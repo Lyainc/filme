@@ -35,3 +35,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# 개인 학습 노트 및 프로토타입
+PHASE0_LESSONS.md
+PHASE1_LESSONS.md
+PHASE2_LESSONS.md
+PHASE3_LESSONS.md
+prototype.html
+
+# IDE 설정 (개인 선호도)
+.vscode/
+.idea/
