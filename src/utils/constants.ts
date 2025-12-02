@@ -53,37 +53,90 @@ export const SCREENING_FORMATS = [
   { value: '르클라이너', label: '르클라이너', file: 'lerecliner.png' },
 ] as const;
 
-// Canvas 레이아웃 설정
-export const CANVAS_LAYOUT = {
-  // 하단 오버레이
-  overlayHeight: 200,
-  overlayOpacity: 0.6,
+// Canvas 디자인 레이아웃 (신규 디자인 시스템)
+export const DESIGN_LAYOUT = {
+  // 극장 체인 로고 (상단 좌측)
+  chainLogo: {
+    x: 40,
+    y: 50,
+    maxWidth: 140,
+    maxHeight: 50,
+  },
 
-  // 텍스트 위치
-  padding: 40,
-  chainY: 70,
-  formatY: 120,
-  titleY: TARGET_HEIGHT - 140,
-  dateY: TARGET_HEIGHT - 90,
-  theaterY: TARGET_HEIGHT - 45,
+  // 상영 포맷 배지 (중단 좌측)
+  formatBadge: {
+    x: 40,
+    y: 700,
+    maxWidth: 120,
+    maxHeight: 40,
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+  },
 
-  // 폰트 설정
-  fonts: {
-    chainSize: 32,
-    formatSize: 24,
-    titleSize: 48,
-    dateSize: 24,
-    theaterSize: 20,
+  // 영화 제목 (하단)
+  movieTitle: {
+    x: 40,
+    y: 1250,
+    maxWidth: 880,
+    fontSize: 56,
+    fontWeight: 'bold',
+    lineHeight: 1.2,
+  },
+
+  // 관람일 (하단)
+  watchDate: {
+    x: 40,
+    y: 1350,
+    fontSize: 28,
+    fontWeight: '500',
+  },
+
+  // 극장 위치 (하단)
+  theater: {
+    x: 40,
+    y: 1400,
+    fontSize: 22,
+    fontWeight: '400',
+  },
+
+  // 여백
+  padding: {
+    side: 40,
+    top: 50,
+    bottom: 50,
+  },
+} as const;
+
+// 디자인 효과 (필터, 그림자 등)
+export const DESIGN_EFFECTS = {
+  // 그라디언트 오버레이 (상단 어둡게, 하단 약간 어둡게)
+  gradients: {
+    topDark: {
+      type: 'linear',
+      stops: [
+        { offset: 0, color: 'rgba(0, 0, 0, 0.5)' },
+        { offset: 0.3, color: 'rgba(0, 0, 0, 0)' },
+        { offset: 0.7, color: 'rgba(0, 0, 0, 0)' },
+        { offset: 1, color: 'rgba(0, 0, 0, 0.3)' },
+      ],
+    },
+  },
+
+  // 텍스트 그림자 (시인성 확보)
+  textShadow: {
+    offsetX: 2,
+    offsetY: 2,
+    blur: 4,
+    color: 'rgba(0, 0, 0, 0.8)',
   },
 
   // 색상
   colors: {
-    chain: '#ff0000',
-    format: '#ffffff',
-    title: '#ffffff',
-    date: '#ffffff',
-    theater: '#cccccc',
-    overlay: 'rgba(0, 0, 0, 0.6)',
-    formatBg: 'rgba(0, 0, 0, 0.7)',
+    textPrimary: '#FFFFFF',
+    textSecondary: '#EEEEEE',
+    textTertiary: '#CCCCCC',
+    badgeBackground: 'rgba(255, 255, 255, 0.9)',
+    badgeText: '#000000',
   },
 } as const;
