@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { TARGET_WIDTH, TARGET_HEIGHT, DESIGN_LAYOUT, DESIGN_EFFECTS, THEATER_CHAINS, SCREENING_FORMATS } from '@/utils/constants';
 
 interface PhototicketCanvasProps {
@@ -10,156 +10,187 @@ interface PhototicketCanvasProps {
   theater: string;
   chain: string;
   format: string;
+  texture: string;
+  screen?: string;
+  seat?: string;
 }
 
 /**
- * 포토티켓 Canvas 렌더링 컴포넌트 (신규 디자인 시스템)
- *
- * 포스터 위에 조화롭게 어울리는 요소들을 레이어로 쌓아 렌더링합니다.
+ * 이미지 하단부 평균 밝기를 분석하여 텍스트 색상을 결정합니다.
  */
-export default function PhototicketCanvas({
+function getContrastColor(ctx: CanvasRenderingContext2D): 'white' | 'black' {
+  const checkAreaHeight = 400; 
+  const imageData = ctx.getImageData(0, TARGET_HEIGHT - checkAreaHeight, TARGET_WIDTH, checkAreaHeight);
+  const data = imageData.data;
+  let r, g, b, avg;
+  let colorSum = 0;
+
+  for (let x = 0, len = data.length; x < len; x += 4) {
+    r = data[x];
+    g = data[x + 1];
+    b = data[x + 2];
+
+    avg = Math.floor((r + g + b) / 3);
+    colorSum += avg;
+  }
+
+  const brightness = colorSum / (data.length / 4);
+  return brightness > 190 ? 'black' : 'white';
+}
+
+/**
+ * 포토티켓 Canvas 렌더링 컴포넌트
+ */
+const PhototicketCanvas = forwardRef<HTMLCanvasElement, PhototicketCanvasProps>(({
   croppedImageUrl,
   movieTitle,
   watchDate,
   theater,
   chain,
-  format
-}: PhototicketCanvasProps) {
+  format,
+  texture,
+  screen,
+  seat
+}, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useImperativeHandle(ref, () => canvasRef.current!);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !croppedImageUrl) return;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
 
-    // Canvas 크기 설정
     canvas.width = TARGET_WIDTH;
     canvas.height = TARGET_HEIGHT;
 
-    // 배경 검은색
     ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
 
-    // 배경 이미지 로드 및 렌더링
     const posterImg = new Image();
-    posterImg.crossOrigin = 'anonymous';
+    
+    if (!croppedImageUrl.startsWith('blob:')) {
+      posterImg.crossOrigin = 'anonymous';
+    }
 
     posterImg.onload = async () => {
-      // Layer 1: 배경 포스터 이미지
-      ctx.drawImage(posterImg, 0, 0, TARGET_WIDTH, TARGET_HEIGHT);
+      // 0. 초기 필터 (빈티지, 흑백 신문 등)
+      ctx.filter = 'none';
+      if (texture === 'vintage') {
+        ctx.filter = 'sepia(60%) contrast(1.1) brightness(0.9)';
+      } else if (texture === 'newspaper') {
+        ctx.filter = 'grayscale(100%) contrast(1.5) brightness(1.2)';
+      }
 
-      // Layer 2: 그라디언트 오버레이 (상단/하단 어둡게)
+      // 1. 포스터 렌더링
+      ctx.drawImage(posterImg, 0, 0, TARGET_WIDTH, TARGET_HEIGHT);
+      ctx.filter = 'none'; // 필터 초기화
+
+      // 2. 밝기 분석 및 색상 결정
+      const contrastMode = getContrastColor(ctx);
+      const isDark = contrastMode === 'white';
+
+      // 3. 시네마틱 그라디언트 오버레이
       const gradient = ctx.createLinearGradient(0, 0, 0, TARGET_HEIGHT);
-      const stops = DESIGN_EFFECTS.gradients.topDark.stops;
+      const stops = isDark ? DESIGN_EFFECTS.gradients.topDark.stops : DESIGN_EFFECTS.gradients.topLight.stops;
       stops.forEach(stop => {
         gradient.addColorStop(stop.offset, stop.color);
       });
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
 
-      // Layer 3: 극장 체인 로고 (상단 좌측)
+      // 4. 로고 렌더링 (체인)
       if (chain) {
         const chainData = THEATER_CHAINS.find(c => c.value === chain);
         if (chainData && chainData.file) {
-          await drawLogo(
-            ctx,
-            `/assets/chains/${chainData.file}`,
-            DESIGN_LAYOUT.chainLogo.x,
-            DESIGN_LAYOUT.chainLogo.y,
-            DESIGN_LAYOUT.chainLogo.maxWidth,
-            DESIGN_LAYOUT.chainLogo.maxHeight
-          );
+          await drawLogo(ctx, `/assets/chains/${chainData.file}`, DESIGN_LAYOUT.chainLogo.x, DESIGN_LAYOUT.chainLogo.y, DESIGN_LAYOUT.chainLogo.maxWidth, DESIGN_LAYOUT.chainLogo.maxHeight);
         }
       }
 
-      // Layer 4: 상영 포맷 배지 (중단 좌측)
+      // 5. 상영 포맷 배지
       if (format) {
         const formatData = SCREENING_FORMATS.find(f => f.value === format);
         if (formatData && formatData.file) {
-          // 배지 배경 (둥근 사각형)
-          const badgeX = DESIGN_LAYOUT.formatBadge.x;
-          const badgeY = DESIGN_LAYOUT.formatBadge.y;
-          const badgePadding = DESIGN_LAYOUT.formatBadge.padding;
-          const badgeRadius = DESIGN_LAYOUT.formatBadge.borderRadius;
+          const { x, y, padding, borderRadius, maxWidth, maxHeight } = DESIGN_LAYOUT.formatBadge;
+          const badgeWidth = maxWidth + padding * 2;
+          const badgeHeight = maxHeight + padding * 2;
 
-          // 배지 크기는 로고 크기 + 패딩
-          const logoWidth = DESIGN_LAYOUT.formatBadge.maxWidth;
-          const logoHeight = DESIGN_LAYOUT.formatBadge.maxHeight;
-          const badgeWidth = logoWidth + badgePadding * 2;
-          const badgeHeight = logoHeight + badgePadding * 2;
-
-          // 둥근 사각형 배지 배경
-          ctx.fillStyle = DESIGN_LAYOUT.formatBadge.backgroundColor;
-          roundRect(ctx, badgeX, badgeY, badgeWidth, badgeHeight, badgeRadius);
+          ctx.fillStyle = isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)';
+          roundRect(ctx, x, y, badgeWidth, badgeHeight, borderRadius);
           ctx.fill();
 
-          // 포맷 로고 렌더링 (배지 안쪽)
-          await drawLogo(
-            ctx,
-            `/assets/formats/${formatData.file}`,
-            badgeX + badgePadding,
-            badgeY + badgePadding,
-            logoWidth,
-            logoHeight
-          );
+          await drawLogo(ctx, `/assets/formats/${formatData.file}`, x + padding, y + padding, maxWidth, maxHeight);
         }
       }
 
-      // 텍스트 렌더링 설정
+      // === 하단 프리미엄 정보 패널 ===
       ctx.textBaseline = 'top';
       ctx.textAlign = 'left';
 
-      // 텍스트 그림자 설정 (시인성)
-      const shadow = DESIGN_EFFECTS.textShadow;
-      ctx.shadowOffsetX = shadow.offsetX;
-      ctx.shadowOffsetY = shadow.offsetY;
-      ctx.shadowBlur = shadow.blur;
-      ctx.shadowColor = shadow.color;
+      const textColor = isDark ? '#FFFFFF' : '#111111';
+      const shadowColor = isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.5)';
+      const dividerColor = isDark ? `rgba(255, 255, 255, ${DESIGN_LAYOUT.divider.opacity})` : `rgba(0, 0, 0, ${DESIGN_LAYOUT.divider.opacity})`;
+      
+      // 6. 넘버링 & 별점 (수집용 티켓 감성)
+      ctx.font = `${DESIGN_LAYOUT.numbering.fontWeight} ${DESIGN_LAYOUT.numbering.fontSize}px "Pretendard", system-ui, sans-serif`;
+      ctx.fillStyle = isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)';
+      fillTextWithSpacing(ctx, `${DESIGN_LAYOUT.numbering.prefix} 001`, DESIGN_LAYOUT.numbering.x, DESIGN_LAYOUT.numbering.y, DESIGN_LAYOUT.numbering.letterSpacing);
+      
+      drawStars(ctx, DESIGN_LAYOUT.rating.x, DESIGN_LAYOUT.rating.y + (DESIGN_LAYOUT.rating.size / 2), DESIGN_LAYOUT.rating.size, DESIGN_LAYOUT.rating.gap, isDark);
 
-      // Layer 5: 영화 제목 (하단)
+      // 7. 영화 제목
       if (movieTitle) {
-        ctx.font = `${DESIGN_LAYOUT.movieTitle.fontWeight} ${DESIGN_LAYOUT.movieTitle.fontSize}px Arial, sans-serif`;
-        ctx.fillStyle = DESIGN_EFFECTS.colors.textPrimary;
-
-        // 긴 제목 처리 (줄바꿈)
-        const maxWidth = DESIGN_LAYOUT.movieTitle.maxWidth;
-        wrapText(
-          ctx,
-          movieTitle,
-          DESIGN_LAYOUT.movieTitle.x,
-          DESIGN_LAYOUT.movieTitle.y,
-          maxWidth,
-          DESIGN_LAYOUT.movieTitle.fontSize * DESIGN_LAYOUT.movieTitle.lineHeight
-        );
+        ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2; ctx.shadowBlur = 6; ctx.shadowColor = shadowColor;
+        ctx.font = `${DESIGN_LAYOUT.movieTitle.fontWeight} ${DESIGN_LAYOUT.movieTitle.fontSize}px "Pretendard", system-ui, sans-serif`;
+        ctx.fillStyle = textColor;
+        wrapText(ctx, movieTitle, DESIGN_LAYOUT.movieTitle.x, DESIGN_LAYOUT.movieTitle.y, DESIGN_LAYOUT.movieTitle.maxWidth, DESIGN_LAYOUT.movieTitle.fontSize * DESIGN_LAYOUT.movieTitle.lineHeight);
       }
 
-      // Layer 6: 관람일 (하단)
-      if (watchDate) {
-        ctx.font = `${DESIGN_LAYOUT.watchDate.fontWeight} ${DESIGN_LAYOUT.watchDate.fontSize}px Arial, sans-serif`;
-        ctx.fillStyle = DESIGN_EFFECTS.colors.textSecondary;
-        ctx.fillText(watchDate, DESIGN_LAYOUT.watchDate.x, DESIGN_LAYOUT.watchDate.y);
+      ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0; ctx.shadowBlur = 0; 
+
+      // 8. 구분선 (Divider)
+      ctx.fillStyle = dividerColor;
+      ctx.fillRect(DESIGN_LAYOUT.divider.x, DESIGN_LAYOUT.divider.y, DESIGN_LAYOUT.divider.width, DESIGN_LAYOUT.divider.thickness);
+
+      // 9. 메타데이터 (날짜, 극장, 상영관, 좌석)
+      const metaY = DESIGN_LAYOUT.metadata.y;
+      const lh = DESIGN_LAYOUT.metadata.lineHeight;
+
+      let primaryText = [];
+      if (watchDate) primaryText.push(watchDate);
+      if (theater) primaryText.push(theater);
+      
+      if (primaryText.length > 0) {
+        ctx.font = `${DESIGN_LAYOUT.metadata.primary.fontWeight} ${DESIGN_LAYOUT.metadata.primary.fontSize}px "Pretendard", system-ui, sans-serif`;
+        ctx.fillStyle = textColor;
+        fillTextWithSpacing(ctx, primaryText.join('   |   '), DESIGN_LAYOUT.metadata.x, metaY, DESIGN_LAYOUT.metadata.primary.letterSpacing);
       }
 
-      // Layer 7: 극장 위치 (하단)
-      if (theater) {
-        ctx.font = `${DESIGN_LAYOUT.theater.fontWeight} ${DESIGN_LAYOUT.theater.fontSize}px Arial, sans-serif`;
-        ctx.fillStyle = DESIGN_EFFECTS.colors.textTertiary;
-        ctx.fillText(theater, DESIGN_LAYOUT.theater.x, DESIGN_LAYOUT.theater.y);
+      let secondaryText = [];
+      if (screen) secondaryText.push(screen);
+      if (seat) secondaryText.push(seat);
+
+      if (secondaryText.length > 0) {
+        ctx.font = `${DESIGN_LAYOUT.metadata.secondary.fontWeight} ${DESIGN_LAYOUT.metadata.secondary.fontSize}px "Pretendard", system-ui, sans-serif`;
+        ctx.globalAlpha = DESIGN_LAYOUT.metadata.secondary.opacity;
+        fillTextWithSpacing(ctx, secondaryText.join('   |   '), DESIGN_LAYOUT.metadata.x, metaY + lh, DESIGN_LAYOUT.metadata.secondary.letterSpacing);
+        ctx.globalAlpha = 1.0; 
       }
 
-      // Canvas를 window에 노출 (다운로드용)
-      window.phototicketCanvas = canvas;
+      // 10. 장식용 바코드
+      drawBarcode(ctx, DESIGN_LAYOUT.barcode.x, DESIGN_LAYOUT.barcode.y, DESIGN_LAYOUT.barcode.width, DESIGN_LAYOUT.barcode.height, isDark);
+
+      // 11. TCG 프레임 (Inner Border)
+      drawTCGBorder(ctx, isDark);
+
+      // 12. 텍스처 (후가공) 오버레이 적용
+      applyTextureOverlay(ctx, texture, TARGET_WIDTH, TARGET_HEIGHT);
     };
 
     posterImg.src = croppedImageUrl;
-
-    // Cleanup
-    return () => {
-      delete window.phototicketCanvas;
-    };
-  }, [croppedImageUrl, movieTitle, watchDate, theater, chain, format]);
+  }, [croppedImageUrl, movieTitle, watchDate, theater, chain, format, texture, screen, seat]);
 
   return (
     <div className="flex justify-center">
@@ -170,54 +201,34 @@ export default function PhototicketCanvas({
       />
     </div>
   );
-}
+});
 
-/**
- * 로고 이미지 로드 및 렌더링
- */
-async function drawLogo(
-  ctx: CanvasRenderingContext2D,
-  src: string,
-  x: number,
-  y: number,
-  maxWidth: number,
-  maxHeight: number
-): Promise<void> {
+PhototicketCanvas.displayName = 'PhototicketCanvas';
+
+export default PhototicketCanvas;
+
+/* =========================================================================
+ * Helper Functions
+ * ========================================================================= */
+
+async function drawLogo(ctx: CanvasRenderingContext2D, src: string, x: number, y: number, maxWidth: number, maxHeight: number): Promise<void> {
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
-
     img.onload = () => {
-      // 비율 유지하며 크기 조정
       const scale = Math.min(maxWidth / img.width, maxHeight / img.height);
-      const width = img.width * scale;
-      const height = img.height * scale;
-
-      // 이미지 렌더링
-      ctx.drawImage(img, x, y, width, height);
+      ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
       resolve();
     };
-
     img.onerror = () => {
       console.warn(`Failed to load logo: ${src}`);
-      resolve(); // 에러여도 계속 진행
+      resolve();
     };
-
     img.src = src;
   });
 }
 
-/**
- * 둥근 사각형 그리기
- */
-function roundRect(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  radius: number
-) {
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
   ctx.beginPath();
   ctx.moveTo(x + radius, y);
   ctx.lineTo(x + width - radius, y);
@@ -232,7 +243,7 @@ function roundRect(
 }
 
 /**
- * 텍스트 줄바꿈 처리
+ * 텍스트 줄바꿈 처리 (한국어/영어 복합 지원 알고리즘)
  */
 function wrapText(
   ctx: CanvasRenderingContext2D,
@@ -242,22 +253,222 @@ function wrapText(
   maxWidth: number,
   lineHeight: number
 ) {
-  const words = text.split('');
+  const words = text.split(' ');
   let line = '';
   let currentY = y;
 
   for (let n = 0; n < words.length; n++) {
-    const testLine = line + words[n];
-    const metrics = ctx.measureText(testLine);
-    const testWidth = metrics.width;
-
-    if (testWidth > maxWidth && n > 0) {
-      ctx.fillText(line, x, currentY);
-      line = words[n];
-      currentY += lineHeight;
+    const word = words[n];
+    
+    if (ctx.measureText(word).width > maxWidth) {
+      if (line.trim() !== '') {
+        ctx.fillText(line.trim(), x, currentY);
+        line = '';
+        currentY += lineHeight;
+      }
+      
+      let subLine = '';
+      for (let i = 0; i < word.length; i++) {
+        const char = word[i];
+        if (ctx.measureText(subLine + char).width > maxWidth) {
+          ctx.fillText(subLine, x, currentY);
+          subLine = char;
+          currentY += lineHeight;
+        } else {
+          subLine += char;
+        }
+      }
+      line = subLine + ' ';
     } else {
-      line = testLine;
+      const testLine = line + word + (n < words.length - 1 ? ' ' : '');
+      const metrics = ctx.measureText(testLine);
+
+      if (metrics.width > maxWidth && n > 0) {
+        ctx.fillText(line.trim(), x, currentY);
+        line = word + ' ';
+        currentY += lineHeight;
+      } else {
+        line = testLine;
+      }
     }
   }
-  ctx.fillText(line, x, currentY);
+  
+  if (line.trim().length > 0) {
+    ctx.fillText(line.trim(), x, currentY);
+  }
+}
+
+/**
+ * 자간(Letter Spacing)을 지원하는 텍스트 렌더링
+ */
+function fillTextWithSpacing(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  spacing: number
+) {
+  let currentX = x;
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    ctx.fillText(char, currentX, y);
+    currentX += ctx.measureText(char).width + spacing;
+  }
+}
+
+/**
+ * 장식용 바코드 그리기 (티켓 미학)
+ */
+function drawBarcode(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  isDark: boolean
+) {
+  ctx.fillStyle = isDark ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
+  const bars = [2, 1, 3, 1, 1, 4, 2, 1, 1, 2, 3, 1, 2, 2, 1, 3, 1, 2];
+  let currentX = x;
+  
+  for (let i = 0; i < bars.length; i++) {
+    const barWidth = bars[i] * 2.5; 
+    const gap = (i % 2 === 0) ? 4 : 8; 
+    
+    if (currentX + barWidth > x + width) break;
+    
+    ctx.fillRect(currentX, y, barWidth, height);
+    currentX += barWidth + gap;
+  }
+}
+
+/**
+ * TCG 스타일의 이너 프레임 라인 (고급스러움 강조)
+ */
+function drawTCGBorder(ctx: CanvasRenderingContext2D, isDark: boolean) {
+  const { margin, thickness, radius } = DESIGN_LAYOUT.border;
+  const width = TARGET_WIDTH - margin * 2;
+  const height = TARGET_HEIGHT - margin * 2;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(margin + radius, margin);
+  ctx.lineTo(margin + width - radius, margin);
+  ctx.quadraticCurveTo(margin + width, margin, margin + width, margin + radius);
+  ctx.lineTo(margin + width, margin + height - radius);
+  ctx.quadraticCurveTo(margin + width, margin + height, margin + width - radius, margin + height);
+  ctx.lineTo(margin + radius, margin + height);
+  ctx.quadraticCurveTo(margin, margin + height, margin, margin + height - radius);
+  ctx.lineTo(margin, margin + radius);
+  ctx.quadraticCurveTo(margin, margin, margin + radius, margin);
+  ctx.closePath();
+
+  ctx.lineWidth = thickness;
+  // 다크 모드일 땐 금/은박 느낌의 선명한 흰색, 라이트 모드일 땐 부드러운 검은색
+  ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.3)';
+  
+  // Scodix나 박(Foil) 효과를 위한 글로우 효과
+  ctx.shadowColor = isDark ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.5)';
+  ctx.shadowBlur = 8;
+  
+  ctx.stroke();
+  ctx.restore();
+}
+
+/**
+ * 특수 후가공 텍스처 오버레이 (Hologram, Metal, Artpaper, Scodix 등)
+ */
+function applyTextureOverlay(ctx: CanvasRenderingContext2D, texture: string, width: number, height: number) {
+  if (!texture || texture === 'none' || texture === 'vintage' || texture === 'newspaper') return;
+
+  ctx.save();
+  
+  if (texture === 'hologram') {
+    // 홀로그램 무지개빛 그라디언트
+    const gradient = ctx.createLinearGradient(0, 0, width, height);
+    gradient.addColorStop(0, 'rgba(255, 0, 0, 0.15)');
+    gradient.addColorStop(0.2, 'rgba(255, 165, 0, 0.15)');
+    gradient.addColorStop(0.4, 'rgba(255, 255, 0, 0.15)');
+    gradient.addColorStop(0.6, 'rgba(0, 128, 0, 0.15)');
+    gradient.addColorStop(0.8, 'rgba(0, 0, 255, 0.15)');
+    gradient.addColorStop(1, 'rgba(238, 130, 238, 0.15)');
+    
+    ctx.globalCompositeOperation = 'color-dodge';
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+  } 
+  else if (texture === 'metal') {
+    // 메탈릭한 대각선 빛 반사
+    const gradient = ctx.createLinearGradient(0, 0, width, height);
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+    gradient.addColorStop(0.4, 'rgba(200, 200, 200, 0.1)');
+    gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.5)');
+    gradient.addColorStop(0.6, 'rgba(150, 150, 150, 0.1)');
+    gradient.addColorStop(1, 'rgba(50, 50, 50, 0.3)');
+    
+    ctx.globalCompositeOperation = 'hard-light';
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+  }
+  else if (texture === 'artpaper') {
+    // 수채화/캔버스 질감을 위한 가상 노이즈 패턴 시뮬레이션
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.fillStyle = 'rgba(230, 225, 215, 0.3)'; // 종이 질감 베이스
+    ctx.fillRect(0, 0, width, height);
+    // (Note: 브라우저 환경에서 실제 픽셀 조작 노이즈는 성능 이슈가 있어 단색 곱하기로 질감 톤만 조절)
+  }
+  else if (texture === 'scodix') {
+    // 부분 코팅 엠보싱 효과 (전체적으로 채도를 살짝 낮추고 광택을 줌)
+    const gradient = ctx.createLinearGradient(0, height/2, width, height/2);
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
+    gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.15)');
+    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    
+    ctx.globalCompositeOperation = 'overlay';
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+  }
+
+  ctx.restore();
+}
+
+/**
+ * 별점 빈 칸 그리기 (메가박스 오리지널 티켓 스타일 리뷰란)
+ */
+function drawStars(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, gap: number, isDark: boolean) {
+  ctx.save();
+  ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)';
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  
+  let currentX = x;
+  const outerRadius = size / 2;
+  const innerRadius = size / 4;
+  
+  for(let i=0; i<5; i++) {
+    let rot = Math.PI / 2 * 3;
+    let cx = currentX + outerRadius;
+    let cy = y;
+    let step = Math.PI / 5;
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - outerRadius);
+    for (let j = 0; j < 5; j++) {
+      let px = cx + Math.cos(rot) * outerRadius;
+      let py = cy + Math.sin(rot) * outerRadius;
+      ctx.lineTo(px, py);
+      rot += step;
+
+      px = cx + Math.cos(rot) * innerRadius;
+      py = cy + Math.sin(rot) * innerRadius;
+      ctx.lineTo(px, py);
+      rot += step;
+    }
+    ctx.lineTo(cx, cy - outerRadius);
+    ctx.closePath();
+    ctx.stroke();
+    
+    currentX += size + gap;
+  }
+  ctx.restore();
 }
