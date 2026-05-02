@@ -221,28 +221,26 @@ export const DESIGN_LAYOUT = {
 
 ---
 
-## 🚀 구현 단계
+## 🚀 구현 완료 내역 (Phase 1.5 ~ 3)
 
-### Phase 1: 기본 레이아웃
-1. 반투명 박스 제거
-2. 그라디언트 오버레이 추가
-3. 텍스트 위치 재배치
-4. 텍스트 그림자 추가
+### Phase 1.5: 렌더링 성능 최적화
+- **Blob 활용**: `URL.createObjectURL` 적용으로 Base64 변환 생략, 메모리 안정성 향상
+- **디바운싱**: 입력 폼 조작 시 300ms 딜레이를 두어 불필요한 Canvas 리렌더링 방지
 
-### Phase 2: 에셋 통합
-1. 극장 체인 로고 렌더링 (PNG/SVG)
-2. 상영 포맷 아이콘 렌더링
-3. 배지 스타일 적용
+### Phase 2: 레이아웃 & 텍스트 고도화
+- **Pretendard CDN**: `next/font/local` 대신 CDN과 Tailwind CSS를 이용해 웹폰트 적용
+- **자동 콘트라스트 (`getContrastColor`)**: 포스터 하단 400px 영역의 밝기(Brightness)를 분석하여 텍스트 및 효과 색상을 Black/White로 자동 전환
+- **멀티 라인 줄바꿈**: 단어 단위 우선, 이후 문자 단위로 줄바꿈을 지원하는 커스텀 `wrapText` 함수 적용
 
-### Phase 3: 웹폰트
-1. Pretendard 다운로드 및 설정
-2. next/font 적용
-3. Canvas에 웹폰트 로드
-
-### Phase 4: 세부 조정
-1. 여백, 간격 조정
-2. 색상 미세 조정
-3. 다양한 이미지로 테스트
+### Phase 3: 프리미엄 에셋 통합 & 특수 효과
+- **TCG 스타일 프레임 (`drawTCGBorder`)**: 둥근 모서리와 두께를 갖춘 이너 라인과 글로우(Shadow) 효과 적용
+- **특수 후가공 텍스처 (`applyTextureOverlay`)**:
+  - `Hologram`: 무지개빛 그라디언트 + `color-dodge` 블렌딩
+  - `Metal`: 차가운 대각선 빛 반사 + `hard-light`
+  - `Artpaper`: 수채화/캔버스 종이 질감 + `multiply`
+  - `Scodix`: 부분 엠보싱/코팅 광택 + `overlay`
+  - `Vintage` / `Newspaper`: Canvas Filter 적용
+- **미학적 장식**: 메가박스 스타일의 별점(`drawStars`), 티켓 바코드(`drawBarcode`), 메타데이터 구분선(`Divider`) 추가
 
 ---
 
