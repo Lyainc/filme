@@ -10,16 +10,20 @@ export function downloadCanvasAsJPEG(
   canvas: HTMLCanvasElement,
   filename: string = 'phototicket.jpg'
 ): void {
-  const dataURL = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
-
-  fetch(dataURL)
-    .then(res => res.blob())
-    .then(blob => {
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.download = filename;
-      link.href = url;
-      link.click();
+  canvas.toBlob((blob) => {
+    if (!blob) {
+      console.error('Failed to create blob from canvas');
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = url;
+    link.click();
+    
+    // Revoke the Object URL after a slight delay to ensure download starts
+    setTimeout(() => {
       URL.revokeObjectURL(url);
-    });
+    }, 100);
+  }, 'image/jpeg', JPEG_QUALITY);
 }

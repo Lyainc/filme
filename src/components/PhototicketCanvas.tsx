@@ -57,6 +57,7 @@ const PhototicketCanvas = forwardRef<HTMLCanvasElement, PhototicketCanvasProps>(
   useImperativeHandle(ref, () => canvasRef.current!);
 
   useEffect(() => {
+    let isCancelled = false;
     const canvas = canvasRef.current;
     if (!canvas || !croppedImageUrl) return;
 
@@ -76,6 +77,8 @@ const PhototicketCanvas = forwardRef<HTMLCanvasElement, PhototicketCanvasProps>(
     }
 
     posterImg.onload = async () => {
+      if (isCancelled) return;
+
       // 0. 초기 필터 (빈티지, 흑백 신문 등)
       ctx.filter = 'none';
       if (texture === 'vintage') {
@@ -106,6 +109,7 @@ const PhototicketCanvas = forwardRef<HTMLCanvasElement, PhototicketCanvasProps>(
         const chainData = THEATER_CHAINS.find(c => c.value === chain);
         if (chainData && chainData.file) {
           await drawLogo(ctx, `/assets/chains/${chainData.file}`, DESIGN_LAYOUT.chainLogo.x, DESIGN_LAYOUT.chainLogo.y, DESIGN_LAYOUT.chainLogo.maxWidth, DESIGN_LAYOUT.chainLogo.maxHeight);
+          if (isCancelled) return;
         }
       }
 
@@ -122,6 +126,7 @@ const PhototicketCanvas = forwardRef<HTMLCanvasElement, PhototicketCanvasProps>(
           ctx.fill();
 
           await drawLogo(ctx, `/assets/formats/${formatData.file}`, x + padding, y + padding, maxWidth, maxHeight);
+          if (isCancelled) return;
         }
       }
 
@@ -190,6 +195,10 @@ const PhototicketCanvas = forwardRef<HTMLCanvasElement, PhototicketCanvasProps>(
     };
 
     posterImg.src = croppedImageUrl;
+
+    return () => {
+      isCancelled = true;
+    };
   }, [croppedImageUrl, movieTitle, watchDate, theater, chain, format, texture, screen, seat]);
 
   return (
