@@ -43,6 +43,17 @@ export interface DesignLayout {
   padding: { side: number; top: number; bottom: number };
 }
 
+// KOBIS API 영화 검색 결과 항목
+export interface KobisMovie {
+  movieCd: string;        // 영화 코드
+  movieNm: string;        // 한글 제목
+  movieNmEn: string;      // 영문 제목
+  openDt: string;         // 개봉일 (YYYYMMDD)
+  genreAlt: string;       // 장르 (SF,드라마,모험)
+  nationAlt: string;      // 국가
+  prdtYear: string;       // 제작년도
+}
+
 // Window 타입 확장 (Canvas 노출 제거 예정 - forwardRef 사용)
 declare global {
   interface Window {
