@@ -106,7 +106,7 @@ const PhototicketCanvas = forwardRef<HTMLCanvasElement, PhototicketCanvasProps>(
             DESIGN_LAYOUT.chainLogo.maxWidth, 
             DESIGN_LAYOUT.chainLogo.maxHeight, 
             themeColor,
-            true // 중앙 정렬
+            'center' // 중앙 정렬
           );
           if (isCancelled) return;
         }
@@ -117,20 +117,26 @@ const PhototicketCanvas = forwardRef<HTMLCanvasElement, PhototicketCanvasProps>(
         const formatData = SCREENING_FORMATS.find(f => f.value === format);
         if (formatData && formatData.file) {
           const { x, y, badgeWidth, badgeHeight, padding } = DESIGN_LAYOUT.formatBadge;
-          const maxWidth = badgeWidth - (padding * 2);
+          const maxWidth = 400; // 충분히 넓은 영역을 주어 width constraint에 걸리지 않도록 함
           const maxHeight = badgeHeight - (padding * 2);
+          
+          // 우측 정렬을 위해 시작 X좌표를 조정
+          // 현재 x는 708, badgeWidth는 192 -> 우측 끝은 900.
+          // maxWidth가 400이라면, 시작 X를 900 - 400 = 500으로 잡으면 우측 정렬 시 우측 끝이 900이 됨
+          const badgeRightEdge = x + badgeWidth - padding;
+          const startX = badgeRightEdge - maxWidth;
           
           // 배경 없이 로고만 렌더링 (사용자 요청: 배경색 무조건 투명)
           // 색상은 왼쪽 극장 로고와 동일하게 themeColor 적용
           await drawLogo(
             ctx, 
             `/assets/formats_transparent/${formatData.file}`, 
-            x + padding, 
+            startX, 
             y + padding, 
             maxWidth, 
             maxHeight, 
             themeColor,
-            true // 중앙 정렬
+            'right' // 우측 정렬
           );
           if (isCancelled) return;
         }

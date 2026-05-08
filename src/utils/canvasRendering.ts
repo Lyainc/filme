@@ -39,14 +39,20 @@ export async function drawLogo(
   targetMaxWidth: number,
   targetMaxHeight: number,
   themeColor: string = '#FFFFFF',
-  center: boolean = true // 중앙 정렬 옵션 추가
+  align: 'left' | 'center' | 'right' = 'center'
 ): Promise<void> {
-  const cacheKey = `${src}_${themeColor}_${targetMaxWidth}_${targetMaxHeight}`;
+  const cacheKey = `${src}_${themeColor}_${targetMaxWidth}_${targetMaxHeight}_${align}`;
   
   if (logoCanvasCache.has(cacheKey)) {
     const cachedCanvas = logoCanvasCache.get(cacheKey)!;
-    const finalX = center ? targetX + (targetMaxWidth - cachedCanvas.width) / 2 : targetX;
-    const finalY = center ? targetY + (targetMaxHeight - cachedCanvas.height) / 2 : targetY;
+    let finalX = targetX;
+    if (align === 'center') finalX = targetX + (targetMaxWidth - cachedCanvas.width) / 2;
+    else if (align === 'right') finalX = targetX + targetMaxWidth - cachedCanvas.width;
+    
+    let finalY = targetY;
+    if (align === 'center') finalY = targetY + (targetMaxHeight - cachedCanvas.height) / 2;
+    else if (align === 'right') finalY = targetY + (targetMaxHeight - cachedCanvas.height) / 2; // Keep Y centered
+    
     ctx.drawImage(cachedCanvas, Math.round(finalX), Math.round(finalY));
     return;
   }
@@ -67,9 +73,14 @@ export async function drawLogo(
     offCanvas.height = h;
     const offCtx = offCanvas.getContext('2d');
     
+    let finalX = targetX;
+    if (align === 'center') finalX = targetX + (targetMaxWidth - w) / 2;
+    else if (align === 'right') finalX = targetX + targetMaxWidth - w;
+
+    let finalY = targetY;
+    if (align === 'center' || align === 'right') finalY = targetY + (targetMaxHeight - h) / 2; // Y is always centered for 'right' and 'center'
+
     if (!offCtx) {
-      const finalX = center ? targetX + (targetMaxWidth - w) / 2 : targetX;
-      const finalY = center ? targetY + (targetMaxHeight - h) / 2 : targetY;
       ctx.drawImage(img, Math.round(finalX), Math.round(finalY), w, h);
       return;
     }
@@ -88,8 +99,6 @@ export async function drawLogo(
     // 캐시에 저장
     logoCanvasCache.set(cacheKey, offCanvas);
     
-    const finalX = center ? targetX + (targetMaxWidth - w) / 2 : targetX;
-    const finalY = center ? targetY + (targetMaxHeight - h) / 2 : targetY;
     ctx.drawImage(offCanvas, Math.round(finalX), Math.round(finalY));
   } catch (err) {
     console.warn(`Failed to process logo: ${src}`, err);
