@@ -9,6 +9,7 @@ export interface MovieInfo {
   theater: string;
   screen?: string; // 예: 4관, IMAX관
   seat?: string;   // 예: G14, G15
+  rating: number;  // 별점 (0~5)
 }
 
 // 컴포넌트 선택
@@ -16,6 +17,8 @@ export interface TicketComponents {
   chain: string;
   format: string;
   texture: string; // 특수 후가공 텍스처 (홀로그램, 메탈 등)
+  posterOpacity: number; // 포스터 불투명도 (0~1)
+  themeColor: string;    // 테마 색상 (글씨, 로고 등)
 }
 
 // 전체 포토티켓 상태
@@ -23,6 +26,7 @@ export interface PhototicketState {
   croppedImageUrl: string | null;
   movieInfo: MovieInfo;
   components: TicketComponents;
+  recommendedColors: string[]; // K-means 추천 색상
 }
 
 // Canvas 디자인 설정 타입
@@ -31,8 +35,8 @@ export interface DesignLayout {
   formatBadge: {
     x: number;
     y: number;
-    maxWidth: number;
-    maxHeight: number;
+    badgeWidth: number;
+    badgeHeight: number;
     padding: number;
     borderRadius: number;
     backgroundColor: string;

@@ -10,12 +10,16 @@ export function usePhototicket() {
       theater: '',
       screen: '',
       seat: '',
+      rating: 5,
     },
     components: {
       chain: '',
       format: '',
       texture: 'none',
+      posterOpacity: 0.8,
+      themeColor: '#FFFFFF',
     },
+    recommendedColors: [],
   });
 
   const [isProcessing, setIsProcessing] = useState(false);
@@ -66,6 +70,14 @@ export function usePhototicket() {
     }));
   }, []);
 
+  // Set recommended colors
+  const setRecommendedColors = useCallback((colors: string[]) => {
+    setState((prev) => ({
+      ...prev,
+      recommendedColors: colors,
+    }));
+  }, []);
+
   // Cleanup Object URLs on unmount
   useEffect(() => {
     return () => {
@@ -82,5 +94,6 @@ export function usePhototicket() {
     handleImageUpload,
     updateMovieInfo,
     updateComponents,
+    setRecommendedColors,
   };
 }

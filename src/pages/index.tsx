@@ -1,10 +1,11 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import PhototicketCanvas from '@/components/PhototicketCanvas';
 import ImageUploader from '@/components/ImageUploader';
 import MovieInfoForm from '@/components/MovieInfoForm';
 import ComponentSelector from '@/components/ComponentSelector';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { downloadCanvasAsJPEG } from '@/utils/canvasExport';
+import { extractColors } from '@/utils/colorExtraction';
 
 export default function Home() {
   const {
@@ -14,9 +15,19 @@ export default function Home() {
     handleImageUpload,
     updateMovieInfo,
     updateComponents,
+    setRecommendedColors,
   } = usePhototicket();
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // 이미지 업로드 시 색상 추출
+  useEffect(() => {
+    if (state.croppedImageUrl) {
+      extractColors(state.croppedImageUrl, 2).then((colors) => {
+        setRecommendedColors(colors);
+      });
+    }
+  }, [state.croppedImageUrl, setRecommendedColors]);
 
   // 다운로드 핸들러
   const handleDownload = () => {
@@ -54,6 +65,7 @@ export default function Home() {
 
             <ComponentSelector
               components={state.components}
+              recommendedColors={state.recommendedColors}
               onChange={updateComponents}
             />
 
@@ -90,9 +102,12 @@ export default function Home() {
                     theater={debouncedState.movieInfo.theater}
                     screen={debouncedState.movieInfo.screen}
                     seat={debouncedState.movieInfo.seat}
+                    rating={debouncedState.movieInfo.rating}
                     chain={debouncedState.components.chain}
                     format={debouncedState.components.format}
                     texture={debouncedState.components.texture}
+                    posterOpacity={debouncedState.components.posterOpacity}
+                    themeColor={debouncedState.components.themeColor}
                   />
                 ) : (
                   <div className="flex items-center justify-center aspect-[0.65/1] w-full max-w-[320px] mx-auto bg-gray-100 rounded-xl border-2 border-dashed border-gray-200">
