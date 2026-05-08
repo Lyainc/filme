@@ -16,49 +16,59 @@ async function processLogo(inputPath, outputPath, category) {
   
   try {
     const isSvg = fileName.toLowerCase().endsWith('.svg');
+    const isWebp = fileName.toLowerCase().endsWith('.webp');
     
     // 1. 이미지 로드 및 기본 메타데이터 획득
     // SVG는 고해상도 렌더링을 위해 density를 높게 설정
     let pipeline = sharp(inputPath, isSvg ? { density: 1200 } : {});
+    
+    // WebP 같은 경우 투명/흰색 배경 처리가 불안정할 수 있으므로, 
+    // 비트맵인 경우 먼저 흰색 배경으로 플래튼 처리한 버퍼를 생성하여 검사합니다.
+    let inspectionPipeline = pipeline.clone();
+    if (!isSvg) {
+      inspectionPipeline = inspectionPipeline.flatten({ background: '#ffffff' });
+    }
+    
     const metadata = await pipeline.metadata();
     
     // 2. 배경 분석을 위한 샘플링 (비트맵인 경우만)
     let isWhiteBG = false;
     let isBlackBG = false;
-    let hasAlpha = metadata.hasAlpha && !isSvg; // SVG는 항상 투명 배경으로 가정
+    let hasAlpha = metadata.hasAlpha && !isSvg && !isWebp; // SVG는 항상 투명, WebP는 일단 흰 배경으로 강제 취급
 
     if (!isSvg) {
-      // 4개 모서리 픽셀 샘플링
-      const { data } = await pipeline
+      // 플래튼 처리된 이미지로 4개 모서리 픽셀 샘플링
+      const { data, info } = await inspectionPipeline
         .raw()
         .toBuffer({ resolveWithObject: true });
       
-      const channels = metadata.channels || 4;
+      const channels = info.channels || 3; // flatten 했으므로 보통 3(RGB)
       const corners = [
         0, // Top-left
-        (metadata.width - 1) * channels, // Top-right
-        (metadata.width * (metadata.height - 1)) * channels, // Bottom-left
+        (info.width - 1) * channels, // Top-right
+        (info.width * (info.height - 1)) * channels, // Bottom-left
         (data.length - channels) // Bottom-right
       ];
 
       let whiteScore = 0;
       let blackScore = 0;
-      let alphaScore = 0;
 
       for (const idx of corners) {
         const r = data[idx];
         const g = data[idx + 1];
         const b = data[idx + 2];
-        const a = channels === 4 ? data[idx + 3] : 255;
 
-        if (a < 50) alphaScore++;
         if (r > 240 && g > 240 && b > 240) whiteScore++;
         if (r < 15 && g < 15 && b < 15) blackScore++;
       }
 
-      if (alphaScore >= 2) hasAlpha = true;
-      else if (whiteScore >= 2) isWhiteBG = true;
-      else if (blackScore >= 2) isBlackBG = true;
+      if (hasAlpha) {
+         // keep true
+      } else if (whiteScore >= 2 || isWebp) { // WebP는 흰배경으로 간주 (flatten 했으므로)
+        isWhiteBG = true;
+      } else if (blackScore >= 2) {
+        isBlackBG = true;
+      }
     }
 
     // 3. 최적의 처리 파이프라인 구성
@@ -67,12 +77,12 @@ async function processLogo(inputPath, outputPath, category) {
     if (isSvg) {
       // SVG는 투명 배경으로 렌더링 후 실루엣화
       finalPipeline = finalPipeline.png().ensureAlpha();
-    } else if (hasAlpha) {
+    } else if (hasAlpha && !isWebp) {
       // 이미 투명도가 있는 경우: 알파 채널 유지
       finalPipeline = finalPipeline.ensureAlpha();
     } else if (isWhiteBG) {
-      // 흰색 배경인 경우: 반전시켜서 검정 배경의 흰색 로고로 만든 후 처리
-      finalPipeline = finalPipeline.ensureAlpha().negate({ alpha: false });
+      // 흰색 배경인 경우: 흰색 배경으로 병합한 뒤 반전시켜서 검정 배경의 흰색 로고로 만든 후 처리
+      finalPipeline = finalPipeline.flatten({ background: '#ffffff' }).ensureAlpha().negate({ alpha: false });
     } else if (isBlackBG) {
       // 검정색 배경인 경우: 그대로 유지 (trim이 배경을 날려줄 것임)
       finalPipeline = finalPipeline.ensureAlpha();
@@ -90,8 +100,14 @@ async function processLogo(inputPath, outputPath, category) {
     const trimmedMetadata = await sharp(trimmedBuffer).metadata();
     
     // 시각적 무게(높이) 정규화
-    // IMAX 로고를 기준으로 모든 포맷 로고의 높이를 맞춥니다.
-    const TARGET_HEIGHT = category === 'formats' ? 160 : 100;
+    let TARGET_HEIGHT = category === 'formats' ? 160 : 100;
+    if (category === 'formats') {
+      if (fileName.toLowerCase().includes('imax')) {
+        TARGET_HEIGHT = 140; // 아이맥스는 너무 크니 10% 축소된 느낌
+      } else {
+        TARGET_HEIGHT = 176; // 나머지 포맷들은 10% 확대된 느낌
+      }
+    }
     
     let scale = TARGET_HEIGHT / trimmedMetadata.height;
     

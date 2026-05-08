@@ -147,8 +147,15 @@ const PhototicketCanvas = forwardRef<HTMLCanvasElement, PhototicketCanvasProps>(
 
       // 7. 영화 제목
       if (movieTitle) {
-        ctx.font = `${DESIGN_LAYOUT.movieTitle.fontWeight} ${DESIGN_LAYOUT.movieTitle.fontSize}px "Pretendard", system-ui, sans-serif`;
-        wrapText(ctx, movieTitle, DESIGN_LAYOUT.movieTitle.x, DESIGN_LAYOUT.movieTitle.y, DESIGN_LAYOUT.movieTitle.maxWidth, DESIGN_LAYOUT.movieTitle.fontSize * DESIGN_LAYOUT.movieTitle.lineHeight);
+        let titleFontSize = DESIGN_LAYOUT.movieTitle.fontSize;
+        if (movieTitle.length > 15) {
+          titleFontSize = titleFontSize * 0.85; // 긴 제목은 15% 축소
+        } else if (movieTitle.length > 10) {
+          titleFontSize = titleFontSize * 0.95; // 약간 긴 제목은 5% 축소
+        }
+        
+        ctx.font = `${DESIGN_LAYOUT.movieTitle.fontWeight} ${titleFontSize}px "Pretendard", system-ui, sans-serif`;
+        wrapText(ctx, movieTitle, DESIGN_LAYOUT.movieTitle.x, DESIGN_LAYOUT.movieTitle.y, DESIGN_LAYOUT.movieTitle.maxWidth, titleFontSize * DESIGN_LAYOUT.movieTitle.lineHeight);
       }
 
       // 8. 구분선 (Divider)

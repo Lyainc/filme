@@ -224,18 +224,31 @@ export function drawTCGBorder(ctx: CanvasRenderingContext2D, color: string) {
 }
 
 export function applyTextureOverlay(ctx: CanvasRenderingContext2D, texture: string, width: number, height: number) {
-  if (!texture || texture === 'none' || texture === 'original' || texture === 'vintage' || texture === 'newspaper') return;
+  if (!texture || texture === 'original' || texture === 'vintage' || texture === 'newspaper') return;
 
   ctx.save();
   
-  if (texture === 'hologram') {
+  if (texture === 'none') {
+    // 일반 인화지 (유광) 느낌을 위한 은은한 빛 반사
     const gradient = ctx.createLinearGradient(0, 0, width, height);
-    gradient.addColorStop(0, 'rgba(255, 182, 193, 0.15)'); // 파스텔 핑크
-    gradient.addColorStop(0.2, 'rgba(255, 223, 186, 0.15)'); // 파스텔 오렌지
-    gradient.addColorStop(0.4, 'rgba(255, 255, 186, 0.15)'); // 파스텔 옐로우
-    gradient.addColorStop(0.6, 'rgba(186, 255, 201, 0.15)'); // 파스텔 그린
-    gradient.addColorStop(0.8, 'rgba(186, 225, 255, 0.15)'); // 파스텔 블루
-    gradient.addColorStop(1, 'rgba(216, 191, 216, 0.15)'); // 파스텔 퍼플
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
+    gradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.05)');
+    gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.15)'); // 사선 하이라이트
+    gradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.05)');
+    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    
+    ctx.globalCompositeOperation = 'screen';
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+  }
+  else if (texture === 'hologram') {
+    const gradient = ctx.createLinearGradient(0, 0, width, height);
+    gradient.addColorStop(0, 'rgba(255, 182, 193, 0.25)'); // 파스텔 핑크
+    gradient.addColorStop(0.2, 'rgba(255, 223, 186, 0.25)'); // 파스텔 오렌지
+    gradient.addColorStop(0.4, 'rgba(255, 255, 186, 0.25)'); // 파스텔 옐로우
+    gradient.addColorStop(0.6, 'rgba(186, 255, 201, 0.25)'); // 파스텔 그린
+    gradient.addColorStop(0.8, 'rgba(186, 225, 255, 0.25)'); // 파스텔 블루
+    gradient.addColorStop(1, 'rgba(216, 191, 216, 0.25)'); // 파스텔 퍼플
     
     ctx.globalCompositeOperation = 'color-dodge';
     ctx.fillStyle = gradient;
@@ -243,7 +256,7 @@ export function applyTextureOverlay(ctx: CanvasRenderingContext2D, texture: stri
     
     // 은은한 반짝임 효과
     const sparkle = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width);
-    sparkle.addColorStop(0, 'rgba(255, 255, 255, 0.1)');
+    sparkle.addColorStop(0, 'rgba(255, 255, 255, 0.2)');
     sparkle.addColorStop(1, 'rgba(0, 0, 0, 0)');
     ctx.fillStyle = sparkle;
     ctx.fillRect(0, 0, width, height);

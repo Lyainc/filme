@@ -56,7 +56,7 @@ export const SCREENING_FORMATS = [
 // 후가공 텍스처(특수 용지) 옵션
 export const TEXTURE_OPTIONS = [
   { value: 'original', label: '무가공 (원본 이미지 그대로)' },
-  { value: 'none', label: '일반 인화지 (기본)' },
+  { value: 'none', label: '일반 인화지 (유광)' },
   { value: 'hologram', label: '홀로그램 (무지개빛 반사)' },
   { value: 'metal', label: '메탈릭 (차가운 금속 질감)' },
   { value: 'artpaper', label: '미술용지 (캔버스/수채화 질감)' },
@@ -115,7 +115,7 @@ export const DESIGN_LAYOUT = {
     x: 60,
     y: 1210,
     maxWidth: 840,
-    fontSize: 76,
+    fontSize: 70,
     fontWeight: '800',
     lineHeight: 1.15,
   },
