@@ -116,7 +116,7 @@ const PhototicketCanvas = forwardRef<HTMLCanvasElement, PhototicketCanvasProps>(
             DESIGN_LAYOUT.chainLogo.maxWidth, 
             DESIGN_LAYOUT.chainLogo.maxHeight, 
             themeColor,
-            'center' // 중앙 정렬
+            'left' // 좌측 정렬 (빈 공간 방지)
           );
           if (isCancelled) return;
         }

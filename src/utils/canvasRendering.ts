@@ -61,7 +61,19 @@ export async function drawLogo(
     const img = await loadImage(src);
     
     // 비율 유지하며 크기 계산
-    const scale = Math.min(targetMaxWidth / img.width, targetMaxHeight / img.height);
+    const ratio = img.width / img.height;
+    
+    // 시각적 균형(Visual Weight) 보정:
+    // 가로로 긴 로고는 높이가 낮아도 넓어서 적당해 보이지만,
+    // 정사각형에 가까운 로고는 지정된 상하폭(targetMaxHeight)에 갇히면 좌우가 너무 비어 휑해 보입니다.
+    // 이를 방지하기 위해 가로세로 비율이 일정 수치 미만일 경우 최대 높이를 1.0~1.6배까지 유동적으로 늘려줍니다.
+    let adjustedMaxHeight = targetMaxHeight;
+    if (ratio < 3.0) {
+      const multiplier = Math.min(1.6, 3.0 / ratio);
+      adjustedMaxHeight = targetMaxHeight * multiplier;
+    }
+
+    const scale = Math.min(targetMaxWidth / img.width, adjustedMaxHeight / img.height);
     const w = Math.round(img.width * scale);
     const h = Math.round(img.height * scale);
 
