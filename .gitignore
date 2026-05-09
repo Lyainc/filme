@@ -46,3 +46,9 @@ prototype.html
 # IDE 설정 (개인 선호도)
 .vscode/
 .idea/
+
+# OMC 세션/메타 (자동 생성)
+.omc/
+
+# graphify 캐시 (자동 생성)
+graphify-out/cache/
