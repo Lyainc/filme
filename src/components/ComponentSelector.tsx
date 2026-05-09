@@ -1,5 +1,6 @@
 import { TicketComponents } from '@/types';
 import { THEATER_CHAINS, SCREENING_FORMATS, TEXTURE_OPTIONS } from '@/utils/constants';
+import SectionHeader from './ui/SectionHeader';
 
 interface ComponentSelectorProps {
   components: TicketComponents;
@@ -7,27 +8,36 @@ interface ComponentSelectorProps {
   onChange: (components: Partial<TicketComponents>) => void;
 }
 
-export default function ComponentSelector({ components, recommendedColors, onChange }: ComponentSelectorProps) {
+export default function ComponentSelector({
+  components,
+  recommendedColors,
+  onChange,
+}: ComponentSelectorProps) {
   const colorOptions = [
     { label: 'White', value: '#FFFFFF' },
     { label: 'Black', value: '#000000' },
-    ...(recommendedColors[0] ? [{ label: '추천 1', value: recommendedColors[0] }] : []),
-    ...(recommendedColors[1] ? [{ label: '추천 2', value: recommendedColors[1] }] : []),
+    { label: 'Gold', value: '#E5B469' },
+    ...(recommendedColors[0] ? [{ label: 'Pick 1', value: recommendedColors[0] }] : []),
+    ...(recommendedColors[1] ? [{ label: 'Pick 2', value: recommendedColors[1] }] : []),
   ];
 
-  const isCustomColor = !colorOptions.some(opt => opt.value === components.themeColor);
+  const isCustomColor = !colorOptions.some((opt) => opt.value === components.themeColor);
 
   return (
-    <section className="bg-white p-6 rounded-lg shadow">
-      <h2 className="text-xl font-semibold mb-4">3. 디자인 & 텍스처</h2>
-      <div className="space-y-6">
-        {/* 포스터 투명도 (시인성) */}
-        <div>
-          <div className="flex justify-between items-center mb-1">
-            <label htmlFor="posterOpacity" className="block text-sm font-medium">
-              포스터 밝기 (시인성 조절)
+    <section>
+      <SectionHeader index="03" title="Finish" caption="Color · texture · format" />
+
+      <div className="space-y-8">
+        {/* Opacity slider */}
+        <div className="space-y-3">
+          <div className="flex items-baseline justify-between">
+            <label
+              htmlFor="posterOpacity"
+              className="text-mono text-[10px] uppercase tracking-widest text-bone-400"
+            >
+              Poster brightness
             </label>
-            <span className="text-xs font-mono text-gray-500">
+            <span className="text-mono text-[10px] uppercase tracking-widest text-gold">
               {Math.round(components.posterOpacity * 100)}%
             </span>
           </div>
@@ -39,105 +49,136 @@ export default function ComponentSelector({ components, recommendedColors, onCha
             step="0.01"
             value={components.posterOpacity}
             onChange={(e) => onChange({ posterOpacity: parseFloat(e.target.value) })}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+            className="w-full"
           />
         </div>
 
-        {/* 테마 색상 선택 */}
-        <div>
-          <label className="block text-sm font-medium mb-2">테마 색상 (로고/텍스트/테두리)</label>
-          <div className="flex flex-wrap gap-2 items-center">
-            {colorOptions.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => onChange({ themeColor: opt.value })}
-                className={`group relative w-10 h-10 rounded-full border-2 transition-all ${
-                  components.themeColor === opt.value ? 'border-blue-600 scale-110 shadow-md' : 'border-gray-200 hover:border-gray-400'
-                }`}
-                style={{ backgroundColor: opt.value }}
-                title={opt.label}
-              >
-                {components.themeColor === opt.value && (
-                  <span className="absolute inset-0 flex items-center justify-center text-xs mix-blend-difference text-white">
-                    ✓
-                  </span>
-                )}
-              </button>
-            ))}
+        {/* Theme color */}
+        <div className="space-y-3">
+          <span className="block text-mono text-[10px] uppercase tracking-widest text-bone-400">
+            Ink · logo & type color
+          </span>
+          <div className="flex flex-wrap items-center gap-3">
+            {colorOptions.map((opt) => {
+              const active = components.themeColor === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => onChange({ themeColor: opt.value })}
+                  title={opt.label}
+                  className={`group relative h-9 w-9 rounded-full border transition-all ${
+                    active
+                      ? 'border-gold scale-110 shadow-[0_0_0_3px_rgba(229,180,105,0.15)]'
+                      : 'border-white/15 hover:border-white/40'
+                  }`}
+                  style={{ backgroundColor: opt.value }}
+                >
+                  {active && (
+                    <span className="absolute inset-0 flex items-center justify-center text-xs mix-blend-difference text-white">
+                      ✓
+                    </span>
+                  )}
+                </button>
+              );
+            })}
 
-            {/* 스포이드 / 커스텀 색상 */}
-            <div className="relative group">
+            <div className="relative">
               <input
                 type="color"
+                aria-label="Custom color"
                 value={isCustomColor ? components.themeColor : '#FFFFFF'}
                 onChange={(e) => onChange({ themeColor: e.target.value })}
-                className={`w-10 h-10 rounded-full border-2 cursor-pointer transition-all ${
-                  isCustomColor ? 'border-blue-600 scale-110 shadow-md' : 'border-gray-200 hover:border-gray-400'
+                className={`h-9 w-9 cursor-pointer rounded-full border transition-all ${
+                  isCustomColor
+                    ? 'border-gold scale-110 shadow-[0_0_0_3px_rgba(229,180,105,0.15)]'
+                    : 'border-white/15 hover:border-white/40'
                 }`}
               />
-              <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] text-gray-400 whitespace-nowrap">
-                커스텀
-              </span>
             </div>
+            <span className="text-mono ml-1 text-[10px] uppercase tracking-widest text-bone-500">
+              custom
+            </span>
           </div>
         </div>
 
-        <div>
-          <label htmlFor="texture" className="block text-sm font-medium mb-1">
-            후가공 재질 (특수 용지)
-          </label>
-          <select
-            id="texture"
-            value={components.texture}
-            onChange={(e) => onChange({ texture: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {TEXTURE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Texture */}
+        <SelectField
+          id="texture"
+          label="Surface treatment"
+          value={components.texture}
+          onChange={(value) => onChange({ texture: value })}
+          options={TEXTURE_OPTIONS}
+        />
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="chain" className="block text-sm font-medium mb-1">
-              극장 체인
-            </label>
-            <select
-              id="chain"
-              value={components.chain}
-              onChange={(e) => onChange({ chain: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {THEATER_CHAINS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="format" className="block text-sm font-medium mb-1">
-              상영 포맷
-            </label>
-            <select
-              id="format"
-              value={components.format}
-              onChange={(e) => onChange({ format: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {SCREENING_FORMATS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
+        {/* Chain & format */}
+        <div className="grid grid-cols-1 gap-7 md:grid-cols-2">
+          <SelectField
+            id="chain"
+            label="Theater chain"
+            value={components.chain}
+            onChange={(value) => onChange({ chain: value })}
+            options={THEATER_CHAINS}
+          />
+          <SelectField
+            id="format"
+            label="Screening format"
+            value={components.format}
+            onChange={(value) => onChange({ format: value })}
+            options={SCREENING_FORMATS}
+          />
         </div>
       </div>
     </section>
+  );
+}
+
+interface SelectOption {
+  readonly value: string;
+  readonly label: string;
+}
+
+function SelectField({
+  id,
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: readonly SelectOption[];
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label
+        htmlFor={id}
+        className="text-mono text-[10px] uppercase tracking-widest text-bone-400"
+      >
+        {label}
+      </label>
+      <div className="relative">
+        <select
+          id={id}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full appearance-none border-0 border-b border-white/[0.12] bg-transparent px-0 py-2.5 pr-8 text-[15px] text-paper outline-none transition-colors focus:border-gold"
+        >
+          {options.map((opt) => (
+            <option key={opt.value} value={opt.value} className="bg-ink-100 text-paper">
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        <span
+          aria-hidden
+          className="text-mono pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-xs text-bone-400"
+        >
+          ▾
+        </span>
+      </div>
+    </div>
   );
 }

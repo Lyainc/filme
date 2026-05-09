@@ -1,43 +1,47 @@
 import { useRef, useState, useEffect } from 'react';
 import ImageCropModal from './ImageCropModal';
 import { getCroppedImg, Area } from '@/utils/imageCrop';
+import SectionHeader from './ui/SectionHeader';
 
 interface ImageUploaderProps {
   onUpload: (croppedImageUrl: string) => void;
   isProcessing: boolean;
+  hasImage?: boolean;
 }
 
-export default function ImageUploader({ onUpload, isProcessing }: ImageUploaderProps) {
+const ACCEPT = 'image/jpeg,image/png,image/jpg,image/webp';
+
+export default function ImageUploader({ onUpload, isProcessing, hasImage = false }: ImageUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null);
   const [isCropping, setIsCropping] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const openFile = (file: File) => {
+    if (selectedImageSrc) URL.revokeObjectURL(selectedImageSrc);
+    const objectUrl = URL.createObjectURL(file);
+    setSelectedImageSrc(objectUrl);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // 이전에 선택된 이미지가 있다면 메모리 해제하여 누수 방지
-      if (selectedImageSrc) {
-        URL.revokeObjectURL(selectedImageSrc);
-      }
-      const objectUrl = URL.createObjectURL(file);
-      setSelectedImageSrc(objectUrl);
-      
-      // 같은 파일을 연달아 선택할 수 있도록 input value 초기화 (onChange 트리거용)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
+    if (file) openFile(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && ACCEPT.includes(file.type)) openFile(file);
   };
 
   const handleCropComplete = async (croppedAreaPixels: Area) => {
     if (!selectedImageSrc) return;
-    
     setIsCropping(true);
     try {
       const croppedUrl = await getCroppedImg(selectedImageSrc, croppedAreaPixels);
       onUpload(croppedUrl);
-      
-      // Cleanup
       URL.revokeObjectURL(selectedImageSrc);
       setSelectedImageSrc(null);
     } catch (error) {
@@ -49,35 +53,73 @@ export default function ImageUploader({ onUpload, isProcessing }: ImageUploaderP
   };
 
   const handleCropCancel = () => {
-    if (selectedImageSrc) {
-      URL.revokeObjectURL(selectedImageSrc);
-    }
+    if (selectedImageSrc) URL.revokeObjectURL(selectedImageSrc);
     setSelectedImageSrc(null);
   };
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (selectedImageSrc) {
-        URL.revokeObjectURL(selectedImageSrc);
-      }
+      if (selectedImageSrc) URL.revokeObjectURL(selectedImageSrc);
     };
   }, [selectedImageSrc]);
 
+  const busy = isProcessing || isCropping;
+
   return (
-    <section className="bg-white p-6 rounded-lg shadow">
-      <h2 className="text-xl font-semibold mb-4">1. 포스터 업로드</h2>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/jpg,image/webp"
-        onChange={handleChange}
-        disabled={isProcessing || isCropping}
-        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50 cursor-pointer"
-      />
-      {(isProcessing || isCropping) && (
-        <p className="text-sm text-blue-600 mt-2 animate-pulse">이미지 처리 중...</p>
-      )}
+    <section>
+      <SectionHeader index="01" title="Poster" caption="Source image · 0.65:1 crop" />
+
+      <button
+        type="button"
+        onClick={() => fileInputRef.current?.click()}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setIsDragging(true);
+        }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={handleDrop}
+        disabled={busy}
+        className={`group relative block w-full overflow-hidden border bg-ink-100 p-8 text-left transition-all md:p-10
+          ${isDragging ? 'border-gold bg-gold/[0.04]' : 'border-white/[0.08] hover:border-white/20'}
+          ${busy ? 'cursor-wait opacity-60' : 'cursor-pointer'}`}
+      >
+        <div className="flex items-start justify-between gap-6">
+          <div className="space-y-3">
+            <div className="text-mono text-[10px] uppercase tracking-widest text-bone-400">
+              {hasImage ? '— REPLACE —' : '— DROP OR CLICK —'}
+            </div>
+            <p className="text-display text-2xl font-light italic leading-tight tracking-tight text-paper md:text-[28px]">
+              {hasImage ? 'Swap poster' : 'Upload film poster'}
+            </p>
+            <p className="max-w-[36ch] text-xs leading-relaxed text-bone-400 md:text-[13px]">
+              JPEG · PNG · WEBP. 업로드 후 0.65:1 비율로 직접 크롭할 수 있어요.
+            </p>
+          </div>
+
+          <span
+            aria-hidden
+            className="text-mono shrink-0 text-3xl font-light text-gold transition-transform group-hover:rotate-90 group-hover:translate-x-0 md:text-4xl"
+          >
+            +
+          </span>
+        </div>
+
+        {busy && (
+          <div className="mt-6 flex items-center gap-3 text-mono text-[10px] uppercase tracking-widest text-gold">
+            <span className="h-1 w-1 animate-pulse rounded-full bg-gold" />
+            Processing image…
+          </div>
+        )}
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={ACCEPT}
+          onChange={handleChange}
+          disabled={busy}
+          className="sr-only"
+        />
+      </button>
 
       {selectedImageSrc && (
         <ImageCropModal

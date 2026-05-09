@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Cropper from 'react-easy-crop';
 import { Area } from '@/utils/imageCrop';
 import { TARGET_RATIO } from '@/utils/constants';
@@ -10,37 +10,61 @@ interface ImageCropModalProps {
   isProcessing?: boolean;
 }
 
-export default function ImageCropModal({ imageSrc, onClose, onComplete, isProcessing = false }: ImageCropModalProps) {
+export default function ImageCropModal({
+  imageSrc,
+  onClose,
+  onComplete,
+  isProcessing = false,
+}: ImageCropModalProps) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
 
-  const onCropComplete = useCallback((_croppedArea: Area, croppedAreaPixels: Area) => {
-    setCroppedAreaPixels(croppedAreaPixels);
+  const onCropComplete = useCallback((_a: Area, pixels: Area) => {
+    setCroppedAreaPixels(pixels);
   }, []);
 
   const handleConfirm = () => {
-    if (croppedAreaPixels && !isProcessing) {
-      onComplete(croppedAreaPixels);
-    }
+    if (croppedAreaPixels && !isProcessing) onComplete(croppedAreaPixels);
   };
 
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isProcessing) onClose();
+    };
+    document.addEventListener('keydown', handleEsc);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', handleEsc);
+      document.body.style.overflow = '';
+    };
+  }, [isProcessing, onClose]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4 overscroll-contain">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col h-[80vh] max-h-[800px]">
-        <div className="p-4 border-b flex justify-between items-center">
-          <h3 className="text-lg font-bold">이미지 크롭</h3>
-          <button 
-            onClick={onClose} 
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/90 p-4 backdrop-blur-sm overscroll-contain animate-fade-in">
+      <div className="relative flex h-[85vh] max-h-[820px] w-full max-w-xl flex-col overflow-hidden border border-white/[0.08] bg-ink-100 shadow-2xl shadow-black/60">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
+          <div className="flex items-baseline gap-3">
+            <span className="text-mono text-[10px] uppercase tracking-widest text-gold">
+              [CROP]
+            </span>
+            <h3 className="text-display text-lg font-light italic tracking-tight text-paper">
+              Frame the poster
+            </h3>
+          </div>
+          <button
+            onClick={onClose}
             disabled={isProcessing}
-            className="text-gray-500 hover:text-gray-700 p-1 disabled:opacity-50"
-            aria-label="닫기"
+            aria-label="Close"
+            className="text-mono p-2 text-sm text-bone-400 transition-colors hover:text-paper disabled:opacity-30"
           >
             ✕
           </button>
         </div>
-        
-        <div className="relative flex-1 bg-gray-100">
+
+        {/* Cropper */}
+        <div className="relative flex-1 bg-black">
           <Cropper
             image={imageSrc}
             crop={crop}
@@ -51,11 +75,20 @@ export default function ImageCropModal({ imageSrc, onClose, onComplete, isProces
             onZoomChange={setZoom}
             objectFit="contain"
           />
+          <div className="text-mono pointer-events-none absolute bottom-3 left-3 text-[10px] uppercase tracking-widest text-paper/60">
+            0.65 : 1
+          </div>
         </div>
-        
-        <div className="p-4 border-t flex flex-col gap-4">
+
+        {/* Footer */}
+        <div className="flex flex-col gap-4 border-t border-white/[0.06] px-5 py-4">
           <div className="flex items-center gap-4">
-            <span id="zoom-label" className="text-sm text-gray-500 whitespace-nowrap">확대/축소</span>
+            <span
+              id="zoom-label"
+              className="text-mono whitespace-nowrap text-[10px] uppercase tracking-widest text-bone-400"
+            >
+              Zoom · {zoom.toFixed(1)}×
+            </span>
             <input
               type="range"
               value={zoom}
@@ -65,32 +98,31 @@ export default function ImageCropModal({ imageSrc, onClose, onComplete, isProces
               aria-labelledby="zoom-label"
               onChange={(e) => setZoom(Number(e.target.value))}
               disabled={isProcessing}
-              className="w-full h-2 bg-gray-200 rounded-lg cursor-pointer accent-blue-600 disabled:opacity-50"
+              className="w-full"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-3">
             <button
               onClick={onClose}
               disabled={isProcessing}
-              className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-mono border border-white/[0.12] py-3 text-[10px] uppercase tracking-widest text-bone-400 transition-colors hover:border-white/30 hover:text-paper disabled:opacity-30"
             >
-              취소
+              Cancel
             </button>
             <button
               onClick={handleConfirm}
-              disabled={isProcessing}
-              className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed"
+              disabled={isProcessing || !croppedAreaPixels}
+              className="text-mono group flex items-center justify-center gap-2 border border-gold bg-gold/[0.08] py-3 text-[10px] uppercase tracking-widest text-gold transition-all hover:bg-gold/[0.18] disabled:cursor-not-allowed disabled:opacity-40"
             >
               {isProcessing ? (
                 <>
-                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <span>처리 중...</span>
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-gold" />
+                  Processing
                 </>
               ) : (
-                <span>적용하기</span>
+                <>
+                  Apply <span className="transition-transform group-hover:translate-x-0.5">→</span>
+                </>
               )}
             </button>
           </div>
