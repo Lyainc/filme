@@ -111,9 +111,9 @@ async function processLogo(inputPath, outputPath, category) {
     
     let scale = TARGET_HEIGHT / trimmedMetadata.height;
     
-    // 너무 심한 해상도 저하 방지를 위해 최대 스케일 제한 (2.5배)
-    if (scale > 2.5 && !isSvg) {
-      scale = 2.5;
+    // 너무 심한 해상도 저하 방지를 위해 최대 스케일 제한 (5배)
+    if (scale > 5.0 && !isSvg) {
+      scale = 5.0;
     }
 
     const finalWidth = Math.round(trimmedMetadata.width * scale);
