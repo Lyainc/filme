@@ -144,7 +144,7 @@ export default function MovieInfoForm({
             onClick={handleSearch}
             disabled={isSearching}
             data-touch="44"
-            className="text-mono inline-flex min-h-touch shrink-0 items-center justify-center rounded-field bg-accent px-4 text-[11px] uppercase tracking-widest text-paper transition-colors hover:bg-accent-ink disabled:opacity-40"
+            className="text-mono inline-flex min-h-touch shrink-0 items-center justify-center rounded-field bg-accent px-4 text-[11px] uppercase tracking-widest text-white transition-colors hover:bg-accent-ink disabled:opacity-40"
           >
             {isSearching ? '…' : '↗ Search'}
           </button>

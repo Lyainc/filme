@@ -44,7 +44,7 @@ export default function Step4Export({ photo, onDownload, isExporting }: Step4Exp
         onClick={onDownload}
         disabled={!ready || isExporting}
         data-touch="44"
-        className="text-mono inline-flex min-h-btn w-full items-center justify-center gap-2 rounded-field bg-accent px-6 text-[11px] uppercase tracking-widest text-paper transition-colors hover:bg-accent-ink disabled:cursor-not-allowed disabled:opacity-40"
+        className="text-mono inline-flex min-h-btn w-full items-center justify-center gap-2 rounded-field bg-accent px-6 text-[11px] uppercase tracking-widest text-white transition-colors hover:bg-accent-ink disabled:cursor-not-allowed disabled:opacity-40"
       >
         {isExporting ? 'Capturing…' : 'Download JPEG ↓'}
       </button>

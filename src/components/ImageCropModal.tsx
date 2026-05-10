@@ -76,7 +76,7 @@ export default function ImageCropModal({
             onZoomChange={setZoom}
             objectFit="contain"
           />
-          <div className="text-mono pointer-events-none absolute bottom-3 left-3 text-[10px] uppercase tracking-widest text-paper/70">
+          <div className="text-mono pointer-events-none absolute bottom-3 left-3 text-[10px] uppercase tracking-widest text-white/70">
             0.65 : 1
           </div>
         </div>
@@ -116,7 +116,7 @@ export default function ImageCropModal({
               onClick={handleConfirm}
               disabled={isProcessing || !croppedAreaPixels}
               data-touch="44"
-              className="text-mono group inline-flex min-h-btn items-center justify-center gap-2 rounded-field bg-accent text-[11px] uppercase tracking-widest text-paper transition-colors hover:bg-accent-ink disabled:cursor-not-allowed disabled:opacity-40"
+              className="text-mono group inline-flex min-h-btn items-center justify-center gap-2 rounded-field bg-accent text-[11px] uppercase tracking-widest text-white transition-colors hover:bg-accent-ink disabled:cursor-not-allowed disabled:opacity-40"
             >
               {isProcessing ? (
                 <>

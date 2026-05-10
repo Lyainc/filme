@@ -31,13 +31,13 @@ export default function ProgressSteps({ current, completed, onJump }: ProgressSt
               data-state={state}
               data-touch="44"
               className={`group flex min-h-touch items-center gap-2 rounded-chip px-3 py-1.5 text-mono text-[11px] uppercase tracking-widest transition-colors
-                ${isActive ? 'bg-accent text-paper' : ''}
+                ${isActive ? 'bg-accent text-white' : ''}
                 ${state === 'done' ? 'text-fg hover:bg-accent-soft' : ''}
                 ${state === 'pending' ? 'text-fg-faint cursor-not-allowed' : ''}`}
             >
               <span
                 className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-medium
-                  ${isActive ? 'bg-paper/25 text-paper' : ''}
+                  ${isActive ? 'bg-paper/25 text-white' : ''}
                   ${state === 'done' ? 'bg-accent-soft text-accent-ink' : ''}
                   ${state === 'pending' ? 'border border-hairline text-fg-faint' : ''}`}
               >

@@ -54,7 +54,7 @@ export default function ColorPicker({ value, onChange, recommended }: ColorPicke
               {active && (
                 <span
                   aria-hidden
-                  className="absolute inset-0 flex items-center justify-center text-[10px] mix-blend-difference text-paper"
+                  className="absolute inset-0 flex items-center justify-center text-[10px] mix-blend-difference text-white"
                 >
                   ✓
                 </span>

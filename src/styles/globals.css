@@ -8,7 +8,6 @@
   :root {
     color-scheme: light;
 
-    /* === Wizard light tokens === */
     --bg: #F8F5EE;
     --surface: #FCFAF6;
     --paper: #FFFFFF;
@@ -26,15 +25,6 @@
     --r-field: 12px;
     --r-card: 18px;
     --r-modal: 22px;
-
-    /* === Legacy dark tokens (Phase 5에서 사용처 정리 후 제거) === */
-    --ink: #0E0E10;
-    --ink-100: #16161A;
-    --ink-200: #1F1F24;
-    --bone: #D8D2C2;
-    --bone-dim: #9C988B;
-    --gold: #E5B469;
-    --hairline-strong: rgba(216, 210, 194, 0.22);
   }
 
   html {
@@ -127,30 +117,5 @@
 
   .hairline {
     border-color: var(--hairline);
-  }
-
-  .hairline-strong {
-    border-color: var(--hairline-strong);
-  }
-
-  .grain::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background-image: theme('backgroundImage.grain');
-    background-size: 256px 256px;
-    mix-blend-mode: overlay;
-    opacity: 0.6;
-    z-index: 0;
-  }
-
-  .scrollbar-stealth::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
-  }
-  .scrollbar-stealth::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 9999px;
   }
 }

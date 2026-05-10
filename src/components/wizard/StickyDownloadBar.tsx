@@ -47,7 +47,7 @@ export default function StickyDownloadBar({
             onClick={onDownload}
             disabled={!ready || isExporting}
             data-touch="44"
-            className="text-mono inline-flex min-h-btn flex-1 items-center justify-center gap-2 rounded-field bg-accent px-6 text-[11px] uppercase tracking-widest text-paper transition-colors hover:bg-accent-ink disabled:cursor-not-allowed disabled:opacity-40"
+            className="text-mono inline-flex min-h-btn flex-1 items-center justify-center gap-2 rounded-field bg-accent px-6 text-[11px] uppercase tracking-widest text-white transition-colors hover:bg-accent-ink disabled:cursor-not-allowed disabled:opacity-40"
           >
             {isExporting ? 'Capturing…' : 'Download JPEG ↓'}
           </button>
@@ -57,7 +57,7 @@ export default function StickyDownloadBar({
             onClick={onNext}
             disabled={!canAdvance}
             data-touch="44"
-            className="text-mono inline-flex min-h-btn flex-1 items-center justify-center gap-2 rounded-field bg-accent px-6 text-[11px] uppercase tracking-widest text-paper transition-colors hover:bg-accent-ink disabled:cursor-not-allowed disabled:opacity-40"
+            className="text-mono inline-flex min-h-btn flex-1 items-center justify-center gap-2 rounded-field bg-accent px-6 text-[11px] uppercase tracking-widest text-white transition-colors hover:bg-accent-ink disabled:cursor-not-allowed disabled:opacity-40"
           >
             Next →
           </button>

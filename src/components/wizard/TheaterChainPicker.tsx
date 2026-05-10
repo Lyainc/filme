@@ -24,7 +24,7 @@ export default function TheaterChainPicker({ value, onChange }: TheaterChainPick
               className={`text-mono inline-flex min-h-touch items-center gap-2 rounded-chip border px-4 text-[11px] uppercase tracking-widest transition-colors
                 ${
                   active
-                    ? 'border-accent bg-accent text-paper'
+                    ? 'border-accent bg-accent text-white'
                     : 'hairline bg-paper text-fg hover:bg-accent-soft'
                 }`}
             >
