@@ -7,6 +7,30 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // === Wizard light theme (디자인 시방서 기준) ===
+        bg: '#F8F5EE',           // oklch(97% .018 70) page cream
+        surface: '#FCFAF6',      // oklch(99% .008 70) cards
+        paper: {                 // overrides legacy `paper.*` — DEFAULT 반전
+          DEFAULT: '#FFFFFF',    // device/modal surface
+          dim: '#E8E3D5',        // legacy 호환
+          cream: '#F4EDE0',      // legacy 호환
+          deep: '#1A1612',       // legacy 호환 (mood preview inner-frame fallback)
+        },
+        fg: {
+          DEFAULT: '#2C2622',    // primary text dark brown
+          muted: '#756B62',
+          faint: '#A89E92',
+        },
+        accent: {
+          DEFAULT: '#C8704F',    // warm rust ~ oklch(64% .13 28)
+          soft: 'rgba(200,112,79,0.12)',
+          ink: '#9B5436',
+        },
+        success: '#3A9A56',
+        warn: '#D9A248',
+        danger: '#D6422F',
+
+        // === Legacy dark theme (Phase 3~4에서 wizard로 마이그레이션, Phase 5 cleanup 대상) ===
         ink: {
           DEFAULT: '#0E0E10',
           50: '#1B1B1F',
@@ -15,19 +39,8 @@ module.exports = {
           300: '#2A2A30',
           400: '#3A3A42',
         },
-        paper: {
-          DEFAULT: '#F5F1E8',
-          dim: '#E8E3D5',
-          cream: '#F4EDE0',
-          deep: '#1A1612',
-        },
-        cannes: {
-          DEFAULT: '#A8312A',
-        },
-        film: {
-          base: '#0A0A0A',
-          ink: '#F4EDE0',
-        },
+        cannes: { DEFAULT: '#A8312A' },
+        film: { base: '#0A0A0A', ink: '#F4EDE0' },
         bone: {
           DEFAULT: '#D8D2C2',
           50: '#F0EBDD',
@@ -43,16 +56,29 @@ module.exports = {
           300: '#C99A4F',
           400: '#A07835',
         },
-        burn: {
-          DEFAULT: '#C75A3F',
-        },
+        burn: { DEFAULT: '#C75A3F' },
+        border: '#E5DFD3',  // wizard border (라이트)
       },
       fontFamily: {
-        sans: ['"Pretendard Variable"', 'Pretendard', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'Roboto', '"Helvetica Neue"', '"Apple SD Gothic Neo"', '"Noto Sans KR"', 'sans-serif'],
+        sans: ['var(--font-sans)', '"Pretendard Variable"', 'Pretendard', 'system-ui', '"Apple SD Gothic Neo"', '"Noto Sans KR"', 'sans-serif'],
+        mono: ['var(--font-mono)', '"JetBrains Mono"', 'ui-monospace', 'Menlo', 'monospace'],
+        // Legacy display/serif/inter — Phase 4~5에서 사용처 정리 후 제거
         display: ['"Fraunces"', '"Pretendard Variable"', 'Pretendard', 'Georgia', 'serif'],
-        mono: ['"JetBrains Mono"', '"Berkeley Mono"', '"SF Mono"', 'ui-monospace', 'Menlo', 'monospace'],
         serif: ['"Cormorant Garamond"', '"Times New Roman"', 'Georgia', 'serif'],
         inter: ['"Inter"', '"Pretendard Variable"', '"Helvetica Neue"', 'sans-serif'],
+      },
+      borderRadius: {
+        field: '12px',
+        card: '18px',
+        modal: '22px',
+        chip: '9999px',
+      },
+      spacing: {
+        btn: '52px',
+        touch: '44px',
+      },
+      boxShadow: {
+        card: '0 1px 2px rgba(44,38,34,0.05), 0 12px 40px -24px rgba(44,38,34,0.18)',
       },
       letterSpacing: {
         tightest: '-0.04em',

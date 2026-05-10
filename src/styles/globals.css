@@ -1,5 +1,4 @@
-@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css");
-@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,700;0,900;1,400;1,500;1,700;1,900&family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..900,0..100,0..1;1,9..144,300..900,0..100,0..1&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap");
+/* 폰트는 next/font/local + next/font/google로 _app.tsx에서 로드 (CDN @import 제거) */
 
 @tailwind base;
 @tailwind components;
@@ -7,33 +6,54 @@
 
 @layer base {
   :root {
-    color-scheme: dark;
+    color-scheme: light;
+
+    /* === Wizard light tokens === */
+    --bg: #F8F5EE;
+    --surface: #FCFAF6;
+    --paper: #FFFFFF;
+    --fg: #2C2622;
+    --fg-muted: #756B62;
+    --fg-faint: #A89E92;
+    --border: #E5DFD3;
+    --hairline: #E5DFD3;
+    --accent: #C8704F;
+    --accent-soft: rgba(200,112,79,0.12);
+    --accent-ink: #9B5436;
+    --success: #3A9A56;
+    --warn: #D9A248;
+    --danger: #D6422F;
+    --r-field: 12px;
+    --r-card: 18px;
+    --r-modal: 22px;
+    --shadow-card: 0 1px 2px rgba(44,38,34,0.05), 0 12px 40px -24px rgba(44,38,34,0.18);
+
+    /* === Legacy dark tokens (Phase 5에서 사용처 정리 후 제거) === */
     --ink: #0E0E10;
     --ink-100: #16161A;
     --ink-200: #1F1F24;
     --bone: #D8D2C2;
     --bone-dim: #9C988B;
     --gold: #E5B469;
-    --hairline: rgba(216, 210, 194, 0.12);
     --hairline-strong: rgba(216, 210, 194, 0.22);
   }
 
   html {
-    background: var(--ink);
-    color: var(--bone);
+    background: var(--bg);
+    color: var(--fg);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
   }
 
   body {
-    background: var(--ink);
+    background: var(--bg);
     font-feature-settings: "ss01", "cv11";
   }
 
   ::selection {
-    background: var(--gold);
-    color: var(--ink);
+    background: var(--accent);
+    color: var(--paper);
   }
 
   input[type="date"]::-webkit-calendar-picker-indicator {
