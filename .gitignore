@@ -60,9 +60,14 @@ prototype.html
 
 # OMC 세션/메타 (자동 생성)
 .omc/
+.omx/
 
 # graphify 캐시 + 자동 생성 그래프 출력물
 graphify-out/
+
+# 다른 AI 어시스턴트 가이드 (CLAUDE.md만 메인 가이드로 유지)
+AGENTS.md
+CODEX.md
 
 # vault-bridge 로컬 바인딩 (개인 경로)
 .vault-link
