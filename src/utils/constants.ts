@@ -102,7 +102,7 @@ export const DESIGN_LAYOUT = {
     fontSize: 28,
     fontWeight: '500',
     letterSpacing: 2,
-    opacity: 0.7,
+    opacity: 0.8,
   },
 
   // 메인 영화 제목
@@ -110,7 +110,7 @@ export const DESIGN_LAYOUT = {
     x: 60,
     y: 1170,
     maxWidth: 660,
-    fontSize: 64,
+    fontSize: 58,
     fontWeight: '800',
     lineHeight: 1.15,
   },
@@ -130,7 +130,7 @@ export const DESIGN_LAYOUT = {
     maxWidth: 840,
     fontSize: 22,
     fontWeight: '400',
-    opacity: 0.6,
+    opacity: 0.8,
   },
 
   // 개봉일 (Footer 좌측 하단)
@@ -140,7 +140,7 @@ export const DESIGN_LAYOUT = {
     fontSize: 22,
     fontWeight: '400',
     letterSpacing: 1,
-    opacity: 0.6,
+    opacity: 0.8,
   },
 
   // 상영 포맷 배지 (하단 우측)

@@ -13,10 +13,102 @@ const ASSETS_ROOT = path.join(ROOT_DIR, 'public', 'assets');
  */
 async function processLogo(inputPath, outputPath, category) {
   const fileName = path.basename(inputPath);
+  const lowerFileName = fileName.toLowerCase();
   
   try {
-    const isSvg = fileName.toLowerCase().endsWith('.svg');
-    const isWebp = fileName.toLowerCase().endsWith('.webp');
+    // --- SPECIAL CASES ---
+    if (
+      lowerFileName === 'stresslesscinema.png' ||
+      lowerFileName === 'stresslesscinema.jpg' ||
+      lowerFileName === 'stresslesscinema.jpeg'
+    ) {
+      // 갈색 목재 배경에 검은색 로고 텍스트.
+      // 밝기를 반전시켜 알파로 변환 (어두울수록 불투명).
+      // 사전 블러로 나뭇결 미세 노이즈를 흐려 마스크 가독성 확보.
+      const { data, info } = await sharp(inputPath)
+        .blur(0.8)
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      const channels = info.channels;
+      const newData = Buffer.alloc(info.width * info.height * 4);
+
+      for (let i = 0, j = 0; i < data.length; i += channels, j += 4) {
+        const r = data[i], g = data[i + 1], b = data[i + 2];
+        const brightness = (r + g + b) / 3;
+        // 40 미만: 완전 불투명 / 40–70: 선형 페이드(텍스트 안티앨리어싱) / 70 이상: 투명
+        let alpha;
+        if (brightness < 40) alpha = 255;
+        else if (brightness < 70) alpha = Math.round((70 - brightness) * (255 / 30));
+        else alpha = 0;
+        newData[j] = 0;
+        newData[j + 1] = 0;
+        newData[j + 2] = 0;
+        newData[j + 3] = alpha;
+      }
+
+      const mask = sharp(newData, { raw: { width: info.width, height: info.height, channels: 4 } });
+      const trimmedBuffer = await mask.trim({ threshold: 120 }).png().toBuffer();
+      const trimmedMetadata = await sharp(trimmedBuffer).metadata();
+
+      let TARGET_HEIGHT = 176;
+      let scale = TARGET_HEIGHT / trimmedMetadata.height;
+      if (scale > 5.0) scale = 5.0;
+
+      const finalWidth = Math.round(trimmedMetadata.width * scale);
+      const finalHeight = Math.round(trimmedMetadata.height * scale);
+
+      await sharp(trimmedBuffer)
+        .resize(finalWidth, finalHeight, { fit: 'fill' })
+        .extend({ top: 20, bottom: 20, left: 20, right: 20, background: { r: 0, g: 0, b: 0, alpha: 0 } })
+        // R/G/B는 이미 0 — modulate 불필요
+        .png({ compressionLevel: 9, palette: true })
+        .toFile(outputPath);
+
+      console.log(`   ✅ ${fileName} [Special-Stressless]: Processed (Dark-on-Wood)`);
+      return;
+    }
+    
+    if (lowerFileName === 'tempurcinema.jpg' || lowerFileName === 'tempurcinema.jpeg') {
+      // 검은색 배경에 흰색 텍스트
+      // 밝기를 알파 채널로 변환하여 텍스트만 추출
+      const original = sharp(inputPath);
+      const { data, info } = await original.raw().toBuffer({ resolveWithObject: true });
+      const newData = Buffer.alloc(info.width * info.height * 4);
+      const channels = info.channels;
+      
+      for (let i = 0, j = 0; i < data.length; i += channels, j += 4) {
+        const r = data[i], g = data[i + 1], b = data[i + 2];
+        const brightness = (r + g + b) / 3;
+        newData[j] = 0;     // R
+        newData[j+1] = 0;   // G
+        newData[j+2] = 0;   // B
+        newData[j+3] = brightness; // Alpha
+      }
+      
+      const mask = sharp(newData, { raw: { width: info.width, height: info.height, channels: 4 } });
+      const trimmedBuffer = await mask.trim({ threshold: 10 }).png().toBuffer();
+      const trimmedMetadata = await sharp(trimmedBuffer).metadata();
+      
+      let TARGET_HEIGHT = 176;
+      let scale = TARGET_HEIGHT / trimmedMetadata.height;
+      if (scale > 5.0) scale = 5.0;
+      
+      const finalWidth = Math.round(trimmedMetadata.width * scale);
+      const finalHeight = Math.round(trimmedMetadata.height * scale);
+      
+      await sharp(trimmedBuffer)
+        .resize(finalWidth, finalHeight, { fit: 'fill' })
+        .extend({ top: 20, bottom: 20, left: 20, right: 20, background: { r: 0, g: 0, b: 0, alpha: 0 } })
+        // 이미 RGB가 0이므로 실루엣화 불필요
+        .png({ compressionLevel: 9, palette: true })
+        .toFile(outputPath);
+        
+      console.log(`   ✅ ${fileName} [Special-Tempur]: Processed & Silhouette created`);
+      return;
+    }
+    
+    const isSvg = lowerFileName.endsWith('.svg');
+    const isWebp = lowerFileName.endsWith('.webp');
     
     // 1. 이미지 로드 및 기본 메타데이터 획득
     // SVG는 고해상도 렌더링을 위해 density를 높게 설정
@@ -81,8 +173,33 @@ async function processLogo(inputPath, outputPath, category) {
       // 이미 투명도가 있는 경우: 알파 채널 유지
       finalPipeline = finalPipeline.ensureAlpha();
     } else if (isWhiteBG) {
-      // 흰색 배경인 경우: 흰색 배경으로 병합한 뒤 반전시켜서 검정 배경의 흰색 로고로 만든 후 처리
-      finalPipeline = finalPipeline.flatten({ background: '#ffffff' }).ensureAlpha().negate({ alpha: false });
+      // 흰색 배경 + 어두운 로고: 밝기를 반전시켜 알파로 인코딩.
+      // (단순 negate는 RGB만 뒤집고 알파를 만들지 않아서 modulate 단계에서 검정 박스가 됨.)
+      const flat = await sharp(inputPath, isSvg ? { density: 1200 } : {})
+        .flatten({ background: '#ffffff' })
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      const { data: srcData, info: srcInfo } = flat;
+      const srcCh = srcInfo.channels;
+      const buf = Buffer.alloc(srcInfo.width * srcInfo.height * 4);
+      for (let i = 0, j = 0; i < srcData.length; i += srcCh, j += 4) {
+        const r = srcData[i], g = srcData[i + 1], b = srcData[i + 2];
+        const brightness = (r + g + b) / 3;
+        // 80 미만: 완전 불투명 / 80–200: 선형 페이드 (안티앨리어싱) / 200 이상: 투명
+        let alpha;
+        if (brightness < 80) alpha = 255;
+        else if (brightness < 200) alpha = Math.round((200 - brightness) * (255 / 120));
+        else alpha = 0;
+        buf[j] = 0;
+        buf[j + 1] = 0;
+        buf[j + 2] = 0;
+        buf[j + 3] = alpha;
+      }
+      // raw → PNG로 한 번 인코딩해야 후속 trim().toBuffer() 결과를 sharp이 다시 디코드 가능.
+      const pngBuf = await sharp(buf, {
+        raw: { width: srcInfo.width, height: srcInfo.height, channels: 4 },
+      }).png().toBuffer();
+      finalPipeline = sharp(pngBuf);
     } else if (isBlackBG) {
       // 검정색 배경인 경우: 그대로 유지 (trim이 배경을 날려줄 것임)
       finalPipeline = finalPipeline.ensureAlpha();
