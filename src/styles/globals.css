@@ -55,13 +55,14 @@
     color: var(--paper);
   }
 
-  input[type="date"]::-webkit-calendar-picker-indicator {
-    filter: invert(0.85) brightness(0.9);
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator {
     cursor: pointer;
-    opacity: 0.6;
+    opacity: 0.55;
   }
-  input[type="date"]::-webkit-calendar-picker-indicator:hover {
-    opacity: 1;
+  input[type="date"]::-webkit-calendar-picker-indicator:hover,
+  input[type="time"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 0.95;
   }
 
   input[type="color"] {
@@ -85,44 +86,40 @@
     cursor: pointer;
   }
   input[type="range"]::-webkit-slider-runnable-track {
-    height: 1px;
-    background: var(--hairline-strong);
+    height: 2px;
+    background: var(--border);
+    border-radius: 9999px;
   }
   input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    height: 14px;
-    width: 14px;
+    height: 18px;
+    width: 18px;
     border-radius: 9999px;
-    background: var(--gold);
-    margin-top: -6.5px;
-    box-shadow: 0 0 0 2px var(--ink);
+    background: var(--accent);
+    margin-top: -8px;
+    box-shadow: 0 1px 2px rgba(44, 38, 34, 0.18), 0 0 0 2px var(--paper);
     transition: transform 120ms ease;
   }
   input[type="range"]::-webkit-slider-thumb:hover {
-    transform: scale(1.15);
+    transform: scale(1.1);
   }
   input[type="range"]::-moz-range-track {
-    height: 1px;
-    background: var(--hairline-strong);
+    height: 2px;
+    background: var(--border);
+    border-radius: 9999px;
   }
   input[type="range"]::-moz-range-thumb {
-    height: 14px;
-    width: 14px;
+    height: 18px;
+    width: 18px;
     border: none;
     border-radius: 9999px;
-    background: var(--gold);
-    box-shadow: 0 0 0 2px var(--ink);
+    background: var(--accent);
+    box-shadow: 0 1px 2px rgba(44, 38, 34, 0.18), 0 0 0 2px var(--paper);
   }
 }
 
 @layer utilities {
-  .text-display {
-    font-family: theme('fontFamily.display');
-    font-feature-settings: "ss01", "ss02", "ss03";
-    font-optical-sizing: auto;
-  }
-
   .text-mono {
     font-family: theme('fontFamily.mono');
     font-feature-settings: "ss01", "zero", "cv11";
@@ -153,7 +150,7 @@
     height: 4px;
   }
   .scrollbar-stealth::-webkit-scrollbar-thumb {
-    background: var(--hairline-strong);
+    background: var(--border);
     border-radius: 9999px;
   }
 }

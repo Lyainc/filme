@@ -1,7 +1,8 @@
 import { useRef, useState, useEffect } from 'react';
-import ImageCropModal from './ImageCropModal';
+import dynamic from 'next/dynamic';
 import { getCroppedImg, Area } from '@/utils/imageCrop';
-import SectionHeader from './ui/SectionHeader';
+
+const ImageCropModal = dynamic(() => import('./ImageCropModal'), { ssr: false });
 
 interface ImageUploaderProps {
   onUpload: (croppedImageUrl: string) => void;
@@ -67,8 +68,6 @@ export default function ImageUploader({ onUpload, isProcessing, hasImage = false
 
   return (
     <section>
-      <SectionHeader index="01" title="Poster" caption="Source image · 0.65:1 crop" />
-
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
@@ -79,35 +78,36 @@ export default function ImageUploader({ onUpload, isProcessing, hasImage = false
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
         disabled={busy}
-        className={`group relative block w-full overflow-hidden border bg-ink-100 p-8 text-left transition-all md:p-10
-          ${isDragging ? 'border-gold bg-gold/[0.04]' : 'border-white/[0.08] hover:border-white/20'}
+        data-touch="44"
+        className={`group relative block w-full overflow-hidden rounded-card border bg-paper p-7 text-left shadow-card transition-colors md:p-9
+          ${isDragging ? 'border-accent bg-accent-soft' : 'hairline hover:border-accent/40'}
           ${busy ? 'cursor-wait opacity-60' : 'cursor-pointer'}`}
       >
         <div className="flex items-start justify-between gap-6">
-          <div className="space-y-3">
-            <div className="text-mono text-[10px] uppercase tracking-widest text-bone-400">
-              {hasImage ? '— REPLACE —' : '— DROP OR CLICK —'}
+          <div className="space-y-2">
+            <div className="text-mono text-[10px] uppercase tracking-widest text-fg-faint">
+              {hasImage ? 'Replace' : 'Drop or click'}
             </div>
-            <p className="text-display text-2xl font-light italic leading-tight tracking-tight text-paper md:text-[28px]">
-              {hasImage ? 'Swap poster' : 'Upload film poster'}
+            <p className="text-[20px] font-medium leading-tight text-fg md:text-[22px]">
+              {hasImage ? '포스터 교체' : '포스터 업로드'}
             </p>
-            <p className="max-w-[36ch] text-xs leading-relaxed text-bone-400 md:text-[13px]">
-              JPEG · PNG · WEBP. 업로드 후 0.65:1 비율로 직접 크롭할 수 있어요.
+            <p className="max-w-[36ch] text-[13px] leading-relaxed text-fg-muted">
+              JPEG · PNG · WEBP. 0.65 : 1 비율로 직접 크롭할 수 있어요.
             </p>
           </div>
 
           <span
             aria-hidden
-            className="text-mono shrink-0 text-3xl font-light text-gold transition-transform group-hover:rotate-90 group-hover:translate-x-0 md:text-4xl"
+            className="text-mono shrink-0 text-3xl font-light text-accent transition-transform group-hover:rotate-90 md:text-4xl"
           >
             +
           </span>
         </div>
 
         {busy && (
-          <div className="mt-6 flex items-center gap-3 text-mono text-[10px] uppercase tracking-widest text-gold">
-            <span className="h-1 w-1 animate-pulse rounded-full bg-gold" />
-            Processing image…
+          <div className="text-mono mt-5 flex items-center gap-2 text-[10px] uppercase tracking-widest text-accent-ink">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
+            Processing…
           </div>
         )}
 

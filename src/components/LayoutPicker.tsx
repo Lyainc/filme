@@ -9,8 +9,8 @@ interface LayoutPickerProps {
 
 function LayoutPicker({ value, onChange }: LayoutPickerProps) {
   return (
-    <div className="space-y-3">
-      <span className="block text-mono text-[10px] uppercase tracking-widest text-bone-400">
+    <div className="space-y-2.5">
+      <span className="text-mono block text-[10px] uppercase tracking-widest text-fg-muted">
         Mood · 4 designs
       </span>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -21,22 +21,25 @@ function LayoutPicker({ value, onChange }: LayoutPickerProps) {
               key={layout.id}
               type="button"
               onClick={() => onChange(layout.id)}
-              className={`group relative flex flex-col items-stretch gap-2 border bg-ink-100/40 p-3 text-left transition-all ${
-                active
-                  ? 'border-gold bg-gold/[0.06] shadow-[0_0_0_1px_rgba(229,180,105,0.3)]'
-                  : 'border-white/[0.08] hover:border-white/30 hover:bg-ink-100/80'
-              }`}
+              aria-pressed={active}
+              data-touch="44"
+              className={`group relative flex min-h-touch flex-col items-stretch gap-2 rounded-card border p-2.5 text-left transition-colors
+                ${
+                  active
+                    ? 'border-accent bg-accent-soft shadow-card'
+                    : 'hairline bg-paper hover:border-accent/40 hover:bg-accent-soft'
+                }`}
             >
               <Thumbnail layout={layout} active={active} />
               <div className="space-y-0.5">
                 <div
                   className={`text-mono text-[10px] uppercase tracking-widest ${
-                    active ? 'text-gold' : 'text-bone-400 group-hover:text-paper'
+                    active ? 'text-accent-ink' : 'text-fg-muted group-hover:text-fg'
                   }`}
                 >
                   {layout.label}
                 </div>
-                <div className="text-[11px] leading-tight text-bone-500/80">{layout.caption}</div>
+                <div className="text-[11px] leading-tight text-fg-faint">{layout.caption}</div>
               </div>
             </button>
           );
@@ -150,13 +153,13 @@ const Thumbnail = memo(function Thumbnail({
   layout: LayoutSpec;
   active: boolean;
 }) {
-  const stroke = active ? '#E5B469' : 'rgba(216,210,194,0.45)';
-  const dim = active ? 'rgba(229,180,105,0.7)' : 'rgba(216,210,194,0.25)';
-  const inkBg = active ? 'rgba(229,180,105,0.12)' : 'rgba(255,255,255,0.04)';
+  const stroke = active ? '#9B5436' : '#756B62';
+  const dim = active ? 'rgba(155,84,54,0.55)' : 'rgba(44,38,34,0.25)';
+  const inkBg = active ? 'rgba(200,112,79,0.10)' : 'rgba(44,38,34,0.04)';
 
   return (
     <div
-      className="relative w-full overflow-hidden bg-ink-200"
+      className="relative w-full overflow-hidden rounded-field bg-bg"
       style={{ aspectRatio: layout.orientation === 'landscape' ? '4/3' : '0.78/1' }}
     >
       <svg
