@@ -234,6 +234,25 @@ export default function MovieInfoForm({ movieInfo, onChange }: MovieInfoFormProp
           />
         </div>
 
+        <div className="grid grid-cols-2 gap-7">
+          <Field
+            id="watchTime"
+            label="Showtime"
+            type="time"
+            optional
+            value={movieInfo.watchTime || ''}
+            onChange={(e) => onChange({ watchTime: e.target.value })}
+          />
+          <Field
+            id="runtime"
+            label="Runtime"
+            optional
+            value={movieInfo.runtime || ''}
+            onChange={(e) => onChange({ runtime: e.target.value })}
+            placeholder="150 MIN"
+          />
+        </div>
+
         <Field
           id="theater"
           label="Theater"
@@ -258,6 +277,25 @@ export default function MovieInfoForm({ movieInfo, onChange }: MovieInfoFormProp
             value={movieInfo.seat || ''}
             onChange={(e) => onChange({ seat: e.target.value })}
             placeholder="G14, G15"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-7">
+          <Field
+            id="audienceCert"
+            label="Cert"
+            optional
+            value={movieInfo.audienceCert || ''}
+            onChange={(e) => onChange({ audienceCert: e.target.value })}
+            placeholder="12"
+          />
+          <Field
+            id="bookingNumber"
+            label="Booking No."
+            optional
+            value={movieInfo.bookingNumber || ''}
+            onChange={(e) => onChange({ bookingNumber: e.target.value })}
+            placeholder="T-20260510-0014"
           />
         </div>
 
