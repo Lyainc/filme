@@ -1,11 +1,13 @@
-import { useRef, useEffect, useMemo, useCallback } from 'react';
-import PhototicketCanvas from '@/components/PhototicketCanvas';
+import { useRef, useEffect, useMemo, useCallback, useState } from 'react';
+import TicketRenderer from '@/components/TicketRenderer';
 import ImageUploader from '@/components/ImageUploader';
 import MovieInfoForm from '@/components/MovieInfoForm';
 import ComponentSelector from '@/components/ComponentSelector';
 import { usePhototicket } from '@/hooks/usePhototicket';
-import { downloadCanvasAsJPEG } from '@/utils/canvasExport';
+import { downloadTicketAsJpeg } from '@/utils/captureToImage';
 import { extractColors } from '@/utils/colorExtraction';
+import { getLayout } from '@/utils/layouts';
+import type { LayoutId } from '@/types';
 
 export default function Home() {
   const {
@@ -18,7 +20,8 @@ export default function Home() {
     setRecommendedColors,
   } = usePhototicket();
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const ticketRef = useRef<HTMLDivElement>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     if (!state.croppedImageUrl) return;
@@ -31,11 +34,26 @@ export default function Home() {
     };
   }, [state.croppedImageUrl, setRecommendedColors]);
 
-  const handleDownload = useCallback(() => {
-    if (!canvasRef.current || !state.croppedImageUrl) return;
-    const filename = `phototicket_${state.movieInfo.title || 'untitled'}.jpg`;
-    downloadCanvasAsJPEG(canvasRef.current, filename);
-  }, [state.croppedImageUrl, state.movieInfo.title]);
+  const handleDownload = useCallback(async () => {
+    const node = ticketRef.current;
+    if (!node || !state.croppedImageUrl) return;
+
+    const layout = getLayout(state.components.layout);
+    const filename = `phototicket_${layout.id}_${state.movieInfo.title || 'untitled'}.jpg`;
+
+    setIsExporting(true);
+    try {
+      await downloadTicketAsJpeg(node, {
+        filename,
+        width: layout.width,
+        height: layout.height,
+      });
+    } catch (err) {
+      console.error('Failed to export ticket', err);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [state.croppedImageUrl, state.movieInfo.title, state.components.layout]);
 
   const issueDate = useMemo(
     () =>
@@ -49,43 +67,23 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen overflow-x-hidden">
-      {/* Ambient gold halo */}
-      <div
-        aria-hidden
-        className="pointer-events-none fixed -top-40 left-1/2 -z-10 h-[600px] w-[1200px] -translate-x-1/2 rounded-full opacity-[0.07] blur-3xl"
-        style={{ background: 'radial-gradient(closest-side, #E5B469, transparent)' }}
-      />
-
       {/* Masthead */}
       <header className="border-b border-white/[0.06]">
-        <div className="mx-auto flex max-w-[1400px] items-end justify-between px-5 py-5 md:px-10 md:py-8">
-          <div className="flex items-center gap-3 md:gap-5">
-            <div
-              aria-hidden
-              className="hidden h-7 w-7 shrink-0 rotate-45 border border-gold/70 md:block"
-            />
-            <div>
-              <p className="text-mono text-[10px] uppercase tracking-widest text-bone-400">
-                Issue No. 03 · {issueDate}
-              </p>
-              <h1 className="text-display mt-1 text-2xl font-light italic leading-none tracking-tightest text-paper md:text-[34px]">
-                Phototicket <span className="not-italic font-normal">Maker</span>
-              </h1>
-            </div>
-          </div>
-          <div className="hidden items-center gap-6 text-mono text-[11px] uppercase tracking-widest text-bone-400 md:flex">
-            <span>EDITORIAL · v0.3</span>
-            <span className="h-1 w-1 rounded-full bg-bone-400/60" />
-            <span>{ready ? <span className="text-gold">● LIVE</span> : 'STANDBY'}</span>
-          </div>
+        <div className="mx-auto flex max-w-[1400px] items-center justify-between px-5 py-6 md:px-10 md:py-7">
+          <h1 className="text-display text-xl font-light italic leading-none tracking-tightest text-paper md:text-2xl">
+            Phototicket <span className="not-italic font-normal">Maker</span>
+          </h1>
+          <span className="text-mono text-[10px] uppercase tracking-widest text-bone-500">
+            {issueDate}
+          </span>
         </div>
       </header>
 
       {/* Main grid */}
-      <div className="mx-auto max-w-[1400px] px-5 pb-32 pt-8 md:px-10 md:pb-16 md:pt-12 lg:pt-16">
+      <div className="mx-auto max-w-[1400px] px-5 pb-32 pt-10 md:px-10 md:pb-16 md:pt-14">
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,540px)] lg:gap-16">
           {/* Form column */}
-          <div className="order-2 space-y-12 lg:order-1 lg:space-y-16">
+          <div className="order-2 space-y-12 lg:order-1 lg:space-y-14">
             <Intro />
 
             <ImageUploader
@@ -107,39 +105,20 @@ export default function Home() {
 
             {/* Desktop save action */}
             <div className="hidden lg:block">
-              <SaveButton onClick={handleDownload} disabled={!ready} />
+              <SaveButton onClick={handleDownload} disabled={!ready || isExporting} busy={isExporting} />
             </div>
-
-            <Colophon />
           </div>
 
           {/* Preview column */}
           <div className="order-1 lg:order-2">
             <div className="lg:sticky lg:top-10">
-              <PreviewFrame
-                ready={ready}
-                live={ready}
-                title={debouncedState.movieInfo.title}
-              >
+              <PreviewFrame layoutId={debouncedState.components.layout}>
                 {ready ? (
-                  <PhototicketCanvas
-                    ref={canvasRef}
-                    croppedImageUrl={state.croppedImageUrl}
-                    movieTitle={debouncedState.movieInfo.title}
-                    movieTitleOg={debouncedState.movieInfo.titleOg}
-                    actors={debouncedState.movieInfo.actors}
-                    releaseDate={debouncedState.movieInfo.releaseDate}
-                    watchDate={debouncedState.movieInfo.watchDate}
-                    theater={debouncedState.movieInfo.theater}
-                    screen={debouncedState.movieInfo.screen}
-                    seat={debouncedState.movieInfo.seat}
-                    rating={debouncedState.movieInfo.rating}
-                    showRating={debouncedState.movieInfo.showRating}
-                    chain={debouncedState.components.chain}
-                    format={debouncedState.components.format}
-                    texture={debouncedState.components.texture}
-                    posterOpacity={debouncedState.components.posterOpacity}
-                    themeColor={debouncedState.components.themeColor}
+                  <TicketRenderer
+                    ref={ticketRef}
+                    croppedImageUrl={state.croppedImageUrl!}
+                    movieInfo={debouncedState.movieInfo}
+                    components={debouncedState.components}
                   />
                 ) : (
                   <EmptyPreview />
@@ -148,7 +127,7 @@ export default function Home() {
 
               {/* Mobile save action — inline */}
               <div className="mt-6 lg:hidden">
-                <SaveButton onClick={handleDownload} disabled={!ready} />
+                <SaveButton onClick={handleDownload} disabled={!ready || isExporting} busy={isExporting} />
               </div>
             </div>
           </div>
@@ -180,14 +159,11 @@ export default function Home() {
 function Intro() {
   return (
     <section className="space-y-3 pb-2">
-      <p className="text-mono text-[10px] uppercase tracking-widest text-bone-400">
-        Vol.01 / FEATURE
-      </p>
-      <h2 className="text-display text-3xl font-light italic leading-[1.05] tracking-tightest text-paper md:text-[44px]">
+      <h2 className="text-display text-3xl font-light italic leading-[1.05] tracking-tightest text-paper md:text-[40px]">
         영화의 한 장면을<br />
         <span className="not-italic">손에 쥐는 방식.</span>
       </h2>
-      <p className="max-w-[42ch] pt-2 text-sm leading-relaxed text-bone-400 md:text-[15px]">
+      <p className="max-w-[42ch] pt-1 text-sm leading-relaxed text-bone-400 md:text-[15px]">
         포스터를 올리고 정보를 채우면 CGV Photoplay 규격의 프리미엄 티켓이 생성돼요.
         업로드 즉시 미리보기에 반영되거든요.
       </p>
@@ -197,60 +173,21 @@ function Intro() {
 
 function PreviewFrame({
   children,
-  ready,
-  live,
-  title,
+  layoutId,
 }: {
   children: React.ReactNode;
-  ready: boolean;
-  live: boolean;
-  title: string;
+  layoutId?: LayoutId;
 }) {
+  const layout = layoutId ? getLayout(layoutId) : undefined;
+  const isLandscape = layout?.orientation === 'landscape';
   return (
-    <div className="relative">
-      {/* Top meta */}
-      <div className="mb-4 flex items-center justify-between text-mono text-[10px] uppercase tracking-widest text-bone-400">
-        <span>PREVIEW · 960×1477</span>
-        <span className="flex items-center gap-2">
-          {live && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-gold" />}
-          {live ? 'LIVE' : 'IDLE'}
-        </span>
-      </div>
-
-      {/* Frame */}
-      <div className="relative border border-white/[0.06] bg-ink-100 p-4 md:p-6">
-        {/* Corner markers */}
-        <Corner pos="top-left" />
-        <Corner pos="top-right" />
-        <Corner pos="bottom-left" />
-        <Corner pos="bottom-right" />
-
-        <div className="relative">{children}</div>
-      </div>
-
-      {/* Bottom meta */}
-      <div className="mt-4 flex items-center justify-between text-mono text-[10px] uppercase tracking-widest text-bone-400">
-        <span className="truncate pr-4">
-          {ready && title ? `// ${title}` : '// awaiting upload'}
-        </span>
-        <span>FILE_001.jpg</span>
-      </div>
+    <div
+      className={`relative border border-white/[0.06] bg-ink-100 p-4 md:p-6 ${
+        isLandscape ? 'mx-auto max-w-full' : ''
+      }`}
+    >
+      {children}
     </div>
-  );
-}
-
-function Corner({ pos }: { pos: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' }) {
-  const map: Record<string, string> = {
-    'top-left': '-top-px -left-px border-t border-l',
-    'top-right': '-top-px -right-px border-t border-r',
-    'bottom-left': '-bottom-px -left-px border-b border-l',
-    'bottom-right': '-bottom-px -right-px border-b border-r',
-  };
-  return (
-    <span
-      aria-hidden
-      className={`pointer-events-none absolute h-3 w-3 border-gold/60 ${map[pos]}`}
-    />
   );
 }
 
@@ -258,21 +195,24 @@ function EmptyPreview() {
   return (
     <div className="flex aspect-[0.65/1] w-full max-w-[420px] mx-auto flex-col items-center justify-center gap-4 border border-dashed border-white/[0.08] bg-ink-200/40 px-6 text-center">
       <div className="text-mono text-[10px] uppercase tracking-widest text-bone-500">
-        [ AWAITING POSTER ]
+        AWAITING POSTER
       </div>
       <p className="max-w-[24ch] text-sm leading-relaxed text-bone-400">
         포스터를 업로드하면 이곳에 티켓이 실시간으로 조판돼요.
       </p>
-      <div className="mt-4 flex items-center gap-2 text-mono text-[10px] uppercase tracking-widest text-bone-500">
-        <span className="h-px w-6 bg-bone-500/40" />
-        <span>0.65 : 1</span>
-        <span className="h-px w-6 bg-bone-500/40" />
-      </div>
     </div>
   );
 }
 
-function SaveButton({ onClick, disabled }: { onClick: () => void; disabled: boolean }) {
+function SaveButton({
+  onClick,
+  disabled,
+  busy = false,
+}: {
+  onClick: () => void;
+  disabled: boolean;
+  busy?: boolean;
+}) {
   return (
     <button
       onClick={onClick}
@@ -281,28 +221,15 @@ function SaveButton({ onClick, disabled }: { onClick: () => void; disabled: bool
     >
       <span>
         <span className="block text-mono text-[10px] uppercase tracking-widest text-bone-400 group-hover:text-gold">
-          Export · JPEG
+          {busy ? 'Rendering…' : 'Export · JPEG'}
         </span>
         <span className="text-display mt-1 block text-2xl font-light italic tracking-tight text-paper">
-          Save Ticket
+          {busy ? 'Capturing' : 'Save Ticket'}
         </span>
       </span>
       <span className="text-mono text-xs tracking-widest text-gold transition-transform group-hover:translate-x-1">
-        960 × 1477  ↓
+        ↓
       </span>
     </button>
-  );
-}
-
-function Colophon() {
-  return (
-    <footer className="border-t border-white/[0.06] pt-8 text-mono text-[10px] uppercase tracking-widest text-bone-500">
-      <div className="grid grid-cols-2 gap-y-2 md:grid-cols-4">
-        <span>Issue 03 · Editorial</span>
-        <span>Spec · 0.65:1</span>
-        <span>Engine · Canvas2D</span>
-        <span>© Phototicket</span>
-      </div>
-    </footer>
   );
 }

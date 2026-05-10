@@ -1,6 +1,7 @@
-import { TicketComponents } from '@/types';
+import { TicketComponents, LayoutId } from '@/types';
 import { THEATER_CHAINS, SCREENING_FORMATS, TEXTURE_OPTIONS } from '@/utils/constants';
 import SectionHeader from './ui/SectionHeader';
+import LayoutPicker from './LayoutPicker';
 
 interface ComponentSelectorProps {
   components: TicketComponents;
@@ -24,10 +25,19 @@ export default function ComponentSelector({
   const isCustomColor = !colorOptions.some((opt) => opt.value === components.themeColor);
 
   return (
-    <section>
-      <SectionHeader index="03" title="Finish" caption="Color · texture · format" />
+    <section className="space-y-12">
+      <div>
+        <SectionHeader index="03" title="Mood" caption="Layout · 4 designs" />
+        <LayoutPicker
+          value={components.layout}
+          onChange={(id: LayoutId) => onChange({ layout: id })}
+        />
+      </div>
 
-      <div className="space-y-8">
+      <div>
+        <SectionHeader index="04" title="Finish" caption="Color · texture · format" />
+
+        <div className="space-y-8">
         {/* Opacity slider */}
         <div className="space-y-3">
           <div className="flex items-baseline justify-between">
@@ -127,6 +137,7 @@ export default function ComponentSelector({
             onChange={(value) => onChange({ format: value })}
             options={SCREENING_FORMATS}
           />
+        </div>
         </div>
       </div>
     </section>

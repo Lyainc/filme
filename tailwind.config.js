@@ -18,6 +18,15 @@ module.exports = {
         paper: {
           DEFAULT: '#F5F1E8',
           dim: '#E8E3D5',
+          cream: '#F4EDE0',
+          deep: '#1A1612',
+        },
+        cannes: {
+          DEFAULT: '#A8312A',
+        },
+        film: {
+          base: '#0A0A0A',
+          ink: '#F4EDE0',
         },
         bone: {
           DEFAULT: '#D8D2C2',
@@ -42,6 +51,8 @@ module.exports = {
         sans: ['"Pretendard Variable"', 'Pretendard', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'Roboto', '"Helvetica Neue"', '"Apple SD Gothic Neo"', '"Noto Sans KR"', 'sans-serif'],
         display: ['"Fraunces"', '"Pretendard Variable"', 'Pretendard', 'Georgia', 'serif'],
         mono: ['"JetBrains Mono"', '"Berkeley Mono"', '"SF Mono"', 'ui-monospace', 'Menlo', 'monospace'],
+        serif: ['"Cormorant Garamond"', '"Times New Roman"', 'Georgia', 'serif'],
+        inter: ['"Inter"', '"Pretendard Variable"', '"Helvetica Neue"', 'sans-serif'],
       },
       letterSpacing: {
         tightest: '-0.04em',

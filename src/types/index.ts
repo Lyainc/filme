@@ -1,17 +1,24 @@
+export type LayoutId = 'minimal' | 'criterion' | '35mm' | 'editorial';
+
 export interface MovieInfo {
   title: string;
   titleOg?: string;
   actors?: string;
   releaseDate?: string;
   watchDate: string;
+  watchTime?: string;
   theater: string;
   screen?: string;
   seat?: string;
   rating: number;
   showRating: boolean;
+  runtime?: string;
+  audienceCert?: string;
+  bookingNumber?: string;
 }
 
 export interface TicketComponents {
+  layout: LayoutId;
   chain: string;
   format: string;
   texture: string;
