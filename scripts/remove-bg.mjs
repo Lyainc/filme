@@ -53,7 +53,7 @@ async function maskStressless(inputPath) {
   const bg = await sharp(orig.data, {
     raw: { width: orig.info.width, height: orig.info.height, channels: orig.info.channels },
   })
-    .blur(50)
+    .blur(80)
     .raw()
     .toBuffer();
 
@@ -75,7 +75,19 @@ async function maskStressless(inputPath) {
     out[j + 2] = 0;
     out[j + 3] = alpha;
   }
-  return rawRgbaToPngBuffer(out, W, H);
+
+  // morphological opening 흉내: 약한 blur로 미세 노이즈 점/줄을 흐리고
+  // alpha 80 미만은 컷오프. 텍스트 본체의 페이드는 80~255 구간에서 보존.
+  const refined = await sharp(out, { raw: { width: W, height: H, channels: 4 } })
+    .blur(2)
+    .raw()
+    .toBuffer();
+  const finalMask = Buffer.alloc(W * H * 4);
+  for (let i = 0; i < refined.length; i += 4) {
+    const a = refined[i + 3];
+    finalMask[i + 3] = a < 80 ? 0 : a;
+  }
+  return rawRgbaToPngBuffer(finalMask, W, H);
 }
 
 async function maskTempur(inputPath) {
