@@ -100,7 +100,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl }: Moo
             {components.format && (
               <>
                 <span style={{ width: 1, height: 26, background: PAPER_DIM }} />
-                <FormatStamp format={components.format} color={PAPER_DEEP} size={0.85} />
+                <FormatStamp format={components.format} size={0.85} />
               </>
             )}
           </div>
@@ -132,7 +132,9 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl }: Moo
           {d.title && (
             <div
               style={{
-                font: `900 ${titleSize}px ${FONT_KR}`,
+                fontWeight: 900,
+                fontSize: titleSize,
+                fontFamily: FONT_KR,
                 lineHeight: 0.95,
                 letterSpacing: -1.5,
               }}
@@ -199,7 +201,9 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl }: Moo
               </div>
               <div
                 style={{
-                  font: `500 26px ${FONT_KR}`,
+                  fontWeight: 500,
+                  fontSize: 26,
+                  fontFamily: FONT_KR,
                   letterSpacing: -0.2,
                   lineHeight: 1.3,
                 }}
@@ -243,7 +247,10 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl }: Moo
           </div>
           <div
             style={{
-              font: `italic 400 15px ${FONT_SERIF}`,
+              fontStyle: 'italic',
+              fontWeight: 400,
+              fontSize: 15,
+              fontFamily: FONT_SERIF,
               color: PAPER_DIM,
               letterSpacing: 0.3,
               lineHeight: 1.5,
@@ -299,7 +306,9 @@ function MetaCell({
       </div>
       <div
         style={{
-          font: mono ? `800 30px ${FONT_MONO}` : `800 30px ${FONT_SANS}`,
+          fontWeight: 800,
+          fontSize: 30,
+          fontFamily: mono ? FONT_MONO : FONT_SANS,
           letterSpacing: mono ? 0.5 : -0.4,
           lineHeight: 1.05,
           color: PAPER_DEEP,

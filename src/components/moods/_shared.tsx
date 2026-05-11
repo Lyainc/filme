@@ -22,15 +22,8 @@ interface ChainStampProps {
   height?: number;
 }
 
-function chainAssetSrc(chain: string): string | null {
-  const found = THEATER_CHAINS.find((c) => c.value === chain);
-  return found?.file ? `/assets/chains_transparent/${found.file}` : null;
-}
-
-function formatAssetSrc(format: string): string | null {
-  const found = SCREENING_FORMATS.find((f) => f.value === format);
-  return found?.file ? `/assets/formats_transparent/${found.file}` : null;
-}
+const CHAIN_INDEX = new Map(THEATER_CHAINS.map((c) => [c.value, c]));
+const FORMAT_INDEX = new Map(SCREENING_FORMATS.map((f) => [f.value, f]));
 
 const wrapperPaper = (size: number): CSSProperties => ({
   display: 'inline-flex',
@@ -47,120 +40,73 @@ export function ChainStamp({
   height = 38,
 }: ChainStampProps) {
   if (!chain) return null;
-  const src = chainAssetSrc(chain);
+  const entry = CHAIN_INDEX.get(chain);
+  if (!entry?.file) return null;
+  const src = `/assets/chains_transparent/${entry.file}`;
   const h = height * size;
 
-  if (src) {
-    if (surface === 'dark') {
-      return (
-        <span style={{ ...wrapperPaper(size), height: h + 10 * size }}>
-          <img
-            src={src}
-            alt={chain}
-            style={{ height: '100%', width: 'auto', display: 'block' }}
-            draggable={false}
-            crossOrigin="anonymous"
-          />
-        </span>
-      );
-    }
+  if (surface === 'dark') {
     return (
-      <img
-        src={src}
-        alt={chain}
-        style={{ height: h, width: 'auto', display: 'block' }}
-        draggable={false}
-        crossOrigin="anonymous"
-      />
+      <span style={{ ...wrapperPaper(size), height: h + 10 * size }}>
+        <img
+          src={src}
+          alt={entry.label}
+          style={{ height: '100%', width: 'auto', display: 'block' }}
+          draggable={false}
+          crossOrigin="anonymous"
+        />
+      </span>
     );
   }
-
   return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        font: `900 ${22 * size}px ${FONT_SANS}`,
-        letterSpacing: 1.5 * size,
-      }}
-    >
-      {chain}
-    </span>
+    <img
+      src={src}
+      alt={entry.label}
+      style={{ height: h, width: 'auto', display: 'block' }}
+      draggable={false}
+      crossOrigin="anonymous"
+    />
   );
 }
 
 interface FormatStampProps {
   format: string;
-  color?: string;
   size?: number;
-  framed?: boolean;
   surface?: Surface;
 }
 
 export function FormatStamp({
   format,
-  color = 'currentColor',
   size = 1,
-  framed = false,
   surface = 'paper',
 }: FormatStampProps) {
   if (!format) return null;
-  const label = format.toUpperCase();
-  const src = formatAssetSrc(format);
+  const entry = FORMAT_INDEX.get(format);
+  if (!entry?.file) return null;
+  const src = `/assets/formats_transparent/${entry.file}`;
+  const h = 32 * size;
 
-  if (src) {
-    const h = 32 * size;
-    if (surface === 'dark') {
-      return (
-        <span style={{ ...wrapperPaper(size), height: h + 10 * size }}>
-          <img
-            src={src}
-            alt={label}
-            style={{ height: '100%', width: 'auto', display: 'block' }}
-            draggable={false}
-            crossOrigin="anonymous"
-          />
-        </span>
-      );
-    }
+  if (surface === 'dark') {
     return (
-      <img
-        src={src}
-        alt={label}
-        style={{ height: h, width: 'auto', display: 'block' }}
-        draggable={false}
-        crossOrigin="anonymous"
-      />
-    );
-  }
-
-  if (framed) {
-    return (
-      <span
-        style={{
-          display: 'inline-block',
-          padding: `${8 * size}px ${14 * size}px`,
-          border: `${2 * size}px solid ${color}`,
-          color,
-          font: `800 ${22 * size}px ${FONT_SANS}`,
-          letterSpacing: 2 * size,
-        }}
-      >
-        {label}
+      <span style={{ ...wrapperPaper(size), height: h + 10 * size }}>
+        <img
+          src={src}
+          alt={entry.label}
+          style={{ height: '100%', width: 'auto', display: 'block' }}
+          draggable={false}
+          crossOrigin="anonymous"
+        />
       </span>
     );
   }
-
   return (
-    <span
-      style={{
-        color,
-        font: `900 ${28 * size}px ${FONT_SANS}`,
-        letterSpacing: 3 * size,
-      }}
-    >
-      {label}
-    </span>
+    <img
+      src={src}
+      alt={entry.label}
+      style={{ height: h, width: 'auto', display: 'block' }}
+      draggable={false}
+      crossOrigin="anonymous"
+    />
   );
 }
 

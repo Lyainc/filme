@@ -24,7 +24,9 @@ const metaLabelStyle = (ink: string): CSSProperties => ({
 });
 
 const metaValueStyle = (ink: string): CSSProperties => ({
-  font: `700 22px ${FONT_SANS}`,
+  fontWeight: 700,
+  fontSize: 22,
+  fontFamily: FONT_SANS,
   letterSpacing: -0.2,
   color: ink,
   lineHeight: 1.25,
@@ -128,7 +130,9 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl }: MoodP
         {d.title && (
           <div
             style={{
-              font: `${titleLen > 12 ? 400 : 300} ${titleSize}px ${FONT_KR}`,
+              fontWeight: titleLen > 12 ? 400 : 300,
+              fontSize: titleSize,
+              fontFamily: FONT_KR,
               lineHeight: 1.05,
               letterSpacing: -1.5,
               marginBottom: 36,
@@ -143,7 +147,9 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl }: MoodP
         {d.actors && (
           <div
             style={{
-              font: `500 22px ${FONT_KR}`,
+              fontWeight: 500,
+              fontSize: 22,
+              fontFamily: FONT_KR,
               opacity: 0.78,
               marginBottom: 16,
               letterSpacing: 0.2,
@@ -242,7 +248,7 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl }: MoodP
               gap: 14,
             }}
           >
-            {components.format && <FormatStamp format={components.format} color={ink} size={0.9} />}
+            {components.format && <FormatStamp format={components.format} size={0.9} />}
             <Barcode value={bookingNo} color={ink} width={180} height={34} textSize={10} />
           </div>
         </div>

@@ -117,7 +117,7 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl }: MoodProp
             transform: 'rotate(-3deg)',
           }}
         >
-          <FormatStamp format={components.format} color={FS_INK} size={1.1} framed surface="dark" />
+          <FormatStamp format={components.format} size={1.1} surface="dark" />
         </div>
       )}
 
@@ -156,7 +156,9 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl }: MoodProp
           {d.title && (
             <div
               style={{
-                font: `800 ${titleSize}px ${FONT_KR}`,
+                fontWeight: 800,
+                fontSize: titleSize,
+                fontFamily: FONT_KR,
                 lineHeight: 1.0,
                 letterSpacing: -0.5,
                 marginBottom: 18,
@@ -194,7 +196,9 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl }: MoodProp
                 <span
                   style={{
                     color: FS_INK,
-                    font: `500 16px ${FONT_KR}`,
+                    fontWeight: 500,
+                    fontSize: 16,
+                    fontFamily: FONT_KR,
                     letterSpacing: -0.1,
                     lineHeight: 1.3,
                   }}

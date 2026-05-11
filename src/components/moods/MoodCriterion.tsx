@@ -120,7 +120,7 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl }: Moo
         {components.format && (
           <>
             <span style={{ width: 1, height: 26, background: ink, opacity: 0.6 }} />
-            <FormatStamp format={components.format} color={ink} size={0.78} framed />
+            <FormatStamp format={components.format} size={0.78} />
           </>
         )}
       </div>
@@ -167,7 +167,9 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl }: Moo
         {d.title && (
           <div
             style={{
-              font: `800 ${titleSize}px ${FONT_KR}`,
+              fontWeight: 800,
+              fontSize: titleSize,
+              fontFamily: FONT_KR,
               lineHeight: 1.0,
               letterSpacing: titleLen > 8 ? -1.5 : 1,
               marginBottom: 28,
@@ -180,7 +182,10 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl }: Moo
         {d.actors && (
           <div
             style={{
-              font: `italic 500 22px ${FONT_SERIF}`,
+              fontStyle: 'italic',
+              fontWeight: 500,
+              fontSize: 22,
+              fontFamily: FONT_SERIF,
               opacity: 0.85,
               marginBottom: 24,
               lineHeight: 1.4,
@@ -208,7 +213,9 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl }: Moo
         )}
         <div
           style={{
-            font: `700 17px ${FONT_MONO}`,
+            fontWeight: 700,
+            fontSize: 17,
+            fontFamily: FONT_MONO,
             letterSpacing: 2.5,
             textTransform: 'uppercase',
             opacity: 0.95,
@@ -298,7 +305,9 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl }: Moo
           </div>
           <div
             style={{
-              font: `900 26px ${FONT_SANS}`,
+              fontWeight: 900,
+              fontSize: 26,
+              fontFamily: FONT_SANS,
               letterSpacing: -0.5,
               lineHeight: 1,
               marginTop: 2,
