@@ -41,7 +41,7 @@ export default function FormatPicker({ value, onChange }: FormatPickerProps) {
             >
               {fmt.file && (
                 <img
-                  src={`/formats_transparent/${fmt.file}`}
+                  src={`/assets/formats_transparent/${fmt.file}`}
                   alt=""
                   className="h-4 w-auto"
                   style={{

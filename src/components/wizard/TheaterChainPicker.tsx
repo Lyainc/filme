@@ -30,7 +30,7 @@ export default function TheaterChainPicker({ value, onChange }: TheaterChainPick
             >
               {chain.file && (
                 <img
-                  src={`/chains_transparent/${chain.file}`}
+                  src={`/assets/chains_transparent/${chain.file}`}
                   alt=""
                   className="h-4 w-auto"
                   style={{

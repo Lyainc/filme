@@ -10,48 +10,20 @@ export const TARGET_RATIO = TARGET_WIDTH / TARGET_HEIGHT; // 0.65:1
 // 이미지 품질 설정
 export const JPEG_QUALITY = 0.95;
 
-// 극장 체인 목록 (에셋 파일명과 일치)
-export const THEATER_CHAINS = [
-  { value: '', label: '선택 안함', file: null },
-  { value: 'CGV', label: 'CGV', file: 'cgv.png' },
-  { value: '롯데시네마', label: '롯데시네마', file: 'lotte.png' },
-  { value: '메가박스', label: '메가박스', file: 'megabox.png' },
-  { value: '씨네Q', label: '씨네Q', file: 'cineq.png' },
-] as const;
+// Picker 데이터는 자산 폴더에서 자동 파생.
+// 파일명 규약: `<value>_<label>.png` — value=영문 식별자, label=표기명(_ 뒤 문자열).
+// 자산 추가/삭제만 하면 generator(`bun run gen:assets`)가 picker를 동기화한다.
+import { CHAIN_ASSETS, FORMAT_ASSETS, type AssetEntry } from './assets.generated';
 
-// 상영 포맷 목록 (에셋 파일명과 일치)
-export const SCREENING_FORMATS = [
-  { value: '', label: '선택 안함', file: null },
+export type PickerOption =
+  | AssetEntry
+  | { readonly value: ''; readonly label: '선택 안함'; readonly file: null };
 
-  // 프리미엄 포맷
-  { value: 'IMAX', label: 'IMAX', file: 'imax.png' },
-  { value: '4DX', label: '4DX', file: '4dx.png' },
-  { value: 'ULTRA 4DX', label: 'ULTRA 4DX', file: 'ultra4dx.png' },
-  { value: 'ScreenX', label: 'ScreenX', file: 'screenx.png' },
-  { value: 'MX4D', label: 'MX4D', file: 'smx4d.png' },
+const NONE = { value: '', label: '선택 안함', file: null } as const;
 
-  // Dolby 시리즈
-  { value: 'DOLBY CINEMA', label: 'DOLBY CINEMA', file: 'dolby-cinema.png' },
-  { value: 'DOLBY Atmos', label: 'DOLBY Atmos', file: 'dolby-atmos.png' },
-  { value: 'DOLBY Vision+Atmos', label: 'DOLBY Vision+Atmos', file: 'dolby-va.png' },
+export const THEATER_CHAINS: readonly PickerOption[] = [NONE, ...CHAIN_ASSETS];
 
-  // LED/스크린 포맷
-  { value: 'SUPER PLEX', label: 'SUPER PLEX', file: 'superplex.png' },
-  { value: 'SUPER LED', label: 'SUPER LED', file: 'superled.png' },
-  { value: 'MEGA LED', label: 'MEGA LED', file: 'megaled.png' },
-  { value: 'SLED', label: 'SLED', file: 'sled.png' },
-
-  // 사운드 포맷
-  { value: 'CrazySound', label: 'CrazySound', file: 'crazysound.png' },
-  { value: 'CrazySound LED', label: 'CrazySound LED', file: 'crazysoundled.png' },
-
-  // 특별관
-  { value: '샬롯데', label: '샬롯데', file: 'chalotte.png' },
-  { value: '부티크', label: '부티크', file: 'boutique.png' },
-  { value: '부티크 프라이빗', label: '부티크 프라이빗', file: 'boutiqueprivate.png' },
-  { value: '부티크 스위트', label: '부티크 스위트', file: 'boutiquesuite.png' },
-  { value: '르클라이너', label: '르클라이너', file: 'lerecliner.png' },
-] as const;
+export const SCREENING_FORMATS: readonly PickerOption[] = [NONE, ...FORMAT_ASSETS];
 
 // 후가공 텍스처(특수 용지) 옵션
 export const TEXTURE_OPTIONS = [

@@ -72,3 +72,6 @@ CODEX.md
 # vault-bridge 로컬 바인딩 (개인 경로)
 .vault-link
 .vault-link.local
+
+# 자동 생성 자산 매니페스트 (predev/prebuild가 재생성 — 커밋 안 함)
+/src/utils/assets.generated.ts
