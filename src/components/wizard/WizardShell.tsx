@@ -94,6 +94,7 @@ export default function WizardShell() {
                   layoutId={photo.debouncedState.components.layout}
                   ready={ready}
                   step={wizard.step}
+                  posterUrl={croppedImageUrl}
                 />
               </div>
 

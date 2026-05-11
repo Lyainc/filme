@@ -68,16 +68,13 @@ export default function ImageUploader({ onUpload, isProcessing, hasImage = false
 
   return (
     <section>
-      <button
-        type="button"
-        onClick={() => fileInputRef.current?.click()}
+      <label
         onDragOver={(e) => {
           e.preventDefault();
           setIsDragging(true);
         }}
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
-        disabled={busy}
         data-touch="44"
         className={`group relative block w-full overflow-hidden rounded-card border bg-paper p-7 text-left shadow-card transition-colors md:p-9
           ${isDragging ? 'border-accent bg-accent-soft' : 'hairline hover:border-accent/40'}
@@ -119,7 +116,7 @@ export default function ImageUploader({ onUpload, isProcessing, hasImage = false
           disabled={busy}
           className="sr-only"
         />
-      </button>
+      </label>
 
       {selectedImageSrc && (
         <ImageCropModal
