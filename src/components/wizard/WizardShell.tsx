@@ -70,7 +70,10 @@ export default function WizardShell() {
 
       <main className="mx-auto max-w-[1180px] px-5 pb-32 pt-8 md:px-8 md:pt-10">
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,360px)] lg:gap-12">
-          <section className="order-2 min-w-0 lg:order-1">
+          <section
+            className={`order-2 min-w-0 lg:order-1 ${isExporting ? 'pointer-events-none opacity-50' : ''}`}
+            aria-busy={isExporting}
+          >
             {wizard.step === 1 && <Step1Poster photo={photo} />}
             {wizard.step === 2 && (
               <Step2Movie photo={photo} onPendingFetchChange={setPendingFetch} />
@@ -91,30 +94,30 @@ export default function WizardShell() {
               {/* PreviewMini visible at steps 1-3 */}
               <div className={isStep4 ? 'hidden' : 'block'}>
                 <PreviewMini
-                  layoutId={photo.debouncedState.components.layout}
+                  layoutId={photo.state.components.layout}
                   ready={ready}
                   step={wizard.step}
                   posterUrl={croppedImageUrl}
                 />
               </div>
 
-              {/* TicketRenderer host. Position swap: offscreen (steps 1-3) ⇄ in-frame (step 4).
-                  TicketRenderer mounts once `ready` becomes true and never unmounts thereafter. */}
+              {/* TicketRenderer host. Offscreen (1-3) ⇄ in-frame (4); never visibility:hidden —
+                  html-to-image can't capture a hidden subtree and would export blank. */}
               <div
                 aria-hidden={!isStep4}
                 className={
                   isStep4
                     ? 'block'
-                    : 'pointer-events-none invisible absolute -left-[9999px] top-0'
+                    : 'pointer-events-none absolute -left-[9999px] top-0'
                 }
               >
-                <PreviewPanel layoutId={photo.debouncedState.components.layout}>
+                <PreviewPanel layoutId={photo.state.components.layout}>
                   {croppedImageUrl ? (
                     <TicketRenderer
                       ref={ticketRef}
                       croppedImageUrl={croppedImageUrl}
-                      movieInfo={photo.debouncedState.movieInfo}
-                      components={photo.debouncedState.components}
+                      movieInfo={photo.state.movieInfo}
+                      components={photo.state.components}
                     />
                   ) : (
                     <div className="text-mono py-8 text-center text-[11px] uppercase tracking-widest text-fg-faint">

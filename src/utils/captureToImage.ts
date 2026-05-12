@@ -53,10 +53,18 @@ export async function downloadTicketAsJpeg(
   options: CaptureOptions
 ): Promise<void> {
   const dataUrl = await captureNodeToJpeg(node, options);
+  if (!dataUrl?.startsWith('data:image/')) {
+    throw new Error('Capture returned empty data URL');
+  }
+  // Go through Blob + ObjectURL: Chrome rejects very large `data:` hrefs on <a download>
+  // and Safari sometimes ignores the download attribute on data URLs.
+  const blob = await (await fetch(dataUrl)).blob();
+  const objectUrl = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.download = options.filename;
-  link.href = dataUrl;
+  link.href = objectUrl;
   document.body.appendChild(link);
   link.click();
-  document.body.removeChild(link);
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
 }
