@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { MovieInfo, KobisMovie } from '@/types';
+import { MovieInfo, KobisMovie, DateFormatToken, DateGranularity } from '@/types';
+import { formatDate } from '@/utils/dateFormat';
 import Field from './ui/Field';
 
 interface MovieInfoFormProps {
@@ -9,10 +10,19 @@ interface MovieInfoFormProps {
   onPendingFetchChange?: (pending: boolean) => void;
 }
 
-/**
- * Required-fields form: Title (with KOBIS lookup), Watched, Theater.
- * Optional fields are rendered separately by OptionalDetailsAccordion in the wizard.
- */
+const GRANULARITY_OPTIONS: { value: DateGranularity; label: string }[] = [
+  { value: 'year', label: '연만' },
+  { value: 'year-month', label: '연·월' },
+  { value: 'date', label: '연·월·일' },
+];
+
+const FORMAT_TOKENS: { value: DateFormatToken; sample: string }[] = [
+  { value: 'iso', sample: '2014-11-06' },
+  { value: 'kr-compact', sample: '2014.11.06' },
+  { value: 'cinema-mono', sample: '06·NOV·2014' },
+  { value: 'en-long', sample: 'November 6, 2014' },
+];
+
 export default function MovieInfoForm({
   movieInfo,
   onChange,
@@ -74,10 +84,12 @@ export default function MovieInfoForm({
   };
 
   const handleSelectMovie = async (movie: KobisMovie) => {
+    const isoOpen = openDtToIso(movie.openDt);
     onChange({
       title: movie.movieNm,
       titleOg: movie.movieNmEn || '',
-      releaseDate: formatOpenDt(movie.openDt) || '',
+      releaseDate: isoOpen,
+      releaseDateGranularity: isoOpen ? 'date' : undefined,
     });
     setShowResults(false);
 
@@ -92,12 +104,12 @@ export default function MovieInfoForm({
       const isKorean = info.nations?.some((n: { nationNm: string }) => n.nationNm === '한국');
       const actors =
         info.actors
-          ?.slice(0, 3)
-          .map((a: { peopleNm: string; peopleNmEn: string }) =>
+          ?.map((a: { peopleNm: string; peopleNmEn: string }) =>
             !isKorean && a.peopleNmEn ? a.peopleNmEn : a.peopleNm
           )
           .join(', ') || '';
-      onChange({ actors });
+      const runtime = info.showTm ? `${info.showTm} MIN` : '';
+      onChange({ actors, ...(runtime ? { runtime } : {}) });
     } catch (error) {
       console.error('영화 상세 정보 검색 오류:', error);
     } finally {
@@ -105,6 +117,9 @@ export default function MovieInfoForm({
       setIsFetchingDetail(false);
     }
   };
+
+  const releaseGran = movieInfo.releaseDateGranularity || 'date';
+  const releaseFmt = movieInfo.releaseDateFormat || 'kr-compact';
 
   return (
     <section className="space-y-5">
@@ -173,7 +188,7 @@ export default function MovieInfoForm({
                       <div className="text-[15px] font-medium text-fg">{movie.movieNm}</div>
                       <div className="text-mono mt-1 flex items-center gap-2 text-[10px] uppercase tracking-widest text-fg-faint">
                         {movie.openDt && (
-                          <span>{formatOpenDt(movie.openDt).replace(/ /g, '')}</span>
+                          <span>{formatDate(openDtToIso(movie.openDt), 'kr-compact', 'date')}</span>
                         )}
                         {movie.genreAlt && (
                           <>
@@ -197,34 +212,208 @@ export default function MovieInfoForm({
         )}
       </div>
 
-      {/* Watched + Theater (required) */}
       <Field
-        id="watchDate"
-        label="Watched"
-        type="date"
-        value={
-          movieInfo.watchDate
-            ? movieInfo.watchDate.replace(/\. /g, '-').replace(/\.$/, '')
-            : ''
-        }
-        onChange={(e) => {
-          const val = e.target.value;
-          onChange({ watchDate: val ? val.replace(/-/g, '. ') + '.' : '' });
+        id="titleOg"
+        label="Original Title"
+        value={movieInfo.titleOg}
+        onChange={(e) => onChange({ titleOg: e.target.value })}
+        placeholder="Interstellar (또는 한글 제목 영문 표기)"
+      />
+      {!movieInfo.titleOg.trim() && (
+        <p className="text-mono -mt-3 text-[10px] uppercase tracking-widest text-fg-faint">
+          원제 또는 한글 제목의 영문 표기를 입력해 주세요.
+        </p>
+      )}
+
+      <DateBlock
+        label="Released"
+        value={movieInfo.releaseDate || ''}
+        granularity={releaseGran}
+        token={releaseFmt}
+        onGranularityChange={(releaseDateGranularity) => {
+          const trimmed = truncateToGranularity(movieInfo.releaseDate || '', releaseDateGranularity);
+          onChange({ releaseDateGranularity, releaseDate: trimmed });
         }}
+        onTokenChange={(releaseDateFormat) => onChange({ releaseDateFormat })}
       />
 
-      <Field
-        id="theater"
-        label="Theater"
-        value={movieInfo.theater}
-        onChange={(e) => onChange({ theater: e.target.value })}
-        placeholder="CGV 용산아이파크몰"
+      <ReissueBlock
+        checked={!!movieInfo.isReissue}
+        reissueDate={movieInfo.reissueDate || ''}
+        granularity={releaseGran}
+        token={releaseFmt}
+        onToggle={(isReissue) => onChange({ isReissue })}
+        onDateChange={(reissueDate) => onChange({ reissueDate })}
       />
     </section>
   );
 }
 
-function formatOpenDt(dt: string) {
-  if (!dt || dt.length !== 8) return dt;
-  return `${dt.substring(0, 4)}. ${dt.substring(4, 6)}. ${dt.substring(6, 8)}.`;
+/** Release date block. Source-of-truth is KOBIS — user only picks granularity & format. */
+function DateBlock({
+  label,
+  value,
+  granularity,
+  token,
+  onGranularityChange,
+  onTokenChange,
+}: {
+  label: string;
+  value: string;
+  granularity: DateGranularity;
+  token: DateFormatToken;
+  onGranularityChange: (next: DateGranularity) => void;
+  onTokenChange: (next: DateFormatToken) => void;
+}) {
+  const hasValue = !!value;
+  return (
+    <div className="space-y-2.5">
+      <div className="flex items-baseline justify-between">
+        <span className="text-mono block text-[10px] uppercase tracking-widest text-fg-muted">
+          {label}
+        </span>
+        <span className="text-mono text-[10px] uppercase tracking-widest text-fg-faint">
+          {formatDate(value, token, granularity) || '—'}
+        </span>
+      </div>
+      <div className="flex flex-wrap items-stretch gap-2">
+        <select
+          value={granularity}
+          onChange={(e) => onGranularityChange(e.target.value as DateGranularity)}
+          className="text-mono rounded-field border hairline bg-paper px-3 py-3 text-[11px] uppercase tracking-widest text-fg outline-none focus:border-accent"
+          aria-label={`${label} 정밀도`}
+        >
+          {GRANULARITY_OPTIONS.map((g) => (
+            <option key={g.value} value={g.value}>
+              {g.label}
+            </option>
+          ))}
+        </select>
+        <div
+          className={`text-mono inline-flex flex-1 min-w-[160px] items-center rounded-field border hairline px-3.5 py-3 text-[12px] uppercase tracking-widest ${
+            hasValue ? 'bg-accent-soft text-fg' : 'bg-paper text-fg-faint'
+          }`}
+        >
+          {hasValue ? formatDate(value, token, granularity) : 'KOBIS 검색으로 자동 입력돼요'}
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2 pt-1" role="radiogroup" aria-label={`${label} 표기`}>
+        {FORMAT_TOKENS.map((opt) => {
+          const active = token === opt.value;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={() => onTokenChange(opt.value)}
+              data-touch="44"
+              className={`text-mono inline-flex min-h-touch items-center rounded-chip border px-3 text-[10px] uppercase tracking-widest transition-colors
+                ${active ? 'border-accent bg-accent text-white' : 'hairline bg-paper text-fg hover:bg-accent-soft'}`}
+            >
+              {opt.sample}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ReissueBlock({
+  checked,
+  reissueDate,
+  granularity,
+  token,
+  onToggle,
+  onDateChange,
+}: {
+  checked: boolean;
+  reissueDate: string;
+  granularity: DateGranularity;
+  token: DateFormatToken;
+  onToggle: (checked: boolean) => void;
+  onDateChange: (next: string) => void;
+}) {
+  return (
+    <div className="space-y-2.5">
+      <label className="text-mono inline-flex cursor-pointer items-center gap-2 text-[11px] uppercase tracking-widest text-fg">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onToggle(e.target.checked)}
+          className="h-4 w-4 accent-accent"
+        />
+        재개봉작이에요
+      </label>
+      {checked && (
+        <div className="flex flex-wrap items-stretch gap-2">
+          <DateInput value={reissueDate} granularity={granularity} onChange={onDateChange} />
+          <span className="text-mono inline-flex items-center text-[10px] uppercase tracking-widest text-fg-faint">
+            표기: {formatDate(reissueDate, token, granularity) || '—'}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DateInput({
+  value,
+  granularity,
+  onChange,
+}: {
+  value: string;
+  granularity: DateGranularity;
+  onChange: (next: string) => void;
+}) {
+  const base =
+    'flex-1 min-w-[160px] rounded-field border hairline bg-paper px-3.5 py-3 text-[15px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft';
+  if (granularity === 'year') {
+    return (
+      <input
+        type="number"
+        min={1900}
+        max={2099}
+        value={value || ''}
+        onChange={(e) => {
+          const v = e.target.value.replace(/[^\d]/g, '').slice(0, 4);
+          onChange(v);
+        }}
+        placeholder="2014"
+        className={base}
+      />
+    );
+  }
+  if (granularity === 'year-month') {
+    return (
+      <input
+        type="month"
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value)}
+        className={base}
+      />
+    );
+  }
+  return (
+    <input
+      type="date"
+      value={value || ''}
+      onChange={(e) => onChange(e.target.value)}
+      className={base}
+    />
+  );
+}
+
+function truncateToGranularity(iso: string, g: DateGranularity): string {
+  if (!iso) return '';
+  if (g === 'year') return iso.split('-')[0] || '';
+  if (g === 'year-month') return iso.split('-').slice(0, 2).join('-');
+  return iso;
+}
+
+/** KOBIS openDt (YYYYMMDD) → ISO 'YYYY-MM-DD'. Empty/invalid → ''. */
+function openDtToIso(dt: string): string {
+  if (!dt || dt.length !== 8) return '';
+  return `${dt.substring(0, 4)}-${dt.substring(4, 6)}-${dt.substring(6, 8)}`;
 }
