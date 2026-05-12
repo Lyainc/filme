@@ -60,21 +60,29 @@ export function useWizard({ state, pendingFetch }: UseWizardOptions): UseWizard 
       switch (from) {
         case 1:
           return !!state.croppedImageUrl;
-        case 2:
-          // KOBIS detail in-flight ⇒ block advance to avoid actors-after-mount race
+        case 2: {
           if (pendingFetch) return false;
+          const mi = state.movieInfo;
+          const release = (mi.releaseDate || '').trim();
           return (
-            state.movieInfo.title.trim().length > 0 &&
-            state.movieInfo.watchDate.trim().length > 0 &&
-            state.movieInfo.theater.trim().length > 0
+            mi.title.trim().length > 0 &&
+            mi.titleOg.trim().length > 0 &&
+            release.length >= 4
           );
+        }
         case 3:
           return true;
         case 4:
           return false;
       }
     },
-    [state.croppedImageUrl, state.movieInfo.title, state.movieInfo.watchDate, state.movieInfo.theater, pendingFetch]
+    [
+      state.croppedImageUrl,
+      state.movieInfo.title,
+      state.movieInfo.titleOg,
+      state.movieInfo.releaseDate,
+      pendingFetch,
+    ]
   );
 
   const goNext = useCallback(() => {
