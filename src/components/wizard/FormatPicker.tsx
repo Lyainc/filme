@@ -52,7 +52,7 @@ export default function FormatPicker({ value, onChange, chain }: FormatPickerPro
                 ${
                   active
                     ? 'border-accent bg-accent text-white'
-                    : 'hairline bg-paper text-fg hover:bg-accent-soft'
+                    : 'border-line bg-paper text-fg hover:bg-accent-soft'
                 }`}
             >
               {fmt.file && (

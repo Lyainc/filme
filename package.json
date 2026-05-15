@@ -8,7 +8,8 @@
     "prebuild": "bun scripts/generate-asset-manifest.ts",
     "build": "bun --bun next build",
     "start": "bun --bun next start",
-    "gen:assets": "bun scripts/generate-asset-manifest.ts"
+    "gen:assets": "bun scripts/generate-asset-manifest.ts",
+    "test": "bun test"
   },
   "dependencies": {
     "html-to-image": "^1.11.13",

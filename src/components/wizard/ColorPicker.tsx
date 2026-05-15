@@ -39,7 +39,7 @@ export default function ColorPicker({ value, onChange, recommended }: ColorPicke
               className={`relative inline-flex min-h-touch min-w-touch items-center justify-center rounded-chip border-2 transition-transform ${
                 active
                   ? 'border-accent shadow-card scale-105'
-                  : 'hairline hover:border-accent/40'
+                  : 'border-line hover:border-accent/40'
               }`}
               style={{ width: 44, height: 44 }}
             >
@@ -72,7 +72,7 @@ export default function ColorPicker({ value, onChange, recommended }: ColorPicke
           />
           <span
             className={`flex h-11 w-11 items-center justify-center rounded-chip border-2 transition-transform ${
-              isCustom ? 'border-accent shadow-card scale-105' : 'hairline hover:border-accent/40'
+              isCustom ? 'border-accent shadow-card scale-105' : 'border-line hover:border-accent/40'
             }`}
             style={{
               background:
@@ -89,7 +89,7 @@ export default function ColorPicker({ value, onChange, recommended }: ColorPicke
       <div className="flex items-stretch gap-2 pt-1">
         <span
           aria-hidden
-          className="inline-flex shrink-0 items-center justify-center rounded-field border hairline px-3 text-[15px] text-fg-muted"
+          className="inline-flex shrink-0 items-center justify-center rounded-field border border-line px-3 text-[15px] text-fg-muted"
           style={{ minWidth: 44 }}
         >
           #
@@ -104,7 +104,7 @@ export default function ColorPicker({ value, onChange, recommended }: ColorPicke
           maxLength={6}
           aria-label="Hex color"
           placeholder="FFFFFF"
-          className="text-mono w-full rounded-field border hairline bg-paper px-3.5 py-2.5 text-[14px] uppercase tracking-widest text-fg outline-none transition-colors placeholder:text-fg-faint focus:border-accent focus:ring-2 focus:ring-accent-soft"
+          className="text-mono w-full rounded-field border border-line bg-paper px-3.5 py-2.5 text-[14px] uppercase tracking-widest text-fg outline-none transition-colors placeholder:text-fg-faint focus:border-accent focus:ring-2 focus:ring-accent-soft"
         />
       </div>
     </div>

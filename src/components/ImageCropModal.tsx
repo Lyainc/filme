@@ -46,7 +46,7 @@ export default function ImageCropModal({
       style={{ background: 'rgba(44,38,34,0.55)' }}
     >
       <div className="relative flex h-[85vh] max-h-[820px] w-full max-w-xl flex-col overflow-hidden rounded-modal bg-paper shadow-card">
-        <div className="flex items-center justify-between border-b hairline px-5 py-3.5">
+        <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
           <div className="flex items-baseline gap-3">
             <span className="text-mono text-[10px] uppercase tracking-widest text-accent-ink">
               Crop
@@ -81,7 +81,7 @@ export default function ImageCropModal({
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 border-t hairline px-5 py-4">
+        <div className="flex flex-col gap-4 border-t border-line px-5 py-4">
           <div className="flex items-center gap-4">
             <span
               id="zoom-label"
@@ -107,7 +107,7 @@ export default function ImageCropModal({
               onClick={onClose}
               disabled={isProcessing}
               data-touch="44"
-              className="text-mono inline-flex min-h-btn items-center justify-center rounded-field border hairline bg-paper text-[11px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft disabled:opacity-30"
+              className="text-mono inline-flex min-h-btn items-center justify-center rounded-field border border-line bg-paper text-[11px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft disabled:opacity-30"
             >
               Cancel
             </button>

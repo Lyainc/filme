@@ -25,7 +25,7 @@ export default function TheaterChainPicker({ value, onChange }: TheaterChainPick
                 ${
                   active
                     ? 'border-accent bg-accent text-white'
-                    : 'hairline bg-paper text-fg hover:bg-accent-soft'
+                    : 'border-line bg-paper text-fg hover:bg-accent-soft'
                 }`}
             >
               {chain.file && (

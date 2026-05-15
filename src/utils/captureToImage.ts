@@ -6,6 +6,26 @@ interface CaptureOptions {
   pixelRatio?: number;
 }
 
+export function buildJpegOptions(
+  width: number,
+  height: number,
+  quality = 0.95,
+  pixelRatio = 2
+) {
+  return {
+    quality,
+    pixelRatio,
+    width,
+    height,
+    canvasWidth: width * pixelRatio,
+    canvasHeight: height * pixelRatio,
+    backgroundColor: '#000000',
+    cacheBust: false,
+    skipFonts: false,
+    style: { transform: 'none', transformOrigin: '0 0' },
+  };
+}
+
 async function waitForImagesLoaded(node: HTMLElement): Promise<void> {
   const images = Array.from(node.querySelectorAll('img'));
   await Promise.all(
@@ -32,20 +52,7 @@ export async function captureNodeToJpeg(
   await waitForImagesLoaded(node);
 
   const { toJpeg } = await import('html-to-image');
-  return toJpeg(node, {
-    quality,
-    pixelRatio,
-    width,
-    height,
-    canvasWidth: width * pixelRatio,
-    canvasHeight: height * pixelRatio,
-    backgroundColor: '#000000',
-    cacheBust: false,
-    skipFonts: false,
-    // Captured node lives inside a preview-scaled wrapper; force identity transform
-    // during capture so output renders at the layout's natural pixel dimensions.
-    style: { transform: 'none', transformOrigin: '0 0' },
-  });
+  return toJpeg(node, buildJpegOptions(width, height, quality, pixelRatio));
 }
 
 export async function downloadTicketAsJpeg(

@@ -29,7 +29,7 @@ export default function TexturePicker({ value, onChange }: TexturePickerProps) {
                 ${
                   active
                     ? 'border-accent bg-accent text-white'
-                    : 'hairline bg-paper text-fg hover:bg-accent-soft'
+                    : 'border-line bg-paper text-fg hover:bg-accent-soft'
                 }`}
             >
               {short}

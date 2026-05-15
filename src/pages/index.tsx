@@ -1,5 +1,187 @@
-import WizardShell from '@/components/wizard/WizardShell';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { usePhototicket } from '@/hooks/usePhototicket';
+import { usePhase } from '@/hooks/usePhase';
+import { useDebounce } from '@/hooks/useDebounce';
+import { useMatchMedia } from '@/hooks/useMatchMedia';
+import { downloadTicketAsJpeg } from '@/utils/captureToImage';
+import { extractColors } from '@/utils/colorExtraction';
+import { getLayout } from '@/utils/layouts';
+import { AppShell } from '@/components/v2/AppShell';
+import { Phase1Canvas } from '@/components/v2/Phase1Canvas';
+import { Phase2Canvas } from '@/components/v2/Phase2Canvas';
+import { PreviewFilmCell } from '@/components/v2/PreviewFilmCell';
+import { PrimaryCta } from '@/components/v2/PrimaryCta';
+import { RailReason } from '@/components/v2/RailReason';
+import { MobileDock } from '@/components/v2/MobileDock';
+import { PreviewLightbox } from '@/components/v2/PreviewLightbox';
+import TicketRenderer from '@/components/TicketRenderer';
+
+type CtaState = 'idle' | 'loading' | 'success' | 'disabled';
 
 export default function Home() {
-  return <WizardShell />;
+  // SSR safe: 초기값 'light', mount 후 localStorage/prefers-color-scheme 읽기
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [ctaState, setCtaState] = useState<CtaState>('idle');
+  const [pendingFetch, setPendingFetch] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const isMobile = useMatchMedia('(max-width: 640px)');
+
+  const ticketRef = useRef<HTMLDivElement>(null);
+  const photo = usePhototicket();
+  const phase = usePhase({ state: photo.state, pendingFetch });
+
+  const { croppedImageUrl } = photo.state;
+  const debouncedMovieInfo = useDebounce(photo.state.movieInfo, 280);
+  const debouncedComponents = useDebounce(photo.state.components, 280);
+
+  // Mount 후 theme 복원
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('phototicket:theme');
+      if (stored === 'dark' || stored === 'light') {
+        setTheme(stored);
+      } else {
+        setTheme(
+          window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        );
+      }
+    } catch {
+      // localStorage 접근 불가 시 기본값 유지
+    }
+  }, []);
+
+  // documentElement 토글 + localStorage 영속
+  useEffect(() => {
+    document.documentElement.classList.toggle('theme-dark', theme === 'dark');
+    try {
+      localStorage.setItem('phototicket:theme', theme);
+    } catch {}
+  }, [theme]);
+
+  // croppedImageUrl 변경 시 색상 추출
+  useEffect(() => {
+    if (!croppedImageUrl) return;
+    let cancelled = false;
+    extractColors(croppedImageUrl)
+      .then((colors) => {
+        if (!cancelled) photo.setRecommendedColors(colors);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [croppedImageUrl]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // success → idle 자동 전환 (2000ms)
+  useEffect(() => {
+    if (ctaState !== 'success') return;
+    const timer = setTimeout(() => setCtaState('idle'), 2000);
+    return () => clearTimeout(timer);
+  }, [ctaState]);
+
+  const handleDownload = useCallback(async () => {
+    const node = ticketRef.current;
+    if (!node || !photo.state.croppedImageUrl) return;
+    const layout = getLayout(photo.state.components.layout);
+    const filename = `phototicket_${layout.id}_${photo.state.movieInfo.title || 'untitled'}.jpg`;
+    setCtaState('loading');
+    try {
+      await downloadTicketAsJpeg(node, {
+        filename,
+        width: layout.width,
+        height: layout.height,
+      });
+      setCtaState('success');
+    } catch (err) {
+      console.error('[export]', err);
+      setCtaState('idle');
+    }
+  }, [photo.state.croppedImageUrl, photo.state.movieInfo.title, photo.state.components.layout]);
+
+  // PreviewFilmCell 상태 계산
+  const previewState = !croppedImageUrl ? 'empty' : ctaState === 'loading' ? 'saving' : 'ready';
+
+  const rail = (
+    <div className="flex flex-col gap-4">
+      <PreviewFilmCell state={previewState}>
+        {/* croppedImageUrl이 있으면 항상 마운트, phase 전환 시 unmount 없음 */}
+        {croppedImageUrl ? (
+          <TicketRenderer
+            ref={ticketRef}
+            croppedImageUrl={croppedImageUrl}
+            movieInfo={debouncedMovieInfo}
+            components={debouncedComponents}
+          />
+        ) : null}
+      </PreviewFilmCell>
+
+      {phase.phase === 2 && (
+        <>
+          <RailReason
+            status={!croppedImageUrl ? 'warn' : 'ok'}
+            message={!croppedImageUrl ? '포스터를 먼저 추가해주세요' : '티켓이 준비됐어요'}
+          />
+          <PrimaryCta
+            state={ctaState}
+            label="JPEG 다운로드"
+            onClick={handleDownload}
+          />
+        </>
+      )}
+    </div>
+  );
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <AppShell
+        theme={theme}
+        onThemeChange={setTheme}
+        currentPhase={phase.phase}
+        onPhaseClick={(p) => {
+          if (p === 2 && phase.canAdvance(1)) phase.goTo(2);
+          if (p === 1) phase.goTo(1);
+        }}
+        canAdvanceToPhase2={phase.canAdvance(1)}
+        rail={rail}
+      >
+        <div style={isMobile ? { paddingBottom: 80 } : {}}>
+          <div key={phase.phase} className="phase-in">
+            {phase.phase === 1 ? (
+              <Phase1Canvas photo={photo} onPendingFetchChange={setPendingFetch} />
+            ) : (
+              <Phase2Canvas photo={photo} onGoBack={() => phase.goTo(1)} />
+            )}
+          </div>
+        </div>
+      </AppShell>
+
+      {isMobile && (
+        <MobileDock
+          previewState={previewState}
+          ctaState={ctaState}
+          phase={phase.phase}
+          canAdvance={phase.canAdvance(1)}
+          hasImage={!!croppedImageUrl}
+          previewThumb={croppedImageUrl ?? undefined}
+          onPreviewClick={() => setLightboxOpen(true)}
+          onCtaClick={phase.phase === 1 ? () => phase.goTo(2) : handleDownload}
+          onGoBack={phase.phase === 2 ? () => phase.goTo(1) : undefined}
+        />
+      )}
+
+      <PreviewLightbox open={lightboxOpen} onClose={() => setLightboxOpen(false)}>
+        {croppedImageUrl ? (
+          <div style={{ pointerEvents: 'none' }}>
+            <TicketRenderer
+              croppedImageUrl={croppedImageUrl}
+              movieInfo={debouncedMovieInfo}
+              components={debouncedComponents}
+            />
+          </div>
+        ) : (
+          <p style={{ color: '#fff', fontSize: 14 }}>포스터를 먼저 추가해주세요</p>
+        )}
+      </PreviewLightbox>
+    </div>
+  );
 }

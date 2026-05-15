@@ -77,7 +77,7 @@ export default function ImageUploader({ onUpload, isProcessing, hasImage = false
         onDrop={handleDrop}
         data-touch="44"
         className={`group relative block w-full overflow-hidden rounded-card border bg-paper p-7 text-left shadow-card transition-colors md:p-9
-          ${isDragging ? 'border-accent bg-accent-soft' : 'hairline hover:border-accent/40'}
+          ${isDragging ? 'border-accent bg-accent-soft' : 'border-line hover:border-accent/40'}
           ${busy ? 'cursor-wait opacity-60' : 'cursor-pointer'}`}
       >
         <div className="flex items-start justify-between gap-6">

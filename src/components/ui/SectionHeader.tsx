@@ -6,7 +6,7 @@ interface SectionHeaderProps {
 
 export default function SectionHeader({ index, title, caption }: SectionHeaderProps) {
   return (
-    <div className="mb-5 flex items-baseline justify-between border-b hairline pb-3">
+    <div className="mb-5 flex items-baseline justify-between border-b border-line pb-3">
       <div className="flex items-baseline gap-3">
         <span className="text-mono text-[11px] uppercase tracking-widest text-accent-ink">
           [{index}]

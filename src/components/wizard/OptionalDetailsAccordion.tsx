@@ -18,7 +18,7 @@ export default function OptionalDetailsAccordion({
   const panelId = `optdetails-${reactId}`;
 
   return (
-    <div className="rounded-card border hairline bg-paper">
+    <div className="rounded-card border border-line bg-paper">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -39,7 +39,7 @@ export default function OptionalDetailsAccordion({
         </span>
       </button>
       {open && (
-        <div id={panelId} className="border-t hairline px-5 py-5">
+        <div id={panelId} className="border-t border-line px-5 py-5">
           {children}
         </div>
       )}

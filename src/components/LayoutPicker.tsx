@@ -27,7 +27,7 @@ function LayoutPicker({ value, onChange }: LayoutPickerProps) {
                 ${
                   active
                     ? 'border-accent bg-accent-soft shadow-card'
-                    : 'hairline bg-paper hover:border-accent/40 hover:bg-accent-soft'
+                    : 'border-line bg-paper hover:border-accent/40 hover:bg-accent-soft'
                 }`}
             >
               <Thumbnail layout={layout} active={active} />

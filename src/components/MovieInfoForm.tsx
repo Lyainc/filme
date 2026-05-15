@@ -152,7 +152,7 @@ export default function MovieInfoForm({
               }
             }}
             placeholder="인터스텔라"
-            className="flex-1 rounded-field border hairline bg-paper px-3.5 py-3 text-[15px] text-fg outline-none transition-colors placeholder:text-fg-faint focus:border-accent focus:ring-2 focus:ring-accent-soft"
+            className="flex-1 rounded-field border border-line bg-paper px-3.5 py-3 text-[15px] text-fg outline-none transition-colors placeholder:text-fg-faint focus:border-accent focus:ring-2 focus:ring-accent-soft"
           />
           <button
             type="button"
@@ -166,7 +166,7 @@ export default function MovieInfoForm({
         </div>
 
         {showResults && (
-          <div className="absolute z-30 mt-2 max-h-72 w-full overflow-y-auto rounded-card border hairline bg-paper shadow-card">
+          <div className="absolute z-30 mt-2 max-h-72 w-full overflow-y-auto rounded-card border border-line bg-paper shadow-card">
             {isSearching ? (
               <div className="text-mono px-4 py-6 text-center text-[11px] uppercase tracking-widest text-fg-faint">
                 Loading…
@@ -183,7 +183,7 @@ export default function MovieInfoForm({
                       type="button"
                       onClick={() => handleSelectMovie(movie)}
                       data-touch="44"
-                      className="block w-full border-b hairline px-4 py-3 text-left transition-colors last:border-0 hover:bg-accent-soft"
+                      className="block w-full border-b border-line px-4 py-3 text-left transition-colors last:border-0 hover:bg-accent-soft"
                     >
                       <div className="text-[15px] font-medium text-fg">{movie.movieNm}</div>
                       <div className="text-mono mt-1 flex items-center gap-2 text-[10px] uppercase tracking-widest text-fg-faint">
@@ -280,7 +280,7 @@ function DateBlock({
         <select
           value={granularity}
           onChange={(e) => onGranularityChange(e.target.value as DateGranularity)}
-          className="text-mono rounded-field border hairline bg-paper px-3 py-3 text-[11px] uppercase tracking-widest text-fg outline-none focus:border-accent"
+          className="text-mono rounded-field border border-line bg-paper px-3 py-3 text-[11px] uppercase tracking-widest text-fg outline-none focus:border-accent"
           aria-label={`${label} 정밀도`}
         >
           {GRANULARITY_OPTIONS.map((g) => (
@@ -290,7 +290,7 @@ function DateBlock({
           ))}
         </select>
         <div
-          className={`text-mono inline-flex flex-1 min-w-[160px] items-center rounded-field border hairline px-3.5 py-3 text-[12px] uppercase tracking-widest ${
+          className={`text-mono inline-flex flex-1 min-w-[160px] items-center rounded-field border border-line px-3.5 py-3 text-[12px] uppercase tracking-widest ${
             hasValue ? 'bg-accent-soft text-fg' : 'bg-paper text-fg-faint'
           }`}
         >
@@ -309,7 +309,7 @@ function DateBlock({
               onClick={() => onTokenChange(opt.value)}
               data-touch="44"
               className={`text-mono inline-flex min-h-touch items-center rounded-chip border px-3 text-[10px] uppercase tracking-widest transition-colors
-                ${active ? 'border-accent bg-accent text-white' : 'hairline bg-paper text-fg hover:bg-accent-soft'}`}
+                ${active ? 'border-accent bg-accent text-white' : 'border-line bg-paper text-fg hover:bg-accent-soft'}`}
             >
               {opt.sample}
             </button>
@@ -368,7 +368,7 @@ function DateInput({
   onChange: (next: string) => void;
 }) {
   const base =
-    'flex-1 min-w-[160px] rounded-field border hairline bg-paper px-3.5 py-3 text-[15px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft';
+    'flex-1 min-w-[160px] rounded-field border border-line bg-paper px-3.5 py-3 text-[15px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft';
   if (granularity === 'year') {
     return (
       <input

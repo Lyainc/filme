@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: ['class', '.theme-dark'],
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx}",
     "./src/components/**/*.{js,ts,jsx,tsx}",
@@ -7,36 +8,41 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // === Wizard light theme ===
-        bg: '#F8F5EE',           // page cream
-        surface: '#FCFAF6',      // raised cards
-        paper: '#FFFFFF',        // device/modal surface (used by bg-paper, bg-paper/25 etc.)
+        // === v2.2 cool-neutral theme (CSS var — responds to .theme-dark) ===
+        bg: 'var(--bg)',
+        surface: 'var(--surface)',
+        'surface-elevated': 'var(--surface-elevated)',
+        paper: 'var(--surface-elevated)',   // backward compat alias
         fg: {
-          DEFAULT: '#2C2622',    // primary text dark brown
-          muted: '#756B62',
-          faint: '#A89E92',
+          DEFAULT: 'var(--fg)',
+          muted: 'var(--fg-muted)',
+          faint: 'var(--fg-faint)',
         },
         accent: {
-          DEFAULT: '#C8704F',    // warm rust
-          soft: 'rgba(200,112,79,0.12)',
-          ink: '#9B5436',
+          DEFAULT: 'var(--accent)',
+          soft: 'var(--accent-soft)',
+          hover: 'var(--accent-hover)',
+          ink: 'var(--accent-ink)',
         },
-        success: '#3A9A56',
-        warn: '#D9A248',
-        danger: '#D6422F',
+        'border-strong': 'var(--border-strong)',
+        'focus-ring': 'var(--focus-ring)',
+        success: 'var(--success)',
+        warn: 'var(--warn)',
+        danger: 'var(--danger)',
 
-        // wizard hairline border (Tailwind's `border` token name conflicts with
-        // Preflight's borderColor.DEFAULT — keep this as `hairline`).
-        hairline: '#E5DFD3',
+        // design-system border token — use border-line, bg-line for dividers/separators
+        line: 'var(--border)',
       },
       fontFamily: {
         sans: ['var(--font-sans)', '"Pretendard Variable"', 'Pretendard', 'system-ui', '"Apple SD Gothic Neo"', '"Noto Sans KR"', 'sans-serif'],
         mono: ['var(--font-mono)', '"JetBrains Mono"', 'ui-monospace', 'Menlo', 'monospace'],
       },
       borderRadius: {
-        field: '12px',
+        field: '12px',       // backward compat (Stage 2에서 컴포넌트 클래스 교체)
+        'field-sm': '10px',  // v2.2 신규 (--r-field: 10px)
         card: '18px',
         modal: '22px',
+        shell: '20px',       // v2.2 --r-shell
         chip: '9999px',
       },
       spacing: {
@@ -54,9 +60,14 @@ module.exports = {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
         },
+        'sprocket-spin': {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 0.4s ease-out forwards',
+        'sprocket-spin': 'sprocket-spin 1.4s linear infinite',
       },
     },
   },

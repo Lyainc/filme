@@ -1,0 +1,73 @@
+import { useRef } from 'react';
+import { Sprocket } from './Sprocket';
+
+type CtaState = 'idle' | 'loading' | 'success' | 'disabled';
+
+interface PrimaryCtaProps {
+  state?: CtaState;
+  label?: string;
+  successLabel?: string;
+  onClick?: () => void;
+  className?: string;
+}
+
+function CheckIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
+      <path d="M10.28 2.28 4.75 7.81 1.72 4.78.28 6.22l4.47 4.47 7-7-1.47-1.41z" />
+    </svg>
+  );
+}
+
+export function PrimaryCta({
+  state = 'idle',
+  label = '티켓 저장',
+  successLabel = '저장됨!',
+  onClick,
+  className = '',
+}: PrimaryCtaProps) {
+  const prefersReducedMotion = useRef(
+    typeof window !== 'undefined'
+      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      : false
+  );
+
+  const isDisabled = state === 'disabled' || state === 'loading';
+
+  return (
+    <button
+      type="button"
+      onClick={isDisabled ? undefined : onClick}
+      disabled={isDisabled}
+      aria-busy={state === 'loading'}
+      className={`w-full min-h-[44px] rounded-field-sm flex items-center justify-center gap-2 font-semibold text-sm transition-colors duration-150 ${
+        state === 'disabled'
+          ? 'opacity-50 cursor-not-allowed bg-accent text-white'
+          : state === 'success'
+          ? 'bg-success text-white cursor-default'
+          : 'bg-accent text-white hover:bg-accent-hover cursor-pointer'
+      } ${className}`}
+    >
+      {state === 'loading' && (
+        <>
+          <span className={prefersReducedMotion.current ? '' : 'animate-sprocket-spin'}>
+            <Sprocket size={16} />
+          </span>
+          <span>저장 중...</span>
+        </>
+      )}
+      {state === 'success' && (
+        <>
+          <CheckIcon />
+          <span>{successLabel}</span>
+        </>
+      )}
+      {(state === 'idle' || state === 'disabled') && (
+        <>
+          <Sprocket size={16} />
+          <span>{label}</span>
+        </>
+      )}
+    </button>
+  );
+}
