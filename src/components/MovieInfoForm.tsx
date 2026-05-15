@@ -37,11 +37,8 @@ export default function MovieInfoForm({
 
   useEffect(() => {
     onPendingFetchChange?.(isFetchingDetail);
-  }, [isFetchingDetail, onPendingFetchChange]);
-
-  useEffect(() => {
     return () => onPendingFetchChange?.(false);
-  }, [onPendingFetchChange]);
+  }, [isFetchingDetail, onPendingFetchChange]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

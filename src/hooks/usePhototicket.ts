@@ -36,17 +36,14 @@ const INITIAL_STATE: PhototicketState = {
 
 export function usePhototicket() {
   const [state, setState] = useState<PhototicketState>(INITIAL_STATE);
-  const [isProcessing, setIsProcessing] = useState(false);
   const latestUrlRef = useRef<string | null>(null);
 
   const handleImageUpload = useCallback((croppedUrl: string) => {
-    setIsProcessing(true);
     setState((prev) => {
       if (prev.croppedImageUrl) URL.revokeObjectURL(prev.croppedImageUrl);
       latestUrlRef.current = croppedUrl;
       return { ...prev, croppedImageUrl: croppedUrl };
     });
-    setIsProcessing(false);
   }, []);
 
   const updateMovieInfo = useCallback((info: Partial<MovieInfo>) => {
@@ -69,7 +66,6 @@ export function usePhototicket() {
 
   return {
     state,
-    isProcessing,
     handleImageUpload,
     updateMovieInfo,
     updateComponents,

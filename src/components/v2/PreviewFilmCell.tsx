@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 
 type PreviewState = 'empty' | 'updating' | 'ready' | 'saving' | 'saved';
 
@@ -39,15 +39,23 @@ export function PreviewFilmCell({
   badge,
   className = '',
 }: PreviewFilmCellProps) {
-  const [displayState, setDisplayState] = useState<PreviewState>(state);
+  const [savedDone, setSavedDone] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    setDisplayState(state);
     if (state === 'saved') {
-      const timer = setTimeout(() => setDisplayState('ready'), 2000);
-      return () => clearTimeout(timer);
+      setSavedDone(false);
+      timerRef.current = setTimeout(() => setSavedDone(true), 2000);
+    } else {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      setSavedDone(false);
     }
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, [state]);
+
+  const displayState = state === 'saved' && savedDone ? 'ready' : state;
 
   const showOverlay = displayState === 'updating' || displayState === 'saving' || displayState === 'saved';
   const overlayLabel =

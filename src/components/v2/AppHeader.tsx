@@ -25,7 +25,7 @@ export function AppHeader({
     },
     {
       label: '티켓 디자인',
-      status: (currentPhase === 2 ? 'active' : canAdvanceToPhase2 ? 'pending' : 'pending') as 'done' | 'active' | 'pending',
+      status: (currentPhase === 2 ? 'active' : 'pending') as 'done' | 'active' | 'pending',
       onClick: canAdvanceToPhase2 && onPhaseClick ? () => onPhaseClick(2) : undefined,
     },
   ];

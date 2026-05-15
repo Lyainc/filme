@@ -23,7 +23,6 @@ export function AppShell({
   return (
     <div
       data-theme={theme}
-      className={theme === 'dark' ? 'theme-dark' : ''}
       style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}
     >
       <AppHeader

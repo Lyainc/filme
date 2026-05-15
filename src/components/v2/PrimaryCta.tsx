@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useMatchMedia } from '@/hooks/useMatchMedia';
 import { Sprocket } from './Sprocket';
 
 type CtaState = 'idle' | 'loading' | 'success' | 'disabled';
@@ -26,12 +26,7 @@ export function PrimaryCta({
   onClick,
   className = '',
 }: PrimaryCtaProps) {
-  const prefersReducedMotion = useRef(
-    typeof window !== 'undefined'
-      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      : false
-  );
-
+  const prefersReducedMotion = useMatchMedia('(prefers-reduced-motion: reduce)');
   const isDisabled = state === 'disabled' || state === 'loading';
 
   return (
@@ -50,7 +45,7 @@ export function PrimaryCta({
     >
       {state === 'loading' && (
         <>
-          <span className={prefersReducedMotion.current ? '' : 'animate-sprocket-spin'}>
+          <span className={prefersReducedMotion ? '' : 'animate-sprocket-spin'}>
             <Sprocket size={16} />
           </span>
           <span>저장 중...</span>

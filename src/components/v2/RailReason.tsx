@@ -12,18 +12,11 @@ const DOT_STYLE: Record<ReasonStatus, string> = {
   danger: 'bg-danger',
 };
 
-const TEXT_STYLE: Record<ReasonStatus, string> = {
-  idle: 'text-fg-muted',
-  ok: 'text-fg',
-  warn: 'text-fg',
-  danger: 'text-fg',
-};
-
 export function RailReason({ status = 'idle', message }: RailReasonProps) {
   if (!message) return null;
 
   return (
-    <div className={`flex items-center gap-2 text-sm ${TEXT_STYLE[status]}`}>
+    <div className={`flex items-center gap-2 text-sm ${status === 'idle' ? 'text-fg-muted' : 'text-fg'}`}>
       <span
         className={`inline-block w-2 h-2 rounded-full shrink-0 ${DOT_STYLE[status]}`}
         aria-hidden="true"

@@ -42,7 +42,7 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
         <div className="grid grid-cols-2 gap-4">
           <ImageUploader
             onUpload={photo.handleImageUpload}
-            isProcessing={photo.isProcessing}
+            isProcessing={false}
             hasImage={!!photo.state.croppedImageUrl}
           />
           <OcrUploadCard />
