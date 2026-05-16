@@ -18,6 +18,10 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
+    "types": [
+      "node",
+      "bun-types"
+    ],
     "paths": {
       "@/*": [
         "./src/*"

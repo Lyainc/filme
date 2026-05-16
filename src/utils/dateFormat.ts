@@ -24,13 +24,21 @@ const MONTHS_SHORT = [
  *   formatDate('2014-11', 'cinema-mono', 'year-month') → 'NOV 2014'
  *   formatDate('2014', 'en-long', 'year')           → '2014'
  */
+/** Matches a variable-length ISO date with optionally non-padded month/day. */
+const ISO_RE = /^\d{4}(-\d{1,2}(-\d{1,2})?)?$/;
+
 export function formatDate(
   iso: string | undefined,
   token: DateFormatToken = 'kr-compact',
   granularity: DateGranularity = 'date'
 ): string {
-  if (!iso) return '';
-  const [y, m, d] = iso.split('-');
+  if (!iso || !ISO_RE.test(iso)) return '';
+  // Normalize digit-width: parse each part to an int, re-pad to 2 digits so
+  // a non-padded ISO like '2014-1-6' formats correctly across all tokens.
+  const raw = iso.split('-');
+  const y = raw[0];
+  const m = raw[1] != null ? String(parseInt(raw[1], 10)).padStart(2, '0') : undefined;
+  const d = raw[2] != null ? String(parseInt(raw[2], 10)).padStart(2, '0') : undefined;
   if (!y) return '';
   if (granularity === 'year' || !m) return y;
 
@@ -43,6 +51,7 @@ export function formatDate(
       case 'kr-compact': return `${y}.${m}`;
       case 'cinema-mono': return `${MONTHS_SHORT[mi]} ${y}`;
       case 'en-long': return `${MONTHS_LONG[mi]} ${y}`;
+      default: return `${y}-${m}`;
     }
   }
 
@@ -51,6 +60,7 @@ export function formatDate(
     case 'kr-compact': return `${y}.${m}.${d}`;
     case 'cinema-mono': return `${d}·${MONTHS_SHORT[mi]}·${y}`;
     case 'en-long': return `${MONTHS_LONG[mi]} ${parseInt(d, 10)}, ${y}`;
+    default: return `${y}-${m}-${d}`;
   }
 }
 

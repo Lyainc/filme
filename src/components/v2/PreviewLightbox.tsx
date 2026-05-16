@@ -8,6 +8,7 @@ interface PreviewLightboxProps {
 
 export function PreviewLightbox({ open, onClose, children }: PreviewLightboxProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -17,6 +18,19 @@ export function PreviewLightbox({ open, onClose, children }: PreviewLightboxProp
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [open, onClose]);
+
+  // 포커스 이동·복원 + body 스크롤 잠금
+  useEffect(() => {
+    if (!open) return;
+    const prevActive = document.activeElement as HTMLElement | null;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    closeBtnRef.current?.focus();
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      prevActive?.focus();
+    };
+  }, [open]);
 
   if (!open) return null;
 
@@ -41,6 +55,7 @@ export function PreviewLightbox({ open, onClose, children }: PreviewLightboxProp
       }}
     >
       <button
+        ref={closeBtnRef}
         type="button"
         onClick={onClose}
         aria-label="닫기"

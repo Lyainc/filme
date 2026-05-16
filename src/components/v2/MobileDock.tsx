@@ -70,7 +70,7 @@ export function MobileDock({
         WebkitBackdropFilter: 'blur(14px)',
         zIndex: 40,
         borderTop: '1px solid var(--border)',
-        background: 'var(--surface-80, rgba(var(--surface-rgb, 255 255 255) / 0.8))',
+        background: 'var(--surface-translucent)',
       }}
     >
       <div className="flex items-center gap-3 px-4 py-3">
@@ -84,7 +84,7 @@ export function MobileDock({
             flexShrink: 0,
             borderRadius: 6,
             overflow: 'hidden',
-            background: 'var(--surface-raised, #000)',
+            background: 'var(--surface-elevated)',
             border: '1px solid var(--border)',
             display: 'flex',
             alignItems: 'center',
@@ -99,7 +99,7 @@ export function MobileDock({
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
           ) : (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary, #888)" strokeWidth="1.5" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--fg-faint)" strokeWidth="1.5" aria-hidden="true">
               <rect x="3" y="3" width="18" height="18" rx="2" />
               <path d="M3 9h18M9 3v18" />
             </svg>
@@ -119,7 +119,7 @@ export function MobileDock({
                 borderRadius: 8,
                 border: '1px solid var(--border)',
                 background: 'transparent',
-                color: 'var(--text-secondary)',
+                color: 'var(--fg-muted)',
                 fontSize: 13,
                 fontWeight: 500,
                 cursor: 'pointer',

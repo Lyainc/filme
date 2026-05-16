@@ -6,7 +6,6 @@ interface PreviewFilmCellProps {
   state?: PreviewState;
   children?: ReactNode;
   mountSlot?: HTMLElement;
-  badge?: ReactNode;
   className?: string;
 }
 
@@ -36,7 +35,6 @@ function PerforationStrip() {
 export function PreviewFilmCell({
   state = 'empty',
   children,
-  badge,
   className = '',
 }: PreviewFilmCellProps) {
   const [savedDone, setSavedDone] = useState(false);
@@ -89,10 +87,6 @@ export function PreviewFilmCell({
       </div>
 
       <PerforationStrip />
-
-      {badge && (
-        <div className="absolute top-3 right-3 z-20">{badge}</div>
-      )}
     </div>
   );
 }

@@ -12,6 +12,8 @@
     --bg: #F4F5F7;
     --surface: #F9FAFB;
     --surface-elevated: #FFFFFF;
+    /* 반투명 surface — backdrop-blur 위에 깔리는 dock/bar 배경용 */
+    --surface-translucent: rgba(244, 245, 247, 0.8);
     --fg: #14171A;
     --fg-muted: #6B7280;
     --fg-faint: #9AA1AC;
@@ -44,6 +46,7 @@
     --bg: #0E1012;
     --surface: #161A1C;
     --surface-elevated: #1E2326;
+    --surface-translucent: rgba(14, 16, 18, 0.8);
     --fg: #E8EAED;
     --fg-muted: #9AA1AC;
     --fg-faint: #6B7280;

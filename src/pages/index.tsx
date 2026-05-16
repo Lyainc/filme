@@ -31,6 +31,7 @@ export default function Home() {
   const phase = usePhase({ state: photo.state, pendingFetch });
 
   const { croppedImageUrl } = photo.state;
+  const { setRecommendedColors } = photo;
   const debouncedMovieInfo = useDebounce(photo.state.movieInfo, 280);
   const debouncedComponents = useDebounce(photo.state.components, 280);
 
@@ -58,13 +59,13 @@ export default function Home() {
     let cancelled = false;
     extractColors(croppedImageUrl)
       .then((colors) => {
-        if (!cancelled) photo.setRecommendedColors(colors);
+        if (!cancelled) setRecommendedColors(colors);
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [croppedImageUrl]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [croppedImageUrl, setRecommendedColors]);
 
   // success → idle 자동 전환 (2000ms)
   useEffect(() => {

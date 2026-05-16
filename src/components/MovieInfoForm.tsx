@@ -228,8 +228,9 @@ export default function MovieInfoForm({
         granularity={releaseGran}
         token={releaseFmt}
         onGranularityChange={(releaseDateGranularity) => {
-          const trimmed = truncateToGranularity(movieInfo.releaseDate || '', releaseDateGranularity);
-          onChange({ releaseDateGranularity, releaseDate: trimmed });
+          // releaseDate is always kept as full ISO — formatDate handles
+          // graceful degradation per granularity, so no truncation here.
+          onChange({ releaseDateGranularity });
         }}
         onTokenChange={(releaseDateFormat) => onChange({ releaseDateFormat })}
       />
@@ -355,6 +356,18 @@ function ReissueBlock({
   );
 }
 
+/**
+ * Merge a coarser-granularity edit back onto a stored full-ISO value so that
+ * switching granularity (e.g. date → year) and back doesn't discard precision.
+ * If the edit shares a prefix with the stored value, the stored finer parts
+ * are kept; otherwise the edit replaces the value outright.
+ */
+function mergeDatePrefix(stored: string, edit: string): string {
+  if (!stored || !edit) return edit;
+  if (stored === edit || stored.startsWith(`${edit}-`)) return stored;
+  return edit;
+}
+
 function DateInput({
   value,
   granularity,
@@ -366,16 +379,19 @@ function DateInput({
 }) {
   const base =
     'flex-1 min-w-[160px] rounded-field border border-line bg-paper px-3.5 py-3 text-[15px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft';
+  const parts = value ? value.split('-') : [];
   if (granularity === 'year') {
+    // Display only the year part; preserve stored month/day on edit.
+    const yearView = parts[0] || '';
     return (
       <input
         type="number"
         min={1900}
         max={2099}
-        value={value || ''}
+        value={yearView}
         onChange={(e) => {
           const v = e.target.value.replace(/[^\d]/g, '').slice(0, 4);
-          onChange(v);
+          onChange(mergeDatePrefix(value, v));
         }}
         placeholder="2014"
         className={base}
@@ -383,11 +399,13 @@ function DateInput({
     );
   }
   if (granularity === 'year-month') {
+    // type="month" expects YYYY-MM; trim a stored full ISO down to that.
+    const monthView = parts.length >= 2 ? `${parts[0]}-${parts[1]}` : '';
     return (
       <input
         type="month"
-        value={value || ''}
-        onChange={(e) => onChange(e.target.value)}
+        value={monthView}
+        onChange={(e) => onChange(mergeDatePrefix(value, e.target.value))}
         className={base}
       />
     );
@@ -400,13 +418,6 @@ function DateInput({
       className={base}
     />
   );
-}
-
-function truncateToGranularity(iso: string, g: DateGranularity): string {
-  if (!iso) return '';
-  if (g === 'year') return iso.split('-')[0] || '';
-  if (g === 'year-month') return iso.split('-').slice(0, 2).join('-');
-  return iso;
 }
 
 /** KOBIS openDt (YYYYMMDD) → ISO 'YYYY-MM-DD'. Empty/invalid → ''. */

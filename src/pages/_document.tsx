@@ -5,8 +5,9 @@ const themeScript = `
   const t=localStorage.getItem('phototicket:theme');
   const dark=t==='dark'||(t!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);
   if(dark)document.documentElement.classList.add('theme-dark');
-  const m=document.querySelector('meta[name="theme-color"]');
-  if(m)m.setAttribute('content',dark?'#0E1012':'#F4F5F7');
+  var m=document.querySelector('meta[name="theme-color"]');
+  if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');document.head.appendChild(m);}
+  m.setAttribute('content',dark?'#0E1012':'#F4F5F7');
 }catch(e){}}());
 `.trim();
 

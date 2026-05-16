@@ -31,18 +31,18 @@ export default function RatingPicker({ value, show, onValueChange, onShowChange 
           <div
             className="flex gap-1.5"
             onMouseLeave={() => setHover(0)}
-            role="slider"
-            aria-valuemin={0}
-            aria-valuemax={5}
-            aria-valuenow={value}
+            role="radiogroup"
+            aria-label="별점"
           >
             {[1, 2, 3, 4, 5].map((star) => (
               <button
                 key={star}
                 type="button"
+                role="radio"
+                aria-checked={value >= star}
                 onClick={(e) => onValueChange(computeRating(e, star))}
                 onMouseMove={(e) => setHover(computeRating(e, star))}
-                aria-label={`${star} stars`}
+                aria-label={`${star}점`}
                 data-touch="44"
                 className="relative inline-flex min-h-touch min-w-touch items-center justify-center"
               >
