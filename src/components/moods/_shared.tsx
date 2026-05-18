@@ -119,6 +119,9 @@ interface PosterProps {
   posterOpacity?: number;
 }
 
+const PRINT_SIM = 'saturate(0.92) contrast(1.05)';
+
+// vintage/newspaper have intentional contrast curves — no PRINT_SIM stacking
 const TEXTURE_FILTERS: Record<string, string> = {
   vintage: 'sepia(0.6) contrast(1.1) brightness(0.9)',
   newspaper: 'grayscale(1) contrast(1.5) brightness(1.2)',
@@ -131,7 +134,7 @@ export function Poster({
   texture = 'original',
   posterOpacity = 0.5,
 }: PosterProps) {
-  const filter = TEXTURE_FILTERS[texture];
+  const filter = TEXTURE_FILTERS[texture] ?? PRINT_SIM;
 
   return (
     <div
@@ -326,7 +329,9 @@ export const Barcode = memo(function Barcode({
       {showText && (
         <span
           style={{
-            font: `600 ${textSize}px ${FONT_MONO}`,
+            fontWeight: 600,
+            fontSize: textSize,
+            fontFamily: FONT_MONO,
             color,
             letterSpacing: 2,
             writingMode: orientation === 'horizontal' ? 'horizontal-tb' : 'vertical-rl',

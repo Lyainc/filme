@@ -5,6 +5,7 @@ import { MoodMinimal } from './moods/MoodMinimal';
 import { MoodCriterion } from './moods/MoodCriterion';
 import { Mood35mm } from './moods/Mood35mm';
 import { MoodEditorial } from './moods/MoodEditorial';
+import { FinishLayer } from './FinishLayer';
 import { getLayout } from '@/utils/layouts';
 import type { LayoutId, MovieInfo, TicketComponents } from '@/types';
 
@@ -67,6 +68,11 @@ const TicketRenderer = forwardRef<HTMLDivElement, TicketRendererProps>(function 
           croppedImageUrl={croppedImageUrl}
           movieInfo={movieInfo}
           components={components}
+        />
+        <FinishLayer
+          vignette={components.vignette}
+          temperature={components.temperature}
+          grain={components.grain}
         />
       </div>
     </div>
