@@ -2,6 +2,7 @@ import { CSSProperties } from 'react';
 import {
   Barcode,
   ChainStamp,
+  EditionMark,
   FONT_KR,
   FONT_MONO,
   FONT_SANS,
@@ -11,6 +12,7 @@ import {
   isInkLight,
   pickTitleSize,
   resolveBookingNo,
+  resolveSerialNo,
 } from './_shared';
 import { formatDate } from '@/utils/dateFormat';
 
@@ -45,6 +47,7 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl }: MoodP
   const topPanelBg = isLight ? 'rgba(255,255,255,0.92)' : 'rgba(0,0,0,0.55)';
 
   const bookingNo = resolveBookingNo(d);
+  const serialNo = resolveSerialNo(d);
   const watchToken = d.watchDateFormat || 'kr-compact';
   const releaseToken = d.releaseDateFormat || 'kr-compact';
   const releaseGran = d.releaseDateGranularity || 'date';
@@ -268,6 +271,13 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl }: MoodP
           >
             {components.format && <FormatStamp format={components.format} size={0.9} />}
             <Barcode value={bookingNo} color={ink} width={180} height={34} textSize={10} />
+            <EditionMark
+              serialNo={serialNo}
+              collectionNo={d.collectionNo}
+              surface={isLight ? 'paper' : 'dark'}
+              ink={ink}
+              size={11}
+            />
           </div>
         </div>
       </div>

@@ -165,6 +165,25 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
             placeholder="T-20260510-0014"
           />
 
+          <div className="grid grid-cols-2 gap-4">
+            <Field
+              id="p1-serialNo"
+              label="Serial No."
+              optional
+              value={movieInfo.serialNo || ''}
+              onChange={(e) => setInfo({ serialNo: e.target.value })}
+              placeholder="자동 부여"
+            />
+            <Field
+              id="p1-collectionNo"
+              label="Collection No."
+              optional
+              value={movieInfo.collectionNo || ''}
+              onChange={(e) => setInfo({ collectionNo: e.target.value })}
+              placeholder="03 / 12"
+            />
+          </div>
+
           <RatingPicker
             value={movieInfo.rating}
             show={movieInfo.showRating !== false}

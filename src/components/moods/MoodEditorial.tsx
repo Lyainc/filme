@@ -1,6 +1,7 @@
 import {
   Barcode,
   ChainStamp,
+  EditionMark,
   FONT_KR,
   FONT_MONO,
   FONT_SANS,
@@ -11,6 +12,7 @@ import {
   Poster,
   pickTitleSize,
   resolveBookingNo,
+  resolveSerialNo,
 } from './_shared';
 import { formatDate } from '@/utils/dateFormat';
 
@@ -25,6 +27,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl }: Moo
   const accent = themeColor.toLowerCase() === '#ffffff' ? '#a8312a' : themeColor;
   const titleSize = pickTitleSize(d.title.length, [124, 102, 80, 60]);
   const bookingNo = resolveBookingNo(d);
+  const serialNo = resolveSerialNo(d);
   const watchToken = d.watchDateFormat || 'kr-compact';
   const releaseToken = d.releaseDateFormat || 'kr-compact';
   const releaseGran = d.releaseDateGranularity || 'date';
@@ -246,6 +249,15 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl }: Moo
               }}
             >
               {bookingNo}
+            </div>
+            <div style={{ marginTop: 7 }}>
+              <EditionMark
+                serialNo={serialNo}
+                collectionNo={d.collectionNo}
+                surface="paper"
+                ink={PAPER_DIM}
+                size={11}
+              />
             </div>
           </div>
           <div

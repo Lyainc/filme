@@ -1,6 +1,7 @@
 import {
   Barcode,
   ChainStamp,
+  EditionMark,
   FONT_KR,
   FONT_MONO,
   FONT_SANS,
@@ -11,6 +12,7 @@ import {
   isInkLight,
   pickTitleSize,
   resolveBookingNo,
+  resolveSerialNo,
 } from './_shared';
 import { formatDate } from '@/utils/dateFormat';
 
@@ -28,6 +30,7 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl }: Moo
   const spineDivider = isLight ? '#0d0c0a' : ink;
 
   const bookingNo = resolveBookingNo(d);
+  const serialNo = resolveSerialNo(d);
   const bookingTail = bookingNo.split('-').pop() || '0000';
   const watchYear = d.watchDate ? (d.watchDate.match(/\d{4}/) || [''])[0] : '';
   const watchToken = d.watchDateFormat || 'kr-compact';
@@ -244,6 +247,16 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl }: Moo
           ]
             .filter(Boolean)
             .join('  ·  ')}
+        </div>
+        <div style={{ marginTop: 16, opacity: 0.85 }}>
+          <EditionMark
+            serialNo={serialNo}
+            collectionNo={d.collectionNo}
+            surface={isLight ? 'paper' : 'dark'}
+            ink={ink}
+            size={14}
+            letterSpacing={3}
+          />
         </div>
       </div>
 

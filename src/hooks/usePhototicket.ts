@@ -21,6 +21,8 @@ const INITIAL_STATE: PhototicketState = {
     showRating: true,
     runtime: '',
     bookingNumber: '',
+    serialNo: '',
+    collectionNo: '',
   },
   components: {
     layout: 'minimal',

@@ -2,6 +2,7 @@ import { CSSProperties } from 'react';
 import {
   Barcode,
   ChainStamp,
+  EditionMark,
   FONT_KR,
   FONT_MONO,
   FONT_SANS,
@@ -11,6 +12,7 @@ import {
   Poster,
   pickTitleSize,
   resolveBookingNo,
+  resolveSerialNo,
 } from './_shared';
 import { formatDate } from '@/utils/dateFormat';
 
@@ -44,6 +46,7 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl }: MoodProp
     'linear-gradient(180deg, rgba(10,10,10,0) 0%, rgba(10,10,10,0.55) 18%, rgba(10,10,10,0.92) 60%, rgba(10,10,10,0.98) 100%)';
 
   const bookingNo = resolveBookingNo(d);
+  const serialNo = resolveSerialNo(d);
   const watchToken = d.watchDateFormat || 'kr-compact';
   const releaseToken = d.releaseDateFormat || 'kr-compact';
   const releaseGran = d.releaseDateGranularity || 'date';
@@ -240,6 +243,16 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl }: MoodProp
                 </span>
               </>
             )}
+          </div>
+
+          <div style={{ marginBottom: 14 }}>
+            <EditionMark
+              serialNo={serialNo}
+              collectionNo={d.collectionNo}
+              surface="dark"
+              ink={FS_INK}
+              size={12}
+            />
           </div>
 
           <div

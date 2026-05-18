@@ -345,6 +345,63 @@ export const Barcode = memo(function Barcode({
   );
 });
 
+interface EditionMarkProps {
+  serialNo: string;
+  collectionNo?: string;
+  /** Picks default ink when `ink` is omitted. */
+  surface: Surface;
+  ink?: string;
+  font?: string;
+  size?: number;
+  letterSpacing?: number;
+}
+
+/**
+ * Compact edition token — "SERIAL No.0042 · COLL 03 / 12".
+ * Pass `font` to match the host mood's tone (mono / serif / sans).
+ */
+export function EditionMark({
+  serialNo,
+  collectionNo,
+  surface,
+  ink,
+  font = FONT_MONO,
+  size = 13,
+  letterSpacing = 2.4,
+}: EditionMarkProps) {
+  const color = ink ?? (surface === 'dark' ? '#f4ede0' : '#0d0c0a');
+  return (
+    <div
+      style={{
+        display: 'inline-flex',
+        alignItems: 'baseline',
+        gap: 12,
+        fontWeight: 700,
+        fontSize: size,
+        fontFamily: font,
+        letterSpacing,
+        textTransform: 'uppercase',
+        color,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <span>
+        <span style={{ opacity: 0.5 }}>Serial </span>
+        <span>No.{serialNo}</span>
+      </span>
+      {collectionNo && (
+        <>
+          <span style={{ opacity: 0.35 }}>·</span>
+          <span>
+            <span style={{ opacity: 0.5 }}>Coll </span>
+            <span>{collectionNo}</span>
+          </span>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function HorizontalSprockets({
   count = 14,
   height = 64,
@@ -458,6 +515,12 @@ export function fallbackBookingNumber(seed: string): string {
 
 export function resolveBookingNo(d: MovieInfo): string {
   return d.bookingNumber || fallbackBookingNumber(d.title || 'phototicket');
+}
+
+export function resolveSerialNo(d: MovieInfo): string {
+  if (d.serialNo) return d.serialNo;
+  const seed = 'serial::' + (d.title || 'phototicket') + (d.bookingNumber || '');
+  return String(seedFromString(seed) % 10000).padStart(4, '0');
 }
 
 export function pickTitleSize(len: number, sizes: [number, number, number, number]): number {

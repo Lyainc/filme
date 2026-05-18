@@ -70,6 +70,7 @@ export function Phase2Canvas({ photo, onGoBack }: Phase2CanvasProps) {
         <TexturePicker
           value={components.texture}
           onChange={(texture) => setComp({ texture })}
+          croppedImageUrl={photo.state.croppedImageUrl}
         />
       </section>
 
