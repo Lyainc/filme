@@ -171,7 +171,10 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl }: Moo
         {d.titleOg && (
           <div
             style={{
-              font: `italic 400 36px ${FONT_SERIF}`,
+              fontStyle: 'italic',
+              fontWeight: 400,
+              fontSize: 36,
+              fontFamily: FONT_SERIF,
               letterSpacing: 1,
               opacity: 0.92,
               marginBottom: 16,
@@ -355,7 +358,10 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl }: Moo
           </div>
           <div
             style={{
-              font: `italic 400 13px ${FONT_SERIF}`,
+              fontStyle: 'italic',
+              fontWeight: 400,
+              fontSize: 13,
+              fontFamily: FONT_SERIF,
               opacity: 0.85,
               marginTop: 4,
             }}
@@ -377,7 +383,10 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl }: Moo
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          font: `italic 900 16px ${FONT_SERIF}`,
+          fontStyle: 'italic',
+          fontWeight: 900,
+          fontSize: 16,
+          fontFamily: FONT_SERIF,
           color: ink,
           opacity: 0.85,
           letterSpacing: -0.5,

@@ -133,7 +133,10 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl }: Moo
         <div style={{ paddingTop: 30, paddingBottom: 28 }}>
           <div
             style={{
-              font: `italic 500 22px ${FONT_SERIF}`,
+              fontStyle: 'italic',
+              fontWeight: 500,
+              fontSize: 22,
+              fontFamily: FONT_SERIF,
               color: accent,
               marginBottom: 14,
               letterSpacing: 0.3,
@@ -158,7 +161,10 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl }: Moo
             <div
               style={{
                 marginTop: 14,
-                font: `italic 400 32px ${FONT_SERIF}`,
+                fontStyle: 'italic',
+                fontWeight: 400,
+                fontSize: 32,
+                fontFamily: FONT_SERIF,
                 color: PAPER_DEEP,
                 opacity: 0.7,
                 letterSpacing: 0.3,
@@ -195,7 +201,10 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl }: Moo
             <div style={{ gridColumn: '1 / -1', marginTop: 4 }}>
               <div
                 style={{
-                  font: `italic 500 16px ${FONT_SERIF}`,
+                  fontStyle: 'italic',
+                  fontWeight: 500,
+                  fontSize: 16,
+                  fontFamily: FONT_SERIF,
                   color: accent,
                   marginBottom: 6,
                   letterSpacing: 0.3,
@@ -235,7 +244,10 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl }: Moo
           <div>
             <div
               style={{
-                font: `italic 400 13px ${FONT_SERIF}`,
+                fontStyle: 'italic',
+                fontWeight: 400,
+                fontSize: 13,
+                fontFamily: FONT_SERIF,
                 color: PAPER_DIM,
                 letterSpacing: 0.3,
                 marginBottom: 2,
@@ -317,7 +329,10 @@ function MetaCell({
     <div>
       <div
         style={{
-          font: `italic 500 17px ${FONT_SERIF}`,
+          fontStyle: 'italic',
+          fontWeight: 500,
+          fontSize: 17,
+          fontFamily: FONT_SERIF,
           color: PAPER_DIM,
           letterSpacing: 0.3,
           marginBottom: 6,
