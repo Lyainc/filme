@@ -75,3 +75,10 @@ CODEX.md
 
 # 자동 생성 자산 매니페스트 (predev/prebuild가 재생성 — 커밋 안 함)
 /src/utils/assets.generated.ts
+
+# autonomous-dev-loop v4 audit harness (세션 산출물, 커밋 안 함)
+PROGRESS.md
+AUDIT_REPORT.md
+audit-test-runner.sh
+autonomous-dev-loop.v4.md
+.audit-baseline/
