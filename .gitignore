@@ -54,6 +54,9 @@ PHASE2_LESSONS.md
 PHASE3_LESSONS.md
 prototype.html
 
+# 디자인 시안 및 와이어프레임 HTML 파일
+/public/opendesign/
+
 # IDE 설정 (개인 선호도)
 .vscode/
 .idea/
