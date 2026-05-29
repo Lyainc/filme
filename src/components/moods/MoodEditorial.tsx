@@ -40,6 +40,10 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
   const releaseClean = formatDate(d.releaseDate, releaseToken, releaseGran);
   const reissueClean = d.isReissue ? formatDate(d.reissueDate, releaseToken, releaseGran) : '';
   const watchYear = d.watchDate ? d.watchDate.slice(0, 4) : '';
+  const theaterValue = gate(fv?.theater, d.theater) || gate(fv?.screen, d.screen);
+  const theaterSub = gate(fv?.theater, d.theater) ? gate(fv?.screen, d.screen) : '';
+  const sessionValue = gate(fv?.watchDate, watchDateClean) || gate(fv?.watchTime, d.watchTime);
+  const sessionSub = gate(fv?.watchDate, watchDateClean) ? gate(fv?.watchTime, d.watchTime) : '';
 
   return (
     <div
@@ -193,11 +197,20 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
             borderBottom: `1px solid ${PAPER_DEEP}`,
           }}
         >
-          {gate(fv?.theater, d.theater) && (
-            <MetaCell label="Théâtre" value={gate(fv?.theater, d.theater)} sub={gate(fv?.screen, d.screen) || undefined} />
+          {theaterValue && (
+            <MetaCell
+              label={gate(fv?.theater, d.theater) ? 'Théâtre' : 'Salle'}
+              value={theaterValue}
+              sub={theaterSub || undefined}
+            />
           )}
-          {gate(fv?.watchDate, watchDateClean) && (
-            <MetaCell label="Séance" value={gate(fv?.watchDate, watchDateClean)} sub={gate(fv?.watchTime, d.watchTime) || undefined} mono />
+          {sessionValue && (
+            <MetaCell
+              label={gate(fv?.watchDate, watchDateClean) ? 'Séance' : 'Heure'}
+              value={sessionValue}
+              sub={sessionSub || undefined}
+              mono
+            />
           )}
           {gate(fv?.seat, d.seat) && (
             <MetaCell label="Place" value={gate(fv?.seat, d.seat)} mono />
@@ -366,7 +379,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
           <PerforationStrip vertical count={42} color={PAPER_DEEP} background="transparent" />
         </div>
 
-        {watchYear && (
+        {(fv?.watchDate ?? true) && watchYear && (
           <div
             style={{
               fontWeight: 700,

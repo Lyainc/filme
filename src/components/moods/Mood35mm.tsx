@@ -109,7 +109,9 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
         }}
       >
         <span>KODAK 5219 · 65MM</span>
-        <span style={{ color: FS_INK, letterSpacing: 1.5 }}>{bookingNo}</span>
+        {(fv?.bookingNo ?? true) && (
+          <span style={{ color: FS_INK, letterSpacing: 1.5 }}>{bookingNo}</span>
+        )}
         <span>FRAME 14 / 24 →</span>
       </div>
 

@@ -91,7 +91,7 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
             transform: 'rotate(180deg)',
           }}
         >
-          PHOTOTICKET · No.{bookingTail}
+          PHOTOTICKET{(fv?.bookingNo ?? true) ? ` · No.${bookingTail}` : ''}
         </div>
         <div style={{ flex: 1 }} />
         {(fv?.bookingNo ?? true) && (
@@ -105,7 +105,7 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
           />
         )}
         <div style={{ flex: 1 }} />
-        {watchYear && (
+        {(fv?.watchDate ?? true) && watchYear && (
           <div
             style={{
               fontWeight: 900,

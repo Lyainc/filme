@@ -42,6 +42,7 @@ export function Phase2Canvas({ photo, onGoBack }: Phase2CanvasProps) {
 
   const allOn = FIELD_ORDER.every((f) => fieldVisibility[f]);
   const allOff = FIELD_ORDER.every((f) => !fieldVisibility[f]);
+  const selectedCount = FIELD_ORDER.filter((f) => fieldVisibility[f]).length;
 
   return (
     <div className="space-y-8">
@@ -117,13 +118,18 @@ export function Phase2Canvas({ photo, onGoBack }: Phase2CanvasProps) {
 
       <section className="space-y-4">
         <div className="flex items-baseline justify-between">
-          <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Display Fields</h3>
+          <div className="space-y-1">
+            <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Display Fields</h3>
+            <p className="text-mono text-[10px] uppercase tracking-widest text-fg-faint">
+              {selectedCount}/{FIELD_ORDER.length} selected
+            </p>
+          </div>
           <div className="flex gap-2">
             <button
               type="button"
               onClick={() => setField(Object.fromEntries(FIELD_ORDER.map((f) => [f, true])) as Record<TicketField, boolean>)}
               disabled={allOn}
-              className="text-mono inline-flex min-h-[32px] items-center rounded-chip border border-line bg-surface-elevated px-2.5 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft disabled:opacity-40"
+              className="text-mono inline-flex min-h-[32px] items-center rounded-chip border border-line bg-surface-elevated px-2.5 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft focus-visible:ring-2 focus-visible:ring-accent-soft disabled:opacity-40"
             >
               전체 선택
             </button>
@@ -131,7 +137,7 @@ export function Phase2Canvas({ photo, onGoBack }: Phase2CanvasProps) {
               type="button"
               onClick={() => setField(Object.fromEntries(FIELD_ORDER.map((f) => [f, false])) as Record<TicketField, boolean>)}
               disabled={allOff}
-              className="text-mono inline-flex min-h-[32px] items-center rounded-chip border border-line bg-surface-elevated px-2.5 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft disabled:opacity-40"
+              className="text-mono inline-flex min-h-[32px] items-center rounded-chip border border-line bg-surface-elevated px-2.5 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft focus-visible:ring-2 focus-visible:ring-accent-soft disabled:opacity-40"
             >
               전체 해제
             </button>
@@ -145,8 +151,9 @@ export function Phase2Canvas({ photo, onGoBack }: Phase2CanvasProps) {
                 key={field}
                 type="button"
                 onClick={() => setField({ [field]: !active })}
+                aria-pressed={active}
                 data-touch="44"
-                className={`text-mono inline-flex min-h-touch items-center rounded-chip border px-3 text-[10px] uppercase tracking-widest transition-colors
+                className={`text-mono inline-flex min-h-touch items-center rounded-chip border px-3 text-[10px] uppercase tracking-widest transition-colors focus-visible:ring-2 focus-visible:ring-accent-soft
                   ${active ? 'border-accent bg-accent text-white' : 'border-line bg-surface-elevated text-fg-muted hover:bg-accent-soft'}`}
               >
                 {FIELD_LABELS[field]}
