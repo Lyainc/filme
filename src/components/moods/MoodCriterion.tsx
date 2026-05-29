@@ -5,7 +5,6 @@ import {
   FONT_KR,
   FONT_MONO,
   FONT_SANS,
-  FONT_SERIF,
   FormatStamp,
   MoodProps,
   Poster,
@@ -174,7 +173,7 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl }: Moo
               fontStyle: 'italic',
               fontWeight: 400,
               fontSize: 36,
-              fontFamily: FONT_SERIF,
+              fontFamily: FONT_SANS,
               letterSpacing: 1,
               opacity: 0.92,
               marginBottom: 16,
@@ -205,7 +204,7 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl }: Moo
               fontStyle: 'italic',
               fontWeight: 500,
               fontSize: 22,
-              fontFamily: FONT_SERIF,
+              fontFamily: FONT_KR,
               opacity: 0.85,
               marginBottom: 24,
               lineHeight: 1.4,
@@ -223,7 +222,7 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl }: Moo
       </div>
 
       {/* Bottom caps row */}
-      <div style={{ position: 'absolute', left: 116, right: 200, bottom: 56 }}>
+      <div style={{ position: 'absolute', left: 116, right: 56, bottom: 56 }}>
         {d.showRating && d.rating > 0 && (
           <div
             style={{
@@ -271,106 +270,6 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl }: Moo
         </div>
       </div>
 
-      {/* ADMIT ONE medallion bottom-right */}
-      <div
-        style={{
-          position: 'absolute',
-          right: 48,
-          bottom: 48,
-          width: 140,
-          height: 140,
-        }}
-      >
-        <svg
-          width="140"
-          height="140"
-          viewBox="0 0 140 140"
-          style={{ position: 'absolute', inset: 0 }}
-        >
-          <defs>
-            <path
-              id="rim-criterion"
-              d="M 70 70 m -56 0 a 56 56 0 1 1 112 0 a 56 56 0 1 1 -112 0"
-              fill="none"
-            />
-          </defs>
-          <circle cx="70" cy="70" r="64" fill="none" stroke={ink} strokeWidth="1.5" opacity="0.85" />
-          <circle cx="70" cy="70" r="56" fill="none" stroke={ink} strokeWidth="1" opacity="0.55" />
-          <circle
-            cx="70"
-            cy="70"
-            r="40"
-            fill="none"
-            stroke={ink}
-            strokeWidth="1"
-            opacity="0.55"
-            strokeDasharray="2 4"
-          />
-          <text
-            style={{
-              fontWeight: 700,
-              fontSize: 9,
-              fontFamily: FONT_MONO,
-              letterSpacing: 4,
-              fill: ink,
-              opacity: 0.85,
-            }}
-          >
-            <textPath href="#rim-criterion" startOffset="0">
-              · ADMIT ONE · NON-TRANSFERABLE · {bookingNo} · CRITERION IMPRINT
-            </textPath>
-          </text>
-        </svg>
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: ink,
-            textAlign: 'center',
-          }}
-        >
-          <div
-            style={{
-              fontWeight: 600,
-              fontSize: 9,
-              fontFamily: FONT_MONO,
-              letterSpacing: 2,
-              opacity: 0.7,
-            }}
-          >
-            No.
-          </div>
-          <div
-            style={{
-              fontWeight: 900,
-              fontSize: 26,
-              fontFamily: FONT_SANS,
-              letterSpacing: -0.5,
-              lineHeight: 1,
-              marginTop: 2,
-            }}
-          >
-            {bookingTail}
-          </div>
-          <div
-            style={{
-              fontStyle: 'italic',
-              fontWeight: 400,
-              fontSize: 13,
-              fontFamily: FONT_SERIF,
-              opacity: 0.85,
-              marginTop: 4,
-            }}
-          >
-            imprint
-          </div>
-        </div>
-      </div>
-
       {/* Pt monogram top-left */}
       <div
         style={{
@@ -386,7 +285,7 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl }: Moo
           fontStyle: 'italic',
           fontWeight: 900,
           fontSize: 16,
-          fontFamily: FONT_SERIF,
+          fontFamily: FONT_SANS,
           color: ink,
           opacity: 0.85,
           letterSpacing: -0.5,

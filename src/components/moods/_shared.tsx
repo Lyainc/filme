@@ -9,7 +9,7 @@ export interface MoodProps {
 }
 
 export const FONT_MONO = '"JetBrains Mono", "SF Mono", ui-monospace, monospace';
-export const FONT_SANS = '"Inter", "Pretendard Variable", "Pretendard", "Noto Sans KR", sans-serif';
+export const FONT_SANS = '"Pretendard Variable", "Pretendard", "Noto Sans KR", sans-serif';
 export const FONT_SERIF = '"Cormorant Garamond", "Times New Roman", serif';
 export const FONT_KR = '"Pretendard Variable", "Noto Sans KR", "Inter", sans-serif';
 
