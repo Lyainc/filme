@@ -282,14 +282,18 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
             }}
           >
             {components.format && <FormatStamp format={components.format} size={0.9} />}
-            <Barcode value={bookingNo} color={ink} width={180} height={34} textSize={10} />
-            <EditionMark
-              serialNo={serialNo}
-              collectionNo={d.collectionNo}
-              surface={isLight ? 'paper' : 'dark'}
-              ink={ink}
-              size={11}
-            />
+            {(fv?.bookingNo ?? true) && (
+              <Barcode value={bookingNo} color={ink} width={180} height={34} textSize={10} />
+            )}
+            {(fv?.edition ?? true) && (
+              <EditionMark
+                serialNo={serialNo}
+                collectionNo={d.collectionNo}
+                surface={isLight ? 'paper' : 'dark'}
+                ink={ink}
+                size={11}
+              />
+            )}
           </div>
         </div>
       </div>

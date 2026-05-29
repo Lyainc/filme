@@ -23,8 +23,9 @@ const PAPER_DIM = '#8a7e63';
 const POSTER_W = 460;
 const PERF_W = 14;
 const MAIN_W = 805;
-// Stub width: 1477 - 460 - 14 - 805 = 198
-const STUB_W = 198;
+// Perf strips are absolute overlays (no layout width), so the three flex
+// sections must sum to the full 1477 natural width: 460 + 805 + 212 = 1477.
+const STUB_W = 212;
 
 export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
@@ -252,39 +253,45 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
           }}
         >
           <div>
-            <div
-              style={{
-                fontStyle: 'italic',
-                fontWeight: 400,
-                fontSize: 12,
-                fontFamily: FONT_SANS,
-                color: PAPER_DIM,
-                letterSpacing: 0.3,
-                marginBottom: 2,
-              }}
-            >
-              No.
-            </div>
-            <div
-              style={{
-                fontWeight: 700,
-                fontSize: 20,
-                fontFamily: FONT_MONO,
-                letterSpacing: 1,
-                color: PAPER_DEEP,
-              }}
-            >
-              {bookingNo}
-            </div>
-            <div style={{ marginTop: 6 }}>
-              <EditionMark
-                serialNo={serialNo}
-                collectionNo={d.collectionNo}
-                surface="paper"
-                ink={PAPER_DIM}
-                size={11}
-              />
-            </div>
+            {(fv?.bookingNo ?? true) && (
+              <>
+                <div
+                  style={{
+                    fontStyle: 'italic',
+                    fontWeight: 400,
+                    fontSize: 12,
+                    fontFamily: FONT_SANS,
+                    color: PAPER_DIM,
+                    letterSpacing: 0.3,
+                    marginBottom: 2,
+                  }}
+                >
+                  No.
+                </div>
+                <div
+                  style={{
+                    fontWeight: 700,
+                    fontSize: 20,
+                    fontFamily: FONT_MONO,
+                    letterSpacing: 1,
+                    color: PAPER_DEEP,
+                  }}
+                >
+                  {bookingNo}
+                </div>
+              </>
+            )}
+            {(fv?.edition ?? true) && (
+              <div style={{ marginTop: 6 }}>
+                <EditionMark
+                  serialNo={serialNo}
+                  collectionNo={d.collectionNo}
+                  surface="paper"
+                  ink={PAPER_DIM}
+                  size={11}
+                />
+              </div>
+            )}
           </div>
           <div
             style={{
@@ -300,7 +307,11 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
           >
             non-transférable · 양도 또는 재판매 불가
           </div>
-          <Barcode value={bookingNo} color={PAPER_DEEP} width={200} height={42} textSize={10} />
+          {(fv?.bookingNo ?? true) ? (
+            <Barcode value={bookingNo} color={PAPER_DEEP} width={200} height={42} textSize={10} />
+          ) : (
+            <div />
+          )}
         </div>
 
         {/* Rating — absolute top-right */}
@@ -379,14 +390,16 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
             justifyContent: 'center',
           }}
         >
-          <Barcode
-            value={bookingNo}
-            color={PAPER_DEEP}
-            orientation="vertical"
-            width={40}
-            height={200}
-            showText={false}
-          />
+          {(fv?.bookingNo ?? true) && (
+            <Barcode
+              value={bookingNo}
+              color={PAPER_DEEP}
+              orientation="vertical"
+              width={40}
+              height={200}
+              showText={false}
+            />
+          )}
         </div>
 
         <div

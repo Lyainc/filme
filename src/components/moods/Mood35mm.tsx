@@ -250,15 +250,17 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
             )}
           </div>
 
-          <div style={{ marginBottom: 14 }}>
-            <EditionMark
-              serialNo={serialNo}
-              collectionNo={d.collectionNo}
-              surface="dark"
-              ink={FS_INK}
-              size={12}
-            />
-          </div>
+          {(fv?.edition ?? true) && (
+            <div style={{ marginBottom: 14 }}>
+              <EditionMark
+                serialNo={serialNo}
+                collectionNo={d.collectionNo}
+                surface="dark"
+                ink={FS_INK}
+                size={12}
+              />
+            </div>
+          )}
 
           <div
             style={{
@@ -286,7 +288,9 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
                 .filter(Boolean)
                 .join(' · ')}
             </div>
-            <Barcode value={bookingNo} color={FS_INK} width={180} height={28} textSize={10} />
+            {(fv?.bookingNo ?? true) && (
+              <Barcode value={bookingNo} color={FS_INK} width={180} height={28} textSize={10} />
+            )}
           </div>
         </div>
       </div>

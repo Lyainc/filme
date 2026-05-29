@@ -94,14 +94,16 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
           PHOTOTICKET · No.{bookingTail}
         </div>
         <div style={{ flex: 1 }} />
-        <Barcode
-          value={bookingNo}
-          color={ink}
-          orientation="vertical"
-          width={40}
-          height={500}
-          showText={false}
-        />
+        {(fv?.bookingNo ?? true) && (
+          <Barcode
+            value={bookingNo}
+            color={ink}
+            orientation="vertical"
+            width={40}
+            height={500}
+            showText={false}
+          />
+        )}
         <div style={{ flex: 1 }} />
         {watchYear && (
           <div
@@ -259,16 +261,18 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
             .filter(Boolean)
             .join('  ·  ')}
         </div>
-        <div style={{ marginTop: 16, opacity: 0.85 }}>
-          <EditionMark
-            serialNo={serialNo}
-            collectionNo={d.collectionNo}
-            surface={isLight ? 'paper' : 'dark'}
-            ink={ink}
-            size={14}
-            letterSpacing={3}
-          />
-        </div>
+        {(fv?.edition ?? true) && (
+          <div style={{ marginTop: 16, opacity: 0.85 }}>
+            <EditionMark
+              serialNo={serialNo}
+              collectionNo={d.collectionNo}
+              surface={isLight ? 'paper' : 'dark'}
+              ink={ink}
+              size={14}
+              letterSpacing={3}
+            />
+          </div>
+        )}
       </div>
 
       {/* Pt monogram top-left */}
