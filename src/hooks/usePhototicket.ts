@@ -1,5 +1,39 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { PhototicketState, MovieInfo, TicketComponents } from '@/types';
+import { PhototicketState, MovieInfo, TicketComponents, TicketField } from '@/types';
+
+const ALL_FIELDS_ON: Record<TicketField, boolean> = {
+  title: true,
+  titleOg: true,
+  actors: true,
+  watchDate: true,
+  watchTime: true,
+  theater: true,
+  screen: true,
+  seat: true,
+  runtime: true,
+  rating: true,
+  releaseDate: true,
+  reissue: true,
+  bookingNo: true,
+  edition: true,
+};
+
+const DEFAULT_VISIBILITY_ON_UPLOAD: Record<TicketField, boolean> = {
+  title: true,
+  titleOg: true,
+  actors: false,
+  watchDate: true,
+  watchTime: false,
+  theater: true,
+  screen: false,
+  seat: true,
+  runtime: false,
+  rating: true,
+  releaseDate: false,
+  reissue: false,
+  bookingNo: false,
+  edition: false,
+};
 
 const INITIAL_STATE: PhototicketState = {
   movieInfo: {
@@ -18,7 +52,6 @@ const INITIAL_STATE: PhototicketState = {
     screen: '',
     seat: '',
     rating: 5.0,
-    showRating: true,
     runtime: '',
     bookingNumber: '',
     serialNo: '',
@@ -35,6 +68,7 @@ const INITIAL_STATE: PhototicketState = {
   },
   recommendedColors: [],
   croppedImageUrl: null,
+  fieldVisibility: ALL_FIELDS_ON,
 };
 
 export function usePhototicket() {
@@ -45,8 +79,20 @@ export function usePhototicket() {
     setState((prev) => {
       if (prev.croppedImageUrl) URL.revokeObjectURL(prev.croppedImageUrl);
       latestUrlRef.current = croppedUrl;
-      return { ...prev, croppedImageUrl: croppedUrl };
+      const isFirstUpload = prev.croppedImageUrl === null;
+      return {
+        ...prev,
+        croppedImageUrl: croppedUrl,
+        ...(isFirstUpload ? { fieldVisibility: DEFAULT_VISIBILITY_ON_UPLOAD } : {}),
+      };
     });
+  }, []);
+
+  const updateFieldVisibility = useCallback((partial: Partial<Record<TicketField, boolean>>) => {
+    setState((prev) => ({
+      ...prev,
+      fieldVisibility: { ...prev.fieldVisibility, ...partial },
+    }));
   }, []);
 
   const updateMovieInfo = useCallback((info: Partial<MovieInfo>) => {
@@ -73,5 +119,6 @@ export function usePhototicket() {
     updateMovieInfo,
     updateComponents,
     setRecommendedColors,
+    updateFieldVisibility,
   };
 }

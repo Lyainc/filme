@@ -8,6 +8,7 @@ import {
   FormatStamp,
   MoodProps,
   Poster,
+  gate,
   isInkLight,
   pickTitleSize,
   resolveBookingNo,
@@ -15,7 +16,7 @@ import {
 } from './_shared';
 import { formatDate } from '@/utils/dateFormat';
 
-export function MoodCriterion({ movieInfo: d, components, croppedImageUrl }: MoodProps) {
+export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
   const isLight = isInkLight(themeColor);
   const ink = isLight ? '#0d0c0a' : themeColor;
@@ -167,7 +168,7 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl }: Moo
       >
         <div style={{ height: 2, background: ink, opacity: 0.6, marginBottom: 28 }} />
 
-        {d.titleOg && (
+        {gate(fv?.titleOg, d.titleOg) && (
           <div
             style={{
               fontStyle: 'italic',
@@ -179,11 +180,11 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl }: Moo
               marginBottom: 16,
             }}
           >
-            {d.titleOg}
+            {gate(fv?.titleOg, d.titleOg)}
           </div>
         )}
 
-        {d.title && (
+        {gate(fv?.title, d.title) && (
           <div
             style={{
               fontWeight: 800,
@@ -194,11 +195,11 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl }: Moo
               marginBottom: 28,
             }}
           >
-            {d.title}
+            {gate(fv?.title, d.title)}
           </div>
         )}
 
-        {d.actors && (
+        {gate(fv?.actors, d.actors) && (
           <div
             style={{
               fontStyle: 'italic',
@@ -214,7 +215,7 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl }: Moo
               overflow: 'hidden',
             }}
           >
-            with {d.actors}
+            with {gate(fv?.actors, d.actors)}
           </div>
         )}
 
@@ -223,7 +224,7 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl }: Moo
 
       {/* Bottom caps row */}
       <div style={{ position: 'absolute', left: 116, right: 56, bottom: 56 }}>
-        {d.showRating && d.rating > 0 && (
+        {(fv?.rating ?? true) && d.rating > 0 && (
           <div
             style={{
               fontWeight: 800,
@@ -248,12 +249,12 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl }: Moo
           }}
         >
           {[
-            d.theater,
-            d.screen,
-            d.seat && `SEAT ${d.seat}`,
-            watchDateClean,
-            releaseClean && `REL ${releaseClean}`,
-            reissueClean && `RE-REL ${reissueClean}`,
+            gate(fv?.theater, d.theater),
+            gate(fv?.screen, d.screen),
+            gate(fv?.seat, d.seat) && `SEAT ${gate(fv?.seat, d.seat)}`,
+            gate(fv?.watchDate, watchDateClean),
+            gate(fv?.releaseDate, releaseClean) && `REL ${gate(fv?.releaseDate, releaseClean)}`,
+            gate(fv?.reissue, reissueClean) && `RE-REL ${gate(fv?.reissue, reissueClean)}`,
           ]
             .filter(Boolean)
             .join('  ·  ')}

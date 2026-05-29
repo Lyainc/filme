@@ -106,6 +106,7 @@ export default function Home() {
             croppedImageUrl={croppedImageUrl}
             movieInfo={debouncedMovieInfo}
             components={debouncedComponents}
+            fieldVisibility={photo.state.fieldVisibility}
           />
         ) : null}
       </PreviewFilmCell>
@@ -171,6 +172,7 @@ export default function Home() {
               croppedImageUrl={croppedImageUrl}
               movieInfo={debouncedMovieInfo}
               components={debouncedComponents}
+              fieldVisibility={photo.state.fieldVisibility}
             />
           </div>
         ) : (

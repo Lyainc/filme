@@ -6,18 +6,19 @@ import { MoodCriterion } from './moods/MoodCriterion';
 import { Mood35mm } from './moods/Mood35mm';
 import { MoodEditorial } from './moods/MoodEditorial';
 import { getLayout } from '@/utils/layouts';
-import type { LayoutId, MovieInfo, TicketComponents } from '@/types';
+import type { LayoutId, MovieInfo, TicketComponents, TicketField } from '@/types';
 
 interface TicketRendererProps {
   croppedImageUrl: string;
   movieInfo: MovieInfo;
   components: TicketComponents;
+  fieldVisibility?: Record<TicketField, boolean>;
 }
 
 const SCALE_EPSILON = 0.001;
 
 const TicketRenderer = forwardRef<HTMLDivElement, TicketRendererProps>(function TicketRenderer(
-  { croppedImageUrl, movieInfo, components },
+  { croppedImageUrl, movieInfo, components, fieldVisibility },
   ref
 ) {
   const layout = getLayout(components.layout);
@@ -67,6 +68,7 @@ const TicketRenderer = forwardRef<HTMLDivElement, TicketRendererProps>(function 
           croppedImageUrl={croppedImageUrl}
           movieInfo={movieInfo}
           components={components}
+          fieldVisibility={fieldVisibility}
         />
       </div>
     </div>
@@ -78,13 +80,15 @@ const Mood = memo(function Mood({
   croppedImageUrl,
   movieInfo,
   components,
+  fieldVisibility,
 }: {
   layoutId: LayoutId;
   croppedImageUrl: string;
   movieInfo: MovieInfo;
   components: TicketComponents;
+  fieldVisibility?: Record<TicketField, boolean>;
 }) {
-  const props = { croppedImageUrl, movieInfo, components };
+  const props = { croppedImageUrl, movieInfo, components, fieldVisibility };
   switch (layoutId) {
     case 'minimal':
       return <MoodMinimal {...props} />;

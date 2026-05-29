@@ -10,6 +10,7 @@ import {
   HorizontalSprockets,
   MoodProps,
   Poster,
+  gate,
   pickTitleSize,
   resolveBookingNo,
   resolveSerialNo,
@@ -45,7 +46,7 @@ const cellValueMono: CSSProperties = {
   letterSpacing: 0.5,
 };
 
-export function Mood35mm({ movieInfo: d, components, croppedImageUrl }: MoodProps) {
+export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv }: MoodProps) {
   const titleSize = pickTitleSize(d.title.length, [76, 60, 48, 38]);
 
   const captionScrim =
@@ -59,8 +60,8 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl }: MoodProp
   const watchDateClean = formatDate(d.watchDate, watchToken, 'date');
   const releaseClean = formatDate(d.releaseDate, releaseToken, releaseGran);
   const reissueClean = d.isReissue ? formatDate(d.reissueDate, releaseToken, releaseGran) : '';
-  const exhibitedText = [d.theater, d.screen, d.seat].filter(Boolean).join(' · ');
-  const screenedText = [watchDateClean, d.watchTime].filter(Boolean).join(' · ');
+  const exhibitedText = [gate(fv?.theater, d.theater), gate(fv?.screen, d.screen), gate(fv?.seat, d.seat)].filter(Boolean).join(' · ');
+  const screenedText = [gate(fv?.watchDate, watchDateClean), gate(fv?.watchTime, d.watchTime)].filter(Boolean).join(' · ');
 
   return (
     <div
@@ -151,7 +152,7 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl }: MoodProp
             margin: '0 12px',
           }}
         >
-          {d.titleOg && (
+          {gate(fv?.titleOg, d.titleOg) && (
             <div
               style={{
                 fontWeight: 700,
@@ -163,10 +164,10 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl }: MoodProp
                 marginBottom: 8,
               }}
             >
-              CAPTION · {d.titleOg}
+              CAPTION · {gate(fv?.titleOg, d.titleOg)}
             </div>
           )}
-          {d.title && (
+          {gate(fv?.title, d.title) && (
             <div
               style={{
                 fontWeight: 800,
@@ -178,7 +179,7 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl }: MoodProp
                 color: FS_INK,
               }}
             >
-              {d.title}
+              {gate(fv?.title, d.title)}
             </div>
           )}
 
@@ -204,7 +205,7 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl }: MoodProp
                 <span style={cellValueMono}>{screenedText}</span>
               </>
             )}
-            {d.actors && (
+            {gate(fv?.actors, d.actors) && (
               <>
                 <span style={cellLabelStyle}>STARRING</span>
                 <span
@@ -221,17 +222,17 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl }: MoodProp
                     overflow: 'hidden',
                   }}
                 >
-                  {d.actors}
+                  {gate(fv?.actors, d.actors)}
                 </span>
               </>
             )}
-            {d.runtime && (
+            {gate(fv?.runtime, d.runtime) && (
               <>
                 <span style={cellLabelStyle}>RUNTIME</span>
-                <span style={cellValueMono}>{d.runtime}</span>
+                <span style={cellValueMono}>{gate(fv?.runtime, d.runtime)}</span>
               </>
             )}
-            {d.showRating && d.rating > 0 && (
+            {(fv?.rating ?? true) && d.rating > 0 && (
               <>
                 <span style={cellLabelStyle}>RATING</span>
                 <span
@@ -278,9 +279,9 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl }: MoodProp
               }}
             >
               {[
-                watchDateClean && `← EXP ${watchDateClean}`,
-                releaseClean && `REL ${releaseClean}`,
-                reissueClean && `RE-REL ${reissueClean}`,
+                gate(fv?.watchDate, watchDateClean) && `← EXP ${gate(fv?.watchDate, watchDateClean)}`,
+                gate(fv?.releaseDate, releaseClean) && `REL ${gate(fv?.releaseDate, releaseClean)}`,
+                gate(fv?.reissue, reissueClean) && `RE-REL ${gate(fv?.reissue, reissueClean)}`,
               ]
                 .filter(Boolean)
                 .join(' · ')}

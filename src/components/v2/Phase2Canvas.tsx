@@ -5,7 +5,30 @@ import TexturePicker from '@/components/wizard/TexturePicker';
 import BrightnessSlider from '@/components/wizard/BrightnessSlider';
 import ColorPicker from '@/components/wizard/ColorPicker';
 import type { usePhototicket } from '@/hooks/usePhototicket';
-import type { LayoutId } from '@/types';
+import type { LayoutId, TicketField } from '@/types';
+
+const FIELD_LABELS: Record<TicketField, string> = {
+  title: '제목',
+  titleOg: '원제',
+  actors: '출연',
+  watchDate: '관람일',
+  watchTime: '관람 시간',
+  theater: '극장',
+  screen: '상영관',
+  seat: '좌석',
+  runtime: '러닝타임',
+  rating: '평점',
+  releaseDate: '개봉일',
+  reissue: '재개봉',
+  bookingNo: '예매 번호',
+  edition: '에디션',
+};
+
+const FIELD_ORDER: TicketField[] = [
+  'title', 'titleOg', 'actors', 'watchDate', 'watchTime',
+  'theater', 'screen', 'seat', 'runtime', 'rating',
+  'releaseDate', 'reissue', 'bookingNo', 'edition',
+];
 
 interface Phase2CanvasProps {
   photo: ReturnType<typeof usePhototicket>;
@@ -13,8 +36,12 @@ interface Phase2CanvasProps {
 }
 
 export function Phase2Canvas({ photo, onGoBack }: Phase2CanvasProps) {
-  const { components, recommendedColors } = photo.state;
+  const { components, recommendedColors, fieldVisibility } = photo.state;
   const setComp = photo.updateComponents;
+  const setField = photo.updateFieldVisibility;
+
+  const allOn = FIELD_ORDER.every((f) => fieldVisibility[f]);
+  const allOff = FIELD_ORDER.every((f) => !fieldVisibility[f]);
 
   return (
     <div className="space-y-8">
@@ -85,6 +112,47 @@ export function Phase2Canvas({ photo, onGoBack }: Phase2CanvasProps) {
             onChange={(themeColor) => setComp({ themeColor })}
             recommended={recommendedColors}
           />
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <div className="flex items-baseline justify-between">
+          <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Display Fields</h3>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setField(Object.fromEntries(FIELD_ORDER.map((f) => [f, true])) as Record<TicketField, boolean>)}
+              disabled={allOn}
+              className="text-mono inline-flex min-h-[32px] items-center rounded-chip border border-line bg-surface-elevated px-2.5 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft disabled:opacity-40"
+            >
+              전체 선택
+            </button>
+            <button
+              type="button"
+              onClick={() => setField(Object.fromEntries(FIELD_ORDER.map((f) => [f, false])) as Record<TicketField, boolean>)}
+              disabled={allOff}
+              className="text-mono inline-flex min-h-[32px] items-center rounded-chip border border-line bg-surface-elevated px-2.5 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft disabled:opacity-40"
+            >
+              전체 해제
+            </button>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {FIELD_ORDER.map((field) => {
+            const active = fieldVisibility[field];
+            return (
+              <button
+                key={field}
+                type="button"
+                onClick={() => setField({ [field]: !active })}
+                data-touch="44"
+                className={`text-mono inline-flex min-h-touch items-center rounded-chip border px-3 text-[10px] uppercase tracking-widest transition-colors
+                  ${active ? 'border-accent bg-accent text-white' : 'border-line bg-surface-elevated text-fg-muted hover:bg-accent-soft'}`}
+              >
+                {FIELD_LABELS[field]}
+              </button>
+            );
+          })}
         </div>
       </section>
 

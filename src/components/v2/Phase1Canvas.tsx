@@ -186,9 +186,7 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
 
           <RatingPicker
             value={movieInfo.rating}
-            show={movieInfo.showRating !== false}
             onValueChange={(rating) => setInfo({ rating })}
-            onShowChange={(showRating) => setInfo({ showRating })}
           />
         </div>
       </OptionalDetailsAccordion>

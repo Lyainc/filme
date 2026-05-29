@@ -2,12 +2,10 @@ import { useState } from 'react';
 
 interface RatingPickerProps {
   value: number;
-  show: boolean;
   onValueChange: (rating: number) => void;
-  onShowChange: (show: boolean) => void;
 }
 
-export default function RatingPicker({ value, show, onValueChange, onShowChange }: RatingPickerProps) {
+export default function RatingPicker({ value, onValueChange }: RatingPickerProps) {
   const [hover, setHover] = useState(0);
   const current = hover || value || 0;
 
@@ -15,19 +13,9 @@ export default function RatingPicker({ value, show, onValueChange, onShowChange 
     <div className="space-y-2.5">
       <div className="flex items-baseline justify-between">
         <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Rating</span>
-        <label className="text-mono inline-flex cursor-pointer items-center gap-2 text-[10px] uppercase tracking-widest text-fg-faint">
-          <input
-            type="checkbox"
-            checked={show}
-            onChange={(e) => onShowChange(e.target.checked)}
-            className="h-3.5 w-3.5 accent-accent"
-          />
-          Show on ticket
-        </label>
       </div>
 
-      {show && (
-        <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4">
           <div
             className="flex gap-1.5"
             onMouseLeave={() => setHover(0)}
@@ -69,7 +57,6 @@ export default function RatingPicker({ value, show, onValueChange, onShowChange 
             {current.toFixed(1)} <span className="text-fg-faint">/ 5.0</span>
           </span>
         </div>
-      )}
     </div>
   );
 }

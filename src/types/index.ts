@@ -3,6 +3,22 @@ export type LayoutId = 'minimal' | 'criterion' | '35mm' | 'editorial';
 export type DateFormatToken = 'iso' | 'kr-compact' | 'cinema-mono' | 'en-long';
 export type DateGranularity = 'year' | 'year-month' | 'date';
 
+export type TicketField =
+  | 'title'
+  | 'titleOg'
+  | 'actors'
+  | 'watchDate'
+  | 'watchTime'
+  | 'theater'
+  | 'screen'
+  | 'seat'
+  | 'runtime'
+  | 'rating'
+  | 'releaseDate'
+  | 'reissue'
+  | 'bookingNo'
+  | 'edition';
+
 export interface MovieInfo {
   title: string;
   titleOg: string;
@@ -22,7 +38,6 @@ export interface MovieInfo {
   seat?: string;
   actors?: string;
   rating: number;
-  showRating: boolean;
   runtime?: string;
   bookingNumber?: string;
   /** Edition serial — manual input or deterministic 4-digit fallback. */
@@ -46,6 +61,7 @@ export interface PhototicketState {
   movieInfo: MovieInfo;
   components: TicketComponents;
   recommendedColors: string[];
+  fieldVisibility: Record<TicketField, boolean>;
 }
 
 export interface KobisMovie {

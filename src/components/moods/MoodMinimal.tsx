@@ -9,6 +9,7 @@ import {
   FormatStamp,
   MoodProps,
   Poster,
+  gate,
   isInkLight,
   pickTitleSize,
   resolveBookingNo,
@@ -36,7 +37,7 @@ const metaValueStyle = (ink: string): CSSProperties => ({
   lineHeight: 1.25,
 });
 
-export function MoodMinimal({ movieInfo: d, components, croppedImageUrl }: MoodProps) {
+export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
   const isLight = isInkLight(themeColor);
   const ink = isLight ? '#0d0c0a' : themeColor;
@@ -90,7 +91,7 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl }: MoodP
         }}
       >
         <ChainStamp chain={components.chain} size={1.25} />
-        {(watchDateClean || d.watchTime) && (
+        {(gate(fv?.watchDate, watchDateClean) || gate(fv?.watchTime, d.watchTime)) && (
           <div
             style={{
               fontWeight: 700,
@@ -101,11 +102,11 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl }: MoodP
               textAlign: 'right',
             }}
           >
-            {watchDateClean}
-            {d.watchTime && (
+            {gate(fv?.watchDate, watchDateClean)}
+            {gate(fv?.watchTime, d.watchTime) && (
               <>
-                {watchDateClean && <br />}
-                <span style={{ opacity: 0.6, fontSize: 18 }}>{d.watchTime}</span>
+                {gate(fv?.watchDate, watchDateClean) && <br />}
+                <span style={{ opacity: 0.6, fontSize: 18 }}>{gate(fv?.watchTime, d.watchTime)}</span>
               </>
             )}
           </div>
@@ -127,7 +128,7 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl }: MoodP
 
       {/* Bottom block */}
       <div style={{ position: 'absolute', left: 56, right: 56, bottom: 56 }}>
-        {d.titleOg && (
+        {gate(fv?.titleOg, d.titleOg) && (
           <div
             style={{
               fontWeight: 700,
@@ -139,11 +140,11 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl }: MoodP
               marginBottom: 18,
             }}
           >
-            {d.titleOg}
+            {gate(fv?.titleOg, d.titleOg)}
           </div>
         )}
 
-        {d.title && (
+        {gate(fv?.title, d.title) && (
           <div
             style={{
               fontWeight: titleLen > 12 ? 400 : 300,
@@ -154,13 +155,13 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl }: MoodP
               marginBottom: 36,
             }}
           >
-            {d.title}
+            {gate(fv?.title, d.title)}
           </div>
         )}
 
         <div style={{ height: 2, background: ink, opacity: 0.45, marginBottom: 22 }} />
 
-        {d.actors && (
+        {gate(fv?.actors, d.actors) && (
           <div
             style={{
               fontWeight: 500,
@@ -189,11 +190,11 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl }: MoodP
             >
               CAST
             </span>
-            {d.actors}
+            {gate(fv?.actors, d.actors)}
           </div>
         )}
 
-        {releaseClean && (
+        {(gate(fv?.releaseDate, releaseClean) || gate(fv?.reissue, reissueClean)) && (
           <div
             style={{
               fontWeight: 600,
@@ -204,8 +205,9 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl }: MoodP
               marginBottom: 30,
             }}
           >
-            RELEASED · {releaseClean}
-            {reissueClean && <>{'  ·  '}RE-RELEASED · {reissueClean}</>}
+            {gate(fv?.releaseDate, releaseClean) && <>RELEASED · {gate(fv?.releaseDate, releaseClean)}</>}
+            {gate(fv?.releaseDate, releaseClean) && gate(fv?.reissue, reissueClean) && <>{'  ·  '}</>}
+            {gate(fv?.reissue, reissueClean) && <>RE-RELEASED · {gate(fv?.reissue, reissueClean)}</>}
           </div>
         )}
 
@@ -228,40 +230,40 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl }: MoodP
               alignItems: 'baseline',
             }}
           >
-            {(watchDateClean || d.watchTime) && (
+            {(gate(fv?.watchDate, watchDateClean) || gate(fv?.watchTime, d.watchTime)) && (
               <>
                 <div style={metaLabelStyle(ink)}>관람일</div>
                 <div style={metaValueStyle(ink)}>
-                  {watchDateClean}
-                  {watchDateClean && d.watchTime && ' '}
-                  {d.watchTime && <span style={{ opacity: 0.6 }}>{d.watchTime}</span>}
+                  {gate(fv?.watchDate, watchDateClean)}
+                  {gate(fv?.watchDate, watchDateClean) && gate(fv?.watchTime, d.watchTime) && ' '}
+                  {gate(fv?.watchTime, d.watchTime) && <span style={{ opacity: 0.6 }}>{gate(fv?.watchTime, d.watchTime)}</span>}
                 </div>
               </>
             )}
-            {(d.theater || d.screen) && (
+            {(gate(fv?.theater, d.theater) || gate(fv?.screen, d.screen)) && (
               <>
                 <div style={metaLabelStyle(ink)}>상영관</div>
                 <div style={metaValueStyle(ink)}>
-                  {d.theater}
-                  {d.theater && d.screen ? ` · ${d.screen}` : d.screen || ''}
+                  {gate(fv?.theater, d.theater)}
+                  {gate(fv?.theater, d.theater) && gate(fv?.screen, d.screen) ? ` · ${gate(fv?.screen, d.screen)}` : gate(fv?.screen, d.screen) || ''}
                 </div>
               </>
             )}
 
-            {d.seat && (
+            {gate(fv?.seat, d.seat) && (
               <>
                 <div style={metaLabelStyle(ink)}>좌석</div>
-                <div style={metaValueStyle(ink)}>{d.seat}</div>
+                <div style={metaValueStyle(ink)}>{gate(fv?.seat, d.seat)}</div>
               </>
             )}
-            {d.runtime && (
+            {gate(fv?.runtime, d.runtime) && (
               <>
                 <div style={metaLabelStyle(ink)}>러닝타임</div>
-                <div style={metaValueStyle(ink)}>{d.runtime}</div>
+                <div style={metaValueStyle(ink)}>{gate(fv?.runtime, d.runtime)}</div>
               </>
             )}
 
-            {d.showRating && d.rating > 0 && (
+            {(fv?.rating ?? true) && d.rating > 0 && (
               <>
                 <div style={metaLabelStyle(ink)}>평점</div>
                 <div style={{ ...metaValueStyle(ink), gridColumn: 'span 3' }}>

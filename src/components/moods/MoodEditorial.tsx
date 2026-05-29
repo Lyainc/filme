@@ -9,6 +9,7 @@ import {
   MoodProps,
   PerforationStrip,
   Poster,
+  gate,
   pickTitleSize,
   resolveBookingNo,
   resolveSerialNo,
@@ -21,7 +22,7 @@ const PAPER_DIM = '#8a7e63';
 
 const POSTER_W = 640;
 
-export function MoodEditorial({ movieInfo: d, components, croppedImageUrl }: MoodProps) {
+export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
   const accent = themeColor.toLowerCase() === '#ffffff' ? '#a8312a' : themeColor;
   const titleSize = pickTitleSize(d.title.length, [108, 88, 70, 52]);
@@ -112,7 +113,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl }: Moo
               </>
             )}
           </div>
-          {d.runtime && (
+          {gate(fv?.runtime, d.runtime) && (
             <div
               style={{
                 fontWeight: 600,
@@ -123,7 +124,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl }: Moo
                 textTransform: 'uppercase',
               }}
             >
-              {d.runtime}
+              {gate(fv?.runtime, d.runtime)}
             </div>
           )}
         </div>
@@ -143,7 +144,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl }: Moo
           >
             une présentation cinématographique
           </div>
-          {d.title && (
+          {gate(fv?.title, d.title) && (
             <div
               style={{
                 fontWeight: 900,
@@ -153,10 +154,10 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl }: Moo
                 letterSpacing: -1.5,
               }}
             >
-              {d.title}
+              {gate(fv?.title, d.title)}
             </div>
           )}
-          {d.titleOg && (
+          {gate(fv?.titleOg, d.titleOg) && (
             <div
               style={{
                 marginTop: 14,
@@ -169,7 +170,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl }: Moo
                 letterSpacing: 0.3,
               }}
             >
-              {d.titleOg}
+              {gate(fv?.titleOg, d.titleOg)}
             </div>
           )}
         </div>
@@ -189,14 +190,31 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl }: Moo
             borderBottom: `1px solid ${PAPER_DEEP}`,
           }}
         >
-          {d.theater && <MetaCell label="Théâtre" value={d.theater} sub={d.screen} />}
-          {watchDateClean && (
-            <MetaCell label="Séance" value={watchDateClean} sub={d.watchTime} mono />
+          {gate(fv?.theater, d.theater) && (
+            <MetaCell
+              label="Théâtre"
+              value={gate(fv?.theater, d.theater) as string}
+              sub={gate(fv?.screen, d.screen) || undefined}
+            />
           )}
-          {d.seat && <MetaCell label="Place" value={d.seat} mono />}
-          {releaseClean && <MetaCell label="Sortie" value={releaseClean} mono />}
-          {reissueClean && <MetaCell label="Reprise" value={reissueClean} mono />}
-          {d.actors && (
+          {gate(fv?.watchDate, watchDateClean) && (
+            <MetaCell
+              label="Séance"
+              value={gate(fv?.watchDate, watchDateClean) as string}
+              sub={gate(fv?.watchTime, d.watchTime) || undefined}
+              mono
+            />
+          )}
+          {gate(fv?.seat, d.seat) && (
+            <MetaCell label="Place" value={gate(fv?.seat, d.seat) as string} mono />
+          )}
+          {gate(fv?.releaseDate, releaseClean) && (
+            <MetaCell label="Sortie" value={gate(fv?.releaseDate, releaseClean) as string} mono />
+          )}
+          {gate(fv?.reissue, reissueClean) && (
+            <MetaCell label="Reprise" value={gate(fv?.reissue, reissueClean) as string} mono />
+          )}
+          {gate(fv?.actors, d.actors) && (
             <div style={{ gridColumn: '1 / -1', marginTop: 4 }}>
               <div
                 style={{
@@ -224,7 +242,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl }: Moo
                   overflow: 'hidden',
                 }}
               >
-                {d.actors}
+                {gate(fv?.actors, d.actors)}
               </div>
             </div>
           )}
@@ -292,7 +310,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl }: Moo
           <Barcode value={bookingNo} color={PAPER_DEEP} width={200} height={42} textSize={10} />
         </div>
 
-        {d.showRating && d.rating > 0 && (
+        {(fv?.rating ?? true) && d.rating > 0 && (
           <div
             style={{
               position: 'absolute',

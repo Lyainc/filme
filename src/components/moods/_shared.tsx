@@ -1,11 +1,23 @@
 import { CSSProperties, memo, useMemo } from 'react';
 import { THEATER_CHAINS, SCREENING_FORMATS } from '@/utils/constants';
-import type { MovieInfo, TicketComponents } from '@/types';
+import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 
 export interface MoodProps {
   movieInfo: MovieInfo;
   components: TicketComponents;
   croppedImageUrl: string;
+  fieldVisibility?: Record<TicketField, boolean>;
+}
+
+/**
+ * Returns `value` when the field is visible (or visibility is undefined), otherwise ''.
+ * Falsy values (empty string, null, undefined, false) always return ''.
+ */
+export function gate(
+  visible: boolean | undefined,
+  value: string | false | undefined | null
+): string {
+  return visible !== false && value ? value : '';
 }
 
 export const FONT_MONO = '"JetBrains Mono", "SF Mono", ui-monospace, monospace';
