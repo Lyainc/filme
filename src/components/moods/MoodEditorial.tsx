@@ -20,7 +20,11 @@ const PAPER = '#f4ede0';
 const PAPER_DEEP = '#1a1612';
 const PAPER_DIM = '#8a7e63';
 
-const POSTER_W = 640;
+const POSTER_W = 460;
+const PERF_W = 14;
+const MAIN_W = 805;
+// Stub width: 1477 - 460 - 14 - 805 = 198
+const STUB_W = 198;
 
 export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
@@ -34,6 +38,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
   const watchDateClean = formatDate(d.watchDate, watchToken, 'date');
   const releaseClean = formatDate(d.releaseDate, releaseToken, releaseGran);
   const reissueClean = d.isReissue ? formatDate(d.reissueDate, releaseToken, releaseGran) : '';
+  const watchYear = d.watchDate ? d.watchDate.slice(0, 4) : '';
 
   return (
     <div
@@ -47,7 +52,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
         display: 'flex',
       }}
     >
-      {/* Left — full-bleed poster */}
+      {/* A: Poster block */}
       <div
         style={{
           flex: `0 0 ${POSTER_W}px`,
@@ -61,46 +66,32 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
           texture={components.texture}
           posterOpacity={components.posterOpacity}
         />
+        <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: PERF_W }}>
+          <PerforationStrip vertical count={42} color={PAPER} background="transparent" />
+        </div>
       </div>
 
-      {/* Perforation strip */}
-      <div style={{ position: 'relative', flex: '0 0 14px', background: PAPER }}>
-        <PerforationStrip vertical count={42} color={PAPER_DEEP} />
-      </div>
-
-      {/* Right — editorial paper */}
+      {/* B: Main info block */}
       <div
         style={{
-          flex: 1,
+          flex: `0 0 ${MAIN_W}px`,
           position: 'relative',
-          display: 'flex',
-          flexDirection: 'column',
           background: PAPER,
           color: PAPER_DEEP,
-          minWidth: 0,
-          padding: '44px 52px 36px',
+          display: 'flex',
+          flexDirection: 'column',
+          padding: '36px 48px 32px',
+          boxSizing: 'border-box',
         }}
       >
-        {/* Hairline accent bar */}
-        <div
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: 44,
-            bottom: 36,
-            width: 3,
-            background: accent,
-          }}
-        />
-
-        {/* Header */}
+        {/* Header row */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: 18,
-            paddingBottom: 22,
+            paddingBottom: 20,
             borderBottom: `1px solid ${PAPER_DEEP}`,
           }}
         >
@@ -108,7 +99,15 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
             <ChainStamp chain={components.chain} size={1.0} />
             {components.format && (
               <>
-                <span style={{ width: 1, height: 26, background: PAPER_DIM }} />
+                <span
+                  style={{
+                    display: 'inline-block',
+                    width: 1,
+                    height: 26,
+                    background: PAPER_DIM,
+                    flexShrink: 0,
+                  }}
+                />
                 <FormatStamp format={components.format} size={0.85} />
               </>
             )}
@@ -129,21 +128,24 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
           )}
         </div>
 
+        {/* Subtitle label */}
+        <div
+          style={{
+            marginTop: 22,
+            fontStyle: 'italic',
+            fontWeight: 500,
+            fontSize: 20,
+            fontFamily: FONT_SANS,
+            color: accent,
+            letterSpacing: 0.3,
+            marginBottom: 14,
+          }}
+        >
+          une présentation cinématographique
+        </div>
+
         {/* Title block */}
-        <div style={{ paddingTop: 30, paddingBottom: 28 }}>
-          <div
-            style={{
-              fontStyle: 'italic',
-              fontWeight: 500,
-              fontSize: 22,
-              fontFamily: FONT_SANS,
-              color: accent,
-              marginBottom: 14,
-              letterSpacing: 0.3,
-            }}
-          >
-            une présentation cinématographique
-          </div>
+        <div style={{ marginBottom: 24 }}>
           {gate(fv?.title, d.title) && (
             <div
               style={{
@@ -160,13 +162,13 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
           {gate(fv?.titleOg, d.titleOg) && (
             <div
               style={{
-                marginTop: 14,
+                marginTop: 12,
                 fontStyle: 'italic',
                 fontWeight: 400,
-                fontSize: 32,
+                fontSize: 28,
                 fontFamily: FONT_SANS,
                 color: PAPER_DEEP,
-                opacity: 0.7,
+                opacity: 0.65,
                 letterSpacing: 0.3,
               }}
             >
@@ -175,6 +177,8 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
           )}
         </div>
 
+        <div style={{ height: 1, background: PAPER_DEEP, opacity: 0.25, marginBottom: 22 }} />
+
         {/* Meta grid */}
         <div
           style={{
@@ -182,37 +186,26 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
             display: 'grid',
             gridTemplateColumns: '1fr 1fr',
             columnGap: 36,
-            rowGap: 24,
+            rowGap: 20,
             alignContent: 'start',
-            paddingTop: 26,
-            paddingBottom: 26,
-            borderTop: `1px solid ${PAPER_DEEP}`,
+            paddingBottom: 20,
             borderBottom: `1px solid ${PAPER_DEEP}`,
           }}
         >
           {gate(fv?.theater, d.theater) && (
-            <MetaCell
-              label="Théâtre"
-              value={gate(fv?.theater, d.theater) as string}
-              sub={gate(fv?.screen, d.screen) || undefined}
-            />
+            <MetaCell label="Théâtre" value={gate(fv?.theater, d.theater)} sub={gate(fv?.screen, d.screen) || undefined} />
           )}
           {gate(fv?.watchDate, watchDateClean) && (
-            <MetaCell
-              label="Séance"
-              value={gate(fv?.watchDate, watchDateClean) as string}
-              sub={gate(fv?.watchTime, d.watchTime) || undefined}
-              mono
-            />
+            <MetaCell label="Séance" value={gate(fv?.watchDate, watchDateClean)} sub={gate(fv?.watchTime, d.watchTime) || undefined} mono />
           )}
           {gate(fv?.seat, d.seat) && (
-            <MetaCell label="Place" value={gate(fv?.seat, d.seat) as string} mono />
+            <MetaCell label="Place" value={gate(fv?.seat, d.seat)} mono />
           )}
           {gate(fv?.releaseDate, releaseClean) && (
-            <MetaCell label="Sortie" value={gate(fv?.releaseDate, releaseClean) as string} mono />
+            <MetaCell label="Sortie" value={gate(fv?.releaseDate, releaseClean)} mono />
           )}
           {gate(fv?.reissue, reissueClean) && (
-            <MetaCell label="Reprise" value={gate(fv?.reissue, reissueClean) as string} mono />
+            <MetaCell label="Reprise" value={gate(fv?.reissue, reissueClean)} mono />
           )}
           {gate(fv?.actors, d.actors) && (
             <div style={{ gridColumn: '1 / -1', marginTop: 4 }}>
@@ -220,10 +213,10 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
                 style={{
                   fontStyle: 'italic',
                   fontWeight: 500,
-                  fontSize: 16,
+                  fontSize: 15,
                   fontFamily: FONT_SANS,
                   color: accent,
-                  marginBottom: 6,
+                  marginBottom: 5,
                   letterSpacing: 0.3,
                 }}
               >
@@ -232,7 +225,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
               <div
                 style={{
                   fontWeight: 500,
-                  fontSize: 26,
+                  fontSize: 24,
                   fontFamily: FONT_KR,
                   letterSpacing: -0.2,
                   lineHeight: 1.3,
@@ -251,10 +244,10 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
         {/* Footer */}
         <div
           style={{
-            paddingTop: 22,
+            paddingTop: 20,
             display: 'grid',
             gridTemplateColumns: 'auto 1fr auto',
-            gap: 28,
+            gap: 24,
             alignItems: 'center',
           }}
         >
@@ -263,7 +256,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
               style={{
                 fontStyle: 'italic',
                 fontWeight: 400,
-                fontSize: 13,
+                fontSize: 12,
                 fontFamily: FONT_SANS,
                 color: PAPER_DIM,
                 letterSpacing: 0.3,
@@ -275,7 +268,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
             <div
               style={{
                 fontWeight: 700,
-                fontSize: 22,
+                fontSize: 20,
                 fontFamily: FONT_MONO,
                 letterSpacing: 1,
                 color: PAPER_DEEP,
@@ -283,7 +276,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
             >
               {bookingNo}
             </div>
-            <div style={{ marginTop: 7 }}>
+            <div style={{ marginTop: 6 }}>
               <EditionMark
                 serialNo={serialNo}
                 collectionNo={d.collectionNo}
@@ -297,7 +290,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
             style={{
               fontStyle: 'italic',
               fontWeight: 400,
-              fontSize: 15,
+              fontSize: 13,
               fontFamily: FONT_SANS,
               color: PAPER_DIM,
               letterSpacing: 0.3,
@@ -310,11 +303,12 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
           <Barcode value={bookingNo} color={PAPER_DEEP} width={200} height={42} textSize={10} />
         </div>
 
+        {/* Rating — absolute top-right */}
         {(fv?.rating ?? true) && d.rating > 0 && (
           <div
             style={{
               position: 'absolute',
-              right: 52,
+              right: 48,
               top: 44,
               fontWeight: 800,
               fontSize: 16,
@@ -326,6 +320,110 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
             ★ {d.rating.toFixed(1)}
           </div>
         )}
+
+        {/* Notch (DD5): #000 circle at Main/Stub boundary — matches captureToImage backgroundColor:'#000000' */}
+        <div
+          style={{
+            position: 'absolute',
+            right: -28,
+            top: 960 / 2 - 28,
+            width: 56,
+            height: 56,
+            borderRadius: '50%',
+            background: '#000000',
+            zIndex: 10,
+          }}
+        />
+      </div>
+
+      {/* C: Stub block */}
+      <div
+        style={{
+          flex: `0 0 ${STUB_W}px`,
+          position: 'relative',
+          background: PAPER,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          padding: '36px 16px',
+          boxSizing: 'border-box',
+          borderLeft: `1px solid ${PAPER_DEEP}`,
+          overflow: 'hidden',
+        }}
+      >
+        <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: PERF_W }}>
+          <PerforationStrip vertical count={42} color={PAPER_DEEP} background="transparent" />
+        </div>
+
+        {watchYear && (
+          <div
+            style={{
+              fontWeight: 700,
+              fontSize: 13,
+              fontFamily: FONT_MONO,
+              letterSpacing: 3,
+              color: PAPER_DIM,
+              textTransform: 'uppercase',
+              marginBottom: 20,
+            }}
+          >
+            {watchYear}
+          </div>
+        )}
+
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Barcode
+            value={bookingNo}
+            color={PAPER_DEEP}
+            orientation="vertical"
+            width={40}
+            height={200}
+            showText={false}
+          />
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 8,
+            marginTop: 16,
+          }}
+        >
+          <div
+            style={{
+              fontWeight: 700,
+              fontSize: 11,
+              fontFamily: FONT_MONO,
+              letterSpacing: 3,
+              color: PAPER_DIM,
+              textTransform: 'uppercase',
+            }}
+          >
+            ADMIT ONE
+          </div>
+          {(fv?.rating ?? true) && d.rating > 0 && (
+            <div
+              style={{
+                fontWeight: 600,
+                fontSize: 13,
+                fontFamily: FONT_MONO,
+                letterSpacing: 1,
+                color: accent,
+              }}
+            >
+              ★ {d.rating.toFixed(1)}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -348,11 +446,11 @@ function MetaCell({
         style={{
           fontStyle: 'italic',
           fontWeight: 500,
-          fontSize: 17,
+          fontSize: 15,
           fontFamily: FONT_SANS,
           color: PAPER_DIM,
           letterSpacing: 0.3,
-          marginBottom: 6,
+          marginBottom: 5,
         }}
       >
         {label}
@@ -360,7 +458,7 @@ function MetaCell({
       <div
         style={{
           fontWeight: 800,
-          fontSize: 30,
+          fontSize: 26,
           fontFamily: mono ? FONT_MONO : FONT_SANS,
           letterSpacing: mono ? 0.5 : -0.4,
           lineHeight: 1.05,
@@ -372,9 +470,9 @@ function MetaCell({
       {sub && (
         <div
           style={{
-            marginTop: 4,
+            marginTop: 3,
             fontWeight: 600,
-            fontSize: 16,
+            fontSize: 14,
             fontFamily: FONT_MONO,
             letterSpacing: 1.5,
             color: PAPER_DIM,
