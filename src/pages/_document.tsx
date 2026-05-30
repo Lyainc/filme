@@ -15,6 +15,7 @@ export default function Document() {
   return (
     <Html lang="ko">
       <Head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#F4F5F7" />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </Head>

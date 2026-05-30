@@ -128,7 +128,7 @@ export default function Home() {
   );
 
   return (
-    <div style={{ position: 'relative' }}>
+    <>
       <AppShell
         theme={theme}
         onThemeChange={setTheme}
@@ -179,6 +179,6 @@ export default function Home() {
           <p style={{ color: '#fff', fontSize: 14 }}>포스터를 먼저 추가해주세요</p>
         )}
       </PreviewLightbox>
-    </div>
+    </>
   );
 }

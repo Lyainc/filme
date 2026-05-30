@@ -19,15 +19,22 @@ export function PreviewLightbox({ open, onClose, children }: PreviewLightboxProp
     return () => window.removeEventListener('keydown', handler);
   }, [open, onClose]);
 
-  // 포커스 이동·복원 + body 스크롤 잠금
+  // 포커스 이동·복원 + body 스크롤 잠금 (iOS Safari 대응)
   useEffect(() => {
     if (!open) return;
     const prevActive = document.activeElement as HTMLElement | null;
-    const prevOverflow = document.body.style.overflow;
+    const scrollY = window.scrollY;
     document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
     closeBtnRef.current?.focus();
     return () => {
-      document.body.style.overflow = prevOverflow;
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      window.scrollTo(0, scrollY);
       prevActive?.focus();
     };
   }, [open]);
@@ -61,7 +68,7 @@ export function PreviewLightbox({ open, onClose, children }: PreviewLightboxProp
         aria-label="닫기"
         style={{
           position: 'absolute',
-          top: 16,
+          top: 'calc(env(safe-area-inset-top) + 16px)',
           right: 16,
           width: 36,
           height: 36,
@@ -84,7 +91,7 @@ export function PreviewLightbox({ open, onClose, children }: PreviewLightboxProp
       <div
         style={{
           maxWidth: '90vw',
-          maxHeight: '90vh',
+          maxHeight: '90svh',
           overflow: 'auto',
           display: 'flex',
           alignItems: 'center',

@@ -33,10 +33,19 @@ export default function ImageCropModal({
       if (e.key === 'Escape' && !isProcessing) onClose();
     };
     document.addEventListener('keydown', handleEsc);
+    // iOS Safari는 overflow:hidden만으로 스크롤이 안 막힘 — position:fixed로 고정
+    const scrollY = window.scrollY;
     document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
     return () => {
       document.removeEventListener('keydown', handleEsc);
       document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      window.scrollTo(0, scrollY);
     };
   }, [isProcessing, onClose]);
 
@@ -45,7 +54,7 @@ export default function ImageCropModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm overscroll-contain animate-fade-in"
       style={{ background: 'rgba(44,38,34,0.55)' }}
     >
-      <div className="relative flex h-[85vh] max-h-[820px] w-full max-w-xl flex-col overflow-hidden rounded-modal bg-paper shadow-card">
+      <div className="relative flex h-[85svh] max-h-[820px] w-full max-w-xl flex-col overflow-hidden rounded-modal bg-paper shadow-card">
         <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
           <div className="flex items-baseline gap-3">
             <span className="text-mono text-[10px] uppercase tracking-widest text-accent-ink">
@@ -81,7 +90,7 @@ export default function ImageCropModal({
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 border-t border-line px-5 py-4">
+        <div className="flex flex-col gap-4 border-t border-line px-5 pt-4" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}>
           <div className="flex items-center gap-4">
             <span
               id="zoom-label"
