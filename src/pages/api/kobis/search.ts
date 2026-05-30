@@ -29,6 +29,7 @@ export default async function handler(
     }
     
     const data = await response.json();
+    res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate');
     res.status(200).json(data);
   } catch (error) {
     console.error('KOBIS API Error:', error);
