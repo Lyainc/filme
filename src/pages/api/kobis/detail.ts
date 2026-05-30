@@ -13,6 +13,9 @@ export default async function handler(
   if (!movieCd || typeof movieCd !== 'string') {
     return res.status(400).json({ error: 'movieCd is required' });
   }
+  if (!/^\d{8}$/.test(movieCd)) {
+    return res.status(400).json({ error: 'Invalid movieCd format' });
+  }
 
   const apiKey = process.env.KOBIS_API_KEY;
   if (!apiKey) {

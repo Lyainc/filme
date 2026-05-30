@@ -13,6 +13,9 @@ export default async function handler(
   if (!movieNm || typeof movieNm !== 'string') {
     return res.status(400).json({ error: 'movieNm is required' });
   }
+  if (movieNm.length > 100) {
+    return res.status(400).json({ error: 'movieNm too long' });
+  }
 
   const apiKey = process.env.KOBIS_API_KEY;
   if (!apiKey) {
