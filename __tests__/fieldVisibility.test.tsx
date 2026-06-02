@@ -58,7 +58,6 @@ const BASE_COMPONENTS: TicketComponents = {
   texture: 'none',
   posterOpacity: 0.5,
   themeColor: '#FFFFFF',
-  textureIntensity: 0.65,
 };
 
 const MOODS = [

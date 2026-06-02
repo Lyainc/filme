@@ -10,6 +10,7 @@
     "start": "bun --bun next start",
     "gen:assets": "bun scripts/generate-asset-manifest.ts",
     "gen:tesseract": "bun scripts/vendor-tesseract.ts",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },

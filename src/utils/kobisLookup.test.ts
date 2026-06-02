@@ -60,7 +60,7 @@ beforeEach(() => {
 describe('triggerKobisLookup — U-4', () => {
   it('단일 매치: titleOg/releaseDate(search) + actors/runtime(detail) 주입, detail 1회', async () => {
     const fetchMock = mockFetch([BASE_MOVIE], DETAIL_KOR);
-    vi.spyOn(global, 'fetch').mockImplementation(fetchMock as typeof fetch);
+    vi.spyOn(global, 'fetch').mockImplementation(fetchMock as unknown as typeof fetch);
 
     const result = await triggerKobisLookup('인터스텔라');
 
@@ -84,7 +84,7 @@ describe('triggerKobisLookup — U-4', () => {
 
   it('한국 영화: actors = peopleNm (한글)', async () => {
     vi.spyOn(global, 'fetch').mockImplementation(
-      mockFetch([{ ...BASE_MOVIE, movieNm: '기생충' }], DETAIL_KOREAN_MOVIE) as typeof fetch
+      mockFetch([{ ...BASE_MOVIE, movieNm: '기생충' }], DETAIL_KOREAN_MOVIE) as unknown as typeof fetch
     );
 
     const result = await triggerKobisLookup('기생충');
@@ -94,7 +94,7 @@ describe('triggerKobisLookup — U-4', () => {
 
   it('외화: actors = peopleNmEn', async () => {
     vi.spyOn(global, 'fetch').mockImplementation(
-      mockFetch([BASE_MOVIE], DETAIL_KOR) as typeof fetch
+      mockFetch([BASE_MOVIE], DETAIL_KOR) as unknown as typeof fetch
     );
 
     const result = await triggerKobisLookup('인터스텔라');
@@ -104,7 +104,7 @@ describe('triggerKobisLookup — U-4', () => {
 
   it('2건 이상 → { title } 만, detail 0회 호출', async () => {
     const fetchMock = mockFetch([BASE_MOVIE, { ...BASE_MOVIE, movieCd: 'M002' }]);
-    vi.spyOn(global, 'fetch').mockImplementation(fetchMock as typeof fetch);
+    vi.spyOn(global, 'fetch').mockImplementation(fetchMock as unknown as typeof fetch);
 
     const result = await triggerKobisLookup('인터스텔라');
 
@@ -119,7 +119,7 @@ describe('triggerKobisLookup — U-4', () => {
 
   it('0건 → { title } 만, throw 없음', async () => {
     vi.spyOn(global, 'fetch').mockImplementation(
-      mockFetch([]) as typeof fetch
+      mockFetch([]) as unknown as typeof fetch
     );
 
     const result = await triggerKobisLookup('존재하지않는영화');
