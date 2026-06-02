@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import ImageUploader from '@/components/ImageUploader';
 import MovieInfoForm from '@/components/MovieInfoForm';
 import Field from '@/components/ui/Field';
 import OptionalDetailsAccordion from '@/components/wizard/OptionalDetailsAccordion';
 import RatingPicker from '@/components/wizard/RatingPicker';
 import { OcrUploadCard } from './OcrUploadCard';
+import type { OcrDirectField } from './OcrUploadCard';
 import { formatDate } from '@/utils/dateFormat';
 import type { DateFormatToken } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
@@ -20,10 +22,38 @@ const WATCH_FORMAT_TOKENS: { value: DateFormatToken; sample: string }[] = [
   { value: 'en-long', sample: 'May 12, 2026' },
 ];
 
+function OcrChip() {
+  return (
+    <span className="text-mono text-[8px] uppercase tracking-wider bg-accent-soft text-accent px-1.5 py-0.5 rounded-chip leading-none">
+      OCR
+    </span>
+  );
+}
+
 export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps) {
   const { movieInfo } = photo.state;
   const setInfo = photo.updateMovieInfo;
   const watchToken = movieInfo.watchDateFormat || 'kr-compact';
+
+  // Tracks which fields were last filled by OCR. Cleared field-by-field on user edit.
+  const [ocrFilledFields, setOcrFilledFields] = useState<Set<OcrDirectField>>(new Set());
+
+  function removeFromOcr(key: OcrDirectField) {
+    setOcrFilledFields((prev) => {
+      if (!prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
+  }
+
+  function handleOcrFill(keys: Set<OcrDirectField>) {
+    setOcrFilledFields((prev) => {
+      const next = new Set(prev);
+      keys.forEach((k) => next.add(k));
+      return next;
+    });
+  }
 
   return (
     <div className="space-y-8">
@@ -45,7 +75,11 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
             isProcessing={false}
             hasImage={!!photo.state.croppedImageUrl}
           />
-          <OcrUploadCard />
+          <OcrUploadCard
+            setInfo={setInfo}
+            currentInfo={movieInfo}
+            onOcrFill={handleOcrFill}
+          />
         </div>
       </section>
 
@@ -62,12 +96,15 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
         <div className="space-y-5">
           <div className="space-y-2.5">
             <div className="flex items-baseline justify-between">
-              <label
-                htmlFor="p1-watchDate"
-                className="text-mono block text-[10px] uppercase tracking-widest text-fg-muted"
-              >
-                Watched
-              </label>
+              <div className="flex items-center gap-1.5">
+                <label
+                  htmlFor="p1-watchDate"
+                  className="text-mono block text-[10px] uppercase tracking-widest text-fg-muted"
+                >
+                  Watched
+                </label>
+                {ocrFilledFields.has('watchDate') && <OcrChip />}
+              </div>
               <span className="text-mono text-[10px] uppercase tracking-widest text-fg-faint">
                 {formatDate(movieInfo.watchDate, watchToken, 'date') || '—'}
               </span>
@@ -76,7 +113,10 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
               id="p1-watchDate"
               type="date"
               value={movieInfo.watchDate || ''}
-              onChange={(e) => setInfo({ watchDate: e.target.value })}
+              onChange={(e) => {
+                setInfo({ watchDate: e.target.value });
+                removeFromOcr('watchDate');
+              }}
               className="w-full rounded-field border border-line bg-surface-elevated px-3.5 py-3 text-[15px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
             />
             <div className="flex flex-wrap gap-2 pt-1" role="radiogroup" aria-label="Watched 표기">
@@ -100,14 +140,22 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
             </div>
           </div>
 
-          <Field
-            id="p1-theater"
-            label="Theater"
-            optional
-            value={movieInfo.theater || ''}
-            onChange={(e) => setInfo({ theater: e.target.value })}
-            placeholder="CGV 용산아이파크몰"
-          />
+          <div className="space-y-1">
+            {ocrFilledFields.has('theater') && (
+              <div className="flex justify-start"><OcrChip /></div>
+            )}
+            <Field
+              id="p1-theater"
+              label="Theater"
+              optional
+              value={movieInfo.theater || ''}
+              onChange={(e) => {
+                setInfo({ theater: e.target.value });
+                removeFromOcr('theater');
+              }}
+              placeholder="CGV 용산아이파크몰"
+            />
+          </div>
 
           <Field
             id="p1-actors"
@@ -119,14 +167,22 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
           />
 
           <div className="grid grid-cols-2 gap-4">
-            <Field
-              id="p1-watchTime"
-              label="Showtime"
-              type="time"
-              optional
-              value={movieInfo.watchTime || ''}
-              onChange={(e) => setInfo({ watchTime: e.target.value })}
-            />
+            <div className="space-y-1">
+              {ocrFilledFields.has('watchTime') && (
+                <div className="flex justify-start"><OcrChip /></div>
+              )}
+              <Field
+                id="p1-watchTime"
+                label="Showtime"
+                type="time"
+                optional
+                value={movieInfo.watchTime || ''}
+                onChange={(e) => {
+                  setInfo({ watchTime: e.target.value });
+                  removeFromOcr('watchTime');
+                }}
+              />
+            </div>
             <Field
               id="p1-runtime"
               label="Runtime"
@@ -138,14 +194,22 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Field
-              id="p1-screen"
-              label="Screen"
-              optional
-              value={movieInfo.screen || ''}
-              onChange={(e) => setInfo({ screen: e.target.value })}
-              placeholder="IMAX관"
-            />
+            <div className="space-y-1">
+              {ocrFilledFields.has('screen') && (
+                <div className="flex justify-start"><OcrChip /></div>
+              )}
+              <Field
+                id="p1-screen"
+                label="Screen"
+                optional
+                value={movieInfo.screen || ''}
+                onChange={(e) => {
+                  setInfo({ screen: e.target.value });
+                  removeFromOcr('screen');
+                }}
+                placeholder="IMAX관"
+              />
+            </div>
             <Field
               id="p1-seat"
               label="Seat"

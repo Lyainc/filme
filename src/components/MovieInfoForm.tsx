@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { MovieInfo, KobisMovie, DateFormatToken, DateGranularity } from '@/types';
-import { formatDate } from '@/utils/dateFormat';
+import { formatDate, openDtToIso } from '@/utils/dateFormat';
 import Field from './ui/Field';
 
 interface MovieInfoFormProps {
@@ -471,10 +471,4 @@ function DateInput({
       className={base}
     />
   );
-}
-
-/** KOBIS openDt (YYYYMMDD) → ISO 'YYYY-MM-DD'. Empty/invalid → ''. */
-function openDtToIso(dt: string): string {
-  if (!dt || dt.length !== 8) return '';
-  return `${dt.substring(0, 4)}-${dt.substring(4, 6)}-${dt.substring(6, 8)}`;
 }

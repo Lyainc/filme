@@ -1,8 +1,23 @@
-import { useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
+import type { MovieInfo } from '@/types';
+import { runOcr } from '@/utils/ocr';
+import { parseTicket } from '@/utils/parseTicket';
+import { triggerKobisLookup } from '@/utils/kobisLookup';
 
-interface OcrUploadCardProps {
+export type OcrDirectField = 'theater' | 'screen' | 'watchDate' | 'watchTime';
+export const OCR_DIRECT_FIELDS: OcrDirectField[] = ['theater', 'screen', 'watchDate', 'watchTime'];
+
+export interface OcrUploadCardProps {
+  setInfo: (info: Partial<MovieInfo>) => void;
+  /** Current form values — used to detect user edits before OCR re-run. */
+  currentInfo: Partial<MovieInfo>;
+  /** Called after OCR values are applied so the parent can track which fields are OCR-sourced. */
+  onOcrFill: (keys: Set<OcrDirectField>) => void;
   className?: string;
 }
+
+const ALLOWED_MIME = new Set(['image/png', 'image/jpeg', 'image/webp']);
+const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 
 function ScanIcon() {
   return (
@@ -13,46 +28,229 @@ function ScanIcon() {
   );
 }
 
-export function OcrUploadCard({ className = '' }: OcrUploadCardProps) {
-  const [toastVisible, setToastVisible] = useState(false);
+export function OcrUploadCard({
+  setInfo,
+  currentInfo,
+  onOcrFill,
+  className = '',
+}: OcrUploadCardProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [toast, setToast] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!toastVisible) return;
-    const timer = setTimeout(() => setToastVisible(false), 2000);
-    return () => clearTimeout(timer);
-  }, [toastVisible]);
+  // Tracks values that were last written by OCR. Used to detect user edits on re-run.
+  const lastOcrRef = useRef<Partial<MovieInfo>>({});
+
+  // Pending OCR result waiting for user confirmation (conflict case)
+  const [pendingOcr, setPendingOcr] = useState<{
+    direct: Partial<MovieInfo>;
+    title?: string;
+    conflictCount: number;
+  } | null>(null);
+
+  function showToast(msg: string, durationMs = 3000) {
+    setToast(msg);
+    setTimeout(() => setToast(null), durationMs);
+  }
+
+  function validateFile(file: File): string | null {
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+    if (ext === 'heic' || file.type === 'image/heic' || file.type === 'image/heif') {
+      return 'HEIC 파일은 지원하지 않아요. PNG/JPG로 저장해 주세요.';
+    }
+    if (!ALLOWED_MIME.has(file.type)) {
+      return 'PNG, JPG, WebP 파일만 인식할 수 있어요.';
+    }
+    if (file.size > MAX_BYTES) {
+      return '파일 크기가 10MB를 초과해요.';
+    }
+    return null;
+  }
+
+  /** Apply direct OCR fields to the form, then trigger KOBIS lookup for title. */
+  function applyOcr(direct: Partial<MovieInfo>, title?: string) {
+    const filled = new Set<OcrDirectField>();
+    const toApply: Partial<MovieInfo> = {};
+
+    for (const key of OCR_DIRECT_FIELDS) {
+      if (direct[key] !== undefined) {
+        (toApply as Record<string, unknown>)[key] = direct[key];
+        filled.add(key);
+      }
+    }
+
+    if (filled.size > 0) {
+      setInfo(toApply);
+      onOcrFill(filled);
+      lastOcrRef.current = toApply;
+    }
+
+    if (title) {
+      triggerKobisLookup(title).then((kobisInfo) => {
+        setInfo(kobisInfo);
+        if (!kobisInfo.titleOg && !kobisInfo.actors) {
+          showToast('영화 제목을 확인 후 검색해 주세요.');
+        }
+      });
+    }
+
+    if (filled.size > 0) {
+      showToast(`${filled.size}개 필드를 인식했어요. 확인해 주세요.`);
+    } else if (!title) {
+      showToast('인식된 정보가 없어요. 직접 입력해 주세요.');
+    }
+  }
+
+  function confirmPending() {
+    if (!pendingOcr) return;
+    applyOcr(pendingOcr.direct, pendingOcr.title);
+    setPendingOcr(null);
+  }
+
+  function cancelPending() {
+    setPendingOcr(null);
+  }
+
+  async function processFile(file: File) {
+    setIsProcessing(true);
+    setProgress(0);
+
+    try {
+      const raw = await runOcr(file, (p) => setProgress(p));
+      const parsed = parseTicket(raw);
+
+      // Build direct fields (4 fields only — seat/bookingNumber structurally absent from parseTicket)
+      const direct: Partial<MovieInfo> = {};
+      for (const key of OCR_DIRECT_FIELDS) {
+        if (parsed[key] !== undefined) {
+          (direct as Record<string, unknown>)[key] = parsed[key];
+        }
+      }
+
+      // Conflict detection: fields OCR previously filled that the user has since edited
+      const lastOcr = lastOcrRef.current;
+      const conflictKeys = OCR_DIRECT_FIELDS.filter((k) => {
+        // Was set by last OCR AND user has changed it since
+        return (
+          lastOcr[k] !== undefined &&
+          currentInfo[k] !== lastOcr[k] &&
+          direct[k] !== undefined
+        );
+      });
+
+      if (conflictKeys.length > 0) {
+        // Hold result — ask user before overwriting their edits
+        setPendingOcr({
+          direct,
+          title: parsed.title,
+          conflictCount: conflictKeys.length,
+        });
+      } else {
+        applyOcr(direct, parsed.title);
+      }
+    } catch {
+      // Principle 5: silent fallback
+    } finally {
+      setIsProcessing(false);
+      setProgress(0);
+    }
+  }
+
+  async function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
+    const err = validateFile(file);
+    if (err) {
+      showToast(err);
+      return;
+    }
+
+    await processFile(file);
+  }
 
   function handleClick() {
-    setToastVisible(true);
+    if (!isProcessing && !pendingOcr) inputRef.current?.click();
   }
 
   return (
     <div className={`relative ${className}`}>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="sr-only"
+        aria-hidden="true"
+        onChange={handleChange}
+      />
+
       <div
         role="button"
         tabIndex={0}
-        aria-disabled="true"
+        aria-label="티켓 스크린샷으로 자동 인식"
+        aria-busy={isProcessing}
         onClick={handleClick}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleClick(); }}
-        className="relative w-full rounded-card border-2 border-dashed border-line opacity-60 cursor-default overflow-hidden"
+        className={`relative w-full rounded-card border-2 border-dashed overflow-hidden transition-colors
+          ${isProcessing || pendingOcr
+            ? 'border-accent cursor-default'
+            : 'border-line hover:border-accent cursor-pointer'
+          }`}
         style={{ paddingBottom: '150%' }}
       >
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-          <span className="text-fg-muted"><ScanIcon /></span>
-          <div className="text-center space-y-1">
-            <div className="flex items-center justify-center gap-1.5">
-              <span className="text-xs font-semibold bg-accent-soft text-accent px-2 py-0.5 rounded-chip">
-                OCR 예정
-              </span>
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-3">
+          {isProcessing ? (
+            <div className="flex flex-col items-center gap-2 w-full">
+              <span className="text-accent animate-pulse"><ScanIcon /></span>
+              <div className="w-full max-w-[80%] h-1 bg-line rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-accent transition-all duration-300"
+                  style={{ width: `${Math.round(progress * 100)}%` }}
+                />
+              </div>
+              <p className="text-xs text-fg-muted">인식 중...</p>
             </div>
-            <p className="text-xs text-fg-muted">포스터로 자동 인식</p>
-          </div>
+          ) : (
+            <div className="text-center space-y-1">
+              <span className="text-fg-muted"><ScanIcon /></span>
+              <p className="text-xs text-fg-muted">티켓 스크린샷으로 자동 인식</p>
+              <p className="text-[10px] text-fg-faint">PNG · JPG · WebP</p>
+            </div>
+          )}
         </div>
       </div>
 
-      {toastVisible && (
+      {/* Conflict confirmation overlay */}
+      {pendingOcr && (
+        <div className="absolute inset-x-2 bottom-2 bg-surface-elevated border border-accent rounded-card shadow-lg p-3 z-20 space-y-2">
+          <p className="text-xs text-fg leading-snug">
+            수정한 {pendingOcr.conflictCount}개 필드를 새로 인식한 값으로 덮어쓸까요?
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={confirmPending}
+              className="flex-1 rounded-chip bg-accent py-1 text-[11px] font-medium text-white"
+            >
+              덮어쓰기
+            </button>
+            <button
+              type="button"
+              onClick={cancelPending}
+              className="flex-1 rounded-chip border border-line py-1 text-[11px] font-medium text-fg"
+            >
+              취소
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Info toast */}
+      {toast && !pendingOcr && (
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-fg text-surface-elevated text-xs font-medium px-3 py-1.5 rounded-chip whitespace-nowrap shadow-lg animate-fade-in z-10">
-          곧 추가될 기능이에요
+          {toast}
         </div>
       )}
     </div>
