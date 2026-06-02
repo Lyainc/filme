@@ -1,7 +1,9 @@
 import { useState, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Cropper from 'react-easy-crop';
 import { Area } from '@/utils/imageCrop';
 import { TARGET_RATIO } from '@/utils/constants';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 interface ImageCropModalProps {
   imageSrc: string;
@@ -28,29 +30,23 @@ export default function ImageCropModal({
     if (croppedAreaPixels && !isProcessing) onComplete(croppedAreaPixels);
   };
 
+  // 모달은 selectedImageSrc가 있을 때만 마운트되므로 항상 열린 상태 — 스크롤 잠금
+  useBodyScrollLock(true);
+
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !isProcessing) onClose();
     };
     document.addEventListener('keydown', handleEsc);
-    // iOS Safari는 overflow:hidden만으로 스크롤이 안 막힘 — position:fixed로 고정
-    const scrollY = window.scrollY;
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = '100%';
-    return () => {
-      document.removeEventListener('keydown', handleEsc);
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      window.scrollTo(0, scrollY);
-    };
+    return () => document.removeEventListener('keydown', handleEsc);
   }, [isProcessing, onClose]);
 
-  return (
+  // dynamic(ssr:false)로만 import되므로 document는 항상 존재 — mount 가드 불필요
+  return createPortal(
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Frame the poster"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm overscroll-contain animate-fade-in"
       style={{ background: 'rgba(44,38,34,0.55)' }}
     >
@@ -141,6 +137,7 @@ export default function ImageCropModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

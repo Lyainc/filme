@@ -93,14 +93,11 @@ export default function Home() {
     }
   }, [photo.state.croppedImageUrl, photo.state.movieInfo.title, photo.state.components.layout]);
 
-  // PreviewFilmCell 상태 계산
-  const previewState = !croppedImageUrl ? 'empty' : ctaState === 'loading' ? 'saving' : 'ready';
-
   const rail = (
     <div className="flex flex-col gap-4">
-      <PreviewFilmCell state={previewState}>
-        {/* croppedImageUrl이 있으면 항상 마운트, phase 전환 시 unmount 없음 */}
-        {croppedImageUrl ? (
+      {/* 업로드 전에는 프리뷰 영역 자체를 렌더하지 않음 — 빈 티켓 틀이 보이지 않게 */}
+      {croppedImageUrl && (
+        <PreviewFilmCell saving={ctaState === 'loading'}>
           <TicketRenderer
             ref={ticketRef}
             croppedImageUrl={croppedImageUrl}
@@ -108,8 +105,8 @@ export default function Home() {
             components={debouncedComponents}
             fieldVisibility={photo.state.fieldVisibility}
           />
-        ) : null}
-      </PreviewFilmCell>
+        </PreviewFilmCell>
+      )}
 
       {phase.phase === 2 && (
         <>
@@ -153,7 +150,6 @@ export default function Home() {
 
       {isMobile && (
         <MobileDock
-          previewState={previewState}
           ctaState={ctaState}
           phase={phase.phase}
           canAdvance={phase.canAdvance(1)}

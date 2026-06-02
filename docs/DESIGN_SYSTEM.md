@@ -78,19 +78,31 @@ style={{
 2. **시인성 확보** — 텍스트 그림자/아웃라인 + posterOpacity slider로 사용자가 직접 조정.
 3. **레이어 구조** — 포스터 → 텍스처 오버레이(스코딕스/메탈/홀로그램 등) → 메타 → 로고 stamp.
 4. **자연 픽셀 + 스케일 분리** — 무드 컴포넌트는 layout의 natural pixel(예 960×1477)을 그대로 렌더, preview는 ResizeObserver로 css transform scale만 적용. 캡처는 항상 natural pixel.
+5. **빈 상태는 비운다** — 포스터 업로드 전에는 프리뷰 영역(`PreviewFilmCell`)을 아예 렌더하지 않아요. 빈 티켓 틀·천공 장식이 먼저 보이면 "아직 미완성"이라는 인상을 주거든요. `croppedImageUrl`이 생긴 뒤에만 프리뷰가 등장. `PreviewFilmCell`의 상하 천공(동그란 구멍) 장식은 제거됐어요 — 실제 티켓에 이미 충분한 그래픽이 있어 컨테이너 장식은 중복이라.
 
 ---
 
 ## 🖌️ 폰트 토큰 (`_shared.tsx`)
 
+티켓(mood) 렌더링에서 쓰는 폰트 토큰이에요. mood 컴포넌트와 stamp에서 import.
+
 ```ts
-FONT_MONO   = "JetBrains Mono", "SF Mono", ui-monospace, monospace
-FONT_SANS   = "Inter", "Pretendard Variable", "Pretendard", "Noto Sans KR", sans-serif
-FONT_SERIF  = "Cormorant Garamond", "Times New Roman", serif
-FONT_KR     = "Pretendard Variable", "Noto Sans KR", "Inter", sans-serif
+FONT_MONO = "JetBrains Mono", "SF Mono", ui-monospace, monospace
+FONT_SANS = "Pretendard Variable", "Pretendard", "Noto Sans KR", sans-serif
+FONT_KR   = "Pretendard Variable", "Noto Sans KR", "Inter", sans-serif
 ```
 
-mood 컴포넌트와 stamp에서 이 토큰을 import해서 사용.
+> 장식용 serif 토큰(`FONT_SERIF`)은 직관성·시인성 정리 과정에서 제거됐어요. 모든 mood는 Pretendard(sans) + JetBrains Mono 두 계열만 사용해요. 실제 폰트 로드는 `_app.tsx`의 `next/font`(Pretendard local + JetBrains Mono google)에서 담당.
+
+---
+
+## 🔤 앱 UI 타이포그래피
+
+티켓이 아닌 **앱 인터페이스**(Phase 캔버스, 위저드, 헤더 등)의 폰트 정책이에요.
+
+- **폰트**: Pretendard (`--font-sans`). Tailwind `font-sans` 토큰으로 일관 적용.
+- **본문 기준 weight: 450** — `globals.css`의 `body`에 지정. Pretendard 기본 400은 `-webkit-font-smoothing: antialiased` 환경에서 얇게 읽혀 시인성이 낮아, 본문 기준선을 450으로 올렸어요. 제목·라벨은 `font-medium`(500) 이상을 명시.
+- **장식 weight 지양**: `font-light`/`font-thin`(300 이하)은 UI 본문에서 사용하지 않음. (큰 `+` 같은 순수 기호 글리프도 `font-normal` 이상)
 
 ---
 
@@ -128,4 +140,4 @@ mood 컴포넌트와 stamp에서 이 토큰을 import해서 사용.
 
 ---
 
-**마지막 업데이트**: 2026-05-11
+**마지막 업데이트**: 2026-05-30

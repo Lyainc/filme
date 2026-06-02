@@ -95,7 +95,7 @@ export default function ImageUploader({ onUpload, isProcessing, hasImage = false
 
           <span
             aria-hidden
-            className="text-mono shrink-0 text-3xl font-light text-accent transition-transform group-hover:rotate-90 md:text-4xl"
+            className="text-mono shrink-0 text-3xl font-normal text-accent transition-transform group-hover:rotate-90 md:text-4xl"
           >
             +
           </span>

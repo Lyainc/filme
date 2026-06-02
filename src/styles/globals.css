@@ -76,6 +76,8 @@
   body {
     background: var(--bg);
     font-feature-settings: "ss01", "cv11";
+    /* Pretendard 기본 400은 antialiased 환경에서 얇게 읽혀 시인성이 낮음 — 본문 기준 weight 상향 */
+    font-weight: 450;
   }
 
   ::selection {
@@ -173,9 +175,13 @@
     text-wrap: pretty;
   }
 
+  /* opacity-only 진입 — keyframe에 transform을 한 번이라도 두면 forwards 채움
+     상태에서 identity matrix가 남아 fixed 자식의 containing block을 viewport에서
+     .phase-in으로 가로채요(모달/오버레이가 깨짐). transform을 빼면 .phase-in의
+     computed transform이 none으로 유지돼 그 함정이 사라져요. */
   @keyframes phase-in {
-    from { opacity: 0; transform: translateX(16px); }
-    to   { opacity: 1; transform: translateX(0); }
+    from { opacity: 0; }
+    to   { opacity: 1; }
   }
 
   @media (prefers-reduced-motion: reduce) {

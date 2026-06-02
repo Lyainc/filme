@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useRef } from 'react';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 interface PreviewLightboxProps {
   open: boolean;
@@ -19,22 +20,14 @@ export function PreviewLightbox({ open, onClose, children }: PreviewLightboxProp
     return () => window.removeEventListener('keydown', handler);
   }, [open, onClose]);
 
-  // 포커스 이동·복원 + body 스크롤 잠금 (iOS Safari 대응)
+  useBodyScrollLock(open);
+
+  // 포커스 이동·복원
   useEffect(() => {
     if (!open) return;
     const prevActive = document.activeElement as HTMLElement | null;
-    const scrollY = window.scrollY;
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = '100%';
     closeBtnRef.current?.focus();
     return () => {
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      window.scrollTo(0, scrollY);
       prevActive?.focus();
     };
   }, [open]);
