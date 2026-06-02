@@ -1,3 +1,7 @@
+import { FORMAT_ASSETS } from './assets.generated';
+
+type FormatValue = (typeof FORMAT_ASSETS)[number]['value'];
+
 /**
  * 극장 체인별 상영 포맷 매핑.
  *
@@ -8,11 +12,11 @@
  *
  * ※ 사용자가 직접 채우는 데이터입니다. 자동 채우지 마세요.
  */
-export const CHAIN_FORMAT_MAP: Readonly<Record<string, readonly string[]>> = {
-  cgv: [],
+export const CHAIN_FORMAT_MAP: Readonly<Record<string, readonly FormatValue[]>> = {
+  cgv: ['4dx', 'arthouse', 'imax', 'screenx', 'stresslesscinema', 'tempurcinema', 'ultra4dx'],
   cineq: [],
-  lotte: [],
-  megabox: [],
+  lotte: ['chalotte', 'crazysound', 'crazysoundled', 'sled', 'smx4d', 'superplex', 'dolby-atmos'],
+  megabox: ['boutique', 'boutiqueprivate', 'boutiquesuite', 'dolby-atmos', 'dolby-cinema', 'dolby-va', 'megaled', 'megamx4d'],
 };
 
 export function allowedFormatsForChain(chain: string): readonly string[] | null {

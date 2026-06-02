@@ -21,7 +21,9 @@ export default function FormatPicker({ value, onChange, chain }: FormatPickerPro
     if (allowed && value && !allowed.includes(value)) {
       onChange('');
     }
-  }, [chain, value, onChange]);
+    // onChange는 useState setter로 stable — deps 포함 시 인라인 함수 참조 변경마다 불필요 재실행
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chain, value]);
 
   return (
     <div className="space-y-2.5">
