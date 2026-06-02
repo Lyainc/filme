@@ -44,13 +44,9 @@ export function PhaseIndicator({ steps }: PhaseIndicatorProps) {
               {step.status === 'done' ? <CheckIcon /> : index + 1}
             </span>
             <span
-              className={
-                step.status === 'active'
-                  ? 'text-accent'
-                  : step.status === 'done'
-                  ? 'text-fg-muted'
-                  : 'text-fg-muted'
-              }
+              className={`sr-only whitespace-nowrap sm:not-sr-only ${
+                step.status === 'active' ? 'text-accent' : 'text-fg-muted'
+              }`}
             >
               {step.label}
             </span>

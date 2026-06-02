@@ -1,11 +1,9 @@
 import { useMatchMedia } from '@/hooks/useMatchMedia';
 import { Sprocket } from './Sprocket';
 
-type PreviewState = 'empty' | 'updating' | 'ready' | 'saving' | 'saved';
 type CtaState = 'idle' | 'loading' | 'success' | 'disabled';
 
 interface MobileDockProps {
-  previewState: PreviewState;
   ctaState: CtaState;
   ctaLabel?: string;
   phase: 1 | 2;
@@ -35,7 +33,6 @@ function SpinnerIcon({ spin }: { spin: boolean }) {
 }
 
 export function MobileDock({
-  previewState,
   ctaState,
   ctaLabel,
   phase,
@@ -56,7 +53,7 @@ export function MobileDock({
     (phase === 1 && !canAdvance) ||
     (phase === 2 && !hasImage);
 
-  const showThumb = previewState !== 'empty' && previewThumb;
+  const showThumb = hasImage && previewThumb;
 
   return (
     <div

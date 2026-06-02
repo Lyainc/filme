@@ -1,11 +1,9 @@
-import { ReactNode, useEffect, useRef, useState } from 'react';
-
-type PreviewState = 'empty' | 'updating' | 'ready' | 'saving' | 'saved';
+import { ReactNode } from 'react';
 
 interface PreviewFilmCellProps {
-  state?: PreviewState;
+  /** 다운로드(저장) 진행 중이면 오버레이를 띄운다. */
+  saving?: boolean;
   children?: ReactNode;
-  mountSlot?: HTMLElement;
   className?: string;
 }
 
@@ -18,75 +16,22 @@ function Spinner() {
   );
 }
 
-function PerforationStrip() {
-  return (
-    <div className="flex items-center gap-1.5 py-2 px-1 bg-black w-full">
-      {Array.from({ length: 12 }).map((_, i) => (
-        <span
-          key={i}
-          className="w-3 h-3 rounded-full border border-white/20 bg-white/10 shrink-0"
-          aria-hidden="true"
-        />
-      ))}
-    </div>
-  );
-}
-
-export function PreviewFilmCell({
-  state = 'empty',
-  children,
-  className = '',
-}: PreviewFilmCellProps) {
-  const [savedDone, setSavedDone] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (state === 'saved') {
-      setSavedDone(false);
-      timerRef.current = setTimeout(() => setSavedDone(true), 2000);
-    } else {
-      if (timerRef.current) clearTimeout(timerRef.current);
-      setSavedDone(false);
-    }
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [state]);
-
-  const displayState = state === 'saved' && savedDone ? 'ready' : state;
-
-  const showOverlay = displayState === 'updating' || displayState === 'saving' || displayState === 'saved';
-  const overlayLabel =
-    displayState === 'updating' ? '업데이트 중...' :
-    displayState === 'saving' ? '저장 중...' :
-    displayState === 'saved' ? '저장됨' : '';
-
+export function PreviewFilmCell({ saving = false, children, className = '' }: PreviewFilmCellProps) {
   return (
     <div
       className={`flex flex-col bg-black rounded-card overflow-hidden ${className}`}
       style={{ position: 'relative', isolation: 'isolate' }}
     >
-      <PerforationStrip />
-
       <div className="relative flex-1 flex items-center justify-center bg-black">
         {children}
 
-        {showOverlay && (
+        {saving && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60 backdrop-blur-sm z-10">
-            {(displayState === 'updating' || displayState === 'saving') && (
-              <span className="text-white"><Spinner /></span>
-            )}
-            {displayState === 'saved' && (
-              <svg width="20" height="20" viewBox="0 0 12 12" fill="white" aria-hidden="true">
-                <path d="M10.28 2.28 4.75 7.81 1.72 4.78.28 6.22l4.47 4.47 7-7-1.47-1.41z" />
-              </svg>
-            )}
-            <span className="text-white text-sm font-medium">{overlayLabel}</span>
+            <span className="text-white"><Spinner /></span>
+            <span className="text-white text-sm font-medium">저장 중...</span>
           </div>
         )}
       </div>
-
-      <PerforationStrip />
     </div>
   );
 }
