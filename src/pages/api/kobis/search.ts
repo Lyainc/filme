@@ -22,17 +22,16 @@ export default async function handler(
     return res.status(500).json({ error: 'KOBIS API Key is not configured' });
   }
 
-  const query = encodeURIComponent(movieNm);
-  const url = `https://www.kobis.or.kr/kobisopenapi/webservice/rest/movie/searchMovieList.json?key=${apiKey}&movieNm=${query}`;
+  const url = `https://www.kobis.or.kr/kobisopenapi/webservice/rest/movie/searchMovieList.json?key=${apiKey}&movieNm=${encodeURIComponent(movieNm)}`;
 
   try {
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`KOBIS API responded with status: ${response.status}`);
     }
-    
+
     const data = await response.json();
-    res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate');
+    res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=3600');
     res.status(200).json(data);
   } catch (error) {
     console.error('KOBIS API Error:', error);

@@ -34,6 +34,10 @@ export default function MovieInfoForm({
   const [showResults, setShowResults] = useState(false);
   const [isFetchingDetail, setIsFetchingDetail] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const searchCacheRef = useRef<Map<string, KobisMovie[]>>(new Map());
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const isComposingRef = useRef(false);
 
   useEffect(() => {
     onPendingFetchChange?.(isFetchingDetail);
@@ -53,30 +57,65 @@ export default function MovieInfoForm({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSearch = async () => {
-    if (!movieInfo.title.trim()) {
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      abortControllerRef.current?.abort();
+    };
+  }, []);
+
+  const clearDebounce = () => {
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+  };
+
+  const scheduleSearch = (term: string) => {
+    clearDebounce();
+    debounceTimerRef.current = setTimeout(() => handleSearch(term), 300);
+  };
+
+  const handleSearch = async (term: string) => {
+    if (!term) {
       setSearchError('검색할 영화 제목을 입력해주세요.');
       setShowResults(true);
       return;
     }
+
+    if (searchCacheRef.current.has(term)) {
+      const cached = searchCacheRef.current.get(term)!;
+      setSearchResults(cached);
+      setSearchError(cached.length === 0 ? '검색 결과가 없습니다.' : '');
+      setShowResults(true);
+      return;
+    }
+
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setIsSearching(true);
     setSearchError('');
     setShowResults(true);
+
     try {
       const res = await fetch(
-        `/api/kobis/search?movieNm=${encodeURIComponent(movieInfo.title.trim())}`
+        `/api/kobis/search?movieNm=${encodeURIComponent(term)}`,
+        { signal: controller.signal }
       );
       if (!res.ok) throw new Error('API 요청 실패');
       const data = await res.json();
-      const list = data.movieListResult?.movieList || [];
+      const list: KobisMovie[] = data.movieListResult?.movieList || [];
+      searchCacheRef.current.set(term, list);
       setSearchResults(list);
       if (list.length === 0) setSearchError('검색 결과가 없습니다.');
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return;
       console.error('영화 검색 오류:', error);
       setSearchError('영화를 검색하는 중 문제가 발생했습니다.');
       setSearchResults([]);
     } finally {
-      setIsSearching(false);
+      if (abortControllerRef.current === controller) {
+        setIsSearching(false);
+      }
     }
   };
 
@@ -120,7 +159,6 @@ export default function MovieInfoForm({
 
   return (
     <section className="space-y-5">
-      {/* Title with KOBIS search */}
       <div className="relative" ref={searchContainerRef}>
         <div className="flex items-baseline justify-between">
           <label
@@ -138,14 +176,25 @@ export default function MovieInfoForm({
             id="movieTitle"
             type="text"
             value={movieInfo.title}
+            onCompositionStart={() => { isComposingRef.current = true; }}
+            onCompositionEnd={(e) => {
+              isComposingRef.current = false;
+              const value = e.currentTarget.value.trim();
+              if (value.length >= 2) scheduleSearch(value);
+            }}
             onChange={(e) => {
-              onChange({ title: e.target.value });
+              const value = e.target.value;
+              onChange({ title: value });
               setShowResults(false);
+              clearDebounce();
+              if (isComposingRef.current || value.trim().length < 2) return;
+              scheduleSearch(value.trim());
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
-                handleSearch();
+                clearDebounce();
+                handleSearch(movieInfo.title.trim());
               }
             }}
             placeholder="인터스텔라"
@@ -155,7 +204,10 @@ export default function MovieInfoForm({
           />
           <button
             type="button"
-            onClick={handleSearch}
+            onClick={() => {
+              clearDebounce();
+              handleSearch(movieInfo.title.trim());
+            }}
             disabled={isSearching}
             data-touch="44"
             className="text-mono inline-flex min-h-touch shrink-0 items-center justify-center rounded-field bg-accent px-4 text-[11px] uppercase tracking-widest text-white transition-colors hover:bg-accent-ink disabled:opacity-40"
@@ -362,12 +414,7 @@ function ReissueBlock({
   );
 }
 
-/**
- * Merge a coarser-granularity edit back onto a stored full-ISO value so that
- * switching granularity (e.g. date → year) and back doesn't discard precision.
- * If the edit shares a prefix with the stored value, the stored finer parts
- * are kept; otherwise the edit replaces the value outright.
- */
+// Merges coarser-granularity edits onto a full-ISO value so switching year↔date doesn't discard precision.
 function mergeDatePrefix(stored: string, edit: string): string {
   if (!stored || !edit) return edit;
   if (stored === edit || stored.startsWith(`${edit}-`)) return stored;
