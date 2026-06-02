@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "bun scripts/generate-asset-manifest.ts",
+    "predev": "bun scripts/generate-asset-manifest.ts && bun scripts/vendor-tesseract.ts",
     "dev": "bun --bun next dev",
-    "prebuild": "bun scripts/generate-asset-manifest.ts",
+    "prebuild": "bun scripts/generate-asset-manifest.ts && bun scripts/vendor-tesseract.ts",
     "build": "bun --bun next build",
     "start": "bun --bun next start",
     "gen:assets": "bun scripts/generate-asset-manifest.ts",
+    "gen:tesseract": "bun scripts/vendor-tesseract.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },

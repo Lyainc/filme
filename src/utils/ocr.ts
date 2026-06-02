@@ -1,62 +1,70 @@
 import type { Worker } from 'tesseract.js';
 
-// Worker singleton — lazy-initialized on first runOcr call, reused thereafter
-let workerSingleton: Worker | null = null;
+// Worker init is deduped via a single in-flight promise so a warm-up call and a
+// real runOcr call share one download (the ~15MB kor model loads exactly once).
+let workerPromise: Promise<Worker> | null = null;
 
-async function getWorker(onProgress?: (p: number) => void): Promise<Worker> {
-  if (workerSingleton) return workerSingleton;
+// Progress callback is module-level (not bound at createWorker time) so that
+// warm-up — which starts the download with no callback — doesn't prevent a later
+// runOcr from receiving 'recognizing text' progress on the same worker.
+let onProgressCb: ((p: number) => void) | null = null;
 
-  const { createWorker } = await import('tesseract.js');
-  workerSingleton = await createWorker('kor', 1, {
-    langPath: 'https://tessdata.projectnaptha.com/4.0.0',
-    logger: (m: { status: string; progress: number }) => {
-      if (onProgress && typeof m.progress === 'number') {
-        onProgress(m.progress);
-      }
-    },
-  });
-  return workerSingleton;
+function getWorker(): Promise<Worker> {
+  if (!workerPromise) {
+    workerPromise = (async () => {
+      const { createWorker } = await import('tesseract.js');
+      // All assets are self-hosted from /public/tesseract (vendored by
+      // scripts/vendor-tesseract.ts) so the cold-start loads from our own Edge CDN
+      // instead of third-party CDNs — removing the slow projectnaptha model fetch.
+      // The kor model is 4.0.0_fast (1.0MB vs 6.6MB standard, byte-identical OCR on
+      // Korean tickets). OEM 1 = LSTM-only; Tesseract.js picks the matching core.
+      return createWorker('kor', 1, {
+        workerPath: '/tesseract/worker.min.js',
+        corePath: '/tesseract',
+        langPath: '/tesseract',
+        logger: (m: { status: string; progress: number }) => {
+          if (onProgressCb && typeof m.progress === 'number') onProgressCb(m.progress);
+        },
+      });
+    })().catch((err) => {
+      // Reset so a later call can retry instead of being stuck on a rejected promise.
+      workerPromise = null;
+      throw err;
+    });
+  }
+  return workerPromise;
 }
 
 /**
- * Preprocess a File/Blob into a canvas:
- * - Uses createImageBitmap with imageOrientation 'from-image' to apply EXIF rotation
- * - Converts to greyscale to improve Tesseract accuracy
+ * Start downloading/initializing the OCR worker ahead of time.
+ *
+ * The first OCR pays a one-time ~15MB model download (20–40s on a cold cache).
+ * Calling this on an intent signal — OCR card hover/focus, or the moment the file
+ * picker opens — overlaps that download with the user choosing an image, so the
+ * actual recognition (~0.3–1s) feels instant. Safe to call repeatedly; no-op after
+ * the first. SSR-safe.
  */
-async function preprocessImage(file: File | Blob): Promise<HTMLCanvasElement> {
-  const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
-
-  const canvas = document.createElement('canvas');
-  canvas.width = bitmap.width;
-  canvas.height = bitmap.height;
-
-  const ctx = canvas.getContext('2d');
-  if (!ctx) {
-    bitmap.close();
-    throw new Error('Failed to get 2D canvas context');
-  }
-
-  ctx.drawImage(bitmap, 0, 0);
-  bitmap.close();
-
-  // Greyscale conversion via pixel manipulation
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imageData.data;
-  for (let i = 0; i < data.length; i += 4) {
-    // Luminance formula (BT.601)
-    const grey = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
-    data[i] = grey;
-    data[i + 1] = grey;
-    data[i + 2] = grey;
-    // alpha unchanged
-  }
-  ctx.putImageData(imageData, 0, 0);
-
-  return canvas;
+export function warmUpOcr(): void {
+  if (typeof window === 'undefined') return;
+  void getWorker().catch(() => {
+    /* warm-up failures surface on the real runOcr call */
+  });
 }
 
+/**
+ * Preprocess a File/Blob into a canvas, applying EXIF rotation only.
 /**
  * Run Tesseract OCR on a File or Blob.
+ *
+ * The file is fed to Tesseract DIRECTLY (no canvas/greyscale preprocessing).
+ * These tickets are app screenshots — colored text on colored backgrounds —
+ * and Tesseract reads the original encoded image far better than a canvas:
+ * routing pixels through a <canvas> shifts them (color-profile/gamma) and breaks
+ * Korean title glyphs (e.g. '콜럼버스' → noise), whereas the raw image decode
+ * path preserves titles (maximizing KOBIS auto-lookup) and avoids fabricating
+ * wrong times. Greyscale/contrast-stretch made it worse on every sample.
+ * Trade-off: EXIF-rotated camera photos aren't auto-rotated, which is fine for a
+ * screenshot-oriented feature. See scripts/test-ocr.ts for the comparison.
  *
  * Returns raw Korean text, or '' on failure.
  * Never throws — all errors are caught and logged to console.error.
@@ -72,12 +80,14 @@ export async function runOcr(
   if (typeof window === 'undefined') return '';
 
   try {
-    const canvas = await preprocessImage(file);
-    const worker = await getWorker(onProgress);
-    const { data } = await worker.recognize(canvas);
+    onProgressCb = onProgress ?? null;
+    const worker = await getWorker();
+    const { data } = await worker.recognize(file);
     return data.text ?? '';
   } catch (err) {
     console.error('[ocr] runOcr failed:', err);
     return '';
+  } finally {
+    onProgressCb = null;
   }
 }

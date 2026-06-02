@@ -1,11 +1,19 @@
 import { useRef, useState } from 'react';
-import type { MovieInfo } from '@/types';
-import { runOcr } from '@/utils/ocr';
+import type { MovieInfo, TicketComponents } from '@/types';
+import { runOcr, warmUpOcr } from '@/utils/ocr';
 import { parseTicket } from '@/utils/parseTicket';
+import { detectChain } from '@/utils/detectChain';
 import { triggerKobisLookup } from '@/utils/kobisLookup';
 
-export type OcrDirectField = 'theater' | 'screen' | 'watchDate' | 'watchTime';
-export const OCR_DIRECT_FIELDS: OcrDirectField[] = ['theater', 'screen', 'watchDate', 'watchTime'];
+export type OcrDirectField = 'theater' | 'screen' | 'watchDate' | 'watchTime' | 'seat' | 'bookingNumber';
+export const OCR_DIRECT_FIELDS: OcrDirectField[] = [
+  'theater',
+  'screen',
+  'watchDate',
+  'watchTime',
+  'seat',
+  'bookingNumber',
+];
 
 export interface OcrUploadCardProps {
   setInfo: (info: Partial<MovieInfo>) => void;
@@ -13,6 +21,8 @@ export interface OcrUploadCardProps {
   currentInfo: Partial<MovieInfo>;
   /** Called after OCR values are applied so the parent can track which fields are OCR-sourced. */
   onOcrFill: (keys: Set<OcrDirectField>) => void;
+  /** Optional — when provided, a detected chain auto-selects the ticket chain logo. */
+  setComponents?: (components: Partial<TicketComponents>) => void;
   className?: string;
 }
 
@@ -32,6 +42,7 @@ export function OcrUploadCard({
   setInfo,
   currentInfo,
   onOcrFill,
+  setComponents,
   className = '',
 }: OcrUploadCardProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -120,7 +131,11 @@ export function OcrUploadCard({
       const raw = await runOcr(file, (p) => setProgress(p));
       const parsed = parseTicket(raw);
 
-      // Build direct fields (4 fields only — seat/bookingNumber structurally absent from parseTicket)
+      // Detected chain auto-selects the ticket logo (chain value === asset slug).
+      const chain = detectChain(raw);
+      if (chain && setComponents) setComponents({ chain });
+
+      // Build direct fields applied straight to the form (title goes via KOBIS lookup).
       const direct: Partial<MovieInfo> = {};
       for (const key of OCR_DIRECT_FIELDS) {
         if (parsed[key] !== undefined) {
@@ -172,7 +187,12 @@ export function OcrUploadCard({
   }
 
   function handleClick() {
-    if (!isProcessing && !pendingOcr) inputRef.current?.click();
+    if (!isProcessing && !pendingOcr) {
+      // Kick off the model download while the user browses for a file — the
+      // ~15MB cold-start overlaps file selection instead of blocking after it.
+      warmUpOcr();
+      inputRef.current?.click();
+    }
   }
 
   return (
@@ -193,6 +213,8 @@ export function OcrUploadCard({
         aria-busy={isProcessing}
         onClick={handleClick}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleClick(); }}
+        onPointerEnter={() => warmUpOcr()}
+        onFocus={() => warmUpOcr()}
         className={`relative w-full rounded-card border-2 border-dashed overflow-hidden transition-colors
           ${isProcessing || pendingOcr
             ? 'border-accent cursor-default'

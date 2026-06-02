@@ -79,6 +79,7 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
             setInfo={setInfo}
             currentInfo={movieInfo}
             onOcrFill={handleOcrFill}
+            setComponents={photo.updateComponents}
           />
         </div>
       </section>
@@ -210,24 +211,40 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
                 placeholder="IMAX관"
               />
             </div>
-            <Field
-              id="p1-seat"
-              label="Seat"
-              optional
-              value={movieInfo.seat || ''}
-              onChange={(e) => setInfo({ seat: e.target.value })}
-              placeholder="G14, G15"
-            />
+            <div className="space-y-1">
+              {ocrFilledFields.has('seat') && (
+                <div className="flex justify-start"><OcrChip /></div>
+              )}
+              <Field
+                id="p1-seat"
+                label="Seat"
+                optional
+                value={movieInfo.seat || ''}
+                onChange={(e) => {
+                  setInfo({ seat: e.target.value });
+                  removeFromOcr('seat');
+                }}
+                placeholder="G14, G15"
+              />
+            </div>
           </div>
 
-          <Field
-            id="p1-bookingNumber"
-            label="Booking No."
-            optional
-            value={movieInfo.bookingNumber || ''}
-            onChange={(e) => setInfo({ bookingNumber: e.target.value })}
-            placeholder="T-20260510-0014"
-          />
+          <div className="space-y-1">
+            {ocrFilledFields.has('bookingNumber') && (
+              <div className="flex justify-start"><OcrChip /></div>
+            )}
+            <Field
+              id="p1-bookingNumber"
+              label="Booking No."
+              optional
+              value={movieInfo.bookingNumber || ''}
+              onChange={(e) => {
+                setInfo({ bookingNumber: e.target.value });
+                removeFromOcr('bookingNumber');
+              }}
+              placeholder="T-20260510-0014"
+            />
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <Field
