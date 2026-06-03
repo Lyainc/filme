@@ -100,7 +100,7 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
 
       <section className="space-y-4">
         <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Poster</h3>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 items-stretch">
           <ImageUploader
             onUpload={photo.handleImageUpload}
             isProcessing={false}

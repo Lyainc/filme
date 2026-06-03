@@ -67,7 +67,7 @@ export default function ImageUploader({ onUpload, isProcessing, hasImage = false
   const busy = isProcessing || isCropping;
 
   return (
-    <section>
+    <section className="h-full">
       <label
         onDragOver={(e) => {
           e.preventDefault();
@@ -76,7 +76,7 @@ export default function ImageUploader({ onUpload, isProcessing, hasImage = false
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
         data-touch="44"
-        className={`group relative block w-full overflow-hidden rounded-card border bg-paper p-7 text-left shadow-card transition-colors md:p-9
+        className={`group relative flex h-full w-full flex-col justify-center overflow-hidden rounded-card border bg-paper p-7 text-left shadow-card transition-colors md:p-9
           ${isDragging ? 'border-accent bg-accent-soft' : 'border-line hover:border-accent/40'}
           ${busy ? 'cursor-wait opacity-60' : 'cursor-pointer'}`}
       >
