@@ -185,8 +185,8 @@ export default function MovieInfoForm({
             onChange={(e) => {
               const value = e.target.value;
               onChange({ title: value });
-              setShowResults(false);
               clearDebounce();
+              if (value.trim().length < 2) setShowResults(false);
               if (isComposingRef.current || value.trim().length < 2) return;
               scheduleSearch(value.trim());
             }}
