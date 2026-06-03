@@ -7,7 +7,7 @@ import RatingPicker from '@/components/wizard/RatingPicker';
 import { OcrUploadCard } from './OcrUploadCard';
 import type { OcrDirectField } from './OcrUploadCard';
 import { formatDate } from '@/utils/dateFormat';
-import type { DateFormatToken } from '@/types';
+import type { DateFormatToken, TicketField } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 
 interface Phase1CanvasProps {
@@ -22,6 +22,32 @@ const WATCH_FORMAT_TOKENS: { value: DateFormatToken; sample: string }[] = [
   { value: 'en-long', sample: 'May 12, 2026' },
 ];
 
+const FIELD_LABELS: Record<TicketField, string> = {
+  title: '제목',
+  titleOg: '원제',
+  actors: '출연',
+  watchDate: '관람일',
+  watchTime: '관람 시간',
+  theater: '극장',
+  screen: '상영관',
+  seat: '좌석',
+  runtime: '러닝타임',
+  rating: '평점',
+  releaseDate: '개봉일',
+  reissue: '재개봉',
+  bookingNo: '예매 번호',
+  edition: '에디션',
+};
+
+const FIELD_ORDER: TicketField[] = [
+  'title', 'titleOg', 'actors', 'watchDate', 'watchTime',
+  'theater', 'screen', 'seat', 'runtime', 'rating',
+  'releaseDate', 'reissue', 'bookingNo', 'edition',
+];
+
+// dim/disable a wrapper when its field's visibility toggle is off.
+const dim = (on: boolean) => (on ? '' : 'opacity-40 pointer-events-none');
+
 function OcrChip() {
   return (
     <span className="text-mono text-[8px] uppercase tracking-wider bg-accent-soft text-accent px-1.5 py-0.5 rounded-chip leading-none">
@@ -31,9 +57,14 @@ function OcrChip() {
 }
 
 export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps) {
-  const { movieInfo } = photo.state;
+  const { movieInfo, fieldVisibility } = photo.state;
   const setInfo = photo.updateMovieInfo;
+  const setField = photo.updateFieldVisibility;
   const watchToken = movieInfo.watchDateFormat || 'kr-compact';
+
+  const allOn = FIELD_ORDER.every((f) => fieldVisibility[f]);
+  const allOff = FIELD_ORDER.every((f) => !fieldVisibility[f]);
+  const selectedCount = FIELD_ORDER.filter((f) => fieldVisibility[f]).length;
 
   // Tracks which fields were last filled by OCR. Cleared field-by-field on user edit.
   const [ocrFilledFields, setOcrFilledFields] = useState<Set<OcrDirectField>>(new Set());
@@ -95,7 +126,7 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
 
       <OptionalDetailsAccordion>
         <div className="space-y-5">
-          <div className="space-y-2.5">
+          <div className={`space-y-2.5 ${dim(fieldVisibility.watchDate)}`}>
             <div className="flex items-baseline justify-between">
               <div className="flex items-center gap-1.5">
                 <label
@@ -114,6 +145,7 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
               id="p1-watchDate"
               type="date"
               value={movieInfo.watchDate || ''}
+              disabled={!fieldVisibility.watchDate}
               onChange={(e) => {
                 setInfo({ watchDate: e.target.value });
                 removeFromOcr('watchDate');
@@ -129,6 +161,7 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
                     type="button"
                     role="radio"
                     aria-checked={active}
+                    disabled={!fieldVisibility.watchDate}
                     onClick={() => setInfo({ watchDateFormat: opt.value })}
                     data-touch="44"
                     className={`text-mono inline-flex min-h-touch items-center rounded-chip border px-3 text-[10px] uppercase tracking-widest transition-colors
@@ -141,7 +174,7 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
             </div>
           </div>
 
-          <div className="space-y-1">
+          <div className={`space-y-1 ${dim(fieldVisibility.theater)}`}>
             {ocrFilledFields.has('theater') && (
               <div className="flex justify-start"><OcrChip /></div>
             )}
@@ -150,6 +183,7 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
               label="Theater"
               optional
               value={movieInfo.theater || ''}
+              disabled={!fieldVisibility.theater}
               onChange={(e) => {
                 setInfo({ theater: e.target.value });
                 removeFromOcr('theater');
@@ -158,17 +192,20 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
             />
           </div>
 
-          <Field
-            id="p1-actors"
-            label="Cast"
-            optional
-            value={movieInfo.actors || ''}
-            onChange={(e) => setInfo({ actors: e.target.value })}
-            placeholder="매튜 맥커너히, 앤 해서웨이"
-          />
+          <div className={dim(fieldVisibility.actors)}>
+            <Field
+              id="p1-actors"
+              label="Cast"
+              optional
+              value={movieInfo.actors || ''}
+              disabled={!fieldVisibility.actors}
+              onChange={(e) => setInfo({ actors: e.target.value })}
+              placeholder="매튜 맥커너히, 앤 해서웨이"
+            />
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
+            <div className={`space-y-1 ${dim(fieldVisibility.watchTime)}`}>
               {ocrFilledFields.has('watchTime') && (
                 <div className="flex justify-start"><OcrChip /></div>
               )}
@@ -178,24 +215,28 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
                 type="time"
                 optional
                 value={movieInfo.watchTime || ''}
+                disabled={!fieldVisibility.watchTime}
                 onChange={(e) => {
                   setInfo({ watchTime: e.target.value });
                   removeFromOcr('watchTime');
                 }}
               />
             </div>
-            <Field
-              id="p1-runtime"
-              label="Runtime"
-              optional
-              value={movieInfo.runtime || ''}
-              onChange={(e) => setInfo({ runtime: e.target.value })}
-              placeholder="150 MIN"
-            />
+            <div className={dim(fieldVisibility.runtime)}>
+              <Field
+                id="p1-runtime"
+                label="Runtime"
+                optional
+                value={movieInfo.runtime || ''}
+                disabled={!fieldVisibility.runtime}
+                onChange={(e) => setInfo({ runtime: e.target.value })}
+                placeholder="150 MIN"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
+            <div className={`space-y-1 ${dim(fieldVisibility.screen)}`}>
               {ocrFilledFields.has('screen') && (
                 <div className="flex justify-start"><OcrChip /></div>
               )}
@@ -204,6 +245,7 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
                 label="Screen"
                 optional
                 value={movieInfo.screen || ''}
+                disabled={!fieldVisibility.screen}
                 onChange={(e) => {
                   setInfo({ screen: e.target.value });
                   removeFromOcr('screen');
@@ -211,7 +253,7 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
                 placeholder="IMAX관"
               />
             </div>
-            <div className="space-y-1">
+            <div className={`space-y-1 ${dim(fieldVisibility.seat)}`}>
               {ocrFilledFields.has('seat') && (
                 <div className="flex justify-start"><OcrChip /></div>
               )}
@@ -220,6 +262,7 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
                 label="Seat"
                 optional
                 value={movieInfo.seat || ''}
+                disabled={!fieldVisibility.seat}
                 onChange={(e) => {
                   setInfo({ seat: e.target.value });
                   removeFromOcr('seat');
@@ -229,7 +272,7 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
             </div>
           </div>
 
-          <div className="space-y-1">
+          <div className={`space-y-1 ${dim(fieldVisibility.bookingNo)}`}>
             {ocrFilledFields.has('bookingNumber') && (
               <div className="flex justify-start"><OcrChip /></div>
             )}
@@ -238,6 +281,7 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
               label="Booking No."
               optional
               value={movieInfo.bookingNumber || ''}
+              disabled={!fieldVisibility.bookingNo}
               onChange={(e) => {
                 setInfo({ bookingNumber: e.target.value });
                 removeFromOcr('bookingNumber');
@@ -269,6 +313,53 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
             value={movieInfo.rating}
             onValueChange={(rating) => setInfo({ rating })}
           />
+
+          <div className="space-y-4 border-t border-line pt-5">
+            <div className="flex items-baseline justify-between">
+              <div className="space-y-1">
+                <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Display Fields</h3>
+                <p className="text-mono text-[10px] uppercase tracking-widest text-fg-faint">
+                  {selectedCount}/{FIELD_ORDER.length} selected
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setField(Object.fromEntries(FIELD_ORDER.map((f) => [f, true])) as Record<TicketField, boolean>)}
+                  disabled={allOn}
+                  className="text-mono inline-flex min-h-[32px] items-center rounded-chip border border-line bg-surface-elevated px-2.5 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft focus-visible:ring-2 focus-visible:ring-accent-soft disabled:opacity-40"
+                >
+                  전체 선택
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setField(Object.fromEntries(FIELD_ORDER.map((f) => [f, false])) as Record<TicketField, boolean>)}
+                  disabled={allOff}
+                  className="text-mono inline-flex min-h-[32px] items-center rounded-chip border border-line bg-surface-elevated px-2.5 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft focus-visible:ring-2 focus-visible:ring-accent-soft disabled:opacity-40"
+                >
+                  전체 해제
+                </button>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {FIELD_ORDER.map((field) => {
+                const active = fieldVisibility[field];
+                return (
+                  <button
+                    key={field}
+                    type="button"
+                    onClick={() => setField({ [field]: !active })}
+                    aria-pressed={active}
+                    data-touch="44"
+                    className={`text-mono inline-flex min-h-touch items-center rounded-chip border px-3 text-[10px] uppercase tracking-widest transition-colors focus-visible:ring-2 focus-visible:ring-accent-soft
+                      ${active ? 'border-accent bg-accent text-white' : 'border-line bg-surface-elevated text-fg-muted hover:bg-accent-soft'}`}
+                  >
+                    {FIELD_LABELS[field]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </OptionalDetailsAccordion>
     </div>

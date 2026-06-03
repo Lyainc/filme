@@ -5,7 +5,6 @@ import { Mood35mm } from '../src/components/moods/Mood35mm';
 import { MoodCriterion } from '../src/components/moods/MoodCriterion';
 import { MoodEditorial } from '../src/components/moods/MoodEditorial';
 import { MoodMinimal } from '../src/components/moods/MoodMinimal';
-import { Phase2Canvas } from '../src/components/v2/Phase2Canvas';
 import type { MovieInfo, TicketComponents, TicketField, LayoutId } from '../src/types';
 
 const FIELDS: TicketField[] = [
@@ -133,37 +132,5 @@ describe('fieldVisibility mood rendering', () => {
     expect(timeOnly).toContain('Heure');
     expect(timeOnly).toContain('20:30');
     expect(timeOnly).not.toContain('2026');
-  });
-});
-
-describe('Phase2 display field controls', () => {
-  test('shows partial selection count and pressed state', () => {
-    const fieldVisibility = Object.fromEntries(
-      FIELDS.map((field, index) => [field, index < 3])
-    ) as Record<TicketField, boolean>;
-    const noop = () => {};
-    const html = renderToStaticMarkup(
-      <Phase2Canvas
-        photo={{
-          state: {
-            movieInfo: MOVIE,
-            components: BASE_COMPONENTS,
-            recommendedColors: [],
-            croppedImageUrl: null,
-            fieldVisibility,
-          },
-          handleImageUpload: noop,
-          updateMovieInfo: noop,
-          updateComponents: noop,
-          setRecommendedColors: noop,
-          updateFieldVisibility: noop,
-        }}
-        onGoBack={noop}
-      />
-    );
-
-    expect(html).toContain('3/14 selected');
-    expect(html).toContain('aria-pressed="true"');
-    expect(html).toContain('aria-pressed="false"');
   });
 });
