@@ -14,6 +14,7 @@ import {
   pickTitleSize,
   resolveBookingNo,
   resolveSerialNo,
+  truncateActors,
 } from './_shared';
 import { formatDate } from '@/utils/dateFormat';
 
@@ -60,7 +61,7 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
 
   const titleVal       = gate(fv?.title, d.title);
   const titleOgVal     = gate(fv?.titleOg, d.titleOg);
-  const actorsVal      = gate(fv?.actors, d.actors);
+  const actorsVal      = truncateActors(gate(fv?.actors, d.actors));
   const watchDateVal   = gate(fv?.watchDate, watchDateClean);
   const watchTimeVal   = gate(fv?.watchTime, d.watchTime);
   const theaterVal     = gate(fv?.theater, d.theater);
@@ -293,7 +294,7 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
               gap: 14,
             }}
           >
-            {components.format && <FormatStamp format={components.format} size={0.9} />}
+            {components.format && <FormatStamp format={components.format} size={1.4} />}
             {(fv?.bookingNo ?? true) && (
               <Barcode value={bookingNo} color={ink} width={180} height={34} textSize={10} />
             )}
