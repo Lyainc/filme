@@ -17,7 +17,7 @@ interface TicketRendererProps {
 
 const SCALE_EPSILON = 0.001;
 
-const TicketRenderer = forwardRef<HTMLDivElement, TicketRendererProps>(function TicketRenderer(
+const TicketRenderer = memo(forwardRef<HTMLDivElement, TicketRendererProps>(function TicketRenderer(
   { croppedImageUrl, movieInfo, components, fieldVisibility },
   ref
 ) {
@@ -73,7 +73,7 @@ const TicketRenderer = forwardRef<HTMLDivElement, TicketRendererProps>(function 
       </div>
     </div>
   );
-});
+}));
 
 const Mood = memo(function Mood({
   layoutId,

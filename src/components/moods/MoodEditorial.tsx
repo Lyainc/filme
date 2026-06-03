@@ -13,6 +13,7 @@ import {
   pickTitleSize,
   resolveBookingNo,
   resolveSerialNo,
+  truncateActors,
 } from './_shared';
 import { formatDate } from '@/utils/dateFormat';
 
@@ -44,6 +45,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
   const theaterSub = gate(fv?.theater, d.theater) ? gate(fv?.screen, d.screen) : '';
   const sessionValue = gate(fv?.watchDate, watchDateClean) || gate(fv?.watchTime, d.watchTime);
   const sessionSub = gate(fv?.watchDate, watchDateClean) ? gate(fv?.watchTime, d.watchTime) : '';
+  const actorsVal = truncateActors(gate(fv?.actors, d.actors));
 
   return (
     <div
@@ -113,7 +115,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
                     flexShrink: 0,
                   }}
                 />
-                <FormatStamp format={components.format} size={0.85} />
+                <FormatStamp format={components.format} size={1.2} />
               </>
             )}
           </div>
@@ -221,7 +223,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
           {gate(fv?.reissue, reissueClean) && (
             <MetaCell label="Reprise" value={gate(fv?.reissue, reissueClean)} mono />
           )}
-          {gate(fv?.actors, d.actors) && (
+          {actorsVal && (
             <div style={{ gridColumn: '1 / -1', marginTop: 4 }}>
               <div
                 style={{
@@ -249,7 +251,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
                   overflow: 'hidden',
                 }}
               >
-                {gate(fv?.actors, d.actors)}
+                {actorsVal}
               </div>
             </div>
           )}

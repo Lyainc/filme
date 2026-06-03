@@ -36,9 +36,10 @@ yarn-error.log*
 *.swo
 *~
 
-# local env files
-.env*.local
+# local env files (keep .env.example tracked as template)
 .env
+.env.*
+!.env.example
 
 # vercel
 .vercel
@@ -59,17 +60,6 @@ prototype.html
 
 # 테스트용 샘플 이미지
 /public/sample/
-
-# Tesseract 벤더링: worker/core는 node_modules에서 prebuild 시 재생성(ignore).
-# kor 모델만 커밋해 빌드가 외부 CDN(projectnaptha)에 의존하지 않게 함.
-/public/tesseract/*
-!/public/tesseract/kor.traineddata.gz
-
-# OCR raw 캐시 (로컬 회귀 테스트용)
-scripts/.ocr-cache.json
-
-# tesseract.js가 Node 실행 시 cwd에 압축 해제하는 모델 (스트레이)
-/kor.traineddata
 
 # IDE 설정 (개인 선호도)
 .vscode/

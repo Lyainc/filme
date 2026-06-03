@@ -13,6 +13,7 @@ import {
   pickTitleSize,
   resolveBookingNo,
   resolveSerialNo,
+  truncateActors,
 } from './_shared';
 import { formatDate } from '@/utils/dateFormat';
 
@@ -42,7 +43,7 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
 
   const titleVal       = gate(fv?.title, d.title);
   const titleOgVal     = gate(fv?.titleOg, d.titleOg);
-  const actorsVal      = gate(fv?.actors, d.actors);
+  const actorsVal      = truncateActors(gate(fv?.actors, d.actors));
   const watchDateVal   = gate(fv?.watchDate, watchDateClean);
   const theaterVal     = gate(fv?.theater, d.theater);
   const screenVal      = gate(fv?.screen, d.screen);
@@ -147,7 +148,7 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
         {components.format && (
           <>
             <span style={{ width: 1, height: 26, background: ink, opacity: 0.6 }} />
-            <FormatStamp format={components.format} size={0.78} />
+            <FormatStamp format={components.format} size={1.0} />
           </>
         )}
       </div>

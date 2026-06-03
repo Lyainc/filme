@@ -531,3 +531,10 @@ export function luminance(hex: string): number {
 export function isInkLight(themeColor: string): boolean {
   return luminance(themeColor) < 0.18;
 }
+
+export function truncateActors(actors: string, max = 3): string {
+  if (!actors) return '';
+  const parts = actors.split(',').map(s => s.trim()).filter(Boolean);
+  if (parts.length <= max) return parts.join(', ');
+  return `${parts.slice(0, max).join(', ')} 외 ${parts.length - max}명`;
+}

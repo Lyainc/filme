@@ -1,8 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // tesseract.js uses browser APIs (Worker, canvas) — exclude from server bundle
-  serverExternalPackages: ['tesseract.js'],
   async headers() {
     return [
       {

@@ -1,8 +1,6 @@
 import { useRef, useState } from 'react';
 import type { MovieInfo, TicketComponents } from '@/types';
-import { runOcr, warmUpOcr } from '@/utils/ocr';
-import { parseTicket } from '@/utils/parseTicket';
-import { detectChain } from '@/utils/detectChain';
+import { runOcr } from '@/utils/ocr';
 import { triggerKobisLookup } from '@/utils/kobisLookup';
 
 export type OcrDirectField = 'theater' | 'screen' | 'watchDate' | 'watchTime' | 'seat' | 'bookingNumber';
@@ -47,7 +45,6 @@ export function OcrUploadCard({
 }: OcrUploadCardProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
 
   // Tracks values that were last written by OCR. Used to detect user edits on re-run.
@@ -125,28 +122,25 @@ export function OcrUploadCard({
 
   async function processFile(file: File) {
     setIsProcessing(true);
-    setProgress(0);
 
     try {
-      const raw = await runOcr(file, (p) => setProgress(p));
-      const parsed = parseTicket(raw);
+      // 전처리 → /api/ocr(GPT-4o mini vision) → 구조화 필드 + chain
+      const result = await runOcr(file);
 
       // Detected chain auto-selects the ticket logo (chain value === asset slug).
-      const chain = detectChain(raw);
-      if (chain && setComponents) setComponents({ chain });
+      if (result.chain && setComponents) setComponents({ chain: result.chain });
 
       // Build direct fields applied straight to the form (title goes via KOBIS lookup).
       const direct: Partial<MovieInfo> = {};
       for (const key of OCR_DIRECT_FIELDS) {
-        if (parsed[key] !== undefined) {
-          (direct as Record<string, unknown>)[key] = parsed[key];
+        if (result[key] !== undefined) {
+          (direct as Record<string, unknown>)[key] = result[key];
         }
       }
 
       // Conflict detection: fields OCR previously filled that the user has since edited
       const lastOcr = lastOcrRef.current;
       const conflictKeys = OCR_DIRECT_FIELDS.filter((k) => {
-        // Was set by last OCR AND user has changed it since
         return (
           lastOcr[k] !== undefined &&
           currentInfo[k] !== lastOcr[k] &&
@@ -158,17 +152,16 @@ export function OcrUploadCard({
         // Hold result — ask user before overwriting their edits
         setPendingOcr({
           direct,
-          title: parsed.title,
+          title: result.title,
           conflictCount: conflictKeys.length,
         });
       } else {
-        applyOcr(direct, parsed.title);
+        applyOcr(direct, result.title);
       }
     } catch {
       // Principle 5: silent fallback
     } finally {
       setIsProcessing(false);
-      setProgress(0);
     }
   }
 
@@ -188,9 +181,6 @@ export function OcrUploadCard({
 
   function handleClick() {
     if (!isProcessing && !pendingOcr) {
-      // Kick off the model download while the user browses for a file — the
-      // ~15MB cold-start overlaps file selection instead of blocking after it.
-      warmUpOcr();
       inputRef.current?.click();
     }
   }
@@ -213,8 +203,6 @@ export function OcrUploadCard({
         aria-busy={isProcessing}
         onClick={handleClick}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleClick(); }}
-        onPointerEnter={() => warmUpOcr()}
-        onFocus={() => warmUpOcr()}
         className={`relative w-full rounded-card border-2 border-dashed overflow-hidden transition-colors
           ${isProcessing || pendingOcr
             ? 'border-accent cursor-default'
@@ -224,14 +212,8 @@ export function OcrUploadCard({
       >
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-3">
           {isProcessing ? (
-            <div className="flex flex-col items-center gap-2 w-full">
+            <div className="flex flex-col items-center gap-2">
               <span className="text-accent animate-pulse"><ScanIcon /></span>
-              <div className="w-full max-w-[80%] h-1 bg-line rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-accent transition-all duration-300"
-                  style={{ width: `${Math.round(progress * 100)}%` }}
-                />
-              </div>
               <p className="text-xs text-fg-muted">인식 중...</p>
             </div>
           ) : (

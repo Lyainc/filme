@@ -1,93 +1,54 @@
-import type { Worker } from 'tesseract.js';
-
-// Worker init is deduped via a single in-flight promise so a warm-up call and a
-// real runOcr call share one download (the ~15MB kor model loads exactly once).
-let workerPromise: Promise<Worker> | null = null;
-
-// Progress callback is module-level (not bound at createWorker time) so that
-// warm-up — which starts the download with no callback — doesn't prevent a later
-// runOcr from receiving 'recognizing text' progress on the same worker.
-let onProgressCb: ((p: number) => void) | null = null;
-
-function getWorker(): Promise<Worker> {
-  if (!workerPromise) {
-    workerPromise = (async () => {
-      const { createWorker } = await import('tesseract.js');
-      // All assets are self-hosted from /public/tesseract (vendored by
-      // scripts/vendor-tesseract.ts) so the cold-start loads from our own Edge CDN
-      // instead of third-party CDNs — removing the slow projectnaptha model fetch.
-      // The kor model is 4.0.0_fast (1.0MB vs 6.6MB standard, byte-identical OCR on
-      // Korean tickets). OEM 1 = LSTM-only; Tesseract.js picks the matching core.
-      return createWorker('kor', 1, {
-        workerPath: '/tesseract/worker.min.js',
-        corePath: '/tesseract',
-        langPath: '/tesseract',
-        logger: (m: { status: string; progress: number }) => {
-          if (onProgressCb && typeof m.progress === 'number') onProgressCb(m.progress);
-        },
-      });
-    })().catch((err) => {
-      // Reset so a later call can retry instead of being stuck on a rejected promise.
-      workerPromise = null;
-      throw err;
-    });
-  }
-  return workerPromise;
-}
+import type { MovieInfo } from '@/types';
+import { preprocessForOcr } from './ocrPreprocess';
 
 /**
- * Start downloading/initializing the OCR worker ahead of time.
- *
- * The first OCR pays a one-time ~15MB model download (20–40s on a cold cache).
- * Calling this on an intent signal — OCR card hover/focus, or the moment the file
- * picker opens — overlaps that download with the user choosing an image, so the
- * actual recognition (~0.3–1s) feels instant. Safe to call repeatedly; no-op after
- * the first. SSR-safe.
+ * runOcr 반환 — 폼에 직접 적용할 필드 + KOBIS 조회용 title + 자동선택용 chain.
+ * (title은 폼에 바로 쓰지 않고 OcrUploadCard에서 KOBIS 검색어로 흐른다.)
  */
-export function warmUpOcr(): void {
-  if (typeof window === 'undefined') return;
-  void getWorker().catch(() => {
-    /* warm-up failures surface on the real runOcr call */
+export type OcrResult = Partial<MovieInfo> & { chain?: string };
+
+/** Blob → 순수 base64 문자열(data URL prefix 제거). */
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      resolve(result.replace(/^data:[^;]+;base64,/, ''));
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
   });
 }
 
 /**
- * Preprocess a File/Blob into a canvas, applying EXIF rotation only.
-/**
- * Run Tesseract OCR on a File or Blob.
+ * 티켓 스크린샷 → 전처리(하단 크롭·768px·JPEG) → `/api/ocr`(GPT-4o mini vision)
+ * → 구조화 필드. 서버가 채워진 필드만 주므로 반환 객체엔 인식된 값만 담긴다.
  *
- * The file is fed to Tesseract DIRECTLY (no canvas/greyscale preprocessing).
- * These tickets are app screenshots — colored text on colored backgrounds —
- * and Tesseract reads the original encoded image far better than a canvas:
- * routing pixels through a <canvas> shifts them (color-profile/gamma) and breaks
- * Korean title glyphs (e.g. '콜럼버스' → noise), whereas the raw image decode
- * path preserves titles (maximizing KOBIS auto-lookup) and avoids fabricating
- * wrong times. Greyscale/contrast-stretch made it worse on every sample.
- * Trade-off: EXIF-rotated camera photos aren't auto-rotated, which is fine for a
- * screenshot-oriented feature. See scripts/test-ocr.ts for the comparison.
+ * SSR-safe: window가 없으면 빈 객체. 절대 throw하지 않는다 — 전처리/네트워크/파싱
+ * 실패는 모두 빈 객체로 흡수해 OCR 흐름이 끊기지 않게 한다.
  *
- * Returns raw Korean text, or '' on failure.
- * Never throws — all errors are caught and logged to console.error.
- * SSR-safe: returns '' immediately when called outside a browser context.
- *
- * @param file      Image file (PNG / JPEG / WebP recommended)
- * @param onProgress  Optional progress callback (0–1)
+ * @param file  티켓 이미지 File (PNG / JPEG / WebP)
  */
-export async function runOcr(
-  file: File | Blob,
-  onProgress?: (p: number) => void
-): Promise<string> {
-  if (typeof window === 'undefined') return '';
+export async function runOcr(file: File): Promise<OcrResult> {
+  if (typeof window === 'undefined') return {};
 
   try {
-    onProgressCb = onProgress ?? null;
-    const worker = await getWorker();
-    const { data } = await worker.recognize(file);
-    return data.text ?? '';
+    const blob = await preprocessForOcr(file);
+    const base64 = await blobToBase64(blob);
+    const mimeType = blob.type || 'image/jpeg';
+
+    const res = await fetch('/api/ocr', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: base64, mimeType }),
+    });
+
+    if (!res.ok) return {};
+
+    const data = (await res.json()) as OcrResult;
+    return data ?? {};
   } catch (err) {
     console.error('[ocr] runOcr failed:', err);
-    return '';
-  } finally {
-    onProgressCb = null;
+    return {};
   }
 }

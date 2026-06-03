@@ -14,6 +14,7 @@ import {
   pickTitleSize,
   resolveBookingNo,
   resolveSerialNo,
+  truncateActors,
 } from './_shared';
 import { formatDate } from '@/utils/dateFormat';
 
@@ -62,6 +63,7 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
   const reissueClean = d.isReissue ? formatDate(d.reissueDate, releaseToken, releaseGran) : '';
   const exhibitedText = [gate(fv?.theater, d.theater), gate(fv?.screen, d.screen), gate(fv?.seat, d.seat)].filter(Boolean).join(' · ');
   const screenedText = [gate(fv?.watchDate, watchDateClean), gate(fv?.watchTime, d.watchTime)].filter(Boolean).join(' · ');
+  const actorsVal = truncateActors(gate(fv?.actors, d.actors));
 
   return (
     <div
@@ -131,7 +133,7 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
             transform: 'rotate(-3deg)',
           }}
         >
-          <FormatStamp format={components.format} size={0.8} surface="dark" />
+          <FormatStamp format={components.format} size={1.2} surface="dark" />
         </div>
       )}
 
@@ -207,7 +209,7 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
                 <span style={cellValueMono}>{screenedText}</span>
               </>
             )}
-            {gate(fv?.actors, d.actors) && (
+            {actorsVal && (
               <>
                 <span style={cellLabelStyle}>STARRING</span>
                 <span
@@ -224,7 +226,7 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
                     overflow: 'hidden',
                   }}
                 >
-                  {gate(fv?.actors, d.actors)}
+                  {actorsVal}
                 </span>
               </>
             )}
