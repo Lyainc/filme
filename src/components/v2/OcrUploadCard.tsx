@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
 import type { MovieInfo, TicketComponents } from '@/types';
-import { runOcr } from '@/utils/ocr';
+import { runOcr, runOcrBoxes, type OcrBoxItem } from '@/utils/ocr';
 import { triggerKobisLookup } from '@/utils/kobisLookup';
+import OcrReviewModal from './OcrReviewModal';
 
 export type OcrDirectField = 'theater' | 'screen' | 'watchDate' | 'watchTime' | 'seat' | 'bookingNumber';
 export const OCR_DIRECT_FIELDS: OcrDirectField[] = [
@@ -56,6 +57,9 @@ export function OcrUploadCard({
     title?: string;
     conflictCount: number;
   } | null>(null);
+
+  const boxesInputRef = useRef<HTMLInputElement>(null);
+  const [reviewItems, setReviewItems] = useState<OcrBoxItem[] | null>(null);
 
   function showToast(msg: string, durationMs = 3000) {
     setToast(msg);
@@ -120,17 +124,35 @@ export function OcrUploadCard({
     setPendingOcr(null);
   }
 
+  function checkAndApplyOcr(direct: Partial<MovieInfo>, title?: string) {
+    const lastOcr = lastOcrRef.current;
+    const conflictKeys = OCR_DIRECT_FIELDS.filter((k) => {
+      return (
+        lastOcr[k] !== undefined &&
+        currentInfo[k] !== lastOcr[k] &&
+        direct[k] !== undefined
+      );
+    });
+
+    if (conflictKeys.length > 0) {
+      setPendingOcr({
+        direct,
+        title,
+        conflictCount: conflictKeys.length,
+      });
+    } else {
+      applyOcr(direct, title);
+    }
+  }
+
   async function processFile(file: File) {
     setIsProcessing(true);
 
     try {
-      // 전처리 → /api/ocr(GPT-4o mini vision) → 구조화 필드 + chain
       const result = await runOcr(file);
 
-      // Detected chain auto-selects the ticket logo (chain value === asset slug).
       if (result.chain && setComponents) setComponents({ chain: result.chain });
 
-      // Build direct fields applied straight to the form (title goes via KOBIS lookup).
       const direct: Partial<MovieInfo> = {};
       for (const key of OCR_DIRECT_FIELDS) {
         if (result[key] !== undefined) {
@@ -138,31 +160,60 @@ export function OcrUploadCard({
         }
       }
 
-      // Conflict detection: fields OCR previously filled that the user has since edited
-      const lastOcr = lastOcrRef.current;
-      const conflictKeys = OCR_DIRECT_FIELDS.filter((k) => {
-        return (
-          lastOcr[k] !== undefined &&
-          currentInfo[k] !== lastOcr[k] &&
-          direct[k] !== undefined
-        );
-      });
-
-      if (conflictKeys.length > 0) {
-        // Hold result — ask user before overwriting their edits
-        setPendingOcr({
-          direct,
-          title: result.title,
-          conflictCount: conflictKeys.length,
-        });
-      } else {
-        applyOcr(direct, result.title);
-      }
+      checkAndApplyOcr(direct, result.title);
     } catch {
       // Principle 5: silent fallback
     } finally {
       setIsProcessing(false);
     }
+  }
+
+  async function processFileBoxes(file: File) {
+    setIsProcessing(true);
+    try {
+      const result = await runOcrBoxes(file);
+      if (result.items.length > 0) {
+        setReviewItems(result.items);
+      } else {
+        showToast('인식된 정보가 없어요.');
+      }
+    } catch {
+      // silent fallback
+    } finally {
+      setIsProcessing(false);
+    }
+  }
+
+  async function handleBoxesChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
+    const err = validateFile(file);
+    if (err) {
+      showToast(err);
+      return;
+    }
+
+    await processFileBoxes(file);
+  }
+
+  function handleBoxesClick(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!isProcessing && !pendingOcr && !reviewItems) {
+      boxesInputRef.current?.click();
+    }
+  }
+
+  function handleReviewConfirm(mappedData: Record<string, string>) {
+    setReviewItems(null);
+    const direct: Partial<MovieInfo> = {};
+    for (const key of OCR_DIRECT_FIELDS) {
+      if (mappedData[key] !== undefined) {
+        (direct as Record<string, unknown>)[key] = mappedData[key];
+      }
+    }
+    checkAndApplyOcr(direct, mappedData.title);
   }
 
   async function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -195,6 +246,14 @@ export function OcrUploadCard({
         aria-hidden="true"
         onChange={handleChange}
       />
+      <input
+        ref={boxesInputRef}
+        type="file"
+        accept="image/*"
+        className="sr-only"
+        aria-hidden="true"
+        onChange={handleBoxesChange}
+      />
 
       <div
         role="button"
@@ -225,6 +284,23 @@ export function OcrUploadCard({
           )}
         </div>
       </div>
+      <div className="mt-3 text-center relative z-10">
+        <button
+          type="button"
+          onClick={handleBoxesClick}
+          className="text-xs text-fg-muted underline hover:text-fg transition-colors"
+        >
+          (베타) 칩 검수 모달로 인식하기
+        </button>
+      </div>
+
+      {reviewItems && (
+        <OcrReviewModal
+          items={reviewItems}
+          onClose={() => setReviewItems(null)}
+          onConfirm={handleReviewConfirm}
+        />
+      )}
 
       {/* Conflict confirmation overlay */}
       {pendingOcr && (
