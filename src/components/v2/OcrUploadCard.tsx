@@ -1,8 +1,7 @@
 import { useRef, useState } from 'react';
 import type { MovieInfo, TicketComponents } from '@/types';
-import { runOcr, runOcrBoxes, type OcrBoxItem } from '@/utils/ocr';
+import { runOcr } from '@/utils/ocr';
 import { triggerKobisLookup } from '@/utils/kobisLookup';
-import OcrReviewModal from './OcrReviewModal';
 
 export type OcrDirectField = 'theater' | 'screen' | 'watchDate' | 'watchTime' | 'seat' | 'bookingNumber';
 export const OCR_DIRECT_FIELDS: OcrDirectField[] = [
@@ -16,11 +15,8 @@ export const OCR_DIRECT_FIELDS: OcrDirectField[] = [
 
 export interface OcrUploadCardProps {
   setInfo: (info: Partial<MovieInfo>) => void;
-  /** Current form values — used to detect user edits before OCR re-run. */
   currentInfo: Partial<MovieInfo>;
-  /** Called after OCR values are applied so the parent can track which fields are OCR-sourced. */
-  onOcrFill: (keys: Set<OcrDirectField>) => void;
-  /** Optional — when provided, a detected chain auto-selects the ticket chain logo. */
+  onOcrApply: (params: { keys: Set<OcrDirectField>; prevValues: Partial<MovieInfo> }) => void;
   setComponents?: (components: Partial<TicketComponents>) => void;
   className?: string;
 }
@@ -40,7 +36,7 @@ function ScanIcon() {
 export function OcrUploadCard({
   setInfo,
   currentInfo,
-  onOcrFill,
+  onOcrApply,
   setComponents,
   className = '',
 }: OcrUploadCardProps) {
@@ -48,18 +44,8 @@ export function OcrUploadCard({
   const [isProcessing, setIsProcessing] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
-  // Tracks values that were last written by OCR. Used to detect user edits on re-run.
-  const lastOcrRef = useRef<Partial<MovieInfo>>({});
-
-  // Pending OCR result waiting for user confirmation (conflict case)
-  const [pendingOcr, setPendingOcr] = useState<{
-    direct: Partial<MovieInfo>;
-    title?: string;
-    conflictCount: number;
-  } | null>(null);
-
-  const boxesInputRef = useRef<HTMLInputElement>(null);
-  const [reviewItems, setReviewItems] = useState<OcrBoxItem[] | null>(null);
+  // KOBIS async race guard
+  const runIdRef = useRef(0);
 
   function showToast(msg: string, durationMs = 3000) {
     setToast(msg);
@@ -80,26 +66,28 @@ export function OcrUploadCard({
     return null;
   }
 
-  /** Apply direct OCR fields to the form, then trigger KOBIS lookup for title. */
   function applyOcr(direct: Partial<MovieInfo>, title?: string) {
     const filled = new Set<OcrDirectField>();
     const toApply: Partial<MovieInfo> = {};
+    const prevValues: Partial<MovieInfo> = {};
 
     for (const key of OCR_DIRECT_FIELDS) {
       if (direct[key] !== undefined) {
         (toApply as Record<string, unknown>)[key] = direct[key];
+        (prevValues as Record<string, unknown>)[key] = currentInfo[key];
         filled.add(key);
       }
     }
 
     if (filled.size > 0) {
       setInfo(toApply);
-      onOcrFill(filled);
-      lastOcrRef.current = toApply;
+      onOcrApply({ keys: filled, prevValues });
     }
 
     if (title) {
+      const currentRunId = ++runIdRef.current;
       triggerKobisLookup(title).then((kobisInfo) => {
+        if (currentRunId !== runIdRef.current) return;
         setInfo(kobisInfo);
         if (!kobisInfo.titleOg && !kobisInfo.actors) {
           showToast('영화 제목을 확인 후 검색해 주세요.');
@@ -107,41 +95,10 @@ export function OcrUploadCard({
       });
     }
 
-    if (filled.size > 0) {
-      showToast(`${filled.size}개 필드를 인식했어요. 확인해 주세요.`);
-    } else if (!title) {
+    if (filled.size === 0 && !title) {
       showToast('인식된 정보가 없어요. 직접 입력해 주세요.');
-    }
-  }
-
-  function confirmPending() {
-    if (!pendingOcr) return;
-    applyOcr(pendingOcr.direct, pendingOcr.title);
-    setPendingOcr(null);
-  }
-
-  function cancelPending() {
-    setPendingOcr(null);
-  }
-
-  function checkAndApplyOcr(direct: Partial<MovieInfo>, title?: string) {
-    const lastOcr = lastOcrRef.current;
-    const conflictKeys = OCR_DIRECT_FIELDS.filter((k) => {
-      return (
-        lastOcr[k] !== undefined &&
-        currentInfo[k] !== lastOcr[k] &&
-        direct[k] !== undefined
-      );
-    });
-
-    if (conflictKeys.length > 0) {
-      setPendingOcr({
-        direct,
-        title,
-        conflictCount: conflictKeys.length,
-      });
-    } else {
-      applyOcr(direct, title);
+    } else if (filled.size === 0 && title) {
+      showToast('인식된 정보가 없어요. 제목으로 영화 정보만 검색할게요.');
     }
   }
 
@@ -160,60 +117,12 @@ export function OcrUploadCard({
         }
       }
 
-      checkAndApplyOcr(direct, result.title);
-    } catch {
-      // Principle 5: silent fallback
-    } finally {
-      setIsProcessing(false);
-    }
-  }
-
-  async function processFileBoxes(file: File) {
-    setIsProcessing(true);
-    try {
-      const result = await runOcrBoxes(file);
-      if (result.items.length > 0) {
-        setReviewItems(result.items);
-      } else {
-        showToast('인식된 정보가 없어요.');
-      }
+      applyOcr(direct, result.title);
     } catch {
       // silent fallback
     } finally {
       setIsProcessing(false);
     }
-  }
-
-  async function handleBoxesChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    e.target.value = '';
-
-    const err = validateFile(file);
-    if (err) {
-      showToast(err);
-      return;
-    }
-
-    await processFileBoxes(file);
-  }
-
-  function handleBoxesClick(e: React.MouseEvent) {
-    e.stopPropagation();
-    if (!isProcessing && !pendingOcr && !reviewItems) {
-      boxesInputRef.current?.click();
-    }
-  }
-
-  function handleReviewConfirm(mappedData: Record<string, string>) {
-    setReviewItems(null);
-    const direct: Partial<MovieInfo> = {};
-    for (const key of OCR_DIRECT_FIELDS) {
-      if (mappedData[key] !== undefined) {
-        (direct as Record<string, unknown>)[key] = mappedData[key];
-      }
-    }
-    checkAndApplyOcr(direct, mappedData.title);
   }
 
   async function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -231,7 +140,7 @@ export function OcrUploadCard({
   }
 
   function handleClick() {
-    if (!isProcessing && !pendingOcr) {
+    if (!isProcessing) {
       inputRef.current?.click();
     }
   }
@@ -246,14 +155,6 @@ export function OcrUploadCard({
         aria-hidden="true"
         onChange={handleChange}
       />
-      <input
-        ref={boxesInputRef}
-        type="file"
-        accept="image/*"
-        className="sr-only"
-        aria-hidden="true"
-        onChange={handleBoxesChange}
-      />
 
       <div
         role="button"
@@ -263,7 +164,7 @@ export function OcrUploadCard({
         onClick={handleClick}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleClick(); }}
         className={`relative w-full rounded-card border-2 border-dashed overflow-hidden transition-colors
-          ${isProcessing || pendingOcr
+          ${isProcessing
             ? 'border-accent cursor-default'
             : 'border-line hover:border-accent cursor-pointer'
           }`}
@@ -284,51 +185,8 @@ export function OcrUploadCard({
           )}
         </div>
       </div>
-      <div className="mt-3 text-center relative z-10">
-        <button
-          type="button"
-          onClick={handleBoxesClick}
-          className="text-xs text-fg-muted underline hover:text-fg transition-colors"
-        >
-          (베타) 칩 검수 모달로 인식하기
-        </button>
-      </div>
 
-      {reviewItems && (
-        <OcrReviewModal
-          items={reviewItems}
-          onClose={() => setReviewItems(null)}
-          onConfirm={handleReviewConfirm}
-        />
-      )}
-
-      {/* Conflict confirmation overlay */}
-      {pendingOcr && (
-        <div className="absolute inset-x-2 bottom-2 bg-surface-elevated border border-accent rounded-card shadow-lg p-3 z-20 space-y-2">
-          <p className="text-xs text-fg leading-snug">
-            수정한 {pendingOcr.conflictCount}개 필드를 새로 인식한 값으로 덮어쓸까요?
-          </p>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={confirmPending}
-              className="flex-1 rounded-chip bg-accent py-1 text-[11px] font-medium text-white"
-            >
-              덮어쓰기
-            </button>
-            <button
-              type="button"
-              onClick={cancelPending}
-              className="flex-1 rounded-chip border border-line py-1 text-[11px] font-medium text-fg"
-            >
-              취소
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Info toast */}
-      {toast && !pendingOcr && (
+      {toast && (
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-fg text-surface-elevated text-xs font-medium px-3 py-1.5 rounded-chip whitespace-nowrap shadow-lg animate-fade-in z-10">
           {toast}
         </div>

@@ -1,19 +1,20 @@
-import { useId, useState, type ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 
 interface OptionalDetailsAccordionProps {
   title?: string;
   hint?: string;
-  defaultOpen?: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   children: ReactNode;
 }
 
 export default function OptionalDetailsAccordion({
   title = 'Optional details',
   hint = '관람 시간 · 좌석 · 평점 등 선택 항목',
-  defaultOpen = false,
+  open,
+  onOpenChange,
   children,
 }: OptionalDetailsAccordionProps) {
-  const [open, setOpen] = useState(defaultOpen);
   const reactId = useId();
   const panelId = `optdetails-${reactId}`;
 
@@ -21,7 +22,7 @@ export default function OptionalDetailsAccordion({
     <div className="rounded-card border border-line bg-paper">
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => onOpenChange(!open)}
         aria-expanded={open}
         aria-controls={panelId}
         data-touch="44"

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import ImageUploader from '@/components/ImageUploader';
 import MovieInfoForm from '@/components/MovieInfoForm';
 import Field from '@/components/ui/Field';
@@ -7,7 +7,7 @@ import RatingPicker from '@/components/wizard/RatingPicker';
 import { OcrUploadCard } from './OcrUploadCard';
 import type { OcrDirectField } from './OcrUploadCard';
 import { formatDate } from '@/utils/dateFormat';
-import type { DateFormatToken, TicketField } from '@/types';
+import type { DateFormatToken, TicketField, MovieInfo } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 
 interface Phase1CanvasProps {
@@ -68,6 +68,9 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
 
   // Tracks which fields were last filled by OCR. Cleared field-by-field on user edit.
   const [ocrFilledFields, setOcrFilledFields] = useState<Set<OcrDirectField>>(new Set());
+  const [ocrSnapshot, setOcrSnapshot] = useState<Partial<MovieInfo> | null>(null);
+  const [accordionOpen, setAccordionOpen] = useState(false);
+  const accordionRef = useRef<HTMLDivElement>(null);
 
   function removeFromOcr(key: OcrDirectField) {
     setOcrFilledFields((prev) => {
@@ -78,12 +81,27 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
     });
   }
 
-  function handleOcrFill(keys: Set<OcrDirectField>) {
-    setOcrFilledFields((prev) => {
-      const next = new Set(prev);
-      keys.forEach((k) => next.add(k));
-      return next;
-    });
+  function handleOcrApply({ keys, prevValues }: { keys: Set<OcrDirectField>; prevValues: Partial<MovieInfo> }) {
+    setOcrFilledFields(keys);
+    setOcrSnapshot(prevValues);
+    setAccordionOpen(true);
+    
+    // Smooth scroll into view if offscreen
+    setTimeout(() => {
+      accordionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
+  }
+
+  function handleCancelOcr() {
+    if (ocrSnapshot) {
+      setInfo(ocrSnapshot);
+    }
+    setOcrFilledFields(new Set());
+    setOcrSnapshot(null);
+  }
+  
+  function handleConfirmOcr() {
+    setOcrSnapshot(null);
   }
 
   return (
@@ -109,7 +127,7 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
           <OcrUploadCard
             setInfo={setInfo}
             currentInfo={movieInfo}
-            onOcrFill={handleOcrFill}
+            onOcrApply={handleOcrApply}
             setComponents={photo.updateComponents}
           />
         </div>
@@ -124,8 +142,9 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
         />
       </section>
 
-      <OptionalDetailsAccordion>
-        <div className="space-y-5">
+      <div ref={accordionRef}>
+        <OptionalDetailsAccordion open={accordionOpen} onOpenChange={setAccordionOpen}>
+          <div className="space-y-5">
           <div className={`space-y-2.5 ${dim(fieldVisibility.watchDate)}`}>
             <div className="flex items-baseline justify-between">
               <div className="flex items-center gap-1.5">
@@ -361,7 +380,33 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
             </div>
           </div>
         </div>
-      </OptionalDetailsAccordion>
+        </OptionalDetailsAccordion>
+      </div>
+
+      {/* OCR Result Banner */}
+      {ocrSnapshot && ocrFilledFields.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-surface-elevated border border-accent rounded-card shadow-lg p-3 z-50 flex items-center gap-4 w-[90%] max-w-sm animate-slide-up">
+          <p className="text-[13px] text-fg flex-1">
+            {ocrFilledFields.size}개 항목이 자동 입력되었어요.
+          </p>
+          <div className="flex gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleCancelOcr}
+              className="text-[12px] font-medium text-fg-muted hover:text-fg transition-colors"
+            >
+              되돌리기
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmOcr}
+              className="rounded-chip bg-accent px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-accent-hover"
+            >
+              확인
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
