@@ -2,6 +2,11 @@
 
 > 클라이언트 Tesseract WebWorker OCR을 서버사이드 GPT-4o mini(Vercel AI Gateway / AI SDK) API로 전면 교체. 포함 이슈: #15, #16, #17, #18, #19, #20, #21
 
+**[업데이트 내역 - OCR UX 변경]**
+OCR 도입 후 Bounding Box 기반 리뷰 UI(A1~A3)는 GPT 모델의 좌표 반환 정밀도 부족으로 인해 **개발 취소(Unimplemented)** 되었습니다. 
+현재 UX는 **'Optimistic injection + instant revert' (낙관적 폼 주입 및 즉각적 실행취소)** 방식을 사용하고 있습니다. 
+따라서 박스 검수나 이미지 핀치 줌 등의 복잡한 단계 없이, API에서 반환된 값을 폼에 즉각 적용하고 오류 시 사용자가 Undo 할 수 있는 구조를 취합니다.
+
 ## 1. 배경 / 왜 이 단위인가
 
 ### 묶은 근거

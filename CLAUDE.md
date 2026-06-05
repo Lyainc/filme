@@ -50,6 +50,7 @@ bun run start   # Run production server (after build)
 ### 🔍 OCR Pipeline (티켓 스크린샷 자동 인식)
 > Tesseract.js 클라이언트 OCR을 GPT-4o mini 서버 vision으로 **전면 교체** 완료. 진입점은 `OcrUploadCard`.
 - **Flow**: 스크린샷 → 클라 전처리 → base64 JSON → `POST /api/ocr` → GPT-4o mini vision → 채워진 필드만 반환.
+- **UX**: Bounding-box review is deprecated (A1~A3 unimplemented). OCR uses 'optimistic injection + instant revert' (fields are injected directly into the form, with an immediate undo toast).
 - **Client preprocess**: `src/utils/ocrPreprocess.ts` — `preprocessForOcr(file)`: 하단 18% 크롭(앱 UI·고지 제거) → width 768px 캡 → JPEG 0.92 재인코딩. SSR-safe(`window` 없으면 원본). 모든 실패 경로에서 throw 없이 원본 file fallback.
 - **Client entry**: `src/utils/ocr.ts` — `runOcr(file)`가 전처리 → `/api/ocr` → `Partial<MovieInfo> & { chain? }`. **절대 throw 안 함** — 실패는 빈 객체로 흡수. 반환 필드 분기: `title`은 KOBIS 검색어로, 나머지는 폼에 직접, `chain`은 로고 자동선택.
 - **API route**: `src/pages/api/ocr.ts` — base64 JSON 수신(multipart 아님, `bodyParser.sizeLimit: '15mb'`). 가드 순서 method → 입력(MIME 화이트리스트·10MB) → rate limit → 인증 → 모델. **절대 throw 안 함**, 모든 에러를 status + `{ error }`로. Zod 스키마는 전 필드 `.nullable()`(`.optional()` 아님 — OpenAI structured output의 `NoObjectGeneratedError` 회피). `chain` enum 4종(`cgv`/`lotte`/`megabox`/`cineq`, 에셋 슬러그와 1:1).
