@@ -41,5 +41,5 @@ bun run lint    # Run ESLint
 - **Memory Management**: Always use `URL.revokeObjectURL` to clean up blob URLs created for cropped images to prevent memory leaks.
 
 ### 🚧 Current Project Status
-- **Completed**: MVP + KOBIS API + Manual Cropping + TCG Premium Textures (Refactoring Complete).
-- **Next Up**: TMDB API integration (for automated poster fetching) and Database/Gallery implementation (Supabase).
+- **Completed**: MVP + KOBIS API + Manual Cropping + TCG Premium Textures + Editorial Cinema redesign + 4-Mood layout system + GPT-4o mini OCR.
+- **Next Up**: No confirmed roadmap (Previous plans for TMDB and Supabase integration are revoked).
