@@ -35,8 +35,8 @@ export function AppHeader({
       <div className="flex items-center gap-2">
         <Sprocket size={20} className="text-accent" />
         <span
-          className="font-semibold text-fg"
-          style={{ fontSize: 15, fontWeight: 600, fontFamily: 'inherit' }}
+          className="font-display text-fg"
+          style={{ fontSize: 19, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase' }}
         >
           Phototicket
         </span>

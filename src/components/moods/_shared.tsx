@@ -22,7 +22,8 @@ export function gate(
 
 export const FONT_MONO = '"JetBrains Mono", "SF Mono", ui-monospace, monospace';
 export const FONT_SANS = '"Pretendard Variable", "Pretendard", "Noto Sans KR", sans-serif';
-export const FONT_KR = '"Pretendard Variable", "Noto Sans KR", "Inter", sans-serif';
+// Inter는 한글 글리프가 없어 폴백 시 한글이 시스템 폰트로 어긋남 → 한글 지원 폰트로 교체.
+export const FONT_KR = '"Pretendard Variable", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
 
 export type Surface = 'paper' | 'dark';
 

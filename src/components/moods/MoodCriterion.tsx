@@ -172,7 +172,6 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
         {titleOgVal && (
           <div
             style={{
-              fontStyle: 'italic',
               fontWeight: 400,
               fontSize: 36,
               fontFamily: FONT_SANS,
@@ -203,7 +202,6 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
         {actorsVal && (
           <div
             style={{
-              fontStyle: 'italic',
               fontWeight: 500,
               fontSize: 22,
               fontFamily: FONT_KR,
