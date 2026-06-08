@@ -11,11 +11,9 @@ import {
   Poster,
   gate,
   pickTitleSize,
-  resolveBookingNo,
-  resolveSerialNo,
+  resolveTicketData,
   truncateActors,
 } from './_shared';
-import { formatDate } from '@/utils/dateFormat';
 
 const PAPER = '#f4ede0';
 const PAPER_DEEP = '#1a1612';
@@ -32,15 +30,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
   const themeColor = components.themeColor || '#FFFFFF';
   const accent = themeColor.toLowerCase() === '#ffffff' ? '#a8312a' : themeColor;
   const titleSize = pickTitleSize(d.title.length, [108, 88, 70, 52]);
-  const bookingNo = resolveBookingNo(d);
-  const serialNo = resolveSerialNo(d);
-  const watchToken = d.watchDateFormat || 'kr-compact';
-  const releaseToken = d.releaseDateFormat || 'kr-compact';
-  const releaseGran = d.releaseDateGranularity || 'date';
-  const watchDateClean = formatDate(d.watchDate, watchToken, 'date');
-  const releaseClean = formatDate(d.releaseDate, releaseToken, releaseGran);
-  const reissueClean = d.isReissue ? formatDate(d.reissueDate, releaseToken, releaseGran) : '';
-  const watchYear = d.watchDate ? d.watchDate.slice(0, 4) : '';
+  const { bookingNo, serialNo, watchDateClean, releaseClean, reissueClean, watchYear } = resolveTicketData(d);
   const theaterValue = gate(fv?.theater, d.theater) || gate(fv?.screen, d.screen);
   const theaterSub = gate(fv?.theater, d.theater) ? gate(fv?.screen, d.screen) : '';
   const sessionValue = gate(fv?.watchDate, watchDateClean) || gate(fv?.watchTime, d.watchTime);

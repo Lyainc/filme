@@ -10,10 +10,31 @@ interface KobisActor {
   peopleNmEn: string;
 }
 
-interface KobisMovieInfo {
+export interface KobisMovieInfo {
   nations?: KobisNation[];
   actors?: KobisActor[];
   showTm?: string;
+}
+
+/**
+ * KOBIS movie detail → 티켓용 actors/runtime 문자열.
+ *
+ * - actors: 비한국 영화면 영문명(peopleNmEn) 우선, 없으면 한글명. 한국 영화는 한글명.
+ *   빈 항목은 제외(filter)해 ", ," 잔재를 막는다.
+ * - runtime: showTm이 있으면 "NN MIN".
+ *
+ * triggerKobisLookup과 MovieInfoForm.handleSelectMovie 양쪽이 호출 — 추출 규칙을
+ * 한 곳에서만 관리한다.
+ */
+export function extractKobisActorsRuntime(info: KobisMovieInfo): { actors: string; runtime: string } {
+  const isKorean = info.nations?.some((n) => n.nationNm === '한국') ?? false;
+  const actors =
+    info.actors
+      ?.map((a) => (!isKorean && a.peopleNmEn ? a.peopleNmEn : a.peopleNm))
+      .filter(Boolean)
+      .join(', ') ?? '';
+  const runtime = info.showTm ? `${info.showTm} MIN` : '';
+  return { actors, runtime };
 }
 
 interface KobisListMovie {
@@ -29,8 +50,8 @@ interface KobisListMovie {
  * - Exactly 1 result  → full enrichment: title, titleOg, releaseDate, actors, runtime
  * - 0 or 2+ results  → { title } only; detail is NOT fetched (overkill-match guard)
  *
- * Mirrors the search→detail logic in MovieInfoForm.handleSelectMovie without
- * touching that component. Never throws; returns { title } on any fetch failure.
+ * Shares actors/runtime extraction with MovieInfoForm.handleSelectMovie via
+ * extractKobisActorsRuntime. Never throws; returns { title } on any fetch failure.
  */
 export async function triggerKobisLookup(title: string): Promise<Partial<MovieInfo>> {
   try {
@@ -61,15 +82,7 @@ export async function triggerKobisLookup(title: string): Promise<Partial<MovieIn
     const detailData = await detailRes.json();
     const info: KobisMovieInfo = detailData.movieInfoResult?.movieInfo ?? {};
 
-    // Replicate MovieInfoForm.tsx:140-146 actors extraction exactly
-    const isKorean = info.nations?.some((n) => n.nationNm === '한국') ?? false;
-    const actors =
-      info.actors
-        ?.map((a) => (!isKorean && a.peopleNmEn ? a.peopleNmEn : a.peopleNm))
-        .filter(Boolean)
-        .join(', ') ?? '';
-
-    const runtime = info.showTm ? `${info.showTm} MIN` : '';
+    const { actors, runtime } = extractKobisActorsRuntime(info);
 
     const result: Partial<MovieInfo> = { title };
     if (titleOg) result.titleOg = titleOg;

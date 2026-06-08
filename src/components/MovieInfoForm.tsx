@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { MovieInfo, KobisMovie, DateFormatToken, DateGranularity } from '@/types';
 import { formatDate, openDtToIso } from '@/utils/dateFormat';
+import { extractKobisActorsRuntime } from '@/utils/kobisLookup';
 import Field from './ui/Field';
 
 interface MovieInfoFormProps {
@@ -137,14 +138,7 @@ export default function MovieInfoForm({
       const data = await res.json();
       const info = data.movieInfoResult?.movieInfo;
       if (!info) return;
-      const isKorean = info.nations?.some((n: { nationNm: string }) => n.nationNm === '한국');
-      const actors =
-        info.actors
-          ?.map((a: { peopleNm: string; peopleNmEn: string }) =>
-            !isKorean && a.peopleNmEn ? a.peopleNmEn : a.peopleNm
-          )
-          .join(', ') || '';
-      const runtime = info.showTm ? `${info.showTm} MIN` : '';
+      const { actors, runtime } = extractKobisActorsRuntime(info);
       onChange({ actors, ...(runtime ? { runtime } : {}) });
     } catch (error) {
       console.error('영화 상세 정보 검색 오류:', error);

@@ -12,11 +12,9 @@ import {
   Poster,
   gate,
   pickTitleSize,
-  resolveBookingNo,
-  resolveSerialNo,
+  resolveTicketData,
   truncateActors,
 } from './_shared';
-import { formatDate } from '@/utils/dateFormat';
 
 const FS_BASE = '#0a0a0a';
 const FS_HOLE = '#f6f1e4';
@@ -53,17 +51,23 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
   const captionScrim =
     'linear-gradient(180deg, rgba(10,10,10,0) 0%, rgba(10,10,10,0.55) 18%, rgba(10,10,10,0.92) 60%, rgba(10,10,10,0.98) 100%)';
 
-  const bookingNo = resolveBookingNo(d);
-  const serialNo = resolveSerialNo(d);
-  const watchToken = d.watchDateFormat || 'kr-compact';
-  const releaseToken = d.releaseDateFormat || 'kr-compact';
-  const releaseGran = d.releaseDateGranularity || 'date';
-  const watchDateClean = formatDate(d.watchDate, watchToken, 'date');
-  const releaseClean = formatDate(d.releaseDate, releaseToken, releaseGran);
-  const reissueClean = d.isReissue ? formatDate(d.reissueDate, releaseToken, releaseGran) : '';
-  const exhibitedText = [gate(fv?.theater, d.theater), gate(fv?.screen, d.screen), gate(fv?.seat, d.seat)].filter(Boolean).join(' · ');
-  const screenedText = [gate(fv?.watchDate, watchDateClean), gate(fv?.watchTime, d.watchTime)].filter(Boolean).join(' · ');
+  const { bookingNo, serialNo, watchDateClean, releaseClean, reissueClean } = resolveTicketData(d);
+
+  // gate는 순수 함수 — 필드당 1회만 호출해 상단에서 파생 (MoodMinimal/Criterion 패턴 정렬)
+  const titleVal = gate(fv?.title, d.title);
+  const titleOgVal = gate(fv?.titleOg, d.titleOg);
+  const theaterVal = gate(fv?.theater, d.theater);
+  const screenVal = gate(fv?.screen, d.screen);
+  const seatVal = gate(fv?.seat, d.seat);
+  const watchDateVal = gate(fv?.watchDate, watchDateClean);
+  const watchTimeVal = gate(fv?.watchTime, d.watchTime);
+  const runtimeVal = gate(fv?.runtime, d.runtime);
+  const releaseDateVal = gate(fv?.releaseDate, releaseClean);
+  const reissueVal = gate(fv?.reissue, reissueClean);
   const actorsVal = truncateActors(gate(fv?.actors, d.actors));
+
+  const exhibitedText = [theaterVal, screenVal, seatVal].filter(Boolean).join(' · ');
+  const screenedText = [watchDateVal, watchTimeVal].filter(Boolean).join(' · ');
 
   return (
     <div
@@ -156,7 +160,7 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
             margin: '0 12px',
           }}
         >
-          {gate(fv?.titleOg, d.titleOg) && (
+          {titleOgVal && (
             <div
               style={{
                 fontWeight: 700,
@@ -168,10 +172,10 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
                 marginBottom: 8,
               }}
             >
-              CAPTION · {gate(fv?.titleOg, d.titleOg)}
+              CAPTION · {titleOgVal}
             </div>
           )}
-          {gate(fv?.title, d.title) && (
+          {titleVal && (
             <div
               style={{
                 fontWeight: 800,
@@ -183,7 +187,7 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
                 color: FS_INK,
               }}
             >
-              {gate(fv?.title, d.title)}
+              {titleVal}
             </div>
           )}
 
@@ -230,10 +234,10 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
                 </span>
               </>
             )}
-            {gate(fv?.runtime, d.runtime) && (
+            {runtimeVal && (
               <>
                 <span style={cellLabelStyle}>RUNTIME</span>
-                <span style={cellValueMono}>{gate(fv?.runtime, d.runtime)}</span>
+                <span style={cellValueMono}>{runtimeVal}</span>
               </>
             )}
             {(fv?.rating ?? true) && d.rating > 0 && (
@@ -285,9 +289,9 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
               }}
             >
               {[
-                gate(fv?.watchDate, watchDateClean) && `← EXP ${gate(fv?.watchDate, watchDateClean)}`,
-                gate(fv?.releaseDate, releaseClean) && `REL ${gate(fv?.releaseDate, releaseClean)}`,
-                gate(fv?.reissue, reissueClean) && `RE-REL ${gate(fv?.reissue, reissueClean)}`,
+                watchDateVal && `← EXP ${watchDateVal}`,
+                releaseDateVal && `REL ${releaseDateVal}`,
+                reissueVal && `RE-REL ${reissueVal}`,
               ]
                 .filter(Boolean)
                 .join(' · ')}

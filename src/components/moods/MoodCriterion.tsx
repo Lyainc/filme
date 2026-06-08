@@ -11,11 +11,9 @@ import {
   gate,
   isInkLight,
   pickTitleSize,
-  resolveBookingNo,
-  resolveSerialNo,
+  resolveTicketData,
   truncateActors,
 } from './_shared';
-import { formatDate } from '@/utils/dateFormat';
 
 export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
@@ -30,16 +28,8 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
   const spineBg = isLight ? 'rgba(245,240,232,0.95)' : 'rgba(0,0,0,0.7)';
   const spineDivider = isLight ? '#0d0c0a' : ink;
 
-  const bookingNo = resolveBookingNo(d);
-  const serialNo = resolveSerialNo(d);
+  const { bookingNo, serialNo, watchDateClean, releaseClean, reissueClean, watchYear } = resolveTicketData(d);
   const bookingTail = bookingNo.split('-').pop() || '0000';
-  const watchYear = d.watchDate ? (d.watchDate.match(/\d{4}/) || [''])[0] : '';
-  const watchToken = d.watchDateFormat || 'kr-compact';
-  const releaseToken = d.releaseDateFormat || 'kr-compact';
-  const releaseGran = d.releaseDateGranularity || 'date';
-  const watchDateClean = formatDate(d.watchDate, watchToken, 'date');
-  const releaseClean = formatDate(d.releaseDate, releaseToken, releaseGran);
-  const reissueClean = d.isReissue ? formatDate(d.reissueDate, releaseToken, releaseGran) : '';
 
   const titleVal       = gate(fv?.title, d.title);
   const titleOgVal     = gate(fv?.titleOg, d.titleOg);

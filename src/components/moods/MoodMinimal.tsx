@@ -12,11 +12,9 @@ import {
   gate,
   isInkLight,
   pickTitleSize,
-  resolveBookingNo,
-  resolveSerialNo,
+  resolveTicketData,
   truncateActors,
 } from './_shared';
-import { formatDate } from '@/utils/dateFormat';
 
 const metaLabelStyle = (ink: string): CSSProperties => ({
   fontWeight: 700,
@@ -50,14 +48,7 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
     : 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.65) 35%, rgba(0,0,0,0.92) 100%)';
   const topPanelBg = isLight ? 'rgba(255,255,255,0.92)' : 'rgba(0,0,0,0.55)';
 
-  const bookingNo = resolveBookingNo(d);
-  const serialNo = resolveSerialNo(d);
-  const watchToken = d.watchDateFormat || 'kr-compact';
-  const releaseToken = d.releaseDateFormat || 'kr-compact';
-  const releaseGran = d.releaseDateGranularity || 'date';
-  const watchDateClean = formatDate(d.watchDate, watchToken, 'date');
-  const releaseClean = formatDate(d.releaseDate, releaseToken, releaseGran);
-  const reissueClean = d.isReissue ? formatDate(d.reissueDate, releaseToken, releaseGran) : '';
+  const { bookingNo, serialNo, watchDateClean, releaseClean, reissueClean } = resolveTicketData(d);
 
   const titleVal       = gate(fv?.title, d.title);
   const titleOgVal     = gate(fv?.titleOg, d.titleOg);

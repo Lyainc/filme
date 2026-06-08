@@ -1,5 +1,6 @@
 import { CSSProperties, memo, useMemo } from 'react';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
+import { formatDate } from '@/utils/dateFormat';
 
 export interface MoodProps {
   movieInfo: MovieInfo;
@@ -551,6 +552,27 @@ export function resolveSerialNo(d: MovieInfo): string {
   if (d.serialNo) return d.serialNo;
   const seed = 'serial::' + (d.title || 'phototicket') + (d.bookingNumber || '');
   return String(seedFromString(seed) % 10000).padStart(4, '0');
+}
+
+/**
+ * 4종 무드가 공통으로 파생하던 티켓 데이터를 한 곳으로 모은 것.
+ * 신규 무드는 `const { ... } = resolveTicketData(d)` 한 줄로 동일 파생값을 얻는다.
+ *
+ * watchYear는 watchDate가 정규화된 YYYY-MM-DD 형식이므로 `slice(0,4)`로 통일
+ * (이전 MoodCriterion의 `match(/\d{4}/)`와 ISO 입력에서 결과 동일).
+ */
+export function resolveTicketData(d: MovieInfo) {
+  const watchToken = d.watchDateFormat || 'kr-compact';
+  const releaseToken = d.releaseDateFormat || 'kr-compact';
+  const releaseGran = d.releaseDateGranularity || 'date';
+  return {
+    bookingNo: resolveBookingNo(d),
+    serialNo: resolveSerialNo(d),
+    watchDateClean: formatDate(d.watchDate, watchToken, 'date'),
+    releaseClean: formatDate(d.releaseDate, releaseToken, releaseGran),
+    reissueClean: d.isReissue ? formatDate(d.reissueDate, releaseToken, releaseGran) : '',
+    watchYear: d.watchDate ? d.watchDate.slice(0, 4) : '',
+  };
 }
 
 export function pickTitleSize(len: number, sizes: [number, number, number, number]): number {
