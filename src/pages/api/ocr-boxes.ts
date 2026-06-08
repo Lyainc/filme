@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { generateObject } from 'ai';
 import { z } from 'zod';
-import { checkRateLimit } from '@/utils/ratelimit';
+import { validateOcrRequest } from '@/utils/ocrRoute';
 
 export const config = {
   api: { bodyParser: { sizeLimit: '15mb' } },
@@ -24,9 +24,6 @@ const TicketBoxesSchema = z.object({
   items: z.array(ItemSchema).nullable(),
 });
 
-const ALLOWED_MIME = new Set(['image/png', 'image/jpeg', 'image/webp']);
-const MAX_BYTES = 10 * 1024 * 1024; // 10MB
-
 function buildSystemPrompt(year: number): string {
   return `당신은 한국 영화관 예매 티켓/스크린샷에서 정보를 추출하는 OCR 어시스턴트입니다.
 이미지를 분석해 텍스트 조각(칩)들을 추출하고, 각각의 텍스트와 분류(field), 박스(box) 좌표를 반환하세요.
@@ -44,45 +41,10 @@ field 분류 기준:
 분류할 수 없거나 확실하지 않은 텍스트는 field를 null로 설정하세요. 모든 속성은 null을 허용하며 절대 생략하지 마세요.`;
 }
 
-function clientIp(req: NextApiRequest): string {
-  const xff = req.headers['x-forwarded-for'];
-  if (typeof xff === 'string' && xff.length > 0) return xff.split(',')[0].trim();
-  if (Array.isArray(xff) && xff.length > 0) return xff[0];
-  return req.socket.remoteAddress ?? 'unknown';
-}
-
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  const body = req.body as { image?: unknown; mimeType?: unknown } | undefined;
-  const image = typeof body?.image === 'string' ? body.image : '';
-  if (!image) {
-    return res.status(400).json({ error: 'image (base64) is required' });
-  }
-
-  const mimeType = typeof body?.mimeType === 'string' ? body.mimeType : 'image/jpeg';
-  if (!ALLOWED_MIME.has(mimeType)) {
-    return res.status(415).json({ error: 'Unsupported image type' });
-  }
-
-  const base64 = image.replace(/^data:[^;]+;base64,/, '');
-
-  const approxBytes = Math.floor((base64.length * 3) / 4);
-  if (approxBytes > MAX_BYTES) {
-    return res.status(413).json({ error: 'Image too large (max 10MB)' });
-  }
-
-  const rl = await checkRateLimit(clientIp(req));
-  if (!rl.ok) {
-    res.setHeader('Retry-After', String(rl.retryAfterSec ?? 60));
-    return res.status(429).json({ error: 'Too many requests' });
-  }
-
-  if (!process.env.AI_GATEWAY_API_KEY && !process.env.VERCEL_OIDC_TOKEN) {
-    return res.status(500).json({ error: 'AI Gateway is not configured' });
-  }
+  const valid = await validateOcrRequest(req, res);
+  if (!valid) return;
+  const { base64, mimeType } = valid;
 
   try {
     const { object } = await generateObject({

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { MovieInfo, TicketComponents } from '@/types';
 import { runOcr } from '@/utils/ocr';
 import { triggerKobisLookup } from '@/utils/kobisLookup';
+import { ALLOWED_MIME, MAX_BYTES } from '@/utils/ocrConstants';
 
 export type OcrDirectField = 'theater' | 'screen' | 'watchDate' | 'watchTime' | 'seat' | 'bookingNumber';
 export const OCR_DIRECT_FIELDS: OcrDirectField[] = [
@@ -20,9 +21,6 @@ export interface OcrUploadCardProps {
   setComponents?: (components: Partial<TicketComponents>) => void;
   className?: string;
 }
-
-const ALLOWED_MIME = new Set(['image/png', 'image/jpeg', 'image/webp']);
-const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 
 function ScanIcon() {
   return (

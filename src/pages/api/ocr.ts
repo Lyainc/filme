@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { generateObject } from 'ai';
 import { z } from 'zod';
-import { checkRateLimit } from '@/utils/ratelimit';
+import { validateOcrRequest } from '@/utils/ocrRoute';
 
 /**
  * 클라이언트가 base64 JSON으로 이미지를 보낸다(multipart 대신). Pages Router 기본
@@ -35,9 +35,6 @@ const TicketSchema = z.object({
   chain: z.enum(['cgv', 'lotte', 'megabox', 'cineq']).nullable(),
 });
 
-const ALLOWED_MIME = new Set(['image/png', 'image/jpeg', 'image/webp']);
-const MAX_BYTES = 10 * 1024 * 1024; // 10MB (디코드 기준)
-
 /** 연도는 호출 시점 기준으로 주입 — 티켓에 연도가 빠진 MM.DD 표기를 보정하기 위함. */
 function buildSystemPrompt(year: number): string {
   return `당신은 한국 영화관 예매 티켓/스크린샷에서 정보를 추출하는 OCR 어시스턴트입니다.
@@ -53,62 +50,17 @@ function buildSystemPrompt(year: number): string {
 - chain: 영화관 체인. cgv / lotte / megabox / cineq 중 하나. 판단 불가면 null.`;
 }
 
-/** 클라이언트 IP — Vercel은 x-forwarded-for를 설정한다. 로컬 dev는 소켓 주소로 폴백. */
-function clientIp(req: NextApiRequest): string {
-  const xff = req.headers['x-forwarded-for'];
-  if (typeof xff === 'string' && xff.length > 0) return xff.split(',')[0].trim();
-  if (Array.isArray(xff) && xff.length > 0) return xff[0];
-  return req.socket.remoteAddress ?? 'unknown';
-}
-
 /**
  * 티켓 스크린샷(base64) → GPT-4o mini vision → 구조화 JSON.
  *
- * AI Gateway 경유(`model: 'openai/gpt-4o-mini'`). 인증은 OIDC(VERCEL_OIDC_TOKEN,
- * 배포/`vercel env pull`) 또는 정적 AI_GATEWAY_API_KEY. 둘 다 없으면 500을 반환하고
- * 모델 호출을 시도하지 않는다.
- *
- * 가드 순서: method → 입력(존재·MIME·크기) → rate limit → 인증 → 모델.
- * 저렴한 검증을 먼저 두어 키 없이도 입력 거부가 동작하고, 남용은 모델 호출 전에 막는다.
- * 절대 throw하지 않는다 — 모든 에러는 catch해 status + { error }로 반환한다.
+ * AI Gateway 경유(`model: 'openai/gpt-4o-mini'`). 공통 가드(method·입력·rate limit·
+ * 인증)는 validateOcrRequest로 일원화 — 통과 시 정제된 base64/mimeType을 받고,
+ * 실패 시 res에 status+{error}가 쓰여 있으므로 그대로 반환한다. 절대 throw하지 않는다.
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  const body = req.body as { image?: unknown; mimeType?: unknown } | undefined;
-  const image = typeof body?.image === 'string' ? body.image : '';
-  if (!image) {
-    return res.status(400).json({ error: 'image (base64) is required' });
-  }
-
-  const mimeType = typeof body?.mimeType === 'string' ? body.mimeType : 'image/jpeg';
-  if (!ALLOWED_MIME.has(mimeType)) {
-    return res.status(415).json({ error: 'Unsupported image type' });
-  }
-
-  // data URL prefix가 붙어와도 방어적으로 제거 — AI SDK엔 순수 base64를 넘긴다.
-  const base64 = image.replace(/^data:[^;]+;base64,/, '');
-
-  // 크기 제한: base64 디코드 크기 ≈ 문자열 길이 × 3/4. 10MB 초과는 거부한다
-  // (전처리를 거치면 보통 수백 KB지만, 원본이 직접 올 가능성에 대비한 상한).
-  const approxBytes = Math.floor((base64.length * 3) / 4);
-  if (approxBytes > MAX_BYTES) {
-    return res.status(413).json({ error: 'Image too large (max 10MB)' });
-  }
-
-  // Rate limit: IP sliding window(시간당 10·일당 50). Upstash env 미설정 시 skip.
-  const rl = await checkRateLimit(clientIp(req));
-  if (!rl.ok) {
-    res.setHeader('Retry-After', String(rl.retryAfterSec ?? 60));
-    return res.status(429).json({ error: 'Too many requests' });
-  }
-
-  // Gateway 인증 가드: 입력·rate 검증을 통과한 뒤, 모델 호출 직전에 확인한다.
-  if (!process.env.AI_GATEWAY_API_KEY && !process.env.VERCEL_OIDC_TOKEN) {
-    return res.status(500).json({ error: 'AI Gateway is not configured' });
-  }
+  const valid = await validateOcrRequest(req, res);
+  if (!valid) return;
+  const { base64, mimeType } = valid;
 
   try {
     const { object } = await generateObject({
