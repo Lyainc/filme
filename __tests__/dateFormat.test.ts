@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { formatDate, inferGranularity } from '../src/utils/dateFormat';
+import { formatDate } from '../src/utils/dateFormat';
 import type { DateFormatToken } from '../src/types';
 
 describe('formatDate — padded ISO baseline', () => {
@@ -81,17 +81,5 @@ describe('formatDate — HIGH-8: unknown token falls back to iso behavior', () =
   });
   test('year-month granularity → iso-like output', () => {
     expect(formatDate('2014-11', BAD, 'year-month')).toBe('2014-11');
-  });
-});
-
-describe('inferGranularity', () => {
-  test('date', () => {
-    expect(inferGranularity('2014-11-06')).toBe('date');
-  });
-  test('year-month', () => {
-    expect(inferGranularity('2014-11')).toBe('year-month');
-  });
-  test('year', () => {
-    expect(inferGranularity('2014')).toBe('year');
   });
 });

@@ -1,5 +1,13 @@
 import { useId, type ReactNode } from 'react';
 
+function ChevronIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
 interface OptionalDetailsAccordionProps {
   title?: string;
   hint?: string;
@@ -34,9 +42,9 @@ export default function OptionalDetailsAccordion({
             {hint}
           </span>
         </span>
-        <span aria-hidden className="text-fg-muted transition-transform"
+        <span aria-hidden className="inline-flex text-fg-muted transition-transform"
           style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-          ⌄
+          <ChevronIcon />
         </span>
       </button>
       {open && (

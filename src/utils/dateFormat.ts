@@ -64,13 +64,6 @@ export function formatDate(
   }
 }
 
-export function inferGranularity(iso: string): DateGranularity {
-  const parts = iso.split('-').filter(Boolean);
-  if (parts.length >= 3) return 'date';
-  if (parts.length === 2) return 'year-month';
-  return 'year';
-}
-
 /** KOBIS openDt (YYYYMMDD) → ISO YYYY-MM-DD. Empty/invalid → empty string. */
 export function openDtToIso(dt: string): string {
   if (!dt || dt.length !== 8) return "";

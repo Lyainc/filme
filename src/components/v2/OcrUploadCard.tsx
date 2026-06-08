@@ -110,7 +110,7 @@ export function OcrUploadCard({
 
       if (result.chain && setComponents) {
         setComponents({ chainVisible: true });
-        showToast(`${result.chain.toUpperCase()} 체인이 인식되었습니다. Phase 2에서 로고를 업로드하세요.`);
+        showToast(`${result.chain.toUpperCase()} 체인을 인식했어요. 로고는 다음 단계에서 올려 주세요.`);
       }
 
       const direct: Partial<MovieInfo> = {};
