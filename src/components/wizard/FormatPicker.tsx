@@ -13,7 +13,7 @@ export default function FormatPicker({ value, onChange, visible, onVisibilityCha
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (file && file.type.startsWith('image/')) {
       if (value && value.startsWith('blob:')) {
         URL.revokeObjectURL(value);
       }

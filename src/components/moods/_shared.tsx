@@ -1,5 +1,4 @@
 import { CSSProperties, memo, useMemo } from 'react';
-import { THEATER_CHAINS, SCREENING_FORMATS } from '@/utils/constants';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 
 export interface MoodProps {
@@ -31,7 +30,7 @@ interface ChainStampProps {
   size?: number;
   surface?: Surface;
   height?: number;
-  visible?: boolean;
+  visible: boolean;
 }
 
 const LOGO_SHADOW = 'drop-shadow(0 2px 8px rgba(0,0,0,0.85))';
@@ -43,7 +42,7 @@ export function ChainStamp({
   height = 48,
   visible,
 }: ChainStampProps) {
-  if (visible === false) return null;
+  if (!visible) return null;
   const h = height * size;
 
   if (!chain) {
@@ -90,7 +89,7 @@ interface FormatStampProps {
   format: string;
   size?: number;
   surface?: Surface;
-  visible?: boolean;
+  visible: boolean;
 }
 
 export function FormatStamp({
@@ -99,7 +98,7 @@ export function FormatStamp({
   surface = 'paper',
   visible,
 }: FormatStampProps) {
-  if (visible === false) return null;
+  if (!visible) return null;
   const h = 64 * size;
 
   if (!format) {

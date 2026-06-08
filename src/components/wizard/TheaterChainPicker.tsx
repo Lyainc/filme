@@ -12,7 +12,7 @@ export default function TheaterChainPicker({ value, onChange, visible, onVisibil
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (file && file.type.startsWith('image/')) {
       // Use Object URL and revoke old one
       if (value && value.startsWith('blob:')) {
         URL.revokeObjectURL(value);

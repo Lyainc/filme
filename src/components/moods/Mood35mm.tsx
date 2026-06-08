@@ -118,13 +118,13 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
       </div>
 
       {/* Stamps — chain top-left, format top-right rotated */}
-      {components.chain && (
+      {components.chainVisible && (
         <div style={{ position: 'absolute', left: 28, top: 132 }}>
           <ChainStamp chain={components.chain} visible={components.chainVisible} size={1.0} surface="dark" height={48} />
         </div>
       )}
 
-      {components.format && (
+      {components.formatVisible && (
         <div
           style={{
             position: 'absolute',

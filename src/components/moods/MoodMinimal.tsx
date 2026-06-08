@@ -294,7 +294,7 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
               gap: 14,
             }}
           >
-            {components.format && <FormatStamp format={components.format} visible={components.formatVisible} size={1.4} />}
+            <FormatStamp format={components.format} visible={components.formatVisible} size={1.4} />
             {(fv?.bookingNo ?? true) && (
               <Barcode value={bookingNo} color={ink} width={180} height={34} textSize={10} />
             )}
