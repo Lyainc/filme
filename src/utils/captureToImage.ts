@@ -23,6 +23,12 @@ export function buildJpegOptions(
     cacheBust: false,
     skipFonts: false,
     style: { transform: 'none', transformOrigin: '0 0' },
+    filter: (node: unknown) => {
+      if (node instanceof Element && node.hasAttribute('data-hide-on-export')) {
+        return false;
+      }
+      return true;
+    },
   };
 }
 

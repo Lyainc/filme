@@ -1,78 +1,78 @@
-import { useEffect, useMemo } from 'react';
-import { SCREENING_FORMATS } from '@/utils/constants';
-import { allowedFormatsForChain } from '@/utils/chainFormatMap';
+import { useRef } from 'react';
 
 interface FormatPickerProps {
   value: string;
   onChange: (value: string) => void;
   chain: string;
+  visible: boolean;
+  onVisibilityChange: (visible: boolean) => void;
 }
 
-export default function FormatPicker({ value, onChange, chain }: FormatPickerProps) {
-  const visibleFormats = useMemo(() => {
-    const allowed = allowedFormatsForChain(chain);
-    if (!allowed) return SCREENING_FORMATS;
-    return SCREENING_FORMATS.filter((f) => f.value === '' || allowed.includes(f.value));
-  }, [chain]);
+export default function FormatPicker({ value, onChange, visible, onVisibilityChange }: FormatPickerProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Self-correction: when chain changes and current value is incompatible, clear it.
-  useEffect(() => {
-    const allowed = allowedFormatsForChain(chain);
-    if (allowed && value && !allowed.includes(value)) {
-      onChange('');
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (value && value.startsWith('blob:')) {
+        URL.revokeObjectURL(value);
+      }
+      const objectUrl = URL.createObjectURL(file);
+      onChange(objectUrl);
     }
-    // onChange는 useState setter로 stable — deps 포함 시 인라인 함수 참조 변경마다 불필요 재실행
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chain, value]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   return (
     <div className="space-y-2.5">
       <div className="flex items-baseline justify-between">
-        <span className="text-mono block text-[10px] uppercase tracking-widest text-fg-muted">
-          Screening format
-        </span>
-        <span className="text-mono text-[10px] uppercase tracking-widest text-fg-faint">
-          {value || 'none'}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-mono block text-[10px] uppercase tracking-widest text-fg-muted">
+            Screening format
+          </span>
+          <button
+            type="button"
+            onClick={() => onVisibilityChange(!visible)}
+            className={`text-mono text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-chip border transition-colors ${
+              visible ? 'border-accent text-accent' : 'border-line text-fg-muted hover:text-fg'
+            }`}
+          >
+            {visible ? 'ON' : 'OFF'}
+          </button>
+        </div>
       </div>
-      <div
-        className="-mx-1 flex flex-wrap gap-2 px-1 pb-1"
-        role="radiogroup"
-        aria-label="Screening format"
-      >
-        {visibleFormats.map((fmt) => {
-          const active = value === fmt.value;
-          return (
+
+      {visible && (
+        <div className="flex items-center gap-3 pt-1">
+          {value ? (
+            <div className="flex items-center gap-2 bg-paper border border-line rounded-chip px-3 py-1.5 h-11">
+              <img src={value} alt="Uploaded Format" className="h-6 w-auto object-contain" />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="text-[11px] text-fg-muted hover:text-fg underline ml-2"
+              >
+                Change
+              </button>
+            </div>
+          ) : (
             <button
-              key={fmt.value || 'none'}
               type="button"
-              role="radio"
-              aria-checked={active}
-              onClick={() => onChange(fmt.value)}
-              data-touch="44"
-              className={`text-mono inline-flex min-h-touch shrink-0 items-center gap-2 rounded-chip border px-4 text-[11px] uppercase tracking-widest transition-colors
-                ${
-                  active
-                    ? 'border-accent bg-accent text-white'
-                    : 'border-line bg-paper text-fg hover:bg-accent-soft'
-                }`}
+              onClick={() => fileInputRef.current?.click()}
+              className="text-mono inline-flex items-center justify-center min-h-touch gap-2 rounded-chip border border-dashed border-line bg-surface-elevated px-4 text-[11px] uppercase tracking-widest text-fg-muted transition-colors hover:border-accent hover:text-accent"
             >
-              {fmt.file && (
-                <img
-                  src={`/assets/formats_transparent/${fmt.file}`}
-                  alt=""
-                  className="h-4 w-auto"
-                  style={{
-                    filter: active ? 'brightness(0) invert(1)' : 'none',
-                    opacity: active ? 0.95 : 0.85,
-                  }}
-                />
-              )}
-              <span>{fmt.label}</span>
+              Upload Format
             </button>
-          );
-        })}
-      </div>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+            onChange={handleFileChange}
+            className="sr-only"
+          />
+        </div>
+      )}
     </div>
   );
 }

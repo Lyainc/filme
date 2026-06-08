@@ -4,7 +4,6 @@ import FormatPicker from '@/components/wizard/FormatPicker';
 import TexturePicker from '@/components/wizard/TexturePicker';
 import BrightnessSlider from '@/components/wizard/BrightnessSlider';
 import ColorPicker from '@/components/wizard/ColorPicker';
-import { allowedFormatsForChain } from '@/utils/chainFormatMap';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { LayoutId } from '@/types';
 
@@ -37,7 +36,7 @@ export function Phase2Canvas({ photo, onGoBack }: Phase2CanvasProps) {
           무드와 마감을 골라요.
         </h2>
         <p className="max-w-[42ch] text-[13px] leading-relaxed text-fg-muted">
-          4가지 레이아웃 중 하나를 선택하고, 극장 · 포맷 · 텍스처를 칩으로 골라요.
+          4가지 레이아웃 중 하나를 선택하고, 극장 · 포맷 · 텍스처를 지정해요.
         </p>
       </header>
 
@@ -53,24 +52,22 @@ export function Phase2Canvas({ photo, onGoBack }: Phase2CanvasProps) {
         <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Theater</h3>
         <TheaterChainPicker
           value={components.chain}
-          onChange={(chain) => {
-            const allowed = allowedFormatsForChain(chain);
-            const keepFormat = allowed ? allowed.includes(components.format) : false;
-            setComp({ chain, ...(keepFormat ? {} : { format: '' }) });
-          }}
+          visible={components.chainVisible}
+          onVisibilityChange={(v) => setComp({ chainVisible: v })}
+          onChange={(chain) => setComp({ chain })}
         />
       </section>
 
-      {allowedFormatsForChain(components.chain) !== null && (
-        <section className="space-y-4">
-          <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Format</h3>
-          <FormatPicker
-            value={components.format}
-            onChange={(format) => setComp({ format })}
-            chain={components.chain}
-          />
-        </section>
-      )}
+      <section className="space-y-4">
+        <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Format</h3>
+        <FormatPicker
+          value={components.format}
+          visible={components.formatVisible}
+          onVisibilityChange={(v) => setComp({ formatVisible: v })}
+          onChange={(format) => setComp({ format })}
+          chain={components.chain}
+        />
+      </section>
 
       <section className="space-y-4">
         <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Texture</h3>

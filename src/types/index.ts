@@ -53,6 +53,8 @@ export interface TicketComponents {
   texture: string;
   posterOpacity: number;
   themeColor: string;
+  chainVisible: boolean;
+  formatVisible: boolean;
 }
 
 export interface PhototicketState {

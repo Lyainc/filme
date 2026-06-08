@@ -31,10 +31,8 @@ interface ChainStampProps {
   size?: number;
   surface?: Surface;
   height?: number;
+  visible?: boolean;
 }
-
-const CHAIN_INDEX = new Map(THEATER_CHAINS.map((c) => [c.value, c]));
-const FORMAT_INDEX = new Map(SCREENING_FORMATS.map((f) => [f.value, f]));
 
 const LOGO_SHADOW = 'drop-shadow(0 2px 8px rgba(0,0,0,0.85))';
 
@@ -43,17 +41,40 @@ export function ChainStamp({
   size = 1,
   surface = 'paper',
   height = 48,
+  visible,
 }: ChainStampProps) {
-  if (!chain) return null;
-  const entry = CHAIN_INDEX.get(chain);
-  if (!entry?.file) return null;
-  const src = `/assets/chains_transparent/${entry.file}`;
+  if (visible === false) return null;
   const h = height * size;
+
+  if (!chain) {
+    return (
+      <div
+        data-hide-on-export="true"
+        style={{
+          height: h,
+          width: 120 * size,
+          border: '1px dashed currentColor',
+          opacity: 0.4,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 10 * size,
+          fontWeight: 600,
+          fontFamily: FONT_MONO,
+          letterSpacing: 1,
+          color: 'currentColor',
+          ...(surface === 'dark' ? { borderColor: 'rgba(255,255,255,0.5)', color: 'rgba(255,255,255,0.7)' } : {}),
+        }}
+      >
+        LOGO
+      </div>
+    );
+  }
 
   return (
     <img
-      src={src}
-      alt={entry.label}
+      src={chain}
+      alt="Theater Chain"
       style={{
         height: h,
         width: 'auto',
@@ -61,7 +82,6 @@ export function ChainStamp({
         ...(surface === 'dark' ? { filter: LOGO_SHADOW } : {}),
       }}
       draggable={false}
-      crossOrigin="anonymous"
     />
   );
 }
@@ -70,24 +90,47 @@ interface FormatStampProps {
   format: string;
   size?: number;
   surface?: Surface;
+  visible?: boolean;
 }
 
 export function FormatStamp({
   format,
   size = 1,
   surface = 'paper',
+  visible,
 }: FormatStampProps) {
-  if (!format) return null;
-  const entry = FORMAT_INDEX.get(format);
-  if (!entry?.file) return null;
-  const src = `/assets/formats_transparent/${entry.file}`;
-  // Base 64 (vs ChainStamp's 48): format glyphs are wide/thin so they read smaller at equal height.
+  if (visible === false) return null;
   const h = 64 * size;
+
+  if (!format) {
+    return (
+      <div
+        data-hide-on-export="true"
+        style={{
+          height: h,
+          width: 140 * size,
+          border: '1px dashed currentColor',
+          opacity: 0.4,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 10 * size,
+          fontWeight: 600,
+          fontFamily: FONT_MONO,
+          letterSpacing: 1,
+          color: 'currentColor',
+          ...(surface === 'dark' ? { borderColor: 'rgba(255,255,255,0.5)', color: 'rgba(255,255,255,0.7)' } : {}),
+        }}
+      >
+        FORMAT
+      </div>
+    );
+  }
 
   return (
     <img
-      src={src}
-      alt={entry.label}
+      src={format}
+      alt="Screening Format"
       style={{
         height: h,
         width: 'auto',
@@ -95,7 +138,6 @@ export function FormatStamp({
         ...(surface === 'dark' ? { filter: LOGO_SHADOW } : {}),
       }}
       draggable={false}
-      crossOrigin="anonymous"
     />
   );
 }

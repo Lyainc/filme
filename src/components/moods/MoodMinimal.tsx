@@ -103,7 +103,7 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
           WebkitBackdropFilter: 'blur(6px)',
         }}
       >
-        <ChainStamp chain={components.chain} size={1.25} />
+        <ChainStamp chain={components.chain} visible={components.chainVisible} size={1.25} />
         {(watchDateVal || watchTimeVal) && (
           <div
             style={{
@@ -294,7 +294,7 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
               gap: 14,
             }}
           >
-            {components.format && <FormatStamp format={components.format} size={1.4} />}
+            {components.format && <FormatStamp format={components.format} visible={components.formatVisible} size={1.4} />}
             {(fv?.bookingNo ?? true) && (
               <Barcode value={bookingNo} color={ink} width={180} height={34} textSize={10} />
             )}

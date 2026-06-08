@@ -103,7 +103,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
           }}
         >
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 18 }}>
-            <ChainStamp chain={components.chain} size={1.0} />
+            <ChainStamp chain={components.chain} visible={components.chainVisible} size={1.0} />
             {components.format && (
               <>
                 <span
@@ -115,7 +115,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
                     flexShrink: 0,
                   }}
                 />
-                <FormatStamp format={components.format} size={1.2} />
+                <FormatStamp format={components.format} visible={components.formatVisible} size={1.2} />
               </>
             )}
           </div>

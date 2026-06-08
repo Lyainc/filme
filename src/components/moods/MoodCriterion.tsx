@@ -144,11 +144,11 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
           padding: '10px 16px',
         }}
       >
-        <ChainStamp chain={components.chain} size={1.05} />
+        <ChainStamp chain={components.chain} visible={components.chainVisible} size={1.05} />
         {components.format && (
           <>
             <span style={{ width: 1, height: 26, background: ink, opacity: 0.6 }} />
-            <FormatStamp format={components.format} size={1.0} />
+            <FormatStamp format={components.format} visible={components.formatVisible} size={1.0} />
           </>
         )}
       </div>

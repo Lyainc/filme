@@ -108,7 +108,10 @@ export function OcrUploadCard({
     try {
       const result = await runOcr(file);
 
-      if (result.chain && setComponents) setComponents({ chain: result.chain });
+      if (result.chain && setComponents) {
+        setComponents({ chainVisible: true });
+        showToast(`${result.chain.toUpperCase()} 체인이 인식되었습니다. Phase 2에서 로고를 업로드하세요.`);
+      }
 
       const direct: Partial<MovieInfo> = {};
       for (const key of OCR_DIRECT_FIELDS) {
