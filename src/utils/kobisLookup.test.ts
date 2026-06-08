@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, mock, spyOn } from 'bun:test';
 import { triggerKobisLookup } from './kobisLookup';
 
 const BASE_MOVIE = {
@@ -35,7 +35,7 @@ const DETAIL_KOREAN_MOVIE = {
 };
 
 function mockFetch(searchList: object[], detailData?: object) {
-  return vi.fn().mockImplementation((url: string) => {
+  return mock((url: string) => {
     if (url.includes('/api/kobis/search')) {
       return Promise.resolve({
         ok: true,
@@ -53,14 +53,14 @@ function mockFetch(searchList: object[], detailData?: object) {
 }
 
 beforeEach(() => {
-  vi.restoreAllMocks();
+  mock.restore();
 });
 
 // U-4: triggerKobisLookup 분기 테스트
 describe('triggerKobisLookup — U-4', () => {
   it('단일 매치: titleOg/releaseDate(search) + actors/runtime(detail) 주입, detail 1회', async () => {
     const fetchMock = mockFetch([BASE_MOVIE], DETAIL_KOR);
-    vi.spyOn(global, 'fetch').mockImplementation(fetchMock as unknown as typeof fetch);
+    spyOn(global, 'fetch').mockImplementation(fetchMock as unknown as typeof fetch);
 
     const result = await triggerKobisLookup('인터스텔라');
 
@@ -71,9 +71,7 @@ describe('triggerKobisLookup — U-4', () => {
     expect(result.runtime).toBe('169 MIN');
 
     // detail 1회만 호출
-    const calls = (fetchMock as ReturnType<typeof vi.fn>).mock.calls.map(
-      (c: [string]) => c[0]
-    );
+    const calls = fetchMock.mock.calls.map((c: [string]) => c[0]);
     const detailCalls = calls.filter((u: string) => u.includes('/api/kobis/detail'));
     expect(detailCalls).toHaveLength(1);
 
@@ -83,7 +81,7 @@ describe('triggerKobisLookup — U-4', () => {
   });
 
   it('한국 영화: actors = peopleNm (한글)', async () => {
-    vi.spyOn(global, 'fetch').mockImplementation(
+    spyOn(global, 'fetch').mockImplementation(
       mockFetch([{ ...BASE_MOVIE, movieNm: '기생충' }], DETAIL_KOREAN_MOVIE) as unknown as typeof fetch
     );
 
@@ -93,7 +91,7 @@ describe('triggerKobisLookup — U-4', () => {
   });
 
   it('외화: actors = peopleNmEn', async () => {
-    vi.spyOn(global, 'fetch').mockImplementation(
+    spyOn(global, 'fetch').mockImplementation(
       mockFetch([BASE_MOVIE], DETAIL_KOR) as unknown as typeof fetch
     );
 
@@ -104,21 +102,19 @@ describe('triggerKobisLookup — U-4', () => {
 
   it('2건 이상 → { title } 만, detail 0회 호출', async () => {
     const fetchMock = mockFetch([BASE_MOVIE, { ...BASE_MOVIE, movieCd: 'M002' }]);
-    vi.spyOn(global, 'fetch').mockImplementation(fetchMock as unknown as typeof fetch);
+    spyOn(global, 'fetch').mockImplementation(fetchMock as unknown as typeof fetch);
 
     const result = await triggerKobisLookup('인터스텔라');
 
     expect(result).toEqual({ title: '인터스텔라' });
 
-    const calls = (fetchMock as ReturnType<typeof vi.fn>).mock.calls.map(
-      (c: [string]) => c[0]
-    );
+    const calls = fetchMock.mock.calls.map((c: [string]) => c[0]);
     const detailCalls = calls.filter((u: string) => u.includes('/api/kobis/detail'));
     expect(detailCalls).toHaveLength(0);
   });
 
   it('0건 → { title } 만, throw 없음', async () => {
-    vi.spyOn(global, 'fetch').mockImplementation(
+    spyOn(global, 'fetch').mockImplementation(
       mockFetch([]) as unknown as typeof fetch
     );
 
@@ -128,7 +124,9 @@ describe('triggerKobisLookup — U-4', () => {
   });
 
   it('fetch 실패 → { title } 만, throw 없음', async () => {
-    vi.spyOn(global, 'fetch').mockRejectedValue(new Error('network error'));
+    spyOn(global, 'fetch').mockImplementation(
+      (() => Promise.reject(new Error('network error'))) as unknown as typeof fetch
+    );
 
     const result = await triggerKobisLookup('오류영화');
 

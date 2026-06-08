@@ -76,7 +76,7 @@ export default function ColorPicker({ value, onChange, recommended }: ColorPicke
             }`}
             style={{
               background:
-                'conic-gradient(from 0deg, #ff6b6b, #f9d423, #4ecdc4, #2c7be5, #b06ab3, #ff6b6b)',
+                'conic-gradient(from 0deg, #C08079, #D4B483, #8FA99E, #7E93A8, #9A8BA3, #C08079)',
             }}
             aria-hidden
           />

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { PhototicketState } from '@/types';
 
 export type Phase = 1 | 2;
@@ -57,11 +57,8 @@ export interface UsePhaseOptions {
 export interface UsePhase {
   phase: Phase;
   hydrated: boolean;
-  goNext: () => void;
-  goPrev: () => void;
   goTo: (phase: Phase) => void;
   canAdvance: (phase: Phase) => boolean;
-  completedPhases: ReadonlySet<Phase>;
 }
 
 export function usePhase({ state, pendingFetch }: UsePhaseOptions): UsePhase {
@@ -104,23 +101,9 @@ export function usePhase({ state, pendingFetch }: UsePhaseOptions): UsePhase {
     ]
   );
 
-  const goNext = useCallback(() => {
-    setPhase((prev) => (prev === 1 ? 2 : prev));
-  }, []);
-
-  const goPrev = useCallback(() => {
-    setPhase((prev) => (prev === 2 ? 1 : prev));
-  }, []);
-
   const goTo = useCallback((target: Phase) => {
     setPhase(target);
   }, []);
 
-  const completedPhases = useMemo<ReadonlySet<Phase>>(() => {
-    const set = new Set<Phase>();
-    if (phase === 2) set.add(1);
-    return set;
-  }, [phase]);
-
-  return { phase, hydrated, goNext, goPrev, goTo, canAdvance, completedPhases };
+  return { phase, hydrated, goTo, canAdvance };
 }
