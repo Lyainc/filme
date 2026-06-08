@@ -16,30 +16,32 @@ import {
   truncateActors,
 } from './_shared';
 
-const metaLabelStyle = (ink: string): CSSProperties => ({
+// 컬러를 제외한 정적 부분은 모듈 레벨 상수 — 매 렌더 새 객체 생성을 막는다.
+// 라이브 컬러(ink)만 컴포넌트 안에서 1회 spread.
+const META_LABEL_BASE: CSSProperties = {
   fontWeight: 700,
   fontSize: 13,
   fontFamily: FONT_MONO,
   letterSpacing: 2.8,
   textTransform: 'uppercase',
-  color: ink,
   opacity: 0.55,
   whiteSpace: 'nowrap',
-});
+};
 
-const metaValueStyle = (ink: string): CSSProperties => ({
+const META_VALUE_BASE: CSSProperties = {
   fontWeight: 700,
   fontSize: 23,
   fontFamily: FONT_SANS,
   letterSpacing: -0.2,
-  color: ink,
   lineHeight: 1.25,
-});
+};
 
 export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
   const isLight = isInkLight(themeColor);
   const ink = isLight ? '#0d0c0a' : themeColor;
+  const labelStyle: CSSProperties = { ...META_LABEL_BASE, color: ink };
+  const valueStyle: CSSProperties = { ...META_VALUE_BASE, color: ink };
   const titleLen = d.title.length;
   const titleSize = pickTitleSize(titleLen, [96, 78, 62, 50]);
 
@@ -236,8 +238,8 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
           >
             {(watchDateVal || watchTimeVal) && (
               <>
-                <div style={metaLabelStyle(ink)}>관람일</div>
-                <div style={metaValueStyle(ink)}>
+                <div style={labelStyle}>관람일</div>
+                <div style={valueStyle}>
                   {watchDateVal}
                   {watchDateVal && watchTimeVal && ' '}
                   {watchTimeVal && <span style={{ opacity: 0.6 }}>{watchTimeVal}</span>}
@@ -246,8 +248,8 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
             )}
             {(theaterVal || screenVal) && (
               <>
-                <div style={metaLabelStyle(ink)}>상영관</div>
-                <div style={metaValueStyle(ink)}>
+                <div style={labelStyle}>상영관</div>
+                <div style={valueStyle}>
                   {theaterVal}
                   {theaterVal && screenVal ? ` · ${screenVal}` : screenVal || ''}
                 </div>
@@ -256,21 +258,21 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
 
             {seatVal && (
               <>
-                <div style={metaLabelStyle(ink)}>좌석</div>
-                <div style={metaValueStyle(ink)}>{seatVal}</div>
+                <div style={labelStyle}>좌석</div>
+                <div style={valueStyle}>{seatVal}</div>
               </>
             )}
             {runtimeVal && (
               <>
-                <div style={metaLabelStyle(ink)}>러닝타임</div>
-                <div style={metaValueStyle(ink)}>{runtimeVal}</div>
+                <div style={labelStyle}>러닝타임</div>
+                <div style={valueStyle}>{runtimeVal}</div>
               </>
             )}
 
             {(fv?.rating ?? true) && d.rating > 0 && (
               <>
-                <div style={metaLabelStyle(ink)}>평점</div>
-                <div style={{ ...metaValueStyle(ink), gridColumn: 'span 3' }}>
+                <div style={labelStyle}>평점</div>
+                <div style={{ ...valueStyle, gridColumn: 'span 3' }}>
                   ★ {d.rating.toFixed(1)} / 5.0
                 </div>
               </>

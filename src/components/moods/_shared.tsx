@@ -433,7 +433,7 @@ export function EditionMark({
   );
 }
 
-export function HorizontalSprockets({
+export const HorizontalSprockets = memo(function HorizontalSprockets({
   count = 14,
   height = 64,
   base = '#0a0a0a',
@@ -444,18 +444,23 @@ export function HorizontalSprockets({
   base?: string;
   hole?: string;
 }) {
-  const holes = Array.from({ length: count }, (_, i) => (
-    <div
-      key={i}
-      style={{
-        width: 50,
-        height: 38,
-        borderRadius: 2,
-        background: hole,
-        flexShrink: 0,
-      }}
-    />
-  ));
+  // 무드 리렌더 시 count·hole이 고정이면 배열 재생성 안 함
+  const holes = useMemo(
+    () =>
+      Array.from({ length: count }, (_, i) => (
+        <div
+          key={i}
+          style={{
+            width: 50,
+            height: 38,
+            borderRadius: 2,
+            background: hole,
+            flexShrink: 0,
+          }}
+        />
+      )),
+    [count, hole]
+  );
   return (
     <div
       style={{
@@ -470,9 +475,9 @@ export function HorizontalSprockets({
       {holes}
     </div>
   );
-}
+});
 
-export function PerforationStrip({
+export const PerforationStrip = memo(function PerforationStrip({
   vertical = true,
   count = 30,
   color = '#1a1612',
@@ -483,18 +488,23 @@ export function PerforationStrip({
   color?: string;
   background?: string;
 }) {
-  const dots = Array.from({ length: count }, (_, i) => (
-    <div
-      key={i}
-      style={{
-        width: 5,
-        height: 5,
-        borderRadius: 999,
-        background: color,
-        opacity: 0.55,
-      }}
-    />
-  ));
+  // 무드 리렌더 시 count·color가 고정이면 dot 배열 재생성 안 함
+  const dots = useMemo(
+    () =>
+      Array.from({ length: count }, (_, i) => (
+        <div
+          key={i}
+          style={{
+            width: 5,
+            height: 5,
+            borderRadius: 999,
+            background: color,
+            opacity: 0.55,
+          }}
+        />
+      )),
+    [count, color]
+  );
   return (
     <div
       style={{
@@ -526,7 +536,7 @@ export function PerforationStrip({
       {dots}
     </div>
   );
-}
+});
 
 export function seedFromString(s: string): number {
   let h = 0x9e3779b9 >>> 0;

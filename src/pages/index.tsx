@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { usePhase } from '@/hooks/usePhase';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -94,7 +94,9 @@ export default function Home() {
     }
   }, [photo.state.croppedImageUrl, photo.state.movieInfo.title, photo.state.components.layout]);
 
-  const rail = (
+  // useMemo로 안정 참조 유지 — deps가 그대로면 동일 엘리먼트 참조라 React가 rail
+  // 서브트리 재조정을 건너뛴다(theme·isMobile·lightbox 등 무관한 리렌더 시 스킵).
+  const rail = useMemo(() => (
     <div className="flex flex-col gap-4">
       {/* 업로드 전에는 프리뷰 영역 자체를 렌더하지 않음 — 빈 티켓 틀이 보이지 않게 */}
       {croppedImageUrl && (
@@ -123,7 +125,7 @@ export default function Home() {
         </>
       )}
     </div>
-  );
+  ), [croppedImageUrl, ctaState, debouncedMovieInfo, debouncedComponents, photo.state.fieldVisibility, phase.phase, handleDownload]);
 
   return (
     <>
