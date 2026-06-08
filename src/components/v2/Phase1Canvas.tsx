@@ -108,7 +108,7 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
     <div className="space-y-8">
       <header className="space-y-1.5">
         <p className="text-mono text-[10px] uppercase tracking-widest text-accent">Phase 1</p>
-        <h2 className="text-2xl font-medium tracking-tight text-fg">
+        <h2 className="font-display text-2xl font-medium tracking-tight text-fg">
           포스터와 영화 정보
         </h2>
         <p className="max-w-[42ch] text-[13px] leading-relaxed text-fg-muted">

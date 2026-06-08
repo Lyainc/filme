@@ -32,7 +32,7 @@ export function Phase2Canvas({ photo, onGoBack }: Phase2CanvasProps) {
 
       <header className="space-y-1.5">
         <p className="text-mono text-[10px] uppercase tracking-widest text-accent">Phase 2</p>
-        <h2 className="text-2xl font-medium tracking-tight text-fg">
+        <h2 className="font-display text-2xl font-medium tracking-tight text-fg">
           무드와 마감을 골라요.
         </h2>
         <p className="max-w-[42ch] text-[13px] leading-relaxed text-fg-muted">
