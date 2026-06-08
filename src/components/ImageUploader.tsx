@@ -19,7 +19,7 @@ export default function ImageUploader({ onUpload, isProcessing, hasImage = false
   const [isDragging, setIsDragging] = useState(false);
 
   const openFile = (file: File) => {
-    if (selectedImageSrc) URL.revokeObjectURL(selectedImageSrc);
+    // 이전 selectedImageSrc는 아래 effect cleanup이 단일 소유자로 revoke (이중 revoke 방지)
     const objectUrl = URL.createObjectURL(file);
     setSelectedImageSrc(objectUrl);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -43,8 +43,7 @@ export default function ImageUploader({ onUpload, isProcessing, hasImage = false
     try {
       const croppedUrl = await getCroppedImg(selectedImageSrc, croppedAreaPixels);
       onUpload(croppedUrl);
-      URL.revokeObjectURL(selectedImageSrc);
-      setSelectedImageSrc(null);
+      setSelectedImageSrc(null); // effect cleanup이 직전 selectedImageSrc revoke
     } catch (error) {
       console.error('크롭 실패:', error);
       alert('이미지 크롭에 실패했습니다.');
@@ -54,10 +53,11 @@ export default function ImageUploader({ onUpload, isProcessing, hasImage = false
   };
 
   const handleCropCancel = () => {
-    if (selectedImageSrc) URL.revokeObjectURL(selectedImageSrc);
-    setSelectedImageSrc(null);
+    setSelectedImageSrc(null); // effect cleanup이 직전 selectedImageSrc revoke
   };
 
+  // selectedImageSrc blob의 단일 소유자: 값이 바뀌거나(교체·크롭완료·취소) 언마운트될 때
+  // 직전 URL을 revoke. 명시 revoke를 두면 이 cleanup과 겹쳐 이중 revoke가 됨.
   useEffect(() => {
     return () => {
       if (selectedImageSrc) URL.revokeObjectURL(selectedImageSrc);

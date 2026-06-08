@@ -75,6 +75,10 @@ const INITIAL_STATE: PhototicketState = {
 export function usePhototicket() {
   const [state, setState] = useState<PhototicketState>(INITIAL_STATE);
   const latestUrlRef = useRef<string | null>(null);
+  // chain/format은 picker가 교체 시점에만 revoke하므로, 언마운트 정리를 위해
+  // 상태 소유자(hook)가 마지막 blob URL을 추적한다 (latestUrlRef와 동일 패턴).
+  const latestChainUrlRef = useRef<string | null>(null);
+  const latestFormatUrlRef = useRef<string | null>(null);
 
   const handleImageUpload = useCallback((croppedUrl: string) => {
     setState((prev) => {
@@ -101,7 +105,12 @@ export function usePhototicket() {
   }, []);
 
   const updateComponents = useCallback((components: Partial<TicketComponents>) => {
-    setState((prev) => ({ ...prev, components: { ...prev.components, ...components } }));
+    setState((prev) => {
+      const nextComponents = { ...prev.components, ...components };
+      latestChainUrlRef.current = nextComponents.chain.startsWith('blob:') ? nextComponents.chain : null;
+      latestFormatUrlRef.current = nextComponents.format.startsWith('blob:') ? nextComponents.format : null;
+      return { ...prev, components: nextComponents };
+    });
   }, []);
 
   const setRecommendedColors = useCallback((colors: string[]) => {
@@ -111,6 +120,8 @@ export function usePhototicket() {
   useEffect(() => {
     return () => {
       if (latestUrlRef.current) URL.revokeObjectURL(latestUrlRef.current);
+      if (latestChainUrlRef.current) URL.revokeObjectURL(latestChainUrlRef.current);
+      if (latestFormatUrlRef.current) URL.revokeObjectURL(latestFormatUrlRef.current);
     };
   }, []);
 
