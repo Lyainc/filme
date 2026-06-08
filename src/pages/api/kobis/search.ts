@@ -34,7 +34,9 @@ export default async function handler(
     res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=3600');
     res.status(200).json(data);
   } catch (error) {
-    console.error('KOBIS API Error:', error);
+    // fetch 실패 시 에러 message/stack에 요청 URL(=key 포함)이 섞일 수 있어 마스킹 후 로깅
+    const message = (error instanceof Error ? error.message : String(error)).replaceAll(apiKey, '***');
+    console.error('KOBIS API Error:', message);
     res.status(500).json({ error: 'Failed to fetch movie data' });
   }
 }
