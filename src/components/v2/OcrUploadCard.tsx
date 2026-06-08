@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { MovieInfo, TicketComponents } from '@/types';
 import { runOcr } from '@/utils/ocr';
 import { triggerKobisLookup } from '@/utils/kobisLookup';
@@ -46,10 +46,23 @@ export function OcrUploadCard({
 
   // KOBIS async race guard
   const runIdRef = useRef(0);
+  // 언마운트 후 비동기 콜백의 setState 누수 가드
+  const mountedRef = useRef(true);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    mountedRef.current = true; // Strict Mode 재마운트 시 true 복구
+    return () => {
+      mountedRef.current = false;
+      clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   function showToast(msg: string, durationMs = 3000) {
+    if (!mountedRef.current) return;
     setToast(msg);
-    setTimeout(() => setToast(null), durationMs);
+    clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToast(null), durationMs);
   }
 
   function validateFile(file: File): string | null {
@@ -87,7 +100,7 @@ export function OcrUploadCard({
     if (title) {
       const currentRunId = ++runIdRef.current;
       triggerKobisLookup(title).then((kobisInfo) => {
-        if (currentRunId !== runIdRef.current) return;
+        if (!mountedRef.current || currentRunId !== runIdRef.current) return;
         setInfo(kobisInfo);
         if (!kobisInfo.titleOg && !kobisInfo.actors) {
           showToast('영화 제목을 확인 후 검색해 주세요.');
@@ -124,7 +137,7 @@ export function OcrUploadCard({
     } catch {
       // silent fallback
     } finally {
-      setIsProcessing(false);
+      if (mountedRef.current) setIsProcessing(false);
     }
   }
 
