@@ -35,7 +35,7 @@ export function PrimaryCta({
       onClick={isDisabled ? undefined : onClick}
       disabled={isDisabled}
       aria-busy={state === 'loading'}
-      className={`w-full min-h-[44px] rounded-field-sm flex items-center justify-center gap-2 font-semibold text-sm transition-colors duration-150 ${
+      className={`w-full min-h-[44px] rounded-field-sm flex items-center justify-center gap-2 font-semibold text-sm transition-[background-color,color,opacity,transform] duration-200 active:scale-[0.97] ${
         state === 'disabled'
           ? 'opacity-50 cursor-not-allowed bg-accent text-white'
           : state === 'success'

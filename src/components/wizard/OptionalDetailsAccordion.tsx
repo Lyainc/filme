@@ -47,11 +47,21 @@ export default function OptionalDetailsAccordion({
           <ChevronIcon />
         </span>
       </button>
-      {open && (
-        <div id={panelId} className="border-t border-line px-5 py-5">
-          {children}
+      {/* grid 0fr→1fr 트랜지션으로 부드러운 펼침(매직 max-height 없이). 닫힘 시 inert로
+          내부 포커스/접근성 차단. prefers-reduced-motion은 globals.css에서 자동 무효화. */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateRows: open ? '1fr' : '0fr',
+          transition: 'grid-template-rows 240ms cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
+      >
+        <div id={panelId} className="overflow-hidden" inert={!open || undefined}>
+          <div className="border-t border-line px-5 py-5">
+            {children}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

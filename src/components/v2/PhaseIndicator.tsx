@@ -33,7 +33,10 @@ export function PhaseIndicator({ steps }: PhaseIndicatorProps) {
             }`}
           >
             <span
+              key={step.status}
               className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold shrink-0 ${
+                step.status !== 'pending' ? 'badge-pop' : ''
+              } ${
                 step.status === 'done'
                   ? 'bg-accent-soft text-accent'
                   : step.status === 'active'
@@ -52,7 +55,12 @@ export function PhaseIndicator({ steps }: PhaseIndicatorProps) {
             </span>
           </button>
           {index < steps.length - 1 && (
-            <span className="h-px w-6 bg-line shrink-0" aria-hidden="true" />
+            <span
+              className={`h-px w-6 shrink-0 transition-colors duration-300 ${
+                step.status === 'done' ? 'bg-accent' : 'bg-line'
+              }`}
+              aria-hidden="true"
+            />
           )}
         </div>
       ))}

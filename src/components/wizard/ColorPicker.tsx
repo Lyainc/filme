@@ -38,10 +38,15 @@ export default function ColorPicker({ value, onChange, recommended }: ColorPicke
               data-touch="44"
               className={`relative inline-flex min-h-touch min-w-touch items-center justify-center rounded-chip border-2 transition-transform ${
                 active
-                  ? 'border-accent shadow-card scale-105'
+                  ? 'border-accent scale-105'
                   : 'border-line hover:border-accent/40'
               }`}
-              style={{ width: 44, height: 44 }}
+              style={{
+                width: 44,
+                height: 44,
+                // 이중 링: 내부 bg-gap + accent 링으로 44px 원에서도 활성 상태 또렷
+                boxShadow: active ? '0 0 0 2px var(--bg), 0 0 0 4px var(--accent)' : undefined,
+              }}
             >
               <span
                 className="block h-7 w-7 rounded-chip"
@@ -72,11 +77,12 @@ export default function ColorPicker({ value, onChange, recommended }: ColorPicke
           />
           <span
             className={`flex h-11 w-11 items-center justify-center rounded-chip border-2 transition-transform ${
-              isCustom ? 'border-accent shadow-card scale-105' : 'border-line hover:border-accent/40'
+              isCustom ? 'border-accent scale-105' : 'border-line hover:border-accent/40'
             }`}
             style={{
               background:
                 'conic-gradient(from 0deg, #C08079, #D4B483, #8FA99E, #7E93A8, #9A8BA3, #C08079)',
+              boxShadow: isCustom ? '0 0 0 2px var(--bg), 0 0 0 4px var(--accent)' : undefined,
             }}
             aria-hidden
           />
