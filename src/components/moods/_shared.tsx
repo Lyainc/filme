@@ -12,6 +12,10 @@ export interface MoodProps {
 /**
  * Returns `value` when the field is visible (or visibility is undefined), otherwise ''.
  * Falsy values (empty string, null, undefined, false) always return ''.
+ *
+ * 무드의 `{gateVal && <X/>}` 조건부는 gate가 항상 string을 반환하므로 falsy-0
+ * footgun이 없다(빈 문자열 → 렌더 없음). 단, 향후 숫자/0이 가능한 필드를 직접
+ * 조건에 쓸 땐 `{num > 0 && ...}` 또는 명시 삼항을 사용할 것(`{0 && <X/>}`는 "0"을 렌더).
  */
 export function gate(
   visible: boolean | undefined,
