@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, mock, spyOn } from 'bun:test';
-import { triggerKobisLookup } from './kobisLookup';
+import { triggerKobisLookup, clearKobisLookupCache } from './kobisLookup';
 
 const BASE_MOVIE = {
   movieCd: 'M001',
@@ -54,6 +54,7 @@ function mockFetch(searchList: object[], detailData?: object) {
 
 beforeEach(() => {
   mock.restore();
+  clearKobisLookupCache(); // 모듈 스코프 dedup 캐시를 테스트 간 격리
 });
 
 // U-4: triggerKobisLookup 분기 테스트
@@ -131,5 +132,34 @@ describe('triggerKobisLookup — U-4', () => {
     const result = await triggerKobisLookup('오류영화');
 
     expect(result).toEqual({ title: '오류영화' });
+  });
+});
+
+// #7: 모듈 스코프 dedup 캐시
+describe('triggerKobisLookup — dedup cache', () => {
+  it('동일 title 재호출은 캐시 Promise 재사용 (search+detail 재실행 안 함)', async () => {
+    const fetchMock = mockFetch([BASE_MOVIE], DETAIL_KOR);
+    spyOn(global, 'fetch').mockImplementation(fetchMock as unknown as typeof fetch);
+
+    const r1 = await triggerKobisLookup('인터스텔라');
+    const r2 = await triggerKobisLookup('인터스텔라');
+
+    expect(r2).toEqual(r1);
+    // 첫 호출의 search 1회 + detail 1회 = 총 2회. 재호출은 캐시라 추가 fetch 없음.
+    expect(fetchMock.mock.calls).toHaveLength(2);
+  });
+
+  it('검색 실패({title}만)는 캐시하지 않아 재시도가 재요청한다', async () => {
+    spyOn(global, 'fetch').mockImplementation(mockFetch([]) as unknown as typeof fetch);
+    const first = await triggerKobisLookup('재시도영화');
+    expect(first).toEqual({ title: '재시도영화' });
+
+    const fetchMock2 = mockFetch([BASE_MOVIE], DETAIL_KOR);
+    spyOn(global, 'fetch').mockImplementation(fetchMock2 as unknown as typeof fetch);
+    const retry = await triggerKobisLookup('재시도영화');
+
+    // 첫 결과가 캐시되지 않았으므로 재시도가 실제 fetch를 수행
+    expect(fetchMock2.mock.calls.length).toBeGreaterThan(0);
+    expect(retry.titleOg).toBe('Interstellar');
   });
 });

@@ -45,6 +45,18 @@ interface KobisListMovie {
 }
 
 /**
+ * title → in-flight/완료된 lookup Promise. 동일 티켓 재업로드나 동시 호출 시
+ * search+detail 재실행을 막는다(모듈 스코프 dedup). 검색 실패/무매치({ title }만
+ * 반환)는 캐시에 남기지 않아 재시도를 허용한다.
+ */
+const lookupCache = new Map<string, Promise<Partial<MovieInfo>>>();
+
+/** 테스트/리셋용 — dedup 캐시 비우기. */
+export function clearKobisLookupCache(): void {
+  lookupCache.clear();
+}
+
+/**
  * Look up a movie title via the KOBIS search + detail APIs.
  *
  * - Exactly 1 result  → full enrichment: title, titleOg, releaseDate, actors, runtime
@@ -52,8 +64,23 @@ interface KobisListMovie {
  *
  * Shares actors/runtime extraction with MovieInfoForm.handleSelectMovie via
  * extractKobisActorsRuntime. Never throws; returns { title } on any fetch failure.
+ *
+ * 모듈 스코프 dedup: 같은 title은 in-flight/완료 Promise를 재사용.
  */
-export async function triggerKobisLookup(title: string): Promise<Partial<MovieInfo>> {
+export function triggerKobisLookup(title: string): Promise<Partial<MovieInfo>> {
+  const cached = lookupCache.get(title);
+  if (cached) return cached;
+
+  const promise = fetchKobisLookup(title).then((result) => {
+    // enrichment 없이 title만 돌아온 경우(실패·무매치·다중매치)는 캐시에서 제거 → 재시도 허용
+    if (Object.keys(result).length <= 1) lookupCache.delete(title);
+    return result;
+  });
+  lookupCache.set(title, promise);
+  return promise;
+}
+
+async function fetchKobisLookup(title: string): Promise<Partial<MovieInfo>> {
   try {
     const searchRes = await fetch(`/api/kobis/search?movieNm=${encodeURIComponent(title)}`);
     if (!searchRes.ok) return { title };
