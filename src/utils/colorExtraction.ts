@@ -34,11 +34,11 @@ function rgbToHex(rgb: RGB): string {
  * 두 RGB 색상 간의 거리(유클리드 거리 제곱 - 성능 최적화) 계산
  */
 function getDistanceSq(c1: RGB, c2: RGB): number {
-  return (
-    Math.pow(c1.r - c2.r, 2) +
-    Math.pow(c1.g - c2.g, 2) +
-    Math.pow(c1.b - c2.b, 2)
-  );
+  // 업로드당 ~25,600회 호출 — Math.pow(x,2) 대신 곱셈으로.
+  const dr = c1.r - c2.r;
+  const dg = c1.g - c2.g;
+  const db = c1.b - c2.b;
+  return dr * dr + dg * dg + db * db;
 }
 
 /**
@@ -94,11 +94,13 @@ export async function extractColors(imageUrl: string, k: number = 2): Promise<st
           
           // 각 픽셀에 대해 가장 가까운 중심점과의 거리를 계산하고, 그 중 가장 먼 픽셀 선택
           for (const pixel of pixels) {
-            let minDistToAnyCentroid = centroids.reduce(
-              (min, c) => Math.min(min, getDistanceSq(pixel, c)), 
-              Infinity
-            );
-            
+            // reduce 클로저 대신 인라인 min 스캔 (픽셀 × 중심점 루프라 호출 빈도 높음)
+            let minDistToAnyCentroid = Infinity;
+            for (const c of centroids) {
+              const dist = getDistanceSq(pixel, c);
+              if (dist < minDistToAnyCentroid) minDistToAnyCentroid = dist;
+            }
+
             if (minDistToAnyCentroid > maxDist) {
               maxDist = minDistToAnyCentroid;
               nextCentroid = pixel;

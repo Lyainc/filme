@@ -8,7 +8,7 @@ export function useMatchMedia(query: string): boolean {
     setMatches(mql.matches);
 
     const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
-    mql.addEventListener('change', handler);
+    mql.addEventListener('change', handler, { passive: true });
     return () => mql.removeEventListener('change', handler);
   }, [query]);
 
