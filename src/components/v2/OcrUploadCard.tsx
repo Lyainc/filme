@@ -184,6 +184,20 @@ export function OcrUploadCard({
           }`}
         style={{ paddingBottom: '150%' }}
       >
+        {/* 필름 퍼포레이션 가장자리 — "티켓 스캔" 컨텍스트 */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 left-0 w-3 opacity-50"
+          style={{ backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0 8px, var(--border) 8px 16px, transparent 16px 24px)' }}
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 right-0 w-3 opacity-50"
+          style={{ backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0 8px, var(--border) 8px 16px, transparent 16px 24px)' }}
+        />
+        {/* 진행 중 스캔라인 (prefers-reduced-motion: globals.css에서 자동 무효화) */}
+        {isProcessing && <div className="ocr-scanline" aria-hidden="true" />}
+
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-3">
           {isProcessing ? (
             <div className="flex flex-col items-center gap-2">

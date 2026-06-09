@@ -158,6 +158,40 @@
   .phase-in {
     animation: phase-in 200ms cubic-bezier(.4,0,.2,1) forwards;
   }
+
+  /* 앱 배경 — 단색 + 미세 SVG 노이즈(2~4%)로 평면 탈출. light/dark 공용(저대비 그레이 노이즈). */
+  .app-canvas {
+    background-color: var(--bg);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  }
+
+  /* OCR 드롭존 진행 중 스캔라인 — "티켓 스캔" 컨텍스트 */
+  .ocr-scanline {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    box-shadow: 0 0 8px var(--accent);
+    animation: ocr-scan 1.8s cubic-bezier(.4,0,.6,1) infinite;
+  }
+
+  /* 필름 스프로킷 스트립 — 프리뷰 셀 상하단(검은 베이스 + 페이퍼색 홀, 반응형) */
+  .film-sprocket-strip {
+    height: 12px;
+    flex-shrink: 0;
+    background-color: #0a0a0a;
+    background-image: repeating-linear-gradient(
+      to right,
+      transparent 0 7px,
+      rgba(246, 241, 228, 0.85) 7px 16px,
+      transparent 16px 23px
+    );
+    background-size: 23px 7px;
+    background-position: center;
+    background-repeat: repeat-x;
+  }
 }
 
 @layer base {
@@ -182,6 +216,23 @@
   @keyframes phase-in {
     from { opacity: 0; }
     to   { opacity: 1; }
+  }
+
+  /* OCR 스캔라인 상하 왕복 */
+  @keyframes ocr-scan {
+    0%   { top: 4%; opacity: 0; }
+    15%  { opacity: 1; }
+    85%  { opacity: 1; }
+    100% { top: 96%; opacity: 0; }
+  }
+
+  /* Phase 배지 완료/활성 오버슈트 스프링 */
+  @keyframes badge-pop {
+    0%   { transform: scale(0.6); }
+    100% { transform: scale(1); }
+  }
+  .badge-pop {
+    animation: badge-pop 360ms cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   @media (prefers-reduced-motion: reduce) {

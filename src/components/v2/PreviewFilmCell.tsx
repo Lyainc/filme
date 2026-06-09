@@ -22,6 +22,7 @@ export function PreviewFilmCell({ saving = false, children, className = '' }: Pr
       className={`flex flex-col bg-black rounded-card overflow-hidden ${className}`}
       style={{ position: 'relative', isolation: 'isolate' }}
     >
+      <div className="film-sprocket-strip" aria-hidden="true" />
       <div className="relative flex-1 flex items-center justify-center bg-black">
         {children}
 
@@ -32,6 +33,7 @@ export function PreviewFilmCell({ saving = false, children, className = '' }: Pr
           </div>
         )}
       </div>
+      <div className="film-sprocket-strip" aria-hidden="true" />
     </div>
   );
 }
