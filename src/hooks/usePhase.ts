@@ -65,6 +65,11 @@ export function usePhase({ state, pendingFetch }: UsePhaseOptions): UsePhase {
   const [phase, setPhase] = useState<Phase>(1);
   const [hydrated, setHydrated] = useState(false);
 
+  // 의도적으로 phase=1로 시작해 SSR(window 없음 → 1)과 첫 클라 렌더를 일치시킨다.
+  // 마운트 후 effect에서 sessionStorage를 읽어 갱신 → 하이드레이션 미스매치 방지.
+  // ⚠️ useState(() => migrateAndReadPhase()) 레이지 이니셜라이저로 바꾸지 말 것:
+  //    클라 초기 렌더가 저장된 phase=2를 읽으면 서버 HTML(1)과 어긋나 미스매치가 난다.
+  // persistence는 아래 effect에서 hydrated 게이트로 막아 두 effect 간 경쟁도 없다.
   useEffect(() => {
     setPhase(migrateAndReadPhase());
     setHydrated(true);
@@ -101,9 +106,8 @@ export function usePhase({ state, pendingFetch }: UsePhaseOptions): UsePhase {
     ]
   );
 
-  const goTo = useCallback((target: Phase) => {
-    setPhase(target);
-  }, []);
+  // setPhase는 React가 보장하는 안정 참조 — 래핑 useCallback 불필요.
+  const goTo = setPhase;
 
   return { phase, hydrated, goTo, canAdvance };
 }
