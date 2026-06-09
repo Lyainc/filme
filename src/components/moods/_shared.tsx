@@ -381,63 +381,6 @@ export const Barcode = memo(function Barcode({
   );
 });
 
-interface EditionMarkProps {
-  serialNo: string;
-  collectionNo?: string;
-  /** Picks default ink when `ink` is omitted. */
-  surface: Surface;
-  ink?: string;
-  font?: string;
-  size?: number;
-  letterSpacing?: number;
-}
-
-/**
- * Compact edition token — "SERIAL No.0042 · COLL 03 / 12".
- * Pass `font` to match the host mood's tone (mono / serif / sans).
- */
-export function EditionMark({
-  serialNo,
-  collectionNo,
-  surface,
-  ink,
-  font = FONT_MONO,
-  size = 13,
-  letterSpacing = 2.4,
-}: EditionMarkProps) {
-  const color = ink ?? (surface === 'dark' ? '#f4ede0' : '#0d0c0a');
-  return (
-    <div
-      style={{
-        display: 'inline-flex',
-        alignItems: 'baseline',
-        gap: 12,
-        fontWeight: 700,
-        fontSize: size,
-        fontFamily: font,
-        letterSpacing,
-        textTransform: 'uppercase',
-        color,
-        whiteSpace: 'nowrap',
-      }}
-    >
-      <span>
-        <span style={{ opacity: 0.5 }}>Serial </span>
-        <span>No.{serialNo}</span>
-      </span>
-      {collectionNo && (
-        <>
-          <span style={{ opacity: 0.35 }}>·</span>
-          <span>
-            <span style={{ opacity: 0.5 }}>Coll </span>
-            <span>{collectionNo}</span>
-          </span>
-        </>
-      )}
-    </div>
-  );
-}
-
 export const HorizontalSprockets = memo(function HorizontalSprockets({
   count = 14,
   height = 64,
@@ -563,12 +506,6 @@ export function resolveBookingNo(d: MovieInfo): string {
   return d.bookingNumber || fallbackBookingNumber(d.title || 'phototicket');
 }
 
-export function resolveSerialNo(d: MovieInfo): string {
-  if (d.serialNo) return d.serialNo;
-  const seed = 'serial::' + (d.title || 'phototicket') + (d.bookingNumber || '');
-  return String(seedFromString(seed) % 10000).padStart(4, '0');
-}
-
 /**
  * 4종 무드가 공통으로 파생하던 티켓 데이터를 한 곳으로 모은 것.
  * 신규 무드는 `const { ... } = resolveTicketData(d)` 한 줄로 동일 파생값을 얻는다.
@@ -582,7 +519,6 @@ export function resolveTicketData(d: MovieInfo) {
   const releaseGran = d.releaseDateGranularity || 'date';
   return {
     bookingNo: resolveBookingNo(d),
-    serialNo: resolveSerialNo(d),
     watchDateClean: formatDate(d.watchDate, watchToken, 'date'),
     releaseClean: formatDate(d.releaseDate, releaseToken, releaseGran),
     reissueClean: d.isReissue ? formatDate(d.reissueDate, releaseToken, releaseGran) : '',

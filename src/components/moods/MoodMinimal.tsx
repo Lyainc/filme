@@ -2,7 +2,6 @@ import { CSSProperties } from 'react';
 import {
   Barcode,
   ChainStamp,
-  EditionMark,
   FONT_KR,
   FONT_MONO,
   FONT_SANS,
@@ -50,7 +49,7 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
     : 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.65) 35%, rgba(0,0,0,0.92) 100%)';
   const topPanelBg = isLight ? 'rgba(255,255,255,0.92)' : 'rgba(0,0,0,0.55)';
 
-  const { bookingNo, serialNo, watchDateClean, releaseClean, reissueClean } = resolveTicketData(d);
+  const { bookingNo, watchDateClean, releaseClean, reissueClean } = resolveTicketData(d);
 
   const titleVal       = gate(fv?.title, d.title);
   const titleOgVal     = gate(fv?.titleOg, d.titleOg);
@@ -290,15 +289,6 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
             <FormatStamp format={components.format} visible={components.formatVisible} size={1.4} />
             {(fv?.bookingNo ?? true) && (
               <Barcode value={bookingNo} color={ink} width={180} height={34} textSize={10} />
-            )}
-            {(fv?.edition ?? true) && (
-              <EditionMark
-                serialNo={serialNo}
-                collectionNo={d.collectionNo}
-                surface={isLight ? 'paper' : 'dark'}
-                ink={ink}
-                size={11}
-              />
             )}
           </div>
         </div>

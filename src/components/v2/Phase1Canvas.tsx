@@ -36,13 +36,12 @@ const FIELD_LABELS: Record<TicketField, string> = {
   releaseDate: '개봉일',
   reissue: '재개봉',
   bookingNo: '예매 번호',
-  edition: '에디션',
 };
 
 const FIELD_ORDER: TicketField[] = [
   'title', 'titleOg', 'actors', 'watchDate', 'watchTime',
   'theater', 'screen', 'seat', 'runtime', 'rating',
-  'releaseDate', 'reissue', 'bookingNo', 'edition',
+  'releaseDate', 'reissue', 'bookingNo',
 ];
 
 // dim/disable a wrapper when its field's visibility toggle is off.
@@ -306,25 +305,6 @@ export function Phase1Canvas({ photo, onPendingFetchChange }: Phase1CanvasProps)
                 removeFromOcr('bookingNumber');
               }}
               placeholder="T-20260510-0014"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Field
-              id="p1-serialNo"
-              label="Serial No."
-              optional
-              value={movieInfo.serialNo || ''}
-              onChange={(e) => setInfo({ serialNo: e.target.value })}
-              placeholder="자동 부여"
-            />
-            <Field
-              id="p1-collectionNo"
-              label="Collection No."
-              optional
-              value={movieInfo.collectionNo || ''}
-              onChange={(e) => setInfo({ collectionNo: e.target.value })}
-              placeholder="03 / 12"
             />
           </div>
 

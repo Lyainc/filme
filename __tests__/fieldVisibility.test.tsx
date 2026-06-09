@@ -21,7 +21,6 @@ const FIELDS: TicketField[] = [
   'releaseDate',
   'reissue',
   'bookingNo',
-  'edition',
 ];
 
 const ALL_OFF = Object.fromEntries(FIELDS.map((field) => [field, false])) as Record<
@@ -47,8 +46,6 @@ const MOVIE: MovieInfo = {
   rating: 4.5,
   runtime: '150 MIN',
   bookingNumber: 'BOOK-1234',
-  serialNo: '0007',
-  collectionNo: '03/12',
 };
 
 const BASE_COMPONENTS: TicketComponents = {
@@ -80,9 +77,6 @@ const DATA_TOKENS = [
   'G14',
   '150 MIN',
   'BOOK-1234',
-  'No.1234',
-  '0007',
-  '03/12',
   '4.5',
 ];
 

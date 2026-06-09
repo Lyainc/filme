@@ -1,7 +1,6 @@
 import {
   Barcode,
   ChainStamp,
-  EditionMark,
   FONT_KR,
   FONT_MONO,
   FONT_SANS,
@@ -28,7 +27,7 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
   const spineBg = isLight ? 'rgba(245,240,232,0.95)' : 'rgba(0,0,0,0.7)';
   const spineDivider = isLight ? '#0d0c0a' : ink;
 
-  const { bookingNo, serialNo, watchDateClean, releaseClean, reissueClean, watchYear } = resolveTicketData(d);
+  const { bookingNo, watchDateClean, releaseClean, reissueClean, watchYear } = resolveTicketData(d);
   const bookingTail = bookingNo.split('-').pop() || '0000';
 
   const titleVal       = gate(fv?.title, d.title);
@@ -258,18 +257,6 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
             .filter(Boolean)
             .join('  ·  ')}
         </div>
-        {(fv?.edition ?? true) && (
-          <div style={{ marginTop: 16, opacity: 0.85 }}>
-            <EditionMark
-              serialNo={serialNo}
-              collectionNo={d.collectionNo}
-              surface={isLight ? 'paper' : 'dark'}
-              ink={ink}
-              size={14}
-              letterSpacing={3}
-            />
-          </div>
-        )}
       </div>
 
       {/* Pt monogram top-left */}
