@@ -31,7 +31,7 @@ export default async function handler(
     }
     
     const data = await response.json();
-    res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate');
+    res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=3600');
     res.status(200).json(data);
   } catch (error) {
     // fetch 실패 시 에러 message/stack에 요청 URL(=key 포함)이 섞일 수 있어 마스킹 후 로깅

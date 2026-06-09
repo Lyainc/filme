@@ -52,8 +52,13 @@ export async function runOcr(file: File): Promise<OcrResult> {
 
     if (!res.ok) return { preprocessedImage };
 
-    const data = (await res.json()) as OcrResult;
-    return data ? { ...data, preprocessedImage } : { preprocessedImage };
+    // 서버는 채워진 string 필드만 담은 객체를 반환한다. 무검증 캐스트 대신
+    // 최소한 객체 형태인지 확인하고, 아니면 이미지만 돌려준다.
+    const data: unknown = await res.json();
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      return { preprocessedImage };
+    }
+    return { ...(data as OcrResult), preprocessedImage };
   } catch (err) {
     console.error('[ocr] runOcr failed:', err);
     return {};

@@ -40,15 +40,17 @@ export interface RateLimitResult {
 export async function checkRateLimit(ip: string): Promise<RateLimitResult> {
   if (!limiters) return { ok: true };
 
-  const [hr, day] = await Promise.all([
-    limiters.hourly.limit(ip),
-    limiters.daily.limit(ip),
-  ]);
+  // 시간당 윈도우를 먼저 순차로 본다. 여기서 막히면 daily.limit()을 호출하지 않아,
+  // 이미 차단될 요청이 일일 카운터를 불필요하게 소진하지 않는다(Promise.all 동시 호출의 부작용 제거).
+  const hr = await limiters.hourly.limit(ip);
+  if (!hr.success) {
+    return { ok: false, retryAfterSec: Math.max(1, Math.ceil((hr.reset - Date.now()) / 1000)) };
+  }
 
-  if (hr.success && day.success) return { ok: true };
+  const day = await limiters.daily.limit(ip);
+  if (!day.success) {
+    return { ok: false, retryAfterSec: Math.max(1, Math.ceil((day.reset - Date.now()) / 1000)) };
+  }
 
-  const now = Date.now();
-  const reset = Math.max(hr.success ? 0 : hr.reset, day.success ? 0 : day.reset);
-  const retryAfterSec = Math.max(1, Math.ceil((reset - now) / 1000));
-  return { ok: false, retryAfterSec };
+  return { ok: true };
 }

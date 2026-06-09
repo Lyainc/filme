@@ -74,6 +74,18 @@ describe('formatDate — HIGH-8: invalid input returns empty string', () => {
   });
 });
 
+describe('formatDate — out-of-range month degrades to year (no crash / no bad index)', () => {
+  test('month 0 falls back to year', () => {
+    expect(formatDate('2014-0-5', 'kr-compact', 'date')).toBe('2014');
+  });
+  test('month 13 falls back to year', () => {
+    expect(formatDate('2014-13-5', 'cinema-mono', 'date')).toBe('2014');
+  });
+  test('month 0 at year-month granularity falls back to year', () => {
+    expect(formatDate('2014-0', 'iso', 'year-month')).toBe('2014');
+  });
+});
+
 describe('formatDate — HIGH-8: unknown token falls back to iso behavior', () => {
   const BAD = 'bogus-token' as DateFormatToken;
   test('date granularity → iso-like output', () => {
