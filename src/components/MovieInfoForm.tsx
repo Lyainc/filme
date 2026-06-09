@@ -266,7 +266,7 @@ export default function MovieInfoForm({
         label="Original Title"
         value={movieInfo.titleOg}
         onChange={(e) => onChange({ titleOg: e.target.value })}
-        placeholder="Interstellar (또는 한글 제목 영문 표기)"
+        placeholder="Interstellar"
       />
       {!movieInfo.titleOg.trim() && (
         <p className="text-mono -mt-3 text-[10px] uppercase tracking-widest text-fg-faint">
