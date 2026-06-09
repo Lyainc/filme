@@ -2,7 +2,6 @@ import { CSSProperties } from 'react';
 import {
   Barcode,
   ChainStamp,
-  EditionMark,
   FONT_KR,
   FONT_MONO,
   FONT_SANS,
@@ -51,7 +50,7 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
   const captionScrim =
     'linear-gradient(180deg, rgba(10,10,10,0) 0%, rgba(10,10,10,0.55) 18%, rgba(10,10,10,0.92) 60%, rgba(10,10,10,0.98) 100%)';
 
-  const { bookingNo, serialNo, watchDateClean, releaseClean, reissueClean } = resolveTicketData(d);
+  const { bookingNo, watchDateClean, releaseClean, reissueClean } = resolveTicketData(d);
 
   // gate는 순수 함수 — 필드당 1회만 호출해 상단에서 파생 (MoodMinimal/Criterion 패턴 정렬)
   const titleVal = gate(fv?.title, d.title);
@@ -257,18 +256,6 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
               </>
             )}
           </div>
-
-          {(fv?.edition ?? true) && (
-            <div style={{ marginBottom: 14 }}>
-              <EditionMark
-                serialNo={serialNo}
-                collectionNo={d.collectionNo}
-                surface="dark"
-                ink={FS_INK}
-                size={12}
-              />
-            </div>
-          )}
 
           <div
             style={{

@@ -16,8 +16,7 @@ export type TicketField =
   | 'rating'
   | 'releaseDate'
   | 'reissue'
-  | 'bookingNo'
-  | 'edition';
+  | 'bookingNo';
 
 export interface MovieInfo {
   title: string;
@@ -40,10 +39,6 @@ export interface MovieInfo {
   rating: number;
   runtime?: string;
   bookingNumber?: string;
-  /** Edition serial — manual input or deterministic 4-digit fallback. */
-  serialNo?: string;
-  /** Collection number — manual input only (free-form, e.g. '03 / 12'). */
-  collectionNo?: string;
 }
 
 export interface TicketComponents {

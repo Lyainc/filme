@@ -15,7 +15,6 @@ const ALL_FIELDS_ON: Record<TicketField, boolean> = {
   releaseDate: true,
   reissue: true,
   bookingNo: true,
-  edition: true,
 };
 
 const DEFAULT_VISIBILITY_ON_UPLOAD: Record<TicketField, boolean> = {
@@ -32,7 +31,6 @@ const DEFAULT_VISIBILITY_ON_UPLOAD: Record<TicketField, boolean> = {
   releaseDate: false,
   reissue: false,
   bookingNo: false,
-  edition: false,
 };
 
 const INITIAL_STATE: PhototicketState = {
@@ -54,8 +52,6 @@ const INITIAL_STATE: PhototicketState = {
     rating: 5.0,
     runtime: '',
     bookingNumber: '',
-    serialNo: '',
-    collectionNo: '',
   },
   components: {
     layout: 'minimal',

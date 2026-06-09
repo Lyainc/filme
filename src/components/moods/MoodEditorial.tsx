@@ -1,7 +1,6 @@
 import {
   Barcode,
   ChainStamp,
-  EditionMark,
   FONT_KR,
   FONT_MONO,
   FONT_SANS,
@@ -30,7 +29,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
   const themeColor = components.themeColor || '#FFFFFF';
   const accent = themeColor.toLowerCase() === '#ffffff' ? '#a8312a' : themeColor;
   const titleSize = pickTitleSize(d.title.length, [108, 88, 70, 52]);
-  const { bookingNo, serialNo, watchDateClean, releaseClean, reissueClean, watchYear } = resolveTicketData(d);
+  const { bookingNo, watchDateClean, releaseClean, reissueClean, watchYear } = resolveTicketData(d);
   const theaterValue = gate(fv?.theater, d.theater) || gate(fv?.screen, d.screen);
   const theaterSub = gate(fv?.theater, d.theater) ? gate(fv?.screen, d.screen) : '';
   const sessionValue = gate(fv?.watchDate, watchDateClean) || gate(fv?.watchTime, d.watchTime);
@@ -283,17 +282,6 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
                   {bookingNo}
                 </div>
               </>
-            )}
-            {(fv?.edition ?? true) && (
-              <div style={{ marginTop: 6 }}>
-                <EditionMark
-                  serialNo={serialNo}
-                  collectionNo={d.collectionNo}
-                  surface="paper"
-                  ink={PAPER_DIM}
-                  size={11}
-                />
-              </div>
             )}
           </div>
           <div
