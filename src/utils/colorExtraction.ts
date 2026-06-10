@@ -1,44 +1,93 @@
 /**
  * K-means 클러스터링을 이용한 이미지 대표 색상 추출 유틸리티
+ *
+ * 구조(#80): 이미지 디코드/캔버스 샘플링은 DOM API가 필요해 메인스레드에서 수행하고,
+ * K-means 클러스터링(~10-40ms)만 Web Worker로 오프로드한다. 픽셀 배열은
+ * transferable ArrayBuffer로 전달(복사본을 transfer — 원본은 동기 fallback용으로 보존).
+ *
+ * Worker 수명: 모듈 스코프 싱글턴. 첫 호출에 lazy 생성 후 재사용(크롭 반복 시
+ * 생성/teardown 비용 없음, 태스크당 수십 ms라 상주 비용도 무시 가능). 에러/타임아웃 시
+ * terminate 후 영구적으로 동기 경로로 전환 — 두 경로 모두 동일한 `clusterPixels`
+ * (colorCluster.ts)를 실행하므로 결과 알고리즘은 항상 같다.
  */
+import { clusterPixels } from './colorCluster';
 
-interface RGB {
-  r: number;
-  g: number;
-  b: number;
+/** Worker 응답 대기 한도. 초과 시 해당 worker를 폐기하고 동기 경로로 전환. */
+const WORKER_TIMEOUT_MS = 3000;
+
+let worker: Worker | null = null;
+/** 생성 실패·런타임 에러·타임아웃 발생 시 true — 이후 호출은 즉시 동기 경로. */
+let workerBroken = false;
+let nextRequestId = 0;
+/** 요청 id → settle 콜백. 응답/실패 시 제거되므로 pending promise가 누수되지 않는다. */
+const pending = new Map<number, (colors: string[] | null) => void>();
+
+/** 진행 중인 요청 전부 null로 settle하고 worker를 폐기한다(이후 영구 동기 fallback). */
+function failAllPending() {
+  workerBroken = true;
+  if (worker) {
+    worker.terminate();
+    worker = null;
+  }
+  const settlers: Array<(colors: string[] | null) => void> = [];
+  pending.forEach((settle) => settlers.push(settle));
+  pending.clear();
+  settlers.forEach((settle) => settle(null));
+}
+
+/** SSR-safe lazy 싱글턴. Worker 미지원/생성 실패 시 null. */
+function getWorker(): Worker | null {
+  if (workerBroken) return null;
+  if (worker) return worker;
+  if (typeof window === 'undefined' || typeof Worker === 'undefined') return null;
+  try {
+    // Turbopack(Next 16)이 지원하는 정적 분석 가능 Worker 패턴 — 별도 lazy 청크로 분리됨.
+    worker = new Worker(new URL('./colorExtraction.worker.ts', import.meta.url));
+    worker.onmessage = (event: MessageEvent<{ id: number; colors: string[] }>) => {
+      const settle = pending.get(event.data.id);
+      if (settle) {
+        pending.delete(event.data.id);
+        settle(event.data.colors);
+      }
+    };
+    // 어느 요청에서 났는지 알 수 없으므로 전부 실패 처리 → 각 호출이 동기 경로로 fallback.
+    worker.onerror = () => failAllPending();
+    return worker;
+  } catch {
+    workerBroken = true;
+    worker = null;
+    return null;
+  }
 }
 
 /**
- * HEX 색상을 RGB 객체로 변환
+ * 픽셀 데이터를 Worker로 보내 클러스터링. 실패 시 null(호출부가 동기 fallback).
+ * 요청마다 고유 id를 부여하므로 빠른 연속 호출(재크롭)에서도 응답이 섞이지 않는다.
  */
-function hexToRgb(hex: string): RGB {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? {
-    r: parseInt(result[1], 16),
-    g: parseInt(result[2], 16),
-    b: parseInt(result[3], 16)
-  } : { r: 0, g: 0, b: 0 };
-}
+function clusterInWorker(data: Uint8ClampedArray, k: number): Promise<string[] | null> {
+  const w = getWorker();
+  if (!w) return Promise.resolve(null);
 
-/**
- * RGB를 HEX 색상으로 변환
- */
-function rgbToHex(rgb: RGB): string {
-  const r = Math.max(0, Math.min(255, Math.round(rgb.r)));
-  const g = Math.max(0, Math.min(255, Math.round(rgb.g)));
-  const b = Math.max(0, Math.min(255, Math.round(rgb.b)));
-  return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
-}
+  return new Promise((resolve) => {
+    const id = nextRequestId++;
+    // 타임아웃 = worker가 멈춘 상태(청크 로드 실패 등) — 뒤 요청들도 막히므로 전부 폐기.
+    const timer = setTimeout(() => {
+      if (pending.has(id)) failAllPending();
+    }, WORKER_TIMEOUT_MS);
 
-/**
- * 두 RGB 색상 간의 거리(유클리드 거리 제곱 - 성능 최적화) 계산
- */
-function getDistanceSq(c1: RGB, c2: RGB): number {
-  // 업로드당 ~25,600회 호출 — Math.pow(x,2) 대신 곱셈으로.
-  const dr = c1.r - c2.r;
-  const dg = c1.g - c2.g;
-  const db = c1.b - c2.b;
-  return dr * dr + dg * dg + db * db;
+    pending.set(id, (colors) => {
+      clearTimeout(timer);
+      resolve(colors);
+    });
+
+    // 복사본의 buffer를 transfer — 원본 data는 동기 fallback에서 그대로 재사용 가능.
+    const copy = data.slice();
+    try {
+      w.postMessage({ id, buffer: copy.buffer, k }, [copy.buffer]);
+    } catch {
+      failAllPending();
+    }
+  });
 }
 
 /**
@@ -50,7 +99,7 @@ export async function extractColors(imageUrl: string, k: number = 2): Promise<st
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    img.onload = () => {
+    img.onload = async () => {
       try {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
@@ -60,100 +109,16 @@ export async function extractColors(imageUrl: string, k: number = 2): Promise<st
         }
 
         // 성능 최적화: 40x40으로 축소 (1600개 샘플)
-        const size = 40; 
+        const size = 40;
         canvas.width = size;
         canvas.height = size;
         ctx.drawImage(img, 0, 0, size, size);
 
         const imageData = ctx.getImageData(0, 0, size, size).data;
-        const pixels: RGB[] = [];
 
-        // 픽셀 데이터 수집 (알파값이 128 이상인 불투명 픽셀만 샘플링)
-        for (let i = 0; i < imageData.length; i += 4) {
-          if (imageData[i + 3] > 128) {
-            pixels.push({
-              r: imageData[i],
-              g: imageData[i + 1],
-              b: imageData[i + 2],
-            });
-          }
-        }
-
-        if (pixels.length === 0) {
-          resolve(['#FFFFFF', '#000000']);
-          return;
-        }
-
-        // K-means++ 스타일 초기화 (최대한 멀리 떨어진 색상 선택)
-        let centroids: RGB[] = [];
-        centroids.push(pixels[Math.floor(Math.random() * pixels.length)]);
-
-        for (let i = 1; i < k; i++) {
-          let maxDist = -1;
-          let nextCentroid = pixels[0];
-          
-          // 각 픽셀에 대해 가장 가까운 중심점과의 거리를 계산하고, 그 중 가장 먼 픽셀 선택
-          for (const pixel of pixels) {
-            // reduce 클로저 대신 인라인 min 스캔 (픽셀 × 중심점 루프라 호출 빈도 높음)
-            let minDistToAnyCentroid = Infinity;
-            for (const c of centroids) {
-              const dist = getDistanceSq(pixel, c);
-              if (dist < minDistToAnyCentroid) minDistToAnyCentroid = dist;
-            }
-
-            if (minDistToAnyCentroid > maxDist) {
-              maxDist = minDistToAnyCentroid;
-              nextCentroid = pixel;
-            }
-          }
-          centroids.push(nextCentroid);
-        }
-
-        const maxIterations = 8; // 반복 횟수 최적화
-        for (let iter = 0; iter < maxIterations; iter++) {
-          const clusters: RGB[][] = Array.from({ length: k }, () => []);
-
-          for (const pixel of pixels) {
-            let minDist = Infinity;
-            let closestIndex = 0;
-
-            for (let i = 0; i < k; i++) {
-              const dist = getDistanceSq(pixel, centroids[i]);
-              if (dist < minDist) {
-                minDist = dist;
-                closestIndex = i;
-              }
-            }
-            clusters[closestIndex].push(pixel);
-          }
-
-          let changed = false;
-          for (let i = 0; i < k; i++) {
-            if (clusters[i].length === 0) continue;
-
-            const sum = clusters[i].reduce((acc, p) => ({
-              r: acc.r + p.r,
-              g: acc.g + p.g,
-              b: acc.b + p.b
-            }), { r: 0, g: 0, b: 0 });
-
-            const newCentroid = {
-              r: sum.r / clusters[i].length,
-              g: sum.g / clusters[i].length,
-              b: sum.b / clusters[i].length
-            };
-
-            if (getDistanceSq(centroids[i], newCentroid) > 4) { // 이동 거리 임계값
-              centroids[i] = newCentroid;
-              changed = true;
-            }
-          }
-
-          if (!changed) break;
-        }
-
-        // 최종 색상들 간의 대비를 위해 정렬하거나 보정 가능 (여기서는 단순 반환)
-        resolve(centroids.map(rgbToHex));
+        // Worker 우선, 실패(null) 시 동일 알고리즘의 동기 경로로 fallback.
+        const workerColors = await clusterInWorker(imageData, k);
+        resolve(workerColors ?? clusterPixels(imageData, k));
       } catch (err) {
         console.error('Color extraction error:', err);
         resolve(['#FFFFFF', '#000000']);
