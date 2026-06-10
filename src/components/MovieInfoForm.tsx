@@ -195,12 +195,12 @@ export default function MovieInfoForm({
             onChange={(e) => {
               const value = e.target.value;
               onChange({ title: value });
-              clearDebounce();
               const term = value.trim();
               // 1-char titles exist in KOBIS (e.g. «돈», «굿») — debounce +
               // per-term cache keep the API load acceptable, so search from
               // the first non-space character.
               if (!term) {
+                clearDebounce();
                 setShowResults(false);
                 return;
               }
