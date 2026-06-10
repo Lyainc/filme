@@ -61,19 +61,57 @@ export async function captureNodeToJpeg(
   return toJpeg(node, buildJpegOptions(width, height, quality, pixelRatio));
 }
 
+// CSP-safe: decode base64 directly without fetch() — Vercel CSP `connect-src` blocks fetch(data:).
+export function dataUrlToJpegBlob(dataUrl: string): Blob {
+  if (!dataUrl.startsWith('data:image/')) {
+    throw new Error('Capture returned empty data URL');
+  }
+  const bytes = Uint8Array.from(atob(dataUrl.split(',')[1]), c => c.charCodeAt(0));
+  return new Blob([bytes], { type: 'image/jpeg' });
+}
+
+/** Web Share API Level 2(파일 공유) 지원 여부. SSR에서는 항상 false. */
+export function canShareTicketFile(): boolean {
+  if (typeof navigator === 'undefined' || typeof File === 'undefined') return false;
+  if (typeof navigator.canShare !== 'function' || typeof navigator.share !== 'function') {
+    return false;
+  }
+  try {
+    const probe = new File([new Uint8Array(1)], 'phototicket.jpg', { type: 'image/jpeg' });
+    return navigator.canShare({ files: [probe] });
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 티켓 노드를 캡처해 OS 공유 시트로 보낸다.
+ * 사용자가 공유 시트를 닫으면(AbortError) 에러가 아니라 'cancelled'로 돌려준다.
+ */
+export async function shareTicketAsJpeg(
+  node: HTMLElement,
+  options: CaptureOptions & { shareTitle?: string }
+): Promise<'shared' | 'cancelled'> {
+  const dataUrl = await captureNodeToJpeg(node, options);
+  const blob = dataUrlToJpegBlob(dataUrl);
+  const file = new File([blob], options.filename, { type: 'image/jpeg' });
+  try {
+    await navigator.share({ files: [file], title: options.shareTitle ?? options.filename });
+    return 'shared';
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') return 'cancelled';
+    throw err;
+  }
+}
+
 export async function downloadTicketAsJpeg(
   node: HTMLElement,
   options: CaptureOptions
 ): Promise<void> {
   const dataUrl = await captureNodeToJpeg(node, options);
-  if (!dataUrl.startsWith('data:image/')) {
-    throw new Error('Capture returned empty data URL');
-  }
   // Go through Blob + ObjectURL: Chrome rejects very large `data:` hrefs on <a download>
   // and Safari sometimes ignores the download attribute on data URLs.
-  // CSP-safe: decode base64 directly without fetch() to avoid connect-src violations.
-  const bytes = Uint8Array.from(atob(dataUrl.split(',')[1]), c => c.charCodeAt(0));
-  const blob = new Blob([bytes], { type: 'image/jpeg' });
+  const blob = dataUrlToJpegBlob(dataUrl);
   const objectUrl = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.download = options.filename;

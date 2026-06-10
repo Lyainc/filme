@@ -16,12 +16,17 @@ interface DoneCanvasProps {
   ticketRef: RefObject<HTMLDivElement | null>;
   ctaState: CtaState;
   onDownload: () => void;
+  /** Web Share API Level 2(파일 공유) 지원 여부 — false면 공유 버튼 숨김(다운로드가 주 액션) */
+  canShare: boolean;
+  shareState: CtaState;
+  onShare: () => void;
   onBack: () => void;
 }
 
 /**
  * 완료 화면 — 결과물 액션 전용 (다운로드 / 공유 / 퍼마링크).
- * 공유·퍼마링크는 백엔드 저장이 필요해 1차에서는 자리만 잡는다(disabled).
+ * SNS 공유는 Web Share API 파일 공유 지원 환경에서만 노출.
+ * 퍼마링크는 백엔드 저장이 필요해 자리만 잡는다(disabled, 2차 범위).
  */
 export function DoneCanvas({
   croppedImageUrl,
@@ -31,6 +36,9 @@ export function DoneCanvas({
   ticketRef,
   ctaState,
   onDownload,
+  canShare,
+  shareState,
+  onShare,
   onBack,
 }: DoneCanvasProps) {
   const layout = getLayout(components.layout);
@@ -52,7 +60,9 @@ export function DoneCanvas({
           티켓이 완성됐어요!
         </h2>
         <p className="max-w-[42ch] text-[13px] leading-relaxed text-fg-muted">
-          JPEG로 저장하거나, 곧 추가될 공유 기능을 기다려 주세요.
+          {canShare
+            ? 'JPEG로 저장하거나 SNS로 바로 공유해 보세요.'
+            : 'JPEG로 저장해 SNS에 자유롭게 올려 보세요.'}
         </p>
       </header>
 
@@ -87,20 +97,25 @@ export function DoneCanvas({
         </p>
 
         <div className="grid grid-cols-2 gap-3">
+          {canShare && (
+            <button
+              type="button"
+              onClick={onShare}
+              disabled={!croppedImageUrl || shareState === 'loading'}
+              className="text-mono inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-field-sm border border-line bg-surface-elevated text-[11px] uppercase tracking-widest text-fg transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:border-line"
+            >
+              {shareState === 'loading'
+                ? '공유 준비 중…'
+                : shareState === 'success'
+                  ? '공유됨!'
+                  : 'SNS 공유'}
+            </button>
+          )}
           <button
             type="button"
             disabled
             title="준비 중인 기능이에요"
-            className="text-mono inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-field-sm border border-line bg-surface-elevated text-[11px] uppercase tracking-widest text-fg-faint cursor-not-allowed"
-          >
-            SNS 공유
-            <span className="rounded-chip bg-accent-soft px-1.5 py-0.5 text-[10px] text-accent">준비 중</span>
-          </button>
-          <button
-            type="button"
-            disabled
-            title="준비 중인 기능이에요"
-            className="text-mono inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-field-sm border border-line bg-surface-elevated text-[11px] uppercase tracking-widest text-fg-faint cursor-not-allowed"
+            className={`text-mono inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-field-sm border border-line bg-surface-elevated text-[11px] uppercase tracking-widest text-fg-faint cursor-not-allowed ${canShare ? '' : 'col-span-2'}`}
           >
             퍼마링크
             <span className="rounded-chip bg-accent-soft px-1.5 py-0.5 text-[10px] text-accent">준비 중</span>

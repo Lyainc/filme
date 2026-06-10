@@ -3,7 +3,11 @@ import { usePhototicket } from '@/hooks/usePhototicket';
 import { useScreen } from '@/hooks/useScreen';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useMatchMedia } from '@/hooks/useMatchMedia';
-import { downloadTicketAsJpeg } from '@/utils/captureToImage';
+import {
+  canShareTicketFile,
+  downloadTicketAsJpeg,
+  shareTicketAsJpeg,
+} from '@/utils/captureToImage';
 import { getLayout } from '@/utils/layouts';
 import { AppShell } from '@/components/v2/AppShell';
 import { EditorCanvas } from '@/components/v2/EditorCanvas';
@@ -24,6 +28,9 @@ export default function Home() {
   // SSR safe: 초기값 'light', mount 후 localStorage/prefers-color-scheme 읽기
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [ctaState, setCtaState] = useState<CtaState>('idle');
+  const [shareState, setShareState] = useState<CtaState>('idle');
+  // SSR safe: navigator는 mount 후에만 — 데스크톱 등 미지원 환경에선 공유 버튼 숨김
+  const [canShareFile, setCanShareFile] = useState(false);
   const [pendingFetch, setPendingFetch] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const isMobile = useMatchMedia('(max-width: 640px)');
@@ -71,12 +78,23 @@ export default function Home() {
     };
   }, [croppedImageUrl, setRecommendedColors]);
 
+  // Web Share API Level 2(파일 공유) 지원 판정 — 클라이언트에서만
+  useEffect(() => {
+    setCanShareFile(canShareTicketFile());
+  }, []);
+
   // success → idle 자동 전환 (2000ms)
   useEffect(() => {
     if (ctaState !== 'success') return;
     const timer = setTimeout(() => setCtaState('idle'), 2000);
     return () => clearTimeout(timer);
   }, [ctaState]);
+
+  useEffect(() => {
+    if (shareState !== 'success') return;
+    const timer = setTimeout(() => setShareState('idle'), 2000);
+    return () => clearTimeout(timer);
+  }, [shareState]);
 
   const handleDownload = useCallback(async () => {
     const node = ticketRef.current;
@@ -94,6 +112,26 @@ export default function Home() {
     } catch (err) {
       console.error('[export]', err);
       setCtaState('idle');
+    }
+  }, [photo.state.croppedImageUrl, photo.state.movieInfo.title, photo.state.components.layout]);
+
+  const handleShare = useCallback(async () => {
+    const node = ticketRef.current;
+    if (!node || !photo.state.croppedImageUrl) return;
+    const layout = getLayout(photo.state.components.layout);
+    const title = photo.state.movieInfo.title || 'untitled';
+    setShareState('loading');
+    try {
+      const result = await shareTicketAsJpeg(node, {
+        filename: `phototicket_${layout.id}_${title}.jpg`,
+        width: layout.width,
+        height: layout.height,
+        shareTitle: title,
+      });
+      setShareState(result === 'shared' ? 'success' : 'idle');
+    } catch (err) {
+      console.error('[share]', err);
+      setShareState('idle');
     }
   }, [photo.state.croppedImageUrl, photo.state.movieInfo.title, photo.state.components.layout]);
 
@@ -149,6 +187,9 @@ export default function Home() {
                 ticketRef={ticketRef}
                 ctaState={ctaState}
                 onDownload={handleDownload}
+                canShare={canShareFile}
+                shareState={shareState}
+                onShare={handleShare}
                 onBack={() => goTo('editor')}
               />
             )}
