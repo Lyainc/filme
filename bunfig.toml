@@ -1,0 +1,5 @@
+# Bun test runner config.
+# Registers happy-dom globals (document/window/events) before tests run so
+# component tests can mount with react-dom/client and dispatch real DOM events.
+[test]
+preload = ["./__tests__/setup/happydom.ts"]

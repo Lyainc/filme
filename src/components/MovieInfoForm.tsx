@@ -38,7 +38,9 @@ export default function MovieInfoForm({
   const searchCacheRef = useRef<Map<string, KobisMovie[]>>(new Map());
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const isComposingRef = useRef(false);
+  // Monotonic id guarding handleSelectMovie's async detail fetch: a stale
+  // response from a previously selected movie must not overwrite the latest one.
+  const detailRunIdRef = useRef(0);
 
   useEffect(() => {
     onPendingFetchChange?.(isFetchingDetail);
@@ -82,6 +84,8 @@ export default function MovieInfoForm({
     }
 
     if (searchCacheRef.current.has(term)) {
+      // Abort any in-flight fetch so a stale response can't overwrite the cached results.
+      abortControllerRef.current?.abort();
       const cached = searchCacheRef.current.get(term)!;
       setSearchResults(cached);
       setSearchError(cached.length === 0 ? '검색 결과가 없습니다.' : '');
@@ -130,12 +134,15 @@ export default function MovieInfoForm({
     });
     setShowResults(false);
 
+    const runId = ++detailRunIdRef.current;
     try {
       setIsSearching(true);
       setIsFetchingDetail(true);
       const res = await fetch(`/api/kobis/detail?movieCd=${movie.movieCd}`);
+      if (detailRunIdRef.current !== runId) return; // stale — a newer selection took over
       if (!res.ok) return;
       const data = await res.json();
+      if (detailRunIdRef.current !== runId) return;
       const info = data.movieInfoResult?.movieInfo;
       if (!info) return;
       const { actors, runtime } = extractKobisActorsRuntime(info);
@@ -143,8 +150,11 @@ export default function MovieInfoForm({
     } catch (error) {
       console.error('영화 상세 정보 검색 오류:', error);
     } finally {
-      setIsSearching(false);
-      setIsFetchingDetail(false);
+      // Only the latest selection may clear the loading/pending flags.
+      if (detailRunIdRef.current === runId) {
+        setIsSearching(false);
+        setIsFetchingDetail(false);
+      }
     }
   };
 
@@ -170,19 +180,31 @@ export default function MovieInfoForm({
             id="movieTitle"
             type="text"
             value={movieInfo.title}
-            onCompositionStart={() => { isComposingRef.current = true; }}
+            // IME note: search is scheduled on every onChange, including
+            // mid-composition values. Korean IMEs keep the last syllable in
+            // composition until an explicit commit (space/enter/blur), so
+            // gating on compositionend used to silently drop the search when
+            // the user simply stopped typing (#82). The 300ms debounce bounds
+            // the extra mid-composition queries.
             onCompositionEnd={(e) => {
-              isComposingRef.current = false;
+              // Some IMEs adjust the value at commit time without a trailing
+              // change event — reschedule with the final committed value.
               const value = e.currentTarget.value.trim();
-              if (value.length >= 2) scheduleSearch(value);
+              if (value) scheduleSearch(value);
             }}
             onChange={(e) => {
               const value = e.target.value;
               onChange({ title: value });
               clearDebounce();
-              if (value.trim().length < 2) setShowResults(false);
-              if (isComposingRef.current || value.trim().length < 2) return;
-              scheduleSearch(value.trim());
+              const term = value.trim();
+              // 1-char titles exist in KOBIS (e.g. «돈», «굿») — debounce +
+              // per-term cache keep the API load acceptable, so search from
+              // the first non-space character.
+              if (!term) {
+                setShowResults(false);
+                return;
+              }
+              scheduleSearch(term);
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
