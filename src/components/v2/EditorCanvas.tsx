@@ -77,7 +77,10 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
   const [ocrSnapshot, setOcrSnapshot] = useState<Partial<MovieInfo> | null>(null);
   const [accordionOpen, setAccordionOpen] = useState(false);
   const accordionRef = useRef<HTMLDivElement>(null);
-  // Incremented on cancel/confirm to invalidate any in-flight KOBIS fetch
+  // Incremented on cancel (undo) to invalidate any in-flight KOBIS fetch so it
+  // can't re-populate the form after revert. NOT bumped on confirm: confirm
+  // accepts the OCR injection, and KOBIS enrichment (which carries title itself,
+  // not just titleOg/releaseDate/actors/runtime) must still be allowed to land.
   const ocrEpochRef = useRef(0);
 
   function removeFromOcr(key: OcrDirectField) {
@@ -110,7 +113,6 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
   }
 
   function handleConfirmOcr() {
-    ocrEpochRef.current++;
     setOcrSnapshot(null);
   }
 
