@@ -77,6 +77,8 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
   const [ocrSnapshot, setOcrSnapshot] = useState<Partial<MovieInfo> | null>(null);
   const [accordionOpen, setAccordionOpen] = useState(false);
   const accordionRef = useRef<HTMLDivElement>(null);
+  // Incremented on cancel/confirm to invalidate any in-flight KOBIS fetch
+  const ocrEpochRef = useRef(0);
 
   function removeFromOcr(key: OcrDirectField) {
     setOcrFilledFields((prev) => {
@@ -99,6 +101,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
   }
 
   function handleCancelOcr() {
+    ocrEpochRef.current++;
     if (ocrSnapshot) {
       setInfo(ocrSnapshot);
     }
@@ -107,6 +110,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
   }
 
   function handleConfirmOcr() {
+    ocrEpochRef.current++;
     setOcrSnapshot(null);
   }
 
@@ -134,6 +138,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
             currentInfo={movieInfo}
             onOcrApply={handleOcrApply}
             setComponents={photo.updateComponents}
+            ocrEpochRef={ocrEpochRef}
           />
         </div>
       </section>

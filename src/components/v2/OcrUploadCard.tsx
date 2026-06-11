@@ -19,6 +19,7 @@ export interface OcrUploadCardProps {
   currentInfo: Partial<MovieInfo>;
   onOcrApply: (params: { keys: Set<OcrDirectField>; prevValues: Partial<MovieInfo> }) => void;
   setComponents?: (components: Partial<TicketComponents>) => void;
+  ocrEpochRef: { current: number };
   className?: string;
 }
 
@@ -36,6 +37,7 @@ export function OcrUploadCard({
   currentInfo,
   onOcrApply,
   setComponents,
+  ocrEpochRef,
   className = '',
 }: OcrUploadCardProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -90,6 +92,14 @@ export function OcrUploadCard({
       }
     }
 
+    // Snapshot KOBIS-injectable fields so undo can revert them too
+    if (title) {
+      const kobisKeys = ['title', 'titleOg', 'releaseDate', 'releaseDateGranularity', 'actors', 'runtime'] as const;
+      for (const key of kobisKeys) {
+        (prevValues as Record<string, unknown>)[key] = currentInfo[key] ?? '';
+      }
+    }
+
     if (filled.size > 0) {
       setInfo(toApply);
       onOcrApply({ keys: filled, prevValues });
@@ -97,8 +107,10 @@ export function OcrUploadCard({
 
     if (title) {
       const currentRunId = ++runIdRef.current;
+      const epoch = ocrEpochRef.current;
       triggerKobisLookup(title).then((kobisInfo) => {
         if (!mountedRef.current || currentRunId !== runIdRef.current) return;
+        if (epoch !== ocrEpochRef.current) return;
         setInfo(kobisInfo);
         if (!kobisInfo.titleOg && !kobisInfo.actors) {
           showToast('영화 제목을 확인 후 검색해 주세요.');
