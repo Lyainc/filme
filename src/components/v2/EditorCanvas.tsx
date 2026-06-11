@@ -428,9 +428,9 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
         </div>
       </section>
 
-      {/* OCR Result Banner */}
+      {/* OCR Result Banner — floats above MobileDock on mobile, above viewport bottom on desktop */}
       {ocrSnapshot && ocrFilledFields.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-surface-elevated border border-accent rounded-card shadow-lg p-3 z-50 flex items-center gap-4 w-[90%] max-w-sm animate-slide-up">
+        <div className="fixed bottom-[calc(80px+env(safe-area-inset-bottom)+12px)] sm:bottom-6 left-1/2 -translate-x-1/2 bg-surface-elevated border border-accent rounded-card shadow-lg p-3 z-50 flex items-center gap-4 w-[90%] max-w-sm animate-slide-up">
           <p className="text-[13px] text-fg flex-1">
             {ocrFilledFields.size}개 항목이 자동 입력되었어요.
           </p>
@@ -451,6 +451,11 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
             </button>
           </div>
         </div>
+      )}
+
+      {/* Spacer — prevents last section from being hidden behind the OCR banner */}
+      {ocrSnapshot && ocrFilledFields.size > 0 && (
+        <div className="h-40 sm:h-20" aria-hidden="true" />
       )}
     </div>
   );
