@@ -105,6 +105,13 @@ export function OcrUploadCard({
 
     if (filled.size > 0) {
       setInfo(toApply);
+    }
+
+    // Surface the undo banner whenever OCR will mutate the form — either direct
+    // fields applied now, or a title that schedules async KOBIS injection. With
+    // zero direct fields the KOBIS path still needs an undo affordance: keys is
+    // an empty Set, but prevValues already carries the KOBIS snapshot (#100).
+    if (filled.size > 0 || title) {
       onOcrApply({ keys: filled, prevValues });
     }
 
@@ -124,7 +131,7 @@ export function OcrUploadCard({
     if (filled.size === 0 && !title) {
       showToast('인식된 정보가 없어요. 직접 입력해 주세요.');
     } else if (filled.size === 0 && title) {
-      showToast('인식된 정보가 없어요. 제목으로 영화 정보만 검색할게요.');
+      showToast('제목으로 영화 정보를 검색할게요.');
     }
   }
 
