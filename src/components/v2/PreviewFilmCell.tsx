@@ -31,7 +31,8 @@ export function PreviewFilmCell({ saving = false, promoted = false, label, child
   return (
     <div
       data-promoted={promoted || undefined}
-      className={`flex flex-col bg-black rounded-card overflow-hidden transition-shadow duration-300 ${className}`}
+      // promoted(결과 표면)로 마운트될 때 "철컥 안착" 모션 1회(#98 2단계). 편집 프리뷰는 끔.
+      className={`flex flex-col bg-black rounded-card overflow-hidden transition-shadow duration-300 ${promoted ? 'animate-settle' : ''} ${className}`}
       style={{
         position: 'relative',
         isolation: 'isolate',
