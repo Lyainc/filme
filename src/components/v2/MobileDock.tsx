@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Sprocket } from './Sprocket';
 
 interface MobileDockProps {
@@ -21,9 +22,28 @@ export function MobileDock({
   onCtaClick,
 }: MobileDockProps) {
   const showThumb = hasImage && previewThumb;
+  const dockRef = useRef<HTMLDivElement>(null);
+
+  // dock의 실제 렌더 높이를 --mobile-dock-h로 노출(hint 유무로 높이가 달라짐).
+  // 콘텐츠 여백(DOCK_PADDING)과 OCR 배너가 매직넘버 대신 이 값에 묶인다(#102/#97).
+  // offsetHeight는 safe-area paddingBottom까지 포함하므로 따로 더하지 않는다.
+  useEffect(() => {
+    const el = dockRef.current;
+    if (!el) return;
+    const root = document.documentElement;
+    const apply = () => root.style.setProperty('--mobile-dock-h', `${el.offsetHeight}px`);
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      root.style.removeProperty('--mobile-dock-h');
+    };
+  }, []);
 
   return (
     <div
+      ref={dockRef}
       style={{
         position: 'fixed',
         bottom: 0,
