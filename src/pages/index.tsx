@@ -1,17 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { usePhototicket } from '@/hooks/usePhototicket';
-import { useScreen } from '@/hooks/useScreen';
+import { useExportReady } from '@/hooks/useExportReady';
+import { useResultView } from '@/hooks/useResultView';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useMatchMedia } from '@/hooks/useMatchMedia';
-import {
-  canShareTicketFile,
-  downloadTicketAsJpeg,
-  shareTicketAsJpeg,
-} from '@/utils/captureToImage';
-import { getLayout } from '@/utils/layouts';
 import { AppShell } from '@/components/v2/AppShell';
 import { EditorCanvas } from '@/components/v2/EditorCanvas';
-import { DoneCanvas } from '@/components/v2/DoneCanvas';
+import { ResultPanel } from '@/components/v2/ResultPanel';
+import { ResultSheet } from '@/components/v2/ResultSheet';
 import { PreviewFilmCell } from '@/components/v2/PreviewFilmCell';
 import { PrimaryCta } from '@/components/v2/PrimaryCta';
 import { RailReason } from '@/components/v2/RailReason';
@@ -19,30 +15,26 @@ import { MobileDock } from '@/components/v2/MobileDock';
 import { PreviewLightbox } from '@/components/v2/PreviewLightbox';
 import TicketRenderer from '@/components/TicketRenderer';
 
-type CtaState = 'idle' | 'loading' | 'success' | 'disabled';
-
-// 모바일 에디터에서 고정 dock에 콘텐츠가 가리지 않게 하단 여백 확보 (렌더마다 새 객체 생성 방지)
-const DOCK_PADDING = { paddingBottom: 80 } as const;
+// 모바일 에디터에서 고정 dock에 콘텐츠가 가리지 않게 하단 여백 확보. dock의 실제
+// 높이(--mobile-dock-h, MobileDock이 측정해 노출)에 묶어 매직넘버를 없앤다(#102).
+const DOCK_PADDING = { paddingBottom: 'calc(var(--mobile-dock-h, 80px) + 16px)' } as const;
 
 export default function Home() {
   // SSR safe: 초기값 'light', mount 후 localStorage/prefers-color-scheme 읽기
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const [ctaState, setCtaState] = useState<CtaState>('idle');
-  const [shareState, setShareState] = useState<CtaState>('idle');
-  // SSR safe: navigator는 mount 후에만 — 데스크톱 등 미지원 환경에선 공유 버튼 숨김
-  const [canShareFile, setCanShareFile] = useState(false);
   const [pendingFetch, setPendingFetch] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const isMobile = useMatchMedia('(max-width: 640px)');
 
-  const ticketRef = useRef<HTMLDivElement>(null);
   const photo = usePhototicket();
-  const { screen, goTo, canExport } = useScreen({ state: photo.state, pendingFetch });
+  const canExport = useExportReady({ state: photo.state, pendingFetch });
+  const { open: resultOpen, openView, closeView } = useResultView();
 
   const { croppedImageUrl } = photo.state;
   const { setRecommendedColors } = photo;
   const debouncedMovieInfo = useDebounce(photo.state.movieInfo, 280);
   const debouncedComponents = useDebounce(photo.state.components, 280);
+  const { fieldVisibility } = photo.state;
 
   // FOUC 스크립트(_document.tsx)가 이미 적용한 클래스를 신뢰
   useEffect(() => {
@@ -78,63 +70,6 @@ export default function Home() {
     };
   }, [croppedImageUrl, setRecommendedColors]);
 
-  // Web Share API Level 2(파일 공유) 지원 판정 — 클라이언트에서만
-  useEffect(() => {
-    setCanShareFile(canShareTicketFile());
-  }, []);
-
-  // success → idle 자동 전환 (2000ms)
-  useEffect(() => {
-    if (ctaState !== 'success') return;
-    const timer = setTimeout(() => setCtaState('idle'), 2000);
-    return () => clearTimeout(timer);
-  }, [ctaState]);
-
-  useEffect(() => {
-    if (shareState !== 'success') return;
-    const timer = setTimeout(() => setShareState('idle'), 2000);
-    return () => clearTimeout(timer);
-  }, [shareState]);
-
-  const handleDownload = useCallback(async () => {
-    const node = ticketRef.current;
-    if (!node || !photo.state.croppedImageUrl) return;
-    const layout = getLayout(photo.state.components.layout);
-    const filename = `phototicket_${layout.id}_${photo.state.movieInfo.title || 'untitled'}.jpg`;
-    setCtaState('loading');
-    try {
-      await downloadTicketAsJpeg(node, {
-        filename,
-        width: layout.width,
-        height: layout.height,
-      });
-      setCtaState('success');
-    } catch (err) {
-      console.error('[export]', err);
-      setCtaState('idle');
-    }
-  }, [photo.state.croppedImageUrl, photo.state.movieInfo.title, photo.state.components.layout]);
-
-  const handleShare = useCallback(async () => {
-    const node = ticketRef.current;
-    if (!node || !photo.state.croppedImageUrl) return;
-    const layout = getLayout(photo.state.components.layout);
-    const title = photo.state.movieInfo.title || 'untitled';
-    setShareState('loading');
-    try {
-      const result = await shareTicketAsJpeg(node, {
-        filename: `phototicket_${layout.id}_${title}.jpg`,
-        width: layout.width,
-        height: layout.height,
-        shareTitle: title,
-      });
-      setShareState(result === 'shared' ? 'success' : 'idle');
-    } catch (err) {
-      console.error('[share]', err);
-      setShareState('idle');
-    }
-  }, [photo.state.croppedImageUrl, photo.state.movieInfo.title, photo.state.components.layout]);
-
   const railMessage = !croppedImageUrl
     ? '포스터를 먼저 추가해주세요'
     : !canExport
@@ -143,61 +78,62 @@ export default function Home() {
 
   // useMemo로 안정 참조 유지 — deps가 그대로면 동일 엘리먼트 참조라 React가 rail
   // 서브트리 재조정을 건너뛴다(theme·isMobile·lightbox 등 무관한 리렌더 시 스킵).
-  // 완료 화면은 캔버스가 프리뷰·액션을 직접 그리므로 rail은 에디터에서만 쓴다.
+  // 데스크톱 rail은 편집 중엔 프리뷰+CTA, 결과 열림 시 같은 자리에서 ResultPanel로
+  // 모핑한다(인플레이스). 결과 콘텐츠는 모바일 시트와 동일한 ResultPanel 하나뿐.
   const rail = useMemo(() => (
     <div className="flex flex-col gap-4">
-      {/* 업로드 전에는 프리뷰 영역 자체를 렌더하지 않음 — 빈 티켓 틀이 보이지 않게 */}
-      {croppedImageUrl && (
+      {/* 업로드 전에는 프리뷰 영역 자체를 렌더하지 않음 — 빈 티켓 틀이 보이지 않게.
+          결과 열림 시엔 ResultPanel이 자체 프리뷰(캡처 대상)를 그리므로 편집 프리뷰는 숨긴다. */}
+      {croppedImageUrl && !resultOpen && (
         <PreviewFilmCell>
           <TicketRenderer
             croppedImageUrl={croppedImageUrl}
             movieInfo={debouncedMovieInfo}
             components={debouncedComponents}
-            fieldVisibility={photo.state.fieldVisibility}
+            fieldVisibility={fieldVisibility}
           />
         </PreviewFilmCell>
       )}
 
-      <RailReason status={canExport ? 'ok' : 'warn'} message={railMessage} />
-      <PrimaryCta
-        state={canExport ? 'idle' : 'disabled'}
-        label="티켓 완성"
-        onClick={() => goTo('done')}
-      />
+      {resultOpen ? (
+        <div className="flex flex-col gap-3">
+          <button
+            type="button"
+            onClick={closeView}
+            className="text-mono inline-flex min-h-[44px] items-center gap-1.5 self-start text-[11px] uppercase tracking-widest text-fg-muted transition-colors hover:text-fg"
+          >
+            ← 편집으로 돌아가기
+          </button>
+          <ResultPanel
+            croppedImageUrl={croppedImageUrl}
+            movieInfo={debouncedMovieInfo}
+            components={debouncedComponents}
+            fieldVisibility={fieldVisibility}
+          />
+        </div>
+      ) : (
+        <>
+          <RailReason status={canExport ? 'ok' : 'warn'} message={railMessage} />
+          <PrimaryCta
+            state={canExport ? 'idle' : 'disabled'}
+            label="티켓 완성"
+            onClick={openView}
+          />
+        </>
+      )}
     </div>
-  ), [croppedImageUrl, debouncedMovieInfo, debouncedComponents, photo.state.fieldVisibility, canExport, railMessage, goTo]);
+  ), [croppedImageUrl, resultOpen, debouncedMovieInfo, debouncedComponents, fieldVisibility, canExport, railMessage, openView, closeView]);
 
   return (
     <>
-      <AppShell
-        theme={theme}
-        onThemeChange={setTheme}
-        rail={screen === 'editor' ? rail : undefined}
-      >
-        <div style={isMobile && screen === 'editor' ? DOCK_PADDING : undefined}>
-          <div key={screen} className="screen-in">
-            {screen === 'editor' ? (
-              <EditorCanvas photo={photo} onPendingFetchChange={setPendingFetch} />
-            ) : (
-              <DoneCanvas
-                croppedImageUrl={croppedImageUrl}
-                movieInfo={debouncedMovieInfo}
-                components={debouncedComponents}
-                fieldVisibility={photo.state.fieldVisibility}
-                ticketRef={ticketRef}
-                ctaState={ctaState}
-                onDownload={handleDownload}
-                canShare={canShareFile}
-                shareState={shareState}
-                onShare={handleShare}
-                onBack={() => goTo('editor')}
-              />
-            )}
-          </div>
+      <AppShell theme={theme} onThemeChange={setTheme} rail={rail}>
+        <div style={isMobile ? DOCK_PADDING : undefined}>
+          <EditorCanvas photo={photo} onPendingFetchChange={setPendingFetch} />
         </div>
       </AppShell>
 
-      {isMobile && screen === 'editor' && (
+      {/* 모바일: 편집 중엔 dock, 결과 열림 시엔 바텀시트(dock은 숨김 — 시트 트리거가 곧 dock CTA). */}
+      {isMobile && !resultOpen && (
         <MobileDock
           ctaLabel="티켓 완성 →"
           disabled={!canExport}
@@ -205,7 +141,18 @@ export default function Home() {
           hasImage={!!croppedImageUrl}
           previewThumb={croppedImageUrl ?? undefined}
           onPreviewClick={() => setLightboxOpen(true)}
-          onCtaClick={() => goTo('done')}
+          onCtaClick={openView}
+        />
+      )}
+
+      {isMobile && (
+        <ResultSheet
+          open={resultOpen}
+          onClose={closeView}
+          croppedImageUrl={croppedImageUrl}
+          movieInfo={debouncedMovieInfo}
+          components={debouncedComponents}
+          fieldVisibility={fieldVisibility}
         />
       )}
 
@@ -216,7 +163,7 @@ export default function Home() {
               croppedImageUrl={croppedImageUrl}
               movieInfo={debouncedMovieInfo}
               components={debouncedComponents}
-              fieldVisibility={photo.state.fieldVisibility}
+              fieldVisibility={fieldVisibility}
             />
           </div>
         ) : (

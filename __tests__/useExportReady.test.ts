@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { canExport } from '../src/hooks/useScreen';
+import { canExport } from '../src/hooks/useExportReady';
 
 const POSTER = true;
 const NO_POSTER = false;

@@ -436,9 +436,11 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
       </section>
 
       {/* OCR Result Banner — floats above MobileDock on mobile, above viewport bottom on desktop.
-          96px clears the hint-expanded dock (~102px); 80px assumed the hint-less height and overlapped. */}
+          dock 실제 높이(--mobile-dock-h, MobileDock이 측정해 노출)에 12px 띄워 앵커한다 —
+          hint 유무로 dock 높이가 변해도 항상 dock 위에 뜬다(매직넘버 제거, #102/#97).
+          var 미설정(측정 전 한 틱) 시 96px fallback. 데스크톱은 dock이 없어 sm:bottom-6로 덮어쓴다. */}
       {ocrSnapshot && (
-        <div className="fixed bottom-[calc(96px+env(safe-area-inset-bottom)+12px)] sm:bottom-6 left-1/2 -translate-x-1/2 bg-surface-elevated border border-accent rounded-card shadow-lg p-3 z-50 flex items-center gap-4 w-[90%] max-w-sm animate-slide-up">
+        <div className="fixed bottom-[calc(var(--mobile-dock-h,_96px)_+_12px)] sm:bottom-6 left-1/2 -translate-x-1/2 bg-surface-elevated border border-accent rounded-card shadow-lg p-3 z-50 flex items-center gap-4 w-[90%] max-w-sm animate-slide-up">
           <p className="text-[13px] text-fg flex-1">
             {ocrFilledFields.size > 0
               ? `${ocrFilledFields.size}개 항목이 자동 입력되었어요.`
