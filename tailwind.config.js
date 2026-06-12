@@ -76,11 +76,34 @@ module.exports = {
           '0%': { opacity: '0', transform: 'translate(-50%, 1rem)' },
           '100%': { opacity: '1', transform: 'translate(-50%, 0)' },
         },
+        // #98 완성 모먼트 "철컥 안착" — 결과 promoted 셀이 마운트될 때 위에서 살짝
+        // 내려앉으며 accent ring/그림자가 깊어진다(60%에서 미세 overshoot). box-shadow를
+        // keyframe이 전담 — 100%는 PreviewFilmCell의 promoted inline 그림자와 동일해서
+        // animation 종료 후 원래 스타일로 복귀해도(아래 backwards) 시각 점프가 없다.
+        // 100%(=정상 표시)가 끝상태라 reduced-motion 전역 가드가 duration을 0.01ms로
+        // 죽여도 정상에 즉시 도달 → 자동 비활성.
+        'settle': {
+          '0%': {
+            opacity: '0',
+            transform: 'translateY(-10px) scale(0.96)',
+            boxShadow: '0 4px 16px -8px rgba(0,0,0,0.3)',
+          },
+          '60%': { opacity: '1', transform: 'translateY(2px) scale(1.005)' },
+          '100%': {
+            opacity: '1',
+            transform: 'translateY(0) scale(1)',
+            boxShadow:
+              '0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent), 0 16px 50px -16px rgba(0,0,0,0.6)',
+          },
+        },
       },
       animation: {
         'fade-in': 'fade-in 0.4s ease-out forwards',
         'sprocket-spin': 'sprocket-spin 1.4s linear infinite',
         'slide-up': 'slide-up 0.3s ease-out forwards',
+        // backwards: 마운트 즉시 0% 프레임부터 적용하되, 종료 후엔 transform을 남기지
+        // 않고 원래 스타일로 복귀 → screen-in identity-matrix 함정(forwards) 원천 차단.
+        'settle': 'settle 0.42s cubic-bezier(0.2,0.9,0.3,1) backwards',
       },
     },
   },
