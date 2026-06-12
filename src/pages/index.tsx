@@ -18,7 +18,9 @@ import TicketRenderer from '@/components/TicketRenderer';
 
 // 모바일 에디터에서 고정 dock에 콘텐츠가 가리지 않게 하단 여백 확보. dock의 실제
 // 높이(--mobile-dock-h, MobileDock이 측정해 노출)에 묶어 매직넘버를 없앤다(#102).
-const DOCK_PADDING = { paddingBottom: 'calc(var(--mobile-dock-h, 80px) + 16px)' } as const;
+// rail 이상에서는 dock이 CSS로 숨으므로 rail:pb-0으로 여백을 끈다 — JS isMobile에
+// 의존하지 않아 첫 페인트부터 여백이 자리잡는다(#107 hydration flash 제거).
+const DOCK_PADDING_CLASS = 'pb-[calc(var(--mobile-dock-h,80px)+16px)] rail:pb-0';
 
 export default function Home() {
   // SSR safe: 초기값 'light', mount 후 localStorage/prefers-color-scheme 읽기
@@ -130,22 +132,26 @@ export default function Home() {
   return (
     <>
       <AppShell theme={theme} onThemeChange={setTheme} rail={rail}>
-        <div style={isMobile ? DOCK_PADDING : undefined}>
+        <div className={DOCK_PADDING_CLASS}>
           <EditorCanvas photo={photo} onPendingFetchChange={setPendingFetch} />
         </div>
       </AppShell>
 
-      {/* 모바일: 편집 중엔 dock, 결과 열림 시엔 바텀시트(dock은 숨김 — 시트 트리거가 곧 dock CTA). */}
-      {isMobile && !resultOpen && (
-        <MobileDock
-          ctaLabel="티켓 완성 →"
-          disabled={!canExport}
-          hint={canExport ? undefined : railMessage}
-          hasImage={!!croppedImageUrl}
-          previewThumb={croppedImageUrl ?? undefined}
-          onPreviewClick={() => setLightboxOpen(true)}
-          onCtaClick={openView}
-        />
+      {/* 모바일: 편집 중엔 dock, 결과 열림 시엔 바텀시트(dock은 숨김 — 시트 트리거가 곧 dock CTA).
+          노출은 CSS(block rail:hidden)로 — rail aside의 `hidden rail:flex`와 대칭. JS isMobile에
+          의존하지 않아 SSR HTML에 항상 들어가고, rail 이상에서만 숨어 첫 페인트 점프가 없다(#107). */}
+      {!resultOpen && (
+        <div className="block rail:hidden">
+          <MobileDock
+            ctaLabel="티켓 완성 →"
+            disabled={!canExport}
+            hint={canExport ? undefined : railMessage}
+            hasImage={!!croppedImageUrl}
+            previewThumb={croppedImageUrl ?? undefined}
+            onPreviewClick={() => setLightboxOpen(true)}
+            onCtaClick={openView}
+          />
+        </div>
       )}
 
       {isMobile && (

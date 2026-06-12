@@ -114,7 +114,7 @@ export function ResultPanel({
   return (
     <div className="space-y-4">
       <div className={`mx-auto w-full transition-[max-width] duration-300 ${previewClassName ?? 'max-w-md'}`}>
-        <PreviewFilmCell saving={ctaState === 'loading'}>
+        <PreviewFilmCell saving={ctaState === 'loading'} promoted label="이 상태 그대로 저장 · 공유돼요">
           <TicketRenderer
             ref={ticketRef}
             croppedImageUrl={croppedImageUrl}
