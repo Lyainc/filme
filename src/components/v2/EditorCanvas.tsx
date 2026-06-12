@@ -435,11 +435,14 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
         </div>
       </section>
 
-      {/* OCR Result Banner — floats above MobileDock on mobile, above viewport bottom on desktop */}
-      {ocrSnapshot && ocrFilledFields.size > 0 && (
-        <div className="fixed bottom-[calc(80px+env(safe-area-inset-bottom)+12px)] sm:bottom-6 left-1/2 -translate-x-1/2 bg-surface-elevated border border-accent rounded-card shadow-lg p-3 z-50 flex items-center gap-4 w-[90%] max-w-sm animate-slide-up">
+      {/* OCR Result Banner — floats above MobileDock on mobile, above viewport bottom on desktop.
+          96px clears the hint-expanded dock (~102px); 80px assumed the hint-less height and overlapped. */}
+      {ocrSnapshot && (
+        <div className="fixed bottom-[calc(96px+env(safe-area-inset-bottom)+12px)] sm:bottom-6 left-1/2 -translate-x-1/2 bg-surface-elevated border border-accent rounded-card shadow-lg p-3 z-50 flex items-center gap-4 w-[90%] max-w-sm animate-slide-up">
           <p className="text-[13px] text-fg flex-1">
-            {ocrFilledFields.size}개 항목이 자동 입력되었어요.
+            {ocrFilledFields.size > 0
+              ? `${ocrFilledFields.size}개 항목이 자동 입력되었어요.`
+              : '영화 정보를 자동으로 불러왔어요.'}
           </p>
           <div className="flex gap-2 shrink-0">
             <button
@@ -461,7 +464,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
       )}
 
       {/* Spacer — prevents last section from being hidden behind the OCR banner */}
-      {ocrSnapshot && ocrFilledFields.size > 0 && (
+      {ocrSnapshot && (
         <div className="h-40 sm:h-20" aria-hidden="true" />
       )}
     </div>
