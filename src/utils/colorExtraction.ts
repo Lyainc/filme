@@ -91,6 +91,23 @@ function clusterInWorker(data: Uint8ClampedArray, k: number): Promise<string[] |
 }
 
 /**
+ * hex 중복 제거(대소문자 무시). 첫 등장 순서·원본 표기를 유지한다. 평면/단색 비중이
+ * 큰 포스터에선 K-means가 같은 색을 두 번 뱉을 수 있는데, 동일 추천색은 사용자에게
+ * 무의미할 뿐 아니라 ColorPicker에서 hex가 곧 React key라 중복 시 경고가 난다(#105).
+ */
+function dedupeHex(colors: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const c of colors) {
+    const key = c.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(c);
+  }
+  return out;
+}
+
+/**
  * 이미지 URL에서 대표 색상 2개를 추출합니다.
  * @param imageUrl 이미지 소스 (Blob URL 또는 일반 URL)
  * @param k 추출할 색상 개수 (기본값 2)
@@ -118,7 +135,7 @@ export async function extractColors(imageUrl: string, k: number = 2): Promise<st
 
         // Worker 우선, 실패(null) 시 동일 알고리즘의 동기 경로로 fallback.
         const workerColors = await clusterInWorker(imageData, k);
-        resolve(workerColors ?? clusterPixels(imageData, k));
+        resolve(dedupeHex(workerColors ?? clusterPixels(imageData, k)));
       } catch (err) {
         console.error('Color extraction error:', err);
         resolve(['#FFFFFF', '#000000']);

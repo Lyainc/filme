@@ -11,11 +11,20 @@ const PRESETS = [
 ];
 
 export default function ColorPicker({ value, onChange, recommended }: ColorPickerProps) {
+  // 추천색이 프리셋과(또는 서로) 같은 hex일 수 있어 — 순백/순흑 단색 포스터 등 — value가
+  // 곧 React key인 이상 중복이면 key 충돌 경고가 난다. 첫 항목(프리셋 우선)을 남기고
+  // hex(대소문자 무시)로 dedupe한다(#105). 추출 단계 dedupe와 별개로 프리셋 충돌까지 막는다.
+  const seen = new Set<string>();
   const swatches = [
     ...PRESETS,
     ...(recommended[0] ? [{ label: 'Pick 1', value: recommended[0] }] : []),
     ...(recommended[1] ? [{ label: 'Pick 2', value: recommended[1] }] : []),
-  ];
+  ].filter((s) => {
+    const key = s.value.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
   const lowerValue = value.toLowerCase();
   const isCustom = !swatches.some((s) => s.value.toLowerCase() === lowerValue);
   const displayHex = value.toUpperCase();

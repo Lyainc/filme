@@ -7,6 +7,11 @@ module.exports = {
   ],
   theme: {
     extend: {
+      // rail↔dock 단일 경계(#104). src/utils/breakpoints.ts의 RAIL_BREAKPOINT_PX와
+      // 반드시 같은 px — 한쪽만 바꾸면 그 사이 폭에 진입 CTA dead zone이 생긴다.
+      screens: {
+        rail: '1024px',
+      },
       colors: {
         // === v2.2 cool-neutral theme (CSS var — responds to .theme-dark) ===
         bg: 'var(--bg)',

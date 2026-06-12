@@ -4,6 +4,7 @@ import { useExportReady } from '@/hooks/useExportReady';
 import { useResultView } from '@/hooks/useResultView';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useMatchMedia } from '@/hooks/useMatchMedia';
+import { BELOW_RAIL_QUERY } from '@/utils/breakpoints';
 import { AppShell } from '@/components/v2/AppShell';
 import { EditorCanvas } from '@/components/v2/EditorCanvas';
 import { ResultPanel } from '@/components/v2/ResultPanel';
@@ -24,7 +25,9 @@ export default function Home() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [pendingFetch, setPendingFetch] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const isMobile = useMatchMedia('(max-width: 640px)');
+  // rail(데스크톱) ↔ dock/sheet(모바일) 경계는 rail 노출 분기점(rail=1024)과 동일해야
+  // 그 사이 폭에서 진입 CTA가 사라지지 않는다. BELOW_RAIL_QUERY가 그 단일 경계(#104).
+  const isMobile = useMatchMedia(BELOW_RAIL_QUERY);
 
   const photo = usePhototicket();
   const canExport = useExportReady({ state: photo.state, pendingFetch });

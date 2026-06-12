@@ -25,7 +25,7 @@ export function AppShell({ theme, onThemeChange, rail, children }: AppShellProps
         </main>
 
         {rail && (
-          <aside className="hidden lg:flex flex-col w-80 xl:w-96 shrink-0 border-l border-line bg-surface overflow-y-auto sticky top-0 h-screen shadow-[-8px_0_24px_-12px_rgba(0,0,0,0.12)]">
+          <aside className="hidden rail:flex flex-col w-80 xl:w-96 shrink-0 border-l border-line bg-surface overflow-y-auto sticky top-0 h-screen shadow-[-8px_0_24px_-12px_rgba(0,0,0,0.12)]">
             <div className="p-4 flex flex-col gap-4">
               {rail}
             </div>
