@@ -22,7 +22,7 @@ bun install
 
 ### 2. 환경 변수 설정
 
-프로젝트 루트에 `.env.local` 파일을 생성하고 아래와 같이 KOBIS API 키를 설정합니다. (발급처: [영화진흥위원회 오픈API](https://www.kobis.or.kr/kobisopenapi/homepg/main/main.do))
+프로젝트 루트에 `.env.local` 파일을 생성하고 API 키를 설정합니다. KOBIS 키 발급처는 [영화진흥위원회 오픈API](https://www.kobis.or.kr/kobisopenapi/homepg/main/main.do)입니다.
 
 ```bash
 cp .env.example .env.local
@@ -31,7 +31,12 @@ cp .env.example .env.local
 `.env.local` 파일 내용:
 ```env
 KOBIS_API_KEY=당신의_발급받은_API_키를_여기에_입력하세요
+AI_GATEWAY_API_KEY=로컬_OCR_테스트용_AI_Gateway_키
+UPSTASH_REDIS_REST_URL=Upstash_REST_URL
+UPSTASH_REDIS_REST_TOKEN=Upstash_REST_TOKEN
 ```
+
+`UPSTASH_REDIS_REST_URL`과 `UPSTASH_REDIS_REST_TOKEN`은 로컬 개발에서는 생략할 수 있지만, production에서는 공개 OCR/KOBIS API 남용 방지를 위해 필요합니다.
 
 ### 3. 개발 서버 실행
 

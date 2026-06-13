@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { checkRateLimit } from '@/utils/ratelimit';
+import { checkOcrRateLimit } from '@/utils/ratelimit';
 import { ALLOWED_MIME, MAX_BYTES } from '@/utils/ocrConstants';
 
 /** 클라이언트 IP — Vercel은 x-forwarded-for를 설정한다. 로컬 dev는 소켓 주소로 폴백. */
@@ -10,13 +10,58 @@ export function clientIp(req: NextApiRequest): string {
   return req.socket.remoteAddress ?? 'unknown';
 }
 
+function hasImageMagicBytes(bytes: Uint8Array, mimeType: string): boolean {
+  if (mimeType === 'image/png') {
+    return (
+      bytes.length >= 8 &&
+      bytes[0] === 0x89 &&
+      bytes[1] === 0x50 &&
+      bytes[2] === 0x4e &&
+      bytes[3] === 0x47 &&
+      bytes[4] === 0x0d &&
+      bytes[5] === 0x0a &&
+      bytes[6] === 0x1a &&
+      bytes[7] === 0x0a
+    );
+  }
+
+  if (mimeType === 'image/jpeg') {
+    return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  }
+
+  if (mimeType === 'image/webp') {
+    return (
+      bytes.length >= 12 &&
+      bytes[0] === 0x52 &&
+      bytes[1] === 0x49 &&
+      bytes[2] === 0x46 &&
+      bytes[3] === 0x46 &&
+      bytes[8] === 0x57 &&
+      bytes[9] === 0x45 &&
+      bytes[10] === 0x42 &&
+      bytes[11] === 0x50
+    );
+  }
+
+  return false;
+}
+
+export function decodeAllowedImage(base64: string, mimeType: string): Uint8Array | null {
+  if (base64.length % 4 === 1 || !/^[A-Za-z0-9+/]*={0,2}$/.test(base64)) return null;
+
+  const bytes = Buffer.from(base64, 'base64');
+  if (bytes.length === 0 || !hasImageMagicBytes(bytes, mimeType)) return null;
+  return bytes;
+}
+
 /**
  * OCR 라우트 공통 가드. ocr.ts / ocr-boxes.ts가 스키마·프롬프트만 다르고 검증
  * 프리앰블이 동일하므로 한 곳으로 추출한다.
  *
  * 가드 순서: method → 입력(존재·MIME·크기) → rate limit → 인증.
  * 저렴한 검증을 먼저 두어 키 없이도 입력 거부가 동작하고, 남용은 모델 호출 전에 막는다.
- * Rate limit은 Upstash env 미설정 시 checkRateLimit 내부에서 graceful skip.
+ * Rate limit은 로컬/테스트에서만 Upstash env 미설정 시 통과한다. Production에서는
+ * provider 비용 보호 경계이므로 fail-closed.
  *
  * 통과 시 정제된 `{ base64, mimeType }`를 반환하고, 실패 시 res에 status + { error }를
  * 쓰고 null을 반환한다. **절대 throw하지 않는다** (CLAUDE.md 규칙). 호출부는
@@ -47,16 +92,24 @@ export async function validateOcrRequest(
   // data URL prefix가 붙어와도 방어적으로 제거 — AI SDK엔 순수 base64를 넘긴다.
   const base64 = image.replace(/^data:[^;]+;base64,/, '');
 
-  // 크기 제한: base64 디코드 크기 ≈ 문자열 길이 × 3/4.
-  const approxBytes = Math.floor((base64.length * 3) / 4);
-  if (approxBytes > MAX_BYTES) {
+  const decoded = decodeAllowedImage(base64, mimeType);
+  if (!decoded) {
+    res.status(400).json({ error: 'Invalid image payload' });
+    return null;
+  }
+
+  if (decoded.length > MAX_BYTES) {
     res.status(413).json({ error: 'Image too large (max 10MB)' });
     return null;
   }
 
-  // Rate limit: IP sliding window(시간당 10·일당 50). Upstash env 미설정 시 skip.
-  const rl = await checkRateLimit(clientIp(req));
+  // Rate limit: IP sliding window(시간당 10·일당 50). Production env 누락은 503으로 닫는다.
+  const rl = await checkOcrRateLimit(clientIp(req));
   if (!rl.ok) {
+    if (rl.reason === 'misconfigured') {
+      res.status(503).json({ error: 'Rate limit is not configured' });
+      return null;
+    }
     res.setHeader('Retry-After', String(rl.retryAfterSec ?? 60));
     res.status(429).json({ error: 'Too many requests' });
     return null;
