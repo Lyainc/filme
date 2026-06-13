@@ -1,4 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { checkKobisRateLimit } from '@/utils/ratelimit';
+import { clientIp } from '@/utils/ocrRoute';
 
 export default async function handler(
   req: NextApiRequest,
@@ -20,6 +22,15 @@ export default async function handler(
   const apiKey = process.env.KOBIS_API_KEY;
   if (!apiKey) {
     return res.status(500).json({ error: 'KOBIS API Key is not configured' });
+  }
+
+  const rl = await checkKobisRateLimit(clientIp(req));
+  if (!rl.ok) {
+    if (rl.reason === 'misconfigured') {
+      return res.status(503).json({ error: 'Rate limit is not configured' });
+    }
+    res.setHeader('Retry-After', String(rl.retryAfterSec ?? 60));
+    return res.status(429).json({ error: 'Too many requests' });
   }
 
   const url = `https://www.kobis.or.kr/kobisopenapi/webservice/rest/movie/searchMovieList.json?key=${apiKey}&movieNm=${encodeURIComponent(movieNm)}`;

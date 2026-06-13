@@ -52,7 +52,7 @@ describe('buildJpegOptions — AC12: capture dimensions invariant', () => {
 describe('dataUrlToJpegBlob — CSP-safe base64 decode (no fetch(data:))', () => {
   test('decodes a base64 data URL into a JPEG Blob', async () => {
     const bytes = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0]); // JPEG SOI marker
-    const dataUrl = `data:image/jpeg;base64,${btoa(String.fromCharCode(...bytes))}`;
+    const dataUrl = `data:image/jpeg;base64,${btoa(String.fromCharCode(...Array.from(bytes)))}`;
     const blob = dataUrlToJpegBlob(dataUrl);
     expect(blob.type).toBe('image/jpeg');
     expect(blob.size).toBe(4);
