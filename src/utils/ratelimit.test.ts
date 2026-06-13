@@ -25,7 +25,11 @@ afterEach(() => {
 });
 
 describe('provider API rate limits', () => {
-  it('fails closed for OCR in production when Upstash is missing', async () => {
+  // failMode 분기는 Upstash 미설정(limiter=null) 경로에서만 갈린다. env가 설정된 경로는
+  // 실제 Redis 호출이라 failMode와 무관(두 scope 모두 limiter를 그대로 거침)하므로
+  // 여기선 다루지 않는다. 매트릭스: production×dev × scope(ocr/kobis), env 미설정.
+
+  it('fails closed for OCR in production when Upstash is missing (실과금 보호)', async () => {
     setNodeEnv('production');
     clearUpstashEnv();
 
@@ -34,16 +38,16 @@ describe('provider API rate limits', () => {
     expect(result).toEqual({ ok: false, reason: 'misconfigured' });
   });
 
-  it('fails closed for KOBIS in production when Upstash is missing', async () => {
+  it('fails open for KOBIS in production when Upstash is missing (#112 가용성 우선)', async () => {
     setNodeEnv('production');
     clearUpstashEnv();
 
     const result = await checkKobisRateLimit('203.0.113.10');
 
-    expect(result).toEqual({ ok: false, reason: 'misconfigured' });
+    expect(result).toEqual({ ok: true });
   });
 
-  it('allows local development without Upstash', async () => {
+  it('allows both scopes in local development without Upstash', async () => {
     setNodeEnv('test');
     clearUpstashEnv();
 

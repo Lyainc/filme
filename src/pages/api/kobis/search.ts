@@ -24,11 +24,9 @@ export default async function handler(
     return res.status(500).json({ error: 'KOBIS API Key is not configured' });
   }
 
+  // KOBIS는 fail-open(#112): Upstash 미설정이면 limiter가 통과시키므로 misconfigured(503) 분기 없음.
   const rl = await checkKobisRateLimit(clientIp(req));
   if (!rl.ok) {
-    if (rl.reason === 'misconfigured') {
-      return res.status(503).json({ error: 'Rate limit is not configured' });
-    }
     res.setHeader('Retry-After', String(rl.retryAfterSec ?? 60));
     return res.status(429).json({ error: 'Too many requests' });
   }

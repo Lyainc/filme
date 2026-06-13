@@ -5,8 +5,11 @@ import { Redis } from '@upstash/redis';
  * Public provider-backed API rate limiter.
  *
  * Upstash Redis env(URL + TOKEN)가 둘 다 설정됐을 때만 distributed limiter를 만든다.
- * 로컬/테스트에서는 env 미설정 시 통과시키지만, production에서는 provider API 비용
- * 보호가 보안 경계이므로 fail-closed 한다.
+ * 로컬/테스트(NODE_ENV!=='production')에서는 env 미설정 시 통과한다.
+ * production에서 env 미설정 시 동작은 scope의 failMode가 가른다(#112):
+ *  - OCR(fail-closed): GPT vision이 실과금이라 비용 보호가 보안 경계 → 차단(misconfigured).
+ *  - KOBIS(fail-open): 무료 quota(일 3000) 오픈API라 남용돼도 과금이 없어, limiter 백엔드
+ *    장애로 핵심 검색이 다운되는 가용성 리스크가 더 크다 → 통과.
  */
 export interface RateLimitResult {
   ok: boolean;
@@ -17,6 +20,8 @@ export interface RateLimitResult {
 
 type LimitPolicy = {
   scope: 'ocr' | 'kobis';
+  /** Upstash 미설정 시 production 동작: 'closed'=차단(misconfigured), 'open'=통과(fail-open). */
+  failMode: 'closed' | 'open';
   windows: Array<{ name: string; limit: number; window: `${number} ${'m' | 'h' | 'd'}` }>;
 };
 
@@ -53,9 +58,9 @@ function createLimiters(policy: LimitPolicy): LimitersCache | null {
 async function checkConfiguredRateLimit(ip: string, policy: LimitPolicy): Promise<RateLimitResult> {
   const configured = createLimiters(policy);
   if (!configured) {
-    return process.env.NODE_ENV === 'production'
-      ? { ok: false, reason: 'misconfigured' }
-      : { ok: true };
+    // dev/test는 항상 통과. production에서만 scope의 failMode가 가른다(#112).
+    const failClosed = process.env.NODE_ENV === 'production' && policy.failMode === 'closed';
+    return failClosed ? { ok: false, reason: 'misconfigured' } : { ok: true };
   }
 
   // 가장 짧은 윈도우부터 순차 체크한다. 이미 차단될 요청은 더 긴 윈도우 카운터를
@@ -81,6 +86,7 @@ export function resetRateLimitCacheForTests(): void {
 export async function checkOcrRateLimit(ip: string): Promise<RateLimitResult> {
   return checkConfiguredRateLimit(ip, {
     scope: 'ocr',
+    failMode: 'closed',
     windows: [
       { name: 'hr', limit: 10, window: '1 h' },
       { name: 'day', limit: 50, window: '1 d' },
@@ -91,6 +97,7 @@ export async function checkOcrRateLimit(ip: string): Promise<RateLimitResult> {
 export async function checkKobisRateLimit(ip: string): Promise<RateLimitResult> {
   return checkConfiguredRateLimit(ip, {
     scope: 'kobis',
+    failMode: 'open',
     windows: [
       { name: 'min', limit: 30, window: '1 m' },
       { name: 'day', limit: 1000, window: '1 d' },
