@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it } from 'bun:test';
-import { checkKobisRateLimit, checkOcrRateLimit, resetRateLimitCacheForTests } from './ratelimit';
+import {
+  checkKobisRateLimit,
+  checkOcrRateLimit,
+  checkTicketRateLimit,
+  resetRateLimitCacheForTests,
+} from './ratelimit';
 
 const originalNodeEnv = process.env.NODE_ENV;
 const originalUrl = process.env.UPSTASH_REDIS_REST_URL;
@@ -47,11 +52,21 @@ describe('provider API rate limits', () => {
     expect(result).toEqual({ ok: true });
   });
 
-  it('allows both scopes in local development without Upstash', async () => {
+  it('fails closed for TICKET in production when Upstash is missing (Blob 쓰기 보호)', async () => {
+    setNodeEnv('production');
+    clearUpstashEnv();
+
+    const result = await checkTicketRateLimit('203.0.113.10');
+
+    expect(result).toEqual({ ok: false, reason: 'misconfigured' });
+  });
+
+  it('allows all scopes in local development without Upstash', async () => {
     setNodeEnv('test');
     clearUpstashEnv();
 
     await expect(checkOcrRateLimit('127.0.0.1')).resolves.toEqual({ ok: true });
     await expect(checkKobisRateLimit('127.0.0.1')).resolves.toEqual({ ok: true });
+    await expect(checkTicketRateLimit('127.0.0.1')).resolves.toEqual({ ok: true });
   });
 });

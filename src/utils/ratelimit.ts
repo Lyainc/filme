@@ -10,6 +10,8 @@ import { Redis } from '@upstash/redis';
  *  - OCR(fail-closed): GPT vision이 실과금이라 비용 보호가 보안 경계 → 차단(misconfigured).
  *  - KOBIS(fail-open): 무료 quota(일 3000) 오픈API라 남용돼도 과금이 없어, limiter 백엔드
  *    장애로 핵심 검색이 다운되는 가용성 리스크가 더 크다 → 통과.
+ *  - TICKET(fail-closed): Blob 쓰기는 저장 용량·대역폭 과금이라, limiter 부재 시 무제한
+ *    업로드를 허용하면 스토리지 남용을 막을 수 없다 → 차단(#91).
  */
 export interface RateLimitResult {
   ok: boolean;
@@ -19,7 +21,7 @@ export interface RateLimitResult {
 }
 
 type LimitPolicy = {
-  scope: 'ocr' | 'kobis';
+  scope: 'ocr' | 'kobis' | 'ticket';
   /** Upstash 미설정 시 production 동작: 'closed'=차단(misconfigured), 'open'=통과(fail-open). */
   failMode: 'closed' | 'open';
   windows: Array<{ name: string; limit: number; window: `${number} ${'m' | 'h' | 'd'}` }>;
@@ -101,6 +103,17 @@ export async function checkKobisRateLimit(ip: string): Promise<RateLimitResult> 
     windows: [
       { name: 'min', limit: 30, window: '1 m' },
       { name: 'day', limit: 1000, window: '1 d' },
+    ],
+  });
+}
+
+export async function checkTicketRateLimit(ip: string): Promise<RateLimitResult> {
+  return checkConfiguredRateLimit(ip, {
+    scope: 'ticket',
+    failMode: 'closed',
+    windows: [
+      { name: 'hr', limit: 20, window: '1 h' },
+      { name: 'day', limit: 100, window: '1 d' },
     ],
   });
 }

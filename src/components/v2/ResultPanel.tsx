@@ -3,6 +3,7 @@ import TicketRenderer from '@/components/TicketRenderer';
 import { getLayout } from '@/utils/layouts';
 import {
   canShareTicketFile,
+  captureNodeToJpeg,
   downloadTicketAsJpeg,
   shareTicketAsJpeg,
 } from '@/utils/captureToImage';
@@ -11,6 +12,9 @@ import { PrimaryCta } from './PrimaryCta';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 
 type CtaState = 'idle' | 'loading' | 'success' | 'disabled';
+// 퍼마링크는 발급 실패를 사용자에게 알려야 해 'error'를 추가로 갖는다. PrimaryCta가 받는
+// CtaState와는 분리 — 'error'를 공유 타입에 넣으면 download/share CTA 타입과 충돌한다.
+type PermaState = 'idle' | 'loading' | 'success' | 'error';
 
 interface ResultPanelProps {
   croppedImageUrl: string | null;
@@ -26,12 +30,12 @@ interface ResultPanelProps {
 }
 
 /**
- * 결과물 단일 패널 — 캡처 대상 프리뷰 + 다운로드 / SNS 공유 / 퍼마링크(자리).
+ * 결과물 단일 패널 — 캡처 대상 프리뷰 + 다운로드 / SNS 공유 / 퍼마링크.
  *
  * 데스크톱 rail과 모바일 바텀시트가 공유하는 유일한 결과 콘텐츠. 캡처 대상(ticketRef)과
  * 내보내기 상태/로직이 전부 이 컴포넌트 안에 닫혀 있어, 컨테이너는 배치·크기만 정한다.
- * SNS 공유는 Web Share API 파일 공유 지원 환경에서만 노출. 퍼마링크는 백엔드 저장이
- * 필요해 자리만 잡는다(#91 2차 범위).
+ * SNS 공유는 Web Share API 파일 공유 지원 환경에서만 노출. 퍼마링크는 완성 티켓을 Blob에
+ * 저장(/api/ticket)해 /t/<id> 공유 링크를 발급·복사한다 — og 미리보기로 유입되는 루프(#91).
  */
 export function ResultPanel({
   croppedImageUrl,
@@ -44,6 +48,7 @@ export function ResultPanel({
   const ticketRef = useRef<HTMLDivElement>(null);
   const [ctaState, setCtaState] = useState<CtaState>('idle');
   const [shareState, setShareState] = useState<CtaState>('idle');
+  const [permaState, setPermaState] = useState<PermaState>('idle');
   // SSR safe: navigator는 mount 후에만 — 미지원 환경(데스크톱 등)에선 공유 버튼 숨김.
   const [canShareFile, setCanShareFile] = useState(false);
 
@@ -65,6 +70,13 @@ export function ResultPanel({
     const timer = setTimeout(() => setShareState('idle'), 2000);
     return () => clearTimeout(timer);
   }, [shareState]);
+
+  // success/error 모두 잠시 노출 후 idle 복귀
+  useEffect(() => {
+    if (permaState !== 'success' && permaState !== 'error') return;
+    const timer = setTimeout(() => setPermaState('idle'), 2000);
+    return () => clearTimeout(timer);
+  }, [permaState]);
 
   const handleDownload = useCallback(async () => {
     const node = ticketRef.current;
@@ -100,6 +112,35 @@ export function ResultPanel({
     } catch (err) {
       console.error('[share]', err);
       setShareState('idle');
+    }
+  }, [croppedImageUrl, layout.id, layout.width, layout.height, movieInfo.title]);
+
+  // 완성 티켓을 캡처 → Blob 업로드(/api/ticket) → 발급된 /t/<id> 링크를 클립보드에 복사.
+  // og:image가 붙은 퍼마링크라 수신자가 미리보기를 보고 "나도 만들기"로 유입되는 루프(#91).
+  const handlePermalink = useCallback(async () => {
+    const node = ticketRef.current;
+    if (!node || !croppedImageUrl) return;
+    setPermaState('loading');
+    try {
+      const dataUrl = await captureNodeToJpeg(node, {
+        filename: `phototicket_${layout.id}.jpg`,
+        width: layout.width,
+        height: layout.height,
+      });
+      const base64 = dataUrl.split(',')[1] ?? '';
+      const res = await fetch('/api/ticket', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64, title: movieInfo.title, layout: layout.id }),
+      });
+      if (!res.ok) throw new Error(`ticket upload failed: ${res.status}`);
+      const { id } = (await res.json()) as { id: string; url: string };
+      const permalink = `${window.location.origin}/t/${id}`;
+      await navigator.clipboard.writeText(permalink);
+      setPermaState('success');
+    } catch (err) {
+      console.error('[permalink]', err);
+      setPermaState('error');
     }
   }, [croppedImageUrl, layout.id, layout.width, layout.height, movieInfo.title]);
 
@@ -154,12 +195,18 @@ export function ResultPanel({
           )}
           <button
             type="button"
-            disabled
-            title="준비 중인 기능이에요"
-            className={`text-mono inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-field-sm border border-line bg-surface-elevated text-[11px] uppercase tracking-widest text-fg-faint cursor-not-allowed ${canShareFile ? '' : 'col-span-2'}`}
+            onClick={handlePermalink}
+            disabled={permaState === 'loading'}
+            title="공유 링크를 만들어 클립보드에 복사해요"
+            className={`text-mono inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-field-sm border border-line bg-surface-elevated text-[11px] uppercase tracking-widest text-fg transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:border-line ${canShareFile ? '' : 'col-span-2'}`}
           >
-            퍼마링크
-            <span className="rounded-chip bg-accent-soft px-1.5 py-0.5 text-[10px] text-accent">준비 중</span>
+            {permaState === 'loading'
+              ? '링크 만드는 중…'
+              : permaState === 'success'
+                ? '링크 복사됨!'
+                : permaState === 'error'
+                  ? '실패, 다시 시도'
+                  : '링크 만들기'}
           </button>
         </div>
       </div>
