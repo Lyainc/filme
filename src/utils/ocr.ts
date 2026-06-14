@@ -30,7 +30,7 @@ async function prepareImagePayload(file: File) {
 }
 
 /**
- * 티켓 스크린샷 → 전처리(하단 크롭·768px·JPEG) → `/api/ocr`(GPT-4o mini vision)
+ * 티켓 스크린샷 → 전처리(하단 크롭·512px·JPEG) → `/api/ocr`(GPT-4o mini vision)
  * → 구조화 필드. 서버가 채워진 필드만 주므로 반환 객체엔 인식된 값만 담긴다.
  *
  * SSR-safe: window가 없으면 빈 객체. 절대 throw하지 않는다 — 전처리/네트워크/파싱

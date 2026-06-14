@@ -7,7 +7,7 @@ import { validateOcrRequest } from '@/utils/ocrRoute';
  * 클라이언트가 base64 JSON으로 이미지를 보낸다(multipart 대신). Pages Router 기본
  * bodyParser는 multipart/form-data를 안 주므로 formidable 같은 의존성이 필요한데,
  * 전처리 후 이미지가 우리 코드(ocrPreprocess)에서 나오는 Blob이라 표준 multipart일
- * 이유가 없다. base64는 원본보다 ~33% 크지만 768px JPEG이면 보통 200~400KB라
+ * 이유가 없다. base64는 원본보다 ~33% 크지만 512px JPEG이면 보통 100~250KB라
  * 기본 1mb 한도를 넘을 수 있어 여유 있게 상향한다.
  */
 export const config = {
@@ -72,7 +72,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           role: 'user',
           content: [
             { type: 'text', text: '이 영화 티켓에서 정보를 추출해줘.' },
-            { type: 'file', mediaType: mimeType, data: base64 },
+            {
+              type: 'file',
+              mediaType: mimeType,
+              data: base64,
+              // detail=high 명시(#111): auto에 맡기지 않고 타일링을 고정한다. 전처리 폭
+              // 512(ocrPreprocess)와 합쳐 ~14.7k 토큰/요청 — 폭768 auto(=high, ~37k) 대비
+              // ~2.5배 절감하면서 예매번호·좌석 같은 작은 글씨 정확도를 보장한다.
+              // detail=low(~3.4k, 11배 절감)는 작은 숫자를 자릿수 단위로 오인식해 기각.
+              providerOptions: { openai: { imageDetail: 'high' } },
+            },
           ],
         },
       ],

@@ -4,8 +4,14 @@
  *
  * 처리 파이프라인 (순서 고정):
  *   1. 하단 18% 크롭  — 앱 UI 버튼·고지 영역 제거
- *   2. width 768 캡   — GPT Vision 이미지 토큰 절감 (width가 이미 ≤768 이면 스킵)
+ *   2. width 512 캡   — GPT Vision 이미지 토큰 절감 (width가 이미 ≤512 이면 스킵)
  *   3. JPEG 92% 재인코딩
+ *
+ * 폭 캡이 512인 이유(#111): api/ocr.ts가 detail=high로 호출하므로 gpt-4o-mini는
+ * 이미지를 512px 타일로 쪼개 과금한다. 폭 768(≈768×1363)은 6타일 ~37k 토큰이지만
+ * 폭 512(≈512×909)는 2타일 ~14.7k 토큰으로 ~2.5배 절감되며, 작은 글씨(예매번호·
+ * 좌석) 정확도는 폭768 high와 동등하게 유지된다(실측 검증). detail=low(통짜 ~2.8k)는
+ * 11배 더 싸지만 작은 숫자를 자릿수 단위로 오인식해 기각했다.
  */
 
 /**
@@ -18,8 +24,8 @@
  *
  * 크롭 계산 예시 (1170×2532 입력):
  *   cropH  = round(2532 × 0.82) = 2076
- *   scale  = 768 / 1170
- *   outW   = 768, outH = round(2076 × 768 / 1170) = 1363
+ *   scale  = 512 / 1170
+ *   outW   = 512, outH = round(2076 × 512 / 1170) = 909
  *
  * @param file  원본 이미지 File (PNG / JPEG / WebP)
  * @returns     전처리된 JPEG Blob, 또는 전처리 불가 시 원본 file
@@ -46,9 +52,9 @@ export async function preprocessForOcr(file: File): Promise<Blob> {
     //    상단 82%만 남긴다
     const cropH = Math.round(H * 0.82);
 
-    // 4. width 768 캡 — GPT Vision 토큰은 이미지 픽셀 수에 비례하므로
-    //    768 이하로 맞춰 비용을 줄인다. 이미 작으면 스케일 1(그대로).
-    const scale = W > 768 ? 768 / W : 1;
+    // 4. width 512 캡 — detail=high에서 512px 타일 수가 비용을 지배하므로
+    //    512 이하로 맞춰 타일을 6→2로 줄인다(#111). 이미 작으면 스케일 1(그대로).
+    const scale = W > 512 ? 512 / W : 1;
     const outW = Math.round(W * scale);
     const outH = Math.round(cropH * scale);
 
