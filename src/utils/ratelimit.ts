@@ -35,8 +35,11 @@ type LimitersCache = {
 let cache: LimitersCache | null = null;
 
 function createLimiters(policy: LimitPolicy): LimitersCache | null {
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  // Vercel Marketplace의 "Upstash for Redis"(slug upstash-kv)는 연결 환경에 따라
+  // UPSTASH_REDIS_REST_* 또는 KV_REST_API_*(레거시 Vercel KV 호환)를 주입한다.
+  // @upstash/redis의 Redis.fromEnv()와 동일하게 둘 다 받아 어느 이름이든 동작시킨다.
+  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
   if (!url || !token) return null;
 
   const key = `${policy.scope}:${url}:${token}`;
