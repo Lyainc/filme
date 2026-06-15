@@ -115,8 +115,12 @@ export async function checkTicketRateLimit(ip: string): Promise<RateLimitResult>
     scope: 'ticket',
     failMode: 'closed',
     windows: [
+      // 버스트 차단: 사람은 60초에 완성 티켓 5개를 못 만든다(매번 편집이 필요). 스크립트 플러딩은
+      // 가장 짧은 윈도우에서 먼저 막혀 더 긴 카운터·Upstash command를 아끼고 Blob 쓰기 비용도 막는다.
+      { name: 'min', limit: 5, window: '1 m' },
       { name: 'hr', limit: 20, window: '1 h' },
-      { name: 'day', limit: 100, window: '1 d' },
+      // 슬로우드립 남용 상한. 100→60으로 좁혀도 하루 60개는 어떤 실사용보다 넉넉하다.
+      { name: 'day', limit: 60, window: '1 d' },
     ],
   });
 }
