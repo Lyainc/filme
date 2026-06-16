@@ -1,14 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
-import { MovieInfo, KobisMovie, DateFormatToken, DateGranularity } from '@/types';
+import { MovieInfo, KobisMovie, DateFormatToken, DateGranularity, TicketField } from '@/types';
 import { formatDate, openDtToIso } from '@/utils/dateFormat';
 import { extractKobisActorsRuntime } from '@/utils/kobisLookup';
 import Field from './ui/Field';
+import VisibilityCheckbox from './ui/VisibilityCheckbox';
 
 interface MovieInfoFormProps {
   movieInfo: MovieInfo;
   onChange: (info: Partial<MovieInfo>) => void;
   /** Reports KOBIS detail-fetch in-flight state so a parent wizard can gate "Next" */
   onPendingFetchChange?: (pending: boolean) => void;
+  /** 티켓 표시 여부(인라인 체크박스) — #116 */
+  fieldVisibility: Record<TicketField, boolean>;
+  onFieldVisibilityChange: (partial: Partial<Record<TicketField, boolean>>) => void;
 }
 
 const GRANULARITY_OPTIONS: { value: DateGranularity; label: string }[] = [
@@ -28,6 +32,8 @@ export default function MovieInfoForm({
   movieInfo,
   onChange,
   onPendingFetchChange,
+  fieldVisibility,
+  onFieldVisibilityChange,
 }: MovieInfoFormProps) {
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<KobisMovie[]>([]);
@@ -164,13 +170,20 @@ export default function MovieInfoForm({
   return (
     <section className="space-y-5">
       <div className="relative" ref={searchContainerRef}>
-        <div className="flex items-baseline justify-between">
-          <label
-            htmlFor="movieTitle"
-            className="text-mono text-[10px] uppercase tracking-widest text-fg-muted"
-          >
-            Title
-          </label>
+        <div className="flex items-center justify-between">
+          <span className="flex items-center gap-2">
+            <VisibilityCheckbox
+              checked={fieldVisibility.title}
+              onChange={(v) => onFieldVisibilityChange({ title: v })}
+              label="제목"
+            />
+            <label
+              htmlFor="movieTitle"
+              className="text-mono text-[10px] uppercase tracking-widest text-fg-muted"
+            >
+              Title
+            </label>
+          </span>
           <span className="text-mono text-[10px] uppercase tracking-widest text-fg-faint">
             KOBIS lookup
           </span>
@@ -286,6 +299,13 @@ export default function MovieInfoForm({
       <Field
         id="titleOg"
         label="Original Title"
+        labelAccessory={
+          <VisibilityCheckbox
+            checked={fieldVisibility.titleOg}
+            onChange={(v) => onFieldVisibilityChange({ titleOg: v })}
+            label="원제"
+          />
+        }
         value={movieInfo.titleOg}
         onChange={(e) => onChange({ titleOg: e.target.value })}
         placeholder="Interstellar"
@@ -301,6 +321,8 @@ export default function MovieInfoForm({
         value={movieInfo.releaseDate || ''}
         granularity={releaseGran}
         token={releaseFmt}
+        visible={fieldVisibility.releaseDate}
+        onVisibleChange={(v) => onFieldVisibilityChange({ releaseDate: v })}
         onGranularityChange={(releaseDateGranularity) => {
           // releaseDate is always kept as full ISO — formatDate handles
           // graceful degradation per granularity, so no truncation here.
@@ -314,6 +336,8 @@ export default function MovieInfoForm({
         reissueDate={movieInfo.reissueDate || ''}
         granularity={releaseGran}
         token={releaseFmt}
+        visible={fieldVisibility.reissue}
+        onVisibleChange={(v) => onFieldVisibilityChange({ reissue: v })}
         onToggle={(isReissue) => onChange({ isReissue })}
         onDateChange={(reissueDate) => onChange({ reissueDate })}
       />
@@ -327,6 +351,8 @@ function DateBlock({
   value,
   granularity,
   token,
+  visible,
+  onVisibleChange,
   onGranularityChange,
   onTokenChange,
 }: {
@@ -334,15 +360,20 @@ function DateBlock({
   value: string;
   granularity: DateGranularity;
   token: DateFormatToken;
+  visible: boolean;
+  onVisibleChange: (next: boolean) => void;
   onGranularityChange: (next: DateGranularity) => void;
   onTokenChange: (next: DateFormatToken) => void;
 }) {
   const hasValue = !!value;
   return (
     <div className="space-y-2.5">
-      <div className="flex items-baseline justify-between">
-        <span className="text-mono block text-[10px] uppercase tracking-widest text-fg-muted">
-          {label}
+      <div className="flex items-center justify-between">
+        <span className="flex items-center gap-2">
+          <VisibilityCheckbox checked={visible} onChange={onVisibleChange} label="개봉일" />
+          <span className="text-mono block text-[10px] uppercase tracking-widest text-fg-muted">
+            {label}
+          </span>
         </span>
         <span className="text-mono text-[10px] uppercase tracking-widest text-fg-faint">
           {formatDate(value, token, granularity) || '—'}
@@ -397,6 +428,8 @@ function ReissueBlock({
   reissueDate,
   granularity,
   token,
+  visible,
+  onVisibleChange,
   onToggle,
   onDateChange,
 }: {
@@ -404,6 +437,8 @@ function ReissueBlock({
   reissueDate: string;
   granularity: DateGranularity;
   token: DateFormatToken;
+  visible: boolean;
+  onVisibleChange: (next: boolean) => void;
   onToggle: (checked: boolean) => void;
   onDateChange: (next: string) => void;
 }) {
@@ -419,10 +454,19 @@ function ReissueBlock({
         재개봉작이에요
       </label>
       {checked && (
-        <div className="flex flex-wrap items-stretch gap-2">
-          <DateInput value={reissueDate} granularity={granularity} onChange={onDateChange} />
-          <span className="text-mono inline-flex items-center text-[10px] uppercase tracking-widest text-fg-faint">
-            표기: {formatDate(reissueDate, token, granularity) || '—'}
+        <div className="space-y-2.5">
+          <div className="flex flex-wrap items-stretch gap-2">
+            <DateInput value={reissueDate} granularity={granularity} onChange={onDateChange} />
+            <span className="text-mono inline-flex items-center text-[10px] uppercase tracking-widest text-fg-faint">
+              표기: {formatDate(reissueDate, token, granularity) || '—'}
+            </span>
+          </div>
+          {/* 재개봉일 티켓 표시 여부 — 'Display Fields' 칩 대체(#116). isReissue와 구분 위해 재개봉작일 때만 노출. */}
+          <span className="flex items-center gap-2">
+            <VisibilityCheckbox checked={visible} onChange={onVisibleChange} label="재개봉" />
+            <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">
+              티켓에 재개봉일 표시
+            </span>
           </span>
         </div>
       )}
