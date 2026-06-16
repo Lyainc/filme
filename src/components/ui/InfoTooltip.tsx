@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 interface InfoTooltipProps {
   /** 툴팁에 표시할 안내 문구 */
@@ -14,20 +14,38 @@ interface InfoTooltipProps {
 export default function InfoTooltip({ text, label = '도움말' }: InfoTooltipProps) {
   const [open, setOpen] = useState(false);
   const id = useId();
+  const containerRef = useRef<HTMLSpanElement>(null);
+
+  // 열렸을 때만 외부 탭/Escape로 닫기. hover-open과 click-open이 모두 open 방향이라
+  // 닫기는 전부 여기에 위임한다(hover 중 클릭해도 안 닫히는 게 핵심, #130).
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDownOutside = (e: PointerEvent) => {
+      if (!containerRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointerDownOutside);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDownOutside);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
 
   return (
-    <span className="relative inline-flex">
+    <span ref={containerRef} className="relative inline-flex">
       <button
         type="button"
         aria-label={label}
         aria-expanded={open}
         aria-describedby={open ? id : undefined}
-        onClick={() => setOpen((v) => !v)}
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
+        onClick={() => setOpen(true)}
+        onPointerEnter={(e) => { if (e.pointerType !== 'touch') setOpen(true); }}
+        onPointerLeave={(e) => { if (e.pointerType !== 'touch') setOpen(false); }}
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
-        onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false); }}
         className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-line text-fg-faint transition-colors hover:border-accent hover:text-accent"
       >
         <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
