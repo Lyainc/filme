@@ -213,12 +213,11 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
                 id="editor-watchDate"
                 type="date"
                 value={movieInfo.watchDate || ''}
-                disabled={!fieldVisibility.watchDate}
                 onChange={(e) => {
                   setInfo({ watchDate: e.target.value });
                   removeFromOcr('watchDate');
                 }}
-                className="w-full rounded-field border border-line bg-surface-elevated px-3.5 py-3 text-[15px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft disabled:cursor-not-allowed"
+                className="w-full rounded-field border border-line bg-surface-elevated px-3.5 py-3 text-[15px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
               />
               <div className="flex flex-wrap gap-2 pt-1" role="radiogroup" aria-label="Watched 표기">
                 {WATCH_FORMAT_TOKENS.map((opt) => {
@@ -229,10 +228,9 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
                       type="button"
                       role="radio"
                       aria-checked={active}
-                      disabled={!fieldVisibility.watchDate}
                       onClick={() => setInfo({ watchDateFormat: opt.value })}
                       data-touch="44"
-                      className={`text-mono inline-flex min-h-touch items-center rounded-chip border px-3 text-[10px] uppercase tracking-widest transition-colors disabled:cursor-not-allowed
+                      className={`text-mono inline-flex min-h-touch items-center rounded-chip border px-3 text-[10px] uppercase tracking-widest transition-colors
                         ${active ? 'border-accent bg-accent text-white' : 'border-line bg-surface-elevated text-fg hover:bg-accent-soft'}`}
                     >
                       {opt.sample}
@@ -253,7 +251,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
               optional
               labelAccessory={<VisibilityCheckbox {...visProps('theater')} />}
               value={movieInfo.theater || ''}
-              disabled={!fieldVisibility.theater}
+              dimmed={!fieldVisibility.theater}
               onChange={(e) => {
                 setInfo({ theater: e.target.value });
                 removeFromOcr('theater');
@@ -268,7 +266,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
             optional
             labelAccessory={<VisibilityCheckbox {...visProps('actors')} />}
             value={movieInfo.actors || ''}
-            disabled={!fieldVisibility.actors}
+            dimmed={!fieldVisibility.actors}
             onChange={(e) => setInfo({ actors: e.target.value })}
             placeholder="매튜 맥커너히, 앤 해서웨이"
           />
@@ -285,7 +283,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
                 optional
                 labelAccessory={<VisibilityCheckbox {...visProps('watchTime')} />}
                 value={movieInfo.watchTime || ''}
-                disabled={!fieldVisibility.watchTime}
+                dimmed={!fieldVisibility.watchTime}
                 onChange={(e) => {
                   setInfo({ watchTime: e.target.value });
                   removeFromOcr('watchTime');
@@ -298,7 +296,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
               optional
               labelAccessory={<VisibilityCheckbox {...visProps('runtime')} />}
               value={movieInfo.runtime || ''}
-              disabled={!fieldVisibility.runtime}
+              dimmed={!fieldVisibility.runtime}
               onChange={(e) => setInfo({ runtime: e.target.value })}
               placeholder="150 MIN"
             />
@@ -315,7 +313,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
                 optional
                 labelAccessory={<VisibilityCheckbox {...visProps('screen')} />}
                 value={movieInfo.screen || ''}
-                disabled={!fieldVisibility.screen}
+                dimmed={!fieldVisibility.screen}
                 onChange={(e) => {
                   setInfo({ screen: e.target.value });
                   removeFromOcr('screen');
@@ -333,7 +331,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
                 optional
                 labelAccessory={<VisibilityCheckbox {...visProps('seat')} />}
                 value={movieInfo.seat || ''}
-                disabled={!fieldVisibility.seat}
+                dimmed={!fieldVisibility.seat}
                 onChange={(e) => {
                   setInfo({ seat: e.target.value });
                   removeFromOcr('seat');
@@ -353,7 +351,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
               optional
               labelAccessory={<VisibilityCheckbox {...visProps('bookingNo')} />}
               value={movieInfo.bookingNumber || ''}
-              disabled={!fieldVisibility.bookingNo}
+              dimmed={!fieldVisibility.bookingNo}
               onChange={(e) => {
                 setInfo({ bookingNumber: e.target.value });
                 removeFromOcr('bookingNumber');
