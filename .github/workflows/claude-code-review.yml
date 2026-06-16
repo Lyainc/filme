@@ -7,21 +7,13 @@ on:
     # paths:
     #   - "src/**/*.ts"
     #   - "src/**/*.tsx"
-    #   - "src/**/*.js"
-    #   - "src/**/*.jsx"
 
 jobs:
   claude-review:
-    # Optional: Filter by PR author
-    # if: |
-    #   github.event.pull_request.user.login == 'external-contributor' ||
-    #   github.event.pull_request.user.login == 'new-developer' ||
-    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
-
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
+      pull-requests: write
       issues: read
       id-token: write
 
@@ -31,14 +23,59 @@ jobs:
         with:
           fetch-depth: 1
 
+      # 플러그인(/code-review:code-review + MCP 인라인 코멘트) 방식은 인라인 지적이
+      # 0개면 아무것도 안 올리고 초록불로 끝나 "조용한 패스"가 됐다 (#122). self-contained
+      # 프롬프트 + 항상 단일 요약 코멘트 방식으로 교체해 침묵을 구조적으로 제거한다.
       - name: Run Claude Code Review
         id: claude-review
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
-          plugins: 'code-review@claude-code-plugins'
-          prompt: '/code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }}'
-          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
-          # or https://code.claude.com/docs/en/cli-reference for available options
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
 
+            이 PR을 리뷰해. 스타일보다 실질을 우선해서 다음을 본다:
+            - 버그·정확성 위험
+            - 보안 문제
+            - 성능
+            - 코드 품질·관례
+            - 변경 로직의 테스트 커버리지
+
+            레포의 CLAUDE.md를 컨벤션·스타일 기준으로 참조해.
+
+            ## 심각도 태깅 (모든 지적에 부여)
+            - P0 (blocking): 실제 버그·보안 구멍·데이터 손실·빌드/테스트 깨짐. 이 PR에서 고쳐야 함.
+            - P1 (should-fix): 정확성 위험, 변경 로직의 테스트 누락, 계약/스펙 위반.
+            - P2 (nit): 스타일·네이밍·주관적 선호. 이 PR에서 변경을 요구하지 말 것.
+
+            ## 재플래그 금지
+            이전 라운드에서 이미 지적했거나 해결된 점은 다시 올리지 마라. 먼저
+            `gh pr view ${{ github.event.pull_request.number }} --comments`로 기존 코멘트를
+            읽고 중복을 건너뛴다.
+
+            ## 출력 (필수 — 항상 코멘트를 남긴다)
+            `gh pr comment`로 단 하나의 요약 코멘트를 남긴다. 심각도별(P0 / P1 / P2 (nit))로
+            묶어라. **지적할 게 없어도 반드시 "P0/P1 없음 — LGTM" 요약 코멘트를 남긴다.**
+            침묵(코멘트 0)은 금지 — 초록불인데 리뷰가 없는 상태는 리뷰가 안 돈 것과 구분되지
+            않기 때문이다 (#122).
+          # gh CLI만 허용 (MCP 인라인 코멘트 툴·gh issue create 제외 — 백로그 자동생성 안 함)
+          claude_args: '--allowed-tools "Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh search:*)"'
+
+      # #122 조용한 실패 방지: 리뷰 step이 초록불이어도 코멘트가 0개면 리뷰가 무력화된
+      # 것이므로 job을 빨간불로 떨어뜨려 Checks에 드러낸다. (claude 봇 계정이 단 코멘트가
+      # 1개 이상 존재하는지 확인. 게시 author login이 다르면 첫 실측 run에서 드러나니
+      # test() 패턴 한 줄만 조정하면 된다.)
+      - name: Verify a review comment was posted (no silent pass)
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          count=$(gh pr view "$PR" --json comments \
+            --jq '[.comments[] | select(.author.login | test("claude"; "i"))] | length')
+          echo "Claude review comments on PR #$PR: $count"
+          if [ "$count" -lt 1 ]; then
+            echo "::error::No Claude review comment found on PR #$PR — the review produced nothing. Failing to surface the silent-pass gap (#122)."
+            exit 1
+          fi
