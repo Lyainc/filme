@@ -13,7 +13,7 @@ import { PreviewFilmCell } from '@/components/v2/PreviewFilmCell';
 import { PrimaryCta } from '@/components/v2/PrimaryCta';
 import { RailReason } from '@/components/v2/RailReason';
 import { MobileDock } from '@/components/v2/MobileDock';
-import { PreviewLightbox } from '@/components/v2/PreviewLightbox';
+import { PreviewSheet } from '@/components/v2/PreviewSheet';
 import TicketRenderer from '@/components/TicketRenderer';
 
 // 모바일 에디터에서 고정 dock에 콘텐츠가 가리지 않게 하단 여백 확보. dock의 실제
@@ -26,7 +26,7 @@ export default function Home() {
   // SSR safe: 초기값 'light', mount 후 localStorage/prefers-color-scheme 읽기
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [pendingFetch, setPendingFetch] = useState(false);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   // rail(데스크톱) ↔ dock/sheet(모바일) 경계는 rail 노출 분기점(rail=1024)과 동일해야
   // 그 사이 폭에서 진입 CTA가 사라지지 않는다. BELOW_RAIL_QUERY가 그 단일 경계(#104).
   const isMobile = useMatchMedia(BELOW_RAIL_QUERY);
@@ -148,7 +148,7 @@ export default function Home() {
             hint={canExport ? undefined : railMessage}
             hasImage={!!croppedImageUrl}
             previewThumb={croppedImageUrl ?? undefined}
-            onPreviewClick={() => setLightboxOpen(true)}
+            onPreviewClick={() => setPreviewOpen(true)}
             onCtaClick={openView}
           />
         </div>
@@ -165,7 +165,7 @@ export default function Home() {
         />
       )}
 
-      <PreviewLightbox open={lightboxOpen} onClose={() => setLightboxOpen(false)}>
+      <PreviewSheet open={previewOpen} onOpenChange={setPreviewOpen}>
         {croppedImageUrl ? (
           <div style={{ pointerEvents: 'none' }}>
             <TicketRenderer
@@ -176,9 +176,9 @@ export default function Home() {
             />
           </div>
         ) : (
-          <p style={{ color: '#fff', fontSize: 14 }}>포스터를 먼저 추가해주세요</p>
+          <p className="text-[14px] text-fg-muted">포스터를 먼저 추가해주세요</p>
         )}
-      </PreviewLightbox>
+      </PreviewSheet>
     </>
   );
 }
