@@ -13,6 +13,7 @@ import ColorPicker from '@/components/wizard/ColorPicker';
 import { OcrUploadCard } from './OcrUploadCard';
 import type { OcrDirectField } from './OcrUploadCard';
 import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
+import InfoTooltip from '@/components/ui/InfoTooltip';
 import { formatDate } from '@/utils/dateFormat';
 import type { DateFormatToken, TicketField, MovieInfo, LayoutId } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
@@ -123,13 +124,14 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
 
   return (
     <div className="space-y-8">
-      <header className="space-y-1.5">
+      <header className="flex items-center gap-2">
         <h2 className="font-sans text-2xl font-semibold tracking-tight text-fg">
           티켓 만들기
         </h2>
-        <p className="max-w-[42ch] text-[13px] leading-relaxed text-fg-muted">
-          제목 · 원제 · 개봉연도가 필수예요. 포스터부터 무드까지 이 화면에서 한 번에 끝나요.
-        </p>
+        <InfoTooltip
+          text="제목 · 원제 · 개봉연도가 필수예요. 포스터부터 무드까지 이 화면에서 한 번에 끝나요."
+          label="티켓 만들기 안내"
+        />
       </header>
 
       <section className="space-y-4">
@@ -384,18 +386,14 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
         />
       </section>
 
-      <section className="space-y-4">
-        <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Theater</h3>
+      <section className="space-y-3">
+        <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Logos</h3>
         <TheaterChainPicker
           value={components.chain}
           visible={components.chainVisible}
           onVisibilityChange={(v) => setComp({ chainVisible: v })}
           onChange={(chain) => setComp({ chain })}
         />
-      </section>
-
-      <section className="space-y-4">
-        <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Format</h3>
         <FormatPicker
           value={components.format}
           visible={components.formatVisible}

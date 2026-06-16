@@ -4,6 +4,7 @@ import { formatDate, openDtToIso } from '@/utils/dateFormat';
 import { extractKobisActorsRuntime } from '@/utils/kobisLookup';
 import Field from './ui/Field';
 import VisibilityCheckbox from './ui/VisibilityCheckbox';
+import InfoTooltip from './ui/InfoTooltip';
 
 interface MovieInfoFormProps {
   movieInfo: MovieInfo;
@@ -300,21 +301,22 @@ export default function MovieInfoForm({
         id="titleOg"
         label="Original Title"
         labelAccessory={
-          <VisibilityCheckbox
-            checked={fieldVisibility.titleOg}
-            onChange={(v) => onFieldVisibilityChange({ titleOg: v })}
-            label="원제"
-          />
+          <>
+            <VisibilityCheckbox
+              checked={fieldVisibility.titleOg}
+              onChange={(v) => onFieldVisibilityChange({ titleOg: v })}
+              label="원제"
+            />
+            <InfoTooltip
+              text="원제 또는 한글 제목의 영문 표기를 입력해 주세요."
+              label="원제 도움말"
+            />
+          </>
         }
         value={movieInfo.titleOg}
         onChange={(e) => onChange({ titleOg: e.target.value })}
         placeholder="Interstellar"
       />
-      {!movieInfo.titleOg.trim() && (
-        <p className="text-mono -mt-3 text-[10px] uppercase tracking-widest text-fg-faint">
-          원제 또는 한글 제목의 영문 표기를 입력해 주세요.
-        </p>
-      )}
 
       <DateBlock
         label="Released"
