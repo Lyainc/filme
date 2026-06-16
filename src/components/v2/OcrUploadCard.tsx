@@ -219,7 +219,7 @@ export function OcrUploadCard({
         {/* 진행 중 스캔라인 (prefers-reduced-motion: globals.css에서 자동 무효화) */}
         {isProcessing && <div className="ocr-scanline" aria-hidden="true" />}
 
-        <div className="flex h-full min-h-[120px] flex-col items-center justify-center gap-3 px-3 py-5">
+        <div className="flex h-full min-h-[92px] flex-col items-center justify-center gap-2 px-3 py-4">
           {isProcessing ? (
             <div className="flex flex-col items-center gap-2">
               <span className="text-accent animate-pulse"><ScanIcon /></span>

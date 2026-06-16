@@ -76,33 +76,33 @@ export default function ImageUploader({ onUpload, isProcessing, hasImage = false
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
         data-touch="44"
-        className={`group relative flex h-full w-full flex-col justify-center overflow-hidden rounded-card border bg-paper p-5 text-left shadow-card transition-colors md:p-6
+        className={`group relative flex h-full w-full flex-col justify-center overflow-hidden rounded-card border bg-paper p-4 text-left shadow-card transition-colors
           ${isDragging ? 'border-accent bg-accent-soft' : 'border-line hover:border-accent/40'}
           ${busy ? 'cursor-wait opacity-60' : 'cursor-pointer'}`}
       >
-        <div className="flex items-start justify-between gap-6">
-          <div className="space-y-2">
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1">
             <div className="text-mono text-[10px] uppercase tracking-widest text-fg-faint">
               {hasImage ? 'Replace' : 'Drop or click'}
             </div>
-            <p className="text-[16px] font-medium leading-tight text-fg md:text-[17px]">
+            <p className="text-[15px] font-medium leading-tight text-fg md:text-[16px]">
               {hasImage ? '포스터 교체' : '포스터 업로드'}
             </p>
-            <p className="max-w-[36ch] text-[13px] leading-relaxed text-fg-muted">
+            <p className="max-w-[36ch] text-[12px] leading-relaxed text-fg-muted">
               JPEG · PNG · WEBP. 0.65 : 1 비율로 직접 크롭할 수 있어요.
             </p>
           </div>
 
           <span
             aria-hidden
-            className="text-mono shrink-0 text-2xl font-normal text-accent transition-transform group-hover:rotate-90 md:text-3xl"
+            className="text-mono shrink-0 text-xl font-normal text-accent transition-transform group-hover:rotate-90 md:text-2xl"
           >
             +
           </span>
         </div>
 
         {busy && (
-          <div className="text-mono mt-5 flex items-center gap-2 text-[10px] uppercase tracking-widest text-accent-ink">
+          <div className="text-mono mt-3 flex items-center gap-2 text-[10px] uppercase tracking-widest text-accent-ink">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
             Processing…
           </div>
