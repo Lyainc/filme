@@ -15,13 +15,13 @@ export function AppHeader({ theme, onThemeChange }: AppHeaderProps) {
           className="font-sans text-fg"
           style={{ fontSize: 19, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' }}
         >
-          Phototicket
+          FILME
         </span>
       </div>
 
       <div className="flex items-center gap-2">
         <a
-          href="https://github.com/Lyainc/PhototicketMaker"
+          href="https://github.com/Lyainc/filme"
           target="_blank"
           rel="noopener noreferrer"
           aria-label="GitHub 저장소"

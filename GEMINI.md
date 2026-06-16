@@ -1,6 +1,6 @@
 # GEMINI.md - Gemini CLI Assistant Guidelines
 
-## 🎬 Project: Phototicket Maker
+## 🎬 Project: FILME
 A Next.js web application for generating high-quality CGV Photoplay premium tickets.
 
 ### 📌 Core Architecture & Tech Stack

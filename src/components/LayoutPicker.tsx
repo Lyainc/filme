@@ -87,6 +87,16 @@ const THUMBNAIL_RENDERERS: Record<LayoutId, (c: ThumbColors) => ReactNode> = {
       >
         PHOTOTICKET
       </text>
+      <text
+        x="4.5"
+        y="84"
+        textAnchor="middle"
+        fontSize="1.8"
+        fill={dim}
+        transform="rotate(-90 4.5 84)"
+      >
+        Made by FILME
+      </text>
       <rect x="14" y="14" width="3" height="3" fill="none" stroke={stroke} strokeWidth="0.4" />
       <rect x="50" y="10" width="22" height="6" fill={stroke} opacity="0.7" />
       <line x1="14" y1="38" x2="74" y2="38" stroke={stroke} strokeWidth="0.4" />

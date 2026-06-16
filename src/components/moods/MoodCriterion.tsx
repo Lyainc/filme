@@ -93,6 +93,20 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
         >
           PHOTOTICKET{(fv?.bookingNo ?? true) ? ` · No.${bookingTail}` : ''}
         </div>
+        <div
+          style={{
+            marginTop: 14,
+            fontWeight: 500,
+            fontSize: 9,
+            fontFamily: FONT_MONO,
+            letterSpacing: 2,
+            opacity: 0.5,
+            writingMode: 'vertical-rl',
+            transform: 'rotate(180deg)',
+          }}
+        >
+          Made by FILME
+        </div>
         <div style={{ flex: 1 }} />
         {(fv?.bookingNo ?? true) && (
           <Barcode
