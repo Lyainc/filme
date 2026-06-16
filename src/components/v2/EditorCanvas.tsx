@@ -119,7 +119,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
   return (
     <div className="space-y-8">
       <header className="space-y-1.5">
-        <h2 className="font-display text-2xl font-medium tracking-tight text-fg">
+        <h2 className="font-sans text-2xl font-semibold tracking-tight text-fg">
           티켓 만들기
         </h2>
         <p className="max-w-[42ch] text-[13px] leading-relaxed text-fg-muted">

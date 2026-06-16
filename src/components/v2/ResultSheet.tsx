@@ -91,7 +91,7 @@ export function ResultSheet({
             />
           </button>
           <div className="flex items-center justify-between px-5 pb-1">
-            <h2 className="font-display text-lg font-medium tracking-tight text-fg">
+            <h2 className="font-sans text-lg font-semibold tracking-tight text-fg">
               티켓이 완성됐어요!
             </h2>
             <button

@@ -12,8 +12,8 @@ export function AppHeader({ theme, onThemeChange }: AppHeaderProps) {
       <div className="flex items-center gap-2">
         <Sprocket size={20} className="text-accent" />
         <span
-          className="font-display text-fg"
-          style={{ fontSize: 19, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase' }}
+          className="font-sans text-fg"
+          style={{ fontSize: 19, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' }}
         >
           Phototicket
         </span>

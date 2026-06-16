@@ -41,8 +41,6 @@ module.exports = {
       fontFamily: {
         sans: ['var(--font-sans)', '"Pretendard Variable"', 'Pretendard', 'system-ui', '"Apple SD Gothic Neo"', '"Noto Sans KR"', 'sans-serif'],
         mono: ['var(--font-mono)', '"JetBrains Mono"', 'ui-monospace', 'Menlo', 'monospace'],
-        // 라틴 디스플레이(Oswald). 한글은 Pretendard 폴백으로 per-glyph 렌더 → 토푸 방지.
-        display: ['var(--font-display)', '"Oswald"', 'var(--font-sans)', '"Pretendard Variable"', '"Apple SD Gothic Neo"', '"Noto Sans KR"', 'sans-serif'],
       },
       borderRadius: {
         field: '12px',       // backward compat (Stage 2에서 컴포넌트 클래스 교체)
