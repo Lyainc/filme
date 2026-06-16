@@ -12,6 +12,7 @@ import BrightnessSlider from '@/components/wizard/BrightnessSlider';
 import ColorPicker from '@/components/wizard/ColorPicker';
 import { OcrUploadCard } from './OcrUploadCard';
 import type { OcrDirectField } from './OcrUploadCard';
+import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
 import { formatDate } from '@/utils/dateFormat';
 import type { DateFormatToken, TicketField, MovieInfo, LayoutId } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
@@ -50,9 +51,6 @@ const FIELD_ORDER: TicketField[] = [
   'releaseDate', 'reissue', 'bookingNo',
 ];
 
-// dim/disable a wrapper when its field's visibility toggle is off.
-const dim = (on: boolean) => (on ? '' : 'opacity-40 pointer-events-none');
-
 function OcrChip() {
   return (
     <span className="text-mono text-[8px] uppercase tracking-wider bg-accent-soft text-accent px-1.5 py-0.5 rounded-chip leading-none">
@@ -67,6 +65,13 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
   const setField = photo.updateFieldVisibility;
   const setComp = photo.updateComponents;
   const watchToken = movieInfo.watchDateFormat || 'kr-compact';
+
+  // 인라인 표시여부 체크박스 prop 빌더(#116) — 반복 제거. dim 래퍼 바깥(라벨 행)에 둘 것.
+  const visProps = (field: TicketField) => ({
+    checked: fieldVisibility[field],
+    onChange: (v: boolean) => setField({ [field]: v }),
+    label: FIELD_LABELS[field],
+  });
 
   const allOn = FIELD_ORDER.every((f) => fieldVisibility[f]);
   const allOff = FIELD_ORDER.every((f) => !fieldVisibility[f]);
@@ -145,21 +150,50 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
         </div>
       </section>
 
+      {/* 표시 항목 일괄 컨트롤 — 각 필드 옆 체크박스(인라인)를 전체 제어(#116).
+          'Display Fields' 칩 섹션을 대체하고, 입력 그룹 상단에 콤팩트하게 둔다. */}
+      <div className="flex items-center justify-between gap-3 rounded-card border border-line bg-surface-elevated px-3.5 py-2.5">
+        <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">
+          표시 항목 <span className="text-fg-faint">{selectedCount}/{FIELD_ORDER.length}</span>
+        </span>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setField(Object.fromEntries(FIELD_ORDER.map((f) => [f, true])) as Record<TicketField, boolean>)}
+            disabled={allOn}
+            className="text-mono inline-flex min-h-[32px] items-center rounded-chip border border-line bg-surface px-2.5 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft focus-visible:ring-2 focus-visible:ring-accent-soft disabled:opacity-40"
+          >
+            전체 선택
+          </button>
+          <button
+            type="button"
+            onClick={() => setField(Object.fromEntries(FIELD_ORDER.map((f) => [f, false])) as Record<TicketField, boolean>)}
+            disabled={allOff}
+            className="text-mono inline-flex min-h-[32px] items-center rounded-chip border border-line bg-surface px-2.5 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft focus-visible:ring-2 focus-visible:ring-accent-soft disabled:opacity-40"
+          >
+            전체 해제
+          </button>
+        </div>
+      </div>
+
       <section className="space-y-4">
         <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Film</h3>
         <MovieInfoForm
           movieInfo={movieInfo}
           onChange={setInfo}
           onPendingFetchChange={onPendingFetchChange}
+          fieldVisibility={fieldVisibility}
+          onFieldVisibilityChange={setField}
         />
       </section>
 
       <div ref={accordionRef}>
         <OptionalDetailsAccordion open={accordionOpen} onOpenChange={setAccordionOpen}>
           <div className="space-y-5">
-          <div className={`space-y-2.5 ${dim(fieldVisibility.watchDate)}`}>
-            <div className="flex items-baseline justify-between">
-              <div className="flex items-center gap-1.5">
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <VisibilityCheckbox {...visProps('watchDate')} />
                 <label
                   htmlFor="editor-watchDate"
                   className="text-mono block text-[10px] uppercase tracking-widest text-fg-muted"
@@ -172,40 +206,42 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
                 {formatDate(movieInfo.watchDate, watchToken, 'date') || '—'}
               </span>
             </div>
-            <input
-              id="editor-watchDate"
-              type="date"
-              value={movieInfo.watchDate || ''}
-              disabled={!fieldVisibility.watchDate}
-              onChange={(e) => {
-                setInfo({ watchDate: e.target.value });
-                removeFromOcr('watchDate');
-              }}
-              className="w-full rounded-field border border-line bg-surface-elevated px-3.5 py-3 text-[15px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
-            />
-            <div className="flex flex-wrap gap-2 pt-1" role="radiogroup" aria-label="Watched 표기">
-              {WATCH_FORMAT_TOKENS.map((opt) => {
-                const active = watchToken === opt.value;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    role="radio"
-                    aria-checked={active}
-                    disabled={!fieldVisibility.watchDate}
-                    onClick={() => setInfo({ watchDateFormat: opt.value })}
-                    data-touch="44"
-                    className={`text-mono inline-flex min-h-touch items-center rounded-chip border px-3 text-[10px] uppercase tracking-widest transition-colors
-                      ${active ? 'border-accent bg-accent text-white' : 'border-line bg-surface-elevated text-fg hover:bg-accent-soft'}`}
-                  >
-                    {opt.sample}
-                  </button>
-                );
-              })}
+            <div className={`space-y-2.5 ${fieldVisibility.watchDate ? '' : 'opacity-40'}`}>
+              <input
+                id="editor-watchDate"
+                type="date"
+                value={movieInfo.watchDate || ''}
+                disabled={!fieldVisibility.watchDate}
+                onChange={(e) => {
+                  setInfo({ watchDate: e.target.value });
+                  removeFromOcr('watchDate');
+                }}
+                className="w-full rounded-field border border-line bg-surface-elevated px-3.5 py-3 text-[15px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft disabled:cursor-not-allowed"
+              />
+              <div className="flex flex-wrap gap-2 pt-1" role="radiogroup" aria-label="Watched 표기">
+                {WATCH_FORMAT_TOKENS.map((opt) => {
+                  const active = watchToken === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      disabled={!fieldVisibility.watchDate}
+                      onClick={() => setInfo({ watchDateFormat: opt.value })}
+                      data-touch="44"
+                      className={`text-mono inline-flex min-h-touch items-center rounded-chip border px-3 text-[10px] uppercase tracking-widest transition-colors disabled:cursor-not-allowed
+                        ${active ? 'border-accent bg-accent text-white' : 'border-line bg-surface-elevated text-fg hover:bg-accent-soft'}`}
+                    >
+                      {opt.sample}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
-          <div className={`space-y-1 ${dim(fieldVisibility.theater)}`}>
+          <div className="space-y-1">
             {ocrFilledFields.has('theater') && (
               <div className="flex justify-start"><OcrChip /></div>
             )}
@@ -213,6 +249,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
               id="editor-theater"
               label="Theater"
               optional
+              labelAccessory={<VisibilityCheckbox {...visProps('theater')} />}
               value={movieInfo.theater || ''}
               disabled={!fieldVisibility.theater}
               onChange={(e) => {
@@ -223,20 +260,19 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
             />
           </div>
 
-          <div className={dim(fieldVisibility.actors)}>
-            <Field
-              id="editor-actors"
-              label="Cast"
-              optional
-              value={movieInfo.actors || ''}
-              disabled={!fieldVisibility.actors}
-              onChange={(e) => setInfo({ actors: e.target.value })}
-              placeholder="매튜 맥커너히, 앤 해서웨이"
-            />
-          </div>
+          <Field
+            id="editor-actors"
+            label="Cast"
+            optional
+            labelAccessory={<VisibilityCheckbox {...visProps('actors')} />}
+            value={movieInfo.actors || ''}
+            disabled={!fieldVisibility.actors}
+            onChange={(e) => setInfo({ actors: e.target.value })}
+            placeholder="매튜 맥커너히, 앤 해서웨이"
+          />
 
           <div className="grid grid-cols-2 gap-4">
-            <div className={`space-y-1 ${dim(fieldVisibility.watchTime)}`}>
+            <div className="space-y-1">
               {ocrFilledFields.has('watchTime') && (
                 <div className="flex justify-start"><OcrChip /></div>
               )}
@@ -245,6 +281,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
                 label="Showtime"
                 type="time"
                 optional
+                labelAccessory={<VisibilityCheckbox {...visProps('watchTime')} />}
                 value={movieInfo.watchTime || ''}
                 disabled={!fieldVisibility.watchTime}
                 onChange={(e) => {
@@ -253,21 +290,20 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
                 }}
               />
             </div>
-            <div className={dim(fieldVisibility.runtime)}>
-              <Field
-                id="editor-runtime"
-                label="Runtime"
-                optional
-                value={movieInfo.runtime || ''}
-                disabled={!fieldVisibility.runtime}
-                onChange={(e) => setInfo({ runtime: e.target.value })}
-                placeholder="150 MIN"
-              />
-            </div>
+            <Field
+              id="editor-runtime"
+              label="Runtime"
+              optional
+              labelAccessory={<VisibilityCheckbox {...visProps('runtime')} />}
+              value={movieInfo.runtime || ''}
+              disabled={!fieldVisibility.runtime}
+              onChange={(e) => setInfo({ runtime: e.target.value })}
+              placeholder="150 MIN"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className={`space-y-1 ${dim(fieldVisibility.screen)}`}>
+            <div className="space-y-1">
               {ocrFilledFields.has('screen') && (
                 <div className="flex justify-start"><OcrChip /></div>
               )}
@@ -275,6 +311,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
                 id="editor-screen"
                 label="Screen"
                 optional
+                labelAccessory={<VisibilityCheckbox {...visProps('screen')} />}
                 value={movieInfo.screen || ''}
                 disabled={!fieldVisibility.screen}
                 onChange={(e) => {
@@ -284,7 +321,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
                 placeholder="IMAX관"
               />
             </div>
-            <div className={`space-y-1 ${dim(fieldVisibility.seat)}`}>
+            <div className="space-y-1">
               {ocrFilledFields.has('seat') && (
                 <div className="flex justify-start"><OcrChip /></div>
               )}
@@ -292,6 +329,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
                 id="editor-seat"
                 label="Seat"
                 optional
+                labelAccessory={<VisibilityCheckbox {...visProps('seat')} />}
                 value={movieInfo.seat || ''}
                 disabled={!fieldVisibility.seat}
                 onChange={(e) => {
@@ -303,7 +341,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
             </div>
           </div>
 
-          <div className={`space-y-1 ${dim(fieldVisibility.bookingNo)}`}>
+          <div className="space-y-1">
             {ocrFilledFields.has('bookingNumber') && (
               <div className="flex justify-start"><OcrChip /></div>
             )}
@@ -311,6 +349,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
               id="editor-bookingNumber"
               label="Booking No."
               optional
+              labelAccessory={<VisibilityCheckbox {...visProps('bookingNo')} />}
               value={movieInfo.bookingNumber || ''}
               disabled={!fieldVisibility.bookingNo}
               onChange={(e) => {
@@ -324,58 +363,12 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
           <RatingPicker
             value={movieInfo.rating}
             onValueChange={(rating) => setInfo({ rating })}
+            visible={fieldVisibility.rating}
+            onVisibleChange={(v) => setField({ rating: v })}
           />
           </div>
         </OptionalDetailsAccordion>
       </div>
-
-      {/* Display Fields — 아코디언 밖 독립 섹션. 어떤 항목이 티켓에 찍힐지 한눈에 보이게. */}
-      <section className="space-y-4">
-        <div className="flex items-baseline justify-between">
-          <div className="space-y-1">
-            <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Display Fields</h3>
-            <p className="text-mono text-[10px] uppercase tracking-widest text-fg-faint">
-              {selectedCount}/{FIELD_ORDER.length} selected
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setField(Object.fromEntries(FIELD_ORDER.map((f) => [f, true])) as Record<TicketField, boolean>)}
-              disabled={allOn}
-              className="text-mono inline-flex min-h-[32px] items-center rounded-chip border border-line bg-surface-elevated px-2.5 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft focus-visible:ring-2 focus-visible:ring-accent-soft disabled:opacity-40"
-            >
-              전체 선택
-            </button>
-            <button
-              type="button"
-              onClick={() => setField(Object.fromEntries(FIELD_ORDER.map((f) => [f, false])) as Record<TicketField, boolean>)}
-              disabled={allOff}
-              className="text-mono inline-flex min-h-[32px] items-center rounded-chip border border-line bg-surface-elevated px-2.5 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft focus-visible:ring-2 focus-visible:ring-accent-soft disabled:opacity-40"
-            >
-              전체 해제
-            </button>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {FIELD_ORDER.map((field) => {
-            const active = fieldVisibility[field];
-            return (
-              <button
-                key={field}
-                type="button"
-                onClick={() => setField({ [field]: !active })}
-                aria-pressed={active}
-                data-touch="44"
-                className={`text-mono inline-flex min-h-touch items-center rounded-chip border px-3 text-[10px] uppercase tracking-widest transition-colors focus-visible:ring-2 focus-visible:ring-accent-soft
-                  ${active ? 'border-accent bg-accent text-white' : 'border-line bg-surface-elevated text-fg-muted hover:bg-accent-soft'}`}
-              >
-                {FIELD_LABELS[field]}
-              </button>
-            );
-          })}
-        </div>
-      </section>
 
       {/* 정보 입력 ↔ 티켓 디자인 영역 경계 — 단일 스크롤에서 스캔을 돕는 시각 구분 */}
       <div className="flex items-center gap-3 pt-2" aria-hidden="true">

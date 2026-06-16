@@ -1,21 +1,27 @@
 import { useState } from 'react';
+import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
 
 interface RatingPickerProps {
   value: number;
   onValueChange: (rating: number) => void;
+  visible: boolean;
+  onVisibleChange: (next: boolean) => void;
 }
 
-export default function RatingPicker({ value, onValueChange }: RatingPickerProps) {
+export default function RatingPicker({ value, onValueChange, visible, onVisibleChange }: RatingPickerProps) {
   const [hover, setHover] = useState(0);
   const current = hover || value || 0;
 
   return (
     <div className="space-y-2.5">
-      <div className="flex items-baseline justify-between">
-        <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Rating</span>
+      <div className="flex items-center justify-between">
+        <span className="flex items-center gap-2">
+          <VisibilityCheckbox checked={visible} onChange={onVisibleChange} label="평점" />
+          <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Rating</span>
+        </span>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className={`flex items-center gap-4 ${visible ? '' : 'opacity-40'}`}>
           <div
             className="flex gap-1.5"
             onMouseLeave={() => setHover(0)}
