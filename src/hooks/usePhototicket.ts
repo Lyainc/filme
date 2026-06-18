@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { PhototicketState, MovieInfo, TicketComponents, TicketField } from '@/types';
 
-const ALL_FIELDS_ON: Record<TicketField, boolean> = {
+export const ALL_FIELDS_ON: Record<TicketField, boolean> = {
   title: true,
   titleOg: true,
   actors: true,

@@ -15,7 +15,8 @@ import { describe, expect, test, beforeEach, afterEach } from 'bun:test';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import MovieInfoForm from '../src/components/MovieInfoForm';
-import type { MovieInfo } from '../src/types';
+import { ALL_FIELDS_ON } from '../src/hooks/usePhototicket';
+import type { MovieInfo, TicketField } from '../src/types';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -73,6 +74,7 @@ let latestPending = false;
 
 function Harness() {
   const [info, setInfo] = useState<MovieInfo>({ title: '', titleOg: '', rating: 0 });
+  const [visibility, setVisibility] = useState<Record<TicketField, boolean>>(ALL_FIELDS_ON);
   latestInfo = info;
   return (
     <MovieInfoForm
@@ -81,6 +83,8 @@ function Harness() {
       onPendingFetchChange={(pending) => {
         latestPending = pending;
       }}
+      fieldVisibility={visibility}
+      onFieldVisibilityChange={(patch) => setVisibility((prev) => ({ ...prev, ...patch }))}
     />
   );
 }
