@@ -80,12 +80,13 @@ export function MobileDock({
           onTouchStart={handleGrabTouchStart}
           onTouchMove={handleGrabTouchMove}
           aria-label="미리보기 열기"
-          className="flex w-full items-center justify-center pt-2 pb-0.5"
+          className="flex w-full items-center justify-center pt-2 pb-1 text-fg-faint transition-colors active:text-accent"
         >
-          <span
-            aria-hidden="true"
-            style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--border-strong)' }}
-          />
+          {/* dock은 움직이지 않고 프리뷰 시트만 위로 열리므로, 드래그 핸들 바 대신
+              방향을 직접 가리키는 위 chevron으로 '끌어올려 미리보기' 의도를 명확히 한다(#117). */}
+          <svg width="22" height="10" viewBox="0 0 24 12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M3 9l9-6 9 6" />
+          </svg>
         </button>
       )}
       {disabled && hint && (
