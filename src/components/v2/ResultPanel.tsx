@@ -47,6 +47,9 @@ export function ResultPanel({
   // 캡처 원본 — 여기 달린 TicketRenderer의 (스케일 전) 내부 DOM이 내보내기 대상이다.
   const ticketRef = useRef<HTMLDivElement>(null);
   const linkInputRef = useRef<HTMLInputElement>(null);
+  // 인-플라이트 handlePermalink의 세대 — 업로드 중 티켓 내용이 바뀌면(아래 reset effect가
+  // 증가) 완료된 URL은 옛 스냅샷이므로 폐기해 스테일 링크 노출을 막는다.
+  const permaGenRef = useRef(0);
   const [ctaState, setCtaState] = useState<CtaState>('idle');
   const [permaState, setPermaState] = useState<PermaState>('idle');
   // 발급된 퍼마링크 — clipboard 성공 여부와 독립으로 보관해 읽기전용 인풋 + 복사 버튼으로
@@ -80,6 +83,7 @@ export function ResultPanel({
   // 티켓 내용이 바뀌면 기존 링크는 옛 스냅샷을 가리키므로 비운다 — 사용자가 다시 발급.
   // (movieInfo/components는 디바운스된 props라 편집이 멎고 ~280ms 뒤에만 참조가 바뀐다.)
   useEffect(() => {
+    permaGenRef.current += 1; // 진행 중인 발급을 스테일로 표시
     setPermalink(null);
     setCopyState('idle');
   }, [croppedImageUrl, movieInfo, components, fieldVisibility]);
@@ -123,6 +127,7 @@ export function ResultPanel({
     const node = ticketRef.current;
     if (!node || !croppedImageUrl) return;
     setPermaState('loading');
+    const gen = permaGenRef.current; // 이 발급의 세대 — 업로드 중 내용이 바뀌면 reset effect가 증가시킨다
     let url: string;
     // 1단계: 캡처 → 업로드. URL 산출까지가 성공 판정 — 여기까지 실패해야 error다.
     try {
@@ -143,6 +148,12 @@ export function ResultPanel({
     } catch (err) {
       console.error('[permalink]', err);
       setPermaState('error');
+      return;
+    }
+    // 업로드 중 티켓 내용이 바뀌었으면(reset effect가 gen 증가) 이 URL은 옛 스냅샷이다 —
+    // 스테일 링크를 노출하지 않도록 폐기하고 idle로 되돌린다(사용자가 다시 발급).
+    if (gen !== permaGenRef.current) {
+      setPermaState('idle');
       return;
     }
     // URL 확보 = 성공. 인풋에 노출해 clipboard 실패와 무관하게 공유 가능하게 한다.
