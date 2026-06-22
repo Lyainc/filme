@@ -46,9 +46,14 @@ export function ResultPanel({
 }: ResultPanelProps) {
   // 캡처 원본 — 여기 달린 TicketRenderer의 (스케일 전) 내부 DOM이 내보내기 대상이다.
   const ticketRef = useRef<HTMLDivElement>(null);
+  const linkInputRef = useRef<HTMLInputElement>(null);
   const [ctaState, setCtaState] = useState<CtaState>('idle');
   const [shareState, setShareState] = useState<CtaState>('idle');
   const [permaState, setPermaState] = useState<PermaState>('idle');
+  // 발급된 퍼마링크 — clipboard 성공 여부와 독립으로 보관해 읽기전용 인풋 + 복사 버튼으로
+  // 노출한다. clipboard가 막혀도(인앱 웹뷰·포커스 이탈) 링크 자체는 확보·공유 가능(#138 항목1).
+  const [permalink, setPermalink] = useState<string | null>(null);
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'manual'>('idle');
   // SSR safe: navigator는 mount 후에만 — 미지원 환경(데스크톱 등)에선 공유 버튼 숨김.
   const [canShareFile, setCanShareFile] = useState(false);
 
@@ -71,12 +76,26 @@ export function ResultPanel({
     return () => clearTimeout(timer);
   }, [shareState]);
 
-  // success/error 모두 잠시 노출 후 idle 복귀
+  // success/error 모두 잠시 노출 후 idle 복귀 (버튼 라벨용 — permalink 인풋은 유지)
   useEffect(() => {
     if (permaState !== 'success' && permaState !== 'error') return;
     const timer = setTimeout(() => setPermaState('idle'), 2000);
     return () => clearTimeout(timer);
   }, [permaState]);
+
+  // '복사됨!' 라벨은 2초 후 '복사'로 복귀. 'manual'(수동 복사 안내)은 다음 액션까지 유지.
+  useEffect(() => {
+    if (copyState !== 'copied') return;
+    const timer = setTimeout(() => setCopyState('idle'), 2000);
+    return () => clearTimeout(timer);
+  }, [copyState]);
+
+  // 티켓 내용이 바뀌면 기존 링크는 옛 스냅샷을 가리키므로 비운다 — 사용자가 다시 발급.
+  // (movieInfo/components는 디바운스된 props라 편집이 멎고 ~280ms 뒤에만 참조가 바뀐다.)
+  useEffect(() => {
+    setPermalink(null);
+    setCopyState('idle');
+  }, [croppedImageUrl, movieInfo, components, fieldVisibility]);
 
   const handleDownload = useCallback(async () => {
     const node = ticketRef.current;
@@ -115,12 +134,14 @@ export function ResultPanel({
     }
   }, [croppedImageUrl, layout.id, layout.width, layout.height, movieInfo.title]);
 
-  // 완성 티켓을 캡처 → Blob 업로드(/api/ticket) → 발급된 /t/<id> 링크를 클립보드에 복사.
+  // 완성 티켓을 캡처 → Blob 업로드(/api/ticket) → 발급된 /t/<id> 링크를 노출·복사.
   // og:image가 붙은 퍼마링크라 수신자가 미리보기를 보고 "나도 만들기"로 유입되는 루프(#91).
   const handlePermalink = useCallback(async () => {
     const node = ticketRef.current;
     if (!node || !croppedImageUrl) return;
     setPermaState('loading');
+    let url: string;
+    // 1단계: 캡처 → 업로드. URL 산출까지가 성공 판정 — 여기까지 실패해야 error다.
     try {
       const dataUrl = await captureNodeToJpeg(node, {
         filename: `phototicket_${layout.id}.jpg`,
@@ -135,14 +156,36 @@ export function ResultPanel({
       });
       if (!res.ok) throw new Error(`ticket upload failed: ${res.status}`);
       const { id } = (await res.json()) as { id: string; url: string };
-      const permalink = `${window.location.origin}/t/${id}`;
-      await navigator.clipboard.writeText(permalink);
-      setPermaState('success');
+      url = `${window.location.origin}/t/${id}`;
     } catch (err) {
       console.error('[permalink]', err);
       setPermaState('error');
+      return;
+    }
+    // URL 확보 = 성공. 인풋에 노출해 clipboard 실패와 무관하게 공유 가능하게 한다.
+    setPermalink(url);
+    setPermaState('success');
+    // 2단계: 자동 복사는 best-effort. 인앱 웹뷰·포커스 이탈로 거부돼도(NotAllowedError)
+    // 링크는 이미 노출돼 있으므로 '수동 복사'로 떨어질 뿐, 실패로 처리하지 않는다.
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopyState('copied');
+    } catch {
+      setCopyState('manual');
     }
   }, [croppedImageUrl, layout.id, layout.width, layout.height, movieInfo.title]);
+
+  const handleCopyLink = useCallback(async () => {
+    if (!permalink) return;
+    try {
+      await navigator.clipboard.writeText(permalink);
+      setCopyState('copied');
+    } catch {
+      // clipboard 거부 환경 — 인풋을 선택해 사용자가 직접 복사하도록 안내한다.
+      linkInputRef.current?.select();
+      setCopyState('manual');
+    }
+  }, [permalink]);
 
   if (!croppedImageUrl) {
     return (
@@ -203,12 +246,49 @@ export function ResultPanel({
             {permaState === 'loading'
               ? '링크 만드는 중…'
               : permaState === 'success'
-                ? '링크 복사됨!'
+                ? '링크 생성됨!'
                 : permaState === 'error'
                   ? '실패, 다시 시도'
-                  : '링크 만들기'}
+                  : permalink
+                    ? '링크 다시 만들기'
+                    : '링크 만들기'}
           </button>
         </div>
+
+        {permalink && (
+          <div className="space-y-1.5">
+            <label
+              htmlFor="permalink-input"
+              className="text-mono block text-[10px] uppercase tracking-widest text-fg-muted"
+            >
+              공유 링크
+            </label>
+            <div className="flex items-stretch gap-2">
+              <input
+                ref={linkInputRef}
+                id="permalink-input"
+                type="text"
+                readOnly
+                value={permalink}
+                onFocus={(e) => e.currentTarget.select()}
+                aria-label="공유 링크"
+                className="text-mono min-w-0 flex-1 rounded-field-sm border border-line bg-surface px-3 py-2 text-[12px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
+              />
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className="text-mono inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-field-sm border border-line bg-surface-elevated px-3.5 text-[11px] uppercase tracking-widest text-fg transition-colors hover:border-accent hover:text-accent"
+              >
+                {copyState === 'copied' ? '복사됨!' : '복사'}
+              </button>
+            </div>
+            {copyState === 'manual' && (
+              <p className="text-[12px] text-fg-muted">
+                자동 복사가 막혔어요. 링크를 길게 눌러 직접 복사해 주세요.
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
