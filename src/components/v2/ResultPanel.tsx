@@ -224,16 +224,14 @@ export function ResultPanel({
 
         {permalink && (
           <div className="space-y-1.5">
-            <label
-              htmlFor="permalink-input"
-              className="text-mono block text-[10px] uppercase tracking-widest text-fg-muted"
-            >
+            {/* 모바일에선 rail(숨김)+시트로 ResultPanel이 둘 동시 렌더되므로 전역 id는
+                중복된다 — 라벨은 span + 인풋 aria-label로 연결해 id 충돌을 피한다. */}
+            <span className="text-mono block text-[10px] uppercase tracking-widest text-fg-muted">
               공유 링크
-            </label>
+            </span>
             <div className="flex items-stretch gap-2">
               <input
                 ref={linkInputRef}
-                id="permalink-input"
                 type="text"
                 readOnly
                 value={permalink}
