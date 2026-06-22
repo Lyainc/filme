@@ -86,6 +86,10 @@ export function ResultPanel({
     permaGenRef.current += 1; // 진행 중인 발급을 스테일로 표시
     setPermalink(null);
     setCopyState('idle');
+    // 진행 중이던 발급은 이미 스테일이므로 버튼을 즉시 재활성화한다 — 안 그러면 느린
+    // 네트워크에서 permaState가 'loading'에 묶여, 백그라운드 업로드가 끝날 때까지
+    // 재발급을 못 한다(스테일 발급의 idle 복귀가 그 완료 시점에야 일어나므로).
+    setPermaState('idle');
   }, [croppedImageUrl, movieInfo, components, fieldVisibility]);
 
   // "사진 저장" — 파일 공유 지원 환경(모바일)이면 OS 공유 시트로 보내 사진앱 저장을
