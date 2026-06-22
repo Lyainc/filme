@@ -170,7 +170,13 @@ export function Poster({
   texture = 'original',
   posterOpacity = 0.5,
 }: PosterProps) {
-  const filter = TEXTURE_FILTERS[texture] ?? PRINT_SIM;
+  // 밝기(posterOpacity)를 texture와 분리해 포스터 <img>에 직접 합성한다. 이전엔
+  // TextureOverlay의 검은 dim 레이어에서만 적용돼 original/vintage/newspaper에선
+  // 밝기 슬라이더가 완전히 무효였다(#139 ①). brightness(x)는 검은색을 multiply로
+  // opacity (1-x)만큼 덮은 것과 수학적으로 동치라(final = src*x), 텍스처 dim 룩이
+  // 그대로 유지되면서 모든 texture에서 밝기가 동작한다.
+  const baseFilter = TEXTURE_FILTERS[texture] ?? PRINT_SIM;
+  const filter = `${baseFilter} brightness(${posterOpacity})`;
 
   return (
     <div
@@ -197,20 +203,14 @@ export function Poster({
         draggable={false}
         crossOrigin="anonymous"
       />
-      {texture && texture !== 'original' && (
-        <TextureOverlay texture={texture} posterOpacity={posterOpacity} />
-      )}
+      {texture && texture !== 'original' && <TextureOverlay texture={texture} />}
     </div>
   );
 }
 
-function TextureOverlay({
-  texture,
-  posterOpacity,
-}: {
-  texture: string;
-  posterOpacity: number;
-}) {
+// 텍스처별 sheen(하이라이트) 오버레이만 담당한다. dim(밝기)은 Poster의 <img> filter로
+// 분리됐으므로 여기선 검은 레이어를 두지 않는다(#139 ①).
+function TextureOverlay({ texture }: { texture: string }) {
   if (texture === 'original' || texture === 'vintage' || texture === 'newspaper') {
     return null;
   }
@@ -247,28 +247,15 @@ function TextureOverlay({
   if (!style) return null;
 
   return (
-    <>
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          pointerEvents: 'none',
-          ...style,
-        }}
-      />
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          pointerEvents: 'none',
-          background: '#000',
-          opacity: 1 - posterOpacity,
-          mixBlendMode: 'multiply',
-        }}
-      />
-    </>
+    <div
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        inset: 0,
+        pointerEvents: 'none',
+        ...style,
+      }}
+    />
   );
 }
 
