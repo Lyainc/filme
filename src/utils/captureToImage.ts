@@ -32,18 +32,36 @@ export function buildJpegOptions(
   };
 }
 
+/**
+ * 한 이미지가 디코드까지 끝났음을 보장한다. `img.decode()`는 로드+디코드가 모두
+ * 끝나야 resolve하고, 실패(로드 에러·디코드 실패) 시 reject한다 — 단순 `complete`
+ * 체크나 load 이벤트와 달리 "픽셀을 그릴 준비"까지 기다리므로, blob 포스터가 디코드되기
+ * 전에 html-to-image가 캡처해 포스터가 빠지는 콜드 미스를 막는다(#138 항목3).
+ *
+ * 일시적 디코드 레이스를 흡수하려 1회 재시도하고, 그래도 실패하면 throw해 캡처를
+ * 중단한다 — 포스터 없는 티켓을 조용히 내보내는 것보다 명시적 실패가 낫다.
+ */
+async function decodeImage(img: HTMLImageElement): Promise<void> {
+  // decode() 미지원(구형 브라우저) 폴백 — load/error 이벤트로 settle만 보장.
+  if (typeof img.decode !== 'function') {
+    if (img.complete) return;
+    await new Promise<void>((resolve, reject) => {
+      img.addEventListener('load', () => resolve(), { once: true });
+      img.addEventListener('error', () => reject(new Error('image failed to load')), { once: true });
+    });
+    return;
+  }
+  try {
+    await img.decode();
+  } catch {
+    // 1회 재시도: 일시적 디코드 실패(레이스)를 흡수. 두 번째도 실패하면 throw된다.
+    await img.decode();
+  }
+}
+
 async function waitForImagesLoaded(node: HTMLElement): Promise<void> {
   const images = Array.from(node.querySelectorAll('img'));
-  await Promise.all(
-    images.map((img) => {
-      // Already settled (loaded OR errored) — naturalWidth==0 with complete=true means error.
-      if (img.complete) return Promise.resolve();
-      return new Promise<void>((resolve) => {
-        img.addEventListener('load', () => resolve(), { once: true });
-        img.addEventListener('error', () => resolve(), { once: true });
-      });
-    })
-  );
+  await Promise.all(images.map((img) => decodeImage(img)));
 }
 
 export async function captureNodeToJpeg(
