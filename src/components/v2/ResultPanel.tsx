@@ -13,7 +13,7 @@ import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 
 type CtaState = 'idle' | 'loading' | 'success' | 'disabled';
 // 퍼마링크는 발급 실패를 사용자에게 알려야 해 'error'를 추가로 갖는다. PrimaryCta가 받는
-// CtaState와는 분리 — 'error'를 공유 타입에 넣으면 download/share CTA 타입과 충돌한다.
+// CtaState와는 분리 — 'error'를 넣으면 '사진 저장' CTA가 받는 CtaState와 충돌한다.
 type PermaState = 'idle' | 'loading' | 'success' | 'error';
 
 interface ResultPanelProps {
@@ -48,20 +48,13 @@ export function ResultPanel({
   const ticketRef = useRef<HTMLDivElement>(null);
   const linkInputRef = useRef<HTMLInputElement>(null);
   const [ctaState, setCtaState] = useState<CtaState>('idle');
-  const [shareState, setShareState] = useState<CtaState>('idle');
   const [permaState, setPermaState] = useState<PermaState>('idle');
   // 발급된 퍼마링크 — clipboard 성공 여부와 독립으로 보관해 읽기전용 인풋 + 복사 버튼으로
   // 노출한다. clipboard가 막혀도(인앱 웹뷰·포커스 이탈) 링크 자체는 확보·공유 가능(#138 항목1).
   const [permalink, setPermalink] = useState<string | null>(null);
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'manual'>('idle');
-  // SSR safe: navigator는 mount 후에만 — 미지원 환경(데스크톱 등)에선 공유 버튼 숨김.
-  const [canShareFile, setCanShareFile] = useState(false);
 
   const layout = getLayout(components.layout);
-
-  useEffect(() => {
-    setCanShareFile(canShareTicketFile());
-  }, []);
 
   // success → idle 자동 전환 (2000ms)
   useEffect(() => {
@@ -69,12 +62,6 @@ export function ResultPanel({
     const timer = setTimeout(() => setCtaState('idle'), 2000);
     return () => clearTimeout(timer);
   }, [ctaState]);
-
-  useEffect(() => {
-    if (shareState !== 'success') return;
-    const timer = setTimeout(() => setShareState('idle'), 2000);
-    return () => clearTimeout(timer);
-  }, [shareState]);
 
   // success/error 모두 잠시 노출 후 idle 복귀 (버튼 라벨용 — permalink 인풋은 유지)
   useEffect(() => {
@@ -97,40 +84,36 @@ export function ResultPanel({
     setCopyState('idle');
   }, [croppedImageUrl, movieInfo, components, fieldVisibility]);
 
+  // "사진 저장" — 파일 공유 지원 환경(모바일)이면 OS 공유 시트로 보내 사진앱 저장을
+  // 가능하게 하고, 미지원(데스크톱)이면 기존 a[download] 파일 저장으로 떨어진다. 웹은
+  // 갤러리 무음 저장 API가 없어 iOS/Android 모두 공유 시트가 유일한 사진앱 저장 경로다(#138 항목5).
   const handleDownload = useCallback(async () => {
     const node = ticketRef.current;
     if (!node || !croppedImageUrl) return;
-    const filename = `phototicket_${layout.id}_${movieInfo.title || 'untitled'}.jpg`;
+    const title = movieInfo.title || 'untitled';
+    const filename = `phototicket_${layout.id}_${title}.jpg`;
     setCtaState('loading');
     try {
-      await downloadTicketAsJpeg(node, {
-        filename,
-        width: layout.width,
-        height: layout.height,
-      });
-      setCtaState('success');
+      if (canShareTicketFile()) {
+        const result = await shareTicketAsJpeg(node, {
+          filename,
+          width: layout.width,
+          height: layout.height,
+          shareTitle: title,
+        });
+        // 시트를 닫으면(cancelled) 저장 안 한 것 — success 토스트 없이 idle 복귀.
+        setCtaState(result === 'shared' ? 'success' : 'idle');
+      } else {
+        await downloadTicketAsJpeg(node, {
+          filename,
+          width: layout.width,
+          height: layout.height,
+        });
+        setCtaState('success');
+      }
     } catch (err) {
-      console.error('[export]', err);
+      console.error('[save]', err);
       setCtaState('idle');
-    }
-  }, [croppedImageUrl, layout.id, layout.width, layout.height, movieInfo.title]);
-
-  const handleShare = useCallback(async () => {
-    const node = ticketRef.current;
-    if (!node || !croppedImageUrl) return;
-    const title = movieInfo.title || 'untitled';
-    setShareState('loading');
-    try {
-      const result = await shareTicketAsJpeg(node, {
-        filename: `phototicket_${layout.id}_${title}.jpg`,
-        width: layout.width,
-        height: layout.height,
-        shareTitle: title,
-      });
-      setShareState(result === 'shared' ? 'success' : 'idle');
-    } catch (err) {
-      console.error('[share]', err);
-      setShareState('idle');
     }
   }, [croppedImageUrl, layout.id, layout.width, layout.height, movieInfo.title]);
 
@@ -212,7 +195,7 @@ export function ResultPanel({
       <div className="space-y-3">
         <PrimaryCta
           state={ctaState}
-          label="JPEG 다운로드"
+          label="사진 저장"
           successLabel="저장됨!"
           onClick={handleDownload}
         />
@@ -221,39 +204,23 @@ export function ResultPanel({
           {layout.width}×{layout.height} px ×2 · JPEG
         </p>
 
-        <div className="grid grid-cols-2 gap-3">
-          {canShareFile && (
-            <button
-              type="button"
-              onClick={handleShare}
-              disabled={shareState === 'loading'}
-              className="text-mono inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-field-sm border border-line bg-surface-elevated text-[11px] uppercase tracking-widest text-fg transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:border-line"
-            >
-              {shareState === 'loading'
-                ? '공유 준비 중…'
-                : shareState === 'success'
-                  ? '공유됨!'
-                  : 'SNS 공유'}
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={handlePermalink}
-            disabled={permaState === 'loading'}
-            title="공유 링크를 만들어 클립보드에 복사해요"
-            className={`text-mono inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-field-sm border border-line bg-surface-elevated text-[11px] uppercase tracking-widest text-fg transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:border-line ${canShareFile ? '' : 'col-span-2'}`}
-          >
-            {permaState === 'loading'
-              ? '링크 만드는 중…'
-              : permaState === 'success'
-                ? '링크 생성됨!'
-                : permaState === 'error'
-                  ? '실패, 다시 시도'
-                  : permalink
-                    ? '링크 다시 만들기'
-                    : '링크 만들기'}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handlePermalink}
+          disabled={permaState === 'loading'}
+          title="공유 링크를 만들어 클립보드에 복사해요"
+          className="text-mono inline-flex w-full min-h-[44px] items-center justify-center gap-1.5 rounded-field-sm border border-line bg-surface-elevated text-[11px] uppercase tracking-widest text-fg transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:border-line"
+        >
+          {permaState === 'loading'
+            ? '링크 만드는 중…'
+            : permaState === 'success'
+              ? '링크 생성됨!'
+              : permaState === 'error'
+                ? '실패, 다시 시도'
+                : permalink
+                  ? '링크 다시 만들기'
+                  : '링크 만들기'}
+        </button>
 
         {permalink && (
           <div className="space-y-1.5">
