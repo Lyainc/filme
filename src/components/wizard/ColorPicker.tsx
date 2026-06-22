@@ -2,6 +2,9 @@ interface ColorPickerProps {
   value: string;
   onChange: (value: string) => void;
   recommended: string[];
+  /** true면 모든 컨트롤을 비활성화하고 안내(disabledNote)를 노출 — 색이 고정된 무드(35mm)용. */
+  disabled?: boolean;
+  disabledNote?: string;
 }
 
 const PRESETS = [
@@ -10,7 +13,7 @@ const PRESETS = [
   { label: 'Gold', value: '#E5B469' },
 ];
 
-export default function ColorPicker({ value, onChange, recommended }: ColorPickerProps) {
+export default function ColorPicker({ value, onChange, recommended, disabled = false, disabledNote }: ColorPickerProps) {
   // 추천색이 프리셋과(또는 서로) 같은 hex일 수 있어 — 순백/순흑 단색 포스터 등 — value가
   // 곧 React key인 이상 중복이면 key 충돌 경고가 난다. 첫 항목(프리셋 우선)을 남기고
   // hex(대소문자 무시)로 dedupe한다(#105). 추출 단계 dedupe와 별개로 프리셋 충돌까지 막는다.
@@ -34,13 +37,17 @@ export default function ColorPicker({ value, onChange, recommended }: ColorPicke
       <span className="text-mono block text-[10px] uppercase tracking-widest text-fg-muted">
         Ink · logo & type color
       </span>
-      <div className="flex flex-wrap items-center gap-2.5">
+      {disabled && disabledNote && (
+        <p className="text-[12px] text-fg-muted">{disabledNote}</p>
+      )}
+      <div className={`flex flex-wrap items-center gap-2.5 ${disabled ? 'opacity-40' : ''}`} aria-disabled={disabled || undefined}>
         {swatches.map((s) => {
           const active = s.value.toLowerCase() === lowerValue;
           return (
             <button
               key={s.value}
               type="button"
+              disabled={disabled}
               onClick={() => onChange(s.value)}
               title={s.label}
               aria-label={s.label}
@@ -80,6 +87,7 @@ export default function ColorPicker({ value, onChange, recommended }: ColorPicke
           <input
             type="color"
             aria-label="Custom color"
+            disabled={disabled}
             value={isCustom ? value : '#FFFFFF'}
             onChange={(e) => onChange(e.target.value)}
             className="sr-only"
@@ -101,7 +109,7 @@ export default function ColorPicker({ value, onChange, recommended }: ColorPicke
         </span>
       </div>
 
-      <div className="flex items-stretch gap-2 pt-1">
+      <div className={`flex items-stretch gap-2 pt-1 ${disabled ? 'opacity-40' : ''}`}>
         <span
           aria-hidden
           className="inline-flex shrink-0 items-center justify-center rounded-field border border-line px-3 text-[15px] text-fg-muted"
@@ -111,6 +119,7 @@ export default function ColorPicker({ value, onChange, recommended }: ColorPicke
         </span>
         <input
           type="text"
+          disabled={disabled}
           value={displayHex.replace('#', '')}
           onChange={(e) => {
             const sanitized = e.target.value.replace(/[^0-9a-fA-F]/g, '').slice(0, 6);
@@ -119,7 +128,7 @@ export default function ColorPicker({ value, onChange, recommended }: ColorPicke
           maxLength={6}
           aria-label="Hex color"
           placeholder="FFFFFF"
-          className="text-mono w-full rounded-field border border-line bg-paper px-3.5 py-2.5 text-[14px] uppercase tracking-widest text-fg outline-none transition-colors placeholder:text-fg-faint focus:border-accent focus:ring-2 focus:ring-accent-soft"
+          className="text-mono w-full rounded-field border border-line bg-paper px-3.5 py-2.5 text-[14px] uppercase tracking-widest text-fg outline-none transition-colors placeholder:text-fg-faint focus:border-accent focus:ring-2 focus:ring-accent-soft disabled:cursor-not-allowed"
         />
       </div>
     </div>
