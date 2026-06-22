@@ -420,6 +420,8 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
             value={components.themeColor}
             onChange={(themeColor) => setComp({ themeColor })}
             recommended={recommendedColors}
+            disabled={components.layout === '35mm'}
+            disabledNote="35mm 무드는 필름 톤(크림·먹색)이 고정이라 잉크 색을 바꿀 수 없어요."
           />
         </div>
       </section>
