@@ -102,7 +102,7 @@ export default function ImageUploader({ onUpload, isProcessing, hasImage = false
         </div>
 
         {busy && (
-          <div className="text-mono mt-3 flex items-center gap-2 text-[10px] uppercase tracking-widest text-accent-ink">
+          <div className="text-mono mt-3 flex items-center gap-2 text-[10px] uppercase tracking-widest text-accent">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
             Processing…
           </div>

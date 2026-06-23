@@ -13,7 +13,7 @@ export default function BrightnessSlider({ value, onChange }: BrightnessSliderPr
         >
           Poster brightness
         </label>
-        <span className="text-mono text-[10px] uppercase tracking-widest text-accent-ink">
+        <span className="text-mono text-[10px] uppercase tracking-widest text-accent">
           {Math.round(value * 100)}%
         </span>
       </div>

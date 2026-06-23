@@ -53,7 +53,7 @@ export default function ImageCropModal({
       <div className="relative flex h-[85svh] max-h-[820px] w-full max-w-xl flex-col overflow-hidden rounded-modal bg-paper shadow-card">
         <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
           <div className="flex items-baseline gap-3">
-            <span className="text-mono text-[10px] uppercase tracking-widest text-accent-ink">
+            <span className="text-mono text-[10px] uppercase tracking-widest text-accent">
               Crop
             </span>
             <h3 className="text-[16px] font-medium tracking-tight text-fg">Frame the poster</h3>
@@ -121,7 +121,7 @@ export default function ImageCropModal({
               onClick={handleConfirm}
               disabled={isProcessing || !croppedAreaPixels}
               data-touch="44"
-              className="text-mono group inline-flex min-h-btn items-center justify-center gap-2 rounded-field bg-accent text-[11px] uppercase tracking-widest text-white transition-colors hover:bg-accent-ink disabled:cursor-not-allowed disabled:opacity-40"
+              className="text-mono group inline-flex min-h-btn items-center justify-center gap-2 rounded-field bg-accent text-[11px] uppercase tracking-widest text-white transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
             >
               {isProcessing ? (
                 <>
