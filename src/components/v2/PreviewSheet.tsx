@@ -44,6 +44,16 @@ export function PreviewSheet({ open, onOpenChange, children }: PreviewSheetProps
           <div className="flex shrink-0 w-full items-center justify-center pt-3 pb-2">
             <Drawer.Handle style={{ background: 'var(--border-strong)' }} />
           </div>
+          {/* 명시적 닫기 버튼 — scrim 탭·Handle 드래그에 더해 키보드/스크린리더용 어포던스.
+              ResultSheet의 X 버튼과 동일한 스타일·aria-label로 맞춘다. */}
+          <Drawer.Close
+            aria-label="닫기"
+            className="absolute right-4 top-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full border border-line text-fg-muted transition-colors hover:text-fg"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </Drawer.Close>
           <Drawer.Title className="sr-only">티켓 미리보기</Drawer.Title>
           {/* TicketRenderer는 w-full로 부모 너비를 받아 스케일을 계산한다. flex-row 가운데
               정렬에 그냥 두면 너비를 못 받아 스케일이 0이 되므로, 명시적 폭의 세로 컨테이너로 감싼다. */}
