@@ -2,6 +2,7 @@ import type { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 import { list } from '@vercel/blob';
+import { Sprocket } from '@/components/v2/Sprocket';
 
 interface TicketLandingProps {
   imageUrl: string;
@@ -59,44 +60,77 @@ export const getServerSideProps: GetServerSideProps<TicketLandingProps> = async 
 
 export default function TicketLanding({ imageUrl, title, pageUrl }: TicketLandingProps) {
   const ogTitle = title ? `${title} · 포토티켓` : '포토티켓';
-  const description = '나만의 CGV Photoplay 프리미엄 티켓을 만들어보세요.';
+  // 메타 카피는 둘로 갈린다 — <title>·헤더는 정적이지만, og description은 수신자를
+  // 후킹하는 바이럴 카피라 제목이 있으면 이름을 넣어 "너도 만들어봐"로 끌어당긴다(#138 2-1).
+  const ogDescription = title
+    ? `${title}, FILME로 만든 포토티켓이에요. 너도 만들어봐.`
+    : 'FILME로 만든 포토티켓이에요. 너도 만들어봐.';
 
   return (
     <>
       <Head>
         <title>{ogTitle}</title>
-        <meta name="description" content={description} />
+        <meta name="description" content={ogDescription} />
         <meta property="og:type" content="website" />
         <meta property="og:title" content={ogTitle} />
-        <meta property="og:description" content={description} />
+        <meta property="og:description" content={ogDescription} />
         <meta property="og:image" content={imageUrl} />
         <meta property="og:url" content={pageUrl} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={ogTitle} />
-        <meta name="twitter:description" content={description} />
+        <meta name="twitter:description" content={ogDescription} />
         <meta name="twitter:image" content={imageUrl} />
       </Head>
 
-      <main className="flex min-h-[100dvh] flex-col items-center justify-center gap-8 bg-surface px-5 py-12">
-        <div className="w-full max-w-sm">
-          {/* eslint-disable-next-line @next/next/no-img-element — Blob 원격 도메인이라 일반 img 사용 */}
-          <img
-            src={imageUrl}
-            alt={ogTitle}
-            className="w-full rounded-card border border-line shadow-card"
-          />
-        </div>
-
-        <div className="flex flex-col items-center gap-3 text-center">
-          <p className="text-[13px] text-fg-muted">마음에 드나요? 직접 만들 수도 있어요.</p>
-          <Link
-            href="/"
-            className="text-mono inline-flex min-h-[48px] items-center justify-center rounded-field-sm bg-accent px-8 text-[12px] uppercase tracking-widest text-white transition-colors hover:bg-accent-hover"
-          >
-            나도 만들기
+      {/* 메인 앱과 같은 브랜드 정체성 — app-canvas 노이즈 배경 + Sprocket·FILME 워드마크.
+          단색 bg-surface 한 장이던 랜딩을 헤더·배경·티켓 위계로 끌어올려 "같은 서비스"
+          인상을 만든다(#138 브랜딩). 라이트·다크는 _document themeScript가 html에 건
+          .theme-dark를 그대로 상속하므로 토큰만 쓰면 양쪽에서 동작한다. */}
+      <div className="app-canvas flex min-h-[100dvh] flex-col">
+        <header className="flex h-14 shrink-0 items-center border-b border-line bg-surface px-4">
+          <Link href="/" className="flex items-center gap-2" aria-label="FILME 홈">
+            <Sprocket size={20} className="text-accent" />
+            <span
+              className="font-sans text-fg"
+              style={{ fontSize: 19, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' }}
+            >
+              FILME
+            </span>
           </Link>
-        </div>
-      </main>
+        </header>
+
+        <main className="flex flex-1 flex-col items-center justify-center gap-10 px-5 py-12">
+          {/* 미세 기울임 + 깊은 그림자로 "프리미엄 티켓 한 장" 느낌을 강조한다(평평한 img 탈피). */}
+          <div className="w-full max-w-sm" style={{ perspective: '1200px' }}>
+            <div
+              className="rounded-card transition-transform duration-500 will-change-transform"
+              style={{ transform: 'rotate(-1.4deg)' }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element — Blob 원격 도메인이라 일반 img 사용 */}
+              <img
+                src={imageUrl}
+                alt={ogTitle}
+                className="w-full rounded-card border border-line shadow-pop"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center gap-3 text-center">
+            <p className="text-mono text-[10px] uppercase tracking-widest text-fg-faint">
+              FILME · Photoplay Premium Ticket
+            </p>
+            <p className="text-[14px] text-fg-muted">
+              영화 포스터로 시네마틱한 포토티켓을, 너도 만들어봐.
+            </p>
+            <Link
+              href="/"
+              className="text-mono mt-1 inline-flex min-h-[48px] items-center justify-center rounded-field-sm bg-accent px-8 text-[12px] uppercase tracking-widest text-white transition-colors hover:bg-accent-hover"
+            >
+              나도 티켓 만들기 →
+            </Link>
+          </div>
+        </main>
+      </div>
     </>
   );
 }
