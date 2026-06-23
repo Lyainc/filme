@@ -30,7 +30,7 @@ const STUB_W = 212;
 export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
   const accent = themeColor.toLowerCase() === '#ffffff' ? '#a8312a' : themeColor;
-  const titleSize = pickTitleSize(d.title.length, [108, 88, 70, 52]);
+  const titleSize = pickTitleSize(d.title.length, [112, 94, 76, 56]);
   const { bookingNo, watchDateClean, releaseClean, reissueClean, watchYear } = resolveTicketData(d);
   // gate는 순수 함수 — 필드당 1회만 호출해 상단에서 파생 (Minimal/Criterion/35mm 패턴 정렬)
   const titleVal = gate(fv?.title, d.title);
@@ -231,7 +231,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
                 style={{
                   fontStyle: 'italic',
                   fontWeight: 500,
-                  fontSize: 15,
+                  fontSize: 16,
                   fontFamily: FONT_SANS,
                   color: accent,
                   marginBottom: 5,
@@ -243,7 +243,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
               <div
                 style={{
                   fontWeight: 500,
-                  fontSize: 24,
+                  fontSize: 28,
                   fontFamily: FONT_KR,
                   letterSpacing: -0.2,
                   lineHeight: 1.3,
@@ -275,7 +275,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
               style={{
                 fontStyle: 'italic',
                 fontWeight: 500,
-                fontSize: 15,
+                fontSize: 16,
                 fontFamily: FONT_SANS,
                 color: accent,
                 letterSpacing: 0.3,
@@ -510,7 +510,7 @@ function MetaCell({
         style={{
           fontStyle: 'italic',
           fontWeight: 500,
-          fontSize: 15,
+          fontSize: 16,
           fontFamily: FONT_SANS,
           color: PAPER_DIM,
           letterSpacing: 0.3,
@@ -522,7 +522,7 @@ function MetaCell({
       <div
         style={{
           fontWeight: 800,
-          fontSize: 26,
+          fontSize: 30,
           fontFamily: mono ? FONT_MONO : FONT_SANS,
           letterSpacing: mono ? 0.5 : -0.4,
           lineHeight: 1.05,
@@ -536,7 +536,7 @@ function MetaCell({
           style={{
             marginTop: 3,
             fontWeight: 600,
-            fontSize: 14,
+            fontSize: 15,
             fontFamily: FONT_MONO,
             letterSpacing: 1.5,
             color: PAPER_DIM,

@@ -22,7 +22,7 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
   const inkIsDark = isInkDark(themeColor);
   const ink = inkIsDark ? '#0d0c0a' : themeColor;
   const titleLen = d.title.length;
-  const titleSize = pickTitleSize(titleLen, [104, 84, 64, 50]);
+  const titleSize = pickTitleSize(titleLen, [108, 88, 68, 52]);
 
   const globalScrim = inkIsDark
     ? 'linear-gradient(180deg, rgba(245,240,232,0.7) 0%, rgba(245,240,232,0.35) 30%, rgba(245,240,232,0.5) 60%, rgba(245,240,232,0.95) 100%)'
@@ -210,7 +210,7 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
           <div
             style={{
               fontWeight: 500,
-              fontSize: 22,
+              fontSize: 24,
               fontFamily: FONT_KR,
               opacity: 0.85,
               marginBottom: 24,
@@ -246,7 +246,7 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
         <div
           style={{
             fontWeight: 700,
-            fontSize: 17,
+            fontSize: 18,
             fontFamily: FONT_MONO,
             letterSpacing: 2.5,
             textTransform: 'uppercase',

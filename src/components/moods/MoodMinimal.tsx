@@ -32,7 +32,7 @@ const META_LABEL_BASE: CSSProperties = {
 
 const META_VALUE_BASE: CSSProperties = {
   fontWeight: 700,
-  fontSize: 23,
+  fontSize: 25,
   fontFamily: FONT_SANS,
   letterSpacing: -0.2,
   lineHeight: 1.25,
@@ -45,7 +45,7 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
   const labelStyle: CSSProperties = { ...META_LABEL_BASE, color: ink };
   const valueStyle: CSSProperties = { ...META_VALUE_BASE, color: ink };
   const titleLen = d.title.length;
-  const titleSize = pickTitleSize(titleLen, [96, 78, 62, 50]);
+  const titleSize = pickTitleSize(titleLen, [100, 82, 66, 52]);
 
   const scrimGrad = inkIsDark
     ? 'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(245,240,232,0.85) 35%, rgba(245,240,232,0.98) 100%)'
@@ -104,7 +104,7 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
           <div
             style={{
               fontWeight: 700,
-              fontSize: 22,
+              fontSize: 24,
               fontFamily: FONT_MONO,
               letterSpacing: 2.5,
               color: ink,
@@ -115,7 +115,7 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
             {watchTimeVal && (
               <>
                 {watchDateVal && <br />}
-                <span style={{ opacity: 0.6, fontSize: 18 }}>{watchTimeVal}</span>
+                <span style={{ opacity: 0.6, fontSize: 20 }}>{watchTimeVal}</span>
               </>
             )}
           </div>
@@ -174,7 +174,7 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
           <div
             style={{
               fontWeight: 500,
-              fontSize: 22,
+              fontSize: 24,
               fontFamily: FONT_KR,
               opacity: 0.78,
               marginBottom: 16,

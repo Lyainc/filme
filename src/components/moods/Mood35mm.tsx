@@ -35,20 +35,20 @@ const cellLabelStyle: CSSProperties = {
 const cellValueSans: CSSProperties = {
   color: FS_INK,
   fontWeight: 700,
-  fontSize: 18,
+  fontSize: 20,
   fontFamily: FONT_SANS,
   letterSpacing: -0.2,
 };
 const cellValueMono: CSSProperties = {
   color: FS_INK,
   fontWeight: 700,
-  fontSize: 17,
+  fontSize: 19,
   fontFamily: FONT_MONO,
   letterSpacing: 0.5,
 };
 
 export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv }: MoodProps) {
-  const titleSize = pickTitleSize(d.title.length, [76, 60, 48, 38]);
+  const titleSize = pickTitleSize(d.title.length, [80, 64, 50, 40]);
 
   const captionScrim =
     'linear-gradient(180deg, rgba(10,10,10,0) 0%, rgba(10,10,10,0.55) 18%, rgba(10,10,10,0.92) 60%, rgba(10,10,10,0.98) 100%)';
@@ -223,7 +223,7 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
                   style={{
                     color: FS_INK,
                     fontWeight: 500,
-                    fontSize: 16,
+                    fontSize: 18,
                     fontFamily: FONT_KR,
                     letterSpacing: -0.1,
                     lineHeight: 1.3,
@@ -250,7 +250,7 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
                   style={{
                     color: FS_INK,
                     fontWeight: 800,
-                    fontSize: 17,
+                    fontSize: 18,
                     fontFamily: FONT_SANS,
                     gridColumn: 'span 3',
                   }}
