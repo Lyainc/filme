@@ -15,7 +15,7 @@ import type { OcrDirectField } from './OcrUploadCard';
 import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
 import InfoTooltip from '@/components/ui/InfoTooltip';
 import { formatDate } from '@/utils/dateFormat';
-import type { DateFormatToken, TicketField, MovieInfo, LayoutId } from '@/types';
+import type { DateFormatToken, TicketField, MovieInfo, LayoutId, TicketComponents } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import { ALL_FIELDS_ON, ALL_FIELDS_OFF } from '@/constants/fieldVisibility';
 
@@ -24,9 +24,10 @@ interface EditorCanvasProps {
   onPendingFetchChange: (pending: boolean) => void;
 }
 
+// 기본값 kr-compact를 첫 번째로(#141 (12)). kr-compact 샘플은 끝점 포함 YYYY.MM.DD.(#141 (13)).
 const WATCH_FORMAT_TOKENS: { value: DateFormatToken; sample: string }[] = [
+  { value: 'kr-compact', sample: '2026.05.12.' },
   { value: 'iso', sample: '2026-05-12' },
-  { value: 'kr-compact', sample: '2026.05.12' },
   { value: 'cinema-mono', sample: '12·MAY·2026' },
   { value: 'en-long', sample: 'May 12, 2026' },
 ];
@@ -94,6 +95,9 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
   // Tracks which fields were last filled by OCR. Cleared field-by-field on user edit.
   const [ocrFilledFields, setOcrFilledFields] = useState<Set<OcrDirectField>>(new Set());
   const [ocrSnapshot, setOcrSnapshot] = useState<Partial<MovieInfo> | null>(null);
+  // OCR이 chain을 인식하면 chainVisible/chainLabel을 바꾸는데, 라벨이 export에
+  // 반영되므로 undo가 이 변경도 되돌려야 한다(#141 리뷰 P1). 변경 직전 컴포넌트 값.
+  const [ocrComponentSnapshot, setOcrComponentSnapshot] = useState<Partial<TicketComponents> | null>(null);
   const [accordionOpen, setAccordionOpen] = useState(false);
   const accordionRef = useRef<HTMLDivElement>(null);
   // Incremented on cancel (undo) to invalidate any in-flight KOBIS fetch so it
@@ -111,9 +115,18 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
     });
   }
 
-  function handleOcrApply({ keys, prevValues }: { keys: Set<OcrDirectField>; prevValues: Partial<MovieInfo> }) {
+  function handleOcrApply({
+    keys,
+    prevValues,
+    prevComponents,
+  }: {
+    keys: Set<OcrDirectField>;
+    prevValues: Partial<MovieInfo>;
+    prevComponents?: Partial<TicketComponents>;
+  }) {
     setOcrFilledFields(keys);
     setOcrSnapshot(prevValues);
+    setOcrComponentSnapshot(prevComponents ?? null);
     setAccordionOpen(true);
 
     // Smooth scroll into view if offscreen
@@ -127,12 +140,18 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
     if (ocrSnapshot) {
       setInfo(ocrSnapshot);
     }
+    // chain 라벨/노출도 OCR 적용 전으로 되돌린다(#141 리뷰 P1).
+    if (ocrComponentSnapshot) {
+      photo.updateComponents(ocrComponentSnapshot);
+    }
     setOcrFilledFields(new Set());
     setOcrSnapshot(null);
+    setOcrComponentSnapshot(null);
   }
 
   function handleConfirmOcr() {
     setOcrSnapshot(null);
+    setOcrComponentSnapshot(null);
   }
 
   return (
@@ -160,6 +179,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
             currentInfo={movieInfo}
             onOcrApply={handleOcrApply}
             setComponents={photo.updateComponents}
+            currentComponents={photo.state.components}
             ocrEpochRef={ocrEpochRef}
           />
         </div>
@@ -389,19 +409,26 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
 
       <section className="space-y-3">
         <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Logos</h3>
-        <TheaterChainPicker
-          value={components.chain}
-          visible={components.chainVisible}
-          onVisibilityChange={(v) => setComp({ chainVisible: v })}
-          onChange={(chain) => setComp({ chain })}
-        />
-        <FormatPicker
-          value={components.format}
-          visible={components.formatVisible}
-          onVisibilityChange={(v) => setComp({ formatVisible: v })}
-          onChange={(format) => setComp({ format })}
-          chain={components.chain}
-        />
+        {/* Theater/Format 병렬 한 줄 배치(#141 (6)) */}
+        <div className="grid grid-cols-2 gap-4">
+          <TheaterChainPicker
+            value={components.chain}
+            label={components.chainLabel}
+            onLabelChange={(chainLabel) => setComp({ chainLabel })}
+            visible={components.chainVisible}
+            onVisibilityChange={(v) => setComp({ chainVisible: v })}
+            onChange={(chain) => setComp({ chain })}
+          />
+          <FormatPicker
+            value={components.format}
+            label={components.formatLabel}
+            onLabelChange={(formatLabel) => setComp({ formatLabel })}
+            visible={components.formatVisible}
+            onVisibilityChange={(v) => setComp({ formatVisible: v })}
+            onChange={(format) => setComp({ format })}
+            chain={components.chain}
+          />
+        </div>
       </section>
 
       <section className="space-y-4">

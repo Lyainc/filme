@@ -18,7 +18,7 @@ const MONTHS_SHORT = [
  *
  * Examples:
  *   formatDate('2014-11-06', 'iso', 'date')         → '2014-11-06'
- *   formatDate('2014-11-06', 'kr-compact', 'date')  → '2014.11.06'
+ *   formatDate('2014-11-06', 'kr-compact', 'date')  → '2014.11.06.'
  *   formatDate('2014-11-06', 'cinema-mono', 'date') → '06·NOV·2014'
  *   formatDate('2014-11-06', 'en-long', 'date')     → 'November 6, 2014'
  *   formatDate('2014-11', 'cinema-mono', 'year-month') → 'NOV 2014'
@@ -48,7 +48,8 @@ export function formatDate(
   if (granularity === 'year-month' || !d) {
     switch (token) {
       case 'iso': return `${y}-${m}`;
-      case 'kr-compact': return `${y}.${m}`;
+      // 한국어 날짜 표기 관례의 끝점 — YYYY.MM. (#141 (13))
+      case 'kr-compact': return `${y}.${m}.`;
       case 'cinema-mono': return `${MONTHS_SHORT[mi]} ${y}`;
       case 'en-long': return `${MONTHS_LONG[mi]} ${y}`;
       default: return `${y}-${m}`;
@@ -57,7 +58,8 @@ export function formatDate(
 
   switch (token) {
     case 'iso': return `${y}-${m}-${d}`;
-    case 'kr-compact': return `${y}.${m}.${d}`;
+    // 한국어 날짜 표기 관례의 끝점 — YYYY.MM.DD. (#141 (13))
+    case 'kr-compact': return `${y}.${m}.${d}.`;
     case 'cinema-mono': return `${d}·${MONTHS_SHORT[mi]}·${y}`;
     case 'en-long': return `${MONTHS_LONG[mi]} ${parseInt(d, 10)}, ${y}`;
     default: return `${y}-${m}-${d}`;

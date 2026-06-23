@@ -54,6 +54,8 @@ const BASE_COMPONENTS: TicketComponents = {
   layout: 'minimal',
   chain: '',
   format: '',
+  chainLabel: '',
+  formatLabel: '',
   texture: 'none',
   posterOpacity: 0.5,
   themeColor: '#FFFFFF',
