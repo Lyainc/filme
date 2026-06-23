@@ -34,7 +34,7 @@ function LayoutPicker({ value, onChange }: LayoutPickerProps) {
               <div className="space-y-0.5">
                 <div
                   className={`text-mono text-[10px] uppercase tracking-widest ${
-                    active ? 'text-accent-ink' : 'text-fg-muted group-hover:text-fg'
+                    active ? 'text-accent' : 'text-fg-muted group-hover:text-fg'
                   }`}
                 >
                   {layout.label}
