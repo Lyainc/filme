@@ -83,7 +83,7 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
           );
         })}
 
-        <label className="relative inline-flex min-h-touch min-w-touch cursor-pointer items-center justify-center">
+        <label className={`relative inline-flex min-h-touch min-w-touch items-center justify-center ${disabled ? 'cursor-default' : 'cursor-pointer'}`}>
           <input
             type="color"
             aria-label="Custom color"
