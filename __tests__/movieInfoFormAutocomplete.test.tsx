@@ -15,7 +15,7 @@ import { describe, expect, test, beforeEach, afterEach } from 'bun:test';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import MovieInfoForm from '../src/components/MovieInfoForm';
-import { ALL_FIELDS_ON } from '../src/hooks/usePhototicket';
+import { ALL_FIELDS_ON } from '../src/constants/fieldVisibility';
 import type { MovieInfo, TicketField } from '../src/types';
 
 // ---------------------------------------------------------------------------

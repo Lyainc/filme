@@ -17,6 +17,7 @@ import InfoTooltip from '@/components/ui/InfoTooltip';
 import { formatDate } from '@/utils/dateFormat';
 import type { DateFormatToken, TicketField, MovieInfo, LayoutId } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
+import { ALL_FIELDS_ON, ALL_FIELDS_OFF } from '@/constants/fieldVisibility';
 
 interface EditorCanvasProps {
   photo: ReturnType<typeof usePhototicket>;
@@ -53,12 +54,23 @@ const FIELD_ORDER: TicketField[] = [
   'releaseDate', 'reissue', 'bookingNo', 'signature',
 ];
 
-function OcrChip() {
-  return (
+function OcrChip({
+  field,
+  filled,
+}: {
+  /** 주어지면 칩이 자기 조건·`flex justify-start` 래퍼를 흡수해 호출부가 한 줄로 축소된다. */
+  field?: OcrDirectField;
+  filled?: Set<OcrDirectField>;
+}) {
+  const chip = (
     <span className="text-mono text-[8px] uppercase tracking-wider bg-accent-soft text-accent px-1.5 py-0.5 rounded-chip leading-none">
       OCR
     </span>
   );
+  // field 없이 쓰면(watchDate 라벨 행) 칩만 반환 — 래퍼는 호출부가 가진다.
+  if (!field) return chip;
+  if (!filled?.has(field)) return null;
+  return <div className="flex justify-start">{chip}</div>;
 }
 
 export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps) {
@@ -162,7 +174,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => setField(Object.fromEntries(FIELD_ORDER.map((f) => [f, true])) as Record<TicketField, boolean>)}
+            onClick={() => setField(ALL_FIELDS_ON)}
             disabled={allOn}
             className="text-mono inline-flex min-h-[32px] items-center rounded-chip border border-line bg-surface px-2.5 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft focus-visible:ring-2 focus-visible:ring-accent-soft disabled:opacity-40"
           >
@@ -170,7 +182,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
           </button>
           <button
             type="button"
-            onClick={() => setField(Object.fromEntries(FIELD_ORDER.map((f) => [f, false])) as Record<TicketField, boolean>)}
+            onClick={() => setField(ALL_FIELDS_OFF)}
             disabled={allOff}
             className="text-mono inline-flex min-h-[32px] items-center rounded-chip border border-line bg-surface px-2.5 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft focus-visible:ring-2 focus-visible:ring-accent-soft disabled:opacity-40"
           >
@@ -203,7 +215,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
                 >
                   Watched
                 </label>
-                {ocrFilledFields.has('watchDate') && <OcrChip />}
+                {ocrFilledFields.has('watchDate') && <OcrChip />}{/* 라벨 행 안 — 래퍼 없는 칩 */}
               </div>
               <span className="text-mono text-[10px] uppercase tracking-widest text-fg-faint">
                 {formatDate(movieInfo.watchDate, watchToken, 'date') || '—'}
@@ -243,9 +255,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
           </div>
 
           <div className="space-y-1">
-            {ocrFilledFields.has('theater') && (
-              <div className="flex justify-start"><OcrChip /></div>
-            )}
+            <OcrChip field="theater" filled={ocrFilledFields} />
             <Field
               id="editor-theater"
               label="Theater"
@@ -274,9 +284,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              {ocrFilledFields.has('watchTime') && (
-                <div className="flex justify-start"><OcrChip /></div>
-              )}
+              <OcrChip field="watchTime" filled={ocrFilledFields} />
               <Field
                 id="editor-watchTime"
                 label="Showtime"
@@ -305,9 +313,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              {ocrFilledFields.has('screen') && (
-                <div className="flex justify-start"><OcrChip /></div>
-              )}
+              <OcrChip field="screen" filled={ocrFilledFields} />
               <Field
                 id="editor-screen"
                 label="Screen"
@@ -323,9 +329,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
               />
             </div>
             <div className="space-y-1">
-              {ocrFilledFields.has('seat') && (
-                <div className="flex justify-start"><OcrChip /></div>
-              )}
+              <OcrChip field="seat" filled={ocrFilledFields} />
               <Field
                 id="editor-seat"
                 label="Seat"
@@ -343,9 +347,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
           </div>
 
           <div className="space-y-1">
-            {ocrFilledFields.has('bookingNumber') && (
-              <div className="flex justify-start"><OcrChip /></div>
-            )}
+            <OcrChip field="bookingNumber" filled={ocrFilledFields} />
             <Field
               id="editor-bookingNumber"
               label="Booking No."

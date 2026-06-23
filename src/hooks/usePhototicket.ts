@@ -1,23 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { PhototicketState, MovieInfo, TicketComponents, TicketField } from '@/types';
 import { defaultBrightnessForTexture } from '@/components/moods/_shared';
-
-export const ALL_FIELDS_ON: Record<TicketField, boolean> = {
-  title: true,
-  titleOg: true,
-  actors: true,
-  watchDate: true,
-  watchTime: true,
-  theater: true,
-  screen: true,
-  seat: true,
-  runtime: true,
-  rating: true,
-  releaseDate: true,
-  reissue: true,
-  bookingNo: true,
-  signature: true,
-};
+import { ALL_FIELDS_ON } from '@/constants/fieldVisibility';
 
 const DEFAULT_VISIBILITY_ON_UPLOAD: Record<TicketField, boolean> = {
   title: true,

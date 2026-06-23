@@ -32,12 +32,24 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
   const accent = themeColor.toLowerCase() === '#ffffff' ? '#a8312a' : themeColor;
   const titleSize = pickTitleSize(d.title.length, [108, 88, 70, 52]);
   const { bookingNo, watchDateClean, releaseClean, reissueClean, watchYear } = resolveTicketData(d);
-  const theaterValue = gate(fv?.theater, d.theater) || gate(fv?.screen, d.screen);
-  const theaterSub = gate(fv?.theater, d.theater) ? gate(fv?.screen, d.screen) : '';
-  const sessionValue = gate(fv?.watchDate, watchDateClean) || gate(fv?.watchTime, d.watchTime);
-  const sessionSub = gate(fv?.watchDate, watchDateClean) ? gate(fv?.watchTime, d.watchTime) : '';
+  // gate는 순수 함수 — 필드당 1회만 호출해 상단에서 파생 (Minimal/Criterion/35mm 패턴 정렬)
+  const titleVal = gate(fv?.title, d.title);
+  const titleOgVal = gate(fv?.titleOg, d.titleOg);
+  const theaterVal = gate(fv?.theater, d.theater);
+  const screenVal = gate(fv?.screen, d.screen);
+  const seatVal = gate(fv?.seat, d.seat);
+  const watchDateVal = gate(fv?.watchDate, watchDateClean);
+  const watchTimeVal = gate(fv?.watchTime, d.watchTime);
+  const runtimeVal = gate(fv?.runtime, d.runtime);
+  const releaseDateVal = gate(fv?.releaseDate, releaseClean);
+  const reissueVal = gate(fv?.reissue, reissueClean);
   const actorsVal = truncateActors(gate(fv?.actors, d.actors));
   const signatureVal = gate(fv?.signature, d.signature);
+
+  const theaterValue = theaterVal || screenVal;
+  const theaterSub = theaterVal ? screenVal : '';
+  const sessionValue = watchDateVal || watchTimeVal;
+  const sessionSub = watchDateVal ? watchTimeVal : '';
 
   return (
     <div
@@ -109,7 +121,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
             )}
             <FormatStamp format={components.format} visible={components.formatVisible} size={1.2} />
           </div>
-          {gate(fv?.runtime, d.runtime) && (
+          {runtimeVal && (
             <div
               style={{
                 fontWeight: 600,
@@ -120,7 +132,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
                 textTransform: 'uppercase',
               }}
             >
-              {gate(fv?.runtime, d.runtime)}
+              {runtimeVal}
             </div>
           )}
         </div>
@@ -143,7 +155,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
 
         {/* Title block */}
         <div style={{ marginBottom: 24 }}>
-          {gate(fv?.title, d.title) && (
+          {titleVal && (
             <div
               style={{
                 fontWeight: 900,
@@ -153,10 +165,10 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
                 letterSpacing: -1.5,
               }}
             >
-              {gate(fv?.title, d.title)}
+              {titleVal}
             </div>
           )}
-          {gate(fv?.titleOg, d.titleOg) && (
+          {titleOgVal && (
             <div
               style={{
                 marginTop: 12,
@@ -169,7 +181,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
                 letterSpacing: 0.3,
               }}
             >
-              {gate(fv?.titleOg, d.titleOg)}
+              {titleOgVal}
             </div>
           )}
         </div>
@@ -191,27 +203,27 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
         >
           {theaterValue && (
             <MetaCell
-              label={gate(fv?.theater, d.theater) ? 'Théâtre' : 'Salle'}
+              label={theaterVal ? 'Théâtre' : 'Salle'}
               value={theaterValue}
               sub={theaterSub || undefined}
             />
           )}
           {sessionValue && (
             <MetaCell
-              label={gate(fv?.watchDate, watchDateClean) ? 'Séance' : 'Heure'}
+              label={watchDateVal ? 'Séance' : 'Heure'}
               value={sessionValue}
               sub={sessionSub || undefined}
               mono
             />
           )}
-          {gate(fv?.seat, d.seat) && (
-            <MetaCell label="Place" value={gate(fv?.seat, d.seat)} mono />
+          {seatVal && (
+            <MetaCell label="Place" value={seatVal} mono />
           )}
-          {gate(fv?.releaseDate, releaseClean) && (
-            <MetaCell label="Sortie" value={gate(fv?.releaseDate, releaseClean)} mono />
+          {releaseDateVal && (
+            <MetaCell label="Sortie" value={releaseDateVal} mono />
           )}
-          {gate(fv?.reissue, reissueClean) && (
-            <MetaCell label="Reprise" value={gate(fv?.reissue, reissueClean)} mono />
+          {reissueVal && (
+            <MetaCell label="Reprise" value={reissueVal} mono />
           )}
           {actorsVal && (
             <div style={{ gridColumn: '1 / -1', marginTop: 4 }}>

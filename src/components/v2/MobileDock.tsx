@@ -147,7 +147,8 @@ export function MobileDock({
           style={{
             flex: 1,
             height: 44,
-            borderRadius: 8,
+            // PrimaryCta(rounded-field-sm)와 같은 토큰에 묶어 화면 폭에 따른 반경 불일치 제거.
+            borderRadius: 'var(--r-field)',
             border: 'none',
             display: 'flex',
             alignItems: 'center',
