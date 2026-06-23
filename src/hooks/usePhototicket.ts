@@ -84,6 +84,10 @@ export function usePhototicket() {
   const brightnessTouchedRef = useRef(false);
 
   const handleImageUpload = useCallback((croppedUrl: string) => {
+    // 새 포스터 업로드는 밝기 슬레이트를 초기화한다 — 이후 texture 전환에서 그 texture의
+    // 기본 밝기가 다시 적용된다(#146 리뷰). fieldVisibility(첫 업로드에만 리셋)와 달리
+    // 밝기는 포스터 콘텐츠(어두운/밝은 포스터)에 종속적이라 매 업로드마다 리셋한다.
+    brightnessTouchedRef.current = false;
     setState((prev) => {
       if (prev.croppedImageUrl) URL.revokeObjectURL(prev.croppedImageUrl);
       latestUrlRef.current = croppedUrl;
