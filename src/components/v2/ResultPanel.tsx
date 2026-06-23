@@ -220,13 +220,35 @@ export function ResultPanel({
   }, [permalink, issuePermalink, movieInfo, copyToClipboard]);
 
   // "X로 공유" — 링크가 있으면 함께 싣고 없으면 먼저 발급. 링크 발급이 실패하면 문구만으로 연다.
-  const handleShareTwitter = useCallback(async () => {
-    const url = permalink ?? (await issuePermalink()) ?? '';
+  const composeTweetUrl = useCallback((url: string) => {
     const { text } = buildShareMessage(movieInfo, url);
     const parts = [`text=${encodeURIComponent(text)}`];
     if (url) parts.push(`url=${encodeURIComponent(url)}`);
-    window.open(`https://twitter.com/intent/tweet?${parts.join('&')}`, '_blank', 'noopener,noreferrer');
-  }, [permalink, issuePermalink, movieInfo]);
+    return `https://twitter.com/intent/tweet?${parts.join('&')}`;
+  }, [movieInfo]);
+
+  const handleShareTwitter = useCallback(async () => {
+    // 링크가 이미 있으면 클릭 제스처 직후 동기로 연다(정상 동작).
+    if (permalink) {
+      window.open(composeTweetUrl(permalink), '_blank', 'noopener,noreferrer');
+      return;
+    }
+    // 링크 미발급: window.open을 issuePermalink() await 뒤에 호출하면 user-activation이
+    // 만료돼 브라우저가 팝업을 차단한다(#149 리뷰). 그래서 클릭 제스처에서 먼저 빈 창을 열어
+    // 활성화를 유지하고, 링크 발급 후 그 창을 redirect한다. (noopener를 쓰면 window.open이
+    // null을 반환해 참조를 못 잡으므로 빼고, 대신 win.opener=null로 tabnabbing을 막는다.)
+    const win = window.open('', '_blank');
+    if (win) win.opener = null;
+    const url = (await issuePermalink()) ?? '';
+    const intent = composeTweetUrl(url);
+    if (win) {
+      win.location.href = intent;
+    } else {
+      // 빈 창마저 차단된 드문 경우 — 동기 재시도, 그래도 막히면 링크/문구를 클립보드로 폴백.
+      const opened = window.open(intent, '_blank', 'noopener,noreferrer');
+      if (!opened) await copyToClipboard(url || buildShareMessage(movieInfo, url).text);
+    }
+  }, [permalink, issuePermalink, movieInfo, composeTweetUrl, copyToClipboard]);
 
   if (!croppedImageUrl) {
     return (
