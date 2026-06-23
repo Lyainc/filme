@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { MovieInfo, TicketComponents } from '@/types';
 import { runOcr } from '@/utils/ocr';
 import { triggerKobisLookup } from '@/utils/kobisLookup';
-import { ALLOWED_MIME, MAX_BYTES } from '@/utils/ocrConstants';
+import { ALLOWED_MIME, MAX_BYTES, chainLabelFor } from '@/utils/ocrConstants';
 
 export type OcrDirectField = 'theater' | 'screen' | 'watchDate' | 'watchTime' | 'seat' | 'bookingNumber';
 export const OCR_DIRECT_FIELDS: OcrDirectField[] = [
@@ -17,8 +17,16 @@ export const OCR_DIRECT_FIELDS: OcrDirectField[] = [
 export interface OcrUploadCardProps {
   setInfo: (info: Partial<MovieInfo>) => void;
   currentInfo: Partial<MovieInfo>;
-  onOcrApply: (params: { keys: Set<OcrDirectField>; prevValues: Partial<MovieInfo> }) => void;
+  onOcrApply: (params: {
+    keys: Set<OcrDirectField>;
+    prevValues: Partial<MovieInfo>;
+    // OCR이 chain을 인식하면 chainVisible/chainLabel을 변경하는데, 이 라벨은
+    // export에 포함되므로 undo가 반드시 되돌려야 한다(#141 리뷰 P1). 변경 직전 값.
+    prevComponents?: Partial<TicketComponents>;
+  }) => void;
   setComponents?: (components: Partial<TicketComponents>) => void;
+  /** chain 변경 undo 스냅샷용 — 변경 전 컴포넌트 값을 읽는다. */
+  currentComponents?: Partial<TicketComponents>;
   ocrEpochRef: { current: number };
   className?: string;
 }
@@ -37,6 +45,7 @@ export function OcrUploadCard({
   currentInfo,
   onOcrApply,
   setComponents,
+  currentComponents,
   ocrEpochRef,
   className = '',
 }: OcrUploadCardProps) {
@@ -79,7 +88,7 @@ export function OcrUploadCard({
     return null;
   }
 
-  function applyOcr(direct: Partial<MovieInfo>, title?: string) {
+  function applyOcr(direct: Partial<MovieInfo>, title?: string, prevComponents?: Partial<TicketComponents>) {
     const filled = new Set<OcrDirectField>();
     const toApply: Partial<MovieInfo> = {};
     const prevValues: Partial<MovieInfo> = {};
@@ -107,12 +116,14 @@ export function OcrUploadCard({
       setInfo(toApply);
     }
 
-    // Surface the undo banner whenever OCR will mutate the form — either direct
-    // fields applied now, or a title that schedules async KOBIS injection. With
-    // zero direct fields the KOBIS path still needs an undo affordance: keys is
-    // an empty Set, but prevValues already carries the KOBIS snapshot (#100).
-    if (filled.size > 0 || title) {
-      onOcrApply({ keys: filled, prevValues });
+    // Surface the undo banner whenever OCR will mutate the form — direct fields
+    // applied now, a title that schedules async KOBIS injection, or a chain that
+    // set chainLabel/chainVisible on components. With zero direct fields the KOBIS
+    // path still needs an undo affordance: keys is an empty Set, but prevValues
+    // already carries the KOBIS snapshot (#100). chain-only도 라벨이 export에
+    // 반영되므로 undo가 필요하다(#141 리뷰 P1).
+    if (filled.size > 0 || title || prevComponents) {
+      onOcrApply({ keys: filled, prevValues, prevComponents });
     }
 
     if (title) {
@@ -128,7 +139,7 @@ export function OcrUploadCard({
       });
     }
 
-    if (filled.size === 0 && !title) {
+    if (filled.size === 0 && !title && !prevComponents) {
       showToast('인식된 정보가 없어요. 직접 입력해 주세요.');
     } else if (filled.size === 0 && title) {
       showToast('제목으로 영화 정보를 검색할게요.');
@@ -141,9 +152,18 @@ export function OcrUploadCard({
     try {
       const result = await runOcr(file);
 
+      let prevComponents: Partial<TicketComponents> | undefined;
       if (result.chain && setComponents) {
-        setComponents({ chainVisible: true });
-        showToast(`${result.chain.toUpperCase()} 체인을 인식했어요. 로고는 아래 Theater에서 올려 주세요.`);
+        // 텍스트 라벨을 바로 채워 로고 없이도 체인이 표시되게 한다(#141 (7)). 이미지를 올리면
+        // ChainStamp가 이미지를 우선하므로 라벨은 자동으로 가려진다.
+        // 변경 전 값을 스냅샷해 undo가 라벨/노출을 정확히 되돌리게 한다(#141 리뷰 P1).
+        prevComponents = {
+          chainVisible: currentComponents?.chainVisible,
+          chainLabel: currentComponents?.chainLabel,
+        };
+        const label = chainLabelFor(result.chain);
+        setComponents({ chainVisible: true, chainLabel: label });
+        showToast(`${label} 체인을 인식했어요. 로고 이미지는 아래 Theater에서 올릴 수 있어요.`);
       }
 
       const direct: Partial<MovieInfo> = {};
@@ -153,7 +173,7 @@ export function OcrUploadCard({
         }
       }
 
-      applyOcr(direct, result.title);
+      applyOcr(direct, result.title, prevComponents);
     } catch {
       // silent fallback
     } finally {

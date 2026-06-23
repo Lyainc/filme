@@ -3,6 +3,7 @@ import {
   Barcode,
   BrandMark,
   ChainStamp,
+  DATE_LABELS,
   FONT_KR,
   FONT_MONO,
   FONT_SANS,
@@ -98,7 +99,7 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
           WebkitBackdropFilter: 'blur(6px)',
         }}
       >
-        <ChainStamp chain={components.chain} visible={components.chainVisible} size={1.25} />
+        <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} size={1.25} />
         {(watchDateVal || watchTimeVal) && (
           <div
             style={{
@@ -213,9 +214,9 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
               marginBottom: 30,
             }}
           >
-            {releaseDateVal && <>RELEASED · {releaseDateVal}</>}
+            {releaseDateVal && <>{DATE_LABELS.released} {releaseDateVal}</>}
             {releaseDateVal && reissueVal && <>{'  ·  '}</>}
-            {reissueVal && <>RE-RELEASED · {reissueVal}</>}
+            {reissueVal && <>{DATE_LABELS.reissued} {reissueVal}</>}
           </div>
         )}
 
@@ -289,7 +290,7 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
               gap: 14,
             }}
           >
-            <FormatStamp format={components.format} visible={components.formatVisible} size={1.4} />
+            <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={1.4} />
             {(fv?.bookingNo ?? true) && (
               <Barcode value={bookingNo} color={ink} width={180} height={34} textSize={10} />
             )}

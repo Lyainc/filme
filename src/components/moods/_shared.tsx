@@ -33,6 +33,8 @@ export type Surface = 'paper' | 'dark';
 
 interface ChainStampProps {
   chain: string;
+  /** 이미지 없을 때 출력할 텍스트 라벨(#141 (7)). 이미지가 있으면 무시된다. */
+  label?: string;
   size?: number;
   surface?: Surface;
   height?: number;
@@ -40,9 +42,87 @@ interface ChainStampProps {
 }
 
 const LOGO_SHADOW = 'drop-shadow(0 2px 8px rgba(0,0,0,0.85))';
+const TEXT_SHADOW = '0 2px 8px rgba(0,0,0,0.85)';
+
+/**
+ * 로고 텍스트 fallback 스탬프(#141 (7)). 이미지가 없고 라벨만 있을 때 브랜드 워드마크처럼
+ * 렌더한다. dashed placeholder와 달리 **export에 포함**된다(data-hide-on-export 없음) —
+ * 라벨은 사용자가 의도한 실제 콘텐츠이기 때문. 색은 currentColor(무드 잉크)를 따라가고,
+ * dark surface(35mm 등 포스터 위)에선 가독성을 위해 text-shadow를 얹는다.
+ */
+function TextStamp({
+  label,
+  height,
+  size,
+  surface,
+}: {
+  label: string;
+  height: number;
+  size: number;
+  surface: Surface;
+}) {
+  return (
+    <div
+      style={{
+        height,
+        display: 'flex',
+        alignItems: 'center',
+        fontSize: Math.round(height * 0.46),
+        fontWeight: 800,
+        fontFamily: FONT_SANS,
+        letterSpacing: 1.5 * size,
+        textTransform: 'uppercase',
+        whiteSpace: 'nowrap',
+        color: 'currentColor',
+        lineHeight: 1,
+        ...(surface === 'dark' ? { textShadow: TEXT_SHADOW } : {}),
+      }}
+    >
+      {label}
+    </div>
+  );
+}
+
+function DashedPlaceholder({
+  text,
+  width,
+  height,
+  size,
+  surface,
+}: {
+  text: string;
+  width: number;
+  height: number;
+  size: number;
+  surface: Surface;
+}) {
+  return (
+    <div
+      data-hide-on-export="true"
+      style={{
+        height,
+        width,
+        border: '1px dashed currentColor',
+        opacity: 0.4,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 10 * size,
+        fontWeight: 600,
+        fontFamily: FONT_MONO,
+        letterSpacing: 1,
+        color: 'currentColor',
+        ...(surface === 'dark' ? { borderColor: 'rgba(255,255,255,0.5)', color: 'rgba(255,255,255,0.7)' } : {}),
+      }}
+    >
+      {text}
+    </div>
+  );
+}
 
 export function ChainStamp({
   chain,
+  label,
   size = 1,
   surface = 'paper',
   height = 48,
@@ -51,48 +131,34 @@ export function ChainStamp({
   if (!visible) return null;
   const h = height * size;
 
-  if (!chain) {
+  // 우선순위: 이미지 > 텍스트 라벨 > dashed placeholder(미리보기 전용).
+  if (chain) {
     return (
-      <div
-        data-hide-on-export="true"
+      <img
+        src={chain}
+        alt="Theater Chain"
         style={{
           height: h,
-          width: 120 * size,
-          border: '1px dashed currentColor',
-          opacity: 0.4,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 10 * size,
-          fontWeight: 600,
-          fontFamily: FONT_MONO,
-          letterSpacing: 1,
-          color: 'currentColor',
-          ...(surface === 'dark' ? { borderColor: 'rgba(255,255,255,0.5)', color: 'rgba(255,255,255,0.7)' } : {}),
+          width: 'auto',
+          display: 'block',
+          ...(surface === 'dark' ? { filter: LOGO_SHADOW } : {}),
         }}
-      >
-        LOGO
-      </div>
+        draggable={false}
+      />
     );
   }
 
-  return (
-    <img
-      src={chain}
-      alt="Theater Chain"
-      style={{
-        height: h,
-        width: 'auto',
-        display: 'block',
-        ...(surface === 'dark' ? { filter: LOGO_SHADOW } : {}),
-      }}
-      draggable={false}
-    />
-  );
+  if (label) {
+    return <TextStamp label={label} height={h} size={size} surface={surface} />;
+  }
+
+  return <DashedPlaceholder text="LOGO" width={120 * size} height={h} size={size} surface={surface} />;
 }
 
 interface FormatStampProps {
   format: string;
+  /** 이미지 없을 때 출력할 텍스트 라벨(#141 (7)). 이미지가 있으면 무시된다. */
+  label?: string;
   size?: number;
   surface?: Surface;
   visible: boolean;
@@ -100,6 +166,7 @@ interface FormatStampProps {
 
 export function FormatStamp({
   format,
+  label,
   size = 1,
   surface = 'paper',
   visible,
@@ -107,44 +174,28 @@ export function FormatStamp({
   if (!visible) return null;
   const h = 64 * size;
 
-  if (!format) {
+  // 우선순위: 이미지 > 텍스트 라벨 > dashed placeholder(미리보기 전용).
+  if (format) {
     return (
-      <div
-        data-hide-on-export="true"
+      <img
+        src={format}
+        alt="Screening Format"
         style={{
           height: h,
-          width: 140 * size,
-          border: '1px dashed currentColor',
-          opacity: 0.4,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 10 * size,
-          fontWeight: 600,
-          fontFamily: FONT_MONO,
-          letterSpacing: 1,
-          color: 'currentColor',
-          ...(surface === 'dark' ? { borderColor: 'rgba(255,255,255,0.5)', color: 'rgba(255,255,255,0.7)' } : {}),
+          width: 'auto',
+          display: 'block',
+          ...(surface === 'dark' ? { filter: LOGO_SHADOW } : {}),
         }}
-      >
-        FORMAT
-      </div>
+        draggable={false}
+      />
     );
   }
 
-  return (
-    <img
-      src={format}
-      alt="Screening Format"
-      style={{
-        height: h,
-        width: 'auto',
-        display: 'block',
-        ...(surface === 'dark' ? { filter: LOGO_SHADOW } : {}),
-      }}
-      draggable={false}
-    />
-  );
+  if (label) {
+    return <TextStamp label={label} height={h} size={size} surface={surface} />;
+  }
+
+  return <DashedPlaceholder text="FORMAT" width={140 * size} height={h} size={size} surface={surface} />;
 }
 
 interface BrandMarkProps {
@@ -624,6 +675,18 @@ export function fallbackBookingNumber(seed: string): string {
 export function resolveBookingNo(d: MovieInfo): string {
   return d.bookingNumber || fallbackBookingNumber(d.title || 'phototicket');
 }
+
+/**
+ * 날짜 캡션 라벨 — 영어 라벨 무드(Minimal/Criterion/35mm)에서 관람일/개봉일/재개봉일을
+ * **같은 꼴**(접두 라벨 + 공백 + 값)로 통일한다(#141 (11)). 이전엔 무드마다 제각각이었다
+ * (35mm `← EXP`, Criterion은 watchDate 접두사 없이 bare, `REL`/`RE-REL` 약어 혼용).
+ * Editorial은 정체성이 프랑스어라 자체 라벨(Séance/Sortie/Reprise)을 유지한다.
+ */
+export const DATE_LABELS = {
+  watched: 'WATCHED',
+  released: 'RELEASED',
+  reissued: 'RE-RELEASED',
+} as const;
 
 /**
  * 4종 무드가 공통으로 파생하던 티켓 데이터를 한 곳으로 모은 것.

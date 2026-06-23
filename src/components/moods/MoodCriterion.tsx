@@ -2,6 +2,7 @@ import {
   Barcode,
   BrandMark,
   ChainStamp,
+  DATE_LABELS,
   FONT_KR,
   FONT_MONO,
   FONT_SANS,
@@ -140,11 +141,11 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
           padding: '10px 16px',
         }}
       >
-        <ChainStamp chain={components.chain} visible={components.chainVisible} size={1.05} />
+        <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} size={1.05} />
         {components.chainVisible && components.formatVisible && (
           <span style={{ width: 1, height: 26, background: ink, opacity: 0.6 }} />
         )}
-        <FormatStamp format={components.format} visible={components.formatVisible} size={1.0} />
+        <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={1.0} />
       </div>
 
       {/* Tag top-left */}
@@ -257,9 +258,9 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
             theaterVal,
             screenVal,
             seatVal && `SEAT ${seatVal}`,
-            watchDateVal,
-            releaseDateVal && `REL ${releaseDateVal}`,
-            reissueVal && `RE-REL ${reissueVal}`,
+            watchDateVal && `${DATE_LABELS.watched} ${watchDateVal}`,
+            releaseDateVal && `${DATE_LABELS.released} ${releaseDateVal}`,
+            reissueVal && `${DATE_LABELS.reissued} ${reissueVal}`,
           ]
             .filter(Boolean)
             .join('  ·  ')}

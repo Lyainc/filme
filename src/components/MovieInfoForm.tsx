@@ -22,9 +22,10 @@ const GRANULARITY_OPTIONS: { value: DateGranularity; label: string }[] = [
   { value: 'date', label: '연·월·일' },
 ];
 
+// 기본값 kr-compact를 첫 번째로(#141 (12)). kr-compact 샘플은 끝점 포함 YYYY.MM.DD.(#141 (13)).
 const FORMAT_TOKENS: { value: DateFormatToken; sample: string }[] = [
+  { value: 'kr-compact', sample: '2014.11.06.' },
   { value: 'iso', sample: '2014-11-06' },
-  { value: 'kr-compact', sample: '2014.11.06' },
   { value: 'cinema-mono', sample: '06·NOV·2014' },
   { value: 'en-long', sample: 'November 6, 2014' },
 ];
@@ -318,7 +319,7 @@ export default function MovieInfoForm({
         placeholder="Interstellar"
       />
 
-      <DateBlock
+      <ReleaseDateBlock
         label="Released"
         value={movieInfo.releaseDate || ''}
         granularity={releaseGran}
@@ -331,17 +332,12 @@ export default function MovieInfoForm({
           onChange({ releaseDateGranularity });
         }}
         onTokenChange={(releaseDateFormat) => onChange({ releaseDateFormat })}
-      />
-
-      <ReissueBlock
-        checked={!!movieInfo.isReissue}
+        reissueChecked={!!movieInfo.isReissue}
         reissueDate={movieInfo.reissueDate || ''}
-        granularity={releaseGran}
-        token={releaseFmt}
-        visible={fieldVisibility.reissue}
-        onVisibleChange={(v) => onFieldVisibilityChange({ reissue: v })}
-        onToggle={(isReissue) => onChange({ isReissue })}
-        onDateChange={(reissueDate) => onChange({ reissueDate })}
+        reissueVisible={fieldVisibility.reissue}
+        onReissueVisibleChange={(v) => onFieldVisibilityChange({ reissue: v })}
+        onReissueToggle={(isReissue) => onChange({ isReissue })}
+        onReissueDateChange={(reissueDate) => onChange({ reissueDate })}
       />
 
       <Field
@@ -371,8 +367,13 @@ export default function MovieInfoForm({
   );
 }
 
-/** Release date block. Source-of-truth is KOBIS — user only picks granularity & format. */
-function DateBlock({
+/**
+ * Release date block. Source-of-truth is KOBIS — user only picks granularity & format.
+ * 재개봉(reissue) 토글을 RELEASED 헤더 옆 인라인으로 통합(#141 (14)) — 이전엔 별도
+ * ReissueBlock으로 분리돼 있었다. 재개봉작 체크 시 개봉일과 같은 정밀도/표기 토큰을
+ * 공유하는 재개봉일 입력이 아래에 펼쳐진다.
+ */
+function ReleaseDateBlock({
   label,
   value,
   granularity,
@@ -381,6 +382,12 @@ function DateBlock({
   onVisibleChange,
   onGranularityChange,
   onTokenChange,
+  reissueChecked,
+  reissueDate,
+  reissueVisible,
+  onReissueVisibleChange,
+  onReissueToggle,
+  onReissueDateChange,
 }: {
   label: string;
   value: string;
@@ -390,16 +397,34 @@ function DateBlock({
   onVisibleChange: (next: boolean) => void;
   onGranularityChange: (next: DateGranularity) => void;
   onTokenChange: (next: DateFormatToken) => void;
+  reissueChecked: boolean;
+  reissueDate: string;
+  reissueVisible: boolean;
+  onReissueVisibleChange: (next: boolean) => void;
+  onReissueToggle: (next: boolean) => void;
+  onReissueDateChange: (next: string) => void;
 }) {
   const hasValue = !!value;
   return (
     <div className="space-y-2.5">
-      <div className="flex items-center justify-between">
-        <span className="flex items-center gap-2">
-          <VisibilityCheckbox checked={visible} onChange={onVisibleChange} label="개봉일" />
-          <span className="text-mono block text-[10px] uppercase tracking-widest text-fg-muted">
-            {label}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="flex items-center gap-3">
+          <span className="flex items-center gap-2">
+            <VisibilityCheckbox checked={visible} onChange={onVisibleChange} label="개봉일" />
+            <span className="text-mono block text-[10px] uppercase tracking-widest text-fg-muted">
+              {label}
+            </span>
           </span>
+          {/* 재개봉 토글 — RELEASED 헤더 옆 인라인(#141 (14)) */}
+          <label className="text-mono inline-flex cursor-pointer items-center gap-1.5 text-[10px] uppercase tracking-widest text-fg-muted hover:text-fg">
+            <input
+              type="checkbox"
+              checked={reissueChecked}
+              onChange={(e) => onReissueToggle(e.target.checked)}
+              className="h-3.5 w-3.5 accent-accent"
+            />
+            재개봉작
+          </label>
         </span>
         <span className="text-mono text-[10px] uppercase tracking-widest text-fg-faint">
           {formatDate(value, token, granularity) || '—'}
@@ -445,51 +470,19 @@ function DateBlock({
           );
         })}
       </div>
-    </div>
-  );
-}
 
-function ReissueBlock({
-  checked,
-  reissueDate,
-  granularity,
-  token,
-  visible,
-  onVisibleChange,
-  onToggle,
-  onDateChange,
-}: {
-  checked: boolean;
-  reissueDate: string;
-  granularity: DateGranularity;
-  token: DateFormatToken;
-  visible: boolean;
-  onVisibleChange: (next: boolean) => void;
-  onToggle: (checked: boolean) => void;
-  onDateChange: (next: string) => void;
-}) {
-  return (
-    <div className="space-y-2.5">
-      <label className="text-mono inline-flex cursor-pointer items-center gap-2 text-[11px] uppercase tracking-widest text-fg">
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={(e) => onToggle(e.target.checked)}
-          className="h-4 w-4 accent-accent"
-        />
-        재개봉작이에요
-      </label>
-      {checked && (
-        <div className="space-y-2.5">
+      {/* 재개봉일 입력 — 토글 ON일 때만. 개봉일과 같은 정밀도/토큰을 공유한다. */}
+      {reissueChecked && (
+        <div className="space-y-2.5 border-l-2 border-line pl-3">
           <div className="flex flex-wrap items-stretch gap-2">
-            <DateInput value={reissueDate} granularity={granularity} onChange={onDateChange} />
+            <DateInput value={reissueDate} granularity={granularity} onChange={onReissueDateChange} />
             <span className="text-mono inline-flex items-center text-[10px] uppercase tracking-widest text-fg-faint">
               표기: {formatDate(reissueDate, token, granularity) || '—'}
             </span>
           </div>
           {/* 재개봉일 티켓 표시 여부 — 'Display Fields' 칩 대체(#116). isReissue와 구분 위해 재개봉작일 때만 노출. */}
           <span className="flex items-center gap-2">
-            <VisibilityCheckbox checked={visible} onChange={onVisibleChange} label="재개봉" />
+            <VisibilityCheckbox checked={reissueVisible} onChange={onReissueVisibleChange} label="재개봉" />
             <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">
               티켓에 재개봉일 표시
             </span>

@@ -7,7 +7,7 @@ describe('formatDate — padded ISO baseline', () => {
     expect(formatDate('2014-11-06', 'iso', 'date')).toBe('2014-11-06');
   });
   test('kr-compact / date', () => {
-    expect(formatDate('2014-11-06', 'kr-compact', 'date')).toBe('2014.11.06');
+    expect(formatDate('2014-11-06', 'kr-compact', 'date')).toBe('2014.11.06.');
   });
   test('cinema-mono / date', () => {
     expect(formatDate('2014-11-06', 'cinema-mono', 'date')).toBe('06·NOV·2014');
@@ -28,13 +28,13 @@ describe('formatDate — HIGH-8: non-padded ISO normalization', () => {
     expect(formatDate('2014-1-6', 'iso', 'date')).toBe('2014-01-06');
   });
   test('single-digit month and day, kr-compact', () => {
-    expect(formatDate('2014-1-6', 'kr-compact', 'date')).toBe('2014.01.06');
+    expect(formatDate('2014-1-6', 'kr-compact', 'date')).toBe('2014.01.06.');
   });
   test('single-digit month and day, cinema-mono', () => {
     expect(formatDate('2014-1-6', 'cinema-mono', 'date')).toBe('06·JAN·2014');
   });
   test('single-digit month, year-month, kr-compact', () => {
-    expect(formatDate('2014-3', 'kr-compact', 'year-month')).toBe('2014.03');
+    expect(formatDate('2014-3', 'kr-compact', 'year-month')).toBe('2014.03.');
   });
   test('single-digit month, year-month, cinema-mono', () => {
     expect(formatDate('2014-3', 'cinema-mono', 'year-month')).toBe('MAR 2014');

@@ -46,8 +46,14 @@ export interface MovieInfo {
 
 export interface TicketComponents {
   layout: LayoutId;
+  /** 극장 체인 로고 이미지 URL(blob: 또는 빈 문자열). 이미지가 라벨보다 우선한다. */
   chain: string;
+  /** 상영 포맷 로고 이미지 URL(blob: 또는 빈 문자열). 이미지가 라벨보다 우선한다. */
   format: string;
+  /** 체인 텍스트 라벨(예: "CGV") — 이미지 없을 때 텍스트 스탬프로 출력. OCR/수동으로 채움. */
+  chainLabel: string;
+  /** 포맷 텍스트 라벨(예: "IMAX") — 이미지 없을 때 텍스트 스탬프로 출력. 프리셋/수동이 1차 소스. */
+  formatLabel: string;
   texture: string;
   posterOpacity: number;
   themeColor: string;

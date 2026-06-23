@@ -3,6 +3,7 @@ import {
   Barcode,
   BrandMark,
   ChainStamp,
+  DATE_LABELS,
   FONT_KR,
   FONT_MONO,
   FONT_SANS,
@@ -126,7 +127,7 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
       {/* Stamps — chain top-left, format top-right rotated */}
       {components.chainVisible && (
         <div style={{ position: 'absolute', left: 28, top: 132 }}>
-          <ChainStamp chain={components.chain} visible={components.chainVisible} size={1.0} surface="dark" height={48} />
+          <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} size={1.0} surface="dark" height={48} />
         </div>
       )}
 
@@ -139,7 +140,7 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
             transform: 'rotate(-3deg)',
           }}
         >
-          <FormatStamp format={components.format} visible={components.formatVisible} size={1.2} surface="dark" />
+          <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={1.2} surface="dark" />
         </div>
       )}
 
@@ -279,9 +280,9 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
               }}
             >
               {[
-                watchDateVal && `← EXP ${watchDateVal}`,
-                releaseDateVal && `REL ${releaseDateVal}`,
-                reissueVal && `RE-REL ${reissueVal}`,
+                watchDateVal && `${DATE_LABELS.watched} ${watchDateVal}`,
+                releaseDateVal && `${DATE_LABELS.released} ${releaseDateVal}`,
+                reissueVal && `${DATE_LABELS.reissued} ${reissueVal}`,
               ]
                 .filter(Boolean)
                 .join(' · ')}
