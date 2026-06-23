@@ -7,6 +7,7 @@ import {
   downloadTicketAsJpeg,
   shareTicketAsJpeg,
 } from '@/utils/captureToImage';
+import { buildShareMessage } from '@/utils/shareMessage';
 import { PreviewFilmCell } from './PreviewFilmCell';
 import { PrimaryCta } from './PrimaryCta';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
@@ -34,8 +35,10 @@ interface ResultPanelProps {
  *
  * 데스크톱 rail과 모바일 바텀시트가 공유하는 유일한 결과 콘텐츠. 캡처 대상(ticketRef)과
  * 내보내기 상태/로직이 전부 이 컴포넌트 안에 닫혀 있어, 컨테이너는 배치·크기만 정한다.
- * SNS 공유는 Web Share API 파일 공유 지원 환경에서만 노출. 퍼마링크는 완성 티켓을 Blob에
- * 저장(/api/ticket)해 /t/<id> 공유 링크를 발급·복사한다 — og 미리보기로 유입되는 루프(#91).
+ * "사진 저장"은 파일 공유 지원 환경에서 OS 시트(사진앱 저장), 미지원 시 파일 다운로드로 떨어진다.
+ * 퍼마링크는 완성 티켓을 Blob에 저장(/api/ticket)해 /t/<id> 공유 링크를 발급한다 — og 미리보기로
+ * 유입되는 루프(#91). 카톡·메신저(navigator.share)·X(인텐트) 채널 공유는 그 링크를 단일 소스
+ * 문구(buildShareMessage)에 실어 보내며, 링크가 없으면 핸들러가 먼저 발급한다.
  */
 export function ResultPanel({
   croppedImageUrl,
@@ -125,11 +128,13 @@ export function ResultPanel({
     }
   }, [croppedImageUrl, layout.id, layout.width, layout.height, movieInfo.title]);
 
-  // 완성 티켓을 캡처 → Blob 업로드(/api/ticket) → 발급된 /t/<id> 링크를 노출·복사.
+  // 완성 티켓을 캡처 → Blob 업로드(/api/ticket) → 발급된 /t/<id> URL을 반환·상태 갱신.
   // og:image가 붙은 퍼마링크라 수신자가 미리보기를 보고 "나도 만들기"로 유입되는 루프(#91).
-  const handlePermalink = useCallback(async () => {
+  // 발급 성공 시 URL 문자열을, 실패·스테일 시 null을 돌려준다 — 링크/X/메신저 공유가 공통으로
+  // 호출해 "필요하면 먼저 발급, 있으면 재사용"하는 단일 진입점이다(절대 throw 안 함).
+  const issuePermalink = useCallback(async (): Promise<string | null> => {
     const node = ticketRef.current;
-    if (!node || !croppedImageUrl) return;
+    if (!node || !croppedImageUrl) return null;
     setPermaState('loading');
     const gen = permaGenRef.current; // 이 발급의 세대 — 업로드 중 내용이 바뀌면 reset effect가 증가시킨다
     let url: string;
@@ -152,38 +157,76 @@ export function ResultPanel({
     } catch (err) {
       console.error('[permalink]', err);
       setPermaState('error');
-      return;
+      return null;
     }
     // 업로드 중 티켓 내용이 바뀌었으면(reset effect가 gen 증가) 이 URL은 옛 스냅샷이다 —
     // 스테일 링크를 노출하지 않도록 폐기하고 idle로 되돌린다(사용자가 다시 발급).
     if (gen !== permaGenRef.current) {
       setPermaState('idle');
-      return;
+      return null;
     }
     // URL 확보 = 성공. 인풋에 노출해 clipboard 실패와 무관하게 공유 가능하게 한다.
     setPermalink(url);
     setPermaState('success');
-    // 2단계: 자동 복사는 best-effort. 인앱 웹뷰·포커스 이탈로 거부돼도(NotAllowedError)
-    // 링크는 이미 노출돼 있으므로 '수동 복사'로 떨어질 뿐, 실패로 처리하지 않는다.
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopyState('copied');
-    } catch {
-      setCopyState('manual');
-    }
+    return url;
   }, [croppedImageUrl, layout.id, layout.width, layout.height, movieInfo.title]);
 
-  const handleCopyLink = useCallback(async () => {
-    if (!permalink) return;
+  // 공통 클립보드 복사 — 성공/거부에 따라 copyState 라벨을 갱신한다(기존 피드백 패턴 재사용).
+  const copyToClipboard = useCallback(async (value: string) => {
+    if (!value) return;
     try {
-      await navigator.clipboard.writeText(permalink);
+      await navigator.clipboard.writeText(value);
       setCopyState('copied');
     } catch {
-      // clipboard 거부 환경 — 인풋을 선택해 사용자가 직접 복사하도록 안내한다.
+      // clipboard 거부 환경(인앱 웹뷰·포커스 이탈) — 인풋을 선택해 직접 복사하도록 안내한다.
       linkInputRef.current?.select();
       setCopyState('manual');
     }
-  }, [permalink]);
+  }, []);
+
+  // "링크 만들기" — 발급 후 자동 복사는 best-effort. 거부돼도(NotAllowedError) 링크는 이미
+  // 인풋에 노출돼 있으므로 '수동 복사'로 떨어질 뿐, 실패로 처리하지 않는다.
+  const handlePermalink = useCallback(async () => {
+    const url = await issuePermalink();
+    if (!url) return;
+    await copyToClipboard(url);
+  }, [issuePermalink, copyToClipboard]);
+
+  const handleCopyLink = useCallback(async () => {
+    if (!permalink) return;
+    await copyToClipboard(permalink);
+  }, [permalink, copyToClipboard]);
+
+  // "카톡·메신저로 공유" — 발급된 링크가 있으면 재사용, 없으면 먼저 발급한다(호출부 책임).
+  // navigator.share 지원 시 OS 공유 시트(카톡·메신저 등), 미지원·실패 시 링크 클립보드 폴백.
+  const handleShareLink = useCallback(async () => {
+    const url = permalink ?? (await issuePermalink()) ?? '';
+    const message = buildShareMessage(movieInfo, url);
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({
+          title: message.title,
+          text: message.text,
+          url: message.url || undefined,
+        });
+        return;
+      } catch (err) {
+        // 사용자가 시트를 닫으면(AbortError) 조용히 종료. 그 외 실패만 클립보드 폴백으로.
+        if (err instanceof Error && err.name === 'AbortError') return;
+      }
+    }
+    // 데스크톱·share 미지원·share 실패 → 링크(없으면 문구) 클립보드 복사로 폴백.
+    await copyToClipboard(url || message.text);
+  }, [permalink, issuePermalink, movieInfo, copyToClipboard]);
+
+  // "X로 공유" — 링크가 있으면 함께 싣고 없으면 먼저 발급. 링크 발급이 실패하면 문구만으로 연다.
+  const handleShareTwitter = useCallback(async () => {
+    const url = permalink ?? (await issuePermalink()) ?? '';
+    const { text } = buildShareMessage(movieInfo, url);
+    const parts = [`text=${encodeURIComponent(text)}`];
+    if (url) parts.push(`url=${encodeURIComponent(url)}`);
+    window.open(`https://twitter.com/intent/tweet?${parts.join('&')}`, '_blank', 'noopener,noreferrer');
+  }, [permalink, issuePermalink, movieInfo]);
 
   if (!croppedImageUrl) {
     return (
@@ -269,6 +312,29 @@ export function ResultPanel({
             )}
           </div>
         )}
+
+        {/* 채널별 공유 — 링크가 없으면 핸들러가 먼저 발급하고, 발급 중엔 비활성화한다.
+            navigator.share(카톡·메신저 OS 시트)와 X 인텐트는 같은 buildShareMessage 문구를 쓴다. */}
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={handleShareLink}
+            disabled={permaState === 'loading'}
+            title="카톡·메신저 등으로 공유해요"
+            className="text-mono inline-flex min-h-[44px] items-center justify-center rounded-field-sm border border-line bg-surface-elevated px-3 text-center text-[11px] uppercase tracking-widest text-fg transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:border-line"
+          >
+            카톡·메신저로 공유
+          </button>
+          <button
+            type="button"
+            onClick={handleShareTwitter}
+            disabled={permaState === 'loading'}
+            title="X(트위터)에 공유해요"
+            className="text-mono inline-flex min-h-[44px] items-center justify-center rounded-field-sm border border-line bg-surface-elevated px-3 text-center text-[11px] uppercase tracking-widest text-fg transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:border-line"
+          >
+            X로 공유
+          </button>
+        </div>
       </div>
     </div>
   );
