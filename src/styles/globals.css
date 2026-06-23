@@ -56,6 +56,7 @@
     --accent: #C45550;
     --accent-soft: color-mix(in srgb, #C45550 12%, transparent);
     --accent-hover: #D46460;
+    /* on-accent ink: bg-accent(빨강) 채움 위에 얹는 글자색 전용. 밝은 표면 위 단독 전경색으로 쓰면 라이트모드에서 흰 글자가 묻혀 비가시 — 그 자리엔 text-accent / text-fg-muted 사용 */
     --accent-ink: #FFFFFF;
     --success: #22C55E;
     --warn: #F59E0B;
