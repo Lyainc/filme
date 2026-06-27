@@ -29,6 +29,9 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
     : 'linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 30%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.92) 100%)';
   const spineBg = inkIsDark ? 'rgba(245,240,232,0.95)' : 'rgba(0,0,0,0.7)';
   const spineDivider = inkIsDark ? '#0d0c0a' : ink;
+  // 우상단 스탬프는 밴드 없이 스크림 위에 직접 얹힌다(#176). 스크림 톤은 inkIsDark에서
+  // 크림으로 반전되므로, 스탬프 surface도 거기 맞춰야 placeholder/로고 shadow가 옳게 잡힌다.
+  const stampSurface = inkIsDark ? 'paper' : 'dark';
 
   const { bookingNo, watchDateClean, releaseClean, reissueClean, watchYear } = resolveTicketData(d);
   const bookingTail = bookingNo.split('-').pop() || '0000';
@@ -139,11 +142,11 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
           gap: 18,
         }}
       >
-        <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} size={1.05} surface="dark" />
+        <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} size={1.05} surface={stampSurface} />
         {components.chainVisible && components.formatVisible && (
           <span style={{ width: 1, height: 26, background: ink, opacity: 0.6 }} />
         )}
-        <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={1.0} surface="dark" />
+        <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={1.0} surface={stampSurface} />
       </div>
 
       {/* Tag top-left */}
