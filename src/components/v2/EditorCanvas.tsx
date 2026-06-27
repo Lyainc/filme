@@ -171,6 +171,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
             onUpload={photo.handleImageUpload}
             isProcessing={false}
             hasImage={!!photo.state.croppedImageUrl}
+            imageUrl={photo.state.croppedImageUrl}
           />
           <OcrUploadCard
             setInfo={setInfo}

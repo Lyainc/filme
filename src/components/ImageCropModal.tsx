@@ -30,7 +30,7 @@ export default function ImageCropModal({
     if (croppedAreaPixels && !isProcessing) onComplete(croppedAreaPixels);
   };
 
-  // 모달은 selectedImageSrc가 있을 때만 마운트되므로 항상 열린 상태 — 스크롤 잠금
+  // 모달은 크롭 열림 상태에서만 마운트되므로 항상 열린 상태 — 스크롤 잠금
   useBodyScrollLock(true);
 
   useEffect(() => {
