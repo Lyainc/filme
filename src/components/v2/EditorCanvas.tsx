@@ -156,12 +156,6 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      <header className="flex items-center gap-2">
-        <h2 className="font-sans text-2xl font-semibold tracking-tight text-fg">
-          티켓 만들기
-        </h2>
-      </header>
-
       <section className="space-y-4">
         <div className="flex items-center gap-2">
           <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Poster</h3>
@@ -285,21 +279,40 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
             </div>
           </div>
 
-          <div className="space-y-1">
-            <OcrChip field="theater" filled={ocrFilledFields} />
-            <Field
-              id="editor-theater"
-              label="Theater"
-              optional
-              labelAccessory={<VisibilityCheckbox {...visProps('theater')} />}
-              value={movieInfo.theater || ''}
-              dimmed={!fieldVisibility.theater}
-              onChange={(e) => {
-                setInfo({ theater: e.target.value });
-                removeFromOcr('theater');
-              }}
-              placeholder="CGV 용산아이파크몰"
-            />
+          {/* Theater + Booking No.를 2열로 묶어 세로 한 줄 절약(#180 (8)). 둘 다 짧은 거래 정보라 짝이 맞는다. */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <OcrChip field="theater" filled={ocrFilledFields} />
+              <Field
+                id="editor-theater"
+                label="Theater"
+                optional
+                labelAccessory={<VisibilityCheckbox {...visProps('theater')} />}
+                value={movieInfo.theater || ''}
+                dimmed={!fieldVisibility.theater}
+                onChange={(e) => {
+                  setInfo({ theater: e.target.value });
+                  removeFromOcr('theater');
+                }}
+                placeholder="CGV 용산아이파크몰"
+              />
+            </div>
+            <div className="space-y-1">
+              <OcrChip field="bookingNumber" filled={ocrFilledFields} />
+              <Field
+                id="editor-bookingNumber"
+                label="Booking No."
+                optional
+                labelAccessory={<VisibilityCheckbox {...visProps('bookingNo')} />}
+                value={movieInfo.bookingNumber || ''}
+                dimmed={!fieldVisibility.bookingNo}
+                onChange={(e) => {
+                  setInfo({ bookingNumber: e.target.value });
+                  removeFromOcr('bookingNumber');
+                }}
+                placeholder="T-20260510-0014"
+              />
+            </div>
           </div>
 
           <Field
@@ -377,23 +390,6 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
             </div>
           </div>
 
-          <div className="space-y-1">
-            <OcrChip field="bookingNumber" filled={ocrFilledFields} />
-            <Field
-              id="editor-bookingNumber"
-              label="Booking No."
-              optional
-              labelAccessory={<VisibilityCheckbox {...visProps('bookingNo')} />}
-              value={movieInfo.bookingNumber || ''}
-              dimmed={!fieldVisibility.bookingNo}
-              onChange={(e) => {
-                setInfo({ bookingNumber: e.target.value });
-                removeFromOcr('bookingNumber');
-              }}
-              placeholder="T-20260510-0014"
-            />
-          </div>
-
           <RatingPicker
             value={movieInfo.rating}
             onValueChange={(rating) => setInfo({ rating })}
@@ -465,12 +461,12 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
         />
       </section>
 
-      <section className="space-y-5 rounded-card border border-border bg-surface-elevated p-5" style={{ boxShadow: 'var(--shadow-card)' }}>
+      <section className="space-y-4 rounded-card border border-border bg-surface-elevated p-4" style={{ boxShadow: 'var(--shadow-card)' }}>
         <BrightnessSlider
           value={components.posterOpacity}
           onChange={(posterOpacity) => setComp({ posterOpacity })}
         />
-        <div className="border-t border-border pt-5">
+        <div className="border-t border-border pt-4">
           <ColorPicker
             value={components.themeColor}
             onChange={(themeColor) => setComp({ themeColor })}
