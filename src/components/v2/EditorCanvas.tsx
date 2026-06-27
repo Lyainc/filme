@@ -155,20 +155,23 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <header className="flex items-center gap-2">
         <h2 className="font-sans text-2xl font-semibold tracking-tight text-fg">
           티켓 만들기
         </h2>
-        <InfoTooltip
-          text="제목 · 원제 · 개봉연도가 필수예요. 포스터부터 무드까지 이 화면에서 한 번에 끝나요."
-          label="티켓 만들기 안내"
-        />
       </header>
 
       <section className="space-y-4">
-        <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Poster</h3>
-        <div className="grid grid-cols-2 gap-4 items-stretch">
+        <div className="flex items-center gap-2">
+          <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Poster</h3>
+          <InfoTooltip
+            text="영화 포스터 이미지를 올리는 곳이에요. 오른쪽 자동 인식 카드에 티켓 스크린샷을 넣으면 영화 정보가 자동으로 채워져요."
+            label="포스터 추가 안내"
+            placement="right"
+          />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-stretch">
           <ImageUploader
             onUpload={photo.handleImageUpload}
             isProcessing={false}
@@ -188,8 +191,15 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
       {/* 표시 항목 일괄 컨트롤 — 각 필드 옆 체크박스(인라인)를 전체 제어(#116).
           'Display Fields' 칩 섹션을 대체하고, 입력 그룹 상단에 콤팩트하게 둔다. */}
       <div className="flex items-center justify-between gap-3 rounded-card border border-line bg-surface-elevated px-3.5 py-2.5">
-        <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">
-          표시 항목 <span className="text-fg-faint">{selectedCount}/{FIELD_ORDER.length}</span>
+        <span className="flex items-center gap-2">
+          <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">
+            표시 항목 <span className="text-fg-faint">{selectedCount}/{FIELD_ORDER.length}</span>
+          </span>
+          <InfoTooltip
+            text="티켓에 실제로 새길 항목을 고르는 곳이에요. 각 입력칸 옆 체크박스를 한 번에 켜고 끌 수 있어요."
+            label="표시 항목 안내"
+            placement="right"
+          />
         </span>
         <div className="flex gap-2">
           <button
@@ -302,7 +312,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
             placeholder="매튜 맥커너히, 앤 해서웨이"
           />
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
               <OcrChip field="watchTime" filled={ocrFilledFields} />
               <Field
@@ -331,7 +341,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
               <OcrChip field="screen" filled={ocrFilledFields} />
               <Field
@@ -400,7 +410,14 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
       </div>
 
       <section className="space-y-4">
-        <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Mood</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Mood</h3>
+          <InfoTooltip
+            text="티켓의 전체 분위기를 정하는 곳이에요. 미니멀·크라이테리온·35mm·에디토리얼 무드별로 레이아웃과 질감이 달라져요."
+            label="티켓 무드 안내"
+            placement="right"
+          />
+        </div>
         <LayoutPicker
           value={components.layout}
           onChange={(id: LayoutId) => setComp({ layout: id })}
@@ -409,8 +426,8 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
 
       <section className="space-y-3">
         <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Logos</h3>
-        {/* Theater/Format 병렬 한 줄 배치(#141 (6)) */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* Theater/Format 병렬 한 줄 배치(#141 (6)) — 모바일은 1열로 떨어뜨려 협소 방지 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <TheaterChainPicker
             value={components.chain}
             label={components.chainLabel}
@@ -432,7 +449,14 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
       </section>
 
       <section className="space-y-4">
-        <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Texture</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Texture</h3>
+          <InfoTooltip
+            text="티켓 표면의 종이·필름 질감을 입히는 곳이에요. 같은 무드라도 질감에 따라 인쇄물 느낌이 확 달라져요."
+            label="Texture 안내"
+            placement="right"
+          />
+        </div>
         <TexturePicker
           value={components.texture}
           onChange={(texture) => setComp({ texture })}
@@ -486,9 +510,14 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
         </div>
       )}
 
-      {/* Spacer — prevents last section from being hidden behind the OCR banner */}
+      {/* Spacer — prevents last section from being hidden behind the OCR banner.
+          배너가 dock 위(var(--mobile-dock-h)+12)에 앵커되므로 스페이서도 dock 높이에 묶어
+          동적화한다(고정 h-40 제거, #142 (15)). 데스크톱은 dock이 없어 sm:h-20으로 덮어쓴다. */}
       {ocrSnapshot && (
-        <div className="h-40 sm:h-20" aria-hidden="true" />
+        <div
+          className="h-[calc(var(--mobile-dock-h,_96px)_+_56px)] sm:h-20"
+          aria-hidden="true"
+        />
       )}
     </div>
   );
