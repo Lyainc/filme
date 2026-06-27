@@ -166,12 +166,13 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
         <div className="flex items-center gap-2">
           <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Poster</h3>
           <InfoTooltip
-            text="영화 포스터 이미지를 올리는 곳이에요. 오른쪽 자동 인식 카드에 티켓 스크린샷을 넣으면 영화 정보가 자동으로 채워져요."
+            text="영화 포스터 이미지를 올리는 곳이에요. 아래 '티켓 스크린샷으로 자동입력'에 티켓 스크린샷을 넣으면 영화 정보가 자동으로 채워져요."
             label="포스터 추가 안내"
             placement="right"
           />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-stretch">
+        {/* 포스터 주연 드롭존(크게) + 하단 자동 인식 보조 액션(작게)으로 위계를 명확히(#142 (18)). */}
+        <div className="space-y-2.5">
           <ImageUploader
             onUpload={photo.handleImageUpload}
             isProcessing={false}

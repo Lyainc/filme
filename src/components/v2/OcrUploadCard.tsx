@@ -31,9 +31,9 @@ export interface OcrUploadCardProps {
   className?: string;
 }
 
-function ScanIcon() {
+function ScanIcon({ size = 24 }: { size?: number }) {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
       <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 3.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 13.5 9.375v-4.5z" />
       <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 6.75h.75v.75h-.75v-.75zM6.75 16.75h.75v.75h-.75v-.75zM16.75 6.75h.75v.75h-.75v-.75zM13.5 13.5h.75v.75H13.5V13.5zM13.5 19.5h.75v.75H13.5V19.5zM19.5 13.5h.75v.75h-.75V13.5zM19.5 19.5h.75v.75h-.75V19.5zM16.5 16.5h.75v.75h-.75V16.5z" />
     </svg>
@@ -212,51 +212,29 @@ export function OcrUploadCard({
         onChange={handleChange}
       />
 
-      <div
-        role="button"
-        tabIndex={0}
-        aria-label="티켓 스크린샷으로 자동 인식"
-        aria-busy={isProcessing}
+      {/* 포스터 드롭존이 주연, 자동 인식은 보조 액션으로 위계를 낮춘다(#142 (18)).
+          큰 점선 카드 대신 한 줄짜리 텍스트 버튼 — 핵심 동작(파일 선택→runOcr→주입→undo)은 유지. */}
+      <button
+        type="button"
         onClick={handleClick}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleClick(); }}
-        className={`relative h-full w-full rounded-card border-2 border-dashed overflow-hidden transition-colors
-          ${isProcessing
-            ? 'border-accent cursor-default'
-            : 'border-line hover:border-accent cursor-pointer'
-          }`}
+        aria-disabled={isProcessing}
+        aria-busy={isProcessing}
+        aria-label="티켓 스크린샷으로 자동 인식"
+        data-touch="44"
+        className="group inline-flex min-h-touch items-center gap-1.5 rounded-chip text-[13px] text-fg-muted transition-colors hover:text-accent aria-disabled:cursor-default aria-disabled:opacity-70"
       >
-        {/* 필름 퍼포레이션 가장자리 — "티켓 스캔" 컨텍스트 */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 left-0 w-3 opacity-50"
-          style={{ backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0 8px, var(--border) 8px 16px, transparent 16px 24px)' }}
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 right-0 w-3 opacity-50"
-          style={{ backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0 8px, var(--border) 8px 16px, transparent 16px 24px)' }}
-        />
-        {/* 진행 중 스캔라인 (prefers-reduced-motion: globals.css에서 자동 무효화) */}
-        {isProcessing && <div className="ocr-scanline" aria-hidden="true" />}
-
-        <div className="flex h-full min-h-[92px] flex-col items-center justify-center gap-2 px-3 py-4">
-          {isProcessing ? (
-            <div className="flex flex-col items-center gap-2">
-              <span className="text-accent animate-pulse"><ScanIcon /></span>
-              <p className="text-xs text-fg-muted">인식 중...</p>
-            </div>
-          ) : (
-            <div className="text-center space-y-1">
-              <span className="text-fg-muted"><ScanIcon /></span>
-              <p className="text-xs text-fg-muted">티켓 스크린샷으로 자동 인식</p>
-              <p className="text-[10px] text-fg-faint">PNG · JPG · WebP</p>
-            </div>
-          )}
-        </div>
-      </div>
+        <span aria-hidden="true" className="text-fg-faint">⤷</span>
+        <span className={isProcessing ? 'text-accent animate-pulse' : 'text-fg-faint group-hover:text-accent'}>
+          <ScanIcon size={16} />
+        </span>
+        <span>{isProcessing ? '티켓 인식 중...' : '티켓 스크린샷으로 자동입력'}</span>
+        {!isProcessing && (
+          <span aria-hidden="true" className="text-fg-faint transition-transform group-hover:translate-x-0.5">›</span>
+        )}
+      </button>
 
       {toast && (
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-fg text-surface-elevated text-xs font-medium px-3 py-1.5 rounded-chip whitespace-nowrap shadow-lg animate-fade-in z-10">
+        <div className="absolute bottom-full left-0 mb-2 max-w-[260px] bg-fg text-surface-elevated text-xs font-medium px-3 py-1.5 rounded-chip shadow-lg animate-fade-in z-10">
           {toast}
         </div>
       )}

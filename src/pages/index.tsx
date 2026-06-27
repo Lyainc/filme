@@ -27,7 +27,10 @@ const PreviewSheet = dynamic(
 // 높이(--mobile-dock-h, MobileDock이 측정해 노출)에 묶어 매직넘버를 없앤다(#102).
 // rail 이상에서는 dock이 CSS로 숨으므로 rail:pb-0으로 여백을 끈다 — JS isMobile에
 // 의존하지 않아 첫 페인트부터 여백이 자리잡는다(#107 hydration flash 제거).
-const DOCK_PADDING_CLASS = 'pb-[calc(var(--mobile-dock-h,80px)+16px)] rail:pb-0';
+// fallback은 측정 전 첫 페인트 상태의 실측 dock 높이에 맞춘다. 그 시점은 포스터 미업로드라
+// dock에 hint("포스터를 먼저 추가해주세요")가 떠 있어 높이가 ~102px → 96px이 80px보다 가깝다.
+// EditorCanvas의 OCR 배너/스페이서 fallback과 단일 값(96px)으로 통일(#171).
+const DOCK_PADDING_CLASS = 'pb-[calc(var(--mobile-dock-h,96px)+16px)] rail:pb-0';
 
 export default function Home() {
   // SSR safe: 초기값 'light', mount 후 localStorage/prefers-color-scheme 읽기

@@ -67,7 +67,7 @@ export default function ImageUploader({ onUpload, isProcessing, hasImage = false
   const busy = isProcessing || isCropping;
 
   return (
-    <section className="h-full">
+    <section>
       <label
         onDragOver={(e) => {
           e.preventDefault();
@@ -76,33 +76,28 @@ export default function ImageUploader({ onUpload, isProcessing, hasImage = false
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
         data-touch="44"
-        className={`group relative flex h-full w-full flex-col justify-center overflow-hidden rounded-card border bg-paper p-4 text-left shadow-card transition-colors
+        className={`group relative flex min-h-[150px] w-full flex-col items-center justify-center gap-1.5 overflow-hidden rounded-card border bg-paper p-6 text-center shadow-card transition-colors
           ${isDragging ? 'border-accent bg-accent-soft' : 'border-line hover:border-accent/40'}
           ${busy ? 'cursor-wait opacity-60' : 'cursor-pointer'}`}
       >
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-1">
-            <div className="text-mono text-[10px] uppercase tracking-widest text-fg-faint">
-              {hasImage ? 'Replace' : 'Drop or click'}
-            </div>
-            <p className="text-[15px] font-medium leading-tight text-fg md:text-[16px]">
-              {hasImage ? '포스터 교체' : '포스터 업로드'}
-            </p>
-            <p className="max-w-[36ch] text-[12px] leading-relaxed text-fg-muted">
-              JPEG · PNG · WEBP. 0.65 : 1 비율로 직접 크롭할 수 있어요.
-            </p>
-          </div>
-
-          <span
-            aria-hidden
-            className="text-mono shrink-0 text-xl font-normal text-accent transition-transform group-hover:rotate-90 md:text-2xl"
-          >
-            +
-          </span>
-        </div>
+        <span
+          aria-hidden
+          className="text-mono text-2xl font-normal leading-none text-accent transition-transform group-hover:rotate-90 md:text-3xl"
+        >
+          +
+        </span>
+        <p className="text-[16px] font-medium leading-tight text-fg">
+          {hasImage ? '포스터 교체' : '포스터 업로드'}
+        </p>
+        <p className="text-[12px] leading-relaxed text-fg-muted">
+          드래그 또는 클릭{hasImage ? '으로 교체' : ''}
+        </p>
+        <p className="text-[11px] leading-relaxed text-fg-faint">
+          JPEG · PNG · WEBP · 0.65 : 1 크롭
+        </p>
 
         {busy && (
-          <div className="text-mono mt-3 flex items-center gap-2 text-[10px] uppercase tracking-widest text-accent">
+          <div className="text-mono mt-2 flex items-center gap-2 text-[10px] uppercase tracking-widest text-accent">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
             Processing…
           </div>
