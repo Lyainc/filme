@@ -67,6 +67,7 @@ function LayoutPicker({ value, onChange }: LayoutPickerProps) {
         role="group"
         aria-roledescription="carousel"
         aria-label="Mood designs"
+        aria-keyshortcuts="ArrowLeft ArrowRight"
         tabIndex={0}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
@@ -94,7 +95,9 @@ function LayoutPicker({ value, onChange }: LayoutPickerProps) {
                     type="button"
                     onClick={() => select(i)}
                     aria-pressed={active}
-                    tabIndex={isCurrent ? 0 : -1}
+                    // 컨테이너 div(tabIndex=0)가 단일 Tab stop — 화살표로 탐색=선택하므로
+                    // 카드는 Tab 대상에서 빼 이중 stop을 없앤다. 마우스·터치 클릭은 유지(#166).
+                    tabIndex={-1}
                     data-touch="44"
                     className={`group relative flex min-h-touch w-full flex-col items-stretch gap-2 rounded-card border p-2.5 text-left transition-colors
                       ${
