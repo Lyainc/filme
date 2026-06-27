@@ -733,6 +733,16 @@ export function isInkDark(themeColor: string): boolean {
   return luminance(themeColor) < 0.18;
 }
 
+/**
+ * 잉크 색을 안전하게 해석한다 — 완전한 6자리 hex만 통과하고, 부분 입력(`#8E` 등)은
+ * fallback으로 떨군다. ColorPicker 텍스트 필드는 타이핑/삭제 중 `'#8'`·`'#8E4E6'` 같은
+ * 불완전 hex도 emit하는데, 그게 잉크로 새면 `color:'#8E'`가 무효 CSS라 텍스트가 순간
+ * 투명해진다(#177 리뷰 P1). 유효 hex는 그대로, 불완전 hex는 fallback으로 가독성을 지킨다.
+ */
+export function resolveInk(themeColor: string, fallback: string): string {
+  return /^#[0-9a-fA-F]{6}$/.test(themeColor) ? themeColor : fallback;
+}
+
 export function truncateActors(actors: string, max = 3): string {
   if (!actors) return '';
   const parts = actors.split(',').map(s => s.trim()).filter(Boolean);
