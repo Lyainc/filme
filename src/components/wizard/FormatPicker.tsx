@@ -23,6 +23,8 @@ export default function FormatPicker({
   onVisibilityChange,
 }: FormatPickerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // 프리셋 활성화 직전의 커스텀 입력값 보존 — 프리셋 해제 시 빈 문자열 대신 이 값으로 복원(#162).
+  const prevLabelRef = useRef('');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -92,7 +94,15 @@ export default function FormatPicker({
                 <button
                   key={preset}
                   type="button"
-                  onClick={() => onLabelChange(active ? '' : preset)}
+                  onClick={() => {
+                    if (active) {
+                      onLabelChange(prevLabelRef.current);
+                    } else {
+                      // 프리셋 값은 보존하지 않음 — 프리셋끼리 갈아타도 직전 커스텀 입력이 살아남게.
+                      if (!FORMAT_PRESETS.includes(label)) prevLabelRef.current = label;
+                      onLabelChange(preset);
+                    }
+                  }}
                   className={`text-mono text-[10px] uppercase tracking-widest px-2 py-1 rounded-chip border transition-colors ${
                     active
                       ? 'border-accent bg-accent text-white'
