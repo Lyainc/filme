@@ -21,11 +21,15 @@ export default function ImageUploader({ onUpload, isProcessing, hasImage = false
   const [cropOpen, setCropOpen] = useState(false);
   const [isCropping, setIsCropping] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  // 방금 고른 새 파일이 아직 크롭 확정 전인지. 첫 업로드·교체에서 true, 크롭 완료 시 false.
+  // 재크롭(새 파일 안 고름)에선 false로 남아 취소해도 원본을 유지한다.
+  const [pendingNewFile, setPendingNewFile] = useState(false);
 
   const openFile = (file: File) => {
     // 이전 originalSrc는 아래 effect cleanup이 단일 소유자로 revoke (이중 revoke 방지)
     const objectUrl = URL.createObjectURL(file);
     setOriginalSrc(objectUrl);
+    setPendingNewFile(true);
     setCropOpen(true);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -48,6 +52,7 @@ export default function ImageUploader({ onUpload, isProcessing, hasImage = false
     try {
       const croppedUrl = await getCroppedImg(originalSrc, croppedAreaPixels);
       onUpload(croppedUrl);
+      setPendingNewFile(false);
       setCropOpen(false); // originalSrc는 유지 — 재크롭에 재사용
     } catch (error) {
       console.error('크롭 실패:', error);
@@ -59,9 +64,13 @@ export default function ImageUploader({ onUpload, isProcessing, hasImage = false
 
   const handleCropCancel = () => {
     setCropOpen(false);
-    // 기존 포스터가 없는 첫 크롭 취소면 원본을 버린다(재크롭 대상이 없으므로).
-    // 재크롭 취소(이미 포스터 있음)면 원본을 유지해 다음 재크롭에 재사용.
-    if (!hasImage) setOriginalSrc(null);
+    // 새 파일(첫 업로드·교체)을 고른 뒤 취소면 원본을 버린다 — 교체 취소 땐 직전 포스터의
+    // 원본이 이미 revoke됐으므로 재크롭 불가, originalSrc를 null로 둬 정합성을 맞춘다.
+    // 재크롭 취소(새 파일 안 고름)면 originalSrc를 유지해 다음 재크롭에 재사용.
+    if (pendingNewFile) {
+      setOriginalSrc(null);
+      setPendingNewFile(false);
+    }
   };
 
   // originalSrc blob의 단일 소유자: 값이 바뀌거나(새 파일 선택) 언마운트될 때 직전 URL을 revoke.
