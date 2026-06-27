@@ -52,7 +52,13 @@ function TexturePicker({ value, onChange, croppedImageUrl }: TexturePickerProps)
       <span className="text-mono block text-[10px] uppercase tracking-widest text-fg-muted">
         Surface treatment
       </span>
-      <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Texture">
+      {/* ponytail: 가로 스크롤 스트립 = 캐러셀(#180 (6)). 8개 작은 스와치는 한 장씩 넘기는
+          LayoutPicker식 캐러셀보다 한 줄 스크롤이 비교·선택에 낫고 세로도 절약된다(2줄 wrap→1줄). */}
+      <div
+        className="flex gap-2 overflow-x-auto pb-1 snap-x [scrollbar-width:thin]"
+        role="radiogroup"
+        aria-label="Texture"
+      >
         {TEXTURE_OPTIONS.map((tex) => {
           const active = value === tex.value;
           // Show only short label (first parenthesis-free portion) on chip
@@ -68,7 +74,7 @@ function TexturePicker({ value, onChange, croppedImageUrl }: TexturePickerProps)
                 onClick={() => onChange(tex.value)}
                 data-touch="44"
                 title={tex.label}
-                className={`text-mono inline-flex min-h-touch flex-col items-center gap-1.5 rounded-chip border p-1.5 text-[10px] uppercase tracking-widest transition-colors
+                className={`text-mono inline-flex shrink-0 snap-start min-h-touch flex-col items-center gap-1.5 rounded-chip border p-1.5 text-[10px] uppercase tracking-widest transition-colors
                   ${
                     active
                       ? 'border-accent bg-accent text-white'
@@ -90,7 +96,7 @@ function TexturePicker({ value, onChange, croppedImageUrl }: TexturePickerProps)
               onClick={() => onChange(tex.value)}
               data-touch="44"
               title={tex.label}
-              className={`text-mono inline-flex min-h-touch items-center rounded-chip border px-4 text-[11px] uppercase tracking-widest transition-colors
+              className={`text-mono inline-flex shrink-0 snap-start min-h-touch items-center rounded-chip border px-4 text-[11px] uppercase tracking-widest transition-colors
                 ${
                   active
                     ? 'border-accent bg-accent text-white'
