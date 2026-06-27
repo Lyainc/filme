@@ -24,7 +24,15 @@ Before making architectural changes or implementing new features, consult:
 bun run dev     # Start development server
 bun run build   # Build production application
 bun run start   # Run production server (after build)
+bun test        # Unit + interaction tests
 ```
+
+### 🧪 Testing
+- **Runner**: `bun test`. Tests live in `__tests__/` (not co-located).
+- **두 부류**: (1) 순수 유닛·static-markup(`renderToStaticMarkup`), (2) **상호작용 테스트** — happy-dom + `@testing-library/react` + `user-event`로 사용자 동작→상태→결과를 검증(#163).
+- **DOM 환경**: `bunfig.toml`의 `[test] preload = ["./__tests__/setup/happydom.ts"]`가 happy-dom 글로벌 + `IS_REACT_ACT_ENVIRONMENT`를 등록. happy-dom 미구현 API(예: `scrollIntoView`)는 그 setup에 no-op 폴리필로 추가.
+- **모듈 mock**: bun `mock.module`은 hoisting 안 됨 — mock 등록 **후** `require(...)`로 대상(예: `runOcr`)을 import해야 가로채짐. top-level `await import`는 tsconfig `target:es5`에서 막히니 `require` 사용.
+- **회귀 테스트 예**: `__tests__/ocrUndoRestore.test.tsx` — OCR undo가 chainVisible/chainLabel + 폼 필드를 원자 복원하는지(#141 P1) 검증. 새 상호작용 테스트는 testing-library로 통일 권장.
 
 ### 🌱 Git & Commit Conventions
 - **Merge policy = rebase merge** (squash/merge-commit는 GitHub에서 비활성화). PR의 커밋이 **main에 그대로(verbatim) 올라오므로**, 각 커밋은 atomic하고 메시지가 깔끔해야 한다. WIP·"fix typo" 같은 커밋은 push 전 정리(squash/reword)할 것.
@@ -68,5 +76,5 @@ bun run start   # Run production server (after build)
 - **Env**: `AI_GATEWAY_API_KEY`(또는 OIDC, OCR 필수) · `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`(선택) · `KOBIS_API_KEY`(title→KOBIS 조회).
 
 ### 🚧 Current Project Status
-- **Completed**: MVP + KOBIS API + Manual Cropping + TCG Premium Textures + Editorial Cinema redesign + 4-Mood layout system + GPT-4o mini OCR(Tesseract 클라이언트에서 전환) + 단일 에디터 재편(#86: 2-step Phase 폐기 → `EditorCanvas` + `DoneCanvas`, `useScreen` 훅) + Serial/Collection 입력·EditionMark 제거(#84) + K-means 색 추출 Web Worker 오프로드(#80: `src/utils/colorExtraction.worker.ts`).
+- **Completed**: MVP + KOBIS API + Manual Cropping + TCG Premium Textures + Editorial Cinema redesign + 4-Mood layout system + GPT-4o mini OCR(Tesseract 클라이언트에서 전환) + 단일 에디터 재편(#86: 2-step Phase 폐기 → `EditorCanvas` + `DoneCanvas`, `useScreen` 훅) + Serial/Collection 입력·EditionMark 제거(#84) + K-means 색 추출 Web Worker 오프로드(#80: `src/utils/colorExtraction.worker.ts`) + 상호작용 테스트 인프라(#163: happy-dom + testing-library, OCR undo 회귀 테스트) + 업로드 영역 포스터 주연 재설계(#142: 드롭존 메인 + OCR 보조 액션).
 - **Next Up**: 확정 로드맵 없음 (이전 TMDB·Supabase 계획은 폐기).

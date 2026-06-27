@@ -42,7 +42,7 @@ bun run dev                  # http://localhost:3000
 | `AI_GATEWAY_API_KEY` | ✅ (for OCR) | [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) key; `VERCEL_OIDC_TOKEN` works in deployed envs |
 | `UPSTASH_REDIS_REST_URL` / `_TOKEN` | ⬜ | Rate limiting (recommended in production; skipped locally if unset) |
 
-`bun run build` / `bun run start` for production.
+`bun run build` / `bun run start` for production. `bun test` runs the unit and interaction tests.
 
 ## 🏗 Tech stack
 
@@ -52,6 +52,7 @@ bun run dev                  # http://localhost:3000
 - **OCR / AI**: GPT-4o mini vision via `ai` SDK v6 + Vercel AI Gateway, Zod schemas, Upstash rate limiting
 - **Movie data**: KOBIS Open API
 - **Package manager**: Bun
+- **Testing**: `bun test` with happy-dom + `@testing-library/react` for interaction tests
 
 ## 📄 License
 
