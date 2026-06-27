@@ -53,6 +53,9 @@ export function ResultPanel({
   // 인-플라이트 handlePermalink의 세대 — 업로드 중 티켓 내용이 바뀌면(아래 reset effect가
   // 증가) 완료된 URL은 옛 스냅샷이므로 폐기해 스테일 링크 노출을 막는다.
   const permaGenRef = useRef(0);
+  // 캡처 in-flight 가드 — 다운로드·permalink가 같은 ticketRef 노드에 html-to-image를
+  // 동시에 돌리면 산출물이 깨진다. 노드 캡처 구간을 직렬화한다(#167).
+  const capturingRef = useRef(false);
   const [ctaState, setCtaState] = useState<CtaState>('idle');
   const [permaState, setPermaState] = useState<PermaState>('idle');
   // 발급된 퍼마링크 — clipboard 성공 여부와 독립으로 보관해 읽기전용 인풋 + 복사 버튼으로
@@ -61,6 +64,11 @@ export function ResultPanel({
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'manual'>('idle');
 
   const layout = getLayout(components.layout);
+
+  // 캡처/발급 진행 중 = 액션 버튼 비활성. ctaState(다운로드)·permaState(발급) 중 하나라도
+  // loading이면 다른 액션 진입을 막는다 — 안 그러면 다운로드 캡처 중 공유 탭이 가드로 null을
+  // 받아 빈 URL 트윗/공유로 새어나간다(#167 가드가 만든 edge case, PR #168 리뷰 P1).
+  const isBusy = ctaState === 'loading' || permaState === 'loading';
 
   // success → idle 자동 전환 (2000ms)
   useEffect(() => {
@@ -100,9 +108,11 @@ export function ResultPanel({
   // 갤러리 무음 저장 API가 없어 iOS/Android 모두 공유 시트가 유일한 사진앱 저장 경로다(#138 항목5).
   const handleDownload = useCallback(async () => {
     const node = ticketRef.current;
-    if (!node || !croppedImageUrl) return;
+    // 다른 캡처가 진행 중이면(연타·동시 공유) 무시 — 같은 노드 toJpeg 중복을 막는다(#167).
+    if (!node || !croppedImageUrl || capturingRef.current) return;
     const title = movieInfo.title || 'untitled';
     const filename = `phototicket_${layout.id}_${title}.jpg`;
+    capturingRef.current = true;
     setCtaState('loading');
     try {
       if (canShareTicketFile()) {
@@ -125,6 +135,8 @@ export function ResultPanel({
     } catch (err) {
       console.error('[save]', err);
       setCtaState('idle');
+    } finally {
+      capturingRef.current = false;
     }
   }, [croppedImageUrl, layout.id, layout.width, layout.height, movieInfo.title]);
 
@@ -134,17 +146,26 @@ export function ResultPanel({
   // 호출해 "필요하면 먼저 발급, 있으면 재사용"하는 단일 진입점이다(절대 throw 안 함).
   const issuePermalink = useCallback(async (): Promise<string | null> => {
     const node = ticketRef.current;
-    if (!node || !croppedImageUrl) return null;
+    // 다른 캡처가 진행 중이면 무시 — 같은 노드 toJpeg 중복을 막는다(#167).
+    if (!node || !croppedImageUrl || capturingRef.current) return null;
+    capturingRef.current = true;
     setPermaState('loading');
     const gen = permaGenRef.current; // 이 발급의 세대 — 업로드 중 내용이 바뀌면 reset effect가 증가시킨다
     let url: string;
     // 1단계: 캡처 → 업로드. URL 산출까지가 성공 판정 — 여기까지 실패해야 error다.
     try {
-      const dataUrl = await captureNodeToJpeg(node, {
-        filename: `phototicket_${layout.id}.jpg`,
-        width: layout.width,
-        height: layout.height,
-      });
+      let dataUrl: string;
+      // 가드는 노드 캡처 구간만 — 업로드(fetch)는 노드를 안 건드리므로 그동안 해제해
+      // 다운로드 dead-tap을 막는다. 캡처 성공·실패 어느 쪽이든 finally로 해제(#167).
+      try {
+        dataUrl = await captureNodeToJpeg(node, {
+          filename: `phototicket_${layout.id}.jpg`,
+          width: layout.width,
+          height: layout.height,
+        });
+      } finally {
+        capturingRef.current = false;
+      }
       const base64 = dataUrl.split(',')[1] ?? '';
       const res = await fetch('/api/ticket', {
         method: 'POST',
@@ -287,7 +308,7 @@ export function ResultPanel({
         <button
           type="button"
           onClick={handlePermalink}
-          disabled={permaState === 'loading'}
+          disabled={isBusy}
           title="공유 링크를 만들어 클립보드에 복사해요"
           className="text-mono inline-flex w-full min-h-[44px] items-center justify-center gap-1.5 rounded-field-sm border border-line bg-surface-elevated text-[11px] uppercase tracking-widest text-fg transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:border-line"
         >
@@ -341,7 +362,7 @@ export function ResultPanel({
           <button
             type="button"
             onClick={handleShareLink}
-            disabled={permaState === 'loading'}
+            disabled={isBusy}
             title="카톡·메신저 등으로 공유해요"
             className="text-mono inline-flex min-h-[44px] items-center justify-center rounded-field-sm border border-line bg-surface-elevated px-3 text-center text-[11px] uppercase tracking-widest text-fg transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:border-line"
           >
@@ -350,7 +371,7 @@ export function ResultPanel({
           <button
             type="button"
             onClick={handleShareTwitter}
-            disabled={permaState === 'loading'}
+            disabled={isBusy}
             title="X(트위터)에 공유해요"
             className="text-mono inline-flex min-h-[44px] items-center justify-center rounded-field-sm border border-line bg-surface-elevated px-3 text-center text-[11px] uppercase tracking-widest text-fg transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:border-line"
           >
