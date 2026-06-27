@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { getCroppedImg, Area } from '@/utils/imageCrop';
 
-const ImageCropModal = dynamic(() => import('./ImageCropModal'), { ssr: false });
+const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ssr: false });
 
 interface ImageUploaderProps {
   onUpload: (croppedImageUrl: string) => void;
@@ -42,6 +42,9 @@ export default function ImageUploader({ onUpload, isProcessing, hasImage = false
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
+    // 크롭/처리 중 드롭하면 진행 중인 getCroppedImg가 읽고 있는 원본 blob을
+    // cleanup이 revoke해버린다(버튼은 disabled지만 드롭은 따로 막아야 함).
+    if (busy) return;
     const file = e.dataTransfer.files?.[0];
     if (file && ACCEPT.includes(file.type)) openFile(file);
   };
