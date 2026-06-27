@@ -13,6 +13,7 @@ import {
   gate,
   isInkDark,
   pickTitleSize,
+  resolveInk,
   resolveTicketData,
   truncateActors,
 } from './_shared';
@@ -20,9 +21,10 @@ import {
 export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
   const inkIsDark = isInkDark(themeColor);
-  // ink는 항상 사용자가 고른 themeColor — inkIsDark는 표면/스크림 톤만 분기한다.
+  // ink는 사용자가 고른 themeColor를 그대로 쓴다 — inkIsDark는 표면/스크림 톤만 분기한다.
   // (이전엔 dark일 때 '#0d0c0a'로 덮어써 #8E4E69 같은 어두운 유채색이 묻혔다, #177)
-  const ink = themeColor;
+  // resolveInk로 불완전 hex(타이핑 중 '#8E' 등)는 fallback 처리해 투명 텍스트를 막는다(#177 리뷰 P1).
+  const ink = resolveInk(themeColor, inkIsDark ? '#0d0c0a' : '#FFFFFF');
   const titleLen = d.title.length;
   const titleSize = pickTitleSize(titleLen, [108, 88, 68, 52]);
 
@@ -30,6 +32,8 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
     ? 'linear-gradient(180deg, rgba(245,240,232,0.7) 0%, rgba(245,240,232,0.35) 30%, rgba(245,240,232,0.5) 60%, rgba(245,240,232,0.95) 100%)'
     : 'linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 30%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.92) 100%)';
   const spineBg = inkIsDark ? 'rgba(245,240,232,0.95)' : 'rgba(0,0,0,0.7)';
+  // 스파인 경계선은 구조선이라 dark/크림 모드에선 잉크 색이 아닌 중립 near-black을 쓴다
+  // (잉크 hue를 안 따르는 건 의도 — #177 리뷰 P2).
   const spineDivider = inkIsDark ? '#0d0c0a' : ink;
   // 우상단 스탬프는 밴드 없이 스크림 위에 직접 얹힌다(#176). 스크림 톤은 inkIsDark에서
   // 크림으로 반전되므로, 스탬프 surface도 거기 맞춰야 placeholder/로고 shadow가 옳게 잡힌다.

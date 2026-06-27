@@ -47,6 +47,20 @@ describe('#177 어두운 유채색 ink 반영', () => {
     expect(markup(Mood, layout)).toContain('8e4e69');
   });
 
+  // 타이핑/삭제 중 ColorPicker가 emit하는 불완전 hex('#8E')는 무효 CSS color라
+  // 잉크로 새면 텍스트가 투명해진다 — resolveInk가 fallback으로 떨궈야 한다(#177 리뷰 P1).
+  test.each([
+    ['minimal', MoodMinimal],
+    ['criterion', MoodCriterion],
+  ] as const)('%s 가 불완전 hex(#8E)는 잉크로 안 쓴다', (layout, Mood) => {
+    const html = renderToStaticMarkup(
+      <Mood movieInfo={MOVIE} components={{ ...BASE, layout, themeColor: '#8E' }} croppedImageUrl="blob:test" />
+    ).toLowerCase();
+    // 무효 hex가 color:로 새지 않는다 — fallback(#0d0c0a)이 쓰인다.
+    expect(html).not.toContain('color:#8e');
+    expect(html).toContain('#0d0c0a');
+  });
+
   test('어떤 무드도 유효 hex 에서 throw 하지 않는다', () => {
     for (const Mood of [MoodMinimal, Mood35mm, MoodCriterion, MoodEditorial]) {
       expect(() => markup(Mood as typeof MoodMinimal, BASE.layout)).not.toThrow();
