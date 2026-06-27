@@ -24,6 +24,8 @@ Loved the phototicket you got at the cinema, or want to design your own? Just up
 3. **Fill in details** — search the movie title and add the date, screen, seat, and logos. The preview updates live.
 4. **Download** — save the finished ticket as a high-res JPEG.
 
+> 💡 For physical prints, the **CGV Premium** kiosk is recommended — the exported image is tuned for it. Megabox and Lotte Cinema kiosks work too.
+
 ## 🛠 Self-hosting
 
 Requires [Bun](https://bun.sh).
