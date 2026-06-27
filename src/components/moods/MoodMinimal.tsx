@@ -41,7 +41,9 @@ const META_VALUE_BASE: CSSProperties = {
 export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
   const inkIsDark = isInkDark(themeColor);
-  const ink = inkIsDark ? '#0d0c0a' : themeColor;
+  // ink는 항상 사용자가 고른 themeColor — inkIsDark는 표면/스크림 톤만 분기한다.
+  // (이전엔 dark일 때 '#0d0c0a'로 덮어써 #8E4E69 같은 어두운 유채색이 묻혔다, #177)
+  const ink = themeColor;
   const labelStyle: CSSProperties = { ...META_LABEL_BASE, color: ink };
   const valueStyle: CSSProperties = { ...META_VALUE_BASE, color: ink };
   const titleLen = d.title.length;
