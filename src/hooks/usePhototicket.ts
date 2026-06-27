@@ -20,6 +20,26 @@ const DEFAULT_VISIBILITY_ON_UPLOAD: Record<TicketField, boolean> = {
   signature: false,
 };
 
+// 영속화 키 — 스키마가 깨지게 바뀌면 버전을 올려 옛 데이터를 자연히 무시한다(복원 시 키 불일치 → null).
+const STORAGE_KEY = 'filme:phototicket:v1';
+
+// 텍스트·설정만 영속화한다. 포스터(croppedImageUrl)는 objectURL이라 세션이 끝나면 무효라 제외하고,
+// recommendedColors는 포스터에서 재추출되므로 제외한다(#178).
+type PersistedState = Pick<PhototicketState, 'movieInfo' | 'components' | 'fieldVisibility'>;
+
+function loadPersisted(): Partial<PersistedState> | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    // 손상·구버전·접근 차단(프라이빗 모드)은 조용히 폴백 — INITIAL_STATE로 시작한다.
+    return null;
+  }
+}
+
 const INITIAL_STATE: PhototicketState = {
   movieInfo: {
     title: '',
@@ -69,6 +89,22 @@ export function usePhototicket() {
   // 사용자가 밝기 슬라이더를 직접 만졌는지 추적(#146). 한번 만지면 이후 texture 전환에서
   // 기본 밝기를 덮어쓰지 않고 사용자 값을 존중한다.
   const brightnessTouchedRef = useRef(false);
+  // 저장 effect의 첫 커밋을 건너뛴다 — 복원 전 빈 INITIAL_STATE가 저장분을 덮어쓰지 않게(#178).
+  const skipFirstSaveRef = useRef(true);
+
+  // 마운트 시 localStorage에서 텍스트·설정을 복원한다. SSR 하이드레이션 불일치를 피하려
+  // useState 초기화가 아니라 effect에서 한다(서버는 INITIAL_STATE로 렌더, 클라가 마운트 후 복원).
+  // 얕은 병합이라 누락/추가 필드는 INITIAL_STATE 기본값으로 자연히 메워진다(#178).
+  useEffect(() => {
+    const saved = loadPersisted();
+    if (!saved) return;
+    setState((prev) => ({
+      ...prev,
+      movieInfo: { ...prev.movieInfo, ...(saved.movieInfo ?? {}) },
+      components: { ...prev.components, ...(saved.components ?? {}) },
+      fieldVisibility: { ...prev.fieldVisibility, ...(saved.fieldVisibility ?? {}) },
+    }));
+  }, []);
 
   const handleImageUpload = useCallback((croppedUrl: string) => {
     // 새 포스터 업로드는 밝기 슬레이트를 초기화한다 — 이후 texture 전환에서 그 texture의
@@ -128,6 +164,35 @@ export function usePhototicket() {
   const setRecommendedColors = useCallback((colors: string[]) => {
     setState((prev) => ({ ...prev, recommendedColors: colors }));
   }, []);
+
+  // 텍스트·설정 변경을 디바운스 저장한다(400ms). 첫 커밋은 건너뛰어 복원 전 INITIAL이
+  // 저장분을 덮어쓰지 않게 하고, 복원 setState가 일으킨 재렌더부터 실제 저장이 시작된다(#178).
+  useEffect(() => {
+    if (skipFirstSaveRef.current) {
+      skipFirstSaveRef.current = false;
+      return;
+    }
+    if (typeof window === 'undefined') return;
+    const timer = setTimeout(() => {
+      try {
+        const payload: PersistedState = {
+          movieInfo: state.movieInfo,
+          // chain/format이 업로드 로고의 blob: URL이면 비운다 — 포스터와 같은 이유로 재시작 후
+          // 죽은 참조다. 라벨·토글은 유지되어 복원 시 dashed placeholder로 재업로드를 유도한다.
+          components: {
+            ...state.components,
+            chain: state.components.chain.startsWith('blob:') ? '' : state.components.chain,
+            format: state.components.format.startsWith('blob:') ? '' : state.components.format,
+          },
+          fieldVisibility: state.fieldVisibility,
+        };
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      } catch {
+        // 저장 실패(쿼터 초과·프라이빗 모드)는 무시 — 영속화는 best-effort다.
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [state.movieInfo, state.components, state.fieldVisibility]);
 
   useEffect(() => {
     return () => {
