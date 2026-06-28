@@ -136,6 +136,7 @@ export default function Home() {
             movieInfo={debouncedMovieInfo}
             components={debouncedComponents}
             fieldVisibility={fieldVisibility}
+            autoIssue={!isMobile}
           />
         </div>
       ) : (
@@ -149,7 +150,7 @@ export default function Home() {
         </>
       )}
     </div>
-  ), [croppedImageUrl, resultOpen, debouncedMovieInfo, debouncedComponents, fieldVisibility, canExport, railMessage, openView, closeView]);
+  ), [croppedImageUrl, resultOpen, debouncedMovieInfo, debouncedComponents, fieldVisibility, canExport, railMessage, openView, closeView, isMobile]);
 
   return (
     <>

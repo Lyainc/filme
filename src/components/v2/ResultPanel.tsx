@@ -28,6 +28,12 @@ interface ResultPanelProps {
    * 콘텐츠/캡처 로직은 동일 — 컨테이너가 크기만 분기한다.
    */
   previewClassName?: string;
+  /**
+   * 결과 뷰가 열려 이 패널이 마운트되면 permalink를 1회 자동 발급한다(#179, 공유 진입장벽 제거).
+   * 모바일은 rail(숨김)+시트로 ResultPanel이 둘 동시 마운트되므로(아래 인풋 id 코멘트 참고)
+   * **보이는 인스턴스에만** true를 줘 업로드 중복을 막는다.
+   */
+  autoIssue?: boolean;
 }
 
 /**
@@ -46,6 +52,7 @@ export function ResultPanel({
   components,
   fieldVisibility,
   previewClassName,
+  autoIssue = false,
 }: ResultPanelProps) {
   // 캡처 원본 — 여기 달린 TicketRenderer의 (스케일 전) 내부 DOM이 내보내기 대상이다.
   const ticketRef = useRef<HTMLDivElement>(null);
@@ -191,6 +198,20 @@ export function ResultPanel({
     setPermaState('success');
     return url;
   }, [croppedImageUrl, layout.id, layout.width, layout.height, movieInfo.title]);
+
+  // 결과 뷰 열림 = 마운트 시점에 permalink 1회 자동 발급(#179). 마운트 1회라서, 열린 채
+  // 편집해도 remount가 없어 매-편집 업로드 storm이 안 생긴다 — 내용이 바뀌면 위 reset effect가
+  // 링크를 비우고 사용자가 '링크 다시 만들기'로 재발급한다. ponytail: 닫았다 같은 내용으로
+  // 재오픈 시 재업로드(새 blob)되지만 수동 재오픈이라 storm 아님, rate limit + 7일 cleanup이
+  // 회수한다. dup 볼륨이 문제되면 permalink state를 부모로 올려 open/close 간 보존한다.
+  const autoIssuedRef = useRef(false);
+  useEffect(() => {
+    if (!autoIssue || autoIssuedRef.current || !croppedImageUrl) return;
+    autoIssuedRef.current = true;
+    void issuePermalink();
+    // 마운트 1회 — croppedImageUrl/issuePermalink 변동으로 재발화하지 않게 deps를 비운다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 공통 클립보드 복사 — 성공/거부에 따라 copyState 라벨을 갱신한다(기존 피드백 패턴 재사용).
   const copyToClipboard = useCallback(async (value: string) => {
@@ -353,6 +374,10 @@ export function ResultPanel({
                 자동 복사가 막혔어요. 링크를 길게 눌러 직접 복사해 주세요.
               </p>
             )}
+            {/* 공유 링크 disclaimer(#179) — 만료·비공식·양도불가 고지. */}
+            <p className="text-[11px] leading-snug text-fg-faint">
+              이 링크는 7일 후 만료돼요. 비공식 팬메이드 티켓이라 양도·재판매할 수 없어요.
+            </p>
           </div>
         )}
 

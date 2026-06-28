@@ -17,11 +17,12 @@ import { planTicketCleanup, type CleanupBlob } from '@/utils/ticketCleanup';
  */
 export const config = { maxDuration: 60 };
 
-const DEFAULT_TTL_DAYS = 30;
+const DEFAULT_TTL_DAYS = 7;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DEL_BATCH = 1000; // @vercel/blob del 1회 호출 상한.
 
-/** TTL(ms). TICKET_TTL_DAYS env override, 기본 30일. 양수 유한값이 아니면 기본값으로 폴백. */
+/** TTL(ms). TICKET_TTL_DAYS env override, 기본 7일. 양수 유한값이 아니면 기본값으로 폴백.
+ *  자동 발급(#179)으로 모든 완성 티켓이 업로드되므로 30→7일로 줄여 누적 저장을 상쇄한다. */
 function ttlMs(): number {
   const raw = Number(process.env.TICKET_TTL_DAYS);
   const days = Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_TTL_DAYS;
