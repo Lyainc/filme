@@ -108,15 +108,12 @@ export function ResultSheet({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-2">
-          {/* 시트는 모바일·open일 때만 마운트되는 '보이는' 인스턴스라 자동 발급을 켠다(#179).
-              데스크톱 rail ResultPanel은 autoIssue={!isMobile}로 분기해 중복 업로드를 막는다. */}
           <ResultPanel
             croppedImageUrl={croppedImageUrl}
             movieInfo={movieInfo}
             components={components}
             fieldVisibility={fieldVisibility}
             previewClassName={expanded ? 'max-w-[320px]' : 'max-w-[200px]'}
-            autoIssue
           />
         </div>
       </div>
