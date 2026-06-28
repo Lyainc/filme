@@ -158,7 +158,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
     <div className="space-y-6 sm:space-y-8">
       <section className="space-y-4">
         <div className="flex items-center gap-2">
-          <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Poster</h3>
+          <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Poster</span>
           <InfoTooltip
             text="영화 포스터 이미지를 올리는 곳이에요. 아래 '티켓 스크린샷으로 자동입력'에 티켓 스크린샷을 넣으면 영화 정보가 자동으로 채워져요."
             label="포스터 추가 안내"
@@ -218,7 +218,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
       </div>
 
       <section className="space-y-4">
-        <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Film</h3>
+        <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Film</span>
         <MovieInfoForm
           movieInfo={movieInfo}
           onChange={setInfo}
@@ -409,7 +409,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
 
       <section className="space-y-4">
         <div className="flex items-center gap-2">
-          <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Mood</h3>
+          <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Mood</span>
           <InfoTooltip
             text="티켓의 전체 분위기를 정하는 곳이에요. 미니멀·크라이테리온·35mm·에디토리얼 무드별로 레이아웃과 질감이 달라져요."
             label="티켓 무드 안내"
@@ -423,7 +423,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Logos</h3>
+        <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Logos</span>
         {/* Theater/Format 병렬 한 줄 배치(#141 (6)) — 모바일은 1열로 떨어뜨려 협소 방지 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <TheaterChainPicker
@@ -448,7 +448,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
 
       <section className="space-y-4">
         <div className="flex items-center gap-2">
-          <h3 className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Texture</h3>
+          <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Texture</span>
           <InfoTooltip
             text="티켓 표면의 종이·필름 질감을 입히는 곳이에요. 같은 무드라도 질감에 따라 인쇄물 느낌이 확 달라져요."
             label="Texture 안내"
