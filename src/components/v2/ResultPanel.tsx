@@ -205,6 +205,9 @@ export function ResultPanel({
   // 링크를 비우고 사용자가 '링크 다시 만들기'로 재발급한다. ponytail: 닫았다 같은 내용으로
   // 재오픈 시 재업로드(새 blob)되지만 수동 재오픈이라 storm 아님, rate limit + 7일 cleanup이
   // 회수한다. dup 볼륨이 문제되면 permalink state를 부모로 올려 open/close 간 보존한다.
+  // 전제: autoIssue=true로 마운트될 땐 croppedImageUrl이 이미 있어야 한다(데스크톱·모바일 모두
+  // canExport가 null 포스터 상태의 openView를 막으므로 보장됨). null인 채 마운트되면 deps:[]라
+  // 재발화가 없어 auto-issue가 영구 스킵된다 — 이 패널을 그 조합으로 독립 렌더하지 말 것(#179 리뷰 P2).
   const autoIssuedRef = useRef(false);
   useEffect(() => {
     if (!autoIssue || autoIssuedRef.current || !croppedImageUrl) return;
