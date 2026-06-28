@@ -12,6 +12,7 @@
  */
 import { describe, expect, test, afterEach, afterAll, beforeAll, mock } from 'bun:test';
 import { render, screen, cleanup, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 
 const React = require('react') as typeof import('react');
@@ -72,5 +73,15 @@ describe('ResultPanel 공유 의도 게이팅 (#194)', () => {
     // 발급이 일어났다면 loading 또는 error 라벨이 떠야 한다 — 둘 다 없어야 자동 발급 부재.
     expect(screen.queryByText('링크 만드는 중…')).toBeNull();
     expect(screen.queryByText('실패, 다시 시도')).toBeNull();
+  });
+
+  test("'링크 만들기' 클릭 시에는 발급이 일어난다 (공유 의도 = 양의 경로)", async () => {
+    const user = userEvent.setup();
+    renderPanel();
+    const button = await screen.findByText('링크 만들기');
+    await user.click(button);
+    // on-demand 발급이 돌면 캡처 전에 loading→(happy-dom 캡처 실패로) error로 전이한다.
+    // error 라벨이 뜨면 issuePermalink가 끝까지 돌았다는 증거 = 버튼→발급 배선 정상.
+    await waitFor(() => expect(screen.getByText('실패, 다시 시도')).toBeTruthy());
   });
 });
