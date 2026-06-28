@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { list } from '@vercel/blob';
 import { Sprocket } from '@/components/v2/Sprocket';
+import { DEFAULT_TICKET_TTL_DAYS } from '@/utils/ticketCleanup';
 
 interface TicketLandingProps {
   imageUrl: string;
@@ -128,9 +129,9 @@ export default function TicketLanding({ imageUrl, title, pageUrl }: TicketLandin
             >
               나도 티켓 만들기 →
             </Link>
-            {/* disclaimer(#179) — 공유 링크 수신자에게 만료·비공식·양도불가 고지. */}
+            {/* disclaimer(#179) — 공유 링크 수신자에게 만료·비공식·양도불가 고지(만료일 단일 출처). */}
             <p className="mt-2 max-w-xs text-[11px] leading-snug text-fg-faint">
-              이 링크는 7일 후 만료돼요. 비공식 팬메이드 티켓이라 양도·재판매할 수 없어요.
+              이 링크는 {DEFAULT_TICKET_TTL_DAYS}일 후 만료돼요. 비공식 팬메이드 티켓이라 양도·재판매할 수 없어요.
             </p>
           </div>
         </main>

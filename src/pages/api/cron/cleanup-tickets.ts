@@ -1,6 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { list, del } from '@vercel/blob';
-import { planTicketCleanup, type CleanupBlob } from '@/utils/ticketCleanup';
+import {
+  planTicketCleanup,
+  DEFAULT_TICKET_TTL_DAYS,
+  type CleanupBlob,
+} from '@/utils/ticketCleanup';
 
 /**
  * 만료·orphan 티켓 Blob 정리 cron(#121 C3).
@@ -17,15 +21,15 @@ import { planTicketCleanup, type CleanupBlob } from '@/utils/ticketCleanup';
  */
 export const config = { maxDuration: 60 };
 
-const DEFAULT_TTL_DAYS = 7;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DEL_BATCH = 1000; // @vercel/blob del 1회 호출 상한.
 
-/** TTL(ms). TICKET_TTL_DAYS env override, 기본 7일. 양수 유한값이 아니면 기본값으로 폴백.
- *  자동 발급(#179)으로 모든 완성 티켓이 업로드되므로 30→7일로 줄여 누적 저장을 상쇄한다. */
+/** TTL(ms). TICKET_TTL_DAYS env override, 기본은 DEFAULT_TICKET_TTL_DAYS(#179). 양수 유한값이
+ *  아니면 기본값으로 폴백. ⚠️ 기본값을 줄이면 다음 cron 실행에서 그만큼 오래된 기존 blob이
+ *  소급 삭제된다 — 점진 적용이 필요하면 prod에 TICKET_TTL_DAYS를 한시적으로 높게 둘 것. */
 function ttlMs(): number {
   const raw = Number(process.env.TICKET_TTL_DAYS);
-  const days = Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_TTL_DAYS;
+  const days = Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_TICKET_TTL_DAYS;
   return days * DAY_MS;
 }
 
