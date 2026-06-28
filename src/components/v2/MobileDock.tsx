@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactElement } from 'react';
 import { Sprocket } from './Sprocket';
 
 // grabber(렌더 높이 약 20px) 위로 끌어올림으로 인정하는 최소 이동량. 단순 탭과 구분되게 잡았다.
@@ -10,8 +10,9 @@ interface MobileDockProps {
   /** CTA가 비활성일 때 이유를 한 줄로 안내 (데스크탑 rail의 RailReason과 패리티). */
   hint?: string;
   hasImage: boolean;
-  /** dock 좌측 라이브 썸네일 — 입력 변경이 즉시 반영되는 축소 TicketRenderer를 넘긴다(#181). */
-  thumb?: ReactNode;
+  /** dock 좌측 라이브 썸네일 — 입력 변경이 즉시 반영되는 축소 TicketRenderer를 넘긴다(#181).
+   *  ReactElement로 좁혀 falsy-but-renderable(0 등)이 불리언 가드를 통과하는 걸 막는다. */
+  thumb?: ReactElement;
   onPreviewClick?: () => void;
   onCtaClick?: () => void;
 }
