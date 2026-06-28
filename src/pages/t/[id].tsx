@@ -21,6 +21,7 @@ interface TicketLandingProps {
 export const getServerSideProps: GetServerSideProps<TicketLandingProps> = async ({
   params,
   req,
+  res,
 }) => {
   const id = typeof params?.id === 'string' ? params.id : '';
   if (!id) return { notFound: true };
@@ -55,6 +56,15 @@ export const getServerSideProps: GetServerSideProps<TicketLandingProps> = async 
     ? protoHeader[0]
     : protoHeader ?? (hostHeader.startsWith('localhost') ? 'http' : 'https');
   const pageUrl = `${proto}://${hostHeader}/t/${id}`;
+
+  // 티켓은 발급 후 불변이라 SSR 결과를 엣지에 캐시한다(#194) — 같은 링크 반복 열람·크롤러
+  // 언프롤이 CDN HIT로 빠져 per-view 함수 invocation과 list() advanced op를 없앤다. 성공
+  // 경로에만 건다(404·일시 조회 실패는 캐시 안 함). s-maxage(1h)는 TTL 3일보다 짧게 둬,
+  // 만료 삭제된 티켓이 캐시로 남는 창을 1h 이내로 제한한다(이후 revalidate가 404로 갱신).
+  res.setHeader(
+    'Cache-Control',
+    'public, s-maxage=3600, stale-while-revalidate=86400',
+  );
 
   return { props: { imageUrl, title, pageUrl } };
 };
