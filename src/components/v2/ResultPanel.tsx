@@ -29,12 +29,6 @@ interface ResultPanelProps {
    * 콘텐츠/캡처 로직은 동일 — 컨테이너가 크기만 분기한다.
    */
   previewClassName?: string;
-  /**
-   * 결과 뷰가 열려 이 패널이 마운트되면 permalink를 1회 자동 발급한다(#179, 공유 진입장벽 제거).
-   * 모바일은 rail(숨김)+시트로 ResultPanel이 둘 동시 마운트되므로(아래 인풋 id 코멘트 참고)
-   * **보이는 인스턴스에만** true를 줘 업로드 중복을 막는다.
-   */
-  autoIssue?: boolean;
 }
 
 /**
@@ -53,7 +47,6 @@ export function ResultPanel({
   components,
   fieldVisibility,
   previewClassName,
-  autoIssue = false,
 }: ResultPanelProps) {
   // 캡처 원본 — 여기 달린 TicketRenderer의 (스케일 전) 내부 DOM이 내보내기 대상이다.
   const ticketRef = useRef<HTMLDivElement>(null);
@@ -166,10 +159,16 @@ export function ResultPanel({
       // 가드는 노드 캡처 구간만 — 업로드(fetch)는 노드를 안 건드리므로 그동안 해제해
       // 다운로드 dead-tap을 막는다. 캡처 성공·실패 어느 쪽이든 finally로 해제(#167).
       try {
+        // 공유용 블롭은 다운로드(pixelRatio 2·q0.95)보다 작게 캡처한다(#194). 이 JPEG은 OG
+        // 카드·랜딩 썸네일로만 쓰여 작게 표시되므로 1920×2954 풀해상도가 불필요 — pixelRatio 1
+        // (960×1477) + q0.82로 ~2MB→~0.5MB. Blob 저장·Fast Origin Transfer·데이터 전송이 그만큼
+        // 줄어 Hobby 한도 헤드룸을 ~3~4배 늘린다. 다운로드/네이티브 공유 경로는 풀해상도 유지.
         dataUrl = await captureNodeToJpeg(node, {
           filename: `phototicket_${layout.id}.jpg`,
           width: layout.width,
           height: layout.height,
+          pixelRatio: 1,
+          quality: 0.82,
         });
       } finally {
         capturingRef.current = false;
@@ -205,18 +204,6 @@ export function ResultPanel({
   // 링크를 비우고 사용자가 '링크 다시 만들기'로 재발급한다. ponytail: 닫았다 같은 내용으로
   // 재오픈 시 재업로드(새 blob)되지만 수동 재오픈이라 storm 아님, rate limit + 7일 cleanup이
   // 회수한다. dup 볼륨이 문제되면 permalink state를 부모로 올려 open/close 간 보존한다.
-  // 전제: autoIssue=true로 마운트될 땐 croppedImageUrl이 이미 있어야 한다(데스크톱·모바일 모두
-  // canExport가 null 포스터 상태의 openView를 막으므로 보장됨). null인 채 마운트되면 deps:[]라
-  // 재발화가 없어 auto-issue가 영구 스킵된다 — 이 패널을 그 조합으로 독립 렌더하지 말 것(#179 리뷰 P2).
-  const autoIssuedRef = useRef(false);
-  useEffect(() => {
-    if (!autoIssue || autoIssuedRef.current || !croppedImageUrl) return;
-    autoIssuedRef.current = true;
-    void issuePermalink();
-    // 마운트 1회 — croppedImageUrl/issuePermalink 변동으로 재발화하지 않게 deps를 비운다.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // 공통 클립보드 복사 — 성공/거부에 따라 copyState 라벨을 갱신한다(기존 피드백 패턴 재사용).
   const copyToClipboard = useCallback(async (value: string) => {
     if (!value) return;
