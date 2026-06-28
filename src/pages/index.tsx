@@ -155,36 +155,9 @@ export default function Home() {
     <>
       <AppShell theme={theme} onThemeChange={setTheme} rail={rail}>
         <div className={DOCK_PADDING_CLASS}>
-          {/* 모바일 라이브 미니 프리뷰 — rail이 숨는 1024px 미만에서 색/밝기/texture/무드를
-              조정하면 즉시 보이도록 편집 영역 상단에 sticky로 고정한다. 탭하면 프리뷰 시트로
-              확대(dock 썸네일과 동일 진입). 데스크톱은 우측 rail 프리뷰가 그 역할을 하므로
-              rail:hidden으로 끈다(#139 ③). 노출은 CSS(rail:hidden)로 — JS isMobile에 의존하지
-              않아 첫 페인트부터 자리잡는다(#107). */}
-          {croppedImageUrl && !resultOpen && (
-            <div className="rail:hidden sticky top-0 z-30 -mx-4 mb-6 border-b border-line bg-surface px-4 py-2.5">
-              <button
-                type="button"
-                onClick={() => setPreviewOpen(true)}
-                className="flex w-full items-center gap-3 text-left"
-                aria-label="미리보기 크게 보기"
-              >
-                <div className="w-[56px] shrink-0 overflow-hidden rounded-sm">
-                  <TicketRenderer
-                    croppedImageUrl={croppedImageUrl}
-                    movieInfo={debouncedMovieInfo}
-                    components={debouncedComponents}
-                    fieldVisibility={fieldVisibility}
-                  />
-                </div>
-                <span className="text-mono flex-1 text-[10px] uppercase tracking-widest text-fg-muted">
-                  실시간 미리보기
-                </span>
-                <span className="text-mono shrink-0 text-[10px] uppercase tracking-widest text-fg-faint">
-                  탭하면 크게 ↗
-                </span>
-              </button>
-            </div>
-          )}
+          {/* 모바일 라이브 미니 프리뷰는 하단 MobileDock 좌측 썸네일로 통합했다(#181) —
+              상단 sticky 프리뷰는 스크롤하면 화면 밖으로 밀려 거의 안 보였고, 항상 보이는
+              dock 썸네일과 중복이라 제거했다. 데스크톱은 우측 rail 프리뷰가 그대로 담당. */}
           <EditorCanvas photo={photo} onPendingFetchChange={setPendingFetch} />
         </div>
       </AppShell>
@@ -199,7 +172,16 @@ export default function Home() {
             disabled={!canExport}
             hint={canExport ? undefined : railMessage}
             hasImage={!!croppedImageUrl}
-            previewThumb={croppedImageUrl ?? undefined}
+            thumb={
+              croppedImageUrl ? (
+                <TicketRenderer
+                  croppedImageUrl={croppedImageUrl}
+                  movieInfo={debouncedMovieInfo}
+                  components={debouncedComponents}
+                  fieldVisibility={fieldVisibility}
+                />
+              ) : undefined
+            }
             onPreviewClick={() => setPreviewOpen(true)}
             onCtaClick={openView}
           />

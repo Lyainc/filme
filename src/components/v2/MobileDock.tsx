@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { Sprocket } from './Sprocket';
 
 // grabber(렌더 높이 약 20px) 위로 끌어올림으로 인정하는 최소 이동량. 단순 탭과 구분되게 잡았다.
@@ -10,7 +10,8 @@ interface MobileDockProps {
   /** CTA가 비활성일 때 이유를 한 줄로 안내 (데스크탑 rail의 RailReason과 패리티). */
   hint?: string;
   hasImage: boolean;
-  previewThumb?: string;
+  /** dock 좌측 라이브 썸네일 — 입력 변경이 즉시 반영되는 축소 TicketRenderer를 넘긴다(#181). */
+  thumb?: ReactNode;
   onPreviewClick?: () => void;
   onCtaClick?: () => void;
 }
@@ -20,11 +21,11 @@ export function MobileDock({
   disabled = false,
   hint,
   hasImage,
-  previewThumb,
+  thumb,
   onPreviewClick,
   onCtaClick,
 }: MobileDockProps) {
-  const showThumb = hasImage && previewThumb;
+  const showThumb = hasImage && thumb;
   const dockRef = useRef<HTMLDivElement>(null);
 
   // grabber에서 위로 스와이프하면 프리뷰를 연다(#117, 미니뷰어 풀업). 탭도 동일하게 연다.
@@ -114,11 +115,9 @@ export function MobileDock({
           }}
         >
           {showThumb ? (
-            <img
-              src={previewThumb}
-              alt="티켓 미리보기"
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
+            // 라이브 렌더는 w-full로 박스 폭(44)을 받아 aspectRatio로 높이를 잡고,
+            // 박스의 overflow:hidden + flex-center가 세로 넘침을 가운데 크롭으로 처리한다.
+            thumb
           ) : (
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--fg-faint)" strokeWidth="1.5" aria-hidden="true">
               <rect x="3" y="3" width="18" height="18" rx="2" />
