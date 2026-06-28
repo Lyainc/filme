@@ -15,11 +15,12 @@
 
 /**
  * 공유 링크 기본 유효기간(일). cleanup cron의 TTL 기본값이자 사용자 disclaimer 표기의 단일
- * 출처(#179) — 셋이 따로 박혀 어긋나지 않게 여기서만 정의한다. 자동 발급으로 모든 완성 티켓이
- * 업로드되므로 30→7로 줄여 누적 저장을 상쇄한다. cron은 TICKET_TTL_DAYS env로 이 값을 덮을 수
- * 있으나, disclaimer 표기는 기본값을 따른다(env override의 UI 반영은 미사용 escape hatch라 생략).
+ * 출처(#179) — 셋이 따로 박혀 어긋나지 않게 여기서만 정의한다. 30→7(#179)→3(#194)으로 줄여
+ * 공유 블롭 누적 저장을 상쇄한다(자동 발급 폐기로 업로드는 공유자에 한정되지만, 저장 헤드룸을
+ * 더 확보). cron은 TICKET_TTL_DAYS env로 덮을 수 있으나, disclaimer 표기는 기본값을 따른다
+ * (env override의 UI 반영은 미사용 escape hatch라 생략).
  */
-export const DEFAULT_TICKET_TTL_DAYS = 7;
+export const DEFAULT_TICKET_TTL_DAYS = 3;
 
 export interface CleanupBlob {
   pathname: string;
