@@ -8,6 +8,7 @@ import {
   shareTicketAsJpeg,
 } from '@/utils/captureToImage';
 import { buildShareMessage } from '@/utils/shareMessage';
+import { DEFAULT_TICKET_TTL_DAYS } from '@/utils/ticketCleanup';
 import { PreviewFilmCell } from './PreviewFilmCell';
 import { PrimaryCta } from './PrimaryCta';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
@@ -374,9 +375,10 @@ export function ResultPanel({
                 자동 복사가 막혔어요. 링크를 길게 눌러 직접 복사해 주세요.
               </p>
             )}
-            {/* 공유 링크 disclaimer(#179) — 만료·비공식·양도불가 고지. */}
+            {/* 공유 링크 disclaimer(#179) — 만료·비공식·양도불가 고지. 만료일은 cleanup과 같은
+                단일 출처(DEFAULT_TICKET_TTL_DAYS)에서 가져와 표기와 실제 정책이 어긋나지 않게 한다. */}
             <p className="text-[11px] leading-snug text-fg-faint">
-              이 링크는 7일 후 만료돼요. 비공식 팬메이드 티켓이라 양도·재판매할 수 없어요.
+              이 링크는 {DEFAULT_TICKET_TTL_DAYS}일 후 만료돼요. 비공식 팬메이드 티켓이라 양도·재판매할 수 없어요.
             </p>
           </div>
         )}
