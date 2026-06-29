@@ -29,6 +29,14 @@ export const FONT_SANS = '"Pretendard Variable", "Pretendard", "Noto Sans KR", s
 // Inter는 한글 글리프가 없어 폴백 시 한글이 시스템 폰트로 어긋남 → 한글 지원 폰트로 교체.
 export const FONT_KR = '"Pretendard Variable", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
 
+/**
+ * 장식 전용 디스플레이 세리프(#205). 유저 데이터가 아닌 순수 디자인 문구·큐레이션 라벨에만
+ * 쓴다(제목/본문 데이터는 FONT_SANS 유지 — 한글 글리프 + 인쇄 안정성). Instrument Serif는
+ * `_app.tsx`에서 next/font로 자체 호스팅하며 `--font-display` CSS 변수로 노출된다(레포 컨벤션:
+ * CDN @import 금지). 한글이 없으므로 Georgia/Times 폴백을 두고, 한글에는 절대 쓰지 말 것.
+ */
+export const FONT_DISPLAY = 'var(--font-display), Georgia, "Times New Roman", serif';
+
 export type Surface = 'paper' | 'dark';
 
 interface ChainStampProps {
@@ -198,127 +206,6 @@ export function FormatStamp({
   return <DashedPlaceholder text="FORMAT" width={140 * size} height={h} size={size} surface={surface} />;
 }
 
-interface BrandMarkProps {
-  /** 워드마크 색 — 무드 잉크색을 그대로 넘긴다. */
-  color?: string;
-  /** 스케일 배율(1 = 기본 14px). */
-  size?: number;
-  orientation?: 'horizontal' | 'vertical';
-  opacity?: number;
-  letterSpacing?: number;
-}
-
-/**
- * 브랜드 cue "FILME" 워드마크(#138 T1). 4무드 공통 푸터에 들어가며 캡처에 포함된다
- * (data-hide-on-export 금지). 도메인이 아닌 순수 "FILME". 색·크기·방향만 무드별로 조정.
- */
-export function BrandMark({
-  color = 'currentColor',
-  size = 1,
-  orientation = 'horizontal',
-  opacity = 0.9,
-  letterSpacing = 4,
-}: BrandMarkProps) {
-  return (
-    <span
-      style={{
-        display: 'inline-block',
-        fontWeight: 800,
-        fontSize: 14 * size,
-        fontFamily: FONT_SANS,
-        letterSpacing: letterSpacing * size,
-        textTransform: 'uppercase',
-        color,
-        opacity,
-        whiteSpace: 'nowrap',
-        ...(orientation === 'vertical'
-          ? { writingMode: 'vertical-rl', transform: 'rotate(180deg)' }
-          : {}),
-      }}
-    >
-      FILME
-    </span>
-  );
-}
-
-interface SignatureMarkProps {
-  value: string;
-  color?: string;
-  size?: number;
-  /** 위에 붙는 작은 mono 라벨(예: SIGNED). 생략 시 라벨 없이 서명만. */
-  label?: string;
-  fontFamily?: string;
-  italic?: boolean;
-  opacity?: number;
-  /** 말줄임 기준 폭. 길이 제한을 넘겨도 ellipsis로 잘린다. */
-  maxWidth?: number;
-  align?: 'left' | 'right';
-}
-
-/**
- * 유저 서명/닉네임 슬롯(#148). value가 비면 아무것도 렌더하지 않아 빈 자리를 안 남긴다.
- * 한 줄 + ellipsis(폼의 maxLength와 이중 안전장치). 브랜드 cue와 시각적으로 분리해 배치할 것.
- */
-export function SignatureMark({
-  value,
-  color = 'currentColor',
-  size = 1,
-  label,
-  fontFamily = FONT_KR,
-  italic = false,
-  opacity = 0.9,
-  maxWidth = 360,
-  align = 'left',
-}: SignatureMarkProps) {
-  if (!value) return null;
-  return (
-    <div
-      style={{
-        display: 'inline-flex',
-        flexDirection: 'column',
-        alignItems: align === 'right' ? 'flex-end' : 'flex-start',
-        maxWidth,
-        minWidth: 0,
-        opacity,
-        color,
-      }}
-    >
-      {label && (
-        <span
-          style={{
-            fontWeight: 700,
-            fontSize: 9 * size,
-            fontFamily: FONT_MONO,
-            letterSpacing: 2 * size,
-            textTransform: 'uppercase',
-            opacity: 0.6,
-            marginBottom: 3,
-          }}
-        >
-          {label}
-        </span>
-      )}
-      <span
-        style={{
-          fontWeight: 500,
-          fontStyle: italic ? 'italic' : 'normal',
-          fontSize: 19 * size,
-          fontFamily,
-          letterSpacing: 0.2,
-          lineHeight: 1.15,
-          maxWidth: '100%',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          textAlign: align,
-        }}
-      >
-        {value}
-      </span>
-    </div>
-  );
-}
-
 interface PosterProps {
   src: string;
   fit?: 'cover' | 'contain';
@@ -454,26 +341,30 @@ interface BarcodeProps {
 
 type Bar = { ink: boolean; w: number };
 
+// Code 128 심볼 패턴(6모듈 = bar,space,bar,space,bar,space, 합 11) 서브셋. 실제 바코드의
+// 균형 잡힌 밀도감을 재현해 "가짜 랜덤 막대" 느낌을 없앤다(#205 바코드 재설계).
+const C128_PATTERNS = [
+  '212222', '222122', '222221', '121223', '121322', '131222', '122213', '122312',
+  '132212', '221213', '221312', '231212', '112232', '122132', '122231', '113222',
+  '123122', '123221', '223211', '221132', '221231', '213212', '223112', '312131',
+  '311222', '321122', '321221', '312212', '322112', '322211', '212123', '212321',
+];
+const C128_START = '211214'; // Start-B 가이드
+const C128_STOP = '2331112'; // Stop 가이드(7모듈, bar로 끝)
+
 function buildBarcodeWidths(value: string): Bar[] {
-  let s = seedFromString(value);
-  const widths: Bar[] = [
-    { ink: true, w: 3 },
-    { ink: false, w: 1 },
-    { ink: true, w: 1 },
-  ];
-  let toggle = false;
-  for (let i = 0; i < 80; i++) {
-    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
-    widths.push({ ink: toggle, w: 1 + (s % 3) });
-    toggle = !toggle;
+  const v = value || 'PT-000000-0000';
+  let seq = C128_START;
+  for (let i = 0; i < v.length; i++) {
+    seq += C128_PATTERNS[v.charCodeAt(i) % C128_PATTERNS.length];
   }
-  widths.push(
-    { ink: true, w: 1 },
-    { ink: false, w: 1 },
-    { ink: true, w: 3 },
-    { ink: false, w: 1 },
-    { ink: true, w: 2 }
-  );
+  seq += C128_STOP;
+  const widths: Bar[] = [];
+  let ink = true; // 시퀀스는 항상 bar로 시작→space 교차
+  for (let i = 0; i < seq.length; i++) {
+    widths.push({ ink, w: parseInt(seq[i], 10) });
+    ink = !ink;
+  }
   return widths;
 }
 
@@ -516,7 +407,7 @@ export const Barcode = memo(function Barcode({
         display: 'inline-flex',
         flexDirection: orientation === 'horizontal' ? 'column' : 'row',
         alignItems: orientation === 'horizontal' ? 'flex-start' : 'flex-end',
-        gap: 6,
+        gap: Math.max(textSize * 0.5, 6),
       }}
     >
       <svg
@@ -539,7 +430,8 @@ export const Barcode = memo(function Barcode({
             fontSize: textSize,
             fontFamily: FONT_MONO,
             color,
-            letterSpacing: 2,
+            letterSpacing: textSize * 0.18,
+            whiteSpace: 'nowrap',
             writingMode: orientation === 'horizontal' ? 'horizontal-tb' : 'vertical-rl',
             ...(orientation === 'vertical' ? { transform: 'rotate(180deg)' } : {}),
           }}
@@ -675,18 +567,6 @@ export function fallbackBookingNumber(seed: string): string {
 export function resolveBookingNo(d: MovieInfo): string {
   return d.bookingNumber || fallbackBookingNumber(d.title || 'phototicket');
 }
-
-/**
- * 날짜 캡션 라벨 — 영어 라벨 무드(Minimal/Criterion/35mm)에서 관람일/개봉일/재개봉일을
- * **같은 꼴**(접두 라벨 + 공백 + 값)로 통일한다(#141 (11)). 이전엔 무드마다 제각각이었다
- * (35mm `← EXP`, Criterion은 watchDate 접두사 없이 bare, `REL`/`RE-REL` 약어 혼용).
- * Editorial은 정체성이 프랑스어라 자체 라벨(Séance/Sortie/Reprise)을 유지한다.
- */
-export const DATE_LABELS = {
-  watched: 'WATCHED',
-  released: 'RELEASED',
-  reissued: 'RE-RELEASED',
-} as const;
 
 /**
  * 4종 무드가 공통으로 파생하던 티켓 데이터를 한 곳으로 모은 것.

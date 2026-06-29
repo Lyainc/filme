@@ -1,16 +1,13 @@
 import { CSSProperties } from 'react';
 import {
   Barcode,
-  BrandMark,
   ChainStamp,
-  DATE_LABELS,
+  FONT_DISPLAY,
   FONT_KR,
-  FONT_MONO,
   FONT_SANS,
   FormatStamp,
   MoodProps,
   Poster,
-  SignatureMark,
   gate,
   isInkDark,
   pickTitleSize,
@@ -19,42 +16,64 @@ import {
   truncateActors,
 } from './_shared';
 
-// 컬러를 제외한 정적 부분은 모듈 레벨 상수 — 매 렌더 새 객체 생성을 막는다.
-// 라이브 컬러(ink)만 컴포넌트 안에서 1회 spread.
-const META_LABEL_BASE: CSSProperties = {
-  fontWeight: 700,
-  fontSize: 14,
-  fontFamily: FONT_MONO,
-  letterSpacing: 2.8,
-  textTransform: 'uppercase',
-  opacity: 0.55,
-  whiteSpace: 'nowrap',
+/**
+ * v4 — 모던 갤러리 아트카드. 포스터 풀블리드 + 하단 스크림.
+ * 리뷰 반영: 상단 중복 날짜 제거(메타 Screening으로 일원화), 포맷(DOLBY)을 극장체인 옆 상단으로
+ * 통일, RELEASED를 다른 메타와 동급 셀로 승격, FILME에 'phototicket' 컨텍스트, 서명에 'collected by'
+ * 라벨, 바코드 확대. 데이터=Pretendard, 장식 라벨=Instrument Serif, 코드=Mono.
+ */
+const labelSerif = (color: string): CSSProperties => ({
+  fontFamily: FONT_DISPLAY,
+  fontStyle: 'italic',
+  fontWeight: 400,
+  fontSize: 30,
+  lineHeight: 1,
+  letterSpacing: 0.3,
+  color,
+  opacity: 0.72,
+  marginBottom: 6,
+});
+
+const metaValue: CSSProperties = {
+  fontWeight: 600,
+  fontSize: 40,
+  fontFamily: FONT_SANS,
+  letterSpacing: -0.4,
+  lineHeight: 1.12,
 };
 
-const META_VALUE_BASE: CSSProperties = {
-  fontWeight: 700,
-  fontSize: 28,
-  fontFamily: FONT_SANS,
-  letterSpacing: -0.2,
-  lineHeight: 1.25,
-};
+/** 아트프린트 코너 레지스트레이션 마크(과하지 않은 엣지) — 4모서리 L자 틱. */
+function RegistrationMarks({ color }: { color: string }) {
+  const L = 22;
+  const W = 2;
+  const inset = 24;
+  const base: CSSProperties = { position: 'absolute', width: L, height: L, opacity: 0.45, pointerEvents: 'none' };
+  return (
+    <>
+      <div style={{ ...base, top: inset, left: inset, borderTop: `${W}px solid ${color}`, borderLeft: `${W}px solid ${color}` }} />
+      <div style={{ ...base, top: inset, right: inset, borderTop: `${W}px solid ${color}`, borderRight: `${W}px solid ${color}` }} />
+      <div style={{ ...base, bottom: inset, left: inset, borderBottom: `${W}px solid ${color}`, borderLeft: `${W}px solid ${color}` }} />
+      <div style={{ ...base, bottom: inset, right: inset, borderBottom: `${W}px solid ${color}`, borderRight: `${W}px solid ${color}` }} />
+    </>
+  );
+}
 
 export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
   const inkIsDark = isInkDark(themeColor);
-  // ink는 사용자가 고른 themeColor를 그대로 쓴다 — inkIsDark는 표면/스크림 톤만 분기한다.
-  // (이전엔 dark일 때 '#0d0c0a'로 덮어써 #8E4E69 같은 어두운 유채색이 묻혔다, #177)
-  // resolveInk로 불완전 hex(타이핑 중 '#8E' 등)는 fallback 처리해 투명 텍스트를 막는다(#177 리뷰 P1).
   const ink = resolveInk(themeColor, inkIsDark ? '#0d0c0a' : '#FFFFFF');
-  const labelStyle: CSSProperties = { ...META_LABEL_BASE, color: ink };
-  const valueStyle: CSSProperties = { ...META_VALUE_BASE, color: ink };
+  // 밝은 테마(inkIsDark)에선 topScrim이 크림이라 stamp surface도 paper로 — 'dark' 고정이면
+  // DashedPlaceholder가 흰색 테두리·텍스트라 크림 위에서 안 보인다(Criterion 패턴 정렬, #205 리뷰 P1).
+  const stampSurface = inkIsDark ? 'paper' : 'dark';
   const titleLen = d.title.length;
-  const titleSize = pickTitleSize(titleLen, [100, 82, 66, 52]);
+  const titleSize = pickTitleSize(titleLen, [136, 112, 92, 76]);
 
   const scrimGrad = inkIsDark
-    ? 'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(245,240,232,0.85) 35%, rgba(245,240,232,0.98) 100%)'
-    : 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.65) 35%, rgba(0,0,0,0.92) 100%)';
-  const topPanelBg = inkIsDark ? 'rgba(255,255,255,0.92)' : 'rgba(0,0,0,0.55)';
+    ? 'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(245,240,232,0.82) 36%, rgba(245,240,232,0.97) 100%)'
+    : 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 36%, rgba(0,0,0,0.93) 100%)';
+  const topScrim = inkIsDark
+    ? 'linear-gradient(180deg, rgba(245,240,232,0.9) 0%, rgba(245,240,232,0) 100%)'
+    : 'linear-gradient(180deg, rgba(0,0,0,0.58) 0%, rgba(0,0,0,0) 100%)';
 
   const { bookingNo, watchDateClean, releaseClean, reissueClean } = resolveTicketData(d);
 
@@ -70,260 +89,116 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
   const releaseDateVal = gate(fv?.releaseDate, releaseClean);
   const reissueVal     = gate(fv?.reissue, reissueClean);
   const signatureVal   = gate(fv?.signature, d.signature);
+  const ratingVisible  = (fv?.rating ?? true) && d.rating > 0;
+
+  // 메타 청킹(#리뷰): 관람(Screening/Venue/Seat) vs 영화(Runtime/Rated/Released)를 분리.
+  // 값 폰트는 전부 Pretendard로 통일(숫자·날짜 포함) — 모노는 바코드/일련번호 같은 코드에만.
+  const screeningCells: { label: string; value: string }[] = [];
+  const screening = [watchDateVal, watchTimeVal].filter(Boolean).join('  ');
+  if (screening) screeningCells.push({ label: 'Screening', value: screening });
+  const venue = [theaterVal, screenVal].filter(Boolean).join(' · ');
+  if (venue) screeningCells.push({ label: 'Venue', value: venue });
+  if (seatVal) screeningCells.push({ label: 'Seat', value: seatVal });
+
+  const filmCells: { label: string; value: string }[] = [];
+  if (runtimeVal) filmCells.push({ label: 'Runtime', value: runtimeVal });
+  if (ratingVisible) filmCells.push({ label: 'Rated', value: `★ ${d.rating.toFixed(1)}` });
+  if (releaseDateVal) filmCells.push({ label: 'Released', value: releaseDateVal });
+  if (reissueVal) filmCells.push({ label: 'Re-released', value: reissueVal });
+
+  const hasTopStamp = components.chainVisible || components.formatVisible;
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        color: ink,
-        fontFamily: FONT_SANS,
-        overflow: 'hidden',
-      }}
-    >
-      <Poster
-        src={croppedImageUrl}
-        texture={components.texture}
-        posterOpacity={components.posterOpacity}
-      />
+    <div style={{ position: 'absolute', inset: 0, color: ink, fontFamily: FONT_SANS, overflow: 'hidden' }}>
+      <Poster src={croppedImageUrl} texture={components.texture} posterOpacity={components.posterOpacity} />
 
-      {/* Top stamp bar */}
-      <div
-        style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          top: 0,
-          background: topPanelBg,
-          padding: '30px 56px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          backdropFilter: 'blur(6px)',
-          WebkitBackdropFilter: 'blur(6px)',
-        }}
-      >
-        <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} size={1.25} />
-        {(watchDateVal || watchTimeVal) && (
-          <div
-            style={{
-              fontWeight: 700,
-              fontSize: 24,
-              fontFamily: FONT_MONO,
-              letterSpacing: 2.5,
-              color: ink,
-              textAlign: 'right',
-            }}
-          >
-            {watchDateVal}
-            {watchTimeVal && (
-              <>
-                {watchDateVal && <br />}
-                <span style={{ opacity: 0.6, fontSize: 20 }}>{watchTimeVal}</span>
-              </>
-            )}
+      <RegistrationMarks color={ink} />
+
+      {/* Top — chain + format paired (같은 위상이라 인접 배치) */}
+      {hasTopStamp && (
+        <>
+          <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 180, background: topScrim, pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', left: 56, top: 44, display: 'flex', alignItems: 'center', gap: 22 }}>
+            <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={54} surface={stampSurface} />
+            {components.chainVisible && components.formatVisible && <span style={{ width: 1, height: 38, background: ink, opacity: 0.5 }} />}
+            <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.9} surface={stampSurface} />
           </div>
-        )}
-      </div>
+        </>
+      )}
 
       {/* Bottom scrim */}
-      <div
-        style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: 760,
-          background: scrimGrad,
-          pointerEvents: 'none',
-        }}
-      />
+      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 770, background: scrimGrad, pointerEvents: 'none' }} />
 
       {/* Bottom block */}
-      <div style={{ position: 'absolute', left: 56, right: 56, bottom: 56 }}>
+      <div style={{ position: 'absolute', left: 56, right: 56, bottom: 52 }}>
+        <div style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 34, opacity: 0.7, marginBottom: 12, letterSpacing: 0.3 }}>
+          now showing
+        </div>
+
+        {titleVal && (
+          <div style={{ fontWeight: titleLen > 12 ? 400 : 300, fontSize: titleSize, fontFamily: FONT_KR, lineHeight: 1.06, letterSpacing: -1.5, marginBottom: 16, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            {titleVal}
+          </div>
+        )}
         {titleOgVal && (
-          <div
-            style={{
-              fontWeight: 700,
-              fontSize: 24,
-              fontFamily: FONT_SANS,
-              letterSpacing: 4,
-              textTransform: 'uppercase',
-              opacity: 0.78,
-              marginBottom: 18,
-            }}
-          >
+          <div style={{ fontWeight: 600, fontSize: 26, fontFamily: FONT_SANS, letterSpacing: 2.5, textTransform: 'uppercase', opacity: 0.66, marginBottom: 28, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {titleOgVal}
           </div>
         )}
 
-        {titleVal && (
-          <div
-            style={{
-              fontWeight: titleLen > 12 ? 400 : 300,
-              fontSize: titleSize,
-              fontFamily: FONT_KR,
-              lineHeight: 1.05,
-              letterSpacing: -1.5,
-              marginBottom: 36,
-            }}
-          >
-            {titleVal}
+        <div style={{ height: 1, background: ink, opacity: 0.38, marginBottom: 26 }} />
+
+        {/* Meta — 관람/영화 청킹, 두 행 사이 헤어라인. 값은 Pretendard로 통일 */}
+        {(screeningCells.length > 0 || filmCells.length > 0) && (
+          <div style={{ marginBottom: 28 }}>
+            {screeningCells.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '18px 56px' }}>
+                {screeningCells.map((c, i) => (
+                  <div key={i} style={{ minWidth: 0 }}>
+                    <div style={labelSerif(ink)}>{c.label}</div>
+                    <div style={{ ...metaValue, maxWidth: 560, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.value}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {screeningCells.length > 0 && filmCells.length > 0 && (
+              <div style={{ height: 1, background: ink, opacity: 0.18, margin: '22px 0' }} />
+            )}
+            {filmCells.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '18px 56px' }}>
+                {filmCells.map((c, i) => (
+                  <div key={i} style={{ minWidth: 0 }}>
+                    <div style={labelSerif(ink)}>{c.label}</div>
+                    <div style={{ ...metaValue, maxWidth: 560, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.value}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
-
-        <div style={{ height: 2, background: ink, opacity: 0.45, marginBottom: 22 }} />
 
         {actorsVal && (
-          <div
-            style={{
-              fontWeight: 500,
-              fontSize: 24,
-              fontFamily: FONT_KR,
-              opacity: 0.78,
-              marginBottom: 16,
-              letterSpacing: 0.2,
-              lineHeight: 1.35,
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-            }}
-          >
-            <span
-              style={{
-                fontWeight: 700,
-                fontSize: 14,
-                fontFamily: FONT_SANS,
-                letterSpacing: 2.5,
-                opacity: 0.55,
-                marginRight: 12,
-                verticalAlign: '1px',
-              }}
-            >
-              CAST
-            </span>
-            {actorsVal}
+          <div style={{ marginBottom: 30, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 30, opacity: 0.7, marginRight: 14 }}>with</span>
+            <span style={{ fontWeight: 500, fontSize: 32, fontFamily: FONT_KR, opacity: 0.86, letterSpacing: -0.2 }}>{actorsVal}</span>
           </div>
         )}
 
-        {(releaseDateVal || reissueVal) && (
-          <div
-            style={{
-              fontWeight: 600,
-              fontSize: 16,
-              fontFamily: FONT_MONO,
-              letterSpacing: 2,
-              opacity: 0.55,
-              marginBottom: 30,
-            }}
-          >
-            {releaseDateVal && <>{DATE_LABELS.released} {releaseDateVal}</>}
-            {releaseDateVal && reissueVal && <>{'  ·  '}</>}
-            {reissueVal && <>{DATE_LABELS.reissued} {reissueVal}</>}
+        {/* Footer — FILME 락업(컨텍스트) / 바코드 + 서명(라벨) */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 32 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 9, opacity: 0.55, minWidth: 0 }}>
+            <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 20, color: ink }}>made with</span>
+            <span style={{ fontWeight: 800, fontSize: 20, fontFamily: FONT_SANS, letterSpacing: 3, color: ink }}>FILME</span>
           </div>
-        )}
-
-        {/* Bottom row */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr auto',
-            columnGap: 32,
-            alignItems: 'end',
-            marginTop: 14,
-          }}
-        >
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'auto 1fr auto 1fr',
-              columnGap: 24,
-              rowGap: 14,
-              alignItems: 'baseline',
-            }}
-          >
-            {(watchDateVal || watchTimeVal) && (
-              <>
-                <div style={labelStyle}>관람일</div>
-                <div style={valueStyle}>
-                  {watchDateVal}
-                  {watchDateVal && watchTimeVal && ' '}
-                  {watchTimeVal && <span style={{ opacity: 0.6 }}>{watchTimeVal}</span>}
-                </div>
-              </>
-            )}
-            {(theaterVal || screenVal) && (
-              <>
-                <div style={labelStyle}>상영관</div>
-                <div style={valueStyle}>
-                  {theaterVal}
-                  {theaterVal && screenVal ? ` · ${screenVal}` : screenVal || ''}
-                </div>
-              </>
-            )}
-
-            {seatVal && (
-              <>
-                <div style={labelStyle}>좌석</div>
-                <div style={valueStyle}>{seatVal}</div>
-              </>
-            )}
-            {runtimeVal && (
-              <>
-                <div style={labelStyle}>러닝타임</div>
-                <div style={valueStyle}>{runtimeVal}</div>
-              </>
-            )}
-
-            {(fv?.rating ?? true) && d.rating > 0 && (
-              <>
-                <div style={labelStyle}>평점</div>
-                <div style={{ ...valueStyle, gridColumn: 'span 3' }}>
-                  ★ {d.rating.toFixed(1)} / 5.0
-                </div>
-              </>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 14, minWidth: 0 }}>
+            {(fv?.bookingNo ?? true) && <Barcode value={bookingNo} color={ink} width={268} height={54} textSize={19} />}
+            {signatureVal && (
+              <div style={{ textAlign: 'right', maxWidth: 440, minWidth: 0 }}>
+                <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 23, opacity: 0.6, color: ink, marginRight: 10 }}>collected by</span>
+                <span style={{ fontWeight: 500, fontSize: 30, fontFamily: FONT_KR, color: ink, letterSpacing: -0.2 }}>{signatureVal}</span>
+              </div>
             )}
           </div>
-
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'flex-end',
-              gap: 14,
-            }}
-          >
-            <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={1.4} />
-            {(fv?.bookingNo ?? true) && (
-              <Barcode value={bookingNo} color={ink} width={180} height={34} textSize={10} />
-            )}
-          </div>
-        </div>
-
-        {/* Brand cue + signature footer — 양 끝으로 갈라 시각적으로 분리 */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'space-between',
-            gap: 24,
-            marginTop: 30,
-          }}
-        >
-          <BrandMark color={ink} size={1.0} letterSpacing={6} opacity={0.82} />
-          {signatureVal && (
-            <SignatureMark
-              value={signatureVal}
-              color={ink}
-              label="SIGNED"
-              fontFamily={FONT_KR}
-              maxWidth={420}
-              align="right"
-              size={0.95}
-              opacity={0.8}
-            />
-          )}
         </div>
       </div>
     </div>
