@@ -4,8 +4,7 @@ import Link from 'next/link';
 import { list } from '@vercel/blob';
 import { Sprocket } from '@/components/v2/Sprocket';
 import { DEFAULT_TICKET_TTL_DAYS } from '@/utils/ticketCleanup';
-import { getLayout } from '@/utils/layouts';
-import type { LayoutId } from '@/types';
+import { getLayout, LAYOUTS } from '@/utils/layouts';
 
 interface TicketLandingProps {
   imageUrl: string;
@@ -49,9 +48,10 @@ export const getServerSideProps: GetServerSideProps<TicketLandingProps> = async 
           layout?: unknown;
         };
         if (typeof meta?.title === 'string') title = meta.title;
-        if (typeof meta?.layout === 'string') {
-          ({ width, height } = getLayout(meta.layout as LayoutId));
-        }
+        // 알 수 없는/이름이 바뀐 layout 값은 무시하고 portrait 기본값 유지 — getLayout은
+        // 미지의 id를 minimal로 흡수하지만, 그건 landscape 티켓에 잘못된 비율을 줄 수 있다.
+        const spec = LAYOUTS.find((l) => l.id === meta?.layout);
+        if (spec) ({ width, height } = spec);
       } catch {
         // 메타 조회 실패는 치명적이지 않다 — 이미지로 링크는 동작하고 og:title만 기본값으로.
       }
