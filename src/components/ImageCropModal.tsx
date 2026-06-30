@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Cropper from 'react-easy-crop';
 import { Area } from '@/utils/imageCrop';
@@ -33,17 +33,54 @@ export default function ImageCropModal({
   // 모달은 크롭 열림 상태에서만 마운트되므로 항상 열린 상태 — 스크롤 잠금
   useBodyScrollLock(true);
 
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const getFocusables = useCallback(
+    () =>
+      dialogRef.current
+        ? Array.from(
+            dialogRef.current.querySelectorAll<HTMLElement>(
+              'button:not([disabled]),input:not([disabled]),[href],[tabindex]:not([tabindex="-1"])',
+            ),
+          )
+        : [],
+    [],
+  );
+
+  // 마운트 시 첫 포커서블로 포커스 이동, 언마운트 시 직전 포커스 복원 (한 번만)
   useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !isProcessing) onClose();
+    const prev = document.activeElement as HTMLElement | null;
+    getFocusables()[0]?.focus();
+    return () => prev?.focus?.();
+  }, [getFocusables]);
+
+  // Escape 닫기 + Tab 순환 트랩 (포커스가 모달 뒤 페이지로 새지 않게)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (!isProcessing) onClose();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const els = getFocusables();
+      if (els.length === 0) return;
+      const first = els[0];
+      const last = els[els.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
-    document.addEventListener('keydown', handleEsc);
-    return () => document.removeEventListener('keydown', handleEsc);
-  }, [isProcessing, onClose]);
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isProcessing, onClose, getFocusables]);
 
   // dynamic(ssr:false)로만 import되므로 document는 항상 존재 — mount 가드 불필요
   return createPortal(
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label="Frame the poster"
