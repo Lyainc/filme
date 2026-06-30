@@ -78,7 +78,9 @@ export default function ImageCropModal({
       const first = els[0];
       const last = els[els.length - 1];
       const active = document.activeElement;
-      if (!node.contains(active)) {
+      // node.contains(node)는 true라(DOM: 자기 자신 포함) 다이얼로그 자체가 포커스를 쥔
+      // 경우(빈 focusables 분기 직후)도 "밖" 취급해 first로 끌어와야 Tab이 안 샌다.
+      if (!node.contains(active) || active === node) {
         e.preventDefault();
         first.focus();
       } else if (e.shiftKey && active === first) {
