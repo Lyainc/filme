@@ -41,6 +41,9 @@ export default function MovieInfoForm({
   const [searchResults, setSearchResults] = useState<KobisMovie[]>([]);
   const [searchError, setSearchError] = useState('');
   const [showResults, setShowResults] = useState(false);
+  // 자동완성 키보드 내비 — 하이라이트된 옵션 인덱스(-1 = 없음). aria-activedescendant로
+  // 노출하고 Enter가 이 항목을 선택한다(#198).
+  const [highlightIndex, setHighlightIndex] = useState(-1);
   const [isFetchingDetail, setIsFetchingDetail] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const searchCacheRef = useRef<Map<string, KobisMovie[]>>(new Map());
@@ -74,6 +77,12 @@ export default function MovieInfoForm({
       abortControllerRef.current?.abort();
     };
   }, []);
+
+  // 결과가 갈리거나 드롭다운이 닫히면 하이라이트 초기화 — 스테일 인덱스가 엉뚱한 항목을
+  // 가리키지 않게.
+  useEffect(() => {
+    setHighlightIndex(-1);
+  }, [searchResults, showResults]);
 
   const clearDebounce = () => {
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
@@ -222,13 +231,39 @@ export default function MovieInfoForm({
               scheduleSearch(term);
             }}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
+              const items = searchResults;
+              if (e.key === 'ArrowDown') {
+                if (!showResults || items.length === 0) return;
                 e.preventDefault();
-                clearDebounce();
-                handleSearch(movieInfo.title.trim());
+                setHighlightIndex((i) => (i + 1) % items.length);
+              } else if (e.key === 'ArrowUp') {
+                if (!showResults || items.length === 0) return;
+                e.preventDefault();
+                setHighlightIndex((i) => (i <= 0 ? items.length - 1 : i - 1));
+              } else if (e.key === 'Enter') {
+                e.preventDefault();
+                // 하이라이트된 항목이 있으면 그걸 선택, 없으면 검색 실행.
+                if (showResults && highlightIndex >= 0 && items[highlightIndex]) {
+                  handleSelectMovie(items[highlightIndex]);
+                } else {
+                  clearDebounce();
+                  handleSearch(movieInfo.title.trim());
+                }
+              } else if (e.key === 'Escape') {
+                if (showResults) {
+                  e.preventDefault();
+                  setShowResults(false);
+                }
               }
             }}
             placeholder="인터스텔라"
+            role="combobox"
+            aria-expanded={showResults}
+            aria-controls="movieTitle-listbox"
+            aria-autocomplete="list"
+            aria-activedescendant={
+              showResults && highlightIndex >= 0 ? `movieTitle-opt-${highlightIndex}` : undefined
+            }
             aria-invalid={(showResults && !!searchError) || undefined}
             aria-describedby={showResults && searchError ? 'movieTitle-error' : undefined}
             className="flex-1 rounded-field border border-line bg-paper px-3.5 py-3 text-[15px] text-fg outline-none transition-colors placeholder:text-fg-faint focus:border-accent focus:ring-2 focus:ring-accent-soft"
@@ -247,6 +282,16 @@ export default function MovieInfoForm({
           </button>
         </div>
 
+        {/* 로딩/결과수 announce — sr-only 요약(리스트 전체를 라이브로 두면 항목이 통째로
+            읽혀 과하다). 에러는 아래 role="alert"가 따로 처리. */}
+        <div role="status" aria-live="polite" className="sr-only">
+          {showResults && isSearching
+            ? '영화 검색 중'
+            : showResults && !searchError && searchResults.length > 0
+              ? `검색 결과 ${searchResults.length}개`
+              : ''}
+        </div>
+
         {showResults && (
           <div className="absolute z-30 mt-2 max-h-72 w-full overflow-y-auto rounded-card border border-line bg-paper shadow-card">
             {isSearching ? (
@@ -262,14 +307,22 @@ export default function MovieInfoForm({
                 {searchError}
               </div>
             ) : searchResults.length > 0 ? (
-              <ul>
-                {searchResults.map((movie) => (
-                  <li key={movie.movieCd}>
+              <ul id="movieTitle-listbox" role="listbox" aria-label="검색 결과">
+                {searchResults.map((movie, i) => (
+                  <li
+                    key={movie.movieCd}
+                    id={`movieTitle-opt-${i}`}
+                    role="option"
+                    aria-selected={i === highlightIndex}
+                  >
                     <button
                       type="button"
+                      tabIndex={-1}
                       onClick={() => handleSelectMovie(movie)}
                       data-touch="44"
-                      className="block w-full border-b border-line px-4 py-3 text-left transition-colors last:border-0 hover:bg-accent-soft"
+                      className={`block w-full border-b border-line px-4 py-3 text-left transition-colors last:border-0 hover:bg-accent-soft ${
+                        i === highlightIndex ? 'bg-accent-soft' : ''
+                      }`}
                     >
                       <div className="text-[15px] font-medium text-fg">{movie.movieNm}</div>
                       <div className="text-mono mt-1 flex items-center gap-2 text-[10px] uppercase tracking-widest text-fg-faint">
@@ -475,7 +528,7 @@ function ReleaseDateBlock({
       {reissueChecked && (
         <div className="space-y-2.5 border-l-2 border-line pl-3">
           <div className="flex flex-wrap items-stretch gap-2">
-            <DateInput value={reissueDate} granularity={granularity} onChange={onReissueDateChange} />
+            <DateInput value={reissueDate} granularity={granularity} onChange={onReissueDateChange} ariaLabel="재개봉일" />
             <span className="text-mono inline-flex items-center text-[10px] uppercase tracking-widest text-fg-faint">
               표기: {formatDate(reissueDate, token, granularity) || '—'}
             </span>
@@ -504,10 +557,13 @@ function DateInput({
   value,
   granularity,
   onChange,
+  ariaLabel,
 }: {
   value: string;
   granularity: DateGranularity;
   onChange: (next: string) => void;
+  /** placeholder만 있던 스핀버튼에 접근명을 부여 — SR이 무라벨로 읽지 않게(#198). */
+  ariaLabel?: string;
 }) {
   const base =
     'flex-1 min-w-[160px] rounded-field border border-line bg-paper px-3.5 py-3 text-[15px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft';
@@ -526,6 +582,7 @@ function DateInput({
           onChange(mergeDatePrefix(value, v));
         }}
         placeholder="2014"
+        aria-label={ariaLabel}
         className={base}
       />
     );
@@ -538,6 +595,7 @@ function DateInput({
         type="month"
         value={monthView}
         onChange={(e) => onChange(mergeDatePrefix(value, e.target.value))}
+        aria-label={ariaLabel}
         className={base}
       />
     );
@@ -547,6 +605,7 @@ function DateInput({
       type="date"
       value={value || ''}
       onChange={(e) => onChange(e.target.value)}
+      aria-label={ariaLabel}
       className={base}
     />
   );

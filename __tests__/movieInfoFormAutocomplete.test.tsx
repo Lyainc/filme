@@ -329,3 +329,73 @@ describe('detail fetch race (#82 suspect 4)', () => {
     expect(latestPending).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// 4. Keyboard navigation (#198) — ArrowDown/Up·Enter·Escape
+// ---------------------------------------------------------------------------
+
+function keydown(input: HTMLInputElement, key: string) {
+  return act(async () => {
+    input.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+  });
+}
+
+describe('자동완성 키보드 내비게이션 (#198)', () => {
+  test('ArrowDown으로 옵션을 하이라이트하고 aria-activedescendant를 갱신한다', async () => {
+    const input = titleInput(container);
+    await typeValue(input, '영화');
+    await flushDebounce();
+    expect(input.getAttribute('aria-activedescendant')).toBeNull();
+
+    await keydown(input, 'ArrowDown');
+    expect(input.getAttribute('aria-activedescendant')).toBe('movieTitle-opt-0');
+    await keydown(input, 'ArrowDown');
+    expect(input.getAttribute('aria-activedescendant')).toBe('movieTitle-opt-1');
+  });
+
+  test('ArrowDown→Enter로 하이라이트된 결과가 폼에 반영된다', async () => {
+    const input = titleInput(container);
+    await typeValue(input, '영화');
+    await flushDebounce();
+
+    // 두 번 내리면 1번(영화B)이 하이라이트.
+    await keydown(input, 'ArrowDown');
+    await keydown(input, 'ArrowDown');
+    await act(async () => {
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+      );
+      await sleep(10);
+    });
+
+    expect(latestInfo.title).toBe('영화B');
+    expect(resultButtons(container).length).toBe(0); // 선택 후 드롭다운 닫힘
+  });
+
+  test('하이라이트 없이 Enter면 항목을 선택하지 않는다(검색 경로)', async () => {
+    const input = titleInput(container);
+    await typeValue(input, '영화');
+    await flushDebounce();
+
+    await act(async () => {
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+      );
+    });
+
+    // 하이라이트가 없으니 handleSelectMovie가 아니라 handleSearch 경로 — 어떤 결과도
+    // 선택되지 않아 title은 입력값 그대로, 드롭다운도 유지(캐시 히트 재검색).
+    expect(latestInfo.title).toBe('영화');
+    expect(resultButtons(container).length).toBe(2);
+  });
+
+  test('Escape로 드롭다운이 닫힌다', async () => {
+    const input = titleInput(container);
+    await typeValue(input, '영화');
+    await flushDebounce();
+    expect(resultButtons(container).length).toBe(2);
+
+    await keydown(input, 'Escape');
+    expect(resultButtons(container).length).toBe(0);
+  });
+});
