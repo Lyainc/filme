@@ -88,6 +88,14 @@ export default function MovieInfoForm({
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
   };
 
+  // 하이라이트 이동 + 스크롤 동기화 — 리스트가 max-h-72 overflow-y-auto라 KOBIS 기본
+  // 10개 중 하단 항목은 뷰 밖이다. 하이라이트만 옮기면 키보드 사용자가 안 보이는 항목을
+  // 고르게 되므로 해당 옵션을 뷰로 끌어온다(#198 리뷰 P1).
+  const moveHighlight = (next: number) => {
+    setHighlightIndex(next);
+    document.getElementById(`movieTitle-opt-${next}`)?.scrollIntoView({ block: 'nearest' });
+  };
+
   const scheduleSearch = (term: string) => {
     clearDebounce();
     debounceTimerRef.current = setTimeout(() => handleSearch(term), 300);
@@ -177,6 +185,9 @@ export default function MovieInfoForm({
 
   const releaseGran = movieInfo.releaseDateGranularity || 'date';
   const releaseFmt = movieInfo.releaseDateFormat || 'kr-compact';
+  // listbox는 결과가 있을 때만 렌더되므로 aria-controls도 그때만 — 로딩/에러 상태에서
+  // 없는 요소를 가리키지 않게(ARIA 1.2, #198 리뷰 P1).
+  const hasListbox = showResults && !isSearching && !searchError && searchResults.length > 0;
 
   return (
     <section className="space-y-5">
@@ -235,11 +246,11 @@ export default function MovieInfoForm({
               if (e.key === 'ArrowDown') {
                 if (!showResults || items.length === 0) return;
                 e.preventDefault();
-                setHighlightIndex((i) => (i + 1) % items.length);
+                moveHighlight((highlightIndex + 1) % items.length);
               } else if (e.key === 'ArrowUp') {
                 if (!showResults || items.length === 0) return;
                 e.preventDefault();
-                setHighlightIndex((i) => (i <= 0 ? items.length - 1 : i - 1));
+                moveHighlight(highlightIndex <= 0 ? items.length - 1 : highlightIndex - 1);
               } else if (e.key === 'Enter') {
                 e.preventDefault();
                 // 하이라이트된 항목이 있으면 그걸 선택, 없으면 검색 실행.
@@ -253,13 +264,14 @@ export default function MovieInfoForm({
                 if (showResults) {
                   e.preventDefault();
                   setShowResults(false);
+                  setHighlightIndex(-1);
                 }
               }
             }}
             placeholder="인터스텔라"
             role="combobox"
             aria-expanded={showResults}
-            aria-controls="movieTitle-listbox"
+            aria-controls={hasListbox ? 'movieTitle-listbox' : undefined}
             aria-autocomplete="list"
             aria-activedescendant={
               showResults && highlightIndex >= 0 ? `movieTitle-opt-${highlightIndex}` : undefined
