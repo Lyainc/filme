@@ -389,6 +389,31 @@ describe('자동완성 키보드 내비게이션 (#198)', () => {
     expect(resultButtons(container).length).toBe(2);
   });
 
+  test('ArrowUp은 첫 입력에서 마지막 항목으로 wrap하고 위로 순환한다', async () => {
+    const input = titleInput(container);
+    await typeValue(input, '영화');
+    await flushDebounce();
+
+    await keydown(input, 'ArrowUp'); // -1 → 마지막(1)
+    expect(input.getAttribute('aria-activedescendant')).toBe('movieTitle-opt-1');
+    await keydown(input, 'ArrowUp'); // 1 → 0
+    expect(input.getAttribute('aria-activedescendant')).toBe('movieTitle-opt-0');
+    await keydown(input, 'ArrowUp'); // 0 → 마지막(1) wrap
+    expect(input.getAttribute('aria-activedescendant')).toBe('movieTitle-opt-1');
+  });
+
+  test('ArrowDown은 마지막 항목에서 0으로 wrap한다', async () => {
+    const input = titleInput(container);
+    await typeValue(input, '영화');
+    await flushDebounce();
+
+    await keydown(input, 'ArrowDown'); // 0
+    await keydown(input, 'ArrowDown'); // 1 (마지막)
+    expect(input.getAttribute('aria-activedescendant')).toBe('movieTitle-opt-1');
+    await keydown(input, 'ArrowDown'); // (1+1)%2 = 0 wrap
+    expect(input.getAttribute('aria-activedescendant')).toBe('movieTitle-opt-0');
+  });
+
   test('Escape로 드롭다운이 닫힌다', async () => {
     const input = titleInput(container);
     await typeValue(input, '영화');
