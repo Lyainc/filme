@@ -35,7 +35,10 @@ export function ResultSheet({
   }, [open]);
 
   return (
-    <Drawer.Root open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+    // dismissible(드래그-다운 닫기)은 vaul 기본 true를 그대로 둔다 — grabber 달린 모바일
+    // 바텀시트의 표준 동작이고 PreviewSheet와 통일된다. 닫혀도 결과 상태는 유지돼 비가역이
+    // 아니라, 실수 닫힘 비용보다 표준 제스처 기대치가 크다(#197 리뷰).
+    <Drawer.Root open={open} onOpenChange={(o) => { if (!o) onClose(); }} dismissible>
       <Drawer.Portal>
         <Drawer.Overlay
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 50 }}
