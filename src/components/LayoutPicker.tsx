@@ -90,6 +90,7 @@ function LayoutPicker({ value, onChange }: LayoutPickerProps) {
                   aria-roledescription="slide"
                   aria-label={`${i + 1} / ${count}: ${layout.label}`}
                   aria-hidden={!isCurrent}
+                  inert={!isCurrent}
                 >
                   <button
                     type="button"

@@ -4,11 +4,16 @@ import Link from 'next/link';
 import { list } from '@vercel/blob';
 import { Sprocket } from '@/components/v2/Sprocket';
 import { DEFAULT_TICKET_TTL_DAYS } from '@/utils/ticketCleanup';
+import { getLayout } from '@/utils/layouts';
+import type { LayoutId } from '@/types';
 
 interface TicketLandingProps {
   imageUrl: string;
   title: string;
   pageUrl: string;
+  /** 히어로 img 고유 치수 — 비율 예약으로 CLS 방지(meta의 layout에서 도출, #199). */
+  width: number;
+  height: number;
 }
 
 /**
@@ -28,6 +33,8 @@ export const getServerSideProps: GetServerSideProps<TicketLandingProps> = async 
 
   let imageUrl = '';
   let title = '';
+  // 기본은 portrait(무드 4개 중 3개) — meta에 layout이 있으면 그 비율로 덮어쓴다.
+  let { width, height } = getLayout('minimal');
   try {
     const { blobs } = await list({ prefix: `t/${id}`, limit: 2 });
     const jpg = blobs.find((b) => b.pathname === `t/${id}.jpg`);
@@ -37,8 +44,14 @@ export const getServerSideProps: GetServerSideProps<TicketLandingProps> = async 
     const json = blobs.find((b) => b.pathname === `t/${id}.json`);
     if (json) {
       try {
-        const meta = (await fetch(json.url).then((r) => r.json())) as { title?: unknown };
+        const meta = (await fetch(json.url).then((r) => r.json())) as {
+          title?: unknown;
+          layout?: unknown;
+        };
         if (typeof meta?.title === 'string') title = meta.title;
+        if (typeof meta?.layout === 'string') {
+          ({ width, height } = getLayout(meta.layout as LayoutId));
+        }
       } catch {
         // 메타 조회 실패는 치명적이지 않다 — 이미지로 링크는 동작하고 og:title만 기본값으로.
       }
@@ -67,10 +80,10 @@ export const getServerSideProps: GetServerSideProps<TicketLandingProps> = async 
     'public, s-maxage=3600, stale-while-revalidate=3600',
   );
 
-  return { props: { imageUrl, title, pageUrl } };
+  return { props: { imageUrl, title, pageUrl, width, height } };
 };
 
-export default function TicketLanding({ imageUrl, title, pageUrl }: TicketLandingProps) {
+export default function TicketLanding({ imageUrl, title, pageUrl, width, height }: TicketLandingProps) {
   const ogTitle = title ? `${title} · 포토티켓` : '포토티켓';
   // 메타 카피는 둘로 갈린다 — <title>·헤더는 정적이지만, og description은 수신자를
   // 후킹하는 바이럴 카피라 제목이 있으면 이름을 넣어 "너도 만들어봐"로 끌어당긴다(#138 2-1).
@@ -112,6 +125,8 @@ export default function TicketLanding({ imageUrl, title, pageUrl }: TicketLandin
         </header>
 
         <main className="flex flex-1 flex-col items-center justify-center gap-10 px-5 py-12">
+          {/* heading 랜드마크 — 시각 워드마크는 홈 링크(nav)라 별도 sr-only h1로 페이지 주제를 노출(#199). */}
+          <h1 className="sr-only">{ogTitle}</h1>
           {/* 미세 기울임 + 깊은 그림자로 "프리미엄 티켓 한 장" 느낌을 강조한다(평평한 img 탈피). */}
           <div className="w-full max-w-sm" style={{ perspective: '1200px' }}>
             <div
@@ -122,7 +137,10 @@ export default function TicketLanding({ imageUrl, title, pageUrl }: TicketLandin
               <img
                 src={imageUrl}
                 alt={ogTitle}
-                className="w-full rounded-card border border-line shadow-pop"
+                width={width}
+                height={height}
+                fetchPriority="high"
+                className="h-auto w-full rounded-card border border-line shadow-pop"
               />
             </div>
           </div>

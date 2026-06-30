@@ -484,7 +484,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
           var 미설정(측정 전 한 틱) 시 96px fallback. 데스크톱은 dock이 없어 sm:bottom-6로 덮어쓴다. */}
       {ocrSnapshot && (
         <div className="fixed bottom-[calc(var(--mobile-dock-h,_96px)_+_12px)] sm:bottom-6 left-1/2 -translate-x-1/2 bg-surface-elevated border border-accent rounded-card shadow-lg p-3 z-50 flex items-center gap-4 w-[90%] max-w-sm animate-slide-up">
-          <p className="text-[13px] text-fg flex-1">
+          <p role="status" aria-live="polite" className="text-[13px] text-fg flex-1">
             {ocrFilledFields.size > 0
               ? `${ocrFilledFields.size}개 항목이 자동 입력되었어요.`
               : '영화 정보를 자동으로 불러왔어요.'}

@@ -13,13 +13,17 @@ interface VisibilityCheckboxProps {
  */
 export default function VisibilityCheckbox({ checked, onChange, label }: VisibilityCheckboxProps) {
   return (
-    <input
-      type="checkbox"
-      checked={checked}
-      onChange={(e) => onChange(e.target.checked)}
-      aria-label={`${label} 티켓에 표시`}
-      title={checked ? '티켓에 표시 중 — 끄면 숨겨져요' : '티켓에서 숨김 — 켜면 표시돼요'}
-      className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-accent"
-    />
+    // 14px 체크박스를 label로 감싸 패딩으로 탭타깃을 넓히고, 같은 크기의 음수 마진으로
+    // 시각 레이아웃은 그대로 둔다(인접 gap-2 안쪽으로만 확장 — 레이아웃 불변). (#199 P3)
+    <label className="-m-2 inline-flex shrink-0 cursor-pointer p-2">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        aria-label={`${label} 티켓에 표시`}
+        title={checked ? '티켓에 표시 중 — 끄면 숨겨져요' : '티켓에서 숨김 — 켜면 표시돼요'}
+        className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-accent"
+      />
+    </label>
   );
 }

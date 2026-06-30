@@ -234,7 +234,11 @@ export function OcrUploadCard({
       </button>
 
       {toast && (
-        <div className="absolute top-full left-0 mt-2 max-w-[260px] bg-fg text-surface-elevated text-xs font-medium px-3 py-1.5 rounded-chip shadow-lg animate-fade-in z-10">
+        <div
+          role="status"
+          aria-live="polite"
+          className="absolute top-full left-0 mt-2 max-w-[260px] bg-fg text-surface-elevated text-xs font-medium px-3 py-1.5 rounded-chip shadow-lg animate-fade-in z-10"
+        >
           {toast}
         </div>
       )}

@@ -287,6 +287,7 @@ export default function MovieInfoForm({
               handleSearch(movieInfo.title.trim());
             }}
             disabled={isSearching}
+            aria-busy={isSearching}
             data-touch="44"
             className="text-mono inline-flex min-h-touch shrink-0 items-center justify-center rounded-field bg-accent px-4 text-[11px] uppercase tracking-widest text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
           >

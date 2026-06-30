@@ -55,6 +55,7 @@ export function PreviewSheet({ open, onOpenChange, children }: PreviewSheetProps
             </svg>
           </Drawer.Close>
           <Drawer.Title className="sr-only">티켓 미리보기</Drawer.Title>
+          <Drawer.Description className="sr-only">현재 편집 중인 티켓의 미리보기예요.</Drawer.Description>
           {/* TicketRenderer는 w-full로 부모 너비를 받아 스케일을 계산한다. flex-row 가운데
               정렬에 그냥 두면 너비를 못 받아 스케일이 0이 되므로, 명시적 폭의 세로 컨테이너로 감싼다. */}
           <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto px-5 pb-5 pt-1">

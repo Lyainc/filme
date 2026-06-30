@@ -11,12 +11,12 @@ export function AppHeader({ theme, onThemeChange }: AppHeaderProps) {
     <header className="h-14 px-4 flex items-center justify-between border-b border-line bg-surface shrink-0">
       <div className="flex items-center gap-2">
         <Sprocket size={20} className="text-accent" />
-        <span
+        <h1
           className="font-sans text-fg"
           style={{ fontSize: 19, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' }}
         >
           FILME
-        </span>
+        </h1>
       </div>
 
       <div className="flex items-center gap-2">

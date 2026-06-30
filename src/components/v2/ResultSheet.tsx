@@ -77,9 +77,14 @@ export function ResultSheet({
           </button>
 
           <div className="flex shrink-0 items-center justify-between px-5 pb-1">
-            <Drawer.Title className="font-sans text-lg font-semibold tracking-tight text-fg">
-              티켓이 완성됐어요!
-            </Drawer.Title>
+            <div>
+              <Drawer.Title className="font-sans text-lg font-semibold tracking-tight text-fg">
+                티켓이 완성됐어요!
+              </Drawer.Title>
+              <Drawer.Description className="sr-only">
+                완성된 티켓을 저장하거나 공유할 수 있어요.
+              </Drawer.Description>
+            </div>
             <Drawer.Close
               aria-label="닫기"
               className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-line text-fg-muted transition-colors hover:text-fg"
