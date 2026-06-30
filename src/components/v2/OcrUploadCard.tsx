@@ -234,14 +234,16 @@ export function OcrUploadCard({
       </button>
 
       {toast && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="absolute top-full left-0 mt-2 max-w-[260px] bg-fg text-surface-elevated text-xs font-medium px-3 py-1.5 rounded-chip shadow-lg animate-fade-in z-10"
-        >
+        <div className="absolute top-full left-0 mt-2 max-w-[260px] bg-fg text-surface-elevated text-xs font-medium px-3 py-1.5 rounded-chip shadow-lg animate-fade-in z-10">
           {toast}
         </div>
       )}
+
+      {/* 토스트 announce — 라이브리전은 콘텐츠 변경 전부터 DOM에 있어야 SR이 잡으므로(토스트와
+          동시 삽입되면 무시됨, #199 리뷰 P1) 항상 마운트하고 텍스트만 바꾼다. 시각 토스트와 분리. */}
+      <div role="status" aria-live="polite" className="sr-only">
+        {toast ?? ''}
+      </div>
     </div>
   );
 }
