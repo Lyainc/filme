@@ -46,11 +46,15 @@ export default function ImageCropModal({
     [],
   );
 
-  // 마운트 시 첫 포커서블로 포커스 이동, 언마운트 시 직전 포커스 복원 (한 번만)
+  // 마운트 시 첫 포커서블(없으면 다이얼로그 자체)로 포커스 이동, 언마운트 시 직전 포커스 복원.
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null;
-    getFocusables()[0]?.focus();
-    return () => prev?.focus?.();
+    (getFocusables()[0] ?? dialogRef.current)?.focus();
+    // 성공 크롭 등으로 트리거가 언마운트되면(showPreview 전환) prev는 detached — 복원하면
+    // body로 떨어지므로 살아있을 때만 되돌린다. 그 경우 새 포커스 타깃은 부모(ImageUploader) 몫.
+    return () => {
+      if (prev?.isConnected) prev.focus();
+    };
   }, [getFocusables]);
 
   // Escape 닫기 + Tab 순환 트랩 (포커스가 모달 뒤 페이지로 새지 않게)
@@ -61,14 +65,26 @@ export default function ImageCropModal({
         return;
       }
       if (e.key !== 'Tab') return;
+      const node = dialogRef.current;
+      if (!node) return;
       const els = getFocusables();
-      if (els.length === 0) return;
+      // 처리 중엔 모든 컨트롤이 disabled라 els가 비고, 캔버스 클릭 등으로 포커스가 모달 밖에
+      // 있을 수도 있다. 둘 다 다이얼로그 안으로 끌어와 가둔다(빈 경우엔 다이얼로그 자체로).
+      if (els.length === 0) {
+        e.preventDefault();
+        node.focus();
+        return;
+      }
       const first = els[0];
       const last = els[els.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
+      const active = document.activeElement;
+      if (!node.contains(active)) {
+        e.preventDefault();
+        first.focus();
+      } else if (e.shiftKey && active === first) {
         e.preventDefault();
         last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
+      } else if (!e.shiftKey && active === last) {
         e.preventDefault();
         first.focus();
       }
@@ -84,6 +100,7 @@ export default function ImageCropModal({
       role="dialog"
       aria-modal="true"
       aria-label="Frame the poster"
+      tabIndex={-1}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm overscroll-contain animate-fade-in"
       style={{ background: 'rgba(44,38,34,0.55)' }}
     >
