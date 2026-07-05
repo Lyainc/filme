@@ -101,61 +101,61 @@ export default function ImageCropModal({
       ref={dialogRef}
       role="dialog"
       aria-modal="true"
-      aria-label="Frame the poster"
+      aria-label="포스터 크롭"
       tabIndex={-1}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm overscroll-contain animate-fade-in"
       style={{ background: 'rgba(44,38,34,0.55)' }}
     >
-      <div className="relative flex h-[85svh] max-h-[820px] w-full max-w-xl flex-col overflow-hidden rounded-modal bg-paper shadow-card">
-        <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
-          <div className="flex items-baseline gap-3">
-            <span className="text-mono text-[10px] uppercase tracking-widest text-accent">
-              Crop
-            </span>
-            <h3 className="text-[16px] font-medium tracking-tight text-fg">Frame the poster</h3>
-          </div>
+      <div className="relative flex h-[85svh] max-h-[820px] w-full max-w-sm flex-col overflow-hidden rounded-card bg-paper shadow-card">
+        {/* Header — 제목 + 정사각 닫기 버튼 */}
+        <div className="flex items-center justify-between border-b border-line px-4 py-3">
+          <h3 className="text-[14px] font-semibold tracking-tight text-fg">포스터 크롭</h3>
           <button
             type="button"
             onClick={onClose}
             disabled={isProcessing}
-            aria-label="Close"
+            aria-label="닫기"
             data-touch="44"
-            className="text-mono inline-flex min-h-touch min-w-touch items-center justify-center rounded-chip text-fg-muted transition-colors hover:bg-accent-soft hover:text-fg disabled:opacity-30"
+            className="inline-flex min-h-touch min-w-touch items-center justify-center rounded-field-sm border border-line text-fg-muted transition-colors hover:bg-accent-soft hover:text-fg disabled:opacity-30"
           >
             ✕
           </button>
         </div>
 
-        <div className="relative flex-1 bg-fg/95">
-          <Cropper
-            image={imageSrc}
-            crop={crop}
-            zoom={zoom}
-            aspect={TARGET_RATIO}
-            onCropChange={setCrop}
-            onCropComplete={onCropComplete}
-            onZoomChange={setZoom}
-            objectFit="contain"
-          />
-          <div className="text-mono pointer-events-none absolute bottom-3 left-3 text-[10px] uppercase tracking-widest text-white/70">
-            0.65 : 1
+        {/* Crop area — 여백 안에 라운드 인셋 */}
+        <div className="min-h-0 flex-1 p-4">
+          <div className="relative h-full w-full overflow-hidden rounded-field bg-fg/95">
+            <Cropper
+              image={imageSrc}
+              crop={crop}
+              zoom={zoom}
+              aspect={TARGET_RATIO}
+              onCropChange={setCrop}
+              onCropComplete={onCropComplete}
+              onZoomChange={setZoom}
+              objectFit="contain"
+            />
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 border-t border-line px-5 pt-4" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}>
-          <div className="flex items-center gap-4">
+        {/* Footer — 확대 슬라이더 + 액션 버튼 */}
+        <div
+          className="flex flex-col gap-3 border-t border-line px-4 pt-3"
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.875rem)' }}
+        >
+          <div className="flex items-center gap-3">
             <span
               id="zoom-label"
-              className="text-mono whitespace-nowrap text-[10px] uppercase tracking-widest text-fg-muted"
+              className="text-mono whitespace-nowrap text-[11px] tracking-wide text-fg-muted"
             >
-              Zoom · {zoom.toFixed(1)}×
+              확대
             </span>
             <input
               type="range"
               value={zoom}
               min={1}
               max={3}
-              step={0.1}
+              step={0.02}
               aria-labelledby="zoom-label"
               onChange={(e) => setZoom(Number(e.target.value))}
               disabled={isProcessing}
@@ -168,26 +168,24 @@ export default function ImageCropModal({
               onClick={onClose}
               disabled={isProcessing}
               data-touch="44"
-              className="text-mono inline-flex min-h-btn items-center justify-center rounded-field border border-line bg-paper text-[11px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft disabled:opacity-30"
+              className="inline-flex min-h-btn items-center justify-center rounded-field border border-line bg-surface text-[13px] font-medium text-fg transition-colors hover:bg-accent-soft disabled:opacity-30"
             >
-              Cancel
+              다른 사진 선택
             </button>
             <button
               type="button"
               onClick={handleConfirm}
               disabled={isProcessing || !croppedAreaPixels}
               data-touch="44"
-              className="text-mono group inline-flex min-h-btn items-center justify-center gap-2 rounded-field bg-accent text-[11px] uppercase tracking-widest text-white transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex min-h-btn items-center justify-center gap-2 rounded-field bg-accent text-[13px] font-medium text-accent-ink transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
             >
               {isProcessing ? (
                 <>
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-paper" />
-                  Processing
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent-ink" />
+                  적용 중
                 </>
               ) : (
-                <>
-                  Apply <span className="transition-transform group-hover:translate-x-0.5">→</span>
-                </>
+                '적용'
               )}
             </button>
           </div>
