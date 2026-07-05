@@ -22,6 +22,10 @@ interface TicketRendererProps {
 
 const SCALE_EPSILON = 0.001;
 
+// 프리뷰 컨테이너의 세로 상한. MobileEditorShell의 max 모드 width 역산이 이 값을 그대로
+// 참조하므로(둘이 어긋나면 잘림/여백 발생) 단일 소스로 export한다.
+export const PREVIEW_MAX_HEIGHT = 'min(72vh, 720px)';
+
 const TicketRenderer = memo(forwardRef<HTMLDivElement, TicketRendererProps>(function TicketRenderer(
   { croppedImageUrl, movieInfo, components, fieldVisibility },
   ref
@@ -53,7 +57,7 @@ const TicketRenderer = memo(forwardRef<HTMLDivElement, TicketRendererProps>(func
       className="relative w-full overflow-hidden bg-black shadow-2xl shadow-black/40"
       style={{
         aspectRatio: `${layout.width} / ${layout.height}`,
-        maxHeight: 'min(72vh, 720px)',
+        maxHeight: PREVIEW_MAX_HEIGHT,
       }}
     >
       <div
