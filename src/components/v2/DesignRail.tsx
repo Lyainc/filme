@@ -1,13 +1,13 @@
 import { useRef, useState, type ReactNode } from 'react';
 import LayoutPicker from '@/components/LayoutPicker';
 import TexturePicker from '@/components/wizard/TexturePicker';
+import ColorPicker from '@/components/wizard/ColorPicker';
 import type { LayoutId } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 
-// 모바일 디자인 레일(#217): 무드·후보정 편집 콘텐츠를 인라인 폼 밖으로 빼 가로 원형 아이콘 +
-// 단일 공용 확장 패널로 호스팅한다. 색/잉크(#218)·투명도(#219)는 이 셸에 뒤이어 붙는다 —
-// 지금은 아이콘/패널 스텁을 두지 않는다.
-type Pop = 'mood' | 'texture';
+// 모바일 디자인 레일(#217+): 무드·컬러·후보정 편집 콘텐츠를 인라인 폼 밖으로 빼 가로 원형
+// 아이콘 + 단일 공용 확장 패널로 호스팅한다. 컬러(#218) 추가 완료, 투명도(#219)는 뒤이어 붙는다.
+type Pop = 'mood' | 'color' | 'texture';
 
 const PANEL_ID = 'design-rail-panel';
 
@@ -33,6 +33,18 @@ const RAIL_ITEMS: { id: Pop; label: string; eyebrow: string; icon: ReactNode }[]
       <svg {...RAIL_ICON}>
         <path d="M12 3 21 20H3Z" />
         <path d="M12 3v17" />
+      </svg>
+    ),
+  },
+  {
+    id: 'color',
+    label: '컬러',
+    eyebrow: 'Color',
+    // 컬러: 겹친 두 원(잉크 색 혼합 힌트)
+    icon: (
+      <svg {...RAIL_ICON}>
+        <circle cx="9" cy="12" r="5" />
+        <circle cx="15" cy="12" r="5" />
       </svg>
     ),
   },
@@ -140,7 +152,7 @@ function RailExpandPanel({
 
 export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket> }) {
   const [pop, setPop] = useState<Pop | null>(null);
-  const { components, croppedImageUrl } = photo.state;
+  const { components, croppedImageUrl, recommendedColors } = photo.state;
   const setComp = photo.updateComponents;
 
   // 접히는 중에도 콘텐츠를 마운트한 채 높이만 줄여 부드럽게 닫는다(패널이 비면 점프한다).
@@ -171,6 +183,15 @@ export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket>
       <RailExpandPanel open={pop !== null} eyebrow={eyebrow} onClose={() => setPop(null)}>
         {active === 'mood' ? (
           <LayoutPicker value={components.layout} onChange={(id: LayoutId) => setComp({ layout: id })} />
+        ) : active === 'color' ? (
+          // EditorCanvas와 동일 배선 — 잉크색 단일 축(themeColor). 35mm는 톤 고정이라 disabled.
+          <ColorPicker
+            value={components.themeColor}
+            onChange={(themeColor) => setComp({ themeColor })}
+            recommended={recommendedColors}
+            disabled={components.layout === '35mm'}
+            disabledNote="35mm 무드는 필름 톤(크림·먹색)이 고정이라 잉크 색을 바꿀 수 없어요."
+          />
         ) : (
           <TexturePicker
             value={components.texture}
