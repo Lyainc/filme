@@ -1,10 +1,64 @@
 import dynamic from 'next/dynamic';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { EditorCanvas } from './EditorCanvas';
 import { ThemeToggle } from './ThemeToggle';
-import TicketRenderer from '@/components/TicketRenderer';
+import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
+import { getLayout } from '@/utils/layouts';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
+
+// 프리뷰 3단 줌 모드(#214): 기본(인라인) · 최대화(세로 꽉) · 실제 크기(물리 cm).
+type ViewMode = 'default' | 'max' | 'actual';
+
+const ICON_SVG = {
+  width: 18,
+  height: 18,
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 2,
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round',
+  'aria-hidden': true,
+} as const;
+
+const VIEW_MODES: { id: ViewMode; label: string; icon: ReactNode }[] = [
+  {
+    // 기본: 베이스라인 있는 둥근 사각(인라인 카드)
+    id: 'default',
+    label: '기본',
+    icon: (
+      <svg {...ICON_SVG}>
+        <rect x="4" y="4" width="16" height="16" rx="3" />
+        <line x1="4" y1="15" x2="20" y2="15" />
+      </svg>
+    ),
+  },
+  {
+    // 최대화: 네 모서리 확장 화살표
+    id: 'max',
+    label: '최대화',
+    icon: (
+      <svg {...ICON_SVG}>
+        <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+        <path d="M16 3h3a2 2 0 0 1 2 2v3" />
+        <path d="M8 21H5a2 2 0 0 1-2-2v-3" />
+        <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+      </svg>
+    ),
+  },
+  {
+    // 실제 크기: 점선 바깥틀 + 채운 안쪽 사각
+    id: 'actual',
+    label: '실제 크기',
+    icon: (
+      <svg {...ICON_SVG}>
+        <rect x="3" y="3" width="18" height="18" rx="2" strokeDasharray="3 2.5" />
+        <rect x="8.5" y="8.5" width="7" height="7" rx="1" fill="currentColor" stroke="none" />
+      </svg>
+    ),
+  },
+];
 
 // 필드 시트는 vaul(+radix)을 끌어와 무겁고 필드 탭 전엔 안 쓰므로 dynamic(ssr:false)로 분리 —
 // 셸 자체는 모바일 첫 페인트에 즉시 필요하므로 static, vaul은 시트가 열릴 때만 로드된다.
@@ -43,6 +97,7 @@ export function MobileEditorShell({
 }: MobileEditorShellProps) {
   const { croppedImageUrl } = photo.state;
   const [activeField, setActiveField] = useState<TicketField | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('default');
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -71,6 +126,23 @@ export function MobileEditorShell({
   const doneEnabledStyle = canExport
     ? { background: 'linear-gradient(135deg, var(--accent-hover), var(--accent))', color: 'var(--accent-ink)' }
     : undefined;
+
+  // 활성 레이아웃의 방향으로 실제 크기 결정 — portrait 5.5×8.5cm, landscape 8.5×5.5cm.
+  const layout = getLayout(previewComponents.layout);
+  const isLandscape = layout.orientation === 'landscape';
+  const actualCaption = isLandscape ? '8.5 × 5.5cm' : '5.5 × 8.5cm';
+  const isActual = viewMode === 'actual';
+  // 컨테이너 width만으로 렌더 크기를 몰기(TicketRenderer는 width에 맞춰 스케일). actual은
+  // 짧은 변(portrait 5.5cm / landscape 8.5cm)을 그대로 줘 물리 크기로 렌더. max는 세로를
+  // TicketRenderer의 자체 maxHeight(min(72vh,720px)) 한도까지 채우는 width를 역산.
+  const previewWidth = isActual
+    ? isLandscape
+      ? '8.5cm'
+      : '5.5cm'
+    : `min(90vw, calc(${PREVIEW_MAX_HEIGHT} * ${layout.width} / ${layout.height}))`;
+  // 기본이 아닐 때만 편집 본문(EditorCanvas)을 접어 프리뷰에 세로 공간을 내준다. 이미지가
+  // 없으면(업로드 전) 접지 않는다 — 그땐 프리뷰/pill 자체가 없다.
+  const collapseBody = !!croppedImageUrl && viewMode !== 'default';
 
   return (
     <div
@@ -122,28 +194,93 @@ export function MobileEditorShell({
         </div>
       </header>
 
-      {/* 스크롤 본문: 인라인 프리뷰 + 편집 본문(#215까지는 기존 EditorCanvas 재사용) */}
+      {/* 스크롤 본문: 줌 pill + 인라인 프리뷰 + 편집 본문(#215까지는 기존 EditorCanvas 재사용).
+          비-기본 모드에선 justify-center로 pill+프리뷰를 세로 중앙에 두고 본문을 접는다. */}
       <div ref={bodyRef} className="min-h-0 flex-1 overflow-y-auto">
-        {croppedImageUrl && (
-          <div className="px-4 pt-5">
-            <button
-              type="button"
-              onClick={() => setActiveField('title')}
-              aria-label="제목 편집"
-              className="mx-auto block w-full max-w-[280px] rounded-card transition-transform active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-soft"
-            >
-              <TicketRenderer
-                croppedImageUrl={croppedImageUrl}
-                movieInfo={previewMovieInfo}
-                components={previewComponents}
-                fieldVisibility={fieldVisibility}
-              />
-            </button>
-          </div>
-        )}
+        <div className={`flex min-h-full flex-col ${collapseBody ? 'justify-center' : ''}`}>
+          {/* 줌 모드 pill — 3모드 어디서든 항상 보인다(기본으로 돌아오는 유일한 길). */}
+          {croppedImageUrl && (
+            <div className="flex justify-center px-4 pt-4">
+              <div
+                role="group"
+                aria-label="미리보기 크기"
+                className="inline-flex items-center gap-1 rounded-full border border-line bg-surface-elevated p-1"
+              >
+                {VIEW_MODES.map((m) => {
+                  const selected = viewMode === m.id;
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => setViewMode(m.id)}
+                      aria-pressed={selected}
+                      aria-label={m.label}
+                      title={m.label}
+                      className={`flex h-9 items-center justify-center rounded-full px-3.5 transition-colors ${
+                        selected ? 'bg-accent-soft text-accent' : 'text-fg-muted hover:text-fg'
+                      }`}
+                    >
+                      {m.icon}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
-        <div className="px-4 pb-24 pt-6">
-          <EditorCanvas photo={photo} onPendingFetchChange={onPendingFetchChange} />
+          {croppedImageUrl && (
+            <div className="px-4 pt-4">
+              {/* 래퍼는 3모드 모두 <button>로 고정 — 요소 타입이 바뀌면 TicketRenderer가
+                  remount돼 내부 scale이 1로 리셋되며 깜빡인다. 크기/동작만 모드별로 달리한다:
+                  기본은 인라인 폭 + 탭→필드 시트, max/actual은 확대 폭 + 탭→기본 복귀.
+                  #216 seam: ghost 모드가 들어오면 actual일 때 강제로 끈다
+                  (예: ghost={isActual ? false : ghostMode}). 지금은 ghostMode 상태가 없어 게이팅할 것이 없다. */}
+              <button
+                type="button"
+                onClick={
+                  viewMode === 'default'
+                    ? () => setActiveField('title')
+                    : () => setViewMode('default')
+                }
+                aria-label={viewMode === 'default' ? '제목 편집' : '기본 크기로 돌아가기'}
+                className={`mx-auto block rounded-card transition-transform active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-soft ${
+                  viewMode === 'default' ? 'w-full max-w-[280px]' : ''
+                }`}
+                style={viewMode === 'default' ? undefined : { width: previewWidth }}
+              >
+                <TicketRenderer
+                  croppedImageUrl={croppedImageUrl}
+                  movieInfo={previewMovieInfo}
+                  components={previewComponents}
+                  fieldVisibility={fieldVisibility}
+                />
+              </button>
+            </div>
+          )}
+
+          {croppedImageUrl && isActual && (
+            <p
+              className="text-mono px-4 pt-3 text-center text-fg-muted"
+              style={{ fontSize: 11, letterSpacing: '0.08em' }}
+            >
+              실제 크기 · {actualCaption}
+            </p>
+          )}
+
+          {/* 편집 본문 — collapse는 grid-rows 0fr↔1fr 트랜지션(overflow-hidden 필수).
+              reduced-motion은 globals.css 전역 가드가 transition-duration을 죽여 즉시 전환
+              + motion-reduce:transition-none로 이중 차단. 접혔을 땐 inert로 포커스/Tab/SR
+              진입 차단(OptionalDetailsAccordion 패턴, React 19 inert prop). */}
+          <div
+            className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
+            style={{ gridTemplateRows: collapseBody ? '0fr' : '1fr' }}
+          >
+            <div className="overflow-hidden" inert={collapseBody || undefined}>
+              <div className="px-4 pb-24 pt-6">
+                <EditorCanvas photo={photo} onPendingFetchChange={onPendingFetchChange} />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
