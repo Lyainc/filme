@@ -1,7 +1,7 @@
 /**
  * rail(데스크톱 인플레이스 결과·CTA) ↔ dock·sheet(모바일) 단일 경계(#104).
  *
- * 이 값 미만이면 모바일 패턴(MobileDock·ResultSheet), 이상이면 데스크톱 rail이 뜬다.
+ * 이 값 미만이면 모바일 셸(MobileEditorShell·ResultSheet), 이상이면 데스크톱 rail이 뜬다.
  * 두 경계가 어긋나면 그 사이 폭에서 진입 CTA가 둘 다 사라지는 dead zone이 생긴다
  * (이전: rail은 lg=1024, isMobile은 640 기준이라 641~1023 구간이 비어 있었음).
  *

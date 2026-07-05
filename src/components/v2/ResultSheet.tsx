@@ -15,7 +15,7 @@ interface ResultSheetProps {
 /**
  * 모바일 결과 바텀시트 — 편집 컨텍스트 위에 떠서 결과(다운로드·공유·링크자리)를 담는다.
  * half(썸네일+액션) ↔ full(세로 티켓 확대) 두 단계. grabber를 탭하면 전환된다.
- * 셸은 형제 PreviewSheet와 동일한 vaul Drawer — 포커스 트랩·복원·Escape·scroll lock을
+ * 셸은 형제 FieldEditSheet와 동일한 vaul Drawer — 포커스 트랩·복원·Escape·scroll lock을
  * 공짜로 가져온다(#197). half/full 높이 토글만 자체 state로 제어한다.
  * (snapPoints 미사용: grabber 탭 토글 UX를 그대로 유지하고 드래그-snap과 싸우지 않으려고.)
  */
@@ -36,7 +36,7 @@ export function ResultSheet({
 
   return (
     // dismissible(드래그-다운 닫기)은 vaul 기본 true를 그대로 둔다 — grabber 달린 모바일
-    // 바텀시트의 표준 동작이고 PreviewSheet와 통일된다. 닫혀도 결과 상태는 유지돼 비가역이
+    // 바텀시트의 표준 동작이고 FieldEditSheet와 통일된다. 닫혀도 결과 상태는 유지돼 비가역이
     // 아니라, 실수 닫힘 비용보다 표준 제스처 기대치가 크다(#197 리뷰).
     <Drawer.Root open={open} onOpenChange={(o) => { if (!o) onClose(); }} dismissible>
       <Drawer.Portal>
