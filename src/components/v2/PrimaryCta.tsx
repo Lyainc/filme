@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useMatchMedia } from '@/hooks/useMatchMedia';
 import { Sprocket } from './Sprocket';
 
@@ -9,6 +10,8 @@ interface PrimaryCtaProps {
   successLabel?: string;
   onClick?: () => void;
   className?: string;
+  /** idle/disabled 상태의 leading 아이콘. 미지정 시 기본 Sprocket(브랜드). Done 저장 CTA는 다운로드 아이콘을 넘긴다(#222). */
+  icon?: ReactNode;
 }
 
 function CheckIcon() {
@@ -25,6 +28,7 @@ export function PrimaryCta({
   successLabel = '저장됨!',
   onClick,
   className = '',
+  icon,
 }: PrimaryCtaProps) {
   const prefersReducedMotion = useMatchMedia('(prefers-reduced-motion: reduce)');
   const isDisabled = state === 'disabled' || state === 'loading';
@@ -59,7 +63,7 @@ export function PrimaryCta({
       )}
       {(state === 'idle' || state === 'disabled') && (
         <>
-          <Sprocket size={16} />
+          {icon ?? <Sprocket size={16} />}
           <span>{label}</span>
         </>
       )}

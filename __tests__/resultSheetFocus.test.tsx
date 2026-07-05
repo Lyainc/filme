@@ -1,6 +1,6 @@
 /**
  * #197 — ResultSheet 모달 포커스 관리. aria-modal만 선언하고 포커스/Escape 관리가
- * 없던 커스텀 시트를, 형제 PreviewSheet가 쓰는 vaul Drawer로 교체해 포커스 트랩·복원·
+ * 없던 커스텀 시트를, 형제 FieldEditSheet가 쓰는 vaul Drawer로 교체해 포커스 트랩·복원·
  * Escape 닫힘을 라이브러리에서 가져왔다.
  *
  * 이 테스트는 셸 배선의 핵심 — Escape와 닫기 버튼이 onClose로 연결되는지 — 를 고정한다.
