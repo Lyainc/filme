@@ -22,6 +22,8 @@ import { ALL_FIELDS_ON, ALL_FIELDS_OFF } from '@/constants/fieldVisibility';
 interface EditorCanvasProps {
   photo: ReturnType<typeof usePhototicket>;
   onPendingFetchChange: (pending: boolean) => void;
+  /** 모바일 디자인 레일(#217+)로 옮겨진 섹션(무드·후보정)을 인라인 폼에서 숨긴다. #218/#219가 확장. */
+  hideRailSections?: boolean;
 }
 
 // 기본값 kr-compact를 첫 번째로(#141 (12)). kr-compact 샘플은 끝점 포함 YYYY.MM.DD.(#141 (13)).
@@ -74,7 +76,7 @@ function OcrChip({
   return <div className="flex justify-start">{chip}</div>;
 }
 
-export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps) {
+export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = false }: EditorCanvasProps) {
   const { movieInfo, fieldVisibility, components, recommendedColors } = photo.state;
   const setInfo = photo.updateMovieInfo;
   const setField = photo.updateFieldVisibility;
@@ -407,6 +409,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
         <div className="h-px flex-1 bg-line" />
       </div>
 
+      {!hideRailSections && (
       <section className="space-y-4">
         <div className="flex items-center gap-2">
           <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Mood</span>
@@ -421,6 +424,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
           onChange={(id: LayoutId) => setComp({ layout: id })}
         />
       </section>
+      )}
 
       <section className="space-y-3">
         <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Logos</span>
@@ -446,6 +450,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
         </div>
       </section>
 
+      {!hideRailSections && (
       <section className="space-y-4">
         <div className="flex items-center gap-2">
           <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Texture</span>
@@ -461,6 +466,7 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
           croppedImageUrl={photo.state.croppedImageUrl}
         />
       </section>
+      )}
 
       <section className="space-y-4 rounded-card border border-border bg-surface-elevated p-4" style={{ boxShadow: 'var(--shadow-card)' }}>
         <BrightnessSlider
