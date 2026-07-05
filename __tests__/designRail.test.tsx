@@ -1,9 +1,10 @@
 /**
- * #217 회귀 테스트 — 모바일 디자인 레일(무드·후보정).
+ * #217/#218 회귀 테스트 — 모바일 디자인 레일(무드·컬러·후보정).
  *
  * (a) 아이콘 클릭 → 패널 disclosure 토글(aria-expanded), 한 번에 하나만 열림, 재클릭 시 닫힘.
- * (b) EditorCanvas hideRailSections=true면 Mood·Texture 섹션 미렌더(false/미전달이면 렌더).
+ * (b) EditorCanvas hideRailSections=true면 Mood·Texture·ColorPicker 미렌더(false/미전달이면 렌더).
  * (c) rail에서 무드를 고르면 photo.state.components.layout에 반영.
+ * (d) 컬러 아이콘 클릭 → 컬러 패널 열림, 무드·후보정과 배타(#218).
  *
  * 셋업은 mobileEditorShellGating.test.tsx 미러 — Harness가 usePhototicket()으로 실제 photo를
  * 만들고 컴포넌트에 그대로 넘긴다. 모듈 mock 없음(전역 누수 회피). photo 상태 관찰은
@@ -74,20 +75,43 @@ describe('DesignRail (#217)', () => {
 
     expect(screen.getByTestId('layout').textContent).not.toBe('minimal');
   });
+
+  test('(d) 컬러 아이콘 클릭 → 컬러 패널 열림 · 무드/후보정과 배타 (#218)', async () => {
+    const user = userEvent.setup();
+    render(<RailHarness />);
+    const mood = screen.getByRole('button', { name: '무드' });
+    const color = screen.getByRole('button', { name: '컬러' });
+    const texture = screen.getByRole('button', { name: '후보정' });
+
+    // 컬러 열기 → ColorPicker 노출
+    await user.click(color);
+    expect(color.getAttribute('aria-expanded')).toBe('true');
+    expect(mood.getAttribute('aria-expanded')).toBe('false');
+    expect(texture.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.getByText('Ink · logo & type color')).not.toBeNull();
+
+    // 무드 열기 → 컬러 닫힘(한 번에 하나)
+    await user.click(mood);
+    expect(mood.getAttribute('aria-expanded')).toBe('true');
+    expect(color.getAttribute('aria-expanded')).toBe('false');
+  });
 });
 
-describe('EditorCanvas hideRailSections (#217)', () => {
+describe('EditorCanvas hideRailSections (#217/#218)', () => {
   // LayoutPicker 캐러셀(role=group "Mood designs")·TexturePicker(role=radiogroup "Texture")가
-  // 곧 Mood·Texture 섹션의 존재 신호 — 이 둘만 hideRailSections로 사라져야 한다.
-  test('true → Mood·Texture 섹션 미렌더', () => {
+  // 곧 Mood·Texture 섹션의 존재 신호. ColorPicker는 고유 헤더 텍스트로 식별(#218) —
+  // 셋 다 hideRailSections로 사라져야 한다(BrightnessSlider는 유지, #219 몫).
+  test('true → Mood·Texture·ColorPicker 미렌더', () => {
     render(<EditorHarness hide />);
     expect(screen.queryByRole('group', { name: 'Mood designs' })).toBeNull();
     expect(screen.queryByRole('radiogroup', { name: 'Texture' })).toBeNull();
+    expect(screen.queryByText('Ink · logo & type color')).toBeNull();
   });
 
-  test('미전달(기본 false) → Mood·Texture 섹션 렌더', () => {
+  test('미전달(기본 false) → Mood·Texture·ColorPicker 렌더', () => {
     render(<EditorHarness />);
     expect(screen.queryByRole('group', { name: 'Mood designs' })).not.toBeNull();
     expect(screen.queryByRole('radiogroup', { name: 'Texture' })).not.toBeNull();
+    expect(screen.queryByText('Ink · logo & type color')).not.toBeNull();
   });
 });

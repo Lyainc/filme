@@ -473,6 +473,8 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
           value={components.posterOpacity}
           onChange={(posterOpacity) => setComp({ posterOpacity })}
         />
+        {/* ColorPicker만 디자인 레일(#218)로 이동 — BrightnessSlider(#219 몫)와 박스는 유지. */}
+        {!hideRailSections && (
         <div className="border-t border-border pt-4">
           <ColorPicker
             value={components.themeColor}
@@ -482,6 +484,7 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
             disabledNote="35mm 무드는 필름 톤(크림·먹색)이 고정이라 잉크 색을 바꿀 수 없어요."
           />
         </div>
+        )}
       </section>
 
       {/* OCR Result Banner — 화면 하단 중앙 고정. 이전엔 MobileDock 위(--mobile-dock-h)에 앵커했으나
