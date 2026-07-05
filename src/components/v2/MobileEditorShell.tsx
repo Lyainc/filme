@@ -1,6 +1,7 @@
 import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { EditorCanvas } from './EditorCanvas';
+import { DesignRail } from './DesignRail';
 import { ThemeToggle } from './ThemeToggle';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
 import { getLayout } from '@/utils/layouts';
@@ -276,8 +277,12 @@ export function MobileEditorShell({
             style={{ gridTemplateRows: collapseBody ? '0fr' : '1fr' }}
           >
             <div className="overflow-hidden" inert={collapseBody || undefined}>
-              <div className="px-4 pb-24 pt-6">
-                <EditorCanvas photo={photo} onPendingFetchChange={onPendingFetchChange} />
+              <div className="space-y-6 px-4 pb-24 pt-6">
+                {/* 무드·후보정은 인라인 폼에서 빼(hideRailSections) 디자인 레일(#217)로 옮긴다.
+                    레일을 폼 위(프리뷰 바로 아래)에 둬 폼 전체를 스크롤하지 않고 닿게 한다 — #215가
+                    폼을 걷어낸 뒤 rail이 프리뷰 바로 아래 주 표면이 되는 최종 상태와도 정합. */}
+                <DesignRail photo={photo} />
+                <EditorCanvas photo={photo} onPendingFetchChange={onPendingFetchChange} hideRailSections />
               </div>
             </div>
           </div>

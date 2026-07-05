@@ -1,0 +1,184 @@
+import { useRef, useState, type ReactNode } from 'react';
+import LayoutPicker from '@/components/LayoutPicker';
+import TexturePicker from '@/components/wizard/TexturePicker';
+import type { LayoutId } from '@/types';
+import type { usePhototicket } from '@/hooks/usePhototicket';
+
+// 모바일 디자인 레일(#217): 무드·후보정 편집 콘텐츠를 인라인 폼 밖으로 빼 가로 원형 아이콘 +
+// 단일 공용 확장 패널로 호스팅한다. 색/잉크(#218)·투명도(#219)는 이 셸에 뒤이어 붙는다 —
+// 지금은 아이콘/패널 스텁을 두지 않는다.
+type Pop = 'mood' | 'texture';
+
+const PANEL_ID = 'design-rail-panel';
+
+const RAIL_ICON = {
+  width: 20,
+  height: 20,
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 1.8,
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round',
+  'aria-hidden': true,
+} as const;
+
+const RAIL_ITEMS: { id: Pop; label: string; eyebrow: string; icon: ReactNode }[] = [
+  {
+    id: 'mood',
+    label: '무드',
+    eyebrow: 'Mood',
+    // 사면체 힌트: 외곽 삼각 + 꼭짓점→밑변 중앙 능선
+    icon: (
+      <svg {...RAIL_ICON}>
+        <path d="M12 3 21 20H3Z" />
+        <path d="M12 3v17" />
+      </svg>
+    ),
+  },
+  {
+    id: 'texture',
+    label: '후보정',
+    eyebrow: 'Texture',
+    // 질감: 대각선 3줄
+    icon: (
+      <svg {...RAIL_ICON}>
+        <path d="M4 20 20 4" />
+        <path d="M4 14 14 4" />
+        <path d="M10 20 20 10" />
+      </svg>
+    ),
+  },
+];
+
+function RailIconButton({
+  icon,
+  label,
+  selected,
+  ringColor,
+  onClick,
+}: {
+  icon: ReactNode;
+  label: string;
+  selected: boolean;
+  ringColor: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-expanded={selected}
+      aria-controls={PANEL_ID}
+      data-touch="44"
+      className="flex flex-col items-center gap-1.5 outline-none"
+    >
+      <span
+        aria-hidden="true"
+        className={`flex h-11 w-11 items-center justify-center rounded-full border transition-colors ${
+          selected ? 'bg-accent-soft text-accent' : 'border-line bg-surface-elevated text-fg-muted'
+        }`}
+        // 선택 시 유저의 티켓 잉크색(themeColor) 링. 미설정이면 accent로 폴백.
+        style={selected ? { borderColor: 'transparent', boxShadow: `0 0 0 2px ${ringColor}` } : undefined}
+      >
+        {icon}
+      </span>
+      <span
+        className={`text-[11px] font-medium transition-colors ${selected ? 'text-accent' : 'text-fg-muted'}`}
+      >
+        {label}
+      </span>
+    </button>
+  );
+}
+
+function RailExpandPanel({
+  open,
+  eyebrow,
+  onClose,
+  children,
+}: {
+  open: boolean;
+  eyebrow: string;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  return (
+    // collapse = grid-rows 0fr↔1fr + overflow-hidden(필수) + 접힘 시 inert(포커스/Tab/SR 차단).
+    // reduced-motion은 전역 가드 + motion-reduce:transition-none로 이중 차단(MobileEditorShell 패턴).
+    <div
+      className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
+      style={{ gridTemplateRows: open ? '1fr' : '0fr' }}
+    >
+      <div className="overflow-hidden" inert={!open || undefined}>
+        <div
+          id={PANEL_ID}
+          role="region"
+          aria-label={eyebrow}
+          className="rounded-card border border-line bg-surface-elevated p-4"
+        >
+          {/* 라벨은 피커 자체 헤더(LayoutPicker "Mood · n/count", TexturePicker "Surface treatment")와
+              겹치므로 여기선 생략 — 닫기 버튼만. 접근성 이름은 region aria-label(eyebrow)이 유지. */}
+          <div className="mb-3 flex items-center justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="닫기"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-fg-muted transition-colors hover:text-fg"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket> }) {
+  const [pop, setPop] = useState<Pop | null>(null);
+  const { components, croppedImageUrl } = photo.state;
+  const setComp = photo.updateComponents;
+
+  // 접히는 중에도 콘텐츠를 마운트한 채 높이만 줄여 부드럽게 닫는다(패널이 비면 점프한다).
+  // 마지막 활성 섹션을 기억 — pop이 null이 돼도 애니메이션 동안 직전 섹션이 남는다.
+  const lastPopRef = useRef<Pop>('mood');
+  if (pop) lastPopRef.current = pop;
+  const active = lastPopRef.current;
+  const eyebrow = RAIL_ITEMS.find((it) => it.id === active)?.eyebrow ?? '';
+
+  const ringColor = components.themeColor || 'var(--accent)';
+  const toggle = (id: Pop) => setPop((cur) => (cur === id ? null : id));
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-start justify-center gap-8">
+        {RAIL_ITEMS.map((it) => (
+          <RailIconButton
+            key={it.id}
+            icon={it.icon}
+            label={it.label}
+            selected={pop === it.id}
+            ringColor={ringColor}
+            onClick={() => toggle(it.id)}
+          />
+        ))}
+      </div>
+
+      <RailExpandPanel open={pop !== null} eyebrow={eyebrow} onClose={() => setPop(null)}>
+        {active === 'mood' ? (
+          <LayoutPicker value={components.layout} onChange={(id: LayoutId) => setComp({ layout: id })} />
+        ) : (
+          <TexturePicker
+            value={components.texture}
+            onChange={(texture) => setComp({ texture })}
+            croppedImageUrl={croppedImageUrl}
+          />
+        )}
+      </RailExpandPanel>
+    </div>
+  );
+}
