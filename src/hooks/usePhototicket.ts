@@ -69,6 +69,7 @@ const INITIAL_STATE: PhototicketState = {
     formatLabel: '',
     texture: 'none',
     posterOpacity: 0.5,
+    componentOpacity: 1,
     themeColor: '#FFFFFF',
     // #141 (8): 로고는 기본 ON — 텍스트 라벨/이미지가 없으면 dashed placeholder(미리보기 전용)로 입력을 유도한다.
     chainVisible: true,

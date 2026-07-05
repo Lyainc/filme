@@ -56,6 +56,8 @@ export interface TicketComponents {
   formatLabel: string;
   texture: string;
   posterOpacity: number;
+  /** 포스터를 뺀 모든 오버레이 콘텐츠(텍스트·바코드·스탬프·로고·장식)의 불투명도 0..1(기본 1=원본). posterOpacity와 독립(#219). */
+  componentOpacity: number;
   themeColor: string;
   chainVisible: boolean;
   formatVisible: boolean;

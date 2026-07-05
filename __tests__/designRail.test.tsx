@@ -12,7 +12,7 @@
  * 저장하므로 파일 내/간 격리를 위해 매 테스트 전후로 clear.
  */
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { DesignRail } from '@/components/v2/DesignRail';
@@ -23,6 +23,7 @@ function RailHarness() {
   return (
     <>
       <div data-testid="layout">{photo.state.components.layout}</div>
+      <div data-testid="componentOpacity">{photo.state.components.componentOpacity}</div>
       <DesignRail photo={photo} />
     </>
   );
@@ -95,23 +96,56 @@ describe('DesignRail (#217)', () => {
     expect(mood.getAttribute('aria-expanded')).toBe('true');
     expect(color.getAttribute('aria-expanded')).toBe('false');
   });
+
+  test('(e) 투명도 아이콘 클릭 → 듀얼 슬라이더 패널 열림 · 무드와 배타 (#219)', async () => {
+    const user = userEvent.setup();
+    render(<RailHarness />);
+    const mood = screen.getByRole('button', { name: '무드' });
+    const opacity = screen.getByRole('button', { name: '투명도' });
+
+    await user.click(opacity);
+    expect(opacity.getAttribute('aria-expanded')).toBe('true');
+    expect(mood.getAttribute('aria-expanded')).toBe('false');
+    // 포스터·컴포넌트 듀얼 슬라이더 노출
+    expect(screen.getByLabelText('포스터')).not.toBeNull();
+    expect(screen.getByLabelText('컴포넌트')).not.toBeNull();
+
+    // 무드 열기 → 투명도 닫힘(한 번에 하나)
+    await user.click(mood);
+    expect(mood.getAttribute('aria-expanded')).toBe('true');
+    expect(opacity.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  test('(f) 컴포넌트 슬라이더 변경 → components.componentOpacity 반영 (#219)', async () => {
+    const user = userEvent.setup();
+    render(<RailHarness />);
+    expect(screen.getByTestId('componentOpacity').textContent).toBe('1');
+
+    await user.click(screen.getByRole('button', { name: '투명도' }));
+    fireEvent.change(screen.getByLabelText('컴포넌트'), { target: { value: '0.5' } });
+
+    expect(screen.getByTestId('componentOpacity').textContent).toBe('0.5');
+  });
 });
 
-describe('EditorCanvas hideRailSections (#217/#218)', () => {
+describe('EditorCanvas hideRailSections (#217/#218/#219)', () => {
   // LayoutPicker 캐러셀(role=group "Mood designs")·TexturePicker(role=radiogroup "Texture")가
-  // 곧 Mood·Texture 섹션의 존재 신호. ColorPicker는 고유 헤더 텍스트로 식별(#218) —
-  // 셋 다 hideRailSections로 사라져야 한다(BrightnessSlider는 유지, #219 몫).
-  test('true → Mood·Texture·ColorPicker 미렌더', () => {
+  // 곧 Mood·Texture 섹션의 존재 신호. ColorPicker는 고유 헤더 텍스트로 식별(#218),
+  // BrightnessSlider는 'Poster brightness' 라벨로 식별(#219). 넷 다 hideRailSections로 사라진다
+  // (밝기+컬러 박스는 통째로 숨겨 빈 테두리 박스가 남지 않게).
+  test('true → Mood·Texture·ColorPicker·BrightnessSlider 미렌더', () => {
     render(<EditorHarness hide />);
     expect(screen.queryByRole('group', { name: 'Mood designs' })).toBeNull();
     expect(screen.queryByRole('radiogroup', { name: 'Texture' })).toBeNull();
     expect(screen.queryByText('Ink · logo & type color')).toBeNull();
+    expect(screen.queryByText('Poster brightness')).toBeNull();
   });
 
-  test('미전달(기본 false) → Mood·Texture·ColorPicker 렌더', () => {
+  test('미전달(기본 false) → Mood·Texture·ColorPicker·BrightnessSlider 렌더', () => {
     render(<EditorHarness />);
     expect(screen.queryByRole('group', { name: 'Mood designs' })).not.toBeNull();
     expect(screen.queryByRole('radiogroup', { name: 'Texture' })).not.toBeNull();
     expect(screen.queryByText('Ink · logo & type color')).not.toBeNull();
+    expect(screen.queryByText('Poster brightness')).not.toBeNull();
   });
 });

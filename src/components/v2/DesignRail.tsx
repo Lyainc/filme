@@ -2,12 +2,13 @@ import { useRef, useState, type ReactNode } from 'react';
 import LayoutPicker from '@/components/LayoutPicker';
 import TexturePicker from '@/components/wizard/TexturePicker';
 import ColorPicker from '@/components/wizard/ColorPicker';
+import BrightnessSlider from '@/components/wizard/BrightnessSlider';
 import type { LayoutId } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 
-// 모바일 디자인 레일(#217+): 무드·컬러·후보정 편집 콘텐츠를 인라인 폼 밖으로 빼 가로 원형
-// 아이콘 + 단일 공용 확장 패널로 호스팅한다. 컬러(#218) 추가 완료, 투명도(#219)는 뒤이어 붙는다.
-type Pop = 'mood' | 'color' | 'texture';
+// 모바일 디자인 레일(#217+): 무드·컬러·후보정·투명도 편집 콘텐츠를 인라인 폼 밖으로 빼 가로 원형
+// 아이콘 + 단일 공용 확장 패널로 호스팅한다. 컬러(#218)·투명도(#219) 추가 완료.
+type Pop = 'mood' | 'color' | 'texture' | 'opacity';
 
 const PANEL_ID = 'design-rail-panel';
 
@@ -58,6 +59,18 @@ const RAIL_ITEMS: { id: Pop; label: string; eyebrow: string; icon: ReactNode }[]
         <path d="M4 20 20 4" />
         <path d="M4 14 14 4" />
         <path d="M10 20 20 10" />
+      </svg>
+    ),
+  },
+  {
+    id: 'opacity',
+    label: '투명도',
+    eyebrow: 'Opacity',
+    // 투명도: 겹친 두 원 — 한쪽은 반투명 채움으로 컬러(윤곽만)와 구분.
+    icon: (
+      <svg {...RAIL_ICON}>
+        <circle cx="10" cy="12" r="6" />
+        <circle cx="14" cy="12" r="6" fill="currentColor" fillOpacity={0.25} />
       </svg>
     ),
   },
@@ -192,12 +205,29 @@ export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket>
             disabled={components.layout === '35mm'}
             disabledNote="35mm 무드는 필름 톤(크림·먹색)이 고정이라 잉크 색을 바꿀 수 없어요."
           />
-        ) : (
+        ) : active === 'texture' ? (
           <TexturePicker
             value={components.texture}
             onChange={(texture) => setComp({ texture })}
             croppedImageUrl={croppedImageUrl}
           />
+        ) : (
+          // 투명도(#219) — 듀얼 슬라이더. 포스터=밝기(posterOpacity, 기존 메커니즘 유지),
+          // 컴포넌트=오버레이 불투명도(componentOpacity). BrightnessSlider 재사용(둘 다 0..1→%).
+          <div className="space-y-4">
+            <BrightnessSlider
+              label="포스터"
+              id="rail-poster-opacity"
+              value={components.posterOpacity}
+              onChange={(posterOpacity) => setComp({ posterOpacity })}
+            />
+            <BrightnessSlider
+              label="컴포넌트"
+              id="rail-component-opacity"
+              value={components.componentOpacity ?? 1}
+              onChange={(componentOpacity) => setComp({ componentOpacity })}
+            />
+          </div>
         )}
       </RailExpandPanel>
     </div>

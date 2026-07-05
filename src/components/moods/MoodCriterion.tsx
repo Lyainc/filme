@@ -66,9 +66,15 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
     { label: 'RE-REL.', value: reissueVal },
   ].filter(r => r.value);
 
+  const componentOpacity = components.componentOpacity ?? 1;
+
   return (
     <div style={{ position: 'absolute', inset: 0, color: ink, fontFamily: FONT_SANS, overflow: 'hidden' }}>
       <Poster src={croppedImageUrl} texture={components.texture} posterOpacity={components.posterOpacity} />
+
+      {/* #219 componentOpacity: 포스터를 뺀 오버레이 전체를 함께 페이드. 자식이 전부 position:absolute라
+          inset:0 래퍼가 루트를 채워 opacity 1에서 좌표·페인트 순서 동일(no-op). */}
+      <div style={{ position: 'absolute', inset: 0, opacity: componentOpacity }}>
       <div style={{ position: 'absolute', inset: 0, background: globalScrim, pointerEvents: 'none' }} />
 
       {/* Spine band — DVD 스파인 임프린트(원제 + 연도), 넘버링 제거 */}
@@ -165,6 +171,7 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

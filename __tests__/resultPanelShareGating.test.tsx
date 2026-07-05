@@ -51,7 +51,7 @@ const MOVIE: MovieInfo = {
 };
 const COMPONENTS: TicketComponents = {
   layout: 'minimal', chain: '', format: '', chainLabel: '', formatLabel: '',
-  texture: 'none', posterOpacity: 0.5, themeColor: '#FFFFFF',
+  texture: 'none', posterOpacity: 0.5, componentOpacity: 1, themeColor: '#FFFFFF',
   chainVisible: false, formatVisible: false,
 };
 
