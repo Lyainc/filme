@@ -107,11 +107,15 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
   if (reissueVal) filmCells.push({ label: 'Re-released', value: reissueVal });
 
   const hasTopStamp = components.chainVisible || components.formatVisible;
+  const componentOpacity = components.componentOpacity ?? 1;
 
   return (
     <div style={{ position: 'absolute', inset: 0, color: ink, fontFamily: FONT_SANS, overflow: 'hidden' }}>
       <Poster src={croppedImageUrl} texture={components.texture} posterOpacity={components.posterOpacity} />
 
+      {/* #219 componentOpacity: 포스터를 뺀 모든 오버레이를 함께 페이드. 자식이 전부 position:absolute라
+          inset:0 래퍼가 루트를 그대로 채워 opacity 1에서 좌표·페인트 순서가 동일(no-op). */}
+      <div style={{ position: 'absolute', inset: 0, opacity: componentOpacity }}>
       <RegistrationMarks color={ink} />
 
       {/* Top — chain + format paired (같은 위상이라 인접 배치) */}
@@ -200,6 +204,7 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
             )}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

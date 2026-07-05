@@ -71,6 +71,10 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
 
   const filmSummary = runtimeVal;
   const stubHasStamp = components.chainVisible || components.formatVisible;
+  // #219 componentOpacity: 3열 flex라 inset:0 래퍼로 감싸면 flex 컨텍스트가 깨진다. 대신 포스터가 아닌
+  // 두 열(B: Main, C: Stub)의 기존 스타일에 opacity를 직접 얹는다 — opacity는 레이아웃에 무관하고
+  // opacity 1은 기본값이라 데스크톱은 픽셀 동일. 포스터 열 A는 손대지 않아 축 독립 유지.
+  const componentOpacity = components.componentOpacity ?? 1;
 
   return (
     <div style={{ position: 'absolute', inset: 0, background: PAPER, color: PAPER_DEEP, fontFamily: FONT_SANS, overflow: 'hidden', display: 'flex' }}>
@@ -83,7 +87,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
       </div>
 
       {/* B: Main */}
-      <div style={{ flex: `0 0 ${MAIN_W}px`, position: 'relative', background: PAPER, color: PAPER_DEEP, display: 'flex', flexDirection: 'column', padding: '36px 48px 34px', boxSizing: 'border-box' }}>
+      <div style={{ flex: `0 0 ${MAIN_W}px`, position: 'relative', background: PAPER, color: PAPER_DEEP, display: 'flex', flexDirection: 'column', padding: '36px 48px 34px', boxSizing: 'border-box', opacity: componentOpacity }}>
         {/* Header — le billet + 영화 요약(러닝·평점) (크기 확대) */}
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 18, paddingBottom: 18 }}>
           <div style={{ ...italicLabel(accent, 36) }}>le billet</div>
@@ -172,7 +176,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
 
       {/* C: Stub — 세로형 tear-off. 가로 행 하나를 -90° 회전 → admis·영화관(먼저)·포맷·바코드·티켓번호가
           strip 방향으로 선다. 컴포넌트 크기를 맞추고 바코드를 길게 빼 공간을 채운다. */}
-      <div style={{ flex: `0 0 ${STUB_W}px`, position: 'relative', background: PAPER, borderLeft: `1px solid ${PAPER_DEEP}`, overflow: 'hidden' }}>
+      <div style={{ flex: `0 0 ${STUB_W}px`, position: 'relative', background: PAPER, borderLeft: `1px solid ${PAPER_DEEP}`, overflow: 'hidden', opacity: componentOpacity }}>
         <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: PERF_W }}>
           <PerforationStrip vertical count={42} color={PAPER_DEEP} background="transparent" />
         </div>

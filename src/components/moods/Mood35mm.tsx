@@ -73,10 +73,15 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
   if (released) filmCells.push({ label: 'Released', value: released });
   if (actorsVal) filmCells.push({ label: 'Starring', value: actorsVal, cast: true, full: true });
 
+  const componentOpacity = components.componentOpacity ?? 1;
+
   return (
     <div style={{ position: 'absolute', inset: 0, color: FS_INK, background: FS_BASE, fontFamily: FONT_SANS, overflow: 'hidden' }}>
       <Poster src={croppedImageUrl} fit="contain" background={FS_BASE} texture={components.texture} posterOpacity={components.posterOpacity} />
 
+      {/* #219 componentOpacity: 스프로킷·일련번호·스탬프·캡션 등 필름 크롬 전체를 함께 페이드.
+          자식이 전부 position:absolute라 inset:0 래퍼가 루트를 채워 opacity 1에서 no-op. */}
+      <div style={{ position: 'absolute', inset: 0, opacity: componentOpacity }}>
       {/* Top sprocket band */}
       <div style={{ position: 'absolute', left: 0, right: 0, top: 0 }}>
         <HorizontalSprockets count={14} height={56} base={FS_BASE} hole={FS_HOLE} />
@@ -166,6 +171,7 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
       {/* Bottom sprocket band */}
       <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}>
         <HorizontalSprockets count={14} height={56} base={FS_BASE} hole={FS_HOLE} />
+      </div>
       </div>
     </div>
   );

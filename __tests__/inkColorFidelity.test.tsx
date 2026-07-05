@@ -23,7 +23,7 @@ const MOVIE: MovieInfo = {
 
 const BASE: TicketComponents = {
   layout: 'minimal', chain: '', format: '', chainLabel: '', formatLabel: '',
-  texture: 'none', posterOpacity: 0.5, themeColor: DARK_CHROMATIC,
+  texture: 'none', posterOpacity: 0.5, componentOpacity: 1, themeColor: DARK_CHROMATIC,
   chainVisible: false, formatVisible: false,
 } as TicketComponents;
 

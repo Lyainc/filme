@@ -468,13 +468,14 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
       </section>
       )}
 
+      {/* 밝기+컬러 박스 — 모바일(hideRailSections)에선 둘 다 레일(#218/#219)로 옮겨졌으므로 박스째 숨긴다
+          (빈 테두리 박스가 남지 않게). 데스크톱은 밝기·컬러를 그대로 인라인 노출. */}
+      {!hideRailSections && (
       <section className="space-y-4 rounded-card border border-border bg-surface-elevated p-4" style={{ boxShadow: 'var(--shadow-card)' }}>
         <BrightnessSlider
           value={components.posterOpacity}
           onChange={(posterOpacity) => setComp({ posterOpacity })}
         />
-        {/* ColorPicker만 디자인 레일(#218)로 이동 — BrightnessSlider(#219 몫)와 박스는 유지. */}
-        {!hideRailSections && (
         <div className="border-t border-border pt-4">
           <ColorPicker
             value={components.themeColor}
@@ -484,8 +485,8 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
             disabledNote="35mm 무드는 필름 톤(크림·먹색)이 고정이라 잉크 색을 바꿀 수 없어요."
           />
         </div>
-        )}
       </section>
+      )}
 
       {/* OCR Result Banner — 화면 하단 중앙 고정. 이전엔 MobileDock 위(--mobile-dock-h)에 앵커했으나
           #213에서 dock을 제거해 이제 뷰포트 하단(bottom-6)에 직접 앵커한다(데스크톱과 동일). */}
