@@ -74,6 +74,12 @@ module.exports = {
           '0%': { opacity: '0', transform: 'translate(-50%, 1rem)' },
           '100%': { opacity: '1', transform: 'translate(-50%, 0)' },
         },
+        // 완성 화면 eyebrow의 은은한 rise-in(#222). backwards fill로 종료 후 transform을
+        // 남기지 않아 settle과 같은 이유로 screen-in identity-matrix 함정을 피한다.
+        'rise-in': {
+          '0%': { opacity: '0', transform: 'translateY(6px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
         // #98 완성 모먼트 "철컥 안착" — 결과 promoted 셀이 마운트될 때 위에서 살짝
         // 내려앉으며 accent ring/그림자가 깊어진다(60%에서 미세 overshoot). box-shadow를
         // keyframe이 전담 — 100%는 PreviewFilmCell의 promoted inline 그림자와 동일해서
@@ -99,6 +105,7 @@ module.exports = {
         'fade-in': 'fade-in 0.4s ease-out forwards',
         'sprocket-spin': 'sprocket-spin 1.4s linear infinite',
         'slide-up': 'slide-up 0.3s ease-out forwards',
+        'rise-in': 'rise-in 0.5s cubic-bezier(0.2,0.9,0.3,1) backwards',
         // backwards: 마운트 즉시 0% 프레임부터 적용하되, 종료 후엔 transform을 남기지
         // 않고 원래 스타일로 복귀 → screen-in identity-matrix 함정(forwards) 원천 차단.
         'settle': 'settle 0.42s cubic-bezier(0.2,0.9,0.3,1) backwards',

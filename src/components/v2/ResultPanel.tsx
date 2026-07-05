@@ -288,6 +288,12 @@ export function ResultPanel({
 
   return (
     <div className="space-y-4">
+      {/* 완성 eyebrow(#222) — mono·와이드 트래킹·대문자, 은은한 rise-in. D7: 빨강은 액션 전용이라
+          eyebrow는 faint 중립톤으로 둔다. 모바일 시트는 별도 Drawer.Title이 a11y 라벨을 맡는다. */}
+      <p className="text-mono text-center text-[10px] uppercase tracking-widest text-fg-faint animate-rise-in">
+        티켓 완성
+      </p>
+
       <div className={`mx-auto w-full transition-[max-width] duration-300 ${previewClassName ?? 'max-w-md'}`}>
         <PreviewFilmCell saving={ctaState === 'loading'} promoted label="이 상태 그대로 저장 · 공유돼요">
           <TicketRenderer
@@ -301,37 +307,69 @@ export function ResultPanel({
       </div>
 
       <div className="space-y-3">
+        {/* 1차 액션 = 사진 저장(accent, ~52px, 다운로드 아이콘). 성공 시 체크 + '사진에 저장됨'. */}
         <PrimaryCta
           state={ctaState}
-          label="사진 저장"
-          successLabel="저장됨!"
+          label="사진에 저장"
+          successLabel="사진에 저장됨"
           onClick={handleDownload}
+          icon={<DownloadIcon />}
+          className="!min-h-[52px]"
         />
         {/* 내보내기 스펙 — 캡처는 natural px × pixelRatio 2 (captureToImage 참고) */}
         <p className="text-mono text-center text-[10px] uppercase tracking-widest text-fg-faint">
-          {layout.width}×{layout.height} px ×2 · JPEG
+          {layout.width} × {layout.height} · JPEG ×2
         </p>
 
-        <button
-          type="button"
-          onClick={handlePermalink}
-          disabled={isBusy}
-          title="공유 링크를 만들어 클립보드에 복사해요"
-          className="text-mono inline-flex w-full min-h-[44px] items-center justify-center gap-1.5 rounded-field-sm border border-line bg-surface-elevated text-[11px] uppercase tracking-widest text-fg transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:border-line"
-        >
-          {permaState === 'loading'
-            ? '링크 만드는 중…'
-            : permaState === 'success'
-              ? '링크 생성됨!'
-              : permaState === 'error'
-                ? '실패, 다시 시도'
-                : permalink
-                  ? '링크 다시 만들기'
-                  : '링크 만들기'}
-        </button>
+        {/* 채널 3-cell 카드(#222 v5) — 링크(퍼마링크 발급) / X(인텐트) / 공유(navigator.share).
+            mockup의 '카카오톡' 셀은 더미라 SDK를 붙이지 않고, OS 공유 시트(카톡 포함)를 여는
+            '공유' 셀이 그 의도를 실제로 수행한다. D7: 채널은 quiet outline, 빨강 없음. */}
+        <div className="grid grid-cols-3 divide-x divide-line overflow-hidden rounded-field-sm border border-line bg-surface-elevated">
+          <button
+            type="button"
+            onClick={handlePermalink}
+            disabled={isBusy}
+            title="공유 링크를 만들어 클립보드에 복사해요"
+            className="text-mono flex min-h-[60px] flex-col items-center justify-center gap-1.5 px-2 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:bg-transparent disabled:hover:text-fg-faint"
+          >
+            <LinkIcon />
+            <span>
+              {permaState === 'loading'
+                ? '링크 만드는 중…'
+                : permaState === 'success'
+                  ? '링크 생성됨!'
+                  : permaState === 'error'
+                    ? '실패, 다시 시도'
+                    : permalink
+                      ? '링크 다시 만들기'
+                      : '링크 만들기'}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={handleShareTwitter}
+            disabled={isBusy}
+            title="X(트위터)에 공유해요"
+            className="text-mono flex min-h-[60px] flex-col items-center justify-center gap-1.5 px-2 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:bg-transparent disabled:hover:text-fg-faint"
+          >
+            <XIcon />
+            <span>X</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleShareLink}
+            disabled={isBusy}
+            title="카톡·메신저 등으로 공유해요"
+            className="text-mono flex min-h-[60px] flex-col items-center justify-center gap-1.5 px-2 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:bg-transparent disabled:hover:text-fg-faint"
+          >
+            <ShareIcon />
+            <span>공유</span>
+          </button>
+        </div>
 
+        {/* 공유 링크 패널 — '링크' 셀을 탭해 퍼마링크가 발급되면(permalink set) 펼쳐진다. */}
         {permalink && (
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 rounded-field-sm border border-line bg-surface p-3 animate-rise-in">
             {/* 모바일에선 rail(숨김)+시트로 ResultPanel이 둘 동시 렌더되므로 전역 id는
                 중복된다 — 라벨은 span + 인풋 aria-label로 연결해 id 충돌을 피한다. */}
             <span className="text-mono block text-[10px] uppercase tracking-widest text-fg-muted">
@@ -345,7 +383,7 @@ export function ResultPanel({
                 value={permalink}
                 onFocus={(e) => e.currentTarget.select()}
                 aria-label="공유 링크"
-                className="text-mono min-w-0 flex-1 rounded-field-sm border border-line bg-surface px-3 py-2 text-[12px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
+                className="text-mono min-w-0 flex-1 rounded-field-sm border border-line bg-surface-elevated px-3 py-2 text-[12px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
               />
               <button
                 type="button"
@@ -367,30 +405,43 @@ export function ResultPanel({
             </p>
           </div>
         )}
-
-        {/* 채널별 공유 — 링크가 없으면 핸들러가 먼저 발급하고, 발급 중엔 비활성화한다.
-            navigator.share(카톡·메신저 OS 시트)와 X 인텐트는 같은 buildShareMessage 문구를 쓴다. */}
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={handleShareLink}
-            disabled={isBusy}
-            title="카톡·메신저 등으로 공유해요"
-            className="text-mono inline-flex min-h-[44px] items-center justify-center rounded-field-sm border border-line bg-surface-elevated px-3 text-center text-[11px] uppercase tracking-widest text-fg transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:border-line"
-          >
-            카톡·메신저로 공유
-          </button>
-          <button
-            type="button"
-            onClick={handleShareTwitter}
-            disabled={isBusy}
-            title="X(트위터)에 공유해요"
-            className="text-mono inline-flex min-h-[44px] items-center justify-center rounded-field-sm border border-line bg-surface-elevated px-3 text-center text-[11px] uppercase tracking-widest text-fg transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:border-line"
-          >
-            X로 공유
-          </button>
-        </div>
       </div>
     </div>
+  );
+}
+
+function DownloadIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
+    </svg>
+  );
+}
+
+function LinkIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>
+  );
+}
+
+function XIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.657l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+  );
+}
+
+function ShareIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="18" cy="5" r="3" />
+      <circle cx="6" cy="12" r="3" />
+      <circle cx="18" cy="19" r="3" />
+      <path d="m8.59 13.51 6.83 3.98M15.41 6.51 8.59 10.49" />
+    </svg>
   );
 }
