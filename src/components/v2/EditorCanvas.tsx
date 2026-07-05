@@ -478,12 +478,10 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
         </div>
       </section>
 
-      {/* OCR Result Banner — floats above MobileDock on mobile, above viewport bottom on desktop.
-          dock 실제 높이(--mobile-dock-h, MobileDock이 측정해 노출)에 12px 띄워 앵커한다 —
-          hint 유무로 dock 높이가 변해도 항상 dock 위에 뜬다(매직넘버 제거, #102/#97).
-          var 미설정(측정 전 한 틱) 시 96px fallback. 데스크톱은 dock이 없어 sm:bottom-6로 덮어쓴다. */}
+      {/* OCR Result Banner — 화면 하단 중앙 고정. 이전엔 MobileDock 위(--mobile-dock-h)에 앵커했으나
+          #213에서 dock을 제거해 이제 뷰포트 하단(bottom-6)에 직접 앵커한다(데스크톱과 동일). */}
       {ocrSnapshot && (
-        <div className="fixed bottom-[calc(var(--mobile-dock-h,_96px)_+_12px)] sm:bottom-6 left-1/2 -translate-x-1/2 bg-surface-elevated border border-accent rounded-card shadow-lg p-3 z-50 flex items-center gap-4 w-[90%] max-w-sm animate-slide-up">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-surface-elevated border border-accent rounded-card shadow-lg p-3 z-50 flex items-center gap-4 w-[90%] max-w-sm animate-slide-up">
           <p className="text-[13px] text-fg flex-1">
             {ocrFilledFields.size > 0
               ? `${ocrFilledFields.size}개 항목이 자동 입력되었어요.`
@@ -508,15 +506,9 @@ export function EditorCanvas({ photo, onPendingFetchChange }: EditorCanvasProps)
         </div>
       )}
 
-      {/* Spacer — prevents last section from being hidden behind the OCR banner.
-          배너가 dock 위(var(--mobile-dock-h)+12)에 앵커되므로 스페이서도 dock 높이에 묶어
-          동적화한다(고정 h-40 제거, #142 (15)). 데스크톱은 dock이 없어 sm:h-20으로 덮어쓴다. */}
-      {ocrSnapshot && (
-        <div
-          className="h-[calc(var(--mobile-dock-h,_96px)_+_56px)] sm:h-20"
-          aria-hidden="true"
-        />
-      )}
+      {/* Spacer — 마지막 섹션이 하단 고정 OCR 배너에 가리지 않게. #213에서 dock 제거로 배너가
+          bottom-6에 앵커되므로 배너 높이만큼(h-20)만 비운다. */}
+      {ocrSnapshot && <div className="h-20" aria-hidden="true" />}
 
       {/* OCR 결과 announce — 라이브리전은 콘텐츠 변경 *전부터* DOM에 있어야 SR이 mutation을
           잡으므로(배너와 함께 삽입되면 무시됨, #199 리뷰 P1) 항상 마운트하고 텍스트만 바꾼다. */}

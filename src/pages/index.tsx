@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import dynamic from 'next/dynamic';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { useExportReady } from '@/hooks/useExportReady';
 import { useResultView } from '@/hooks/useResultView';
@@ -8,36 +7,23 @@ import { useMatchMedia } from '@/hooks/useMatchMedia';
 import { BELOW_RAIL_QUERY } from '@/utils/breakpoints';
 import { AppShell } from '@/components/v2/AppShell';
 import { EditorCanvas } from '@/components/v2/EditorCanvas';
+import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
 import { ResultPanel } from '@/components/v2/ResultPanel';
 import { ResultSheet } from '@/components/v2/ResultSheet';
 import { PreviewFilmCell } from '@/components/v2/PreviewFilmCell';
 import { PrimaryCta } from '@/components/v2/PrimaryCta';
 import { RailReason } from '@/components/v2/RailReason';
-import { MobileDock } from '@/components/v2/MobileDock';
 import TicketRenderer from '@/components/TicketRenderer';
-
-// vaul 기반 프리뷰 시트는 모바일 인터랙션 후에야 필요하고 rail(데스크톱)에선 안 쓰므로
-// 초기 번들에서 제외한다(vaul+radix). 포스터가 준비되면 preload해 첫 탭 지연을 없앤다(#117).
-const PreviewSheet = dynamic(
-  () => import('@/components/v2/PreviewSheet').then((m) => m.PreviewSheet),
-  { ssr: false },
-);
-
-// 모바일 에디터에서 고정 dock에 콘텐츠가 가리지 않게 하단 여백 확보. dock의 실제
-// 높이(--mobile-dock-h, MobileDock이 측정해 노출)에 묶어 매직넘버를 없앤다(#102).
-// rail 이상에서는 dock이 CSS로 숨으므로 rail:pb-0으로 여백을 끈다 — JS isMobile에
-// 의존하지 않아 첫 페인트부터 여백이 자리잡는다(#107 hydration flash 제거).
-// fallback은 측정 전 첫 페인트 상태의 실측 dock 높이에 맞춘다. 그 시점은 포스터 미업로드라
-// dock에 hint("포스터를 먼저 추가해주세요")가 떠 있어 높이가 ~102px → 96px이 80px보다 가깝다.
-// EditorCanvas의 OCR 배너/스페이서 fallback과 단일 값(96px)으로 통일(#171).
-const DOCK_PADDING_CLASS = 'pb-[calc(var(--mobile-dock-h,96px)+16px)] rail:pb-0';
 
 export default function Home() {
   // SSR safe: 초기값 'light', mount 후 localStorage/prefers-color-scheme 읽기
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [pendingFetch, setPendingFetch] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
-  // rail(데스크톱) ↔ dock/sheet(모바일) 경계는 rail 노출 분기점(rail=1024)과 동일해야
+  // 모바일 셸(<1024px)과 데스크톱 rail(≥1024px)은 근본 구조가 달라 CSS가 아닌 JS로 분기한다.
+  // SSR/첫 페인트는 데스크톱을 기본으로 그리고(서버는 뷰포트를 모름), mount 후 isMobile로 확정.
+  // mount 전엔 데스크톱 셸이 곧 모바일의 SSR 셸이기도 하다(둘 다 EditorCanvas 본문 공유) → 하이드레이션 일치.
+  const [mounted, setMounted] = useState(false);
+  // rail(데스크톱) ↔ 모바일 셸 경계는 rail 노출 분기점(rail=1024)과 동일해야
   // 그 사이 폭에서 진입 CTA가 사라지지 않는다. BELOW_RAIL_QUERY가 그 단일 경계(#104).
   const isMobile = useMatchMedia(BELOW_RAIL_QUERY);
 
@@ -58,9 +44,10 @@ export default function Home() {
   const { movieInfo: debouncedMovieInfo, components: debouncedComponents } = debounced;
   const { fieldVisibility } = photo.state;
 
-  // FOUC 스크립트(_document.tsx)가 이미 적용한 클래스를 신뢰
+  // FOUC 스크립트(_document.tsx)가 이미 적용한 클래스를 신뢰. mount 확정도 여기서(한 번).
   useEffect(() => {
     setTheme(document.documentElement.classList.contains('theme-dark') ? 'dark' : 'light');
+    setMounted(true);
   }, []);
 
   // 사용자 토글 시 class + theme-color + localStorage 동기화
@@ -91,11 +78,6 @@ export default function Home() {
       cancelled = true;
     };
   }, [croppedImageUrl, setRecommendedColors]);
-
-  // 포스터가 생기면 프리뷰 시트 청크를 미리 받아 dock 썸네일/grabber 첫 탭에 지연이 없게 한다(#117).
-  useEffect(() => {
-    if (croppedImageUrl) void import('@/components/v2/PreviewSheet');
-  }, [croppedImageUrl]);
 
   const railMessage = !croppedImageUrl
     ? '포스터를 먼저 추가해주세요'
@@ -151,44 +133,25 @@ export default function Home() {
     </div>
   ), [croppedImageUrl, resultOpen, debouncedMovieInfo, debouncedComponents, fieldVisibility, canExport, railMessage, openView, closeView]);
 
-  return (
-    <>
-      <AppShell theme={theme} onThemeChange={setTheme} rail={rail}>
-        <div className={DOCK_PADDING_CLASS}>
-          {/* 모바일 라이브 미니 프리뷰는 하단 MobileDock 좌측 썸네일로 통합했다(#181) —
-              상단 sticky 프리뷰는 스크롤하면 화면 밖으로 밀려 거의 안 보였고, 항상 보이는
-              dock 썸네일과 중복이라 제거했다. 데스크톱은 우측 rail 프리뷰가 그대로 담당. */}
-          <EditorCanvas photo={photo} onPendingFetchChange={setPendingFetch} />
-        </div>
-      </AppShell>
+  // 모바일 셸은 mount 후에만(SSR/첫 페인트는 데스크톱 기본, 하이드레이션 일치). #212 리뉴얼.
+  const showMobile = mounted && isMobile;
 
-      {/* 모바일: 편집 중엔 dock, 결과 열림 시엔 바텀시트(dock은 숨김 — 시트 트리거가 곧 dock CTA).
-          노출은 CSS(block rail:hidden)로 — rail aside의 `hidden rail:flex`와 대칭. JS isMobile에
-          의존하지 않아 SSR HTML에 항상 들어가고, rail 이상에서만 숨어 첫 페인트 점프가 없다(#107). */}
-      {!resultOpen && (
-        <div className="block rail:hidden">
-          <MobileDock
-            ctaLabel="티켓 완성 →"
-            disabled={!canExport}
-            hint={canExport ? undefined : railMessage}
-            hasImage={!!croppedImageUrl}
-            thumb={
-              croppedImageUrl ? (
-                <TicketRenderer
-                  croppedImageUrl={croppedImageUrl}
-                  movieInfo={debouncedMovieInfo}
-                  components={debouncedComponents}
-                  fieldVisibility={fieldVisibility}
-                />
-              ) : undefined
-            }
-            onPreviewClick={() => setPreviewOpen(true)}
-            onCtaClick={openView}
-          />
-        </div>
-      )}
-
-      {isMobile && (
+  if (showMobile) {
+    return (
+      <>
+        <MobileEditorShell
+          photo={photo}
+          canExport={canExport}
+          theme={theme}
+          onThemeChange={setTheme}
+          onPendingFetchChange={setPendingFetch}
+          onDone={openView}
+          disabledReason={railMessage}
+          previewMovieInfo={debouncedMovieInfo}
+          previewComponents={debouncedComponents}
+          fieldVisibility={fieldVisibility}
+        />
+        {/* 결과(완성)는 아직 바텀시트로 — Done 화면 리뉴얼은 #222에서 이 자리를 대체한다. */}
         <ResultSheet
           open={resultOpen}
           onClose={closeView}
@@ -197,22 +160,14 @@ export default function Home() {
           components={debouncedComponents}
           fieldVisibility={fieldVisibility}
         />
-      )}
+      </>
+    );
+  }
 
-      <PreviewSheet open={previewOpen} onOpenChange={setPreviewOpen}>
-        {croppedImageUrl ? (
-          <div style={{ pointerEvents: 'none' }}>
-            <TicketRenderer
-              croppedImageUrl={croppedImageUrl}
-              movieInfo={debouncedMovieInfo}
-              components={debouncedComponents}
-              fieldVisibility={fieldVisibility}
-            />
-          </div>
-        ) : (
-          <p className="text-[14px] text-fg-muted">포스터를 먼저 추가해주세요</p>
-        )}
-      </PreviewSheet>
-    </>
+  // 데스크톱(및 mount 전 SSR 기본): 기존 AppShell + rail. 이번 모바일 리뉴얼 스코프에서 그대로 유지(#213).
+  return (
+    <AppShell theme={theme} onThemeChange={setTheme} rail={rail}>
+      <EditorCanvas photo={photo} onPendingFetchChange={setPendingFetch} />
+    </AppShell>
   );
 }
