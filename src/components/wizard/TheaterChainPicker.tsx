@@ -1,4 +1,8 @@
 import { useRef } from 'react';
+import dynamic from 'next/dynamic';
+import { useLogoCrop } from '@/hooks/useLogoCrop';
+
+const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ssr: false });
 
 interface TheaterChainPickerProps {
   value: string;
@@ -19,17 +23,12 @@ export default function TheaterChainPicker({
   onVisibilityChange,
 }: TheaterChainPickerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // 업로드 → 자유 크롭 모달 → '적용' 시 크롭된 PNG를 onChange로 넘긴다(#220).
+  const { rawSrc, isCropping, openFile, handleComplete, handleCancel } = useLogoCrop(value, onChange);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      // Use Object URL and revoke old one
-      if (value && value.startsWith('blob:')) {
-        URL.revokeObjectURL(value);
-      }
-      const objectUrl = URL.createObjectURL(file);
-      onChange(objectUrl);
-    }
+    if (file && file.type.startsWith('image/')) openFile(file);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -89,6 +88,17 @@ export default function TheaterChainPicker({
         onChange={handleFileChange}
         className="sr-only"
       />
+
+      {rawSrc && (
+        <ImageCropModal
+          imageSrc={rawSrc}
+          aspect={undefined}
+          title="로고 크롭"
+          onClose={handleCancel}
+          onComplete={handleComplete}
+          isProcessing={isCropping}
+        />
+      )}
     </div>
   );
 }

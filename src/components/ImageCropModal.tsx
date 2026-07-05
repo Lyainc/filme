@@ -10,14 +10,26 @@ interface ImageCropModalProps {
   onClose: () => void;
   onComplete: (croppedAreaPixels: Area) => void;
   isProcessing?: boolean;
+  /**
+   * 크롭 종횡비. 생략 시 포스터 기본(TARGET_RATIO). 로고는 `undefined`를 넘겨
+   * react-easy-crop 자유 크롭으로 연다.
+   * 주의: 구조분해 기본값을 쓰면 명시적 `undefined`가 기본값으로 덮여 자유 크롭이
+   * 안 되므로, 아래에서 `'aspect' in props`로 "미전달"과 "명시적 undefined"를 구분한다.
+   */
+  aspect?: number;
+  /** 헤더/aria 라벨. 기본 '포스터 크롭', 로고는 '로고 크롭'. */
+  title?: string;
 }
 
-export default function ImageCropModal({
-  imageSrc,
-  onClose,
-  onComplete,
-  isProcessing = false,
-}: ImageCropModalProps) {
+export default function ImageCropModal(props: ImageCropModalProps) {
+  const {
+    imageSrc,
+    onClose,
+    onComplete,
+    isProcessing = false,
+    title = '포스터 크롭',
+  } = props;
+  const aspect = 'aspect' in props ? props.aspect : TARGET_RATIO;
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
@@ -101,7 +113,7 @@ export default function ImageCropModal({
       ref={dialogRef}
       role="dialog"
       aria-modal="true"
-      aria-label="포스터 크롭"
+      aria-label={title}
       tabIndex={-1}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm overscroll-contain animate-fade-in"
       style={{ background: 'rgba(44,38,34,0.55)' }}
@@ -109,7 +121,7 @@ export default function ImageCropModal({
       <div className="relative flex h-[85svh] max-h-[820px] w-full max-w-sm flex-col overflow-hidden rounded-card bg-paper shadow-card">
         {/* Header — 제목 + 정사각 닫기 버튼 */}
         <div className="flex items-center justify-between border-b border-line px-4 py-3">
-          <h3 className="text-[14px] font-semibold tracking-tight text-fg">포스터 크롭</h3>
+          <h3 className="text-[14px] font-semibold tracking-tight text-fg">{title}</h3>
           <button
             type="button"
             onClick={onClose}
@@ -129,7 +141,7 @@ export default function ImageCropModal({
               image={imageSrc}
               crop={crop}
               zoom={zoom}
-              aspect={TARGET_RATIO}
+              aspect={aspect}
               onCropChange={setCrop}
               onCropComplete={onCropComplete}
               onZoomChange={setZoom}
