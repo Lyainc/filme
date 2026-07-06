@@ -105,6 +105,10 @@ export function MoodStub({ movieInfo: d, components, croppedImageUrl, fieldVisib
   ) : gScreen ? (
     <FieldTap field="screen" onField={onField}><FieldGhost text="SCREEN" width={130} height={30} surface="paper" /></FieldTap>
   ) : null;
+  // ghost(블록 FieldGhost)가 실값 텍스트(inline)와 섞이면 nowrap 한 줄 전제인 cellValue에서 줄바꿈돼 깨진다
+  // (actors 관례처럼 flex로 감싼다). ghost는 ghost===true(모바일)에서만 서니 데스크톱(undefined)은 이 경로를
+  // 안 타 바이트 동일이 유지된다(#268 리뷰 P1).
+  const hasGhostPiece = gTheater || gScreen;
 
   const scrimGrad =
     'linear-gradient(180deg, rgba(10,10,10,0) 0%, rgba(10,10,10,0.55) 40%, rgba(10,10,10,0.94) 100%)';
@@ -237,7 +241,7 @@ export function MoodStub({ movieInfo: d, components, croppedImageUrl, fieldVisib
             {/* 셀 전체를 감싸던 바깥 FieldTap 제거 — 조각별 FieldTap이 형제로 붙어 이중 중첩(stopPropagation 삼킴) 없음(#266 [중] 리스크). */}
             <div style={{ padding: '18px 26px', minWidth: 0 }}>
               <div style={cellLabel}>Screen</div>
-              <div style={{ ...cellValue, fontSize: 26 }}>
+              <div style={{ ...cellValue, fontSize: 26, ...(hasGhostPiece ? { display: 'flex', alignItems: 'center', gap: 10, whiteSpace: 'normal' } : null) }}>
                 {theaterPiece || screenPiece ? (
                   <>
                     {theaterPiece}

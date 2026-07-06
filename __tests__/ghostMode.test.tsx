@@ -223,4 +223,19 @@ describe('MoodStub SCREEN 셀 분해 ghost (#266 PR-B)', () => {
     expect(html).not.toContain('THEATER');
     expect(html).not.toContain('SCREEN');
   });
+
+  // #268 리뷰 P1 회귀 가드 — theater 실값(inline 텍스트) + screen ghost(블록) 혼합 시, 값 컨테이너가
+  // flex여야 줄바꿈 없이 한 줄 정렬된다. gap:10px는 이 flex 컨테이너의 유일 시그니처(무드 내 다른 gap과 겹치지 않음).
+  test('theater 값 + 빈 screen + ghost=true → 텍스트·ghost 혼합을 flex로 정렬', () => {
+    const html = render(MoodStub, 'stub', { ...FULL_MOVIE, screen: '' }, {}, true);
+    expect(html).toContain('CGVDATA'); // theater 실값 텍스트
+    expect(html).toContain('SCREEN'); // screen ghost 라벨
+    expect(html).toContain('gap:10px'); // flex 컨테이너 — 없으면 block ghost가 줄바꿈돼 깨짐
+  });
+
+  // 데스크톱은 혼합이라도 ghost가 안 서므로 flex 경로를 타지 않는다(바이트 동일 보존).
+  test('theater 값 + 빈 screen + ghost=undefined → flex 아님(데스크톱 픽셀 보존)', () => {
+    const html = render(MoodStub, 'stub', { ...FULL_MOVIE, screen: '' }, {}, undefined);
+    expect(html).not.toContain('gap:10px');
+  });
 });
