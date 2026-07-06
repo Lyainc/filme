@@ -5,15 +5,9 @@ import { useResultView } from '@/hooks/useResultView';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useMatchMedia } from '@/hooks/useMatchMedia';
 import { BELOW_RAIL_QUERY } from '@/utils/breakpoints';
-import { AppShell } from '@/components/v2/AppShell';
-import { EditorCanvas } from '@/components/v2/EditorCanvas';
+import { DesktopStudioShell } from '@/components/v2/DesktopStudioShell';
 import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
-import { ResultPanel } from '@/components/v2/ResultPanel';
 import { ResultSheet } from '@/components/v2/ResultSheet';
-import { PreviewFilmCell } from '@/components/v2/PreviewFilmCell';
-import { PrimaryCta } from '@/components/v2/PrimaryCta';
-import { RailReason } from '@/components/v2/RailReason';
-import TicketRenderer from '@/components/TicketRenderer';
 
 export default function Home() {
   // SSR safe: 초기값 'light', mount 후 localStorage/prefers-color-scheme 읽기
@@ -85,54 +79,6 @@ export default function Home() {
       ? '제목 · 원제 · 개봉연도를 채워주세요'
       : '티켓이 준비됐어요';
 
-  // useMemo로 안정 참조 유지 — deps가 그대로면 동일 엘리먼트 참조라 React가 rail
-  // 서브트리 재조정을 건너뛴다(theme·isMobile·lightbox 등 무관한 리렌더 시 스킵).
-  // 데스크톱 rail은 편집 중엔 프리뷰+CTA, 결과 열림 시 같은 자리에서 ResultPanel로
-  // 모핑한다(인플레이스). 결과 콘텐츠는 모바일 시트와 동일한 ResultPanel 하나뿐.
-  const rail = useMemo(() => (
-    <div className="flex flex-col gap-4">
-      {/* 업로드 전에는 프리뷰 영역 자체를 렌더하지 않음 — 빈 티켓 틀이 보이지 않게.
-          결과 열림 시엔 ResultPanel이 자체 프리뷰(캡처 대상)를 그리므로 편집 프리뷰는 숨긴다. */}
-      {croppedImageUrl && !resultOpen && (
-        <PreviewFilmCell>
-          <TicketRenderer
-            croppedImageUrl={croppedImageUrl}
-            movieInfo={debouncedMovieInfo}
-            components={debouncedComponents}
-            fieldVisibility={fieldVisibility}
-          />
-        </PreviewFilmCell>
-      )}
-
-      {resultOpen ? (
-        <div className="flex flex-col gap-3">
-          <button
-            type="button"
-            onClick={closeView}
-            className="text-mono inline-flex min-h-[44px] items-center gap-1.5 self-start text-[11px] uppercase tracking-widest text-fg-muted transition-colors hover:text-fg"
-          >
-            ← 편집으로 돌아가기
-          </button>
-          <ResultPanel
-            croppedImageUrl={croppedImageUrl}
-            movieInfo={debouncedMovieInfo}
-            components={debouncedComponents}
-            fieldVisibility={fieldVisibility}
-          />
-        </div>
-      ) : (
-        <>
-          <RailReason status={canExport ? 'ok' : 'warn'} message={railMessage} />
-          <PrimaryCta
-            state={canExport ? 'idle' : 'disabled'}
-            label="티켓 완성"
-            onClick={openView}
-          />
-        </>
-      )}
-    </div>
-  ), [croppedImageUrl, resultOpen, debouncedMovieInfo, debouncedComponents, fieldVisibility, canExport, railMessage, openView, closeView]);
-
   // 모바일 셸은 mount 후에만(SSR/첫 페인트는 데스크톱 기본, 하이드레이션 일치). #212 리뉴얼.
   const showMobile = mounted && isMobile;
 
@@ -164,10 +110,22 @@ export default function Home() {
     );
   }
 
-  // 데스크톱(및 mount 전 SSR 기본): 기존 AppShell + rail. 이번 모바일 리뉴얼 스코프에서 그대로 유지(#213).
+  // 데스크톱(및 mount 전 SSR 기본): Studio 3-pane 셸(#224). 3-pane row는 rail(1024) 미만에서
+  // 숨겨져 모바일 pre-mount의 가로 overflow를 막는다 — SSR/첫 페인트 하이드레이션은 그대로 일치.
   return (
-    <AppShell theme={theme} onThemeChange={setTheme} rail={rail}>
-      <EditorCanvas photo={photo} onPendingFetchChange={setPendingFetch} />
-    </AppShell>
+    <DesktopStudioShell
+      photo={photo}
+      theme={theme}
+      onThemeChange={setTheme}
+      onPendingFetchChange={setPendingFetch}
+      canExport={canExport}
+      disabledReason={railMessage}
+      resultOpen={resultOpen}
+      onDone={openView}
+      onBackToEdit={closeView}
+      previewMovieInfo={debouncedMovieInfo}
+      previewComponents={debouncedComponents}
+      fieldVisibility={fieldVisibility}
+    />
   );
 }
