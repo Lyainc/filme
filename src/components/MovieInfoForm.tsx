@@ -566,7 +566,8 @@ function mergeDatePrefix(stored: string, edit: string): string {
   return edit;
 }
 
-function DateInput({
+// 필드 편집 시트(#215)의 개봉일/재개봉일 입력도 이 granularity 인식 입력을 재사용한다.
+export function DateInput({
   value,
   granularity,
   onChange,

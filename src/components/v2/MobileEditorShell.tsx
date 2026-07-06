@@ -2,6 +2,7 @@ import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { EditorCanvas } from './EditorCanvas';
 import { DesignRail } from './DesignRail';
+import { FieldLauncher } from './FieldLauncher';
 import { ThemeToggle } from './ThemeToggle';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
 import { getLayout } from '@/utils/layouts';
@@ -279,10 +280,12 @@ export function MobileEditorShell({
             <div className="overflow-hidden" inert={collapseBody || undefined}>
               <div className="space-y-6 px-4 pb-24 pt-6">
                 {/* 무드·후보정은 인라인 폼에서 빼(hideRailSections) 디자인 레일(#217)로 옮긴다.
-                    레일을 폼 위(프리뷰 바로 아래)에 둬 폼 전체를 스크롤하지 않고 닿게 한다 — #215가
-                    폼을 걷어낸 뒤 rail이 프리뷰 바로 아래 주 표면이 되는 최종 상태와도 정합. */}
+                    레일을 폼 위(프리뷰 바로 아래)에 둬 폼 전체를 스크롤하지 않고 닿게 한다. */}
                 <DesignRail photo={photo} />
-                <EditorCanvas photo={photo} onPendingFetchChange={onPendingFetchChange} hideRailSections />
+                {/* 탭-투-에딧 진입점(#215) — 폼을 걷어낸(hideFormSections) 자리의 주 편집 표면.
+                    행 탭 → 그 필드의 FieldEditSheet. 극장/포맷 스탬프는 PART B에서 추가. */}
+                <FieldLauncher photo={photo} onSelect={setActiveField} />
+                <EditorCanvas photo={photo} onPendingFetchChange={onPendingFetchChange} hideRailSections hideFormSections />
               </div>
             </div>
           </div>

@@ -18,12 +18,18 @@ import { formatDate } from '@/utils/dateFormat';
 import type { DateFormatToken, TicketField, MovieInfo, LayoutId, TicketComponents } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import { ALL_FIELDS_ON, ALL_FIELDS_OFF } from '@/constants/fieldVisibility';
+import { FIELD_LABELS } from '@/constants/fields';
 
 interface EditorCanvasProps {
   photo: ReturnType<typeof usePhototicket>;
   onPendingFetchChange: (pending: boolean) => void;
   /** 모바일 디자인 레일(#217+)로 옮겨진 섹션(무드·후보정)을 인라인 폼에서 숨긴다. #218/#219가 확장. */
   hideRailSections?: boolean;
+  /**
+   * 모바일 탭-투-에딧(#215): 인라인 MovieInfo 폼(Film 섹션 + Optional 아코디언, RatingPicker 포함)을
+   * 숨긴다 — 이 필드들은 FieldLauncher → FieldEditSheet로 편집한다. 포스터·OCR·표시항목 일괄·로고는 유지.
+   */
+  hideFormSections?: boolean;
 }
 
 // 기본값 kr-compact를 첫 번째로(#141 (12)). kr-compact 샘플은 끝점 포함 YYYY.MM.DD.(#141 (13)).
@@ -33,23 +39,6 @@ const WATCH_FORMAT_TOKENS: { value: DateFormatToken; sample: string }[] = [
   { value: 'cinema-mono', sample: '12·MAY·2026' },
   { value: 'en-long', sample: 'May 12, 2026' },
 ];
-
-const FIELD_LABELS: Record<TicketField, string> = {
-  title: '제목',
-  titleOg: '원제',
-  actors: '출연',
-  watchDate: '관람일',
-  watchTime: '관람 시간',
-  theater: '극장',
-  screen: '상영관',
-  seat: '좌석',
-  runtime: '러닝타임',
-  rating: '평점',
-  releaseDate: '개봉일',
-  reissue: '재개봉',
-  bookingNo: '예매 번호',
-  signature: '서명',
-};
 
 const FIELD_ORDER: TicketField[] = [
   'title', 'titleOg', 'actors', 'watchDate', 'watchTime',
@@ -76,7 +65,7 @@ function OcrChip({
   return <div className="flex justify-start">{chip}</div>;
 }
 
-export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = false }: EditorCanvasProps) {
+export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = false, hideFormSections = false }: EditorCanvasProps) {
   const { movieInfo, fieldVisibility, components, recommendedColors } = photo.state;
   const setInfo = photo.updateMovieInfo;
   const setField = photo.updateFieldVisibility;
@@ -219,6 +208,9 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
         </div>
       </div>
 
+      {/* MovieInfo 인라인 폼(Film + Optional 아코디언) — 모바일 탭-투-에딧(#215)에선 숨기고
+          FieldLauncher → FieldEditSheet로 대체. 데스크톱은 hideFormSections 미전달이라 그대로 렌더. */}
+      {!hideFormSections && (
       <section className="space-y-4">
         <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Film</span>
         <MovieInfoForm
@@ -229,7 +221,9 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
           onFieldVisibilityChange={setField}
         />
       </section>
+      )}
 
+      {!hideFormSections && (
       <div ref={accordionRef}>
         <OptionalDetailsAccordion open={accordionOpen} onOpenChange={setAccordionOpen}>
           <div className="space-y-5">
@@ -402,6 +396,7 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
           </div>
         </OptionalDetailsAccordion>
       </div>
+      )}
 
       {/* 정보 입력 ↔ 티켓 디자인 영역 경계 — 단일 스크롤에서 스캔을 돕는 시각 구분 */}
       <div className="flex items-center gap-3 pt-2" aria-hidden="true">
