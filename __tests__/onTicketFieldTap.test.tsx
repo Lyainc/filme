@@ -18,7 +18,7 @@ import { MoodCriterion } from '../src/components/moods/MoodCriterion';
 import { MoodEditorial } from '../src/components/moods/MoodEditorial';
 import { MoodMinimal } from '../src/components/moods/MoodMinimal';
 import type { MovieInfo, TicketComponents, TicketField } from '../src/types';
-import type { SheetTarget } from '../src/constants/fields';
+import { FIELD_SHEET_TYPE, isStampTarget, type SheetTarget } from '../src/constants/fields';
 
 const FIELDS: TicketField[] = [
   'title', 'titleOg', 'actors', 'watchDate', 'watchTime', 'theater', 'screen',
@@ -75,6 +75,26 @@ describe('온-티켓 필드 탭 (#259)', () => {
       );
       fireEvent.click(screen.getByRole('button', { name: '제목 편집' }));
       expect(calls).toEqual(['title']);
+    });
+
+    test(`${id}: 모든 필드 탭이 시트 있는 타깃으로 매핑 (빈 시트 dead-end 방지)`, () => {
+      // 회귀: reissue처럼 FIELD_SHEET_TYPE에 없는 필드로 매핑하면 FieldEditorBody가 빈 시트를 연다.
+      // 각 필드 탭을 눌러 onField가 넘기는 타깃이 전부 스탬프거나 시트 타입이 있는지 검증한다.
+      const calls: SheetTarget[] = [];
+      const { container } = render(
+        <Mood
+          movieInfo={FULL_MOVIE}
+          components={{ ...BASE, layout: id as TicketComponents['layout'], chainVisible: true, formatVisible: true, chainLabel: 'CGV', formatLabel: 'IMAX' }}
+          croppedImageUrl="blob:x"
+          fieldVisibility={ALL_ON}
+          onField={(f) => calls.push(f)}
+        />
+      );
+      const taps = container.querySelectorAll('[role="button"][aria-label$="편집"]');
+      expect(taps.length).toBeGreaterThan(0);
+      taps.forEach((t) => fireEvent.click(t));
+      const deadEnds = calls.filter((t) => !isStampTarget(t) && FIELD_SHEET_TYPE[t] == null);
+      expect(deadEnds).toEqual([]);
     });
 
     test(`${id}: onField 없으면 필드 role=button·data-poster-tap 0건 (캡처 안전)`, () => {

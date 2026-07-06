@@ -78,7 +78,9 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
   const filmRows = ([
     { label: 'RATED', value: ratingText, ghost: ghostOn && !ratingText && fv?.rating !== false, field: 'rating' },
     { label: 'RELEASED', value: releaseDateVal, ghost: ghostOn && !releaseDateVal && fv?.releaseDate !== false, field: 'releaseDate' },
-    { label: 'RE-REL.', value: reissueVal, ghost: ghostOn && !reissueVal && !!d.isReissue && fv?.reissue !== false, field: 'reissue' },
+    // RE-REL.은 releaseDate로 매핑 — reissue는 FIELD_SHEET_TYPE에 없어 단독 타깃이면 빈 시트가 열린다
+    // (재개봉일 편집은 releaseDate 시트의 재개봉 토글 안, 35mm/Editorial과 정렬).
+    { label: 'RE-REL.', value: reissueVal, ghost: ghostOn && !reissueVal && !!d.isReissue && fv?.reissue !== false, field: 'releaseDate' },
   ] as Row[]).filter(r => r.value || r.ghost);
 
   const componentOpacity = components.componentOpacity ?? 1;
