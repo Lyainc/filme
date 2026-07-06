@@ -118,7 +118,7 @@ export default function ImageCropModal(props: ImageCropModalProps) {
       className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm overscroll-contain animate-fade-in"
       style={{ background: 'rgba(44,38,34,0.55)' }}
     >
-      <div className="relative flex h-[85svh] max-h-[820px] w-full max-w-sm flex-col overflow-hidden rounded-card bg-paper shadow-card">
+      <div className="relative flex h-[85svh] max-h-[820px] w-full max-w-sm flex-col overflow-hidden rounded-card bg-paper shadow-card rail:h-[700px] rail:max-h-[88vh] rail:max-w-2xl">
         {/* Header — 제목 + 정사각 닫기 버튼 */}
         <div className="flex items-center justify-between border-b border-line px-4 py-3">
           <h3 className="text-[14px] font-semibold tracking-tight text-fg">{title}</h3>
