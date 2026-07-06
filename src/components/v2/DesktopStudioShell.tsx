@@ -202,6 +202,8 @@ export function DesktopStudioShell({
                 movieInfo={previewMovieInfo}
                 components={previewComponents}
                 fieldVisibility={fieldVisibility}
+                // 캔버스 hero 티켓이 이미 프리뷰라 인스펙터는 액션만 — 이중 노출 제거(#233).
+                hidePreview
               />
             ) : activeTab === 'poster' ? (
               <div className="space-y-4">

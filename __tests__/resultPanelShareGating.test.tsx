@@ -55,13 +55,14 @@ const COMPONENTS: TicketComponents = {
   chainVisible: false, formatVisible: false,
 };
 
-function renderPanel() {
+function renderPanel(extra: { hidePreview?: boolean } = {}) {
   return render(
     React.createElement(ResultPanel, {
       croppedImageUrl: 'blob:fake',
       movieInfo: MOVIE,
       components: COMPONENTS,
       fieldVisibility: ALL_ON,
+      ...extra,
     }),
   );
 }
@@ -83,5 +84,31 @@ describe('ResultPanel 공유 의도 게이팅 (#194)', () => {
     // on-demand 발급이 돌면 캡처 전에 loading→(happy-dom 캡처 실패로) error로 전이한다.
     // error 라벨이 뜨면 issuePermalink가 끝까지 돌았다는 증거 = 버튼→발급 배선 정상.
     await waitFor(() => expect(screen.getByText('실패, 다시 시도')).toBeTruthy());
+  });
+});
+
+describe('ResultPanel hidePreview (#233 데스크톱 done 이중 프리뷰 제거)', () => {
+  test('hidePreview 미전달(모바일 경로) = 프리뷰 카드가 flow에 보인다', async () => {
+    renderPanel();
+    const ticket = await screen.findByTestId('ticket');
+    // 캡처 타깃이 off-screen aria-hidden 래퍼 밖 = 시각적으로 노출된 프리뷰 카드.
+    expect(ticket.closest('[aria-hidden="true"]')).toBeNull();
+  });
+
+  test('hidePreview=true = 캡처 타깃은 DOM에 남되 off-screen, 액션 버튼은 전부 렌더', async () => {
+    renderPanel({ hidePreview: true });
+    // 캡처 타깃 노드는 DOM에 유지(html-to-image 대상) — 다운로드/공유/퍼마링크 무결.
+    const ticket = await screen.findByTestId('ticket');
+    // 시각적으로만 숨김: off-screen aria-hidden 래퍼 안(display:none 아님).
+    const wrapper = ticket.closest('[aria-hidden="true"]') as HTMLElement | null;
+    expect(wrapper).not.toBeNull();
+    expect(wrapper!.style.position).toBe('fixed'); // off-screen 고정 — 레이아웃은 유지
+    // 액션 버튼(저장/링크/X/공유)은 전부 남는다.
+    expect(screen.getByRole('button', { name: '사진에 저장' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /링크 만들기/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'X' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '공유' })).toBeTruthy();
+    // "이 상태 그대로" 안심 카피가 액션 영역에도 유지된다(프리뷰 라벨이 화면 밖으로 나가므로).
+    expect(screen.getAllByText(/이 상태 그대로 저장/).length).toBeGreaterThan(0);
   });
 });
