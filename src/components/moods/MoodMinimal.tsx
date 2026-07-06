@@ -109,7 +109,7 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
   // ghost 셀은 값이 비었고 기여 필드 중 하나라도 visible일 때만(ghostOn), value 없이 push한다.
   // 합쳐진 셀(Screening=관람일+시간, Venue=극장+상영관)은 대표 필드로 탭 매핑한다(#259) — 2차 필드
   // (watchTime/screen)는 FieldLauncher/시트에서 닿는다. field가 붙은 셀만 FieldTap으로 감싼다.
-  const screeningCells: { label: string; value?: string; ghost?: boolean; field?: SheetTarget }[] = [];
+  const screeningCells: { label: string; value?: string; ghost?: boolean; field: SheetTarget }[] = [];
   const screening = [watchDateVal, watchTimeVal].filter(Boolean).join('  ');
   if (screening) screeningCells.push({ label: 'Screening', value: screening, field: 'watchDate' });
   else if (ghostOn && (fv?.watchDate !== false || fv?.watchTime !== false)) screeningCells.push({ label: 'Screening', ghost: true, field: 'watchDate' });
@@ -119,15 +119,17 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
   if (seatVal) screeningCells.push({ label: 'Seat', value: seatVal, field: 'seat' });
   else if (ghostOn && fv?.seat !== false) screeningCells.push({ label: 'Seat', ghost: true, field: 'seat' });
 
-  const filmCells: { label: string; value?: string; ghost?: boolean; field?: SheetTarget }[] = [];
+  // Re-released 셀은 releaseDate로 매핑 — 재개봉일 편집 UI가 releaseDate 시트(재개봉 토글) 안에만
+  // 있고 reissue는 FIELD_SHEET_TYPE에 없어 단독 타깃이면 빈 시트가 열린다(35mm/Editorial과 정렬).
+  const filmCells: { label: string; value?: string; ghost?: boolean; field: SheetTarget }[] = [];
   if (runtimeVal) filmCells.push({ label: 'Runtime', value: runtimeVal, field: 'runtime' });
   else if (ghostOn && fv?.runtime !== false) filmCells.push({ label: 'Runtime', ghost: true, field: 'runtime' });
   if (ratingVisible) filmCells.push({ label: 'Rated', value: `★ ${d.rating.toFixed(1)}`, field: 'rating' });
   else if (ghostOn && fv?.rating !== false) filmCells.push({ label: 'Rated', ghost: true, field: 'rating' });
   if (releaseDateVal) filmCells.push({ label: 'Released', value: releaseDateVal, field: 'releaseDate' });
   else if (ghostOn && fv?.releaseDate !== false) filmCells.push({ label: 'Released', ghost: true, field: 'releaseDate' });
-  if (reissueVal) filmCells.push({ label: 'Re-released', value: reissueVal, field: 'reissue' });
-  else if (ghostOn && d.isReissue && fv?.reissue !== false) filmCells.push({ label: 'Re-released', ghost: true, field: 'reissue' });
+  if (reissueVal) filmCells.push({ label: 'Re-released', value: reissueVal, field: 'releaseDate' });
+  else if (ghostOn && d.isReissue && fv?.reissue !== false) filmCells.push({ label: 'Re-released', ghost: true, field: 'releaseDate' });
 
   // 스탬프가 실제로 뭔가(이미지/라벨/고스트 placeholder)를 렌더할 때만 상단 스크림+스탬프 블록을
   // 낸다. visible 토글만 보면 로고 미업로드+ghost=false에서 빈 스크림만 남는다(#216 리뷰 P1).
@@ -206,7 +208,7 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
             {screeningCells.length > 0 && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '18px 56px' }}>
                 {screeningCells.map((c, i) => (
-                  <FieldTap key={i} field={c.field!} onField={onField}>
+                  <FieldTap key={i} field={c.field} onField={onField}>
                     <div style={{ minWidth: 0 }}>
                       <div style={labelSerif(ink)}>{c.label}</div>
                       {c.ghost ? (
@@ -225,7 +227,7 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
             {filmCells.length > 0 && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '18px 56px' }}>
                 {filmCells.map((c, i) => (
-                  <FieldTap key={i} field={c.field!} onField={onField}>
+                  <FieldTap key={i} field={c.field} onField={onField}>
                     <div style={{ minWidth: 0 }}>
                       <div style={labelSerif(ink)}>{c.label}</div>
                       {c.ghost ? (
