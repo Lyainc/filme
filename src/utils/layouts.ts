@@ -44,6 +44,22 @@ export const LAYOUTS: readonly LayoutSpec[] = [
     height: 960,
     orientation: 'landscape',
   },
+  {
+    id: 'stub',
+    label: 'Stub',
+    caption: '티켓 스텁 절취',
+    width: 960,
+    height: 1477,
+    orientation: 'portrait',
+  },
+  {
+    id: '35mm-landscape',
+    label: '35mm Wide',
+    caption: '35mm 가로 필름',
+    width: 1477,
+    height: 960,
+    orientation: 'landscape',
+  },
 ] as const;
 
 export function getLayout(id: LayoutId): LayoutSpec {

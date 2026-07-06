@@ -1,4 +1,4 @@
-export type LayoutId = 'minimal' | 'criterion' | '35mm' | 'editorial';
+export type LayoutId = 'minimal' | 'criterion' | '35mm' | 'editorial' | 'stub' | '35mm-landscape';
 
 export type DateFormatToken = 'iso' | 'kr-compact' | 'cinema-mono' | 'en-long';
 export type DateGranularity = 'year' | 'year-month' | 'date';

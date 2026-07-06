@@ -284,6 +284,50 @@ const THUMBNAIL_RENDERERS: Record<LayoutId, (c: ThumbColors) => ReactNode> = {
       <rect x="62" y="80" width="14" height="6" fill="#1a1612" />
     </>
   ),
+  // 상단 포스터 풀블리드 + 점선 절취선(양옆 노치) + 하단 크림 스텁(SEAT 대형 + 그리드 + 바코드)
+  stub: ({ stroke, dim }) => (
+    <>
+      <rect x="0" y="0" width="80" height="58" fill={dim} opacity="0.22" />
+      <rect x="0" y="40" width="80" height="18" fill="rgba(0,0,0,0.6)" />
+      <rect x="6" y="6" width="16" height="4" fill={stroke} opacity="0.7" />
+      <rect x="60" y="6" width="14" height="3" fill={stroke} />
+      <rect x="6" y="46" width="34" height="5" fill={stroke} />
+      <line x1="3" y1="58" x2="77" y2="58" stroke={stroke} strokeWidth="0.5" strokeDasharray="1.4 1.2" />
+      <circle cx="0" cy="58" r="3" fill="#000000" />
+      <circle cx="80" cy="58" r="3" fill="#000000" />
+      <rect x="6" y="63" width="20" height="3" fill={stroke} opacity="0.7" />
+      <rect x="58" y="63" width="16" height="2" fill={dim} />
+      <rect x="6" y="70" width="68" height="18" fill="none" stroke={stroke} strokeWidth="0.5" />
+      <line x1="34" y1="70" x2="34" y2="88" stroke={stroke} strokeWidth="0.5" />
+      <line x1="34" y1="76" x2="74" y2="76" stroke={stroke} strokeWidth="0.4" />
+      <line x1="34" y1="82" x2="74" y2="82" stroke={stroke} strokeWidth="0.4" />
+      <rect x="10" y="76" width="16" height="7" fill={stroke} />
+      <rect x="58" y="92" width="16" height="5" fill={dim} />
+    </>
+  ),
+  // 상·하 필름 스트립(스프로킷) + 좌 포스터 / 우 정보패널 좌우 분할
+  '35mm-landscape': ({ stroke, dim }) => (
+    <>
+      <rect x="0" y="0" width="80" height="12" fill="#0a0a0a" />
+      <rect x="0" y="88" width="80" height="12" fill="#0a0a0a" />
+      {[5, 15, 25, 35, 45, 55, 65, 75].map((x) => (
+        <rect key={`t-${x}`} x={x} y="4" width="4" height="4" rx="0.6" fill="#f6f1e4" />
+      ))}
+      {[5, 15, 25, 35, 45, 55, 65, 75].map((x) => (
+        <rect key={`b-${x}`} x={x} y="92" width="4" height="4" rx="0.6" fill="#f6f1e4" />
+      ))}
+      <rect x="0" y="12" width="50" height="76" fill={dim} opacity="0.18" />
+      <rect x="0" y="66" width="50" height="22" fill="rgba(0,0,0,0.6)" />
+      <rect x="5" y="72" width="30" height="5" fill={stroke} />
+      <rect x="5" y="80" width="20" height="2" fill={dim} />
+      <rect x="50" y="12" width="30" height="76" fill="#070707" />
+      <rect x="55" y="20" width="16" height="2" fill={dim} />
+      <rect x="55" y="30" width="20" height="3" fill={stroke} />
+      <rect x="55" y="40" width="20" height="3" fill={stroke} />
+      <rect x="55" y="50" width="14" height="3" fill={stroke} />
+      <rect x="55" y="80" width="20" height="4" fill={dim} />
+    </>
+  ),
 };
 
 const Thumbnail = memo(function Thumbnail({
