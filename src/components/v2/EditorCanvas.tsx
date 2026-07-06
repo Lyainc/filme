@@ -15,7 +15,9 @@ import type { OcrDirectField } from './OcrUploadCard';
 import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
 import InfoTooltip from '@/components/ui/InfoTooltip';
 import { formatDate } from '@/utils/dateFormat';
-import type { DateFormatToken, TicketField, MovieInfo, LayoutId, TicketComponents } from '@/types';
+import { useOcrUndo, type OcrApplyParams } from '@/hooks/useOcrUndo';
+import { OcrUndoBanner } from './OcrUndoBanner';
+import type { DateFormatToken, TicketField, LayoutId } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import { ALL_FIELDS_ON, ALL_FIELDS_OFF } from '@/constants/fieldVisibility';
 import { FIELD_LABELS } from '@/constants/fields';
@@ -84,66 +86,20 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
   const allOff = FIELD_ORDER.every((f) => !fieldVisibility[f]);
   const selectedCount = FIELD_ORDER.filter((f) => fieldVisibility[f]).length;
 
-  // Tracks which fields were last filled by OCR. Cleared field-by-field on user edit.
-  const [ocrFilledFields, setOcrFilledFields] = useState<Set<OcrDirectField>>(new Set());
-  const [ocrSnapshot, setOcrSnapshot] = useState<Partial<MovieInfo> | null>(null);
-  // OCR이 chain을 인식하면 chainVisible/chainLabel을 바꾸는데, 라벨이 export에
-  // 반영되므로 undo가 이 변경도 되돌려야 한다(#141 리뷰 P1). 변경 직전 컴포넌트 값.
-  const [ocrComponentSnapshot, setOcrComponentSnapshot] = useState<Partial<TicketComponents> | null>(null);
+  // OCR 낙관적 주입 + 되돌리기 로직은 useOcrUndo가 소유한다(DesktopStudioShell과 공유, #141-class drift 방지).
+  const ocr = useOcrUndo(photo);
   const [accordionOpen, setAccordionOpen] = useState(false);
   const accordionRef = useRef<HTMLDivElement>(null);
-  // Incremented on cancel (undo) to invalidate any in-flight KOBIS fetch so it
-  // can't re-populate the form after revert. NOT bumped on confirm: confirm
-  // accepts the OCR injection, and KOBIS enrichment (which carries title itself,
-  // not just titleOg/releaseDate/actors/runtime) must still be allowed to land.
-  const ocrEpochRef = useRef(0);
 
-  function removeFromOcr(key: OcrDirectField) {
-    setOcrFilledFields((prev) => {
-      if (!prev.has(key)) return prev;
-      const next = new Set(prev);
-      next.delete(key);
-      return next;
-    });
-  }
-
-  function handleOcrApply({
-    keys,
-    prevValues,
-    prevComponents,
-  }: {
-    keys: Set<OcrDirectField>;
-    prevValues: Partial<MovieInfo>;
-    prevComponents?: Partial<TicketComponents>;
-  }) {
-    setOcrFilledFields(keys);
-    setOcrSnapshot(prevValues);
-    setOcrComponentSnapshot(prevComponents ?? null);
+  // 훅의 apply에 이 사이트만의 UI 사이드이펙트(Optional 아코디언 열기 + 스크롤)를 얹는다.
+  function handleOcrApply(params: OcrApplyParams) {
+    ocr.apply(params);
     setAccordionOpen(true);
 
     // Smooth scroll into view if offscreen
     setTimeout(() => {
       accordionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 100);
-  }
-
-  function handleCancelOcr() {
-    ocrEpochRef.current++;
-    if (ocrSnapshot) {
-      setInfo(ocrSnapshot);
-    }
-    // chain 라벨/노출도 OCR 적용 전으로 되돌린다(#141 리뷰 P1).
-    if (ocrComponentSnapshot) {
-      photo.updateComponents(ocrComponentSnapshot);
-    }
-    setOcrFilledFields(new Set());
-    setOcrSnapshot(null);
-    setOcrComponentSnapshot(null);
-  }
-
-  function handleConfirmOcr() {
-    setOcrSnapshot(null);
-    setOcrComponentSnapshot(null);
   }
 
   return (
@@ -171,7 +127,7 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
             onOcrApply={handleOcrApply}
             setComponents={photo.updateComponents}
             currentComponents={photo.state.components}
-            ocrEpochRef={ocrEpochRef}
+            ocrEpochRef={ocr.epochRef}
           />
         </div>
       </section>
@@ -238,7 +194,7 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
                 >
                   Watched
                 </label>
-                {ocrFilledFields.has('watchDate') && <OcrChip />}{/* 라벨 행 안 — 래퍼 없는 칩 */}
+                {ocr.filledFields.has('watchDate') && <OcrChip />}{/* 라벨 행 안 — 래퍼 없는 칩 */}
               </div>
               <span className="text-mono text-[10px] uppercase tracking-widest text-fg-faint">
                 {formatDate(movieInfo.watchDate, watchToken, 'date') || '—'}
@@ -251,7 +207,7 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
                 value={movieInfo.watchDate || ''}
                 onChange={(e) => {
                   setInfo({ watchDate: e.target.value });
-                  removeFromOcr('watchDate');
+                  ocr.removeField('watchDate');
                 }}
                 className="w-full rounded-field border border-line bg-surface-elevated px-3.5 py-3 text-[15px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
               />
@@ -280,7 +236,7 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
           {/* Theater + Booking No.를 2열로 묶어 세로 한 줄 절약(#180 (8)). 둘 다 짧은 거래 정보라 짝이 맞는다. */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <OcrChip field="theater" filled={ocrFilledFields} />
+              <OcrChip field="theater" filled={ocr.filledFields} />
               <Field
                 id="editor-theater"
                 label="Theater"
@@ -290,13 +246,13 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
                 dimmed={!fieldVisibility.theater}
                 onChange={(e) => {
                   setInfo({ theater: e.target.value });
-                  removeFromOcr('theater');
+                  ocr.removeField('theater');
                 }}
                 placeholder="CGV 용산아이파크몰"
               />
             </div>
             <div className="space-y-1">
-              <OcrChip field="bookingNumber" filled={ocrFilledFields} />
+              <OcrChip field="bookingNumber" filled={ocr.filledFields} />
               <Field
                 id="editor-bookingNumber"
                 label="Booking No."
@@ -306,7 +262,7 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
                 dimmed={!fieldVisibility.bookingNo}
                 onChange={(e) => {
                   setInfo({ bookingNumber: e.target.value });
-                  removeFromOcr('bookingNumber');
+                  ocr.removeField('bookingNumber');
                 }}
                 placeholder="T-20260510-0014"
               />
@@ -326,7 +282,7 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <OcrChip field="watchTime" filled={ocrFilledFields} />
+              <OcrChip field="watchTime" filled={ocr.filledFields} />
               <Field
                 id="editor-watchTime"
                 label="Showtime"
@@ -337,7 +293,7 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
                 dimmed={!fieldVisibility.watchTime}
                 onChange={(e) => {
                   setInfo({ watchTime: e.target.value });
-                  removeFromOcr('watchTime');
+                  ocr.removeField('watchTime');
                 }}
               />
             </div>
@@ -355,7 +311,7 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <OcrChip field="screen" filled={ocrFilledFields} />
+              <OcrChip field="screen" filled={ocr.filledFields} />
               <Field
                 id="editor-screen"
                 label="Screen"
@@ -365,13 +321,13 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
                 dimmed={!fieldVisibility.screen}
                 onChange={(e) => {
                   setInfo({ screen: e.target.value });
-                  removeFromOcr('screen');
+                  ocr.removeField('screen');
                 }}
                 placeholder="IMAX관"
               />
             </div>
             <div className="space-y-1">
-              <OcrChip field="seat" filled={ocrFilledFields} />
+              <OcrChip field="seat" filled={ocr.filledFields} />
               <Field
                 id="editor-seat"
                 label="Seat"
@@ -381,7 +337,7 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
                 dimmed={!fieldVisibility.seat}
                 onChange={(e) => {
                   setInfo({ seat: e.target.value });
-                  removeFromOcr('seat');
+                  ocr.removeField('seat');
                 }}
                 placeholder="G14, G15"
               />
@@ -488,47 +444,15 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
       </section>
       )}
 
-      {/* OCR Result Banner — 화면 하단 중앙 고정. 이전엔 MobileDock 위(--mobile-dock-h)에 앵커했으나
-          #213에서 dock을 제거해 이제 뷰포트 하단(bottom-6)에 직접 앵커한다(데스크톱과 동일). */}
-      {ocrSnapshot && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-surface-elevated border border-accent rounded-card shadow-lg p-3 z-50 flex items-center gap-4 w-[90%] max-w-sm animate-slide-up">
-          <p className="text-[13px] text-fg flex-1">
-            {ocrFilledFields.size > 0
-              ? `${ocrFilledFields.size}개 항목이 자동 입력되었어요.`
-              : '영화 정보를 자동으로 불러왔어요.'}
-          </p>
-          <div className="flex gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={handleCancelOcr}
-              className="text-[12px] font-medium text-fg-muted hover:text-fg transition-colors"
-            >
-              되돌리기
-            </button>
-            <button
-              type="button"
-              onClick={handleConfirmOcr}
-              className="rounded-chip bg-accent px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-accent-hover"
-            >
-              확인
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Spacer — 마지막 섹션이 하단 고정 OCR 배너에 가리지 않게. #213에서 dock 제거로 배너가
-          bottom-6에 앵커되므로 배너 높이만큼(h-20)만 비운다. */}
-      {ocrSnapshot && <div className="h-20" aria-hidden="true" />}
-
-      {/* OCR 결과 announce — 라이브리전은 콘텐츠 변경 *전부터* DOM에 있어야 SR이 mutation을
-          잡으므로(배너와 함께 삽입되면 무시됨, #199 리뷰 P1) 항상 마운트하고 텍스트만 바꾼다. */}
-      <div role="status" aria-live="polite" className="sr-only">
-        {ocrSnapshot
-          ? ocrFilledFields.size > 0
-            ? `${ocrFilledFields.size}개 항목이 자동 입력되었어요.`
-            : '영화 정보를 자동으로 불러왔어요.'
-          : ''}
-      </div>
+      {/* OCR 되돌리기 배너 + sr-only 라이브리전 — DesktopStudioShell과 공유(useOcrUndo/OcrUndoBanner,
+          #141-class drift 방지). spacer는 모바일에서 마지막 섹션이 하단 고정 배너에 가리지 않게 이 사이트에만 둔다(#213). */}
+      <OcrUndoBanner
+        snapshot={ocr.snapshot}
+        filledFields={ocr.filledFields}
+        onCancel={ocr.cancel}
+        onConfirm={ocr.confirm}
+      />
+      {ocr.snapshot && <div className="h-20" aria-hidden="true" />}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import dynamic from 'next/dynamic';
-import { useRef, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import ImageUploader from '@/components/ImageUploader';
 import TicketRenderer from '@/components/TicketRenderer';
 import { AppHeader } from './AppHeader';
@@ -8,7 +8,9 @@ import { DesignRail } from './DesignRail';
 import { ResultPanel } from './ResultPanel';
 import { PreviewFilmCell } from './PreviewFilmCell';
 import { PrimaryCta } from './PrimaryCta';
-import { OcrUploadCard, type OcrDirectField } from './OcrUploadCard';
+import { OcrUploadCard } from './OcrUploadCard';
+import { OcrUndoBanner } from './OcrUndoBanner';
+import { useOcrUndo } from '@/hooks/useOcrUndo';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 import type { SheetTarget } from '@/constants/fields';
@@ -119,41 +121,9 @@ export function DesktopStudioShell({
   const [activeField, setActiveField] = useState<SheetTarget | null>(null);
   const { croppedImageUrl } = photo.state;
 
-  // OCR 낙관적 주입 + 즉시 되돌리기 — EditorCanvas의 poster 섹션 wiring을 그대로 옮긴다.
-  // 필드 칩(ocrFilledFields)은 이 셸에 필드 입력칸이 없어 배너 카운트 용도로만 유지한다.
-  const [ocrFilledFields, setOcrFilledFields] = useState<Set<OcrDirectField>>(new Set());
-  const [ocrSnapshot, setOcrSnapshot] = useState<Partial<MovieInfo> | null>(null);
-  const [ocrComponentSnapshot, setOcrComponentSnapshot] = useState<Partial<TicketComponents> | null>(null);
-  const ocrEpochRef = useRef(0);
-
-  function handleOcrApply({
-    keys,
-    prevValues,
-    prevComponents,
-  }: {
-    keys: Set<OcrDirectField>;
-    prevValues: Partial<MovieInfo>;
-    prevComponents?: Partial<TicketComponents>;
-  }) {
-    setOcrFilledFields(keys);
-    setOcrSnapshot(prevValues);
-    setOcrComponentSnapshot(prevComponents ?? null);
-  }
-
-  function handleCancelOcr() {
-    ocrEpochRef.current++;
-    if (ocrSnapshot) photo.updateMovieInfo(ocrSnapshot);
-    // chain 라벨/노출도 OCR 적용 전으로 되돌린다(#141 리뷰 P1).
-    if (ocrComponentSnapshot) photo.updateComponents(ocrComponentSnapshot);
-    setOcrFilledFields(new Set());
-    setOcrSnapshot(null);
-    setOcrComponentSnapshot(null);
-  }
-
-  function handleConfirmOcr() {
-    setOcrSnapshot(null);
-    setOcrComponentSnapshot(null);
-  }
+  // OCR 낙관적 주입 + 되돌리기 로직은 useOcrUndo가 소유한다(EditorCanvas와 공유, #141-class drift 방지).
+  // 이 셸엔 필드 입력칸이 없어 EditorCanvas의 아코디언 열기 같은 사이트별 사이드이펙트 없이 apply를 그대로 쓴다.
+  const ocr = useOcrUndo(photo);
 
   return (
     <div
@@ -177,7 +147,10 @@ export function DesktopStudioShell({
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
                 aria-pressed={active}
-                className={`flex flex-col items-center justify-center gap-1 rounded-field-sm transition-colors ${
+                // 완성(resultOpen) 모드에선 인스펙터가 ResultPanel 우선이라 탭 클릭이 무반응 —
+                // disabled로 죽은 클릭을 막고 시각적으로도 비활성 표시(리뷰 P2).
+                disabled={resultOpen}
+                className={`flex flex-col items-center justify-center gap-1 rounded-field-sm transition-colors disabled:pointer-events-none disabled:opacity-40 ${
                   active ? 'bg-accent-soft text-accent' : 'text-fg-faint hover:text-fg-muted'
                 }`}
                 style={{ width: 48, height: 48 }}
@@ -226,8 +199,8 @@ export function DesktopStudioShell({
             {resultOpen ? (
               <ResultPanel
                 croppedImageUrl={croppedImageUrl}
-                movieInfo={photo.state.movieInfo}
-                components={photo.state.components}
+                movieInfo={previewMovieInfo}
+                components={previewComponents}
                 fieldVisibility={fieldVisibility}
               />
             ) : activeTab === 'poster' ? (
@@ -243,10 +216,10 @@ export function DesktopStudioShell({
                   <OcrUploadCard
                     setInfo={photo.updateMovieInfo}
                     currentInfo={photo.state.movieInfo}
-                    onOcrApply={handleOcrApply}
+                    onOcrApply={ocr.apply}
                     setComponents={photo.updateComponents}
                     currentComponents={photo.state.components}
-                    ocrEpochRef={ocrEpochRef}
+                    ocrEpochRef={ocr.epochRef}
                   />
                 </div>
               </div>
@@ -281,41 +254,13 @@ export function DesktopStudioShell({
       {/* 필드 편집 하단시트(vaul, dynamic) — 정보 탭에서 행 탭 시 열린다. 탭 전환과 무관하게 항상 마운트. */}
       <FieldEditSheet activeField={activeField} onClose={() => setActiveField(null)} photo={photo} />
 
-      {/* OCR 되돌리기 배너 — 화면 하단 중앙 고정(EditorCanvas 패턴). */}
-      {ocrSnapshot && (
-        <div className="fixed bottom-6 left-1/2 z-50 flex w-[90%] max-w-sm -translate-x-1/2 animate-slide-up items-center gap-4 rounded-card border border-accent bg-surface-elevated p-3 shadow-lg">
-          <p className="flex-1 text-[13px] text-fg">
-            {ocrFilledFields.size > 0
-              ? `${ocrFilledFields.size}개 항목이 자동 입력되었어요.`
-              : '영화 정보를 자동으로 불러왔어요.'}
-          </p>
-          <div className="flex shrink-0 gap-2">
-            <button
-              type="button"
-              onClick={handleCancelOcr}
-              className="text-[12px] font-medium text-fg-muted transition-colors hover:text-fg"
-            >
-              되돌리기
-            </button>
-            <button
-              type="button"
-              onClick={handleConfirmOcr}
-              className="rounded-chip bg-accent px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-accent-hover"
-            >
-              확인
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* OCR announce — 라이브리전은 콘텐츠 변경 전부터 DOM에 있어야 SR이 잡으므로 항상 마운트하고 텍스트만 바꾼다(#199). */}
-      <div role="status" aria-live="polite" className="sr-only">
-        {ocrSnapshot
-          ? ocrFilledFields.size > 0
-            ? `${ocrFilledFields.size}개 항목이 자동 입력되었어요.`
-            : '영화 정보를 자동으로 불러왔어요.'
-          : ''}
-      </div>
+      {/* OCR 되돌리기 배너 + sr-only 라이브리전 — EditorCanvas와 공유(useOcrUndo/OcrUndoBanner, #141-class drift 방지). */}
+      <OcrUndoBanner
+        snapshot={ocr.snapshot}
+        filledFields={ocr.filledFields}
+        onCancel={ocr.cancel}
+        onConfirm={ocr.confirm}
+      />
     </div>
   );
 }
