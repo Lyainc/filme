@@ -1,9 +1,8 @@
-import dynamic from 'next/dynamic';
 import { useState, type ReactNode } from 'react';
 import ImageUploader from '@/components/ImageUploader';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
 import { AppHeader } from './AppHeader';
-import { FieldLauncher } from './FieldLauncher';
+import { FieldAccordion } from './FieldAccordion';
 import { DesktopDesignPanel } from './DesktopDesignPanel';
 import { ResultPanel } from './ResultPanel';
 import { PreviewFilmCell } from './PreviewFilmCell';
@@ -15,15 +14,9 @@ import { useOcrUndo } from '@/hooks/useOcrUndo';
 import { getLayout } from '@/utils/layouts';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
-import type { SheetTarget } from '@/constants/fields';
 
-// 필드 편집 시트는 vaul(+radix)을 끌어와 무겁고 필드 탭 전엔 안 쓰므로 dynamic(ssr:false)로 분리 —
-// 셸 자체는 즉시 필요하지만 vaul은 시트가 열릴 때만 로드된다(MobileEditorShell과 동일 패턴).
-// #226이 이 드로어를 인라인 아코디언으로 교체한다.
-const FieldEditSheet = dynamic(
-  () => import('./FieldEditSheet').then((m) => m.FieldEditSheet),
-  { ssr: false },
-);
+// 데스크톱은 필드를 인라인 아코디언(FieldAccordion, #226)으로 편집한다 — vaul-free라 상시 마운트해도
+// vaul이 메인 번들로 안 딸려온다. 모바일(MobileEditorShell)만 vaul 하단시트(FieldEditSheet)를 쓴다.
 
 type StudioTab = 'poster' | 'info' | 'design';
 
@@ -79,7 +72,7 @@ interface DesktopStudioShellProps {
   photo: ReturnType<typeof usePhototicket>;
   theme: 'light' | 'dark';
   onThemeChange: (theme: 'light' | 'dark') => void;
-  /** MovieInfoForm이 이 셸엔 없어(제목 검색은 FieldEditSheet 경유) 현재는 미소비 — index 대칭용 prop. */
+  /** MovieInfoForm이 이 셸엔 없어(제목 검색은 FieldAccordion의 인라인 에디터 경유) 현재는 미소비 — index 대칭용 prop. */
   onPendingFetchChange: (pending: boolean) => void;
   canExport: boolean;
   /** = index의 railMessage. 완료 비활성 사유 힌트. */
@@ -102,8 +95,9 @@ function Eyebrow({ children }: { children: ReactNode }) {
 
 /**
  * 데스크톱(≥1024px) Studio 셸(#224) — 헤더 + 3-pane(아이콘 내비 · 중앙 캔버스 · 컨텍스트 인스펙터).
- * 모바일 #212가 만든 콘텐츠 leaf(ImageUploader·OcrUploadCard·FieldLauncher·FieldEditSheet·DesignRail·
- * ResultPanel)를 새 하우징에 재배치만 한다 — 새 편집/디자인/결과 로직은 없다. 색은 전부 CSS var 토큰.
+ * 모바일 #212가 만든 콘텐츠 leaf(ImageUploader·OcrUploadCard·DesignRail·ResultPanel)를 재배치하고,
+ * INFO는 데스크톱 인라인 아코디언(FieldAccordion, #226)으로 편집한다 — 모바일 시트와 본문(FieldEditorBody)
+ * 공유. 새 편집/디자인/결과 로직은 없다. 색은 전부 CSS var 토큰.
  * 3-pane row는 rail(1024) 미만에서 hidden — 모바일 pre-mount 시 가로 overflow 방지.
  */
 export function DesktopStudioShell({
@@ -120,7 +114,6 @@ export function DesktopStudioShell({
   fieldVisibility,
 }: DesktopStudioShellProps) {
   const [activeTab, setActiveTab] = useState<StudioTab>('poster');
-  const [activeField, setActiveField] = useState<SheetTarget | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('default');
   const { croppedImageUrl } = photo.state;
 
@@ -262,7 +255,7 @@ export function DesktopStudioShell({
             ) : activeTab === 'info' ? (
               <div className="space-y-4">
                 <Eyebrow>INFO</Eyebrow>
-                <FieldLauncher photo={photo} onSelect={setActiveField} />
+                <FieldAccordion photo={photo} />
               </div>
             ) : (
               <div className="space-y-4">
@@ -287,9 +280,6 @@ export function DesktopStudioShell({
         </aside>
         )}
       </div>
-
-      {/* 필드 편집 하단시트(vaul, dynamic) — 정보 탭에서 행 탭 시 열린다. 탭 전환과 무관하게 항상 마운트. */}
-      <FieldEditSheet activeField={activeField} onClose={() => setActiveField(null)} photo={photo} />
 
       {/* OCR 되돌리기 배너 + sr-only 라이브리전 — EditorCanvas와 공유(useOcrUndo/OcrUndoBanner, #141-class drift 방지). */}
       <OcrUndoBanner
