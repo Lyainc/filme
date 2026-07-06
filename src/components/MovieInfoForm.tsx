@@ -5,6 +5,7 @@ import { useKobisSearch } from '@/hooks/useKobisSearch';
 import Field from './ui/Field';
 import VisibilityCheckbox from './ui/VisibilityCheckbox';
 import InfoTooltip from './ui/InfoTooltip';
+import { DATE_FORMAT_TOKENS, GRANULARITY_OPTIONS } from '@/constants/dateTokens';
 
 interface MovieInfoFormProps {
   movieInfo: MovieInfo;
@@ -15,20 +16,6 @@ interface MovieInfoFormProps {
   fieldVisibility: Record<TicketField, boolean>;
   onFieldVisibilityChange: (partial: Partial<Record<TicketField, boolean>>) => void;
 }
-
-const GRANULARITY_OPTIONS: { value: DateGranularity; label: string }[] = [
-  { value: 'year', label: '연만' },
-  { value: 'year-month', label: '연·월' },
-  { value: 'date', label: '연·월·일' },
-];
-
-// 기본값 kr-compact를 첫 번째로(#141 (12)). kr-compact 샘플은 끝점 포함 YYYY.MM.DD.(#141 (13)).
-const FORMAT_TOKENS: { value: DateFormatToken; sample: string }[] = [
-  { value: 'kr-compact', sample: '2014.11.06.' },
-  { value: 'iso', sample: '2014-11-06' },
-  { value: 'cinema-mono', sample: '06·NOV·2014' },
-  { value: 'en-long', sample: 'November 6, 2014' },
-];
 
 export default function MovieInfoForm({
   movieInfo,
@@ -414,7 +401,7 @@ function ReleaseDateBlock({
         </div>
       </div>
       <div className="flex flex-wrap gap-2 pt-1" role="radiogroup" aria-label={`${label} 표기`}>
-        {FORMAT_TOKENS.map((opt) => {
+        {DATE_FORMAT_TOKENS.map((opt) => {
           const active = token === opt.value;
           return (
             <button

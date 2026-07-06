@@ -22,6 +22,7 @@ import {
   type SheetTarget,
   type StampTarget,
 } from '@/constants/fields';
+import { DATE_FORMAT_TOKENS, GRANULARITY_OPTIONS } from '@/constants/dateTokens';
 
 // 로고 크롭 모달 — 픽커들과 동일하게 dynamic(ssr:false)로 로드(react-easy-crop을 시트 청크에서 뺀다).
 const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ssr: false });
@@ -30,20 +31,6 @@ type Photo = ReturnType<typeof usePhototicket>;
 
 const INPUT_CLS =
   'w-full rounded-field border border-line bg-surface-elevated px-3.5 py-3 text-[15px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft';
-
-// 날짜 표기 토큰(#141) — kr-compact 기본을 첫 번째로. 인라인 폼과 동일 세트를 시트에서 재사용.
-const DATE_FORMAT_TOKENS: { value: DateFormatToken; sample: string }[] = [
-  { value: 'kr-compact', sample: '2014.11.06.' },
-  { value: 'iso', sample: '2014-11-06' },
-  { value: 'cinema-mono', sample: '06·NOV·2014' },
-  { value: 'en-long', sample: 'November 6, 2014' },
-];
-
-const GRANULARITY_OPTIONS: { value: DateGranularity; label: string }[] = [
-  { value: 'year', label: '연만' },
-  { value: 'year-month', label: '연·월' },
-  { value: 'date', label: '연·월·일' },
-];
 
 interface FieldEditSheetProps {
   /** 열린 타깃(null이면 닫힘) — MovieInfo 필드 또는 스탬프(chain/format). */
