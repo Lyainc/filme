@@ -14,9 +14,11 @@ import { describe, expect, test, afterEach } from 'bun:test';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Mood35mm } from '../src/components/moods/Mood35mm';
+import { Mood35mmLandscape } from '../src/components/moods/Mood35mmLandscape';
 import { MoodCriterion } from '../src/components/moods/MoodCriterion';
 import { MoodEditorial } from '../src/components/moods/MoodEditorial';
 import { MoodMinimal } from '../src/components/moods/MoodMinimal';
+import { MoodStub } from '../src/components/moods/MoodStub';
 import type { MovieInfo, TicketComponents, TicketField } from '../src/types';
 import { FIELD_SHEET_TYPE, isStampTarget, type SheetTarget } from '../src/constants/fields';
 
@@ -56,6 +58,8 @@ const MOODS: [string, MoodFn][] = [
   ['35mm', Mood35mm],
   ['criterion', MoodCriterion],
   ['editorial', MoodEditorial],
+  ['stub', MoodStub],
+  ['35mm-landscape', Mood35mmLandscape],
 ];
 
 afterEach(cleanup);

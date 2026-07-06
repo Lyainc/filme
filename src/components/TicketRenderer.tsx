@@ -13,6 +13,8 @@ const MoodMinimal = dynamic(() => import('./moods/MoodMinimal').then((m) => m.Mo
 const MoodCriterion = dynamic(() => import('./moods/MoodCriterion').then((m) => m.MoodCriterion), { ssr: false });
 const Mood35mm = dynamic(() => import('./moods/Mood35mm').then((m) => m.Mood35mm), { ssr: false });
 const MoodEditorial = dynamic(() => import('./moods/MoodEditorial').then((m) => m.MoodEditorial), { ssr: false });
+const MoodStub = dynamic(() => import('./moods/MoodStub').then((m) => m.MoodStub), { ssr: false });
+const Mood35mmLandscape = dynamic(() => import('./moods/Mood35mmLandscape').then((m) => m.Mood35mmLandscape), { ssr: false });
 
 interface TicketRendererProps {
   croppedImageUrl: string;
@@ -129,6 +131,10 @@ const Mood = memo(function Mood({
       return <Mood35mm {...props} />;
     case 'editorial':
       return <MoodEditorial {...props} />;
+    case 'stub':
+      return <MoodStub {...props} />;
+    case '35mm-landscape':
+      return <Mood35mmLandscape {...props} />;
   }
 });
 
