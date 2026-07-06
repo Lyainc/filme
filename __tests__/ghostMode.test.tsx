@@ -16,7 +16,7 @@ import { MoodEditorial } from '../src/components/moods/MoodEditorial';
 import { MoodMinimal } from '../src/components/moods/MoodMinimal';
 import { MoodStub } from '../src/components/moods/MoodStub';
 import { Mood35mmLandscape } from '../src/components/moods/Mood35mmLandscape';
-import { stampWillRender } from '../src/components/moods/_shared';
+import { showFieldGhost, stampWillRender } from '../src/components/moods/_shared';
 import type { MovieInfo, TicketComponents, TicketField, LayoutId } from '../src/types';
 
 const FIELDS: TicketField[] = [
@@ -70,13 +70,14 @@ function render(
   movie: MovieInfo,
   components: Partial<TicketComponents>,
   ghost: boolean | undefined,
+  fieldVisibility: Record<TicketField, boolean> = ALL_ON,
 ) {
   return renderToStaticMarkup(
     <Mood
       movieInfo={movie}
       components={{ ...BASE, ...components, layout }}
       croppedImageUrl="blob:test"
-      fieldVisibility={ALL_ON}
+      fieldVisibility={fieldVisibility}
       ghost={ghost}
     />,
   );
@@ -110,6 +111,36 @@ describe('ghost mode field placeholders (#216)', () => {
   test.each(MOODS)('%s: 값이 채워진 필드는 ghost=true여도 placeholder 없음', (layout, Mood) => {
     const html = render(Mood, layout, FULL_MOVIE, {}, true);
     expect(countGhosts(html)).toBe(0);
+  });
+});
+
+describe('ghost mode hidden-field ghost (#266 PR-A — 목록 없이 재켜기)', () => {
+  // titleOg는 6무드 공통으로 ghost 슬롯('ORIGINAL TITLE')을 그리는 유일 필드라 대표로 쓴다.
+  // FULL_MOVIE라 titleOg에도 값이 있지만, 숨김(visible=false)이면 gate가 ''를 반환해 슬롯이 비고
+  // ghost 모드에선 재켜기용 '+ 라벨' 점선이 떠야 한다(#266 확정 방향 (a)).
+  const HIDE_TITLEOG = { ...ALL_ON, titleOg: false };
+
+  test.each(MOODS)('%s: 숨긴 titleOg + 값 있음 + ghost=true → ORIGINAL TITLE ghost 하나만 등장', (layout, Mood) => {
+    const html = render(Mood, layout, FULL_MOVIE, {}, true, HIDE_TITLEOG);
+    expect(html).toContain('ORIGINAL TITLE');
+    // 숨긴 필드 하나만 ghost로 뜨고 다른 값 채워진 필드는 새 placeholder를 만들지 않음.
+    expect(countGhosts(html)).toBe(1);
+  });
+
+  // 데스크톱 픽셀 보존 불변식(:103 확장) — 숨긴 필드가 있어도 ghost=undefined면 placeholder 0.
+  test.each(MOODS)('%s: 숨긴 titleOg + ghost=undefined(데스크톱) → 필드 placeholder 0', (layout, Mood) => {
+    const html = render(Mood, layout, FULL_MOVIE, {}, undefined, HIDE_TITLEOG);
+    expect(countGhosts(html)).toBe(0);
+    expect(html).not.toContain('ORIGINAL TITLE');
+  });
+
+  test('showFieldGhost: 숨김(visible=false)은 값 유무와 무관하게 ghost=true에서만 렌더', () => {
+    expect(showFieldGhost(false, 'VALUE', true)).toBe(true); // 숨김 + 값 있음 → 재켜기 ghost
+    expect(showFieldGhost(false, '', true)).toBe(true); // 숨김 + 값 없음 → ghost
+    expect(showFieldGhost(false, 'VALUE', undefined)).toBe(false); // 데스크톱 픽셀 보존
+    expect(showFieldGhost(false, 'VALUE', false)).toBe(false); // ghost off
+    expect(showFieldGhost(true, 'VALUE', true)).toBe(false); // 보임 + 값 있음 → 실필드, ghost 아님
+    expect(showFieldGhost(true, '', true)).toBe(true); // 보임 + 값 없음 → 기존 #216 동작 유지
   });
 });
 

@@ -1,4 +1,5 @@
 import type { TicketField, MovieInfo, TicketComponents } from '@/types';
+import { formatDate } from '@/utils/dateFormat';
 
 /**
  * 필드 메타데이터 단일 소스(#215). 라벨은 인라인 폼(EditorCanvas)·런처(FieldLauncher)·
@@ -126,3 +127,25 @@ export const STAMP_PLACEHOLDERS: Record<StampTarget, string> = {
 
 /** 상영 포맷 빠른 프리셋(#141) — StampSheet(#215 PART B) 포맷 자동완성·칩의 단일 소스. */
 export const FORMAT_PRESETS = ['IMAX', '4DX', 'Dolby', 'ScreenX'];
+
+/**
+ * 필드 현재값 미리보기 문자열. 비어 있으면 '' 반환(호출부가 placeholder로 대체).
+ * 데스크톱 아코디언(FieldAccordion)·모바일 런처(FieldLauncher) 공유 — FieldLauncher 격리를 위해
+ * 여기 상수 모듈로 이전(#266 PR-A).
+ */
+export function fieldPreview(field: TicketField, info: MovieInfo): string {
+  if (field === 'rating') return `${(info.rating ?? 0).toFixed(1)} / 5.0`;
+  if (field === 'watchDate') return formatDate(info.watchDate, info.watchDateFormat || 'kr-compact', 'date');
+  if (field === 'releaseDate') {
+    return formatDate(info.releaseDate, info.releaseDateFormat || 'kr-compact', info.releaseDateGranularity || 'date');
+  }
+  const key = FIELD_INFO_KEY[field];
+  return key ? String(info[key] ?? '') : '';
+}
+
+/** 스탬프 현재값 미리보기 — 이미지가 있으면 '이미지'(라벨 우선), 없으면 텍스트 라벨. */
+export function stampPreview(target: StampTarget, components: TicketComponents): string {
+  const keys = STAMP_KEYS[target];
+  if (components[keys.image]) return '이미지';
+  return String(components[keys.label] ?? '');
+}

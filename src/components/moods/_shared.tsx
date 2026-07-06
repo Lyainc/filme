@@ -75,16 +75,17 @@ export function posterTapProps(onPosterTap?: () => void) {
 }
 
 /**
- * 빈 항목 미리보기(ghost, #216) 판정. visible이면서 값이 비었고 ghost 모드가 켜졌을(===true)
- * 때만 true — 즉 무드가 해당 필드 슬롯에 자리표시자를 그려야 하는지. ghost가 undefined(데스크톱)나
- * false면 항상 false라 신규 placeholder는 등장하지 않는다(데스크톱 픽셀 보존).
+ * 빈 항목 미리보기(ghost, #216 → #266 PR-A) 판정. ghost 모드가 켜졌을(===true) 때, 필드가
+ * (a) 숨김(visible===false)이거나 (b) 값이 비었으면 무드가 해당 슬롯에 자리표시자를 그린다.
+ * (a)는 목록 없이 필드를 다시 켜는 유일 경로 — 숨긴 필드가 `+ 라벨` 점선으로 티켓에 떠 탭→재노출(#266).
+ * ghost가 undefined(데스크톱)나 false면 항상 false라 신규 placeholder는 등장하지 않는다(데스크톱 픽셀 보존).
  */
 export function showFieldGhost(
   visible: boolean | undefined,
   value: unknown,
   ghost: boolean | undefined
 ): boolean {
-  return ghost === true && visible !== false && !value;
+  return ghost === true && (visible === false || !value);
 }
 
 /**

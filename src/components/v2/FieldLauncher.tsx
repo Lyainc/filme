@@ -1,40 +1,21 @@
 import type { usePhototicket } from '@/hooks/usePhototicket';
-import type { MovieInfo, TicketComponents, TicketField } from '@/types';
-import { formatDate } from '@/utils/dateFormat';
+import type { TicketComponents } from '@/types';
 import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
 import {
   FIELD_LABELS,
-  FIELD_INFO_KEY,
   LAUNCHER_GROUPS,
   STAMP_TARGETS,
   STAMP_KEYS,
   STAMP_LABELS,
+  fieldPreview,
+  stampPreview,
   type SheetTarget,
-  type StampTarget,
 } from '@/constants/fields';
 
 interface FieldLauncherProps {
   photo: ReturnType<typeof usePhototicket>;
   /** 행 탭 → 해당 필드(또는 스탬프)의 편집 시트를 연다. */
   onSelect: (target: SheetTarget) => void;
-}
-
-/** 필드 현재값 미리보기 문자열. 비어 있으면 '' 반환(호출부가 placeholder로 대체). */
-export function fieldPreview(field: TicketField, info: MovieInfo): string {
-  if (field === 'rating') return `${(info.rating ?? 0).toFixed(1)} / 5.0`;
-  if (field === 'watchDate') return formatDate(info.watchDate, info.watchDateFormat || 'kr-compact', 'date');
-  if (field === 'releaseDate') {
-    return formatDate(info.releaseDate, info.releaseDateFormat || 'kr-compact', info.releaseDateGranularity || 'date');
-  }
-  const key = FIELD_INFO_KEY[field];
-  return key ? String(info[key] ?? '') : '';
-}
-
-/** 스탬프 현재값 미리보기 — 이미지가 있으면 '이미지'(라벨 우선), 없으면 텍스트 라벨. */
-export function stampPreview(target: StampTarget, components: TicketComponents): string {
-  const keys = STAMP_KEYS[target];
-  if (components[keys.image]) return '이미지';
-  return String(components[keys.label] ?? '');
 }
 
 /**

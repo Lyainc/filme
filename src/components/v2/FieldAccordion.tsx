@@ -3,13 +3,14 @@ import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { TicketComponents } from '@/types';
 import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
 import { FieldEditorBody } from './FieldEditorBody';
-import { fieldPreview, stampPreview } from './FieldLauncher';
 import {
   FIELD_LABELS,
   LAUNCHER_GROUPS,
   STAMP_TARGETS,
   STAMP_KEYS,
   STAMP_LABELS,
+  fieldPreview,
+  stampPreview,
   type SheetTarget,
 } from '@/constants/fields';
 
