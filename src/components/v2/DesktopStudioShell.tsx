@@ -12,8 +12,12 @@ import { OcrUndoBanner } from './OcrUndoBanner';
 import { ZoomSegment, actualSize, type ViewMode } from './viewMode';
 import { useOcrUndo } from '@/hooks/useOcrUndo';
 import { getLayout } from '@/utils/layouts';
+import { ALL_FIELDS_ON } from '@/constants/fieldVisibility';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
+
+// 전체 표시/숨김 대상 = 모든 티켓 필드 - 필수 필드(제목). ALL_FIELDS_ON을 도메인 소스로.
+const TOGGLE_FIELDS = (Object.keys(ALL_FIELDS_ON) as TicketField[]).filter((f) => f !== 'title');
 
 // 데스크톱은 필드를 인라인 아코디언(FieldAccordion, #226)으로 편집한다 — vaul-free라 상시 마운트해도
 // vaul이 메인 번들로 안 딸려온다. 모바일(MobileEditorShell)만 vaul 하단시트(FieldEditSheet)를 쓴다.
@@ -94,6 +98,28 @@ function Eyebrow({ children }: { children: ReactNode }) {
 }
 
 /**
+ * 전체 표시/숨김 일괄 토글(#227) — INFO 탭 상단. 필수 필드(제목)는 대상에서 제외(TOGGLE_FIELDS).
+ * 라벨은 다음 동작을 가리킨다: 전부 켜져 있으면 '전체 숨김', 하나라도 꺼져 있으면 '전체 표시'.
+ */
+function AllVisibilityToggle({ photo }: { photo: ReturnType<typeof usePhototicket> }) {
+  const { fieldVisibility } = photo.state;
+  const allShown = TOGGLE_FIELDS.every((f) => fieldVisibility[f]);
+  const setAll = (v: boolean) =>
+    photo.updateFieldVisibility(
+      Object.fromEntries(TOGGLE_FIELDS.map((f) => [f, v])) as Partial<Record<TicketField, boolean>>,
+    );
+  return (
+    <button
+      type="button"
+      onClick={() => setAll(!allShown)}
+      className="text-mono rounded-chip border border-line px-2.5 py-1 text-[9.5px] uppercase tracking-widest text-fg-muted transition-colors hover:border-accent hover:text-accent"
+    >
+      {allShown ? '전체 숨김' : '전체 표시'}
+    </button>
+  );
+}
+
+/**
  * 데스크톱(≥1024px) Studio 셸(#224) — 헤더 + 3-pane(아이콘 내비 · 중앙 캔버스 · 컨텍스트 인스펙터).
  * 모바일 #212가 만든 콘텐츠 leaf(ImageUploader·OcrUploadCard·DesignRail·ResultPanel)를 재배치하고,
  * INFO는 데스크톱 인라인 아코디언(FieldAccordion, #226)으로 편집한다 — 모바일 시트와 본문(FieldEditorBody)
@@ -121,8 +147,14 @@ export function DesktopStudioShell({
   // 이 셸엔 필드 입력칸이 없어 EditorCanvas의 아코디언 열기 같은 사이트별 사이드이펙트 없이 apply를 그대로 쓴다.
   const ocr = useOcrUndo(photo);
 
+  // 빈 항목 미리보기(ghost, #227) — 셸 로컬, 미영속(기본 on). 실제 크기 모드에선 강제 off(모바일 #216과 동일).
+  const [ghostMode, setGhostMode] = useState(true);
+
   // 줌은 편집 모드만 — 결과(resultOpen)에선 캔버스 hero 티켓이 기본 크기로 고정된다(인스펙터=ResultPanel).
   const mode = resultOpen ? 'default' : viewMode;
+  // 실제 크기에선 ghost를 강제로 끈다(물리 크기 정밀 비교엔 자리표시자가 방해). 그 외엔 토글값.
+  const isActual = mode === 'actual';
+  const ghostEffective = !isActual && ghostMode;
   const layout = getLayout(previewComponents.layout);
   const actual = actualSize(layout);
   // 티켓 컨테이너 width로 렌더 크기를 몬다(TicketRenderer는 width에 맞춰 스케일, 모바일과 동일 방식).
@@ -186,10 +218,47 @@ export function DesktopStudioShell({
             </button>
           )}
 
-          {/* 줌 세그먼트 — 편집 모드 + 티켓 있을 때만. max에서 인스펙터를 숨겨도 이 세그먼트는
-              캔버스에 남아 기본으로 돌아오는 유일한 길이 된다. */}
+          {/* 캔버스 컨트롤 바 — 편집 모드 + 티켓 있을 때만. 빈 항목 미리보기 토글 + 줌 세그먼트.
+              max에서 인스펙터를 숨겨도 이 바는 캔버스에 남아 기본으로 돌아오는 유일한 길이 된다. */}
           {!resultOpen && croppedImageUrl && (
-            <ZoomSegment viewMode={viewMode} onChange={setViewMode} className="absolute right-7 top-6 z-10" />
+            <div className="absolute right-7 top-6 z-10 flex items-center gap-2.5">
+              {/* 빈 항목 미리보기 토글(#227) — 실제 크기 모드에선 비활성(ghost 강제 off, opacity .4 · cursor default). */}
+              <button
+                type="button"
+                role="switch"
+                aria-checked={ghostEffective}
+                aria-label="빈 항목 미리보기"
+                title="빈 항목 미리보기"
+                disabled={isActual}
+                onClick={() => setGhostMode((v) => !v)}
+                className={`inline-flex h-9 items-center gap-2 rounded-full border border-line bg-surface-elevated pl-3 pr-1.5 transition-opacity ${
+                  isActual ? 'cursor-default opacity-40' : ''
+                }`}
+              >
+                <span
+                  className="text-mono text-fg-muted"
+                  style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase' }}
+                >
+                  빈 항목
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="relative inline-block h-5 w-9 rounded-full transition-colors"
+                  style={{ background: ghostEffective ? 'var(--accent)' : 'var(--border)' }}
+                >
+                  <span
+                    className="absolute top-0.5 h-4 w-4 rounded-full transition-transform"
+                    style={{
+                      left: 2,
+                      background: '#fff',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                      transform: ghostEffective ? 'translateX(16px)' : 'translateX(0)',
+                    }}
+                  />
+                </span>
+              </button>
+              <ZoomSegment viewMode={viewMode} onChange={setViewMode} />
+            </div>
           )}
 
           {croppedImageUrl && (
@@ -203,6 +272,7 @@ export function DesktopStudioShell({
                   movieInfo={previewMovieInfo}
                   components={previewComponents}
                   fieldVisibility={fieldVisibility}
+                  ghost={ghostEffective}
                 />
               </PreviewFilmCell>
             </div>
@@ -254,7 +324,10 @@ export function DesktopStudioShell({
               </div>
             ) : activeTab === 'info' ? (
               <div className="space-y-4">
-                <Eyebrow>INFO</Eyebrow>
+                <div className="flex items-center justify-between">
+                  <Eyebrow>INFO</Eyebrow>
+                  <AllVisibilityToggle photo={photo} />
+                </div>
                 <FieldAccordion photo={photo} />
               </div>
             ) : (
