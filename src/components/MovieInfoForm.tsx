@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { MovieInfo, KobisMovie, DateFormatToken, DateGranularity, TicketField } from '@/types';
+import { MovieInfo, DateFormatToken, DateGranularity, TicketField } from '@/types';
 import { formatDate, openDtToIso } from '@/utils/dateFormat';
-import { extractKobisActorsRuntime } from '@/utils/kobisLookup';
+import { useKobisSearch } from '@/hooks/useKobisSearch';
 import Field from './ui/Field';
 import VisibilityCheckbox from './ui/VisibilityCheckbox';
 import InfoTooltip from './ui/InfoTooltip';
@@ -37,26 +37,30 @@ export default function MovieInfoForm({
   fieldVisibility,
   onFieldVisibilityChange,
 }: MovieInfoFormProps) {
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<KobisMovie[]>([]);
-  const [searchError, setSearchError] = useState('');
-  const [showResults, setShowResults] = useState(false);
   // 자동완성 키보드 내비 — 하이라이트된 옵션 인덱스(-1 = 없음). aria-activedescendant로
   // 노출하고 Enter가 이 항목을 선택한다(#198).
   const [highlightIndex, setHighlightIndex] = useState(-1);
-  const [isFetchingDetail, setIsFetchingDetail] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
-  const searchCacheRef = useRef<Map<string, KobisMovie[]>>(new Map());
-  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
-  // Monotonic id guarding handleSelectMovie's async detail fetch: a stale
-  // response from a previously selected movie must not overwrite the latest one.
-  const detailRunIdRef = useRef(0);
 
-  useEffect(() => {
-    onPendingFetchChange?.(isFetchingDetail);
-    return () => onPendingFetchChange?.(false);
-  }, [isFetchingDetail, onPendingFetchChange]);
+  // 검색 코어(디바운스·abort·캐시·detail 경합)는 공용 훅이 소유. 표현·키보드 내비만 여기서.
+  const {
+    results: searchResults,
+    loading: isSearching,
+    error: searchError,
+    open: showResults,
+    setOpen: setShowResults,
+    scheduleSearch,
+    runSearch,
+    selectMovie: handleSelectMovie,
+  } = useKobisSearch({
+    apply: onChange,
+    onDetailPending: onPendingFetchChange,
+    messages: {
+      empty: '검색할 영화 제목을 입력해주세요.',
+      noResults: '검색 결과가 없습니다.',
+      requestFailed: '영화를 검색하는 중 문제가 발생했습니다.',
+    },
+  });
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -69,14 +73,7 @@ export default function MovieInfoForm({
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-      abortControllerRef.current?.abort();
-    };
-  }, []);
+  }, [setShowResults]);
 
   // 결과가 갈리거나 드롭다운이 닫히면 하이라이트 초기화 — 스테일 인덱스가 엉뚱한 항목을
   // 가리키지 않게.
@@ -84,103 +81,12 @@ export default function MovieInfoForm({
     setHighlightIndex(-1);
   }, [searchResults, showResults]);
 
-  const clearDebounce = () => {
-    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-  };
-
   // 하이라이트 이동 + 스크롤 동기화 — 리스트가 max-h-72 overflow-y-auto라 KOBIS 기본
   // 10개 중 하단 항목은 뷰 밖이다. 하이라이트만 옮기면 키보드 사용자가 안 보이는 항목을
   // 고르게 되므로 해당 옵션을 뷰로 끌어온다(#198 리뷰 P1).
   const moveHighlight = (next: number) => {
     setHighlightIndex(next);
     document.getElementById(`movieTitle-opt-${next}`)?.scrollIntoView({ block: 'nearest' });
-  };
-
-  const scheduleSearch = (term: string) => {
-    clearDebounce();
-    debounceTimerRef.current = setTimeout(() => handleSearch(term), 300);
-  };
-
-  const handleSearch = async (term: string) => {
-    if (!term) {
-      setSearchError('검색할 영화 제목을 입력해주세요.');
-      setShowResults(true);
-      return;
-    }
-
-    if (searchCacheRef.current.has(term)) {
-      // Abort any in-flight fetch so a stale response can't overwrite the cached results.
-      abortControllerRef.current?.abort();
-      const cached = searchCacheRef.current.get(term)!;
-      setSearchResults(cached);
-      setSearchError(cached.length === 0 ? '검색 결과가 없습니다.' : '');
-      setShowResults(true);
-      return;
-    }
-
-    abortControllerRef.current?.abort();
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-
-    setIsSearching(true);
-    setSearchError('');
-    setShowResults(true);
-
-    try {
-      const res = await fetch(
-        `/api/kobis/search?movieNm=${encodeURIComponent(term)}`,
-        { signal: controller.signal }
-      );
-      if (!res.ok) throw new Error('API 요청 실패');
-      const data = await res.json();
-      const list: KobisMovie[] = data.movieListResult?.movieList || [];
-      searchCacheRef.current.set(term, list);
-      setSearchResults(list);
-      if (list.length === 0) setSearchError('검색 결과가 없습니다.');
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') return;
-      console.error('영화 검색 오류:', error);
-      setSearchError('영화를 검색하는 중 문제가 발생했습니다.');
-      setSearchResults([]);
-    } finally {
-      if (abortControllerRef.current === controller) {
-        setIsSearching(false);
-      }
-    }
-  };
-
-  const handleSelectMovie = async (movie: KobisMovie) => {
-    const isoOpen = openDtToIso(movie.openDt);
-    onChange({
-      title: movie.movieNm,
-      titleOg: movie.movieNmEn || '',
-      releaseDate: isoOpen,
-      releaseDateGranularity: isoOpen ? 'date' : undefined,
-    });
-    setShowResults(false);
-
-    const runId = ++detailRunIdRef.current;
-    try {
-      setIsSearching(true);
-      setIsFetchingDetail(true);
-      const res = await fetch(`/api/kobis/detail?movieCd=${movie.movieCd}`);
-      if (detailRunIdRef.current !== runId) return; // stale — a newer selection took over
-      if (!res.ok) return;
-      const data = await res.json();
-      if (detailRunIdRef.current !== runId) return;
-      const info = data.movieInfoResult?.movieInfo;
-      if (!info) return;
-      const { actors, runtime } = extractKobisActorsRuntime(info);
-      onChange({ actors, ...(runtime ? { runtime } : {}) });
-    } catch (error) {
-      console.error('영화 상세 정보 검색 오류:', error);
-    } finally {
-      // Only the latest selection may clear the loading/pending flags.
-      if (detailRunIdRef.current === runId) {
-        setIsSearching(false);
-        setIsFetchingDetail(false);
-      }
-    }
   };
 
   const releaseGran = movieInfo.releaseDateGranularity || 'date';
@@ -230,16 +136,10 @@ export default function MovieInfoForm({
             onChange={(e) => {
               const value = e.target.value;
               onChange({ title: value });
-              const term = value.trim();
               // 1-char titles exist in KOBIS (e.g. «돈», «굿») — debounce +
               // per-term cache keep the API load acceptable, so search from
-              // the first non-space character.
-              if (!term) {
-                clearDebounce();
-                setShowResults(false);
-                return;
-              }
-              scheduleSearch(term);
+              // the first non-space character. 빈 값은 scheduleSearch가 드롭다운을 닫는다.
+              scheduleSearch(value.trim());
             }}
             onKeyDown={(e) => {
               const items = searchResults;
@@ -257,8 +157,7 @@ export default function MovieInfoForm({
                 if (showResults && highlightIndex >= 0 && items[highlightIndex]) {
                   handleSelectMovie(items[highlightIndex]);
                 } else {
-                  clearDebounce();
-                  handleSearch(movieInfo.title.trim());
+                  runSearch(movieInfo.title.trim());
                 }
               } else if (e.key === 'Escape') {
                 if (showResults) {
@@ -282,10 +181,7 @@ export default function MovieInfoForm({
           />
           <button
             type="button"
-            onClick={() => {
-              clearDebounce();
-              handleSearch(movieInfo.title.trim());
-            }}
+            onClick={() => runSearch(movieInfo.title.trim())}
             disabled={isSearching}
             aria-busy={isSearching}
             data-touch="44"
