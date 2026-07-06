@@ -1,23 +1,56 @@
 import { Drawer } from 'vaul';
+import { useEffect, useRef, useState } from 'react';
 import type { usePhototicket } from '@/hooks/usePhototicket';
-import type { TicketField } from '@/types';
+import type { DateFormatToken, DateGranularity, KobisMovie, MovieInfo, TicketField } from '@/types';
+import { formatDate, openDtToIso } from '@/utils/dateFormat';
+import { extractKobisActorsRuntime } from '@/utils/kobisLookup';
+import { DateInput } from '@/components/MovieInfoForm';
+import RatingPicker from '@/components/wizard/RatingPicker';
+import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
+import {
+  FIELD_LABELS,
+  FIELD_SHEET_TYPE,
+  FIELD_INFO_KEY,
+  FIELD_PLACEHOLDERS,
+} from '@/constants/fields';
 
-// #213은 제목만 배선한다. 타입별 콘텐츠(원제/날짜/평점/스탬프)와 개별 티켓 필드 탭은 #215.
-const SHEET_LABELS: Partial<Record<TicketField, string>> = { title: '제목' };
+type Photo = ReturnType<typeof usePhototicket>;
+
+const INPUT_CLS =
+  'w-full rounded-field border border-line bg-surface-elevated px-3.5 py-3 text-[15px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft';
+
+// 날짜 표기 토큰(#141) — kr-compact 기본을 첫 번째로. 인라인 폼과 동일 세트를 시트에서 재사용.
+const DATE_FORMAT_TOKENS: { value: DateFormatToken; sample: string }[] = [
+  { value: 'kr-compact', sample: '2014.11.06.' },
+  { value: 'iso', sample: '2014-11-06' },
+  { value: 'cinema-mono', sample: '06·NOV·2014' },
+  { value: 'en-long', sample: 'November 6, 2014' },
+];
+
+const GRANULARITY_OPTIONS: { value: DateGranularity; label: string }[] = [
+  { value: 'year', label: '연만' },
+  { value: 'year-month', label: '연·월' },
+  { value: 'date', label: '연·월·일' },
+];
 
 interface FieldEditSheetProps {
   /** 열린 필드(null이면 닫힘) */
   activeField: TicketField | null;
   onClose: () => void;
-  photo: ReturnType<typeof usePhototicket>;
+  photo: Photo;
 }
 
 /**
- * 필드 편집 하단시트(vaul). 스크림·슬라이드·포커스 트랩·Escape·scroll lock은 vaul이 담당.
- * index/셸에서 dynamic(ssr:false)로 로드해 vaul(+radix)을 초기 번들에서 뺀다 — 데스크톱·모바일
- * 첫 페인트 모두 필드 탭 전엔 vaul을 안 받는다(삭제된 PreviewSheet의 코드 스플리팅 의도 계승).
+ * 필드 편집 하단시트(vaul, #215). 스크림·슬라이드·포커스 트랩·Escape·scroll lock은 vaul이 담당.
+ * 필드 타입(text/date/rating)별로 본문을 분기하고, 헤더엔 선택 필드의 표시여부 눈 토글을 둔다.
+ * index/셸에서 dynamic(ssr:false)로 로드해 vaul(+radix)을 초기 번들에서 뺀다.
  */
 export function FieldEditSheet({ activeField, onClose, photo }: FieldEditSheetProps) {
+  const label = activeField ? FIELD_LABELS[activeField] : '편집';
+  // 헤더 눈 토글: 모든 필드(제목·개봉일 포함 — 데스크톱 MovieInfoForm과 동일하게 표시여부 조작
+  // 제공). rating만 본문 RatingPicker가 자체 토글을 렌더하므로 헤더에선 중복 방지로 생략.
+  const showHeaderEye = activeField != null && activeField !== 'rating';
+
   return (
     <Drawer.Root open={activeField != null} onOpenChange={(o) => !o && onClose()}>
       <Drawer.Portal>
@@ -44,9 +77,16 @@ export function FieldEditSheet({ activeField, onClose, photo }: FieldEditSheetPr
             <Drawer.Handle style={{ background: 'var(--border-strong)' }} />
           </div>
           <div className="flex items-center justify-between px-5 pb-3">
-            <Drawer.Title className="text-[15px] font-bold text-fg">
-              {activeField ? SHEET_LABELS[activeField] ?? '편집' : '편집'}
-            </Drawer.Title>
+            <span className="flex items-center gap-2">
+              <Drawer.Title className="text-[15px] font-bold text-fg">{label}</Drawer.Title>
+              {showHeaderEye && activeField && (
+                <VisibilityCheckbox
+                  checked={photo.state.fieldVisibility[activeField]}
+                  onChange={(v) => photo.updateFieldVisibility({ [activeField]: v })}
+                  label={label}
+                />
+              )}
+            </span>
             <Drawer.Close
               aria-label="닫기"
               className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-line text-fg-muted transition-colors hover:text-fg"
@@ -58,18 +98,341 @@ export function FieldEditSheet({ activeField, onClose, photo }: FieldEditSheetPr
           </div>
           <Drawer.Description className="sr-only">티켓 필드를 편집하는 시트예요.</Drawer.Description>
           <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5">
-            {activeField === 'title' && (
-              <input
-                autoFocus
-                value={photo.state.movieInfo.title}
-                onChange={(e) => photo.updateMovieInfo({ title: e.target.value })}
-                placeholder="영화 제목"
-                className="w-full rounded-field border border-line bg-surface-elevated px-3.5 py-3 text-[15px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
-              />
-            )}
+            {activeField && <SheetBody field={activeField} photo={photo} />}
           </div>
         </Drawer.Content>
       </Drawer.Portal>
     </Drawer.Root>
+  );
+}
+
+function SheetBody({ field, photo }: { field: TicketField; photo: Photo }) {
+  const type = FIELD_SHEET_TYPE[field];
+  if (type === 'rating') return <RatingSheet photo={photo} />;
+  if (type === 'date') return <DateSheet field={field} photo={photo} />;
+  if (field === 'title') return <TitleSheet photo={photo} />;
+  if (type === 'text') return <TextSheet field={field} photo={photo} />;
+  return null; // reissue 등 PART A에서 시트가 없는 필드는 본문 없음.
+}
+
+/** 일반 텍스트 필드 — MovieInfo 키에 직접 바인딩. watchTime만 시간 입력. */
+function TextSheet({ field, photo }: { field: TicketField; photo: Photo }) {
+  const key = FIELD_INFO_KEY[field];
+  if (!key) return null;
+  const value = String(photo.state.movieInfo[key] ?? '');
+  return (
+    <input
+      autoFocus
+      type={field === 'watchTime' ? 'time' : 'text'}
+      value={value}
+      // key는 문자열 필드(title/titleOg/... bookingNumber/signature)만 — 값이 늘 string이라 안전.
+      onChange={(e) => photo.updateMovieInfo({ [key]: e.target.value } as Partial<MovieInfo>)}
+      placeholder={FIELD_PLACEHOLDERS[field]}
+      aria-label={FIELD_LABELS[field]}
+      maxLength={field === 'signature' ? 20 : undefined}
+      className={INPUT_CLS}
+    />
+  );
+}
+
+/** 제목 — 텍스트 입력 + KOBIS 검색(디바운스 → 결과 목록 → 선택 시 제목/원제/개봉일/출연/러닝타임 채움). */
+function TitleSheet({ photo }: { photo: Photo }) {
+  const title = photo.state.movieInfo.title;
+  const [results, setResults] = useState<KobisMovie[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState('');
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  // 상세 fetch 경합 가드 — 오래된 응답이 최신 선택을 덮어쓰지 않게(MovieInfoForm 패턴).
+  const detailRunRef = useRef(0);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      abortRef.current?.abort();
+    };
+  }, []);
+
+  async function search(term: string) {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setLoading(true);
+    setError('');
+    setOpen(true);
+    try {
+      const res = await fetch(`/api/kobis/search?movieNm=${encodeURIComponent(term)}`, {
+        signal: controller.signal,
+      });
+      if (!res.ok) throw new Error('search failed');
+      const data = await res.json();
+      const list: KobisMovie[] = data.movieListResult?.movieList || [];
+      setResults(list);
+      if (list.length === 0) setError('검색 결과가 없어요.');
+    } catch (e) {
+      if (e instanceof Error && e.name === 'AbortError') return;
+      setResults([]);
+      setError('검색 중 문제가 생겼어요.');
+    } finally {
+      if (abortRef.current === controller) setLoading(false);
+    }
+  }
+
+  function scheduleSearch(term: string) {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (!term) {
+      setOpen(false);
+      return;
+    }
+    timerRef.current = setTimeout(() => search(term), 300);
+  }
+
+  async function selectMovie(movie: KobisMovie) {
+    const iso = openDtToIso(movie.openDt);
+    photo.updateMovieInfo({
+      title: movie.movieNm,
+      titleOg: movie.movieNmEn || '',
+      releaseDate: iso,
+      releaseDateGranularity: iso ? 'date' : undefined,
+    });
+    setOpen(false);
+
+    const runId = ++detailRunRef.current;
+    try {
+      const res = await fetch(`/api/kobis/detail?movieCd=${movie.movieCd}`);
+      if (detailRunRef.current !== runId || !res.ok) return;
+      const data = await res.json();
+      if (detailRunRef.current !== runId) return;
+      const info = data.movieInfoResult?.movieInfo;
+      if (!info) return;
+      const { actors, runtime } = extractKobisActorsRuntime(info);
+      photo.updateMovieInfo({ actors, ...(runtime ? { runtime } : {}) });
+    } catch {
+      // 상세 실패는 무시 — 검색 결과의 제목/원제/개봉일은 이미 반영됨.
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <input
+        autoFocus
+        type="text"
+        value={title}
+        // 한글 IME는 마지막 음절을 커밋(스페이스/엔터/blur) 전까지 조합 상태로 두고,
+        // 조합 종료 시 trailing change 없이 값만 반영되는 IME가 있어(#82) 최종 커밋 값으로
+        // 재검색한다. MovieInfoForm의 동일 검색 UI와 동작을 맞춘다.
+        onCompositionEnd={(e) => {
+          const v = e.currentTarget.value.trim();
+          if (v) scheduleSearch(v);
+        }}
+        onChange={(e) => {
+          const v = e.target.value;
+          photo.updateMovieInfo({ title: v });
+          scheduleSearch(v.trim());
+        }}
+        placeholder={FIELD_PLACEHOLDERS.title}
+        aria-label="제목"
+        className={INPUT_CLS}
+      />
+      <div className="text-mono flex items-center justify-between text-[10px] uppercase tracking-widest text-fg-faint">
+        <span>KOBIS 검색</span>
+        <button
+          type="button"
+          onClick={() => {
+            if (timerRef.current) clearTimeout(timerRef.current);
+            if (title.trim()) search(title.trim());
+          }}
+          className="rounded-chip bg-accent px-3 py-1.5 text-white transition-colors hover:bg-accent-hover"
+        >
+          ↗ 검색
+        </button>
+      </div>
+
+      {open && (
+        <div className="overflow-hidden rounded-card border border-line bg-surface-elevated">
+          {loading ? (
+            <div className="text-mono px-4 py-5 text-center text-[11px] uppercase tracking-widest text-fg-faint">
+              Loading…
+            </div>
+          ) : error ? (
+            <div role="alert" className="text-mono px-4 py-5 text-center text-[11px] uppercase tracking-widest text-danger">
+              {error}
+            </div>
+          ) : results.length > 0 ? (
+            <ul role="listbox" aria-label="검색 결과" className="max-h-56 overflow-y-auto">
+              {results.map((movie) => (
+                <li key={movie.movieCd} role="option" aria-selected={false}>
+                  <button
+                    type="button"
+                    onClick={() => selectMovie(movie)}
+                    data-touch="44"
+                    className="block w-full border-b border-line px-4 py-3 text-left transition-colors last:border-0 hover:bg-accent-soft"
+                  >
+                    <div className="text-[15px] font-medium text-fg">{movie.movieNm}</div>
+                    <div className="text-mono mt-1 text-[10px] uppercase tracking-widest text-fg-faint">
+                      {movie.openDt && formatDate(openDtToIso(movie.openDt), 'kr-compact', 'date')}
+                      {movie.genreAlt ? ` · ${movie.genreAlt.split(',')[0]}` : ''}
+                      {movie.nationAlt ? ` · ${movie.nationAlt}` : ''}
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** 날짜 표기 토큰 칩(#141) — watchDate/releaseDate 공용. */
+function FormatChips({
+  token,
+  onChange,
+  label,
+  preview,
+}: {
+  token: DateFormatToken;
+  onChange: (next: DateFormatToken) => void;
+  label: string;
+  preview: string;
+}) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">{label}</span>
+        <span className="text-mono text-[10px] uppercase tracking-widest text-fg-faint">{preview || '—'}</span>
+      </div>
+      <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={label}>
+        {DATE_FORMAT_TOKENS.map((opt) => {
+          const active = token === opt.value;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={() => onChange(opt.value)}
+              data-touch="44"
+              className={`text-mono inline-flex min-h-touch items-center rounded-chip border px-3 text-[10px] uppercase tracking-widest transition-colors ${
+                active ? 'border-accent bg-accent text-white' : 'border-line bg-surface-elevated text-fg hover:bg-accent-soft'
+              }`}
+            >
+              {opt.sample}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** 날짜 필드 — watchDate(입력+표기 칩) / releaseDate(정밀도+표기 칩+재개봉 토글). */
+function DateSheet({ field, photo }: { field: TicketField; photo: Photo }) {
+  const info = photo.state.movieInfo;
+  const set = photo.updateMovieInfo;
+
+  if (field === 'watchDate') {
+    const token = info.watchDateFormat || 'kr-compact';
+    return (
+      <div className="space-y-4">
+        <input
+          type="date"
+          value={info.watchDate || ''}
+          onChange={(e) => set({ watchDate: e.target.value })}
+          aria-label="관람일"
+          className={INPUT_CLS}
+        />
+        <FormatChips
+          token={token}
+          onChange={(watchDateFormat) => set({ watchDateFormat })}
+          label="관람일 표기"
+          preview={formatDate(info.watchDate, token, 'date')}
+        />
+      </div>
+    );
+  }
+
+  // releaseDate — 정밀도(연/연월/연월일) 인식 입력 + 표기 칩 + 재개봉 토글(인라인 폼과 동일 로직).
+  const gran = info.releaseDateGranularity || 'date';
+  const token = info.releaseDateFormat || 'kr-compact';
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-stretch gap-2">
+        <select
+          value={gran}
+          onChange={(e) => set({ releaseDateGranularity: e.target.value as DateGranularity })}
+          aria-label="개봉일 정밀도"
+          className="text-mono rounded-field border border-line bg-surface-elevated px-3 py-3 text-[11px] uppercase tracking-widest text-fg outline-none focus:border-accent"
+        >
+          {GRANULARITY_OPTIONS.map((g) => (
+            <option key={g.value} value={g.value}>
+              {g.label}
+            </option>
+          ))}
+        </select>
+        <DateInput
+          value={info.releaseDate || ''}
+          granularity={gran}
+          onChange={(releaseDate) => set({ releaseDate })}
+          ariaLabel="개봉일"
+        />
+      </div>
+      <FormatChips
+        token={token}
+        onChange={(releaseDateFormat) => set({ releaseDateFormat })}
+        label="개봉일 표기"
+        preview={formatDate(info.releaseDate, token, gran)}
+      />
+
+      <label className="text-mono inline-flex cursor-pointer items-center gap-1.5 text-[10px] uppercase tracking-widest text-fg-muted hover:text-fg">
+        <input
+          type="checkbox"
+          checked={!!info.isReissue}
+          onChange={(e) => set({ isReissue: e.target.checked })}
+          className="h-3.5 w-3.5 accent-accent"
+        />
+        재개봉작
+      </label>
+
+      {info.isReissue && (
+        <div className="space-y-2.5 border-l-2 border-line pl-3">
+          <div className="flex flex-wrap items-stretch gap-2">
+            <DateInput
+              value={info.reissueDate || ''}
+              granularity={gran}
+              onChange={(reissueDate) => set({ reissueDate })}
+              ariaLabel="재개봉일"
+            />
+            <span className="text-mono inline-flex items-center text-[10px] uppercase tracking-widest text-fg-faint">
+              표기: {formatDate(info.reissueDate, token, gran) || '—'}
+            </span>
+          </div>
+          <span className="flex items-center gap-2">
+            <VisibilityCheckbox
+              checked={photo.state.fieldVisibility.reissue}
+              onChange={(v) => photo.updateFieldVisibility({ reissue: v })}
+              label="재개봉"
+            />
+            <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">
+              티켓에 재개봉일 표시
+            </span>
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** 평점 — RatingPicker 재사용(자체 표시여부 토글 포함). */
+function RatingSheet({ photo }: { photo: Photo }) {
+  return (
+    <RatingPicker
+      value={photo.state.movieInfo.rating}
+      onValueChange={(rating) => photo.updateMovieInfo({ rating })}
+      visible={photo.state.fieldVisibility.rating}
+      onVisibleChange={(v) => photo.updateFieldVisibility({ rating: v })}
+    />
   );
 }
