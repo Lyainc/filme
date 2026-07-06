@@ -27,7 +27,8 @@ interface EditorCanvasProps {
   hideRailSections?: boolean;
   /**
    * 모바일 탭-투-에딧(#215): 인라인 MovieInfo 폼(Film 섹션 + Optional 아코디언, RatingPicker 포함)을
-   * 숨긴다 — 이 필드들은 FieldLauncher → FieldEditSheet로 편집한다. 포스터·OCR·표시항목 일괄·로고는 유지.
+   * 숨긴다 — 이 필드들은 FieldLauncher → FieldEditSheet로 편집한다. 로고(Logos)도 스탬프 런처/시트로
+   * 옮겨 함께 숨긴다(#215 PART B). 포스터·OCR·표시항목 일괄은 유지.
    */
   hideFormSections?: boolean;
 }
@@ -421,6 +422,9 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
       </section>
       )}
 
+      {/* Logos(극장/포맷 스탬프) — 모바일 탭-투-에딧(#215 PART B)에선 숨기고 FieldLauncher →
+          StampSheet로 대체. 데스크톱은 hideFormSections 미전달이라 그대로 렌더. */}
+      {!hideFormSections && (
       <section className="space-y-3">
         <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Logos</span>
         {/* Theater/Format 병렬 한 줄 배치(#141 (6)) — 모바일은 1열로 떨어뜨려 협소 방지 */}
@@ -444,6 +448,7 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
           />
         </div>
       </section>
+      )}
 
       {!hideRailSections && (
       <section className="space-y-4">

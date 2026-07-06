@@ -1,4 +1,4 @@
-import type { TicketField, MovieInfo } from '@/types';
+import type { TicketField, MovieInfo, TicketComponents } from '@/types';
 
 /**
  * 필드 메타데이터 단일 소스(#215). 라벨은 인라인 폼(EditorCanvas)·런처(FieldLauncher)·
@@ -80,3 +80,49 @@ export const LAUNCHER_GROUPS: { title: string; fields: TicketField[] }[] = [
     fields: ['watchDate', 'watchTime', 'theater', 'screen', 'seat', 'runtime', 'bookingNo', 'signature'],
   },
 ];
+
+/**
+ * 스탬프 타깃(#215 PART B) — 극장/포맷 로고. TicketField가 아니라 TicketComponents에 산다
+ * (chain/chainLabel/chainVisible · format/formatLabel/formatVisible). '이미지가 라벨보다
+ * 우선'하는 렌더 규칙은 _shared.tsx에 이미 있다.
+ */
+export type StampTarget = 'chain' | 'format';
+
+/** 편집 시트/런처가 받는 타깃 — MovieInfo 필드(TicketField) 또는 스탬프(chain/format). */
+export type SheetTarget = TicketField | StampTarget;
+
+export const STAMP_TARGETS: StampTarget[] = ['chain', 'format'];
+
+export function isStampTarget(t: SheetTarget): t is StampTarget {
+  return t === 'chain' || t === 'format';
+}
+
+/**
+ * 스탬프 라벨(런처 행 + 시트 헤더 공용). theater 필드('극장')와 접근명이 겹치지 않도록 '로고'를 붙인다
+ * — theater(상영관 텍스트)와 chain(극장 로고)은 별개 개념.
+ */
+export const STAMP_LABELS: Record<StampTarget, string> = {
+  chain: '극장 로고',
+  format: '포맷 로고',
+};
+
+/** 스탬프 → TicketComponents 키(이미지 URL · 텍스트 라벨 · 노출 토글). */
+export const STAMP_KEYS: Record<
+  StampTarget,
+  {
+    image: keyof TicketComponents;
+    label: keyof TicketComponents;
+    visible: keyof TicketComponents;
+  }
+> = {
+  chain: { image: 'chain', label: 'chainLabel', visible: 'chainVisible' },
+  format: { image: 'format', label: 'formatLabel', visible: 'formatVisible' },
+};
+
+export const STAMP_PLACEHOLDERS: Record<StampTarget, string> = {
+  chain: 'CGV',
+  format: 'IMAX',
+};
+
+/** 상영 포맷 빠른 프리셋(#141) — FormatPicker(데스크톱)·StampSheet(#215 PART B) 공용 단일 소스. */
+export const FORMAT_PRESETS = ['IMAX', '4DX', 'Dolby', 'ScreenX'];

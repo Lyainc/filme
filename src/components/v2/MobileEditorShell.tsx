@@ -8,6 +8,7 @@ import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer'
 import { getLayout } from '@/utils/layouts';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
+import type { SheetTarget } from '@/constants/fields';
 
 // 프리뷰 3단 줌 모드(#214): 기본(인라인) · 최대화(세로 꽉) · 실제 크기(물리 cm).
 type ViewMode = 'default' | 'max' | 'actual';
@@ -98,7 +99,7 @@ export function MobileEditorShell({
   fieldVisibility,
 }: MobileEditorShellProps) {
   const { croppedImageUrl } = photo.state;
-  const [activeField, setActiveField] = useState<TicketField | null>(null);
+  const [activeField, setActiveField] = useState<SheetTarget | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('default');
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -283,7 +284,7 @@ export function MobileEditorShell({
                     레일을 폼 위(프리뷰 바로 아래)에 둬 폼 전체를 스크롤하지 않고 닿게 한다. */}
                 <DesignRail photo={photo} />
                 {/* 탭-투-에딧 진입점(#215) — 폼을 걷어낸(hideFormSections) 자리의 주 편집 표면.
-                    행 탭 → 그 필드의 FieldEditSheet. 극장/포맷 스탬프는 PART B에서 추가. */}
+                    행 탭 → 그 필드/스탬프의 FieldEditSheet(극장·포맷 로고 스탬프 포함, PART B). */}
                 <FieldLauncher photo={photo} onSelect={setActiveField} />
                 <EditorCanvas photo={photo} onPendingFetchChange={onPendingFetchChange} hideRailSections hideFormSections />
               </div>

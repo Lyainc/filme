@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { useLogoCrop } from '@/hooks/useLogoCrop';
+import { FORMAT_PRESETS } from '@/constants/fields';
 
 const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ssr: false });
 
@@ -14,9 +15,6 @@ interface FormatPickerProps {
   visible: boolean;
   onVisibilityChange: (visible: boolean) => void;
 }
-
-// 상영 포맷 빠른 프리셋 — OCR이 포맷을 추출하지 않으므로(이번 범위 밖) 프리셋/수동이 1차 소스.
-const FORMAT_PRESETS = ['IMAX', '4DX', 'Dolby', 'ScreenX'];
 
 export default function FormatPicker({
   value,
