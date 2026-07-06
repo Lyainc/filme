@@ -8,16 +8,17 @@
  * usePhototicket이 디바운스 저장하므로 파일 내/간 격리를 위해 매 테스트 전후로 clear.
  */
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
-import type { TicketField } from '@/types';
+import { useEffect, useRef } from 'react';
+import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { usePhototicket } from '@/hooks/usePhototicket';
+import type { SheetTarget } from '@/constants/fields';
 import { FieldLauncher } from '@/components/v2/FieldLauncher';
 import { FieldEditSheet } from '@/components/v2/FieldEditSheet';
 import { EditorCanvas } from '@/components/v2/EditorCanvas';
 
-function SheetHarness({ field }: { field: TicketField }) {
+function SheetHarness({ field }: { field: SheetTarget }) {
   const photo = usePhototicket();
-  const { movieInfo, fieldVisibility } = photo.state;
+  const { movieInfo, fieldVisibility, components } = photo.state;
   return (
     <>
       <div data-testid="titleOg">{movieInfo.titleOg}</div>
@@ -25,12 +26,16 @@ function SheetHarness({ field }: { field: TicketField }) {
       <div data-testid="releaseDateFormat">{movieInfo.releaseDateFormat}</div>
       <div data-testid="rating">{movieInfo.rating}</div>
       <div data-testid="vis-theater">{String(fieldVisibility.theater)}</div>
+      <div data-testid="chainLabel">{components.chainLabel}</div>
+      <div data-testid="formatLabel">{components.formatLabel}</div>
+      <div data-testid="vis-chain">{String(components.chainVisible)}</div>
+      <div data-testid="vis-format">{String(components.formatVisible)}</div>
       <FieldEditSheet activeField={field} onClose={() => {}} photo={photo} />
     </>
   );
 }
 
-function LauncherHarness({ onSelect }: { onSelect: (f: TicketField) => void }) {
+function LauncherHarness({ onSelect }: { onSelect: (f: SheetTarget) => void }) {
   const photo = usePhototicket();
   return <FieldLauncher photo={photo} onSelect={onSelect} />;
 }
@@ -38,6 +43,26 @@ function LauncherHarness({ onSelect }: { onSelect: (f: TicketField) => void }) {
 function EditorHarness({ hideForm }: { hideForm?: boolean }) {
   const photo = usePhototicket();
   return <EditorCanvas photo={photo} onPendingFetchChange={() => {}} hideFormSections={hideForm} />;
+}
+
+// 스탬프 이미지-있음 분기 검증용 — 마운트 시 로고 이미지 URL을 시드해 "이미지 제거" 경로를 태운다.
+function StampImageHarness({ target, imageUrl }: { target: 'chain' | 'format'; imageUrl: string }) {
+  const photo = usePhototicket();
+  const seeded = useRef(false);
+  useEffect(() => {
+    if (!seeded.current) {
+      seeded.current = true;
+      photo.updateComponents({ [target]: imageUrl });
+    }
+  }, [photo, target, imageUrl]);
+  const { components } = photo.state;
+  return (
+    <>
+      <div data-testid="chain-img">{components.chain}</div>
+      <div data-testid="format-img">{components.format}</div>
+      <FieldEditSheet activeField={target} onClose={() => {}} photo={photo} />
+    </>
+  );
 }
 
 beforeEach(() => window.localStorage.clear());
@@ -48,7 +73,7 @@ afterEach(() => {
 
 describe('FieldLauncher (#215 PART A)', () => {
   test('행 탭 → onSelect(field) 호출', () => {
-    let picked: TicketField | null = null;
+    let picked: SheetTarget | null = null;
     render(<LauncherHarness onSelect={(f) => { picked = f; }} />);
 
     fireEvent.click(screen.getByRole('button', { name: '원제 편집' }));
@@ -56,6 +81,17 @@ describe('FieldLauncher (#215 PART A)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '관람일 편집' }));
     expect(picked).toBe('watchDate');
+  });
+
+  test('스탬프 행(극장/포맷) 탭 → onSelect(chain/format) 호출 (#215 PART B)', () => {
+    let picked: SheetTarget | null = null;
+    render(<LauncherHarness onSelect={(f) => { picked = f; }} />);
+
+    fireEvent.click(screen.getByRole('button', { name: '극장 로고 편집' }));
+    expect(picked).toBe('chain');
+
+    fireEvent.click(screen.getByRole('button', { name: '포맷 로고 편집' }));
+    expect(picked).toBe('format');
   });
 
   test('모든 필드(제목·개봉일 포함)에 눈 토글이 있다 — 데스크톱 폼과 표시여부 조작 parity', () => {
@@ -108,19 +144,86 @@ describe('FieldEditSheet 타입별 편집 (#215 PART A)', () => {
   });
 });
 
-describe('EditorCanvas hideFormSections (#215 PART A)', () => {
-  test('true → MovieInfoForm·OptionalDetailsAccordion 미렌더, 포스터/표시항목/로고는 유지', () => {
+describe('StampSheet 극장/포맷 (#215 PART B)', () => {
+  test('극장 텍스트 입력이 components.chainLabel을 갱신', async () => {
+    render(<SheetHarness field="chain" />);
+    const input = await screen.findByPlaceholderText('CGV');
+    fireEvent.change(input, { target: { value: 'CGV' } });
+    expect(screen.getByTestId('chainLabel').textContent).toBe('CGV');
+  });
+
+  test('포맷 텍스트 입력이 components.formatLabel을 갱신', async () => {
+    render(<SheetHarness field="format" />);
+    const input = await screen.findByPlaceholderText('IMAX');
+    fireEvent.change(input, { target: { value: 'Dolby' } });
+    expect(screen.getByTestId('formatLabel').textContent).toBe('Dolby');
+  });
+
+  test('포맷 자동완성: 타이핑이 프리셋을 필터하고 선택 시 formatLabel 지정', async () => {
+    render(<SheetHarness field="format" />);
+    const input = await screen.findByPlaceholderText('IMAX');
+    // 'Do' → Dolby만 부분일치('D'는 4DX도 매치하므로 두 글자로 좁힌다).
+    fireEvent.change(input, { target: { value: 'Do' } });
+    const listbox = screen.getByRole('listbox', { name: '포맷 제안' });
+    const opts = within(listbox).getAllByRole('option');
+    expect(opts.length).toBe(1);
+    expect(listbox.textContent).toContain('Dolby');
+    // 옵션 클릭은 li(role=option)가 아니라 그 안의 버튼에 핸들러가 있으므로 버튼을 친다.
+    // 프리셋 칩에도 'Dolby' 버튼이 있어 listbox 범위로 좁혀 특정한다.
+    fireEvent.click(within(listbox).getByRole('button', { name: 'Dolby' }));
+    expect(screen.getByTestId('formatLabel').textContent).toBe('Dolby');
+  });
+
+  test('포맷 자동완성: 매치 없는 값은 그대로 저장 + 안내 노출', async () => {
+    render(<SheetHarness field="format" />);
+    const input = await screen.findByPlaceholderText('IMAX');
+    fireEvent.change(input, { target: { value: 'Laser' } });
+    expect(screen.getByTestId('formatLabel').textContent).toBe('Laser');
+    expect(screen.queryByRole('listbox', { name: '포맷 제안' })).toBeNull();
+    expect(screen.queryByText(/목록에 없는 포맷이에요/)).not.toBeNull();
+  });
+
+  test('스탬프 헤더 눈 토글이 components.chainVisible/formatVisible를 갱신', async () => {
+    render(<SheetHarness field="chain" />);
+    expect(screen.getByTestId('vis-chain').textContent).toBe('true');
+    fireEvent.click(await screen.findByLabelText('극장 로고 티켓에 표시'));
+    expect(screen.getByTestId('vis-chain').textContent).toBe('false');
+  });
+
+  test('이미지 있음: "이미지 제거" 클릭 → blob revoke 후 이미지 URL 클리어(텍스트 복귀)', async () => {
+    const revoked: string[] = [];
+    const origRevoke = URL.revokeObjectURL;
+    URL.revokeObjectURL = ((u: string) => revoked.push(u)) as typeof URL.revokeObjectURL;
+    try {
+      render(<StampImageHarness target="chain" imageUrl="blob:seeded-logo" />);
+      // 이미지 브랜치가 렌더돼 "이미지 제거" 버튼이 뜬다.
+      const removeBtn = await screen.findByText('이미지 제거');
+      expect(screen.getByTestId('chain-img').textContent).toBe('blob:seeded-logo');
+      fireEvent.click(removeBtn);
+      // blob이면 revoke하고 이미지 URL을 비워 텍스트 대표로 복귀.
+      expect(revoked).toContain('blob:seeded-logo');
+      expect(screen.getByTestId('chain-img').textContent).toBe('');
+    } finally {
+      URL.revokeObjectURL = origRevoke;
+    }
+  });
+});
+
+describe('EditorCanvas hideFormSections (#215 PART A·B)', () => {
+  test('true → MovieInfoForm·아코디언·로고 미렌더, 포스터/표시항목은 유지', () => {
     render(<EditorHarness hideForm />);
     expect(screen.queryByText('KOBIS lookup')).toBeNull(); // MovieInfoForm 신호
     expect(screen.queryByText('Optional details')).toBeNull(); // 아코디언 신호
-    // 폼 밖 섹션은 그대로.
+    // 포스터·표시항목은 그대로.
     expect(screen.queryByText(/표시 항목/)).not.toBeNull();
-    expect(screen.queryByText('Logos')).not.toBeNull();
+    // Logos 픽커는 PART B에서 스탬프 런처/시트로 옮겨 모바일에선 숨긴다.
+    expect(screen.queryByText('Logos')).toBeNull();
   });
 
-  test('미전달(기본 false) → MovieInfoForm·OptionalDetailsAccordion 렌더', () => {
+  test('미전달(기본 false) → MovieInfoForm·아코디언·로고 렌더(데스크톱)', () => {
     render(<EditorHarness />);
     expect(screen.queryByText('KOBIS lookup')).not.toBeNull();
     expect(screen.queryByText('Optional details')).not.toBeNull();
+    expect(screen.queryByText('Logos')).not.toBeNull();
   });
 });
