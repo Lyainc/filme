@@ -2,6 +2,7 @@ import { CSSProperties } from 'react';
 import {
   Barcode,
   ChainStamp,
+  FieldGhost,
   FONT_DISPLAY,
   FONT_KR,
   FONT_MONO,
@@ -14,6 +15,8 @@ import {
   pickTitleSize,
   resolveInk,
   resolveTicketData,
+  showFieldGhost,
+  stampWillRender,
   truncateActors,
 } from './_shared';
 
@@ -32,7 +35,7 @@ const PERF_W = 14;
 const MAIN_W = 813;
 const STUB_W = 212;
 
-export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv }: MoodProps) {
+export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
   const accent = themeColor.toLowerCase() === '#ffffff' ? '#a8312a' : resolveInk(themeColor, '#a8312a');
   const titleSize = pickTitleSize(d.title.length, [116, 100, 82, 66]);
@@ -56,18 +59,31 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
     fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: size, color, letterSpacing: 0.3,
   });
 
-  // 관람(screening) 메타 셀 — 값은 Pretendard로 통일.
-  const cells: { label: string; value: string; sub?: string }[] = [];
+  // 빈 항목 미리보기(#216) — 아톰/헤더 슬롯 판정. 셀·릴리즈라인은 아래에서 개별 게이팅.
+  const ghostOn = ghost === true;
+  const gTitle = showFieldGhost(fv?.title, d.title, ghost);
+  const gTitleOg = showFieldGhost(fv?.titleOg, d.titleOg, ghost);
+  const gActors = showFieldGhost(fv?.actors, d.actors, ghost);
+  const gRuntime = showFieldGhost(fv?.runtime, runtimeVal, ghost);
+  const gRating = showFieldGhost(fv?.rating, d.rating, ghost);
+  const gSignature = showFieldGhost(fv?.signature, d.signature, ghost);
+
+  // 관람(screening) 메타 셀 — 값은 Pretendard로 통일. ghost 셀은 값이 비었고 기여 필드가 visible일 때.
+  const cells: { label: string; value?: string; sub?: string; ghost?: boolean }[] = [];
   const theaterValue = theaterVal || screenVal;
   if (theaterValue) cells.push({ label: theaterVal ? 'Théâtre' : 'Salle', value: theaterValue, sub: theaterVal ? screenVal : '' });
+  else if (ghostOn && (fv?.theater !== false || fv?.screen !== false)) cells.push({ label: 'Théâtre', ghost: true });
   const sessionValue = watchDateVal || watchTimeVal;
   if (sessionValue) cells.push({ label: watchDateVal ? 'Séance' : 'Heure', value: sessionValue, sub: watchDateVal ? watchTimeVal : '' });
+  else if (ghostOn && (fv?.watchDate !== false || fv?.watchTime !== false)) cells.push({ label: 'Séance', ghost: true });
   if (seatVal) cells.push({ label: 'Place', value: seatVal });
+  else if (ghostOn && fv?.seat !== false) cells.push({ label: 'Place', ghost: true });
 
   const releaseLine = [
     releaseDateVal && `Sortie ${releaseDateVal}`,
     reissueVal && `Reprise ${reissueVal}`,
   ].filter(Boolean).join('      ·      ');
+  const gReleaseLine = ghostOn && !releaseLine && (fv?.releaseDate !== false || (!!d.isReissue && fv?.reissue !== false));
 
   const filmSummary = runtimeVal;
   const stubHasStamp = components.chainVisible || components.formatVisible;
@@ -93,7 +109,9 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
           <div style={{ ...italicLabel(accent, 36) }}>le billet</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 16 }}>
             {filmSummary && <span style={{ fontWeight: 600, fontSize: 24, fontFamily: FONT_SANS, color: PAPER_DIM, letterSpacing: -0.2 }}>{filmSummary}</span>}
+            {!filmSummary && gRuntime && <FieldGhost text="RUNTIME" width={110} height={30} surface="paper" />}
             {ratingVisible && <span style={{ fontWeight: 800, fontSize: 34, fontFamily: FONT_SANS, letterSpacing: 0.5, color: accent }}>★ {d.rating.toFixed(1)}</span>}
+            {!ratingVisible && gRating && <FieldGhost text="★" width={64} height={38} surface="paper" />}
           </div>
         </div>
 
@@ -102,30 +120,45 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
 
         {/* Film chunk — title, original title, cast, release */}
         <div style={{ marginTop: 24 }}>
-          {titleVal && (
+          {titleVal ? (
             <div style={{ fontWeight: 900, fontSize: titleSize, fontFamily: FONT_KR, lineHeight: 1.0, letterSpacing: -1.5, paddingBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
               {titleVal}
             </div>
-          )}
-          {titleOgVal && (
+          ) : gTitle ? (
+            <FieldGhost text="TITLE" width="60%" height={72} size={2} surface="paper" />
+          ) : null}
+          {titleOgVal ? (
             <div style={{ marginTop: 12, ...italicLabel(PAPER_DEEP, 30), opacity: 0.62, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {titleOgVal}
             </div>
-          )}
+          ) : gTitleOg ? (
+            <div style={{ marginTop: 12 }}>
+              <FieldGhost text="ORIGINAL TITLE" width={280} height={32} surface="paper" />
+            </div>
+          ) : null}
         </div>
 
-        {actorsVal && (
+        {actorsVal ? (
           <div style={{ marginTop: 20 }}>
             <span style={{ ...italicLabel(accent, 26), marginRight: 12 }}>avec</span>
             <span style={{ fontWeight: 500, fontSize: 34, fontFamily: FONT_KR, letterSpacing: -0.2, lineHeight: 1.25 }}>{actorsVal}</span>
           </div>
-        )}
+        ) : gActors ? (
+          <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ ...italicLabel(accent, 26) }}>avec</span>
+            <FieldGhost text="CAST" width={280} height={40} surface="paper" />
+          </div>
+        ) : null}
 
-        {releaseLine && (
+        {releaseLine ? (
           <div style={{ marginTop: 16, fontWeight: 600, fontSize: 26, fontFamily: FONT_SANS, letterSpacing: -0.2, color: PAPER_DIM }}>
             {releaseLine}
           </div>
-        )}
+        ) : gReleaseLine ? (
+          <div style={{ marginTop: 16 }}>
+            <FieldGhost text="RELEASE" width={220} height={32} surface="paper" />
+          </div>
+        ) : null}
 
         {/* Chunk divider — film ↕ screening */}
         <div style={{ height: 1, background: PAPER_DEEP, opacity: 0.22, margin: '26px 0' }} />
@@ -136,9 +169,13 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
             {cells.map((c, i) => (
               <div key={i} style={{ minWidth: 0, flex: '0 1 auto' }}>
                 <div style={{ ...italicLabel(PAPER_DIM, 28), marginBottom: 6 }}>{c.label}</div>
-                <div style={{ fontWeight: 800, fontSize: 42, fontFamily: FONT_SANS, letterSpacing: -0.5, lineHeight: 1.05, color: PAPER_DEEP, maxWidth: 440, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {c.value}
-                </div>
+                {c.ghost ? (
+                  <FieldGhost width={220} height={46} surface="paper" />
+                ) : (
+                  <div style={{ fontWeight: 800, fontSize: 42, fontFamily: FONT_SANS, letterSpacing: -0.5, lineHeight: 1.05, color: PAPER_DEEP, maxWidth: 440, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {c.value}
+                  </div>
+                )}
                 {c.sub && (
                   <div style={{ marginTop: 6, fontWeight: 600, fontSize: 26, fontFamily: FONT_SANS, letterSpacing: -0.2, color: PAPER_DIM, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {c.sub}
@@ -158,14 +195,19 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
             <span style={{ fontWeight: 800, fontSize: 24, fontFamily: FONT_SANS, letterSpacing: 3, color: PAPER_DEEP }}>FILME</span>
           </div>
           <div style={{ textAlign: 'right', minWidth: 0 }}>
-            {signatureVal && (
+            {signatureVal ? (
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: 12, marginBottom: 5 }}>
                 <span style={{ ...italicLabel(accent, 28), flexShrink: 0 }}>par</span>
                 <span style={{ fontWeight: 500, fontSize: 34, fontFamily: FONT_KR, color: PAPER_DEEP, letterSpacing: -0.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 360 }}>
                   {signatureVal}
                 </span>
               </div>
-            )}
+            ) : gSignature ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12, marginBottom: 5 }}>
+                <span style={{ ...italicLabel(accent, 28), flexShrink: 0 }}>par</span>
+                <FieldGhost text="SIGNATURE" width={200} height={36} surface="paper" />
+              </div>
+            ) : null}
             <div style={{ ...italicLabel(PAPER_DIM, 26) }}>non-transférable</div>
           </div>
         </div>
@@ -192,9 +234,9 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
             )}
             {stubHasStamp && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-                <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.75} />
-                {components.chainVisible && components.formatVisible && <span style={{ width: 1, height: 34, background: PAPER_DEEP, opacity: 0.3 }} />}
-                <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={48} />
+                <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.75} ghost={ghost} />
+                {stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost) && stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost) && <span style={{ width: 1, height: 34, background: PAPER_DEEP, opacity: 0.3 }} />}
+                <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={48} ghost={ghost} />
               </div>
             )}
             <span style={{ ...italicLabel(accent, 40) }}>admis</span>

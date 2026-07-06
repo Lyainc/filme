@@ -2,6 +2,7 @@ import { CSSProperties } from 'react';
 import {
   Barcode,
   ChainStamp,
+  FieldGhost,
   FONT_KR,
   FONT_MONO,
   FONT_SANS,
@@ -12,6 +13,8 @@ import {
   gate,
   pickTitleSize,
   resolveTicketData,
+  showFieldGhost,
+  stampWillRender,
   truncateActors,
 } from './_shared';
 
@@ -37,7 +40,7 @@ const cellLabel: CSSProperties = {
   marginBottom: 6,
 };
 
-export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv }: MoodProps) {
+export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost }: MoodProps) {
   const titleSize = pickTitleSize(d.title.length, [104, 84, 66, 54]);
 
   const captionScrim =
@@ -59,19 +62,32 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
   const signatureVal = gate(fv?.signature, d.signature);
   const ratingVisible = (fv?.rating ?? true) && d.rating > 0;
 
+  // 빈 항목 미리보기(#216) — 아톰 슬롯 판정. 셀은 아래에서 개별 게이팅.
+  const ghostOn = ghost === true;
+  const gTitle = showFieldGhost(fv?.title, d.title, ghost);
+  const gTitleOg = showFieldGhost(fv?.titleOg, d.titleOg, ghost);
+  const gRating = showFieldGhost(fv?.rating, d.rating, ghost);
+  const gSignature = showFieldGhost(fv?.signature, d.signature, ghost);
+
   // 청킹: 관람(Exhibited/Screened) vs 영화(Runtime/Released/Starring). 값은 Pretendard로 통일
   // (한글이 모노 스택에서 깨지던 문제 해소). 모노는 스프로킷·일련번호·원형 스탬프 등 필름 크롬에만.
-  const screeningCells: { label: string; value: string; cast?: boolean; full?: boolean }[] = [];
+  // ghost 셀은 값이 비었고 기여 필드가 visible일 때만 push(value 없이).
+  const screeningCells: { label: string; value?: string; cast?: boolean; full?: boolean; ghost?: boolean }[] = [];
   const exhibited = [theaterVal, screenVal, seatVal].filter(Boolean).join(' · ');
   if (exhibited) screeningCells.push({ label: 'Exhibited', value: exhibited });
+  else if (ghostOn && (fv?.theater !== false || fv?.screen !== false || fv?.seat !== false)) screeningCells.push({ label: 'Exhibited', ghost: true });
   const screened = [watchDateVal, watchTimeVal].filter(Boolean).join(' · ');
   if (screened) screeningCells.push({ label: 'Screened', value: screened });
+  else if (ghostOn && (fv?.watchDate !== false || fv?.watchTime !== false)) screeningCells.push({ label: 'Screened', ghost: true });
 
-  const filmCells: { label: string; value: string; cast?: boolean; full?: boolean }[] = [];
+  const filmCells: { label: string; value?: string; cast?: boolean; full?: boolean; ghost?: boolean }[] = [];
   if (runtimeVal) filmCells.push({ label: 'Runtime', value: runtimeVal });
+  else if (ghostOn && fv?.runtime !== false) filmCells.push({ label: 'Runtime', ghost: true });
   const released = [releaseDateVal, reissueVal && `재개봉 ${reissueVal}`].filter(Boolean).join(' · ');
   if (released) filmCells.push({ label: 'Released', value: released });
+  else if (ghostOn && (fv?.releaseDate !== false || (!!d.isReissue && fv?.reissue !== false))) filmCells.push({ label: 'Released', ghost: true });
   if (actorsVal) filmCells.push({ label: 'Starring', value: actorsVal, cast: true, full: true });
+  else if (ghostOn && fv?.actors !== false) filmCells.push({ label: 'Starring', full: true, ghost: true });
 
   const componentOpacity = components.componentOpacity ?? 1;
 
@@ -97,9 +113,9 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
       {/* Chain + format paired (같은 위상이라 인접 배치), top-left */}
       {(components.chainVisible || components.formatVisible) && (
         <div style={{ position: 'absolute', left: 28, top: 150, display: 'flex', alignItems: 'center', gap: 18 }}>
-          <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={50} surface="dark" />
-          {components.chainVisible && components.formatVisible && <span style={{ width: 1, height: 34, background: FS_INK, opacity: 0.5 }} />}
-          <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.85} surface="dark" />
+          <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={50} surface="dark" ghost={ghost} />
+          {stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost) && stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost) && <span style={{ width: 1, height: 34, background: FS_INK, opacity: 0.5 }} />}
+          <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.85} surface="dark" ghost={ghost} />
         </div>
       )}
 
@@ -111,19 +127,34 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
         </div>
       )}
 
+      {/* 빈 항목 미리보기(#216): 평점 원형 스탬프 자리표시자(점선 원). ratingVisible과 상호배타. */}
+      {gRating && (
+        <div data-hide-on-export="true" style={{ position: 'absolute', right: 36, top: 150, width: 138, height: 138, borderRadius: '50%', border: `2px dashed ${FS_INK}`, opacity: 0.4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontWeight: 700, fontSize: 14, fontFamily: FONT_MONO, letterSpacing: 2, color: FS_INK }}>RATED ★</span>
+        </div>
+      )}
+
       {/* Caption above bottom sprockets */}
       <div style={{ position: 'absolute', left: 0, right: 0, bottom: 56, paddingTop: 110, background: captionScrim }}>
         <div style={{ padding: '18px 36px 18px', borderTop: `1px solid ${FS_DIVIDER}`, margin: '0 16px' }}>
-          {titleOgVal && (
+          {titleOgVal ? (
             <div style={{ fontWeight: 700, fontSize: 21, fontFamily: FONT_MONO, letterSpacing: 2.5, textTransform: 'uppercase', color: FS_DIM, marginBottom: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {titleOgVal}
             </div>
-          )}
-          {titleVal && (
+          ) : gTitleOg ? (
+            <div style={{ marginBottom: 12 }}>
+              <FieldGhost text="ORIGINAL TITLE" width={280} height={26} surface="dark" />
+            </div>
+          ) : null}
+          {titleVal ? (
             <div style={{ fontWeight: 800, fontSize: titleSize, fontFamily: FONT_KR, lineHeight: 1.05, letterSpacing: -0.5, marginBottom: 22, color: FS_INK, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
               {titleVal}
             </div>
-          )}
+          ) : gTitle ? (
+            <div style={{ marginBottom: 22 }}>
+              <FieldGhost text="TITLE" width="60%" height={62} size={2} surface="dark" />
+            </div>
+          ) : null}
 
           {(screeningCells.length > 0 || filmCells.length > 0) && (
             <div style={{ marginBottom: 18 }}>
@@ -132,7 +163,11 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
                   {screeningCells.map((c, i) => (
                     <div key={i} style={{ minWidth: 0, flex: c.full ? '1 1 100%' : '0 1 auto' }}>
                       <div style={cellLabel}>{c.label}</div>
-                      <div style={{ color: FS_INK, fontWeight: 600, fontSize: 32, fontFamily: FONT_SANS, letterSpacing: -0.2, lineHeight: 1.2, maxWidth: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.value}</div>
+                      {c.ghost ? (
+                        <FieldGhost width={220} height={38} surface="dark" />
+                      ) : (
+                        <div style={{ color: FS_INK, fontWeight: 600, fontSize: 32, fontFamily: FONT_SANS, letterSpacing: -0.2, lineHeight: 1.2, maxWidth: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.value}</div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -145,7 +180,11 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
                   {filmCells.map((c, i) => (
                     <div key={i} style={{ minWidth: 0, flex: c.full ? '1 1 100%' : '0 1 auto' }}>
                       <div style={cellLabel}>{c.label}</div>
-                      <div style={{ color: FS_INK, fontWeight: c.cast ? 500 : 600, fontSize: c.cast ? 30 : 32, fontFamily: c.cast ? FONT_KR : FONT_SANS, letterSpacing: -0.2, lineHeight: 1.2, maxWidth: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.value}</div>
+                      {c.ghost ? (
+                        <FieldGhost width={c.full ? 300 : 220} height={38} surface="dark" />
+                      ) : (
+                        <div style={{ color: FS_INK, fontWeight: c.cast ? 500 : 600, fontSize: c.cast ? 30 : 32, fontFamily: c.cast ? FONT_KR : FONT_SANS, letterSpacing: -0.2, lineHeight: 1.2, maxWidth: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.value}</div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -156,12 +195,17 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
           <div style={{ paddingTop: 14, borderTop: `1px solid ${FS_DIVIDER}`, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 20 }}>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 22, minWidth: 0 }}>
               <span style={{ fontWeight: 700, fontSize: 15, fontFamily: FONT_MONO, letterSpacing: 3, color: FS_DIM }}>MADE WITH FILME</span>
-              {signatureVal && (
+              {signatureVal ? (
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontWeight: 700, fontSize: 14, fontFamily: FONT_MONO, letterSpacing: 2, color: FS_DIM, marginBottom: 4 }}>COLLECTED BY</div>
                   <div style={{ fontWeight: 500, fontSize: 26, fontFamily: FONT_KR, color: FS_INK, maxWidth: 300, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{signatureVal}</div>
                 </div>
-              )}
+              ) : gSignature ? (
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, fontFamily: FONT_MONO, letterSpacing: 2, color: FS_DIM, marginBottom: 4 }}>COLLECTED BY</div>
+                  <FieldGhost text="SIGNATURE" width={200} height={30} surface="dark" />
+                </div>
+              ) : null}
             </div>
             {(fv?.bookingNo ?? true) && <Barcode value={bookingNo} color={FS_INK} width={244} height={50} textSize={19} />}
           </div>

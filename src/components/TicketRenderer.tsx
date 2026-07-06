@@ -18,6 +18,12 @@ interface TicketRendererProps {
   movieInfo: MovieInfo;
   components: TicketComponents;
   fieldVisibility?: Record<TicketField, boolean>;
+  /**
+   * 빈 항목 미리보기(ghost, #216) — 모바일 전용. undefined면 데스크톱/기존 호출자로 간주해
+   * 오늘의 동작(스탬프 placeholder 항상 on, 필드 placeholder off)을 그대로 둔다. 데스크톱 프리뷰
+   * 호출부는 이 프롭을 넘기지 않는다.
+   */
+  ghost?: boolean;
 }
 
 const SCALE_EPSILON = 0.001;
@@ -27,7 +33,7 @@ const SCALE_EPSILON = 0.001;
 export const PREVIEW_MAX_HEIGHT = 'min(72vh, 720px)';
 
 const TicketRenderer = memo(forwardRef<HTMLDivElement, TicketRendererProps>(function TicketRenderer(
-  { croppedImageUrl, movieInfo, components, fieldVisibility },
+  { croppedImageUrl, movieInfo, components, fieldVisibility, ghost },
   ref
 ) {
   const layout = getLayout(components.layout);
@@ -78,6 +84,7 @@ const TicketRenderer = memo(forwardRef<HTMLDivElement, TicketRendererProps>(func
           movieInfo={movieInfo}
           components={components}
           fieldVisibility={fieldVisibility}
+          ghost={ghost}
         />
       </div>
     </div>
@@ -90,14 +97,16 @@ const Mood = memo(function Mood({
   movieInfo,
   components,
   fieldVisibility,
+  ghost,
 }: {
   layoutId: LayoutId;
   croppedImageUrl: string;
   movieInfo: MovieInfo;
   components: TicketComponents;
   fieldVisibility?: Record<TicketField, boolean>;
+  ghost?: boolean;
 }) {
-  const props = { croppedImageUrl, movieInfo, components, fieldVisibility };
+  const props = { croppedImageUrl, movieInfo, components, fieldVisibility, ghost };
   switch (layoutId) {
     case 'minimal':
       return <MoodMinimal {...props} />;

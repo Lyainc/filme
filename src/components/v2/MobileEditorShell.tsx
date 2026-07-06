@@ -101,6 +101,8 @@ export function MobileEditorShell({
   const { croppedImageUrl } = photo.state;
   const [activeField, setActiveField] = useState<SheetTarget | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('default');
+  // 빈 항목 미리보기(ghost, #216) — 셸 로컬, 미영속(기본 on). 실제 크기 모드에선 강제 off.
+  const [ghostMode, setGhostMode] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -135,6 +137,8 @@ export function MobileEditorShell({
   const isLandscape = layout.orientation === 'landscape';
   const actualCaption = isLandscape ? '8.5 × 5.5cm' : '5.5 × 8.5cm';
   const isActual = viewMode === 'actual';
+  // 실제 크기에선 ghost를 강제로 끈다(물리 크기 정밀 비교엔 자리표시자가 방해). 그 외엔 토글값.
+  const ghostEffective = !isActual && ghostMode;
   // 컨테이너 width만으로 렌더 크기를 몰기(TicketRenderer는 width에 맞춰 스케일). actual은
   // 짧은 변(portrait 5.5cm / landscape 8.5cm)을 그대로 줘 물리 크기로 렌더. max는 세로를
   // TicketRenderer의 자체 maxHeight(min(72vh,720px)) 한도까지 채우는 width를 역산.
@@ -203,7 +207,7 @@ export function MobileEditorShell({
         <div className={`flex min-h-full flex-col ${collapseBody ? 'justify-center' : ''}`}>
           {/* 줌 모드 pill — 3모드 어디서든 항상 보인다(기본으로 돌아오는 유일한 길). */}
           {croppedImageUrl && (
-            <div className="flex justify-center px-4 pt-4">
+            <div className="flex flex-wrap items-center justify-center gap-2 px-4 pt-4">
               <div
                 role="group"
                 aria-label="미리보기 크기"
@@ -228,6 +232,42 @@ export function MobileEditorShell({
                   );
                 })}
               </div>
+
+              {/* 빈 항목 미리보기 토글(#216) — 실제 크기 모드에선 비활성(ghost 강제 off). */}
+              <button
+                type="button"
+                role="switch"
+                aria-checked={ghostEffective}
+                aria-label="빈 항목 미리보기"
+                title="빈 항목 미리보기"
+                disabled={isActual}
+                onClick={() => setGhostMode((v) => !v)}
+                className={`inline-flex h-9 items-center gap-2 rounded-full border border-line bg-surface-elevated pl-3 pr-1.5 transition-opacity ${
+                  isActual ? 'opacity-40' : ''
+                }`}
+              >
+                <span
+                  className="text-mono text-fg-muted"
+                  style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase' }}
+                >
+                  빈 항목
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="relative inline-block h-5 w-9 rounded-full transition-colors"
+                  style={{ background: ghostEffective ? 'var(--accent)' : 'var(--border)' }}
+                >
+                  <span
+                    className="absolute top-0.5 h-4 w-4 rounded-full transition-transform"
+                    style={{
+                      left: 2,
+                      background: '#fff',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                      transform: ghostEffective ? 'translateX(16px)' : 'translateX(0)',
+                    }}
+                  />
+                </span>
+              </button>
             </div>
           )}
 
@@ -236,8 +276,7 @@ export function MobileEditorShell({
               {/* 래퍼는 3모드 모두 <button>로 고정 — 요소 타입이 바뀌면 TicketRenderer가
                   remount돼 내부 scale이 1로 리셋되며 깜빡인다. 크기/동작만 모드별로 달리한다:
                   기본은 인라인 폭 + 탭→필드 시트, max/actual은 확대 폭 + 탭→기본 복귀.
-                  #216 seam: ghost 모드가 들어오면 actual일 때 강제로 끈다
-                  (예: ghost={isActual ? false : ghostMode}). 지금은 ghostMode 상태가 없어 게이팅할 것이 없다. */}
+                  #216: 빈 항목 미리보기(ghost)는 actual 모드에서 강제 off(ghostEffective = !isActual && ghostMode). */}
               <button
                 type="button"
                 onClick={
@@ -256,6 +295,7 @@ export function MobileEditorShell({
                   movieInfo={previewMovieInfo}
                   components={previewComponents}
                   fieldVisibility={fieldVisibility}
+                  ghost={ghostEffective}
                 />
               </button>
             </div>
