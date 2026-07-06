@@ -1,7 +1,7 @@
 import dynamic from 'next/dynamic';
 import { useState, type ReactNode } from 'react';
 import ImageUploader from '@/components/ImageUploader';
-import TicketRenderer from '@/components/TicketRenderer';
+import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
 import { AppHeader } from './AppHeader';
 import { FieldLauncher } from './FieldLauncher';
 import { DesignRail } from './DesignRail';
@@ -10,7 +10,9 @@ import { PreviewFilmCell } from './PreviewFilmCell';
 import { PrimaryCta } from './PrimaryCta';
 import { OcrUploadCard } from './OcrUploadCard';
 import { OcrUndoBanner } from './OcrUndoBanner';
+import { ZoomSegment, actualSize, type ViewMode } from './viewMode';
 import { useOcrUndo } from '@/hooks/useOcrUndo';
+import { getLayout } from '@/utils/layouts';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 import type { SheetTarget } from '@/constants/fields';
@@ -119,11 +121,23 @@ export function DesktopStudioShell({
 }: DesktopStudioShellProps) {
   const [activeTab, setActiveTab] = useState<StudioTab>('poster');
   const [activeField, setActiveField] = useState<SheetTarget | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('default');
   const { croppedImageUrl } = photo.state;
 
   // OCR 낙관적 주입 + 되돌리기 로직은 useOcrUndo가 소유한다(EditorCanvas와 공유, #141-class drift 방지).
   // 이 셸엔 필드 입력칸이 없어 EditorCanvas의 아코디언 열기 같은 사이트별 사이드이펙트 없이 apply를 그대로 쓴다.
   const ocr = useOcrUndo(photo);
+
+  // 줌은 편집 모드만 — 결과(resultOpen)에선 캔버스 hero 티켓이 기본 크기로 고정된다(인스펙터=ResultPanel).
+  const mode = resultOpen ? 'default' : viewMode;
+  const layout = getLayout(previewComponents.layout);
+  const actual = actualSize(layout);
+  // 티켓 컨테이너 width로 렌더 크기를 몬다(TicketRenderer는 width에 맞춰 스케일, 모바일과 동일 방식).
+  // actual은 짧은 변을 CSS cm로, max는 TicketRenderer maxHeight 한도까지 채우는 width를 역산.
+  const previewWidth =
+    mode === 'actual'
+      ? actual.shortSideCm
+      : `min(90vw, calc(${PREVIEW_MAX_HEIGHT} * ${layout.width} / ${layout.height}))`;
 
   return (
     <div
@@ -164,7 +178,7 @@ export function DesktopStudioShell({
           })}
         </nav>
 
-        {/* 중앙: 캔버스 — 티켓 중앙 + accent-soft radial glow. 줌 없음(#225). */}
+        {/* 중앙: 캔버스 — 티켓 중앙 + accent-soft radial glow. 3단 줌(#225): 기본/최대화/실제 크기. */}
         <main
           className="relative flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center px-8 py-6"
           style={{ background: 'radial-gradient(60% 50% at 50% 38%, var(--accent-soft), transparent 70%)' }}
@@ -179,8 +193,17 @@ export function DesktopStudioShell({
             </button>
           )}
 
+          {/* 줌 세그먼트 — 편집 모드 + 티켓 있을 때만. max에서 인스펙터를 숨겨도 이 세그먼트는
+              캔버스에 남아 기본으로 돌아오는 유일한 길이 된다. */}
+          {!resultOpen && croppedImageUrl && (
+            <ZoomSegment viewMode={viewMode} onChange={setViewMode} className="absolute right-7 top-6 z-10" />
+          )}
+
           {croppedImageUrl && (
-            <div className="w-full max-w-[380px]">
+            <div
+              className={mode === 'default' ? 'w-full max-w-[380px]' : ''}
+              style={mode === 'default' ? undefined : { width: previewWidth }}
+            >
               <PreviewFilmCell>
                 <TicketRenderer
                   croppedImageUrl={croppedImageUrl}
@@ -191,9 +214,20 @@ export function DesktopStudioShell({
               </PreviewFilmCell>
             </div>
           )}
+
+          {croppedImageUrl && mode === 'actual' && (
+            <p
+              className="text-mono pt-3 text-center text-fg-muted"
+              style={{ fontSize: 11, letterSpacing: '0.08em' }}
+            >
+              실제 크기 · {actual.caption}
+            </p>
+          )}
         </main>
 
-        {/* 우: 컨텍스트 인스펙터 — 스크롤 body + 고정 footer(편집 모드만). */}
+        {/* 우: 컨텍스트 인스펙터 — 스크롤 body + 고정 footer(편집 모드만).
+            최대화 모드에선 숨겨 캔버스를 넓힌다(state는 셸 레벨이라 유지, 렌더만 토글 — #225 제약). */}
+        {mode !== 'max' && (
         <aside className="flex h-full flex-none flex-col border-l border-line" style={{ width: 380 }}>
           <div className="min-h-0 flex-1 overflow-y-auto p-6">
             {resultOpen ? (
@@ -251,6 +285,7 @@ export function DesktopStudioShell({
             </div>
           )}
         </aside>
+        )}
       </div>
 
       {/* 필드 편집 하단시트(vaul, dynamic) — 정보 탭에서 행 탭 시 열린다. 탭 전환과 무관하게 항상 마운트. */}
