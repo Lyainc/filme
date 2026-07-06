@@ -4,6 +4,7 @@ import { forwardRef, memo, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { getLayout } from '@/utils/layouts';
 import type { LayoutId, MovieInfo, TicketComponents, TicketField } from '@/types';
+import type { SheetTarget } from '@/constants/fields';
 
 // 무드 4종은 한 번에 하나만 렌더되므로 각각 별도 청크로 분리해 초기 번들에서 제외.
 // ssr: false — 캡처(captureToImage)는 프리뷰가 이미 보이는(=청크 로드 완료) 시점의
@@ -24,6 +25,12 @@ interface TicketRendererProps {
    * 호출부는 이 프롭을 넘기지 않는다.
    */
   ghost?: boolean;
+  /**
+   * 온-티켓 탭 편집(#259) — 모바일 default 줌 전용. 넘기면 무드 필드/포스터가 탭 가능해진다.
+   * 캡처(ResultPanel)·데스크톱·max/actual 줌은 안 넘겨 비인터랙티브(포커스링/탭UI 유출 원천 차단).
+   */
+  onField?: (field: SheetTarget) => void;
+  onPosterTap?: () => void;
 }
 
 const SCALE_EPSILON = 0.001;
@@ -33,7 +40,7 @@ const SCALE_EPSILON = 0.001;
 export const PREVIEW_MAX_HEIGHT = 'min(72vh, 720px)';
 
 const TicketRenderer = memo(forwardRef<HTMLDivElement, TicketRendererProps>(function TicketRenderer(
-  { croppedImageUrl, movieInfo, components, fieldVisibility, ghost },
+  { croppedImageUrl, movieInfo, components, fieldVisibility, ghost, onField, onPosterTap },
   ref
 ) {
   const layout = getLayout(components.layout);
@@ -85,6 +92,8 @@ const TicketRenderer = memo(forwardRef<HTMLDivElement, TicketRendererProps>(func
           components={components}
           fieldVisibility={fieldVisibility}
           ghost={ghost}
+          onField={onField}
+          onPosterTap={onPosterTap}
         />
       </div>
     </div>
@@ -98,6 +107,8 @@ const Mood = memo(function Mood({
   components,
   fieldVisibility,
   ghost,
+  onField,
+  onPosterTap,
 }: {
   layoutId: LayoutId;
   croppedImageUrl: string;
@@ -105,8 +116,10 @@ const Mood = memo(function Mood({
   components: TicketComponents;
   fieldVisibility?: Record<TicketField, boolean>;
   ghost?: boolean;
+  onField?: (field: SheetTarget) => void;
+  onPosterTap?: () => void;
 }) {
-  const props = { croppedImageUrl, movieInfo, components, fieldVisibility, ghost };
+  const props = { croppedImageUrl, movieInfo, components, fieldVisibility, ghost, onField, onPosterTap };
   switch (layoutId) {
     case 'minimal':
       return <MoodMinimal {...props} />;

@@ -1,5 +1,6 @@
-import { CSSProperties, memo, useMemo } from 'react';
+import { CSSProperties, ReactNode, memo, useMemo } from 'react';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
+import { FIELD_LABELS, STAMP_LABELS, isStampTarget, type SheetTarget } from '@/constants/fields';
 import { formatDate } from '@/utils/dateFormat';
 
 export interface MoodProps {
@@ -14,6 +15,66 @@ export interface MoodProps {
    * - `false`(모바일 ghost off / 실제 크기 모드): 모든 placeholder 숨김.
    */
   ghost?: boolean;
+  /**
+   * 온-티켓 탭 편집(#259) — 모바일 default 줌 전용. 필드/스탬프를 탭하면 그 타깃의 편집 시트를 연다.
+   * undefined(데스크톱/캡처 파이프라인)면 FieldTap이 래퍼 없이 통과 → 레이아웃·래스터 픽셀 동일.
+   */
+  onField?: (field: SheetTarget) => void;
+  /** 포스터 영역 탭(#259) → 파일 선택 → 크롭. undefined면 포스터는 비인터랙티브(캡처/데스크톱). */
+  onPosterTap?: () => void;
+}
+
+/**
+ * 온-티켓 필드 탭 래퍼(#259). onField가 없으면(데스크톱/캡처) 래퍼 없이 children을 그대로 통과해
+ * 레이아웃·래스터가 완전히 동일하다 — 캡처(ResultPanel의 별도 TicketRenderer)엔 onField가 안 가므로
+ * 탭 UI가 산출물에 샐 수 없다. onField가 있으면 display:contents 래퍼로 감싼다: 박스를 만들지 않아
+ * 무드의 절대배치·크기에 0 영향이고(포커스링도 그릴 박스가 없어 캡처 유출 원천 차단), 탭만 받는다.
+ * stopPropagation으로 포스터 root 탭(onPosterTap)과 겹치지 않게 한다.
+ */
+export function FieldTap({
+  field,
+  onField,
+  children,
+}: {
+  field: SheetTarget;
+  onField?: (field: SheetTarget) => void;
+  children: ReactNode;
+}) {
+  if (!onField) return <>{children}</>;
+  const label = isStampTarget(field) ? STAMP_LABELS[field] : FIELD_LABELS[field];
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label={`${label} 편집`}
+      onClick={(e) => {
+        e.stopPropagation();
+        onField(field);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          e.stopPropagation();
+          onField(field);
+        }
+      }}
+      style={{ display: 'contents' }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/**
+ * 포스터 영역 탭 props(#259). onPosterTap이 있을 때만 onClick+라벨을 얹는다. 풀블리드 무드는 root에,
+ * editorial(3열)은 포스터 컬럼에 스프레드한다. role은 생략 — root엔 이미 role=button 필드 자식이 있어
+ * 중첩 방지, 포스터 변경은 포인터 제스처(키보드는 FieldLauncher/ImageUploader가 커버). data 속성은
+ * 테스트 셀렉터용이며 캡처 렌더러엔 onPosterTap이 안 가 붙지 않는다.
+ */
+export function posterTapProps(onPosterTap?: () => void) {
+  return onPosterTap
+    ? { onClick: onPosterTap, 'aria-label': '포스터 변경', 'data-poster-tap': 'true' }
+    : {};
 }
 
 /**

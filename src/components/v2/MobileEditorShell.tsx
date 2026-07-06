@@ -1,5 +1,5 @@
 import dynamic from 'next/dynamic';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
 import { EditorCanvas } from './EditorCanvas';
 import { DesignRail } from './DesignRail';
 import { FieldLauncher } from './FieldLauncher';
@@ -7,9 +7,10 @@ import { ThemeToggle } from './ThemeToggle';
 import { ZoomSegment, actualSize, type ViewMode } from './viewMode';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
 import { getLayout } from '@/utils/layouts';
+import { getCroppedImg, type Area } from '@/utils/imageCrop';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
-import type { SheetTarget } from '@/constants/fields';
+import { isStampTarget, STAMP_KEYS, type SheetTarget } from '@/constants/fields';
 
 // 필드 시트는 vaul(+radix)을 끌어와 무겁고 필드 탭 전엔 안 쓰므로 dynamic(ssr:false)로 분리 —
 // 셸 자체는 모바일 첫 페인트에 즉시 필요하므로 static, vaul은 시트가 열릴 때만 로드된다.
@@ -17,6 +18,9 @@ const FieldEditSheet = dynamic(
   () => import('./FieldEditSheet').then((m) => m.FieldEditSheet),
   { ssr: false },
 );
+
+// 포스터 탭(#259) 크롭 모달 — ImageUploader와 동일 컴포넌트 재사용. 탭 전엔 안 쓰므로 dynamic.
+const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ssr: false });
 
 interface MobileEditorShellProps {
   photo: ReturnType<typeof usePhototicket>;
@@ -54,6 +58,11 @@ export function MobileEditorShell({
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const bodyRef = useRef<HTMLDivElement>(null);
+  // 포스터 온-티켓 탭(#259) — 파일 선택 → 크롭. ImageUploader와 별개의 진입점이라 여기서 자족한다
+  // (크롭 완료 시 photo.handleImageUpload이 이전 croppedImageUrl을 revoke하므로 누수 없음).
+  const posterInputRef = useRef<HTMLInputElement>(null);
+  const [posterCropSrc, setPosterCropSrc] = useState<string | null>(null);
+  const [posterCropping, setPosterCropping] = useState(false);
 
   function flashToast(msg: string) {
     setToast(msg);
@@ -74,6 +83,44 @@ export function MobileEditorShell({
   // 실제 이전 화면이 생기면 교체). 시트 열림 땐 vaul 스크림이 헤더를 덮어 이 버튼은 닿지 않는다.
   function handleBack() {
     bodyRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // 온-티켓 필드 탭(#259). 숨김 필드 탭 시 자동 표시 on(시안 setActive) 후 시트를 연다 — 스탬프는
+  // chainVisible/formatVisible, 나머지는 fieldVisibility. 이미 켜진 필드면 no-op이라 안전하다.
+  function handleField(target: SheetTarget) {
+    if (isStampTarget(target)) {
+      photo.updateComponents({ [STAMP_KEYS[target].visible]: true } as Partial<TicketComponents>);
+    } else {
+      photo.updateFieldVisibility({ [target]: true });
+    }
+    setActiveField(target);
+  }
+
+  function handlePosterTap() {
+    posterInputRef.current?.click();
+  }
+  function handlePosterFile(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) setPosterCropSrc(URL.createObjectURL(file));
+    e.target.value = '';
+  }
+  async function handlePosterCropComplete(area: Area) {
+    if (!posterCropSrc) return;
+    setPosterCropping(true);
+    try {
+      const url = await getCroppedImg(posterCropSrc, area);
+      photo.handleImageUpload(url);
+    } catch (err) {
+      console.error('포스터 크롭 실패:', err);
+    } finally {
+      URL.revokeObjectURL(posterCropSrc);
+      setPosterCropSrc(null);
+      setPosterCropping(false);
+    }
+  }
+  function handlePosterCropCancel() {
+    if (posterCropSrc) URL.revokeObjectURL(posterCropSrc);
+    setPosterCropSrc(null);
   }
 
   const doneEnabledStyle = canExport
@@ -195,20 +242,29 @@ export function MobileEditorShell({
 
           {croppedImageUrl && (
             <div className="px-4 pt-4">
-              {/* 래퍼는 3모드 모두 <button>로 고정 — 요소 타입이 바뀌면 TicketRenderer가
-                  remount돼 내부 scale이 1로 리셋되며 깜빡인다. 크기/동작만 모드별로 달리한다:
-                  기본은 인라인 폭 + 탭→필드 시트, max/actual은 확대 폭 + 탭→기본 복귀.
-                  #216: 빈 항목 미리보기(ghost)는 actual 모드에서 강제 off(ghostEffective = !isActual && ghostMode). */}
-              <button
-                type="button"
-                onClick={
+              {/* 래퍼는 3모드 모두 <div>로 고정 — 요소 타입이 바뀌면 TicketRenderer가 remount돼 내부
+                  scale이 1로 리셋되며 깜빡인다(#259 전엔 button 고정, on-ticket 탭엔 내부에 필드 button이
+                  중첩돼 div로 전환). default는 인라인 폭 + 티켓 위 필드/포스터 직접 탭(onField/onPosterTap),
+                  max/actual은 확대 폭 + 래퍼 전체 탭→기본 복귀. #216: ghost는 actual에서 강제 off. */}
+              <div
+                {...(viewMode === 'default'
+                  ? {}
+                  : {
+                      role: 'button' as const,
+                      tabIndex: 0,
+                      onClick: () => setViewMode('default'),
+                      onKeyDown: (e: KeyboardEvent) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setViewMode('default');
+                        }
+                      },
+                      'aria-label': '기본 크기로 돌아가기',
+                    })}
+                className={`mx-auto block rounded-card ${
                   viewMode === 'default'
-                    ? () => setActiveField('title')
-                    : () => setViewMode('default')
-                }
-                aria-label={viewMode === 'default' ? '제목 편집' : '기본 크기로 돌아가기'}
-                className={`mx-auto block rounded-card transition-transform active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-soft ${
-                  viewMode === 'default' ? 'w-full max-w-[280px]' : ''
+                    ? 'w-full max-w-[280px]'
+                    : 'transition-transform active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-soft'
                 }`}
                 style={viewMode === 'default' ? undefined : { width: previewWidth }}
               >
@@ -218,8 +274,10 @@ export function MobileEditorShell({
                   components={previewComponents}
                   fieldVisibility={fieldVisibility}
                   ghost={ghostEffective}
+                  onField={viewMode === 'default' ? handleField : undefined}
+                  onPosterTap={viewMode === 'default' ? handlePosterTap : undefined}
                 />
-              </button>
+              </div>
             </div>
           )}
 
@@ -258,6 +316,25 @@ export function MobileEditorShell({
       {/* 필드 편집 하단시트 — vaul은 dynamic(ssr:false)라 시트가 열릴 때만 로드된다.
           #213은 제목만, #215가 타입별 콘텐츠와 개별 티켓 필드 탭을 채운다. */}
       <FieldEditSheet activeField={activeField} onClose={() => setActiveField(null)} photo={photo} />
+
+      {/* 포스터 온-티켓 탭(#259) — 숨김 파일 input + 크롭 모달. 티켓 위 포스터 탭 → input.click() →
+          파일 선택 → ImageCropModal(기본 0.65:1) → getCroppedImg → handleImageUpload. */}
+      <input
+        ref={posterInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/jpg,image/webp"
+        onChange={handlePosterFile}
+        className="sr-only"
+        aria-hidden="true"
+      />
+      {posterCropSrc && (
+        <ImageCropModal
+          imageSrc={posterCropSrc}
+          onClose={handlePosterCropCancel}
+          onComplete={handlePosterCropComplete}
+          isProcessing={posterCropping}
+        />
+      )}
 
       {/* 완료 비활성 사유 — SR 라이브리전은 콘텐츠와 함께 삽입되면 mutation을 놓치므로(#199)
           항상 마운트하고 텍스트만 토글한다. 시각 토스트는 별도로 aria-hidden. */}

@@ -1,8 +1,10 @@
 import { CSSProperties } from 'react';
+import type { SheetTarget } from '@/constants/fields';
 import {
   Barcode,
   ChainStamp,
   FieldGhost,
+  FieldTap,
   FONT_DISPLAY,
   FONT_KR,
   FONT_SANS,
@@ -12,6 +14,7 @@ import {
   gate,
   isInkDark,
   pickTitleSize,
+  posterTapProps,
   resolveInk,
   resolveTicketData,
   showFieldGhost,
@@ -61,7 +64,7 @@ function RegistrationMarks({ color }: { color: string }) {
   );
 }
 
-export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost }: MoodProps) {
+export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
   const inkIsDark = isInkDark(themeColor);
   const ink = resolveInk(themeColor, inkIsDark ? '#0d0c0a' : '#FFFFFF');
@@ -104,25 +107,27 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
   // 메타 청킹(#리뷰): 관람(Screening/Venue/Seat) vs 영화(Runtime/Rated/Released)를 분리.
   // 값 폰트는 전부 Pretendard로 통일(숫자·날짜 포함) — 모노는 바코드/일련번호 같은 코드에만.
   // ghost 셀은 값이 비었고 기여 필드 중 하나라도 visible일 때만(ghostOn), value 없이 push한다.
-  const screeningCells: { label: string; value?: string; ghost?: boolean }[] = [];
+  // 합쳐진 셀(Screening=관람일+시간, Venue=극장+상영관)은 대표 필드로 탭 매핑한다(#259) — 2차 필드
+  // (watchTime/screen)는 FieldLauncher/시트에서 닿는다. field가 붙은 셀만 FieldTap으로 감싼다.
+  const screeningCells: { label: string; value?: string; ghost?: boolean; field?: SheetTarget }[] = [];
   const screening = [watchDateVal, watchTimeVal].filter(Boolean).join('  ');
-  if (screening) screeningCells.push({ label: 'Screening', value: screening });
-  else if (ghostOn && (fv?.watchDate !== false || fv?.watchTime !== false)) screeningCells.push({ label: 'Screening', ghost: true });
+  if (screening) screeningCells.push({ label: 'Screening', value: screening, field: 'watchDate' });
+  else if (ghostOn && (fv?.watchDate !== false || fv?.watchTime !== false)) screeningCells.push({ label: 'Screening', ghost: true, field: 'watchDate' });
   const venue = [theaterVal, screenVal].filter(Boolean).join(' · ');
-  if (venue) screeningCells.push({ label: 'Venue', value: venue });
-  else if (ghostOn && (fv?.theater !== false || fv?.screen !== false)) screeningCells.push({ label: 'Venue', ghost: true });
-  if (seatVal) screeningCells.push({ label: 'Seat', value: seatVal });
-  else if (ghostOn && fv?.seat !== false) screeningCells.push({ label: 'Seat', ghost: true });
+  if (venue) screeningCells.push({ label: 'Venue', value: venue, field: 'theater' });
+  else if (ghostOn && (fv?.theater !== false || fv?.screen !== false)) screeningCells.push({ label: 'Venue', ghost: true, field: 'theater' });
+  if (seatVal) screeningCells.push({ label: 'Seat', value: seatVal, field: 'seat' });
+  else if (ghostOn && fv?.seat !== false) screeningCells.push({ label: 'Seat', ghost: true, field: 'seat' });
 
-  const filmCells: { label: string; value?: string; ghost?: boolean }[] = [];
-  if (runtimeVal) filmCells.push({ label: 'Runtime', value: runtimeVal });
-  else if (ghostOn && fv?.runtime !== false) filmCells.push({ label: 'Runtime', ghost: true });
-  if (ratingVisible) filmCells.push({ label: 'Rated', value: `★ ${d.rating.toFixed(1)}` });
-  else if (ghostOn && fv?.rating !== false) filmCells.push({ label: 'Rated', ghost: true });
-  if (releaseDateVal) filmCells.push({ label: 'Released', value: releaseDateVal });
-  else if (ghostOn && fv?.releaseDate !== false) filmCells.push({ label: 'Released', ghost: true });
-  if (reissueVal) filmCells.push({ label: 'Re-released', value: reissueVal });
-  else if (ghostOn && d.isReissue && fv?.reissue !== false) filmCells.push({ label: 'Re-released', ghost: true });
+  const filmCells: { label: string; value?: string; ghost?: boolean; field?: SheetTarget }[] = [];
+  if (runtimeVal) filmCells.push({ label: 'Runtime', value: runtimeVal, field: 'runtime' });
+  else if (ghostOn && fv?.runtime !== false) filmCells.push({ label: 'Runtime', ghost: true, field: 'runtime' });
+  if (ratingVisible) filmCells.push({ label: 'Rated', value: `★ ${d.rating.toFixed(1)}`, field: 'rating' });
+  else if (ghostOn && fv?.rating !== false) filmCells.push({ label: 'Rated', ghost: true, field: 'rating' });
+  if (releaseDateVal) filmCells.push({ label: 'Released', value: releaseDateVal, field: 'releaseDate' });
+  else if (ghostOn && fv?.releaseDate !== false) filmCells.push({ label: 'Released', ghost: true, field: 'releaseDate' });
+  if (reissueVal) filmCells.push({ label: 'Re-released', value: reissueVal, field: 'reissue' });
+  else if (ghostOn && d.isReissue && fv?.reissue !== false) filmCells.push({ label: 'Re-released', ghost: true, field: 'reissue' });
 
   // 스탬프가 실제로 뭔가(이미지/라벨/고스트 placeholder)를 렌더할 때만 상단 스크림+스탬프 블록을
   // 낸다. visible 토글만 보면 로고 미업로드+ghost=false에서 빈 스크림만 남는다(#216 리뷰 P1).
@@ -133,7 +138,7 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
   const componentOpacity = components.componentOpacity ?? 1;
 
   return (
-    <div style={{ position: 'absolute', inset: 0, color: ink, fontFamily: FONT_SANS, overflow: 'hidden' }}>
+    <div style={{ position: 'absolute', inset: 0, color: ink, fontFamily: FONT_SANS, overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
       <Poster src={croppedImageUrl} texture={components.texture} posterOpacity={components.posterOpacity} />
 
       {/* #219 componentOpacity: 포스터를 뺀 모든 오버레이를 함께 페이드. 자식이 전부 position:absolute라
@@ -146,9 +151,13 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
         <>
           <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 180, background: topScrim, pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', left: 56, top: 44, display: 'flex', alignItems: 'center', gap: 22 }}>
-            <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={54} surface={stampSurface} ghost={ghost} />
+            <FieldTap field="chain" onField={onField}>
+              <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={54} surface={stampSurface} ghost={ghost} />
+            </FieldTap>
             {stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost) && stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost) && <span style={{ width: 1, height: 38, background: ink, opacity: 0.5 }} />}
-            <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.9} surface={stampSurface} ghost={ghost} />
+            <FieldTap field="format" onField={onField}>
+              <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.9} surface={stampSurface} ghost={ghost} />
+            </FieldTap>
           </div>
         </>
       )}
@@ -163,22 +172,30 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
         </div>
 
         {titleVal ? (
-          <div style={{ fontWeight: titleLen > 12 ? 400 : 300, fontSize: titleSize, fontFamily: FONT_KR, lineHeight: 1.06, letterSpacing: -1.5, marginBottom: 16, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-            {titleVal}
-          </div>
+          <FieldTap field="title" onField={onField}>
+            <div style={{ fontWeight: titleLen > 12 ? 400 : 300, fontSize: titleSize, fontFamily: FONT_KR, lineHeight: 1.06, letterSpacing: -1.5, marginBottom: 16, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+              {titleVal}
+            </div>
+          </FieldTap>
         ) : gTitle ? (
-          <div style={{ marginBottom: 16 }}>
-            <FieldGhost text="TITLE" width="66%" height={84} size={2} surface={stampSurface} />
-          </div>
+          <FieldTap field="title" onField={onField}>
+            <div style={{ marginBottom: 16 }}>
+              <FieldGhost text="TITLE" width="66%" height={84} size={2} surface={stampSurface} />
+            </div>
+          </FieldTap>
         ) : null}
         {titleOgVal ? (
-          <div style={{ fontWeight: 600, fontSize: 26, fontFamily: FONT_SANS, letterSpacing: 2.5, textTransform: 'uppercase', opacity: 0.66, marginBottom: 28, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {titleOgVal}
-          </div>
+          <FieldTap field="titleOg" onField={onField}>
+            <div style={{ fontWeight: 600, fontSize: 26, fontFamily: FONT_SANS, letterSpacing: 2.5, textTransform: 'uppercase', opacity: 0.66, marginBottom: 28, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {titleOgVal}
+            </div>
+          </FieldTap>
         ) : gTitleOg ? (
-          <div style={{ marginBottom: 28 }}>
-            <FieldGhost text="ORIGINAL TITLE" width={280} height={30} surface={stampSurface} />
-          </div>
+          <FieldTap field="titleOg" onField={onField}>
+            <div style={{ marginBottom: 28 }}>
+              <FieldGhost text="ORIGINAL TITLE" width={280} height={30} surface={stampSurface} />
+            </div>
+          </FieldTap>
         ) : null}
 
         <div style={{ height: 1, background: ink, opacity: 0.38, marginBottom: 26 }} />
@@ -189,14 +206,16 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
             {screeningCells.length > 0 && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '18px 56px' }}>
                 {screeningCells.map((c, i) => (
-                  <div key={i} style={{ minWidth: 0 }}>
-                    <div style={labelSerif(ink)}>{c.label}</div>
-                    {c.ghost ? (
-                      <FieldGhost width={200} height={46} surface={stampSurface} />
-                    ) : (
-                      <div style={{ ...metaValue, maxWidth: 560, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.value}</div>
-                    )}
-                  </div>
+                  <FieldTap key={i} field={c.field!} onField={onField}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={labelSerif(ink)}>{c.label}</div>
+                      {c.ghost ? (
+                        <FieldGhost width={200} height={46} surface={stampSurface} />
+                      ) : (
+                        <div style={{ ...metaValue, maxWidth: 560, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.value}</div>
+                      )}
+                    </div>
+                  </FieldTap>
                 ))}
               </div>
             )}
@@ -206,14 +225,16 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
             {filmCells.length > 0 && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '18px 56px' }}>
                 {filmCells.map((c, i) => (
-                  <div key={i} style={{ minWidth: 0 }}>
-                    <div style={labelSerif(ink)}>{c.label}</div>
-                    {c.ghost ? (
-                      <FieldGhost width={200} height={46} surface={stampSurface} />
-                    ) : (
-                      <div style={{ ...metaValue, maxWidth: 560, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.value}</div>
-                    )}
-                  </div>
+                  <FieldTap key={i} field={c.field!} onField={onField}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={labelSerif(ink)}>{c.label}</div>
+                      {c.ghost ? (
+                        <FieldGhost width={200} height={46} surface={stampSurface} />
+                      ) : (
+                        <div style={{ ...metaValue, maxWidth: 560, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.value}</div>
+                      )}
+                    </div>
+                  </FieldTap>
                 ))}
               </div>
             )}
@@ -221,15 +242,19 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
         )}
 
         {actorsVal ? (
-          <div style={{ marginBottom: 30, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-            <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 30, opacity: 0.7, marginRight: 14 }}>with</span>
-            <span style={{ fontWeight: 500, fontSize: 32, fontFamily: FONT_KR, opacity: 0.86, letterSpacing: -0.2 }}>{actorsVal}</span>
-          </div>
+          <FieldTap field="actors" onField={onField}>
+            <div style={{ marginBottom: 30, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+              <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 30, opacity: 0.7, marginRight: 14 }}>with</span>
+              <span style={{ fontWeight: 500, fontSize: 32, fontFamily: FONT_KR, opacity: 0.86, letterSpacing: -0.2 }}>{actorsVal}</span>
+            </div>
+          </FieldTap>
         ) : gActors ? (
-          <div style={{ marginBottom: 30, display: 'flex', alignItems: 'center', gap: 14 }}>
-            <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 30, opacity: 0.7 }}>with</span>
-            <FieldGhost text="CAST" width={260} height={36} surface={stampSurface} />
-          </div>
+          <FieldTap field="actors" onField={onField}>
+            <div style={{ marginBottom: 30, display: 'flex', alignItems: 'center', gap: 14 }}>
+              <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 30, opacity: 0.7 }}>with</span>
+              <FieldGhost text="CAST" width={260} height={36} surface={stampSurface} />
+            </div>
+          </FieldTap>
         ) : null}
 
         {/* Footer — FILME 락업(컨텍스트) / 바코드 + 서명(라벨) */}
@@ -239,17 +264,25 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
             <span style={{ fontWeight: 800, fontSize: 20, fontFamily: FONT_SANS, letterSpacing: 3, color: ink }}>FILME</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 14, minWidth: 0 }}>
-            {(fv?.bookingNo ?? true) && <Barcode value={bookingNo} color={ink} width={268} height={54} textSize={19} />}
+            {(fv?.bookingNo ?? true) && (
+              <FieldTap field="bookingNo" onField={onField}>
+                <Barcode value={bookingNo} color={ink} width={268} height={54} textSize={19} />
+              </FieldTap>
+            )}
             {signatureVal ? (
-              <div style={{ textAlign: 'right', maxWidth: 440, minWidth: 0 }}>
-                <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 23, opacity: 0.6, color: ink, marginRight: 10 }}>collected by</span>
-                <span style={{ fontWeight: 500, fontSize: 30, fontFamily: FONT_KR, color: ink, letterSpacing: -0.2 }}>{signatureVal}</span>
-              </div>
+              <FieldTap field="signature" onField={onField}>
+                <div style={{ textAlign: 'right', maxWidth: 440, minWidth: 0 }}>
+                  <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 23, opacity: 0.6, color: ink, marginRight: 10 }}>collected by</span>
+                  <span style={{ fontWeight: 500, fontSize: 30, fontFamily: FONT_KR, color: ink, letterSpacing: -0.2 }}>{signatureVal}</span>
+                </div>
+              </FieldTap>
             ) : gSignature ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10 }}>
-                <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 23, opacity: 0.6, color: ink }}>collected by</span>
-                <FieldGhost text="SIGNATURE" width={200} height={34} surface={stampSurface} />
-              </div>
+              <FieldTap field="signature" onField={onField}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10 }}>
+                  <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 23, opacity: 0.6, color: ink }}>collected by</span>
+                  <FieldGhost text="SIGNATURE" width={200} height={34} surface={stampSurface} />
+                </div>
+              </FieldTap>
             ) : null}
           </div>
         </div>
