@@ -2,6 +2,7 @@ import { Fragment } from 'react';
 import {
   Barcode,
   ChainStamp,
+  FieldGhost,
   FONT_DISPLAY,
   FONT_KR,
   FONT_MONO,
@@ -14,6 +15,8 @@ import {
   pickTitleSize,
   resolveInk,
   resolveTicketData,
+  showFieldGhost,
+  stampWillRender,
   truncateActors,
 } from './_shared';
 
@@ -23,7 +26,7 @@ import {
  * 대신 스파인을 원제(titleOg)·연도의 진짜 DVD 스파인처럼 구성, 중앙 eyebrow는 "from a film diary"로
  * 교체, 서명에 'collected by' 라벨, FILME에 phototicket 컨텍스트. 데이터=Pretendard, 장식=Instrument Serif.
  */
-export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv }: MoodProps) {
+export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
   const inkIsDark = isInkDark(themeColor);
   const ink = resolveInk(themeColor, inkIsDark ? '#0d0c0a' : '#FFFFFF');
@@ -51,20 +54,28 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
   const signatureVal   = gate(fv?.signature, d.signature);
   const ratingVisible  = (fv?.rating ?? true) && d.rating > 0;
 
+  // 빈 항목 미리보기(#216) — 아톰 슬롯 판정. 셀 행은 아래에서 개별 게이팅.
+  const ghostOn = ghost === true;
+  const gTitle     = showFieldGhost(fv?.title, d.title, ghost);
+  const gTitleOg   = showFieldGhost(fv?.titleOg, d.titleOg, ghost);
+  const gActors    = showFieldGhost(fv?.actors, d.actors, ghost);
+  const gSignature = showFieldGhost(fv?.signature, d.signature, ghost);
+
   // 스파인 임프린트 — 넘버링 없이 원제(없으면 제목)로 진짜 카탈로그 스파인처럼.
   const spineText = titleOgVal || titleVal;
 
-  // mono 캡스 메타 — 존재하는 행만.
+  // mono 캡스 메타 — 값이 있거나 ghost 행일 때만. ghost 행은 값이 비었고 기여 필드가 visible일 때.
+  const ratingText = ratingVisible ? `★ ${d.rating.toFixed(1)} / 5.0` : '';
   const venueLine = [theaterVal, screenVal, seatVal].filter(Boolean).join('  ·  ');
-  const screeningRows = [
-    { label: 'VENUE', value: venueLine },
-    { label: 'WATCHED', value: watchDateVal },
-  ].filter(r => r.value);
-  const filmRows = [
-    { label: 'RATED', value: ratingVisible ? `★ ${d.rating.toFixed(1)} / 5.0` : '' },
-    { label: 'RELEASED', value: releaseDateVal },
-    { label: 'RE-REL.', value: reissueVal },
-  ].filter(r => r.value);
+  const screeningRows: { label: string; value?: string; ghost?: boolean }[] = [
+    { label: 'VENUE', value: venueLine, ghost: ghostOn && !venueLine && (fv?.theater !== false || fv?.screen !== false || fv?.seat !== false) },
+    { label: 'WATCHED', value: watchDateVal, ghost: ghostOn && !watchDateVal && fv?.watchDate !== false },
+  ].filter(r => r.value || r.ghost);
+  const filmRows: { label: string; value?: string; ghost?: boolean }[] = [
+    { label: 'RATED', value: ratingText, ghost: ghostOn && !ratingText && fv?.rating !== false },
+    { label: 'RELEASED', value: releaseDateVal, ghost: ghostOn && !releaseDateVal && fv?.releaseDate !== false },
+    { label: 'RE-REL.', value: reissueVal, ghost: ghostOn && !reissueVal && !!d.isReissue && fv?.reissue !== false },
+  ].filter(r => r.value || r.ghost);
 
   const componentOpacity = components.componentOpacity ?? 1;
 
@@ -98,9 +109,9 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
 
       {/* Top-right paired stamps */}
       <div style={{ position: 'absolute', right: 44, top: 40, display: 'flex', alignItems: 'center', gap: 16 }}>
-        <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={50} surface={stampSurface} />
-        {components.chainVisible && components.formatVisible && <span style={{ width: 1, height: 30, background: ink, opacity: 0.55 }} />}
-        <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.9} surface={stampSurface} />
+        <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={50} surface={stampSurface} ghost={ghost} />
+        {stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost) && stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost) && <span style={{ width: 1, height: 30, background: ink, opacity: 0.55 }} />}
+        <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.9} surface={stampSurface} ghost={ghost} />
       </div>
 
       {/* Title block — catalog double-rule frame */}
@@ -112,22 +123,35 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
           from a film diary
         </div>
 
-        {titleVal && (
+        {titleVal ? (
           <div style={{ fontWeight: 800, fontSize: titleSize, fontFamily: FONT_KR, lineHeight: 1.05, letterSpacing: titleLen > 8 ? -1.5 : 1, marginBottom: 18, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
             {titleVal}
           </div>
-        )}
-        {titleOgVal && (
+        ) : gTitle ? (
+          <div style={{ marginBottom: 18 }}>
+            <FieldGhost text="TITLE" width="66%" height={72} size={2} surface={stampSurface} />
+          </div>
+        ) : null}
+        {titleOgVal ? (
           <div style={{ fontWeight: 500, fontSize: 28, fontFamily: FONT_SANS, letterSpacing: 1, opacity: 0.7, marginBottom: 18, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {titleOgVal}
           </div>
-        )}
-        {actorsVal && (
+        ) : gTitleOg ? (
+          <div style={{ marginBottom: 18 }}>
+            <FieldGhost text="ORIGINAL TITLE" width={280} height={32} surface={stampSurface} />
+          </div>
+        ) : null}
+        {actorsVal ? (
           <div style={{ marginBottom: 22, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
             <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 28, opacity: 0.75, marginRight: 12 }}>featuring</span>
             <span style={{ fontWeight: 500, fontSize: 30, fontFamily: FONT_KR, opacity: 0.85 }}>{actorsVal}</span>
           </div>
-        )}
+        ) : gActors ? (
+          <div style={{ marginBottom: 22, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 28, opacity: 0.75 }}>featuring</span>
+            <FieldGhost text="CAST" width={260} height={36} surface={stampSurface} />
+          </div>
+        ) : null}
 
         <div style={{ height: 3, background: ink, opacity: 0.6, marginBottom: 4 }} />
         <div style={{ height: 1, background: ink, opacity: 0.6 }} />
@@ -140,7 +164,9 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
             {screeningRows.map((r, i) => (
               <Fragment key={i}>
                 <div style={{ fontWeight: 700, fontSize: 19, fontFamily: FONT_MONO, letterSpacing: 2, textTransform: 'uppercase', opacity: 0.55 }}>{r.label}</div>
-                <div style={{ fontWeight: 700, fontSize: 28, fontFamily: FONT_SANS, letterSpacing: -0.2, opacity: 0.95, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.value}</div>
+                {r.ghost
+                  ? <FieldGhost width={180} height={32} surface={stampSurface} />
+                  : <div style={{ fontWeight: 700, fontSize: 28, fontFamily: FONT_SANS, letterSpacing: -0.2, opacity: 0.95, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.value}</div>}
               </Fragment>
             ))}
           </div>
@@ -153,7 +179,9 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
             {filmRows.map((r, i) => (
               <Fragment key={i}>
                 <div style={{ fontWeight: 700, fontSize: 19, fontFamily: FONT_MONO, letterSpacing: 2, textTransform: 'uppercase', opacity: 0.55 }}>{r.label}</div>
-                <div style={{ fontWeight: 700, fontSize: 28, fontFamily: FONT_SANS, letterSpacing: -0.2, opacity: 0.95, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.value}</div>
+                {r.ghost
+                  ? <FieldGhost width={180} height={32} surface={stampSurface} />
+                  : <div style={{ fontWeight: 700, fontSize: 28, fontFamily: FONT_SANS, letterSpacing: -0.2, opacity: 0.95, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.value}</div>}
               </Fragment>
             ))}
           </div>
@@ -164,12 +192,17 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
             <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 20, color: ink }}>made with</span>
             <span style={{ fontWeight: 800, fontSize: 20, fontFamily: FONT_SANS, letterSpacing: 3, color: ink }}>FILME</span>
           </div>
-          {signatureVal && (
+          {signatureVal ? (
             <div style={{ textAlign: 'right', maxWidth: 560, minWidth: 0 }}>
               <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 23, opacity: 0.6, color: ink, marginRight: 10 }}>collected by</span>
               <span style={{ fontWeight: 500, fontStyle: 'italic', fontSize: 30, fontFamily: FONT_KR, color: ink, letterSpacing: -0.2 }}>{signatureVal}</span>
             </div>
-          )}
+          ) : gSignature ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10 }}>
+              <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 23, opacity: 0.6, color: ink }}>collected by</span>
+              <FieldGhost text="SIGNATURE" width={200} height={34} surface={stampSurface} />
+            </div>
+          ) : null}
         </div>
       </div>
       </div>

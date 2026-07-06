@@ -7,6 +7,41 @@ export interface MoodProps {
   components: TicketComponents;
   croppedImageUrl: string;
   fieldVisibility?: Record<TicketField, boolean>;
+  /**
+   * 빈 항목 미리보기(ghost, #216). 세 값의 의미가 다르다:
+   * - `undefined`(데스크톱/프롭 미전달): 스탬프 placeholder는 오늘처럼 항상 on, 필드 placeholder는 off → 기존과 픽셀 동일.
+   * - `true`(모바일 ghost on): 스탬프 + 빈 필드 placeholder 모두 표시.
+   * - `false`(모바일 ghost off / 실제 크기 모드): 모든 placeholder 숨김.
+   */
+  ghost?: boolean;
+}
+
+/**
+ * 빈 항목 미리보기(ghost, #216) 판정. visible이면서 값이 비었고 ghost 모드가 켜졌을(===true)
+ * 때만 true — 즉 무드가 해당 필드 슬롯에 자리표시자를 그려야 하는지. ghost가 undefined(데스크톱)나
+ * false면 항상 false라 신규 placeholder는 등장하지 않는다(데스크톱 픽셀 보존).
+ */
+export function showFieldGhost(
+  visible: boolean | undefined,
+  value: unknown,
+  ghost: boolean | undefined
+): boolean {
+  return ghost === true && visible !== false && !value;
+}
+
+/**
+ * ChainStamp/FormatStamp가 실제로 무언가를 렌더하는지(#216). visible이고, 이미지·라벨이 있거나
+ * ghost가 false가 아니라서 placeholder라도 그릴 때 true. 스탬프 사이 구분선은 두 스탬프가 모두
+ * 렌더될 때만 그려야 하므로(둘 중 하나라도 null이면 허공에 뜬 구분선이 남음), 무드가 이 헬퍼로
+ * 구분선을 게이팅한다. 스탬프 내부의 null 판정과 같은 조건이라 단일 소스로 export.
+ */
+export function stampWillRender(
+  visible: boolean | undefined,
+  image: string | undefined,
+  label: string | undefined,
+  ghost: boolean | undefined
+): boolean {
+  return visible !== false && (!!image || !!label || ghost !== false);
 }
 
 /**
@@ -47,6 +82,8 @@ interface ChainStampProps {
   surface?: Surface;
   height?: number;
   visible: boolean;
+  /** 빈 항목 미리보기(#216). false면 dashed placeholder를 숨긴다. undefined/true면 오늘처럼 표시. */
+  ghost?: boolean;
 }
 
 const LOGO_SHADOW = 'drop-shadow(0 2px 8px rgba(0,0,0,0.85))';
@@ -99,7 +136,7 @@ function DashedPlaceholder({
   surface,
 }: {
   text: string;
-  width: number;
+  width: number | string;
   height: number;
   size: number;
   surface: Surface;
@@ -128,6 +165,28 @@ function DashedPlaceholder({
   );
 }
 
+/**
+ * 빈 필드 자리표시자(#216). 값이 비었지만 필드가 visible이고 ghost 모드가 켜졌을 때 무드의 해당
+ * 슬롯에 그리는 대시 박스. 스탬프의 DashedPlaceholder와 동일한 룩·export 제외(data-hide-on-export)를
+ * 공유하되, 필드 슬롯 크기에 맞춰 width/height/size/surface를 받는다. text는 선택(라벨이 이미
+ * 위에 있는 메타 셀은 빈 문자열로 두고, 단독 슬롯은 짧은 힌트를 줄 수 있다).
+ */
+export function FieldGhost({
+  text = '',
+  width = 140,
+  height = 34,
+  size = 1,
+  surface = 'paper',
+}: {
+  text?: string;
+  width?: number | string;
+  height?: number;
+  size?: number;
+  surface?: Surface;
+}) {
+  return <DashedPlaceholder text={text} width={width} height={height} size={size} surface={surface} />;
+}
+
 export function ChainStamp({
   chain,
   label,
@@ -135,11 +194,14 @@ export function ChainStamp({
   surface = 'paper',
   height = 48,
   visible,
+  ghost,
 }: ChainStampProps) {
-  if (!visible) return null;
+  // null 판정을 stampWillRender로 일원화(무드 구분선 게이팅과 동일 조건). 여기를 통과하면
+  // 이미지·라벨·placeholder(ghost!==false) 중 하나는 반드시 렌더된다.
+  if (!stampWillRender(visible, chain, label, ghost)) return null;
   const h = height * size;
 
-  // 우선순위: 이미지 > 텍스트 라벨 > dashed placeholder(미리보기 전용).
+  // 우선순위: 이미지 > 텍스트 라벨 > dashed placeholder(미리보기 전용, ghost!==false 보장됨).
   if (chain) {
     return (
       <img
@@ -170,6 +232,8 @@ interface FormatStampProps {
   size?: number;
   surface?: Surface;
   visible: boolean;
+  /** 빈 항목 미리보기(#216). false면 dashed placeholder를 숨긴다. undefined/true면 오늘처럼 표시. */
+  ghost?: boolean;
 }
 
 export function FormatStamp({
@@ -178,11 +242,14 @@ export function FormatStamp({
   size = 1,
   surface = 'paper',
   visible,
+  ghost,
 }: FormatStampProps) {
-  if (!visible) return null;
+  // null 판정을 stampWillRender로 일원화(무드 구분선 게이팅과 동일 조건). 통과하면
+  // 이미지·라벨·placeholder(ghost!==false) 중 하나는 반드시 렌더된다.
+  if (!stampWillRender(visible, format, label, ghost)) return null;
   const h = 64 * size;
 
-  // 우선순위: 이미지 > 텍스트 라벨 > dashed placeholder(미리보기 전용).
+  // 우선순위: 이미지 > 텍스트 라벨 > dashed placeholder(미리보기 전용, ghost!==false 보장됨).
   if (format) {
     return (
       <img

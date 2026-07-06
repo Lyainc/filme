@@ -2,6 +2,7 @@ import { CSSProperties } from 'react';
 import {
   Barcode,
   ChainStamp,
+  FieldGhost,
   FONT_DISPLAY,
   FONT_KR,
   FONT_SANS,
@@ -13,6 +14,8 @@ import {
   pickTitleSize,
   resolveInk,
   resolveTicketData,
+  showFieldGhost,
+  stampWillRender,
   truncateActors,
 } from './_shared';
 
@@ -58,7 +61,7 @@ function RegistrationMarks({ color }: { color: string }) {
   );
 }
 
-export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv }: MoodProps) {
+export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
   const inkIsDark = isInkDark(themeColor);
   const ink = resolveInk(themeColor, inkIsDark ? '#0d0c0a' : '#FFFFFF');
@@ -91,22 +94,42 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
   const signatureVal   = gate(fv?.signature, d.signature);
   const ratingVisible  = (fv?.rating ?? true) && d.rating > 0;
 
+  // 빈 항목 미리보기(#216) — 아톰 슬롯용 판정. 셀은 아래에서 개별 게이팅.
+  const ghostOn = ghost === true;
+  const gTitle     = showFieldGhost(fv?.title, d.title, ghost);
+  const gTitleOg   = showFieldGhost(fv?.titleOg, d.titleOg, ghost);
+  const gActors    = showFieldGhost(fv?.actors, d.actors, ghost);
+  const gSignature = showFieldGhost(fv?.signature, d.signature, ghost);
+
   // 메타 청킹(#리뷰): 관람(Screening/Venue/Seat) vs 영화(Runtime/Rated/Released)를 분리.
   // 값 폰트는 전부 Pretendard로 통일(숫자·날짜 포함) — 모노는 바코드/일련번호 같은 코드에만.
-  const screeningCells: { label: string; value: string }[] = [];
+  // ghost 셀은 값이 비었고 기여 필드 중 하나라도 visible일 때만(ghostOn), value 없이 push한다.
+  const screeningCells: { label: string; value?: string; ghost?: boolean }[] = [];
   const screening = [watchDateVal, watchTimeVal].filter(Boolean).join('  ');
   if (screening) screeningCells.push({ label: 'Screening', value: screening });
+  else if (ghostOn && (fv?.watchDate !== false || fv?.watchTime !== false)) screeningCells.push({ label: 'Screening', ghost: true });
   const venue = [theaterVal, screenVal].filter(Boolean).join(' · ');
   if (venue) screeningCells.push({ label: 'Venue', value: venue });
+  else if (ghostOn && (fv?.theater !== false || fv?.screen !== false)) screeningCells.push({ label: 'Venue', ghost: true });
   if (seatVal) screeningCells.push({ label: 'Seat', value: seatVal });
+  else if (ghostOn && fv?.seat !== false) screeningCells.push({ label: 'Seat', ghost: true });
 
-  const filmCells: { label: string; value: string }[] = [];
+  const filmCells: { label: string; value?: string; ghost?: boolean }[] = [];
   if (runtimeVal) filmCells.push({ label: 'Runtime', value: runtimeVal });
+  else if (ghostOn && fv?.runtime !== false) filmCells.push({ label: 'Runtime', ghost: true });
   if (ratingVisible) filmCells.push({ label: 'Rated', value: `★ ${d.rating.toFixed(1)}` });
+  else if (ghostOn && fv?.rating !== false) filmCells.push({ label: 'Rated', ghost: true });
   if (releaseDateVal) filmCells.push({ label: 'Released', value: releaseDateVal });
+  else if (ghostOn && fv?.releaseDate !== false) filmCells.push({ label: 'Released', ghost: true });
   if (reissueVal) filmCells.push({ label: 'Re-released', value: reissueVal });
+  else if (ghostOn && d.isReissue && fv?.reissue !== false) filmCells.push({ label: 'Re-released', ghost: true });
 
-  const hasTopStamp = components.chainVisible || components.formatVisible;
+  // 스탬프가 실제로 뭔가(이미지/라벨/고스트 placeholder)를 렌더할 때만 상단 스크림+스탬프 블록을
+  // 낸다. visible 토글만 보면 로고 미업로드+ghost=false에서 빈 스크림만 남는다(#216 리뷰 P1).
+  // ghost=undefined면 stampWillRender가 visible!==false로 붕괴 → 원래 조건과 동일(데스크톱 무손상).
+  const hasTopStamp =
+    stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost) ||
+    stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost);
   const componentOpacity = components.componentOpacity ?? 1;
 
   return (
@@ -123,9 +146,9 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
         <>
           <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 180, background: topScrim, pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', left: 56, top: 44, display: 'flex', alignItems: 'center', gap: 22 }}>
-            <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={54} surface={stampSurface} />
-            {components.chainVisible && components.formatVisible && <span style={{ width: 1, height: 38, background: ink, opacity: 0.5 }} />}
-            <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.9} surface={stampSurface} />
+            <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={54} surface={stampSurface} ghost={ghost} />
+            {stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost) && stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost) && <span style={{ width: 1, height: 38, background: ink, opacity: 0.5 }} />}
+            <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.9} surface={stampSurface} ghost={ghost} />
           </div>
         </>
       )}
@@ -139,16 +162,24 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
           now showing
         </div>
 
-        {titleVal && (
+        {titleVal ? (
           <div style={{ fontWeight: titleLen > 12 ? 400 : 300, fontSize: titleSize, fontFamily: FONT_KR, lineHeight: 1.06, letterSpacing: -1.5, marginBottom: 16, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
             {titleVal}
           </div>
-        )}
-        {titleOgVal && (
+        ) : gTitle ? (
+          <div style={{ marginBottom: 16 }}>
+            <FieldGhost text="TITLE" width="66%" height={84} size={2} surface={stampSurface} />
+          </div>
+        ) : null}
+        {titleOgVal ? (
           <div style={{ fontWeight: 600, fontSize: 26, fontFamily: FONT_SANS, letterSpacing: 2.5, textTransform: 'uppercase', opacity: 0.66, marginBottom: 28, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {titleOgVal}
           </div>
-        )}
+        ) : gTitleOg ? (
+          <div style={{ marginBottom: 28 }}>
+            <FieldGhost text="ORIGINAL TITLE" width={280} height={30} surface={stampSurface} />
+          </div>
+        ) : null}
 
         <div style={{ height: 1, background: ink, opacity: 0.38, marginBottom: 26 }} />
 
@@ -160,7 +191,11 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
                 {screeningCells.map((c, i) => (
                   <div key={i} style={{ minWidth: 0 }}>
                     <div style={labelSerif(ink)}>{c.label}</div>
-                    <div style={{ ...metaValue, maxWidth: 560, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.value}</div>
+                    {c.ghost ? (
+                      <FieldGhost width={200} height={46} surface={stampSurface} />
+                    ) : (
+                      <div style={{ ...metaValue, maxWidth: 560, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.value}</div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -173,7 +208,11 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
                 {filmCells.map((c, i) => (
                   <div key={i} style={{ minWidth: 0 }}>
                     <div style={labelSerif(ink)}>{c.label}</div>
-                    <div style={{ ...metaValue, maxWidth: 560, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.value}</div>
+                    {c.ghost ? (
+                      <FieldGhost width={200} height={46} surface={stampSurface} />
+                    ) : (
+                      <div style={{ ...metaValue, maxWidth: 560, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.value}</div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -181,12 +220,17 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
           </div>
         )}
 
-        {actorsVal && (
+        {actorsVal ? (
           <div style={{ marginBottom: 30, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
             <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 30, opacity: 0.7, marginRight: 14 }}>with</span>
             <span style={{ fontWeight: 500, fontSize: 32, fontFamily: FONT_KR, opacity: 0.86, letterSpacing: -0.2 }}>{actorsVal}</span>
           </div>
-        )}
+        ) : gActors ? (
+          <div style={{ marginBottom: 30, display: 'flex', alignItems: 'center', gap: 14 }}>
+            <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 30, opacity: 0.7 }}>with</span>
+            <FieldGhost text="CAST" width={260} height={36} surface={stampSurface} />
+          </div>
+        ) : null}
 
         {/* Footer — FILME 락업(컨텍스트) / 바코드 + 서명(라벨) */}
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 32 }}>
@@ -196,12 +240,17 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 14, minWidth: 0 }}>
             {(fv?.bookingNo ?? true) && <Barcode value={bookingNo} color={ink} width={268} height={54} textSize={19} />}
-            {signatureVal && (
+            {signatureVal ? (
               <div style={{ textAlign: 'right', maxWidth: 440, minWidth: 0 }}>
                 <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 23, opacity: 0.6, color: ink, marginRight: 10 }}>collected by</span>
                 <span style={{ fontWeight: 500, fontSize: 30, fontFamily: FONT_KR, color: ink, letterSpacing: -0.2 }}>{signatureVal}</span>
               </div>
-            )}
+            ) : gSignature ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10 }}>
+                <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 23, opacity: 0.6, color: ink }}>collected by</span>
+                <FieldGhost text="SIGNATURE" width={200} height={34} surface={stampSurface} />
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
