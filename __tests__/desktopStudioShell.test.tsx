@@ -93,3 +93,28 @@ describe('DesktopStudioShell (#224)', () => {
     expect(screen.queryByRole('button', { name: '티켓 완성' })).toBeNull();
   });
 });
+
+describe('DesktopStudioShell — 전체 표시/숨김 토글 (#227)', () => {
+  test('전체 숨김 → 제목(필수) 제외 모든 필드 eye off + 라벨 전환, 재클릭 시 복귀', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(screen.getByRole('button', { name: 'INFO' }));
+
+    const seatEye = () => screen.getByRole('checkbox', { name: '좌석 티켓에 표시' }) as HTMLInputElement;
+    const titleEye = () => screen.getByRole('checkbox', { name: '제목 티켓에 표시' }) as HTMLInputElement;
+
+    // 초기: 모두 표시(ALL_FIELDS_ON) → 버튼 라벨 '전체 숨김', 좌석·제목 eye 켜짐.
+    expect(seatEye().checked).toBe(true);
+    expect(titleEye().checked).toBe(true);
+
+    await user.click(screen.getByRole('button', { name: '전체 숨김' }));
+
+    // 좌석은 꺼지고 제목(필수)은 유지 — 라벨은 '전체 표시'로.
+    expect(seatEye().checked).toBe(false);
+    expect(titleEye().checked).toBe(true);
+
+    // 재클릭 → 전체 표시 복귀.
+    await user.click(screen.getByRole('button', { name: '전체 표시' }));
+    expect(seatEye().checked).toBe(true);
+  });
+});
