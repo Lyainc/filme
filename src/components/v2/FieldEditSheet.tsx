@@ -1,10 +1,10 @@
 import { Drawer } from 'vaul';
 import dynamic from 'next/dynamic';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import type { usePhototicket } from '@/hooks/usePhototicket';
-import type { DateFormatToken, DateGranularity, KobisMovie, MovieInfo, TicketComponents, TicketField } from '@/types';
+import type { DateFormatToken, DateGranularity, MovieInfo, TicketComponents, TicketField } from '@/types';
 import { formatDate, openDtToIso } from '@/utils/dateFormat';
-import { extractKobisActorsRuntime } from '@/utils/kobisLookup';
+import { useKobisSearch } from '@/hooks/useKobisSearch';
 import { useLogoCrop } from '@/hooks/useLogoCrop';
 import { DateInput } from '@/components/MovieInfoForm';
 import RatingPicker from '@/components/wizard/RatingPicker';
@@ -168,80 +168,12 @@ function TextSheet({ field, photo }: { field: TicketField; photo: Photo }) {
 /** 제목 — 텍스트 입력 + KOBIS 검색(디바운스 → 결과 목록 → 선택 시 제목/원제/개봉일/출연/러닝타임 채움). */
 function TitleSheet({ photo }: { photo: Photo }) {
   const title = photo.state.movieInfo.title;
-  const [results, setResults] = useState<KobisMovie[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(false);
-  const [error, setError] = useState('');
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
-  // 상세 fetch 경합 가드 — 오래된 응답이 최신 선택을 덮어쓰지 않게(MovieInfoForm 패턴).
-  const detailRunRef = useRef(0);
-
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-      abortRef.current?.abort();
-    };
-  }, []);
-
-  async function search(term: string) {
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-    setLoading(true);
-    setError('');
-    setOpen(true);
-    try {
-      const res = await fetch(`/api/kobis/search?movieNm=${encodeURIComponent(term)}`, {
-        signal: controller.signal,
-      });
-      if (!res.ok) throw new Error('search failed');
-      const data = await res.json();
-      const list: KobisMovie[] = data.movieListResult?.movieList || [];
-      setResults(list);
-      if (list.length === 0) setError('검색 결과가 없어요.');
-    } catch (e) {
-      if (e instanceof Error && e.name === 'AbortError') return;
-      setResults([]);
-      setError('검색 중 문제가 생겼어요.');
-    } finally {
-      if (abortRef.current === controller) setLoading(false);
-    }
-  }
-
-  function scheduleSearch(term: string) {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    if (!term) {
-      setOpen(false);
-      return;
-    }
-    timerRef.current = setTimeout(() => search(term), 300);
-  }
-
-  async function selectMovie(movie: KobisMovie) {
-    const iso = openDtToIso(movie.openDt);
-    photo.updateMovieInfo({
-      title: movie.movieNm,
-      titleOg: movie.movieNmEn || '',
-      releaseDate: iso,
-      releaseDateGranularity: iso ? 'date' : undefined,
-    });
-    setOpen(false);
-
-    const runId = ++detailRunRef.current;
-    try {
-      const res = await fetch(`/api/kobis/detail?movieCd=${movie.movieCd}`);
-      if (detailRunRef.current !== runId || !res.ok) return;
-      const data = await res.json();
-      if (detailRunRef.current !== runId) return;
-      const info = data.movieInfoResult?.movieInfo;
-      if (!info) return;
-      const { actors, runtime } = extractKobisActorsRuntime(info);
-      photo.updateMovieInfo({ actors, ...(runtime ? { runtime } : {}) });
-    } catch {
-      // 상세 실패는 무시 — 검색 결과의 제목/원제/개봉일은 이미 반영됨.
-    }
-  }
+  // 검색 코어는 데스크톱 폼과 공용 훅을 쓴다(#242 drift 방지). 시트는 축소판 UX라
+  // 키보드 내비·pending 게이팅 없이 에러 문구만 캐주얼 톤으로.
+  const { results, loading, error, open, scheduleSearch, runSearch, selectMovie } = useKobisSearch({
+    apply: photo.updateMovieInfo,
+    messages: { noResults: '검색 결과가 없어요.', requestFailed: '검색 중 문제가 생겼어요.' },
+  });
 
   return (
     <div className="space-y-3">
@@ -269,10 +201,7 @@ function TitleSheet({ photo }: { photo: Photo }) {
         <span>KOBIS 검색</span>
         <button
           type="button"
-          onClick={() => {
-            if (timerRef.current) clearTimeout(timerRef.current);
-            if (title.trim()) search(title.trim());
-          }}
+          onClick={() => runSearch(title.trim())}
           className="rounded-chip bg-accent px-3 py-1.5 text-white transition-colors hover:bg-accent-hover"
         >
           ↗ 검색
