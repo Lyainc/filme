@@ -1,8 +1,10 @@
 import { CSSProperties } from 'react';
+import type { SheetTarget } from '@/constants/fields';
 import {
   Barcode,
   ChainStamp,
   FieldGhost,
+  FieldTap,
   FONT_DISPLAY,
   FONT_KR,
   FONT_MONO,
@@ -13,6 +15,7 @@ import {
   Poster,
   gate,
   pickTitleSize,
+  posterTapProps,
   resolveInk,
   resolveTicketData,
   showFieldGhost,
@@ -35,7 +38,7 @@ const PERF_W = 14;
 const MAIN_W = 813;
 const STUB_W = 212;
 
-export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost }: MoodProps) {
+export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
   const accent = themeColor.toLowerCase() === '#ffffff' ? '#a8312a' : resolveInk(themeColor, '#a8312a');
   const titleSize = pickTitleSize(d.title.length, [116, 100, 82, 66]);
@@ -69,15 +72,16 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
   const gSignature = showFieldGhost(fv?.signature, d.signature, ghost);
 
   // 관람(screening) 메타 셀 — 값은 Pretendard로 통일. ghost 셀은 값이 비었고 기여 필드가 visible일 때.
-  const cells: { label: string; value?: string; sub?: string; ghost?: boolean }[] = [];
+  // 합쳐진 셀(Théâtre=극장+상영관, Séance=관람일+시간)은 대표 필드로 탭 매핑(#259).
+  const cells: { label: string; value?: string; sub?: string; ghost?: boolean; field: SheetTarget }[] = [];
   const theaterValue = theaterVal || screenVal;
-  if (theaterValue) cells.push({ label: theaterVal ? 'Théâtre' : 'Salle', value: theaterValue, sub: theaterVal ? screenVal : '' });
-  else if (ghostOn && (fv?.theater !== false || fv?.screen !== false)) cells.push({ label: 'Théâtre', ghost: true });
+  if (theaterValue) cells.push({ label: theaterVal ? 'Théâtre' : 'Salle', value: theaterValue, sub: theaterVal ? screenVal : '', field: 'theater' });
+  else if (ghostOn && (fv?.theater !== false || fv?.screen !== false)) cells.push({ label: 'Théâtre', ghost: true, field: 'theater' });
   const sessionValue = watchDateVal || watchTimeVal;
-  if (sessionValue) cells.push({ label: watchDateVal ? 'Séance' : 'Heure', value: sessionValue, sub: watchDateVal ? watchTimeVal : '' });
-  else if (ghostOn && (fv?.watchDate !== false || fv?.watchTime !== false)) cells.push({ label: 'Séance', ghost: true });
-  if (seatVal) cells.push({ label: 'Place', value: seatVal });
-  else if (ghostOn && fv?.seat !== false) cells.push({ label: 'Place', ghost: true });
+  if (sessionValue) cells.push({ label: watchDateVal ? 'Séance' : 'Heure', value: sessionValue, sub: watchDateVal ? watchTimeVal : '', field: 'watchDate' });
+  else if (ghostOn && (fv?.watchDate !== false || fv?.watchTime !== false)) cells.push({ label: 'Séance', ghost: true, field: 'watchDate' });
+  if (seatVal) cells.push({ label: 'Place', value: seatVal, field: 'seat' });
+  else if (ghostOn && fv?.seat !== false) cells.push({ label: 'Place', ghost: true, field: 'seat' });
 
   const releaseLine = [
     releaseDateVal && `Sortie ${releaseDateVal}`,
@@ -94,8 +98,8 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
 
   return (
     <div style={{ position: 'absolute', inset: 0, background: PAPER, color: PAPER_DEEP, fontFamily: FONT_SANS, overflow: 'hidden', display: 'flex' }}>
-      {/* A: Poster */}
-      <div style={{ flex: `0 0 ${POSTER_W}px`, position: 'relative', background: '#0a0a0a', overflow: 'hidden' }}>
+      {/* A: Poster — 포스터 컬럼에만 탭(#259). 풀블리드 무드와 달리 editorial은 3열이라 root가 아닌 이 열에. */}
+      <div style={{ flex: `0 0 ${POSTER_W}px`, position: 'relative', background: '#0a0a0a', overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
         <Poster src={croppedImageUrl} texture={components.texture} posterOpacity={components.posterOpacity} />
         <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: PERF_W }}>
           <PerforationStrip vertical count={42} color={PAPER} background="transparent" />
@@ -108,10 +112,26 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 18, paddingBottom: 18 }}>
           <div style={{ ...italicLabel(accent, 36) }}>le billet</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 16 }}>
-            {filmSummary && <span style={{ fontWeight: 600, fontSize: 24, fontFamily: FONT_SANS, color: PAPER_DIM, letterSpacing: -0.2 }}>{filmSummary}</span>}
-            {!filmSummary && gRuntime && <FieldGhost text="RUNTIME" width={110} height={30} surface="paper" />}
-            {ratingVisible && <span style={{ fontWeight: 800, fontSize: 34, fontFamily: FONT_SANS, letterSpacing: 0.5, color: accent }}>★ {d.rating.toFixed(1)}</span>}
-            {!ratingVisible && gRating && <FieldGhost text="★" width={64} height={38} surface="paper" />}
+            {filmSummary && (
+              <FieldTap field="runtime" onField={onField}>
+                <span style={{ fontWeight: 600, fontSize: 24, fontFamily: FONT_SANS, color: PAPER_DIM, letterSpacing: -0.2 }}>{filmSummary}</span>
+              </FieldTap>
+            )}
+            {!filmSummary && gRuntime && (
+              <FieldTap field="runtime" onField={onField}>
+                <FieldGhost text="RUNTIME" width={110} height={30} surface="paper" />
+              </FieldTap>
+            )}
+            {ratingVisible && (
+              <FieldTap field="rating" onField={onField}>
+                <span style={{ fontWeight: 800, fontSize: 34, fontFamily: FONT_SANS, letterSpacing: 0.5, color: accent }}>★ {d.rating.toFixed(1)}</span>
+              </FieldTap>
+            )}
+            {!ratingVisible && gRating && (
+              <FieldTap field="rating" onField={onField}>
+                <FieldGhost text="★" width={64} height={38} surface="paper" />
+              </FieldTap>
+            )}
           </div>
         </div>
 
@@ -121,43 +141,59 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
         {/* Film chunk — title, original title, cast, release */}
         <div style={{ marginTop: 24 }}>
           {titleVal ? (
-            <div style={{ fontWeight: 900, fontSize: titleSize, fontFamily: FONT_KR, lineHeight: 1.0, letterSpacing: -1.5, paddingBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-              {titleVal}
-            </div>
+            <FieldTap field="title" onField={onField}>
+              <div style={{ fontWeight: 900, fontSize: titleSize, fontFamily: FONT_KR, lineHeight: 1.0, letterSpacing: -1.5, paddingBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                {titleVal}
+              </div>
+            </FieldTap>
           ) : gTitle ? (
-            <FieldGhost text="TITLE" width="60%" height={72} size={2} surface="paper" />
+            <FieldTap field="title" onField={onField}>
+              <FieldGhost text="TITLE" width="60%" height={72} size={2} surface="paper" />
+            </FieldTap>
           ) : null}
           {titleOgVal ? (
-            <div style={{ marginTop: 12, ...italicLabel(PAPER_DEEP, 30), opacity: 0.62, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {titleOgVal}
-            </div>
+            <FieldTap field="titleOg" onField={onField}>
+              <div style={{ marginTop: 12, ...italicLabel(PAPER_DEEP, 30), opacity: 0.62, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {titleOgVal}
+              </div>
+            </FieldTap>
           ) : gTitleOg ? (
-            <div style={{ marginTop: 12 }}>
-              <FieldGhost text="ORIGINAL TITLE" width={280} height={32} surface="paper" />
-            </div>
+            <FieldTap field="titleOg" onField={onField}>
+              <div style={{ marginTop: 12 }}>
+                <FieldGhost text="ORIGINAL TITLE" width={280} height={32} surface="paper" />
+              </div>
+            </FieldTap>
           ) : null}
         </div>
 
         {actorsVal ? (
-          <div style={{ marginTop: 20 }}>
-            <span style={{ ...italicLabel(accent, 26), marginRight: 12 }}>avec</span>
-            <span style={{ fontWeight: 500, fontSize: 34, fontFamily: FONT_KR, letterSpacing: -0.2, lineHeight: 1.25 }}>{actorsVal}</span>
-          </div>
+          <FieldTap field="actors" onField={onField}>
+            <div style={{ marginTop: 20 }}>
+              <span style={{ ...italicLabel(accent, 26), marginRight: 12 }}>avec</span>
+              <span style={{ fontWeight: 500, fontSize: 34, fontFamily: FONT_KR, letterSpacing: -0.2, lineHeight: 1.25 }}>{actorsVal}</span>
+            </div>
+          </FieldTap>
         ) : gActors ? (
-          <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ ...italicLabel(accent, 26) }}>avec</span>
-            <FieldGhost text="CAST" width={280} height={40} surface="paper" />
-          </div>
+          <FieldTap field="actors" onField={onField}>
+            <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ ...italicLabel(accent, 26) }}>avec</span>
+              <FieldGhost text="CAST" width={280} height={40} surface="paper" />
+            </div>
+          </FieldTap>
         ) : null}
 
         {releaseLine ? (
-          <div style={{ marginTop: 16, fontWeight: 600, fontSize: 26, fontFamily: FONT_SANS, letterSpacing: -0.2, color: PAPER_DIM }}>
-            {releaseLine}
-          </div>
+          <FieldTap field="releaseDate" onField={onField}>
+            <div style={{ marginTop: 16, fontWeight: 600, fontSize: 26, fontFamily: FONT_SANS, letterSpacing: -0.2, color: PAPER_DIM }}>
+              {releaseLine}
+            </div>
+          </FieldTap>
         ) : gReleaseLine ? (
-          <div style={{ marginTop: 16 }}>
-            <FieldGhost text="RELEASE" width={220} height={32} surface="paper" />
-          </div>
+          <FieldTap field="releaseDate" onField={onField}>
+            <div style={{ marginTop: 16 }}>
+              <FieldGhost text="RELEASE" width={220} height={32} surface="paper" />
+            </div>
+          </FieldTap>
         ) : null}
 
         {/* Chunk divider — film ↕ screening */}
@@ -167,21 +203,23 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
         {cells.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '22px 52px' }}>
             {cells.map((c, i) => (
-              <div key={i} style={{ minWidth: 0, flex: '0 1 auto' }}>
-                <div style={{ ...italicLabel(PAPER_DIM, 28), marginBottom: 6 }}>{c.label}</div>
-                {c.ghost ? (
-                  <FieldGhost width={220} height={46} surface="paper" />
-                ) : (
-                  <div style={{ fontWeight: 800, fontSize: 42, fontFamily: FONT_SANS, letterSpacing: -0.5, lineHeight: 1.05, color: PAPER_DEEP, maxWidth: 440, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {c.value}
-                  </div>
-                )}
-                {c.sub && (
-                  <div style={{ marginTop: 6, fontWeight: 600, fontSize: 26, fontFamily: FONT_SANS, letterSpacing: -0.2, color: PAPER_DIM, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {c.sub}
-                  </div>
-                )}
-              </div>
+              <FieldTap key={i} field={c.field} onField={onField}>
+                <div style={{ minWidth: 0, flex: '0 1 auto' }}>
+                  <div style={{ ...italicLabel(PAPER_DIM, 28), marginBottom: 6 }}>{c.label}</div>
+                  {c.ghost ? (
+                    <FieldGhost width={220} height={46} surface="paper" />
+                  ) : (
+                    <div style={{ fontWeight: 800, fontSize: 42, fontFamily: FONT_SANS, letterSpacing: -0.5, lineHeight: 1.05, color: PAPER_DEEP, maxWidth: 440, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {c.value}
+                    </div>
+                  )}
+                  {c.sub && (
+                    <div style={{ marginTop: 6, fontWeight: 600, fontSize: 26, fontFamily: FONT_SANS, letterSpacing: -0.2, color: PAPER_DIM, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {c.sub}
+                    </div>
+                  )}
+                </div>
+              </FieldTap>
             ))}
           </div>
         )}
@@ -196,17 +234,21 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
           </div>
           <div style={{ textAlign: 'right', minWidth: 0 }}>
             {signatureVal ? (
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: 12, marginBottom: 5 }}>
-                <span style={{ ...italicLabel(accent, 28), flexShrink: 0 }}>par</span>
-                <span style={{ fontWeight: 500, fontSize: 34, fontFamily: FONT_KR, color: PAPER_DEEP, letterSpacing: -0.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 360 }}>
-                  {signatureVal}
-                </span>
-              </div>
+              <FieldTap field="signature" onField={onField}>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: 12, marginBottom: 5 }}>
+                  <span style={{ ...italicLabel(accent, 28), flexShrink: 0 }}>par</span>
+                  <span style={{ fontWeight: 500, fontSize: 34, fontFamily: FONT_KR, color: PAPER_DEEP, letterSpacing: -0.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 360 }}>
+                    {signatureVal}
+                  </span>
+                </div>
+              </FieldTap>
             ) : gSignature ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12, marginBottom: 5 }}>
-                <span style={{ ...italicLabel(accent, 28), flexShrink: 0 }}>par</span>
-                <FieldGhost text="SIGNATURE" width={200} height={36} surface="paper" />
-              </div>
+              <FieldTap field="signature" onField={onField}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12, marginBottom: 5 }}>
+                  <span style={{ ...italicLabel(accent, 28), flexShrink: 0 }}>par</span>
+                  <FieldGhost text="SIGNATURE" width={200} height={36} surface="paper" />
+                </div>
+              </FieldTap>
             ) : null}
             <div style={{ ...italicLabel(PAPER_DIM, 26) }}>non-transférable</div>
           </div>
@@ -227,16 +269,24 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
               영화관(체인)이 포맷보다 위(=먼저)에 오도록 그룹 내 순서는 format→chain. */}
           <div style={{ transform: 'rotate(-90deg)', display: 'flex', alignItems: 'center', gap: 34, whiteSpace: 'nowrap' }}>
             {(fv?.bookingNo ?? true) && (
-              <span style={{ fontWeight: 700, fontSize: 22, fontFamily: FONT_MONO, letterSpacing: 2, color: PAPER_DEEP }}>No. {bookingNo}</span>
+              <FieldTap field="bookingNo" onField={onField}>
+                <span style={{ fontWeight: 700, fontSize: 22, fontFamily: FONT_MONO, letterSpacing: 2, color: PAPER_DEEP }}>No. {bookingNo}</span>
+              </FieldTap>
             )}
             {(fv?.bookingNo ?? true) && (
-              <Barcode value={bookingNo} color={PAPER_DEEP} orientation="horizontal" width={336} height={58} showText={false} />
+              <FieldTap field="bookingNo" onField={onField}>
+                <Barcode value={bookingNo} color={PAPER_DEEP} orientation="horizontal" width={336} height={58} showText={false} />
+              </FieldTap>
             )}
             {stubHasStamp && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-                <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.75} ghost={ghost} />
+                <FieldTap field="format" onField={onField}>
+                  <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.75} ghost={ghost} />
+                </FieldTap>
                 {stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost) && stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost) && <span style={{ width: 1, height: 34, background: PAPER_DEEP, opacity: 0.3 }} />}
-                <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={48} ghost={ghost} />
+                <FieldTap field="chain" onField={onField}>
+                  <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={48} ghost={ghost} />
+                </FieldTap>
               </div>
             )}
             <span style={{ ...italicLabel(accent, 40) }}>admis</span>

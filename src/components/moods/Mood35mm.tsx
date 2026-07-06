@@ -1,8 +1,10 @@
 import { CSSProperties } from 'react';
+import type { SheetTarget } from '@/constants/fields';
 import {
   Barcode,
   ChainStamp,
   FieldGhost,
+  FieldTap,
   FONT_KR,
   FONT_MONO,
   FONT_SANS,
@@ -12,6 +14,7 @@ import {
   Poster,
   gate,
   pickTitleSize,
+  posterTapProps,
   resolveTicketData,
   showFieldGhost,
   stampWillRender,
@@ -40,7 +43,7 @@ const cellLabel: CSSProperties = {
   marginBottom: 6,
 };
 
-export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost }: MoodProps) {
+export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap }: MoodProps) {
   const titleSize = pickTitleSize(d.title.length, [104, 84, 66, 54]);
 
   const captionScrim =
@@ -72,27 +75,28 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
   // 청킹: 관람(Exhibited/Screened) vs 영화(Runtime/Released/Starring). 값은 Pretendard로 통일
   // (한글이 모노 스택에서 깨지던 문제 해소). 모노는 스프로킷·일련번호·원형 스탬프 등 필름 크롬에만.
   // ghost 셀은 값이 비었고 기여 필드가 visible일 때만 push(value 없이).
-  const screeningCells: { label: string; value?: string; cast?: boolean; full?: boolean; ghost?: boolean }[] = [];
+  // 합쳐진 셀(Exhibited=극장+상영관+좌석, Screened=관람일+시간)은 대표 필드로 탭 매핑(#259).
+  const screeningCells: { label: string; value?: string; cast?: boolean; full?: boolean; ghost?: boolean; field: SheetTarget }[] = [];
   const exhibited = [theaterVal, screenVal, seatVal].filter(Boolean).join(' · ');
-  if (exhibited) screeningCells.push({ label: 'Exhibited', value: exhibited });
-  else if (ghostOn && (fv?.theater !== false || fv?.screen !== false || fv?.seat !== false)) screeningCells.push({ label: 'Exhibited', ghost: true });
+  if (exhibited) screeningCells.push({ label: 'Exhibited', value: exhibited, field: 'theater' });
+  else if (ghostOn && (fv?.theater !== false || fv?.screen !== false || fv?.seat !== false)) screeningCells.push({ label: 'Exhibited', ghost: true, field: 'theater' });
   const screened = [watchDateVal, watchTimeVal].filter(Boolean).join(' · ');
-  if (screened) screeningCells.push({ label: 'Screened', value: screened });
-  else if (ghostOn && (fv?.watchDate !== false || fv?.watchTime !== false)) screeningCells.push({ label: 'Screened', ghost: true });
+  if (screened) screeningCells.push({ label: 'Screened', value: screened, field: 'watchDate' });
+  else if (ghostOn && (fv?.watchDate !== false || fv?.watchTime !== false)) screeningCells.push({ label: 'Screened', ghost: true, field: 'watchDate' });
 
-  const filmCells: { label: string; value?: string; cast?: boolean; full?: boolean; ghost?: boolean }[] = [];
-  if (runtimeVal) filmCells.push({ label: 'Runtime', value: runtimeVal });
-  else if (ghostOn && fv?.runtime !== false) filmCells.push({ label: 'Runtime', ghost: true });
+  const filmCells: { label: string; value?: string; cast?: boolean; full?: boolean; ghost?: boolean; field: SheetTarget }[] = [];
+  if (runtimeVal) filmCells.push({ label: 'Runtime', value: runtimeVal, field: 'runtime' });
+  else if (ghostOn && fv?.runtime !== false) filmCells.push({ label: 'Runtime', ghost: true, field: 'runtime' });
   const released = [releaseDateVal, reissueVal && `재개봉 ${reissueVal}`].filter(Boolean).join(' · ');
-  if (released) filmCells.push({ label: 'Released', value: released });
-  else if (ghostOn && (fv?.releaseDate !== false || (!!d.isReissue && fv?.reissue !== false))) filmCells.push({ label: 'Released', ghost: true });
-  if (actorsVal) filmCells.push({ label: 'Starring', value: actorsVal, cast: true, full: true });
-  else if (ghostOn && fv?.actors !== false) filmCells.push({ label: 'Starring', full: true, ghost: true });
+  if (released) filmCells.push({ label: 'Released', value: released, field: 'releaseDate' });
+  else if (ghostOn && (fv?.releaseDate !== false || (!!d.isReissue && fv?.reissue !== false))) filmCells.push({ label: 'Released', ghost: true, field: 'releaseDate' });
+  if (actorsVal) filmCells.push({ label: 'Starring', value: actorsVal, cast: true, full: true, field: 'actors' });
+  else if (ghostOn && fv?.actors !== false) filmCells.push({ label: 'Starring', full: true, ghost: true, field: 'actors' });
 
   const componentOpacity = components.componentOpacity ?? 1;
 
   return (
-    <div style={{ position: 'absolute', inset: 0, color: FS_INK, background: FS_BASE, fontFamily: FONT_SANS, overflow: 'hidden' }}>
+    <div style={{ position: 'absolute', inset: 0, color: FS_INK, background: FS_BASE, fontFamily: FONT_SANS, overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
       <Poster src={croppedImageUrl} fit="contain" background={FS_BASE} texture={components.texture} posterOpacity={components.posterOpacity} />
 
       {/* #219 componentOpacity: 스프로킷·일련번호·스탬프·캡션 등 필름 크롬 전체를 함께 페이드.
@@ -113,47 +117,63 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
       {/* Chain + format paired (같은 위상이라 인접 배치), top-left */}
       {(components.chainVisible || components.formatVisible) && (
         <div style={{ position: 'absolute', left: 28, top: 150, display: 'flex', alignItems: 'center', gap: 18 }}>
-          <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={50} surface="dark" ghost={ghost} />
+          <FieldTap field="chain" onField={onField}>
+            <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={50} surface="dark" ghost={ghost} />
+          </FieldTap>
           {stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost) && stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost) && <span style={{ width: 1, height: 34, background: FS_INK, opacity: 0.5 }} />}
-          <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.85} surface="dark" ghost={ghost} />
+          <FieldTap field="format" onField={onField}>
+            <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.85} surface="dark" ghost={ghost} />
+          </FieldTap>
         </div>
       )}
 
       {/* Circular rating stamp — 기울기 제거(정방향) */}
       {ratingVisible && (
-        <div style={{ position: 'absolute', right: 36, top: 150, width: 138, height: 138, borderRadius: '50%', border: `2px solid ${FS_INK}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,10,10,0.42)', boxShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>
-          <span style={{ fontWeight: 800, fontSize: 46, fontFamily: FONT_MONO, lineHeight: 1, color: FS_INK }}>{d.rating.toFixed(1)}</span>
-          <span style={{ fontWeight: 700, fontSize: 14, fontFamily: FONT_MONO, letterSpacing: 2, color: FS_DIM, marginTop: 4 }}>RATED ★</span>
-        </div>
+        <FieldTap field="rating" onField={onField}>
+          <div style={{ position: 'absolute', right: 36, top: 150, width: 138, height: 138, borderRadius: '50%', border: `2px solid ${FS_INK}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,10,10,0.42)', boxShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>
+            <span style={{ fontWeight: 800, fontSize: 46, fontFamily: FONT_MONO, lineHeight: 1, color: FS_INK }}>{d.rating.toFixed(1)}</span>
+            <span style={{ fontWeight: 700, fontSize: 14, fontFamily: FONT_MONO, letterSpacing: 2, color: FS_DIM, marginTop: 4 }}>RATED ★</span>
+          </div>
+        </FieldTap>
       )}
 
       {/* 빈 항목 미리보기(#216): 평점 원형 스탬프 자리표시자(점선 원). ratingVisible과 상호배타. */}
       {gRating && (
-        <div data-hide-on-export="true" style={{ position: 'absolute', right: 36, top: 150, width: 138, height: 138, borderRadius: '50%', border: `2px dashed ${FS_INK}`, opacity: 0.4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontWeight: 700, fontSize: 14, fontFamily: FONT_MONO, letterSpacing: 2, color: FS_INK }}>RATED ★</span>
-        </div>
+        <FieldTap field="rating" onField={onField}>
+          <div data-hide-on-export="true" style={{ position: 'absolute', right: 36, top: 150, width: 138, height: 138, borderRadius: '50%', border: `2px dashed ${FS_INK}`, opacity: 0.4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontWeight: 700, fontSize: 14, fontFamily: FONT_MONO, letterSpacing: 2, color: FS_INK }}>RATED ★</span>
+          </div>
+        </FieldTap>
       )}
 
       {/* Caption above bottom sprockets */}
       <div style={{ position: 'absolute', left: 0, right: 0, bottom: 56, paddingTop: 110, background: captionScrim }}>
         <div style={{ padding: '18px 36px 18px', borderTop: `1px solid ${FS_DIVIDER}`, margin: '0 16px' }}>
           {titleOgVal ? (
-            <div style={{ fontWeight: 700, fontSize: 21, fontFamily: FONT_MONO, letterSpacing: 2.5, textTransform: 'uppercase', color: FS_DIM, marginBottom: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {titleOgVal}
-            </div>
+            <FieldTap field="titleOg" onField={onField}>
+              <div style={{ fontWeight: 700, fontSize: 21, fontFamily: FONT_MONO, letterSpacing: 2.5, textTransform: 'uppercase', color: FS_DIM, marginBottom: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {titleOgVal}
+              </div>
+            </FieldTap>
           ) : gTitleOg ? (
-            <div style={{ marginBottom: 12 }}>
-              <FieldGhost text="ORIGINAL TITLE" width={280} height={26} surface="dark" />
-            </div>
+            <FieldTap field="titleOg" onField={onField}>
+              <div style={{ marginBottom: 12 }}>
+                <FieldGhost text="ORIGINAL TITLE" width={280} height={26} surface="dark" />
+              </div>
+            </FieldTap>
           ) : null}
           {titleVal ? (
-            <div style={{ fontWeight: 800, fontSize: titleSize, fontFamily: FONT_KR, lineHeight: 1.05, letterSpacing: -0.5, marginBottom: 22, color: FS_INK, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-              {titleVal}
-            </div>
+            <FieldTap field="title" onField={onField}>
+              <div style={{ fontWeight: 800, fontSize: titleSize, fontFamily: FONT_KR, lineHeight: 1.05, letterSpacing: -0.5, marginBottom: 22, color: FS_INK, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                {titleVal}
+              </div>
+            </FieldTap>
           ) : gTitle ? (
-            <div style={{ marginBottom: 22 }}>
-              <FieldGhost text="TITLE" width="60%" height={62} size={2} surface="dark" />
-            </div>
+            <FieldTap field="title" onField={onField}>
+              <div style={{ marginBottom: 22 }}>
+                <FieldGhost text="TITLE" width="60%" height={62} size={2} surface="dark" />
+              </div>
+            </FieldTap>
           ) : null}
 
           {(screeningCells.length > 0 || filmCells.length > 0) && (
@@ -161,14 +181,16 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
               {screeningCells.length > 0 && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px 48px' }}>
                   {screeningCells.map((c, i) => (
-                    <div key={i} style={{ minWidth: 0, flex: c.full ? '1 1 100%' : '0 1 auto' }}>
-                      <div style={cellLabel}>{c.label}</div>
-                      {c.ghost ? (
-                        <FieldGhost width={220} height={38} surface="dark" />
-                      ) : (
-                        <div style={{ color: FS_INK, fontWeight: 600, fontSize: 32, fontFamily: FONT_SANS, letterSpacing: -0.2, lineHeight: 1.2, maxWidth: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.value}</div>
-                      )}
-                    </div>
+                    <FieldTap key={i} field={c.field} onField={onField}>
+                      <div style={{ minWidth: 0, flex: c.full ? '1 1 100%' : '0 1 auto' }}>
+                        <div style={cellLabel}>{c.label}</div>
+                        {c.ghost ? (
+                          <FieldGhost width={220} height={38} surface="dark" />
+                        ) : (
+                          <div style={{ color: FS_INK, fontWeight: 600, fontSize: 32, fontFamily: FONT_SANS, letterSpacing: -0.2, lineHeight: 1.2, maxWidth: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.value}</div>
+                        )}
+                      </div>
+                    </FieldTap>
                   ))}
                 </div>
               )}
@@ -178,14 +200,16 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
               {filmCells.length > 0 && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px 48px' }}>
                   {filmCells.map((c, i) => (
-                    <div key={i} style={{ minWidth: 0, flex: c.full ? '1 1 100%' : '0 1 auto' }}>
-                      <div style={cellLabel}>{c.label}</div>
-                      {c.ghost ? (
-                        <FieldGhost width={c.full ? 300 : 220} height={38} surface="dark" />
-                      ) : (
-                        <div style={{ color: FS_INK, fontWeight: c.cast ? 500 : 600, fontSize: c.cast ? 30 : 32, fontFamily: c.cast ? FONT_KR : FONT_SANS, letterSpacing: -0.2, lineHeight: 1.2, maxWidth: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.value}</div>
-                      )}
-                    </div>
+                    <FieldTap key={i} field={c.field} onField={onField}>
+                      <div style={{ minWidth: 0, flex: c.full ? '1 1 100%' : '0 1 auto' }}>
+                        <div style={cellLabel}>{c.label}</div>
+                        {c.ghost ? (
+                          <FieldGhost width={c.full ? 300 : 220} height={38} surface="dark" />
+                        ) : (
+                          <div style={{ color: FS_INK, fontWeight: c.cast ? 500 : 600, fontSize: c.cast ? 30 : 32, fontFamily: c.cast ? FONT_KR : FONT_SANS, letterSpacing: -0.2, lineHeight: 1.2, maxWidth: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.value}</div>
+                        )}
+                      </div>
+                    </FieldTap>
                   ))}
                 </div>
               )}
@@ -196,18 +220,26 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 22, minWidth: 0 }}>
               <span style={{ fontWeight: 700, fontSize: 15, fontFamily: FONT_MONO, letterSpacing: 3, color: FS_DIM }}>MADE WITH FILME</span>
               {signatureVal ? (
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, fontFamily: FONT_MONO, letterSpacing: 2, color: FS_DIM, marginBottom: 4 }}>COLLECTED BY</div>
-                  <div style={{ fontWeight: 500, fontSize: 26, fontFamily: FONT_KR, color: FS_INK, maxWidth: 300, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{signatureVal}</div>
-                </div>
+                <FieldTap field="signature" onField={onField}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, fontFamily: FONT_MONO, letterSpacing: 2, color: FS_DIM, marginBottom: 4 }}>COLLECTED BY</div>
+                    <div style={{ fontWeight: 500, fontSize: 26, fontFamily: FONT_KR, color: FS_INK, maxWidth: 300, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{signatureVal}</div>
+                  </div>
+                </FieldTap>
               ) : gSignature ? (
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, fontFamily: FONT_MONO, letterSpacing: 2, color: FS_DIM, marginBottom: 4 }}>COLLECTED BY</div>
-                  <FieldGhost text="SIGNATURE" width={200} height={30} surface="dark" />
-                </div>
+                <FieldTap field="signature" onField={onField}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, fontFamily: FONT_MONO, letterSpacing: 2, color: FS_DIM, marginBottom: 4 }}>COLLECTED BY</div>
+                    <FieldGhost text="SIGNATURE" width={200} height={30} surface="dark" />
+                  </div>
+                </FieldTap>
               ) : null}
             </div>
-            {(fv?.bookingNo ?? true) && <Barcode value={bookingNo} color={FS_INK} width={244} height={50} textSize={19} />}
+            {(fv?.bookingNo ?? true) && (
+              <FieldTap field="bookingNo" onField={onField}>
+                <Barcode value={bookingNo} color={FS_INK} width={244} height={50} textSize={19} />
+              </FieldTap>
+            )}
           </div>
         </div>
       </div>

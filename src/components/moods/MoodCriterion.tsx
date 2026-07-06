@@ -1,8 +1,9 @@
-import { Fragment } from 'react';
+import type { SheetTarget } from '@/constants/fields';
 import {
   Barcode,
   ChainStamp,
   FieldGhost,
+  FieldTap,
   FONT_DISPLAY,
   FONT_KR,
   FONT_MONO,
@@ -13,6 +14,7 @@ import {
   gate,
   isInkDark,
   pickTitleSize,
+  posterTapProps,
   resolveInk,
   resolveTicketData,
   showFieldGhost,
@@ -26,7 +28,7 @@ import {
  * 대신 스파인을 원제(titleOg)·연도의 진짜 DVD 스파인처럼 구성, 중앙 eyebrow는 "from a film diary"로
  * 교체, 서명에 'collected by' 라벨, FILME에 phototicket 컨텍스트. 데이터=Pretendard, 장식=Instrument Serif.
  */
-export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost }: MoodProps) {
+export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
   const inkIsDark = isInkDark(themeColor);
   const ink = resolveInk(themeColor, inkIsDark ? '#0d0c0a' : '#FFFFFF');
@@ -67,20 +69,22 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
   // mono 캡스 메타 — 값이 있거나 ghost 행일 때만. ghost 행은 값이 비었고 기여 필드가 visible일 때.
   const ratingText = ratingVisible ? `★ ${d.rating.toFixed(1)} / 5.0` : '';
   const venueLine = [theaterVal, screenVal, seatVal].filter(Boolean).join('  ·  ');
-  const screeningRows: { label: string; value?: string; ghost?: boolean }[] = [
-    { label: 'VENUE', value: venueLine, ghost: ghostOn && !venueLine && (fv?.theater !== false || fv?.screen !== false || fv?.seat !== false) },
-    { label: 'WATCHED', value: watchDateVal, ghost: ghostOn && !watchDateVal && fv?.watchDate !== false },
-  ].filter(r => r.value || r.ghost);
-  const filmRows: { label: string; value?: string; ghost?: boolean }[] = [
-    { label: 'RATED', value: ratingText, ghost: ghostOn && !ratingText && fv?.rating !== false },
-    { label: 'RELEASED', value: releaseDateVal, ghost: ghostOn && !releaseDateVal && fv?.releaseDate !== false },
-    { label: 'RE-REL.', value: reissueVal, ghost: ghostOn && !reissueVal && !!d.isReissue && fv?.reissue !== false },
-  ].filter(r => r.value || r.ghost);
+  // 합쳐진 VENUE 셀(극장+상영관+좌석)은 대표 필드 theater로 탭 매핑(#259).
+  type Row = { label: string; value?: string; ghost?: boolean; field: SheetTarget };
+  const screeningRows = ([
+    { label: 'VENUE', value: venueLine, ghost: ghostOn && !venueLine && (fv?.theater !== false || fv?.screen !== false || fv?.seat !== false), field: 'theater' },
+    { label: 'WATCHED', value: watchDateVal, ghost: ghostOn && !watchDateVal && fv?.watchDate !== false, field: 'watchDate' },
+  ] as Row[]).filter(r => r.value || r.ghost);
+  const filmRows = ([
+    { label: 'RATED', value: ratingText, ghost: ghostOn && !ratingText && fv?.rating !== false, field: 'rating' },
+    { label: 'RELEASED', value: releaseDateVal, ghost: ghostOn && !releaseDateVal && fv?.releaseDate !== false, field: 'releaseDate' },
+    { label: 'RE-REL.', value: reissueVal, ghost: ghostOn && !reissueVal && !!d.isReissue && fv?.reissue !== false, field: 'reissue' },
+  ] as Row[]).filter(r => r.value || r.ghost);
 
   const componentOpacity = components.componentOpacity ?? 1;
 
   return (
-    <div style={{ position: 'absolute', inset: 0, color: ink, fontFamily: FONT_SANS, overflow: 'hidden' }}>
+    <div style={{ position: 'absolute', inset: 0, color: ink, fontFamily: FONT_SANS, overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
       <Poster src={croppedImageUrl} texture={components.texture} posterOpacity={components.posterOpacity} />
 
       {/* #219 componentOpacity: 포스터를 뺀 오버레이 전체를 함께 페이드. 자식이 전부 position:absolute라
@@ -93,25 +97,37 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
         {spineText && (
           // 원제(라틴)면 디스플레이 세리프, 원제 없어 한글 제목이 올라오면 FONT_KR로 — FONT_DISPLAY는
           // 한글 글리프가 없어 시스템 세리프로 어긋난다(_shared FONT_DISPLAY 경고, #205 리뷰 P1).
-          <div style={{ fontFamily: titleOgVal ? FONT_DISPLAY : FONT_KR, fontStyle: 'italic', fontWeight: 400, fontSize: 34, letterSpacing: 0.5, writingMode: 'vertical-rl', transform: 'rotate(180deg)', whiteSpace: 'nowrap', maxHeight: 560, overflow: 'hidden' }}>
-            {spineText}
-          </div>
+          <FieldTap field={titleOgVal ? 'titleOg' : 'title'} onField={onField}>
+            <div style={{ fontFamily: titleOgVal ? FONT_DISPLAY : FONT_KR, fontStyle: 'italic', fontWeight: 400, fontSize: 34, letterSpacing: 0.5, writingMode: 'vertical-rl', transform: 'rotate(180deg)', whiteSpace: 'nowrap', maxHeight: 560, overflow: 'hidden' }}>
+              {spineText}
+            </div>
+          </FieldTap>
         )}
         <div style={{ flex: 1 }} />
-        {(fv?.bookingNo ?? true) && <Barcode value={bookingNo} color={ink} orientation="vertical" width={46} height={430} showText={false} />}
+        {(fv?.bookingNo ?? true) && (
+          <FieldTap field="bookingNo" onField={onField}>
+            <Barcode value={bookingNo} color={ink} orientation="vertical" width={46} height={430} showText={false} />
+          </FieldTap>
+        )}
         <div style={{ flex: 1 }} />
         {(fv?.watchDate ?? true) && watchYear && (
-          <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 400, fontSize: 66, letterSpacing: 1, writingMode: 'vertical-rl', lineHeight: 1 }}>
-            {watchYear}
-          </div>
+          <FieldTap field="watchDate" onField={onField}>
+            <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 400, fontSize: 66, letterSpacing: 1, writingMode: 'vertical-rl', lineHeight: 1 }}>
+              {watchYear}
+            </div>
+          </FieldTap>
         )}
       </div>
 
       {/* Top-right paired stamps */}
       <div style={{ position: 'absolute', right: 44, top: 40, display: 'flex', alignItems: 'center', gap: 16 }}>
-        <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={50} surface={stampSurface} ghost={ghost} />
+        <FieldTap field="chain" onField={onField}>
+          <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={50} surface={stampSurface} ghost={ghost} />
+        </FieldTap>
         {stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost) && stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost) && <span style={{ width: 1, height: 30, background: ink, opacity: 0.55 }} />}
-        <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.9} surface={stampSurface} ghost={ghost} />
+        <FieldTap field="format" onField={onField}>
+          <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.9} surface={stampSurface} ghost={ghost} />
+        </FieldTap>
       </div>
 
       {/* Title block — catalog double-rule frame */}
@@ -124,33 +140,45 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
         </div>
 
         {titleVal ? (
-          <div style={{ fontWeight: 800, fontSize: titleSize, fontFamily: FONT_KR, lineHeight: 1.05, letterSpacing: titleLen > 8 ? -1.5 : 1, marginBottom: 18, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-            {titleVal}
-          </div>
+          <FieldTap field="title" onField={onField}>
+            <div style={{ fontWeight: 800, fontSize: titleSize, fontFamily: FONT_KR, lineHeight: 1.05, letterSpacing: titleLen > 8 ? -1.5 : 1, marginBottom: 18, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+              {titleVal}
+            </div>
+          </FieldTap>
         ) : gTitle ? (
-          <div style={{ marginBottom: 18 }}>
-            <FieldGhost text="TITLE" width="66%" height={72} size={2} surface={stampSurface} />
-          </div>
+          <FieldTap field="title" onField={onField}>
+            <div style={{ marginBottom: 18 }}>
+              <FieldGhost text="TITLE" width="66%" height={72} size={2} surface={stampSurface} />
+            </div>
+          </FieldTap>
         ) : null}
         {titleOgVal ? (
-          <div style={{ fontWeight: 500, fontSize: 28, fontFamily: FONT_SANS, letterSpacing: 1, opacity: 0.7, marginBottom: 18, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {titleOgVal}
-          </div>
+          <FieldTap field="titleOg" onField={onField}>
+            <div style={{ fontWeight: 500, fontSize: 28, fontFamily: FONT_SANS, letterSpacing: 1, opacity: 0.7, marginBottom: 18, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {titleOgVal}
+            </div>
+          </FieldTap>
         ) : gTitleOg ? (
-          <div style={{ marginBottom: 18 }}>
-            <FieldGhost text="ORIGINAL TITLE" width={280} height={32} surface={stampSurface} />
-          </div>
+          <FieldTap field="titleOg" onField={onField}>
+            <div style={{ marginBottom: 18 }}>
+              <FieldGhost text="ORIGINAL TITLE" width={280} height={32} surface={stampSurface} />
+            </div>
+          </FieldTap>
         ) : null}
         {actorsVal ? (
-          <div style={{ marginBottom: 22, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-            <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 28, opacity: 0.75, marginRight: 12 }}>featuring</span>
-            <span style={{ fontWeight: 500, fontSize: 30, fontFamily: FONT_KR, opacity: 0.85 }}>{actorsVal}</span>
-          </div>
+          <FieldTap field="actors" onField={onField}>
+            <div style={{ marginBottom: 22, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+              <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 28, opacity: 0.75, marginRight: 12 }}>featuring</span>
+              <span style={{ fontWeight: 500, fontSize: 30, fontFamily: FONT_KR, opacity: 0.85 }}>{actorsVal}</span>
+            </div>
+          </FieldTap>
         ) : gActors ? (
-          <div style={{ marginBottom: 22, display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 28, opacity: 0.75 }}>featuring</span>
-            <FieldGhost text="CAST" width={260} height={36} surface={stampSurface} />
-          </div>
+          <FieldTap field="actors" onField={onField}>
+            <div style={{ marginBottom: 22, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 28, opacity: 0.75 }}>featuring</span>
+              <FieldGhost text="CAST" width={260} height={36} surface={stampSurface} />
+            </div>
+          </FieldTap>
         ) : null}
 
         <div style={{ height: 3, background: ink, opacity: 0.6, marginBottom: 4 }} />
@@ -162,12 +190,12 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
         {screeningRows.length > 0 && (
           <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: 26, rowGap: 11, alignItems: 'baseline' }}>
             {screeningRows.map((r, i) => (
-              <Fragment key={i}>
+              <FieldTap key={i} field={r.field} onField={onField}>
                 <div style={{ fontWeight: 700, fontSize: 19, fontFamily: FONT_MONO, letterSpacing: 2, textTransform: 'uppercase', opacity: 0.55 }}>{r.label}</div>
                 {r.ghost
                   ? <FieldGhost width={180} height={32} surface={stampSurface} />
                   : <div style={{ fontWeight: 700, fontSize: 28, fontFamily: FONT_SANS, letterSpacing: -0.2, opacity: 0.95, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.value}</div>}
-              </Fragment>
+              </FieldTap>
             ))}
           </div>
         )}
@@ -177,12 +205,12 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
         {filmRows.length > 0 && (
           <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: 26, rowGap: 11, alignItems: 'baseline' }}>
             {filmRows.map((r, i) => (
-              <Fragment key={i}>
+              <FieldTap key={i} field={r.field} onField={onField}>
                 <div style={{ fontWeight: 700, fontSize: 19, fontFamily: FONT_MONO, letterSpacing: 2, textTransform: 'uppercase', opacity: 0.55 }}>{r.label}</div>
                 {r.ghost
                   ? <FieldGhost width={180} height={32} surface={stampSurface} />
                   : <div style={{ fontWeight: 700, fontSize: 28, fontFamily: FONT_SANS, letterSpacing: -0.2, opacity: 0.95, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.value}</div>}
-              </Fragment>
+              </FieldTap>
             ))}
           </div>
         )}
@@ -193,15 +221,19 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
             <span style={{ fontWeight: 800, fontSize: 20, fontFamily: FONT_SANS, letterSpacing: 3, color: ink }}>FILME</span>
           </div>
           {signatureVal ? (
-            <div style={{ textAlign: 'right', maxWidth: 560, minWidth: 0 }}>
-              <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 23, opacity: 0.6, color: ink, marginRight: 10 }}>collected by</span>
-              <span style={{ fontWeight: 500, fontStyle: 'italic', fontSize: 30, fontFamily: FONT_KR, color: ink, letterSpacing: -0.2 }}>{signatureVal}</span>
-            </div>
+            <FieldTap field="signature" onField={onField}>
+              <div style={{ textAlign: 'right', maxWidth: 560, minWidth: 0 }}>
+                <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 23, opacity: 0.6, color: ink, marginRight: 10 }}>collected by</span>
+                <span style={{ fontWeight: 500, fontStyle: 'italic', fontSize: 30, fontFamily: FONT_KR, color: ink, letterSpacing: -0.2 }}>{signatureVal}</span>
+              </div>
+            </FieldTap>
           ) : gSignature ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10 }}>
-              <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 23, opacity: 0.6, color: ink }}>collected by</span>
-              <FieldGhost text="SIGNATURE" width={200} height={34} surface={stampSurface} />
-            </div>
+            <FieldTap field="signature" onField={onField}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10 }}>
+                <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 23, opacity: 0.6, color: ink }}>collected by</span>
+                <FieldGhost text="SIGNATURE" width={200} height={34} surface={stampSurface} />
+              </div>
+            </FieldTap>
           ) : null}
         </div>
       </div>
