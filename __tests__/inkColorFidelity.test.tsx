@@ -5,6 +5,8 @@ import { Mood35mm } from '../src/components/moods/Mood35mm';
 import { MoodCriterion } from '../src/components/moods/MoodCriterion';
 import { MoodEditorial } from '../src/components/moods/MoodEditorial';
 import { MoodMinimal } from '../src/components/moods/MoodMinimal';
+import { MoodStub } from '../src/components/moods/MoodStub';
+import { Mood35mmLandscape } from '../src/components/moods/Mood35mmLandscape';
 import { isInkDark } from '../src/components/moods/_shared';
 import type { MovieInfo, TicketComponents } from '../src/types';
 
@@ -69,7 +71,7 @@ describe('#177 어두운 유채색 ink 반영', () => {
   });
 
   test('어떤 무드도 유효 hex 에서 throw 하지 않는다', () => {
-    for (const Mood of [MoodMinimal, Mood35mm, MoodCriterion, MoodEditorial]) {
+    for (const Mood of [MoodMinimal, Mood35mm, MoodCriterion, MoodEditorial, MoodStub, Mood35mmLandscape]) {
       expect(() => markup(Mood as typeof MoodMinimal, BASE.layout)).not.toThrow();
     }
   });

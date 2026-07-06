@@ -14,6 +14,8 @@ import { Mood35mm } from '../src/components/moods/Mood35mm';
 import { MoodCriterion } from '../src/components/moods/MoodCriterion';
 import { MoodEditorial } from '../src/components/moods/MoodEditorial';
 import { MoodMinimal } from '../src/components/moods/MoodMinimal';
+import { MoodStub } from '../src/components/moods/MoodStub';
+import { Mood35mmLandscape } from '../src/components/moods/Mood35mmLandscape';
 import { stampWillRender } from '../src/components/moods/_shared';
 import type { MovieInfo, TicketComponents, TicketField, LayoutId } from '../src/types';
 
@@ -50,6 +52,8 @@ const MOODS = [
   ['35mm', Mood35mm],
   ['criterion', MoodCriterion],
   ['editorial', MoodEditorial],
+  ['stub', MoodStub],
+  ['35mm-landscape', Mood35mmLandscape],
 ] as const;
 
 type MoodFn = (props: {
