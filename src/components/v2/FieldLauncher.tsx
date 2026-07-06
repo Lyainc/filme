@@ -20,7 +20,7 @@ interface FieldLauncherProps {
 }
 
 /** 필드 현재값 미리보기 문자열. 비어 있으면 '' 반환(호출부가 placeholder로 대체). */
-function fieldPreview(field: TicketField, info: MovieInfo): string {
+export function fieldPreview(field: TicketField, info: MovieInfo): string {
   if (field === 'rating') return `${(info.rating ?? 0).toFixed(1)} / 5.0`;
   if (field === 'watchDate') return formatDate(info.watchDate, info.watchDateFormat || 'kr-compact', 'date');
   if (field === 'releaseDate') {
@@ -31,7 +31,7 @@ function fieldPreview(field: TicketField, info: MovieInfo): string {
 }
 
 /** 스탬프 현재값 미리보기 — 이미지가 있으면 '이미지'(라벨 우선), 없으면 텍스트 라벨. */
-function stampPreview(target: StampTarget, components: TicketComponents): string {
+export function stampPreview(target: StampTarget, components: TicketComponents): string {
   const keys = STAMP_KEYS[target];
   if (components[keys.image]) return '이미지';
   return String(components[keys.label] ?? '');
