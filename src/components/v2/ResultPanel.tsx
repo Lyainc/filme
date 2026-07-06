@@ -29,6 +29,13 @@ interface ResultPanelProps {
    * 콘텐츠/캡처 로직은 동일 — 컨테이너가 크기만 분기한다.
    */
   previewClassName?: string;
+  /**
+   * 데스크톱 done(#233)에서 켠다 — 캔버스 hero 티켓과 인스펙터 프리뷰의 이중 노출을 없앤다.
+   * true면 캡처 타깃 프리뷰는 DOM에 유지하되 화면 밖(off-screen)으로 빼 시각적으로만 숨기고,
+   * 인스펙터엔 액션만 남긴다. **기본 false** → 모바일 ResultSheet는 이 프롭을 안 넘겨 byte-identical.
+   * display:none이 아니라 off-screen인 이유: html-to-image가 캡처하려면 레이아웃이 있어야 한다.
+   */
+  hidePreview?: boolean;
 }
 
 /**
@@ -47,6 +54,7 @@ export function ResultPanel({
   components,
   fieldVisibility,
   previewClassName,
+  hidePreview = false,
 }: ResultPanelProps) {
   // 캡처 원본 — 여기 달린 TicketRenderer의 (스케일 전) 내부 DOM이 내보내기 대상이다.
   const ticketRef = useRef<HTMLDivElement>(null);
@@ -294,7 +302,14 @@ export function ResultPanel({
         티켓 완성
       </p>
 
-      <div className={`mx-auto w-full transition-[max-width] duration-300 ${previewClassName ?? 'max-w-md'}`}>
+      {/* hidePreview(데스크톱 done): 캡처 타깃은 DOM에 유지하되 인스펙터 flow 밖으로 뺀다.
+          display:none이면 html-to-image가 레이아웃을 못 잡으니 off-screen 고정으로만 숨긴다
+          (캔버스 hero 티켓이 이미 프리뷰 역할이라 인스펙터는 액션만 — #233 이중 노출 제거). */}
+      <div
+        className={hidePreview ? undefined : `mx-auto w-full transition-[max-width] duration-300 ${previewClassName ?? 'max-w-md'}`}
+        style={hidePreview ? { position: 'fixed', left: -99999, top: 0, width: layout.width } : undefined}
+        aria-hidden={hidePreview || undefined}
+      >
         <PreviewFilmCell saving={ctaState === 'loading'} promoted label="이 상태 그대로 저장 · 공유돼요">
           <TicketRenderer
             ref={ticketRef}
@@ -307,6 +322,16 @@ export function ResultPanel({
       </div>
 
       <div className="space-y-3">
+        {/* 프리뷰가 화면 밖으로 나간 done(hidePreview)에선 프리뷰 셀 하단 카피가 사라지므로,
+            "이 상태 그대로" 안심 문구를 저장 CTA 위에 동등하게 남겨 문맥을 유지한다(#233 스펙). */}
+        {hidePreview && (
+          <p className="flex items-center justify-center gap-1.5 text-[11px] font-medium tracking-tight text-accent">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+            이 상태 그대로 저장 · 공유돼요
+          </p>
+        )}
         {/* 1차 액션 = 사진 저장(accent, ~52px, 다운로드 아이콘). 성공 시 체크 + '사진에 저장됨'. */}
         <PrimaryCta
           state={ctaState}
