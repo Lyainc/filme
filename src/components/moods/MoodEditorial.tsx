@@ -67,7 +67,7 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
   const gTitle = showFieldGhost(fv?.title, d.title, ghost);
   const gTitleOg = showFieldGhost(fv?.titleOg, d.titleOg, ghost);
   const gActors = showFieldGhost(fv?.actors, d.actors, ghost);
-  const gRuntime = showFieldGhost(fv?.runtime, runtimeVal, ghost);
+  const gRuntime = showFieldGhost(fv?.runtime, d.runtime, ghost);
   const gRating = showFieldGhost(fv?.rating, d.rating, ghost);
   const gSignature = showFieldGhost(fv?.signature, d.signature, ghost);
 
