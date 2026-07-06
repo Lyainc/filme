@@ -326,7 +326,7 @@ function StampSheet({ target, photo }: { target: StampTarget; photo: Photo }) {
   // 로고 업로드 → 자유 크롭 → PNG. 픽커들과 동일한 useLogoCrop 흐름(#220).
   const { rawSrc, isCropping, openFile, handleComplete, handleCancel } = useLogoCrop(imageUrl, setImage);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  // 프리셋 활성 직전의 커스텀 입력 보존 — 프리셋 해제 시 이 값으로 복원(FormatPicker prevLabelRef 미러).
+  // 프리셋 활성 직전의 커스텀 입력 보존 — 프리셋 해제 시 이 값으로 복원.
   const prevLabelRef = useRef('');
   const [acOpen, setAcOpen] = useState(false);
 
@@ -405,7 +405,7 @@ function StampSheet({ target, photo }: { target: StampTarget; photo: Photo }) {
         </p>
       ) : null)}
 
-      {/* 포맷 프리셋 칩 — FormatPicker의 prevLabelRef 토글 동작을 그대로 미러. */}
+      {/* 포맷 프리셋 칩 — 활성 칩 재클릭 시 직전 커스텀 입력(prevLabelRef)으로 복원하는 토글. */}
       {isFormat && (
         <div className="flex flex-wrap gap-1.5" role="group" aria-label="포맷 프리셋">
           {FORMAT_PRESETS.map((preset) => {
