@@ -125,6 +125,8 @@ describe('ghost mode hidden-field ghost (#266 PR-A — 목록 없이 재켜기)'
     expect(html).toContain('ORIGINAL TITLE');
     // 숨긴 필드 하나만 ghost로 뜨고 다른 값 채워진 필드는 새 placeholder를 만들지 않음.
     expect(countGhosts(html)).toBe(1);
+    // 숨긴 필드의 실제 값은 마크업에 새지 않는다 — ghost는 고정 라벨만 그린다(PR-B 무드 리라이트 회귀 방지).
+    expect(html).not.toContain(FULL_MOVIE.titleOg);
   });
 
   // 데스크톱 픽셀 보존 불변식(:103 확장) — 숨긴 필드가 있어도 ghost=undefined면 placeholder 0.
