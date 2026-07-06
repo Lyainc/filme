@@ -6,14 +6,16 @@
  *     - aspect prop 생략   → 포스터 기본(TARGET_RATIO)
  *     - aspect={undefined} → 자유 크롭(undefined). 구조분해 기본값이면 여기서 덮여버리므로
  *       `'aspect' in props` 분기가 살아있는지 회귀로 잡는다.
- *  2) TheaterChainPicker/FormatPicker는 파일 선택 시 자유 크롭 모달을 연다(aspect undefined).
+ *  2) 로고 편집 본문(StampSheet — chain/format)은 파일 선택 시 자유 크롭 모달을 연다(aspect undefined).
+ *     구 TheaterChainPicker/FormatPicker는 렌더 경로가 사라져 제거됨(#231) — 로고 크롭은 이제
+ *     FieldLauncher/FieldAccordion → FieldEditorBody(StampSheet)가 담당하므로 그 경로로 검증한다.
  *
  * react-easy-crop(Cropper)만 mock — 이 모듈을 렌더하는 건 ImageCropModal뿐이고, 다른
  * 테스트는 ImageCropModal 자체를 mock으로 대체하므로 실제 Cropper를 렌더하지 않는다.
  * 따라서 이 mock은 파일 간에 새어도 피해가 없다(공유 모듈 mock 회피 — MEMORY).
  * 캔버스/적용 경로(getCroppedImg)는 happy-dom 한계라 건드리지 않고, 모달 오픈 + aspect만 본다.
  */
-import { describe, expect, test, afterEach, mock } from 'bun:test';
+import { describe, expect, test, afterEach, beforeEach, mock } from 'bun:test';
 import { render, screen, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TARGET_RATIO } from '@/utils/constants';
@@ -31,22 +33,24 @@ const ImageCropModal = (
     default: typeof import('@/components/ImageCropModal').default;
   }
 ).default;
-const TheaterChainPicker = (
-  require('@/components/wizard/TheaterChainPicker') as {
-    default: typeof import('@/components/wizard/TheaterChainPicker').default;
-  }
-).default;
-const FormatPicker = (
-  require('@/components/wizard/FormatPicker') as {
-    default: typeof import('@/components/wizard/FormatPicker').default;
-  }
-).default;
+const { FieldEditorBody } = require('@/components/v2/FieldEditorBody') as typeof import('@/components/v2/FieldEditorBody');
+const { usePhototicket } = require('@/hooks/usePhototicket') as typeof import('@/hooks/usePhototicket');
 
 const noop = () => {};
 const pngFile = (name: string) => new File([name], name, { type: 'image/png' });
 const fileInput = () => document.querySelector('input[type="file"]') as HTMLInputElement;
 
-afterEach(cleanup);
+// StampSheet(로고 본문)를 실제 photo로 렌더 — chain/format 타깃.
+function StampHarness({ target }: { target: 'chain' | 'format' }) {
+  const photo = usePhototicket();
+  return <FieldEditorBody target={target} photo={photo} />;
+}
+
+beforeEach(() => window.localStorage.clear());
+afterEach(() => {
+  cleanup();
+  window.localStorage.clear();
+});
 
 describe('ImageCropModal aspect forwarding (#220)', () => {
   test('aspect prop 생략 → 포스터 기본 TARGET_RATIO', () => {
@@ -62,19 +66,10 @@ describe('ImageCropModal aspect forwarding (#220)', () => {
   });
 });
 
-describe('로고 픽커 파일 선택 → 자유 크롭 모달 오픈 (#220)', () => {
-  test('TheaterChainPicker: 업로드 시 자유 aspect 모달', async () => {
+describe('로고 본문(StampSheet) 파일 선택 → 자유 크롭 모달 오픈 (#220/#231)', () => {
+  test('극장 로고: 업로드 시 자유 aspect 모달', async () => {
     const user = userEvent.setup();
-    render(
-      <TheaterChainPicker
-        value=""
-        onChange={noop}
-        label=""
-        onLabelChange={noop}
-        visible
-        onVisibilityChange={noop}
-      />
-    );
+    render(<StampHarness target="chain" />);
     await user.upload(fileInput(), pngFile('cgv.png'));
     // dynamic(ssr:false) 로딩 대기 후 모달 등장.
     const cropper = await screen.findByTestId('cropper');
@@ -82,19 +77,9 @@ describe('로고 픽커 파일 선택 → 자유 크롭 모달 오픈 (#220)', (
     expect(screen.getByRole('dialog').getAttribute('aria-label')).toBe('로고 크롭');
   });
 
-  test('FormatPicker: 업로드 시 자유 aspect 모달', async () => {
+  test('포맷 로고: 업로드 시 자유 aspect 모달', async () => {
     const user = userEvent.setup();
-    render(
-      <FormatPicker
-        value=""
-        onChange={noop}
-        label=""
-        onLabelChange={noop}
-        chain=""
-        visible
-        onVisibilityChange={noop}
-      />
-    );
+    render(<StampHarness target="format" />);
     await user.upload(fileInput(), pngFile('imax.png'));
     const cropper = await screen.findByTestId('cropper');
     expect(cropper.getAttribute('data-aspect')).toBe('undefined');

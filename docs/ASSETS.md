@@ -87,8 +87,9 @@ public/assets/
 |-----------------------------------------------------|--------------------------------------------------------|
 | `src/utils/assets.generated.ts`                     | generator 출력. **수동 편집 금지**.                    |
 | `src/utils/constants.ts`                            | `THEATER_CHAINS` / `SCREENING_FORMATS` derive. NONE 항목(`value: ''`)만 추가. |
-| `src/components/wizard/{TheaterChainPicker,FormatPicker}.tsx` | picker UI. `chain.file` / `fmt.file`을 src로 사용. |
 | `src/components/moods/_shared.tsx`                  | `ChainStamp` / `FormatStamp` — 본문 티켓 로고. `CHAIN_INDEX` / `FORMAT_INDEX` Map으로 O(1) lookup. |
+
+> 로고 **선택/업로드 UI**는 이 매니페스트 체인을 쓰지 않아요 — 사용자가 StampSheet(`FieldEditorBody`)에서 직접 업로드(useLogoCrop 자유 크롭)해요. 구 `TheaterChainPicker`/`FormatPicker`는 #231에서 제거됐어요.
 
 `ChainStamp` / `FormatStamp`은 entry를 찾지 못하거나 `file`이 비어있으면 **null 렌더**해요. 의도치 않은 raw value(`cgv` 같은 슬러그)가 티켓에 노출되지 않도록 안전망. 즉 picker에서 정상 선택한 경우에만 렌더되고, 외부 dirty input(예: 백엔드에서 들어온 unknown chain code)은 그냥 자리만 비워요.
 

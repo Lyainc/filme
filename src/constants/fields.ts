@@ -124,5 +124,5 @@ export const STAMP_PLACEHOLDERS: Record<StampTarget, string> = {
   format: 'IMAX',
 };
 
-/** 상영 포맷 빠른 프리셋(#141) — FormatPicker(데스크톱)·StampSheet(#215 PART B) 공용 단일 소스. */
+/** 상영 포맷 빠른 프리셋(#141) — StampSheet(#215 PART B) 포맷 자동완성·칩의 단일 소스. */
 export const FORMAT_PRESETS = ['IMAX', '4DX', 'Dolby', 'ScreenX'];

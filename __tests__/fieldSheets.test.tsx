@@ -210,20 +210,19 @@ describe('StampSheet 극장/포맷 (#215 PART B)', () => {
 });
 
 describe('EditorCanvas hideFormSections (#215 PART A·B)', () => {
-  test('true → MovieInfoForm·아코디언·로고 미렌더, 포스터/표시항목은 유지', () => {
+  // Logos 픽커(TheaterChainPicker/FormatPicker)는 렌더 경로가 사라져 제거됨(#231) — 이제 어느
+  // 경로에서도 'Logos' 섹션은 없다. hideFormSections 게이트는 MovieInfoForm·아코디언만 남는다.
+  test('true → MovieInfoForm·아코디언 미렌더, 포스터/표시항목은 유지', () => {
     render(<EditorHarness hideForm />);
     expect(screen.queryByText('KOBIS lookup')).toBeNull(); // MovieInfoForm 신호
     expect(screen.queryByText('Optional details')).toBeNull(); // 아코디언 신호
     // 포스터·표시항목은 그대로.
     expect(screen.queryByText(/표시 항목/)).not.toBeNull();
-    // Logos 픽커는 PART B에서 스탬프 런처/시트로 옮겨 모바일에선 숨긴다.
-    expect(screen.queryByText('Logos')).toBeNull();
   });
 
-  test('미전달(기본 false) → MovieInfoForm·아코디언·로고 렌더(데스크톱)', () => {
+  test('미전달(기본 false) → MovieInfoForm·아코디언 렌더(데스크톱)', () => {
     render(<EditorHarness />);
     expect(screen.queryByText('KOBIS lookup')).not.toBeNull();
     expect(screen.queryByText('Optional details')).not.toBeNull();
-    expect(screen.queryByText('Logos')).not.toBeNull();
   });
 });

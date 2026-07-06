@@ -31,8 +31,12 @@ src/utils/assets.generated.ts
    ↓
 THEATER_CHAINS / SCREENING_FORMATS  ←  constants.ts (NONE 항목만 prepend)
    ↓
-TheaterChainPicker / FormatPicker / ChainStamp / FormatStamp
+ChainStamp / FormatStamp  (본문 티켓 로고 렌더)
 ```
+
+> 로고 **선택/업로드 UI**는 더 이상 이 매니페스트 체인을 쓰지 않아요. 저작권 문제로 번들 로고를
+> 뺀 뒤(#231에서 죽은 `TheaterChainPicker`/`FormatPicker`도 제거), 사용자가 `FieldAccordion`/
+> `FieldLauncher` → `FieldEditorBody`의 StampSheet에서 로고를 직접 업로드(useLogoCrop 자유 크롭)해요.
 
 `ChainStamp` / `FormatStamp`은 entry lookup miss 또는 `file`이 비어있을 때 **null을 렌더**해요. raw value가 티켓에 새어 나가지 않도록 안전망.
 

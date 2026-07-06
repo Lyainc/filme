@@ -5,8 +5,6 @@ import Field from '@/components/ui/Field';
 import OptionalDetailsAccordion from '@/components/wizard/OptionalDetailsAccordion';
 import RatingPicker from '@/components/wizard/RatingPicker';
 import LayoutPicker from '@/components/LayoutPicker';
-import TheaterChainPicker from '@/components/wizard/TheaterChainPicker';
-import FormatPicker from '@/components/wizard/FormatPicker';
 import TexturePicker from '@/components/wizard/TexturePicker';
 import BrightnessSlider from '@/components/wizard/BrightnessSlider';
 import ColorPicker from '@/components/wizard/ColorPicker';
@@ -29,8 +27,9 @@ interface EditorCanvasProps {
   hideRailSections?: boolean;
   /**
    * 모바일 탭-투-에딧(#215): 인라인 MovieInfo 폼(Film 섹션 + Optional 아코디언, RatingPicker 포함)을
-   * 숨긴다 — 이 필드들은 FieldLauncher → FieldEditSheet로 편집한다. 로고(Logos)도 스탬프 런처/시트로
-   * 옮겨 함께 숨긴다(#215 PART B). 포스터·OCR·표시항목 일괄은 유지.
+   * 숨긴다 — 이 필드들은 FieldLauncher → FieldEditSheet로 편집한다. 포스터·OCR·표시항목 일괄은 유지.
+   * (로고 픽커 섹션은 #231에서 EditorCanvas에서 통째로 제거 — 로고는 StampSheet가 담당하므로
+   *  이 플래그와 무관하게 더 이상 렌더되지 않는다.)
    */
   hideFormSections?: boolean;
 }
@@ -378,33 +377,10 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
       </section>
       )}
 
-      {/* Logos(극장/포맷 스탬프) — 모바일 탭-투-에딧(#215 PART B)에선 숨기고 FieldLauncher →
-          StampSheet로 대체. 데스크톱은 hideFormSections 미전달이라 그대로 렌더. */}
-      {!hideFormSections && (
-      <section className="space-y-3">
-        <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Logos</span>
-        {/* Theater/Format 병렬 한 줄 배치(#141 (6)) — 모바일은 1열로 떨어뜨려 협소 방지 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <TheaterChainPicker
-            value={components.chain}
-            label={components.chainLabel}
-            onLabelChange={(chainLabel) => setComp({ chainLabel })}
-            visible={components.chainVisible}
-            onVisibilityChange={(v) => setComp({ chainVisible: v })}
-            onChange={(chain) => setComp({ chain })}
-          />
-          <FormatPicker
-            value={components.format}
-            label={components.formatLabel}
-            onLabelChange={(formatLabel) => setComp({ formatLabel })}
-            visible={components.formatVisible}
-            onVisibilityChange={(v) => setComp({ formatVisible: v })}
-            onChange={(format) => setComp({ format })}
-            chain={components.chain}
-          />
-        </div>
-      </section>
-      )}
+      {/* Logos(극장/포맷 스탬프)는 FieldLauncher → StampSheet(자유 크롭)로 편집한다. 구
+          TheaterChainPicker/FormatPicker는 이 !hideFormSections 폼 경로에서만 쓰였는데, 데스크톱이
+          DesktopStudioShell로 넘어가고 모바일은 hideFormSections를 늘 넘기면서 렌더 경로가 사라져
+          제거됨(#231). 로고 크롭은 StampSheet의 useLogoCrop + ImageCropModal(aspect undefined)이 담당. */}
 
       {!hideRailSections && (
       <section className="space-y-4">
