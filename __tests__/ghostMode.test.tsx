@@ -208,3 +208,19 @@ describe('ghost mode stamp divider gating (#216 P1.1)', () => {
     expect(html).not.toContain(MINIMAL_TOP_SCRIM);
   });
 });
+
+describe('MoodStub SCREEN 셀 분해 ghost (#266 PR-B)', () => {
+  // 분해 전 screen은 개별 ghost가 없었다. 이제 빈 theater·screen이 ghost 모드에서 각자 라벨 점선을
+  // 그리되, 데스크톱 픽셀 불변식(:104 — ghost=undefined면 placeholder 0)은 그대로 유지된다.
+  test('빈 theater·screen + ghost=true → THEATER·SCREEN ghost 각각', () => {
+    const html = render(MoodStub, 'stub', EMPTY_MOVIE, {}, true);
+    expect(html).toContain('THEATER');
+    expect(html).toContain('SCREEN');
+  });
+
+  test('빈 theater·screen + ghost=undefined(데스크톱) → 분해 셀 placeholder 없음(픽셀 보존)', () => {
+    const html = render(MoodStub, 'stub', EMPTY_MOVIE, {}, undefined);
+    expect(html).not.toContain('THEATER');
+    expect(html).not.toContain('SCREEN');
+  });
+});

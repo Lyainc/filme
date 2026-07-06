@@ -149,3 +149,38 @@ describe('온-티켓 필드 탭 (#259)', () => {
     expect(tapped).toBe(1);
   });
 });
+
+describe('MoodStub SCREEN 셀 분해 (#266 PR-B)', () => {
+  // 분해 전 theater 하나의 FieldTap이 극장·상영관을 함께 삼켰다. 이제 조각별 FieldTap이라
+  // theater 탭과 screen 탭이 각자 제 시트 타깃을 연다.
+  test('theater 탭·screen 탭이 각자 제 시트 타깃을 연다', () => {
+    const calls: SheetTarget[] = [];
+    render(
+      <MoodStub
+        movieInfo={FULL_MOVIE}
+        components={{ ...BASE, layout: 'stub' }}
+        croppedImageUrl="blob:x"
+        fieldVisibility={ALL_ON}
+        onField={(f) => calls.push(f)}
+      />
+    );
+    fireEvent.click(screen.getByRole('button', { name: '극장 편집' }));
+    fireEvent.click(screen.getByRole('button', { name: '상영관 편집' }));
+    expect(calls).toEqual(['theater', 'screen']);
+  });
+
+  // 캡처 파이프라인 유출 불변식(:104-115) — 분해 후에도 onField 없으면 탭 UI 0건이고,
+  // theater·screen은 · 결합 텍스트로 그대로 렌더돼 산출물 픽셀이 보존된다.
+  test('onField 없으면 role=button 0건 + · 결합 텍스트 보존(캡처 안전)', () => {
+    const html = renderToStaticMarkup(
+      <MoodStub
+        movieInfo={FULL_MOVIE}
+        components={{ ...BASE, layout: 'stub' }}
+        croppedImageUrl="blob:x"
+        fieldVisibility={ALL_ON}
+      />
+    );
+    expect(html).not.toContain('role="button"');
+    expect(html).toContain('CGVDATA · IMAXDATA');
+  });
+});
