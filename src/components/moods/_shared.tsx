@@ -30,6 +30,11 @@ export interface MoodProps {
  * 탭 UI가 산출물에 샐 수 없다. onField가 있으면 display:contents 래퍼로 감싼다: 박스를 만들지 않아
  * 무드의 절대배치·크기에 0 영향이고(포커스링도 그릴 박스가 없어 캡처 유출 원천 차단), 탭만 받는다.
  * stopPropagation으로 포스터 root 탭(onPosterTap)과 겹치지 않게 한다.
+ *
+ * display:contents는 principal box를 만들지 않아 Tab 포커스를 받을 수 없다(CSS 스펙, 브라우저 공통) —
+ * tabIndex/onKeyDown을 얹어도 죽은 코드라 두지 않는다. 클릭(터치·마우스)은 버블링으로, SR 브라우즈
+ * 모드 활성화는 role+aria-label+click으로 동작하고, 키보드 Tab 편집 경로는 FieldLauncher가 커버한다
+ * (posterTapProps의 pointer-only 입장과 동일).
  */
 export function FieldTap({
   field,
@@ -45,18 +50,10 @@ export function FieldTap({
   return (
     <div
       role="button"
-      tabIndex={0}
       aria-label={`${label} 편집`}
       onClick={(e) => {
         e.stopPropagation();
         onField(field);
-      }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          e.stopPropagation();
-          onField(field);
-        }
       }}
       style={{ display: 'contents' }}
     >
