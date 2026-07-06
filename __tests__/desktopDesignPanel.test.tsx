@@ -50,4 +50,16 @@ describe('DesktopDesignPanel (#228)', () => {
 
     expect(screen.getByTestId('layout').textContent).not.toBe('minimal');
   });
+
+  // #229 — 컬러가 eyebrow "컬러"를 접근성 이름으로 갖는 region 섹션이고, 잉크는 별도 축 없이
+  // 단일 themeColor(White/Black 프리셋 = 라이트/다크 원터치)라는 걸 확정.
+  test('(c) 컬러 섹션 = 라벨 "컬러" region + 잉크 단일축(White/Black 프리셋)', () => {
+    render(<PanelHarness />);
+    const region = screen.getByRole('region', { name: '컬러' });
+    expect(region.querySelector('*')).not.toBeNull();
+    // ColorPicker(단일 themeColor 축)가 이 region 안에 — 잉크 헤더 + White/Black 원터치.
+    expect(region.textContent).toContain('Ink · logo & type color');
+    expect(region.querySelector('[aria-label="White"]')).not.toBeNull();
+    expect(region.querySelector('[aria-label="Black"]')).not.toBeNull();
+  });
 });
