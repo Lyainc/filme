@@ -1,67 +1,15 @@
 import dynamic from 'next/dynamic';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { EditorCanvas } from './EditorCanvas';
 import { DesignRail } from './DesignRail';
 import { FieldLauncher } from './FieldLauncher';
 import { ThemeToggle } from './ThemeToggle';
+import { ZoomSegment, actualSize, type ViewMode } from './viewMode';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
 import { getLayout } from '@/utils/layouts';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 import type { SheetTarget } from '@/constants/fields';
-
-// 프리뷰 3단 줌 모드(#214): 기본(인라인) · 최대화(세로 꽉) · 실제 크기(물리 cm).
-type ViewMode = 'default' | 'max' | 'actual';
-
-const ICON_SVG = {
-  width: 18,
-  height: 18,
-  viewBox: '0 0 24 24',
-  fill: 'none',
-  stroke: 'currentColor',
-  strokeWidth: 2,
-  strokeLinecap: 'round',
-  strokeLinejoin: 'round',
-  'aria-hidden': true,
-} as const;
-
-const VIEW_MODES: { id: ViewMode; label: string; icon: ReactNode }[] = [
-  {
-    // 기본: 베이스라인 있는 둥근 사각(인라인 카드)
-    id: 'default',
-    label: '기본',
-    icon: (
-      <svg {...ICON_SVG}>
-        <rect x="4" y="4" width="16" height="16" rx="3" />
-        <line x1="4" y1="15" x2="20" y2="15" />
-      </svg>
-    ),
-  },
-  {
-    // 최대화: 네 모서리 확장 화살표
-    id: 'max',
-    label: '최대화',
-    icon: (
-      <svg {...ICON_SVG}>
-        <path d="M8 3H5a2 2 0 0 0-2 2v3" />
-        <path d="M16 3h3a2 2 0 0 1 2 2v3" />
-        <path d="M8 21H5a2 2 0 0 1-2-2v-3" />
-        <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
-      </svg>
-    ),
-  },
-  {
-    // 실제 크기: 점선 바깥틀 + 채운 안쪽 사각
-    id: 'actual',
-    label: '실제 크기',
-    icon: (
-      <svg {...ICON_SVG}>
-        <rect x="3" y="3" width="18" height="18" rx="2" strokeDasharray="3 2.5" />
-        <rect x="8.5" y="8.5" width="7" height="7" rx="1" fill="currentColor" stroke="none" />
-      </svg>
-    ),
-  },
-];
 
 // 필드 시트는 vaul(+radix)을 끌어와 무겁고 필드 탭 전엔 안 쓰므로 dynamic(ssr:false)로 분리 —
 // 셸 자체는 모바일 첫 페인트에 즉시 필요하므로 static, vaul은 시트가 열릴 때만 로드된다.
@@ -132,10 +80,9 @@ export function MobileEditorShell({
     ? { background: 'linear-gradient(135deg, var(--accent-hover), var(--accent))', color: 'var(--accent-ink)' }
     : undefined;
 
-  // 활성 레이아웃의 방향으로 실제 크기 결정 — portrait 5.5×8.5cm, landscape 8.5×5.5cm.
+  // 활성 레이아웃의 방향으로 실제 크기 결정 — portrait 5.5×8.5cm, landscape 8.5×5.5cm(공용 actualSize).
   const layout = getLayout(previewComponents.layout);
-  const isLandscape = layout.orientation === 'landscape';
-  const actualCaption = isLandscape ? '8.5 × 5.5cm' : '5.5 × 8.5cm';
+  const actual = actualSize(layout);
   const isActual = viewMode === 'actual';
   // 실제 크기에선 ghost를 강제로 끈다(물리 크기 정밀 비교엔 자리표시자가 방해). 그 외엔 토글값.
   const ghostEffective = !isActual && ghostMode;
@@ -143,9 +90,7 @@ export function MobileEditorShell({
   // 짧은 변(portrait 5.5cm / landscape 8.5cm)을 그대로 줘 물리 크기로 렌더. max는 세로를
   // TicketRenderer의 자체 maxHeight(min(72vh,720px)) 한도까지 채우는 width를 역산.
   const previewWidth = isActual
-    ? isLandscape
-      ? '8.5cm'
-      : '5.5cm'
+    ? actual.shortSideCm
     : `min(90vw, calc(${PREVIEW_MAX_HEIGHT} * ${layout.width} / ${layout.height}))`;
   // 기본이 아닐 때만 편집 본문(EditorCanvas)을 접어 프리뷰에 세로 공간을 내준다. 이미지가
   // 없으면(업로드 전) 접지 않는다 — 그땐 프리뷰/pill 자체가 없다.
@@ -208,30 +153,7 @@ export function MobileEditorShell({
           {/* 줌 모드 pill — 3모드 어디서든 항상 보인다(기본으로 돌아오는 유일한 길). */}
           {croppedImageUrl && (
             <div className="flex flex-wrap items-center justify-center gap-2 px-4 pt-4">
-              <div
-                role="group"
-                aria-label="미리보기 크기"
-                className="inline-flex items-center gap-1 rounded-full border border-line bg-surface-elevated p-1"
-              >
-                {VIEW_MODES.map((m) => {
-                  const selected = viewMode === m.id;
-                  return (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => setViewMode(m.id)}
-                      aria-pressed={selected}
-                      aria-label={m.label}
-                      title={m.label}
-                      className={`flex h-9 items-center justify-center rounded-full px-3.5 transition-colors ${
-                        selected ? 'bg-accent-soft text-accent' : 'text-fg-muted hover:text-fg'
-                      }`}
-                    >
-                      {m.icon}
-                    </button>
-                  );
-                })}
-              </div>
+              <ZoomSegment viewMode={viewMode} onChange={setViewMode} />
 
               {/* 빈 항목 미리보기 토글(#216) — 실제 크기 모드에선 비활성(ghost 강제 off). */}
               <button
@@ -306,7 +228,7 @@ export function MobileEditorShell({
               className="text-mono px-4 pt-3 text-center text-fg-muted"
               style={{ fontSize: 11, letterSpacing: '0.08em' }}
             >
-              실제 크기 · {actualCaption}
+              실제 크기 · {actual.caption}
             </p>
           )}
 
