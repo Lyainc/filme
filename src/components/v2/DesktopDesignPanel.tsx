@@ -8,8 +8,8 @@ import type { usePhototicket } from '@/hooks/usePhototicket';
 
 // 데스크톱 DESIGN 패널(#228): 모바일 DesignRail은 가로 rail로 한 번에 한 축만 펼쳐 380px 세로
 // 인스펙터를 낭비한다. 데스크톱은 무드·컬러·후보정·투명도 4섹션을 세로 스택으로 상시 노출한다.
-// 로직·와이어링은 DesignRail과 동일 피커 재사용 — 배치만 바꾼다. 무드·후보정·컬러는 다듬은 섹션,
-// 투명도만 기능만(정식 섹션 라벨·% 표기는 #230).
+// 로직·와이어링은 DesignRail과 동일 피커 재사용 — 배치만 바꾼다. 무드·후보정·컬러·투명도 4섹션
+// 전부 eyebrow+region 정식 섹션(#228→#229→#230). 상태는 전부 기존 것 재사용 — 새 축 없음.
 
 // 각 섹션은 eyebrow를 접근성 이름으로 갖는 region 랜드마크(#229) — <section>+aria-labelledby면
 // 이미 region이지만 role을 명시해 testing-library getByRole('region')·SR 노출을 확정한다.
@@ -55,21 +55,25 @@ export function DesktopDesignPanel({ photo }: { photo: ReturnType<typeof usePhot
         />
       </Section>
 
-      {/* 투명도 — #228은 기능만. 정식 섹션 라벨·% 표기는 #230. 듀얼 슬라이더(포스터·컴포넌트). */}
-      <div className="space-y-4">
-        <BrightnessSlider
-          label="포스터"
-          id="desktop-poster-opacity"
-          value={components.posterOpacity}
-          onChange={(posterOpacity) => setComp({ posterOpacity })}
-        />
-        <BrightnessSlider
-          label="컴포넌트"
-          id="desktop-component-opacity"
-          value={components.componentOpacity ?? 1}
-          onChange={(componentOpacity) => setComp({ componentOpacity })}
-        />
-      </div>
+      {/* 투명도·듀얼 슬라이더(#230, #204 대체) — 포스터=밝기(posterOpacity), 컴포넌트=포스터 외
+          오버레이 불투명도(componentOpacity, #219). 둘 다 기존 상태 재사용 — 새 overlayOpacity 축 없음.
+          BrightnessSlider 자체가 라벨+% 표기라 eyebrow만 얹으면 정식 섹션. */}
+      <Section eyebrow="투명도">
+        <div className="space-y-4">
+          <BrightnessSlider
+            label="포스터"
+            id="desktop-poster-opacity"
+            value={components.posterOpacity}
+            onChange={(posterOpacity) => setComp({ posterOpacity })}
+          />
+          <BrightnessSlider
+            label="컴포넌트"
+            id="desktop-component-opacity"
+            value={components.componentOpacity ?? 1}
+            onChange={(componentOpacity) => setComp({ componentOpacity })}
+          />
+        </div>
+      </Section>
     </div>
   );
 }

@@ -62,4 +62,12 @@ describe('DesktopDesignPanel (#228)', () => {
     expect(region.querySelector('[aria-label="White"]')).not.toBeNull();
     expect(region.querySelector('[aria-label="Black"]')).not.toBeNull();
   });
+
+  // #230 — 투명도가 라벨 "투명도" region이고, 포스터·컴포넌트 듀얼 슬라이더(기존 상태 재사용)를 담는다.
+  test('(d) 투명도 섹션 = 라벨 "투명도" region + 포스터·컴포넌트 듀얼 슬라이더', () => {
+    render(<PanelHarness />);
+    const region = screen.getByRole('region', { name: '투명도' });
+    expect(region.querySelector('#desktop-poster-opacity')).not.toBeNull();
+    expect(region.querySelector('#desktop-component-opacity')).not.toBeNull();
+  });
 });
