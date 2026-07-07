@@ -520,26 +520,50 @@ interface BarcodeProps {
 
 type Bar = { ink: boolean; w: number };
 
-// Code 128 심볼 패턴(6모듈 = bar,space,bar,space,bar,space, 합 11) 서브셋. 실제 바코드의
-// 균형 잡힌 밀도감을 재현해 "가짜 랜덤 막대" 느낌을 없앤다(#205 바코드 재설계).
-const C128_PATTERNS = [
-  '212222', '222122', '222221', '121223', '121322', '131222', '122213', '122312',
-  '132212', '221213', '221312', '231212', '112232', '122132', '122231', '113222',
-  '123122', '123221', '223211', '221132', '221231', '213212', '223112', '312131',
-  '311222', '321122', '321221', '312212', '322112', '322211', '212123', '212321',
+// Code 128 심볼 폭 패턴 전체 표(값 0~106). 각 항목은 bar,space,bar,space,bar,space
+// (6요소, 폭 합 11모듈). 값 104=Start-B, 105=Start-C, 106=Stop(7요소, 13모듈).
+// 실제 스캐너가 bookingNo를 디코드하는 표준 Code128B 인코딩(#207) — 이전 #205는 이 표의
+// 앞 32개만 쓰고 charCode%32로 인덱싱한 장식이라 체크디짓도 없어 스캔 불가였다.
+const CODE128_PATTERNS = [
+  '212222', '222122', '222221', '121223', '121322', '131222', '122213', '122312', // 0-7
+  '132212', '221213', '221312', '231212', '112232', '122132', '122231', '113222', // 8-15
+  '123122', '123221', '223211', '221132', '221231', '213212', '223112', '312131', // 16-23
+  '311222', '321122', '321221', '312212', '322112', '322211', '212123', '212321', // 24-31
+  '232121', '111323', '131123', '131321', '112313', '132113', '132311', '211313', // 32-39
+  '231113', '231311', '112133', '112331', '132131', '113123', '113321', '133121', // 40-47
+  '313121', '211331', '231131', '213113', '213311', '213131', '311123', '311321', // 48-55
+  '331121', '312113', '312311', '332111', '314111', '221411', '431111', '111224', // 56-63
+  '111422', '121124', '121421', '141122', '141221', '112214', '112412', '122114', // 64-71
+  '122411', '142112', '142211', '241211', '221114', '413111', '241112', '134111', // 72-79
+  '111242', '121142', '121241', '114212', '124112', '124211', '411212', '421112', // 80-87
+  '421211', '212141', '214121', '412121', '111143', '111341', '131141', '114113', // 88-95
+  '114311', '411113', '411311', '113141', '114131', '311141', '411131', '211412', // 96-103
+  '211214', '211232', '2331112', // 104=Start-B, 105=Start-C, 106=Stop
 ];
-const C128_START = '211214'; // Start-B 가이드
-const C128_STOP = '2331112'; // Stop 가이드(7모듈, bar로 끝)
+const CODE128_START_B = 104;
+const CODE128_STOP = 106;
 
-function buildBarcodeWidths(value: string): Bar[] {
+// bookingNo 문자열을 표준 Code128B로 인코딩해 실제 스캐너가 디코드 가능한 막대 폭을 만든다.
+// Start-B + 데이터(값=ASCII-32) + 체크디짓(mod 103) + Stop. export는 인코딩 self-check용.
+export function buildBarcodeWidths(value: string): Bar[] {
   const v = value || 'PT-000000-0000';
-  let seq = C128_START;
+  const values: number[] = [];
   for (let i = 0; i < v.length; i++) {
-    seq += C128_PATTERNS[v.charCodeAt(i) % C128_PATTERNS.length];
+    const code = v.charCodeAt(i);
+    // Code128B 인코딩 가능 범위는 ASCII 32~126(값 0~94). bookingNo는 영숫자·하이픈이라 항상
+    // 안전하나, 범위 밖 문자는 space(값 0)로 대체해 디코드 깨짐 없이 흡수한다.
+    // ponytail: 실사용 bookingNo에 범위 밖 문자는 없음.
+    values.push(code >= 32 && code <= 126 ? code - 32 : 0);
   }
-  seq += C128_STOP;
+  let checksum = CODE128_START_B;
+  values.forEach((val, i) => {
+    checksum += val * (i + 1);
+  });
+  checksum %= 103;
+  const symbols = [CODE128_START_B, ...values, checksum, CODE128_STOP];
+  const seq = symbols.map((s) => CODE128_PATTERNS[s]).join('');
   const widths: Bar[] = [];
-  let ink = true; // 시퀀스는 항상 bar로 시작→space 교차
+  let ink = true; // 데이터 심볼은 6요소(짝수)라 심볼 경계마다 bar-start parity 복원, Stop만 7요소로 bar 종결
   for (let i = 0; i < seq.length; i++) {
     widths.push({ ink, w: parseInt(seq[i], 10) });
     ink = !ink;
@@ -560,7 +584,7 @@ export const Barcode = memo(function Barcode({
 
   const bars = useMemo(() => {
     const totalUnits = widths.reduce((a, b) => a + b.w, 0);
-    const QUIET = 6;
+    const QUIET = 10; // Code128 표준 quiet zone >=10 모듈 (#207, 너무 좁으면 스캔 실패)
     const longSide = orientation === 'horizontal' ? width : height;
     const shortSide = orientation === 'horizontal' ? height : width;
     const unit = longSide / (totalUnits + QUIET * 2);
