@@ -1,4 +1,4 @@
-import { CSSProperties, ReactNode, memo, useMemo } from 'react';
+import { CSSProperties, Fragment, ReactNode, memo, useMemo } from 'react';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 import { FIELD_LABELS, STAMP_LABELS, isStampTarget, type SheetTarget } from '@/constants/fields';
 import { formatDate } from '@/utils/dateFormat';
@@ -244,6 +244,59 @@ export function FieldGhost({
   surface?: Surface;
 }) {
   return <DashedPlaceholder text={text} width={width} height={height} size={size} surface={surface} />;
+}
+
+export type FieldPieceSpec = {
+  field: SheetTarget;
+  /** 실값(있으면 텍스트만 — 데스크톱 FieldTap 통과 → 분해 전과 바이트 동일). */
+  value?: string;
+  /** showFieldGhost 결과 — 비었고 ghost 모드면 라벨 점선 조각을 그린다. */
+  ghost?: boolean;
+  /** ghost 점선 라벨(THEATER/SCREEN/SEAT/DATE/TIME 등) — 조각이 나란히 서므로 뭐가 뭔지 표시. */
+  label: string;
+};
+
+/**
+ * 병합 셀(여러 필드를 sep으로 이어 붙이던 한 셀)을 필드별 독립 조각으로 분해한다(#266 PR-B/PR-C).
+ * 각 조각: 값이 있으면 텍스트만, 비었고 ghost면 라벨 점선(FieldGhost), 아니면 null. present 조각
+ * 사이에만 sep을 끼운다(원래 filter(Boolean).join(sep)과 동치). 각 조각은 제 FieldTap을 달아 탭이
+ * 자기 시트 타깃을 연다 — 바깥 셀 FieldTap을 없애고 조각을 형제로 배치하므로 이중 중첩 stopPropagation
+ * 삼킴이 없다. onField가 없으면(데스크톱/캡처) FieldTap이 통과해 결합 텍스트가 바이트 그대로 보존된다.
+ * hasGhost: ghost 조각(블록 FieldGhost)이 실값 텍스트(inline)와 섞였는지 — 무드가 이걸로 값 컨테이너를
+ * flex로 감싸 nowrap 한 줄 전제에서 ghost 박스가 줄바꿈돼 어긋나는 걸 막는다(#268 리뷰 P1).
+ */
+export function fieldPieces(
+  specs: FieldPieceSpec[],
+  onField: ((field: SheetTarget) => void) | undefined,
+  opts?: { sep?: string; surface?: Surface }
+): { node: ReactNode; hasGhost: boolean; hasAny: boolean } {
+  const sep = opts?.sep ?? ' · ';
+  const surface = opts?.surface ?? 'dark';
+  const present = specs
+    .map((s): { field: SheetTarget; ghost: boolean; node: ReactNode } | null => {
+      if (s.value) return { field: s.field, ghost: false, node: s.value };
+      if (s.ghost)
+        return {
+          field: s.field,
+          ghost: true,
+          node: <FieldGhost text={s.label} width={130} height={30} surface={surface} />,
+        };
+      return null;
+    })
+    .filter((x): x is { field: SheetTarget; ghost: boolean; node: ReactNode } => x !== null);
+
+  const node = present.length ? (
+    <>
+      {present.map((p, i) => (
+        <Fragment key={p.field}>
+          {i > 0 ? sep : null}
+          <FieldTap field={p.field} onField={onField}>{p.node}</FieldTap>
+        </Fragment>
+      ))}
+    </>
+  ) : null;
+
+  return { node, hasGhost: present.some((p) => p.ghost), hasAny: present.length > 0 };
 }
 
 export function ChainStamp({
