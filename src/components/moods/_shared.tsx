@@ -727,7 +727,7 @@ export const PerforationStrip = memo(function PerforationStrip({
   );
 });
 
-export function seedFromString(s: string): number {
+function seedFromString(s: string): number {
   let h = 0x9e3779b9 >>> 0;
   for (let i = 0; i < s.length; i++) {
     h ^= s.charCodeAt(i);
@@ -738,12 +738,12 @@ export function seedFromString(s: string): number {
 
 const CURRENT_YEAR = new Date().getFullYear();
 
-export function fallbackBookingNumber(seed: string): string {
+function fallbackBookingNumber(seed: string): string {
   const tail = String(seedFromString(seed) % 10000).padStart(4, '0');
   return `PT-${CURRENT_YEAR}-${tail}`;
 }
 
-export function resolveBookingNo(d: MovieInfo): string {
+function resolveBookingNo(d: MovieInfo): string {
   return d.bookingNumber || fallbackBookingNumber(d.title || 'phototicket');
 }
 
@@ -774,7 +774,7 @@ export function pickTitleSize(len: number, sizes: [number, number, number, numbe
   return sizes[3];
 }
 
-export function luminance(hex: string): number {
+function luminance(hex: string): number {
   const c = hex.replace('#', '').padEnd(6, '0');
   const toLinear = (v: number) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
   const r = toLinear(parseInt(c.slice(0, 2), 16) / 255);
@@ -786,7 +786,6 @@ export function luminance(hex: string): number {
 /**
  * 선택된 잉크(themeColor)가 어두운지 판정한다(luminance < 0.18).
  * true면 무드는 어두운 잉크가 읽히도록 밝은(크림) 표면 톤으로 스냅한다.
- * (이전 이름 `isInkLight`는 실제 반환 의미와 반대라 #147에서 바로잡음.)
  */
 export function isInkDark(themeColor: string): boolean {
   return luminance(themeColor) < 0.18;

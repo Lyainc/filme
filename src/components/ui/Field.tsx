@@ -1,5 +1,4 @@
 import { forwardRef, type ReactNode } from 'react';
-import { cn } from '@/utils/cn';
 
 interface FieldProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
   label: string;
@@ -38,11 +37,11 @@ const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
       <input
         ref={ref}
         id={id}
-        className={cn(
+        className={[
           'w-full rounded-field border border-line bg-paper px-3.5 py-3 text-[15px] text-fg outline-none transition-colors placeholder:text-fg-faint focus:border-accent focus:ring-2 focus:ring-accent-soft disabled:opacity-40 disabled:cursor-not-allowed',
           dimmed && 'opacity-40',
-          className
-        )}
+          className,
+        ].filter(Boolean).join(' ')}
         {...props}
       />
       {hint && <p className="text-[11px] leading-relaxed text-fg-faint">{hint}</p>}
