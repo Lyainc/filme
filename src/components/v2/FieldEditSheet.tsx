@@ -10,6 +10,7 @@ import {
   isStampTarget,
   type SheetTarget,
 } from '@/constants/fields';
+import { isRequiredField } from '@/constants/fieldVisibility';
 
 type Photo = ReturnType<typeof usePhototicket>;
 
@@ -32,9 +33,12 @@ export function FieldEditSheet({ activeField, onClose, photo }: FieldEditSheetPr
       : isStampTarget(activeField)
         ? STAMP_LABELS[activeField]
         : FIELD_LABELS[activeField];
-  // 헤더 눈 토글: 스탬프 + 모든 필드(제목·개봉일 포함 — 데스크톱과 표시여부 조작 parity).
-  // rating만 본문 RatingPicker가 자체 토글을 렌더하므로 헤더에선 중복 방지로 생략.
-  const showHeaderEye = activeField != null && activeField !== 'rating';
+  // 헤더 눈 토글: 스탬프 + 숨김가능 필드. rating은 본문 RatingPicker가 자체 토글을 렌더하므로 중복 방지로,
+  // 필수 필드(title)는 숨기면 제목 없는 티켓이 되므로 생략(#260, 데스크톱 일괄토글과 동일 규칙).
+  const showHeaderEye =
+    activeField != null &&
+    activeField !== 'rating' &&
+    !(!isStampTarget(activeField) && isRequiredField(activeField));
 
   return (
     <Drawer.Root open={activeField != null} onOpenChange={(o) => !o && onClose()}>

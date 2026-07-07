@@ -26,6 +26,7 @@ function SheetHarness({ field }: { field: SheetTarget }) {
       <div data-testid="watchDateFormat">{movieInfo.watchDateFormat}</div>
       <div data-testid="releaseDateFormat">{movieInfo.releaseDateFormat}</div>
       <div data-testid="rating">{movieInfo.rating}</div>
+      <div data-testid="vis-title">{String(fieldVisibility.title)}</div>
       <div data-testid="vis-theater">{String(fieldVisibility.theater)}</div>
       <div data-testid="chainLabel">{components.chainLabel}</div>
       <div data-testid="formatLabel">{components.formatLabel}</div>
@@ -38,7 +39,14 @@ function SheetHarness({ field }: { field: SheetTarget }) {
 
 function EditorHarness({ hideForm }: { hideForm?: boolean }) {
   const photo = usePhototicket();
-  return <EditorCanvas photo={photo} onPendingFetchChange={() => {}} hideFormSections={hideForm} />;
+  const { fieldVisibility } = photo.state;
+  return (
+    <>
+      <div data-testid="vis-title">{String(fieldVisibility.title)}</div>
+      <div data-testid="vis-actors">{String(fieldVisibility.actors)}</div>
+      <EditorCanvas photo={photo} onPendingFetchChange={() => {}} hideFormSections={hideForm} />
+    </>
+  );
 }
 
 // 스탬프 이미지-있음 분기 검증용 — 마운트 시 로고 이미지 URL을 시드해 "이미지 제거" 경로를 태운다.
@@ -104,6 +112,15 @@ describe('FieldEditSheet 타입별 편집 (#215 PART A)', () => {
     expect(screen.getByTestId('vis-theater').textContent).toBe('true');
     fireEvent.click(await screen.findByLabelText('극장 티켓에 표시'));
     expect(screen.getByTestId('vis-theater').textContent).toBe('false');
+  });
+
+  // #260 경로 2 — 필수 필드(제목) 시트엔 헤더 눈 토글이 없어 숨길 방법이 없다.
+  test('제목 시트: 헤더 눈 토글 미노출 → title 숨김 불가', async () => {
+    render(<SheetHarness field="title" />);
+    // 본문(제목 입력)은 렌더되지만 헤더 눈 토글은 없다.
+    await screen.findByPlaceholderText('인터스텔라');
+    expect(screen.queryByLabelText('제목 티켓에 표시')).toBeNull();
+    expect(screen.getByTestId('vis-title').textContent).toBe('true');
   });
 });
 
@@ -187,5 +204,15 @@ describe('EditorCanvas hideFormSections (#215 PART A·B)', () => {
     render(<EditorHarness />);
     expect(screen.queryByText('KOBIS lookup')).not.toBeNull();
     expect(screen.queryByText('Optional details')).not.toBeNull();
+  });
+
+  // #260 경로 1 — '전체 해제'는 필수 필드(제목)를 남기고 나머지만 끈다(제목 없는 티켓 방지).
+  test("'전체 해제' 클릭 → title은 유지, 나머지는 off", () => {
+    render(<EditorHarness />);
+    expect(screen.getByTestId('vis-title').textContent).toBe('true');
+    expect(screen.getByTestId('vis-actors').textContent).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: '전체 해제' }));
+    expect(screen.getByTestId('vis-title').textContent).toBe('true');
+    expect(screen.getByTestId('vis-actors').textContent).toBe('false');
   });
 });
