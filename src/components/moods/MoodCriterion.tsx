@@ -1,3 +1,4 @@
+import { CSSProperties } from 'react';
 import type { SheetTarget } from '@/constants/fields';
 import {
   Barcode,
@@ -11,6 +12,7 @@ import {
   FormatStamp,
   MoodProps,
   Poster,
+  fieldPieces,
   gate,
   isInkDark,
   pickTitleSize,
@@ -21,6 +23,11 @@ import {
   stampWillRender,
   truncateActors,
 } from './_shared';
+
+// 하단 caps 메타 그리드(관람·영화 청킹)의 라벨/값 스타일. 인라인 리터럴에서 추출해 VENUE 분해 셀·
+// screeningRows·filmRows가 한 소스를 공유한다 — 값 스타일이 어긋나면 데스크톱 바이트가 깨지므로 단일화.
+const metaLabel: CSSProperties = { fontWeight: 700, fontSize: 19, fontFamily: FONT_MONO, letterSpacing: 2, textTransform: 'uppercase', opacity: 0.55 };
+const metaValue: CSSProperties = { fontWeight: 700, fontSize: 28, fontFamily: FONT_SANS, letterSpacing: -0.2, opacity: 0.95, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' };
 
 /**
  * v4 — 컬렉션 임프린트. 좌측 스파인 + 중앙 카탈로그 제목 블록.
@@ -62,19 +69,32 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
   const gTitleOg   = showFieldGhost(fv?.titleOg, d.titleOg, ghost);
   const gActors    = showFieldGhost(fv?.actors, d.actors, ghost);
   const gSignature = showFieldGhost(fv?.signature, d.signature, ghost);
+  const gTheater   = showFieldGhost(fv?.theater, d.theater, ghost);
+  const gScreen    = showFieldGhost(fv?.screen, d.screen, ghost);
+  const gSeat      = showFieldGhost(fv?.seat, d.seat, ghost);
 
   // 스파인 임프린트 — 넘버링 없이 원제(없으면 제목)로 진짜 카탈로그 스파인처럼.
   const spineText = titleOgVal || titleVal;
 
   // mono 캡스 메타 — 값이 있거나 ghost 행일 때만. ghost 행은 값이 비었고 기여 필드가 visible일 때.
   const ratingText = ratingVisible ? `★ ${d.rating.toFixed(1)} / 5.0` : '';
-  const venueLine = [theaterVal, screenVal, seatVal].filter(Boolean).join('  ·  ');
-  // 합쳐진 VENUE 셀(극장+상영관+좌석)은 대표 필드 theater로 탭 매핑(#259).
+  // VENUE 셀 분해(#266 PR-D) — 극장·상영관·좌석을 시각은 Criterion 고유 sep('  ·  ')로 붙이되 각각
+  // 독립 FieldTap + 개별 ghost. sep·stampSurface를 조각에 물려 픽셀 보존, 바깥 셀 FieldTap을 없애
+  // 조각을 형제로 배치(이중 중첩 stopPropagation 삼킴 회피).
+  const venueCell = fieldPieces(
+    [
+      { field: 'theater', value: theaterVal, ghost: gTheater, label: 'THEATER' },
+      { field: 'screen', value: screenVal, ghost: gScreen, label: 'SCREEN' },
+      { field: 'seat', value: seatVal, ghost: gSeat, label: 'SEAT' },
+    ],
+    onField,
+    { sep: '  ·  ', surface: stampSurface }
+  );
   type Row = { label: string; value?: string; ghost?: boolean; field: SheetTarget };
   const screeningRows = ([
-    { label: 'VENUE', value: venueLine, ghost: ghostOn && !venueLine && (fv?.theater !== false || fv?.screen !== false || fv?.seat !== false), field: 'theater' },
     { label: 'WATCHED', value: watchDateVal, ghost: ghostOn && !watchDateVal && fv?.watchDate !== false, field: 'watchDate' },
   ] as Row[]).filter(r => r.value || r.ghost);
+  const hasScreening = venueCell.hasAny || screeningRows.length > 0;
   const filmRows = ([
     { label: 'RATED', value: ratingText, ghost: ghostOn && !ratingText && fv?.rating !== false, field: 'rating' },
     { label: 'RELEASED', value: releaseDateVal, ghost: ghostOn && !releaseDateVal && fv?.releaseDate !== false, field: 'releaseDate' },
@@ -189,29 +209,39 @@ export function MoodCriterion({ movieInfo: d, components, croppedImageUrl, field
 
       {/* Bottom caps block — 관람/영화 청킹, 값은 Pretendard로 통일 */}
       <div style={{ position: 'absolute', left: 144, right: 56, bottom: 52 }}>
-        {screeningRows.length > 0 && (
+        {hasScreening && (
           <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: 26, rowGap: 11, alignItems: 'baseline' }}>
+            {venueCell.hasAny && (
+              <>
+                {/* VENUE 라벨은 비인터랙티브(바깥 FieldTap 제거) — 값의 theater·screen·seat 조각이 각자
+                    제 FieldTap을 달아 탭 타깃을 연다. 실값+ghost 혼합 시에만 flex로 한 줄 정렬(#268 P1). */}
+                <div style={metaLabel}>VENUE</div>
+                <div style={{ ...metaValue, ...(venueCell.hasGhost ? { display: 'flex', alignItems: 'center', gap: 10, whiteSpace: 'normal' } : null) }}>
+                  {venueCell.node}
+                </div>
+              </>
+            )}
             {screeningRows.map((r, i) => (
               <FieldTap key={i} field={r.field} onField={onField}>
-                <div style={{ fontWeight: 700, fontSize: 19, fontFamily: FONT_MONO, letterSpacing: 2, textTransform: 'uppercase', opacity: 0.55 }}>{r.label}</div>
+                <div style={metaLabel}>{r.label}</div>
                 {r.ghost
                   ? <FieldGhost width={180} height={32} surface={stampSurface} />
-                  : <div style={{ fontWeight: 700, fontSize: 28, fontFamily: FONT_SANS, letterSpacing: -0.2, opacity: 0.95, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.value}</div>}
+                  : <div style={metaValue}>{r.value}</div>}
               </FieldTap>
             ))}
           </div>
         )}
-        {screeningRows.length > 0 && filmRows.length > 0 && (
+        {hasScreening && filmRows.length > 0 && (
           <div style={{ height: 1, background: ink, opacity: 0.2, margin: '16px 0' }} />
         )}
         {filmRows.length > 0 && (
           <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: 26, rowGap: 11, alignItems: 'baseline' }}>
             {filmRows.map((r, i) => (
               <FieldTap key={i} field={r.field} onField={onField}>
-                <div style={{ fontWeight: 700, fontSize: 19, fontFamily: FONT_MONO, letterSpacing: 2, textTransform: 'uppercase', opacity: 0.55 }}>{r.label}</div>
+                <div style={metaLabel}>{r.label}</div>
                 {r.ghost
                   ? <FieldGhost width={180} height={32} surface={stampSurface} />
-                  : <div style={{ fontWeight: 700, fontSize: 28, fontFamily: FONT_SANS, letterSpacing: -0.2, opacity: 0.95, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.value}</div>}
+                  : <div style={metaValue}>{r.value}</div>}
               </FieldTap>
             ))}
           </div>

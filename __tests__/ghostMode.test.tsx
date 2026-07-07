@@ -277,3 +277,37 @@ describe('중간 무드 병합 셀 분해 ghost (#266 PR-C)', () => {
     expect(html).not.toContain('gap:10px');
   });
 });
+
+describe('MoodCriterion VENUE 셀 분해 ghost (#266 PR-D)', () => {
+  // 분해 전 VENUE 셀은 셋 다 비었을 때 ghost 하나만 그렸다. 이제 빈 theater·screen·seat가 각자 라벨
+  // 점선을 그리되, 데스크톱(ghost=undefined) placeholder 0 불변식(:104)은 유지되고, 값+ghost 혼합
+  // 셀은 flex로 한 줄 정렬(#268 P1)한다. seat까지 셋을 분해하는 유일 무드.
+  test('빈 theater·screen·seat + ghost=true → THEATER·SCREEN·SEAT ghost 각각', () => {
+    const html = render(MoodCriterion, 'criterion', EMPTY_MOVIE, {}, true);
+    expect(html).toContain('THEATER');
+    expect(html).toContain('SCREEN');
+    expect(html).toContain('SEAT');
+  });
+
+  test('빈 venue + ghost=undefined(데스크톱) → 조각 placeholder 없음(픽셀 보존)', () => {
+    const html = render(MoodCriterion, 'criterion', EMPTY_MOVIE, {}, undefined);
+    expect(html).not.toContain('THEATER');
+    expect(html).not.toContain('SCREEN');
+    expect(html).not.toContain('SEAT');
+  });
+
+  // theater 실값(inline 텍스트) + screen ghost(블록 FieldGhost) 혼합 시, nowrap 한 줄 전제인 값
+  // 컨테이너가 flex여야 ghost 박스가 줄바꿈되지 않는다(#268 리뷰 P1). gap:10px는 이 flex 컨테이너의
+  // 시그니처 — signature ghost(gap:10)는 FULL_MOVIE에 signature 값이 있어 이 경로를 타지 않는다.
+  test('theater 값 + 빈 screen + ghost=true → 텍스트·ghost 혼합을 flex로 정렬', () => {
+    const html = render(MoodCriterion, 'criterion', { ...FULL_MOVIE, screen: '' }, {}, true);
+    expect(html).toContain('CGVDATA'); // theater 실값 텍스트
+    expect(html).toContain('SCREEN'); // screen ghost 라벨
+    expect(html).toContain('gap:10px'); // 혼합 flex 컨테이너 — 없으면 block ghost가 줄바꿈돼 깨짐
+  });
+
+  test('theater 값 + 빈 screen + ghost=undefined → flex 아님(데스크톱 픽셀 보존)', () => {
+    const html = render(MoodCriterion, 'criterion', { ...FULL_MOVIE, screen: '' }, {}, undefined);
+    expect(html).not.toContain('gap:10px');
+  });
+});
