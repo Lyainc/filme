@@ -204,6 +204,8 @@ describe('EditorCanvas hideFormSections (#215 PART A·B)', () => {
     render(<EditorHarness />);
     expect(screen.queryByText('KOBIS lookup')).not.toBeNull();
     expect(screen.queryByText('Optional details')).not.toBeNull();
+    // #260: MovieInfoForm 제목 행에도 눈 토글 없음(네 번째 title-hide 경로 차단).
+    expect(screen.queryByLabelText('제목 티켓에 표시')).toBeNull();
   });
 
   // #260 경로 1 — '전체 해제'는 필수 필드(제목)를 남기고 나머지만 끈다(제목 없는 티켓 방지).

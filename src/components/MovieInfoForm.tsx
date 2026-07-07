@@ -87,11 +87,7 @@ export default function MovieInfoForm({
       <div className="relative" ref={searchContainerRef}>
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-2">
-            <VisibilityCheckbox
-              checked={fieldVisibility.title}
-              onChange={(v) => onFieldVisibilityChange({ title: v })}
-              label="제목"
-            />
+            {/* 제목은 필수 필드(#260 REQUIRED_FIELDS) — 숨김 눈 토글 없음(다른 세 경로와 동일 규칙). */}
             <label
               htmlFor="movieTitle"
               className="text-mono text-[10px] uppercase tracking-widest text-fg-muted"
