@@ -230,3 +230,39 @@ describe('중간 무드 병합 셀 분해 (#266 PR-C)', () => {
     });
   }
 });
+
+describe('MoodCriterion VENUE 셀 분해 (#266 PR-D)', () => {
+  // 분해 전 theater 하나의 FieldTap이 VENUE 셀(극장·상영관·좌석)을 통째로 삼켰다. 이제 조각별
+  // FieldTap이라 세 필드 탭이 각자 제 시트 타깃을 연다. Criterion은 seat까지 셋을 병합하던 유일 무드.
+  test('극장·상영관·좌석 탭이 각자 제 시트 타깃을 연다', () => {
+    const calls: SheetTarget[] = [];
+    render(
+      <MoodCriterion
+        movieInfo={FULL_MOVIE}
+        components={{ ...BASE, layout: 'criterion' }}
+        croppedImageUrl="blob:x"
+        fieldVisibility={ALL_ON}
+        onField={(f) => calls.push(f)}
+      />
+    );
+    fireEvent.click(screen.getByRole('button', { name: '극장 편집' }));
+    fireEvent.click(screen.getByRole('button', { name: '상영관 편집' }));
+    fireEvent.click(screen.getByRole('button', { name: '좌석 편집' }));
+    expect(calls).toEqual(['theater', 'screen', 'seat']);
+  });
+
+  // 캡처 유출 불변식(:104-115) — onField 없으면 탭 UI 0건이고, 세 필드가 Criterion 고유 sep('  ·  ',
+  // 양쪽 공백 2칸)로 결합돼 산출물 픽셀이 보존된다(MoodStub의 단일 공백 ·와 구별).
+  test("onField 없으면 role=button 0건 + '  ·  ' 결합 텍스트 보존(캡처 안전)", () => {
+    const html = renderToStaticMarkup(
+      <MoodCriterion
+        movieInfo={FULL_MOVIE}
+        components={{ ...BASE, layout: 'criterion' }}
+        croppedImageUrl="blob:x"
+        fieldVisibility={ALL_ON}
+      />
+    );
+    expect(html).not.toContain('role="button"');
+    expect(html).toContain('CGVDATA  ·  IMAXDATA  ·  G14'); // 극장·상영관·좌석 2칸 sep 결합 보존
+  });
+});
