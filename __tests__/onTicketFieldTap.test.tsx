@@ -184,3 +184,49 @@ describe('MoodStub SCREEN 셀 분해 (#266 PR-B)', () => {
     expect(html).toContain('CGVDATA · IMAXDATA');
   });
 });
+
+describe('중간 무드 병합 셀 분해 (#266 PR-C)', () => {
+  // MoodStub PR-B 패턴을 Minimal·35mm·35mmLandscape에 복제. 장소(venue/exhibited)·시간
+  // (screening/screened) 병합 셀이 필드별 독립 조각이라 각 필드 탭이 제 시트 타깃을 연다.
+  const MID_MOODS: [string, MoodFn][] = [
+    ['minimal', MoodMinimal],
+    ['35mm', Mood35mm],
+    ['35mm-landscape', Mood35mmLandscape],
+  ];
+
+  for (const [id, Mood] of MID_MOODS) {
+    test(`${id}: 극장·상영관·좌석·관람일·시각 탭이 각자 제 시트 타깃을 연다`, () => {
+      const calls: SheetTarget[] = [];
+      render(
+        <Mood
+          movieInfo={FULL_MOVIE}
+          components={{ ...BASE, layout: id as TicketComponents['layout'] }}
+          croppedImageUrl="blob:x"
+          fieldVisibility={ALL_ON}
+          onField={(f) => calls.push(f)}
+        />
+      );
+      fireEvent.click(screen.getByRole('button', { name: '극장 편집' }));
+      fireEvent.click(screen.getByRole('button', { name: '상영관 편집' }));
+      fireEvent.click(screen.getByRole('button', { name: '좌석 편집' }));
+      fireEvent.click(screen.getByRole('button', { name: '관람일 편집' }));
+      fireEvent.click(screen.getByRole('button', { name: '관람 시간 편집' }));
+      expect(calls).toEqual(['theater', 'screen', 'seat', 'watchDate', 'watchTime']);
+    });
+
+    // 캡처 유출 불변식(:104-115) — 분해 후에도 onField 없으면 탭 UI 0건이고, 조각이 · 결합 텍스트로
+    // 그대로 렌더돼 산출물 픽셀이 보존된다(데스크톱 바이트 동일 근사).
+    test(`${id}: onField 없으면 role=button 0건 + · 결합 텍스트 보존(캡처 안전)`, () => {
+      const html = renderToStaticMarkup(
+        <Mood
+          movieInfo={FULL_MOVIE}
+          components={{ ...BASE, layout: id as TicketComponents['layout'] }}
+          croppedImageUrl="blob:x"
+          fieldVisibility={ALL_ON}
+        />
+      );
+      expect(html).not.toContain('role="button"');
+      expect(html).toContain('CGVDATA · IMAXDATA'); // 극장·상영관 결합 텍스트 보존
+    });
+  }
+});

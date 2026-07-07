@@ -1,4 +1,4 @@
-import { CSSProperties } from 'react';
+import { CSSProperties, ReactNode } from 'react';
 import type { SheetTarget } from '@/constants/fields';
 import {
   Barcode,
@@ -12,6 +12,7 @@ import {
   HorizontalSprockets,
   MoodProps,
   Poster,
+  fieldPieces,
   gate,
   pickTitleSize,
   posterTapProps,
@@ -43,6 +44,9 @@ const cellLabel: CSSProperties = {
   marginBottom: 6,
 };
 
+// 병합 셀(node)이면 분해 조각을, 아니면 단일 값/ghost를 렌더하는 공통 메타 셀 형태(#266 PR-C).
+type MetaCell = { label: string; field: SheetTarget; value?: string; cast?: boolean; full?: boolean; ghost?: boolean; node?: ReactNode; hasGhost?: boolean };
+
 export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap }: MoodProps) {
   const titleSize = pickTitleSize(d.title.length, [104, 84, 66, 54]);
 
@@ -71,20 +75,39 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
   const gTitleOg = showFieldGhost(fv?.titleOg, d.titleOg, ghost);
   const gRating = showFieldGhost(fv?.rating, d.rating, ghost);
   const gSignature = showFieldGhost(fv?.signature, d.signature, ghost);
+  const gTheater = showFieldGhost(fv?.theater, d.theater, ghost);
+  const gScreen = showFieldGhost(fv?.screen, d.screen, ghost);
+  const gSeat = showFieldGhost(fv?.seat, d.seat, ghost);
+  const gWatchDate = showFieldGhost(fv?.watchDate, watchDateClean, ghost);
+  const gWatchTime = showFieldGhost(fv?.watchTime, d.watchTime, ghost);
 
   // 청킹: 관람(Exhibited/Screened) vs 영화(Runtime/Released/Starring). 값은 Pretendard로 통일
   // (한글이 모노 스택에서 깨지던 문제 해소). 모노는 스프로킷·일련번호·원형 스탬프 등 필름 크롬에만.
-  // ghost 셀은 값이 비었고 기여 필드가 visible일 때만 push(value 없이).
-  // 합쳐진 셀(Exhibited=극장+상영관+좌석, Screened=관람일+시간)은 대표 필드로 탭 매핑(#259).
-  const screeningCells: { label: string; value?: string; cast?: boolean; full?: boolean; ghost?: boolean; field: SheetTarget }[] = [];
-  const exhibited = [theaterVal, screenVal, seatVal].filter(Boolean).join(' · ');
-  if (exhibited) screeningCells.push({ label: 'Exhibited', value: exhibited, field: 'theater' });
-  else if (ghostOn && (fv?.theater !== false || fv?.screen !== false || fv?.seat !== false)) screeningCells.push({ label: 'Exhibited', ghost: true, field: 'theater' });
-  const screened = [watchDateVal, watchTimeVal].filter(Boolean).join(' · ');
-  if (screened) screeningCells.push({ label: 'Screened', value: screened, field: 'watchDate' });
-  else if (ghostOn && (fv?.watchDate !== false || fv?.watchTime !== false)) screeningCells.push({ label: 'Screened', ghost: true, field: 'watchDate' });
+  // 병합 셀(Exhibited=극장+상영관+좌석, Screened=관람일+시간)은 fieldPieces로 필드별 독립 조각(값→
+  // 텍스트, 빈+ghost→라벨 점선)으로 분해한다(#266 PR-C) — 조각이 각자 제 시트를 열고, 데스크톱
+  // (onField=undefined)은 FieldTap이 통과해 분해 전과 바이트 동일.
+  const screeningCells: MetaCell[] = [];
+  const exhibited = fieldPieces(
+    [
+      { field: 'theater', value: theaterVal, ghost: gTheater, label: 'THEATER' },
+      { field: 'screen', value: screenVal, ghost: gScreen, label: 'SCREEN' },
+      { field: 'seat', value: seatVal, ghost: gSeat, label: 'SEAT' },
+    ],
+    onField,
+    { surface: 'dark' }
+  );
+  if (exhibited.hasAny) screeningCells.push({ label: 'Exhibited', node: exhibited.node, hasGhost: exhibited.hasGhost, field: 'theater' });
+  const screened = fieldPieces(
+    [
+      { field: 'watchDate', value: watchDateVal, ghost: gWatchDate, label: 'DATE' },
+      { field: 'watchTime', value: watchTimeVal, ghost: gWatchTime, label: 'TIME' },
+    ],
+    onField,
+    { surface: 'dark' }
+  );
+  if (screened.hasAny) screeningCells.push({ label: 'Screened', node: screened.node, hasGhost: screened.hasGhost, field: 'watchDate' });
 
-  const filmCells: { label: string; value?: string; cast?: boolean; full?: boolean; ghost?: boolean; field: SheetTarget }[] = [];
+  const filmCells: MetaCell[] = [];
   if (runtimeVal) filmCells.push({ label: 'Runtime', value: runtimeVal, field: 'runtime' });
   else if (ghostOn && fv?.runtime !== false) filmCells.push({ label: 'Runtime', ghost: true, field: 'runtime' });
   const released = [releaseDateVal, reissueVal && `재개봉 ${reissueVal}`].filter(Boolean).join(' · ');
@@ -180,7 +203,12 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
             <div style={{ marginBottom: 18 }}>
               {screeningCells.length > 0 && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px 48px' }}>
-                  {screeningCells.map((c, i) => (
+                  {screeningCells.map((c, i) => c.node !== undefined ? (
+                    <div key={i} style={{ minWidth: 0, flex: c.full ? '1 1 100%' : '0 1 auto' }}>
+                      <div style={cellLabel}>{c.label}</div>
+                      <div style={{ color: FS_INK, fontWeight: 600, fontSize: 32, fontFamily: FONT_SANS, letterSpacing: -0.2, lineHeight: 1.2, maxWidth: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', ...(c.hasGhost ? { display: 'flex', alignItems: 'center', gap: 10, whiteSpace: 'normal' } : null) }}>{c.node}</div>
+                    </div>
+                  ) : (
                     <FieldTap key={i} field={c.field} onField={onField}>
                       <div style={{ minWidth: 0, flex: c.full ? '1 1 100%' : '0 1 auto' }}>
                         <div style={cellLabel}>{c.label}</div>
