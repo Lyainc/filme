@@ -288,7 +288,7 @@ export function fieldPieces(
   const node = present.length ? (
     <>
       {present.map((p, i) => (
-        <Fragment key={p.field}>
+        <Fragment key={`${p.field}-${i}`}>
           {i > 0 ? sep : null}
           <FieldTap field={p.field} onField={onField}>{p.node}</FieldTap>
         </Fragment>

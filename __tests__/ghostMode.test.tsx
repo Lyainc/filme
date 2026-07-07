@@ -311,3 +311,41 @@ describe('MoodCriterion VENUE 셀 분해 ghost (#266 PR-D)', () => {
     expect(html).not.toContain('gap:10px');
   });
 });
+
+describe('MoodEditorial 관람 셀·릴리즈 분해 ghost (#266)', () => {
+  // theater 셀은 value(극장)+sub(상영관) 2줄. 빈 두 필드가 ghost 모드에서 각 줄 라벨 점선(THEATER·
+  // SCREEN)을 그리되, 데스크톱(ghost=undefined) placeholder 0 불변식(:104)은 유지된다.
+  test('빈 theater·screen + ghost=true → THEATER·SCREEN ghost 각각', () => {
+    const html = render(MoodEditorial, 'editorial', { ...FULL_MOVIE, theater: '', screen: '' }, {}, true);
+    expect(html).toContain('THEATER');
+    expect(html).toContain('SCREEN');
+  });
+
+  test('빈 theater·screen + ghost=undefined(데스크톱) → 분해 셀 placeholder 없음(픽셀 보존)', () => {
+    const html = render(MoodEditorial, 'editorial', { ...FULL_MOVIE, theater: '', screen: '' }, {}, undefined);
+    expect(html).not.toContain('THEATER');
+    expect(html).not.toContain('SCREEN');
+  });
+
+  // 빈 screen도 개별 ghost — theater 실값(value 줄) + screen ghost(sub 줄)는 원래 세로 2줄이라 flex
+  // 없이 각 줄에 선다. Stub/중간무드의 sep-join 한 줄 혼합과 달리 여기선 줄바꿈 문제가 없어 flex를 안 쓴다.
+  test('theater 값 + 빈 screen + ghost=true → SCREEN ghost(sub 줄) 등장', () => {
+    const html = render(MoodEditorial, 'editorial', { ...FULL_MOVIE, screen: '' }, {}, true);
+    expect(html).toContain('CGVDATA'); // 극장 실값(value 줄)
+    expect(html).toContain('SCREEN'); // 상영관 재켜기 ghost(sub 줄)
+  });
+
+  // 혼합 flex(#268 P1)는 Editorial에선 릴리즈 병합선(fieldPieces)에서 발생 — Sortie 실값(inline) +
+  // Reprise ghost(블록) 혼합 시 값 줄이 flex여야 ghost 박스가 줄바꿈되지 않는다. gap:10px가 이 시그니처.
+  test('releaseDate 값 + 빈 reissue + ghost=true → 릴리즈 텍스트·ghost 혼합을 flex로 정렬', () => {
+    const html = render(MoodEditorial, 'editorial', { ...FULL_MOVIE, reissueDate: '' }, {}, true);
+    expect(html).toContain('Sortie '); // 개봉일 실값(inline)
+    expect(html).toContain('REISSUE'); // 재개봉 재켜기 ghost(블록)
+    expect(html).toContain('gap:10px'); // 혼합 flex — 없으면 block ghost가 줄바꿈
+  });
+
+  test('releaseDate 값 + 빈 reissue + ghost=undefined(데스크톱) → 릴리즈 ghost 없음(픽셀 보존)', () => {
+    const html = render(MoodEditorial, 'editorial', { ...FULL_MOVIE, reissueDate: '' }, {}, undefined);
+    expect(html).not.toContain('REISSUE');
+  });
+});

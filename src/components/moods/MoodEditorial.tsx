@@ -13,6 +13,7 @@ import {
   MoodProps,
   PerforationStrip,
   Poster,
+  fieldPieces,
   gate,
   pickTitleSize,
   posterTapProps,
@@ -70,24 +71,51 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
   const gRuntime = showFieldGhost(fv?.runtime, d.runtime, ghost);
   const gRating = showFieldGhost(fv?.rating, d.rating, ghost);
   const gSignature = showFieldGhost(fv?.signature, d.signature, ghost);
+  const gTheater = showFieldGhost(fv?.theater, d.theater, ghost);
+  const gScreen = showFieldGhost(fv?.screen, d.screen, ghost);
+  const gWatchDate = showFieldGhost(fv?.watchDate, watchDateClean, ghost);
+  const gWatchTime = showFieldGhost(fv?.watchTime, d.watchTime, ghost);
+  const gRelease = showFieldGhost(fv?.releaseDate, releaseClean, ghost);
+  const gReissue = ghostOn && !reissueVal && !!d.isReissue && fv?.reissue !== false;
 
-  // 관람(screening) 메타 셀 — 값은 Pretendard로 통일. ghost 셀은 값이 비었고 기여 필드가 visible일 때.
-  // 합쳐진 셀(Théâtre=극장+상영관, Séance=관람일+시간)은 대표 필드로 탭 매핑(#259).
-  const cells: { label: string; value?: string; sub?: string; ghost?: boolean; field: SheetTarget }[] = [];
-  const theaterValue = theaterVal || screenVal;
-  if (theaterValue) cells.push({ label: theaterVal ? 'Théâtre' : 'Salle', value: theaterValue, sub: theaterVal ? screenVal : '', field: 'theater' });
-  else if (ghostOn && (fv?.theater !== false || fv?.screen !== false)) cells.push({ label: 'Théâtre', ghost: true, field: 'theater' });
-  const sessionValue = watchDateVal || watchTimeVal;
-  if (sessionValue) cells.push({ label: watchDateVal ? 'Séance' : 'Heure', value: sessionValue, sub: watchDateVal ? watchTimeVal : '', field: 'watchDate' });
-  else if (ghostOn && (fv?.watchDate !== false || fv?.watchTime !== false)) cells.push({ label: 'Séance', ghost: true, field: 'watchDate' });
-  if (seatVal) cells.push({ label: 'Place', value: seatVal, field: 'seat' });
-  else if (ghostOn && fv?.seat !== false) cells.push({ label: 'Place', ghost: true, field: 'seat' });
+  // 관람(screening) 메타 셀 분해(#266) — 병합 셀(Théâtre=극장+상영관, Séance=관람일+시간)을 조각별
+  // 독립 FieldTap + 개별 ghost로. 단 Editorial은 sep-join이 아니라 value(42px)+sub(26px) 2줄·라벨
+  // 스위칭 구조라 fieldPieces(inline sep-join)가 안 맞아 셀 내부에서 각 줄을 FieldTap으로 감싼다.
+  // 라벨 스위칭(극장 없으면 상영관이 value로 승격)을 그대로 유지해 데스크톱 픽셀을 보존한다.
+  type Cell = {
+    label: string;
+    value?: string; valueField: SheetTarget; valueGhost?: boolean; valueGhostLabel?: string;
+    sub?: string; subField?: SheetTarget; subGhost?: boolean; subGhostLabel?: string;
+  };
+  const cells: Cell[] = [];
+  if (theaterVal) {
+    cells.push({ label: 'Théâtre', value: theaterVal, valueField: 'theater', sub: screenVal, subField: 'screen', subGhost: gScreen, subGhostLabel: 'SCREEN' });
+  } else if (screenVal) {
+    cells.push({ label: 'Salle', value: screenVal, valueField: 'screen', subField: 'theater', subGhost: gTheater, subGhostLabel: 'THEATER' });
+  } else if (ghostOn && (fv?.theater !== false || fv?.screen !== false)) {
+    cells.push({ label: 'Théâtre', valueField: 'theater', valueGhost: gTheater, valueGhostLabel: 'THEATER', subField: 'screen', subGhost: gScreen, subGhostLabel: 'SCREEN' });
+  }
+  if (watchDateVal) {
+    cells.push({ label: 'Séance', value: watchDateVal, valueField: 'watchDate', sub: watchTimeVal, subField: 'watchTime', subGhost: gWatchTime, subGhostLabel: 'TIME' });
+  } else if (watchTimeVal) {
+    cells.push({ label: 'Heure', value: watchTimeVal, valueField: 'watchTime', subField: 'watchDate', subGhost: gWatchDate, subGhostLabel: 'DATE' });
+  } else if (ghostOn && (fv?.watchDate !== false || fv?.watchTime !== false)) {
+    cells.push({ label: 'Séance', valueField: 'watchDate', valueGhost: gWatchDate, valueGhostLabel: 'DATE', subField: 'watchTime', subGhost: gWatchTime, subGhostLabel: 'TIME' });
+  }
+  if (seatVal) cells.push({ label: 'Place', value: seatVal, valueField: 'seat' });
+  else if (ghostOn && fv?.seat !== false) cells.push({ label: 'Place', valueField: 'seat', valueGhost: true, valueGhostLabel: 'SEAT' });
 
-  const releaseLine = [
-    releaseDateVal && `Sortie ${releaseDateVal}`,
-    reissueVal && `Reprise ${reissueVal}`,
-  ].filter(Boolean).join('      ·      ');
-  const gReleaseLine = ghostOn && !releaseLine && (fv?.releaseDate !== false || (!!d.isReissue && fv?.reissue !== false));
+  // 릴리즈 병합선 분해(#266) — Sortie·Reprise를 Editorial 고유 sep('      ·      ')로 붙이던 한 줄을
+  // 조각별 독립 FieldTap + 개별 ghost로. 이건 실제 sep-join이라 fieldPieces가 그대로 맞는다. reissue는
+  // FIELD_SHEET_TYPE에 없어 releaseDate 시트로 매핑(Criterion/Minimal RE-REL.과 정렬).
+  const release = fieldPieces(
+    [
+      { field: 'releaseDate', value: releaseDateVal && `Sortie ${releaseDateVal}`, ghost: gRelease, label: 'RELEASE' },
+      { field: 'releaseDate', value: reissueVal && `Reprise ${reissueVal}`, ghost: gReissue, label: 'REISSUE' },
+    ],
+    onField,
+    { sep: '      ·      ', surface: 'paper' }
+  );
 
   const filmSummary = runtimeVal;
   const stubHasStamp = components.chainVisible || components.formatVisible;
@@ -182,19 +210,11 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
           </FieldTap>
         ) : null}
 
-        {releaseLine ? (
-          <FieldTap field="releaseDate" onField={onField}>
-            <div style={{ marginTop: 16, fontWeight: 600, fontSize: 26, fontFamily: FONT_SANS, letterSpacing: -0.2, color: PAPER_DIM }}>
-              {releaseLine}
-            </div>
-          </FieldTap>
-        ) : gReleaseLine ? (
-          <FieldTap field="releaseDate" onField={onField}>
-            <div style={{ marginTop: 16 }}>
-              <FieldGhost text="RELEASE" width={220} height={32} surface="paper" />
-            </div>
-          </FieldTap>
-        ) : null}
+        {release.hasAny && (
+          <div style={{ marginTop: 16, fontWeight: 600, fontSize: 26, fontFamily: FONT_SANS, letterSpacing: -0.2, color: PAPER_DIM, ...(release.hasGhost ? { display: 'flex', alignItems: 'center', gap: 10 } : null) }}>
+            {release.node}
+          </div>
+        )}
 
         {/* Chunk divider — film ↕ screening */}
         <div style={{ height: 1, background: PAPER_DEEP, opacity: 0.22, margin: '26px 0' }} />
@@ -203,23 +223,33 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
         {cells.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '22px 52px' }}>
             {cells.map((c, i) => (
-              <FieldTap key={i} field={c.field} onField={onField}>
-                <div style={{ minWidth: 0, flex: '0 1 auto' }}>
-                  <div style={{ ...italicLabel(PAPER_DIM, 28), marginBottom: 6 }}>{c.label}</div>
-                  {c.ghost ? (
-                    <FieldGhost width={220} height={46} surface="paper" />
-                  ) : (
+              <div key={i} style={{ minWidth: 0, flex: '0 1 auto' }}>
+                <div style={{ ...italicLabel(PAPER_DIM, 28), marginBottom: 6 }}>{c.label}</div>
+                {c.value ? (
+                  <FieldTap field={c.valueField} onField={onField}>
                     <div style={{ fontWeight: 800, fontSize: 42, fontFamily: FONT_SANS, letterSpacing: -0.5, lineHeight: 1.05, color: PAPER_DEEP, maxWidth: 440, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {c.value}
                     </div>
-                  )}
-                  {c.sub && (
+                  </FieldTap>
+                ) : c.valueGhost ? (
+                  <FieldTap field={c.valueField} onField={onField}>
+                    <FieldGhost text={c.valueGhostLabel} width={220} height={46} surface="paper" />
+                  </FieldTap>
+                ) : null}
+                {c.sub ? (
+                  <FieldTap field={c.subField!} onField={onField}>
                     <div style={{ marginTop: 6, fontWeight: 600, fontSize: 26, fontFamily: FONT_SANS, letterSpacing: -0.2, color: PAPER_DIM, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {c.sub}
                     </div>
-                  )}
-                </div>
-              </FieldTap>
+                  </FieldTap>
+                ) : c.subGhost ? (
+                  <FieldTap field={c.subField!} onField={onField}>
+                    <div style={{ marginTop: 6 }}>
+                      <FieldGhost text={c.subGhostLabel} width={130} height={30} surface="paper" />
+                    </div>
+                  </FieldTap>
+                ) : null}
+              </div>
             ))}
           </div>
         )}
