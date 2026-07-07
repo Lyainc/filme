@@ -12,6 +12,7 @@ import {
   FormatStamp,
   MoodProps,
   Poster,
+  fieldPieces,
   gate,
   pickTitleSize,
   posterTapProps,
@@ -93,22 +94,14 @@ export function MoodStub({ movieInfo: d, components, croppedImageUrl, fieldVisib
     stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost);
 
   // SCREEN 셀 분해(#266 PR-B) — theater·screen을 시각은 ·로 붙이되 각각 독립 FieldTap + 개별 ghost.
-  // 값이 있으면 텍스트만 두어 데스크톱(onField=undefined)에선 FieldTap이 통과, 분해 전과 마크업 동일.
-  // 비었고 ghost 모드면 라벨 점선(FieldGhost)으로 재노출 어포던스를 준다.
-  const theaterPiece = theaterVal ? (
-    <FieldTap field="theater" onField={onField}>{theaterVal}</FieldTap>
-  ) : gTheater ? (
-    <FieldTap field="theater" onField={onField}><FieldGhost text="THEATER" width={130} height={30} surface="paper" /></FieldTap>
-  ) : null;
-  const screenPiece = screenVal ? (
-    <FieldTap field="screen" onField={onField}>{screenVal}</FieldTap>
-  ) : gScreen ? (
-    <FieldTap field="screen" onField={onField}><FieldGhost text="SCREEN" width={130} height={30} surface="paper" /></FieldTap>
-  ) : null;
-  // ghost(블록 FieldGhost)가 실값 텍스트(inline)와 섞이면 nowrap 한 줄 전제인 cellValue에서 줄바꿈돼 깨진다
-  // (actors 관례처럼 flex로 감싼다). ghost는 ghost===true(모바일)에서만 서니 데스크톱(undefined)은 이 경로를
-  // 안 타 바이트 동일이 유지된다(#268 리뷰 P1).
-  const hasGhostPiece = gTheater || gScreen;
+  const screenCell = fieldPieces(
+    [
+      { field: 'theater', value: theaterVal, ghost: gTheater, label: 'THEATER' },
+      { field: 'screen', value: screenVal, ghost: gScreen, label: 'SCREEN' },
+    ],
+    onField,
+    { surface: 'paper' }
+  );
 
   const scrimGrad =
     'linear-gradient(180deg, rgba(10,10,10,0) 0%, rgba(10,10,10,0.55) 40%, rgba(10,10,10,0.94) 100%)';
@@ -241,14 +234,8 @@ export function MoodStub({ movieInfo: d, components, croppedImageUrl, fieldVisib
             {/* 셀 전체를 감싸던 바깥 FieldTap 제거 — 조각별 FieldTap이 형제로 붙어 이중 중첩(stopPropagation 삼킴) 없음(#266 [중] 리스크). */}
             <div style={{ padding: '18px 26px', minWidth: 0 }}>
               <div style={cellLabel}>Screen</div>
-              <div style={{ ...cellValue, fontSize: 26, ...(hasGhostPiece ? { display: 'flex', alignItems: 'center', gap: 10, whiteSpace: 'normal' } : null) }}>
-                {theaterPiece || screenPiece ? (
-                  <>
-                    {theaterPiece}
-                    {theaterVal && screenVal ? ' · ' : null}
-                    {screenPiece}
-                  </>
-                ) : '—'}
+              <div style={{ ...cellValue, fontSize: 26, ...(screenCell.hasGhost ? { display: 'flex', alignItems: 'center', gap: 10, whiteSpace: 'normal' } : null) }}>
+                {screenCell.node ?? '—'}
               </div>
             </div>
           </div>
