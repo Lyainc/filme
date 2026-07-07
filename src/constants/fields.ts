@@ -2,8 +2,8 @@ import type { TicketField, MovieInfo, TicketComponents } from '@/types';
 import { formatDate } from '@/utils/dateFormat';
 
 /**
- * 필드 메타데이터 단일 소스(#215). 라벨은 인라인 폼(EditorCanvas)·런처(FieldLauncher)·
- * 편집 시트(FieldEditSheet) 셋이 공유하므로 여기 한 곳에 둔다(이전엔 EditorCanvas 로컬).
+ * 필드 메타데이터 단일 소스(#215). 라벨은 인라인 폼(EditorCanvas)·편집 시트(FieldEditSheet)·
+ * 데스크톱 아코디언(FieldAccordion)이 공유하므로 여기 한 곳에 둔다(이전엔 EditorCanvas 로컬).
  */
 export const FIELD_LABELS: Record<TicketField, string> = {
   title: '제목',
@@ -130,8 +130,8 @@ export const FORMAT_PRESETS = ['IMAX', '4DX', 'Dolby', 'ScreenX'];
 
 /**
  * 필드 현재값 미리보기 문자열. 비어 있으면 '' 반환(호출부가 placeholder로 대체).
- * 데스크톱 아코디언(FieldAccordion)·모바일 런처(FieldLauncher) 공유 — FieldLauncher 격리를 위해
- * 여기 상수 모듈로 이전(#266 PR-A).
+ * 데스크톱 아코디언(FieldAccordion)·모바일 온-티켓 탭이 공유 — 컴포넌트에서 분리해
+ * 상수 모듈로 이전(#266 PR-A).
  */
 export function fieldPreview(field: TicketField, info: MovieInfo): string {
   if (field === 'rating') return `${(info.rating ?? 0).toFixed(1)} / 5.0`;

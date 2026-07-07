@@ -27,7 +27,7 @@ interface EditorCanvasProps {
   hideRailSections?: boolean;
   /**
    * 모바일 탭-투-에딧(#215): 인라인 MovieInfo 폼(Film 섹션 + Optional 아코디언, RatingPicker 포함)을
-   * 숨긴다 — 이 필드들은 FieldLauncher → FieldEditSheet로 편집한다. 포스터·OCR·표시항목 일괄은 유지.
+   * 숨긴다 — 이 필드들은 온-티켓 탭 → FieldEditSheet로 편집한다. 포스터·OCR·표시항목 일괄은 유지.
    * (로고 픽커 섹션은 #231에서 EditorCanvas에서 통째로 제거 — 로고는 StampSheet가 담당하므로
    *  이 플래그와 무관하게 더 이상 렌더되지 않는다.)
    */
@@ -165,7 +165,7 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
       </div>
 
       {/* MovieInfo 인라인 폼(Film + Optional 아코디언) — 모바일 탭-투-에딧(#215)에선 숨기고
-          FieldLauncher → FieldEditSheet로 대체. 데스크톱은 hideFormSections 미전달이라 그대로 렌더. */}
+          온-티켓 탭 → FieldEditSheet로 대체. 데스크톱은 hideFormSections 미전달이라 그대로 렌더. */}
       {!hideFormSections && (
       <section className="space-y-4">
         <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Film</span>
@@ -354,11 +354,15 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
       </div>
       )}
 
-      {/* 정보 입력 ↔ 티켓 디자인 영역 경계 — 단일 스크롤에서 스캔을 돕는 시각 구분 */}
+      {/* 정보 입력 ↔ 티켓 디자인 영역 경계 — 단일 스크롤에서 스캔을 돕는 시각 구분. 모바일
+          (hideRailSections)에선 뒤따르는 무드·질감·색 섹션이 전부 레일로 빠져 divider가 고아가
+          되므로 숨긴다(#266 갭3). 데스크톱은 그대로 노출. */}
+      {!hideRailSections && (
       <div className="flex items-center gap-3 pt-2" aria-hidden="true">
         <span className="text-mono text-[10px] uppercase tracking-widest text-fg-faint">Ticket Design</span>
         <div className="h-px flex-1 bg-line" />
       </div>
+      )}
 
       {!hideRailSections && (
       <section className="space-y-4">
@@ -377,7 +381,7 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
       </section>
       )}
 
-      {/* Logos(극장/포맷 스탬프)는 FieldLauncher → StampSheet(자유 크롭)로 편집한다. 구
+      {/* Logos(극장/포맷 스탬프)는 온-티켓 탭 → StampSheet(자유 크롭)로 편집한다. 구
           TheaterChainPicker/FormatPicker는 이 !hideFormSections 폼 경로에서만 쓰였는데, 데스크톱이
           DesktopStudioShell로 넘어가고 모바일은 hideFormSections를 늘 넘기면서 렌더 경로가 사라져
           제거됨(#231). 로고 크롭은 StampSheet의 useLogoCrop + ImageCropModal(aspect undefined)이 담당. */}

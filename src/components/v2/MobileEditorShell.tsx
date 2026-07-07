@@ -2,7 +2,6 @@ import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
 import { EditorCanvas } from './EditorCanvas';
 import { DesignRail } from './DesignRail';
-import { FieldLauncher } from './FieldLauncher';
 import { ThemeToggle } from './ThemeToggle';
 import { ZoomSegment, actualSize, type ViewMode } from './viewMode';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
@@ -303,9 +302,8 @@ export function MobileEditorShell({
                 {/* 무드·후보정은 인라인 폼에서 빼(hideRailSections) 디자인 레일(#217)로 옮긴다.
                     레일을 폼 위(프리뷰 바로 아래)에 둬 폼 전체를 스크롤하지 않고 닿게 한다. */}
                 <DesignRail photo={photo} />
-                {/* 탭-투-에딧 진입점(#215) — 폼을 걷어낸(hideFormSections) 자리의 주 편집 표면.
-                    행 탭 → 그 필드/스탬프의 FieldEditSheet(극장·포맷 로고 스탬프 포함, PART B). */}
-                <FieldLauncher photo={photo} onSelect={setActiveField} />
+                {/* 필드 편집은 티켓 위 온-티켓 탭(#259, FieldTap)이 전담 — 끄기=시트 헤더 눈,
+                    켜기=ghost 재탭/전체표시. 별도 필드 목록 UI(구 런처)는 #266 PR-E에서 제거. */}
                 <EditorCanvas photo={photo} onPendingFetchChange={onPendingFetchChange} hideRailSections hideFormSections />
               </div>
             </div>

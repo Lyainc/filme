@@ -1,5 +1,7 @@
 /**
- * #215 PART A 회귀 테스트 — 필드 탭-투-에딧(FieldLauncher + FieldEditSheet) + EditorCanvas 폼 숨김.
+ * #215 PART A 회귀 테스트 — 필드 편집 시트(FieldEditSheet/StampSheet) + EditorCanvas 폼 숨김.
+ * (FieldLauncher 목록은 #266 PR-E에서 제거 — 필드 편집은 온-티켓 탭이 전담. 관련 커버리지는
+ *  onTicketFieldTap.test.tsx·mobileEditorShellFieldCoverage.test.tsx로 이전.)
  *
  * 셋업은 designRail.test.tsx 미러 — Harness가 usePhototicket()으로 실제 photo를 만들고, 상태는
  * DOM probe(data-testid)로 읽는다. 모듈 mock 없음(전역 누수 회피). vaul 시트 내부 상호작용은
@@ -12,7 +14,6 @@ import { useEffect, useRef } from 'react';
 import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import type { SheetTarget } from '@/constants/fields';
-import { FieldLauncher } from '@/components/v2/FieldLauncher';
 import { FieldEditSheet } from '@/components/v2/FieldEditSheet';
 import { EditorCanvas } from '@/components/v2/EditorCanvas';
 
@@ -33,11 +34,6 @@ function SheetHarness({ field }: { field: SheetTarget }) {
       <FieldEditSheet activeField={field} onClose={() => {}} photo={photo} />
     </>
   );
-}
-
-function LauncherHarness({ onSelect }: { onSelect: (f: SheetTarget) => void }) {
-  const photo = usePhototicket();
-  return <FieldLauncher photo={photo} onSelect={onSelect} />;
 }
 
 function EditorHarness({ hideForm }: { hideForm?: boolean }) {
@@ -69,39 +65,6 @@ beforeEach(() => window.localStorage.clear());
 afterEach(() => {
   cleanup();
   window.localStorage.clear();
-});
-
-describe('FieldLauncher (#215 PART A)', () => {
-  test('행 탭 → onSelect(field) 호출', () => {
-    let picked: SheetTarget | null = null;
-    render(<LauncherHarness onSelect={(f) => { picked = f; }} />);
-
-    fireEvent.click(screen.getByRole('button', { name: '원제 편집' }));
-    expect(picked).toBe('titleOg');
-
-    fireEvent.click(screen.getByRole('button', { name: '관람일 편집' }));
-    expect(picked).toBe('watchDate');
-  });
-
-  test('스탬프 행(극장/포맷) 탭 → onSelect(chain/format) 호출 (#215 PART B)', () => {
-    let picked: SheetTarget | null = null;
-    render(<LauncherHarness onSelect={(f) => { picked = f; }} />);
-
-    fireEvent.click(screen.getByRole('button', { name: '극장 로고 편집' }));
-    expect(picked).toBe('chain');
-
-    fireEvent.click(screen.getByRole('button', { name: '포맷 로고 편집' }));
-    expect(picked).toBe('format');
-  });
-
-  test('모든 필드(제목·개봉일 포함)에 눈 토글이 있다 — 데스크톱 폼과 표시여부 조작 parity', () => {
-    render(<LauncherHarness onSelect={() => {}} />);
-    // 눈 토글은 VisibilityCheckbox의 "…티켓에 표시" 접근명으로 식별. 데스크톱 MovieInfoForm이
-    // title/releaseDate에도 VisibilityCheckbox를 두므로 모바일 런처도 동일하게 눈을 노출한다.
-    expect(screen.queryByLabelText('제목 티켓에 표시')).not.toBeNull();
-    expect(screen.queryByLabelText('개봉일 티켓에 표시')).not.toBeNull();
-    expect(screen.queryByLabelText('극장 티켓에 표시')).not.toBeNull();
-  });
 });
 
 describe('FieldEditSheet 타입별 편집 (#215 PART A)', () => {

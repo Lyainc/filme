@@ -62,7 +62,7 @@ export function FieldAccordion({ photo }: { photo: Photo }) {
         </section>
       ))}
 
-      {/* 스탬프(로고) — chain/format은 TicketComponents에 살아 TicketField 그룹과 별도(FieldLauncher 미러). */}
+      {/* 스탬프(로고) — chain/format은 TicketComponents에 살아 TicketField 그룹과 별도(모바일 온-티켓 스탬프 탭과 동형). */}
       <section className="space-y-2">
         <span className="text-mono px-1 text-[10px] uppercase tracking-widest text-fg-muted">로고</span>
         <div className="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface-elevated">
