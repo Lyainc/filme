@@ -17,7 +17,6 @@ Before making architectural changes or implementing new features, consult:
 - **`README.md`**: Project setup, running instructions, and tech stack overview.
 - **`docs/DESIGN_SYSTEM.md`**: Ticket design specs, layout coords, and textures.
 - **`docs/KOBIS_API.md`**: Instructions and examples for using the KOBIS movie search API.
-- **`docs/ASSETS.md`**: Specs and guidelines for theater/format logos.
 
 ### 💻 Development Workflow & Commands
 ```bash
@@ -56,12 +55,12 @@ bun test        # Unit + interaction tests
 ### 🖼️ Core Mechanisms (4-Mood Ticket Rendering)
 - **Layout catalog**: `src/utils/layouts.ts` — `LAYOUTS` defines 4 mood ids (`minimal`/`criterion`/`35mm`/`editorial`) with dimensions and orientation. `LayoutId` union lives in `src/types/index.ts`.
 - **Mood components**: `src/components/moods/Mood{Minimal,Criterion,35mm,Editorial}.tsx` — each mood is a self-contained DOM tree at the layout's natural pixel size (3 portrait 960×1477, Editorial landscape 1477×960).
-- **Shared primitives**: `src/components/moods/_shared.tsx` — `Barcode` (memoized), `ChainStamp`, `FormatStamp`, `Poster`, `HorizontalSprockets`, `PerforationStrip`, plus helpers (`pickTitleSize`, `resolveBookingNo`, `isInkLight`, `seedFromString`, `truncateActors`) and font tokens (`FONT_MONO`, `FONT_SANS`, `FONT_KR`). **Add new shared helpers here**, not inline in moods.
+- **Shared primitives**: `src/components/moods/_shared.tsx` — `Barcode` (memoized), `ChainStamp`, `FormatStamp`, `Poster`, `HorizontalSprockets`, `PerforationStrip`, plus helpers (`pickTitleSize`, `isInkDark`, `truncateActors`) and font tokens (`FONT_MONO`, `FONT_SANS`, `FONT_KR`). **Add new shared helpers here**, not inline in moods.
 - **Renderer**: `src/components/TicketRenderer.tsx` — dispatches to active mood, uses `ResizeObserver` to scale the inner natural-pixel tree to fit the preview, and forwards the inner ref so the export pipeline captures the unscaled DOM.
 - **Picker**: `src/components/LayoutPicker.tsx` — typed `Record<LayoutId, ...>` thumbnail registry; renaming a layout id breaks the lookup at compile time.
 - **Export**: `src/utils/captureToImage.ts` — awaits `document.fonts.ready` + image loads, then dynamically imports `html-to-image` and forces `transform: 'none'` during capture (otherwise the preview scale wrapper distorts output). Output is a JPEG data URL at the layout's natural pixel dimensions × `pixelRatio: 2`.
 - **Memory Management**: Always `URL.revokeObjectURL` on blob URLs created for cropped images. Download (`downloadTicketAsJpeg`) decodes the capture's base64 `data:` URL via `atob` → `Uint8Array` → `Blob` → `createObjectURL`, then revokes after the anchor click. **No `fetch(data:)`** — Vercel CSP `connect-src` blocks it, so base64 is decoded directly (CSP-safe).
-- **Asset manifest**: `public/assets/{chains,formats}_transparent/` filenames were the single source of truth, but to avoid copyright issues, **bundled logos are removed**. Users now upload logos directly via the field editor's Theater/Format stamp rows (`StampSheet` inside `src/components/v2/FieldEditorBody.tsx`, reached from `FieldAccordion` on desktop / `FieldLauncher`→`FieldEditSheet` on mobile) with free-aspect crop (`useLogoCrop` + `ImageCropModal`). The old `TheaterChainPicker`/`FormatPicker` were removed in #231. The `scripts/generate-asset-manifest.ts` script still exists for local testing if you place your own PNGs.
+- **Asset manifest**: `public/assets/{chains,formats}_transparent/` filenames were the single source of truth, but to avoid copyright issues, **bundled logos are removed**. Users now upload logos directly via the field editor's Theater/Format stamp rows (`StampSheet` inside `src/components/v2/FieldEditorBody.tsx`, reached from `FieldAccordion` on desktop / `FieldLauncher`→`FieldEditSheet` on mobile) with free-aspect crop (`useLogoCrop` + `ImageCropModal`). The old `TheaterChainPicker`/`FormatPicker` were removed in #231, and the file-based asset-manifest codegen (`scripts/generate-asset-manifest.ts` → `assets.generated.ts`, predev/prebuild hooks) was removed in #196.
 - **Dashed Placeholders**: If a user toggles chain/format ON but doesn't upload a logo, a dashed placeholder appears in the preview. This placeholder is explicitly ignored during `html-to-image` capture via the `data-hide-on-export` attribute.
 
 ### 🔍 OCR Pipeline (티켓 스크린샷 자동 인식)
