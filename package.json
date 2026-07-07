@@ -3,12 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "bun scripts/generate-asset-manifest.ts",
     "dev": "bun --bun next dev",
-    "prebuild": "bun scripts/generate-asset-manifest.ts",
     "build": "bun --bun next build",
     "start": "bun --bun next start",
-    "gen:assets": "bun scripts/generate-asset-manifest.ts",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "test:watch": "bun test --watch"

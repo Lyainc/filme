@@ -7,21 +7,6 @@ export const TARGET_WIDTH = 960;
 export const TARGET_HEIGHT = 1477;
 export const TARGET_RATIO = TARGET_WIDTH / TARGET_HEIGHT; // 0.65:1
 
-// Picker 데이터는 자산 폴더에서 자동 파생.
-// 파일명 규약: `<value>_<label>.png` — value=영문 식별자, label=표기명(_ 뒤 문자열).
-// 자산 추가/삭제만 하면 generator(`bun run gen:assets`)가 picker를 동기화한다.
-import { CHAIN_ASSETS, FORMAT_ASSETS, type AssetEntry } from './assets.generated';
-
-export type PickerOption =
-  | AssetEntry
-  | { readonly value: ''; readonly label: '선택 안함'; readonly file: null };
-
-const NONE = { value: '', label: '선택 안함', file: null } as const;
-
-export const THEATER_CHAINS: readonly PickerOption[] = [NONE, ...CHAIN_ASSETS];
-
-export const SCREENING_FORMATS: readonly PickerOption[] = [NONE, ...FORMAT_ASSETS];
-
 // 후가공 텍스처(특수 용지) 옵션
 export const TEXTURE_OPTIONS = [
   { value: 'original', label: '무가공 (원본 이미지 그대로)' },
