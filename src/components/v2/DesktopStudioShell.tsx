@@ -12,12 +12,12 @@ import { OcrUndoBanner } from './OcrUndoBanner';
 import { ZoomSegment, actualSize, type ViewMode } from './viewMode';
 import { useOcrUndo } from '@/hooks/useOcrUndo';
 import { getLayout } from '@/utils/layouts';
-import { ALL_FIELDS_ON } from '@/constants/fieldVisibility';
+import { ALL_FIELDS_ON, isRequiredField } from '@/constants/fieldVisibility';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 
-// 전체 표시/숨김 대상 = 모든 티켓 필드 - 필수 필드(제목). ALL_FIELDS_ON을 도메인 소스로.
-const TOGGLE_FIELDS = (Object.keys(ALL_FIELDS_ON) as TicketField[]).filter((f) => f !== 'title');
+// 전체 표시/숨김 대상 = 모든 티켓 필드 - 필수 필드(#260 REQUIRED_FIELDS). ALL_FIELDS_ON을 도메인 소스로.
+const TOGGLE_FIELDS = (Object.keys(ALL_FIELDS_ON) as TicketField[]).filter((f) => !isRequiredField(f));
 
 // 데스크톱은 필드를 인라인 아코디언(FieldAccordion, #226)으로 편집한다 — vaul-free라 상시 마운트해도
 // vaul이 메인 번들로 안 딸려온다. 모바일(MobileEditorShell)만 vaul 하단시트(FieldEditSheet)를 쓴다.

@@ -35,3 +35,16 @@ export const ALL_FIELDS_OFF: Record<TicketField, boolean> = {
   bookingNo: false,
   signature: false,
 };
+
+/**
+ * 티켓에서 숨길 수 없는 필수 필드(#260) — 꺼지면 제목 없는 정체불명 티켓이 된다. 데스크톱 일괄토글
+ * (DesktopStudioShell)·모바일 전체해제(EditorCanvas)·필드시트 눈토글(FieldEditSheet)이 각자 'title'
+ * 리터럴을 들고 있던 걸 여기 단일 소스로 수렴 — 세 경로가 어긋나던 내부 모순 제거.
+ */
+export const REQUIRED_FIELDS: readonly TicketField[] = ['title'];
+
+export const isRequiredField = (f: TicketField): boolean => REQUIRED_FIELDS.includes(f);
+
+/** 전체 해제 값 — 필수 필드는 켠 채 나머지만 끈다(#260, ALL_FIELDS_OFF 위에 필수만 되켬). */
+export const ALL_FIELDS_OFF_KEEP_REQUIRED: Record<TicketField, boolean> =
+  REQUIRED_FIELDS.reduce((acc, f) => ({ ...acc, [f]: true }), { ...ALL_FIELDS_OFF });

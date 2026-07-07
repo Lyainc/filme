@@ -17,7 +17,7 @@ import { useOcrUndo, type OcrApplyParams } from '@/hooks/useOcrUndo';
 import { OcrUndoBanner } from './OcrUndoBanner';
 import type { DateFormatToken, TicketField, LayoutId } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
-import { ALL_FIELDS_ON, ALL_FIELDS_OFF } from '@/constants/fieldVisibility';
+import { ALL_FIELDS_ON, ALL_FIELDS_OFF_KEEP_REQUIRED, isRequiredField } from '@/constants/fieldVisibility';
 import { FIELD_LABELS } from '@/constants/fields';
 
 interface EditorCanvasProps {
@@ -82,7 +82,8 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
   });
 
   const allOn = FIELD_ORDER.every((f) => fieldVisibility[f]);
-  const allOff = FIELD_ORDER.every((f) => !fieldVisibility[f]);
+  // 필수 필드(title)는 전체 해제해도 켜진 채라, '모두 꺼짐' 판정에서 제외해야 버튼이 올바르게 비활성화된다(#260).
+  const allOff = FIELD_ORDER.every((f) => isRequiredField(f) || !fieldVisibility[f]);
   const selectedCount = FIELD_ORDER.filter((f) => fieldVisibility[f]).length;
 
   // OCR 낙관적 주입 + 되돌리기 로직은 useOcrUndo가 소유한다(DesktopStudioShell과 공유, #141-class drift 방지).
@@ -155,7 +156,7 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
           </button>
           <button
             type="button"
-            onClick={() => setField(ALL_FIELDS_OFF)}
+            onClick={() => setField(ALL_FIELDS_OFF_KEEP_REQUIRED)}
             disabled={allOff}
             className="text-mono inline-flex min-h-[32px] items-center rounded-chip border border-line bg-surface px-2.5 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft focus-visible:ring-2 focus-visible:ring-accent-soft disabled:opacity-40"
           >
