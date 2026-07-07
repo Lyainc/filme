@@ -62,9 +62,11 @@ describe('FieldAccordion (#226)', () => {
     const user = userEvent.setup();
     render(<Harness />);
 
-    // 접힘: 평점 표시 체크박스 0개(행 eye 억제 + 본문 미마운트). 다른 필드는 행 eye 있음.
+    // 접힘: 평점 표시 체크박스 0개(행 eye 억제 + 본문 미마운트). 숨김가능 필드(좌석)는 행 eye 있음.
     expect(screen.queryAllByRole('checkbox', { name: '평점 티켓에 표시' }).length).toBe(0);
-    expect(screen.queryByRole('checkbox', { name: '제목 티켓에 표시' })).not.toBeNull();
+    expect(screen.queryByRole('checkbox', { name: '좌석 티켓에 표시' })).not.toBeNull();
+    // #260: 필수 필드(제목)도 행 eye 억제 — 데스크톱에서 제목 숨김 불가.
+    expect(screen.queryByRole('checkbox', { name: '제목 티켓에 표시' })).toBeNull();
 
     // 평점 행 확장 → RatingPicker eye 딱 하나(이중 아님).
     await user.click(screen.getByRole('button', { name: '평점 편집' }));
