@@ -33,8 +33,8 @@ export interface MoodProps {
  *
  * display:contents는 principal box를 만들지 않아 Tab 포커스를 받을 수 없다(CSS 스펙, 브라우저 공통) —
  * tabIndex/onKeyDown을 얹어도 죽은 코드라 두지 않는다. 클릭(터치·마우스)은 버블링으로, SR 브라우즈
- * 모드 활성화는 role+aria-label+click으로 동작하고, 키보드 Tab 편집 경로는 FieldLauncher가 커버한다
- * (posterTapProps의 pointer-only 입장과 동일).
+ * 모드 활성화는 role+aria-label+click으로 동작한다. 온-티켓 편집은 포인터 전용이며(posterTapProps와
+ * 동일 입장), 키보드 Tab 전용 필드 편집 목록은 #266에서 의도적으로 제거됐다(실사용 후 필요하면 재도입).
  */
 export function FieldTap({
   field,
@@ -65,7 +65,7 @@ export function FieldTap({
 /**
  * 포스터 영역 탭 props(#259). onPosterTap이 있을 때만 onClick+라벨을 얹는다. 풀블리드 무드는 root에,
  * editorial(3열)은 포스터 컬럼에 스프레드한다. role은 생략 — root엔 이미 role=button 필드 자식이 있어
- * 중첩 방지, 포스터 변경은 포인터 제스처(키보드는 FieldLauncher/ImageUploader가 커버). data 속성은
+ * 중첩 방지, 포스터 변경은 포인터 제스처(키보드 업로드 경로는 ImageUploader가 커버). data 속성은
  * 테스트 셀렉터용이며 캡처 렌더러엔 onPosterTap이 안 가 붙지 않는다.
  */
 export function posterTapProps(onPosterTap?: () => void) {
