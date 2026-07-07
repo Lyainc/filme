@@ -1,4 +1,4 @@
-import { CSSProperties } from 'react';
+import { CSSProperties, ReactNode } from 'react';
 import type { SheetTarget } from '@/constants/fields';
 import {
   Barcode,
@@ -13,6 +13,7 @@ import {
   HorizontalSprockets,
   MoodProps,
   Poster,
+  fieldPieces,
   gate,
   pickTitleSize,
   posterTapProps,
@@ -59,6 +60,9 @@ const cellValue: CSSProperties = {
   textOverflow: 'ellipsis',
 };
 
+// 병합 셀(node)이면 분해 조각을, 아니면 단일 값/ghost를 렌더하는 공통 메타 셀 형태(#266 PR-C).
+type MetaCell = { label: string; field: SheetTarget; value?: string; cast?: boolean; ghost?: boolean; node?: ReactNode; hasGhost?: boolean };
+
 /** amber latent-image edge print — 스프로킷 스트립 위 필름 가장자리 인쇄 문구. */
 function EdgePrint({ text }: { text: string }) {
   return (
@@ -89,15 +93,35 @@ export function Mood35mmLandscape({ movieInfo: d, components, croppedImageUrl, f
   const ghostOn = ghost === true;
   const gTitle = showFieldGhost(fv?.title, d.title, ghost);
   const gTitleOg = showFieldGhost(fv?.titleOg, d.titleOg, ghost);
+  const gTheater = showFieldGhost(fv?.theater, d.theater, ghost);
+  const gScreen = showFieldGhost(fv?.screen, d.screen, ghost);
+  const gSeat = showFieldGhost(fv?.seat, d.seat, ghost);
+  const gWatchDate = showFieldGhost(fv?.watchDate, watchDateClean, ghost);
+  const gWatchTime = showFieldGhost(fv?.watchTime, d.watchTime, ghost);
 
-  // 우 패널 라벨 스택(#210). 합쳐진 셀은 대표 필드로 탭 매핑(#259). Released 재개봉은 releaseDate로(#215).
-  const cells: { label: string; value?: string; cast?: boolean; ghost?: boolean; field: SheetTarget }[] = [];
-  const exhibited = [theaterVal, screenVal, seatVal].filter(Boolean).join(' · ');
-  if (exhibited) cells.push({ label: 'Exhibited', value: exhibited, field: 'theater' });
-  else if (ghostOn && (fv?.theater !== false || fv?.screen !== false || fv?.seat !== false)) cells.push({ label: 'Exhibited', ghost: true, field: 'theater' });
-  const screened = [watchDateVal, watchTimeVal].filter(Boolean).join(' · ');
-  if (screened) cells.push({ label: 'Screened', value: screened, field: 'watchDate' });
-  else if (ghostOn && (fv?.watchDate !== false || fv?.watchTime !== false)) cells.push({ label: 'Screened', ghost: true, field: 'watchDate' });
+  // 우 패널 라벨 스택(#210). 병합 셀(Exhibited=극장+상영관+좌석, Screened=관람일+시간)은 fieldPieces로
+  // 필드별 독립 조각(값→텍스트, 빈+ghost→라벨 점선)으로 분해한다(#266 PR-C) — 조각이 각자 제 시트를 열고,
+  // 데스크톱(onField=undefined)은 FieldTap이 통과해 분해 전과 바이트 동일. Released 재개봉은 releaseDate로(#215).
+  const cells: MetaCell[] = [];
+  const exhibited = fieldPieces(
+    [
+      { field: 'theater', value: theaterVal, ghost: gTheater, label: 'THEATER' },
+      { field: 'screen', value: screenVal, ghost: gScreen, label: 'SCREEN' },
+      { field: 'seat', value: seatVal, ghost: gSeat, label: 'SEAT' },
+    ],
+    onField,
+    { surface: 'dark' }
+  );
+  if (exhibited.hasAny) cells.push({ label: 'Exhibited', node: exhibited.node, hasGhost: exhibited.hasGhost, field: 'theater' });
+  const screened = fieldPieces(
+    [
+      { field: 'watchDate', value: watchDateVal, ghost: gWatchDate, label: 'DATE' },
+      { field: 'watchTime', value: watchTimeVal, ghost: gWatchTime, label: 'TIME' },
+    ],
+    onField,
+    { surface: 'dark' }
+  );
+  if (screened.hasAny) cells.push({ label: 'Screened', node: screened.node, hasGhost: screened.hasGhost, field: 'watchDate' });
   if (runtimeVal) cells.push({ label: 'Runtime', value: runtimeVal, field: 'runtime' });
   else if (ghostOn && fv?.runtime !== false) cells.push({ label: 'Runtime', ghost: true, field: 'runtime' });
   const released = [releaseDateVal, reissueVal && `재개봉 ${reissueVal}`].filter(Boolean).join(' · ');
@@ -191,7 +215,12 @@ export function Mood35mmLandscape({ movieInfo: d, components, croppedImageUrl, f
 
           {/* Label stack */}
           <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', gap: 22 }}>
-            {cells.map((c, i) => (
+            {cells.map((c, i) => c.node !== undefined ? (
+              <div key={i} style={{ minWidth: 0 }}>
+                <div style={cellLabel}>{c.label}</div>
+                <div style={{ ...cellValue, ...(c.hasGhost ? { display: 'flex', alignItems: 'center', gap: 10, whiteSpace: 'normal' } : null) }}>{c.node}</div>
+              </div>
+            ) : (
               <FieldTap key={i} field={c.field} onField={onField}>
                 <div style={{ minWidth: 0 }}>
                   <div style={cellLabel}>{c.label}</div>

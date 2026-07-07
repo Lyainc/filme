@@ -1,4 +1,4 @@
-import { CSSProperties } from 'react';
+import { CSSProperties, ReactNode } from 'react';
 import type { SheetTarget } from '@/constants/fields';
 import {
   Barcode,
@@ -11,6 +11,7 @@ import {
   FormatStamp,
   MoodProps,
   Poster,
+  fieldPieces,
   gate,
   isInkDark,
   pickTitleSize,
@@ -47,6 +48,9 @@ const metaValue: CSSProperties = {
   letterSpacing: -0.4,
   lineHeight: 1.12,
 };
+
+// 병합 셀(node)이면 분해 조각을, 아니면 단일 값/ghost를 렌더하는 공통 메타 셀 형태(#266 PR-C).
+type MetaCell = { label: string; field: SheetTarget; value?: string; ghost?: boolean; node?: ReactNode; hasGhost?: boolean };
 
 /** 아트프린트 코너 레지스트레이션 마크(과하지 않은 엣지) — 4모서리 L자 틱. */
 function RegistrationMarks({ color }: { color: string }) {
@@ -103,25 +107,41 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
   const gTitleOg   = showFieldGhost(fv?.titleOg, d.titleOg, ghost);
   const gActors    = showFieldGhost(fv?.actors, d.actors, ghost);
   const gSignature = showFieldGhost(fv?.signature, d.signature, ghost);
+  const gTheater   = showFieldGhost(fv?.theater, d.theater, ghost);
+  const gScreen    = showFieldGhost(fv?.screen, d.screen, ghost);
+  const gWatchDate = showFieldGhost(fv?.watchDate, watchDateClean, ghost);
+  const gWatchTime = showFieldGhost(fv?.watchTime, d.watchTime, ghost);
 
   // 메타 청킹(#리뷰): 관람(Screening/Venue/Seat) vs 영화(Runtime/Rated/Released)를 분리.
   // 값 폰트는 전부 Pretendard로 통일(숫자·날짜 포함) — 모노는 바코드/일련번호 같은 코드에만.
-  // ghost 셀은 값이 비었고 기여 필드 중 하나라도 visible일 때만(ghostOn), value 없이 push한다.
-  // 합쳐진 셀(Screening=관람일+시간, Venue=극장+상영관)은 대표 필드로 탭 매핑한다(#259) — 2차 필드
-  // (watchTime/screen)는 FieldLauncher/시트에서 닿는다. field가 붙은 셀만 FieldTap으로 감싼다.
-  const screeningCells: { label: string; value?: string; ghost?: boolean; field: SheetTarget }[] = [];
-  const screening = [watchDateVal, watchTimeVal].filter(Boolean).join('  ');
-  if (screening) screeningCells.push({ label: 'Screening', value: screening, field: 'watchDate' });
-  else if (ghostOn && (fv?.watchDate !== false || fv?.watchTime !== false)) screeningCells.push({ label: 'Screening', ghost: true, field: 'watchDate' });
-  const venue = [theaterVal, screenVal].filter(Boolean).join(' · ');
-  if (venue) screeningCells.push({ label: 'Venue', value: venue, field: 'theater' });
-  else if (ghostOn && (fv?.theater !== false || fv?.screen !== false)) screeningCells.push({ label: 'Venue', ghost: true, field: 'theater' });
+  // 병합 셀(Screening=관람일+시간, Venue=극장+상영관)은 fieldPieces로 필드별 독립 조각(값→텍스트,
+  // 빈+ghost→라벨 점선)으로 분해한다(#266 PR-C) — 조각이 각자 제 시트를 열고, 데스크톱(onField=undefined)은
+  // FieldTap이 통과해 분해 전과 바이트 동일. seat은 단일 필드라 그대로 둔다.
+  const screeningCells: MetaCell[] = [];
+  const screening = fieldPieces(
+    [
+      { field: 'watchDate', value: watchDateVal, ghost: gWatchDate, label: 'DATE' },
+      { field: 'watchTime', value: watchTimeVal, ghost: gWatchTime, label: 'TIME' },
+    ],
+    onField,
+    { sep: '  ', surface: stampSurface }
+  );
+  if (screening.hasAny) screeningCells.push({ label: 'Screening', node: screening.node, hasGhost: screening.hasGhost, field: 'watchDate' });
+  const venue = fieldPieces(
+    [
+      { field: 'theater', value: theaterVal, ghost: gTheater, label: 'THEATER' },
+      { field: 'screen', value: screenVal, ghost: gScreen, label: 'SCREEN' },
+    ],
+    onField,
+    { surface: stampSurface }
+  );
+  if (venue.hasAny) screeningCells.push({ label: 'Venue', node: venue.node, hasGhost: venue.hasGhost, field: 'theater' });
   if (seatVal) screeningCells.push({ label: 'Seat', value: seatVal, field: 'seat' });
   else if (ghostOn && fv?.seat !== false) screeningCells.push({ label: 'Seat', ghost: true, field: 'seat' });
 
   // Re-released 셀은 releaseDate로 매핑 — 재개봉일 편집 UI가 releaseDate 시트(재개봉 토글) 안에만
   // 있고 reissue는 FIELD_SHEET_TYPE에 없어 단독 타깃이면 빈 시트가 열린다(35mm/Editorial과 정렬).
-  const filmCells: { label: string; value?: string; ghost?: boolean; field: SheetTarget }[] = [];
+  const filmCells: MetaCell[] = [];
   if (runtimeVal) filmCells.push({ label: 'Runtime', value: runtimeVal, field: 'runtime' });
   else if (ghostOn && fv?.runtime !== false) filmCells.push({ label: 'Runtime', ghost: true, field: 'runtime' });
   if (ratingVisible) filmCells.push({ label: 'Rated', value: `★ ${d.rating.toFixed(1)}`, field: 'rating' });
@@ -207,7 +227,12 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
           <div style={{ marginBottom: 28 }}>
             {screeningCells.length > 0 && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '18px 56px' }}>
-                {screeningCells.map((c, i) => (
+                {screeningCells.map((c, i) => c.node !== undefined ? (
+                  <div key={i} style={{ minWidth: 0 }}>
+                    <div style={labelSerif(ink)}>{c.label}</div>
+                    <div style={{ ...metaValue, maxWidth: 560, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', ...(c.hasGhost ? { display: 'flex', alignItems: 'center', gap: 10, whiteSpace: 'normal' } : null) }}>{c.node}</div>
+                  </div>
+                ) : (
                   <FieldTap key={i} field={c.field} onField={onField}>
                     <div style={{ minWidth: 0 }}>
                       <div style={labelSerif(ink)}>{c.label}</div>
