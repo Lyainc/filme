@@ -64,12 +64,13 @@ const launcherFields = (layout: LayoutId): TicketField[] =>
   launcherGroupsFor(layout).flatMap((g) => g.fields);
 
 describe('launcherGroupsFor 게이팅 로직 (#287)', () => {
-  test('Minimal은 bookingNo를 런처에서 제외한다', () => {
+  test('Minimal·35mm는 bookingNo를 런처에서 제외한다', () => {
     expect(launcherFields('minimal')).not.toContain('bookingNo');
+    expect(launcherFields('35mm')).not.toContain('bookingNo'); // #281 마스터 재동기화 — 푸터 바코드 제거
   });
 
   test('제외 필드가 없는 무드의 런처는 LAUNCHER_GROUPS 그대로(무손상)', () => {
-    for (const layout of ['35mm', 'editorial', 'stub', '35mm-landscape'] as LayoutId[]) {
+    for (const layout of ['editorial', 'stub', '35mm-landscape'] as LayoutId[]) {
       expect(launcherGroupsFor(layout)).toEqual(LAUNCHER_GROUPS);
     }
   });

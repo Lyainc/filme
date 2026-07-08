@@ -689,6 +689,81 @@ export const HorizontalSprockets = memo(function HorizontalSprockets({
   );
 });
 
+/**
+ * 35mm 필름 스트립 밴드(에픽 #281, 마스터 Ticket Design Master.dc.html v2 1:1). 상/하단 92px 밴드에
+ * 천공(44×24 r6) + 프레임번호(236+i) + KEYKODE 바 + 엣지 스크롤 코드(×4, ◆ 구분) + 그레인 오버레이.
+ * accent(amber)는 무드가 themeColor에서 파생해 넘긴다. pos로 상/하단을 뒤집는다 — 천공·프레임·키코드는
+ * 바깥 모서리, 엣지 텍스트는 안쪽 모서리에 붙는다. HorizontalSprockets(단순 천공)와 달리 이건 35mm 전용.
+ */
+const KK_PATTERN = '31122112132113112212311213212112'.split('').map(Number);
+
+export const FilmStripBand = memo(function FilmStripBand({
+  pos,
+  accent,
+  codes,
+  base = '#0a0a0a',
+  height = 92,
+}: {
+  pos: 'top' | 'bottom';
+  accent: string;
+  codes: string[];
+  base?: string;
+  height?: number;
+}) {
+  const outer: 'top' | 'bottom' = pos;
+  const inner: 'top' | 'bottom' = pos === 'top' ? 'bottom' : 'top';
+  const N = 15;
+
+  const holes = Array.from({ length: N }, (_, i) => (
+    <div key={i} style={{ width: 44, height: 24, borderRadius: 6, background: '#f1ead9', flexShrink: 0, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.5), inset 0 2px 4px rgba(0,0,0,.6)' }} />
+  ));
+  const frameNums = Array.from({ length: N }, (_, i) => {
+    const f = 236 + i;
+    const label = f % 2 === 0 ? String(f >> 1) : `${f >> 1}A`;
+    return <span key={i} style={{ fontFamily: FONT_MONO, fontSize: 9, fontWeight: 700, letterSpacing: 0.5, color: accent, flexShrink: 0 }}>{label}</span>;
+  });
+  let inkBar = true;
+  const kkBars = KK_PATTERN.map((w, i) => {
+    const seg = <span key={i} style={{ width: w * 1.5, height: 8, background: inkBar ? accent : 'transparent', flexShrink: 0 }} />;
+    inkBar = !inkBar;
+    return seg;
+  });
+  const cells: ReactNode[] = [];
+  for (let r = 0; r < 4; r++)
+    codes.forEach((code, i) => {
+      cells.push(
+        <span key={`${r}-${i}`} style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0, color: accent, fontWeight: 600, letterSpacing: 2.5 }}>
+          <span>{code}</span>
+          <span style={{ margin: '0 15px', opacity: 0.5 }}>◆</span>
+        </span>
+      );
+    });
+
+  const holesStyle: CSSProperties = { position: 'absolute', left: 0, right: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px' };
+  holesStyle[outer] = 6;
+  const frameStyle: CSSProperties = { position: 'absolute', left: 0, right: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 27px', opacity: 0.7, pointerEvents: 'none' };
+  frameStyle[outer] = 32;
+  const kkStyle: CSSProperties = { position: 'absolute', left: 16, display: 'flex', alignItems: 'center', gap: 8, opacity: 0.9, pointerEvents: 'none' };
+  kkStyle[outer] = 45;
+  const edgeStyle: CSSProperties = { position: 'absolute', left: 0, right: 0, display: 'flex', alignItems: 'center', padding: '0 14px', fontFamily: FONT_MONO, fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', opacity: 0.92, pointerEvents: 'none' };
+  edgeStyle[inner] = 6;
+  const rootStyle: CSSProperties = { position: 'absolute', left: 0, right: 0, height, background: base, overflow: 'hidden' };
+  rootStyle[outer] = 0;
+
+  return (
+    <div style={rootStyle}>
+      <div style={holesStyle}>{holes}</div>
+      <div style={frameStyle}>{frameNums}</div>
+      <div style={kkStyle}>
+        <div style={{ display: 'flex', alignItems: 'flex-end' }}>{kkBars}</div>
+        <span style={{ fontFamily: FONT_MONO, fontSize: 10, fontWeight: 700, letterSpacing: 1.6, color: accent }}>KL 23 4587 1234+05</span>
+      </div>
+      <div style={edgeStyle}>{cells}</div>
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.5, mixBlendMode: 'overlay', backgroundImage: 'repeating-linear-gradient(90deg, rgba(255,255,255,.06) 0 1px, rgba(0,0,0,.07) 1px 3px), repeating-linear-gradient(0deg, rgba(255,255,255,.04) 0 1px, rgba(0,0,0,.05) 1px 3px)' }} />
+    </div>
+  );
+});
+
 export const PerforationStrip = memo(function PerforationStrip({
   vertical = true,
   count = 30,
