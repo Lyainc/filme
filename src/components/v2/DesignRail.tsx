@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { Fragment, useRef, useState, type ReactNode } from 'react';
 import LayoutPicker from '@/components/LayoutPicker';
 import TexturePicker from '@/components/wizard/TexturePicker';
 import ColorPicker from '@/components/wizard/ColorPicker';
@@ -11,6 +11,12 @@ import type { usePhototicket } from '@/hooks/usePhototicket';
 type Pop = 'mood' | 'color' | 'texture' | 'opacity';
 
 const PANEL_ID = 'design-rail-panel';
+
+// 잉크 원탭 토글(#262, 2a 레일 5번째 버튼). 라이트↔다크 잉크를 컬러 패널 안 열고 즉시 전환한다.
+// 값은 ColorPicker의 White/Black 프리셋과 동일한 hex라야 두 UI가 안 어긋난다 — 2a 목업 팔레트
+// (#F2EFEA/#0C0E11)가 아니라 우리 프리셋(#FFFFFF/#000000)을 쓴다.
+const LIGHT_INK = '#FFFFFF';
+const DARK_INK = '#000000';
 
 const RAIL_ICON = {
   width: 20,
@@ -117,6 +123,42 @@ function RailIconButton({
   );
 }
 
+// 잉크 원탭 토글 버튼 — 패널을 여는 disclosure가 아니라 즉시 라이트↔다크를 뒤집는 토글이라
+// aria-expanded/aria-controls 없이 별도 버튼으로 둔다. 접근성 이름에 현재 잉크를 실어 SR에 상태 노출.
+function InkToggleButton({
+  isLight,
+  disabled,
+  onToggle,
+}: {
+  isLight: boolean;
+  disabled: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      disabled={disabled}
+      aria-label={`잉크 색상 전환, 현재 ${isLight ? '라이트' : '다크'}`}
+      data-touch="44"
+      className="flex flex-col items-center gap-1.5 outline-none disabled:opacity-40"
+    >
+      <span
+        aria-hidden="true"
+        className="relative flex h-11 w-11 items-center justify-center rounded-full border border-line"
+        // 좌 다크 / 우 라이트 반원 스플릿. 현재 잉크는 마커 점 위치로 표시(라이트=우 75%, 다크=좌 25%).
+        style={{ background: `linear-gradient(90deg, ${DARK_INK} 50%, ${LIGHT_INK} 50%)` }}
+      >
+        <span
+          className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white transition-[left] duration-200 motion-reduce:transition-none"
+          style={{ left: isLight ? '75%' : '25%', boxShadow: '0 0 0 2px rgba(0,0,0,.35)' }}
+        />
+      </span>
+      <span className="text-[11px] font-medium text-fg-muted">잉크</span>
+    </button>
+  );
+}
+
 function RailExpandPanel({
   open,
   eyebrow,
@@ -178,18 +220,28 @@ export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket>
   const ringColor = components.themeColor || 'var(--accent)';
   const toggle = (id: Pop) => setPop((cur) => (cur === id ? null : id));
 
+  // 잉크 원탭 토글(#262) — 라이트↔다크. 색이 고정된 35mm 무드는 컬러 패널과 동일하게 disabled.
+  const isLightInk = (components.themeColor || '').toLowerCase() === LIGHT_INK.toLowerCase();
+  const inkDisabled = components.layout === '35mm';
+  const toggleInk = () => setComp({ themeColor: isLightInk ? DARK_INK : LIGHT_INK });
+
   return (
     <div className="space-y-3">
-      <div className="flex items-start justify-center gap-8">
+      <div className="flex items-start justify-center gap-6">
         {RAIL_ITEMS.map((it) => (
-          <RailIconButton
-            key={it.id}
-            icon={it.icon}
-            label={it.label}
-            selected={pop === it.id}
-            ringColor={ringColor}
-            onClick={() => toggle(it.id)}
-          />
+          <Fragment key={it.id}>
+            <RailIconButton
+              icon={it.icon}
+              label={it.label}
+              selected={pop === it.id}
+              ringColor={ringColor}
+              onClick={() => toggle(it.id)}
+            />
+            {/* 2a 레일 순서: 무드·컬러·잉크·후보정·투명도 — 컬러 뒤에 잉크 토글 삽입 */}
+            {it.id === 'color' && (
+              <InkToggleButton isLight={isLightInk} disabled={inkDisabled} onToggle={toggleInk} />
+            )}
+          </Fragment>
         ))}
       </div>
 
