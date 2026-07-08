@@ -32,6 +32,13 @@ interface EditorCanvasProps {
    *  이 플래그와 무관하게 더 이상 렌더되지 않는다.)
    */
   hideFormSections?: boolean;
+  /**
+   * 모바일 chrome 재배치(#261): OCR 카드·표시항목 일괄 스위치·OCR 되돌리기 배너를 숨긴다 —
+   * 이 셋은 MobileEditorShell이 프리뷰 직하(OCR)·토글 행(allVis)·고정 배너로 직접 렌더하므로
+   * 여기선 중복 렌더를 막는다. Poster 드롭존(ImageUploader)은 유지. 데스크톱/테스트 경로는
+   * 미전달(=false)이라 종전대로 전부 렌더한다.
+   */
+  hideChromeControls?: boolean;
 }
 
 // 기본값 kr-compact를 첫 번째로(#141 (12)). kr-compact 샘플은 끝점 포함 YYYY.MM.DD.(#141 (13)).
@@ -67,7 +74,7 @@ function OcrChip({
   return <div className="flex justify-start">{chip}</div>;
 }
 
-export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = false, hideFormSections = false }: EditorCanvasProps) {
+export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = false, hideFormSections = false, hideChromeControls = false }: EditorCanvasProps) {
   const { movieInfo, fieldVisibility, components, recommendedColors } = photo.state;
   const setInfo = photo.updateMovieInfo;
   const setField = photo.updateFieldVisibility;
@@ -108,7 +115,7 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
         <div className="flex items-center gap-2">
           <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Poster</span>
           <InfoTooltip
-            text="영화 포스터 이미지를 올리는 곳이에요. 아래 '티켓 스크린샷으로 자동입력'에 티켓 스크린샷을 넣으면 영화 정보가 자동으로 채워져요."
+            text="영화 포스터 이미지를 올리는 곳이에요. '티켓 스크린샷으로 자동입력'에 티켓 스크린샷을 넣으면 영화 정보가 자동으로 채워져요."
             label="포스터 추가 안내"
             placement="right"
           />
@@ -121,6 +128,7 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
             hasImage={!!photo.state.croppedImageUrl}
             imageUrl={photo.state.croppedImageUrl}
           />
+          {!hideChromeControls && (
           <OcrUploadCard
             setInfo={setInfo}
             currentInfo={movieInfo}
@@ -129,11 +137,14 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
             currentComponents={photo.state.components}
             ocrEpochRef={ocr.epochRef}
           />
+          )}
         </div>
       </section>
 
       {/* 표시 항목 일괄 컨트롤 — 각 필드 옆 체크박스(인라인)를 전체 제어(#116).
-          'Display Fields' 칩 섹션을 대체하고, 입력 그룹 상단에 콤팩트하게 둔다. */}
+          'Display Fields' 칩 섹션을 대체하고, 입력 그룹 상단에 콤팩트하게 둔다.
+          모바일(#261)은 이 2버튼을 셸의 단일 스위치로 승격하므로 hideChromeControls로 숨긴다. */}
+      {!hideChromeControls && (
       <div className="flex items-center justify-between gap-3 rounded-card border border-line bg-surface-elevated px-3.5 py-2.5">
         <span className="flex items-center gap-2">
           <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">
@@ -164,6 +175,7 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
           </button>
         </div>
       </div>
+      )}
 
       {/* MovieInfo 인라인 폼(Film + Optional 아코디언) — 모바일 탭-투-에딧(#215)에선 숨기고
           온-티켓 탭 → FieldEditSheet로 대체. 데스크톱은 hideFormSections 미전달이라 그대로 렌더. */}
@@ -426,7 +438,10 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
       )}
 
       {/* OCR 되돌리기 배너 + sr-only 라이브리전 — DesktopStudioShell과 공유(useOcrUndo/OcrUndoBanner,
-          #141-class drift 방지). spacer는 모바일에서 마지막 섹션이 하단 고정 배너에 가리지 않게 이 사이트에만 둔다(#213). */}
+          #141-class drift 방지). spacer는 모바일에서 마지막 섹션이 하단 고정 배너에 가리지 않게 이 사이트에만 둔다(#213).
+          모바일(#261)은 셸이 자체 useOcrUndo로 OCR 카드·배너를 소유하므로 hideChromeControls로 숨긴다(중복 배너 방지). */}
+      {!hideChromeControls && (
+      <>
       <OcrUndoBanner
         snapshot={ocr.snapshot}
         filledFields={ocr.filledFields}
@@ -434,6 +449,8 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
         onConfirm={ocr.confirm}
       />
       {ocr.snapshot && <div className="h-20" aria-hidden="true" />}
+      </>
+      )}
     </div>
   );
 }
