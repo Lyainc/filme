@@ -132,7 +132,7 @@ describe('온-티켓 필드 탭 (#259)', () => {
     expect(tapped).toBe(1);
   });
 
-  test('editorial(3열): 포스터 컬럼 탭 → onPosterTap', () => {
+  test('editorial(4열): 포스터 컬럼 탭 → onPosterTap', () => {
     let tapped = 0;
     const { container } = render(
       <MoodEditorial
@@ -267,10 +267,9 @@ describe('MoodCriterion VENUE 셀 분해 (#266 PR-D)', () => {
   });
 });
 
-describe('MoodEditorial 관람 셀·릴리즈 분해 (#266)', () => {
-  // Editorial은 sep-join이 아니라 value(42px)+sub(26px) 2줄·라벨 스위칭 구조. theater 셀(극장=value,
-  // 상영관=sub)과 Séance 셀(관람일=value, 관람 시간=sub)을 각 줄 독립 FieldTap으로 분해했다. screen·
-  // watchTime이 sub 줄이라 이전엔 상위 셀(theater/watchDate) 시트만 열었지만 이제 제 시트를 연다.
+describe('MoodEditorial 필드 탭 (#266, 마스터 재동기화 #281)', () => {
+  // 마스터 4열 재구조 후에도 각 필드가 독립 FieldTap을 유지한다. theater=Théâtre 값, screen=그 sub,
+  // watchDate=Séance 값, watchTime=도착시간(19:30), seat=스텁 place. 각 탭이 제 시트 타깃을 연다.
   test('극장·상영관·좌석·관람일·관람 시간 탭이 각자 제 시트 타깃을 연다', () => {
     const calls: SheetTarget[] = [];
     render(
@@ -290,10 +289,9 @@ describe('MoodEditorial 관람 셀·릴리즈 분해 (#266)', () => {
     expect(calls).toEqual(['theater', 'screen', 'seat', 'watchDate', 'watchTime']);
   });
 
-  // 캡처 유출 불변식(:104-115) — onField 없으면 탭 UI 0건. 2줄 셀이라 극장·상영관은 결합되지 않고
-  // 각자 제 줄에 보존되고, 릴리즈 병합선(Sortie·Reprise)은 Editorial 고유 sep('      ·      ', 공백
-  // 6칸)로 결합 보존된다. 데스크톱 바이트 동일은 stash-diff로 별도 확인(8케이스 IDENTICAL).
-  test('onField 없으면 role=button 0건 + 관람 값·릴리즈 sep 결합 보존(캡처 안전)', () => {
+  // 캡처 유출 불변식(:104-115) — onField 없으면 탭 UI 0건. Théâtre 셀은 극장(value)·상영관(sub) 각 줄에
+  // 보존된다. 마스터 재동기화로 릴리즈 Reprise 병합선은 제거(메타 그리드 Sortie는 개봉일만).
+  test('onField 없으면 role=button 0건 + Théâtre 극장·상영관 값 보존(캡처 안전)', () => {
     const html = renderToStaticMarkup(
       <MoodEditorial
         movieInfo={FULL_MOVIE}
@@ -305,6 +303,5 @@ describe('MoodEditorial 관람 셀·릴리즈 분해 (#266)', () => {
     expect(html).not.toContain('role="button"');
     expect(html).toContain('CGVDATA'); // 극장 value 줄 보존
     expect(html).toContain('IMAXDATA'); // 상영관 sub 줄 보존
-    expect(html).toContain('      ·      Reprise '); // Sortie…·Reprise 6칸 sep 결합 보존
   });
 });

@@ -1,5 +1,4 @@
-import { CSSProperties } from 'react';
-import type { SheetTarget } from '@/constants/fields';
+import { CSSProperties, Fragment, ReactNode } from 'react';
 import {
   Barcode,
   ChainStamp,
@@ -11,11 +10,8 @@ import {
   FONT_SANS,
   FormatStamp,
   MoodProps,
-  PerforationStrip,
   Poster,
-  fieldPieces,
   gate,
-  pickTitleSize,
   posterTapProps,
   resolveInk,
   resolveTicketData,
@@ -25,25 +21,25 @@ import {
 } from './_shared';
 
 /**
- * v7 — 영화제 공식 티켓. 좌 포스터 | 중앙 정보 | 우 절취 스텁(노치/천공).
- * 리뷰 반영: 영화 메타(제목·캐스트·러닝·개봉)와 관람 메타(상영관·세앙스·좌석)를 헤어라인으로 청킹,
- * 메타 '값'은 전부 Pretendard로 통일(모노는 스텁 일련번호에만), 헤더(le billet·평점)·꼬릿말·Sortie·
- * Séance 시간 폰트 확대. 스텁은 세로형 tear-off: 영화관(먼저)·포맷·바코드·티켓번호로 공간을 채움.
+ * Editorial — 영화제 공식 티켓(마스터 Ticket Design Master.dc.html v2 · 2026-07-08 resync, 에픽 #281).
+ * 4열 재구조: 포스터 516 | 골드포일 세로 스트립 42(장식) | 메인 flex | 절취 스텁 224(accent 배경).
+ * 메인: 킥커(En Reprise) → 타이틀 72/900 → avec → Séance + 도착시간(시계) → 메타 그리드(Théâtre/Durée/
+ * Note/Sortie 37/800) → 프랑스어 고지문 → 푸터(réalisé avec FILME / par). 좌석·바코드·체인/포맷·le billet은
+ * 스텁(회전 -90°) 5그룹으로 이동. reissue는 마스터 메타 그리드에 슬롯이 없어(킥커 En Reprise는 장식) 미렌더.
  */
 const PAPER = '#f4ede0';
-const PAPER_DEEP = '#1a1612';
-const PAPER_DIM = '#8a7e63';
+const INK = '#1a1612';
+const BROWN = '#6f6347';
+const CREAM = '#f7ece2';
 
-const POSTER_W = 452;
-const PERF_W = 14;
-const MAIN_W = 813;
-const STUB_W = 212;
+const POSTER_W = 516;
+const FOIL_W = 42;
+const STUB_W = 224;
 
 export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
   const accent = themeColor.toLowerCase() === '#ffffff' ? '#a8312a' : resolveInk(themeColor, '#a8312a');
-  const titleSize = pickTitleSize(d.title.length, [116, 100, 82, 66]);
-  const { bookingNo, watchDateClean, releaseClean, reissueClean } = resolveTicketData(d);
+  const { bookingNo, watchDateClean, releaseClean } = resolveTicketData(d);
 
   const titleVal = gate(fv?.title, d.title);
   const titleOgVal = gate(fv?.titleOg, d.titleOg);
@@ -53,273 +49,290 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
   const watchDateVal = gate(fv?.watchDate, watchDateClean);
   const watchTimeVal = gate(fv?.watchTime, d.watchTime);
   const runtimeVal = gate(fv?.runtime, d.runtime);
-  const releaseDateVal = gate(fv?.releaseDate, releaseClean);
-  const reissueVal = gate(fv?.reissue, reissueClean);
+  const releaseVal = gate(fv?.releaseDate, releaseClean);
   const actorsVal = truncateActors(gate(fv?.actors, d.actors));
   const signatureVal = gate(fv?.signature, d.signature);
   const ratingVisible = (fv?.rating ?? true) && d.rating > 0;
 
-  const italicLabel = (color: string, size: number): CSSProperties => ({
-    fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: size, color, letterSpacing: 0.3,
-  });
-
-  // 빈 항목 미리보기(#216) — 아톰/헤더 슬롯 판정. 셀·릴리즈라인은 아래에서 개별 게이팅.
-  const ghostOn = ghost === true;
+  // ghost 판정(#216) — 빈 슬롯을 ghost 모드에서만 라벨 점선으로.
   const gTitle = showFieldGhost(fv?.title, d.title, ghost);
   const gTitleOg = showFieldGhost(fv?.titleOg, d.titleOg, ghost);
   const gActors = showFieldGhost(fv?.actors, d.actors, ghost);
-  const gRuntime = showFieldGhost(fv?.runtime, d.runtime, ghost);
-  const gRating = showFieldGhost(fv?.rating, d.rating, ghost);
-  const gSignature = showFieldGhost(fv?.signature, d.signature, ghost);
   const gTheater = showFieldGhost(fv?.theater, d.theater, ghost);
   const gScreen = showFieldGhost(fv?.screen, d.screen, ghost);
   const gWatchDate = showFieldGhost(fv?.watchDate, watchDateClean, ghost);
   const gWatchTime = showFieldGhost(fv?.watchTime, d.watchTime, ghost);
+  const gRuntime = showFieldGhost(fv?.runtime, d.runtime, ghost);
+  const gRating = showFieldGhost(fv?.rating, d.rating, ghost);
   const gRelease = showFieldGhost(fv?.releaseDate, releaseClean, ghost);
-  const gReissue = ghostOn && !reissueVal && !!d.isReissue && fv?.reissue !== false;
+  const gSeat = showFieldGhost(fv?.seat, d.seat, ghost);
 
-  // 관람(screening) 메타 셀 분해(#266) — 병합 셀(Théâtre=극장+상영관, Séance=관람일+시간)을 조각별
-  // 독립 FieldTap + 개별 ghost로. 단 Editorial은 sep-join이 아니라 value(42px)+sub(26px) 2줄·라벨
-  // 스위칭 구조라 fieldPieces(inline sep-join)가 안 맞아 셀 내부에서 각 줄을 FieldTap으로 감싼다.
-  // 라벨 스위칭(극장 없으면 상영관이 value로 승격)을 그대로 유지해 데스크톱 픽셀을 보존한다.
-  type Cell = {
-    label: string;
-    value?: string; valueField: SheetTarget; valueGhost?: boolean; valueGhostLabel?: string;
-    sub?: string; subField?: SheetTarget; subGhost?: boolean; subGhostLabel?: string;
-  };
-  const cells: Cell[] = [];
-  if (theaterVal) {
-    cells.push({ label: 'Théâtre', value: theaterVal, valueField: 'theater', sub: screenVal, subField: 'screen', subGhost: gScreen, subGhostLabel: 'SCREEN' });
-  } else if (screenVal) {
-    cells.push({ label: 'Salle', value: screenVal, valueField: 'screen', subField: 'theater', subGhost: gTheater, subGhostLabel: 'THEATER' });
-  } else if (ghostOn && (fv?.theater !== false || fv?.screen !== false)) {
-    cells.push({ label: 'Théâtre', valueField: 'theater', valueGhost: gTheater, valueGhostLabel: 'THEATER', subField: 'screen', subGhost: gScreen, subGhostLabel: 'SCREEN' });
-  }
-  if (watchDateVal) {
-    cells.push({ label: 'Séance', value: watchDateVal, valueField: 'watchDate', sub: watchTimeVal, subField: 'watchTime', subGhost: gWatchTime, subGhostLabel: 'TIME' });
-  } else if (watchTimeVal) {
-    cells.push({ label: 'Heure', value: watchTimeVal, valueField: 'watchTime', subField: 'watchDate', subGhost: gWatchDate, subGhostLabel: 'DATE' });
-  } else if (ghostOn && (fv?.watchDate !== false || fv?.watchTime !== false)) {
-    cells.push({ label: 'Séance', valueField: 'watchDate', valueGhost: gWatchDate, valueGhostLabel: 'DATE', subField: 'watchTime', subGhost: gWatchTime, subGhostLabel: 'TIME' });
-  }
-  if (seatVal) cells.push({ label: 'Place', value: seatVal, valueField: 'seat' });
-  else if (ghostOn && fv?.seat !== false) cells.push({ label: 'Place', valueField: 'seat', valueGhost: true, valueGhostLabel: 'SEAT' });
+  const italic = (color: string, size: number): CSSProperties => ({
+    fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: size, color, letterSpacing: 0.2,
+  });
+  const metaLabel = (): CSSProperties => ({ ...italic(BROWN, 26), marginBottom: 5 });
+  const metaValue = (color = INK): CSSProperties => ({ fontWeight: 800, fontSize: 37, fontFamily: FONT_SANS, letterSpacing: -0.5, lineHeight: 1, color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' });
 
-  // 릴리즈 병합선 분해(#266) — Sortie·Reprise를 Editorial 고유 sep('      ·      ')로 붙이던 한 줄을
-  // 조각별 독립 FieldTap + 개별 ghost로. 이건 실제 sep-join이라 fieldPieces가 그대로 맞는다. reissue는
-  // FIELD_SHEET_TYPE에 없어 releaseDate 시트로 매핑(Criterion/Minimal RE-REL.과 정렬).
-  const release = fieldPieces(
-    [
-      { field: 'releaseDate', value: releaseDateVal && `Sortie ${releaseDateVal}`, ghost: gRelease, label: 'RELEASE' },
-      { field: 'releaseDate', value: reissueVal && `Reprise ${reissueVal}`, ghost: gReissue, label: 'REISSUE' },
-    ],
-    onField,
-    { sep: '      ·      ', surface: 'paper' }
-  );
-
-  const filmSummary = runtimeVal;
-  const stubHasStamp = components.chainVisible || components.formatVisible;
-  // #219 componentOpacity: 3열 flex라 inset:0 래퍼로 감싸면 flex 컨텍스트가 깨진다. 대신 포스터가 아닌
-  // 두 열(B: Main, C: Stub)의 기존 스타일에 opacity를 직접 얹는다 — opacity는 레이아웃에 무관하고
-  // opacity 1은 기본값이라 데스크톱은 픽셀 동일. 포스터 열 A는 손대지 않아 축 독립 유지.
+  const seanceOn = !!watchDateVal || gWatchDate;
+  const arrivalOn = !!watchTimeVal || gWatchTime;
   const componentOpacity = components.componentOpacity ?? 1;
+  // 스텁 스탬프는 실제 렌더 조건(stampWillRender)으로 게이팅 — chainVisible=true여도 로고·라벨 없고
+  // ghost=false면 null이라, 이 group을 안 그려야 허공 구분선/빈 컨테이너가 안 남는다(#216 P1.1).
+  const stubStampOn =
+    stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost) ||
+    stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost);
+
+  // 단일 값 메타 셀(Durée/Note/Sortie) — 값 있으면 값, 비었고 ghost면 라벨 점선.
+  const metaCell = (label: string, value: string, field: 'runtime' | 'rating' | 'releaseDate', ghostOn: boolean, ghostLabel: string, valueColor = INK) =>
+    value || ghostOn ? (
+      <div key={field}>
+        <div style={metaLabel()}>{label}</div>
+        {value ? (
+          <FieldTap field={field} onField={onField}><div style={metaValue(valueColor)}>{value}</div></FieldTap>
+        ) : (
+          <FieldTap field={field} onField={onField}><FieldGhost text={ghostLabel} width={150} height={40} surface="paper" /></FieldTap>
+        )}
+      </div>
+    ) : null;
+
+  const ratingCell = (ratingVisible || gRating) ? (
+    <div key="rating">
+      <div style={metaLabel()}>Note</div>
+      {ratingVisible ? (
+        <FieldTap field="rating" onField={onField}><div style={metaValue(accent)}>★ {d.rating.toFixed(1)}</div></FieldTap>
+      ) : (
+        <FieldTap field="rating" onField={onField}><FieldGhost text="★" width={90} height={40} surface="paper" /></FieldTap>
+      )}
+    </div>
+  ) : null;
+
+  const theaterCell = (theaterVal || screenVal || gTheater || gScreen) ? (
+    <div key="theater">
+      <div style={metaLabel()}>Théâtre</div>
+      {theaterVal ? (
+        <FieldTap field="theater" onField={onField}><div style={metaValue()}>{theaterVal}</div></FieldTap>
+      ) : gTheater ? (
+        <FieldTap field="theater" onField={onField}><FieldGhost text="THEATER" width={200} height={40} surface="paper" /></FieldTap>
+      ) : null}
+      {screenVal ? (
+        <FieldTap field="screen" onField={onField}>
+          <div style={{ marginTop: 5, fontWeight: 600, fontSize: 24, fontFamily: FONT_SANS, letterSpacing: -0.2, color: BROWN, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{screenVal}</div>
+        </FieldTap>
+      ) : gScreen ? (
+        <FieldTap field="screen" onField={onField}><div style={{ marginTop: 5 }}><FieldGhost text="SCREEN" width={140} height={30} surface="paper" /></div></FieldTap>
+      ) : null}
+    </div>
+  ) : null;
+
+  const metaCells = [
+    theaterCell,
+    metaCell('Durée', runtimeVal, 'runtime', gRuntime, 'RUNTIME'),
+    ratingCell,
+    metaCell('Sortie', releaseVal, 'releaseDate', gRelease, 'RELEASE'),
+  ].filter(Boolean);
+
+  // 스텁 5그룹(회전 -90°) — DOM 좌→우 = 회전 후 아래→위. 존재하는 그룹만 담고 사이에만 구분선을 끼워
+  // 허공 구분선을 원천 차단한다(#216 P1.1). admis·le billet은 장식이라 항상 렌더.
+  const stubGroups: ReactNode[] = [];
+  if (fv?.bookingNo ?? true)
+    stubGroups.push(
+      <FieldTap key="booking" field="bookingNo" onField={onField}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 9 }}>
+          <Barcode value={bookingNo} color={CREAM} orientation="horizontal" width={132} height={70} showText={false} />
+          <span style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 15, letterSpacing: 1.4 }}>No. {bookingNo}</span>
+        </div>
+      </FieldTap>
+    );
+  if (stubStampOn)
+    stubGroups.push(
+      <div key="stamp" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+        <FieldTap field="chain" onField={onField}>
+          <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={48} surface="paper" ghost={ghost} />
+        </FieldTap>
+        <FieldTap field="format" onField={onField}>
+          <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.55} surface="paper" ghost={ghost} />
+        </FieldTap>
+      </div>
+    );
+  if (seatVal || gSeat)
+    stubGroups.push(
+      <div key="seat" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+        <span style={{ ...italic(CREAM, 24), opacity: 0.9, lineHeight: 1 }}>place</span>
+        {seatVal ? (
+          <FieldTap field="seat" onField={onField}><span style={{ fontWeight: 900, fontSize: 56, fontFamily: FONT_SANS, letterSpacing: -2, lineHeight: 0.85 }}>{seatVal}</span></FieldTap>
+        ) : (
+          <FieldTap field="seat" onField={onField}><FieldGhost text="SEAT" width={100} height={50} surface="dark" /></FieldTap>
+        )}
+        <span style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 12, letterSpacing: 2.5, opacity: 0.72 }}>SIÈGE · SEAT</span>
+      </div>
+    );
+  stubGroups.push(
+    <div key="admis" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7 }}>
+      <span style={{ ...italic(CREAM, 44), lineHeight: 0.9 }}>admis</span>
+      <span style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 14, letterSpacing: 4, opacity: 0.82 }}>ADMIT ONE</span>
+      <span style={{ ...italic(CREAM, 16), opacity: 0.72, marginTop: 1 }}>non-transférable</span>
+    </div>
+  );
+  stubGroups.push(
+    <div key="billet" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+      <span style={{ ...italic(CREAM, 36), lineHeight: 0.9 }}>le billet</span>
+      <span style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 12, letterSpacing: 2.5, textTransform: 'uppercase', opacity: 0.85 }}>Édition Spéciale</span>
+    </div>
+  );
+  const stubDivider = <span style={{ width: 1, height: 112, background: CREAM, opacity: 0.32, flexShrink: 0 }} />;
 
   return (
-    <div style={{ position: 'absolute', inset: 0, background: PAPER, color: PAPER_DEEP, fontFamily: FONT_SANS, overflow: 'hidden', display: 'flex' }}>
-      {/* A: Poster — 포스터 컬럼에만 탭(#259). 풀블리드 무드와 달리 editorial은 3열이라 root가 아닌 이 열에. */}
+    <div style={{ position: 'absolute', inset: 0, background: PAPER, color: INK, fontFamily: FONT_SANS, overflow: 'hidden', display: 'flex' }}>
+      {/* A: Poster — 포스터 컬럼에만 탭(#259). editorial은 다열이라 root가 아닌 이 열에. */}
       <div style={{ flex: `0 0 ${POSTER_W}px`, position: 'relative', background: '#0a0a0a', overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
         <Poster src={croppedImageUrl} texture={components.texture} posterOpacity={components.posterOpacity} />
-        <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: PERF_W }}>
-          <PerforationStrip vertical count={42} color={PAPER} background="transparent" />
+        <div aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 150, background: 'linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0))' }} />
+        <div aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 150, background: 'linear-gradient(0deg,rgba(0,0,0,.6),rgba(0,0,0,0))' }} />
+      </div>
+
+      {/* B: Gold foil strip — 순수 장식 크롬. 세로 홀로그램 골드 + 프랑스어 큐레이션 텍스트. 편집 필드 아님 → aria-hidden. */}
+      <div aria-hidden="true" style={{ flex: `0 0 ${FOIL_W}px`, position: 'relative', overflow: 'hidden', background: 'linear-gradient(180deg,#7a5a24 0%,#c99a3e 12%,#f4de95 26%,#b8842f 40%,#ecc86b 55%,#9c7226 70%,#f2d888 84%,#8a641f 100%)', boxShadow: 'inset 1px 0 rgba(0,0,0,.3), inset -1px 0 rgba(0,0,0,.3)' }}>
+        <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(115deg, rgba(255,255,255,.45) 0 2px, rgba(255,255,255,0) 2px 8px)', mixBlendMode: 'screen' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(62deg, rgba(0,0,0,.16) 0 1px, rgba(0,0,0,0) 1px 7px)' }} />
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ writingMode: 'vertical-rl', fontFamily: FONT_MONO, fontWeight: 700, fontSize: 11, letterSpacing: 5, textTransform: 'uppercase', color: 'rgba(74,52,14,.78)', textShadow: '0 1px 0 rgba(255,255,255,.45)', whiteSpace: 'nowrap' }}>FILME · SÉLECTION 2024 · ÉDITION SPÉCIALE · FILME · SÉLECTION 2024</div>
         </div>
       </div>
 
-      {/* B: Main */}
-      <div style={{ flex: `0 0 ${MAIN_W}px`, position: 'relative', background: PAPER, color: PAPER_DEEP, display: 'flex', flexDirection: 'column', padding: '36px 48px 34px', boxSizing: 'border-box', opacity: componentOpacity }}>
-        {/* Header — le billet + 영화 요약(러닝·평점) (크기 확대) */}
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 18, paddingBottom: 18 }}>
-          <div style={{ ...italicLabel(accent, 36) }}>le billet</div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 16 }}>
-            {filmSummary && (
-              <FieldTap field="runtime" onField={onField}>
-                <span style={{ fontWeight: 600, fontSize: 24, fontFamily: FONT_SANS, color: PAPER_DIM, letterSpacing: -0.2 }}>{filmSummary}</span>
-              </FieldTap>
-            )}
-            {!filmSummary && gRuntime && (
-              <FieldTap field="runtime" onField={onField}>
-                <FieldGhost text="RUNTIME" width={110} height={30} surface="paper" />
-              </FieldTap>
-            )}
-            {ratingVisible && (
-              <FieldTap field="rating" onField={onField}>
-                <span style={{ fontWeight: 800, fontSize: 34, fontFamily: FONT_SANS, letterSpacing: 0.5, color: accent }}>★ {d.rating.toFixed(1)}</span>
-              </FieldTap>
-            )}
-            {!ratingVisible && gRating && (
-              <FieldTap field="rating" onField={onField}>
-                <FieldGhost text="★" width={64} height={38} surface="paper" />
-              </FieldTap>
-            )}
-          </div>
+      {/* C: Main */}
+      <div style={{ flex: '1 1 auto', minWidth: 0, position: 'relative', background: PAPER, color: INK, display: 'flex', flexDirection: 'column', padding: '44px 52px 36px', boxSizing: 'border-box', opacity: componentOpacity }}>
+        {/* Kicker — 장식 큐레이션 라벨(bar + En Reprise) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
+          <span style={{ width: 46, height: 2, background: accent, flexShrink: 0 }} />
+          <span style={{ ...italic(accent, 29) }}>En Reprise · Longs Métrages</span>
         </div>
 
-        <div style={{ height: 2, background: PAPER_DEEP, marginBottom: 6 }} />
-        <div style={{ height: 1, background: PAPER_DEEP, opacity: 0.5 }} />
+        {/* Title */}
+        {titleVal ? (
+          <FieldTap field="title" onField={onField}>
+            <div style={{ fontWeight: 900, fontSize: 72, fontFamily: FONT_KR, lineHeight: 0.98, letterSpacing: -2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{titleVal}</div>
+          </FieldTap>
+        ) : gTitle ? (
+          <FieldTap field="title" onField={onField}><FieldGhost text="TITLE" width="60%" height={72} size={2} surface="paper" /></FieldTap>
+        ) : null}
 
-        {/* Film chunk — title, original title, cast, release */}
-        <div style={{ marginTop: 24 }}>
-          {titleVal ? (
-            <FieldTap field="title" onField={onField}>
-              <div style={{ fontWeight: 900, fontSize: titleSize, fontFamily: FONT_KR, lineHeight: 1.0, letterSpacing: -1.5, paddingBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                {titleVal}
-              </div>
-            </FieldTap>
-          ) : gTitle ? (
-            <FieldTap field="title" onField={onField}>
-              <FieldGhost text="TITLE" width="60%" height={72} size={2} surface="paper" />
-            </FieldTap>
-          ) : null}
-          {titleOgVal ? (
-            <FieldTap field="titleOg" onField={onField}>
-              <div style={{ marginTop: 12, ...italicLabel(PAPER_DEEP, 30), opacity: 0.62, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {titleOgVal}
-              </div>
-            </FieldTap>
-          ) : gTitleOg ? (
-            <FieldTap field="titleOg" onField={onField}>
-              <div style={{ marginTop: 12 }}>
-                <FieldGhost text="ORIGINAL TITLE" width={280} height={32} surface="paper" />
-              </div>
-            </FieldTap>
-          ) : null}
-        </div>
+        {titleOgVal ? (
+          <FieldTap field="titleOg" onField={onField}>
+            <div style={{ marginTop: 12, ...italic(INK, 30), opacity: 0.6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{titleOgVal}</div>
+          </FieldTap>
+        ) : gTitleOg ? (
+          <FieldTap field="titleOg" onField={onField}><div style={{ marginTop: 12 }}><FieldGhost text="ORIGINAL TITLE" width={280} height={32} surface="paper" /></div></FieldTap>
+        ) : null}
 
+        {/* avec — cast */}
         {actorsVal ? (
           <FieldTap field="actors" onField={onField}>
-            <div style={{ marginTop: 20 }}>
-              <span style={{ ...italicLabel(accent, 26), marginRight: 12 }}>avec</span>
-              <span style={{ fontWeight: 500, fontSize: 34, fontFamily: FONT_KR, letterSpacing: -0.2, lineHeight: 1.25 }}>{actorsVal}</span>
+            <div style={{ marginTop: 20, display: 'flex', alignItems: 'baseline', gap: 12 }}>
+              <span style={{ ...italic(accent, 26), flexShrink: 0 }}>avec</span>
+              <span style={{ fontWeight: 600, fontSize: 33, fontFamily: FONT_KR, letterSpacing: -0.3, flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{actorsVal}</span>
             </div>
           </FieldTap>
         ) : gActors ? (
           <FieldTap field="actors" onField={onField}>
             <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ ...italicLabel(accent, 26) }}>avec</span>
+              <span style={{ ...italic(accent, 26) }}>avec</span>
               <FieldGhost text="CAST" width={280} height={40} surface="paper" />
             </div>
           </FieldTap>
         ) : null}
 
-        {release.hasAny && (
-          <div style={{ marginTop: 16, fontWeight: 600, fontSize: 26, fontFamily: FONT_SANS, letterSpacing: -0.2, color: PAPER_DIM, ...(release.hasGhost ? { display: 'flex', alignItems: 'center', gap: 10 } : null) }}>
-            {release.node}
-          </div>
-        )}
+        <div style={{ height: 1, background: INK, opacity: 0.2, margin: '26px 0' }} />
 
-        {/* Chunk divider — film ↕ screening */}
-        <div style={{ height: 1, background: PAPER_DEEP, opacity: 0.22, margin: '26px 0' }} />
-
-        {/* Screening chunk — Théâtre / Séance / Place (값 Pretendard) */}
-        {cells.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '22px 52px' }}>
-            {cells.map((c, i) => (
-              <div key={i} style={{ minWidth: 0, flex: '0 1 auto' }}>
-                <div style={{ ...italicLabel(PAPER_DIM, 28), marginBottom: 6 }}>{c.label}</div>
-                {c.value ? (
-                  <FieldTap field={c.valueField} onField={onField}>
-                    <div style={{ fontWeight: 800, fontSize: 42, fontFamily: FONT_SANS, letterSpacing: -0.5, lineHeight: 1.05, color: PAPER_DEEP, maxWidth: 440, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {c.value}
-                    </div>
-                  </FieldTap>
-                ) : c.valueGhost ? (
-                  <FieldTap field={c.valueField} onField={onField}>
-                    <FieldGhost text={c.valueGhostLabel} width={220} height={46} surface="paper" />
-                  </FieldTap>
-                ) : null}
-                {c.sub ? (
-                  <FieldTap field={c.subField!} onField={onField}>
-                    <div style={{ marginTop: 6, fontWeight: 600, fontSize: 26, fontFamily: FONT_SANS, letterSpacing: -0.2, color: PAPER_DIM, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {c.sub}
-                    </div>
-                  </FieldTap>
-                ) : c.subGhost ? (
-                  <FieldTap field={c.subField!} onField={onField}>
-                    <div style={{ marginTop: 6 }}>
-                      <FieldGhost text={c.subGhostLabel} width={130} height={30} surface="paper" />
-                    </div>
-                  </FieldTap>
-                ) : null}
+        {/* Séance + 도착시간 */}
+        {(seanceOn || arrivalOn) && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+            {seanceOn && (
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 16 }}>
+                <span style={{ ...italic(BROWN, 26), flexShrink: 0 }}>Séance</span>
+                {watchDateVal ? (
+                  <FieldTap field="watchDate" onField={onField}><span style={{ fontWeight: 800, fontSize: 38, fontFamily: FONT_SANS, letterSpacing: -0.5, lineHeight: 1 }}>{watchDateVal}</span></FieldTap>
+                ) : (
+                  <FieldTap field="watchDate" onField={onField}><FieldGhost text="DATE" width={220} height={40} surface="paper" /></FieldTap>
+                )}
               </div>
-            ))}
+            )}
+            {arrivalOn && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 13, letterSpacing: 2, color: BROWN, lineHeight: 1.45 }}>SE PRÉSENTER À<br />PLEASE ARRIVE AT</div>
+                <svg aria-hidden="true" width="42" height="42" viewBox="0 0 42 42" fill="none" style={{ flexShrink: 0 }}>
+                  <circle cx="21" cy="21" r="18.5" stroke={INK} strokeWidth="2.5" />
+                  <path d="M21 21V10" stroke={INK} strokeWidth="2.5" strokeLinecap="round" />
+                  <path d="M21 21L29 25" stroke={INK} strokeWidth="2.5" strokeLinecap="round" />
+                </svg>
+                {watchTimeVal ? (
+                  <FieldTap field="watchTime" onField={onField}><span style={{ fontWeight: 900, fontSize: 54, fontFamily: FONT_SANS, letterSpacing: -2, lineHeight: 0.85 }}>{watchTimeVal}</span></FieldTap>
+                ) : (
+                  <FieldTap field="watchTime" onField={onField}><FieldGhost text="TIME" width={140} height={48} surface="paper" /></FieldTap>
+                )}
+              </div>
+            )}
           </div>
         )}
 
-        <div style={{ flex: 1 }} />
+        <div style={{ flex: 1, maxHeight: 48, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}><div style={{ height: 1, background: INK, opacity: 0.2 }} /></div>
 
-        {/* Footer (꼬릿말, 크기 확대) — made with FILME / 서명. 티켓번호는 스텁에만. */}
-        <div style={{ paddingTop: 20, borderTop: `1px solid ${PAPER_DEEP}`, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, opacity: 0.6 }}>
-            <span style={{ ...italicLabel(PAPER_DIM, 24) }}>made with</span>
-            <span style={{ fontWeight: 800, fontSize: 24, fontFamily: FONT_SANS, letterSpacing: 3, color: PAPER_DEEP }}>FILME</span>
-          </div>
-          <div style={{ textAlign: 'right', minWidth: 0 }}>
-            {signatureVal ? (
-              <FieldTap field="signature" onField={onField}>
-                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: 12, marginBottom: 5 }}>
-                  <span style={{ ...italicLabel(accent, 28), flexShrink: 0 }}>par</span>
-                  <span style={{ fontWeight: 500, fontSize: 34, fontFamily: FONT_KR, color: PAPER_DEEP, letterSpacing: -0.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 360 }}>
-                    {signatureVal}
-                  </span>
-                </div>
-              </FieldTap>
-            ) : gSignature ? (
-              <FieldTap field="signature" onField={onField}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12, marginBottom: 5 }}>
-                  <span style={{ ...italicLabel(accent, 28), flexShrink: 0 }}>par</span>
-                  <FieldGhost text="SIGNATURE" width={200} height={36} surface="paper" />
-                </div>
-              </FieldTap>
-            ) : null}
-            <div style={{ ...italicLabel(PAPER_DIM, 26) }}>non-transférable</div>
-          </div>
+        {/* Meta grid — Théâtre / Durée / Note / Sortie (좌석은 스텁으로 이동) */}
+        {metaCells.length > 0 && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: '22px 44px', alignItems: 'start' }}>{metaCells}</div>
+        )}
+
+        {/* 프랑스어 고지문(장식 법적 문구) */}
+        <div style={{ marginTop: 20, fontWeight: 500, fontSize: 14, fontFamily: FONT_SANS, lineHeight: 1.5, color: BROWN, maxWidth: 540 }}>
+          Place garantie jusqu&apos;à 25min avant le début de la séance.<br />
+          <span style={{ opacity: 0.72 }}>Seat guaranteed up to 25min before the beginning of the screening.</span>
         </div>
 
-        {/* Notch (#000 matches captureToImage backgroundColor) */}
-        <div style={{ position: 'absolute', right: -28, top: 960 / 2 - 28, width: 56, height: 56, borderRadius: '50%', background: '#000000', zIndex: 10 }} />
+        {/* Footer — réalisé avec FILME / par 서명 */}
+        <div style={{ marginTop: 16, paddingTop: 15, borderTop: `1px solid ${INK}`, opacity: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, opacity: 0.6 }}>
+            <span style={{ ...italic(BROWN, 22) }}>réalisé avec</span>
+            <span style={{ fontWeight: 800, fontSize: 22, fontFamily: FONT_SANS, letterSpacing: 3, color: INK }}>FILME</span>
+          </div>
+          {signatureVal ? (
+            <FieldTap field="signature" onField={onField}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, minWidth: 0 }}>
+                <span style={{ ...italic(accent, 26), flexShrink: 0 }}>par</span>
+                <span style={{ fontWeight: 600, fontSize: 30, fontFamily: FONT_KR, letterSpacing: -0.3, color: INK, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 360 }}>{signatureVal}</span>
+              </div>
+            </FieldTap>
+          ) : showFieldGhost(fv?.signature, d.signature, ghost) ? (
+            <FieldTap field="signature" onField={onField}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ ...italic(accent, 26), flexShrink: 0 }}>par</span>
+                <FieldGhost text="SIGNATURE" width={200} height={36} surface="paper" />
+              </div>
+            </FieldTap>
+          ) : null}
+        </div>
+
+        {/* 크로스헤어(우상단 장식) */}
+        <div aria-hidden="true" style={{ position: 'absolute', right: 22, top: 22, width: 22, height: 22, pointerEvents: 'none', opacity: 0.32 }}>
+          <span style={{ position: 'absolute', right: 0, top: 10, width: 22, height: 1, background: INK }} />
+          <span style={{ position: 'absolute', right: 10, top: 0, width: 1, height: 22, background: INK }} />
+          <span style={{ position: 'absolute', right: 6, top: 6, width: 9, height: 9, border: `1px solid ${INK}`, borderRadius: '50%' }} />
+        </div>
       </div>
 
-      {/* C: Stub — 세로형 tear-off. 가로 행 하나를 -90° 회전 → admis·영화관(먼저)·포맷·바코드·티켓번호가
-          strip 방향으로 선다. 컴포넌트 크기를 맞추고 바코드를 길게 빼 공간을 채운다. */}
-      <div style={{ flex: `0 0 ${STUB_W}px`, position: 'relative', background: PAPER, borderLeft: `1px solid ${PAPER_DEEP}`, overflow: 'hidden', opacity: componentOpacity }}>
-        <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: PERF_W }}>
-          <PerforationStrip vertical count={42} color={PAPER_DEEP} background="transparent" />
-        </div>
+      {/* D: Stub — accent 배경, 크림 잉크. 회전 -90° 5그룹(바코드·체인/포맷·좌석·admis·le billet). */}
+      <div style={{ flex: `0 0 ${STUB_W}px`, position: 'relative', background: accent, overflow: 'hidden', color: CREAM, opacity: componentOpacity }}>
+        {/* 절취 천공 엣지(페이퍼색 구멍) + 점선 */}
+        <div aria-hidden="true" style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 12, backgroundImage: `radial-gradient(circle at left center, ${PAPER} 0 5.5px, rgba(244,237,224,0) 6px)`, backgroundSize: '12px 24px', backgroundRepeat: 'repeat-y', backgroundPosition: 'left top', zIndex: 2, filter: 'drop-shadow(1px 0 0 rgba(0,0,0,.22))' }} />
+        <div aria-hidden="true" style={{ position: 'absolute', left: 18, top: 14, bottom: 14, width: 0, borderLeft: '1.5px dashed rgba(247,236,226,.6)', zIndex: 2 }} />
+        <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(125deg, rgba(0,0,0,.05) 0 2px, rgba(0,0,0,0) 2px 9px)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {/* DOM 좌→우 = 회전 후 아래→위. 맨 오른쪽(admis)이 위, 맨 왼쪽(티켓번호)이 아래.
-              영화관(체인)이 포맷보다 위(=먼저)에 오도록 그룹 내 순서는 format→chain. */}
-          <div style={{ transform: 'rotate(-90deg)', display: 'flex', alignItems: 'center', gap: 34, whiteSpace: 'nowrap' }}>
-            {(fv?.bookingNo ?? true) && (
-              <FieldTap field="bookingNo" onField={onField}>
-                <span style={{ fontWeight: 700, fontSize: 22, fontFamily: FONT_MONO, letterSpacing: 2, color: PAPER_DEEP }}>No. {bookingNo}</span>
-              </FieldTap>
-            )}
-            {(fv?.bookingNo ?? true) && (
-              <FieldTap field="bookingNo" onField={onField}>
-                <Barcode value={bookingNo} color={PAPER_DEEP} orientation="horizontal" width={336} height={58} showText={false} />
-              </FieldTap>
-            )}
-            {stubHasStamp && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-                <FieldTap field="format" onField={onField}>
-                  <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.75} ghost={ghost} />
-                </FieldTap>
-                {stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost) && stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost) && <span style={{ width: 1, height: 34, background: PAPER_DEEP, opacity: 0.3 }} />}
-                <FieldTap field="chain" onField={onField}>
-                  <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={48} ghost={ghost} />
-                </FieldTap>
-              </div>
-            )}
-            <span style={{ ...italicLabel(accent, 40) }}>admis</span>
+          {/* DOM 좌→우 = 회전 후 아래→위 */}
+          <div style={{ transform: 'rotate(-90deg)', display: 'flex', alignItems: 'center', gap: 20, padding: '0 22px', boxSizing: 'border-box', whiteSpace: 'nowrap' }}>
+            {stubGroups.map((g, i) => (
+              <Fragment key={i}>
+                {i > 0 ? stubDivider : null}
+                {g}
+              </Fragment>
+            ))}
           </div>
         </div>
       </div>

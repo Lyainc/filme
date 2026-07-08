@@ -179,9 +179,22 @@ describe('ghost mode stamp divider gating (#216 P1.1)', () => {
     expect(html).toContain(DIVIDER);
   });
 
-  test.each(MOODS)('%s: ghost=false + 로고 없음 → 두 스탬프 null → 구분선도 사라짐', (layout, Mood) => {
+  // Editorial 스텁(마스터 #281)은 admis·le billet 구조 구분선이 항상 있어 '구분선 0'이 성립하지 않는다.
+  // 여기선 스탬프 divider만 검증하는 다른 5무드를 대상으로 하고, Editorial은 아래에서 별도 검증한다.
+  const NON_EDITORIAL = MOODS.filter(([id]) => id !== 'editorial');
+  test.each(NON_EDITORIAL)('%s: ghost=false + 로고 없음 → 두 스탬프 null → 구분선도 사라짐', (layout, Mood) => {
     const html = render(Mood, layout, EMPTY_MOVIE, { chainVisible: true, formatVisible: true }, false);
     expect(html).not.toContain(DIVIDER);
+  });
+
+  // Editorial: 스탬프 그룹과 그 선행 구분선은 stampWillRender로 게이팅된다(#216 P1.1). 스탬프가 실제
+  // 렌더될 때(ghost=undefined)보다 null일 때(ghost=false) 구분선 수가 줄어야 한다 — 허공 구분선 없음.
+  test('editorial: 스탬프 null이면 스탬프 그룹 구분선이 사라진다(구조 구분선은 유지)', () => {
+    const withStamp = render(MoodEditorial, 'editorial', EMPTY_MOVIE, { chainVisible: true, formatVisible: true }, undefined);
+    const noStamp = render(MoodEditorial, 'editorial', EMPTY_MOVIE, { chainVisible: true, formatVisible: true }, false);
+    const count = (h: string) => h.split(DIVIDER).length - 1;
+    expect(count(withStamp)).toBeGreaterThan(count(noStamp)); // 스탬프 그룹 divider 게이팅
+    expect(count(noStamp)).toBeGreaterThan(0); // admis·le billet 구조 구분선은 유지
   });
 
   test('stampWillRender: image>label>placeholder(ghost!==false) 조건', () => {
@@ -312,8 +325,8 @@ describe('MoodCriterion VENUE 셀 분해 ghost (#266 PR-D)', () => {
   });
 });
 
-describe('MoodEditorial 관람 셀·릴리즈 분해 ghost (#266)', () => {
-  // theater 셀은 value(극장)+sub(상영관) 2줄. 빈 두 필드가 ghost 모드에서 각 줄 라벨 점선(THEATER·
+describe('MoodEditorial ghost (#266, 마스터 재동기화 #281)', () => {
+  // Théâtre 셀은 value(극장)+sub(상영관) 2줄. 빈 두 필드가 ghost 모드에서 각 줄 라벨 점선(THEATER·
   // SCREEN)을 그리되, 데스크톱(ghost=undefined) placeholder 0 불변식(:104)은 유지된다.
   test('빈 theater·screen + ghost=true → THEATER·SCREEN ghost 각각', () => {
     const html = render(MoodEditorial, 'editorial', { ...FULL_MOVIE, theater: '', screen: '' }, {}, true);
@@ -335,17 +348,15 @@ describe('MoodEditorial 관람 셀·릴리즈 분해 ghost (#266)', () => {
     expect(html).toContain('SCREEN'); // 상영관 재켜기 ghost(sub 줄)
   });
 
-  // 혼합 flex(#268 P1)는 Editorial에선 릴리즈 병합선(fieldPieces)에서 발생 — Sortie 실값(inline) +
-  // Reprise ghost(블록) 혼합 시 값 줄이 flex여야 ghost 박스가 줄바꿈되지 않는다. gap:10px가 이 시그니처.
-  test('releaseDate 값 + 빈 reissue + ghost=true → 릴리즈 텍스트·ghost 혼합을 flex로 정렬', () => {
-    const html = render(MoodEditorial, 'editorial', { ...FULL_MOVIE, reissueDate: '' }, {}, true);
-    expect(html).toContain('Sortie '); // 개봉일 실값(inline)
-    expect(html).toContain('REISSUE'); // 재개봉 재켜기 ghost(블록)
-    expect(html).toContain('gap:10px'); // 혼합 flex — 없으면 block ghost가 줄바꿈
+  // 좌석은 스텁 place 그룹으로 이동(마스터 #281). 빈 좌석이 ghost 모드에서 SEAT 점선을, 데스크톱에선
+  // placeholder 0(픽셀 보존)을 유지한다. reissue는 마스터 메타 그리드에 슬롯이 없어 미렌더(REISSUE ghost 제거).
+  test('빈 seat + ghost=true → 스텁 place SEAT ghost 등장', () => {
+    const html = render(MoodEditorial, 'editorial', { ...FULL_MOVIE, seat: '' }, {}, true);
+    expect(html).toContain('SEAT');
   });
 
-  test('releaseDate 값 + 빈 reissue + ghost=undefined(데스크톱) → 릴리즈 ghost 없음(픽셀 보존)', () => {
-    const html = render(MoodEditorial, 'editorial', { ...FULL_MOVIE, reissueDate: '' }, {}, undefined);
-    expect(html).not.toContain('REISSUE');
+  test('빈 seat + ghost=undefined(데스크톱) → SEAT placeholder 없음(픽셀 보존)', () => {
+    const html = render(MoodEditorial, 'editorial', { ...FULL_MOVIE, seat: '' }, {}, undefined);
+    expect(html).not.toContain('SEAT');
   });
 });
