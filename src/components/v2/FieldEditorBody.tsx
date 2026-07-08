@@ -29,7 +29,8 @@ const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ss
 type Photo = ReturnType<typeof usePhototicket>;
 
 const INPUT_CLS =
-  'w-full rounded-field border border-line bg-surface-elevated px-3.5 py-3 text-[15px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft';
+  // 16px 미만이면 iOS Safari가 포커스 시 자동 줌인해 레이아웃이 틀어진다(#274) — 편집 폼 컨트롤은 16px 이상.
+  'w-full rounded-field border border-line bg-surface-elevated px-3.5 py-3 text-[16px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft';
 
 /**
  * 필드 편집 본문(#226) — vaul-free. 필드/스탬프 타깃별 에디터 콘텐츠(text/date/title/rating + 스탬프)를
@@ -231,7 +232,7 @@ function DateSheet({ field, photo }: { field: TicketField; photo: Photo }) {
           value={gran}
           onChange={(e) => set({ releaseDateGranularity: e.target.value as DateGranularity })}
           aria-label="개봉일 정밀도"
-          className="text-mono rounded-field border border-line bg-surface-elevated px-3 py-3 text-[11px] uppercase tracking-widest text-fg outline-none focus:border-accent"
+          className="text-mono rounded-field border border-line bg-surface-elevated px-3 py-3 text-[16px] uppercase tracking-widest text-fg outline-none focus:border-accent"
         >
           {GRANULARITY_OPTIONS.map((g) => (
             <option key={g.value} value={g.value}>

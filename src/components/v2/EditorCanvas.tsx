@@ -209,7 +209,7 @@ export function EditorCanvas({ photo, onPendingFetchChange, hideRailSections = f
                   setInfo({ watchDate: e.target.value });
                   ocr.removeField('watchDate');
                 }}
-                className="w-full rounded-field border border-line bg-surface-elevated px-3.5 py-3 text-[15px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
+                className="w-full rounded-field border border-line bg-surface-elevated px-3.5 py-3 text-[16px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
               />
               <div className="flex flex-wrap gap-2 pt-1" role="radiogroup" aria-label="Watched 표기">
                 {WATCH_FORMAT_TOKENS.map((opt) => {
