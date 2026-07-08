@@ -21,7 +21,6 @@ function Harness({ canExport, onDone }: { canExport: boolean; onDone: () => void
       canExport={canExport}
       theme="light"
       onThemeChange={() => {}}
-      onPendingFetchChange={() => {}}
       onDone={onDone}
       disabledReason={REASON}
       previewMovieInfo={photo.state.movieInfo}

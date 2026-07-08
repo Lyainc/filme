@@ -12,17 +12,16 @@ import { ResultSheet } from '@/components/v2/ResultSheet';
 export default function Home() {
   // SSR safe: 초기값 'light', mount 후 localStorage/prefers-color-scheme 읽기
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const [pendingFetch, setPendingFetch] = useState(false);
   // 모바일 셸(<1024px)과 데스크톱 rail(≥1024px)은 근본 구조가 달라 CSS가 아닌 JS로 분기한다.
   // SSR/첫 페인트는 데스크톱을 기본으로 그리고(서버는 뷰포트를 모름), mount 후 isMobile로 확정.
-  // mount 전엔 데스크톱 셸이 곧 모바일의 SSR 셸이기도 하다(첫 페인트는 데스크톱 기본) → 하이드레이션 일치.
+  // mount 전엔 서버와 클라의 첫 렌더가 같은 트리(데스크톱 셸)라 하이드레이션이 일치한다.
   const [mounted, setMounted] = useState(false);
   // rail(데스크톱) ↔ 모바일 셸 경계는 rail 노출 분기점(rail=1024)과 동일해야
   // 그 사이 폭에서 진입 CTA가 사라지지 않는다. BELOW_RAIL_QUERY가 그 단일 경계(#104).
   const isMobile = useMatchMedia(BELOW_RAIL_QUERY);
 
   const photo = usePhototicket();
-  const canExport = useExportReady({ state: photo.state, pendingFetch });
+  const canExport = useExportReady({ state: photo.state });
   const { open: resultOpen, openView, closeView } = useResultView();
 
   const { croppedImageUrl } = photo.state;
@@ -90,7 +89,6 @@ export default function Home() {
           canExport={canExport}
           theme={theme}
           onThemeChange={setTheme}
-          onPendingFetchChange={setPendingFetch}
           onDone={openView}
           disabledReason={railMessage}
           previewMovieInfo={debouncedMovieInfo}
@@ -117,7 +115,6 @@ export default function Home() {
       photo={photo}
       theme={theme}
       onThemeChange={setTheme}
-      onPendingFetchChange={setPendingFetch}
       canExport={canExport}
       disabledReason={railMessage}
       resultOpen={resultOpen}

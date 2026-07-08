@@ -91,8 +91,6 @@ interface MobileEditorShellProps {
   onDone: () => void;
   /** 완료 비활성 시 안내 문구(=railMessage). 탭하면 토스트로 노출. */
   disabledReason: string;
-  /** 현재 미소비 — #283에서 죽은 인라인 폼이 사라져 소비처가 없어졌다. index 대칭용 prop. */
-  onPendingFetchChange: (pending: boolean) => void;
   /** 인라인 프리뷰는 디바운스된 값으로 렌더(폼 입력이 프리뷰를 매타건 리렌더하지 않게). */
   previewMovieInfo: MovieInfo;
   previewComponents: TicketComponents;
@@ -104,7 +102,6 @@ export function MobileEditorShell({
   canExport,
   theme,
   onThemeChange,
-  onPendingFetchChange,
   onDone,
   disabledReason,
   previewMovieInfo,

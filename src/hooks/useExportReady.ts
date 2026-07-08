@@ -5,7 +5,6 @@ interface CanExportParams {
   title: string;
   titleOg: string;
   releaseDate: string | undefined;
-  pendingFetch: boolean;
 }
 
 export function canExport({
@@ -13,9 +12,7 @@ export function canExport({
   title,
   titleOg,
   releaseDate,
-  pendingFetch,
 }: CanExportParams): boolean {
-  if (pendingFetch) return false;
   const release = (releaseDate ?? '').trim();
   return (
     hasPoster &&
@@ -27,7 +24,6 @@ export function canExport({
 
 interface UseExportReadyOptions {
   state: PhototicketState;
-  pendingFetch: boolean;
 }
 
 /**
@@ -35,12 +31,11 @@ interface UseExportReadyOptions {
  * 결과는 별도 화면이 아니라 같은 페이지 위에 뜨는 rail/바텀시트로 표시되므로
  * 화면 전환·sessionStorage 복원 로직은 없다(파생 boolean 하나로 충분).
  */
-export function useExportReady({ state, pendingFetch }: UseExportReadyOptions): boolean {
+export function useExportReady({ state }: UseExportReadyOptions): boolean {
   return canExport({
     hasPoster: !!state.croppedImageUrl,
     title: state.movieInfo.title,
     titleOg: state.movieInfo.titleOg,
     releaseDate: state.movieInfo.releaseDate,
-    pendingFetch,
   });
 }
