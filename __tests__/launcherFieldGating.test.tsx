@@ -76,10 +76,10 @@ describe('launcherGroupsFor 게이팅 로직 (#287)', () => {
   });
 
   test('제외해도 빈 그룹만 사라지고 남는 필드는 순서 보존', () => {
-    // Minimal(bookingNo만 제외)·Criterion(watchTime·runtime 제외) 모두 두 그룹이 다 남는다.
+    // Minimal(bookingNo만 제외)·Criterion(watchTime만 제외) 모두 두 그룹이 다 남는다.
     expect(launcherGroupsFor('minimal').map((g) => g.title)).toEqual(['Film', 'Optional']);
     expect(launcherFields('criterion')).not.toContain('watchTime');
-    expect(launcherFields('criterion')).not.toContain('runtime');
+    expect(launcherFields('criterion')).toContain('runtime'); // #281 재동기화 — RUNTIME 셀 추가로 제외 해제
     expect(launcherFields('criterion')).toContain('seat'); // 나머지 Optional 필드는 보존
   });
 });

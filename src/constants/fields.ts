@@ -90,10 +90,10 @@ export const LAUNCHER_GROUPS: { title: string; fields: TicketField[] }[] = [
  */
 export const MOOD_EXCLUDED_FIELDS: Partial<Record<LayoutId, readonly TicketField[]>> = {
   minimal: ['bookingNo'], // #286: 마스터 Minimal은 푸터 바코드 없음 → bookingNo 미렌더.
-  // Criterion: watchTime은 마스터 본문에 TIME 셀이 없어 미렌더가 의도. 단 runtime은 마스터 v2 Criterion에
-  // RUNTIME 셀이 있으므로 진짜 제외가 아니라 아직 재동기화 안 된 렌더 누락(#281 판정) — Criterion 슬라이스에서
-  // RUNTIME 셀을 추가하고 여기서 'runtime'을 뺄 것. 그전까진 현재 stale 렌더와 맞추려 잠정 제외 유지.
-  criterion: ['watchTime', 'runtime'],
+  // Criterion(#281 재동기화 완료): 마스터 v2 하단 필름 셀은 RATED·RUNTIME·RELEASED·RE-RELEASED라
+  // RUNTIME 셀을 렌더하므로 runtime은 제외 아님. watchTime은 마스터에 독립 TIME 셀이 없어(WATCHED 값에만
+  // 병합) 편집 타깃이 없으므로 제외 유지.
+  criterion: ['watchTime'],
   '35mm': ['bookingNo'], // #281: 마스터 35mm는 푸터 바코드 없음 → bookingNo 미렌더(MADE WITH FILME·서명 푸터는 유지).
 };
 
