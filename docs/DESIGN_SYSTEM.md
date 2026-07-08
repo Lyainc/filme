@@ -88,7 +88,7 @@ FONT_KR   = "Pretendard Variable", "Noto Sans KR", "Inter", sans-serif
 
 ## 🔤 앱 UI 타이포그래피
 
-티켓이 아닌 **앱 인터페이스**(EditorCanvas/DoneCanvas, 위저드 피커, 헤더 등)의 폰트 정책이에요.
+티켓이 아닌 **앱 인터페이스**(에디터 셸, 위저드 피커, 헤더 등)의 폰트 정책이에요.
 
 - **폰트**: Pretendard (`--font-sans`). Tailwind `font-sans` 토큰으로 일관 적용.
 - **본문 기준 weight: 450** — `globals.css`의 `body`에 지정. Pretendard 기본 400은 `-webkit-font-smoothing: antialiased` 환경에서 얇게 읽혀 시인성이 낮아, 본문 기준선을 450으로 올렸어요. 제목·라벨은 `font-medium`(500) 이상을 명시.

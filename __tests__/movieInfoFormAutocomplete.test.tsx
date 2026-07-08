@@ -66,7 +66,7 @@ function jsonResponse(body: unknown): Response {
 }
 
 // ---------------------------------------------------------------------------
-// Harness — owns MovieInfo state like the real EditorCanvas parent
+// Harness — owns MovieInfo state like a real form parent
 // ---------------------------------------------------------------------------
 
 let latestInfo: MovieInfo;

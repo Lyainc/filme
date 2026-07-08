@@ -197,7 +197,7 @@ export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket>
         {active === 'mood' ? (
           <LayoutPicker value={components.layout} onChange={(id: LayoutId) => setComp({ layout: id })} />
         ) : active === 'color' ? (
-          // EditorCanvas와 동일 배선 — 잉크색 단일 축(themeColor). 35mm는 톤 고정이라 disabled.
+          // DesktopStudioShell과 동일 배선 — 잉크색 단일 축(themeColor). 35mm는 톤 고정이라 disabled.
           <ColorPicker
             value={components.themeColor}
             onChange={(themeColor) => setComp({ themeColor })}

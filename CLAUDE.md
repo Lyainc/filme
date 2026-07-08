@@ -75,5 +75,5 @@ bun test        # Unit + interaction tests
 - **Env**: `AI_GATEWAY_API_KEY`(또는 OIDC, OCR 필수) · `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`(선택) · `KOBIS_API_KEY`(title→KOBIS 조회).
 
 ### 🚧 Current Project Status
-- **Completed**: MVP + KOBIS API + Manual Cropping + TCG Premium Textures + Editorial Cinema redesign + 4-Mood layout system + GPT-4o mini OCR(Tesseract 클라이언트에서 전환) + 단일 에디터 재편(#86: 2-step Phase 폐기 → `EditorCanvas` + `DoneCanvas`, `useScreen` 훅) + Serial/Collection 입력·EditionMark 제거(#84) + K-means 색 추출 Web Worker 오프로드(#80: `src/utils/colorExtraction.worker.ts`) + 상호작용 테스트 인프라(#163: happy-dom + testing-library, OCR undo 회귀 테스트) + 업로드 영역 포스터 주연 재설계(#142: 드롭존 메인 + OCR 보조 액션).
+- **Completed**: MVP + KOBIS API + Manual Cropping + TCG Premium Textures + Editorial Cinema redesign + 4-Mood layout system + GPT-4o mini OCR(Tesseract 클라이언트에서 전환) + 단일 에디터 재편(#86: 2-step Phase 폐기 → 단일 에디터 셸, `useScreen` 훅) + 모바일 편집 셸 dead-code 정리(#283: 도달 불가 OCR·폼·rail 경로 제거, Poster 드롭존만 `MobileEditorShell`에 인라인) + Serial/Collection 입력·EditionMark 제거(#84) + K-means 색 추출 Web Worker 오프로드(#80: `src/utils/colorExtraction.worker.ts`) + 상호작용 테스트 인프라(#163: happy-dom + testing-library, OCR undo 회귀 테스트) + 업로드 영역 포스터 주연 재설계(#142: 드롭존 메인 + OCR 보조 액션).
 - **Next Up**: 확정 로드맵 없음 (이전 TMDB·Supabase 계획은 폐기).

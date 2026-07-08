@@ -38,7 +38,7 @@ export const ALL_FIELDS_OFF: Record<TicketField, boolean> = {
 
 /**
  * 티켓에서 숨길 수 없는 필수 필드(#260) — 꺼지면 제목 없는 정체불명 티켓이 된다. 데스크톱 일괄토글
- * (DesktopStudioShell)·모바일 전체해제(EditorCanvas)·필드시트 눈토글(FieldEditSheet)이 각자 'title'
+ * (DesktopStudioShell)·모바일 전체표시 토글(MobileEditorShell)·필드시트 눈토글(FieldEditSheet)이 각자 'title'
  * 리터럴을 들고 있던 걸 여기 단일 소스로 수렴 — 세 경로가 어긋나던 내부 모순 제거.
  */
 export const REQUIRED_FIELDS: readonly TicketField[] = ['title'];

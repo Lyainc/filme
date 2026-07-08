@@ -5,7 +5,8 @@
  *  1. 끄기: 티켓 위 필드 탭 → FieldEditSheet 헤더 "티켓에 표시" 눈 토글 → 필드 숨김.
  *  2. 다시 켜기 (a): ghost 켜짐(기본 on) → 숨긴 필드가 티켓에 "+ 라벨" 점선(FieldTap)으로 남아
  *     재탭 → 재노출.
- *  3. 다시 켜기 (b): EditorCanvas "전체 선택"(전체표시) → 전 필드 재노출.
+ *  3. 다시 켜기 (b): 셸 "전체 표시" 스위치 → 전 필드 재노출.
+ *  4. 끄기(전체): "전체 표시" off는 필수 필드(제목)를 남기고 나머지만 끈다(#260, 제목 없는 티켓 방지).
  *
  * 무드/시트는 dynamic(ssr:false)라 로드 대기에 findBy*를 쓴다. 상태는 Harness의 data-testid
  * 프로브로 읽는다(모듈 mock 없음 — bun mock.module 전역 누수 회피, 기존 셸 테스트 미러). 무드는
@@ -24,6 +25,7 @@ function Harness() {
   const { fieldVisibility } = photo.state;
   return (
     <>
+      <div data-testid="vis-title">{String(fieldVisibility.title)}</div>
       <div data-testid="vis-theater">{String(fieldVisibility.theater)}</div>
       <div data-testid="vis-screen">{String(fieldVisibility.screen)}</div>
       <button
@@ -88,5 +90,23 @@ describe('MobileEditorShell 필드 커버리지 (#266 PR-E)', () => {
     // (열린 vaul이 본문을 aria-hidden 처리하므로 hidden:true로 포함해 조회.)
     fireEvent.click(await screen.findByRole('switch', { name: '전체 표시', hidden: true }));
     expect(screen.getByTestId('vis-screen').textContent).toBe('true');
+  });
+
+  // #260 경로 1(이관) — "전체 표시" off는 필수 필드(제목)를 남기고 나머지만 끈다(제목 없는 티켓 방지).
+  // 셸 스위치가 ALL_FIELDS_OFF_KEEP_REQUIRED를 넘기는지 실제 상호작용으로 검증(구 인라인 폼 '전체 해제' 테스트 이관, #283).
+  test('"전체 표시" off → title은 유지, 나머지는 off (#260)', async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByText('seed'));
+
+    // 첫 업로드는 표시항목을 부분 기본값으로 리셋하므로, 먼저 "전체 표시"로 전 필드를 켠다.
+    const allVis = await screen.findByRole('switch', { name: '전체 표시' });
+    fireEvent.click(allVis);
+    expect(screen.getByTestId('vis-title').textContent).toBe('true');
+    expect(screen.getByTestId('vis-theater').textContent).toBe('true');
+
+    // 다시 끄면 KEEP_REQUIRED로 title만 남고 나머지는 off.
+    fireEvent.click(allVis);
+    expect(screen.getByTestId('vis-title').textContent).toBe('true');
+    expect(screen.getByTestId('vis-theater').textContent).toBe('false');
   });
 });
