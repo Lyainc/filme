@@ -284,25 +284,26 @@ const THUMBNAIL_RENDERERS: Record<LayoutId, (c: ThumbColors) => ReactNode> = {
       <rect x="62" y="80" width="14" height="6" fill="#1a1612" />
     </>
   ),
-  // 상단 포스터 풀블리드 + 점선 절취선(양옆 노치) + 하단 크림 스텁(SEAT 대형 + 그리드 + 바코드)
+  // 상단 포스터(텍스트 없음) + 점선 절취선(노치 없음) + 홀로그램 티커 + 페이퍼 스텁(제목 이동 · SEAT 칩 · The Film · 바코드) — 마스터 재동기화 #281
   stub: ({ stroke, dim }) => (
     <>
-      <rect x="0" y="0" width="80" height="58" fill={dim} opacity="0.22" />
-      <rect x="0" y="40" width="80" height="18" fill="rgba(0,0,0,0.6)" />
-      <rect x="6" y="6" width="16" height="4" fill={stroke} opacity="0.7" />
-      <rect x="60" y="6" width="14" height="3" fill={stroke} />
-      <rect x="6" y="46" width="34" height="5" fill={stroke} />
-      <line x1="3" y1="58" x2="77" y2="58" stroke={stroke} strokeWidth="0.5" strokeDasharray="1.4 1.2" />
-      <circle cx="0" cy="58" r="3" fill="#000000" />
-      <circle cx="80" cy="58" r="3" fill="#000000" />
-      <rect x="6" y="63" width="20" height="3" fill={stroke} opacity="0.7" />
-      <rect x="58" y="63" width="16" height="2" fill={dim} />
-      <rect x="6" y="70" width="68" height="18" fill="none" stroke={stroke} strokeWidth="0.5" />
-      <line x1="34" y1="70" x2="34" y2="88" stroke={stroke} strokeWidth="0.5" />
-      <line x1="34" y1="76" x2="74" y2="76" stroke={stroke} strokeWidth="0.4" />
-      <line x1="34" y1="82" x2="74" y2="82" stroke={stroke} strokeWidth="0.4" />
-      <rect x="10" y="76" width="16" height="7" fill={stroke} />
-      <rect x="58" y="92" width="16" height="5" fill={dim} />
+      {/* 포스터(텍스트 없음, 상단 ~52%) */}
+      <rect x="0" y="0" width="80" height="52" fill={dim} opacity="0.22" />
+      {/* 절취선(점선) — 반원 노치 없음 */}
+      <line x1="3" y1="52" x2="77" y2="52" stroke={stroke} strokeWidth="0.5" strokeDasharray="1.4 1.2" />
+      {/* 홀로그램 티커 스트립 */}
+      <rect x="0" y="54" width="80" height="4" fill="#c9baf7" opacity="0.55" />
+      {/* 워드마크 + 제목(포스터→페이퍼 이동, 2줄) */}
+      <rect x="6" y="62" width="24" height="2" fill={dim} />
+      <rect x="6" y="67" width="46" height="4" fill={stroke} />
+      <rect x="6" y="73" width="32" height="4" fill={stroke} />
+      {/* SEAT 칩 + 점선 행(DATE/TIME/HALL) */}
+      <rect x="6" y="81" width="16" height="13" fill={stroke} />
+      <line x1="28" y1="83" x2="74" y2="83" stroke={stroke} strokeWidth="0.35" strokeDasharray="1 1" />
+      <line x1="28" y1="88" x2="74" y2="88" stroke={stroke} strokeWidth="0.35" strokeDasharray="1 1" />
+      <line x1="28" y1="93" x2="74" y2="93" stroke={stroke} strokeWidth="0.35" strokeDasharray="1 1" />
+      {/* 푸터 바코드 */}
+      <rect x="58" y="96" width="16" height="3" fill={dim} />
     </>
   ),
   // 상·하 필름 스트립(스프로킷) + 좌 포스터 / 우 정보패널 좌우 분할
