@@ -193,10 +193,10 @@ describe('ghost mode stamp divider gating (#216 P1.1)', () => {
     expect(stampWillRender(false, 'blob:x', 'CGV', undefined)).toBe(false); // 비가시
   });
 
-  // MoodMinimal은 상단 스크림(height:180px 그라디언트)을 hasTopStamp로 게이팅한다 — 두 스탬프가
+  // MoodMinimal은 상단 스크림(height:160px 그라디언트)을 hasTopStamp로 게이팅한다 — 두 스탬프가
   // 하나도 렌더 안 되면 스크림도 사라져야 함(#216 리뷰 P1: 로고없음+ghost=false 빈 스크림 잔류 방지).
-  // 다른 3무드는 배경 없는 flex라 무관. height:180px는 MoodMinimal 상단 스크림 전용 시그니처.
-  const MINIMAL_TOP_SCRIM = 'height:180px';
+  // 다른 3무드는 배경 없는 flex라 무관. height:160px는 MoodMinimal 상단 스크림 전용 시그니처(마스터 resync #281).
+  const MINIMAL_TOP_SCRIM = 'height:160px';
 
   test('minimal: ghost=undefined(데스크톱) + 로고 없음 → 상단 스크림 유지', () => {
     const html = render(MoodMinimal, 'minimal', EMPTY_MOVIE, { chainVisible: true, formatVisible: true }, undefined);
