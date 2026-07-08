@@ -5,7 +5,7 @@ import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
 import { FieldEditorBody } from './FieldEditorBody';
 import {
   FIELD_LABELS,
-  LAUNCHER_GROUPS,
+  launcherGroupsFor,
   STAMP_TARGETS,
   STAMP_KEYS,
   STAMP_LABELS,
@@ -33,7 +33,7 @@ export function FieldAccordion({ photo }: { photo: Photo }) {
 
   return (
     <div className="space-y-5">
-      {LAUNCHER_GROUPS.map((group) => (
+      {launcherGroupsFor(components.layout).map((group) => (
         <section key={group.title} className="space-y-2">
           <span className="text-mono px-1 text-[10px] uppercase tracking-widest text-fg-muted">
             {group.title}
