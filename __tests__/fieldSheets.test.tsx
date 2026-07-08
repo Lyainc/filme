@@ -10,7 +10,7 @@
  * usePhototicket이 디바운스 저장하므로 파일 내/간 격리를 위해 매 테스트 전후로 clear.
  */
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
-import { useEffect, useRef } from 'react';
+import { act, useEffect, useRef } from 'react';
 import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import type { SheetTarget } from '@/constants/fields';
@@ -216,5 +216,42 @@ describe('EditorCanvas hideFormSections (#215 PART A·B)', () => {
     fireEvent.click(screen.getByRole('button', { name: '전체 해제' }));
     expect(screen.getByTestId('vis-title').textContent).toBe('true');
     expect(screen.getByTestId('vis-actors').textContent).toBe('false');
+  });
+});
+
+// #274 — 시트 maxHeight의 visualViewport 추적. happy-dom엔 visualViewport가 없어(effect가
+// 조기 반환해 '72dvh' 폴백) 가짜 EventTarget을 window에 심어 리사이즈 → 캡 갱신을 검증한다.
+describe('FieldEditSheet visualViewport 키보드 캡 (#274)', () => {
+  class FakeVisualViewport extends EventTarget {
+    height = 844;
+  }
+
+  afterEach(() => {
+    // 전역 window 오염이 파일 간 새지 않게 원복(bun 전역 누수 주의).
+    delete (window as unknown as { visualViewport?: unknown }).visualViewport;
+  });
+
+  test('마운트 시 vv.height-24 캡, resize(키보드) 시 캡 축소', async () => {
+    const vv = new FakeVisualViewport();
+    (window as unknown as { visualViewport: unknown }).visualViewport = vv;
+
+    render(<SheetHarness field="title" />);
+    const content = document.querySelector('[data-vaul-drawer]') as HTMLElement;
+    expect(content).not.toBeNull();
+    expect(content.getAttribute('style')).toContain('min(72dvh, 820px)');
+
+    // 키보드가 뜬 상황 시뮬레이션 — visual viewport 축소.
+    await act(async () => {
+      vv.height = 508;
+      vv.dispatchEvent(new Event('resize'));
+    });
+    expect(content.getAttribute('style')).toContain('min(72dvh, 484px)');
+  });
+
+  test('visualViewport 미지원 환경은 72dvh 폴백', () => {
+    render(<SheetHarness field="title" />);
+    const content = document.querySelector('[data-vaul-drawer]') as HTMLElement;
+    expect(content.getAttribute('style')).toContain('72dvh');
+    expect(content.getAttribute('style')).not.toContain('px)');
   });
 });
