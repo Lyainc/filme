@@ -95,6 +95,7 @@ export const MOOD_EXCLUDED_FIELDS: Partial<Record<LayoutId, readonly TicketField
   // 병합) 편집 타깃이 없으므로 제외 유지.
   criterion: ['watchTime'],
   '35mm': ['bookingNo'], // #281: 마스터 35mm는 푸터 바코드 없음 → bookingNo 미렌더(MADE WITH FILME·서명 푸터는 유지).
+  '35mm-landscape': ['bookingNo'], // #281: 마스터 35mm Wide는 바코드 없음 → bookingNo 미렌더(collected by·ACCESSION 아카이브 카드는 유지).
 };
 
 /** 현재 layout에 적용되는 런처 그룹 — MOOD_EXCLUDED_FIELDS의 필드를 걸러내고, 비게 된 그룹은 제거. */

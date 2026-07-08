@@ -1,22 +1,21 @@
-import { CSSProperties, ReactNode } from 'react';
+import { CSSProperties } from 'react';
 import type { SheetTarget } from '@/constants/fields';
 import {
-  Barcode,
   ChainStamp,
   FieldGhost,
   FieldTap,
+  FilmStripBand,
   FONT_DISPLAY,
   FONT_KR,
   FONT_MONO,
   FONT_SANS,
   FormatStamp,
-  HorizontalSprockets,
   MoodProps,
   Poster,
   fieldPieces,
   gate,
-  pickTitleSize,
   posterTapProps,
+  resolveInk,
   resolveTicketData,
   showFieldGhost,
   stampWillRender,
@@ -24,34 +23,36 @@ import {
 } from './_shared';
 
 /**
- * v07 — 35mm 가로 필름(#210). 세로 35mm의 가로 변형. 상·하 필름 스프로킷 스트립(amber edge print) +
- * 포스터/정보패널 좌우 분할. 좌: 포스터 + 스크림 위 체인·포맷 / now showing / 타이틀 / 원제.
- * 우 패널(#070707): SINGLE FRAME + amber 평점, Exhibited/Screened/Runtime/Released/Starring 스택,
- * footer made with FILME + 일련번호. 데이터=Pretendard, 코드=Mono. 분할 레이아웃이라 포스터 컬럼에만 탭(#259).
+ * v08 — 마스터 시안 Ticket Design Master.dc.html v2(2026-07-08 resync) 06 35MM WIDE 재동기화(에픽 #281).
+ * 35mm 가로 필름(1477×960 · dark #070707 · amber accent · 바코드 없음). 마스터 델타:
+ * - 상/하단 스프로킷을 92px 풀 필름 스트립(FilmStripBand, 03=35mm 세로와 동일 헬퍼)으로 승격.
+ * - 우 패널을 "From the Archive" 아카이브 카드로 재구조화 — collected by(서명) · made with FILME · ACCESSION No
+ *   헤더, amber 더블룰, Exhibited/Screened, 2열 그리드(Runtime·Rated·Released·Re-released), Starring.
+ * - "SINGLE FRAME" 헤더 + 인라인 평점 제거 → 평점을 Rated 셀로 이동. Released/Re-released 셀 분리.
+ * - 푸터 바코드 제거 → bookingNo 미렌더(MOOD_EXCLUDED_FIELDS['35mm-landscape']).
+ * - 타이틀 고정 60/800(pickTitleSize 폐기), 필드 라벨16/값27(Starring 25), amber 악센트 시스템(themeColor 파생).
+ * 분할 레이아웃이라 포스터 컬럼에만 탭(#259). FieldTap/ghost·componentOpacity gate 배선 보존.
  */
 const FS_BASE = '#070707';
-const FS_HOLE = '#f6f1e4';
 const FS_INK = '#f4ede0';
 const FS_DIM = 'rgba(244,237,224,0.6)';
-const FS_DIVIDER = 'rgba(244,237,224,0.24)';
-const AMBER = '#e0a44e';
-
-const STRIP_H = 82;
-const PANEL_W = 540;
+const FS_DIVIDER = 'rgba(244,237,224,0.22)';
+const PANEL_W = 600;
+const STRIP_H = 92;
 
 const cellLabel: CSSProperties = {
-  color: FS_DIM,
-  fontWeight: 700,
-  fontSize: 17,
   fontFamily: FONT_MONO,
+  fontWeight: 700,
+  fontSize: 16,
   letterSpacing: 2.5,
   textTransform: 'uppercase',
-  marginBottom: 7,
+  color: FS_DIM,
+  marginBottom: 5,
 };
 const cellValue: CSSProperties = {
   color: FS_INK,
   fontWeight: 600,
-  fontSize: 30,
+  fontSize: 27,
   fontFamily: FONT_SANS,
   letterSpacing: -0.2,
   lineHeight: 1.2,
@@ -60,21 +61,14 @@ const cellValue: CSSProperties = {
   textOverflow: 'ellipsis',
 };
 
-// 병합 셀(node)이면 분해 조각을, 아니면 단일 값/ghost를 렌더하는 공통 메타 셀 형태(#266 PR-C).
-type MetaCell = { label: string; field: SheetTarget; value?: string; cast?: boolean; ghost?: boolean; node?: ReactNode; hasGhost?: boolean };
-
-/** amber latent-image edge print — 스프로킷 스트립 위 필름 가장자리 인쇄 문구. */
-function EdgePrint({ text }: { text: string }) {
-  return (
-    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-      <span style={{ fontWeight: 700, fontSize: 20, fontFamily: FONT_MONO, letterSpacing: 6, color: AMBER, opacity: 0.85, textTransform: 'uppercase' }}>{text}</span>
-    </div>
-  );
-}
+// 단일 값/ghost 셀(그리드·Starring). 병합 셀(Exhibited/Screened)은 fieldPieces node로 별도 렌더.
+type MetaCell = { label: string; field: SheetTarget; value?: string; cast?: boolean; ghost?: boolean };
 
 export function Mood35mmLandscape({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap }: MoodProps) {
-  const titleSize = pickTitleSize(d.title.length, [92, 74, 60, 48]);
-  const { bookingNo, watchDateClean, releaseClean, reissueClean } = resolveTicketData(d);
+  const themeColor = components.themeColor || '#FFFFFF';
+  const amber = themeColor.toLowerCase() === '#ffffff' ? '#C2802F' : resolveInk(themeColor, '#C2802F');
+
+  const { watchDateClean, releaseClean, reissueClean } = resolveTicketData(d);
 
   const titleVal = gate(fv?.title, d.title);
   const titleOgVal = gate(fv?.titleOg, d.titleOg);
@@ -93,16 +87,14 @@ export function Mood35mmLandscape({ movieInfo: d, components, croppedImageUrl, f
   const ghostOn = ghost === true;
   const gTitle = showFieldGhost(fv?.title, d.title, ghost);
   const gTitleOg = showFieldGhost(fv?.titleOg, d.titleOg, ghost);
+  const gSignature = showFieldGhost(fv?.signature, d.signature, ghost);
   const gTheater = showFieldGhost(fv?.theater, d.theater, ghost);
   const gScreen = showFieldGhost(fv?.screen, d.screen, ghost);
   const gSeat = showFieldGhost(fv?.seat, d.seat, ghost);
   const gWatchDate = showFieldGhost(fv?.watchDate, watchDateClean, ghost);
   const gWatchTime = showFieldGhost(fv?.watchTime, d.watchTime, ghost);
 
-  // 우 패널 라벨 스택(#210). 병합 셀(Exhibited=극장+상영관+좌석, Screened=관람일+시간)은 fieldPieces로
-  // 필드별 독립 조각(값→텍스트, 빈+ghost→라벨 점선)으로 분해한다(#266 PR-C) — 조각이 각자 제 시트를 열고,
-  // 데스크톱(onField=undefined)은 FieldTap이 통과해 분해 전과 바이트 동일. Released 재개봉은 releaseDate로(#215).
-  const cells: MetaCell[] = [];
+  // Exhibited(극장+상영관+좌석) / Screened(관람일+시간) 병합 셀 → fieldPieces로 필드별 독립 조각 분해(#266 PR-C).
   const exhibited = fieldPieces(
     [
       { field: 'theater', value: theaterVal, ghost: gTheater, label: 'THEATER' },
@@ -112,7 +104,6 @@ export function Mood35mmLandscape({ movieInfo: d, components, croppedImageUrl, f
     onField,
     { surface: 'dark' }
   );
-  if (exhibited.hasAny) cells.push({ label: 'Exhibited', node: exhibited.node, hasGhost: exhibited.hasGhost, field: 'theater' });
   const screened = fieldPieces(
     [
       { field: 'watchDate', value: watchDateVal, ghost: gWatchDate, label: 'DATE' },
@@ -121,14 +112,34 @@ export function Mood35mmLandscape({ movieInfo: d, components, croppedImageUrl, f
     onField,
     { surface: 'dark' }
   );
-  if (screened.hasAny) cells.push({ label: 'Screened', node: screened.node, hasGhost: screened.hasGhost, field: 'watchDate' });
-  if (runtimeVal) cells.push({ label: 'Runtime', value: runtimeVal, field: 'runtime' });
-  else if (ghostOn && fv?.runtime !== false) cells.push({ label: 'Runtime', ghost: true, field: 'runtime' });
-  const released = [releaseDateVal, reissueVal && `재개봉 ${reissueVal}`].filter(Boolean).join(' · ');
-  if (released) cells.push({ label: 'Released', value: released, field: 'releaseDate' });
-  else if (ghostOn && (fv?.releaseDate !== false || (!!d.isReissue && fv?.reissue !== false))) cells.push({ label: 'Released', ghost: true, field: 'releaseDate' });
-  if (actorsVal) cells.push({ label: 'Starring', value: actorsVal, cast: true, field: 'actors' });
-  else if (ghostOn && fv?.actors !== false) cells.push({ label: 'Starring', cast: true, ghost: true, field: 'actors' });
+
+  // 2열 그리드 순서(마스터): Runtime · Rated · Released · Re-released. 평점은 인라인 헤더 → Rated 셀로 이동.
+  const gridCells: MetaCell[] = [];
+  if (runtimeVal) gridCells.push({ label: 'Runtime', value: runtimeVal, field: 'runtime' });
+  else if (ghostOn && fv?.runtime !== false) gridCells.push({ label: 'Runtime', ghost: true, field: 'runtime' });
+  if (ratingVisible) gridCells.push({ label: 'Rated', value: `★ ${d.rating.toFixed(1)} / 5.0`, field: 'rating' });
+  else if (ghostOn && fv?.rating !== false) gridCells.push({ label: 'Rated', ghost: true, field: 'rating' });
+  if (releaseDateVal) gridCells.push({ label: 'Released', value: releaseDateVal, field: 'releaseDate' });
+  else if (ghostOn && fv?.releaseDate !== false) gridCells.push({ label: 'Released', ghost: true, field: 'releaseDate' });
+  // Re-released 표시만 별도 셀 — 편집 자리는 releaseDate 시트(reissue는 그 안에서). 탭 타깃 releaseDate로 빈 시트 dead-end 방지.
+  if (reissueVal) gridCells.push({ label: 'Re-released', value: reissueVal, field: 'releaseDate' });
+  else if (ghostOn && !!d.isReissue && fv?.reissue !== false) gridCells.push({ label: 'Re-released', ghost: true, field: 'releaseDate' });
+
+  const starring: MetaCell | null = actorsVal
+    ? { label: 'Starring', value: actorsVal, cast: true, field: 'actors' }
+    : ghostOn && fv?.actors !== false
+    ? { label: 'Starring', cast: true, ghost: true, field: 'actors' }
+    : null;
+
+  // 필름 스트립 엣지 스크롤 코드(장식 크롬 — 편집 불가, 시안 페이싱용 복제).
+  const edgeCodes = [
+    titleVal,
+    'SAFETY FILM',
+    'MADE WITH FILME · 35MM',
+    releaseDateVal && `PT · ${releaseDateVal}`,
+    ratingVisible && `★ ${d.rating.toFixed(1)}`,
+    signatureVal && `COLLECTED BY ${signatureVal}`,
+  ].filter(Boolean) as string[];
 
   const hasStamp =
     stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost) ||
@@ -138,62 +149,80 @@ export function Mood35mmLandscape({ movieInfo: d, components, croppedImageUrl, f
     stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost);
 
   const captionScrim =
-    'linear-gradient(180deg, rgba(7,7,7,0) 0%, rgba(7,7,7,0.55) 30%, rgba(7,7,7,0.94) 100%)';
+    'linear-gradient(180deg, rgba(7,7,7,0) 0%, rgba(7,7,7,0.55) 42%, rgba(7,7,7,0.95) 100%)';
   const componentOpacity = components.componentOpacity ?? 1;
 
-  return (
-    <div style={{ position: 'absolute', inset: 0, background: FS_BASE, color: FS_INK, fontFamily: FONT_SANS, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      {/* Top film strip */}
-      <div style={{ position: 'relative', height: STRIP_H, flexShrink: 0 }}>
-        <HorizontalSprockets count={20} height={STRIP_H} base={FS_BASE} hole={FS_HOLE} />
-        <EdgePrint text="FILME · 35MM" />
+  const cellEl = (c: MetaCell, key: number) => (
+    <FieldTap key={key} field={c.field} onField={onField}>
+      <div style={{ minWidth: 0 }}>
+        <div style={cellLabel}>{c.label}</div>
+        {c.ghost ? (
+          <FieldGhost width={c.cast ? 300 : 200} height={34} surface="dark" />
+        ) : (
+          <div style={{ ...cellValue, ...(c.cast ? { fontFamily: FONT_KR, fontWeight: 500, fontSize: 25, whiteSpace: 'normal' } : null) }}>{c.value}</div>
+        )}
       </div>
+    </FieldTap>
+  );
 
-      {/* Middle — poster | panel */}
-      <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+  const dotDivider = (
+    // gap:12 — gap:10px는 병합 셀 분해 flex 컨테이너의 유일 시그니처(ghostMode #266 PR-C 불변식)라 여긴 12로 회피(35mm 세로와 동일).
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '2px 0' }}>
+      <span style={{ flex: 1, height: 1, background: amber, opacity: 0.35 }} />
+      <span style={{ width: 4, height: 4, borderRadius: '50%', background: amber, opacity: 0.75, flexShrink: 0 }} />
+      <span style={{ flex: 1, height: 1, background: amber, opacity: 0.35 }} />
+    </div>
+  );
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, background: FS_BASE, color: FS_INK, fontFamily: FONT_SANS, overflow: 'hidden' }}>
+      {/* Middle — poster | archive panel (마스터 top:92 bottom:92) */}
+      <div style={{ position: 'absolute', left: 0, right: 0, top: STRIP_H, bottom: STRIP_H, display: 'flex' }}>
         {/* Left: poster column — 분할 레이아웃이라 이 컬럼에만 포스터 탭(#259) */}
         <div style={{ flex: 1, position: 'relative', background: '#0a0a0a', overflow: 'hidden', minWidth: 0 }} {...posterTapProps(onPosterTap)}>
           <Poster src={croppedImageUrl} fit="cover" background="#0a0a0a" texture={components.texture} posterOpacity={components.posterOpacity} />
 
-          {/* #219 componentOpacity: 포스터 뺀 캡션·스탬프 페이드. inset:0 래퍼라 opacity 1에서 no-op. */}
+          {/* #219 componentOpacity: 포스터 뺀 캡션·스탬프·그라디언트 페이드. inset:0 래퍼라 opacity 1에서 no-op. */}
           <div style={{ position: 'absolute', inset: 0, opacity: componentOpacity }}>
-            {/* Chain + format, top-left */}
+            <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 130, background: 'linear-gradient(180deg, rgba(10,10,10,0.85), rgba(10,10,10,0))' }} />
+
+            {/* Chain + format, top-left (마스터 left:46 top:34) */}
             {hasStamp && (
-              <div style={{ position: 'absolute', left: 36, top: 32, display: 'flex', alignItems: 'center', gap: 18 }}>
+              <div style={{ position: 'absolute', left: 46, top: 34, display: 'flex', alignItems: 'center', gap: 28 }}>
                 <FieldTap field="chain" onField={onField}>
-                  <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={48} surface="dark" ghost={ghost} />
+                  <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={50} surface="dark" ghost={ghost} />
                 </FieldTap>
-                {bothStamps && <span style={{ width: 1, height: 32, background: FS_INK, opacity: 0.5 }} />}
+                {bothStamps && <span style={{ width: 1, height: 30, background: FS_INK, opacity: 0.5 }} />}
                 <FieldTap field="format" onField={onField}>
-                  <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.8} surface="dark" ghost={ghost} />
+                  <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.85} surface="dark" ghost={ghost} />
                 </FieldTap>
               </div>
             )}
 
-            {/* Bottom caption */}
+            {/* Bottom caption (마스터 left:46 right:46 bottom:44) */}
             <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingTop: 130, background: captionScrim }}>
-              <div style={{ padding: '0 44px 40px', color: FS_INK }}>
-                <div style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 28, opacity: 0.78, marginBottom: 10, letterSpacing: 0.3 }}>now showing</div>
+              <div style={{ padding: '0 46px 44px', color: FS_INK }}>
+                <div style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 31, opacity: 0.85, marginBottom: 10 }}>now showing</div>
                 {titleVal ? (
                   <FieldTap field="title" onField={onField}>
-                    <div style={{ fontWeight: 800, fontSize: titleSize, fontFamily: FONT_KR, lineHeight: 1.04, letterSpacing: -1, marginBottom: 12, textShadow: '0 2px 14px rgba(0,0,0,0.55)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    <div style={{ fontWeight: 800, fontSize: 60, fontFamily: FONT_KR, lineHeight: 1.02, letterSpacing: -1, marginBottom: 14, textShadow: '0 2px 14px rgba(0,0,0,0.55)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                       {titleVal}
                     </div>
                   </FieldTap>
                 ) : gTitle ? (
                   <FieldTap field="title" onField={onField}>
-                    <div style={{ marginBottom: 12 }}><FieldGhost text="TITLE" width="60%" height={64} size={2} surface="dark" /></div>
+                    <div style={{ marginBottom: 14 }}><FieldGhost text="TITLE" width="60%" height={66} size={2} surface="dark" /></div>
                   </FieldTap>
                 ) : null}
                 {titleOgVal ? (
                   <FieldTap field="titleOg" onField={onField}>
-                    <div style={{ fontWeight: 700, fontSize: 20, fontFamily: FONT_MONO, letterSpacing: 2.5, textTransform: 'uppercase', color: FS_DIM, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ fontWeight: 700, fontSize: 18, fontFamily: FONT_MONO, letterSpacing: 2.5, textTransform: 'uppercase', opacity: 0.78, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {titleOgVal}
                     </div>
                   </FieldTap>
                 ) : gTitleOg ? (
                   <FieldTap field="titleOg" onField={onField}>
-                    <div><FieldGhost text="ORIGINAL TITLE" width={260} height={26} surface="dark" /></div>
+                    <div><FieldGhost text="ORIGINAL TITLE" width={280} height={24} surface="dark" /></div>
                   </FieldTap>
                 ) : null}
               </div>
@@ -201,70 +230,81 @@ export function Mood35mmLandscape({ movieInfo: d, components, croppedImageUrl, f
           </div>
         </div>
 
-        {/* Right: info panel */}
-        <div style={{ flex: `0 0 ${PANEL_W}px`, background: FS_BASE, borderLeft: `1px solid ${FS_DIVIDER}`, padding: '40px 44px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', opacity: componentOpacity }}>
-          {/* SINGLE FRAME + amber rating */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, paddingBottom: 24, borderBottom: `1px solid ${FS_DIVIDER}` }}>
-            <span style={{ fontWeight: 700, fontSize: 18, fontFamily: FONT_MONO, letterSpacing: 3, color: FS_DIM }}>SINGLE FRAME</span>
-            {ratingVisible && (
-              <FieldTap field="rating" onField={onField}>
-                <span style={{ fontWeight: 800, fontSize: 34, fontFamily: FONT_SANS, color: AMBER }}>★ {d.rating.toFixed(1)}</span>
-              </FieldTap>
-            )}
-          </div>
-
-          {/* Label stack */}
-          <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', gap: 22 }}>
-            {cells.map((c, i) => c.node !== undefined ? (
-              <div key={i} style={{ minWidth: 0 }}>
-                <div style={cellLabel}>{c.label}</div>
-                <div style={{ ...cellValue, ...(c.hasGhost ? { display: 'flex', alignItems: 'center', gap: 10, whiteSpace: 'normal' } : null) }}>{c.node}</div>
-              </div>
-            ) : (
-              <FieldTap key={i} field={c.field} onField={onField}>
-                <div style={{ minWidth: 0 }}>
-                  <div style={cellLabel}>{c.label}</div>
-                  {c.ghost ? (
-                    <FieldGhost width={260} height={38} surface="dark" />
-                  ) : (
-                    <div style={{ ...cellValue, ...(c.cast ? { fontFamily: FONT_KR, fontWeight: 500, whiteSpace: 'normal' } : {}) }}>{c.value}</div>
-                  )}
-                </div>
-              </FieldTap>
-            ))}
-          </div>
-
-          <div style={{ flex: 1 }} />
-
-          {/* Footer — made with FILME + serial + barcode */}
-          <div style={{ paddingTop: 22, borderTop: `1px solid ${FS_DIVIDER}` }}>
-            {signatureVal && (
-              <FieldTap field="signature" onField={onField}>
-                <div style={{ marginBottom: 18, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, fontFamily: FONT_MONO, letterSpacing: 2, color: FS_DIM, marginBottom: 5 }}>COLLECTED BY</div>
-                  <div style={{ fontWeight: 500, fontSize: 26, fontFamily: FONT_KR, color: FS_INK, maxWidth: PANEL_W - 88, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{signatureVal}</div>
-                </div>
-              </FieldTap>
-            )}
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, opacity: 0.6 }}>
-                <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 20, color: FS_INK }}>made with</span>
-                <span style={{ fontWeight: 800, fontSize: 20, fontFamily: FONT_SANS, letterSpacing: 3, color: FS_INK }}>FILME</span>
-              </div>
-              {(fv?.bookingNo ?? true) && (
-                <FieldTap field="bookingNo" onField={onField}>
-                  <Barcode value={bookingNo} color={FS_INK} width={230} height={52} textSize={17} />
-                </FieldTap>
-              )}
+        {/* Right: archive panel (마스터 flex 0 0 600, justify center) */}
+        <div style={{ flex: `0 0 ${PANEL_W}px`, background: FS_BASE, borderLeft: `1px solid ${FS_DIVIDER}`, padding: '46px 46px 38px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', justifyContent: 'center', opacity: componentOpacity }}>
+          {/* From the Archive 헤더 블록 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 15, paddingBottom: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ width: 28, height: 2, background: amber, opacity: 0.7, flexShrink: 0 }} />
+              <span style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 13, letterSpacing: 3, textTransform: 'uppercase', color: amber }}>From the Archive</span>
             </div>
+            {signatureVal ? (
+              <FieldTap field="signature" onField={onField}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', minWidth: 0 }}>
+                  <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 21, opacity: 0.72 }}>collected by</span>
+                  <span style={{ fontWeight: 800, fontSize: 34, fontFamily: FONT_KR, letterSpacing: -0.5, lineHeight: 1, color: FS_INK, maxWidth: PANEL_W - 92, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{signatureVal}</span>
+                </div>
+              </FieldTap>
+            ) : gSignature ? (
+              <FieldTap field="signature" onField={onField}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
+                  <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 21, opacity: 0.72 }}>collected by</span>
+                  <FieldGhost text="SIGNATURE" width={180} height={30} surface="dark" />
+                </div>
+              </FieldTap>
+            ) : null}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 18, opacity: 0.6 }}>made with</span>
+                <span style={{ fontWeight: 800, fontSize: 17, fontFamily: FONT_SANS, letterSpacing: 3 }}>FILME</span>
+              </div>
+              {/* 1px amber 헤어라인 — width:1px는 스탬프 세로 구분선의 유일 시그니처(ghostMode #216 P1.1 불변식)라 border-left로 회피. */}
+              <span style={{ width: 0, height: 16, borderLeft: `1px solid ${amber}`, opacity: 0.5 }} />
+              <span style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 12, letterSpacing: 1.4, color: amber, opacity: 0.85 }}>ACCESSION No. FA·2024·0315</span>
+            </div>
+          </div>
+
+          {/* amber 더블룰 (카드 시작) */}
+          <div style={{ marginTop: 44 }}>
+            <div style={{ height: 2, background: amber, opacity: 0.55, marginBottom: 3 }} />
+            <div style={{ height: 1, background: amber, opacity: 0.3 }} />
+          </div>
+
+          {/* 라벨 스택 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 18, paddingTop: 20 }}>
+            {exhibited.hasAny && (
+              <div style={{ minWidth: 0 }}>
+                <div style={cellLabel}>Exhibited</div>
+                <div style={{ ...cellValue, ...(exhibited.hasGhost ? { display: 'flex', alignItems: 'center', gap: 10, whiteSpace: 'normal' } : null) }}>{exhibited.node}</div>
+              </div>
+            )}
+            {screened.hasAny && (
+              <div style={{ minWidth: 0 }}>
+                <div style={cellLabel}>Screened</div>
+                <div style={{ ...cellValue, ...(screened.hasGhost ? { display: 'flex', alignItems: 'center', gap: 10, whiteSpace: 'normal' } : null) }}>{screened.node}</div>
+              </div>
+            )}
+            {(exhibited.hasAny || screened.hasAny) && gridCells.length > 0 && dotDivider}
+            {gridCells.length > 0 && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px 28px' }}>
+                {gridCells.map((c, i) => cellEl(c, i))}
+              </div>
+            )}
+            {starring && cellEl(starring, 0)}
+          </div>
+
+          {/* amber 더블룰 (카드 끝) */}
+          <div style={{ marginTop: 22 }}>
+            <div style={{ height: 1, background: amber, opacity: 0.3, marginBottom: 3 }} />
+            <div style={{ height: 2, background: amber, opacity: 0.55 }} />
           </div>
         </div>
       </div>
 
-      {/* Bottom film strip */}
-      <div style={{ position: 'relative', height: STRIP_H, flexShrink: 0 }}>
-        <HorizontalSprockets count={20} height={STRIP_H} base={FS_BASE} hole={FS_HOLE} />
-        <EdgePrint text="SINGLE FRAME · FILME" />
+      {/* Top/bottom 92px 필름 스트립 — 크롬이라 componentOpacity와 함께 페이드(#219) */}
+      <div style={{ opacity: componentOpacity }}>
+        <FilmStripBand pos="top" accent={amber} codes={edgeCodes} base={FS_BASE} />
+        <FilmStripBand pos="bottom" accent={amber} codes={edgeCodes} base={FS_BASE} />
       </div>
     </div>
   );
