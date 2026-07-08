@@ -1,0 +1,109 @@
+import { describe, expect, test } from 'bun:test';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { MoodStub } from '../src/components/moods/MoodStub';
+import type { MovieInfo, TicketComponents } from '../src/types';
+
+// 마스터 시안(Ticket Design Master.dc.html v2 · 2026-07-08 resync) 05 STUB 재동기화 회귀(#281, 에픽 #281).
+// Stub 델타(대규모 재구조): 포스터 760(텍스트 없음) · 절취 3px dashed 반원 노치 제거 · 페이퍼 스텁 flex.
+// 제목이 포스터→페이퍼로 이동(42/700 2줄), 홀로그램 티커 신규(무지개 + ✦), Admission(SEAT 칩 48/900 on
+// #1A1612 + DATE/TIME/HALL 점선), The Film(RUNTIME/RATED/RELEASED/RE-RELEASED 2열 + STARRING),
+// 푸터(made with FILME · collected by · 스텁 바코드 300×40 텍스트 없음). ink #1A1612 고정 · monochrome.
+// Editorial과 달리 reissue는 The Film RE-RELEASED 셀로 렌더된다(스텁은 바코드도 유지).
+
+const FULL_MOVIE: MovieInfo = {
+  title: '그랜드 부다페스트 호텔', titleOg: 'The Grand Budapest Hotel', actors: '랄프 파인즈, 토니 레볼로리 외 3명', rating: 4.5,
+  releaseDate: '2014-03-20', releaseDateGranularity: 'date', releaseDateFormat: 'kr-compact',
+  reissueDate: '2023-09-15', isReissue: true,
+  watchDate: '2024-03-15', watchDateFormat: 'kr-compact', watchTime: '19:30',
+  theater: '메가박스 코엑스', screen: 'Dolby Cinema', seat: 'G14', runtime: '99분',
+  bookingNumber: 'BOOK-1234', signature: '영화수집가',
+};
+
+const BASE: TicketComponents = {
+  layout: 'stub', chain: '', format: '', chainLabel: 'MEGABOX', formatLabel: 'DOLBY',
+  texture: 'none', posterOpacity: 0.5, componentOpacity: 1, themeColor: '#FFFFFF',
+  chainVisible: true, formatVisible: true,
+};
+
+const markup = () =>
+  renderToStaticMarkup(
+    <MoodStub movieInfo={FULL_MOVIE} components={BASE} croppedImageUrl="blob:x" onField={() => {}} />
+  );
+
+describe('MoodStub 마스터 resync (#281)', () => {
+  test('flex 컬럼 재구조 — 포스터 760(텍스트 없음)', () => {
+    const html = markup();
+    expect(html).toContain('flex:0 0 760px'); // 포스터 영역
+    expect(html).toContain('flex-direction:column'); // root flex 컬럼
+  });
+
+  test('절취선 3px dashed · 반원 노치 없음', () => {
+    const html = markup();
+    expect(html).toContain('3px dashed rgba(26,22,18,.85)');
+    expect(html).not.toContain('border-radius:50%'); // 이전 반원 노치 원 제거
+  });
+
+  test('홀로그램 티커(신규) — 무지개 그라디언트 + ✦ 구분', () => {
+    const html = markup();
+    expect(html).toContain('#9ff0df'); // 무지개 그라디언트 시작/끝 stop
+    expect(html).toContain('✦'); // 정보 구분자
+  });
+
+  test('제목이 페이퍼 스텁으로 이동 — 42/700 2줄 클램프', () => {
+    const html = markup();
+    expect(html).toContain('font-size:42px');
+    expect(html).toContain('font-weight:700');
+    expect(html).toContain('-webkit-line-clamp:2');
+    expect(html).toContain('그랜드 부다페스트 호텔');
+  });
+
+  test('원제 18/600 uppercase 브라운', () => {
+    const html = markup();
+    expect(html).toContain('The Grand Budapest Hotel');
+    expect(html).toContain('color:#6f6347');
+  });
+
+  test('Admission — SEAT 칩 48/900 on #1A1612', () => {
+    const html = markup();
+    expect(html).toContain('Admission');
+    expect(html).toContain('background:#1a1612'); // SEAT 칩 배경
+    expect(html).toContain('font-size:48px');
+    expect(html).toContain('font-weight:900');
+    expect(html).toContain('G14');
+  });
+
+  test('Admission DATE/TIME/HALL 점선 행 — HALL = theater · screen', () => {
+    const html = markup();
+    expect(html).toContain('DATE');
+    expect(html).toContain('TIME');
+    expect(html).toContain('HALL');
+    expect(html).toContain('1px dotted'); // 점선 필러
+    // HALL = theater · screen(각 조각 독립 FieldTap #266 PR-B). 결합 문자열 불변식은 onTicketFieldTap 캡처 테스트가 커버.
+    expect(html).toContain('메가박스 코엑스');
+    expect(html).toContain('Dolby Cinema');
+  });
+
+  test('The Film — RUNTIME/RATED/RELEASED/RE-RELEASED 2열 + STARRING', () => {
+    const html = markup();
+    expect(html).toContain('The Film');
+    expect(html).toContain('grid-template-columns:1fr 1fr');
+    expect(html).toContain('RUNTIME');
+    expect(html).toContain('RATED');
+    expect(html).toContain('RELEASED');
+    expect(html).toContain('RE-RELEASED');
+    expect(html).toContain('STARRING');
+  });
+
+  test('reissue 렌더 — RE-RELEASED 셀(Editorial과 달리 스텁은 재개봉일 유지)', () => {
+    expect(markup()).toContain('2023'); // reissueDate 2023-09-15 (releaseDate 2014·watchDate 2024와 구별)
+  });
+
+  test('푸터 — made with FILME · collected by + 스텁 바코드 300×40 텍스트 없음', () => {
+    const html = markup();
+    expect(html).toContain('made with');
+    expect(html).toContain('FILME');
+    expect(html).toContain('collected by');
+    expect(html).toContain('영화수집가');
+    expect(html).toContain('width="300"'); // 바코드 300px, showText=false
+  });
+});
