@@ -319,51 +319,55 @@ export function MobileEditorShell({
             </p>
           )}
 
-          {/* 편집 본문 — collapse는 grid-rows 0fr↔1fr 트랜지션(overflow-hidden 필수).
-              reduced-motion은 globals.css 전역 가드가 transition-duration을 죽여 즉시 전환
-              + motion-reduce:transition-none로 이중 차단. 접혔을 땐 inert로 포커스/Tab/SR
-              진입 차단(OptionalDetailsAccordion 패턴, React 19 inert prop). */}
+          {/* OCR + allVis/ghost 토글 행은 collapse 밖에 둔다(#261 리뷰 P1) — 줌(max/actual) 모드에서도
+              닿게. 특히 allVis는 줌에서 비활성화할 이유가 없고, ghost는 actual에서 disabled 스타일로만
+              명시 비활성(inert로 조용히 사라지지 않게). #212 시안 섹션 A 순서: OCR(프리뷰 직하 최상단)
+              → allVis+ghost 토글 행 → (아래 collapse의) Poster 드롭존 → 디자인 rail 최하단. */}
+          <div className="space-y-4 px-4 pt-6">
+            {/* OCR 자동입력 — 주 자동입력 어포던스라 chrome 최상단(프리뷰 직하)으로 승격. 로직은
+                셸의 useOcrUndo가 소유, 아코디언 없는 모바일이라 apply를 그대로 넘긴다(DesktopStudioShell과 동형). */}
+            <OcrUploadCard
+              setInfo={photo.updateMovieInfo}
+              currentInfo={photo.state.movieInfo}
+              onOcrApply={ocr.apply}
+              setComponents={photo.updateComponents}
+              currentComponents={photo.state.components}
+              ocrEpochRef={ocr.epochRef}
+            />
+
+            {/* 토글 행 — 표시 항목 일괄(전체 표시) 단일 스위치 ⟷ 빈 항목 미리보기(ghost).
+                프리뷰가 있을 때만(croppedImageUrl) 의미가 있으므로 게이팅. #260: 끄기는 title 유지. */}
+            {croppedImageUrl && (
+              <div className="flex items-center justify-between gap-3">
+                <TogglePill
+                  label="전체 표시"
+                  checked={allVisOn}
+                  onClick={() =>
+                    photo.updateFieldVisibility(allVisOn ? ALL_FIELDS_OFF_KEEP_REQUIRED : ALL_FIELDS_ON)
+                  }
+                />
+                {/* 빈 항목 미리보기(#216) — 실제 크기 모드에선 비활성(ghost 강제 off). */}
+                <TogglePill
+                  label="빈 항목"
+                  ariaLabel="빈 항목 미리보기"
+                  checked={ghostEffective}
+                  disabled={isActual}
+                  onClick={() => setGhostMode((v) => !v)}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* 편집 본문(Poster 드롭존 + rail) — collapse는 grid-rows 0fr↔1fr 트랜지션(overflow-hidden 필수).
+              비-기본 모드에선 접어 프리뷰에 세로 공간을 내준다. reduced-motion은 globals.css 전역 가드가
+              transition-duration을 죽여 즉시 전환 + motion-reduce:transition-none로 이중 차단. 접혔을 땐
+              inert로 포커스/Tab/SR 진입 차단(OptionalDetailsAccordion 패턴, React 19 inert prop). */}
           <div
             className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
             style={{ gridTemplateRows: collapseBody ? '0fr' : '1fr' }}
           >
             <div className="overflow-hidden" inert={collapseBody || undefined}>
               <div className="space-y-6 px-4 pb-24 pt-6">
-                {/* #212 시안 섹션 A 순서(#261): OCR(프리뷰 직하 최상단) → allVis+ghost 토글 행 →
-                    Poster 드롭존 → 디자인 rail 최하단. */}
-                {/* OCR 자동입력 — 주 자동입력 어포던스라 chrome 최상단(프리뷰 직하)으로 승격. 로직은
-                    셸의 useOcrUndo가 소유, 아코디언 없는 모바일이라 apply를 그대로 넘긴다(DesktopStudioShell과 동형). */}
-                <OcrUploadCard
-                  setInfo={photo.updateMovieInfo}
-                  currentInfo={photo.state.movieInfo}
-                  onOcrApply={ocr.apply}
-                  setComponents={photo.updateComponents}
-                  currentComponents={photo.state.components}
-                  ocrEpochRef={ocr.epochRef}
-                />
-
-                {/* 토글 행 — 표시 항목 일괄(전체 표시) 단일 스위치 ⟷ 빈 항목 미리보기(ghost).
-                    프리뷰가 있을 때만(croppedImageUrl) 의미가 있으므로 게이팅. #260: 끄기는 title 유지. */}
-                {croppedImageUrl && (
-                  <div className="flex items-center justify-between gap-3">
-                    <TogglePill
-                      label="전체 표시"
-                      checked={allVisOn}
-                      onClick={() =>
-                        photo.updateFieldVisibility(allVisOn ? ALL_FIELDS_OFF_KEEP_REQUIRED : ALL_FIELDS_ON)
-                      }
-                    />
-                    {/* 빈 항목 미리보기(#216) — 실제 크기 모드에선 비활성(ghost 강제 off). */}
-                    <TogglePill
-                      label="빈 항목"
-                      ariaLabel="빈 항목 미리보기"
-                      checked={ghostEffective}
-                      disabled={isActual}
-                      onClick={() => setGhostMode((v) => !v)}
-                    />
-                  </div>
-                )}
-
                 {/* Poster 드롭존만 남긴 EditorCanvas(#261 hideChromeControls) — OCR·allVis·배너는 위/아래에서
                     셸이 직접 소유. 필드 편집은 온-티켓 탭(#259, FieldTap)이 전담(구 런처는 #266 PR-E에서 제거). */}
                 <EditorCanvas photo={photo} onPendingFetchChange={onPendingFetchChange} hideRailSections hideFormSections hideChromeControls />
