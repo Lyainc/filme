@@ -64,7 +64,7 @@ export function FieldTap({
 
 /**
  * 포스터 영역 탭 props(#259). onPosterTap이 있을 때만 onClick+라벨을 얹는다. 풀블리드 무드는 root에,
- * editorial(3열)은 포스터 컬럼에 스프레드한다. role은 생략 — root엔 이미 role=button 필드 자식이 있어
+ * editorial(다열)은 포스터 컬럼에 스프레드한다. role은 생략 — root엔 이미 role=button 필드 자식이 있어
  * 중첩 방지, 포스터 변경은 포인터 제스처(키보드 업로드 경로는 ImageUploader가 커버). data 속성은
  * 테스트 셀렉터용이며 캡처 렌더러엔 onPosterTap이 안 가 붙지 않는다.
  */

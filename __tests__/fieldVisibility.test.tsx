@@ -130,11 +130,13 @@ describe('fieldVisibility mood rendering', () => {
       watchTime: true,
     });
 
-    expect(screenOnly).toContain('Salle');
+    // 마스터 재동기화(#281): Théâtre 셀은 고정 라벨 — screen은 theater 없이도 sub(IMAX)로 독립 렌더.
+    expect(screenOnly).toContain('Théâtre');
     expect(screenOnly).toContain('IMAX');
     expect(screenOnly).not.toContain('CGV');
 
-    expect(timeOnly).toContain('Heure');
+    // watchTime은 watchDate 없이도 도착시간 블록(SE PRÉSENTER À + 20:30)으로 독립 렌더.
+    expect(timeOnly).toContain('SE PRÉSENTER À');
     expect(timeOnly).toContain('20:30');
     expect(timeOnly).not.toContain('2026');
   });
