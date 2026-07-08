@@ -521,7 +521,7 @@ interface BarcodeProps {
 type Bar = { ink: boolean; w: number };
 
 // Code 128 심볼 폭 패턴 전체 표(값 0~106). 각 항목은 bar,space,bar,space,bar,space
-// (6요소, 폭 합 11모듈). 값 104=Start-B, 105=Start-C, 106=Stop(7요소, 13모듈).
+// (6요소, 폭 합 11모듈). 값 104=Start-B, 106=Stop(7요소, 13모듈). 103(Start-A)·105(Start-C)는 미사용(표 완전성용).
 // 실제 스캐너가 bookingNo를 디코드하는 표준 Code128B 인코딩(#207) — 이전 #205는 이 표의
 // 앞 32개만 쓰고 charCode%32로 인덱싱한 장식이라 체크디짓도 없어 스캔 불가였다.
 const CODE128_PATTERNS = [
@@ -552,7 +552,6 @@ export function buildBarcodeWidths(value: string): Bar[] {
     const code = v.charCodeAt(i);
     // Code128B 인코딩 가능 범위는 ASCII 32~126(값 0~94). bookingNo는 영숫자·하이픈이라 항상
     // 안전하나, 범위 밖 문자는 space(값 0)로 대체해 디코드 깨짐 없이 흡수한다.
-    // ponytail: 실사용 bookingNo에 범위 밖 문자는 없음.
     values.push(code >= 32 && code <= 126 ? code - 32 : 0);
   }
   let checksum = CODE128_START_B;
