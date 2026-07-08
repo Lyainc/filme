@@ -23,7 +23,6 @@ function Harness() {
         canExport
         theme="light"
         onThemeChange={() => {}}
-        onPendingFetchChange={() => {}}
         onDone={() => {}}
         disabledReason=""
         previewMovieInfo={photo.state.movieInfo}

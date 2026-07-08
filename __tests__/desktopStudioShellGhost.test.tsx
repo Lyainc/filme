@@ -22,7 +22,6 @@ function Harness() {
         photo={photo}
         theme="light"
         onThemeChange={() => {}}
-        onPendingFetchChange={() => {}}
         canExport
         disabledReason=""
         resultOpen={false}

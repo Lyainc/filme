@@ -28,7 +28,6 @@ function Harness({
       photo={photo}
       theme="light"
       onThemeChange={() => {}}
-      onPendingFetchChange={() => {}}
       canExport={canExport}
       disabledReason="포스터를 먼저 추가해주세요"
       resultOpen={resultOpen}

@@ -76,8 +76,6 @@ interface DesktopStudioShellProps {
   photo: ReturnType<typeof usePhototicket>;
   theme: 'light' | 'dark';
   onThemeChange: (theme: 'light' | 'dark') => void;
-  /** MovieInfoForm이 이 셸엔 없어(제목 검색은 FieldAccordion의 인라인 에디터 경유) 현재는 미소비 — index 대칭용 prop. */
-  onPendingFetchChange: (pending: boolean) => void;
   canExport: boolean;
   /** = index의 railMessage. 완료 비활성 사유 힌트. */
   disabledReason: string | null;

@@ -13,6 +13,7 @@ import { describe, expect, test, beforeEach, afterEach } from 'bun:test';
 import { act } from 'react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { usePhototicket } from '@/hooks/usePhototicket';
+import { useExportReady } from '@/hooks/useExportReady';
 import { FieldEditSheet } from '@/components/v2/FieldEditSheet';
 
 const MOVIE_A = { movieCd: 'M001', movieNm: '영화A', movieNmEn: 'Movie A', openDt: '20141106', genreAlt: '드라마', nationAlt: '한국', prdtYear: '2014' };
@@ -48,6 +49,20 @@ function Harness() {
   const photo = usePhototicket();
   photoRef = photo;
   return <FieldEditSheet activeField="title" onClose={() => {}} photo={photo} />;
+}
+
+// 현재 편집 표면(TitleSheet)이 KOBIS 조회 중 export를 게이팅하지 않는지 본다(#284: pendingFetch
+// 게이트 제거 회귀). canExport = useExportReady(state 파생) 하나라 셸 없이 시트+훅만으로 검증된다.
+function GatingHarness() {
+  const photo = usePhototicket();
+  photoRef = photo;
+  const canExport = useExportReady({ state: photo.state });
+  return (
+    <>
+      <div data-testid="export">{canExport ? 'ready' : 'blocked'}</div>
+      <FieldEditSheet activeField="title" onClose={() => {}} photo={photo} />
+    </>
+  );
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -134,5 +149,25 @@ describe('TitleSheet KOBIS 검색 (#215 PART A)', () => {
     // A stale detail 늦게 도착 → 버려져야 함.
     await act(async () => { pending.get('M001')!(jsonResponse(detailResponse('배우A', '170'))); await sleep(10); });
     expect(info().actors).toBe('배우B');
+  });
+
+  test('detail 조회가 미해결이어도 export 게이팅은 그대로 열려 있다(#284 pending 게이트 제거)', async () => {
+    const pending = new Map<string, (res: Response) => void>();
+    mockFetch((movieCd) => new Promise<Response>((resolve) => pending.set(movieCd, resolve)));
+    render(<GatingHarness />);
+    // 포스터는 검색으로 안 채워지는 유일한 필수 입력이라 직접 seed. 나머지 3필드는 선택으로 채워진다.
+    act(() => { photoRef.handleImageUpload('blob:test-poster'); });
+
+    fireEvent.change(titleInput(), { target: { value: '영화' } });
+    await flushDebounce();
+    // A 선택: 제목·원제·개봉일이 즉시 반영되고 detail(M001)은 미해결로 남는다.
+    await act(async () => { resultButtons()[0].click(); await sleep(10); });
+    expect(pending.has('M001')).toBe(true);
+    // detail in-flight인데도 export는 열려 있어야 한다 — 현재 표면은 pending을 게이팅하지 않는다.
+    expect(screen.getByTestId('export').textContent).toBe('ready');
+
+    // detail 해결 후에도 동일.
+    await act(async () => { pending.get('M001')!(jsonResponse(detailResponse('배우A', '120'))); await sleep(10); });
+    expect(screen.getByTestId('export').textContent).toBe('ready');
   });
 });
