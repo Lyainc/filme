@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Drawer } from 'vaul';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { TicketComponents } from '@/types';
@@ -27,6 +28,20 @@ interface FieldEditSheetProps {
  * index/셸에서 dynamic(ssr:false)로 로드해 vaul(+radix)을 초기 번들에서 뺀다.
  */
 export function FieldEditSheet({ activeField, onClose, photo }: FieldEditSheetProps) {
+  // iOS에서 키보드가 떠도 vh/dvh는 안 줄어들어 시트 하단(입력칸·KOBIS 결과)이 가려진다(#274).
+  // visualViewport 높이를 추적해 시트 maxHeight를 실제 보이는 영역 안으로 캡한다 —
+  // vaul(repositionInputs)이 키보드 위로 시트를 올려주는 것과 별개로, 키보드가 열린 뒤
+  // 콘텐츠가 늘어나는 경우(검색 결과 도착)까지 막으려면 캡 자체가 키보드를 알아야 한다.
+  const [vvHeight, setVvHeight] = useState<number | null>(null);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => setVvHeight(Math.round(vv.height));
+    update();
+    vv.addEventListener('resize', update);
+    return () => vv.removeEventListener('resize', update);
+  }, []);
+
   const label =
     activeField == null
       ? '편집'
@@ -52,7 +67,7 @@ export function FieldEditSheet({ activeField, onClose, photo }: FieldEditSheetPr
             right: 0,
             bottom: 0,
             zIndex: 50,
-            maxHeight: '72vh',
+            maxHeight: vvHeight ? `min(72dvh, ${vvHeight - 24}px)` : '72dvh',
             borderTopLeftRadius: 20,
             borderTopRightRadius: 20,
             boxShadow: '0 -8px 40px -12px rgba(0,0,0,0.45)',

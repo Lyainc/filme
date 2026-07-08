@@ -128,7 +128,7 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
           maxLength={6}
           aria-label="Hex color"
           placeholder="FFFFFF"
-          className="text-mono w-full rounded-field border border-line bg-paper px-3.5 py-2.5 text-[14px] uppercase tracking-widest text-fg outline-none transition-colors placeholder:text-fg-faint focus:border-accent focus:ring-2 focus:ring-accent-soft disabled:cursor-not-allowed"
+          className="text-mono w-full rounded-field border border-line bg-paper px-3.5 py-2.5 text-[16px] uppercase tracking-widest text-fg outline-none transition-colors placeholder:text-fg-faint focus:border-accent focus:ring-2 focus:ring-accent-soft disabled:cursor-not-allowed"
         />
       </div>
     </div>

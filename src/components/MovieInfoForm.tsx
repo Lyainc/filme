@@ -160,7 +160,7 @@ export default function MovieInfoForm({
             }
             aria-invalid={(showResults && !!searchError) || undefined}
             aria-describedby={showResults && searchError ? 'movieTitle-error' : undefined}
-            className="flex-1 rounded-field border border-line bg-paper px-3.5 py-3 text-[15px] text-fg outline-none transition-colors placeholder:text-fg-faint focus:border-accent focus:ring-2 focus:ring-accent-soft"
+            className="flex-1 rounded-field border border-line bg-paper px-3.5 py-3 text-[16px] text-fg outline-none transition-colors placeholder:text-fg-faint focus:border-accent focus:ring-2 focus:ring-accent-soft"
           />
           <button
             type="button"
@@ -379,7 +379,7 @@ function ReleaseDateBlock({
         <select
           value={granularity}
           onChange={(e) => onGranularityChange(e.target.value as DateGranularity)}
-          className="text-mono rounded-field border border-line bg-paper px-3 py-3 text-[11px] uppercase tracking-widest text-fg outline-none focus:border-accent"
+          className="text-mono rounded-field border border-line bg-paper px-3 py-3 text-[16px] uppercase tracking-widest text-fg outline-none focus:border-accent"
           aria-label={`${label} 정밀도`}
         >
           {GRANULARITY_OPTIONS.map((g) => (
@@ -459,7 +459,7 @@ export function DateInput({
   ariaLabel?: string;
 }) {
   const base =
-    'flex-1 min-w-[160px] rounded-field border border-line bg-paper px-3.5 py-3 text-[15px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft';
+    'flex-1 min-w-[160px] rounded-field border border-line bg-paper px-3.5 py-3 text-[16px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft';
   const parts = value ? value.split('-') : [];
   if (granularity === 'year') {
     // Display only the year part; preserve stored month/day on edit.
