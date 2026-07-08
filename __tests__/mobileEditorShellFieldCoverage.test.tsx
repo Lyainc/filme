@@ -84,9 +84,9 @@ describe('MobileEditorShell 필드 커버리지 (#266 PR-E)', () => {
     fireEvent.click(await screen.findByLabelText('상영관 티켓에 표시'));
     expect(screen.getByTestId('vis-screen').textContent).toBe('false');
 
-    // EditorCanvas "전체 선택"(전체표시) → 전 필드 재노출. (열린 vaul이 본문을 aria-hidden 처리하므로
-    //  hidden:true로 포함해 조회.)
-    fireEvent.click(await screen.findByRole('button', { name: '전체 선택', hidden: true }));
+    // 셸 chrome 토글 행의 "전체 표시" 단일 스위치(#261) → 꺼진 상태(일부 숨김)에서 켜면 전 필드 재노출.
+    // (열린 vaul이 본문을 aria-hidden 처리하므로 hidden:true로 포함해 조회.)
+    fireEvent.click(await screen.findByRole('switch', { name: '전체 표시', hidden: true }));
     expect(screen.getByTestId('vis-screen').textContent).toBe('true');
   });
 });

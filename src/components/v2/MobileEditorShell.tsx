@@ -2,14 +2,18 @@ import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
 import { EditorCanvas } from './EditorCanvas';
 import { DesignRail } from './DesignRail';
+import { OcrUploadCard } from './OcrUploadCard';
+import { OcrUndoBanner } from './OcrUndoBanner';
 import { ThemeToggle } from './ThemeToggle';
 import { ZoomSegment, actualSize, type ViewMode } from './viewMode';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
 import { getLayout } from '@/utils/layouts';
 import { getCroppedImg, type Area } from '@/utils/imageCrop';
+import { useOcrUndo } from '@/hooks/useOcrUndo';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 import { isStampTarget, STAMP_KEYS, type SheetTarget } from '@/constants/fields';
+import { ALL_FIELDS_ON, ALL_FIELDS_OFF_KEEP_REQUIRED } from '@/constants/fieldVisibility';
 
 // 필드 시트는 vaul(+radix)을 끌어와 무겁고 필드 탭 전엔 안 쓰므로 dynamic(ssr:false)로 분리 —
 // 셸 자체는 모바일 첫 페인트에 즉시 필요하므로 static, vaul은 시트가 열릴 때만 로드된다.
@@ -20,6 +24,62 @@ const FieldEditSheet = dynamic(
 
 // 포스터 탭(#259) 크롭 모달 — ImageUploader와 동일 컴포넌트 재사용. 탭 전엔 안 쓰므로 dynamic.
 const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ssr: false });
+
+// 표시 항목 일괄 스위치의 도메인 필드 집합(#261) — ALL_FIELDS_ON 키가 곧 전체 티켓 필드.
+const ALL_FIELDS = Object.keys(ALL_FIELDS_ON) as TicketField[];
+
+// chrome 토글 행(#261)의 라벨+스위치 pill — allVis(전체 표시)·ghost(빈 항목 미리보기)가 공유한다.
+// 기존 ghost 토글 마크업을 그대로 승격해 두 스위치의 생김새를 일치시킨다.
+function TogglePill({
+  label,
+  checked,
+  onClick,
+  disabled = false,
+  ariaLabel,
+}: {
+  label: string;
+  checked: boolean;
+  onClick: () => void;
+  disabled?: boolean;
+  ariaLabel?: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={ariaLabel ?? label}
+      title={ariaLabel ?? label}
+      disabled={disabled}
+      onClick={onClick}
+      className={`inline-flex h-9 items-center gap-2 rounded-full border border-line bg-surface-elevated pl-3 pr-1.5 transition-opacity ${
+        disabled ? 'opacity-40' : ''
+      }`}
+    >
+      <span
+        className="text-mono text-fg-muted"
+        style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase' }}
+      >
+        {label}
+      </span>
+      <span
+        aria-hidden="true"
+        className="relative inline-block h-5 w-9 rounded-full transition-colors"
+        style={{ background: checked ? 'var(--accent)' : 'var(--border)' }}
+      >
+        <span
+          className="absolute top-0.5 h-4 w-4 rounded-full transition-transform"
+          style={{
+            left: 2,
+            background: '#fff',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
+            transform: checked ? 'translateX(16px)' : 'translateX(0)',
+          }}
+        />
+      </span>
+    </button>
+  );
+}
 
 interface MobileEditorShellProps {
   photo: ReturnType<typeof usePhototicket>;
@@ -50,6 +110,11 @@ export function MobileEditorShell({
   fieldVisibility,
 }: MobileEditorShellProps) {
   const { croppedImageUrl } = photo.state;
+  // OCR 낙관적 주입 + 되돌리기 로직은 useOcrUndo가 소유(DesktopStudioShell·EditorCanvas와 공유, #141-class
+  // drift 방지). #261에서 OCR 카드를 EditorCanvas Poster 섹션에서 셸 프리뷰 직하로 승격하며 이 훅도 셸이 쥔다.
+  const ocr = useOcrUndo(photo);
+  // 표시 항목 일괄 단일 스위치(#261, #260 연계) — 전체 켜짐 여부. 끄기는 필수 필드(title)를 켠 채 유지한다.
+  const allVisOn = ALL_FIELDS.every((f) => photo.state.fieldVisibility[f]);
   const [activeField, setActiveField] = useState<SheetTarget | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('default');
   // 빈 항목 미리보기(ghost, #216) — 셸 로컬, 미영속(기본 on). 실제 크기 모드에선 강제 off.
@@ -196,46 +261,11 @@ export function MobileEditorShell({
           비-기본 모드에선 justify-center로 pill+프리뷰를 세로 중앙에 두고 본문을 접는다. */}
       <div ref={bodyRef} className="min-h-0 flex-1 overflow-y-auto">
         <div className={`flex min-h-full flex-col ${collapseBody ? 'justify-center' : ''}`}>
-          {/* 줌 모드 pill — 3모드 어디서든 항상 보인다(기본으로 돌아오는 유일한 길). */}
+          {/* 줌 모드 pill — 3모드 어디서든 항상 보인다(기본으로 돌아오는 유일한 길). ghost 토글은
+              #261에서 프리뷰 아래 chrome 토글 행(allVis와 space-between)으로 내렸다. */}
           {croppedImageUrl && (
             <div className="flex flex-wrap items-center justify-center gap-2 px-4 pt-4">
               <ZoomSegment viewMode={viewMode} onChange={setViewMode} />
-
-              {/* 빈 항목 미리보기 토글(#216) — 실제 크기 모드에선 비활성(ghost 강제 off). */}
-              <button
-                type="button"
-                role="switch"
-                aria-checked={ghostEffective}
-                aria-label="빈 항목 미리보기"
-                title="빈 항목 미리보기"
-                disabled={isActual}
-                onClick={() => setGhostMode((v) => !v)}
-                className={`inline-flex h-9 items-center gap-2 rounded-full border border-line bg-surface-elevated pl-3 pr-1.5 transition-opacity ${
-                  isActual ? 'opacity-40' : ''
-                }`}
-              >
-                <span
-                  className="text-mono text-fg-muted"
-                  style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase' }}
-                >
-                  빈 항목
-                </span>
-                <span
-                  aria-hidden="true"
-                  className="relative inline-block h-5 w-9 rounded-full transition-colors"
-                  style={{ background: ghostEffective ? 'var(--accent)' : 'var(--border)' }}
-                >
-                  <span
-                    className="absolute top-0.5 h-4 w-4 rounded-full transition-transform"
-                    style={{
-                      left: 2,
-                      background: '#fff',
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
-                      transform: ghostEffective ? 'translateX(16px)' : 'translateX(0)',
-                    }}
-                  />
-                </span>
-              </button>
             </div>
           )}
 
@@ -299,12 +329,49 @@ export function MobileEditorShell({
           >
             <div className="overflow-hidden" inert={collapseBody || undefined}>
               <div className="space-y-6 px-4 pb-24 pt-6">
-                {/* 무드·후보정은 인라인 폼에서 빼(hideRailSections) 디자인 레일(#217)로 옮긴다.
-                    레일을 폼 위(프리뷰 바로 아래)에 둬 폼 전체를 스크롤하지 않고 닿게 한다. */}
+                {/* #212 시안 섹션 A 순서(#261): OCR(프리뷰 직하 최상단) → allVis+ghost 토글 행 →
+                    Poster 드롭존 → 디자인 rail 최하단. */}
+                {/* OCR 자동입력 — 주 자동입력 어포던스라 chrome 최상단(프리뷰 직하)으로 승격. 로직은
+                    셸의 useOcrUndo가 소유, 아코디언 없는 모바일이라 apply를 그대로 넘긴다(DesktopStudioShell과 동형). */}
+                <OcrUploadCard
+                  setInfo={photo.updateMovieInfo}
+                  currentInfo={photo.state.movieInfo}
+                  onOcrApply={ocr.apply}
+                  setComponents={photo.updateComponents}
+                  currentComponents={photo.state.components}
+                  ocrEpochRef={ocr.epochRef}
+                />
+
+                {/* 토글 행 — 표시 항목 일괄(전체 표시) 단일 스위치 ⟷ 빈 항목 미리보기(ghost).
+                    프리뷰가 있을 때만(croppedImageUrl) 의미가 있으므로 게이팅. #260: 끄기는 title 유지. */}
+                {croppedImageUrl && (
+                  <div className="flex items-center justify-between gap-3">
+                    <TogglePill
+                      label="전체 표시"
+                      checked={allVisOn}
+                      onClick={() =>
+                        photo.updateFieldVisibility(allVisOn ? ALL_FIELDS_OFF_KEEP_REQUIRED : ALL_FIELDS_ON)
+                      }
+                    />
+                    {/* 빈 항목 미리보기(#216) — 실제 크기 모드에선 비활성(ghost 강제 off). */}
+                    <TogglePill
+                      label="빈 항목"
+                      ariaLabel="빈 항목 미리보기"
+                      checked={ghostEffective}
+                      disabled={isActual}
+                      onClick={() => setGhostMode((v) => !v)}
+                    />
+                  </div>
+                )}
+
+                {/* Poster 드롭존만 남긴 EditorCanvas(#261 hideChromeControls) — OCR·allVis·배너는 위/아래에서
+                    셸이 직접 소유. 필드 편집은 온-티켓 탭(#259, FieldTap)이 전담(구 런처는 #266 PR-E에서 제거). */}
+                <EditorCanvas photo={photo} onPendingFetchChange={onPendingFetchChange} hideRailSections hideFormSections hideChromeControls />
+
+                {/* 디자인 rail을 최하단으로(#261 시안 섹션 A). #217은 rail을 폼 위에 둬 무스크롤 접근을
+                    노렸지만, 인라인 폼이 탭-투-에딧 시트(#215)로 빠진 지금 rail 위 chrome은 OCR·토글·드롭존
+                    뿐이라 짧다 — 시안 순서(최하단)로 옮겨도 스크롤 부담이 없어 시안을 따른다. */}
                 <DesignRail photo={photo} />
-                {/* 필드 편집은 티켓 위 온-티켓 탭(#259, FieldTap)이 전담 — 끄기=시트 헤더 눈,
-                    켜기=ghost 재탭/전체표시. 별도 필드 목록 UI(구 런처)는 #266 PR-E에서 제거. */}
-                <EditorCanvas photo={photo} onPendingFetchChange={onPendingFetchChange} hideRailSections hideFormSections />
               </div>
             </div>
           </div>
@@ -333,6 +400,15 @@ export function MobileEditorShell({
           isProcessing={posterCropping}
         />
       )}
+
+      {/* OCR 되돌리기 배너(#261 승격) — 화면 하단 고정(fixed), useOcrUndo/OcrUndoBanner 공유(#141-class
+          drift 방지). EditorCanvas는 hideChromeControls로 자기 배너를 숨기므로 중복되지 않는다. */}
+      <OcrUndoBanner
+        snapshot={ocr.snapshot}
+        filledFields={ocr.filledFields}
+        onCancel={ocr.cancel}
+        onConfirm={ocr.confirm}
+      />
 
       {/* 완료 비활성 사유 — SR 라이브리전은 콘텐츠와 함께 삽입되면 mutation을 놓치므로(#199)
           항상 마운트하고 텍스트만 토글한다. 시각 토스트는 별도로 aria-hidden. */}
