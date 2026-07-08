@@ -1,4 +1,4 @@
-import type { TicketField, MovieInfo, TicketComponents } from '@/types';
+import type { TicketField, MovieInfo, TicketComponents, LayoutId } from '@/types';
 import { formatDate } from '@/utils/dateFormat';
 
 /**
@@ -81,6 +81,27 @@ export const LAUNCHER_GROUPS: { title: string; fields: TicketField[] }[] = [
     fields: ['watchDate', 'watchTime', 'theater', 'screen', 'seat', 'runtime', 'bookingNo', 'signature'],
   },
 ];
+
+/**
+ * 무드별 미적용(런처에서 숨길) 필드(#287, 에픽 #281). 마스터 규격상 그 무드가 렌더하지 않는 필드만
+ * 등록해 데스크톱 런처(FieldAccordion)의 죽은 컨트롤을 없앤다. 기본은 전 필드 적용(등록 없음 = 제외 없음).
+ * 무드 재동기화 슬라이스가 진행되며 렌더에서 빠지는 필드를 여기 등록한다(예: 35mm·35mm Wide도 곧 바코드 제거).
+ * 모바일은 온-티켓 FieldTap이라 렌더 안 하는 필드는 탭 타깃 자체가 없어 구조상 이미 layout-aware — 여긴 데스크톱용.
+ */
+export const MOOD_EXCLUDED_FIELDS: Partial<Record<LayoutId, readonly TicketField[]>> = {
+  minimal: ['bookingNo'], // #286: 마스터 Minimal은 푸터 바코드 없음 → bookingNo 미렌더.
+  criterion: ['watchTime', 'runtime'], // Criterion 메타는 WATCHED(날짜)·RATED·RELEASED만 — watchTime·runtime 미렌더.
+};
+
+/** 현재 layout에 적용되는 런처 그룹 — MOOD_EXCLUDED_FIELDS의 필드를 걸러내고, 비게 된 그룹은 제거. */
+export function launcherGroupsFor(layout: LayoutId): { title: string; fields: TicketField[] }[] {
+  const excluded = MOOD_EXCLUDED_FIELDS[layout];
+  if (!excluded?.length) return LAUNCHER_GROUPS;
+  const drop = new Set<TicketField>(excluded);
+  return LAUNCHER_GROUPS.map((g) => ({ ...g, fields: g.fields.filter((f) => !drop.has(f)) })).filter(
+    (g) => g.fields.length > 0
+  );
+}
 
 /**
  * 스탬프 타깃(#215 PART B) — 극장/포맷 로고. TicketField가 아니라 TicketComponents에 산다
