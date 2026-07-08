@@ -750,8 +750,10 @@ export const FilmStripBand = memo(function FilmStripBand({
   const rootStyle: CSSProperties = { position: 'absolute', left: 0, right: 0, height, background: base, overflow: 'hidden' };
   rootStyle[outer] = 0;
 
+  // 밴드 전체가 순수 장식 크롬(천공·프레임번호·KEYKODE·엣지 스크롤은 편집 필드가 아님) — 엣지 텍스트가 제목·
+  // 서명을 복제하므로 aria-hidden으로 스크린리더가 티켓 필드처럼 중복해 읽지 않게 한다(#289 리뷰 P2).
   return (
-    <div style={rootStyle}>
+    <div aria-hidden="true" style={rootStyle}>
       <div style={holesStyle}>{holes}</div>
       <div style={frameStyle}>{frameNums}</div>
       <div style={kkStyle}>
