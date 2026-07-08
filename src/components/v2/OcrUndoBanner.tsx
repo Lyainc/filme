@@ -10,7 +10,7 @@ interface OcrUndoBannerProps {
 }
 
 /**
- * OCR 낙관적 주입 되돌리기 배너 + sr-only 라이브리전 — EditorCanvas(모바일)와
+ * OCR 낙관적 주입 되돌리기 배너 + sr-only 라이브리전 — MobileEditorShell(모바일)과
  * DesktopStudioShell(데스크톱)이 공유하는 표현 계층(#141-class drift 방지). 로직은 useOcrUndo.
  * 화면 하단 중앙 고정(fixed bottom-6). 라이브리전은 콘텐츠 변경 *전부터* DOM에 있어야 SR이 mutation을
  * 잡으므로(배너와 동시 삽입되면 무시됨, #199 리뷰 P1) 항상 마운트하고 텍스트만 바꾼다.

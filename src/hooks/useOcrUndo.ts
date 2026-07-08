@@ -5,11 +5,11 @@ import type { usePhototicket } from '@/hooks/usePhototicket';
 
 /**
  * OCR 낙관적 주입 + 되돌리기 로직의 단일 출처 — 스냅샷 상태·채워진 필드 집합·apply/cancel/confirm/
- * removeField 핸들러를 한 곳에 둔다. EditorCanvas(모바일)와 DesktopStudioShell(데스크톱)이 이 훅만
+ * removeField 핸들러를 한 곳에 둔다. MobileEditorShell(모바일)과 DesktopStudioShell(데스크톱)이 이 훅만
  * 쓴다. 이전엔 두 컴포넌트가 동일 로직을 각자 복제했고, 그 drift가 #141-class 회귀(한쪽 고치면 다른
  * 쪽이 조용히 깨짐)를 낳는다. 배너·sr-only 표현은 OcrUndoBanner가, 로직은 여기가 소유한다.
  *
- * 표현 계층(EditorCanvas의 accordion open·scroll 같은 사이트별 사이드이펙트)은 각 컴포넌트가
+ * 표현 계층(스크롤·포커스 같은 사이트별 사이드이펙트)은 각 컴포넌트가
  * apply를 감싸서 소유한다 — 훅은 순수 상태·복원 로직만.
  */
 

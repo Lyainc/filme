@@ -2,7 +2,6 @@
  * #217/#218 회귀 테스트 — 모바일 디자인 레일(무드·컬러·후보정).
  *
  * (a) 아이콘 클릭 → 패널 disclosure 토글(aria-expanded), 한 번에 하나만 열림, 재클릭 시 닫힘.
- * (b) EditorCanvas hideRailSections=true면 Mood·Texture·ColorPicker 미렌더(false/미전달이면 렌더).
  * (c) rail에서 무드를 고르면 photo.state.components.layout에 반영.
  * (d) 컬러 아이콘 클릭 → 컬러 패널 열림, 무드·후보정과 배타(#218).
  *
@@ -16,7 +15,6 @@ import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { DesignRail } from '@/components/v2/DesignRail';
-import { EditorCanvas } from '@/components/v2/EditorCanvas';
 
 function RailHarness() {
   const photo = usePhototicket();
@@ -27,11 +25,6 @@ function RailHarness() {
       <DesignRail photo={photo} />
     </>
   );
-}
-
-function EditorHarness({ hide }: { hide?: boolean }) {
-  const photo = usePhototicket();
-  return <EditorCanvas photo={photo} onPendingFetchChange={() => {}} hideRailSections={hide} />;
 }
 
 beforeEach(() => window.localStorage.clear());
@@ -125,27 +118,5 @@ describe('DesignRail (#217)', () => {
     fireEvent.change(screen.getByLabelText('컴포넌트'), { target: { value: '0.5' } });
 
     expect(screen.getByTestId('componentOpacity').textContent).toBe('0.5');
-  });
-});
-
-describe('EditorCanvas hideRailSections (#217/#218/#219)', () => {
-  // LayoutPicker 캐러셀(role=group "Mood designs")·TexturePicker(role=radiogroup "Texture")가
-  // 곧 Mood·Texture 섹션의 존재 신호. ColorPicker는 고유 헤더 텍스트로 식별(#218),
-  // BrightnessSlider는 'Poster brightness' 라벨로 식별(#219). 넷 다 hideRailSections로 사라진다
-  // (밝기+컬러 박스는 통째로 숨겨 빈 테두리 박스가 남지 않게).
-  test('true → Mood·Texture·ColorPicker·BrightnessSlider 미렌더', () => {
-    render(<EditorHarness hide />);
-    expect(screen.queryByRole('group', { name: 'Mood designs' })).toBeNull();
-    expect(screen.queryByRole('radiogroup', { name: 'Texture' })).toBeNull();
-    expect(screen.queryByText('Ink · logo & type color')).toBeNull();
-    expect(screen.queryByText('Poster brightness')).toBeNull();
-  });
-
-  test('미전달(기본 false) → Mood·Texture·ColorPicker·BrightnessSlider 렌더', () => {
-    render(<EditorHarness />);
-    expect(screen.queryByRole('group', { name: 'Mood designs' })).not.toBeNull();
-    expect(screen.queryByRole('radiogroup', { name: 'Texture' })).not.toBeNull();
-    expect(screen.queryByText('Ink · logo & type color')).not.toBeNull();
-    expect(screen.queryByText('Poster brightness')).not.toBeNull();
   });
 });

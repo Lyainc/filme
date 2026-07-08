@@ -1,5 +1,5 @@
 /**
- * #215 PART A 회귀 테스트 — 필드 편집 시트(FieldEditSheet/StampSheet) + EditorCanvas 폼 숨김.
+ * #215 PART A 회귀 테스트 — 필드 편집 시트(FieldEditSheet/StampSheet).
  * (FieldLauncher 목록은 #266 PR-E에서 제거 — 필드 편집은 온-티켓 탭이 전담. 관련 커버리지는
  *  onTicketFieldTap.test.tsx·mobileEditorShellFieldCoverage.test.tsx로 이전.)
  *
@@ -15,7 +15,6 @@ import { render, screen, cleanup, fireEvent, within } from '@testing-library/rea
 import { usePhototicket } from '@/hooks/usePhototicket';
 import type { SheetTarget } from '@/constants/fields';
 import { FieldEditSheet } from '@/components/v2/FieldEditSheet';
-import { EditorCanvas } from '@/components/v2/EditorCanvas';
 
 function SheetHarness({ field }: { field: SheetTarget }) {
   const photo = usePhototicket();
@@ -33,18 +32,6 @@ function SheetHarness({ field }: { field: SheetTarget }) {
       <div data-testid="vis-chain">{String(components.chainVisible)}</div>
       <div data-testid="vis-format">{String(components.formatVisible)}</div>
       <FieldEditSheet activeField={field} onClose={() => {}} photo={photo} />
-    </>
-  );
-}
-
-function EditorHarness({ hideForm }: { hideForm?: boolean }) {
-  const photo = usePhototicket();
-  const { fieldVisibility } = photo.state;
-  return (
-    <>
-      <div data-testid="vis-title">{String(fieldVisibility.title)}</div>
-      <div data-testid="vis-actors">{String(fieldVisibility.actors)}</div>
-      <EditorCanvas photo={photo} onPendingFetchChange={() => {}} hideFormSections={hideForm} />
     </>
   );
 }
@@ -186,36 +173,6 @@ describe('StampSheet 극장/포맷 (#215 PART B)', () => {
     } finally {
       URL.revokeObjectURL = origRevoke;
     }
-  });
-});
-
-describe('EditorCanvas hideFormSections (#215 PART A·B)', () => {
-  // Logos 픽커(TheaterChainPicker/FormatPicker)는 렌더 경로가 사라져 제거됨(#231) — 이제 어느
-  // 경로에서도 'Logos' 섹션은 없다. hideFormSections 게이트는 MovieInfoForm·아코디언만 남는다.
-  test('true → MovieInfoForm·아코디언 미렌더, 포스터/표시항목은 유지', () => {
-    render(<EditorHarness hideForm />);
-    expect(screen.queryByText('KOBIS lookup')).toBeNull(); // MovieInfoForm 신호
-    expect(screen.queryByText('Optional details')).toBeNull(); // 아코디언 신호
-    // 포스터·표시항목은 그대로.
-    expect(screen.queryByText(/표시 항목/)).not.toBeNull();
-  });
-
-  test('미전달(기본 false) → MovieInfoForm·아코디언 렌더(데스크톱)', () => {
-    render(<EditorHarness />);
-    expect(screen.queryByText('KOBIS lookup')).not.toBeNull();
-    expect(screen.queryByText('Optional details')).not.toBeNull();
-    // #260: MovieInfoForm 제목 행에도 눈 토글 없음(네 번째 title-hide 경로 차단).
-    expect(screen.queryByLabelText('제목 티켓에 표시')).toBeNull();
-  });
-
-  // #260 경로 1 — '전체 해제'는 필수 필드(제목)를 남기고 나머지만 끈다(제목 없는 티켓 방지).
-  test("'전체 해제' 클릭 → title은 유지, 나머지는 off", () => {
-    render(<EditorHarness />);
-    expect(screen.getByTestId('vis-title').textContent).toBe('true');
-    expect(screen.getByTestId('vis-actors').textContent).toBe('true');
-    fireEvent.click(screen.getByRole('button', { name: '전체 해제' }));
-    expect(screen.getByTestId('vis-title').textContent).toBe('true');
-    expect(screen.getByTestId('vis-actors').textContent).toBe('false');
   });
 });
 

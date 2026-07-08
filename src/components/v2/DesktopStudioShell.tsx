@@ -143,8 +143,8 @@ export function DesktopStudioShell({
   const [viewMode, setViewMode] = useState<ViewMode>('default');
   const { croppedImageUrl } = photo.state;
 
-  // OCR 낙관적 주입 + 되돌리기 로직은 useOcrUndo가 소유한다(EditorCanvas와 공유, #141-class drift 방지).
-  // 이 셸엔 필드 입력칸이 없어 EditorCanvas의 아코디언 열기 같은 사이트별 사이드이펙트 없이 apply를 그대로 쓴다.
+  // OCR 낙관적 주입 + 되돌리기 로직은 useOcrUndo가 소유한다(MobileEditorShell과 공유, #141-class drift 방지).
+  // 이 셸엔 필드 입력칸이 없어 사이트별 사이드이펙트 없이 apply를 그대로 쓴다.
   const ocr = useOcrUndo(photo);
 
   // 빈 항목 미리보기(ghost, #227) — 셸 로컬, 미영속(기본 on). 실제 크기 모드에선 강제 off(모바일 #216과 동일).
@@ -354,7 +354,7 @@ export function DesktopStudioShell({
         )}
       </div>
 
-      {/* OCR 되돌리기 배너 + sr-only 라이브리전 — EditorCanvas와 공유(useOcrUndo/OcrUndoBanner, #141-class drift 방지). */}
+      {/* OCR 되돌리기 배너 + sr-only 라이브리전 — MobileEditorShell과 공유(useOcrUndo/OcrUndoBanner, #141-class drift 방지). */}
       <OcrUndoBanner
         snapshot={ocr.snapshot}
         filledFields={ocr.filledFields}

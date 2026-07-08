@@ -1,7 +1,7 @@
 /**
- * useOcrUndo — OCR 낙관적 주입 + 되돌리기 로직의 단일 출처(EditorCanvas·DesktopStudioShell 공유,
+ * useOcrUndo — OCR 낙관적 주입 + 되돌리기 로직의 단일 출처(MobileEditorShell·DesktopStudioShell 공유,
  * #141-class drift 방지). 추출 전엔 두 컴포넌트가 이 로직을 각자 복제해 회귀 커버리지가 한쪽
- * (EditorCanvas)에만 있었다(#224 리뷰 P1). 여기서 공용 훅 자체를 직접 검증한다.
+ * (모바일 편집 셸)에만 있었다(#224 리뷰 P1). 여기서 공용 훅 자체를 직접 검증한다.
  */
 import { describe, expect, test, mock } from 'bun:test';
 import { act, renderHook } from '@testing-library/react';

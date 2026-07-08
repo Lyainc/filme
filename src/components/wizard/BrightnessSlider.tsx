@@ -1,7 +1,7 @@
 interface BrightnessSliderProps {
   value: number;
   onChange: (value: number) => void;
-  /** 슬라이더 라벨. 기본은 데스크톱 EditorCanvas의 'Poster brightness'. 레일 듀얼 슬라이더가 재사용(#219). */
+  /** 슬라이더 라벨. 기본은 데스크톱의 'Poster brightness'. 레일 듀얼 슬라이더가 재사용(#219). */
   label?: string;
   /** input/label 연결 id. 한 화면에 두 슬라이더가 뜨면 고유해야 한다(#219). */
   id?: string;

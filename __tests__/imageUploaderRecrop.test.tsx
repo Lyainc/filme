@@ -65,7 +65,7 @@ mock.module('@/utils/imageCrop', () => ({
 const ImageUploader =
   (require('@/components/ImageUploader') as { default: typeof import('@/components/ImageUploader').default }).default;
 
-// Parent-like harness: owns croppedImageUrl exactly as EditorCanvas does, so
+// Parent-like harness: owns croppedImageUrl exactly as MobileEditorShell does, so
 // hasImage flips to true once the first crop commits.
 function Harness() {
   const [url, setUrl] = useState<string | null>(null);

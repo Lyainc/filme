@@ -1,6 +1,7 @@
 import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
-import { EditorCanvas } from './EditorCanvas';
+import ImageUploader from '@/components/ImageUploader';
+import InfoTooltip from '@/components/ui/InfoTooltip';
 import { DesignRail } from './DesignRail';
 import { OcrUploadCard } from './OcrUploadCard';
 import { OcrUndoBanner } from './OcrUndoBanner';
@@ -86,11 +87,12 @@ interface MobileEditorShellProps {
   canExport: boolean;
   theme: 'light' | 'dark';
   onThemeChange: (theme: 'light' | 'dark') => void;
-  onPendingFetchChange: (pending: boolean) => void;
   /** 완료(결과 열기) — useResultView.openView */
   onDone: () => void;
   /** 완료 비활성 시 안내 문구(=railMessage). 탭하면 토스트로 노출. */
   disabledReason: string;
+  /** 현재 미소비 — #283에서 죽은 인라인 폼이 사라져 소비처가 없어졌다. index 대칭용 prop. */
+  onPendingFetchChange: (pending: boolean) => void;
   /** 인라인 프리뷰는 디바운스된 값으로 렌더(폼 입력이 프리뷰를 매타건 리렌더하지 않게). */
   previewMovieInfo: MovieInfo;
   previewComponents: TicketComponents;
@@ -110,8 +112,8 @@ export function MobileEditorShell({
   fieldVisibility,
 }: MobileEditorShellProps) {
   const { croppedImageUrl } = photo.state;
-  // OCR 낙관적 주입 + 되돌리기 로직은 useOcrUndo가 소유(DesktopStudioShell·EditorCanvas와 공유, #141-class
-  // drift 방지). #261에서 OCR 카드를 EditorCanvas Poster 섹션에서 셸 프리뷰 직하로 승격하며 이 훅도 셸이 쥔다.
+  // OCR 낙관적 주입 + 되돌리기 로직은 useOcrUndo가 소유(DesktopStudioShell과 공유, #141-class drift 방지).
+  // OCR 카드는 셸 프리뷰 직하에 두고(#261) 이 훅도 셸이 쥔다.
   const ocr = useOcrUndo(photo);
   // 표시 항목 일괄 단일 스위치(#261, #260 연계) — 전체 켜짐 여부. 끄기는 필수 필드(title)를 켠 채 유지한다.
   const allVisOn = ALL_FIELDS.every((f) => photo.state.fieldVisibility[f]);
@@ -203,7 +205,7 @@ export function MobileEditorShell({
   const previewWidth = isActual
     ? actual.shortSideCm
     : `min(90vw, calc(${PREVIEW_MAX_HEIGHT} * ${layout.width} / ${layout.height}))`;
-  // 기본이 아닐 때만 편집 본문(EditorCanvas)을 접어 프리뷰에 세로 공간을 내준다. 이미지가
+  // 기본이 아닐 때만 편집 본문(Poster 드롭존 + rail)을 접어 프리뷰에 세로 공간을 내준다. 이미지가
   // 없으면(업로드 전) 접지 않는다 — 그땐 프리뷰/pill 자체가 없다.
   const collapseBody = !!croppedImageUrl && viewMode !== 'default';
 
@@ -257,7 +259,7 @@ export function MobileEditorShell({
         </div>
       </header>
 
-      {/* 스크롤 본문: 줌 pill + 인라인 프리뷰 + 편집 본문(#215까지는 기존 EditorCanvas 재사용).
+      {/* 스크롤 본문: 줌 pill + 인라인 프리뷰 + 편집 본문(Poster 드롭존 + 디자인 rail).
           비-기본 모드에선 justify-center로 pill+프리뷰를 세로 중앙에 두고 본문을 접는다. */}
       <div ref={bodyRef} className="min-h-0 flex-1 overflow-y-auto">
         <div className={`flex min-h-full flex-col ${collapseBody ? 'justify-center' : ''}`}>
@@ -368,9 +370,24 @@ export function MobileEditorShell({
           >
             <div className="overflow-hidden" inert={collapseBody || undefined}>
               <div className="space-y-6 px-4 pb-24 pt-6">
-                {/* Poster 드롭존만 남긴 EditorCanvas(#261 hideChromeControls) — OCR·allVis·배너는 위/아래에서
-                    셸이 직접 소유. 필드 편집은 온-티켓 탭(#259, FieldTap)이 전담(구 런처는 #266 PR-E에서 제거). */}
-                <EditorCanvas photo={photo} onPendingFetchChange={onPendingFetchChange} hideRailSections hideFormSections hideChromeControls />
+                {/* Poster 드롭존 — OCR·allVis·배너는 위/아래에서 셸이 직접 소유하고, 필드 편집은 온-티켓
+                    탭(#259, FieldTap)이 전담한다(#283에서 죽은 편집 본문 폐기, 살아있던 Poster 섹션만 인라인). */}
+                <section className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Poster</span>
+                    <InfoTooltip
+                      text="영화 포스터 이미지를 올리는 곳이에요. '티켓 스크린샷으로 자동입력'에 티켓 스크린샷을 넣으면 영화 정보가 자동으로 채워져요."
+                      label="포스터 추가 안내"
+                      placement="right"
+                    />
+                  </div>
+                  <ImageUploader
+                    onUpload={photo.handleImageUpload}
+                    isProcessing={false}
+                    hasImage={!!croppedImageUrl}
+                    imageUrl={croppedImageUrl}
+                  />
+                </section>
 
                 {/* 디자인 rail을 최하단으로(#261 시안 섹션 A). #217은 rail을 폼 위에 둬 무스크롤 접근을
                     노렸지만, 인라인 폼이 탭-투-에딧 시트(#215)로 빠진 지금 rail 위 chrome은 OCR·토글·드롭존
@@ -406,7 +423,7 @@ export function MobileEditorShell({
       )}
 
       {/* OCR 되돌리기 배너(#261 승격) — 화면 하단 고정(fixed), useOcrUndo/OcrUndoBanner 공유(#141-class
-          drift 방지). EditorCanvas는 hideChromeControls로 자기 배너를 숨기므로 중복되지 않는다. */}
+          drift 방지). 배너는 셸이 단독 소유하므로 중복되지 않는다. */}
       <OcrUndoBanner
         snapshot={ocr.snapshot}
         filledFields={ocr.filledFields}
