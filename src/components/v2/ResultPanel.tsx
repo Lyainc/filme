@@ -280,6 +280,20 @@ export function ResultPanel({
     }
   }, [permalink, issuePermalink, movieInfo, composeTweetUrl, copyToClipboard]);
 
+  // 퍼마링크 셀 라벨 — permaState/permalink에서 계산해 텍스트 자체를 key로 써서, 값이 실제로
+  // 바뀔 때만 크로스페이드가 재생되게 한다(#201 모션 정합: 하드 텍스트 스왑 대신 settle 이징).
+  const permaLabel =
+    permaState === 'loading'
+      ? '링크 만드는 중…'
+      : permaState === 'success'
+        ? '링크 생성됨!'
+        : permaState === 'error'
+          ? '실패, 다시 시도'
+          : permalink
+            ? '링크 다시 만들기'
+            : '링크 만들기';
+  const copyLabel = copyState === 'copied' ? '복사됨!' : '복사';
+
   if (!croppedImageUrl) {
     return (
       <p className="text-[13px] text-fg-muted">
@@ -352,16 +366,8 @@ export function ResultPanel({
             className="text-mono flex min-h-[60px] flex-col items-center justify-center gap-1.5 px-2 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:bg-transparent disabled:hover:text-fg-faint"
           >
             <LinkIcon />
-            <span>
-              {permaState === 'loading'
-                ? '링크 만드는 중…'
-                : permaState === 'success'
-                  ? '링크 생성됨!'
-                  : permaState === 'error'
-                    ? '실패, 다시 시도'
-                    : permalink
-                      ? '링크 다시 만들기'
-                      : '링크 만들기'}
+            <span key={permaLabel} className="inline-block animate-settle">
+              {permaLabel}
             </span>
           </button>
           <button
@@ -407,7 +413,9 @@ export function ResultPanel({
                 onClick={handleCopyLink}
                 className="text-mono inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-field-sm border border-line bg-surface-elevated px-3.5 text-[11px] uppercase tracking-widest text-fg transition-colors hover:border-accent hover:text-accent"
               >
-                {copyState === 'copied' ? '복사됨!' : '복사'}
+                <span key={copyLabel} className="inline-block animate-settle">
+                  {copyLabel}
+                </span>
               </button>
             </div>
             {copyState === 'manual' && (
