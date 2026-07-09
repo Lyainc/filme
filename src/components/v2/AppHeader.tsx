@@ -1,5 +1,5 @@
-import { Sprocket } from './Sprocket';
 import { ThemeToggle } from './ThemeToggle';
+import { Wordmark } from './Wordmark';
 
 interface AppHeaderProps {
   theme: 'light' | 'dark';
@@ -10,13 +10,7 @@ export function AppHeader({ theme, onThemeChange }: AppHeaderProps) {
   return (
     <header className="h-14 px-4 flex items-center justify-between border-b border-line bg-surface shrink-0">
       <div className="flex items-center gap-2">
-        <Sprocket size={20} className="text-accent" />
-        <h1
-          className="font-sans text-fg"
-          style={{ fontSize: 19, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' }}
-        >
-          FILME
-        </h1>
+        <Wordmark as="h1" />
       </div>
 
       <div className="flex items-center gap-2">
