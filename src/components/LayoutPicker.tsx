@@ -58,7 +58,7 @@ function LayoutPicker({ value, onChange }: LayoutPickerProps) {
   };
 
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-field">
       <Eyebrow className="block">
         Mood · {activeIndex + 1} / {count}
       </Eyebrow>
@@ -196,7 +196,7 @@ function MoodCardBody({ layout, active }: { layout: LayoutSpec; active: boolean 
 // 상태가 전부 불필요해진다(네이티브 스크롤·Tab이 대신). 데스크톱은 캐러셀 유지 — 이건 모바일 전용.
 export const LayoutStrip = memo(function LayoutStrip({ value, onChange }: LayoutPickerProps) {
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-field">
       <Eyebrow className="block">Mood</Eyebrow>
       <div
         className="flex gap-2 overflow-x-auto pb-1 snap-x [scrollbar-width:thin]"

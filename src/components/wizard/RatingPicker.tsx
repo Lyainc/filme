@@ -14,7 +14,7 @@ export default function RatingPicker({ value, onValueChange, visible, onVisibleC
   const current = hover || value || 0;
 
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-field">
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-2">
           <VisibilityCheckbox checked={visible} onChange={onVisibleChange} label="평점" />

@@ -369,7 +369,7 @@ export function MobileEditorShell({
               닿게. 특히 allVis는 줌에서 비활성화할 이유가 없고, ghost는 actual에서 disabled 스타일로만
               명시 비활성(inert로 조용히 사라지지 않게). #212 시안 섹션 A 순서: OCR(프리뷰 직하 최상단)
               → allVis+ghost 토글 행 → (아래 collapse의) Poster 드롭존 → 디자인 rail 최하단. */}
-          <div className="space-y-4 px-4 pt-6">
+          <div className="space-y-group px-4 pt-6">
             {/* OCR 자동입력 — 주 자동입력 어포던스라 chrome 최상단(프리뷰 직하)으로 승격. 로직은
                 셸의 useOcrUndo가 소유, 아코디언 없는 모바일이라 apply를 그대로 넘긴다(DesktopStudioShell과 동형). */}
             <OcrUploadCard
@@ -413,10 +413,10 @@ export function MobileEditorShell({
             style={{ gridTemplateRows: collapseBody ? '0fr' : '1fr' }}
           >
             <div className="overflow-hidden" inert={collapseBody || undefined}>
-              <div className="space-y-6 px-4 pb-24 pt-6">
+              <div className="space-y-section px-4 pb-24 pt-6">
                 {/* Poster 드롭존 — OCR·allVis·배너는 위/아래에서 셸이 직접 소유하고, 필드 편집은 온-티켓
                     탭(#259, FieldTap)이 전담한다(#283에서 죽은 편집 본문 폐기, 살아있던 Poster 섹션만 인라인). */}
-                <section className="space-y-4">
+                <section className="space-y-group">
                   <div className="flex items-center gap-2">
                     <Eyebrow>Poster</Eyebrow>
                     <InfoTooltip

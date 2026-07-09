@@ -17,7 +17,7 @@ import type { usePhototicket } from '@/hooks/usePhototicket';
 function Section({ eyebrow, children }: { eyebrow: string; children: ReactNode }) {
   const labelId = useId();
   return (
-    <section className="space-y-2.5" role="region" aria-labelledby={labelId}>
+    <section className="space-y-field" role="region" aria-labelledby={labelId}>
       <Eyebrow as="div" id={labelId} size={11}>
         {eyebrow}
       </Eyebrow>
@@ -31,7 +31,7 @@ export function DesktopDesignPanel({ photo }: { photo: ReturnType<typeof usePhot
   const setComp = photo.updateComponents;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-section">
       <Section eyebrow="Mood">
         <LayoutPicker value={components.layout} onChange={(id: LayoutId) => setComp({ layout: id })} />
       </Section>
@@ -60,7 +60,7 @@ export function DesktopDesignPanel({ photo }: { photo: ReturnType<typeof usePhot
           오버레이 불투명도(componentOpacity, #219). 둘 다 기존 상태 재사용 — 새 overlayOpacity 축 없음.
           BrightnessSlider 자체가 라벨+% 표기라 eyebrow만 얹으면 정식 섹션. */}
       <Section eyebrow="Opacity">
-        <div className="space-y-4">
+        <div className="space-y-group">
           <BrightnessSlider
             label="포스터"
             id="desktop-poster-opacity"

@@ -33,7 +33,7 @@ export function FieldAccordion({ photo }: { photo: Photo }) {
   const toggle = (t: SheetTarget) => setExpanded((cur) => (cur === t ? null : t));
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-group">
       {launcherGroupsFor(components.layout).map((group) => (
         <section key={group.title} className="space-y-2">
           <Eyebrow className="px-1">{group.title}</Eyebrow>
