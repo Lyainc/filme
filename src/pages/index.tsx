@@ -7,7 +7,7 @@ import { useMatchMedia } from '@/hooks/useMatchMedia';
 import { BELOW_RAIL_QUERY } from '@/utils/breakpoints';
 import { DesktopStudioShell } from '@/components/v2/DesktopStudioShell';
 import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
-import { ResultSheet } from '@/components/v2/ResultSheet';
+import { ResultStage } from '@/components/v2/ResultStage';
 
 export default function Home() {
   // SSR safe: 초기값 'light', mount 후 localStorage/prefers-color-scheme 읽기
@@ -82,29 +82,28 @@ export default function Home() {
   const showMobile = mounted && isMobile;
 
   if (showMobile) {
-    return (
-      <>
-        <MobileEditorShell
-          photo={photo}
-          canExport={canExport}
-          theme={theme}
-          onThemeChange={setTheme}
-          onDone={openView}
-          disabledReason={railMessage}
-          previewMovieInfo={debouncedMovieInfo}
-          previewComponents={debouncedComponents}
-          fieldVisibility={fieldVisibility}
-        />
-        {/* 결과(완성)는 아직 바텀시트로 — Done 화면 리뉴얼은 #222에서 이 자리를 대체한다. */}
-        <ResultSheet
-          open={resultOpen}
-          onClose={closeView}
-          croppedImageUrl={croppedImageUrl}
-          movieInfo={debouncedMovieInfo}
-          components={debouncedComponents}
-          fieldVisibility={fieldVisibility}
-        />
-      </>
+    // 완료(결과)는 편집 셸 위 오버레이가 아니라 편집 셸을 교체하는 전체화면 스테이지(#258).
+    return resultOpen ? (
+      <ResultStage
+        theme={theme}
+        onBack={closeView}
+        croppedImageUrl={croppedImageUrl}
+        movieInfo={debouncedMovieInfo}
+        components={debouncedComponents}
+        fieldVisibility={fieldVisibility}
+      />
+    ) : (
+      <MobileEditorShell
+        photo={photo}
+        canExport={canExport}
+        theme={theme}
+        onThemeChange={setTheme}
+        onDone={openView}
+        disabledReason={railMessage}
+        previewMovieInfo={debouncedMovieInfo}
+        previewComponents={debouncedComponents}
+        fieldVisibility={fieldVisibility}
+      />
     );
   }
 
