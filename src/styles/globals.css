@@ -30,8 +30,10 @@
     --focus-ring: color-mix(in srgb, #B0423F 35%, transparent);
     /* 2nd 시네마틱 neutral(#203) — 구조 요소(eyebrow·디바이더) 전용. warm projection amber vs
        cool film-base teal 스파이크 비교(스크린샷 4장, 대비 계산) 후 amber 채택. 기존 cool-neutral
-       회색(--fg-muted/--border)과 온도가 갈려야 "2nd" 정체성이 서는데 teal은 그 계열에 묻힘. */
-    --neutral-2: #96805F;
+       회색(--fg-muted/--border)과 온도가 갈려야 "2nd" 정체성이 서는데 teal은 그 계열에 묻힘.
+       스파이크 원안 #96805F는 --bg(#F4F5F7) 대비 3.47:1로 AA(4.5:1) 미달(PR #306 리뷰) —
+       Eyebrow 기본 톤으로 전역 적용되며 동일 색상 계열 안에서 더 어둡게 조정해 4.98:1 확보. */
+    --neutral-2: #7A6748;
     --r-field: 10px;
     --r-card: 14px;
     --r-shell: 20px;
