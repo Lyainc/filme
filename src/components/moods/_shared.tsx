@@ -545,14 +545,14 @@ const CODE128_STOP = 106;
 
 // bookingNo 문자열을 표준 Code128B로 인코딩해 실제 스캐너가 디코드 가능한 막대 폭을 만든다.
 // Start-B + 데이터(값=ASCII-32) + 체크디짓(mod 103) + Stop. export는 인코딩 self-check용.
+// 숫자만 인코딩(#312) — 대시 포함 원본을 그대로 넣으면 대시가 심볼을 차지해 바코드가 왜곡된다.
+// 텍스트 표시(`No. ${bookingNo}`)는 원본을 그대로 쓰므로 이 변환은 바코드 인코딩에만 영향.
 export function buildBarcodeWidths(value: string): Bar[] {
-  const v = value || 'PT-000000-0000';
+  const v = (value || 'PT-000000-0000').replace(/\D/g, '');
   const values: number[] = [];
   for (let i = 0; i < v.length; i++) {
-    const code = v.charCodeAt(i);
-    // Code128B 인코딩 가능 범위는 ASCII 32~126(값 0~94). bookingNo는 영숫자·하이픈이라 항상
-    // 안전하나, 범위 밖 문자는 space(값 0)로 대체해 디코드 깨짐 없이 흡수한다.
-    values.push(code >= 32 && code <= 126 ? code - 32 : 0);
+    // 숫자(ASCII 48~57)만 남은 문자열이라 항상 Code128B 범위(32~126) 안이다.
+    values.push(v.charCodeAt(i) - 32);
   }
   let checksum = CODE128_START_B;
   values.forEach((val, i) => {
