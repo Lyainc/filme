@@ -22,12 +22,15 @@ function extractYear(movieInfo: MovieInfo): string {
 /**
  * X 인텐트·navigator.share·클립보드 폴백이 공유하는 단일 소스 공유 문구.
  *
- * 제목·원제(제목과 다를 때만)·연도를 묶어 한 문장으로 만든다. permalink는 인자로 받아
+ * 제목·원제(제목과 다를 때만)·연도를 묶고, 티켓 푸터 서명 문구 'made with FILME'를 앵커로
+ * 붙인다(#277) — 라벨형·서술형 후보 대신 앵커형을 채택한 건 티켓 실물의 푸터 서명과 공유
+ * 문구가 같은 꼬리표로 끝나야 티켓↔공유 브랜드가 한 목소리로 읽히기 때문. 후킹은 링크
+ * 프리뷰 이미지(티켓 자체)에 맡기고 문구는 담백하게 유지한다. permalink는 인자로 받아
  * url에 그대로 싣고, 없으면 빈 문자열 — 링크 발급은 호출부 책임이다(문구 자체는 항상 생성).
  *
  * 예) buildShareMessage({ title: '인터스텔라', titleOg: 'Interstellar', releaseDate: '2014-11-06', ... }, 'https://filme.app/t/abc')
  *  → { title: '인터스텔라 포토티켓',
- *      text: '《인터스텔라》(Interstellar, 2014), FILME로 만든 포토티켓이에요.',
+ *      text: '《인터스텔라》(Interstellar, 2014) 포토티켓 — made with FILME.',
  *      url: 'https://filme.app/t/abc' }
  */
 export function buildShareMessage(
@@ -43,9 +46,9 @@ export function buildShareMessage(
     // 원제는 한글 제목과 다를 때만, 연도와 함께 괄호로 묶는다.
     const meta = [og && og !== movieTitle ? og : '', year].filter(Boolean).join(', ');
     const labeled = meta ? `《${movieTitle}》(${meta})` : `《${movieTitle}》`;
-    text = `${labeled}, FILME로 만든 포토티켓이에요.`;
+    text = `${labeled} 포토티켓 — made with FILME.`;
   } else {
-    text = 'FILME로 만든 포토티켓이에요.';
+    text = '포토티켓 — made with FILME.';
   }
 
   const title = movieTitle ? `${movieTitle} 포토티켓` : 'FILME 포토티켓';
