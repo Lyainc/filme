@@ -66,9 +66,25 @@ describe('DesignRail (#217)', () => {
     expect(screen.getByTestId('layout').textContent).toBe('minimal');
 
     await user.click(screen.getByRole('button', { name: '무드' })); // 패널 열기(닫힘 땐 inert)
-    await user.click(screen.getByRole('button', { name: '다음 무드' }));
+    // 스트립(#262 갭2): 캐러셀 화살표 대신 무드 카드를 직접 탭. 캡션으로 카드 특정.
+    await user.click(screen.getByRole('radio', { name: /크라이테리언/ }));
 
-    expect(screen.getByTestId('layout').textContent).not.toBe('minimal');
+    expect(screen.getByTestId('layout').textContent).toBe('criterion');
+  });
+
+  test('(c2) 스트립: 선택된 무드 카드만 aria-checked (#262 갭2)', async () => {
+    const user = userEvent.setup();
+    render(<RailHarness />);
+    await user.click(screen.getByRole('button', { name: '무드' }));
+
+    const minimal = screen.getByRole('radio', { name: /미니멀 시네마틱/ });
+    const criterion = screen.getByRole('radio', { name: /크라이테리언/ });
+    expect(minimal.getAttribute('aria-checked')).toBe('true'); // 기본값
+    expect(criterion.getAttribute('aria-checked')).toBe('false');
+
+    await user.click(criterion);
+    expect(criterion.getAttribute('aria-checked')).toBe('true');
+    expect(minimal.getAttribute('aria-checked')).toBe('false');
   });
 
   test('(d) 컬러 아이콘 클릭 → 컬러 패널 열림 · 무드/후보정과 배타 (#218)', async () => {
@@ -153,11 +169,9 @@ describe('DesignRail (#217)', () => {
   test('(i) 35mm 무드에선 잉크 토글 disabled — 톤 고정(ColorPicker와 동일 조건)', async () => {
     const user = userEvent.setup();
     render(<RailHarness />);
-    // 무드 패널 열고 '다음 무드'로 35mm까지 이동(순서 비의존 · 6무드 경계 루프)
+    // 무드 패널 열고 35mm 카드 직접 탭(캡션 '35mm 임프린트'로 특정 — '35mm Wide'와 구분)
     await user.click(screen.getByRole('button', { name: '무드' }));
-    for (let i = 0; i < 6 && screen.getByTestId('layout').textContent !== '35mm'; i++) {
-      await user.click(screen.getByRole('button', { name: '다음 무드' }));
-    }
+    await user.click(screen.getByRole('radio', { name: /35mm 임프린트/ }));
     expect(screen.getByTestId('layout').textContent).toBe('35mm');
 
     const ink = screen.getByRole('button', { name: /잉크 색상 전환/ }) as HTMLButtonElement;

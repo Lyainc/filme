@@ -107,18 +107,7 @@ function LayoutPicker({ value, onChange }: LayoutPickerProps) {
                           : 'border-line bg-paper hover:border-accent/40 hover:bg-accent-soft'
                       }`}
                   >
-                    <Thumbnail layout={layout} active={active} />
-                    <div className="space-y-0.5">
-                      <div
-                        className={`text-mono text-[10px] uppercase tracking-widest ${
-                          active ? 'text-accent' : 'text-fg-muted group-hover:text-fg'
-                        }`}
-                      >
-                        {layout.label}
-                        {active && <span className="ml-1.5 text-accent">· 선택됨</span>}
-                      </div>
-                      <div className="text-[11px] leading-tight text-fg-faint">{layout.caption}</div>
-                    </div>
+                    <MoodCardBody layout={layout} active={active} />
                   </button>
                 </div>
               );
@@ -180,6 +169,66 @@ function LayoutPicker({ value, onChange }: LayoutPickerProps) {
 }
 
 export default memo(LayoutPicker);
+
+// 카드 본문(썸네일 + 라벨 + 캡션) — 캐러셀(LayoutPicker)·스트립(LayoutStrip) 공용.
+function MoodCardBody({ layout, active }: { layout: LayoutSpec; active: boolean }) {
+  return (
+    <>
+      <Thumbnail layout={layout} active={active} />
+      <div className="space-y-0.5">
+        <div
+          className={`text-mono text-[10px] uppercase tracking-widest ${
+            active ? 'text-accent' : 'text-fg-muted group-hover:text-fg'
+          }`}
+        >
+          {layout.label}
+          {active && <span className="ml-1.5 text-accent">· 선택됨</span>}
+        </div>
+        <div className="text-[11px] leading-tight text-fg-faint">{layout.caption}</div>
+      </div>
+    </>
+  );
+}
+
+// 모바일 무드 스트립(#262 갭2, #212 섹션 D) — 캐러셀 대신 가로 scroll-snap. TexturePicker 패턴 재사용.
+// 모든 무드를 한 줄로 노출해 비교·선택이 한 번에 되고, 캐러셀의 pendingIndex·터치·키보드·도트
+// 상태가 전부 불필요해진다(네이티브 스크롤·Tab이 대신). 데스크톱은 캐러셀 유지 — 이건 모바일 전용.
+export const LayoutStrip = memo(function LayoutStrip({ value, onChange }: LayoutPickerProps) {
+  return (
+    <div className="space-y-2.5">
+      <span className="text-mono block text-[10px] uppercase tracking-widest text-fg-muted">
+        Mood
+      </span>
+      <div
+        className="flex gap-2 overflow-x-auto pb-1 snap-x [scrollbar-width:thin]"
+        role="radiogroup"
+        aria-label="Mood designs"
+      >
+        {LAYOUTS.map((layout) => {
+          const active = value === layout.id;
+          return (
+            <button
+              key={layout.id}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={() => onChange(layout.id)}
+              data-touch="44"
+              className={`group relative flex w-28 shrink-0 snap-start flex-col items-stretch gap-2 rounded-card border p-2.5 text-left transition-colors
+                ${
+                  active
+                    ? 'border-accent bg-accent-soft shadow-card'
+                    : 'border-line bg-paper hover:border-accent/40 hover:bg-accent-soft'
+                }`}
+            >
+              <MoodCardBody layout={layout} active={active} />
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+});
 
 interface ThumbColors {
   stroke: string;
