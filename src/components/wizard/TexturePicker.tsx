@@ -14,6 +14,8 @@ const THUMB_W = 40;
 const THUMB_H = 56;
 // Representative opacity for previews — fixed so chips don't recompute on slider drag.
 const PREVIEW_OPACITY = 0.5;
+// Bundled placeholder shown when no poster is uploaded yet, so texture concepts stay visible (#276).
+const SAMPLE_POSTER_SRC = '/assets/texture-sample.svg';
 
 /**
  * Mini poster-with-texture preview. Memoized on `src`/`texture` only, so
@@ -46,7 +48,7 @@ const TexturePreview = memo(function TexturePreview({
 });
 
 function TexturePicker({ value, onChange, croppedImageUrl }: TexturePickerProps) {
-  const hasPoster = !!croppedImageUrl;
+  const previewSrc = croppedImageUrl || SAMPLE_POSTER_SRC;
 
   return (
     <div className="space-y-field">
@@ -63,29 +65,6 @@ function TexturePicker({ value, onChange, croppedImageUrl }: TexturePickerProps)
           // Show only short label (first parenthesis-free portion) on chip
           const short = tex.label.split('(')[0].trim();
 
-          if (hasPoster) {
-            return (
-              <button
-                key={tex.value}
-                type="button"
-                role="radio"
-                aria-checked={active}
-                onClick={() => onChange(tex.value)}
-                data-touch="44"
-                title={tex.label}
-                className={`text-mono inline-flex shrink-0 snap-start min-h-touch flex-col items-center gap-1.5 rounded-chip border p-1.5 text-[10px] uppercase tracking-widest transition-colors
-                  ${
-                    active
-                      ? 'border-accent bg-accent text-accent-ink'
-                      : 'border-line bg-paper text-fg hover:bg-accent-soft'
-                  }`}
-              >
-                <TexturePreview src={croppedImageUrl as string} texture={tex.value} />
-                <span className="px-1 pb-0.5">{short}</span>
-              </button>
-            );
-          }
-
           return (
             <button
               key={tex.value}
@@ -95,14 +74,15 @@ function TexturePicker({ value, onChange, croppedImageUrl }: TexturePickerProps)
               onClick={() => onChange(tex.value)}
               data-touch="44"
               title={tex.label}
-              className={`text-mono inline-flex shrink-0 snap-start min-h-touch items-center rounded-chip border px-4 text-[11px] uppercase tracking-widest transition-colors
+              className={`text-mono inline-flex shrink-0 snap-start min-h-touch flex-col items-center gap-1.5 rounded-chip border p-1.5 text-[10px] uppercase tracking-widest transition-colors
                 ${
                   active
                     ? 'border-accent bg-accent text-accent-ink'
                     : 'border-line bg-paper text-fg hover:bg-accent-soft'
                 }`}
             >
-              {short}
+              <TexturePreview src={previewSrc} texture={tex.value} />
+              <span className="px-1 pb-0.5">{short}</span>
             </button>
           );
         })}
