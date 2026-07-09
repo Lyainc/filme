@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { list } from '@vercel/blob';
 import { Wordmark } from '@/components/v2/Wordmark';
+import { Eyebrow } from '@/components/v2/Eyebrow';
 import { DEFAULT_TICKET_TTL_DAYS } from '@/utils/ticketCleanup';
 import { getLayout, LAYOUTS } from '@/utils/layouts';
 
@@ -140,9 +141,9 @@ export default function TicketLanding({ imageUrl, title, pageUrl, width, height 
           </div>
 
           <div className="flex flex-col items-center gap-3 text-center">
-            <p className="text-mono text-[10px] uppercase tracking-widest text-fg-faint">
+            <Eyebrow as="p" tone="faint">
               FILME · Photoplay Premium Ticket
-            </p>
+            </Eyebrow>
             <p className="text-[14px] text-fg-muted">
               영화 포스터로 시네마틱한 포토티켓을, 너도 만들어봐.
             </p>

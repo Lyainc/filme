@@ -5,6 +5,7 @@ import { useKobisSearch } from '@/hooks/useKobisSearch';
 import Field from './ui/Field';
 import VisibilityCheckbox from './ui/VisibilityCheckbox';
 import InfoTooltip from './ui/InfoTooltip';
+import { Eyebrow } from './v2/Eyebrow';
 import { DATE_FORMAT_TOKENS, GRANULARITY_OPTIONS } from '@/constants/dateTokens';
 
 interface MovieInfoFormProps {
@@ -88,16 +89,11 @@ export default function MovieInfoForm({
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-2">
             {/* 제목은 필수 필드(#260 REQUIRED_FIELDS) — 숨김 눈 토글 없음(다른 세 경로와 동일 규칙). */}
-            <label
-              htmlFor="movieTitle"
-              className="text-mono text-[10px] uppercase tracking-widest text-fg-muted"
-            >
+            <Eyebrow as="label" htmlFor="movieTitle">
               Title
-            </label>
+            </Eyebrow>
           </span>
-          <span className="text-mono text-[10px] uppercase tracking-widest text-fg-faint">
-            KOBIS lookup
-          </span>
+          <Eyebrow tone="faint">KOBIS lookup</Eyebrow>
         </div>
         <div className="mt-1.5 flex items-stretch gap-2">
           <input
@@ -217,7 +213,7 @@ export default function MovieInfoForm({
                       }`}
                     >
                       <div className="text-[15px] font-medium text-fg">{movie.movieNm}</div>
-                      <div className="text-mono mt-1 flex items-center gap-2 text-[10px] uppercase tracking-widest text-fg-faint">
+                      <Eyebrow as="div" tone="faint" className="mt-1 flex items-center gap-2">
                         {movie.openDt && (
                           <span>{formatDate(openDtToIso(movie.openDt), 'kr-compact', 'date')}</span>
                         )}
@@ -233,7 +229,7 @@ export default function MovieInfoForm({
                             <span>{movie.nationAlt}</span>
                           </>
                         )}
-                      </div>
+                      </Eyebrow>
                     </button>
                   </li>
                 ))}
@@ -356,12 +352,10 @@ function ReleaseDateBlock({
         <span className="flex items-center gap-3">
           <span className="flex items-center gap-2">
             <VisibilityCheckbox checked={visible} onChange={onVisibleChange} label="개봉일" />
-            <span className="text-mono block text-[10px] uppercase tracking-widest text-fg-muted">
-              {label}
-            </span>
+            <Eyebrow className="block">{label}</Eyebrow>
           </span>
           {/* 재개봉 토글 — RELEASED 헤더 옆 인라인(#141 (14)) */}
-          <label className="text-mono inline-flex cursor-pointer items-center gap-1.5 text-[10px] uppercase tracking-widest text-fg-muted hover:text-fg">
+          <Eyebrow as="label" className="inline-flex cursor-pointer items-center gap-1.5 hover:text-fg">
             <input
               type="checkbox"
               checked={reissueChecked}
@@ -369,11 +363,9 @@ function ReleaseDateBlock({
               className="h-3.5 w-3.5 accent-accent"
             />
             재개봉작
-          </label>
+          </Eyebrow>
         </span>
-        <span className="text-mono text-[10px] uppercase tracking-widest text-fg-faint">
-          {formatDate(value, token, granularity) || '—'}
-        </span>
+        <Eyebrow tone="faint">{formatDate(value, token, granularity) || '—'}</Eyebrow>
       </div>
       <div className="flex flex-wrap items-stretch gap-2">
         <select
@@ -421,16 +413,14 @@ function ReleaseDateBlock({
         <div className="space-y-2.5 border-l-2 border-line pl-3">
           <div className="flex flex-wrap items-stretch gap-2">
             <DateInput value={reissueDate} granularity={granularity} onChange={onReissueDateChange} ariaLabel="재개봉일" />
-            <span className="text-mono inline-flex items-center text-[10px] uppercase tracking-widest text-fg-faint">
+            <Eyebrow tone="faint" className="inline-flex items-center">
               표기: {formatDate(reissueDate, token, granularity) || '—'}
-            </span>
+            </Eyebrow>
           </div>
           {/* 재개봉일 티켓 표시 여부 — 'Display Fields' 칩 대체(#116). isReissue와 구분 위해 재개봉작일 때만 노출. */}
           <span className="flex items-center gap-2">
             <VisibilityCheckbox checked={reissueVisible} onChange={onReissueVisibleChange} label="재개봉" />
-            <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">
-              티켓에 재개봉일 표시
-            </span>
+            <Eyebrow>티켓에 재개봉일 표시</Eyebrow>
           </span>
         </div>
       )}

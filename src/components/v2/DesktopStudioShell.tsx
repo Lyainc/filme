@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import ImageUploader from '@/components/ImageUploader';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
 import { AppHeader } from './AppHeader';
+import { Eyebrow } from './Eyebrow';
 import { FieldAccordion } from './FieldAccordion';
 import { DesktopDesignPanel } from './DesktopDesignPanel';
 import { ResultPanel } from './ResultPanel';
@@ -87,12 +88,6 @@ interface DesktopStudioShellProps {
   previewMovieInfo: MovieInfo;
   previewComponents: TicketComponents;
   fieldVisibility: Record<TicketField, boolean>;
-}
-
-function Eyebrow({ children }: { children: ReactNode }) {
-  return (
-    <div className="text-mono text-[11px] uppercase tracking-widest text-fg-muted">{children}</div>
-  );
 }
 
 /**
@@ -302,7 +297,7 @@ export function DesktopStudioShell({
               />
             ) : activeTab === 'poster' ? (
               <div className="space-y-4">
-                <Eyebrow>POSTER</Eyebrow>
+                <Eyebrow as="div" size={11}>POSTER</Eyebrow>
                 <div className="space-y-2.5">
                   <ImageUploader
                     onUpload={photo.handleImageUpload}
@@ -323,14 +318,14 @@ export function DesktopStudioShell({
             ) : activeTab === 'info' ? (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Eyebrow>INFO</Eyebrow>
+                  <Eyebrow as="div" size={11}>INFO</Eyebrow>
                   <AllVisibilityToggle photo={photo} />
                 </div>
                 <FieldAccordion photo={photo} />
               </div>
             ) : (
               <div className="space-y-4">
-                <Eyebrow>DESIGN</Eyebrow>
+                <Eyebrow as="div" size={11}>DESIGN</Eyebrow>
                 <DesktopDesignPanel photo={photo} />
               </div>
             )}

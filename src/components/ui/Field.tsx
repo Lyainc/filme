@@ -1,4 +1,5 @@
 import { forwardRef, type ReactNode } from 'react';
+import { Eyebrow } from '../v2/Eyebrow';
 
 interface FieldProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
   label: string;
@@ -20,19 +21,12 @@ const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-2">
           {labelAccessory}
-          <label
-            htmlFor={id}
-            className="text-mono text-[10px] uppercase tracking-widest text-fg-muted"
-          >
+          <Eyebrow as="label" htmlFor={id}>
             {label}
             {optional && <span className="ml-2 normal-case text-fg-faint">— optional</span>}
-          </label>
+          </Eyebrow>
         </span>
-        {meta && (
-          <span className="text-mono text-[10px] uppercase tracking-widest text-fg-faint">
-            {meta}
-          </span>
-        )}
+        {meta && <Eyebrow tone="faint">{meta}</Eyebrow>}
       </div>
       <input
         ref={ref}

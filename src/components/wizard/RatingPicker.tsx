@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
+import { Eyebrow } from '@/components/v2/Eyebrow';
 
 interface RatingPickerProps {
   value: number;
@@ -17,7 +18,7 @@ export default function RatingPicker({ value, onValueChange, visible, onVisibleC
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-2">
           <VisibilityCheckbox checked={visible} onChange={onVisibleChange} label="평점" />
-          <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Rating</span>
+          <Eyebrow>Rating</Eyebrow>
         </span>
       </div>
 

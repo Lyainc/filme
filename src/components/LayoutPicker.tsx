@@ -1,6 +1,7 @@
 import { ReactNode, TouchEvent, memo, useEffect, useRef } from 'react';
 import { LAYOUTS, type LayoutSpec } from '@/utils/layouts';
 import type { LayoutId } from '@/types';
+import { Eyebrow } from './v2/Eyebrow';
 
 interface LayoutPickerProps {
   value: LayoutId;
@@ -58,9 +59,9 @@ function LayoutPicker({ value, onChange }: LayoutPickerProps) {
 
   return (
     <div className="space-y-2.5">
-      <span className="text-mono block text-[10px] uppercase tracking-widest text-fg-muted">
+      <Eyebrow className="block">
         Mood · {activeIndex + 1} / {count}
-      </span>
+      </Eyebrow>
 
       <div
         className="relative outline-none"
@@ -176,14 +177,14 @@ function MoodCardBody({ layout, active }: { layout: LayoutSpec; active: boolean 
     <>
       <Thumbnail layout={layout} active={active} />
       <div className="space-y-0.5">
-        <div
-          className={`text-mono text-[10px] uppercase tracking-widest ${
-            active ? 'text-accent' : 'text-fg-muted group-hover:text-fg'
-          }`}
+        <Eyebrow
+          as="div"
+          tone={active ? 'accent' : 'muted'}
+          className={active ? '' : 'group-hover:text-fg'}
         >
           {layout.label}
           {active && <span className="ml-1.5 text-accent">· 선택됨</span>}
-        </div>
+        </Eyebrow>
         <div className="text-[11px] leading-tight text-fg-faint">{layout.caption}</div>
       </div>
     </>
@@ -196,9 +197,7 @@ function MoodCardBody({ layout, active }: { layout: LayoutSpec; active: boolean 
 export const LayoutStrip = memo(function LayoutStrip({ value, onChange }: LayoutPickerProps) {
   return (
     <div className="space-y-2.5">
-      <span className="text-mono block text-[10px] uppercase tracking-widest text-fg-muted">
-        Mood
-      </span>
+      <Eyebrow className="block">Mood</Eyebrow>
       <div
         className="flex gap-2 overflow-x-auto pb-1 snap-x [scrollbar-width:thin]"
         role="radiogroup"

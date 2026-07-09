@@ -9,6 +9,7 @@ import {
 } from '@/utils/captureToImage';
 import { buildShareMessage } from '@/utils/shareMessage';
 import { DEFAULT_TICKET_TTL_DAYS } from '@/utils/ticketCleanup';
+import { Eyebrow } from './Eyebrow';
 import { PreviewFilmCell } from './PreviewFilmCell';
 import { PrimaryCta } from './PrimaryCta';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
@@ -291,9 +292,9 @@ export function ResultPanel({
     <div className="space-y-4">
       {/* 완성 eyebrow(#222) — mono·와이드 트래킹·대문자, 은은한 rise-in. D7: 빨강은 액션 전용이라
           eyebrow는 faint 중립톤으로 둔다. 모바일 시트는 별도 Drawer.Title이 a11y 라벨을 맡는다. */}
-      <p className="text-mono text-center text-[10px] uppercase tracking-widest text-fg-faint animate-rise-in">
+      <Eyebrow as="p" tone="faint" className="text-center animate-rise-in">
         티켓 완성
-      </p>
+      </Eyebrow>
 
       {/* hidePreview(데스크톱 done): 캡처 타깃은 DOM에 유지하되 인스펙터 flow 밖으로 뺀다.
           display:none이면 html-to-image가 레이아웃을 못 잡으니 off-screen 고정으로만 숨긴다
@@ -335,9 +336,9 @@ export function ResultPanel({
           className="!min-h-[52px]"
         />
         {/* 내보내기 스펙 — 캡처는 natural px × pixelRatio 2 (captureToImage 참고) */}
-        <p className="text-mono text-center text-[10px] uppercase tracking-widest text-fg-faint">
+        <Eyebrow as="p" tone="faint" className="text-center">
           {layout.width} × {layout.height} · JPEG ×2
-        </p>
+        </Eyebrow>
 
         {/* 채널 3-cell 카드(#222 v5) — 링크(퍼마링크 발급) / X(인텐트) / 공유(navigator.share).
             mockup의 '카카오톡' 셀은 더미라 SDK를 붙이지 않고, OS 공유 시트(카톡 포함)를 여는
@@ -390,9 +391,7 @@ export function ResultPanel({
           <div className="space-y-1.5 rounded-field-sm border border-line bg-surface p-3 animate-rise-in">
             {/* 모바일에선 rail(숨김)+시트로 ResultPanel이 둘 동시 렌더되므로 전역 id는
                 중복된다 — 라벨은 span + 인풋 aria-label로 연결해 id 충돌을 피한다. */}
-            <span className="text-mono block text-[10px] uppercase tracking-widest text-fg-muted">
-              공유 링크
-            </span>
+            <Eyebrow className="block">공유 링크</Eyebrow>
             <div className="flex items-stretch gap-2">
               <input
                 ref={linkInputRef}
