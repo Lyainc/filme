@@ -1,5 +1,5 @@
 import { Fragment, useRef, useState, type ReactNode } from 'react';
-import LayoutPicker from '@/components/LayoutPicker';
+import { LayoutStrip } from '@/components/LayoutPicker';
 import TexturePicker from '@/components/wizard/TexturePicker';
 import ColorPicker from '@/components/wizard/ColorPicker';
 import BrightnessSlider from '@/components/wizard/BrightnessSlider';
@@ -184,7 +184,7 @@ function RailExpandPanel({
           aria-label={eyebrow}
           className="rounded-card border border-line bg-surface-elevated p-4"
         >
-          {/* 라벨은 피커 자체 헤더(LayoutPicker "Mood · n/count", TexturePicker "Surface treatment")와
+          {/* 라벨은 피커 자체 헤더(LayoutStrip "Mood", TexturePicker "Surface treatment")와
               겹치므로 여기선 생략 — 닫기 버튼만. 접근성 이름은 region aria-label(eyebrow)이 유지. */}
           <div className="mb-3 flex items-center justify-end">
             <button
@@ -247,7 +247,7 @@ export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket>
 
       <RailExpandPanel open={pop !== null} eyebrow={eyebrow} onClose={() => setPop(null)}>
         {active === 'mood' ? (
-          <LayoutPicker value={components.layout} onChange={(id: LayoutId) => setComp({ layout: id })} />
+          <LayoutStrip value={components.layout} onChange={(id: LayoutId) => setComp({ layout: id })} />
         ) : active === 'color' ? (
           // DesktopStudioShell과 동일 배선 — 잉크색 단일 축(themeColor). 35mm는 톤 고정이라 disabled.
           <ColorPicker
