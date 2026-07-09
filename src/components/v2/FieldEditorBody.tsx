@@ -205,7 +205,7 @@ function DateSheet({ field, photo }: { field: TicketField; photo: Photo }) {
   if (field === 'watchDate') {
     const token = info.watchDateFormat || 'kr-compact';
     return (
-      <div className="space-y-4">
+      <div className="space-y-group">
         <input
           type="date"
           value={info.watchDate || ''}
@@ -227,7 +227,7 @@ function DateSheet({ field, photo }: { field: TicketField; photo: Photo }) {
   const gran = info.releaseDateGranularity || 'date';
   const token = info.releaseDateFormat || 'kr-compact';
   return (
-    <div className="space-y-4">
+    <div className="space-y-group">
       <div className="flex flex-wrap items-stretch gap-2">
         <select
           value={gran}
@@ -266,7 +266,7 @@ function DateSheet({ field, photo }: { field: TicketField; photo: Photo }) {
       </Eyebrow>
 
       {info.isReissue && (
-        <div className="space-y-2.5 border-l-2 border-line pl-3">
+        <div className="space-y-field border-l-2 border-line pl-3">
           <div className="flex flex-wrap items-stretch gap-2">
             <DateInput
               value={info.reissueDate || ''}

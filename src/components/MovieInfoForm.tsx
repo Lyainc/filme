@@ -84,7 +84,7 @@ export default function MovieInfoForm({
   const hasListbox = showResults && !isSearching && !searchError && searchResults.length > 0;
 
   return (
-    <section className="space-y-5">
+    <section className="space-y-group">
       <div className="relative" ref={searchContainerRef}>
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-2">
@@ -347,7 +347,7 @@ function ReleaseDateBlock({
 }) {
   const hasValue = !!value;
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-field">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="flex items-center gap-3">
           <span className="flex items-center gap-2">
@@ -410,7 +410,7 @@ function ReleaseDateBlock({
 
       {/* 재개봉일 입력 — 토글 ON일 때만. 개봉일과 같은 정밀도/토큰을 공유한다. */}
       {reissueChecked && (
-        <div className="space-y-2.5 border-l-2 border-line pl-3">
+        <div className="space-y-field border-l-2 border-line pl-3">
           <div className="flex flex-wrap items-stretch gap-2">
             <DateInput value={reissueDate} granularity={granularity} onChange={onReissueDateChange} ariaLabel="재개봉일" />
             <Eyebrow tone="faint" className="inline-flex items-center">

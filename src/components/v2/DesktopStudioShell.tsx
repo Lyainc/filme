@@ -296,9 +296,9 @@ export function DesktopStudioShell({
                 hidePreview
               />
             ) : activeTab === 'poster' ? (
-              <div className="space-y-4">
+              <div className="space-y-group">
                 <Eyebrow as="div" size={11}>POSTER</Eyebrow>
-                <div className="space-y-2.5">
+                <div className="space-y-field">
                   <ImageUploader
                     onUpload={photo.handleImageUpload}
                     isProcessing={false}
@@ -316,7 +316,7 @@ export function DesktopStudioShell({
                 </div>
               </div>
             ) : activeTab === 'info' ? (
-              <div className="space-y-4">
+              <div className="space-y-group">
                 <div className="flex items-center justify-between">
                   <Eyebrow as="div" size={11}>INFO</Eyebrow>
                   <AllVisibilityToggle photo={photo} />
@@ -324,7 +324,7 @@ export function DesktopStudioShell({
                 <FieldAccordion photo={photo} />
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-group">
                 <Eyebrow as="div" size={11}>DESIGN</Eyebrow>
                 <DesktopDesignPanel photo={photo} />
               </div>

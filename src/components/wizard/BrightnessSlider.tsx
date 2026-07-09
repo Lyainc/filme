@@ -16,7 +16,7 @@ export default function BrightnessSlider({
   id = 'posterOpacity',
 }: BrightnessSliderProps) {
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-field">
       <div className="flex items-baseline justify-between">
         <Eyebrow as="label" htmlFor={id}>
           {label}

@@ -266,7 +266,7 @@ export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket>
         ) : (
           // 투명도(#219) — 듀얼 슬라이더. 포스터=밝기(posterOpacity, 기존 메커니즘 유지),
           // 컴포넌트=오버레이 불투명도(componentOpacity). BrightnessSlider 재사용(둘 다 0..1→%).
-          <div className="space-y-4">
+          <div className="space-y-group">
             <BrightnessSlider
               label="포스터"
               id="rail-poster-opacity"

@@ -35,7 +35,7 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
   const displayHex = value.toUpperCase();
 
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-field">
       <Eyebrow className="block">Ink · logo & type color</Eyebrow>
       {disabled && disabledNote && (
         <p className="text-[12px] text-fg-muted">{disabledNote}</p>

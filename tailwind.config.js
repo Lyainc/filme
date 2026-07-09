@@ -56,6 +56,10 @@ module.exports = {
       spacing: {
         btn: '52px',
         touch: '44px',
+        // 에디터 세로 리듬 3단 스케일(#201) — field(필드 내부) < group(필드 묶음) < section(섹션 경계)
+        field: '0.625rem',  // 10px, 기존 space-y-2.5
+        group: '1rem',      // 16px, 기존 space-y-4/5 통합
+        section: '1.5rem',  // 24px, 기존 space-y-6
       },
       boxShadow: {
         card: '0 1px 2px rgba(44,38,34,0.05), 0 12px 40px -24px rgba(44,38,34,0.18)',

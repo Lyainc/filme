@@ -305,7 +305,7 @@ export function ResultPanel({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-group">
       {/* 완성 eyebrow(#222) — mono·와이드 트래킹·대문자, 은은한 rise-in. D7: 빨강은 액션 전용이라
           eyebrow는 faint 중립톤으로 둔다. 모바일 시트는 별도 Drawer.Title이 a11y 라벨을 맡는다. */}
       <Eyebrow as="p" tone="faint" className="text-center animate-rise-in">
