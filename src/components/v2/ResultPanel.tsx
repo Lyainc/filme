@@ -356,28 +356,38 @@ export function ResultPanel({
           {layout.width} × {layout.height} · JPEG ×2
         </Eyebrow>
 
-        {/* 채널 3-cell 카드(#222 v5) — 링크(퍼마링크 발급) / X(인텐트) / 공유(navigator.share).
-            mockup의 '카카오톡' 셀은 더미라 SDK를 붙이지 않고, OS 공유 시트(카톡 포함)를 여는
-            '공유' 셀이 그 의도를 실제로 수행한다. D7: 채널은 quiet outline, 빨강 없음. */}
-        <div className="grid grid-cols-3 divide-x divide-line overflow-hidden rounded-field-sm border border-line bg-surface-elevated">
-          <button
-            type="button"
-            onClick={handlePermalink}
-            disabled={isBusy}
-            title="공유 링크를 만들어 클립보드에 복사해요"
-            className="text-mono flex min-h-[60px] flex-col items-center justify-center gap-1.5 px-2 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:bg-transparent disabled:hover:text-fg-faint"
-          >
-            <LinkIcon />
-            <span key={permaLabel} className="inline-block animate-fade-in">
-              {permaLabel}
-            </span>
-          </button>
+        {/* D7 공유 위계: save→link→channels 시퀀스를 '공유' eyebrow 디바이더로 시각 분리. */}
+        <div className="flex items-center gap-3">
+          <span aria-hidden="true" className="h-px flex-1 bg-line" />
+          <Eyebrow tone="faint">공유</Eyebrow>
+          <span aria-hidden="true" className="h-px flex-1 bg-line" />
+        </div>
+
+        {/* 2차 액션 = 링크 만들기(퍼마링크 발급, 바이럴 루프 진입점 #91). elevated secondary —
+            accent-soft 그라운드 + accent 아이콘/텍스트로 저장(accent fill)과 채널(quiet outline)
+            사이 중간 무게를 준다. */}
+        <button
+          type="button"
+          onClick={handlePermalink}
+          disabled={isBusy}
+          title="공유 링크를 만들어 클립보드에 복사해요"
+          className="text-mono flex min-h-[48px] w-full items-center justify-center gap-2 rounded-field-sm bg-accent-soft px-4 text-[11px] uppercase tracking-widest text-accent transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <LinkIcon />
+          <span key={permaLabel} className="inline-block animate-fade-in">
+            {permaLabel}
+          </span>
+        </button>
+
+        {/* 3차 액션 = 채널(카톡/X). mockup의 '카카오톡' 셀은 더미라 SDK를 붙이지 않고, OS 공유
+            시트(카톡 포함)를 여는 '공유' 셀이 그 의도를 실제로 수행한다. D7: quiet outline, 빨강 없음. */}
+        <div className="grid grid-cols-2 divide-x divide-line overflow-hidden rounded-field-sm border border-line bg-surface-elevated">
           <button
             type="button"
             onClick={handleShareTwitter}
             disabled={isBusy}
             title="X(트위터)에 공유해요"
-            className="text-mono flex min-h-[60px] flex-col items-center justify-center gap-1.5 px-2 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:bg-transparent disabled:hover:text-fg-faint"
+            className="text-mono flex min-h-[52px] flex-col items-center justify-center gap-1.5 px-2 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:bg-transparent disabled:hover:text-fg-faint"
           >
             <XIcon />
             <span>X</span>
@@ -387,7 +397,7 @@ export function ResultPanel({
             onClick={handleShareLink}
             disabled={isBusy}
             title="카톡·메신저 등으로 공유해요"
-            className="text-mono flex min-h-[60px] flex-col items-center justify-center gap-1.5 px-2 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:bg-transparent disabled:hover:text-fg-faint"
+            className="text-mono flex min-h-[52px] flex-col items-center justify-center gap-1.5 px-2 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:bg-transparent disabled:hover:text-fg-faint"
           >
             <ShareIcon />
             <span>공유</span>
