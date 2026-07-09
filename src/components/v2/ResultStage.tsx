@@ -2,6 +2,7 @@ import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer'
 import { getLayout } from '@/utils/layouts';
 import { PreviewFilmCell } from './PreviewFilmCell';
 import { ResultPanel } from './ResultPanel';
+import { WordmarkCompact } from './Wordmark';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 
 interface ResultStageProps {
@@ -50,12 +51,7 @@ export function ResultStage({
             <path d="m15 18-6-6 6-6" />
           </svg>
         </button>
-        <span
-          className="text-mono text-fg-muted"
-          style={{ fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase' }}
-        >
-          FILME
-        </span>
+        <WordmarkCompact />
         <div aria-hidden="true" className="h-9 w-9" />
       </header>
 

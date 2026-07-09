@@ -7,6 +7,7 @@ import { Eyebrow } from './Eyebrow';
 import { OcrUploadCard } from './OcrUploadCard';
 import { OcrUndoBanner } from './OcrUndoBanner';
 import { ThemeToggle } from './ThemeToggle';
+import { WordmarkCompact } from './Wordmark';
 import { ZoomSegment, actualSize, usePhysicalSizeCorrection, type ViewMode } from './viewMode';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
 import { getLayout } from '@/utils/layouts';
@@ -244,12 +245,7 @@ export function MobileEditorShell({
           </svg>
         </button>
 
-        <span
-          className="text-mono text-fg-muted"
-          style={{ fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase' }}
-        >
-          FILME
-        </span>
+        <WordmarkCompact />
 
         <div className="flex items-center gap-1.5">
           <ThemeToggle theme={theme} onChange={onThemeChange} />
