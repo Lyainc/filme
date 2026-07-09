@@ -6,7 +6,7 @@ import { DesignRail } from './DesignRail';
 import { OcrUploadCard } from './OcrUploadCard';
 import { OcrUndoBanner } from './OcrUndoBanner';
 import { ThemeToggle } from './ThemeToggle';
-import { ZoomSegment, actualSize, type ViewMode } from './viewMode';
+import { ZoomSegment, actualSize, usePhysicalSizeCorrection, type ViewMode } from './viewMode';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
 import { getLayout } from '@/utils/layouts';
 import { getCroppedImg, type Area } from '@/utils/imageCrop';
@@ -194,14 +194,27 @@ export function MobileEditorShell({
   const layout = getLayout(previewComponents.layout);
   const actual = actualSize(layout);
   const isActual = viewMode === 'actual';
+  // 실제 크기(cm)의 물리 부정확(#275-7) 보정 — devicePixelRatio 근사 + 사용자 캘리브레이션.
+  const { correction: physicalCorrection, calibration, setCalibration } = usePhysicalSizeCorrection();
   // 실제 크기에선 ghost를 강제로 끈다(물리 크기 정밀 비교엔 자리표시자가 방해). 그 외엔 토글값.
   const ghostEffective = !isActual && ghostMode;
+  // actual의 cm 값엔 항상 물리 보정을 곱한다(portrait/landscape 공용 소스).
+  const actualWidthCss = `calc(${actual.shortSideCm} * ${physicalCorrection})`;
   // 컨테이너 width만으로 렌더 크기를 몰기(TicketRenderer는 width에 맞춰 스케일). actual은
-  // 짧은 변(portrait 5.5cm / landscape 8.5cm)을 그대로 줘 물리 크기로 렌더. max는 세로를
+  // 짧은 변(portrait 5.5cm / landscape 8.5cm, 보정 적용)을 그대로 줘 물리 크기로 렌더. max는 세로를
   // TicketRenderer의 자체 maxHeight(min(72vh,720px)) 한도까지 채우는 width를 역산.
   const previewWidth = isActual
-    ? actual.shortSideCm
+    ? actualWidthCss
     : `min(90vw, calc(${PREVIEW_MAX_HEIGHT} * ${layout.width} / ${layout.height}))`;
+  // 가로형(editorial·35mm-landscape) 무드는 세로 화면 폭 기준 스케일이면 작은 가로 띠로 렌더되므로
+  // (#275-8) max/actual에서 90° 회전 + 화면 꽉 채우기로 배치. rotatedInnerWidth는 회전 전(자연 방향)
+  // TicketRenderer 폭 — actual은 물리 긴 변(보정 포함) 그대로, max는 회전 후 세로가 화면 상한을
+  // 채우도록 역산. rotatedStageWidth(회전 후 화면에 보이는 폭)는 같은 비율로 calc 유도해 반올림을 피한다.
+  const rotateLandscape = layout.orientation === 'landscape' && viewMode !== 'default';
+  const rotatedInnerWidth = isActual
+    ? actualWidthCss
+    : `min(${PREVIEW_MAX_HEIGHT}, calc(90vw * ${layout.width} / ${layout.height}))`;
+  const rotatedStageWidth = `calc(${rotatedInnerWidth} * ${layout.height} / ${layout.width})`;
   // 기본이 아닐 때만 편집 본문(Poster 드롭존 + rail)을 접어 프리뷰에 세로 공간을 내준다. 이미지가
   // 없으면(업로드 전) 접지 않는다 — 그땐 프리뷰/pill 자체가 없다.
   const collapseBody = !!croppedImageUrl && viewMode !== 'default';
@@ -270,52 +283,102 @@ export function MobileEditorShell({
 
           {croppedImageUrl && (
             <div className="px-4 pt-4">
-              {/* 래퍼는 3모드 모두 <div>로 고정 — 요소 타입이 바뀌면 TicketRenderer가 remount돼 내부
-                  scale이 1로 리셋되며 깜빡인다(#259 전엔 button 고정, on-ticket 탭엔 내부에 필드 button이
-                  중첩돼 div로 전환). default는 인라인 폭 + 티켓 위 필드/포스터 직접 탭(onField/onPosterTap),
-                  max/actual은 확대 폭 + 래퍼 전체 탭→기본 복귀. #216: ghost는 actual에서 강제 off. */}
-              <div
-                {...(viewMode === 'default'
-                  ? {}
-                  : {
-                      role: 'button' as const,
-                      tabIndex: 0,
-                      onClick: () => setViewMode('default'),
-                      onKeyDown: (e: KeyboardEvent) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          setViewMode('default');
-                        }
-                      },
-                      'aria-label': '기본 크기로 돌아가기',
-                    })}
-                className={`mx-auto block rounded-card ${
-                  viewMode === 'default'
-                    ? 'w-full max-w-[280px]'
-                    : 'transition-transform active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-soft'
-                }`}
-                style={viewMode === 'default' ? undefined : { width: previewWidth }}
-              >
-                <TicketRenderer
-                  croppedImageUrl={croppedImageUrl}
-                  movieInfo={previewMovieInfo}
-                  components={previewComponents}
-                  fieldVisibility={fieldVisibility}
-                  ghost={ghostEffective}
-                  onField={viewMode === 'default' ? handleField : undefined}
-                  onPosterTap={viewMode === 'default' ? handlePosterTap : undefined}
-                />
-              </div>
+              {rotateLandscape ? (
+                // 가로형 무드의 max/actual 회전 배치(#275-8) — 바깥 stage는 회전 후 화면에 보이는
+                // 크기로 고정(overflow-hidden), 안쪽 래퍼를 rotate(90deg)로 돌려 중앙에 배치한다.
+                // TicketRenderer 자신은 늘 자연(비회전) 방향으로 렌더 — scale 계산이 방향을 몰라도 된다.
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setViewMode('default')}
+                  onKeyDown={(e: KeyboardEvent) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setViewMode('default');
+                    }
+                  }}
+                  aria-label="기본 크기로 돌아가기"
+                  className="relative mx-auto block overflow-hidden rounded-card transition-transform active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-soft"
+                  style={{ width: rotatedStageWidth, height: rotatedInnerWidth }}
+                >
+                  <div
+                    className="absolute left-1/2 top-1/2"
+                    style={{ width: rotatedInnerWidth, transform: 'translate(-50%, -50%) rotate(90deg)' }}
+                  >
+                    <TicketRenderer
+                      croppedImageUrl={croppedImageUrl}
+                      movieInfo={previewMovieInfo}
+                      components={previewComponents}
+                      fieldVisibility={fieldVisibility}
+                      ghost={ghostEffective}
+                    />
+                  </div>
+                </div>
+              ) : (
+                // 래퍼는 3모드 모두 <div>로 고정 — 요소 타입이 바뀌면 TicketRenderer가 remount돼 내부
+                // scale이 1로 리셋되며 깜빡인다(#259 전엔 button 고정, on-ticket 탭엔 내부에 필드 button이
+                // 중첩돼 div로 전환). default는 인라인 폭 + 티켓 위 필드/포스터 직접 탭(onField/onPosterTap),
+                // max/actual은 확대 폭 + 래퍼 전체 탭→기본 복귀. #216: ghost는 actual에서 강제 off.
+                <div
+                  {...(viewMode === 'default'
+                    ? {}
+                    : {
+                        role: 'button' as const,
+                        tabIndex: 0,
+                        onClick: () => setViewMode('default'),
+                        onKeyDown: (e: KeyboardEvent) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setViewMode('default');
+                          }
+                        },
+                        'aria-label': '기본 크기로 돌아가기',
+                      })}
+                  className={`mx-auto block rounded-card ${
+                    viewMode === 'default'
+                      ? 'w-full max-w-[280px]'
+                      : 'transition-transform active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-soft'
+                  }`}
+                  style={viewMode === 'default' ? undefined : { width: previewWidth }}
+                >
+                  <TicketRenderer
+                    croppedImageUrl={croppedImageUrl}
+                    movieInfo={previewMovieInfo}
+                    components={previewComponents}
+                    fieldVisibility={fieldVisibility}
+                    ghost={ghostEffective}
+                    onField={viewMode === 'default' ? handleField : undefined}
+                    onPosterTap={viewMode === 'default' ? handlePosterTap : undefined}
+                  />
+                </div>
+              )}
             </div>
           )}
 
           {croppedImageUrl && isActual && (
-            <p
-              className="text-mono px-4 pt-3 text-center text-fg-muted"
-              style={{ fontSize: 11, letterSpacing: '0.08em' }}
-            >
-              실제 크기 · {actual.caption}
-            </p>
+            <div className="px-4 pt-3 text-center">
+              <p className="text-mono text-fg-muted" style={{ fontSize: 11, letterSpacing: '0.08em' }}>
+                실제 크기 · {actual.caption}
+              </p>
+              {/* 물리 보정 캘리브레이션(#275-7) — devicePixelRatio 근사는 오차가 있어 신용카드 등
+                  실물과 대조해 미세조정하는 노브를 남긴다. actual 모드에서만 노출. */}
+              <label
+                className="text-mono mt-2 inline-flex items-center gap-2 text-fg-faint"
+                style={{ fontSize: 10 }}
+              >
+                보정 {Math.round(calibration * 100)}%
+                <input
+                  type="range"
+                  min={0.7}
+                  max={1.4}
+                  step={0.01}
+                  value={calibration}
+                  onChange={(e) => setCalibration(Number(e.target.value))}
+                  aria-label="실제 크기 보정 — 신용카드 등 실물과 비교해 맞춰보세요"
+                  style={{ width: 120 }}
+                />
+              </label>
+            </div>
           )}
 
           {/* OCR + allVis/ghost 토글 행은 collapse 밖에 둔다(#261 리뷰 P1) — 줌(max/actual) 모드에서도

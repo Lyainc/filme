@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import type { LayoutSpec } from '@/utils/layouts';
 
 // 프리뷰 3단 줌 모드 — 모바일(#214)·데스크톱(#225) 공용. 기본(인라인) · 최대화(세로 꽉) ·
@@ -63,6 +63,40 @@ export function actualSize(layout: LayoutSpec): { caption: string; shortSideCm: 
   return layout.orientation === 'landscape'
     ? { caption: '8.5 × 5.5cm', shortSideCm: '8.5cm' }
     : { caption: '5.5 × 8.5cm', shortSideCm: '5.5cm' };
+}
+
+// CSS cm은 항상 96px/2.54cm 고정 매핑이라 물리 DPI와 무관하다. 모바일 브라우저는 이 고정 매핑이
+// 대략 160 CSS-dpi(Android dp/iOS point) 기준 화면에 물려서, actual(cm) 모드가 실제보다 축소 렌더된다
+// (#275-7, 예: iPhone 14에서 5.5cm 지정 시 실측 ≈3.8cm). 웹은 물리 DPI를 직접 못 읽으므로 devicePixelRatio를
+// "폰이다"는 신호로만 쓰는 근사 보정 + 사용자 캘리브레이션 배율(신용카드 등 실물 대조) 조합으로 절충한다.
+// ponytail: 근사치, 완벽한 물리 정확도가 필요해지면 캘리브레이션 UI를 남긴다(정밀 DPI API는 웹엔 없음).
+const MOBILE_CSS_DPI_ESTIMATE = 160;
+const DESKTOP_CSS_DPI = 96;
+const CALIBRATION_STORAGE_KEY = 'phototicket:actualSizeCalibration';
+
+function readStoredCalibration(): number {
+  if (typeof window === 'undefined') return 1;
+  const raw = Number(window.localStorage.getItem(CALIBRATION_STORAGE_KEY));
+  return raw > 0 ? raw : 1;
+}
+
+/** actual(cm) 모드 전용 물리 크기 보정 배율 — devicePixelRatio 근사 × 사용자 캘리브레이션. */
+export function usePhysicalSizeCorrection() {
+  const [dpr, setDpr] = useState(1);
+  const [calibration, setCalibrationState] = useState(1);
+
+  useEffect(() => {
+    setDpr(window.devicePixelRatio || 1);
+    setCalibrationState(readStoredCalibration());
+  }, []);
+
+  function setCalibration(value: number) {
+    setCalibrationState(value);
+    window.localStorage.setItem(CALIBRATION_STORAGE_KEY, String(value));
+  }
+
+  const dprCorrection = dpr > 1 ? MOBILE_CSS_DPI_ESTIMATE / DESKTOP_CSS_DPI : 1;
+  return { correction: dprCorrection * calibration, calibration, setCalibration };
 }
 
 /** 3아이콘 줌 pill. className은 바깥 group에 덧붙는다(모바일=미지정, 데스크톱=절대배치). */
