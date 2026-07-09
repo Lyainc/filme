@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { TicketComponents } from '@/types';
 import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
+import { Eyebrow } from './Eyebrow';
 import { FieldEditorBody } from './FieldEditorBody';
 import {
   FIELD_LABELS,
@@ -35,9 +36,7 @@ export function FieldAccordion({ photo }: { photo: Photo }) {
     <div className="space-y-5">
       {launcherGroupsFor(components.layout).map((group) => (
         <section key={group.title} className="space-y-2">
-          <span className="text-mono px-1 text-[10px] uppercase tracking-widest text-fg-muted">
-            {group.title}
-          </span>
+          <Eyebrow className="px-1">{group.title}</Eyebrow>
           <div className="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface-elevated">
             {group.fields.map((field) => (
               <AccordionRow
@@ -65,7 +64,7 @@ export function FieldAccordion({ photo }: { photo: Photo }) {
 
       {/* 스탬프(로고) — chain/format은 TicketComponents에 살아 TicketField 그룹과 별도(모바일 온-티켓 스탬프 탭과 동형). */}
       <section className="space-y-2">
-        <span className="text-mono px-1 text-[10px] uppercase tracking-widest text-fg-muted">로고</span>
+        <Eyebrow className="px-1">Logos</Eyebrow>
         <div className="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface-elevated">
           {STAMP_TARGETS.map((target) => (
             <AccordionRow

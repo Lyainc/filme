@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent, type Keyboa
 import ImageUploader from '@/components/ImageUploader';
 import InfoTooltip from '@/components/ui/InfoTooltip';
 import { DesignRail } from './DesignRail';
+import { Eyebrow } from './Eyebrow';
 import { OcrUploadCard } from './OcrUploadCard';
 import { OcrUndoBanner } from './OcrUndoBanner';
 import { ThemeToggle } from './ThemeToggle';
@@ -421,7 +422,7 @@ export function MobileEditorShell({
                     탭(#259, FieldTap)이 전담한다(#283에서 죽은 편집 본문 폐기, 살아있던 Poster 섹션만 인라인). */}
                 <section className="space-y-4">
                   <div className="flex items-center gap-2">
-                    <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">Poster</span>
+                    <Eyebrow>Poster</Eyebrow>
                     <InfoTooltip
                       text="영화 포스터 이미지를 올리는 곳이에요. '티켓 스크린샷으로 자동입력'에 티켓 스크린샷을 넣으면 영화 정보가 자동으로 채워져요."
                       label="포스터 추가 안내"

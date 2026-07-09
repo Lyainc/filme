@@ -5,6 +5,7 @@ import type { DateFormatToken, DateGranularity, MovieInfo, TicketComponents, Tic
 import { formatDate, openDtToIso } from '@/utils/dateFormat';
 import { useKobisSearch } from '@/hooks/useKobisSearch';
 import { useLogoCrop } from '@/hooks/useLogoCrop';
+import { Eyebrow } from './Eyebrow';
 import { DateInput } from '@/components/MovieInfoForm';
 import RatingPicker from '@/components/wizard/RatingPicker';
 import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
@@ -106,7 +107,7 @@ function TitleSheet({ photo }: { photo: Photo }) {
         aria-label="제목"
         className={INPUT_CLS}
       />
-      <div className="text-mono flex items-center justify-between text-[10px] uppercase tracking-widest text-fg-faint">
+      <Eyebrow as="div" tone="faint" className="flex items-center justify-between">
         <span>KOBIS 검색</span>
         <button
           type="button"
@@ -115,7 +116,7 @@ function TitleSheet({ photo }: { photo: Photo }) {
         >
           ↗ 검색
         </button>
-      </div>
+      </Eyebrow>
 
       {open && (
         <div className="overflow-hidden rounded-card border border-line bg-surface-elevated">
@@ -138,11 +139,11 @@ function TitleSheet({ photo }: { photo: Photo }) {
                     className="block w-full border-b border-line px-4 py-3 text-left transition-colors last:border-0 hover:bg-accent-soft"
                   >
                     <div className="text-[15px] font-medium text-fg">{movie.movieNm}</div>
-                    <div className="text-mono mt-1 text-[10px] uppercase tracking-widest text-fg-faint">
+                    <Eyebrow as="div" tone="faint" className="mt-1">
                       {movie.openDt && formatDate(openDtToIso(movie.openDt), 'kr-compact', 'date')}
                       {movie.genreAlt ? ` · ${movie.genreAlt.split(',')[0]}` : ''}
                       {movie.nationAlt ? ` · ${movie.nationAlt}` : ''}
-                    </div>
+                    </Eyebrow>
                   </button>
                 </li>
               ))}
@@ -169,8 +170,8 @@ function FormatChips({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">{label}</span>
-        <span className="text-mono text-[10px] uppercase tracking-widest text-fg-faint">{preview || '—'}</span>
+        <Eyebrow>{label}</Eyebrow>
+        <Eyebrow tone="faint">{preview || '—'}</Eyebrow>
       </div>
       <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={label}>
         {DATE_FORMAT_TOKENS.map((opt) => {
@@ -254,7 +255,7 @@ function DateSheet({ field, photo }: { field: TicketField; photo: Photo }) {
         preview={formatDate(info.releaseDate, token, gran)}
       />
 
-      <label className="text-mono inline-flex cursor-pointer items-center gap-1.5 text-[10px] uppercase tracking-widest text-fg-muted hover:text-fg">
+      <Eyebrow as="label" className="inline-flex cursor-pointer items-center gap-1.5 hover:text-fg">
         <input
           type="checkbox"
           checked={!!info.isReissue}
@@ -262,7 +263,7 @@ function DateSheet({ field, photo }: { field: TicketField; photo: Photo }) {
           className="h-3.5 w-3.5 accent-accent"
         />
         재개봉작
-      </label>
+      </Eyebrow>
 
       {info.isReissue && (
         <div className="space-y-2.5 border-l-2 border-line pl-3">
@@ -273,9 +274,9 @@ function DateSheet({ field, photo }: { field: TicketField; photo: Photo }) {
               onChange={(reissueDate) => set({ reissueDate })}
               ariaLabel="재개봉일"
             />
-            <span className="text-mono inline-flex items-center text-[10px] uppercase tracking-widest text-fg-faint">
+            <Eyebrow tone="faint" className="inline-flex items-center">
               표기: {formatDate(info.reissueDate, token, gran) || '—'}
-            </span>
+            </Eyebrow>
           </div>
           <span className="flex items-center gap-2">
             <VisibilityCheckbox
@@ -283,9 +284,9 @@ function DateSheet({ field, photo }: { field: TicketField; photo: Photo }) {
               onChange={(v) => photo.updateFieldVisibility({ reissue: v })}
               label="재개봉"
             />
-            <span className="text-mono text-[10px] uppercase tracking-widest text-fg-muted">
+            <Eyebrow>
               티켓에 재개봉일 표시
-            </span>
+            </Eyebrow>
           </span>
         </div>
       )}

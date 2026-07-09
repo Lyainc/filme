@@ -3,6 +3,7 @@ import LayoutPicker from '@/components/LayoutPicker';
 import TexturePicker from '@/components/wizard/TexturePicker';
 import ColorPicker from '@/components/wizard/ColorPicker';
 import BrightnessSlider from '@/components/wizard/BrightnessSlider';
+import { Eyebrow } from './Eyebrow';
 import type { LayoutId } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 
@@ -17,9 +18,9 @@ function Section({ eyebrow, children }: { eyebrow: string; children: ReactNode }
   const labelId = useId();
   return (
     <section className="space-y-2.5" role="region" aria-labelledby={labelId}>
-      <div id={labelId} className="text-mono text-[11px] uppercase tracking-widest text-fg-muted">
+      <Eyebrow as="div" id={labelId} size={11}>
         {eyebrow}
-      </div>
+      </Eyebrow>
       {children}
     </section>
   );
@@ -31,11 +32,11 @@ export function DesktopDesignPanel({ photo }: { photo: ReturnType<typeof usePhot
 
   return (
     <div className="space-y-6">
-      <Section eyebrow="무드">
+      <Section eyebrow="Mood">
         <LayoutPicker value={components.layout} onChange={(id: LayoutId) => setComp({ layout: id })} />
       </Section>
 
-      <Section eyebrow="후보정">
+      <Section eyebrow="Texture">
         <TexturePicker
           value={components.texture}
           onChange={(texture) => setComp({ texture })}
@@ -45,7 +46,7 @@ export function DesktopDesignPanel({ photo }: { photo: ReturnType<typeof usePhot
 
       {/* 컬러·잉크(#229) — 잉크는 별도 상태 축 없이 단일 themeColor. White↔Black 프리셋이 곧
           라이트/다크 잉크 원터치, 추천 추출색·커스텀 hex는 포인트 컬러. 35mm는 톤 고정이라 disabled. */}
-      <Section eyebrow="컬러">
+      <Section eyebrow="Color">
         <ColorPicker
           value={components.themeColor}
           onChange={(themeColor) => setComp({ themeColor })}
@@ -58,7 +59,7 @@ export function DesktopDesignPanel({ photo }: { photo: ReturnType<typeof usePhot
       {/* 투명도·듀얼 슬라이더(#230, #204 대체) — 포스터=밝기(posterOpacity), 컴포넌트=포스터 외
           오버레이 불투명도(componentOpacity, #219). 둘 다 기존 상태 재사용 — 새 overlayOpacity 축 없음.
           BrightnessSlider 자체가 라벨+% 표기라 eyebrow만 얹으면 정식 섹션. */}
-      <Section eyebrow="투명도">
+      <Section eyebrow="Opacity">
         <div className="space-y-4">
           <BrightnessSlider
             label="포스터"

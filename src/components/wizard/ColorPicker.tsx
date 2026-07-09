@@ -1,3 +1,5 @@
+import { Eyebrow } from '@/components/v2/Eyebrow';
+
 interface ColorPickerProps {
   value: string;
   onChange: (value: string) => void;
@@ -34,9 +36,7 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
 
   return (
     <div className="space-y-2.5">
-      <span className="text-mono block text-[10px] uppercase tracking-widest text-fg-muted">
-        Ink · logo & type color
-      </span>
+      <Eyebrow className="block">Ink · logo & type color</Eyebrow>
       {disabled && disabledNote && (
         <p className="text-[12px] text-fg-muted">{disabledNote}</p>
       )}
@@ -104,9 +104,7 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
             aria-hidden
           />
         </label>
-        <span className="text-mono ml-1 text-[10px] uppercase tracking-widest text-fg-faint">
-          custom
-        </span>
+        <Eyebrow tone="faint" className="ml-1">custom</Eyebrow>
       </div>
 
       <div className={`flex items-stretch gap-2 pt-1 ${disabled ? 'opacity-40' : ''}`}>

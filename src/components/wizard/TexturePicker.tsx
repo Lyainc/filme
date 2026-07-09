@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { TEXTURE_OPTIONS } from '@/utils/constants';
 import { Poster } from '@/components/moods/_shared';
+import { Eyebrow } from '@/components/v2/Eyebrow';
 
 interface TexturePickerProps {
   value: string;
@@ -49,9 +50,7 @@ function TexturePicker({ value, onChange, croppedImageUrl }: TexturePickerProps)
 
   return (
     <div className="space-y-2.5">
-      <span className="text-mono block text-[10px] uppercase tracking-widest text-fg-muted">
-        Surface treatment
-      </span>
+      <Eyebrow className="block">Surface treatment</Eyebrow>
       {/* ponytail: 가로 스크롤 스트립 = 캐러셀(#180 (6)). 8개 작은 스와치는 한 장씩 넘기는
           LayoutPicker식 캐러셀보다 한 줄 스크롤이 비교·선택에 낫고 세로도 절약된다(2줄 wrap→1줄). */}
       <div

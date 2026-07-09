@@ -1,3 +1,5 @@
+import { Eyebrow } from '@/components/v2/Eyebrow';
+
 interface BrightnessSliderProps {
   value: number;
   onChange: (value: number) => void;
@@ -16,15 +18,10 @@ export default function BrightnessSlider({
   return (
     <div className="space-y-2.5">
       <div className="flex items-baseline justify-between">
-        <label
-          htmlFor={id}
-          className="text-mono text-[10px] uppercase tracking-widest text-fg-muted"
-        >
+        <Eyebrow as="label" htmlFor={id}>
           {label}
-        </label>
-        <span className="text-mono text-[10px] uppercase tracking-widest text-accent">
-          {Math.round(value * 100)}%
-        </span>
+        </Eyebrow>
+        <Eyebrow tone="accent">{Math.round(value * 100)}%</Eyebrow>
       </div>
       <input
         id={id}

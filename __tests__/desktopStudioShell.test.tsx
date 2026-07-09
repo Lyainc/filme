@@ -55,9 +55,9 @@ describe('DesktopStudioShell (#224)', () => {
     expect(screen.getByText('Film')).toBeDefined();
     expect(screen.queryByText('포스터 업로드')).toBeNull();
 
-    // DESIGN → DesignRail(레일 아이콘 '무드').
+    // DESIGN → DesktopDesignPanel(첫 섹션 eyebrow 'Mood').
     await user.click(screen.getByRole('button', { name: 'DESIGN' }));
-    expect(screen.getByText('무드')).toBeDefined();
+    expect(screen.getByText('Mood')).toBeDefined();
     expect(screen.queryByText('Film')).toBeNull();
 
     // POSTER 복귀.
