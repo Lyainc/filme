@@ -283,63 +283,50 @@ export function MobileEditorShell({
 
           {croppedImageUrl && (
             <div className="px-4 pt-4">
-              {rotateLandscape ? (
-                // 가로형 무드의 max/actual 회전 배치(#275-8) — 바깥 stage는 회전 후 화면에 보이는
-                // 크기로 고정(overflow-hidden), 안쪽 래퍼를 rotate(90deg)로 돌려 중앙에 배치한다.
-                // TicketRenderer 자신은 늘 자연(비회전) 방향으로 렌더 — scale 계산이 방향을 몰라도 된다.
+              {/* 래퍼 트리는 rotate 여부와 무관하게 항상 바깥 div → 안쪽 div → TicketRenderer로 depth가
+                  고정돼 있다 — 요소 "타입"뿐 아니라 트리 "깊이"가 바뀌어도 React가 그 지점부터 서브트리를
+                  통째로 remount해 TicketRenderer의 scale state가 1로 리셋되며 깜빡인다(#259, 리뷰 지적
+                  #275 PR — rotate 분기를 별도 JSX 트리로 나눴을 때 default↔max/actual 전환에서 재현됨).
+                  안쪽 div는 항상 존재하고 rotate일 때만 회전 스타일을 얹는다. default는 인라인 폭 + 티켓
+                  위 필드/포스터 직접 탭(onField/onPosterTap), max/actual은 확대 폭 + 래퍼 전체 탭→기본
+                  복귀. rotateLandscape(#275-8)는 가로형 무드의 max/actual에서만 90도 회전 + 화면 꽉
+                  채우기 — TicketRenderer 자신은 늘 자연(비회전) 방향으로 렌더돼 scale 계산이 방향을
+                  몰라도 된다. #216: ghost는 actual에서 강제 off. */}
+              <div
+                {...(viewMode === 'default'
+                  ? {}
+                  : {
+                      role: 'button' as const,
+                      tabIndex: 0,
+                      onClick: () => setViewMode('default'),
+                      onKeyDown: (e: KeyboardEvent) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setViewMode('default');
+                        }
+                      },
+                      'aria-label': '기본 크기로 돌아가기',
+                    })}
+                className={`relative mx-auto block rounded-card ${
+                  viewMode === 'default'
+                    ? 'w-full max-w-[280px]'
+                    : 'transition-transform active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-soft'
+                } ${rotateLandscape ? 'overflow-hidden' : ''}`}
+                style={
+                  viewMode === 'default'
+                    ? undefined
+                    : rotateLandscape
+                      ? { width: rotatedStageWidth, height: rotatedInnerWidth }
+                      : { width: previewWidth }
+                }
+              >
                 <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setViewMode('default')}
-                  onKeyDown={(e: KeyboardEvent) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      setViewMode('default');
-                    }
-                  }}
-                  aria-label="기본 크기로 돌아가기"
-                  className="relative mx-auto block overflow-hidden rounded-card transition-transform active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-soft"
-                  style={{ width: rotatedStageWidth, height: rotatedInnerWidth }}
-                >
-                  <div
-                    className="absolute left-1/2 top-1/2"
-                    style={{ width: rotatedInnerWidth, transform: 'translate(-50%, -50%) rotate(90deg)' }}
-                  >
-                    <TicketRenderer
-                      croppedImageUrl={croppedImageUrl}
-                      movieInfo={previewMovieInfo}
-                      components={previewComponents}
-                      fieldVisibility={fieldVisibility}
-                      ghost={ghostEffective}
-                    />
-                  </div>
-                </div>
-              ) : (
-                // 래퍼는 3모드 모두 <div>로 고정 — 요소 타입이 바뀌면 TicketRenderer가 remount돼 내부
-                // scale이 1로 리셋되며 깜빡인다(#259 전엔 button 고정, on-ticket 탭엔 내부에 필드 button이
-                // 중첩돼 div로 전환). default는 인라인 폭 + 티켓 위 필드/포스터 직접 탭(onField/onPosterTap),
-                // max/actual은 확대 폭 + 래퍼 전체 탭→기본 복귀. #216: ghost는 actual에서 강제 off.
-                <div
-                  {...(viewMode === 'default'
-                    ? {}
-                    : {
-                        role: 'button' as const,
-                        tabIndex: 0,
-                        onClick: () => setViewMode('default'),
-                        onKeyDown: (e: KeyboardEvent) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            setViewMode('default');
-                          }
-                        },
-                        'aria-label': '기본 크기로 돌아가기',
-                      })}
-                  className={`mx-auto block rounded-card ${
-                    viewMode === 'default'
-                      ? 'w-full max-w-[280px]'
-                      : 'transition-transform active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-soft'
-                  }`}
-                  style={viewMode === 'default' ? undefined : { width: previewWidth }}
+                  className={rotateLandscape ? 'absolute left-1/2 top-1/2' : undefined}
+                  style={
+                    rotateLandscape
+                      ? { width: rotatedInnerWidth, transform: 'translate(-50%, -50%) rotate(90deg)' }
+                      : undefined
+                  }
                 >
                   <TicketRenderer
                     croppedImageUrl={croppedImageUrl}
@@ -351,7 +338,7 @@ export function MobileEditorShell({
                     onPosterTap={viewMode === 'default' ? handlePosterTap : undefined}
                   />
                 </div>
-              )}
+              </div>
             </div>
           )}
 
