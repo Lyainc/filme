@@ -371,7 +371,7 @@ export function ResultPanel({
           onClick={handlePermalink}
           disabled={isBusy}
           title="공유 링크를 만들어 클립보드에 복사해요"
-          className="text-mono flex min-h-[48px] w-full items-center justify-center gap-2 rounded-field-sm bg-accent-soft px-4 text-[11px] uppercase tracking-widest text-accent transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+          className="text-mono flex min-h-[48px] w-full items-center justify-center gap-2 rounded-field-sm bg-accent-soft px-4 text-[11px] uppercase tracking-widest text-accent transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:opacity-50"
         >
           <LinkIcon />
           <span key={permaLabel} className="inline-block animate-fade-in">
