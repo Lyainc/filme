@@ -296,8 +296,10 @@ export function MobileEditorShell({
 
         {menuOpen && (
           <>
-            {/* 메뉴 밖 탭으로 닫기 — 헤더보다 낮은 z, 패널보다 낮은 z. */}
-            <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} aria-hidden="true" />
+            {/* 메뉴 밖 탭으로 닫기 — top-14로 헤더 자신(h-14)은 덮지 않는다. inset-0으로 전체를
+                덮으면 z-index 없는 헤더 버튼(햄버거·완료)이 이 오버레이 밑에 깔려 탭이 메뉴만
+                닫고 버튼 클릭은 씹힌다(claude-review PR #331 P2 지적). */}
+            <div className="fixed inset-x-0 bottom-0 top-14 z-40" onClick={() => setMenuOpen(false)} aria-hidden="true" />
             <div
               id="editor-menu-panel"
               role="menu"
