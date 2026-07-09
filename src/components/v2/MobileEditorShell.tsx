@@ -1,13 +1,10 @@
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
-import ImageUploader from '@/components/ImageUploader';
-import InfoTooltip from '@/components/ui/InfoTooltip';
 import { DesignRail } from './DesignRail';
 import { Eyebrow } from './Eyebrow';
 import { OcrUploadCard } from './OcrUploadCard';
 import { OcrUndoBanner } from './OcrUndoBanner';
 import { ThemeToggle } from './ThemeToggle';
-import { WordmarkCompact } from './Wordmark';
 import { ZoomSegment, actualSize, usePhysicalSizeCorrection, type ViewMode } from './viewMode';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
 import { getLayout } from '@/utils/layouts';
@@ -30,6 +27,11 @@ const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ss
 
 // 표시 항목 일괄 스위치의 도메인 필드 집합(#261) — ALL_FIELDS_ON 키가 곧 전체 티켓 필드.
 const ALL_FIELDS = Object.keys(ALL_FIELDS_ON) as TicketField[];
+
+// 잉크 원탭 토글(#262, #315에서 DesignRail 레일 → 헤더 서브메뉴로 이전). 값은 ColorPicker의
+// White/Black 프리셋과 동일한 hex라야 두 UI가 안 어긋난다.
+const LIGHT_INK = '#FFFFFF';
+const DARK_INK = '#000000';
 
 // chrome 토글 행(#261)의 라벨+스위치 pill — allVis(전체 표시)·ghost(빈 항목 미리보기)가 공유한다.
 // 기존 ghost 토글 마크업을 그대로 승격해 두 스위치의 생김새를 일치시킨다.
@@ -122,12 +124,23 @@ export function MobileEditorShell({
   const [ghostMode, setGhostMode] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const bodyRef = useRef<HTMLDivElement>(null);
-  // 포스터 온-티켓 탭(#259) — 파일 선택 → 크롭. ImageUploader와 별개의 진입점이라 여기서 자족한다
-  // (크롭 완료 시 photo.handleImageUpload이 이전 croppedImageUrl을 revoke하므로 누수 없음).
+  // 헤더 서브메뉴(#315) — 다크모드·전체표시·빈 항목·잉크 토글 + 포스터 교체/재크롭 액션을 호스팅.
+  const [menuOpen, setMenuOpen] = useState(false);
+  // 포스터 크롭 파이프라인(#259 on-ticket tap + #315 서브메뉴 교체/재크롭 통합 단일 소스).
+  // originalSrc는 첫 업로드 이후에도 유지돼야 재크롭이 되므로(#315 설계, ImageUploader의
+  // pendingNewFile 패턴을 그대로 포팅) 크롭 완료 시 revoke하지 않는다 — 값이 바뀌거나(교체로
+  // 새 파일 선택) 언마운트될 때만 아래 effect가 이전 URL을 단일 소유자로 revoke한다.
   const posterInputRef = useRef<HTMLInputElement>(null);
-  const [posterCropSrc, setPosterCropSrc] = useState<string | null>(null);
+  const [posterOriginalSrc, setPosterOriginalSrc] = useState<string | null>(null);
+  const [posterCropOpen, setPosterCropOpen] = useState(false);
   const [posterCropping, setPosterCropping] = useState(false);
+  const [posterPendingNewFile, setPosterPendingNewFile] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (posterOriginalSrc) URL.revokeObjectURL(posterOriginalSrc);
+    };
+  }, [posterOriginalSrc]);
 
   function flashToast(msg: string) {
     setToast(msg);
@@ -144,12 +157,6 @@ export function MobileEditorShell({
     onDone();
   }
 
-  // 에디터가 루트 화면이라 상위 내비 타깃이 없다 — 본문 최상단으로 스크롤(#213 임시 어포던스,
-  // 실제 이전 화면이 생기면 교체). 시트 열림 땐 vaul 스크림이 헤더를 덮어 이 버튼은 닿지 않는다.
-  function handleBack() {
-    bodyRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
   // 온-티켓 필드 탭(#259). 숨김 필드 탭 시 자동 표시 on(시안 setActive) 후 시트를 연다 — 스탬프는
   // chainVisible/formatVisible, 나머지는 fieldVisibility. 이미 켜진 필드면 no-op이라 안전하다.
   const handleField = useCallback((target: SheetTarget) => {
@@ -161,32 +168,53 @@ export function MobileEditorShell({
     setActiveField(target);
   }, [photo.updateComponents, photo.updateFieldVisibility]);
 
+  // 첫 업로드·교체(새 파일 선택) — 포스터 드롭존 탭, 온-티켓 탭, 서브메뉴 "교체" 셋 다 이 경로.
   const handlePosterTap = useCallback(() => {
     posterInputRef.current?.click();
   }, []);
   function handlePosterFile(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (file) setPosterCropSrc(URL.createObjectURL(file));
+    if (file) {
+      setPosterOriginalSrc(URL.createObjectURL(file));
+      setPosterPendingNewFile(true);
+      setPosterCropOpen(true);
+    }
     e.target.value = '';
   }
+  // 재크롭 — 새 파일 없이 기존 원본으로 크롭 모달만 재오픈(서브메뉴 전용 진입점).
+  const handlePosterRecrop = useCallback(() => {
+    if (posterOriginalSrc) setPosterCropOpen(true);
+  }, [posterOriginalSrc]);
   async function handlePosterCropComplete(area: Area) {
-    if (!posterCropSrc) return;
+    if (!posterOriginalSrc) return;
     setPosterCropping(true);
     try {
-      const url = await getCroppedImg(posterCropSrc, area);
+      const url = await getCroppedImg(posterOriginalSrc, area);
       photo.handleImageUpload(url);
+      setPosterPendingNewFile(false);
+      setPosterCropOpen(false); // 원본은 유지 — 재크롭에 재사용
     } catch (err) {
       console.error('포스터 크롭 실패:', err);
     } finally {
-      URL.revokeObjectURL(posterCropSrc);
-      setPosterCropSrc(null);
       setPosterCropping(false);
     }
   }
   function handlePosterCropCancel() {
-    if (posterCropSrc) URL.revokeObjectURL(posterCropSrc);
-    setPosterCropSrc(null);
+    setPosterCropOpen(false);
+    // 새 파일(첫 업로드·교체) 취소면 원본을 버린다 — 직전 포스터의 원본은 이미 위 revoke effect가
+    // 정리했으므로 재크롭 불가, originalSrc를 null로 둬 정합성을 맞춘다(ImageUploader와 동일 패턴).
+    // 재크롭 취소(새 파일 안 고름)면 originalSrc를 유지해 다음 재크롭에 재사용.
+    if (posterPendingNewFile) {
+      setPosterOriginalSrc(null);
+      setPosterPendingNewFile(false);
+    }
   }
+
+  // 잉크 원탭 토글(#262, #315에서 헤더 서브메뉴로 이전) — 라이트↔다크. 색이 고정된 35mm 무드는
+  // 컬러 패널과 동일하게 disabled.
+  const isLightInk = (photo.state.components.themeColor || '').toLowerCase() === LIGHT_INK.toLowerCase();
+  const inkDisabled = photo.state.components.layout === '35mm';
+  const toggleInk = () => photo.updateComponents({ themeColor: isLightInk ? DARK_INK : LIGHT_INK });
 
   const doneEnabledStyle = canExport
     ? { background: 'linear-gradient(135deg, var(--accent-hover), var(--accent))', color: 'var(--accent-ink)' }
@@ -232,46 +260,122 @@ export function MobileEditorShell({
         paddingTop: 'env(safe-area-inset-top, 0px)',
       }}
     >
-      {/* 상단 네브: 뒤로 · FILME 워드마크 · (테마) · 완료 */}
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-line bg-surface px-3">
+      {/* 상단 네브(#315): 뒤로가기·워드마크(무의미해 제거) 대신 좌측 햄버거 서브메뉴 + 우측 완료.
+          다크모드·전체표시·빈 항목·잉크 토글과 포스터 교체·재크롭 액션은 서브메뉴로 통합. */}
+      <header className="relative flex h-14 shrink-0 items-center justify-between border-b border-line bg-surface px-3">
         <button
           type="button"
-          onClick={handleBack}
-          aria-label="맨 위로"
+          onClick={() => setMenuOpen((v) => !v)}
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          aria-controls="editor-menu-panel"
+          aria-label="편집 메뉴"
           className="flex h-9 w-9 items-center justify-center rounded-full border border-line text-fg-muted transition-colors hover:text-fg"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="m15 18-6-6 6-6" />
+            <line x1="4" y1="7" x2="20" y2="7" />
+            <line x1="4" y1="12" x2="20" y2="12" />
+            <line x1="4" y1="17" x2="20" y2="17" />
           </svg>
         </button>
 
-        <WordmarkCompact />
+        <button
+          type="button"
+          onClick={handleDone}
+          aria-disabled={!canExport}
+          className={`inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold transition-colors ${
+            canExport ? '' : 'border border-line bg-surface-elevated text-fg-faint'
+          }`}
+          style={doneEnabledStyle}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+          완료
+        </button>
 
-        <div className="flex items-center gap-1.5">
-          <ThemeToggle theme={theme} onChange={onThemeChange} />
-          <button
-            type="button"
-            onClick={handleDone}
-            aria-disabled={!canExport}
-            className={`inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold transition-colors ${
-              canExport ? '' : 'border border-line bg-surface-elevated text-fg-faint'
-            }`}
-            style={doneEnabledStyle}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M20 6 9 17l-5-5" />
-            </svg>
-            완료
-          </button>
-        </div>
+        {menuOpen && (
+          <>
+            {/* 메뉴 밖 탭으로 닫기 — 헤더보다 낮은 z, 패널보다 낮은 z. */}
+            <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} aria-hidden="true" />
+            <div
+              id="editor-menu-panel"
+              role="menu"
+              aria-label="편집 메뉴"
+              className="absolute left-3 top-[calc(100%+8px)] z-50 w-64 space-y-3 rounded-card border border-line bg-surface-elevated p-3 shadow-card"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[13px] text-fg-muted">다크모드</span>
+                <ThemeToggle theme={theme} onChange={onThemeChange} />
+              </div>
+
+              <div className="flex flex-col items-start gap-2">
+                {/* 전체표시/빈 항목은 프리뷰(포스터)가 있어야 의미가 있으므로 기존과 동일하게 게이팅.
+                    잉크는 DesignRail 시절과 동일하게 포스터 유무와 무관하게 항상 노출. */}
+                {croppedImageUrl && (
+                  <>
+                    <TogglePill
+                      label="전체 표시"
+                      checked={allVisOn}
+                      onClick={() =>
+                        photo.updateFieldVisibility(allVisOn ? ALL_FIELDS_OFF_KEEP_REQUIRED : ALL_FIELDS_ON)
+                      }
+                    />
+                    <TogglePill
+                      label="빈 항목"
+                      ariaLabel="빈 항목 미리보기"
+                      checked={ghostEffective}
+                      disabled={isActual}
+                      onClick={() => setGhostMode((v) => !v)}
+                    />
+                  </>
+                )}
+                <TogglePill
+                  label="잉크"
+                  ariaLabel={`잉크 색상 전환, 현재 ${isLightInk ? '라이트' : '다크'}`}
+                  checked={!isLightInk}
+                  disabled={inkDisabled}
+                  onClick={toggleInk}
+                />
+              </div>
+
+              {croppedImageUrl && (
+                <div className="flex flex-col gap-1.5 border-t border-line pt-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      handlePosterTap();
+                    }}
+                    className="text-mono flex min-h-[36px] items-center rounded-chip border border-line bg-surface px-3 text-[11px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft"
+                  >
+                    포스터 교체
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      handlePosterRecrop();
+                    }}
+                    disabled={!posterOriginalSrc}
+                    title={posterOriginalSrc ? undefined : '재크롭하려면 포스터를 다시 업로드해 주세요'}
+                    className="text-mono flex min-h-[36px] items-center rounded-chip border border-line bg-surface px-3 text-[11px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft disabled:opacity-40"
+                  >
+                    재크롭
+                  </button>
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </header>
 
       {/* 스크롤 본문: 줌 pill + 인라인 프리뷰 + 편집 본문(Poster 드롭존 + 디자인 rail).
           비-기본 모드에선 justify-center로 pill+프리뷰를 세로 중앙에 두고 본문을 접는다. */}
-      <div ref={bodyRef} className="min-h-0 flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <div className={`flex min-h-full flex-col ${collapseBody ? 'justify-center' : ''}`}>
           {/* 줌 모드 pill — 3모드 어디서든 항상 보인다(기본으로 돌아오는 유일한 길). ghost 토글은
-              #261에서 프리뷰 아래 chrome 토글 행(allVis와 space-between)으로 내렸다. */}
+              #315에서 헤더 서브메뉴로 이전. */}
           {croppedImageUrl && (
             <div className="flex flex-wrap items-center justify-center gap-2 px-4 pt-4">
               <ZoomSegment viewMode={viewMode} onChange={setViewMode} />
@@ -365,10 +469,8 @@ export function MobileEditorShell({
             </div>
           )}
 
-          {/* OCR + allVis/ghost 토글 행은 collapse 밖에 둔다(#261 리뷰 P1) — 줌(max/actual) 모드에서도
-              닿게. 특히 allVis는 줌에서 비활성화할 이유가 없고, ghost는 actual에서 disabled 스타일로만
-              명시 비활성(inert로 조용히 사라지지 않게). #212 시안 섹션 A 순서: OCR(프리뷰 직하 최상단)
-              → allVis+ghost 토글 행 → (아래 collapse의) Poster 드롭존 → 디자인 rail 최하단. */}
+          {/* OCR은 collapse 밖(#261 리뷰 P1) — 줌(max/actual) 모드에서도 닿게. allVis/ghost/잉크 토글은
+              #315에서 헤더 서브메뉴로 이전. */}
           <div className="space-y-group px-4 pt-6">
             {/* OCR 자동입력 — 주 자동입력 어포던스라 chrome 최상단(프리뷰 직하)으로 승격. 로직은
                 셸의 useOcrUndo가 소유, 아코디언 없는 모바일이라 apply를 그대로 넘긴다(DesktopStudioShell과 동형). */}
@@ -380,28 +482,6 @@ export function MobileEditorShell({
               currentComponents={photo.state.components}
               ocrEpochRef={ocr.epochRef}
             />
-
-            {/* 토글 행 — 표시 항목 일괄(전체 표시) 단일 스위치 ⟷ 빈 항목 미리보기(ghost).
-                프리뷰가 있을 때만(croppedImageUrl) 의미가 있으므로 게이팅. #260: 끄기는 title 유지. */}
-            {croppedImageUrl && (
-              <div className="flex items-center justify-between gap-3">
-                <TogglePill
-                  label="전체 표시"
-                  checked={allVisOn}
-                  onClick={() =>
-                    photo.updateFieldVisibility(allVisOn ? ALL_FIELDS_OFF_KEEP_REQUIRED : ALL_FIELDS_ON)
-                  }
-                />
-                {/* 빈 항목 미리보기(#216) — 실제 크기 모드에선 비활성(ghost 강제 off). */}
-                <TogglePill
-                  label="빈 항목"
-                  ariaLabel="빈 항목 미리보기"
-                  checked={ghostEffective}
-                  disabled={isActual}
-                  onClick={() => setGhostMode((v) => !v)}
-                />
-              </div>
-            )}
           </div>
 
           {/* 편집 본문(Poster 드롭존 + rail) — collapse는 grid-rows 0fr↔1fr 트랜지션(overflow-hidden 필수).
@@ -414,28 +494,34 @@ export function MobileEditorShell({
           >
             <div className="overflow-hidden" inert={collapseBody || undefined}>
               <div className="space-y-section px-4 pb-24 pt-6">
-                {/* Poster 드롭존 — OCR·allVis·배너는 위/아래에서 셸이 직접 소유하고, 필드 편집은 온-티켓
-                    탭(#259, FieldTap)이 전담한다(#283에서 죽은 편집 본문 폐기, 살아있던 Poster 섹션만 인라인). */}
-                <section className="space-y-group">
-                  <div className="flex items-center gap-2">
+                {/* Poster 드롭존 — 업로드 전에만 노출(#315). 업로드 후엔 온-티켓 탭 + 헤더 서브메뉴의
+                    교체/재크롭이 대신하므로(#324) 툴팁·적용 카드 없이 섹션 자체가 사라진다. */}
+                {!croppedImageUrl && (
+                  <section className="space-y-group">
                     <Eyebrow>Poster</Eyebrow>
-                    <InfoTooltip
-                      text="영화 포스터 이미지를 올리는 곳이에요. '티켓 스크린샷으로 자동입력'에 티켓 스크린샷을 넣으면 영화 정보가 자동으로 채워져요."
-                      label="포스터 추가 안내"
-                      placement="right"
-                    />
-                  </div>
-                  <ImageUploader
-                    onUpload={photo.handleImageUpload}
-                    isProcessing={false}
-                    hasImage={!!croppedImageUrl}
-                    imageUrl={croppedImageUrl}
-                  />
-                </section>
+                    <button
+                      type="button"
+                      onClick={handlePosterTap}
+                      data-touch="44"
+                      className="group relative flex min-h-[96px] w-full flex-col items-center justify-center gap-1 rounded-card border border-line bg-paper p-4 text-center shadow-card transition-colors hover:border-accent/40"
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="text-mono text-2xl font-normal leading-none text-accent transition-transform group-hover:rotate-90"
+                      >
+                        +
+                      </span>
+                      <p className="text-[15px] font-medium leading-tight text-fg">포스터 업로드</p>
+                      <p className="text-[11px] leading-relaxed text-fg-faint">
+                        탭해서 선택 · JPEG · PNG · WEBP · 0.65 : 1
+                      </p>
+                    </button>
+                  </section>
+                )}
 
                 {/* 디자인 rail을 최하단으로(#261 시안 섹션 A). #217은 rail을 폼 위에 둬 무스크롤 접근을
-                    노렸지만, 인라인 폼이 탭-투-에딧 시트(#215)로 빠진 지금 rail 위 chrome은 OCR·토글·드롭존
-                    뿐이라 짧다 — 시안 순서(최하단)로 옮겨도 스크롤 부담이 없어 시안을 따른다. */}
+                    노렸지만, 인라인 폼이 탭-투-에딧 시트(#215)로 빠진 지금 rail 위 chrome은 OCR·드롭존뿐이라
+                    짧다 — 시안 순서(최하단)로 옮겨도 스크롤 부담이 없어 시안을 따른다. */}
                 <DesignRail photo={photo} />
               </div>
             </div>
@@ -447,8 +533,9 @@ export function MobileEditorShell({
           #213은 제목만, #215가 타입별 콘텐츠와 개별 티켓 필드 탭을 채운다. */}
       <FieldEditSheet activeField={activeField} onClose={() => setActiveField(null)} photo={photo} />
 
-      {/* 포스터 온-티켓 탭(#259) — 숨김 파일 input + 크롭 모달. 티켓 위 포스터 탭 → input.click() →
-          파일 선택 → ImageCropModal(기본 0.65:1) → getCroppedImg → handleImageUpload. */}
+      {/* 포스터 크롭 파이프라인(#259 on-ticket tap + #315 드롭존·서브메뉴 교체/재크롭 통합) — 숨김
+          파일 input + 크롭 모달. 탭 → input.click() → 파일 선택 → ImageCropModal(기본 0.65:1) →
+          getCroppedImg → handleImageUpload. originalSrc는 크롭 완료 후에도 유지돼 재크롭에 재사용된다. */}
       <input
         ref={posterInputRef}
         type="file"
@@ -457,9 +544,9 @@ export function MobileEditorShell({
         className="sr-only"
         aria-hidden="true"
       />
-      {posterCropSrc && (
+      {posterCropOpen && posterOriginalSrc && (
         <ImageCropModal
-          imageSrc={posterCropSrc}
+          imageSrc={posterOriginalSrc}
           onClose={handlePosterCropCancel}
           onComplete={handlePosterCropComplete}
           isProcessing={posterCropping}
