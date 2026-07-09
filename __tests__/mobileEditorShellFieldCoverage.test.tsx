@@ -85,8 +85,9 @@ describe('MobileEditorShell 필드 커버리지 (#266 PR-E)', () => {
     fireEvent.click(await screen.findByLabelText('상영관 티켓에 표시'));
     expect(screen.getByTestId('vis-screen').textContent).toBe('false');
 
-    // 셸 chrome 토글 행의 "전체 표시" 단일 스위치(#261) → 꺼진 상태(일부 숨김)에서 켜면 전 필드 재노출.
+    // "전체 표시" 단일 스위치(#261)는 #315에서 헤더 서브메뉴로 이전 — 먼저 메뉴를 연다.
     // (열린 vaul이 본문을 aria-hidden 처리하므로 hidden:true로 포함해 조회.)
+    fireEvent.click(await screen.findByRole('button', { name: '편집 메뉴', hidden: true }));
     fireEvent.click(await screen.findByRole('switch', { name: '전체 표시', hidden: true }));
     expect(screen.getByTestId('vis-screen').textContent).toBe('true');
   });
@@ -97,6 +98,8 @@ describe('MobileEditorShell 필드 커버리지 (#266 PR-E)', () => {
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
 
+    // #315: "전체 표시"는 헤더 서브메뉴 안 — 먼저 메뉴를 연다.
+    fireEvent.click(await screen.findByRole('button', { name: '편집 메뉴' }));
     // 첫 업로드는 표시항목을 부분 기본값으로 리셋하므로, 먼저 "전체 표시"로 전 필드를 켠다.
     const allVis = await screen.findByRole('switch', { name: '전체 표시' });
     fireEvent.click(allVis);

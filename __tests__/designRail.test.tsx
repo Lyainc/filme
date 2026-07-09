@@ -137,44 +137,6 @@ describe('DesignRail (#217)', () => {
     expect(screen.getByTestId('componentOpacity').textContent).toBe('0.5');
   });
 
-  // #262 갭1 — 잉크 원탭 토글(2a 레일 5번째 버튼). 컬러 패널 안 열고 라이트↔다크 즉시 전환.
-  test('(g) 잉크 토글 → themeColor 라이트(#FFFFFF)↔다크(#000000) 즉시 전환', async () => {
-    const user = userEvent.setup();
-    render(<RailHarness />);
-    // 기본 잉크 = 라이트(#FFFFFF)
-    expect(screen.getByTestId('themeColor').textContent).toBe('#FFFFFF');
-
-    const ink = screen.getByRole('button', { name: /잉크 색상 전환/ });
-    await user.click(ink);
-    expect(screen.getByTestId('themeColor').textContent).toBe('#000000');
-    await user.click(ink);
-    expect(screen.getByTestId('themeColor').textContent).toBe('#FFFFFF');
-  });
-
-  test('(h) 잉크 토글은 disclosure가 아니다 — 패널을 열지 않음', async () => {
-    const user = userEvent.setup();
-    render(<RailHarness />);
-    const mood = screen.getByRole('button', { name: '무드' });
-    const ink = screen.getByRole('button', { name: /잉크 색상 전환/ });
-
-    // 잉크 토글엔 aria-expanded/aria-controls가 없다(패널 disclosure 아님)
-    expect(ink.getAttribute('aria-expanded')).toBeNull();
-    expect(ink.getAttribute('aria-controls')).toBeNull();
-
-    // 잉크를 눌러도 어떤 패널도 안 열림
-    await user.click(ink);
-    expect(mood.getAttribute('aria-expanded')).toBe('false');
-  });
-
-  test('(i) 35mm 무드에선 잉크 토글 disabled — 톤 고정(ColorPicker와 동일 조건)', async () => {
-    const user = userEvent.setup();
-    render(<RailHarness />);
-    // 무드 패널 열고 35mm 카드 직접 탭(캡션 '35mm 임프린트'로 특정 — '35mm Wide'와 구분)
-    await user.click(screen.getByRole('button', { name: '무드' }));
-    await user.click(screen.getByRole('radio', { name: /35mm 임프린트/ }));
-    expect(screen.getByTestId('layout').textContent).toBe('35mm');
-
-    const ink = screen.getByRole('button', { name: /잉크 색상 전환/ }) as HTMLButtonElement;
-    expect(ink.disabled).toBe(true);
-  });
+  // 잉크 원탭 토글(#262)은 #315에서 헤더 서브메뉴(MobileEditorShell)로 이전 —
+  // 회귀 테스트는 __tests__/mobileEditorShellMenu.test.tsx로 이관.
 });

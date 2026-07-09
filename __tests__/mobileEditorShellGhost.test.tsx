@@ -39,11 +39,15 @@ describe('MobileEditorShell ghost 토글 (#216)', () => {
     const user = userEvent.setup();
     render(<Harness />);
 
-    // seed 전엔 토글이 없다.
+    // seed 전엔 토글이 없다(헤더 서브메뉴 안, #315).
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
     expect(screen.queryByRole('switch', { name: '빈 항목 미리보기' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
 
     await user.click(screen.getByText('seed-poster'));
 
+    // #315: 토글은 헤더 서브메뉴 안으로 이전 — 메뉴를 열어야 보인다.
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
     const toggle = screen.getByRole('switch', { name: '빈 항목 미리보기' });
     // 기본값 on.
     expect(toggle.getAttribute('aria-checked')).toBe('true');
