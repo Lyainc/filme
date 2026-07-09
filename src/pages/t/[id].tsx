@@ -2,7 +2,7 @@ import type { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 import { list } from '@vercel/blob';
-import { Sprocket } from '@/components/v2/Sprocket';
+import { Wordmark } from '@/components/v2/Wordmark';
 import { DEFAULT_TICKET_TTL_DAYS } from '@/utils/ticketCleanup';
 import { getLayout, LAYOUTS } from '@/utils/layouts';
 
@@ -114,13 +114,7 @@ export default function TicketLanding({ imageUrl, title, pageUrl, width, height 
       <div className="app-canvas flex min-h-[100dvh] flex-col">
         <header className="flex h-14 shrink-0 items-center border-b border-line bg-surface px-4">
           <Link href="/" className="flex items-center gap-2" aria-label="FILME 홈">
-            <Sprocket size={20} className="text-accent" />
-            <span
-              className="font-sans text-fg"
-              style={{ fontSize: 19, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' }}
-            >
-              FILME
-            </span>
+            <Wordmark />
           </Link>
         </header>
 
