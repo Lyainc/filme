@@ -14,3 +14,15 @@ export function Wordmark({ as: Tag = 'span' }: { as?: 'h1' | 'span' }) {
     </>
   );
 }
+
+/** Sprocket 없는 축약형 "FILME" 텍스트. 모바일 셸 nav바 전용. */
+export function WordmarkCompact() {
+  return (
+    <span
+      className="text-mono text-fg-muted"
+      style={{ fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase' }}
+    >
+      FILME
+    </span>
+  );
+}
