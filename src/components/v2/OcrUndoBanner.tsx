@@ -37,7 +37,7 @@ export function OcrUndoBanner({ snapshot, filledFields, onCancel, onConfirm }: O
             <button
               type="button"
               onClick={onConfirm}
-              className="rounded-chip bg-accent px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-accent-hover"
+              className="rounded-chip bg-accent px-3 py-1.5 text-[12px] font-medium text-accent-ink transition-colors hover:bg-accent-hover"
             >
               확인
             </button>

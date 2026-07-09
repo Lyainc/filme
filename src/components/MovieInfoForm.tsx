@@ -164,7 +164,7 @@ export default function MovieInfoForm({
             disabled={isSearching}
             aria-busy={isSearching}
             data-touch="44"
-            className="text-mono inline-flex min-h-touch shrink-0 items-center justify-center rounded-field bg-accent px-4 text-[11px] uppercase tracking-widest text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
+            className="text-mono inline-flex min-h-touch shrink-0 items-center justify-center rounded-field bg-accent px-4 text-[11px] uppercase tracking-widest text-accent-ink transition-colors hover:bg-accent-hover disabled:opacity-40"
           >
             {isSearching ? '…' : '↗ Search'}
           </button>
@@ -400,7 +400,7 @@ function ReleaseDateBlock({
               onClick={() => onTokenChange(opt.value)}
               data-touch="44"
               className={`text-mono inline-flex min-h-touch items-center rounded-chip border px-3 text-[10px] uppercase tracking-widest transition-colors
-                ${active ? 'border-accent bg-accent text-white' : 'border-line bg-paper text-fg hover:bg-accent-soft'}`}
+                ${active ? 'border-accent bg-accent text-accent-ink' : 'border-line bg-paper text-fg hover:bg-accent-soft'}`}
             >
               {opt.sample}
             </button>

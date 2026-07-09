@@ -112,7 +112,7 @@ function TitleSheet({ photo }: { photo: Photo }) {
         <button
           type="button"
           onClick={() => runSearch(title.trim())}
-          className="rounded-chip bg-accent px-3 py-1.5 text-white transition-colors hover:bg-accent-hover"
+          className="rounded-chip bg-accent px-3 py-1.5 text-accent-ink transition-colors hover:bg-accent-hover"
         >
           ↗ 검색
         </button>
@@ -185,7 +185,7 @@ function FormatChips({
               onClick={() => onChange(opt.value)}
               data-touch="44"
               className={`text-mono inline-flex min-h-touch items-center rounded-chip border px-3 text-[10px] uppercase tracking-widest transition-colors ${
-                active ? 'border-accent bg-accent text-white' : 'border-line bg-surface-elevated text-fg hover:bg-accent-soft'
+                active ? 'border-accent bg-accent text-accent-ink' : 'border-line bg-surface-elevated text-fg hover:bg-accent-soft'
               }`}
             >
               {opt.sample}
@@ -427,7 +427,7 @@ function StampSheet({ target, photo }: { target: StampTarget; photo: Photo }) {
                 }}
                 className={`text-mono rounded-chip border px-3 py-1.5 text-[10px] uppercase tracking-widest transition-colors ${
                   active
-                    ? 'border-accent bg-accent text-white'
+                    ? 'border-accent bg-accent text-accent-ink'
                     : 'border-line bg-surface-elevated text-fg-muted hover:border-accent hover:text-fg'
                 }`}
               >
