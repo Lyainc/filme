@@ -176,9 +176,10 @@ describe('StampSheet 극장/포맷 (#215 PART B)', () => {
   });
 });
 
-// #274 — 시트 maxHeight의 visualViewport 추적. happy-dom엔 visualViewport가 없어(effect가
-// 조기 반환해 '72dvh' 폴백) 가짜 EventTarget을 window에 심어 리사이즈 → 캡 갱신을 검증한다.
-describe('FieldEditSheet visualViewport 키보드 캡 (#274)', () => {
+// #274/#314 — 시트 크기의 visualViewport 추적. happy-dom엔 visualViewport가 없어(effect가
+// 조기 반환해 '72dvh' 폴백) 가짜 EventTarget을 window에 심어 리사이즈 → 크기 갱신을 검증한다.
+// happy-dom의 window.innerHeight는 768 고정이라, vv.height와의 차로 "키보드 열림"이 갈린다.
+describe('FieldEditSheet visualViewport 키보드 캡 (#274, #314)', () => {
   class FakeVisualViewport extends EventTarget {
     height = 844;
   }
@@ -188,7 +189,7 @@ describe('FieldEditSheet visualViewport 키보드 캡 (#274)', () => {
     delete (window as unknown as { visualViewport?: unknown }).visualViewport;
   });
 
-  test('마운트 시 vv.height-24 캡, resize(키보드) 시 캡 축소', async () => {
+  test('키보드 닫힘(vv≈전체 높이): 기존 min(72dvh, vv-24) 캡 유지', async () => {
     const vv = new FakeVisualViewport();
     (window as unknown as { visualViewport: unknown }).visualViewport = vv;
 
@@ -196,13 +197,22 @@ describe('FieldEditSheet visualViewport 키보드 캡 (#274)', () => {
     const content = document.querySelector('[data-vaul-drawer]') as HTMLElement;
     expect(content).not.toBeNull();
     expect(content.getAttribute('style')).toContain('min(72dvh, 820px)');
+  });
 
-    // 키보드가 뜬 상황 시뮬레이션 — visual viewport 축소.
+  test('키보드 열림(vv가 768보다 100px+ 작음): height를 고정해 필드 간 시트 크기를 통일(#314)', async () => {
+    const vv = new FakeVisualViewport();
+    (window as unknown as { visualViewport: unknown }).visualViewport = vv;
+    render(<SheetHarness field="title" />);
+    const content = document.querySelector('[data-vaul-drawer]') as HTMLElement;
+
+    // 키보드가 뜬 상황 시뮬레이션 — visual viewport 축소(768 - 508 = 260px > 100px 임계값).
     await act(async () => {
       vv.height = 508;
       vv.dispatchEvent(new Event('resize'));
     });
-    expect(content.getAttribute('style')).toContain('min(72dvh, 484px)');
+    // 콘텐츠 높이가 아니라 vv.height - 헤더 여유(72px)로 고정 — 필드가 뭐든 동일한 크기.
+    expect(content.getAttribute('style')).toContain('max-height: 436px');
+    expect(content.getAttribute('style')).toContain('height: 436px');
   });
 
   test('visualViewport 미지원 환경은 72dvh 폴백', () => {
