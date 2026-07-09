@@ -37,6 +37,9 @@ module.exports = {
 
         // design-system border token — use border-line, bg-line for dividers/separators
         line: 'var(--border)',
+
+        // 2nd 시네마틱 neutral(#203) — 구조 요소(eyebrow·디바이더) 전용, 액션 red와 별개
+        'neutral-2': 'var(--neutral-2)',
       },
       fontFamily: {
         sans: ['var(--font-sans)', '"Pretendard Variable"', 'Pretendard', 'system-ui', '"Apple SD Gothic Neo"', '"Noto Sans KR"', 'sans-serif'],

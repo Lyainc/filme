@@ -28,6 +28,10 @@
     --warn: #B25500;
     --danger: #DC2626;
     --focus-ring: color-mix(in srgb, #B0423F 35%, transparent);
+    /* 2nd 시네마틱 neutral(#203) — 구조 요소(eyebrow·디바이더) 전용. warm projection amber vs
+       cool film-base teal 스파이크 비교(스크린샷 4장, 대비 계산) 후 amber 채택. 기존 cool-neutral
+       회색(--fg-muted/--border)과 온도가 갈려야 "2nd" 정체성이 서는데 teal은 그 계열에 묻힘. */
+    --neutral-2: #96805F;
     --r-field: 10px;
     --r-card: 14px;
     --r-shell: 20px;
@@ -62,6 +66,7 @@
     --warn: #F59E0B;
     --danger: #EF4444;
     --focus-ring: color-mix(in srgb, #C45550 35%, transparent);
+    --neutral-2: #C2A67A;
     --shadow-card: 0 1px 3px rgba(0,0,0,0.20), 0 8px 24px -6px rgba(0,0,0,0.30);
     --shadow-pop: 0 4px 8px -2px rgba(0,0,0,0.30), 0 16px 40px -8px rgba(0,0,0,0.40);
     --preview-glow: 0 0 0 1px rgba(255,255,255,0.06), 0 12px 40px -8px rgba(0,0,0,0.40);
