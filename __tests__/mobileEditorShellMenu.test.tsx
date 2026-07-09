@@ -68,6 +68,34 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     expect(hamburger.getAttribute('aria-expanded')).toBe('false');
   });
 
+  test('메뉴가 열려 있어도 완료 버튼은 오버레이에 가려지지 않고 바로 눌린다 (claude-review PR #331 P2)', async () => {
+    const user = userEvent.setup();
+    let calls = 0;
+    function DoneHarness() {
+      const photo = usePhototicket();
+      return (
+        <MobileEditorShell
+          photo={photo}
+          canExport
+          theme="light"
+          onThemeChange={() => {}}
+          onDone={() => { calls++; }}
+          disabledReason=""
+          previewMovieInfo={photo.state.movieInfo}
+          previewComponents={photo.state.components}
+          fieldVisibility={photo.state.fieldVisibility}
+        />
+      );
+    }
+    render(<DoneHarness />);
+
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    expect(screen.getByRole('menu', { name: '편집 메뉴' })).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '완료' }));
+    expect(calls).toBe(1);
+  });
+
   test('업로드 전엔 포스터 교체/재크롭 액션이 없다', async () => {
     const user = userEvent.setup();
     render(<Harness />);
