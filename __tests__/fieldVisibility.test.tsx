@@ -91,12 +91,12 @@ const DATA_TOKENS = [
 ];
 
 function renderMood(
-  Mood: (props: {
+  Mood: React.ComponentType<{
     movieInfo: MovieInfo;
     components: TicketComponents;
     croppedImageUrl: string;
     fieldVisibility?: Record<TicketField, boolean>;
-  }) => React.ReactElement,
+  }>,
   layout: LayoutId,
   fieldVisibility: Record<TicketField, boolean>
 ) {

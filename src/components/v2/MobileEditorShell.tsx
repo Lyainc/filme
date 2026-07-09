@@ -1,5 +1,5 @@
 import dynamic from 'next/dynamic';
-import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
 import ImageUploader from '@/components/ImageUploader';
 import InfoTooltip from '@/components/ui/InfoTooltip';
 import { DesignRail } from './DesignRail';
@@ -150,18 +150,18 @@ export function MobileEditorShell({
 
   // 온-티켓 필드 탭(#259). 숨김 필드 탭 시 자동 표시 on(시안 setActive) 후 시트를 연다 — 스탬프는
   // chainVisible/formatVisible, 나머지는 fieldVisibility. 이미 켜진 필드면 no-op이라 안전하다.
-  function handleField(target: SheetTarget) {
+  const handleField = useCallback((target: SheetTarget) => {
     if (isStampTarget(target)) {
       photo.updateComponents({ [STAMP_KEYS[target].visible]: true } as Partial<TicketComponents>);
     } else {
       photo.updateFieldVisibility({ [target]: true });
     }
     setActiveField(target);
-  }
+  }, [photo.updateComponents, photo.updateFieldVisibility]);
 
-  function handlePosterTap() {
+  const handlePosterTap = useCallback(() => {
     posterInputRef.current?.click();
-  }
+  }, []);
   function handlePosterFile(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) setPosterCropSrc(URL.createObjectURL(file));

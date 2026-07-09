@@ -1,4 +1,4 @@
-import { CSSProperties, Fragment, ReactNode } from 'react';
+import { CSSProperties, Fragment, ReactNode, memo } from 'react';
 import {
   Barcode,
   ChainStamp,
@@ -36,7 +36,7 @@ const POSTER_W = 516;
 const FOIL_W = 42;
 const STUB_W = 224;
 
-export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap }: MoodProps) {
+export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
   const accent = themeColor.toLowerCase() === '#ffffff' ? '#a8312a' : resolveInk(themeColor, '#a8312a');
   const { bookingNo, watchDateClean, releaseClean } = resolveTicketData(d);
@@ -338,4 +338,4 @@ export function MoodEditorial({ movieInfo: d, components, croppedImageUrl, field
       </div>
     </div>
   );
-}
+});

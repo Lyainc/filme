@@ -1,4 +1,4 @@
-import { CSSProperties, ReactNode } from 'react';
+import { CSSProperties, ReactNode, memo } from 'react';
 import type { SheetTarget } from '@/constants/fields';
 import {
   ChainStamp,
@@ -49,7 +49,7 @@ const metaValue: CSSProperties = {
 // 병합 셀(node)이면 분해 조각을, 아니면 단일 값/ghost를 렌더하는 공통 메타 셀 형태(#266 PR-C).
 type MetaCell = { label: string; field: SheetTarget; value?: string; ghost?: boolean; node?: ReactNode; hasGhost?: boolean };
 
-export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap }: MoodProps) {
+export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
   const inkIsDark = isInkDark(themeColor);
   const ink = resolveInk(themeColor, inkIsDark ? '#0d0c0a' : '#FFFFFF');
@@ -293,4 +293,4 @@ export function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVi
       </div>
     </div>
   );
-}
+});

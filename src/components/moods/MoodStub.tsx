@@ -1,4 +1,4 @@
-import { CSSProperties, Fragment, ReactNode } from 'react';
+import { CSSProperties, Fragment, ReactNode, memo } from 'react';
 import {
   Barcode,
   ChainStamp,
@@ -67,7 +67,7 @@ function SectionHead({ label }: { label: string }) {
   );
 }
 
-export function MoodStub({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap }: MoodProps) {
+export const MoodStub = memo(function MoodStub({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap }: MoodProps) {
   const { bookingNo, watchDateClean, releaseClean, reissueClean } = resolveTicketData(d);
 
   const titleVal = gate(fv?.title, d.title);
@@ -333,4 +333,4 @@ export function MoodStub({ movieInfo: d, components, croppedImageUrl, fieldVisib
       </div>
     </div>
   );
-}
+});

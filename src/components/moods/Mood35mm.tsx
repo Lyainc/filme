@@ -1,4 +1,4 @@
-import { CSSProperties, ReactNode } from 'react';
+import { CSSProperties, ReactNode, memo } from 'react';
 import type { SheetTarget } from '@/constants/fields';
 import {
   ChainStamp,
@@ -47,7 +47,7 @@ const cellLabel: CSSProperties = {
 // 병합 셀(node)이면 분해 조각을, 아니면 단일 값/ghost를 렌더하는 공통 메타 셀 형태(#266 PR-C).
 type MetaCell = { label: string; field: SheetTarget; value?: string; cast?: boolean; full?: boolean; ghost?: boolean; node?: ReactNode; hasGhost?: boolean };
 
-export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap }: MoodProps) {
+export const Mood35mm = memo(function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
   const amber = themeColor.toLowerCase() === '#ffffff' ? '#C2802F' : resolveInk(themeColor, '#C2802F');
 
@@ -273,4 +273,4 @@ export function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisib
       </div>
     </div>
   );
-}
+});
