@@ -43,7 +43,7 @@ const BASE: TicketComponents = {
   chainVisible: false, formatVisible: false,
 };
 
-type MoodFn = (props: {
+type MoodFn = React.ComponentType<{
   movieInfo: MovieInfo;
   components: TicketComponents;
   croppedImageUrl: string;
@@ -51,7 +51,7 @@ type MoodFn = (props: {
   ghost?: boolean;
   onField?: (f: SheetTarget) => void;
   onPosterTap?: () => void;
-}) => React.ReactElement;
+}>;
 
 const MOODS: [string, MoodFn][] = [
   ['minimal', MoodMinimal],

@@ -56,13 +56,13 @@ const MOODS = [
   ['35mm-landscape', Mood35mmLandscape],
 ] as const;
 
-type MoodFn = (props: {
+type MoodFn = React.ComponentType<{
   movieInfo: MovieInfo;
   components: TicketComponents;
   croppedImageUrl: string;
   fieldVisibility?: Record<TicketField, boolean>;
   ghost?: boolean;
-}) => React.ReactElement;
+}>;
 
 function render(
   Mood: MoodFn,

@@ -411,7 +411,7 @@ export function defaultBrightnessForTexture(texture: string): number {
   return FULL_BRIGHTNESS_TEXTURES.has(texture) ? 1.0 : 0.5;
 }
 
-export function Poster({
+export const Poster = memo(function Poster({
   src,
   fit = 'cover',
   background = '#0a0a0a',
@@ -455,7 +455,7 @@ export function Poster({
       {texture && texture !== 'original' && <TextureOverlay texture={texture} />}
     </div>
   );
-}
+});
 
 // 텍스처별 sheen(하이라이트) 오버레이만 담당한다. dim(밝기)은 Poster의 <img> filter로
 // 분리됐으므로 여기선 검은 레이어를 두지 않는다(#139 ①).
