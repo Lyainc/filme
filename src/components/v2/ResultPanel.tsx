@@ -281,7 +281,9 @@ export function ResultPanel({
   }, [permalink, issuePermalink, movieInfo, composeTweetUrl, copyToClipboard]);
 
   // 퍼마링크 셀 라벨 — permaState/permalink에서 계산해 텍스트 자체를 key로 써서, 값이 실제로
-  // 바뀔 때만 크로스페이드가 재생되게 한다(#201 모션 정합: 하드 텍스트 스왑 대신 settle 이징).
+  // 바뀔 때만 크로스페이드가 재생되게 한다(#201 모션 정합: 하드 텍스트 스왑 대신 fade-in).
+  // settle(카드용 box-shadow+translateY(-10px)+scale, PreviewFilmCell 참고)은 60px 버튼 안
+  // 작은 텍스트엔 부적합해 리뷰(PR #303 P1)에 따라 이미 정의된 opacity-only fade-in으로 대체.
   const permaLabel =
     permaState === 'loading'
       ? '링크 만드는 중…'
@@ -366,7 +368,7 @@ export function ResultPanel({
             className="text-mono flex min-h-[60px] flex-col items-center justify-center gap-1.5 px-2 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:bg-transparent disabled:hover:text-fg-faint"
           >
             <LinkIcon />
-            <span key={permaLabel} className="inline-block animate-settle">
+            <span key={permaLabel} className="inline-block animate-fade-in">
               {permaLabel}
             </span>
           </button>
@@ -413,7 +415,7 @@ export function ResultPanel({
                 onClick={handleCopyLink}
                 className="text-mono inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-field-sm border border-line bg-surface-elevated px-3.5 text-[11px] uppercase tracking-widest text-fg transition-colors hover:border-accent hover:text-accent"
               >
-                <span key={copyLabel} className="inline-block animate-settle">
+                <span key={copyLabel} className="inline-block animate-fade-in">
                   {copyLabel}
                 </span>
               </button>
