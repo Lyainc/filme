@@ -356,11 +356,12 @@ export function ResultPanel({
           {layout.width} × {layout.height} · JPEG ×2
         </Eyebrow>
 
-        {/* D7 공유 위계: save→link→channels 시퀀스를 '공유' eyebrow 디바이더로 시각 분리. */}
+        {/* D7 공유 위계: save→link→channels 시퀀스를 '공유' eyebrow 디바이더로 시각 분리.
+            2nd 시네마틱 neutral(#203 warm amber) — Eyebrow 기본 톤이 neutral-2라 여긴 divider만 명시. */}
         <div className="flex items-center gap-3">
-          <span aria-hidden="true" className="h-px flex-1 bg-line" />
-          <Eyebrow tone="faint">공유</Eyebrow>
-          <span aria-hidden="true" className="h-px flex-1 bg-line" />
+          <span aria-hidden="true" className="h-px flex-1 bg-neutral-2" />
+          <Eyebrow>공유</Eyebrow>
+          <span aria-hidden="true" className="h-px flex-1 bg-neutral-2" />
         </div>
 
         {/* 2차 액션 = 링크 만들기(퍼마링크 발급, 바이럴 루프 진입점 #91). elevated secondary —

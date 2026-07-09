@@ -4,8 +4,9 @@ type EyebrowTag = 'span' | 'div' | 'p' | 'label';
 type EyebrowTone = 'muted' | 'faint' | 'accent';
 
 const TONE_CLS: Record<EyebrowTone, string> = {
-  muted: 'text-fg-muted',
-  faint: 'text-fg-faint',
+  // 2nd 시네마틱 neutral(#203) — eyebrow는 정의상 구조 요소라 cool-neutral 회색 대신 warm neutral-2로.
+  muted: 'text-neutral-2',
+  faint: 'text-neutral-2/60',
   accent: 'text-accent',
 };
 
