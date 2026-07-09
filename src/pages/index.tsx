@@ -82,28 +82,37 @@ export default function Home() {
   const showMobile = mounted && isMobile;
 
   if (showMobile) {
-    // 완료(결과)는 편집 셸 위 오버레이가 아니라 편집 셸을 교체하는 전체화면 스테이지(#258).
-    return resultOpen ? (
-      <ResultStage
-        theme={theme}
-        onBack={closeView}
-        croppedImageUrl={croppedImageUrl}
-        movieInfo={debouncedMovieInfo}
-        components={debouncedComponents}
-        fieldVisibility={fieldVisibility}
-      />
-    ) : (
-      <MobileEditorShell
-        photo={photo}
-        canExport={canExport}
-        theme={theme}
-        onThemeChange={setTheme}
-        onDone={openView}
-        disabledReason={railMessage}
-        previewMovieInfo={debouncedMovieInfo}
-        previewComponents={debouncedComponents}
-        fieldVisibility={fieldVisibility}
-      />
+    return (
+      <>
+        {/* 완료(결과)는 편집 셸 위 오버레이가 아니라 편집 셸을 교체하는 전체화면 스테이지(#258)로
+            "보이는" 전환이지만, MobileEditorShell은 resultOpen 중에도 unmount하지 않고 CSS로만
+            숨긴다 — 언마운트하면 셸 로컬 state(viewMode·ghostMode·activeField·스크롤 위치)가
+            Done↔뒤로가기 왕복마다 리셋된다(claude-review #297 P1). DesktopStudioShell이 같은
+            문제를 "state는 셸 레벨 유지, 렌더만 토글"로 피하는 것과 동일한 패턴. */}
+        <div className={resultOpen ? 'hidden' : undefined}>
+          <MobileEditorShell
+            photo={photo}
+            canExport={canExport}
+            theme={theme}
+            onThemeChange={setTheme}
+            onDone={openView}
+            disabledReason={railMessage}
+            previewMovieInfo={debouncedMovieInfo}
+            previewComponents={debouncedComponents}
+            fieldVisibility={fieldVisibility}
+          />
+        </div>
+        {resultOpen && (
+          <ResultStage
+            theme={theme}
+            onBack={closeView}
+            croppedImageUrl={croppedImageUrl}
+            movieInfo={debouncedMovieInfo}
+            components={debouncedComponents}
+            fieldVisibility={fieldVisibility}
+          />
+        )}
+      </>
     );
   }
 

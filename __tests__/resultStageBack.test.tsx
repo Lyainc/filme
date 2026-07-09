@@ -77,4 +77,19 @@ describe('ResultStage 뒤로가기 배선 (#258)', () => {
     // hero(표시용) + ResultPanel의 off-screen 캡처 대상, 두 TicketRenderer가 함께 마운트된다.
     expect(screen.getAllByTestId('ticket').length).toBe(2);
   });
+
+  test('croppedImageUrl이 없으면 hero 없이 ResultPanel의 안내 문구만 뜬다', async () => {
+    render(
+      React.createElement(ResultStage, {
+        theme: 'light',
+        onBack: () => {},
+        croppedImageUrl: null,
+        movieInfo: MOVIE,
+        components: COMPONENTS,
+        fieldVisibility: ALL_ON,
+      }),
+    );
+    await screen.findByText('포스터가 없어요. 편집 화면에서 포스터를 추가해 주세요.');
+    expect(screen.queryByTestId('ticket')).toBeNull();
+  });
 });

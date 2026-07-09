@@ -24,15 +24,9 @@ interface ResultPanelProps {
   components: TicketComponents;
   fieldVisibility: Record<TicketField, boolean>;
   /**
-   * 프리뷰 래퍼의 너비 제약(컨테이너가 결정). 데스크톱 rail은 자연 너비,
-   * 모바일 시트는 half(작게)↔full(크게)로 이 클래스만 바꿔 확대를 연출한다.
-   * 콘텐츠/캡처 로직은 동일 — 컨테이너가 크기만 분기한다.
-   */
-  previewClassName?: string;
-  /**
-   * 데스크톱 done(#233)에서 켠다 — 캔버스 hero 티켓과 인스펙터 프리뷰의 이중 노출을 없앤다.
-   * true면 캡처 타깃 프리뷰는 DOM에 유지하되 화면 밖(off-screen)으로 빼 시각적으로만 숨기고,
-   * 인스펙터엔 액션만 남긴다. **기본 false** → 모바일 ResultSheet는 이 프롭을 안 넘겨 byte-identical.
+   * 데스크톱 done(#233)·모바일 ResultStage(#258) 둘 다 켠다 — hero 티켓(캔버스/스테이지 상단)과
+   * 인스펙터/액션 블록의 이중 노출을 없앤다. true면 캡처 타깃 프리뷰는 DOM에 유지하되 화면
+   * 밖(off-screen)으로 빼 시각적으로만 숨기고, 액션만 남긴다.
    * display:none이 아니라 off-screen인 이유: html-to-image가 캡처하려면 레이아웃이 있어야 한다.
    */
   hidePreview?: boolean;
@@ -53,7 +47,6 @@ export function ResultPanel({
   movieInfo,
   components,
   fieldVisibility,
-  previewClassName,
   hidePreview = false,
 }: ResultPanelProps) {
   // 캡처 원본 — 여기 달린 TicketRenderer의 (스케일 전) 내부 DOM이 내보내기 대상이다.
@@ -306,7 +299,7 @@ export function ResultPanel({
           display:none이면 html-to-image가 레이아웃을 못 잡으니 off-screen 고정으로만 숨긴다
           (캔버스 hero 티켓이 이미 프리뷰 역할이라 인스펙터는 액션만 — #233 이중 노출 제거). */}
       <div
-        className={hidePreview ? undefined : `mx-auto w-full transition-[max-width] duration-300 ${previewClassName ?? 'max-w-md'}`}
+        className={hidePreview ? undefined : 'mx-auto w-full max-w-md transition-[max-width] duration-300'}
         style={hidePreview ? { position: 'fixed', left: -99999, top: 0, width: layout.width } : undefined}
         aria-hidden={hidePreview || undefined}
       >
