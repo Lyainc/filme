@@ -149,7 +149,7 @@ export default function TicketLanding({ imageUrl, title, pageUrl, width, height 
             </p>
             <Link
               href="/"
-              className="text-mono mt-1 inline-flex min-h-[48px] items-center justify-center rounded-field-sm bg-accent px-8 text-[12px] uppercase tracking-widest text-white transition-colors hover:bg-accent-hover"
+              className="text-mono mt-1 inline-flex min-h-[48px] items-center justify-center rounded-field-sm bg-accent px-8 text-[12px] uppercase tracking-widest text-accent-ink transition-colors hover:bg-accent-hover"
             >
               나도 티켓 만들기 →
             </Link>

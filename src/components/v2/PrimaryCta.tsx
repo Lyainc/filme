@@ -41,10 +41,10 @@ export function PrimaryCta({
       aria-busy={state === 'loading'}
       className={`w-full min-h-[44px] rounded-field-sm flex items-center justify-center gap-2 font-semibold text-sm transition-[background-color,color,opacity,transform] duration-200 active:scale-[0.97] ${
         state === 'disabled'
-          ? 'opacity-50 cursor-not-allowed bg-accent text-white'
+          ? 'opacity-50 cursor-not-allowed bg-accent text-accent-ink'
           : state === 'success'
           ? 'bg-success text-white cursor-default'
-          : 'bg-accent text-white hover:bg-accent-hover cursor-pointer'
+          : 'bg-accent text-accent-ink hover:bg-accent-hover cursor-pointer'
       } ${className}`}
     >
       {state === 'loading' && (

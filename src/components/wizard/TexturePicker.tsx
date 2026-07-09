@@ -76,7 +76,7 @@ function TexturePicker({ value, onChange, croppedImageUrl }: TexturePickerProps)
                 className={`text-mono inline-flex shrink-0 snap-start min-h-touch flex-col items-center gap-1.5 rounded-chip border p-1.5 text-[10px] uppercase tracking-widest transition-colors
                   ${
                     active
-                      ? 'border-accent bg-accent text-white'
+                      ? 'border-accent bg-accent text-accent-ink'
                       : 'border-line bg-paper text-fg hover:bg-accent-soft'
                   }`}
               >
@@ -98,7 +98,7 @@ function TexturePicker({ value, onChange, croppedImageUrl }: TexturePickerProps)
               className={`text-mono inline-flex shrink-0 snap-start min-h-touch items-center rounded-chip border px-4 text-[11px] uppercase tracking-widest transition-colors
                 ${
                   active
-                    ? 'border-accent bg-accent text-white'
+                    ? 'border-accent bg-accent text-accent-ink'
                     : 'border-line bg-paper text-fg hover:bg-accent-soft'
                 }`}
             >
