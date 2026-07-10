@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import ImageUploader from '@/components/ImageUploader';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
 import { AppHeader } from './AppHeader';
+import { AppFooter } from './AppFooter';
 import { FieldAccordion } from './FieldAccordion';
 import { DesktopDesignPanel } from './DesktopDesignPanel';
 import { ResultPanel } from './ResultPanel';
@@ -323,6 +324,8 @@ export function DesktopStudioShell({
         </aside>
         )}
       </div>
+
+      <AppFooter />
 
       {/* OCR 되돌리기 배너 + sr-only 라이브리전 — MobileEditorShell과 공유(useOcrUndo/OcrUndoBanner, #141-class drift 방지). */}
       <OcrUndoBanner
