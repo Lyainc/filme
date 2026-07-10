@@ -19,6 +19,7 @@ import {
   showFieldGhost,
   stampWillRender,
   truncateActors,
+  useFontsReady,
 } from './_shared';
 
 /**
@@ -74,7 +75,8 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
   const titleVal = gate(fv?.title, d.title);
   // 타이틀 폭 맞춤(#318) — 페이퍼 스텁 가용폭(960 - padding40*2). 2줄 클램프라 가용폭×2를
   // maxWidth로 넘겨 가장 긴 한 줄 기준으로 안전하게 축소한다(_shared.tsx 참고).
-  const titleFontSize = fitFontSizeToWidth(titleVal, 880 * 2, { fontFamily: FONT_KR, fontWeight: 700, minSize: 26, maxSize: 42 });
+  const fontsReady = useFontsReady();
+  const titleFontSize = fitFontSizeToWidth(titleVal, 880 * 2, { fontFamily: FONT_KR, fontWeight: 700, minSize: 26, maxSize: 42 }, fontsReady);
   const titleOgVal = gate(fv?.titleOg, d.titleOg);
   const actorsVal = truncateActors(gate(fv?.actors, d.actors));
   const seatVal = gate(fv?.seat, d.seat);

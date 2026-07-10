@@ -97,4 +97,25 @@ describe('fitFontSizeToWidth', () => {
     const size = fitFontSizeToWidth('제목 텍스트', 1, { fontFamily: 'FitTestNoCtx', minSize: 5, maxSize: 40 });
     expect(size).toBe(40);
   });
+
+  // claude-review PR #345 P1: 폰트 로드 전 잰 값이 캐시에 박히면 로드 후에도 안 바뀌던 버그.
+  test('fontsReady=false면 결과를 캐시에 쓰지 않는다 — 같은 인자라도 매번 다시 측정한다', () => {
+    const text = 'c'.repeat(20);
+    const opts = { fontFamily: 'FitTestNotReady', minSize: 10, maxSize: 60 };
+    fitFontSizeToWidth(text, 300, opts, false);
+    const callsAfterFirst = fake.getMeasureCalls();
+    fitFontSizeToWidth(text, 300, opts, false);
+    // 캐시 미스라 두 번째 호출도 measureText를 다시 부른다(호출 수가 늘어난다).
+    expect(fake.getMeasureCalls()).toBeGreaterThan(callsAfterFirst);
+  });
+
+  test('fontsReady=false로 잰 뒤 true로 재호출하면 그제서야 캐시에 쓰고, 그다음부터 재사용한다', () => {
+    const text = 'd'.repeat(20);
+    const opts = { fontFamily: 'FitTestReadyLater', minSize: 10, maxSize: 60 };
+    fitFontSizeToWidth(text, 300, opts, false); // 폰트 로드 전 — 캐시 안 씀
+    fitFontSizeToWidth(text, 300, opts, true); // 폰트 로드 후 첫 정확한 측정 — 캐시에 씀
+    const callsAfterReady = fake.getMeasureCalls();
+    fitFontSizeToWidth(text, 300, opts, true); // 캐시 히트 — measureText 안 부름
+    expect(fake.getMeasureCalls()).toBe(callsAfterReady);
+  });
 });
