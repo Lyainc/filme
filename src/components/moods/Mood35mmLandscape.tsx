@@ -13,6 +13,7 @@ import {
   MoodProps,
   Poster,
   fieldPieces,
+  fitFontSizeToWidth,
   gate,
   posterTapProps,
   resolveInk,
@@ -71,6 +72,9 @@ export const Mood35mmLandscape = memo(function Mood35mmLandscape({ movieInfo: d,
   const { watchDateClean, releaseClean, reissueClean } = resolveTicketData(d);
 
   const titleVal = gate(fv?.title, d.title);
+  // 타이틀 폭 맞춤(#318) — 포스터 열 캡션 가용폭(1477 - PANEL_W600 - padding46*2). 2줄
+  // 클램프라 가용폭×2를 maxWidth로 넘겨 가장 긴 한 줄 기준으로 안전하게 축소한다(_shared.tsx 참고).
+  const titleFontSize = fitFontSizeToWidth(titleVal, 785 * 2, { fontFamily: FONT_KR, fontWeight: 800, minSize: 37, maxSize: 60 });
   const titleOgVal = gate(fv?.titleOg, d.titleOg);
   const theaterVal = gate(fv?.theater, d.theater);
   const screenVal = gate(fv?.screen, d.screen);
@@ -205,7 +209,7 @@ export const Mood35mmLandscape = memo(function Mood35mmLandscape({ movieInfo: d,
                 <div style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 31, opacity: 0.85, marginBottom: 10 }}>now showing</div>
                 {titleVal ? (
                   <FieldTap field="title" onField={onField}>
-                    <div style={{ fontWeight: 800, fontSize: 60, fontFamily: FONT_KR, lineHeight: 1.02, letterSpacing: -1, marginBottom: 14, textShadow: '0 2px 14px rgba(0,0,0,0.55)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    <div style={{ fontWeight: 800, fontSize: titleFontSize, fontFamily: FONT_KR, lineHeight: 1.02, letterSpacing: -1, marginBottom: 14, textShadow: '0 2px 14px rgba(0,0,0,0.55)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                       {titleVal}
                     </div>
                   </FieldTap>

@@ -875,11 +875,82 @@ export function resolveTicketData(d: MovieInfo) {
   };
 }
 
-export function pickTitleSize(len: number, sizes: [number, number, number, number]): number {
-  if (len <= 6) return sizes[0];
-  if (len <= 10) return sizes[1];
-  if (len <= 14) return sizes[2];
-  return sizes[3];
+export interface FitFontSizeOptions {
+  fontFamily: string;
+  fontWeight?: number;
+  minSize: number;
+  maxSize: number;
+}
+
+let measureCanvas: HTMLCanvasElement | null | undefined;
+
+// 캔버스 엘리먼트만 모듈 스코프에서 lazy하게 재사용하고(매번 새로 만들지 않음), 2D 컨텍스트는
+// 호출마다 새로 얻는다 — 컨텍스트 유무를 한 번만 확인해 영구 캐시하면 이 판정이 이후 절대
+// 재확인되지 않아, 테스트(문서 프로토타입 목)나 real-world context-lost 이벤트에서 최초
+// 판정이 그대로 굳어버린다. `getContext('2d')` 자체는 같은 canvas에 대해 매번 불러도 저렴하다.
+function getMeasureCtx(): CanvasRenderingContext2D | null {
+  if (measureCanvas === undefined) {
+    // SSR 가드 — Canvas는 브라우저 전용 API(ocrPreprocess.ts와 동일 패턴).
+    measureCanvas = typeof document === 'undefined' ? null : document.createElement('canvas');
+  }
+  return measureCanvas ? measureCanvas.getContext('2d') : null;
+}
+
+const fitFontSizeCache = new Map<string, number>();
+
+/**
+ * 텍스트가 maxWidth(px) 안에 들어가는 가장 큰 폰트 크기를 이진탐색으로 구한다(#318).
+ *
+ * 티켓은 뷰포트에 반응하지 않고 무드별 고정 자연 픽셀 크기로 렌더되므로, 타이틀 영역의
+ * 가용폭은 런타임에 관찰할 필요 없이 이미 알려진 상수다 — ResizeObserver나 실측
+ * 오버플로 루프 없이 canvas 2D `measureText`로 순수 계산 후 그대로 쓴다.
+ *
+ * SSR-safe: document 없으면(서버 렌더) throw 없이 maxSize를 그대로 반환한다(ocrPreprocess.ts
+ * 실패-흡수 패턴). 프리뷰에서 폰트 로드 전 잠깐 부정확해도 `document.fonts.ready` 이후
+ * 리렌더에서 자연히 교정되고, 캡처 파이프라인(captureToImage)은 이미 fonts.ready를
+ * 기다리므로 export 결과물에는 영향이 없다.
+ *
+ * (text, maxWidth, fontFamily, fontWeight, minSize, maxSize) 키로 메모이즈해 리렌더마다
+ * 재계산하지 않는다.
+ *
+ * ponytail: letter-spacing은 측정에 반영하지 않는다 — 실제 호출부 값이 전부 0 이하(자간
+ * 좁힘)라 canvas 기본 측정값이 실제보다 넓게(보수적으로) 잡히므로 오버플로 방향의 오차는
+ * 없다. 완벽한 줄바꿈 시뮬레이션도 하지 않는다 — 호출부가 "가용폭 × 클램프 줄 수"를
+ * maxWidth로 넘겨 가장 긴 한 줄 기준으로 안전하게 축소하는 근사를 쓴다.
+ */
+export function fitFontSizeToWidth(text: string, maxWidth: number, { fontFamily, fontWeight = 400, minSize, maxSize }: FitFontSizeOptions): number {
+  if (!text) return maxSize;
+
+  const key = `${text} ${maxWidth} ${fontFamily} ${fontWeight} ${minSize} ${maxSize}`;
+  const cached = fitFontSizeCache.get(key);
+  if (cached !== undefined) return cached;
+
+  const ctx = getMeasureCtx();
+  if (!ctx) return maxSize;
+
+  const widthAt = (size: number) => {
+    ctx.font = `${fontWeight} ${size}px ${fontFamily}`;
+    return ctx.measureText(text).width;
+  };
+
+  let result = maxSize;
+  if (widthAt(maxSize) > maxWidth) {
+    if (widthAt(minSize) > maxWidth) {
+      result = minSize;
+    } else {
+      let lo = minSize;
+      let hi = maxSize;
+      while (hi - lo > 1) {
+        const mid = Math.floor((lo + hi) / 2);
+        if (widthAt(mid) <= maxWidth) lo = mid;
+        else hi = mid;
+      }
+      result = lo;
+    }
+  }
+
+  fitFontSizeCache.set(key, result);
+  return result;
 }
 
 function luminance(hex: string): number {
