@@ -11,7 +11,7 @@
  */
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
 import { act, useEffect, useRef } from 'react';
-import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import type { SheetTarget } from '@/constants/fields';
 import { FieldEditSheet } from '@/components/v2/FieldEditSheet';
@@ -127,29 +127,6 @@ describe('StampSheet 극장/포맷 (#215 PART B)', () => {
     expect(screen.getByTestId('formatLabel').textContent).toBe('Dolby');
   });
 
-  test('포맷 자동완성: 타이핑이 프리셋을 필터하고 선택 시 formatLabel 지정', async () => {
-    render(<SheetHarness field="format" />);
-    const input = await screen.findByRole('textbox', { name: '포맷 로고' });
-    // 'Do' → Dolby만 부분일치('D'는 4DX도 매치하므로 두 글자로 좁힌다).
-    fireEvent.change(input, { target: { value: 'Do' } });
-    const listbox = screen.getByRole('listbox', { name: '포맷 제안' });
-    const opts = within(listbox).getAllByRole('option');
-    expect(opts.length).toBe(1);
-    expect(listbox.textContent).toContain('Dolby');
-    // 옵션 클릭은 li(role=option)가 아니라 그 안의 버튼에 핸들러가 있으므로 버튼을 친다.
-    // 프리셋 칩에도 'Dolby' 버튼이 있어 listbox 범위로 좁혀 특정한다.
-    fireEvent.click(within(listbox).getByRole('button', { name: 'Dolby' }));
-    expect(screen.getByTestId('formatLabel').textContent).toBe('Dolby');
-  });
-
-  test('포맷 자동완성: 매치 없는 값은 그대로 저장 + 안내 노출', async () => {
-    render(<SheetHarness field="format" />);
-    const input = await screen.findByRole('textbox', { name: '포맷 로고' });
-    fireEvent.change(input, { target: { value: 'Laser' } });
-    expect(screen.getByTestId('formatLabel').textContent).toBe('Laser');
-    expect(screen.queryByRole('listbox', { name: '포맷 제안' })).toBeNull();
-    expect(screen.queryByText(/목록에 없는 포맷이에요/)).not.toBeNull();
-  });
 
   test('스탬프 헤더 눈 토글이 components.chainVisible/formatVisible를 갱신', async () => {
     render(<SheetHarness field="chain" />);

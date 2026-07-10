@@ -1,5 +1,5 @@
 import dynamic from 'next/dynamic';
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { DateFormatToken, DateGranularity, MovieInfo, TicketComponents, TicketField } from '@/types';
 import { formatDate, openDtToIso } from '@/utils/dateFormat';
@@ -13,7 +13,6 @@ import {
   FIELD_LABELS,
   FIELD_SHEET_TYPE,
   FIELD_INFO_KEY,
-  FORMAT_PRESETS,
   STAMP_LABELS,
   STAMP_KEYS,
   isStampTarget,
@@ -305,16 +304,14 @@ function RatingSheet({ photo }: { photo: Photo }) {
 /**
  * 스탬프(극장/포맷 로고, #215 PART B) — 텍스트 라벨 + 로고 이미지 업로드. 데이터는 TicketComponents에
  * 산다(chain/chainLabel · format/formatLabel). '이미지가 라벨보다 우선'하는 규칙은 _shared.tsx가
- * 이미 처리하므로, 이미지가 있으면 텍스트/프리셋 대신 이미지+'제거'만 노출한다.
- * 포맷은 프리셋 칩 + 타이핑 자동완성(FORMAT_PRESETS 필터)을 추가로 제공한다. 극장은 프리셋이 없어
- * 평문 텍스트 입력만.
+ * 이미 처리하므로, 이미지가 있으면 텍스트 대신 이미지+'제거'만 노출한다.
+ * 극장·포맷 모두 완전 자유입력(#317) — 프리셋/자동완성 없음.
  */
 function StampSheet({ target, photo }: { target: StampTarget; photo: Photo }) {
   const components = photo.state.components;
   const keys = STAMP_KEYS[target];
   const imageUrl = String(components[keys.image] ?? '');
   const labelValue = String(components[keys.label] ?? '');
-  const isFormat = target === 'format';
 
   const setLabel = (v: string) =>
     photo.updateComponents({ [keys.label]: v } as Partial<TicketComponents>);
@@ -324,9 +321,6 @@ function StampSheet({ target, photo }: { target: StampTarget; photo: Photo }) {
   // 로고 업로드 → 자유 크롭 → PNG. 픽커들과 동일한 useLogoCrop 흐름(#220).
   const { rawSrc, isCropping, openFile, handleComplete, handleCancel } = useLogoCrop(imageUrl, setImage);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  // 프리셋 활성 직전의 커스텀 입력 보존 — 프리셋 해제 시 이 값으로 복원.
-  const prevLabelRef = useRef('');
-  const [acOpen, setAcOpen] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -340,7 +334,7 @@ function StampSheet({ target, photo }: { target: StampTarget; photo: Photo }) {
     setImage('');
   };
 
-  // 이미지가 있으면 이미지 + 제거만(이미지 우선). 텍스트/프리셋/자동완성은 숨긴다.
+  // 이미지가 있으면 이미지 + 제거만(이미지 우선). 텍스트는 숨긴다.
   if (imageUrl) {
     return (
       <div className="flex items-center gap-3 rounded-field border border-line bg-surface-elevated px-3.5 py-3">
@@ -356,82 +350,17 @@ function StampSheet({ target, photo }: { target: StampTarget; photo: Photo }) {
     );
   }
 
-  // 자동완성(포맷만) — 대소문자 무시 부분일치. 매치 없고 입력이 있으면 '그대로 저장' 안내.
-  const query = labelValue.trim().toLowerCase();
-  const suggestions = isFormat ? FORMAT_PRESETS.filter((p) => p.toLowerCase().includes(query)) : [];
-  const noMatch = isFormat && query.length > 0 && suggestions.length === 0;
-
   return (
     <div className="space-y-3">
       <input
         autoFocus
         type="text"
         value={labelValue}
-        onChange={(e) => {
-          setLabel(e.target.value);
-          if (isFormat) setAcOpen(true);
-        }}
-        onFocus={() => isFormat && setAcOpen(true)}
+        onChange={(e) => setLabel(e.target.value)}
         aria-label={STAMP_LABELS[target]}
         maxLength={24}
         className={INPUT_CLS}
       />
-
-      {isFormat && acOpen && (suggestions.length > 0 ? (
-        <ul role="listbox" aria-label="포맷 제안" className="overflow-hidden rounded-card border border-line bg-surface-elevated">
-          {suggestions.map((s) => (
-            <li key={s} role="option" aria-selected={labelValue === s}>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!FORMAT_PRESETS.includes(labelValue)) prevLabelRef.current = labelValue;
-                  setLabel(s);
-                  setAcOpen(false);
-                }}
-                data-touch="44"
-                className="block w-full border-b border-line px-4 py-3 text-left text-[14px] text-fg transition-colors last:border-0 hover:bg-accent-soft"
-              >
-                {s}
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : noMatch ? (
-        <p className="text-mono px-1 text-[11px] tracking-wide text-fg-muted">
-          목록에 없는 포맷이에요 · 입력한 값 그대로 저장돼요
-        </p>
-      ) : null)}
-
-      {/* 포맷 프리셋 칩 — 활성 칩 재클릭 시 직전 커스텀 입력(prevLabelRef)으로 복원하는 토글. */}
-      {isFormat && (
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label="포맷 프리셋">
-          {FORMAT_PRESETS.map((preset) => {
-            const active = labelValue === preset;
-            return (
-              <button
-                key={preset}
-                type="button"
-                onClick={() => {
-                  if (active) {
-                    setLabel(prevLabelRef.current);
-                  } else {
-                    if (!FORMAT_PRESETS.includes(labelValue)) prevLabelRef.current = labelValue;
-                    setLabel(preset);
-                    setAcOpen(false);
-                  }
-                }}
-                className={`text-mono rounded-chip border px-3 py-1.5 text-[10px] uppercase tracking-widest transition-colors ${
-                  active
-                    ? 'border-accent bg-accent text-accent-ink'
-                    : 'border-line bg-surface-elevated text-fg-muted hover:border-accent hover:text-fg'
-                }`}
-              >
-                {preset}
-              </button>
-            );
-          })}
-        </div>
-      )}
 
       <button
         type="button"
