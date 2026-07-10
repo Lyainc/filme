@@ -20,10 +20,11 @@ Before making architectural changes or implementing new features, consult:
 
 ### 💻 Development Workflow & Commands
 ```bash
-bun run dev     # Start development server
-bun run build   # Build production application
-bun run start   # Run production server (after build)
-bun test        # Unit + interaction tests
+bun run dev       # Start development server
+bun run build     # Build production application
+bun run start     # Run production server (after build)
+bun test          # Unit + interaction tests
+bun run typecheck # tsc --noEmit
 ```
 
 ### 🧪 Testing
@@ -80,5 +81,5 @@ bun test        # Unit + interaction tests
 - **Env**: `AI_GATEWAY_API_KEY`(또는 OIDC, OCR 필수) · `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`(선택) · `KOBIS_API_KEY`(title→KOBIS 조회).
 
 ### 🚧 Current Project Status
-- **Completed**: MVP + KOBIS API + Manual Cropping + TCG Premium Textures + Editorial Cinema redesign + 4-Mood layout system + GPT-4o mini OCR(Tesseract 클라이언트에서 전환) + 단일 에디터 재편(#86: 2-step Phase 폐기 → 단일 에디터 셸, `useScreen` 훅) + 모바일 편집 셸 dead-code 정리(#283: 도달 불가 OCR·폼·rail 경로 제거, Poster 드롭존만 `MobileEditorShell`에 인라인) + Serial/Collection 입력·EditionMark 제거(#84) + K-means 색 추출 Web Worker 오프로드(#80: `src/utils/colorExtraction.worker.ts`) + 상호작용 테스트 인프라(#163: happy-dom + testing-library, OCR undo 회귀 테스트) + 업로드 영역 포스터 주연 재설계(#142: 드롭존 메인 + OCR 보조 액션).
+- **Completed**: MVP + KOBIS API + Manual Cropping + TCG Premium Textures + Editorial Cinema redesign + 6-Mood layout system(#281: Stub·35mm Wide 등 마스터 시안 재동기화) + GPT-4o mini OCR(Tesseract 클라이언트에서 전환) + 단일 에디터 재편(#86: 2-step Phase 폐기 → 단일 에디터 셸, `useScreen` 훅) + 모바일 편집 셸 dead-code 정리(#283: 도달 불가 OCR·폼·rail 경로 제거, Poster 드롭존만 `MobileEditorShell`에 인라인) + Serial/Collection 입력·EditionMark 제거(#84) + K-means 색 추출 Web Worker 오프로드(#80: `src/utils/colorExtraction.worker.ts`) + 상호작용 테스트 인프라(#163: happy-dom + testing-library, OCR undo 회귀 테스트) + 업로드 영역 포스터 주연 재설계(#142: 드롭존 메인 + OCR 보조 액션) + 폼 입력 자유화(#316/#317: placeholder 제거, 극장/포맷 자유입력) + 명시적 임시저장/초기화 전환(#310/#344) + 제목 폭 맞춤 폰트 자동 축소(#318/#345) + 공유 액션 단일화(#325: 저장/링크/공유 3종) + disclaimer footer(#327).
 - **Next Up**: 확정 로드맵 없음 (이전 TMDB·Supabase 계획은 폐기).
