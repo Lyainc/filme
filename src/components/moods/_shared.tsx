@@ -200,6 +200,10 @@ function DashedPlaceholder({
   size: number;
   surface: Surface;
 }) {
+  // 고스트 시인성 개선(#313): 박스 opacity(0.4)가 테두리·텍스트 색의 자체 알파와 곱연산으로 겹쳐
+  // dark surface에서 실효 알파가 테두리 0.2·텍스트 0.28까지 떨어졌었다. 박스 opacity를 0.65로 올리고
+  // (paper: currentColor 알파 1 × 0.65 = 0.65), dark 오버라이드의 자체 알파도 함께 올려(0.5→0.85,
+  // 0.7→0.95) 곱연산 후 실효 알파가 테두리 ~0.55·텍스트 ~0.62로 나오게 재배분했다.
   return (
     <div
       data-hide-on-export="true"
@@ -207,7 +211,7 @@ function DashedPlaceholder({
         height,
         width,
         border: '1px dashed currentColor',
-        opacity: 0.4,
+        opacity: 0.65,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -216,7 +220,7 @@ function DashedPlaceholder({
         fontFamily: FONT_MONO,
         letterSpacing: 1,
         color: 'currentColor',
-        ...(surface === 'dark' ? { borderColor: 'rgba(255,255,255,0.5)', color: 'rgba(255,255,255,0.7)' } : {}),
+        ...(surface === 'dark' ? { borderColor: 'rgba(255,255,255,0.85)', color: 'rgba(255,255,255,0.95)' } : {}),
       }}
     >
       {text}
