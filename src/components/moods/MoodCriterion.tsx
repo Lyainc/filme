@@ -13,6 +13,7 @@ import {
   MoodProps,
   Poster,
   fieldPieces,
+  fitFontSizeToWidth,
   gate,
   isInkDark,
   posterTapProps,
@@ -43,8 +44,6 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
   const themeColor = components.themeColor || '#FFFFFF';
   const inkIsDark = isInkDark(themeColor);
   const ink = resolveInk(themeColor, inkIsDark ? '#0d0c0a' : '#FFFFFF');
-  // 마스터 v2: 타이틀 고정 58/800 · lh1.14 · ls-1.5 · 3줄 클램프(무드별 pickTitleSize 스케일 폐기, 35mm와 정렬).
-  const titleSize = 58;
 
   const globalScrim = inkIsDark
     ? 'linear-gradient(180deg, rgba(245,240,232,0.7) 0%, rgba(245,240,232,0.34) 30%, rgba(245,240,232,0.5) 60%, rgba(245,240,232,0.95) 100%)'
@@ -56,6 +55,10 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
   const { bookingNo, watchDateClean, releaseClean, reissueClean, watchYear } = resolveTicketData(d);
 
   const titleVal       = gate(fv?.title, d.title);
+  // 타이틀 폭 맞춤(#318) — 마스터 v2 기본값 58/800·lh1.14·ls-1.5는 maxSize로 유지하고, 제목
+  // 블록 가용폭(960 - left200 - right64)을 넘는 긴 제목만 이진탐색으로 축소한다. 3줄 클램프라
+  // 가용폭×3을 maxWidth로 넘겨 가장 긴 한 줄 기준으로 안전하게 축소한다(_shared.tsx 참고).
+  const titleSize      = fitFontSizeToWidth(titleVal, 696 * 3, { fontFamily: FONT_KR, fontWeight: 800, minSize: 36, maxSize: 58 });
   const titleOgVal     = gate(fv?.titleOg, d.titleOg);
   const actorsVal      = truncateActors(gate(fv?.actors, d.actors));
   const watchDateVal   = gate(fv?.watchDate, watchDateClean);

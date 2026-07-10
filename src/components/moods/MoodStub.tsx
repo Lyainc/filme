@@ -12,6 +12,7 @@ import {
   MoodProps,
   Poster,
   fieldPieces,
+  fitFontSizeToWidth,
   gate,
   posterTapProps,
   resolveTicketData,
@@ -71,6 +72,9 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
   const { bookingNo, watchDateClean, releaseClean, reissueClean } = resolveTicketData(d);
 
   const titleVal = gate(fv?.title, d.title);
+  // 타이틀 폭 맞춤(#318) — 페이퍼 스텁 가용폭(960 - padding40*2). 2줄 클램프라 가용폭×2를
+  // maxWidth로 넘겨 가장 긴 한 줄 기준으로 안전하게 축소한다(_shared.tsx 참고).
+  const titleFontSize = fitFontSizeToWidth(titleVal, 880 * 2, { fontFamily: FONT_KR, fontWeight: 700, minSize: 26, maxSize: 42 });
   const titleOgVal = gate(fv?.titleOg, d.titleOg);
   const actorsVal = truncateActors(gate(fv?.actors, d.actors));
   const seatVal = gate(fv?.seat, d.seat);
@@ -176,7 +180,7 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
           )}
           {titleVal ? (
             <FieldTap field="title" onField={onField}>
-              <div style={{ fontWeight: 700, fontSize: 42, fontFamily: FONT_KR, lineHeight: 1.06, letterSpacing: -1.2, marginBottom: 8, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{titleVal}</div>
+              <div style={{ fontWeight: 700, fontSize: titleFontSize, fontFamily: FONT_KR, lineHeight: 1.06, letterSpacing: -1.2, marginBottom: 8, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{titleVal}</div>
             </FieldTap>
           ) : gTitle ? (
             <FieldTap field="title" onField={onField}><div style={{ marginBottom: 8 }}><FieldGhost text="TITLE" width="66%" height={46} size={2} surface="paper" /></div></FieldTap>

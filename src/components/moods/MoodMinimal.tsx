@@ -11,6 +11,7 @@ import {
   MoodProps,
   Poster,
   fieldPieces,
+  fitFontSizeToWidth,
   gate,
   isInkDark,
   posterTapProps,
@@ -49,6 +50,13 @@ const metaValue: CSSProperties = {
 // 병합 셀(node)이면 분해 조각을, 아니면 단일 값/ghost를 렌더하는 공통 메타 셀 형태(#266 PR-C).
 type MetaCell = { label: string; field: SheetTarget; value?: string; ghost?: boolean; node?: ReactNode; hasGhost?: boolean };
 
+// 타이틀 폭 맞춤(#318) — Bottom block 가용폭(960 - left70 - right70). 2줄 클램프라
+// maxWidth로 가용폭×2를 넘겨 가장 긴 한 줄 기준으로 안전하게 축소한다(_shared.tsx 참고).
+const TITLE_AVAIL_WIDTH = 820;
+const TITLE_CLAMP_LINES = 2;
+const TITLE_MAX_SIZE = 62;
+const TITLE_MIN_SIZE = 38;
+
 export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
   const inkIsDark = isInkDark(themeColor);
@@ -67,6 +75,7 @@ export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components,
   const { watchDateClean, releaseClean, reissueClean } = resolveTicketData(d);
 
   const titleVal       = gate(fv?.title, d.title);
+  const titleFontSize  = fitFontSizeToWidth(titleVal, TITLE_AVAIL_WIDTH * TITLE_CLAMP_LINES, { fontFamily: FONT_KR, fontWeight: 500, minSize: TITLE_MIN_SIZE, maxSize: TITLE_MAX_SIZE });
   const titleOgVal     = gate(fv?.titleOg, d.titleOg);
   const actorsVal      = truncateActors(gate(fv?.actors, d.actors));
   const watchDateVal   = gate(fv?.watchDate, watchDateClean);
@@ -175,7 +184,7 @@ export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components,
 
         {titleVal ? (
           <FieldTap field="title" onField={onField}>
-            <div style={{ fontWeight: 500, fontSize: 62, fontFamily: FONT_KR, lineHeight: 1.05, letterSpacing: -1.2, marginBottom: 10, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            <div style={{ fontWeight: 500, fontSize: titleFontSize, fontFamily: FONT_KR, lineHeight: 1.05, letterSpacing: -1.2, marginBottom: 10, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
               {titleVal}
             </div>
           </FieldTap>
