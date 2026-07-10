@@ -51,13 +51,12 @@ describe('MobileEditorShell landscape 회전 배치 (#275-8)', () => {
     render(<Harness />);
     await user.click(screen.getByText('seed-editorial-poster'));
 
-    const max = screen.getByRole('button', { name: '최대화' });
-    const actual = screen.getByRole('button', { name: '실제 크기' });
-
-    await user.click(max);
+    await user.click(screen.getByRole('button', { name: '최대화' }));
     expect(screen.getByRole('button', { name: '기본 크기로 돌아가기' })).toBeTruthy();
 
-    await user.click(actual);
+    // #328: 최대화는 pill까지 숨기므로 실제 크기로 바로 못 간다 — 티켓 탭으로 기본 복귀 후 전환.
+    await user.click(screen.getByRole('button', { name: '기본 크기로 돌아가기' }));
+    await user.click(screen.getByRole('button', { name: '실제 크기' }));
     expect(screen.getByText(/실제 크기 · 8\.5 × 5\.5cm/)).toBeTruthy();
 
     // 기본 복귀 — 회전 래퍼가 사라진다.

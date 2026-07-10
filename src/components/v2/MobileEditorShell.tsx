@@ -248,6 +248,10 @@ export function MobileEditorShell({
   // 기본이 아닐 때만 편집 본문(Poster 드롭존 + rail)을 접어 프리뷰에 세로 공간을 내준다. 이미지가
   // 없으면(업로드 전) 접지 않는다 — 그땐 프리뷰/pill 자체가 없다.
   const collapseBody = !!croppedImageUrl && viewMode !== 'default';
+  // max 재정의(#328): actual(실측 비교, 헤더·pill·보정 슬라이더 유지)과 달리 max는 헤더·서브메뉴·
+  // pill·OCR까지 다 숨기고 티켓만 화면에 fixed 오버레이로 띄운다 — 나가는 길은 티켓 자신을 탭(기존
+  // default 복귀 핸들러 재사용).
+  const isMax = viewMode === 'max';
 
   return (
     <div
@@ -261,7 +265,9 @@ export function MobileEditorShell({
       }}
     >
       {/* 상단 네브(#315): 뒤로가기·워드마크(무의미해 제거) 대신 좌측 햄버거 서브메뉴 + 우측 완료.
-          다크모드·전체표시·빈 항목·잉크 토글과 포스터 교체·재크롭 액션은 서브메뉴로 통합. */}
+          다크모드·전체표시·빈 항목·잉크 토글과 포스터 교체·재크롭 액션은 서브메뉴로 통합.
+          max(#328)는 이 헤더(서브메뉴 포함)까지 숨기는 풀스크린 모드라 통째로 언마운트한다. */}
+      {!isMax && (
       <header className="relative flex h-14 shrink-0 items-center justify-between border-b border-line bg-surface px-3">
         <button
           type="button"
@@ -371,30 +377,39 @@ export function MobileEditorShell({
           </>
         )}
       </header>
+      )}
 
       {/* 스크롤 본문: 줌 pill + 인라인 프리뷰 + 편집 본문(Poster 드롭존 + 디자인 rail).
           비-기본 모드에선 justify-center로 pill+프리뷰를 세로 중앙에 두고 본문을 접는다. */}
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className={`flex min-h-full flex-col ${collapseBody ? 'justify-center' : ''}`}>
-          {/* 줌 모드 pill — 3모드 어디서든 항상 보인다(기본으로 돌아오는 유일한 길). ghost 토글은
-              #315에서 헤더 서브메뉴로 이전. */}
           {croppedImageUrl && (
-            <div className="flex flex-wrap items-center justify-center gap-2 px-4 pt-4">
-              <ZoomSegment viewMode={viewMode} onChange={setViewMode} />
-            </div>
-          )}
-
-          {croppedImageUrl && (
-            <div className="px-4 pt-4">
+            <div
+              className={
+                isMax
+                  ? 'fixed inset-0 z-50 flex items-center justify-center bg-surface px-6'
+                  : 'px-4 pt-4'
+              }
+              style={
+                isMax
+                  ? {
+                      paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)',
+                      paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
+                    }
+                  : undefined
+              }
+            >
               {/* 래퍼 트리는 rotate 여부와 무관하게 항상 바깥 div → 안쪽 div → TicketRenderer로 depth가
                   고정돼 있다 — 요소 "타입"뿐 아니라 트리 "깊이"가 바뀌어도 React가 그 지점부터 서브트리를
                   통째로 remount해 TicketRenderer의 scale state가 1로 리셋되며 깜빡인다(#259, 리뷰 지적
                   #275 PR — rotate 분기를 별도 JSX 트리로 나눴을 때 default↔max/actual 전환에서 재현됨).
                   안쪽 div는 항상 존재하고 rotate일 때만 회전 스타일을 얹는다. default는 인라인 폭 + 티켓
                   위 필드/포스터 직접 탭(onField/onPosterTap), max/actual은 확대 폭 + 래퍼 전체 탭→기본
-                  복귀. rotateLandscape(#275-8)는 가로형 무드의 max/actual에서만 90도 회전 + 화면 꽉
-                  채우기 — TicketRenderer 자신은 늘 자연(비회전) 방향으로 렌더돼 scale 계산이 방향을
-                  몰라도 된다. #216: ghost는 actual에서 강제 off. */}
+                  복귀(max는 헤더·pill 자체가 없으니 이 탭이 유일한 탈출구). rotateLandscape(#275-8)는
+                  가로형 무드의 max/actual에서만 90도 회전 + 화면 꽉 채우기 — TicketRenderer 자신은 늘
+                  자연(비회전) 방향으로 렌더돼 scale 계산이 방향을 몰라도 된다. #216: ghost는 actual에서
+                  강제 off. isMax는 바깥 div의 className/style만 바꿀 뿐 이 안쪽부터의 depth는 그대로라
+                  전환 시 TicketRenderer가 remount되지 않는다. */}
               <div
                 {...(viewMode === 'default'
                   ? {}
@@ -445,6 +460,16 @@ export function MobileEditorShell({
             </div>
           )}
 
+          {/* 줌 모드 pill — 프리뷰(포스터) 아래로 이동(#328). 원래 "포스터 드롭존 아래"였으나 업로드 후
+              드롭존 자체가 통째로 언마운트되므로(#324) 프리뷰 자신을 기준점으로 재정의(#331 코멘트).
+              default/actual에선 기본으로 돌아오는 길이지만, max는 pill째로 숨기고 티켓 탭 복귀(위
+              onClick)로 대체한다. ghost 토글은 #315에서 헤더 서브메뉴로 이전. */}
+          {croppedImageUrl && !isMax && (
+            <div className="flex flex-wrap items-center justify-center gap-2 px-4 pt-4">
+              <ZoomSegment viewMode={viewMode} onChange={setViewMode} />
+            </div>
+          )}
+
           {croppedImageUrl && isActual && (
             <div className="px-4 pt-3 text-center">
               <p className="text-mono text-fg-muted" style={{ fontSize: 11, letterSpacing: '0.08em' }}>
@@ -471,8 +496,9 @@ export function MobileEditorShell({
             </div>
           )}
 
-          {/* OCR은 collapse 밖(#261 리뷰 P1) — 줌(max/actual) 모드에서도 닿게. allVis/ghost/잉크 토글은
-              #315에서 헤더 서브메뉴로 이전. */}
+          {/* OCR은 collapse 밖(#261 리뷰 P1) — actual 모드에서도 닿게. max(#328)는 모든 UX를 숨기는
+              풀스크린이라 OCR도 예외 없이 숨긴다. allVis/ghost/잉크 토글은 #315에서 헤더 서브메뉴로 이전. */}
+          {!isMax && (
           <div className="space-y-group px-4 pt-6">
             {/* OCR 자동입력 — 주 자동입력 어포던스라 chrome 최상단(프리뷰 직하)으로 승격. 로직은
                 셸의 useOcrUndo가 소유, 아코디언 없는 모바일이라 apply를 그대로 넘긴다(DesktopStudioShell과 동형). */}
@@ -485,6 +511,7 @@ export function MobileEditorShell({
               ocrEpochRef={ocr.epochRef}
             />
           </div>
+          )}
 
           {/* 편집 본문(Poster 드롭존 + rail) — collapse는 grid-rows 0fr↔1fr 트랜지션(overflow-hidden 필수).
               비-기본 모드에선 접어 프리뷰에 세로 공간을 내준다. reduced-motion은 globals.css 전역 가드가
