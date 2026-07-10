@@ -5,6 +5,7 @@ import {
   FieldGhost,
   FieldTap,
   FilmStripBand,
+  FONT_DISPLAY,
   FONT_KR,
   FONT_MONO,
   FONT_SANS,
@@ -246,20 +247,26 @@ export const Mood35mm = memo(function Mood35mm({ movieInfo: d, components, cropp
             </>
           )}
 
-          {/* 푸터 — 바코드 제거(마스터), MADE WITH FILME + 서명은 유지(Q1) */}
-          <div style={{ paddingTop: 14, display: 'flex', alignItems: 'flex-end', gap: 22, minWidth: 0 }}>
-            <span style={{ fontWeight: 700, fontSize: 15, fontFamily: FONT_MONO, letterSpacing: 3, color: FS_DIM }}>MADE WITH FILME</span>
+          {/* 푸터 — 바코드 제거(마스터), MADE WITH FILME + 서명은 유지(Q1). 이탤릭 connector(made with/
+              collected by) + 대문자 워드마크(FILME)는 Criterion·Stub·Editorial·35mm-landscape 4무드가
+              공유하는 관례 — 이전엔 이 무드만 MONO 대문자로 갈라져 있었다(#321 방향 간 구조 통일). */}
+          <div style={{ paddingTop: 14, display: 'flex', alignItems: 'baseline', gap: 22, minWidth: 0, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+              <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 15, opacity: 0.6, color: FS_INK }}>made with</span>
+              <span style={{ fontWeight: 800, fontSize: 14, fontFamily: FONT_SANS, letterSpacing: 3, color: FS_INK }}>FILME</span>
+            </div>
+            {/* gap:12 — gap:10px는 병합 셀 분해 flex 컨테이너의 유일 시그니처(ghostMode #266 PR-C 불변식)라 여긴 12로 회피. */}
             {signatureVal ? (
               <FieldTap field="signature" onField={onField}>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, fontFamily: FONT_MONO, letterSpacing: 2, color: FS_DIM, marginBottom: 4 }}>COLLECTED BY</div>
-                  <div style={{ fontWeight: 500, fontSize: 26, fontFamily: FONT_KR, color: FS_INK, maxWidth: 300, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{signatureVal}</div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, minWidth: 0 }}>
+                  <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 14, opacity: 0.72, color: FS_INK }}>collected by</span>
+                  <span style={{ fontWeight: 500, fontSize: 26, fontFamily: FONT_KR, color: FS_INK, maxWidth: 300, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{signatureVal}</span>
                 </div>
               </FieldTap>
             ) : gSignature ? (
               <FieldTap field="signature" onField={onField}>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, fontFamily: FONT_MONO, letterSpacing: 2, color: FS_DIM, marginBottom: 4 }}>COLLECTED BY</div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
+                  <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 14, opacity: 0.72, color: FS_INK }}>collected by</span>
                   <FieldGhost text="SIGNATURE" width={200} height={30} surface="dark" />
                 </div>
               </FieldTap>

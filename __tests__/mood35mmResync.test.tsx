@@ -66,10 +66,11 @@ describe('Mood35mm 마스터 resync (#281)', () => {
     expect(html).toContain('SAFETY FILM');          // 엣지 스크롤 코드
   });
 
-  test('MADE WITH FILME + 서명 푸터는 유지(Q1)', () => {
+  test('made with FILME + collected by 서명 푸터는 유지(Q1) — #321 다른 3무드와 동일한 이탤릭 라벨', () => {
     const html = markup();
-    expect(html).toContain('MADE WITH FILME');
-    expect(html).toContain('COLLECTED BY');
+    expect(html).toContain('made with');
+    expect(html).toContain('FILME');
+    expect(html).toContain('collected by');
     expect(html).toContain('영화수집가');
   });
 });
