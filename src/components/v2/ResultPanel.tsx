@@ -153,7 +153,7 @@ export function ResultPanel({
 
   // 완성 티켓을 캡처 → Blob 업로드(/api/ticket) → 발급된 /t/<id> URL을 반환·상태 갱신.
   // og:image가 붙은 퍼마링크라 수신자가 미리보기를 보고 "나도 만들기"로 유입되는 루프(#91).
-  // 발급 성공 시 URL 문자열을, 실패·스테일 시 null을 돌려준다 — 링크/X/메신저 공유가 공통으로
+  // 발급 성공 시 URL 문자열을, 실패·스테일 시 null을 돌려준다 — 링크/메신저 공유가 공통으로
   // 호출해 "필요하면 먼저 발급, 있으면 재사용"하는 단일 진입점이다(절대 throw 안 함).
   const issuePermalink = useCallback(async (): Promise<string | null> => {
     const node = ticketRef.current;
