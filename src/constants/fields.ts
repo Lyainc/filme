@@ -57,19 +57,6 @@ export const FIELD_INFO_KEY: Partial<Record<TicketField, keyof MovieInfo>> = {
   releaseDate: 'releaseDate',
 };
 
-/** 입력 플레이스홀더 — 인라인 폼의 것을 그대로 계승. */
-export const FIELD_PLACEHOLDERS: Partial<Record<TicketField, string>> = {
-  title: '인터스텔라',
-  titleOg: 'Interstellar',
-  actors: '매튜 맥커너히, 앤 해서웨이',
-  theater: 'CGV 용산아이파크몰',
-  screen: 'IMAX관',
-  seat: 'G14, G15',
-  runtime: '150 MIN',
-  bookingNo: 'T-20260510-0014',
-  signature: '@minji · 티켓에 공개돼요',
-};
-
 /**
  * 런처 행 그룹(#215) — 현재 폼 구조(Film / Optional)를 반영. reissue는 releaseDate 시트 안에서,
  * chain/format 로고는 PART B에서 다룬다(여기 없음).
@@ -144,11 +131,6 @@ export const STAMP_KEYS: Record<
 > = {
   chain: { image: 'chain', label: 'chainLabel', visible: 'chainVisible' },
   format: { image: 'format', label: 'formatLabel', visible: 'formatVisible' },
-};
-
-export const STAMP_PLACEHOLDERS: Record<StampTarget, string> = {
-  chain: 'CGV',
-  format: 'IMAX',
 };
 
 /** 상영 포맷 빠른 프리셋(#141) — StampSheet(#215 PART B) 포맷 자동완성·칩의 단일 소스. */

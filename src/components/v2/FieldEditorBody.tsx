@@ -13,10 +13,8 @@ import {
   FIELD_LABELS,
   FIELD_SHEET_TYPE,
   FIELD_INFO_KEY,
-  FIELD_PLACEHOLDERS,
   FORMAT_PRESETS,
   STAMP_LABELS,
-  STAMP_PLACEHOLDERS,
   STAMP_KEYS,
   isStampTarget,
   type SheetTarget,
@@ -67,7 +65,6 @@ function TextSheet({ field, photo }: { field: TicketField; photo: Photo }) {
       value={value}
       // key는 문자열 필드(title/titleOg/... bookingNumber/signature)만 — 값이 늘 string이라 안전.
       onChange={(e) => photo.updateMovieInfo({ [key]: e.target.value } as Partial<MovieInfo>)}
-      placeholder={FIELD_PLACEHOLDERS[field]}
       aria-label={FIELD_LABELS[field]}
       maxLength={field === 'signature' ? 20 : undefined}
       className={INPUT_CLS}
@@ -103,7 +100,6 @@ function TitleSheet({ photo }: { photo: Photo }) {
           photo.updateMovieInfo({ title: v });
           scheduleSearch(v.trim());
         }}
-        placeholder={FIELD_PLACEHOLDERS.title}
         aria-label="제목"
         className={INPUT_CLS}
       />
@@ -376,7 +372,6 @@ function StampSheet({ target, photo }: { target: StampTarget; photo: Photo }) {
           if (isFormat) setAcOpen(true);
         }}
         onFocus={() => isFormat && setAcOpen(true)}
-        placeholder={STAMP_PLACEHOLDERS[target]}
         aria-label={STAMP_LABELS[target]}
         maxLength={24}
         className={INPUT_CLS}

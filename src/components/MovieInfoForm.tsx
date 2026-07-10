@@ -146,7 +146,6 @@ export default function MovieInfoForm({
                 }
               }
             }}
-            placeholder="인터스텔라"
             role="combobox"
             aria-expanded={showResults}
             aria-controls={hasListbox ? 'movieTitle-listbox' : undefined}
@@ -257,7 +256,6 @@ export default function MovieInfoForm({
         }
         value={movieInfo.titleOg}
         onChange={(e) => onChange({ titleOg: e.target.value })}
-        placeholder="Interstellar"
       />
 
       <ReleaseDateBlock
@@ -301,7 +299,6 @@ export default function MovieInfoForm({
         value={movieInfo.signature || ''}
         dimmed={!fieldVisibility.signature}
         onChange={(e) => onChange({ signature: e.target.value })}
-        placeholder="@minji · 티켓에 공개돼요"
         maxLength={20}
       />
     </section>
@@ -464,7 +461,6 @@ export function DateInput({
           const v = e.target.value.replace(/[^\d]/g, '').slice(0, 4);
           onChange(mergeDatePrefix(value, v));
         }}
-        placeholder="2014"
         aria-label={ariaLabel}
         className={base}
       />
