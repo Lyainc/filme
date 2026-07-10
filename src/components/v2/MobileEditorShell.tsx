@@ -126,6 +126,12 @@ export function MobileEditorShell({
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // 헤더 서브메뉴(#315) — 다크모드·전체표시·빈 항목·잉크 토글 + 포스터 교체/재크롭 액션을 호스팅.
   const [menuOpen, setMenuOpen] = useState(false);
+  // pill 클릭 시 서브메뉴가 열린 채로 남지 않게 항상 같이 닫는다(claude-review PR #332 P2 —
+  // 메뉴 오버레이가 마우스 클릭은 막아도 키보드 포커스는 막지 않아 Tab으로 pill까지 도달 가능).
+  function handleViewModeChange(mode: ViewMode) {
+    setViewMode(mode);
+    setMenuOpen(false);
+  }
   // 포스터 크롭 파이프라인(#259 on-ticket tap + #315 서브메뉴 교체/재크롭 통합 단일 소스).
   // originalSrc는 첫 업로드 이후에도 유지돼야 재크롭이 되므로(#315 설계, ImageUploader의
   // pendingNewFile 패턴을 그대로 포팅) 크롭 완료 시 revoke하지 않는다 — 값이 바뀌거나(교체로
@@ -466,7 +472,7 @@ export function MobileEditorShell({
               onClick)로 대체한다. ghost 토글은 #315에서 헤더 서브메뉴로 이전. */}
           {croppedImageUrl && !isMax && (
             <div className="flex flex-wrap items-center justify-center gap-2 px-4 pt-4">
-              <ZoomSegment viewMode={viewMode} onChange={setViewMode} />
+              <ZoomSegment viewMode={viewMode} onChange={handleViewModeChange} />
             </div>
           )}
 
@@ -583,18 +589,20 @@ export function MobileEditorShell({
       )}
 
       {/* OCR 되돌리기 배너(#261 승격) — 화면 하단 고정(fixed), useOcrUndo/OcrUndoBanner 공유(#141-class
-          drift 방지). 배너는 셸이 단독 소유하므로 중복되지 않는다. */}
+          drift 방지). 배너는 셸이 단독 소유하므로 중복되지 않는다. max(#328)는 티켓만 노출하는
+          풀스크린이라 시각 배너를 숨긴다 — snapshot을 null로 넘겨도 컴포넌트 자신은 계속 마운트돼
+          sr-only 라이브리전의 mutation 감지 계약(#199)은 유지된다. */}
       <OcrUndoBanner
-        snapshot={ocr.snapshot}
+        snapshot={isMax ? null : ocr.snapshot}
         filledFields={ocr.filledFields}
         onCancel={ocr.cancel}
         onConfirm={ocr.confirm}
       />
 
       {/* 완료 비활성 사유 — SR 라이브리전은 콘텐츠와 함께 삽입되면 mutation을 놓치므로(#199)
-          항상 마운트하고 텍스트만 토글한다. 시각 토스트는 별도로 aria-hidden. */}
+          항상 마운트하고 텍스트만 토글한다. 시각 토스트는 별도로 aria-hidden, max(#328)에선 숨김. */}
       <div role="status" aria-live="polite" className="sr-only">{toast ?? ''}</div>
-      {toast && (
+      {!isMax && toast && (
         <div
           aria-hidden="true"
           className="fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-full border border-line bg-surface-elevated px-4 py-2 text-[13px] text-fg"
