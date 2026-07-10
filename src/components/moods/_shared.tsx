@@ -542,13 +542,17 @@ const CODE128_PATTERNS = [
 ];
 const CODE128_START_B = 104;
 const CODE128_STOP = 106;
+const BARCODE_FALLBACK_DIGITS = 'PT-000000-0000'.replace(/\D/g, '');
 
 // bookingNo 문자열을 표준 Code128B로 인코딩해 실제 스캐너가 디코드 가능한 막대 폭을 만든다.
 // Start-B + 데이터(값=ASCII-32) + 체크디짓(mod 103) + Stop. export는 인코딩 self-check용.
 // 숫자만 인코딩(#312) — 대시 포함 원본을 그대로 넣으면 대시가 심볼을 차지해 바코드가 왜곡된다.
 // 텍스트 표시(`No. ${bookingNo}`)는 원본을 그대로 쓰므로 이 변환은 바코드 인코딩에만 영향.
 export function buildBarcodeWidths(value: string): Bar[] {
-  const v = (value || 'PT-000000-0000').replace(/\D/g, '');
+  // 숫자가 하나도 없는 값(예: 순한글 OCR 오인식)도 폴백 — value가 truthy면 앞의 `value ||`
+  // 폴백을 안 타고 숫자만 걸러낸 뒤 빈 문자열이 되어, 데이터 심볼 없는 "빈" 바코드가 그려졌다
+  // (#190 P2 nit, PR #329 리뷰).
+  const v = (value || 'PT-000000-0000').replace(/\D/g, '') || BARCODE_FALLBACK_DIGITS;
   const values: number[] = [];
   for (let i = 0; i < v.length; i++) {
     // 숫자(ASCII 48~57)만 남은 문자열이라 항상 Code128B 범위(32~126) 안이다.
