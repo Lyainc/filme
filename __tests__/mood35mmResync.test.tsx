@@ -68,9 +68,9 @@ describe('Mood35mm 마스터 resync (#281)', () => {
 
   test('made with FILME + collected by 서명 푸터는 유지(Q1) — #321 다른 3무드와 동일한 이탤릭 라벨', () => {
     const html = markup();
-    expect(html).toContain('made with');
-    expect(html).toContain('FILME');
-    expect(html).toContain('collected by');
-    expect(html).toContain('영화수집가');
+    // 필름 스트립 엣지 코드에도 대문자 'FILME'이 섞여 있어 단순 toContain으로는 푸터 특정 검증이
+    // 안 된다 — 이탤릭 "made with"/"collected by" span 바로 뒤에 워드마크/값이 오는 구조로 고정.
+    expect(html).toMatch(/made with<\/span><span[^>]*>FILME<\/span>/);
+    expect(html).toMatch(/collected by<\/span><span[^>]*>영화수집가<\/span>/);
   });
 });
