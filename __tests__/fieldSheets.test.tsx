@@ -127,7 +127,6 @@ describe('StampSheet 극장/포맷 (#215 PART B)', () => {
     expect(screen.getByTestId('formatLabel').textContent).toBe('Dolby');
   });
 
-
   test('스탬프 헤더 눈 토글이 components.chainVisible/formatVisible를 갱신', async () => {
     render(<SheetHarness field="chain" />);
     expect(screen.getByTestId('vis-chain').textContent).toBe('true');
