@@ -53,6 +53,7 @@ export function ResultPanel({
   // 캡처 원본 — 여기 달린 TicketRenderer의 (스케일 전) 내부 DOM이 내보내기 대상이다.
   const ticketRef = useRef<HTMLDivElement>(null);
   const linkInputRef = useRef<HTMLInputElement>(null);
+  const linkPanelRef = useRef<HTMLDivElement>(null);
   // 인-플라이트 handlePermalink의 세대 — 업로드 중 티켓 내용이 바뀌면(아래 reset effect가
   // 증가) 완료된 URL은 옛 스냅샷이므로 폐기해 스테일 링크 노출을 막는다.
   const permaGenRef = useRef(0);
@@ -86,6 +87,13 @@ export function ResultPanel({
     const timer = setTimeout(() => setPermaState('idle'), 2000);
     return () => clearTimeout(timer);
   }, [permaState]);
+
+  // 링크 발급 성공 시 패널로 스크롤 — 액션 버튼 아래 조건부로 붙는 패널이라, 스크롤 없이는
+  // 화면 밖일 수 있어 생성됐는지 확인할 방법이 없었다(#326).
+  useEffect(() => {
+    if (!permalink) return;
+    linkPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [permalink]);
 
   // '복사됨!' 라벨은 2초 후 '복사'로 복귀. 'manual'(수동 복사 안내)은 다음 액션까지 유지.
   useEffect(() => {
@@ -407,7 +415,7 @@ export function ResultPanel({
 
         {/* 공유 링크 패널 — '링크' 셀을 탭해 퍼마링크가 발급되면(permalink set) 펼쳐진다. */}
         {permalink && (
-          <div className="space-y-1.5 rounded-field-sm border border-line bg-surface p-3 animate-rise-in">
+          <div ref={linkPanelRef} className="space-y-1.5 rounded-field-sm border border-line bg-surface p-3 animate-rise-in">
             {/* 모바일에선 rail(숨김)+시트로 ResultPanel이 둘 동시 렌더되므로 전역 id는
                 중복된다 — 라벨은 span + 인풋 aria-label로 연결해 id 충돌을 피한다. */}
             <Eyebrow className="block">공유 링크</Eyebrow>
