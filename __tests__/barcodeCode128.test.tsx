@@ -45,6 +45,13 @@ describe('buildBarcodeWidths — 표준 Code128B 인코딩 (#207)', () => {
   test('빈 입력은 폴백 bookingNo로 인코딩(throw 없이 비어있지 않음)', () => {
     expect(buildBarcodeWidths('').length).toBeGreaterThan(0);
   });
+
+  // #190 rolling nit(PR #329 리뷰) — bookingNo가 숫자 없는 값(예: 순한글 OCR 오인식)이면
+  // `\D` 제거 후 빈 문자열이 돼 데이터 심볼 없는 "빈" 바코드(Start+체크디짓+Stop 3개뿐)가 그려졌다.
+  test('숫자가 하나도 없는 값은 빈 데이터가 아니라 폴백 bookingNo로 인코딩된다', () => {
+    const noDigits = buildBarcodeWidths('가나다');
+    expect(noDigits).toEqual(buildBarcodeWidths(''));
+  });
 });
 
 // bookingNo에 섞인 대시가 Code128 심볼을 차지해 바코드가 왜곡되던 버그(#312) 회귀.
