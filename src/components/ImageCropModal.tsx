@@ -123,9 +123,8 @@ export default function ImageCropModal(props: ImageCropModalProps) {
       style={{ background: 'rgba(44,38,34,0.55)' }}
     >
       <div className="relative flex h-[85svh] max-h-[820px] w-full max-w-sm flex-col overflow-hidden rounded-card bg-paper shadow-card rail:h-[700px] rail:max-h-[88vh] rail:max-w-2xl">
-        {/* Header — 제목 + 정사각 닫기 버튼 */}
-        <div className="flex items-center justify-between border-b border-line px-4 py-3">
-          <h3 className="text-[14px] font-semibold tracking-tight text-fg">{title}</h3>
+        {/* Header — 정사각 닫기 버튼. 제목은 aria-label(다이얼로그 접근성 이름)로만 유지, 시각 헤딩은 제거(#320) */}
+        <div className="flex items-center justify-end border-b border-line px-4 py-3">
           <button
             type="button"
             onClick={onClose}

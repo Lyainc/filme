@@ -51,7 +51,7 @@ describe('MobileEditorShell chrome 정보위계 (#261/#315)', () => {
     render(<Harness />);
 
     const ocr = await screen.findByRole('button', { name: '티켓 스크린샷으로 자동 인식' });
-    const poster = screen.getByText('Poster'); // 업로드 전 인라인 드롭존 섹션 eyebrow
+    const poster = screen.getByText('포스터 업로드'); // 업로드 전 인라인 드롭존
     const rail = screen.getByRole('button', { name: '무드' }); // 첫 rail 아이템
 
     expect(precedes(ocr, poster)).toBe(true);
@@ -65,7 +65,7 @@ describe('MobileEditorShell chrome 정보위계 (#261/#315)', () => {
     const ocr = await screen.findByRole('button', { name: '티켓 스크린샷으로 자동 인식' });
     const rail = screen.getByRole('button', { name: '무드' });
 
-    expect(screen.queryByText('Poster')).toBeNull();
+    expect(screen.queryByText('포스터 업로드')).toBeNull();
     expect(precedes(ocr, rail)).toBe(true);
   });
 

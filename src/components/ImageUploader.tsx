@@ -108,7 +108,6 @@ export default function ImageUploader({ onUpload, isProcessing, hasImage = false
             className="h-[88px] w-[57px] shrink-0 rounded-field border border-line object-cover"
           />
           <div className="flex min-w-0 flex-1 flex-col gap-2">
-            <p className="text-[13px] font-medium leading-tight text-fg">포스터가 적용됐어요</p>
             <div className="flex gap-2">
               <button
                 type="button"
