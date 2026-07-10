@@ -10,6 +10,9 @@ interface AppHeaderProps {
   clearDraft: () => void;
 }
 
+/** 초기화 확인 문구(#310) — 데스크톱 AppHeader·모바일 MobileEditorShell 서브메뉴가 공유하는 단일 출처. */
+export const CLEAR_DRAFT_CONFIRM_MESSAGE = '입력한 모든 티켓 정보를 지우고 초기화할까요? 되돌릴 수 없어요.';
+
 /** GitHub 저장소 링크 — 헤더(데스크톱)·AppFooter(#327)가 공유하는 단일 정의. */
 export function GithubLink({ className }: { className?: string }) {
   return (
@@ -74,7 +77,7 @@ function ClearDraftButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={() => {
-        if (window.confirm('입력한 모든 티켓 정보를 지우고 초기화할까요? 되돌릴 수 없어요.')) {
+        if (window.confirm(CLEAR_DRAFT_CONFIRM_MESSAGE)) {
           onClick();
         }
       }}

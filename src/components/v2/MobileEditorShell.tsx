@@ -1,6 +1,7 @@
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
 import { AppFooter } from './AppFooter';
+import { CLEAR_DRAFT_CONFIRM_MESSAGE } from './AppHeader';
 import { DesignRail } from './DesignRail';
 import { OcrUploadCard } from './OcrUploadCard';
 import { OcrUndoBanner } from './OcrUndoBanner';
@@ -387,7 +388,7 @@ export function MobileEditorShell({
                   type="button"
                   onClick={() => {
                     setMenuOpen(false);
-                    if (window.confirm('입력한 모든 티켓 정보를 지우고 초기화할까요? 되돌릴 수 없어요.')) {
+                    if (window.confirm(CLEAR_DRAFT_CONFIRM_MESSAGE)) {
                       photo.clearDraft();
                       flashToast('초기화했어요');
                     }
