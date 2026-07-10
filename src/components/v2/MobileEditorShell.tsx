@@ -227,6 +227,10 @@ export function MobileEditorShell({
     : undefined;
 
   const layout = getLayout(previewComponents.layout);
+  // max 재정의(#328): 헤더·서브메뉴·pill·OCR까지 다 숨기고 티켓만 화면에 fixed 오버레이로 띄운다 —
+  // 나가는 길은 티켓 자신을 탭(기존 default 복귀 핸들러 재사용). ViewMode가 'default' | 'max' 2값뿐이라
+  // viewMode !== 'default'는 항상 isMax와 동치 — 아래 rotateLandscape/collapseBody도 이걸 재사용한다.
+  const isMax = viewMode === 'max';
   // 컨테이너 width만으로 렌더 크기를 몰기(TicketRenderer는 width에 맞춰 스케일). max는 세로를
   // TicketRenderer의 자체 maxHeight(min(72vh,720px)) 한도까지 채우는 width를 역산.
   const previewWidth = `min(90vw, calc(${PREVIEW_MAX_HEIGHT} * ${layout.width} / ${layout.height}))`;
@@ -234,15 +238,12 @@ export function MobileEditorShell({
   // (#275-8) max에서 90° 회전 + 화면 꽉 채우기로 배치. rotatedInnerWidth는 회전 전(자연 방향)
   // TicketRenderer 폭 — 회전 후 세로가 화면 상한을 채우도록 역산. rotatedStageWidth(회전 후 화면에
   // 보이는 폭)는 같은 비율로 calc 유도해 반올림을 피한다.
-  const rotateLandscape = layout.orientation === 'landscape' && viewMode !== 'default';
+  const rotateLandscape = layout.orientation === 'landscape' && isMax;
   const rotatedInnerWidth = `min(${PREVIEW_MAX_HEIGHT}, calc(90vw * ${layout.width} / ${layout.height}))`;
   const rotatedStageWidth = `calc(${rotatedInnerWidth} * ${layout.height} / ${layout.width})`;
   // 기본이 아닐 때만 편집 본문(Poster 드롭존 + rail)을 접어 프리뷰에 세로 공간을 내준다. 이미지가
   // 없으면(업로드 전) 접지 않는다 — 그땐 프리뷰/pill 자체가 없다.
-  const collapseBody = !!croppedImageUrl && viewMode !== 'default';
-  // max 재정의(#328): 헤더·서브메뉴·pill·OCR까지 다 숨기고 티켓만 화면에 fixed 오버레이로 띄운다 —
-  // 나가는 길은 티켓 자신을 탭(기존 default 복귀 핸들러 재사용).
-  const isMax = viewMode === 'max';
+  const collapseBody = !!croppedImageUrl && isMax;
 
   return (
     <div
