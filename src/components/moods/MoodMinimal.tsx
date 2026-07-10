@@ -20,6 +20,7 @@ import {
   showFieldGhost,
   stampWillRender,
   truncateActors,
+  useFontsReady,
 } from './_shared';
 
 /**
@@ -75,7 +76,8 @@ export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components,
   const { watchDateClean, releaseClean, reissueClean } = resolveTicketData(d);
 
   const titleVal       = gate(fv?.title, d.title);
-  const titleFontSize  = fitFontSizeToWidth(titleVal, TITLE_AVAIL_WIDTH * TITLE_CLAMP_LINES, { fontFamily: FONT_KR, fontWeight: 500, minSize: TITLE_MIN_SIZE, maxSize: TITLE_MAX_SIZE });
+  const fontsReady      = useFontsReady();
+  const titleFontSize  = fitFontSizeToWidth(titleVal, TITLE_AVAIL_WIDTH * TITLE_CLAMP_LINES, { fontFamily: FONT_KR, fontWeight: 500, minSize: TITLE_MIN_SIZE, maxSize: TITLE_MAX_SIZE }, fontsReady);
   const titleOgVal     = gate(fv?.titleOg, d.titleOg);
   const actorsVal      = truncateActors(gate(fv?.actors, d.actors));
   const watchDateVal   = gate(fv?.watchDate, watchDateClean);

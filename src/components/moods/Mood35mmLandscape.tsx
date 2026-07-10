@@ -21,6 +21,7 @@ import {
   showFieldGhost,
   stampWillRender,
   truncateActors,
+  useFontsReady,
 } from './_shared';
 
 /**
@@ -74,7 +75,8 @@ export const Mood35mmLandscape = memo(function Mood35mmLandscape({ movieInfo: d,
   const titleVal = gate(fv?.title, d.title);
   // 타이틀 폭 맞춤(#318) — 포스터 열 캡션 가용폭(1477 - PANEL_W600 - padding46*2). 2줄
   // 클램프라 가용폭×2를 maxWidth로 넘겨 가장 긴 한 줄 기준으로 안전하게 축소한다(_shared.tsx 참고).
-  const titleFontSize = fitFontSizeToWidth(titleVal, 785 * 2, { fontFamily: FONT_KR, fontWeight: 800, minSize: 37, maxSize: 60 });
+  const fontsReady = useFontsReady();
+  const titleFontSize = fitFontSizeToWidth(titleVal, 785 * 2, { fontFamily: FONT_KR, fontWeight: 800, minSize: 37, maxSize: 60 }, fontsReady);
   const titleOgVal = gate(fv?.titleOg, d.titleOg);
   const theaterVal = gate(fv?.theater, d.theater);
   const screenVal = gate(fv?.screen, d.screen);

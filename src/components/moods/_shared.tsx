@@ -1,4 +1,4 @@
-import { CSSProperties, Fragment, ReactNode, memo, useMemo } from 'react';
+import { CSSProperties, Fragment, ReactNode, memo, useEffect, useMemo, useState } from 'react';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 import { FIELD_LABELS, STAMP_LABELS, isStampTarget, type SheetTarget } from '@/constants/fields';
 import { formatDate } from '@/utils/dateFormat';
@@ -899,6 +899,31 @@ function getMeasureCtx(): CanvasRenderingContext2D | null {
 const fitFontSizeCache = new Map<string, number>();
 
 /**
+ * 커스텀 웹폰트(FONT_KR = next/font/local Pretendard, `display:'swap'`) 로드 완료 여부(#318
+ * claude-review PR #345 P1). 로드 전엔 canvas measureText가 폴백 폰트 메트릭으로 재는데, 그
+ * 결과가 캐시에 박히면 진짜 폰트가 도착해도 재계산 없인 안 바뀐다 — 그래서 로드 전엔
+ * `fitFontSizeToWidth`가 캐시에 쓰지 않는다(아래). 이 훅은 그 "로드 전" 구간을 알려주고,
+ * 로드 완료 시 상태 변경으로 소비 컴포넌트를 정확히 한 번 재렌더시켜 정확한 값으로 재계산·
+ * 캐시되게 한다.
+ */
+export function useFontsReady(): boolean {
+  const [ready, setReady] = useState(
+    () => typeof document === 'undefined' || document.fonts === undefined || document.fonts.status === 'loaded',
+  );
+  useEffect(() => {
+    if (ready || typeof document === 'undefined' || !document.fonts) return;
+    let cancelled = false;
+    document.fonts.ready.then(() => {
+      if (!cancelled) setReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [ready]);
+  return ready;
+}
+
+/**
  * 텍스트가 maxWidth(px) 안에 들어가는 가장 큰 폰트 크기를 이진탐색으로 구한다(#318).
  *
  * 티켓은 뷰포트에 반응하지 않고 무드별 고정 자연 픽셀 크기로 렌더되므로, 타이틀 영역의
@@ -906,9 +931,12 @@ const fitFontSizeCache = new Map<string, number>();
  * 오버플로 루프 없이 canvas 2D `measureText`로 순수 계산 후 그대로 쓴다.
  *
  * SSR-safe: document 없으면(서버 렌더) throw 없이 maxSize를 그대로 반환한다(ocrPreprocess.ts
- * 실패-흡수 패턴). 프리뷰에서 폰트 로드 전 잠깐 부정확해도 `document.fonts.ready` 이후
- * 리렌더에서 자연히 교정되고, 캡처 파이프라인(captureToImage)은 이미 fonts.ready를
- * 기다리므로 export 결과물에는 영향이 없다.
+ * 실패-흡수 패턴).
+ *
+ * `fontsReady=false`(호출부가 `useFontsReady()`로 넘김)일 땐 **캐시에 쓰지 않는다** — 폰트
+ * 로드 전 폴백 메트릭으로 잰 값이 캐시에 박혀 로드 후에도 안 바뀌는 걸 막는다(PR #345 P1).
+ * 이 구간은 실사용에서 아주 짧고 드물어(로드 전 렌더는 useFontsReady가 재렌더를 트리거하기
+ * 전까지의 한두 프레임뿐) 캐시 미스 비용이 무시할 만하다.
  *
  * (text, maxWidth, fontFamily, fontWeight, minSize, maxSize) 키로 메모이즈해 리렌더마다
  * 재계산하지 않는다.
@@ -918,7 +946,12 @@ const fitFontSizeCache = new Map<string, number>();
  * 없다. 완벽한 줄바꿈 시뮬레이션도 하지 않는다 — 호출부가 "가용폭 × 클램프 줄 수"를
  * maxWidth로 넘겨 가장 긴 한 줄 기준으로 안전하게 축소하는 근사를 쓴다.
  */
-export function fitFontSizeToWidth(text: string, maxWidth: number, { fontFamily, fontWeight = 400, minSize, maxSize }: FitFontSizeOptions): number {
+export function fitFontSizeToWidth(
+  text: string,
+  maxWidth: number,
+  { fontFamily, fontWeight = 400, minSize, maxSize }: FitFontSizeOptions,
+  fontsReady = true,
+): number {
   if (!text) return maxSize;
 
   const key = `${text} ${maxWidth} ${fontFamily} ${fontWeight} ${minSize} ${maxSize}`;
@@ -949,7 +982,7 @@ export function fitFontSizeToWidth(text: string, maxWidth: number, { fontFamily,
     }
   }
 
-  fitFontSizeCache.set(key, result);
+  if (fontsReady) fitFontSizeCache.set(key, result);
   return result;
 }
 

@@ -22,6 +22,7 @@ import {
   showFieldGhost,
   stampWillRender,
   truncateActors,
+  useFontsReady,
 } from './_shared';
 
 // 하단 caps 메타 그리드(관람·영화 청킹)의 라벨/값 스타일. 인라인 리터럴에서 추출해 VENUE 분해 셀·
@@ -58,7 +59,8 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
   // 타이틀 폭 맞춤(#318) — 마스터 v2 기본값 58/800·lh1.14·ls-1.5는 maxSize로 유지하고, 제목
   // 블록 가용폭(960 - left200 - right64)을 넘는 긴 제목만 이진탐색으로 축소한다. 3줄 클램프라
   // 가용폭×3을 maxWidth로 넘겨 가장 긴 한 줄 기준으로 안전하게 축소한다(_shared.tsx 참고).
-  const titleSize      = fitFontSizeToWidth(titleVal, 696 * 3, { fontFamily: FONT_KR, fontWeight: 800, minSize: 36, maxSize: 58 });
+  const fontsReady     = useFontsReady();
+  const titleSize      = fitFontSizeToWidth(titleVal, 696 * 3, { fontFamily: FONT_KR, fontWeight: 800, minSize: 36, maxSize: 58 }, fontsReady);
   const titleOgVal     = gate(fv?.titleOg, d.titleOg);
   const actorsVal      = truncateActors(gate(fv?.actors, d.actors));
   const watchDateVal   = gate(fv?.watchDate, watchDateClean);
