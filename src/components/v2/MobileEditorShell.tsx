@@ -230,8 +230,8 @@ export function MobileEditorShell({
   const layout = getLayout(previewComponents.layout);
   const actual = actualSize(layout);
   const isActual = viewMode === 'actual';
-  // 실제 크기(cm)의 물리 부정확(#275-7) 보정 — devicePixelRatio 근사 + 사용자 캘리브레이션.
-  const { correction: physicalCorrection, calibration, setCalibration } = usePhysicalSizeCorrection();
+  // 실제 크기(cm)의 물리 부정확(#275-7) 보정 — devicePixelRatio 근사만(#311: 캘리브레이션 슬라이더 제거).
+  const physicalCorrection = usePhysicalSizeCorrection();
   // 실제 크기에선 ghost를 강제로 끈다(물리 크기 정밀 비교엔 자리표시자가 방해). 그 외엔 토글값.
   const ghostEffective = !isActual && ghostMode;
   // actual의 cm 값엔 항상 물리 보정을 곱한다(portrait/landscape 공용 소스).
@@ -481,24 +481,6 @@ export function MobileEditorShell({
               <p className="text-mono text-fg-muted" style={{ fontSize: 11, letterSpacing: '0.08em' }}>
                 실제 크기 · {actual.caption}
               </p>
-              {/* 물리 보정 캘리브레이션(#275-7) — devicePixelRatio 근사는 오차가 있어 신용카드 등
-                  실물과 대조해 미세조정하는 노브를 남긴다. actual 모드에서만 노출. */}
-              <label
-                className="text-mono mt-2 inline-flex items-center gap-2 text-fg-faint"
-                style={{ fontSize: 10 }}
-              >
-                보정 {Math.round(calibration * 100)}%
-                <input
-                  type="range"
-                  min={0.7}
-                  max={1.4}
-                  step={0.01}
-                  value={calibration}
-                  onChange={(e) => setCalibration(Number(e.target.value))}
-                  aria-label="실제 크기 보정 — 신용카드 등 실물과 비교해 맞춰보세요"
-                  style={{ width: 120 }}
-                />
-              </label>
             </div>
           )}
 
