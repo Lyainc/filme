@@ -314,12 +314,6 @@ export function ResultPanel({
 
   return (
     <div className="space-y-group">
-      {/* 완성 eyebrow(#222) — mono·와이드 트래킹·대문자, 은은한 rise-in. D7: 빨강은 액션 전용이라
-          eyebrow는 faint 중립톤으로 둔다. 모바일 시트는 별도 Drawer.Title이 a11y 라벨을 맡는다. */}
-      <Eyebrow as="p" tone="faint" className="text-center animate-rise-in">
-        티켓 완성
-      </Eyebrow>
-
       {/* hidePreview(데스크톱 done): 캡처 타깃은 DOM에 유지하되 인스펙터 flow 밖으로 뺀다.
           display:none이면 html-to-image가 레이아웃을 못 잡으니 off-screen 고정으로만 숨긴다
           (캔버스 hero 티켓이 이미 프리뷰 역할이라 인스펙터는 액션만 — #233 이중 노출 제거). */}
@@ -328,7 +322,7 @@ export function ResultPanel({
         style={hidePreview ? { position: 'fixed', left: -99999, top: 0, width: layout.width } : undefined}
         aria-hidden={hidePreview || undefined}
       >
-        <PreviewFilmCell saving={ctaState === 'loading'} promoted label="이 상태 그대로 저장 · 공유돼요">
+        <PreviewFilmCell saving={ctaState === 'loading'} promoted>
           <TicketRenderer
             ref={ticketRef}
             croppedImageUrl={croppedImageUrl}
@@ -340,16 +334,6 @@ export function ResultPanel({
       </div>
 
       <div className="space-y-3">
-        {/* 프리뷰가 화면 밖으로 나간 done(hidePreview)에선 프리뷰 셀 하단 카피가 사라지므로,
-            "이 상태 그대로" 안심 문구를 저장 CTA 위에 동등하게 남겨 문맥을 유지한다(#233 스펙). */}
-        {hidePreview && (
-          <p className="flex items-center justify-center gap-1.5 text-[11px] font-medium tracking-tight text-accent">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
-              <path d="M20 6 9 17l-5-5" />
-            </svg>
-            이 상태 그대로 저장 · 공유돼요
-          </p>
-        )}
         {/* 1차 액션 = 사진 저장(accent, ~52px, 다운로드 아이콘). 성공 시 체크 + '사진에 저장됨'. */}
         <PrimaryCta
           state={ctaState}
@@ -359,18 +343,9 @@ export function ResultPanel({
           icon={<DownloadIcon />}
           className="!min-h-[52px]"
         />
-        {/* 내보내기 스펙 — 캡처는 natural px × pixelRatio 2 (captureToImage 참고) */}
-        <Eyebrow as="p" tone="faint" className="text-center">
-          {layout.width} × {layout.height} · JPEG ×2
-        </Eyebrow>
 
-        {/* D7 공유 위계: save→link→channels 시퀀스를 '공유' eyebrow 디바이더로 시각 분리.
-            2nd 시네마틱 neutral(#203 warm amber) — Eyebrow 기본 톤이 neutral-2라 여긴 divider만 명시. */}
-        <div className="flex items-center gap-3">
-          <span aria-hidden="true" className="h-px flex-1 bg-neutral-2" />
-          <Eyebrow>공유</Eyebrow>
-          <span aria-hidden="true" className="h-px flex-1 bg-neutral-2" />
-        </div>
+        {/* D7 공유 위계: save→link→channels 시퀀스를 디바이더로 시각 분리. */}
+        <div aria-hidden="true" className="h-px w-full bg-neutral-2" />
 
         {/* 2차 액션 = 링크 만들기(퍼마링크 발급, 바이럴 루프 진입점 #91). elevated secondary —
             accent-soft 그라운드 + accent 아이콘/텍스트로 저장(accent fill)과 채널(quiet outline)
@@ -439,11 +414,6 @@ export function ResultPanel({
                 </span>
               </button>
             </div>
-            {copyState === 'manual' && (
-              <p className="text-[12px] text-fg-muted">
-                자동 복사가 막혔어요. 링크를 길게 눌러 직접 복사해 주세요.
-              </p>
-            )}
             {/* 공유 링크 disclaimer(#179) — 만료·비공식·양도불가 고지. 만료일은 cleanup과 같은
                 단일 출처(DEFAULT_TICKET_TTL_DAYS)에서 가져와 표기와 실제 정책이 어긋나지 않게 한다. */}
             <p className="text-[11px] leading-snug text-fg-faint">

@@ -1,7 +1,6 @@
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
 import { DesignRail } from './DesignRail';
-import { Eyebrow } from './Eyebrow';
 import { OcrUploadCard } from './OcrUploadCard';
 import { OcrUndoBanner } from './OcrUndoBanner';
 import { ThemeToggle } from './ThemeToggle';
@@ -492,7 +491,6 @@ export function MobileEditorShell({
                     교체/재크롭이 대신하므로(#324) 툴팁·적용 카드 없이 섹션 자체가 사라진다. */}
                 {!croppedImageUrl && (
                   <section className="space-y-group">
-                    <Eyebrow>Poster</Eyebrow>
                     <button
                       type="button"
                       onClick={handlePosterTap}

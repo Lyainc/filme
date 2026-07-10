@@ -71,10 +71,10 @@ describe('ResultStage 뒤로가기 배선 (#258)', () => {
     expect(backed).toBe(1);
   });
 
-  test('완성 eyebrow와 hero 티켓이 렌더된다', async () => {
+  test('hero 티켓이 렌더된다', async () => {
     renderStage(() => {});
-    await screen.findByText('티켓 완성');
     // hero(표시용) + ResultPanel의 off-screen 캡처 대상, 두 TicketRenderer가 함께 마운트된다.
+    await screen.findAllByTestId('ticket');
     expect(screen.getAllByTestId('ticket').length).toBe(2);
   });
 

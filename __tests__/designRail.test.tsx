@@ -99,7 +99,7 @@ describe('DesignRail (#217)', () => {
     expect(color.getAttribute('aria-expanded')).toBe('true');
     expect(mood.getAttribute('aria-expanded')).toBe('false');
     expect(texture.getAttribute('aria-expanded')).toBe('false');
-    expect(screen.getByText('Ink · logo & type color')).not.toBeNull();
+    expect(screen.getByLabelText('Hex color')).not.toBeNull();
 
     // 무드 열기 → 컬러 닫힘(한 번에 하나)
     await user.click(mood);

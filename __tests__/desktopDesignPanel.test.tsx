@@ -36,7 +36,7 @@ describe('DesktopDesignPanel (#228)', () => {
     // 아코디언이 아니라 세로 스택 — 넷 다 한 번에 보인다(designRail은 한 번에 하나만).
     expect(screen.queryByRole('group', { name: 'Mood designs' })).not.toBeNull();
     expect(screen.queryByRole('radiogroup', { name: 'Texture' })).not.toBeNull();
-    expect(screen.queryByText('Ink · logo & type color')).not.toBeNull();
+    expect(screen.queryByLabelText('Hex color')).not.toBeNull();
     expect(screen.queryByLabelText('포스터')).not.toBeNull();
     expect(screen.queryByLabelText('컴포넌트')).not.toBeNull();
   });
@@ -57,8 +57,8 @@ describe('DesktopDesignPanel (#228)', () => {
     render(<PanelHarness />);
     const region = screen.getByRole('region', { name: 'Color' });
     expect(region.querySelector('*')).not.toBeNull();
-    // ColorPicker(단일 themeColor 축)가 이 region 안에 — 잉크 헤더 + White/Black 원터치.
-    expect(region.textContent).toContain('Ink · logo & type color');
+    // ColorPicker(단일 themeColor 축)가 이 region 안에 — Hex 입력 + White/Black 원터치.
+    expect(region.querySelector('[aria-label="Hex color"]')).not.toBeNull();
     expect(region.querySelector('[aria-label="White"]')).not.toBeNull();
     expect(region.querySelector('[aria-label="Black"]')).not.toBeNull();
   });
