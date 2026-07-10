@@ -5,7 +5,7 @@ import { Eyebrow } from './Eyebrow';
 import { OcrUploadCard } from './OcrUploadCard';
 import { OcrUndoBanner } from './OcrUndoBanner';
 import { ThemeToggle } from './ThemeToggle';
-import { ZoomSegment, actualSize, usePhysicalSizeCorrection, type ViewMode } from './viewMode';
+import { ZoomSegment, type ViewMode } from './viewMode';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
 import { getLayout } from '@/utils/layouts';
 import { getCroppedImg, type Area } from '@/utils/imageCrop';
@@ -120,7 +120,7 @@ export function MobileEditorShell({
   const allVisOn = ALL_FIELDS.every((f) => photo.state.fieldVisibility[f]);
   const [activeField, setActiveField] = useState<SheetTarget | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('default');
-  // 빈 항목 미리보기(ghost, #216) — 셸 로컬, 미영속(기본 on). 실제 크기 모드에선 강제 off.
+  // 빈 항목 미리보기(ghost, #216) — 셸 로컬, 미영속(기본 on).
   const [ghostMode, setGhostMode] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -226,37 +226,22 @@ export function MobileEditorShell({
     ? { background: 'linear-gradient(135deg, var(--accent-hover), var(--accent))', color: 'var(--accent-ink)' }
     : undefined;
 
-  // 활성 레이아웃의 방향으로 실제 크기 결정 — portrait 5.5×8.5cm, landscape 8.5×5.5cm(공용 actualSize).
   const layout = getLayout(previewComponents.layout);
-  const actual = actualSize(layout);
-  const isActual = viewMode === 'actual';
-  // 실제 크기(cm)의 물리 부정확(#275-7) 보정 — devicePixelRatio 근사만(#311: 캘리브레이션 슬라이더 제거).
-  const physicalCorrection = usePhysicalSizeCorrection();
-  // 실제 크기에선 ghost를 강제로 끈다(물리 크기 정밀 비교엔 자리표시자가 방해). 그 외엔 토글값.
-  const ghostEffective = !isActual && ghostMode;
-  // actual의 cm 값엔 항상 물리 보정을 곱한다(portrait/landscape 공용 소스).
-  const actualWidthCss = `calc(${actual.shortSideCm} * ${physicalCorrection})`;
-  // 컨테이너 width만으로 렌더 크기를 몰기(TicketRenderer는 width에 맞춰 스케일). actual은
-  // 짧은 변(portrait 5.5cm / landscape 8.5cm, 보정 적용)을 그대로 줘 물리 크기로 렌더. max는 세로를
+  // 컨테이너 width만으로 렌더 크기를 몰기(TicketRenderer는 width에 맞춰 스케일). max는 세로를
   // TicketRenderer의 자체 maxHeight(min(72vh,720px)) 한도까지 채우는 width를 역산.
-  const previewWidth = isActual
-    ? actualWidthCss
-    : `min(90vw, calc(${PREVIEW_MAX_HEIGHT} * ${layout.width} / ${layout.height}))`;
+  const previewWidth = `min(90vw, calc(${PREVIEW_MAX_HEIGHT} * ${layout.width} / ${layout.height}))`;
   // 가로형(editorial·35mm-landscape) 무드는 세로 화면 폭 기준 스케일이면 작은 가로 띠로 렌더되므로
-  // (#275-8) max/actual에서 90° 회전 + 화면 꽉 채우기로 배치. rotatedInnerWidth는 회전 전(자연 방향)
-  // TicketRenderer 폭 — actual은 물리 긴 변(보정 포함) 그대로, max는 회전 후 세로가 화면 상한을
-  // 채우도록 역산. rotatedStageWidth(회전 후 화면에 보이는 폭)는 같은 비율로 calc 유도해 반올림을 피한다.
+  // (#275-8) max에서 90° 회전 + 화면 꽉 채우기로 배치. rotatedInnerWidth는 회전 전(자연 방향)
+  // TicketRenderer 폭 — 회전 후 세로가 화면 상한을 채우도록 역산. rotatedStageWidth(회전 후 화면에
+  // 보이는 폭)는 같은 비율로 calc 유도해 반올림을 피한다.
   const rotateLandscape = layout.orientation === 'landscape' && viewMode !== 'default';
-  const rotatedInnerWidth = isActual
-    ? actualWidthCss
-    : `min(${PREVIEW_MAX_HEIGHT}, calc(90vw * ${layout.width} / ${layout.height}))`;
+  const rotatedInnerWidth = `min(${PREVIEW_MAX_HEIGHT}, calc(90vw * ${layout.width} / ${layout.height}))`;
   const rotatedStageWidth = `calc(${rotatedInnerWidth} * ${layout.height} / ${layout.width})`;
   // 기본이 아닐 때만 편집 본문(Poster 드롭존 + rail)을 접어 프리뷰에 세로 공간을 내준다. 이미지가
   // 없으면(업로드 전) 접지 않는다 — 그땐 프리뷰/pill 자체가 없다.
   const collapseBody = !!croppedImageUrl && viewMode !== 'default';
-  // max 재정의(#328): actual(실측 비교, 헤더·pill 유지)과 달리 max는 헤더·서브메뉴·
-  // pill·OCR까지 다 숨기고 티켓만 화면에 fixed 오버레이로 띄운다 — 나가는 길은 티켓 자신을 탭(기존
-  // default 복귀 핸들러 재사용).
+  // max 재정의(#328): 헤더·서브메뉴·pill·OCR까지 다 숨기고 티켓만 화면에 fixed 오버레이로 띄운다 —
+  // 나가는 길은 티켓 자신을 탭(기존 default 복귀 핸들러 재사용).
   const isMax = viewMode === 'max';
 
   return (
@@ -338,8 +323,7 @@ export function MobileEditorShell({
                     <TogglePill
                       label="빈 항목"
                       ariaLabel="빈 항목 미리보기"
-                      checked={ghostEffective}
-                      disabled={isActual}
+                      checked={ghostMode}
                       onClick={() => setGhostMode((v) => !v)}
                     />
                   </>
@@ -408,14 +392,14 @@ export function MobileEditorShell({
               {/* 래퍼 트리는 rotate 여부와 무관하게 항상 바깥 div → 안쪽 div → TicketRenderer로 depth가
                   고정돼 있다 — 요소 "타입"뿐 아니라 트리 "깊이"가 바뀌어도 React가 그 지점부터 서브트리를
                   통째로 remount해 TicketRenderer의 scale state가 1로 리셋되며 깜빡인다(#259, 리뷰 지적
-                  #275 PR — rotate 분기를 별도 JSX 트리로 나눴을 때 default↔max/actual 전환에서 재현됨).
+                  #275 PR — rotate 분기를 별도 JSX 트리로 나눴을 때 default↔max 전환에서 재현됨).
                   안쪽 div는 항상 존재하고 rotate일 때만 회전 스타일을 얹는다. default는 인라인 폭 + 티켓
-                  위 필드/포스터 직접 탭(onField/onPosterTap), max/actual은 확대 폭 + 래퍼 전체 탭→기본
+                  위 필드/포스터 직접 탭(onField/onPosterTap), max는 확대 폭 + 래퍼 전체 탭→기본
                   복귀(max는 헤더·pill 자체가 없으니 이 탭이 유일한 탈출구). rotateLandscape(#275-8)는
-                  가로형 무드의 max/actual에서만 90도 회전 + 화면 꽉 채우기 — TicketRenderer 자신은 늘
-                  자연(비회전) 방향으로 렌더돼 scale 계산이 방향을 몰라도 된다. #216: ghost는 actual에서
-                  강제 off. isMax는 바깥 div의 className/style만 바꿀 뿐 이 안쪽부터의 depth는 그대로라
-                  전환 시 TicketRenderer가 remount되지 않는다. */}
+                  가로형 무드의 max에서만 90도 회전 + 화면 꽉 채우기 — TicketRenderer 자신은 늘
+                  자연(비회전) 방향으로 렌더돼 scale 계산이 방향을 몰라도 된다. isMax는 바깥 div의
+                  className/style만 바꿀 뿐 이 안쪽부터의 depth는 그대로라 전환 시 TicketRenderer가
+                  remount되지 않는다. */}
               <div
                 {...(viewMode === 'default'
                   ? {}
@@ -457,7 +441,7 @@ export function MobileEditorShell({
                     movieInfo={previewMovieInfo}
                     components={previewComponents}
                     fieldVisibility={fieldVisibility}
-                    ghost={ghostEffective}
+                    ghost={ghostMode}
                     onField={viewMode === 'default' ? handleField : undefined}
                     onPosterTap={viewMode === 'default' ? handlePosterTap : undefined}
                   />
@@ -468,7 +452,7 @@ export function MobileEditorShell({
 
           {/* 줌 모드 pill — 프리뷰(포스터) 아래로 이동(#328). 원래 "포스터 드롭존 아래"였으나 업로드 후
               드롭존 자체가 통째로 언마운트되므로(#324) 프리뷰 자신을 기준점으로 재정의(#331 코멘트).
-              default/actual에선 기본으로 돌아오는 길이지만, max는 pill째로 숨기고 티켓 탭 복귀(위
+              default에선 기본으로 돌아오는 길이지만, max는 pill째로 숨기고 티켓 탭 복귀(위
               onClick)로 대체한다. ghost 토글은 #315에서 헤더 서브메뉴로 이전. */}
           {croppedImageUrl && !isMax && (
             <div className="flex flex-wrap items-center justify-center gap-2 px-4 pt-4">
@@ -476,15 +460,7 @@ export function MobileEditorShell({
             </div>
           )}
 
-          {croppedImageUrl && isActual && (
-            <div className="px-4 pt-3 text-center">
-              <p className="text-mono text-fg-muted" style={{ fontSize: 11, letterSpacing: '0.08em' }}>
-                실제 크기 · {actual.caption}
-              </p>
-            </div>
-          )}
-
-          {/* OCR은 collapse 밖(#261 리뷰 P1) — actual 모드에서도 닿게. max(#328)는 모든 UX를 숨기는
+          {/* OCR은 collapse 밖(#261 리뷰 P1). max(#328)는 모든 UX를 숨기는
               풀스크린이라 OCR도 예외 없이 숨긴다. allVis/ghost/잉크 토글은 #315에서 헤더 서브메뉴로 이전. */}
           {!isMax && (
           <div className="space-y-group px-4 pt-6">

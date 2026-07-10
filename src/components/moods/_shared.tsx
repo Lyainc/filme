@@ -12,7 +12,7 @@ export interface MoodProps {
    * 빈 항목 미리보기(ghost, #216). 세 값의 의미가 다르다:
    * - `undefined`(데스크톱/프롭 미전달): 스탬프 placeholder는 오늘처럼 항상 on, 필드 placeholder는 off → 기존과 픽셀 동일.
    * - `true`(모바일 ghost on): 스탬프 + 빈 필드 placeholder 모두 표시.
-   * - `false`(모바일 ghost off / 실제 크기 모드): 모든 placeholder 숨김.
+   * - `false`(모바일 ghost off): 모든 placeholder 숨김.
    */
   ghost?: boolean;
   /**

@@ -1,9 +1,11 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import type { LayoutSpec } from '@/utils/layouts';
+import type { ReactNode } from 'react';
 
-// 프리뷰 3단 줌 모드 — 모바일(#214)·데스크톱(#225) 공용. 기본(인라인) · 최대화(세로 꽉) ·
-// 실제 크기(물리 cm). 아이콘·라벨·cm 값의 단일 출처(중복 방지, #224 리뷰 P1 선례).
-export type ViewMode = 'default' | 'max' | 'actual';
+// 프리뷰 2단 줌 모드 — 모바일(#214)·데스크톱(#225) 공용. 기본(인라인) · 최대화(세로 꽉).
+// 아이콘·라벨의 단일 출처(중복 방지, #224 리뷰 P1 선례).
+// "실제 크기(cm)" 모드는 #311에서 제거 — 웹은 물리 DPI를 못 읽어 CSS cm이 실측과 어긋나고(#275-7),
+// 이를 보정할 슬라이더도 UI 비용 대비 이득이 적어 걷어냈다. 실물 크기 확인 니즈는 모드 대신
+// 최대화(pinch-zoom 가능한 전체화면)로 커버한다.
+export type ViewMode = 'default' | 'max';
 
 const ICON_SVG = {
   width: 18,
@@ -42,52 +44,9 @@ export const VIEW_MODES: { id: ViewMode; label: string; icon: ReactNode }[] = [
       </svg>
     ),
   },
-  {
-    // 실제 크기: 점선 바깥틀 + 채운 안쪽 사각
-    id: 'actual',
-    label: '실제 크기',
-    icon: (
-      <svg {...ICON_SVG}>
-        <rect x="3" y="3" width="18" height="18" rx="2" strokeDasharray="3 2.5" />
-        <rect x="8.5" y="8.5" width="7" height="7" rx="1" fill="currentColor" stroke="none" />
-      </svg>
-    ),
-  },
 ];
 
-/**
- * 실제 크기 렌더용 방향별 cm 값 — DPI 계산 없이 CSS cm 그대로(1cm≈37.8px @96dpi, 모바일과 동일).
- * portrait 5.5×8.5cm(짧은변 5.5) / landscape 8.5×5.5cm(짧은변 8.5).
- */
-export function actualSize(layout: LayoutSpec): { caption: string; shortSideCm: string } {
-  return layout.orientation === 'landscape'
-    ? { caption: '8.5 × 5.5cm', shortSideCm: '8.5cm' }
-    : { caption: '5.5 × 8.5cm', shortSideCm: '5.5cm' };
-}
-
-// CSS cm은 항상 96px/2.54cm 고정 매핑이라 물리 DPI와 무관하다. 모바일 브라우저는 이 고정 매핑이
-// 대략 160 CSS-dpi(Android dp/iOS point) 기준 화면에 물려서, actual(cm) 모드가 실제보다 축소 렌더된다
-// (#275-7, 예: iPhone 14에서 5.5cm 지정 시 실측 ≈3.8cm). 웹은 물리 DPI를 직접 못 읽으므로 근사치로 절충한다.
-// "폰이다" 판정은 devicePixelRatio가 아니라 matchMedia('(pointer: coarse)')로 한다 — DPR은 Retina
-// 데스크톱·OS 스케일링된 Windows 노트북에서도 1보다 커서(리뷰 지적, #275 PR) 데스크톱을 폰으로 오인해
-// 실제 크기를 더 크게 오적용할 수 있다. pointer:coarse는 터치 입력 기기에서만 참이라(마우스/트랙패드는
-// 창을 좁혀도 여전히 fine) 오탐이 훨씬 적다.
-// ponytail: 근사치를 그대로 둔다 — 사용자 캘리브레이션 슬라이더는 UI 비용 대비 이득이 적어 제거(#311).
-const MOBILE_CSS_DPI_ESTIMATE = 160;
-const DESKTOP_CSS_DPI = 96;
-
-/** actual(cm) 모드 전용 물리 크기 보정 배율 — 터치 기기 근사 보정만(#311: 사용자 캘리브레이션 제거). */
-export function usePhysicalSizeCorrection(): number {
-  const [isTouchDevice, setIsTouchDevice] = useState(false);
-
-  useEffect(() => {
-    setIsTouchDevice(window.matchMedia('(pointer: coarse)').matches);
-  }, []);
-
-  return isTouchDevice ? MOBILE_CSS_DPI_ESTIMATE / DESKTOP_CSS_DPI : 1;
-}
-
-/** 3아이콘 줌 pill. className은 바깥 group에 덧붙는다(모바일=미지정, 데스크톱=절대배치). */
+/** 2아이콘 줌 pill. className은 바깥 group에 덧붙는다(모바일=미지정, 데스크톱=절대배치). */
 export function ZoomSegment({
   viewMode,
   onChange,
