@@ -1,9 +1,13 @@
+import { useEffect, useRef, useState } from 'react';
 import { ThemeToggle } from './ThemeToggle';
 import { Wordmark } from './Wordmark';
 
 interface AppHeaderProps {
   theme: 'light' | 'dark';
   onThemeChange: (theme: 'light' | 'dark') => void;
+  /** #310: 명시적 임시저장/초기화 — usePhototicket이 소유, 이 헤더가 데스크톱의 유일한 진입점. */
+  saveDraft: () => void;
+  clearDraft: () => void;
 }
 
 /** GitHub 저장소 링크 — 헤더(데스크톱)·AppFooter(#327)가 공유하는 단일 정의. */
@@ -29,14 +33,75 @@ export function GithubLink({ className }: { className?: string }) {
   );
 }
 
-export function AppHeader({ theme, onThemeChange }: AppHeaderProps) {
+/** 임시저장 아이콘 버튼 — 클릭 시 저장 즉시 실행 + 체크 아이콘으로 잠깐 피드백
+ * (ResultPanel의 copyLabel 패턴 참고 — 새 토스트 인프라 없이 버튼 자체 상태로 충분). */
+function SaveDraftButton({ onClick }: { onClick: () => void }) {
+  const [saved, setSaved] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(timerRef.current), []);
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        onClick();
+        setSaved(true);
+        clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => setSaved(false), 1600);
+      }}
+      aria-label={saved ? '임시저장됨' : '임시저장'}
+      title="임시저장"
+      className="inline-flex items-center text-fg-muted hover:text-fg transition-colors"
+    >
+      {saved ? (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+      ) : (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
+          <path d="M17 21v-8H7v8" />
+          <path d="M7 3v5h8" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
+/** 초기화 아이콘 버튼 — 파괴적 액션(모든 입력값 소실)이라 네이티브 confirm으로 한 번 확인한다
+ * (이 코드베이스엔 아직 확인 모달/토스트 인프라가 없어 새로 만들지 않고 가장 가벼운 방법을 쓴다). */
+function ClearDraftButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        if (window.confirm('입력한 모든 티켓 정보를 지우고 초기화할까요? 되돌릴 수 없어요.')) {
+          onClick();
+        }
+      }}
+      aria-label="초기화"
+      title="초기화 (입력값 전체 삭제)"
+      className="inline-flex items-center text-fg-muted hover:text-fg transition-colors"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M3 6h18" />
+        <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+        <path d="M10 11v6M14 11v6" />
+      </svg>
+    </button>
+  );
+}
+
+export function AppHeader({ theme, onThemeChange, saveDraft, clearDraft }: AppHeaderProps) {
   return (
     <header className="h-14 px-4 flex items-center justify-between border-b border-line bg-surface shrink-0">
       <div className="flex items-center gap-2">
         <Wordmark as="h1" />
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
+        <SaveDraftButton onClick={saveDraft} />
+        <ClearDraftButton onClick={clearDraft} />
         <GithubLink />
         <ThemeToggle theme={theme} onChange={onThemeChange} />
       </div>

@@ -90,8 +90,6 @@ export function usePhototicket() {
   // 사용자가 밝기 슬라이더를 직접 만졌는지 추적(#146). 한번 만지면 이후 texture 전환에서
   // 기본 밝기를 덮어쓰지 않고 사용자 값을 존중한다.
   const brightnessTouchedRef = useRef(false);
-  // 저장 effect의 첫 커밋을 건너뛴다 — 복원 전 빈 INITIAL_STATE가 저장분을 덮어쓰지 않게(#178).
-  const skipFirstSaveRef = useRef(true);
 
   // 마운트 시 localStorage에서 텍스트·설정을 복원한다. SSR 하이드레이션 불일치를 피하려
   // useState 초기화가 아니라 effect에서 한다(서버는 INITIAL_STATE로 렌더, 클라가 마운트 후 복원).
@@ -175,34 +173,49 @@ export function usePhototicket() {
     setState((prev) => ({ ...prev, recommendedColors: colors }));
   }, []);
 
-  // 텍스트·설정 변경을 디바운스 저장한다(400ms). 첫 커밋은 건너뛰어 복원 전 INITIAL이
-  // 저장분을 덮어쓰지 않게 하고, 복원 setState가 일으킨 재렌더부터 실제 저장이 시작된다(#178).
-  useEffect(() => {
-    if (skipFirstSaveRef.current) {
-      skipFirstSaveRef.current = false;
-      return;
-    }
+  // #310: 자동저장(디바운스 effect) 폐지 — 명시적 트리거(버튼 클릭) 1회성이라 디바운스가 불필요하다.
+  const saveDraft = useCallback(() => {
     if (typeof window === 'undefined') return;
-    const timer = setTimeout(() => {
-      try {
-        const payload: PersistedState = {
-          movieInfo: state.movieInfo,
-          // chain/format이 업로드 로고의 blob: URL이면 비운다 — 포스터와 같은 이유로 재시작 후
-          // 죽은 참조다. 라벨·토글은 유지되어 복원 시 dashed placeholder로 재업로드를 유도한다.
-          components: {
-            ...state.components,
-            chain: state.components.chain.startsWith('blob:') ? '' : state.components.chain,
-            format: state.components.format.startsWith('blob:') ? '' : state.components.format,
-          },
-          fieldVisibility: state.fieldVisibility,
-        };
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-      } catch {
-        // 저장 실패(쿼터 초과·프라이빗 모드)는 무시 — 영속화는 best-effort다.
-      }
-    }, 400);
-    return () => clearTimeout(timer);
+    try {
+      const payload: PersistedState = {
+        movieInfo: state.movieInfo,
+        // chain/format이 업로드 로고의 blob: URL이면 비운다 — 포스터와 같은 이유로 재시작 후
+        // 죽은 참조다. 라벨·토글은 유지되어 복원 시 dashed placeholder로 재업로드를 유도한다.
+        components: {
+          ...state.components,
+          chain: state.components.chain.startsWith('blob:') ? '' : state.components.chain,
+          format: state.components.format.startsWith('blob:') ? '' : state.components.format,
+        },
+        fieldVisibility: state.fieldVisibility,
+      };
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    } catch {
+      // 저장 실패(쿼터 초과·프라이빗 모드)는 무시 — 영속화는 best-effort다.
+    }
   }, [state.movieInfo, state.components, state.fieldVisibility]);
+
+  // #310: 저장분 삭제 + 상태를 INITIAL_STATE로 되돌린다(파괴적 — 호출부에서 확인 UX를 거친다).
+  // croppedImageUrl은 handleImageUpload의 revoke 패턴과 동일하게 교체 전 먼저 해제한다.
+  const clearDraft = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.removeItem(STORAGE_KEY);
+      } catch {
+        // 삭제 실패(프라이빗 모드 등)는 무시 — best-effort.
+      }
+    }
+    brightnessTouchedRef.current = false;
+    setState((prev) => {
+      if (prev.croppedImageUrl) URL.revokeObjectURL(prev.croppedImageUrl);
+      latestUrlRef.current = null;
+      // chain/format 로고도 poster와 동일하게 처리 — 안 하면 blob이 탭 닫힐 때까지 안 풀린다.
+      if (prev.components.chain.startsWith('blob:')) URL.revokeObjectURL(prev.components.chain);
+      if (prev.components.format.startsWith('blob:')) URL.revokeObjectURL(prev.components.format);
+      latestChainUrlRef.current = null;
+      latestFormatUrlRef.current = null;
+      return INITIAL_STATE;
+    });
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -219,5 +232,7 @@ export function usePhototicket() {
     updateComponents,
     setRecommendedColors,
     updateFieldVisibility,
+    saveDraft,
+    clearDraft,
   };
 }

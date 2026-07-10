@@ -364,6 +364,39 @@ export function MobileEditorShell({
                   </button>
                 </div>
               )}
+
+              {/* 임시저장/초기화(#310) — 자동저장 폐지에 따른 명시적 트리거. croppedImageUrl 유무와
+                  무관하게 항상 노출한다 — 포스터(croppedImageUrl)는 새로고침에 안 남지만 movieInfo 등
+                  나머지 필드는 복원되므로(#310이 고치려는 시나리오 자체), 포스터 재업로드 전에도
+                  초기화에 닿을 수 있어야 한다. 초기화는 파괴적이라 네이티브 confirm으로 한 번 확인한다
+                  (이 코드베이스엔 확인 모달 인프라가 없어 새로 만들지 않는다). 저장 피드백은 기존
+                  flashToast 재사용. */}
+              <div className="flex flex-col gap-1.5 border-t border-line pt-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    photo.saveDraft();
+                    flashToast('임시저장했어요');
+                  }}
+                  className="text-mono flex min-h-[36px] items-center rounded-chip border border-line bg-surface px-3 text-[11px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft"
+                >
+                  임시저장
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    if (window.confirm('입력한 모든 티켓 정보를 지우고 초기화할까요? 되돌릴 수 없어요.')) {
+                      photo.clearDraft();
+                      flashToast('초기화했어요');
+                    }
+                  }}
+                  className="text-mono flex min-h-[36px] items-center rounded-chip border border-line bg-surface px-3 text-[11px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft"
+                >
+                  초기화
+                </button>
+              </div>
             </div>
           </>
         )}

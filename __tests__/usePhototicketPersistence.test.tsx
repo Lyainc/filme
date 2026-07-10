@@ -1,34 +1,56 @@
-import { afterEach, describe, expect, test } from 'bun:test';
+/**
+ * #310 — 입력값 자동 영속 → 명시적 임시저장/초기화 전환.
+ *
+ * 이전(#178)엔 movieInfo/components/fieldVisibility 변경마다 400ms 디바운스로 무조건
+ * localStorage에 썼다. saveDraft()/clearDraft() 명시적 함수로 대체되며:
+ *  - 쓰기는 saveDraft() 호출 시에만, 디바운스 없이 즉시 일어난다.
+ *  - clearDraft()가 저장 키를 지우고 상태를 INITIAL_STATE로 되돌리는, 이전엔 없던 진입점을 제공한다.
+ * 마운트 시 자동 복원(loadPersisted)은 이 이슈의 스코프 밖 — 그대로 유지되고 아래 테스트도 이를 검증한다.
+ */
+import { afterEach, describe, expect, test, mock } from 'bun:test';
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { usePhototicket } from '../src/hooks/usePhototicket';
 
 const KEY = 'filme:phototicket:v1';
 
 afterEach(() => {
-  // hook을 언마운트해 저장 effect의 디바운스 타이머(clearTimeout)를 정리한다 — 안 그러면
-  // 이전 테스트의 잔여 타이머가 다음 테스트 창에서 localStorage에 써 격리가 깨진다.
   cleanup();
   window.localStorage.clear();
 });
 
-describe('#178 usePhototicket localStorage 영속화', () => {
-  test('movieInfo/components/fieldVisibility 변경이 저장된다(포스터 제외)', async () => {
+describe('#310 usePhototicket saveDraft/clearDraft', () => {
+  test('saveDraft()는 디바운스 없이 즉시 movieInfo/components/fieldVisibility를 저장한다(포스터 제외)', () => {
     const { result } = renderHook(() => usePhototicket());
     act(() => {
       result.current.updateMovieInfo({ title: '기생충' });
       result.current.updateComponents({ themeColor: '#8E4E69' });
     });
-    await waitFor(() => {
-      const saved = JSON.parse(window.localStorage.getItem(KEY) || '{}');
-      expect(saved.movieInfo?.title).toBe('기생충');
-      expect(saved.components?.themeColor).toBe('#8E4E69');
-      // 포스터(croppedImageUrl)·recommendedColors는 직렬화 대상이 아니다.
-      expect(saved.croppedImageUrl).toBeUndefined();
-      expect(saved.recommendedColors).toBeUndefined();
+    // 업데이트 직후엔 saveDraft를 부르기 전이라 아직 아무것도 안 쓰여 있어야 한다.
+    expect(window.localStorage.getItem(KEY)).toBeNull();
+
+    act(() => {
+      result.current.saveDraft();
     });
+    // 디바운스가 없으므로 waitFor 없이 동기로 즉시 읽힌다.
+    const saved = JSON.parse(window.localStorage.getItem(KEY) || '{}');
+    expect(saved.movieInfo?.title).toBe('기생충');
+    expect(saved.components?.themeColor).toBe('#8E4E69');
+    // 포스터(croppedImageUrl)·recommendedColors는 직렬화 대상이 아니다.
+    expect(saved.croppedImageUrl).toBeUndefined();
+    expect(saved.recommendedColors).toBeUndefined();
   });
 
-  test('마운트 시 저장분을 복원한다', async () => {
+  test('saveDraft()를 부르지 않으면 상태 변경만으로는 아무것도 저장되지 않는다(자동저장 폐지)', async () => {
+    const { result } = renderHook(() => usePhototicket());
+    act(() => {
+      result.current.updateMovieInfo({ title: '기생충' });
+    });
+    // 옛 디바운스(400ms)가 있었다면 걸릴 시간을 넉넉히 흘려도 여전히 비어 있어야 한다.
+    await new Promise((r) => setTimeout(r, 500));
+    expect(window.localStorage.getItem(KEY)).toBeNull();
+  });
+
+  test('마운트 시 저장분을 복원한다(자동 복원은 이번 스코프 밖 — 그대로 유지)', async () => {
     window.localStorage.setItem(KEY, JSON.stringify({
       movieInfo: { title: '복원된제목' },
       components: { texture: 'vintage' },
@@ -42,21 +64,9 @@ describe('#178 usePhototicket localStorage 영속화', () => {
       expect(result.current.state.components.layout).toBe('minimal');
       expect(result.current.state.fieldVisibility.actors).toBe(true);
     });
-    // 복원분이 INITIAL로 덮어써지지 않고 그대로 다시 저장된다(skipFirstSaveRef 불변식).
-    await waitFor(() => {
-      const stored = JSON.parse(window.localStorage.getItem(KEY) || '{}');
-      expect(stored.movieInfo?.title).toBe('복원된제목');
-    });
   });
 
-  test('마운트만으로는 저장 안 함 — 첫 커밋 skip이 INITIAL 클로버를 막는다', async () => {
-    renderHook(() => usePhototicket()); // 저장분 없음
-    // 첫 커밋에서 save를 건너뛰므로(skipFirstSaveRef) 사용자 입력 전엔 아무것도 안 쓴다.
-    await new Promise((r) => setTimeout(r, 500)); // 디바운스(400ms) 경과해도
-    expect(window.localStorage.getItem(KEY)).toBeNull();
-  });
-
-  test('업로드 로고 blob: URL은 저장 시 비운다(chain·format 둘 다)', async () => {
+  test('saveDraft()는 업로드 로고 blob: URL을 비운다(chain·format 둘 다)', () => {
     const { result } = renderHook(() => usePhototicket());
     act(() => {
       result.current.updateComponents({
@@ -64,19 +74,87 @@ describe('#178 usePhototicket localStorage 영속화', () => {
         format: 'blob:def', formatLabel: 'IMAX',
       });
     });
-    await waitFor(() => {
-      const saved = JSON.parse(window.localStorage.getItem(KEY) || '{}');
-      expect(saved.components?.chain).toBe('');
-      expect(saved.components?.format).toBe('');
-      expect(saved.components?.chainLabel).toBe('CGV'); // 라벨은 유지
-      expect(saved.components?.formatLabel).toBe('IMAX');
+    // saveDraft는 별도 act로 — 같은 act 안에서 부르면 위 setState가 아직 반영 안 된
+    // result.current 클로저(구 state)를 읽어버린다(renderHook 재렌더 경계 유의).
+    act(() => {
+      result.current.saveDraft();
     });
+    const saved = JSON.parse(window.localStorage.getItem(KEY) || '{}');
+    expect(saved.components?.chain).toBe('');
+    expect(saved.components?.format).toBe('');
+    expect(saved.components?.chainLabel).toBe('CGV'); // 라벨은 유지
+    expect(saved.components?.formatLabel).toBe('IMAX');
   });
 
-  test('손상된 저장 데이터는 무시하고 INITIAL로 시작', async () => {
+  test('손상된 저장 데이터는 무시하고 INITIAL로 시작', () => {
     window.localStorage.setItem(KEY, 'not-json{');
     const { result } = renderHook(() => usePhototicket());
     // throw 없이 기본값으로 마운트.
     expect(result.current.state.movieInfo.title).toBe('');
+  });
+
+  test('clearDraft()는 저장 키를 지우고 상태를 INITIAL_STATE로 되돌린다', () => {
+    window.localStorage.setItem(KEY, JSON.stringify({
+      movieInfo: { title: '기생충' },
+      components: { texture: 'vintage' },
+      fieldVisibility: { actors: true },
+    }));
+    const { result } = renderHook(() => usePhototicket());
+    act(() => {
+      result.current.updateMovieInfo({ title: '또 다른 제목', seat: 'H12' });
+      result.current.updateFieldVisibility({ actors: true });
+    });
+    expect(result.current.state.movieInfo.title).toBe('또 다른 제목');
+
+    act(() => {
+      result.current.clearDraft();
+    });
+
+    expect(window.localStorage.getItem(KEY)).toBeNull();
+    expect(result.current.state.movieInfo.title).toBe('');
+    expect(result.current.state.movieInfo.seat).toBe('');
+    expect(result.current.state.components.texture).toBe('none');
+    expect(result.current.state.croppedImageUrl).toBeNull();
+  });
+
+  test('clearDraft()는 남아있던 croppedImageUrl을 revoke한다(handleImageUpload와 동일 패턴)', () => {
+    const revoked: string[] = [];
+    const origRevoke = URL.revokeObjectURL;
+    URL.revokeObjectURL = mock((u: string) => revoked.push(u));
+
+    const { result } = renderHook(() => usePhototicket());
+    act(() => {
+      result.current.handleImageUpload('blob:mock/poster');
+    });
+    expect(result.current.state.croppedImageUrl).toBe('blob:mock/poster');
+
+    act(() => {
+      result.current.clearDraft();
+    });
+    expect(revoked).toEqual(['blob:mock/poster']);
+    expect(result.current.state.croppedImageUrl).toBeNull();
+
+    URL.revokeObjectURL = origRevoke;
+  });
+
+  test('clearDraft()는 chain·format 로고 blob: URL도 revoke한다(poster와 동일 취급)', () => {
+    const revoked: string[] = [];
+    const origRevoke = URL.revokeObjectURL;
+    URL.revokeObjectURL = mock((u: string) => revoked.push(u));
+
+    const { result } = renderHook(() => usePhototicket());
+    act(() => {
+      result.current.updateComponents({ chain: 'blob:mock/chain', format: 'blob:mock/format' });
+    });
+
+    act(() => {
+      result.current.clearDraft();
+    });
+
+    expect(revoked.sort()).toEqual(['blob:mock/chain', 'blob:mock/format']);
+    expect(result.current.state.components.chain).toBe('');
+    expect(result.current.state.components.format).toBe('');
+
+    URL.revokeObjectURL = origRevoke;
   });
 });
