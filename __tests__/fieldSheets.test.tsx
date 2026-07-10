@@ -65,8 +65,9 @@ afterEach(() => {
 describe('FieldEditSheet 타입별 편집 (#215 PART A)', () => {
   test('text 시트: 원제 입력이 movieInfo.titleOg를 갱신', async () => {
     render(<SheetHarness field="titleOg" />);
-    // 헤더 제목("원제")과 입력 aria-label("원제")이 같은 접근명이라 placeholder로 입력을 특정.
-    const input = await screen.findByPlaceholderText('Interstellar');
+    // 헤더 제목("원제")과 입력 aria-label("원제")이 같은 접근명이라 role=textbox로 입력을 특정
+    // (헤더는 heading이라 role이 갈려 textbox 필터로 충돌 없음).
+    const input = await screen.findByRole('textbox', { name: '원제' });
     fireEvent.change(input, { target: { value: 'Interstellar' } });
     expect(screen.getByTestId('titleOg').textContent).toBe('Interstellar');
   });
@@ -105,7 +106,7 @@ describe('FieldEditSheet 타입별 편집 (#215 PART A)', () => {
   test('제목 시트: 헤더 눈 토글 미노출 → title 숨김 불가', async () => {
     render(<SheetHarness field="title" />);
     // 본문(제목 입력)은 렌더되지만 헤더 눈 토글은 없다.
-    await screen.findByPlaceholderText('인터스텔라');
+    await screen.findByRole('textbox', { name: '제목' });
     expect(screen.queryByLabelText('제목 티켓에 표시')).toBeNull();
     expect(screen.getByTestId('vis-title').textContent).toBe('true');
   });
@@ -114,21 +115,21 @@ describe('FieldEditSheet 타입별 편집 (#215 PART A)', () => {
 describe('StampSheet 극장/포맷 (#215 PART B)', () => {
   test('극장 텍스트 입력이 components.chainLabel을 갱신', async () => {
     render(<SheetHarness field="chain" />);
-    const input = await screen.findByPlaceholderText('CGV');
+    const input = await screen.findByRole('textbox', { name: '극장 로고' });
     fireEvent.change(input, { target: { value: 'CGV' } });
     expect(screen.getByTestId('chainLabel').textContent).toBe('CGV');
   });
 
   test('포맷 텍스트 입력이 components.formatLabel을 갱신', async () => {
     render(<SheetHarness field="format" />);
-    const input = await screen.findByPlaceholderText('IMAX');
+    const input = await screen.findByRole('textbox', { name: '포맷 로고' });
     fireEvent.change(input, { target: { value: 'Dolby' } });
     expect(screen.getByTestId('formatLabel').textContent).toBe('Dolby');
   });
 
   test('포맷 자동완성: 타이핑이 프리셋을 필터하고 선택 시 formatLabel 지정', async () => {
     render(<SheetHarness field="format" />);
-    const input = await screen.findByPlaceholderText('IMAX');
+    const input = await screen.findByRole('textbox', { name: '포맷 로고' });
     // 'Do' → Dolby만 부분일치('D'는 4DX도 매치하므로 두 글자로 좁힌다).
     fireEvent.change(input, { target: { value: 'Do' } });
     const listbox = screen.getByRole('listbox', { name: '포맷 제안' });
@@ -143,7 +144,7 @@ describe('StampSheet 극장/포맷 (#215 PART B)', () => {
 
   test('포맷 자동완성: 매치 없는 값은 그대로 저장 + 안내 노출', async () => {
     render(<SheetHarness field="format" />);
-    const input = await screen.findByPlaceholderText('IMAX');
+    const input = await screen.findByRole('textbox', { name: '포맷 로고' });
     fireEvent.change(input, { target: { value: 'Laser' } });
     expect(screen.getByTestId('formatLabel').textContent).toBe('Laser');
     expect(screen.queryByRole('listbox', { name: '포맷 제안' })).toBeNull();
