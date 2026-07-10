@@ -31,7 +31,6 @@ import {
  */
 const FS_BASE = '#0a0a0a';
 const FS_INK = '#f4ede0';
-const FS_DIM = 'rgba(244,237,224,0.6)';
 const FS_LABEL = 'rgba(244,237,224,0.72)';
 const FS_DIVIDER = 'rgba(244,237,224,0.28)';
 
