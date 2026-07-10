@@ -115,7 +115,11 @@ export default function ImageCropModal(props: ImageCropModalProps) {
       aria-modal="true"
       aria-label={title}
       tabIndex={-1}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm overscroll-contain animate-fade-in"
+      // pointer-events-auto: 모바일 필드 시트(vaul Drawer, modal)가 열려 있으면 Radix
+      // DismissableLayer가 document.body에 pointer-events:none을 걸어두는데, 이 모달은
+      // Radix 레이어 스택 밖의 별도 body 포털이라 그 none을 그대로 상속해 전혀 반응하지
+      // 않는다(#319). 이 요소에서 명시적으로 auto로 되돌려 하위 트리 전체를 다시 클릭 가능하게 한다.
+      className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm overscroll-contain animate-fade-in"
       style={{ background: 'rgba(44,38,34,0.55)' }}
     >
       <div className="relative flex h-[85svh] max-h-[820px] w-full max-w-sm flex-col overflow-hidden rounded-card bg-paper shadow-card rail:h-[700px] rail:max-h-[88vh] rail:max-w-2xl">
