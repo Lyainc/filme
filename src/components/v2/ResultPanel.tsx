@@ -40,7 +40,7 @@ interface ResultPanelProps {
  * 내보내기 상태/로직이 전부 이 컴포넌트 안에 닫혀 있어, 컨테이너는 배치·크기만 정한다.
  * "사진 저장"은 파일 공유 지원 환경에서 OS 시트(사진앱 저장), 미지원 시 파일 다운로드로 떨어진다.
  * 퍼마링크는 완성 티켓을 Blob에 저장(/api/ticket)해 /t/<id> 공유 링크를 발급한다 — og 미리보기로
- * 유입되는 루프(#91). 카톡·메신저(navigator.share)·X(인텐트) 채널 공유는 그 링크를 단일 소스
+ * 유입되는 루프(#91). 카톡·메신저(navigator.share) 채널 공유는 그 링크를 단일 소스
  * 문구(buildShareMessage)에 실어 보내며, 링크가 없으면 핸들러가 먼저 발급한다.
  */
 export function ResultPanel({
@@ -257,37 +257,6 @@ export function ResultPanel({
     await copyToClipboard(url || message.text);
   }, [permalink, issuePermalink, movieInfo, copyToClipboard]);
 
-  // "X로 공유" — 링크가 있으면 함께 싣고 없으면 먼저 발급. 링크 발급이 실패하면 문구만으로 연다.
-  const composeTweetUrl = useCallback((url: string) => {
-    const { text } = buildShareMessage(movieInfo, url);
-    const parts = [`text=${encodeURIComponent(text)}`];
-    if (url) parts.push(`url=${encodeURIComponent(url)}`);
-    return `https://twitter.com/intent/tweet?${parts.join('&')}`;
-  }, [movieInfo]);
-
-  const handleShareTwitter = useCallback(async () => {
-    // 링크가 이미 있으면 클릭 제스처 직후 동기로 연다(정상 동작).
-    if (permalink) {
-      window.open(composeTweetUrl(permalink), '_blank', 'noopener,noreferrer');
-      return;
-    }
-    // 링크 미발급: window.open을 issuePermalink() await 뒤에 호출하면 user-activation이
-    // 만료돼 브라우저가 팝업을 차단한다(#149 리뷰). 그래서 클릭 제스처에서 먼저 빈 창을 열어
-    // 활성화를 유지하고, 링크 발급 후 그 창을 redirect한다. (noopener를 쓰면 window.open이
-    // null을 반환해 참조를 못 잡으므로 빼고, 대신 win.opener=null로 tabnabbing을 막는다.)
-    const win = window.open('', '_blank');
-    if (win) win.opener = null;
-    const url = (await issuePermalink()) ?? '';
-    const intent = composeTweetUrl(url);
-    if (win) {
-      win.location.href = intent;
-    } else {
-      // 빈 창마저 차단된 드문 경우 — 동기 재시도, 그래도 막히면 링크/문구를 클립보드로 폴백.
-      const opened = window.open(intent, '_blank', 'noopener,noreferrer');
-      if (!opened) await copyToClipboard(url || buildShareMessage(movieInfo, url).text);
-    }
-  }, [permalink, issuePermalink, movieInfo, composeTweetUrl, copyToClipboard]);
-
   // 퍼마링크 셀 라벨 — permaState/permalink에서 계산해 텍스트 자체를 key로 써서, 값이 실제로
   // 바뀔 때만 크로스페이드가 재생되게 한다(#201 모션 정합: 하드 텍스트 스왑 대신 fade-in).
   // settle(카드용 box-shadow+translateY(-10px)+scale, PreviewFilmCell 참고)은 60px 버튼 안
@@ -363,30 +332,19 @@ export function ResultPanel({
           </span>
         </button>
 
-        {/* 3차 액션 = 채널(카톡/X). mockup의 '카카오톡' 셀은 더미라 SDK를 붙이지 않고, OS 공유
-            시트(카톡 포함)를 여는 '공유' 셀이 그 의도를 실제로 수행한다. D7: quiet outline, 빨강 없음. */}
-        <div className="grid grid-cols-2 divide-x divide-line overflow-hidden rounded-field-sm border border-line bg-surface-elevated">
-          <button
-            type="button"
-            onClick={handleShareTwitter}
-            disabled={isBusy}
-            title="X(트위터)에 공유해요"
-            className="text-mono flex min-h-[52px] flex-col items-center justify-center gap-1.5 px-2 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:bg-transparent disabled:hover:text-fg-faint"
-          >
-            <XIcon />
-            <span>X</span>
-          </button>
-          <button
-            type="button"
-            onClick={handleShareLink}
-            disabled={isBusy}
-            title="카톡·메신저 등으로 공유해요"
-            className="text-mono flex min-h-[52px] flex-col items-center justify-center gap-1.5 px-2 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:bg-transparent disabled:hover:text-fg-faint"
-          >
-            <ShareIcon />
-            <span>공유</span>
-          </button>
-        </div>
+        {/* 3차 액션 = 채널(카톡 등 OS 공유 시트). mockup의 '카카오톡' 셀은 더미라 SDK를 붙이지
+            않고, OS 공유 시트(카톡 포함)를 여는 '공유' 버튼이 그 의도를 실제로 수행한다. D7: quiet
+            outline, 빨강 없음. X 제거 후 단일 열이라 링크 버튼과 같은 가로 배치로 통일(#325). */}
+        <button
+          type="button"
+          onClick={handleShareLink}
+          disabled={isBusy}
+          title="카톡·메신저 등으로 공유해요"
+          className="text-mono flex min-h-[48px] w-full items-center justify-center gap-2 rounded-field-sm border border-line bg-surface-elevated px-4 text-[11px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:bg-transparent disabled:hover:text-fg-faint"
+        >
+          <ShareIcon />
+          <span>공유</span>
+        </button>
 
         {/* 공유 링크 패널 — '링크' 셀을 탭해 퍼마링크가 발급되면(permalink set) 펼쳐진다. */}
         {permalink && (
@@ -439,14 +397,6 @@ function LinkIcon() {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
       <path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-    </svg>
-  );
-}
-
-function XIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.657l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
     </svg>
   );
 }

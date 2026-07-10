@@ -1,7 +1,7 @@
 /**
- * buildShareMessage(#277)는 navigator.share·X 인텐트·클립보드 폴백 세 공유 경로의
- * 단일 소스라, 여기서 한 번만 검증하면 세 경로 모두 같은 문구를 받는다는 게 보장된다
- * (호출부는 ResultPanel.tsx에서 세 경로 모두 이 함수를 그대로 통과시킴, 별도 가공 없음).
+ * buildShareMessage(#277)는 navigator.share·클립보드 폴백 두 공유 경로의
+ * 단일 소스라, 여기서 한 번만 검증하면 두 경로 모두 같은 문구를 받는다는 게 보장된다
+ * (호출부는 ResultPanel.tsx에서 두 경로 모두 이 함수를 그대로 통과시킴, 별도 가공 없음).
  */
 import { describe, expect, test } from 'bun:test';
 import { buildShareMessage } from '@/utils/shareMessage';
