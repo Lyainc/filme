@@ -17,7 +17,7 @@ interface ImageCropModalProps {
    * 안 되므로, 아래에서 `'aspect' in props`로 "미전달"과 "명시적 undefined"를 구분한다.
    */
   aspect?: number;
-  /** 헤더/aria 라벨. 기본 '포스터 크롭', 로고는 '로고 크롭'. */
+  /** aria 라벨(다이얼로그 접근성 이름). 기본 '포스터 크롭', 로고는 '로고 크롭'. 시각 헤딩은 #320에서 제거. */
   title?: string;
 }
 
