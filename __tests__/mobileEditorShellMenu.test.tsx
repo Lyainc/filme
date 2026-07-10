@@ -6,11 +6,13 @@
  * disclosure 아님, 35mm disabled)은 원래 designRail.test.tsx (g)(h)(i)였으나 토글이 DesignRail
  * 레일 → 이 서브메뉴로 이전하며 이관됐다.
  */
-import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
+import { describe, expect, test, afterEach, beforeEach, mock } from 'bun:test';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
+
+const STORAGE_KEY = 'filme:phototicket:v1';
 
 function Harness() {
   const photo = usePhototicket();
@@ -103,6 +105,85 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
 
     expect(screen.queryByRole('button', { name: '포스터 교체' })).toBeNull();
     expect(screen.queryByRole('button', { name: '재크롭' })).toBeNull();
+  });
+
+  test('업로드 전에도 임시저장/초기화는 노출된다(#310) — 포스터 전용 액션과 달리 게이팅하지 않는다', async () => {
+    // 포스터(croppedImageUrl)는 새로고침에 안 남지만 movieInfo 등 나머지는 복원되므로(#310이 고치려는
+    // 시나리오 자체), 포스터 재업로드 전에도 초기화에 닿을 수 있어야 한다.
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+
+    expect(screen.getByRole('button', { name: '임시저장' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '초기화' })).toBeTruthy();
+    // 반면 포스터 전용 액션은 여전히 게이팅된다.
+    expect(screen.queryByRole('button', { name: '포스터 교체' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '재크롭' })).toBeNull();
+  });
+
+  test('초기화(#310): 포스터 없이 복원된 stale 값만 있어도 초기화로 지워진다(핵심 시나리오 — 새로고침 직후)', async () => {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ movieInfo: { title: '기생충' } }));
+    const origConfirm = window.confirm;
+    window.confirm = mock(() => true);
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+
+    await user.click(screen.getByRole('button', { name: '초기화' }));
+
+    expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
+    expect(screen.getAllByText('초기화했어요').length).toBeGreaterThan(0);
+
+    window.confirm = origConfirm;
+  });
+
+  test('임시저장(#310): 즉시 localStorage에 저장 + 토스트 + 메뉴 닫힘', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    fireEvent.click(screen.getByText('seed'));
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+
+    await user.click(screen.getByRole('button', { name: '임시저장' }));
+
+    expect(screen.queryByRole('menu', { name: '편집 메뉴' })).toBeNull();
+    expect(screen.getAllByText('임시저장했어요').length).toBeGreaterThan(0);
+    expect(window.localStorage.getItem(STORAGE_KEY)).not.toBeNull();
+  });
+
+  test('초기화(#310): confirm 취소 시 아무것도 지워지지 않는다', async () => {
+    const origConfirm = window.confirm;
+    window.confirm = mock(() => false);
+    const user = userEvent.setup();
+    render(<Harness />);
+    fireEvent.click(screen.getByText('seed'));
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+
+    await user.click(screen.getByRole('button', { name: '초기화' }));
+
+    // 취소했으니 포스터가 그대로 남아 재크롭 액션이 여전히 노출된다(초기화 미실행 증거).
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    expect(screen.queryByRole('button', { name: '재크롭' })).not.toBeNull();
+
+    window.confirm = origConfirm;
+  });
+
+  test('초기화(#310): confirm 승인 시 storage 삭제 + 상태 초기화 + 토스트', async () => {
+    const origConfirm = window.confirm;
+    window.confirm = mock(() => true);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ movieInfo: { title: '기생충' } }));
+    const user = userEvent.setup();
+    render(<Harness />);
+    fireEvent.click(screen.getByText('seed'));
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+
+    await user.click(screen.getByRole('button', { name: '초기화' }));
+
+    expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
+    expect(screen.getAllByText('초기화했어요').length).toBeGreaterThan(0);
+    // 포스터가 사라져 업로드 드롭존이 다시 보인다(INITIAL_STATE 복귀 증거).
+    expect(screen.getByText('포스터 업로드')).toBeTruthy();
+
+    window.confirm = origConfirm;
   });
 
   test('업로드 후: 잉크 토글 → themeColor 라이트(#FFFFFF)↔다크(#000000) 즉시 전환', async () => {

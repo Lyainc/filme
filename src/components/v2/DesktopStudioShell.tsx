@@ -155,7 +155,12 @@ export function DesktopStudioShell({
       data-theme={theme}
       className="app-canvas flex h-screen flex-col overflow-hidden"
     >
-      <AppHeader theme={theme} onThemeChange={onThemeChange} />
+      <AppHeader
+        theme={theme}
+        onThemeChange={onThemeChange}
+        saveDraft={photo.saveDraft}
+        clearDraft={photo.clearDraft}
+      />
 
       {/* 3-pane row — rail(1024) 미만에선 숨겨 모바일 pre-mount의 가로 overflow를 막는다(AppShell aside 패턴). */}
       <div className="hidden min-h-0 flex-1 rail:flex">
