@@ -20,7 +20,7 @@ function extractYear(movieInfo: MovieInfo): string {
 }
 
 /**
- * X 인텐트·navigator.share·클립보드 폴백이 공유하는 단일 소스 공유 문구.
+ * navigator.share·클립보드 폴백이 공유하는 단일 소스 공유 문구.
  *
  * 제목·원제(제목과 다를 때만)·연도를 묶고, 티켓 푸터 서명 문구 'made with FILME'를 앵커로
  * 붙인다(#277) — 라벨형·서술형 후보 대신 앵커형을 채택한 건 티켓 실물의 푸터 서명과 공유
