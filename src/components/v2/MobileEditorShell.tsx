@@ -254,7 +254,7 @@ export function MobileEditorShell({
   // 기본이 아닐 때만 편집 본문(Poster 드롭존 + rail)을 접어 프리뷰에 세로 공간을 내준다. 이미지가
   // 없으면(업로드 전) 접지 않는다 — 그땐 프리뷰/pill 자체가 없다.
   const collapseBody = !!croppedImageUrl && viewMode !== 'default';
-  // max 재정의(#328): actual(실측 비교, 헤더·pill·보정 슬라이더 유지)과 달리 max는 헤더·서브메뉴·
+  // max 재정의(#328): actual(실측 비교, 헤더·pill 유지)과 달리 max는 헤더·서브메뉴·
   // pill·OCR까지 다 숨기고 티켓만 화면에 fixed 오버레이로 띄운다 — 나가는 길은 티켓 자신을 탭(기존
   // default 복귀 핸들러 재사용).
   const isMax = viewMode === 'max';
