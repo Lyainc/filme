@@ -120,12 +120,10 @@ function RailIconButton({
 function RailExpandPanel({
   open,
   eyebrow,
-  onClose,
   children,
 }: {
   open: boolean;
   eyebrow: string;
-  onClose: () => void;
   children: ReactNode;
 }) {
   return (
@@ -142,20 +140,9 @@ function RailExpandPanel({
           aria-label={eyebrow}
           className="rounded-card border border-line bg-surface-elevated p-4"
         >
-          {/* 라벨은 피커 자체 헤더(LayoutStrip "Mood", TexturePicker "Surface treatment")와
-              겹치므로 여기선 생략 — 닫기 버튼만. 접근성 이름은 region aria-label(eyebrow)이 유지. */}
-          <div className="mb-3 flex items-center justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="닫기"
-              className="flex h-8 w-8 items-center justify-center rounded-full text-fg-muted transition-colors hover:text-fg"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M18 6 6 18M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
+          {/* 닫기(x) 버튼 제거(#322) — 레일 아이콘 재클릭으로 이미 토글 닫힘이라 기능 중복.
+              라벨은 피커 자체 헤더(LayoutStrip "Mood", TexturePicker "Surface treatment")와 겹쳐 생략,
+              접근성 이름은 region aria-label(eyebrow)이 유지. */}
           {children}
         </div>
       </div>
@@ -193,7 +180,7 @@ export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket>
         ))}
       </div>
 
-      <RailExpandPanel open={pop !== null} eyebrow={eyebrow} onClose={() => setPop(null)}>
+      <RailExpandPanel open={pop !== null} eyebrow={eyebrow}>
         {active === 'mood' ? (
           <LayoutStrip value={components.layout} onChange={(id: LayoutId) => setComp({ layout: id })} />
         ) : active === 'color' ? (
