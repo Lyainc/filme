@@ -22,6 +22,9 @@
  */
 export const DEFAULT_TICKET_TTL_DAYS = 3;
 
+/** 비공식·양도불가 고지 문구 — 공유 패널·수신자 페이지·앱 footer(#327)가 공유하는 단일 출처. */
+export const UNOFFICIAL_TICKET_NOTICE = '비공식 팬메이드 티켓이라 양도·재판매할 수 없어요.';
+
 export interface CleanupBlob {
   pathname: string;
   uploadedAt: Date | string;

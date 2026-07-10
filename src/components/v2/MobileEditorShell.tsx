@@ -1,5 +1,6 @@
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
+import { AppFooter } from './AppFooter';
 import { DesignRail } from './DesignRail';
 import { OcrUploadCard } from './OcrUploadCard';
 import { OcrUndoBanner } from './OcrUndoBanner';
@@ -515,6 +516,9 @@ export function MobileEditorShell({
                     노렸지만, 인라인 폼이 탭-투-에딧 시트(#215)로 빠진 지금 rail 위 chrome은 OCR·드롭존뿐이라
                     짧다 — 시안 순서(최하단)로 옮겨도 스크롤 부담이 없어 시안을 따른다. */}
                 <DesignRail photo={photo} />
+
+                {/* 앱 chrome footer(#327) — max에선 이 grid-rows 0fr collapse가 그대로 숨겨준다(별도 분기 불필요). */}
+                <AppFooter />
               </div>
             </div>
           </div>
