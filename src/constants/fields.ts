@@ -133,9 +133,6 @@ export const STAMP_KEYS: Record<
   format: { image: 'format', label: 'formatLabel', visible: 'formatVisible' },
 };
 
-/** 상영 포맷 빠른 프리셋(#141) — StampSheet(#215 PART B) 포맷 자동완성·칩의 단일 소스. */
-export const FORMAT_PRESETS = ['IMAX', '4DX', 'Dolby', 'ScreenX'];
-
 /**
  * 필드 현재값 미리보기 문자열. 비어 있으면 '' 반환(호출부가 placeholder로 대체).
  * 데스크톱 아코디언(FieldAccordion)·모바일 온-티켓 탭이 공유 — 컴포넌트에서 분리해
