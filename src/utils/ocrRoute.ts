@@ -114,9 +114,10 @@ export async function validateOcrRequest(
     return null;
   }
 
-  // Gateway 인증 가드: 입력·rate 검증을 통과한 뒤, 모델 호출 직전에 확인한다.
-  if (!process.env.AI_GATEWAY_API_KEY && !process.env.VERCEL_OIDC_TOKEN) {
-    res.status(500).json({ error: 'AI Gateway is not configured' });
+  // 인증 가드: 입력·rate 검증을 통과한 뒤, 모델 호출 직전에 확인한다. OCR은 Google AI Studio
+  // 직결이라(#125) 필요한 건 이 키 하나 — Gateway/OIDC 폴백은 없다.
+  if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+    res.status(500).json({ error: 'Google AI is not configured' });
     return null;
   }
 

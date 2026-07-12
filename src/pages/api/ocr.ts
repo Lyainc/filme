@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { generateObject } from 'ai';
+import { google } from '@ai-sdk/google';
 import { z } from 'zod';
 import { validateOcrRequest } from '@/utils/ocrRoute';
 
@@ -15,11 +16,11 @@ export const config = {
 };
 
 /**
- * GPT-4o mini vision으로 추출할 7필드 + chain.
+ * Gemini 3.1 Flash Lite vision으로 추출할 7필드 + chain.
  *
- * 모든 필드를 `.nullable()`로 둔다(`.optional()` 아님). OpenAI structured output은
- * optional 필드에서 NoObjectGeneratedError를 던질 수 있어 nullable이 안전하다.
- * 없는 값은 모델이 null로 채우고, 서버가 null/빈 문자열을 걸러 채워진 필드만 반환한다.
+ * 모든 필드를 `.nullable()`로 둔다(`.optional()` 아님). structured output은 optional
+ * 필드에서 NoObjectGeneratedError를 던질 수 있어 nullable이 안전하다. 없는 값은 모델이
+ * null로 채우고, 서버가 null/빈 문자열을 걸러 채워진 필드만 반환한다.
  *
  * chain 값은 에셋 슬러그와 1:1(public/assets/chains_transparent/<value>_*.png).
  * cineq 에셋이 존재하므로 4종 enum을 유지한다 — 씨네Q 티켓도 로고가 자동선택된다.
@@ -35,27 +36,43 @@ const TicketSchema = z.object({
   chain: z.enum(['cgv', 'lotte', 'megabox', 'cineq']).nullable(),
 });
 
-/** 연도는 호출 시점 기준으로 주입 — 티켓에 연도가 빠진 MM.DD 표기를 보정하기 위함. */
+/**
+ * 지시문은 영어, 예시는 한국어(티켓 텍스트가 한국어라 그대로 대조돼야 한다). 같은 규칙을
+ * 한국어로 쓴 판본 대비 입력 ~9% 절감이면서 STRICT 정확도 동일 100%(#125 A/B, 15장).
+ *
+ * 규칙 하나하나가 실측으로 들어온 것들이다 — theater/screen 분리(CGV 앱은 지점명 줄과
+ * 상영관 줄이 붙어 있어 "전도연관"을 지점명으로 오인함), 지점명 축약 금지, 로고 없는 CGV
+ * 티켓의 chain 판별(번호 라벨·형식이 유일한 단서), 심야 상영 25:00 표기 보존.
+ * 연도는 호출 시점 기준으로 주입 — 티켓에 연도가 빠진 MM.DD 표기를 보정하기 위함.
+ */
 function buildSystemPrompt(year: number): string {
-  return `당신은 한국 영화관 예매 티켓/스크린샷에서 정보를 추출하는 OCR 어시스턴트입니다.
-이미지를 분석해 아래 필드를 추출하세요. 이미지에 없거나 판독 불가한 필드만 null로 두세요(임의 추측 금지).
+  return `Extract booking info from a Korean cinema ticket screenshot. Set a field to null ONLY if it is absent or unreadable. Never guess.
 
-- title: 영화 제목. 한글 제목을 우선하고, [굿즈증정] 같은 대괄호 배지와 (자막/러닝타임) 같은 괄호 부가정보는 제거하세요. 제목이 길어도 잘라내지 말고 전체를 그대로 넣으세요.
-- theater: 극장 지점명"만". 다음은 절대 theater에 넣지 마세요 — 체인명(CGV/롯데시네마/메가박스/씨네Q), 상영관 번호(예: "1관"·"6관"처럼 숫자+"관"), 층(예: "10층"), 상영 포맷(IMAX/4DX/Laser/LASER/아이맥스 등). 예: "용산", "강남", "코엑스". 표기가 "광교 1관"이면 theater는 "광교"만. 단, 지점명 자체가 "관"으로 끝나면(예: "전도연관") 그건 상영관 번호가 아니라 지점명이니 "전도연관" 그대로 두세요.
-- screen: 상영관 식별자(상영관 번호·이름·층). 예: "1관", "IMAX관", "디즈니시네마 11관", "10층", "스크린A". theater의 지점명을 screen에 반복해 넣지 마세요. theater와 screen은 서로 겹치지 않는 별개 정보입니다.
-- watchDate: 관람 날짜를 YYYY-MM-DD 형식으로. 연도가 티켓에 없으면 ${year}년으로 간주하세요.
-- watchTime: 관람 시작 시각을 HH:MM 24시간 형식으로. "오후 7:30"은 "19:30". 상영 시간 범위(예: 14:20~16:36)면 시작 시각만.
-- seat: 좌석. 예: "G14", 여러 개면 "H2, H3".
-- bookingNumber: 예매번호 또는 판매번호를 화면에 보이는 자릿수·구분자 그대로(한 자리도 더하거나 빼지 마세요).
-- chain: 영화관 체인(cgv / lotte / megabox / cineq 중 하나). 로고·브랜드 색·체인명 텍스트·앱 화면 등 단서가 하나라도 있으면 반드시 그 체인을 고르세요. 지점명이 특정 체인 전용이면 그것도 단서입니다. cineq(씨네Q)는 "씨네Q"/"CINE Q" 브랜딩이 분명히 보일 때만 고르세요(드묾) — 애매하면 cineq로 찍지 마세요. 정말 아무 단서도 없을 때만 null.`;
+- title: Movie title (prefer Korean). Strip bracket badges like [굿즈증정] and parenthetical notes like (자막/러닝타임). Keep the full title, never truncate.
+- theater: Branch name ONLY, exactly as printed, never shortened ("스타필드시티위례" must not become "위례"). NEVER put in theater: the chain name (CGV/롯데시네마/메가박스/씨네Q); an auditorium label (digits+"관", and also named special halls like "전도연관"/"이병헌관" — those are auditoriums, not branches); special-hall brands ([CGV아트하우스], 디즈니시네마, 르 리클라이너); a floor ("10층"); a format (IMAX/4DX/Laser/DOLBY). In the CGV app the branch line (small text) sits directly above the auditorium line (bold text): "강변" + "전도연관[CGV아트하우스](Laser) 10층" → theater is "강변".
+- screen: Auditorium label as printed, including bracket/paren annotations, but drop the floor ("10층"). e.g. "전도연관[CGV아트하우스](Laser)", "6관 (Laser)", "디즈니시네마 11관(르 리클라이너)", "스크린A". Never repeat the branch name here. theater and screen never overlap.
+- watchDate: YYYY-MM-DD. If the ticket omits the year, assume ${year}.
+- watchTime: Start time as HH:MM, 24-hour. "오후 7:30" → "19:30". For a range (14:20~16:36) take the start only. Late-night shows are printed past 24:00 (e.g. "25:00", "26:30") — keep them verbatim, do NOT wrap to 01:00.
+- seat: e.g. "G14"; multiple → "H2, H3".
+- bookingNumber: The 예매번호/판매번호 exactly as shown — same digit count, same separators, nothing added or dropped.
+- chain: One of cgv / lotte / megabox / cineq. 롯데시네마 and 메가박스 tickets usually carry a logo ("LOTTE CINEMA" / "MEGABOX") — trust it. A CGV app ticket may show NO CGV logo at all; do not pick another chain just because the logo is missing. Identify by the number label and format instead: CGV = label "판매번호", number like "2026-0101-1234-5678" (year-monthday-4digits-4digits); 롯데시네마 = label "예매번호", number like "10000000" (8 digits); 메가박스 = number like "9000-000-10000" (4-3-5 digits). A branch name unique to one chain is also a cue. Pick cineq only when "씨네Q"/"CINE Q" branding is clearly visible (rare) — never guess it. Return null only when neither logo nor number format gives a cue.`;
 }
 
 /**
- * 티켓 스크린샷(base64) → GPT-4o mini vision → 구조화 JSON.
+ * 티켓 스크린샷(base64) → Gemini 3.1 Flash Lite vision → 구조화 JSON.
  *
- * AI Gateway 경유(`model: 'openai/gpt-4o-mini'`). 공통 가드(method·입력·rate limit·
- * 인증)는 validateOcrRequest로 일원화 — 통과 시 정제된 base64/mimeType을 받고,
- * 실패 시 res에 status+{error}가 쓰여 있으므로 그대로 반환한다. 절대 throw하지 않는다.
+ * Google AI Studio 직결(`@ai-sdk/google`, env `GOOGLE_GENERATIVE_AI_API_KEY`) — AI Gateway를
+ * 거치지 않는다. Gateway free tier의 모델별 요청 한도가 실사용에서 자주 걸렸고(무료 크레딧
+ * 잔액과 무관하게 paid credits 구매 여부로 게이팅), 직결은 그 한도를 안 탄다. 대가로 Gateway의
+ * provider fallback·통합 비용 관측·OIDC 무키 인증은 포기한다(#125·#299).
+ *
+ * gpt-4o-mini 대비 STRICT 정확도 100% vs 95.6%, 요청당 입력 토큰 1.9k vs 15.3k,
+ * 1000요청 $0.64 vs $2.34 (#125 A/B, 실 티켓 15장). imageDetail은 OpenAI 전용이라 없다 —
+ * Gemini는 이미지를 자체 타일링하므로 전처리 폭 512(ocrPreprocess)만으로 충분하다.
+ *
+ * 공통 가드(method·입력·rate limit·인증)는 validateOcrRequest로 일원화 — 통과 시 정제된
+ * base64/mimeType을 받고, 실패 시 res에 status+{error}가 쓰여 있으므로 그대로 반환한다.
+ * 절대 throw하지 않는다.
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const valid = await validateOcrRequest(req, res);
@@ -64,7 +81,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const { object } = await generateObject({
-      model: 'openai/gpt-4o-mini',
+      model: google('gemini-3.1-flash-lite'),
       schema: TicketSchema,
       system: buildSystemPrompt(new Date().getFullYear()),
       messages: [
@@ -72,16 +89,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           role: 'user',
           content: [
             { type: 'text', text: '이 영화 티켓에서 정보를 추출해줘.' },
-            {
-              type: 'file',
-              mediaType: mimeType,
-              data: base64,
-              // detail=high 명시(#111): auto에 맡기지 않고 타일링을 고정한다. 전처리 폭
-              // 512(ocrPreprocess)와 합쳐 ~14.7k 토큰/요청 — 폭768 auto(=high, ~37k) 대비
-              // ~2.5배 절감하면서 예매번호·좌석 같은 작은 글씨 정확도를 보장한다.
-              // detail=low(~3.4k, 11배 절감)는 작은 숫자를 자릿수 단위로 오인식해 기각.
-              providerOptions: { openai: { imageDetail: 'high' } },
-            },
+            { type: 'file', mediaType: mimeType, data: base64 },
           ],
         },
       ],

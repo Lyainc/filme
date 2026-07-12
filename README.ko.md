@@ -39,7 +39,7 @@ bun run dev                  # http://localhost:3000
 | 변수 | 필수 | 용도 |
 | --- | --- | --- |
 | `KOBIS_API_KEY` | ✅ | 영화 검색 ([키 발급](https://www.kobis.or.kr/kobisopenapi/homepg/main/main.do)) |
-| `AI_GATEWAY_API_KEY` | ✅ (OCR) | [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) 키. 배포 환경에선 `VERCEL_OIDC_TOKEN`으로 대체 가능 |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | ✅ (OCR) | [Google AI Studio](https://aistudio.google.com/apikey) 키 (Gemini vision) |
 | `UPSTASH_REDIS_REST_URL` / `_TOKEN` | ⬜ | rate limit (production 권장, 로컬에선 미설정 시 자동 skip) |
 
 프로덕션은 `bun run build` / `bun run start`를 사용합니다.
@@ -49,7 +49,7 @@ bun run dev                  # http://localhost:3000
 - **Framework**: Next.js 16 (Pages Router), React 19, TypeScript
 - **Styling**: Tailwind CSS v3
 - **티켓 렌더링**: DOM(JSX/CSS) + `html-to-image` 캡처, `react-easy-crop` 포스터 크롭
-- **OCR / AI**: GPT-4o mini vision — `ai` SDK v6 + Vercel AI Gateway, Zod 스키마, Upstash rate limit
+- **OCR / AI**: Gemini 3.1 Flash Lite vision — `ai` SDK v6 + `@ai-sdk/google`(Google AI Studio 직결), Zod 스키마, Upstash rate limit
 - **영화 데이터**: KOBIS Open API
 - **Package Manager**: Bun
 
