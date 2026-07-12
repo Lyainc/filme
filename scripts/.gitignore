@@ -1,0 +1,4 @@
+# OCR A/B 하네스의 로컬 전용 산출물 — 실 티켓에서 뜬 예매번호·좌석·지점명이 들어 있고
+# 이 레포는 public이라 절대 커밋하지 않는다. 결과 캐시는 언제든 재생성 가능.
+ab-ocr-groundtruth.json
+ab-ocr-model-result*.json

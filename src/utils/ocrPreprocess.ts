@@ -50,8 +50,8 @@ export async function preprocessForOcr(file: File): Promise<Blob> {
     //    상단 82%만 남긴다
     const cropH = Math.round(H * 0.82);
 
-    // 4. width 512 캡 — detail=high에서 512px 타일 수가 비용을 지배하므로
-    //    512 이하로 맞춰 타일을 6→2로 줄인다(#111). 이미 작으면 스케일 1(그대로).
+    // 4. width 512 캡 — 이미지 토큰을 줄인다. 이미 작으면 스케일 1(그대로).
+    //    자세한 근거는 파일 상단 헤더 참고(#111에서 정하고 #125에서 gemini로도 재확인).
     const scale = W > 512 ? 512 / W : 1;
     const outW = Math.round(W * scale);
     const outH = Math.round(cropH * scale);
