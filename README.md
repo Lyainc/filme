@@ -39,7 +39,7 @@ bun run dev                  # http://localhost:3000
 | Variable | Required | Purpose |
 | --- | --- | --- |
 | `KOBIS_API_KEY` | ✅ | Movie search ([get a key here](https://www.kobis.or.kr/kobisopenapi/homepg/main/main.do)) |
-| `AI_GATEWAY_API_KEY` | ✅ (for OCR) | [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) key; `VERCEL_OIDC_TOKEN` works in deployed envs |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | ✅ (for OCR) | [Google AI Studio](https://aistudio.google.com/apikey) key (Gemini vision) |
 | `UPSTASH_REDIS_REST_URL` / `_TOKEN` | ⬜ | Rate limiting (recommended in production; skipped locally if unset) |
 
 `bun run build` / `bun run start` for production. `bun test` runs the unit and interaction tests.
@@ -49,7 +49,7 @@ bun run dev                  # http://localhost:3000
 - **Framework**: Next.js 16 (Pages Router), React 19, TypeScript
 - **Styling**: Tailwind CSS v3
 - **Ticket rendering**: DOM (JSX/CSS) captured with `html-to-image`; `react-easy-crop` for poster cropping
-- **OCR / AI**: GPT-4o mini vision via `ai` SDK v6 + Vercel AI Gateway, Zod schemas, Upstash rate limiting
+- **OCR / AI**: Gemini 3.1 Flash Lite vision via `ai` SDK v6 + `@ai-sdk/google` (direct Google AI Studio), Zod schemas, Upstash rate limiting
 - **Movie data**: KOBIS Open API
 - **Package manager**: Bun
 - **Testing**: `bun test` with happy-dom + `@testing-library/react` for interaction tests
