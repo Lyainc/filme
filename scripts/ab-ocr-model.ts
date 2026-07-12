@@ -29,9 +29,17 @@ const RATES: Record<string, { in: number; out: number }> = {
   // free tier로 A/B 가능한 vision 모델은 gpt-4o-mini·gemini-2.5-flash-lite 둘뿐. 참고용으로만 기재.
   'openai/gpt-5-nano': { in: 0.05, out: 0.4 },
   // #299 후속 — AI Gateway 우회, Google AI Studio 직결(@ai-sdk/google). 가격은 ai.google.dev
-  // 공식 리스트가(2026-07-12 확인), Gateway 마진 없음.
+  // 공식 리스트 기준(2026-07-12 확인)이라 Gateway 마진이 안 붙는다.
   'google-direct/gemini-3.1-flash-lite': { in: 0.25, out: 1.5 },
 };
+
+/**
+ * env: 후보(`google-direct/*`)는 `GOOGLE_GENERATIVE_AI_API_KEY`, baseline(`openai/*`)은
+ * `AI_GATEWAY_API_KEY` 또는 `VERCEL_OIDC_TOKEN`이 있어야 돈다. 프로덕션은 #125에서 Google
+ * 직결로 넘어가면서 Gateway 키를 걷어냈으니(.env.example·README에서 제거), baseline과 다시
+ * 비교하려면 Gateway 키를 `.env.local`에 직접 넣어야 한다. Gateway free tier는 모델별 요청
+ * 한도가 낮아 baseline 15장이 429를 여러 번 탄다 — 무료 크레딧 잔액이 남아도 안 풀린다.
+ */
 
 /** 'google-direct/<model>'은 AI Gateway를 거치지 않고 @ai-sdk/google로 직결한다. */
 function resolveModel(modelKey: string): LanguageModel {
