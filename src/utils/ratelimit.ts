@@ -109,8 +109,9 @@ export function resetRateLimitCacheForTests(): void {
  * IP 둘이 동시에 버스트하면 1분에 15를 넘겨 Google이 429를 뱉는다(우리는 재시도하지
  * 않으므로 그대로 502 실패로 유저에게 나간다). 그래서 shared 윈도우로 키 총량을 우리가
  * 먼저 막고, 초과분은 502가 아니라 429 + Retry-After로 돌려보낸다.
- * 여유분은 벤더 한도의 ~10%(15→12 RPM, 500→450 RPD) — 우리 sliding window와 Google의
- * 카운팅이 정확히 같은 경계를 쓰지 않으므로 그 오차만큼 비워둔다.
+ * 여유분은 분당 -20%(15→12), 일당 -10%(500→450) — 우리 sliding window와 Google의 카운팅이
+ * 정확히 같은 경계를 쓰지 않으므로 그 오차만큼 비워둔다. 분당을 더 크게 비운 건 15가 작은
+ * 수라 같은 비율이어도 경계 오차 한두 건이 곧바로 벤더 429가 되기 때문이다.
  * Tier 1(4K RPM · 150K RPD)으로 올릴 계획이 생기면 shared 수치를 함께 올릴 것(#299).
  */
 export async function checkOcrRateLimit(ip: string): Promise<RateLimitResult> {
