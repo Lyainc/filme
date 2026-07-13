@@ -4,7 +4,8 @@ import { getCroppedImg, Area } from '@/utils/imageCrop';
 /**
  * 극장/포맷 로고 업로드용 자유 크롭 흐름(#220).
  *
- * 포스터 크롭과 달리 고정 종횡비가 없고, 크롭 결과가 곧 로고 이미지(투명 PNG)다.
+ * 포스터 크롭과 달리 고정 종횡비가 없고(프레임 = 업로드 이미지의 자연 종횡비, #347),
+ * 크롭 결과가 곧 로고 이미지(투명 PNG)다.
  * 파일 선택 → 원본 objectURL 생성 → 크롭 모달 → '적용' 시 getCroppedImg(png, 종횡비 보존)
  * → 직전 로고 URL과 원본 URL을 revoke하고 새 크롭 URL을 onChange로 넘긴다.
  *
