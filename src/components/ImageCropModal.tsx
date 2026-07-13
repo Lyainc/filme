@@ -12,9 +12,9 @@ interface ImageCropModalProps {
   isProcessing?: boolean;
   /**
    * 크롭 종횡비. 생략 시 포스터 기본(TARGET_RATIO). 로고는 `undefined`를 넘겨
-   * react-easy-crop 자유 크롭으로 연다.
-   * 주의: 구조분해 기본값을 쓰면 명시적 `undefined`가 기본값으로 덮여 자유 크롭이
-   * 안 되므로, 아래에서 `'aspect' in props`로 "미전달"과 "명시적 undefined"를 구분한다.
+   * "업로드 이미지의 자연 종횡비" 프레임으로 연다(#347).
+   * 주의: 구조분해 기본값을 쓰면 명시적 `undefined`가 기본값으로 덮이므로,
+   * 아래에서 `'aspect' in props`로 "미전달"과 "명시적 undefined"를 구분한다.
    */
   aspect?: number;
   /** aria 라벨(다이얼로그 접근성 이름). 기본 '포스터 크롭', 로고는 '로고 크롭'. 시각 헤딩은 #320에서 제거. */
@@ -29,7 +29,14 @@ export default function ImageCropModal(props: ImageCropModalProps) {
     isProcessing = false,
     title = '포스터 크롭',
   } = props;
-  const aspect = 'aspect' in props ? props.aspect : TARGET_RATIO;
+  const fixedAspect = 'aspect' in props ? props.aspect : TARGET_RATIO;
+  // 로고(자유 크롭)는 이미지의 자연 종횡비를 크롭 프레임으로 쓴다(#347). react-easy-crop은
+  // aspect가 undefined면 defaultProps의 4/3으로 대체해버려서 "자유 크롭"이 4:3 강제였다.
+  // 자연비 프레임 + zoom 1이면 크롭 영역이 원본 전체와 정확히 일치해(getCropSize) 잘림·여백이 없고,
+  // 사용자가 확대하면 종횡비를 유지한 채 부분만 잘라낸다.
+  // ponytail: 리사이즈 가능한 자유형 프레임까지 필요해지면 그때 react-image-crop 교체(#347 제안).
+  const [mediaAspect, setMediaAspect] = useState<number | null>(null);
+  const aspect = fixedAspect ?? mediaAspect ?? undefined;
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
@@ -148,6 +155,9 @@ export default function ImageCropModal(props: ImageCropModalProps) {
               onCropChange={setCrop}
               onCropComplete={onCropComplete}
               onZoomChange={setZoom}
+              onMediaLoaded={({ naturalWidth, naturalHeight }) =>
+                setMediaAspect(naturalHeight > 0 ? naturalWidth / naturalHeight : null)
+              }
               objectFit="contain"
             />
           </div>
