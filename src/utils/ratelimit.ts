@@ -20,16 +20,27 @@ export interface RateLimitResult {
   reason?: 'limited' | 'misconfigured';
 }
 
+type LimitWindow = {
+  name: string;
+  limit: number;
+  window: `${number} ${'m' | 'h' | 'd'}`;
+  /**
+   * true면 IP가 아니라 고정 키로 센다 — 즉 이 배포 전체의 총량 상한이다.
+   * 벤더 한도가 API 키(=프로젝트) 단위인 경우, IP별 카운터만으로는 소진을 원리적으로 못 막는다.
+   */
+  shared?: boolean;
+};
+
 type LimitPolicy = {
   scope: 'ocr' | 'kobis' | 'ticket';
   /** Upstash 미설정 시 production 동작: 'closed'=차단(misconfigured), 'open'=통과(fail-open). */
   failMode: 'closed' | 'open';
-  windows: Array<{ name: string; limit: number; window: `${number} ${'m' | 'h' | 'd'}` }>;
+  windows: LimitWindow[];
 };
 
 type LimitersCache = {
   key: string;
-  limiters: Array<{ limiter: Ratelimit; name: string }>;
+  limiters: Array<{ limiter: Ratelimit; name: string; shared?: boolean }>;
 };
 
 let cache: LimitersCache | null = null;
@@ -50,6 +61,7 @@ function createLimiters(policy: LimitPolicy): LimitersCache | null {
     key,
     limiters: policy.windows.map((w) => ({
       name: w.name,
+      shared: w.shared,
       limiter: new Ratelimit({
         redis,
         limiter: Ratelimit.slidingWindow(w.limit, w.window),
@@ -68,10 +80,11 @@ async function checkConfiguredRateLimit(ip: string, policy: LimitPolicy): Promis
     return failClosed ? { ok: false, reason: 'misconfigured' } : { ok: true };
   }
 
-  // 가장 짧은 윈도우부터 순차 체크한다. 이미 차단될 요청은 더 긴 윈도우 카운터를
-  // 불필요하게 소진하지 않는다.
-  for (const { limiter } of configured.limiters) {
-    const result = await limiter.limit(ip);
+  // 순서는 (1) per-IP 먼저, (2) 그 안에서 짧은 윈도우 먼저다. 이미 차단될 요청은 더 긴
+  // 윈도우 카운터를 소진하지 않고, per-IP에서 막힌 요청은 애초에 벤더를 안 부르므로
+  // shared(총량) 카운터도 소진하면 안 된다 — 그러면 실제보다 빨리 총량을 닫아버린다.
+  for (const { limiter, shared } of configured.limiters) {
+    const result = await limiter.limit(shared ? 'global' : ip);
     if (!result.success) {
       return {
         ok: false,
@@ -88,13 +101,28 @@ export function resetRateLimitCacheForTests(): void {
   cache = null;
 }
 
+/**
+ * OCR은 Google AI Studio free tier 직결이고, 그 한도는 **API 키(프로젝트) 단위**다 —
+ * gemini-3.1-flash-lite 기준 15 RPM · 500 RPD (2026-07-13 실측: 429 QuotaFailure의
+ * quotaId `GenerateRequestsPerMinutePerProjectPerModel-FreeTier`, quotaValue 15).
+ * IP별 카운터만으로는 이 총량을 못 막는다 — IP 10개가 각자 하루치를 쓰면 키가 소진되고,
+ * IP 둘이 동시에 버스트하면 1분에 15를 넘겨 Google이 429를 뱉는다(우리는 재시도하지
+ * 않으므로 그대로 502 실패로 유저에게 나간다). 그래서 shared 윈도우로 키 총량을 우리가
+ * 먼저 막고, 초과분은 502가 아니라 429 + Retry-After로 돌려보낸다.
+ * 여유분은 벤더 한도의 ~10%(15→12 RPM, 500→450 RPD) — 우리 sliding window와 Google의
+ * 카운팅이 정확히 같은 경계를 쓰지 않으므로 그 오차만큼 비워둔다.
+ * Tier 1(4K RPM · 150K RPD)으로 올릴 계획이 생기면 shared 수치를 함께 올릴 것(#299).
+ */
 export async function checkOcrRateLimit(ip: string): Promise<RateLimitResult> {
   return checkConfiguredRateLimit(ip, {
     scope: 'ocr',
     failMode: 'closed',
     windows: [
       { name: 'hr', limit: 10, window: '1 h' },
-      { name: 'day', limit: 50, window: '1 d' },
+      // 한 IP가 키 하루치(450)의 5% 이상을 못 먹게 한다. 50이면 IP 9개로 전부 소진됐다.
+      { name: 'day', limit: 20, window: '1 d' },
+      { name: 'global-min', limit: 12, window: '1 m', shared: true },
+      { name: 'global-day', limit: 450, window: '1 d', shared: true },
     ],
   });
 }
