@@ -156,7 +156,9 @@ export default function ImageCropModal(props: ImageCropModalProps) {
               onCropComplete={onCropComplete}
               onZoomChange={setZoom}
               onMediaLoaded={({ naturalWidth, naturalHeight }) =>
-                setMediaAspect(naturalHeight > 0 ? naturalWidth / naturalHeight : null)
+                setMediaAspect(
+                  naturalWidth > 0 && naturalHeight > 0 ? naturalWidth / naturalHeight : null
+                )
               }
               objectFit="contain"
             />

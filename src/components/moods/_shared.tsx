@@ -94,15 +94,6 @@ export function showFieldGhost(
  * 렌더될 때만 그려야 하므로(둘 중 하나라도 null이면 허공에 뜬 구분선이 남음), 무드가 이 헬퍼로
  * 구분선을 게이팅한다. 스탬프 내부의 null 판정과 같은 조건이라 단일 소스로 export.
  */
-/**
- * 로고 스탬프 폭 상한 = 높이 × 5 (#347). 크롭이 자유 종횡비로 풀리면서(ImageCropModal) 극단적으로
- * 긴 워드마크가 그대로 올라올 수 있는데, 스탬프 그룹엔 maxWidth 제약이 없어 티켓 경계를 넘거나 옆
- * 텍스트와 겹친다. 폭만 상한을 두고 objectFit:contain으로 종횡비를 유지한 채 축소한다.
- * 5:1은 실제 극장/포맷 워드마크(CGV·메가박스·IMAX 등)를 안 건드리면서, 가장 좁은 무드(Stub, 체인
- * 높이 39·포맷 38)에서도 두 스탬프 + 구분선이 티켓 폭 960 안에 들어오는 선.
- */
-export const STAMP_MAX_ASPECT = 5;
-
 export function stampWillRender(
   visible: boolean | undefined,
   image: string | undefined,
@@ -111,6 +102,15 @@ export function stampWillRender(
 ): boolean {
   return visible !== false && (!!image || !!label || ghost !== false);
 }
+
+/**
+ * 로고 스탬프 폭 상한 = 높이 × 5 (#347). 크롭이 자유 종횡비로 풀리면서(ImageCropModal) 극단적으로
+ * 긴 워드마크가 그대로 올라올 수 있는데, 스탬프 그룹엔 maxWidth 제약이 없어 티켓 경계를 넘거나 옆
+ * 텍스트와 겹친다. 폭만 상한을 두고 objectFit:contain으로 종횡비를 유지한 채 축소한다.
+ * 5:1은 실제 극장/포맷 워드마크(CGV·메가박스·IMAX 등)를 안 건드리면서, 가장 좁은 무드(Stub, 체인
+ * 높이 39·포맷 38)에서도 두 스탬프 + 구분선이 티켓 폭 960 안에 들어오는 선.
+ */
+export const STAMP_MAX_ASPECT = 5;
 
 /**
  * Returns `value` when the field is visible (or visibility is undefined), otherwise ''.
