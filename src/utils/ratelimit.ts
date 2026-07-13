@@ -83,6 +83,9 @@ async function checkConfiguredRateLimit(ip: string, policy: LimitPolicy): Promis
   // 순서는 (1) per-IP 먼저, (2) 그 안에서 짧은 윈도우 먼저다. 이미 차단될 요청은 더 긴
   // 윈도우 카운터를 소진하지 않고, per-IP에서 막힌 요청은 애초에 벤더를 안 부르므로
   // shared(총량) 카운터도 소진하면 안 된다 — 그러면 실제보다 빨리 총량을 닫아버린다.
+  // 반대급부: shared가 혼잡하면 유저는 벤더 호출이 한 번도 성공 못 한 채 429만 받으면서
+  // 자기 per-IP 한도를 깎아먹는다. 완벽한 순서는 없고, 벤더 quota를 과소진하는 쪽이 더
+  // 나쁘다고 봐서 이쪽을 골랐다(총량이 닫히면 전체 유저가 죽는다).
   for (const { limiter, shared } of configured.limiters) {
     const result = await limiter.limit(shared ? 'global' : ip);
     if (!result.success) {
