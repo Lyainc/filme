@@ -2,10 +2,15 @@ import type { MovieInfo } from '@/types';
 import { preprocessForOcr } from './ocrPreprocess';
 
 /**
- * runOcr 반환 — 폼에 직접 적용할 필드 + KOBIS 조회용 title + 자동선택용 chain.
- * (title은 폼에 바로 쓰지 않고 OcrUploadCard에서 KOBIS 검색어로 흐른다.)
+ * runOcr 반환 — 폼에 직접 적용할 필드 + KOBIS 조회용 title + 스탬프 자동적용용 chain/format.
+ * (title은 폼에 바로 쓰지 않고 OcrUploadCard에서 KOBIS 검색어로 흐른다. chain/format은
+ * MovieInfo가 아니라 TicketComponents의 라벨·노출로 흐른다 — #141(chain)·#348(format).)
  */
-export type OcrResult = Partial<MovieInfo> & { chain?: string; preprocessedImage?: string };
+export type OcrResult = Partial<MovieInfo> & {
+  chain?: string;
+  format?: string;
+  preprocessedImage?: string;
+};
 
 /** Blob → 순수 base64 문자열(data URL prefix 제거). */
 function blobToBase64(blob: Blob): Promise<string> {

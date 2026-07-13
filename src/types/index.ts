@@ -52,7 +52,7 @@ export interface TicketComponents {
   format: string;
   /** 체인 텍스트 라벨(예: "CGV") — 이미지 없을 때 텍스트 스탬프로 출력. OCR/수동으로 채움. */
   chainLabel: string;
-  /** 포맷 텍스트 라벨(예: "IMAX") — 이미지 없을 때 텍스트 스탬프로 출력. 프리셋/수동이 1차 소스. */
+  /** 포맷 텍스트 라벨(예: "IMAX") — 이미지 없을 때 텍스트 스탬프로 출력. OCR/수동으로 채움(#348). */
   formatLabel: string;
   texture: string;
   posterOpacity: number;
