@@ -20,12 +20,12 @@ export interface OcrUploadCardProps {
   onOcrApply: (params: {
     keys: Set<OcrDirectField>;
     prevValues: Partial<MovieInfo>;
-    // OCR이 chain을 인식하면 chainVisible/chainLabel을 변경하는데, 이 라벨은
+    // OCR이 chain/format을 인식하면 {chain,format}Visible/Label을 변경하는데, 이 라벨은
     // export에 포함되므로 undo가 반드시 되돌려야 한다(#141 리뷰 P1). 변경 직전 값.
     prevComponents?: Partial<TicketComponents>;
   }) => void;
   setComponents?: (components: Partial<TicketComponents>) => void;
-  /** chain 변경 undo 스냅샷용 — 변경 전 컴포넌트 값을 읽는다. */
+  /** chain/format 변경 undo 스냅샷용 — 변경 전 컴포넌트 값을 읽는다. */
   currentComponents?: Partial<TicketComponents>;
   ocrEpochRef: { current: number };
   className?: string;
@@ -152,18 +152,35 @@ export function OcrUploadCard({
     try {
       const result = await runOcr(file);
 
-      let prevComponents: Partial<TicketComponents> | undefined;
-      if (result.chain && setComponents) {
-        // 텍스트 라벨을 바로 채워 로고 없이도 체인이 표시되게 한다(#141 (7)). 이미지를 올리면
-        // ChainStamp가 이미지를 우선하므로 라벨은 자동으로 가려진다.
-        // 변경 전 값을 스냅샷해 undo가 라벨/노출을 정확히 되돌리게 한다(#141 리뷰 P1).
-        prevComponents = {
-          chainVisible: currentComponents?.chainVisible,
-          chainLabel: currentComponents?.chainLabel,
-        };
+      // 텍스트 라벨을 바로 채워 로고 없이도 체인/포맷이 표시되게 한다(#141 (7)·#348). 이미지를
+      // 올리면 ChainStamp/FormatStamp가 이미지를 우선하므로 라벨은 자동으로 가려진다.
+      // 변경 전 값을 스냅샷해 undo가 라벨/노출을 정확히 되돌리게 한다(#141 리뷰 P1).
+      const prev: Partial<TicketComponents> = {};
+      const next: Partial<TicketComponents> = {};
+      const labels: string[] = [];
+
+      if (result.chain) {
         const label = chainLabelFor(result.chain);
-        setComponents({ chainVisible: true, chainLabel: label });
-        showToast(`${label} 체인을 인식했어요. 로고 이미지는 아래 Theater에서 올릴 수 있어요.`);
+        prev.chainVisible = currentComponents?.chainVisible;
+        prev.chainLabel = currentComponents?.chainLabel;
+        next.chainVisible = true;
+        next.chainLabel = label;
+        labels.push(label);
+      }
+      if (result.format) {
+        // chain과 달리 매핑 테이블이 없다 — 서버가 이미 표준 토큰(IMAX/4DX/LASER…)으로 준다.
+        prev.formatVisible = currentComponents?.formatVisible;
+        prev.formatLabel = currentComponents?.formatLabel;
+        next.formatVisible = true;
+        next.formatLabel = result.format;
+        labels.push(result.format);
+      }
+
+      let prevComponents: Partial<TicketComponents> | undefined;
+      if (labels.length > 0 && setComponents) {
+        prevComponents = prev;
+        setComponents(next);
+        showToast(`${labels.join(' · ')} 스탬프를 채웠어요. 로고 이미지는 아래 Theater에서 올릴 수 있어요.`);
       }
 
       const direct: Partial<MovieInfo> = {};

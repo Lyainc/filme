@@ -51,6 +51,11 @@ function MobileHarness() {
       <button type="button" onClick={() => photo.handleImageUpload('blob:test-poster')}>
         seed-poster
       </button>
+      {/* #348 전용 시드 — formatVisible 기본값이 true라, OCR이 노출을 실제로 "켜는지" 보려면
+          꺼둔 상태에서 출발해야 한다(기본값에 기대면 아무것도 검증 못 한다). */}
+      <button type="button" onClick={() => photo.updateComponents({ formatVisible: false })}>
+        seed-format-off
+      </button>
       <MobileEditorShell
         photo={photo}
         canExport
@@ -120,6 +125,45 @@ describe('OCR undo restoration (#163 / #141 P1)', () => {
     await waitFor(() => {
       expect(screen.queryByRole('button', { name: '되돌리기' })).toBeNull();
     });
+  });
+
+  // #348: chain과 대칭으로 format도 라벨 자동 채움 + 스탬프 노출 ON. 상태만이 아니라 티켓
+  // 프리뷰에 스탬프가 실제로 찍히는 것까지 본다 — formatLabel은 export에 들어가므로 undo도
+  // chain과 똑같이 원자 복원해야 한다(#141 리뷰 P1과 같은 이유).
+  test('OCR이 인식한 format이 포맷 스탬프를 켜고, undo가 라벨·노출을 되돌린다', async () => {
+    const user = userEvent.setup();
+    render(<MobileHarness />);
+
+    // 티켓 프리뷰(TicketRenderer)는 croppedImageUrl이 있어야 렌더된다 — 스탬프를 눈으로 보려면 필요.
+    await user.click(screen.getByText('seed-poster'));
+    await user.click(screen.getByText('seed-format-off'));
+    expect(captured.components.formatVisible).toBe(false);
+    expect(captured.components.formatLabel).toBe('');
+    expect(screen.queryByText('IMAX')).toBeNull();
+
+    ocrImpl = async () => ({
+      chain: 'cgv',
+      format: 'IMAX',
+      theater: '영등포타임스퀘어',
+    });
+
+    await user.upload(
+      ocrFileInput(),
+      new File(['x'], 'ticket.png', { type: 'image/png' })
+    );
+
+    const undoButton = await screen.findByRole('button', { name: '되돌리기' });
+    expect(captured.components.formatVisible).toBe(true);
+    expect(captured.components.formatLabel).toBe('IMAX');
+    expect(screen.getAllByText('IMAX').length).toBeGreaterThan(0);
+
+    await user.click(undoButton);
+
+    expect(captured.components.formatVisible).toBe(false);
+    expect(captured.components.formatLabel).toBe('');
+    expect(screen.queryByText('IMAX')).toBeNull();
+    // chain 스냅샷이 format과 한 객체에 실려도 서로 덮지 않는지 — 같은 prevComponents를 공유한다.
+    expect(captured.components.chainLabel).toBe('');
   });
 
   // #328 claude-review 재검토 P1: max는 헤더·서브메뉴·pill·OCR과 함께 OCR 되돌리기 배너·토스트도

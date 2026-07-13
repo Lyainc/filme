@@ -16,14 +16,17 @@ export const config = {
 };
 
 /**
- * Gemini 3.1 Flash Lite vision으로 추출할 7필드 + chain.
+ * Gemini 3.1 Flash Lite vision으로 추출할 7필드 + chain + format.
  *
  * 모든 필드를 `.nullable()`로 둔다(`.optional()` 아님). structured output은 optional
  * 필드에서 NoObjectGeneratedError를 던질 수 있어 nullable이 안전하다. 없는 값은 모델이
  * null로 채우고, 서버가 null/빈 문자열을 걸러 채워진 필드만 반환한다.
  *
- * chain 값은 에셋 슬러그와 1:1(public/assets/chains_transparent/<value>_*.png).
- * cineq 에셋이 존재하므로 4종 enum을 유지한다 — 씨네Q 티켓도 로고가 자동선택된다.
+ * chain은 enum — 값이 에셋 슬러그와 1:1이고(chains_transparent/<value>_*.png) 4종으로 닫혀 있다.
+ * format은 반대로 자유 문자열이다(#348): 포맷 브랜드는 체인마다 계속 늘어나는데(IMAX·4DX·
+ * SCREENX·DOLBY·MEGA LED·SUPER PLEX·LASER…) 목적지인 formatLabel이 이미 자유 텍스트라
+ * (#316/#317), enum으로 닫으면 브랜드가 하나 생길 때마다 코드를 고쳐야 한다. 대신 표준 토큰은
+ * 프롬프트에서 좁힌다 — 스키마가 아니라 지시문이 어휘를 쥔다.
  */
 const TicketSchema = z.object({
   title: z.string().nullable(),
@@ -34,6 +37,7 @@ const TicketSchema = z.object({
   seat: z.string().nullable(),
   bookingNumber: z.string().nullable(),
   chain: z.enum(['cgv', 'lotte', 'megabox', 'cineq']).nullable(),
+  format: z.string().nullable(),
 });
 
 /**
@@ -44,6 +48,12 @@ const TicketSchema = z.object({
  * 상영관 줄이 붙어 있어 "전도연관"을 지점명으로 오인함), 지점명 축약 금지, 로고 없는 CGV
  * 티켓의 chain 판별(번호 라벨·형식이 유일한 단서), 심야 상영 25:00 표기 보존.
  * 연도는 호출 시점 기준으로 주입 — 티켓에 연도가 빠진 MM.DD 표기를 보정하기 위함.
+ *
+ * format 규칙도 실측(#348, 같은 15장)에서 나왔다 — 포맷은 상영관 줄 안에 섞여 찍히고
+ * (`IMAX관`·`6관 (Laser)`·`MEGA | LED 3관`), CGV 앱은 IMAX/4DX만 제목 옆 배지로 따로 보여주며
+ * Laser관은 배지가 `2D`라 배지만 보면 놓친다. 특별관·좌석등급 브랜드(전도연관·[CGV아트하우스]·
+ * 디즈니시네마·르 리클라이너·경기인디시네마·광음시네마)는 상영 포맷이 아니라 제외 — 스탬프
+ * 어휘를 영사/음향 포맷으로 좁혀야 채점이 결정적이고, 나머지는 사용자가 직접 입력한다.
  */
 function buildSystemPrompt(year: number): string {
   return `Extract booking info from a Korean cinema ticket screenshot. Set a field to null ONLY if it is absent or unreadable. Never guess.
@@ -55,7 +65,8 @@ function buildSystemPrompt(year: number): string {
 - watchTime: Start time as HH:MM, 24-hour. "오후 7:30" → "19:30". For a range (14:20~16:36) take the start only. Late-night shows are printed past 24:00 (e.g. "25:00", "26:30") — keep them verbatim, do NOT wrap to 01:00.
 - seat: e.g. "G14"; multiple → "H2, H3".
 - bookingNumber: The 예매번호/판매번호 exactly as shown — same digit count, same separators, nothing added or dropped.
-- chain: One of cgv / lotte / megabox / cineq. 롯데시네마 and 메가박스 tickets usually carry a logo ("LOTTE CINEMA" / "MEGABOX") — trust it. A CGV app ticket may show NO CGV logo at all; do not pick another chain just because the logo is missing. Identify by the number label and format instead: CGV = label "판매번호", number like "2026-0101-1234-5678" (year-monthday-4digits-4digits); 롯데시네마 = label "예매번호", number like "10000000" (8 digits); 메가박스 = number like "9000-000-10000" (4-3-5 digits). A branch name unique to one chain is also a cue. Pick cineq only when "씨네Q"/"CINE Q" branding is clearly visible (rare) — never guess it. Return null only when neither logo nor number format gives a cue.`;
+- chain: One of cgv / lotte / megabox / cineq. 롯데시네마 and 메가박스 tickets usually carry a logo ("LOTTE CINEMA" / "MEGABOX") — trust it. A CGV app ticket may show NO CGV logo at all; do not pick another chain just because the logo is missing. Identify by the number label and format instead: CGV = label "판매번호", number like "2026-0101-1234-5678" (year-monthday-4digits-4digits); 롯데시네마 = label "예매번호", number like "10000000" (8 digits); 메가박스 = number like "9000-000-10000" (4-3-5 digits). A branch name unique to one chain is also a cue. Pick cineq only when "씨네Q"/"CINE Q" branding is clearly visible (rare) — never guess it. Return null only when neither logo nor number format gives a cue.
+- format: The screening format brand, if the ticket carries one. Recognized: IMAX, 4DX, ULTRA 4DX, SCREENX, DOLBY, MEGA LED, SUPER PLEX, LASER. It is printed inside the auditorium line ("IMAX관", "6관 (Laser)", "MEGA | LED 3관", "DOLBY VISION+ATMOS", "월드타워 15관 LASER", "6관 [이병헌관] LASER/광음시네마"), and CGV also badges it beside the title ("IMAX · 15세이상관람가") — but only for IMAX/4DX, so read the auditorium line too. Output ONE brand, uppercase, dropping "관"/"2D"/"3D" and any trailing words: "IMAX관" → "IMAX", "6관 (Laser)" → "LASER", "MEGA | LED 3관" → "MEGA LED", "DOLBY VISION+ATMOS" → "DOLBY". If a premium brand and LASER both appear, return the premium brand. A special/themed hall or a seat grade is NOT a format — return null when the auditorium carries only those: a plain numbered hall ("15관", "4관", "스크린A"), a seat grade (컴포트석, 르 리클라이너), a named or branded hall (전도연관, 이병헌관, [CGV아트하우스], 디즈니시네마, 경기인디시네마, 광음시네마).`;
 }
 
 /**
