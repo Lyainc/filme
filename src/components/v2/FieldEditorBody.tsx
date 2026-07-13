@@ -16,6 +16,7 @@ import {
   STAMP_LABELS,
   STAMP_KEYS,
   isStampTarget,
+  STAMP_LABEL_MAX,
   type SheetTarget,
   type StampTarget,
 } from '@/constants/fields';
@@ -358,7 +359,7 @@ function StampSheet({ target, photo }: { target: StampTarget; photo: Photo }) {
         value={labelValue}
         onChange={(e) => setLabel(e.target.value)}
         aria-label={STAMP_LABELS[target]}
-        maxLength={24}
+        maxLength={STAMP_LABEL_MAX}
         className={INPUT_CLS}
       />
 

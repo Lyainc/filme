@@ -20,6 +20,7 @@ import { describe, expect, test, afterEach, mock } from 'bun:test';
 import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { PhototicketState } from '@/types';
+import { STAMP_LABEL_MAX } from '@/constants/fields';
 
 // runOcr must be mocked BEFORE MobileEditorShell (which transitively imports it via
 // OcrUploadCard) is loaded — bun's mock.module is not hoisted, so the shell is
@@ -164,6 +165,27 @@ describe('OCR undo restoration (#163 / #141 P1)', () => {
     expect(screen.queryByText('IMAX')).toBeNull();
     // chain 스냅샷이 format과 한 객체에 실려도 서로 덮지 않는지 — 같은 prevComponents를 공유한다.
     expect(captured.components.chainLabel).toBe('');
+  });
+
+  // #348 PR #351 리뷰 P1: format은 자유 문자열이라 chain의 enum 같은 길이 보장이 없다. 모델이
+  // 프롬프트를 벗어나 상영관 줄을 통째로 뱉으면 TextStamp(nowrap·축소 로직 없음)가 티켓 레이아웃을
+  // 민다 — 수동 입력(StampSheet의 maxLength)과 같은 상한으로 잘라야 한다.
+  test('OCR format이 길게 와도 수동 입력과 같은 상한(STAMP_LABEL_MAX)으로 잘린다', async () => {
+    const user = userEvent.setup();
+    render(<MobileHarness />);
+
+    ocrImpl = async () => ({ format: '  IMAX LASER 2D 전도연관[CGV아트하우스] 10층  ' });
+
+    await user.upload(
+      ocrFileInput(),
+      new File(['x'], 'ticket.png', { type: 'image/png' })
+    );
+
+    await screen.findByRole('button', { name: '되돌리기' });
+    expect(captured.components.formatLabel.length).toBeLessThanOrEqual(STAMP_LABEL_MAX);
+    expect(captured.components.formatLabel).toBe(
+      'IMAX LASER 2D 전도연관[CGV아트하우스] 10층'.slice(0, STAMP_LABEL_MAX)
+    );
   });
 
   // #328 claude-review 재검토 P1: max는 헤더·서브메뉴·pill·OCR과 함께 OCR 되돌리기 배너·토스트도

@@ -3,6 +3,7 @@ import type { MovieInfo, TicketComponents } from '@/types';
 import { runOcr } from '@/utils/ocr';
 import { triggerKobisLookup } from '@/utils/kobisLookup';
 import { ALLOWED_MIME, MAX_BYTES, chainLabelFor } from '@/utils/ocrConstants';
+import { STAMP_LABEL_MAX } from '@/constants/fields';
 
 export type OcrDirectField = 'theater' | 'screen' | 'watchDate' | 'watchTime' | 'seat' | 'bookingNumber';
 export const OCR_DIRECT_FIELDS: OcrDirectField[] = [
@@ -167,13 +168,16 @@ export function OcrUploadCard({
         next.chainLabel = label;
         labels.push(label);
       }
-      if (result.format) {
-        // chain과 달리 매핑 테이블이 없다 — 서버가 이미 표준 토큰(IMAX/4DX/LASER…)으로 준다.
+      // chain과 달리 매핑 테이블이 없다 — 서버가 이미 표준 토큰(IMAX/4DX/LASER…)으로 준다.
+      // 다만 format은 자유 문자열이라 chain의 enum 같은 길이 보장이 없어서, 수동 입력과 같은
+      // 상한으로 자른다 — TextStamp는 nowrap에 축소 로직이 없어 긴 라벨이 레이아웃을 민다.
+      const format = result.format?.trim().slice(0, STAMP_LABEL_MAX);
+      if (format) {
         prev.formatVisible = currentComponents?.formatVisible;
         prev.formatLabel = currentComponents?.formatLabel;
         next.formatVisible = true;
-        next.formatLabel = result.format;
-        labels.push(result.format);
+        next.formatLabel = format;
+        labels.push(format);
       }
 
       let prevComponents: Partial<TicketComponents> | undefined;
