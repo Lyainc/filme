@@ -50,10 +50,18 @@ const TicketSchema = z.object({
  * 연도는 호출 시점 기준으로 주입 — 티켓에 연도가 빠진 MM.DD 표기를 보정하기 위함.
  *
  * format 규칙도 실측(#348, 같은 15장)에서 나왔다 — 포맷은 상영관 줄 안에 섞여 찍히고
- * (`IMAX관`·`6관 (Laser)`·`MEGA | LED 3관`), CGV 앱은 IMAX/4DX만 제목 옆 배지로 따로 보여주며
- * Laser관은 배지가 `2D`라 배지만 보면 놓친다. 특별관·좌석등급 브랜드(전도연관·[CGV아트하우스]·
- * 디즈니시네마·르 리클라이너·경기인디시네마·광음시네마)는 상영 포맷이 아니라 제외 — 스탬프
- * 어휘를 영사/음향 포맷으로 좁혀야 채점이 결정적이고, 나머지는 사용자가 직접 입력한다.
+ * (`IMAX관`·`MEGA | LED 3관`·`전도연관[CGV아트하우스](Laser)`), CGV 앱은 IMAX/4DX만 제목 옆
+ * 배지로 따로 보여줘서 배지만 보면 나머지를 놓친다.
+ *
+ * 인정 어휘는 **닫힌 토큰 목록**이다 — 이 프로젝트가 예전에 갖고 있던 포맷 로고 에셋
+ * (`formats_transparent/`: imax·4dx·screenx·dolby-*·megaled·arthouse·lerecliner·crazysound(광음시네마)
+ * ·tempurcinema·chalotte·boutique·superplex…)과 같은 어휘다. 자유 문자열로 열어두면 상영관 줄의
+ * 아무 토막이나 들어와 STRICT 채점이 성립하지 않는다.
+ *
+ * **LASER는 어휘에 없다** — 옛 에셋 목록에도 없었고, CGV 거의 모든 관에 붙어서 정보량이 없다.
+ * 좌석등급(컴포트석)·이름관(전도연관)·목록 밖 브랜드(디즈니시네마·아르떼)도 제외 — 사용자가
+ * 직접 입력한다. LASER를 빼고 나니 15장에서 포맷↔특별관 충돌이 사라졌지만, 그래도 둘이 겹치는
+ * 티켓에 대비해 "영사 포맷 우선" 한 줄은 남긴다.
  */
 function buildSystemPrompt(year: number): string {
   return `Extract booking info from a Korean cinema ticket screenshot. Set a field to null ONLY if it is absent or unreadable. Never guess.
@@ -66,7 +74,7 @@ function buildSystemPrompt(year: number): string {
 - seat: e.g. "G14"; multiple → "H2, H3".
 - bookingNumber: The 예매번호/판매번호 exactly as shown — same digit count, same separators, nothing added or dropped.
 - chain: One of cgv / lotte / megabox / cineq. 롯데시네마 and 메가박스 tickets usually carry a logo ("LOTTE CINEMA" / "MEGABOX") — trust it. A CGV app ticket may show NO CGV logo at all; do not pick another chain just because the logo is missing. Identify by the number label and format instead: CGV = label "판매번호", number like "2026-0101-1234-5678" (year-monthday-4digits-4digits); 롯데시네마 = label "예매번호", number like "10000000" (8 digits); 메가박스 = number like "9000-000-10000" (4-3-5 digits). A branch name unique to one chain is also a cue. Pick cineq only when "씨네Q"/"CINE Q" branding is clearly visible (rare) — never guess it. Return null only when neither logo nor number format gives a cue.
-- format: The screening format brand, if the ticket carries one. Recognized: IMAX, 4DX, ULTRA 4DX, SCREENX, DOLBY, MEGA LED, SUPER PLEX, LASER. It is printed inside the auditorium line ("IMAX관", "6관 (Laser)", "MEGA | LED 3관", "DOLBY VISION+ATMOS", "월드타워 15관 LASER", "6관 [이병헌관] LASER/광음시네마"), and CGV also badges it beside the title ("IMAX · 15세이상관람가") — but only for IMAX/4DX, so read the auditorium line too. Output ONE brand, uppercase, dropping "관"/"2D"/"3D" and any trailing words: "IMAX관" → "IMAX", "6관 (Laser)" → "LASER", "MEGA | LED 3관" → "MEGA LED", "DOLBY VISION+ATMOS" → "DOLBY". If a premium brand and LASER both appear, return the premium brand. A special/themed hall or a seat grade is NOT a format — return null when the auditorium carries only those: a plain numbered hall ("15관", "4관", "스크린A"), a seat grade (컴포트석, 르 리클라이너), a named or branded hall (전도연관, 이병헌관, [CGV아트하우스], 디즈니시네마, 경기인디시네마, 광음시네마).`;
+- format: The screening format or premium-hall brand. Output EXACTLY ONE of these tokens, or null: IMAX, 4DX, ULTRA 4DX, SCREENX, DOLBY, MEGA LED, MX4D, SUPER PLEX, 아트하우스, 르 리클라이너, 광음시네마, 광음LED, 템퍼시네마, 샤롯데, 부티크, 스트레스리스 시네마. It is printed inside the auditorium line ("IMAX관", "MEGA | LED 3관", "DOLBY VISION+ATMOS", "전도연관[CGV아트하우스](Laser)", "6관 [이병헌관] LASER/광음시네마", "르 리클라이너 10관"), and CGV also badges IMAX/4DX beside the title ("IMAX · 15세이상관람가") — but only those two, so always read the auditorium line. Map what is printed onto the token: "IMAX관" → "IMAX", "MEGA | LED 3관" → "MEGA LED", "DOLBY VISION+ATMOS" → "DOLBY", "[CGV아트하우스]" → "아트하우스". LASER/Laser is NOT a format — ignore it entirely; it sits on nearly every CGV hall and carries no information. Anything outside the token list is NOT a format either: return null when the auditorium carries only a plain numbered hall ("15관", "4관", "스크린A"), a seat grade (컴포트석), a named hall (전도연관, 이병헌관), or an unlisted brand (디즈니시네마, 경기인디시네마, 아르떼). If a projection format and a hall brand both appear, return the projection format.`;
 }
 
 /**
