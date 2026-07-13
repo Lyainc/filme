@@ -120,6 +120,15 @@ export const STAMP_LABELS: Record<StampTarget, string> = {
   format: '포맷 로고',
 };
 
+/**
+ * 스탬프 텍스트 라벨 길이 상한 — 수동 입력(StampSheet input)과 OCR 자동 주입(OcrUploadCard)이
+ * 공유한다. TextStamp(_shared.tsx)는 `whiteSpace: nowrap`에 폭 축소 로직이 없어서, 긴 라벨이
+ * 들어오면 스탬프가 티켓 레이아웃을 밀어낸다. chain은 enum→고정 라벨이라 안전하지만 format은
+ * 자유 문자열이라(#348) 모델이 프롬프트를 벗어나 상영관 줄을 통째로 뱉을 여지가 있다 —
+ * 두 입구 모두 여기서 막는다(PR #351 리뷰 P1).
+ */
+export const STAMP_LABEL_MAX = 24;
+
 /** 스탬프 → TicketComponents 키(이미지 URL · 텍스트 라벨 · 노출 토글). */
 export const STAMP_KEYS: Record<
   StampTarget,
