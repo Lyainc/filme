@@ -62,11 +62,16 @@ const TicketSchema = z.object({
   seat: z.string().nullable(),
   bookingNumber: z.string().nullable(),
   chain: z.enum(['cgv', 'lotte', 'megabox', 'cineq']).nullable(),
+  format: z.string().nullable(),
 });
 type Ticket = z.infer<typeof TicketSchema>;
 const FIELDS: (keyof Ticket)[] = [
-  'title', 'theater', 'screen', 'watchDate', 'watchTime', 'seat', 'bookingNumber', 'chain',
+  'title', 'theater', 'screen', 'watchDate', 'watchTime', 'seat', 'bookingNumber', 'chain', 'format',
 ];
+/**
+ * 기존 6필드 = #125에서 100%(90/90)를 찍은 기준선. format(#348)은 여기 넣지 않고 따로 센다 —
+ * STRICT에 합치면 분모가 105로 바뀌어 "기존 필드가 안 깨졌나"를 옛 수치와 대조할 수 없다.
+ */
 const STRICT: (keyof Ticket)[] = ['theater', 'watchDate', 'watchTime', 'seat', 'bookingNumber', 'chain'];
 
 /** AB_PROMPT=en이면 영어 프롬프트(토큰 절감 실험). 티켓 텍스트가 한국어라 예시는 한국어 유지. */
@@ -84,7 +89,8 @@ function buildSystemPromptEn(year: number): string {
 - watchTime: Start time as HH:MM, 24-hour. "오후 7:30" → "19:30". For a range (14:20~16:36) take the start only. Late-night shows are printed past 24:00 (e.g. "25:00", "26:30") — keep them verbatim, do NOT wrap to 01:00.
 - seat: e.g. "G14"; multiple → "H2, H3".
 - bookingNumber: The 예매번호/판매번호 exactly as shown — same digit count, same separators, nothing added or dropped.
-- chain: One of cgv / lotte / megabox / cineq. 롯데시네마 and 메가박스 tickets usually carry a logo ("LOTTE CINEMA" / "MEGABOX") — trust it. A CGV app ticket may show NO CGV logo at all; do not pick another chain just because the logo is missing. Identify by the number label and format instead: CGV = label "판매번호", number like "2026-0101-1234-5678" (year-monthday-4digits-4digits); 롯데시네마 = label "예매번호", number like "10000000" (8 digits); 메가박스 = number like "9000-000-10000" (4-3-5 digits). A branch name unique to one chain is also a cue. Pick cineq only when "씨네Q"/"CINE Q" branding is clearly visible (rare) — never guess it. Return null only when neither logo nor number format gives a cue.`;
+- chain: One of cgv / lotte / megabox / cineq. 롯데시네마 and 메가박스 tickets usually carry a logo ("LOTTE CINEMA" / "MEGABOX") — trust it. A CGV app ticket may show NO CGV logo at all; do not pick another chain just because the logo is missing. Identify by the number label and format instead: CGV = label "판매번호", number like "2026-0101-1234-5678" (year-monthday-4digits-4digits); 롯데시네마 = label "예매번호", number like "10000000" (8 digits); 메가박스 = number like "9000-000-10000" (4-3-5 digits). A branch name unique to one chain is also a cue. Pick cineq only when "씨네Q"/"CINE Q" branding is clearly visible (rare) — never guess it. Return null only when neither logo nor number format gives a cue.
+- format: The screening format brand, if the ticket carries one. Recognized: IMAX, 4DX, ULTRA 4DX, SCREENX, DOLBY, MEGA LED, SUPER PLEX, LASER. It is printed inside the auditorium line ("IMAX관", "6관 (Laser)", "MEGA | LED 3관", "DOLBY VISION+ATMOS", "월드타워 15관 LASER", "6관 [이병헌관] LASER/광음시네마"), and CGV also badges it beside the title ("IMAX · 15세이상관람가") — but only for IMAX/4DX, so read the auditorium line too. Output ONE brand, uppercase, dropping "관"/"2D"/"3D" and any trailing words: "IMAX관" → "IMAX", "6관 (Laser)" → "LASER", "MEGA | LED 3관" → "MEGA LED", "DOLBY VISION+ATMOS" → "DOLBY". If a premium brand and LASER both appear, return the premium brand. A special/themed hall or a seat grade is NOT a format — return null when the auditorium carries only those: a plain numbered hall ("15관", "4관", "스크린A"), a seat grade (컴포트석, 르 리클라이너), a named or branded hall (전도연관, 이병헌관, [CGV아트하우스], 디즈니시네마, 경기인디시네마, 광음시네마).`;
 }
 
 function buildSystemPromptKo(year: number): string {
@@ -98,7 +104,8 @@ function buildSystemPromptKo(year: number): string {
 - watchTime: 관람 시작 시각을 HH:MM 24시간 형식으로. "오후 7:30"은 "19:30". 상영 시간 범위(예: 14:20~16:36)면 시작 시각만. 심야 상영은 "25:00"·"26:30"처럼 24시를 넘겨 표기되니 보이는 그대로 두세요(01:00으로 바꾸지 마세요).
 - seat: 좌석. 예: "G14", 여러 개면 "H2, H3".
 - bookingNumber: 예매번호 또는 판매번호를 화면에 보이는 자릿수·구분자 그대로(한 자리도 더하거나 빼지 마세요).
-- chain: 영화관 체인(cgv / lotte / megabox / cineq 중 하나). 롯데시네마·메가박스 티켓엔 보통 로고("LOTTE CINEMA"·"MEGABOX")가 찍혀 있으니 그대로 따르세요. CGV 앱 티켓엔 CGV 로고가 아예 없을 수 있습니다 — 로고가 안 보인다고 다른 체인으로 찍지 말고 번호 라벨·형식으로 판별하세요: CGV는 라벨이 "판매번호"이고 번호가 "2026-0101-1234-5678"처럼 연도-월일-4자리-4자리, 롯데시네마는 라벨이 "예매번호"이고 번호가 "10000000"처럼 숫자 8자리, 메가박스는 번호가 "9000-000-10000"처럼 4자리-3자리-5자리입니다. 지점명이 특정 체인 전용이면 그것도 단서입니다. cineq(씨네Q)는 "씨네Q"/"CINE Q" 브랜딩이 분명히 보일 때만 고르세요(드묾) — 애매하면 cineq로 찍지 마세요. 로고도 번호 형식도 단서가 없을 때만 null.`;
+- chain: 영화관 체인(cgv / lotte / megabox / cineq 중 하나). 롯데시네마·메가박스 티켓엔 보통 로고("LOTTE CINEMA"·"MEGABOX")가 찍혀 있으니 그대로 따르세요. CGV 앱 티켓엔 CGV 로고가 아예 없을 수 있습니다 — 로고가 안 보인다고 다른 체인으로 찍지 말고 번호 라벨·형식으로 판별하세요: CGV는 라벨이 "판매번호"이고 번호가 "2026-0101-1234-5678"처럼 연도-월일-4자리-4자리, 롯데시네마는 라벨이 "예매번호"이고 번호가 "10000000"처럼 숫자 8자리, 메가박스는 번호가 "9000-000-10000"처럼 4자리-3자리-5자리입니다. 지점명이 특정 체인 전용이면 그것도 단서입니다. cineq(씨네Q)는 "씨네Q"/"CINE Q" 브랜딩이 분명히 보일 때만 고르세요(드묾) — 애매하면 cineq로 찍지 마세요. 로고도 번호 형식도 단서가 없을 때만 null.
+- format: 상영 포맷 브랜드(티켓에 있을 때만). 인정 어휘: IMAX, 4DX, ULTRA 4DX, SCREENX, DOLBY, MEGA LED, SUPER PLEX, LASER. 포맷은 상영관 줄 안에 섞여 찍힙니다("IMAX관", "6관 (Laser)", "MEGA | LED 3관", "DOLBY VISION+ATMOS", "월드타워 15관 LASER", "6관 [이병헌관] LASER/광음시네마"). CGV는 제목 옆 배지로도 보여주지만("IMAX · 15세이상관람가") IMAX/4DX일 때만이라, 상영관 줄도 반드시 읽으세요. 브랜드 하나만, 대문자로, "관"·"2D"·"3D"와 뒤따르는 군더더기를 떼고 출력하세요: "IMAX관" → "IMAX", "6관 (Laser)" → "LASER", "MEGA | LED 3관" → "MEGA LED", "DOLBY VISION+ATMOS" → "DOLBY". 프리미엄 브랜드와 LASER가 함께 보이면 프리미엄 브랜드를 고르세요. 특별관·좌석등급은 포맷이 아닙니다 — 상영관에 이런 것만 있으면 null: 숫자만 붙은 일반관("15관", "4관", "스크린A"), 좌석등급(컴포트석, 르 리클라이너), 이름·브랜드 특별관(전도연관, 이병헌관, [CGV아트하우스], 디즈니시네마, 경기인디시네마, 광음시네마).`;
 }
 
 /** ocrPreprocess.ts 파이프라인을 폭 512로 재현. */
@@ -150,7 +157,7 @@ async function runOcr(
 const norm = (v: string | null | undefined) => (v ?? '').trim();
 const seatNorm = (v: string | null | undefined) => norm(v).replace(/\s+/g, '').toUpperCase();
 
-type Stat = { strictCorrect: number; strictTotal: number; booking: number; inTok: number; outTok: number; cost: number; files: number; fails: string[] };
+type Stat = { strictCorrect: number; strictTotal: number; booking: number; format: number; inTok: number; outTok: number; cost: number; files: number; fails: string[]; formatFails: string[] };
 type Rec = { file: string; models: Record<string, { inTok: number; outTok: number; fields: Record<string, { got: string; want: string }> }> };
 
 async function main() {
@@ -201,7 +208,7 @@ async function main() {
   for (const rec of all) {
     const truth = gt.get(rec.file.toLowerCase())!;
     for (const [model, data] of Object.entries(rec.models)) {
-      const s = (stats[model] ??= { strictCorrect: 0, strictTotal: 0, booking: 0, inTok: 0, outTok: 0, cost: 0, files: 0, fails: [] });
+      const s = (stats[model] ??= { strictCorrect: 0, strictTotal: 0, booking: 0, format: 0, inTok: 0, outTok: 0, cost: 0, files: 0, fails: [], formatFails: [] });
       s.files++;
       s.inTok += data.inTok;
       s.outTok += data.outTok;
@@ -216,6 +223,12 @@ async function main() {
         else s.fails.push(`${rec.file}/${f}: "${norm(data.fields[f]?.got)}"≠"${norm(truth[f])}"`);
         if (f === 'bookingNumber' && ok) s.booking++;
       }
+      // format(#348)은 STRICT 분모 밖에서 같은 방식(정규화 후 완전일치)으로 따로 센다.
+      // 정답이 null인 티켓(포맷 표기 없음)은 빈 문자열로 정규화되므로 오탐도 여기서 잡힌다.
+      const gotFmt = norm(data.fields.format?.got);
+      const wantFmt = norm(truth.format);
+      if (gotFmt === wantFmt) s.format++;
+      else s.formatFails.push(`${rec.file}/format: "${gotFmt}"≠"${wantFmt}"`);
     }
   }
 
@@ -225,12 +238,18 @@ async function main() {
     const acc = (100 * s.strictCorrect / Math.max(s.strictTotal, 1)).toFixed(1);
     const per1k = (s.cost / Math.max(s.files, 1)) * 1000;
     console.log(`\n● ${model}`);
+    const fmtAcc = (100 * s.format / Math.max(s.files, 1)).toFixed(1);
     console.log(`  STRICT 정확: ${s.strictCorrect}/${s.strictTotal} (${acc}%)   bookingNumber: ${s.booking}/${s.files}`);
+    console.log(`  format STRICT: ${s.format}/${s.files} (${fmtAcc}%)`);
     console.log(`  토큰 평균: in ${Math.round(s.inTok / Math.max(s.files, 1))} / out ${Math.round(s.outTok / Math.max(s.files, 1))}`);
     console.log(`  비용: 합계 $${s.cost.toFixed(5)}  →  1000요청 $${per1k.toFixed(3)}`);
     if (s.fails.length) {
       console.log(`  ✗ 오답:`);
       for (const f of s.fails) console.log(`      ${f}`);
+    }
+    if (s.formatFails.length) {
+      console.log(`  ✗ format 오답:`);
+      for (const f of s.formatFails) console.log(`      ${f}`);
     }
   }
 }
