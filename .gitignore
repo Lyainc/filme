@@ -91,3 +91,12 @@ autonomous-dev-loop.v4.md
 .audit-baseline/
 
 .claude-kit/
+
+# Claude Code 세션 로컬 락 (프로세스마다 갱신 — 추적 불필요)
+.claude/scheduled_tasks.lock
+
+# 극장 체인·상영 포맷 로고 원본 (저작권 — 번들 배포 안 함, #231).
+# 로컬 보관은 유지하되 레포/배포에는 싣지 않는다. remove-bg.mjs의 입력.
+/public/assets/chains/
+/public/assets/formats/
+/public/assets/메가박스_BI/
