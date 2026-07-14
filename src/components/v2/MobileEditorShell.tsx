@@ -290,7 +290,9 @@ export function MobileEditorShell({
       className={`app-canvas${chromeDark ? ' chrome-dark' : ''}`}
       style={{
         position: 'relative',
-        minHeight: '100dvh',
+        // height 캡(#357) — minHeight면 콘텐츠가 길 때 문서 전체가 자라 하단 dock이 접근성만
+        // 남고 화면 밖으로 밀린다. 캡을 걸어야 본문(flex-1)이 내부 스크롤하고 dock이 항상 보인다.
+        height: '100dvh',
         display: 'flex',
         flexDirection: 'column',
         paddingTop: 'env(safe-area-inset-top, 0px)',
@@ -459,9 +461,9 @@ export function MobileEditorShell({
       </header>
       )}
 
-      {/* 스크롤 본문: 줌 pill + 인라인 프리뷰 + 편집 본문(Poster 드롭존 + 디자인 rail).
-          비-기본 모드에선 justify-center로 pill+프리뷰를 세로 중앙에 두고 본문을 접는다.
-          relative — absolute 앰비언트 레이어 위에 그려지기 위함(#353). */}
+      {/* 스크롤 본문: 인라인 프리뷰 + OCR + 편집 본문(Poster 드롭존 + footer). 디자인 rail은
+          #357에서 본문 밖 하단 고정 dock으로 이동. 비-기본 모드에선 justify-center로 프리뷰를
+          세로 중앙에 두고 본문을 접는다. relative — absolute 앰비언트 레이어 위에 그려지기 위함(#353). */}
       <div className="relative min-h-0 flex-1 overflow-y-auto">
         <div className={`flex min-h-full flex-col ${collapseBody ? 'justify-center' : ''}`}>
           {croppedImageUrl && (
@@ -575,7 +577,7 @@ export function MobileEditorShell({
           </div>
           )}
 
-          {/* 편집 본문(Poster 드롭존 + rail) — collapse는 grid-rows 0fr↔1fr 트랜지션(overflow-hidden 필수).
+          {/* 편집 본문(Poster 드롭존 + footer) — collapse는 grid-rows 0fr↔1fr 트랜지션(overflow-hidden 필수).
               비-기본 모드에선 접어 프리뷰에 세로 공간을 내준다. reduced-motion은 globals.css 전역 가드가
               transition-duration을 죽여 즉시 전환 + motion-reduce:transition-none로 이중 차단. 접혔을 땐
               inert로 포커스/Tab/SR 진입 차단(OptionalDetailsAccordion 패턴, React 19 inert prop). */}
@@ -609,11 +611,6 @@ export function MobileEditorShell({
                   </section>
                 )}
 
-                {/* 디자인 rail을 최하단으로(#261 시안 섹션 A). #217은 rail을 폼 위에 둬 무스크롤 접근을
-                    노렸지만, 인라인 폼이 탭-투-에딧 시트(#215)로 빠진 지금 rail 위 chrome은 OCR·드롭존뿐이라
-                    짧다 — 시안 순서(최하단)로 옮겨도 스크롤 부담이 없어 시안을 따른다. */}
-                <DesignRail photo={photo} />
-
                 {/* 앱 chrome footer(#327) — max에선 이 grid-rows 0fr collapse가 그대로 숨겨준다(별도 분기 불필요). */}
                 <AppFooter />
               </div>
@@ -621,6 +618,20 @@ export function MobileEditorShell({
           </div>
         </div>
       </div>
+
+      {/* 스타일링 dock(#357) — rail을 스크롤 본문 밖 하단 고정 슬롯으로. 시안의 railTop 절대
+          산수(390×844 하드코딩) 대신 flex라 iPhone SE(667px)를 포함한 어떤 뷰포트에서도 dock이
+          화면 안에 있다. 언박스 패널이 열리면 dock 영역이 위로 자라고 본문(flex-1)이 줄어든다.
+          DOM 순서는 본문 뒤라 기존 "OCR → rail 최하단" 위계(#261)가 유지된다. max는 티켓 전용
+          풀스크린이라 숨기고, relative는 absolute 앰비언트(#353) 위에 그려지기 위함. */}
+      {!isMax && (
+        <div
+          className="relative shrink-0 px-4 pt-3"
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
+        >
+          <DesignRail photo={photo} />
+        </div>
+      )}
 
       {/* 플로팅 툴바(#356) — undo/redo·항목목록·최대화·배치·숨김. 프리뷰가 있어야 의미가 있고,
           max는 티켓만 남기는 풀스크린이라 숨긴다(탈출은 티켓 탭). 필드 편집·드로어 중에도 셸이

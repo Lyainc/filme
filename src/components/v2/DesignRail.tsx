@@ -96,7 +96,9 @@ function RailIconButton({
       aria-expanded={selected}
       aria-controls={PANEL_ID}
       data-touch="44"
-      className="flex flex-col items-center gap-1.5 outline-none"
+      // outline-none 제거(#357) — 전역 :focus-visible 링이 dock 탭에도 걸리게 한다(키보드
+      // 포커스에만 뜨므로 터치/마우스 시각 변화 없음).
+      className="flex flex-col items-center gap-1.5"
     >
       <span
         aria-hidden="true"
@@ -134,12 +136,10 @@ function RailExpandPanel({
       style={{ gridTemplateRows: open ? '1fr' : '0fr' }}
     >
       <div className="overflow-hidden" inert={!open || undefined}>
-        <div
-          id={PANEL_ID}
-          role="region"
-          aria-label={eyebrow}
-          className="rounded-card border border-line bg-surface-elevated p-4"
-        >
+        {/* v8 언박스(#357) — 패널의 배경·보더·라운드·그림자 전부 제거. 상세는 앰비언트 배경 위
+            느슨한 컨트롤로 얹히고, 가독성은 앰비언트의 어두움 + 각 피커 자체 대비로 확보한다.
+            과거 박스형 룩(rounded-card border bg-surface-elevated) 복원 금지 — 언박스가 최종. */}
+        <div id={PANEL_ID} role="region" aria-label={eyebrow} className="pt-3">
           {/* 닫기(x) 버튼 제거(#322) — 레일 아이콘 재클릭으로 이미 토글 닫힘이라 기능 중복.
               라벨은 피커 자체 헤더(LayoutStrip "Mood", TexturePicker "Surface treatment")와 겹쳐 생략,
               접근성 이름은 region aria-label(eyebrow)이 유지. */}
