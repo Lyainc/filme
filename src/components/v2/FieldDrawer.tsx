@@ -1,5 +1,5 @@
 import dynamic from 'next/dynamic';
-import { useEffect, useRef, type ReactNode, type TouchEvent } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type TouchEvent } from 'react';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { TicketComponents } from '@/types';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
@@ -48,9 +48,15 @@ export function FieldDrawer({ photo, onField, onClose, children }: FieldDrawerPr
   const { movieInfo, fieldVisibility, components } = photo.state;
   useBodyScrollLock(true);
 
+  // 로고 크롭 모달(body 포털)이 떠 있는 동안엔 포커스 유지·Escape를 모달에 양보한다 —
+  // 안 그러면 keepFocus가 모달 포커스를 계속 뺏고 Escape 한 번에 드로어까지 닫힌다(#355 리뷰 P1).
+  const [cropOpen, setCropOpen] = useState(false);
+
   // 초기 포커스 + 간이 포커스 유지 — 패널 밖으로 새면 패널로 되돌린다(vaul이 하던 최소한만).
+  // cropOpen이 풀리면 재실행돼 포커스가 드로어로 복귀한다.
   const panelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    if (cropOpen) return;
     panelRef.current?.focus();
     const keepFocus = (e: FocusEvent) => {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
@@ -59,15 +65,16 @@ export function FieldDrawer({ photo, onField, onClose, children }: FieldDrawerPr
     };
     document.addEventListener('focusin', keepFocus);
     return () => document.removeEventListener('focusin', keepFocus);
-  }, []);
+  }, [cropOpen]);
 
   useEffect(() => {
+    if (cropOpen) return;
     const onKey = (e: globalThis.KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onClose, cropOpen]);
 
   // 스와이프 →로 닫기 — 수평 이동이 우세하고 60px를 넘으면 닫는다.
   const touchStart = useRef<{ x: number; y: number } | null>(null);
@@ -127,7 +134,13 @@ export function FieldDrawer({ photo, onField, onClose, children }: FieldDrawerPr
           <section className="space-y-1.5">
             <Eyebrow className="px-1">Logos</Eyebrow>
             {STAMP_TARGETS.map((target) => (
-              <LogoRow key={target} target={target} photo={photo} onOpen={() => onField(target)} />
+              <LogoRow
+                key={target}
+                target={target}
+                photo={photo}
+                onOpen={() => onField(target)}
+                onCropOpenChange={setCropOpen}
+              />
             ))}
           </section>
         </div>
@@ -203,7 +216,18 @@ function DrawerRow({
 }
 
 /** 로고(극장/포맷) 행 — 업로드 버튼(44px)이 useLogoCrop 자유 크롭 흐름(#220)으로 이미지를 채운다. */
-function LogoRow({ target, photo, onOpen }: { target: StampTarget; photo: Photo; onOpen: () => void }) {
+function LogoRow({
+  target,
+  photo,
+  onOpen,
+  onCropOpenChange,
+}: {
+  target: StampTarget;
+  photo: Photo;
+  onOpen: () => void;
+  /** 크롭 모달(body 포털) 열림/닫힘 통지 — 드로어가 포커스·Escape를 양보하도록. */
+  onCropOpenChange: (open: boolean) => void;
+}) {
   const keys = STAMP_KEYS[target];
   const components = photo.state.components;
   const imageUrl = String(components[keys.image] ?? '');
@@ -211,6 +235,11 @@ function LogoRow({ target, photo, onOpen }: { target: StampTarget; photo: Photo;
     photo.updateComponents({ [keys.image]: url } as Partial<TicketComponents>);
   const { rawSrc, isCropping, openFile, handleComplete, handleCancel } = useLogoCrop(imageUrl, setImage);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 두 로고 행이 콜백을 공유하지만 파일 다이얼로그는 한 번에 하나만 열리므로 boolean으로 충분.
+  useEffect(() => {
+    onCropOpenChange(rawSrc != null);
+  }, [rawSrc, onCropOpenChange]);
 
   return (
     <>
@@ -235,17 +264,18 @@ function LogoRow({ target, photo, onOpen }: { target: StampTarget; photo: Photo;
           </button>
         }
       />
+      {/* sr-only여도 tabbable이라 aria-hidden 금지(axe aria-hidden-focus) — StampSheet와 동일 패턴. */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/png,image/jpeg,image/webp,image/svg+xml"
+        aria-label={`${STAMP_LABELS[target]} 이미지 파일`}
         onChange={(e) => {
           const file = e.target.files?.[0];
           if (file && file.type.startsWith('image/')) openFile(file);
           e.target.value = '';
         }}
         className="sr-only"
-        aria-hidden="true"
       />
       {rawSrc && (
         <ImageCropModal

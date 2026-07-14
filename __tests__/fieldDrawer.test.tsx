@@ -79,4 +79,29 @@ describe('FieldDrawer (#355)', () => {
     fireEvent.click(screen.getByRole('button', { name: '극장 편집' }));
     expect(opened).toEqual(['theater']);
   });
+
+  test('(f) Escape → onClose (백드롭 탭과 같은 비드래그 대체 경로)', () => {
+    render(<Harness />);
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(closed).toBe(1);
+  });
+
+  // #355 리뷰 P1 — 로고 크롭 모달(body 포털)이 떠 있는 동안 드로어는 Escape를 모달에 양보한다.
+  // rawSrc 세팅(파일 선택)까지만 태우고 모달 dynamic 로드는 기다리지 않는다 — cropOpen 신호는
+  // rawSrc 기반이라 즉시 검증 가능.
+  test('(g) 로고 크롭 열림 동안 Escape가 드로어를 닫지 않는다', () => {
+    const origCreate = URL.createObjectURL;
+    URL.createObjectURL = (() => 'blob:raw-logo') as typeof URL.createObjectURL;
+    try {
+      render(<Harness />);
+      const fileInput = screen.getByLabelText('극장 로고 이미지 파일') as HTMLInputElement;
+      const file = new File(['x'], 'logo.png', { type: 'image/png' });
+      fireEvent.change(fileInput, { target: { files: [file] } });
+
+      fireEvent.keyDown(document, { key: 'Escape' });
+      expect(closed).toBe(0);
+    } finally {
+      URL.createObjectURL = origCreate;
+    }
+  });
 });
