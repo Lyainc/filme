@@ -246,22 +246,37 @@ export function MobileEditorShell({
   // 없으면(업로드 전) 접지 않는다 — 그땐 프리뷰/pill 자체가 없다.
   const collapseBody = !!croppedImageUrl && isMax;
 
+  // 앰비언트 다크 크롬(#353) — 포스터가 있으면 셸 전체가 .chrome-dark 스코프에 들어가
+  // 기존 토큰이 다크 값으로 로컬 재정의되고(공유 컴포넌트 0줄 변경), 그 뒤에 앰비언트
+  // 배경이 .35s 페이드인된다. 테마와 무관(라이트 테마여도 다크 크롬).
+  const chromeDark = !!croppedImageUrl;
+
   return (
     <div
       data-theme={theme}
-      className="app-canvas"
+      className={`app-canvas${chromeDark ? ' chrome-dark' : ''}`}
       style={{
+        position: 'relative',
         minHeight: '100dvh',
         display: 'flex',
         flexDirection: 'column',
         paddingTop: 'env(safe-area-inset-top, 0px)',
       }}
     >
+      {/* 앰비언트 배경(#353) — 클래스 토글 대신 opacity 페이드라 사라질 때도 트랜지션이 걸린다.
+          형제 콘텐츠(header는 relative, 본문 래퍼도 relative)가 위에 그려진다. */}
+      <div
+        aria-hidden="true"
+        data-testid="chrome-ambient"
+        className="chrome-ambient pointer-events-none absolute inset-0"
+        style={{ opacity: chromeDark ? 1 : 0 }}
+      />
       {/* 상단 네브(#315): 뒤로가기·워드마크(무의미해 제거) 대신 좌측 햄버거 서브메뉴 + 우측 완료.
           다크모드·전체표시·빈 항목·잉크 토글과 포스터 교체·재크롭 액션은 서브메뉴로 통합.
-          max(#328)는 이 헤더(서브메뉴 포함)까지 숨기는 풀스크린 모드라 통째로 언마운트한다. */}
+          max(#328)는 이 헤더(서브메뉴 포함)까지 숨기는 풀스크린 모드라 통째로 언마운트한다.
+          배경은 앰비언트가 깔리면 투명(플랫 바로 끊기지 않게, v8 §1), 없으면 기존 surface. */}
       {!isMax && (
-      <header className="relative flex h-14 shrink-0 items-center justify-between border-b border-line bg-surface px-3">
+      <header className={`relative flex h-14 shrink-0 items-center justify-between border-b border-line px-3 ${chromeDark ? '' : 'bg-surface'}`}>
         <button
           type="button"
           onClick={() => setMenuOpen((v) => !v)}
@@ -269,7 +284,7 @@ export function MobileEditorShell({
           aria-expanded={menuOpen}
           aria-controls="editor-menu-panel"
           aria-label="편집 메뉴"
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-line text-fg-muted transition-colors hover:text-fg"
+          className="flex h-11 w-11 items-center justify-center rounded-full text-fg-muted transition-colors hover:text-fg"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <line x1="4" y1="7" x2="20" y2="7" />
@@ -405,8 +420,9 @@ export function MobileEditorShell({
       )}
 
       {/* 스크롤 본문: 줌 pill + 인라인 프리뷰 + 편집 본문(Poster 드롭존 + 디자인 rail).
-          비-기본 모드에선 justify-center로 pill+프리뷰를 세로 중앙에 두고 본문을 접는다. */}
-      <div className="min-h-0 flex-1 overflow-y-auto">
+          비-기본 모드에선 justify-center로 pill+프리뷰를 세로 중앙에 두고 본문을 접는다.
+          relative — absolute 앰비언트 레이어 위에 그려지기 위함(#353). */}
+      <div className="relative min-h-0 flex-1 overflow-y-auto">
         <div className={`flex min-h-full flex-col ${collapseBody ? 'justify-center' : ''}`}>
           {croppedImageUrl && (
             <div
