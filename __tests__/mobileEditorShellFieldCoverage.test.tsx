@@ -14,7 +14,7 @@
  * 셸 배선만 겨눈다. localStorage는 usePhototicket 디바운스 저장분 격리를 위해 매 테스트 전후 clear.
  */
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
 
@@ -87,6 +87,32 @@ describe('MobileEditorShell 필드 커버리지 (#266 PR-E)', () => {
     fireEvent.click(await screen.findByRole('button', { name: '편집 메뉴' }));
     fireEvent.click(await screen.findByRole('switch', { name: '전체 표시' }));
     expect(screen.getByTestId('vis-screen').textContent).toBe('true');
+  });
+
+  // #355 — 헤더 목록 버튼 → 필드 드로어 → 행 탭이 드로어를 닫고 인플레이스 편집을 여는 셸 배선.
+  // 드로어 onField는 handleField를 타므로 숨겨둔 필드도 자동 표시 on이 걸려야 한다.
+  test('헤더 목록 버튼 → 드로어 행 탭 → 드로어 닫힘 + 인플레이스 편집 + 자동 표시 on (#355)', async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByText('seed'));
+
+    // 먼저 상영관을 숨겨 자동 표시 on까지 검증(기존 경로: 온-티켓 탭 → 필드바 눈 → 편집 완료).
+    fireEvent.click(await screen.findByRole('button', { name: '상영관 편집' }));
+    fireEvent.click(await screen.findByRole('switch', { name: '티켓 노출' }));
+    fireEvent.click(await screen.findByRole('button', { name: '편집 완료' }));
+    expect(screen.getByTestId('vis-screen').textContent).toBe('false');
+
+    // 헤더 목록 버튼(포스터 있을 때만 노출) → 드로어(dynamic) 로드·오픈.
+    fireEvent.click(screen.getByRole('button', { name: '티켓 항목 목록' }));
+    const drawer = await screen.findByRole('dialog', { name: '티켓 항목' });
+    // 상단 슬롯의 OCR 진입점(#142 병존)이 드로어 안에 있다.
+    expect(within(drawer).getByRole('button', { name: '티켓 스크린샷으로 자동 인식' })).toBeDefined();
+
+    // 행 본문 탭('상영관'은 티켓 FieldTap과 접근명이 겹치므로 드로어 스코프로 특정) →
+    // 드로어 닫힘 + handleField가 자동 표시 on + 인플레이스 필드바 오픈.
+    fireEvent.click(within(drawer).getByRole('button', { name: '상영관 편집' }));
+    expect(screen.queryByRole('dialog', { name: '티켓 항목' })).toBeNull();
+    expect(screen.getByTestId('vis-screen').textContent).toBe('true');
+    expect(await screen.findByRole('switch', { name: '티켓 노출' })).toBeDefined();
   });
 
   // #260 경로 1(이관) — "전체 표시" off는 필수 필드(제목)를 남기고 나머지만 끈다(제목 없는 티켓 방지).
