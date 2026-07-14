@@ -104,7 +104,7 @@ describe('StampSheet 극장/포맷 (#215 PART B)', () => {
     expect(screen.getByTestId('formatLabel').textContent).toBe('Dolby');
   });
 
-  test('이미지 있음: "이미지 제거" 클릭 → blob revoke 후 이미지 URL 클리어(텍스트 복귀)', async () => {
+  test('이미지 있음: "이미지 제거" 클릭 → 이미지 URL 클리어(텍스트 복귀), revoke는 안 한다(#356)', async () => {
     const revoked: string[] = [];
     const origRevoke = URL.revokeObjectURL;
     URL.revokeObjectURL = ((u: string) => revoked.push(u)) as typeof URL.revokeObjectURL;
@@ -114,8 +114,9 @@ describe('StampSheet 극장/포맷 (#215 PART B)', () => {
       const removeBtn = await screen.findByText('이미지 제거');
       expect(screen.getByTestId('chain-img').textContent).toBe('blob:seeded-logo');
       fireEvent.click(removeBtn);
-      // blob이면 revoke하고 이미지 URL을 비워 텍스트 대표로 복귀.
-      expect(revoked).toContain('blob:seeded-logo');
+      // 이미지 URL만 비워 텍스트 대표로 복귀. blob은 revoke하지 않는다 —
+      // undo 히스토리(#356)가 이전 URL을 참조하므로 여기서 풀면 undo가 죽은 이미지를 복원한다.
+      expect(revoked).toEqual([]);
       expect(screen.getByTestId('chain-img').textContent).toBe('');
     } finally {
       URL.revokeObjectURL = origRevoke;

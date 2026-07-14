@@ -219,11 +219,11 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
   // 로고 업로드(필드바 이미지 칩) — StampSheet와 동일한 useLogoCrop 흐름.
   const setStampImage = (url: string) =>
     isStamp && photo.updateComponents({ [STAMP_KEYS[field].image]: url } as Partial<TicketComponents>);
-  const logo = useLogoCrop(stampImage, setStampImage);
+  const logo = useLogoCrop(setStampImage);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   const removeStampImage = () => {
-    if (stampImage.startsWith('blob:')) URL.revokeObjectURL(stampImage);
+    // blob revoke는 하지 않는다 — undo 히스토리(#356)가 이 URL을 참조한다(useLogoCrop 참고).
     setStampImage('');
   };
 

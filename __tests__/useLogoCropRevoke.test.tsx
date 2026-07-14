@@ -6,8 +6,7 @@
  *
  * URL.createObjectURL/revokeObjectURL를 글로벌 스파이로 갈아끼워 호출 인자를 본다
  * (공유 모듈 mock.module 미사용 — 전역 누수 함정 회피, MEMORY).
- * getCroppedImg(canvas) 성공 경로의 value(직전 로고) revoke는 happy-dom canvas
- * 한계(toBlob 불안정)로 여기서 검증하지 않는다.
+ * 직전 로고(value) revoke는 #356에서 제거됨 — undo 히스토리가 이전 URL을 참조한다.
  */
 import { describe, expect, test, beforeEach, afterEach, mock } from 'bun:test';
 import { render, cleanup, act } from '@testing-library/react';
@@ -40,8 +39,8 @@ afterEach(() => {
 
 type Api = ReturnType<typeof useLogoCrop>;
 
-function Harness({ value, apiRef }: { value: string; apiRef: { current: Api | null } }) {
-  const api = useLogoCrop(value, () => {});
+function Harness({ apiRef }: { apiRef: { current: Api | null } }) {
+  const api = useLogoCrop(() => {});
   apiRef.current = api;
   return <div data-testid="rawsrc" data-value={api.rawSrc ?? ''} />;
 }
@@ -51,7 +50,7 @@ const png = () => new File(['x'], 'logo.png', { type: 'image/png' });
 describe('useLogoCrop revoke 생명주기 (#220)', () => {
   test('openFile → createObjectURL 호출 + rawSrc 설정', () => {
     const apiRef: { current: Api | null } = { current: null };
-    render(<Harness value="" apiRef={apiRef} />);
+    render(<Harness apiRef={apiRef} />);
     act(() => apiRef.current!.openFile(png()));
     expect(created).toEqual(['blob:mock/1']);
     expect(apiRef.current!.rawSrc).toBe('blob:mock/1');
@@ -60,7 +59,7 @@ describe('useLogoCrop revoke 생명주기 (#220)', () => {
 
   test('새 파일 재선택 → 직전 rawSrc만 단일 revoke', () => {
     const apiRef: { current: Api | null } = { current: null };
-    render(<Harness value="" apiRef={apiRef} />);
+    render(<Harness apiRef={apiRef} />);
     act(() => apiRef.current!.openFile(png()));
     act(() => apiRef.current!.openFile(png()));
     expect(created).toEqual(['blob:mock/1', 'blob:mock/2']);
@@ -70,7 +69,7 @@ describe('useLogoCrop revoke 생명주기 (#220)', () => {
 
   test('handleCancel → rawSrc revoke 후 null', () => {
     const apiRef: { current: Api | null } = { current: null };
-    render(<Harness value="" apiRef={apiRef} />);
+    render(<Harness apiRef={apiRef} />);
     act(() => apiRef.current!.openFile(png()));
     act(() => apiRef.current!.handleCancel());
     expect(revoked).toEqual(['blob:mock/1']);
@@ -79,17 +78,9 @@ describe('useLogoCrop revoke 생명주기 (#220)', () => {
 
   test('언마운트 → 남은 rawSrc revoke', () => {
     const apiRef: { current: Api | null } = { current: null };
-    const { unmount } = render(<Harness value="" apiRef={apiRef} />);
+    const { unmount } = render(<Harness apiRef={apiRef} />);
     act(() => apiRef.current!.openFile(png()));
     act(() => unmount());
     expect(revoked).toEqual(['blob:mock/1']);
-  });
-
-  test('외부(non-blob) value는 revoke하지 않음 — openFile은 value를 건드리지 않는다', () => {
-    const apiRef: { current: Api | null } = { current: null };
-    render(<Harness value="https://cdn.example/logo.png" apiRef={apiRef} />);
-    act(() => apiRef.current!.openFile(png()));
-    // 원본 rawSrc 생성만, 외부 value URL revoke 없음
-    expect(revoked).toEqual([]);
   });
 });

@@ -27,6 +27,10 @@ const STORAGE_KEY = 'filme:phototicket:v1';
 // recommendedColors는 포스터에서 재추출되므로 제외한다(#178).
 type PersistedState = Pick<PhototicketState, 'movieInfo' | 'components' | 'fieldVisibility'>;
 
+// undo/redo(#356) 스냅샷 = 편집 가능한 문서 상태 전부. 포스터(croppedImageUrl)는 blob 수명
+// 관리가 히스토리와 얽혀 제외(이슈 결정), recommendedColors는 포스터 파생값이라 제외.
+export type HistorySnapshot = Pick<PhototicketState, 'movieInfo' | 'components' | 'fieldVisibility'>;
+
 function loadPersisted(): Partial<PersistedState> | null {
   if (typeof window === 'undefined') return null;
   try {
@@ -173,6 +177,20 @@ export function usePhototicket() {
     setState((prev) => ({ ...prev, recommendedColors: colors }));
   }, []);
 
+  // undo/redo(#356) 복원 전용 경로 — updateComponents를 거치지 않는다. 거치면 posterOpacity가
+  // 항상 실려와 brightnessTouchedRef가 오염되고 texture 기본 밝기 로직이 스냅샷을 덮는다.
+  // 언마운트 revoke 대상 ref만 복원된 로고에 맞춰 갱신한다.
+  const restoreSnapshot = useCallback((snap: HistorySnapshot) => {
+    latestChainUrlRef.current = snap.components.chain.startsWith('blob:') ? snap.components.chain : null;
+    latestFormatUrlRef.current = snap.components.format.startsWith('blob:') ? snap.components.format : null;
+    setState((prev) => ({
+      ...prev,
+      movieInfo: snap.movieInfo,
+      components: snap.components,
+      fieldVisibility: snap.fieldVisibility,
+    }));
+  }, []);
+
   // #310: 자동저장(디바운스 effect) 폐지 — 명시적 트리거(버튼 클릭) 1회성이라 디바운스가 불필요하다.
   const saveDraft = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -232,6 +250,7 @@ export function usePhototicket() {
     updateComponents,
     setRecommendedColors,
     updateFieldVisibility,
+    restoreSnapshot,
     saveDraft,
     clearDraft,
   };
