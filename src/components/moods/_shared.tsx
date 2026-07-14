@@ -35,6 +35,10 @@ export interface MoodProps {
  * tabIndex/onKeyDown을 얹어도 죽은 코드라 두지 않는다. 클릭(터치·마우스)은 버블링으로, SR 브라우즈
  * 모드 활성화는 role+aria-label+click으로 동작한다. 온-티켓 편집은 포인터 전용이며(posterTapProps와
  * 동일 입장), 키보드 Tab 전용 필드 편집 목록은 #266에서 의도적으로 제거됐다(실사용 후 필요하면 재도입).
+ *
+ * data-field-tap(#354): 인플레이스 에디터의 측정 앵커. display:contents 래퍼 자신은 박스가 없어
+ * getBoundingClientRect()가 0을 반환하므로, 에디터는 이 속성으로 래퍼를 찾은 뒤 firstElementChild
+ * (실제 레이아웃 박스를 가진 노드)를 측정한다 — 박스를 벗기지 않아 캡처 계약이 유지된다.
  */
 export function FieldTap({
   field,
@@ -51,6 +55,7 @@ export function FieldTap({
     <div
       role="button"
       aria-label={`${label} 편집`}
+      data-field-tap={field}
       onClick={(e) => {
         e.stopPropagation();
         onField(field);
