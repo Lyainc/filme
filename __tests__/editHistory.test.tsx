@@ -58,6 +58,12 @@ function Harness() {
       <button type="button" onClick={() => photo.updateMovieInfo({ theater: photo.state.movieInfo.theater + 'x' })}>
         edit
       </button>
+      <button type="button" onClick={() => photo.updateComponents({ posterOpacity: 0.8 })}>
+        bright
+      </button>
+      <button type="button" onClick={() => photo.updateComponents({ texture: 'original' })}>
+        texture
+      </button>
       <button type="button" disabled={!hist.canUndo} onClick={hist.undo}>
         undo
       </button>
@@ -131,6 +137,26 @@ describe('useEditHistory (usePhototicket 통합)', () => {
     });
     expect(redoBtn().disabled).toBe(false);
     expect(captured.movieInfo.theater).toBe('');
+  });
+
+  test('밝기 조작 이전으로 undo하면 texture 전환이 기본 밝기를 다시 적용한다 (PR #361 P1)', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await mountSettle(); // 베이스라인: texture 'none', posterOpacity 0.5(= 'none' 기본값)
+
+    // 밝기 슬라이더 조작 → brightnessTouchedRef가 true로.
+    await user.click(screen.getByText('bright'));
+    expect(captured.components.posterOpacity).toBe(0.8);
+    await settle();
+
+    // 조작 이전 시점으로 undo — restoreSnapshot이 touched를 스냅샷 기준으로 재유도해야
+    // (0.5 == 'none' 기본값 → 안 만짐), 이후 texture 전환에서 기본 밝기가 다시 적용된다.
+    await user.click(undoBtn());
+    expect(captured.components.posterOpacity).toBe(0.5);
+
+    await user.click(screen.getByText('texture'));
+    expect(captured.components.texture).toBe('original');
+    expect(captured.components.posterOpacity).toBe(1.0); // 'original'의 기본 밝기
   });
 
   test('undo 후 새 편집은 redo 가지를 절단한다', async () => {

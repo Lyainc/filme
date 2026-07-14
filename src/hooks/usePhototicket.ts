@@ -183,6 +183,11 @@ export function usePhototicket() {
   const restoreSnapshot = useCallback((snap: HistorySnapshot) => {
     latestChainUrlRef.current = snap.components.chain.startsWith('blob:') ? snap.components.chain : null;
     latestFormatUrlRef.current = snap.components.format.startsWith('blob:') ? snap.components.format : null;
+    // touched도 스냅샷 시점 기준으로 재유도(#178의 loadPersisted 패턴, PR #361 리뷰 P1) —
+    // 안 하면 밝기 조작 이전 시점으로 undo해도 ref가 true로 남아, 이후 texture 전환에서
+    // 그 texture 기본 밝기 적용이 스킵된다.
+    brightnessTouchedRef.current =
+      snap.components.posterOpacity !== defaultBrightnessForTexture(snap.components.texture);
     setState((prev) => ({
       ...prev,
       movieInfo: snap.movieInfo,
