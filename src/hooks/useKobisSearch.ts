@@ -5,8 +5,8 @@ import { extractKobisActorsRuntime } from '@/utils/kobisLookup';
 
 /**
  * KOBIS 자동완성 검색의 공용 상태·부작용 코어 — 디바운스·abort·per-term 캐시·detail 경합
- * 가드를 한 곳에 둔다. MovieInfoForm(데스크톱 폼)과 FieldEditSheet의 TitleSheet(모바일 시트)가
- * 이 훅만 쓴다. 이전엔 두 컴포넌트가 동일 로직을 각자 복제했고, 그 drift가 #242의
+ * 가드를 한 곳에 둔다. MovieInfoForm(데스크톱 폼)과 FieldEditorBody의 TitleSheet(모바일·아코디언
+ * 공용 본문)가 이 훅만 쓴다. 이전엔 두 컴포넌트가 동일 로직을 각자 복제했고, 그 drift가 #242의
  * onCompositionEnd 회귀를 낳았다.
  *
  * ARIA 키보드 내비(#198), 에러 문구 톤, 드롭다운 마크업 같은 표현 계층은 각 컴포넌트가 소유한다.

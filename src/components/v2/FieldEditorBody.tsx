@@ -32,9 +32,9 @@ const INPUT_CLS =
   'w-full rounded-field border border-line bg-surface-elevated px-3.5 py-3 text-[16px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft';
 
 /**
- * 필드 편집 본문(#226) — vaul-free. 필드/스탬프 타깃별 에디터 콘텐츠(text/date/title/rating + 스탬프)를
- * 렌더한다. FieldEditSheet(모바일 vaul 드로어)와 데스크톱 인라인 아코디언(FieldAccordion)이 하우징만
- * 달리해 이 본문을 공유한다 — 데스크톱 아코디언은 상시 마운트라 vaul을 여기서 import하지 않는 게 핵심.
+ * 필드 편집 본문(#226) — 필드/스탬프 타깃별 에디터 콘텐츠(text/date/title/rating + 스탬프)를
+ * 렌더한다. 데스크톱 인라인 아코디언(FieldAccordion)과 모바일 인플레이스 에디터(#354)가 하우징만
+ * 달리해 이 본문을 공유한다(구 FieldEditSheet vaul 하우징은 #355에서 제거).
  */
 export function FieldEditorBody({ target, photo }: { target: SheetTarget; photo: Photo }) {
   return isStampTarget(target) ? (
