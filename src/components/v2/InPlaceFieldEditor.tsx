@@ -6,6 +6,7 @@ import type { MovieInfo, TicketComponents } from '@/types';
 import { useKobisSearch } from '@/hooks/useKobisSearch';
 import { useLogoCrop } from '@/hooks/useLogoCrop';
 import RatingPicker from '@/components/wizard/RatingPicker';
+import { EyeIcon } from '@/components/ui/VisibilityCheckbox';
 import { DateSheet } from './FieldEditorBody';
 import { Eyebrow } from './Eyebrow';
 import { formatDate, openDtToIso } from '@/utils/dateFormat';
@@ -236,7 +237,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
     }
   };
   // rating은 aid(RatingPicker)가 자체 토글을, 필수 필드(title)는 숨기면 제목 없는 티켓이 되므로
-  // 눈을 감춘다 — FieldEditSheet 헤더 눈과 동일 규칙(#260).
+  // 눈을 감춘다 — 필드 드로어 자물쇠·데스크톱 아코디언과 동일 규칙(#260).
   const showEye = field !== 'rating' && !(!isStamp && isRequiredField(field));
 
   // ── prev/next: 현재 무드 DOM에 실제 존재하는 필드만 순회 ─────────────────────
@@ -378,20 +379,9 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
             onClick={toggleVisible}
             className={barBtnCls}
           >
-            {/* 눈 아이콘은 채운 동공 필수 — 윤곽만으론 이 크기에서 눈으로 안 읽힌다(#354 시안 §5). */}
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              {visible ? (
-                <>
-                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
-                  <circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none" />
-                </>
-              ) : (
-                <>
-                  <path d="M10.7 5.2A10.9 10.9 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-2.5 3.5M6.6 6.6C3.7 8.6 2 12 2 12s3.5 7 10 7c1.8 0 3.4-.5 4.8-1.2" />
-                  <path d="m3 3 18 18" />
-                </>
-              )}
-            </svg>
+            {/* 눈 아이콘은 채운 동공 필수 — 윤곽만으론 이 크기에서 눈으로 안 읽힌다(#354 시안 §5).
+                아이콘 자체는 VisibilityCheckbox의 EyeIcon과 공유(#355). */}
+            <EyeIcon open={visible} />
           </button>
         )}
         <button
