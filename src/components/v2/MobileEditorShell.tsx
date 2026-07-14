@@ -6,10 +6,12 @@ import { DesignRail } from './DesignRail';
 import { OcrUploadCard } from './OcrUploadCard';
 import { OcrUndoBanner } from './OcrUndoBanner';
 import { ThemeToggle } from './ThemeToggle';
-import { ZoomSegment, type ViewMode } from './viewMode';
+import { FloatingToolbar } from './FloatingToolbar';
+import type { ViewMode } from './viewMode';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
 import { getLayout } from '@/utils/layouts';
 import { getCroppedImg, type Area } from '@/utils/imageCrop';
+import { useEditHistory } from '@/hooks/useEditHistory';
 import { useOcrUndo } from '@/hooks/useOcrUndo';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
@@ -124,6 +126,9 @@ export function MobileEditorShell({
   // OCR 낙관적 주입 + 되돌리기 로직은 useOcrUndo가 소유(DesktopStudioShell과 공유, #141-class drift 방지).
   // OCR 카드는 셸 프리뷰 직하에 두고(#261) 이 훅도 셸이 쥔다.
   const ocr = useOcrUndo(photo);
+  // 전역 undo/redo(#356) — usePhototicket 위 히스토리 레이어. useOcrUndo와는 독립(이슈 결정,
+  // #141 회귀 테스트 보호). 진입점은 플로팅 툴바.
+  const history = useEditHistory(photo);
   // 표시 항목 일괄 단일 스위치(#261, #260 연계) — 전체 켜짐 여부. 끄기는 필수 필드(title)를 켠 채 유지한다.
   const allVisOn = ALL_FIELDS.every((f) => photo.state.fieldVisibility[f]);
   const [activeField, setActiveField] = useState<SheetTarget | null>(null);
@@ -220,7 +225,12 @@ export function MobileEditorShell({
     setPosterCropping(true);
     try {
       const url = await getCroppedImg(posterOriginalSrc, area);
+      const isFirstUpload = !photo.state.croppedImageUrl;
       photo.handleImageUpload(url);
+      // 첫 업로드는 문서 시작 — 같이 일어나는 fieldVisibility 기본셋 리셋이 undo 1스텝으로
+      // 잡히면 시작하자마자 undo가 활성돼 어색하다(#356). 교체는 히스토리 유지(포스터 자체는
+      // 스냅샷 밖이라 스텝도 안 생긴다).
+      if (isFirstUpload) history.clear();
       setPosterPendingNewFile(false);
       setPosterCropOpen(false); // 원본은 유지 — 재크롭에 재사용
     } catch (err) {
@@ -316,25 +326,9 @@ export function MobileEditorShell({
           </svg>
         </button>
 
+        {/* '티켓 항목 목록' 헤더 버튼(#355/#360 임시 진입점)은 플로팅 툴바의 항목목록 버튼(#356)이
+            대체 — 드로어 배선(handleField·OCR 슬롯)은 그대로 재사용한다. */}
         <div className="flex items-center gap-1">
-        {croppedImageUrl && (
-          <button
-            type="button"
-            onClick={() => setDrawerOpen(true)}
-            aria-haspopup="dialog"
-            aria-label="티켓 항목 목록"
-            className="flex h-11 w-11 items-center justify-center rounded-full text-fg-muted transition-colors hover:text-fg"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <line x1="9" y1="6" x2="20" y2="6" />
-              <line x1="9" y1="12" x2="20" y2="12" />
-              <line x1="9" y1="18" x2="20" y2="18" />
-              <circle cx="4.5" cy="6" r="0.5" fill="currentColor" />
-              <circle cx="4.5" cy="12" r="0.5" fill="currentColor" />
-              <circle cx="4.5" cy="18" r="0.5" fill="currentColor" />
-            </svg>
-          </button>
-        )}
         <button
           type="button"
           onClick={handleDone}
@@ -448,6 +442,9 @@ export function MobileEditorShell({
                     setMenuOpen(false);
                     if (window.confirm(CLEAR_DRAFT_CONFIRM_MESSAGE)) {
                       photo.clearDraft();
+                      // 초기화는 새 문서 — undo로 못 돌아간다(로고·포스터 blob이 revoke돼
+                      // 복원해도 죽은 참조라 히스토리째 파기가 맞다).
+                      history.clear();
                       flashToast('초기화했어요');
                     }
                   }}
@@ -558,15 +555,8 @@ export function MobileEditorShell({
             </div>
           )}
 
-          {/* 줌 모드 pill — 프리뷰(포스터) 아래로 이동(#328). 원래 "포스터 드롭존 아래"였으나 업로드 후
-              드롭존 자체가 통째로 언마운트되므로(#324) 프리뷰 자신을 기준점으로 재정의(#331 코멘트).
-              default에선 기본으로 돌아오는 길이지만, max는 pill째로 숨기고 티켓 탭 복귀(위
-              onClick)로 대체한다. ghost 토글은 #315에서 헤더 서브메뉴로 이전. */}
-          {croppedImageUrl && !isMax && (
-            <div className="flex flex-wrap items-center justify-center gap-2 px-4 pt-4">
-              <ZoomSegment viewMode={viewMode} onChange={handleViewModeChange} />
-            </div>
-          )}
+          {/* 줌 pill(#328)은 #356에서 제거 — 최대화 진입은 플로팅 툴바가 흡수, max 탈출은
+              기존 티켓 탭 복귀 그대로. */}
 
           {/* OCR은 collapse 밖(#261 리뷰 P1). max(#328)는 모든 UX를 숨기는
               풀스크린이라 OCR도 예외 없이 숨긴다. allVis/ghost/잉크 토글은 #315에서 헤더 서브메뉴로 이전. */}
@@ -631,6 +621,26 @@ export function MobileEditorShell({
           </div>
         </div>
       </div>
+
+      {/* 플로팅 툴바(#356) — undo/redo·항목목록·최대화·배치·숨김. 프리뷰가 있어야 의미가 있고,
+          max는 티켓만 남기는 풀스크린이라 숨긴다(탈출은 티켓 탭). 필드 편집·드로어 중에도 셸이
+          계속 렌더한다 — 겹침 규칙은 z-index로(툴바 45: 편집 백드롭 40 위, 드로어 50 아래). */}
+      {croppedImageUrl && !isMax && (
+        <FloatingToolbar
+          canUndo={history.canUndo}
+          canRedo={history.canRedo}
+          onUndo={() => {
+            history.undo();
+            flashToast('되돌렸어요');
+          }}
+          onRedo={() => {
+            history.redo();
+            flashToast('다시 실행했어요');
+          }}
+          onFieldList={() => setDrawerOpen(true)}
+          onMaximize={() => handleViewModeChange('max')}
+        />
+      )}
 
       {/* 온티켓 인플레이스 에디터(#354) — 필드 탭이 시트 대신 이걸 연다. 투명 input + 필드바 +
           aid 패널(KOBIS/별점/날짜). 위치는 래퍼/티켓 ref 기반 측정, lift는 setEditLift로 위 transform에.

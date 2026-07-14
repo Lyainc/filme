@@ -1,14 +1,14 @@
 /**
  * #214 회귀 테스트 — MobileEditorShell 프리뷰 2단 줌 모드(기본/최대화).
  * #328로 max를 "모든 UX를 숨기고 티켓만 풀스크린" 모드로 재정의.
- * "실제 크기" 모드는 #311에서 제거(웹은 물리 DPI를 못 읽어 실측과 어긋나고, 보정 슬라이더도 UI
- * 비용 대비 이득이 적었음) — 최대화가 pinch-zoom 가능한 전체화면으로 그 니즈를 대신 커버한다.
+ * #356으로 줌 pill(ZoomSegment)을 제거 — 최대화 진입은 플로팅 툴바 버튼이 흡수하고,
+ * max 탈출은 티켓 탭 복귀 그대로다.
  *
- * pill·프리뷰는 croppedImageUrl이 있을 때만 렌더되므로, 하네스에 포스터 업로드 버튼을 두고
+ * 툴바·프리뷰는 croppedImageUrl이 있을 때만 렌더되므로, 하네스에 포스터 업로드 버튼을 두고
  * 테스트가 먼저 눌러 seed한다(실제 usePhototicket.handleImageUpload 경로). 검증:
- * pill 위치·기본 pressed 상태 → 최대화는 헤더·pill·OCR을 숨기고 티켓 탭으로만 기본 복귀 가능.
+ * 툴바 최대화 버튼 → 헤더·툴바·OCR을 숨기고 티켓 탭으로만 기본 복귀 가능.
  */
-import { describe, expect, test, afterEach } from 'bun:test';
+import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
 import { render, screen, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { usePhototicket } from '@/hooks/usePhototicket';
@@ -36,47 +36,47 @@ function Harness() {
   );
 }
 
+beforeEach(() => {
+  // 툴바 위치·숨김 영속(filme:toolbar:v1)이 테스트 간 새지 않게 초기화.
+  window.localStorage.clear();
+});
 afterEach(cleanup);
 
-describe('MobileEditorShell 줌 모드 (#214)', () => {
-  test('포스터 seed 후: pill이 프리뷰 아래 렌더되고 기본이 눌린 상태다', async () => {
+describe('MobileEditorShell 줌 모드 (#214/#328/#356)', () => {
+  test('포스터 seed 후: 줌 pill 없이 플로팅 툴바가 뜨고 최대화 버튼이 있다', async () => {
     const user = userEvent.setup();
-    const { container } = render(<Harness />);
+    render(<Harness />);
 
-    // seed 전엔 pill이 없다.
-    expect(screen.queryByRole('group', { name: '미리보기 크기' })).toBeNull();
+    // seed 전엔 툴바가 없다(프리뷰가 있어야 의미).
+    expect(screen.queryByRole('toolbar', { name: '편집 도구' })).toBeNull();
 
     await user.click(screen.getByText('seed-poster'));
 
-    // pill(줌 group)이 프리뷰(온-티켓 포스터 탭 마커) 뒤에 온다 — #328: 포스터 아래→프리뷰 아래 재정의.
-    const preview = container.querySelector('[data-poster-tap]');
-    const zoomGroup = screen.getByRole('group', { name: '미리보기 크기' });
-    expect(preview).toBeTruthy();
-    expect(preview!.compareDocumentPosition(zoomGroup) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-
-    const def = screen.getByRole('button', { name: '기본' });
-    expect(def.getAttribute('aria-pressed')).toBe('true');
+    // 줌 pill(ZoomSegment)은 제거됐고(#356) 툴바가 최대화 진입점을 흡수했다.
+    expect(screen.queryByRole('group', { name: '미리보기 크기' })).toBeNull();
+    expect(screen.getByRole('toolbar', { name: '편집 도구' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '최대화' })).toBeTruthy();
   });
 
-  test('최대화(#328): 헤더·pill·OCR을 숨기고 티켓만 남기며, 티켓 탭으로만 기본 복귀한다', async () => {
+  test('최대화(#328): 헤더·툴바·OCR을 숨기고 티켓만 남기며, 티켓 탭으로만 기본 복귀한다', async () => {
     const user = userEvent.setup();
     render(<Harness />);
     await user.click(screen.getByText('seed-poster'));
 
-    // 진입 전: 헤더 메뉴 버튼·pill·OCR 카드가 모두 보인다.
+    // 진입 전: 헤더 메뉴 버튼·툴바가 모두 보인다.
     expect(screen.getByRole('button', { name: '편집 메뉴' })).toBeTruthy();
-    expect(screen.getByRole('group', { name: '미리보기 크기' })).toBeTruthy();
+    expect(screen.getByRole('toolbar', { name: '편집 도구' })).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '최대화' }));
 
-    // 진입 후: 헤더·pill이 사라지고, 티켓 탭(기본 복귀) 핸들만 남는다.
+    // 진입 후: 헤더·툴바가 사라지고, 티켓 탭(기본 복귀) 핸들만 남는다.
     expect(screen.queryByRole('button', { name: '편집 메뉴' })).toBeNull();
-    expect(screen.queryByRole('group', { name: '미리보기 크기' })).toBeNull();
+    expect(screen.queryByRole('toolbar', { name: '편집 도구' })).toBeNull();
     expect(screen.getByRole('button', { name: '기본 크기로 돌아가기' })).toBeTruthy();
 
-    // 티켓 탭 → 기본 복귀, 헤더·pill 재노출.
+    // 티켓 탭 → 기본 복귀, 헤더·툴바 재노출.
     await user.click(screen.getByRole('button', { name: '기본 크기로 돌아가기' }));
     expect(screen.getByRole('button', { name: '편집 메뉴' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: '기본' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('toolbar', { name: '편집 도구' })).toBeTruthy();
   });
 });
