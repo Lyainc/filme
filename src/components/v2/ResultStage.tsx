@@ -40,9 +40,11 @@ export function ResultStage({
       className="app-canvas chrome-dark"
       style={{ position: 'relative', minHeight: '100dvh', display: 'flex', flexDirection: 'column', paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
+      {/* testid는 편집 셸의 chrome-ambient와 분리 — 모바일에서 resultOpen이면 편집 셸이
+          hidden으로 동시 마운트라(index.tsx) 같은 testid가 DOM에 2개 생긴다(PR #362 리뷰 P2). */}
       <div
         aria-hidden="true"
-        data-testid="chrome-ambient"
+        data-testid="result-ambient"
         className="chrome-ambient pointer-events-none absolute inset-0"
       />
       {/* 상단 네브 — MobileEditorShell 헤더와 동형 구조(뒤로가기·워드마크·우측 슬롯)를 유지해
