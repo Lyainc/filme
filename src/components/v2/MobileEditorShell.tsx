@@ -23,6 +23,13 @@ const FieldEditSheet = dynamic(
   { ssr: false },
 );
 
+// 온티켓 인플레이스 에디터(#354) — RatingPicker·DateSheet(FieldEditorBody)를 끌어오므로
+// 시트와 같은 이유로 dynamic(ssr:false), 첫 필드 탭에 로드된다.
+const InPlaceFieldEditor = dynamic(
+  () => import('./InPlaceFieldEditor').then((m) => m.InPlaceFieldEditor),
+  { ssr: false },
+);
+
 // 포스터 탭(#259) 크롭 모달 — ImageUploader와 동일 컴포넌트 재사용. 탭 전엔 안 쓰므로 dynamic.
 const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ssr: false });
 
@@ -132,7 +139,20 @@ export function MobileEditorShell({
   function handleViewModeChange(mode: ViewMode) {
     setViewMode(mode);
     setMenuOpen(false);
+    setActiveField(null); // 인플레이스 편집(#354)은 default 줌 전용 — 줌 전환 시 닫는다.
   }
+  // 인플레이스 에디터(#354)의 portal 대상(래퍼)·측정 대상(티켓 div). callback ref state라
+  // 엘리먼트가 준비되면 에디터가 리렌더로 붙는다.
+  const [previewWrapEl, setPreviewWrapEl] = useState<HTMLDivElement | null>(null);
+  const [ticketBoxEl, setTicketBoxEl] = useState<HTMLDivElement | null>(null);
+  // 편집 중 티켓 lift(px, ≤0) — 에디터가 계산해 올리고 셸이 transform으로만 적용(폭 애니메이트 금지,
+  // TicketRenderer의 ResizeObserver 스케일과 싸우지 않게).
+  const [editLift, setEditLift] = useState(0);
+  const editing = activeField != null && viewMode === 'default' && !!croppedImageUrl;
+  const closeEditor = useCallback(() => {
+    setActiveField(null);
+    setEditLift(0);
+  }, []);
   // 포스터 크롭 파이프라인(#259 on-ticket tap + #315 서브메뉴 교체/재크롭 통합 단일 소스).
   // originalSrc는 첫 업로드 이후에도 유지돼야 재크롭이 되므로(#315 설계, ImageUploader의
   // pendingNewFile 패턴을 그대로 포팅) 크롭 완료 시 revoke하지 않는다 — 값이 바뀌거나(교체로
@@ -466,20 +486,32 @@ export function MobileEditorShell({
                       },
                       'aria-label': '기본 크기로 돌아가기',
                     })}
+                ref={setPreviewWrapEl}
                 className={`relative mx-auto block rounded-card ${
                   viewMode === 'default'
-                    ? 'w-full max-w-[280px]'
+                    ? 'w-full max-w-[280px] transition-transform duration-300 ease-out motion-reduce:transition-none'
                     : 'transition-transform active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-soft'
                 } ${rotateLandscape ? 'overflow-hidden' : ''}`}
                 style={
                   viewMode === 'default'
-                    ? undefined
+                    ? {
+                        // 편집 중 lift + scale(#354, 시안 §5 ~1.08) — transform만 바꾼다. 폭을
+                        // 애니메이트하면 TicketRenderer의 ResizeObserver 스케일과 싸운다.
+                        // 비편집에도 항등 transform을 유지해야 해제 시 transform→none 이산 점프 없이
+                        // 트랜지션이 걸린다. z-41은 편집 backdrop(z-40) 위로 티켓 탭을 살린다.
+                        transform: editing
+                          ? `translateY(${editLift}px) scale(1.08)`
+                          : 'translateY(0) scale(1)',
+                        transformOrigin: 'top center',
+                        zIndex: editing ? 41 : undefined,
+                      }
                     : rotateLandscape
                       ? { width: rotatedStageWidth, height: rotatedInnerWidth }
                       : { width: previewWidth }
                 }
               >
                 <div
+                  ref={setTicketBoxEl}
                   className={rotateLandscape ? 'absolute left-1/2 top-1/2' : undefined}
                   style={
                     rotateLandscape
@@ -492,7 +524,9 @@ export function MobileEditorShell({
                     movieInfo={previewMovieInfo}
                     components={previewComponents}
                     fieldVisibility={fieldVisibility}
-                    ghost={ghostMode}
+                    // 편집 중 ghost 강제 on(#354 시안 결정: ghostEff = ghostOn || editing) —
+                    // 빈/숨김 필드도 탭·순회 타깃으로 티켓에 남는다.
+                    ghost={ghostMode || editing}
                     onField={viewMode === 'default' ? handleField : undefined}
                     onPosterTap={viewMode === 'default' ? handlePosterTap : undefined}
                   />
@@ -575,9 +609,23 @@ export function MobileEditorShell({
         </div>
       </div>
 
-      {/* 필드 편집 하단시트 — vaul은 dynamic(ssr:false)라 시트가 열릴 때만 로드된다.
-          #213은 제목만, #215가 타입별 콘텐츠와 개별 티켓 필드 탭을 채운다. */}
-      <FieldEditSheet activeField={activeField} onClose={() => setActiveField(null)} photo={photo} />
+      {/* 온티켓 인플레이스 에디터(#354) — 필드 탭이 시트 대신 이걸 연다. 투명 input + 필드바 +
+          aid 패널(KOBIS/별점/날짜). 위치는 래퍼/티켓 ref 기반 측정, lift는 setEditLift로 위 transform에. */}
+      {editing && activeField && (
+        <InPlaceFieldEditor
+          photo={photo}
+          field={activeField}
+          wrapperEl={previewWrapEl}
+          ticketEl={ticketBoxEl}
+          onField={handleField}
+          onClose={closeEditor}
+          onLift={setEditLift}
+        />
+      )}
+
+      {/* 필드 편집 하단시트 — #354에서 인플레이스 에디터가 진입을 대체해 더는 열리지 않는다.
+          컴포넌트 제거는 #355(필드 드로어)에서 — main에 항상 동작하는 상태를 남기기 위해 단계를 나눈다. */}
+      <FieldEditSheet activeField={null} onClose={() => {}} photo={photo} />
 
       {/* 포스터 크롭 파이프라인(#259 on-ticket tap + #315 드롭존·서브메뉴 교체/재크롭 통합) — 숨김
           파일 input + 크롭 모달. 탭 → input.click() → 파일 선택 → ImageCropModal(기본 0.65:1) →

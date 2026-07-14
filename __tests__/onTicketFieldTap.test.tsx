@@ -112,6 +112,7 @@ describe('온-티켓 필드 탭 (#259)', () => {
       );
       expect(html).not.toContain('role="button"');
       expect(html).not.toContain('data-poster-tap');
+      expect(html).not.toContain('data-field-tap'); // #354 측정 앵커도 캡처 경로엔 없다
     });
   }
 

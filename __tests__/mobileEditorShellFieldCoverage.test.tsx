@@ -2,7 +2,7 @@
  * #266 PR-E 회귀 테스트 — FieldLauncher 제거 후 필드 편집 커버리지가 온-티켓 탭만으로 유지되는지.
  *
  * 별도 필드 목록(FieldLauncher)을 지운 뒤 남는 두 경로를 MobileEditorShell 통합으로 검증한다:
- *  1. 끄기: 티켓 위 필드 탭 → FieldEditSheet 헤더 "티켓에 표시" 눈 토글 → 필드 숨김.
+ *  1. 끄기: 티켓 위 필드 탭 → 인플레이스 필드바(#354, FieldEditSheet 대체) "티켓 노출" 눈 토글 → 필드 숨김.
  *  2. 다시 켜기 (a): ghost 켜짐(기본 on) → 숨긴 필드가 티켓에 "+ 라벨" 점선(FieldTap)으로 남아
  *     재탭 → 재노출.
  *  3. 다시 켜기 (b): 셸 "전체 표시" 스위치 → 전 필드 재노출.
@@ -59,36 +59,35 @@ afterEach(() => {
 });
 
 describe('MobileEditorShell 필드 커버리지 (#266 PR-E)', () => {
-  test('끄기(시트 눈) → ghost 재탭으로 다시 켜기 (path a)', async () => {
+  test('끄기(필드바 눈) → ghost 재탭으로 다시 켜기 (path a)', async () => {
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
 
-    // 무드 로드 대기 후 극장 탭 → 시트 열림.
+    // 무드 로드 대기 후 극장 탭 → 인플레이스 에디터(#354, 시트 대체) 열림.
     fireEvent.click(await screen.findByRole('button', { name: '극장 편집' }));
 
-    // 시트 헤더 "티켓에 표시" 눈 토글 → 극장 숨김.
-    fireEvent.click(await screen.findByLabelText('극장 티켓에 표시'));
+    // 필드바 "티켓 노출" 눈 토글 → 극장 숨김.
+    fireEvent.click(await screen.findByRole('switch', { name: '티켓 노출' }));
     expect(screen.getByTestId('vis-theater').textContent).toBe('false');
 
-    // 숨긴 필드도 ghost로 "극장 편집" FieldTap이 티켓에 남는다(재켜기 진입점) → 재탭 → 재노출.
-    // (열린 vaul 시트가 본문 티켓을 aria-hidden 처리하므로 hidden:true로 포함해 조회 — fireEvent는
-    //  aria-hidden이어도 onClick을 발화한다.)
-    fireEvent.click(await screen.findByRole('button', { name: '극장 편집', hidden: true }));
+    // 숨긴 필드도 편집 중 ghost 강제 on으로 "극장 편집" FieldTap이 티켓에 남는다(재켜기 진입점)
+    // → 재탭 → 재노출(handleField의 자동 표시 on).
+    fireEvent.click(await screen.findByRole('button', { name: '극장 편집' }));
     expect(screen.getByTestId('vis-theater').textContent).toBe('true');
   });
 
-  test('끄기(시트 눈) → "전체 표시"로 다시 켜기 (path b)', async () => {
+  test('끄기(필드바 눈) → "전체 표시"로 다시 켜기 (path b)', async () => {
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
 
     fireEvent.click(await screen.findByRole('button', { name: '상영관 편집' }));
-    fireEvent.click(await screen.findByLabelText('상영관 티켓에 표시'));
+    fireEvent.click(await screen.findByRole('switch', { name: '티켓 노출' }));
     expect(screen.getByTestId('vis-screen').textContent).toBe('false');
 
-    // "전체 표시" 단일 스위치(#261)는 #315에서 헤더 서브메뉴로 이전 — 먼저 메뉴를 연다.
-    // (열린 vaul이 본문을 aria-hidden 처리하므로 hidden:true로 포함해 조회.)
-    fireEvent.click(await screen.findByRole('button', { name: '편집 메뉴', hidden: true }));
-    fireEvent.click(await screen.findByRole('switch', { name: '전체 표시', hidden: true }));
+    // "전체 표시" 단일 스위치(#261)는 #315에서 헤더 서브메뉴로 이전 — 먼저 편집을 닫고 메뉴를 연다.
+    fireEvent.click(await screen.findByRole('button', { name: '편집 완료' }));
+    fireEvent.click(await screen.findByRole('button', { name: '편집 메뉴' }));
+    fireEvent.click(await screen.findByRole('switch', { name: '전체 표시' }));
     expect(screen.getByTestId('vis-screen').textContent).toBe('true');
   });
 

@@ -193,8 +193,12 @@ function FormatChips({
   );
 }
 
-/** 날짜 필드 — watchDate(입력+표기 칩) / releaseDate(정밀도+표기 칩+재개봉 토글). */
-function DateSheet({ field, photo }: { field: TicketField; photo: Photo }) {
+/**
+ * 날짜 필드 — watchDate(입력+표기 칩) / releaseDate(정밀도+표기 칩+재개봉 토글).
+ * export(#354): 인플레이스 에디터의 aid 패널이 재사용 — 날짜는 투명 input 대신 이 편집기가
+ * 키보드 자리에 뜬다(표기 칩·정밀도·재개봉 토글까지 보존하는 유일한 기존 UI).
+ */
+export function DateSheet({ field, photo }: { field: TicketField; photo: Photo }) {
   const info = photo.state.movieInfo;
   const set = photo.updateMovieInfo;
 
