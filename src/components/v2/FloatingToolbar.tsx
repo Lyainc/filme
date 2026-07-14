@@ -104,6 +104,32 @@ export function FloatingToolbar({
     return () => clearTimeout(t);
   }, [prefs]);
 
+  // 저장된 이동식 좌표는 뷰포트가 좁아지는 리사이즈·화면 회전에서 화면 밖으로 나갈 수 있다
+  // (PR #361 리뷰 P2) — resize마다 재클램프.
+  useEffect(() => {
+    if (place !== 'movable' || !pos) return;
+    const onResize = () => {
+      const el = rootRef.current;
+      const w = el?.offsetWidth ?? 52;
+      const h = el?.offsetHeight ?? 52;
+      const x = Math.max(EDGE, Math.min(window.innerWidth - w - EDGE, pos.x));
+      const y = Math.max(EDGE, Math.min(window.innerHeight - h - EDGE, pos.y));
+      if (x !== pos.x || y !== pos.y) setPrefs((prev) => ({ ...prev, x, y }));
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [place, pos?.x, pos?.y]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 배치 서브메뉴는 바깥 탭 외에 Escape로도 닫힌다(PR #361 리뷰 P2).
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
+
   const clampPos = (x: number, y: number) => {
     const el = rootRef.current;
     const w = el?.offsetWidth ?? 52;
