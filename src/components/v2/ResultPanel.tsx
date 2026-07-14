@@ -318,13 +318,15 @@ export function ResultPanel({
 
         {/* 2차 액션 = 링크 만들기(퍼마링크 발급, 바이럴 루프 진입점 #91). elevated secondary —
             accent-soft 그라운드 + accent 아이콘/텍스트로 저장(accent fill)과 채널(quiet outline)
-            사이 중간 무게를 준다. */}
+            사이 중간 무게를 준다. v8 사이징(높이 50px·아이콘 16px, #357)은 모바일 ResultStage의
+            .chrome-dark 스코프 안에서만 — 이 컴포넌트는 데스크톱 인스펙터와 공유라 기본값을
+            바꾸면 데스크톱 픽셀이 바뀐다. */}
         <button
           type="button"
           onClick={handlePermalink}
           disabled={isBusy}
           title="공유 링크를 만들어 클립보드에 복사해요"
-          className="text-mono flex min-h-[48px] w-full items-center justify-center gap-2 rounded-field-sm bg-accent-soft px-4 text-[11px] uppercase tracking-widest text-accent transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:opacity-50"
+          className="text-mono flex min-h-[48px] w-full items-center justify-center gap-2 rounded-field-sm bg-accent-soft px-4 text-[11px] uppercase tracking-widest text-accent transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:opacity-50 [.chrome-dark_&]:min-h-[50px]"
         >
           <LinkIcon />
           <span key={permaLabel} className="inline-block animate-fade-in">
@@ -340,7 +342,7 @@ export function ResultPanel({
           onClick={handleShareLink}
           disabled={isBusy}
           title="카톡·메신저 등으로 공유해요"
-          className="text-mono flex min-h-[48px] w-full items-center justify-center gap-2 rounded-field-sm border border-line bg-surface-elevated px-4 text-[11px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:bg-transparent disabled:hover:text-fg-faint"
+          className="text-mono flex min-h-[48px] w-full items-center justify-center gap-2 rounded-field-sm border border-line bg-surface-elevated px-4 text-[11px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:bg-transparent disabled:hover:text-fg-faint [.chrome-dark_&]:min-h-[50px]"
         >
           <ShareIcon />
           <span>공유</span>
@@ -392,9 +394,11 @@ function DownloadIcon() {
   );
 }
 
+// 보조 버튼 아이콘은 v8에서 16px(#357) — .chrome-dark(모바일 ResultStage) 스코프에서만 클래스로
+// 줄이고, 속성 크기(18)는 데스크톱 인스펙터 픽셀 불변을 위해 유지한다.
 function LinkIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="[.chrome-dark_&]:h-4 [.chrome-dark_&]:w-4">
       <path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
       <path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
     </svg>
@@ -403,7 +407,7 @@ function LinkIcon() {
 
 function ShareIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="[.chrome-dark_&]:h-4 [.chrome-dark_&]:w-4">
       <circle cx="18" cy="5" r="3" />
       <circle cx="6" cy="12" r="3" />
       <circle cx="18" cy="19" r="3" />

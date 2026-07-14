@@ -32,15 +32,24 @@ export function ResultStage({
   const heroWidth = `min(84vw, calc(${PREVIEW_MAX_HEIGHT} * ${layout.width} / ${layout.height}))`;
 
   return (
+    // 결과화면 톤(#357) — 편집 셸과 같은 .chrome-dark 스코프 + 앰비언트. 결과화면은 항상
+    // 포스터가 있으므로 상시 on(편집 셸의 chromeDark 조건 분기 불필요). 이 스코프는 모바일
+    // ResultStage에만 걸린다 — 공유되는 ResultPanel의 데스크톱 인스펙터 렌더는 무영향.
     <div
       data-theme={theme}
-      className="app-canvas"
-      style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', paddingTop: 'env(safe-area-inset-top, 0px)' }}
+      className="app-canvas chrome-dark"
+      style={{ position: 'relative', minHeight: '100dvh', display: 'flex', flexDirection: 'column', paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
+      <div
+        aria-hidden="true"
+        data-testid="chrome-ambient"
+        className="chrome-ambient pointer-events-none absolute inset-0"
+      />
       {/* 상단 네브 — MobileEditorShell 헤더와 동형 구조(뒤로가기·워드마크·우측 슬롯)를 유지해
           편집↔완료 전환에서 네브 위치가 튀지 않게 한다. 완료 화면엔 테마/완료 버튼이 없어
-          우측은 좌측 뒤로가기 버튼과 같은 폭의 빈 스페이서로 균형만 맞춘다. */}
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-line bg-surface px-3">
+          우측은 좌측 뒤로가기 버튼과 같은 폭의 빈 스페이서로 균형만 맞춘다. 배경은 앰비언트가
+          항상 깔리므로 투명(편집 셸의 chromeDark 헤더와 동일 처리, #357). */}
+      <header className="relative flex h-14 shrink-0 items-center justify-between border-b border-line px-3">
         <button
           type="button"
           onClick={onBack}
@@ -55,7 +64,7 @@ export function ResultStage({
         <div aria-hidden="true" className="h-9 w-9" />
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-6">
+      <div className="relative min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-6">
         {croppedImageUrl && (
           <div className="relative mx-auto mb-6" style={{ width: heroWidth }}>
             <PreviewFilmCell promoted>
