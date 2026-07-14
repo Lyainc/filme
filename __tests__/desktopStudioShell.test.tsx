@@ -99,21 +99,22 @@ describe('DesktopStudioShell — 전체 표시/숨김 토글 (#227)', () => {
     render(<Harness />);
     await user.click(screen.getByRole('button', { name: 'INFO' }));
 
-    const seatEye = () => screen.getByRole('checkbox', { name: '좌석 티켓에 표시' }) as HTMLInputElement;
+    // #355: VisibilityCheckbox가 네이티브 체크박스 → 눈 아이콘 switch 버튼으로 교체됐다.
+    const seatEye = () => screen.getByRole('switch', { name: '좌석 티켓에 표시' });
 
     // 필수 필드(제목)는 애초에 행 eye 토글이 없어 일괄토글 대상이 아니다(#260).
-    expect(screen.queryByRole('checkbox', { name: '제목 티켓에 표시' })).toBeNull();
+    expect(screen.queryByRole('switch', { name: '제목 티켓에 표시' })).toBeNull();
 
     // 초기: 모두 표시(ALL_FIELDS_ON) → 버튼 라벨 '전체 숨김', 좌석 eye 켜짐.
-    expect(seatEye().checked).toBe(true);
+    expect(seatEye().getAttribute('aria-checked')).toBe('true');
 
     await user.click(screen.getByRole('button', { name: '전체 숨김' }));
 
     // 좌석은 꺼지고 — 라벨은 '전체 표시'로.
-    expect(seatEye().checked).toBe(false);
+    expect(seatEye().getAttribute('aria-checked')).toBe('false');
 
     // 재클릭 → 전체 표시 복귀.
     await user.click(screen.getByRole('button', { name: '전체 표시' }));
-    expect(seatEye().checked).toBe(true);
+    expect(seatEye().getAttribute('aria-checked')).toBe('true');
   });
 });
