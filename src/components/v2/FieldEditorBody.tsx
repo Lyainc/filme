@@ -324,7 +324,7 @@ function StampSheet({ target, photo }: { target: StampTarget; photo: Photo }) {
     photo.updateComponents({ [keys.image]: url } as Partial<TicketComponents>);
 
   // 로고 업로드 → 자유 크롭 → PNG. 픽커들과 동일한 useLogoCrop 흐름(#220).
-  const { rawSrc, isCropping, openFile, handleComplete, handleCancel } = useLogoCrop(imageUrl, setImage);
+  const { rawSrc, isCropping, openFile, handleComplete, handleCancel } = useLogoCrop(setImage);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -334,8 +334,7 @@ function StampSheet({ target, photo }: { target: StampTarget; photo: Photo }) {
   };
 
   const removeImage = () => {
-    // useLogoCrop과 동일하게 우리가 만든 blob이면 revoke 후 텍스트 표현으로 복귀.
-    if (imageUrl.startsWith('blob:')) URL.revokeObjectURL(imageUrl);
+    // blob revoke는 하지 않는다 — undo 히스토리(#356)가 이 URL을 참조한다(useLogoCrop 참고).
     setImage('');
   };
 

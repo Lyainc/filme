@@ -233,7 +233,7 @@ function LogoRow({
   const imageUrl = String(components[keys.image] ?? '');
   const setImage = (url: string) =>
     photo.updateComponents({ [keys.image]: url } as Partial<TicketComponents>);
-  const { rawSrc, isCropping, openFile, handleComplete, handleCancel } = useLogoCrop(imageUrl, setImage);
+  const { rawSrc, isCropping, openFile, handleComplete, handleCancel } = useLogoCrop(setImage);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 두 로고 행이 콜백을 공유하지만 파일 다이얼로그는 한 번에 하나만 열리므로 boolean으로 충분.

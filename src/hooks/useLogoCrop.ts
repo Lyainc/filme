@@ -7,14 +7,14 @@ import { getCroppedImg, Area } from '@/utils/imageCrop';
  * 포스터 크롭과 달리 고정 종횡비가 없고(프레임 = 업로드 이미지의 자연 종횡비, #347),
  * 크롭 결과가 곧 로고 이미지(투명 PNG)다.
  * 파일 선택 → 원본 objectURL 생성 → 크롭 모달 → '적용' 시 getCroppedImg(png, 종횡비 보존)
- * → 직전 로고 URL과 원본 URL을 revoke하고 새 크롭 URL을 onChange로 넘긴다.
+ * → 원본 URL을 revoke하고 새 크롭 URL을 onChange로 넘긴다. 직전 로고 URL은 undo 히스토리
+ * (#356)가 참조하므로 여기서 revoke하지 않는다(handleComplete 주석 참고).
  *
  * 재크롭은 범위 밖(#220): 크롭 완료/취소 후 원본을 유지하지 않으므로 다시 업로드로 재크롭.
  *
- * @param value    현재 로고 objectURL(부모 소유). 교체 시 blob:이면 revoke.
  * @param onChange 크롭 완료 시 새 로고 URL 전달.
  */
-export function useLogoCrop(value: string, onChange: (url: string) => void) {
+export function useLogoCrop(onChange: (url: string) => void) {
   // 크롭 모달 소스이자 getCroppedImg가 읽는 원본. 완료/취소 시 null로 비워 revoke.
   const [rawSrc, setRawSrc] = useState<string | null>(null);
   const [isCropping, setIsCropping] = useState(false);
@@ -32,8 +32,10 @@ export function useLogoCrop(value: string, onChange: (url: string) => void) {
         mimeType: 'image/png', // 투명 PNG 로고의 알파 보존
         maxSide: 640, // 자유 종횡비 유지, 긴 변만 캡해 파일 크기 제한
       });
-      // 직전 로고가 우리가 만든 blob이면 교체 전에 revoke(외부 경로는 건드리지 않음).
-      if (value && value.startsWith('blob:')) URL.revokeObjectURL(value);
+      // 직전 로고(value)는 교체 시점에 revoke하지 않는다 — undo 히스토리(#356)가 이전 URL을
+      // 참조하므로 여기서 풀면 undo가 죽은 이미지를 복원한다. 최신 로고는 usePhototicket이
+      // 언마운트·clearDraft에서 revoke하고, 히스토리 속 과거 로고는 탭 수명 누수로 수용한다
+      // (640px 캡 PNG라 작다). ponytail: 히스토리 밀림에 맞춘 참조 카운팅이 필요해지면 그때.
       onChange(cropped);
       setRawSrc(null); // effect cleanup이 원본 revoke
     } catch (err) {
