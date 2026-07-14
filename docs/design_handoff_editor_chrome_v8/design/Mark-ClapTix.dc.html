@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<svg viewBox="0 0 100 100" style="display:block;width:100%;height:100%;" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="FILME clapper ticket icon">
+  <path fill="{{ ink }}" d="M21 27 H79 A8 8 0 0 1 87 35 V65 A8 8 0 0 1 79 73 H21 A8 8 0 0 1 13 65 V35 A8 8 0 0 1 21 27 Z"></path>
+  <rect x="21" y="34.5" width="30" height="9" rx="2.5" fill="{{ accent }}"></rect>
+  <g fill="{{ ink }}">
+    <path d="M24.5 34.5 H28.5 L25.5 43.5 H21.5 Z"></path>
+    <path d="M32 34.5 H36 L33 43.5 H29 Z"></path>
+    <path d="M39.5 34.5 H43.5 L40.5 43.5 H36.5 Z"></path>
+    <path d="M47 34.5 H51 L48 43.5 H44 Z"></path>
+  </g>
+  <rect x="22" y="49" width="28" height="3.4" rx="1.7" fill="{{ accent }}"></rect>
+  <rect x="22" y="56.5" width="18" height="3.4" rx="1.7" fill="{{ accent }}"></rect>
+  <line x1="58" y1="33" x2="58" y2="67" stroke="{{ accent }}" stroke-width="2" stroke-dasharray="2 3.6" stroke-linecap="round"></line>
+  <rect x="66" y="43.5" width="14" height="14" rx="3.5" fill="{{ accent }}"></rect>
+  <circle cx="73" cy="50.5" r="3.4" fill="{{ ink }}"></circle>
+  <circle cx="73" cy="50.5" r="1.15" fill="{{ accent }}"></circle>
+</svg>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:320,&quot;height&quot;:320},&quot;ink&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#241C22&quot;,&quot;options&quot;:[&quot;#241C22&quot;,&quot;#FBF4EC&quot;,&quot;#B0423F&quot;],&quot;tsType&quot;:&quot;string&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#B0423F&quot;,&quot;options&quot;:[&quot;#B0423F&quot;,&quot;#E7A19E&quot;,&quot;#241C22&quot;],&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      ink: this.props.ink ?? '#241C22',
+      accent: this.props.accent ?? '#B0423F',
+    };
+  }
+}
+</script>
+</body>
+</html>

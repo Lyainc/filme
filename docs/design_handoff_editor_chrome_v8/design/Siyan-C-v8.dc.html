@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+.scNoScroll::-webkit-scrollbar{width:0;height:0;}
+.scThin::-webkit-scrollbar{height:0;}
+.scInput::placeholder{color:#A7ADB6;opacity:.6;}
+a{color:#B0423F;}a:hover{color:#9A3936;}
+@keyframes scv5scan{0%{top:-14%;opacity:0}9%{opacity:.95}90%{opacity:.95}100%{top:100%;opacity:0}}
+@keyframes scv5pop{0%{transform:scale(.5);opacity:0}55%{transform:scale(1.12);opacity:1}100%{transform:scale(1);opacity:1}}
+</style>
+</helmet>
+<div style="width:390px;height:844px;position:relative;overflow:hidden;border-radius:46px;background:{{ C.bg }};color:{{ C.fg }};font-family:'Pretendard Variable',sans-serif;box-shadow:0 0 0 11px #0b0b0d, 0 40px 80px -30px rgba(0,0,0,.6);touch-action:manipulation;user-select:none;">
+
+  <!-- camera cutout -->
+  <sc-if value="{{ isIOS }}" hint-placeholder-val="{{ true }}"><div style="position:absolute;top:11px;left:50%;transform:translateX(-50%);width:118px;height:33px;border-radius:999px;background:#050505;z-index:40;pointer-events:none;"></div></sc-if>
+  <sc-if value="{{ isAndroid }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;top:15px;left:50%;transform:translateX(-50%);width:12px;height:12px;border-radius:999px;background:#050505;box-shadow:0 0 0 2px rgba(0,0,0,.28);z-index:40;pointer-events:none;"></div></sc-if>
+
+  <!-- ambient backdrop — full-frame poster-glow echo behind status bar/header/canvas, on while editing -->
+  <sc-if value="{{ ambientShown }}" hint-placeholder-val="{{ false }}"><div style="{{ ambientStyle }}"></div></sc-if>
+
+  <!-- status bar -->
+  <div style="height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;position:relative;z-index:30;">
+    <span style="{{ clockStyle }}">9:41</span>
+    <span style="display:flex;align-items:center;gap:7px;color:{{ chromeInk }};">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor" aria-hidden="true"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="4.5" width="3" height="7.5" rx="1"/><rect x="10" y="2" width="3" height="10" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1" opacity=".35"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M1 4.2C3 2.3 5.4 1.3 8 1.3s5 1 7 2.9M3.4 6.8C4.7 5.6 6.3 5 8 5s3.3.6 4.6 1.8M6 9.4c.6-.5 1.3-.8 2-.8s1.4.3 2 .8"/></svg>
+      <span style="display:inline-flex;align-items:center;"><span style="width:22px;height:11px;border:1.4px solid currentColor;border-radius:3px;opacity:.9;position:relative;display:inline-block;"><span style="position:absolute;left:1.4px;top:1.4px;bottom:1.4px;width:14px;background:currentColor;border-radius:1px;"></span></span><span style="width:1.6px;height:4px;background:currentColor;border-radius:0 1px 1px 0;margin-left:1px;opacity:.6;"></span></span>
+    </span>
+  </div>
+
+  <!-- header: brand · mini toolbar (undo/redo · list · maximize) · settings -->
+  <header style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;position:relative;z-index:25;">
+    <span style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+      <span style="width:30px;height:30px;border-radius:9px;background:#B0423F;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
+        <span style="display:flex;transform:rotate(-16deg);"><dc-import name="Mark-ClapTix" ink="#FBF4EC" accent="#241C22" style="width:22px;height:22px;display:block;" hint-size="22px,22px"></dc-import></span>
+      </span>
+      <dc-import name="Wordmark-Filme" size="17" ink="{{ chromeInk }}" accent="#B0423F" me-emph="true" tittle="dot" style="display:block;" hint-size="76px,21px"></dc-import>
+    </span>
+    <span style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+      <button onClick="{{ openSettings }}" aria-label="편집 메뉴" style="{{ menuBtnStyle }}">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <sc-if value="{{ nextShown }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ goResult }}" aria-disabled="{{ nextDisabled }}" style="{{ headerNextStyle }}">다음<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+      </sc-if>
+    </span>
+  </header>
+
+  <!-- ===== EDIT CANVAS ===== -->
+  <div style="position:absolute;top:100px;left:0;right:0;bottom:0;overflow:hidden;z-index:10;">
+
+    <!-- START: poster upload -->
+    <div style="{{ dropzoneWrap }}">
+      <div style="width:100%;max-width:300px;display:flex;flex-direction:column;align-items:center;gap:18px;">
+        <button onClick="{{ posterUpload }}" style="width:230px;aspect-ratio:960/1477;border-radius:16px;border:2px dashed {{ C.borderStrong }};background:{{ C.surface }};color:{{ C.fg }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;cursor:pointer;position:relative;overflow:hidden;">
+          <span style="position:absolute;inset:0;background:radial-gradient(70% 45% at 50% 34%, {{ C.accentSoft }}, transparent 72%);pointer-events:none;"></span>
+          <span style="width:62px;height:62px;border-radius:18px;background:#B0423F;display:flex;align-items:center;justify-content:center;box-shadow:0 14px 30px -12px rgba(176,66,63,.7);position:relative;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M8 8l4-4 4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+          </span>
+          <span style="position:relative;font-size:15.5px;font-weight:700;">포스터 업로드</span>
+        </button>
+        <button onClick="{{ ocrStart }}" style="display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 16px;border-radius:999px;border:1px solid {{ C.border }};background:{{ C.surface }};color:{{ C.fgMuted }};font-size:12.5px;font-weight:600;cursor:pointer;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          예매 스크린샷으로 자동 채우기
+        </button>
+      </div>
+    </div>
+
+    <!-- TICKET -->
+    <div style="{{ ticketAreaStyle }}">
+      <div onClick="{{ closeField }}" style="{{ editBackdropStyle }}"></div>
+      <div ref="{{ setTicket }}" style="position:absolute;left:50%;top:20px;width:{{ ticketW }}px;transform-origin:50% 0;transform:{{ liftTransform }};transition:transform .34s cubic-bezier(.32,.72,0,1),width .3s ease;z-index:2;">
+        <div style="position:relative;border-radius:15px;overflow:hidden;box-shadow:0 30px 60px -24px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.07), 0 0 50px -8px rgba(224,163,58,.14);aspect-ratio:{{ ticketAspect }};background:#0a0a0a;">
+          <dc-import name="FilmeTicket-v4" data="{{ f }}" mood="{{ mood }}" tint="{{ tint }}" texture="{{ texture }}" poster-bright="{{ posterBright }}" comp-opacity="{{ compOpacity }}" show-ghosts="{{ ghostEff }}" hidden-keys="{{ hiddenKeys }}" logo-img="{{ logoImg }}" format-logo-img="{{ formatLogoImg }}" interactive="{{ true }}" active-key="{{ activeKeyVal }}" on-field="{{ openField }}" style="display:block;width:100%;height:100%;" hint-size="264px,406px"></dc-import>
+        </div>
+        <div ref="{{ setInpWrap }}" style="{{ inplaceInputStyle }}">
+          <input key="inpedit-{{ editKey }}" class="scInput" value="{{ editVal }}" onInput="{{ onInput }}" autofocus="true" style="width:100%;height:100%;border:none;border-radius:6px;background:rgba(176,66,63,.12);color:transparent;caret-color:{{ C.accent }};font-size:14px;text-align:center;outline:none;font-family:'Pretendard Variable',sans-serif;" />
+        </div>
+
+        <!-- floating field toolbar — sits ON the ticket, next to the active field (#1) -->
+        <div ref="{{ setBarWrap }}" style="{{ fieldBarBase }}">
+          <button onClick="{{ prevField }}" aria-label="이전 항목" style="{{ barNavBtn }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+          <span style="width:1px;height:20px;background:{{ C.border }};flex-shrink:0;"></span>
+          <sc-if value="{{ isLogoEdit }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ openLogoImage }}" aria-label="로고 이미지" style="{{ barChip }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="m21 15-5-5L5 21"/></svg>이미지</button>
+          </sc-if>
+          <button onClick="{{ toggleFieldVis }}" role="switch" aria-checked="{{ fieldVisible }}" aria-label="티켓 노출" style="{{ visChipStyle }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="{{ visChipIconPath }}"/><sc-if value="{{ visEyeOpen }}" hint-placeholder-val="{{ false }}"><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/></sc-if></svg>{{ visChipLabel }}</button>
+          <button onClick="{{ nextField }}" aria-label="다음 항목" style="{{ barNavBtn }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+          <button onClick="{{ closeField }}" aria-label="완료" style="{{ barDone }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ON-TICKET 항목: translucent right drawer (swipe →/tap outside to close, no X) -->
+    <div onClick="{{ closeDrawer }}" style="{{ drawerBackdropStyle }}"></div>
+    <div ref="{{ setDrawerEl }}" style="{{ sidebarStyle }}">
+      <div onPointerDown="{{ onDrawerDown }}" onPointerMove="{{ onDrawerMove }}" onPointerUp="{{ onDrawerUp }}" onPointerCancel="{{ onDrawerUp }}" style="display:flex;flex-direction:column;height:100%;border-radius:20px;overflow:hidden;background:{{ drawerBg }};backdrop-filter:blur(13px) saturate(1.4);border:1px solid {{ drawerBorder }};box-shadow:-16px 0 44px -20px rgba(0,0,0,.5);touch-action:pan-y;">
+        <button onClick="{{ fieldsOcr }}" style="{{ sidebarOcrBtn }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>티켓 자동 인식</button>
+        <div class="scNoScroll" style="flex:1;overflow-y:auto;padding:8px;">
+          <sc-for list="{{ fieldRows }}" as="r" hint-placeholder-count="8">
+            <div style="{{ r.rowStyle }}">
+              <button onClick="{{ r.tap }}" style="flex:1;display:flex;flex-direction:column;align-items:flex-start;gap:1px;background:none;border:none;cursor:pointer;padding:7px 4px 7px 9px;text-align:left;min-width:0;">
+                <span style="font-size:9.5px;font-weight:600;letter-spacing:.02em;color:{{ r.labelColor }};">{{ r.label }}</span>
+                <span style="max-width:100%;font-size:12.5px;font-weight:600;color:{{ r.valueColor }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.valueText }}</span>
+              </button>
+              <sc-if value="{{ r.isLogo }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ r.uploadTap }}" aria-label="로고 이미지" style="width:28px;height:28px;border-radius:8px;border:none;background:none;color:{{ C.fgMuted }};display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="m21 15-5-5L5 21"/></svg></button>
+              </sc-if>
+              <button onClick="{{ r.toggle }}" aria-label="노출 전환" style="{{ r.eyeBtnStyle }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ r.eyeIcon }}"/><sc-if value="{{ r.eyeOpen }}" hint-placeholder-val="{{ false }}"><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/></sc-if></svg></button>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FLOATING TOOLBAR MODULE (undo/redo · list · maximize · placement · hide) ===== -->
+  <sc-if value="{{ toolbarShown }}" hint-placeholder-val="{{ false }}">
+    <div ref="{{ setTbEl }}" style="{{ tbStyle }}">
+      <sc-if value="{{ tbShowGrip }}" hint-placeholder-val="{{ false }}">
+        <span onPointerDown="{{ onTbGripDown }}" onPointerMove="{{ onTbGripMove }}" onPointerUp="{{ onTbGripUp }}" onPointerCancel="{{ onTbGripUp }}" style="{{ tbGripStyle }}">{{ tbGripDots }}</span>
+      </sc-if>
+      <button onClick="{{ onUndo }}" aria-disabled="{{ undoDisabled }}" aria-label="실행 취소" style="{{ undoStyle }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></button>
+      <button onClick="{{ onRedo }}" aria-disabled="{{ redoDisabled }}" aria-label="다시 실행" style="{{ redoStyle }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg></button>
+      <span style="{{ tbDividerStyle }}"></span>
+      <button onClick="{{ openFields }}" aria-label="항목 목록" style="{{ miniListBtn }}"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.6" cy="6" r="1.1"/><circle cx="3.6" cy="12" r="1.1"/><circle cx="3.6" cy="18" r="1.1"/></svg></button>
+      <button onClick="{{ openZoom }}" aria-label="최대화" style="{{ miniBtn }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
+      <span style="{{ tbDividerStyle }}"></span>
+      <button onClick="{{ onTbGear }}" aria-label="툴바 배치 설정" style="{{ tbGearStyle }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <button onClick="{{ onTbHide }}" aria-label="툴바 감추기" style="{{ miniBtn }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 8 10 8a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.53 13.53 0 0 0 2 12s3 8 10 8a9.74 9.74 0 0 0 5.39-1.61"/><path d="M2 2l20 20"/><path d="M9.53 9.53a3 3 0 0 0 4.24 4.24"/></svg></button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ tbMiniShown }}" hint-placeholder-val="{{ false }}">
+    <button onPointerDown="{{ onTbMiniDown }}" onPointerMove="{{ onTbMiniMove }}" onPointerUp="{{ onTbMiniUp }}" onPointerCancel="{{ onTbMiniUp }}" aria-label="툴바 표시" style="{{ tbMiniStyle }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+  </sc-if>
+
+  <div onClick="{{ onTbMenuBackdrop }}" style="{{ tbMenuBackdropStyle }}"></div>
+  <div style="{{ tbMenuStyle }}">
+    <div style="font-size:10px;font-weight:800;letter-spacing:.05em;color:{{ C.fgFaint }};padding:2px 6px 6px;">툴바 배치 선택</div>
+    <sc-for list="{{ tbModeItems }}" as="m" hint-placeholder-count="4">
+      <button onClick="{{ m.tap }}" style="{{ m.style }}"><span style="{{ m.dot }}"></span>{{ m.label }}</button>
+    </sc-for>
+  </div>
+
+  <!-- ===== STYLING DOCK (2a) — dark immersive rail + detail, sits just under the poster ===== -->
+  <div style="{{ dockStyle }}">
+    <div style="{{ railRowStyle }}">
+      <sc-for list="{{ tools }}" as="t" hint-placeholder-count="4">
+        <button onClick="{{ t.tap }}" aria-label="{{ t.label }}" style="background:none;border:none;padding:2px;cursor:pointer;display:flex;flex-direction:column;align-items:center;">
+          <span style="{{ t.circle }}">{{ t.icon }}</span>
+          <span style="{{ t.labelStyle }}">{{ t.label }}</span>
+        </button>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{ dMood }}" hint-placeholder-val="{{ false }}">
+      <div class="scThin" style="{{ moodRowStyle }}">
+        <sc-for list="{{ moods }}" as="m" hint-placeholder-count="6">
+          <button onClick="{{ m.tap }}" style="flex:none;display:flex;flex-direction:column;align-items:center;gap:7px;background:none;border:none;cursor:pointer;padding:0;">
+            <span style="{{ m.thumbWrap }}">{{ m.thumb }}</span>
+            <span style="font-size:11px;font-weight:700;color:{{ m.labelColor }};">{{ m.name }}</span>
+          </button>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ dColortone }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:4px 16px 18px;display:flex;flex-direction:column;gap:14px;">
+        <sc-if value="{{ colorFree }}" hint-placeholder-val="{{ true }}">
+          <div class="scThin" style="display:flex;gap:12px;overflow-x:auto;padding:2px 0;">
+            <sc-for list="{{ inkColors }}" as="c" hint-placeholder-count="5">
+              <button onClick="{{ c.tap }}" aria-label="{{ c.name }}" style="background:none;border:none;cursor:pointer;padding:0;flex:none;"><span style="{{ c.dot }}"></span></button>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ dOpacity }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:4px 16px 20px;display:flex;flex-direction:column;gap:14px;">
+        <div style="display:flex;align-items:center;gap:11px;">
+          <span style="font-size:11.5px;color:rgba(255,255,255,.62);width:62px;flex-shrink:0;">포스터 밝기</span>
+          <input type="range" min="0" max="100" value="{{ posterBright }}" onInput="{{ onBright }}" style="flex:1;height:22px;accent-color:#B0423F;cursor:pointer;" />
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;color:#fff;width:34px;text-align:right;flex-shrink:0;">{{ brightLabel }}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:11px;">
+          <span style="font-size:11.5px;color:rgba(255,255,255,.62);width:62px;flex-shrink:0;">투명도</span>
+          <input type="range" min="0" max="100" value="{{ compOpacity }}" onInput="{{ onOpacity }}" style="flex:1;height:22px;accent-color:#B0423F;cursor:pointer;" />
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;color:#fff;width:34px;text-align:right;flex-shrink:0;">{{ opacityLabel }}</span>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ dTexture }}" hint-placeholder-val="{{ false }}">
+      <div class="scThin" style="{{ texRowStyle }}">
+        <sc-for list="{{ textures }}" as="t" hint-placeholder-count="8">
+          <button onClick="{{ t.tap }}" style="flex:none;display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:none;cursor:pointer;padding:0;">
+            <span style="{{ t.swWrap }}">{{ t.overlay }}</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:8.5px;color:{{ t.labelColor }};">{{ t.name }}</span>
+          </button>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+
+
+  <!-- ===== FLOATING INPUT-AID PANEL (KOBIS / rating) — fades in above keyboard, no slide (#8) ===== -->
+  <div ref="{{ setAidEl }}" style="{{ aidPanelBase }}">
+    <div style="border-radius:16px;overflow:hidden;background:{{ C.elevated }};border:1px solid {{ C.border }};box-shadow:0 14px 40px -14px rgba(0,0,0,.5);">
+      <sc-if value="{{ kobisShown }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:11px 12px;">
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;">
+            <span style="font-size:10px;font-weight:700;letter-spacing:.08em;color:#fff;background:#B0423F;padding:2px 7px;border-radius:5px;font-family:'JetBrains Mono',monospace;">KOBIS</span>
+            <span style="font-size:11.5px;color:{{ C.fgMuted }};">영화진흥위원회 검색 결과 · 눌러서 채우기</span>
+          </div>
+          <div class="scNoScroll" style="display:flex;flex-direction:column;gap:7px;max-height:150px;overflow-y:auto;">
+            <sc-for list="{{ kobisRows }}" as="r" hint-placeholder-count="2">
+              <button onClick="{{ r.tap }}" style="{{ r.rowStyle }}">
+                <span style="display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;text-align:left;">
+                  <span style="font-size:14px;font-weight:700;color:{{ C.fg }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.nm }}</span>
+                  <span style="font-size:11.5px;color:{{ C.fgMuted }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.sub }}</span>
+                </span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{ C.accent }}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M12 5v14M5 12h14"/></svg>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ showStars }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;justify-content:center;gap:12px;padding:14px 12px;">{{ starNode }}<span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:{{ C.fg }};">{{ ratingLabel }}</span></div>
+      </sc-if>
+    </div>
+  </div>
+
+  <!-- ===== KEYBOARD (keys only) ===== -->
+  <div ref="{{ setKbEl }}" style="{{ kbStyle }}">
+    <div style="flex:1;display:flex;flex-direction:column;gap:9px;padding:8px 5px 0;">
+      <div style="display:flex;gap:5px;justify-content:center;"><sc-for list="{{ kbRow1 }}" as="k" hint-placeholder-count="10"><span style="{{ keyStyle }}">{{ k }}</span></sc-for></div>
+      <div style="display:flex;gap:5px;justify-content:center;padding:0 16px;"><sc-for list="{{ kbRow2 }}" as="k" hint-placeholder-count="9"><span style="{{ keyStyle }}">{{ k }}</span></sc-for></div>
+      <div style="display:flex;gap:5px;justify-content:center;align-items:center;">
+        <span style="{{ keyActionStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg></span>
+        <sc-for list="{{ kbRow3 }}" as="k" hint-placeholder-count="7"><span style="{{ keyStyle }}">{{ k }}</span></sc-for>
+        <span style="{{ keyActionStyle }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a4 4 0 0 1 0 8h-1"/></svg></span>
+      </div>
+      <div style="display:flex;gap:5px;align-items:center;padding-bottom:calc(8px + env(safe-area-inset-bottom));">
+        <span style="{{ keyWideStyle }}">?123</span>
+        <span style="{{ keyIconStyle }}">{{ kbGlobeGlyph }}</span>
+        <span style="flex:1;height:42px;border-radius:6px;background:{{ keySpaceBg }};box-shadow:{{ keyShadow }};display:flex;align-items:center;justify-content:center;color:{{ C.fgMuted }};font-size:12px;"></span>
+        <button onClick="{{ nextField }}" style="width:76px;height:42px;border-radius:6px;border:none;background:#B0423F;color:#fff;font-size:13px;font-weight:700;box-shadow:{{ keyShadow }};cursor:pointer;">다음</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== LOGO SHEET ===== -->
+  <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:rgba(0,0,0,.42);z-index:57;opacity:{{ logoOverlayOpacity }};pointer-events:{{ logoPointer }};transition:opacity .26s ease;"></div>
+  <div style="position:absolute;left:0;right:0;bottom:0;background:{{ C.elevated }};z-index:58;border-radius:24px 24px 0 0;transform:{{ logoTransform }};transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:0 -10px 40px -12px rgba(0,0,0,.4);padding:20px 20px calc(22px + env(safe-area-inset-bottom));display:flex;flex-direction:column;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;">
+      <span style="font-size:16px;font-weight:700;">{{ logoSheetTitle }}</span>
+      <button onClick="{{ closeSheet }}" aria-label="닫기" style="width:32px;height:32px;border-radius:9px;border:1px solid {{ C.border }};background:{{ C.surface }};color:{{ C.fgMuted }};display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div style="align-self:center;position:relative;width:280px;height:172px;border-radius:12px;overflow:hidden;background:{{ cropStageBg }};touch-action:none;">
+      <div style="position:absolute;inset:0;background-image:url('{{ sampleLogo }}');background-size:cover;background-position:center;opacity:.4;"></div>
+      <div onPointerDown="{{ onCropDown }}" onPointerMove="{{ onCropMove }}" onPointerUp="{{ onCropUp }}" onPointerLeave="{{ onCropUp }}" style="position:absolute;left:{{ cropX }}px;top:{{ cropY }}px;width:{{ cropW }}px;height:{{ cropH }}px;cursor:move;overflow:hidden;box-shadow:0 0 0 2px #B0423F, 0 0 0 999px rgba(0,0,0,.4);border-radius:3px;">
+        <div style="position:absolute;background-image:url('{{ sampleLogo }}');background-size:280px 172px;background-position:-{{ cropX }}px -{{ cropY }}px;left:0;top:0;width:280px;height:172px;"></div>
+      </div>
+      <div onPointerDown="{{ onResizeDown }}" style="position:absolute;left:{{ cropHandleX }}px;top:{{ cropHandleY }}px;width:22px;height:22px;transform:translate(-50%,-50%);cursor:nwse-resize;display:flex;align-items:center;justify-content:center;z-index:3;"><span style="width:13px;height:13px;border-radius:4px;background:#fff;box-shadow:0 0 0 2px #B0423F;"></span></div>
+    </div>
+    <div style="display:flex;gap:10px;padding-top:16px;">
+      <button onClick="{{ removeLogo }}" style="height:50px;padding:0 18px;border-radius:14px;border:1px solid {{ C.border }};background:{{ C.surface }};color:{{ C.fgMuted }};font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>제거</button>
+      <button onClick="{{ applyLogo }}" style="flex:1;height:50px;border-radius:14px;border:none;background:{{ doneGrad }};color:#fff;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 6px 18px -8px rgba(176,66,63,.55);">티켓에 적용</button>
+    </div>
+  </div>
+
+  <!-- ===== SETTINGS / MENU SHEET (OCR removed → moved to 항목) ===== -->
+  <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:57;opacity:{{ settingsOverlayOpacity }};pointer-events:{{ settingsPointer }};transition:opacity .26s ease;"></div>
+  <div style="position:absolute;left:0;right:0;bottom:0;background:{{ C.surface }};z-index:58;border-radius:24px 24px 0 0;transform:{{ settingsTransform }};transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:0 -10px 40px -12px rgba(0,0,0,.4);padding-bottom:calc(22px + env(safe-area-inset-bottom));">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 16px 12px;">
+      <span style="font-size:16px;font-weight:700;color:{{ C.fg }};">편집 메뉴</span>
+      <button onClick="{{ closeSheet }}" aria-label="닫기" style="width:32px;height:32px;border-radius:9px;border:1px solid {{ C.border }};background:{{ C.elevated }};color:{{ C.fgMuted }};display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div style="padding:0 16px;display:flex;flex-direction:column;gap:12px;">
+      <button onClick="{{ posterReplace }}" style="{{ posterMenuStyle }}">
+        <span style="display:flex;align-items:center;gap:11px;font-size:14px;font-weight:500;color:{{ C.fg }};"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{ C.fgMuted }}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M8 8l4-4 4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>포스터 다시 올리기</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{ C.fgFaint }}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+      <div style="border:1px solid {{ C.border }};border-radius:14px;background:{{ C.elevated }};overflow:hidden;">
+        <div style="height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;">
+          <span style="display:flex;align-items:center;gap:11px;font-size:14px;font-weight:500;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{ C.fgMuted }}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>다크 모드</span>
+          <button onClick="{{ toggleTheme }}" role="switch" aria-checked="{{ darkOn }}" style="width:46px;height:27px;border-radius:999px;border:none;background:{{ darkTrack }};position:relative;cursor:pointer;transition:background .2s;"><span style="position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.35);transform:{{ darkKnob }};transition:transform .2s;"></span></button>
+        </div>
+        <div style="height:1px;background:{{ C.border }};margin:0 16px;"></div>
+        <div style="height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;">
+          <span style="display:flex;align-items:center;gap:11px;font-size:14px;font-weight:500;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{ C.fgMuted }}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>빈 항목 미리보기</span>
+          <button onClick="{{ toggleGhost }}" role="switch" aria-checked="{{ ghostOn }}" style="width:46px;height:27px;border-radius:999px;border:none;background:{{ ghostTrack }};position:relative;cursor:pointer;transition:background .2s;"><span style="position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.35);transform:{{ ghostKnob }};transition:transform .2s;"></span></button>
+        </div>
+        <div style="height:1px;background:{{ C.border }};margin:0 16px;"></div>
+        <div style="height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;">
+          <span style="display:flex;align-items:center;gap:11px;font-size:14px;font-weight:500;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{ C.fgMuted }}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>목록 반투명</span>
+          <button onClick="{{ toggleListGlass }}" role="switch" aria-checked="{{ listGlassOn }}" style="width:46px;height:27px;border-radius:999px;border:none;background:{{ listGlassTrack }};position:relative;cursor:pointer;transition:background .2s;"><span style="position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.35);transform:{{ listGlassKnob }};transition:transform .2s;"></span></button>
+        </div>
+      </div>
+      <div style="border:1px solid {{ C.border }};border-radius:14px;background:{{ C.elevated }};overflow:hidden;">
+        <button onClick="{{ saveDraft }}" style="width:100%;height:56px;display:flex;align-items:center;gap:11px;padding:0 16px;background:none;border:none;cursor:pointer;text-align:left;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{ C.fgMuted }}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+          <span style="display:flex;flex-direction:column;gap:1px;flex:1;min-width:0;"><span style="font-size:14px;font-weight:500;color:{{ C.fg }};">임시저장</span></span>
+        </button>
+        <div style="height:1px;background:{{ C.border }};margin:0 16px;"></div>
+        <button onClick="{{ clearReset }}" style="{{ clearRowStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/></svg>{{ clearLabel }}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FULLSCREEN ZOOM / MAXIMIZE (landscape rotates 90°) ===== -->
+  <div style="position:absolute;inset:0;z-index:74;visibility:{{ zoomVisibility }};background:{{ zoomBg }};pointer-events:{{ zoomPointer }};transition:background .3s ease;touch-action:none;" onClick="{{ zoomBackdropClick }}" onPointerDown="{{ onZPointerDown }}" onPointerMove="{{ onZPointerMove }}" onPointerUp="{{ onZPointerUp }}" onPointerCancel="{{ onZPointerUp }}" onWheel="{{ onZWheel }}">
+    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:40px 10px;">
+      <div onClick="{{ stopZoomClick }}" style="{{ zoomStageStyle }}">
+        <dc-import name="FilmeTicket-v4" data="{{ f }}" mood="{{ mood }}" tint="{{ tint }}" texture="{{ texture }}" poster-bright="{{ posterBright }}" comp-opacity="{{ compOpacity }}" show-ghosts="{{ false }}" logo-img="{{ logoImg }}" format-logo-img="{{ formatLogoImg }}" interactive="{{ false }}" style="display:block;width:100%;height:100%;" hint-size="330px,507px"></dc-import>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== RESULT SCREEN ===== -->
+  <div style="position:absolute;inset:0;z-index:70;background:{{ resultBg }};transform:{{ resultTransform }};display:flex;flex-direction:column;overflow:hidden;">
+    <div style="position:absolute;top:-36px;right:-46px;opacity:.05;pointer-events:none;transform:rotate(-16deg);"><dc-import name="Mark-ClapTix" ink="{{ C.fg }}" accent="{{ C.fg }}" style="width:250px;height:250px;display:block;" hint-size="250px,250px"></dc-import></div>
+    <div style="height:46px;"></div>
+    <div style="height:54px;display:flex;align-items:center;padding:0 16px;position:relative;z-index:2;">
+      <button onClick="{{ goEdit }}" aria-label="뒤로" style="width:42px;height:42px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#F3EFEA;display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 20px;position:relative;z-index:2;">
+      <div onClick="{{ openZoom }}" style="position:relative;width:{{ resultW }};max-height:80vh;border-radius:16px;overflow:hidden;box-shadow:0 30px 68px -22px rgba(0,0,0,.62);aspect-ratio:{{ ticketAspect }};cursor:zoom-in;transform:{{ printTicketTransform }};transition:transform .2s ease;">
+        <dc-import name="FilmeTicket-v4" data="{{ f }}" mood="{{ mood }}" tint="{{ tint }}" texture="{{ texture }}" poster-bright="{{ posterBright }}" comp-opacity="{{ compOpacity }}" show-ghosts="{{ false }}" logo-img="{{ logoImg }}" format-logo-img="{{ formatLogoImg }}" interactive="{{ false }}" style="display:block;width:100%;height:100%;" hint-size="330px,507px"></dc-import>
+        <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none;opacity:{{ printOverlayOpacity }};">
+          <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.34),rgba(0,0,0,0) 22%);"></div>
+          <div style="{{ printScanStyle }}"></div>
+        </div>
+      </div>
+      <div style="margin-top:16px;display:flex;align-items:center;gap:7px;height:22px;">
+        <sc-if value="{{ printBusy }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;color:{{ C.accent }};text-transform:uppercase;">인쇄 중<span style="display:inline-flex;gap:3px;"><span style="width:4px;height:4px;border-radius:999px;background:{{ C.accent }};"></span><span style="width:4px;height:4px;border-radius:999px;background:{{ C.accent }};opacity:.55;"></span><span style="width:4px;height:4px;border-radius:999px;background:{{ C.accent }};opacity:.28;"></span></span></span></sc-if>
+        <sc-if value="{{ printIdle }}" hint-placeholder-val="{{ true }}"><span style="display:flex;align-items:center;gap:7px;"><span style="font-family:'Newsreader',serif;font-style:italic;font-size:14px;color:rgba(243,239,234,.55);">made with</span><dc-import name="Wordmark-Filme" size="18" ink="#D9D3C8" accent="#B0423F" me-emph="true" tittle="dot" style="display:block;" hint-size="76px,22px"></dc-import></span></sc-if>
+      </div>
+    </div>
+    <div style="padding:0 20px calc(28px + env(safe-area-inset-bottom));position:relative;z-index:2;">
+      <button onClick="{{ downloadFlash }}" style="{{ savePrimaryStyle }}">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        사진 저장
+      </button>
+      <div style="height:1px;background:rgba(194,166,122,.28);margin:14px 0 2px;"></div>
+      <div style="display:flex;gap:10px;margin-top:10px;">
+        <button onClick="{{ openPermalink }}" style="{{ subActionStyle }}">
+          <span style="display:flex;color:{{ subIconColor }};"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg></span>
+          {{ linkBtnLabel }}
+        </button>
+        <button onClick="{{ shareFlash }}" style="{{ subActionStyle }}">
+          <span style="display:flex;color:{{ subIconColor }};"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg></span>
+          공유
+        </button>
+      </div>
+      <sc-if value="{{ linkOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:10px;margin-top:10px;padding:5px 5px 5px 15px;border-radius:14px;border:1.5px solid {{ permaFieldBorder }};background:rgba(255,255,255,.08);transition:border .2s;">
+          <span style="flex:1;min-width:0;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:#F3EFEA;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ permaUrl }}</span>
+          <button onClick="{{ copyLink }}" style="height:42px;padding:0 16px;border-radius:10px;border:none;background:{{ copyBtnBg }};color:{{ copyBtnColor }};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:6px;cursor:pointer;flex-shrink:0;transition:all .2s;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ copyIcon }}"/></svg>{{ copyLabel }}</button>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <!-- toast -->
+  <div style="position:absolute;left:50%;bottom:120px;transform:translateX(-50%) translateY({{ toastY }});opacity:{{ toastOpacity }};transition:opacity .25s, transform .25s;z-index:82;background:{{ C.fg }};color:{{ C.bg }};font-size:13px;font-weight:500;padding:11px 18px;border-radius:999px;box-shadow:0 8px 24px -6px rgba(0,0,0,.4);pointer-events:none;white-space:nowrap;">{{ toast }}</div>
+
+  <!-- save success badge -->
+  <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:83;opacity:{{ savedBadgeOpacity }};pointer-events:none;{{ savedBadgeAnim }}">
+    <div style="width:96px;height:96px;border-radius:28px;background:{{ C.elevated }};box-shadow:0 20px 50px -18px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;border:1px solid {{ C.border }};">
+      <span style="width:56px;height:56px;border-radius:999px;background:{{ doneGrad }};display:flex;align-items:center;justify-content:center;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+    </div>
+  </div>
+
+  <!-- system nav indicator -->
+  <sc-if value="{{ isIOS }}" hint-placeholder-val="{{ true }}"><div style="position:absolute;left:50%;bottom:8px;transform:translateX(-50%);width:134px;height:5px;border-radius:999px;background:{{ C.fg }};opacity:.42;z-index:88;pointer-events:none;"></div></sc-if>
+  <sc-if value="{{ isAndroid }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:50%;bottom:9px;transform:translateX(-50%);width:110px;height:4px;border-radius:999px;background:{{ C.fg }};opacity:.38;z-index:88;pointer-events:none;"></div></sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;platform&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;ios&quot;,&quot;android&quot;],&quot;default&quot;:&quot;ios&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;demo&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = {
+    theme:'light', screen:'edit', hasPoster:false, designTool:null, sheet:null,
+    fieldsOpen:false, listGlass:true, clearArm:false, draftAt:0, linkOpen:false,
+    editKey:null, kobisChosen:false,
+    zoomOpen:false, zoomScale:1, zoomTx:0, zoomTy:0, zGesturing:false, toast:'', suppressToast:false,
+    printing:false, savedBadge:false,
+    ghostOn:true, hiddenKeys:[],
+    mood:'minimal', tint:'#FFFFFF', texture:'original', posterBright:55, compOpacity:100,
+    logoImg:'', formatLogoImg:'', logoTarget:'chain',
+    cropX:74, cropY:56, cropW:132, cropH:60, lift:0, linkCopied:false,
+    fldTop:null, fldLeft:null, fldW:null, fldH:null,
+    hist:[], histAt:0,
+    f:{ title:'화양연화', titleOg:'IN THE MOOD FOR LOVE', actors:'양조위, 장만옥', watchDate:'2026.07.11', watchTime:'19:40', theater:'CGV 용산아이파크몰', screen:'2관', seat:'H12', runtime:'98분', rating:'4.5', releaseDate:'2000.10.21', signature:'', chainLabel:'', formatLabel:'' },
+    tbOrient:'v', tbPlace:'fixed', tbX:null, tbY:null, tbDragging:false, tbMenuOpen:false, tbHidden:false,
+  };
+  _pid='HY7k2x';
+  REQUIRED=['title'];
+  editOrder=['title','titleOg','releaseDate','actors','rating','watchDate','watchTime','theater','screen','seat','runtime','signature','chain','format'];
+  META={
+    title:{label:'제목'}, titleOg:{label:'원제'}, releaseDate:{label:'개봉일'}, actors:{label:'출연'}, rating:{label:'평점'},
+    watchDate:{label:'관람일'}, watchTime:{label:'관람 시간'}, theater:{label:'극장'}, screen:{label:'상영관'}, seat:{label:'좌석'},
+    runtime:{label:'러닝타임'}, signature:{label:'서명'}, chain:{label:'극장 로고'}, format:{label:'포맷 로고'},
+  };
+  KOBIS=[
+    {nm:'화양연화', og:'In the Mood for Love', yr:'2000', nat:'홍콩', genre:'멜로·로맨스', open:'2000.10.21', actors:'양조위, 장만옥', runtime:'98분'},
+    {nm:'화양연화 리마스터', og:'In the Mood for Love (4K)', yr:'2021', nat:'홍콩', genre:'멜로·로맨스', open:'2021.05.20', actors:'양조위, 장만옥', runtime:'99분'},
+    {nm:'해피 투게더', og:'Happy Together', yr:'1997', nat:'홍콩', genre:'멜로·드라마', open:'1998.05.16', actors:'양조위, 장국영', runtime:'96분'},
+  ];
+  SAMPLE_LOGO="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='280'%20height='172'%3E%3Crect%20width='280'%20height='172'%20fill='%23241C22'/%3E%3Ccircle%20cx='78'%20cy='86'%20r='34'%20fill='none'%20stroke='%23F6F1E7'%20stroke-width='8'/%3E%3Ccircle%20cx='78'%20cy='86'%20r='9'%20fill='%23B0423F'/%3E%3Crect%20x='134'%20y='66'%20width='110'%20height='13'%20rx='6'%20fill='%23F6F1E7'/%3E%3Crect%20x='134'%20y='92'%20width='74'%20height='13'%20rx='6'%20fill='%23B0423F'/%3E%3C/svg%3E";
+  SAMPLE_FMT="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='260'%20height='96'%3E%3Crect%20x='6'%20y='20'%20width='16'%20height='56'%20rx='3'%20fill='%23F6F1E7'/%3E%3Crect%20x='30'%20y='20'%20width='16'%20height='56'%20rx='3'%20fill='%23F6F1E7'/%3E%3Cpath%20d='M60%2076V20l22%2030%2022-30v56'%20fill='none'%20stroke='%23F6F1E7'%20stroke-width='14'%20stroke-linejoin='round'/%3E%3Crect%20x='120'%20y='20'%20width='16'%20height='56'%20rx='3'%20fill='%23B0423F'/%3E%3Ctext%20x='146'%20y='70'%20font-family='Arial%20Black,Arial'%20font-weight='900'%20font-size='58'%20fill='%23F6F1E7'%3ELAB%3C/text%3E%3C/svg%3E";
+
+  flash(m){ if(this.state.suppressToast) return; this.setState({toast:m}); clearTimeout(this._t); this._t=setTimeout(()=>this.setState({toast:''}),2200); }
+  isReq(k){ return this.REQUIRED.indexOf(k)>=0; }
+  valKeyFor(k){ return k==='chain'?'chainLabel':k==='format'?'formatLabel':k; }
+  _fieldOffset(k){ const wr=this._ticketEl; if(!wr||!k) return null; const el=wr.querySelector('[data-fkey~="'+k+'"]'); if(!el) return null; const wb=wr.getBoundingClientRect(), eb=el.getBoundingClientRect(); if(!eb.width&&!eb.height) return null; const sx=wb.width/(wr.offsetWidth||wb.width||1), sy=wb.height/(wr.offsetHeight||wb.height||1); return {top:(eb.top-wb.top)/sy, left:(eb.left-wb.left)/sx, w:eb.width/sx, h:eb.height/sy}; }
+  _liftFor(k){ const o=this._fieldOffset(k); if(!o) return 0; const c=20, center=c+o.top+o.h/2; return Math.min(0,Math.round(300-center)); }
+  _afterField(k){ const run=()=>{ if(this._ekey!==k) return; this.setState({lift:this._liftFor(k)}); this._place(); }; requestAnimationFrame(()=>requestAnimationFrame(run)); clearTimeout(this._mt1); clearTimeout(this._mt2); clearTimeout(this._mt3); this._mt1=setTimeout(run,120); this._mt2=setTimeout(run,260); this._mt3=setTimeout(run,440); }
+  // floating toolbar module: placement estimate / default position / clamp / apply
+  _tbEst(orient){
+    const n=6, btn=31, gap=2, div=9;
+    const main=8+n*btn+(n-1)*gap+2*div;
+    return orient==='h' ? {w:main,h:39} : {w:39,h:main};
+  }
+  _tbDefPos(orient, place){
+    const e=this._tbEst(orient), top=100, H=744, W=390;
+    if(orient==='h'&&place==='fixed') return {x:Math.round((W-e.w)/2), y:top+14};
+    if(orient==='v'&&place==='fixed') return {x:14, y:Math.max(top+14, Math.round(top+(H-e.h)/2)-130)};
+    if(orient==='h') return {x:Math.round((W-e.w)/2), y:top+70};
+    return {x:W-e.w-14, y:top+70};
+  }
+  _tbClamp(x,y,orient){
+    const e=this._tbEst(orient);
+    return {x:Math.max(8,Math.min(390-e.w-8,x)), y:Math.max(104,Math.min(830-e.h,y))};
+  }
+  _tbApplyMode(orient,place){
+    const p=this._tbDefPos(orient,place);
+    this.setState({tbOrient:orient, tbPlace:place, tbX:p.x, tbY:p.y, tbMenuOpen:false});
+  }
+  // position the in-place input + floating field toolbar over the live field, and the aid panel above the keyboard.
+  // called every rAF frame AND from field-change timers + componentDidUpdate, so it works even if rAF is throttled.
+  _place(){
+    const k=this._ekey, wr=this._ticketEl, w=this._inpWrap, bar=this._barWrap;
+    let l=0,t=0,ww=0,hh=0,has=false;
+    if(k&&wr){ const el=wr.querySelector('[data-fkey~="'+k+'"]'); if(el){ const wb=wr.getBoundingClientRect(), eb=el.getBoundingClientRect(); if(eb.width||eb.height){ const sx=wb.width/(wr.offsetWidth||wb.width||1), sy=wb.height/(wr.offsetHeight||wb.height||1); l=(eb.left-wb.left)/sx; t=(eb.top-wb.top)/sy; ww=eb.width/sx; hh=eb.height/sy; has=true; } } }
+    if(w){ if(has){ w.style.left=(l-8)+'px'; w.style.top=(t-6)+'px'; w.style.width=(ww+16)+'px'; w.style.height=(hh+12)+'px'; w.style.opacity='1'; w.style.pointerEvents='auto'; } else { w.style.opacity='0'; w.style.pointerEvents='none'; } }
+    if(bar){ if(has){ const bw=bar.offsetWidth||170, bh=bar.offsetHeight||40, tw=wr.offsetWidth||300, offX=(390-tw)/2, lift=this.state.lift||0; let bl=l+ww/2-bw/2; const minL=8-offX, maxL=382-offX-bw; if(bl<minL)bl=minL; if(bl>maxL)bl=maxL; let bt=t-bh-10; if((20+lift+bt)<52) bt=t+hh+10; bar.style.left=bl+'px'; bar.style.top=bt+'px'; bar.style.opacity='1'; bar.style.pointerEvents='auto'; } else { bar.style.opacity='0'; bar.style.pointerEvents='none'; } }
+    const aid=this._aidEl, kb=this._kbEl;
+    if(aid){ if(this._aidShown && kb){ aid.style.bottom=(kb.offsetHeight+8)+'px'; aid.style.opacity='1'; aid.style.pointerEvents='auto'; } else { aid.style.opacity='0'; aid.style.pointerEvents='none'; } }
+  }
+  _tick(){ this._place(); this._raf=requestAnimationFrame(this._tick.bind(this)); }
+  // only cycle through fields that actually render in the current mood
+  _navOrder(){ const wr=this._ticketEl; if(!wr) return this.editOrder.slice(); const list=this.editOrder.filter(k=>{ const el=wr.querySelector('[data-fkey~="'+k+'"]'); if(!el) return false; const b=el.getBoundingClientRect(); return (b.width>0||b.height>0); }); return list.length?list:this.editOrder.slice(); }
+  openF(k){ if(k==='poster'){ this.setState({sheet:'settings'}); } else { this._ekey=k; this.setState({editKey:k, sheet:null, kobisChosen:false, fldTop:null}); this._afterField(k); } }
+
+  // undo / redo history
+  _snapObj(){ const s=this.state; return {f:s.f,mood:s.mood,tint:s.tint,texture:s.texture,posterBright:s.posterBright,compOpacity:s.compOpacity,hiddenKeys:s.hiddenKeys,logoImg:s.logoImg,formatLogoImg:s.formatLogoImg}; }
+  _snap(){ return JSON.stringify(this._snapObj()); }
+  _goHist(at){ const o=JSON.parse(this.state.hist[at]); this._restoring=true; this._ekey=null; clearTimeout(this._histT); this.setState(Object.assign({histAt:at, editKey:null, lift:0, fldTop:null}, o), ()=>{ this._lastSnap=this._snap(); this._restoring=false; }); }
+  undo(){ if(this.state.histAt<=0) return; this._goHist(this.state.histAt-1); this.flash('되돌렸어요'); }
+  redo(){ if(this.state.histAt>=this.state.hist.length-1) return; this._goHist(this.state.histAt+1); this.flash('다시 실행했어요'); }
+  pickKobis(m){ this.setState(st=>({ f:{...st.f, title:m.nm, titleOg:m.og, releaseDate:m.open, actors:m.actors, runtime:m.runtime}, kobisChosen:true })); this.flash('KOBIS에서 정보를 채웠어요'); }
+
+  renderVals(){
+    const s=this.state, dark=s.theme==='dark';
+    const platform=(this.props&&this.props.platform)==='android'?'android':'ios';
+    const android=platform==='android', ios=!android;
+    const C = dark
+      ? { bg:'#0E1012', surface:'#161A1C', elevated:'#1E2326', fg:'#E8EAED', fgMuted:'#9AA1AC', fgFaint:'#6B7280', border:'#272D30', borderStrong:'#353D41', accent:'#C45550', accentHover:'#D46460', accentSoft:'rgba(196,85,80,.16)', danger:'#E5675F', ok:'#4FA98A', okSoft:'rgba(79,169,138,.18)' }
+      : { bg:'#F4F5F7', surface:'#F9FAFB', elevated:'#FFFFFF', fg:'#14171A', fgMuted:'#6B7280', fgFaint:'#9AA1AC', border:'#E4E6EA', borderStrong:'#CDD1D8', accent:'#B0423F', accentHover:'#9A3936', accentSoft:'rgba(176,66,63,.10)', danger:'#C0392F', ok:'#2E9E7B', okSoft:'rgba(46,158,123,.12)' };
+    const R=React.createElement;
+    const rawSvg=(html)=>R('span',{style:{display:'flex'},dangerouslySetInnerHTML:{__html:html}});
+    const doneGrad=`linear-gradient(135deg, ${C.accentHover}, ${C.accent})`;
+    const accentGhost = dark?'rgba(196,85,80,.24)':'rgba(176,66,63,.16)';
+    const fabShadow = dark?'0 8px 20px -8px rgba(0,0,0,.7)':'0 8px 20px -8px rgba(0,0,0,.35)';
+
+    const editing=s.editKey!==null, result=s.screen==='result';
+    const hasPoster=s.hasPoster, sheet=s.sheet, zoomOpen=s.zoomOpen;
+    const land=s.mood==='editorial'||s.mood==='35mm-landscape';
+    const ticketAspect = land ? '1477/960' : '960/1477';
+    const ek=s.editKey, meta = ek ? this.META[ek] : {label:''};
+    const tool=s.designTool;
+
+    const chromeShown = s.screen==='edit' && hasPoster && !editing && !sheet && !zoomOpen;
+    const ticketW = land ? (tool?340:362) : (tool?308:330);
+    const ticketH = Math.round(ticketW * (land ? 960/1477 : 1477/960));
+    const stageTop = 120; // canvas(100) + ticket top(20)
+    const railTop = stageTop + ticketH + 16;
+    const railH = 92;
+    const detailMax = Math.max(120, 844 - railTop - railH - 24);
+    const liftTransform = editing ? `translateX(-50%) translateY(${s.lift}px) scale(1.08)` : `translateX(-50%) translateY(0) scale(1)`;
+    const ghostEff = s.ghostOn || editing;
+
+    // 다음 gating
+    const titleFilled=(s.f.title||'').trim()!=='';
+    const nextDisabled = !hasPoster || !titleFilled;
+    const nextShown = chromeShown && !s.fieldsOpen;
+    const miniShown = s.screen==='edit' && hasPoster && !zoomOpen && !sheet;
+    const menuBtnStyle = `width:38px;height:38px;border-radius:${android?999:11}px;border:none;background:none;color:${hasPoster?'#F3EFEA':C.fg};display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;`;
+
+    // undo / redo + mini toolbar (top app bar)
+    const canUndo = s.histAt>0, canRedo = s.histAt < (s.hist.length-1);
+    const histBtn=(on)=>`width:31px;height:31px;border-radius:8px;border:none;background:none;color:${on?C.fg:C.fgFaint};display:flex;align-items:center;justify-content:center;cursor:${on?'pointer':'default'};transition:color .15s;`;
+    const miniToolbarStyle=`display:${miniShown?'flex':'none'};align-items:center;gap:1px;padding:2px;border-radius:11px;background:${C.surface};border:1px solid ${C.border};box-shadow:${fabShadow};`;
+    const miniBtn=`width:31px;height:31px;border-radius:8px;border:none;background:none;color:${C.fgMuted};display:flex;align-items:center;justify-content:center;cursor:pointer;`;
+    const miniListBtn=`width:31px;height:31px;border-radius:8px;border:none;background:${s.fieldsOpen?C.accentSoft:'none'};color:${s.fieldsOpen?C.accent:C.fgMuted};display:flex;align-items:center;justify-content:center;cursor:pointer;`;
+
+    // rating stars
+    const ratingNum = parseFloat(s.f.rating)||0;
+    const ratingLabel = ratingNum.toFixed(1)+' / 5.0';
+    const showStars = ek==='rating';
+    const starGlyph=(px,color)=>R('svg',{width:px,height:px,viewBox:'0 0 24 24',fill:color,style:{display:'block'}},R('path',{d:'M12 2.6l2.85 6.02 6.6.82-4.86 4.5 1.25 6.53L12 18.7 6.16 20.99l1.25-6.53L2.55 9.44l6.6-.82z'}));
+    const setRating=(v)=>this.setState(st=>({f:{...st.f, rating:v.toFixed(1)}}));
+    const starNode = R('span',{style:{display:'inline-flex',gap:5,alignItems:'center'}}, [1,2,3,4,5].map(i=>{
+      const full=ratingNum>=i, half=!full&&ratingNum>=i-0.5;
+      return R('span',{key:i,style:{position:'relative',width:30,height:30,display:'inline-block',cursor:'pointer'}},
+        starGlyph(30,C.borderStrong),
+        R('span',{style:{position:'absolute',left:0,top:0,height:30,width: full?30:(half?15:0),overflow:'hidden'}}, starGlyph(30,'#E0A33A')),
+        R('span',{onClick:()=>setRating(i-0.5),style:{position:'absolute',left:0,top:0,width:15,height:30,zIndex:2}}),
+        R('span',{onClick:()=>setRating(i),style:{position:'absolute',right:0,top:0,width:15,height:30,zIndex:2}}));
+    }));
+
+    // styling dock (2a): dark immersive rail — circular icon + label, sized for real product touch targets
+    const toolIcon={
+      mood:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.4"/><circle cx="8.4" cy="9.4" r="1.7"/><path d="m21 15.5-4.5-4.5L5 20"/></svg>',
+      colortone:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="9" cy="12" r="5.4"/><circle cx="15" cy="12" r="5.4"/></svg>',
+      texture:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 20 20 4M4 14 14 4M10 20 20 10"/></svg>',
+      opacity:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg>',
+    };
+    const toolDefs=[['mood','무드'],['colortone','컬러·톤'],['texture','텍스처'],['opacity','투명도']];
+    const tools=toolDefs.map(([id,label])=>{ const on=tool===id; return {
+      label, icon:rawSvg(toolIcon[id]),
+      tap:()=>this.setState(st=>({designTool: st.designTool===id?null:id, fieldsOpen:false, tbMenuOpen:false})),
+      circle:`width:40px;height:40px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:${on?'#fff':'rgba(255,255,255,.14)'};color:${on?C.accent:'#fff'};box-shadow:${on?'0 4px 14px -6px rgba(0,0,0,.5)':'none'};transition:all .16s;`,
+      labelStyle:`font-size:10px;font-weight:${on?700:600};color:${on?'#fff':'rgba(255,255,255,.6)'};margin-top:6px;`,
+    }; });
+
+    // mood cards
+    const miniPoster='radial-gradient(120% 90% at 68% 14%,rgba(224,163,58,.5),transparent 46%),linear-gradient(178deg,#33404e,#212c39 45%,#0b0f14)';
+    const P=(st)=>R('span',{style:Object.assign({position:'absolute'},st)});
+    const thumbFor=(id)=>{ const common={position:'absolute',inset:0};
+      if(id==='minimal') return R('span',{style:common},R('span',{style:{position:'absolute',inset:0,background:miniPoster}}),R('span',{style:{position:'absolute',left:0,right:0,bottom:0,height:'46%',background:'linear-gradient(180deg,transparent,rgba(0,0,0,.9))'}}),P({left:7,bottom:18,width:'55%',height:6,background:'#fff',borderRadius:2}),P({left:7,bottom:10,width:'40%',height:4,background:'rgba(255,255,255,.6)',borderRadius:2}));
+      if(id==='criterion') return R('span',{style:common},R('span',{style:{position:'absolute',inset:0,background:miniPoster}}),P({left:0,top:0,bottom:0,width:12,background:'rgba(0,0,0,.75)'}),P({left:20,top:'42%',right:7,height:7,background:'#fff',borderRadius:2}),P({left:20,top:'60%',width:'40%',height:4,background:'rgba(255,255,255,.6)',borderRadius:2}));
+      if(id==='35mm') return R('span',{style:common},P({left:0,right:0,top:0,height:8,background:'#0a0a0a'}),P({left:0,right:0,bottom:0,height:8,background:'#0a0a0a'}),R('span',{style:{position:'absolute',top:8,bottom:8,left:0,right:0,background:miniPoster}}),P({left:7,bottom:14,width:'50%',height:6,background:'#f1ead9',borderRadius:2}),P({left:7,bottom:24,width:20,height:3,background:'#E0A33A'}));
+      if(id==='stub') return R('span',{style:common},R('span',{style:{position:'absolute',top:0,left:0,right:0,height:'50%',background:miniPoster}}),P({top:'50%',left:0,right:0,bottom:0,background:'#f4ede0'}),P({top:'50%',left:0,right:0,height:3,background:'linear-gradient(90deg,#c9baf7,#b7e3f8,#f7e2b3)'}),P({left:7,top:'62%',width:'55%',height:6,background:'#1a1612',borderRadius:2}),P({left:7,top:'80%',width:18,height:12,background:'#1a1612',borderRadius:2}));
+      if(id==='editorial') return R('span',{style:common},P({left:0,top:0,bottom:0,width:'42%',background:miniPoster}),P({left:'42%',top:0,bottom:0,right:0,background:'#f4ede0'}),P({left:'42%',top:0,bottom:0,width:3,background:'#A8312A'}),P({left:'50%',top:'28%',right:7,height:6,background:'#1a1612',borderRadius:2}),P({left:'50%',top:'50%',width:'30%',height:4,background:'#6f6347',borderRadius:2}));
+      return R('span',{style:common},P({left:0,right:0,top:0,height:7,background:'#0a0a0a'}),P({left:0,right:0,bottom:0,height:7,background:'#0a0a0a'}),P({left:0,top:7,bottom:7,width:'52%',background:miniPoster}),P({left:'52%',top:7,bottom:7,right:0,background:'#070707'}),P({left:'58%',top:'36%',right:7,height:6,background:'#f1ead9',borderRadius:2}),P({left:'58%',top:'22%',width:14,height:3,background:'#E0A33A'}));
+    };
+    const moodDefs=[['minimal','미니멀'],['criterion','크라이테리언'],['35mm','35mm'],['stub','스텁'],['editorial','에디토리얼'],['35mm-landscape','35mm 와이드']];
+    const moods=moodDefs.map(([id,name])=>{ const on=s.mood===id; return { name, tap:()=>this.setState({mood:id}), thumb:thumbFor(id), labelColor:on?'#fff':'rgba(255,255,255,.55)',
+      thumbWrap:`width:56px;height:74px;border-radius:11px;overflow:hidden;position:relative;background:#0a0a0a;border:2px solid ${on?C.accent:'rgba(255,255,255,.18)'};box-shadow:${on?('0 0 0 2px '+C.accent):'none'};display:block;` }; });
+
+    const colorLocked = s.mood==='35mm'||s.mood==='35mm-landscape';
+    const inkDefs=[['크림','#F6F1E7'],['화이트','#FFFFFF'],['골드','#E5B469'],['로즈','#C08079'],['스틸','#7E93A8']];
+    const inkColors=inkDefs.map(([name,hex])=>({name,tap:()=>this.setState({tint:hex}),dot:`display:block;width:38px;height:38px;border-radius:999px;background:${hex};box-shadow:0 0 0 ${s.tint===hex?'2px '+C.accent:'1px rgba(255,255,255,.3)'}, inset 0 0 0 1px rgba(0,0,0,.1);`}));
+
+    const texDefs=[['original','원본'],['none','유광'],['hologram','홀로'],['metal','메탈'],['artpaper','아트지'],['vintage','빈티지'],['newspaper','신문'],['scodix','스코딕스']];
+    const texOverlayCss={ none:'linear-gradient(135deg,rgba(255,255,255,0),rgba(255,255,255,.25) 50%,rgba(255,255,255,0))', hologram:'linear-gradient(135deg,rgba(255,182,193,.5),rgba(186,225,255,.5),rgba(216,191,216,.5))', metal:'repeating-linear-gradient(96deg,rgba(255,255,255,.25) 0 2px,rgba(0,0,0,.15) 2px 4px)', artpaper:'repeating-linear-gradient(45deg,rgba(0,0,0,.14) 0 2px,transparent 2px 4px)', vintage:'linear-gradient(0deg,rgba(120,72,30,.4),rgba(120,72,30,.4))', newspaper:'linear-gradient(0deg,rgba(255,255,255,.15),rgba(255,255,255,.15))', scodix:'linear-gradient(120deg,transparent 42%,rgba(255,255,255,.7) 50%,transparent 58%)' };
+    const textures=texDefs.map(([id,name])=>{ const on=s.texture===id; return { name, tap:()=>this.setState({texture:id}), labelColor:on?'#fff':'rgba(255,255,255,.55)',
+      swWrap:`width:44px;height:58px;border-radius:9px;overflow:hidden;position:relative;background:${miniPoster};border:2px solid ${on?C.accent:'rgba(255,255,255,.18)'};box-shadow:${on?('0 0 0 2px '+C.accent):'none'};display:block;`,
+      overlay: texOverlayCss[id]?R('span',{style:{position:'absolute',inset:0,background:texOverlayCss[id],mixBlendMode:'screen'}}):null }; });
+
+    // visibility icons
+    const eyeOn='M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z';
+    const eyeOff='M2 2l20 20M9.5 9.6a3 3 0 0 0 4.2 4.2M6.7 6.8C3.9 8.4 2 12 2 12s3.5 7 10 7c2 0 3.7-.5 5.1-1.2M12 5c6.5 0 10 7 10 7a17 17 0 0 1-2.4 3.1';
+    const lockIcon='M6 10V7a6 6 0 0 1 12 0v3M5 10h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z';
+    const fieldVisible = ek ? (this.isReq(ek) ? true : !s.hiddenKeys.includes(ek)) : true;
+    const visLocked = ek ? this.isReq(ek) : false;
+
+    // 항목 drawer field rows
+    const drawerOpen = s.fieldsOpen && chromeShown;
+    const drawerBg = s.listGlass ? (dark?'rgba(18,22,24,.40)':'rgba(255,255,255,.36)') : (dark?'rgba(20,24,26,.985)':'rgba(255,255,255,.985)');
+    const drawerBorder = s.listGlass ? 'rgba(255,255,255,.16)' : C.border;
+    const fieldRows = this.editOrder.map((k)=>{
+      const req=this.isReq(k), hidden=!req && s.hiddenKeys.includes(k), vk=this.valKeyFor(k), isLogo=(k==='chain'||k==='format');
+      const raw=(s.f[vk]||'')+''; const hasImg = isLogo ? (k==='chain'?s.logoImg:s.formatLogoImg) : '';
+      let valueText;
+      if(hidden) valueText='숨김';
+      else if(isLogo) valueText = raw.trim()!=='' ? raw : (hasImg?'이미지 사용 중':'텍스트 · 이미지');
+      else valueText = raw.trim()!=='' ? raw : '입력 안 됨';
+      const empty = raw.trim()==='' && !hasImg;
+      return {
+        label:this.META[k].label, isLogo, valueText,
+        labelColor: C.fgMuted, valueColor: (hidden||empty)?C.fgFaint:C.fg,
+        tap:()=>this.openF(k),
+        uploadTap:()=>{ this._ekey=null; this.setState({sheet:'logo', logoTarget: k==='format'?'format':'chain', designTool:null, editKey:null, lift:0}); },
+        toggle:()=>{ if(req){ this.flash('제목은 티켓에 꼭 필요해서 숨길 수 없어요'); return; } this.setState(st=>{ const set=new Set(st.hiddenKeys); set.has(k)?set.delete(k):set.add(k); return {hiddenKeys:[...set]}; }); },
+        eyeIcon: req?lockIcon:(hidden?eyeOff:eyeOn), eyeOpen: !req && !hidden,
+        eyeBtnStyle:`width:28px;height:28px;border-radius:8px;border:none;background:none;color:${req?C.fgFaint:(hidden?C.fgFaint:C.accent)};display:flex;align-items:center;justify-content:center;cursor:${req?'default':'pointer'};flex-shrink:0;`,
+        rowStyle:`display:flex;align-items:center;gap:1px;border-radius:11px;background:${dark?'rgba(255,255,255,.05)':'rgba(20,23,26,.04)'};margin-bottom:5px;opacity:${hidden?0.5:1};`,
+      };
+    });
+
+    // KOBIS results (title) — shown in the fade-in aid panel
+    const qn=(s.f.title||'').replace(/\s/g,'').toLowerCase();
+    const kmatches = qn ? this.KOBIS.filter(m=> m.nm.replace(/\s/g,'').toLowerCase().includes(qn) || m.og.replace(/\s/g,'').toLowerCase().includes(qn) ) : [];
+    const kobisShown = ek==='title' && !s.kobisChosen && kmatches.length>0;
+    const kobisRows = kmatches.map(m=>({ nm:m.nm, sub:`${m.og} · ${m.yr} · ${m.nat} · ${m.genre}`, tap:()=>this.pickKobis(m),
+      rowStyle:`display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:12px;border:1px solid ${C.border};background:${C.surface};cursor:pointer;` }));
+    this._aidShown = editing && (kobisShown || showStars);
+
+    // keyboard
+    const kbUp = editing;
+    const kbBg = android ? (dark?'#1B1F24':'#E8EAEE') : (dark?'#26292E':'#D2D5DC');
+    const keyFace = android ? (dark?'#2C3138':'#FFFFFF') : (dark?'#4A4F57':'#FFFFFF');
+    const keyShadow = android ? 'none' : '0 1px 0 rgba(0,0,0,.28)';
+    const keyStyle=`flex:1;max-width:35px;height:42px;border-radius:${android?7:6}px;background:${keyFace};color:${C.fg};display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:${keyShadow};`;
+    const keyActionStyle=`width:42px;height:42px;border-radius:${android?7:6}px;background:${android?(dark?'#242A30':'#D6DAE0'):(dark?'#3A3E44':'#ADB2BC')};color:${C.fg};display:flex;align-items:center;justify-content:center;box-shadow:${keyShadow};`;
+    const keyWideStyle=`width:56px;height:42px;border-radius:${android?7:6}px;background:${android?(dark?'#242A30':'#D6DAE0'):(dark?'#3A3E44':'#ADB2BC')};color:${C.fgMuted};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;box-shadow:${keyShadow};`;
+    const keyIconStyle=`width:40px;height:42px;border-radius:${android?7:6}px;background:${android?(dark?'#242A30':'#D6DAE0'):(dark?'#3A3E44':'#ADB2BC')};color:${C.fgMuted};display:flex;align-items:center;justify-content:center;box-shadow:${keyShadow};`;
+
+    // floating field toolbar
+    const isLogoEdit = ek==='chain'||ek==='format';
+    const barNavBtn=`width:30px;height:30px;border-radius:999px;border:none;background:${C.surface};color:${C.fgMuted};display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;`;
+    const barChip=`display:inline-flex;align-items:center;gap:4px;height:30px;padding:0 10px;border-radius:999px;border:1px solid ${C.border};background:${C.surface};color:${C.fgMuted};font-size:11.5px;font-weight:600;cursor:pointer;flex-shrink:0;`;
+    const barDone=`height:30px;padding:0 14px;border-radius:999px;border:none;background:${doneGrad};color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;flex-shrink:0;`;
+    const visChipLabel = visLocked?'필수':(fieldVisible?'표시':'숨김');
+    const visChipIconPath = visLocked?lockIcon:(fieldVisible?eyeOn:eyeOff);
+    const visChipStyle=`display:inline-flex;align-items:center;gap:4px;height:30px;padding:0 10px;border-radius:999px;border:none;background:${fieldVisible&&!visLocked?C.accentSoft:C.surface};color:${visLocked?C.fgFaint:(fieldVisible?C.accent:C.fgFaint)};font-size:11.5px;font-weight:700;cursor:${visLocked?'default':'pointer'};flex-shrink:0;`;
+
+    // printing
+    const printBusy = s.printing;
+    const printOverlayOpacity = s.printing?1:0;
+    const printScanStyle = `position:absolute;left:0;right:0;height:16%;background:linear-gradient(180deg,rgba(255,255,255,0),rgba(255,236,210,.85) 55%,rgba(255,255,255,0));box-shadow:0 0 24px 6px rgba(255,214,170,.6);${s.printing?'animation:scv5scan .62s cubic-bezier(.5,0,.5,1) 2;':'top:-20%;'}`;
+
+    // unified preview / full-size sizes | landscape rotates 90° on maximize
+    const previewW = 'min(90vw, 348px)';
+    const resultW = land ? 'min(94vw, 560px)' : previewW;
+    const zoomStageTransform = `translate(${s.zoomTx}px, ${s.zoomTy}px) scale(${s.zoomScale}) rotate(${land?90:0}deg)`;
+    const zoomFit = land ? 'width:540px;max-width:none;max-height:none;' : `width:${previewW};max-width:calc(100% - 20px);max-height:calc(100% - 40px);`;
+    const zoomStageStyle = `position:relative;${zoomFit}border-radius:16px;overflow:hidden;box-shadow:0 40px 90px -30px rgba(0,0,0,.8);aspect-ratio:${ticketAspect};transform:${zoomStageTransform};transition:${s.zGesturing?'none':'transform .2s cubic-bezier(.32,.72,0,1)'};cursor:${s.zoomScale>1.02?'grab':'zoom-out'};touch-action:none;`;
+
+    // styling dock (2a): rail + detail merged into one dark panel; detail opens under the active tab
+    const dockOpen = chromeShown && !s.fieldsOpen;
+    const detailShown = dockOpen && !!tool;
+    const dockStyle = `position:absolute;left:12px;right:12px;top:${railTop}px;z-index:41;opacity:${dockOpen?1:0};pointer-events:${dockOpen?'auto':'none'};transform:translateY(${dockOpen?'0':'8px'});transition:opacity .22s ease, transform .22s ease, top .3s cubic-bezier(.32,.72,0,1);`;
+    const railRowStyle = `display:flex;justify-content:center;gap:22px;padding:${detailShown?'16px 14px 6px':'16px 14px'};`;
+    const moodRowStyle = `display:flex;gap:12px;overflow-x:auto;padding:6px 16px 16px;max-height:${detailMax}px;`;
+    const texRowStyle = `display:flex;gap:11px;overflow-x:auto;padding:6px 16px 16px;max-height:${detailMax}px;`;
+
+    // ambient backdrop: full-frame poster-glow echo (status bar + header + canvas), on while editing
+    const ambientShown = hasPoster;
+    const ambientStyle = `position:absolute;inset:0;z-index:1;background:radial-gradient(120% 50% at 50% 17%, rgba(224,163,58,.16), transparent 46%), linear-gradient(180deg, #1c2129 0%, #14171b 42%, #0d0f11 100%);opacity:${ambientShown?1:0};pointer-events:none;transition:opacity .35s ease;`;
+    const chromeInk = ambientShown ? '#F3EFEA' : C.fg;
+
+    // floating toolbar module (undo/redo · list · maximize · placement · hide)
+    const tbOrient=s.tbOrient, tbPlace=s.tbPlace, tbHoriz=tbOrient==='h';
+    const tbEst=this._tbEst(tbOrient);
+    const tbX = s.tbX==null? this._tbDefPos(tbOrient,tbPlace).x : s.tbX;
+    const tbY = s.tbY==null? this._tbDefPos(tbOrient,tbPlace).y : s.tbY;
+    const tbW = this._tbEl? this._tbEl.offsetWidth : tbEst.w;
+    const tbH = this._tbEl? this._tbEl.offsetHeight : tbEst.h;
+    const toolbarShown = miniShown && !s.tbHidden;
+    const tbMiniShown = miniShown && s.tbHidden;
+    const tbStyle = `position:absolute;left:${tbX}px;top:${tbY}px;z-index:23;display:flex;flex-direction:${tbHoriz?'row':'column'};align-items:center;gap:2px;padding:4px;border-radius:13px;background:${C.surface};border:1px solid ${C.border};box-shadow:${fabShadow};transition:${s.tbDragging?'none':'left .2s cubic-bezier(.32,.72,0,1), top .2s cubic-bezier(.32,.72,0,1)'};`;
+    const tbDividerStyle = `width:${tbHoriz?'1px':'18px'};height:${tbHoriz?'18px':'1px'};background:${C.border};margin:${tbHoriz?'0 3px':'3px 0'};flex-shrink:0;`;
+    const tbGearStyle = `width:31px;height:31px;border-radius:8px;border:none;background:${s.tbMenuOpen?C.accentSoft:'none'};color:${s.tbMenuOpen?C.accent:C.fgMuted};display:flex;align-items:center;justify-content:center;cursor:pointer;`;
+    const tbShowGrip = tbPlace==='movable';
+    const tbDotSt={width:3,height:3,borderRadius:9,background:C.fgFaint};
+    const tbGripDots = R('span',{style:{display:'flex',flexDirection:tbHoriz?'column':'row',gap:2}}, R('span',{style:tbDotSt}), R('span',{style:tbDotSt}), R('span',{style:tbDotSt}));
+    const tbGripStyle = `width:${tbHoriz?'12px':'31px'};height:${tbHoriz?'31px':'12px'};display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;flex-shrink:0;`;
+
+    const tbMenuW=200, tbMenuH=182;
+    let tbMenuLeft, tbMenuTop;
+    if(tbOrient==='v'){ tbMenuLeft=tbX+tbW+8; if(tbMenuLeft+tbMenuW>390-8) tbMenuLeft=tbX-tbMenuW-8; tbMenuTop=tbY; }
+    else { tbMenuTop=tbY+tbH+8; if(tbMenuTop+tbMenuH>844-14) tbMenuTop=tbY-tbMenuH-8; tbMenuLeft=tbX; }
+    tbMenuLeft=Math.max(8,Math.min(390-tbMenuW-8,tbMenuLeft));
+    tbMenuTop=Math.max(104,Math.min(844-tbMenuH-14,tbMenuTop));
+    const tbMenuBackdropStyle = `position:absolute;inset:0;z-index:23;background:transparent;display:${s.tbMenuOpen?'block':'none'};`;
+    const tbMenuStyle = `position:absolute;left:${tbMenuLeft}px;top:${tbMenuTop}px;width:${tbMenuW}px;z-index:24;background:${C.elevated};border:1px solid ${C.border};border-radius:14px;box-shadow:0 18px 44px -16px rgba(0,0,0,.42);padding:8px;display:flex;flex-direction:column;gap:2px;opacity:${s.tbMenuOpen?1:0};pointer-events:${s.tbMenuOpen?'auto':'none'};transform:translateY(${s.tbMenuOpen?'0':'6px'});transition:opacity .18s ease, transform .18s cubic-bezier(.32,.72,0,1);`;
+    const tbModes=[
+      {label:'가로형 · 이동식', o:'h', p:'movable'},
+      {label:'가로형 · 고정식', o:'h', p:'fixed'},
+      {label:'세로형 · 고정식', o:'v', p:'fixed'},
+      {label:'세로형 · 이동식', o:'v', p:'movable'},
+    ];
+    const tbModeItems = tbModes.map(m=>{ const on=tbOrient===m.o&&tbPlace===m.p; return {
+      label:m.label, tap:()=>this._tbApplyMode(m.o,m.p),
+      style:`display:flex;align-items:center;gap:9px;height:34px;padding:0 10px;border-radius:9px;border:none;background:${on?C.accentSoft:'none'};color:${on?C.accent:C.fg};font-size:12px;font-weight:${on?700:600};cursor:pointer;text-align:left;`,
+      dot:`width:7px;height:7px;border-radius:9px;background:${on?C.accent:C.borderStrong};flex-shrink:0;`,
+    }; });
+
+    const tbMiniSize=38;
+    const tbMiniLeft = Math.max(8,Math.min(390-tbMiniSize-8, tbX));
+    const tbMiniTop = Math.max(104,Math.min(830-tbMiniSize, tbY));
+    const tbMiniStyle = `position:absolute;left:${tbMiniLeft}px;top:${tbMiniTop}px;width:${tbMiniSize}px;height:${tbMiniSize}px;border-radius:999px;z-index:23;border:1px solid ${C.border};display:flex;align-items:center;justify-content:center;background:${C.elevated};box-shadow:${fabShadow};color:${C.accent};cursor:${tbPlace==='movable'?'grab':'pointer'};touch-action:none;transition:${s.tbDragging?'none':'left .2s cubic-bezier(.32,.72,0,1), top .2s cubic-bezier(.32,.72,0,1)'};`;
+
+    const _rel=(t)=>{ if(!t) return '아직 저장 안 됨'; const d=Math.floor((Date.now()-t)/1000); if(d<60) return '방금 전 저장됨'; const m=Math.floor(d/60); if(m<60) return m+'분 전 저장됨'; const h=Math.floor(m/60); if(h<24) return h+'시간 전 저장됨'; return Math.floor(h/24)+'일 전 저장됨'; };
+    const draftLabel=_rel(s.draftAt);
+    return {
+      ambientShown, ambientStyle,
+      setTbEl:(el)=>{ this._tbEl=el; },
+      tbStyle, tbDividerStyle, tbGearStyle, tbShowGrip, tbGripStyle, tbGripDots,
+      toolbarShown, tbMiniShown, tbMiniStyle,
+      onTbGear:()=>this.setState(st=>({tbMenuOpen:!st.tbMenuOpen})),
+      onTbMenuBackdrop:()=>this.setState({tbMenuOpen:false}),
+      onTbHide:()=>this.setState({tbHidden:true, tbMenuOpen:false}),
+      tbMenuBackdropStyle, tbMenuStyle, tbModeItems,
+      onTbGripDown:(e)=>{ e.stopPropagation(); this._tbDrag={px:e.clientX,py:e.clientY,ox:tbX,oy:tbY}; if(e.currentTarget.setPointerCapture){try{e.currentTarget.setPointerCapture(e.pointerId);}catch(_){}} this.setState({tbDragging:true}); },
+      onTbGripMove:(e)=>{ if(!this._tbDrag) return; const c=this._tbClamp(this._tbDrag.ox+(e.clientX-this._tbDrag.px), this._tbDrag.oy+(e.clientY-this._tbDrag.py), tbOrient); this.setState({tbX:c.x,tbY:c.y}); },
+      onTbGripUp:(e)=>{ if(this._tbDrag&&e.currentTarget.releasePointerCapture){try{e.currentTarget.releasePointerCapture(e.pointerId);}catch(_){}} this._tbDrag=null; this.setState({tbDragging:false}); },
+      onTbMiniDown:(e)=>{ e.stopPropagation(); this._tbMiniDrag={px:e.clientX,py:e.clientY,ox:tbX,oy:tbY,moved:false,canDrag:tbPlace==='movable'}; if(e.currentTarget.setPointerCapture){try{e.currentTarget.setPointerCapture(e.pointerId);}catch(_){}} },
+      onTbMiniMove:(e)=>{ const d=this._tbMiniDrag; if(!d||!d.canDrag) return; const dx=e.clientX-d.px, dy=e.clientY-d.py; if(!d.moved&&(Math.abs(dx)>4||Math.abs(dy)>4)){ d.moved=true; this.setState({tbDragging:true}); } if(!d.moved) return; const c=this._tbClamp(d.ox+dx, d.oy+dy, tbOrient); this.setState({tbX:c.x, tbY:c.y}); },
+      onTbMiniUp:(e)=>{ const d=this._tbMiniDrag; this._tbMiniDrag=null; if(e.currentTarget.releasePointerCapture){try{e.currentTarget.releasePointerCapture(e.pointerId);}catch(_){}} this.setState({tbDragging:false}); if(!d||!d.moved) this.setState({tbHidden:false}); },
+      isIOS:ios, isAndroid:android,
+      C, doneGrad, f:s.f, mood:s.mood, tint:s.tint, texture:s.texture, posterBright:s.posterBright, compOpacity:s.compOpacity,
+      ghostEff, hiddenKeys:s.hiddenKeys, logoImg:s.logoImg, formatLogoImg:s.formatLogoImg, sampleLogo:this.SAMPLE_LOGO,
+      activeKeyVal: ek||'', darkOn:dark, ticketAspect, ticketW,
+      clockStyle: android?`font-size:13.5px;font-weight:600;color:${chromeInk};`:`font-size:14.5px;font-weight:700;letter-spacing:.3px;color:${chromeInk};`,
+      chromeInk,
+      menuBtnStyle,
+      liftTransform, setTicket:(el)=>{ this._ticketEl=el; },
+      canvasChromeOpacity: editing?0:1, canvasChromePointer: editing?'none':'auto',
+      editBackdropStyle:`position:absolute;inset:0;z-index:1;display:${editing?'block':'none'};`,
+
+      // start / poster
+      dropzoneWrap:`position:absolute;inset:0;display:${hasPoster?'none':'flex'};align-items:center;justify-content:center;padding:0 24px;`,
+      ticketAreaStyle:`position:absolute;inset:0;display:${hasPoster?'block':'none'};`,
+      posterUpload:()=>{ this.setState({hasPoster:true, screen:'edit', designTool:null}); this.flash('포스터를 불러왔어요'); },
+      ocrStart:()=>{ this.setState(st=>({hasPoster:true, screen:'edit', f:{...st.f, theater:'CGV 용산아이파크몰', screen:'2관', seat:'H12', watchDate:'2026.07.11', watchTime:'19:40'}})); this.flash('예매 스크린샷에서 자동으로 채웠어요'); },
+
+      // mini toolbar (top app bar): undo / redo · list · maximize
+      miniToolbarStyle, miniBtn, miniListBtn,
+      onUndo:()=>this.undo(), onRedo:()=>this.redo(),
+      undoDisabled:!canUndo, redoDisabled:!canRedo, undoStyle:histBtn(canUndo), redoStyle:histBtn(canRedo),
+      openFields:()=>this.setState(st=>({fieldsOpen:!st.fieldsOpen, designTool:null})),
+
+      // styling dock (under the poster) + 다음 (under the dock)
+      dockStyle, railRowStyle, moodRowStyle, texRowStyle,
+      tools,
+      nextDisabled, nextShown,
+      headerNextStyle: `display:inline-flex;align-items:center;gap:4px;height:34px;padding:0 14px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;`
+        + (nextDisabled
+          ? `border:1px solid ${C.border};background:${C.surface};color:${C.fgFaint};`
+          : `border:none;background:${doneGrad};color:#fff;box-shadow:0 6px 16px -8px rgba(176,66,63,.55);`),
+
+      // detail content (inside the dock, under the active tab)
+      dMood:tool==='mood', dColortone:tool==='colortone', dTexture:tool==='texture', dOpacity:tool==='opacity',
+      moods, inkColors, textures, colorFree:!colorLocked,
+      onBright:(e)=>this.setState({posterBright:parseInt(e.target.value,10)}), onOpacity:(e)=>this.setState({compOpacity:parseInt(e.target.value,10)}),
+      brightLabel:s.posterBright+'%', opacityLabel:s.compOpacity+'%',
+
+      // 항목 drawer (translucent, right side; swipe →/tap outside to close, no X)
+      sidebarStyle:`position:absolute;right:6px;top:6px;bottom:14px;width:248px;z-index:22;pointer-events:${drawerOpen?'auto':'none'};transform:translateX(${drawerOpen?'0':'112%'});transition:transform .3s cubic-bezier(.32,.72,0,1);`,
+      drawerBg, drawerBorder,
+      drawerBackdropStyle:`position:absolute;inset:0;z-index:21;background:transparent;display:${drawerOpen?'block':'none'};`,
+      setDrawerEl:(el)=>{ this._drawerEl=el; },
+      onDrawerDown:(e)=>{ this._dr={x:e.clientX,y:e.clientY}; this._drDx=0; this._drAxis=null; },
+      onDrawerMove:(e)=>{ if(!this._dr) return; const dx=e.clientX-this._dr.x, dy=e.clientY-this._dr.y; if(this._drAxis===null){ if(Math.abs(dx)>6||Math.abs(dy)>6) this._drAxis=Math.abs(dx)>Math.abs(dy)?'h':'v'; } if(this._drAxis!=='h') return; const mv=Math.max(0,dx); this._drDx=mv; if(this._drawerEl){ this._drawerEl.style.transition='none'; this._drawerEl.style.transform='translateX('+mv+'px)'; } },
+      onDrawerUp:()=>{ if(!this._dr) return; const dx=this._drDx||0; this._dr=null; this._drDx=0; this._drAxis=null; if(this._drawerEl){ this._drawerEl.style.transition=''; this._drawerEl.style.transform=''; } if(dx>64) this.setState({fieldsOpen:false}); },
+      closeDrawer:()=>this.setState({fieldsOpen:false}),
+      sidebarOcrBtn:`display:flex;align-items:center;justify-content:center;gap:6px;height:38px;margin:12px 10px 4px;border-radius:11px;border:none;background:${C.accentSoft};color:${C.accent};font-size:12.5px;font-weight:700;cursor:pointer;`,
+      fieldRows,
+      fieldsOcr:()=>{ this.setState(st=>({ f:{...st.f, theater:'CGV 용산아이파크몰', screen:'2관', seat:'H12', watchDate:'2026.07.11', watchTime:'19:40'} })); this.flash('예매 스크린샷에서 자동으로 채웠어요'); },
+
+      // inplace editor + floating toolbar
+      inplaceInputStyle:'position:absolute;left:0;top:0;z-index:60;opacity:0;pointer-events:none;',
+      setInpWrap:(el)=>{ this._inpWrap=el; },
+      fieldBarBase:`position:absolute;left:0;top:0;z-index:62;display:flex;align-items:center;gap:5px;padding:5px;border-radius:15px;background:${C.elevated};border:1px solid ${C.border};box-shadow:0 12px 30px -10px rgba(0,0,0,.5);opacity:0;pointer-events:none;white-space:nowrap;`,
+      setBarWrap:(el)=>{ this._barWrap=el; },
+      barNavBtn, barChip, barDone, editLabel:meta.label,
+      isLogoEdit, openLogoImage:()=>{ const tt=this._ekey==='format'?'format':'chain'; this._ekey=null; this.setState({sheet:'logo', logoTarget:tt, editKey:null, lift:0}); },
+      fieldVisible, visChipLabel, visChipIconPath, visChipStyle, visEyeOpen: fieldVisible && !visLocked,
+      toggleFieldVis:()=>{ if(visLocked){ this.flash('제목은 티켓에 꼭 필요해서 숨길 수 없어요'); return; } this.setState(st=>{ const set=new Set(st.hiddenKeys); if(set.has(st.editKey))set.delete(st.editKey); else set.add(st.editKey); return {hiddenKeys:[...set]}; }); },
+      editKey:ek||'', editVal: ek?(s.f[this.valKeyFor(ek)]||''):'',
+      onInput:(e)=>{ const v=e.target.value; this.setState(st=>({f:{...st.f,[this.valKeyFor(st.editKey)]:v}, kobisChosen: st.editKey==='title'?false:st.kobisChosen})); },
+      openField:(k)=>this.openF(k),
+      closeField:()=>{ this._ekey=null; this.setState({editKey:null, lift:0, fldTop:null}); },
+      prevField:()=>{ const ord=this._navOrder(); if(!ord.length)return; let i=ord.indexOf(this._ekey); if(i<0)i=0; const k=ord[(i-1+ord.length)%ord.length]; this._ekey=k; this.setState({editKey:k, kobisChosen:false, fldTop:null}); this._afterField(k); },
+      nextField:()=>{ const ord=this._navOrder(); if(!ord.length)return; let i=ord.indexOf(this._ekey); if(i<0)i=0; const k=ord[(i+1)%ord.length]; this._ekey=k; this.setState({editKey:k, kobisChosen:false, fldTop:null}); this._afterField(k); },
+
+      // aid panel (kobis / stars)
+      setAidEl:(el)=>{ this._aidEl=el; }, setKbEl:(el)=>{ this._kbEl=el; },
+      aidPanelBase:`position:absolute;left:10px;right:10px;bottom:300px;z-index:47;opacity:0;pointer-events:none;transition:opacity .2s ease;`,
+      kobisShown, kobisRows, showStars, starNode, ratingLabel,
+
+      // keyboard
+      kbStyle:`position:absolute;left:0;right:0;bottom:0;background:${kbBg};z-index:46;transform:${kbUp?'translateY(0)':'translateY(100%)'};transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;`,
+      kbRow1:['ㅂ','ㅈ','ㄷ','ㄱ','ㅅ','ㅛ','ㅕ','ㅑ','ㅐ','ㅔ'], kbRow2:['ㅁ','ㄴ','ㅇ','ㄹ','ㅎ','ㅗ','ㅓ','ㅏ','ㅣ'], kbRow3:['ㅋ','ㅌ','ㅊ','ㅍ','ㅠ','ㅜ','ㅡ'],
+      keyStyle, keyActionStyle, keyWideStyle, keyIconStyle, keySpaceBg:keyFace, keyShadow, kbGlobeGlyph: android?'🎤':'🌐',
+
+      // logo sheet
+      logoOverlayOpacity: sheet==='logo'?1:0, logoPointer: sheet==='logo'?'auto':'none', logoTransform: sheet==='logo'?'translateY(0)':'translateY(110%)',
+      logoSheetTitle: s.logoTarget==='format'?'포맷 로고':'극장 로고',
+      cropStageBg: dark?'#0C0E10':'#101317',
+      cropX:s.cropX, cropY:s.cropY, cropW:s.cropW, cropH:s.cropH, cropHandleX:s.cropX+s.cropW, cropHandleY:s.cropY+s.cropH,
+      onCropDown:(e)=>{ this._cd={x:e.clientX,y:e.clientY,ox:s.cropX,oy:s.cropY}; if(e.currentTarget.setPointerCapture){try{e.currentTarget.setPointerCapture(e.pointerId);}catch(_){}} },
+      onCropMove:(e)=>{ if(!this._cd) return; const nx=Math.max(0,Math.min(280-s.cropW,this._cd.ox+(e.clientX-this._cd.x))); const ny=Math.max(0,Math.min(172-s.cropH,this._cd.oy+(e.clientY-this._cd.y))); this.setState({cropX:nx,cropY:ny}); },
+      onCropUp:()=>{ this._cd=null; this._rz=null; },
+      onResizeDown:(e)=>{ e.stopPropagation(); this._rz={x:e.clientX,y:e.clientY,ow:s.cropW,oh:s.cropH}; if(e.currentTarget.setPointerCapture){try{e.currentTarget.setPointerCapture(e.pointerId);}catch(_){}} },
+      applyLogo:()=>{ if(s.logoTarget==='format'){ this.setState({formatLogoImg:this.SAMPLE_FMT, sheet:null}); this.flash('포맷 로고를 적용했어요'); } else { this.setState({logoImg:this.SAMPLE_LOGO, sheet:null}); this.flash('극장 로고를 적용했어요'); } },
+      removeLogo:()=>{ if(s.logoTarget==='format'){ this.setState({formatLogoImg:'', sheet:null}); } else { this.setState({logoImg:'', sheet:null}); } this.flash('로고를 제거했어요'); },
+
+      // settings
+      settingsOverlayOpacity: sheet==='settings'?1:0, settingsPointer: sheet==='settings'?'auto':'none', settingsTransform: sheet==='settings'?'translateY(0)':'translateY(110%)',
+      openSettings:()=>this.setState({sheet:'settings', clearArm:false}),
+      posterMenuStyle:`display:${hasPoster?'flex':'none'};align-items:center;justify-content:space-between;width:100%;height:54px;padding:0 16px;border:1px solid ${C.border};border-radius:14px;background:${C.elevated};cursor:pointer;`,
+      posterReplace:()=>{ this.setState({sheet:null}); this.flash('새 포스터를 불러왔어요'); },
+      darkTrack: dark?C.accent:C.borderStrong, darkKnob: dark?'translateX(19px)':'translateX(0)',
+      toggleTheme:()=>this.setState(st=>({theme:st.theme==='dark'?'light':'dark'})),
+      ghostOn:s.ghostOn, ghostTrack: s.ghostOn?C.accent:C.borderStrong, ghostKnob: s.ghostOn?'translateX(19px)':'translateX(0)',
+      toggleGhost:()=>this.setState(st=>({ghostOn:!st.ghostOn})),
+      listGlassOn:s.listGlass, listGlassTrack: s.listGlass?C.accent:C.borderStrong, listGlassKnob: s.listGlass?'translateX(19px)':'translateX(0)',
+      toggleListGlass:()=>this.setState(st=>({listGlass:!st.listGlass})),
+      draftLabel,
+      saveDraft:()=>{ try{ localStorage.setItem('filmeDraftV6', JSON.stringify({at:Date.now(), data:this._snapObj(), hasPoster:this.state.hasPoster})); }catch(_){} this.setState({draftAt:Date.now(), sheet:null}); this.flash('임시저장했어요'); },
+      clearArmed:s.clearArm,
+      clearLabel: s.clearArm?'한 번 더 눌러 전체 삭제':'작업 내용 전체 삭제',
+      clearRowStyle:`width:100%;height:52px;display:flex;align-items:center;gap:11px;padding:0 16px;background:${s.clearArm?(dark?'rgba(229,103,95,.16)':'rgba(192,57,47,.10)'):'none'};border:none;cursor:pointer;font-size:14px;font-weight:${s.clearArm?700:600};color:${C.danger};transition:background .16s;`,
+      clearReset:()=>{ if(!this.state.clearArm){ this.setState({clearArm:true}); clearTimeout(this._ca); this._ca=setTimeout(()=>this.setState({clearArm:false}),3200); return; } clearTimeout(this._ca); try{ localStorage.removeItem('filmeDraftV6'); }catch(_){} this._ekey=null; this.setState({clearArm:false, sheet:null, hasPoster:false, screen:'edit', editKey:null, designTool:null, fieldsOpen:false, hiddenKeys:[], logoImg:'', formatLogoImg:'', mood:'minimal', tint:'#FFFFFF', texture:'original', posterBright:55, compOpacity:100, f:{title:'',titleOg:'',actors:'',watchDate:'',watchTime:'',theater:'',screen:'',seat:'',runtime:'',rating:'',releaseDate:'',signature:'',chainLabel:'',formatLabel:''}}); this.flash('작업 내용을 모두 삭제했어요'); },
+
+      // permalink
+      permaUrl:'filme.app/t/'+this._pid, permaFieldBorder: s.linkCopied?C.ok:'rgba(255,255,255,.16)',
+      copyLabel: s.linkCopied?'복사됨':'복사', copyIcon: s.linkCopied?'M20 6 9 17l-5-5':'M8 4h10a2 2 0 0 1 2 2v10M16 8H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2z',
+      copyBtnBg: s.linkCopied?C.okSoft:doneGrad, copyBtnColor: s.linkCopied?C.ok:'#fff',
+      copyLink:()=>{ this.setState({linkCopied:true}); this.flash('링크를 복사했어요'); },
+      linkOpen:s.linkOpen, linkBtnLabel: s.linkOpen?'링크 숨기기':'링크 만들기',
+      openPermalink:()=>this.setState(st=>({linkOpen:!st.linkOpen, linkCopied:false})),
+      shareFlash:()=>this.flash('공유 시트를 열었어요'),
+      closeSheet:()=>this.setState({sheet:null, clearArm:false}),
+
+      // zoom / maximize
+      openZoom:()=>this.setState({zoomOpen:true, zoomScale:1, zoomTx:0, zoomTy:0}),
+      zoomPointer: zoomOpen?'auto':'none', zoomVisibility: zoomOpen?'visible':'hidden',
+      zoomBg: zoomOpen?'rgba(8,9,11,.94)':'rgba(8,9,11,0)',
+      zoomStageStyle,
+      zoomBackdropClick:()=>{ if(this._zGestured){ this._zGestured=false; return; } this.setState({zoomOpen:false, zoomScale:1, zoomTx:0, zoomTy:0}); },
+      stopZoomClick:(e)=>{ e.stopPropagation(); },
+      onZPointerDown:(e)=>{ if(!this.state.zoomOpen) return; this._zpts=this._zpts||{}; this._zpts[e.pointerId]={x:e.clientX,y:e.clientY}; const ids=Object.keys(this._zpts); if(ids.length===2){ const a=this._zpts[ids[0]], b=this._zpts[ids[1]]; this._zpinch={d:Math.hypot(a.x-b.x,a.y-b.y)||1, s:this.state.zoomScale}; this.setState({zGesturing:true}); } else if(ids.length===1 && this.state.zoomScale>1.02){ this._zpan={x:e.clientX,y:e.clientY,tx:this.state.zoomTx,ty:this.state.zoomTy}; } },
+      onZPointerMove:(e)=>{ if(!this._zpts||!this._zpts[e.pointerId]) return; this._zpts[e.pointerId]={x:e.clientX,y:e.clientY}; const ids=Object.keys(this._zpts); if(ids.length>=2 && this._zpinch){ const a=this._zpts[ids[0]], b=this._zpts[ids[1]]; const d=Math.hypot(a.x-b.x,a.y-b.y); const sc=Math.max(1,Math.min(4, this._zpinch.s * d/this._zpinch.d)); this._zGestured=true; this.setState({zoomScale:sc}); } else if(ids.length===1 && this._zpan){ this._zGestured=true; this.setState({zoomTx:this._zpan.tx+(e.clientX-this._zpan.x), zoomTy:this._zpan.ty+(e.clientY-this._zpan.y)}); } },
+      onZPointerUp:(e)=>{ if(this._zpts) delete this._zpts[e.pointerId]; const n=this._zpts?Object.keys(this._zpts).length:0; if(n<2){ this._zpinch=null; this.setState({zGesturing:false}); } if(n===0){ this._zpan=null; if(this.state.zoomScale<=1.02 && (this.state.zoomTx||this.state.zoomTy)) this.setState({zoomTx:0,zoomTy:0}); } },
+      onZWheel:(e)=>{ if(!this.state.zoomOpen) return; const sc=Math.max(1,Math.min(4, this.state.zoomScale * (e.deltaY<0?1.12:0.9))); this._zGestured=true; clearTimeout(this._zwt); this._zwt=setTimeout(()=>{this._zGestured=false;},280); this.setState({zoomScale:sc, zoomTx: sc<=1.02?0:this.state.zoomTx, zoomTy: sc<=1.02?0:this.state.zoomTy}); },
+
+      // result
+      resultTransform: result?'translateY(0)':'translateY(100%)', resultW,
+      goResult:()=>{ if(nextDisabled){ this.flash(hasPoster?'제목을 입력해 주세요':'먼저 포스터를 올려 주세요'); return; } this.setState({screen:'result', sheet:null, editKey:null}); },
+      goEdit:()=>this.setState({screen:'edit'}),
+      savePrimaryStyle:`width:100%;height:60px;border-radius:${android?14:16}px;border:none;background:${doneGrad};color:#fff;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;box-shadow:0 12px 28px -10px rgba(176,66,63,.6);font-size:16px;font-weight:700;`,
+      subActionStyle:`flex:1;height:50px;border-radius:14px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);color:#F3EFEA;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-family:'JetBrains Mono',monospace;`,
+      subIconColor:C.accent,
+      downloadFlash:()=>{ if(this.state.printing) return; this.setState({printing:true, suppressToast:true}); clearTimeout(this._pr); clearTimeout(this._pr2); this._pr=setTimeout(()=>{ this.setState({printing:false, savedBadge:true}); },1240); this._pr2=setTimeout(()=>{ this.setState({savedBadge:false, suppressToast:false}); this.flash('사진에 저장했어요'); },1720); },
+      printBusy, printIdle:!printBusy, printOverlayOpacity, printScanStyle, resultBg:'radial-gradient(120% 45% at 50% 8%, rgba(224,163,58,.14), transparent 46%), linear-gradient(180deg, #1c2129 0%, #14171b 42%, #0d0f11 100%)',
+      printTicketTransform: s.printing?'translateY(2px) scale(.994)':'translateY(0) scale(1)',
+      savedBadgeOpacity: s.savedBadge?1:0, savedBadgeAnim: s.savedBadge?'animation:scv5pop .34s cubic-bezier(.34,1.56,.64,1) both;':'',
+
+      toast:s.toast, toastOpacity:s.toast?1:0, toastY:s.toast?'0':'8px',
+    };
+  }
+  componentDidMount(){
+    this._lastSnap=this._snap();
+    this.setState({hist:[this._lastSnap], histAt:0});
+    const tp=this._tbDefPos(this.state.tbOrient, this.state.tbPlace);
+    this.setState({tbX:tp.x, tbY:tp.y});
+    try{ const raw=localStorage.getItem('filmeDraftV6'); if(raw){ const d=JSON.parse(raw); if(d&&d.at) this.setState({draftAt:d.at}); } }catch(_){}
+    this._raf=requestAnimationFrame(this._tick.bind(this));
+    this._rzMove=(e)=>{ if(!this._rz) return; const s=this.state; const nw=Math.max(40,Math.min(280-s.cropX,this._rz.ow+(e.clientX-this._rz.x))); const nh=Math.max(28,Math.min(172-s.cropY,this._rz.oh+(e.clientY-this._rz.y))); this.setState({cropW:nw,cropH:nh}); };
+    window.addEventListener('pointermove',this._rzMove);
+    const demo=(this.props||{}).demo||'';
+    if(demo==='start') this.setState({hasPoster:false, screen:'edit'});
+    else if(demo==='result') this.setState({hasPoster:true, screen:'result', editKey:null});
+    else if(demo==='fields') this.setState({hasPoster:true, screen:'edit', designTool:'fields'});
+    else if(this.editOrder.includes(demo)){ this._ekey=demo; this.setState({hasPoster:true, screen:'edit', editKey:demo}); setTimeout(()=>this._afterField(demo),320); }
+    else this.setState({hasPoster:true});
+  }
+  componentDidUpdate(){
+    this._place();
+    if(this._restoring) return;
+    const snap=this._snap();
+    if(snap!==this._lastSnap){
+      this._lastSnap=snap;
+      clearTimeout(this._histT);
+      this._histT=setTimeout(()=>{
+        this.setState(st=>{ const base=st.hist.slice(0,st.histAt+1); base.push(snap); const capped=base.slice(-80); return {hist:capped, histAt:capped.length-1}; });
+      },350);
+    }
+  }
+  componentWillUnmount(){ if(this._raf) cancelAnimationFrame(this._raf); if(this._rzMove) window.removeEventListener('pointermove',this._rzMove); clearTimeout(this._t); clearTimeout(this._mt1); clearTimeout(this._mt2); clearTimeout(this._mt3); clearTimeout(this._pr); clearTimeout(this._pr2); clearTimeout(this._histT); clearTimeout(this._ca); }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500;1,6..72,600&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>*{box-sizing:border-box;}</style>
+</helmet>
+<div ref="{{ setRoot }}" style="position:absolute;inset:0;overflow:hidden;background:{{ frameBg }};container-type:size;">
+  <div style="position:absolute;top:0;left:0;width:{{ natW }}px;height:{{ natH }}px;transform-origin:top left;transform:scale({{ scale }});font-family:'Pretendard Variable',sans-serif;">
+
+    <!-- ============ MINIMAL ============ -->
+    <sc-if value="{{ isMinimal }}" hint-placeholder-val="{{ true }}">
+      <div style="position:absolute;inset:0;color:{{ ink }};overflow:hidden;">
+        <div style="position:absolute;inset:0;background:{{ posterImg }};filter:{{ posterFilter }};"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;{{ textureCss }}"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;background:{{ scrimGrad }};"></div>
+        <div style="position:absolute;left:0;right:0;top:0;height:200px;pointer-events:none;background:{{ topScrim }};opacity:{{ hasTopStamp }};"></div>
+        <div style="position:absolute;left:60px;top:52px;display:flex;align-items:center;gap:34px;opacity:{{ compOp }};">
+          <div data-fkey="chain" onClick="{{ F.chain.tap }}" style="{{ F.chain.wrap }}">{{ chainNode }}</div>
+          <sc-if value="{{ bothStamps }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:38px;background:{{ ink }};opacity:.5;"></span></sc-if>
+          <div data-fkey="format" onClick="{{ F.format.tap }}" style="{{ F.format.wrap }}">{{ formatNode }}</div>
+        </div>
+        <div style="position:absolute;left:70px;right:70px;bottom:58px;opacity:{{ compOp }};">
+          <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:400;font-size:30px;opacity:.82;margin-bottom:8px;">now showing</div>
+          <div data-fkey="title" onClick="{{ F.title.tap }}" style="{{ F.title.wrap }}">
+            <sc-if value="{{ F.title.has }}" hint-placeholder-val="{{ true }}"><div style="font-weight:500;font-size:62px;line-height:1.05;letter-spacing:-1.2px;">{{ F.title.text }}</div></sc-if>
+            <sc-if value="{{ F.title.ghost }}" hint-placeholder-val="{{ false }}"><div style="{{ ghostBig }}">TITLE</div></sc-if>
+          </div>
+          <div data-fkey="titleOg" onClick="{{ F.titleOg.tap }}" style="{{ F.titleOg.wrap }}">
+            <sc-if value="{{ F.titleOg.has }}" hint-placeholder-val="{{ true }}"><div style="font-weight:600;font-size:22px;letter-spacing:2px;text-transform:uppercase;opacity:.8;">{{ F.titleOg.text }}</div></sc-if>
+            <sc-if value="{{ F.titleOg.ghost }}" hint-placeholder-val="{{ false }}"><div style="{{ ghostSm }}">ORIGINAL TITLE</div></sc-if>
+          </div>
+          <div style="height:1px;background:{{ ink }};opacity:.34;margin:18px 0;"></div>
+          <div style="display:flex;flex-wrap:wrap;gap:12px 44px;margin-bottom:16px;">
+            <div><div style="{{ mLabel }}">Screening</div><div style="{{ mVal }}" data-fkey="watchDate watchTime">{{ watchLine }}</div></div>
+            <div data-fkey="theater screen" onClick="{{ F.theater.tap }}" style="{{ F.theater.wrap }}"><div style="{{ mLabel }}">Venue</div><div style="{{ mVal }}">{{ venueLine }}</div></div>
+            <div data-fkey="seat" onClick="{{ F.seat.tap }}" style="{{ F.seat.wrap }}"><div style="{{ mLabel }}">Seat</div><div style="{{ mVal }}">{{ F.seat.dash }}</div></div>
+          </div>
+          <div style="height:1px;background:{{ ink }};opacity:.16;margin-bottom:16px;"></div>
+          <div style="display:flex;flex-wrap:wrap;gap:12px 44px;margin-bottom:20px;">
+            <div><div style="{{ mLabel }}">Runtime</div><div style="{{ mVal }}" data-fkey="runtime">{{ runtimeDash }}</div></div>
+            <div><div style="{{ mLabel }}">Rated</div><div style="{{ mVal }}" data-fkey="rating">★ {{ ratingDash }}</div></div>
+            <div data-fkey="actors" onClick="{{ F.actors.tap }}" style="{{ F.actors.wrap }}"><div style="{{ mLabel }}">Cast</div><div style="{{ mVal }}">{{ F.actors.dash }}</div></div>
+          </div>
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:32px;">
+            <div style="display:flex;align-items:baseline;gap:9px;opacity:.72;"><span style="font-family:'Newsreader',serif;font-style:italic;font-size:22px;">made with</span><span style="font-weight:800;font-size:22px;letter-spacing:3px;">FILME</span></div>
+            <div data-fkey="signature" onClick="{{ F.signature.tap }}" style="{{ F.signature.wrap }}"><sc-if value="{{ F.signature.has }}" hint-placeholder-val="{{ false }}"><span style="font-family:'Newsreader',serif;font-style:italic;font-size:25px;opacity:.78;margin-right:10px;">collected by</span><span style="font-weight:600;font-size:32px;">{{ F.signature.text }}</span></sc-if><sc-if value="{{ F.signature.ghost }}" hint-placeholder-val="{{ false }}"><span style="{{ sigGhost }}">서명</span></sc-if></div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ CRITERION ============ -->
+    <sc-if value="{{ isCriterion }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;color:{{ ink }};overflow:hidden;">
+        <div style="position:absolute;inset:0;background:{{ posterImg }};filter:{{ posterFilter }};"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;{{ textureCss }}"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;background:{{ critScrim }};"></div>
+        <div style="position:absolute;left:0;top:0;bottom:0;width:150px;background:{{ spineBg }};border-right:1px solid {{ ink }};display:flex;flex-direction:column;align-items:center;padding:48px 0 52px;opacity:{{ compOp }};">
+          <div style="font-family:'Newsreader',serif;font-style:italic;font-size:40px;letter-spacing:.5px;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;max-height:600px;overflow:hidden;">{{ spineText }}</div>
+          <div style="flex:1;"></div>
+          <div style="width:52px;height:360px;background:repeating-linear-gradient(0deg,{{ ink }} 0 3px,transparent 3px 8px);opacity:.9;"></div>
+          <div style="flex:1;"></div>
+          <div style="font-family:'Newsreader',serif;font-size:66px;letter-spacing:1px;writing-mode:vertical-rl;line-height:1;">{{ watchYear }}</div>
+        </div>
+        <div style="position:absolute;right:52px;top:48px;display:flex;align-items:center;gap:28px;opacity:{{ compOp }};">
+          <div data-fkey="chain" onClick="{{ F.chain.tap }}" style="{{ F.chain.wrap }}">{{ chainNode }}</div>
+          <sc-if value="{{ bothStamps }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:30px;background:{{ ink }};opacity:.55;"></span></sc-if>
+          <div data-fkey="format" onClick="{{ F.format.tap }}" style="{{ F.format.wrap }}">{{ formatNode }}</div>
+        </div>
+        <div style="position:absolute;left:200px;right:64px;top:42%;transform:translateY(-42%);opacity:{{ compOp }};">
+          <div style="height:1px;background:{{ ink }};opacity:.6;margin-bottom:4px;"></div>
+          <div style="height:3px;background:{{ ink }};opacity:.6;margin-bottom:22px;"></div>
+          <div style="font-family:'Newsreader',serif;font-style:italic;font-size:32px;opacity:.8;margin-bottom:18px;">from a film diary</div>
+          <div data-fkey="title" onClick="{{ F.title.tap }}" style="{{ F.title.wrap }}">
+            <sc-if value="{{ F.title.has }}" hint-placeholder-val="{{ true }}"><div style="font-weight:800;font-size:58px;line-height:1.14;letter-spacing:-1.5px;">{{ F.title.text }}</div></sc-if>
+            <sc-if value="{{ F.title.ghost }}" hint-placeholder-val="{{ false }}"><div style="{{ ghostBig }}">TITLE</div></sc-if>
+          </div>
+          <div data-fkey="titleOg" onClick="{{ F.titleOg.tap }}" style="{{ F.titleOg.wrap }}margin-top:18px;">
+            <sc-if value="{{ F.titleOg.has }}" hint-placeholder-val="{{ true }}"><div style="font-weight:500;font-size:29px;letter-spacing:1px;opacity:.82;">{{ F.titleOg.text }}</div></sc-if>
+            <sc-if value="{{ F.titleOg.ghost }}" hint-placeholder-val="{{ false }}"><div style="{{ ghostSm }}">ORIGINAL TITLE</div></sc-if>
+          </div>
+          <div data-fkey="actors" onClick="{{ F.actors.tap }}" style="{{ F.actors.wrap }}margin-top:18px;">
+            <span style="font-family:'Newsreader',serif;font-style:italic;font-size:29px;opacity:.85;margin-right:12px;">featuring</span><span style="font-weight:500;font-size:31px;">{{ F.actors.dash }}</span>
+          </div>
+          <div style="height:3px;background:{{ ink }};opacity:.6;margin:22px 0 4px;"></div>
+          <div style="height:1px;background:{{ ink }};opacity:.6;"></div>
+        </div>
+        <div style="position:absolute;left:200px;right:64px;bottom:52px;opacity:{{ compOp }};">
+          <div style="display:grid;grid-template-columns:auto 1fr;column-gap:26px;row-gap:14px;align-items:baseline;">
+            <div style="{{ capLabel }}">VENUE</div><div style="{{ capVal }}" data-fkey="theater screen seat">{{ venueSeatLine }}</div>
+            <div style="{{ capLabel }}">WATCHED</div><div style="{{ capVal }}" data-fkey="watchDate watchTime">{{ watchDateDash }}</div>
+          </div>
+          <div style="height:1px;background:{{ ink }};opacity:.2;margin:16px 0;"></div>
+          <div style="display:grid;grid-template-columns:auto 1fr;column-gap:26px;row-gap:14px;align-items:baseline;">
+            <div style="{{ capLabel }}">RATED</div><div style="{{ capVal }}" data-fkey="rating">★ {{ ratingDash }}</div>
+            <div style="{{ capLabel }}">RUNTIME</div><div style="{{ capVal }}" data-fkey="runtime">{{ runtimeDash }}</div>
+          </div>
+          <div style="margin-top:22px;display:flex;align-items:flex-end;justify-content:space-between;gap:24px;">
+            <div style="display:flex;align-items:baseline;gap:9px;opacity:.72;"><span style="font-family:'Newsreader',serif;font-style:italic;font-size:22px;">made with</span><span style="font-weight:800;font-size:22px;letter-spacing:3px;">FILME</span></div>
+            <div data-fkey="signature" onClick="{{ F.signature.tap }}" style="{{ F.signature.wrap }}"><sc-if value="{{ F.signature.has }}" hint-placeholder-val="{{ false }}"><span style="font-family:'Newsreader',serif;font-style:italic;font-size:25px;opacity:.78;margin-right:10px;">collected by</span><span style="font-weight:600;font-size:32px;">{{ F.signature.text }}</span></sc-if><sc-if value="{{ F.signature.ghost }}" hint-placeholder-val="{{ false }}"><span style="{{ sigGhost }}">서명</span></sc-if></div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ 35MM ============ -->
+    <sc-if value="{{ is35mm }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;background:#0a0a0a;color:{{ filmCream }};overflow:hidden;">
+        <div style="position:absolute;left:0;right:0;top:92px;height:1293px;background:{{ posterImg }};filter:{{ posterFilter }};"></div>
+        <div style="position:absolute;left:0;right:0;top:92px;height:1293px;pointer-events:none;{{ textureCss }}"></div>
+        <div style="position:absolute;left:0;right:0;bottom:92px;height:520px;pointer-events:none;background:linear-gradient(180deg,rgba(8,7,5,0) 0%,rgba(8,7,5,.82) 45%,rgba(8,7,5,.97) 100%);"></div>
+        <div style="position:absolute;left:0;right:0;top:0;height:92px;background:#0a0a0a;display:flex;align-items:center;justify-content:space-between;padding:0 20px;">{{ sprocketTop }}</div>
+        <div style="position:absolute;left:0;right:0;bottom:0;height:92px;background:#0a0a0a;display:flex;align-items:center;justify-content:space-between;padding:0 20px;">{{ sprocketBot }}</div>
+        <div style="position:absolute;left:64px;top:132px;display:flex;align-items:center;gap:28px;opacity:{{ compOp }};">
+          <div data-fkey="chain" onClick="{{ F.chain.tap }}" style="{{ F.chain.wrap }}">{{ chainNode }}</div>
+          <sc-if value="{{ bothStamps }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:34px;background:{{ filmCream }};opacity:.5;"></span></sc-if>
+          <div data-fkey="format" onClick="{{ F.format.tap }}" style="{{ F.format.wrap }}">{{ formatNode }}</div>
+        </div>
+        <div style="position:absolute;left:64px;right:64px;bottom:150px;opacity:{{ compOp }};">
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;"><span style="width:34px;height:2px;background:{{ amber }};"></span><span style="font-family:'JetBrains Mono',monospace;font-size:16px;letter-spacing:5px;color:{{ amber }};">35MM · FRAME 237A</span></div>
+          <div data-fkey="title" onClick="{{ F.title.tap }}" style="{{ F.title.wrap }}">
+            <sc-if value="{{ F.title.has }}" hint-placeholder-val="{{ true }}"><div style="font-weight:700;font-size:60px;line-height:1.06;letter-spacing:-1px;">{{ F.title.text }}</div></sc-if>
+            <sc-if value="{{ F.title.ghost }}" hint-placeholder-val="{{ false }}"><div style="{{ ghostBig }}">TITLE</div></sc-if>
+          </div>
+          <div style="height:1px;background:{{ filmCream }};opacity:.3;margin:22px 0;"></div>
+          <div style="display:flex;flex-wrap:wrap;gap:16px 46px;">
+            <div><div style="{{ filmLabel }}">SCREENING</div><div style="{{ filmVal }}" data-fkey="watchDate watchTime">{{ watchLine }}</div></div>
+            <div data-fkey="theater" onClick="{{ F.theater.tap }}" style="{{ F.theater.wrap }}"><div style="{{ filmLabel }}">VENUE</div><div style="{{ filmVal }}">{{ venueLine }}</div></div>
+            <div data-fkey="seat" onClick="{{ F.seat.tap }}" style="{{ F.seat.wrap }}"><div style="{{ filmLabel }}">SEAT</div><div style="{{ filmVal }}">{{ F.seat.dash }}</div></div>
+            <div><div style="{{ filmLabel }}">RUNTIME</div><div style="{{ filmVal }}" data-fkey="runtime">{{ runtimeDash }}</div></div>
+          </div>
+          <div style="margin-top:26px;display:flex;align-items:flex-end;justify-content:space-between;"><span style="font-family:'JetBrains Mono',monospace;font-weight:800;font-size:22px;letter-spacing:3px;color:{{ amber }};">FILME</span><div data-fkey="signature" onClick="{{ F.signature.tap }}" style="{{ F.signature.wrap }}"><sc-if value="{{ F.signature.has }}" hint-placeholder-val="{{ false }}"><span style="font-family:'Newsreader',serif;font-style:italic;font-size:24px;opacity:.75;margin-right:10px;">collected by</span><span style="font-weight:600;font-size:28px;">{{ F.signature.text }}</span></sc-if><sc-if value="{{ F.signature.ghost }}" hint-placeholder-val="{{ false }}"><span style="{{ sigGhost }}">서명</span></sc-if></div></div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ STUB ============ -->
+    <sc-if value="{{ isStub }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;background:#f4ede0;color:#1a1612;overflow:hidden;display:flex;flex-direction:column;">
+        <div data-fkey="poster" onClick="{{ posterTap }}" style="flex:0 0 760px;position:relative;background:#0a0a0a;overflow:hidden;">
+          <div style="position:absolute;inset:0;background:{{ posterImg }};filter:{{ posterFilter }};"></div>
+          <div style="position:absolute;inset:0;pointer-events:none;{{ textureCss }}"></div>
+        </div>
+        <div style="height:16px;flex-shrink:0;display:flex;align-items:center;"><span style="flex:1;border-top:3px dashed rgba(26,22,18,.85);"></span></div>
+        <div style="flex:1;min-height:0;position:relative;background:#f4ede0;padding:22px 40px 26px;display:flex;flex-direction:column;opacity:{{ compOp }};">
+          <div style="position:relative;height:42px;overflow:hidden;margin:-22px -40px 22px;background:{{ holo }};box-shadow:inset 0 1px 0 rgba(26,22,18,.22),inset 0 -1px 0 rgba(26,22,18,.22);display:flex;align-items:center;"><div style="white-space:nowrap;padding-left:16px;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:rgba(26,22,18,.62);">{{ tickerText }}</div></div>
+          <div style="display:flex;align-items:center;gap:13px;margin-bottom:22px;opacity:{{ hasAnyStampNum }};">
+            <div data-fkey="chain" onClick="{{ F.chain.tap }}" style="{{ F.chain.wrap }}">{{ chainNodePaper }}</div>
+            <sc-if value="{{ bothStamps }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:24px;background:#1a1612;opacity:.35;"></span></sc-if>
+            <div data-fkey="format" onClick="{{ F.format.tap }}" style="{{ F.format.wrap }}">{{ formatNodePaper }}</div>
+          </div>
+          <div data-fkey="title" onClick="{{ F.title.tap }}" style="{{ F.title.wrap }}">
+            <sc-if value="{{ F.title.has }}" hint-placeholder-val="{{ true }}"><div style="font-weight:700;font-size:42px;line-height:1.06;letter-spacing:-1.2px;">{{ F.title.text }}</div></sc-if>
+            <sc-if value="{{ F.title.ghost }}" hint-placeholder-val="{{ false }}"><div style="{{ ghostBigDark }}">TITLE</div></sc-if>
+          </div>
+          <div data-fkey="titleOg" onClick="{{ F.titleOg.tap }}" style="{{ F.titleOg.wrap }}margin-top:8px;"><div style="font-weight:600;font-size:18px;letter-spacing:2px;text-transform:uppercase;color:#6f6347;">{{ F.titleOg.dash }}</div></div>
+          <div style="height:1px;background:rgba(26,22,18,.2);margin:24px 0;"></div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:13px;"><span style="width:22px;height:2px;background:#1a1612;"></span><span style="font-family:'JetBrains Mono',monospace;font-weight:800;font-size:13px;letter-spacing:3px;">ADMISSION</span><span style="flex:1;height:1px;background:rgba(26,22,18,.18);"></span></div>
+          <div style="display:flex;gap:22px;align-items:stretch;margin-bottom:20px;">
+            <div data-fkey="seat" onClick="{{ F.seat.tap }}" style="{{ F.seatChip }}"><span style="font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:3px;color:rgba(244,237,224,.6);margin-bottom:6px;">SEAT</span><span style="font-weight:900;font-size:48px;letter-spacing:-1px;line-height:.85;">{{ F.seat.dash }}</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:12px;">
+              <div style="display:flex;align-items:center;gap:12px;"><span style="{{ stubRowLabel }}">DATE</span><span style="flex:1;border-bottom:1px dotted rgba(26,22,18,.4);"></span><span data-fkey="watchDate" onClick="{{ F.watchDate.tap }}" style="{{ F.watchDate.wrapInline }}font-weight:700;font-size:24px;">{{ watchDateDash }}</span></div>
+              <div style="display:flex;align-items:center;gap:12px;"><span style="{{ stubRowLabel }}">TIME</span><span style="flex:1;border-bottom:1px dotted rgba(26,22,18,.4);"></span><span data-fkey="watchTime" onClick="{{ F.watchTime.tap }}" style="{{ F.watchTime.wrapInline }}font-weight:700;font-size:24px;">{{ F.watchTime.dash }}</span></div>
+              <div style="display:flex;align-items:center;gap:12px;"><span style="{{ stubRowLabel }}">HALL</span><span style="flex:1;border-bottom:1px dotted rgba(26,22,18,.4);"></span><span data-fkey="theater" onClick="{{ F.theater.tap }}" style="{{ F.theater.wrapInline }}font-weight:700;font-size:20px;">{{ venueLine }}</span></div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:13px;"><span style="width:22px;height:2px;background:#1a1612;"></span><span style="font-family:'JetBrains Mono',monospace;font-weight:800;font-size:13px;letter-spacing:3px;">THE FILM</span><span style="flex:1;height:1px;background:rgba(26,22,18,.18);"></span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;column-gap:40px;row-gap:12px;">
+            <div style="display:flex;align-items:center;gap:12px;"><span style="{{ stubRowLabel }}">RUNTIME</span><span style="flex:1;border-bottom:1px dotted rgba(26,22,18,.4);"></span><span style="font-weight:700;font-size:24px;" data-fkey="runtime">{{ runtimeDash }}</span></div>
+            <div style="display:flex;align-items:center;gap:12px;"><span style="{{ stubRowLabel }}">RATED</span><span style="flex:1;border-bottom:1px dotted rgba(26,22,18,.4);"></span><span style="font-weight:700;font-size:24px;" data-fkey="rating">★ {{ ratingDash }}</span></div>
+            <div style="display:flex;align-items:center;gap:12px;"><span style="{{ stubRowLabel }}">RELEASED</span><span style="flex:1;border-bottom:1px dotted rgba(26,22,18,.4);"></span><span style="font-weight:700;font-size:24px;" data-fkey="releaseDate">{{ releaseDash }}</span></div>
+            <div data-fkey="actors" onClick="{{ F.actors.tap }}" style="display:flex;align-items:center;gap:12px;{{ F.actors.wrapInlineRaw }}"><span style="{{ stubRowLabel }}">CAST</span><span style="flex:1;border-bottom:1px dotted rgba(26,22,18,.4);"></span><span style="font-weight:700;font-size:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px;">{{ F.actors.dash }}</span></div>
+          </div>
+          <div style="flex:1;"></div>
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;">
+            <div style="display:flex;align-items:baseline;gap:10px;"><span style="font-family:'Newsreader',serif;font-style:italic;font-size:22px;color:#6f6347;">made with</span><span style="font-family:'JetBrains Mono',monospace;font-weight:800;font-size:22px;letter-spacing:2px;">FILME</span><span data-fkey="signature" onClick="{{ F.signature.tap }}" style="{{ F.signature.wrapInline }}margin-left:6px;"><sc-if value="{{ F.signature.has }}" hint-placeholder-val="{{ false }}"><span style="font-family:'Newsreader',serif;font-style:italic;font-size:20px;color:#6f6347;margin-right:8px;">·</span><span style="font-weight:600;font-size:22px;">{{ F.signature.text }}</span></sc-if><sc-if value="{{ F.signature.ghost }}" hint-placeholder-val="{{ false }}"><span style="{{ sigGhostDark }}">서명</span></sc-if></span></div>
+            <div style="width:300px;height:40px;background:repeating-linear-gradient(90deg,#1a1612 0 2px,transparent 2px 3px,#1a1612 3px 6px,transparent 6px 8px,#1a1612 8px 9px,transparent 9px 13px);"></div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ EDITORIAL (landscape) ============ -->
+    <sc-if value="{{ isEditorial }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;background:#f4ede0;color:#1a1612;overflow:hidden;display:flex;">
+        <div data-fkey="poster" onClick="{{ posterTap }}" style="flex:0 0 600px;position:relative;background:#0a0a0a;overflow:hidden;">
+          <div style="position:absolute;inset:0;background:{{ posterImg }};filter:{{ posterFilter }};"></div>
+          <div style="position:absolute;inset:0;pointer-events:none;{{ textureCss }}"></div>
+        </div>
+        <div style="width:14px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:space-around;background:#f4ede0;">{{ perfDots }}</div>
+        <div style="flex:1;min-width:0;position:relative;background:#f4ede0;padding:66px 70px 60px;display:flex;flex-direction:column;opacity:{{ compOp }};">
+          <div style="position:absolute;left:0;top:0;bottom:0;width:6px;background:#A8312A;"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:26px;">
+            <div style="font-family:'Newsreader',serif;font-style:italic;font-size:34px;color:#A8312A;">à l'affiche</div>
+            <div style="display:flex;align-items:center;gap:20px;opacity:{{ hasAnyStampNum }};"><div data-fkey="chain" onClick="{{ F.chain.tap }}" style="{{ F.chain.wrap }}">{{ chainNodePaper }}</div><div data-fkey="format" onClick="{{ F.format.tap }}" style="{{ F.format.wrap }}">{{ formatNodePaper }}</div></div>
+          </div>
+          <div style="height:2px;background:#1a1612;margin-bottom:26px;"></div>
+          <div data-fkey="title" onClick="{{ F.title.tap }}" style="{{ F.title.wrap }}">
+            <sc-if value="{{ F.title.has }}" hint-placeholder-val="{{ true }}"><div style="font-family:'Newsreader',serif;font-weight:600;font-size:82px;line-height:1;letter-spacing:-1px;">{{ F.title.text }}</div></sc-if>
+            <sc-if value="{{ F.title.ghost }}" hint-placeholder-val="{{ false }}"><div style="{{ ghostBigDark }}">TITLE</div></sc-if>
+          </div>
+          <div data-fkey="titleOg" onClick="{{ F.titleOg.tap }}" style="{{ F.titleOg.wrap }}margin-top:14px;"><div style="font-weight:600;font-size:24px;letter-spacing:3px;text-transform:uppercase;color:#6f6347;">{{ F.titleOg.dash }}</div></div>
+          <div data-fkey="actors" onClick="{{ F.actors.tap }}" style="{{ F.actors.wrap }}margin-top:20px;"><span style="font-family:'Newsreader',serif;font-style:italic;font-size:30px;color:#6f6347;margin-right:12px;">avec</span><span style="font-weight:500;font-size:32px;">{{ F.actors.dash }}</span></div>
+          <div style="flex:1;"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;column-gap:36px;row-gap:20px;border-top:1px solid rgba(26,22,18,.25);padding-top:26px;">
+            <div><div style="{{ edLabel }}">séance</div><div style="{{ edVal }}" data-fkey="watchDate watchTime">{{ watchLine }}</div></div>
+            <div data-fkey="theater" onClick="{{ F.theater.tap }}" style="{{ F.theater.wrap }}"><div style="{{ edLabel }}">cinéma</div><div style="{{ edVal }}">{{ venueLine }}</div></div>
+            <div data-fkey="seat" onClick="{{ F.seat.tap }}" style="{{ F.seat.wrap }}"><div style="{{ edLabel }}">place</div><div style="{{ edVal }}">{{ F.seat.dash }}</div></div>
+            <div><div style="{{ edLabel }}">durée</div><div style="{{ edVal }}" data-fkey="runtime">{{ runtimeDash }}</div></div>
+            <div><div style="{{ edLabel }}">note</div><div style="{{ edVal }}" data-fkey="rating">★ {{ ratingDash }}</div></div>
+            <div data-fkey="signature" onClick="{{ F.signature.tap }}" style="{{ F.signature.wrap }}"><sc-if value="{{ F.signature.show }}" hint-placeholder-val="{{ false }}"><div style="{{ edLabel }}">collectionné par</div><div style="{{ edVal }}">{{ F.signature.dash }}</div></sc-if></div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ 35MM WIDE (landscape) ============ -->
+    <sc-if value="{{ is35mmWide }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;background:#0a0a0a;color:{{ filmCream }};overflow:hidden;">
+        <div style="position:absolute;left:0;right:0;top:0;height:120px;background:#0a0a0a;display:flex;align-items:center;justify-content:space-between;padding:0 24px;z-index:3;">{{ sprocketTop }}</div>
+        <div style="position:absolute;left:0;right:0;bottom:0;height:120px;background:#0a0a0a;display:flex;align-items:center;justify-content:space-between;padding:0 24px;z-index:3;">{{ sprocketBot }}</div>
+        <div data-fkey="poster" onClick="{{ posterTap }}" style="position:absolute;left:0;top:120px;bottom:120px;width:740px;background:#0a0a0a;overflow:hidden;">
+          <div style="position:absolute;inset:0;background:{{ posterImg }};filter:{{ posterFilter }};"></div>
+          <div style="position:absolute;inset:0;pointer-events:none;{{ textureCss }}"></div>
+        </div>
+        <div style="position:absolute;left:740px;right:0;top:120px;bottom:120px;background:#070707;padding:56px 60px;display:flex;flex-direction:column;opacity:{{ compOp }};">
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;"><span style="width:30px;height:2px;background:{{ amber }};"></span><span style="font-family:'JetBrains Mono',monospace;font-size:15px;letter-spacing:5px;color:{{ amber }};">ACCESSION · 35MM</span></div>
+          <div data-fkey="title" onClick="{{ F.title.tap }}" style="{{ F.title.wrap }}">
+            <sc-if value="{{ F.title.has }}" hint-placeholder-val="{{ true }}"><div style="font-weight:700;font-size:64px;line-height:1.02;letter-spacing:-1px;">{{ F.title.text }}</div></sc-if>
+            <sc-if value="{{ F.title.ghost }}" hint-placeholder-val="{{ false }}"><div style="{{ ghostBig }}">TITLE</div></sc-if>
+          </div>
+          <div data-fkey="titleOg" onClick="{{ F.titleOg.tap }}" style="{{ F.titleOg.wrap }}margin-top:12px;"><div style="font-family:'JetBrains Mono',monospace;font-size:18px;letter-spacing:3px;text-transform:uppercase;opacity:.6;">{{ F.titleOg.dash }}</div></div>
+          <div style="height:1px;background:{{ filmCream }};opacity:.24;margin:26px 0;"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px 40px;">
+            <div><div style="{{ filmLabel }}">SCREENING</div><div style="{{ filmVal }}" data-fkey="watchDate watchTime">{{ watchLine }}</div></div>
+            <div data-fkey="theater" onClick="{{ F.theater.tap }}" style="{{ F.theater.wrap }}"><div style="{{ filmLabel }}">VENUE</div><div style="{{ filmVal }}">{{ venueLine }}</div></div>
+            <div data-fkey="seat" onClick="{{ F.seat.tap }}" style="{{ F.seat.wrap }}"><div style="{{ filmLabel }}">SEAT</div><div style="{{ filmVal }}">{{ F.seat.dash }}</div></div>
+            <div><div style="{{ filmLabel }}">RUNTIME</div><div style="{{ filmVal }}" data-fkey="runtime">{{ runtimeDash }}</div></div>
+          </div>
+          <div style="flex:1;"></div>
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;"><span style="font-family:'JetBrains Mono',monospace;font-weight:800;font-size:20px;letter-spacing:3px;color:{{ amber }};">FILME</span><div data-fkey="signature" onClick="{{ F.signature.tap }}" style="{{ F.signature.wrap }}"><sc-if value="{{ F.signature.has }}" hint-placeholder-val="{{ false }}"><span style="font-family:'Newsreader',serif;font-style:italic;font-size:22px;opacity:.72;margin-right:8px;">collected by</span><span style="font-weight:600;font-size:26px;">{{ F.signature.text }}</span></sc-if><sc-if value="{{ F.signature.ghost }}" hint-placeholder-val="{{ false }}"><span style="{{ sigGhost }}">서명</span></sc-if></div></div>
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:320,&quot;height&quot;:492},&quot;data&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;},&quot;mood&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;minimal&quot;,&quot;options&quot;:[&quot;minimal&quot;,&quot;criterion&quot;,&quot;35mm&quot;,&quot;stub&quot;,&quot;editorial&quot;,&quot;35mm-landscape&quot;],&quot;tsType&quot;:&quot;string&quot;},&quot;tint&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;},&quot;texture&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;},&quot;posterBright&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:55,&quot;min&quot;:0,&quot;max&quot;:100,&quot;tsType&quot;:&quot;number&quot;},&quot;compOpacity&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:100,&quot;min&quot;:0,&quot;max&quot;:100,&quot;tsType&quot;:&quot;number&quot;},&quot;showGhosts&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;interactive&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;activeKey&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;},&quot;hiddenKeys&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string[]&quot;},&quot;logoImg&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;},&quot;formatLogoImg&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;},&quot;onField&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(k:string)=&gt;void&quot;}}">
+class Component extends DCLogic {
+  state = { scale: 0.34 };
+  componentDidMount() {
+    this._ro = new ResizeObserver(() => this._measure());
+    if (this._root) this._ro.observe(this._root);
+    this._measure();
+  }
+  componentWillUnmount() { if (this._ro) this._ro.disconnect(); }
+  _measure() {
+    if (!this._root) return;
+    const w = this._root.clientWidth;
+    if (w <= 0) return;
+    const land = this._isLand();
+    const natW = land ? 1477 : 960;
+    const s = w / natW;
+    if (Math.abs(s - this.state.scale) > 0.0015) this.setState({ scale: s });
+  }
+  _isLand() { const m = (this.props || {}).mood || 'minimal'; return m === 'editorial' || m === '35mm-landscape'; }
+
+  renderVals() {
+    const p = this.props || {};
+    const SAMPLE = { title:'화양연화', titleOg:'IN THE MOOD FOR LOVE', actors:'양조위, 장만옥', watchDate:'2026.07.11', watchTime:'19:40', theater:'CGV 용산아이파크몰', screen:'2관', seat:'H12', runtime:'98분', rating:'4.8', releaseDate:'2000.10.21', signature:'', chainLabel:'', formatLabel:'' };
+    const d = p.data || SAMPLE;
+    const mood = p.mood || 'minimal';
+    const land = mood === 'editorial' || mood === '35mm-landscape';
+    const themeColor = (p.tint || '#FFFFFF');
+    const texture = p.texture || 'original';
+    const bright = p.posterBright ?? 55;
+    const compOp = (p.compOpacity ?? 100) / 100;
+    const showGhosts = p.showGhosts ?? true;
+    const interactive = p.interactive ?? true;
+    const activeKey = p.activeKey ?? null;
+    const logoImg = p.logoImg || '';
+    const formatLogoImg = p.formatLogoImg || '';
+    const hiddenSet = new Set(Array.isArray(p.hiddenKeys) ? p.hiddenKeys : []);
+
+    // ---- ink (themeColor) — dark ink snaps surface to cream (minimal/criterion) ----
+    const lum = (hex) => { const c=(hex||'#fff').replace('#','').padEnd(6,'0'); const f=v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4);}; return .2126*f(parseInt(c.slice(0,2),16))+.7152*f(parseInt(c.slice(2,4),16))+.0722*f(parseInt(c.slice(4,6),16)); };
+    const inkIsDark = lum(themeColor) < 0.18;
+    const ink = inkIsDark ? '#141210' : themeColor;
+    const filmCream = '#f1ead9';
+    const amber = '#E0A33A';
+
+    const scrimGrad = inkIsDark
+      ? 'linear-gradient(180deg, rgba(245,240,232,0) 0%, rgba(245,240,232,.82) 28%, rgba(245,240,232,.97) 100%)'
+      : 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.6) 28%, rgba(0,0,0,.94) 100%)';
+    const topScrim = inkIsDark
+      ? 'linear-gradient(180deg, rgba(245,240,232,.9) 0%, rgba(245,240,232,0) 100%)'
+      : 'linear-gradient(180deg, rgba(0,0,0,.58) 0%, rgba(0,0,0,0) 100%)';
+    const critScrim = inkIsDark
+      ? 'linear-gradient(180deg, rgba(245,240,232,.7) 0%, rgba(245,240,232,.34) 30%, rgba(245,240,232,.5) 60%, rgba(245,240,232,.95) 100%)'
+      : 'linear-gradient(180deg, rgba(0,0,0,.7) 0%, rgba(0,0,0,.3) 30%, rgba(0,0,0,.46) 60%, rgba(0,0,0,.93) 100%)';
+    const spineBg = inkIsDark ? 'rgba(245,240,232,.95)' : 'rgba(0,0,0,.74)';
+
+    // ---- poster placeholder (constant "uploaded poster" stand-in) ----
+    const posterImg = 'radial-gradient(150% 90% at 68% 14%, rgba(224,163,58,.42) 0%, transparent 46%), linear-gradient(178deg, #33404e 0%, #212c39 38%, #131a24 66%, #090d13 100%)';
+    // texture filter + brightness
+    const full = new Set(['original','vintage','newspaper']);
+    const factor = 0.32 + (bright / 100) * 0.86;
+    const texFilter = { vintage:'sepia(.6) contrast(1.1) brightness(.9)', newspaper:'grayscale(1) contrast(1.5) brightness(1.15)' }[texture] || 'saturate(.94) contrast(1.05)';
+    const posterFilter = `${texFilter} brightness(${(full.has(texture) ? factor : factor * 0.9).toFixed(3)})`;
+    const texOverlays = {
+      none:'background:linear-gradient(135deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.06) 30%,rgba(255,255,255,.18) 50%,rgba(255,255,255,.06) 70%,rgba(255,255,255,0) 100%);mix-blend-mode:screen;',
+      hologram:'background:linear-gradient(135deg,rgba(255,182,193,.32) 0%,rgba(255,223,186,.32) 20%,rgba(255,255,186,.32) 40%,rgba(186,255,201,.32) 60%,rgba(186,225,255,.32) 80%,rgba(216,191,216,.32) 100%);mix-blend-mode:color-dodge;',
+      metal:'background:linear-gradient(135deg,rgba(255,255,255,.45) 0%,rgba(180,190,200,.1) 30%,rgba(255,255,255,.55) 50%,rgba(100,110,120,.1) 70%,rgba(30,40,50,.35) 100%);mix-blend-mode:hard-light;',
+      artpaper:'background:repeating-linear-gradient(45deg,rgba(0,0,0,.05) 0 2px,rgba(255,255,255,.05) 2px 4px);mix-blend-mode:multiply;',
+      scodix:'background:linear-gradient(135deg,rgba(255,255,255,0) 40%,rgba(0,0,0,.12) 45%,rgba(255,255,255,.65) 50%,rgba(255,255,255,0) 55%);mix-blend-mode:overlay;',
+    };
+    const textureCss = texOverlays[texture] || '';
+
+    // ---- field cell factory ----
+    const mk = (key) => (interactive && typeof p.onField === 'function') ? () => p.onField(key) : undefined;
+    const hiRing = '0 0 0 3px rgba(176,66,63,.9), 0 0 0 6px rgba(176,66,63,.28), 0 0 20px rgba(176,66,63,.6)';
+    const wrap = (key, extra) => {
+      const hi = interactive && activeKey === key;
+      return Object.assign({ cursor: interactive ? 'pointer' : 'default', borderRadius: 8, padding: '4px 6px', margin: '-4px -6px', transition: 'box-shadow .16s, background .16s' }, extra || {}, hi ? { boxShadow: hiRing, background: 'rgba(176,66,63,.14)' } : {});
+    };
+    const styleStr = (o) => Object.entries(o).map(([k,v]) => k.replace(/[A-Z]/g,m=>'-'+m.toLowerCase())+':'+(typeof v==='number'&&!['opacity','zIndex','flex','fontWeight','lineHeight'].includes(k)?v+'px':v)).join(';')+';';
+    const cell = (key, extra) => {
+      const v = (d[key] ?? '') + '';
+      const hidden = hiddenSet.has(key);
+      const has = v !== '' && !hidden;
+      const ghost = v === '' && showGhosts && !hidden;
+      return { text: v, dash: has ? v : (ghost ? '—' : ''), has, ghost, show: has || ghost, tap: mk(key), wrap: styleStr(wrap(key, extra)), wrapInline: styleStr(wrap(key, { display:'inline-block' })), wrapInlineRaw: (interactive&&activeKey===key)?('box-shadow:'+hiRing+';background:rgba(176,66,63,.14);border-radius:8px;'):'' };
+    };
+    // stamps carry label + logo
+    const stampCell = (key) => {
+      const label = (d[key + 'Label'] ?? '') + '';
+      const hidden = hiddenSet.has(key);
+      const hasLogo = !hidden && ((key === 'chain' && !!logoImg) || (key === 'format' && !!formatLogoImg));
+      const has = (label !== '' || hasLogo) && !hidden;
+      const ghost = label === '' && !hasLogo && showGhosts && !hidden;
+      return { label, hasLogo, has, ghost, show: has || ghost, tap: mk(key), wrap: styleStr(wrap(key)) };
+    };
+
+    const F = {
+      title: cell('title'), titleOg: cell('titleOg'), actors: cell('actors'),
+      theater: cell('theater'), screen: cell('screen'), seat: cell('seat'),
+      watchDate: cell('watchDate'), watchTime: cell('watchTime'),
+      runtime: cell('runtime'), rating: cell('rating'), releaseDate: cell('releaseDate'),
+      signature: cell('signature'), chain: stampCell('chain'), format: stampCell('format'),
+    };
+    F.seatChip = '';
+
+    // ---- stamp nodes (logo | text label | ghost dashed) ----
+    const R = React.createElement;
+    const stampNode = (key, surface, h) => {
+      const s = F[key];
+      const dark = surface === 'dark';
+      if (s.hasLogo) return R('img', { src: key === 'chain' ? logoImg : formatLogoImg, style: { height: h, width: 'auto', display: 'block', filter: dark ? 'drop-shadow(0 2px 8px rgba(0,0,0,.85))' : 'none' } });
+      if (s.label) return R('div', { style: { fontFamily: '"Pretendard Variable",sans-serif', fontWeight: 800, fontSize: Math.round(h * 0.46), letterSpacing: 1.5, textTransform: 'uppercase', whiteSpace: 'nowrap', color: dark ? ink : '#1a1612', lineHeight: 1, textShadow: dark ? '0 2px 8px rgba(0,0,0,.7)' : 'none' } }, s.label);
+      if (s.ghost) return R('div', { style: { height: h, minWidth: h * 2.4, border: '1px dashed ' + (dark ? 'rgba(255,255,255,.7)' : 'rgba(26,22,18,.55)'), borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: '"JetBrains Mono",monospace', fontSize: h * 0.34, letterSpacing: 1, color: dark ? 'rgba(255,255,255,.85)' : 'rgba(26,22,18,.65)', padding: '0 10px' } }, key === 'chain' ? 'LOGO' : 'FORMAT');
+      return null;
+    };
+
+    // sprockets
+    const holes = (n) => R(React.Fragment, {}, Array.from({ length: n }, (_, i) => R('div', { key: i, style: { width: 44, height: 24, borderRadius: 6, background: '#f1ead9', flexShrink: 0, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.5)' } })));
+    const perfDots = R(React.Fragment, {}, Array.from({ length: 26 }, (_, i) => R('div', { key: i, style: { width: 5, height: 5, borderRadius: 999, background: 'rgba(26,22,18,.5)' } })));
+
+    // derived lines
+    const j = (arr, sep) => arr.filter(Boolean).join(sep);
+    const watchLine = j([F.watchDate.has ? d.watchDate : '', F.watchTime.has ? d.watchTime : ''], '  ·  ') || '—';
+    const venueLine = j([F.theater.has ? d.theater : '', F.screen.has ? d.screen : ''], ' · ') || '—';
+    const venueSeatLine = j([F.theater.has ? d.theater : '', F.screen.has ? d.screen : '', F.seat.has ? d.seat : ''], '  ·  ') || '—';
+    const watchYear = (d.watchDate || '').replace(/[^0-9]/g, '').slice(0, 4) || '2026';
+    const spineText = (F.titleOg.has ? d.titleOg : (F.title.has ? d.title : '')) || '';
+    const tickerText = j([F.title.has ? d.title : '', watchLine !== '—' ? watchLine : '', F.seat.has ? ('SEAT ' + d.seat) : '', 'ADMIT ONE', F.runtime.has ? d.runtime : '', '★ ' + (F.rating.has ? d.rating : '—')], '   ✦   ');
+
+    const hasTopStamp = (F.chain.show || F.format.show) ? 1 : 0;
+    const bothStamps = F.chain.show && F.format.show;
+    const hasAnyStampNum = (F.chain.show || F.format.show) ? 1 : 0;
+
+    const labelSerif = 'font-family:\'Newsreader\',serif;font-style:italic;font-weight:400;font-size:23px;line-height:1;opacity:.82;margin-bottom:2px;color:' + ink + ';';
+    const mVal = 'font-weight:600;font-size:30px;letter-spacing:-.4px;line-height:1.12;max-width:560px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:' + ink + ';';
+    const capLabel = 'font-weight:700;font-size:20px;font-family:\'JetBrains Mono\',monospace;letter-spacing:2px;text-transform:uppercase;opacity:.74;';
+    const capVal = 'font-weight:700;font-size:30px;letter-spacing:-.2px;opacity:.95;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+    const filmLabel = 'font-family:\'JetBrains Mono\',monospace;font-weight:600;font-size:15px;letter-spacing:2px;opacity:.62;margin-bottom:5px;';
+    const filmVal = 'font-weight:600;font-size:27px;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:360px;';
+    const stubRowLabel = 'font-family:\'JetBrains Mono\',monospace;font-size:13px;letter-spacing:2px;color:#6f6347;flex-shrink:0;';
+    const edLabel = 'font-family:\'Newsreader\',serif;font-style:italic;font-size:22px;color:#A8312A;margin-bottom:4px;';
+    const edVal = 'font-weight:600;font-size:26px;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+    const ghostBig = 'display:inline-flex;align-items:center;border:1px dashed rgba(255,255,255,.6);color:rgba(255,255,255,.6);font-family:\'JetBrains Mono\',monospace;font-size:24px;letter-spacing:2px;padding:14px 20px;border-radius:6px;';
+    const ghostBigDark = 'display:inline-flex;align-items:center;border:1px dashed rgba(26,22,18,.5);color:rgba(26,22,18,.55);font-family:\'JetBrains Mono\',monospace;font-size:24px;letter-spacing:2px;padding:14px 20px;border-radius:6px;';
+    const ghostSm = 'display:inline-flex;align-items:center;border:1px dashed rgba(255,255,255,.55);color:rgba(255,255,255,.6);font-family:\'JetBrains Mono\',monospace;font-size:12px;letter-spacing:1px;padding:6px 10px;border-radius:4px;';
+    // 서명 빈 상태(#10) — 'collected by —' 프로즈 대신 다른 필드와 동일한 담백한 고스트 칩. 숨김이면 아예 미표시(F.signature.show=false).
+    const sigGhost = 'display:inline-flex;align-items:center;border:1px dashed rgba(255,255,255,.5);color:rgba(255,255,255,.62);font-family:\'JetBrains Mono\',monospace;font-size:20px;letter-spacing:2px;padding:6px 15px;border-radius:6px;';
+    const sigGhostDark = 'display:inline-flex;align-items:center;border:1px dashed rgba(26,22,18,.42);color:rgba(26,22,18,.5);font-family:\'JetBrains Mono\',monospace;font-size:15px;letter-spacing:2px;padding:5px 12px;border-radius:6px;';
+    const seatChip = styleStr(wrap('seat', { flex: '0 0 auto', background: '#1a1612', color: '#f4ede0', borderRadius: 6, padding: '14px 26px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }));
+    F.seatChip = seatChip;
+
+    return {
+      setRoot: (el) => { this._root = el; if (el && this._ro) { this._ro.observe(el); this._measure(); } },
+      scale: this.state.scale, natW: land ? 1477 : 960, natH: land ? 960 : 1477, frameBg: (mood==='stub'||mood==='editorial') ? '#f4ede0' : '#0a0a0a',
+      isMinimal: mood === 'minimal', isCriterion: mood === 'criterion', is35mm: mood === '35mm', isStub: mood === 'stub', isEditorial: mood === 'editorial', is35mmWide: mood === '35mm-landscape',
+      ink, filmCream, amber, compOp, posterImg, posterFilter, textureCss,
+      scrimGrad, topScrim, critScrim, spineBg,
+      F, chainNode: stampNode('chain', 'dark', 74), formatNode: stampNode('format', 'dark', 64),
+      chainNodePaper: stampNode('chain', 'paper', 40), formatNodePaper: stampNode('format', 'paper', 40),
+      sprocketTop: holes(15), sprocketBot: holes(15), perfDots,
+      hasTopStamp, bothStamps, hasAnyStampNum,
+      watchLine, venueLine, venueSeatLine, watchYear, spineText, tickerText, holo: 'linear-gradient(100deg,#9ff0df 0%,#f6c4e4 14%,#c9baf7 30%,#b7e3f8 47%,#f7e2b3 64%,#b6f7c6 81%,#9ff0df 100%)',
+      watchDateDash: F.watchDate.dash || '—', runtimeDash: F.runtime.dash || '—', ratingDash: F.rating.dash || '—', releaseDash: F.releaseDate.dash || '—',
+      mLabel: labelSerif, mVal, capLabel, capVal, filmLabel, filmVal, stubRowLabel, edLabel, edVal,
+      ghostBig, ghostBigDark, ghostSm, sigGhost, sigGhostDark,
+      posterTap: mk('poster'),
+    };
+  }
+}
+</script>
+</body>
+</html>
