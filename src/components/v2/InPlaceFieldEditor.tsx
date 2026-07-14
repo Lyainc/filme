@@ -103,7 +103,11 @@ interface InPlaceFieldEditorProps {
   wrapperEl: HTMLElement | null;
   /** TicketRenderer를 감싼 안쪽 div — 측정·MutationObserver 대상(오버레이 자신을 관찰하지 않게 분리). */
   ticketEl: HTMLElement | null;
-  /** prev/next·필드 전환 — 셸 handleField(숨김 필드 자동 표시 on 포함) 재사용. */
+  /**
+   * prev/next 순회 — 순수 탐색이라 가시성을 건드리지 않는다(PR #359 리뷰 P1: 셸 handleField를
+   * 재사용하면 경유한 숨김 필드가 전부 노출로 바뀐다). 숨김 필드 재켜기는 FieldTap 직접 재탭
+   * (handleField)과 필드바 눈 토글만의 몫.
+   */
   onField: (field: SheetTarget) => void;
   onClose: () => void;
   /** 편집 중 티켓 lift(px, ≤0) — 셸이 transform으로 적용. */

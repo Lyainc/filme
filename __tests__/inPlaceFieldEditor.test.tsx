@@ -23,6 +23,7 @@ function Harness() {
     <>
       <div data-testid="movie-title">{photo.state.movieInfo.title}</div>
       <div data-testid="movie-theater">{photo.state.movieInfo.theater}</div>
+      <div data-testid="vis-actors">{String(photo.state.fieldVisibility.actors)}</div>
       <button
         type="button"
         onClick={() => {
@@ -31,6 +32,9 @@ function Harness() {
         }}
       >
         seed
+      </button>
+      <button type="button" onClick={() => photo.updateFieldVisibility({ actors: false })}>
+        hide-actors
       </button>
       <MobileEditorShell
         photo={photo}
@@ -107,6 +111,22 @@ describe('인플레이스 필드 에디터 (#354)', () => {
     fireEvent.click(screen.getByRole('button', { name: '편집 완료' }));
     expect(screen.queryByRole('textbox', { name: '극장' })).toBeNull();
     expect(screen.queryByRole('toolbar', { name: '필드 편집 도구' })).toBeNull();
+  });
+
+  test('prev/next 순회 경유는 숨긴 필드 가시성을 켜지 않는다 (PR #359 리뷰 P1)', async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByText('seed'));
+    fireEvent.click(screen.getByText('hide-actors'));
+    expect(screen.getByTestId('vis-actors').textContent).toBe('false');
+
+    // title에서 next를 눌러 actors를 경유·통과해도 actors 가시성은 그대로 꺼져 있어야 한다.
+    // (자동 표시 on은 FieldTap 직접 탭(handleField) 전용 — 순회는 순수 탐색.)
+    fireEvent.click(await screen.findByRole('button', { name: '제목 편집' }));
+    await screen.findByRole('textbox', { name: '제목' });
+    for (let i = 0; i < 6; i++) {
+      fireEvent.click(screen.getByRole('button', { name: '다음 항목' }));
+    }
+    expect(screen.getByTestId('vis-actors').textContent).toBe('false');
   });
 
   test('편집 중 ghost 강제 on — "빈 항목" off여도 빈 필드 탭 타깃이 남는다', async () => {

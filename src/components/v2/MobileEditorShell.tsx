@@ -610,14 +610,16 @@ export function MobileEditorShell({
       </div>
 
       {/* 온티켓 인플레이스 에디터(#354) — 필드 탭이 시트 대신 이걸 연다. 투명 input + 필드바 +
-          aid 패널(KOBIS/별점/날짜). 위치는 래퍼/티켓 ref 기반 측정, lift는 setEditLift로 위 transform에. */}
+          aid 패널(KOBIS/별점/날짜). 위치는 래퍼/티켓 ref 기반 측정, lift는 setEditLift로 위 transform에.
+          onField는 handleField가 아니라 setActiveField — prev/next 순회는 순수 탐색이라 경유 필드의
+          가시성을 켜면 안 된다(PR #359 리뷰 P1). 자동 표시 on은 FieldTap 직접 탭(handleField)에만. */}
       {editing && activeField && (
         <InPlaceFieldEditor
           photo={photo}
           field={activeField}
           wrapperEl={previewWrapEl}
           ticketEl={ticketBoxEl}
-          onField={handleField}
+          onField={setActiveField}
           onClose={closeEditor}
           onLift={setEditLift}
         />
