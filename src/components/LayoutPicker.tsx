@@ -157,7 +157,7 @@ function LayoutPicker({ value, onChange }: LayoutPickerProps) {
             >
               <span
                 aria-hidden="true"
-                className={`block rounded-full transition-all ${
+                className={`block rounded-full transition-[width,background-color] ${
                   isCurrent ? 'h-2 w-5 bg-accent' : 'h-2 w-2 bg-line'
                 }`}
               />
