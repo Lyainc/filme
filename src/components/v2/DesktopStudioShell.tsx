@@ -20,8 +20,8 @@ import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 // 전체 표시/숨김 대상 = 모든 티켓 필드 - 필수 필드(#260 REQUIRED_FIELDS). ALL_FIELDS_ON을 도메인 소스로.
 const TOGGLE_FIELDS = (Object.keys(ALL_FIELDS_ON) as TicketField[]).filter((f) => !isRequiredField(f));
 
-// 데스크톱은 필드를 인라인 아코디언(FieldAccordion, #226)으로 편집한다 — vaul-free라 상시 마운트해도
-// vaul이 메인 번들로 안 딸려온다. 모바일(MobileEditorShell)만 vaul 하단시트(FieldEditSheet)를 쓴다.
+// 데스크톱은 필드를 인라인 아코디언(FieldAccordion, #226)으로 편집한다. 모바일(MobileEditorShell)은
+// 온티켓 인플레이스 편집(#354) + 필드 목록 드로어(#355) — vaul 하단시트는 #355에서 제거됐다.
 
 type StudioTab = 'poster' | 'info' | 'design';
 

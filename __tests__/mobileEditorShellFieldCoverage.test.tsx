@@ -11,9 +11,7 @@
  * 무드/시트는 dynamic(ssr:false)라 로드 대기에 findBy*를 쓴다. 상태는 Harness의 data-testid
  * 프로브로 읽는다(모듈 mock 없음 — bun mock.module 전역 누수 회피, 기존 셸 테스트 미러). 무드는
  * 'stub'로 고정 — 극장/상영관이 명확한 개별 FieldTap이라(onTicketFieldTap.test.tsx 검증) 여기선
- * 셸 배선만 겨눈다. vaul 시트 상호작용은 fireEvent로(userEvent 포인터 시뮬이 happy-dom 빈 transform을
- * 읽는 vaul 드래그 핸들러를 건드리는 걸 피함). localStorage는 usePhototicket 디바운스 저장분 격리를
- * 위해 매 테스트 전후 clear.
+ * 셸 배선만 겨눈다. localStorage는 usePhototicket 디바운스 저장분 격리를 위해 매 테스트 전후 clear.
  */
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';

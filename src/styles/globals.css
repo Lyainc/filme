@@ -173,6 +173,12 @@
     animation: screen-in 200ms cubic-bezier(.4,0,.2,1) forwards;
   }
 
+  /* 필드 드로어(#355) 진입 슬라이드 — 닫힘은 즉시 언마운트라 진입만. forwards 채움 없이
+     종료 후 computed transform이 none으로 돌아가 fixed 자식 containing block 함정을 피한다. */
+  .drawer-slide-in {
+    animation: drawer-in 240ms cubic-bezier(.32,.72,0,1);
+  }
+
   /* 앱 배경 — 단색 + 미세 SVG 노이즈(2~4%)로 평면 탈출. light/dark 공용(저대비 그레이 노이즈). */
   .app-canvas {
     background-color: var(--bg);
@@ -227,6 +233,11 @@
   @keyframes screen-in {
     from { opacity: 0; }
     to   { opacity: 1; }
+  }
+
+  @keyframes drawer-in {
+    from { transform: translateX(100%); }
+    to   { transform: translateX(0); }
   }
 
   /* OCR 스캔라인 상하 왕복 */

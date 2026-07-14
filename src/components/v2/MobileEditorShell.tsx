@@ -16,10 +16,10 @@ import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 import { isStampTarget, STAMP_KEYS, type SheetTarget } from '@/constants/fields';
 import { ALL_FIELDS_ON, ALL_FIELDS_OFF_KEEP_REQUIRED } from '@/constants/fieldVisibility';
 
-// 필드 시트는 vaul(+radix)을 끌어와 무겁고 필드 탭 전엔 안 쓰므로 dynamic(ssr:false)로 분리 —
-// 셸 자체는 모바일 첫 페인트에 즉시 필요하므로 static, vaul은 시트가 열릴 때만 로드된다.
-const FieldEditSheet = dynamic(
-  () => import('./FieldEditSheet').then((m) => m.FieldEditSheet),
+// 필드 목록 우측 드로어(#355, 구 FieldEditSheet 대체) — 크롭 모달·로고 훅을 끌어오고 열기 전엔
+// 안 쓰므로 dynamic(ssr:false)로 분리, 첫 열기에 로드된다.
+const FieldDrawer = dynamic(
+  () => import('./FieldDrawer').then((m) => m.FieldDrawer),
   { ssr: false },
 );
 
@@ -134,6 +134,9 @@ export function MobileEditorShell({
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // 헤더 서브메뉴(#315) — 다크모드·전체표시·빈 항목·잉크 토글 + 포스터 교체/재크롭 액션을 호스팅.
   const [menuOpen, setMenuOpen] = useState(false);
+  // 필드 목록 우측 드로어(#355). 진입은 헤더 목록 버튼 — #356 플로팅 툴바가 오면 그쪽
+  // field-list 버튼이 이 진입점을 이어받는다.
+  const [drawerOpen, setDrawerOpen] = useState(false);
   // pill 클릭 시 서브메뉴가 열린 채로 남지 않게 항상 같이 닫는다(claude-review PR #332 P2 —
   // 메뉴 오버레이가 마우스 클릭은 막아도 키보드 포커스는 막지 않아 Tab으로 pill까지 도달 가능).
   function handleViewModeChange(mode: ViewMode) {
@@ -313,6 +316,25 @@ export function MobileEditorShell({
           </svg>
         </button>
 
+        <div className="flex items-center gap-1">
+        {croppedImageUrl && (
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(true)}
+            aria-haspopup="dialog"
+            aria-label="티켓 항목 목록"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-fg-muted transition-colors hover:text-fg"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <line x1="9" y1="6" x2="20" y2="6" />
+              <line x1="9" y1="12" x2="20" y2="12" />
+              <line x1="9" y1="18" x2="20" y2="18" />
+              <circle cx="4.5" cy="6" r="0.5" fill="currentColor" />
+              <circle cx="4.5" cy="12" r="0.5" fill="currentColor" />
+              <circle cx="4.5" cy="18" r="0.5" fill="currentColor" />
+            </svg>
+          </button>
+        )}
         <button
           type="button"
           onClick={handleDone}
@@ -327,6 +349,7 @@ export function MobileEditorShell({
           </svg>
           완료
         </button>
+        </div>
 
         {menuOpen && (
           <>
@@ -625,9 +648,27 @@ export function MobileEditorShell({
         />
       )}
 
-      {/* 필드 편집 하단시트 — #354에서 인플레이스 에디터가 진입을 대체해 더는 열리지 않는다.
-          컴포넌트 제거는 #355(필드 드로어)에서 — main에 항상 동작하는 상태를 남기기 위해 단계를 나눈다. */}
-      <FieldEditSheet activeField={null} onClose={() => {}} photo={photo} />
+      {/* 필드 목록 우측 드로어(#355) — 행 탭은 handleField(자동 표시 on + 인플레이스 열기)로,
+          상단 슬롯엔 OCR 카드를 한 번 더 꽂는다(#142: 편집 화면 카드는 그대로 유지, 진입점 병존). */}
+      {drawerOpen && croppedImageUrl && (
+        <FieldDrawer
+          photo={photo}
+          onClose={() => setDrawerOpen(false)}
+          onField={(target) => {
+            setDrawerOpen(false);
+            handleField(target);
+          }}
+        >
+          <OcrUploadCard
+            setInfo={photo.updateMovieInfo}
+            currentInfo={photo.state.movieInfo}
+            onOcrApply={ocr.apply}
+            setComponents={photo.updateComponents}
+            currentComponents={photo.state.components}
+            ocrEpochRef={ocr.epochRef}
+          />
+        </FieldDrawer>
+      )}
 
       {/* 포스터 크롭 파이프라인(#259 on-ticket tap + #315 드롭존·서브메뉴 교체/재크롭 통합) — 숨김
           파일 input + 크롭 모달. 탭 → input.click() → 파일 선택 → ImageCropModal(기본 0.65:1) →

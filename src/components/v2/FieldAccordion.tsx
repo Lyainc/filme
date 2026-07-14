@@ -20,12 +20,12 @@ type Photo = ReturnType<typeof usePhototicket>;
 
 /**
  * 데스크톱 INFO 탭 필드 인라인 아코디언(#226). 상시 노출되는 380px 인스펙터라 모바일처럼 시트로
- * 덮지 않고, 필드 행을 클릭하면 그 자리에서 에디터가 확장된다. 본문은 FieldEditorBody(vaul-free)에
- * 위임 — 이 컴포넌트가 항상 마운트돼도 vaul이 메인 번들로 딸려오지 않는다(모바일 FieldEditSheet만 vaul).
+ * 덮지 않고, 필드 행을 클릭하면 그 자리에서 에디터가 확장된다. 본문은 FieldEditorBody에 위임 —
+ * 모바일 인플레이스 에디터(#354)와 공유한다(구 vaul 하단시트는 #355에서 제거).
  *
  * 표시/숨김 눈 토글은 각 행에 유지하되 rating과 필수 필드(#260 title)는 생략한다 — rating은 본문
  * (RatingPicker)이 자체 눈 토글을 렌더해 이중 eye가 되므로, 필수 필드는 숨기면 제목 없는 티켓이
- * 되므로(FieldEditSheet 헤더·모바일 전체해제와 동일 규칙).
+ * 되므로(모바일 드로어 자물쇠·전체해제와 동일 규칙).
  */
 export function FieldAccordion({ photo }: { photo: Photo }) {
   const [expanded, setExpanded] = useState<SheetTarget | null>(null);

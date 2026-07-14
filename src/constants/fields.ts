@@ -2,8 +2,8 @@ import type { TicketField, MovieInfo, TicketComponents, LayoutId } from '@/types
 import { formatDate } from '@/utils/dateFormat';
 
 /**
- * 필드 메타데이터 단일 소스(#215). 라벨은 편집 시트(FieldEditSheet)·데스크톱 아코디언
- * (FieldAccordion)이 공유하므로 여기 한 곳에 둔다.
+ * 필드 메타데이터 단일 소스(#215). 라벨은 필드 드로어(FieldDrawer)·데스크톱 아코디언
+ * (FieldAccordion)·인플레이스 에디터가 공유하므로 여기 한 곳에 둔다.
  */
 export const FIELD_LABELS: Record<TicketField, string> = {
   title: '제목',
