@@ -77,9 +77,20 @@ function ResultHarness() {
 describe('ResultStage 결과화면 톤 (#357)', () => {
   test('루트에 chrome-dark 상시 적용 + 앰비언트 상시 표시', () => {
     render(<ResultHarness />);
-    const ambient = screen.getByTestId('chrome-ambient');
+    // testid는 편집 셸과 분리(result-ambient) — resultOpen 시 둘이 동시 마운트라 중복 방지.
+    const ambient = screen.getByTestId('result-ambient');
     // 편집 셸과 달리 opacity 토글 없음 — 인라인 opacity를 걸지 않아 항상 보인다.
     expect(ambient.style.opacity).toBe('');
     expect((ambient.parentElement as HTMLElement).classList.contains('chrome-dark')).toBe(true);
+  });
+
+  // PR #362 리뷰 P2 — dock을 조건부 unmount로 숨기면 DesignRail의 pop(열린 패널) state가
+  // 최대화 왕복마다 리셋된다(#297 P1과 동일 패턴). hidden 토글 + 항상 마운트를 고정한다.
+  test('편집 셸: max 전환에도 dock(DesignRail)은 마운트 유지', () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByText('seed'));
+    // 최대화(플로팅 툴바) 진입 후에도 dock 탭이 DOM에 남아 있어야 한다(hidden일 뿐).
+    fireEvent.click(screen.getByRole('button', { name: '최대화' }));
+    expect(screen.getByRole('button', { name: '무드', hidden: true })).toBeTruthy();
   });
 });

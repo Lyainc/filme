@@ -623,15 +623,15 @@ export function MobileEditorShell({
           산수(390×844 하드코딩) 대신 flex라 iPhone SE(667px)를 포함한 어떤 뷰포트에서도 dock이
           화면 안에 있다. 언박스 패널이 열리면 dock 영역이 위로 자라고 본문(flex-1)이 줄어든다.
           DOM 순서는 본문 뒤라 기존 "OCR → rail 최하단" 위계(#261)가 유지된다. max는 티켓 전용
-          풀스크린이라 숨기고, relative는 absolute 앰비언트(#353) 위에 그려지기 위함. */}
-      {!isMax && (
-        <div
-          className="relative shrink-0 px-4 pt-3"
-          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
-        >
-          <DesignRail photo={photo} />
-        </div>
-      )}
+          풀스크린이라 숨기되 CSS hidden으로만 — 조건부 unmount면 DesignRail의 pop(열린 패널)
+          state가 최대화 왕복마다 리셋된다(#297 P1과 동일 패턴, PR #362 리뷰 P2).
+          relative는 absolute 앰비언트(#353) 위에 그려지기 위함. */}
+      <div
+        className={`relative shrink-0 px-4 pt-3${isMax ? ' hidden' : ''}`}
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
+      >
+        <DesignRail photo={photo} />
+      </div>
 
       {/* 플로팅 툴바(#356) — undo/redo·항목목록·최대화·배치·숨김. 프리뷰가 있어야 의미가 있고,
           max는 티켓만 남기는 풀스크린이라 숨긴다(탈출은 티켓 탭). 필드 편집·드로어 중에도 셸이
