@@ -71,6 +71,21 @@ describe('MobileEditorShell chrome 정보위계 (#261/#315/#363)', () => {
     expect(rail.closest('.hidden')).toBeNull();
   });
 
+  test('OcrUploadCard는 랜딩→업로드·최대화 전환에도 remount되지 않는다 (PR #372 리뷰 P1)', async () => {
+    // 분기별 별도 JSX로 심으면 전환 순간 remount되고, in-flight KOBIS 보강의 mountedRef 가드가
+    // setInfo를 조용히 버려 titleOg·releaseDate(완료 게이트 필수)가 유실된다. 같은 DOM 노드면
+    // 인스턴스 유지 — remount면 노드가 새로 생성돼 레퍼런스가 갈린다.
+    render(<Harness />);
+    const before = await screen.findByRole('button', { name: '티켓 스크린샷으로 자동 인식' });
+
+    fireEvent.click(screen.getByText('seed'));
+    expect(screen.getByRole('button', { name: '티켓 스크린샷으로 자동 인식' }) === before).toBe(true);
+
+    // max도 unmount가 아니라 CSS hidden — 최대화 왕복 중 동일 레이스 차단.
+    fireEvent.click(screen.getByRole('button', { name: '최대화' }));
+    expect(screen.getByRole('button', { name: '티켓 스크린샷으로 자동 인식', hidden: true }) === before).toBe(true);
+  });
+
   test('업로드 후: 헤더 서브메뉴에서 전체표시·빈 항목·잉크·포스터 교체/재크롭 접근 가능(#315)', async () => {
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
