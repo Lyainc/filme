@@ -203,7 +203,9 @@ export function MobileEditorShell({
     setActiveField(target);
   }, [photo.updateComponents, photo.updateFieldVisibility]);
 
-  // 첫 업로드·교체(새 파일 선택) — 포스터 드롭존 탭, 온-티켓 탭, 서브메뉴 "교체" 셋 다 이 경로.
+  // 첫 업로드·교체(새 파일 선택) — 포스터 드롭존 탭, 서브메뉴 "교체" 둘 다 이 경로.
+  // 온-티켓 빈 공간 탭 경로(#259)는 미스터치로 파일선택창이 떠서 제거(#365) — TicketRenderer에
+  // onPosterTap을 더는 넘기지 않는다.
   const handlePosterTap = useCallback(() => {
     posterInputRef.current?.click();
   }, []);
@@ -501,7 +503,7 @@ export function MobileEditorShell({
                   통째로 remount해 TicketRenderer의 scale state가 1로 리셋되며 깜빡인다(#259, 리뷰 지적
                   #275 PR — rotate 분기를 별도 JSX 트리로 나눴을 때 default↔max 전환에서 재현됨).
                   안쪽 div는 항상 존재하고 rotate일 때만 회전 스타일을 얹는다. default는 인라인 폭 + 티켓
-                  위 필드/포스터 직접 탭(onField/onPosterTap), max는 확대 폭 + 래퍼 전체 탭→기본
+                  위 필드 직접 탭(onField — 포스터 탭은 #365에서 제거), max는 확대 폭 + 래퍼 전체 탭→기본
                   복귀(max는 헤더·pill 자체가 없으니 이 탭이 유일한 탈출구). rotateLandscape(#275-8)는
                   가로형 무드의 max에서만 90도 회전 + 화면 꽉 채우기 — TicketRenderer 자신은 늘
                   자연(비회전) 방향으로 렌더돼 scale 계산이 방향을 몰라도 된다. isMax는 바깥 div의
@@ -567,7 +569,6 @@ export function MobileEditorShell({
                     // 빈/숨김 필드도 탭·순회 타깃으로 티켓에 남는다.
                     ghost={ghostMode || editing}
                     onField={viewMode === 'default' ? handleField : undefined}
-                    onPosterTap={viewMode === 'default' ? handlePosterTap : undefined}
                   />
                 </div>
               </div>

@@ -1,8 +1,9 @@
 import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { MovieInfo, TicketComponents } from '@/types';
+import { getLayout } from '@/utils/layouts';
 import { useKobisSearch } from '@/hooks/useKobisSearch';
 import { useLogoCrop } from '@/hooks/useLogoCrop';
 import RatingPicker from '@/components/wizard/RatingPicker';
@@ -45,6 +46,13 @@ interface FieldRect {
   h: number;
   /** 필드 세로 중심의 viewport Y — 래퍼 transform의 translateY 성분을 제거한 값(리프트 자기참조 방지). */
   vpCenter: number;
+  /** 티켓 렌더 텍스트의 시각 폰트 크기(래퍼 로컬 px, #365) — 캐럿 input의 텍스트 폭 계산을 티켓과 맞춘다. */
+  fontPx: number;
+  textAlign: string;
+  fontFamily: string;
+  fontWeight: string;
+  /** 시각 자간(래퍼 로컬 px, #365). computed 'normal'은 0. */
+  letterSpacingPx: number;
 }
 
 /**
@@ -53,7 +61,12 @@ interface FieldRect {
  * transform(리프트 중간값 포함)은 computed matrix로 읽어 스케일은 나누고 translateY는 빼서,
  * 트랜지션 중간에 측정돼도 좌표가 흔들리지 않는다.
  */
-function measureField(wrapper: HTMLElement, ticket: HTMLElement, field: SheetTarget): FieldRect | null {
+function measureField(
+  wrapper: HTMLElement,
+  ticket: HTMLElement,
+  field: SheetTarget,
+  naturalWidth: number
+): FieldRect | null {
   // null은 "앵커가 DOM에 없음"(그 무드가 필드를 안 렌더)일 때만 — 오버레이 렌더 게이트.
   // 0-크기 rect는 그대로 반환한다(레이아웃 미완·happy-dom 등, 다음 변경 관측에서 재측정).
   const tap = ticket.querySelector(`[data-field-tap="${field}"]`);
@@ -78,6 +91,15 @@ function measureField(wrapper: HTMLElement, ticket: HTMLElement, field: SheetTar
     if (m.a > 0) scale = m.a;
     translateY = m.f;
   }
+  // 캐럿 폰트 힌트(#365) — 티켓 텍스트의 computed 스타일은 자연 픽셀(무드 960/1477 기준)이라
+  // 티켓 스케일(래퍼 로컬 폭 ÷ 자연 폭)로 환산한다. el이 없는 텍스트 조각(fieldPieces)은
+  // display:contents 래퍼(tap)의 상속 스타일이 곧 텍스트 스타일이다.
+  const tw = ticket.getBoundingClientRect().width / scale;
+  const ticketScale = tw > 0 && naturalWidth > 0 ? tw / naturalWidth : 1;
+  const st = typeof getComputedStyle === 'function'
+    ? getComputedStyle((el instanceof HTMLElement ? el : null) ?? (tap as HTMLElement))
+    : null;
+  const lsRaw = st ? parseFloat(st.letterSpacing) : NaN;
   return {
     top: (eb.top - wb.top) / scale,
     left: (eb.left - wb.left) / scale,
@@ -86,6 +108,11 @@ function measureField(wrapper: HTMLElement, ticket: HTMLElement, field: SheetTar
     // ponytail: scale(1.08)이 origin(top center) 기준으로 세로 위치를 최대 ~2% 미는 건 무시 —
     // 리프트는 "키보드 위로 띄우기"라 ±20px 오차가 체감 안 된다.
     vpCenter: eb.top + eb.height / 2 - translateY,
+    fontPx: (st ? parseFloat(st.fontSize) || 16 : 16) * ticketScale,
+    textAlign: st?.textAlign || 'left',
+    fontFamily: st?.fontFamily || '',
+    fontWeight: st?.fontWeight || '400',
+    letterSpacingPx: (Number.isFinite(lsRaw) ? lsRaw : 0) * ticketScale,
   };
 }
 
@@ -94,7 +121,8 @@ const rectEq = (a: FieldRect | null, b: FieldRect | null) =>
   (!!a && !!b &&
     Math.abs(a.top - b.top) < 0.5 && Math.abs(a.left - b.left) < 0.5 &&
     Math.abs(a.w - b.w) < 0.5 && Math.abs(a.h - b.h) < 0.5 &&
-    Math.abs(a.vpCenter - b.vpCenter) < 0.5);
+    Math.abs(a.vpCenter - b.vpCenter) < 0.5 &&
+    Math.abs(a.fontPx - b.fontPx) < 0.5);
 
 interface InPlaceFieldEditorProps {
   photo: Photo;
@@ -134,19 +162,21 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
   // ── 지오메트리: 필드 rect(래퍼 로컬 좌표) ──────────────────────────────────
   const [rect, setRect] = useState<FieldRect | null>(null);
   const rectRef = useRef<FieldRect | null>(null);
+  // 캐럿 폰트 환산용 티켓 자연 폭(#365) — computed 폰트 크기(자연 px)를 화면 px로 바꾸는 분모.
+  const naturalWidth = getLayout(components.layout).width;
 
   const remeasure = useCallback(() => {
     if (!wrapperEl || !ticketEl) return;
-    const next = measureField(wrapperEl, ticketEl, field);
+    const next = measureField(wrapperEl, ticketEl, field, naturalWidth);
     if (rectEq(rectRef.current, next)) return;
     rectRef.current = next;
     setRect(next);
-  }, [wrapperEl, ticketEl, field]);
+  }, [wrapperEl, ticketEl, field, naturalWidth]);
 
   useLayoutEffect(() => {
     // 필드 전환 시 무조건 상태 동기화 — remeasure의 epsilon 게이트를 우회해 stale rect(이전 필드
     // 위치에 오버레이가 남는 것)를 방지한다.
-    const next = wrapperEl && ticketEl ? measureField(wrapperEl, ticketEl, field) : null;
+    const next = wrapperEl && ticketEl ? measureField(wrapperEl, ticketEl, field, naturalWidth) : null;
     rectRef.current = next;
     setRect(next);
     if (!wrapperEl || !ticketEl) return;
@@ -161,7 +191,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
       mo.disconnect();
       ro.disconnect();
     };
-  }, [remeasure, wrapperEl, ticketEl, field]);
+  }, [remeasure, wrapperEl, ticketEl, field, naturalWidth]);
 
   // ── visualViewport: 키보드 높이(aid 패널 bottom) + 가시 높이(리프트 목표) ──
   const [vvBox, setVvBox] = useState<{ h: number; bottom: number } | null>(null);
@@ -273,6 +303,14 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
   const barBtnCls =
     'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-fg-muted transition-colors hover:text-fg';
 
+  // 캐럿 스케일(#365) — caret 위치는 input 자신의 텍스트 폭 계산을 따르므로, 티켓 렌더 텍스트와
+  // 같은 폰트·자간·정렬로 흘려야 caret이 실제 텍스트 끝에 온다. 단 16px 미만 input은 iOS Safari가
+  // 포커스 시 자동 줌인하므로(#274) 폰트는 16px 이상으로 두고 transform: scale로 시각 크기만
+  // 낮춘다 — 레이아웃 값(width/height/padding/자간)은 역배율로 부풀려 화면 박스는 그대로다.
+  // ponytail: 여러 줄로 꺾인 필드는 단일라인 input의 한계로 첫 줄 기준 근사만 된다.
+  const caretScale = rect && rect.fontPx < 16 ? rect.fontPx / 16 : 1;
+  const inv = 1 / caretScale;
+
   const overlay = rect && (
     <>
       {/* 활성 필드 하이라이트 + (텍스트류) 투명 input — 텍스트는 티켓이 렌더, caret만 보인다. */}
@@ -296,17 +334,26 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
             position: 'absolute',
             left: rect.left - 8,
             top: rect.top - 6,
-            width: rect.w + 16,
-            height: rect.h + 12,
+            width: (rect.w + 16) * inv,
+            height: (rect.h + 12) * inv,
+            // 하이라이트 박스는 필드보다 8px 넓다 — 텍스트 시작을 rect 가장자리(티켓 텍스트
+            // 시작점)에 맞추는 패딩. 스케일 좌표계라 역배율로 넣어 시각 8px을 유지한다.
+            padding: `0 ${8 * inv}px`,
             zIndex: 60,
             border: 'none',
-            borderRadius: 6,
+            borderRadius: 6 * inv,
             background: 'var(--accent-soft)',
             color: 'transparent',
             caretColor: 'var(--accent)',
-            // 16px 미만이면 iOS Safari가 포커스 시 자동 줌인해 레이아웃이 틀어진다(#274).
-            fontSize: 16,
-            textAlign: 'center',
+            // 16px 미만이면 iOS Safari가 포커스 시 자동 줌인해 레이아웃이 틀어진다(#274) —
+            // 실제 시각 크기는 위 transform scale이 담당한다.
+            fontSize: Math.max(16, rect.fontPx),
+            fontFamily: rect.fontFamily || undefined,
+            fontWeight: rect.fontWeight as CSSProperties['fontWeight'],
+            letterSpacing: rect.letterSpacingPx ? `${rect.letterSpacingPx * inv}px` : undefined,
+            textAlign: rect.textAlign as CSSProperties['textAlign'],
+            transform: caretScale < 1 ? `scale(${caretScale})` : undefined,
+            transformOrigin: 'top left',
             outlineColor: 'var(--focus-ring)',
           }}
         />
