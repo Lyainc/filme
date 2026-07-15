@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MoodStub } from '../src/components/moods/MoodStub';
-import type { MovieInfo, TicketComponents } from '../src/types';
+import { FULL_MOVIE, makeMoodBase } from './fixtures';
 
 // 마스터 시안(Ticket Design Master.dc.html v2 · 2026-07-08 resync) 05 STUB 재동기화 회귀(#281, 에픽 #281).
 // Stub 델타(대규모 재구조): 포스터 760(텍스트 없음) · 절취 3px dashed 반원 노치 제거 · 페이퍼 스텁 flex.
@@ -10,20 +10,7 @@ import type { MovieInfo, TicketComponents } from '../src/types';
 // 푸터(made with FILME · collected by · 스텁 바코드 300×40 텍스트 없음). ink #1A1612 고정 · monochrome.
 // Editorial과 달리 reissue는 The Film RE-RELEASED 셀로 렌더된다(스텁은 바코드도 유지).
 
-const FULL_MOVIE: MovieInfo = {
-  title: '그랜드 부다페스트 호텔', titleOg: 'The Grand Budapest Hotel', actors: '랄프 파인즈, 토니 레볼로리 외 3명', rating: 4.5,
-  releaseDate: '2014-03-20', releaseDateGranularity: 'date', releaseDateFormat: 'kr-compact',
-  reissueDate: '2023-09-15', isReissue: true,
-  watchDate: '2024-03-15', watchDateFormat: 'kr-compact', watchTime: '19:30',
-  theater: '메가박스 코엑스', screen: 'Dolby Cinema', seat: 'G14', runtime: '99분',
-  bookingNumber: 'BOOK-1234', signature: '영화수집가',
-};
-
-const BASE: TicketComponents = {
-  layout: 'stub', chain: '', format: '', chainLabel: 'MEGABOX', formatLabel: 'DOLBY',
-  texture: 'none', posterOpacity: 0.5, componentOpacity: 1, themeColor: '#FFFFFF',
-  chainVisible: true, formatVisible: true,
-};
+const BASE = makeMoodBase('stub');
 
 const markup = () =>
   renderToStaticMarkup(

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MoodEditorial } from '../src/components/moods/MoodEditorial';
-import type { MovieInfo, TicketComponents } from '../src/types';
+import { FULL_MOVIE, makeMoodBase } from './fixtures';
 
 // 마스터 시안(Ticket Design Master.dc.html v2 · 2026-07-08 resync) 04 EDITORIAL 재동기화 회귀(#281, 에픽 #281).
 // Editorial 델타(3열→4열 대규모 재구조): 포스터 516 · 골드포일 세로 스트립 42(신규 장식) · 메인 flex · 스텁 224.
@@ -9,20 +9,7 @@ import type { MovieInfo, TicketComponents } from '../src/types';
 // PLEASE ARRIVE AT" 도착시간 블록 + 시계, 메타 그리드 Théâtre/Durée/Note/Sortie 37/800(좌석은 스텁 place로
 // 이동), 프랑스어 고지문 + 크로스헤어. 회전 -90° 스텁 바코드는 유지. reissue는 메타 그리드 슬롯이 없어 미렌더.
 
-const FULL_MOVIE: MovieInfo = {
-  title: '그랜드 부다페스트 호텔', titleOg: 'The Grand Budapest Hotel', actors: '랄프 파인즈, 토니 레볼로리 외 3명', rating: 4.5,
-  releaseDate: '2014-03-20', releaseDateGranularity: 'date', releaseDateFormat: 'kr-compact',
-  reissueDate: '2023-09-15', isReissue: true,
-  watchDate: '2024-03-15', watchDateFormat: 'kr-compact', watchTime: '19:30',
-  theater: '메가박스 코엑스', screen: 'Dolby Cinema', seat: 'G14', runtime: '99분',
-  bookingNumber: 'BOOK-1234', signature: '영화수집가',
-};
-
-const BASE: TicketComponents = {
-  layout: 'editorial', chain: '', format: '', chainLabel: 'MEGABOX', formatLabel: 'DOLBY',
-  texture: 'none', posterOpacity: 0.5, componentOpacity: 1, themeColor: '#FFFFFF',
-  chainVisible: true, formatVisible: true,
-};
+const BASE = makeMoodBase('editorial');
 
 const markup = () =>
   renderToStaticMarkup(
