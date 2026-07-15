@@ -86,7 +86,7 @@ function MenuRow({
       role={checked !== undefined ? 'switch' : undefined}
       aria-checked={checked}
       aria-label={ariaLabel}
-      title={title}
+      title={title ?? ariaLabel ?? label}
       disabled={disabled}
       onClick={onClick}
       className={`flex h-11 w-full items-center justify-between gap-2 rounded-lg px-2.5 text-left transition-colors ${
@@ -182,6 +182,8 @@ export function MobileEditorShell({
   // 바뀌고 3.2초 뒤 자동 해제), arm 상태에서 한 번 더 탭해야 실행. 메뉴가 닫히면 함께 해제.
   const [clearArmed, setClearArmed] = useState(false);
   const clearArmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // 습관적 더블탭이 arm과 실행을 한 번에 뚫지 않게 arm 직후 재탭은 무시(claude-review PR #375 P1).
+  const clearArmedAt = useRef(0);
   useEffect(() => {
     if (!menuOpen) {
       clearTimeout(clearArmTimer.current);
@@ -245,10 +247,12 @@ export function MobileEditorShell({
   function handleClearTap() {
     if (!clearArmed) {
       setClearArmed(true);
+      clearArmedAt.current = Date.now();
       clearTimeout(clearArmTimer.current);
       clearArmTimer.current = setTimeout(() => setClearArmed(false), 3200);
       return;
     }
+    if (Date.now() - clearArmedAt.current < 350) return;
     clearTimeout(clearArmTimer.current);
     setMenuOpen(false); // 닫힘 effect가 clearArmed도 함께 해제
     photo.clearDraft();

@@ -7,7 +7,7 @@
  * 레일 → 이 서브메뉴로 이전하며 이관됐다.
  */
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
@@ -135,7 +135,9 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
 
     // 2탭 arm(#374) — 1탭은 arm만, 확인 문구로 바뀐 행을 한 번 더 탭해야 실행.
+    // 더블탭 가드(350ms) 밖에서 재탭해야 실행된다(PR #375 P1).
     await user.click(screen.getByRole('button', { name: '초기화' }));
+    await new Promise((r) => setTimeout(r, 400));
     await user.click(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' }));
 
     expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
@@ -182,6 +184,7 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
 
     await user.click(screen.getByRole('button', { name: '초기화' }));
+    await new Promise((r) => setTimeout(r, 400));
     await user.click(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' }));
 
     expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
@@ -191,6 +194,37 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     // 실행 후 메뉴는 닫힌다.
     expect(screen.queryByRole('menu', { name: '편집 메뉴' })).toBeNull();
   });
+
+  test('초기화 arm(#374): arm 직후 350ms 내 재탭(더블탭)은 실행되지 않는다 (claude-review PR #375 P1)', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    fireEvent.click(screen.getByText('seed'));
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+
+    // userEvent 연속 클릭은 수 ms 간격 — 습관적 더블탭 시뮬레이션.
+    await user.click(screen.getByRole('button', { name: '초기화' }));
+    await user.click(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' }));
+
+    // 실행되지 않고 armed 상태로 남는다.
+    expect(screen.queryByText('초기화했어요')).toBeNull();
+    expect(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' })).toBeTruthy();
+  });
+
+  test('초기화 arm(#374): 3.2초 내 재탭이 없으면 자동 해제된다 (claude-review PR #375 P1)', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    await user.click(screen.getByRole('button', { name: '초기화' }));
+    expect(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' })).toBeTruthy();
+
+    // 3.2초 auto-disarm 타이머 만료를 real timer로 대기 — act로 감싸 타이머 콜백의
+    // setState가 반영되게 한다(happy-dom에서 waitFor 폴링이 안 돌아 직접 대기).
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 3400));
+    });
+    expect(screen.getByRole('button', { name: '초기화' })).toBeTruthy();
+    expect(screen.queryByText('초기화했어요')).toBeNull();
+  }, 10000);
 
   test('업로드 후: 잉크 토글 → themeColor 라이트(#FFFFFF)↔다크(#000000) 즉시 전환', async () => {
     const user = userEvent.setup();
