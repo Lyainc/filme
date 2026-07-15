@@ -11,6 +11,7 @@ import { render, screen, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { DesktopStudioShell } from '@/components/v2/DesktopStudioShell';
+import { desktopShellProps } from './shellHarness';
 
 function Harness() {
   const photo = usePhototicket();
@@ -19,19 +20,7 @@ function Harness() {
       <button type="button" onClick={() => photo.handleImageUpload('blob:test-poster')}>
         seed-poster
       </button>
-      <DesktopStudioShell
-        photo={photo}
-        theme="light"
-        onThemeChange={() => {}}
-        canExport
-        disabledReason={null}
-        resultOpen={false}
-        onDone={() => {}}
-        onBackToEdit={() => {}}
-        previewMovieInfo={photo.state.movieInfo}
-        previewComponents={photo.state.components}
-        fieldVisibility={photo.state.fieldVisibility}
-      />
+      <DesktopStudioShell {...desktopShellProps(photo, { disabledReason: null })} />
     </>
   );
 }

@@ -15,6 +15,7 @@ import { describe, expect, test, afterEach, mock } from 'bun:test';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { usePhototicket } from '@/hooks/usePhototicket';
+import { mobileShellProps } from './shellHarness';
 
 mock.module('@/components/ImageCropModal', () => ({
   default: ({
@@ -47,19 +48,7 @@ const { MobileEditorShell } = require('@/components/v2/MobileEditorShell') as {
 
 function Harness() {
   const photo = usePhototicket();
-  return (
-    <MobileEditorShell
-      photo={photo}
-      canExport
-      theme="light"
-      onThemeChange={() => {}}
-      onDone={() => {}}
-      disabledReason=""
-      previewMovieInfo={photo.state.movieInfo}
-      previewComponents={photo.state.components}
-      fieldVisibility={photo.state.fieldVisibility}
-    />
-  );
+  return <MobileEditorShell {...mobileShellProps(photo)} />;
 }
 
 // 포스터 전용 파일 input(accept에 jpeg 포함) — OcrUploadCard의 image/* input과 구분.

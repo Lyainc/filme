@@ -17,6 +17,7 @@ import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
 import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
+import { mobileShellProps } from './shellHarness';
 
 function Harness() {
   const photo = usePhototicket();
@@ -36,15 +37,7 @@ function Harness() {
         seed
       </button>
       <MobileEditorShell
-        photo={photo}
-        canExport
-        theme="light"
-        onThemeChange={() => {}}
-        onDone={() => {}}
-        disabledReason=""
-        previewMovieInfo={photo.state.movieInfo}
-        previewComponents={{ ...photo.state.components, layout: 'stub' }}
-        fieldVisibility={fieldVisibility}
+        {...mobileShellProps(photo, { previewComponents: { ...photo.state.components, layout: 'stub' } })}
       />
     </>
   );
