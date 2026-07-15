@@ -1,11 +1,9 @@
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
 import { AppFooter } from './AppFooter';
-import { CLEAR_DRAFT_CONFIRM_MESSAGE } from './AppHeader';
 import { DesignRail } from './DesignRail';
 import { OcrUploadCard } from './OcrUploadCard';
 import { OcrUndoBanner } from './OcrUndoBanner';
-import { ThemeToggle } from './ThemeToggle';
 import { FloatingToolbar } from './FloatingToolbar';
 import { Wordmark } from './Wordmark';
 import type { ViewMode } from './viewMode';
@@ -44,55 +42,95 @@ const ALL_FIELDS = Object.keys(ALL_FIELDS_ON) as TicketField[];
 const LIGHT_INK = '#FFFFFF';
 const DARK_INK = '#000000';
 
-// chrome 토글 행(#261)의 라벨+스위치 pill — allVis(전체 표시)·ghost(빈 항목 미리보기)가 공유한다.
-// 기존 ghost 토글 마크업을 그대로 승격해 두 스위치의 생김새를 일치시킨다.
-function TogglePill({
+// 서브메뉴 행 리딩 아이콘(#374) — 시안 Siyan-C-v8 L296-322와 동일한 18px/stroke 1.7 계열.
+// 멀티 서브패스도 단일 d 문자열로 합쳐 MenuRow가 <path> 하나로 렌더한다.
+const MENU_ICONS = {
+  moon: 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
+  list: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
+  eye: 'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',
+  ink: 'M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z',
+  upload: 'M12 16V4M8 8l4-4 4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2',
+  crop: 'M6 2v14a2 2 0 0 0 2 2h14M18 22V8a2 2 0 0 0-2-2H2',
+  save: 'M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z M17 21v-8H7v8 M7 3v5h8',
+  trash:
+    'M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6',
+};
+
+// 헤더 서브메뉴 공용 행(#374, 시안 Siyan-C-v8 설정 시트의 행 문법 이식) — 리딩 아이콘 +
+// 14px 라벨 + (토글 행이면) 트레일링 스위치. checked를 주면 role="switch" 토글 행,
+// 없으면 액션 행. 스위치 비주얼은 구 TogglePill 것을 그대로 승계.
+function MenuRow({
+  iconPath,
   label,
-  checked,
   onClick,
+  checked,
   disabled = false,
   ariaLabel,
+  title,
+  danger = false,
+  armed = false,
 }: {
+  iconPath: string;
   label: string;
-  checked: boolean;
   onClick: () => void;
+  checked?: boolean;
   disabled?: boolean;
   ariaLabel?: string;
+  title?: string;
+  danger?: boolean;
+  armed?: boolean;
 }) {
   return (
     <button
       type="button"
-      role="switch"
+      role={checked !== undefined ? 'switch' : undefined}
       aria-checked={checked}
-      aria-label={ariaLabel ?? label}
-      title={ariaLabel ?? label}
+      aria-label={ariaLabel}
+      title={title}
       disabled={disabled}
       onClick={onClick}
-      className={`inline-flex h-9 items-center gap-2 rounded-full border border-[var(--glass-border)] bg-[var(--glass-fill)] pl-3 pr-1.5 transition-opacity ${
-        disabled ? 'opacity-40' : ''
+      className={`flex h-11 w-full items-center justify-between gap-2 rounded-lg px-2.5 text-left transition-colors ${
+        disabled ? 'opacity-40' : 'hover:bg-white/5'
       }`}
+      style={armed ? { background: 'rgba(229,103,95,.16)' } : undefined}
     >
       <span
-        className="text-mono text-fg-muted"
-        style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase' }}
+        className={`flex min-w-0 items-center gap-2.5 text-[14px] ${danger ? 'text-danger' : 'text-fg'}`}
+        style={{ fontWeight: armed ? 700 : 500 }}
       >
-        {label}
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          className={danger ? 'shrink-0' : 'shrink-0 text-fg-muted'}
+        >
+          <path d={iconPath} />
+        </svg>
+        <span className="truncate">{label}</span>
       </span>
-      <span
-        aria-hidden="true"
-        className="relative inline-block h-5 w-9 rounded-full transition-colors"
-        style={{ background: checked ? 'var(--accent)' : 'var(--border)' }}
-      >
+      {checked !== undefined && (
         <span
-          className="absolute top-0.5 h-4 w-4 rounded-full transition-transform"
-          style={{
-            left: 2,
-            background: '#fff',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
-            transform: checked ? 'translateX(16px)' : 'translateX(0)',
-          }}
-        />
-      </span>
+          aria-hidden="true"
+          className="relative inline-block h-5 w-9 shrink-0 rounded-full transition-colors"
+          style={{ background: checked ? 'var(--accent)' : 'var(--border)' }}
+        >
+          <span
+            className="absolute top-0.5 h-4 w-4 rounded-full transition-transform"
+            style={{
+              left: 2,
+              background: '#fff',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
+              transform: checked ? 'translateX(16px)' : 'translateX(0)',
+            }}
+          />
+        </span>
+      )}
     </button>
   );
 }
@@ -140,6 +178,17 @@ export function MobileEditorShell({
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // 헤더 서브메뉴(#315) — 다크모드·전체표시·빈 항목·잉크 토글 + 포스터 교체/재크롭 액션을 호스팅.
   const [menuOpen, setMenuOpen] = useState(false);
+  // 초기화 2탭 arm(#374, 시안 clearArm) — window.confirm 대체. 1탭에 arm(라벨이 확인 문구로
+  // 바뀌고 3.2초 뒤 자동 해제), arm 상태에서 한 번 더 탭해야 실행. 메뉴가 닫히면 함께 해제.
+  const [clearArmed, setClearArmed] = useState(false);
+  const clearArmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => {
+    if (!menuOpen) {
+      clearTimeout(clearArmTimer.current);
+      setClearArmed(false);
+    }
+  }, [menuOpen]);
+  useEffect(() => () => clearTimeout(clearArmTimer.current), []);
   // 필드 목록 우측 드로어(#355). 진입은 헤더 목록 버튼 — #356 플로팅 툴바가 오면 그쪽
   // field-list 버튼이 이 진입점을 이어받는다.
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -191,6 +240,22 @@ export function MobileEditorShell({
       return;
     }
     onDone();
+  }
+
+  function handleClearTap() {
+    if (!clearArmed) {
+      setClearArmed(true);
+      clearTimeout(clearArmTimer.current);
+      clearArmTimer.current = setTimeout(() => setClearArmed(false), 3200);
+      return;
+    }
+    clearTimeout(clearArmTimer.current);
+    setMenuOpen(false); // 닫힘 effect가 clearArmed도 함께 해제
+    photo.clearDraft();
+    // 초기화는 새 문서 — undo로 못 돌아간다(로고·포스터 blob이 revoke돼
+    // 복원해도 죽은 참조라 히스토리째 파기가 맞다).
+    history.clear();
+    flashToast('초기화했어요');
   }
 
   // 온-티켓 필드 탭(#259). 숨김 필드 탭 시 자동 표시 on(시안 setActive) 후 시트를 연다 — 스탬프는
@@ -367,11 +432,13 @@ export function MobileEditorShell({
             <div className="fixed inset-x-0 bottom-0 top-14 z-40" onClick={() => setMenuOpen(false)} aria-hidden="true" />
             {/* v8 dark-glass(#364) — 일반 카드 대신 글래스 토큰 + blur. 상시 다크 크롬(#363)이라
                 항상 white-alpha 유리. 햄버거가 우측으로 가며(#363) 앵커도 우측 정렬. */}
+            {/* 내부 행 문법(#374) — 전 항목을 MenuRow(리딩 아이콘 + 14px 라벨 + 트레일링 스위치)로
+                통일하고 토글/포스터 액션/문서 액션 세 그룹을 헤어라인으로 구분(시안 L296-322 이식). */}
             <div
               id="editor-menu-panel"
               role="menu"
               aria-label="편집 메뉴"
-              className="absolute right-3 top-[calc(100%+8px)] z-50 w-64 space-y-3 rounded-card border p-3 shadow-card"
+              className="absolute right-3 top-[calc(100%+8px)] z-50 w-64 rounded-card border p-2 shadow-card"
               style={{
                 background: 'var(--glass-fill)',
                 borderColor: 'var(--glass-border)',
@@ -379,101 +446,87 @@ export function MobileEditorShell({
                 WebkitBackdropFilter: 'blur(13px)',
               }}
             >
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[13px] text-fg-muted">다크모드</span>
-                <ThemeToggle theme={theme} onChange={onThemeChange} />
-              </div>
-
-              <div className="flex flex-col items-start gap-2">
-                {/* 전체표시/빈 항목은 프리뷰(포스터)가 있어야 의미가 있으므로 기존과 동일하게 게이팅.
-                    잉크는 DesignRail 시절과 동일하게 포스터 유무와 무관하게 항상 노출. */}
-                {croppedImageUrl && (
-                  <>
-                    <TogglePill
-                      label="전체 표시"
-                      checked={allVisOn}
-                      onClick={() =>
-                        photo.updateFieldVisibility(allVisOn ? ALL_FIELDS_OFF_KEEP_REQUIRED : ALL_FIELDS_ON)
-                      }
-                    />
-                    <TogglePill
-                      label="빈 항목"
-                      ariaLabel="빈 항목 미리보기"
-                      checked={ghostMode}
-                      onClick={() => setGhostMode((v) => !v)}
-                    />
-                  </>
-                )}
-                <TogglePill
-                  label="잉크"
-                  ariaLabel={`잉크 색상 전환, 현재 ${isLightInk ? '라이트' : '다크'}`}
-                  checked={!isLightInk}
-                  disabled={inkDisabled}
-                  onClick={toggleInk}
-                />
-              </div>
+              <MenuRow
+                iconPath={MENU_ICONS.moon}
+                label="다크모드"
+                checked={theme === 'dark'}
+                onClick={() => onThemeChange(theme === 'dark' ? 'light' : 'dark')}
+              />
+              {/* 전체표시/빈 항목은 프리뷰(포스터)가 있어야 의미가 있으므로 기존과 동일하게 게이팅.
+                  잉크는 DesignRail 시절과 동일하게 포스터 유무와 무관하게 항상 노출. */}
+              {croppedImageUrl && (
+                <>
+                  <MenuRow
+                    iconPath={MENU_ICONS.list}
+                    label="전체 표시"
+                    checked={allVisOn}
+                    onClick={() =>
+                      photo.updateFieldVisibility(allVisOn ? ALL_FIELDS_OFF_KEEP_REQUIRED : ALL_FIELDS_ON)
+                    }
+                  />
+                  <MenuRow
+                    iconPath={MENU_ICONS.eye}
+                    label="빈 항목"
+                    ariaLabel="빈 항목 미리보기"
+                    checked={ghostMode}
+                    onClick={() => setGhostMode((v) => !v)}
+                  />
+                </>
+              )}
+              <MenuRow
+                iconPath={MENU_ICONS.ink}
+                label="잉크"
+                ariaLabel={`잉크 색상 전환, 현재 ${isLightInk ? '라이트' : '다크'}`}
+                checked={!isLightInk}
+                disabled={inkDisabled}
+                onClick={toggleInk}
+              />
 
               {croppedImageUrl && (
-                <div className="flex flex-col gap-1.5 border-t border-[var(--glass-border)] pt-3">
-                  <button
-                    type="button"
+                <div className="mt-2 border-t border-[var(--glass-border)] pt-2">
+                  <MenuRow
+                    iconPath={MENU_ICONS.upload}
+                    label="포스터 교체"
                     onClick={() => {
                       setMenuOpen(false);
                       handlePosterTap();
                     }}
-                    className="text-mono flex min-h-[36px] items-center rounded-chip border border-[var(--glass-border)] bg-[var(--glass-fill)] px-3 text-[11px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft"
-                  >
-                    포스터 교체
-                  </button>
-                  <button
-                    type="button"
+                  />
+                  <MenuRow
+                    iconPath={MENU_ICONS.crop}
+                    label="재크롭"
+                    disabled={!posterOriginalSrc}
+                    title={posterOriginalSrc ? undefined : '재크롭하려면 포스터를 다시 업로드해 주세요'}
                     onClick={() => {
                       setMenuOpen(false);
                       handlePosterRecrop();
                     }}
-                    disabled={!posterOriginalSrc}
-                    title={posterOriginalSrc ? undefined : '재크롭하려면 포스터를 다시 업로드해 주세요'}
-                    className="text-mono flex min-h-[36px] items-center rounded-chip border border-[var(--glass-border)] bg-[var(--glass-fill)] px-3 text-[11px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft disabled:opacity-40"
-                  >
-                    재크롭
-                  </button>
+                  />
                 </div>
               )}
 
               {/* 임시저장/초기화(#310) — 자동저장 폐지에 따른 명시적 트리거. croppedImageUrl 유무와
                   무관하게 항상 노출한다 — 포스터(croppedImageUrl)는 새로고침에 안 남지만 movieInfo 등
                   나머지 필드는 복원되므로(#310이 고치려는 시나리오 자체), 포스터 재업로드 전에도
-                  초기화에 닿을 수 있어야 한다. 초기화는 파괴적이라 네이티브 confirm으로 한 번 확인한다
-                  (이 코드베이스엔 확인 모달 인프라가 없어 새로 만들지 않는다). 저장 피드백은 기존
-                  flashToast 재사용. */}
-              <div className="flex flex-col gap-1.5 border-t border-[var(--glass-border)] pt-3">
-                <button
-                  type="button"
+                  초기화에 닿을 수 있어야 한다. 초기화 확인은 2탭 arm(#374, handleClearTap). 저장
+                  피드백은 기존 flashToast 재사용. */}
+              <div className="mt-2 border-t border-[var(--glass-border)] pt-2">
+                <MenuRow
+                  iconPath={MENU_ICONS.save}
+                  label="임시저장"
                   onClick={() => {
                     setMenuOpen(false);
                     photo.saveDraft();
                     flashToast('임시저장했어요');
                   }}
-                  className="text-mono flex min-h-[36px] items-center rounded-chip border border-[var(--glass-border)] bg-[var(--glass-fill)] px-3 text-[11px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft"
-                >
-                  임시저장
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    if (window.confirm(CLEAR_DRAFT_CONFIRM_MESSAGE)) {
-                      photo.clearDraft();
-                      // 초기화는 새 문서 — undo로 못 돌아간다(로고·포스터 blob이 revoke돼
-                      // 복원해도 죽은 참조라 히스토리째 파기가 맞다).
-                      history.clear();
-                      flashToast('초기화했어요');
-                    }
-                  }}
-                  className="text-mono flex min-h-[36px] items-center rounded-chip border border-[var(--glass-border)] bg-[var(--glass-fill)] px-3 text-[11px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft"
-                >
-                  초기화
-                </button>
+                />
+                <MenuRow
+                  iconPath={MENU_ICONS.trash}
+                  label={clearArmed ? '한 번 더 눌러 전체 삭제' : '초기화'}
+                  danger
+                  armed={clearArmed}
+                  onClick={handleClearTap}
+                />
               </div>
             </div>
           </>

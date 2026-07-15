@@ -6,7 +6,7 @@
  * disclosure 아님, 35mm disabled)은 원래 designRail.test.tsx (g)(h)(i)였으나 토글이 DesignRail
  * 레일 → 이 서브메뉴로 이전하며 이관됐다.
  */
-import { describe, expect, test, afterEach, beforeEach, mock } from 'bun:test';
+import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { usePhototicket } from '@/hooks/usePhototicket';
@@ -130,18 +130,16 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
 
   test('초기화(#310): 포스터 없이 복원된 stale 값만 있어도 초기화로 지워진다(핵심 시나리오 — 새로고침 직후)', async () => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ movieInfo: { title: '기생충' } }));
-    const origConfirm = window.confirm;
-    window.confirm = mock(() => true);
     const user = userEvent.setup();
     render(<Harness />);
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
 
+    // 2탭 arm(#374) — 1탭은 arm만, 확인 문구로 바뀐 행을 한 번 더 탭해야 실행.
     await user.click(screen.getByRole('button', { name: '초기화' }));
+    await user.click(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' }));
 
     expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
     expect(screen.getAllByText('초기화했어요').length).toBeGreaterThan(0);
-
-    window.confirm = origConfirm;
   });
 
   test('임시저장(#310): 즉시 localStorage에 저장 + 토스트 + 메뉴 닫힘', async () => {
@@ -157,26 +155,26 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     expect(window.localStorage.getItem(STORAGE_KEY)).not.toBeNull();
   });
 
-  test('초기화(#310): confirm 취소 시 아무것도 지워지지 않는다', async () => {
-    const origConfirm = window.confirm;
-    window.confirm = mock(() => false);
+  test('초기화 arm(#374): 1탭은 실행하지 않는다 — 라벨만 확인 문구로 바뀌고, 메뉴를 닫으면 해제된다', async () => {
     const user = userEvent.setup();
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
 
     await user.click(screen.getByRole('button', { name: '초기화' }));
+    // arm됨 — 메뉴는 열린 채, 실행은 아직.
+    expect(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' })).toBeTruthy();
+    expect(screen.queryByText('초기화했어요')).toBeNull();
 
-    // 취소했으니 포스터가 그대로 남아 재크롭 액션이 여전히 노출된다(초기화 미실행 증거).
+    // 메뉴를 닫았다 다시 열면 arm이 풀려 원래 라벨로 돌아오고, 포스터도 그대로다(미실행 증거).
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    expect(screen.getByRole('button', { name: '초기화' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '한 번 더 눌러 전체 삭제' })).toBeNull();
     expect(screen.queryByRole('button', { name: '재크롭' })).not.toBeNull();
-
-    window.confirm = origConfirm;
   });
 
-  test('초기화(#310): confirm 승인 시 storage 삭제 + 상태 초기화 + 토스트', async () => {
-    const origConfirm = window.confirm;
-    window.confirm = mock(() => true);
+  test('초기화 arm(#374): 2탭 시 storage 삭제 + 상태 초기화 + 토스트', async () => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ movieInfo: { title: '기생충' } }));
     const user = userEvent.setup();
     render(<Harness />);
@@ -184,13 +182,14 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
 
     await user.click(screen.getByRole('button', { name: '초기화' }));
+    await user.click(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' }));
 
     expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
     expect(screen.getAllByText('초기화했어요').length).toBeGreaterThan(0);
     // 포스터가 사라져 업로드 드롭존이 다시 보인다(INITIAL_STATE 복귀 증거).
     expect(screen.getByText('포스터 업로드')).toBeTruthy();
-
-    window.confirm = origConfirm;
+    // 실행 후 메뉴는 닫힌다.
+    expect(screen.queryByRole('menu', { name: '편집 메뉴' })).toBeNull();
   });
 
   test('업로드 후: 잉크 토글 → themeColor 라이트(#FFFFFF)↔다크(#000000) 즉시 전환', async () => {
