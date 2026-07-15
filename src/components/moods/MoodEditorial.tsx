@@ -20,6 +20,7 @@ import {
   stampWillRender,
   truncateActors,
   useFontsReady,
+  type FieldGhostState,
 } from './_shared';
 
 /**
@@ -69,9 +70,10 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
   const gWatchDate = showFieldGhost(fv?.watchDate, watchDateClean, ghost);
   const gWatchTime = showFieldGhost(fv?.watchTime, d.watchTime, ghost);
   const gRuntime = showFieldGhost(fv?.runtime, d.runtime, ghost);
-  const gRating = showFieldGhost(fv?.rating, d.rating, ghost);
+  const gRating = showFieldGhost(fv?.rating, d.rating > 0, ghost);
   const gRelease = showFieldGhost(fv?.releaseDate, releaseClean, ghost);
   const gSeat = showFieldGhost(fv?.seat, d.seat, ghost);
+  const gSignature = showFieldGhost(fv?.signature, d.signature, ghost);
 
   const italic = (color: string, size: number): CSSProperties => ({
     fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: size, color, letterSpacing: 0.2,
@@ -89,14 +91,14 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
     stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost);
 
   // 단일 값 메타 셀(Durée/Note/Sortie) — 값 있으면 값, 비었고 ghost면 라벨 점선.
-  const metaCell = (label: string, value: string, field: 'runtime' | 'rating' | 'releaseDate', ghostOn: boolean, ghostLabel: string, valueColor = INK) =>
+  const metaCell = (label: string, value: string, field: 'runtime' | 'rating' | 'releaseDate', ghostOn: FieldGhostState, ghostLabel: string, valueColor = INK) =>
     value || ghostOn ? (
       <div key={field}>
         <div style={metaLabel()}>{label}</div>
         {value ? (
           <FieldTap field={field} onField={onField}><div style={metaValue(valueColor)}>{value}</div></FieldTap>
         ) : (
-          <FieldTap field={field} onField={onField}><FieldGhost text={ghostLabel} width={150} height={40} surface="paper" /></FieldTap>
+          <FieldTap field={field} onField={onField}><FieldGhost text={ghostLabel} width={150} height={40} surface="paper" state={ghostOn} /></FieldTap>
         )}
       </div>
     ) : null;
@@ -107,7 +109,7 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
       {ratingVisible ? (
         <FieldTap field="rating" onField={onField}><div style={metaValue(accent)}>★ {d.rating.toFixed(1)}</div></FieldTap>
       ) : (
-        <FieldTap field="rating" onField={onField}><FieldGhost text="★" width={90} height={40} surface="paper" /></FieldTap>
+        <FieldTap field="rating" onField={onField}><FieldGhost text="★" width={90} height={40} surface="paper" state={gRating} /></FieldTap>
       )}
     </div>
   ) : null;
@@ -118,14 +120,14 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
       {theaterVal ? (
         <FieldTap field="theater" onField={onField}><div style={metaValue()}>{theaterVal}</div></FieldTap>
       ) : gTheater ? (
-        <FieldTap field="theater" onField={onField}><FieldGhost text="THEATER" width={200} height={40} surface="paper" /></FieldTap>
+        <FieldTap field="theater" onField={onField}><FieldGhost text="THEATER" width={200} height={40} surface="paper" state={gTheater} /></FieldTap>
       ) : null}
       {screenVal ? (
         <FieldTap field="screen" onField={onField}>
           <div style={{ marginTop: 5, fontWeight: 600, fontSize: 24, fontFamily: FONT_SANS, letterSpacing: -0.2, color: BROWN, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{screenVal}</div>
         </FieldTap>
       ) : gScreen ? (
-        <FieldTap field="screen" onField={onField}><div style={{ marginTop: 5 }}><FieldGhost text="SCREEN" width={140} height={30} surface="paper" /></div></FieldTap>
+        <FieldTap field="screen" onField={onField}><div style={{ marginTop: 5 }}><FieldGhost text="SCREEN" width={140} height={30} surface="paper" state={gScreen} /></div></FieldTap>
       ) : null}
     </div>
   ) : null;
@@ -167,7 +169,7 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
         {seatVal ? (
           <FieldTap field="seat" onField={onField}><span style={{ fontWeight: 900, fontSize: 56, fontFamily: FONT_SANS, letterSpacing: -2, lineHeight: 0.85 }}>{seatVal}</span></FieldTap>
         ) : (
-          <FieldTap field="seat" onField={onField}><FieldGhost text="SEAT" width={100} height={50} surface="dark" /></FieldTap>
+          <FieldTap field="seat" onField={onField}><FieldGhost text="SEAT" width={100} height={50} surface="dark" state={gSeat} /></FieldTap>
         )}
         <span style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 12, letterSpacing: 2.5, opacity: 0.72 }}>SIÈGE · SEAT</span>
       </div>
@@ -219,7 +221,7 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
             <div style={{ fontWeight: 900, fontSize: titleFontSize, fontFamily: FONT_KR, lineHeight: 0.98, letterSpacing: -2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{titleVal}</div>
           </FieldTap>
         ) : gTitle ? (
-          <FieldTap field="title" onField={onField}><FieldGhost text="TITLE" width="60%" height={72} size={2} surface="paper" /></FieldTap>
+          <FieldTap field="title" onField={onField}><FieldGhost text="TITLE" width="60%" height={72} size={2} surface="paper" state={gTitle} /></FieldTap>
         ) : null}
 
         {titleOgVal ? (
@@ -227,7 +229,7 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
             <div style={{ marginTop: 12, ...italic(INK, 30), opacity: 0.6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{titleOgVal}</div>
           </FieldTap>
         ) : gTitleOg ? (
-          <FieldTap field="titleOg" onField={onField}><div style={{ marginTop: 12 }}><FieldGhost text="ORIGINAL TITLE" width={280} height={32} surface="paper" /></div></FieldTap>
+          <FieldTap field="titleOg" onField={onField}><div style={{ marginTop: 12 }}><FieldGhost text="ORIGINAL TITLE" width={280} height={32} surface="paper" state={gTitleOg} /></div></FieldTap>
         ) : null}
 
         {/* avec — cast */}
@@ -242,7 +244,7 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
           <FieldTap field="actors" onField={onField}>
             <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
               <span style={{ ...italic(accent, 26) }}>avec</span>
-              <FieldGhost text="CAST" width={280} height={40} surface="paper" />
+              <FieldGhost text="CAST" width={280} height={40} surface="paper" state={gActors} />
             </div>
           </FieldTap>
         ) : null}
@@ -258,7 +260,7 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
                 {watchDateVal ? (
                   <FieldTap field="watchDate" onField={onField}><span style={{ fontWeight: 800, fontSize: 38, fontFamily: FONT_SANS, letterSpacing: -0.5, lineHeight: 1 }}>{watchDateVal}</span></FieldTap>
                 ) : (
-                  <FieldTap field="watchDate" onField={onField}><FieldGhost text="DATE" width={220} height={40} surface="paper" /></FieldTap>
+                  <FieldTap field="watchDate" onField={onField}><FieldGhost text="DATE" width={220} height={40} surface="paper" state={gWatchDate} /></FieldTap>
                 )}
               </div>
             )}
@@ -273,7 +275,7 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
                 {watchTimeVal ? (
                   <FieldTap field="watchTime" onField={onField}><span style={{ fontWeight: 900, fontSize: 54, fontFamily: FONT_SANS, letterSpacing: -2, lineHeight: 0.85 }}>{watchTimeVal}</span></FieldTap>
                 ) : (
-                  <FieldTap field="watchTime" onField={onField}><FieldGhost text="TIME" width={140} height={48} surface="paper" /></FieldTap>
+                  <FieldTap field="watchTime" onField={onField}><FieldGhost text="TIME" width={140} height={48} surface="paper" state={gWatchTime} /></FieldTap>
                 )}
               </div>
             )}
@@ -306,11 +308,11 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
                 <span style={{ fontWeight: 600, fontSize: 30, fontFamily: FONT_KR, letterSpacing: -0.3, color: INK, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 360 }}>{signatureVal}</span>
               </div>
             </FieldTap>
-          ) : showFieldGhost(fv?.signature, d.signature, ghost) ? (
+          ) : gSignature ? (
             <FieldTap field="signature" onField={onField}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ ...italic(accent, 26), flexShrink: 0 }}>par</span>
-                <FieldGhost text="SIGNATURE" width={200} height={36} surface="paper" />
+                <FieldGhost text="SIGNATURE" width={200} height={36} surface="paper" state={gSignature} />
               </div>
             </FieldTap>
           ) : null}

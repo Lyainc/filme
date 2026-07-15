@@ -100,7 +100,7 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
   const gTheater = showFieldGhost(fv?.theater, d.theater, ghost);
   const gScreen = showFieldGhost(fv?.screen, d.screen, ghost);
   const gRuntime = showFieldGhost(fv?.runtime, d.runtime, ghost);
-  const gRating = showFieldGhost(fv?.rating, d.rating, ghost);
+  const gRating = showFieldGhost(fv?.rating, d.rating > 0, ghost);
   const gRelease = showFieldGhost(fv?.releaseDate, releaseClean, ghost);
   const gSignature = showFieldGhost(fv?.signature, d.signature, ghost);
 
@@ -185,14 +185,14 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
               <div style={{ fontWeight: 700, fontSize: titleFontSize, fontFamily: FONT_KR, lineHeight: 1.06, letterSpacing: -1.2, marginBottom: 8, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{titleVal}</div>
             </FieldTap>
           ) : gTitle ? (
-            <FieldTap field="title" onField={onField}><div style={{ marginBottom: 8 }}><FieldGhost text="TITLE" width="66%" height={46} size={2} surface="paper" /></div></FieldTap>
+            <FieldTap field="title" onField={onField}><div style={{ marginBottom: 8 }}><FieldGhost text="TITLE" width="66%" height={46} size={2} surface="paper" state={gTitle} /></div></FieldTap>
           ) : null}
           {titleOgVal ? (
             <FieldTap field="titleOg" onField={onField}>
               <div style={{ fontWeight: 600, fontSize: 18, letterSpacing: 2, textTransform: 'uppercase', color: BROWN, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{titleOgVal}</div>
             </FieldTap>
           ) : gTitleOg ? (
-            <FieldTap field="titleOg" onField={onField}><FieldGhost text="ORIGINAL TITLE" width={280} height={26} surface="paper" /></FieldTap>
+            <FieldTap field="titleOg" onField={onField}><FieldGhost text="ORIGINAL TITLE" width={280} height={26} surface="paper" state={gTitleOg} /></FieldTap>
           ) : null}
         </div>
 
@@ -211,7 +211,7 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
                       {seatVal ? (
                         <span style={{ fontWeight: 900, fontSize: 48, letterSpacing: -1, lineHeight: 0.85 }}>{seatVal}</span>
                       ) : (
-                        <FieldGhost text="SEAT" width={100} height={48} size={2} surface="dark" />
+                        <FieldGhost text="SEAT" width={100} height={48} size={2} surface="dark" state={gSeat} />
                       )}
                     </div>
                   </FieldTap>
@@ -222,7 +222,7 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
                       {watchDateVal ? (
                         <FieldTap field="watchDate" onField={onField}><span style={rowValue()}>{watchDateVal}</span></FieldTap>
                       ) : (
-                        <FieldTap field="watchDate" onField={onField}><FieldGhost text="DATE" width={160} height={30} surface="paper" /></FieldTap>
+                        <FieldTap field="watchDate" onField={onField}><FieldGhost text="DATE" width={160} height={30} surface="paper" state={gWatchDate} /></FieldTap>
                       )}
                     </Row>
                   )}
@@ -231,7 +231,7 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
                       {watchTimeVal ? (
                         <FieldTap field="watchTime" onField={onField}><span style={rowValue()}>{watchTimeVal}</span></FieldTap>
                       ) : (
-                        <FieldTap field="watchTime" onField={onField}><FieldGhost text="TIME" width={120} height={30} surface="paper" /></FieldTap>
+                        <FieldTap field="watchTime" onField={onField}><FieldGhost text="TIME" width={120} height={30} surface="paper" state={gWatchTime} /></FieldTap>
                       )}
                     </Row>
                   )}
@@ -257,7 +257,7 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
                     {runtimeVal ? (
                       <FieldTap field="runtime" onField={onField}><span style={rowValue()}>{runtimeVal}</span></FieldTap>
                     ) : (
-                      <FieldTap field="runtime" onField={onField}><FieldGhost text="RUNTIME" width={120} height={30} surface="paper" /></FieldTap>
+                      <FieldTap field="runtime" onField={onField}><FieldGhost text="RUNTIME" width={120} height={30} surface="paper" state={gRuntime} /></FieldTap>
                     )}
                   </Row>
                 )}
@@ -266,7 +266,7 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
                     {ratingVisible ? (
                       <FieldTap field="rating" onField={onField}><span style={rowValue()}>★ {d.rating.toFixed(1)}</span></FieldTap>
                     ) : (
-                      <FieldTap field="rating" onField={onField}><FieldGhost text="★" width={90} height={30} surface="paper" /></FieldTap>
+                      <FieldTap field="rating" onField={onField}><FieldGhost text="★" width={90} height={30} surface="paper" state={gRating} /></FieldTap>
                     )}
                   </Row>
                 )}
@@ -275,7 +275,7 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
                     {releaseVal ? (
                       <FieldTap field="releaseDate" onField={onField}><span style={rowValue()}>{releaseVal}</span></FieldTap>
                     ) : (
-                      <FieldTap field="releaseDate" onField={onField}><FieldGhost text="RELEASE" width={140} height={30} surface="paper" /></FieldTap>
+                      <FieldTap field="releaseDate" onField={onField}><FieldGhost text="RELEASE" width={140} height={30} surface="paper" state={gRelease} /></FieldTap>
                     )}
                   </Row>
                 )}
@@ -290,7 +290,7 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
                     {actorsVal ? (
                       <FieldTap field="actors" onField={onField}><span style={{ ...rowValue(20), flexShrink: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{actorsVal}</span></FieldTap>
                     ) : (
-                      <FieldTap field="actors" onField={onField}><FieldGhost text="CAST" width={200} height={30} surface="paper" /></FieldTap>
+                      <FieldTap field="actors" onField={onField}><FieldGhost text="CAST" width={200} height={30} surface="paper" state={gActors} /></FieldTap>
                     )}
                   </Row>
                 </div>
@@ -324,7 +324,7 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
                 <FieldTap field="signature" onField={onField}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
                     <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontSize: 22, color: BROWN, flexShrink: 0 }}>collected by</span>
-                    <FieldGhost text="SIGNATURE" width={200} height={30} surface="paper" />
+                    <FieldGhost text="SIGNATURE" width={200} height={30} surface="paper" state={gSignature} />
                   </div>
                 </FieldTap>
               </>

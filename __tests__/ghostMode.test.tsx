@@ -109,7 +109,9 @@ describe('ghost mode field placeholders (#216)', () => {
   });
 
   test.each(MOODS)('%s: 값이 채워진 필드는 ghost=true여도 placeholder 없음', (layout, Mood) => {
-    const html = render(Mood, layout, FULL_MOVIE, {}, true);
+    // 스탬프도 "값 있음+노출 on"으로 채운다 — 노출 off 스탬프는 이제 ghost 모드에서 dim
+    // placeholder로 남는 게 스펙이라(#369), off로 두면 이 "placeholder 0" 전제가 안 선다.
+    const html = render(Mood, layout, FULL_MOVIE, { chainVisible: true, formatVisible: true, chainLabel: 'CGV', formatLabel: 'IMAX' }, true);
     expect(countGhosts(html)).toBe(0);
   });
 });
@@ -121,7 +123,8 @@ describe('ghost mode hidden-field ghost (#266 PR-A — 목록 없이 재켜기)'
   const HIDE_TITLEOG = { ...ALL_ON, titleOg: false };
 
   test.each(MOODS)('%s: 숨긴 titleOg + 값 있음 + ghost=true → ORIGINAL TITLE ghost 하나만 등장', (layout, Mood) => {
-    const html = render(Mood, layout, FULL_MOVIE, {}, true, HIDE_TITLEOG);
+    // 스탬프는 "값 있음+노출 on"으로 채워 placeholder 셈에서 제외(#369 — off 스탬프는 dim ghost가 뜬다).
+    const html = render(Mood, layout, FULL_MOVIE, { chainVisible: true, formatVisible: true, chainLabel: 'CGV', formatLabel: 'IMAX' }, true, HIDE_TITLEOG);
     expect(html).toContain('ORIGINAL TITLE');
     // 숨긴 필드 하나만 ghost로 뜨고 다른 값 채워진 필드는 새 placeholder를 만들지 않음.
     expect(countGhosts(html)).toBe(1);
@@ -136,13 +139,59 @@ describe('ghost mode hidden-field ghost (#266 PR-A — 목록 없이 재켜기)'
     expect(html).not.toContain('ORIGINAL TITLE');
   });
 
-  test('showFieldGhost: 숨김(visible=false)은 값 유무와 무관하게 ghost=true에서만 렌더', () => {
-    expect(showFieldGhost(false, 'VALUE', true)).toBe(true); // 숨김 + 값 있음 → 재켜기 ghost
-    expect(showFieldGhost(false, '', true)).toBe(true); // 숨김 + 값 없음 → ghost
+  test('showFieldGhost: 숨김(visible=false)은 값 유무와 무관하게 ghost=true에서만 렌더 + dim/hasValue 상태(#369)', () => {
+    expect(showFieldGhost(false, 'VALUE', true)).toEqual({ dim: true, hasValue: true }); // 숨김 + 값 있음 → dim + 배지
+    expect(showFieldGhost(false, '', true)).toEqual({ dim: true, hasValue: false }); // 숨김 + 값 없음 → dim
     expect(showFieldGhost(false, 'VALUE', undefined)).toBe(false); // 데스크톱 픽셀 보존
     expect(showFieldGhost(false, 'VALUE', false)).toBe(false); // ghost off
     expect(showFieldGhost(true, 'VALUE', true)).toBe(false); // 보임 + 값 있음 → 실필드, ghost 아님
-    expect(showFieldGhost(true, '', true)).toBe(true); // 보임 + 값 없음 → 기존 #216 동작 유지
+    expect(showFieldGhost(true, '', true)).toEqual({ dim: false, hasValue: false }); // 보임 + 값 없음 → 기존 #216 동작 유지
+  });
+});
+
+describe('ghost/visibility 4칸 매트릭스 (#369 옵션 B)', () => {
+  // dim placeholder의 유일 시그니처 — DashedPlaceholder가 dim일 때만 다는 데이터 속성.
+  const DIM = 'data-ghost-dim="true"';
+  const HIDE_TITLEOG = { ...ALL_ON, titleOg: false };
+
+  test.each(MOODS)('%s: 없음+on → 일반 placeholder(dim 아님)', (layout, Mood) => {
+    // 스탬프도 노출 on(라벨 없음 → 일반 LOGO/FORMAT placeholder)으로 — off면 dim이 떠서 전제가 안 선다.
+    const html = render(Mood, layout, EMPTY_MOVIE, { chainVisible: true, formatVisible: true }, true);
+    expect(html).not.toContain(DIM);
+  });
+
+  test.each(MOODS)('%s: 없음+off → dim placeholder(eye-off), 값 배지 없음', (layout, Mood) => {
+    const html = render(Mood, layout, { ...EMPTY_MOVIE, isReissue: false }, {}, true, HIDE_TITLEOG);
+    expect(html).toContain(DIM);
+    // 값 배지(accent 점)는 값이 있을 때만.
+    expect(html).not.toContain('background:var(--accent)');
+  });
+
+  test.each(MOODS)('%s: 있음+off → dim placeholder + 값 존재 점 배지, 값 텍스트는 안 샘', (layout, Mood) => {
+    const html = render(Mood, layout, FULL_MOVIE, {}, true, HIDE_TITLEOG);
+    expect(html).toContain(DIM);
+    expect(html).toContain('background:var(--accent)');
+    expect(html).not.toContain(FULL_MOVIE.titleOg);
+  });
+
+  test.each(MOODS)('%s: 데스크톱(ghost=undefined)은 dim 경로 자체가 없음(픽셀 보존)', (layout, Mood) => {
+    const html = render(Mood, layout, FULL_MOVIE, {}, undefined, HIDE_TITLEOG);
+    expect(html).not.toContain(DIM);
+  });
+
+  // 스탬프도 같은 매트릭스(#369) — 노출 off + ghost=true면 값(라벨)이 있어도 dim placeholder + 배지.
+  test('스탬프: chainLabel 있음 + chainVisible=false + ghost=true → dim LOGO + 배지, 라벨 안 샘', () => {
+    const html = render(MoodMinimal, 'minimal', FULL_MOVIE, { chainLabel: 'CGVCHAIN', chainVisible: false, formatVisible: true }, true);
+    expect(html).toContain(DIM);
+    expect(html).toContain('LOGO');
+    expect(html).toContain('background:var(--accent)');
+    expect(html).not.toContain('CGVCHAIN');
+  });
+
+  test('스탬프: 데스크톱(ghost=undefined) + chainVisible=false → 기존대로 아무것도 안 그림', () => {
+    const html = render(MoodMinimal, 'minimal', FULL_MOVIE, { chainLabel: 'CGVCHAIN', chainVisible: false, formatVisible: false }, undefined);
+    expect(html).not.toContain('LOGO');
+    expect(html).not.toContain(DIM);
   });
 });
 
