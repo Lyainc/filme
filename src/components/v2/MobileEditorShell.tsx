@@ -266,7 +266,7 @@ export function MobileEditorShell({
   const layout = getLayout(previewComponents.layout);
   // max 재정의(#328): 헤더·서브메뉴·pill·OCR까지 다 숨기고 티켓만 화면에 fixed 오버레이로 띄운다 —
   // 나가는 길은 티켓 자신을 탭(기존 default 복귀 핸들러 재사용). ViewMode가 'default' | 'max' 2값뿐이라
-  // viewMode !== 'default'는 항상 isMax와 동치 — 아래 rotateLandscape/collapseBody도 이걸 재사용한다.
+  // viewMode !== 'default'는 항상 isMax와 동치 — 아래 rotateLandscape도 이걸 재사용한다.
   const isMax = viewMode === 'max';
   // 컨테이너 width만으로 렌더 크기를 몰기(TicketRenderer는 width에 맞춰 스케일). max는 세로를
   // TicketRenderer의 자체 maxHeight(min(72vh,720px)) 한도까지 채우는 width를 역산.
@@ -284,9 +284,6 @@ export function MobileEditorShell({
   const rotateLandscape = layout.orientation === 'landscape' && isMax;
   const rotatedInnerWidth = `min(${PREVIEW_MAX_HEIGHT}, calc(90vw * ${layout.width} / ${layout.height}))`;
   const rotatedStageWidth = `calc(${rotatedInnerWidth} * ${layout.height} / ${layout.width})`;
-  // 기본이 아닐 때만 편집 본문(Poster 드롭존 + rail)을 접어 프리뷰에 세로 공간을 내준다. 이미지가
-  // 없으면(업로드 전) 접지 않는다 — 그땐 프리뷰/pill 자체가 없다.
-  const collapseBody = !!croppedImageUrl && isMax;
 
   // 앰비언트 다크 크롬(#353→#363) — 원래 포스터 유무로 토글했지만, 랜딩(업로드 전)을 업로드 후
   // 화면 기준으로 톤앤매너 통일하며(#363) 셸 전체가 상시 .chrome-dark 스코프다. 기존 토큰이
@@ -484,16 +481,17 @@ export function MobileEditorShell({
       </header>
       )}
 
-      {/* 본문: 인라인 프리뷰 + OCR + 편집 본문(Poster 드롭존 + footer). 디자인 rail은 #357에서
-          본문 밖 하단 고정 dock으로 이동. 업로드 후엔 프리뷰가 fit 스테이지(flex-1, #366)라 콘텐츠가
-          정확히 본문 높이에 맞아 스크롤이 생기지 않고, 업로드 전(드롭존 본문)엔 기존대로 스크롤한다.
-          비-기본 모드에선 justify-center로 프리뷰를 세로 중앙에 두고 본문을 접는다.
+      {/* 본문: 업로드 후엔 인라인 프리뷰 + OCR만(footer는 편집 화면에서 제거 — rail dock 위에
+          고지가 끼는 어색한 위계를 없앴다. 고지는 랜딩 + 공유 플로우(ResultPanel·/t/[id])가 커버),
+          업로드 전엔 랜딩 히어로 + footer. 디자인 rail은 #357에서 본문 밖 하단 고정 dock으로 이동.
+          업로드 후엔 프리뷰가 fit 스테이지(flex-1, #366)라 콘텐츠가 정확히 본문 높이에 맞아
+          스크롤이 생기지 않고, 업로드 전(랜딩)엔 기존대로 스크롤한다.
           relative — absolute 앰비언트 레이어 위에 그려지기 위함(#353). */}
       <div className="relative min-h-0 flex-1 overflow-y-auto">
         {/* 업로드 후엔 h-full로 높이를 확정해야 fit 스테이지(flex-1)의 cq 단위가 산다(#366) —
             min-h-full(height:auto)이면 CSS상 indefinite라 cqh가 0으로 폴백해 티켓이 사라진다.
-            업로드 전(드롭존 본문)은 콘텐츠가 넘칠 때 스크롤해야 하므로 min-h-full 유지. */}
-        <div className={`flex flex-col ${croppedImageUrl ? 'h-full' : 'min-h-full'} ${collapseBody ? 'justify-center' : ''}`}>
+            업로드 전(랜딩 본문)은 콘텐츠가 넘칠 때 스크롤해야 하므로 min-h-full 유지. */}
+        <div className={`flex flex-col ${croppedImageUrl ? 'h-full' : 'min-h-full'}`}>
           {croppedImageUrl && (
             <div
               className={
@@ -611,24 +609,7 @@ export function MobileEditorShell({
           </div>
           )}
 
-          {croppedImageUrl ? (
-            /* 편집 본문(footer만, #363에서 드롭존은 랜딩 히어로로 이전) — collapse는 grid-rows
-               0fr↔1fr 트랜지션(overflow-hidden 필수). 비-기본 모드에선 접어 프리뷰에 세로 공간을
-               내준다. reduced-motion은 globals.css 전역 가드가 transition-duration을 죽여 즉시 전환
-               + motion-reduce:transition-none로 이중 차단. 접혔을 땐 inert로 포커스/Tab/SR 진입
-               차단(OptionalDetailsAccordion 패턴, React 19 inert prop). max에선 이 collapse가
-               footer도 그대로 숨겨준다(별도 분기 불필요). */
-            <div
-              className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
-              style={{ gridTemplateRows: collapseBody ? '0fr' : '1fr' }}
-            >
-              <div className="overflow-hidden" inert={collapseBody || undefined}>
-                <div className="px-4 pb-2 pt-4">
-                  <AppFooter ambient />
-                </div>
-              </div>
-            </div>
-          ) : (
+          {!croppedImageUrl && (
             /* 랜딩(#363) — 시안(Siyan-C-v8) 드롭존 히어로 재현: 포스터 비율(960/1477) 점선 카드 +
                어센트 업로드 아이콘 박스를 세로 중앙에, OCR은 보조 액션으로 직하(#142 위계: 드롭존
                주연). footer는 하단 고정. 업로드 시 OcrUploadCard가 위 슬롯으로 remount되지만 잃는 건
