@@ -60,7 +60,9 @@ const INITIAL_STATE: PhototicketState = {
     theater: '',
     screen: '',
     seat: '',
-    rating: 5.0,
+    // 0 = 미입력(#368) — 무드 6종 모두 `rating > 0`을 표시 게이트로 쓰므로, 사용자가 직접
+    // 입력하기 전엔 "★ 5.0"이 티켓에 노출되지 않는다.
+    rating: 0,
     runtime: '',
     bookingNumber: '',
     signature: '',

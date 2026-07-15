@@ -82,7 +82,8 @@ describe('FieldEditorBody 타입별 편집 (#215 PART A)', () => {
 
   test('rating 본문: 별점 클릭이 movieInfo.rating을 갱신', () => {
     render(<BodyHarness field="rating" />);
-    expect(screen.getByTestId('rating').textContent).toBe('5');
+    // 기본값은 미입력(0, #368) — 직접 입력 전엔 티켓에 평점이 노출되지 않는다.
+    expect(screen.getByTestId('rating').textContent).toBe('0');
     // happy-dom의 getBoundingClientRect는 0 → computeRating이 정수 별점(4) 반환.
     fireEvent.click(screen.getByRole('radio', { name: '4점' }));
     expect(screen.getByTestId('rating').textContent).toBe('4');
