@@ -191,40 +191,63 @@ function MoodCardBody({ layout, active }: { layout: LayoutSpec; active: boolean 
   );
 }
 
-// 모바일 무드 스트립(#262 갭2, #212 섹션 D) — 캐러셀 대신 가로 scroll-snap. TexturePicker 패턴 재사용.
-// 모든 무드를 한 줄로 노출해 비교·선택이 한 번에 되고, 캐러셀의 pendingIndex·터치·키보드·도트
-// 상태가 전부 불필요해진다(네이티브 스크롤·Tab이 대신). 데스크톱은 캐러셀 유지 — 이건 모바일 전용.
+// 무드 칩 배경(#367) — 티켓 미니어처(THUMBNAIL_RENDERERS, 데스크톱 캐러셀 전용) 대신 무드의
+// 핵심 색면 2~3개만 남긴 추상 칩. 46px에선 텍스트 라인·퍼포레이션 재현이 노이즈라 과함(이슈 결정).
+// 색 값은 미니어처와 같은 성격의 아트워크 상수라 토큰이 아니라 리터럴이 맞다.
+const MOOD_CHIP_BG: Record<LayoutId, string> = {
+  minimal: 'linear-gradient(180deg, #b9b3a8 0%, #b9b3a8 62%, #17150f 62%)',
+  criterion: 'linear-gradient(90deg, #f2ede2 0 22%, #23201c 22%)',
+  '35mm': 'linear-gradient(180deg, #0a0a0a 0 18%, #8a8175 18% 82%, #0a0a0a 82%)',
+  editorial: 'linear-gradient(90deg, #6e675e 0 40%, #A8312A 40% 44%, #f4ede0 44%)',
+  stub: 'linear-gradient(180deg, #8a8175 0 50%, #c9baf7 50% 58%, #f2ede2 58%)',
+  '35mm-landscape':
+    'linear-gradient(180deg, #0a0a0a 0 18%, rgba(0,0,0,0) 18% 82%, #0a0a0a 82%), linear-gradient(90deg, #8a8175 0 55%, #070707 55%)',
+};
+
+// 모바일 무드 스트립(#262 갭2, #212 섹션 D) — 캐러셀 대신 가로 scroll-snap. 데스크톱은 캐러셀 유지.
+// #367에서 rail 상세패널 공통 문법(46px 칩 + 이중 링 + 하단 라벨, ColorPicker·TexturePicker와
+// 동일)으로 축소 — 캡션·카드 프레임 제거로 패널이 낮아져 fit 스테이지(#370)의 티켓이 커진다.
 export const LayoutStrip = memo(function LayoutStrip({ value, onChange }: LayoutPickerProps) {
   return (
-    <div className="space-y-field">
-      <Eyebrow className="block">Mood</Eyebrow>
-      <div
-        className="flex gap-2 overflow-x-auto pb-1 snap-x [scrollbar-width:thin]"
-        role="radiogroup"
-        aria-label="Mood designs"
-      >
-        {LAYOUTS.map((layout) => {
-          const active = value === layout.id;
-          return (
-            <button
-              key={layout.id}
-              type="button"
-              role="radio"
-              aria-checked={active}
-              onClick={() => onChange(layout.id)}
-              data-touch="44"
-              className={`group relative flex w-28 shrink-0 snap-start flex-col items-stretch gap-2 rounded-card border p-2.5 text-left transition-colors
-                ${
-                  active
-                    ? 'border-accent bg-accent-soft shadow-card'
-                    : 'border-line bg-paper hover:border-accent/40 hover:bg-accent-soft'
-                }`}
+    <div
+      className="flex gap-3 overflow-x-auto px-1 pb-1 pt-1 snap-x [scrollbar-width:thin]"
+      role="radiogroup"
+      aria-label="Mood designs"
+    >
+      {LAYOUTS.map((layout) => {
+        const active = value === layout.id;
+        return (
+          <button
+            key={layout.id}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            // 라벨은 칩 하단(짧은 label)만 노출 — 접근명엔 캡션까지 넣어 SR·테스트가 무드를
+            // 한국어명으로도 특정할 수 있게 유지한다(designRail.test의 /크라이테리언/ 쿼리).
+            aria-label={`${layout.label} · ${layout.caption}`}
+            title={layout.caption}
+            onClick={() => onChange(layout.id)}
+            data-touch="44"
+            className="flex shrink-0 snap-start flex-col items-center gap-1.5"
+          >
+            <span
+              aria-hidden="true"
+              className="block h-[46px] w-[46px] rounded-[12px] border transition-transform"
+              style={{
+                background: MOOD_CHIP_BG[layout.id],
+                borderColor: active ? 'transparent' : 'var(--glass-border)',
+                boxShadow: active ? '0 0 0 2px var(--bg), 0 0 0 4px var(--accent)' : undefined,
+                transform: active ? 'scale(1.05)' : undefined,
+              }}
+            />
+            <span
+              className={`text-[11px] font-medium transition-colors ${active ? 'text-accent' : 'text-fg-muted'}`}
             >
-              <MoodCardBody layout={layout} active={active} />
-            </button>
-          );
-        })}
-      </div>
+              {layout.label}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 });

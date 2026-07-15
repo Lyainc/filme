@@ -141,7 +141,7 @@ function RailExpandPanel({
             과거 박스형 룩(rounded-card border bg-surface-elevated) 복원 금지 — 언박스가 최종. */}
         <div id={PANEL_ID} role="region" aria-label={eyebrow} className="pt-3">
           {/* 닫기(x) 버튼 제거(#322) — 레일 아이콘 재클릭으로 이미 토글 닫힘이라 기능 중복.
-              라벨은 피커 자체 헤더(LayoutStrip "Mood", TexturePicker "Surface treatment")와 겹쳐 생략,
+              패널 자체 헤더도 없음(#367에서 LayoutStrip "Mood" 헤더 제거 — rail 탭 라벨과 중복),
               접근성 이름은 region aria-label(eyebrow)이 유지. */}
           {children}
         </div>

@@ -9,8 +9,9 @@ interface TexturePickerProps {
   croppedImageUrl?: string | null;
 }
 
-const THUMB_W = 40;
-const THUMB_H = 56;
+// rail 상세패널 공통 칩 크기(#367, v8 §3) — LayoutStrip 무드 칩·ColorPicker 스와치와 동일 46px.
+const THUMB_W = 46;
+const THUMB_H = 46;
 // Representative opacity for previews — fixed so chips don't recompute on slider drag.
 const PREVIEW_OPACITY = 0.5;
 // Bundled placeholder shown when no poster is uploaded yet, so texture concepts stay visible (#276).
@@ -36,7 +37,7 @@ const TexturePreview = memo(function TexturePreview({
         display: 'block',
         width: THUMB_W,
         height: THUMB_H,
-        borderRadius: 4,
+        borderRadius: 12,
         overflow: 'hidden',
         flexShrink: 0,
       }}
@@ -63,6 +64,7 @@ function TexturePicker({ value, onChange, croppedImageUrl }: TexturePickerProps)
           // Show only short label (first parenthesis-free portion) on chip
           const short = tex.label.split('(')[0].trim();
 
+          // rail 공통 선택 문법(#367) — 카드 프레임·채움 반전 대신 칩 이중 링 + 라벨 색 전환.
           return (
             <button
               key={tex.value}
@@ -72,15 +74,24 @@ function TexturePicker({ value, onChange, croppedImageUrl }: TexturePickerProps)
               onClick={() => onChange(tex.value)}
               data-touch="44"
               title={tex.label}
-              className={`text-mono inline-flex shrink-0 snap-start min-h-touch flex-col items-center gap-1.5 rounded-chip border p-1.5 text-[10px] uppercase tracking-widest transition-colors
-                ${
-                  active
-                    ? 'border-accent bg-accent text-accent-ink'
-                    : 'border-line bg-paper text-fg hover:bg-accent-soft'
-                }`}
+              className="flex shrink-0 snap-start flex-col items-center gap-1.5"
             >
-              <TexturePreview src={previewSrc} texture={tex.value} />
-              <span className="px-1 pb-0.5">{short}</span>
+              <span
+                aria-hidden="true"
+                className="block rounded-[12px] border transition-transform"
+                style={{
+                  borderColor: active ? 'transparent' : 'var(--glass-border)',
+                  boxShadow: active ? '0 0 0 2px var(--bg), 0 0 0 4px var(--accent)' : undefined,
+                  transform: active ? 'scale(1.05)' : undefined,
+                }}
+              >
+                <TexturePreview src={previewSrc} texture={tex.value} />
+              </span>
+              <span
+                className={`text-[11px] font-medium transition-colors ${active ? 'text-accent' : 'text-fg-muted'}`}
+              >
+                {short}
+              </span>
             </button>
           );
         })}
