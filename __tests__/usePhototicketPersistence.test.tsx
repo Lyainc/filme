@@ -7,7 +7,7 @@
  *  - clearDraft()가 저장 키를 지우고 상태를 INITIAL_STATE로 되돌리는, 이전엔 없던 진입점을 제공한다.
  * 마운트 시 자동 복원(loadPersisted)은 이 이슈의 스코프 밖 — 그대로 유지되고 아래 테스트도 이를 검증한다.
  */
-import { afterEach, describe, expect, test, mock } from 'bun:test';
+import { afterEach, describe, expect, test, mock, jest } from 'bun:test';
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { usePhototicket } from '../src/hooks/usePhototicket';
 
@@ -45,8 +45,11 @@ describe('#310 usePhototicket saveDraft/clearDraft', () => {
     act(() => {
       result.current.updateMovieInfo({ title: '기생충' });
     });
-    // 옛 디바운스(400ms)가 있었다면 걸릴 시간을 넉넉히 흘려도 여전히 비어 있어야 한다.
-    await new Promise((r) => setTimeout(r, 500));
+    // 옛 디바운스(400ms)가 있었다면 걸릴 시간을 넉넉히 흘려도 여전히 비어 있어야 한다 — 지금은
+    // 그 타이머 자체가 없으므로 fake timer 전진만으로 실시간 대기 없이 같은 조건을 검증한다.
+    jest.useFakeTimers();
+    act(() => jest.advanceTimersByTime(500));
+    jest.useRealTimers();
     expect(window.localStorage.getItem(KEY)).toBeNull();
   });
 

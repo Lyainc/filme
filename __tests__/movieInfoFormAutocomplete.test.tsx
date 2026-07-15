@@ -11,7 +11,7 @@
  *     /api/kobis/detail response overwrite B's actors/runtime.
  */
 import React, { useState } from 'react';
-import { describe, expect, test, beforeEach, afterEach } from 'bun:test';
+import { describe, expect, test, beforeEach, afterEach, jest } from 'bun:test';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import MovieInfoForm from '../src/components/MovieInfoForm';
@@ -93,9 +93,12 @@ function Harness() {
 // DOM helpers
 // ---------------------------------------------------------------------------
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-/** Past the 300ms debounce + a settle margin. */
-const flushDebounce = () => act(async () => { await sleep(380); });
+/**
+ * Past the 300ms debounce, via fake timers instead of a real sleep — React's async act()
+ * absorbs the fetch/json/setState microtask chain the timer fire kicks off (same pattern
+ * proven in titleSheetSearch.test.tsx, which exercises the identical useKobisSearch hook).
+ */
+const flushDebounce = () => act(async () => { jest.advanceTimersByTime(310); });
 
 function setNativeValue(input: HTMLInputElement, value: string) {
   // Controlled inputs: write through the native setter so React's value
@@ -164,9 +167,11 @@ beforeEach(async () => {
     root = createRoot(container);
     root.render(<Harness />);
   });
+  jest.useFakeTimers();
 });
 
 afterEach(async () => {
+  jest.useRealTimers();
   await act(async () => {
     root.unmount();
   });
@@ -296,7 +301,6 @@ describe('detail fetch race (#82 suspect 4)', () => {
     // B's detail resolves first…
     await act(async () => {
       pendingDetails.get('M002')!(jsonResponse(detailResponse('배우B', '95')));
-      await sleep(10);
     });
     expect(latestInfo.actors).toBe('배우B');
     expect(latestPending).toBe(false);
@@ -304,7 +308,6 @@ describe('detail fetch race (#82 suspect 4)', () => {
     // …then A's stale detail arrives late and must be discarded.
     await act(async () => {
       pendingDetails.get('M001')!(jsonResponse(detailResponse('배우A', '170')));
-      await sleep(10);
     });
 
     expect(latestInfo.actors).toBe('배우B');
@@ -319,7 +322,6 @@ describe('detail fetch race (#82 suspect 4)', () => {
 
     await act(async () => {
       resultButtons(container)[0].click();
-      await sleep(10);
     });
 
     expect(latestInfo.title).toBe('영화A');
@@ -365,7 +367,6 @@ describe('자동완성 키보드 내비게이션 (#198)', () => {
       input.dispatchEvent(
         new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
       );
-      await sleep(10);
     });
 
     expect(latestInfo.title).toBe('영화B');
