@@ -2,6 +2,7 @@ import { CSSProperties, Fragment, ReactNode, memo, useEffect, useMemo, useState 
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 import { FIELD_LABELS, STAMP_LABELS, isStampTarget, type SheetTarget } from '@/constants/fields';
 import { formatDate } from '@/utils/dateFormat';
+import { EyeIcon } from '@/components/ui/VisibilityCheckbox';
 
 export interface MoodProps {
   movieInfo: MovieInfo;
@@ -84,13 +85,21 @@ export function posterTapProps(onPosterTap?: () => void) {
  * (a) 숨김(visible===false)이거나 (b) 값이 비었으면 무드가 해당 슬롯에 자리표시자를 그린다.
  * (a)는 목록 없이 필드를 다시 켜는 유일 경로 — 숨긴 필드가 `+ 라벨` 점선으로 티켓에 떠 탭→재노출(#266).
  * ghost가 undefined(데스크톱)나 false면 항상 false라 신규 placeholder는 등장하지 않는다(데스크톱 픽셀 보존).
+ *
+ * 반환은 boolean 대신 상태 객체(#369) — 노출 off(dim)와 값 존재(hasValue)를 실어 나르면 무드가
+ * `<FieldGhost state={g}/>`로 넘기는 것만으로 4칸(값×노출)이 전부 다른 시각으로 그려진다:
+ * 없음+on 점선 / 없음+off 흐린 점선+eye-off / 있음+off 흐린 점선+eye-off+점 배지 / 있음+on 실값.
+ * truthiness는 기존과 동일해(`g ? ... : null`) 분기 코드는 그대로다.
  */
+export type FieldGhostState = { dim: boolean; hasValue: boolean } | false;
+
 export function showFieldGhost(
   visible: boolean | undefined,
   value: unknown,
   ghost: boolean | undefined
-): boolean {
-  return ghost === true && (visible === false || !value);
+): FieldGhostState {
+  if (!(ghost === true && (visible === false || !value))) return false;
+  return { dim: visible === false, hasValue: !!value };
 }
 
 /**
@@ -98,6 +107,10 @@ export function showFieldGhost(
  * ghost가 false가 아니라서 placeholder라도 그릴 때 true. 스탬프 사이 구분선은 두 스탬프가 모두
  * 렌더될 때만 그려야 하므로(둘 중 하나라도 null이면 허공에 뜬 구분선이 남음), 무드가 이 헬퍼로
  * 구분선을 게이팅한다. 스탬프 내부의 null 판정과 같은 조건이라 단일 소스로 export.
+ *
+ * 노출 off도 모바일 ghost 모드(===true)에선 흐린 placeholder를 그린다(#369) — 필드의
+ * showFieldGhost와 같은 매트릭스로, 탭→재노출 경로(#266)가 스탬프에도 성립한다. ghost가
+ * undefined(데스크톱)면 기존과 동일하게 숨김 스탬프는 아무것도 안 그린다(픽셀 보존).
  */
 export function stampWillRender(
   visible: boolean | undefined,
@@ -105,7 +118,8 @@ export function stampWillRender(
   label: string | undefined,
   ghost: boolean | undefined
 ): boolean {
-  return visible !== false && (!!image || !!label || ghost !== false);
+  if (visible === false) return ghost === true;
+  return !!image || !!label || ghost !== false;
 }
 
 /**
@@ -207,37 +221,57 @@ function DashedPlaceholder({
   height,
   size,
   surface,
+  dim = false,
+  hasValue = false,
 }: {
   text: string;
   width: number | string;
   height: number;
   size: number;
   surface: Surface;
+  /** 노출이 명시적으로 꺼진 필드(#369) — 더 흐린 톤 + eye-off로 "빈 필드"(dim=false)와 구분. */
+  dim?: boolean;
+  /** dim이면서 값이 있음(#369) — accent 점 배지로 "값이 있는데 숨김"을 암시(값 자체는 노출 안 함). */
+  hasValue?: boolean;
 }) {
   // 고스트 시인성 개선(#313): 박스 opacity(0.4)가 테두리·텍스트 색의 자체 알파와 곱연산으로 겹쳐
   // dark surface에서 실효 알파가 테두리 0.2·텍스트 0.28까지 떨어졌었다. 박스 opacity를 0.65로 올리고
   // (paper: currentColor 알파 1 × 0.65 = 0.65), dark 오버라이드의 자체 알파도 함께 올려(0.5→0.85,
   // 0.7→0.95) 곱연산 후 실효 알파가 테두리 ~0.55·텍스트 ~0.62로 나오게 재배분했다.
+  // dim(#369)은 새 색을 만들지 않고 같은 값들의 알파만 낮춘다(0.65→0.3, 0.85→0.35, 0.95→0.45).
   return (
     <div
       data-hide-on-export="true"
+      data-ghost-dim={dim || undefined}
       style={{
         height,
         width,
         border: '1px dashed currentColor',
-        opacity: 0.65,
+        opacity: dim ? 0.3 : 0.65,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        gap: 5 * size,
         fontSize: 10 * size,
         fontWeight: 600,
         fontFamily: FONT_MONO,
         letterSpacing: 1,
         color: 'currentColor',
-        ...(surface === 'dark' ? { borderColor: 'rgba(255,255,255,0.85)', color: 'rgba(255,255,255,0.95)' } : {}),
+        ...(surface === 'dark'
+          ? dim
+            ? { borderColor: 'rgba(255,255,255,0.35)', color: 'rgba(255,255,255,0.45)' }
+            : { borderColor: 'rgba(255,255,255,0.85)', color: 'rgba(255,255,255,0.95)' }
+          : {}),
       }}
     >
+      {dim && <EyeIcon open={false} size={12 * size} />}
       {text}
+      {dim && hasValue && (
+        <span
+          aria-hidden="true"
+          style={{ width: 5 * size, height: 5 * size, borderRadius: 999, background: 'var(--accent)', flexShrink: 0 }}
+        />
+      )}
     </div>
   );
 }
@@ -247,6 +281,9 @@ function DashedPlaceholder({
  * 슬롯에 그리는 대시 박스. 스탬프의 DashedPlaceholder와 동일한 룩·export 제외(data-hide-on-export)를
  * 공유하되, 필드 슬롯 크기에 맞춰 width/height/size/surface를 받는다. text는 선택(라벨이 이미
  * 위에 있는 메타 셀은 빈 문자열로 두고, 단독 슬롯은 짧은 힌트를 줄 수 있다).
+ *
+ * state(#369) — showFieldGhost의 반환을 그대로 받아 노출 off(dim)·값 존재(hasValue) 시각을
+ * 얹는다. 생략(레거시 boolean 분기)이면 기존 "빈 필드" 룩 그대로.
  */
 export function FieldGhost({
   text = '',
@@ -254,22 +291,34 @@ export function FieldGhost({
   height = 34,
   size = 1,
   surface = 'paper',
+  state,
 }: {
   text?: string;
   width?: number | string;
   height?: number;
   size?: number;
   surface?: Surface;
+  state?: FieldGhostState;
 }) {
-  return <DashedPlaceholder text={text} width={width} height={height} size={size} surface={surface} />;
+  return (
+    <DashedPlaceholder
+      text={text}
+      width={width}
+      height={height}
+      size={size}
+      surface={surface}
+      dim={state ? state.dim : false}
+      hasValue={state ? state.hasValue : false}
+    />
+  );
 }
 
 export type FieldPieceSpec = {
   field: SheetTarget;
   /** 실값(있으면 텍스트만 — 데스크톱 FieldTap 통과 → 분해 전과 바이트 동일). */
   value?: string;
-  /** showFieldGhost 결과 — 비었고 ghost 모드면 라벨 점선 조각을 그린다. */
-  ghost?: boolean;
+  /** showFieldGhost 결과 — 비었고 ghost 모드면 라벨 점선 조각을 그린다(dim/hasValue도 전달, #369). */
+  ghost?: FieldGhostState;
   /** ghost 점선 라벨(THEATER/SCREEN/SEAT/DATE/TIME 등) — 조각이 나란히 서므로 뭐가 뭔지 표시. */
   label: string;
 };
@@ -297,7 +346,7 @@ export function fieldPieces(
         return {
           field: s.field,
           ghost: true,
-          node: <FieldGhost text={s.label} width={130} height={30} surface={surface} />,
+          node: <FieldGhost text={s.label} width={130} height={30} surface={surface} state={s.ghost} />,
         };
       return null;
     })
@@ -330,6 +379,12 @@ export function ChainStamp({
   // 이미지·라벨·placeholder(ghost!==false) 중 하나는 반드시 렌더된다.
   if (!stampWillRender(visible, chain, label, ghost)) return null;
   const h = height * size;
+
+  // 노출 off(#369) — 여기 도달했으면 ghost===true(stampWillRender 계약). 이미지·라벨이 있어도
+  // 노출하지 않고 흐린 placeholder + 값 존재 배지로만 암시한다(탭→재노출 #266 유지).
+  if (visible === false) {
+    return <DashedPlaceholder text="LOGO" width={120 * size} height={h} size={size} surface={surface} dim hasValue={!!(chain || label)} />;
+  }
 
   // 우선순위: 이미지 > 텍스트 라벨 > dashed placeholder(미리보기 전용, ghost!==false 보장됨).
   if (chain) {
@@ -380,6 +435,11 @@ export function FormatStamp({
   // 이미지·라벨·placeholder(ghost!==false) 중 하나는 반드시 렌더된다.
   if (!stampWillRender(visible, format, label, ghost)) return null;
   const h = 64 * size;
+
+  // 노출 off(#369) — ChainStamp와 동일: 값이 있어도 흐린 placeholder + 배지로만 암시.
+  if (visible === false) {
+    return <DashedPlaceholder text="FORMAT" width={140 * size} height={h} size={size} surface={surface} dim hasValue={!!(format || label)} />;
+  }
 
   // 우선순위: 이미지 > 텍스트 라벨 > dashed placeholder(미리보기 전용, ghost!==false 보장됨).
   if (format) {

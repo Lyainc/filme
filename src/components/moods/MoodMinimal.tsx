@@ -21,6 +21,7 @@ import {
   stampWillRender,
   truncateActors,
   useFontsReady,
+  type FieldGhostState,
 } from './_shared';
 
 /**
@@ -49,7 +50,7 @@ const metaValue: CSSProperties = {
 };
 
 // 병합 셀(node)이면 분해 조각을, 아니면 단일 값/ghost를 렌더하는 공통 메타 셀 형태(#266 PR-C).
-type MetaCell = { label: string; field: SheetTarget; value?: string; ghost?: boolean; node?: ReactNode; hasGhost?: boolean };
+type MetaCell = { label: string; field: SheetTarget; value?: string; ghost?: FieldGhostState; node?: ReactNode; hasGhost?: boolean };
 
 // 타이틀 폭 맞춤(#318) — Bottom block 가용폭(960 - left70 - right70). 2줄 클램프라
 // maxWidth로 가용폭×2를 넘겨 가장 긴 한 줄 기준으로 안전하게 축소한다(_shared.tsx 참고).
@@ -91,16 +92,22 @@ export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components,
   const signatureVal   = gate(fv?.signature, d.signature);
   const ratingVisible  = (fv?.rating ?? true) && d.rating > 0;
 
-  // 빈 항목 미리보기(#216) — 아톰 슬롯용 판정. 셀은 아래에서 개별 게이팅.
-  const ghostOn = ghost === true;
-  const gTitle     = showFieldGhost(fv?.title, d.title, ghost);
-  const gTitleOg   = showFieldGhost(fv?.titleOg, d.titleOg, ghost);
-  const gActors    = showFieldGhost(fv?.actors, d.actors, ghost);
-  const gSignature = showFieldGhost(fv?.signature, d.signature, ghost);
-  const gTheater   = showFieldGhost(fv?.theater, d.theater, ghost);
-  const gScreen    = showFieldGhost(fv?.screen, d.screen, ghost);
-  const gWatchDate = showFieldGhost(fv?.watchDate, watchDateClean, ghost);
-  const gWatchTime = showFieldGhost(fv?.watchTime, d.watchTime, ghost);
+  // 빈 항목 미리보기(#216) — 아톰 슬롯·셀 공통 판정. 노출 off도 dim placeholder로 남아
+  // 탭→재노출이 되고 on/off가 시각으로 구분된다(#369) — 이전엔 셀 계열이 fv !== false 인라인
+  // 조건이라 숨기면 통째로 사라져 매트릭스가 어긋났다.
+  const gTitle       = showFieldGhost(fv?.title, d.title, ghost);
+  const gTitleOg     = showFieldGhost(fv?.titleOg, d.titleOg, ghost);
+  const gActors      = showFieldGhost(fv?.actors, d.actors, ghost);
+  const gSignature   = showFieldGhost(fv?.signature, d.signature, ghost);
+  const gTheater     = showFieldGhost(fv?.theater, d.theater, ghost);
+  const gScreen      = showFieldGhost(fv?.screen, d.screen, ghost);
+  const gWatchDate   = showFieldGhost(fv?.watchDate, watchDateClean, ghost);
+  const gWatchTime   = showFieldGhost(fv?.watchTime, d.watchTime, ghost);
+  const gSeat        = showFieldGhost(fv?.seat, d.seat, ghost);
+  const gRuntime     = showFieldGhost(fv?.runtime, d.runtime, ghost);
+  const gRating      = showFieldGhost(fv?.rating, d.rating > 0, ghost);
+  const gReleaseDate = showFieldGhost(fv?.releaseDate, releaseClean, ghost);
+  const gReissue     = showFieldGhost(fv?.reissue, reissueClean, ghost);
 
   // 메타 청킹(#리뷰): 관람(Screening/Venue/Seat) vs 영화(Runtime/Rated/Released)를 분리.
   // 값 폰트는 전부 Pretendard로 통일(숫자·날짜 포함).
@@ -127,19 +134,19 @@ export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components,
   );
   if (venue.hasAny) screeningCells.push({ label: 'Venue', node: venue.node, hasGhost: venue.hasGhost, field: 'theater' });
   if (seatVal) screeningCells.push({ label: 'Seat', value: seatVal, field: 'seat' });
-  else if (ghostOn && fv?.seat !== false) screeningCells.push({ label: 'Seat', ghost: true, field: 'seat' });
+  else if (gSeat) screeningCells.push({ label: 'Seat', ghost: gSeat, field: 'seat' });
 
   // Re-released 셀은 releaseDate로 매핑 — 재개봉일 편집 UI가 releaseDate 시트(재개봉 토글) 안에만
   // 있고 reissue는 FIELD_SHEET_TYPE에 없어 단독 타깃이면 빈 시트가 열린다(35mm/Editorial과 정렬).
   const filmCells: MetaCell[] = [];
   if (runtimeVal) filmCells.push({ label: 'Runtime', value: runtimeVal, field: 'runtime' });
-  else if (ghostOn && fv?.runtime !== false) filmCells.push({ label: 'Runtime', ghost: true, field: 'runtime' });
+  else if (gRuntime) filmCells.push({ label: 'Runtime', ghost: gRuntime, field: 'runtime' });
   if (ratingVisible) filmCells.push({ label: 'Rated', value: `★ ${d.rating.toFixed(1)}`, field: 'rating' });
-  else if (ghostOn && fv?.rating !== false) filmCells.push({ label: 'Rated', ghost: true, field: 'rating' });
+  else if (gRating) filmCells.push({ label: 'Rated', ghost: gRating, field: 'rating' });
   if (releaseDateVal) filmCells.push({ label: 'Released', value: releaseDateVal, field: 'releaseDate' });
-  else if (ghostOn && fv?.releaseDate !== false) filmCells.push({ label: 'Released', ghost: true, field: 'releaseDate' });
+  else if (gReleaseDate) filmCells.push({ label: 'Released', ghost: gReleaseDate, field: 'releaseDate' });
   if (reissueVal) filmCells.push({ label: 'Re-released', value: reissueVal, field: 'releaseDate' });
-  else if (ghostOn && d.isReissue && fv?.reissue !== false) filmCells.push({ label: 'Re-released', ghost: true, field: 'releaseDate' });
+  else if (d.isReissue && gReissue) filmCells.push({ label: 'Re-released', ghost: gReissue, field: 'releaseDate' });
 
   // 스탬프가 실제로 뭔가(이미지/라벨/고스트 placeholder)를 렌더할 때만 상단 스크림+스탬프 블록을
   // 낸다. visible 토글만 보면 로고 미업로드+ghost=false에서 빈 스크림만 남는다(#216 리뷰 P1).
@@ -193,7 +200,7 @@ export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components,
         ) : gTitle ? (
           <FieldTap field="title" onField={onField}>
             <div style={{ marginBottom: 10 }}>
-              <FieldGhost text="TITLE" width="66%" height={72} size={2} surface={stampSurface} />
+              <FieldGhost text="TITLE" width="66%" height={72} size={2} surface={stampSurface} state={gTitle} />
             </div>
           </FieldTap>
         ) : null}
@@ -206,7 +213,7 @@ export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components,
         ) : gTitleOg ? (
           <FieldTap field="titleOg" onField={onField}>
             <div style={{ marginBottom: 20 }}>
-              <FieldGhost text="ORIGINAL TITLE" width={280} height={26} surface={stampSurface} />
+              <FieldGhost text="ORIGINAL TITLE" width={280} height={26} surface={stampSurface} state={gTitleOg} />
             </div>
           </FieldTap>
         ) : null}
@@ -228,7 +235,7 @@ export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components,
                     <div style={{ minWidth: 0 }}>
                       <div style={labelSerif(ink)}>{c.label}</div>
                       {c.ghost ? (
-                        <FieldGhost width={200} height={40} surface={stampSurface} />
+                        <FieldGhost width={200} height={40} surface={stampSurface} state={c.ghost} />
                       ) : (
                         <div style={{ ...metaValue, maxWidth: 560, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.value}</div>
                       )}
@@ -247,7 +254,7 @@ export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components,
                     <div style={{ minWidth: 0 }}>
                       <div style={labelSerif(ink)}>{c.label}</div>
                       {c.ghost ? (
-                        <FieldGhost width={200} height={40} surface={stampSurface} />
+                        <FieldGhost width={200} height={40} surface={stampSurface} state={c.ghost} />
                       ) : (
                         <div style={{ ...metaValue, maxWidth: 560, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.value}</div>
                       )}
@@ -273,7 +280,7 @@ export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components,
           <FieldTap field="actors" onField={onField}>
             <div style={{ marginBottom: 20 }}>
               <div style={labelSerif(ink)}>Cast</div>
-              <FieldGhost text="CAST" width={260} height={40} surface={stampSurface} />
+              <FieldGhost text="CAST" width={260} height={40} surface={stampSurface} state={gActors} />
             </div>
           </FieldTap>
         ) : null}
@@ -295,7 +302,7 @@ export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components,
             <FieldTap field="signature" onField={onField}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10 }}>
                 <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 25, opacity: 0.78, color: ink }}>collected by</span>
-                <FieldGhost text="SIGNATURE" width={200} height={34} surface={stampSurface} />
+                <FieldGhost text="SIGNATURE" width={200} height={34} surface={stampSurface} state={gSignature} />
               </div>
             </FieldTap>
           ) : null}

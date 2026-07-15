@@ -22,6 +22,7 @@ import {
   stampWillRender,
   truncateActors,
   useFontsReady,
+  type FieldGhostState,
 } from './_shared';
 
 /**
@@ -47,7 +48,7 @@ const cellLabel: CSSProperties = {
 };
 
 // 병합 셀(node)이면 분해 조각을, 아니면 단일 값/ghost를 렌더하는 공통 메타 셀 형태(#266 PR-C).
-type MetaCell = { label: string; field: SheetTarget; value?: string; cast?: boolean; full?: boolean; ghost?: boolean; node?: ReactNode; hasGhost?: boolean };
+type MetaCell = { label: string; field: SheetTarget; value?: string; cast?: boolean; full?: boolean; ghost?: FieldGhostState; node?: ReactNode; hasGhost?: boolean };
 
 export const Mood35mm = memo(function Mood35mm({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
@@ -76,8 +77,7 @@ export const Mood35mm = memo(function Mood35mm({ movieInfo: d, components, cropp
   const signatureVal = gate(fv?.signature, d.signature);
   const ratingVisible = (fv?.rating ?? true) && d.rating > 0;
 
-  // 빈 항목 미리보기(#216) — 아톰 슬롯 판정. 셀은 아래에서 개별 게이팅.
-  const ghostOn = ghost === true;
+  // 빈 항목 미리보기(#216) — 아톰 슬롯·셀 공통 판정. 노출 off도 dim placeholder로 남는다(#369).
   const gTitle = showFieldGhost(fv?.title, d.title, ghost);
   const gTitleOg = showFieldGhost(fv?.titleOg, d.titleOg, ghost);
   const gSignature = showFieldGhost(fv?.signature, d.signature, ghost);
@@ -86,6 +86,11 @@ export const Mood35mm = memo(function Mood35mm({ movieInfo: d, components, cropp
   const gSeat = showFieldGhost(fv?.seat, d.seat, ghost);
   const gWatchDate = showFieldGhost(fv?.watchDate, watchDateClean, ghost);
   const gWatchTime = showFieldGhost(fv?.watchTime, d.watchTime, ghost);
+  const gRuntime = showFieldGhost(fv?.runtime, d.runtime, ghost);
+  const gRating = showFieldGhost(fv?.rating, d.rating > 0, ghost);
+  const gReleaseDate = showFieldGhost(fv?.releaseDate, releaseClean, ghost);
+  const gReissue = showFieldGhost(fv?.reissue, reissueClean, ghost);
+  const gActors = showFieldGhost(fv?.actors, d.actors, ghost);
 
   // 청킹: 관람(Exhibited/Screened) vs 영화(Runtime/Rated/Released/Re-released/Starring). 값은 Pretendard로 통일.
   // 병합 셀(Exhibited=극장+상영관+좌석, Screened=관람일+시간)은 fieldPieces로 필드별 독립 조각으로 분해(#266 PR-C).
@@ -113,16 +118,16 @@ export const Mood35mm = memo(function Mood35mm({ movieInfo: d, components, cropp
   // 마스터 필름 셀 순서: Runtime · Rated · Released · Re-released · Starring. 평점은 원형 스탬프에서 셀로 이동.
   const filmCells: MetaCell[] = [];
   if (runtimeVal) filmCells.push({ label: 'Runtime', value: runtimeVal, field: 'runtime' });
-  else if (ghostOn && fv?.runtime !== false) filmCells.push({ label: 'Runtime', ghost: true, field: 'runtime' });
+  else if (gRuntime) filmCells.push({ label: 'Runtime', ghost: gRuntime, field: 'runtime' });
   if (ratingVisible) filmCells.push({ label: 'Rated', value: `★ ${d.rating.toFixed(1)} / 5.0`, field: 'rating' });
-  else if (ghostOn && fv?.rating !== false) filmCells.push({ label: 'Rated', ghost: true, field: 'rating' });
+  else if (gRating) filmCells.push({ label: 'Rated', ghost: gRating, field: 'rating' });
   if (releaseDateVal) filmCells.push({ label: 'Released', value: releaseDateVal, field: 'releaseDate' });
-  else if (ghostOn && fv?.releaseDate !== false) filmCells.push({ label: 'Released', ghost: true, field: 'releaseDate' });
+  else if (gReleaseDate) filmCells.push({ label: 'Released', ghost: gReleaseDate, field: 'releaseDate' });
   // Re-released는 표시만 별도 셀, 편집 자리는 releaseDate 시트(reissue는 그 안에서) — 탭 타깃을 releaseDate로 둔다(빈 시트 dead-end 방지, onTicketFieldTap 회귀).
   if (reissueVal) filmCells.push({ label: 'Re-released', value: reissueVal, field: 'releaseDate' });
-  else if (ghostOn && !!d.isReissue && fv?.reissue !== false) filmCells.push({ label: 'Re-released', ghost: true, field: 'releaseDate' });
+  else if (!!d.isReissue && gReissue) filmCells.push({ label: 'Re-released', ghost: gReissue, field: 'releaseDate' });
   if (actorsVal) filmCells.push({ label: 'Starring', value: actorsVal, cast: true, full: true, field: 'actors' });
-  else if (ghostOn && fv?.actors !== false) filmCells.push({ label: 'Starring', full: true, ghost: true, field: 'actors' });
+  else if (gActors) filmCells.push({ label: 'Starring', full: true, ghost: gActors, field: 'actors' });
 
   // 필름 스트립 엣지 스크롤 코드(장식 크롬 — 편집 불가). 서명의 편집 자리는 아래 푸터, 여긴 시안 페이싱용 복제.
   const edgeCodes = [
@@ -153,7 +158,8 @@ export const Mood35mm = memo(function Mood35mm({ movieInfo: d, components, cropp
       <FilmStripBand pos="top" accent={amber} codes={edgeCodes} base={FS_BASE} />
 
       {/* Chain + format paired, top-left (마스터 left:50 top:130) */}
-      {(components.chainVisible || components.formatVisible) && (
+      {(stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost) ||
+        stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost)) && (
         <div style={{ position: 'absolute', left: 50, top: 130, display: 'flex', alignItems: 'center', gap: 32 }}>
           <FieldTap field="chain" onField={onField}>
             <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={50} surface="dark" ghost={ghost} />
@@ -177,7 +183,7 @@ export const Mood35mm = memo(function Mood35mm({ movieInfo: d, components, cropp
           ) : gTitleOg ? (
             <FieldTap field="titleOg" onField={onField}>
               <div style={{ marginBottom: 9 }}>
-                <FieldGhost text="ORIGINAL TITLE" width={280} height={24} surface="dark" />
+                <FieldGhost text="ORIGINAL TITLE" width={280} height={24} surface="dark" state={gTitleOg} />
               </div>
             </FieldTap>
           ) : null}
@@ -190,7 +196,7 @@ export const Mood35mm = memo(function Mood35mm({ movieInfo: d, components, cropp
           ) : gTitle ? (
             <FieldTap field="title" onField={onField}>
               <div style={{ marginBottom: 15 }}>
-                <FieldGhost text="TITLE" width="60%" height={48} size={2} surface="dark" />
+                <FieldGhost text="TITLE" width="60%" height={48} size={2} surface="dark" state={gTitle} />
               </div>
             </FieldTap>
           ) : null}
@@ -211,7 +217,7 @@ export const Mood35mm = memo(function Mood35mm({ movieInfo: d, components, cropp
                         <div style={{ minWidth: 0, flex: c.full ? '1 1 100%' : '0 1 auto' }}>
                           <div style={cellLabel}>{c.label}</div>
                           {c.ghost ? (
-                            <FieldGhost width={220} height={34} surface="dark" />
+                            <FieldGhost width={220} height={34} surface="dark" state={c.ghost} />
                           ) : (
                             <div style={{ color: FS_INK, fontWeight: 600, fontSize: 26, fontFamily: FONT_SANS, letterSpacing: -0.2, lineHeight: 1.2, maxWidth: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.value}</div>
                           )}
@@ -234,7 +240,7 @@ export const Mood35mm = memo(function Mood35mm({ movieInfo: d, components, cropp
                         <div style={{ minWidth: 0, flex: c.full ? '1 1 100%' : '0 1 auto' }}>
                           <div style={cellLabel}>{c.label}</div>
                           {c.ghost ? (
-                            <FieldGhost width={c.full ? 300 : 220} height={34} surface="dark" />
+                            <FieldGhost width={c.full ? 300 : 220} height={34} surface="dark" state={c.ghost} />
                           ) : (
                             <div style={{ color: FS_INK, fontWeight: 600, fontSize: c.cast ? 24 : 26, fontFamily: FONT_SANS, letterSpacing: -0.2, lineHeight: 1.2, maxWidth: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.value}</div>
                           )}
@@ -272,7 +278,7 @@ export const Mood35mm = memo(function Mood35mm({ movieInfo: d, components, cropp
               <FieldTap field="signature" onField={onField}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
                   <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 14, opacity: 0.72, color: FS_INK }}>collected by</span>
-                  <FieldGhost text="SIGNATURE" width={200} height={30} surface="dark" />
+                  <FieldGhost text="SIGNATURE" width={200} height={30} surface="dark" state={gSignature} />
                 </div>
               </FieldTap>
             ) : null}

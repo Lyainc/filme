@@ -23,6 +23,7 @@ import {
   stampWillRender,
   truncateActors,
   useFontsReady,
+  type FieldGhostState,
 } from './_shared';
 
 // 하단 caps 메타 그리드(관람·영화 청킹)의 라벨/값 스타일. 인라인 리터럴에서 추출해 VENUE 분해 셀·
@@ -73,8 +74,7 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
   const signatureVal   = gate(fv?.signature, d.signature);
   const ratingVisible  = (fv?.rating ?? true) && d.rating > 0;
 
-  // 빈 항목 미리보기(#216) — 아톰 슬롯 판정. 셀 행은 아래에서 개별 게이팅.
-  const ghostOn = ghost === true;
+  // 빈 항목 미리보기(#216) — 아톰 슬롯·셀 행 공통 판정. 노출 off도 dim placeholder로 남는다(#369).
   const gTitle     = showFieldGhost(fv?.title, d.title, ghost);
   const gTitleOg   = showFieldGhost(fv?.titleOg, d.titleOg, ghost);
   const gActors    = showFieldGhost(fv?.actors, d.actors, ghost);
@@ -82,6 +82,11 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
   const gTheater   = showFieldGhost(fv?.theater, d.theater, ghost);
   const gScreen    = showFieldGhost(fv?.screen, d.screen, ghost);
   const gSeat      = showFieldGhost(fv?.seat, d.seat, ghost);
+  const gWatchDate = showFieldGhost(fv?.watchDate, watchDateClean, ghost);
+  const gRating    = showFieldGhost(fv?.rating, d.rating > 0, ghost);
+  const gRuntime   = showFieldGhost(fv?.runtime, d.runtime, ghost);
+  const gRelease   = showFieldGhost(fv?.releaseDate, releaseClean, ghost);
+  const gReissue   = showFieldGhost(fv?.reissue, reissueClean, ghost);
 
   // 스파인 임프린트 — 넘버링 없이 원제(없으면 제목)로 진짜 카탈로그 스파인처럼.
   const spineText = titleOgVal || titleVal;
@@ -100,19 +105,19 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
     onField,
     { sep: '  ·  ', surface: stampSurface }
   );
-  type Row = { label: string; value?: string; ghost?: boolean; field: SheetTarget };
+  type Row = { label: string; value?: string; ghost?: FieldGhostState; field: SheetTarget };
   const screeningRows = ([
-    { label: 'WATCHED', value: watchDateVal, ghost: ghostOn && !watchDateVal && fv?.watchDate !== false, field: 'watchDate' },
+    { label: 'WATCHED', value: watchDateVal, ghost: gWatchDate, field: 'watchDate' },
   ] as Row[]).filter(r => r.value || r.ghost);
   const hasScreening = venueCell.hasAny || screeningRows.length > 0;
   // 마스터 v2 필름 셀 순서: RATED · RUNTIME · RELEASED · RE-RELEASED.
   const filmRows = ([
-    { label: 'RATED', value: ratingText, ghost: ghostOn && !ratingText && fv?.rating !== false, field: 'rating' },
-    { label: 'RUNTIME', value: runtimeVal, ghost: ghostOn && !runtimeVal && fv?.runtime !== false, field: 'runtime' },
-    { label: 'RELEASED', value: releaseDateVal, ghost: ghostOn && !releaseDateVal && fv?.releaseDate !== false, field: 'releaseDate' },
+    { label: 'RATED', value: ratingText, ghost: gRating, field: 'rating' },
+    { label: 'RUNTIME', value: runtimeVal, ghost: gRuntime, field: 'runtime' },
+    { label: 'RELEASED', value: releaseDateVal, ghost: gRelease, field: 'releaseDate' },
     // RE-RELEASED는 releaseDate로 매핑 — reissue는 FIELD_SHEET_TYPE에 없어 단독 타깃이면 빈 시트가 열린다
     // (재개봉일 편집은 releaseDate 시트의 재개봉 토글 안, 35mm/Editorial과 정렬).
-    { label: 'RE-RELEASED', value: reissueVal, ghost: ghostOn && !reissueVal && !!d.isReissue && fv?.reissue !== false, field: 'releaseDate' },
+    { label: 'RE-RELEASED', value: reissueVal, ghost: d.isReissue ? gReissue : false, field: 'releaseDate' },
   ] as Row[]).filter(r => r.value || r.ghost);
 
   const componentOpacity = components.componentOpacity ?? 1;
@@ -182,7 +187,7 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
         ) : gTitle ? (
           <FieldTap field="title" onField={onField}>
             <div style={{ marginBottom: 18 }}>
-              <FieldGhost text="TITLE" width="66%" height={72} size={2} surface={stampSurface} />
+              <FieldGhost text="TITLE" width="66%" height={72} size={2} surface={stampSurface} state={gTitle} />
             </div>
           </FieldTap>
         ) : null}
@@ -195,7 +200,7 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
         ) : gTitleOg ? (
           <FieldTap field="titleOg" onField={onField}>
             <div style={{ marginBottom: 18 }}>
-              <FieldGhost text="ORIGINAL TITLE" width={280} height={32} surface={stampSurface} />
+              <FieldGhost text="ORIGINAL TITLE" width={280} height={32} surface={stampSurface} state={gTitleOg} />
             </div>
           </FieldTap>
         ) : null}
@@ -210,7 +215,7 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
           <FieldTap field="actors" onField={onField}>
             <div style={{ marginBottom: 22, display: 'flex', alignItems: 'center', gap: 12 }}>
               <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 29, opacity: 0.85 }}>featuring</span>
-              <FieldGhost text="CAST" width={260} height={36} surface={stampSurface} />
+              <FieldGhost text="CAST" width={260} height={36} surface={stampSurface} state={gActors} />
             </div>
           </FieldTap>
         ) : null}
@@ -237,7 +242,7 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
               <FieldTap key={i} field={r.field} onField={onField}>
                 <div style={metaLabel}>{r.label}</div>
                 {r.ghost
-                  ? <FieldGhost width={180} height={32} surface={stampSurface} />
+                  ? <FieldGhost width={180} height={32} surface={stampSurface} state={r.ghost} />
                   : <div style={metaValue}>{r.value}</div>}
               </FieldTap>
             ))}
@@ -252,7 +257,7 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
               <FieldTap key={i} field={r.field} onField={onField}>
                 <div style={metaLabel}>{r.label}</div>
                 {r.ghost
-                  ? <FieldGhost width={180} height={32} surface={stampSurface} />
+                  ? <FieldGhost width={180} height={32} surface={stampSurface} state={r.ghost} />
                   : <div style={metaValue}>{r.value}</div>}
               </FieldTap>
             ))}
@@ -275,7 +280,7 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
             <FieldTap field="signature" onField={onField}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10 }}>
                 <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 25, opacity: 0.78, color: ink }}>collected by</span>
-                <FieldGhost text="SIGNATURE" width={200} height={34} surface={stampSurface} />
+                <FieldGhost text="SIGNATURE" width={200} height={34} surface={stampSurface} state={gSignature} />
               </div>
             </FieldTap>
           ) : null}
