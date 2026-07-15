@@ -72,7 +72,10 @@ describe('MobileEditorShell 줌 모드 (#214/#328/#356)', () => {
     // 진입 후: 헤더·툴바가 사라지고, 티켓 탭(기본 복귀) 핸들만 남는다.
     expect(screen.queryByRole('button', { name: '편집 메뉴' })).toBeNull();
     expect(screen.queryByRole('toolbar', { name: '편집 도구' })).toBeNull();
-    expect(screen.getByRole('button', { name: '기본 크기로 돌아가기' })).toBeTruthy();
+    const escapeHatch = screen.getByRole('button', { name: '기본 크기로 돌아가기' });
+    // 진입 버튼이 있던 툴바가 언마운트돼 포커스가 body로 떨어지면 키보드 사용자가 복귀
+    // 수단을 잃는다 — 포커스는 유일한 탈출구(티켓 래퍼)로 옮겨져야 한다(#190).
+    expect(document.activeElement).toBe(escapeHatch);
 
     // 티켓 탭 → 기본 복귀, 헤더·툴바 재노출.
     await user.click(screen.getByRole('button', { name: '기본 크기로 돌아가기' }));
