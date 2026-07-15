@@ -110,6 +110,22 @@ describe('플로팅 툴바 (#356)', () => {
     expect(screen.getByRole('toolbar', { name: '편집 도구' })).toBeTruthy();
   });
 
+  test('영속된 이동식 좌표가 뷰포트 밖이면 마운트 시 재클램프된다(#190)', async () => {
+    // 저장 당시보다 좁은 뷰포트로 다시 연 상황 — resize 없이 마운트만으로 화면 안으로 들어와야 한다.
+    window.localStorage.setItem(
+      TB_KEY,
+      JSON.stringify({ orient: 'v', place: 'movable', x: 5000, y: 5000, hidden: false })
+    );
+    const user = userEvent.setup();
+    render(<Harness />);
+    const toolbar = await seedPoster(user);
+
+    const m = toolbar.style.transform.match(/translate\((-?[\d.]+)px, (-?[\d.]+)px\)/);
+    expect(m).toBeTruthy();
+    expect(parseFloat(m![1])).toBeLessThanOrEqual(window.innerWidth - 8); // EDGE=8
+    expect(parseFloat(m![2])).toBeLessThanOrEqual(window.innerHeight - 8);
+  });
+
   test('기어 메뉴 프리셋이 방향을 바꾸고 별도 키로 영속, 재마운트에 복원된다', async () => {
     const user = userEvent.setup();
     const { unmount } = render(<Harness />);

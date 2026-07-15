@@ -337,6 +337,11 @@ export function MobileEditorShell({
   // 나가는 길은 티켓 자신을 탭(기존 default 복귀 핸들러 재사용). ViewMode가 'default' | 'max' 2값뿐이라
   // viewMode !== 'default'는 항상 isMax와 동치 — 아래 rotateLandscape도 이걸 재사용한다.
   const isMax = viewMode === 'max';
+  // max 진입 시 포커스를 티켓 래퍼(유일한 탈출구)로 옮긴다 — 진입 버튼이 있던 플로팅 툴바가
+  // max에서 통째로 언마운트돼 포커스가 body로 떨어지면 키보드 사용자가 복귀 수단을 잃는다(#190).
+  useEffect(() => {
+    if (isMax) previewWrapEl?.focus();
+  }, [isMax, previewWrapEl]);
   // 컨테이너 width만으로 렌더 크기를 몰기(TicketRenderer는 width에 맞춰 스케일). max는 세로를
   // TicketRenderer의 자체 maxHeight(min(72vh,720px)) 한도까지 채우는 width를 역산.
   const previewWidth = `min(90vw, calc(${PREVIEW_MAX_HEIGHT} * ${layout.width} / ${layout.height}))`;

@@ -1,5 +1,3 @@
-import { Eyebrow } from '@/components/v2/Eyebrow';
-
 interface ColorPickerProps {
   value: string;
   onChange: (value: string) => void;
@@ -83,7 +81,12 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
           );
         })}
 
-        <label className={`relative inline-flex min-h-touch min-w-touch items-center justify-center ${disabled ? 'cursor-default' : 'cursor-pointer'}`}>
+        {/* 시각 라벨 없이 title/aria로만 — 스와치·무드·후보정 칩과 같은 문법. 375px에서
+            'custom' 텍스트가 고아 줄바꿈을 만들던 Eyebrow는 제거(#190). */}
+        <label
+          title="Custom color"
+          className={`relative inline-flex min-h-touch min-w-touch items-center justify-center ${disabled ? 'cursor-default' : 'cursor-pointer'}`}
+        >
           <input
             type="color"
             aria-label="Custom color"
@@ -104,7 +107,6 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
             aria-hidden
           />
         </label>
-        <Eyebrow tone="faint" className="ml-1">custom</Eyebrow>
       </div>
 
       <div className={`flex items-stretch gap-2 pt-1 ${disabled ? 'opacity-40' : ''}`}>
