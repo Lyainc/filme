@@ -10,7 +10,7 @@
  * fetch는 글로벌 스왑으로 mock(공유 모듈 mock.module 미사용 — 전역 누수 회피). 상호작용은
  * fieldSheets 패턴대로 testing-library render + fireEvent.
  */
-import { describe, expect, test, beforeEach, afterEach } from 'bun:test';
+import { describe, expect, test, beforeEach, afterEach, jest } from 'bun:test';
 import { act } from 'react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { usePhototicket } from '@/hooks/usePhototicket';
@@ -66,8 +66,9 @@ function GatingHarness() {
   );
 }
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const flushDebounce = () => act(async () => { await sleep(380); });
+// 300ms 디바운스를 fake timer로 발화시킨다 — act(async)가 뒤이은 fetch/json/setState 마이크로태스크
+// 체인도 settle될 때까지 흡수한다(React act의 표준 fake-timer 패턴).
+const flushDebounce = () => act(async () => { jest.advanceTimersByTime(310); });
 const titleInput = () => screen.getByRole('textbox') as HTMLInputElement;
 const resultButtons = () => screen.queryAllByRole('button').filter((b) => /영화[AB]/.test(b.textContent || ''));
 const info = () => photoRef.state.movieInfo;
@@ -76,11 +77,13 @@ beforeEach(() => {
   window.localStorage.clear();
   searchCalls = [];
   mockFetch((movieCd) => Promise.resolve(jsonResponse(detailResponse(`배우-${movieCd}`, '120'))));
+  jest.useFakeTimers();
 });
 afterEach(() => {
   cleanup();
   window.localStorage.clear();
   globalThis.fetch = originalFetch;
+  jest.useRealTimers();
 });
 
 describe('TitleSheet KOBIS 검색 (#215 PART A)', () => {
@@ -92,7 +95,7 @@ describe('TitleSheet KOBIS 검색 (#215 PART A)', () => {
     const btns = resultButtons();
     expect(btns.length).toBe(2);
 
-    await act(async () => { btns[0].click(); await sleep(20); });
+    await act(async () => { btns[0].click(); });
     expect(info().title).toBe('영화A');
     expect(info().titleOg).toBe('Movie A');
     expect(info().releaseDate).toBe('2014-11-06');
@@ -134,21 +137,21 @@ describe('TitleSheet KOBIS 검색 (#215 PART A)', () => {
     // A 선택 — detail 미해결.
     fireEvent.change(titleInput(), { target: { value: '영화' } });
     await flushDebounce();
-    await act(async () => { resultButtons()[0].click(); await sleep(10); });
+    await act(async () => { resultButtons()[0].click(); });
     expect(info().title).toBe('영화A');
 
     // 다시 검색해 B 선택 — A detail 여전히 미해결.
     fireEvent.change(titleInput(), { target: { value: '영화' } });
     await flushDebounce();
-    await act(async () => { resultButtons()[1].click(); await sleep(10); });
+    await act(async () => { resultButtons()[1].click(); });
     expect(info().title).toBe('영화B');
 
     // B detail 먼저 해결.
-    await act(async () => { pending.get('M002')!(jsonResponse(detailResponse('배우B', '95'))); await sleep(10); });
+    await act(async () => { pending.get('M002')!(jsonResponse(detailResponse('배우B', '95'))); });
     expect(info().actors).toBe('배우B');
 
     // A stale detail 늦게 도착 → 버려져야 함.
-    await act(async () => { pending.get('M001')!(jsonResponse(detailResponse('배우A', '170'))); await sleep(10); });
+    await act(async () => { pending.get('M001')!(jsonResponse(detailResponse('배우A', '170'))); });
     expect(info().actors).toBe('배우B');
   });
 
@@ -162,13 +165,13 @@ describe('TitleSheet KOBIS 검색 (#215 PART A)', () => {
     fireEvent.change(titleInput(), { target: { value: '영화' } });
     await flushDebounce();
     // A 선택: 제목·원제·개봉일이 즉시 반영되고 detail(M001)은 미해결로 남는다.
-    await act(async () => { resultButtons()[0].click(); await sleep(10); });
+    await act(async () => { resultButtons()[0].click(); });
     expect(pending.has('M001')).toBe(true);
     // detail in-flight인데도 export는 열려 있어야 한다 — 현재 표면은 pending을 게이팅하지 않는다.
     expect(screen.getByTestId('export').textContent).toBe('ready');
 
     // detail 해결 후에도 동일.
-    await act(async () => { pending.get('M001')!(jsonResponse(detailResponse('배우A', '120'))); await sleep(10); });
+    await act(async () => { pending.get('M001')!(jsonResponse(detailResponse('배우A', '120'))); });
     expect(screen.getByTestId('export').textContent).toBe('ready');
   });
 });

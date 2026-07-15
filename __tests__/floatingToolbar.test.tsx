@@ -7,8 +7,8 @@
  * - 기어 → 배치 서브메뉴(툴바 부착) → 프리셋 탭이 방향을 바꾸고 filme:toolbar:v1로 영속,
  *   재마운트 시 복원(새로고침 복원 완료 조건).
  */
-import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
-import { render, screen, cleanup, waitFor, act } from '@testing-library/react';
+import { describe, expect, test, afterEach, beforeEach, jest } from 'bun:test';
+import { render, screen, cleanup, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
@@ -46,23 +46,29 @@ function Harness() {
 
 beforeEach(() => {
   window.localStorage.clear();
+  jest.useFakeTimers();
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  jest.useRealTimers();
+});
+
+const userSetup = () => userEvent.setup({ delay: null });
+// fake timer 전진은 동기라 실시간 대기 없이 디바운스를 발화시킨다.
+const advance = (ms: number) => act(() => jest.advanceTimersByTime(ms));
 
 async function seedPoster(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByText('seed-poster'));
   // 히스토리 베이스라인은 마운트 후 첫 디바운스(350ms)가 잡는다 — 그 윈도 안의 변경(포스터
   // 업로드의 fieldVisibility 리셋 포함)은 베이스라인에 뭉친다. 이후 편집이 1스텝으로 잡히도록
   // settle을 기다린다.
-  await act(async () => {
-    await new Promise((r) => setTimeout(r, 400));
-  });
+  await advance(400);
   return screen.getByRole('toolbar', { name: '편집 도구' });
 }
 
 describe('플로팅 툴바 (#356)', () => {
   test('undo/redo 배선: 초기 disabled → 편집 후 실행 취소가 폼을 되돌린다', async () => {
-    const user = userEvent.setup();
+    const user = userSetup();
     render(<Harness />);
     await seedPoster(user);
 
@@ -73,7 +79,8 @@ describe('플로팅 툴바 (#356)', () => {
 
     await user.click(screen.getByText('seed-edit'));
     expect(captured.movieInfo.theater).toBe('CGV 용산');
-    await waitFor(() => expect(undo.disabled).toBe(false)); // 350ms 디바운스 settle
+    await advance(360); // 350ms 디바운스 settle
+    expect(undo.disabled).toBe(false);
 
     await user.click(undo);
     expect(captured.movieInfo.theater).toBe('');
@@ -84,7 +91,7 @@ describe('플로팅 툴바 (#356)', () => {
   });
 
   test('항목목록 버튼이 헤더 대신 툴바에서 드로어를 연다(#360 임시 진입점 대체)', async () => {
-    const user = userEvent.setup();
+    const user = userSetup();
     render(<Harness />);
     const toolbar = await seedPoster(user);
 
@@ -99,7 +106,7 @@ describe('플로팅 툴바 (#356)', () => {
   });
 
   test('숨김 → 원형 표시 버튼으로 접히고, 다시 펼 수 있다', async () => {
-    const user = userEvent.setup();
+    const user = userSetup();
     render(<Harness />);
     await seedPoster(user);
 
@@ -116,7 +123,7 @@ describe('플로팅 툴바 (#356)', () => {
       TB_KEY,
       JSON.stringify({ orient: 'v', place: 'movable', x: 5000, y: 5000, hidden: false })
     );
-    const user = userEvent.setup();
+    const user = userSetup();
     render(<Harness />);
     const toolbar = await seedPoster(user);
 
@@ -127,7 +134,7 @@ describe('플로팅 툴바 (#356)', () => {
   });
 
   test('기어 메뉴 프리셋이 방향을 바꾸고 별도 키로 영속, 재마운트에 복원된다', async () => {
-    const user = userEvent.setup();
+    const user = userSetup();
     const { unmount } = render(<Harness />);
     const toolbar = await seedPoster(user);
     expect(toolbar.getAttribute('aria-orientation')).toBe('vertical'); // 기본 세로·고정
@@ -140,16 +147,15 @@ describe('플로팅 툴바 (#356)', () => {
     expect(toolbar.getAttribute('aria-orientation')).toBe('horizontal');
 
     // 자동 영속(300ms 디바운스) — 문서 키(filme:phototicket:v1)가 아닌 별도 키.
-    await waitFor(() => {
-      const raw = window.localStorage.getItem(TB_KEY);
-      expect(raw).toBeTruthy();
-      expect(JSON.parse(raw!).orient).toBe('h');
-    });
+    await advance(310);
+    const raw = window.localStorage.getItem(TB_KEY);
+    expect(raw).toBeTruthy();
+    expect(JSON.parse(raw!).orient).toBe('h');
     expect(window.localStorage.getItem('filme:phototicket:v1')).toBeNull();
 
     // 재마운트(새로고침 상당) — 저장된 방향으로 복원.
     unmount();
-    const user2 = userEvent.setup();
+    const user2 = userSetup();
     render(<Harness />);
     const toolbar2 = await seedPoster(user2);
     expect(toolbar2.getAttribute('aria-orientation')).toBe('horizontal');
