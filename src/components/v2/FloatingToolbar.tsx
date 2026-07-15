@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, type PointerEvent } from 'react';
  *
  * - 버튼 44px(시안 31px은 앱 현행 44~48px 대비 회귀 — 이슈 표), dark-glass 배경
  *   (--surface-translucent 재사용: README §Design Tokens, 시안 불투명 코드는 모순으로 기각).
- * - 방향(가로/세로) × 배치(고정/이동) 두 축. 기본 세로·고정·좌측 상단 1/3.
+ * - 방향(가로/세로) × 배치(고정/이동) 두 축. 기본 세로·고정·좌측 헤더 직하(#364).
  * - 이동식은 44px 그립 드래그(시안 12px은 WCAG 2.2 SC 2.5.8 미달) + 기어 메뉴의
  *   좌/우 가장자리 스냅(드래그 없는 단일 포인터 대체 경로, WCAG 2.2 SC 2.5.7).
  * - 숨김 → 툴바 top-left 원점에 앵커된 원형 버튼으로 접힘(중심 앵커는 탭 위치로 튄다 — 이슈).
@@ -177,14 +177,16 @@ export function FloatingToolbar({
   };
 
   // 위치 스타일 — 이동식은 transform(translate)만 움직인다(left/top 애니메이트 금지 — 이슈 표).
-  // 고정식 프리셋은 CSS 값이라 리사이즈에 자동 대응. 세로·고정 top 30vh ≈ 시안의 좌측 상단 1/3.
+  // 고정식 프리셋은 CSS 값이라 리사이즈에 자동 대응. 세로·고정 기본은 헤더(56px) 바로 아래 —
+  // 이전 30vh는 화면 세로 중간대라 fit 스테이지(#370)로 커진 티켓의 중심부와 겹쳤다(#364,
+  // v8 "raised well above center"). safe-area 기준 고정값이라 Safari 동적 툴바(vh 변동)와 무관.
   const posStyle: React.CSSProperties =
     place === 'movable'
       ? pos
         ? { left: 0, top: 0, transform: `translate(${pos.x}px, ${pos.y}px)` }
         : { right: 14, top: 'calc(env(safe-area-inset-top, 0px) + 126px)' } // 이동식 기본: 우상단(시안)
       : orient === 'v'
-        ? { left: 14, top: '30vh' }
+        ? { left: 14, top: 'calc(env(safe-area-inset-top, 0px) + 70px)' }
         : {
             left: '50%',
             transform: 'translateX(-50%)',
@@ -360,22 +362,35 @@ export function FloatingToolbar({
             })}
             {place === 'movable' && (
               <div className="mt-1 flex gap-1 border-t border-line pt-1.5">
-                {/* 드래그 없는 위치 조정 대체 경로(WCAG 2.2 SC 2.5.7) — 좌/우 가장자리 스냅. */}
+                {/* 드래그 없는 위치 조정 대체 경로(WCAG 2.2 SC 2.5.7) — 좌/우 가장자리 스냅.
+                    텍스트 버튼 대신 아이콘화(#364) — 접근명·역할은 유지해 2.5.7을 계속 만족한다. */}
                 <button
                   type="button"
                   role="menuitem"
                   onClick={() => snapTo('left')}
-                  className="h-11 flex-1 rounded-[9px] text-[12px] font-semibold text-fg"
+                  aria-label="왼쪽 가장자리로 이동"
+                  title="왼쪽 가장자리로 이동"
+                  className="flex h-11 flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:text-fg"
                 >
-                  ← 왼쪽
+                  <svg {...ICON}>
+                    <path d="M3 19V5" />
+                    <path d="m13 6-6 6 6 6" />
+                    <path d="M7 12h14" />
+                  </svg>
                 </button>
                 <button
                   type="button"
                   role="menuitem"
                   onClick={() => snapTo('right')}
-                  className="h-11 flex-1 rounded-[9px] text-[12px] font-semibold text-fg"
+                  aria-label="오른쪽 가장자리로 이동"
+                  title="오른쪽 가장자리로 이동"
+                  className="flex h-11 flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:text-fg"
                 >
-                  오른쪽 →
+                  <svg {...ICON}>
+                    <path d="M21 5v14" />
+                    <path d="m11 18 6-6-6-6" />
+                    <path d="M17 12H3" />
+                  </svg>
                 </button>
               </div>
             )}
