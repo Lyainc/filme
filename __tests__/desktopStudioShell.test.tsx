@@ -50,7 +50,7 @@ describe('DesktopStudioShell (#224)', () => {
     // 기본 탭 = poster → ImageUploader 드롭존.
     expect(screen.getByText('포스터 업로드')).toBeDefined();
 
-    // INFO → FieldLauncher(그룹 'Film'). poster 콘텐츠는 사라진다.
+    // INFO → FieldAccordion(그룹 'Film'). poster 콘텐츠는 사라진다.
     await user.click(screen.getByRole('button', { name: 'INFO' }));
     expect(screen.getByText('Film')).toBeDefined();
     expect(screen.queryByText('포스터 업로드')).toBeNull();

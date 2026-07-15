@@ -191,16 +191,14 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
   }
 
-  /* 에디터 앰비언트 배경(#353) — 포스터가 있을 때 opacity로 페이드인. 테마 무관 항상 다크.
+  /* 에디터 앰비언트 배경(#353) — 상시 표시(#363, 랜딩 톤앤매너 통일). 테마 무관 항상 다크.
      amber bloom은 1개, alpha .16 이하 유지(hallmark atmospheric 예외 조건 — 밝히면 채도 높은
      포스터와 싸운다). amber는 새 리터럴 대신 --neutral-2에서 color-mix() 파생 — .chrome-dark
-     스코프 안에선 --neutral-2가 다크 값(#C2A67A)으로 고정돼 테마와 무관하게 동일하다.
-     reduced-motion은 전역 가드가 transition-duration을 죽여 즉시 전환된다. */
+     스코프 안에선 --neutral-2가 다크 값(#C2A67A)으로 고정돼 테마와 무관하게 동일하다. */
   .chrome-ambient {
     background:
       radial-gradient(120% 50% at 50% 17%, color-mix(in srgb, var(--neutral-2) 16%, transparent), transparent 46%),
       linear-gradient(180deg, #1c2129 0%, #14171b 42%, #0d0f11 100%);
-    transition: opacity 0.35s ease;
   }
 
   /* OCR 드롭존 진행 중 스캔라인 — "티켓 스캔" 컨텍스트 */
