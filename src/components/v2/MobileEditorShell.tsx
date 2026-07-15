@@ -591,13 +591,50 @@ export function MobileEditorShell({
           {/* 줌 pill(#328)은 #356에서 제거 — 최대화 진입은 플로팅 툴바가 흡수, max 탈출은
               기존 티켓 탭 복귀 그대로. */}
 
-          {/* OCR은 collapse 밖(#261 리뷰 P1). max(#328)는 모든 UX를 숨기는
-              풀스크린이라 OCR도 예외 없이 숨긴다. 업로드 전엔 랜딩 히어로(아래)가 자체 OCR 진입을
-              가지므로 이 슬롯은 업로드 후 전용(#363). */}
-          {croppedImageUrl && !isMax && (
-          <div className="space-y-group px-4 pt-1">
-            {/* OCR 자동입력 — 주 자동입력 어포던스라 chrome 최상단(프리뷰 직하)으로 승격. 로직은
-                셸의 useOcrUndo가 소유, 아코디언 없는 모바일이라 apply를 그대로 넘긴다(DesktopStudioShell과 동형). */}
+          {/* OCR 섹션 — 랜딩·업로드 후가 같은 트리 위치의 단일 OcrUploadCard 인스턴스를 공유한다
+              (PR #372 리뷰 P1: 분기별 별도 JSX로 심으면 업로드 전환 순간 remount되고, in-flight
+              KOBIS 보강의 mountedRef 가드가 setInfo를 조용히 버려 titleOg·releaseDate가 유실된다 —
+              완료 게이트 필수 필드라 사용자는 원인을 알 수 없다). max(#328)도 같은 이유로 unmount
+              대신 CSS hidden — 최대화 왕복 중의 동일 레이스까지 함께 막는다. 랜딩에선 시안(Siyan-C-v8)
+              드롭존 히어로(포스터 비율 960/1477 점선 카드, OCR은 보조 직하 — #142 위계), 업로드 후엔
+              프리뷰 직하 OCR 슬롯(#261). OCR 로직은 셸의 useOcrUndo가 소유(DesktopStudioShell과 동형). */}
+          <section
+            className={
+              isMax
+                ? 'hidden'
+                : croppedImageUrl
+                  ? 'space-y-group px-4 pt-1'
+                  : 'flex flex-1 flex-col items-center justify-center gap-5 px-6 py-8'
+            }
+          >
+            {!croppedImageUrl && (
+              <button
+                type="button"
+                onClick={handlePosterTap}
+                data-touch="44"
+                className="group relative flex w-full max-w-[230px] flex-col items-center justify-center gap-3.5 overflow-hidden rounded-card border-2 border-dashed border-border-strong bg-surface p-6 text-center transition-colors hover:border-accent/40"
+                style={{ aspectRatio: '960 / 1477' }}
+              >
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0"
+                  style={{ background: 'radial-gradient(70% 45% at 50% 34%, var(--accent-soft), transparent 72%)' }}
+                />
+                <span
+                  aria-hidden="true"
+                  className="relative flex h-[62px] w-[62px] items-center justify-center rounded-[18px] bg-accent text-accent-ink transition-transform group-hover:scale-105"
+                  style={{ boxShadow: '0 14px 30px -12px color-mix(in srgb, var(--accent) 70%, transparent)' }}
+                >
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 16V4M8 8l4-4 4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+                  </svg>
+                </span>
+                <span className="relative text-[15.5px] font-bold leading-tight text-fg">포스터 업로드</span>
+                <span className="relative text-[11px] leading-relaxed text-fg-faint">
+                  탭해서 선택 · JPEG · PNG · WEBP · 0.65 : 1
+                </span>
+              </button>
+            )}
             <OcrUploadCard
               setInfo={photo.updateMovieInfo}
               currentInfo={photo.state.movieInfo}
@@ -606,54 +643,10 @@ export function MobileEditorShell({
               currentComponents={photo.state.components}
               ocrEpochRef={ocr.epochRef}
             />
-          </div>
-          )}
+          </section>
 
-          {!croppedImageUrl && (
-            /* 랜딩(#363) — 시안(Siyan-C-v8) 드롭존 히어로 재현: 포스터 비율(960/1477) 점선 카드 +
-               어센트 업로드 아이콘 박스를 세로 중앙에, OCR은 보조 액션으로 직하(#142 위계: 드롭존
-               주연). footer는 하단 고정. 업로드 시 OcrUploadCard가 위 슬롯으로 remount되지만 잃는 건
-               진행 중 토스트뿐이라(max 전환의 기존 unmount와 동일 계열) 허용. */
-            <>
-              <section className="flex flex-1 flex-col items-center justify-center gap-5 px-6 py-8">
-                <button
-                  type="button"
-                  onClick={handlePosterTap}
-                  data-touch="44"
-                  className="group relative flex w-full max-w-[230px] flex-col items-center justify-center gap-3.5 overflow-hidden rounded-card border-2 border-dashed border-border-strong bg-surface p-6 text-center transition-colors hover:border-accent/40"
-                  style={{ aspectRatio: '960 / 1477' }}
-                >
-                  <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-0"
-                    style={{ background: 'radial-gradient(70% 45% at 50% 34%, var(--accent-soft), transparent 72%)' }}
-                  />
-                  <span
-                    aria-hidden="true"
-                    className="relative flex h-[62px] w-[62px] items-center justify-center rounded-[18px] bg-accent text-accent-ink transition-transform group-hover:scale-105"
-                    style={{ boxShadow: '0 14px 30px -12px color-mix(in srgb, var(--accent) 70%, transparent)' }}
-                  >
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 16V4M8 8l4-4 4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
-                    </svg>
-                  </span>
-                  <span className="relative text-[15.5px] font-bold leading-tight text-fg">포스터 업로드</span>
-                  <span className="relative text-[11px] leading-relaxed text-fg-faint">
-                    탭해서 선택 · JPEG · PNG · WEBP · 0.65 : 1
-                  </span>
-                </button>
-                <OcrUploadCard
-                  setInfo={photo.updateMovieInfo}
-                  currentInfo={photo.state.movieInfo}
-                  onOcrApply={ocr.apply}
-                  setComponents={photo.updateComponents}
-                  currentComponents={photo.state.components}
-                  ocrEpochRef={ocr.epochRef}
-                />
-              </section>
-              <AppFooter ambient />
-            </>
-          )}
+          {/* 랜딩 footer — 편집 화면(업로드 후)엔 없음(rail dock 위에 고지가 끼는 위계 방지). */}
+          {!croppedImageUrl && <AppFooter ambient />}
         </div>
       </div>
 
