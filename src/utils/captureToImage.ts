@@ -87,6 +87,26 @@ export function __resetWarmupCacheForTest(): void {
   warmedSignatures.clear();
 }
 
+// html-to-image는 노드를 복제·임베드할 때 각 <img>의 src를 스스로 다시 fetch한다 —
+// decodeImage()가 보장하는 라이브 비트맵 디코드와는 별개 경로다. 포스터는 blob: URL인데,
+// 모바일 Safari는 탭이 백그라운드로 밀리거나 메모리 압박이 오면 앱 모르게 blob: URL을
+// 무효화할 수 있어 재fetch가 조용히 실패하고 포스터 자리만 배경색으로 빠진다(#378).
+// 이미 디코드된 라이브 비트맵을 캔버스로 구워 data: URL로 바꾸면 재fetch 자체가 필요 없어져
+// blob 수명과 무관해진다.
+function blobSrcToDataUrl(img: HTMLImageElement): string | null {
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.drawImage(img, 0, 0);
+    return canvas.toDataURL('image/png');
+  } catch {
+    return null; // 극히 드문 캔버스 오염 등 — 원래 src(blob:)로 진행
+  }
+}
+
 export async function captureNodeToJpeg(
   node: HTMLElement,
   options: CaptureOptions
@@ -107,7 +127,9 @@ export async function captureNodeToJpeg(
   // 캔버스 해상도와 무관하니 같은 경로를 덥히면서 pixelRatio:2의 ~1/4 메모리만 쓴다. (전체 해상도
   // 워밍업은 iOS Safari per-tab GPU 버젯에서 OOM날 수 있다.) 워밍업 실패는 시그니처에서 도로
   // 빼 다음 캡처가 재시도하게 하고, 본 캡처가 진짜 결과/에러를 내도록 삼킨다.
-  const signature = images.map((img) => img.src).join('|');
+  // options.filename(무드별로 다름)도 시그니처에 섞는다 — src만 기준이면 같은 포스터로 무드만
+  // 바꿔 내보낼 때 새 무드 DOM이 한 번도 안 덥혀진 채로 나간다(#378).
+  const signature = images.map((img) => img.src).join('|') + '::' + options.filename;
   if (images.length > 0 && !warmedSignatures.has(signature)) {
     warmedSignatures.add(signature);
     try {
@@ -117,7 +139,22 @@ export async function captureNodeToJpeg(
     }
   }
 
-  return toJpeg(node, jpegOptions);
+  // blob: 소스 <img>를 캡처 직전 data: URL로 바꿔치기해 html-to-image의 재fetch를 우회하고,
+  // 캡처가 끝나면(성공/실패 무관) 원래 blob: URL로 복원한다.
+  const restores: Array<() => void> = [];
+  for (const img of images) {
+    if (!img.src.startsWith('blob:')) continue;
+    const dataUrl = blobSrcToDataUrl(img);
+    if (!dataUrl) continue;
+    const original = img.src;
+    img.src = dataUrl;
+    restores.push(() => { img.src = original; });
+  }
+  try {
+    return await toJpeg(node, jpegOptions);
+  } finally {
+    restores.forEach((restore) => restore());
+  }
 }
 
 // CSP-safe: decode base64 directly without fetch() — Vercel CSP `connect-src` blocks fetch(data:).
