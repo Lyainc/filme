@@ -1,9 +1,9 @@
 /**
- * #353 회귀 테스트 — 앰비언트 다크 크롬 스코프.
+ * #353→#363 회귀 테스트 — 앰비언트 다크 크롬 스코프.
  *
- * 포스터 유무가 셸 루트의 .chrome-dark 스코프(토큰 로컬 재정의)와 앰비언트 배경의
- * opacity 페이드를 함께 토글하는지 검증한다. 스코프 클래스가 빠지면 라이트 테마에서
- * 앰비언트 다크 배경 위에 라이트 토큰(흰 알약·대비 역전)이 얹히는 회귀라 이 배선이 핵심.
+ * 원래(#353) 포스터 유무로 토글했지만, 랜딩 톤앤매너 통일(#363)로 셸 루트의 .chrome-dark
+ * 스코프(토큰 로컬 재정의)와 앰비언트 배경이 상시 켜진다. 스코프 클래스가 빠지면 라이트
+ * 테마에서 앰비언트 다크 배경 위에 라이트 토큰(흰 알약·대비 역전)이 얹히는 회귀라 이 배선이 핵심.
  * 렌더 패턴은 mobileEditorShellFieldCoverage.test.tsx 미러(모듈 mock 없음).
  */
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
@@ -40,19 +40,20 @@ afterEach(() => {
   window.localStorage.clear();
 });
 
-describe('앰비언트 다크 크롬 스코프 (#353)', () => {
-  test('포스터 없음 → chrome-dark 미적용 + 앰비언트 투명', () => {
+describe('앰비언트 다크 크롬 스코프 (#353→#363 상시)', () => {
+  test('포스터 없음(랜딩)에도 chrome-dark + 앰비언트 상시 표시', () => {
     render(<Harness />);
     const ambient = screen.getByTestId('chrome-ambient');
-    expect(ambient.style.opacity).toBe('0');
-    expect((ambient.parentElement as HTMLElement).classList.contains('chrome-dark')).toBe(false);
+    // 인라인 opacity 토글 없음 — 항상 보인다(#363 톤앤매너 통일).
+    expect(ambient.style.opacity).toBe('');
+    expect((ambient.parentElement as HTMLElement).classList.contains('chrome-dark')).toBe(true);
   });
 
-  test('포스터 업로드 → 루트에 chrome-dark + 앰비언트 페이드인', () => {
+  test('포스터 업로드 후에도 동일 — chrome-dark + 앰비언트 유지', () => {
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
     const ambient = screen.getByTestId('chrome-ambient');
-    expect(ambient.style.opacity).toBe('1');
+    expect(ambient.style.opacity).toBe('');
     expect((ambient.parentElement as HTMLElement).classList.contains('chrome-dark')).toBe(true);
   });
 });

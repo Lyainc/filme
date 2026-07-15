@@ -48,10 +48,10 @@ afterEach(() => {
 });
 
 describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
-  test('뒤로가기·FILME 워드마크는 헤더에서 제거됐다', () => {
+  test('FILME 워드마크는 헤더에 복귀(#363, v8 §1 — #315 제거 결정 번복), 뒤로가기는 여전히 없다', () => {
     render(<Harness />);
+    expect(screen.getByRole('heading', { level: 1, name: 'FILME' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: '맨 위로' })).toBeNull();
-    expect(screen.queryByText('FILME')).toBeNull();
   });
 
   test('햄버거 탭 → 메뉴 열림/닫힘(aria-expanded), 바깥 탭으로 닫힘', async () => {
@@ -76,20 +76,27 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     function DoneHarness() {
       const photo = usePhototicket();
       return (
-        <MobileEditorShell
-          photo={photo}
-          canExport
-          theme="light"
-          onThemeChange={() => {}}
-          onDone={() => { calls++; }}
-          disabledReason=""
-          previewMovieInfo={photo.state.movieInfo}
-          previewComponents={photo.state.components}
-          fieldVisibility={photo.state.fieldVisibility}
-        />
+        <>
+          {/* 완료는 포스터가 있어야 렌더(#363) — seed 후에 검증한다. */}
+          <button type="button" onClick={() => photo.handleImageUpload('blob:test-poster')}>
+            seed
+          </button>
+          <MobileEditorShell
+            photo={photo}
+            canExport
+            theme="light"
+            onThemeChange={() => {}}
+            onDone={() => { calls++; }}
+            disabledReason=""
+            previewMovieInfo={photo.state.movieInfo}
+            previewComponents={photo.state.components}
+            fieldVisibility={photo.state.fieldVisibility}
+          />
+        </>
       );
     }
     render(<DoneHarness />);
+    fireEvent.click(screen.getByText('seed'));
 
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
     expect(screen.getByRole('menu', { name: '편집 메뉴' })).toBeTruthy();

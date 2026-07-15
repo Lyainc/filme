@@ -1,10 +1,10 @@
 /**
- * #261 회귀 테스트 — 모바일 chrome 정보위계가 #212 시안 섹션 A 순서로 렌더되는지.
+ * #261 회귀 테스트 — 모바일 chrome 정보위계.
  * #315로 allVis(전체 표시)·ghost(빈 항목) 토글은 헤더 서브메뉴로 이전하고, Poster 드롭존은
- * 업로드 후 사라지도록 바뀌었다(#324) — 이 테스트는 남은 불변식(OCR → 디자인 rail 순서, 업로드
- * 전 Poster 드롭존 존재)만 검증하고, 토글 이전은 별도 서브메뉴 테스트로 옮긴다.
+ * 업로드 후 사라지도록 바뀌었다(#324). #363 랜딩 리디자인으로 업로드 전 위계가 뒤집혔다 —
+ * 드롭존이 주연(히어로), OCR은 보조 액션으로 직하(#142 위계), 디자인 rail은 CSS hidden.
  *
- * 프리뷰 직하 chrome 순서: OCR 자동입력(최상단) → (업로드 전 Poster 드롭존) → 디자인 rail(최하단).
+ * 업로드 후 프리뷰 직하 chrome 순서는 그대로: OCR 자동입력(최상단) → 디자인 rail(최하단).
  * DOM 순서를 compareDocumentPosition으로 단언한다(시각 좌표 아닌 트리 순서). OcrUploadCard·
  * DesignRail은 정적 import라 렌더 즉시 존재한다.
  */
@@ -46,19 +46,20 @@ function precedes(a: Element, b: Element): boolean {
   return (a.compareDocumentPosition(b) & 4) !== 0;
 }
 
-describe('MobileEditorShell chrome 정보위계 (#261/#315)', () => {
-  test('업로드 전: OCR → Poster 드롭존 → 디자인 rail(최하단)', async () => {
+describe('MobileEditorShell chrome 정보위계 (#261/#315/#363)', () => {
+  test('업로드 전(랜딩, #363): 드롭존 주연 → OCR 보조 순서, 디자인 rail은 CSS hidden', async () => {
     render(<Harness />);
 
+    const poster = screen.getByText('포스터 업로드'); // 랜딩 히어로 드롭존
     const ocr = await screen.findByRole('button', { name: '티켓 스크린샷으로 자동 인식' });
-    const poster = screen.getByText('포스터 업로드'); // 업로드 전 인라인 드롭존
     const rail = screen.getByRole('button', { name: '무드' }); // 첫 rail 아이템
 
-    expect(precedes(ocr, poster)).toBe(true);
-    expect(precedes(poster, rail)).toBe(true);
+    expect(precedes(poster, ocr)).toBe(true);
+    // rail dock은 마운트 유지(pop state 보존, #297 P1 패턴) + hidden 클래스로만 숨김.
+    expect(rail.closest('.hidden')).not.toBeNull();
   });
 
-  test('업로드 후: Poster 드롭존은 사라지고(#324) OCR → rail 순서는 유지', async () => {
+  test('업로드 후: Poster 드롭존은 사라지고(#324) OCR → rail 순서는 유지, rail hidden 해제', async () => {
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
 
@@ -67,6 +68,7 @@ describe('MobileEditorShell chrome 정보위계 (#261/#315)', () => {
 
     expect(screen.queryByText('포스터 업로드')).toBeNull();
     expect(precedes(ocr, rail)).toBe(true);
+    expect(rail.closest('.hidden')).toBeNull();
   });
 
   test('업로드 후: 헤더 서브메뉴에서 전체표시·빈 항목·잉크·포스터 교체/재크롭 접근 가능(#315)', async () => {

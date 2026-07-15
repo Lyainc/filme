@@ -7,6 +7,7 @@ import { OcrUploadCard } from './OcrUploadCard';
 import { OcrUndoBanner } from './OcrUndoBanner';
 import { ThemeToggle } from './ThemeToggle';
 import { FloatingToolbar } from './FloatingToolbar';
+import { Wordmark } from './Wordmark';
 import type { ViewMode } from './viewMode';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
 import { getLayout } from '@/utils/layouts';
@@ -287,15 +288,13 @@ export function MobileEditorShell({
   // 없으면(업로드 전) 접지 않는다 — 그땐 프리뷰/pill 자체가 없다.
   const collapseBody = !!croppedImageUrl && isMax;
 
-  // 앰비언트 다크 크롬(#353) — 포스터가 있으면 셸 전체가 .chrome-dark 스코프에 들어가
-  // 기존 토큰이 다크 값으로 로컬 재정의되고(공유 컴포넌트 0줄 변경), 그 뒤에 앰비언트
-  // 배경이 .35s 페이드인된다. 테마와 무관(라이트 테마여도 다크 크롬).
-  const chromeDark = !!croppedImageUrl;
-
+  // 앰비언트 다크 크롬(#353→#363) — 원래 포스터 유무로 토글했지만, 랜딩(업로드 전)을 업로드 후
+  // 화면 기준으로 톤앤매너 통일하며(#363) 셸 전체가 상시 .chrome-dark 스코프다. 기존 토큰이
+  // 다크 값으로 로컬 재정의되고(공유 컴포넌트 0줄 변경) 테마와 무관(라이트 테마여도 다크 크롬).
   return (
     <div
       data-theme={theme}
-      className={`app-canvas${chromeDark ? ' chrome-dark' : ''}`}
+      className="app-canvas chrome-dark"
       style={{
         position: 'relative',
         // height 캡(#357) — minHeight면 콘텐츠가 길 때 문서 전체가 자라 하단 dock이 접근성만
@@ -306,20 +305,28 @@ export function MobileEditorShell({
         paddingTop: 'env(safe-area-inset-top, 0px)',
       }}
     >
-      {/* 앰비언트 배경(#353) — 클래스 토글 대신 opacity 페이드라 사라질 때도 트랜지션이 걸린다.
-          형제 콘텐츠(header는 relative, 본문 래퍼도 relative)가 위에 그려진다. */}
+      {/* 앰비언트 배경(#353) — 랜딩 톤앤매너 통일(#363)로 상시 표시. 형제 콘텐츠(header는
+          relative, 본문 래퍼도 relative)가 위에 그려진다. */}
       <div
         aria-hidden="true"
         data-testid="chrome-ambient"
         className="chrome-ambient pointer-events-none absolute inset-0"
-        style={{ opacity: chromeDark ? 1 : 0 }}
       />
-      {/* 상단 네브(#315): 뒤로가기·워드마크(무의미해 제거) 대신 좌측 햄버거 서브메뉴 + 우측 완료.
-          다크모드·전체표시·빈 항목·잉크 토글과 포스터 교체·재크롭 액션은 서브메뉴로 통합.
-          max(#328)는 이 헤더(서브메뉴 포함)까지 숨기는 풀스크린 모드라 통째로 언마운트한다.
-          배경은 앰비언트가 깔리면 투명(플랫 바로 끊기지 않게, v8 §1), 없으면 기존 surface. */}
+      {/* 상단 네브(v8 §1, #363): 좌측 브랜드 워드마크 + 우측 [편집 메뉴 → 완료(최외곽)].
+          #315가 제거했던 워드마크는 #363에서 복귀 확정(데스크톱 AppHeader와 동일 컴포넌트 재사용,
+          셸은 상호배타 마운트라 h1 중복 없음). 상시 chrome-dark 스코프(#363)가 잉크를 이미 라이트로
+          고정해 v8이 말한 --chrome-ink 신규 토큰은 추가하지 않는다. 다크모드·전체표시·빈 항목·잉크
+          토글과 포스터 교체·재크롭 액션은 서브메뉴로 통합. max(#328)는 이 헤더(서브메뉴 포함)까지
+          숨기는 풀스크린 모드라 통째로 언마운트한다. 배경은 앰비언트 위라 투명(v8 §1). */}
       {!isMax && (
-      <header className={`relative flex h-14 shrink-0 items-center justify-between border-b border-line px-3 ${chromeDark ? '' : 'bg-surface'}`}>
+      <header className="relative flex h-14 shrink-0 items-center justify-between border-b border-line px-3">
+        <div className="flex items-center gap-2 pl-1.5">
+          <Wordmark as="h1" />
+        </div>
+
+        {/* '티켓 항목 목록' 헤더 버튼(#355/#360 임시 진입점)은 플로팅 툴바의 항목목록 버튼(#356)이
+            대체 — 드로어 배선(handleField·OCR 슬롯)은 그대로 재사용한다. */}
+        <div className="flex items-center gap-1">
         <button
           type="button"
           onClick={() => setMenuOpen((v) => !v)}
@@ -335,10 +342,9 @@ export function MobileEditorShell({
             <line x1="4" y1="17" x2="20" y2="17" />
           </svg>
         </button>
-
-        {/* '티켓 항목 목록' 헤더 버튼(#355/#360 임시 진입점)은 플로팅 툴바의 항목목록 버튼(#356)이
-            대체 — 드로어 배선(handleField·OCR 슬롯)은 그대로 재사용한다. */}
-        <div className="flex items-center gap-1">
+        {/* 완료(다음)는 포스터가 있어야 렌더(v8 §1·시안 nextShown) — 랜딩은 업로드 액션에만
+            집중(#363). 업로드 후 canExport 전까지는 기존대로 aria-disabled + 사유 토스트. */}
+        {croppedImageUrl && (
         <button
           type="button"
           onClick={handleDone}
@@ -353,6 +359,7 @@ export function MobileEditorShell({
           </svg>
           완료
         </button>
+        )}
         </div>
 
         {menuOpen && (
@@ -361,13 +368,13 @@ export function MobileEditorShell({
                 덮으면 z-index 없는 헤더 버튼(햄버거·완료)이 이 오버레이 밑에 깔려 탭이 메뉴만
                 닫고 버튼 클릭은 씹힌다(claude-review PR #331 P2 지적). */}
             <div className="fixed inset-x-0 bottom-0 top-14 z-40" onClick={() => setMenuOpen(false)} aria-hidden="true" />
-            {/* v8 dark-glass(#364) — 일반 카드 대신 글래스 토큰 + blur. 다크 크롬에선 white-alpha
-                유리, 업로드 전 라이트 크롬에선 밝은 유리로 같은 마크업이 양쪽에 선다. */}
+            {/* v8 dark-glass(#364) — 일반 카드 대신 글래스 토큰 + blur. 상시 다크 크롬(#363)이라
+                항상 white-alpha 유리. 햄버거가 우측으로 가며(#363) 앵커도 우측 정렬. */}
             <div
               id="editor-menu-panel"
               role="menu"
               aria-label="편집 메뉴"
-              className="absolute left-3 top-[calc(100%+8px)] z-50 w-64 space-y-3 rounded-card border p-3 shadow-card"
+              className="absolute right-3 top-[calc(100%+8px)] z-50 w-64 space-y-3 rounded-card border p-3 shadow-card"
               style={{
                 background: 'var(--glass-fill)',
                 borderColor: 'var(--glass-border)',
@@ -587,9 +594,10 @@ export function MobileEditorShell({
               기존 티켓 탭 복귀 그대로. */}
 
           {/* OCR은 collapse 밖(#261 리뷰 P1). max(#328)는 모든 UX를 숨기는
-              풀스크린이라 OCR도 예외 없이 숨긴다. allVis/ghost/잉크 토글은 #315에서 헤더 서브메뉴로 이전. */}
-          {!isMax && (
-          <div className={`space-y-group px-4 ${croppedImageUrl ? 'pt-1' : 'pt-6'}`}>
+              풀스크린이라 OCR도 예외 없이 숨긴다. 업로드 전엔 랜딩 히어로(아래)가 자체 OCR 진입을
+              가지므로 이 슬롯은 업로드 후 전용(#363). */}
+          {croppedImageUrl && !isMax && (
+          <div className="space-y-group px-4 pt-1">
             {/* OCR 자동입력 — 주 자동입력 어포던스라 chrome 최상단(프리뷰 직하)으로 승격. 로직은
                 셸의 useOcrUndo가 소유, 아코디언 없는 모바일이라 apply를 그대로 넘긴다(DesktopStudioShell과 동형). */}
             <OcrUploadCard
@@ -603,47 +611,68 @@ export function MobileEditorShell({
           </div>
           )}
 
-          {/* 편집 본문(Poster 드롭존 + footer) — collapse는 grid-rows 0fr↔1fr 트랜지션(overflow-hidden 필수).
-              비-기본 모드에선 접어 프리뷰에 세로 공간을 내준다. reduced-motion은 globals.css 전역 가드가
-              transition-duration을 죽여 즉시 전환 + motion-reduce:transition-none로 이중 차단. 접혔을 땐
-              inert로 포커스/Tab/SR 진입 차단(OptionalDetailsAccordion 패턴, React 19 inert prop). */}
-          <div
-            className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
-            style={{ gridTemplateRows: collapseBody ? '0fr' : '1fr' }}
-          >
-            <div className="overflow-hidden" inert={collapseBody || undefined}>
-              {/* 업로드 후엔 footer만 남으므로 스크롤 여백(pb-24)을 접는다(#366) — fit 스테이지가
-                  그만큼 세로 공간을 돌려받는다. 업로드 전(드롭존 본문)은 기존 스크롤 여백 유지. */}
-              <div className={croppedImageUrl ? 'px-4 pb-2 pt-4' : 'space-y-section px-4 pb-24 pt-6'}>
-                {/* Poster 드롭존 — 업로드 전에만 노출(#315). 업로드 후엔 온-티켓 탭 + 헤더 서브메뉴의
-                    교체/재크롭이 대신하므로(#324) 툴팁·적용 카드 없이 섹션 자체가 사라진다. */}
-                {!croppedImageUrl && (
-                  <section className="space-y-group">
-                    <button
-                      type="button"
-                      onClick={handlePosterTap}
-                      data-touch="44"
-                      className="group relative flex min-h-[96px] w-full flex-col items-center justify-center gap-1 rounded-card border border-line bg-paper p-4 text-center shadow-card transition-colors hover:border-accent/40"
-                    >
-                      <span
-                        aria-hidden="true"
-                        className="text-mono text-2xl font-normal leading-none text-accent transition-transform group-hover:rotate-90"
-                      >
-                        +
-                      </span>
-                      <p className="text-[15px] font-medium leading-tight text-fg">포스터 업로드</p>
-                      <p className="text-[11px] leading-relaxed text-fg-faint">
-                        탭해서 선택 · JPEG · PNG · WEBP · 0.65 : 1
-                      </p>
-                    </button>
-                  </section>
-                )}
-
-                {/* 앱 chrome footer(#327) — max에선 이 grid-rows 0fr collapse가 그대로 숨겨준다(별도 분기 불필요). */}
-                <AppFooter />
+          {croppedImageUrl ? (
+            /* 편집 본문(footer만, #363에서 드롭존은 랜딩 히어로로 이전) — collapse는 grid-rows
+               0fr↔1fr 트랜지션(overflow-hidden 필수). 비-기본 모드에선 접어 프리뷰에 세로 공간을
+               내준다. reduced-motion은 globals.css 전역 가드가 transition-duration을 죽여 즉시 전환
+               + motion-reduce:transition-none로 이중 차단. 접혔을 땐 inert로 포커스/Tab/SR 진입
+               차단(OptionalDetailsAccordion 패턴, React 19 inert prop). max에선 이 collapse가
+               footer도 그대로 숨겨준다(별도 분기 불필요). */
+            <div
+              className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
+              style={{ gridTemplateRows: collapseBody ? '0fr' : '1fr' }}
+            >
+              <div className="overflow-hidden" inert={collapseBody || undefined}>
+                <div className="px-4 pb-2 pt-4">
+                  <AppFooter ambient />
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            /* 랜딩(#363) — 시안(Siyan-C-v8) 드롭존 히어로 재현: 포스터 비율(960/1477) 점선 카드 +
+               어센트 업로드 아이콘 박스를 세로 중앙에, OCR은 보조 액션으로 직하(#142 위계: 드롭존
+               주연). footer는 하단 고정. 업로드 시 OcrUploadCard가 위 슬롯으로 remount되지만 잃는 건
+               진행 중 토스트뿐이라(max 전환의 기존 unmount와 동일 계열) 허용. */
+            <>
+              <section className="flex flex-1 flex-col items-center justify-center gap-5 px-6 py-8">
+                <button
+                  type="button"
+                  onClick={handlePosterTap}
+                  data-touch="44"
+                  className="group relative flex w-full max-w-[230px] flex-col items-center justify-center gap-3.5 overflow-hidden rounded-card border-2 border-dashed border-border-strong bg-surface p-6 text-center transition-colors hover:border-accent/40"
+                  style={{ aspectRatio: '960 / 1477' }}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0"
+                    style={{ background: 'radial-gradient(70% 45% at 50% 34%, var(--accent-soft), transparent 72%)' }}
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="relative flex h-[62px] w-[62px] items-center justify-center rounded-[18px] bg-accent text-accent-ink transition-transform group-hover:scale-105"
+                    style={{ boxShadow: '0 14px 30px -12px color-mix(in srgb, var(--accent) 70%, transparent)' }}
+                  >
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 16V4M8 8l4-4 4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+                    </svg>
+                  </span>
+                  <span className="relative text-[15.5px] font-bold leading-tight text-fg">포스터 업로드</span>
+                  <span className="relative text-[11px] leading-relaxed text-fg-faint">
+                    탭해서 선택 · JPEG · PNG · WEBP · 0.65 : 1
+                  </span>
+                </button>
+                <OcrUploadCard
+                  setInfo={photo.updateMovieInfo}
+                  currentInfo={photo.state.movieInfo}
+                  onOcrApply={ocr.apply}
+                  setComponents={photo.updateComponents}
+                  currentComponents={photo.state.components}
+                  ocrEpochRef={ocr.epochRef}
+                />
+              </section>
+              <AppFooter ambient />
+            </>
+          )}
         </div>
       </div>
 
@@ -652,11 +681,12 @@ export function MobileEditorShell({
           화면 안에 있다. 언박스 패널이 열리면 dock 영역이 위로 자라고 본문(flex-1)이 줄어드는데,
           티켓은 fit 스테이지(#366)가 같이 축소해 dock에 가려지지 않는다(이전엔 고정 280px 폭이라
           소형 화면에서 하단이 dock 뒤로 잘렸다). DOM 순서는 본문 뒤라 기존 "OCR → rail 최하단"
-          위계(#261)가 유지된다. max는 티켓 전용 풀스크린이라 숨기되 CSS hidden으로만 — 조건부
-          unmount면 DesignRail의 pop(열린 패널) state가 최대화 왕복마다 리셋된다(#297 P1과 동일
-          패턴, PR #362 리뷰 P2). relative는 absolute 앰비언트(#353) 위에 그려지기 위함. */}
+          위계(#261)가 유지된다. max는 티켓 전용 풀스크린이라 숨기고, 랜딩(업로드 전)도 스타일링
+          대상이 없어 숨긴다(#363) — 둘 다 CSS hidden으로만. 조건부 unmount면 DesignRail의
+          pop(열린 패널) state가 왕복마다 리셋된다(#297 P1과 동일 패턴, PR #362 리뷰 P2).
+          relative는 absolute 앰비언트(#353) 위에 그려지기 위함. */}
       <div
-        className={`relative shrink-0 px-4 pt-3${isMax ? ' hidden' : ''}`}
+        className={`relative shrink-0 px-4 pt-3${isMax || !croppedImageUrl ? ' hidden' : ''}`}
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
       >
         <DesignRail photo={photo} />
