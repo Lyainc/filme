@@ -1,13 +1,14 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 
 // html-to-image의 toJpeg 호출 수를 세 워밍업(버리는 캡처)이 콘텐츠별로 도는지 검증한다.
 // mock.module은 hoisting 안 됨 — 등록 후 require로 SUT를 가져와야 가로채진다(CLAUDE.md).
-let calls: Array<{ pixelRatio: number }> = [];
+let calls: Array<{ pixelRatio: number; imgSrc?: string }> = [];
 // 워밍업(pixelRatio:1) 한 번만 실패시켜 재시도 경로를 검증할 때 켠다.
 let failWarmupOnce = false;
 mock.module('html-to-image', () => ({
   toJpeg: (_node: unknown, opts: { pixelRatio: number }) => {
-    calls.push({ pixelRatio: opts.pixelRatio });
+    const img = (_node as HTMLElement).querySelector?.('img');
+    calls.push({ pixelRatio: opts.pixelRatio, imgSrc: img?.src });
     if (failWarmupOnce && opts.pixelRatio === 1) {
       failWarmupOnce = false;
       return Promise.reject(new Error('warmup boom'));
@@ -75,5 +76,48 @@ describe('#175 캡처 워밍업 — 콘텐츠(이미지 src)별로 덥힌다', (
     // 2차: 시그니처가 비워졌으므로 같은 src도 다시 워밍업한다(실패가 영구 콜드로 굳지 않음).
     await captureNodeToJpeg(nodeWithPoster('blob:retry'), OPTS);
     expect(calls.map((c) => c.pixelRatio)).toEqual([1, 2]);
+  });
+});
+
+describe('#378 blob: 포스터 — 캡처 시점 data: 치환 + 캡처 후 원복', () => {
+  // happy-dom은 canvas 2D를 기본 지원 안 해(getContext('2d') → null) blobSrcToDataUrl이
+  // 조용히 null을 리턴하고 스킵한다. 실제 치환 경로를 검증하려면 getContext/toDataURL을 스텁한다.
+  let originalGetContext: typeof HTMLCanvasElement.prototype.getContext;
+  let originalToDataURL: typeof HTMLCanvasElement.prototype.toDataURL;
+
+  beforeEach(() => {
+    calls = [];
+    failWarmupOnce = false;
+    __resetWarmupCacheForTest();
+    originalGetContext = HTMLCanvasElement.prototype.getContext;
+    originalToDataURL = HTMLCanvasElement.prototype.toDataURL;
+    const fakeCtx = { drawImage: () => {} } as unknown as CanvasRenderingContext2D;
+    HTMLCanvasElement.prototype.getContext = ((kind: string) =>
+      kind === '2d' ? fakeCtx : null) as typeof HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.toDataURL = (() =>
+      'data:image/png;base64,AAAA') as typeof HTMLCanvasElement.prototype.toDataURL;
+  });
+
+  afterEach(() => {
+    HTMLCanvasElement.prototype.getContext = originalGetContext;
+    HTMLCanvasElement.prototype.toDataURL = originalToDataURL;
+  });
+
+  test('본 캡처(ratio 2) 순간엔 img.src가 data:이고, 캡처 후 원래 blob:로 복원된다', async () => {
+    const node = nodeWithPoster('blob:378');
+    const img = node.querySelector('img')!;
+
+    await captureNodeToJpeg(node, OPTS);
+
+    // 워밍업(ratio 1)은 원래 blob: 그대로 돈다 — 버리는 캡처라 치환 대상이 아니다.
+    const warmupCall = calls.find((c) => c.pixelRatio === 1);
+    expect(warmupCall?.imgSrc).toBe('blob:378');
+
+    // 본 캡처(ratio 2)는 data: URL로 치환된 상태로 toJpeg에 전달된다.
+    const mainCall = calls.find((c) => c.pixelRatio === 2);
+    expect(mainCall?.imgSrc?.startsWith('data:')).toBe(true);
+
+    // 캡처가 끝나면 라이브 DOM의 img.src는 원래 blob: URL로 복원된다.
+    expect(img.src).toBe('blob:378');
   });
 });
