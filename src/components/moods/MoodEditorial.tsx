@@ -91,7 +91,7 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
     stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost);
 
   // 단일 값 메타 셀(Durée/Note/Sortie) — 값 있으면 값, 비었고 ghost면 라벨 점선.
-  const metaCell = (label: string, value: string, field: 'runtime' | 'rating' | 'releaseDate', ghostOn: FieldGhostState, ghostLabel: string, valueColor = INK) =>
+  const metaCell = (label: string, value: string, field: 'runtime' | 'releaseDate', ghostOn: FieldGhostState, ghostLabel: string, valueColor = INK) =>
     value || ghostOn ? (
       <div key={field}>
         <div style={metaLabel()}>{label}</div>

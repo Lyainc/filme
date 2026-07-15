@@ -56,7 +56,6 @@ describe('DesktopDesignPanel (#228)', () => {
   test('(c) 컬러 섹션 = 라벨 "Color" region + 잉크 단일축(White/Black 프리셋)', () => {
     render(<PanelHarness />);
     const region = screen.getByRole('region', { name: 'Color' });
-    expect(region.querySelector('*')).not.toBeNull();
     // ColorPicker(단일 themeColor 축)가 이 region 안에 — Hex 입력 + White/Black 원터치.
     expect(region.querySelector('[aria-label="Hex color"]')).not.toBeNull();
     expect(region.querySelector('[aria-label="White"]')).not.toBeNull();

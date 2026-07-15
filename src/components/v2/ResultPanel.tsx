@@ -16,7 +16,7 @@ import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 
 type CtaState = 'idle' | 'loading' | 'success' | 'disabled';
 // 퍼마링크는 발급 실패를 사용자에게 알려야 해 'error'를 추가로 갖는다. PrimaryCta가 받는
-// CtaState와는 분리 — 'error'를 넣으면 '사진 저장' CTA가 받는 CtaState와 충돌한다.
+// CtaState와는 분리 — 'error'를 넣으면 '사진에 저장' CTA가 받는 CtaState와 충돌한다.
 type PermaState = 'idle' | 'loading' | 'success' | 'error';
 
 interface ResultPanelProps {
@@ -38,7 +38,7 @@ interface ResultPanelProps {
  *
  * 데스크톱 rail과 모바일 ResultStage가 공유하는 유일한 결과 콘텐츠. 캡처 대상(ticketRef)과
  * 내보내기 상태/로직이 전부 이 컴포넌트 안에 닫혀 있어, 컨테이너는 배치·크기만 정한다.
- * "사진 저장"은 파일 공유 지원 환경에서 OS 시트(사진앱 저장), 미지원 시 파일 다운로드로 떨어진다.
+ * "사진에 저장"은 파일 공유 지원 환경에서 OS 시트(사진앱 저장), 미지원 시 파일 다운로드로 떨어진다.
  * 퍼마링크는 완성 티켓을 Blob에 저장(/api/ticket)해 /t/<id> 공유 링크를 발급한다 — og 미리보기로
  * 유입되는 루프(#91). 카톡·메신저(navigator.share) 채널 공유는 그 링크를 단일 소스
  * 문구(buildShareMessage)에 실어 보내며, 링크가 없으면 핸들러가 먼저 발급한다.
@@ -114,7 +114,7 @@ export function ResultPanel({
     setPermaState('idle');
   }, [croppedImageUrl, movieInfo, components, fieldVisibility]);
 
-  // "사진 저장" — 파일 공유 지원 환경(모바일)이면 OS 공유 시트로 보내 사진앱 저장을
+  // "사진에 저장" — 파일 공유 지원 환경(모바일)이면 OS 공유 시트로 보내 사진앱 저장을
   // 가능하게 하고, 미지원(데스크톱)이면 기존 a[download] 파일 저장으로 떨어진다. 웹은
   // 갤러리 무음 저장 API가 없어 iOS/Android 모두 공유 시트가 유일한 사진앱 저장 경로다(#138 항목5).
   const handleDownload = useCallback(async () => {
@@ -235,7 +235,7 @@ export function ResultPanel({
     await copyToClipboard(permalink);
   }, [permalink, copyToClipboard]);
 
-  // "카톡·메신저로 공유" — 발급된 링크가 있으면 재사용, 없으면 먼저 발급한다(호출부 책임).
+  // "공유"(채널 공유) — 발급된 링크가 있으면 재사용, 없으면 먼저 발급한다(호출부 책임).
   // navigator.share 지원 시 OS 공유 시트(카톡·메신저 등), 미지원·실패 시 링크 클립보드 폴백.
   const handleShareLink = useCallback(async () => {
     const url = permalink ?? (await issuePermalink()) ?? '';
@@ -303,7 +303,7 @@ export function ResultPanel({
       </div>
 
       <div className="space-y-3">
-        {/* 1차 액션 = 사진 저장(accent, ~52px, 다운로드 아이콘). 성공 시 체크 + '사진에 저장됨'. */}
+        {/* 1차 액션 = 사진에 저장(accent, ~52px, 다운로드 아이콘). 성공 시 체크 + '사진에 저장됨'. */}
         <PrimaryCta
           state={ctaState}
           label="사진에 저장"

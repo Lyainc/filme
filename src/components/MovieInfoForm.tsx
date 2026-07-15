@@ -121,20 +121,19 @@ export default function MovieInfoForm({
               scheduleSearch(value.trim());
             }}
             onKeyDown={(e) => {
-              const items = searchResults;
               if (e.key === 'ArrowDown') {
-                if (!showResults || items.length === 0) return;
+                if (!showResults || searchResults.length === 0) return;
                 e.preventDefault();
-                moveHighlight((highlightIndex + 1) % items.length);
+                moveHighlight((highlightIndex + 1) % searchResults.length);
               } else if (e.key === 'ArrowUp') {
-                if (!showResults || items.length === 0) return;
+                if (!showResults || searchResults.length === 0) return;
                 e.preventDefault();
-                moveHighlight(highlightIndex <= 0 ? items.length - 1 : highlightIndex - 1);
+                moveHighlight(highlightIndex <= 0 ? searchResults.length - 1 : highlightIndex - 1);
               } else if (e.key === 'Enter') {
                 e.preventDefault();
                 // 하이라이트된 항목이 있으면 그걸 선택, 없으면 검색 실행.
-                if (showResults && highlightIndex >= 0 && items[highlightIndex]) {
-                  handleSelectMovie(items[highlightIndex]);
+                if (showResults && highlightIndex >= 0 && searchResults[highlightIndex]) {
+                  handleSelectMovie(searchResults[highlightIndex]);
                 } else {
                   runSearch(movieInfo.title.trim());
                 }

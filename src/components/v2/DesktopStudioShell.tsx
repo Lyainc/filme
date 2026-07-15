@@ -287,7 +287,6 @@ export function DesktopStudioShell({
                   <ImageUploader
                     onUpload={photo.handleImageUpload}
                     isProcessing={false}
-                    hasImage={!!croppedImageUrl}
                     imageUrl={croppedImageUrl}
                   />
                   <OcrUploadCard

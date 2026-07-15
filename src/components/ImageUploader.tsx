@@ -7,14 +7,13 @@ const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ss
 interface ImageUploaderProps {
   onUpload: (croppedImageUrl: string) => void;
   isProcessing: boolean;
-  hasImage?: boolean;
   /** 업로드 후 프리뷰로 보여줄 크롭 결과(부모 소유 objectURL). */
   imageUrl?: string | null;
 }
 
 const ACCEPT = 'image/jpeg,image/png,image/jpg,image/webp';
 
-export default function ImageUploader({ onUpload, isProcessing, hasImage = false, imageUrl }: ImageUploaderProps) {
+export default function ImageUploader({ onUpload, isProcessing, imageUrl }: ImageUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   // 크롭 모달의 소스이자 재크롭을 위해 유지되는 원본 objectURL. 크롭 완료 후에도 버리지 않는다.
   const [originalSrc, setOriginalSrc] = useState<string | null>(null);
@@ -85,7 +84,7 @@ export default function ImageUploader({ onUpload, isProcessing, hasImage = false
   }, [originalSrc]);
 
   const busy = isProcessing || isCropping;
-  const showPreview = hasImage && !!imageUrl;
+  const showPreview = !!imageUrl;
 
   return (
     <section>

@@ -9,8 +9,8 @@
  *    source was already revoked when the replacement file was picked, so the
  *    stale objectURL must NOT survive as the re-crop target.
  *
- * The P1 bug: the old `if (!hasImage)` guard couldn't see the replace case
- * (hasImage is still true from the committed poster), so after replace+cancel
+ * The P1 bug: the old "committed poster exists" guard couldn't see the replace
+ * case (the committed poster is still displayed), so after replace+cancel
  * the "재크롭" button opened the WRONG file (the abandoned replacement). The fix
  * tracks `pendingNewFile`; this test asserts "재크롭" is disabled after that flow.
  *
@@ -65,11 +65,11 @@ mock.module('@/utils/imageCrop', () => ({
 const ImageUploader =
   (require('@/components/ImageUploader') as { default: typeof import('@/components/ImageUploader').default }).default;
 
-// Parent-like harness: owns croppedImageUrl exactly as MobileEditorShell does, so
-// hasImage flips to true once the first crop commits.
+// Parent-like harness: owns croppedImageUrl exactly as DesktopStudioShell does, so
+// imageUrl is set once the first crop commits.
 function Harness() {
   const [url, setUrl] = useState<string | null>(null);
-  return <ImageUploader onUpload={setUrl} isProcessing={false} hasImage={!!url} imageUrl={url} />;
+  return <ImageUploader onUpload={setUrl} isProcessing={false} imageUrl={url} />;
 }
 
 const fileInput = () =>
@@ -130,7 +130,7 @@ describe('ImageUploader re-crop target (#182 PR #191)', () => {
     await user.upload(fileInput(), pngFile('a.png'));
     await user.click(await screen.findByText('mock-cancel'));
 
-    // hasImage never flipped → drop zone stays, no 교체/재크롭 surface.
+    // imageUrl never set → drop zone stays, no 교체/재크롭 surface.
     expect(screen.queryByRole('button', { name: '재크롭' })).toBeNull();
     expect(screen.getByText('포스터 업로드')).toBeTruthy();
   });
@@ -143,7 +143,7 @@ describe('ImageUploader re-crop target (#182 PR #191)', () => {
     const srcBefore = (await screen.findByTestId('crop-src')).textContent;
 
     // Apply, but hold the crop so isCropping (busy) stays true with the modal open.
-    // hasImage is still false here (onUpload not yet called), so the drop zone is
+    // imageUrl is still null here (onUpload not yet called), so the drop zone is
     // the <label> — fire on it directly, since onDrop lives there, not on <section>.
     holdCrop = true;
     await user.click(screen.getByText('mock-apply'));
