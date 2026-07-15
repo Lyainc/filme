@@ -10,6 +10,7 @@ import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
+import { mobileShellProps } from './shellHarness';
 
 const REASON = '포스터를 먼저 추가해주세요';
 
@@ -21,17 +22,7 @@ function Harness({ canExport, onDone }: { canExport: boolean; onDone: () => void
       <button type="button" onClick={() => photo.handleImageUpload('blob:test-poster')}>
         seed
       </button>
-      <MobileEditorShell
-        photo={photo}
-        canExport={canExport}
-        theme="light"
-        onThemeChange={() => {}}
-        onDone={onDone}
-        disabledReason={REASON}
-        previewMovieInfo={photo.state.movieInfo}
-        previewComponents={photo.state.components}
-        fieldVisibility={photo.state.fieldVisibility}
-      />
+      <MobileEditorShell {...mobileShellProps(photo, { canExport, onDone, disabledReason: REASON })} />
     </>
   );
 }

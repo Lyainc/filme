@@ -11,6 +11,7 @@ import { render, screen, cleanup, fireEvent, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
+import { mobileShellProps } from './shellHarness';
 
 const STORAGE_KEY = 'filme:phototicket:v1';
 
@@ -26,17 +27,7 @@ function Harness() {
       <button type="button" onClick={() => photo.updateComponents({ layout: '35mm' })}>
         set-35mm
       </button>
-      <MobileEditorShell
-        photo={photo}
-        canExport
-        theme="light"
-        onThemeChange={() => {}}
-        onDone={() => {}}
-        disabledReason=""
-        previewMovieInfo={photo.state.movieInfo}
-        previewComponents={photo.state.components}
-        fieldVisibility={photo.state.fieldVisibility}
-      />
+      <MobileEditorShell {...mobileShellProps(photo)} />
     </>
   );
 }

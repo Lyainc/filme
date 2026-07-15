@@ -10,6 +10,7 @@ import { render, screen, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { DesktopStudioShell } from '@/components/v2/DesktopStudioShell';
+import { desktopShellProps } from './shellHarness';
 
 function Harness({
   canExport = false,
@@ -25,17 +26,13 @@ function Harness({
   const photo = usePhototicket();
   return (
     <DesktopStudioShell
-      photo={photo}
-      theme="light"
-      onThemeChange={() => {}}
-      canExport={canExport}
-      disabledReason="포스터를 먼저 추가해주세요"
-      resultOpen={resultOpen}
-      onDone={onDone}
-      onBackToEdit={onBackToEdit}
-      previewMovieInfo={photo.state.movieInfo}
-      previewComponents={photo.state.components}
-      fieldVisibility={photo.state.fieldVisibility}
+      {...desktopShellProps(photo, {
+        canExport,
+        disabledReason: '포스터를 먼저 추가해주세요',
+        resultOpen,
+        onDone,
+        onBackToEdit,
+      })}
     />
   );
 }

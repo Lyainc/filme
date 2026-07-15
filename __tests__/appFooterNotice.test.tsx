@@ -10,6 +10,7 @@ import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
 import { UNOFFICIAL_TICKET_NOTICE } from '@/utils/ticketCleanup';
+import { mobileShellProps } from './shellHarness';
 
 function Harness() {
   const photo = usePhototicket();
@@ -18,17 +19,7 @@ function Harness() {
       <button type="button" onClick={() => photo.handleImageUpload('blob:test-poster')}>
         seed-poster
       </button>
-      <MobileEditorShell
-        photo={photo}
-        canExport
-        theme="light"
-        onThemeChange={() => {}}
-        onDone={() => {}}
-        disabledReason=""
-        previewMovieInfo={photo.state.movieInfo}
-        previewComponents={photo.state.components}
-        fieldVisibility={photo.state.fieldVisibility}
-      />
+      <MobileEditorShell {...mobileShellProps(photo)} />
     </>
   );
 }
