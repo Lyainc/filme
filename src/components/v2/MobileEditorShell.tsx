@@ -268,6 +268,12 @@ export function MobileEditorShell({
   // 컨테이너 width만으로 렌더 크기를 몰기(TicketRenderer는 width에 맞춰 스케일). max는 세로를
   // TicketRenderer의 자체 maxHeight(min(72vh,720px)) 한도까지 채우는 width를 역산.
   const previewWidth = `min(90vw, calc(${PREVIEW_MAX_HEIGHT} * ${layout.width} / ${layout.height}))`;
+  // 기본 모드 프리뷰 폭(#366) — 고정 280px 캡 대신 fit 스테이지(container-type:size)의 가용
+  // 공간에서 역산한다: 가로는 스테이지 폭, 세로는 스테이지 높이 × 종횡비 중 작은 쪽. dock 패널이
+  // 열려 스테이지가 줄면 티켓이 통째로 축소돼 어떤 뷰포트에서도 하단(서명 등)이 dock에 안 가리고,
+  // 큰 화면에선 캡 없이 커져 빈 공간도 채운다. cq 단위는 뷰포트가 아니라 스테이지 기준이라
+  // Safari 동적 툴바(dvh 변동)에도 산수가 그대로 성립한다.
+  const fitWidth = `min(100cqw, calc(100cqh * ${layout.width} / ${layout.height}))`;
   // 가로형(editorial·35mm-landscape) 무드는 세로 화면 폭 기준 스케일이면 작은 가로 띠로 렌더되므로
   // (#275-8) max에서 90° 회전 + 화면 꽉 채우기로 배치. rotatedInnerWidth는 회전 전(자연 방향)
   // TicketRenderer 폭 — 회전 후 세로가 화면 상한을 채우도록 역산. rotatedStageWidth(회전 후 화면에
@@ -461,17 +467,22 @@ export function MobileEditorShell({
       </header>
       )}
 
-      {/* 스크롤 본문: 인라인 프리뷰 + OCR + 편집 본문(Poster 드롭존 + footer). 디자인 rail은
-          #357에서 본문 밖 하단 고정 dock으로 이동. 비-기본 모드에선 justify-center로 프리뷰를
-          세로 중앙에 두고 본문을 접는다. relative — absolute 앰비언트 레이어 위에 그려지기 위함(#353). */}
+      {/* 본문: 인라인 프리뷰 + OCR + 편집 본문(Poster 드롭존 + footer). 디자인 rail은 #357에서
+          본문 밖 하단 고정 dock으로 이동. 업로드 후엔 프리뷰가 fit 스테이지(flex-1, #366)라 콘텐츠가
+          정확히 본문 높이에 맞아 스크롤이 생기지 않고, 업로드 전(드롭존 본문)엔 기존대로 스크롤한다.
+          비-기본 모드에선 justify-center로 프리뷰를 세로 중앙에 두고 본문을 접는다.
+          relative — absolute 앰비언트 레이어 위에 그려지기 위함(#353). */}
       <div className="relative min-h-0 flex-1 overflow-y-auto">
-        <div className={`flex min-h-full flex-col ${collapseBody ? 'justify-center' : ''}`}>
+        {/* 업로드 후엔 h-full로 높이를 확정해야 fit 스테이지(flex-1)의 cq 단위가 산다(#366) —
+            min-h-full(height:auto)이면 CSS상 indefinite라 cqh가 0으로 폴백해 티켓이 사라진다.
+            업로드 전(드롭존 본문)은 콘텐츠가 넘칠 때 스크롤해야 하므로 min-h-full 유지. */}
+        <div className={`flex flex-col ${croppedImageUrl ? 'h-full' : 'min-h-full'} ${collapseBody ? 'justify-center' : ''}`}>
           {croppedImageUrl && (
             <div
               className={
                 isMax
                   ? 'fixed inset-0 z-50 flex items-center justify-center bg-surface px-6'
-                  : 'px-4 pt-4'
+                  : 'flex min-h-0 flex-1 items-center justify-center px-4 py-3'
               }
               style={
                 isMax
@@ -479,7 +490,10 @@ export function MobileEditorShell({
                       paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)',
                       paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
                     }
-                  : undefined
+                  : // fit 스테이지(#366) — flex-1 + basis 0이라 높이가 "본문 - OCR·footer"로 확정되고,
+                    // container-type:size라 자식(티켓)이 이 높이에 기여하지 않아 순환이 없다.
+                    // 아래 fitWidth의 cqw/cqh가 이 박스를 컨테이너로 읽는다.
+                    { containerType: 'size' }
               }
             >
               {/* 래퍼 트리는 rotate 여부와 무관하게 항상 바깥 div → 안쪽 div → TicketRenderer로 depth가
@@ -511,12 +525,15 @@ export function MobileEditorShell({
                 ref={setPreviewWrapEl}
                 className={`relative mx-auto block rounded-card ${
                   viewMode === 'default'
-                    ? 'w-full max-w-[280px] transition-transform duration-300 ease-out motion-reduce:transition-none'
+                    ? 'transition-transform duration-300 ease-out motion-reduce:transition-none'
                     : 'transition-transform active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-soft'
                 } ${rotateLandscape ? 'overflow-hidden' : ''}`}
                 style={
                   viewMode === 'default'
                     ? {
+                        // fit 폭(#366) — 스테이지 크기 변경(dock 패널 개폐)에 cq 단위가 즉시
+                        // 따라가고, TicketRenderer의 ResizeObserver가 재스케일한다.
+                        width: fitWidth,
                         // 편집 중 lift + scale(#354, 시안 §5 ~1.08) — transform만 바꾼다. 폭을
                         // 애니메이트하면 TicketRenderer의 ResizeObserver 스케일과 싸운다.
                         // 비편집에도 항등 transform을 유지해야 해제 시 transform→none 이산 점프 없이
@@ -563,7 +580,7 @@ export function MobileEditorShell({
           {/* OCR은 collapse 밖(#261 리뷰 P1). max(#328)는 모든 UX를 숨기는
               풀스크린이라 OCR도 예외 없이 숨긴다. allVis/ghost/잉크 토글은 #315에서 헤더 서브메뉴로 이전. */}
           {!isMax && (
-          <div className="space-y-group px-4 pt-6">
+          <div className={`space-y-group px-4 ${croppedImageUrl ? 'pt-1' : 'pt-6'}`}>
             {/* OCR 자동입력 — 주 자동입력 어포던스라 chrome 최상단(프리뷰 직하)으로 승격. 로직은
                 셸의 useOcrUndo가 소유, 아코디언 없는 모바일이라 apply를 그대로 넘긴다(DesktopStudioShell과 동형). */}
             <OcrUploadCard
@@ -586,7 +603,9 @@ export function MobileEditorShell({
             style={{ gridTemplateRows: collapseBody ? '0fr' : '1fr' }}
           >
             <div className="overflow-hidden" inert={collapseBody || undefined}>
-              <div className="space-y-section px-4 pb-24 pt-6">
+              {/* 업로드 후엔 footer만 남으므로 스크롤 여백(pb-24)을 접는다(#366) — fit 스테이지가
+                  그만큼 세로 공간을 돌려받는다. 업로드 전(드롭존 본문)은 기존 스크롤 여백 유지. */}
+              <div className={croppedImageUrl ? 'px-4 pb-2 pt-4' : 'space-y-section px-4 pb-24 pt-6'}>
                 {/* Poster 드롭존 — 업로드 전에만 노출(#315). 업로드 후엔 온-티켓 탭 + 헤더 서브메뉴의
                     교체/재크롭이 대신하므로(#324) 툴팁·적용 카드 없이 섹션 자체가 사라진다. */}
                 {!croppedImageUrl && (
@@ -621,11 +640,12 @@ export function MobileEditorShell({
 
       {/* 스타일링 dock(#357) — rail을 스크롤 본문 밖 하단 고정 슬롯으로. 시안의 railTop 절대
           산수(390×844 하드코딩) 대신 flex라 iPhone SE(667px)를 포함한 어떤 뷰포트에서도 dock이
-          화면 안에 있다. 언박스 패널이 열리면 dock 영역이 위로 자라고 본문(flex-1)이 줄어든다.
-          DOM 순서는 본문 뒤라 기존 "OCR → rail 최하단" 위계(#261)가 유지된다. max는 티켓 전용
-          풀스크린이라 숨기되 CSS hidden으로만 — 조건부 unmount면 DesignRail의 pop(열린 패널)
-          state가 최대화 왕복마다 리셋된다(#297 P1과 동일 패턴, PR #362 리뷰 P2).
-          relative는 absolute 앰비언트(#353) 위에 그려지기 위함. */}
+          화면 안에 있다. 언박스 패널이 열리면 dock 영역이 위로 자라고 본문(flex-1)이 줄어드는데,
+          티켓은 fit 스테이지(#366)가 같이 축소해 dock에 가려지지 않는다(이전엔 고정 280px 폭이라
+          소형 화면에서 하단이 dock 뒤로 잘렸다). DOM 순서는 본문 뒤라 기존 "OCR → rail 최하단"
+          위계(#261)가 유지된다. max는 티켓 전용 풀스크린이라 숨기되 CSS hidden으로만 — 조건부
+          unmount면 DesignRail의 pop(열린 패널) state가 최대화 왕복마다 리셋된다(#297 P1과 동일
+          패턴, PR #362 리뷰 P2). relative는 absolute 앰비언트(#353) 위에 그려지기 위함. */}
       <div
         className={`relative shrink-0 px-4 pt-3${isMax ? ' hidden' : ''}`}
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
