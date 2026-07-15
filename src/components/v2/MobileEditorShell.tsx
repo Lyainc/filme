@@ -67,7 +67,7 @@ function TogglePill({
       title={ariaLabel ?? label}
       disabled={disabled}
       onClick={onClick}
-      className={`inline-flex h-9 items-center gap-2 rounded-full border border-line bg-surface-elevated pl-3 pr-1.5 transition-opacity ${
+      className={`inline-flex h-9 items-center gap-2 rounded-full border border-[var(--glass-border)] bg-[var(--glass-fill)] pl-3 pr-1.5 transition-opacity ${
         disabled ? 'opacity-40' : ''
       }`}
     >
@@ -361,11 +361,19 @@ export function MobileEditorShell({
                 덮으면 z-index 없는 헤더 버튼(햄버거·완료)이 이 오버레이 밑에 깔려 탭이 메뉴만
                 닫고 버튼 클릭은 씹힌다(claude-review PR #331 P2 지적). */}
             <div className="fixed inset-x-0 bottom-0 top-14 z-40" onClick={() => setMenuOpen(false)} aria-hidden="true" />
+            {/* v8 dark-glass(#364) — 일반 카드 대신 글래스 토큰 + blur. 다크 크롬에선 white-alpha
+                유리, 업로드 전 라이트 크롬에선 밝은 유리로 같은 마크업이 양쪽에 선다. */}
             <div
               id="editor-menu-panel"
               role="menu"
               aria-label="편집 메뉴"
-              className="absolute left-3 top-[calc(100%+8px)] z-50 w-64 space-y-3 rounded-card border border-line bg-surface-elevated p-3 shadow-card"
+              className="absolute left-3 top-[calc(100%+8px)] z-50 w-64 space-y-3 rounded-card border p-3 shadow-card"
+              style={{
+                background: 'var(--glass-fill)',
+                borderColor: 'var(--glass-border)',
+                backdropFilter: 'blur(13px)',
+                WebkitBackdropFilter: 'blur(13px)',
+              }}
             >
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[13px] text-fg-muted">다크모드</span>
@@ -402,14 +410,14 @@ export function MobileEditorShell({
               </div>
 
               {croppedImageUrl && (
-                <div className="flex flex-col gap-1.5 border-t border-line pt-3">
+                <div className="flex flex-col gap-1.5 border-t border-[var(--glass-border)] pt-3">
                   <button
                     type="button"
                     onClick={() => {
                       setMenuOpen(false);
                       handlePosterTap();
                     }}
-                    className="text-mono flex min-h-[36px] items-center rounded-chip border border-line bg-surface px-3 text-[11px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft"
+                    className="text-mono flex min-h-[36px] items-center rounded-chip border border-[var(--glass-border)] bg-[var(--glass-fill)] px-3 text-[11px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft"
                   >
                     포스터 교체
                   </button>
@@ -421,7 +429,7 @@ export function MobileEditorShell({
                     }}
                     disabled={!posterOriginalSrc}
                     title={posterOriginalSrc ? undefined : '재크롭하려면 포스터를 다시 업로드해 주세요'}
-                    className="text-mono flex min-h-[36px] items-center rounded-chip border border-line bg-surface px-3 text-[11px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft disabled:opacity-40"
+                    className="text-mono flex min-h-[36px] items-center rounded-chip border border-[var(--glass-border)] bg-[var(--glass-fill)] px-3 text-[11px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft disabled:opacity-40"
                   >
                     재크롭
                   </button>
@@ -434,7 +442,7 @@ export function MobileEditorShell({
                   초기화에 닿을 수 있어야 한다. 초기화는 파괴적이라 네이티브 confirm으로 한 번 확인한다
                   (이 코드베이스엔 확인 모달 인프라가 없어 새로 만들지 않는다). 저장 피드백은 기존
                   flashToast 재사용. */}
-              <div className="flex flex-col gap-1.5 border-t border-line pt-3">
+              <div className="flex flex-col gap-1.5 border-t border-[var(--glass-border)] pt-3">
                 <button
                   type="button"
                   onClick={() => {
@@ -442,7 +450,7 @@ export function MobileEditorShell({
                     photo.saveDraft();
                     flashToast('임시저장했어요');
                   }}
-                  className="text-mono flex min-h-[36px] items-center rounded-chip border border-line bg-surface px-3 text-[11px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft"
+                  className="text-mono flex min-h-[36px] items-center rounded-chip border border-[var(--glass-border)] bg-[var(--glass-fill)] px-3 text-[11px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft"
                 >
                   임시저장
                 </button>
@@ -458,7 +466,7 @@ export function MobileEditorShell({
                       flashToast('초기화했어요');
                     }
                   }}
-                  className="text-mono flex min-h-[36px] items-center rounded-chip border border-line bg-surface px-3 text-[11px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft"
+                  className="text-mono flex min-h-[36px] items-center rounded-chip border border-[var(--glass-border)] bg-[var(--glass-fill)] px-3 text-[11px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft"
                 >
                   초기화
                 </button>
@@ -653,6 +661,33 @@ export function MobileEditorShell({
       >
         <DesignRail photo={photo} />
       </div>
+
+      {/* 필드 드로어 엣지 핸들(#364) — 우측 엣지에 드로어 존재를 암시하는 상시 인디케이터.
+          툴바의 항목목록 버튼과 진입점 병존(툴바를 모르면 드로어를 못 찾는 문제의 직접 해소).
+          히트영역은 44px(왼쪽으로 투명 확장), 보이는 탭은 20px 글래스. z-30 — 편집 백드롭(z-40)
+          아래라 인플레이스 편집 중엔 가려지고, 드로어(z-50)가 열리면 그 뒤에 깔린다. */}
+      {croppedImageUrl && !isMax && (
+        <button
+          type="button"
+          onClick={() => setDrawerOpen(true)}
+          aria-label="티켓 항목 목록 열기"
+          className="fixed right-0 top-1/2 z-30 flex h-14 w-11 -translate-y-1/2 items-center justify-end"
+        >
+          <span
+            aria-hidden="true"
+            className="flex h-full w-5 items-center justify-center rounded-l-[10px] border border-r-0 border-[var(--glass-border)] text-fg-muted"
+            style={{
+              background: 'var(--glass-fill)',
+              backdropFilter: 'blur(13px)',
+              WebkitBackdropFilter: 'blur(13px)',
+            }}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          </span>
+        </button>
+      )}
 
       {/* 플로팅 툴바(#356) — undo/redo·항목목록·최대화·배치·숨김. 프리뷰가 있어야 의미가 있고,
           max는 티켓만 남기는 풀스크린이라 숨긴다(탈출은 티켓 탭). 필드 편집·드로어 중에도 셸이

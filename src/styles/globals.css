@@ -41,6 +41,10 @@
     --shadow-card: 0 1px 3px rgba(0,0,0,0.05), 0 8px 24px -6px rgba(0,0,0,0.08);
     --shadow-pop: 0 4px 8px -2px rgba(0,0,0,0.10), 0 16px 40px -8px rgba(0,0,0,0.14);
     --preview-glow: 0 0 0 1px rgba(0,0,0,0.06), 0 12px 40px -8px rgba(0,0,0,0.18);
+    /* v8 글래스 표면 쌍(#364, 핸드오프 §Design Tokens) — blur 위에 얹는 메뉴·핸들·칩의
+       fill/border. 다크 크롬에선 white-alpha 유리(.08/.15), 라이트에선 밝은 유리로 등가. */
+    --glass-fill: rgba(255, 255, 255, 0.55);
+    --glass-border: rgba(20, 23, 26, 0.12);
 
     /* Backward compat aliases */
     --paper: var(--surface-elevated);
@@ -77,6 +81,8 @@
     --shadow-card: 0 1px 3px rgba(0,0,0,0.20), 0 8px 24px -6px rgba(0,0,0,0.30);
     --shadow-pop: 0 4px 8px -2px rgba(0,0,0,0.30), 0 16px 40px -8px rgba(0,0,0,0.40);
     --preview-glow: 0 0 0 1px rgba(255,255,255,0.06), 0 12px 40px -8px rgba(0,0,0,0.40);
+    --glass-fill: rgba(255, 255, 255, 0.08);
+    --glass-border: rgba(255, 255, 255, 0.15);
   }
 
   html {
