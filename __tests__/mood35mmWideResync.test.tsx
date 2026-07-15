@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Mood35mmLandscape } from '../src/components/moods/Mood35mmLandscape';
-import type { MovieInfo, TicketComponents } from '../src/types';
+import { FULL_MOVIE, makeMoodBase } from './fixtures';
 
 // 마스터 시안(Ticket Design Master.dc.html v2 · 2026-07-08 resync) 06 35MM WIDE 재동기화 회귀(#281, 에픽 #281).
 // 35mm Wide 델타: 바코드 없음, "SINGLE FRAME" 헤더 제거, 인라인 평점 → Rated 셀, 우 패널을 "From the Archive"
@@ -9,20 +9,7 @@ import type { MovieInfo, TicketComponents } from '../src/types';
 // 타이틀 고정 60/800(pickTitleSize 폐기), 필드 라벨16/값27(Starring 25), 상/하단 92px 풀 필름 스트립.
 // 마스터 Spec 값: 라벨 16 / 값 27(Starring 25) — 목표문 "값26"은 35mm 세로 값 착오, 마스터 우선. stale로 되돌아오면 여기서 잡는다.
 
-const FULL_MOVIE: MovieInfo = {
-  title: '그랜드 부다페스트 호텔', titleOg: 'The Grand Budapest Hotel', actors: '랄프 파인즈, 토니 레볼로리 외 3명', rating: 4.5,
-  releaseDate: '2014-03-20', releaseDateGranularity: 'date', releaseDateFormat: 'kr-compact',
-  reissueDate: '2023-09-15', isReissue: true,
-  watchDate: '2024-03-15', watchDateFormat: 'kr-compact', watchTime: '19:30',
-  theater: '메가박스 코엑스', screen: 'Dolby Cinema', seat: 'G14', runtime: '99분',
-  bookingNumber: 'BOOK-1234', signature: '영화수집가',
-};
-
-const BASE: TicketComponents = {
-  layout: '35mm-landscape', chain: '', format: '', chainLabel: 'MEGABOX', formatLabel: 'DOLBY',
-  texture: 'none', posterOpacity: 0.5, componentOpacity: 1, themeColor: '#FFFFFF',
-  chainVisible: true, formatVisible: true,
-};
+const BASE = makeMoodBase('35mm-landscape');
 
 const markup = () =>
   renderToStaticMarkup(
