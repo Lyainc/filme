@@ -29,7 +29,9 @@ type Photo = ReturnType<typeof usePhototicket>;
 
 const INPUT_CLS =
   // 16px 미만이면 iOS Safari가 포커스 시 자동 줌인해 레이아웃이 틀어진다(#274) — 편집 폼 컨트롤은 16px 이상.
-  'w-full rounded-field border border-line bg-surface-elevated px-3.5 py-3 text-[16px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft';
+  // 글래스 톤(#367) — 다크 앰비언트 위 solid 카드 대신 v8 글래스 토큰. 데스크톱 아코디언(라이트
+  // 서피스)에선 밝은 유리로 등가 렌더된다(토큰이 스코프별 해석).
+  'w-full rounded-field border border-[var(--glass-border)] bg-[var(--glass-fill)] px-3.5 py-3 text-[16px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft';
 
 /**
  * 필드 편집 본문(#226) — 필드/스탬프 타깃별 에디터 콘텐츠(text/date/title/rating + 스탬프)를
@@ -181,7 +183,9 @@ function FormatChips({
               onClick={() => onChange(opt.value)}
               data-touch="44"
               className={`text-mono inline-flex min-h-touch items-center rounded-chip border px-3 text-[10px] uppercase tracking-widest transition-colors ${
-                active ? 'border-accent bg-accent text-accent-ink' : 'border-line bg-surface-elevated text-fg hover:bg-accent-soft'
+                active
+                  ? 'border-accent bg-accent text-accent-ink'
+                  : 'border-[var(--glass-border)] bg-[var(--glass-fill)] text-fg hover:bg-accent-soft'
               }`}
             >
               {opt.sample}
@@ -233,7 +237,7 @@ export function DateSheet({ field, photo }: { field: TicketField; photo: Photo }
           value={gran}
           onChange={(e) => set({ releaseDateGranularity: e.target.value as DateGranularity })}
           aria-label="개봉일 정밀도"
-          className="text-mono rounded-field border border-line bg-surface-elevated px-3 py-3 text-[16px] uppercase tracking-widest text-fg outline-none focus:border-accent"
+          className="text-mono rounded-field border border-[var(--glass-border)] bg-[var(--glass-fill)] px-3 py-3 text-[16px] uppercase tracking-widest text-fg outline-none focus:border-accent"
         >
           {GRANULARITY_OPTIONS.map((g) => (
             <option key={g.value} value={g.value}>

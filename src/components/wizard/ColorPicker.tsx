@@ -57,9 +57,10 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
                   : 'border-line hover:border-accent/40'
               }`}
               style={{
-                width: 44,
-                height: 44,
-                // 이중 링: 내부 bg-gap + accent 링으로 44px 원에서도 활성 상태 또렷
+                // 46px — rail 상세패널 공통 칩 크기(#367, 무드·후보정 칩과 동일).
+                width: 46,
+                height: 46,
+                // 이중 링: 내부 bg-gap + accent 링으로 작은 원에서도 활성 상태 또렷
                 boxShadow: active ? '0 0 0 2px var(--bg), 0 0 0 4px var(--accent)' : undefined,
               }}
             >
@@ -92,7 +93,7 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
             className="sr-only"
           />
           <span
-            className={`flex h-11 w-11 items-center justify-center rounded-chip border-2 transition-transform ${
+            className={`flex h-[46px] w-[46px] items-center justify-center rounded-chip border-2 transition-transform ${
               isCustom ? 'border-accent scale-105' : 'border-line hover:border-accent/40'
             }`}
             style={{
