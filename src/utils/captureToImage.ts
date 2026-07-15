@@ -6,23 +6,43 @@ interface CaptureOptions {
   pixelRatio?: number;
 }
 
+// 인쇄 기계가 여백 없는 이미지의 가장자리를 잘라내는 문제 때문에, export 결과물에만 상하좌우
+// 20px 흰 여백을 둔다(#382). 프리뷰는 이 함수를 거치지 않는 별도 렌더 경로(TicketRenderer)라
+// 자동으로 영향 밖이다.
+const EXPORT_MARGIN_PX = 20;
+
 export function buildJpegOptions(
   width: number,
   height: number,
   quality = 0.95,
   pixelRatio = 2
 ) {
+  const marginedWidth = width + EXPORT_MARGIN_PX * 2;
+  const marginedHeight = height + EXPORT_MARGIN_PX * 2;
   return {
     quality,
     pixelRatio,
-    width,
-    height,
-    canvasWidth: width * pixelRatio,
-    canvasHeight: height * pixelRatio,
-    backgroundColor: '#000000',
+    // width/height는 SVG 캔버스(여백 포함) 크기 — html-to-image가 캡처 노드 자체의 CSS
+    // width/height에도 강제로 씌우는 값이라, 노드 실크기는 아래 style.width/height로 되돌린다.
+    width: marginedWidth,
+    height: marginedHeight,
+    canvasWidth: marginedWidth * pixelRatio,
+    canvasHeight: marginedHeight * pixelRatio,
+    // 캔버스 전체 배경(투명 픽셀 채움 + 여백 프레임 색). 캡처 대상 루트 노드는 배경이 없는
+    // 투명 wrapper이고 티켓 배경(무드별 색)은 그 자식이 따로 그리므로, 이 흰색은 여백에만
+    // 보이고 티켓 배경은 건드리지 않는다.
+    backgroundColor: '#FFFFFF',
     cacheBust: false,
     skipFonts: false,
-    style: { transform: 'none', transformOrigin: '0 0' },
+    style: {
+      transform: 'none',
+      transformOrigin: '0 0',
+      // options.width/height(여백 포함)가 먼저 적용된 뒤 style이 나중에 적용되는 순서를 이용해
+      // 노드 실크기를 원본으로 되돌리고, margin으로 여백만큼 오프셋을 준다.
+      width: `${width}px`,
+      height: `${height}px`,
+      margin: `${EXPORT_MARGIN_PX}px`,
+    },
     filter: (node: unknown) => {
       if (node instanceof Element && node.hasAttribute('data-hide-on-export')) {
         return false;

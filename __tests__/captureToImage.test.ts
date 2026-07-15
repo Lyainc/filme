@@ -12,20 +12,31 @@ describe('buildJpegOptions — AC12: capture dimensions invariant', () => {
     expect(opts.pixelRatio).toBe(2);
   });
 
-  test('canvasWidth = width * pixelRatio', () => {
+  test('canvasWidth = (width + 20px margin * 2) * pixelRatio', () => {
     const opts = buildJpegOptions(960, 1477);
-    expect(opts.canvasWidth).toBe(960 * 2);
+    expect(opts.canvasWidth).toBe((960 + 40) * 2);
   });
 
-  test('canvasHeight = height * pixelRatio', () => {
+  test('canvasHeight = (height + 20px margin * 2) * pixelRatio', () => {
     const opts = buildJpegOptions(960, 1477);
-    expect(opts.canvasHeight).toBe(1477 * 2);
+    expect(opts.canvasHeight).toBe((1477 + 40) * 2);
   });
 
-  test('width and height pass through unchanged', () => {
+  test('options.width/height include the export margin (SVG canvas size)', () => {
     const opts = buildJpegOptions(1477, 960);
-    expect(opts.width).toBe(1477);
-    expect(opts.height).toBe(960);
+    expect(opts.width).toBe(1477 + 40);
+    expect(opts.height).toBe(960 + 40);
+  });
+
+  test('style.width/height restore the original node size (margin does not stretch the ticket)', () => {
+    const opts = buildJpegOptions(1477, 960);
+    expect(opts.style.width).toBe('1477px');
+    expect(opts.style.height).toBe('960px');
+  });
+
+  test('style.margin offsets the node by 20px inside the enlarged canvas', () => {
+    const opts = buildJpegOptions(960, 1477);
+    expect(opts.style.margin).toBe('20px');
   });
 
   test('transform: none is set (capture wrapper fix)', () => {
@@ -33,17 +44,17 @@ describe('buildJpegOptions — AC12: capture dimensions invariant', () => {
     expect(opts.style.transform).toBe('none');
   });
 
-  test('backgroundColor is black (ticket background)', () => {
+  test('backgroundColor is white (export margin frame, not the ticket background)', () => {
     const opts = buildJpegOptions(960, 1477);
-    expect(opts.backgroundColor).toBe('#000000');
+    expect(opts.backgroundColor).toBe('#FFFFFF');
   });
 
   test.each(LAYOUTS.map((l) => [l.id, l.width, l.height] as const))(
-    'layout %s: canvasWidth=%i*2 canvasHeight=%i*2',
+    'layout %s: canvasWidth=(%i+40)*2 canvasHeight=(%i+40)*2',
     (id, width, height) => {
       const opts = buildJpegOptions(width, height);
-      expect(opts.canvasWidth).toBe(width * 2);
-      expect(opts.canvasHeight).toBe(height * 2);
+      expect(opts.canvasWidth).toBe((width + 40) * 2);
+      expect(opts.canvasHeight).toBe((height + 40) * 2);
       expect(opts.pixelRatio).toBe(2);
     }
   );
