@@ -86,7 +86,7 @@ describe('MobileEditorShell chrome 정보위계 (#261/#315/#363)', () => {
     expect(screen.getByRole('button', { name: '티켓 스크린샷으로 자동 인식', hidden: true }) === before).toBe(true);
   });
 
-  test('업로드 후: 헤더 서브메뉴에서 전체표시·빈 항목·잉크·포스터 교체/재크롭 접근 가능(#315)', async () => {
+  test('업로드 후: 헤더 서브메뉴에서 전체표시·빈 항목·포스터 교체/재크롭 접근 가능(#315, 잉크는 #387에서 삭제 — 컬러 패널 White/Black 프리셋과 중복)', async () => {
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
     await screen.findByRole('button', { name: '티켓 스크린샷으로 자동 인식' });
@@ -95,7 +95,6 @@ describe('MobileEditorShell chrome 정보위계 (#261/#315/#363)', () => {
 
     expect(screen.getByRole('switch', { name: '전체 표시' })).toBeTruthy();
     expect(screen.getByRole('switch', { name: '빈 항목 미리보기' })).toBeTruthy();
-    expect(screen.getByRole('switch', { name: /잉크 색상 전환/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: '포스터 교체' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '재크롭' })).toBeTruthy();
   });

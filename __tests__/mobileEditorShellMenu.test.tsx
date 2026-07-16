@@ -1,10 +1,8 @@
 /**
  * #315 회귀 테스트 — MobileEditorShell 헤더 서브메뉴.
  *
- * 뒤로가기·워드마크를 제거하고 햄버거 서브메뉴로 다크모드·전체표시·빈 항목·잉크 토글과 포스터
- * 교체·재크롭 액션을 통합했다(#323/#324 흡수). 잉크 토글 자체의 동작 검증(라이트↔다크 전환,
- * disclosure 아님, 35mm disabled)은 원래 designRail.test.tsx (g)(h)(i)였으나 토글이 DesignRail
- * 레일 → 이 서브메뉴로 이전하며 이관됐다.
+ * 뒤로가기·워드마크를 제거하고 햄버거 서브메뉴로 다크모드·전체표시·빈 항목 토글과 포스터
+ * 교체·재크롭 액션을 통합했다(#323/#324 흡수). 잉크 토글은 #387에서 컬러 패널과 중복이라 삭제.
  */
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
 import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
@@ -19,13 +17,8 @@ function Harness() {
   const photo = usePhototicket();
   return (
     <>
-      <div data-testid="themeColor">{photo.state.components.themeColor}</div>
-      <div data-testid="layout">{photo.state.components.layout}</div>
       <button type="button" onClick={() => photo.handleImageUpload('blob:test-poster')}>
         seed
-      </button>
-      <button type="button" onClick={() => photo.updateComponents({ layout: '35mm' })}>
-        set-35mm
       </button>
       <MobileEditorShell {...mobileShellProps(photo)} />
     </>
@@ -217,37 +210,9 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     expect(screen.queryByText('초기화했어요')).toBeNull();
   }, 10000);
 
-  test('업로드 후: 잉크 토글 → themeColor 라이트(#FFFFFF)↔다크(#000000) 즉시 전환', async () => {
-    const user = userEvent.setup();
-    render(<Harness />);
-    fireEvent.click(screen.getByText('seed'));
-    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
-
-    // 기본 잉크 = 라이트(#FFFFFF)
-    expect(screen.getByTestId('themeColor').textContent).toBe('#FFFFFF');
-
-    const ink = screen.getByRole('switch', { name: /잉크 색상 전환/ });
-    await user.click(ink);
-    expect(screen.getByTestId('themeColor').textContent).toBe('#000000');
-    await user.click(ink);
-    expect(screen.getByTestId('themeColor').textContent).toBe('#FFFFFF');
-
-    // 이 하네스는 photo.handleImageUpload를 직접 호출해 seed하므로(실제 파일 선택 우회) 셸의
-    // posterOriginalSrc가 없다 — 재크롭은 실제 원본이 있어야 하므로 여전히 disabled가 맞다.
-    // 파일 선택→크롭 전체 플로우의 originalSrc 영속화 자체는 imageUploaderRecrop.test.tsx가
-    // 검증하는 것과 동일한 상태 머신을 포팅한 것(핸들러 구현 참조).
-    const recrop = screen.getByRole('button', { name: '재크롭' }) as HTMLButtonElement;
-    expect(recrop.disabled).toBe(true);
-  });
-
-  test('35mm 무드에선 잉크 토글 disabled — 톤 고정(ColorPicker와 동일 조건)', async () => {
-    const user = userEvent.setup();
-    render(<Harness />);
-    fireEvent.click(screen.getByText('set-35mm'));
-    expect(screen.getByTestId('layout').textContent).toBe('35mm');
-
-    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
-    const ink = screen.getByRole('switch', { name: /잉크 색상 전환/ }) as HTMLButtonElement;
-    expect(ink.disabled).toBe(true);
-  });
+  // 잉크 토글은 #387에서 삭제 — 컬러 패널(DesignRail ColorPicker)의 White/Black 프리셋과
+  // 완전히 중복이라 기능 손실 없이 제거(전문가 패널 검토, docs/discussions/20260716...).
+  // 이 서브메뉴가 검증하던 라이트↔다크 전환·35mm disabled 동작 회귀 테스트는 ColorPicker
+  // 쪽에 상응하는 게 없다 — desktopDesignPanel.test.tsx (c)는 White/Black 프리셋의 존재만
+  // 확인하고 클릭 동작은 검증하지 않는다(#387 스코프 밖의 기존 커버리지 공백, 별도 이슈감).
 });

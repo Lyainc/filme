@@ -4,8 +4,8 @@
  * - undo/redo 배선: 초기 disabled → 편집 settle 후 '실행 취소'가 폼을 되돌린다.
  * - 항목목록 버튼이 #360의 임시 헤더 버튼을 대체 — 헤더가 아니라 툴바에서 드로어를 연다.
  * - 숨김 → 원형 '툴바 표시' 버튼으로 접힘 → 재표시.
- * - 기어 → 배치 서브메뉴(툴바 부착) → 프리셋 탭이 방향을 바꾸고 filme:toolbar:v1로 영속,
- *   재마운트 시 복원(새로고침 복원 완료 조건).
+ * - 배치설정(#387에서 헤더 편집 메뉴로 이전) → 라디오 프리셋 탭이 방향을 바꾸고
+ *   filme:toolbar:v1로 영속, 재마운트 시 복원(새로고침 복원 완료 조건).
  */
 import { describe, expect, test, afterEach, beforeEach, jest } from 'bun:test';
 import { render, screen, cleanup, act } from '@testing-library/react';
@@ -133,15 +133,14 @@ describe('플로팅 툴바 (#356)', () => {
     expect(parseFloat(m![2])).toBeLessThanOrEqual(window.innerHeight - 8);
   });
 
-  test('기어 메뉴 프리셋이 방향을 바꾸고 별도 키로 영속, 재마운트에 복원된다', async () => {
+  test('배치 라디오(#387, 헤더 편집 메뉴로 이전)가 방향을 바꾸고 별도 키로 영속, 재마운트에 복원된다', async () => {
     const user = userSetup();
     const { unmount } = render(<Harness />);
     const toolbar = await seedPoster(user);
     expect(toolbar.getAttribute('aria-orientation')).toBe('vertical'); // 기본 세로·고정
 
-    await user.click(screen.getByRole('button', { name: '툴바 배치 설정' }));
-    const menu = screen.getByRole('menu', { name: '툴바 배치' });
-    expect(toolbar.contains(menu)).toBe(true); // 서브메뉴는 툴바 자신에 부착(바텀시트 아님)
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    expect(screen.getByRole('radiogroup', { name: '툴바 배치' })).toBeTruthy();
 
     await user.click(screen.getByRole('menuitemradio', { name: '가로형 · 고정식' }));
     expect(toolbar.getAttribute('aria-orientation')).toBe('horizontal');

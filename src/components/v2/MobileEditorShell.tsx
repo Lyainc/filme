@@ -4,7 +4,16 @@ import { AppFooter } from './AppFooter';
 import { DesignRail } from './DesignRail';
 import { OcrUploadCard } from './OcrUploadCard';
 import { OcrUndoBanner } from './OcrUndoBanner';
-import { FloatingToolbar } from './FloatingToolbar';
+import {
+  FloatingToolbar,
+  TOOLBAR_MODES,
+  TB_STORAGE_KEY,
+  TB_EDGE,
+  loadPrefs as loadTbPrefs,
+  type TbPrefs,
+  type TbOrient,
+  type TbPlace,
+} from './FloatingToolbar';
 import { Wordmark } from './Wordmark';
 import type { ViewMode } from './viewMode';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
@@ -37,23 +46,18 @@ const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ss
 // 표시 항목 일괄 스위치의 도메인 필드 집합(#261) — ALL_FIELDS_ON 키가 곧 전체 티켓 필드.
 const ALL_FIELDS = Object.keys(ALL_FIELDS_ON) as TicketField[];
 
-// 잉크 원탭 토글(#262, #315에서 DesignRail 레일 → 헤더 서브메뉴로 이전). 값은 ColorPicker의
-// White/Black 프리셋과 동일한 hex라야 두 UI가 안 어긋난다.
-const LIGHT_INK = '#FFFFFF';
-const DARK_INK = '#000000';
-
 // 서브메뉴 행 리딩 아이콘(#374) — 시안 Siyan-C-v8 L296-322와 동일한 18px/stroke 1.7 계열.
 // 멀티 서브패스도 단일 d 문자열로 합쳐 MenuRow가 <path> 하나로 렌더한다.
 const MENU_ICONS = {
   moon: 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
   list: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
   eye: 'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',
-  ink: 'M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z',
   upload: 'M12 16V4M8 8l4-4 4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2',
   crop: 'M6 2v14a2 2 0 0 0 2 2h14M18 22V8a2 2 0 0 0-2-2H2',
   save: 'M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z M17 21v-8H7v8 M7 3v5h8',
   trash:
     'M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6',
+  gear: 'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
 };
 
 // 헤더 서브메뉴 공용 행(#374, 시안 Siyan-C-v8 설정 시트의 행 문법 이식) — 리딩 아이콘 +
@@ -176,8 +180,33 @@ export function MobileEditorShell({
   const [ghostMode, setGhostMode] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  // 헤더 서브메뉴(#315) — 다크모드·전체표시·빈 항목·잉크 토글 + 포스터 교체/재크롭 액션을 호스팅.
+  // 헤더 서브메뉴(#315) — 다크모드·전체표시·빈 항목 토글 + 포스터 교체/재크롭 액션을 호스팅.
+  // 배치설정(#387에서 플로팅 툴바 gear로부터 이전)도 이 메뉴가 호스팅한다.
   const [menuOpen, setMenuOpen] = useState(false);
+  // 플로팅 툴바 배치 상태(#387) — 이전엔 FloatingToolbar 로컬 state였으나, 배치설정 UI를
+  // 이 헤더 메뉴로 옮기며 부모가 소유하는 controlled 값으로 승격(localStorage 영속도 여기로).
+  const [tbPrefs, setTbPrefs] = useState<TbPrefs>(loadTbPrefs);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try {
+        window.localStorage.setItem(TB_STORAGE_KEY, JSON.stringify(tbPrefs));
+      } catch {
+        // 영속 실패(쿼터·프라이빗 모드)는 무시 — best-effort.
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [tbPrefs]);
+  const applyToolbarMode = (o: TbOrient, p: TbPlace) => {
+    // 모드 전환은 프리셋 기본 위치로 리셋(x/y null) — 방향이 바뀌면 이전 좌표는 클램프 밖일 수 있다.
+    setTbPrefs((prev) => ({ ...prev, orient: o, place: p, x: null, y: null }));
+  };
+  const snapToolbarTo = (side: 'left' | 'right') => {
+    const rect = toolbarRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const x = side === 'left' ? TB_EDGE : window.innerWidth - rect.width - TB_EDGE;
+    setTbPrefs((prev) => ({ ...prev, x, y: rect.top }));
+  };
   // 초기화 2탭 arm(#374, 시안 clearArm) — window.confirm 대체. 1탭에 arm(라벨이 확인 문구로
   // 바뀌고 3.2초 뒤 자동 해제), arm 상태에서 한 번 더 탭해야 실행. 메뉴가 닫히면 함께 해제.
   const [clearArmed, setClearArmed] = useState(false);
@@ -321,12 +350,6 @@ export function MobileEditorShell({
       setPosterPendingNewFile(false);
     }
   }
-
-  // 잉크 원탭 토글(#262, #315에서 헤더 서브메뉴로 이전) — 라이트↔다크. 색이 고정된 35mm 무드는
-  // 컬러 패널과 동일하게 disabled.
-  const isLightInk = (photo.state.components.themeColor || '').toLowerCase() === LIGHT_INK.toLowerCase();
-  const inkDisabled = photo.state.components.layout === '35mm';
-  const toggleInk = () => photo.updateComponents({ themeColor: isLightInk ? DARK_INK : LIGHT_INK });
 
   const doneEnabledStyle = canExport
     ? { background: 'linear-gradient(135deg, var(--accent-hover), var(--accent))', color: 'var(--accent-ink)' }
@@ -482,14 +505,81 @@ export function MobileEditorShell({
                   />
                 </>
               )}
-              <MenuRow
-                iconPath={MENU_ICONS.ink}
-                label="잉크"
-                ariaLabel={`잉크 색상 전환, 현재 ${isLightInk ? '라이트' : '다크'}`}
-                checked={!isLightInk}
-                disabled={inkDisabled}
-                onClick={toggleInk}
-              />
+              {/* 배치설정(#387, 플로팅 툴바 gear에서 이전) — 방향(가로/세로) × 배치(고정/이동)
+                  라디오 4종 + 이동식일 때 좌/우 가장자리 스냅(WCAG 2.2 SC 2.5.7 대체 경로).
+                  잉크 토글은 컬러 패널(White/Black 프리셋)과 중복이라 이 자리에서 삭제. */}
+              <div className="mt-2 border-t border-[var(--glass-border)] pt-2">
+                <div className="flex items-center gap-2.5 px-2.5 pb-1 text-[14px] font-medium text-fg">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                    className="shrink-0 text-fg-muted"
+                  >
+                    <path d={MENU_ICONS.gear} />
+                  </svg>
+                  <span>배치</span>
+                </div>
+                <div role="radiogroup" aria-label="툴바 배치">
+                  {TOOLBAR_MODES.map((m) => {
+                    const on = tbPrefs.orient === m.orient && tbPrefs.place === m.place;
+                    return (
+                      <button
+                        key={m.label}
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked={on}
+                        onClick={() => applyToolbarMode(m.orient, m.place)}
+                        className={`flex h-11 w-full items-center gap-2.5 rounded-[9px] px-2.5 text-[12px] font-semibold ${
+                          on ? 'bg-accent-soft text-accent' : 'text-fg hover:bg-white/5'
+                        }`}
+                      >
+                        <span
+                          aria-hidden="true"
+                          className={`h-[7px] w-[7px] shrink-0 rounded-full ${on ? 'bg-accent' : 'bg-border-strong'}`}
+                        />
+                        {m.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {tbPrefs.place === 'movable' && (
+                  <div className="mt-1 flex gap-1 border-t border-[var(--glass-border)] pt-1.5">
+                    <button
+                      type="button"
+                      onClick={() => snapToolbarTo('left')}
+                      aria-label="왼쪽 가장자리로 이동"
+                      title="왼쪽 가장자리로 이동"
+                      className="flex h-11 flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:bg-white/5 hover:text-fg"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M3 19V5" />
+                        <path d="m13 6-6 6 6 6" />
+                        <path d="M7 12h14" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => snapToolbarTo('right')}
+                      aria-label="오른쪽 가장자리로 이동"
+                      title="오른쪽 가장자리로 이동"
+                      className="flex h-11 flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:bg-white/5 hover:text-fg"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M21 5v14" />
+                        <path d="m11 18 6-6-6-6" />
+                        <path d="M17 12H3" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </div>
 
               {croppedImageUrl && (
                 <div className="mt-2 border-t border-[var(--glass-border)] pt-2">
@@ -755,11 +845,15 @@ export function MobileEditorShell({
         </button>
       )}
 
-      {/* 플로팅 툴바(#356) — undo/redo·항목목록·최대화·배치·숨김. 프리뷰가 있어야 의미가 있고,
-          max는 티켓만 남기는 풀스크린이라 숨긴다(탈출은 티켓 탭). 필드 편집·드로어 중에도 셸이
-          계속 렌더한다 — 겹침 규칙은 z-index로(툴바 45: 편집 백드롭 40 위, 드로어 50 아래). */}
+      {/* 플로팅 툴바(#356) — undo/redo·항목목록·최대화·숨김(배치설정은 #387에서 헤더 메뉴로 이전).
+          프리뷰가 있어야 의미가 있고, max는 티켓만 남기는 풀스크린이라 숨긴다(탈출은 티켓 탭).
+          필드 편집·드로어 중에도 셸이 계속 렌더한다 — 겹침 규칙은 z-index로(툴바 45: 편집 백드롭 40 위,
+          드로어 50 아래). */}
       {croppedImageUrl && !isMax && (
         <FloatingToolbar
+          ref={toolbarRef}
+          prefs={tbPrefs}
+          onPrefsChange={setTbPrefs}
           canUndo={history.canUndo}
           canRedo={history.canRedo}
           onUndo={() => {

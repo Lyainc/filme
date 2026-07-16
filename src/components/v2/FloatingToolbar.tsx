@@ -1,29 +1,31 @@
-import { useEffect, useRef, useState, type PointerEvent } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, type PointerEvent } from 'react';
 
 /**
- * 플로팅 툴바(#356, v8 시안 §4) — undo · redo | 항목목록 · 최대화 | 기어(배치) · 숨김.
+ * 플로팅 툴바(#356, v8 시안 §4) — undo · redo | 항목목록 · 최대화 | 숨김.
+ * 배치설정(방향/위치)은 #387에서 햄버거 메뉴로 이전 — prefs는 부모(MobileEditorShell)가
+ * 소유하는 controlled 값이라 이 컴포넌트는 렌더·드래그·리클램프만 담당한다.
  *
  * - 버튼 44px(시안 31px은 앱 현행 44~48px 대비 회귀 — 이슈 표), dark-glass 배경
  *   (--surface-translucent 재사용: README §Design Tokens, 시안 불투명 코드는 모순으로 기각).
  * - 방향(가로/세로) × 배치(고정/이동) 두 축. 기본 세로·고정·좌측 헤더 직하(#364).
- * - 이동식은 44px 그립 드래그(시안 12px은 WCAG 2.2 SC 2.5.8 미달) + 기어 메뉴의
+ * - 이동식은 44px 그립 드래그(시안 12px은 WCAG 2.2 SC 2.5.8 미달) + 햄버거 메뉴의
  *   좌/우 가장자리 스냅(드래그 없는 단일 포인터 대체 경로, WCAG 2.2 SC 2.5.7).
  * - 숨김 → 툴바 top-left 원점에 앵커된 원형 버튼으로 접힘(중심 앵커는 탭 위치로 튄다 — 이슈).
  * - 위치·방향·숨김은 filme:toolbar:v1로 자동 영속(문서 키 filme:phototicket:v1과 분리, #310과
- *   무충돌 — 이건 UI 취향이라 phototicket:theme 선례를 따른다).
+ *   무충돌 — 이건 UI 취향이라 phototicket:theme 선례를 따른다). 영속 저장은 부모가 담당(#387).
  * - 겹침 규칙(이슈 "설계가 필요한 것"): 티켓과는 반투명 글래스로 위에 뜨는 걸 수용(옵션 b,
  *   기어/드래그/숨김으로 회피 가능). z-45 — 인플레이스 편집 백드롭(z-40) 위(편집 중에도 동작),
  *   FieldDrawer(z-50) 아래(드로어는 모달이라 위가 맞다). max 모드에선 셸이 툴바를 렌더하지
  *   않는다(탈출은 기존 티켓 탭).
  */
 
-type TbOrient = 'v' | 'h';
-type TbPlace = 'fixed' | 'movable';
+export type TbOrient = 'v' | 'h';
+export type TbPlace = 'fixed' | 'movable';
 
-const TB_STORAGE_KEY = 'filme:toolbar:v1';
-const EDGE = 8; // 이동식 클램프·스냅 여백
+export const TB_STORAGE_KEY = 'filme:toolbar:v1';
+export const TB_EDGE = 8; // 이동식 클램프·스냅 여백 — 배치 스냅(#387)도 부모가 이 값으로 계산한다.
 
-interface TbPrefs {
+export interface TbPrefs {
   orient: TbOrient;
   place: TbPlace;
   x: number | null;
@@ -31,9 +33,9 @@ interface TbPrefs {
   hidden: boolean;
 }
 
-const DEFAULT_PREFS: TbPrefs = { orient: 'v', place: 'fixed', x: null, y: null, hidden: false };
+export const DEFAULT_PREFS: TbPrefs = { orient: 'v', place: 'fixed', x: null, y: null, hidden: false };
 
-function loadPrefs(): TbPrefs {
+export function loadPrefs(): TbPrefs {
   if (typeof window === 'undefined') return DEFAULT_PREFS;
   try {
     const raw = window.localStorage.getItem(TB_STORAGE_KEY);
@@ -57,7 +59,8 @@ const ICON = {
   'aria-hidden': true,
 } as const;
 
-const MODES: { label: string; orient: TbOrient; place: TbPlace }[] = [
+// 배치 메뉴(#387에서 햄버거로 이전) 라디오 옵션 — MobileEditorShell이 렌더한다.
+export const TOOLBAR_MODES: { label: string; orient: TbOrient; place: TbPlace }[] = [
   { label: '세로형 · 고정식', orient: 'v', place: 'fixed' },
   { label: '세로형 · 이동식', orient: 'v', place: 'movable' },
   { label: '가로형 · 고정식', orient: 'h', place: 'fixed' },
@@ -65,6 +68,8 @@ const MODES: { label: string; orient: TbOrient; place: TbPlace }[] = [
 ];
 
 interface FloatingToolbarProps {
+  prefs: TbPrefs;
+  onPrefsChange: (updater: (prev: TbPrefs) => TbPrefs) => void;
   canUndo: boolean;
   canRedo: boolean;
   onUndo: () => void;
@@ -74,35 +79,16 @@ interface FloatingToolbarProps {
   onMaximize: () => void;
 }
 
-export function FloatingToolbar({
-  canUndo,
-  canRedo,
-  onUndo,
-  onRedo,
-  onFieldList,
-  onMaximize,
-}: FloatingToolbarProps) {
-  // 렌더는 저장값으로 시작해도 SSR 불일치가 없다 — 셸이 mounted 이후에만 이 컴포넌트를
-  // 렌더하므로(usePhototicket의 effect 복원과 달리) lazy 초기화로 충분하다.
-  const [prefs, setPrefs] = useState<TbPrefs>(loadPrefs);
+export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(function FloatingToolbar(
+  { prefs, onPrefsChange, canUndo, canRedo, onUndo, onRedo, onFieldList, onMaximize },
+  forwardedRef,
+) {
   const { orient, place, hidden } = prefs;
   const pos = prefs.x != null && prefs.y != null ? { x: prefs.x, y: prefs.y } : null;
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [menuSide, setMenuSide] = useState<'start' | 'end'>('start');
   const rootRef = useRef<HTMLDivElement>(null);
+  // 부모(MobileEditorShell)가 배치 스냅 계산(getBoundingClientRect)에 이 DOM을 참조한다(#387).
+  useImperativeHandle(forwardedRef, () => rootRef.current as HTMLDivElement);
   const dragRef = useRef<{ px: number; py: number; ox: number; oy: number } | null>(null);
-
-  // 자동 영속 — 드래그가 매 move마다 setPrefs하므로 300ms 디바운스로 localStorage 쓰기를 묶는다.
-  useEffect(() => {
-    const t = setTimeout(() => {
-      try {
-        window.localStorage.setItem(TB_STORAGE_KEY, JSON.stringify(prefs));
-      } catch {
-        // 영속 실패(쿼터·프라이빗 모드)는 무시 — best-effort.
-      }
-    }, 300);
-    return () => clearTimeout(t);
-  }, [prefs]);
 
   // 저장된 이동식 좌표는 뷰포트가 좁아지는 리사이즈·화면 회전에서 화면 밖으로 나갈 수 있고
   // (PR #361 리뷰 P2), 영속된 좌표라 저장 당시보다 좁은 뷰포트로 다시 열 수도 있다(#190)
@@ -113,53 +99,23 @@ export function FloatingToolbar({
       const el = rootRef.current;
       const w = el?.offsetWidth ?? 52;
       const h = el?.offsetHeight ?? 52;
-      const x = Math.max(EDGE, Math.min(window.innerWidth - w - EDGE, pos.x));
-      const y = Math.max(EDGE, Math.min(window.innerHeight - h - EDGE, pos.y));
-      if (x !== pos.x || y !== pos.y) setPrefs((prev) => ({ ...prev, x, y }));
+      const x = Math.max(TB_EDGE, Math.min(window.innerWidth - w - TB_EDGE, pos.x));
+      const y = Math.max(TB_EDGE, Math.min(window.innerHeight - h - TB_EDGE, pos.y));
+      if (x !== pos.x || y !== pos.y) onPrefsChange((prev) => ({ ...prev, x, y }));
     };
     reclamp();
     window.addEventListener('resize', reclamp);
     return () => window.removeEventListener('resize', reclamp);
   }, [place, pos?.x, pos?.y]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 배치 서브메뉴는 바깥 탭 외에 Escape로도 닫힌다(PR #361 리뷰 P2).
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMenuOpen(false);
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [menuOpen]);
-
   const clampPos = (x: number, y: number) => {
     const el = rootRef.current;
     const w = el?.offsetWidth ?? 52;
     const h = el?.offsetHeight ?? 52;
     return {
-      x: Math.max(EDGE, Math.min(window.innerWidth - w - EDGE, x)),
-      y: Math.max(EDGE, Math.min(window.innerHeight - h - EDGE, y)),
+      x: Math.max(TB_EDGE, Math.min(window.innerWidth - w - TB_EDGE, x)),
+      y: Math.max(TB_EDGE, Math.min(window.innerHeight - h - TB_EDGE, y)),
     };
-  };
-
-  const applyMode = (o: TbOrient, p: TbPlace) => {
-    // 모드 전환은 프리셋 기본 위치로 리셋(x/y null) — 방향이 바뀌면 이전 좌표는 클램프 밖일 수 있다.
-    setPrefs((prev) => ({ ...prev, orient: o, place: p, x: null, y: null }));
-    setMenuOpen(false);
-  };
-
-  const snapTo = (side: 'left' | 'right') => {
-    const rect = rootRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const x = side === 'left' ? EDGE : window.innerWidth - rect.width - EDGE;
-    setPrefs((prev) => ({ ...prev, x, y: rect.top }));
-    setMenuOpen(false);
-  };
-
-  const toggleMenu = () => {
-    const rect = rootRef.current?.getBoundingClientRect();
-    if (rect) setMenuSide(rect.left + rect.width / 2 > window.innerWidth / 2 ? 'end' : 'start');
-    setMenuOpen((v) => !v);
   };
 
   const onGripDown = (e: PointerEvent<HTMLElement>) => {
@@ -172,23 +128,23 @@ export function FloatingToolbar({
     const d = dragRef.current;
     if (!d) return;
     const c = clampPos(d.ox + (e.clientX - d.px), d.oy + (e.clientY - d.py));
-    setPrefs((prev) => ({ ...prev, x: c.x, y: c.y }));
+    onPrefsChange((prev) => ({ ...prev, x: c.x, y: c.y }));
   };
   const onGripUp = () => {
     dragRef.current = null;
   };
 
   // 위치 스타일 — 이동식은 transform(translate)만 움직인다(left/top 애니메이트 금지 — 이슈 표).
-  // 고정식 프리셋은 CSS 값이라 리사이즈에 자동 대응. 세로·고정 기본은 헤더(56px) 바로 아래 —
-  // 이전 30vh는 화면 세로 중간대라 fit 스테이지(#370)로 커진 티켓의 중심부와 겹쳤다(#364,
-  // v8 "raised well above center"). safe-area 기준 고정값이라 Safari 동적 툴바(vh 변동)와 무관.
+  // 고정식 프리셋은 CSS 값이라 리사이즈에 자동 대응. 세로·고정 기본은 헤더 아래 60px 선(#387,
+  // 이전 70px에서 상향 — #364 30vh→70px 상향 이력의 연장, fit 스테이지로 커진 티켓 상단부와의
+  // 여백을 더 확보). safe-area 기준 고정값이라 Safari 동적 툴바(vh 변동)와 무관.
   const posStyle: React.CSSProperties =
     place === 'movable'
       ? pos
         ? { left: 0, top: 0, transform: `translate(${pos.x}px, ${pos.y}px)` }
         : { right: 14, top: 'calc(env(safe-area-inset-top, 0px) + 126px)' } // 이동식 기본: 우상단(시안)
       : orient === 'v'
-        ? { left: 14, top: 'calc(env(safe-area-inset-top, 0px) + 70px)' }
+        ? { left: 14, top: 'calc(env(safe-area-inset-top, 0px) + 60px)' }
         : {
             left: '50%',
             transform: 'translateX(-50%)',
@@ -206,7 +162,7 @@ export function FloatingToolbar({
     return (
       <button
         type="button"
-        onClick={() => setPrefs((prev) => ({ ...prev, hidden: false }))}
+        onClick={() => onPrefsChange((prev) => ({ ...prev, hidden: false }))}
         aria-label="툴바 표시"
         className="fixed z-[45] flex h-11 w-11 items-center justify-center rounded-full border border-line text-fg-muted transition-colors hover:text-fg"
         style={{ ...posStyle, ...glass }}
@@ -295,23 +251,7 @@ export function FloatingToolbar({
 
       <button
         type="button"
-        onClick={toggleMenu}
-        aria-haspopup="menu"
-        aria-expanded={menuOpen}
-        aria-label="툴바 배치 설정"
-        className={btn}
-      >
-        <svg {...ICON} strokeWidth={1.9} width={17} height={17}>
-          <circle cx="12" cy="12" r="3" />
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-        </svg>
-      </button>
-      <button
-        type="button"
-        onClick={() => {
-          setMenuOpen(false);
-          setPrefs((prev) => ({ ...prev, hidden: true }));
-        }}
+        onClick={() => onPrefsChange((prev) => ({ ...prev, hidden: true }))}
         aria-label="툴바 숨기기"
         className={btn}
       >
@@ -322,83 +262,6 @@ export function FloatingToolbar({
           <line x1="2" x2="22" y1="2" y2="22" />
         </svg>
       </button>
-
-      {menuOpen && (
-        <>
-          {/* 밖 탭으로 닫기 — 같은 스택 컨텍스트 안에서 메뉴가 뒤에 오므로 메뉴 위 조작은 산다. */}
-          <div className="fixed inset-0" onClick={() => setMenuOpen(false)} aria-hidden="true" />
-          {/* 배치 서브메뉴 — 툴바 자신에 부착(바텀시트 아님, 이슈 결정). 세로형은 옆, 가로형은 아래로
-              열고, 툴바가 화면 오른쪽 절반이면 반대쪽 정렬로 화면 밖 넘침을 피한다. */}
-          <div
-            role="menu"
-            aria-label="툴바 배치"
-            className="absolute w-48 rounded-card border border-line bg-surface-elevated p-2 shadow-card"
-            style={
-              horiz
-                ? { top: 'calc(100% + 8px)', ...(menuSide === 'end' ? { right: 0 } : { left: 0 }) }
-                : menuSide === 'end'
-                  ? { right: 'calc(100% + 8px)', top: 0 }
-                  : { left: 'calc(100% + 8px)', top: 0 }
-            }
-          >
-            {MODES.map((m) => {
-              const on = orient === m.orient && place === m.place;
-              return (
-                <button
-                  key={m.label}
-                  type="button"
-                  role="menuitemradio"
-                  aria-checked={on}
-                  onClick={() => applyMode(m.orient, m.place)}
-                  className={`flex h-11 w-full items-center gap-2.5 rounded-[9px] px-2.5 text-[12px] font-semibold ${
-                    on ? 'bg-accent-soft text-accent' : 'text-fg'
-                  }`}
-                >
-                  <span
-                    aria-hidden="true"
-                    className={`h-[7px] w-[7px] shrink-0 rounded-full ${on ? 'bg-accent' : 'bg-border-strong'}`}
-                  />
-                  {m.label}
-                </button>
-              );
-            })}
-            {place === 'movable' && (
-              <div className="mt-1 flex gap-1 border-t border-line pt-1.5">
-                {/* 드래그 없는 위치 조정 대체 경로(WCAG 2.2 SC 2.5.7) — 좌/우 가장자리 스냅.
-                    텍스트 버튼 대신 아이콘화(#364) — 접근명·역할은 유지해 2.5.7을 계속 만족한다. */}
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => snapTo('left')}
-                  aria-label="왼쪽 가장자리로 이동"
-                  title="왼쪽 가장자리로 이동"
-                  className="flex h-11 flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:text-fg"
-                >
-                  <svg {...ICON}>
-                    <path d="M3 19V5" />
-                    <path d="m13 6-6 6 6 6" />
-                    <path d="M7 12h14" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => snapTo('right')}
-                  aria-label="오른쪽 가장자리로 이동"
-                  title="오른쪽 가장자리로 이동"
-                  className="flex h-11 flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:text-fg"
-                >
-                  <svg {...ICON}>
-                    <path d="M21 5v14" />
-                    <path d="m11 18 6-6-6-6" />
-                    <path d="M17 12H3" />
-                  </svg>
-                </button>
-              </div>
-            )}
-          </div>
-        </>
-      )}
     </div>
   );
-}
+});
