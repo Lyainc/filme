@@ -151,14 +151,18 @@ export function stampHeightDelta(aspect: number | null): number {
   return Math.min(STAMP_HEIGHT_DELTA_CAP, Math.max(-STAMP_HEIGHT_DELTA_CAP, raw));
 }
 
-/** 이미지 자연 종횡비(width/height) — 로드 전/실패/빈 src는 null(#392, 스탬프 높이 보정 입력). */
-function useNaturalAspect(src: string): number | null {
+/**
+ * 이미지 자연 종횡비(width/height) — 로드 전/실패/빈 src는 null(#392, 스탬프 높이 보정 입력).
+ * `active=false`면 로드 자체를 생략한다(스탬프가 화면에 전혀 안 그려지는 상태에서의 낭비 로드
+ * 방지, #190 nit).
+ */
+function useNaturalAspect(src: string, active: boolean = true): number | null {
   const [aspect, setAspect] = useState<number | null>(null);
   useEffect(() => {
-    if (!src) {
-      setAspect(null);
-      return;
-    }
+    // src/active가 바뀔 때마다 이전 값부터 폐기 — 새 로드가 끝나기 전까지 stale aspect로
+    // 렌더되는 걸 막는다(로고 교체 시 이전 높이가 잠깐 유지되던 #190 nit).
+    setAspect(null);
+    if (!active || !src) return;
     let cancelled = false;
     const img = new Image();
     img.onload = () => {
@@ -170,7 +174,7 @@ function useNaturalAspect(src: string): number | null {
     return () => {
       cancelled = true;
     };
-  }, [src]);
+  }, [src, active]);
   return aspect;
 }
 
@@ -457,10 +461,12 @@ export function ChainStamp({
   ghost,
 }: ChainStampProps) {
   // Rules of Hooks — stampWillRender의 조기 return보다 앞에서 무조건 호출(#392).
-  const aspect = useNaturalAspect(chain);
+  // 결과(willRender)를 그대로 로드 여부에도 재사용 — 완전 비노출(null 렌더)이면 로드 자체를 생략한다(#190 nit).
+  const willRender = stampWillRender(visible, chain, label, ghost);
+  const aspect = useNaturalAspect(chain, willRender);
   // null 판정을 stampWillRender로 일원화(무드 구분선 게이팅과 동일 조건). 여기를 통과하면
   // 이미지·라벨·placeholder(ghost!==false) 중 하나는 반드시 렌더된다.
-  if (!stampWillRender(visible, chain, label, ghost)) return null;
+  if (!willRender) return null;
   // delta도 size로 스케일 — 아니면 size가 작은 무드(Stub·Editorial)에서 ±16px가 base height 대비
   // 훨씬 큰 상대 변화를 만들어 이 PR이 피하려는 회귀 카테고리를 좁은 size에서 재현한다(claude-review
   // PR #408 P1, 2차 라운드).
@@ -518,10 +524,12 @@ export function FormatStamp({
   ghost,
 }: FormatStampProps) {
   // Rules of Hooks — stampWillRender의 조기 return보다 앞에서 무조건 호출(#392).
-  const aspect = useNaturalAspect(format);
+  // 결과(willRender)를 그대로 로드 여부에도 재사용 — 완전 비노출(null 렌더)이면 로드 자체를 생략한다(#190 nit).
+  const willRender = stampWillRender(visible, format, label, ghost);
+  const aspect = useNaturalAspect(format, willRender);
   // null 판정을 stampWillRender로 일원화(무드 구분선 게이팅과 동일 조건). 통과하면
   // 이미지·라벨·placeholder(ghost!==false) 중 하나는 반드시 렌더된다.
-  if (!stampWillRender(visible, format, label, ghost)) return null;
+  if (!willRender) return null;
   // delta도 size로 스케일 — ChainStamp와 동일 이유(claude-review PR #408 P1, 2차 라운드).
   const h = (64 + stampHeightDelta(aspect)) * size;
 
