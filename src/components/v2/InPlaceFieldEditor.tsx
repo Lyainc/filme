@@ -17,6 +17,7 @@ import {
   STAMP_KEYS,
   STAMP_LABELS,
   STAMP_LABEL_MAX,
+  QUOTE_MAX_LENGTH,
   isStampTarget,
   type SheetTarget,
 } from '@/constants/fields';
@@ -329,7 +330,15 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
             }
           }}
           aria-label={label}
-          maxLength={isStamp ? STAMP_LABEL_MAX : field === 'signature' ? 20 : undefined}
+          maxLength={
+            isStamp
+              ? STAMP_LABEL_MAX
+              : field === 'signature'
+                ? 20
+                : field === 'quote'
+                  ? QUOTE_MAX_LENGTH
+                  : undefined
+          }
           style={{
             position: 'absolute',
             left: rect.left - 8,

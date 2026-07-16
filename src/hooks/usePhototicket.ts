@@ -18,6 +18,7 @@ const DEFAULT_VISIBILITY_ON_UPLOAD: Record<TicketField, boolean> = {
   reissue: false,
   bookingNo: false,
   signature: false,
+  quote: false,
 };
 
 // 영속화 키 — 스키마가 깨지게 바뀌면 버전을 올려 옛 데이터를 자연히 무시한다(복원 시 키 불일치 → null).

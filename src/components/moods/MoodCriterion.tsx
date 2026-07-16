@@ -8,11 +8,13 @@ import {
   FONT_DISPLAY,
   FONT_KR,
   FONT_MONO,
+  FONT_QUOTE_KR,
   FONT_SANS,
   FormatStamp,
   MoodProps,
   MoodWordmark,
   Poster,
+  containsHangul,
   fieldPieces,
   fitFontSizeToWidth,
   gate,
@@ -31,6 +33,22 @@ import {
 // screeningRows·filmRows가 한 소스를 공유한다 — 값 스타일이 어긋나면 데스크톱 바이트가 깨지므로 단일화.
 const metaLabel: CSSProperties = { fontWeight: 700, fontSize: 20, fontFamily: FONT_MONO, letterSpacing: 2, textTransform: 'uppercase', opacity: 0.74 };
 const metaValue: CSSProperties = { fontWeight: 700, fontSize: 30, fontFamily: FONT_SANS, letterSpacing: -0.2, opacity: 0.95, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' };
+
+// 한줄평 폴백 2단계(#391) — 유저 입력이 없으면 평점(0.5 단위)별 프리셋, 평점도 없으면 기본 quote.
+// 전문가 패널 결론: 프리셋·기본값은 항상 영문(무드 보이스 통일, 콘텐츠 비용은 Criterion 1세트로 절감).
+const RATING_QUOTES: Record<string, string> = {
+  '0.5': 'best forgotten by morning',
+  '1': 'a rare miss',
+  '1.5': 'a rough sit',
+  '2': 'nothing memorable here',
+  '2.5': 'fine, but forgettable',
+  '3': 'a decent way to spend two hours',
+  '3.5': 'better than expected',
+  '4': 'worth the ticket, worth the memory',
+  '4.5': 'close to unforgettable',
+  '5': 'a film that stays with you long after the credits roll',
+};
+const DEFAULT_QUOTE = 'every ticket, a small piece of a bigger story';
 
 /**
  * v5 — 마스터 시안 Ticket Design Master.dc.html v2(2026-07-08 resync) 재동기화(에픽 #281).
@@ -74,6 +92,13 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
   const reissueVal     = gate(fv?.reissue, reissueClean);
   const signatureVal   = gate(fv?.signature, d.signature);
   const ratingVisible  = (fv?.rating ?? true) && d.rating > 0;
+
+  // 한줄평(#391) — 유저 입력 → 평점 구간(0.5 단위) 프리셋 → 기본 quote 순 폴백. 유저 입력에
+  // 한글이 섞이면 FONT_QUOTE_KR(손글씨)로, 그 외(프리셋·기본값은 항상 영문)는 FONT_DISPLAY 그대로.
+  const userQuoteVal   = gate(fv?.quote, d.quote);
+  const ratingQuoteKey = d.rating > 0 ? String(Math.round(d.rating * 2) / 2) : '';
+  const quoteText      = userQuoteVal || RATING_QUOTES[ratingQuoteKey] || DEFAULT_QUOTE;
+  const quoteIsKr      = containsHangul(quoteText);
 
   // 빈 항목 미리보기(#216) — 아톰 슬롯·셀 행 공통 판정. 노출 off도 dim placeholder로 남는다(#369).
   const gTitle     = showFieldGhost(fv?.title, d.title, ghost);
@@ -175,9 +200,24 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
         <div style={{ height: 1, background: ink, opacity: 0.6, marginBottom: 4 }} />
         <div style={{ height: 3, background: ink, opacity: 0.6, marginBottom: 22 }} />
 
-        <div style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 32, opacity: 0.8, marginBottom: 18, letterSpacing: 0.3 }}>
-          from a film diary
-        </div>
+        <FieldTap field="quote" onField={onField}>
+          <div
+            style={{
+              fontFamily: quoteIsKr ? FONT_QUOTE_KR : FONT_DISPLAY,
+              fontStyle: quoteIsKr ? 'normal' : 'italic',
+              fontWeight: 400,
+              fontSize: quoteIsKr ? 40 : 36,
+              opacity: 0.8,
+              marginBottom: 18,
+              letterSpacing: quoteIsKr ? 0 : 0.3,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {quoteText}
+          </div>
+        </FieldTap>
 
         {titleVal ? (
           <FieldTap field="title" onField={onField}>

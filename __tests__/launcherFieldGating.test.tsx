@@ -70,10 +70,11 @@ describe('launcherGroupsFor 게이팅 로직 (#287)', () => {
     expect(launcherFields('35mm-landscape')).not.toContain('bookingNo'); // #281 마스터 재동기화 — 바코드 없음
   });
 
-  test('제외 필드가 없는 무드의 런처는 LAUNCHER_GROUPS 그대로(무손상)', () => {
-    for (const layout of ['editorial', 'stub'] as LayoutId[]) {
-      expect(launcherGroupsFor(layout)).toEqual(LAUNCHER_GROUPS);
+  test('quote(한줄평)는 Criterion 전용 — 나머지 5무드는 런처에서 제외한다(#391)', () => {
+    for (const layout of ['minimal', '35mm', 'editorial', 'stub', '35mm-landscape'] as LayoutId[]) {
+      expect(launcherFields(layout)).not.toContain('quote');
     }
+    expect(launcherFields('criterion')).toContain('quote');
   });
 
   test('제외해도 빈 그룹만 사라지고 남는 필드는 순서 보존', () => {

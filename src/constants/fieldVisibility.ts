@@ -16,6 +16,7 @@ export const ALL_FIELDS_ON: Record<TicketField, boolean> = {
   reissue: true,
   bookingNo: true,
   signature: true,
+  quote: true,
 };
 
 /** 모든 티켓 필드를 숨기는 값 — 전체 해제의 도메인 소스(ALL_FIELDS_ON과 대칭). */
@@ -34,6 +35,7 @@ export const ALL_FIELDS_OFF: Record<TicketField, boolean> = {
   reissue: false,
   bookingNo: false,
   signature: false,
+  quote: false,
 };
 
 /**

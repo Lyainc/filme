@@ -20,6 +20,7 @@ export const FIELD_LABELS: Record<TicketField, string> = {
   reissue: '재개봉',
   bookingNo: '예매 번호',
   signature: '서명',
+  quote: '한줄평',
 };
 
 /** 필드별 편집 시트 타입(#215 PART A). reissue/chain/format은 PART A 런처 행이 아니라 여기 없음. */
@@ -36,6 +37,7 @@ export const FIELD_SHEET_TYPE: Partial<Record<TicketField, FieldSheetType>> = {
   runtime: 'text',
   bookingNo: 'text',
   signature: 'text',
+  quote: 'text',
   watchDate: 'date',
   releaseDate: 'date',
   rating: 'rating',
@@ -53,6 +55,7 @@ export const FIELD_INFO_KEY: Partial<Record<TicketField, keyof MovieInfo>> = {
   runtime: 'runtime',
   bookingNo: 'bookingNumber',
   signature: 'signature',
+  quote: 'quote',
   watchDate: 'watchDate',
   releaseDate: 'releaseDate',
 };
@@ -62,7 +65,7 @@ export const FIELD_INFO_KEY: Partial<Record<TicketField, keyof MovieInfo>> = {
  * chain/format 로고는 PART B에서 다룬다(여기 없음).
  */
 export const LAUNCHER_GROUPS: { title: string; fields: TicketField[] }[] = [
-  { title: 'Film', fields: ['title', 'titleOg', 'releaseDate', 'actors', 'rating'] },
+  { title: 'Film', fields: ['title', 'titleOg', 'releaseDate', 'actors', 'rating', 'quote'] },
   {
     title: 'Optional',
     fields: ['watchDate', 'watchTime', 'theater', 'screen', 'seat', 'runtime', 'bookingNo', 'signature'],
@@ -76,13 +79,15 @@ export const LAUNCHER_GROUPS: { title: string; fields: TicketField[] }[] = [
  * 모바일은 온-티켓 FieldTap이라 렌더 안 하는 필드는 탭 타깃 자체가 없어 구조상 이미 layout-aware — 여긴 데스크톱용.
  */
 export const MOOD_EXCLUDED_FIELDS: Partial<Record<LayoutId, readonly TicketField[]>> = {
-  minimal: ['bookingNo'], // #286: 마스터 Minimal은 푸터 바코드 없음 → bookingNo 미렌더.
+  minimal: ['bookingNo', 'quote'], // #286: 마스터 Minimal은 푸터 바코드 없음 → bookingNo 미렌더.
   // Criterion(#281 재동기화 완료): 마스터 v2 하단 필름 셀은 RATED·RUNTIME·RELEASED·RE-RELEASED라
   // RUNTIME 셀을 렌더하므로 runtime은 제외 아님. watchTime은 마스터에 독립 TIME 셀이 없어(WATCHED 값에만
-  // 병합) 편집 타깃이 없으므로 제외 유지.
+  // 병합) 편집 타깃이 없으므로 제외 유지. quote(한줄평, #391)는 Criterion 전용이라 여기만 제외 없음.
   criterion: ['watchTime'],
-  '35mm': ['bookingNo'], // #281: 마스터 35mm는 푸터 바코드 없음 → bookingNo 미렌더(MADE WITH FILME·서명 푸터는 유지).
-  '35mm-landscape': ['bookingNo'], // #281: 마스터 35mm Wide는 바코드 없음 → bookingNo 미렌더(collected by·ACCESSION 아카이브 카드는 유지).
+  '35mm': ['bookingNo', 'quote'], // #281: 마스터 35mm는 푸터 바코드 없음 → bookingNo 미렌더(MADE WITH FILME·서명 푸터는 유지).
+  editorial: ['quote'], // #391: 한줄평은 Criterion 전용 — 다른 무드는 렌더하지 않으므로 런처에서 제외.
+  stub: ['quote'], // #391: 위와 동일.
+  '35mm-landscape': ['bookingNo', 'quote'], // #281: 마스터 35mm Wide는 바코드 없음 → bookingNo 미렌더(collected by·ACCESSION 아카이브 카드는 유지).
 };
 
 /** 현재 layout에 적용되는 런처 그룹 — MOOD_EXCLUDED_FIELDS의 필드를 걸러내고, 비게 된 그룹은 제거. */
@@ -128,6 +133,13 @@ export const STAMP_LABELS: Record<StampTarget, string> = {
  * 두 입구 모두 여기서 막는다(PR #351 리뷰 P1).
  */
 export const STAMP_LABEL_MAX = 24;
+
+/**
+ * Criterion 한줄평(#391) 글자수 상한 — 타이틀 블록 가용폭(960 - left200 - right64 = 696px) 기준
+ * 역산. 한글 손글씨 폰트(나눔손글씨 펜체)가 라틴 세리프보다 글자당 advance가 넓어 더 보수적인
+ * 쪽(한글 기준)으로 맞춰, 영문 프리셋/기본 quote는 여유가 남더라도 한글 입력이 한 줄을 넘지 않게 한다.
+ */
+export const QUOTE_MAX_LENGTH = 26;
 
 /** 스탬프 → TicketComponents 키(이미지 URL · 텍스트 라벨 · 노출 토글). */
 export const STAMP_KEYS: Record<
