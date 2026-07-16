@@ -139,7 +139,9 @@ function RailExpandPanel({
         {/* v8 언박스(#357) — 패널의 배경·보더·라운드·그림자 전부 제거. 상세는 앰비언트 배경 위
             느슨한 컨트롤로 얹히고, 가독성은 앰비언트의 어두움 + 각 피커 자체 대비로 확보한다.
             과거 박스형 룩(rounded-card border bg-surface-elevated) 복원 금지 — 언박스가 최종. */}
-        <div id={PANEL_ID} role="region" aria-label={eyebrow} className="pt-3">
+        {/* pb: range thumb(globals.css, height 18px margin-top:-8px)이 트랙 아래로 8px
+            튀어나와 overflow-hidden 바닥에서 잘림(#385) — 하단 패딩으로 여유 확보. */}
+        <div id={PANEL_ID} role="region" aria-label={eyebrow} className="pt-3 pb-3">
           {/* 닫기(x) 버튼 제거(#322) — 레일 아이콘 재클릭으로 이미 토글 닫힘이라 기능 중복.
               패널 자체 헤더도 없음(#367에서 LayoutStrip "Mood" 헤더 제거 — rail 탭 라벨과 중복),
               접근성 이름은 region aria-label(eyebrow)이 유지. */}
