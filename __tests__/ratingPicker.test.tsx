@@ -77,4 +77,16 @@ describe('RatingPicker (#384)', () => {
     fireEvent.change(input, { target: { value: '10' } });
     expect(screen.getByText('5.0')).toBeTruthy();
   });
+
+  test('(e) 지우는 중엔 0을 커밋하지 않는다 — 값을 지운 채 블러해도 이전 값 유지(#190 nit)', () => {
+    render(<Harness />);
+    const input = screen.getByRole('spinbutton', { name: '평점 직접 입력 (0.1 단위)' });
+
+    fireEvent.change(input, { target: { value: '4' } });
+    expect(screen.getByText('4.0')).toBeTruthy();
+
+    fireEvent.change(input, { target: { value: '' } });
+    fireEvent.blur(input);
+    expect(screen.getByText('4.0')).toBeTruthy();
+  });
 });
