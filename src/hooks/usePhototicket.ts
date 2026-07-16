@@ -145,7 +145,17 @@ export function usePhototicket() {
   }, []);
 
   const updateMovieInfo = useCallback((info: Partial<MovieInfo>) => {
-    setState((prev) => ({ ...prev, movieInfo: { ...prev.movieInfo, ...info } }));
+    setState((prev) => {
+      // title만 단독으로(movieCd 없이) 바뀌면 수동 편집이라 본다 — 이전 KOBIS 선택의 movieCd는
+      // 더 이상 화면의 title과 대응하지 않으므로 같이 무효화한다. 안 그러면 바코드 fallback(#379)이
+      // 스테일 movieCd를 계속 인코딩한다(claude-review PR #397 P1). KOBIS 선택/보강과 OCR undo
+      // 스냅샷은 title과 movieCd를 항상 같은 patch에 실어 보내므로 이 분기를 타지 않는다.
+      const staleMovieCd = 'title' in info && !('movieCd' in info) && info.title !== prev.movieInfo.title;
+      return {
+        ...prev,
+        movieInfo: { ...prev.movieInfo, ...info, ...(staleMovieCd ? { movieCd: undefined } : {}) },
+      };
+    });
   }, []);
 
   const updateComponents = useCallback((components: Partial<TicketComponents>) => {
