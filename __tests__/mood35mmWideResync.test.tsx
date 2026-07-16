@@ -5,7 +5,7 @@ import { FULL_MOVIE, makeMoodBase } from './fixtures';
 
 // 마스터 시안(Ticket Design Master.dc.html v2 · 2026-07-08 resync) 06 35MM WIDE 재동기화 회귀(#281, 에픽 #281).
 // 35mm Wide 델타: 바코드 없음, "SINGLE FRAME" 헤더 제거, 인라인 평점 → Rated 셀, 우 패널을 "From the Archive"
-// 아카이브 카드로 재구조화(collected by·made with FILME·ACCESSION No), Released/Re-released 셀 분리,
+// 아카이브 카드로 재구조화(collected by·made with FILME), Released/Re-released 셀 분리,
 // 타이틀 고정 60/800(pickTitleSize 폐기), 필드 라벨16/값27(Starring 25), 상/하단 92px 풀 필름 스트립.
 // 마스터 Spec 값: 라벨 16 / 값 27(Starring 25) — 목표문 "값26"은 35mm 세로 값 착오, 마스터 우선. stale로 되돌아오면 여기서 잡는다.
 
@@ -49,14 +49,18 @@ describe('Mood35mmLandscape 마스터 resync (#281)', () => {
     expect(html).not.toContain('· 재개봉'); // 과거 Released 셀에 병합하던 " · 재개봉 {날짜}" 제거
   });
 
-  test('From the Archive 아카이브 카드 — collected by · made with FILME · ACCESSION No', () => {
+  test('From the Archive 아카이브 카드 — collected by · made with FILME', () => {
     const html = markup();
     expect(html).toContain('From the Archive');
     expect(html).toContain('collected by');
     expect(html).toContain('영화수집가');            // 서명 = collected by 값
     expect(html).toContain('made with');
     expect(html).toContain('FILME');
-    expect(html).toContain('ACCESSION No');
+  });
+
+  // 하드코딩 더미 장식 문구("FA·2024·0315") — 유저 데이터와 무관해 제거(#393).
+  test('ACCESSION No. 장식 문구 제거 — #393', () => {
+    expect(markup()).not.toContain('ACCESSION No');
   });
 
   // BI v2 워드마크 포팅(#386) — 필름 스트립 엣지 코드에도 대문자 'FILME'이 섞여 있어 위 toContain만으론
