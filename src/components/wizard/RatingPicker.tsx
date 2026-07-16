@@ -63,7 +63,11 @@ export default function RatingPicker({ value, onValueChange, visible, onVisibleC
             step={0.1}
             value={value || 0}
             onChange={(e) => {
-              const next = Number(e.target.value);
+              const raw = e.target.value;
+              // 지우는 중(raw==='')엔 커밋하지 않는다 — Number('')===0이라 그대로 두면
+              // 재입력 전 순간적으로 평점이 0으로 찍힌다(#190 nit, PR #409 claude-review).
+              if (raw === '') return;
+              const next = Number(raw);
               if (!Number.isNaN(next)) onValueChange(Math.min(5, Math.max(0, next)));
             }}
             aria-label="평점 직접 입력 (0.1 단위)"
