@@ -132,6 +132,49 @@ export function stampWillRender(
 export const STAMP_MAX_ASPECT = 5;
 
 /**
+ * 로고 스탬프 높이 소폭 동적화(#392, ±16px cap). 완전 가변화는 6무드 전체의 스탬프-인접 요소 정렬을
+ * 흔들어 이 저장소에 이미 두 차례 있었던 "레이아웃 구조 변경 → 예상 못 한 회귀"(#275 트리 depth
+ * remount, #258 조건부 unmount state 손실) 카테고리를 다시 밟을 수 있다는 게 전문가 패널 결론이라,
+ * DOM 트리는 그대로 두고 height 계산값만 좁은 range에서 보정한다.
+ *
+ * REF_ASPECT(2)는 "실사용 로고 대부분은 정사각~가로형"이라는 추정 기준점(가로 워드마크 로고의
+ * 전형적 종횡비) — 이 근방(가로형)은 delta≈0으로 기존 고정 높이를 그대로 쓰고, 세로로 긴 로고일수록
+ * +16px 쪽으로, 극단적으로 가로로 긴 로고는 -16px 쪽으로 선형 보정한다. 미로드(aspect=null)는 0(기존과
+ * 동일 높이) — 로드 전 첫 페인트가 보정 후 값으로 튀지 않게 한다.
+ */
+const STAMP_HEIGHT_DELTA_CAP = 16;
+const STAMP_REF_ASPECT = 2;
+
+export function stampHeightDelta(aspect: number | null): number {
+  if (aspect === null) return 0;
+  const raw = (STAMP_REF_ASPECT - aspect) * 8;
+  return Math.min(STAMP_HEIGHT_DELTA_CAP, Math.max(-STAMP_HEIGHT_DELTA_CAP, raw));
+}
+
+/** 이미지 자연 종횡비(width/height) — 로드 전/실패/빈 src는 null(#392, 스탬프 높이 보정 입력). */
+function useNaturalAspect(src: string): number | null {
+  const [aspect, setAspect] = useState<number | null>(null);
+  useEffect(() => {
+    if (!src) {
+      setAspect(null);
+      return;
+    }
+    let cancelled = false;
+    const img = new Image();
+    img.onload = () => {
+      if (!cancelled && img.naturalWidth > 0 && img.naturalHeight > 0) {
+        setAspect(img.naturalWidth / img.naturalHeight);
+      }
+    };
+    img.src = src;
+    return () => {
+      cancelled = true;
+    };
+  }, [src]);
+  return aspect;
+}
+
+/**
  * Returns `value` when the field is visible (or visibility is undefined), otherwise ''.
  * Falsy values (empty string, null, undefined, false) always return ''.
  *
@@ -413,10 +456,12 @@ export function ChainStamp({
   visible,
   ghost,
 }: ChainStampProps) {
+  // Rules of Hooks — stampWillRender의 조기 return보다 앞에서 무조건 호출(#392).
+  const aspect = useNaturalAspect(chain);
   // null 판정을 stampWillRender로 일원화(무드 구분선 게이팅과 동일 조건). 여기를 통과하면
   // 이미지·라벨·placeholder(ghost!==false) 중 하나는 반드시 렌더된다.
   if (!stampWillRender(visible, chain, label, ghost)) return null;
-  const h = height * size;
+  const h = height * size + stampHeightDelta(aspect);
 
   // 노출 off(#369) — 여기 도달했으면 ghost===true(stampWillRender 계약). 이미지·라벨이 있어도
   // 노출하지 않고 흐린 placeholder + 값 존재 배지로만 암시한다(탭→재노출 #266 유지).
@@ -469,10 +514,12 @@ export function FormatStamp({
   visible,
   ghost,
 }: FormatStampProps) {
+  // Rules of Hooks — stampWillRender의 조기 return보다 앞에서 무조건 호출(#392).
+  const aspect = useNaturalAspect(format);
   // null 판정을 stampWillRender로 일원화(무드 구분선 게이팅과 동일 조건). 통과하면
   // 이미지·라벨·placeholder(ghost!==false) 중 하나는 반드시 렌더된다.
   if (!stampWillRender(visible, format, label, ghost)) return null;
-  const h = 64 * size;
+  const h = 64 * size + stampHeightDelta(aspect);
 
   // 노출 off(#369) — ChainStamp와 동일: 값이 있어도 흐린 placeholder + 배지로만 암시.
   if (visible === false) {
