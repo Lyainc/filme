@@ -9,6 +9,7 @@ import {
   TOOLBAR_MODES,
   TB_STORAGE_KEY,
   TB_EDGE,
+  ICON as TB_ICON,
   loadPrefs as loadTbPrefs,
   type TbPrefs,
   type TbOrient,
@@ -220,6 +221,16 @@ export function MobileEditorShell({
     }
   }, [menuOpen]);
   useEffect(() => () => clearTimeout(clearArmTimer.current), []);
+  // 헤더 메뉴는 Escape로도 닫힌다 — 삭제된 플로팅 툴바 배치 서브메뉴가 갖고 있던 키보드 닫기
+  // 경로(PR #361 리뷰 P2)를 이 메뉴가 배치설정을 흡수하며 함께 승계한다(claude-review PR #405 P1).
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
   // 필드 목록 우측 드로어(#355). 진입은 헤더 목록 버튼 — #356 플로팅 툴바가 오면 그쪽
   // field-list 버튼이 이 진입점을 이어받는다.
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -507,79 +518,86 @@ export function MobileEditorShell({
               )}
               {/* 배치설정(#387, 플로팅 툴바 gear에서 이전) — 방향(가로/세로) × 배치(고정/이동)
                   라디오 4종 + 이동식일 때 좌/우 가장자리 스냅(WCAG 2.2 SC 2.5.7 대체 경로).
-                  잉크 토글은 컬러 패널(White/Black 프리셋)과 중복이라 이 자리에서 삭제. */}
-              <div className="mt-2 border-t border-[var(--glass-border)] pt-2">
-                <div className="flex items-center gap-2.5 px-2.5 pb-1 text-[14px] font-medium text-fg">
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.7"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                    className="shrink-0 text-fg-muted"
-                  >
-                    <path d={MENU_ICONS.gear} />
-                  </svg>
-                  <span>배치</span>
-                </div>
-                <div role="radiogroup" aria-label="툴바 배치">
-                  {TOOLBAR_MODES.map((m) => {
-                    const on = tbPrefs.orient === m.orient && tbPrefs.place === m.place;
-                    return (
-                      <button
-                        key={m.label}
-                        type="button"
-                        role="menuitemradio"
-                        aria-checked={on}
-                        onClick={() => applyToolbarMode(m.orient, m.place)}
-                        className={`flex h-11 w-full items-center gap-2.5 rounded-[9px] px-2.5 text-[12px] font-semibold ${
-                          on ? 'bg-accent-soft text-accent' : 'text-fg hover:bg-white/5'
-                        }`}
-                      >
-                        <span
-                          aria-hidden="true"
-                          className={`h-[7px] w-[7px] shrink-0 rounded-full ${on ? 'bg-accent' : 'bg-border-strong'}`}
-                        />
-                        {m.label}
-                      </button>
-                    );
-                  })}
-                </div>
-                {tbPrefs.place === 'movable' && (
-                  <div className="mt-1 flex gap-1 border-t border-[var(--glass-border)] pt-1.5">
-                    <button
-                      type="button"
-                      onClick={() => snapToolbarTo('left')}
-                      aria-label="왼쪽 가장자리로 이동"
-                      title="왼쪽 가장자리로 이동"
-                      className="flex h-11 flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:bg-white/5 hover:text-fg"
+                  잉크 토글은 컬러 패널(White/Black 프리셋)과 중복이라 이 자리에서 삭제.
+                  FloatingToolbar 자체가 croppedImageUrl && !isMax일 때만 마운트되므로(아래) 이
+                  섹션도 동일 조건으로 게이팅 — 아니면 toolbarRef가 비어 스냅이 조용히 no-op된다
+                  (claude-review PR #405 P1). role은 이 메뉴의 다른 항목·레포 컨벤션(radiogroup+radio,
+                  LayoutPicker 등)과 맞춰 radio를 쓴다(menuitemradio는 옛 menu+menuitemradio 조합의
+                  잔재였다, 같은 리뷰 지적). */}
+              {croppedImageUrl && !isMax && (
+                <div className="mt-2 border-t border-[var(--glass-border)] pt-2">
+                  <div className="flex items-center gap-2.5 px-2.5 pb-1 text-[14px] font-medium text-fg">
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                      className="shrink-0 text-fg-muted"
                     >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="M3 19V5" />
-                        <path d="m13 6-6 6 6 6" />
-                        <path d="M7 12h14" />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => snapToolbarTo('right')}
-                      aria-label="오른쪽 가장자리로 이동"
-                      title="오른쪽 가장자리로 이동"
-                      className="flex h-11 flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:bg-white/5 hover:text-fg"
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="M21 5v14" />
-                        <path d="m11 18 6-6-6-6" />
-                        <path d="M17 12H3" />
-                      </svg>
-                    </button>
+                      <path d={MENU_ICONS.gear} />
+                    </svg>
+                    <span>배치</span>
                   </div>
-                )}
-              </div>
+                  <div role="radiogroup" aria-label="툴바 배치">
+                    {TOOLBAR_MODES.map((m) => {
+                      const on = tbPrefs.orient === m.orient && tbPrefs.place === m.place;
+                      return (
+                        <button
+                          key={m.label}
+                          type="button"
+                          role="radio"
+                          aria-checked={on}
+                          onClick={() => applyToolbarMode(m.orient, m.place)}
+                          className={`flex h-11 w-full items-center gap-2.5 rounded-[9px] px-2.5 text-[12px] font-semibold ${
+                            on ? 'bg-accent-soft text-accent' : 'text-fg hover:bg-white/5'
+                          }`}
+                        >
+                          <span
+                            aria-hidden="true"
+                            className={`h-[7px] w-[7px] shrink-0 rounded-full ${on ? 'bg-accent' : 'bg-border-strong'}`}
+                          />
+                          {m.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {tbPrefs.place === 'movable' && (
+                    <div className="mt-1 flex gap-1 border-t border-[var(--glass-border)] pt-1.5">
+                      <button
+                        type="button"
+                        onClick={() => snapToolbarTo('left')}
+                        aria-label="왼쪽 가장자리로 이동"
+                        title="왼쪽 가장자리로 이동"
+                        className="flex h-11 flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:bg-white/5 hover:text-fg"
+                      >
+                        <svg {...TB_ICON}>
+                          <path d="M3 19V5" />
+                          <path d="m13 6-6 6 6 6" />
+                          <path d="M7 12h14" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => snapToolbarTo('right')}
+                        aria-label="오른쪽 가장자리로 이동"
+                        title="오른쪽 가장자리로 이동"
+                        className="flex h-11 flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:bg-white/5 hover:text-fg"
+                      >
+                        <svg {...TB_ICON}>
+                          <path d="M21 5v14" />
+                          <path d="m11 18 6-6-6-6" />
+                          <path d="M17 12H3" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {croppedImageUrl && (
                 <div className="mt-2 border-t border-[var(--glass-border)] pt-2">
