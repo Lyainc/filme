@@ -39,4 +39,10 @@ describe('MoodMinimal 마스터 resync (#281)', () => {
     expect(html).toContain('Cast');
     expect(html).not.toContain('>with<');
   });
+
+  // BI v2 워드마크 포팅(#386) — "made with" 바로 뒤에 MoodWordmark(aria-label="FILME")가 오는지 고정.
+  test('푸터 워드마크는 BI v2 로고타입(MoodWordmark) — #386', () => {
+    const html = markup();
+    expect(html).toMatch(/made with<\/span><span aria-label="FILME"/);
+  });
 });
