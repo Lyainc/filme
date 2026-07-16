@@ -93,6 +93,9 @@ afterEach(() => {
   cleanup();
   ocrImpl = async () => ({});
   clearKobisLookupCache();
+  // fetch spy는 중간 단언이 실패해도 항상 복원되도록 afterEach에서 처리한다(claude-review
+  // PR #397 P2 — 테스트 끝에서만 수동 mockRestore하면 실패 시 다음 테스트로 누수될 수 있었다).
+  mock.restore();
 });
 
 describe('OCR undo restoration (#163 / #141 P1)', () => {
@@ -242,8 +245,6 @@ describe('OCR undo restoration (#163 / #141 P1)', () => {
 
     expect(captured.movieInfo.movieCd).toBeUndefined();
     expect(captured.movieInfo.title).toBe('');
-
-    (global.fetch as unknown as { mockRestore: () => void }).mockRestore();
   });
 
   // #328 claude-review 재검토 P1: max는 헤더·서브메뉴·pill·OCR과 함께 OCR 되돌리기 배너·토스트도
