@@ -92,4 +92,18 @@ describe('ResultStage 뒤로가기 배선 (#258)', () => {
     await screen.findByText('포스터가 없어요. 편집 화면에서 포스터를 추가해 주세요.');
     expect(screen.queryByTestId('ticket')).toBeNull();
   });
+
+  // #380 원인1 — 상단 네브가 BI v2 이전 구형 mono 10px "FILME" 텍스트(WordmarkCompact)를 그대로
+  // 쓰고 있었다. MobileEditorShell(#386)과 동형인 신형 Wordmark(ClapTix 마크 + fılme 로고타입,
+  // aria-label="FILME")로 통일됐는지 고정 — 구형은 시각 텍스트 자체가 대문자 "FILME"라 그 노드가
+  // 없어야 회귀가 아니다.
+  test('상단 네브는 신형 Wordmark를 쓴다 — 구형 mono 텍스트 아님 (#380)', async () => {
+    renderStage(() => {});
+    expect(await screen.findByLabelText('FILME')).toBeTruthy();
+    expect(screen.queryByText('FILME')).toBeNull();
+  });
 });
+
+// #380 원인2 — hero 폭 상한(100dvh 기반 예산)은 happy-dom CSSOM이 min()/env()/dvh 자체를 파싱 못
+// 해 style.width로 검증 불가(기존 PREVIEW_MAX_HEIGHT의 calc(min(...))도 동일 환경 제약). 실기기
+// Safari 동적 툴바 재현도 헤드리스로는 안 되므로, 이 회귀는 브라우저 뷰포트 시뮬레이션으로만 확인.

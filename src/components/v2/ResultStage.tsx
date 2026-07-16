@@ -2,7 +2,7 @@ import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer'
 import { getLayout } from '@/utils/layouts';
 import { PreviewFilmCell } from './PreviewFilmCell';
 import { ResultPanel } from './ResultPanel';
-import { WordmarkCompact } from './Wordmark';
+import { Wordmark } from './Wordmark';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 
 interface ResultStageProps {
@@ -29,7 +29,11 @@ export function ResultStage({
   fieldVisibility,
 }: ResultStageProps) {
   const layout = getLayout(components.layout);
-  const heroWidth = `min(84vw, calc(${PREVIEW_MAX_HEIGHT} * ${layout.width} / ${layout.height}))`;
+  // PREVIEW_MAX_HEIGHT(72vh)는 정적 대형 뷰포트 기준이라 Safari 동적 툴바가 떠 있는 실기기에서는
+  // 안 줄어들어, hero가 남은 공간을 넘겨서 저장/링크/공유 버튼 3종이 fold 아래로 밀린다(#380).
+  // 100dvh(실제 가시 뷰포트, 툴바 노출 시 같이 줄어듦)에서 헤더+패딩+그림자+액션 3종의 고정
+  // 세로 예산(≈372px 실측 + 여유 18px)을 뺀 값도 min()에 추가해 남는 공간만큼만 hero를 채운다.
+  const heroWidth = `min(84vw, calc(${PREVIEW_MAX_HEIGHT} * ${layout.width} / ${layout.height}), calc((100dvh - env(safe-area-inset-top, 0px) - 390px) * ${layout.width} / ${layout.height}))`;
 
   return (
     // 결과화면 톤(#357) — 편집 셸과 같은 .chrome-dark 스코프 + 앰비언트. 결과화면은 항상
@@ -62,13 +66,13 @@ export function ResultStage({
             <path d="m15 18-6-6 6-6" />
           </svg>
         </button>
-        <WordmarkCompact />
+        <Wordmark as="h1" />
         <div aria-hidden="true" className="h-9 w-9" />
       </header>
 
       <div className="relative min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-6">
         {croppedImageUrl && (
-          <div className="relative mx-auto mb-6" style={{ width: heroWidth }}>
+          <div data-testid="result-hero" className="relative mx-auto mb-6" style={{ width: heroWidth }}>
             <PreviewFilmCell promoted>
               <TicketRenderer
                 croppedImageUrl={croppedImageUrl}
