@@ -33,7 +33,7 @@ describe('Criterion 한줄평 폴백 체인 (#391)', () => {
 
   test('유저 입력·평점 둘 다 없으면 기본 quote로 폴백', () => {
     const html = markup({ ...FULL_MOVIE, quote: '', rating: 0 });
-    expect(html).toContain('the last honest critic is the one who paid for the ticket');
+    expect(html).toContain('the paying customer is the last honest critic');
   });
 
   test('fieldVisibility.quote가 꺼지면 유저 입력 대신 프리셋으로 폴백', () => {
