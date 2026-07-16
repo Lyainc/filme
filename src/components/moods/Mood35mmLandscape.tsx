@@ -271,9 +271,6 @@ export const Mood35mmLandscape = memo(function Mood35mmLandscape({ movieInfo: d,
                 <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 18, opacity: 0.6 }}>made with</span>
                 <MoodWordmark size={17} color={FS_INK} />
               </div>
-              {/* 1px amber 헤어라인 — width:1px는 스탬프 세로 구분선의 유일 시그니처(ghostMode #216 P1.1 불변식)라 border-left로 회피. */}
-              <span style={{ width: 0, height: 16, borderLeft: `1px solid ${amber}`, opacity: 0.5 }} />
-              <span style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 12, letterSpacing: 1.4, color: amber, opacity: 0.85 }}>ACCESSION No. FA·2024·0315</span>
             </div>
           </div>
 
