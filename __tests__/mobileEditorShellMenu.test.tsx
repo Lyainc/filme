@@ -54,6 +54,19 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     expect(hamburger.getAttribute('aria-expanded')).toBe('false');
   });
 
+  test('Escape로도 메뉴가 닫힌다(#387, 삭제된 플로팅 툴바 배치 서브메뉴의 Escape 경로를 이 메뉴가 승계 — claude-review PR #405 P1)', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    const hamburger = screen.getByRole('button', { name: '편집 메뉴' });
+
+    await user.click(hamburger);
+    expect(hamburger.getAttribute('aria-expanded')).toBe('true');
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(hamburger.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.queryByRole('menu', { name: '편집 메뉴' })).toBeNull();
+  });
+
   test('메뉴가 열려 있어도 완료 버튼은 오버레이에 가려지지 않고 바로 눌린다 (claude-review PR #331 P2)', async () => {
     const user = userEvent.setup();
     let calls = 0;
