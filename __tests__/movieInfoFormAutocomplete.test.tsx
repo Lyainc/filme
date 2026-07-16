@@ -328,6 +328,8 @@ describe('detail fetch race (#82 suspect 4)', () => {
     expect(latestInfo.titleOg).toBe('Movie A');
     expect(latestInfo.releaseDate).toBe('2014-11-06');
     expect(latestInfo.actors).toContain('배우-M001');
+    // #379 — 바코드 fallback(movieCd+watchDate)이 의존하는 값이라 선택 즉시 배선되는지 직접 확인.
+    expect(latestInfo.movieCd).toBe('M001');
     expect(latestPending).toBe(false);
   });
 });
