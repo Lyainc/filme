@@ -11,6 +11,7 @@ import {
   FONT_SANS,
   FormatStamp,
   MoodProps,
+  MoodWordmark,
   Poster,
   fieldPieces,
   fitFontSizeToWidth,
@@ -268,7 +269,7 @@ export const Mood35mmLandscape = memo(function Mood35mmLandscape({ movieInfo: d,
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                 <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 18, opacity: 0.6 }}>made with</span>
-                <span style={{ fontWeight: 800, fontSize: 17, fontFamily: FONT_SANS, letterSpacing: 3 }}>FILME</span>
+                <MoodWordmark size={17} color={FS_INK} />
               </div>
               {/* 1px amber 헤어라인 — width:1px는 스탬프 세로 구분선의 유일 시그니처(ghostMode #216 P1.1 불변식)라 border-left로 회피. */}
               <span style={{ width: 0, height: 16, borderLeft: `1px solid ${amber}`, opacity: 0.5 }} />

@@ -159,6 +159,31 @@ export const FONT_KR = '"Pretendard Variable", "Apple SD Gothic Neo", "Noto Sans
  */
 export const FONT_DISPLAY = 'var(--font-display), Georgia, "Times New Roman", serif';
 
+// BI 마스터 v2 로고타입 전용 브랜드 타입(Nunito 900) — `_app.tsx`에서 next/font로 자체 호스팅하며
+// `--font-brand` CSS 변수로 노출(#386). 워드마크 외 용도 금지(브랜드 아이덴티티 폰트).
+export const FONT_BRAND = 'var(--font-brand), Nunito, sans-serif';
+
+/**
+ * BI 마스터 v2 워드마크(`v2/Wordmark.tsx`)의 무드-세이프 포팅(#386). 캡처 파이프라인은 전부 inline
+ * style이라 Tailwind className(`text-accent` 등)을 못 쓰므로, dotless-i + 어센트 dot tittle만
+ * 남기고 색은 무드가 이미 쓰는 단색 잉크로 통일(무드별 FILME 워터마크가 원래 단색이었던 것과 동일선상).
+ */
+export function MoodWordmark({ size, color }: { size: number; color: string }) {
+  return (
+    <span
+      aria-label="FILME"
+      style={{ display: 'inline-flex', alignItems: 'baseline', fontFamily: FONT_BRAND, fontWeight: 900, fontSize: size, lineHeight: 1, letterSpacing: '-0.012em', color, whiteSpace: 'nowrap' }}
+    >
+      f
+      <span style={{ position: 'relative', display: 'inline-block' }}>
+        ı
+        <span style={{ position: 'absolute', left: '50%', bottom: '0.72em', width: '0.2em', height: '0.2em', transform: 'translateX(-50%)', borderRadius: 9999, background: color }} />
+      </span>
+      lme
+    </span>
+  );
+}
+
 export type Surface = 'paper' | 'dark';
 
 interface ChainStampProps {

@@ -10,6 +10,7 @@ import {
   FONT_SANS,
   FormatStamp,
   MoodProps,
+  MoodWordmark,
   Poster,
   fieldPieces,
   fitFontSizeToWidth,
@@ -314,7 +315,7 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 32, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexShrink: 0 }}>
               <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontSize: 22, color: BROWN }}>made with</span>
-              <span style={{ fontFamily: FONT_MONO, fontWeight: 800, fontSize: 22, letterSpacing: 2 }}>FILME</span>
+              <MoodWordmark size={22} color={INK} />
             </div>
             {signatureVal ? (
               <>
