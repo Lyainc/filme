@@ -78,6 +78,7 @@ const INITIAL_STATE: PhototicketState = {
     runtime: '',
     bookingNumber: '',
     signature: '',
+    quote: '',
   },
   components: {
     layout: 'minimal',
