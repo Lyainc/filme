@@ -9,7 +9,6 @@ import { preprocessForOcr } from './ocrPreprocess';
 export type OcrResult = Partial<MovieInfo> & {
   chain?: string;
   format?: string;
-  preprocessedImage?: string;
 };
 
 /** Blob → 순수 base64 문자열(data URL prefix 제거). */
@@ -30,12 +29,11 @@ async function prepareImagePayload(file: File) {
   const blob = await preprocessForOcr(file);
   const base64 = await blobToBase64(blob);
   const mimeType = blob.type || 'image/jpeg';
-  const preprocessedImage = `data:${mimeType};base64,${base64}`;
-  return { base64, mimeType, preprocessedImage };
+  return { base64, mimeType };
 }
 
 /**
- * 티켓 스크린샷 → 전처리(하단 크롭·512px·JPEG) → `/api/ocr`(GPT-4o mini vision)
+ * 티켓 이미지 → 전처리(512px·JPEG) → `/api/ocr`(Gemini vision)
  * → 구조화 필드. 서버가 채워진 필드만 주므로 반환 객체엔 인식된 값만 담긴다.
  *
  * SSR-safe: window가 없으면 빈 객체. 절대 throw하지 않는다 — 전처리/네트워크/파싱
@@ -47,7 +45,7 @@ export async function runOcr(file: File): Promise<OcrResult> {
   if (typeof window === 'undefined') return {};
 
   try {
-    const { base64, mimeType, preprocessedImage } = await prepareImagePayload(file);
+    const { base64, mimeType } = await prepareImagePayload(file);
 
     const res = await fetch('/api/ocr', {
       method: 'POST',
@@ -55,15 +53,15 @@ export async function runOcr(file: File): Promise<OcrResult> {
       body: JSON.stringify({ image: base64, mimeType }),
     });
 
-    if (!res.ok) return { preprocessedImage };
+    if (!res.ok) return {};
 
     // 서버는 채워진 string 필드만 담은 객체를 반환한다. 무검증 캐스트 대신
-    // 최소한 객체 형태인지 확인하고, 아니면 이미지만 돌려준다.
+    // 최소한 객체 형태인지 확인하고, 아니면 빈 객체를 돌려준다.
     const data: unknown = await res.json();
     if (!data || typeof data !== 'object' || Array.isArray(data)) {
-      return { preprocessedImage };
+      return {};
     }
-    return { ...(data as OcrResult), preprocessedImage };
+    return data as OcrResult;
   } catch (err) {
     console.error('[ocr] runOcr failed:', err);
     return {};
