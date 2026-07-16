@@ -16,6 +16,8 @@ const KEY = 'filme:phototicket:v1';
 afterEach(() => {
   cleanup();
   window.localStorage.clear();
+  // 아래 fake-timer 테스트가 실패해도 다음 테스트로 새는 걸 막는다 — 다른 파일 컨벤션과 통일(#190 nit).
+  jest.useRealTimers();
 });
 
 describe('#310 usePhototicket saveDraft/clearDraft', () => {
@@ -49,7 +51,6 @@ describe('#310 usePhototicket saveDraft/clearDraft', () => {
     // 그 타이머 자체가 없으므로 fake timer 전진만으로 실시간 대기 없이 같은 조건을 검증한다.
     jest.useFakeTimers();
     act(() => jest.advanceTimersByTime(500));
-    jest.useRealTimers();
     expect(window.localStorage.getItem(KEY)).toBeNull();
   });
 
