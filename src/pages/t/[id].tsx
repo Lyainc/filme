@@ -122,22 +122,18 @@ export default function TicketLanding({ imageUrl, title, pageUrl, width, height 
         <main className="flex flex-1 flex-col items-center justify-center gap-10 px-5 py-12">
           {/* heading 랜드마크 — 시각 워드마크는 홈 링크(nav)라 별도 sr-only h1로 페이지 주제를 노출(#199). */}
           <h1 className="sr-only">{ogTitle}</h1>
-          {/* 미세 기울임 + 깊은 그림자로 "프리미엄 티켓 한 장" 느낌을 강조한다(평평한 img 탈피). */}
+          {/* 그림자·perspective만으로 "프리미엄 티켓 한 장"의 물성을 표현한다(#389 — 기울임은
+              브랜드 보이스인 정밀함과 불일치해 제거). */}
           <div className="w-full max-w-sm" style={{ perspective: '1200px' }}>
-            <div
-              className="rounded-card transition-transform duration-500 will-change-transform"
-              style={{ transform: 'rotate(-1.4deg)' }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element — Blob 원격 도메인이라 일반 img 사용 */}
-              <img
-                src={imageUrl}
-                alt={ogTitle}
-                width={width}
-                height={height}
-                fetchPriority="high"
-                className="h-auto w-full rounded-card border border-line shadow-pop"
-              />
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element — Blob 원격 도메인이라 일반 img 사용 */}
+            <img
+              src={imageUrl}
+              alt={ogTitle}
+              width={width}
+              height={height}
+              fetchPriority="high"
+              className="h-auto w-full rounded-card border border-line shadow-pop"
+            />
           </div>
 
           <div className="flex flex-col items-center gap-3 text-center">
@@ -153,12 +149,17 @@ export default function TicketLanding({ imageUrl, title, pageUrl, width, height 
             >
               나도 티켓 만들기 →
             </Link>
-            {/* disclaimer(#179) — 공유 링크 수신자에게 만료·비공식·양도불가 고지(만료일 단일 출처). */}
-            <p className="mt-2 max-w-xs text-[11px] leading-snug text-fg-faint">
-              이 링크는 {DEFAULT_TICKET_TTL_DAYS}일 후 만료돼요. {UNOFFICIAL_TICKET_NOTICE}
-            </p>
           </div>
         </main>
+
+        {/* disclaimer(#179) — 공유 링크 수신자에게 만료·비공식·양도불가 고지(만료일 단일 출처).
+            CTA 바로 아래의 눈에 띄는 위치는 긴급함을 만들어 브랜드 톤과 안 맞으므로 페이지
+            최하단 저대비 캡션으로 내린다(#389). */}
+        <footer className="shrink-0 px-5 pb-4 text-center">
+          <p className="text-[11px] leading-snug text-fg-faint">
+            이 링크는 {DEFAULT_TICKET_TTL_DAYS}일 후 만료돼요. {UNOFFICIAL_TICKET_NOTICE}
+          </p>
+        </footer>
       </div>
     </>
   );
