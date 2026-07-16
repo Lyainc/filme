@@ -16,7 +16,7 @@
  * useOcrUndo + OcrUploadCard + OcrUndoBanner — the real wiring users hit. Guards the
  * shell's own prop wiring (ocr.apply / setComponents / currentComponents / banner onCancel).
  */
-import { describe, expect, test, afterEach, mock } from 'bun:test';
+import { describe, expect, test, afterEach, mock, spyOn } from 'bun:test';
 import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { PhototicketState } from '@/types';
@@ -29,6 +29,13 @@ let ocrImpl: (file: File) => Promise<Record<string, unknown>> = async () => ({})
 mock.module('@/utils/ocr', () => ({
   runOcr: (file: File) => ocrImpl(file),
 }));
+
+// title 인식 시 OcrUploadCard가 트리거하는 비동기 KOBIS 보강(triggerKobisLookup)은 실제 모듈을
+// 그대로 두고 global.fetch만 스텁한다 — @/utils/kobisLookup을 mock.module하면 실제 구현을
+// 검증하는 kobisLookup.test.ts가 같은 프로세스에서 이 mock을 받아버린다(bun mock.module은
+// 파일 간 격리가 안 되는 프로세스 전역이라 — bun-mock-module-global-leak 메모).
+const { clearKobisLookupCache } =
+  require('@/utils/kobisLookup') as typeof import('@/utils/kobisLookup');
 
 // require (not top-level await import) so the shell loads AFTER the mock above
 // without tripping the es5 target's no-top-level-await rule.
@@ -85,6 +92,7 @@ function ocrFileInput(): HTMLInputElement {
 afterEach(() => {
   cleanup();
   ocrImpl = async () => ({});
+  clearKobisLookupCache();
 });
 
 describe('OCR undo restoration (#163 / #141 P1)', () => {
@@ -186,6 +194,56 @@ describe('OCR undo restoration (#163 / #141 P1)', () => {
     expect(captured.components.formatLabel).toBe(
       'IMAX LASER 2D 전도연관[CGV아트하우스] 10층'.slice(0, STAMP_LABEL_MAX)
     );
+  });
+
+  // #379 PR #397 claude-review P1: OCR이 인식한 title이 비동기 KOBIS 보강으로 movieCd를 채우는데,
+  // kobisKeys 스냅샷에 movieCd가 빠져 있으면 undo가 title/actors 등은 되돌려도 movieCd는 그대로
+  // 남아 바코드 fallback(#379)이 언두된 영화의 movieCd를 계속 반영한다 — #141 P1과 같은 클래스의
+  // atomic-restore 버그.
+  test('OCR title이 트리거한 KOBIS 보강의 movieCd도 undo가 원자 복원한다', async () => {
+    const user = userEvent.setup();
+
+    spyOn(global, 'fetch').mockImplementation((async (url: string) => {
+      if (url.includes('/api/kobis/search')) {
+        return {
+          ok: true,
+          json: async () => ({
+            movieListResult: {
+              movieList: [
+                { movieCd: '20147727', movieNm: '그랜드 부다페스트 호텔', movieNmEn: 'The Grand Budapest Hotel', openDt: '20140320' },
+              ],
+            },
+          }),
+        };
+      }
+      if (url.includes('/api/kobis/detail')) {
+        return { ok: true, json: async () => ({ movieInfoResult: { movieInfo: {} } }) };
+      }
+      throw new Error(`unexpected url: ${url}`);
+    }) as unknown as typeof fetch);
+
+    render(<MobileHarness />);
+
+    expect(captured.movieInfo.movieCd).toBeUndefined();
+
+    ocrImpl = async () => ({ title: '그랜드 부다페스트 호텔' });
+
+    await user.upload(
+      ocrFileInput(),
+      new File(['x'], 'ticket.png', { type: 'image/png' })
+    );
+
+    const undoButton = await screen.findByRole('button', { name: '되돌리기' });
+    await waitFor(() => {
+      expect(captured.movieInfo.movieCd).toBe('20147727');
+    });
+
+    await user.click(undoButton);
+
+    expect(captured.movieInfo.movieCd).toBeUndefined();
+    expect(captured.movieInfo.title).toBe('');
+
+    (global.fetch as unknown as { mockRestore: () => void }).mockRestore();
   });
 
   // #328 claude-review 재검토 P1: max는 헤더·서브메뉴·pill·OCR과 함께 OCR 되돌리기 배너·토스트도
