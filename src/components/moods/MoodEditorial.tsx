@@ -53,6 +53,12 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
   const theaterVal = gate(fv?.theater, d.theater);
   const screenVal = gate(fv?.screen, d.screen);
   const seatVal = gate(fv?.seat, d.seat);
+  // 좌석 폭 맞춤(#381) — 스텁이 -90° 회전되므로 좌석 텍스트의 (회전 전) 가로 폭이 스텁 전체
+  // 그룹 행의 (회전 후) 세로 길이를 늘려, 길어지면 반대편 그룹(바코드·le billet)이 캔버스
+  // 세로(960) 밖으로 밀려 잘린다. 260px는 실측(H12/H12,H13 등 1~2석 자연폭 ≤221px는 그대로
+  // 56px 유지, 3~4석부터 축소)로 정한 예산 — 나머지 4그룹(바코드·스탬프·admis·le billet)의
+  // 실측 폭(~750px)을 뺀 960px 여유에 안전 마진을 둔 값.
+  const seatFontSize = fitFontSizeToWidth(seatVal, 260, { fontFamily: FONT_SANS, fontWeight: 900, minSize: 26, maxSize: 56 }, fontsReady);
   const watchDateVal = gate(fv?.watchDate, watchDateClean);
   const watchTimeVal = gate(fv?.watchTime, d.watchTime);
   const runtimeVal = gate(fv?.runtime, d.runtime);
@@ -167,7 +173,7 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
       <div key="seat" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
         <span style={{ ...italic(CREAM, 24), opacity: 0.9, lineHeight: 1 }}>place</span>
         {seatVal ? (
-          <FieldTap field="seat" onField={onField}><span style={{ fontWeight: 900, fontSize: 56, fontFamily: FONT_SANS, letterSpacing: -2, lineHeight: 0.85 }}>{seatVal}</span></FieldTap>
+          <FieldTap field="seat" onField={onField}><span style={{ fontWeight: 900, fontSize: seatFontSize, fontFamily: FONT_SANS, letterSpacing: -2, lineHeight: 0.85 }}>{seatVal}</span></FieldTap>
         ) : (
           <FieldTap field="seat" onField={onField}><FieldGhost text="SEAT" width={100} height={50} surface="dark" state={gSeat} /></FieldTap>
         )}
