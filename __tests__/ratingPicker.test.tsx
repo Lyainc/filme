@@ -3,10 +3,11 @@
  *
  * (a) 숫자 입력(0.1 step)으로 타이핑한 값이 그대로 텍스트 표시(★ x.x / 5.0)에 반영.
  * (b) 별 아이콘 채움은 0.5 단위로 내림(#384 결정 스펙: 3.3 → 별 3개, 3.5~3.9 → 별 3개 반).
+ * (d) 숫자 입력 clamp — 범위 밖 값(음수, 5 초과)은 0~5로 제한(claude-review PR #409 P1 2차).
  */
 import { describe, expect, test, afterEach } from 'bun:test';
 import { useState } from 'react';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import RatingPicker from '@/components/wizard/RatingPicker';
 
@@ -61,5 +62,19 @@ describe('RatingPicker (#384)', () => {
     expect(starFillWidth(3)).toBe('100%');
     expect(starFillWidth(4)).toBe('50%');
     expect(starFillWidth(5)).toBe('0%');
+  });
+
+  test('(d) 숫자 입력 clamp — 음수는 0으로, 5 초과는 5로 제한', () => {
+    render(<Harness />);
+
+    // fireEvent.change로 값을 직접 주입 — user.type은 number input이 '-' 키 입력을
+    // 문자 단위로 걸러내(happy-dom 네이티브 검증) 음수 조합이 실제로 안 들어간다.
+    const input = screen.getByRole('spinbutton', { name: '평점 직접 입력 (0.1 단위)' });
+
+    fireEvent.change(input, { target: { value: '-1' } });
+    expect(screen.getByText('0.0')).toBeTruthy();
+
+    fireEvent.change(input, { target: { value: '10' } });
+    expect(screen.getByText('5.0')).toBeTruthy();
   });
 });
