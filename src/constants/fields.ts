@@ -87,7 +87,7 @@ export const MOOD_EXCLUDED_FIELDS: Partial<Record<LayoutId, readonly TicketField
   '35mm': ['bookingNo', 'quote'], // #281: 마스터 35mm는 푸터 바코드 없음 → bookingNo 미렌더(MADE WITH FILME·서명 푸터는 유지).
   editorial: ['quote'], // #391: 한줄평은 Criterion 전용 — 다른 무드는 렌더하지 않으므로 런처에서 제외.
   stub: ['quote'], // #391: 위와 동일.
-  '35mm-landscape': ['bookingNo', 'quote'], // #281: 마스터 35mm Wide는 바코드 없음 → bookingNo 미렌더(collected by·ACCESSION 아카이브 카드는 유지).
+  '35mm-landscape': ['bookingNo', 'quote'], // #281: 마스터 35mm Wide는 바코드 없음 → bookingNo 미렌더(collected by 아카이브 카드는 유지, ACCESSION No. 더미 문구는 #393에서 제거).
 };
 
 /** 현재 layout에 적용되는 런처 그룹 — MOOD_EXCLUDED_FIELDS의 필드를 걸러내고, 비게 된 그룹은 제거. */

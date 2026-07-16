@@ -55,3 +55,15 @@ export function buildShareMessage(
 
   return { title, text, url: permalink ?? '' };
 }
+
+/**
+ * `navigator.share()`에 넘길 payload — `url`을 별도 필드로 전달하면 Chrome이 표준 동작으로
+ * `text`와 `url` 사이에 개행을 끼워 넣어 카카오톡 등에서 어색한 줄바꿈이 생긴다(#394). `url`이
+ * 있으면 `text` 끝에 공백으로 흡수시켜 단일 필드로 전달, 없으면 `text`만 그대로 둔다.
+ */
+export function toNativeSharePayload(message: ShareMessage): { title: string; text: string } {
+  return {
+    title: message.title,
+    text: message.url ? `${message.text} ${message.url}` : message.text,
+  };
+}
