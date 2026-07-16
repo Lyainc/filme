@@ -28,6 +28,12 @@ const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ss
 
 type Photo = ReturnType<typeof usePhototicket>;
 
+/** 로컬 타임존 기준 오늘 날짜(YYYY-MM-DD). watchDate 미입력 시 표기 미리보기 fallback용(#390). */
+function todayIso(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 const INPUT_CLS =
   // 16px 미만이면 iOS Safari가 포커스 시 자동 줌인해 레이아웃이 틀어진다(#274) — 편집 폼 컨트롤은 16px 이상.
   // 글래스 톤(#367) — 다크 앰비언트 위 solid 카드 대신 v8 글래스 토큰. 데스크톱 아코디언(라이트
@@ -180,7 +186,9 @@ function FormatChips({
         <Eyebrow>{label}</Eyebrow>
         <Eyebrow tone="faint">{preview || '—'}</Eyebrow>
       </div>
-      <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={label}>
+      {/* 4번째 칩(en-long)이 좁은 폭에서 2줄로 감기던 문제(#390) — 가로 스크롤 레일로 전환.
+          같은 레포 기존 패턴(LayoutPicker.tsx의 snap-start 레일)을 그대로 재사용. */}
+      <div className="flex gap-2 overflow-x-auto pb-1 snap-x [scrollbar-width:thin]" role="radiogroup" aria-label={label}>
         {DATE_FORMAT_TOKENS.map((opt) => {
           const active = token === opt.value;
           return (
@@ -191,7 +199,7 @@ function FormatChips({
               aria-checked={active}
               onClick={() => onChange(opt.value)}
               data-touch="44"
-              className={`text-mono inline-flex min-h-touch items-center rounded-chip border px-3 text-[10px] uppercase tracking-widest transition-colors ${
+              className={`text-mono inline-flex min-h-touch shrink-0 snap-start items-center rounded-chip border px-3 text-[10px] uppercase tracking-widest transition-colors ${
                 active
                   ? 'border-accent bg-accent text-accent-ink'
                   : 'border-[var(--glass-border)] bg-[var(--glass-fill)] text-fg hover:bg-accent-soft'
@@ -230,7 +238,9 @@ export function DateSheet({ field, photo }: { field: TicketField; photo: Photo }
           token={token}
           onChange={(watchDateFormat) => set({ watchDateFormat })}
           label="관람일 표기"
-          preview={formatDate(info.watchDate, token, 'date')}
+          // 미입력 상태에도 표기 형식을 오늘 날짜로 미리 보여준다 — 값 자체는 그대로 비워
+          // 둬서 "미입력"과 "오늘 실제 선택"이 섞이지 않게 한다(#390, 표시 전용 fallback).
+          preview={formatDate(info.watchDate || todayIso(), token, 'date')}
         />
       </div>
     );
