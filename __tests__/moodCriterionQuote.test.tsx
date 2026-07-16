@@ -23,23 +23,31 @@ describe('Criterion 한줄평 폴백 체인 (#391)', () => {
   test('유저 입력이 있으면 그 텍스트를 그대로 노출', () => {
     const html = markup({ ...FULL_MOVIE, quote: 'a perfect Sunday matinee' });
     expect(html).toContain('a perfect Sunday matinee');
-    expect(html).not.toContain('close to unforgettable');
+    expect(html).not.toContain('nearly perfect, and knows it');
   });
 
   test('유저 입력이 없으면 평점(4.5) 구간 프리셋으로 폴백', () => {
     const html = markup({ ...FULL_MOVIE, quote: '' });
-    expect(html).toContain('close to unforgettable');
+    expect(html).toContain('nearly perfect, and knows it');
   });
 
   test('유저 입력·평점 둘 다 없으면 기본 quote로 폴백', () => {
     const html = markup({ ...FULL_MOVIE, quote: '', rating: 0 });
-    expect(html).toContain('every ticket, a small piece of a bigger story');
+    expect(html).toContain('the last honest critic is the one who paid for the ticket');
   });
 
   test('fieldVisibility.quote가 꺼지면 유저 입력 대신 프리셋으로 폴백', () => {
     const html = markup({ ...FULL_MOVIE, quote: 'a perfect Sunday matinee' }, { quote: false });
     expect(html).not.toContain('a perfect Sunday matinee');
-    expect(html).toContain('close to unforgettable');
+    expect(html).toContain('nearly perfect, and knows it');
+  });
+
+  // claude-review PR #407 P1: quote 프리셋은 fv?.rating(RATED 셀 노출 여부)과 무관하게 원본
+  // d.rating으로 고른다 — 의도된 동작(RATED 행을 꺼도 quote는 실제 평점을 반영)임을 고정.
+  test('RATED 셀 노출을 꺼도(fv.rating=false) quote는 실제 평점 기준 프리셋 유지', () => {
+    const html = markup({ ...FULL_MOVIE, quote: '' }, { rating: false });
+    expect(html).toContain('nearly perfect, and knows it');
+    expect(html).not.toContain('★ 4.5 / 5.0'); // RATED 셀 자체는 안 보임
   });
 
   test('한글 유저 입력은 FONT_QUOTE_KR(--font-quote-kr)로 분기', () => {

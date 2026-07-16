@@ -36,19 +36,21 @@ const metaValue: CSSProperties = { fontWeight: 700, fontSize: 30, fontFamily: FO
 
 // 한줄평 폴백 2단계(#391) — 유저 입력이 없으면 평점(0.5 단위)별 프리셋, 평점도 없으면 기본 quote.
 // 전문가 패널 결론: 프리셋·기본값은 항상 영문(무드 보이스 통일, 콘텐츠 비용은 Criterion 1세트로 절감).
+// 톤: 카이에 뒤 시네마급까진 아니어도 "영화평론가의 한 줄 아포리즘" — 비유·위트를 섞어 평이한
+// 감상평이 아니라 포스터 뒷면 인용구처럼 읽히게 한다(오빠 피드백, #391 재작업).
 const RATING_QUOTES: Record<string, string> = {
-  '0.5': 'best forgotten by morning',
-  '1': 'a rare miss',
-  '1.5': 'a rough sit',
-  '2': 'nothing memorable here',
-  '2.5': 'fine, but forgettable',
-  '3': 'a decent way to spend two hours',
-  '3.5': 'better than expected',
-  '4': 'worth the ticket, worth the memory',
-  '4.5': 'close to unforgettable',
-  '5': 'a film that stays with you long after the credits roll',
+  '0.5': 'two hours of my life, respectfully declined',
+  '1': 'a film with the courage of no convictions',
+  '1.5': 'the credits were the best part',
+  '2': 'all style, no pulse',
+  '2.5': 'watchable. forgettable. in that order',
+  '3': 'competent — and that is the whole review',
+  '3.5': 'sharper than its trailer let on',
+  '4': 'the kind of film you quote at dinner',
+  '4.5': 'nearly perfect, and knows it',
+  '5': 'the film every other film will be measured against',
 };
-const DEFAULT_QUOTE = 'every ticket, a small piece of a bigger story';
+const DEFAULT_QUOTE = 'the last honest critic is the one who paid for the ticket';
 
 /**
  * v5 — 마스터 시안 Ticket Design Master.dc.html v2(2026-07-08 resync) 재동기화(에픽 #281).
