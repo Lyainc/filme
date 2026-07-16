@@ -1,5 +1,5 @@
 import dynamic from 'next/dynamic';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { DateFormatToken, DateGranularity, MovieInfo, TicketComponents, TicketField } from '@/types';
 import { formatDate, openDtToIso } from '@/utils/dateFormat';
@@ -84,6 +84,14 @@ function TitleSheet({ photo }: { photo: Photo }) {
     apply: photo.updateMovieInfo,
     messages: { noResults: '검색 결과가 없어요.', requestFailed: '검색 중 문제가 생겼어요.' },
   });
+
+  // OCR이 채운 제목을 들고 편집기를 열었을 때도 후보가 바로 보이도록, 마운트 시
+  // 초기값이 있으면 한 번 자동 검색(#383). onChange/onCompositionEnd는 이후 입력에만 반응한다.
+  useEffect(() => {
+    const v = title.trim();
+    if (v) scheduleSearch(v);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="space-y-3">

@@ -11,7 +11,7 @@
  * fieldSheets 패턴대로 testing-library render + fireEvent.
  */
 import { describe, expect, test, beforeEach, afterEach, jest } from 'bun:test';
-import { act } from 'react';
+import { act, useEffect, useState } from 'react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { useExportReady } from '@/hooks/useExportReady';
@@ -50,6 +50,20 @@ function Harness() {
   const photo = usePhototicket();
   photoRef = photo;
   return <FieldEditorBody target="title" photo={photo} />;
+}
+
+// OCR이 채운 제목을 들고 시트를 여는 상황 재현 — 제목을 먼저 seed하고, 그 값이 이미
+// 있는 상태로 TitleSheet를 처음 마운트한다(#383).
+function PrefilledHarness({ initialTitle }: { initialTitle: string }) {
+  const photo = usePhototicket();
+  photoRef = photo;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    photo.updateMovieInfo({ title: initialTitle });
+    setMounted(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return mounted ? <FieldEditorBody target="title" photo={photo} /> : null;
 }
 
 // 현재 편집 표면(TitleSheet)이 KOBIS 조회 중 export를 게이팅하지 않는지 본다(#284: pendingFetch
@@ -153,6 +167,13 @@ describe('TitleSheet KOBIS 검색 (#215 PART A)', () => {
     // A stale detail 늦게 도착 → 버려져야 함.
     await act(async () => { pending.get('M001')!(jsonResponse(detailResponse('배우A', '170'))); });
     expect(info().actors).toBe('배우B');
+  });
+
+  test('OCR이 채운 제목으로 시트를 열면 마운트 시 자동으로 후보 검색이 뜬다(#383)', async () => {
+    render(<PrefilledHarness initialTitle="영화" />);
+    await flushDebounce();
+    expect(searchCalls).toEqual(['영화']);
+    expect(resultButtons().length).toBe(2);
   });
 
   test('detail 조회가 미해결이어도 export 게이팅은 그대로 열려 있다(#284 pending 게이트 제거)', async () => {
