@@ -37,6 +37,10 @@ const INK = '#1a1612';
 const BROWN = '#6f6347';
 const CREAM = '#f4ede0';
 const DOT = 'rgba(26,22,18,.4)';
+// 좌석 폭 예산(#381) — fitFontSizeToWidth의 maxWidth이자 seat span 자체의 하드 캡. 쉼표 없는
+// 단일 토큰은 개수 캡을 안 타므로(#381 리뷰 P1), minSize까지 줄여도 못 들어가면 span에 걸린
+// overflow:hidden + ellipsis가 최종 방어선이 된다.
+const SEAT_MAX_WIDTH = 520;
 
 const POSTER_H = 760;
 // 홀로그램 티커 무지개 그라디언트(마스터 1:1) — 절취 정보 스트립 배경.
@@ -81,9 +85,9 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
   const actorsVal = truncateActors(gate(fv?.actors, d.actors));
   const seatVal = gate(fv?.seat, d.seat);
   // 좌석 폭 맞춤(#381) — SEAT 칩은 flex:0 0 auto라 길어지면 그대로 커져 옆 DATE/TIME/HALL
-  // 컬럼을 짓누른다. 520px는 실측(4석 "J101, J102, J103, J104" 스타일도 485px로 안전권)
-  // 기준 예산 — DATE/TIME/HALL이 최소 ~280px는 유지하도록 여유를 둔 값.
-  const seatFontSize = fitFontSizeToWidth(seatVal, 520, { fontFamily: FONT_SANS, fontWeight: 900, minSize: 24, maxSize: 48 }, fontsReady);
+  // 컬럼을 짓누른다. SEAT_MAX_WIDTH는 실측(4석 "J101, J102, J103, J104" 스타일도 485px로
+  // 안전권) 기준 예산 — DATE/TIME/HALL이 최소 ~280px는 유지하도록 여유를 둔 값.
+  const seatFontSize = fitFontSizeToWidth(seatVal, SEAT_MAX_WIDTH, { fontFamily: FONT_SANS, fontWeight: 900, minSize: 24, maxSize: 48 }, fontsReady);
   const watchDateVal = gate(fv?.watchDate, watchDateClean);
   const watchTimeVal = gate(fv?.watchTime, d.watchTime);
   const theaterVal = gate(fv?.theater, d.theater);
@@ -213,7 +217,7 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
                     <div style={{ flex: '0 0 auto', background: INK, color: CREAM, borderRadius: 6, padding: '14px 26px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                       <span style={{ fontFamily: FONT_MONO, fontSize: 13, letterSpacing: 3, color: 'rgba(244,237,224,.6)', marginBottom: 6 }}>SEAT</span>
                       {seatVal ? (
-                        <span style={{ fontWeight: 900, fontSize: seatFontSize, letterSpacing: -1, lineHeight: 0.85 }}>{seatVal}</span>
+                        <span style={{ fontWeight: 900, fontSize: seatFontSize, letterSpacing: -1, lineHeight: 0.85, display: 'inline-block', maxWidth: SEAT_MAX_WIDTH, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{seatVal}</span>
                       ) : (
                         <FieldGhost text="SEAT" width={100} height={48} size={2} surface="dark" state={gSeat} />
                       )}

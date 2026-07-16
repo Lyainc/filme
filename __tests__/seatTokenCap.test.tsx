@@ -114,6 +114,20 @@ describe('MoodEditorial 좌석 폭 맞춤 통합 (#381)', () => {
     expect(html).toContain('font-size:39px');
     expect(html).not.toContain('font-size:56px');
   });
+
+  // #381 리뷰 P1 — 쉼표 없는 단일 토큰은 capSeatTokens의 개수 캡을 안 타므로, minSize까지
+  // 줄여도 폭을 못 맞추면 span 자체의 overflow:hidden + ellipsis가 최종 방어선이어야 한다.
+  test('쉼표 없는 긴 단일 토큰은 minSize로 클램프되고 span에 ellipsis 캡이 걸린다', () => {
+    restore = installFakeCanvasContext();
+    // widthAt(minSize=26) = 30자 × 26 × 0.6 = 468 > 260(예산) → minSize로 클램프.
+    const longToken = 'ABCDEFGHIJKLMNOPQRSTUVWXYZABCD';
+    const html = renderToStaticMarkup(
+      <MoodEditorial movieInfo={movieWithSeat(longToken)} components={makeMoodBase('editorial')} croppedImageUrl="blob:x" />,
+    );
+    expect(html).toContain('font-size:26px');
+    expect(html).toContain('max-width:260px');
+    expect(html).toContain('text-overflow:ellipsis');
+  });
 });
 
 describe('MoodStub 좌석 폭 맞춤 통합 (#381)', () => {
@@ -137,5 +151,18 @@ describe('MoodStub 좌석 폭 맞춤 통합 (#381)', () => {
     );
     expect(html).toContain('font-size:37px');
     expect(html).not.toContain('font-size:48px');
+  });
+
+  // #381 리뷰 P1 — Stub도 Editorial과 동일하게 쉼표 없는 단일 토큰에 대한 최종 방어선이 필요하다.
+  test('쉼표 없는 긴 단일 토큰은 minSize로 클램프되고 SEAT 칩 span에 ellipsis 캡이 걸린다', () => {
+    restore = installFakeCanvasContext();
+    // widthAt(minSize=24) = 38자 × 24 × 0.6 = 547.2 > 520(예산) → minSize로 클램프.
+    const longToken = 'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKL';
+    const html = renderToStaticMarkup(
+      <MoodStub movieInfo={movieWithSeat(longToken)} components={makeMoodBase('stub')} croppedImageUrl="blob:x" />,
+    );
+    expect(html).toContain('font-size:24px');
+    expect(html).toContain('max-width:520px');
+    expect(html).toContain('text-overflow:ellipsis');
   });
 });
