@@ -23,6 +23,17 @@ const DEFAULT_VISIBILITY_ON_UPLOAD: Record<TicketField, boolean> = {
 // 영속화 키 — 스키마가 깨지게 바뀌면 버전을 올려 옛 데이터를 자연히 무시한다(복원 시 키 불일치 → null).
 const STORAGE_KEY = 'filme:phototicket:v1';
 
+// 좌석은 쉼표로 구분된 자리 표기(예: "H12, H13")까지만 허용 — 5번째 토큰부터는 조용히 버린다(#381).
+// Editorial/Stub의 좌석 렌더가 fitFontSizeToWidth로 안전하게 축소되는 상한이 4토큰이라, 그 상한을
+// 입력/저장 단계(수동 폼 입력 + OCR 반영 공용 choke point인 updateMovieInfo)에서도 강제한다.
+export const SEAT_TOKEN_MAX = 4;
+
+export function capSeatTokens(raw: string): string {
+  const tokens = raw.split(',').map((t) => t.trim()).filter(Boolean);
+  if (tokens.length <= SEAT_TOKEN_MAX) return raw;
+  return tokens.slice(0, SEAT_TOKEN_MAX).join(', ');
+}
+
 // 텍스트·설정만 영속화한다. 포스터(croppedImageUrl)는 objectURL이라 세션이 끝나면 무효라 제외하고,
 // recommendedColors는 포스터에서 재추출되므로 제외한다(#178).
 type PersistedState = Pick<PhototicketState, 'movieInfo' | 'components' | 'fieldVisibility'>;
@@ -151,9 +162,10 @@ export function usePhototicket() {
       // 스테일 movieCd를 계속 인코딩한다(claude-review PR #397 P1). KOBIS 선택/보강과 OCR undo
       // 스냅샷은 title과 movieCd를 항상 같은 patch에 실어 보내므로 이 분기를 타지 않는다.
       const staleMovieCd = 'title' in info && !('movieCd' in info) && info.title !== prev.movieInfo.title;
+      const capped = typeof info.seat === 'string' ? { ...info, seat: capSeatTokens(info.seat) } : info;
       return {
         ...prev,
-        movieInfo: { ...prev.movieInfo, ...info, ...(staleMovieCd ? { movieCd: undefined } : {}) },
+        movieInfo: { ...prev.movieInfo, ...capped, ...(staleMovieCd ? { movieCd: undefined } : {}) },
       };
     });
   }, []);
