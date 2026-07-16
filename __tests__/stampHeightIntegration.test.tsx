@@ -55,4 +55,14 @@ describe('ChainStamp/FormatStamp 높이 보정 통합 (#392)', () => {
     const { container } = render(<ChainStamp chain="blob:unmapped" visible height={48} />);
     expect(container.querySelector('img')?.style.height).toBe('48px');
   });
+
+  // claude-review PR #408 P1(2차): delta가 size로 스케일 안 되면 Stub/Editorial처럼 size<1인
+  // 무드에서 ±16px가 base height 대비 훨씬 큰 상대 변화를 만든다. (height+delta)*size로 고정.
+  test('size<1(예: Stub/Editorial의 0.5)에서도 delta가 함께 스케일된다', async () => {
+    const { container } = render(<ChainStamp chain="blob:tall" visible height={48} size={0.5} />);
+    await waitFor(() => {
+      // (48 + 14) * 0.5 = 31 — delta가 스케일 안 됐다면 24 + 14 = 38이 됐을 것.
+      expect(container.querySelector('img')?.style.height).toBe('31px');
+    });
+  });
 });

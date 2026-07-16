@@ -461,7 +461,10 @@ export function ChainStamp({
   // null 판정을 stampWillRender로 일원화(무드 구분선 게이팅과 동일 조건). 여기를 통과하면
   // 이미지·라벨·placeholder(ghost!==false) 중 하나는 반드시 렌더된다.
   if (!stampWillRender(visible, chain, label, ghost)) return null;
-  const h = height * size + stampHeightDelta(aspect);
+  // delta도 size로 스케일 — 아니면 size가 작은 무드(Stub·Editorial)에서 ±16px가 base height 대비
+  // 훨씬 큰 상대 변화를 만들어 이 PR이 피하려는 회귀 카테고리를 좁은 size에서 재현한다(claude-review
+  // PR #408 P1, 2차 라운드).
+  const h = (height + stampHeightDelta(aspect)) * size;
 
   // 노출 off(#369) — 여기 도달했으면 ghost===true(stampWillRender 계약). 이미지·라벨이 있어도
   // 노출하지 않고 흐린 placeholder + 값 존재 배지로만 암시한다(탭→재노출 #266 유지).
@@ -519,7 +522,8 @@ export function FormatStamp({
   // null 판정을 stampWillRender로 일원화(무드 구분선 게이팅과 동일 조건). 통과하면
   // 이미지·라벨·placeholder(ghost!==false) 중 하나는 반드시 렌더된다.
   if (!stampWillRender(visible, format, label, ghost)) return null;
-  const h = 64 * size + stampHeightDelta(aspect);
+  // delta도 size로 스케일 — ChainStamp와 동일 이유(claude-review PR #408 P1, 2차 라운드).
+  const h = (64 + stampHeightDelta(aspect)) * size;
 
   // 노출 off(#369) — ChainStamp와 동일: 값이 있어도 흐린 placeholder + 배지로만 암시.
   if (visible === false) {
