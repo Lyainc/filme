@@ -93,4 +93,11 @@ describe('MoodStub 마스터 resync (#281)', () => {
     expect(html).toContain('영화수집가');
     expect(html).toContain('width="300"'); // 바코드 300px, showText=false
   });
+
+  // BI v2 워드마크 포팅(#386) — "made with" 바로 뒤에 MoodWordmark(aria-label="FILME")가 오는지 고정.
+  // Stub은 과거 FONT_MONO 대문자로 다른 무드와 갈라져 있었다(#321 잔재) — 이번에 마저 통일.
+  test('푸터 워드마크는 BI v2 로고타입(MoodWordmark) — #386', () => {
+    const html = markup();
+    expect(html).toMatch(/made with<\/span><span aria-label="FILME"/);
+  });
 });

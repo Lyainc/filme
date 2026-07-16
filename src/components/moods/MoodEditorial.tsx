@@ -214,6 +214,8 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
         <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(115deg, rgba(255,255,255,.45) 0 2px, rgba(255,255,255,0) 2px 8px)', mixBlendMode: 'screen' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(62deg, rgba(0,0,0,.16) 0 1px, rgba(0,0,0,0) 1px 7px)' }} />
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {/* aria-hidden 장식 텍스처(대문자 강제) — 35mm 스프로켓 엣지 라벨과 같은 성격이라 BI v2
+              워드마크 교체(#386) 스코프 밖. textTransform:uppercase라 소문자로 바꿔도 대문자로 나온다. */}
           <div style={{ writingMode: 'vertical-rl', fontFamily: FONT_MONO, fontWeight: 700, fontSize: 11, letterSpacing: 5, textTransform: 'uppercase', color: 'rgba(74,52,14,.78)', textShadow: '0 1px 0 rgba(255,255,255,.45)', whiteSpace: 'nowrap' }}>FILME · SÉLECTION 2024 · ÉDITION SPÉCIALE · FILME · SÉLECTION 2024</div>
         </div>
       </div>

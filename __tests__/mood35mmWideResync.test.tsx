@@ -59,6 +59,13 @@ describe('Mood35mmLandscape 마스터 resync (#281)', () => {
     expect(html).toContain('ACCESSION No');
   });
 
+  // BI v2 워드마크 포팅(#386) — 필름 스트립 엣지 코드에도 대문자 'FILME'이 섞여 있어 위 toContain만으론
+  // 푸터 워드마크 특정이 안 된다. "made with" 바로 뒤에 MoodWordmark(aria-label="FILME")가 오는 구조로 고정.
+  test('푸터 워드마크는 BI v2 로고타입(MoodWordmark) — #386', () => {
+    const html = markup();
+    expect(html).toMatch(/made with<\/span><span aria-label="FILME"/);
+  });
+
   test('상/하단 92px 풀 필름 스트립 — KEYKODE + SAFETY FILM 엣지 코드', () => {
     const html = markup();
     expect(html).toContain('KL 23 4587 1234+05'); // FilmStripBand KEYKODE

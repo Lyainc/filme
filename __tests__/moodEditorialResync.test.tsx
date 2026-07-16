@@ -87,4 +87,12 @@ describe('MoodEditorial 마스터 resync (#281)', () => {
     // 킥커 "En Reprise · Longs Métrages"는 장식이라 유지되므로 reissue 날짜값(2023)의 부재로 검증한다.
     expect(markup()).not.toContain('2023');
   });
+
+  // BI v2 워드마크 포팅(#386) — 골드포일 세로 스트립에도 대문자 'FILME'이 장식으로 섞여 있어(스코프 밖,
+  // 위 컴포넌트 주석 참고) 단순 toContain으론 푸터 특정이 안 된다. "réalisé avec" 바로 뒤에
+  // MoodWordmark(aria-label="FILME")가 오는 구조로 고정.
+  test('푸터 워드마크는 BI v2 로고타입(MoodWordmark) — #386', () => {
+    const html = markup();
+    expect(html).toMatch(/réalisé avec<\/span><span aria-label="FILME"/);
+  });
 });
