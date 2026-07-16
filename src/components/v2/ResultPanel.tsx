@@ -242,10 +242,11 @@ export function ResultPanel({
     const message = buildShareMessage(movieInfo, url);
     if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
       try {
+        // url을 별도 필드로 넘기면 Chrome이 text와 url 사이에 개행을 끼워 넣는다(표준
+        // 동작) — url을 text 끝에 흡수시켜 단일 문자열로 전달, 개행 없이 전송(#394).
         await navigator.share({
           title: message.title,
-          text: message.text,
-          url: message.url || undefined,
+          text: message.url ? `${message.text} ${message.url}` : message.text,
         });
         return;
       } catch (err) {
