@@ -11,8 +11,8 @@ interface RatingPickerProps {
 export default function RatingPicker({ value, onValueChange, visible, onVisibleChange }: RatingPickerProps) {
   const [hover, setHover] = useState(0);
   const current = hover || value || 0;
-  // 별 채움은 0.5 단위로 반올림(#391 PR #407 Criterion 한줄평 프리셋과 동일 공식) — 저장값(텍스트)은 입력 그대로 유지.
-  const starRating = Math.round(current * 2) / 2;
+  // 별 채움은 0.5 단위로 내림(#384 결정 스펙: 3.3 → 별 3개, 3.5~3.9 → 별 3개 반) — 저장값(텍스트)은 입력 그대로 유지.
+  const starRating = Math.floor(current * 2) / 2;
 
   return (
     <div className="space-y-field">
