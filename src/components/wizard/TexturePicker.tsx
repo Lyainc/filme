@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import { TEXTURE_OPTIONS } from '@/utils/constants';
 import { Poster } from '@/components/moods/_shared';
 
@@ -49,6 +49,11 @@ const TexturePreview = memo(function TexturePreview({
 
 function TexturePicker({ value, onChange, croppedImageUrl }: TexturePickerProps) {
   const previewSrc = croppedImageUrl || SAMPLE_POSTER_SRC;
+  // 기본값이 바뀌어 선택 칩이 뷰포트 밖에서 시작해도 항상 보이게(#190 nit, PR #189 리뷰).
+  const activeRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    activeRef.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [value]);
 
   return (
     <div className="space-y-field">
@@ -68,6 +73,7 @@ function TexturePicker({ value, onChange, croppedImageUrl }: TexturePickerProps)
           return (
             <button
               key={tex.value}
+              ref={active ? activeRef : undefined}
               type="button"
               role="radio"
               aria-checked={active}
