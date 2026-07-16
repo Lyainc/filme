@@ -50,7 +50,8 @@ const RATING_QUOTES: Record<string, string> = {
   '4.5': 'nearly perfect, and knows it',
   '5': 'the film every other film will be measured against',
 };
-const DEFAULT_QUOTE = 'the last honest critic is the one who paid for the ticket';
+// claude-review PR #407 P1(2차): 675px/696px로 여유가 3%뿐이라 안전 마진을 위해 축약(552px 실측).
+const DEFAULT_QUOTE = 'the paying customer is the last honest critic';
 
 /**
  * v5 — 마스터 시안 Ticket Design Master.dc.html v2(2026-07-08 resync) 재동기화(에픽 #281).
