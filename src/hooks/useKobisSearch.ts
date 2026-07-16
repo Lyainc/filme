@@ -143,6 +143,7 @@ export function useKobisSearch({ apply, messages, onDetailPending }: UseKobisSea
       titleOg: movie.movieNmEn || '',
       releaseDate: iso,
       releaseDateGranularity: iso ? 'date' : undefined,
+      movieCd: movie.movieCd,
     });
     setOpen(false);
 
