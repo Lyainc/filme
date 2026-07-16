@@ -66,7 +66,9 @@ export function ResultStage({
             <path d="m15 18-6-6 6-6" />
           </svg>
         </button>
-        <Wordmark as="h1" />
+        <div className="flex items-center gap-2">
+          <Wordmark as="h1" />
+        </div>
         <div aria-hidden="true" className="h-9 w-9" />
       </header>
 
