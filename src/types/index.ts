@@ -40,6 +40,8 @@ export interface MovieInfo {
   rating: number;
   runtime?: string;
   bookingNumber?: string;
+  /** KOBIS 영화 코드(8자리) — 바코드 fallback(movieCd+watchDate)에 사용(#379). */
+  movieCd?: string;
   /** 유저 서명/닉네임 — 티켓에 공개로 표시되는 개인 사인(#148). */
   signature?: string;
 }

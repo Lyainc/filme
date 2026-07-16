@@ -100,7 +100,7 @@ async function fetchKobisLookup(title: string): Promise<Partial<MovieInfo>> {
 
     const detailRes = await fetch(`/api/kobis/detail?movieCd=${movie.movieCd}`);
     if (!detailRes.ok) {
-      const partial: Partial<MovieInfo> = { title };
+      const partial: Partial<MovieInfo> = { title, movieCd: movie.movieCd };
       if (titleOg) partial.titleOg = titleOg;
       if (releaseDate) partial.releaseDate = releaseDate;
       return partial;
@@ -111,7 +111,7 @@ async function fetchKobisLookup(title: string): Promise<Partial<MovieInfo>> {
 
     const { actors, runtime } = extractKobisActorsRuntime(info);
 
-    const result: Partial<MovieInfo> = { title };
+    const result: Partial<MovieInfo> = { title, movieCd: movie.movieCd };
     if (titleOg) result.titleOg = titleOg;
     if (releaseDate) result.releaseDate = releaseDate;
     if (actors) result.actors = actors;

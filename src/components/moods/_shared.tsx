@@ -924,13 +924,21 @@ function seedFromString(s: string): number {
 
 const CURRENT_YEAR = new Date().getFullYear();
 
-function fallbackBookingNumber(seed: string): string {
+function legacyFallbackBookingNumber(seed: string): string {
   const tail = String(seedFromString(seed) % 10000).padStart(4, '0');
   return `PT-${CURRENT_YEAR}-${tail}`;
 }
 
+// movieCd(8자리) + watchDate(YYYYMMDD, 8자리) = 16자리. watchDate 없으면 movieCd 8자리만
+// 유지(#379 — 날짜를 오늘/개봉일로 지어내면 같은 티켓이 재생성마다 바뀌거나 '관람일'의 의미가
+// 사라짐). movieCd 자체가 없는 완전 수동입력 케이스만 기존 title 해시 fallback을 유지한다.
+function fallbackBookingNumber(d: MovieInfo): string {
+  if (d.movieCd) return d.movieCd + (d.watchDate ? d.watchDate.replace(/-/g, '') : '');
+  return legacyFallbackBookingNumber(d.title || 'phototicket');
+}
+
 function resolveBookingNo(d: MovieInfo): string {
-  return d.bookingNumber || fallbackBookingNumber(d.title || 'phototicket');
+  return d.bookingNumber || fallbackBookingNumber(d);
 }
 
 /**
