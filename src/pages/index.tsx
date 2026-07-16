@@ -81,6 +81,17 @@ export default function Home() {
   // 모바일 셸은 mount 후에만(SSR/첫 페인트는 데스크톱 기본, 하이드레이션 일치). #212 리뉴얼.
   const showMobile = mounted && isMobile;
 
+  // 모바일 셸(#363)은 theme와 무관하게 상시 다크 크롬인데, 그 .chrome-dark는 셸 내부 div
+  // 스코프라 html/body 자신의 배경(--bg)까지는 안 닿는다 — 라이트 테마에서 html/body가 밝은
+  // 값 그대로 남아, iOS 탄성 스크롤 바운스나 100dvh 재계산 순간 그 밝은 배경이 노출된다(#402
+  // "다크 크롬 위 흰 빈공간"). html에도 같은 클래스를 얹어 배경까지 다크로 맞춘다.
+  useEffect(() => {
+    document.documentElement.classList.toggle('chrome-dark', showMobile);
+    return () => {
+      document.documentElement.classList.remove('chrome-dark');
+    };
+  }, [showMobile]);
+
   if (showMobile) {
     return (
       <>
