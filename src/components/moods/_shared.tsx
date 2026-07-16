@@ -164,6 +164,18 @@ export const FONT_DISPLAY = 'var(--font-display), Georgia, "Times New Roman", se
 export const FONT_BRAND = 'var(--font-brand), Nunito, sans-serif';
 
 /**
+ * Criterion 한줄평(#391) 유저 입력 전용 손글씨 폰트 — FONT_DISPLAY(Instrument Serif)는 한글 글리프가
+ * 없어(위 경고 참고) 유저가 한글로 쓴 한줄평은 이걸로 분기한다. `_app.tsx`에서 next/font/google
+ * Nanum_Pen_Script를 `--font-quote-kr`로 노출. 프리셋/기본 quote는 항상 영문이라 FONT_DISPLAY 유지.
+ */
+export const FONT_QUOTE_KR = 'var(--font-quote-kr), "Nanum Pen Script", cursive';
+
+/** 한글(자모·호환 자모·완성형) 포함 여부 — 한줄평 폰트 분기(FONT_QUOTE_KR vs FONT_DISPLAY)에 사용. */
+export function containsHangul(text: string): boolean {
+  return /[ᄀ-ᇿ㄰-㆏가-힣]/.test(text);
+}
+
+/**
  * BI 마스터 v2 워드마크(`v2/Wordmark.tsx`)의 무드-세이프 포팅(#386). 캡처 파이프라인은 전부 inline
  * style이라 Tailwind className(`text-accent` 등)을 못 쓰므로, dotless-i + 어센트 dot tittle만
  * 남기고 색은 무드가 이미 쓰는 단색 잉크로 통일(무드별 FILME 워터마크가 원래 단색이었던 것과 동일선상).

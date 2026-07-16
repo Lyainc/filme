@@ -17,7 +17,8 @@ export type TicketField =
   | 'releaseDate'
   | 'reissue'
   | 'bookingNo'
-  | 'signature';
+  | 'signature'
+  | 'quote';
 
 export interface MovieInfo {
   title: string;
@@ -44,6 +45,8 @@ export interface MovieInfo {
   movieCd?: string;
   /** 유저 서명/닉네임 — 티켓에 공개로 표시되는 개인 사인(#148). */
   signature?: string;
+  /** Criterion 전용 한줄평(#391) — 비어 있으면 평점 구간 프리셋 → 기본 quote로 폴백(MoodCriterion). */
+  quote?: string;
 }
 
 export interface TicketComponents {

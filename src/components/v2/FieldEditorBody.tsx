@@ -17,6 +17,7 @@ import {
   STAMP_KEYS,
   isStampTarget,
   STAMP_LABEL_MAX,
+  QUOTE_MAX_LENGTH,
   type SheetTarget,
   type StampTarget,
 } from '@/constants/fields';
@@ -68,7 +69,7 @@ function TextSheet({ field, photo }: { field: TicketField; photo: Photo }) {
       // key는 문자열 필드(title/titleOg/... bookingNumber/signature)만 — 값이 늘 string이라 안전.
       onChange={(e) => photo.updateMovieInfo({ [key]: e.target.value } as Partial<MovieInfo>)}
       aria-label={FIELD_LABELS[field]}
-      maxLength={field === 'signature' ? 20 : undefined}
+      maxLength={field === 'signature' ? 20 : field === 'quote' ? QUOTE_MAX_LENGTH : undefined}
       className={INPUT_CLS}
     />
   );
