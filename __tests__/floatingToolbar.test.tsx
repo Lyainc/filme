@@ -142,7 +142,7 @@ describe('플로팅 툴바 (#356)', () => {
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
     expect(screen.getByRole('radiogroup', { name: '툴바 배치' })).toBeTruthy();
 
-    await user.click(screen.getByRole('menuitemradio', { name: '가로형 · 고정식' }));
+    await user.click(screen.getByRole('radio', { name: '가로형 · 고정식' }));
     expect(toolbar.getAttribute('aria-orientation')).toBe('horizontal');
 
     // 자동 영속(300ms 디바운스) — 문서 키(filme:phototicket:v1)가 아닌 별도 키.
@@ -158,5 +158,33 @@ describe('플로팅 툴바 (#356)', () => {
     render(<Harness />);
     const toolbar2 = await seedPoster(user2);
     expect(toolbar2.getAttribute('aria-orientation')).toBe('horizontal');
+  });
+
+  test('포스터 업로드 전엔 배치 섹션이 헤더 메뉴에 없다(claude-review PR #405 P1 — 마운트 전 스냅 no-op 방지)', async () => {
+    const user = userSetup();
+    render(<Harness />);
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    expect(screen.queryByRole('radiogroup', { name: '툴바 배치' })).toBeNull();
+  });
+
+  test('숨김 상태에서도 배치 스냅이 동작한다(claude-review PR #405 P1 — hidden 분기 ref 누락 회귀 방지)', async () => {
+    const user = userSetup();
+    render(<Harness />);
+    await seedPoster(user);
+
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    await user.click(screen.getByRole('radio', { name: '세로형 · 이동식' }));
+    await user.click(screen.getByRole('button', { name: '툴바 숨기기' }));
+    expect(screen.queryByRole('toolbar', { name: '편집 도구' })).toBeNull();
+    // "편집 메뉴"는 위 라디오 클릭으로 이미 열린 채 유지되므로(applyToolbarMode는 메뉴를 안 닫음)
+    // 다시 열면 오히려 토글로 닫힌다 — 스냅 버튼은 그대로 화면에 남아있다.
+
+    await user.click(screen.getByRole('button', { name: '왼쪽 가장자리로 이동' }));
+
+    // hidden 분기에 ref가 안 붙어 있었다면 toolbarRef.current가 null이라 스냅이 no-op되고
+    // x가 이전 값(null) 그대로 남는다 — TB_EDGE(8)로 갱신됐으면 hidden 상태에서도 살아있다는 뜻.
+    await advance(310);
+    const raw = JSON.parse(window.localStorage.getItem(TB_KEY)!);
+    expect(raw.x).toBe(8);
   });
 });

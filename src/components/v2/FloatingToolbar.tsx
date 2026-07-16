@@ -47,7 +47,7 @@ export function loadPrefs(): TbPrefs {
   }
 }
 
-const ICON = {
+export const ICON = {
   width: 18,
   height: 18,
   viewBox: '0 0 24 24',
@@ -85,8 +85,15 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
 ) {
   const { orient, place, hidden } = prefs;
   const pos = prefs.x != null && prefs.y != null ? { x: prefs.x, y: prefs.y } : null;
-  const rootRef = useRef<HTMLDivElement>(null);
-  // 부모(MobileEditorShell)가 배치 스냅 계산(getBoundingClientRect)에 이 DOM을 참조한다(#387).
+  // hidden 분기(button)와 일반 분기(div) 양쪽에 붙는 공용 ref — 부모(MobileEditorShell)가
+  // 배치 스냅 계산(getBoundingClientRect)에 이 DOM을 참조한다(#387). hidden 상태에서도 스냅이
+  // 조용히 no-op되지 않도록(claude-review PR #405 P1) 두 분기 모두에 연결한다.
+  const rootRef = useRef<HTMLDivElement | HTMLButtonElement | null>(null);
+  // div/button 두 엘리먼트 타입이 섞이는 유니언 ref라 콜백 형태로 붙인다(각 JSX의 ref prop이
+  // 요구하는 구체 타입과 RefObject<union>은 직접 호환되지 않는다).
+  const setRootEl = (el: HTMLDivElement | HTMLButtonElement | null) => {
+    rootRef.current = el;
+  };
   useImperativeHandle(forwardedRef, () => rootRef.current as HTMLDivElement);
   const dragRef = useRef<{ px: number; py: number; ox: number; oy: number } | null>(null);
 
@@ -161,6 +168,7 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
   if (hidden) {
     return (
       <button
+        ref={setRootEl}
         type="button"
         onClick={() => onPrefsChange((prev) => ({ ...prev, hidden: false }))}
         aria-label="툴바 표시"
@@ -182,7 +190,7 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
 
   return (
     <div
-      ref={rootRef}
+      ref={setRootEl}
       role="toolbar"
       aria-label="편집 도구"
       aria-orientation={horiz ? 'horizontal' : 'vertical'}
