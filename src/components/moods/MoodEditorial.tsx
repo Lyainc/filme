@@ -10,6 +10,7 @@ import {
   FONT_SANS,
   FormatStamp,
   MoodProps,
+  MoodWordmark,
   Poster,
   fitFontSizeToWidth,
   gate,
@@ -309,7 +310,7 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
         <div style={{ marginTop: 16, paddingTop: 15, borderTop: `1px solid ${INK}`, opacity: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, opacity: 0.6 }}>
             <span style={{ ...italic(BROWN, 22) }}>réalisé avec</span>
-            <span style={{ fontWeight: 800, fontSize: 22, fontFamily: FONT_SANS, letterSpacing: 3, color: INK }}>FILME</span>
+            <MoodWordmark size={22} color={INK} />
           </div>
           {signatureVal ? (
             <FieldTap field="signature" onField={onField}>

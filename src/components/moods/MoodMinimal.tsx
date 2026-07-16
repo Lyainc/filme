@@ -9,6 +9,7 @@ import {
   FONT_SANS,
   FormatStamp,
   MoodProps,
+  MoodWordmark,
   Poster,
   fieldPieces,
   fitFontSizeToWidth,
@@ -289,7 +290,7 @@ export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components,
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 32 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 9, opacity: 0.72, minWidth: 0 }}>
             <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 22, color: ink }}>made with</span>
-            <span style={{ fontWeight: 800, fontSize: 22, fontFamily: FONT_SANS, letterSpacing: 3, color: ink }}>FILME</span>
+            <MoodWordmark size={22} color={ink} />
           </div>
           {signatureVal ? (
             <FieldTap field="signature" onField={onField}>

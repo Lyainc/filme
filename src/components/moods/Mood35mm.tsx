@@ -11,6 +11,7 @@ import {
   FONT_SANS,
   FormatStamp,
   MoodProps,
+  MoodWordmark,
   Poster,
   fieldPieces,
   fitFontSizeToWidth,
@@ -264,7 +265,7 @@ export const Mood35mm = memo(function Mood35mm({ movieInfo: d, components, cropp
           <div style={{ paddingTop: 14, display: 'flex', alignItems: 'baseline', gap: 22, minWidth: 0, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
               <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 15, opacity: 0.6, color: FS_INK }}>made with</span>
-              <span style={{ fontWeight: 800, fontSize: 14, fontFamily: FONT_SANS, letterSpacing: 3, color: FS_INK }}>FILME</span>
+              <MoodWordmark size={14} color={FS_INK} />
             </div>
             {/* gap:12 — gap:10px는 병합 셀 분해 flex 컨테이너의 유일 시그니처(ghostMode #266 PR-C 불변식)라 여긴 12로 회피. */}
             {signatureVal ? (
