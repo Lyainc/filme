@@ -4,7 +4,7 @@
  * (호출부는 ResultPanel.tsx에서 두 경로 모두 이 함수를 그대로 통과시킴, 별도 가공 없음).
  */
 import { describe, expect, test } from 'bun:test';
-import { buildShareMessage } from '@/utils/shareMessage';
+import { buildShareMessage, toNativeSharePayload } from '@/utils/shareMessage';
 import type { MovieInfo } from '@/types';
 
 const base: MovieInfo = { title: '', titleOg: '', rating: 0 };
@@ -35,5 +35,26 @@ describe('buildShareMessage (#277 앵커형: made with FILME)', () => {
     expect(msg.text).toBe('포토티켓 — made with FILME.');
     expect(msg.title).toBe('FILME 포토티켓');
     expect(msg.url).toBe('');
+  });
+});
+
+describe('toNativeSharePayload (#394 — navigator.share 카톡 자동 개행 방지)', () => {
+  test('url이 있으면 text 끝에 공백으로 흡수하고, 별도 url 필드는 만들지 않는다', () => {
+    const msg = buildShareMessage(
+      { ...base, title: '인터스텔라', titleOg: 'Interstellar', releaseDate: '2014-11-06' },
+      'https://filme.app/t/abc',
+    );
+    const payload = toNativeSharePayload(msg);
+    expect(payload).toEqual({
+      title: '인터스텔라 포토티켓',
+      text: '《인터스텔라》(Interstellar, 2014) 포토티켓 — made with FILME. https://filme.app/t/abc',
+    });
+    expect('url' in payload).toBe(false);
+  });
+
+  test('url이 없으면 text를 그대로 둔다(끝에 공백 붙이지 않음)', () => {
+    const msg = buildShareMessage({ ...base, title: '제목뿐' });
+    const payload = toNativeSharePayload(msg);
+    expect(payload.text).toBe('《제목뿐》 포토티켓 — made with FILME.');
   });
 });

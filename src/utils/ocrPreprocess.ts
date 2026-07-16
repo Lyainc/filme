@@ -19,6 +19,16 @@
  */
 
 /**
+ * width 512 캡 출력 치수를 계산한다 — 이미 ≤512면 스케일 1(그대로), 크롭은 적용하지 않는다
+ * (#404: 이 함수가 `cropH` 없이 `H`를 그대로 스케일링하는지가 하단 18% 크롭 회귀의 유일한
+ * 관찰 지점 — canvas/createImageBitmap과 분리해 순수 함수로 둬 happy-dom 없이도 검증한다).
+ */
+export function computeOutputSize(W: number, H: number): { outW: number; outH: number } {
+  const scale = W > 512 ? 512 / W : 1;
+  return { outW: Math.round(W * scale), outH: Math.round(H * scale) };
+}
+
+/**
  * 티켓 이미지를 OCR에 최적화된 Blob으로 전처리한다.
  *
  * SSR-safe: 서버 사이드에서는 Canvas/createImageBitmap을 사용할 수 없으므로
@@ -47,11 +57,9 @@ export async function preprocessForOcr(file: File): Promise<Blob> {
     const W = bitmap.width;
     const H = bitmap.height;
 
-    // 3. width 512 캡 — 업로드 페이로드를 줄인다. 이미 작으면 스케일 1(그대로).
-    //    자세한 근거는 파일 상단 헤더 참고(#111에서 정하고 #125·#404에서 재확인).
-    const scale = W > 512 ? 512 / W : 1;
-    const outW = Math.round(W * scale);
-    const outH = Math.round(H * scale);
+    // 3. width 512 캡 — 업로드 페이로드를 줄인다. 자세한 근거는 파일 상단 헤더 참고
+    //    (#111에서 정하고 #125·#404에서 재확인).
+    const { outW, outH } = computeOutputSize(W, H);
 
     // 4. Canvas에 리사이즈 적용
     const canvas = document.createElement('canvas');

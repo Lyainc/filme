@@ -7,7 +7,7 @@ import {
   downloadTicketAsJpeg,
   shareTicketAsJpeg,
 } from '@/utils/captureToImage';
-import { buildShareMessage } from '@/utils/shareMessage';
+import { buildShareMessage, toNativeSharePayload } from '@/utils/shareMessage';
 import { DEFAULT_TICKET_TTL_DAYS, UNOFFICIAL_TICKET_NOTICE } from '@/utils/ticketCleanup';
 import { Eyebrow } from './Eyebrow';
 import { PreviewFilmCell } from './PreviewFilmCell';
@@ -242,12 +242,7 @@ export function ResultPanel({
     const message = buildShareMessage(movieInfo, url);
     if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
       try {
-        // url을 별도 필드로 넘기면 Chrome이 text와 url 사이에 개행을 끼워 넣는다(표준
-        // 동작) — url을 text 끝에 흡수시켜 단일 문자열로 전달, 개행 없이 전송(#394).
-        await navigator.share({
-          title: message.title,
-          text: message.url ? `${message.text} ${message.url}` : message.text,
-        });
+        await navigator.share(toNativeSharePayload(message));
         return;
       } catch (err) {
         // 사용자가 시트를 닫으면(AbortError) 조용히 종료. 그 외 실패만 클립보드 폴백으로.

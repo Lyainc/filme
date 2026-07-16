@@ -30,8 +30,9 @@ import {
  * v08 — 마스터 시안 Ticket Design Master.dc.html v2(2026-07-08 resync) 06 35MM WIDE 재동기화(에픽 #281).
  * 35mm 가로 필름(1477×960 · dark #070707 · amber accent · 바코드 없음). 마스터 델타:
  * - 상/하단 스프로킷을 92px 풀 필름 스트립(FilmStripBand, 03=35mm 세로와 동일 헬퍼)으로 승격.
- * - 우 패널을 "From the Archive" 아카이브 카드로 재구조화 — collected by(서명) · made with FILME · ACCESSION No
- *   헤더, amber 더블룰, Exhibited/Screened, 2열 그리드(Runtime·Rated·Released·Re-released), Starring.
+ * - 우 패널을 "From the Archive" 아카이브 카드로 재구조화 — collected by(서명) · made with FILME
+ *   헤더(ACCESSION No. 더미 장식 문구는 #393에서 제거), amber 더블룰, Exhibited/Screened,
+ *   2열 그리드(Runtime·Rated·Released·Re-released), Starring.
  * - "SINGLE FRAME" 헤더 + 인라인 평점 제거 → 평점을 Rated 셀로 이동. Released/Re-released 셀 분리.
  * - 푸터 바코드 제거 → bookingNo 미렌더(MOOD_EXCLUDED_FIELDS['35mm-landscape']).
  * - 타이틀 고정 60/800(pickTitleSize 폐기), 필드 라벨16/값27(Starring 25), amber 악센트 시스템(themeColor 파생).
