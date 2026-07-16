@@ -103,11 +103,11 @@ export function OcrUploadCard({
     }
 
     // Snapshot KOBIS-injectable fields so undo can revert them too.
-    // KOBIS lookup only ever writes these 5 fields (see kobisLookup.ts);
+    // KOBIS lookup only ever writes these 6 fields (see kobisLookup.ts);
     // store currentInfo[key] verbatim — preserving undefined — so undo
     // restores the exact pre-injection state instead of clobbering with ''.
     if (title) {
-      const kobisKeys = ['title', 'titleOg', 'releaseDate', 'actors', 'runtime'] as const;
+      const kobisKeys = ['title', 'titleOg', 'releaseDate', 'actors', 'runtime', 'movieCd'] as const;
       for (const key of kobisKeys) {
         (prevValues as Record<string, unknown>)[key] = currentInfo[key];
       }
