@@ -51,12 +51,16 @@ const nunito = Nunito({
 
 // Criterion 한줄평(#391) 한글 입력 전용 손글씨 폰트 → --font-quote-kr. "아이스자람체"(인천교육서체,
 // 눈누 noonnu.cc) — 상업적 이용 무료, 웹폰트 임베딩 명시적 허용. Shin Manager에서 교체(#423).
-// CDN @import 대신 자체 호스팅(레포 컨벤션, Pretendard와 동일 패턴).
+// CDN @import 대신 자체 호스팅(레포 컨벤션, Pretendard와 동일 패턴). 전체 완성형 한글(11172자) 커버라
+// 3.6MB — 서명·한줄평은 유저 자유 입력이라 글리프 누락 위험 없이 서브셋하기 어렵다(claude-review PR
+// #427 P1). 대신 preload:false — Criterion 무드에서 한글 입력이 실제로 있을 때만 지연 로드되고,
+// _app.tsx 루트 선언이어도 다른 무드·페이지에서는 강제 preload로 매 로드마다 injection되지 않는다.
 const iceJaram = localFont({
   src: '../../public/fonts/IceJaram-Rg.woff2',
   variable: '--font-quote-kr',
   display: 'swap',
   weight: '400',
+  preload: false,
 });
 
 // 35mm 필름 스트립 엣지 텍스트(#393) LCD/디지털 폰트 → --font-lcd. dafont.com digital-7은 상업
