@@ -7,7 +7,7 @@ import { UNOFFICIAL_TICKET_NOTICE } from '@/utils/ticketCleanup';
 export function AppFooter({ ambient = false }: { ambient?: boolean }) {
   return (
     <footer
-      className={`flex shrink-0 flex-wrap items-center gap-2 px-4 py-2.5 text-[10.5px] leading-snug text-fg-faint ${
+      className={`flex shrink-0 flex-wrap items-center gap-2 px-4 py-2.5 text-[9.5px] leading-snug text-fg-faint ${
         ambient ? 'justify-center text-center' : 'justify-between border-t border-line bg-surface'
       }`}
     >

@@ -807,9 +807,6 @@ export function MobileEditorShell({
                   </svg>
                 </span>
                 <span className="relative text-[15.5px] font-bold leading-tight text-fg">포스터 업로드</span>
-                <span className="relative text-[11px] leading-relaxed text-fg-faint">
-                  탭해서 선택 · JPEG · PNG · WEBP · 0.65 : 1
-                </span>
               </button>
             )}
             <OcrUploadCard
