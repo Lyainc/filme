@@ -503,6 +503,7 @@ export function ChainStamp({
           ...(surface === 'dark' ? { filter: LOGO_SHADOW } : {}),
         }}
         draggable={false}
+        crossOrigin="anonymous"
       />
     );
   }
@@ -563,6 +564,7 @@ export function FormatStamp({
           ...(surface === 'dark' ? { filter: LOGO_SHADOW } : {}),
         }}
         draggable={false}
+        crossOrigin="anonymous"
       />
     );
   }

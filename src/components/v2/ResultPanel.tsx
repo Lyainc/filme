@@ -61,6 +61,9 @@ export function ResultPanel({
   // 동시에 돌리면 산출물이 깨진다. 노드 캡처 구간을 직렬화한다(#167).
   const capturingRef = useRef(false);
   const [ctaState, setCtaState] = useState<CtaState>('idle');
+  // 다운로드 실패 노출(#414 1단계) — PrimaryCta의 CtaState는 다른 소비자(DesktopStudioShell
+  // 임시저장 CTA)와 공유라 'error' variant를 얹지 않고, 별도 배너 + 재시도 버튼으로 분리한다.
+  const [downloadError, setDownloadError] = useState(false);
   const [permaState, setPermaState] = useState<PermaState>('idle');
   // 발급된 퍼마링크 — clipboard 성공 여부와 독립으로 보관해 읽기전용 인풋 + 복사 버튼으로
   // 노출한다. clipboard가 막혀도(인앱 웹뷰·포커스 이탈) 링크 자체는 확보·공유 가능(#138 항목1).
@@ -125,6 +128,7 @@ export function ResultPanel({
     const filename = `phototicket_${layout.id}_${title}.jpg`;
     capturingRef.current = true;
     setCtaState('loading');
+    setDownloadError(false);
     try {
       if (canShareTicketFile()) {
         const result = await shareTicketAsJpeg(node, {
@@ -144,8 +148,12 @@ export function ResultPanel({
         setCtaState('success');
       }
     } catch (err) {
+      // 무음 실패 제거(#414 1단계) — 사용자 눈엔 "그냥 안 됨"이던 걸 배너 + 재시도로 노출해
+      // 실기기 재현 로그(console.error) 수집 경로를 연다. blob revoke 등 순간적 실패는
+      // 재시도 한 번으로 넘어갈 수 있어 탈출 경로도 같이 제공한다(2단계 근본 수정 전 임시 조치).
       console.error('[save]', err);
       setCtaState('idle');
+      setDownloadError(true);
     } finally {
       capturingRef.current = false;
     }
@@ -308,6 +316,19 @@ export function ResultPanel({
           icon={<DownloadIcon />}
           className="!min-h-[52px]"
         />
+
+        {downloadError && (
+          <p role="alert" className="flex items-center justify-between gap-2 text-[12px] text-danger">
+            <span>저장에 실패했어요.</span>
+            <button
+              type="button"
+              onClick={handleDownload}
+              className="text-mono shrink-0 rounded-chip border border-danger px-2.5 py-1 text-[11px] uppercase tracking-widest text-danger transition-colors hover:bg-danger hover:text-white"
+            >
+              다시 시도
+            </button>
+          </p>
+        )}
 
         {/* D7 공유 위계: save→link→channels 시퀀스를 디바이더로 시각 분리. */}
         <div aria-hidden="true" className="h-px w-full bg-neutral-2" />
