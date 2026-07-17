@@ -20,7 +20,11 @@ export default function RatingPicker({ value, onValueChange, visible, onVisibleC
 
       <div className={`flex items-center gap-4 ${visible ? '' : 'opacity-40'}`}>
           <div
-            className="flex gap-1.5"
+            // -ml-2(#422): 별 버튼은 44px 탭타깃 안에 28px 별을 중앙정렬해 좌측에 8px 여백이 생기고,
+            // 노출 토글(VisibilityCheckbox)은 음수 마진으로 탭타깃만 넓혀 아이콘이 좌측에 그대로
+            // 붙는다 — 두 행의 좌측 시작선을 맞추려 그 8px만큼 별 그룹 전체를 당긴다(별 사이 gap엔
+            // 무영향, 이 div의 margin-left만 조정이라 input·분수 형제와의 gap-4도 그대로 유지).
+            className="-ml-2 flex gap-1.5"
             onMouseLeave={() => setHover(0)}
             role="radiogroup"
             aria-label="별점"
