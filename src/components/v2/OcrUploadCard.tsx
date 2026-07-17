@@ -240,7 +240,7 @@ export function OcrUploadCard({
         onClick={handleClick}
         aria-disabled={isProcessing}
         aria-busy={isProcessing}
-        aria-label="티켓 스크린샷으로 자동 인식"
+        aria-label="티켓 스크린샷으로 자동입력"
         data-touch="44"
         className="group inline-flex min-h-touch items-center gap-1.5 rounded-chip text-[13px] text-fg-muted transition-colors hover:text-accent aria-disabled:cursor-default aria-disabled:opacity-70"
       >

@@ -651,9 +651,9 @@ export function MobileEditorShell({
       </header>
       )}
 
-      {/* 본문: 업로드 후엔 인라인 프리뷰 + OCR만(footer는 편집 화면에서 제거 — rail dock 위에
-          고지가 끼는 어색한 위계를 없앴다. 고지는 랜딩 + 공유 플로우(ResultPanel·/t/[id])가 커버),
-          업로드 전엔 랜딩 히어로 + footer. 디자인 rail은 #357에서 본문 밖 하단 고정 dock으로 이동.
+      {/* 본문: 업로드 후엔 인라인 프리뷰만(OCR 진입점은 드로어로 일원화 — #388, footer는 편집 화면에서
+          제거 — rail dock 위에 고지가 끼는 어색한 위계를 없앴다. 고지는 랜딩 + 공유 플로우
+          (ResultPanel·/t/[id])가 커버), 업로드 전엔 랜딩 히어로 + footer. 디자인 rail은 #357에서 본문 밖 하단 고정 dock으로 이동.
           업로드 후엔 프리뷰가 fit 스테이지(flex-1, #366)라 콘텐츠가 정확히 본문 높이에 맞아
           스크롤이 생기지 않고, 업로드 전(랜딩)엔 기존대로 스크롤한다.
           relative — absolute 앰비언트 레이어 위에 그려지기 위함(#353). */}
@@ -761,20 +761,20 @@ export function MobileEditorShell({
           {/* 줌 pill(#328)은 #356에서 제거 — 최대화 진입은 플로팅 툴바가 흡수, max 탈출은
               기존 티켓 탭 복귀 그대로. */}
 
-          {/* OCR 섹션 — 랜딩·업로드 후가 같은 트리 위치의 단일 OcrUploadCard 인스턴스를 공유한다
-              (PR #372 리뷰 P1: 분기별 별도 JSX로 심으면 업로드 전환 순간 remount되고, in-flight
-              KOBIS 보강의 mountedRef 가드가 setInfo를 조용히 버려 titleOg·releaseDate가 유실된다 —
-              완료 게이트 필수 필드라 사용자는 원인을 알 수 없다). max(#328)도 같은 이유로 unmount
-              대신 CSS hidden — 최대화 왕복 중의 동일 레이스까지 함께 막는다. 랜딩에선 시안(Siyan-C-v8)
-              드롭존 히어로(포스터 비율 960/1477 점선 카드, OCR은 보조 직하 — #142 위계), 업로드 후엔
-              프리뷰 직하 OCR 슬롯(#261). OCR 로직은 셸의 useOcrUndo가 소유(DesktopStudioShell과 동형). */}
+          {/* OCR 섹션 — 랜딩에선 시안(Siyan-C-v8) 드롭존 히어로(포스터 비율 960/1477 점선 카드,
+              OCR은 보조 직하 — #142 위계)가 유일한 진입점이라 노출한다. 업로드 후(croppedImageUrl)엔
+              이 섹션을 통째로 CSS hidden — OCR 진입점은 드로어(#355) 쪽으로 일원화한다(#388, "업로드 후
+              프리뷰 직하 카드" 중복 제거). unmount가 아니라 hidden인 이유는 이 OcrUploadCard가 랜딩·
+              업로드 후에 걸쳐 같은 트리 위치의 단일 인스턴스(DOM 노드)로 남아야 하기 때문이다 —
+              분기별 별도 JSX로 심어 전환 순간 remount되면 in-flight KOBIS 보강의 mountedRef 가드가
+              setInfo를 조용히 버려 titleOg·releaseDate(완료 게이트 필수 필드)가 유실된다(PR #372 리뷰
+              P1, 커밋 514baab #363). max(#328)도 같은 이유로 hidden — 최대화 왕복 중의 동일 레이스까지
+              함께 막는다. OCR 로직은 셸의 useOcrUndo가 소유(DesktopStudioShell과 동형). */}
           <section
             className={
-              isMax
+              isMax || croppedImageUrl
                 ? 'hidden'
-                : croppedImageUrl
-                  ? 'space-y-group px-4 pt-1'
-                  : 'flex flex-1 flex-col items-center justify-center gap-5 px-6 py-8'
+                : 'flex flex-1 flex-col items-center justify-center gap-5 px-6 py-8'
             }
           >
             {!croppedImageUrl && (
