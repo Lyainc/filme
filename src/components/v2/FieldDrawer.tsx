@@ -29,7 +29,8 @@ interface FieldDrawerProps {
   /** 행 본문 탭 → 셸이 드로어를 닫고 인플레이스 편집(#354)을 연다. */
   onField: (target: SheetTarget) => void;
   onClose: () => void;
-  /** 드로어 상단 슬롯 — 셸이 OcrUploadCard(티켓 자동 인식)를 꽂는다(#142: 편집 화면 카드와 병존). */
+  /** 드로어 상단 슬롯 — 셸이 OcrUploadCard(티켓 자동입력)를 꽂는다. 업로드 후 유일한 OCR
+      진입점(#388 — 본문 카드는 업로드 후 CSS hidden으로 드로어에 일원화). */
   children?: ReactNode;
 }
 

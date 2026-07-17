@@ -97,8 +97,8 @@ describe('MobileEditorShell 필드 커버리지 (#266 PR-E)', () => {
     // 헤더 목록 버튼(포스터 있을 때만 노출) → 드로어(dynamic) 로드·오픈.
     fireEvent.click(screen.getByRole('button', { name: '티켓 항목 목록' }));
     const drawer = await screen.findByRole('dialog', { name: '티켓 항목' });
-    // 상단 슬롯의 OCR 진입점(#142 병존)이 드로어 안에 있다.
-    expect(within(drawer).getByRole('button', { name: '티켓 스크린샷으로 자동 인식' })).toBeDefined();
+    // 상단 슬롯의 OCR 진입점(#388: 업로드 후 유일한 OCR 진입점)이 드로어 안에 있다.
+    expect(within(drawer).getByRole('button', { name: '티켓 스크린샷으로 자동입력' })).toBeDefined();
 
     // 행 본문 탭('상영관'은 티켓 FieldTap과 접근명이 겹치므로 드로어 스코프로 특정) →
     // 드로어 닫힘 + handleField가 자동 표시 on + 인플레이스 필드바 오픈.
