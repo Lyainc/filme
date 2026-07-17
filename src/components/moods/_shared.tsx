@@ -199,6 +199,16 @@ export const FONT_SANS = '"Pretendard Variable", "Pretendard", "Noto Sans KR", s
 export const FONT_KR = '"Pretendard Variable", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
 
 /**
+ * 35mm 필름 스트립 엣지 텍스트(FilmStripBand) 전용 LCD/디지털 폰트(#393). dafont.com digital-7은
+ * 상업 라이선스가 유료라 배제하고, SIL OFL 1.1(상업 이용 무료)인 DSEG7-Classic-Bold(keshikan)로
+ * 자체 호스팅(`_app.tsx` → `--font-lcd`). ASCII 전용이라 ◆·★ 등 심볼과 한글은 이 폰트에 글리프가
+ * 없다 — 심볼은 폴백 체인(JetBrains Mono)이 글리프 단위로 알아서 대체하지만, 한글 "단어" 전체가
+ * 이 폴백에 걸리면 자모가 깨져 보일 수 있어 FilmStripBand는 code 단위로 containsHangul을 먼저
+ * 검사해 FONT_KR로 명시 폴백한다(암묵적 글리프 폴백에 기대지 않음).
+ */
+export const FONT_LCD = 'var(--font-lcd), "JetBrains Mono", "SF Mono", ui-monospace, monospace';
+
+/**
  * 장식 전용 디스플레이 세리프(#205). 유저 데이터가 아닌 순수 디자인 문구·큐레이션 라벨에만
  * 쓴다(제목/본문 데이터는 FONT_SANS 유지 — 한글 글리프 + 인쇄 안정성). Instrument Serif는
  * `_app.tsx`에서 next/font로 자체 호스팅하며 `--font-display` CSS 변수로 노출된다(레포 컨벤션:
@@ -903,7 +913,7 @@ export const FilmStripBand = memo(function FilmStripBand({
   const frameNums = Array.from({ length: N }, (_, i) => {
     const f = 236 + i;
     const label = f % 2 === 0 ? String(f >> 1) : `${f >> 1}A`;
-    return <span key={i} style={{ fontFamily: FONT_MONO, fontSize: 9, fontWeight: 700, letterSpacing: 0.5, color: accent, flexShrink: 0 }}>{label}</span>;
+    return <span key={i} style={{ fontFamily: FONT_LCD, fontSize: 9, fontWeight: 700, letterSpacing: 0.5, color: accent, flexShrink: 0 }}>{label}</span>;
   });
   let inkBar = true;
   const kkBars = KK_PATTERN.map((w, i) => {
@@ -916,7 +926,7 @@ export const FilmStripBand = memo(function FilmStripBand({
     codes.forEach((code, i) => {
       cells.push(
         <span key={`${r}-${i}`} style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0, color: accent, fontWeight: 600, letterSpacing: 2.5 }}>
-          <span>{code}</span>
+          <span style={containsHangul(code) ? { fontFamily: FONT_KR } : undefined}>{code}</span>
           <span style={{ margin: '0 15px', opacity: 0.5 }}>◆</span>
         </span>
       );
@@ -928,7 +938,7 @@ export const FilmStripBand = memo(function FilmStripBand({
   frameStyle[outer] = 32;
   const kkStyle: CSSProperties = { position: 'absolute', left: 16, display: 'flex', alignItems: 'center', gap: 8, opacity: 0.9, pointerEvents: 'none' };
   kkStyle[outer] = 45;
-  const edgeStyle: CSSProperties = { position: 'absolute', left: 0, right: 0, display: 'flex', alignItems: 'center', padding: '0 14px', fontFamily: FONT_MONO, fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', opacity: 0.92, pointerEvents: 'none' };
+  const edgeStyle: CSSProperties = { position: 'absolute', left: 0, right: 0, display: 'flex', alignItems: 'center', padding: '0 14px', fontFamily: FONT_LCD, fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', opacity: 0.92, pointerEvents: 'none' };
   edgeStyle[inner] = 6;
   const rootStyle: CSSProperties = { position: 'absolute', left: 0, right: 0, height, background: base, overflow: 'hidden' };
   rootStyle[outer] = 0;
@@ -941,13 +951,40 @@ export const FilmStripBand = memo(function FilmStripBand({
       <div style={frameStyle}>{frameNums}</div>
       <div style={kkStyle}>
         <div style={{ display: 'flex', alignItems: 'flex-end' }}>{kkBars}</div>
-        <span style={{ fontFamily: FONT_MONO, fontSize: 10, fontWeight: 700, letterSpacing: 1.6, color: accent }}>KL 23 4587 1234+05</span>
+        <span style={{ fontFamily: FONT_LCD, fontSize: 10, fontWeight: 700, letterSpacing: 1.6, color: accent }}>KL 23 4587 1234+05</span>
       </div>
       <div style={edgeStyle}>{cells}</div>
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.5, mixBlendMode: 'overlay', backgroundImage: 'repeating-linear-gradient(90deg, rgba(255,255,255,.06) 0 1px, rgba(0,0,0,.07) 1px 3px), repeating-linear-gradient(0deg, rgba(255,255,255,.04) 0 1px, rgba(0,0,0,.05) 1px 3px)' }} />
     </div>
   );
 });
+
+/**
+ * FilmStripBand의 엣지 스크롤 코드 배열 조립(35mm·35mm Wide 공용, #393) — 두 무드가 완전히 같은
+ * 로직을 각자 들고 있던 걸 통합. 순수 장식 크롬(편집 불가)이라 title/signature 복제 외엔 상수 문구.
+ */
+export function buildEdgeCodes({
+  titleVal,
+  releaseDateVal,
+  ratingVisible,
+  rating,
+  signatureVal,
+}: {
+  titleVal: string;
+  releaseDateVal: string;
+  ratingVisible: boolean;
+  rating: number;
+  signatureVal: string;
+}): string[] {
+  return [
+    titleVal,
+    'SAFETY FILM',
+    'MADE WITH FILME · 35MM',
+    releaseDateVal && `PT · ${releaseDateVal}`,
+    ratingVisible && `★ ${rating.toFixed(1)}`,
+    signatureVal && `COLLECTED BY ${signatureVal}`,
+  ].filter(Boolean) as string[];
+}
 
 export const PerforationStrip = memo(function PerforationStrip({
   vertical = true,

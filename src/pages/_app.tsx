@@ -59,6 +59,17 @@ const shinManager = localFont({
   weight: '400',
 });
 
+// 35mm 필름 스트립 엣지 텍스트(#393) LCD/디지털 폰트 → --font-lcd. dafont.com digital-7은 상업
+// 라이선스가 유료($24.95)라 배제하고, SIL Open Font License 1.1(상업 이용 무료)인 DSEG7-Classic-Bold
+// (keshikan, github.com/keshikan/DSEG)로 자체 호스팅. 한글 글리프가 없어 유저 입력이 섞인 코드는
+// containsHangul로 감지해 FONT_KR로 개별 폴백한다(`_shared.tsx` FONT_LCD·FilmStripBand 참고).
+const dseg7 = localFont({
+  src: '../../public/fonts/DSEG7Classic-Bold.woff2',
+  variable: '--font-lcd',
+  display: 'swap',
+  weight: '700',
+});
+
 export default function App({ Component, pageProps }: AppProps) {
   return (
     <>
@@ -67,7 +78,7 @@ export default function App({ Component, pageProps }: AppProps) {
         <meta name="description" content="영화 포스터로 시네마틱한 포토티켓을 만드세요." />
       </Head>
       <main
-        className={`${pretendard.variable} ${jetBrainsMono.variable} ${instrumentSerif.variable} ${nunito.variable} ${shinManager.variable} font-sans bg-bg text-fg min-h-screen antialiased`}
+        className={`${pretendard.variable} ${jetBrainsMono.variable} ${instrumentSerif.variable} ${nunito.variable} ${shinManager.variable} ${dseg7.variable} font-sans bg-bg text-fg min-h-screen antialiased`}
       >
         <Component {...pageProps} />
       </main>

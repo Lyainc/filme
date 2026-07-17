@@ -13,6 +13,7 @@ import {
   MoodProps,
   MoodWordmark,
   Poster,
+  buildEdgeCodes,
   fieldPieces,
   fitFontSizeToWidth,
   gate,
@@ -146,14 +147,7 @@ export const Mood35mmLandscape = memo(function Mood35mmLandscape({ movieInfo: d,
     : null;
 
   // 필름 스트립 엣지 스크롤 코드(장식 크롬 — 편집 불가, 시안 페이싱용 복제).
-  const edgeCodes = [
-    titleVal,
-    'SAFETY FILM',
-    'MADE WITH FILME · 35MM',
-    releaseDateVal && `PT · ${releaseDateVal}`,
-    ratingVisible && `★ ${d.rating.toFixed(1)}`,
-    signatureVal && `COLLECTED BY ${signatureVal}`,
-  ].filter(Boolean) as string[];
+  const edgeCodes = buildEdgeCodes({ titleVal, releaseDateVal, ratingVisible, rating: d.rating, signatureVal });
 
   const hasStamp =
     stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost) ||
