@@ -19,6 +19,7 @@ const React = require('react') as typeof import('react');
 
 let ResultPanel: typeof import('@/components/v2/ResultPanel').ResultPanel;
 let realTicketRenderer: typeof import('@/components/TicketRenderer');
+let realCaptureToImage: typeof import('@/utils/captureToImage');
 
 beforeAll(() => {
   realTicketRenderer = require('@/components/TicketRenderer');
@@ -27,12 +28,25 @@ beforeAll(() => {
       React.createElement('div', { ref, 'data-testid': 'ticket' }),
     ),
   }));
+  // captureNodeToJpeg(→ toJpeg)의 "자연 실패"는 happy-dom 환경 자체(canvas 2D 미지원)에
+  // 기대는 것인데, captureWarmup.test.ts가 파일 스코프에서 'html-to-image'를 mock.module로
+  // 영구 대체해(bun mock.module 전역 누수) 전체 스위트로 돌리면 이 파일보다 먼저 로드돼
+  // toJpeg가 항상 성공으로 leak된다(claude-review PR #426 P1 대응 중 발견). downloadTicketAsJpeg만
+  // 결정론적으로 실패하게 mock — captureNodeToJpeg 등 나머지는 실제 구현 유지해 위 permalink
+  // 테스트(캡처 후 fetch 실패에 의존)는 그대로 둔다.
+  realCaptureToImage = require('@/utils/captureToImage');
+  mock.module('@/utils/captureToImage', () => ({
+    ...realCaptureToImage,
+    canShareTicketFile: () => false,
+    downloadTicketAsJpeg: () => Promise.reject(new Error('mock download failure')),
+  }));
   ResultPanel = require('@/components/v2/ResultPanel').ResultPanel;
 });
 
 afterEach(() => cleanup());
 afterAll(() => {
   mock.module('@/components/TicketRenderer', () => realTicketRenderer);
+  mock.module('@/utils/captureToImage', () => realCaptureToImage);
 });
 
 const FIELDS: TicketField[] = [
@@ -84,6 +98,43 @@ describe('ResultPanel 공유 의도 게이팅 (#194)', () => {
     // on-demand 발급이 돌면 캡처 전에 loading→(happy-dom 캡처 실패로) error로 전이한다.
     // error 라벨이 뜨면 issuePermalink가 끝까지 돌았다는 증거 = 버튼→발급 배선 정상.
     await waitFor(() => expect(screen.getByText('실패, 다시 시도')).toBeTruthy());
+  });
+});
+
+describe('ResultPanel 다운로드 실패 노출 (#414 1단계, claude-review PR #426 P1)', () => {
+  // downloadTicketAsJpeg는 위 beforeAll에서 결정론적으로 reject하도록 mock돼 있다(파일 상단 주석).
+  test('다운로드 실패 시 에러 배너 + 재시도 버튼이 뜬다', async () => {
+    const user = userEvent.setup();
+    renderPanel();
+    const saveButton = await screen.findByRole('button', { name: '사진에 저장' });
+    await user.click(saveButton);
+    await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
+    expect(screen.getByText('저장에 실패했어요.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '다시 시도' })).toBeTruthy();
+  });
+
+  test('재시도 버튼이 handleDownload를 다시 실행한다(캡처 재시도)', async () => {
+    const user = userEvent.setup();
+    const originalError = console.error;
+    const saveCalls: unknown[][] = [];
+    console.error = (...args: unknown[]) => {
+      if (args[0] === '[save]') saveCalls.push(args);
+    };
+    try {
+      renderPanel();
+      const saveButton = await screen.findByRole('button', { name: '사진에 저장' });
+      await user.click(saveButton);
+      await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
+      const countAfterFirst = saveCalls.length;
+      expect(countAfterFirst).toBeGreaterThan(0);
+
+      await user.click(screen.getByRole('button', { name: '다시 시도' }));
+      // 재시도도 같은 이유로 실패하지만, [save] 에러 로그가 한 번 더 찍혔다는 건
+      // handleDownload가 처음부터 다시 실행됐다는 증거다(무음 재-실패가 아니라 재-시도).
+      await waitFor(() => expect(saveCalls.length).toBeGreaterThan(countAfterFirst));
+    } finally {
+      console.error = originalError;
+    }
   });
 });
 
