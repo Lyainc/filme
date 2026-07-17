@@ -661,14 +661,16 @@ export function MobileEditorShell({
           (ResultPanel·/t/[id])가 커버), 업로드 전엔 랜딩 히어로 + footer. 디자인 rail은 #357에서 본문 밖 하단 고정 dock으로 이동.
           업로드 후엔 프리뷰가 fit 스테이지(flex-1, #366)라 콘텐츠가 정확히 본문 높이에 맞아
           스크롤이 생기지 않고, 업로드 전(랜딩)도 _app.tsx min-h-dvh 통일(#416)로 화면 안에
-          들어와 자체 스크롤이 필요 없다(overscroll-contain은 방어적으로 유지).
+          보통 들어오지만, 가로모드·저해상도 등 짧은 뷰포트에선 여전히 넘칠 수 있어(claude-review
+          PR #426 P1) 안쪽엔 overflow를 걸지 않고 이 바깥 div의 overflow-y-auto에 맡긴다 —
+          안 넘치면 육안상 스크롤 없이 그대로, 넘치면 클리핑 대신 스크롤로 안전하게 빠진다.
           relative — absolute 앰비언트 레이어 위에 그려지기 위함(#353). */}
       <div className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain">
         {/* 업로드 후엔 h-full로 높이를 확정해야 fit 스테이지(flex-1)의 cq 단위가 산다(#366) —
             min-h-full(height:auto)이면 CSS상 indefinite라 cqh가 0으로 폴백해 티켓이 사라진다.
-            업로드 전(랜딩 본문)은 _app.tsx의 min-h-dvh 통일(#416)로 화면 안에 들어와 자체
-            스크롤이 필요 없어져, h-full + overflow-hidden으로 고정한다. */}
-        <div className="flex h-full flex-col overflow-hidden">
+            업로드 전(랜딩 본문)도 같은 이유로 h-full을 쓰되, overflow-hidden은 걸지 않는다
+            (짧은 뷰포트에서 콘텐츠가 클리핑되지 않고 바깥 스크롤 컨테이너로 넘어가야 하므로). */}
+        <div className="flex h-full flex-col">
           {croppedImageUrl && (
             <div
               className={
