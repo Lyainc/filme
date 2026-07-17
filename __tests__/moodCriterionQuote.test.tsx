@@ -57,12 +57,26 @@ describe('Criterion 한줄평 폴백 체인 (#391)', () => {
   });
 
   test('영문(프리셋) quote는 FONT_DISPLAY 유지 — --font-quote-kr 미사용', () => {
-    const html = markup({ ...FULL_MOVIE, quote: '' });
+    // signature도 #423에서 언어 분기가 붙었으니(한글 서명 → FONT_QUOTE_KR), quote 자체의
+    // 폰트 분기만 격리해서 보려면 signature를 영문으로 둬야 한다(FULL_MOVIE.signature는 한글).
+    const html = markup({ ...FULL_MOVIE, quote: '', signature: 'Alex Carter' });
     expect(html).not.toContain('--font-quote-kr');
   });
 
   test('한줄평은 FieldTap 편집 타깃(aria-label) 노출', () => {
     const html = markup({ ...FULL_MOVIE, quote: '' });
     expect(html).toContain('한줄평 편집');
+  });
+
+  // 서명(signature) 폰트도 한줄평과 동일하게 언어 분기(#423) — 값이 아니라 라벨(collected by)
+  // 자리는 항상 FONT_DISPLAY 이탤릭이므로, 값 쪽만 갈리는지로 좁혀서 확인.
+  test('한글 서명은 --font-quote-kr, 영문 서명은 FONT_DISPLAY 이탤릭으로 분기', () => {
+    const krHtml = markup({ ...FULL_MOVIE, signature: '박지수' });
+    expect(krHtml).toContain('박지수');
+    expect(krHtml).toContain('--font-quote-kr');
+
+    const enHtml = markup({ ...FULL_MOVIE, quote: '', signature: 'Alex Carter' });
+    expect(enHtml).toContain('Alex Carter');
+    expect(enHtml).not.toContain('--font-quote-kr');
   });
 });

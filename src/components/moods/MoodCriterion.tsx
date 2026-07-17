@@ -94,6 +94,7 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
   const releaseDateVal = gate(fv?.releaseDate, releaseClean);
   const reissueVal     = gate(fv?.reissue, reissueClean);
   const signatureVal   = gate(fv?.signature, d.signature);
+  const signatureIsKr  = containsHangul(signatureVal);
   const ratingVisible  = (fv?.rating ?? true) && d.rating > 0;
 
   // 한줄평(#391) — 유저 입력 → 평점 구간(0.5 단위) 프리셋 → 기본 quote 순 폴백. 유저 입력에
@@ -320,7 +321,7 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
                   동일 원칙, 값이 한 조각뿐이라 fieldPieces 대신 직접 분리. */}
               <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 25, opacity: 0.78, color: ink, marginRight: 10 }}>collected by</span>
               <FieldTap field="signature" onField={onField}>
-                <span style={{ fontWeight: 600, fontSize: 32, fontFamily: FONT_KR, color: ink, letterSpacing: -0.2 }}>{signatureVal}</span>
+                <span style={{ fontWeight: 600, fontSize: 32, fontFamily: signatureIsKr ? FONT_QUOTE_KR : FONT_DISPLAY, fontStyle: signatureIsKr ? 'normal' : 'italic', color: ink, letterSpacing: -0.2 }}>{signatureVal}</span>
               </FieldTap>
             </div>
           ) : gSignature ? (
