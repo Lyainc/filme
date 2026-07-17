@@ -237,7 +237,7 @@ export function OcrUploadCard({
         onChange={handleChange}
       />
 
-      {/* 포스터 드롭존이 주연, 자동 인식은 보조 액션으로 위계를 낮춘다(#142 (18)).
+      {/* 포스터 드롭존이 주연, 자동입력은 보조 액션으로 위계를 낮춘다(#142 (18)).
           큰 점선 카드 대신 한 줄짜리 텍스트 버튼 — 핵심 동작(파일 선택→runOcr→주입→undo)은 유지. */}
       <button
         type="button"
