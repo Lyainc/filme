@@ -660,13 +660,15 @@ export function MobileEditorShell({
           제거 — rail dock 위에 고지가 끼는 어색한 위계를 없앴다. 고지는 랜딩 + 공유 플로우
           (ResultPanel·/t/[id])가 커버), 업로드 전엔 랜딩 히어로 + footer. 디자인 rail은 #357에서 본문 밖 하단 고정 dock으로 이동.
           업로드 후엔 프리뷰가 fit 스테이지(flex-1, #366)라 콘텐츠가 정확히 본문 높이에 맞아
-          스크롤이 생기지 않고, 업로드 전(랜딩)엔 기존대로 스크롤한다.
+          스크롤이 생기지 않고, 업로드 전(랜딩)도 _app.tsx min-h-dvh 통일(#416)로 화면 안에
+          들어와 자체 스크롤이 필요 없다(overscroll-contain은 방어적으로 유지).
           relative — absolute 앰비언트 레이어 위에 그려지기 위함(#353). */}
-      <div className="relative min-h-0 flex-1 overflow-y-auto">
+      <div className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain">
         {/* 업로드 후엔 h-full로 높이를 확정해야 fit 스테이지(flex-1)의 cq 단위가 산다(#366) —
             min-h-full(height:auto)이면 CSS상 indefinite라 cqh가 0으로 폴백해 티켓이 사라진다.
-            업로드 전(랜딩 본문)은 콘텐츠가 넘칠 때 스크롤해야 하므로 min-h-full 유지. */}
-        <div className={`flex flex-col ${croppedImageUrl ? 'h-full' : 'min-h-full'}`}>
+            업로드 전(랜딩 본문)은 _app.tsx의 min-h-dvh 통일(#416)로 화면 안에 들어와 자체
+            스크롤이 필요 없어져, h-full + overflow-hidden으로 고정한다. */}
+        <div className="flex h-full flex-col overflow-hidden">
           {croppedImageUrl && (
             <div
               className={
