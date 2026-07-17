@@ -97,9 +97,9 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
   const componentOpacity = components.componentOpacity ?? 1;
   // 스텁 스탬프는 실제 렌더 조건(stampWillRender)으로 게이팅 — chainVisible=true여도 로고·라벨 없고
   // ghost=false면 null이라, 이 group을 안 그려야 허공 구분선/빈 컨테이너가 안 남는다(#216 P1.1).
-  const stubStampOn =
-    stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost) ||
-    stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost);
+  const stubChainOn = stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost);
+  const stubFormatOn = stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost);
+  const stubStampOn = stubChainOn || stubFormatOn;
 
   // 단일 값 메타 셀(Durée/Note/Sortie) — 값 있으면 값, 비었고 ghost면 라벨 점선.
   const metaCell = (label: string, value: string, field: 'runtime' | 'releaseDate', ghostOn: FieldGhostState, ghostLabel: string, valueColor = INK) =>
@@ -161,10 +161,12 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
     );
   if (stubStampOn)
     stubGroups.push(
-      <div key="stamp" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+      <div key="stamp" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 22 }}>
         <FieldTap field="chain" onField={onField}>
           <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={48} surface="paper" ghost={ghost} />
         </FieldTap>
+        {/* 두 스탬프가 다 렌더될 때만 장식 점(35mm의 amber divider dot과 같은 패턴) */}
+        {stubChainOn && stubFormatOn && <span style={{ width: 5, height: 5, borderRadius: '50%', background: CREAM, opacity: 0.55, flexShrink: 0 }} />}
         <FieldTap field="format" onField={onField}>
           <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.55} surface="paper" ghost={ghost} />
         </FieldTap>
