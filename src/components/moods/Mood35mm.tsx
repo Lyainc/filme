@@ -132,7 +132,8 @@ export const Mood35mm = memo(function Mood35mm({ movieInfo: d, components, cropp
   else if (gActors) filmCells.push({ label: 'Starring', full: true, ghost: gActors, field: 'actors' });
 
   // 필름 스트립 엣지 스크롤 코드(장식 크롬 — 편집 불가). 서명의 편집 자리는 아래 푸터, 여긴 시안 페이싱용 복제.
-  const edgeCodes = buildEdgeCodes({ titleVal, releaseDateVal, ratingVisible, rating: d.rating, signatureVal });
+  // 스프로킷은 원어 표기가 필름 원판 느낌에 맞아 원제(titleOgVal)를 쓰고, 없으면 제목으로 폴백(#423).
+  const edgeCodes = buildEdgeCodes({ titleVal: titleOgVal || titleVal, releaseDateVal, ratingVisible, rating: d.rating, signatureVal });
 
   const componentOpacity = components.componentOpacity ?? 1;
 
