@@ -393,13 +393,14 @@ export function MobileEditorShell({
   const rotatedInnerWidth = `min(${PREVIEW_MAX_HEIGHT}, calc(90vw * ${layout.width} / ${layout.height}))`;
   const rotatedStageWidth = `calc(${rotatedInnerWidth} * ${layout.height} / ${layout.width})`;
 
-  // 앰비언트 다크 크롬(#353→#363) — 원래 포스터 유무로 토글했지만, 랜딩(업로드 전)을 업로드 후
-  // 화면 기준으로 톤앤매너 통일하며(#363) 셸 전체가 상시 .chrome-dark 스코프다. 기존 토큰이
-  // 다크 값으로 로컬 재정의되고(공유 컴포넌트 0줄 변경) 테마와 무관(라이트 테마여도 다크 크롬).
+  // 앰비언트 다크 크롬(#353→#363→#415) — theme==='dark'일 때만 .chrome-dark 스코프(데스크톱
+  // DesktopStudioShell.tsx의 data-theme 바인딩 패턴과 통일). #363에서 "테마와 무관하게 상시
+  // 다크"로 고정했던 게 다크모드 토글을 죽은 컨트롤로 만들어(#415) 원래 의도(라이트/다크 둘 다
+  // 지원)로 되돌린다.
   return (
     <div
       data-theme={theme}
-      className="app-canvas chrome-dark"
+      className={`app-canvas${theme === 'dark' ? ' chrome-dark' : ''}`}
       style={{
         position: 'relative',
         // height 캡(#357) — minHeight면 콘텐츠가 길 때 문서 전체가 자라 하단 dock이 접근성만
@@ -410,13 +411,17 @@ export function MobileEditorShell({
         paddingTop: 'env(safe-area-inset-top, 0px)',
       }}
     >
-      {/* 앰비언트 배경(#353) — 랜딩 톤앤매너 통일(#363)로 상시 표시. 형제 콘텐츠(header는
-          relative, 본문 래퍼도 relative)가 위에 그려진다. */}
-      <div
-        aria-hidden="true"
-        data-testid="chrome-ambient"
-        className="chrome-ambient pointer-events-none absolute inset-0"
-      />
+      {/* 앰비언트 배경(#353→#415) — .chrome-ambient는 테마 무관 리터럴 다크 그라디언트라
+          (globals.css) chrome-dark 토글만으론 안 가려진다. theme==='dark'일 때만 렌더하고,
+          라이트 테마는 데스크톱과 톤을 맞춰(#415 권장) app-canvas의 --bg 그대로 노출한다.
+          형제 콘텐츠(header는 relative, 본문 래퍼도 relative)가 위에 그려진다. */}
+      {theme === 'dark' && (
+        <div
+          aria-hidden="true"
+          data-testid="chrome-ambient"
+          className="chrome-ambient pointer-events-none absolute inset-0"
+        />
+      )}
       {/* 상단 네브(v8 §1, #363): 좌측 브랜드 워드마크 + 우측 [편집 메뉴 → 완료(최외곽)].
           #315가 제거했던 워드마크는 #363에서 복귀 확정(데스크톱 AppHeader와 동일 컴포넌트 재사용,
           셸은 상호배타 마운트라 h1 중복 없음). 상시 chrome-dark 스코프(#363)가 잉크를 이미 라이트로

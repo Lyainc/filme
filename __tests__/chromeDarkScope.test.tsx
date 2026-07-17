@@ -1,9 +1,10 @@
 /**
- * #353→#363 회귀 테스트 — 앰비언트 다크 크롬 스코프.
+ * #353→#363→#415 회귀 테스트 — 앰비언트 다크 크롬 스코프.
  *
- * 원래(#353) 포스터 유무로 토글했지만, 랜딩 톤앤매너 통일(#363)로 셸 루트의 .chrome-dark
- * 스코프(토큰 로컬 재정의)와 앰비언트 배경이 상시 켜진다. 스코프 클래스가 빠지면 라이트
- * 테마에서 앰비언트 다크 배경 위에 라이트 토큰(흰 알약·대비 역전)이 얹히는 회귀라 이 배선이 핵심.
+ * 원래(#353) 포스터 유무로 토글, 랜딩 톤앤매너 통일(#363)로 theme 무관 상시 다크가 됐었지만
+ * 그 결과 다크모드 토글이 죽은 컨트롤이 돼(#415) theme==='dark'일 때만 셸 루트 .chrome-dark
+ * 스코프(토큰 로컬 재정의) + 앰비언트 배경이 켜지는 것으로 되돌렸다. 라이트 테마에선 데스크톱과
+ * 톤을 맞춰(#415 권장) 앰비언트를 아예 렌더하지 않고 app-canvas의 --bg 그대로 노출한다.
  * 렌더 패턴은 mobileEditorShellFieldCoverage.test.tsx 미러(모듈 mock 없음).
  */
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
@@ -12,7 +13,7 @@ import { usePhototicket } from '@/hooks/usePhototicket';
 import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
 import { ResultStage } from '@/components/v2/ResultStage';
 
-function Harness() {
+function Harness({ theme = 'light' }: { theme?: 'light' | 'dark' }) {
   const photo = usePhototicket();
   return (
     <>
@@ -22,7 +23,7 @@ function Harness() {
       <MobileEditorShell
         photo={photo}
         canExport
-        theme="light"
+        theme={theme}
         onThemeChange={() => {}}
         onDone={() => {}}
         disabledReason=""
@@ -40,20 +41,25 @@ afterEach(() => {
   window.localStorage.clear();
 });
 
-describe('앰비언트 다크 크롬 스코프 (#353→#363 상시)', () => {
-  test('포스터 없음(랜딩)에도 chrome-dark + 앰비언트 상시 표시', () => {
-    render(<Harness />);
+describe('앰비언트 다크 크롬 스코프 — theme 바인딩 (#415)', () => {
+  test('라이트 테마: chrome-dark 미적용 + 앰비언트 미렌더(데스크톱과 동일 톤)', () => {
+    render(<Harness theme="light" />);
+    expect(screen.queryByTestId('chrome-ambient')).toBeNull();
+    const canvas = document.querySelector('.app-canvas') as HTMLElement;
+    expect(canvas.classList.contains('chrome-dark')).toBe(false);
+  });
+
+  test('다크 테마: chrome-dark 적용 + 앰비언트 표시(포스터 유무 무관)', () => {
+    render(<Harness theme="dark" />);
     const ambient = screen.getByTestId('chrome-ambient');
-    // 인라인 opacity 토글 없음 — 항상 보인다(#363 톤앤매너 통일).
     expect(ambient.style.opacity).toBe('');
     expect((ambient.parentElement as HTMLElement).classList.contains('chrome-dark')).toBe(true);
   });
 
-  test('포스터 업로드 후에도 동일 — chrome-dark + 앰비언트 유지', () => {
-    render(<Harness />);
+  test('다크 테마 + 포스터 업로드 후에도 동일 유지', () => {
+    render(<Harness theme="dark" />);
     fireEvent.click(screen.getByText('seed'));
     const ambient = screen.getByTestId('chrome-ambient');
-    expect(ambient.style.opacity).toBe('');
     expect((ambient.parentElement as HTMLElement).classList.contains('chrome-dark')).toBe(true);
   });
 });
