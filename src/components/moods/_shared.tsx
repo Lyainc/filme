@@ -221,9 +221,9 @@ export const FONT_DISPLAY = 'var(--font-display), Georgia, "Times New Roman", se
 export const FONT_BRAND = 'var(--font-brand), Nunito, sans-serif';
 
 /**
- * Criterion 한줄평(#391) 유저 입력 전용 손글씨 폰트 — FONT_DISPLAY(Instrument Serif)는 한글 글리프가
- * 없어(위 경고 참고) 유저가 한글로 쓴 한줄평은 이걸로 분기한다. `_app.tsx`에서 next/font/local로
- * "Shin Manager"(눈누, 상업적 이용 무료·웹폰트 임베딩 허용)를 자체 호스팅해 `--font-quote-kr`로 노출.
+ * Criterion 한줄평(#391)·서명(#423) 유저 입력 전용 손글씨 폰트 — FONT_DISPLAY(Instrument Serif)는
+ * 한글 글리프가 없어(위 경고 참고) 한글로 쓴 값은 이걸로 분기한다. `_app.tsx`에서 next/font/local로
+ * "아이스자람체"(인천교육서체, 눈누 무료·웹폰트 임베딩 허용)를 자체 호스팅해 `--font-quote-kr`로 노출.
  * 프리셋/기본 quote는 항상 영문이라 FONT_DISPLAY 유지. 시스템에 없는 커스텀 폰트라 폴백은 generic만.
  */
 export const FONT_QUOTE_KR = 'var(--font-quote-kr), cursive';
