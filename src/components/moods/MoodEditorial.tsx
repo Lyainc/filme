@@ -156,10 +156,7 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
   if (fv?.bookingNo ?? true)
     stubGroups.push(
       <FieldTap key="booking" field="bookingNo" onField={onField}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 9 }}>
-          <Barcode value={bookingNo} color={CREAM} orientation="horizontal" width={132} height={70} showText={false} />
-          <span style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 15, letterSpacing: 1.4 }}>No. {bookingNo}</span>
-        </div>
+        <Barcode value={bookingNo} color={CREAM} orientation="horizontal" width={216} height={70} showText={false} />
       </FieldTap>
     );
   if (stubStampOn)
