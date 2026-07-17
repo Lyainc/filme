@@ -157,9 +157,6 @@ export default function ImageUploader({ onUpload, isProcessing, imageUrl }: Imag
             +
           </span>
           <p className="text-[15px] font-medium leading-tight text-fg">포스터 업로드</p>
-          <p className="text-[11px] leading-relaxed text-fg-faint">
-            드래그 또는 클릭 · JPEG · PNG · WEBP · 0.65 : 1
-          </p>
 
           {busy && (
             <div className="text-mono mt-1 flex items-center gap-2 text-[10px] uppercase tracking-widest text-accent">
