@@ -314,19 +314,22 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
             <MoodWordmark size={22} color={ink} />
           </div>
           {signatureVal ? (
-            <FieldTap field="signature" onField={onField}>
-              <div style={{ textAlign: 'right', maxWidth: 560, minWidth: 0 }}>
-                <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 25, opacity: 0.78, color: ink, marginRight: 10 }}>collected by</span>
+            <div style={{ textAlign: 'right', maxWidth: 560, minWidth: 0 }}>
+              {/* 라벨은 FieldTap 밖(#417) — measureField가 tap.firstElementChild를 재는데
+                  라벨까지 같이 감싸면 캐럿이 값이 아니라 라벨 앞에 뜬다. venueCell fieldPieces와
+                  동일 원칙, 값이 한 조각뿐이라 fieldPieces 대신 직접 분리. */}
+              <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 25, opacity: 0.78, color: ink, marginRight: 10 }}>collected by</span>
+              <FieldTap field="signature" onField={onField}>
                 <span style={{ fontWeight: 600, fontSize: 32, fontFamily: FONT_KR, color: ink, letterSpacing: -0.2 }}>{signatureVal}</span>
-              </div>
-            </FieldTap>
+              </FieldTap>
+            </div>
           ) : gSignature ? (
-            <FieldTap field="signature" onField={onField}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10 }}>
-                <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 25, opacity: 0.78, color: ink }}>collected by</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10 }}>
+              <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 25, opacity: 0.78, color: ink }}>collected by</span>
+              <FieldTap field="signature" onField={onField}>
                 <FieldGhost text="SIGNATURE" width={200} height={34} surface={stampSurface} state={gSignature} />
-              </div>
-            </FieldTap>
+              </FieldTap>
+            </div>
           ) : null}
         </div>
       </div>

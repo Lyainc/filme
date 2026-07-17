@@ -306,3 +306,66 @@ describe('MoodEditorial 필드 탭 (#266, 마스터 재동기화 #281)', () => {
     expect(html).toContain('IMAXDATA'); // 상영관 sub 줄 보존
   });
 });
+
+describe('signature 캐럿 정렬 — 라벨 FieldTap 밖 분리 (#417)', () => {
+  // measureField(InPlaceFieldEditor.tsx)는 [data-field-tap="signature"]의 firstElementChild를
+  // 잰다 — "collected by"/"par" 라벨이 같은 FieldTap 안에 있으면 캐럿이 라벨 앞에 뜬다(#417 버그).
+  // 라벨이 밖으로 빠졌다면 tap 서브트리 textContent엔 값(또는 ghost)만 남고 라벨 문구는 없다.
+  test('MoodCriterion: 값 있음 — tap 서브트리에 collected by 라벨 없음', () => {
+    const { container } = render(
+      <MoodCriterion
+        movieInfo={FULL_MOVIE}
+        components={{ ...BASE, layout: 'criterion' }}
+        croppedImageUrl="blob:x"
+        fieldVisibility={ALL_ON}
+        onField={() => {}}
+      />
+    );
+    const tap = container.querySelector('[data-field-tap="signature"]');
+    expect(tap?.textContent).toBe('SIGDATA');
+  });
+
+  test('MoodCriterion: 빈 서명(ghost) — tap 서브트리에 collected by 라벨 없음', () => {
+    const { container } = render(
+      <MoodCriterion
+        movieInfo={{ ...FULL_MOVIE, signature: '' }}
+        components={{ ...BASE, layout: 'criterion' }}
+        croppedImageUrl="blob:x"
+        fieldVisibility={ALL_ON}
+        ghost
+        onField={() => {}}
+      />
+    );
+    const tap = container.querySelector('[data-field-tap="signature"]');
+    expect(tap?.textContent).not.toContain('collected by');
+  });
+
+  test('MoodEditorial: 값 있음 — tap 서브트리에 par 라벨 없음', () => {
+    const { container } = render(
+      <MoodEditorial
+        movieInfo={FULL_MOVIE}
+        components={{ ...BASE, layout: 'editorial' }}
+        croppedImageUrl="blob:x"
+        fieldVisibility={ALL_ON}
+        onField={() => {}}
+      />
+    );
+    const tap = container.querySelector('[data-field-tap="signature"]');
+    expect(tap?.textContent).toBe('SIGDATA');
+  });
+
+  test('MoodEditorial: 빈 서명(ghost) — tap 서브트리에 par 라벨 없음', () => {
+    const { container } = render(
+      <MoodEditorial
+        movieInfo={{ ...FULL_MOVIE, signature: '' }}
+        components={{ ...BASE, layout: 'editorial' }}
+        croppedImageUrl="blob:x"
+        fieldVisibility={ALL_ON}
+        ghost
+        onField={() => {}}
+      />
+    );
+    const tap = container.querySelector('[data-field-tap="signature"]');
+    expect(tap?.textContent).not.toContain('par');
+  });
+});

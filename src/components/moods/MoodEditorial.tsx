@@ -315,19 +315,21 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
             <MoodWordmark size={22} color={INK} />
           </div>
           {signatureVal ? (
-            <FieldTap field="signature" onField={onField}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, minWidth: 0 }}>
-                <span style={{ ...italic(accent, 26), flexShrink: 0 }}>par</span>
+            // 라벨은 FieldTap 밖(#417, Criterion과 동일 형제 버그) — measureField가
+            // tap.firstElementChild를 재는데 "par"까지 감싸면 캐럿이 값이 아니라 라벨 앞에 뜬다.
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, minWidth: 0 }}>
+              <span style={{ ...italic(accent, 26), flexShrink: 0 }}>par</span>
+              <FieldTap field="signature" onField={onField}>
                 <span style={{ fontWeight: 600, fontSize: 30, fontFamily: FONT_KR, letterSpacing: -0.3, color: INK, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 360 }}>{signatureVal}</span>
-              </div>
-            </FieldTap>
+              </FieldTap>
+            </div>
           ) : gSignature ? (
-            <FieldTap field="signature" onField={onField}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ ...italic(accent, 26), flexShrink: 0 }}>par</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ ...italic(accent, 26), flexShrink: 0 }}>par</span>
+              <FieldTap field="signature" onField={onField}>
                 <FieldGhost text="SIGNATURE" width={200} height={36} surface="paper" state={gSignature} />
-              </div>
-            </FieldTap>
+              </FieldTap>
+            </div>
           ) : null}
         </div>
 
