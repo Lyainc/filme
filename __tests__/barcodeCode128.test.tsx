@@ -1,8 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { renderToStaticMarkup } from 'react-dom/server';
 import { buildBarcodeWidths } from '../src/components/moods/_shared';
-import { MoodEditorial } from '../src/components/moods/MoodEditorial';
-import type { MovieInfo, TicketComponents } from '../src/types';
 
 // 표준 Code128B 참조 벡터: 입력 "20" (손계산, 숫자만 인코딩 — #312 이후 문자는 인코딩 전 제거됨)
 //   '2'(ASCII 50) -> 값 18,  '0'(ASCII 48) -> 값 16
@@ -55,29 +52,11 @@ describe('buildBarcodeWidths — 표준 Code128B 인코딩 (#207)', () => {
 });
 
 // bookingNo에 섞인 대시가 Code128 심볼을 차지해 바코드가 왜곡되던 버그(#312) 회귀.
+// Editorial의 "No. {bookingNo}" 텍스트는 #423에서 제거됐고 어느 무드도 원본 텍스트를
+// 노출하지 않으므로(showText={false}), 여기선 인코딩 자체(대시 무시)만 검증한다.
 describe('buildBarcodeWidths — 대시 포함 bookingNo (#312)', () => {
-  const DASHED = 'T-20260510-0014';
-
-  const MOVIE: MovieInfo = {
-    title: '그랜드 부다페스트 호텔', titleOg: 'The Grand Budapest Hotel', actors: '랄프 파인즈', rating: 4.5,
-    releaseDate: '2014-03-20', releaseDateGranularity: 'date', releaseDateFormat: 'kr-compact',
-    watchDate: '2024-03-15', watchDateFormat: 'kr-compact', watchTime: '19:30',
-    theater: '메가박스 코엑스', screen: 'Dolby Cinema', seat: 'G14', runtime: '99분',
-    bookingNumber: DASHED,
-  };
-
-  const COMPONENTS: TicketComponents = {
-    layout: 'editorial', chain: '', format: '', chainLabel: '', formatLabel: '',
-    texture: 'none', posterOpacity: 0.5, componentOpacity: 1, themeColor: '#FFFFFF',
-    chainVisible: false, formatVisible: false,
-  };
-
-  test('바코드는 숫자만 인코딩하고(대시 무시), 티켓 텍스트는 대시 포함 원본을 그대로 표시한다', () => {
-    expect(buildBarcodeWidths(DASHED)).toEqual(buildBarcodeWidths(DASHED.replace(/\D/g, '')));
-
-    const html = renderToStaticMarkup(
-      <MoodEditorial movieInfo={MOVIE} components={COMPONENTS} croppedImageUrl="blob:x" onField={() => {}} />
-    );
-    expect(html).toContain(`No. ${DASHED}`);
+  test('바코드는 숫자만 인코딩한다(대시 무시)', () => {
+    const dashed = 'T-20260510-0014';
+    expect(buildBarcodeWidths(dashed)).toEqual(buildBarcodeWidths(dashed.replace(/\D/g, '')));
   });
 });

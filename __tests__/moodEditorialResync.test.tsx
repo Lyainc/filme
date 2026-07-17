@@ -77,10 +77,12 @@ describe('MoodEditorial 마스터 resync (#281)', () => {
     expect(html).toContain('ADMIT ONE');
   });
 
-  test('회전 -90° 스텁 바코드는 유지(No. + svg)', () => {
+  // #423: "No. {bookingNo}" 텍스트 제거, 바코드는 132×70 → 200~240 폭 범위로 확대.
+  test('회전 -90° 스텁 바코드는 SVG로 유지, "No." 텍스트는 제거', () => {
     const html = markup();
     expect(html).toContain('rotate(-90deg)');
-    expect(html).toContain('No. BOOK-1234');
+    expect(html).toContain('viewBox="0 0 216 70"');
+    expect(html).not.toContain('No. BOOK-1234');
   });
 
   test('reissue 미렌더 — 메타 그리드 Sortie는 개봉일만(재개봉일 2023 없음)', () => {
