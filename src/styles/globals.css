@@ -85,6 +85,12 @@
     --glass-border: rgba(255, 255, 255, 0.15);
   }
 
+  /* 하단 러버밴드 공백 + 상단 pull-to-refresh 동시 차단(#416) — draft는 수동 저장(#310)이라
+     실수 pull-to-refresh로 작업 중이던 입력이 통째로 유실될 수 있어, 한 속성으로 두 문제를 같이 막는다. */
+  html, body {
+    overscroll-behavior: none;
+  }
+
   html {
     background: var(--bg);
     color: var(--fg);
