@@ -13,6 +13,7 @@ import {
   MoodProps,
   MoodWordmark,
   Poster,
+  buildEdgeCodes,
   fieldPieces,
   fitFontSizeToWidth,
   gate,
@@ -131,14 +132,7 @@ export const Mood35mm = memo(function Mood35mm({ movieInfo: d, components, cropp
   else if (gActors) filmCells.push({ label: 'Starring', full: true, ghost: gActors, field: 'actors' });
 
   // 필름 스트립 엣지 스크롤 코드(장식 크롬 — 편집 불가). 서명의 편집 자리는 아래 푸터, 여긴 시안 페이싱용 복제.
-  const edgeCodes = [
-    titleVal,
-    'SAFETY FILM',
-    'MADE WITH FILME · 35MM',
-    releaseDateVal && `PT · ${releaseDateVal}`,
-    ratingVisible && `★ ${d.rating.toFixed(1)}`,
-    signatureVal && `COLLECTED BY ${signatureVal}`,
-  ].filter(Boolean) as string[];
+  const edgeCodes = buildEdgeCodes({ titleVal, releaseDateVal, ratingVisible, rating: d.rating, signatureVal });
 
   const componentOpacity = components.componentOpacity ?? 1;
 
