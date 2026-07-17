@@ -85,6 +85,21 @@ describe('MoodEditorial 마스터 resync (#281)', () => {
     expect(html).not.toContain('No. BOOK-1234');
   });
 
+  // #423: 극장·포맷 로고 세로 gap 12→22px, 둘 다 렌더될 때만 장식 점(·) 삽입.
+  // 장식 점 마커는 크로스헤어(항상 렌더, border 기반)와 구분되는 "borderRadius+background" 조합으로 좁힌다.
+  const CONNECTOR_DOT_MARKER = 'border-radius:50%;background:#f7ece2';
+  test('극장·포맷 로고 사이 gap 확대 + 둘 다 있을 때만 장식 점', () => {
+    const html = markup();
+    expect(html).toContain('gap:22px');
+    expect(html).toContain(CONNECTOR_DOT_MARKER);
+
+    const formatOffHtml = renderToStaticMarkup(
+      <MoodEditorial movieInfo={FULL_MOVIE} components={{ ...BASE, formatVisible: false }} croppedImageUrl="blob:x" onField={() => {}} />
+    );
+    expect(formatOffHtml).toContain('MEGABOX'); // chain 스탬프는 유지
+    expect(formatOffHtml).not.toContain(CONNECTOR_DOT_MARKER); // 장식 점은 사라짐
+  });
+
   test('reissue 미렌더 — 메타 그리드 Sortie는 개봉일만(재개봉일 2023 없음)', () => {
     // 킥커 "En Reprise · Longs Métrages"는 장식이라 유지되므로 reissue 날짜값(2023)의 부재로 검증한다.
     expect(markup()).not.toContain('2023');
