@@ -49,11 +49,11 @@ const nunito = Nunito({
   weight: '900',
 });
 
-// Criterion 한줄평(#391) 한글 입력 전용 손글씨 폰트 → --font-quote-kr. "Shin Manager"(눈누,
-// noonnu.cc/en/font_page/93) — 상업적 이용 무료, 웹폰트 임베딩 명시적 허용(재배포는 허용, 상업
-// 재판매·폰트 파일 수정은 금지). CDN @import 대신 자체 호스팅(레포 컨벤션, Pretendard와 동일 패턴).
-const shinManager = localFont({
-  src: '../../public/fonts/ShinManager.woff',
+// Criterion 한줄평(#391) 한글 입력 전용 손글씨 폰트 → --font-quote-kr. "아이스자람체"(인천교육서체,
+// 눈누 noonnu.cc) — 상업적 이용 무료, 웹폰트 임베딩 명시적 허용. Shin Manager에서 교체(#423).
+// CDN @import 대신 자체 호스팅(레포 컨벤션, Pretendard와 동일 패턴).
+const iceJaram = localFont({
+  src: '../../public/fonts/IceJaram-Rg.woff2',
   variable: '--font-quote-kr',
   display: 'swap',
   weight: '400',
@@ -78,7 +78,7 @@ export default function App({ Component, pageProps }: AppProps) {
         <meta name="description" content="영화 포스터로 시네마틱한 포토티켓을 만드세요." />
       </Head>
       <main
-        className={`${pretendard.variable} ${jetBrainsMono.variable} ${instrumentSerif.variable} ${nunito.variable} ${shinManager.variable} ${dseg7.variable} font-sans bg-bg text-fg min-h-dvh antialiased`}
+        className={`${pretendard.variable} ${jetBrainsMono.variable} ${instrumentSerif.variable} ${nunito.variable} ${iceJaram.variable} ${dseg7.variable} font-sans bg-bg text-fg min-h-dvh antialiased`}
       >
         <Component {...pageProps} />
       </main>
