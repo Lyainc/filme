@@ -54,9 +54,8 @@ export function OcrUploadCard({
   const [isProcessing, setIsProcessing] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
-  // KOBIS async race guard
-  const runIdRef = useRef(0);
-  // 언마운트 후 비동기 콜백의 setState 누수 가드
+  // 언마운트 후 비동기 콜백의 로컬 UI state(toast/isProcessing) 누수 가드. KOBIS 보강의 최신성
+  // 판단(setInfo 적용 여부)엔 안 쓴다 — 아래 ocrEpochRef 참고.
   const mountedRef = useRef(true);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -128,10 +127,15 @@ export function OcrUploadCard({
     }
 
     if (title) {
-      const currentRunId = ++runIdRef.current;
-      const epoch = ocrEpochRef.current;
+      // ocrEpochRef는 셸이 소유해 랜딩·드로어 두 OcrUploadCard 인스턴스가 공유한다(#388). 여기서
+      // 증가시켜 "이 실행이 최신"임을 표시 — 같은/다른 인스턴스의 더 새 OCR 실행이나 undo(cancel(),
+      // useOcrUndo.ts)가 뒤이어 오면 그 증가가 아래 비교를 무효화한다. 인스턴스 로컬 mountedRef로
+      // 가드하지 않는 이유: 드로어 카드는 닫히면 그 자리에서 unmount되므로(FieldDrawer.tsx) 그
+      // 기준으로 가드하면 "드로어에서 OCR 시작 → 응답 전에 드로어 닫기"에서 titleOg·releaseDate가
+      // 유실된다(#363/#372와 같은 클래스, claude-review PR #413 P0) — setInfo는 이 인스턴스가 아니라
+      // 셸이 쥔 photo 상태를 갱신하므로 unmount 이후에도 안전하게 적용할 수 있다.
+      const epoch = ++ocrEpochRef.current;
       triggerKobisLookup(title).then((kobisInfo) => {
-        if (!mountedRef.current || currentRunId !== runIdRef.current) return;
         if (epoch !== ocrEpochRef.current) return;
         setInfo(kobisInfo);
         if (!kobisInfo.titleOg && !kobisInfo.actors) {

@@ -904,7 +904,7 @@ export function MobileEditorShell({
       )}
 
       {/* 필드 목록 우측 드로어(#355) — 행 탭은 handleField(자동 표시 on + 인플레이스 열기)로,
-          상단 슬롯엔 OCR 카드를 한 번 더 꽂는다(#142: 편집 화면 카드는 그대로 유지, 진입점 병존). */}
+          상단 슬롯엔 OCR 카드를 꽂는다 — 업로드 후 유일한 OCR 진입점이다(#388, 본문 카드는 hidden). */}
       {drawerOpen && croppedImageUrl && (
         <FieldDrawer
           photo={photo}

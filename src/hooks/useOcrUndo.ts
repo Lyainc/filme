@@ -29,6 +29,12 @@ export interface UseOcrUndo {
   /**
    * cancel(undo) 시 증가시켜 in-flight KOBIS fetch를 무효화 — revert 후 폼을 다시 채우지 못하게.
    * confirm에선 안 올린다: confirm은 주입을 수락하고, KOBIS 보강(title 자체를 나르는)은 계속 착지해야 한다.
+   *
+   * MobileEditorShell·DesktopStudioShell 모두 이 훅을 한 번만 호출해 랜딩·드로어 등 여러
+   * OcrUploadCard 인스턴스에 같은 ref 객체를 넘긴다(#388) — OcrUploadCard도 새 OCR 실행 시작 시
+   * 이 값을 직접 증가시켜(OcrUploadCard.tsx applyOcr) "가장 최신 실행"임을 표시한다. 인스턴스별
+   * mountedRef 대신 이 셸 레벨 카운터로 최신성을 판단하므로, 실행을 시작한 인스턴스가 나중에
+   * unmount돼도(드로어를 닫는 경우 등) 아직 최신인 응답은 정상적으로 반영된다.
    */
   epochRef: { current: number };
   /** OcrUploadCard.onOcrApply — 채워진 필드/이전 값 스냅샷을 받아 배너를 띄운다. */
