@@ -6,7 +6,7 @@ A Next.js web application for generating high-quality CGV Photoplay premium tick
 ### 📌 Core Architecture & Tech Stack
 - **Framework**: Next.js 16 (Pages Router), React 19, TypeScript
 - **Styling**: Tailwind CSS v3
-- **Ticket Rendering**: DOM(JSX/CSS) + `html-to-image` 캡처. `react-easy-crop`로 포스터 매뉴얼 크롭
+- **Ticket Rendering**: DOM(JSX/CSS) + `html-to-image` 캡처. `react-image-crop`로 포스터 매뉴얼 크롭(크롭박스 리사이즈 지원, #421)
 - **OCR / AI**: 티켓 스크린샷 → Gemini 3.1 Flash Lite vision OCR. `ai` SDK v6 + `@ai-sdk/google`(Google AI Studio 직결), Upstash rate limit, Zod 스키마
 - **State Management**: React `useState` / Custom Hooks
 - **Package Manager**: Bun
