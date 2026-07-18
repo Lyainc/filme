@@ -121,14 +121,22 @@ export function blobImageMimeType(img: HTMLImageElement): string {
   return img.dataset.role === 'poster' ? 'image/jpeg' : 'image/png';
 }
 
+// iOS Safari는 캔버스 크기가 일정 한계를 넘으면 toDataURL()이 throw 없이 빈/손상 이미지를
+// 조용히 돌려줄 수 있다(#439 후보④) — try/catch로는 못 잡는 실패라 애초에 큰 캔버스를 안 만드는
+// 쪽이 유일한 방어다. "원본 비율 보존" 포스터(getCroppedImg maxSide: TARGET_HEIGHT*2 = 3068px,
+// stub 무드는 항상 이 경로)가 위험권이고, 최종 티켓 출력도 이 해상도로 그릴 일이 없어(캡처
+// pixelRatio 2 기준 최대 변이 약 3100px) 다운스케일에 따른 실질 화질 손실도 없다.
+const MAX_BLOB_CANVAS_DIM = 2048;
+
 function blobSrcToDataUrl(img: HTMLImageElement, mimeType: string): string | null {
   try {
+    const scale = Math.min(1, MAX_BLOB_CANVAS_DIM / Math.max(img.naturalWidth, img.naturalHeight));
     const canvas = document.createElement('canvas');
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
+    canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
-    ctx.drawImage(img, 0, 0);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     return canvas.toDataURL(mimeType);
   } catch {
     return null; // 극히 드문 캔버스 오염 등 — 원래 src(blob:)로 진행
@@ -169,10 +177,20 @@ export async function captureNodeToJpeg(
 
   // blob: 소스 <img>를 캡처 직전 data: URL로 바꿔치기해 html-to-image의 재fetch를 우회하고,
   // 캡처가 끝나면(성공/실패 무관) 원래 blob: URL로 복원한다.
+  // Poster(_shared.tsx)의 contain fit은 블러 배경+전경 두 <img>가 같은 blob src를 공유한다 —
+  // src별로 한 번만 캔버스에 그려 인코딩하고 결과를 재사용해, 안 그래도 큰 preserveRatio 포스터를
+  // 두 번 굽는 iOS 메모리 압박을 줄인다(#439 후보④).
   const restores: Array<() => void> = [];
+  const dataUrlCache = new Map<string, string | null>();
   for (const img of images) {
     if (!img.src.startsWith('blob:')) continue;
-    const dataUrl = blobSrcToDataUrl(img, blobImageMimeType(img));
+    const mimeType = blobImageMimeType(img);
+    const cacheKey = `${img.src}::${mimeType}`;
+    let dataUrl = dataUrlCache.get(cacheKey);
+    if (dataUrl === undefined) {
+      dataUrl = blobSrcToDataUrl(img, mimeType);
+      dataUrlCache.set(cacheKey, dataUrl);
+    }
     if (!dataUrl) continue;
     const original = img.src;
     img.src = dataUrl;
