@@ -16,6 +16,8 @@ const SpeedInsights = dynamic(
   () => import('@vercel/speed-insights/next').then((m) => m.SpeedInsights),
   { ssr: false },
 );
+// #439 실기기 진단용 — ?debug=1 없으면 렌더 자체가 no-op(DebugConsole 내부 가드).
+const DebugConsole = dynamic(() => import('@/components/DebugConsole'), { ssr: false });
 
 const pretendard = localFont({
   src: '../../public/fonts/PretendardVariable.woff2',
@@ -89,6 +91,7 @@ export default function App({ Component, pageProps }: AppProps) {
       </main>
       <Analytics />
       <SpeedInsights />
+      <DebugConsole />
     </>
   );
 }
