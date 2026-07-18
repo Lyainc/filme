@@ -154,10 +154,14 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
   // 스텁 5그룹(회전 -90°) — DOM 좌→우 = 회전 후 아래→위. 존재하는 그룹만 담고 사이에만 구분선을 끼워
   // 허공 구분선을 원천 차단한다(#216 P1.1). admis·le billet은 장식이라 항상 렌더.
   const stubGroups: ReactNode[] = [];
+  // 바코드 폭 216->286(#444) — Code128C(143유닛) 기준 모듈당 2px을 채우는 최소값. 이 이상 넓히면
+  // 5그룹 로우 실측 폭(997px, CGV 16자리 기준)이 캔버스 960px을 넘는 몫이 늘어 padding 22px(양끝)을
+  // 더 잠식한다(현재 3.5px만 남음) — 실측 확인(2026-07-19): 초과분은 padding 안에서만 소진되고
+  // le billet 텍스트·바코드 바 자체는 안 잘리지만, 더 키우면 실콘텐츠까지 닿는다.
   if (fv?.bookingNo ?? true)
     stubGroups.push(
       <FieldTap key="booking" field="bookingNo" onField={onField}>
-        <Barcode value={bookingNo} color={CREAM} orientation="horizontal" width={216} height={70} showText={false} />
+        <Barcode value={bookingNo} color={CREAM} orientation="horizontal" width={286} height={70} showText={false} encoding="code128c" />
       </FieldTap>
     );
   if (stubStampOn)

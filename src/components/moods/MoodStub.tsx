@@ -343,7 +343,7 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
           </div>
           {bookingVisible && (
             <FieldTap field="bookingNo" onField={onField}>
-              <Barcode value={bookingNo} color={INK} width={300} height={40} showText={false} />
+              <Barcode value={bookingNo} color={INK} width={300} height={40} showText={false} encoding="code128c" />
             </FieldTap>
           )}
         </div>

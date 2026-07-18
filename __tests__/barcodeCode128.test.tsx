@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { buildBarcodeWidths } from '../src/components/moods/_shared';
+import { buildBarcodeWidths, buildBarcodeWidths128C } from '../src/components/moods/_shared';
 
 // 표준 Code128B 참조 벡터: 입력 "20" (손계산, 숫자만 인코딩 — #312 이후 문자는 인코딩 전 제거됨)
 //   '2'(ASCII 50) -> 값 18,  '0'(ASCII 48) -> 값 16
@@ -58,5 +58,56 @@ describe('buildBarcodeWidths — 대시 포함 bookingNo (#312)', () => {
   test('바코드는 숫자만 인코딩한다(대시 무시)', () => {
     const dashed = 'T-20260510-0014';
     expect(buildBarcodeWidths(dashed)).toEqual(buildBarcodeWidths(dashed.replace(/\D/g, '')));
+  });
+});
+
+// Code128C 참조 벡터(손계산, #444) — 숫자 2자리를 심볼 1개(값=자릿수 그대로, subset C)로 묶는다.
+// "1234"(짝수): Start-C(105) + [12,34] + 체크디짓 + Stop.
+//   체크디짓 = (105 + 12*1 + 34*2) % 103 = 185 % 103 = 82
+//   패턴 = Start-C(211232) · 12(112232) · 34(131123) · 82(121241) · Stop(2331112)
+const EVEN_SEQ = '211232' + '112232' + '131123' + '121241' + '2331112';
+// "123"(홀수): 마지막 1자리는 Code B로 전환해 넣는다 — Start-C(105) + [12] + CodeB(100) + '3'(subset B, 값19) + 체크디짓 + Stop.
+//   체크디짓 = (105 + 12*1 + 100*2 + 19*3) % 103 = 374 % 103 = 65
+//   패턴 = Start-C(211232) · 12(112232) · CodeB(114131) · 19(221132) · 65(121124) · Stop(2331112)
+const ODD_SEQ = '211232' + '112232' + '114131' + '221132' + '121124' + '2331112';
+
+describe('buildBarcodeWidths128C — Code128C 인코딩(#444)', () => {
+  test('짝수 자리("1234")는 숫자 2자리씩 심볼화해 손계산 참조와 일치', () => {
+    expect(buildBarcodeWidths128C('1234')).toEqual(seqToBars(EVEN_SEQ));
+  });
+
+  test('홀수 자리("123")는 마지막 1자리를 Code B로 전환해 손계산 참조와 일치', () => {
+    expect(buildBarcodeWidths128C('123')).toEqual(seqToBars(ODD_SEQ));
+  });
+
+  test('Code128B 대비 심볼 수가 거의 절반 — CGV 16자리 판매번호 기준 231유닛(quiet 포함) -> 143유닛', () => {
+    const cgv = '2026071912345678';
+    const unitsOf = (bars: ReturnType<typeof buildBarcodeWidths>) =>
+      bars.reduce((sum, b) => sum + b.w, 0) + 20; // quiet zone 10모듈×2
+    expect(unitsOf(buildBarcodeWidths(cgv))).toBe(231);
+    expect(unitsOf(buildBarcodeWidths128C(cgv))).toBe(143);
+  });
+
+  test('막대 폭은 128B와 동일하게 항상 1~4 모듈, Stop으로 bar 종결', () => {
+    for (const b of buildBarcodeWidths128C('20260719123456')) {
+      expect(b.w).toBeGreaterThanOrEqual(1);
+      expect(b.w).toBeLessThanOrEqual(4);
+    }
+    const bars = buildBarcodeWidths128C('CGV-2026-071912345');
+    expect(bars[bars.length - 1].ink).toBe(true);
+  });
+
+  // 체인별 판매번호 자릿수(#444 후속 확인) — CGV 16자리·롯데시네마 8자리·메가박스 11자리(홀수, Code B
+  // 폴백 경로 실사용). editorial(width=286)·stub(width=300)에서 전부 모듈당 2px 이상을 유지해야
+  // 화면 표시 최소 기준(2px/모듈)을 만족한다. CGV 16자리가 가장 길어 최악 케이스 — 나머지 체인은
+  // 자릿수가 짧을수록 심볼 수가 줄어 여유가 더 크다.
+  test.each([
+    ['CGV', '2026071912345678'],
+    ['롯데시네마', '12345678'],
+    ['메가박스', '12345678901'],
+  ])('%s(%s자리) 실제 무드 폭에서 모듈당 2px 이상', (_chain, digits) => {
+    const units = buildBarcodeWidths128C(digits).reduce((sum, b) => sum + b.w, 0) + 20;
+    expect(286 / units).toBeGreaterThanOrEqual(2); // editorial
+    expect(300 / units).toBeGreaterThanOrEqual(2); // stub
   });
 });

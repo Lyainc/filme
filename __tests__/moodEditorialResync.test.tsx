@@ -78,10 +78,11 @@ describe('MoodEditorial 마스터 resync (#281)', () => {
   });
 
   // #423: "No. {bookingNo}" 텍스트 제거, 바코드는 132×70 → 200~240 폭 범위로 확대.
+  // 폭 216->286(#444) — Code128C(143유닛) 기준 모듈당 2px 확보를 위한 재조정.
   test('회전 -90° 스텁 바코드는 SVG로 유지, "No." 텍스트는 제거', () => {
     const html = markup();
     expect(html).toContain('rotate(-90deg)');
-    expect(html).toContain('viewBox="0 0 216 70"');
+    expect(html).toContain('viewBox="0 0 286 70"');
     expect(html).not.toContain('No. BOOK-1234');
   });
 
