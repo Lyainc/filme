@@ -92,7 +92,7 @@ function measureField(
     if (m.a > 0) scale = m.a;
     translateY = m.f;
   }
-  // 캐럿 폰트 힌트(#365) — 티켓 텍스트의 computed 스타일은 자연 픽셀(무드 960/1477 기준)이라
+  // 캐럿 폰트 힌트(#365) — 티켓 텍스트의 computed 스타일은 자연 픽셀(무드 960/1534 기준)이라
   // 티켓 스케일(래퍼 로컬 폭 ÷ 자연 폭)로 환산한다. el이 없는 텍스트 조각(fieldPieces)은
   // display:contents 래퍼(tap)의 상속 스타일이 곧 텍스트 스타일이다.
   const tw = ticket.getBoundingClientRect().width / scale;
