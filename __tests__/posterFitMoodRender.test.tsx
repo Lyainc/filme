@@ -16,6 +16,7 @@ import { MoodCriterion } from '../src/components/moods/MoodCriterion';
 import { MoodEditorial } from '../src/components/moods/MoodEditorial';
 import { MoodMinimal } from '../src/components/moods/MoodMinimal';
 import { MoodStub } from '../src/components/moods/MoodStub';
+import { POSTER_FRAME_INSET_Y } from '../src/components/moods/_shared';
 import type { MovieInfo, TicketComponents } from '../src/types';
 
 const MOVIE: MovieInfo = {
@@ -54,6 +55,11 @@ const POSTER_IMG = /<img[^>]*object-position[^>]*>/;
 const POSTER_WRAPPER_BG = /aria-hidden="true" style="[^"]*background:([^";]*)"/;
 // 레터박스 채움용 blur 포스터 배경(#440) — contain일 때만 존재.
 const POSTER_BG_BLUR = /<img[^>]*data-poster-bg="true"[^>]*blur\(/;
+// frameInsetY 사이징 wrapper(#449) — 선명 포스터 img를 감싸는 div의 top/bottom 인셋.
+// _shared.tsx Poster의 style 선언 순서(position→top→bottom→left→right)에 그대로 대응.
+// React는 style 값이 0이면 단위(px)를 안 붙인다 — top/bottom도 frameInsetY=0(cover, 미배선)일
+// 땐 unit 없이 "0"으로 나오므로 px suffix를 옵셔널로 둔다. left/right는 항상 0(unit 없음).
+const POSTER_FRAME_WRAPPER = /<div style="position:absolute;top:(-?\d+)(?:px)?;bottom:(-?\d+)(?:px)?;left:0;right:0">/;
 
 describe.each([
   ['minimal', MoodMinimal],
@@ -90,6 +96,18 @@ describe.each([
   test('posterFit=cover → blur 배경 없음(전경이 슬롯을 꽉 채움)', () => {
     expect(render(Mood, 'cover')).not.toContain('data-poster-bg');
   });
+
+  test('posterFit=contain → frameInsetY 인셋이 POSTER_FRAME_INSET_Y(22px)만큼 위/아래로 적용(#449)', () => {
+    const m = render(Mood, 'contain').match(POSTER_FRAME_WRAPPER);
+    expect(m?.[1]).toBe(String(POSTER_FRAME_INSET_Y));
+    expect(m?.[2]).toBe(String(POSTER_FRAME_INSET_Y));
+  });
+
+  test('posterFit=cover → frameInsetY 인셋 0(cover는 슬롯을 꽉 채워 프레임 의미 없음)', () => {
+    const m = render(Mood, 'cover').match(POSTER_FRAME_WRAPPER);
+    expect(m?.[1]).toBe('0');
+    expect(m?.[2]).toBe('0');
+  });
 });
 
 describe('#440 posterFit 렌더 분기 — 35mm(정책 통일: contain 하드코딩 제거)', () => {
@@ -108,6 +126,12 @@ describe('#440 posterFit 렌더 분기 — 35mm(정책 통일: contain 하드코
   test('letterbox 배경은 FS_BASE(#0a0a0a)로 고정 — posterFit 무관', () => {
     expect(render(Mood35mm, 'cover').match(POSTER_WRAPPER_BG)?.[1]).toBe('#0a0a0a');
     expect(render(Mood35mm, 'contain').match(POSTER_WRAPPER_BG)?.[1]).toBe('#0a0a0a');
+  });
+
+  test('posterFit=contain → frameInsetY 인셋이 POSTER_FRAME_INSET_Y(22px)만큼 위/아래로 적용(#449)', () => {
+    const m = render(Mood35mm, 'contain').match(POSTER_FRAME_WRAPPER);
+    expect(m?.[1]).toBe(String(POSTER_FRAME_INSET_Y));
+    expect(m?.[2]).toBe(String(POSTER_FRAME_INSET_Y));
   });
 });
 
@@ -137,5 +161,11 @@ describe.each([
     const html = render(Mood, 'contain');
     expect((html.match(POSTER_IMG)?.[0] ?? '')).toContain('object-fit:contain');
     expect(html).toMatch(POSTER_BG_BLUR);
+  });
+
+  test('frameInsetY 미배선 — 인셋 0(#449 스코프 밖, editorial/35mm-landscape는 별도 컬럼 레이아웃)', () => {
+    const m = render(Mood, 'contain').match(POSTER_FRAME_WRAPPER);
+    expect(m?.[1]).toBe('0');
+    expect(m?.[2]).toBe('0');
   });
 });

@@ -16,6 +16,7 @@ import {
   gate,
   isInkDark,
   posterFitProps,
+  POSTER_FRAME_INSET_Y,
   posterTapProps,
   resolveInk,
   resolveTicketData,
@@ -167,7 +168,7 @@ export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components,
     <div style={{ position: 'absolute', inset: 0, color: ink, fontFamily: FONT_SANS, overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
       <Poster
         src={croppedImageUrl}
-        {...posterFitProps(components.posterFit, { letterboxBg: posterBg, frameInsetY: 22 })}
+        {...posterFitProps(components.posterFit, { letterboxBg: posterBg, frameInsetY: POSTER_FRAME_INSET_Y })}
         texture={components.texture}
         posterOpacity={components.posterOpacity}
       />

@@ -593,6 +593,12 @@ interface PosterProps {
   frameInsetY?: number;
 }
 
+/**
+ * 풀블리드 contain 무드(Minimal·Criterion·35mm) 공통 frameInsetY 값(#449 claude-review P2) —
+ * 세 무드가 각자 22를 하드코딩하던 걸 단일 소스로. 20~25px 블러 레터박스 노출 목표의 중간값.
+ */
+export const POSTER_FRAME_INSET_Y = 22;
+
 const PRINT_SIM = 'saturate(0.92) contrast(1.05)';
 
 // vintage/newspaper have intentional contrast curves — no PRINT_SIM stacking
