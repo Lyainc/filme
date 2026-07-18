@@ -75,10 +75,12 @@ describe('MobileEditorShell 필드 커버리지 (#266 PR-E)', () => {
     fireEvent.click(await screen.findByRole('switch', { name: '티켓 노출' }));
     expect(screen.getByTestId('vis-screen').textContent).toBe('false');
 
-    // "전체 표시" 단일 스위치(#261)는 #315에서 헤더 서브메뉴로 이전 — 먼저 편집을 닫고 메뉴를 연다.
+    // "전체 표시" 단일 스위치(#261)는 #315에서 헤더 서브메뉴로, #424에서 필드 드로어로 이전 —
+    // 먼저 편집을 닫고 드로어를 연다.
     fireEvent.click(await screen.findByRole('button', { name: '편집 완료' }));
-    fireEvent.click(await screen.findByRole('button', { name: '편집 메뉴' }));
-    fireEvent.click(await screen.findByRole('switch', { name: '전체 표시' }));
+    fireEvent.click(screen.getByRole('button', { name: '티켓 항목 목록' }));
+    const drawer = await screen.findByRole('dialog', { name: '티켓 항목' });
+    fireEvent.click(within(drawer).getByRole('switch', { name: '전체 표시' }));
     expect(screen.getByTestId('vis-screen').textContent).toBe('true');
   });
 
@@ -97,8 +99,9 @@ describe('MobileEditorShell 필드 커버리지 (#266 PR-E)', () => {
     // 헤더 목록 버튼(포스터 있을 때만 노출) → 드로어(dynamic) 로드·오픈.
     fireEvent.click(screen.getByRole('button', { name: '티켓 항목 목록' }));
     const drawer = await screen.findByRole('dialog', { name: '티켓 항목' });
-    // 상단 슬롯의 OCR 진입점(#388: 업로드 후 유일한 OCR 진입점)이 드로어 안에 있다.
-    expect(within(drawer).getByRole('button', { name: '티켓 스크린샷으로 자동입력' })).toBeDefined();
+    // 상단 슬롯의 OCR 진입점(#388: 업로드 후 유일한 OCR 진입점)이 드로어 안에 있다. 문구는 드로어
+    // 컨텍스트(#424)로 분기 — 랜딩 인스턴스와 다르다.
+    expect(within(drawer).getByRole('button', { name: '스크린샷으로 채우기' })).toBeDefined();
 
     // 행 본문 탭('상영관'은 티켓 FieldTap과 접근명이 겹치므로 드로어 스코프로 특정) →
     // 드로어 닫힘 + handleField가 자동 표시 on + 인플레이스 필드바 오픈.
@@ -114,10 +117,11 @@ describe('MobileEditorShell 필드 커버리지 (#266 PR-E)', () => {
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
 
-    // #315: "전체 표시"는 헤더 서브메뉴 안 — 먼저 메뉴를 연다.
-    fireEvent.click(await screen.findByRole('button', { name: '편집 메뉴' }));
+    // #424: "전체 표시"는 필드 드로어 안 — 먼저 드로어를 연다.
+    fireEvent.click(screen.getByRole('button', { name: '티켓 항목 목록' }));
+    const drawer = await screen.findByRole('dialog', { name: '티켓 항목' });
     // 첫 업로드는 표시항목을 부분 기본값으로 리셋하므로, 먼저 "전체 표시"로 전 필드를 켠다.
-    const allVis = await screen.findByRole('switch', { name: '전체 표시' });
+    const allVis = within(drawer).getByRole('switch', { name: '전체 표시' });
     fireEvent.click(allVis);
     expect(screen.getByTestId('vis-title').textContent).toBe('true');
     expect(screen.getByTestId('vis-theater').textContent).toBe('true');

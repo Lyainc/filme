@@ -1,7 +1,7 @@
 import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState, type ReactNode, type TouchEvent } from 'react';
 import type { usePhototicket } from '@/hooks/usePhototicket';
-import type { TicketComponents } from '@/types';
+import type { TicketComponents, TicketField } from '@/types';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { useLogoCrop } from '@/hooks/useLogoCrop';
 import { EyeIcon } from '@/components/ui/VisibilityCheckbox';
@@ -17,7 +17,10 @@ import {
   type SheetTarget,
   type StampTarget,
 } from '@/constants/fields';
-import { isRequiredField } from '@/constants/fieldVisibility';
+import { ALL_FIELDS_ON, ALL_FIELDS_OFF_KEEP_REQUIRED, isRequiredField } from '@/constants/fieldVisibility';
+
+// 표시 항목 일괄 스위치의 도메인 필드 집합(#261) — ALL_FIELDS_ON 키가 곧 전체 티켓 필드.
+const ALL_FIELDS = Object.keys(ALL_FIELDS_ON) as TicketField[];
 
 // 로고 크롭 모달 — StampSheet와 동일하게 dynamic(ssr:false)로 react-image-crop을 분리.
 const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ssr: false });
@@ -48,6 +51,9 @@ interface FieldDrawerProps {
 export function FieldDrawer({ photo, onField, onClose, children }: FieldDrawerProps) {
   const { movieInfo, fieldVisibility, components } = photo.state;
   useBodyScrollLock(true);
+  // 표시 항목 일괄 단일 스위치(#261, #260 연계, #424에서 편집 메뉴→필드 목록 자리로 이전) — 전체
+  // 켜짐 여부. 끄기는 필수 필드(title)를 켠 채 유지한다.
+  const allVisOn = ALL_FIELDS.every((f) => fieldVisibility[f]);
 
   // 로고 크롭 모달(body 포털)이 떠 있는 동안엔 포커스 유지·Escape를 모달에 양보한다 —
   // 안 그러면 keepFocus가 모달 포커스를 계속 뺏고 Escape 한 번에 드로어까지 닫힌다(#355 리뷰 P1).
@@ -115,6 +121,21 @@ export function FieldDrawer({ photo, onField, onClose, children }: FieldDrawerPr
         {children && <div className="shrink-0 px-4 pb-3">{children}</div>}
 
         <div className="min-h-0 flex-1 space-y-group overflow-y-auto overscroll-contain px-4 pb-[calc(env(safe-area-inset-bottom,0px)+24px)]">
+          {/* 전체 표시(#424) — 필드 목록과 한 자리에. 패널 위 직접 텍스트는 대비가 깨지므로(위 주석)
+              다른 행과 동일하게 불투명 카드(bg-surface-elevated)에 얹는다. */}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={allVisOn}
+            onClick={() =>
+              photo.updateFieldVisibility(allVisOn ? ALL_FIELDS_OFF_KEEP_REQUIRED : ALL_FIELDS_ON)
+            }
+            className="flex h-11 w-full items-center justify-between rounded-card bg-surface-elevated px-3 text-[11px] font-medium text-fg-muted transition-colors hover:text-fg"
+          >
+            <span>전체 표시</span>
+            <EyeIcon open={allVisOn} size={18} />
+          </button>
+
           {launcherGroupsFor(components.layout).map((group) => (
             <section key={group.title} className="space-y-1.5">
               <Eyebrow className="px-1">{group.title}</Eyebrow>

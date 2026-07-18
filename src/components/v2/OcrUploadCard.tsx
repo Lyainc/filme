@@ -30,6 +30,9 @@ export interface OcrUploadCardProps {
   currentComponents?: Partial<TicketComponents>;
   ocrEpochRef: { current: number };
   className?: string;
+  /** 진입 아이콘/문구 분기(#424) — 'landing'(기본)은 위 드롭존을 가리키는 화살표가 자연스럽지만,
+   * 'drawer'(FieldDrawer 상단 슬롯)엔 가리킬 드롭존이 없어 화살표를 빼고 문구도 짧게 줄인다. */
+  context?: 'landing' | 'drawer';
 }
 
 function ScanIcon({ size = 24 }: { size?: number }) {
@@ -49,6 +52,7 @@ export function OcrUploadCard({
   currentComponents,
   ocrEpochRef,
   className = '',
+  context = 'landing',
 }: OcrUploadCardProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -226,6 +230,10 @@ export function OcrUploadCard({
     }
   }
 
+  // 랜딩/드로어 문구 분기(#424) — aria-label도 같이 바꿔 보이는 텍스트와 접근명을 맞춘다
+  // (WCAG 2.5.3 Label in Name — 스크린리더가 화면과 다른 문구를 읽으면 안 된다).
+  const idleLabel = context === 'landing' ? '티켓 스크린샷으로 자동입력' : '스크린샷으로 채우기';
+
   return (
     <div className={`relative ${className}`}>
       <input
@@ -238,21 +246,22 @@ export function OcrUploadCard({
       />
 
       {/* 포스터 드롭존이 주연, 자동입력은 보조 액션으로 위계를 낮춘다(#142 (18)).
-          큰 점선 카드 대신 한 줄짜리 텍스트 버튼 — 핵심 동작(파일 선택→runOcr→주입→undo)은 유지. */}
+          큰 점선 카드 대신 한 줄짜리 텍스트 버튼 — 핵심 동작(파일 선택→runOcr→주입→undo)은 유지.
+          화살표(⤷)는 랜딩에서만 — 위 드롭존을 가리키는 용도라 드로어(가리킬 대상 없음)엔 안 맞는다(#424). */}
       <button
         type="button"
         onClick={handleClick}
         aria-disabled={isProcessing}
         aria-busy={isProcessing}
-        aria-label="티켓 스크린샷으로 자동입력"
+        aria-label={idleLabel}
         data-touch="44"
         className="group inline-flex min-h-touch items-center gap-1.5 rounded-chip text-[13px] text-fg-muted transition-colors hover:text-accent aria-disabled:cursor-default aria-disabled:opacity-70"
       >
-        <span aria-hidden="true" className="text-fg-faint">⤷</span>
+        {context === 'landing' && <span aria-hidden="true" className="text-fg-faint">⤷</span>}
         <span className={isProcessing ? 'text-accent animate-pulse' : 'text-fg-faint group-hover:text-accent'}>
           <ScanIcon size={16} />
         </span>
-        <span>{isProcessing ? '티켓 인식 중...' : '티켓 스크린샷으로 자동입력'}</span>
+        <span>{isProcessing ? '티켓 인식 중...' : idleLabel}</span>
         {!isProcessing && (
           <span aria-hidden="true" className="text-fg-faint transition-transform group-hover:translate-x-0.5">›</span>
         )}

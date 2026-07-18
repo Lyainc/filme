@@ -3,6 +3,9 @@
  * #315로 allVis(전체 표시)·ghost(빈 항목) 토글은 헤더 서브메뉴로 이전하고, Poster 드롭존은
  * 업로드 후 사라지도록 바뀌었다(#324). #363 랜딩 리디자인으로 업로드 전 위계가 뒤집혔다 —
  * 드롭존이 주연(히어로), OCR은 보조 액션으로 직하(#142 위계), 디자인 rail은 CSS hidden.
+ * allVis(전체 표시)는 #424에서 헤더 서브메뉴 → 필드 드로어로 다시 이전(필드 목록과 한 자리) —
+ * 이 파일의 헤더 서브메뉴 검증에선 대상에서 빠지고, mobileEditorShellFieldCoverage.test.tsx가
+ * 드로어 쪽에서 커버한다.
  *
  * #388로 업로드 후 본문 OCR 카드는 CSS hidden — OCR 진입점은 드로어(#355)로 일원화됐다.
  * DOM 순서를 compareDocumentPosition으로 단언한다(시각 좌표 아닌 트리 순서). OcrUploadCard·
@@ -96,14 +99,13 @@ describe('MobileEditorShell chrome 정보위계 (#261/#315/#363/#388)', () => {
     expect(afterMax.closest('.hidden')).not.toBeNull();
   });
 
-  test('업로드 후: 헤더 서브메뉴에서 전체표시·빈 항목·포스터 교체/재크롭 접근 가능(#315, 잉크는 #387에서 삭제 — 컬러 패널 White/Black 프리셋과 중복)', async () => {
+  test('업로드 후: 헤더 서브메뉴에서 빈 항목·포스터 교체/재크롭 접근 가능(#315, 잉크는 #387에서 삭제 — 컬러 패널 White/Black 프리셋과 중복. 전체 표시는 #424에서 필드 드로어로 이전해 대상 밖)', async () => {
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
     await screen.findByRole('button', { name: '티켓 스크린샷으로 자동입력' });
 
     fireEvent.click(screen.getByRole('button', { name: '편집 메뉴' }));
 
-    expect(screen.getByRole('switch', { name: '전체 표시' })).toBeTruthy();
     expect(screen.getByRole('switch', { name: '빈 항목 미리보기' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '포스터 교체' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '재크롭' })).toBeTruthy();
