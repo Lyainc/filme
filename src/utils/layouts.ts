@@ -65,13 +65,3 @@ export const LAYOUTS: readonly LayoutSpec[] = [
 export function getLayout(id: LayoutId): LayoutSpec {
   return LAYOUTS.find((l) => l.id === id) ?? LAYOUTS[0];
 }
-
-/**
- * 세로 풀블리드 무드(#420) — 포스터 크롭 모달의 "원본 비율 보존" 프리셋이 opt-in으로 뜨는 대상.
- * 가로·분할 무드(editorial/stub/35mm-landscape)는 v1 스코프 밖(#420 채택 방향 4).
- */
-export const POSTER_PRESERVE_RATIO_LAYOUTS: ReadonlySet<LayoutId> = new Set<LayoutId>([
-  'minimal',
-  'criterion',
-  '35mm',
-]);

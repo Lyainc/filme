@@ -1,12 +1,12 @@
 /**
- * #420 — MoodMinimal/MoodCriterion의 posterFit==='contain' 렌더 분기 검증
+ * #420 → #440 — 무드의 posterFit 렌더 분기 검증(posterFitProps 공통 정책 통일).
  * (claude-review PR #429 2차 P1: ImageCropModal/ImageUploader 배선은 테스트됐지만
  * 실제 사용자가 보는 Poster fit/align/background 분기는 아무 테스트도 exercise 안 함).
  *
  * componentOpacity.test.tsx(#219)와 같은 renderToStaticMarkup + 정규식 패턴 — Poster
  * <img>의 object-fit/object-position, 감싸는 div의 background가 posterFit(+테마)에
- * 따라 실제로 바뀌는지 마크업에서 직접 확인한다. 35mm는 기존에도 항상 contain이라
- * posterFit과 무관해야 한다(#420 채택 방향 — 무변경 확인).
+ * 따라 실제로 바뀌는지 마크업에서 직접 확인한다. #440에서 35mm의 contain 하드코딩이
+ * 제거돼 전 무드가 posterFit을 일관되게 읽는다(35mm도 cover 토글 시 cover).
  */
 import { describe, expect, test } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -77,12 +77,21 @@ describe.each([
   });
 });
 
-describe('#420 posterFit 렌더 분기 — 35mm(무변경 확인)', () => {
-  test('posterFit과 무관하게 항상 contain·중앙 정렬(기존 동작)', () => {
-    const coverImg = render(Mood35mm, 'cover').match(POSTER_IMG)?.[0] ?? '';
-    const containImg = render(Mood35mm, 'contain').match(POSTER_IMG)?.[0] ?? '';
-    expect(coverImg).toContain('object-fit:contain');
-    expect(coverImg).toContain('object-position:50% 50%');
-    expect(coverImg).toBe(containImg);
+describe('#440 posterFit 렌더 분기 — 35mm(정책 통일: contain 하드코딩 제거)', () => {
+  test('posterFit=cover → object-fit:cover, 중앙 정렬', () => {
+    const img = render(Mood35mm, 'cover').match(POSTER_IMG)?.[0] ?? '';
+    expect(img).toContain('object-fit:cover');
+    expect(img).toContain('object-position:50% 50%');
+  });
+
+  test('posterFit=contain(기본) → object-fit:contain, 중앙 정렬(상하 레터박스)', () => {
+    const img = render(Mood35mm, 'contain').match(POSTER_IMG)?.[0] ?? '';
+    expect(img).toContain('object-fit:contain');
+    expect(img).toContain('object-position:50% 50%');
+  });
+
+  test('letterbox 배경은 FS_BASE(#0a0a0a)로 고정 — posterFit 무관', () => {
+    expect(render(Mood35mm, 'cover').match(POSTER_WRAPPER_BG)?.[1]).toBe('#0a0a0a');
+    expect(render(Mood35mm, 'contain').match(POSTER_WRAPPER_BG)?.[1]).toBe('#0a0a0a');
   });
 });

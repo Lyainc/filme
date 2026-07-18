@@ -15,6 +15,7 @@ import {
   fieldPieces,
   fitFontSizeToWidth,
   gate,
+  posterFitProps,
   posterTapProps,
   resolveTicketData,
   showFieldGhost,
@@ -150,7 +151,7 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
     <div style={{ position: 'absolute', inset: 0, background: PAPER, color: INK, fontFamily: FONT_SANS, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       {/* 상단 포스터 — 텍스트 없음. 분할 레이아웃이라 root가 아닌 이 영역에만 포스터 탭(#259). */}
       <div style={{ flex: `0 0 ${POSTER_H}px`, position: 'relative', background: '#0a0a0a', overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
-        <Poster src={croppedImageUrl} texture={components.texture} posterOpacity={components.posterOpacity} />
+        <Poster src={croppedImageUrl} {...posterFitProps(components.posterFit, { letterboxBg: '#0a0a0a' })} texture={components.texture} posterOpacity={components.posterOpacity} />
       </div>
 
       {/* 절취선(점선) — 크림 밴드에 3px dashed, 반원 노치 없음(마스터 재동기화 #281). */}

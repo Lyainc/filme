@@ -14,6 +14,7 @@ import {
   Poster,
   fitFontSizeToWidth,
   gate,
+  posterFitProps,
   posterTapProps,
   resolveInk,
   resolveTicketData,
@@ -203,7 +204,7 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
     <div style={{ position: 'absolute', inset: 0, background: PAPER, color: INK, fontFamily: FONT_SANS, overflow: 'hidden', display: 'flex' }}>
       {/* A: Poster — 포스터 컬럼에만 탭(#259). editorial은 다열이라 root가 아닌 이 열에. */}
       <div style={{ flex: `0 0 ${POSTER_W}px`, position: 'relative', background: '#0a0a0a', overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
-        <Poster src={croppedImageUrl} texture={components.texture} posterOpacity={components.posterOpacity} />
+        <Poster src={croppedImageUrl} {...posterFitProps(components.posterFit, { letterboxBg: '#0a0a0a' })} texture={components.texture} posterOpacity={components.posterOpacity} />
         <div aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 150, background: 'linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0))' }} />
         <div aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 150, background: 'linear-gradient(0deg,rgba(0,0,0,.6),rgba(0,0,0,0))' }} />
       </div>

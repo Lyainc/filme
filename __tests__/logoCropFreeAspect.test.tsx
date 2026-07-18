@@ -8,9 +8,9 @@
  *     react-image-crop의 aspect=undefined는 defaultProps로 덮이지 않으므로(react-easy-crop과
  *     달리) 자연비를 직접 계산해 잠근다(ImageCropModal의 mediaAspect).
  *  3) 로고 편집 본문(StampSheet — chain/format)이 파일 선택 시 그 모달을 연다(#231).
- *  4) 원본 비율 보존 토글(#420) — 대상 무드에서만 노출, initialPreserveRatio로 재크롭 시
- *     이전 선택을 이어받는다(claude-review PR #429 P1 — 안 이어받으면 크롭 영역만 조정해도
- *     posterFit이 조용히 'cover'로 되돌아간다).
+ *  4) 원본 비율 보존 토글(#420 → #440) — 포스터 크롭(layout 전달)이면 전 무드 노출,
+ *     initialPreserveRatio로 재크롭 시 이전 선택을 이어받는다(claude-review PR #429 P1 —
+ *     안 이어받으면 크롭 영역만 조정해도 posterFit이 조용히 되돌아간다).
  *
  * ImageCropModal이 렌더하는 <img>에 직접 load 이벤트를 흘려(naturalWidth/naturalHeight를
  * defineProperty로 스텁) 실제 react-image-crop을 그대로 태운다 — 라이브러리를 목킹하지 않고
@@ -127,12 +127,12 @@ describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
     expect(screen.queryByRole('checkbox')).toBeNull();
   });
 
-  test('layout이 대상 무드 아님(editorial) → 토글 없음', () => {
+  test('layout 전달 시 전 무드에서 토글 노출(#440) — editorial도 노출', () => {
     render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} layout="editorial" />);
-    expect(screen.queryByRole('checkbox')).toBeNull();
+    expect(screen.queryByRole('checkbox')).not.toBeNull();
   });
 
-  test('layout이 대상 무드(minimal) → 토글 노출, 기본 unchecked, aspect는 TARGET_RATIO', () => {
+  test('layout 전달(minimal) → 토글 노출, initialPreserveRatio 미전달이면 unchecked, aspect는 TARGET_RATIO', () => {
     render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} layout="minimal" />);
     const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
     expect(checkbox.checked).toBe(false);
