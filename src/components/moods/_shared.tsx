@@ -648,6 +648,28 @@ export const Poster = memo(function Poster({
         background,
       }}
     >
+      {/* 무손실(contain) 시 좌우폭/세로 맞춤으로 남는 레터박스를, 같은 포스터의 확대·blur본으로
+          채운다(#440 오너 결정). 밝기는 전경과 동일하게 둬 레터박스가 검정 여백이 아니라 포스터의
+          흐릿한 연장으로 읽히게 한다(너무 어두우면 검정과 구분이 안 됨). scale(1.2)로 blur 가장자리
+          투명을 덮는다. cover는 전경이 슬롯을 꽉 채워 배경이 안 보이므로 생략한다. */}
+      {fit === 'contain' && (
+        <img
+          src={src}
+          alt=""
+          data-poster-bg="true"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            filter: `${baseFilter} brightness(${opacity}) blur(28px)`,
+            transform: 'scale(1.2)',
+          }}
+          draggable={false}
+          crossOrigin="anonymous"
+        />
+      )}
       <img
         src={src}
         alt=""
