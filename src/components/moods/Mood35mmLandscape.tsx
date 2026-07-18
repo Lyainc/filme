@@ -30,7 +30,7 @@ import {
 
 /**
  * v08 — 마스터 시안 Ticket Design Master.dc.html v2(2026-07-08 resync) 06 35MM WIDE 재동기화(에픽 #281).
- * 35mm 가로 필름(1477×960 · dark #070707 · amber accent · 바코드 없음). 마스터 델타:
+ * 35mm 가로 필름(1534×960 · dark #070707 · amber accent · 바코드 없음). 마스터 델타:
  * - 상/하단 스프로킷을 92px 풀 필름 스트립(FilmStripBand, 03=35mm 세로와 동일 헬퍼)으로 승격.
  * - 우 패널을 "From the Archive" 아카이브 카드로 재구조화 — collected by(서명) · made with FILME
  *   헤더(ACCESSION No. 더미 장식 문구는 #393에서 제거), amber 더블룰, Exhibited/Screened,
@@ -78,10 +78,10 @@ export const Mood35mmLandscape = memo(function Mood35mmLandscape({ movieInfo: d,
   const { watchDateClean, releaseClean, reissueClean } = resolveTicketData(d);
 
   const titleVal = gate(fv?.title, d.title);
-  // 타이틀 폭 맞춤(#318) — 포스터 열 캡션 가용폭(1477 - PANEL_W600 - padding46*2). 2줄
+  // 타이틀 폭 맞춤(#318) — 포스터 열 캡션 가용폭(1534 - PANEL_W600 - padding46*2, #450 폭 1534 재조정). 2줄
   // 클램프라 가용폭×2를 maxWidth로 넘겨 가장 긴 한 줄 기준으로 안전하게 축소한다(_shared.tsx 참고).
   const fontsReady = useFontsReady();
-  const titleFontSize = fitFontSizeToWidth(titleVal, 785 * 2, { fontFamily: FONT_KR, fontWeight: 800, minSize: 37, maxSize: 60 }, fontsReady);
+  const titleFontSize = fitFontSizeToWidth(titleVal, 842 * 2, { fontFamily: FONT_KR, fontWeight: 800, minSize: 37, maxSize: 60 }, fontsReady);
   const titleOgVal = gate(fv?.titleOg, d.titleOg);
   const theaterVal = gate(fv?.theater, d.theater);
   const screenVal = gate(fv?.screen, d.screen);
