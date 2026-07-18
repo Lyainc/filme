@@ -70,10 +70,14 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
   const inkIsDark = isInkDark(themeColor);
   const ink = resolveInk(themeColor, inkIsDark ? '#0d0c0a' : '#FFFFFF');
 
+  // 톤다운(#442) — PR #448(#440)로 posterFit이 contain+blur 배경 기본이 되면서, 이전엔 스크림만
+  // 보이던 레터박스 영역에 이제 blur 포스터가 함께 깔린다. 원래 불투명도(0.7~0.95)는 포스터를
+  // 거의 덮어버려 blur 배경과 안 이어지고 붕 떴었다 — 전 구간 30~35% 낮춰 포스터가 스크림 아래로
+  // 비치게 하면서 텍스트 대비는 유지한다.
   const globalScrim = inkIsDark
-    ? 'linear-gradient(180deg, rgba(245,240,232,0.7) 0%, rgba(245,240,232,0.34) 30%, rgba(245,240,232,0.5) 60%, rgba(245,240,232,0.95) 100%)'
-    : 'linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 30%, rgba(0,0,0,0.46) 60%, rgba(0,0,0,0.93) 100%)';
-  const spineBg = inkIsDark ? 'rgba(245,240,232,0.95)' : 'rgba(0,0,0,0.74)';
+    ? 'linear-gradient(180deg, rgba(245,240,232,0.45) 0%, rgba(245,240,232,0.2) 30%, rgba(245,240,232,0.32) 60%, rgba(245,240,232,0.72) 100%)'
+    : 'linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.18) 30%, rgba(0,0,0,0.3) 60%, rgba(0,0,0,0.7) 100%)';
+  const spineBg = inkIsDark ? 'rgba(245,240,232,0.75)' : 'rgba(0,0,0,0.55)';
   const spineDivider = inkIsDark ? '#0d0c0a' : ink;
   const stampSurface = inkIsDark ? 'paper' : 'dark';
 
@@ -153,15 +157,17 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
 
   const componentOpacity = components.componentOpacity ?? 1;
 
-  // 포스터 fit 정책(#440) — 기본 무손실(contain)+상단 정렬. globalScrim이 전체 높이에 걸쳐 있어
-  // 자투리 레터박스 배경을 스크림 끝 색조(테마별 크림/검정)와 맞춰 이질감을 줄인다.
+  // 포스터 fit 정책(#440) — 기본 무손실(contain)+중앙 정렬(#449, 구 top 정렬은 레터박스가
+  // 전부 하단에 몰림). globalScrim이 전체 높이에 걸쳐 있어 자투리 레터박스 배경을 스크림 끝
+  // 색조(테마별 크림/검정)와 맞춰 이질감을 줄인다. frameInsetY로 위/아래 블러 레터박스 노출을
+  // 20~25px 보장(#449).
   const posterBg = inkIsDark ? '#f5f0e8' : '#0a0a0a';
 
   return (
     <div style={{ position: 'absolute', inset: 0, color: ink, fontFamily: FONT_SANS, overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
       <Poster
         src={croppedImageUrl}
-        {...posterFitProps(components.posterFit, { letterboxBg: posterBg, align: 'top' })}
+        {...posterFitProps(components.posterFit, { letterboxBg: posterBg, frameInsetY: 22 })}
         texture={components.texture}
         posterOpacity={components.posterOpacity}
       />
