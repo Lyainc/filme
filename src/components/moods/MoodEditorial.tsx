@@ -37,7 +37,9 @@ const INK = '#1a1612';
 const BROWN = '#6f6347';
 const CREAM = '#f7ece2';
 
-const POSTER_W = 516;
+// 포스터 슬롯 폭(#440 잔여 스코프) — 캔버스 높이 960 기준 0.667 비율(무손실 크롭 정책 통일의
+// 일부). 재계산: mainAvailWidth = 1534 - POSTER_W - FOIL_W - STUB_W - padding52*2.
+const POSTER_W = 640;
 /** 바코드 SVG 폭(px) — Code128C(#444) 기준 모듈당 2px 확보용 286. 테스트가 이 값을 직접 import. */
 export const BARCODE_WIDTH = 286;
 const FOIL_W = 42;
@@ -53,10 +55,10 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
   const { bookingNo, watchDateClean, releaseClean } = resolveTicketData(d);
 
   const titleVal = gate(fv?.title, d.title);
-  // 타이틀 폭 맞춤(#318) — 메인 열 가용폭(1534 - poster516 - foil42 - stub224 - padding52*2, #450 폭 1534 재조정).
+  // 타이틀 폭 맞춤(#318) — 메인 열 가용폭(1534 - poster640 - foil42 - stub224 - padding52*2 = 524, #440 0.667 리사이즈로 648→524 재조정).
   // 2줄 클램프라 가용폭×2를 maxWidth로 넘겨 가장 긴 한 줄 기준으로 안전하게 축소한다(_shared.tsx 참고).
   const fontsReady = useFontsReady();
-  const titleFontSize = fitFontSizeToWidth(titleVal, 648 * 2, { fontFamily: FONT_KR, fontWeight: 900, minSize: 44, maxSize: 72 }, fontsReady);
+  const titleFontSize = fitFontSizeToWidth(titleVal, 524 * 2, { fontFamily: FONT_KR, fontWeight: 900, minSize: 44, maxSize: 72 }, fontsReady);
   const titleOgVal = gate(fv?.titleOg, d.titleOg);
   const theaterVal = gate(fv?.theater, d.theater);
   const screenVal = gate(fv?.screen, d.screen);
@@ -208,8 +210,9 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
 
   return (
     <div style={{ position: 'absolute', inset: 0, background: PAPER, color: INK, fontFamily: FONT_SANS, overflow: 'hidden', display: 'flex' }}>
-      {/* A: Poster — 포스터 컬럼에만 탭(#259). editorial은 다열이라 root가 아닌 이 열에. */}
-      <div style={{ flex: `0 0 ${POSTER_W}px`, position: 'relative', background: '#0a0a0a', overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
+      {/* A: Poster — 포스터 컬럼에만 탭(#259). editorial은 다열이라 root가 아닌 이 열에.
+          배경은 Poster의 letterboxBg가 칠하므로 래퍼 자체엔 안 둔다(nit poster-letterbox-bg, #440). */}
+      <div style={{ flex: `0 0 ${POSTER_W}px`, position: 'relative', overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
         <Poster src={croppedImageUrl} {...posterFitProps(components.posterFit, { letterboxBg: '#0a0a0a' })} texture={components.texture} posterOpacity={components.posterOpacity} />
         <div aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 150, background: 'linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0))' }} />
         <div aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 150, background: 'linear-gradient(0deg,rgba(0,0,0,.6),rgba(0,0,0,0))' }} />
@@ -308,8 +311,8 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
           <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: '22px 44px', alignItems: 'start' }}>{metaCells}</div>
         )}
 
-        {/* 프랑스어 고지문(장식 법적 문구) */}
-        <div style={{ marginTop: 20, fontWeight: 500, fontSize: 14, fontFamily: FONT_SANS, lineHeight: 1.5, color: BROWN, maxWidth: 540 }}>
+        {/* 프랑스어 고지문(장식 법적 문구) — maxWidth는 메인 열 가용폭 재조정 비율(524/648)로 재계산(#440). */}
+        <div style={{ marginTop: 20, fontWeight: 500, fontSize: 14, fontFamily: FONT_SANS, lineHeight: 1.5, color: BROWN, maxWidth: 440 }}>
           Place garantie jusqu&apos;à 25min avant le début de la séance.<br />
           <span style={{ opacity: 0.72 }}>Seat guaranteed up to 25min before the beginning of the screening.</span>
         </div>
