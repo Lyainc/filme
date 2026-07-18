@@ -20,7 +20,7 @@ import type { ViewMode } from './viewMode';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
 import { getLayout } from '@/utils/layouts';
 import { getCroppedImg, type Area } from '@/utils/imageCrop';
-import { TARGET_HEIGHT } from '@/utils/constants';
+import { TARGET_HEIGHT, TARGET_WIDTH } from '@/utils/constants';
 import { useEditHistory } from '@/hooks/useEditHistory';
 import { useOcrUndo } from '@/hooks/useOcrUndo';
 import type { usePhototicket } from '@/hooks/usePhototicket';
@@ -763,7 +763,7 @@ export function MobileEditorShell({
           {/* 줌 pill(#328)은 #356에서 제거 — 최대화 진입은 플로팅 툴바가 흡수, max 탈출은
               기존 티켓 탭 복귀 그대로. */}
 
-          {/* OCR 섹션 — 랜딩에선 시안(Siyan-C-v8) 드롭존 히어로(포스터 비율 960/1477 점선 카드,
+          {/* OCR 섹션 — 랜딩에선 시안(Siyan-C-v8) 드롭존 히어로(포스터 비율 960/1534 점선 카드,
               OCR은 보조 직하 — #142 위계)가 유일한 진입점이라 노출한다. 업로드 후(croppedImageUrl)엔
               이 섹션을 통째로 CSS hidden — OCR 진입점은 드로어(#355) 쪽으로 일원화한다(#388, "업로드 후
               프리뷰 직하 카드" 중복 제거). unmount가 아니라 hidden인 이유는 이 OcrUploadCard가 랜딩·
@@ -785,7 +785,7 @@ export function MobileEditorShell({
                 onClick={handlePosterTap}
                 data-touch="44"
                 className="group relative flex w-full max-w-[230px] flex-col items-center justify-center gap-3.5 overflow-hidden rounded-card border-2 border-dashed border-border-strong bg-surface p-6 text-center transition-colors hover:border-accent/40"
-                style={{ aspectRatio: '960 / 1477' }}
+                style={{ aspectRatio: `${TARGET_WIDTH} / ${TARGET_HEIGHT}` }}
               >
                 <span
                   aria-hidden="true"

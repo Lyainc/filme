@@ -28,7 +28,7 @@ import {
 } from './_shared';
 
 /**
- * Minimal — 미니멀 시네마틱. 포스터 풀블리드 + 하단 스크림. 960×1477 portrait, dark, monochrome.
+ * Minimal — 미니멀 시네마틱. 포스터 풀블리드 + 하단 스크림. 960×1534 portrait, dark, monochrome.
  * 마스터 시안(Ticket Design Master.dc.html v2 · 2026-07-08 resync) 규격에 재동기화(#281):
  * 푸터 바코드·코너 레지스트레이션 마크 제거, 타이포 리스케일, Cast를 "Cast" 라벨 스택 2줄 클램프로.
  * 데이터=Pretendard/Noto, 장식 라벨=Instrument Serif.

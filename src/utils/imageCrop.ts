@@ -22,7 +22,7 @@ export interface CropOutputOptions {
   quality?: number;
   /**
    * 지정 시 출력 캔버스가 크롭의 종횡비를 그대로 보존하고(자유 크롭 로고용), 긴 변을
-   * 이 값(px) 이하로 축소만 한다(확대 안 함). 미지정 시 포스터 고정 해상도(960×1477).
+   * 이 값(px) 이하로 축소만 한다(확대 안 함). 미지정 시 포스터 고정 해상도(960×1534).
    */
   maxSide?: number;
 }
@@ -31,7 +31,7 @@ export interface CropOutputOptions {
  * 선택된 픽셀 영역을 기반으로 이미지를 크롭하여 Object URL로 반환
  * Memory Optimized: Object URL 사용 (사용 후 revokeObjectURL 필요)
  *
- * 기본(opts 없음)은 포스터 경로 — 960×1477 고정, image/jpeg 0.95(기존 동작 그대로).
+ * 기본(opts 없음)은 포스터 경로 — 960×1534 고정, image/jpeg 0.95(기존 동작 그대로).
  * 로고는 `{ mimeType: 'image/png', maxSide: 640 }`로 종횡비 보존 + 알파 유지.
  *
  * @param imageSrc - 원본 이미지의 Object URL
@@ -56,7 +56,7 @@ export async function getCroppedImg(
   let outW: number;
   let outH: number;
   if (maxSide == null) {
-    // 포스터: 항상 고정된 출력 해상도 (960x1477)
+    // 포스터: 항상 고정된 출력 해상도 (960x1534)
     outW = TARGET_WIDTH;
     outH = TARGET_HEIGHT;
   } else {
