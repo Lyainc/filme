@@ -767,6 +767,8 @@ interface BarcodeProps {
   orientation?: 'horizontal' | 'vertical';
   showText?: boolean;
   textSize?: number;
+  /** Code128B(1자리=1심볼, 기본)와 Code128C(2자리=1심볼, 폭 절반 수준) 중 선택(#444). */
+  encoding?: 'code128b' | 'code128c';
 }
 
 type Bar = { ink: boolean; w: number };
@@ -792,8 +794,23 @@ const CODE128_PATTERNS = [
   '211214', '211232', '2331112', // 104=Start-B, 105=Start-C, 106=Stop
 ];
 const CODE128_START_B = 104;
+const CODE128_START_C = 105;
 const CODE128_STOP = 106;
+const CODE128_CODE_B = 100; // Code128C 심볼 스트림 안에서 subset B로 전환(홀수 자리 마지막 1자리용)
 const BARCODE_FALLBACK_DIGITS = 'PT-000000-0000'.replace(/\D/g, '');
+
+// 심볼 값 배열(Start~Stop 전부 포함) -> 교차하는 Bar[]. 128B/128C 두 인코더가 공유(#444) —
+// Code128 심볼 폭 표는 subset과 무관하게 값 0~106이 동일한 bar/space 패턴이라 안전하다.
+function symbolsToBars(symbols: number[]): Bar[] {
+  const seq = symbols.map((s) => CODE128_PATTERNS[s]).join('');
+  const bars: Bar[] = [];
+  let ink = true; // 데이터 심볼은 6요소(짝수)라 심볼 경계마다 bar-start parity 복원, Stop만 7요소로 bar 종결
+  for (let i = 0; i < seq.length; i++) {
+    bars.push({ ink, w: parseInt(seq[i], 10) });
+    ink = !ink;
+  }
+  return bars;
+}
 
 // bookingNo 문자열을 표준 Code128B로 인코딩해 실제 스캐너가 디코드 가능한 막대 폭을 만든다.
 // Start-B + 데이터(값=ASCII-32) + 체크디짓(mod 103) + Stop. export는 인코딩 self-check용.
@@ -814,15 +831,31 @@ export function buildBarcodeWidths(value: string): Bar[] {
     checksum += val * (i + 1);
   });
   checksum %= 103;
-  const symbols = [CODE128_START_B, ...values, checksum, CODE128_STOP];
-  const seq = symbols.map((s) => CODE128_PATTERNS[s]).join('');
-  const widths: Bar[] = [];
-  let ink = true; // 데이터 심볼은 6요소(짝수)라 심볼 경계마다 bar-start parity 복원, Stop만 7요소로 bar 종결
-  for (let i = 0; i < seq.length; i++) {
-    widths.push({ ink, w: parseInt(seq[i], 10) });
-    ink = !ink;
+  return symbolsToBars([CODE128_START_B, ...values, checksum, CODE128_STOP]);
+}
+
+// bookingNo를 Code128C로 인코딩(#444) — 숫자 2자리를 심볼 1개(0~99)로 묶어 128B 대비 심볼 수를
+// 거의 절반으로 줄인다(CGV 16자리 판매번호 기준 211유닛 -> 123유닛, quiet zone 포함 143유닛).
+// 좁은 무드(editorial 216px였던 원래 폭 등)에서 모듈당 px가 스캔 가능 최소치(2px)를 넘기려면
+// 필수 — editorial은 70px 폭 확대(216->286)와 함께 적용해야 실제로 2px/모듈을 넘는다.
+// 자리수가 홀수면 마지막 1자리만 Code B로 전환해 넣는다(표준 Code128 mixed-mode) — Code128C는
+// 항상 짝수 자리만 심볼화할 수 있어서다.
+export function buildBarcodeWidths128C(value: string): Bar[] {
+  const v = (value || 'PT-000000-0000').replace(/\D/g, '') || BARCODE_FALLBACK_DIGITS;
+  const symbols: number[] = [CODE128_START_C];
+  const pairEnd = v.length - (v.length % 2);
+  for (let i = 0; i < pairEnd; i += 2) {
+    symbols.push(parseInt(v.slice(i, i + 2), 10));
   }
-  return widths;
+  if (v.length % 2 === 1) {
+    symbols.push(CODE128_CODE_B, v.charCodeAt(v.length - 1) - 32);
+  }
+  let checksum = CODE128_START_C;
+  symbols.slice(1).forEach((val, i) => {
+    checksum += val * (i + 1);
+  });
+  checksum %= 103;
+  return symbolsToBars([...symbols, checksum, CODE128_STOP]);
 }
 
 export const Barcode = memo(function Barcode({
@@ -833,8 +866,12 @@ export const Barcode = memo(function Barcode({
   orientation = 'horizontal',
   showText = true,
   textSize = 11,
+  encoding = 'code128b',
 }: BarcodeProps) {
-  const widths = useMemo(() => buildBarcodeWidths(value), [value]);
+  const widths = useMemo(
+    () => (encoding === 'code128c' ? buildBarcodeWidths128C(value) : buildBarcodeWidths(value)),
+    [value, encoding]
+  );
 
   const bars = useMemo(() => {
     const totalUnits = widths.reduce((a, b) => a + b.w, 0);
