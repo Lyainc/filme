@@ -6,6 +6,13 @@ interface CaptureOptions {
   pixelRatio?: number;
 }
 
+// #439 실기기 진단 로그 게이트 — ?debug=1일 때만 켠다. DebugConsole(컴포넌트)이 콘솔을 패치해
+// 화면에 보여주는 쪽이라면, 이건 애초에 로그를 만들지 말지를 정하는 발신 쪽 게이트다(claude-review
+// PR #458 P1 — 이게 없으면 일반 사용자의 모든 캡처마다 내부 파이프라인 정보가 콘솔에 찍힌다).
+function isCaptureDebugEnabled(): boolean {
+  return typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1';
+}
+
 // 인쇄 기계가 여백 없는 이미지의 가장자리를 잘라내는 문제 때문에, export 결과물에만 상하좌우
 // 흰 여백을 둔다(#382). 프리뷰는 이 함수를 거치지 않는 별도 렌더 경로(TicketRenderer)라
 // 자동으로 영향 밖이다. 10px(#449) — 캔버스 자체가 960×1534로 커지면서 여백 포함 신용카드
@@ -139,8 +146,10 @@ const MAX_BLOB_CANVAS_DIM = 2048;
 // #439 진단 로그 — ?debug=1(DebugConsole)로 실기기 화면에서 바로 본다. 어느 이미지가 어느
 // 단계(캔버스 컨텍스트 없음/toBlob 실패/예외)에서 떨어지는지가 반복된 "동일 증상" 재현으로도
 // 안 좁혀져서, 원격 디버깅 없이도 실패 지점을 볼 수 있게 임시로 남긴다.
-async function blobSrcToObjectUrl(img: HTMLImageElement, mimeType: string): Promise<string | null> {
-  const tag = `[capture:blob→blob] role=${img.dataset.role ?? '(none)'} natural=${img.naturalWidth}x${img.naturalHeight}`;
+async function blobSrcToObjectUrl(img: HTMLImageElement, mimeType: string, debug: boolean): Promise<string | null> {
+  const tag = debug
+    ? `[capture:blob→blob] role=${img.dataset.role ?? '(none)'} natural=${img.naturalWidth}x${img.naturalHeight}`
+    : '';
   try {
     const scale = Math.min(1, MAX_BLOB_CANVAS_DIM / Math.max(img.naturalWidth, img.naturalHeight));
     const canvas = document.createElement('canvas');
@@ -148,19 +157,19 @@ async function blobSrcToObjectUrl(img: HTMLImageElement, mimeType: string): Prom
     canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
     const ctx = canvas.getContext('2d');
     if (!ctx) {
-      console.warn(`${tag} — getContext('2d') null`);
+      if (debug) console.warn(`${tag} — getContext('2d') null`);
       return null;
     }
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, mimeType));
     if (!blob) {
-      console.warn(`${tag} — toBlob returned null (canvas=${canvas.width}x${canvas.height})`);
+      if (debug) console.warn(`${tag} — toBlob returned null (canvas=${canvas.width}x${canvas.height})`);
       return null;
     }
-    console.log(`${tag} — ok canvas=${canvas.width}x${canvas.height} blobBytes=${blob.size}`);
+    if (debug) console.log(`${tag} — ok canvas=${canvas.width}x${canvas.height} blobBytes=${blob.size}`);
     return URL.createObjectURL(blob);
   } catch (err) {
-    console.error(`${tag} — threw`, err); // 극히 드문 캔버스 오염 등 — 원래 src(blob:)로 진행
+    if (debug) console.error(`${tag} — threw`, err); // 극히 드문 캔버스 오염 등 — 원래 src(blob:)로 진행
     return null;
   }
 }
@@ -175,13 +184,16 @@ export async function captureNodeToJpeg(
     await document.fonts.ready;
   }
   const images = Array.from(node.querySelectorAll('img'));
-  // #439 진단 로그(DebugConsole 참고) — decodeImage 자체의 throw 여부·타이밍을 이미지별로 남긴다.
+  // #439 진단 로그(DebugConsole, ?debug=1) — decodeImage 자체의 throw 여부·타이밍을 이미지별로
+  // 남긴다. isCaptureDebugEnabled()로 게이트해 일반 사용자 콘솔·캡처 경로엔 영향 없다(claude-review
+  // PR #458 P1).
+  const debug = isCaptureDebugEnabled();
   await Promise.all(images.map(async (img) => {
     try {
       await decodeImage(img);
-      console.log(`[capture:decode] ok role=${img.dataset.role ?? '(none)'} natural=${img.naturalWidth}x${img.naturalHeight} src=${img.src.slice(0, 24)}…`);
+      if (debug) console.log(`[capture:decode] ok role=${img.dataset.role ?? '(none)'} natural=${img.naturalWidth}x${img.naturalHeight} src=${img.src.slice(0, 24)}…`);
     } catch (err) {
-      console.error(`[capture:decode] FAILED role=${img.dataset.role ?? '(none)'} src=${img.src.slice(0, 24)}…`, err);
+      if (debug) console.error(`[capture:decode] FAILED role=${img.dataset.role ?? '(none)'} src=${img.src.slice(0, 24)}…`, err);
       throw err;
     }
   }));
@@ -222,7 +234,7 @@ export async function captureNodeToJpeg(
     let objectUrl = objectUrlCache.get(cacheKey);
     if (objectUrl === undefined) {
       // eslint-disable-next-line no-await-in-loop -- 순차 draw 하나뿐, 병렬화할 만큼 무겁지 않음
-      objectUrl = await blobSrcToObjectUrl(img, mimeType);
+      objectUrl = await blobSrcToObjectUrl(img, mimeType, debug);
       objectUrlCache.set(cacheKey, objectUrl);
       if (objectUrl) objectUrlsToRevoke.push(objectUrl);
     }
@@ -231,17 +243,17 @@ export async function captureNodeToJpeg(
     img.src = objectUrl;
     restores.push(() => { img.src = original; });
   }
-  console.log(`[capture:main] images=${images.length} substituted=${restores.length} — calling toJpeg`);
+  if (debug) console.log(`[capture:main] images=${images.length} substituted=${restores.length} — calling toJpeg`);
   try {
     const result = await toJpeg(node, jpegOptions);
-    console.log(`[capture:main] toJpeg ok, dataUrl length=${result.length}`);
-    // #439 진단 — DebugConsole(?debug=1)이 공유/저장 이전의 원본 캡처 결과를 화면에 바로 그리게.
-    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1') {
+    if (debug) {
+      console.log(`[capture:main] toJpeg ok, dataUrl length=${result.length}`);
+      // DebugConsole이 공유/저장 이전의 원본 캡처 결과를 화면에 바로 그리게.
       window.dispatchEvent(new CustomEvent('capture-debug-result', { detail: result }));
     }
     return result;
   } catch (err) {
-    console.error('[capture:main] toJpeg threw', err);
+    if (debug) console.error('[capture:main] toJpeg threw', err);
     throw err;
   } finally {
     restores.forEach((restore) => restore());

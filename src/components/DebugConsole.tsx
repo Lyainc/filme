@@ -46,14 +46,17 @@ export default function DebugConsole() {
         setLines((prev) => [...prev.slice(-199), `[${level}] ${format(args)}`]);
       };
     });
-    window.onerror = (msg) => {
+    const originalOnError = window.onerror;
+    window.onerror = (msg, ...rest) => {
       setLines((prev) => [...prev.slice(-199), `[onerror] ${String(msg)}`]);
+      return originalOnError?.(msg, ...rest);
     };
 
     return () => {
       console.log = original.log;
       console.warn = original.warn;
       console.error = original.error;
+      window.onerror = originalOnError;
       window.removeEventListener('capture-debug-result', onCaptureResult);
     };
   }, []);
