@@ -135,21 +135,15 @@ describe('#440 posterFit 렌더 분기 — 35mm(정책 통일: contain 하드코
   });
 });
 
-describe('#440 posterFit 렌더 분기 — stub(가로 밴드는 항상 cover 가운데 크롭)', () => {
-  test('posterFit 무관하게 cover·blur 배경 없음(오너 결정: 좌우 여백 대신 auto crop)', () => {
-    const coverImg = render(MoodStub, 'cover').match(POSTER_IMG)?.[0] ?? '';
-    const containImg = render(MoodStub, 'contain').match(POSTER_IMG)?.[0] ?? '';
-    expect(coverImg).toContain('object-fit:cover');
-    expect(coverImg).toBe(containImg);
-    expect(render(MoodStub, 'contain')).not.toContain('data-poster-bg');
-  });
-});
-
-// editorial/35mm-landscape는 이 PR에서 처음 posterFit을 읽게 배선됐다(이전엔 cover 고정/미독) —
-// 새로 배선한 fit·blur 배경 분기를 최소 1건씩 검증한다(claude-review PR #448 P1).
+// editorial/35mm-landscape는 PR #448에서 처음 posterFit을 읽게 배선됐다(이전엔 cover 고정/미독).
+// stub은 #440에서 한동안 "항상 cover"(오너 결정, 가로 밴드 1.263 contain 시 좌우 과대 여백 우려)로
+// 남아있다가, 다른 5무드가 이미 갖춘 blur 배경 채움으로 그 여백을 정교화하며 이번에 합류했다
+// (claude-review PR #448 P1 커버리지 + #440 레터박스 정교화). 셋 다 새로 배선한 fit·blur 배경
+// 분기를 최소 1건씩 검증한다.
 describe.each([
   ['editorial', MoodEditorial],
   ['35mm-landscape', Mood35mmLandscape],
+  ['stub', MoodStub],
 ] as const)('#440 posterFit 신규 배선 — %s', (_name, Mood) => {
   test('posterFit=cover → object-fit:cover, blur 배경 없음', () => {
     const html = render(Mood, 'cover');
@@ -163,7 +157,7 @@ describe.each([
     expect(html).toMatch(POSTER_BG_BLUR);
   });
 
-  test('frameInsetY 미배선 — 인셋 0(#449 스코프 밖, editorial/35mm-landscape는 별도 컬럼 레이아웃)', () => {
+  test('frameInsetY 미배선 — 인셋 0(#449 스코프 밖, 세 무드 모두 자연 간극이 이미 크거나 별도 컬럼 레이아웃)', () => {
     const m = render(Mood, 'contain').match(POSTER_FRAME_WRAPPER);
     expect(m?.[1]).toBe('0');
     expect(m?.[2]).toBe('0');

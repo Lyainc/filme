@@ -52,9 +52,10 @@ export default function ImageCropModal(props: ImageCropModalProps) {
     initialPreserveRatio = false,
   } = props;
 
-  // #440 포스터 크롭(layout 전달)이면 "원본 비율 보존" 토글 노출. 단 stub은 렌더가 항상 cover(밴드
-  // 가운데 auto crop, MoodStub)라 토글이 posterFit을 바꿔도 무효 컨트롤이 되므로 제외하고, 크롭은
-  // 원본 비율로 고정한다(포스터 전체를 받아 렌더에서 cover) — claude-review PR #448 P1.
+  // #440 포스터 크롭(layout 전달)이면 "원본 비율 보존" 토글 노출. stub은 MoodStub이 posterFit을
+  // 읽어 contain 시 blur 레터박스로 렌더하지만(#440 정교화), 크롭 UI에서 토글을 켜고 끄는 흐름은
+  // 아직 별도로 배선하지 않아 여기선 계속 제외 — 크롭은 원본 비율로 고정한다(포스터 전체를 받아
+  // usePhototicket 기본값 'contain'을 그대로 탄다) — claude-review PR #448 P1, 토글 노출은 후속 nit.
   const isStubCrop = layout === 'stub';
   const showPreserveToggle = layout != null && !isStubCrop;
   const [preserveRatio, setPreserveRatio] = useState(initialPreserveRatio);
