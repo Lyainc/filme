@@ -5,7 +5,7 @@ import { buildBarcodeWidths, buildBarcodeWidths128C } from '../src/components/mo
 import { FULL_MOVIE, makeMoodBase } from './fixtures';
 
 // 마스터 시안(Ticket Design Master.dc.html v2 · 2026-07-08 resync) 04 EDITORIAL 재동기화 회귀(#281, 에픽 #281).
-// Editorial 델타(3열→4열 대규모 재구조): 포스터 516 · 골드포일 세로 스트립 42(신규 장식) · 메인 flex · 스텁 224.
+// Editorial 델타(3열→4열 대규모 재구조): 포스터 640(#440 0.667 리사이즈, 구 516) · 골드포일 세로 스트립 42(신규 장식) · 메인 flex · 스텁 224.
 // 킥커 "En Reprise · Longs Métrages", 타이틀 고정 72/900(pickTitleSize 폐기), Séance + "SE PRÉSENTER À/
 // PLEASE ARRIVE AT" 도착시간 블록 + 시계, 메타 그리드 Théâtre/Durée/Note/Sortie 37/800(좌석은 스텁 place로
 // 이동), 프랑스어 고지문 + 크로스헤어. 회전 -90° 스텁 바코드는 유지. reissue는 메타 그리드 슬롯이 없어 미렌더.
@@ -18,9 +18,9 @@ const markup = () =>
   );
 
 describe('MoodEditorial 마스터 resync (#281)', () => {
-  test('4열 구조 — 포스터 516 · 골드포일 42 · 메인 flex · 스텁 224', () => {
+  test('4열 구조 — 포스터 640(#440) · 골드포일 42 · 메인 flex · 스텁 224', () => {
     const html = markup();
-    expect(html).toContain('flex:0 0 516px'); // 포스터
+    expect(html).toContain('flex:0 0 640px'); // 포스터
     expect(html).toContain('flex:0 0 42px'); // 골드포일 스트립
     expect(html).toContain('flex:1 1 auto'); // 메인
     expect(html).toContain('flex:0 0 224px'); // 스텁
