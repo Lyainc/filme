@@ -12,6 +12,7 @@ import { render, screen, cleanup, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
+import { FloatingToolbar, type TbPrefs } from '@/components/v2/FloatingToolbar';
 import type { PhototicketState } from '@/types';
 
 const TB_KEY = 'filme:toolbar:v1';
@@ -186,5 +187,93 @@ describe('플로팅 툴바 (#356)', () => {
     await advance(310);
     const raw = JSON.parse(window.localStorage.getItem(TB_KEY)!);
     expect(raw.x).toBe(8);
+  });
+});
+
+// 고정식 위치 실측/클램프(#419, ResizeObserver 보강 0e0e8a3) 회귀 — 이슈 #432.
+// happy-dom의 getBoundingClientRect는 항상 {0,0,0,0}이라 Element.prototype을 스텁으로
+// 오버라이드해 헤더/티켓 콘텐츠 위치를 모킹한다. FloatingToolbar.tsx의 measure()는 마운트
+// 이펙트 안에서 동기 실행되므로(ResizeObserver.observe 호출 전) ResizeObserver 콜백이 실제로
+// 발화하는지와 무관하게 초기 clamp 값을 검증할 수 있다.
+describe('고정식 위치 실측 클램프 (#419, 이슈 #432)', () => {
+  const nativeGetBoundingClientRect = Element.prototype.getBoundingClientRect;
+  let rects: WeakMap<Element, DOMRect>;
+
+  beforeEach(() => {
+    rects = new WeakMap();
+    Element.prototype.getBoundingClientRect = function (this: Element) {
+      return rects.get(this) ?? nativeGetBoundingClientRect.call(this);
+    };
+  });
+  afterEach(() => {
+    Element.prototype.getBoundingClientRect = nativeGetBoundingClientRect;
+  });
+
+  function stubRect(el: Element, partial: Partial<DOMRect>) {
+    rects.set(el, {
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      toJSON: () => ({}),
+      ...partial,
+    } as DOMRect);
+  }
+
+  const noop = () => {};
+  const basePrefs: TbPrefs = { orient: 'v', place: 'fixed', x: null, y: null, hidden: false };
+
+  function renderToolbar(orient: TbPrefs['orient'], headerEl: HTMLElement, contentTopEl: HTMLElement) {
+    render(
+      <FloatingToolbar
+        prefs={{ ...basePrefs, orient }}
+        onPrefsChange={noop}
+        canUndo={false}
+        canRedo={false}
+        onUndo={noop}
+        onRedo={noop}
+        onFieldList={noop}
+        onMaximize={noop}
+        headerEl={headerEl}
+        contentTopEl={contentTopEl}
+      />
+    );
+    return screen.getByRole('toolbar', { name: '편집 도구' });
+  }
+
+  test('세로·고정: 헤더 아래로 TB_HEADER_MARGIN(12px)만큼 띄워 clamp된다', () => {
+    const header = document.createElement('div');
+    const content = document.createElement('div');
+    stubRect(header, { bottom: 100 });
+    stubRect(content, { top: 800 });
+
+    const toolbar = renderToolbar('v', header, content);
+    expect(toolbar.style.top).toBe('112px'); // 100 + TB_HEADER_MARGIN(12)
+  });
+
+  test('가로·고정: 여유 공간이 있으면 헤더 마진이 아니라 콘텐츠 바로 위에 붙는다', () => {
+    const header = document.createElement('div');
+    const content = document.createElement('div');
+    stubRect(header, { bottom: 100 });
+    stubRect(content, { top: 800 });
+
+    const toolbar = renderToolbar('h', header, content);
+    // happy-dom엔 실 레이아웃이 없어 toolbarH(offsetHeight)는 0 — contentTop(800) - 0 - TB_CONTENT_MARGIN(10)
+    expect(toolbar.style.top).toBe('790px');
+  });
+
+  test('가로·고정: 콘텐츠가 헤더 코앞이어도 헤더를 절대 침범하지 않는다', () => {
+    const header = document.createElement('div');
+    const content = document.createElement('div');
+    stubRect(header, { bottom: 100 });
+    stubRect(content, { top: 105 }); // 콘텐츠에 그대로 붙으면 95px로 헤더(100~112) 침범
+
+    const toolbar = renderToolbar('h', header, content);
+    // Math.max(100+12, 105-0-10=95) → 112. 헤더 마진 clamp가 이긴다.
+    expect(toolbar.style.top).toBe('112px');
   });
 });
