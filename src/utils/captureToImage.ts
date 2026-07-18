@@ -110,25 +110,33 @@ export function __resetWarmupCacheForTest(): void {
 
 // html-to-image는 노드를 복제·임베드할 때 각 <img>의 src를 스스로 다시 fetch한다 —
 // decodeImage()가 보장하는 라이브 비트맵 디코드와는 별개 경로다. 포스터는 blob: URL인데,
-// 모바일 Safari는 탭이 백그라운드로 밀리거나 메모리 압박이 오면 앱 모르게 blob: URL을
-// 무효화할 수 있어 재fetch가 조용히 실패하고 포스터 자리만 배경색으로 빠진다(#378).
-// 이미 디코드된 라이브 비트맵을 캔버스로 구워 data: URL로 바꾸면 재fetch 자체가 필요 없어져
-// blob 수명과 무관해진다.
-// 포스터(data-role="poster")는 알파가 필요 없고 큰 PNG data:URL을 iOS WebKit이 SVG <image>로
-// 렌더할 때 크기 한계로 blank 처리될 수 있다는 가설(#439) 때문에 JPEG로 인코딩해 용량을 줄인다.
+// 모바일 Safari는 탭이 백그라운드로 밀리거나 메모리 압박이 오면 앱 모르게 원본 업로드 blob: URL을
+// 무효화할 수 있어 재fetch가 조용히 실패하고 포스터 자리만 배경색으로 빠진다(#378). 이미 디코드된
+// 라이브 비트맵을 캔버스로 구워 캡처 수명 동안만 사는 새 blob: URL로 바꾸면(아래 blobSrcToObjectUrl)
+// 원본 blob 수명과 무관해진다 — data: URL이 아니라 blob: URL로 바꾸는 이유는 그 함수 주석 참고.
+// 포스터(data-role="poster")는 알파가 필요 없어 JPEG로 인코딩해 용량을 줄인다(#439 후보①).
 // 로고/스탬프(ChainStamp·FormatStamp)는 마커가 없어 PNG로 남아 알파 투명도를 보존한다.
 export function blobImageMimeType(img: HTMLImageElement): string {
   return img.dataset.role === 'poster' ? 'image/jpeg' : 'image/png';
 }
 
-// iOS Safari는 캔버스 크기가 일정 한계를 넘으면 toDataURL()이 throw 없이 빈/손상 이미지를
-// 조용히 돌려줄 수 있다(#439 후보④) — try/catch로는 못 잡는 실패라 애초에 큰 캔버스를 안 만드는
-// 쪽이 유일한 방어다. "원본 비율 보존" 포스터(getCroppedImg maxSide: TARGET_HEIGHT*2 = 3068px,
-// stub 무드는 항상 이 경로)가 위험권이고, 최종 티켓 출력도 이 해상도로 그릴 일이 없어(캡처
-// pixelRatio 2 기준 최대 변이 약 3100px) 다운스케일에 따른 실질 화질 손실도 없다.
+// iOS Safari는 캔버스 크기가 일정 한계를 넘으면 인코딩이 throw 없이 빈/손상 이미지를 조용히
+// 돌려줄 수 있다(#439 후보④) — try/catch로는 못 잡는 실패라 애초에 큰 캔버스를 안 만드는 쪽이
+// 방어다. "원본 비율 보존" 포스터(getCroppedImg maxSide: TARGET_HEIGHT*2 = 3068px, stub 무드는
+// 항상 이 경로)가 위험권이고, 최종 티켓 출력도 이 해상도로 그릴 일이 없어(캡처 pixelRatio 2
+// 기준 최대 변이 약 3100px) 다운스케일에 따른 실질 화질 손실도 없다.
 const MAX_BLOB_CANVAS_DIM = 2048;
 
-function blobSrcToDataUrl(img: HTMLImageElement, mimeType: string): string | null {
+// html-to-image의 embedImageNode(node_modules/html-to-image/src/embed-images.ts)는 clone된
+// <img>의 src가 이미 data: URL이면 "이미 임베드됨"으로 보고 decode/load를 기다리지 않고 곧장
+// 반환한다 — canvas.toDataURL()로 만든 data: URL을 캡처 직전 img.src에 심었던 기존 방식(#378)이
+// 정확히 이 조건에 걸려, 노드 복제 시 새로 생성되는 clone <img>가 미처 디코드되기 전에
+// 직렬화·래스터화가 진행될 수 있었다(#439 후보②의 진짜 정체 — data: 치환 자체가 만든 레이스).
+// blob: URL은 이 단축 경로를 안 타 html-to-image가 자기 fetch+decode+requestAnimationFrame
+// 대기 경로(embedImageNode의 Promise 블록)를 정상적으로 밟는다. 그래서 data:가 아니라 새
+// blob: URL(canvas.toBlob)을 심는다 — 원본 업로드 blob(백그라운드 전환에 무효화될 수 있는,
+// #378이 우회하려던 대상)이 아니라 이번 캡처 동안만 사는 새 blob이라 수명 문제도 없다.
+async function blobSrcToObjectUrl(img: HTMLImageElement, mimeType: string): Promise<string | null> {
   try {
     const scale = Math.min(1, MAX_BLOB_CANVAS_DIM / Math.max(img.naturalWidth, img.naturalHeight));
     const canvas = document.createElement('canvas');
@@ -137,7 +145,8 @@ function blobSrcToDataUrl(img: HTMLImageElement, mimeType: string): string | nul
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL(mimeType);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, mimeType));
+    return blob ? URL.createObjectURL(blob) : null;
   } catch {
     return null; // 극히 드문 캔버스 오염 등 — 원래 src(blob:)로 진행
   }
@@ -175,31 +184,36 @@ export async function captureNodeToJpeg(
     }
   }
 
-  // blob: 소스 <img>를 캡처 직전 data: URL로 바꿔치기해 html-to-image의 재fetch를 우회하고,
-  // 캡처가 끝나면(성공/실패 무관) 원래 blob: URL로 복원한다.
+  // blob: 소스 <img>를 캡처 직전 "새 blob:" URL로 바꿔치기해(원본 업로드 blob의 무효화 위험을
+  // 피하면서도 html-to-image의 정상 fetch+decode 대기 경로를 타게) 하고, 캡처가 끝나면
+  // (성공/실패 무관) 원래 URL로 복원 + 새로 만든 object URL은 revoke한다.
   // Poster(_shared.tsx)의 contain fit은 블러 배경+전경 두 <img>가 같은 blob src를 공유한다 —
   // src별로 한 번만 캔버스에 그려 인코딩하고 결과를 재사용해, 안 그래도 큰 preserveRatio 포스터를
   // 두 번 굽는 iOS 메모리 압박을 줄인다(#439 후보④).
   const restores: Array<() => void> = [];
-  const dataUrlCache = new Map<string, string | null>();
+  const objectUrlsToRevoke: string[] = [];
+  const objectUrlCache = new Map<string, string | null>();
   for (const img of images) {
     if (!img.src.startsWith('blob:')) continue;
     const mimeType = blobImageMimeType(img);
     const cacheKey = `${img.src}::${mimeType}`;
-    let dataUrl = dataUrlCache.get(cacheKey);
-    if (dataUrl === undefined) {
-      dataUrl = blobSrcToDataUrl(img, mimeType);
-      dataUrlCache.set(cacheKey, dataUrl);
+    let objectUrl = objectUrlCache.get(cacheKey);
+    if (objectUrl === undefined) {
+      // eslint-disable-next-line no-await-in-loop -- 순차 draw 하나뿐, 병렬화할 만큼 무겁지 않음
+      objectUrl = await blobSrcToObjectUrl(img, mimeType);
+      objectUrlCache.set(cacheKey, objectUrl);
+      if (objectUrl) objectUrlsToRevoke.push(objectUrl);
     }
-    if (!dataUrl) continue;
+    if (!objectUrl) continue;
     const original = img.src;
-    img.src = dataUrl;
+    img.src = objectUrl;
     restores.push(() => { img.src = original; });
   }
   try {
     return await toJpeg(node, jpegOptions);
   } finally {
     restores.forEach((restore) => restore());
+    objectUrlsToRevoke.forEach((url) => URL.revokeObjectURL(url));
   }
 }
 
