@@ -292,6 +292,7 @@ export function DesktopStudioShell({
                     isProcessing={false}
                     imageUrl={croppedImageUrl}
                     layout={previewComponents.layout}
+                    posterFit={previewComponents.posterFit}
                   />
                   <OcrUploadCard
                     setInfo={photo.updateMovieInfo}

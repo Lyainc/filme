@@ -956,6 +956,7 @@ export function MobileEditorShell({
           onComplete={handlePosterCropComplete}
           isProcessing={posterCropping}
           layout={previewComponents.layout}
+          initialPreserveRatio={previewComponents.posterFit === 'contain'}
         />
       )}
 
