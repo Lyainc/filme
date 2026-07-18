@@ -158,15 +158,16 @@ export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components,
     stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost);
   const componentOpacity = components.componentOpacity ?? 1;
 
-  // 포스터 fit 정책(#440) — 기본 무손실(contain)+상단 정렬. 자투리 레터박스는 하단 스크림(470)이
-  // 흡수하므로 배경을 스크림 끝 색조(테마별 크림/검정)와 맞춰 이질감을 줄인다.
+  // 포스터 fit 정책(#440) — 기본 무손실(contain)+중앙 정렬(#449, 구 top 정렬은 레터박스가
+  // 전부 하단에 몰려 상단엔 절대 안 보였다). 배경을 스크림 끝 색조(테마별 크림/검정)와 맞춰
+  // 이질감을 줄인다. frameInsetY로 위/아래 블러 레터박스 노출을 20~25px 보장(#449).
   const posterBg = inkIsDark ? '#f5f0e8' : '#0a0a0a';
 
   return (
     <div style={{ position: 'absolute', inset: 0, color: ink, fontFamily: FONT_SANS, overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
       <Poster
         src={croppedImageUrl}
-        {...posterFitProps(components.posterFit, { letterboxBg: posterBg, align: 'top' })}
+        {...posterFitProps(components.posterFit, { letterboxBg: posterBg, frameInsetY: 22 })}
         texture={components.texture}
         posterOpacity={components.posterOpacity}
       />

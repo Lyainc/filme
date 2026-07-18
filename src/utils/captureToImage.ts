@@ -7,9 +7,10 @@ interface CaptureOptions {
 }
 
 // 인쇄 기계가 여백 없는 이미지의 가장자리를 잘라내는 문제 때문에, export 결과물에만 상하좌우
-// 20px 흰 여백을 둔다(#382). 프리뷰는 이 함수를 거치지 않는 별도 렌더 경로(TicketRenderer)라
-// 자동으로 영향 밖이다.
-const EXPORT_MARGIN_PX = 20;
+// 흰 여백을 둔다(#382). 프리뷰는 이 함수를 거치지 않는 별도 렌더 경로(TicketRenderer)라
+// 자동으로 영향 밖이다. 10px(#449) — 캔버스 자체가 960×1534로 커지면서 여백 포함 신용카드
+// 종횡비(0.631)를 맞추려면 20px로는 넘쳐 축소했다.
+const EXPORT_MARGIN_PX = 10;
 
 export function buildJpegOptions(
   width: number,

@@ -65,10 +65,10 @@ describe.each([
     expect(img).toContain('object-position:50% 50%');
   });
 
-  test('posterFit=contain → object-fit:contain, 상단 정렬', () => {
+  test('posterFit=contain → object-fit:contain, 중앙 정렬(#449, 구 top 정렬 폐기)', () => {
     const img = render(Mood, 'contain').match(POSTER_IMG)?.[0] ?? '';
     expect(img).toContain('object-fit:contain');
-    expect(img).toContain('object-position:50% 0%');
+    expect(img).toContain('object-position:50% 50%');
   });
 
   test('posterFit=cover → letterbox 배경은 Poster 기본값(#0a0a0a), 테마 무관', () => {

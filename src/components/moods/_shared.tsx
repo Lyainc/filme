@@ -584,6 +584,13 @@ interface PosterProps {
   posterOpacity?: number;
   /** contain일 때 정렬(#420 원본 비율 보존 프리셋) — 'top'은 포스터 상단을 캔버스 상단에 붙인다. 기본 중앙. */
   align?: 'center' | 'top';
+  /**
+   * contain일 때 선명 포스터 이미지를 위/아래로 이만큼 안쪽에 둬 블러 레터박스 노출을
+   * 최소 이 폭만큼 보장한다(#449). 소스 포스터가 캔버스와 종횡비가 정확히 같아 자연 레터박스가
+   * 0이 되는 경우(무손실 크롭 기본 경로)에도 매트 프레임처럼 일정한 블러 띠가 보이게 하는 장치 —
+   * blur 배경(data-poster-bg)은 이 인셋과 무관하게 항상 inset:0으로 캔버스 전체를 채운다.
+   */
+  frameInsetY?: number;
 }
 
 const PRINT_SIM = 'saturate(0.92) contrast(1.05)';
@@ -613,11 +620,11 @@ export function defaultBrightnessForTexture(texture: string): number {
  */
 export function posterFitProps(
   posterFit: 'cover' | 'contain' | undefined,
-  opts: { letterboxBg: string; align?: 'center' | 'top' },
-): { fit: 'cover' | 'contain'; align: 'center' | 'top'; background?: string } {
+  opts: { letterboxBg: string; align?: 'center' | 'top'; frameInsetY?: number },
+): { fit: 'cover' | 'contain'; align: 'center' | 'top'; background?: string; frameInsetY?: number } {
   const contain = posterFit !== 'cover';
   return contain
-    ? { fit: 'contain', align: opts.align ?? 'center', background: opts.letterboxBg }
+    ? { fit: 'contain', align: opts.align ?? 'center', background: opts.letterboxBg, frameInsetY: opts.frameInsetY }
     : { fit: 'cover', align: 'center' };
 }
 
@@ -628,6 +635,7 @@ export const Poster = memo(function Poster({
   texture = 'original',
   posterOpacity,
   align = 'center',
+  frameInsetY = 0,
 }: PosterProps) {
   // 밝기(posterOpacity)를 texture와 분리해 포스터 <img>에 직접 합성한다. 이전엔
   // TextureOverlay의 검은 dim 레이어에서만 적용돼 original/vintage/newspaper에선
@@ -670,21 +678,25 @@ export const Poster = memo(function Poster({
           crossOrigin="anonymous"
         />
       )}
-      <img
-        src={src}
-        alt=""
-        style={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: fit,
-          objectPosition: align === 'top' ? '50% 0%' : '50% 50%',
-          filter,
-        }}
-        draggable={false}
-        crossOrigin="anonymous"
-      />
+      {/* img(replaced element)는 top+bottom만으론 안 늘어나 inset이 무시된다 — 사이징은 일반
+          div(inset은 항상 신뢰 가능)가 맡고, img는 그 안에서 기존처럼 inset:0+100%로 채운다. */}
+      <div style={{ position: 'absolute', top: fit === 'contain' ? frameInsetY : 0, bottom: fit === 'contain' ? frameInsetY : 0, left: 0, right: 0 }}>
+        <img
+          src={src}
+          alt=""
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: fit,
+            objectPosition: align === 'top' ? '50% 0%' : '50% 50%',
+            filter,
+          }}
+          draggable={false}
+          crossOrigin="anonymous"
+        />
+      </div>
       {texture && texture !== 'original' && <TextureOverlay texture={texture} />}
     </div>
   );
