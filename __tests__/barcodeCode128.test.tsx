@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { buildBarcodeWidths, buildBarcodeWidths128C } from '../src/components/moods/_shared';
+import { BARCODE_WIDTH as EDITORIAL_BARCODE_WIDTH } from '../src/components/moods/MoodEditorial';
+import { BARCODE_WIDTH as STUB_BARCODE_WIDTH } from '../src/components/moods/MoodStub';
 
 // 표준 Code128B 참조 벡터: 입력 "20" (손계산, 숫자만 인코딩 — #312 이후 문자는 인코딩 전 제거됨)
 //   '2'(ASCII 50) -> 값 18,  '0'(ASCII 48) -> 값 16
@@ -98,16 +100,17 @@ describe('buildBarcodeWidths128C — Code128C 인코딩(#444)', () => {
   });
 
   // 체인별 판매번호 자릿수(#444 후속 확인) — CGV 16자리·롯데시네마 8자리·메가박스 11자리(홀수, Code B
-  // 폴백 경로 실사용). editorial(width=286)·stub(width=300)에서 전부 모듈당 2px 이상을 유지해야
-  // 화면 표시 최소 기준(2px/모듈)을 만족한다. CGV 16자리가 가장 길어 최악 케이스 — 나머지 체인은
-  // 자릿수가 짧을수록 심볼 수가 줄어 여유가 더 크다.
+  // 폴백 경로 실사용). editorial·stub 실제 바코드 width(각 컴포넌트의 BARCODE_WIDTH export, 매직넘버
+  // 하드코딩 금지 — nit barcode-width-test-magic-numbers)에서 전부 모듈당 2px 이상을 유지해야 화면
+  // 표시 최소 기준(2px/모듈)을 만족한다. CGV 16자리가 가장 길어 최악 케이스 — 나머지 체인은 자릿수가
+  // 짧을수록 심볼 수가 줄어 여유가 더 크다.
   test.each([
     ['CGV', '2026071912345678'],
     ['롯데시네마', '12345678'],
     ['메가박스', '12345678901'],
   ])('%s(%s자리) 실제 무드 폭에서 모듈당 2px 이상', (_chain, digits) => {
     const units = buildBarcodeWidths128C(digits).reduce((sum, b) => sum + b.w, 0) + 20;
-    expect(286 / units).toBeGreaterThanOrEqual(2); // editorial
-    expect(300 / units).toBeGreaterThanOrEqual(2); // stub
+    expect(EDITORIAL_BARCODE_WIDTH / units).toBeGreaterThanOrEqual(2);
+    expect(STUB_BARCODE_WIDTH / units).toBeGreaterThanOrEqual(2);
   });
 });
