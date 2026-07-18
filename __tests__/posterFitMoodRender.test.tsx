@@ -11,7 +11,9 @@
 import { describe, expect, test } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Mood35mm } from '../src/components/moods/Mood35mm';
+import { Mood35mmLandscape } from '../src/components/moods/Mood35mmLandscape';
 import { MoodCriterion } from '../src/components/moods/MoodCriterion';
+import { MoodEditorial } from '../src/components/moods/MoodEditorial';
 import { MoodMinimal } from '../src/components/moods/MoodMinimal';
 import { MoodStub } from '../src/components/moods/MoodStub';
 import type { MovieInfo, TicketComponents } from '../src/types';
@@ -116,5 +118,24 @@ describe('#440 posterFit 렌더 분기 — stub(가로 밴드는 항상 cover �
     expect(coverImg).toContain('object-fit:cover');
     expect(coverImg).toBe(containImg);
     expect(render(MoodStub, 'contain')).not.toContain('data-poster-bg');
+  });
+});
+
+// editorial/35mm-landscape는 이 PR에서 처음 posterFit을 읽게 배선됐다(이전엔 cover 고정/미독) —
+// 새로 배선한 fit·blur 배경 분기를 최소 1건씩 검증한다(claude-review PR #448 P1).
+describe.each([
+  ['editorial', MoodEditorial],
+  ['35mm-landscape', Mood35mmLandscape],
+] as const)('#440 posterFit 신규 배선 — %s', (_name, Mood) => {
+  test('posterFit=cover → object-fit:cover, blur 배경 없음', () => {
+    const html = render(Mood, 'cover');
+    expect((html.match(POSTER_IMG)?.[0] ?? '')).toContain('object-fit:cover');
+    expect(html).not.toContain('data-poster-bg');
+  });
+
+  test('posterFit=contain(기본) → object-fit:contain + blur 포스터 배경', () => {
+    const html = render(Mood, 'contain');
+    expect((html.match(POSTER_IMG)?.[0] ?? '')).toContain('object-fit:contain');
+    expect(html).toMatch(POSTER_BG_BLUR);
   });
 });

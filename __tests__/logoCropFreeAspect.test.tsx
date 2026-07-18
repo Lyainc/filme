@@ -132,6 +132,11 @@ describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
     expect(screen.queryByRole('checkbox')).not.toBeNull();
   });
 
+  test('layout이 stub → 토글 없음(항상 cover라 무효 컨트롤이므로 제외, #448 P1)', () => {
+    render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} layout="stub" />);
+    expect(screen.queryByRole('checkbox')).toBeNull();
+  });
+
   test('layout 전달(minimal) → 토글 노출, initialPreserveRatio 미전달이면 unchecked, aspect는 TARGET_RATIO', () => {
     render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} layout="minimal" />);
     const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
