@@ -14,11 +14,16 @@ interface ImageUploaderProps {
   imageUrl?: string | null;
   /** 현재 무드(#420 배선) — ImageCropModal에 그대로 전달해 프리셋 토글 노출 여부를 결정한다. */
   layout: LayoutId;
+  /**
+   * 현재 저장된 posterFit — 재크롭 시 토글 초기 상태로 이어준다. 없으면(호출부 미전달) 매
+   * 재크롭마다 unchecked로 열려 posterFit이 조용히 'cover'로 되돌아간다(claude-review PR #429 P1).
+   */
+  posterFit?: 'cover' | 'contain';
 }
 
 const ACCEPT = 'image/jpeg,image/png,image/jpg,image/webp';
 
-export default function ImageUploader({ onUpload, isProcessing, imageUrl, layout }: ImageUploaderProps) {
+export default function ImageUploader({ onUpload, isProcessing, imageUrl, layout, posterFit }: ImageUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   // 크롭 모달의 소스이자 재크롭을 위해 유지되는 원본 objectURL. 크롭 완료 후에도 버리지 않는다.
   const [originalSrc, setOriginalSrc] = useState<string | null>(null);
@@ -205,6 +210,7 @@ export default function ImageUploader({ onUpload, isProcessing, imageUrl, layout
           onComplete={handleCropComplete}
           isProcessing={isCropping}
           layout={layout}
+          initialPreserveRatio={posterFit === 'contain'}
         />
       )}
     </section>

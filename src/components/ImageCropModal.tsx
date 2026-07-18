@@ -34,6 +34,12 @@ interface ImageCropModalProps {
    * 노출한다. 로고 크롭 호출부는 이 prop을 넘기지 않아 토글이 뜨지 않는다.
    */
   layout?: LayoutId;
+  /**
+   * 토글 초기 체크 상태 — 호출부가 현재 `components.posterFit === 'contain'`을 넘긴다.
+   * 없으면 재크롭 때마다 모달이 unchecked로 새로 열려, 크롭 영역만 조정해도 posterFit이
+   * 조용히 'cover'로 되돌아간다(claude-review PR #429 P1).
+   */
+  initialPreserveRatio?: boolean;
 }
 
 export default function ImageCropModal(props: ImageCropModalProps) {
@@ -44,10 +50,11 @@ export default function ImageCropModal(props: ImageCropModalProps) {
     isProcessing = false,
     title = '포스터 크롭',
     layout,
+    initialPreserveRatio = false,
   } = props;
 
   const showPreserveToggle = layout != null && POSTER_PRESERVE_RATIO_LAYOUTS.has(layout);
-  const [preserveRatio, setPreserveRatio] = useState(false);
+  const [preserveRatio, setPreserveRatio] = useState(initialPreserveRatio);
   // 프리셋 토글이 있으면 그게 요청 aspect를 정하고(켜짐=원본 비율, 꺼짐=TARGET_RATIO 고정),
   // 없으면 기존처럼 aspect prop('aspect' in props로 "미전달"과 명시적 undefined 구분) → 포스터 기본.
   const requestedAspect = showPreserveToggle
