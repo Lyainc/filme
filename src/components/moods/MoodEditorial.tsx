@@ -51,10 +51,10 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
   const { bookingNo, watchDateClean, releaseClean } = resolveTicketData(d);
 
   const titleVal = gate(fv?.title, d.title);
-  // 타이틀 폭 맞춤(#318) — 메인 열 가용폭(1477 - poster516 - foil42 - stub224 - padding52*2).
+  // 타이틀 폭 맞춤(#318) — 메인 열 가용폭(1534 - poster516 - foil42 - stub224 - padding52*2, #450 폭 1534 재조정).
   // 2줄 클램프라 가용폭×2를 maxWidth로 넘겨 가장 긴 한 줄 기준으로 안전하게 축소한다(_shared.tsx 참고).
   const fontsReady = useFontsReady();
-  const titleFontSize = fitFontSizeToWidth(titleVal, 591 * 2, { fontFamily: FONT_KR, fontWeight: 900, minSize: 44, maxSize: 72 }, fontsReady);
+  const titleFontSize = fitFontSizeToWidth(titleVal, 648 * 2, { fontFamily: FONT_KR, fontWeight: 900, minSize: 44, maxSize: 72 }, fontsReady);
   const titleOgVal = gate(fv?.titleOg, d.titleOg);
   const theaterVal = gate(fv?.theater, d.theater);
   const screenVal = gate(fv?.screen, d.screen);
