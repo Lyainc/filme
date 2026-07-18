@@ -147,7 +147,8 @@ export const Mood35mmLandscape = memo(function Mood35mmLandscape({ movieInfo: d,
     : null;
 
   // 필름 스트립 엣지 스크롤 코드(장식 크롬 — 편집 불가, 시안 페이싱용 복제).
-  const edgeCodes = buildEdgeCodes({ titleVal, releaseDateVal, ratingVisible, rating: d.rating, signatureVal });
+  // 스프로킷은 원어 표기가 필름 원판 느낌에 맞아 원제(titleOgVal)를 쓰고, 없으면 제목으로 폴백(35mm 세로와 동일, #423).
+  const edgeCodes = buildEdgeCodes({ titleVal: titleOgVal || titleVal, releaseDateVal, ratingVisible, rating: d.rating, signatureVal });
 
   const hasStamp =
     stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost) ||
