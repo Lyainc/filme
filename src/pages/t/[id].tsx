@@ -86,11 +86,11 @@ export const getServerSideProps: GetServerSideProps<TicketLandingProps> = async 
 
 export default function TicketLanding({ imageUrl, title, pageUrl, width, height }: TicketLandingProps) {
   const ogTitle = title ? `${title} · 포토티켓` : '포토티켓';
-  // 메타 카피는 둘로 갈린다 — <title>·헤더는 정적이지만, og description은 수신자를
-  // 후킹하는 바이럴 카피라 제목이 있으면 이름을 넣어 "너도 만들어봐"로 끌어당긴다(#138 2-1).
-  const ogDescription = title
-    ? `${title}, FILME로 만든 포토티켓이에요. 너도 만들어봐.`
-    : 'FILME로 만든 포토티켓이에요. 너도 만들어봐.';
+  // og:description을 buildShareMessage(#277)의 앵커형 꼬리표('— made with FILME.')로 통일한다
+  // (#190) — 이 페이지의 메타 JSON엔 title만 있고 titleOg·releaseDate가 없어(getServerSideProps
+  // 참고) buildShareMessage를 그대로 재사용은 못 하지만, 같은 꼬리표로 끝나야 티켓 실물 서명·
+  // 공유 문구·OG 메타 세 곳이 한 목소리로 읽힌다는 취지는 동일하게 적용한다.
+  const ogDescription = title ? `《${title}》 포토티켓 — made with FILME.` : '포토티켓 — made with FILME.';
 
   return (
     <>
