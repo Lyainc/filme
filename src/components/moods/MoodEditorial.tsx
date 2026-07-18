@@ -38,6 +38,8 @@ const BROWN = '#6f6347';
 const CREAM = '#f7ece2';
 
 const POSTER_W = 516;
+/** 바코드 SVG 폭(px) — Code128C(#444) 기준 모듈당 2px 확보용 286. 테스트가 이 값을 직접 import. */
+export const BARCODE_WIDTH = 286;
 const FOIL_W = 42;
 const STUB_W = 224;
 // 좌석 폭 예산(#381) — fitFontSizeToWidth의 maxWidth이자 seat span 자체의 하드 캡. 쉼표 없는
@@ -161,7 +163,7 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
   if (fv?.bookingNo ?? true)
     stubGroups.push(
       <FieldTap key="booking" field="bookingNo" onField={onField}>
-        <Barcode value={bookingNo} color={CREAM} orientation="horizontal" width={286} height={70} showText={false} encoding="code128c" />
+        <Barcode value={bookingNo} color={CREAM} orientation="horizontal" width={BARCODE_WIDTH} height={70} showText={false} encoding="code128c" />
       </FieldTap>
     );
   if (stubStampOn)

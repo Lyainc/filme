@@ -38,6 +38,8 @@ const INK = '#1a1612';
 const BROWN = '#6f6347';
 const CREAM = '#f4ede0';
 const DOT = 'rgba(26,22,18,.4)';
+/** 바코드 SVG 폭(px) — Code128C(#444) 기준 모듈당 2px 확보용 300. 테스트가 이 값을 직접 import. */
+export const BARCODE_WIDTH = 300;
 // 좌석 폭 예산(#381) — fitFontSizeToWidth의 maxWidth이자 seat span 자체의 하드 캡. 쉼표 없는
 // 단일 토큰은 개수 캡을 안 타므로(#381 리뷰 P1), minSize까지 줄여도 못 들어가면 span에 걸린
 // overflow:hidden + ellipsis가 최종 방어선이 된다.
@@ -343,7 +345,7 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
           </div>
           {bookingVisible && (
             <FieldTap field="bookingNo" onField={onField}>
-              <Barcode value={bookingNo} color={INK} width={300} height={40} showText={false} encoding="code128c" />
+              <Barcode value={bookingNo} color={INK} width={BARCODE_WIDTH} height={40} showText={false} encoding="code128c" />
             </FieldTap>
           )}
         </div>
