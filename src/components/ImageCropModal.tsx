@@ -52,18 +52,23 @@ export default function ImageCropModal(props: ImageCropModalProps) {
     initialPreserveRatio = false,
   } = props;
 
-  // #440 전 무드 노출 — 포스터 크롭(layout 전달)이면 항상. 기본은 posterFit='contain' → 토글 켜짐(원본 비율).
-  const showPreserveToggle = layout != null;
+  // #440 포스터 크롭(layout 전달)이면 "원본 비율 보존" 토글 노출. 단 stub은 렌더가 항상 cover(밴드
+  // 가운데 auto crop, MoodStub)라 토글이 posterFit을 바꿔도 무효 컨트롤이 되므로 제외하고, 크롭은
+  // 원본 비율로 고정한다(포스터 전체를 받아 렌더에서 cover) — claude-review PR #448 P1.
+  const isStubCrop = layout === 'stub';
+  const showPreserveToggle = layout != null && !isStubCrop;
   const [preserveRatio, setPreserveRatio] = useState(initialPreserveRatio);
-  // 프리셋 토글이 있으면 그게 요청 aspect를 정하고(켜짐=원본 비율, 꺼짐=TARGET_RATIO 고정),
-  // 없으면 기존처럼 aspect prop('aspect' in props로 "미전달"과 명시적 undefined 구분) → 포스터 기본.
-  const requestedAspect = showPreserveToggle
-    ? preserveRatio
-      ? undefined
-      : TARGET_RATIO
-    : 'aspect' in props
-      ? props.aspect
-      : TARGET_RATIO;
+  // stub은 원본 비율 고정. 그 외엔 프리셋 토글이 요청 aspect를 정하고(켜짐=원본 비율, 꺼짐=TARGET_RATIO
+  // 고정), 토글이 없으면 aspect prop('aspect' in props로 "미전달"과 명시적 undefined 구분) → 포스터 기본.
+  const requestedAspect = isStubCrop
+    ? undefined
+    : showPreserveToggle
+      ? preserveRatio
+        ? undefined
+        : TARGET_RATIO
+      : 'aspect' in props
+        ? props.aspect
+        : TARGET_RATIO;
   // requestedAspect가 undefined(로고 자유 크롭 #347, 포스터 원본 비율 보존 #420)면 업로드
   // 이미지의 자연 종횡비로 잠근다 — 완전 자유형이 아니라 "그 비율의 박스를 리사이즈"(#421)다.
   const [mediaAspect, setMediaAspect] = useState<number | null>(null);
@@ -111,7 +116,8 @@ export default function ImageCropModal(props: ImageCropModalProps) {
         width: Math.round(completedCrop.width * scaleX),
         height: Math.round(completedCrop.height * scaleY),
       },
-      preserveRatio,
+      // stub은 토글이 없지만 원본 비율을 유지해 밴드 cover에 온전한 포스터를 넘긴다(#448 P1).
+      isStubCrop ? true : preserveRatio,
     );
   };
 
