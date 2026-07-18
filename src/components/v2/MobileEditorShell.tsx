@@ -26,7 +26,6 @@ import { useOcrUndo } from '@/hooks/useOcrUndo';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 import { isStampTarget, STAMP_KEYS, type SheetTarget } from '@/constants/fields';
-import { ALL_FIELDS_ON, ALL_FIELDS_OFF_KEEP_REQUIRED } from '@/constants/fieldVisibility';
 
 // 필드 목록 우측 드로어(#355, 구 FieldEditSheet 대체) — 크롭 모달·로고 훅을 끌어오고 열기 전엔
 // 안 쓰므로 dynamic(ssr:false)로 분리, 첫 열기에 로드된다.
@@ -45,14 +44,10 @@ const InPlaceFieldEditor = dynamic(
 // 포스터 탭(#259) 크롭 모달 — ImageUploader와 동일 컴포넌트 재사용. 탭 전엔 안 쓰므로 dynamic.
 const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ssr: false });
 
-// 표시 항목 일괄 스위치의 도메인 필드 집합(#261) — ALL_FIELDS_ON 키가 곧 전체 티켓 필드.
-const ALL_FIELDS = Object.keys(ALL_FIELDS_ON) as TicketField[];
-
 // 서브메뉴 행 리딩 아이콘(#374) — 시안 Siyan-C-v8 L296-322와 동일한 18px/stroke 1.7 계열.
 // 멀티 서브패스도 단일 d 문자열로 합쳐 MenuRow가 <path> 하나로 렌더한다.
 const MENU_ICONS = {
   moon: 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  list: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
   eye: 'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',
   upload: 'M12 16V4M8 8l4-4 4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2',
   crop: 'M6 2v14a2 2 0 0 0 2 2h14M18 22V8a2 2 0 0 0-2-2H2',
@@ -174,8 +169,6 @@ export function MobileEditorShell({
   // 전역 undo/redo(#356) — usePhototicket 위 히스토리 레이어. useOcrUndo와는 독립(이슈 결정,
   // #141 회귀 테스트 보호). 진입점은 플로팅 툴바.
   const history = useEditHistory(photo);
-  // 표시 항목 일괄 단일 스위치(#261, #260 연계) — 전체 켜짐 여부. 끄기는 필수 필드(title)를 켠 채 유지한다.
-  const allVisOn = ALL_FIELDS.every((f) => photo.state.fieldVisibility[f]);
   const [activeField, setActiveField] = useState<SheetTarget | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('default');
   // 빈 항목 미리보기(ghost, #216) — 셸 로컬, 미영속(기본 on).
@@ -509,26 +502,17 @@ export function MobileEditorShell({
                 checked={theme === 'dark'}
                 onClick={() => onThemeChange(theme === 'dark' ? 'light' : 'dark')}
               />
-              {/* 전체표시/빈 항목은 프리뷰(포스터)가 있어야 의미가 있으므로 기존과 동일하게 게이팅.
-                  잉크는 DesignRail 시절과 동일하게 포스터 유무와 무관하게 항상 노출. */}
+              {/* 빈 항목은 프리뷰(포스터)가 있어야 의미가 있으므로 기존과 동일하게 게이팅. 잉크는
+                  DesignRail 시절과 동일하게 포스터 유무와 무관하게 항상 노출. '전체 표시'는 필드
+                  목록이 있는 FieldDrawer로 이전(#424) — 필드 목록과 한 자리에 두는 게 더 직관적이다. */}
               {croppedImageUrl && (
-                <>
-                  <MenuRow
-                    iconPath={MENU_ICONS.list}
-                    label="전체 표시"
-                    checked={allVisOn}
-                    onClick={() =>
-                      photo.updateFieldVisibility(allVisOn ? ALL_FIELDS_OFF_KEEP_REQUIRED : ALL_FIELDS_ON)
-                    }
-                  />
-                  <MenuRow
-                    iconPath={MENU_ICONS.eye}
-                    label="빈 항목"
-                    ariaLabel="빈 항목 미리보기"
-                    checked={ghostMode}
-                    onClick={() => setGhostMode((v) => !v)}
-                  />
-                </>
+                <MenuRow
+                  iconPath={MENU_ICONS.eye}
+                  label="빈 항목"
+                  ariaLabel="빈 항목 미리보기"
+                  checked={ghostMode}
+                  onClick={() => setGhostMode((v) => !v)}
+                />
               )}
               {/* 배치설정(#387, 플로팅 툴바 gear에서 이전) — 방향(가로/세로) × 배치(고정/이동)
                   라디오 4종 + 이동식일 때 좌/우 가장자리 스냅(WCAG 2.2 SC 2.5.7 대체 경로).
@@ -555,7 +539,7 @@ export function MobileEditorShell({
                     >
                       <path d={MENU_ICONS.gear} />
                     </svg>
-                    <span>배치</span>
+                    <span>툴바 설정</span>
                   </div>
                   <div role="radiogroup" aria-label="툴바 배치">
                     {TOOLBAR_MODES.map((m) => {
@@ -938,6 +922,7 @@ export function MobileEditorShell({
             setComponents={photo.updateComponents}
             currentComponents={photo.state.components}
             ocrEpochRef={ocr.epochRef}
+            context="drawer"
           />
         </FieldDrawer>
       )}
