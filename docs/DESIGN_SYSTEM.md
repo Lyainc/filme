@@ -1,5 +1,10 @@
 # 포토티켓 디자인 시스템
 
+> ⚠️ **Deprecated (2026-07-19)** — 6-mood 리사이즈(#281, #449/#450)가 이 문서에 반영되지 않아
+> 아래 표·수치가 실제 코드와 어긋나 있어요(4-mood만 기재·자연 픽셀 사이즈 구값 등). 현재 무드 카탈로그·
+> 치수는 `CLAUDE.md`의 "Core Mechanisms (6-Mood Ticket Rendering)" 섹션과 `src/utils/layouts.ts`를
+> 기준으로 삼으세요. 이 문서는 히스토리 참고용으로만 남겨둡니다.
+
 CGV Photoplay 프리미엄 티켓을 모방한 4-mood 카탈로그 + 자산 자동 동기화 기반 렌더링 시스템이에요. 렌더는 React DOM(JSX/CSS)로 그리고 `html-to-image`로 캡처해요. (Canvas API는 v1에서 폐기.)
 
 ---
