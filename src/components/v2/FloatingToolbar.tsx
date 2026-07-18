@@ -127,6 +127,10 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
 
   // 고정식 top 실측(#419) — 헤더/티켓 콘텐츠 ref의 실제 렌더 위치로 계산해 매직넘버 겹침을 없앤다.
   // 세로는 헤더 바로 아래, 가로는 티켓 콘텐츠(LOGO/FORMAT 스탬프 포함) 위쪽에 오도록 클램프.
+  // window resize뿐 아니라 헤더/티켓/툴바 자신의 크기 변화(무드 전환으로 ticketBoxEl 종횡비가
+  // 바뀌는 경우, hidden 토글로 rootRef가 원형 버튼↔전체 툴바 사이를 오가는 경우)에도 재측정해야
+  // 하므로 TicketRenderer(#117)와 동일하게 ResizeObserver로 세 엘리먼트를 관찰한다(claude-review
+  // PR #430 P1·P2 — resize 이벤트만으론 이 변화들을 못 잡는다).
   const [fixedTop, setFixedTop] = useState<{ v: number | null; h: number | null }>({ v: null, h: null });
   useEffect(() => {
     if (place !== 'fixed') return;
@@ -143,9 +147,16 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
       });
     };
     measure();
+    const ro = new ResizeObserver(measure);
+    if (headerEl) ro.observe(headerEl);
+    if (contentTopEl) ro.observe(contentTopEl);
+    if (rootRef.current) ro.observe(rootRef.current);
     window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
-  }, [place, orient, headerEl, contentTopEl]);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [place, orient, headerEl, contentTopEl, hidden]);
 
   const clampPos = (x: number, y: number) => {
     const el = rootRef.current;
