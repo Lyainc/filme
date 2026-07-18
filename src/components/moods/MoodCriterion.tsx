@@ -192,7 +192,7 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
         <div style={{ flex: 1 }} />
         {(fv?.bookingNo ?? true) && (
           <FieldTap field="bookingNo" onField={onField}>
-            <Barcode value={bookingNo} color={ink} orientation="vertical" width={66} height={440} showText={false} />
+            <Barcode value={bookingNo} color={ink} orientation="vertical" width={66} height={440} showText={false} encoding="code128c" />
           </FieldTap>
         )}
         <div style={{ flex: 1 }} />
