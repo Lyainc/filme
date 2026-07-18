@@ -1,6 +1,9 @@
 import { describe, expect, test, afterEach } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MoodMinimal } from '../src/components/moods/MoodMinimal';
+import { MoodEditorial } from '../src/components/moods/MoodEditorial';
+import { Mood35mmLandscape } from '../src/components/moods/Mood35mmLandscape';
+import { FULL_MOVIE, makeMoodBase } from './fixtures';
 import type { MovieInfo, TicketComponents } from '../src/types';
 
 /**
@@ -76,5 +79,44 @@ describe('MoodMinimal 제목 폭 맞춤 통합 (#318)', () => {
       <MoodMinimal movieInfo={movie} components={BASE} croppedImageUrl="blob:x" />,
     );
     expect(html).toContain('font-size:62px');
+  });
+});
+
+/**
+ * #450 claude-review P1 — layouts.ts가 가로 무드 폭을 1477→1534로 늘리며(#449) Editorial/
+ * 35mm-landscape의 타이틀 폭 예산을 591*2→648*2, 785*2→842*2로 재조정했는데, 두 무드의 기존
+ * resync 테스트(moodEditorialResync.test.tsx/mood35mmWideResync.test.tsx)는 canvas 목킹이
+ * 없어 항상 maxSize(72px/60px)만 보고 이 재조정을 검증하지 못했다. 위 MoodMinimal과 같은 fake
+ * canvas + 긴 제목으로 실제 이진탐색이 새 예산을 쓰는지 확인한다.
+ */
+describe('MoodEditorial 제목 폭 맞춤 통합 (#318, #450)', () => {
+  let restore: () => void;
+  afterEach(() => restore?.());
+
+  test('긴 제목은 새 가용폭(648*2=1296) 기준으로 54px에 수렴 — 구 예산(591*2=1182)이면 49px', () => {
+    restore = installFakeCanvasContext();
+    const longTitle = 'A'.repeat(40);
+    const html = renderToStaticMarkup(
+      <MoodEditorial movieInfo={{ ...FULL_MOVIE, title: longTitle }} components={makeMoodBase('editorial')} croppedImageUrl="blob:x" onField={() => {}} />,
+    );
+    expect(html).toContain('font-size:54px');
+    expect(html).not.toContain('font-size:49px');
+    expect(html).not.toContain('font-size:72px');
+  });
+});
+
+describe('Mood35mmLandscape 제목 폭 맞춤 통합 (#318, #450)', () => {
+  let restore: () => void;
+  afterEach(() => restore?.());
+
+  test('긴 제목은 새 가용폭(842*2=1684) 기준으로 59px에 수렴 — 구 예산(785*2=1570)이면 55px', () => {
+    restore = installFakeCanvasContext();
+    const longTitle = 'A'.repeat(47);
+    const html = renderToStaticMarkup(
+      <Mood35mmLandscape movieInfo={{ ...FULL_MOVIE, title: longTitle }} components={makeMoodBase('35mm-landscape')} croppedImageUrl="blob:x" onField={() => {}} />,
+    );
+    expect(html).toContain('font-size:59px');
+    expect(html).not.toContain('font-size:55px');
+    expect(html).not.toContain('font-size:60px');
   });
 });
