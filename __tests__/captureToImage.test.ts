@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import {
+  blobImageMimeType,
   buildJpegOptions,
   canShareTicketFile,
   dataUrlToJpegBlob,
@@ -58,6 +59,25 @@ describe('buildJpegOptions — AC12: capture dimensions invariant', () => {
       expect(opts.pixelRatio).toBe(2);
     }
   );
+});
+
+describe('blobImageMimeType — poster→JPEG, logo/stamp→PNG (#439 후보①)', () => {
+  test('data-role="poster" (Poster 배경·전경 img) requests JPEG', () => {
+    const img = document.createElement('img');
+    img.dataset.role = 'poster';
+    expect(blobImageMimeType(img)).toBe('image/jpeg');
+  });
+
+  test('no data-role (ChainStamp/FormatStamp 로고·스탬프 img) requests PNG — alpha 보존', () => {
+    const img = document.createElement('img');
+    expect(blobImageMimeType(img)).toBe('image/png');
+  });
+
+  test('unrelated data-role value falls back to PNG', () => {
+    const img = document.createElement('img');
+    img.dataset.role = 'something-else';
+    expect(blobImageMimeType(img)).toBe('image/png');
+  });
 });
 
 describe('dataUrlToJpegBlob — CSP-safe base64 decode (no fetch(data:))', () => {
