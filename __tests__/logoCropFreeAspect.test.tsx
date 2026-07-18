@@ -185,7 +185,8 @@ describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
     // 크기보다 작은 게 보통이다. completedCrop은 react-image-crop이 렌더 픽셀 좌표계로 주므로,
     // handleConfirm의 scaleX/scaleY 환산이 없거나 틀리면 사용자가 고른 크롭 위치와 실제 출력
     // 이미지의 크롭 위치가 어긋난다. loadImage(자연=렌더)만 쓰는 다른 테스트는 scaleX/Y가
-    // 항상 1로 고정돼 이 회귀를 못 잡는다.
+    // 항상 1로 고정돼 이 회귀를 못 잡는다. scaleX(2)≠scaleY(3)로 일부러 비대칭을 둬 축이
+    // 뒤바뀌는 회귀(x에 scaleY를 곱하는 등)도 함께 잡는다(claude-review PR #429 4차 P2).
     let received: Area | null = null;
     const onCompleteSpy = (area: Area) => {
       received = area;
@@ -193,7 +194,7 @@ describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
     render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={onCompleteSpy} />);
 
     const img = document.querySelector('img') as HTMLImageElement;
-    const [naturalW, naturalH, renderW, renderH] = [2000, 3000, 1000, 1500]; // 렌더=자연의 절반
+    const [naturalW, naturalH, renderW, renderH] = [2000, 3000, 1000, 1000]; // scaleX=2, scaleY=3
     Object.defineProperty(img, 'naturalWidth', { value: naturalW, configurable: true });
     Object.defineProperty(img, 'naturalHeight', { value: naturalH, configurable: true });
     Object.defineProperty(img, 'width', { value: renderW, configurable: true });
