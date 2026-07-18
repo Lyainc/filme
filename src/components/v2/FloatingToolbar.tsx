@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, type PointerEvent } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type PointerEvent } from 'react';
 
 /**
  * 플로팅 툴바(#356, v8 시안 §4) — undo · redo | 항목목록 · 최대화 | 숨김.
@@ -77,10 +77,20 @@ interface FloatingToolbarProps {
   /** 항목목록 — 필드 드로어 열기(#360 임시 헤더 버튼을 이 버튼이 대체). */
   onFieldList: () => void;
   onMaximize: () => void;
+  /** 세로·고정 기본 위치가 이 아래로 오도록 실측하는 헤더 엘리먼트(#419). */
+  headerEl?: HTMLElement | null;
+  /** 가로·고정 배치가 이 위(티켓 콘텐츠)를 침범하지 않도록 실측하는 엘리먼트(#419). */
+  contentTopEl?: HTMLElement | null;
 }
 
+// 실측 실패(마운트 전) 시 폴백 — 세로는 이슈가 명시한 최소 안전값(76~80px)으로 상향(#419, 이전 60px).
+const TB_FALLBACK_TOP_V = 'calc(env(safe-area-inset-top, 0px) + 78px)';
+const TB_FALLBACK_TOP_H = 'calc(env(safe-area-inset-top, 0px) + 70px)';
+const TB_HEADER_MARGIN = 12; // 헤더 아래 여백
+const TB_CONTENT_MARGIN = 10; // 티켓 콘텐츠 위 여백
+
 export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(function FloatingToolbar(
-  { prefs, onPrefsChange, canUndo, canRedo, onUndo, onRedo, onFieldList, onMaximize },
+  { prefs, onPrefsChange, canUndo, canRedo, onUndo, onRedo, onFieldList, onMaximize, headerEl, contentTopEl },
   forwardedRef,
 ) {
   const { orient, place, hidden } = prefs;
@@ -115,6 +125,28 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
     return () => window.removeEventListener('resize', reclamp);
   }, [place, pos?.x, pos?.y]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // 고정식 top 실측(#419) — 헤더/티켓 콘텐츠 ref의 실제 렌더 위치로 계산해 매직넘버 겹침을 없앤다.
+  // 세로는 헤더 바로 아래, 가로는 티켓 콘텐츠(LOGO/FORMAT 스탬프 포함) 위쪽에 오도록 클램프.
+  const [fixedTop, setFixedTop] = useState<{ v: number | null; h: number | null }>({ v: null, h: null });
+  useEffect(() => {
+    if (place !== 'fixed') return;
+    const measure = () => {
+      const headerBottom = headerEl?.getBoundingClientRect().bottom ?? null;
+      const contentTop = contentTopEl?.getBoundingClientRect().top ?? null;
+      const toolbarH = rootRef.current?.offsetHeight ?? 52;
+      setFixedTop({
+        v: headerBottom != null ? headerBottom + TB_HEADER_MARGIN : null,
+        h:
+          headerBottom != null && contentTop != null
+            ? Math.max(headerBottom + TB_HEADER_MARGIN, contentTop - toolbarH - TB_CONTENT_MARGIN)
+            : null,
+      });
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [place, orient, headerEl, contentTopEl]);
+
   const clampPos = (x: number, y: number) => {
     const el = rootRef.current;
     const w = el?.offsetWidth ?? 52;
@@ -142,20 +174,19 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
   };
 
   // 위치 스타일 — 이동식은 transform(translate)만 움직인다(left/top 애니메이트 금지 — 이슈 표).
-  // 고정식 프리셋은 CSS 값이라 리사이즈에 자동 대응. 세로·고정 기본은 헤더 아래 60px 선(#387,
-  // 이전 70px에서 상향 — #364 30vh→70px 상향 이력의 연장, fit 스테이지로 커진 티켓 상단부와의
-  // 여백을 더 확보). safe-area 기준 고정값이라 Safari 동적 툴바(vh 변동)와 무관.
+  // 고정식은 headerEl/contentTopEl 실측(#419) — 세로는 헤더 바로 아래, 가로는 티켓 콘텐츠(LOGO/FORMAT
+  // 스탬프 포함) 위쪽 클램프로 겹침을 없앤다. 실측 전(마운트 직후 1프레임)엔 안전한 폴백 값을 쓴다.
   const posStyle: React.CSSProperties =
     place === 'movable'
       ? pos
         ? { left: 0, top: 0, transform: `translate(${pos.x}px, ${pos.y}px)` }
         : { right: 14, top: 'calc(env(safe-area-inset-top, 0px) + 126px)' } // 이동식 기본: 우상단(시안)
       : orient === 'v'
-        ? { left: 14, top: 'calc(env(safe-area-inset-top, 0px) + 60px)' }
+        ? { left: 14, top: fixedTop.v ?? TB_FALLBACK_TOP_V }
         : {
             left: '50%',
             transform: 'translateX(-50%)',
-            top: 'calc(env(safe-area-inset-top, 0px) + 70px)',
+            top: fixedTop.h ?? TB_FALLBACK_TOP_H,
           };
 
   const glass: React.CSSProperties = {
