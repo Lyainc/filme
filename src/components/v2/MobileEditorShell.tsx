@@ -235,6 +235,8 @@ export function MobileEditorShell({
   // 필드 목록 우측 드로어(#355). 진입은 헤더 목록 버튼 — #356 플로팅 툴바가 오면 그쪽
   // field-list 버튼이 이 진입점을 이어받는다.
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // 헤더 ref(#419) — 플로팅 툴바 세로·고정 기본 위치가 이 아래로 오도록 FloatingToolbar가 실측한다.
+  const [headerEl, setHeaderEl] = useState<HTMLElement | null>(null);
   // pill 클릭 시 서브메뉴가 열린 채로 남지 않게 항상 같이 닫는다(claude-review PR #332 P2 —
   // 메뉴 오버레이가 마우스 클릭은 막아도 키보드 포커스는 막지 않아 Tab으로 pill까지 도달 가능).
   function handleViewModeChange(mode: ViewMode) {
@@ -436,7 +438,7 @@ export function MobileEditorShell({
           토글과 포스터 교체·재크롭 액션은 서브메뉴로 통합. max(#328)는 이 헤더(서브메뉴 포함)까지
           숨기는 풀스크린 모드라 통째로 언마운트한다. 배경은 앰비언트 위라 투명(v8 §1). */}
       {!isMax && (
-      <header className="relative flex h-14 shrink-0 items-center justify-between border-b border-line px-3">
+      <header ref={setHeaderEl} className="relative flex h-14 shrink-0 items-center justify-between border-b border-line px-3">
         <div className="flex items-center gap-2 pl-1.5">
           <Wordmark as="h1" />
         </div>
@@ -897,6 +899,8 @@ export function MobileEditorShell({
           }}
           onFieldList={() => setDrawerOpen(true)}
           onMaximize={() => handleViewModeChange('max')}
+          headerEl={headerEl}
+          contentTopEl={ticketBoxEl}
         />
       )}
 
