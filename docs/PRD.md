@@ -1,5 +1,11 @@
 # 영화 포토티켓 생성 웹앱
 
+> ⚠️ **Deprecated (2026-07-19)** — 이 문서는 프로젝트 초기(Fabric.js/Canvas API 기반 MVP) 시점의
+> 스냅샷이라 이후 아키텍처 전환(React DOM(JSX/CSS) + `html-to-image` 렌더링, 6-mood 시스템, 자유
+> 크롭 등)이 반영되지 않았고 유지보수되지 않습니다. 현재 스펙은 `CLAUDE.md`(특히 "Core Mechanisms"
+> 섹션)와 실제 코드(`src/utils/layouts.ts`, `src/components/moods/`)를 기준으로 삼으세요. 아래 내용은
+> 히스토리 기록으로만 남겨둡니다 — 수치·기술스택 등은 실제 값과 다를 수 있습니다.
+
 ## 프로젝트 개요
 
 ### 배경 및 목적

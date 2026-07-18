@@ -13,10 +13,10 @@ A Next.js web application for generating high-quality CGV Photoplay premium tick
 
 ### 📂 Key Documentation References
 Before making architectural changes or implementing new features, consult:
-- **`docs/PRD.md`**: Overall product requirements, scope, and phases.
 - **`README.md`**: Project setup, running instructions, and tech stack overview.
-- **`docs/DESIGN_SYSTEM.md`**: Ticket design specs, layout coords, and textures.
 - **`docs/KOBIS_API.md`**: Instructions and examples for using the KOBIS movie search API.
+- Ticket design specs/layout coords/mood catalog live in this file's **"Core Mechanisms (6-Mood Ticket Rendering)"** section + `src/utils/layouts.ts` — not a separate doc.
+- **`docs/PRD.md`**, **`docs/DESIGN_SYSTEM.md`**: deprecated (2026-07-19) — pre-#281/#449 snapshots that no longer match current architecture/mood count. Kept for history only; do not treat as current spec.
 
 ### 💻 Development Workflow & Commands
 ```bash
