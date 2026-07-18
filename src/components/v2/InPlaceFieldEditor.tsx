@@ -23,7 +23,7 @@ import {
 } from '@/constants/fields';
 import { isRequiredField } from '@/constants/fieldVisibility';
 
-// 로고 크롭 모달 — StampSheet와 동일하게 dynamic(ssr:false)로 react-easy-crop을 분리.
+// 로고 크롭 모달 — StampSheet와 동일하게 dynamic(ssr:false)로 react-image-crop을 분리.
 const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ssr: false });
 
 type Photo = ReturnType<typeof usePhototicket>;

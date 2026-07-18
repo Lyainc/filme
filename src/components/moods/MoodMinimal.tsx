@@ -157,9 +157,21 @@ export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components,
     stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost);
   const componentOpacity = components.componentOpacity ?? 1;
 
+  // 원본 비율 보존 프리셋(#420) — contain+상단 정렬. 자투리는 하단 스크림(470)이 흡수하므로
+  // letterbox 배경은 스크림 끝 색조와 맞춰 이질감을 줄인다(테마별 톤은 scrimGrad와 동일 계열).
+  const preserveRatio = components.posterFit === 'contain';
+  const posterBg = inkIsDark ? '#f5f0e8' : '#0a0a0a';
+
   return (
     <div style={{ position: 'absolute', inset: 0, color: ink, fontFamily: FONT_SANS, overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
-      <Poster src={croppedImageUrl} texture={components.texture} posterOpacity={components.posterOpacity} />
+      <Poster
+        src={croppedImageUrl}
+        fit={preserveRatio ? 'contain' : 'cover'}
+        align={preserveRatio ? 'top' : 'center'}
+        background={preserveRatio ? posterBg : undefined}
+        texture={components.texture}
+        posterOpacity={components.posterOpacity}
+      />
 
       {/* #219 componentOpacity: 포스터를 뺀 모든 오버레이를 함께 페이드. 자식이 전부 position:absolute라
           inset:0 래퍼가 루트를 그대로 채워 opacity 1에서 좌표·페인트 순서가 동일(no-op). */}

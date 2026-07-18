@@ -66,7 +66,7 @@ const MOVIE: MovieInfo = {
 const COMPONENTS: TicketComponents = {
   layout: 'minimal', chain: '', format: '', chainLabel: '', formatLabel: '',
   texture: 'none', posterOpacity: 0.5, componentOpacity: 1, themeColor: '#FFFFFF',
-  chainVisible: false, formatVisible: false,
+  chainVisible: false, formatVisible: false, posterFit: 'cover',
 };
 
 function renderPanel(extra: { hidePreview?: boolean } = {}) {

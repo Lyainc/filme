@@ -582,6 +582,8 @@ interface PosterProps {
   background?: string;
   texture?: string;
   posterOpacity?: number;
+  /** contain일 때 정렬(#420 원본 비율 보존 프리셋) — 'top'은 포스터 상단을 캔버스 상단에 붙인다. 기본 중앙. */
+  align?: 'center' | 'top';
 }
 
 const PRINT_SIM = 'saturate(0.92) contrast(1.05)';
@@ -608,6 +610,7 @@ export const Poster = memo(function Poster({
   background = '#0a0a0a',
   texture = 'original',
   posterOpacity,
+  align = 'center',
 }: PosterProps) {
   // 밝기(posterOpacity)를 texture와 분리해 포스터 <img>에 직접 합성한다. 이전엔
   // TextureOverlay의 검은 dim 레이어에서만 적용돼 original/vintage/newspaper에선
@@ -637,7 +640,7 @@ export const Poster = memo(function Poster({
           width: '100%',
           height: '100%',
           objectFit: fit,
-          objectPosition: '50% 50%',
+          objectPosition: align === 'top' ? '50% 0%' : '50% 50%',
           filter,
         }}
         draggable={false}

@@ -18,7 +18,7 @@
  * would revoke the original blob that getCroppedImg is still reading. The
  * "isCropping 동안 드롭" test below holds the crop promise open to exercise it.
  *
- * ImageCropModal (react-easy-crop, canvas) and getCroppedImg (canvas) are
+ * ImageCropModal (react-image-crop, canvas) and getCroppedImg (canvas) are
  * mocked so only the cancel/complete/drop state machine is exercised.
  */
 import { describe, expect, test, afterEach, mock } from 'bun:test';
@@ -69,7 +69,7 @@ const ImageUploader =
 // imageUrl is set once the first crop commits.
 function Harness() {
   const [url, setUrl] = useState<string | null>(null);
-  return <ImageUploader onUpload={setUrl} isProcessing={false} imageUrl={url} />;
+  return <ImageUploader onUpload={setUrl} isProcessing={false} imageUrl={url} layout="minimal" />;
 }
 
 const fileInput = () =>

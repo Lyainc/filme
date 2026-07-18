@@ -20,6 +20,7 @@ import type { ViewMode } from './viewMode';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
 import { getLayout } from '@/utils/layouts';
 import { getCroppedImg, type Area } from '@/utils/imageCrop';
+import { TARGET_HEIGHT } from '@/utils/constants';
 import { useEditHistory } from '@/hooks/useEditHistory';
 import { useOcrUndo } from '@/hooks/useOcrUndo';
 import type { usePhototicket } from '@/hooks/usePhototicket';
@@ -332,13 +333,19 @@ export function MobileEditorShell({
   const handlePosterRecrop = useCallback(() => {
     if (posterOriginalSrc) setPosterCropOpen(true);
   }, [posterOriginalSrc]);
-  async function handlePosterCropComplete(area: Area) {
+  async function handlePosterCropComplete(area: Area, preserveRatio: boolean) {
     if (!posterOriginalSrc) return;
     setPosterCropping(true);
     try {
-      const url = await getCroppedImg(posterOriginalSrc, area);
+      // 원본 비율 보존(#420): 고정 960×1477 스트레치 대신 크롭 종횡비를 유지하며 긴 변만 캡한다.
+      const url = await getCroppedImg(
+        posterOriginalSrc,
+        area,
+        preserveRatio ? { maxSide: TARGET_HEIGHT * 2 } : undefined
+      );
       const isFirstUpload = !photo.state.croppedImageUrl;
       photo.handleImageUpload(url);
+      photo.updateComponents({ posterFit: preserveRatio ? 'contain' : 'cover' });
       // 첫 업로드는 문서 시작 — 같이 일어나는 fieldVisibility 기본셋 리셋이 undo 1스텝으로
       // 잡히면 시작하자마자 undo가 활성돼 어색하다(#356). 교체는 히스토리 유지(포스터 자체는
       // 스냅샷 밖이라 스텝도 안 생긴다).
@@ -948,6 +955,7 @@ export function MobileEditorShell({
           onClose={handlePosterCropCancel}
           onComplete={handlePosterCropComplete}
           isProcessing={posterCropping}
+          layout={previewComponents.layout}
         />
       )}
 

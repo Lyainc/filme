@@ -1,19 +1,24 @@
 import { useRef, useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { getCroppedImg, Area } from '@/utils/imageCrop';
+import { TARGET_HEIGHT } from '@/utils/constants';
+import type { LayoutId } from '@/types';
 
 const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ssr: false });
 
 interface ImageUploaderProps {
-  onUpload: (croppedImageUrl: string) => void;
+  /** preserveRatio는 #420 "원본 비율 보존" 프리셋 토글 결과 — posterFit 컴포넌트 상태로 이어서 저장할 것. */
+  onUpload: (croppedImageUrl: string, preserveRatio: boolean) => void;
   isProcessing: boolean;
   /** 업로드 후 프리뷰로 보여줄 크롭 결과(부모 소유 objectURL). */
   imageUrl?: string | null;
+  /** 현재 무드(#420 배선) — ImageCropModal에 그대로 전달해 프리셋 토글 노출 여부를 결정한다. */
+  layout: LayoutId;
 }
 
 const ACCEPT = 'image/jpeg,image/png,image/jpg,image/webp';
 
-export default function ImageUploader({ onUpload, isProcessing, imageUrl }: ImageUploaderProps) {
+export default function ImageUploader({ onUpload, isProcessing, imageUrl, layout }: ImageUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   // 크롭 모달의 소스이자 재크롭을 위해 유지되는 원본 objectURL. 크롭 완료 후에도 버리지 않는다.
   const [originalSrc, setOriginalSrc] = useState<string | null>(null);
@@ -48,12 +53,17 @@ export default function ImageUploader({ onUpload, isProcessing, imageUrl }: Imag
     if (file && ACCEPT.includes(file.type)) openFile(file);
   };
 
-  const handleCropComplete = async (croppedAreaPixels: Area) => {
+  const handleCropComplete = async (croppedAreaPixels: Area, preserveRatio: boolean) => {
     if (!originalSrc) return;
     setIsCropping(true);
     try {
-      const croppedUrl = await getCroppedImg(originalSrc, croppedAreaPixels);
-      onUpload(croppedUrl);
+      // 원본 비율 보존(#420): 고정 960×1477 스트레치 대신 크롭 종횡비를 유지하며 긴 변만 캡한다.
+      const croppedUrl = await getCroppedImg(
+        originalSrc,
+        croppedAreaPixels,
+        preserveRatio ? { maxSide: TARGET_HEIGHT * 2 } : undefined
+      );
+      onUpload(croppedUrl, preserveRatio);
       setPendingNewFile(false);
       setCropOpen(false); // originalSrc는 유지 — 재크롭에 재사용
     } catch (error) {
@@ -194,6 +204,7 @@ export default function ImageUploader({ onUpload, isProcessing, imageUrl }: Imag
           onClose={handleCropCancel}
           onComplete={handleCropComplete}
           isProcessing={isCropping}
+          layout={layout}
         />
       )}
     </section>

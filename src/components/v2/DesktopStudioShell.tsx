@@ -285,9 +285,13 @@ export function DesktopStudioShell({
               <div className="space-y-group">
                 <div className="space-y-field">
                   <ImageUploader
-                    onUpload={photo.handleImageUpload}
+                    onUpload={(url, preserveRatio) => {
+                      photo.handleImageUpload(url);
+                      photo.updateComponents({ posterFit: preserveRatio ? 'contain' : 'cover' });
+                    }}
                     isProcessing={false}
                     imageUrl={croppedImageUrl}
+                    layout={previewComponents.layout}
                   />
                   <OcrUploadCard
                     setInfo={photo.updateMovieInfo}

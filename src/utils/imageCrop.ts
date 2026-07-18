@@ -35,7 +35,7 @@ export interface CropOutputOptions {
  * 로고는 `{ mimeType: 'image/png', maxSide: 640 }`로 종횡비 보존 + 알파 유지.
  *
  * @param imageSrc - 원본 이미지의 Object URL
- * @param pixelCrop - react-easy-crop에서 반환된 크롭 픽셀 영역
+ * @param pixelCrop - ImageCropModal(react-image-crop)에서 원본 픽셀 좌표로 환산해 반환한 크롭 영역
  * @param opts - 출력 포맷/크기 옵션 (기본값 = 포스터)
  * @returns Promise<string> - 크롭된 이미지의 Object URL
  */

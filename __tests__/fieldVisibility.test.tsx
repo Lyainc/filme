@@ -64,6 +64,7 @@ const BASE_COMPONENTS: TicketComponents = {
   themeColor: '#FFFFFF',
   chainVisible: false,
   formatVisible: false,
+  posterFit: 'cover',
 };
 
 const MOODS = [

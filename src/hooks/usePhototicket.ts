@@ -93,6 +93,7 @@ const INITIAL_STATE: PhototicketState = {
     // #141 (8): 로고는 기본 ON — 텍스트 라벨/이미지가 없으면 dashed placeholder(미리보기 전용)로 입력을 유도한다.
     chainVisible: true,
     formatVisible: true,
+    posterFit: 'cover',
   },
   recommendedColors: [],
   croppedImageUrl: null,
