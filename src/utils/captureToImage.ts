@@ -235,6 +235,10 @@ export async function captureNodeToJpeg(
   try {
     const result = await toJpeg(node, jpegOptions);
     console.log(`[capture:main] toJpeg ok, dataUrl length=${result.length}`);
+    // #439 진단 — DebugConsole(?debug=1)이 공유/저장 이전의 원본 캡처 결과를 화면에 바로 그리게.
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1') {
+      window.dispatchEvent(new CustomEvent('capture-debug-result', { detail: result }));
+    }
     return result;
   } catch (err) {
     console.error('[capture:main] toJpeg threw', err);
