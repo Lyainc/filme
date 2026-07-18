@@ -60,7 +60,7 @@ bun run typecheck # tsc --noEmit
 
 ### 🖼️ Core Mechanisms (6-Mood Ticket Rendering)
 - **Layout catalog**: `src/utils/layouts.ts` — `LAYOUTS` defines 6 mood ids (`minimal`/`criterion`/`35mm`/`editorial`/`stub`/`35mm-landscape`) with dimensions and orientation. `LayoutId` union lives in `src/types/index.ts`.
-- **Mood components**: `src/components/moods/Mood{Minimal,Criterion,35mm,Editorial,Stub,35mmLandscape}.tsx` — each mood is a self-contained DOM tree at the layout's natural pixel size (4 portrait 960×1477, 2 landscape 1477×960: Editorial and 35mm Wide).
+- **Mood components**: `src/components/moods/Mood{Minimal,Criterion,35mm,Editorial,Stub,35mmLandscape}.tsx` — each mood is a self-contained DOM tree at the layout's natural pixel size (4 portrait 960×1534, 2 landscape 1534×960: Editorial and 35mm Wide).
 - **Shared primitives**: `src/components/moods/_shared.tsx` — `Barcode` (memoized), `ChainStamp`, `FormatStamp`, `Poster`, `HorizontalSprockets`, `PerforationStrip`, plus helpers (`fitFontSizeToWidth`, `isInkDark`, `truncateActors`) and font tokens (`FONT_MONO`, `FONT_SANS`, `FONT_KR`). **Add new shared helpers here**, not inline in moods.
 - **Renderer**: `src/components/TicketRenderer.tsx` — dispatches to active mood, uses `ResizeObserver` to scale the inner natural-pixel tree to fit the preview, and forwards the inner ref so the export pipeline captures the unscaled DOM.
 - **Picker**: `src/components/LayoutPicker.tsx` — typed `Record<LayoutId, ...>` thumbnail registry; renaming a layout id breaks the lookup at compile time.
