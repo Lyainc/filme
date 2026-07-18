@@ -27,7 +27,7 @@ import {
 
 /**
  * Editorial — 영화제 공식 티켓(마스터 Ticket Design Master.dc.html v2 · 2026-07-08 resync, 에픽 #281).
- * 4열 재구조: 포스터 516 | 골드포일 세로 스트립 42(장식) | 메인 flex | 절취 스텁 224(accent 배경).
+ * 4열 재구조: 포스터 640(#440 0.667 리사이즈, 구 516) | 골드포일 세로 스트립 42(장식) | 메인 flex | 절취 스텁 224(accent 배경).
  * 메인: 킥커(En Reprise) → 타이틀 72/900 → avec → Séance + 도착시간(시계) → 메타 그리드(Théâtre/Durée/
  * Note/Sortie 37/800) → 프랑스어 고지문 → 푸터(réalisé avec FILME / par). 좌석·바코드·체인/포맷·le billet은
  * 스텁(회전 -90°) 5그룹으로 이동. reissue는 마스터 메타 그리드에 슬롯이 없어(킥커 En Reprise는 장식) 미렌더.
