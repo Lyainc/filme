@@ -136,19 +136,32 @@ const MAX_BLOB_CANVAS_DIM = 2048;
 // 대기 경로(embedImageNode의 Promise 블록)를 정상적으로 밟는다. 그래서 data:가 아니라 새
 // blob: URL(canvas.toBlob)을 심는다 — 원본 업로드 blob(백그라운드 전환에 무효화될 수 있는,
 // #378이 우회하려던 대상)이 아니라 이번 캡처 동안만 사는 새 blob이라 수명 문제도 없다.
+// #439 진단 로그 — ?debug=1(DebugConsole)로 실기기 화면에서 바로 본다. 어느 이미지가 어느
+// 단계(캔버스 컨텍스트 없음/toBlob 실패/예외)에서 떨어지는지가 반복된 "동일 증상" 재현으로도
+// 안 좁혀져서, 원격 디버깅 없이도 실패 지점을 볼 수 있게 임시로 남긴다.
 async function blobSrcToObjectUrl(img: HTMLImageElement, mimeType: string): Promise<string | null> {
+  const tag = `[capture:blob→blob] role=${img.dataset.role ?? '(none)'} natural=${img.naturalWidth}x${img.naturalHeight}`;
   try {
     const scale = Math.min(1, MAX_BLOB_CANVAS_DIM / Math.max(img.naturalWidth, img.naturalHeight));
     const canvas = document.createElement('canvas');
     canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
     canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
     const ctx = canvas.getContext('2d');
-    if (!ctx) return null;
+    if (!ctx) {
+      console.warn(`${tag} — getContext('2d') null`);
+      return null;
+    }
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, mimeType));
-    return blob ? URL.createObjectURL(blob) : null;
-  } catch {
-    return null; // 극히 드문 캔버스 오염 등 — 원래 src(blob:)로 진행
+    if (!blob) {
+      console.warn(`${tag} — toBlob returned null (canvas=${canvas.width}x${canvas.height})`);
+      return null;
+    }
+    console.log(`${tag} — ok canvas=${canvas.width}x${canvas.height} blobBytes=${blob.size}`);
+    return URL.createObjectURL(blob);
+  } catch (err) {
+    console.error(`${tag} — threw`, err); // 극히 드문 캔버스 오염 등 — 원래 src(blob:)로 진행
+    return null;
   }
 }
 
@@ -162,7 +175,16 @@ export async function captureNodeToJpeg(
     await document.fonts.ready;
   }
   const images = Array.from(node.querySelectorAll('img'));
-  await Promise.all(images.map((img) => decodeImage(img)));
+  // #439 진단 로그(DebugConsole 참고) — decodeImage 자체의 throw 여부·타이밍을 이미지별로 남긴다.
+  await Promise.all(images.map(async (img) => {
+    try {
+      await decodeImage(img);
+      console.log(`[capture:decode] ok role=${img.dataset.role ?? '(none)'} natural=${img.naturalWidth}x${img.naturalHeight} src=${img.src.slice(0, 24)}…`);
+    } catch (err) {
+      console.error(`[capture:decode] FAILED role=${img.dataset.role ?? '(none)'} src=${img.src.slice(0, 24)}…`, err);
+      throw err;
+    }
+  }));
 
   const { toJpeg } = await import('html-to-image');
   const jpegOptions = buildJpegOptions(width, height, quality, pixelRatio);
@@ -209,8 +231,14 @@ export async function captureNodeToJpeg(
     img.src = objectUrl;
     restores.push(() => { img.src = original; });
   }
+  console.log(`[capture:main] images=${images.length} substituted=${restores.length} — calling toJpeg`);
   try {
-    return await toJpeg(node, jpegOptions);
+    const result = await toJpeg(node, jpegOptions);
+    console.log(`[capture:main] toJpeg ok, dataUrl length=${result.length}`);
+    return result;
+  } catch (err) {
+    console.error('[capture:main] toJpeg threw', err);
+    throw err;
   } finally {
     restores.forEach((restore) => restore());
     objectUrlsToRevoke.forEach((url) => URL.revokeObjectURL(url));
