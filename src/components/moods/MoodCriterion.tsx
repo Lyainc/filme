@@ -19,6 +19,7 @@ import {
   fitFontSizeToWidth,
   gate,
   isInkDark,
+  posterFitProps,
   posterTapProps,
   resolveInk,
   resolveTicketData,
@@ -152,18 +153,15 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
 
   const componentOpacity = components.componentOpacity ?? 1;
 
-  // 원본 비율 보존 프리셋(#420) — contain+상단 정렬. globalScrim이 전체 높이에 걸쳐 있어
-  // letterbox 배경은 스크림 끝 색조와 맞춰 이질감을 줄인다.
-  const preserveRatio = components.posterFit === 'contain';
+  // 포스터 fit 정책(#440) — 기본 무손실(contain)+상단 정렬. globalScrim이 전체 높이에 걸쳐 있어
+  // 자투리 레터박스 배경을 스크림 끝 색조(테마별 크림/검정)와 맞춰 이질감을 줄인다.
   const posterBg = inkIsDark ? '#f5f0e8' : '#0a0a0a';
 
   return (
     <div style={{ position: 'absolute', inset: 0, color: ink, fontFamily: FONT_SANS, overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
       <Poster
         src={croppedImageUrl}
-        fit={preserveRatio ? 'contain' : 'cover'}
-        align={preserveRatio ? 'top' : 'center'}
-        background={preserveRatio ? posterBg : undefined}
+        {...posterFitProps(components.posterFit, { letterboxBg: posterBg, align: 'top' })}
         texture={components.texture}
         posterOpacity={components.posterOpacity}
       />

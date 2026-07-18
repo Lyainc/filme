@@ -17,6 +17,7 @@ import {
   fieldPieces,
   fitFontSizeToWidth,
   gate,
+  posterFitProps,
   posterTapProps,
   resolveInk,
   resolveTicketData,
@@ -146,7 +147,7 @@ export const Mood35mm = memo(function Mood35mm({ movieInfo: d, components, cropp
 
   return (
     <div style={{ position: 'absolute', inset: 0, color: FS_INK, background: FS_BASE, fontFamily: FONT_SANS, overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
-      <Poster src={croppedImageUrl} fit="contain" background={FS_BASE} texture={components.texture} posterOpacity={components.posterOpacity} />
+      <Poster src={croppedImageUrl} {...posterFitProps(components.posterFit, { letterboxBg: FS_BASE })} texture={components.texture} posterOpacity={components.posterOpacity} />
 
       {/* #219 componentOpacity: 필름 스트립·스탬프·캡션 등 크롬 전체를 함께 페이드. */}
       <div style={{ position: 'absolute', inset: 0, opacity: componentOpacity }}>

@@ -66,7 +66,7 @@ export interface TicketComponents {
   themeColor: string;
   chainVisible: boolean;
   formatVisible: boolean;
-  /** 포스터 원본 비율 보존 프리셋(#420) — 'contain'이면 무드가 letterbox+상단 정렬로 렌더한다. 기본 'cover'. */
+  /** 포스터 fit(#420 → #440 정책 통일) — 기본 'contain'(무손실·좌우 보존, 남는 공간은 무드 배경색 letterbox). 'cover'는 크롭 토글 opt-in(슬롯 꽉 채움). 전 무드가 posterFitProps로 읽는다. */
   posterFit: 'cover' | 'contain';
 }
 

@@ -9,7 +9,6 @@ import ReactCrop, {
 } from 'react-image-crop';
 import { Area } from '@/utils/imageCrop';
 import { TARGET_RATIO } from '@/utils/constants';
-import { POSTER_PRESERVE_RATIO_LAYOUTS } from '@/utils/layouts';
 import type { LayoutId } from '@/types';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
@@ -30,7 +29,7 @@ interface ImageCropModalProps {
   /** aria 라벨(다이얼로그 접근성 이름). 기본 '포스터 크롭', 로고는 '로고 크롭'. 시각 헤딩은 #320에서 제거. */
   title?: string;
   /**
-   * 현재 무드(#420 배선) — 세로 풀블리드(minimal/criterion/35mm)일 때만 "원본 비율 보존" 토글을
+   * 현재 무드(#420 → #440) — 포스터 크롭이면(layout 전달) 전 무드에서 "원본 비율 보존" 토글을
    * 노출한다. 로고 크롭 호출부는 이 prop을 넘기지 않아 토글이 뜨지 않는다.
    */
   layout?: LayoutId;
@@ -53,7 +52,8 @@ export default function ImageCropModal(props: ImageCropModalProps) {
     initialPreserveRatio = false,
   } = props;
 
-  const showPreserveToggle = layout != null && POSTER_PRESERVE_RATIO_LAYOUTS.has(layout);
+  // #440 전 무드 노출 — 포스터 크롭(layout 전달)이면 항상. 기본은 posterFit='contain' → 토글 켜짐(원본 비율).
+  const showPreserveToggle = layout != null;
   const [preserveRatio, setPreserveRatio] = useState(initialPreserveRatio);
   // 프리셋 토글이 있으면 그게 요청 aspect를 정하고(켜짐=원본 비율, 꺼짐=TARGET_RATIO 고정),
   // 없으면 기존처럼 aspect prop('aspect' in props로 "미전달"과 명시적 undefined 구분) → 포스터 기본.
