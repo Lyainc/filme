@@ -22,7 +22,9 @@ import { describe, expect, test, afterEach, beforeEach, mock } from 'bun:test';
 import { useState } from 'react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { centerCrop, convertToPixelCrop, makeAspectCrop } from 'react-image-crop';
 import { TARGET_RATIO } from '@/utils/constants';
+import type { Area } from '@/utils/imageCrop';
 
 mock.module('@/utils/imageCrop', () => ({
   getCroppedImg: () => Promise.resolve('blob:cropped'),
@@ -176,6 +178,46 @@ describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
     fireEvent.click(screen.getByRole('button', { name: '적용' }));
     expect(received).not.toBeNull();
     expect((received as unknown as [unknown, boolean])[1]).toBe(true);
+  });
+
+  test('렌더 크기 ≠ 자연 크기: onComplete 좌표가 자연 픽셀로 스케일업된다 (claude-review PR #429 3차 P1)', () => {
+    // <img style={{maxWidth:'100%',maxHeight:'100%'}}>라 실제 브라우저에선 렌더 크기가 자연
+    // 크기보다 작은 게 보통이다. completedCrop은 react-image-crop이 렌더 픽셀 좌표계로 주므로,
+    // handleConfirm의 scaleX/scaleY 환산이 없거나 틀리면 사용자가 고른 크롭 위치와 실제 출력
+    // 이미지의 크롭 위치가 어긋난다. loadImage(자연=렌더)만 쓰는 다른 테스트는 scaleX/Y가
+    // 항상 1로 고정돼 이 회귀를 못 잡는다.
+    let received: Area | null = null;
+    const onCompleteSpy = (area: Area) => {
+      received = area;
+    };
+    render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={onCompleteSpy} />);
+
+    const img = document.querySelector('img') as HTMLImageElement;
+    const [naturalW, naturalH, renderW, renderH] = [2000, 3000, 1000, 1500]; // 렌더=자연의 절반
+    Object.defineProperty(img, 'naturalWidth', { value: naturalW, configurable: true });
+    Object.defineProperty(img, 'naturalHeight', { value: naturalH, configurable: true });
+    Object.defineProperty(img, 'width', { value: renderW, configurable: true });
+    Object.defineProperty(img, 'height', { value: renderH, configurable: true });
+    fireEvent.load(img);
+
+    // ImageCropModal의 initCrop과 동일한 계산(TARGET_RATIO 고정, centerCrop 90%)을 독립적으로
+    // 재현해 "렌더 픽셀 기준 기대 크롭"을 구하고, scaleX/Y를 곱해 "자연 픽셀 기준 기대값"을 만든다.
+    const percent = centerCrop(makeAspectCrop({ unit: '%', width: 90 }, TARGET_RATIO, renderW, renderH), renderW, renderH);
+    const renderPx = convertToPixelCrop(percent, renderW, renderH);
+    const scaleX = naturalW / renderW;
+    const scaleY = naturalH / renderH;
+    const expected: Area = {
+      x: Math.round(renderPx.x * scaleX),
+      y: Math.round(renderPx.y * scaleY),
+      width: Math.round(renderPx.width * scaleX),
+      height: Math.round(renderPx.height * scaleY),
+    };
+
+    fireEvent.click(screen.getByRole('button', { name: '적용' }));
+    expect(received).toEqual(expected);
+    // 렌더=자연이었다면 나왔을 값(스케일 누락 시의 버그 값)과는 달라야 한다 — 회귀 시 여기가 조용히
+    // 통과하지 않도록 자연 픽셀 쪽이 실제로 더 커야 함을 명시적으로 확인.
+    expect((received as unknown as Area).width).toBeGreaterThan(renderPx.width);
   });
 
   // DesktopStudioShell과 동형 — onUpload에서 posterFit을 갱신하고, 그 posterFit을 다시
