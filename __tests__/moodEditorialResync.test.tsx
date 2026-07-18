@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MoodEditorial } from '../src/components/moods/MoodEditorial';
+import { buildBarcodeWidths, buildBarcodeWidths128C } from '../src/components/moods/_shared';
 import { FULL_MOVIE, makeMoodBase } from './fixtures';
 
 // 마스터 시안(Ticket Design Master.dc.html v2 · 2026-07-08 resync) 04 EDITORIAL 재동기화 회귀(#281, 에픽 #281).
@@ -84,6 +85,18 @@ describe('MoodEditorial 마스터 resync (#281)', () => {
     expect(html).toContain('rotate(-90deg)');
     expect(html).toContain('viewBox="0 0 286 70"');
     expect(html).not.toContain('No. BOOK-1234');
+  });
+
+  // encoding="code128c"(#444)가 실제로 반영됐는지 — Barcode는 <rect>만 심볼 막대를 그리므로(_shared.tsx),
+  // 렌더된 rect 개수가 같은 bookingNumber를 128B로 인코딩했을 때보다 적어야 전환이 유효하다(nit
+  // barcode-markup-test-no-rect-count, viewBox 크기만으론 encoding prop 자체는 검증되지 않는다).
+  test('바코드 rect 개수가 Code128B 대비 줄어든다 — Code128C 적용 확인', () => {
+    const html = markup();
+    const rectCount = (html.match(/<rect/g) || []).length;
+    const rects128C = buildBarcodeWidths128C(FULL_MOVIE.bookingNumber!).filter((b) => b.ink).length;
+    const rects128B = buildBarcodeWidths(FULL_MOVIE.bookingNumber!).filter((b) => b.ink).length;
+    expect(rectCount).toBe(rects128C);
+    expect(rectCount).toBeLessThan(rects128B);
   });
 
   // #423: 극장·포맷 로고 세로 gap 12→22px, 둘 다 렌더될 때만 장식 점(·) 삽입.
