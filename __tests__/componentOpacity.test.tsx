@@ -29,7 +29,7 @@ const MOVIE: MovieInfo = {
 const BASE: TicketComponents = {
   layout: 'minimal', chain: '', format: '', chainLabel: '', formatLabel: '',
   texture: 'none', posterOpacity: 0.5, componentOpacity: 1, themeColor: '#FFFFFF',
-  chainVisible: true, formatVisible: true,
+  chainVisible: true, formatVisible: true, posterFit: 'cover',
 };
 
 const MOODS = [

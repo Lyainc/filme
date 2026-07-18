@@ -66,6 +66,8 @@ export interface TicketComponents {
   themeColor: string;
   chainVisible: boolean;
   formatVisible: boolean;
+  /** 포스터 원본 비율 보존 프리셋(#420) — 'contain'이면 무드가 letterbox+상단 정렬로 렌더한다. 기본 'cover'. */
+  posterFit: 'cover' | 'contain';
 }
 
 export interface PhototicketState {

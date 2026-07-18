@@ -23,7 +23,7 @@ import {
 } from '@/constants/fields';
 import { DATE_FORMAT_TOKENS, GRANULARITY_OPTIONS } from '@/constants/dateTokens';
 
-// 로고 크롭 모달 — 픽커들과 동일하게 dynamic(ssr:false)로 로드(react-easy-crop을 시트 청크에서 뺀다).
+// 로고 크롭 모달 — 픽커들과 동일하게 dynamic(ssr:false)로 로드(react-image-crop을 시트 청크에서 뺀다).
 const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ssr: false });
 
 type Photo = ReturnType<typeof usePhototicket>;

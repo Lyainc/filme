@@ -19,6 +19,6 @@ export function makeMoodBase(layout: LayoutId): TicketComponents {
   return {
     layout, chain: '', format: '', chainLabel: 'MEGABOX', formatLabel: 'DOLBY',
     texture: 'none', posterOpacity: 0.5, componentOpacity: 1, themeColor: '#FFFFFF',
-    chainVisible: true, formatVisible: true,
+    chainVisible: true, formatVisible: true, posterFit: 'cover',
   };
 }

@@ -7,7 +7,7 @@
  * (claude-review PR #331 P1 지적). 이 파일은 imageUploaderRecrop.test.tsx와 동형으로 실제 파일 input을
  * 통해 교체 후 취소 → 재크롭 disabled(stale 파일 방지), 재크롭 취소 → 재크롭 유지를 검증한다.
  *
- * ImageCropModal(react-easy-crop, canvas)과 getCroppedImg(canvas)는 mock — imageUploaderRecrop.test.tsx와
+ * ImageCropModal(react-image-crop, canvas)과 getCroppedImg(canvas)는 mock — imageUploaderRecrop.test.tsx와
  * 동일한 mock.module 패턴. MobileEditorShell 렌더 트리엔 OcrUploadCard의 파일 input도 있어
  * accept 속성으로 포스터용 input만 특정한다(포스터: jpeg/png/webp, OCR: image/*).
  */

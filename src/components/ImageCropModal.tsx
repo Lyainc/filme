@@ -1,24 +1,39 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import Cropper from 'react-easy-crop';
+import ReactCrop, {
+  centerCrop,
+  convertToPixelCrop,
+  makeAspectCrop,
+  type Crop,
+  type PixelCrop,
+} from 'react-image-crop';
 import { Area } from '@/utils/imageCrop';
 import { TARGET_RATIO } from '@/utils/constants';
+import { POSTER_PRESERVE_RATIO_LAYOUTS } from '@/utils/layouts';
+import type { LayoutId } from '@/types';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 interface ImageCropModalProps {
   imageSrc: string;
   onClose: () => void;
-  onComplete: (croppedAreaPixels: Area) => void;
+  /** preserveRatio는 #420 "원본 비율 보존" 토글 상태 — layout이 미전달되거나 대상 무드가 아니면 항상 false. */
+  onComplete: (croppedAreaPixels: Area, preserveRatio: boolean) => void;
   isProcessing?: boolean;
   /**
    * 크롭 종횡비. 생략 시 포스터 기본(TARGET_RATIO). 로고는 `undefined`를 넘겨
    * "업로드 이미지의 자연 종횡비" 프레임으로 연다(#347).
    * 주의: 구조분해 기본값을 쓰면 명시적 `undefined`가 기본값으로 덮이므로,
    * 아래에서 `'aspect' in props`로 "미전달"과 "명시적 undefined"를 구분한다.
+   * layout이 전달되면(포스터 전용) 이 prop 대신 프리셋 토글이 aspect를 결정한다.
    */
   aspect?: number;
   /** aria 라벨(다이얼로그 접근성 이름). 기본 '포스터 크롭', 로고는 '로고 크롭'. 시각 헤딩은 #320에서 제거. */
   title?: string;
+  /**
+   * 현재 무드(#420 배선) — 세로 풀블리드(minimal/criterion/35mm)일 때만 "원본 비율 보존" 토글을
+   * 노출한다. 로고 크롭 호출부는 이 prop을 넘기지 않아 토글이 뜨지 않는다.
+   */
+  layout?: LayoutId;
 }
 
 export default function ImageCropModal(props: ImageCropModalProps) {
@@ -28,25 +43,69 @@ export default function ImageCropModal(props: ImageCropModalProps) {
     onComplete,
     isProcessing = false,
     title = '포스터 크롭',
+    layout,
   } = props;
-  const fixedAspect = 'aspect' in props ? props.aspect : TARGET_RATIO;
-  // 로고(자유 크롭)는 이미지의 자연 종횡비를 크롭 프레임으로 쓴다(#347). react-easy-crop은
-  // aspect가 undefined면 defaultProps의 4/3으로 대체해버려서 "자유 크롭"이 4:3 강제였다.
-  // 자연비 프레임 + zoom 1이면 크롭 영역이 원본 전체와 정확히 일치해(getCropSize) 잘림·여백이 없고,
-  // 사용자가 확대하면 종횡비를 유지한 채 부분만 잘라낸다.
-  // ponytail: 리사이즈 가능한 자유형 프레임까지 필요해지면 그때 react-image-crop 교체(#347 제안).
-  const [mediaAspect, setMediaAspect] = useState<number | null>(null);
-  const aspect = fixedAspect ?? mediaAspect ?? undefined;
-  const [crop, setCrop] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
 
-  const onCropComplete = useCallback((_a: Area, pixels: Area) => {
-    setCroppedAreaPixels(pixels);
+  const showPreserveToggle = layout != null && POSTER_PRESERVE_RATIO_LAYOUTS.has(layout);
+  const [preserveRatio, setPreserveRatio] = useState(false);
+  // 프리셋 토글이 있으면 그게 요청 aspect를 정하고(켜짐=원본 비율, 꺼짐=TARGET_RATIO 고정),
+  // 없으면 기존처럼 aspect prop('aspect' in props로 "미전달"과 명시적 undefined 구분) → 포스터 기본.
+  const requestedAspect = showPreserveToggle
+    ? preserveRatio
+      ? undefined
+      : TARGET_RATIO
+    : 'aspect' in props
+      ? props.aspect
+      : TARGET_RATIO;
+  // requestedAspect가 undefined(로고 자유 크롭 #347, 포스터 원본 비율 보존 #420)면 업로드
+  // 이미지의 자연 종횡비로 잠근다 — 완전 자유형이 아니라 "그 비율의 박스를 리사이즈"(#421)다.
+  const [mediaAspect, setMediaAspect] = useState<number | null>(null);
+  const aspect = requestedAspect ?? mediaAspect ?? undefined;
+
+  const imgRef = useRef<HTMLImageElement>(null);
+  const [crop, setCrop] = useState<Crop>();
+  const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
+
+  // aspect 기준으로 크롭 영역을 (재)초기화 — aspect 있으면 중앙 최대 크기, 없으면 전체 이미지.
+  const initCrop = useCallback((forAspect: number | undefined, width: number, height: number) => {
+    const initial: Crop = forAspect
+      ? centerCrop(makeAspectCrop({ unit: '%', width: 90 }, forAspect, width, height), width, height)
+      : { unit: '%', x: 0, y: 0, width: 100, height: 100 };
+    setCrop(initial);
+    setCompletedCrop(convertToPixelCrop(initial, width, height));
   }, []);
 
+  const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    const natural = img.naturalWidth > 0 && img.naturalHeight > 0 ? img.naturalWidth / img.naturalHeight : null;
+    setMediaAspect(natural);
+    initCrop(requestedAspect ?? natural ?? undefined, img.width, img.height);
+  };
+
+  // 프리셋 토글(포스터 전용)로 requestedAspect가 바뀌면 이미 로드된 이미지 기준으로 재계산한다.
+  useEffect(() => {
+    const img = imgRef.current;
+    if (img && img.complete && img.naturalWidth > 0) initCrop(aspect, img.width, img.height);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestedAspect]);
+
   const handleConfirm = () => {
-    if (croppedAreaPixels && !isProcessing) onComplete(croppedAreaPixels);
+    if (isProcessing || !completedCrop || !completedCrop.width || !completedCrop.height) return;
+    const img = imgRef.current;
+    if (!img) return;
+    // completedCrop은 <img>의 렌더 픽셀 좌표계 — getCroppedImg는 원본(natural) 픽셀 좌표를
+    // 기대하므로 naturalWidth/renderedWidth 비율로 환산한다(react-image-crop 표준 패턴).
+    const scaleX = img.naturalWidth / img.width;
+    const scaleY = img.naturalHeight / img.height;
+    onComplete(
+      {
+        x: Math.round(completedCrop.x * scaleX),
+        y: Math.round(completedCrop.y * scaleY),
+        width: Math.round(completedCrop.width * scaleX),
+        height: Math.round(completedCrop.height * scaleY),
+      },
+      preserveRatio,
+    );
   };
 
   // 모달은 크롭 열림 상태에서만 마운트되므로 항상 열린 상태 — 스크롤 잠금
@@ -140,51 +199,55 @@ export default function ImageCropModal(props: ImageCropModalProps) {
           </button>
         </div>
 
-        {/* Crop area — 여백 안에 라운드 인셋 */}
+        {/* Crop area — 여백 안에 라운드 인셋. 모서리 핸들 드래그로 크롭 영역 자체를 리사이즈한다(#421,
+            react-image-crop). ponytail: 줌 슬라이더는 리사이즈로 대체돼 제거 — 아주 큰 원본에서
+            정밀도가 부족해지면 그때 이미지 스케일 컨트롤을 다시 추가. */}
         <div className="min-h-0 flex-1 p-4">
-          <div className="relative h-full w-full overflow-hidden rounded-field bg-fg/95">
-            <Cropper
-              image={imageSrc}
+          <div
+            className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-field bg-fg/95"
+            data-testid="crop-frame"
+            data-aspect={aspect === undefined ? 'undefined' : aspect}
+          >
+            <ReactCrop
               crop={crop}
-              zoom={zoom}
+              onChange={(_, percentCrop) => setCrop(percentCrop)}
+              onComplete={(c) => setCompletedCrop(c)}
               aspect={aspect}
-              onCropChange={setCrop}
-              onCropComplete={onCropComplete}
-              onZoomChange={setZoom}
-              onMediaLoaded={({ naturalWidth, naturalHeight }) =>
-                setMediaAspect(
-                  naturalWidth > 0 && naturalHeight > 0 ? naturalWidth / naturalHeight : null
-                )
-              }
-              objectFit="contain"
-            />
+              keepSelection
+              minWidth={20}
+              minHeight={20}
+              disabled={isProcessing}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                ref={imgRef}
+                src={imageSrc}
+                alt=""
+                onLoad={onImageLoad}
+                style={{ maxWidth: '100%', maxHeight: '100%', display: 'block' }}
+                crossOrigin="anonymous"
+              />
+            </ReactCrop>
           </div>
         </div>
 
-        {/* Footer — 확대 슬라이더 + 액션 버튼 */}
+        {/* Footer — (포스터 전용) 원본 비율 보존 토글 + 액션 버튼 */}
         <div
           className="flex flex-col gap-3 border-t border-line px-4 pt-3"
           style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.875rem)' }}
         >
-          <div className="flex items-center gap-3">
-            <span
-              id="zoom-label"
-              className="text-mono whitespace-nowrap text-[11px] tracking-wide text-fg-muted"
-            >
-              확대
-            </span>
-            <input
-              type="range"
-              value={zoom}
-              min={1}
-              max={3}
-              step={0.02}
-              aria-labelledby="zoom-label"
-              onChange={(e) => setZoom(Number(e.target.value))}
-              disabled={isProcessing}
-              className="w-full"
-            />
-          </div>
+          {showPreserveToggle && (
+            <label className="flex items-center gap-2 text-[13px] text-fg">
+              <input
+                type="checkbox"
+                checked={preserveRatio}
+                onChange={(e) => setPreserveRatio(e.target.checked)}
+                disabled={isProcessing}
+                className="h-3.5 w-3.5 accent-accent"
+              />
+              원본 비율 보존
+            </label>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
@@ -198,7 +261,7 @@ export default function ImageCropModal(props: ImageCropModalProps) {
             <button
               type="button"
               onClick={handleConfirm}
-              disabled={isProcessing || !croppedAreaPixels}
+              disabled={isProcessing || !completedCrop?.width || !completedCrop?.height}
               data-touch="44"
               className="inline-flex min-h-btn items-center justify-center gap-2 rounded-field bg-accent text-[13px] font-medium text-accent-ink transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
             >

@@ -152,9 +152,21 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
 
   const componentOpacity = components.componentOpacity ?? 1;
 
+  // 원본 비율 보존 프리셋(#420) — contain+상단 정렬. globalScrim이 전체 높이에 걸쳐 있어
+  // letterbox 배경은 스크림 끝 색조와 맞춰 이질감을 줄인다.
+  const preserveRatio = components.posterFit === 'contain';
+  const posterBg = inkIsDark ? '#f5f0e8' : '#0a0a0a';
+
   return (
     <div style={{ position: 'absolute', inset: 0, color: ink, fontFamily: FONT_SANS, overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
-      <Poster src={croppedImageUrl} texture={components.texture} posterOpacity={components.posterOpacity} />
+      <Poster
+        src={croppedImageUrl}
+        fit={preserveRatio ? 'contain' : 'cover'}
+        align={preserveRatio ? 'top' : 'center'}
+        background={preserveRatio ? posterBg : undefined}
+        texture={components.texture}
+        posterOpacity={components.posterOpacity}
+      />
 
       {/* #219 componentOpacity: 포스터를 뺀 오버레이 전체를 함께 페이드. 자식이 전부 position:absolute라
           inset:0 래퍼가 루트를 채워 opacity 1에서 좌표·페인트 순서 동일(no-op). */}
