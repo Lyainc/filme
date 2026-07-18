@@ -10,10 +10,19 @@ import { useEffect, useState } from 'react';
 export default function DebugConsole() {
   const [lines, setLines] = useState<string[]>([]);
   const [enabled, setEnabled] = useState(false);
+  const [lastCapture, setLastCapture] = useState<string | null>(null);
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get('debug') !== '1') return;
     setEnabled(true);
+
+    // captureToImage.ts가 toJpeg 성공 직후 쏘는 이벤트 — 공유/저장 단계를 거치기 전, html-to-image가
+    // 만든 원본 dataUrl을 화면에서 바로 본다. 여기서부터 이미 깨져 있으면 캡처(html-to-image) 쪽
+    // 문제, 여기선 멀쩡한데 사진 앱 저장물만 깨지면 공유/저장(후속) 단계 문제로 좁혀진다.
+    const onCaptureResult = (e: Event) => {
+      setLastCapture((e as CustomEvent<string>).detail);
+    };
+    window.addEventListener('capture-debug-result', onCaptureResult);
 
     const format = (args: unknown[]) =>
       args
@@ -45,6 +54,7 @@ export default function DebugConsole() {
       console.log = original.log;
       console.warn = original.warn;
       console.error = original.error;
+      window.removeEventListener('capture-debug-result', onCaptureResult);
     };
   }, []);
 
@@ -57,7 +67,7 @@ export default function DebugConsole() {
         left: 0,
         right: 0,
         bottom: 0,
-        maxHeight: '40vh',
+        maxHeight: '50vh',
         overflowY: 'auto',
         background: 'rgba(0,0,0,0.92)',
         color: '#0f0',
@@ -70,6 +80,13 @@ export default function DebugConsole() {
         wordBreak: 'break-all',
       }}
     >
+      {lastCapture && (
+        <div style={{ marginBottom: 6 }}>
+          <div>↓ toJpeg 직후 원본 캡처 결과(공유/저장 전):</div>
+          {/* eslint-disable-next-line @next/next/no-img-element -- 디버그 오버레이, next/image 불필요 */}
+          <img src={lastCapture} alt="last capture" style={{ maxWidth: '100%', border: '1px solid #0f0' }} />
+        </div>
+      )}
       {lines.length === 0 ? '(no logs yet)' : lines.join('\n')}
     </div>
   );
