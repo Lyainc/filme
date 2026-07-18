@@ -13,6 +13,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { Mood35mm } from '../src/components/moods/Mood35mm';
 import { MoodCriterion } from '../src/components/moods/MoodCriterion';
 import { MoodMinimal } from '../src/components/moods/MoodMinimal';
+import { MoodStub } from '../src/components/moods/MoodStub';
 import type { MovieInfo, TicketComponents } from '../src/types';
 
 const MOVIE: MovieInfo = {
@@ -44,9 +45,13 @@ function render(
   );
 }
 
-const POSTER_IMG = /<img[^>]*crossorigin="anonymous"[^>]*>/;
+// 전경 포스터 <img> 특정 — contain에선 배경 blur <img>(data-poster-bg, object-position 없음)가
+// 앞서므로 object-position을 가진 전경만 잡는다(#440 레터박스 blur 배경).
+const POSTER_IMG = /<img[^>]*object-position[^>]*>/;
 // Poster 래퍼 div(aria-hidden, background 보유) — style의 마지막 선언이 background(_shared.tsx 순서).
 const POSTER_WRAPPER_BG = /aria-hidden="true" style="[^"]*background:([^";]*)"/;
+// 레터박스 채움용 blur 포스터 배경(#440) — contain일 때만 존재.
+const POSTER_BG_BLUR = /<img[^>]*data-poster-bg="true"[^>]*blur\(/;
 
 describe.each([
   ['minimal', MoodMinimal],
@@ -75,6 +80,14 @@ describe.each([
     // themeColor='#000000'(luminance 낮음 → inkIsDark=true, 어두운 잉크) → 크림 letterbox.
     expect(render(Mood, 'contain', '#000000').match(POSTER_WRAPPER_BG)?.[1]).toBe('#f5f0e8');
   });
+
+  test('posterFit=contain → 레터박스 채움용 blur 포스터 배경(#440)', () => {
+    expect(render(Mood, 'contain')).toMatch(POSTER_BG_BLUR);
+  });
+
+  test('posterFit=cover → blur 배경 없음(전경이 슬롯을 꽉 채움)', () => {
+    expect(render(Mood, 'cover')).not.toContain('data-poster-bg');
+  });
 });
 
 describe('#440 posterFit 렌더 분기 — 35mm(정책 통일: contain 하드코딩 제거)', () => {
@@ -93,5 +106,15 @@ describe('#440 posterFit 렌더 분기 — 35mm(정책 통일: contain 하드코
   test('letterbox 배경은 FS_BASE(#0a0a0a)로 고정 — posterFit 무관', () => {
     expect(render(Mood35mm, 'cover').match(POSTER_WRAPPER_BG)?.[1]).toBe('#0a0a0a');
     expect(render(Mood35mm, 'contain').match(POSTER_WRAPPER_BG)?.[1]).toBe('#0a0a0a');
+  });
+});
+
+describe('#440 posterFit 렌더 분기 — stub(가로 밴드는 항상 cover 가운데 크롭)', () => {
+  test('posterFit 무관하게 cover·blur 배경 없음(오너 결정: 좌우 여백 대신 auto crop)', () => {
+    const coverImg = render(MoodStub, 'cover').match(POSTER_IMG)?.[0] ?? '';
+    const containImg = render(MoodStub, 'contain').match(POSTER_IMG)?.[0] ?? '';
+    expect(coverImg).toContain('object-fit:cover');
+    expect(coverImg).toBe(containImg);
+    expect(render(MoodStub, 'contain')).not.toContain('data-poster-bg');
   });
 });
