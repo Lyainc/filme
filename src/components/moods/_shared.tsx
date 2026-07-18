@@ -671,6 +671,7 @@ export const Poster = memo(function Poster({
           src={src}
           alt=""
           data-poster-bg="true"
+          data-role="poster"
           style={{
             position: 'absolute',
             inset: 0,
@@ -690,6 +691,7 @@ export const Poster = memo(function Poster({
         <img
           src={src}
           alt=""
+          data-role="poster"
           style={{
             position: 'absolute',
             inset: 0,

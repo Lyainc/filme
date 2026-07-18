@@ -114,7 +114,14 @@ export function __resetWarmupCacheForTest(): void {
 // 무효화할 수 있어 재fetch가 조용히 실패하고 포스터 자리만 배경색으로 빠진다(#378).
 // 이미 디코드된 라이브 비트맵을 캔버스로 구워 data: URL로 바꾸면 재fetch 자체가 필요 없어져
 // blob 수명과 무관해진다.
-function blobSrcToDataUrl(img: HTMLImageElement): string | null {
+// 포스터(data-role="poster")는 알파가 필요 없고 큰 PNG data:URL을 iOS WebKit이 SVG <image>로
+// 렌더할 때 크기 한계로 blank 처리될 수 있다는 가설(#439) 때문에 JPEG로 인코딩해 용량을 줄인다.
+// 로고/스탬프(ChainStamp·FormatStamp)는 마커가 없어 PNG로 남아 알파 투명도를 보존한다.
+export function blobImageMimeType(img: HTMLImageElement): string {
+  return img.dataset.role === 'poster' ? 'image/jpeg' : 'image/png';
+}
+
+function blobSrcToDataUrl(img: HTMLImageElement, mimeType: string): string | null {
   try {
     const canvas = document.createElement('canvas');
     canvas.width = img.naturalWidth;
@@ -122,7 +129,7 @@ function blobSrcToDataUrl(img: HTMLImageElement): string | null {
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
     ctx.drawImage(img, 0, 0);
-    return canvas.toDataURL('image/png');
+    return canvas.toDataURL(mimeType);
   } catch {
     return null; // 극히 드문 캔버스 오염 등 — 원래 src(blob:)로 진행
   }
@@ -165,7 +172,7 @@ export async function captureNodeToJpeg(
   const restores: Array<() => void> = [];
   for (const img of images) {
     if (!img.src.startsWith('blob:')) continue;
-    const dataUrl = blobSrcToDataUrl(img);
+    const dataUrl = blobSrcToDataUrl(img, blobImageMimeType(img));
     if (!dataUrl) continue;
     const original = img.src;
     img.src = dataUrl;
