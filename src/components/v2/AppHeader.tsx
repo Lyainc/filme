@@ -97,7 +97,11 @@ function ClearDraftButton({ onClick }: { onClick: () => void }) {
 
 export function AppHeader({ theme, onThemeChange, saveDraft, clearDraft }: AppHeaderProps) {
   return (
-    <header className="h-14 px-4 flex items-center justify-between border-b border-line bg-surface shrink-0">
+    // rail(1024) 미만은 CSS로 숨긴다(#418) — mount 전 SSR/첫 페인트가 데스크톱을 기본 렌더해도
+    // 실제 뷰포트가 모바일이면 이 헤더가 하이드레이션을 기다리지 않고 즉시 숨어, "데스크톱 헤더
+    // 노출 후 모바일 셸로 교체" FOUC가 사라진다. index.tsx의 JS 분기(mounted && isMobile)는 셸
+    // 전체 교체를 계속 담당 — 이 헤더는 그 전 창(pre-mount)의 잔여 증상만 CSS로 선제 차단한다.
+    <header className="hidden h-14 shrink-0 items-center justify-between border-b border-line bg-surface px-4 rail:flex">
       <div className="flex items-center gap-2">
         <Wordmark as="h1" />
       </div>
