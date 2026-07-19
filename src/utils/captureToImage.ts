@@ -97,24 +97,6 @@ async function decodeImage(img: HTMLImageElement): Promise<void> {
   }
 }
 
-// html-to-image의 첫 캡처는 콜드 상태에서 노드를 복제·임베드(이미지 인라인·폰트 해석)하는데,
-// 그 임베드가 끝나기 전에 결과를 내면 포스터가 빠질 수 있다(#138 항목3 — 미재현이나 위험 경로).
-// decodeImage가 원본 <img> 디코드는 보장하지만 복제본 렌더 콜드 미스까지는 못 막아, 버리는
-// 워밍업 캡처를 한 번 돌려 경로를 덥힌다.
-//
-// 워밍업은 "노드의 현재 이미지 src 집합"별로 한 번 돈다 — 세션당 한 번이 아니다. html-to-image의
-// 이미지 인라인 캐시는 URL 키 기반이라, 사용자가 포스터·로고를 바꾸면 새 blob URL은 캐시에 없어
-// 그다음 캡처(다운로드든 공유든)가 콜드로 떨어진다. 세션 전역 플래그는 첫 포스터만 덥히고 교체
-// 이후를 못 막아, 어느 액션을 먼저 누르냐에 따라 포스터가 빠진다(#175: 다운로드 정상·공유 누락,
-// #138의 거울 케이스). src 시그니처별로 덥혀 이 순서 의존성을 콘텐츠가 바뀔 때마다 다시 깬다.
-const warmedSignatures = new Set<string>();
-
-// 테스트 전용 — 모듈 레벨 워밍업 캐시를 비워 테스트 간 격리를 명시한다(#175 리뷰). 프로덕션 경로엔
-// 호출자가 없다.
-export function __resetWarmupCacheForTest(): void {
-  warmedSignatures.clear();
-}
-
 // iOS Safari는 캔버스 크기가 일정 한계를 넘으면 인코딩이 throw 없이 빈/손상 이미지를 조용히
 // 돌려줄 수 있다(#439 후보④) — try/catch로는 못 잡는 실패라 애초에 큰 캔버스를 안 만드는 쪽이
 // 방어다. "원본 비율 보존" 포스터(getCroppedImg maxSide: TARGET_HEIGHT*2 = 3068px, stub 무드는
@@ -185,23 +167,12 @@ export async function captureNodeToJpeg(
   const { toJpeg } = await import('html-to-image');
   const jpegOptions = buildJpegOptions(width, height, quality, pixelRatio);
 
-  // 현재 이미지 집합을 덥힌 적 없으면 워밍업한다(이미지 없는 노드는 덥힐 게 없어 건너뜀).
-  // 결과는 버리고 캐시만 덥힌다. 워밍업은 pixelRatio:1로 돈다 — 임베드 캐시는 URL 키 기반이라
-  // 캔버스 해상도와 무관하니 같은 경로를 덥히면서 pixelRatio:2의 ~1/4 메모리만 쓴다. (전체 해상도
-  // 워밍업은 iOS Safari per-tab GPU 버젯에서 OOM날 수 있다.) 워밍업 실패는 시그니처에서 도로
-  // 빼 다음 캡처가 재시도하게 하고, 본 캡처가 진짜 결과/에러를 내도록 삼킨다.
-  // options.filename(무드별로 다름)도 시그니처에 섞는다 — src만 기준이면 같은 포스터로 무드만
-  // 바꿔 내보낼 때 새 무드 DOM이 한 번도 안 덥혀진 채로 나간다(#378).
-  const signature = images.map((img) => img.src).join('|') + '::' + options.filename;
-  if (images.length > 0 && !warmedSignatures.has(signature)) {
-    warmedSignatures.add(signature);
-    try {
-      await toJpeg(node, buildJpegOptions(width, height, quality, 1));
-    } catch {
-      warmedSignatures.delete(signature);
-    }
-  }
-
+  // 워밍업(버리는 캡처 1회, #175)을 제거했다(#439) — html-to-image의 이미지 인라인 캐시(URL
+  // 키 기반)를 덥혀 콜드미스를 막던 게 원래 목적인데, 지금은 blob: <img>를 캡처 직전 <canvas>로
+  // 바꿔치기해(아래) 그 캐시 경로 자체를 안 타므로 워밍업이 더는 그 이득을 못 준다. 오히려
+  // 메모리 제약이 큰 iOS Safari에서 매 캡처마다 같은 트리를 통째로 두 번(워밍업+본캡처) 렌더하는
+  // 비용만 남아, 실기기에서 포스터·로고가 빠지는 원인 중 하나로 의심돼 제거하고 실측한다.
+  //
   // blob: 소스 <img>를 캡처 직전 미리 그린 <canvas>로 DOM에서 바꿔치기하고(위 blobImgToCanvas
   // 주석 — html-to-image의 foreignObject 중첩 이미지 렌더 레이스를 canvas 경로로 우회), 캡처가
   // 끝나면(성공/실패 무관) 원래 <img> 노드로 되돌린다. Poster의 contain fit은 블러 배경+전경 두
