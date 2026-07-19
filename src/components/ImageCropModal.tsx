@@ -79,9 +79,15 @@ export default function ImageCropModal(props: ImageCropModalProps) {
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
 
-  // aspect 기준으로 크롭 영역을 (재)초기화 — aspect 있으면 중앙 최대 크기, 없으면 전체 이미지.
+  // aspect 기준으로 크롭 영역을 (재)초기화. 크롭 종횡비가 이미지 자연 종횡비와 (사실상) 같으면
+  // — "원본 비율 보존"(#420, aspect=자연비) 또는 로고 자유 크롭(#347) — 전체 이미지(100%)로 연다.
+  // makeAspectCrop({width:90})은 종횡비가 같아도 90%로 줄여 좌우·상하 5%씩 잘라내는데(=원본 손실),
+  // "원본 비율 보존"의 취지(포스터를 통째로 넣기)와 정면으로 어긋난다 — 실사용에서 세로 포스터의
+  // 좌우 가장자리(예: 제목 첫·끝 글자)가 잘려 나가는 걸로 발견(#439). 종횡비가 다를 때(cover:
+  // TARGET_RATIO 고정)만 90% 중앙 크롭으로 열어 사용자가 프레임을 조정하게 한다.
   const initCrop = useCallback((forAspect: number | undefined, width: number, height: number) => {
-    const initial: Crop = forAspect
+    const matchesImage = forAspect != null && width > 0 && height > 0 && Math.abs(forAspect - width / height) < 0.005;
+    const initial: Crop = forAspect && !matchesImage
       ? centerCrop(makeAspectCrop({ unit: '%', width: 90 }, forAspect, width, height), width, height)
       : { unit: '%', x: 0, y: 0, width: 100, height: 100 };
     setCrop(initial);

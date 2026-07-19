@@ -170,6 +170,20 @@ describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
     expect(aspectOf(screen.getByTestId('crop-frame'))).toBe(TARGET_RATIO);
   });
 
+  test('원본 비율 보존 ON → 크롭 기본값이 전체 이미지(90% 축소 없음, 좌우 무손실) (#439)', () => {
+    // 크롭 종횡비가 이미지 자연비와 같을 때 makeAspectCrop({width:90})이 90%로 줄여 좌우·상하 5%씩
+    // 잘라내던 회귀 — 세로 포스터의 제목 첫·끝 글자가 잘려 나가는 실사용 버그. 전체(100%)로 열어야 한다.
+    let received: Area | null = null;
+    render(
+      <ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={(a: Area) => { received = a; }} layout="minimal" />
+    );
+    loadImage(2000, 2865); // 자연=렌더, 세로 포스터
+    fireEvent.click(screen.getByRole('checkbox')); // 원본 비율 보존 ON → aspect=자연비
+    fireEvent.click(screen.getByRole('button', { name: '적용' }));
+    // 90% 축소면 x/y가 양수·width<2000이 된다. 전체 이미지여야 (0,0)에서 원본 크기 그대로.
+    expect(received).toEqual({ x: 0, y: 0, width: 2000, height: 2865 });
+  });
+
   test('적용 시 onComplete가 현재 토글 상태를 preserveRatio로 전달한다', () => {
     let received: [unknown, boolean] | null = null;
     const onCompleteSpy = (area: unknown, preserveRatio: boolean) => {
