@@ -125,6 +125,8 @@ function parseObjectPosition(pos: string): [number, number] {
 // foreignObject→SVG→drawImage 경로는 iOS Safari에서 큰 raster를 조용히 떨어뜨리는데(#439, blob/
 // data/canvas 세 방식 모두 clone-node.ts가 결국 data:URL <img>로 되돌려 같은 함정으로 수렴),
 // 순수 Canvas 2D drawImage는 그 경로를 안 타 iOS에서도 확실히 그려진다.
+interface DeviceRect { x: number; y: number; w: number; h: number }
+
 function compositeRaster(
   ctx: CanvasRenderingContext2D,
   img: HTMLImageElement,
@@ -132,6 +134,8 @@ function compositeRaster(
   width: number,
   height: number,
   pixelRatio: number,
+  ticketRect: DeviceRect,
+  debug: boolean,
 ): void {
   const sw = img.naturalWidth;
   const sh = img.naturalHeight;
@@ -166,10 +170,21 @@ function compositeRaster(
   const dx = bx + (bw - dw) * px;
   const dy = by + (bh - dh) * py;
 
+  // 클립은 raster 박스 ∩ 티켓 내용 영역. blur 배경(transform: scale(1.2))의 렌더 박스가 티켓을
+  // 넘어 흰 여백으로 새지 않게 티켓 영역으로 잘라낸다(원본은 poster-root의 overflow:hidden이 담당).
+  const cx = Math.max(bx, ticketRect.x);
+  const cy = Math.max(by, ticketRect.y);
+  const cw = Math.min(bx + bw, ticketRect.x + ticketRect.w) - cx;
+  const ch = Math.min(by + bh, ticketRect.y + ticketRect.h) - cy;
+
+  if (debug) {
+    console.log(`[capture:composite] role=${img.dataset.role ?? '(none)'} fit=${fit} pos=${img.style.objectPosition || '(none)'} nat=${sw}x${sh} box=${Math.round(bx)},${Math.round(by)},${Math.round(bw)}x${Math.round(bh)} draw=${Math.round(dx)},${Math.round(dy)},${Math.round(dw)}x${Math.round(dh)} filter=${img.style.filter || 'none'}`);
+  }
+
   ctx.save();
   ctx.beginPath();
-  ctx.rect(bx, by, bw, bh);
-  ctx.clip(); // 원본 박스의 overflow:hidden(cover 넘침·scale 넘침) 재현
+  ctx.rect(cx, cy, cw, ch);
+  ctx.clip();
   ctx.filter = img.style.filter ? scaleFilterPx(img.style.filter, pixelRatio) : 'none';
   ctx.drawImage(img, dx, dy, dw, dh);
   ctx.restore();
@@ -209,12 +224,22 @@ export async function captureNodeToJpeg(
   const posters = rasters.filter((img) => img.dataset.role === 'poster');
   const stamps = rasters.filter((img) => img.dataset.role !== 'poster');
 
+  // base(CSS 레이어)는 여백 없이 티켓 자연 크기로 뽑는다 — 여백(흰 프레임)은 아래에서 최종 캔버스에
+  // 직접 소유한다. html-to-image의 margin+backgroundColor 프레임에 기대면(#382 방식) base를 투명으로
+  // 뽑을 때 여백이 조용히 사라져(실기기 확인), 티켓을 여백 안쪽에 배치하고 여백은 흰 fill로 채운다.
   const { toPng } = await import('html-to-image');
-  const base = buildJpegOptions(width, height, quality, pixelRatio);
   const basePngUrl = await toPng(node, {
-    ...base,
-    // 포스터/로고 자리를 투명 구멍으로 남겨야 합성한 raster가 비쳐 보인다(JPEG의 흰 배경 대신 알파).
+    quality,
+    pixelRatio,
+    width,
+    height,
+    canvasWidth: width * pixelRatio,
+    canvasHeight: height * pixelRatio,
+    // 포스터/로고 자리를 투명 구멍으로 남겨야 합성한 raster가 비쳐 보인다.
     backgroundColor: undefined,
+    cacheBust: false,
+    skipFonts: false,
+    style: { transform: 'none', transformOrigin: '0 0' },
     filter: (n: unknown) => {
       if (n instanceof Element && n.hasAttribute('data-hide-on-export')) return false; // 대시 placeholder
       if (n instanceof Element && n.hasAttribute('data-poster-root')) return false; // 포스터 서브트리(배경색 포함)
@@ -223,20 +248,24 @@ export async function captureNodeToJpeg(
     },
   });
 
+  const marginDev = EXPORT_MARGIN_PX * pixelRatio;
   const canvas = document.createElement('canvas');
-  canvas.width = base.canvasWidth;
-  canvas.height = base.canvasHeight;
+  canvas.width = (width + EXPORT_MARGIN_PX * 2) * pixelRatio;
+  canvas.height = (height + EXPORT_MARGIN_PX * 2) * pixelRatio;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('2d canvas context unavailable');
-  // JPEG는 알파가 없으니 흰색으로 채운다(export 여백 프레임 색 = buildJpegOptions backgroundColor와 동일).
+  // JPEG는 알파가 없으니 전체를 흰색으로 채운다 — 이게 곧 export 여백(#382·#449) 흰 프레임이 된다.
   ctx.fillStyle = '#FFFFFF';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  // 티켓 내용 영역(여백 안쪽) — 모든 raster·base를 여기 맞춰 그린다.
+  const ticketRect: DeviceRect = { x: marginDev, y: marginDev, w: width * pixelRatio, h: height * pixelRatio };
   const nodeRect = node.getBoundingClientRect();
-  for (const img of posters) compositeRaster(ctx, img, nodeRect, width, height, pixelRatio);
+  // z-order: 포스터(뒤) → CSS 레이어(base) → 로고 스탬프(앞).
+  for (const img of posters) compositeRaster(ctx, img, nodeRect, width, height, pixelRatio, ticketRect, debug);
   const baseImg = await loadImage(basePngUrl);
-  ctx.drawImage(baseImg, 0, 0, canvas.width, canvas.height);
-  for (const img of stamps) compositeRaster(ctx, img, nodeRect, width, height, pixelRatio);
+  ctx.drawImage(baseImg, ticketRect.x, ticketRect.y, ticketRect.w, ticketRect.h);
+  for (const img of stamps) compositeRaster(ctx, img, nodeRect, width, height, pixelRatio, ticketRect, debug);
 
   const result = canvas.toDataURL('image/jpeg', quality);
   if (debug) {
