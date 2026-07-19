@@ -19,7 +19,7 @@ const OPTS = { filename: 't.jpg', width: 960, height: 1477 };
 
 // happy-dom은 canvas 2D를 지원 안 해(getContext('2d') → null) 합성이 즉시 throw한다. 실제 합성
 // 경로를 검증하려면 getContext·toDataURL을 스텁하고, 합성 base PNG 로드용 Image도 즉시 onload로 만든다.
-interface DrawCall { arg: unknown; filter: string }
+interface DrawCall { arg: unknown; filter: string; dw?: number; dh?: number }
 interface RectCall { x: number; y: number; w: number; h: number }
 let draws: DrawCall[];
 let rects: RectCall[];
@@ -51,7 +51,7 @@ beforeEach(() => {
     clip() {},
     rect(x: number, y: number, w: number, h: number) { rects.push({ x, y, w, h }); },
     fillRect(x: number, y: number, w: number, h: number) { fillRects.push({ x, y, w, h }); },
-    drawImage(this: { filter: string }, arg: unknown) { draws.push({ arg, filter: this.filter }); },
+    drawImage(this: { filter: string }, arg: unknown, _dx?: number, _dy?: number, dw?: number, dh?: number) { draws.push({ arg, filter: this.filter, dw, dh }); },
   };
 
   originalGetContext = HTMLCanvasElement.prototype.getContext;
@@ -148,6 +148,12 @@ describe('#439 — z-order 합성: 포스터(뒤) → base → 로고(앞), 좌�
     // 포스터 clip 박스 = (여백10 + 0)*2, 풀블리드 → 1920×2954. blur는 28→56px로 스케일.
     expect(rects[0]).toEqual({ x: 20, y: 20, w: 1920, h: 2954 });
     expect(draws[0].filter).toBe('brightness(0.5) blur(56px)');
+    // 그린 크기 = 렌더 박스(1920×2954)에 cover, transform scale(1.2)는 getBoundingClientRect에 이미
+    // 반영된 값으로 취급하므로 '또' 곱하지 않는다(이중 적용 방지, claude-review PR #458 P1). 옛 코드는
+    // 여기에 ×1.2가 더 붙어 이 단언이 깨진다.
+    const cover = Math.max(1920 / 1800, 2954 / 2700);
+    expect(draws[0].dw).toBeCloseTo(1800 * cover, 2);
+    expect(draws[0].dh).toBeCloseTo(2700 * cover, 2);
 
     // 로고 박스: fx=50/480, fy=130/738.5 → (10 + fx*960)*2, (10 + fy*1477)*2. 배율 상쇄 확인.
     expect(rects[1].x).toBeCloseTo((10 + (50 / 480) * 960) * 2, 5);

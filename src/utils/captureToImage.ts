@@ -114,11 +114,6 @@ function scaleFilterPx(filter: string, pixelRatio: number): string {
   return filter.replace(/([\d.]+)px/g, (_m, n) => `${parseFloat(n) * pixelRatio}px`);
 }
 
-function parseScale(transform: string): number {
-  const m = transform.match(/scale\(\s*([\d.]+)/);
-  return m ? parseFloat(m[1]) : 1;
-}
-
 /** object-position('x% y%')을 0..1 분율로. 미지정/파싱 실패는 중앙(0.5, 0.5). */
 function parseObjectPosition(pos: string): [number, number] {
   const m = pos.match(/([\d.]+)%\s+([\d.]+)%/);
@@ -154,16 +149,18 @@ function compositeRaster(
   const bh = (r.height / nodeRect.height) * height * pixelRatio;
 
   const fit = img.style.objectFit || 'fill';
-  const extra = parseScale(img.style.transform || '');
   let dw: number;
   let dh: number;
   if (fit === 'contain' || fit === 'cover') {
+    // getBoundingClientRect은 CSS transform(예: 블러 배경의 scale(1.2))이 이미 반영된 최종 렌더
+    // 박스(bw/bh)를 준다 — 그 박스에 object-fit 배율을 맞추면 transform 확대가 자동으로 흡수되므로,
+    // scale을 따로 파싱해 또 곱하면 이중 적용이 된다(claude-review PR #458 P1). 그래서 곱하지 않는다.
     const s = fit === 'contain' ? Math.min(bw / sw, bh / sh) : Math.max(bw / sw, bh / sh);
-    dw = sw * s * extra;
-    dh = sh * s * extra;
+    dw = sw * s;
+    dh = sh * s;
   } else {
-    dw = bw * extra;
-    dh = bh * extra;
+    dw = bw;
+    dh = bh;
   }
   const [px, py] = parseObjectPosition(img.style.objectPosition || '');
   const dx = bx + (bw - dw) * px;
