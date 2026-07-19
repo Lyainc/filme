@@ -128,11 +128,20 @@ function blobImgToCanvas(img: HTMLImageElement, debug: boolean): HTMLCanvasEleme
       if (debug) console.warn(`[capture:img→canvas] role=${img.dataset.role ?? '(none)'} — getContext('2d') null`);
       return null;
     }
+    // 노드 치환(위 커밋)까지 해도 실기기에서 포스터만 계속 빈 채로 나왔다 — 로고 없이 포스터
+    // 단독으로도 재현돼 다른 이미지와 섞인 순서·개수 문제가 아니다. 포스터 <img>에만 항상 걸리는
+    // 것(다른 요소엔 없거나 훨씬 단순한 것)은 CSS filter(saturate·contrast·brightness, 배경은
+    // blur까지)뿐이라, WebKit의 foreignObject 안 filter 합성 실패를 의심한다. 그래서 filter를
+    // 캔버스 스타일로 남기지 않고 Canvas 2D의 ctx.filter로 그리는 시점에 픽셀에 직접 구워버린다
+    // — 캔버스가 담긴 뒤로는 filter가 걸린 요소가 아니라 이미 필터 적용된 평범한 비트맵이 된다.
+    if (img.style.filter) ctx.filter = img.style.filter;
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    // 레이아웃(위치·크기·object-fit·filter 등)은 원본 <img>의 인라인 style을 그대로 복사한다 —
-    // canvas도 img/video와 같은 교체 요소라 object-fit/object-position이 동일하게 먹는다.
+    // 레이아웃(위치·크기·object-fit·transform 등)은 원본 <img>의 인라인 style을 그대로 복사한다 —
+    // canvas도 img/video와 같은 교체 요소라 object-fit/object-position이 동일하게 먹는다. filter는
+    // 위에서 이미 픽셀에 구웠으니 다시 걸면 이중 적용이라 명시적으로 지운다.
     canvas.style.cssText = img.style.cssText;
-    if (debug) console.log(`[capture:img→canvas] role=${img.dataset.role ?? '(none)'} natural=${img.naturalWidth}x${img.naturalHeight} canvas=${canvas.width}x${canvas.height}`);
+    canvas.style.filter = 'none';
+    if (debug) console.log(`[capture:img→canvas] role=${img.dataset.role ?? '(none)'} natural=${img.naturalWidth}x${img.naturalHeight} canvas=${canvas.width}x${canvas.height} filterBaked=${!!img.style.filter}`);
     return canvas;
   } catch (err) {
     if (debug) console.error(`[capture:img→canvas] role=${img.dataset.role ?? '(none)'} — threw`, err); // 극히 드문 캔버스 오염 등 — 원래 src(blob:)로 진행
