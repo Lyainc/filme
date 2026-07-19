@@ -28,8 +28,8 @@ beforeAll(() => {
       React.createElement('div', { ref, 'data-testid': 'ticket' }),
     ),
   }));
-  // captureNodeToJpeg(→ toJpeg)의 "자연 실패"는 happy-dom 환경 자체(canvas 2D 미지원)에
-  // 기대는 것인데, captureWarmup.test.ts가 파일 스코프에서 'html-to-image'를 mock.module로
+  // captureNodeToJpeg의 "자연 실패"는 happy-dom 환경 자체(canvas 2D 미지원 → getContext 2d null)에
+  // 기대는 것인데, captureComposite.test.ts가 파일 스코프에서 'html-to-image'를 mock.module로
   // 영구 대체해(bun mock.module 전역 누수) 전체 스위트로 돌리면 이 파일보다 먼저 로드돼
   // toJpeg가 항상 성공으로 leak된다(claude-review PR #426 P1 대응 중 발견). downloadTicketAsJpeg만
   // 결정론적으로 실패하게 mock — captureNodeToJpeg 등 나머지는 실제 구현 유지해 위 permalink

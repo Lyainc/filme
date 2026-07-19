@@ -97,56 +97,85 @@ async function decodeImage(img: HTMLImageElement): Promise<void> {
   }
 }
 
-// iOS Safari는 캔버스 크기가 일정 한계를 넘으면 인코딩이 throw 없이 빈/손상 이미지를 조용히
-// 돌려줄 수 있다(#439 후보④) — try/catch로는 못 잡는 실패라 애초에 큰 캔버스를 안 만드는 쪽이
-// 방어다. "원본 비율 보존" 포스터(getCroppedImg maxSide: TARGET_HEIGHT*2 = 3068px, stub 무드는
-// 항상 이 경로)가 위험권이고, 최종 티켓 출력도 이 해상도로 그릴 일이 없어(캡처 pixelRatio 2
-// 기준 최대 변이 약 3100px) 다운스케일에 따른 실질 화질 손실도 없다.
-const MAX_BLOB_CANVAS_DIM = 2048;
+/** data URL을 디코드 완료된 <img>로 로드한다(합성 base PNG를 canvas에 그리기 전 단계). */
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => img.decode().then(() => resolve(img)).catch(() => resolve(img));
+    img.onerror = () => reject(new Error('composite base image failed to load'));
+    img.src = src;
+  });
+}
 
-// blob:→data:/blob: src 치환(두 라운드) 모두 캡처 파이프라인 자체(decode·인코딩·toJpeg)는
-// 매번 "성공"으로 보고했는데도 실기기 결과물엔 특정 이미지가 여전히 빠졌다(#439, ?debug=1
-// 화면 콘솔로 확인) — 원인은 html-to-image가 자기 내부에서 <img>를 clone·임베드하는 경로
-// (embed-images.ts) 자체에 있다: 여러 <img>를 하나의 SVG `<foreignObject>`로 직렬화한 뒤
-// `<img>`(SVG data URL)로 다시 불러들여 캔버스에 그리는데, 이 "SVG-as-img" 로드가 완료돼도
-// WebKit이 foreignObject 안에 중첩된 개별 <img>들의 디코드·페인트까지 보장하진 않는다 —
-// 이미지별로 완료 타이밍이 갈려 일부만 빠지는 게 관찰과 정확히 일치한다.
-// html-to-image의 canvas 처리 경로(clone-node.ts cloneCanvasElement → util.ts createImage)는
-// 이 문제가 없다: canvas.toDataURL()이 "현재 이미 그려진 픽셀"을 동기로 즉시 반환하고, 그
-// 결과로 만든 새 <img> 하나만 개별적으로 onload+decode+requestAnimationFrame까지 기다린 뒤
-// 클론 트리에 들어간다 — 여러 이미지가 뒤섞인 foreignObject 중첩 렌더 자체가 없다.
-// 그래서 이번엔 후보④를 이슈가 원래 제안한 그대로 구현한다 — src만 바꾸는 게 아니라 blob:
-// <img> DOM 노드 자체를 미리 그려둔 <canvas>로 치환하고, 캡처가 끝나면 원래 <img>로 되돌린다.
-function blobImgToCanvas(img: HTMLImageElement, debug: boolean): HTMLCanvasElement | null {
-  try {
-    const scale = Math.min(1, MAX_BLOB_CANVAS_DIM / Math.max(img.naturalWidth, img.naturalHeight));
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
-    canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      if (debug) console.warn(`[capture:img→canvas] role=${img.dataset.role ?? '(none)'} — getContext('2d') null`);
-      return null;
-    }
-    // 노드 치환(위 커밋)까지 해도 실기기에서 포스터만 계속 빈 채로 나왔다 — 로고 없이 포스터
-    // 단독으로도 재현돼 다른 이미지와 섞인 순서·개수 문제가 아니다. 포스터 <img>에만 항상 걸리는
-    // 것(다른 요소엔 없거나 훨씬 단순한 것)은 CSS filter(saturate·contrast·brightness, 배경은
-    // blur까지)뿐이라, WebKit의 foreignObject 안 filter 합성 실패를 의심한다. 그래서 filter를
-    // 캔버스 스타일로 남기지 않고 Canvas 2D의 ctx.filter로 그리는 시점에 픽셀에 직접 구워버린다
-    // — 캔버스가 담긴 뒤로는 filter가 걸린 요소가 아니라 이미 필터 적용된 평범한 비트맵이 된다.
-    if (img.style.filter) ctx.filter = img.style.filter;
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    // 레이아웃(위치·크기·object-fit·transform 등)은 원본 <img>의 인라인 style을 그대로 복사한다 —
-    // canvas도 img/video와 같은 교체 요소라 object-fit/object-position이 동일하게 먹는다. filter는
-    // 위에서 이미 픽셀에 구웠으니 다시 걸면 이중 적용이라 명시적으로 지운다.
-    canvas.style.cssText = img.style.cssText;
-    canvas.style.filter = 'none';
-    if (debug) console.log(`[capture:img→canvas] role=${img.dataset.role ?? '(none)'} natural=${img.naturalWidth}x${img.naturalHeight} canvas=${canvas.width}x${canvas.height} filterBaked=${!!img.style.filter}`);
-    return canvas;
-  } catch (err) {
-    if (debug) console.error(`[capture:img→canvas] role=${img.dataset.role ?? '(none)'} — threw`, err); // 극히 드문 캔버스 오염 등 — 원래 src(blob:)로 진행
-    return null;
+// CSS filter 문자열의 모든 px 길이를 pixelRatio로 스케일한다. 인라인 style은 자연(CSS) px 기준인데
+// 합성 캔버스는 device px(자연×pixelRatio)라, blur(28px)·drop-shadow 오프셋을 같은 배율로 키워야
+// 네이티브와 체감이 같다. saturate·contrast·brightness 등 단위 없는 함수는 그대로 통과한다.
+function scaleFilterPx(filter: string, pixelRatio: number): string {
+  return filter.replace(/([\d.]+)px/g, (_m, n) => `${parseFloat(n) * pixelRatio}px`);
+}
+
+function parseScale(transform: string): number {
+  const m = transform.match(/scale\(\s*([\d.]+)/);
+  return m ? parseFloat(m[1]) : 1;
+}
+
+/** object-position('x% y%')을 0..1 분율로. 미지정/파싱 실패는 중앙(0.5, 0.5). */
+function parseObjectPosition(pos: string): [number, number] {
+  const m = pos.match(/([\d.]+)%\s+([\d.]+)%/);
+  return m ? [parseFloat(m[1]) / 100, parseFloat(m[2]) / 100] : [0.5, 0.5];
+}
+
+// raster <img> 하나를, 브라우저가 자기 박스 안에 그리는 그대로(object-fit·object-position·
+// transform:scale·filter 반영) 합성 캔버스에 직접 그린다. 이게 이번 수정의 핵심 — html-to-image의
+// foreignObject→SVG→drawImage 경로는 iOS Safari에서 큰 raster를 조용히 떨어뜨리는데(#439, blob/
+// data/canvas 세 방식 모두 clone-node.ts가 결국 data:URL <img>로 되돌려 같은 함정으로 수렴),
+// 순수 Canvas 2D drawImage는 그 경로를 안 타 iOS에서도 확실히 그려진다.
+function compositeRaster(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  nodeRect: DOMRect,
+  width: number,
+  height: number,
+  pixelRatio: number,
+): void {
+  const sw = img.naturalWidth;
+  const sh = img.naturalHeight;
+  if (!sw || !sh) return;
+
+  // 캡처 노드는 프리뷰 배율(TicketRenderer의 transform: scale)이 걸려 있어 getBoundingClientRect가
+  // 축소된 좌표를 준다. 노드 대비 '분율'로 환산하면 배율이 상쇄돼 자연(layout width/height) 좌표로
+  // 되돌아온다. 거기에 export 여백(10px)을 더하고 pixelRatio를 곱해 캔버스 device px 박스를 얻는다.
+  const r = img.getBoundingClientRect();
+  const fx = (r.left - nodeRect.left) / nodeRect.width;
+  const fy = (r.top - nodeRect.top) / nodeRect.height;
+  const bx = (EXPORT_MARGIN_PX + fx * width) * pixelRatio;
+  const by = (EXPORT_MARGIN_PX + fy * height) * pixelRatio;
+  const bw = (r.width / nodeRect.width) * width * pixelRatio;
+  const bh = (r.height / nodeRect.height) * height * pixelRatio;
+
+  const fit = img.style.objectFit || 'fill';
+  const extra = parseScale(img.style.transform || '');
+  let dw: number;
+  let dh: number;
+  if (fit === 'contain' || fit === 'cover') {
+    const s = fit === 'contain' ? Math.min(bw / sw, bh / sh) : Math.max(bw / sw, bh / sh);
+    dw = sw * s * extra;
+    dh = sh * s * extra;
+  } else {
+    dw = bw * extra;
+    dh = bh * extra;
   }
+  const [px, py] = parseObjectPosition(img.style.objectPosition || '');
+  const dx = bx + (bw - dw) * px;
+  const dy = by + (bh - dh) * py;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(bx, by, bw, bh);
+  ctx.clip(); // 원본 박스의 overflow:hidden(cover 넘침·scale 넘침) 재현
+  ctx.filter = img.style.filter ? scaleFilterPx(img.style.filter, pixelRatio) : 'none';
+  ctx.drawImage(img, dx, dy, dw, dh);
+  ctx.restore();
 }
 
 export async function captureNodeToJpeg(
@@ -173,43 +202,51 @@ export async function captureNodeToJpeg(
     }
   }));
 
-  const { toJpeg } = await import('html-to-image');
-  const jpegOptions = buildJpegOptions(width, height, quality, pixelRatio);
+  // raster <img>(blob:)는 html-to-image의 foreignObject 경로에서 iOS Safari가 조용히 떨어뜨린다
+  // (#439 — blob/data/canvas 치환을 세 라운드 시도했으나 clone-node.ts cloneCanvasElement가 canvas
+  // 조차 data:URL <img>로 되돌려 셋 다 같은 함정으로 수렴, 실기기에서 매번 동일 실패). 그래서
+  // html-to-image엔 포스터 서브트리(data-poster-root)와 로고 <img>를 '제외'하고 나머지(텍스트·
+  // 그라데이션·바코드 = 전부 CSS라 안전)만 투명 배경 PNG로 뽑은 뒤, 이미지는 canvas 2D drawImage로
+  // 직접 합성한다(compositeRaster). z-order: 포스터(뒤) → CSS 레이어(base) → 로고 스탬프(앞).
+  const rasters = images.filter((img) => img.src.startsWith('blob:'));
+  const posters = rasters.filter((img) => img.dataset.role === 'poster');
+  const stamps = rasters.filter((img) => img.dataset.role !== 'poster');
 
-  // 워밍업(버리는 캡처 1회, #175)을 제거했다(#439) — html-to-image의 이미지 인라인 캐시(URL
-  // 키 기반)를 덥혀 콜드미스를 막던 게 원래 목적인데, 지금은 blob: <img>를 캡처 직전 <canvas>로
-  // 바꿔치기해(아래) 그 캐시 경로 자체를 안 타므로 워밍업이 더는 그 이득을 못 준다. 오히려
-  // 메모리 제약이 큰 iOS Safari에서 매 캡처마다 같은 트리를 통째로 두 번(워밍업+본캡처) 렌더하는
-  // 비용만 남아, 실기기에서 포스터·로고가 빠지는 원인 중 하나로 의심돼 제거하고 실측한다.
-  //
-  // blob: 소스 <img>를 캡처 직전 미리 그린 <canvas>로 DOM에서 바꿔치기하고(위 blobImgToCanvas
-  // 주석 — html-to-image의 foreignObject 중첩 이미지 렌더 레이스를 canvas 경로로 우회), 캡처가
-  // 끝나면(성공/실패 무관) 원래 <img> 노드로 되돌린다. Poster의 contain fit은 블러 배경+전경 두
-  // <img>가 같은 blob src를 공유하지만, DOM 노드 자체가 둘이라 각자 독립적으로 자기 <img>에서
-  // 그려 자기 자리에 들어간다(캔버스는 두 곳에 동시에 존재할 수 없다).
-  const swaps: Array<{ original: HTMLImageElement; replacement: HTMLCanvasElement }> = [];
-  for (const img of images) {
-    if (!img.src.startsWith('blob:')) continue;
-    const canvas = blobImgToCanvas(img, debug);
-    if (!canvas) continue;
-    img.replaceWith(canvas);
-    swaps.push({ original: img, replacement: canvas });
+  const { toPng } = await import('html-to-image');
+  const base = buildJpegOptions(width, height, quality, pixelRatio);
+  const basePngUrl = await toPng(node, {
+    ...base,
+    // 포스터/로고 자리를 투명 구멍으로 남겨야 합성한 raster가 비쳐 보인다(JPEG의 흰 배경 대신 알파).
+    backgroundColor: undefined,
+    filter: (n: unknown) => {
+      if (n instanceof Element && n.hasAttribute('data-hide-on-export')) return false; // 대시 placeholder
+      if (n instanceof Element && n.hasAttribute('data-poster-root')) return false; // 포스터 서브트리(배경색 포함)
+      if (n instanceof HTMLImageElement && n.src.startsWith('blob:')) return false; // 로고 스탬프 — 직접 합성
+      return true;
+    },
+  });
+
+  const canvas = document.createElement('canvas');
+  canvas.width = base.canvasWidth;
+  canvas.height = base.canvasHeight;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('2d canvas context unavailable');
+  // JPEG는 알파가 없으니 흰색으로 채운다(export 여백 프레임 색 = buildJpegOptions backgroundColor와 동일).
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const nodeRect = node.getBoundingClientRect();
+  for (const img of posters) compositeRaster(ctx, img, nodeRect, width, height, pixelRatio);
+  const baseImg = await loadImage(basePngUrl);
+  ctx.drawImage(baseImg, 0, 0, canvas.width, canvas.height);
+  for (const img of stamps) compositeRaster(ctx, img, nodeRect, width, height, pixelRatio);
+
+  const result = canvas.toDataURL('image/jpeg', quality);
+  if (debug) {
+    console.log(`[capture:main] posters=${posters.length} stamps=${stamps.length} base=${basePngUrl.length} out=${result.length}`);
+    window.dispatchEvent(new CustomEvent('capture-debug-result', { detail: result }));
   }
-  if (debug) console.log(`[capture:main] images=${images.length} swapped=${swaps.length} — calling toJpeg`);
-  try {
-    const result = await toJpeg(node, jpegOptions);
-    if (debug) {
-      console.log(`[capture:main] toJpeg ok, dataUrl length=${result.length}`);
-      // DebugConsole이 공유/저장 이전의 원본 캡처 결과를 화면에 바로 그리게.
-      window.dispatchEvent(new CustomEvent('capture-debug-result', { detail: result }));
-    }
-    return result;
-  } catch (err) {
-    if (debug) console.error('[capture:main] toJpeg threw', err);
-    throw err;
-  } finally {
-    swaps.forEach(({ original, replacement }) => replacement.replaceWith(original));
-  }
+  return result;
 }
 
 // CSP-safe: decode base64 directly without fetch() — Vercel CSP `connect-src` blocks fetch(data:).

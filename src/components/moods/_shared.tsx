@@ -655,6 +655,11 @@ export const Poster = memo(function Poster({
   return (
     <div
       aria-hidden="true"
+      // data-poster-root(#439): 캡처 시 html-to-image의 foreignObject 경로가 iOS Safari에서
+      // 큰 raster를 떨어뜨리므로, captureToImage가 이 포스터 서브트리(배경색 div + 포스터 <img>들)를
+      // 통째로 제외하고 대신 canvas 2D로 직접 합성한다. 이 div의 background(#0a0a0a)까지 함께
+      // 빠져야 그 자리가 '투명 구멍'으로 남아 합성한 포스터가 비쳐 보인다.
+      data-poster-root="true"
       style={{
         position: 'absolute',
         inset: 0,
