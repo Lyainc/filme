@@ -185,8 +185,40 @@ function compositeRaster(
   ctx.beginPath();
   ctx.rect(cx, cy, cw, ch);
   ctx.clip();
-  ctx.filter = img.style.filter ? scaleFilterPx(img.style.filter, pixelRatio) : 'none';
-  ctx.drawImage(img, dx, dy, dw, dh);
+
+  const filterStr = img.style.filter || '';
+  const blurMatch = filterStr.match(/blur\(([\d.]+)px\)/);
+  if (blurMatch) {
+    // iOS Safari의 canvas `ctx.filter` blur은 큰 반경·큰 캔버스에서 신뢰할 수 없다 — 프리뷰(네이티브
+    // CSS blur)엔 나오는 레터박스 블러 배경이 실기기 export 결과물에만 통째로 빠지는 증상으로 확인됐다
+    // (#439, ?debug=1 실기기 로그). blur만 `ctx.filter`에서 떼서 다운스케일→업스케일 보간으로 만든다
+    // (모든 브라우저에서 확실히 렌더). 색보정(saturate/contrast/brightness)은 blur를 뺀 필터로 그대로
+    // ctx.filter에 걸어 유지한다 — 이쪽은 fg 포스터에서 이미 정상 렌더돼 iOS에서도 안전이 확인됐다.
+    const blurPx = parseFloat(blurMatch[1]) * pixelRatio;
+    const nonBlur = scaleFilterPx(filterStr.replace(/\s*blur\([^)]*\)/, '').trim(), pixelRatio) || 'none';
+    // 다운스케일 배율 — 작을수록 더 흐리다. blur 반경에 비례시키되(f≈blurPx/3) 최소 2배는 보장.
+    // ponytail: 실기기 육안 기준 배율. 블러 세기가 프리뷰와 어긋나면 이 나눗셈 상수만 조정.
+    const f = Math.max(2, Math.round(blurPx / 3));
+    const tmp = document.createElement('canvas');
+    tmp.width = Math.max(1, Math.round(dw / f));
+    tmp.height = Math.max(1, Math.round(dh / f));
+    const tctx = tmp.getContext('2d');
+    if (tctx) {
+      tctx.imageSmoothingEnabled = true;
+      tctx.imageSmoothingQuality = 'high';
+      tctx.drawImage(img, 0, 0, tmp.width, tmp.height);
+      ctx.filter = nonBlur;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(tmp, dx, dy, dw, dh); // 작은 캔버스를 크게 업스케일 → 보간이 블러가 된다
+    } else {
+      ctx.filter = 'none';
+      ctx.drawImage(img, dx, dy, dw, dh);
+    }
+  } else {
+    ctx.filter = filterStr ? scaleFilterPx(filterStr, pixelRatio) : 'none';
+    ctx.drawImage(img, dx, dy, dw, dh);
+  }
   ctx.restore();
 }
 
@@ -263,6 +295,16 @@ export async function captureNodeToJpeg(
   const nodeRect = node.getBoundingClientRect();
   // z-order: 포스터(뒤) → CSS 레이어(base) → 로고 스탬프(앞).
   for (const img of posters) compositeRaster(ctx, img, nodeRect, width, height, pixelRatio, ticketRect, debug);
+  if (debug) {
+    // base를 덮기 전, 레터박스 밴드(티켓 상단 안쪽) 픽셀을 찍어 blur 배경이 실제로 그려졌는지 확인한다
+    // — 흰색(255,255,255)에 가까우면 배경 미렌더, 포스터 색이면 정상. #439 레터박스 진단.
+    try {
+      const p = ctx.getImageData(Math.round(canvas.width / 2), marginDev + 6, 1, 1).data;
+      console.log(`[capture:band] topBand rgba=${p[0]},${p[1]},${p[2]},${p[3]}`);
+    } catch (err) {
+      console.warn('[capture:band] getImageData failed', err);
+    }
+  }
   const baseImg = await loadImage(basePngUrl);
   ctx.drawImage(baseImg, ticketRect.x, ticketRect.y, ticketRect.w, ticketRect.h);
   for (const img of stamps) compositeRaster(ctx, img, nodeRect, width, height, pixelRatio, ticketRect, debug);
