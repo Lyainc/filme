@@ -868,25 +868,26 @@ export function MobileEditorShell({
 
       {/* 필드 드로어 엣지 핸들(#364) — 우측 엣지에 드로어 존재를 암시하는 상시 인디케이터.
           툴바의 항목목록 버튼과 진입점 병존(툴바를 모르면 드로어를 못 찾는 문제의 직접 해소).
-          히트영역은 44px(왼쪽으로 투명 확장), 보이는 탭은 20px 글래스. z-30 — 편집 백드롭(z-40)
-          아래라 인플레이스 편집 중엔 가려지고, 드로어(z-50)가 열리면 그 뒤에 깔린다. */}
+          히트영역은 44px(왼쪽으로 투명 확장), 보이는 탭은 24px 글래스(#447 — 이전 20px는 눈에
+          덜 띈다는 지적). z-30 — 편집 백드롭(z-40) 아래라 인플레이스 편집 중엔 가려지고,
+          드로어(z-50)가 열리면 그 뒤에 깔린다. */}
       {croppedImageUrl && !isMax && (
         <button
           type="button"
           onClick={() => setDrawerOpen(true)}
           aria-label="티켓 항목 목록 열기"
-          className="fixed right-0 top-1/2 z-30 flex h-14 w-11 -translate-y-1/2 items-center justify-end"
+          className="fixed right-0 top-1/2 z-30 flex h-24 w-11 -translate-y-1/2 items-center justify-end"
         >
           <span
             aria-hidden="true"
-            className="flex h-full w-5 items-center justify-center rounded-l-[10px] border border-r-0 border-[var(--glass-border)] text-fg-muted"
+            className="flex h-full w-6 items-center justify-center rounded-l-[10px] border border-r-0 border-[var(--glass-border)] text-fg-muted"
             style={{
               background: 'var(--glass-fill)',
               backdropFilter: 'blur(13px)',
               WebkitBackdropFilter: 'blur(13px)',
             }}
           >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="m15 18-6-6 6-6" />
             </svg>
           </span>
