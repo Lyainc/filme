@@ -3,6 +3,7 @@ import { LayoutStrip } from '@/components/LayoutPicker';
 import TexturePicker from '@/components/wizard/TexturePicker';
 import ColorPicker from '@/components/wizard/ColorPicker';
 import BrightnessSlider from '@/components/wizard/BrightnessSlider';
+import { TEXTURE_RECIPES } from '@/utils/textureRecipes';
 import type { LayoutId } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 
@@ -195,11 +196,23 @@ export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket>
             disabledNote="35mm 무드는 필름 톤(크림·먹색)이 고정이라 잉크 색을 바꿀 수 없어요."
           />
         ) : active === 'texture' ? (
-          <TexturePicker
-            value={components.texture}
-            onChange={(texture) => setComp({ texture })}
-            croppedImageUrl={croppedImageUrl}
-          />
+          // 후가공 프리셋 + 강도 슬라이더(#434). 강도는 레시피 있는 gradient 4종에서만 유효하므로
+          // 그 외(원본·물리재질)에선 슬라이더를 숨긴다. BrightnessSlider 재사용(0..1→%).
+          <div className="space-y-group">
+            <TexturePicker
+              value={components.texture}
+              onChange={(texture) => setComp({ texture })}
+              croppedImageUrl={croppedImageUrl}
+            />
+            {TEXTURE_RECIPES[components.texture] && (
+              <BrightnessSlider
+                label="강도"
+                id="rail-texture-intensity"
+                value={components.textureIntensity}
+                onChange={(textureIntensity) => setComp({ textureIntensity })}
+              />
+            )}
+          </div>
         ) : (
           // 투명도(#219) — 듀얼 슬라이더. 포스터=밝기(posterOpacity, 기존 메커니즘 유지),
           // 컴포넌트=오버레이 불투명도(componentOpacity). BrightnessSlider 재사용(둘 다 0..1→%).
