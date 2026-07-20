@@ -47,7 +47,7 @@ describe('Criterion 한줄평 폴백 체인 (#391)', () => {
   test('RATED 셀 노출을 꺼도(fv.rating=false) quote는 실제 평점 기준 프리셋 유지', () => {
     const html = markup({ ...FULL_MOVIE, quote: '' }, { rating: false });
     expect(html).toContain('nearly perfect, and knows it');
-    expect(html).not.toContain('★ 4.5 / 5.0'); // RATED 셀 자체는 안 보임
+    expect(html).not.toContain('★ 4.5'); // RATED 셀 자체는 안 보임
   });
 
   test('한글 유저 입력은 FONT_QUOTE_KR(--font-quote-kr)로 분기', () => {

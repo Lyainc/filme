@@ -30,7 +30,7 @@ describe('Mood35mmLandscape 마스터 resync (#281)', () => {
   test('인라인 평점 제거 → Rated 필드 셀', () => {
     const html = markup();
     expect(html).toContain('Rated');
-    expect(html).toContain('★ 4.5 / 5.0'); // 평점이 셀 값으로
+    expect(html).toContain('★ 4.5'); // 평점이 셀 값으로
     expect(html).toContain('평점 편집');    // 셀에 rating FieldTap 유지(게이팅 green)
   });
 

@@ -123,7 +123,7 @@ export const Mood35mm = memo(function Mood35mm({ movieInfo: d, components, cropp
   const filmCells: MetaCell[] = [];
   if (runtimeVal) filmCells.push({ label: 'Runtime', value: runtimeVal, field: 'runtime' });
   else if (gRuntime) filmCells.push({ label: 'Runtime', ghost: gRuntime, field: 'runtime' });
-  if (ratingVisible) filmCells.push({ label: 'Rated', value: `★ ${d.rating.toFixed(1)} / 5.0`, field: 'rating' });
+  if (ratingVisible) filmCells.push({ label: 'Rated', value: `★ ${d.rating.toFixed(1)}`, field: 'rating' });
   else if (gRating) filmCells.push({ label: 'Rated', ghost: gRating, field: 'rating' });
   if (releaseDateVal) filmCells.push({ label: 'Released', value: releaseDateVal, field: 'releaseDate' });
   else if (gReleaseDate) filmCells.push({ label: 'Released', ghost: gReleaseDate, field: 'releaseDate' });

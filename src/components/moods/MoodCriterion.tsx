@@ -130,7 +130,7 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
   const spineText = titleOgVal || titleVal;
 
   // mono 캡스 메타 — 값이 있거나 ghost 행일 때만. ghost 행은 값이 비었고 기여 필드가 visible일 때.
-  const ratingText = ratingVisible ? `★ ${d.rating.toFixed(1)} / 5.0` : '';
+  const ratingText = ratingVisible ? `★ ${d.rating.toFixed(1)}` : '';
   // VENUE 셀 분해(#266 PR-D) — 극장·상영관·좌석을 시각은 Criterion 고유 sep('  ·  ')로 붙이되 각각
   // 독립 FieldTap + 개별 ghost. sep·stampSurface를 조각에 물려 픽셀 보존, 바깥 셀 FieldTap을 없애
   // 조각을 형제로 배치(이중 중첩 stopPropagation 삼킴 회피).
