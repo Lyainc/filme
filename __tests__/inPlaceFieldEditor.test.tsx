@@ -23,6 +23,7 @@ function Harness() {
     <>
       <div data-testid="movie-title">{photo.state.movieInfo.title}</div>
       <div data-testid="movie-theater">{photo.state.movieInfo.theater}</div>
+      <div data-testid="movie-actors">{photo.state.movieInfo.actors}</div>
       <div data-testid="vis-actors">{String(photo.state.fieldVisibility.actors)}</div>
       <button
         type="button"
@@ -127,6 +128,23 @@ describe('인플레이스 필드 에디터 (#354)', () => {
       fireEvent.click(screen.getByRole('button', { name: '다음 항목' }));
     }
     expect(screen.getByTestId('vis-actors').textContent).toBe('false');
+  });
+
+  test('actors는 투명 오버레이 input 없이 aid 패널 opaque input만 뜨고, 타이핑이 movieInfo.actors에 반영된다 (#447)', async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByText('seed'));
+
+    // actors는 비어 있어 ghost off에선 탭 타깃이 없다 — 극장 편집으로 먼저 진입해 ghostEff를 켠다.
+    fireEvent.click(await screen.findByRole('button', { name: '극장 편집' }));
+    await screen.findByRole('textbox', { name: '극장' });
+    fireEvent.click(await screen.findByRole('button', { name: '출연 편집' }));
+
+    // 투명 오버레이 input(hasInput 경로)은 actors에서 안 뜬다 — aid 패널의 opaque input 하나만 존재.
+    const boxes = await screen.findAllByRole('textbox', { name: '출연' });
+    expect(boxes).toHaveLength(1);
+
+    fireEvent.change(boxes[0], { target: { value: '배우A, 배우B' } });
+    expect(screen.getByTestId('movie-actors').textContent).toBe('배우A, 배우B');
   });
 
   test('편집 중 ghost 강제 on — "빈 항목" off여도 빈 필드 탭 타깃이 남는다', async () => {
