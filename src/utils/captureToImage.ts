@@ -223,8 +223,9 @@ function compositeRaster(
     // 뒤의 블러 배경(먼저 그려진 data-poster-bg)과 잇는다. 프리뷰의 CSS mask-image와 동일 씸
     // (posterFeatherAxes 공유)·동일 세기. canvas destination-in 알파라 iOS의 ctx.filter blur
     // 함정(#439)과 무관하다. 좌우 꽉 차는 축(insetX=0)은 페더 안 걸어 무손실 유지(#439).
+    // py(object-position y)를 넘겨 align='top'의 비대칭 레터박스에선 세로 페더를 스킵한다(PR #460 P1).
     const axes = img.dataset.role === 'poster' && fit === 'contain'
-      ? posterFeatherAxes(bw, bh, sw / sh)
+      ? posterFeatherAxes(bw, bh, sw / sh, py)
       : { x: false, y: false };
     if (axes.x || axes.y) {
       const F = POSTER_EDGE_FEATHER * pixelRatio;

@@ -32,25 +32,40 @@ export function posterContainRect(boxW: number, boxH: number, natAspect: number)
   return { cw, ch, insetX: Math.max(0, (boxW - cw) / 2), insetY: Math.max(0, (boxH - ch) / 2) };
 }
 
+// 세로 레터박스는 object-position y가 중앙일 때만 대칭이라 페더 대상이 된다. align='top'
+// (posY=0)이면 컨텐츠가 박스 상단에 flush로 붙고 레터박스가 전부 하단에 몰려, 대칭 가정
+// 그라데이션이 실제 컨텐츠 상단을 잘라내므로 세로 페더를 스킵한다(claude-review PR #460 P1).
+// 가로(좌우) 레터박스는 object-position x가 항상 50%라 언제나 대칭 — posY와 무관.
+function isCentered(posY: number): boolean {
+  return Math.abs(posY - 0.5) < 1e-6;
+}
+
 /** 페더가 필요한 축(레터박스 밴드가 있는 쪽). contain이라 최대 한 축만 true. */
-export function posterFeatherAxes(boxW: number, boxH: number, natAspect: number): { x: boolean; y: boolean } {
+export function posterFeatherAxes(
+  boxW: number,
+  boxH: number,
+  natAspect: number,
+  posY: number = 0.5,
+): { x: boolean; y: boolean } {
   const { insetX, insetY } = posterContainRect(boxW, boxH, natAspect);
-  return { x: insetX > EPS, y: insetY > EPS };
+  return { x: insetX > EPS, y: insetY > EPS && isCentered(posY) };
 }
 
 /**
  * 프리뷰 전경 <img>에 걸 mask-image 값(box 좌표계, px). 레터박스가 있는 축의 내용 가장자리
- * feather px를 투명으로 흘려 뒤의 블러 배경과 잇는다. 레터박스가 없으면(슬롯을 꽉 채움)
- * undefined — 마스크 없이 오늘과 동일해 무손실 가장자리를 보존한다(#439).
+ * feather px를 투명으로 흘려 뒤의 블러 배경과 잇는다. 레터박스가 없거나(슬롯을 꽉 채움) 세로
+ * 정렬이 중앙이 아니면(align='top') undefined — 마스크 없이 오늘과 동일해 무손실 가장자리를
+ * 보존한다(#439, PR #460 P1).
  */
 export function posterFeatherMask(
   boxW: number,
   boxH: number,
   natAspect: number,
+  posY: number = 0.5,
   feather: number = POSTER_EDGE_FEATHER,
 ): string | undefined {
   const { insetX, insetY } = posterContainRect(boxW, boxH, natAspect);
-  if (insetY > EPS) return featherGradient('to bottom', insetY, boxH - insetY, feather);
+  if (insetY > EPS && isCentered(posY)) return featherGradient('to bottom', insetY, boxH - insetY, feather);
   if (insetX > EPS) return featherGradient('to right', insetX, boxW - insetX, feather);
   return undefined;
 }

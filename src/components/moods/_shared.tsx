@@ -663,19 +663,22 @@ export const Poster = memo(function Poster({
   const natAspect = useNaturalAspect(src, fit === 'contain');
   useEffect(() => {
     const el = posterRef.current;
-    if (fit !== 'contain' || !el || typeof ResizeObserver === 'undefined') {
+    if (fit !== 'contain' || !el) {
       setBoxSize(null);
       return;
     }
     const measure = () => setBoxSize({ w: el.offsetWidth, h: el.offsetHeight });
-    measure();
+    measure(); // 초기 1회는 ResizeObserver 유무와 무관하게 동기 측정(RO는 이후 리사이즈 반영용).
+    if (typeof ResizeObserver === 'undefined') return;
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
   }, [fit, src]);
+  // align='top'(objectPosition '50% 0%')이면 posY=0 → posterFeatherMask가 세로 페더를 스킵한다
+  // (컨텐츠가 상단에 flush라 대칭 페더가 진짜 픽셀을 잘라냄, PR #460 P1). export도 동일 py를 쓴다.
   const featherMask =
     fit === 'contain' && boxSize && natAspect
-      ? posterFeatherMask(boxSize.w, boxSize.h, natAspect)
+      ? posterFeatherMask(boxSize.w, boxSize.h, natAspect, align === 'top' ? 0 : 0.5)
       : undefined;
 
   return (
