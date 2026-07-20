@@ -28,8 +28,8 @@ describe('canExport truth table', () => {
     expect(canExport({ hasPoster: POSTER, title: '   ', titleOg: TITLE_OG, releaseDate: RELEASE_OK})).toBe(false);
   });
 
-  test('empty titleOg → false', () => {
-    expect(canExport({ hasPoster: POSTER, title: TITLE, titleOg: NO_TITLE_OG, releaseDate: RELEASE_OK})).toBe(false);
+  test('empty titleOg → true (titleOg no longer required, #445)', () => {
+    expect(canExport({ hasPoster: POSTER, title: TITLE, titleOg: NO_TITLE_OG, releaseDate: RELEASE_OK})).toBe(true);
   });
 
   test('releaseDate 3 chars → false', () => {
