@@ -1,4 +1,4 @@
-import { CSSProperties, memo } from 'react';
+import { CSSProperties, memo, useState } from 'react';
 import type { SheetTarget } from '@/constants/fields';
 import {
   Barcode,
@@ -11,6 +11,7 @@ import {
   FONT_QUOTE_KR,
   FONT_SANS,
   FormatStamp,
+  letterboxToneMatch,
   MoodProps,
   MoodWordmark,
   Poster,
@@ -26,6 +27,7 @@ import {
   resolveTicketData,
   showFieldGhost,
   stampWillRender,
+  TopBandTone,
   truncateActors,
   useFontsReady,
   type FieldGhostState,
@@ -164,6 +166,10 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
   // 20~25px 보장(#449).
   const posterBg = inkIsDark ? '#f5f0e8' : '#0a0a0a';
 
+  // 상단 레터박스 밴드 톤 정합(#461) — globalScrim이 하단(0.7~0.72)만큼 진하지 않은 상단 구간의
+  // 블러 밴드가 도드라지는 문제를, 스크림을 대칭화하는 대신 밴드 실측 높이에만 별도 오버레이로 보정.
+  const [topBandH, setTopBandH] = useState(0);
+
   return (
     <div style={{ position: 'absolute', inset: 0, color: ink, fontFamily: FONT_SANS, overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
       <Poster
@@ -171,11 +177,13 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
         {...posterFitProps(components.posterFit, { letterboxBg: posterBg, frameInsetY: POSTER_FRAME_INSET_Y })}
         texture={components.texture}
         posterOpacity={components.posterOpacity}
+        onTopBandHeight={setTopBandH}
       />
 
       {/* #219 componentOpacity: 포스터를 뺀 오버레이 전체를 함께 페이드. 자식이 전부 position:absolute라
           inset:0 래퍼가 루트를 채워 opacity 1에서 좌표·페인트 순서 동일(no-op). */}
       <div style={{ position: 'absolute', inset: 0, opacity: componentOpacity }}>
+      <TopBandTone heightPx={topBandH} tone={letterboxToneMatch(inkIsDark)} />
       <div style={{ position: 'absolute', inset: 0, background: globalScrim, pointerEvents: 'none' }} />
 
       {/* Spine band — DVD 스파인 임프린트(원제 + 연도), 넘버링 제거 */}
