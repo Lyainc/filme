@@ -22,12 +22,12 @@ describe.each([
 
   test('title code는 titleOg(영문)라 FONT_KR 폴백 없이 상속, signature는 한글이라 개별 폴백', () => {
     const html = markup();
-    expect(html).toContain('<span>The Grand Budapest Hotel</span>');
+    expect(html).toContain('<span>THE GRAND BUDAPEST HOTEL</span>');
     expect(html).not.toMatch(/<span style="font-family:&quot;Pretendard Variable&quot;[^"]*">그랜드 부다페스트 호텔<\/span>/);
     expect(html).toMatch(/<span style="font-family:&quot;Pretendard Variable&quot;[^"]*">COLLECTED BY 영화수집가<\/span>/);
   });
 
-  test('titleOg가 없으면 title로 폴백', () => {
+  test('titleOg가 없으면 title로 폴백(toUpperCase는 한글엔 no-op, #443 팔로업)', () => {
     const html = render({ ...FULL_MOVIE, titleOg: '' });
     expect(html).toMatch(/<span style="font-family:&quot;Pretendard Variable&quot;[^"]*">그랜드 부다페스트 호텔<\/span>/);
   });

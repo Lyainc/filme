@@ -1183,7 +1183,9 @@ export function buildEdgeCodes({
   signatureVal: string;
 }): string[] {
   return [
-    titleVal,
+    // 나머지 코드가 전부 대문자 상수라 원어(영어) 원제도 맞춤(#443 팔로업). toUpperCase는 한글엔
+    // no-op이라 titleOgVal 없을 때의 한글 제목 폴백에도 안전하다.
+    titleVal.toUpperCase(),
     'SAFETY FILM',
     'MADE WITH FILME · 35MM',
     releaseDateVal && `PT · ${releaseDateVal}`,
