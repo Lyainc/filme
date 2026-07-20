@@ -5,7 +5,7 @@
  * 교체·재크롭 액션을 통합했다(#323/#324 흡수). 잉크 토글은 #387에서 컬러 패널과 중복이라 삭제.
  */
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
-import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, act, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
@@ -228,4 +228,33 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
   // 이 서브메뉴가 검증하던 라이트↔다크 전환·35mm disabled 동작 회귀 테스트는 ColorPicker
   // 쪽에 상응하는 게 없다 — desktopDesignPanel.test.tsx (c)는 White/Black 프리셋의 존재만
   // 확인하고 클릭 동작은 검증하지 않는다(#387 스코프 밖의 기존 커버리지 공백, 별도 이슈감).
+
+  test('툴바 설정(#447): 기본 접힘 → 헤더 클릭으로 펼침(라디오 4종) → 메뉴 재오픈 시 항상 접힘 리셋', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    fireEvent.click(screen.getByText('seed'));
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+
+    const toggle = screen.getByRole('button', { name: '툴바 설정' });
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    // 접힘 상태의 실제 상호작용 차단은 grid-rows(#447, FieldAccordion과 동일 패턴)가 아니라
+    // inert 속성이 담당 — happy-dom은 inert를 접근성 트리에 반영하지 않으므로(getByRole만으론
+    // 관측 불가) 속성 자체를 직접 확인한다.
+    const panelId = toggle.getAttribute('aria-controls')!;
+    const inertWrapper = () => document.getElementById(panelId)!.parentElement!;
+    expect(inertWrapper().hasAttribute('inert')).toBe(true);
+
+    const group = within(screen.getByRole('radiogroup', { name: '툴바 배치' }));
+    expect(group.getAllByRole('radio')).toHaveLength(4);
+    expect(group.getByRole('radio', { name: '세로형 · 고정식' })).toBeTruthy();
+
+    await user.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(inertWrapper().hasAttribute('inert')).toBe(false);
+
+    // 메뉴를 닫았다 다시 열면 항상 접힘으로 리셋된다(#447).
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' })); // 닫기
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' })); // 재오픈
+    expect(screen.getByRole('button', { name: '툴바 설정' }).getAttribute('aria-expanded')).toBe('false');
+  });
 });
