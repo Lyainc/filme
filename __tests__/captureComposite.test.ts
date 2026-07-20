@@ -250,3 +250,56 @@ describe('#439 — 블러 배경은 ctx.filter blur 대신 다운스케일→업
     node.remove();
   });
 });
+
+describe('#434 — 후가공 sheen 오버레이(compositeOverlay)를 포스터 위에 canvas blend로 합성한다', () => {
+  test('data-texture/data-texture-intensity를 실은 poster-root는 그 레시피 blend·intensity 스케일로 오버레이 fillRect를 호출한다', async () => {
+    const node = document.createElement('div');
+    stubRect(node, 0, 0, 960, 1477); // scale 1
+    const posterRoot = document.createElement('div');
+    posterRoot.setAttribute('data-poster-root', 'true');
+    posterRoot.dataset.texture = 'hologram'; // soft-light
+    posterRoot.dataset.textureIntensity = '0.5';
+    // cover 포스터 = 레터박스 없음 → 페더 gradStops가 안 섞여 오버레이 stop만 남는다.
+    const fg = makeImg({ role: 'poster', w: 1300, h: 2000, style: { objectFit: 'cover' } });
+    posterRoot.appendChild(fg);
+    node.appendChild(posterRoot);
+    document.body.appendChild(node);
+    stubRect(posterRoot, 0, 0, 960, 1477); // 오버레이 영역 = 포스터 슬롯 = 노드 전체
+    stubRect(fg, 0, 0, 960, 1477);
+
+    await captureNodeToJpeg(node, OPTS);
+
+    // hologram blend(soft-light)로 globalCompositeOperation을 설정해 포스터 위에 blend.
+    expect(gcos).toContain('soft-light');
+    // intensity(0.5) × hologram 첫 stop alpha(0.5) = 0.25가 canvas gradient stop에 반영된다.
+    const holoStop = gradStops.find((s) => s.c.startsWith('rgba(255, 150, 180'));
+    expect(holoStop).toBeDefined();
+    expect(holoStop!.c).toContain('0.25');
+    // 오버레이 fillRect가 poster-root 박스(여백20 시작, 티켓 내용 1920×2954)에 그려진다 — clip도 동일.
+    expect(fillRects.some((r) => r.x === 20 && r.y === 20 && r.w === 1920 && r.h === 2954)).toBe(true);
+
+    node.remove();
+  });
+
+  test('data-texture가 없으면(원본·물리재질 등 레시피 밖) 오버레이를 그리지 않는다', async () => {
+    const node = document.createElement('div');
+    stubRect(node, 0, 0, 960, 1477);
+    const posterRoot = document.createElement('div');
+    posterRoot.setAttribute('data-poster-root', 'true');
+    // data-texture 미설정 — compositeOverlay가 스킵해야 한다.
+    const fg = makeImg({ role: 'poster', w: 1300, h: 2000, style: { objectFit: 'cover' } });
+    posterRoot.appendChild(fg);
+    node.appendChild(posterRoot);
+    document.body.appendChild(node);
+    stubRect(posterRoot, 0, 0, 960, 1477);
+    stubRect(fg, 0, 0, 960, 1477);
+
+    await captureNodeToJpeg(node, OPTS);
+
+    // cover라 페더도 없어 blend 오버레이/그라데이션이 전혀 안 생긴다.
+    expect(gcos).not.toContain('soft-light');
+    expect(gradStops.length).toBe(0);
+
+    node.remove();
+  });
+});
