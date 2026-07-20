@@ -1,6 +1,7 @@
 import { memo, useEffect, useRef } from 'react';
 import { TEXTURE_OPTIONS } from '@/utils/constants';
 import { Poster } from '@/components/moods/_shared';
+import { defaultIntensityForTexture } from '@/utils/textureRecipes';
 
 interface TexturePickerProps {
   value: string;
@@ -42,7 +43,14 @@ const TexturePreview = memo(function TexturePreview({
         flexShrink: 0,
       }}
     >
-      <Poster src={src} texture={texture} posterOpacity={PREVIEW_OPACITY} />
+      {/* 칩은 그 texture의 기본 강도로 미리보기 — 강도 100% 고정이면 실제 기본(hologram/metal 0.7)보다
+          화려하게 보인다(#434 PR #472 리뷰 P2). posterOpacity처럼 대표 고정값(슬라이더엔 안 반응). */}
+      <Poster
+        src={src}
+        texture={texture}
+        textureIntensity={defaultIntensityForTexture(texture)}
+        posterOpacity={PREVIEW_OPACITY}
+      />
     </span>
   );
 });
