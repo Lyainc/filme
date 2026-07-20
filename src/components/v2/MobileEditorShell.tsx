@@ -211,6 +211,7 @@ export function MobileEditorShell({
   // 툴바 설정 접기(#447) — 라디오 4종 + 스냅 버튼이 항상 펼쳐져 메뉴 세로 공간을 크게 차지하던 것을
   // 접힘 기본값으로. 메뉴가 닫히면 함께 리셋(다음 열림은 항상 접힌 상태로 시작).
   const [tbSettingsOpen, setTbSettingsOpen] = useState(false);
+  const tbSettingsPanelId = 'tb-settings-panel';
   useEffect(() => {
     if (!menuOpen) {
       clearTimeout(clearArmTimer.current);
@@ -531,6 +532,7 @@ export function MobileEditorShell({
                   <button
                     type="button"
                     aria-expanded={tbSettingsOpen}
+                    aria-controls={tbSettingsPanelId}
                     onClick={() => setTbSettingsOpen((v) => !v)}
                     className="flex w-full items-center gap-2.5 px-2.5 pb-1 text-[14px] font-medium text-fg"
                   >
@@ -570,59 +572,61 @@ export function MobileEditorShell({
                     style={{ gridTemplateRows: tbSettingsOpen ? '1fr' : '0fr' }}
                   >
                     <div className="overflow-hidden" inert={!tbSettingsOpen || undefined}>
-                      <div role="radiogroup" aria-label="툴바 배치">
-                        {TOOLBAR_MODES.map((m) => {
-                          const on = tbPrefs.orient === m.orient && tbPrefs.place === m.place;
-                          return (
-                            <button
-                              key={m.label}
-                              type="button"
-                              role="radio"
-                              aria-checked={on}
-                              onClick={() => applyToolbarMode(m.orient, m.place)}
-                              className={`flex h-11 w-full items-center gap-2.5 rounded-[9px] px-2.5 text-[12px] font-semibold ${
-                                on ? 'bg-accent-soft text-accent' : 'text-fg hover:bg-white/5'
-                              }`}
-                            >
-                              <span
-                                aria-hidden="true"
-                                className={`h-[7px] w-[7px] shrink-0 rounded-full ${on ? 'bg-accent' : 'bg-border-strong'}`}
-                              />
-                              {m.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      {tbPrefs.place === 'movable' && (
-                        <div className="mt-1 flex gap-1 border-t border-[var(--glass-border)] pt-1.5">
-                          <button
-                            type="button"
-                            onClick={() => snapToolbarTo('left')}
-                            aria-label="왼쪽 가장자리로 이동"
-                            title="왼쪽 가장자리로 이동"
-                            className="flex h-11 flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:bg-white/5 hover:text-fg"
-                          >
-                            <svg {...TB_ICON}>
-                              <path d="M3 19V5" />
-                              <path d="m13 6-6 6 6 6" />
-                              <path d="M7 12h14" />
-                            </svg>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => snapToolbarTo('right')}
-                            aria-label="오른쪽 가장자리로 이동"
-                            title="오른쪽 가장자리로 이동"
-                            className="flex h-11 flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:bg-white/5 hover:text-fg"
-                          >
-                            <svg {...TB_ICON}>
-                              <path d="M21 5v14" />
-                              <path d="m11 18 6-6-6-6" />
-                              <path d="M17 12H3" />
-                            </svg>
-                          </button>
+                      <div id={tbSettingsPanelId}>
+                        <div role="radiogroup" aria-label="툴바 배치">
+                          {TOOLBAR_MODES.map((m) => {
+                            const on = tbPrefs.orient === m.orient && tbPrefs.place === m.place;
+                            return (
+                              <button
+                                key={m.label}
+                                type="button"
+                                role="radio"
+                                aria-checked={on}
+                                onClick={() => applyToolbarMode(m.orient, m.place)}
+                                className={`flex h-11 w-full items-center gap-2.5 rounded-[9px] px-2.5 text-[12px] font-semibold ${
+                                  on ? 'bg-accent-soft text-accent' : 'text-fg hover:bg-white/5'
+                                }`}
+                              >
+                                <span
+                                  aria-hidden="true"
+                                  className={`h-[7px] w-[7px] shrink-0 rounded-full ${on ? 'bg-accent' : 'bg-border-strong'}`}
+                                />
+                                {m.label}
+                              </button>
+                            );
+                          })}
                         </div>
-                      )}
+                        {tbPrefs.place === 'movable' && (
+                          <div className="mt-1 flex gap-1 border-t border-[var(--glass-border)] pt-1.5">
+                            <button
+                              type="button"
+                              onClick={() => snapToolbarTo('left')}
+                              aria-label="왼쪽 가장자리로 이동"
+                              title="왼쪽 가장자리로 이동"
+                              className="flex h-11 flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:bg-white/5 hover:text-fg"
+                            >
+                              <svg {...TB_ICON}>
+                                <path d="M3 19V5" />
+                                <path d="m13 6-6 6 6 6" />
+                                <path d="M7 12h14" />
+                              </svg>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => snapToolbarTo('right')}
+                              aria-label="오른쪽 가장자리로 이동"
+                              title="오른쪽 가장자리로 이동"
+                              className="flex h-11 flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:bg-white/5 hover:text-fg"
+                            >
+                              <svg {...TB_ICON}>
+                                <path d="M21 5v14" />
+                                <path d="m11 18 6-6-6-6" />
+                                <path d="M17 12H3" />
+                              </svg>
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
