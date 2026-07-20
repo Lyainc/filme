@@ -35,6 +35,10 @@ describe('MoodStub 마스터 resync (#281)', () => {
     const html = markup();
     expect(html).toContain('#9ff0df'); // 무지개 그라디언트 시작/끝 stop
     expect(html).toContain('✦'); // 정보 구분자
+    // 평점 "/5.0" 분모 제거(#445) — 다른 3무드(35mm/35mm Wide/Criterion quote)와 동일하게
+    // 티커 항목도 분모 없는 "★ N.N" 표기여야 한다(nit mood-stub-rating-test-gap).
+    expect(html).toContain('★ 4.5');
+    expect(html).not.toContain('/5.0');
   });
 
   test('제목이 페이퍼 스텁으로 이동 — 42/700 2줄 클램프', () => {
