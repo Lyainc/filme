@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { TicketComponents } from '@/types';
 import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
@@ -26,11 +26,20 @@ type Photo = ReturnType<typeof usePhototicket>;
  * 표시/숨김 눈 토글은 각 행에 유지하되 rating과 필수 필드(#260 title)는 생략한다 — rating은 본문
  * (RatingPicker)이 자체 눈 토글을 렌더해 이중 eye가 되므로, 필수 필드는 숨기면 제목 없는 티켓이
  * 되므로(모바일 드로어 자물쇠·전체해제와 동일 규칙).
+ *
+ * expanded는 부모(DesktopStudioShell)가 소유한다 — OCR 카드가 KOBIS 무매칭 시 제목 행을
+ * 강제로 펼쳐 열어야 해서(#445) 로컬 state로는 그 트리거가 안 닿는다.
  */
-export function FieldAccordion({ photo }: { photo: Photo }) {
-  const [expanded, setExpanded] = useState<SheetTarget | null>(null);
+export function FieldAccordion({
+  photo,
+  expanded,
+  onToggle,
+}: {
+  photo: Photo;
+  expanded: SheetTarget | null;
+  onToggle: (t: SheetTarget) => void;
+}) {
   const { movieInfo, fieldVisibility, components } = photo.state;
-  const toggle = (t: SheetTarget) => setExpanded((cur) => (cur === t ? null : t));
 
   return (
     <div className="space-y-group">
@@ -45,7 +54,7 @@ export function FieldAccordion({ photo }: { photo: Photo }) {
                 label={FIELD_LABELS[field]}
                 preview={fieldPreview(field, movieInfo)}
                 expanded={expanded === field}
-                onToggle={() => toggle(field)}
+                onToggle={() => onToggle(field)}
                 photo={photo}
                 eye={
                   field === 'rating' || isRequiredField(field) ? null : (
@@ -73,7 +82,7 @@ export function FieldAccordion({ photo }: { photo: Photo }) {
               label={STAMP_LABELS[target]}
               preview={stampPreview(target, components)}
               expanded={expanded === target}
-              onToggle={() => toggle(target)}
+              onToggle={() => onToggle(target)}
               photo={photo}
               eye={
                 <VisibilityCheckbox

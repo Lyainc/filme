@@ -923,6 +923,10 @@ export function MobileEditorShell({
             currentComponents={photo.state.components}
             ocrEpochRef={ocr.epochRef}
             context="drawer"
+            onNeedManualTitle={() => {
+              setDrawerOpen(false);
+              handleField('title');
+            }}
           />
         </FieldDrawer>
       )}

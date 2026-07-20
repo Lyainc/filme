@@ -14,6 +14,7 @@ import { ZoomSegment, type ViewMode } from './viewMode';
 import { useOcrUndo } from '@/hooks/useOcrUndo';
 import { getLayout } from '@/utils/layouts';
 import { ALL_FIELDS_ON, isRequiredField } from '@/constants/fieldVisibility';
+import type { SheetTarget } from '@/constants/fields';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 
@@ -133,6 +134,8 @@ export function DesktopStudioShell({
   fieldVisibility,
 }: DesktopStudioShellProps) {
   const [activeTab, setActiveTab] = useState<StudioTab>('poster');
+  // FieldAccordion 펼침 상태 — 여기서 소유해야 OCR 카드의 KOBIS 무매칭 콜백이 제목 행을 직접 열 수 있다(#445).
+  const [expandedField, setExpandedField] = useState<SheetTarget | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('default');
   const { croppedImageUrl } = photo.state;
 
@@ -301,6 +304,10 @@ export function DesktopStudioShell({
                     setComponents={photo.updateComponents}
                     currentComponents={photo.state.components}
                     ocrEpochRef={ocr.epochRef}
+                    onNeedManualTitle={() => {
+                      setActiveTab('info');
+                      setExpandedField('title');
+                    }}
                   />
                 </div>
               </div>
@@ -309,7 +316,11 @@ export function DesktopStudioShell({
                 <div className="flex justify-end">
                   <AllVisibilityToggle photo={photo} />
                 </div>
-                <FieldAccordion photo={photo} />
+                <FieldAccordion
+                  photo={photo}
+                  expanded={expandedField}
+                  onToggle={(t) => setExpandedField((cur) => (cur === t ? null : t))}
+                />
               </div>
             ) : (
               <div className="space-y-group">
