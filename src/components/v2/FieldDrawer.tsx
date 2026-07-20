@@ -118,7 +118,13 @@ export function FieldDrawer({ photo, onField, onClose, children }: FieldDrawerPr
           paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)',
         }}
       >
-        {children && <div className="shrink-0 px-4 pb-3">{children}</div>}
+        {/* 불투명 카드(bg-surface-elevated)에 얹는다 — 아래 행들과 동일 근거(위 주석): 패널 알파
+            글래스 위 직접 텍스트는 라이트 테마에서 대비가 깨진다(#447, OcrUploadCard 슬롯 한정 발견). */}
+        {children && (
+          <div className="shrink-0 px-4 pb-3">
+            <div className="rounded-card bg-surface-elevated p-3">{children}</div>
+          </div>
+        )}
 
         <div className="min-h-0 flex-1 space-y-group overflow-y-auto overscroll-contain px-4 pb-[calc(env(safe-area-inset-bottom,0px)+24px)]">
           {/* 전체 표시(#424) — 필드 목록과 한 자리에. 패널 위 직접 텍스트는 대비가 깨지므로(위 주석)
