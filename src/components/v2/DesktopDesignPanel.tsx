@@ -3,6 +3,7 @@ import LayoutPicker from '@/components/LayoutPicker';
 import TexturePicker from '@/components/wizard/TexturePicker';
 import ColorPicker from '@/components/wizard/ColorPicker';
 import BrightnessSlider from '@/components/wizard/BrightnessSlider';
+import { TEXTURE_RECIPES } from '@/utils/textureRecipes';
 import { Eyebrow } from './Eyebrow';
 import type { LayoutId } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
@@ -36,12 +37,24 @@ export function DesktopDesignPanel({ photo }: { photo: ReturnType<typeof usePhot
         <LayoutPicker value={components.layout} onChange={(id: LayoutId) => setComp({ layout: id })} />
       </Section>
 
+      {/* 후가공 프리셋 + 강도 슬라이더(#434). 강도는 레시피 있는 gradient 4종에서만 유효하므로
+          그 외(원본·물리재질)에선 슬라이더를 숨긴다. */}
       <Section eyebrow="Texture">
-        <TexturePicker
-          value={components.texture}
-          onChange={(texture) => setComp({ texture })}
-          croppedImageUrl={croppedImageUrl}
-        />
+        <div className="space-y-group">
+          <TexturePicker
+            value={components.texture}
+            onChange={(texture) => setComp({ texture })}
+            croppedImageUrl={croppedImageUrl}
+          />
+          {TEXTURE_RECIPES[components.texture] && (
+            <BrightnessSlider
+              label="강도"
+              id="desktop-texture-intensity"
+              value={components.textureIntensity}
+              onChange={(textureIntensity) => setComp({ textureIntensity })}
+            />
+          )}
+        </div>
       </Section>
 
       {/* 컬러·잉크(#229) — 잉크는 별도 상태 축 없이 단일 themeColor. White↔Black 프리셋이 곧

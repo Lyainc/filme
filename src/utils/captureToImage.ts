@@ -1,4 +1,5 @@
 import { POSTER_EDGE_FEATHER, posterFeatherAxes } from './posterFeather';
+import { TEXTURE_RECIPES } from './textureRecipes';
 
 interface CaptureOptions {
   width: number;
@@ -265,6 +266,65 @@ function compositeRaster(
   ctx.restore();
 }
 
+// 후가공 sheen 오버레이를 포스터 위에 canvas blend로 합성한다(#434 c1). 미리보기 TextureOverlay와
+// 같은 레시피(textureRecipes)를 쓰되, CSS mix-blend-mode 대신 canvas globalCompositeOperation으로
+// (값 이름 동일) 이미 그려진 포스터 픽셀과 블렌드한다. 영역은 poster-root 박스 — 원래 CSS 오버레이가
+// inset:0으로 깔리던 그 영역이다. intensity는 stop alpha에 곱해 0이면 아무것도 안 그린다. z-order상
+// 포스터(compositeRaster) 다음·base 텍스트 PNG 이전에 호출돼 "포스터 위·텍스트 아래"에 얹힌다.
+function compositeOverlay(
+  ctx: CanvasRenderingContext2D,
+  root: HTMLElement,
+  texture: string,
+  intensity: number,
+  nodeRect: DOMRect,
+  width: number,
+  height: number,
+  pixelRatio: number,
+  debug: boolean,
+): void {
+  const recipe = TEXTURE_RECIPES[texture];
+  if (!recipe || intensity <= 0) return;
+
+  // compositeRaster와 동일한 분율 환산 — 프리뷰 scale이 걸린 getBoundingClientRect을 노드 대비
+  // 분율로 되돌려 자연 좌표 + export 여백 + device px 박스를 얻는다.
+  const r = root.getBoundingClientRect();
+  const bx = (EXPORT_MARGIN_PX + ((r.left - nodeRect.left) / nodeRect.width) * width) * pixelRatio;
+  const by = (EXPORT_MARGIN_PX + ((r.top - nodeRect.top) / nodeRect.height) * height) * pixelRatio;
+  const bw = (r.width / nodeRect.width) * width * pixelRatio;
+  const bh = (r.height / nodeRect.height) * height * pixelRatio;
+
+  // CSS linear-gradient 각도(0deg=위, 시계방향) → canvas gradient 라인 두 끝점. 방향 (sinθ, -cosθ),
+  // 라인 길이 |W·sinθ|+|H·cosθ|(박스를 완전히 덮는 투영), 중심 기준 대칭. 미리보기 CSS와 같은 기하.
+  const t = (recipe.angle * Math.PI) / 180;
+  const dirX = Math.sin(t);
+  const dirY = -Math.cos(t);
+  const len = Math.abs(bw * Math.sin(t)) + Math.abs(bh * Math.cos(t));
+  const cx = bx + bw / 2;
+  const cy = by + bh / 2;
+  const grad = ctx.createLinearGradient(
+    cx - (dirX * len) / 2,
+    cy - (dirY * len) / 2,
+    cx + (dirX * len) / 2,
+    cy + (dirY * len) / 2,
+  );
+  for (const s of recipe.stops) {
+    grad.addColorStop(s.at / 100, `rgba(${s.rgb[0]}, ${s.rgb[1]}, ${s.rgb[2]}, ${s.alpha * intensity})`);
+  }
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(bx, by, bw, bh);
+  ctx.clip();
+  ctx.globalCompositeOperation = recipe.blend;
+  ctx.fillStyle = grad;
+  ctx.fillRect(bx, by, bw, bh);
+  ctx.restore();
+
+  if (debug) {
+    console.log(`[capture:overlay] texture=${texture} intensity=${intensity} blend=${recipe.blend} box=${Math.round(bx)},${Math.round(by)},${Math.round(bw)}x${Math.round(bh)}`);
+  }
+}
+
 export async function captureNodeToJpeg(
   node: HTMLElement,
   options: CaptureOptions
@@ -347,6 +407,18 @@ export async function captureNodeToJpeg(
     } catch (err) {
       console.warn('[capture:band] getImageData failed', err);
     }
+  }
+  // 후가공 sheen 오버레이(#434 c1) — 포스터 위·base 텍스트 아래. poster-root 서브트리는 위 toPng
+  // filter에서 제외됐으므로(그 안의 CSS 오버레이도 저장물에서 통째로 빠진다), 여기서 poster-root
+  // 박스에 canvas blend로 같은 레시피를 다시 얹어 미리보기=저장물을 맞춘다. texture/강도는 Poster가
+  // data 속성으로 실어보낸다(캡처가 컴포넌트 상태 없이 DOM만으로 재현).
+  const posterRoots = Array.from(node.querySelectorAll('[data-poster-root]')) as HTMLElement[];
+  for (const root of posterRoots) {
+    const texture = root.dataset.texture;
+    if (!texture) continue;
+    const rawIntensity = root.dataset.textureIntensity;
+    const intensity = rawIntensity != null ? parseFloat(rawIntensity) : 1;
+    compositeOverlay(ctx, root, texture, intensity, nodeRect, width, height, pixelRatio, debug);
   }
   const baseImg = await loadImage(basePngUrl);
   ctx.drawImage(baseImg, ticketRect.x, ticketRect.y, ticketRect.w, ticketRect.h);

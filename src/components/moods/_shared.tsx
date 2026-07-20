@@ -3,6 +3,7 @@ import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 import { FIELD_LABELS, STAMP_LABELS, isStampTarget, type SheetTarget } from '@/constants/fields';
 import { formatDate } from '@/utils/dateFormat';
 import { posterContainRect, posterFeatherMask } from '@/utils/posterFeather';
+import { TEXTURE_RECIPES, recipeToGradientCss } from '@/utils/textureRecipes';
 import { EyeIcon } from '@/components/ui/VisibilityCheckbox';
 
 export interface MoodProps {
@@ -588,6 +589,8 @@ interface PosterProps {
   fit?: 'cover' | 'contain';
   background?: string;
   texture?: string;
+  /** 후가공 sheen 강도 0..1(#434) — TextureOverlay로 관통. 미지정 시 1(강도 100%). */
+  textureIntensity?: number;
   posterOpacity?: number;
   /** contain일 때 정렬(#420 원본 비율 보존 프리셋) — 'top'은 포스터 상단을 캔버스 상단에 붙인다. 기본 중앙. */
   align?: 'center' | 'top';
@@ -659,6 +662,7 @@ export const Poster = memo(function Poster({
   fit = 'cover',
   background = '#0a0a0a',
   texture = 'original',
+  textureIntensity = 1,
   posterOpacity,
   align = 'center',
   frameInsetY = 0,
@@ -720,6 +724,11 @@ export const Poster = memo(function Poster({
       // 통째로 제외하고 대신 canvas 2D로 직접 합성한다. 이 div의 background(#0a0a0a)까지 함께
       // 빠져야 그 자리가 '투명 구멍'으로 남아 합성한 포스터가 비쳐 보인다.
       data-poster-root="true"
+      // 저장 경로(captureToImage.compositeOverlay)가 이 서브트리를 제외하고 canvas로 재합성하므로,
+      // sheen 오버레이의 texture/강도를 DOM 속성으로 실어보내 캡처가 상태 없이 DOM만으로 재현하게 한다(#434 c1).
+      // 오버레이가 없는 texture(original·물리재질 등 레시피 밖)는 data-texture를 안 실어 compositeOverlay가 건너뛴다.
+      data-texture={texture && texture !== 'original' && TEXTURE_RECIPES[texture] ? texture : undefined}
+      data-texture-intensity={textureIntensity}
       style={{
         position: 'absolute',
         inset: 0,
@@ -772,7 +781,7 @@ export const Poster = memo(function Poster({
           crossOrigin="anonymous"
         />
       </div>
-      {texture && texture !== 'original' && <TextureOverlay texture={texture} />}
+      {texture && texture !== 'original' && <TextureOverlay texture={texture} intensity={textureIntensity} />}
     </div>
   );
 });
@@ -816,54 +825,46 @@ export function TopBandTone({ heightPx, tone }: { heightPx: number; tone: string
 }
 
 // 텍스처별 sheen(하이라이트) 오버레이만 담당한다. dim(밝기)은 Poster의 <img> filter로
-// 분리됐으므로 여기선 검은 레이어를 두지 않는다(#139 ①).
-function TextureOverlay({ texture }: { texture: string }) {
-  if (texture === 'original' || texture === 'vintage' || texture === 'newspaper') {
-    return null;
+// 분리됐으므로 여기선 검은 레이어를 두지 않는다(#139 ①). gradient 4종(none·hologram·metal·
+// scodix)은 단일 레시피(textureRecipes.ts)를 저장 경로(captureToImage.compositeOverlay)와
+// 공유해 미리보기=저장물을 맞춘다(#434). intensity는 stop alpha에 곱해져 0=완전 무가공이 된다.
+function TextureOverlay({ texture, intensity = 1 }: { texture: string; intensity?: number }) {
+  const recipe = TEXTURE_RECIPES[texture];
+  if (recipe) {
+    return (
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+          background: recipeToGradientCss(recipe, intensity),
+          mixBlendMode: recipe.blend,
+        }}
+      />
+    );
   }
 
-  const overlays: Record<string, CSSProperties> = {
-    none: {
-      background:
-        'linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.06) 30%, rgba(255,255,255,0.18) 50%, rgba(255,255,255,0.06) 70%, rgba(255,255,255,0) 100%)',
-      mixBlendMode: 'screen',
-    },
-    hologram: {
-      background:
-        'linear-gradient(135deg, rgba(255,182,193,0.32) 0%, rgba(255,223,186,0.32) 20%, rgba(255,255,186,0.32) 40%, rgba(186,255,201,0.32) 60%, rgba(186,225,255,0.32) 80%, rgba(216,191,216,0.32) 100%)',
-      mixBlendMode: 'color-dodge',
-    },
-    metal: {
-      background:
-        'linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(180,190,200,0.1) 30%, rgba(255,255,255,0.55) 50%, rgba(100,110,120,0.1) 70%, rgba(30,40,50,0.35) 100%)',
-      mixBlendMode: 'hard-light',
-    },
-    artpaper: {
-      background:
-        'repeating-linear-gradient(45deg, rgba(0,0,0,0.04) 0 2px, rgba(255,255,255,0.04) 2px 4px)',
-      mixBlendMode: 'multiply',
-    },
-    scodix: {
-      background:
-        'linear-gradient(135deg, rgba(255,255,255,0) 40%, rgba(0,0,0,0.12) 45%, rgba(255,255,255,0.65) 50%, rgba(255,255,255,0) 55%)',
-      mixBlendMode: 'overlay',
-    },
-  };
+  // artpaper — 종이결(feTurbulence)은 후속 이슈로 분리됐다(#434). 그전까지 옛 repeating gradient를
+  // 유지한다(저장물 미반영은 그 후속에서 SVG-raster 경로로 함께 해결).
+  if (texture === 'artpaper') {
+    return (
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+          background:
+            'repeating-linear-gradient(45deg, rgba(0,0,0,0.04) 0 2px, rgba(255,255,255,0.04) 2px 4px)',
+          mixBlendMode: 'multiply',
+        }}
+      />
+    );
+  }
 
-  const style = overlays[texture];
-  if (!style) return null;
-
-  return (
-    <div
-      aria-hidden="true"
-      style={{
-        position: 'absolute',
-        inset: 0,
-        pointerEvents: 'none',
-        ...style,
-      }}
-    />
-  );
+  // original·vintage·newspaper — sheen 오버레이 없음.
+  return null;
 }
 
 interface BarcodeProps {

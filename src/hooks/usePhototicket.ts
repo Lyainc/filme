@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { PhototicketState, MovieInfo, TicketComponents, TicketField } from '@/types';
 import { defaultBrightnessForTexture } from '@/components/moods/_shared';
+import { defaultIntensityForTexture } from '@/utils/textureRecipes';
 import { ALL_FIELDS_ON } from '@/constants/fieldVisibility';
 
 const DEFAULT_VISIBILITY_ON_UPLOAD: Record<TicketField, boolean> = {
@@ -87,6 +88,7 @@ const INITIAL_STATE: PhototicketState = {
     chainLabel: '',
     formatLabel: '',
     texture: 'none',
+    textureIntensity: 1,
     posterOpacity: 0.5,
     componentOpacity: 1,
     themeColor: '#FFFFFF',
@@ -111,6 +113,10 @@ export function usePhototicket() {
   // 사용자가 밝기 슬라이더를 직접 만졌는지 추적(#146). 한번 만지면 이후 texture 전환에서
   // 기본 밝기를 덮어쓰지 않고 사용자 값을 존중한다.
   const brightnessTouchedRef = useRef(false);
+  // 강도 슬라이더 직접 조작 추적(#434) — brightnessTouchedRef와 같은 패턴. 한번 만지면 이후
+  // texture 전환에서 그 texture 기본 강도로 덮지 않고 사용자 값을 존중한다. 밝기와 달리 새 포스터
+  // 업로드로는 리셋하지 않는다 — 강도는 포스터 명암이 아니라 texture 취향에 종속적이다.
+  const intensityTouchedRef = useRef(false);
 
   // 마운트 시 localStorage에서 텍스트·설정을 복원한다. SSR 하이드레이션 불일치를 피하려
   // useState 초기화가 아니라 effect에서 한다(서버는 INITIAL_STATE로 렌더, 클라가 마운트 후 복원).
@@ -126,6 +132,17 @@ export function usePhototicket() {
       saved.components.posterOpacity !== INITIAL_STATE.components.posterOpacity
     ) {
       brightnessTouchedRef.current = true;
+    }
+    // 저장된 강도가 그 texture 기본값과 다르면 사용자가 만진 값이므로 touched로 표시한다(#434,
+    // 위 밝기와 동일 패턴). 구버전 저장본엔 textureIntensity가 없어(undefined) 기본값과 갈리므로
+    // touched로 오판할 수 있으나, undefined는 아래 얕은 병합에서 INITIAL_STATE 기본값(1)으로 메워지고
+    // texture 'none'의 기본 강도도 1이라 실질 오판이 없다.
+    if (
+      saved.components?.textureIntensity !== undefined &&
+      saved.components.textureIntensity !==
+        defaultIntensityForTexture(saved.components.texture ?? INITIAL_STATE.components.texture)
+    ) {
+      intensityTouchedRef.current = true;
     }
     setState((prev) => ({
       ...prev,
@@ -181,6 +198,9 @@ export function usePhototicket() {
     if (components.posterOpacity !== undefined) {
       brightnessTouchedRef.current = true;
     }
+    if (components.textureIntensity !== undefined) {
+      intensityTouchedRef.current = true;
+    }
     setState((prev) => {
       const nextComponents = { ...prev.components, ...components };
       latestChainUrlRef.current = nextComponents.chain.startsWith('blob:') ? nextComponents.chain : null;
@@ -195,6 +215,17 @@ export function usePhototicket() {
         !brightnessTouchedRef.current
       ) {
         nextComponents.posterOpacity = defaultBrightnessForTexture(components.texture);
+      }
+
+      // 강도도 동일 규칙(#434) — texture 전환 시 그 texture 기본 강도를 적용, 단 사용자가 강도
+      // 슬라이더를 직접 만진 적 없고(touched=false) textureIntensity가 이 업데이트에 실려오지 않았을 때만.
+      if (
+        components.textureIntensity === undefined &&
+        components.texture !== undefined &&
+        components.texture !== prev.components.texture &&
+        !intensityTouchedRef.current
+      ) {
+        nextComponents.textureIntensity = defaultIntensityForTexture(components.texture);
       }
 
       return { ...prev, components: nextComponents };
@@ -216,6 +247,8 @@ export function usePhototicket() {
     // 그 texture 기본 밝기 적용이 스킵된다.
     brightnessTouchedRef.current =
       snap.components.posterOpacity !== defaultBrightnessForTexture(snap.components.texture);
+    intensityTouchedRef.current =
+      snap.components.textureIntensity !== defaultIntensityForTexture(snap.components.texture);
     setState((prev) => ({
       ...prev,
       movieInfo: snap.movieInfo,

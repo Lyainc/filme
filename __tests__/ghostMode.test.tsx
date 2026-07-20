@@ -43,7 +43,7 @@ const FULL_MOVIE: MovieInfo = {
 
 const BASE: TicketComponents = {
   layout: 'minimal', chain: '', format: '', chainLabel: '', formatLabel: '',
-  texture: 'none', posterOpacity: 0.5, componentOpacity: 1, themeColor: '#FFFFFF',
+  texture: 'none', textureIntensity: 1, posterOpacity: 0.5, componentOpacity: 1, themeColor: '#FFFFFF',
   chainVisible: false, formatVisible: false, posterFit: 'cover',
 };
 

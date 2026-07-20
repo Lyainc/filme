@@ -149,7 +149,7 @@ export const Mood35mm = memo(function Mood35mm({ movieInfo: d, components, cropp
   return (
     <div style={{ position: 'absolute', inset: 0, color: FS_INK, background: FS_BASE, fontFamily: FONT_SANS, overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
       {/* frameInsetY(#449) — 위/아래 블러 레터박스 노출을 20~25px 보장(중앙 정렬은 기존 기본값). */}
-      <Poster src={croppedImageUrl} {...posterFitProps(components.posterFit, { letterboxBg: FS_BASE, frameInsetY: POSTER_FRAME_INSET_Y })} texture={components.texture} posterOpacity={components.posterOpacity} />
+      <Poster src={croppedImageUrl} {...posterFitProps(components.posterFit, { letterboxBg: FS_BASE, frameInsetY: POSTER_FRAME_INSET_Y })} texture={components.texture} textureIntensity={components.textureIntensity} posterOpacity={components.posterOpacity} />
 
       {/* #219 componentOpacity: 필름 스트립·스탬프·캡션 등 크롬 전체를 함께 페이드. */}
       <div style={{ position: 'absolute', inset: 0, opacity: componentOpacity }}>

@@ -1,0 +1,157 @@
+---
+# Output conforms to thinking-tools/reference/common-schema.md
+skill: build-spec
+schema_version: 1
+version: 4.0.1
+generated: 2026-07-21
+input:
+  target: 포스터 후가공(Texture) 강도조절·세련화 재디자인 (#434 고도화)
+  options: []
+output:
+  type: spec
+  structure: templates/SEED_SPEC.yaml
+
+# build-spec extensions
+spec_version: 1
+created: 2026-07-21
+target: 포스터 후가공(Texture) 강도조절·세련화 재디자인 (#434 고도화)
+domain: tech
+brownfield: true
+refine_generation: 0
+
+goal:
+  statement: >
+    포스터 후가공(Texture)에 texture당 강도 슬라이더(0~100%)를 신설하고 8종 오버레이를
+    다층·세련화해, "굳이 안 써도 되는" 단일 프리셋 on/off에서 사진앱 필터처럼 강도를
+    조절하는 세련된 마감으로 바꿔 사용자가 실제로 쓰고 싶게 만든다.
+  clarity_score: 0.85
+
+constraints:
+  - id: c1
+    type: technical
+    description: >
+      [최우선 선결제약] 오버레이가 저장물에 담기도록 캡처 경로를 재설계한다. 현재
+      TextureOverlay는 `data-poster-root` div 안의 gradient <div>인데, captureToImage.ts:320이
+      html-to-image에서 poster-root 서브트리를 통째로 제외하고 canvas 2D로 포스터 <img>만
+      다시 그린다(compositeRaster). 오버레이 div는 <img>도 blob raster도 아니라 캡처 어느
+      경로에도 안 실려 **저장물에 sheen/blend가 통째로 빠질 가능성이 높다**(미리보기에만 보임).
+      sheen/grain/gloss를 compositeRaster canvas 합성 단계에 태우거나 poster-root 밖 캡처
+      포함 레이어로 옮겨야 강도축·세련화가 의미를 갖는다.
+    hard: true
+    rationale: 성공기준 ac1(미리보기=저장물 일치)의 전제 — 이걸 못 풀면 나머지 작업이 전부 미리보기 전용 장식이 된다.
+  - id: c2
+    type: technical
+    description: >
+      export는 html-to-image 단일 프레임 캡처라 tilt/포인터 반응 동적 홀로그램(gibo·poke-holo류)은
+      채택하지 않는다. 화려한 홀로/포일 룩도 정적 프레임으로만 표현한다.
+    hard: true
+    rationale: 애니메이션은 저장물에 안 담겨 미리보기만 화려하고 결과물이 달라지는 혼란을 낳는다(#434 확정).
+  - id: c3
+    type: technical
+    description: >
+      강도 슬라이더는 texture당 단일 슬라이더 1개이며, 그 하나가 무지개·글로스·그레인 등
+      다층 요소의 alpha/세기를 함께 비례 스케일한다. 강도=0은 무가공(original)과 픽셀 동일해야 한다.
+    hard: true
+    rationale: 오빠 확정 UX 모델(사진앱 필터의 단일 '강도'와 동일). 0=무가공 연속성은 ac2의 하한.
+  - id: c4
+    type: technical
+    description: >
+      mix-blend-mode와 SVG feTurbulence(fractalNoise)가 canvas 캡처(특히 iOS Safari)에서
+      미리보기와 동일하게 렌더되는지 각 texture×강도로 실저장 대조한다. 캡처에서 갈리는 표현은
+      canvas에서 재현 가능한 형태로 제한한다(blend-mode/외부 필터는 프리뷰↔캡처 divergence 상습 구간).
+    hard: true
+    rationale: c1과 짝 — 캡처 경로에 태우더라도 canvas 렌더 정합이 안 맞으면 ac1이 다시 무너진다.
+  - id: c5
+    type: technical
+    description: >
+      6개 무드가 공통 Poster를 공유하므로 한 곳 수정이 전 무드에 반영된다. soft-light 저강도
+      전환 시 어두운 포스터에서 효과가 안 보일 수 있어 texture별 기본 밝기·강도를 재튜닝하고,
+      밝은/어두운 포스터 × 무드 배경 대비 전 조합을 검증한다. 오버레이는 포스터 픽셀에만
+      걸리도록 마스킹(현재 포스터 밖까지 번질 여지 있음, #434 mask 계획 유지).
+    hard: false
+    rationale: 세련화가 특정 포스터·무드에서만 예쁘고 다른 데서 깨지면 ac4 실패.
+  - id: c6
+    type: resource
+    description: >
+      새 상태축 `textureIntensity`를 신설한다 — 기존 posterOpacity(밝기)·componentOpacity와
+      별개 축. undo/redo 스냅샷(#356 prevComponents)·임시저장 복원에 포함하고, texture 전환 시
+      강도 처리 규칙(각 texture가 자기 강도를 기억할지, 공용 값을 유지할지, 전환 시 그 texture
+      기본 강도로 리셋할지)을 defaultBrightnessForTexture와 같은 패턴으로 정의한다.
+    hard: true
+    rationale: 상태축 누락 시 undo·임시저장에서 강도가 유실되고 밝기축과 오염된다(#146·#356 선례).
+  - id: c7
+    type: technical
+    description: >
+      신규 텍스처/축 추가 지점은 세 곳으로 닫혀 있다 — TEXTURE_OPTIONS(constants.ts) +
+      TextureOverlay.overlays(_shared.tsx) + FULL_BRIGHTNESS_TEXTURES/TEXTURE_FILTERS.
+      강도축·다층 표현은 이 구조를 확장하되 "손댈 곳 3군데" 폐쇄성을 유지한다.
+    hard: false
+    rationale: 기존 확장 계약을 깨면 이후 texture 추가마다 산발적 코드 수정이 필요해진다.
+
+success_criteria:
+  - id: ac1
+    description: 각 texture×강도가 html-to-image 저장물(특히 iOS Safari)에서 미리보기와 동일하게 렌더된다.
+    verifiable: true
+    measurable_via: 8종 × 강도 대표값(0/50/100)을 실제 저장→미리보기와 픽셀/육안 대조 (iOS Safari 포함, #439·#439 연계)
+  - id: ac2
+    description: 강도 슬라이더 0→100이 뚝뚝 끊기지 않고 '없음→은은→강함'으로 매끄럽게 연속 변한다. 0은 완전 무가공과 동일.
+    verifiable: true
+    measurable_via: 슬라이더 드래그 시 실시간 프리뷰 육안 확인 + 강도=0일 때 original과 렌더 동일성 확인
+  - id: ac3
+    description: 슬라이더를 안 만져도 각 texture 기본 강도가 어색하지 않고 바로 쓸 만하다(현재 '어색함'의 해소).
+    verifiable: true
+    measurable_via: 8종 기본값 상태 육안 리뷰 — 대표 포스터에서 첫인상이 예쁜지
+  - id: ac4
+    description: 밝은/어두운 포스터 × 6무드 배경 전 조합에서 효과가 깨지거나 안 보이는 경우가 없다.
+    verifiable: true
+    measurable_via: (밝은/어두운 포스터 2종) × (6무드) × (대표 texture) 매트릭스 육안 대조
+  - id: ac5
+    description: textureIntensity가 undo/redo·임시저장 복원에서 밝기축과 독립적으로 원자 복원된다.
+    verifiable: true
+    measurable_via: 강도 조작→texture 전환→undo 시퀀스의 상호작용 테스트(#356·#146 회귀 패턴 확장)
+
+# 세련화 방향 — texture별 지향 매핑(오빠 확정: 세 방향 모두 채택, texture별로 지향이 다름)
+refinement_directions:
+  premium_subtle:   # 은은한 프리미엄 마감 — 낮은 alpha + soft-light + mask
+    - none        # 일반 인화지(유광): 좁고 은은한 정적 글로스 하이라이트 한 겹
+    - scodix      # 부분 코팅/엠보싱: overlay 순화
+  holo_foil:        # 화려한 홀로그램/포일 — 다층 그라디언트 + 은은한 색수차, 정적 프레임
+    - hologram    # color-dodge(과노출 주범) → soft-light/overlay 교체 + opacity 0.32→~0.18
+    - metal       # hard-light → soft-light 계열 순화
+  physical_material: # 물리적 재질 사실성 — SVG feTurbulence(fractalNoise) 결
+    - artpaper    # 반복 linear-gradient → feTurbulence 저강도 종이 결
+    - vintage     # 빛바랜 종이 결
+    - newspaper   # 거친 망점/흑백 결
+
+context:
+  existing_stack:
+    - Next.js 16 (Pages Router), React 19, TypeScript
+    - "포스터 렌더: DOM + CSS filter + mix-blend-mode + gradient 오버레이 (텍스처 이미지 에셋 미사용)"
+    - "export: html-to-image 단일 프레임 캡처 + canvas 2D 포스터 합성(compositeRaster, #439)"
+  dependencies:
+    - "html-to-image: 단일 프레임 캡처 — 동적 효과 불가(c2), poster-root 서브트리 제외(c1)"
+    - "SVG filter feTurbulence: 벡터라 캡처·용량 유리하나 canvas 캡처 정합 실측 필요(c4)"
+  integration_points:
+    - "src/components/moods/_shared.tsx — Poster / TextureOverlay(overlays 맵) / TEXTURE_FILTERS / FULL_BRIGHTNESS_TEXTURES / defaultBrightnessForTexture"
+    - "src/utils/constants.ts — TEXTURE_OPTIONS(8종)"
+    - "src/utils/captureToImage.ts — compositeRaster / data-poster-root 제외 로직(line ~320) ← c1 재설계 핵심"
+    - "src/hooks/usePhototicket.ts — components 상태·posterOpacity·undo/redo 스냅샷 ← c6 textureIntensity 신설"
+    - "src/components/v2/DesktopDesignPanel.tsx · DesignRail.tsx — '후보정' 섹션/rail·기존 BrightnessSlider ← 강도 슬라이더 UI 진입점"
+    - "src/types/index.ts — components 타입(TicketComponents)에 textureIntensity 추가"
+
+ambiguity:
+  overall: 0.175
+  gate_passed: true
+
+clarity_breakdown:
+  goal: 0.85
+  constraint: 0.80
+  success: 0.82
+  context: 0.82
+
+metadata:
+  interview_rounds: 2
+  questions_asked: 4
+  generated_by: thinking-tools/build-spec
+  source_session: "#434 고도화 세션 — 코드 사전조사(캡처 함정 확인) + 4문항 인터뷰"
+---
