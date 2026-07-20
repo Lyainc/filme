@@ -38,7 +38,7 @@ describe.each([
     expect(html).toContain('<span>MADE WITH FILME · 35MM</span>');
   });
 
-  test('FilmStripBand 컨테이너 기본 폰트는 FONT_LCD(DSEG7)', () => {
+  test('FilmStripBand 컨테이너 기본 폰트는 FONT_LCD(Share Tech Mono)', () => {
     const html = markup();
     expect(html).toContain('font-family:var(--font-lcd)');
   });

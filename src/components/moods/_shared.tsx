@@ -1119,7 +1119,7 @@ export const FilmStripBand = memo(function FilmStripBand({
   const frameNums = Array.from({ length: N }, (_, i) => {
     const f = 236 + i;
     const label = f % 2 === 0 ? String(f >> 1) : `${f >> 1}A`;
-    return <span key={i} style={{ fontFamily: FONT_LCD, fontSize: 9, fontWeight: 700, letterSpacing: 0.5, color: accent, flexShrink: 0 }}>{label}</span>;
+    return <span key={i} style={{ fontFamily: FONT_LCD, fontSize: 9, fontWeight: 400, letterSpacing: 0.5, color: accent, flexShrink: 0 }}>{label}</span>;
   });
   let inkBar = true;
   const kkBars = KK_PATTERN.map((w, i) => {
@@ -1157,7 +1157,7 @@ export const FilmStripBand = memo(function FilmStripBand({
       <div style={frameStyle}>{frameNums}</div>
       <div style={kkStyle}>
         <div style={{ display: 'flex', alignItems: 'flex-end' }}>{kkBars}</div>
-        <span style={{ fontFamily: FONT_LCD, fontSize: 10, fontWeight: 700, letterSpacing: 1.6, color: accent }}>KL 23 4587 1234+05</span>
+        <span style={{ fontFamily: FONT_LCD, fontSize: 10, fontWeight: 400, letterSpacing: 1.6, color: accent }}>KL 23 4587 1234+05</span>
       </div>
       <div style={edgeStyle}>{cells}</div>
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.5, mixBlendMode: 'overlay', backgroundImage: 'repeating-linear-gradient(90deg, rgba(255,255,255,.06) 0 1px, rgba(0,0,0,.07) 1px 3px), repeating-linear-gradient(0deg, rgba(255,255,255,.04) 0 1px, rgba(0,0,0,.05) 1px 3px)' }} />
