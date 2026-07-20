@@ -3,6 +3,7 @@ import { put } from '@vercel/blob';
 import { clientIp, decodeAllowedImage } from '@/utils/ocrRoute';
 import { MAX_BYTES } from '@/utils/ocrConstants';
 import { checkTicketRateLimit } from '@/utils/ratelimit';
+import { buildOgImage } from '@/utils/ogImageBuild';
 
 /**
  * 완성 티켓 JPEG를 base64 JSON으로 받는다(OCR 라우트와 동일 규약). 캡처 결과는
@@ -26,16 +27,23 @@ function sanitizeText(value: unknown, maxLen: number): string {
  * 인증(Blob 토큰). 저렴한 검증을 먼저 둬 토큰 없이도 잘못된 입력을 거부하고, 남용은 Blob
  * 쓰기 전에 막는다. **절대 throw하지 않는다** — 모든 실패를 status + { error }로 돌려준다.
  *
- * 이미지(`t/<id>.jpg`)와 메타(`t/<id>.json`)를 함께 저장한다. 메타는 /t/[id] 랜딩의
- * og:title 개인화에 쓰인다 — Blob public URL은 store suffix 때문에 id만으로 알 수 없어
- * SSR이 list로 조회하는데, 그때 title을 함께 읽어 og를 채운다.
+ * 이미지(`t/<id>.jpg`), 메타(`t/<id>.json`), 가로 OG 카드(`t/<id>.og.jpg`, #438)를 함께
+ * 저장한다. 메타는 /t/[id] 랜딩의 og:title/description 개인화에 쓰인다 — Blob public URL은
+ * store suffix 때문에 id만으로 알 수 없어 SSR이 list로 조회하는데, 그때 title 등을 함께
+ * 읽어 og를 채운다.
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const body = req.body as { image?: unknown; title?: unknown; layout?: unknown } | undefined;
+  const body = req.body as {
+    image?: unknown;
+    title?: unknown;
+    titleOg?: unknown;
+    releaseDate?: unknown;
+    layout?: unknown;
+  } | undefined;
   const image = typeof body?.image === 'string' ? body.image : '';
   if (!image) {
     return res.status(400).json({ error: 'image (base64) is required' });
@@ -67,16 +75,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const id = crypto.randomUUID();
   const title = sanitizeText(body?.title, 200);
+  const titleOg = sanitizeText(body?.titleOg, 200);
+  const releaseDate = sanitizeText(body?.releaseDate, 32);
   const layout = sanitizeText(body?.layout, 32);
 
   try {
-    const meta = JSON.stringify({ title, layout, createdAt: new Date().toISOString() });
+    const meta = JSON.stringify({ title, titleOg, releaseDate, layout, createdAt: new Date().toISOString() });
     // 이미지 먼저 — 메타 저장이 실패해도 이미지(og:image 본체)는 남아 링크가 동작한다.
     const blob = await put(`t/${id}.jpg`, Buffer.from(decoded), {
       access: 'public',
       contentType: 'image/jpeg',
       addRandomSuffix: false,
     });
+    // 가로 OG 카드(#438) — og:image의 본체(t/[id].jpg)와 링크 동작에 필수가 아니므로 실패해도
+    // 전체 발급을 막지 않는다(t/[id].tsx가 og.jpg 없으면 원본 세로 JPG로 폴백). 별도 try로
+    // 격리해 여기서 던져도 바깥 catch(502)로 새지 않게 한다.
+    try {
+      const ogImage = await buildOgImage(Buffer.from(decoded));
+      await put(`t/${id}.og.jpg`, ogImage, {
+        access: 'public',
+        contentType: 'image/jpeg',
+        addRandomSuffix: false,
+      });
+    } catch (err) {
+      console.error('[api/ticket] OG image generation failed, falling back to portrait og:image:', err);
+    }
     await put(`t/${id}.json`, meta, {
       access: 'public',
       contentType: 'application/json',
