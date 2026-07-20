@@ -1,3 +1,5 @@
+import { POSTER_EDGE_FEATHER, posterFeatherAxes } from './posterFeather';
+
 interface CaptureOptions {
   width: number;
   height: number;
@@ -216,8 +218,48 @@ function compositeRaster(
       ctx.drawImage(img, dx, dy, dw, dh);
     }
   } else {
-    ctx.filter = filterStr ? scaleFilterPx(filterStr, pixelRatio) : 'none';
-    ctx.drawImage(img, dx, dy, dw, dh);
+    const scaled = filterStr ? scaleFilterPx(filterStr, pixelRatio) : 'none';
+    // 전경 포스터 가장자리 페더(#459) — contain 레터박스 축의 outer feather px를 알파로 흘려
+    // 뒤의 블러 배경(먼저 그려진 data-poster-bg)과 잇는다. 프리뷰의 CSS mask-image와 동일 씸
+    // (posterFeatherAxes 공유)·동일 세기. canvas destination-in 알파라 iOS의 ctx.filter blur
+    // 함정(#439)과 무관하다. 좌우 꽉 차는 축(insetX=0)은 페더 안 걸어 무손실 유지(#439).
+    const axes = img.dataset.role === 'poster' && fit === 'contain'
+      ? posterFeatherAxes(bw, bh, sw / sh)
+      : { x: false, y: false };
+    if (axes.x || axes.y) {
+      const F = POSTER_EDGE_FEATHER * pixelRatio;
+      const tw = Math.max(1, Math.round(dw));
+      const th = Math.max(1, Math.round(dh));
+      const tmp = document.createElement('canvas');
+      tmp.width = tw;
+      tmp.height = th;
+      const tctx = tmp.getContext('2d');
+      if (tctx) {
+        // 색보정은 tmp에 그릴 때 적용(전경 포스터 filter엔 blur 없음). 그다음 destination-in으로
+        // 가장자리 알파만 깎고, 메인엔 filter 없이 1:1로 얹는다.
+        tctx.filter = scaled;
+        tctx.drawImage(img, 0, 0, tw, th);
+        tctx.filter = 'none';
+        tctx.globalCompositeOperation = 'destination-in';
+        const span = axes.y ? th : tw;
+        const grad = axes.y ? tctx.createLinearGradient(0, 0, 0, th) : tctx.createLinearGradient(0, 0, tw, 0);
+        const f = Math.min(F, span / 2) / span;
+        grad.addColorStop(0, 'rgba(0,0,0,0)');
+        grad.addColorStop(f, '#000');
+        grad.addColorStop(1 - f, '#000');
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        tctx.fillStyle = grad;
+        tctx.fillRect(0, 0, tw, th);
+        ctx.filter = 'none';
+        ctx.drawImage(tmp, dx, dy, dw, dh);
+      } else {
+        ctx.filter = scaled;
+        ctx.drawImage(img, dx, dy, dw, dh);
+      }
+    } else {
+      ctx.filter = scaled;
+      ctx.drawImage(img, dx, dy, dw, dh);
+    }
   }
   ctx.restore();
 }

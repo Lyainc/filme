@@ -1,7 +1,8 @@
-import { CSSProperties, Fragment, ReactNode, memo, useEffect, useMemo, useState } from 'react';
+import { CSSProperties, Fragment, ReactNode, memo, useEffect, useMemo, useRef, useState } from 'react';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 import { FIELD_LABELS, STAMP_LABELS, isStampTarget, type SheetTarget } from '@/constants/fields';
 import { formatDate } from '@/utils/dateFormat';
+import { posterFeatherMask } from '@/utils/posterFeather';
 import { EyeIcon } from '@/components/ui/VisibilityCheckbox';
 
 export interface MoodProps {
@@ -652,6 +653,31 @@ export const Poster = memo(function Poster({
   const baseFilter = TEXTURE_FILTERS[texture] ?? PRINT_SIM;
   const filter = `${baseFilter} brightness(${opacity})`;
 
+  // 전경 포스터 가장자리 페더(#459) — contain 레터박스 씸을 뒤의 블러 배경과 부드럽게 잇는다.
+  // 씸 위치는 슬롯 실크기 + 포스터 자연 종횡비로만 정해지므로 클라이언트에서 측정한다. 측정 전
+  // (SSR/첫 페인트)엔 마스크 없이 오늘과 동일 → SSR 마크업 불변(기존 렌더 스냅샷 테스트 보존).
+  // export는 이 CSS 마스크가 아니라 captureToImage.compositeRaster가 canvas로 같은 씸을 다시 그린다
+  // (포스터 서브트리는 html-to-image에서 제외되므로, #439). 두 경로가 posterFeather 헬퍼를 공유해 일치.
+  const posterRef = useRef<HTMLImageElement>(null);
+  const [boxSize, setBoxSize] = useState<{ w: number; h: number } | null>(null);
+  const natAspect = useNaturalAspect(src, fit === 'contain');
+  useEffect(() => {
+    const el = posterRef.current;
+    if (fit !== 'contain' || !el || typeof ResizeObserver === 'undefined') {
+      setBoxSize(null);
+      return;
+    }
+    const measure = () => setBoxSize({ w: el.offsetWidth, h: el.offsetHeight });
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [fit, src]);
+  const featherMask =
+    fit === 'contain' && boxSize && natAspect
+      ? posterFeatherMask(boxSize.w, boxSize.h, natAspect)
+      : undefined;
+
   return (
     <div
       aria-hidden="true"
@@ -694,6 +720,7 @@ export const Poster = memo(function Poster({
           div(inset은 항상 신뢰 가능)가 맡고, img는 그 안에서 기존처럼 inset:0+100%로 채운다. */}
       <div style={{ position: 'absolute', top: fit === 'contain' ? frameInsetY : 0, bottom: fit === 'contain' ? frameInsetY : 0, left: 0, right: 0 }}>
         <img
+          ref={posterRef}
           src={src}
           alt=""
           data-role="poster"
@@ -705,6 +732,7 @@ export const Poster = memo(function Poster({
             objectFit: fit,
             objectPosition: align === 'top' ? '50% 0%' : '50% 50%',
             filter,
+            ...(featherMask ? { maskImage: featherMask, WebkitMaskImage: featherMask } : {}),
           }}
           draggable={false}
           crossOrigin="anonymous"
