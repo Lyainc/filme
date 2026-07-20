@@ -179,7 +179,7 @@ export function ResultPanel({
       try {
         // 공유용 블롭은 다운로드(pixelRatio 2·q0.95)보다 작게 캡처한다(#194). 이 JPEG은 OG
         // 카드·랜딩 썸네일로만 쓰여 작게 표시되므로 1920×2954 풀해상도가 불필요 — pixelRatio 1
-        // (960×1477) + q0.82로 ~2MB→~0.5MB. Blob 저장·Fast Origin Transfer·데이터 전송이 그만큼
+        // (960×1534) + q0.82로 ~2MB→~0.5MB. Blob 저장·Fast Origin Transfer·데이터 전송이 그만큼
         // 줄어 Hobby 한도 헤드룸을 ~3~4배 늘린다. 다운로드/네이티브 공유 경로는 풀해상도 유지.
         dataUrl = await captureNodeToJpeg(node, {
           filename: `phototicket_${layout.id}.jpg`,
