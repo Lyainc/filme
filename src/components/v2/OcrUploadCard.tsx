@@ -33,6 +33,9 @@ export interface OcrUploadCardProps {
   /** 진입 아이콘/문구 분기(#424) — 'landing'(기본)은 위 드롭존을 가리키는 화살표가 자연스럽지만,
    * 'drawer'(FieldDrawer 상단 슬롯)엔 가리킬 드롭존이 없어 화살표를 빼고 문구도 짧게 줄인다. */
   context?: 'landing' | 'drawer';
+  /** KOBIS 무매칭/다중매칭(#445) — 제목 검색 UI를 직접 열 수 있는 셸에서 넘긴다. 안 넘기면
+   * 기존 안내 토스트로 fallback(예: 모바일 랜딩— 포스터 업로드 전이라 열 티켓/필드 UI가 없다). */
+  onNeedManualTitle?: () => void;
 }
 
 function ScanIcon({ size = 24 }: { size?: number }) {
@@ -53,6 +56,7 @@ export function OcrUploadCard({
   ocrEpochRef,
   className = '',
   context = 'landing',
+  onNeedManualTitle,
 }: OcrUploadCardProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -143,7 +147,8 @@ export function OcrUploadCard({
         if (epoch !== ocrEpochRef.current) return;
         setInfo(kobisInfo);
         if (!kobisInfo.titleOg && !kobisInfo.actors) {
-          showToast('영화 제목을 확인 후 검색해 주세요.');
+          if (onNeedManualTitle) onNeedManualTitle();
+          else showToast('영화 제목을 확인 후 검색해 주세요.');
         }
       });
     }
@@ -192,7 +197,6 @@ export function OcrUploadCard({
       if (labels.length > 0 && setComponents) {
         prevComponents = prev;
         setComponents(next);
-        showToast(`${labels.join(' · ')} 스탬프를 채웠어요. 로고 이미지는 아래 Theater에서 올릴 수 있어요.`);
       }
 
       const direct: Partial<MovieInfo> = {};

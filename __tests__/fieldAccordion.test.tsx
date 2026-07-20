@@ -8,18 +8,26 @@
  * Harness가 usePhototicket()으로 실제 photo를 만들어 넘긴다(designRail/desktopDesignPanel 미러).
  * 모듈 mock 없음. photo 상태는 DOM probe로 관찰. localStorage는 매 테스트 전후 clear.
  */
+import { useState } from 'react';
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
 import { render, screen, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { FieldAccordion } from '@/components/v2/FieldAccordion';
+import type { SheetTarget } from '@/constants/fields';
 
 function Harness() {
   const photo = usePhototicket();
+  // expanded는 #445부터 부모가 소유 — 여기서 DesktopStudioShell과 동형으로 모사.
+  const [expanded, setExpanded] = useState<SheetTarget | null>(null);
   return (
     <>
       <div data-testid="seat">{photo.state.movieInfo.seat}</div>
-      <FieldAccordion photo={photo} />
+      <FieldAccordion
+        photo={photo}
+        expanded={expanded}
+        onToggle={(t) => setExpanded((cur) => (cur === t ? null : t))}
+      />
     </>
   );
 }
