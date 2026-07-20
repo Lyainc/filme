@@ -2,7 +2,7 @@ import { CSSProperties, Fragment, ReactNode, memo, useEffect, useMemo, useRef, u
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 import { FIELD_LABELS, STAMP_LABELS, isStampTarget, type SheetTarget } from '@/constants/fields';
 import { formatDate } from '@/utils/dateFormat';
-import { posterFeatherMask } from '@/utils/posterFeather';
+import { posterContainRect, posterFeatherMask } from '@/utils/posterFeather';
 import { EyeIcon } from '@/components/ui/VisibilityCheckbox';
 
 export interface MoodProps {
@@ -592,6 +592,13 @@ interface PosterProps {
    * blur 배경(data-poster-bg)은 이 인셋과 무관하게 항상 inset:0으로 캔버스 전체를 채운다.
    */
   frameInsetY?: number;
+  /**
+   * 상단 레터박스 밴드 실측 높이(frameInsetY + 자연비율 여백, px) 리포트 콜백(#461). Poster 내부의
+   * boxSize/natAspect 측정 결과를 무드가 그대로 재사용해 밴드 구간에만 톤 정합 오버레이를 얹을 수
+   * 있게 한다 — 무드가 같은 측정을 중복 구현하지 않도록. contain+중앙 정렬이 아니면(또는 측정 전)
+   * 0을 리포트한다. 상단만 리포트(align='top'이면 레터박스가 전부 하단이라 0).
+   */
+  onTopBandHeight?: (px: number) => void;
 }
 
 /**
@@ -643,6 +650,7 @@ export const Poster = memo(function Poster({
   posterOpacity,
   align = 'center',
   frameInsetY = 0,
+  onTopBandHeight,
 }: PosterProps) {
   // 밝기(posterOpacity)를 texture와 분리해 포스터 <img>에 직접 합성한다. 이전엔
   // TextureOverlay의 검은 dim 레이어에서만 적용돼 original/vintage/newspaper에선
@@ -674,6 +682,17 @@ export const Poster = memo(function Poster({
     ro.observe(el);
     return () => ro.disconnect();
   }, [fit, src]);
+  // 상단 밴드 실측 리포트(#461) — boxSize/natAspect가 갱신될 때마다 무드에 재계산해 넘긴다.
+  // align='top'은 레터박스가 전부 하단에 몰려 상단 밴드가 없으므로 항상 0.
+  useEffect(() => {
+    if (!onTopBandHeight) return;
+    if (fit === 'contain' && align !== 'top' && boxSize && natAspect) {
+      const { insetY } = posterContainRect(boxSize.w, boxSize.h, natAspect);
+      onTopBandHeight(frameInsetY + insetY);
+    } else {
+      onTopBandHeight(0);
+    }
+  }, [onTopBandHeight, fit, align, boxSize, natAspect, frameInsetY]);
   // align='top'(objectPosition '50% 0%')이면 posY=0 → posterFeatherMask가 세로 페더를 스킵한다
   // (컨텐츠가 상단에 flush라 대칭 페더가 진짜 픽셀을 잘라냄, PR #460 P1). export도 동일 py를 쓴다.
   const featherMask =
@@ -745,6 +764,44 @@ export const Poster = memo(function Poster({
     </div>
   );
 });
+
+/**
+ * 상단 레터박스 밴드 톤 정합 색(#461). contain 포스터의 대칭 레터박스 위에 무드 시인성 스크림이
+ * 비대칭(하단 진함·상단 옅음)으로 얹혀 상단 블러 밴드만 도드라지는 문제 — 스크림 자체를 대칭화(상단을
+ * 하단만큼 진하게)하면 타이틀 블록 위 포스터까지 과다크닝되므로, 별도의 밴드 전용 오버레이(TopBandTone)로
+ * 상단 밴드 구간에만 이 톤을 얹어 하단이 진한 스크림에 묻히는 정도로 맞춘다.
+ *
+ * ponytail: 실기기 육안 기준 상수 — 이미 얹힌 무드 스크림과 이 오버레이가 겹친 최종 합성 결과는
+ * 알파 합성이라 무드마다 픽셀이 다르고, 계산이 아니라 시각으로 맞추는 값이다. 대조 시 어긋나면
+ * 이 알파(0.5)만 조정.
+ */
+export function letterboxToneMatch(inkIsDark: boolean): string {
+  return inkIsDark ? 'rgba(245,240,232,0.5)' : 'rgba(0,0,0,0.5)';
+}
+
+/**
+ * 상단 레터박스 밴드 톤 정합 오버레이(#461) — Poster의 onTopBandHeight로 리포트된 실측 높이 구간에만
+ * tone에서 투명으로 흐르는 그라데이션을 얹는다. heightPx<=0(레터박스 없음/측정 전)이면 렌더 안 함 —
+ * SSR/첫 페인트엔 오늘과 동일(#459 페더와 동일 원칙, 렌더 스냅샷 테스트 보존).
+ */
+export function TopBandTone({ heightPx, tone }: { heightPx: number; tone: string }) {
+  if (heightPx <= 0) return null;
+  return (
+    <div
+      aria-hidden="true"
+      data-letterbox-tone="true"
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: heightPx,
+        background: `linear-gradient(180deg, ${tone} 0%, transparent 100%)`,
+        pointerEvents: 'none',
+      }}
+    />
+  );
+}
 
 // 텍스처별 sheen(하이라이트) 오버레이만 담당한다. dim(밝기)은 Poster의 <img> filter로
 // 분리됐으므로 여기선 검은 레이어를 두지 않는다(#139 ①).

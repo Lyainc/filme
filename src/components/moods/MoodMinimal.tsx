@@ -1,4 +1,4 @@
-import { CSSProperties, ReactNode, memo } from 'react';
+import { CSSProperties, ReactNode, memo, useState } from 'react';
 import type { SheetTarget } from '@/constants/fields';
 import {
   ChainStamp,
@@ -8,6 +8,7 @@ import {
   FONT_KR,
   FONT_SANS,
   FormatStamp,
+  letterboxToneMatch,
   MoodProps,
   MoodWordmark,
   Poster,
@@ -22,6 +23,7 @@ import {
   resolveTicketData,
   showFieldGhost,
   stampWillRender,
+  TopBandTone,
   truncateActors,
   useFontsReady,
   type FieldGhostState,
@@ -164,6 +166,10 @@ export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components,
   // 이질감을 줄인다. frameInsetY로 위/아래 블러 레터박스 노출을 20~25px 보장(#449).
   const posterBg = inkIsDark ? '#f5f0e8' : '#0a0a0a';
 
+  // 상단 레터박스 밴드 톤 정합(#461) — 스탬프 유무와 무관하게(topScrim은 hasTopStamp일 때만 렌더)
+  // 밴드 실측 높이에만 별도 오버레이로 하단 scrimGrad(0.94~0.97)에 가까운 톤을 보정한다.
+  const [topBandH, setTopBandH] = useState(0);
+
   return (
     <div style={{ position: 'absolute', inset: 0, color: ink, fontFamily: FONT_SANS, overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
       <Poster
@@ -171,11 +177,13 @@ export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components,
         {...posterFitProps(components.posterFit, { letterboxBg: posterBg, frameInsetY: POSTER_FRAME_INSET_Y })}
         texture={components.texture}
         posterOpacity={components.posterOpacity}
+        onTopBandHeight={setTopBandH}
       />
 
       {/* #219 componentOpacity: 포스터를 뺀 모든 오버레이를 함께 페이드. 자식이 전부 position:absolute라
           inset:0 래퍼가 루트를 그대로 채워 opacity 1에서 좌표·페인트 순서가 동일(no-op). */}
       <div style={{ position: 'absolute', inset: 0, opacity: componentOpacity }}>
+      <TopBandTone heightPx={topBandH} tone={letterboxToneMatch(inkIsDark)} />
 
       {/* Top — chain + format paired (같은 위상이라 인접 배치) */}
       {hasTopStamp && (
