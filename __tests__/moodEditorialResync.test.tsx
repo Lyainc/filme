@@ -126,4 +126,11 @@ describe('MoodEditorial 마스터 resync (#281)', () => {
     const html = markup();
     expect(html).toMatch(/réalisé avec<\/span><span aria-label="FILME"/);
   });
+
+  // 워드마크 "me" 포인트 컬러(#446) — Editorial 호출부도 stub과 동일하게 WORDMARK_ACCENT(#B0423F) 전달.
+  test('워드마크 "me" + dot tittle만 accent 색(#446)', () => {
+    const html = markup();
+    expect(html).toContain('l<span style="color:#B0423F">me</span>');
+    expect(html).toContain('background:#B0423F');
+  });
 });

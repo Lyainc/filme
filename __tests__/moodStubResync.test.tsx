@@ -117,4 +117,37 @@ describe('MoodStub 마스터 resync (#281)', () => {
     const html = markup();
     expect(html).toMatch(/made with<\/span><span aria-label="FILME"/);
   });
+
+  // stub 톤업(#446) — 본문 좌우 패딩 PAD_X(40→56)이 패딩·티커 음수마진 두 곳에서 어긋나지 않는지 고정.
+  test('본문 패딩 56px — 티커 음수마진과 공유(#446)', () => {
+    const html = markup();
+    expect(html).toContain('padding:22px 56px 26px');
+    expect(html).toContain('margin:-22px -56px 22px');
+  });
+
+  // 홀로그램 티커 4회 반복(#446) — 필드가 적어도 우측이 비지 않게, 상수 문구("Admit One")가
+  // 정확히 4번(Array.from({length:4}) 반복 횟수) 등장하는지로 반복 자체를 고정.
+  test('홀로그램 티커 4회 반복 — 우측 공백 방지(#446)', () => {
+    const html = markup();
+    const count = (html.match(/Admit One/g) || []).length;
+    expect(count).toBe(4);
+  });
+
+  // 워드마크 "me" 포인트 컬러(#446) — "me" 텍스트와 dot tittle만 WORDMARK_ACCENT(#B0423F)로,
+  // "f"·"l"·dotless-i는 잉크 그대로.
+  test('워드마크 "me" + dot tittle만 accent 색(#446)', () => {
+    const html = markup();
+    expect(html).toContain('l<span style="color:#B0423F">me</span>');
+    expect(html).toContain('background:#B0423F');
+  });
+
+  // stub 배우 truncate 상한 5(#446) — 5명까지는 원본 그대로, 6명째부터 "외 N명"으로 줄어드는지 경계 고정.
+  test('배우 truncate 상한 5 — 5명 원본 유지·6명째부터 truncate(#446)', () => {
+    const markupWithActors = (actors: string) =>
+      renderToStaticMarkup(
+        <MoodStub movieInfo={{ ...FULL_MOVIE, actors }} components={BASE} croppedImageUrl="blob:x" onField={() => {}} />
+      );
+    expect(markupWithActors('가, 나, 다, 라, 마')).toContain('가, 나, 다, 라, 마');
+    expect(markupWithActors('가, 나, 다, 라, 마, 바')).toContain('가, 나, 다, 라, 마 외 1명');
+  });
 });
