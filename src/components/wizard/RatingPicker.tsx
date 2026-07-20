@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Eyebrow } from '@/components/v2/Eyebrow';
 import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
 
 interface RatingPickerProps {
@@ -18,69 +19,71 @@ export default function RatingPicker({ value, onValueChange, visible, onVisibleC
     <div className="space-y-field">
       <VisibilityCheckbox checked={visible} onChange={onVisibleChange} label="평점" />
 
-      <div className={`flex items-center gap-4 ${visible ? '' : 'opacity-40'}`}>
-          <div
-            // -ml-2(#422): 별 버튼은 44px 탭타깃 안에 28px 별을 중앙정렬해 좌측에 8px 여백이 생기고,
-            // 노출 토글(VisibilityCheckbox)은 음수 마진으로 탭타깃만 넓혀 아이콘이 좌측에 그대로
-            // 붙는다 — 두 행의 좌측 시작선을 맞추려 그 8px만큼 별 그룹 전체를 당긴다(별 사이 gap엔
-            // 무영향, 이 div의 margin-left만 조정이라 input·분수 형제와의 gap-4도 그대로 유지).
-            className="-ml-2 flex gap-1.5"
-            onMouseLeave={() => setHover(0)}
-            role="radiogroup"
-            aria-label="별점"
-          >
-            {[1, 2, 3, 4, 5].map((star) => (
-              <button
-                key={star}
-                type="button"
-                role="radio"
-                aria-checked={value >= star}
-                onClick={(e) => onValueChange(computeRating(e, star))}
-                onMouseMove={(e) => setHover(computeRating(e, star))}
-                aria-label={`${star}점`}
-                data-touch="44"
-                className="relative inline-flex min-h-touch min-w-touch items-center justify-center"
-              >
-                <span className="relative inline-block h-7 w-7">
-                  <StarSVG className="absolute inset-0 text-fg-faint/40" />
-                  <span
-                    className="absolute inset-0 overflow-hidden"
-                    style={{
-                      width:
-                        starRating >= star
-                          ? '100%'
-                          : starRating >= star - 0.5
-                          ? '50%'
-                          : '0%',
-                    }}
-                  >
-                    <StarSVG className="text-accent" />
-                  </span>
+      <div className={`space-y-3 ${visible ? '' : 'opacity-40'}`}>
+        <div
+          // -ml-2(#422): 별 버튼은 44px 탭타깃 안에 28px 별을 중앙정렬해 좌측에 8px 여백이 생기고,
+          // 노출 토글(VisibilityCheckbox)은 음수 마진으로 탭타깃만 넓혀 아이콘이 좌측에 그대로
+          // 붙는다 — 두 행의 좌측 시작선을 맞추려 그 8px만큼 별 그룹 전체를 당긴다.
+          className="-ml-2 flex gap-1.5"
+          onMouseLeave={() => setHover(0)}
+          role="radiogroup"
+          aria-label="별점"
+        >
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              type="button"
+              role="radio"
+              aria-checked={value >= star}
+              onClick={(e) => onValueChange(computeRating(e, star))}
+              onMouseMove={(e) => setHover(computeRating(e, star))}
+              aria-label={`${star}점`}
+              data-touch="44"
+              className="relative inline-flex min-h-touch min-w-touch items-center justify-center"
+            >
+              <span className="relative inline-block h-7 w-7">
+                <StarSVG className="absolute inset-0 text-fg-faint/40" />
+                <span
+                  className="absolute inset-0 overflow-hidden"
+                  style={{
+                    width:
+                      starRating >= star
+                        ? '100%'
+                        : starRating >= star - 0.5
+                        ? '50%'
+                        : '0%',
+                  }}
+                >
+                  <StarSVG className="text-accent" />
                 </span>
-              </button>
-            ))}
-          </div>
-          <input
-            type="number"
-            min={0}
-            max={5}
-            step={0.1}
-            value={value || 0}
-            onChange={(e) => {
-              const raw = e.target.value;
-              // 지우는 중(raw==='')엔 커밋하지 않는다 — Number('')===0이라 그대로 두면
-              // 재입력 전 순간적으로 평점이 0으로 찍힌다(#190 nit, PR #409 claude-review).
-              if (raw === '') return;
-              const next = Number(raw);
-              if (!Number.isNaN(next)) onValueChange(Math.min(5, Math.max(0, next)));
-            }}
-            aria-label="평점 직접 입력 (0.1 단위)"
-            className="text-mono w-14 rounded-field border border-line bg-transparent px-1.5 py-1 text-[12px] text-fg outline-none focus:border-accent"
-          />
-          <span className="text-mono text-[12px] tracking-widest text-fg-muted">
-            {current.toFixed(1)} <span className="text-fg-faint">/ 5.0</span>
-          </span>
+              </span>
+            </button>
+          ))}
         </div>
+        <input
+          type="number"
+          min={0}
+          max={5}
+          step={0.1}
+          value={value || 0}
+          onChange={(e) => {
+            const raw = e.target.value;
+            // 지우는 중(raw==='')엔 커밋하지 않는다 — Number('')===0이라 그대로 두면
+            // 재입력 전 순간적으로 평점이 0으로 찍힌다(#190 nit, PR #409 claude-review).
+            if (raw === '') return;
+            const next = Number(raw);
+            if (!Number.isNaN(next)) onValueChange(Math.min(5, Math.max(0, next)));
+          }}
+          aria-label="평점 직접 입력 (0.1 단위)"
+          // 16px 미만이면 iOS Safari가 포커스 시 자동 줌인해 레이아웃이 틀어진다(#274) — FieldEditorBody의
+          // INPUT_CLS와 동일 톤(글래스 서피스·풀폭·16px)으로 통일(#435). RatingPicker→FieldEditorBody
+          // 순환 import를 피하려 리터럴을 중복하니, 톤을 바꿀 땐 두 곳을 같이 고칠 것.
+          className="text-mono w-full rounded-field border border-[var(--glass-border)] bg-[var(--glass-fill)] px-3.5 py-3 text-[16px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
+        />
+        <Eyebrow size={11}>
+          {current.toFixed(1)} <span className="text-fg-faint">/ 5.0</span>
+        </Eyebrow>
+      </div>
     </div>
   );
 }
