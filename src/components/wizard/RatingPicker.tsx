@@ -9,6 +9,8 @@ interface RatingPickerProps {
   onVisibleChange: (next: boolean) => void;
 }
 
+const STARS = [1, 2, 3, 4, 5];
+
 export default function RatingPicker({ value, onValueChange, visible, onVisibleChange }: RatingPickerProps) {
   const [hover, setHover] = useState(0);
   const current = hover || value || 0;
@@ -29,7 +31,7 @@ export default function RatingPicker({ value, onValueChange, visible, onVisibleC
           role="radiogroup"
           aria-label="별점"
         >
-          {[1, 2, 3, 4, 5].map((star) => (
+          {STARS.map((star) => (
             <button
               key={star}
               type="button"
@@ -80,8 +82,11 @@ export default function RatingPicker({ value, onValueChange, visible, onVisibleC
           // 순환 import를 피하려 리터럴을 중복하니, 톤을 바꿀 땐 두 곳을 같이 고칠 것.
           className="text-mono w-full rounded-field border border-[var(--glass-border)] bg-[var(--glass-fill)] px-3.5 py-3 text-[16px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
         />
-        <Eyebrow size={11}>
-          {current.toFixed(1)} <span className="text-fg-faint">/ 5.0</span>
+        {/* tone="faint" — FieldEditorBody.tsx의 다른 "현재값 미리보기" 캡션(L155 표기 칩·L187 검색결과
+            부제)과 같은 톤(claude-review PR #464 P2 nit). 분수 텍스트를 별도 span으로 두는 건 텍스트
+            노드를 갈라 회귀 테스트(getByText('3.3'))가 숫자만 단독으로 찾게 하기 위함. */}
+        <Eyebrow size={11} tone="faint">
+          {current.toFixed(1)} <span>/ 5.0</span>
         </Eyebrow>
       </div>
     </div>
