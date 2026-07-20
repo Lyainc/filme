@@ -12,6 +12,7 @@ import {
   MoodProps,
   MoodWordmark,
   Poster,
+  POSTER_LETTERBOX_BG,
   fieldPieces,
   fitFontSizeToWidth,
   gate,
@@ -151,13 +152,15 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
 
   return (
     <div style={{ position: 'absolute', inset: 0, background: PAPER, color: INK, fontFamily: FONT_SANS, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      {/* 상단 포스터 — 텍스트 없음. 분할 레이아웃이라 root가 아닌 이 영역에만 포스터 탭(#259). */}
-      <div style={{ flex: `0 0 ${POSTER_H}px`, position: 'relative', background: '#0a0a0a', overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
+      {/* 상단 포스터 — 텍스트 없음. 분할 레이아웃이라 root가 아닌 이 영역에만 포스터 탭(#259).
+          배경은 Poster의 letterboxBg가 칠하므로 래퍼 자체엔 안 둔다(nit poster-letterbox-bg, #440 —
+          editorial과 동일하게 죽은 스타일이던 래퍼 background 제거). */}
+      <div style={{ flex: `0 0 ${POSTER_H}px`, position: 'relative', overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
         {/* 가로 밴드(1.263)라 세로 포스터를 contain하면 좌우로 크게 벌어진다 — 다른 5무드와 같은
             posterFitProps 공통 정책을 태워 그 여백을 blur 포스터 배경으로 채운다(#440 레터박스
             정교화). 자연 간극이 이미 커 frameInsetY 최소 노출 보장은 불필요(editorial/35mm-landscape와
             동일 패턴). */}
-        <Poster src={croppedImageUrl} {...posterFitProps(components.posterFit, { letterboxBg: '#0a0a0a' })} texture={components.texture} posterOpacity={components.posterOpacity} />
+        <Poster src={croppedImageUrl} {...posterFitProps(components.posterFit, { letterboxBg: POSTER_LETTERBOX_BG })} texture={components.texture} posterOpacity={components.posterOpacity} />
       </div>
 
       {/* 절취선(점선) — 크림 밴드에 3px dashed, 반원 노치 없음(마스터 재동기화 #281). */}
