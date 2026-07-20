@@ -15,6 +15,7 @@ import { Poster, letterboxToneMatch } from '../src/components/moods/_shared';
 import { posterContainRect } from '../src/utils/posterFeather';
 import { MoodCriterion } from '../src/components/moods/MoodCriterion';
 import { MoodMinimal } from '../src/components/moods/MoodMinimal';
+import { Mood35mmLandscape } from '../src/components/moods/Mood35mmLandscape';
 import type { MovieInfo, TicketComponents } from '../src/types';
 
 // 슬롯 960×1433(≈0.670) — posterFeatherWiring.test.tsx·posterFeather.test.ts와 동일 고정값 재사용.
@@ -162,6 +163,48 @@ describe.each([
     await act(async () => {
       container = render(
         <Mood movieInfo={MOVIE} components={{ ...BASE, posterFit: 'cover' }} croppedImageUrl="blob:test" />
+      ).container;
+    });
+    await flush();
+    expect(bandToneEl(container)).toBeNull();
+  });
+});
+
+// 35mm-landscape는 frameInsetY를 안 쓰므로(자연 간극 의존, #461 goal) 밴드 높이가 insetY만이다
+// (Criterion/Minimal의 FRAME_INSET_Y=22 가산 없음).
+const EXPECTED_BAND_H_NO_INSET = posterContainRect(BOX_W, BOX_H, NAT_ASPECT).insetY;
+
+describe('#461 무드 배선 — 35mm-landscape 상단 밴드 톤 정합 오버레이(톤 고정)', () => {
+  test('contain(레터박스 있음) → 실측 높이로 오버레이가 렌더된다', async () => {
+    let container!: HTMLElement;
+    await act(async () => {
+      container = render(
+        <Mood35mmLandscape movieInfo={MOVIE} components={BASE} croppedImageUrl="blob:test" />
+      ).container;
+    });
+    await flush();
+    const el = bandToneEl(container);
+    expect(el).not.toBeNull();
+    expect(el!.style.height).toBe(`${EXPECTED_BAND_H_NO_INSET}px`);
+  });
+
+  // ink가 항상 밝은 FS_INK(크림) 고정이라 themeColor를 바꿔도 검정 톤(letterboxToneMatch(false))으로 고정.
+  test('테마 무관 검정 톤 고정', async () => {
+    let container!: HTMLElement;
+    await act(async () => {
+      container = render(
+        <Mood35mmLandscape movieInfo={MOVIE} components={{ ...BASE, themeColor: '#000000' }} croppedImageUrl="blob:test" />
+      ).container;
+    });
+    await flush();
+    expect(bandToneEl(container)!.style.background).toContain(letterboxToneMatch(false));
+  });
+
+  test("posterFit='cover' → 오버레이 없음(레터박스 자체가 없음)", async () => {
+    let container!: HTMLElement;
+    await act(async () => {
+      container = render(
+        <Mood35mmLandscape movieInfo={MOVIE} components={{ ...BASE, posterFit: 'cover' }} croppedImageUrl="blob:test" />
       ).container;
     });
     await flush();
