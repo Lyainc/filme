@@ -236,10 +236,12 @@ export function containsHangul(text: string): boolean {
 
 /**
  * BI 마스터 v2 워드마크(`v2/Wordmark.tsx`)의 무드-세이프 포팅(#386). 캡처 파이프라인은 전부 inline
- * style이라 Tailwind className(`text-accent` 등)을 못 쓰므로, dotless-i + 어센트 dot tittle만
- * 남기고 색은 무드가 이미 쓰는 단색 잉크로 통일(무드별 FILME 워터마크가 원래 단색이었던 것과 동일선상).
+ * style이라 Tailwind className(`text-accent` 등)을 못 쓰므로, dotless-i + 색은 prop으로 받는다.
+ * `accent` 생략 시 기존처럼 전체 단색(무드 잉크) 유지 — 전달하면 "me" + dot tittle만 그 색으로 칠해
+ * 실제 로고(`l<span className="text-accent">me</span>`)와 같은 포인트 컬러를 얹는다(#446).
  */
-export function MoodWordmark({ size, color }: { size: number; color: string }) {
+export function MoodWordmark({ size, color, accent }: { size: number; color: string; accent?: string }) {
+  const meColor = accent ?? color;
   return (
     <span
       aria-label="FILME"
@@ -248,12 +250,16 @@ export function MoodWordmark({ size, color }: { size: number; color: string }) {
       f
       <span style={{ position: 'relative', display: 'inline-block' }}>
         ı
-        <span style={{ position: 'absolute', left: '50%', bottom: '0.72em', width: '0.2em', height: '0.2em', transform: 'translateX(-50%)', borderRadius: 9999, background: color }} />
+        <span style={{ position: 'absolute', left: '50%', bottom: '0.72em', width: '0.2em', height: '0.2em', transform: 'translateX(-50%)', borderRadius: 9999, background: meColor }} />
       </span>
-      lme
+      l<span style={{ color: meColor }}>me</span>
     </span>
   );
 }
+
+/** "me" 포인트 컬러 — globals.css `--accent` 라이트값 고정(#446). 캡처가 정적 이미지라 다크모드
+ * 분기가 무의미해 라이트 값 하나로 고정(다크 값 `--accent:#C45550`는 UI chrome 전용, 티켓엔 안 씀). */
+export const WORDMARK_ACCENT = '#B0423F';
 
 export type Surface = 'paper' | 'dark';
 

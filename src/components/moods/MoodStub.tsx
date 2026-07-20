@@ -13,6 +13,7 @@ import {
   MoodWordmark,
   Poster,
   POSTER_LETTERBOX_BG,
+  WORDMARK_ACCENT,
   fieldPieces,
   fitFontSizeToWidth,
   gate,
@@ -46,6 +47,8 @@ export const BARCODE_WIDTH = 300;
 // 단일 토큰은 개수 캡을 안 타므로(#381 리뷰 P1), minSize까지 줄여도 못 들어가면 span에 걸린
 // overflow:hidden + ellipsis가 최종 방어선이 된다.
 const SEAT_MAX_WIDTH = 520;
+// 본문 좌우 패딩(#446 톤업, 40→56) — 패딩·티커 풀블리드 음수마진·타이틀 가용폭 세 곳이 공유하는 단일 소스.
+const PAD_X = 56;
 
 const POSTER_H = 760;
 // 홀로그램 티커 무지개 그라디언트(마스터 1:1) — 절취 정보 스트립 배경.
@@ -82,12 +85,13 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
   const { bookingNo, watchDateClean, releaseClean, reissueClean } = resolveTicketData(d);
 
   const titleVal = gate(fv?.title, d.title);
-  // 타이틀 폭 맞춤(#318) — 페이퍼 스텁 가용폭(960 - padding40*2). 2줄 클램프라 가용폭×2를
-  // maxWidth로 넘겨 가장 긴 한 줄 기준으로 안전하게 축소한다(_shared.tsx 참고).
+  // 타이틀 폭 맞춤(#318) — 페이퍼 스텁 가용폭(960 - PAD_X*2). 2줄 클램프라 가용폭×2를
+  // maxWidth로 넘겨 가장 긴 한 줄 기준으로 안전하게 축소한다(_shared.tsx 참고). PAD_X는 패딩·
+  // 티커 음수마진과 공유하는 단일 소스(#446).
   const fontsReady = useFontsReady();
-  const titleFontSize = fitFontSizeToWidth(titleVal, 880 * 2, { fontFamily: FONT_KR, fontWeight: 700, minSize: 26, maxSize: 42 }, fontsReady);
+  const titleFontSize = fitFontSizeToWidth(titleVal, (960 - PAD_X * 2) * 2, { fontFamily: FONT_KR, fontWeight: 700, minSize: 26, maxSize: 42 }, fontsReady);
   const titleOgVal = gate(fv?.titleOg, d.titleOg);
-  const actorsVal = truncateActors(gate(fv?.actors, d.actors));
+  const actorsVal = truncateActors(gate(fv?.actors, d.actors), 5);
   const seatVal = gate(fv?.seat, d.seat);
   // 좌석 폭 맞춤(#381) — SEAT 칩은 flex:0 0 auto라 길어지면 그대로 커져 옆 DATE/TIME/HALL
   // 컬럼을 짓누른다. SEAT_MAX_WIDTH는 실측(4석 "J101, J102, J103, J104" 스타일도 485px로
@@ -169,19 +173,22 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
       </div>
 
       {/* 하단 페이퍼 스텁 */}
-      <div style={{ flex: 1, minHeight: 0, position: 'relative', background: PAPER, padding: '22px 40px 26px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', opacity: componentOpacity }}>
+      <div style={{ flex: 1, minHeight: 0, position: 'relative', background: PAPER, padding: `22px ${PAD_X}px 26px`, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', opacity: componentOpacity }}>
         {/* 홀로그램 티커 — 풀블리드 장식 스트립. 필드값을 복제하므로 aria-hidden(스크린리더 중복 읽기 방지, #289). */}
-        <div aria-hidden="true" style={{ position: 'relative', height: 42, overflow: 'hidden', margin: '-22px -40px 22px', boxShadow: 'inset 0 1px 0 rgba(26,22,18,.22), inset 0 -1px 0 rgba(26,22,18,.22)', background: HOLO }}>
+        <div aria-hidden="true" style={{ position: 'relative', height: 42, overflow: 'hidden', margin: `-22px -${PAD_X}px 22px`, boxShadow: 'inset 0 1px 0 rgba(26,22,18,.22), inset 0 -1px 0 rgba(26,22,18,.22)', background: HOLO }}>
           <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(114deg, rgba(255,255,255,.65) 0 2px, rgba(255,255,255,0) 2px 9px)', mixBlendMode: 'screen' }} />
           <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(68deg, rgba(255,255,255,0) 0 13px, rgba(255,255,255,.34) 13px 15px)' }} />
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 13, paddingLeft: 16, whiteSpace: 'nowrap', fontFamily: FONT_MONO, fontWeight: 800, fontSize: 12, letterSpacing: 1.2, textTransform: 'uppercase', color: 'rgba(26,22,18,.62)', textShadow: '0 1px 0 rgba(255,255,255,.55)' }}>
-              {tickerItems.map((t, i) => (
-                <Fragment key={i}>
-                  <span>{t}</span>
-                  <span style={{ opacity: 0.4 }}>✦</span>
-                </Fragment>
-              ))}
+              {/* 필드 적으면 우측이 비므로 4회 반복해 채운다(FilmStripBand 엣지 cells 패턴 이식, #446). */}
+              {Array.from({ length: 4 }, (_, r) =>
+                tickerItems.map((t, i) => (
+                  <Fragment key={`${r}-${i}`}>
+                    <span>{t}</span>
+                    <span style={{ opacity: 0.4 }}>✦</span>
+                  </Fragment>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -325,7 +332,7 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 32, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexShrink: 0 }}>
               <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontSize: 22, color: BROWN }}>made with</span>
-              <MoodWordmark size={22} color={INK} />
+              <MoodWordmark size={22} color={INK} accent={WORDMARK_ACCENT} />
             </div>
             {signatureVal ? (
               <>

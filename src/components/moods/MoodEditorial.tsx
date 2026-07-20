@@ -13,6 +13,7 @@ import {
   MoodWordmark,
   Poster,
   POSTER_LETTERBOX_BG,
+  WORDMARK_ACCENT,
   fitFontSizeToWidth,
   gate,
   posterFitProps,
@@ -322,7 +323,7 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
         <div style={{ marginTop: 16, paddingTop: 15, borderTop: `1px solid ${INK}`, opacity: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, opacity: 0.6 }}>
             <span style={{ ...italic(BROWN, 22) }}>réalisé avec</span>
-            <MoodWordmark size={22} color={INK} />
+            <MoodWordmark size={22} color={INK} accent={WORDMARK_ACCENT} />
           </div>
           {signatureVal ? (
             // 라벨은 FieldTap 밖(#417, Criterion과 동일 형제 버그) — measureField가
