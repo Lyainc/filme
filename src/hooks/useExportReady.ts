@@ -17,7 +17,6 @@ export function canExport({
   return (
     hasPoster &&
     title.trim().length > 0 &&
-    titleOg.trim().length > 0 &&
     release.length >= 4
   );
 }

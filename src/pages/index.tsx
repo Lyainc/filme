@@ -75,7 +75,7 @@ export default function Home() {
   const railMessage = !croppedImageUrl
     ? '포스터를 먼저 추가해주세요'
     : !canExport
-      ? '제목 · 원제 · 개봉연도를 채워주세요'
+      ? '제목 · 개봉연도를 채워주세요'
       : '티켓이 준비됐어요';
 
   // 모바일 셸은 mount 후에만(SSR/첫 페인트는 데스크톱 기본, 하이드레이션 일치). #212 리뉴얼.
