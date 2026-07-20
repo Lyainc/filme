@@ -109,6 +109,37 @@ describe('planTicketCleanup', () => {
     expect(plan.expiredGroups).toBe(0);
   });
 
+  it('og.jpg(#438 가로 OG 카드)를 정상 티켓 그룹의 일원으로 인식한다(id를 "<id>.og"로 잘못 자르지 않음)', () => {
+    const plan = planTicketCleanup(
+      [blob('t/abc.jpg', 1), blob('t/abc.json', 1), blob('t/abc.og.jpg', 1)],
+      { now: NOW, ttlMs: TTL },
+    );
+    expect(plan.scanned).toBe(3);
+    expect(plan.deletePathnames).toEqual([]); // 신선 — 셋 다 같은 그룹으로 보존
+    expect(plan.expiredGroups).toBe(0);
+    expect(plan.orphanDeleted).toBe(0);
+  });
+
+  it('만료된 3파일(jpg+json+og.jpg) 그룹은 정상 만료로 셋 다 삭제한다(orphan 오판 없음)', () => {
+    const plan = planTicketCleanup(
+      [blob('t/old.jpg', 40), blob('t/old.json', 40), blob('t/old.og.jpg', 40)],
+      { now: NOW, ttlMs: TTL },
+    );
+    expect(plan.deletePathnames.sort()).toEqual(['t/old.jpg', 't/old.json', 't/old.og.jpg']);
+    expect(plan.expiredGroups).toBe(1);
+    expect(plan.orphanDeleted).toBe(0); // og.jpg 때문에 별도 orphan 그룹으로 잘못 잡히면 안 됨
+  });
+
+  it('og.jpg 생성 실패로 없는(jpg+json만 있는) 레거시 그룹도 정상 만료 처리한다', () => {
+    const plan = planTicketCleanup(
+      [blob('t/legacy.jpg', 40), blob('t/legacy.json', 40)],
+      { now: NOW, ttlMs: TTL },
+    );
+    expect(plan.deletePathnames.sort()).toEqual(['t/legacy.jpg', 't/legacy.json']);
+    expect(plan.expiredGroups).toBe(1);
+    expect(plan.orphanDeleted).toBe(0);
+  });
+
   it('Date 객체 uploadedAt도 처리한다', () => {
     const plan = planTicketCleanup(
       [{ pathname: 't/d.jpg', uploadedAt: new Date(NOW - 50 * DAY) }],

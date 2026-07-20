@@ -36,7 +36,7 @@ export interface CleanupBlob {
 export interface CleanupPlan {
   /** 삭제 대상 pathname(만료된 정상 그룹 + 만료된 orphan). */
   deletePathnames: string[];
-  /** 인식된 티켓 blob 수(t/<id>.{jpg,json}만 카운트, 그 외 경로는 제외). */
+  /** 인식된 티켓 blob 수(t/<id>.{jpg,json,og.jpg}만 카운트, 그 외 경로는 제외). */
   scanned: number;
   /** .jpg+.json 짝이 모두 만료돼 삭제된 그룹 수. */
   expiredGroups: number;
@@ -45,13 +45,21 @@ export interface CleanupPlan {
 }
 
 const TICKET_PREFIX = 't/';
+const OG_JPG_SUFFIX = '.og.jpg';
 const JPG_SUFFIX = '.jpg';
 const JSON_SUFFIX = '.json';
 
-/** `t/<id>.jpg` | `t/<id>.json` → { id, kind }. 그 외 경로는 null — 미인식은 절대 후보에 넣지 않는다. */
-function parseTicketPath(pathname: string): { id: string; kind: 'jpg' | 'json' } | null {
+/** `t/<id>.jpg` | `t/<id>.json` | `t/<id>.og.jpg`(#438 가로 OG 카드) → { id, kind }. 그 외
+ * 경로는 null — 미인식은 절대 후보에 넣지 않는다. `.og.jpg`도 `.jpg`로 끝나므로 일반 jpg보다
+ * 먼저 검사해야 한다 — 순서를 바꾸면 `t/<id>.og.jpg`가 `.jpg` 분기에 먼저 걸려 id가
+ * `<id>.og`로 잘못 잘리고, 실제 티켓 그룹과 분리된 채 매번 orphan으로 오판된다. */
+function parseTicketPath(pathname: string): { id: string; kind: 'jpg' | 'json' | 'og' } | null {
   if (!pathname.startsWith(TICKET_PREFIX)) return null;
   const rest = pathname.slice(TICKET_PREFIX.length);
+  if (rest.endsWith(OG_JPG_SUFFIX)) {
+    const id = rest.slice(0, -OG_JPG_SUFFIX.length);
+    return id ? { id, kind: 'og' } : null;
+  }
   if (rest.endsWith(JPG_SUFFIX)) {
     const id = rest.slice(0, -JPG_SUFFIX.length);
     return id ? { id, kind: 'jpg' } : null;
@@ -69,8 +77,9 @@ export function planTicketCleanup(
 ): CleanupPlan {
   const { now, ttlMs } = opts;
 
-  // id별로 jpg/json을 모은다. 미인식 경로(t/ 밖, 확장자 불일치)는 후보에 들어가지 않는다.
-  const groups = new Map<string, { jpg?: CleanupBlob; json?: CleanupBlob }>();
+  // id별로 jpg/json/og(가로 OG 카드)를 모은다. 미인식 경로(t/ 밖, 확장자 불일치)는 후보에
+  // 들어가지 않는다.
+  const groups = new Map<string, { jpg?: CleanupBlob; json?: CleanupBlob; og?: CleanupBlob }>();
   let scanned = 0;
   for (const blob of blobs) {
     const parsed = parseTicketPath(blob.pathname);
@@ -86,11 +95,13 @@ export function planTicketCleanup(
   let orphanDeleted = 0;
 
   for (const g of Array.from(groups.values())) {
-    const members = [g.jpg, g.json].filter(Boolean) as CleanupBlob[];
+    const members = [g.jpg, g.json, g.og].filter(Boolean) as CleanupBlob[];
     // 그룹은 가장 최근 멤버가 TTL을 넘겼을 때만 만료시킨다(삭제 보수적 — 한쪽이라도 신선하면 유지).
     const newest = Math.max(...members.map((m) => new Date(m.uploadedAt).getTime()));
     if (now - newest <= ttlMs) continue; // 아직 유효 — 살아있는 공유 링크라 보존.
 
+    // orphan 판정은 jpg+json 짝만 본다 — og.jpg는 발급 시점에 실패할 수 있는 부차 산출물이라
+    // (t/[id].tsx가 없으면 원본으로 폴백) 있고 없음이 "이 티켓이 정상 그룹인가"를 바꾸지 않는다.
     const isOrphan = !(g.jpg && g.json);
     for (const m of members) deletePathnames.push(m.pathname);
     if (isOrphan) orphanDeleted += 1;
