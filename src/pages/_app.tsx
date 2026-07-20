@@ -4,7 +4,7 @@ import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
 import localFont from 'next/font/local';
-import { JetBrains_Mono, Instrument_Serif, Nunito } from 'next/font/google';
+import { JetBrains_Mono, Instrument_Serif, Nunito, Share_Tech_Mono } from 'next/font/google';
 
 // 애널리틱스/텔레메트리는 사용자 인터랙션을 막지 않으므로 하이드레이션 후 로드한다.
 // 정적 import 시 초기 번들을 블로킹하므로 next/dynamic({ ssr: false })로 지연(#153 ①).
@@ -66,15 +66,15 @@ const iceJaram = localFont({
   preload: false,
 });
 
-// 35mm 필름 스트립 엣지 텍스트(#393) LCD/디지털 폰트 → --font-lcd. dafont.com digital-7은 상업
-// 라이선스가 유료($24.95)라 배제하고, SIL Open Font License 1.1(상업 이용 무료)인 DSEG7-Classic-Bold
-// (keshikan, github.com/keshikan/DSEG)로 자체 호스팅. 한글 글리프가 없어 유저 입력이 섞인 코드는
-// containsHangul로 감지해 FONT_KR로 개별 폴백한다(`_shared.tsx` FONT_LCD·FilmStripBand 참고).
-const dseg7 = localFont({
-  src: '../../public/fonts/DSEG7Classic-Bold.woff2',
+// 35mm 필름 스트립 엣지 텍스트(#443) 기술 모노 폰트 → --font-lcd. 이전 DSEG7-Classic-Bold(7-세그먼트
+// LCD/전자시계 디스플레이 폰트)는 아날로그 필름 엣지 인쇄 톤과 맞지 않아(#443) Share Tech Mono(OFL,
+// Google Fonts)로 교체 — weight 400 단일. 한글 글리프가 없어 유저 입력이 섞인 코드는 containsHangul로
+// 감지해 FONT_KR로 개별 폴백한다(`_shared.tsx` FONT_LCD·FilmStripBand 참고).
+const shareTechMono = Share_Tech_Mono({
+  subsets: ['latin'],
   variable: '--font-lcd',
   display: 'swap',
-  weight: '700',
+  weight: '400',
 });
 
 export default function App({ Component, pageProps }: AppProps) {
@@ -85,7 +85,7 @@ export default function App({ Component, pageProps }: AppProps) {
         <meta name="description" content="영화 포스터로 시네마틱한 포토티켓을 만드세요." />
       </Head>
       <main
-        className={`${pretendard.variable} ${jetBrainsMono.variable} ${instrumentSerif.variable} ${nunito.variable} ${iceJaram.variable} ${dseg7.variable} font-sans bg-bg text-fg min-h-dvh antialiased`}
+        className={`${pretendard.variable} ${jetBrainsMono.variable} ${instrumentSerif.variable} ${nunito.variable} ${iceJaram.variable} ${shareTechMono.variable} font-sans bg-bg text-fg min-h-dvh antialiased`}
       >
         <Component {...pageProps} />
       </main>
