@@ -289,6 +289,10 @@ export function usePhototicket() {
       }
     }
     brightnessTouchedRef.current = false;
+    // 초기화는 전체 슬레이트 리셋이라 강도 touched도 함께 되돌린다(#434 PR #472 리뷰 P1) — 안 하면
+    // 초기화 후 texture를 바꿔도 그 texture 기본 강도가 적용되지 않고 리셋 전 touched가 남는다.
+    // (handleImageUpload은 강도를 의도적으로 유지하지만 clearDraft는 밝기와 대칭으로 리셋한다.)
+    intensityTouchedRef.current = false;
     setState((prev) => {
       if (prev.croppedImageUrl) URL.revokeObjectURL(prev.croppedImageUrl);
       latestUrlRef.current = null;

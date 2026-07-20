@@ -6,7 +6,7 @@ import { describe, expect, test } from 'bun:test';
 import { TEXTURE_RECIPES, recipeToGradientCss, defaultIntensityForTexture } from '@/utils/textureRecipes';
 
 function alphasOf(css: string): number[] {
-  return [...css.matchAll(/rgba\([^)]*,\s*([\d.]+)\)/g)].map((m) => parseFloat(m[1]));
+  return Array.from(css.matchAll(/rgba\([^)]*,\s*([\d.]+)\)/g)).map((m) => parseFloat(m[1]));
 }
 
 describe('textureRecipes', () => {

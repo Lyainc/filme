@@ -10,6 +10,7 @@
 import { afterEach, describe, expect, test, mock, jest } from 'bun:test';
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { usePhototicket } from '../src/hooks/usePhototicket';
+import { defaultIntensityForTexture } from '../src/utils/textureRecipes';
 
 const KEY = 'filme:phototicket:v1';
 
@@ -119,6 +120,27 @@ describe('#310 usePhototicket saveDraft/clearDraft', () => {
     expect(result.current.state.movieInfo.seat).toBe('');
     expect(result.current.state.components.texture).toBe('none');
     expect(result.current.state.croppedImageUrl).toBeNull();
+  });
+
+  test('clearDraft() 후 texture 전환 시 그 texture 기본 강도가 적용된다 — intensityTouchedRef도 리셋(#434 PR #472 P1)', () => {
+    const { result } = renderHook(() => usePhototicket());
+    // 강도 슬라이더 직접 조작 → intensityTouchedRef=true
+    act(() => {
+      result.current.updateComponents({ texture: 'hologram', textureIntensity: 0.3 });
+    });
+    expect(result.current.state.components.textureIntensity).toBe(0.3);
+
+    // 초기화 — 강도 touched도 리셋되어야 한다(밝기와 대칭)
+    act(() => {
+      result.current.clearDraft();
+    });
+
+    // 초기화 후 texture 전환 → 그 texture 기본 강도 적용. touched가 리셋 안 됐으면 이 분기가 스킵돼
+    // 리셋 후 값(INITIAL 1.0)이 남는다 — 그게 버그였다.
+    act(() => {
+      result.current.updateComponents({ texture: 'metal' });
+    });
+    expect(result.current.state.components.textureIntensity).toBe(defaultIntensityForTexture('metal'));
   });
 
   test('clearDraft()는 남아있던 croppedImageUrl을 revoke한다(handleImageUpload와 동일 패턴)', () => {
