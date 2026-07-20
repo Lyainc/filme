@@ -81,8 +81,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const meta = JSON.stringify({ title, titleOg, releaseDate, layout, createdAt: new Date().toISOString() });
+    const ticketBuffer = Buffer.from(decoded);
     // 이미지 먼저 — 메타 저장이 실패해도 이미지(og:image 본체)는 남아 링크가 동작한다.
-    const blob = await put(`t/${id}.jpg`, Buffer.from(decoded), {
+    const blob = await put(`t/${id}.jpg`, ticketBuffer, {
       access: 'public',
       contentType: 'image/jpeg',
       addRandomSuffix: false,
@@ -91,7 +92,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // 전체 발급을 막지 않는다(t/[id].tsx가 og.jpg 없으면 원본 세로 JPG로 폴백). 별도 try로
     // 격리해 여기서 던져도 바깥 catch(502)로 새지 않게 한다.
     try {
-      const ogImage = await buildOgImage(Buffer.from(decoded));
+      const ogImage = await buildOgImage(ticketBuffer);
       await put(`t/${id}.og.jpg`, ogImage, {
         access: 'public',
         contentType: 'image/jpeg',
