@@ -1,4 +1,4 @@
-import { CSSProperties, memo } from 'react';
+import { CSSProperties, memo, useState } from 'react';
 import type { SheetTarget } from '@/constants/fields';
 import {
   ChainStamp,
@@ -10,6 +10,7 @@ import {
   FONT_MONO,
   FONT_SANS,
   FormatStamp,
+  letterboxToneMatch,
   MoodProps,
   MoodWordmark,
   Poster,
@@ -23,6 +24,7 @@ import {
   resolveTicketData,
   showFieldGhost,
   stampWillRender,
+  TopBandTone,
   truncateActors,
   useFontsReady,
   type FieldGhostState,
@@ -162,6 +164,13 @@ export const Mood35mmLandscape = memo(function Mood35mmLandscape({ movieInfo: d,
     'linear-gradient(180deg, rgba(7,7,7,0) 0%, rgba(7,7,7,0.55) 42%, rgba(7,7,7,0.95) 100%)';
   const componentOpacity = components.componentOpacity ?? 1;
 
+  // 상단 레터박스 밴드 톤 정합(#461) — 상단 페이드(130px, 최대 0.85)가 하단 captionScrim(최대 0.95,
+  // 42%부터 전개)보다 훨씬 옅어 Criterion/Minimal과 같은 비대칭 구조다. 표준 세로 포스터는 이 landscape
+  // 슬롯(934×776)에서 좌우로 레터박스가 생겨(natAspect 0.667 < 슬롯비 1.204) 스코프 밖이지만, 사용자가
+  // 정사각형~와이드 비율로 크롭하면 상단 레터박스가 생겨 동일 문제가 재현될 수 있어 방어적으로 배선한다.
+  // ink가 항상 밝은 FS_INK(크림) 고정이라 letterboxToneMatch(false)로 검정 톤 상수 사용.
+  const [topBandH, setTopBandH] = useState(0);
+
   const cellEl = (c: MetaCell, key: number) => (
     <FieldTap key={key} field={c.field} onField={onField}>
       <div style={{ minWidth: 0 }}>
@@ -190,10 +199,11 @@ export const Mood35mmLandscape = memo(function Mood35mmLandscape({ movieInfo: d,
       <div style={{ position: 'absolute', left: 0, right: 0, top: STRIP_H, bottom: STRIP_H, display: 'flex' }}>
         {/* Left: poster column — 분할 레이아웃이라 이 컬럼에만 포스터 탭(#259) */}
         <div style={{ flex: 1, position: 'relative', background: '#0a0a0a', overflow: 'hidden', minWidth: 0 }} {...posterTapProps(onPosterTap)}>
-          <Poster src={croppedImageUrl} {...posterFitProps(components.posterFit, { letterboxBg: '#0a0a0a' })} texture={components.texture} posterOpacity={components.posterOpacity} />
+          <Poster src={croppedImageUrl} {...posterFitProps(components.posterFit, { letterboxBg: '#0a0a0a' })} texture={components.texture} posterOpacity={components.posterOpacity} onTopBandHeight={setTopBandH} />
 
           {/* #219 componentOpacity: 포스터 뺀 캡션·스탬프·그라디언트 페이드. inset:0 래퍼라 opacity 1에서 no-op. */}
           <div style={{ position: 'absolute', inset: 0, opacity: componentOpacity }}>
+            <TopBandTone heightPx={topBandH} tone={letterboxToneMatch(false)} />
             <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 130, background: 'linear-gradient(180deg, rgba(10,10,10,0.85), rgba(10,10,10,0))' }} />
 
             {/* Chain + format, top-left (마스터 left:46 top:34) */}
