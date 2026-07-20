@@ -607,6 +607,12 @@ interface PosterProps {
  */
 export const POSTER_FRAME_INSET_Y = 22;
 
+/**
+ * 포스터 레터박스(contain 여백) 기본 배경색 — Editorial·35mm Wide·Stub이 posterFitProps의
+ * letterboxBg로 각자 하드코딩하던 '#0a0a0a' 리터럴을 단일 소스로(nit letterbox-bg-literal-dup).
+ */
+export const POSTER_LETTERBOX_BG = '#0a0a0a';
+
 const PRINT_SIM = 'saturate(0.92) contrast(1.05)';
 
 // vintage/newspaper have intentional contrast curves — no PRINT_SIM stacking
