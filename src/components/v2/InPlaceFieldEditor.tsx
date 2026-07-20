@@ -8,7 +8,7 @@ import { useKobisSearch } from '@/hooks/useKobisSearch';
 import { useLogoCrop } from '@/hooks/useLogoCrop';
 import RatingPicker from '@/components/wizard/RatingPicker';
 import { EyeIcon } from '@/components/ui/VisibilityCheckbox';
-import { DateSheet } from './FieldEditorBody';
+import { DateSheet, INPUT_CLS } from './FieldEditorBody';
 import { Eyebrow } from './Eyebrow';
 import { formatDate, openDtToIso } from '@/utils/dateFormat';
 import {
@@ -280,8 +280,17 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
     onField(order[(i + dir + order.length) % order.length]);
   };
 
-  // ── 인플레이스 input: 텍스트류만. 날짜/평점은 aid가 편집기라 input 없이 하이라이트만. ──
-  const hasInput = field !== 'rating' && field !== 'watchDate' && field !== 'releaseDate' && !(isStamp && !!stampImage);
+  // ── 인플레이스 input: 텍스트류만. 날짜/평점은 aid가 편집기라 input 없이 하이라이트만.
+  // actors도 마찬가지(#447) — 티켓은 truncateActors로 "A, B, C 외 N명"을 표시 전용으로 자르는데,
+  // 투명 오버레이 input의 value는 항상 원본 풀 텍스트라 박스는 잘린 표시 폭인데 caret은 풀 텍스트
+  // 기준으로 움직여 어긋난다. 티켓 truncate는 그대로 두고(의도된 표시) 편집만 아래 aid 패널의
+  // 일반 opaque input으로 분리 — rating/date와 동일한 기존 패턴 재사용. ──
+  const hasInput =
+    field !== 'rating' &&
+    field !== 'watchDate' &&
+    field !== 'releaseDate' &&
+    field !== 'actors' &&
+    !(isStamp && !!stampImage);
 
   // ── 필드바 배치: 필드 위 10px, 티켓 상단에 붙으면 아래로. 좌우는 래퍼 안으로 클램프. ──
   const barRef = useRef<HTMLDivElement>(null);
@@ -497,6 +506,20 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
         ))}
       </ul>
     ) : null;
+  } else if (field === 'actors') {
+    // 티켓 truncate(외 N명)는 표시 전용으로 그대로 두고, 편집은 풀 텍스트 opaque input으로(#447).
+    aid = (
+      <div className="p-4">
+        <input
+          autoFocus
+          type="text"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          aria-label={label}
+          className={INPUT_CLS}
+        />
+      </div>
+    );
   } else if (field === 'rating') {
     aid = (
       <div className="p-4">
