@@ -7,7 +7,7 @@ import { checkTicketRateLimit } from '@/utils/ratelimit';
 /**
  * 완성 티켓 JPEG를 base64 JSON으로 받는다(OCR 라우트와 동일 규약). 캡처 결과는
  * captureToImage에서 나오는 우리 JPEG라 multipart일 이유가 없다. base64는 ~33% 크지만
- * 960×1477×2 JPEG이 보통 0.5~1.5MB라 기본 1mb 한도를 넘을 수 있어 여유 있게 상향한다.
+ * 960×1534×2 JPEG이 보통 0.5~1.5MB라 기본 1mb 한도를 넘을 수 있어 여유 있게 상향한다.
  */
 export const config = {
   api: { bodyParser: { sizeLimit: '15mb' } },

@@ -337,7 +337,7 @@ export function MobileEditorShell({
     if (!posterOriginalSrc) return;
     setPosterCropping(true);
     try {
-      // 원본 비율 보존(#420): 고정 960×1477 스트레치 대신 크롭 종횡비를 유지하며 긴 변만 캡한다.
+      // 원본 비율 보존(#420): 고정 960×1534 스트레치 대신 크롭 종횡비를 유지하며 긴 변만 캡한다.
       const url = await getCroppedImg(
         posterOriginalSrc,
         area,
@@ -804,8 +804,9 @@ export function MobileEditorShell({
               프리뷰 직하 카드" 중복 제거). unmount가 아니라 hidden인 이유는 이 OcrUploadCard가 랜딩·
               업로드 후에 걸쳐 같은 트리 위치의 단일 인스턴스(DOM 노드)로 남아야 하기 때문이다 —
               분기별 별도 JSX로 심어 전환 순간 remount되면 in-flight KOBIS 보강의 mountedRef 가드가
-              setInfo를 조용히 버려 titleOg·releaseDate(완료 게이트 필수 필드)가 유실된다(PR #372 리뷰
-              P1, 커밋 514baab #363). max(#328)도 같은 이유로 hidden — 최대화 왕복 중의 동일 레이스까지
+              setInfo를 조용히 버려 titleOg·releaseDate가 유실된다(releaseDate는 완료 게이트 필수
+              필드, titleOg는 #445에서 게이트 필수에서 빠졌지만 유실 문제 자체는 여전하다 — PR #372
+              리뷰 P1, 커밋 514baab #363). max(#328)도 같은 이유로 hidden — 최대화 왕복 중의 동일 레이스까지
               함께 막는다. OCR 로직은 셸의 useOcrUndo가 소유(DesktopStudioShell과 동형). */}
           <section
             className={
