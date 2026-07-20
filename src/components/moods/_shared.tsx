@@ -200,9 +200,9 @@ export const FONT_SANS = '"Pretendard Variable", "Pretendard", "Noto Sans KR", s
 export const FONT_KR = '"Pretendard Variable", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
 
 /**
- * 35mm 필름 스트립 엣지 텍스트(FilmStripBand) 전용 LCD/디지털 폰트(#393). dafont.com digital-7은
- * 상업 라이선스가 유료라 배제하고, SIL OFL 1.1(상업 이용 무료)인 DSEG7-Classic-Bold(keshikan)로
- * 자체 호스팅(`_app.tsx` → `--font-lcd`). ASCII 전용이라 ◆·★ 등 심볼과 한글은 이 폰트에 글리프가
+ * 35mm 필름 스트립 엣지 텍스트(FilmStripBand) 전용 기술 모노 폰트(#443, 이전 DSEG7 7-세그먼트 LCD
+ * 폰트는 아날로그 필름 엣지 인쇄 톤과 안 맞아 교체). Share Tech Mono(OFL, Google Fonts)로 자체
+ * 호스팅(`_app.tsx` → `--font-lcd`). ASCII 전용이라 ◆·★ 등 심볼과 한글은 이 폰트에 글리프가
  * 없다 — 심볼은 폴백 체인(JetBrains Mono)이 글리프 단위로 알아서 대체하지만, 한글 "단어" 전체가
  * 이 폴백에 걸리면 자모가 깨져 보일 수 있어 FilmStripBand는 code 단위로 containsHangul을 먼저
  * 검사해 FONT_KR로 명시 폴백한다(암묵적 글리프 폴백에 기대지 않음).
