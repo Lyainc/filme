@@ -30,7 +30,7 @@ describe('Mood35mm 마스터 resync (#281)', () => {
     const html = markup();
     expect(html).not.toContain('width:138px;height:138px'); // 제거된 원형 스탬프 시그니처
     expect(html).toContain('Rated');
-    expect(html).toContain('★ 4.5 / 5.0');                   // 평점이 셀 값으로
+    expect(html).toContain('★ 4.5');                          // 평점이 셀 값으로
     expect(html).toContain('평점 편집');                      // 셀에 rating FieldTap 유지(게이팅 green)
   });
 

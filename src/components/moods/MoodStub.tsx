@@ -137,7 +137,7 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
     [watchDateVal, watchTimeVal].filter(Boolean).join(' · '),
     seatVal ? `Seat ${seatVal}` : '',
     screenVal,
-    ratingVisible ? `★ ${d.rating.toFixed(1)} / 5.0` : '',
+    ratingVisible ? `★ ${d.rating.toFixed(1)}` : '',
     'Admit One',
     runtimeVal,
   ].filter(Boolean);

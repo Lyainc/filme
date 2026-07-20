@@ -135,7 +135,7 @@ export const Mood35mmLandscape = memo(function Mood35mmLandscape({ movieInfo: d,
   const gridCells: MetaCell[] = [];
   if (runtimeVal) gridCells.push({ label: 'Runtime', value: runtimeVal, field: 'runtime' });
   else if (gRuntime) gridCells.push({ label: 'Runtime', ghost: gRuntime, field: 'runtime' });
-  if (ratingVisible) gridCells.push({ label: 'Rated', value: `★ ${d.rating.toFixed(1)} / 5.0`, field: 'rating' });
+  if (ratingVisible) gridCells.push({ label: 'Rated', value: `★ ${d.rating.toFixed(1)}`, field: 'rating' });
   else if (gRating) gridCells.push({ label: 'Rated', ghost: gRating, field: 'rating' });
   if (releaseDateVal) gridCells.push({ label: 'Released', value: releaseDateVal, field: 'releaseDate' });
   else if (gReleaseDate) gridCells.push({ label: 'Released', ghost: gReleaseDate, field: 'releaseDate' });
