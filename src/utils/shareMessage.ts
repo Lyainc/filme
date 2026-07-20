@@ -1,5 +1,9 @@
 import type { MovieInfo } from '@/types';
 
+/** buildShareMessage가 실제로 읽는 필드만 — /t/[id] 랜딩처럼 meta JSON(title/titleOg/releaseDate만
+ * 있음)만 갖고도 재사용할 수 있게 전체 MovieInfo 대신 좁힌 타입을 받는다(#438). */
+type ShareMovieInfo = Pick<MovieInfo, 'title' | 'titleOg' | 'releaseDate' | 'reissueDate'>;
+
 export interface ShareMessage {
   /** OS 공유 시트·플랫폼 제목 슬롯에 들어갈 짧은 제목. */
   title: string;
@@ -13,7 +17,7 @@ export interface ShareMessage {
  * releaseDate는 가변 길이 ISO('1994' | '1994-11' | '1994-11-06')라 앞 4자리만 연도로 뽑는다.
  * 원작 식별엔 개봉 연도가 더 유효해 releaseDate를 우선하고, 없으면 재개봉일로 떨어진다.
  */
-function extractYear(movieInfo: MovieInfo): string {
+function extractYear(movieInfo: ShareMovieInfo): string {
   const source = movieInfo.releaseDate || movieInfo.reissueDate || '';
   const match = /^(\d{4})/.exec(source);
   return match ? match[1] : '';
@@ -34,7 +38,7 @@ function extractYear(movieInfo: MovieInfo): string {
  *      url: 'https://filme.app/t/abc' }
  */
 export function buildShareMessage(
-  movieInfo: MovieInfo,
+  movieInfo: ShareMovieInfo,
   permalink?: string | null
 ): ShareMessage {
   const movieTitle = movieInfo.title?.trim() ?? '';

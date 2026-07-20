@@ -6,6 +6,8 @@ import { Wordmark } from '@/components/v2/Wordmark';
 import { Eyebrow } from '@/components/v2/Eyebrow';
 import { DEFAULT_TICKET_TTL_DAYS, UNOFFICIAL_TICKET_NOTICE } from '@/utils/ticketCleanup';
 import { getLayout, LAYOUTS } from '@/utils/layouts';
+import { buildShareMessage } from '@/utils/shareMessage';
+import { OG_IMAGE_WIDTH, OG_IMAGE_HEIGHT } from '@/utils/ogImage';
 
 interface TicketLandingProps {
   imageUrl: string;
@@ -14,6 +16,10 @@ interface TicketLandingProps {
   /** 히어로 img 고유 치수 — 비율 예약으로 CLS 방지(meta의 layout에서 도출, #199). */
   width: number;
   height: number;
+  /** 카카오톡/SNS 카드용 가로 OG 이미지(#438, 발급 시점 정적 생성 t/{id}.og.jpg) — 없으면(레거시
+   * 티켓) 세로 원본(imageUrl)으로 폴백하고 og:image:width/height도 그때만 싣는다. */
+  ogImageUrl: string;
+  ogDescription: string;
 }
 
 /**
@@ -32,23 +38,34 @@ export const getServerSideProps: GetServerSideProps<TicketLandingProps> = async 
   if (!id) return { notFound: true };
 
   let imageUrl = '';
+  let ogImageUrl = '';
   let title = '';
+  let titleOg = '';
+  let releaseDate = '';
   // 기본은 portrait(무드 4개 중 3개) — meta에 layout이 있으면 그 비율로 덮어쓴다.
   let { width, height } = getLayout('minimal');
   try {
-    const { blobs } = await list({ prefix: `t/${id}`, limit: 2 });
+    // jpg(원본) + json(메타) + og.jpg(가로 OG 카드, #438) 최대 3개.
+    const { blobs } = await list({ prefix: `t/${id}`, limit: 3 });
     const jpg = blobs.find((b) => b.pathname === `t/${id}.jpg`);
     if (!jpg) return { notFound: true };
     imageUrl = jpg.url;
+    // og.jpg는 발급 시점에 실패했을 수 있는 부차 산출물(t/[id] 랜딩은 항상 원본으로 폴백) —
+    // 없는 레거시/실패 티켓도 여기서 그냥 imageUrl(세로)로 떨어진다.
+    ogImageUrl = blobs.find((b) => b.pathname === `t/${id}.og.jpg`)?.url ?? jpg.url;
 
     const json = blobs.find((b) => b.pathname === `t/${id}.json`);
     if (json) {
       try {
         const meta = (await fetch(json.url).then((r) => r.json())) as {
           title?: unknown;
+          titleOg?: unknown;
+          releaseDate?: unknown;
           layout?: unknown;
         };
         if (typeof meta?.title === 'string') title = meta.title;
+        if (typeof meta?.titleOg === 'string') titleOg = meta.titleOg;
+        if (typeof meta?.releaseDate === 'string') releaseDate = meta.releaseDate;
         // 알 수 없는/이름이 바뀐 layout 값은 무시하고 portrait 기본값 유지 — getLayout은
         // 미지의 id를 minimal로 흡수하지만, 그건 landscape 티켓에 잘못된 비율을 줄 수 있다.
         const spec = LAYOUTS.find((l) => l.id === meta?.layout);
@@ -61,6 +78,10 @@ export const getServerSideProps: GetServerSideProps<TicketLandingProps> = async 
     // Blob 조회 실패(토큰 미설정·네트워크)는 404로 숨긴다 — throw해서 500을 띄우지 않는다.
     return { notFound: true };
   }
+
+  // 공유 시트 문구와 같은 소스(buildShareMessage) — 제목·원제·연도를 한 목소리로 묶는다(#438).
+  // 레거시 메타(titleOg·releaseDate 없음)엔 no-op이라 하위호환 안전.
+  const ogDescription = buildShareMessage({ title, titleOg, releaseDate }).text;
 
   // og:url·og:image는 절대 URL이어야 크롤러가 해석한다. imageUrl(blob)은 이미 절대 URL.
   // host 헤더가 비면(드물지만) 'https:///t/id' 같은 기형 URL이 나오므로 VERCEL_URL로 막는다.
@@ -81,16 +102,16 @@ export const getServerSideProps: GetServerSideProps<TicketLandingProps> = async 
     'public, s-maxage=3600, stale-while-revalidate=3600',
   );
 
-  return { props: { imageUrl, title, pageUrl, width, height } };
+  return { props: { imageUrl, title, pageUrl, width, height, ogImageUrl, ogDescription } };
 };
 
-export default function TicketLanding({ imageUrl, title, pageUrl, width, height }: TicketLandingProps) {
+export default function TicketLanding({ imageUrl, title, pageUrl, width, height, ogImageUrl, ogDescription }: TicketLandingProps) {
   const ogTitle = title ? `${title} · 포토티켓` : '포토티켓';
-  // og:description을 buildShareMessage(#277)의 앵커형 꼬리표('— made with FILME.')로 통일한다
-  // (#190) — 이 페이지의 메타 JSON엔 title만 있고 titleOg·releaseDate가 없어(getServerSideProps
-  // 참고) buildShareMessage를 그대로 재사용은 못 하지만, 같은 꼬리표로 끝나야 티켓 실물 서명·
-  // 공유 문구·OG 메타 세 곳이 한 목소리로 읽힌다는 취지는 동일하게 적용한다.
-  const ogDescription = title ? `《${title}》 포토티켓 — made with FILME.` : '포토티켓 — made with FILME.';
+  // 가로 OG 카드(#438)가 있으면 1200×630, 없으면(레거시 티켓 og.jpg 미생성) 원본 세로 치수로
+  // 폴백 — og:image가 실제로 가리키는 이미지와 항상 일치해야 크롤러 프리뷰가 안 어긋난다.
+  const usingOgCard = ogImageUrl !== imageUrl;
+  const ogImageWidth = usingOgCard ? OG_IMAGE_WIDTH : width;
+  const ogImageHeight = usingOgCard ? OG_IMAGE_HEIGHT : height;
 
   return (
     <>
@@ -100,12 +121,14 @@ export default function TicketLanding({ imageUrl, title, pageUrl, width, height 
         <meta property="og:type" content="website" />
         <meta property="og:title" content={ogTitle} />
         <meta property="og:description" content={ogDescription} />
-        <meta property="og:image" content={imageUrl} />
+        <meta property="og:image" content={ogImageUrl} />
+        <meta property="og:image:width" content={String(ogImageWidth)} />
+        <meta property="og:image:height" content={String(ogImageHeight)} />
         <meta property="og:url" content={pageUrl} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={ogTitle} />
         <meta name="twitter:description" content={ogDescription} />
-        <meta name="twitter:image" content={imageUrl} />
+        <meta name="twitter:image" content={ogImageUrl} />
       </Head>
 
       {/* 메인 앱과 같은 브랜드 정체성 — app-canvas 노이즈 배경 + Sprocket·FILME 워드마크.

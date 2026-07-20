@@ -195,7 +195,13 @@ export function ResultPanel({
       const res = await fetch('/api/ticket', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: base64, title: movieInfo.title, layout: layout.id }),
+        body: JSON.stringify({
+          image: base64,
+          title: movieInfo.title,
+          titleOg: movieInfo.titleOg,
+          releaseDate: movieInfo.releaseDate,
+          layout: layout.id,
+        }),
       });
       if (!res.ok) throw new Error(`ticket upload failed: ${res.status}`);
       const { id } = (await res.json()) as { id: string; url: string };
@@ -215,7 +221,7 @@ export function ResultPanel({
     setPermalink(url);
     setPermaState('success');
     return url;
-  }, [croppedImageUrl, layout.id, layout.width, layout.height, movieInfo.title]);
+  }, [croppedImageUrl, layout.id, layout.width, layout.height, movieInfo.title, movieInfo.titleOg, movieInfo.releaseDate]);
 
   // 공통 클립보드 복사 — 성공/거부에 따라 copyState 라벨을 갱신한다(기존 피드백 패턴 재사용).
   const copyToClipboard = useCallback(async (value: string) => {
