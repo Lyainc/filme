@@ -156,7 +156,7 @@ export default function TicketLanding({ imageUrl, title, pageUrl, width, height 
             CTA 바로 아래의 눈에 띄는 위치는 긴급함을 만들어 브랜드 톤과 안 맞으므로 페이지
             최하단 저대비 캡션으로 내린다(#389). */}
         <footer className="shrink-0 px-5 pb-4 text-center">
-          <p className="text-[11px] leading-snug text-fg-faint">
+          <p className="break-keep text-[11px] leading-snug text-fg-faint">
             이 링크는 {DEFAULT_TICKET_TTL_DAYS}일 후 만료돼요. {UNOFFICIAL_TICKET_NOTICE}
           </p>
         </footer>

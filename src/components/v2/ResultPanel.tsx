@@ -393,7 +393,7 @@ export function ResultPanel({
             </div>
             {/* 공유 링크 disclaimer(#179) — 만료·비공식·양도불가 고지. 만료일은 cleanup과 같은
                 단일 출처(DEFAULT_TICKET_TTL_DAYS)에서 가져와 표기와 실제 정책이 어긋나지 않게 한다. */}
-            <p className="text-[11px] leading-snug text-fg-faint">
+            <p className="break-keep text-[11px] leading-snug text-fg-faint">
               이 링크는 {DEFAULT_TICKET_TTL_DAYS}일 후 만료돼요. {UNOFFICIAL_TICKET_NOTICE}
             </p>
           </div>
