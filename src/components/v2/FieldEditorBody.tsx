@@ -34,7 +34,7 @@ function todayIso(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-const INPUT_CLS =
+export const INPUT_CLS =
   // 16px 미만이면 iOS Safari가 포커스 시 자동 줌인해 레이아웃이 틀어진다(#274) — 편집 폼 컨트롤은 16px 이상.
   // 글래스 톤(#367) — 다크 앰비언트 위 solid 카드 대신 v8 글래스 토큰. 데스크톱 아코디언(라이트
   // 서피스)에선 밝은 유리로 등가 렌더된다(토큰이 스코프별 해석).
