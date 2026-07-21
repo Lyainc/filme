@@ -88,5 +88,11 @@ export interface KobisMovie {
   genreAlt: string;
   nationAlt: string;
   prdtYear: string;
+  /** 장편/단편/옴니버스 구분(#476 — 동명 제목 판별용). */
+  typeNm: string;
+  /** 개봉/개봉예정/기타 등 제작 상태(#476). */
+  prdtStatNm: string;
+  /** 감독 목록 — 다큐·옴니버스 등은 빈 배열로 온다(#476). */
+  directors: { peopleNm: string }[];
   actors?: string;
 }
