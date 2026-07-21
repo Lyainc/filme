@@ -23,7 +23,7 @@ export interface KobisMovieInfo {
  *   빈 항목은 제외(filter)해 ", ," 잔재를 막는다.
  * - runtime: showTm이 있으면 "NN MIN".
  *
- * triggerKobisLookup과 MovieInfoForm.handleSelectMovie 양쪽이 호출 — 추출 규칙을
+ * triggerKobisLookup과 useKobisSearch의 selectMovie 양쪽이 호출 — 추출 규칙을
  * 한 곳에서만 관리한다.
  */
 export function extractKobisActorsRuntime(info: KobisMovieInfo): { actors: string; runtime: string } {
@@ -62,7 +62,7 @@ export function clearKobisLookupCache(): void {
  * - Exactly 1 result  → full enrichment: title, titleOg, releaseDate, actors, runtime
  * - 0 or 2+ results  → { title } only; detail is NOT fetched (overkill-match guard)
  *
- * Shares actors/runtime extraction with MovieInfoForm.handleSelectMovie via
+ * Shares actors/runtime extraction with useKobisSearch's selectMovie via
  * extractKobisActorsRuntime. Never throws; returns { title } on any fetch failure.
  *
  * 모듈 스코프 dedup: 같은 title은 in-flight/완료 Promise를 재사용.
