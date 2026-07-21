@@ -159,7 +159,7 @@ export const TEXTURE_RECIPES: Record<string, TextureRecipe> = {
   },
 };
 
-/** 슬라이더 미조작 시 그 texture의 기본 강도. 레시피 밖(original·물리재질)이면 1(무의미). */
+/** 슬라이더 미조작 시 그 texture의 기본 강도. 레시피 밖(original)이면 1(무의미). */
 export function defaultIntensityForTexture(texture: string): number {
   return TEXTURE_RECIPES[texture]?.defaultIntensity ?? 1;
 }

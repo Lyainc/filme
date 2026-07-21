@@ -26,6 +26,7 @@ let draws: DrawCall[];
 let rects: RectCall[];
 let fillRects: RectCall[];
 let gcos: string[]; // globalCompositeOperation 설정 이력(#459 페더 destination-in 검증)
+let gAlphas: number[]; // globalAlpha 설정 이력(#471 noise 유효 opacity = alpha×intensity 검증)
 let gradStops: { o: number; c: string }[]; // createLinearGradient addColorStop 이력
 let originalGetContext: typeof HTMLCanvasElement.prototype.getContext;
 let originalToDataURL: typeof HTMLCanvasElement.prototype.toDataURL;
@@ -43,6 +44,7 @@ beforeEach(() => {
   rects = [];
   fillRects = [];
   gcos = [];
+  gAlphas = [];
   gradStops = [];
   pngFilter = undefined;
   pngBackground = 'unset';
@@ -59,6 +61,9 @@ beforeEach(() => {
       _gco: 'source-over',
       get globalCompositeOperation() { return this._gco; },
       set globalCompositeOperation(v: string) { this._gco = v; gcos.push(v); },
+      _ga: 1,
+      get globalAlpha() { return this._ga; },
+      set globalAlpha(v: number) { this._ga = v; gAlphas.push(v); },
       save() {},
       restore() {},
       beginPath() {},
@@ -325,6 +330,9 @@ describe('#471 — 물리재질 종이결(noise)을 SVG-raster pattern으로 저
 
     // noise 레시피 blend(artpaper=overlay)로 globalCompositeOperation을 설정한다.
     expect(gcos).toContain('overlay');
+    // 유효 opacity = alpha(artpaper 0.5) × intensity(0.5) = 0.25를 globalAlpha에 실어야 한다.
+    // recipe.alpha나 intensity 중 하나를 빠뜨리는 회귀를 잡는다(#434 hologram 대칭 검증, claude-review PR #473 P1).
+    expect(gAlphas).toContain(0.25);
     // noise는 createLinearGradient를 쓰지 않는다(gradient 계열과 구분되는 경로).
     expect(gradStops.length).toBe(0);
     // 오버레이 fillRect가 poster-root 박스(여백20 시작, 티켓 내용 1920×2954)에 그려진다.
