@@ -1,7 +1,7 @@
 import dynamic from 'next/dynamic';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type CSSProperties } from 'react';
 import type { usePhototicket } from '@/hooks/usePhototicket';
-import type { DateFormatToken, DateGranularity, MovieInfo, TicketComponents, TicketField } from '@/types';
+import type { DateFormatToken, DateGranularity, KobisMovie, MovieInfo, TicketComponents, TicketField } from '@/types';
 import { formatDate, openDtToIso } from '@/utils/dateFormat';
 import { useKobisSearch } from '@/hooks/useKobisSearch';
 import { useLogoCrop } from '@/hooks/useLogoCrop';
@@ -142,29 +142,59 @@ function TitleSheet({ photo }: { photo: Photo }) {
               {error}
             </div>
           ) : results.length > 0 ? (
-            <ul role="listbox" aria-label="검색 결과" className="max-h-56 overflow-y-auto">
-              {results.map((movie) => (
-                <li key={movie.movieCd} role="option" aria-selected={false}>
-                  <button
-                    type="button"
-                    onClick={() => selectMovie(movie)}
-                    data-touch="44"
-                    className="block w-full border-b border-line px-4 py-3 text-left transition-colors last:border-0 hover:bg-accent-soft"
-                  >
-                    <div className="text-[15px] font-medium text-fg">{movie.movieNm}</div>
-                    <Eyebrow as="div" tone="faint" className="mt-1">
-                      {movie.openDt && formatDate(openDtToIso(movie.openDt), 'kr-compact', 'date')}
-                      {movie.genreAlt ? ` · ${movie.genreAlt.split(',')[0]}` : ''}
-                      {movie.nationAlt ? ` · ${movie.nationAlt}` : ''}
-                    </Eyebrow>
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <KobisResultList results={results} onSelect={selectMovie} className="max-h-56" />
           ) : null}
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * KOBIS 검색 결과 행(#242 drift 방지) — 데스크톱 아코디언(TitleSheet)과 모바일 인플레이스
+ * 에디터가 공유한다. 리스트 높이만 호출부 사정(고정 max-h-56 vs 동적 aidMaxHeight)에 맞춰
+ * className/style로 주입.
+ */
+export function KobisResultList({
+  results,
+  onSelect,
+  className = '',
+  style,
+}: {
+  results: KobisMovie[];
+  onSelect: (movie: KobisMovie) => void;
+  className?: string;
+  style?: CSSProperties;
+}) {
+  return (
+    <ul role="listbox" aria-label="검색 결과" className={`overflow-y-auto ${className}`} style={style}>
+      {results.map((movie) => (
+        <li key={movie.movieCd} role="option" aria-selected={false}>
+          <button
+            type="button"
+            onClick={() => onSelect(movie)}
+            data-touch="44"
+            className="block w-full border-b border-line px-4 py-3 text-left transition-colors last:border-0 hover:bg-accent-soft"
+          >
+            <div className="text-[15px] font-medium text-fg">{movie.movieNm}</div>
+            {/* 동명·유사 제목 판별용 — 장편/단편/옴니버스, 감독, 개봉 여부(#476 ac2). */}
+            <Eyebrow as="div" tone="faint" className="mt-1">
+              {movie.typeNm}
+              {/* directors는 KOBIS 응답 실측상 항상 배열이지만(#476), 외부 API 응답이라 런타임
+                  검증 없이 캐스팅만 거친다(useKobisSearch.ts) — 필드 누락 시 크래시 대신 폴백
+                  (PR #478 리뷰 P1). */}
+              {movie.directors?.length ? ` · ${movie.directors.map((d) => d.peopleNm).join(', ')}` : ' · 감독 없음'}
+              {movie.prdtStatNm ? ` · ${movie.prdtStatNm}` : ''}
+            </Eyebrow>
+            <Eyebrow as="div" tone="faint" className="mt-0.5">
+              {movie.openDt && formatDate(openDtToIso(movie.openDt), 'kr-compact', 'date')}
+              {movie.genreAlt ? ` · ${movie.genreAlt.split(',')[0]}` : ''}
+              {movie.nationAlt ? ` · ${movie.nationAlt}` : ''}
+            </Eyebrow>
+          </button>
+        </li>
+      ))}
+    </ul>
   );
 }
 

@@ -8,9 +8,7 @@ import { useKobisSearch } from '@/hooks/useKobisSearch';
 import { useLogoCrop } from '@/hooks/useLogoCrop';
 import RatingPicker from '@/components/wizard/RatingPicker';
 import { EyeIcon } from '@/components/ui/VisibilityCheckbox';
-import { DateSheet, INPUT_CLS } from './FieldEditorBody';
-import { Eyebrow } from './Eyebrow';
-import { formatDate, openDtToIso } from '@/utils/dateFormat';
+import { DateSheet, INPUT_CLS, KobisResultList } from './FieldEditorBody';
 import {
   FIELD_INFO_KEY,
   FIELD_LABELS,
@@ -494,34 +492,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
         {kobis.error}
       </div>
     ) : kobis.results.length > 0 ? (
-      <ul role="listbox" aria-label="검색 결과" className="overflow-y-auto" style={{ maxHeight: aidMaxHeight }}>
-        {kobis.results.map((movie) => (
-          <li key={movie.movieCd} role="option" aria-selected={false}>
-            <button
-              type="button"
-              onClick={() => kobis.selectMovie(movie)}
-              data-touch="44"
-              className="block w-full border-b border-line px-4 py-3 text-left transition-colors last:border-0 hover:bg-accent-soft"
-            >
-              <div className="text-[15px] font-medium text-fg">{movie.movieNm}</div>
-              {/* 동명·유사 제목 판별용 — 장편/단편/옴니버스, 감독, 개봉 여부(#476 ac2). */}
-              <Eyebrow as="div" tone="faint" className="mt-1">
-                {movie.typeNm}
-                {/* directors는 KOBIS 응답 실측상 항상 배열이지만(#476), 외부 API 응답이라 런타임
-                    검증 없이 캐스팅만 거친다(useKobisSearch.ts) — 필드 누락 시 크래시 대신 폴백
-                    (PR #478 리뷰 P1). */}
-                {movie.directors?.length ? ` · ${movie.directors.map((d) => d.peopleNm).join(', ')}` : ' · 감독 없음'}
-                {movie.prdtStatNm ? ` · ${movie.prdtStatNm}` : ''}
-              </Eyebrow>
-              <Eyebrow as="div" tone="faint" className="mt-0.5">
-                {movie.openDt && formatDate(openDtToIso(movie.openDt), 'kr-compact', 'date')}
-                {movie.genreAlt ? ` · ${movie.genreAlt.split(',')[0]}` : ''}
-                {movie.nationAlt ? ` · ${movie.nationAlt}` : ''}
-              </Eyebrow>
-            </button>
-          </li>
-        ))}
-      </ul>
+      <KobisResultList results={kobis.results} onSelect={kobis.selectMovie} style={{ maxHeight: aidMaxHeight }} />
     ) : null;
   } else if (field === 'actors') {
     // 티켓 truncate(외 N명)는 표시 전용으로 그대로 두고, 편집은 풀 텍스트 opaque input으로(#447).
