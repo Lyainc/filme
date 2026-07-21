@@ -211,6 +211,12 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
     };
   }, []);
 
+  // aid 패널(KOBIS 결과 목록) 가용 높이 — 키보드 위 가시영역(vvBox.h)에 비례해 늘린다(#476).
+  // 새 측정 루프가 아니라 위 visualViewport effect가 이미 갱신하는 vvBox만 읽는다(#354 rAF 금지).
+  // 0.7 배율은 실측(390×844, 키보드 높이 vv.h≈508 기준) 결과 행(제목+메타 2줄, 행당 ~82.5px)이
+  // 3개 이상 완전히 들어가도록 역산한 값 — 0.6은 2.8행에 그쳐 3번째 행이 잘렸다(ac1).
+  const aidMaxHeight = vvBox ? Math.min(360, Math.max(250, vvBox.h * 0.7)) : 250;
+
   // ── 리프트: 활성 필드 중심을 가시 영역 상단 35% 지점으로(키보드 위). 필드/키보드 변경 시에만
   // 재계산하고 타이핑(rect 갱신)마다 흔들지 않는다 — vpCenter가 리프트 성분을 제거한 값이라
   // 자기참조 발산이 없다. 위로만 민다(min 0).
@@ -486,7 +492,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
         {kobis.error}
       </div>
     ) : kobis.results.length > 0 ? (
-      <ul role="listbox" aria-label="검색 결과" className="max-h-44 overflow-y-auto">
+      <ul role="listbox" aria-label="검색 결과" className="overflow-y-auto" style={{ maxHeight: aidMaxHeight }}>
         {kobis.results.map((movie) => (
           <li key={movie.movieCd} role="option" aria-selected={false}>
             <button
@@ -496,7 +502,13 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
               className="block w-full border-b border-line px-4 py-3 text-left transition-colors last:border-0 hover:bg-accent-soft"
             >
               <div className="text-[15px] font-medium text-fg">{movie.movieNm}</div>
+              {/* 동명·유사 제목 판별용 — 장편/단편/옴니버스, 감독, 개봉 여부(#476 ac2). */}
               <Eyebrow as="div" tone="faint" className="mt-1">
+                {movie.typeNm}
+                {movie.directors.length ? ` · ${movie.directors.map((d) => d.peopleNm).join(', ')}` : ' · 감독 없음'}
+                {movie.prdtStatNm ? ` · ${movie.prdtStatNm}` : ''}
+              </Eyebrow>
+              <Eyebrow as="div" tone="faint" className="mt-0.5">
                 {movie.openDt && formatDate(openDtToIso(movie.openDt), 'kr-compact', 'date')}
                 {movie.genreAlt ? ` · ${movie.genreAlt.split(',')[0]}` : ''}
                 {movie.nationAlt ? ` · ${movie.nationAlt}` : ''}
