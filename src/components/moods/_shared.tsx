@@ -269,6 +269,8 @@ interface ChainStampProps {
   /** 이미지 없을 때 출력할 텍스트 라벨(#141 (7)). 이미지가 있으면 무시된다. */
   label?: string;
   size?: number;
+  /** 사용자 조작 크기 배율 0.6~1.3(기본 1) — 무드 고정 size와 곱연산 결합(#441). */
+  scale?: number;
   surface?: Surface;
   height?: number;
   visible: boolean;
@@ -473,6 +475,7 @@ export function ChainStamp({
   chain,
   label,
   size = 1,
+  scale = 1,
   surface = 'paper',
   height = 48,
   visible,
@@ -485,15 +488,18 @@ export function ChainStamp({
   // null 판정을 stampWillRender로 일원화(무드 구분선 게이팅과 동일 조건). 여기를 통과하면
   // 이미지·라벨·placeholder(ghost!==false) 중 하나는 반드시 렌더된다.
   if (!willRender) return null;
-  // delta도 size로 스케일 — 아니면 size가 작은 무드(Stub·Editorial)에서 ±16px가 base height 대비
+  // 무드 고정 size(디자인 상수)와 사용자 조작 scale(#441)을 분리해 받되, 실제 렌더 계산은
+  // 곱연산 결합값 하나로 통일 — 아래 h·placeholder·라벨이 전부 같은 비율로 스케일된다.
+  const scaledSize = size * scale;
+  // delta도 스케일 — 아니면 size가 작은 무드(Stub·Editorial)에서 ±16px가 base height 대비
   // 훨씬 큰 상대 변화를 만들어 이 PR이 피하려는 회귀 카테고리를 좁은 size에서 재현한다(claude-review
   // PR #408 P1, 2차 라운드).
-  const h = (height + stampHeightDelta(aspect)) * size;
+  const h = (height + stampHeightDelta(aspect)) * scaledSize;
 
   // 노출 off(#369) — 여기 도달했으면 ghost===true(stampWillRender 계약). 이미지·라벨이 있어도
   // 노출하지 않고 흐린 placeholder + 값 존재 배지로만 암시한다(탭→재노출 #266 유지).
   if (visible === false) {
-    return <DashedPlaceholder text="LOGO" width={120 * size} height={h} size={size} surface={surface} dim hasValue={!!(chain || label)} />;
+    return <DashedPlaceholder text="LOGO" width={120 * scaledSize} height={h} size={scaledSize} surface={surface} dim hasValue={!!(chain || label)} />;
   }
 
   // 우선순위: 이미지 > 텍스트 라벨 > dashed placeholder(미리보기 전용, ghost!==false 보장됨).
@@ -517,10 +523,10 @@ export function ChainStamp({
   }
 
   if (label) {
-    return <TextStamp label={label} height={h} size={size} surface={surface} />;
+    return <TextStamp label={label} height={h} size={scaledSize} surface={surface} />;
   }
 
-  return <DashedPlaceholder text="LOGO" width={120 * size} height={h} size={size} surface={surface} />;
+  return <DashedPlaceholder text="LOGO" width={120 * scaledSize} height={h} size={scaledSize} surface={surface} />;
 }
 
 interface FormatStampProps {
@@ -528,6 +534,8 @@ interface FormatStampProps {
   /** 이미지 없을 때 출력할 텍스트 라벨(#141 (7)). 이미지가 있으면 무시된다. */
   label?: string;
   size?: number;
+  /** 사용자 조작 크기 배율 0.6~1.3(기본 1) — 무드 고정 size와 곱연산 결합(#441). */
+  scale?: number;
   surface?: Surface;
   visible: boolean;
   /** 빈 항목 미리보기(#216). false면 dashed placeholder를 숨긴다. undefined/true면 오늘처럼 표시. */
@@ -538,6 +546,7 @@ export function FormatStamp({
   format,
   label,
   size = 1,
+  scale = 1,
   surface = 'paper',
   visible,
   ghost,
@@ -549,12 +558,14 @@ export function FormatStamp({
   // null 판정을 stampWillRender로 일원화(무드 구분선 게이팅과 동일 조건). 통과하면
   // 이미지·라벨·placeholder(ghost!==false) 중 하나는 반드시 렌더된다.
   if (!willRender) return null;
-  // delta도 size로 스케일 — ChainStamp와 동일 이유(claude-review PR #408 P1, 2차 라운드).
-  const h = (64 + stampHeightDelta(aspect)) * size;
+  // ChainStamp와 동일 — 무드 고정 size와 사용자 scale(#441)을 곱연산 결합값 하나로 통일.
+  const scaledSize = size * scale;
+  // delta도 스케일 — ChainStamp와 동일 이유(claude-review PR #408 P1, 2차 라운드).
+  const h = (64 + stampHeightDelta(aspect)) * scaledSize;
 
   // 노출 off(#369) — ChainStamp와 동일: 값이 있어도 흐린 placeholder + 배지로만 암시.
   if (visible === false) {
-    return <DashedPlaceholder text="FORMAT" width={140 * size} height={h} size={size} surface={surface} dim hasValue={!!(format || label)} />;
+    return <DashedPlaceholder text="FORMAT" width={140 * scaledSize} height={h} size={scaledSize} surface={surface} dim hasValue={!!(format || label)} />;
   }
 
   // 우선순위: 이미지 > 텍스트 라벨 > dashed placeholder(미리보기 전용, ghost!==false 보장됨).
@@ -578,10 +589,10 @@ export function FormatStamp({
   }
 
   if (label) {
-    return <TextStamp label={label} height={h} size={size} surface={surface} />;
+    return <TextStamp label={label} height={h} size={scaledSize} surface={surface} />;
   }
 
-  return <DashedPlaceholder text="FORMAT" width={140 * size} height={h} size={size} surface={surface} />;
+  return <DashedPlaceholder text="FORMAT" width={140 * scaledSize} height={h} size={scaledSize} surface={surface} />;
 }
 
 interface PosterProps {

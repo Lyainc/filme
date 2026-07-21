@@ -67,6 +67,8 @@ const BASE_COMPONENTS: TicketComponents = {
   themeColor: '#FFFFFF',
   chainVisible: false,
   formatVisible: false,
+  chainScale: 1,
+  formatScale: 1,
   posterFit: 'cover',
 };
 

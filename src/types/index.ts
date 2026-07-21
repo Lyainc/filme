@@ -73,6 +73,10 @@ export interface TicketComponents {
   themeColor: string;
   chainVisible: boolean;
   formatVisible: boolean;
+  /** 체인 로고 렌더 크기 배율 0.6~1.3(기본 1) — 무드별 고정 size 상수와 곱연산 결합(#441). */
+  chainScale: number;
+  /** 포맷 로고 렌더 크기 배율 0.6~1.3(기본 1) — 무드별 고정 size 상수와 곱연산 결합(#441). */
+  formatScale: number;
   /** 포스터 fit(#420 → #440 정책 통일) — 기본 'contain'(무손실·좌우 보존, 남는 공간은 무드 배경색 letterbox). 'cover'는 크롭 토글 opt-in(슬롯 꽉 채움). 전 무드가 posterFitProps로 읽는다. */
   posterFit: 'cover' | 'contain';
 }

@@ -198,11 +198,11 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
           {(chainOn || formatOn) && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 13, marginBottom: 22 }}>
               <FieldTap field="chain" onField={onField}>
-                <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={39} surface="paper" ghost={ghost} />
+                <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={39} surface="paper" ghost={ghost} scale={components.chainScale ?? 1} />
               </FieldTap>
               {bothStamps && <span style={{ width: 1, height: 24, background: INK, opacity: 0.35, flexShrink: 0 }} />}
               <FieldTap field="format" onField={onField}>
-                <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.6} surface="paper" ghost={ghost} />
+                <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.6} surface="paper" ghost={ghost} scale={components.formatScale ?? 1} />
               </FieldTap>
             </div>
           )}

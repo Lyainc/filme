@@ -174,12 +174,12 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
     stubGroups.push(
       <div key="stamp" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 22 }}>
         <FieldTap field="chain" onField={onField}>
-          <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={48} surface="paper" ghost={ghost} />
+          <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={48} surface="paper" ghost={ghost} scale={components.chainScale ?? 1} />
         </FieldTap>
         {/* 두 스탬프가 다 렌더될 때만 장식 점(35mm의 amber divider dot과 같은 패턴) */}
         {stubChainOn && stubFormatOn && <span style={{ width: 5, height: 5, borderRadius: '50%', background: CREAM, opacity: 0.55, flexShrink: 0 }} />}
         <FieldTap field="format" onField={onField}>
-          <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.55} surface="paper" ghost={ghost} />
+          <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.55} surface="paper" ghost={ghost} scale={components.formatScale ?? 1} />
         </FieldTap>
       </div>
     );

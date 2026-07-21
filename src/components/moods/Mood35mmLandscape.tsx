@@ -211,11 +211,11 @@ export const Mood35mmLandscape = memo(function Mood35mmLandscape({ movieInfo: d,
             {hasStamp && (
               <div style={{ position: 'absolute', left: 46, top: 34, display: 'flex', alignItems: 'center', gap: 28 }}>
                 <FieldTap field="chain" onField={onField}>
-                  <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={50} surface="dark" ghost={ghost} />
+                  <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={50} surface="dark" ghost={ghost} scale={components.chainScale ?? 1} />
                 </FieldTap>
                 {bothStamps && <span style={{ width: 1, height: 30, background: FS_INK, opacity: 0.5 }} />}
                 <FieldTap field="format" onField={onField}>
-                  <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.85} surface="dark" ghost={ghost} />
+                  <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.85} surface="dark" ghost={ghost} scale={components.formatScale ?? 1} />
                 </FieldTap>
               </div>
             )}

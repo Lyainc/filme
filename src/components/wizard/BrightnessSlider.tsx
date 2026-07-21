@@ -7,6 +7,10 @@ interface BrightnessSliderProps {
   label?: string;
   /** input/label 연결 id. 한 화면에 두 슬라이더가 뜨면 고유해야 한다(#219). */
   id?: string;
+  /** 슬라이더 하한. 기본 0(불투명도류). 로고 크기(#441)처럼 0..1을 벗어나는 범위도 재사용. */
+  min?: number;
+  /** 슬라이더 상한. 기본 1. */
+  max?: number;
 }
 
 export default function BrightnessSlider({
@@ -14,6 +18,8 @@ export default function BrightnessSlider({
   onChange,
   label = 'Poster brightness',
   id = 'posterOpacity',
+  min = 0,
+  max = 1,
 }: BrightnessSliderProps) {
   return (
     <div className="space-y-field">
@@ -26,8 +32,8 @@ export default function BrightnessSlider({
       <input
         id={id}
         type="range"
-        min="0"
-        max="1"
+        min={min}
+        max={max}
         step="0.01"
         value={value}
         onChange={(e) => onChange(parseFloat(e.target.value))}

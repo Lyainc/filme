@@ -161,11 +161,11 @@ export const Mood35mm = memo(function Mood35mm({ movieInfo: d, components, cropp
         stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost)) && (
         <div style={{ position: 'absolute', left: 50, top: 130, display: 'flex', alignItems: 'center', gap: 32 }}>
           <FieldTap field="chain" onField={onField}>
-            <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={50} surface="dark" ghost={ghost} />
+            <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={50} surface="dark" ghost={ghost} scale={components.chainScale ?? 1} />
           </FieldTap>
           {stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost) && stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost) && <span style={{ width: 1, height: 40, background: FS_INK, opacity: 0.5 }} />}
           <FieldTap field="format" onField={onField}>
-            <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.85} surface="dark" ghost={ghost} />
+            <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.85} surface="dark" ghost={ghost} scale={components.formatScale ?? 1} />
           </FieldTap>
         </div>
       )}

@@ -38,7 +38,7 @@ function installFakeCanvasContext() {
 const BASE: TicketComponents = {
   layout: 'minimal', chain: '', format: '', chainLabel: '', formatLabel: '',
   material: 'original', coating: 'gloss', materialIntensity: 1, coatingIntensity: 1, posterOpacity: 0.5, componentOpacity: 1, themeColor: '#FFFFFF',
-  chainVisible: false, formatVisible: false, posterFit: 'cover',
+  chainVisible: false, formatVisible: false, chainScale: 1, formatScale: 1, posterFit: 'cover',
 };
 
 describe('MoodMinimal 제목 폭 맞춤 통합 (#318)', () => {
