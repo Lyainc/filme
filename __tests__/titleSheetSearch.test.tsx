@@ -17,7 +17,10 @@ import { usePhototicket } from '@/hooks/usePhototicket';
 import { useExportReady } from '@/hooks/useExportReady';
 import { FieldEditorBody } from '@/components/v2/FieldEditorBody';
 
-const MOVIE_A = { movieCd: 'M001', movieNm: '영화A', movieNmEn: 'Movie A', openDt: '20141106', genreAlt: '드라마', nationAlt: '한국', prdtYear: '2014' };
+const MOVIE_A = {
+  movieCd: 'M001', movieNm: '영화A', movieNmEn: 'Movie A', openDt: '20141106', genreAlt: '드라마', nationAlt: '한국', prdtYear: '2014',
+  typeNm: '장편', prdtStatNm: '개봉', directors: [{ peopleNm: '감독A' }],
+};
 const MOVIE_B = { movieCd: 'M002', movieNm: '영화B', movieNmEn: 'Movie B', openDt: '20190320', genreAlt: 'SF', nationAlt: '한국', prdtYear: '2019' };
 const SEARCH_RESPONSE = { movieListResult: { movieList: [MOVIE_A, MOVIE_B] } };
 
@@ -114,6 +117,16 @@ describe('TitleSheet KOBIS 검색 (#215 PART A)', () => {
     expect(info().titleOg).toBe('Movie A');
     expect(info().releaseDate).toBe('2014-11-06');
     expect(info().actors).toContain('배우-M001');
+  });
+
+  test('검색 결과 행에 typeNm·감독·개봉여부가 렌더된다(#476 모바일 인플레이스 수렴, KobisResultList 공용화)', async () => {
+    render(<Harness />);
+    fireEvent.change(titleInput(), { target: { value: '영화' } });
+    await flushDebounce();
+    const [rowA] = resultButtons();
+    expect(rowA.textContent).toContain('장편');
+    expect(rowA.textContent).toContain('감독A');
+    expect(rowA.textContent).toContain('개봉');
   });
 
   test('compositionend가 최종 커밋 값으로 재검색(#82 IME)', async () => {
