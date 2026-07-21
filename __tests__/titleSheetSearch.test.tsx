@@ -87,7 +87,8 @@ function GatingHarness() {
 // 300ms 디바운스를 fake timer로 발화시킨다 — act(async)가 뒤이은 fetch/json/setState 마이크로태스크
 // 체인도 settle될 때까지 흡수한다(React act의 표준 fake-timer 패턴).
 const flushDebounce = () => act(async () => { jest.advanceTimersByTime(310); });
-const titleInput = () => screen.getByRole('textbox') as HTMLInputElement;
+// role=combobox(#198 재구현) — textbox가 아니다.
+const titleInput = () => screen.getByRole('combobox') as HTMLInputElement;
 const resultButtons = () => screen.queryAllByRole('button').filter((b) => /영화[AB]/.test(b.textContent || ''));
 const info = () => photoRef.state.movieInfo;
 
@@ -208,5 +209,89 @@ describe('TitleSheet KOBIS 검색 (#215 PART A)', () => {
     // detail 해결 후에도 동일.
     await act(async () => { pending.get('M001')!(jsonResponse(detailResponse('배우A', '120'))); });
     expect(screen.getByTestId('export').textContent).toBe('ready');
+  });
+});
+
+describe('TitleSheet 키보드 접근성 (#198 재구현)', () => {
+  test('ArrowDown/Up으로 하이라이트가 이동하고 양끝에서 순환한다', async () => {
+    render(<Harness />);
+    const input = titleInput();
+    fireEvent.change(input, { target: { value: '영화' } });
+    await flushDebounce();
+    expect(resultButtons().length).toBe(2);
+
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    expect(input.getAttribute('aria-activedescendant')).toBe(`kobis-option-${MOVIE_A.movieCd}`);
+    expect(screen.getAllByRole('option')[0].getAttribute('aria-selected')).toBe('true');
+
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    expect(input.getAttribute('aria-activedescendant')).toBe(`kobis-option-${MOVIE_B.movieCd}`);
+
+    // 마지막에서 ArrowDown → 처음으로 순환
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    expect(input.getAttribute('aria-activedescendant')).toBe(`kobis-option-${MOVIE_A.movieCd}`);
+
+    // 첫 항목에서 ArrowUp → 마지막으로 순환
+    fireEvent.keyDown(input, { key: 'ArrowUp' });
+    expect(input.getAttribute('aria-activedescendant')).toBe(`kobis-option-${MOVIE_B.movieCd}`);
+  });
+
+  test('Enter로 하이라이트된 항목을 선택한다', async () => {
+    render(<Harness />);
+    const input = titleInput();
+    fireEvent.change(input, { target: { value: '영화' } });
+    await flushDebounce();
+
+    fireEvent.keyDown(input, { key: 'ArrowDown' }); // MOVIE_A
+    fireEvent.keyDown(input, { key: 'ArrowDown' }); // MOVIE_B
+    await act(async () => { fireEvent.keyDown(input, { key: 'Enter' }); });
+    expect(info().title).toBe('영화B');
+  });
+
+  test('하이라이트 없이 Enter를 눌러도 아무것도 선택하지 않는다', async () => {
+    render(<Harness />);
+    const input = titleInput();
+    fireEvent.change(input, { target: { value: '영화' } });
+    await flushDebounce();
+
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(info().title).toBe('영화');
+  });
+
+  test('Escape로 드롭다운이 닫히고 aria-expanded가 false로 바뀐다', async () => {
+    render(<Harness />);
+    const input = titleInput();
+    fireEvent.change(input, { target: { value: '영화' } });
+    await flushDebounce();
+    expect(input.getAttribute('aria-expanded')).toBe('true');
+    expect(input.getAttribute('aria-controls')).toBe('kobis-results-listbox');
+
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(input.getAttribute('aria-expanded')).toBe('false');
+    expect(input.getAttribute('aria-activedescendant')).toBeNull();
+    expect(resultButtons().length).toBe(0);
+  });
+
+  test('로딩 중엔 role=status/aria-live=polite로 안내한다', async () => {
+    let resolveSearch: (res: Response) => void = () => {};
+    globalThis.fetch = ((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.startsWith('/api/kobis/search')) {
+        return new Promise<Response>((resolve) => {
+          resolveSearch = resolve;
+        });
+      }
+      return Promise.reject(new Error(`unexpected fetch: ${url}`));
+    }) as typeof fetch;
+
+    render(<Harness />);
+    fireEvent.change(titleInput(), { target: { value: '영화' } });
+    await act(async () => { jest.advanceTimersByTime(310); });
+
+    const status = screen.getByRole('status');
+    expect(status.getAttribute('aria-live')).toBe('polite');
+    expect(status.textContent).toBe('Loading…');
+
+    await act(async () => { resolveSearch(jsonResponse(SEARCH_RESPONSE)); });
   });
 });
