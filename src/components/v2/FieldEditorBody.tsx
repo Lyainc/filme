@@ -1,5 +1,5 @@
 import dynamic from 'next/dynamic';
-import { useEffect, useRef, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { DateFormatToken, DateGranularity, KobisMovie, MovieInfo, TicketComponents, TicketField } from '@/types';
 import { formatDate, openDtToIso } from '@/utils/dateFormat';
@@ -84,12 +84,20 @@ function TextSheet({ field, photo }: { field: TicketField; photo: Photo }) {
 /** 제목 — 텍스트 입력 + KOBIS 검색(디바운스 → 결과 목록 → 선택 시 제목/원제/개봉일/출연/러닝타임 채움). */
 function TitleSheet({ photo }: { photo: Photo }) {
   const title = photo.state.movieInfo.title;
-  // 검색 코어는 데스크톱 폼과 공용 훅을 쓴다(#242 drift 방지). 시트는 축소판 UX라
-  // 키보드 내비·pending 게이팅 없이 에러 문구만 캐주얼 톤으로.
-  const { results, loading, error, open, scheduleSearch, runSearch, selectMovie } = useKobisSearch({
+  // 검색 코어는 데스크톱 폼과 공용 훅을 쓴다(#242 drift 방지). 키보드 내비(#198)는 이 시트가
+  // 직접 소유 — useKobisSearch는 검색 상태만 내고 ARIA/키보드는 각 호출부 몫(훅 주석 참고).
+  const { results, loading, error, open, setOpen, scheduleSearch, runSearch, selectMovie } = useKobisSearch({
     apply: photo.updateMovieInfo,
     messages: { noResults: '검색 결과가 없어요.', requestFailed: '검색 중 문제가 생겼어요.' },
   });
+
+  // 자동완성 키보드 내비 — 하이라이트된 결과 인덱스(-1 = 없음). aria-activedescendant로
+  // 노출하고 Enter가 이 항목을 선택한다(#198). 결과가 갈리거나 드롭다운이 닫히면 리셋 —
+  // 스테일 인덱스가 엉뚱한 항목을 가리키지 않게.
+  const [highlightIndex, setHighlightIndex] = useState(-1);
+  useEffect(() => {
+    setHighlightIndex(-1);
+  }, [results, open]);
 
   // OCR이 채운 제목을 들고 편집기를 열었을 때도 후보가 바로 보이도록, 마운트 시
   // 초기값이 있으면 한 번 자동 검색(#383). onChange/onCompositionEnd는 이후 입력에만 반응한다.
@@ -98,6 +106,19 @@ function TitleSheet({ photo }: { photo: Photo }) {
     if (v) scheduleSearch(v);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 하이라이트 이동 + 스크롤 동기화 — 리스트가 overflow-y-auto(max-h-56)라 결과가 많으면
+  // 하단 항목은 뷰 밖이다(#198 리뷰 P1).
+  const moveHighlight = (next: number) => {
+    setHighlightIndex(next);
+    const movie = results[next];
+    if (movie) document.getElementById(kobisOptionId(movie.movieCd))?.scrollIntoView({ block: 'nearest' });
+  };
+
+  // listbox는 결과가 있을 때만 렌더되므로 aria-controls도 그때만 — 로딩/에러 상태에서
+  // 없는 요소를 가리키지 않게(ARIA 1.2, #198 리뷰 P1).
+  const hasListbox = open && !loading && !error && results.length > 0;
+  const highlighted = highlightIndex >= 0 ? results[highlightIndex] : undefined;
 
   return (
     <div className="space-y-3">
@@ -117,7 +138,34 @@ function TitleSheet({ photo }: { photo: Photo }) {
           photo.updateMovieInfo({ title: v });
           scheduleSearch(v.trim());
         }}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowDown') {
+            if (!open || results.length === 0) return;
+            e.preventDefault();
+            moveHighlight((highlightIndex + 1) % results.length);
+          } else if (e.key === 'ArrowUp') {
+            if (!open || results.length === 0) return;
+            e.preventDefault();
+            moveHighlight(highlightIndex <= 0 ? results.length - 1 : highlightIndex - 1);
+          } else if (e.key === 'Enter') {
+            if (open && highlighted) {
+              e.preventDefault();
+              selectMovie(highlighted);
+            }
+          } else if (e.key === 'Escape') {
+            if (open) {
+              e.preventDefault();
+              setOpen(false);
+              setHighlightIndex(-1);
+            }
+          }
+        }}
         aria-label="제목"
+        role="combobox"
+        aria-expanded={open}
+        aria-autocomplete="list"
+        aria-controls={hasListbox ? KOBIS_LISTBOX_ID : undefined}
+        aria-activedescendant={highlighted ? kobisOptionId(highlighted.movieCd) : undefined}
         className={INPUT_CLS}
       />
       <Eyebrow as="div" tone="faint" className="flex items-center justify-between">
@@ -134,7 +182,7 @@ function TitleSheet({ photo }: { photo: Photo }) {
       {open && (
         <div className="overflow-hidden rounded-card border border-line bg-surface-elevated">
           {loading ? (
-            <div className="text-mono px-4 py-5 text-center text-[11px] uppercase tracking-widest text-fg-faint">
+            <div role="status" aria-live="polite" className="text-mono px-4 py-5 text-center text-[11px] uppercase tracking-widest text-fg-faint">
               Loading…
             </div>
           ) : error ? (
@@ -142,7 +190,7 @@ function TitleSheet({ photo }: { photo: Photo }) {
               {error}
             </div>
           ) : results.length > 0 ? (
-            <KobisResultList results={results} onSelect={selectMovie} className="max-h-56" />
+            <KobisResultList results={results} onSelect={selectMovie} className="max-h-56" highlightIndex={highlightIndex} />
           ) : null}
         </div>
       )}
@@ -150,31 +198,44 @@ function TitleSheet({ photo }: { photo: Photo }) {
   );
 }
 
+// TitleSheet의 combobox 호스트(#198)가 aria-controls/aria-activedescendant로 참조하는 고정 id —
+// title 검색 결과 목록은 한 번에 하나만 마운트되므로(데스크톱/모바일은 JS 분기, 동시 마운트 없음)
+// movieCd 기반 옵션 id와 함께 정적 상수로 충분하다.
+const KOBIS_LISTBOX_ID = 'kobis-results-listbox';
+const kobisOptionId = (movieCd: string) => `kobis-option-${movieCd}`;
+
 /**
  * KOBIS 검색 결과 행(#242 drift 방지) — 데스크톱 아코디언(TitleSheet)과 모바일 인플레이스
  * 에디터가 공유한다. 리스트 높이만 호출부 사정(고정 max-h-56 vs 동적 aidMaxHeight)에 맞춰
- * className/style로 주입.
+ * className/style로 주입. highlightIndex는 TitleSheet의 키보드 내비 전용(#198) — InPlaceFieldEditor는
+ * 안 넘겨 기존 동작(하이라이트 없음) 그대로 유지한다. 옵션 버튼은 tabIndex를 안 건드린다 —
+ * InPlaceFieldEditor aid 패널은 자체 화살표키 호스트가 없어(이 재구현 범위 밖) tabIndex=-1을
+ * 걸면 그쪽 결과가 키보드로 아예 닿지 않게 된다.
  */
 export function KobisResultList({
   results,
   onSelect,
   className = '',
   style,
+  highlightIndex = -1,
 }: {
   results: KobisMovie[];
   onSelect: (movie: KobisMovie) => void;
   className?: string;
   style?: CSSProperties;
+  highlightIndex?: number;
 }) {
   return (
-    <ul role="listbox" aria-label="검색 결과" className={`overflow-y-auto ${className}`} style={style}>
-      {results.map((movie) => (
-        <li key={movie.movieCd} role="option" aria-selected={false}>
+    <ul id={KOBIS_LISTBOX_ID} role="listbox" aria-label="검색 결과" className={`overflow-y-auto ${className}`} style={style}>
+      {results.map((movie, i) => (
+        <li key={movie.movieCd} id={kobisOptionId(movie.movieCd)} role="option" aria-selected={i === highlightIndex}>
           <button
             type="button"
             onClick={() => onSelect(movie)}
             data-touch="44"
-            className="block w-full border-b border-line px-4 py-3 text-left transition-colors last:border-0 hover:bg-accent-soft"
+            className={`block w-full border-b border-line px-4 py-3 text-left transition-colors last:border-0 hover:bg-accent-soft ${
+              i === highlightIndex ? 'bg-accent-soft' : ''
+            }`}
           >
             <div className="text-[15px] font-medium text-fg">{movie.movieNm}</div>
             {/* 동명·유사 제목 판별용 — 장편/단편/옴니버스, 감독, 개봉 여부(#476 ac2). */}

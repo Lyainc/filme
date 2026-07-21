@@ -81,8 +81,9 @@ describe('KOBIS 무매칭 → 제목 검색 UI 연결 (#445)', () => {
     await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
 
     // 콜백이 INFO 탭 전환 + 제목 행 확장을 대신 처리 — 기존 안내 토스트는 더는 안 뜬다.
+    // role=combobox(#198 재구현) — textbox가 아니다.
     await waitFor(() => {
-      expect(screen.getByRole('textbox', { name: '제목' })).toBeDefined();
+      expect(screen.getByRole('combobox', { name: '제목' })).toBeDefined();
     });
     expect(screen.queryByText('영화 제목을 확인 후 검색해 주세요.')).toBeNull();
 

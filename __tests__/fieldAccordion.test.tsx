@@ -43,15 +43,15 @@ describe('FieldAccordion (#226)', () => {
     const user = userEvent.setup();
     render(<Harness />);
 
-    // 접힘 상태: 제목 편집 입력은 아직 마운트 안 됨.
-    expect(screen.queryByRole('textbox', { name: '제목' })).toBeNull();
+    // 접힘 상태: 제목 편집 입력은 아직 마운트 안 됨. (role=combobox, #198 재구현)
+    expect(screen.queryByRole('combobox', { name: '제목' })).toBeNull();
 
     const toggle = screen.getByRole('button', { name: '제목 편집' });
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
 
     await user.click(toggle);
 
-    expect(screen.getByRole('textbox', { name: '제목' })).toBeDefined();
+    expect(screen.getByRole('combobox', { name: '제목' })).toBeDefined();
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
   });
 
@@ -87,13 +87,13 @@ describe('FieldAccordion (#226)', () => {
     const titleToggle = screen.getByRole('button', { name: '제목 편집' });
     const seatToggle = screen.getByRole('button', { name: '좌석 편집' });
 
-    // 제목 열기 → 제목 입력 마운트.
+    // 제목 열기 → 제목 입력 마운트. (role=combobox, #198 재구현)
     await user.click(titleToggle);
-    expect(screen.queryByRole('textbox', { name: '제목' })).not.toBeNull();
+    expect(screen.queryByRole('combobox', { name: '제목' })).not.toBeNull();
 
     // 좌석 열기 → 제목은 자동 접힘(상호배타), 좌석만 열림.
     await user.click(seatToggle);
-    expect(screen.queryByRole('textbox', { name: '제목' })).toBeNull();
+    expect(screen.queryByRole('combobox', { name: '제목' })).toBeNull();
     expect(titleToggle.getAttribute('aria-expanded')).toBe('false');
     expect(screen.queryByRole('textbox', { name: '좌석' })).not.toBeNull();
     expect(seatToggle.getAttribute('aria-expanded')).toBe('true');
