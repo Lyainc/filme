@@ -2,9 +2,10 @@
  * #215 PART A — FieldEditorBody TitleSheet의 KOBIS 검색 회귀.
  * (구 FieldEditSheet 하우징은 #355에서 제거 — 본문을 직접 렌더한다.)
  *
- * TitleSheet는 MovieInfoForm의 KOBIS 검색(디바운스→/api/kobis/search→선택 시
- * /api/kobis/detail 보강, #82에서 실제 회귀가 있던 코드)을 재구현했다. movieInfoFormAutocomplete
- * 테스트와 동일 시나리오를 이 본문에도 건다: 검색→선택 반영, IME compositionend 재검색,
+ * TitleSheet는 useKobisSearch 공용 훅의 KOBIS 검색(디바운스→/api/kobis/search→선택 시
+ * /api/kobis/detail 보강, #82에서 실제 회귀가 있던 코드)을 사용한다. 데스크톱 전용
+ * MovieInfoForm이 같은 훅을 쓰던 시절의 회귀 시나리오를 이 본문에도 건다(MovieInfoForm
+ * 자체는 #479 이후 dead code로 제거됨): 검색→선택 반영, IME compositionend 재검색,
  * 1글자 제목, 공백 무검색, detail 경합 가드(detailRunRef).
  *
  * fetch는 글로벌 스왑으로 mock(공유 모듈 mock.module 미사용 — 전역 누수 회피). 상호작용은

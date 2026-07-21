@@ -6,7 +6,7 @@ import { formatDate, openDtToIso } from '@/utils/dateFormat';
 import { useKobisSearch } from '@/hooks/useKobisSearch';
 import { useLogoCrop } from '@/hooks/useLogoCrop';
 import { Eyebrow } from './Eyebrow';
-import { DateInput } from '@/components/MovieInfoForm';
+import { DateInput } from '@/components/ui/DateInput';
 import RatingPicker from '@/components/wizard/RatingPicker';
 import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
 import {
@@ -107,7 +107,7 @@ function TitleSheet({ photo }: { photo: Photo }) {
         value={title}
         // 한글 IME는 마지막 음절을 커밋(스페이스/엔터/blur) 전까지 조합 상태로 두고,
         // 조합 종료 시 trailing change 없이 값만 반영되는 IME가 있어(#82) 최종 커밋 값으로
-        // 재검색한다. MovieInfoForm의 동일 검색 UI와 동작을 맞춘다.
+        // 재검색한다.
         onCompositionEnd={(e) => {
           const v = e.currentTarget.value.trim();
           if (v) scheduleSearch(v);
