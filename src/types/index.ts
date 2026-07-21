@@ -59,9 +59,14 @@ export interface TicketComponents {
   chainLabel: string;
   /** 포맷 텍스트 라벨(예: "IMAX") — 이미지 없을 때 텍스트 스탬프로 출력. OCR/수동으로 채움(#348). */
   formatLabel: string;
-  texture: string;
-  /** 후가공 sheen 오버레이 강도 0..1(기본은 texture별 defaultIntensity). 0=완전 무가공. posterOpacity(밝기)와 독립 축이다(#434). */
-  textureIntensity: number;
+  /** 재질 축(종이 자체 색·톤·결) — 'original'|'artpaper'|'vintage'|'newspaper'(#475). 코팅과 독립 조합. */
+  material: string;
+  /** 코팅 축(재질 최종색 위에 얹는 광택) — 'none'|'gloss'|'hologram'|'metal'|'scodix'(#475). */
+  coating: string;
+  /** 재질 결 오버레이 강도 0..1(기본은 material별 defaultIntensity). 0=그 축 완전 무가공. posterOpacity(밝기)와 독립 축이다(#434/#475). */
+  materialIntensity: number;
+  /** 코팅 광택 오버레이 강도 0..1(기본은 coating별 defaultIntensity). 0=그 축 완전 무가공. materialIntensity와 독립(#475). */
+  coatingIntensity: number;
   posterOpacity: number;
   /** 포스터를 뺀 모든 오버레이 콘텐츠(텍스트·바코드·스탬프·로고·장식)의 불투명도 0..1(기본 1=원본). posterOpacity와 독립(#219). */
   componentOpacity: number;

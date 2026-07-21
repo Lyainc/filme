@@ -18,7 +18,7 @@ export const FULL_MOVIE: MovieInfo = {
 export function makeMoodBase(layout: LayoutId): TicketComponents {
   return {
     layout, chain: '', format: '', chainLabel: 'MEGABOX', formatLabel: 'DOLBY',
-    texture: 'none', textureIntensity: 1, posterOpacity: 0.5, componentOpacity: 1, themeColor: '#FFFFFF',
+    material: 'original', coating: 'gloss', materialIntensity: 1, coatingIntensity: 1, posterOpacity: 0.5, componentOpacity: 1, themeColor: '#FFFFFF',
     chainVisible: true, formatVisible: true, posterFit: 'cover',
   };
 }

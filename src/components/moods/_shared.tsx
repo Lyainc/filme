@@ -588,9 +588,14 @@ interface PosterProps {
   src: string;
   fit?: 'cover' | 'contain';
   background?: string;
-  texture?: string;
-  /** 후가공 sheen 강도 0..1(#434) — TextureOverlay로 관통. 미지정 시 1(강도 100%). */
-  textureIntensity?: number;
+  /** 재질 축(#475) — 'original'|'artpaper'|'vintage'|'newspaper'. 포스터 CSS filter(색) + 결 오버레이(아래)를 만든다. */
+  material?: string;
+  /** 재질 결 오버레이 강도 0..1(#434/#475) — TextureOverlay(재질)로 관통. 미지정 시 1(강도 100%). */
+  materialIntensity?: number;
+  /** 코팅 축(#475) — 'none'|'gloss'|'hologram'|'metal'|'scodix'. 재질 최종색 위에 얹는 광택 오버레이(위). */
+  coating?: string;
+  /** 코팅 광택 오버레이 강도 0..1(#475) — TextureOverlay(코팅)로 관통. 미지정 시 1(강도 100%). */
+  coatingIntensity?: number;
   posterOpacity?: number;
   /** contain일 때 정렬(#420 원본 비율 보존 프리셋) — 'top'은 포스터 상단을 캔버스 상단에 붙인다. 기본 중앙. */
   align?: 'center' | 'top';
@@ -624,20 +629,24 @@ export const POSTER_LETTERBOX_BG = '#0a0a0a';
 
 const PRINT_SIM = 'saturate(0.92) contrast(1.05)';
 
-// vintage/newspaper have intentional contrast curves — no PRINT_SIM stacking
+// vintage/newspaper have intentional contrast curves — no PRINT_SIM stacking. 키는 재질 축(#475).
 const TEXTURE_FILTERS: Record<string, string> = {
   vintage: 'sepia(0.6) contrast(1.1) brightness(0.9)',
   newspaper: 'grayscale(1) contrast(1.5) brightness(1.2)',
 };
 
-// texture별 기본 밝기(#146 확정 b). original/vintage/newspaper는 포스터를 그대로 보여주는
-// 룩이라 1.0(원본 밝기), 그 외 가공 텍스처(none·hologram·metal·artpaper·scodix)는 메타
-// 가독성을 위해 0.5로 살짝 어둡게 깐다. 사용자가 슬라이더로 직접 조정한 값이 있으면
-// usePhototicket이 그 값을 그대로 넘기므로, 이 기본값은 posterOpacity 미지정 시에만 쓰인다.
-const FULL_BRIGHTNESS_TEXTURES = new Set(['original', 'vintage', 'newspaper']);
+// material/coating 조합별 기본 밝기(#146 확정 b → #475 2축 확장). 코팅이 있으면(none 아니면) 코팅
+// sheen 위에서 메타 가독성을 위해 0.5로 살짝 어둡게 깐다 — 옛 단일축의 none/hologram/metal/scodix가
+// 전부 이 조건에 해당했다. 코팅이 없으면(none) 재질 자체의 색 필터가 이미 충분히 어둡게/탈색하는지로
+// 갈린다 — vintage(세피아)·newspaper(흑백)는 필터가 이미 진해 1.0 유지, artpaper는 필터가 없어(원본
+// 채도 유지) 0.5로 다시 깐다. 옛 8종 단일값 전부 이 규칙으로 정확히 재현된다(#475 마이그레이션 검증).
+// 사용자가 슬라이더로 직접 조정한 값이 있으면 usePhototicket이 그 값을 그대로 넘기므로, 이 기본값은
+// posterOpacity 미지정 시에만 쓰인다.
+const DIM_WITHOUT_COATING_MATERIALS = new Set(['artpaper']);
 
-export function defaultBrightnessForTexture(texture: string): number {
-  return FULL_BRIGHTNESS_TEXTURES.has(texture) ? 1.0 : 0.5;
+export function defaultBrightnessForTexture(material: string, coating: string): number {
+  if (coating !== 'none') return 0.5;
+  return DIM_WITHOUT_COATING_MATERIALS.has(material) ? 0.5 : 1.0;
 }
 
 /**
@@ -661,20 +670,22 @@ export const Poster = memo(function Poster({
   src,
   fit = 'cover',
   background = '#0a0a0a',
-  texture = 'original',
-  textureIntensity = 1,
+  material = 'original',
+  materialIntensity = 1,
+  coating = 'none',
+  coatingIntensity = 1,
   posterOpacity,
   align = 'center',
   frameInsetY = 0,
   onTopBandHeight,
 }: PosterProps) {
-  // 밝기(posterOpacity)를 texture와 분리해 포스터 <img>에 직접 합성한다. 이전엔
+  // 밝기(posterOpacity)를 material/coating과 분리해 포스터 <img>에 직접 합성한다. 이전엔
   // TextureOverlay의 검은 dim 레이어에서만 적용돼 original/vintage/newspaper에선
   // 밝기 슬라이더가 완전히 무효였다(#139 ①). brightness(x)는 검은색을 multiply로
   // opacity (1-x)만큼 덮은 것과 수학적으로 동치라(final = src*x), 텍스처 dim 룩이
-  // 그대로 유지되면서 모든 texture에서 밝기가 동작한다.
-  const opacity = posterOpacity ?? defaultBrightnessForTexture(texture);
-  const baseFilter = TEXTURE_FILTERS[texture] ?? PRINT_SIM;
+  // 그대로 유지되면서 모든 조합에서 밝기가 동작한다.
+  const opacity = posterOpacity ?? defaultBrightnessForTexture(material, coating);
+  const baseFilter = TEXTURE_FILTERS[material] ?? PRINT_SIM;
   const filter = `${baseFilter} brightness(${opacity})`;
 
   // 전경 포스터 가장자리 페더(#459) — contain 레터박스 씸을 뒤의 블러 배경과 부드럽게 잇는다.
@@ -725,10 +736,13 @@ export const Poster = memo(function Poster({
       // 빠져야 그 자리가 '투명 구멍'으로 남아 합성한 포스터가 비쳐 보인다.
       data-poster-root="true"
       // 저장 경로(captureToImage.compositeOverlay)가 이 서브트리를 제외하고 canvas로 재합성하므로,
-      // 오버레이의 texture/강도를 DOM 속성으로 실어보내 캡처가 상태 없이 DOM만으로 재현하게 한다(#434 c1, #471).
-      // 레시피 밖 texture(original)는 data-texture를 안 실어 compositeOverlay가 건너뛴다.
-      data-texture={texture && texture !== 'original' && TEXTURE_RECIPES[texture] ? texture : undefined}
-      data-texture-intensity={textureIntensity}
+      // 오버레이의 material/coating·강도를 DOM 속성으로 실어보내 캡처가 상태 없이 DOM만으로 재현하게
+      // 한다(#434 c1, #471, #475 c2 — 재질→코팅 순 2회 합성). 레시피 밖 값(material=original,
+      // coating=none)은 해당 data-* 를 안 실어 compositeOverlay가 그 축을 건너뛴다.
+      data-material={material && material !== 'original' && TEXTURE_RECIPES[material] ? material : undefined}
+      data-material-intensity={materialIntensity}
+      data-coating={coating && coating !== 'none' && TEXTURE_RECIPES[coating] ? coating : undefined}
+      data-coating-intensity={coatingIntensity}
       style={{
         position: 'absolute',
         inset: 0,
@@ -781,7 +795,10 @@ export const Poster = memo(function Poster({
           crossOrigin="anonymous"
         />
       </div>
-      {texture && texture !== 'original' && <TextureOverlay texture={texture} intensity={textureIntensity} />}
+      {/* z-order(#475 c2/c3): 재질 결(아래) → 코팅 광택(위). 코팅은 재질 CSS filter가 이미 적용된
+          <img> 위에 얹히므로 "재질 최종색 위에 코팅 blend"(c3)가 DOM 순서 그대로 성립한다. */}
+      {material && material !== 'original' && <TextureOverlay texture={material} intensity={materialIntensity} />}
+      {coating && coating !== 'none' && <TextureOverlay texture={coating} intensity={coatingIntensity} />}
     </div>
   );
 });

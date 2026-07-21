@@ -31,11 +31,13 @@ afterEach(() => {
 });
 
 describe('DesktopDesignPanel (#228)', () => {
-  test('(a) 4섹션 상시 렌더 — LayoutPicker/TexturePicker/ColorPicker/BrightnessSlider 동시 존재', () => {
+  test('(a) 4섹션 상시 렌더 — LayoutPicker/TexturePicker(재질×코팅 2축)/ColorPicker/BrightnessSlider 동시 존재', () => {
     render(<PanelHarness />);
     // 아코디언이 아니라 세로 스택 — 넷 다 한 번에 보인다(designRail은 한 번에 하나만).
     expect(screen.queryByRole('group', { name: 'Mood designs' })).not.toBeNull();
-    expect(screen.queryByRole('radiogroup', { name: 'Texture' })).not.toBeNull();
+    // #475 — Texture 섹션이 재질×코팅 2축 radiogroup으로 갈린다.
+    expect(screen.queryByRole('radiogroup', { name: '재질' })).not.toBeNull();
+    expect(screen.queryByRole('radiogroup', { name: '코팅' })).not.toBeNull();
     expect(screen.queryByLabelText('Hex color')).not.toBeNull();
     expect(screen.queryByLabelText('포스터')).not.toBeNull();
     expect(screen.queryByLabelText('컴포넌트')).not.toBeNull();

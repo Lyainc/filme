@@ -215,7 +215,7 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
       {/* A: Poster — 포스터 컬럼에만 탭(#259). editorial은 다열이라 root가 아닌 이 열에.
           배경은 Poster의 letterboxBg가 칠하므로 래퍼 자체엔 안 둔다(nit poster-letterbox-bg, #440). */}
       <div style={{ flex: `0 0 ${POSTER_W}px`, position: 'relative', overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
-        <Poster src={croppedImageUrl} {...posterFitProps(components.posterFit, { letterboxBg: POSTER_LETTERBOX_BG })} texture={components.texture} textureIntensity={components.textureIntensity} posterOpacity={components.posterOpacity} />
+        <Poster src={croppedImageUrl} {...posterFitProps(components.posterFit, { letterboxBg: POSTER_LETTERBOX_BG })} material={components.material} coating={components.coating} materialIntensity={components.materialIntensity} coatingIntensity={components.coatingIntensity} posterOpacity={components.posterOpacity} />
         <div aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 150, background: 'linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0))' }} />
         <div aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 150, background: 'linear-gradient(0deg,rgba(0,0,0,.6),rgba(0,0,0,0))' }} />
       </div>

@@ -175,8 +175,8 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
       <Poster
         src={croppedImageUrl}
         {...posterFitProps(components.posterFit, { letterboxBg: posterBg, frameInsetY: POSTER_FRAME_INSET_Y })}
-        texture={components.texture}
-        textureIntensity={components.textureIntensity}
+        material={components.material} coating={components.coating}
+        materialIntensity={components.materialIntensity} coatingIntensity={components.coatingIntensity}
         posterOpacity={components.posterOpacity}
         onTopBandHeight={setTopBandH}
       />

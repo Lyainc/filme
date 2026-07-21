@@ -439,17 +439,25 @@ export async function captureNodeToJpeg(
       console.warn('[capture:band] getImageData failed', err);
     }
   }
-  // 후가공 sheen 오버레이(#434 c1) — 포스터 위·base 텍스트 아래. poster-root 서브트리는 위 toPng
-  // filter에서 제외됐으므로(그 안의 CSS 오버레이도 저장물에서 통째로 빠진다), 여기서 poster-root
-  // 박스에 canvas blend로 같은 레시피를 다시 얹어 미리보기=저장물을 맞춘다. texture/강도는 Poster가
-  // data 속성으로 실어보낸다(캡처가 컴포넌트 상태 없이 DOM만으로 재현).
+  // 후가공 sheen 오버레이(#434 c1, #475 c2) — 포스터 위·base 텍스트 아래, 재질→코팅 순 2회 합성.
+  // poster-root 서브트리는 위 toPng filter에서 제외됐으므로(그 안의 CSS 오버레이도 저장물에서
+  // 통째로 빠진다), 여기서 poster-root 박스에 canvas blend로 같은 레시피를 다시 얹어 미리보기=
+  // 저장물을 맞춘다. material/coating·강도는 Poster가 data 속성으로 실어보낸다(캡처가 컴포넌트
+  // 상태 없이 DOM만으로 재현). 재질을 먼저 그려야 코팅이 그 위(z-order상 위)에 얹힌다(#475 c3).
   const posterRoots = Array.from(node.querySelectorAll('[data-poster-root]')) as HTMLElement[];
   for (const root of posterRoots) {
-    const texture = root.dataset.texture;
-    if (!texture) continue;
-    const rawIntensity = root.dataset.textureIntensity;
-    const intensity = rawIntensity != null ? parseFloat(rawIntensity) : 1;
-    await compositeOverlay(ctx, root, texture, intensity, nodeRect, width, height, pixelRatio, debug);
+    const material = root.dataset.material;
+    if (material) {
+      const rawIntensity = root.dataset.materialIntensity;
+      const intensity = rawIntensity != null ? parseFloat(rawIntensity) : 1;
+      await compositeOverlay(ctx, root, material, intensity, nodeRect, width, height, pixelRatio, debug);
+    }
+    const coating = root.dataset.coating;
+    if (coating) {
+      const rawIntensity = root.dataset.coatingIntensity;
+      const intensity = rawIntensity != null ? parseFloat(rawIntensity) : 1;
+      await compositeOverlay(ctx, root, coating, intensity, nodeRect, width, height, pixelRatio, debug);
+    }
   }
   const baseImg = await loadImage(basePngUrl);
   ctx.drawImage(baseImg, ticketRect.x, ticketRect.y, ticketRect.w, ticketRect.h);
