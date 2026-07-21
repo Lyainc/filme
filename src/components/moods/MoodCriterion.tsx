@@ -217,11 +217,11 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
       {/* Top-right paired stamps */}
       <div style={{ position: 'absolute', right: 52, top: 48, display: 'flex', alignItems: 'center', gap: 28 }}>
         <FieldTap field="chain" onField={onField}>
-          <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={50} surface={stampSurface} ghost={ghost} />
+          <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={50} surface={stampSurface} ghost={ghost} scale={components.chainScale ?? 1} />
         </FieldTap>
         {stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost) && stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost) && <span style={{ width: 1, height: 30, background: ink, opacity: 0.55 }} />}
         <FieldTap field="format" onField={onField}>
-          <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.9} surface={stampSurface} ghost={ghost} />
+          <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.9} surface={stampSurface} ghost={ghost} scale={components.formatScale ?? 1} />
         </FieldTap>
       </div>
 

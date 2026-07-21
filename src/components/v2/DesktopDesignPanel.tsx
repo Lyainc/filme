@@ -110,6 +110,23 @@ export function DesktopDesignPanel({ photo }: { photo: ReturnType<typeof usePhot
             value={components.componentOpacity ?? 1}
             onChange={(componentOpacity) => setComp({ componentOpacity })}
           />
+          {/* 체인/포맷 로고 렌더 크기(#441) — DesignRail과 동일 배선. */}
+          <BrightnessSlider
+            label="체인 로고 크기"
+            id="desktop-chain-scale"
+            value={components.chainScale ?? 1}
+            onChange={(chainScale) => setComp({ chainScale })}
+            min={0.6}
+            max={1.3}
+          />
+          <BrightnessSlider
+            label="포맷 로고 크기"
+            id="desktop-format-scale"
+            value={components.formatScale ?? 1}
+            onChange={(formatScale) => setComp({ formatScale })}
+            min={0.6}
+            max={1.3}
+          />
         </div>
       </Section>
     </div>

@@ -192,11 +192,11 @@ export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components,
           <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 160, background: topScrim, pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', left: 60, top: 52, display: 'flex', alignItems: 'center', gap: 34 }}>
             <FieldTap field="chain" onField={onField}>
-              <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={74} surface={stampSurface} ghost={ghost} />
+              <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={74} surface={stampSurface} ghost={ghost} scale={components.chainScale ?? 1} />
             </FieldTap>
             {stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost) && stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost) && <span style={{ width: 1, height: 38, background: ink, opacity: 0.5 }} />}
             <FieldTap field="format" onField={onField}>
-              <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={1.02} surface={stampSurface} ghost={ghost} />
+              <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={1.02} surface={stampSurface} ghost={ghost} scale={components.formatScale ?? 1} />
             </FieldTap>
           </div>
         </>

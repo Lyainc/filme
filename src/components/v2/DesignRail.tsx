@@ -254,6 +254,24 @@ export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket>
               value={components.componentOpacity ?? 1}
               onChange={(componentOpacity) => setComp({ componentOpacity })}
             />
+            {/* 체인/포맷 로고 렌더 크기(#441) — 여백 없이 꽉 찬 로고가 기대보다 크게 보이는 문제를
+                사용자가 직접 축소·확대로 조절. 컴포넌트 레벨 축이라 같은 탭 재사용. */}
+            <BrightnessSlider
+              label="체인 로고 크기"
+              id="rail-chain-scale"
+              value={components.chainScale ?? 1}
+              onChange={(chainScale) => setComp({ chainScale })}
+              min={0.6}
+              max={1.3}
+            />
+            <BrightnessSlider
+              label="포맷 로고 크기"
+              id="rail-format-scale"
+              value={components.formatScale ?? 1}
+              onChange={(formatScale) => setComp({ formatScale })}
+              min={0.6}
+              max={1.3}
+            />
           </div>
         )}
       </RailExpandPanel>

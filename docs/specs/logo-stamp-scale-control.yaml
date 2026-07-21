@@ -1,0 +1,167 @@
+---
+# Output conforms to thinking-tools/reference/common-schema.md
+skill: build-spec
+schema_version: 1
+version: 4.0.1
+generated: 2026-07-22
+input:
+  target: 로고(체인/포맷 스탬프) 렌더 크기 사용자 조절
+  options: []
+output:
+  type: spec
+  structure: templates/SEED_SPEC.yaml
+
+# build-spec extensions
+spec_version: 1
+created: 2026-07-22
+target: 로고(체인/포맷 스탬프) 렌더 크기 사용자 조절
+domain: tech
+brownfield: true
+refine_generation: 0
+issue: 441
+
+goal:
+  statement: >
+    ChainStamp/FormatStamp(극장·포맷 로고)가 무드별 고정 height 상수에 맞춰 항상 같은
+    크기로 렌더되는데, 여백 없이 꽉 찬 로고를 올리면 기대보다 크게 보인다. 크롭으로
+    여백을 만들어 상대적으로 줄이던 예전 우회로가 #421(react-easy-crop→react-image-crop
+    교체)로 막혔으므로, 사용자가 티켓 화면 안에서 로고 렌더 크기를 직접 슬라이더로
+    조절(축소·확대 양방향)할 수 있게 한다. 서명 이미지 업로드는 별도 이슈(크로스컷·고위험
+    라서 분리 확정, out_of_scope 참조)로 분리해 이번 스코프에서 제외한다.
+  clarity_score: 0.85
+
+constraints:
+  - id: c1
+    type: technical
+    description: >
+      [상태 필드] `TicketComponents`(`src/types/index.ts`)에 `chainScale?: number`·
+      `formatScale?: number` 추가(기본값 1). `usePhototicket.ts` 초기 state에 1로 등록.
+    hard: true
+    rationale: 기존 `componentOpacity` 옵셔널 필드와 동일 패턴(기본값 없으면 `?? 1`).
+  - id: c2
+    type: technical
+    description: >
+      [배율 결합] `ChainStampProps`/`FormatStampProps`는 이미 `size`(기본 1) prop으로
+      `h = (height + stampHeightDelta(aspect)) * size`를 계산한다(`_shared.tsx:491,553`).
+      `size`는 무드별 고정 디자인 상수(0.55~1.02)이므로 그대로 두고, 사용자 조작값은
+      별도 `scale` prop으로 받아 `h = (height + delta) * size * scale`로 곱연산 결합한다.
+      `DashedPlaceholder`(#496,#557)의 `width={120 * size}`류 계산도 `size`를
+      `size * scale`으로 넘기면 함께 스케일된다.
+    hard: true
+    rationale: >
+      무드별 고정 상수(size)와 사용자 조작값(scale)을 분리해야 회귀 위험이 없다 —
+      한 필드에 곱해 넣으면 이후 무드별 디자인 상수 조정 시 사용자 저장값과 뒤섞인다.
+  - id: c3
+    type: technical
+    description: >
+      [호출부 배선] 6개 무드 파일의 `<ChainStamp>`/`<FormatStamp>` 호출부(현재
+      Mood35mmLandscape.tsx:214/218, MoodCriterion.tsx:220/224, Mood35mm.tsx:164/168,
+      MoodEditorial.tsx:177/182, MoodStub.tsx:201/205, MoodMinimal.tsx:195/199 —
+      구현 시점에 실제 줄번호 재확인)에 `scale={components.chainScale ?? 1}` /
+      `scale={components.formatScale ?? 1}`을 추가한다. 12개 호출부 전부 동일한
+      1줄짜리 기계적 추가라 무드별 설계 판단이 필요 없다(서명 이미지 이슈와 다른 점).
+    hard: true
+    rationale: size prop이 이미 모든 호출부에 있으므로 새 prop 추가는 각주 수준 변경.
+  - id: c4
+    type: technical
+    description: >
+      [오버플로우 클램프 유지] `maxWidth: h * STAMP_MAX_ASPECT`(`_shared.tsx:134`,
+      `STAMP_MAX_ASPECT=5`) 클램프는 scale 적용 후 h 기준으로 그대로 유지 — scale이
+      커져도 종횡비 상한을 넘는 폭 초과는 방지된다. 다만 수직 방향(같은 행에 배치된
+      인접 요소와의 높이 겹침)은 이 클램프의 보호 범위 밖이라 s3에서 실측 확인 필요.
+    hard: true
+    rationale: 클램프가 기존에도 존재하므로 재구현이 아니라 "그대로 통과시키기"가 목표.
+  - id: c5
+    type: technical
+    description: >
+      [범위] `chainScale`/`formatScale` 허용 범위는 0.6~1.3(오너 확정, 편도 축소만이
+      아니라 확대도 허용하되 상한을 보수적으로 제한). UI 슬라이더 자체가 이 범위로
+      값을 clamp한다.
+    hard: true
+    rationale: >
+      "로고가 크게 렌더된다"는 축소만으로 해결되지만 "크기 조절" 요청 문구에 맞춰
+      양방향 허용. 확대 시 인접 텍스트/로고와 겹칠 리스크가 있어 상한을 1.3으로 보수적으로.
+  - id: c6
+    type: technical
+    description: >
+      [undo/임시저장] `chainScale`/`formatScale`은 undo/redo(#356) 스냅샷과
+      `saveDraft`/`restoreSnapshot`(`usePhototicket.ts`)에 다른 숫자 필드(`posterOpacity`,
+      `materialIntensity` 등)와 동일하게 원자 포함한다. blob: URL인 `chain`/`format` 자체는
+      임시저장 시 비워지는(`usePhototicket.ts:288-289`) 기존 규칙과 무관 — scale은 숫자값이라
+      그 규칙의 대상이 아니고 그대로 영속화한다.
+    hard: true
+    rationale: >
+      #141/#356 선례(스탬프 관련 새 필드는 항상 undo 스냅샷에 같이 넣는다)를 그대로 따른다.
+  - id: c7
+    type: scope
+    description: >
+      [서명 이미지 제외] 서명 텍스트→이미지 업로드, `signatureImage`/`signatureScale`
+      추가는 이번 스코프 밖(오너 확정, 후속 이슈로 분리). 6개 무드 서명 슬롯 렌더 규격이
+      제각각(폰트 24~34px, maxWidth 유무·값 다름, "collected by"/"par"/"réalisé avec" 라벨
+      혼재)이라 별도 크로스컷 설계가 필요해, 저위험·소규모인 로고 스케일과 리스크
+      프로파일이 다르다고 판단했다.
+    hard: true
+    rationale: P7 — 자기완결적 작업과 크로스컷 아키텍처 결정은 위임 단위를 분리한다.
+
+success_criteria:
+  - id: s1
+    description: >
+      chainScale/formatScale을 0.6~1.3 범위에서 슬라이더로 조작하면 미리보기가 실시간
+      반영된다.
+    measurable: true
+  - id: s2
+    description: >
+      기본값(scale=1)에서 현재 6개 무드 렌더가 픽셀 동일(회귀 없음) — scale 미조작 시
+      기존 사용자에게 아무 변화도 없어야 한다.
+    measurable: true
+  - id: s3
+    description: >
+      6개 무드 × scale 극값(0.6, 1.3) 조합에서 브라우저 실측으로 레이아웃 깨짐(인접
+      텍스트/로고와의 겹침, 슬롯 밖 오버플로우)이 없는지 확인한다. 겹침이 발견되면
+      c5의 상한(1.3)을 좁히거나 무드별 상한을 개별 조정한다.
+    measurable: true
+  - id: s4
+    description: >
+      undo(#356)·redo와 임시저장 복원 시 chainScale/formatScale이 다른 컴포넌트 필드와
+      함께 원자적으로 복원된다(직전 편집 상태와 어긋남 없음).
+    measurable: true
+  - id: s5
+    description: >
+      html-to-image 저장물(다운로드 JPEG)에도 조절된 스탬프 크기가 미리보기와 동일하게
+      반영된다 — 스탬프 `<img>`는 `data-poster-root`(포스터 전용 raster 제외 경로, #434 c1)
+      밖의 일반 DOM 트리이므로 캡처 일반 경로로 커버될 것으로 예상되나 명시적 실측 필요.
+    measurable: true
+  - id: s6
+    description: 기존 테스트 유지 — `bun test`·`bun run typecheck` 통과.
+    measurable: true
+
+verification:
+  note: >
+    s1·s4·s6은 상호작용 테스트(happy-dom + testing-library)로 검증 가능. s3·s5는
+    실제 브라우저 실측(dev 서버)에서만 유효 확인 가능 — 레이아웃 겹침과 캡처 결과는
+    happy-dom에 레이아웃 엔진이 없어 단위 테스트로 대체 불가.
+
+context:
+  entry_point: src/components/moods/_shared.tsx (ChainStamp:472, FormatStamp:537)
+  related_state: src/hooks/usePhototicket.ts (updateComponents, restoreSnapshot, saveDraft)
+  ui_candidates:
+    - DesignRail.tsx/DesktopDesignPanel.tsx의 기존 "투명도" 탭(componentOpacity 옆에
+      크기 슬라이더 추가 — 이미 "컴포넌트" 레벨 축이 있는 자리)
+    - FieldEditorBody.tsx의 StampSheet(로고 업로드·크롭과 같은 자리, 필드별 편집 컨텍스트)
+  existing_infra:
+    - ChainStamp/FormatStamp의 size prop(무드별 고정 상수, 12개 호출부)
+    - STAMP_MAX_ASPECT(_shared.tsx:134) — maxWidth 클램프
+    - BrightnessSlider(src/components/wizard/BrightnessSlider.tsx) — 0..1 값을 %로
+      보여주는 기존 슬라이더, materialIntensity/coatingIntensity/posterOpacity/
+      componentOpacity가 이미 재사용 중
+
+approach:
+  decision: >
+    구현자 판단에 위임 — UI 배치(DesignRail 탭 vs StampSheet)만 오너 재확인 권장,
+    나머지(상태 필드·배선·클램프)는 c1~c7이 강제한다.
+
+out_of_scope:
+  - 서명 이미지 업로드 + signatureImage/signatureScale (별도 이슈로 분리, 이 세션에서
+    새 이슈 생성 예정)
+  - 크롭 모달 zoom-out 복원(#441 원안이 명시적으로 기각, #474 코멘트에서 재확인됨)
+  - 무드별 size 고정 상수(0.55~1.02) 자체의 재튜닝

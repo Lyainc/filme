@@ -112,7 +112,7 @@ const MOVIE: MovieInfo = {
 const BASE: TicketComponents = {
   layout: 'minimal', chain: '', format: '', chainLabel: '', formatLabel: '',
   material: 'original', coating: 'gloss', materialIntensity: 1, coatingIntensity: 1, posterOpacity: 0.5, componentOpacity: 1, themeColor: '#FFFFFF',
-  chainVisible: false, formatVisible: false, posterFit: 'contain',
+  chainVisible: false, formatVisible: false, chainScale: 1, formatScale: 1, posterFit: 'contain',
 };
 
 function bandToneEl(container: HTMLElement): HTMLElement | null {
