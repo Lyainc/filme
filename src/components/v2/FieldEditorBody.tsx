@@ -116,9 +116,12 @@ function TitleSheet({ photo }: { photo: Photo }) {
   };
 
   // listbox는 결과가 있을 때만 렌더되므로 aria-controls도 그때만 — 로딩/에러 상태에서
-  // 없는 요소를 가리키지 않게(ARIA 1.2, #198 리뷰 P1).
+  // 없는 요소를 가리키지 않게(ARIA 1.2, #198 리뷰 P1). highlighted도 같은 게이트를 써야
+  // 한다 — 하이라이트가 있는 채로 새 검색이 로딩 중으로 전환되면(캐시 미스) results/open
+  // 참조는 안 바뀌어 리셋 이펙트가 안 도는데, 리스트는 언마운트되니 게이트가 없으면
+  // aria-activedescendant가 존재하지 않는 옵션 id를 가리키게 된다(claude-review #482 P1).
   const hasListbox = open && !loading && !error && results.length > 0;
-  const highlighted = highlightIndex >= 0 ? results[highlightIndex] : undefined;
+  const highlighted = hasListbox && highlightIndex >= 0 ? results[highlightIndex] : undefined;
 
   return (
     <div className="space-y-3">
@@ -140,11 +143,11 @@ function TitleSheet({ photo }: { photo: Photo }) {
         }}
         onKeyDown={(e) => {
           if (e.key === 'ArrowDown') {
-            if (!open || results.length === 0) return;
+            if (!hasListbox) return;
             e.preventDefault();
             moveHighlight((highlightIndex + 1) % results.length);
           } else if (e.key === 'ArrowUp') {
-            if (!open || results.length === 0) return;
+            if (!hasListbox) return;
             e.preventDefault();
             moveHighlight(highlightIndex <= 0 ? results.length - 1 : highlightIndex - 1);
           } else if (e.key === 'Enter') {
