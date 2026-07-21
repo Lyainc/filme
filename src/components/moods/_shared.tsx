@@ -3,7 +3,7 @@ import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 import { FIELD_LABELS, STAMP_LABELS, isStampTarget, type SheetTarget } from '@/constants/fields';
 import { formatDate } from '@/utils/dateFormat';
 import { posterContainRect, posterFeatherMask } from '@/utils/posterFeather';
-import { TEXTURE_RECIPES, recipeToGradientCss } from '@/utils/textureRecipes';
+import { TEXTURE_RECIPES, recipeToGradientCss, isNoiseRecipe, noiseTileSvg } from '@/utils/textureRecipes';
 import { EyeIcon } from '@/components/ui/VisibilityCheckbox';
 
 export interface MoodProps {
@@ -725,8 +725,8 @@ export const Poster = memo(function Poster({
       // 빠져야 그 자리가 '투명 구멍'으로 남아 합성한 포스터가 비쳐 보인다.
       data-poster-root="true"
       // 저장 경로(captureToImage.compositeOverlay)가 이 서브트리를 제외하고 canvas로 재합성하므로,
-      // sheen 오버레이의 texture/강도를 DOM 속성으로 실어보내 캡처가 상태 없이 DOM만으로 재현하게 한다(#434 c1).
-      // 오버레이가 없는 texture(original·물리재질 등 레시피 밖)는 data-texture를 안 실어 compositeOverlay가 건너뛴다.
+      // 오버레이의 texture/강도를 DOM 속성으로 실어보내 캡처가 상태 없이 DOM만으로 재현하게 한다(#434 c1, #471).
+      // 레시피 밖 texture(original)는 data-texture를 안 실어 compositeOverlay가 건너뛴다.
       data-texture={texture && texture !== 'original' && TEXTURE_RECIPES[texture] ? texture : undefined}
       data-texture-intensity={textureIntensity}
       style={{
@@ -824,13 +824,17 @@ export function TopBandTone({ heightPx, tone }: { heightPx: number; tone: string
   );
 }
 
-// 텍스처별 sheen(하이라이트) 오버레이만 담당한다. dim(밝기)은 Poster의 <img> filter로
-// 분리됐으므로 여기선 검은 레이어를 두지 않는다(#139 ①). gradient 4종(none·hologram·metal·
-// scodix)은 단일 레시피(textureRecipes.ts)를 저장 경로(captureToImage.compositeOverlay)와
-// 공유해 미리보기=저장물을 맞춘다(#434). intensity는 stop alpha에 곱해져 0=완전 무가공이 된다.
+// 텍스처별 오버레이. dim(밝기)은 Poster의 <img> filter로 분리됐으므로 여기선 검은 레이어를 두지
+// 않는다(#139 ①). 두 계열 모두 단일 레시피(textureRecipes.ts)를 저장 경로(captureToImage.
+// compositeOverlay)와 공유해 미리보기=저장물을 맞춘다 — gradient 4종은 stop 하이라이트(#434),
+// 물리재질 3종은 feTurbulence 종이결(#471). intensity는 세기에 곱해져 0=완전 무가공이 된다.
 function TextureOverlay({ texture, intensity = 1 }: { texture: string; intensity?: number }) {
   const recipe = TEXTURE_RECIPES[texture];
-  if (recipe) {
+  if (!recipe) return null; // original 등 레시피 밖 — 오버레이 없음
+
+  if (isNoiseRecipe(recipe)) {
+    // 물리재질 종이결(#471) — feTurbulence 노이즈 타일을 반복해 blend로 얹는다. 저장 경로가 같은
+    // noiseTileSvg를 raster화해 canvas createPattern으로 재현한다. 유효 opacity = alpha × intensity.
     return (
       <div
         aria-hidden="true"
@@ -838,33 +842,28 @@ function TextureOverlay({ texture, intensity = 1 }: { texture: string; intensity
           position: 'absolute',
           inset: 0,
           pointerEvents: 'none',
-          background: recipeToGradientCss(recipe, intensity),
+          backgroundImage: `url("${noiseTileSvg(recipe)}")`,
+          backgroundRepeat: 'repeat',
+          backgroundSize: `${recipe.tile}px ${recipe.tile}px`,
           mixBlendMode: recipe.blend,
+          opacity: recipe.alpha * intensity,
         }}
       />
     );
   }
 
-  // artpaper — 종이결(feTurbulence)은 후속 이슈로 분리됐다(#434). 그전까지 옛 repeating gradient를
-  // 유지한다(저장물 미반영은 그 후속에서 SVG-raster 경로로 함께 해결).
-  if (texture === 'artpaper') {
-    return (
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          pointerEvents: 'none',
-          background:
-            'repeating-linear-gradient(45deg, rgba(0,0,0,0.04) 0 2px, rgba(255,255,255,0.04) 2px 4px)',
-          mixBlendMode: 'multiply',
-        }}
-      />
-    );
-  }
-
-  // original·vintage·newspaper — sheen 오버레이 없음.
-  return null;
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        inset: 0,
+        pointerEvents: 'none',
+        background: recipeToGradientCss(recipe, intensity),
+        mixBlendMode: recipe.blend,
+      }}
+    />
+  );
 }
 
 interface BarcodeProps {

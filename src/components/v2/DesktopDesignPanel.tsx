@@ -37,8 +37,8 @@ export function DesktopDesignPanel({ photo }: { photo: ReturnType<typeof usePhot
         <LayoutPicker value={components.layout} onChange={(id: LayoutId) => setComp({ layout: id })} />
       </Section>
 
-      {/* 후가공 프리셋 + 강도 슬라이더(#434). 강도는 레시피 있는 gradient 4종에서만 유효하므로
-          그 외(원본·물리재질)에선 슬라이더를 숨긴다. */}
+      {/* 후가공 프리셋 + 강도 슬라이더(#434, #471). 강도는 레시피 있는 texture(gradient 4종 +
+          물리재질 3종)에서만 유효하므로 레시피 밖(원본)에선 슬라이더를 숨긴다. */}
       <Section eyebrow="Texture">
         <div className="space-y-group">
           <TexturePicker

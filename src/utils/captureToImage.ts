@@ -1,5 +1,5 @@
 import { POSTER_EDGE_FEATHER, posterFeatherAxes } from './posterFeather';
-import { TEXTURE_RECIPES } from './textureRecipes';
+import { TEXTURE_RECIPES, isNoiseRecipe, noiseTileSvg } from './textureRecipes';
 
 interface CaptureOptions {
   width: number;
@@ -271,7 +271,7 @@ function compositeRaster(
 // (값 이름 동일) 이미 그려진 포스터 픽셀과 블렌드한다. 영역은 poster-root 박스 — 원래 CSS 오버레이가
 // inset:0으로 깔리던 그 영역이다. intensity는 stop alpha에 곱해 0이면 아무것도 안 그린다. z-order상
 // 포스터(compositeRaster) 다음·base 텍스트 PNG 이전에 호출돼 "포스터 위·텍스트 아래"에 얹힌다.
-function compositeOverlay(
+async function compositeOverlay(
   ctx: CanvasRenderingContext2D,
   root: HTMLElement,
   texture: string,
@@ -281,7 +281,7 @@ function compositeOverlay(
   height: number,
   pixelRatio: number,
   debug: boolean,
-): void {
+): Promise<void> {
   const recipe = TEXTURE_RECIPES[texture];
   if (!recipe || intensity <= 0) return;
 
@@ -292,6 +292,37 @@ function compositeOverlay(
   const by = (EXPORT_MARGIN_PX + ((r.top - nodeRect.top) / nodeRect.height) * height) * pixelRatio;
   const bw = (r.width / nodeRect.width) * width * pixelRatio;
   const bh = (r.height / nodeRect.height) * height * pixelRatio;
+
+  if (isNoiseRecipe(recipe)) {
+    // 물리재질 종이결(#471) — feTurbulence 타일 SVG를 raster화해 poster 박스에 pattern으로 반복한다.
+    // 미리보기 CSS background-repeat와 같은 SVG·같은 blend·같은 유효 opacity(alpha×intensity)로
+    // 재현한다. 작은 타일(iOS raster 안전, #439)이라 큰 raster drawImage 함정을 안 탄다. 타일을
+    // device px(tile×pixelRatio)로 스케일해 프리뷰(CSS px)와 결 크기를 맞춘다. 노이즈는 랜덤이라
+    // pattern phase(캔버스 원점 기준)가 프리뷰(박스 기준)와 달라도 육안 무차이 → 위상은 안 맞춘다.
+    const tileImg = await loadImage(noiseTileSvg(recipe));
+    const dev = Math.max(1, Math.round(recipe.tile * pixelRatio));
+    const tile = document.createElement('canvas');
+    tile.width = dev;
+    tile.height = dev;
+    const tctx = tile.getContext('2d');
+    if (!tctx) return;
+    tctx.drawImage(tileImg, 0, 0, dev, dev);
+    const pattern = ctx.createPattern(tile, 'repeat');
+    if (!pattern) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(bx, by, bw, bh);
+    ctx.clip();
+    ctx.globalCompositeOperation = recipe.blend;
+    ctx.globalAlpha = recipe.alpha * intensity; // restore()가 원복
+    ctx.fillStyle = pattern;
+    ctx.fillRect(bx, by, bw, bh);
+    ctx.restore();
+    if (debug) {
+      console.log(`[capture:overlay] texture=${texture} noise intensity=${intensity} blend=${recipe.blend} tile=${recipe.tile} box=${Math.round(bx)},${Math.round(by)},${Math.round(bw)}x${Math.round(bh)}`);
+    }
+    return;
+  }
 
   // CSS linear-gradient 각도(0deg=위, 시계방향) → canvas gradient 라인 두 끝점. 방향 (sinθ, -cosθ),
   // 라인 길이 |W·sinθ|+|H·cosθ|(박스를 완전히 덮는 투영), 중심 기준 대칭. 미리보기 CSS와 같은 기하.
@@ -418,7 +449,7 @@ export async function captureNodeToJpeg(
     if (!texture) continue;
     const rawIntensity = root.dataset.textureIntensity;
     const intensity = rawIntensity != null ? parseFloat(rawIntensity) : 1;
-    compositeOverlay(ctx, root, texture, intensity, nodeRect, width, height, pixelRatio, debug);
+    await compositeOverlay(ctx, root, texture, intensity, nodeRect, width, height, pixelRatio, debug);
   }
   const baseImg = await loadImage(basePngUrl);
   ctx.drawImage(baseImg, ticketRect.x, ticketRect.y, ticketRect.w, ticketRect.h);

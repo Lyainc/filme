@@ -12,8 +12,10 @@
  * 레이어 opacity는 새 stacking context를 만들어 mix-blend-mode 대상을 바꾼다). intensity=0이면
  * 전 stop alpha가 0 → 투명 → 완전 무가공(original)과 동치다.
  *
- * 대상은 gradient 계열 4종(none·hologram·metal·scodix). 물리재질(artpaper·vintage·newspaper)은
- * SVG feTurbulence 결이 필요해 별도 이슈로 분리(#434 후속) — 여기 레시피에 없다.
+ * 대상은 두 계열. gradient 4종(none·hologram·metal·scodix)은 stop/각도/blend로 sheen을 얹고,
+ * 물리재질 3종(artpaper·vintage·newspaper)은 SVG feTurbulence(fractalNoise) 종이결을 얹는다(#471).
+ * 두 계열이 한 레시피 맵(TEXTURE_RECIPES)에 `kind`로 구분돼 공존하므로, 슬라이더 노출·data-texture·
+ * 기본 강도·저장 경로의 `TEXTURE_RECIPES[texture]` 게이트가 양쪽에 동일하게 걸린다.
  *
  * CSS mix-blend-mode 값과 canvas globalCompositeOperation 값은 이름이 동일하다(screen·overlay·
  * soft-light·hard-light·multiply·color-dodge). 두 API가 같은 W3C Compositing/Blending 공식을 쓰나
@@ -36,7 +38,8 @@ export interface TextureStop {
   alpha: number;
 }
 
-export interface TextureRecipe {
+export interface GradientRecipe {
+  kind: 'gradient';
   /** gradient 각도(deg, CSS 관례: 0=위, 시계방향) */
   angle: number;
   stops: TextureStop[];
@@ -45,6 +48,27 @@ export interface TextureRecipe {
   defaultIntensity: number;
 }
 
+/**
+ * 물리재질 종이결(#471) — gradient 대신 SVG feTurbulence(fractalNoise) 노이즈 결(grain)을 얹는다.
+ * 미리보기(CSS background-repeat)와 저장(canvas createPattern)이 같은 noiseTileSvg를 렌더해
+ * 미리보기=저장물을 맞춘다. 작은 타일을 stitchTiles로 seam 없이 반복해 iOS 큰 raster 함정(#439)을 피한다.
+ */
+export interface NoiseRecipe {
+  kind: 'noise';
+  /** feTurbulence baseFrequency — 높을수록 촘촘한 결 */
+  baseFrequency: number;
+  numOctaves: number;
+  /** 종이결 타일 픽셀 크기(작을수록 iOS raster 안전) */
+  tile: number;
+  blend: TextureBlend;
+  /** 강도 100% 기준 grain 세기 0..1 (intensity가 곱해져 오버레이 레이어 opacity가 된다) */
+  alpha: number;
+  /** 슬라이더 미조작 시 기본 강도 0..1 */
+  defaultIntensity: number;
+}
+
+export type TextureRecipe = GradientRecipe | NoiseRecipe;
+
 // 세련화 튜닝값(#434) — 실기기 육안 기준. hologram/metal의 blend를 soft-light 계열로 순화해
 // 밝은 영역을 태우지 않고(옛 color-dodge/hard-light의 과노출 주범) 은은히 얹히게 했다. soft-light는
 // 효과가 약해 alpha를 옛 값보다 올려 보상한다. defaultIntensity는 슬라이더 미조작 시 "바로 예쁜"
@@ -52,6 +76,7 @@ export interface TextureRecipe {
 // 원래 은은해 1.0(INITIAL_STATE.textureIntensity와 일치시켜 첫 로드 none을 100%로).
 export const TEXTURE_RECIPES: Record<string, TextureRecipe> = {
   none: {
+    kind: 'gradient',
     angle: 135,
     blend: 'screen',
     defaultIntensity: 1,
@@ -64,6 +89,7 @@ export const TEXTURE_RECIPES: Record<string, TextureRecipe> = {
     ],
   },
   hologram: {
+    kind: 'gradient',
     angle: 135,
     blend: 'soft-light',
     defaultIntensity: 0.7,
@@ -77,6 +103,7 @@ export const TEXTURE_RECIPES: Record<string, TextureRecipe> = {
     ],
   },
   metal: {
+    kind: 'gradient',
     angle: 135,
     blend: 'soft-light',
     defaultIntensity: 0.7,
@@ -89,6 +116,7 @@ export const TEXTURE_RECIPES: Record<string, TextureRecipe> = {
     ],
   },
   scodix: {
+    kind: 'gradient',
     angle: 135,
     blend: 'overlay',
     defaultIntensity: 0.85,
@@ -98,6 +126,36 @@ export const TEXTURE_RECIPES: Record<string, TextureRecipe> = {
       { at: 50, rgb: [255, 255, 255], alpha: 0.65 },
       { at: 55, rgb: [255, 255, 255], alpha: 0 },
     ],
+  },
+  // 물리재질 종이결(#471). 값은 실기기 육안 튜닝 — feTurbulence 결은 계산이 아니라 눈으로 맞춘다.
+  // ponytail: 대조 시 결이 과하거나 약하면 alpha/defaultIntensity(세기), baseFrequency(촘촘함),
+  // blend(overlay=밝고어둡게·soft-light=은은)만 조정. tile은 iOS raster 안전선(작게 유지).
+  artpaper: {
+    kind: 'noise',
+    baseFrequency: 0.55,
+    numOctaves: 3,
+    tile: 140,
+    blend: 'overlay',
+    alpha: 0.5,
+    defaultIntensity: 0.6,
+  },
+  vintage: {
+    kind: 'noise',
+    baseFrequency: 0.9,
+    numOctaves: 2,
+    tile: 120,
+    blend: 'soft-light',
+    alpha: 0.55,
+    defaultIntensity: 0.5,
+  },
+  newspaper: {
+    kind: 'noise',
+    baseFrequency: 0.7,
+    numOctaves: 4,
+    tile: 110,
+    blend: 'overlay',
+    alpha: 0.6,
+    defaultIntensity: 0.6,
   },
 };
 
@@ -114,6 +172,32 @@ function stopToRgba(stop: TextureStop, intensity: number): string {
 
 /** 미리보기(CSS)용 linear-gradient 문자열. 저장(canvas)은 같은 레시피를 createLinearGradient로 렌더. */
 export function recipeToGradientCss(recipe: TextureRecipe, intensity: number): string {
+  if (recipe.kind !== 'gradient') return ''; // noise 레시피는 gradient가 없다(noiseTileSvg 사용)
   const stops = recipe.stops.map((s) => `${stopToRgba(s, intensity)} ${s.at}%`).join(', ');
   return `linear-gradient(${recipe.angle}deg, ${stops})`;
+}
+
+export function isNoiseRecipe(recipe: TextureRecipe): recipe is NoiseRecipe {
+  return recipe.kind === 'noise';
+}
+
+/**
+ * 물리재질 종이결 타일 SVG를 data:URL로(#471). feTurbulence(fractalNoise)를 saturate(0)로 회색 결로
+ * 만들고 alpha를 1로 평탄화해 불투명 회색 노이즈 타일을 얻는다 — 세기·색은 오버레이 레이어의
+ * opacity·blend·포스터 filter가 정한다. stitchTiles="stitch"로 작은 타일이 seam 없이 반복돼
+ * (iOS 큰 raster 함정 회피, #439) CSS background-repeat / canvas createPattern 양쪽에서 같은 결을 낸다.
+ * 미리보기(CSS)와 저장(canvas)이 이 한 함수를 공유해 미리보기=저장물을 맞춘다.
+ */
+export function noiseTileSvg(recipe: NoiseRecipe): string {
+  const { tile, baseFrequency, numOctaves } = recipe;
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${tile}" height="${tile}">` +
+    `<filter id="n">` +
+    `<feTurbulence type="fractalNoise" baseFrequency="${baseFrequency}" numOctaves="${numOctaves}" stitchTiles="stitch"/>` +
+    `<feColorMatrix type="saturate" values="0"/>` +
+    `<feComponentTransfer><feFuncA type="discrete" tableValues="1"/></feComponentTransfer>` +
+    `</filter>` +
+    `<rect width="100%" height="100%" filter="url(#n)"/>` +
+    `</svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }

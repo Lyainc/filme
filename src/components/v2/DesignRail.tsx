@@ -196,8 +196,8 @@ export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket>
             disabledNote="35mm 무드는 필름 톤(크림·먹색)이 고정이라 잉크 색을 바꿀 수 없어요."
           />
         ) : active === 'texture' ? (
-          // 후가공 프리셋 + 강도 슬라이더(#434). 강도는 레시피 있는 gradient 4종에서만 유효하므로
-          // 그 외(원본·물리재질)에선 슬라이더를 숨긴다. BrightnessSlider 재사용(0..1→%).
+          // 후가공 프리셋 + 강도 슬라이더(#434, #471). 강도는 레시피 있는 texture(gradient 4종 +
+          // 물리재질 3종)에서만 유효하므로 레시피 밖(원본)에선 슬라이더를 숨긴다. BrightnessSlider 재사용(0..1→%).
           <div className="space-y-group">
             <TexturePicker
               value={components.texture}
