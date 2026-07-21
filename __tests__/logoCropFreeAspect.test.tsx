@@ -200,7 +200,7 @@ describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
   });
 
   test('렌더 크기 ≠ 자연 크기: onComplete 좌표가 자연 픽셀로 스케일업된다 (claude-review PR #429 3차 P1)', () => {
-    // <img style={{maxWidth:'100%',maxHeight:'100%'}}>라 실제 브라우저에선 렌더 크기가 자연
+    // <img style={{maxWidth:'100cqw',maxHeight:'100cqh'}}>(#474)라 실제 브라우저에선 렌더 크기가 자연
     // 크기보다 작은 게 보통이다. completedCrop은 react-image-crop이 렌더 픽셀 좌표계로 주므로,
     // handleConfirm의 scaleX/scaleY 환산이 없거나 틀리면 사용자가 고른 크롭 위치와 실제 출력
     // 이미지의 크롭 위치가 어긋난다. loadImage(자연=렌더)만 쓰는 다른 테스트는 scaleX/Y가
