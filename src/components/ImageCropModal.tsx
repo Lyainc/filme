@@ -227,6 +227,8 @@ export default function ImageCropModal(props: ImageCropModalProps) {
             className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-field bg-fg/95"
             data-testid="crop-frame"
             data-aspect={aspect === undefined ? 'undefined' : aspect}
+            // 아래 <img>의 cq 단위가 이 프레임을 기준으로 풀리게 하는 size container 선언(#474).
+            style={{ containerType: 'size' }}
           >
             <ReactCrop
               crop={crop}
@@ -244,7 +246,12 @@ export default function ImageCropModal(props: ImageCropModalProps) {
                 src={imageSrc}
                 alt=""
                 onLoad={onImageLoad}
-                style={{ maxWidth: '100%', maxHeight: '100%', display: 'block' }}
+                // cq 단위(프레임 = size container)로 contain 시킨다(#474). `100%`는 안 통한다 —
+                // `.ReactCrop`이 inline-block이라 높이가 content-based(indefinite)라서 퍼센트
+                // 높이가 해소되지 않고, 라이브러리의 `max-height:inherit` 체인도 `none`으로 끝난다.
+                // 인라인이라 라이브러리 규칙을 이기고, `.ReactCrop`은 그대로 img를 shrink-wrap 해서
+                // 크롭 좌표계(`.ReactCrop` 절대배치 ↔ img 박스)가 어긋나지 않는다.
+                style={{ maxWidth: '100cqw', maxHeight: '100cqh', display: 'block' }}
                 crossOrigin="anonymous"
               />
             </ReactCrop>
