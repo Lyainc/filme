@@ -294,4 +294,40 @@ describe('TitleSheet 키보드 접근성 (#198 재구현)', () => {
 
     await act(async () => { resolveSearch(jsonResponse(SEARCH_RESPONSE)); });
   });
+
+  test('하이라이트 상태에서 새 검색이 로딩 중으로 전환되면 activedescendant가 즉시 사라진다(claude-review #482 P1)', async () => {
+    render(<Harness />);
+    const input = titleInput();
+    fireEvent.change(input, { target: { value: '영화' } });
+    await flushDebounce();
+    expect(resultButtons().length).toBe(2);
+
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    expect(input.getAttribute('aria-activedescendant')).toBe(`kobis-option-${MOVIE_A.movieCd}`);
+
+    // 캐시 미스인 새 검색어 — search()가 setResults 전에 setLoading(true)부터 호출하는
+    // 실제 구간(results/open 참조는 안 바뀜)을 재현한다.
+    let resolveSearch: (res: Response) => void = () => {};
+    globalThis.fetch = ((req: RequestInfo | URL) => {
+      const url = String(req);
+      if (url.startsWith('/api/kobis/search')) {
+        return new Promise<Response>((resolve) => {
+          resolveSearch = resolve;
+        });
+      }
+      return Promise.reject(new Error(`unexpected fetch: ${url}`));
+    }) as typeof fetch;
+    fireEvent.change(input, { target: { value: '영화2' } });
+    await act(async () => { jest.advanceTimersByTime(310); });
+
+    // 로딩 중 — 리스트는 언마운트됐으니 이전 하이라이트가 존재하지 않는 옵션을 가리키면 안 된다.
+    expect(screen.getByRole('status')).toBeDefined();
+    expect(input.getAttribute('aria-activedescendant')).toBeNull();
+
+    // 로딩 중 화살표키도 무시(스테일 인덱스 위에서 이동하지 않는다).
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    expect(input.getAttribute('aria-activedescendant')).toBeNull();
+
+    await act(async () => { resolveSearch(jsonResponse(SEARCH_RESPONSE)); });
+  });
 });
