@@ -4,6 +4,7 @@ import TexturePicker from '@/components/wizard/TexturePicker';
 import ColorPicker from '@/components/wizard/ColorPicker';
 import BrightnessSlider from '@/components/wizard/BrightnessSlider';
 import { TEXTURE_RECIPES } from '@/utils/textureRecipes';
+import { MATERIAL_OPTIONS, COATING_OPTIONS } from '@/utils/constants';
 import type { LayoutId } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 
@@ -196,22 +197,46 @@ export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket>
             disabledNote="35mm 무드는 필름 톤(크림·먹색)이 고정이라 잉크 색을 바꿀 수 없어요."
           />
         ) : active === 'texture' ? (
-          // 후가공 프리셋 + 강도 슬라이더(#434, #471). 강도는 레시피 있는 texture(gradient 4종 +
-          // 물리재질 3종)에서만 유효하므로 레시피 밖(원본)에선 슬라이더를 숨긴다. BrightnessSlider 재사용(0..1→%).
-          <div className="space-y-group">
-            <TexturePicker
-              value={components.texture}
-              onChange={(texture) => setComp({ texture })}
-              croppedImageUrl={croppedImageUrl}
-            />
-            {TEXTURE_RECIPES[components.texture] && (
-              <BrightnessSlider
-                label="강도"
-                id="rail-texture-intensity"
-                value={components.textureIntensity}
-                onChange={(textureIntensity) => setComp({ textureIntensity })}
+          // 재질×코팅 2축 피커 + 축별 강도 슬라이더(#434, #471, #475). 각 강도 슬라이더는 그 축
+          // 피커 바로 아래(c7) — 레시피 있는 옵션(원본/코팅없음 제외)에서만 유효해 레시피 밖에선
+          // 숨긴다. BrightnessSlider 재사용(0..1→%).
+          <div className="space-y-section">
+            <div className="space-y-group">
+              <TexturePicker
+                axis="material"
+                options={MATERIAL_OPTIONS}
+                value={components.material}
+                onChange={(material) => setComp({ material })}
+                croppedImageUrl={croppedImageUrl}
+                ariaLabel="재질"
               />
-            )}
+              {TEXTURE_RECIPES[components.material] && (
+                <BrightnessSlider
+                  label="재질 강도"
+                  id="rail-material-intensity"
+                  value={components.materialIntensity}
+                  onChange={(materialIntensity) => setComp({ materialIntensity })}
+                />
+              )}
+            </div>
+            <div className="space-y-group">
+              <TexturePicker
+                axis="coating"
+                options={COATING_OPTIONS}
+                value={components.coating}
+                onChange={(coating) => setComp({ coating })}
+                croppedImageUrl={croppedImageUrl}
+                ariaLabel="코팅"
+              />
+              {TEXTURE_RECIPES[components.coating] && (
+                <BrightnessSlider
+                  label="코팅 강도"
+                  id="rail-coating-intensity"
+                  value={components.coatingIntensity}
+                  onChange={(coatingIntensity) => setComp({ coatingIntensity })}
+                />
+              )}
+            </div>
           </div>
         ) : (
           // 투명도(#219) — 듀얼 슬라이더. 포스터=밝기(posterOpacity, 기존 메커니즘 유지),

@@ -3,7 +3,16 @@
  * 단일 소스라, 강도 스케일 규칙이 깨지면 두 경로가 동시에 어긋난다. 여기선 그 규칙만 고정한다.
  */
 import { describe, expect, test } from 'bun:test';
-import { TEXTURE_RECIPES, recipeToGradientCss, defaultIntensityForTexture, isNoiseRecipe, noiseTileSvg } from '@/utils/textureRecipes';
+import {
+  TEXTURE_RECIPES,
+  recipeToGradientCss,
+  defaultIntensityForTexture,
+  isNoiseRecipe,
+  noiseTileSvg,
+  LEGACY_TEXTURE_MIGRATION,
+  migrateLegacyComponents,
+  type TextureRecipe,
+} from '@/utils/textureRecipes';
 
 function alphasOf(css: string): number[] {
   return Array.from(css.matchAll(/rgba\([^)]*,\s*([\d.]+)\)/g)).map((m) => parseFloat(m[1]));
@@ -24,18 +33,68 @@ describe('textureRecipes', () => {
   });
 
   test('defaultIntensityForTexture — 레시피 있으면 그 값, 밖이면 1', () => {
-    expect(defaultIntensityForTexture('none')).toBe(1); // INITIAL_STATE.textureIntensity와 일치
+    expect(defaultIntensityForTexture('gloss')).toBe(1); // INITIAL_STATE.coatingIntensity와 일치
     expect(defaultIntensityForTexture('hologram')).toBe(0.7);
-    expect(defaultIntensityForTexture('original')).toBe(1); // 레시피 밖
+    expect(defaultIntensityForTexture('original')).toBe(1); // 재질 레시피 밖
+    expect(defaultIntensityForTexture('none')).toBe(1); // 코팅 레시피 밖(#475 — 'none'은 이제 coating='없음')
     // 물리재질도 이제 레시피에 편입(#471) — 각 noise 레시피의 defaultIntensity를 그대로 반환한다.
     expect(defaultIntensityForTexture('artpaper')).toBe(TEXTURE_RECIPES.artpaper.defaultIntensity);
     expect(defaultIntensityForTexture('vintage')).toBeGreaterThan(0);
   });
 
   test('gradient CSS는 레시피 각도와 stop 위치를 그대로 반영한다', () => {
-    const css = recipeToGradientCss(TEXTURE_RECIPES.none, 1);
-    expect(css.startsWith('linear-gradient(135deg,')).toBe(true);
-    expect(css).toContain('50%'); // none의 하이라이트 피크 stop
+    const css = recipeToGradientCss(TEXTURE_RECIPES.gloss, 1);
+    expect(css.startsWith('linear-gradient(125deg,')).toBe(true);
+    expect(css).toContain('50%'); // gloss의 하이라이트 피크 stop
+  });
+});
+
+describe('#475 재질×코팅 2축 재설계', () => {
+  test('코팅 축 레시피(gloss·hologram·metal·scodix)와 재질 축 레시피(artpaper·vintage·newspaper)가 한 맵에 겹치지 않고 공존한다', () => {
+    const coatingIds = ['gloss', 'hologram', 'metal', 'scodix'];
+    const materialIds = ['artpaper', 'vintage', 'newspaper'];
+    for (const id of [...coatingIds, ...materialIds]) {
+      expect(TEXTURE_RECIPES[id]).toBeDefined();
+    }
+    // 옛 단일축 키 'none'(유광)은 코팅축 'gloss'로 개명됐다 — 남아 있으면 코팅=없음과 이름이 겹친다.
+    expect(TEXTURE_RECIPES.none).toBeUndefined();
+  });
+
+  test('강화 대상(gloss·scodix·artpaper)은 인접 유지 대상보다 피크 강도가 뚜렷이 높다(ac3 구분감)', () => {
+    // gloss(강화) vs hologram/metal(유지) — 코팅 gradient stop 최대 alpha 비교.
+    const peakAlpha = (recipe: TextureRecipe) =>
+      recipe.kind === 'gradient' ? Math.max(...recipe.stops.map((s) => s.alpha)) : recipe.alpha;
+    expect(peakAlpha(TEXTURE_RECIPES.gloss)).toBeGreaterThan(0.3); // 옛 0.18보다 뚜렷이 강화
+    expect(peakAlpha(TEXTURE_RECIPES.scodix)).toBeGreaterThan(0.65); // 옛 0.65 초과
+    expect(TEXTURE_RECIPES.artpaper.kind === 'noise' && TEXTURE_RECIPES.artpaper.alpha).toBeGreaterThan(0.5); // 옛 0.5 초과
+  });
+
+  test('migrateLegacyComponents — 레거시 단일 texture 8종 전부가 migration_map대로 매핑된다(c4)', () => {
+    for (const [legacy, mapped] of Object.entries(LEGACY_TEXTURE_MIGRATION)) {
+      const result = migrateLegacyComponents({ texture: legacy, textureIntensity: 0.42, layout: 'minimal' });
+      expect(result.material).toBe(mapped.material);
+      expect(result.coating).toBe(mapped.coating);
+      expect(result.layout).toBe('minimal'); // 무관 필드는 그대로 통과
+    }
+  });
+
+  test('migrateLegacyComponents — 강도는 코팅형 레거시면 coatingIntensity, 재질형이면 materialIntensity에 실린다', () => {
+    expect(migrateLegacyComponents({ texture: 'hologram', textureIntensity: 0.3 })).toMatchObject({
+      material: 'original', coating: 'hologram', coatingIntensity: 0.3,
+    });
+    expect(migrateLegacyComponents({ texture: 'vintage', textureIntensity: 0.3 })).toMatchObject({
+      material: 'vintage', coating: 'none', materialIntensity: 0.3,
+    });
+  });
+
+  test('migrateLegacyComponents — 이미 새 shape(material 존재)면 그대로 통과(idempotent)', () => {
+    const alreadyNew = { material: 'newspaper', coating: 'scodix', materialIntensity: 0.4, coatingIntensity: 0.9 };
+    expect(migrateLegacyComponents(alreadyNew)).toEqual(alreadyNew);
+  });
+
+  test('migrateLegacyComponents — texture도 material도 없으면 그대로 통과(신규 유저·빈 저장분)', () => {
+    const empty = { layout: 'minimal' };
+    expect(migrateLegacyComponents(empty)).toEqual(empty);
   });
 });
 

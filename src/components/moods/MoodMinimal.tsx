@@ -175,8 +175,8 @@ export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components,
       <Poster
         src={croppedImageUrl}
         {...posterFitProps(components.posterFit, { letterboxBg: posterBg, frameInsetY: POSTER_FRAME_INSET_Y })}
-        texture={components.texture}
-        textureIntensity={components.textureIntensity}
+        material={components.material} coating={components.coating}
+        materialIntensity={components.materialIntensity} coatingIntensity={components.coatingIntensity}
         posterOpacity={components.posterOpacity}
         onTopBandHeight={setTopBandH}
       />

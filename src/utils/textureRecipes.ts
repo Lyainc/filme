@@ -72,19 +72,29 @@ export type TextureRecipe = GradientRecipe | NoiseRecipe;
 // 세련화 튜닝값(#434) — 실기기 육안 기준. hologram/metal의 blend를 soft-light 계열로 순화해
 // 밝은 영역을 태우지 않고(옛 color-dodge/hard-light의 과노출 주범) 은은히 얹히게 했다. soft-light는
 // 효과가 약해 alpha를 옛 값보다 올려 보상한다. defaultIntensity는 슬라이더 미조작 시 "바로 예쁜"
-// 기본 강도 — 화려한 홀로/메탈은 0.7로 눌러 두고 원하면 슬라이더로 100%까지 올린다. 유광(none)은
-// 원래 은은해 1.0(INITIAL_STATE.textureIntensity와 일치시켜 첫 로드 none을 100%로).
+// 기본 강도 — 화려한 홀로/메탈은 0.7로 눌러 두고 원하면 슬라이더로 100%까지 올린다. 유광(gloss)은
+// 원래 은은해 1.0(INITIAL_STATE.coatingIntensity와 일치시켜 첫 로드 gloss를 100%로).
+//
+// #475 2축 재설계 — 이 맵의 키는 재질(artpaper·vintage·newspaper)과 코팅(gloss·hologram·metal·
+// scodix) 두 축에 걸쳐 있지만 값 자체가 서로 겹치지 않아 한 맵을 공유한다. 옛 단일축의 `none`
+// (유광 록)은 코팅축 `gloss`로 개명 — coating='none'(코팅 없음)과 이름이 겹치면 안 돼서다.
+// gloss·scodix(코팅)·artpaper(재질)는 [강화 대상](#475 c8) — 인접 옵션과의 구분감을 강화했다.
 export const TEXTURE_RECIPES: Record<string, TextureRecipe> = {
-  none: {
+  // ── 코팅 축(coating) ──────────────────────────────────────────────────────
+  gloss: {
     kind: 'gradient',
-    angle: 135,
+    angle: 125,
     blend: 'screen',
     defaultIntensity: 1,
+    // [강화] 유광 광택을 "은은한 얼룩"이 아니라 인화지 위 반사광처럼 좁고 밝은 스펙큘러 밴드로 —
+    // 폭을 좁히고(30~70%→38~62%) 피크를 올려(0.18→0.42) 광택이 확실히 보이게 한다.
     stops: [
       { at: 0, rgb: [255, 255, 255], alpha: 0 },
-      { at: 30, rgb: [255, 255, 255], alpha: 0.06 },
-      { at: 50, rgb: [255, 255, 255], alpha: 0.18 },
-      { at: 70, rgb: [255, 255, 255], alpha: 0.06 },
+      { at: 30, rgb: [255, 255, 255], alpha: 0.05 },
+      { at: 42, rgb: [255, 255, 255], alpha: 0.34 },
+      { at: 50, rgb: [255, 255, 255], alpha: 0.42 },
+      { at: 58, rgb: [255, 255, 255], alpha: 0.34 },
+      { at: 70, rgb: [255, 255, 255], alpha: 0.05 },
       { at: 100, rgb: [255, 255, 255], alpha: 0 },
     ],
   },
@@ -120,23 +130,31 @@ export const TEXTURE_RECIPES: Record<string, TextureRecipe> = {
     angle: 135,
     blend: 'overlay',
     defaultIntensity: 0.85,
+    // [강화] "부분 UV 광택 스팟"이 뚜렷이 보이게 밴드를 좁히고(40~55%→38~60%) 앞뒤에 대칭 그림자를
+    // 둬 엠보싱 스팟처럼 도드라지게, 피크도 올렸다(0.65→0.85).
     stops: [
-      { at: 40, rgb: [255, 255, 255], alpha: 0 },
-      { at: 45, rgb: [0, 0, 0], alpha: 0.12 },
-      { at: 50, rgb: [255, 255, 255], alpha: 0.65 },
-      { at: 55, rgb: [255, 255, 255], alpha: 0 },
+      { at: 38, rgb: [255, 255, 255], alpha: 0 },
+      { at: 44, rgb: [0, 0, 0], alpha: 0.22 },
+      { at: 49, rgb: [255, 255, 255], alpha: 0.85 },
+      { at: 54, rgb: [0, 0, 0], alpha: 0.18 },
+      { at: 60, rgb: [255, 255, 255], alpha: 0 },
     ],
   },
+  // ── 재질 축(material) ─────────────────────────────────────────────────────
   // 물리재질 종이결(#471). 값은 실기기 육안 튜닝 — feTurbulence 결은 계산이 아니라 눈으로 맞춘다.
   // ponytail: 대조 시 결이 과하거나 약하면 alpha/defaultIntensity(세기), baseFrequency(촘촘함),
   // blend(overlay=밝고어둡게·soft-light=은은)만 조정. tile은 iOS raster 안전선(작게 유지).
   artpaper: {
+    // [강화] 미술용지 결이 metal 코팅과 뭉치던 문제(#475) — baseFrequency를 낮추고(0.55→0.4)
+    // numOctaves를 줄여(3→2) 더 굵고 거친 캔버스 결로, alpha를 올려(0.5→0.65) 결이 확실히 보이게
+    // 했다. defaultIntensity는 스펙 default_intensity 표(기존 값 재활용) 그대로 0.6 유지 — 세기는
+    // alpha가 담당. tile은 iOS raster 안전선 그대로 유지.
     kind: 'noise',
-    baseFrequency: 0.55,
-    numOctaves: 3,
+    baseFrequency: 0.4,
+    numOctaves: 2,
     tile: 140,
     blend: 'overlay',
-    alpha: 0.5,
+    alpha: 0.65,
     defaultIntensity: 0.6,
   },
   vintage: {
@@ -159,9 +177,53 @@ export const TEXTURE_RECIPES: Record<string, TextureRecipe> = {
   },
 };
 
-/** 슬라이더 미조작 시 그 texture의 기본 강도. 레시피 밖(original)이면 1(무의미). */
+/** 슬라이더 미조작 시 그 texture의 기본 강도. 레시피 밖(original/none)이면 1(무의미). */
 export function defaultIntensityForTexture(texture: string): number {
   return TEXTURE_RECIPES[texture]?.defaultIntensity ?? 1;
+}
+
+/**
+ * 레거시 단일 `texture` → 2축({material, coating}) 매핑(#475 c4). 옛 단일축 8종 각각이 어느
+ * 재질·코팅 조합이었는지 — original/vintage/newspaper는 코팅 없는 순수 재질, none/hologram/metal/
+ * scodix는 재질 없는(original) 순수 코팅이었다.
+ */
+export const LEGACY_TEXTURE_MIGRATION: Record<string, { material: string; coating: string }> = {
+  original: { material: 'original', coating: 'none' },
+  none: { material: 'original', coating: 'gloss' },
+  hologram: { material: 'original', coating: 'hologram' },
+  metal: { material: 'original', coating: 'metal' },
+  scodix: { material: 'original', coating: 'scodix' },
+  artpaper: { material: 'artpaper', coating: 'none' },
+  vintage: { material: 'vintage', coating: 'none' },
+  newspaper: { material: 'newspaper', coating: 'none' },
+};
+
+// 위 8종 중 코팅 쪽에 실렸던 값들 — 레거시 textureIntensity가 이 값들이면 coatingIntensity로,
+// 아니면(재질 쪽) materialIntensity로 싣는다(#475 c4).
+const LEGACY_COATING_TEXTURES = new Set(['none', 'hologram', 'metal', 'scodix']);
+
+/**
+ * 저장된 컴포넌트 상태(localStorage 임시저장·undo 스냅샷)가 옛 단일 `texture` 필드 shape면
+ * `{material, coating, materialIntensity?, coatingIntensity?}`로 매핑해 반환한다(#475 c4). 이미
+ * 새 shape(`material` 존재)면 그대로 통과 — 하위호환 마이그레이션은 1회성이라 재적용해도 안전.
+ */
+export function migrateLegacyComponents(saved: Record<string, unknown>): Record<string, unknown> {
+  if (typeof saved.material === 'string') return saved;
+  const legacyTexture = typeof saved.texture === 'string' ? saved.texture : undefined;
+  if (!legacyTexture) return saved;
+  const mapped = LEGACY_TEXTURE_MIGRATION[legacyTexture] ?? LEGACY_TEXTURE_MIGRATION.original;
+  const legacyIntensity = typeof saved.textureIntensity === 'number' ? saved.textureIntensity : undefined;
+  const onCoating = LEGACY_COATING_TEXTURES.has(legacyTexture);
+  return {
+    ...saved,
+    material: mapped.material,
+    coating: mapped.coating,
+    ...(legacyIntensity !== undefined
+      ? onCoating
+        ? { coatingIntensity: legacyIntensity }
+        : { materialIntensity: legacyIntensity }
+      : {}),
+  };
 }
 
 /** intensity를 stop alpha에 곱한 rgba 문자열. intensity=0이면 완전 투명. */

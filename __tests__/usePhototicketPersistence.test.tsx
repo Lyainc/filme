@@ -10,7 +10,7 @@
 import { afterEach, describe, expect, test, mock, jest } from 'bun:test';
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { usePhototicket } from '../src/hooks/usePhototicket';
-import { defaultIntensityForTexture } from '../src/utils/textureRecipes';
+import { defaultIntensityForTexture, LEGACY_TEXTURE_MIGRATION } from '../src/utils/textureRecipes';
 
 const KEY = 'filme:phototicket:v1';
 
@@ -63,12 +63,38 @@ describe('#310 usePhototicket saveDraft/clearDraft', () => {
     }));
     const { result } = renderHook(() => usePhototicket());
     await waitFor(() => {
-      // 얕은 병합 — 저장에 없는 필드는 INITIAL 기본값 유지.
+      // 얕은 병합 — 저장에 없는 필드는 INITIAL 기본값 유지. 레거시 단일 texture는 {material,
+      // coating}로 매핑돼 복원된다(#475 c4).
       expect(result.current.state.movieInfo.title).toBe('복원된제목');
-      expect(result.current.state.components.texture).toBe('vintage');
+      expect(result.current.state.components.material).toBe('vintage');
+      expect(result.current.state.components.coating).toBe('none');
       expect(result.current.state.components.layout).toBe('minimal');
       expect(result.current.state.fieldVisibility.actors).toBe(true);
     });
+  });
+
+  test('#475 c4 — 레거시 단일 texture 8종이 저장분 복원 시 migration_map대로 {material, coating}에 매핑된다', async () => {
+    for (const [legacyTexture, mapped] of Object.entries(LEGACY_TEXTURE_MIGRATION)) {
+      window.localStorage.clear();
+      window.localStorage.setItem(KEY, JSON.stringify({
+        movieInfo: {},
+        components: { texture: legacyTexture, textureIntensity: 0.42 },
+        fieldVisibility: {},
+      }));
+      const { result, unmount } = renderHook(() => usePhototicket());
+      await waitFor(() => {
+        expect(result.current.state.components.material).toBe(mapped.material);
+        expect(result.current.state.components.coating).toBe(mapped.coating);
+      });
+      // 강도는 코팅형 레거시 값이면 coatingIntensity로, 재질형이면 materialIntensity로 실린다.
+      const onCoating = ['none', 'hologram', 'metal', 'scodix'].includes(legacyTexture);
+      if (onCoating) {
+        expect(result.current.state.components.coatingIntensity).toBe(0.42);
+      } else {
+        expect(result.current.state.components.materialIntensity).toBe(0.42);
+      }
+      unmount();
+    }
   });
 
   test('saveDraft()는 업로드 로고 blob: URL을 비운다(chain·format 둘 다)', () => {
@@ -118,29 +144,30 @@ describe('#310 usePhototicket saveDraft/clearDraft', () => {
     expect(window.localStorage.getItem(KEY)).toBeNull();
     expect(result.current.state.movieInfo.title).toBe('');
     expect(result.current.state.movieInfo.seat).toBe('');
-    expect(result.current.state.components.texture).toBe('none');
+    expect(result.current.state.components.material).toBe('original');
+    expect(result.current.state.components.coating).toBe('gloss');
     expect(result.current.state.croppedImageUrl).toBeNull();
   });
 
-  test('clearDraft() 후 texture 전환 시 그 texture 기본 강도가 적용된다 — intensityTouchedRef도 리셋(#434 PR #472 P1)', () => {
+  test('clearDraft() 후 coating 전환 시 그 coating 기본 강도가 적용된다 — 강도 touchedRef도 리셋(#434 PR #472 P1, #475 축분리)', () => {
     const { result } = renderHook(() => usePhototicket());
-    // 강도 슬라이더 직접 조작 → intensityTouchedRef=true
+    // 강도 슬라이더 직접 조작 → coatingIntensityTouchedRef=true
     act(() => {
-      result.current.updateComponents({ texture: 'hologram', textureIntensity: 0.3 });
+      result.current.updateComponents({ coating: 'hologram', coatingIntensity: 0.3 });
     });
-    expect(result.current.state.components.textureIntensity).toBe(0.3);
+    expect(result.current.state.components.coatingIntensity).toBe(0.3);
 
     // 초기화 — 강도 touched도 리셋되어야 한다(밝기와 대칭)
     act(() => {
       result.current.clearDraft();
     });
 
-    // 초기화 후 texture 전환 → 그 texture 기본 강도 적용. touched가 리셋 안 됐으면 이 분기가 스킵돼
+    // 초기화 후 coating 전환 → 그 coating 기본 강도 적용. touched가 리셋 안 됐으면 이 분기가 스킵돼
     // 리셋 후 값(INITIAL 1.0)이 남는다 — 그게 버그였다.
     act(() => {
-      result.current.updateComponents({ texture: 'metal' });
+      result.current.updateComponents({ coating: 'metal' });
     });
-    expect(result.current.state.components.textureIntensity).toBe(defaultIntensityForTexture('metal'));
+    expect(result.current.state.components.coatingIntensity).toBe(defaultIntensityForTexture('metal'));
   });
 
   test('clearDraft()는 남아있던 croppedImageUrl을 revoke한다(handleImageUpload와 동일 패턴)', () => {

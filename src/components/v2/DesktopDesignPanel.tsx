@@ -4,6 +4,7 @@ import TexturePicker from '@/components/wizard/TexturePicker';
 import ColorPicker from '@/components/wizard/ColorPicker';
 import BrightnessSlider from '@/components/wizard/BrightnessSlider';
 import { TEXTURE_RECIPES } from '@/utils/textureRecipes';
+import { MATERIAL_OPTIONS, COATING_OPTIONS } from '@/utils/constants';
 import { Eyebrow } from './Eyebrow';
 import type { LayoutId } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
@@ -37,23 +38,46 @@ export function DesktopDesignPanel({ photo }: { photo: ReturnType<typeof usePhot
         <LayoutPicker value={components.layout} onChange={(id: LayoutId) => setComp({ layout: id })} />
       </Section>
 
-      {/* 후가공 프리셋 + 강도 슬라이더(#434, #471). 강도는 레시피 있는 texture(gradient 4종 +
-          물리재질 3종)에서만 유효하므로 레시피 밖(원본)에선 슬라이더를 숨긴다. */}
+      {/* 재질×코팅 2축 피커 + 축별 강도 슬라이더(#434, #471, #475). 각 강도 슬라이더는 그 축 피커
+          바로 아래(c7) — 레시피 있는 옵션(원본/코팅없음 제외)에서만 유효해 레시피 밖에선 숨긴다. */}
       <Section eyebrow="Texture">
-        <div className="space-y-group">
-          <TexturePicker
-            value={components.texture}
-            onChange={(texture) => setComp({ texture })}
-            croppedImageUrl={croppedImageUrl}
-          />
-          {TEXTURE_RECIPES[components.texture] && (
-            <BrightnessSlider
-              label="강도"
-              id="desktop-texture-intensity"
-              value={components.textureIntensity}
-              onChange={(textureIntensity) => setComp({ textureIntensity })}
+        <div className="space-y-section">
+          <div className="space-y-group">
+            <TexturePicker
+              axis="material"
+              options={MATERIAL_OPTIONS}
+              value={components.material}
+              onChange={(material) => setComp({ material })}
+              croppedImageUrl={croppedImageUrl}
+              ariaLabel="재질"
             />
-          )}
+            {TEXTURE_RECIPES[components.material] && (
+              <BrightnessSlider
+                label="재질 강도"
+                id="desktop-material-intensity"
+                value={components.materialIntensity}
+                onChange={(materialIntensity) => setComp({ materialIntensity })}
+              />
+            )}
+          </div>
+          <div className="space-y-group">
+            <TexturePicker
+              axis="coating"
+              options={COATING_OPTIONS}
+              value={components.coating}
+              onChange={(coating) => setComp({ coating })}
+              croppedImageUrl={croppedImageUrl}
+              ariaLabel="코팅"
+            />
+            {TEXTURE_RECIPES[components.coating] && (
+              <BrightnessSlider
+                label="코팅 강도"
+                id="desktop-coating-intensity"
+                value={components.coatingIntensity}
+                onChange={(coatingIntensity) => setComp({ coatingIntensity })}
+              />
+            )}
+          </div>
         </div>
       </Section>
 

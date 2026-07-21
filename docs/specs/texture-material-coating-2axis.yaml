@@ -1,0 +1,227 @@
+---
+# Output conforms to thinking-tools/reference/common-schema.md
+skill: build-spec
+schema_version: 1
+version: 4.0.1
+generated: 2026-07-21
+input:
+  target: 용지설정(Texture) 재질×코팅 2축 재설계 — 조합 적용·축별 독립 강도
+  options: []
+output:
+  type: spec
+  structure: templates/SEED_SPEC.yaml
+
+# build-spec extensions
+spec_version: 1
+created: 2026-07-21
+target: 용지설정(Texture) 재질×코팅 2축 재설계 — 조합 적용·축별 독립 강도
+domain: tech
+brownfield: true
+refine_generation: 0
+
+goal:
+  statement: >
+    포스터 후가공(Texture)을 단일축 8종 단일선택에서 "재질 축 × 코팅 축" 2축 조합으로
+    재설계해, 재질(종이 자체 색·톤·결)과 코팅(위에 얹는 광택)을 동시에 얹고 각각 독립
+    강도로 조절할 수 있게 한다. 지금 미술용지·메탈릭·스코딕스가 서로 뭉쳐 구분이 안 되는
+    문제(성격이 다른 두 축을 한 줄에 섞어 경쟁시킨 탓)를 축 분리로 근본 해소하고, 각 축
+    내부의 약한 정체성(재질=미술용지, 코팅=유광·스코딕스)만 강화한다.
+  clarity_score: 0.85
+
+constraints:
+  - id: c1
+    type: technical
+    description: >
+      [상태 재구조] `components.texture: string` 단일 필드를 4필드로 분리한다 —
+      `material`(재질) + `coating`(코팅) + `materialIntensity`(0..1) + `coatingIntensity`(0..1).
+      usePhototicket의 상태·기본값 로직, undo/임시저장 원자 스냅샷, 공유링크 직렬화(/t/[id])를
+      모두 이 4필드로 넓힌다. 강도는 재질/코팅 각각 독립(오너 확정) — 단일 textureIntensity를
+      두 개로 쪼갠다.
+    hard: true
+    rationale: 2축 조합·축별 독립 강도의 전제. 상태를 안 쪼개면 조합도 독립 강도도 불가능하다.
+  - id: c2
+    type: technical
+    description: >
+      [미리보기=저장물, 2겹] 오버레이를 재질·코팅 2겹으로 얹되 미리보기(CSS)와 저장(canvas)이
+      같은 레시피 단일소스(textureRecipes.ts)를 공유하는 #434/#471 원칙을 유지한다.
+      _shared.tsx TextureOverlay는 재질 오버레이(noise, 아래) + 코팅 오버레이(gradient, 위)
+      2겹을 렌더하고, captureToImage.ts compositeOverlay는 재질→코팅 순으로 2회 canvas 합성한다.
+      z-order = 포스터(재질 CSS filter 적용) → 재질 결 오버레이 → 코팅 광택 오버레이 → 텍스트.
+    hard: true
+    rationale: 축이 둘로 늘어도 미리보기=저장물이 안 맞으면 작업 전체가 미리보기 전용 장식이 된다(#434 c1 계승).
+  - id: c3
+    type: technical
+    description: >
+      [색 겹침 순서] 코팅 광택은 재질이 색을 바꾼 뒤의 "최종 포스터 색" 위에 blend한다(오너 확정).
+      즉 재질의 CSS filter(vintage=sepia, newspaper=grayscale, none)가 포스터 <img>에 먼저 적용돼
+      최종색을 만들고, 그 위에 코팅 오버레이가 얹힌다 — 흑백신문+홀로그램 = "흑백 위 무지개".
+      코팅은 원본색이 아니라 재질 반영색 기준이다.
+    hard: true
+    rationale: 실제 인쇄물의 물리 순서(종이 먼저·코팅 나중)와 일치해 조합이 자연스럽게 읽힌다.
+  - id: c4
+    type: technical
+    description: >
+      [하위호환 마이그레이션] 기존 저장된 단일 `texture` 값(임시저장 localStorage·공유링크 blob)을
+      로드 시 {material, coating}로 매핑해 깨지지 않게 한다. 매핑(migration_map 참조):
+      original→{original,none} · none→{original,gloss} · hologram→{original,hologram} ·
+      metal→{original,metal} · scodix→{original,scodix} · artpaper→{artpaper,none} ·
+      vintage→{vintage,none} · newspaper→{newspaper,none}. 강도는 legacy textureIntensity를
+      해당 축(코팅형이면 coatingIntensity, 재질형이면 materialIntensity)에 싣고 반대 축은 기본값.
+    hard: true
+    rationale: 이미 저장된 티켓/공유링크가 재설계로 깨지면 안 된다(성공기준 ac4).
+  - id: c5
+    type: technical
+    description: >
+      [강도 독립·0=무가공] materialIntensity·coatingIntensity는 각각 그 축 오버레이의 세기에만
+      곱해진다. 각 축 강도=0이면 그 축은 완전 무가공(그 오버레이 미출력). material=original 또는
+      coating=none은 그 축 오버레이 없음. material=original & coating=none이면 원본 포스터와
+      픽셀 동일(PRINT_SIM 기본 필터만). 재질 CSS filter(sepia/grayscale)는 materialIntensity와
+      별개로 재질 선택에 종속되는지 여부를 구현 시 결정하되, 재질=original이면 색변화 없음이 하한.
+    hard: true
+    rationale: 두 슬라이더의 의미가 각 축에 국한돼야 UX가 예측 가능하다(#434 c3의 축별 확장).
+  - id: c6
+    type: technical
+    description: >
+      [조합 완전 자유] 재질 4종 × 코팅 5종 = 20조합을 전부 허용한다. 어색한 조합도 막지 않고
+      사용자 재량에 맡긴다(오너 확정). 조합 금지 로직·프리셋 강제는 두지 않는다(프리셋은 후속 여지).
+    hard: false
+    rationale: 막을 근거가 없고 표현력을 최대화한다. 규칙 관리 부담도 없앤다.
+  - id: c7
+    type: technical
+    description: >
+      [강도 UI 배치] 재질 강도 슬라이더는 재질 피커 섹션 바로 아래, 코팅 강도 슬라이더는 코팅
+      피커 섹션 바로 아래에 둔다(각 축 섹션에 슬라이더, 오너 확정). DesignRail(모바일)·
+      DesktopDesignPanel(데스크톱) 양쪽에서 이 배치를 따르고 BrightnessSlider를 재사용한다.
+      기존 `TEXTURE_RECIPES[texture]` 단일 게이트를 축별 게이트로 바꾼다.
+    hard: false
+    rationale: 축과 강도가 시각적으로 붙어 어느 슬라이더가 어느 축인지 직관적이다.
+  - id: c8
+    type: technical
+    description: >
+      [정체성 강화 범위] 각 축 내부 약한 옵션만 재설계한다 — 재질축 artpaper(거친 캔버스/수채
+      종이 결로 강화), 코팅축 gloss(유광 광택 확실히)·scodix(부분 UV 광택 스팟 뚜렷이). 잘 되는
+      hologram·metal(코팅)·vintage·newspaper(재질)의 룩은 유지하며 회귀시키지 않는다.
+    hard: true
+    rationale: 되는 것을 부수지 않고(ponytail) 문제 옵션만 손대 리스크를 줄인다. 구분감의 실제 지렛대.
+  - id: c9
+    type: technical
+    description: >
+      [캡처/iOS 정합] 재질 noise 타일(feTurbulence, 작은 타일 stitchTiles 반복)이 2겹 합성에서도
+      #439 iOS Safari 큰-raster 함정을 피하는지, seam/누락 없이 반복되는지 실기기 대조한다.
+      textureRecipes의 GradientRecipe|NoiseRecipe 유니온과 noiseTileSvg/compositeOverlay(async
+      SVG-raster createPattern) 구조를 재활용한다.
+    hard: true
+    rationale: 2겹으로 늘어난 합성이 #471의 iOS 저위험 가정을 유지하는지 재확인이 필요하다.
+  - id: c10
+    type: technical
+    description: >
+      [회귀 안전] bun run typecheck·bun test 통과. textureRecipes/captureComposite 회귀 테스트를
+      2축 구조로 확장하고, 6무드 공통 Poster 경로라 한 곳 수정이 전 무드에 반영됨을 감안해
+      밝은/어두운 포스터 × 무드 배경 대비 조합을 검증한다.
+    hard: true
+    rationale: 공통 Poster 파급과 단일소스 회귀는 이 프로젝트의 상습 파손 지점이다.
+
+success_criteria:
+  - id: ac1
+    description: >
+      재질×코팅 조합이 미리보기와 실제 저장물에서 동일하게 렌더된다 — 재질 결과 코팅 광택이
+      둘 다 저장 JPEG에 담기고(2겹 합성), 미리보기와 결·색·세기가 일치한다.
+    verifiable: true
+    measurable_via: 데스크톱 Chrome + iOS Safari 실기기에서 대표 조합(예 미술용지+홀로, 빈티지+메탈, 흑백신문+유광) 실저장→미리보기 육안 대조
+  - id: ac2
+    description: >
+      재질/코팅 강도를 각각 독립 슬라이더로 조절할 수 있고, 각 축 강도=0이면 그 축이 완전
+      무가공이 된다. material=original & coating=none이면 원본 포스터와 픽셀 동일.
+    verifiable: true
+    measurable_via: 각 축 슬라이더 0/50/100 조작 시 그 축 오버레이만 반응, 반대 축 불변 확인 + 강도0 무가공 대조
+  - id: ac3
+    description: >
+      각 축 내부 옵션들이 육안으로 확실히 구분된다 — 특히 강화 대상 artpaper(재질)·gloss·scodix(코팅)가
+      같은 축의 다른 옵션과, 그리고 서로 뚜렷이 달라 보인다.
+    verifiable: true
+    measurable_via: 오너 육안 승인 + 데스크톱·iOS 실기기 대조(각 축 내부 인접 옵션 쌍이 구분되는지 정성 판정)
+  - id: ac4
+    description: >
+      기존에 저장된 단일 texture 값(임시저장·공유링크)이 로드 시 {material, coating}로 매핑돼
+      깨지지 않고 동등한 룩으로 복원된다.
+    verifiable: true
+    measurable_via: 레거시 texture 값별 로드 회귀 테스트(migration_map 매핑 검증) + 실제 옛 공유링크 로드 확인
+  - id: ac5
+    description: >
+      잘 되던 hologram·metal·vintage·newspaper의 룩이 재설계 후에도 유지된다(회귀 없음).
+      bun run typecheck·bun test 통과.
+    verifiable: true
+    measurable_via: 재설계 전/후 해당 4종 저장물 대조 + CI(typecheck/test) 통과
+  - id: ac6
+    description: >
+      iOS Safari 실기기 저장물에서 재질 noise 타일이 seam/누락 없이 반복되고, 2겹 합성에서
+      포스터·로고 누락이 없다(#439 재발 없음).
+    verifiable: true
+    measurable_via: iOS 실기기 ?debug=1 저장 → 콘솔 capture 로그(overlay/main·decode throw 여부) + 저장물 육안 대조
+
+context:
+  existing_stack:
+    - Next.js 16 (Pages Router), React 19, TypeScript, Tailwind v3
+    - 상태 관리 useState + 커스텀 훅(usePhototicket)
+    - "텍스처 렌더: DOM + CSS mix-blend-mode + gradient/feTurbulence(fractalNoise) 오버레이, 텍스처 이미지 에셋 미사용"
+    - "export: html-to-image 단일 프레임 캡처 + canvas 2D 포스터/오버레이 합성(compositeRaster/compositeOverlay, #439/#471)"
+  dependencies:
+    - "html-to-image: 단일 프레임 캡처 — poster-root 서브트리를 제외하고 canvas로 재합성(#439). 동적 효과 불가"
+    - "textureRecipes.ts: GradientRecipe | NoiseRecipe 유니온(#471) — 미리보기(CSS)·저장(canvas)이 공유하는 단일 소스, noiseTileSvg(feTurbulence 타일)"
+    - "SVG feTurbulence: 재질 결의 벡터 소스. 작은 타일 stitchTiles 반복으로 iOS 큰-raster 함정 회피(#439 인근)"
+  integration_points:
+    - "src/utils/constants.ts — TEXTURE_OPTIONS(단일 8종) → 재질 축·코팅 축 2목록으로 재편"
+    - "src/utils/textureRecipes.ts — 레시피를 재질(noise+색필터)/코팅(gradient)로 축 분류, 축별 defaultIntensity"
+    - "src/components/moods/_shared.tsx — Poster / TextureOverlay(2겹 렌더) / TEXTURE_FILTERS(재질 색필터) / defaultBrightnessForTexture / data-texture 속성(축별로 확장)"
+    - "src/utils/captureToImage.ts — compositeOverlay 재질→코팅 순 2회 합성, poster-root data 속성으로 material/coating/각 강도 전달"
+    - "src/hooks/usePhototicket.ts — components 상태 4필드화(material/coating/materialIntensity/coatingIntensity), 축별 기본강도 리셋, undo/임시저장 원자 복원 스냅샷 확장"
+    - "src/components/v2/DesignRail.tsx · DesktopDesignPanel.tsx — 재질/코팅 피커 각 섹션 + 각 축 강도 슬라이더(BrightnessSlider 재사용)"
+    - "src/types/index.ts — TicketComponents에 material/coating/materialIntensity/coatingIntensity"
+    - "src/utils/(임시저장·공유 직렬화) — 레거시 단일 texture 하위호환 마이그레이션 로드"
+    - "__tests__/textureRecipes.test.ts · captureComposite.test.ts — 2축·2겹·마이그레이션 회귀 확장"
+
+material_coating_axes:  # 이 스펙의 핵심 구조 — 단일 8종을 두 축으로 재편
+  material_axis:        # 재질 축(종이 자체: 색·톤·결) — 색을 바꾸는 축
+    - id: original      # 원본(색변화 없음, 결 없음)
+    - id: artpaper      # 미술용지 — 거친 캔버스/수채 종이 결. [강화 대상]
+    - id: vintage       # 빈티지 — 빛바랜 세피아 + 노이즈 결(유지)
+    - id: newspaper     # 흑백신문 — 흑백 + 거친 망점 결(유지)
+  coating_axis:         # 코팅 축(위에 얹는 광택) — 재질 최종색 위에 blend
+    - id: none          # 없음
+    - id: gloss         # 유광(인화지 광택). [강화 대상]
+    - id: hologram      # 홀로그램 — 무지개(유지)
+    - id: metal         # 메탈릭 — 금속 포일(유지)
+    - id: scodix        # 스코딕스 — 부분 UV 광택 스팟. [강화 대상]
+  migration_map:        # 레거시 단일 texture → {material, coating} (c4 하위호환)
+    original:   { material: original,  coating: none }
+    none:       { material: original,  coating: gloss }
+    hologram:   { material: original,  coating: hologram }
+    metal:      { material: original,  coating: metal }
+    scodix:     { material: original,  coating: scodix }
+    artpaper:   { material: artpaper,  coating: none }
+    vintage:    { material: vintage,   coating: none }
+    newspaper:  { material: newspaper, coating: none }
+  default_intensity:    # 축별 기본 강도(기존 값 재활용, 슬라이더 미조작 시)
+    material: { artpaper: 0.6, vintage: 0.5, newspaper: 0.6 }   # original 무의미
+    coating:  { gloss: 1.0, hologram: 0.7, metal: 0.7, scodix: 0.85 }  # none 무의미
+  z_order: 포스터(재질 CSS filter 최종색) → 재질 결 오버레이 → 코팅 광택 오버레이 → 텍스트
+
+ambiguity:
+  overall: 0.18
+  gate_passed: true
+
+clarity_breakdown:
+  goal: 0.85
+  constraint: 0.82
+  success: 0.78
+  context: 0.82
+
+metadata:
+  interview_rounds: 2
+  questions_asked: 4
+  generated_by: thinking-tools/build-spec
+  source_session: >
+    #471(물리재질 종이결, PR #473 머지) 직후 iOS 실기기 검증 논의 중 미술용지·메탈릭·스코딕스
+    구분감 부재를 오너가 지적 → 2축(재질×코팅) 재설계로 방향 전환. 4문항 인터뷰로 강도UI·색겹침·
+    조합자유도·성공판정 확정. 관련 이슈: 후가공 부모 #434, 물리재질 종이결 #471.
+---

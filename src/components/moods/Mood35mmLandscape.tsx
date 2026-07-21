@@ -200,7 +200,7 @@ export const Mood35mmLandscape = memo(function Mood35mmLandscape({ movieInfo: d,
       <div style={{ position: 'absolute', left: 0, right: 0, top: STRIP_H, bottom: STRIP_H, display: 'flex' }}>
         {/* Left: poster column — 분할 레이아웃이라 이 컬럼에만 포스터 탭(#259) */}
         <div style={{ flex: 1, position: 'relative', background: '#0a0a0a', overflow: 'hidden', minWidth: 0 }} {...posterTapProps(onPosterTap)}>
-          <Poster src={croppedImageUrl} {...posterFitProps(components.posterFit, { letterboxBg: POSTER_LETTERBOX_BG })} texture={components.texture} textureIntensity={components.textureIntensity} posterOpacity={components.posterOpacity} onTopBandHeight={setTopBandH} />
+          <Poster src={croppedImageUrl} {...posterFitProps(components.posterFit, { letterboxBg: POSTER_LETTERBOX_BG })} material={components.material} coating={components.coating} materialIntensity={components.materialIntensity} coatingIntensity={components.coatingIntensity} posterOpacity={components.posterOpacity} onTopBandHeight={setTopBandH} />
 
           {/* #219 componentOpacity: 포스터 뺀 캡션·스탬프·그라디언트 페이드. inset:0 래퍼라 opacity 1에서 no-op. */}
           <div style={{ position: 'absolute', inset: 0, opacity: componentOpacity }}>

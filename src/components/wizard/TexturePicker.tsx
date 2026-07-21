@@ -1,13 +1,21 @@
 import { memo, useEffect, useRef } from 'react';
-import { TEXTURE_OPTIONS } from '@/utils/constants';
 import { Poster } from '@/components/moods/_shared';
 import { defaultIntensityForTexture } from '@/utils/textureRecipes';
 
+interface TextureOption {
+  value: string;
+  label: string;
+}
+
 interface TexturePickerProps {
+  /** 어느 축의 피커인지(#475) — 미니 스와치가 그 축만 격리해 미리보기하게 한다(반대 축은 기본값). */
+  axis: 'material' | 'coating';
+  options: readonly TextureOption[];
   value: string;
   onChange: (value: string) => void;
   /** Current poster — drives the per-chip texture preview. */
   croppedImageUrl?: string | null;
+  ariaLabel: string;
 }
 
 // rail 상세패널 공통 칩 크기(#367, v8 §3) — LayoutStrip 무드 칩·ColorPicker 스와치와 동일 46px.
@@ -25,11 +33,18 @@ const SAMPLE_POSTER_SRC = '/assets/texture-sample.svg';
  */
 const TexturePreview = memo(function TexturePreview({
   src,
+  axis,
   texture,
 }: {
   src: string;
+  axis: 'material' | 'coating';
   texture: string;
 }) {
+  // 그 축만 격리해 미리보기 — 반대 축은 Poster 기본값(material='original'/coating='none', 즉
+  // 무가공)이라 이 칩이 보여주는 결·광택이 오직 이 옵션 하나뿐임이 보장된다(#475 축 독립).
+  const axisProps = axis === 'material'
+    ? { material: texture, materialIntensity: defaultIntensityForTexture(texture) }
+    : { coating: texture, coatingIntensity: defaultIntensityForTexture(texture) };
   return (
     <span
       aria-hidden
@@ -43,19 +58,14 @@ const TexturePreview = memo(function TexturePreview({
         flexShrink: 0,
       }}
     >
-      {/* 칩은 그 texture의 기본 강도로 미리보기 — 강도 100% 고정이면 실제 기본(hologram/metal 0.7)보다
+      {/* 칩은 그 옵션의 기본 강도로 미리보기 — 강도 100% 고정이면 실제 기본(hologram/metal 0.7)보다
           화려하게 보인다(#434 PR #472 리뷰 P2). posterOpacity처럼 대표 고정값(슬라이더엔 안 반응). */}
-      <Poster
-        src={src}
-        texture={texture}
-        textureIntensity={defaultIntensityForTexture(texture)}
-        posterOpacity={PREVIEW_OPACITY}
-      />
+      <Poster src={src} {...axisProps} posterOpacity={PREVIEW_OPACITY} />
     </span>
   );
 });
 
-function TexturePicker({ value, onChange, croppedImageUrl }: TexturePickerProps) {
+function TexturePicker({ axis, options, value, onChange, croppedImageUrl, ariaLabel }: TexturePickerProps) {
   const previewSrc = croppedImageUrl || SAMPLE_POSTER_SRC;
   // 기본값이 바뀌어 선택 칩이 뷰포트 밖에서 시작해도 항상 보이게(#190 nit, PR #189 리뷰).
   const activeRef = useRef<HTMLButtonElement>(null);
@@ -65,14 +75,14 @@ function TexturePicker({ value, onChange, croppedImageUrl }: TexturePickerProps)
 
   return (
     <div className="space-y-field">
-      {/* ponytail: 가로 스크롤 스트립 = 캐러셀(#180 (6)). 8개 작은 스와치는 한 장씩 넘기는
+      {/* ponytail: 가로 스크롤 스트립 = 캐러셀(#180 (6)). 작은 스와치는 한 장씩 넘기는
           LayoutPicker식 캐러셀보다 한 줄 스크롤이 비교·선택에 낫고 세로도 절약된다(2줄 wrap→1줄). */}
       <div
         className="flex gap-2 overflow-x-auto pb-1 snap-x [scrollbar-width:thin]"
         role="radiogroup"
-        aria-label="Texture"
+        aria-label={ariaLabel}
       >
-        {TEXTURE_OPTIONS.map((tex) => {
+        {options.map((tex) => {
           const active = value === tex.value;
           // Show only short label (first parenthesis-free portion) on chip
           const short = tex.label.split('(')[0].trim();
@@ -99,7 +109,7 @@ function TexturePicker({ value, onChange, croppedImageUrl }: TexturePickerProps)
                   transform: active ? 'scale(1.05)' : undefined,
                 }}
               >
-                <TexturePreview src={previewSrc} texture={tex.value} />
+                <TexturePreview src={previewSrc} axis={axis} texture={tex.value} />
               </span>
               <span
                 className={`text-[11px] font-medium transition-colors ${active ? 'text-accent' : 'text-fg-muted'}`}

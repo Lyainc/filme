@@ -164,7 +164,7 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
             posterFitProps 공통 정책을 태워 그 여백을 blur 포스터 배경으로 채운다(#440 레터박스
             정교화). 자연 간극이 이미 커 frameInsetY 최소 노출 보장은 불필요(editorial/35mm-landscape와
             동일 패턴). */}
-        <Poster src={croppedImageUrl} {...posterFitProps(components.posterFit, { letterboxBg: POSTER_LETTERBOX_BG })} texture={components.texture} textureIntensity={components.textureIntensity} posterOpacity={components.posterOpacity} />
+        <Poster src={croppedImageUrl} {...posterFitProps(components.posterFit, { letterboxBg: POSTER_LETTERBOX_BG })} material={components.material} coating={components.coating} materialIntensity={components.materialIntensity} coatingIntensity={components.coatingIntensity} posterOpacity={components.posterOpacity} />
       </div>
 
       {/* 절취선(점선) — 크림 밴드에 3px dashed, 반원 노치 없음(마스터 재동기화 #281). */}
