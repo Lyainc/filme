@@ -13,6 +13,7 @@ import {
   migrateLegacyComponents,
   type TextureRecipe,
 } from '@/utils/textureRecipes';
+import { defaultBrightnessForTexture } from '@/components/moods/_shared';
 
 function alphasOf(css: string): number[] {
   return Array.from(css.matchAll(/rgba\([^)]*,\s*([\d.]+)\)/g)).map((m) => parseFloat(m[1]));
@@ -95,6 +96,40 @@ describe('#475 재질×코팅 2축 재설계', () => {
   test('migrateLegacyComponents — texture도 material도 없으면 그대로 통과(신규 유저·빈 저장분)', () => {
     const empty = { layout: 'minimal' };
     expect(migrateLegacyComponents(empty)).toEqual(empty);
+  });
+
+  test('migrateLegacyComponents — 매핑 후 죽은 texture/textureIntensity 키를 남기지 않는다(claude-review PR #483 P2)', () => {
+    const result = migrateLegacyComponents({ texture: 'hologram', textureIntensity: 0.3, layout: 'minimal' });
+    expect(result).not.toHaveProperty('texture');
+    expect(result).not.toHaveProperty('textureIntensity');
+    expect(result.layout).toBe('minimal');
+  });
+
+  test('defaultBrightnessForTexture — 옛 단일축 8종의 기본 밝기가 2축 마이그레이션 후에도 정확히 재현된다(c5, claude-review PR #483 P1)', () => {
+    // 옛 FULL_BRIGHTNESS_TEXTURES = {original, vintage, newspaper} → 1.0, 나머지 → 0.5.
+    const legacyExpected: Record<string, number> = {
+      original: 1.0, none: 0.5, hologram: 0.5, metal: 0.5, scodix: 0.5,
+      artpaper: 0.5, vintage: 1.0, newspaper: 1.0,
+    };
+    for (const [legacy, expected] of Object.entries(legacyExpected)) {
+      const mapped = LEGACY_TEXTURE_MIGRATION[legacy];
+      expect(defaultBrightnessForTexture(mapped.material, mapped.coating)).toBe(expected);
+    }
+  });
+
+  test('defaultBrightnessForTexture — 코팅이 있으면(none 아니면) 재질과 무관하게 항상 0.5', () => {
+    for (const material of ['original', 'artpaper', 'vintage', 'newspaper']) {
+      for (const coating of ['gloss', 'hologram', 'metal', 'scodix']) {
+        expect(defaultBrightnessForTexture(material, coating)).toBe(0.5);
+      }
+    }
+  });
+
+  test('defaultBrightnessForTexture — 코팅 없음(none)이면 artpaper만 예외로 0.5, 나머지 재질은 1.0', () => {
+    expect(defaultBrightnessForTexture('artpaper', 'none')).toBe(0.5);
+    for (const material of ['original', 'vintage', 'newspaper']) {
+      expect(defaultBrightnessForTexture(material, 'none')).toBe(1.0);
+    }
   });
 });
 

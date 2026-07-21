@@ -214,8 +214,11 @@ export function migrateLegacyComponents(saved: Record<string, unknown>): Record<
   const mapped = LEGACY_TEXTURE_MIGRATION[legacyTexture] ?? LEGACY_TEXTURE_MIGRATION.original;
   const legacyIntensity = typeof saved.textureIntensity === 'number' ? saved.textureIntensity : undefined;
   const onCoating = LEGACY_COATING_TEXTURES.has(legacyTexture);
+  // 옛 texture/textureIntensity 키는 걷어낸다 — 남기면 아무도 안 읽는 죽은 필드가 매 saveDraft()마다
+  // localStorage에 계속 재기록된다(claude-review PR #483 P2).
+  const { texture: _texture, textureIntensity: _textureIntensity, ...rest } = saved;
   return {
-    ...saved,
+    ...rest,
     material: mapped.material,
     coating: mapped.coating,
     ...(legacyIntensity !== undefined
