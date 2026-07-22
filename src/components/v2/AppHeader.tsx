@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { AutoSaveIndicator } from './AutoSaveIndicator';
 import { ThemeToggle } from './ThemeToggle';
 import { Wordmark } from './Wordmark';
 
@@ -8,6 +9,10 @@ interface AppHeaderProps {
   /** #310: 명시적 임시저장/초기화 — usePhototicket이 소유, 이 헤더가 데스크톱의 유일한 진입점. */
   saveDraft: () => void;
   clearDraft: () => void;
+  /** #436: 자동저장 on/off + 마지막 저장 시각 — usePhototicket이 소유. */
+  autoSaveEnabled: boolean;
+  lastSavedAt: number | null;
+  onToggleAutoSave: () => void;
 }
 
 /** 초기화 확인 문구(#310) — 데스크톱 AppHeader·모바일 MobileEditorShell 서브메뉴가 공유하는 단일 출처. */
@@ -95,7 +100,15 @@ function ClearDraftButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-export function AppHeader({ theme, onThemeChange, saveDraft, clearDraft }: AppHeaderProps) {
+export function AppHeader({
+  theme,
+  onThemeChange,
+  saveDraft,
+  clearDraft,
+  autoSaveEnabled,
+  lastSavedAt,
+  onToggleAutoSave,
+}: AppHeaderProps) {
   return (
     // rail(1024) 미만은 CSS로 숨긴다(#418) — mount 전 SSR/첫 페인트가 데스크톱을 기본 렌더해도
     // 실제 뷰포트가 모바일이면 이 헤더가 하이드레이션을 기다리지 않고 즉시 숨어, "데스크톱 헤더
@@ -107,6 +120,7 @@ export function AppHeader({ theme, onThemeChange, saveDraft, clearDraft }: AppHe
       </div>
 
       <div className="flex items-center gap-3">
+        <AutoSaveIndicator enabled={autoSaveEnabled} lastSavedAt={lastSavedAt} onToggle={onToggleAutoSave} />
         <SaveDraftButton onClick={saveDraft} />
         <ClearDraftButton onClick={clearDraft} />
         <GithubLink />

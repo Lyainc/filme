@@ -25,6 +25,11 @@ const DEFAULT_VISIBILITY_ON_UPLOAD: Record<TicketField, boolean> = {
 // 영속화 키 — 스키마가 깨지게 바뀌면 버전을 올려 옛 데이터를 자연히 무시한다(복원 시 키 불일치 → null).
 const STORAGE_KEY = 'filme:phototicket:v1';
 
+// 자동저장 on/off는 문서(STORAGE_KEY)가 아니라 UI 취향값이라 별도 키로 영속(TB_STORAGE_KEY 선례, #436).
+const AUTOSAVE_PREF_KEY = 'filme:autosave:v1';
+// 프리뷰 디바운스(280ms, index.tsx)보다 느슨하게 — 저장은 프리뷰만큼 즉각적일 필요가 없다(#436).
+const AUTOSAVE_DEBOUNCE_MS = 1000;
+
 // 좌석은 쉼표로 구분된 자리 표기(예: "H12, H13")까지만 허용 — 5번째 토큰부터는 조용히 버린다(#381).
 // Editorial/Stub의 좌석 렌더가 fitFontSizeToWidth로 안전하게 축소되는 상한이 4토큰이라, 그 상한을
 // 입력/저장 단계(수동 폼 입력 + OCR 반영 공용 choke point인 updateMovieInfo)에서도 강제한다.
@@ -112,6 +117,9 @@ const INITIAL_STATE: PhototicketState = {
 
 export function usePhototicket() {
   const [state, setState] = useState<PhototicketState>(INITIAL_STATE);
+  // 자동저장 on/off(기본 ON) + 마지막 저장 시각(인디케이터 반짝임 트리거, #436).
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const latestUrlRef = useRef<string | null>(null);
   // chain/format은 picker가 교체 시점에만 revoke하므로, 언마운트 정리를 위해
   // 상태 소유자(hook)가 마지막 blob URL을 추적한다 (latestUrlRef와 동일 패턴).
@@ -171,6 +179,17 @@ export function usePhototicket() {
       components: { ...prev.components, ...(migratedComponents ?? {}) },
       fieldVisibility: { ...prev.fieldVisibility, ...(saved.fieldVisibility ?? {}) },
     }));
+  }, []);
+
+  // 자동저장 on/off 취향값 복원 — 문서 복원과 키가 갈려 독립 effect(#436).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = window.localStorage.getItem(AUTOSAVE_PREF_KEY);
+      if (raw !== null) setAutoSaveEnabled(raw === '1');
+    } catch {
+      // 손상·접근 차단은 기본값(ON) 유지 — best-effort.
+    }
   }, []);
 
   const handleImageUpload = useCallback((croppedUrl: string) => {
@@ -282,7 +301,7 @@ export function usePhototicket() {
     }));
   }, []);
 
-  // #310: 자동저장(디바운스 effect) 폐지 — 명시적 트리거(버튼 클릭) 1회성이라 디바운스가 불필요하다.
+  // #310이 폐지했던 자동저장을 #436이 enabled 게이트 뒤에 되살린다 — 명시적 트리거(버튼 클릭)는 그대로 유지.
   const saveDraft = useCallback(() => {
     if (typeof window === 'undefined') return;
     try {
@@ -303,6 +322,32 @@ export function usePhototicket() {
       // 저장 실패(쿼터 초과·프라이빗 모드)는 무시 — 영속화는 best-effort다.
     }
   }, [state.movieInfo, state.components, state.fieldVisibility]);
+
+  // 자동저장 토글(#436) — 취향값이라 TB_STORAGE_KEY와 동일하게 즉시 동기 저장(디바운스 불필요, 클릭당 1회).
+  const toggleAutoSave = useCallback(() => {
+    setAutoSaveEnabled((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        try {
+          window.localStorage.setItem(AUTOSAVE_PREF_KEY, next ? '1' : '0');
+        } catch {
+          // best-effort — 저장 실패해도 이번 세션 토글은 유효.
+        }
+      }
+      return next;
+    });
+  }, []);
+
+  // 자동저장 디바운스 effect(#436) — saveDraft 자체가 이미 movieInfo/components/fieldVisibility에
+  // 의존해 참조가 바뀌므로, 그 슬라이스가 바뀔 때마다 자연히 재예약된다(별도 dep 목록 불필요).
+  useEffect(() => {
+    if (!autoSaveEnabled) return;
+    const timer = setTimeout(() => {
+      saveDraft();
+      setLastSavedAt(Date.now());
+    }, AUTOSAVE_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [autoSaveEnabled, saveDraft]);
 
   // #310: 저장분 삭제 + 상태를 INITIAL_STATE로 되돌린다(파괴적 — 호출부에서 확인 UX를 거친다).
   // croppedImageUrl은 handleImageUpload의 revoke 패턴과 동일하게 교체 전 먼저 해제한다.
@@ -353,5 +398,8 @@ export function usePhototicket() {
     restoreSnapshot,
     saveDraft,
     clearDraft,
+    autoSaveEnabled,
+    lastSavedAt,
+    toggleAutoSave,
   };
 }
