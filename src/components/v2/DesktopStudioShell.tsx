@@ -163,6 +163,9 @@ export function DesktopStudioShell({
         onThemeChange={onThemeChange}
         saveDraft={photo.saveDraft}
         clearDraft={photo.clearDraft}
+        autoSaveEnabled={photo.autoSaveEnabled}
+        lastSavedAt={photo.lastSavedAt}
+        onToggleAutoSave={photo.toggleAutoSave}
       />
 
       {/* 3-pane row — rail(1024) 미만에선 숨겨 모바일 pre-mount의 가로 overflow를 막는다(AppShell aside 패턴). */}

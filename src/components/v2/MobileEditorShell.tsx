@@ -1,6 +1,7 @@
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
 import { AppFooter } from './AppFooter';
+import { AutoSaveIndicator } from './AutoSaveIndicator';
 import { DesignRail } from './DesignRail';
 import { OcrUploadCard } from './OcrUploadCard';
 import { OcrUndoBanner } from './OcrUndoBanner';
@@ -444,6 +445,11 @@ export function MobileEditorShell({
         {/* '티켓 항목 목록' 헤더 버튼(#355/#360 임시 진입점)은 플로팅 툴바의 항목목록 버튼(#356)이
             대체 — 드로어 배선(handleField·OCR 슬롯)은 그대로 재사용한다. */}
         <div className="flex items-center gap-1">
+        <AutoSaveIndicator
+          enabled={photo.autoSaveEnabled}
+          lastSavedAt={photo.lastSavedAt}
+          onToggle={photo.toggleAutoSave}
+        />
         <button
           type="button"
           onClick={() => setMenuOpen((v) => !v)}

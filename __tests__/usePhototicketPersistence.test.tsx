@@ -1,5 +1,7 @@
 /**
  * #310 — 입력값 자동 영속 → 명시적 임시저장/초기화 전환.
+ * #436 — #310이 폐지한 자동저장을 enabled 토글(기본 ON) 뒤에 되살림. saveDraft()/clearDraft()
+ * 명시적 진입점은 그대로 유지되고, 그 위에 디바운스 자동저장 레이어가 얹힌다.
  *
  * 이전(#178)엔 movieInfo/components/fieldVisibility 변경마다 400ms 디바운스로 무조건
  * localStorage에 썼다. saveDraft()/clearDraft() 명시적 함수로 대체되며:
@@ -13,6 +15,7 @@ import { usePhototicket } from '../src/hooks/usePhototicket';
 import { defaultIntensityForTexture, LEGACY_TEXTURE_MIGRATION } from '../src/utils/textureRecipes';
 
 const KEY = 'filme:phototicket:v1';
+const AUTOSAVE_KEY = 'filme:autosave:v1';
 
 afterEach(() => {
   cleanup();
@@ -43,16 +46,55 @@ describe('#310 usePhototicket saveDraft/clearDraft', () => {
     expect(saved.recommendedColors).toBeUndefined();
   });
 
-  test('saveDraft()를 부르지 않으면 상태 변경만으로는 아무것도 저장되지 않는다(자동저장 폐지)', async () => {
+  test('#436 — autoSaveEnabled 기본 ON: 상태 변경 후 디바운스(1000ms)가 지나면 saveDraft() 없이도 자동 저장된다', () => {
+    // 마운트 시점(초기 상태)의 디바운스 타이머부터 fake로 잡아야 실타이머와 안 섞인다.
+    jest.useFakeTimers();
     const { result } = renderHook(() => usePhototicket());
     act(() => {
       result.current.updateMovieInfo({ title: '기생충' });
     });
-    // 옛 디바운스(400ms)가 있었다면 걸릴 시간을 넉넉히 흘려도 여전히 비어 있어야 한다 — 지금은
-    // 그 타이머 자체가 없으므로 fake timer 전진만으로 실시간 대기 없이 같은 조건을 검증한다.
+    act(() => jest.advanceTimersByTime(1000));
+    const saved = JSON.parse(window.localStorage.getItem(KEY) || '{}');
+    expect(saved.movieInfo?.title).toBe('기생충');
+    expect(result.current.lastSavedAt).not.toBeNull();
+  });
+
+  test('#436 — toggleAutoSave()로 끄면 상태 변경 + 디바운스 경과해도 저장되지 않는다', () => {
     jest.useFakeTimers();
-    act(() => jest.advanceTimersByTime(500));
+    const { result } = renderHook(() => usePhototicket());
+    act(() => {
+      result.current.toggleAutoSave();
+    });
+    expect(result.current.autoSaveEnabled).toBe(false);
+
+    act(() => {
+      result.current.updateMovieInfo({ title: '기생충' });
+    });
+    act(() => jest.advanceTimersByTime(2000));
     expect(window.localStorage.getItem(KEY)).toBeNull();
+  });
+
+  test('#436 — toggleAutoSave()는 디바운스 없이 즉시 별도 키(filme:autosave:v1)에 취향값을 저장한다', () => {
+    const { result } = renderHook(() => usePhototicket());
+    act(() => {
+      result.current.toggleAutoSave();
+    });
+    expect(window.localStorage.getItem(AUTOSAVE_KEY)).toBe('0');
+    expect(result.current.autoSaveEnabled).toBe(false);
+
+    act(() => {
+      result.current.toggleAutoSave();
+    });
+    expect(window.localStorage.getItem(AUTOSAVE_KEY)).toBe('1');
+    expect(result.current.autoSaveEnabled).toBe(true);
+  });
+
+  test('#436 — autoSaveEnabled 취향값은 마운트 시 별도 키에서 복원된다(TB_STORAGE_KEY 선례)', async () => {
+    window.localStorage.setItem(AUTOSAVE_KEY, '0');
+    const { result } = renderHook(() => usePhototicket());
+    await waitFor(() => {
+      expect(result.current.autoSaveEnabled).toBe(false);
+    });
   });
 
   test('마운트 시 저장분을 복원한다(자동 복원은 이번 스코프 밖 — 그대로 유지)', async () => {
