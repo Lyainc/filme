@@ -185,10 +185,13 @@ export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket>
 
   const ringColor = components.themeColor || 'var(--accent)';
   const toggle = (id: Pop) => setPop((cur) => (cur === id ? null : id));
-  // claude-review PR #486 P1 — Minimal은 MoodMinimal이 실효 scale을 MINIMAL_STAMP_MAX_SCALE로
+  // claude-review PR #486 P1(1차) — Minimal은 MoodMinimal이 실효 scale을 MINIMAL_STAMP_MAX_SCALE로
   // 클램프하므로, 슬라이더 상한도 같이 낮추지 않으면 110~130% 구간이 숫자만 오르고 렌더는 그대로인
-  // 죽은 구간이 된다. 무드 전환 시 상한만 낮아지고 값 자체는 그대로라 다른 무드로 돌아가면 원래
-  // 크기를 유지한다(값을 강제로 깎지 않음).
+  // 죽은 구간이 된다.
+  // claude-review PR #486 P1(2차) — 상한만 낮추고 슬라이더 value는 raw 그대로 넘기면, 다른 무드에서
+  // 1.1~1.3으로 올려둔 뒤 Minimal로 돌아왔을 때 라벨은 raw%를 보여주는데 thumb은 max에 눌려 다른
+  // 위치 — 렌더 결과(1.1)와도 어긋난다. 아래 슬라이더의 value는 Math.min(raw, stampScaleMax)로
+  // 표시만 클램프한다(저장된 raw 값은 안 건드림 — 다른 무드로 돌아가면 원래 크기 그대로 복원).
   const stampScaleMax = components.layout === 'minimal' ? MINIMAL_STAMP_MAX_SCALE : 1.3;
 
   return (
@@ -285,7 +288,7 @@ export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket>
             <BrightnessSlider
               label="체인 로고 크기"
               id="rail-chain-scale"
-              value={components.chainScale ?? 1}
+              value={Math.min(components.chainScale ?? 1, stampScaleMax)}
               onChange={(chainScale) => setComp({ chainScale })}
               min={0.6}
               max={stampScaleMax}
@@ -293,7 +296,7 @@ export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket>
             <BrightnessSlider
               label="포맷 로고 크기"
               id="rail-format-scale"
-              value={components.formatScale ?? 1}
+              value={Math.min(components.formatScale ?? 1, stampScaleMax)}
               onChange={(formatScale) => setComp({ formatScale })}
               min={0.6}
               max={stampScaleMax}

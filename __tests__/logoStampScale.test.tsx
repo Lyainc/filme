@@ -160,6 +160,32 @@ describe('#441 DesignRail 슬라이더 배선', () => {
     expect(screen.getByLabelText('체인 로고 크기').getAttribute('max')).toBe('1.3');
     expect(screen.getByLabelText('포맷 로고 크기').getAttribute('max')).toBe('1.3');
   });
+
+  // claude-review PR #486 P1(2차) — 다른 무드에서 1.1보다 크게 올려둔 raw 값이 Minimal로 돌아와도
+  // 라벨/thumb가 raw(130%)가 아니라 실제 렌더와 같은 클램프값(110%)을 보여줘야 한다. 저장된 raw
+  // 값 자체는 안 건드려(다른 무드로 다시 가면 130%가 복원돼야) 한다.
+  test('다른 무드에서 올려둔 raw scale이 Minimal로 돌아오면 표시만 클램프되고 raw 값은 보존', async () => {
+    const user = userEvent.setup();
+    render(<RailHarness />);
+
+    // 크라이테리언에서 1.3까지 올린다.
+    await user.click(screen.getByRole('button', { name: '무드' }));
+    await user.click(screen.getByRole('radio', { name: /크라이테리언/ }));
+    await user.click(screen.getByRole('button', { name: '무드' }));
+    await user.click(screen.getByRole('button', { name: '크기' }));
+    fireEvent.change(screen.getByLabelText('체인 로고 크기'), { target: { value: '1.3' } });
+    expect(screen.getByTestId('chainScale').textContent).toBe('1.3');
+
+    // 미니멀로 돌아온다.
+    await user.click(screen.getByRole('button', { name: '무드' }));
+    await user.click(screen.getByRole('radio', { name: /미니멀 시네마틱/ }));
+    await user.click(screen.getByRole('button', { name: '무드' }));
+    await user.click(screen.getByRole('button', { name: '크기' }));
+
+    const chainInput = screen.getByLabelText('체인 로고 크기') as HTMLInputElement;
+    expect(chainInput.value).toBe(String(MINIMAL_STAMP_MAX_SCALE)); // thumb·라벨 = 클램프값
+    expect(screen.getByTestId('chainScale').textContent).toBe('1.3'); // 저장된 raw는 보존
+  });
 });
 
 describe('#441 DesktopDesignPanel 슬라이더 배선', () => {
