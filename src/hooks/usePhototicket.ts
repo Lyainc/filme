@@ -332,6 +332,13 @@ export function usePhototicket() {
     }
   }, [state.movieInfo, state.components, state.fieldVisibility]);
 
+  // 디바운스 타이머 콜백이 항상 최신 saveDraft를 호출하도록 하는 latest-ref 패턴 — 매 렌더 갱신.
+  // dirtyTick은 "언제 예약할지"만 게이팅하고, 실행 시점엔 이 ref로 그 사이 바뀐 최신 state를
+  // 저장한다. restoreSnapshot(undo/redo)처럼 dirtyTick을 안 올리는 갱신도 이 ref엔 반영되므로,
+  // 예약된 타이머가 undo 이전 옛 state를 저장하는 사고를 막는다(claude-review PR #488 2차 P1).
+  const saveDraftRef = useRef(saveDraft);
+  saveDraftRef.current = saveDraft;
+
   // 자동저장 토글(#436) — 취향값이라 TB_STORAGE_KEY와 동일하게 즉시 동기 저장(디바운스 불필요, 클릭당 1회).
   const toggleAutoSave = useCallback(() => {
     setAutoSaveEnabled((prev) => {
@@ -347,25 +354,21 @@ export function usePhototicket() {
     });
   }, []);
 
-  // 자동저장 디바운스 effect(#436) — dirtyTick(실사용자 편집만 증가)이 게이트다. saveDraft 참조
-  // 변경만으로는 재예약되지 않는다 — clearDraft/마운트 복원도 movieInfo 등을 바꿔 saveDraft
-  // 참조가 갈리지만 dirtyTick은 그대로라, effect가 재발동하지 않는다(claude-review PR #488 P1).
-  // dirtyTick===0(아직 편집 없음)이면 마운트 직후에도 발동하지 않는다. 편집 직후 debounce가
-  // 끝나기 전에 clearDraft가 오면(dirtyTick 불변이라 이 effect는 안 갈리지만) 예약된 타이머가
-  // 그대로 남아있으면 지운 직후 옛 state로 되살릴 수 있어 — clearDraft가 autoSaveTimerRef로
-  // 직접 취소한다.
+  // 자동저장 디바운스 effect(#436) — dirtyTick(실사용자 편집만 증가)이 "언제 예약할지"의 게이트다.
+  // clearDraft/마운트 복원도 movieInfo 등을 바꾸지만 dirtyTick은 그대로라 재발동하지 않는다
+  // (claude-review PR #488 1차 P1). dirtyTick===0(아직 편집 없음)이면 마운트 직후에도 발동 안 함.
+  // 실행 시점엔 saveDraftRef로 항상 최신 state를 저장하므로, undo/redo처럼 dirtyTick을 안 올리는
+  // 변경이 예약 중에 끼어들어도 그 옛 state가 아니라 최신 state가 저장된다(2차 P1). 편집 직후
+  // clearDraft가 오면 예약된 타이머 자체를 clearDraft가 직접 취소해 지운 키가 재생성되지 않는다.
   useEffect(() => {
     if (!autoSaveEnabled || dirtyTick === 0) return;
     const timer = setTimeout(() => {
-      saveDraft();
+      saveDraftRef.current();
       setLastSavedAt(Date.now());
       autoSaveTimerRef.current = null;
     }, AUTOSAVE_DEBOUNCE_MS);
     autoSaveTimerRef.current = timer;
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- saveDraft는 의도적으로 dep 제외:
-    // dirtyTick과 같은 렌더에서 이미 최신 state를 반영해 갱신되므로, dep에 넣으면 saveDraft만
-    // 홀로 바뀌는 렌더(clearDraft 등)에서도 재발동해 위 P1이 되살아난다.
   }, [autoSaveEnabled, dirtyTick]);
 
   // #310: 저장분 삭제 + 상태를 INITIAL_STATE로 되돌린다(파괴적 — 호출부에서 확인 UX를 거친다).
