@@ -232,6 +232,36 @@ describe('#310 usePhototicket saveDraft/clearDraft', () => {
     URL.revokeObjectURL = origRevoke;
   });
 
+  test('claude-review PR #488 P1 — clearDraft() 후 자동저장 디바운스가 지나도 지운 저장 키가 재생성되지 않는다', () => {
+    jest.useFakeTimers();
+    const { result } = renderHook(() => usePhototicket());
+    act(() => {
+      result.current.updateMovieInfo({ title: '기생충' });
+    });
+    act(() => {
+      result.current.clearDraft();
+    });
+    expect(window.localStorage.getItem(KEY)).toBeNull();
+    act(() => jest.advanceTimersByTime(1000));
+    // clearDraft는 dirtyTick을 안 건드리므로 autosave effect가 재발동하지 않아야 한다.
+    expect(window.localStorage.getItem(KEY)).toBeNull();
+  });
+
+  test('claude-review PR #488 P1 — 마운트 복원 직후 편집 없이 디바운스가 지나도 자동저장이 발동하지 않는다', async () => {
+    jest.useFakeTimers();
+    window.localStorage.setItem(KEY, JSON.stringify({
+      movieInfo: { title: '복원된제목' },
+      components: {},
+      fieldVisibility: {},
+    }));
+    const { result } = renderHook(() => usePhototicket());
+    await waitFor(() => {
+      expect(result.current.state.movieInfo.title).toBe('복원된제목');
+    });
+    act(() => jest.advanceTimersByTime(1000));
+    expect(result.current.lastSavedAt).toBeNull();
+  });
+
   test('clearDraft()는 chain·format 로고 blob: URL도 revoke한다(poster와 동일 취급)', () => {
     const revoked: string[] = [];
     const origRevoke = URL.revokeObjectURL;

@@ -120,6 +120,10 @@ export function usePhototicket() {
   // 자동저장 on/off(기본 ON) + 마지막 저장 시각(인디케이터 반짝임 트리거, #436).
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  // 실사용자 편집만 카운트(update* 3종에서만 증가) — clearDraft/마운트 복원도 movieInfo 등을
+  // 바꾸지만 이 카운터는 안 건드려서, 자동저장 effect가 그 둘에는 재발동하지 않는다
+  // (claude-review PR #488 P1: clearDraft 직후 지운 저장 키가 1초 뒤 재생성되던 문제).
+  const [dirtyTick, setDirtyTick] = useState(0);
   const latestUrlRef = useRef<string | null>(null);
   // chain/format은 picker가 교체 시점에만 revoke하므로, 언마운트 정리를 위해
   // 상태 소유자(hook)가 마지막 blob URL을 추적한다 (latestUrlRef와 동일 패턴).
@@ -134,6 +138,8 @@ export function usePhototicket() {
   // 업로드로는 리셋하지 않는다 — 강도는 포스터 명암이 아니라 재질/코팅 취향에 종속적이다.
   const materialIntensityTouchedRef = useRef(false);
   const coatingIntensityTouchedRef = useRef(false);
+  // 자동저장 디바운스 타이머 핸들 — clearDraft가 직접 취소하는 용도(아래 effect 참고).
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 마운트 시 localStorage에서 텍스트·설정을 복원한다. SSR 하이드레이션 불일치를 피하려
   // useState 초기화가 아니라 effect에서 한다(서버는 INITIAL_STATE로 렌더, 클라가 마운트 후 복원).
@@ -214,6 +220,7 @@ export function usePhototicket() {
       ...prev,
       fieldVisibility: { ...prev.fieldVisibility, ...partial },
     }));
+    setDirtyTick((t) => t + 1);
   }, []);
 
   const updateMovieInfo = useCallback((info: Partial<MovieInfo>) => {
@@ -229,6 +236,7 @@ export function usePhototicket() {
         movieInfo: { ...prev.movieInfo, ...capped, ...(staleMovieCd ? { movieCd: undefined } : {}) },
       };
     });
+    setDirtyTick((t) => t + 1);
   }, []);
 
   const updateComponents = useCallback((components: Partial<TicketComponents>) => {
@@ -271,6 +279,7 @@ export function usePhototicket() {
 
       return { ...prev, components: nextComponents };
     });
+    setDirtyTick((t) => t + 1);
   }, []);
 
   const setRecommendedColors = useCallback((colors: string[]) => {
@@ -338,16 +347,26 @@ export function usePhototicket() {
     });
   }, []);
 
-  // 자동저장 디바운스 effect(#436) — saveDraft 자체가 이미 movieInfo/components/fieldVisibility에
-  // 의존해 참조가 바뀌므로, 그 슬라이스가 바뀔 때마다 자연히 재예약된다(별도 dep 목록 불필요).
+  // 자동저장 디바운스 effect(#436) — dirtyTick(실사용자 편집만 증가)이 게이트다. saveDraft 참조
+  // 변경만으로는 재예약되지 않는다 — clearDraft/마운트 복원도 movieInfo 등을 바꿔 saveDraft
+  // 참조가 갈리지만 dirtyTick은 그대로라, effect가 재발동하지 않는다(claude-review PR #488 P1).
+  // dirtyTick===0(아직 편집 없음)이면 마운트 직후에도 발동하지 않는다. 편집 직후 debounce가
+  // 끝나기 전에 clearDraft가 오면(dirtyTick 불변이라 이 effect는 안 갈리지만) 예약된 타이머가
+  // 그대로 남아있으면 지운 직후 옛 state로 되살릴 수 있어 — clearDraft가 autoSaveTimerRef로
+  // 직접 취소한다.
   useEffect(() => {
-    if (!autoSaveEnabled) return;
+    if (!autoSaveEnabled || dirtyTick === 0) return;
     const timer = setTimeout(() => {
       saveDraft();
       setLastSavedAt(Date.now());
+      autoSaveTimerRef.current = null;
     }, AUTOSAVE_DEBOUNCE_MS);
+    autoSaveTimerRef.current = timer;
     return () => clearTimeout(timer);
-  }, [autoSaveEnabled, saveDraft]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- saveDraft는 의도적으로 dep 제외:
+    // dirtyTick과 같은 렌더에서 이미 최신 state를 반영해 갱신되므로, dep에 넣으면 saveDraft만
+    // 홀로 바뀌는 렌더(clearDraft 등)에서도 재발동해 위 P1이 되살아난다.
+  }, [autoSaveEnabled, dirtyTick]);
 
   // #310: 저장분 삭제 + 상태를 INITIAL_STATE로 되돌린다(파괴적 — 호출부에서 확인 UX를 거친다).
   // croppedImageUrl은 handleImageUpload의 revoke 패턴과 동일하게 교체 전 먼저 해제한다.
@@ -358,6 +377,12 @@ export function usePhototicket() {
       } catch {
         // 삭제 실패(프라이빗 모드 등)는 무시 — best-effort.
       }
+    }
+    // 편집 직후(디바운스 대기 중) clearDraft가 호출되는 경우, 예약된 자동저장이 옛 state로
+    // 저장 키를 되살리지 못하게 직접 취소한다(claude-review PR #488 P1).
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
     }
     brightnessTouchedRef.current = false;
     // 초기화는 전체 슬레이트 리셋이라 강도 touched도 함께 되돌린다(#434 PR #472 리뷰 P1, #475 축분리) —
