@@ -24,6 +24,7 @@ import {
   resolveInk,
   resolveTicketData,
   showFieldGhost,
+  SignatureStamp,
   stampWillRender,
   TopBandTone,
   truncateActors,
@@ -259,7 +260,14 @@ export const Mood35mmLandscape = memo(function Mood35mmLandscape({ movieInfo: d,
               <span style={{ width: 28, height: 2, background: amber, opacity: 0.7, flexShrink: 0 }} />
               <span style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 13, letterSpacing: 3, textTransform: 'uppercase', color: amber }}>From the Archive</span>
             </div>
-            {signatureVal ? (
+            {components.signatureImage ? (
+              <FieldTap field="signature" onField={onField}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', minWidth: 0 }}>
+                  <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 21, opacity: 0.72 }}>collected by</span>
+                  <SignatureStamp image={components.signatureImage} height={30} scale={components.signatureScale ?? 1} surface="dark" />
+                </div>
+              </FieldTap>
+            ) : signatureVal ? (
               <FieldTap field="signature" onField={onField}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', minWidth: 0 }}>
                   <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 21, opacity: 0.72 }}>collected by</span>

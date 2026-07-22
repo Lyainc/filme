@@ -22,6 +22,7 @@ import {
   resolveInk,
   resolveTicketData,
   showFieldGhost,
+  SignatureStamp,
   stampWillRender,
   TopBandTone,
   truncateActors,
@@ -323,7 +324,14 @@ export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components,
             <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 22, color: ink }}>made with</span>
             <MoodWordmark size={22} color={ink} />
           </div>
-          {signatureVal ? (
+          {components.signatureImage ? (
+            <FieldTap field="signature" onField={onField}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10 }}>
+                <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 25, opacity: 0.78, color: ink }}>collected by</span>
+                <SignatureStamp image={components.signatureImage} height={34} scale={components.signatureScale ?? 1} surface={stampSurface} />
+              </div>
+            </FieldTap>
+          ) : signatureVal ? (
             <FieldTap field="signature" onField={onField}>
               <div style={{ textAlign: 'right', maxWidth: 440, minWidth: 0 }}>
                 <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 25, opacity: 0.78, color: ink, marginRight: 10 }}>collected by</span>

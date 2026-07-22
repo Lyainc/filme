@@ -21,6 +21,7 @@ import {
   posterTapProps,
   resolveTicketData,
   showFieldGhost,
+  SignatureStamp,
   stampWillRender,
   truncateActors,
   useFontsReady,
@@ -334,7 +335,17 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
               <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontSize: 22, color: BROWN }}>made with</span>
               <MoodWordmark size={22} color={INK} accent={WORDMARK_ACCENT} />
             </div>
-            {signatureVal ? (
+            {components.signatureImage ? (
+              <>
+                <span style={{ width: 1, height: 24, background: INK, opacity: 0.18, flexShrink: 0 }} />
+                <FieldTap field="signature" onField={onField}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 11, minWidth: 0 }}>
+                    <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontSize: 22, color: BROWN, flexShrink: 0 }}>collected by</span>
+                    <SignatureStamp image={components.signatureImage} height={30} scale={components.signatureScale ?? 1} surface="paper" />
+                  </div>
+                </FieldTap>
+              </>
+            ) : signatureVal ? (
               <>
                 <span style={{ width: 1, height: 24, background: INK, opacity: 0.18, flexShrink: 0 }} />
                 <FieldTap field="signature" onField={onField}>

@@ -23,6 +23,7 @@ import {
   resolveInk,
   resolveTicketData,
   showFieldGhost,
+  SignatureStamp,
   stampWillRender,
   truncateActors,
   useFontsReady,
@@ -266,7 +267,14 @@ export const Mood35mm = memo(function Mood35mm({ movieInfo: d, components, cropp
               <MoodWordmark size={14} color={FS_INK} />
             </div>
             {/* gap:12 — gap:10px는 병합 셀 분해 flex 컨테이너의 유일 시그니처(ghostMode #266 PR-C 불변식)라 여긴 12로 회피. */}
-            {signatureVal ? (
+            {components.signatureImage ? (
+              <FieldTap field="signature" onField={onField}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, minWidth: 0 }}>
+                  <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 14, opacity: 0.72, color: FS_INK }}>collected by</span>
+                  <SignatureStamp image={components.signatureImage} height={30} scale={components.signatureScale ?? 1} surface="dark" />
+                </div>
+              </FieldTap>
+            ) : signatureVal ? (
               <FieldTap field="signature" onField={onField}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, minWidth: 0 }}>
                   <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 14, opacity: 0.72, color: FS_INK }}>collected by</span>

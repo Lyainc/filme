@@ -8,6 +8,7 @@ import { useLogoCrop } from '@/hooks/useLogoCrop';
 import { Eyebrow } from './Eyebrow';
 import { DateInput } from '@/components/ui/DateInput';
 import RatingPicker from '@/components/wizard/RatingPicker';
+import BrightnessSlider from '@/components/wizard/BrightnessSlider';
 import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
 import {
   FIELD_LABELS,
@@ -58,6 +59,7 @@ function SheetBody({ field, photo }: { field: TicketField; photo: Photo }) {
   if (type === 'rating') return <RatingSheet photo={photo} />;
   if (type === 'date') return <DateSheet field={field} photo={photo} />;
   if (field === 'title') return <TitleSheet photo={photo} />;
+  if (field === 'signature') return <SignatureSheet photo={photo} />;
   if (type === 'text') return <TextSheet field={field} photo={photo} />;
   return null; // reissue 등 PART A에서 시트가 없는 필드는 본문 없음.
 }
@@ -423,25 +425,35 @@ function RatingSheet({ photo }: { photo: Photo }) {
   );
 }
 
+/** 값-콜백 페어 — StampEditor의 label/image/scale이 각각 독립으로 받는 모양(#484 c2, expert-panel 합의). */
+interface ValuePair<T> {
+  value: T;
+  onChange: (v: T) => void;
+}
+
 /**
- * 스탬프(극장/포맷 로고, #215 PART B) — 텍스트 라벨 + 로고 이미지 업로드. 데이터는 TicketComponents에
- * 산다(chain/chainLabel · format/formatLabel). '이미지가 라벨보다 우선'하는 규칙은 _shared.tsx가
- * 이미 처리하므로, 이미지가 있으면 텍스트 대신 이미지+'제거'만 노출한다.
- * 극장·포맷 모두 완전 자유입력(#317) — 프리셋/자동완성 없음.
+ * 스탬프류(극장/포맷 로고·서명, #215 PART B·#484) 공용 편집 UI — 텍스트 라벨 + 로고 이미지 업로드 +
+ * 크기 조절. label/image/scale 각각 독립 {value,onChange} 페어를 받는 프레젠테이션 컴포넌트라
+ * StampSheet(chain/format)와 SignatureSheet가 얇은 어댑터로 재사용한다(#484 expert-panel C안 —
+ * 데이터 모델은 그대로 두고 UI만 추출). '이미지가 라벨보다 우선'하는 렌더 규칙은 _shared.tsx가
+ * 이미 처리하므로, 이미지가 있으면 텍스트 대신 이미지+크기 슬라이더+'제거'만 노출한다.
  */
-function StampSheet({ target, photo }: { target: StampTarget; photo: Photo }) {
-  const components = photo.state.components;
-  const keys = STAMP_KEYS[target];
-  const imageUrl = String(components[keys.image] ?? '');
-  const labelValue = String(components[keys.label] ?? '');
-
-  const setLabel = (v: string) =>
-    photo.updateComponents({ [keys.label]: v } as Partial<TicketComponents>);
-  const setImage = (url: string) =>
-    photo.updateComponents({ [keys.image]: url } as Partial<TicketComponents>);
-
+function StampEditor({
+  ariaLabel,
+  label,
+  image,
+  scale,
+  maxLength = STAMP_LABEL_MAX,
+}: {
+  ariaLabel: string;
+  label: ValuePair<string>;
+  image: ValuePair<string>;
+  scale: ValuePair<number>;
+  /** 라벨 input의 글자수 상한. 기본 STAMP_LABEL_MAX(24) — signature는 20 유지(c7, 통일은 스코프 밖). */
+  maxLength?: number;
+}) {
   // 로고 업로드 → 자유 크롭 → PNG. 픽커들과 동일한 useLogoCrop 흐름(#220).
-  const { rawSrc, isCropping, openFile, handleComplete, handleCancel } = useLogoCrop(setImage);
+  const { rawSrc, isCropping, openFile, handleComplete, handleCancel } = useLogoCrop(image.onChange);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -452,21 +464,31 @@ function StampSheet({ target, photo }: { target: StampTarget; photo: Photo }) {
 
   const removeImage = () => {
     // blob revoke는 하지 않는다 — undo 히스토리(#356)가 이 URL을 참조한다(useLogoCrop 참고).
-    setImage('');
+    image.onChange('');
   };
 
-  // 이미지가 있으면 이미지 + 제거만(이미지 우선). 텍스트는 숨긴다.
-  if (imageUrl) {
+  // 이미지가 있으면 이미지 + 크기 슬라이더 + 제거만(이미지 우선). 텍스트는 숨긴다.
+  if (image.value) {
     return (
-      <div className="flex items-center gap-3 rounded-field border border-line bg-surface-elevated px-3.5 py-3">
-        <img src={imageUrl} alt={`${STAMP_LABELS[target]} 이미지`} className="h-8 w-auto object-contain" />
-        <button
-          type="button"
-          onClick={removeImage}
-          className="text-mono ml-auto rounded-chip border border-line px-3 py-1.5 text-[11px] uppercase tracking-widest text-fg-muted transition-colors hover:border-accent hover:text-accent"
-        >
-          이미지 제거
-        </button>
+      <div className="space-y-3">
+        <div className="flex items-center gap-3 rounded-field border border-line bg-surface-elevated px-3.5 py-3">
+          <img src={image.value} alt={`${ariaLabel} 이미지`} className="h-8 w-auto object-contain" />
+          <button
+            type="button"
+            onClick={removeImage}
+            className="text-mono ml-auto rounded-chip border border-line px-3 py-1.5 text-[11px] uppercase tracking-widest text-fg-muted transition-colors hover:border-accent hover:text-accent"
+          >
+            이미지 제거
+          </button>
+        </div>
+        <BrightnessSlider
+          label="크기"
+          id={`stamp-scale-${ariaLabel}`}
+          value={Math.min(scale.value ?? 1, 1.3)}
+          onChange={scale.onChange}
+          min={0.6}
+          max={1.3}
+        />
       </div>
     );
   }
@@ -476,10 +498,10 @@ function StampSheet({ target, photo }: { target: StampTarget; photo: Photo }) {
       <input
         autoFocus
         type="text"
-        value={labelValue}
-        onChange={(e) => setLabel(e.target.value)}
-        aria-label={STAMP_LABELS[target]}
-        maxLength={STAMP_LABEL_MAX}
+        value={label.value}
+        onChange={(e) => label.onChange(e.target.value)}
+        aria-label={ariaLabel}
+        maxLength={maxLength}
         className={INPUT_CLS}
       />
 
@@ -509,5 +531,48 @@ function StampSheet({ target, photo }: { target: StampTarget; photo: Photo }) {
         />
       )}
     </div>
+  );
+}
+
+/** 극장/포맷 로고(#215 PART B) — StampEditor 어댑터. 데이터는 TicketComponents에 산다
+ * (chain/chainLabel · format/formatLabel). 극장·포맷 모두 완전 자유입력(#317) — 프리셋/자동완성 없음. */
+function StampSheet({ target, photo }: { target: StampTarget; photo: Photo }) {
+  const components = photo.state.components;
+  const keys = STAMP_KEYS[target];
+
+  return (
+    <StampEditor
+      ariaLabel={STAMP_LABELS[target]}
+      label={{ value: String(components[keys.label] ?? ''), onChange: (v) => photo.updateComponents({ [keys.label]: v } as Partial<TicketComponents>) }}
+      image={{ value: String(components[keys.image] ?? ''), onChange: (v) => photo.updateComponents({ [keys.image]: v } as Partial<TicketComponents>) }}
+      scale={{ value: Number(components[keys.scale] ?? 1), onChange: (v) => photo.updateComponents({ [keys.scale]: v } as Partial<TicketComponents>) }}
+    />
+  );
+}
+
+/**
+ * 서명(#148/#484) — StampEditor 어댑터. label(텍스트)만 MovieInfo.signature에 살고(c3, 마이그레이션
+ * 리스크 회피), image/scale은 TicketComponents.signatureImage/signatureScale 신규 필드. StampTarget
+ * 유니온은 확장하지 않는다(c3) — chain/format과 데이터 소스가 다를 뿐 편집 UI는 StampEditor로 통일.
+ */
+function SignatureSheet({ photo }: { photo: Photo }) {
+  const components = photo.state.components;
+  return (
+    <StampEditor
+      ariaLabel={FIELD_LABELS.signature}
+      maxLength={20}
+      label={{
+        value: photo.state.movieInfo.signature ?? '',
+        onChange: (v) => photo.updateMovieInfo({ signature: v }),
+      }}
+      image={{
+        value: components.signatureImage ?? '',
+        onChange: (v) => photo.updateComponents({ signatureImage: v }),
+      }}
+      scale={{
+        value: components.signatureScale ?? 1,
+        onChange: (v) => photo.updateComponents({ signatureScale: v }),
+      }}
+    />
   );
 }

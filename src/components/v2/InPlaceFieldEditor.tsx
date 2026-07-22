@@ -154,8 +154,16 @@ interface InPlaceFieldEditorProps {
  */
 export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField, onClose, onLift }: InPlaceFieldEditorProps) {
   const isStamp = isStampTarget(field);
+  // 서명(#484 c6)은 StampTarget이 아니지만(c3 — 데이터가 MovieInfo에 산다) 이미지 업로드 UI는
+  // chain/format과 동일하게 열려야 한다 — isStamp와 별개로 UI 분기만 공유하는 플래그.
+  const isSignature = field === 'signature';
+  const isImageField = isStamp || isSignature;
   const components = photo.state.components;
-  const stampImage = isStamp ? String(components[STAMP_KEYS[field].image] ?? '') : '';
+  const stampImage = isStamp
+    ? String(components[STAMP_KEYS[field].image] ?? '')
+    : isSignature
+      ? components.signatureImage ?? ''
+      : '';
   const label = isStamp ? STAMP_LABELS[field] : FIELD_LABELS[field];
 
   // ── 지오메트리: 필드 rect(래퍼 로컬 좌표) ──────────────────────────────────
@@ -253,9 +261,12 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
     }
   };
 
-  // 로고 업로드(필드바 이미지 칩) — StampSheet와 동일한 useLogoCrop 흐름.
-  const setStampImage = (url: string) =>
-    isStamp && photo.updateComponents({ [STAMP_KEYS[field].image]: url } as Partial<TicketComponents>);
+  // 로고 업로드(필드바 이미지 칩) — StampSheet와 동일한 useLogoCrop 흐름. 서명(#484 c6)은
+  // TicketComponents.signatureImage로 직접 쓴다(STAMP_KEYS에는 없음 — c3).
+  const setStampImage = (url: string) => {
+    if (isStamp) photo.updateComponents({ [STAMP_KEYS[field].image]: url } as Partial<TicketComponents>);
+    else if (isSignature) photo.updateComponents({ signatureImage: url });
+  };
   const logo = useLogoCrop(setStampImage);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
@@ -296,7 +307,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
     field !== 'watchDate' &&
     field !== 'releaseDate' &&
     field !== 'actors' &&
-    !(isStamp && !!stampImage);
+    !(isImageField && !!stampImage);
 
   // ── 필드바 배치: 필드 위 10px, 티켓 상단에 붙으면 아래로. 좌우는 래퍼 안으로 클램프. ──
   const barRef = useRef<HTMLDivElement>(null);
@@ -425,7 +436,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
           </svg>
         </button>
         <span aria-hidden="true" className="h-5 w-px shrink-0 bg-line" />
-        {isStamp && (
+        {isImageField && (
           <button
             type="button"
             aria-label="로고 이미지"
@@ -525,7 +536,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
         <DateSheet field={field} photo={photo} />
       </div>
     );
-  } else if (isStamp && stampImage) {
+  } else if (isImageField && stampImage) {
     aid = (
       <div className="flex items-center gap-3 p-4">
         <img src={stampImage} alt={`${label} 이미지`} className="h-8 w-auto object-contain" />
@@ -558,8 +569,8 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
           {aid}
         </div>
       )}
-      {/* 로고 업로드 파이프라인(스탬프 전용) — 숨김 input + 자유비 크롭(useLogoCrop, StampSheet와 동형). */}
-      {isStamp && (
+      {/* 로고 업로드 파이프라인(스탬프+서명 전용) — 숨김 input + 자유비 크롭(useLogoCrop, StampSheet와 동형). */}
+      {isImageField && (
         <>
           <input
             ref={logoInputRef}
