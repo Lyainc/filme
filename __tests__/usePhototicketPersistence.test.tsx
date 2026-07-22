@@ -262,6 +262,32 @@ describe('#310 usePhototicket saveDraft/clearDraft', () => {
     expect(result.current.lastSavedAt).toBeNull();
   });
 
+  test('claude-review PR #488 2차 P1 — 자동저장 디바운스 대기 중 restoreSnapshot(undo)이 끼어들어도 예약된 저장은 undo 이전이 아니라 최신(복원된) state를 저장한다', () => {
+    jest.useFakeTimers();
+    const { result } = renderHook(() => usePhototicket());
+    const initialSnapshot = {
+      movieInfo: result.current.state.movieInfo,
+      components: result.current.state.components,
+      fieldVisibility: result.current.state.fieldVisibility,
+    };
+
+    act(() => {
+      result.current.updateMovieInfo({ title: '기생충' });
+    });
+    // 디바운스(1000ms)가 끝나기 전에 undo가 끼어든다 — restoreSnapshot은 dirtyTick을 안 올려
+    // effect가 재예약되지 않으므로, 편집 시점에 예약된 타이머가 그대로 살아있다.
+    act(() => jest.advanceTimersByTime(500));
+    act(() => {
+      result.current.restoreSnapshot(initialSnapshot);
+    });
+    expect(result.current.state.movieInfo.title).toBe('');
+
+    // 원래 타이머가 마저 발동 — saveDraftRef 덕분에 undo 이전('기생충')이 아니라 최신('')이 저장돼야 한다.
+    act(() => jest.advanceTimersByTime(500));
+    const saved = JSON.parse(window.localStorage.getItem(KEY) || '{}');
+    expect(saved.movieInfo?.title).toBe('');
+  });
+
   test('clearDraft()는 chain·format 로고 blob: URL도 revoke한다(poster와 동일 취급)', () => {
     const revoked: string[] = [];
     const origRevoke = URL.revokeObjectURL;
