@@ -131,8 +131,8 @@ describe('#441 DesignRail 슬라이더 배선', () => {
   test('체인/포맷 로고 크기 슬라이더 변경 → components에 반영', async () => {
     const user = userEvent.setup();
     render(<RailHarness />);
-    // 투명도 탭 안에 있음(designRail.test.tsx (e)/(f)와 동일 패턴) — 먼저 연다.
-    await user.click(screen.getByRole('button', { name: '투명도' }));
+    // 크기 탭 안에 있음(PR #485 P2 후속 — 투명도에서 분리) — 먼저 연다.
+    await user.click(screen.getByRole('button', { name: '크기' }));
 
     fireEvent.change(screen.getByLabelText('체인 로고 크기'), { target: { value: '0.6' } });
     fireEvent.change(screen.getByLabelText('포맷 로고 크기'), { target: { value: '1.3' } });

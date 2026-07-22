@@ -110,7 +110,13 @@ export function DesktopDesignPanel({ photo }: { photo: ReturnType<typeof usePhot
             value={components.componentOpacity ?? 1}
             onChange={(componentOpacity) => setComp({ componentOpacity })}
           />
-          {/* 체인/포맷 로고 렌더 크기(#441) — DesignRail과 동일 배선. */}
+        </div>
+      </Section>
+
+      {/* 크기(#441, PR #485 P2 후속) — 체인/포맷 로고 렌더 크기. 라벨-기능이 어긋난다는 지적
+          (claude-review PR #485 P2)으로 Opacity에서 분리한 별도 섹션. DesignRail과 동일 배선. */}
+      <Section eyebrow="Size">
+        <div className="space-y-group">
           <BrightnessSlider
             label="체인 로고 크기"
             id="desktop-chain-scale"

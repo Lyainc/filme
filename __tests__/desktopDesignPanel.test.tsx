@@ -1,7 +1,7 @@
 /**
  * #228 회귀 테스트 — 데스크톱 DESIGN 세로 스택 패널.
  *
- * (a) 4섹션(무드/후보정/컬러/투명도)이 상시(아코디언 아님) 렌더 — 피커 4종이 동시에 존재.
+ * (a) 5섹션(무드/후보정/컬러/투명도/크기)이 상시(아코디언 아님) 렌더 — 피커 5종이 동시에 존재.
  * (b) 무드 선택 → photo.state.components.layout 반영(setComp 콜백 배선).
  *
  * 셋업은 designRail.test.tsx 미러 — Harness가 usePhototicket()으로 실제 photo를 만들고
@@ -70,5 +70,18 @@ describe('DesktopDesignPanel (#228)', () => {
     const region = screen.getByRole('region', { name: 'Opacity' });
     expect(region.querySelector('#desktop-poster-opacity')).not.toBeNull();
     expect(region.querySelector('#desktop-component-opacity')).not.toBeNull();
+  });
+
+  // #441 PR #485 P2 후속 — 체인/포맷 로고 크기가 라벨-기능 불일치 지적으로 Opacity에서 분리된
+  // 별도 "Size" region.
+  test('(e) 크기 섹션 = 라벨 "Size" region + 체인·포맷 로고 크기 슬라이더, Opacity엔 더 이상 없음', () => {
+    render(<PanelHarness />);
+    const sizeRegion = screen.getByRole('region', { name: 'Size' });
+    expect(sizeRegion.querySelector('#desktop-chain-scale')).not.toBeNull();
+    expect(sizeRegion.querySelector('#desktop-format-scale')).not.toBeNull();
+
+    const opacityRegion = screen.getByRole('region', { name: 'Opacity' });
+    expect(opacityRegion.querySelector('#desktop-chain-scale')).toBeNull();
+    expect(opacityRegion.querySelector('#desktop-format-scale')).toBeNull();
   });
 });
