@@ -149,7 +149,7 @@ export function FieldDrawer({ photo, onField, onClose, children }: FieldDrawerPr
                 <DrawerRow
                   key={field}
                   label={FIELD_LABELS[field]}
-                  preview={fieldPreview(field, movieInfo)}
+                  preview={fieldPreview(field, movieInfo, components)}
                   locked={isRequiredField(field)}
                   checked={fieldVisibility[field]}
                   onToggle={(v) => photo.updateFieldVisibility({ [field]: v })}

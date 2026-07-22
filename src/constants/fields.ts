@@ -158,14 +158,16 @@ export const STAMP_KEYS: Record<
 /**
  * 필드 현재값 미리보기 문자열. 비어 있으면 '' 반환(호출부가 placeholder로 대체).
  * 데스크톱 아코디언(FieldAccordion)·모바일 온-티켓 탭이 공유 — 컴포넌트에서 분리해
- * 상수 모듈로 이전(#266 PR-A).
+ * 상수 모듈로 이전(#266 PR-A). components는 signature 이미지 우선순위 판정에만 쓴다(#484,
+ * claude-review PR #487 P1 — 이미지 업로드 후 텍스트를 비워도 '비어 있음'으로 잘못 보이던 버그).
  */
-export function fieldPreview(field: TicketField, info: MovieInfo): string {
+export function fieldPreview(field: TicketField, info: MovieInfo, components?: TicketComponents): string {
   if (field === 'rating') return `${(info.rating ?? 0).toFixed(1)} / 5.0`;
   if (field === 'watchDate') return formatDate(info.watchDate, info.watchDateFormat || 'kr-compact', 'date');
   if (field === 'releaseDate') {
     return formatDate(info.releaseDate, info.releaseDateFormat || 'kr-compact', info.releaseDateGranularity || 'date');
   }
+  if (field === 'signature' && components?.signatureImage) return '이미지';
   const key = FIELD_INFO_KEY[field];
   return key ? String(info[key] ?? '') : '';
 }

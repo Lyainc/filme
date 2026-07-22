@@ -52,7 +52,7 @@ export function FieldAccordion({
                 key={field}
                 target={field}
                 label={FIELD_LABELS[field]}
-                preview={fieldPreview(field, movieInfo)}
+                preview={fieldPreview(field, movieInfo, components)}
                 expanded={expanded === field}
                 onToggle={() => onToggle(field)}
                 photo={photo}
