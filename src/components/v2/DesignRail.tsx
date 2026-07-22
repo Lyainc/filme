@@ -8,9 +8,11 @@ import { MATERIAL_OPTIONS, COATING_OPTIONS } from '@/utils/constants';
 import type { LayoutId } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 
-// 모바일 디자인 레일(#217+): 무드·컬러·후보정·투명도 편집 콘텐츠를 인라인 폼 밖으로 빼 가로 원형
-// 아이콘 + 단일 공용 확장 패널로 호스팅한다. 컬러(#218)·투명도(#219) 추가 완료.
-type Pop = 'mood' | 'color' | 'texture' | 'opacity';
+// 모바일 디자인 레일(#217+): 무드·컬러·후보정·투명도·크기 편집 콘텐츠를 인라인 폼 밖으로 빼
+// 가로 원형 아이콘 + 단일 공용 확장 패널로 호스팅한다. 컬러(#218)·투명도(#219) 추가 완료.
+// 크기(#441/#485 P2) — 체인/포맷 로고 크기 슬라이더는 원래 투명도 탭에 얹혀 있었으나 라벨-기능이
+// 어긋난다는 지적(claude-review PR #485 P2)으로 별도 탭 분리.
+type Pop = 'mood' | 'color' | 'texture' | 'opacity' | 'size';
 
 const PANEL_ID = 'design-rail-panel';
 
@@ -73,6 +75,20 @@ const RAIL_ITEMS: { id: Pop; label: string; eyebrow: string; icon: ReactNode }[]
       <svg {...RAIL_ICON}>
         <circle cx="10" cy="12" r="6" />
         <circle cx="14" cy="12" r="6" fill="currentColor" fillOpacity={0.25} />
+      </svg>
+    ),
+  },
+  {
+    id: 'size',
+    label: '크기',
+    eyebrow: 'Size',
+    // 크기: 네 모서리가 바깥으로 벌어지는 화살표 — 확대/축소 힌트.
+    icon: (
+      <svg {...RAIL_ICON}>
+        <path d="M4 20 10 20 10 14" />
+        <path d="M4 20 12 12" />
+        <path d="M20 4 14 4 14 10" />
+        <path d="M20 4 12 12" />
       </svg>
     ),
   },
@@ -238,7 +254,7 @@ export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket>
               )}
             </div>
           </div>
-        ) : (
+        ) : active === 'opacity' ? (
           // 투명도(#219) — 듀얼 슬라이더. 포스터=밝기(posterOpacity, 기존 메커니즘 유지),
           // 컴포넌트=오버레이 불투명도(componentOpacity). BrightnessSlider 재사용(둘 다 0..1→%).
           <div className="space-y-group">
@@ -254,8 +270,12 @@ export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket>
               value={components.componentOpacity ?? 1}
               onChange={(componentOpacity) => setComp({ componentOpacity })}
             />
-            {/* 체인/포맷 로고 렌더 크기(#441) — 여백 없이 꽉 찬 로고가 기대보다 크게 보이는 문제를
-                사용자가 직접 축소·확대로 조절. 컴포넌트 레벨 축이라 같은 탭 재사용. */}
+          </div>
+        ) : (
+          // 크기(#441, PR #485 P2 후속) — 체인/포맷 로고 렌더 크기. 여백 없이 꽉 찬 로고가
+          // 기대보다 크게 보이는 문제를 사용자가 직접 축소·확대로 조절. 투명도와 라벨-기능이
+          // 어긋난다는 지적으로 별도 탭 분리.
+          <div className="space-y-group">
             <BrightnessSlider
               label="체인 로고 크기"
               id="rail-chain-scale"
