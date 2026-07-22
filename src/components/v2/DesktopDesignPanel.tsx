@@ -6,6 +6,7 @@ import BrightnessSlider from '@/components/wizard/BrightnessSlider';
 import { TEXTURE_RECIPES } from '@/utils/textureRecipes';
 import { MATERIAL_OPTIONS, COATING_OPTIONS } from '@/utils/constants';
 import { Eyebrow } from './Eyebrow';
+import { MINIMAL_STAMP_MAX_SCALE } from '@/components/moods/MoodMinimal';
 import type { LayoutId } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 
@@ -31,6 +32,9 @@ function Section({ eyebrow, children }: { eyebrow: string; children: ReactNode }
 export function DesktopDesignPanel({ photo }: { photo: ReturnType<typeof usePhototicket> }) {
   const { components, croppedImageUrl, recommendedColors } = photo.state;
   const setComp = photo.updateComponents;
+  // claude-review PR #486 P1 — DesignRail과 동일 이유: Minimal은 MoodMinimal이 실효 scale을
+  // MINIMAL_STAMP_MAX_SCALE로 클램프하므로 슬라이더 상한도 같이 낮춘다(죽은 구간 방지).
+  const stampScaleMax = components.layout === 'minimal' ? MINIMAL_STAMP_MAX_SCALE : 1.3;
 
   return (
     <div className="space-y-section">
@@ -123,7 +127,7 @@ export function DesktopDesignPanel({ photo }: { photo: ReturnType<typeof usePhot
             value={components.chainScale ?? 1}
             onChange={(chainScale) => setComp({ chainScale })}
             min={0.6}
-            max={1.3}
+            max={stampScaleMax}
           />
           <BrightnessSlider
             label="포맷 로고 크기"
@@ -131,7 +135,7 @@ export function DesktopDesignPanel({ photo }: { photo: ReturnType<typeof usePhot
             value={components.formatScale ?? 1}
             onChange={(formatScale) => setComp({ formatScale })}
             min={0.6}
-            max={1.3}
+            max={stampScaleMax}
           />
         </div>
       </Section>

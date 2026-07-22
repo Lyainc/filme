@@ -5,6 +5,7 @@ import ColorPicker from '@/components/wizard/ColorPicker';
 import BrightnessSlider from '@/components/wizard/BrightnessSlider';
 import { TEXTURE_RECIPES } from '@/utils/textureRecipes';
 import { MATERIAL_OPTIONS, COATING_OPTIONS } from '@/utils/constants';
+import { MINIMAL_STAMP_MAX_SCALE } from '@/components/moods/MoodMinimal';
 import type { LayoutId } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 
@@ -184,6 +185,11 @@ export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket>
 
   const ringColor = components.themeColor || 'var(--accent)';
   const toggle = (id: Pop) => setPop((cur) => (cur === id ? null : id));
+  // claude-review PR #486 P1 — Minimal은 MoodMinimal이 실효 scale을 MINIMAL_STAMP_MAX_SCALE로
+  // 클램프하므로, 슬라이더 상한도 같이 낮추지 않으면 110~130% 구간이 숫자만 오르고 렌더는 그대로인
+  // 죽은 구간이 된다. 무드 전환 시 상한만 낮아지고 값 자체는 그대로라 다른 무드로 돌아가면 원래
+  // 크기를 유지한다(값을 강제로 깎지 않음).
+  const stampScaleMax = components.layout === 'minimal' ? MINIMAL_STAMP_MAX_SCALE : 1.3;
 
   return (
     <div className="space-y-3">
@@ -282,7 +288,7 @@ export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket>
               value={components.chainScale ?? 1}
               onChange={(chainScale) => setComp({ chainScale })}
               min={0.6}
-              max={1.3}
+              max={stampScaleMax}
             />
             <BrightnessSlider
               label="포맷 로고 크기"
@@ -290,7 +296,7 @@ export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket>
               value={components.formatScale ?? 1}
               onChange={(formatScale) => setComp({ formatScale })}
               min={0.6}
-              max={1.3}
+              max={stampScaleMax}
             />
           </div>
         )}

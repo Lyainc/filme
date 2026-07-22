@@ -127,29 +127,53 @@ afterEach(() => {
   window.localStorage.clear();
 });
 
+// PR #486 P1 후속(claude-review) — 기본 무드가 minimal이라 슬라이더 상한이
+// MINIMAL_STAMP_MAX_SCALE(1.1)로 낮아져 있어야 한다. 그렇지 않으면 렌더는 1.1에서 클램프되는데
+// 슬라이더 숫자만 1.3까지 계속 올라가는 죽은 구간이 생긴다(값-효과 불일치).
 describe('#441 DesignRail 슬라이더 배선', () => {
-  test('체인/포맷 로고 크기 슬라이더 변경 → components에 반영', async () => {
+  test('체인/포맷 로고 크기 슬라이더 변경 → components에 반영, Minimal은 상한이 MINIMAL_STAMP_MAX_SCALE로 하향', async () => {
     const user = userEvent.setup();
     render(<RailHarness />);
     // 크기 탭 안에 있음(PR #485 P2 후속 — 투명도에서 분리) — 먼저 연다.
     await user.click(screen.getByRole('button', { name: '크기' }));
 
-    fireEvent.change(screen.getByLabelText('체인 로고 크기'), { target: { value: '0.6' } });
-    fireEvent.change(screen.getByLabelText('포맷 로고 크기'), { target: { value: '1.3' } });
+    const chainInput = screen.getByLabelText('체인 로고 크기');
+    const formatInput = screen.getByLabelText('포맷 로고 크기');
+    expect(chainInput.getAttribute('max')).toBe(String(MINIMAL_STAMP_MAX_SCALE));
+    expect(formatInput.getAttribute('max')).toBe(String(MINIMAL_STAMP_MAX_SCALE));
+
+    fireEvent.change(chainInput, { target: { value: '0.6' } });
+    fireEvent.change(formatInput, { target: { value: '1.3' } }); // 상한 밖 입력 → max로 클램프
 
     expect(screen.getByTestId('chainScale').textContent).toBe('0.6');
-    expect(screen.getByTestId('formatScale').textContent).toBe('1.3');
+    expect(screen.getByTestId('formatScale').textContent).toBe(String(MINIMAL_STAMP_MAX_SCALE));
+  });
+
+  test('Minimal이 아닌 무드에서는 슬라이더 상한이 그대로 1.3', async () => {
+    const user = userEvent.setup();
+    render(<RailHarness />);
+    await user.click(screen.getByRole('button', { name: '무드' }));
+    await user.click(screen.getByRole('radio', { name: /크라이테리언/ }));
+    await user.click(screen.getByRole('button', { name: '무드' })); // 무드 닫고
+    await user.click(screen.getByRole('button', { name: '크기' })); // 크기 열기
+
+    expect(screen.getByLabelText('체인 로고 크기').getAttribute('max')).toBe('1.3');
+    expect(screen.getByLabelText('포맷 로고 크기').getAttribute('max')).toBe('1.3');
   });
 });
 
 describe('#441 DesktopDesignPanel 슬라이더 배선', () => {
-  test('체인/포맷 로고 크기 슬라이더 변경 → components에 반영(상시 렌더 — 탭 없음)', () => {
+  test('체인/포맷 로고 크기 슬라이더 변경 → components에 반영, Minimal은 상한이 MINIMAL_STAMP_MAX_SCALE로 하향(상시 렌더 — 탭 없음)', () => {
     render(<PanelHarness />);
-    fireEvent.change(screen.getByLabelText('체인 로고 크기'), { target: { value: '0.6' } });
-    fireEvent.change(screen.getByLabelText('포맷 로고 크기'), { target: { value: '1.3' } });
+    const chainInput = screen.getByLabelText('체인 로고 크기');
+    const formatInput = screen.getByLabelText('포맷 로고 크기');
+    expect(formatInput.getAttribute('max')).toBe(String(MINIMAL_STAMP_MAX_SCALE));
+
+    fireEvent.change(chainInput, { target: { value: '0.6' } });
+    fireEvent.change(formatInput, { target: { value: '1.3' } }); // 상한 밖 입력 → max로 클램프
 
     expect(screen.getByTestId('chainScale').textContent).toBe('0.6');
-    expect(screen.getByTestId('formatScale').textContent).toBe('1.3');
+    expect(screen.getByTestId('formatScale').textContent).toBe(String(MINIMAL_STAMP_MAX_SCALE));
   });
 });
 
