@@ -12,7 +12,7 @@ import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { render, screen, cleanup, fireEvent, renderHook, act, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MoodMinimal } from '../src/components/moods/MoodMinimal';
+import { MINIMAL_STAMP_MAX_SCALE, MoodMinimal } from '../src/components/moods/MoodMinimal';
 import { Mood35mm } from '../src/components/moods/Mood35mm';
 import { MoodCriterion } from '../src/components/moods/MoodCriterion';
 import { MoodEditorial } from '../src/components/moods/MoodEditorial';
@@ -51,10 +51,12 @@ function renderMinimal(chainScale: number, formatScale: number) {
 }
 
 describe('#441 chainScale/formatScale — 정적 마크업 반영 (MoodMinimal)', () => {
-  test('scale=1.3은 max-width에 반영된다(size와 곱연산)', () => {
+  // PR #485 P1 후속 — Minimal은 폭 예산 초과(stampWidthCap.test.tsx #441 참고)를 막기 위해
+  // 실효 scale을 MINIMAL_STAMP_MAX_SCALE(1.1)로 낮춰 잡는다. 입력 1.3은 그대로 클램프된다.
+  test('scale=1.3은 MINIMAL_STAMP_MAX_SCALE로 클램프돼 max-width에 반영된다', () => {
     const html = renderMinimal(1.3, 1.3);
-    expect(html).toContain(`max-width:${74 * 1.3 * STAMP_MAX_ASPECT}px`);
-    expect(html).toContain(`max-width:${64 * 1.02 * 1.3 * STAMP_MAX_ASPECT}px`);
+    expect(html).toContain(`max-width:${74 * MINIMAL_STAMP_MAX_SCALE * STAMP_MAX_ASPECT}px`);
+    expect(html).toContain(`max-width:${64 * 1.02 * MINIMAL_STAMP_MAX_SCALE * STAMP_MAX_ASPECT}px`);
   });
 
   test('scale=0.6은 max-width에 반영된다', () => {

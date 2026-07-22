@@ -64,6 +64,16 @@ const TITLE_CLAMP_LINES = 2;
 const TITLE_MAX_SIZE = 62;
 const TITLE_MIN_SIZE = 38;
 
+// #441 후속(PR #485 리뷰 P1) — 체인+포맷이 동시에 STAMP_MAX_ASPECT(5:1) 근접 종횡비이고
+// chainScale/formatScale이 전역 상한(1.3)까지 오르면 스탬프 그룹 폭이 avail(960)을 ~134px
+// 초과한다(__tests__/stampWidthCap.test.tsx "#441 scale(1.3) 확장 후 스탬프 그룹 폭 예산" 참고).
+// 다른 5개 무드는 여유가 커 문제없고 Minimal만 edge/gaps/margin이 빡빡하므로(원래 예산이 avail에
+// 딱 맞게 설계됨), 공유 클램프 공식(size*scale 결합, _shared.tsx)이나 전역 슬라이더 범위(0.6~1.3,
+// 오너 확정)는 그대로 두고 Minimal 렌더에서만 실효 scale 상한을 낮춘다.
+// 1.1 = (960 - edge60 - gaps69 - margin60) / (5 * (chainH74 + formatH65.28)) ≈ 1.107에서
+// 역산한 안전 상한 — 두 로고가 동시에 5:1 근접 종횡비여도 폭 예산 안에 든다.
+export const MINIMAL_STAMP_MAX_SCALE = 1.1;
+
 export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
   const inkIsDark = isInkDark(themeColor);
@@ -192,11 +202,11 @@ export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components,
           <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 160, background: topScrim, pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', left: 60, top: 52, display: 'flex', alignItems: 'center', gap: 34 }}>
             <FieldTap field="chain" onField={onField}>
-              <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={74} surface={stampSurface} ghost={ghost} scale={components.chainScale ?? 1} />
+              <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={74} surface={stampSurface} ghost={ghost} scale={Math.min(components.chainScale ?? 1, MINIMAL_STAMP_MAX_SCALE)} />
             </FieldTap>
             {stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost) && stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost) && <span style={{ width: 1, height: 38, background: ink, opacity: 0.5 }} />}
             <FieldTap field="format" onField={onField}>
-              <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={1.02} surface={stampSurface} ghost={ghost} scale={components.formatScale ?? 1} />
+              <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={1.02} surface={stampSurface} ghost={ghost} scale={Math.min(components.formatScale ?? 1, MINIMAL_STAMP_MAX_SCALE)} />
             </FieldTap>
           </div>
         </>
