@@ -595,6 +595,41 @@ export function FormatStamp({
   return <DashedPlaceholder text="FORMAT" width={140 * scaledSize} height={h} size={scaledSize} surface={surface} />;
 }
 
+/**
+ * 서명 이미지(#484) — ChainStamp/FormatStamp와 동일한 image 렌더 규칙(scaledSize = height * scale,
+ * STAMP_MAX_ASPECT 폭 클램프, dark surface 그림자)만 뽑아 쓴다. label 문구·텍스트 폴백·ghost
+ * placeholder는 무드마다 타이포가 달라(#484 c5) 각 무드가 계속 소유하고, 이미지가 있을 때만 호출된다.
+ */
+export function SignatureStamp({
+  image,
+  height,
+  scale = 1,
+  surface = 'paper',
+}: {
+  image: string;
+  height: number;
+  scale?: number;
+  surface?: Surface;
+}) {
+  const h = height * scale;
+  return (
+    <img
+      src={image}
+      alt="Signature"
+      style={{
+        height: h,
+        width: 'auto',
+        maxWidth: h * STAMP_MAX_ASPECT,
+        objectFit: 'contain',
+        display: 'block',
+        ...(surface === 'dark' ? { filter: LOGO_SHADOW } : {}),
+      }}
+      draggable={false}
+      crossOrigin="anonymous"
+    />
+  );
+}
+
 interface PosterProps {
   src: string;
   fit?: 'cover' | 'contain';

@@ -100,6 +100,8 @@ const INITIAL_STATE: PhototicketState = {
     formatVisible: true,
     chainScale: 1,
     formatScale: 1,
+    signatureImage: '',
+    signatureScale: 1,
     // #440 무손실이 기본 — 포스터 좌우를 안 자르고 통째로 넣는다. cover(꽉 채움)는 크롭 모달 토글 opt-in.
     posterFit: 'contain',
   },
@@ -115,6 +117,7 @@ export function usePhototicket() {
   // 상태 소유자(hook)가 마지막 blob URL을 추적한다 (latestUrlRef와 동일 패턴).
   const latestChainUrlRef = useRef<string | null>(null);
   const latestFormatUrlRef = useRef<string | null>(null);
+  const latestSignatureUrlRef = useRef<string | null>(null);
   // 사용자가 밝기 슬라이더를 직접 만졌는지 추적(#146). 한번 만지면 이후 material/coating 전환에서
   // 기본 밝기를 덮어쓰지 않고 사용자 값을 존중한다.
   const brightnessTouchedRef = useRef(false);
@@ -226,6 +229,7 @@ export function usePhototicket() {
       const nextComponents = { ...prev.components, ...components };
       latestChainUrlRef.current = nextComponents.chain.startsWith('blob:') ? nextComponents.chain : null;
       latestFormatUrlRef.current = nextComponents.format.startsWith('blob:') ? nextComponents.format : null;
+      latestSignatureUrlRef.current = nextComponents.signatureImage?.startsWith('blob:') ? nextComponents.signatureImage : null;
 
       const materialChanged = components.material !== undefined && components.material !== prev.components.material;
       const coatingChanged = components.coating !== undefined && components.coating !== prev.components.coating;
@@ -260,6 +264,7 @@ export function usePhototicket() {
   const restoreSnapshot = useCallback((snap: HistorySnapshot) => {
     latestChainUrlRef.current = snap.components.chain.startsWith('blob:') ? snap.components.chain : null;
     latestFormatUrlRef.current = snap.components.format.startsWith('blob:') ? snap.components.format : null;
+    latestSignatureUrlRef.current = snap.components.signatureImage?.startsWith('blob:') ? snap.components.signatureImage : null;
     // touched도 스냅샷 시점 기준으로 재유도(#178의 loadPersisted 패턴, PR #361 리뷰 P1) —
     // 안 하면 밝기 조작 이전 시점으로 undo해도 ref가 true로 남아, 이후 전환에서 기본 밝기
     // 적용이 스킵된다.
@@ -289,6 +294,7 @@ export function usePhototicket() {
           ...state.components,
           chain: state.components.chain.startsWith('blob:') ? '' : state.components.chain,
           format: state.components.format.startsWith('blob:') ? '' : state.components.format,
+          signatureImage: state.components.signatureImage?.startsWith('blob:') ? '' : state.components.signatureImage,
         },
         fieldVisibility: state.fieldVisibility,
       };
@@ -320,8 +326,10 @@ export function usePhototicket() {
       // chain/format 로고도 poster와 동일하게 처리 — 안 하면 blob이 탭 닫힐 때까지 안 풀린다.
       if (prev.components.chain.startsWith('blob:')) URL.revokeObjectURL(prev.components.chain);
       if (prev.components.format.startsWith('blob:')) URL.revokeObjectURL(prev.components.format);
+      if (prev.components.signatureImage?.startsWith('blob:')) URL.revokeObjectURL(prev.components.signatureImage);
       latestChainUrlRef.current = null;
       latestFormatUrlRef.current = null;
+      latestSignatureUrlRef.current = null;
       return INITIAL_STATE;
     });
   }, []);
@@ -331,6 +339,7 @@ export function usePhototicket() {
       if (latestUrlRef.current) URL.revokeObjectURL(latestUrlRef.current);
       if (latestChainUrlRef.current) URL.revokeObjectURL(latestChainUrlRef.current);
       if (latestFormatUrlRef.current) URL.revokeObjectURL(latestFormatUrlRef.current);
+      if (latestSignatureUrlRef.current) URL.revokeObjectURL(latestSignatureUrlRef.current);
     };
   }, []);
 

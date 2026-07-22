@@ -26,6 +26,7 @@ import {
   resolveInk,
   resolveTicketData,
   showFieldGhost,
+  SignatureStamp,
   stampWillRender,
   TopBandTone,
   truncateActors,
@@ -340,7 +341,14 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
             <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 22, color: ink }}>made with</span>
             <MoodWordmark size={22} color={ink} />
           </div>
-          {signatureVal ? (
+          {components.signatureImage ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10 }}>
+              <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 25, opacity: 0.78, color: ink }}>collected by</span>
+              <FieldTap field="signature" onField={onField}>
+                <SignatureStamp image={components.signatureImage} height={34} scale={components.signatureScale ?? 1} surface={stampSurface} />
+              </FieldTap>
+            </div>
+          ) : signatureVal ? (
             <div style={{ textAlign: 'right', maxWidth: 560, minWidth: 0 }}>
               {/* 라벨은 FieldTap 밖(#417) — measureField가 tap.firstElementChild를 재는데
                   라벨까지 같이 감싸면 캐럿이 값이 아니라 라벨 앞에 뜬다. venueCell fieldPieces와

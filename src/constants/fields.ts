@@ -141,17 +141,18 @@ export const STAMP_LABEL_MAX = 24;
  */
 export const QUOTE_MAX_LENGTH = 26;
 
-/** 스탬프 → TicketComponents 키(이미지 URL · 텍스트 라벨 · 노출 토글). */
+/** 스탬프 → TicketComponents 키(이미지 URL · 텍스트 라벨 · 노출 토글 · 크기 배율). */
 export const STAMP_KEYS: Record<
   StampTarget,
   {
     image: keyof TicketComponents;
     label: keyof TicketComponents;
     visible: keyof TicketComponents;
+    scale: keyof TicketComponents;
   }
 > = {
-  chain: { image: 'chain', label: 'chainLabel', visible: 'chainVisible' },
-  format: { image: 'format', label: 'formatLabel', visible: 'formatVisible' },
+  chain: { image: 'chain', label: 'chainLabel', visible: 'chainVisible', scale: 'chainScale' },
+  format: { image: 'format', label: 'formatLabel', visible: 'formatVisible', scale: 'formatScale' },
 };
 
 /**

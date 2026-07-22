@@ -64,6 +64,9 @@ function Harness() {
       <button type="button" onClick={() => photo.updateComponents({ coating: 'none' })}>
         texture
       </button>
+      <button type="button" onClick={() => photo.updateComponents({ signatureImage: 'blob:sig', signatureScale: 1.2 })}>
+        signature
+      </button>
       <button type="button" disabled={!hist.canUndo} onClick={hist.undo}>
         undo
       </button>
@@ -163,6 +166,26 @@ describe('useEditHistory (usePhototicket 통합)', () => {
     await user.click(screen.getByText('texture'));
     expect(captured.components.coating).toBe('none');
     expect(captured.components.posterOpacity).toBe(1.0); // coating='none'의 기본 밝기
+  });
+
+  // #484 s5 — signatureImage/signatureScale은 신규 undo 배선 없이 components 스냅샷 구조에
+  // 그대로 얹혀 나가는지 확인(chain/format과 동일 근거).
+  test('서명 이미지/스케일도 undo가 원자 복원한다 (components 스냅샷에 자동 포함)', async () => {
+    const user = userSetup();
+    render(<Harness />);
+    await mountSettle();
+
+    expect(captured.components.signatureImage).toBe('');
+    expect(captured.components.signatureScale).toBe(1);
+
+    await user.click(screen.getByText('signature'));
+    expect(captured.components.signatureImage).toBe('blob:sig');
+    expect(captured.components.signatureScale).toBe(1.2);
+    await settle();
+
+    await user.click(undoBtn());
+    expect(captured.components.signatureImage).toBe('');
+    expect(captured.components.signatureScale).toBe(1);
   });
 
   test('undo 후 새 편집은 redo 가지를 절단한다', async () => {

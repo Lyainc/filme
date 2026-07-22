@@ -1,0 +1,183 @@
+---
+# Output conforms to thinking-tools/reference/common-schema.md
+skill: build-spec
+schema_version: 1
+version: 4.0.1
+generated: 2026-07-22
+input:
+  target: 서명(signature) 이미지 업로드 + 크기 조절
+  options: []
+output:
+  type: spec
+  structure: templates/SEED_SPEC.yaml
+
+# build-spec extensions
+spec_version: 1
+created: 2026-07-22
+target: 서명(signature) 이미지 업로드 + 크기 조절
+domain: tech
+brownfield: true
+refine_generation: 0
+issue: 484
+
+goal:
+  statement: >
+    서명(signature)이 현재 텍스트 전용(MovieInfo.signature, maxLength 20)인데, 극장체인/
+    포맷 로고(#441/PR#485)와 동일하게 이미지 업로드 + 크기 조절이 가능한 텍스트+이미지
+    동시입력 UX로 확장한다. 편집 경험이 ChainStamp/FormatStamp와 일관되어야 하며, 그
+    UX가 향후 개선되면 세 스탬프 종류(chain/format/signature)에 동일하게 반영돼야 한다.
+  clarity_score: 0.90
+
+constraints:
+  - id: c1
+    type: technical
+    description: >
+      [상태 필드] `TicketComponents`(`src/types/index.ts`)에 `signatureImage?: string`·
+      `signatureScale?: number`(기본값 1) 추가. `usePhototicket.ts` INITIAL_STATE.components에도
+      등록.
+    hard: true
+    rationale: chainScale/formatScale(#441)과 동일한 옵셔널 필드 패턴.
+  - id: c2
+    type: technical
+    description: >
+      [아키텍처 — C안 채택] `StampSheet`(`FieldEditorBody.tsx:432-513`) 내부 UI(텍스트 입력 +
+      로고 업로드 버튼 + 크롭 모달 + 이미지 우선순위 렌더)를 `target`/`photo`가 아니라
+      label/image/scale 각각 `{value, onChange}` 페어 3개를 받는 프레젠테이션 컴포넌트로
+      추출한다. `StampSheet(chain/format)`는 이 컴포넌트에 `TicketComponents` 키를 매핑하는
+      얇은 어댑터로 재구성하고, 신규 `SignatureSheet`는 label을 `MovieInfo.signature`로,
+      image/scale을 `TicketComponents.signatureImage`/`signatureScale`로 매핑하는 또 다른
+      얇은 어댑터로 만든다.
+    hard: true
+    rationale: >
+      expert-panel 합의(2026-07-22, 5/5 만장일치) — 데이터 모델 완전 통합(StampTarget을
+      'chain'|'format'|'signature' 3종화, signature를 MovieInfo에서 TicketComponents로 이전)은
+      localStorage(`filme:phototicket:v1`)에 이미 저장된 유저의 `movieInfo.signature` 텍스트
+      마이그레이션 리스크 + fieldVisibility 인프라(ALL_FIELDS_ON/OFF, 필드드로어, 런처 그룹)
+      전체 파급이 이슈 스코프를 초과함. UX 패턴만 별도 복제(SignatureSheet를 StampSheet와
+      완전 별개로 새로 작성)는 향후 StampSheet UX 변경이 SignatureSheet에 수동 반영 의존이라
+      drift 위험. 프레젠테이션 추출안이 마이그레이션 리스크 없이 코드 레벨 일관성(향후 UX
+      변경 자동 전파)을 확보한다.
+  - id: c3
+    type: technical
+    description: >
+      [데이터 분리 유지] signature 텍스트는 `MovieInfo.signature`(`gate(fv, d)` 패턴 그대로 —
+      `d.signature`는 항상 `''`라 실질 기본값이 없어 변경 영향 없음), 이미지/스케일만
+      `TicketComponents` 신규 필드. `StampTarget` union(`'chain'|'format'`)은 확장하지 않는다.
+    hard: true
+    rationale: c2와 동일한 마이그레이션 리스크 회피 근거.
+  - id: c4
+    type: technical
+    description: >
+      [우선순위 규칙] 이미지 있으면 이미지 렌더, 텍스트값은 삭제하지 않고 보존 — 이미지 제거
+      시 텍스트로 자동 복귀(#141 비파괴 패턴, chain/format과 동일).
+    hard: true
+    rationale: >
+      이슈 원안에서 이미 확정. 기존 `StampSheet`가 이미 이 규칙을 구현 중이라 c2의 프레젠테이션
+      컴포넌트 추출 시 자동 상속된다(재구현 아님).
+  - id: c5
+    type: technical
+    description: >
+      [무드별 렌더 교체] 6개 무드 파일의 서명 렌더 지점(그레핑 시점 실측: MoodMinimal.tsx:326,
+      MoodCriterion.tsx:343, Mood35mm.tsx:269, Mood35mmLandscape.tsx:262, MoodEditorial.tsx:322,
+      MoodStub.tsx:330 — 구현 시점에 `grep -n "collected by\|signatureVal"`로 재확인 필수,
+      #486 PR로 이미 한 차례 라인 드리프트 발생 이력 있음)을 c2의 공유 렌더 헬퍼 호출로 교체.
+      무드 고유 label 문구("collected by"/"par"/"réalisé avec")·height(24~34px)·surface는
+      각 무드가 prop으로 계속 넘긴다.
+    hard: true
+    rationale: >
+      ChainStamp/FormatStamp가 이미 이 패턴(무드별 height/label/surface를 prop으로 받음)으로
+      6개 무드에 배선되어 있어(#441/PR#485) 그대로 답습 — 설계 판단 없는 기계적 반복.
+  - id: c6
+    type: technical
+    description: >
+      [모바일 라우팅] `InPlaceFieldEditor.tsx`의 isStamp 분기(현재 chain/format만 대상 —
+      탭 시 인라인 텍스트 캐럿 대신 시트 오픈)에 signature를 포함한다. 현재 signature는 일반
+      텍스트 필드라 인라인 캐럿 편집(`maxLength 20`, line 351)으로 빠지는데, 이미지 업로드가
+      가능해지면 이 경로로는 업로드 UI를 노출할 수 없다.
+    hard: true
+    rationale: 이미지 업로드 진입점이 최소 하나는 있어야 하며, 기존 stamp 라우팅 분기 확장이 최소 변경.
+  - id: c7
+    type: scope
+    description: >
+      [라벨 길이 통일 보류] `STAMP_LABEL_MAX`(24)로 통일은 이번 스코프 필수 아님 — signature는
+      현재 `maxLength 20` 유지. 실측으로 라벨 잘림 등 문제가 발견되면 후속으로 통일한다.
+    hard: false
+    rationale: ponytail 재검토(2026-07-22) — 2자 차이가 기능 동작에 지장 없어 지금 정할 필요 없음(YAGNI).
+
+success_criteria:
+  - id: s1
+    description: "`TicketComponents.signatureImage?: string` / `signatureScale?: number`(기본 1) 타입 정의 완료."
+    measurable: true
+  - id: s2
+    description: >
+      c2의 공유 프레젠테이션 컴포넌트 추출 + StampSheet/SignatureSheet 어댑터 리팩터 완료,
+      기존 chain/format 편집 시트 동작 회귀 없음(수동 확인 + 기존 interaction test 통과).
+    measurable: true
+  - id: s3
+    description: >
+      6개 무드 전부 signature 렌더 지점이 image>text 우선순위 공유 컴포넌트 호출로 교체,
+      무드별 프리뷰에서 이미지 업로드/스케일 조절이 실시간 반영됨을 수동 확인.
+    measurable: true
+  - id: s4
+    description: >
+      모바일에서 signature 필드 탭 시 시트가 열려 이미지 업로드가 가능함을 수동 확인(기존
+      인라인 캐럿 편집 경로로 빠지지 않음).
+    measurable: true
+  - id: s5
+    description: >
+      undo/redo·임시저장이 signatureImage/signatureScale을 원자 포함 — 신규 배선 없이
+      `components` 객체 스냅샷 구조로 자동 커버되는지 회귀테스트 1개로 확인
+      (`__tests__/ocrUndoRestore.test.tsx` 패턴 준용).
+    measurable: true
+  - id: s6
+    description: 기존 테스트 유지 — `bun test`·`bun run typecheck` 통과.
+    measurable: true
+
+verification:
+  note: >
+    s1·s2·s5·s6은 상호작용 테스트(happy-dom + testing-library) 또는 타입체크로 검증 가능.
+    s3·s4는 실제 브라우저(6개 무드 프리뷰) 및 모바일 뷰포트 실측에서만 유효 확인 가능.
+
+context:
+  entry_point: src/components/v2/FieldEditorBody.tsx (StampSheet:432-513)
+  related_state:
+    - src/types/index.ts (TicketComponents)
+    - src/constants/fields.ts (StampTarget/STAMP_KEYS/STAMP_LABELS/STAMP_LABEL_MAX)
+  existing_infra:
+    - StampSheet + useLogoCrop(#220) 자유크롭 업로드 흐름
+    - gate() 함수(_shared.tsx:191) — signature 텍스트 fallback 렌더 규칙, 변경 없음
+    - undo(#356)/saveDraft/restoreSnapshot — components 객체 통째 스냅샷 구조(신규 배선
+      불필요, #441 PR 코멘트로 확인됨)
+  prior_art: >
+    #441/PR#485(체인/포맷 로고 크기 조절, 머지 완료) — scaledSize = size * scale 곱연산 결합,
+    STAMP_MAX_ASPECT maxWidth 클램프 패턴을 signatureScale에도 동일 적용 검토.
+
+approach:
+  decision: >
+    구현자 판단에 위임 — 프레젠테이션 컴포넌트의 정확한 prop 셰이프(label/image/scale 각각
+    {value,onChange} 페어 3개로 그루핑, expert-panel 합의 조건)만 c2가 강제, 나머지 세부
+    구현은 자유.
+
+out_of_scope:
+  - STAMP_LABEL_MAX(24) 통일 (c7, 후속 — 실측으로 문제 확인되면)
+  - 실기기 iOS 캡처 확인 (#439 root-cause 해결로 일반 보호 예상, 코드 스펙이 아닌 머지 전 QA 단계)
+  - 데이터 모델 완전 통합(StampTarget 3종화, signature를 TicketComponents로 완전 이전) —
+    expert-panel에서 기각. 필드 가시성 시스템 통합 자체가 목표가 될 별도 동기가 생기면
+    독립 이슈로 재검토.
+
+ambiguity:
+  overall: 0.11
+  gate_passed: true
+
+clarity_breakdown:
+  goal: 0.90
+  constraint: 0.90
+  success: 0.85
+  context: 0.90
+
+metadata:
+  interview_rounds: 3
+  questions_asked: 3
+  generated_by: thinking-tools/build-spec
+  source_session: "484번 이슈 build-spec — expert-panel(아키텍처) + ponytail(스코프 재검토) 경유"
+---
