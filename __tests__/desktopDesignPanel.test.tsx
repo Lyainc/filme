@@ -31,7 +31,7 @@ afterEach(() => {
 });
 
 describe('DesktopDesignPanel (#228)', () => {
-  test('(a) 4섹션 상시 렌더 — LayoutPicker/TexturePicker(재질×코팅 2축)/ColorPicker/BrightnessSlider 동시 존재', () => {
+  test('(a) 4섹션(무드/후보정/컬러/투명도) 상시 렌더 — LayoutPicker/TexturePicker(재질×코팅 2축)/ColorPicker/BrightnessSlider 동시 존재', () => {
     render(<PanelHarness />);
     // 아코디언이 아니라 세로 스택 — 넷 다 한 번에 보인다(designRail은 한 번에 하나만).
     expect(screen.queryByRole('group', { name: 'Mood designs' })).not.toBeNull();
