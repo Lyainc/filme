@@ -25,6 +25,7 @@ function Harness() {
       <div data-testid="movie-theater">{photo.state.movieInfo.theater}</div>
       <div data-testid="movie-actors">{photo.state.movieInfo.actors}</div>
       <div data-testid="vis-actors">{String(photo.state.fieldVisibility.actors)}</div>
+      <div data-testid="signature-image">{photo.state.components.signatureImage}</div>
       <button
         type="button"
         onClick={() => {
@@ -36,6 +37,9 @@ function Harness() {
       </button>
       <button type="button" onClick={() => photo.updateFieldVisibility({ actors: false })}>
         hide-actors
+      </button>
+      <button type="button" onClick={() => photo.updateComponents({ signatureImage: 'blob:seeded-signature' })}>
+        seed-signature-image
       </button>
       <MobileEditorShell
         photo={photo}
@@ -164,5 +168,33 @@ describe('인플레이스 필드 에디터 (#354)', () => {
     fireEvent.click(await screen.findByRole('button', { name: '극장 편집' }));
     await screen.findByRole('textbox', { name: '극장' });
     expect(await screen.findByRole('button', { name: '출연 편집' })).toBeTruthy();
+  });
+
+  // #484 c6 — signature는 StampTarget이 아니지만(c3) isImageField 플래그로 chain/format과
+  // 동일한 이미지 업로드 UI 분기를 공유해야 한다.
+  describe('서명 필드 isImageField 라우팅 (#484 c6)', () => {
+    test('이미지 없을 때: 텍스트 캐럿 + 필드바에 "로고 이미지" 버튼(chain/format과 동일)', async () => {
+      render(<Harness />);
+      fireEvent.click(screen.getByText('seed'));
+
+      fireEvent.click(await screen.findByRole('button', { name: '서명 편집' }));
+      expect(await screen.findByRole('textbox', { name: '서명' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: '로고 이미지' })).toBeTruthy();
+    });
+
+    test('이미지 있을 때: 텍스트 캐럿 대신 aid 패널에 이미지+제거 버튼, 제거하면 텍스트 캐럿으로 복귀', async () => {
+      render(<Harness />);
+      fireEvent.click(screen.getByText('seed'));
+      fireEvent.click(screen.getByText('seed-signature-image'));
+
+      fireEvent.click(await screen.findByRole('button', { name: '서명 편집' }));
+      expect(screen.queryByRole('textbox', { name: '서명' })).toBeNull();
+      const removeBtn = await screen.findByText('이미지 제거');
+      expect(screen.getByAltText('서명 이미지')).toBeTruthy();
+
+      fireEvent.click(removeBtn);
+      expect(screen.getByTestId('signature-image').textContent).toBe('');
+      expect(await screen.findByRole('textbox', { name: '서명' })).toBeTruthy();
+    });
   });
 });

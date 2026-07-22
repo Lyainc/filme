@@ -14,6 +14,8 @@ import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import type { SheetTarget } from '@/constants/fields';
 import { FieldEditorBody } from '@/components/v2/FieldEditorBody';
+import { MINIMAL_STAMP_MAX_SCALE } from '@/components/moods/MoodMinimal';
+import type { TicketComponents } from '@/types';
 
 function BodyHarness({ field }: { field: SheetTarget }) {
   const photo = usePhototicket();
@@ -26,27 +28,62 @@ function BodyHarness({ field }: { field: SheetTarget }) {
       <div data-testid="rating">{movieInfo.rating}</div>
       <div data-testid="chainLabel">{components.chainLabel}</div>
       <div data-testid="formatLabel">{components.formatLabel}</div>
+      <div data-testid="signature">{movieInfo.signature}</div>
+      <div data-testid="chainScale">{components.chainScale}</div>
+      <div data-testid="signatureImage">{components.signatureImage}</div>
+      <div data-testid="signatureScale">{components.signatureScale}</div>
       <FieldEditorBody target={field} photo={photo} />
     </>
   );
 }
 
-// 스탬프 이미지-있음 분기 검증용 — 마운트 시 로고 이미지 URL을 시드해 "이미지 제거" 경로를 태운다.
-function StampImageHarness({ target, imageUrl }: { target: 'chain' | 'format'; imageUrl: string }) {
+// 스탬프 이미지-있음 분기 검증용 — 마운트 시 로고 이미지 URL을 시드해 "이미지 제거"·크기 슬라이더
+// 경로를 태운다. layout을 받아 Minimal 클램프(claude-review PR #487 P1) 검증에 재사용한다.
+function StampImageHarness({
+  target,
+  imageUrl,
+  layout = 'minimal',
+}: {
+  target: 'chain' | 'format';
+  imageUrl: string;
+  layout?: TicketComponents['layout'];
+}) {
   const photo = usePhototicket();
   const seeded = useRef(false);
   useEffect(() => {
     if (!seeded.current) {
       seeded.current = true;
-      photo.updateComponents({ [target]: imageUrl });
+      photo.updateComponents({ [target]: imageUrl, layout });
     }
-  }, [photo, target, imageUrl]);
+  }, [photo, target, imageUrl, layout]);
   const { components } = photo.state;
   return (
     <>
       <div data-testid="chain-img">{components.chain}</div>
       <div data-testid="format-img">{components.format}</div>
+      <div data-testid="chainScale">{components.chainScale}</div>
+      <div data-testid="formatScale">{components.formatScale}</div>
       <FieldEditorBody target={target} photo={photo} />
+    </>
+  );
+}
+
+// 서명 이미지-있음 분기 검증용 — StampImageHarness와 동형(#484).
+function SignatureImageHarness({ imageUrl }: { imageUrl: string }) {
+  const photo = usePhototicket();
+  const seeded = useRef(false);
+  useEffect(() => {
+    if (!seeded.current) {
+      seeded.current = true;
+      photo.updateComponents({ signatureImage: imageUrl });
+    }
+  }, [photo, imageUrl]);
+  const { components } = photo.state;
+  return (
+    <>
+      <div data-testid="signatureImage">{components.signatureImage}</div>
+      <div data-testid="signatureScale">{components.signatureScale}</div>
+      <FieldEditorBody target="signature" photo={photo} />
     </>
   );
 }
@@ -122,5 +159,56 @@ describe('StampSheet 극장/포맷 (#215 PART B)', () => {
     } finally {
       URL.revokeObjectURL = origRevoke;
     }
+  });
+});
+
+// claude-review PR #487 P1 — StampSheet가 신규 StampEditor로 리팩터되며 처음으로 필드 시트에
+// 크기 슬라이더가 생겼는데, Minimal 무드의 실제 렌더 클램프(MoodMinimal.tsx의
+// MINIMAL_STAMP_MAX_SCALE)를 몰라 상한이 항상 1.3이던 버그 — DesignRail/DesktopDesignPanel에서
+// 이미 한 번 고쳤던 것과 같은 클래스(logoStampScale.test.tsx)가 이 표면에서 재발했다.
+describe('StampEditor 크기 슬라이더 (#484 c2, claude-review PR #487 P1)', () => {
+  test('Minimal 레이아웃: 상한이 MINIMAL_STAMP_MAX_SCALE로 클램프(죽은 구간 방지)', () => {
+    render(<StampImageHarness target="chain" imageUrl="blob:logo" layout="minimal" />);
+    const slider = screen.getByLabelText('크기');
+    expect(slider.getAttribute('max')).toBe(String(MINIMAL_STAMP_MAX_SCALE));
+    fireEvent.change(slider, { target: { value: '1.3' } }); // 상한 밖 입력 → max로 클램프
+    expect(screen.getByTestId('chainScale').textContent).toBe(String(MINIMAL_STAMP_MAX_SCALE));
+  });
+
+  test('Minimal이 아닌 레이아웃: 상한이 전역 1.3 그대로', () => {
+    render(<StampImageHarness target="format" imageUrl="blob:logo" layout="criterion" />);
+    const slider = screen.getByLabelText('크기');
+    expect(slider.getAttribute('max')).toBe('1.3');
+    fireEvent.change(slider, { target: { value: '1.3' } });
+    expect(screen.getByTestId('formatScale').textContent).toBe('1.3');
+  });
+});
+
+describe('SignatureSheet (#484)', () => {
+  test('텍스트 입력이 movieInfo.signature를 갱신(maxLength 20 유지, c7 — STAMP_LABEL_MAX 24 통일은 스코프 밖)', () => {
+    render(<BodyHarness field="signature" />);
+    const input = screen.getByRole('textbox', { name: '서명' }) as HTMLInputElement;
+    expect(input.maxLength).toBe(20);
+    fireEvent.change(input, { target: { value: '영화수집가' } });
+    expect(screen.getByTestId('signature').textContent).toBe('영화수집가');
+  });
+
+  test('이미지 있음: "이미지 제거" 클릭 → signatureImage 클리어(텍스트 복귀, #141 비파괴 패턴)', async () => {
+    render(<SignatureImageHarness imageUrl="blob:seeded-signature" />);
+    const removeBtn = await screen.findByText('이미지 제거');
+    expect(screen.getByTestId('signatureImage').textContent).toBe('blob:seeded-signature');
+    fireEvent.click(removeBtn);
+    expect(screen.getByTestId('signatureImage').textContent).toBe('');
+  });
+
+  // signature는 chain+format처럼 같은 그룹에 나란히 있어 폭 예산을 공유하지 않는 단독 렌더라
+  // (stampWidthCap.test.tsx 예산 계산 대상 아님) Minimal에서도 클램프가 필요 없다 — 위 StampEditor
+  // 크기 슬라이더 테스트와 대조되는 케이스.
+  test('크기 슬라이더는 Minimal에서도 클램프 없이 전역 상한 1.3 그대로', () => {
+    render(<SignatureImageHarness imageUrl="blob:seeded-signature" />);
+    const slider = screen.getByLabelText('크기');
+    expect(slider.getAttribute('max')).toBe('1.3');
+    fireEvent.change(slider, { target: { value: '1.3' } });
+    expect(screen.getByTestId('signatureScale').textContent).toBe('1.3');
   });
 });

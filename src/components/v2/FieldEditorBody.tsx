@@ -10,6 +10,7 @@ import { DateInput } from '@/components/ui/DateInput';
 import RatingPicker from '@/components/wizard/RatingPicker';
 import BrightnessSlider from '@/components/wizard/BrightnessSlider';
 import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
+import { MINIMAL_STAMP_MAX_SCALE } from '@/components/moods/MoodMinimal';
 import {
   FIELD_LABELS,
   FIELD_SHEET_TYPE,
@@ -440,17 +441,31 @@ interface ValuePair<T> {
  */
 function StampEditor({
   ariaLabel,
+  idSlug,
   label,
   image,
   scale,
   maxLength = STAMP_LABEL_MAX,
+  maxScale = 1.3,
 }: {
   ariaLabel: string;
+  /** 영문 슬러그 — 크기 슬라이더 id에 쓴다. ariaLabel(한글+공백)을 그대로 id에 넣으면 HTML id
+   * 스펙 위반이라(claude-review PR #487 P2) 호출부가 별도로 넘긴다. */
+  idSlug: string;
   label: ValuePair<string>;
   image: ValuePair<string>;
   scale: ValuePair<number>;
   /** 라벨 input의 글자수 상한. 기본 STAMP_LABEL_MAX(24) — signature는 20 유지(c7, 통일은 스코프 밖). */
   maxLength?: number;
+  /**
+   * 크기 슬라이더 상한. 기본 1.3(전역 상한, spec c5). chain/format은 무드가 Minimal일 때 실제
+   * 렌더가 MINIMAL_STAMP_MAX_SCALE(1.1)로 클램프되므로(MoodMinimal.tsx) 호출부가 그 값을 넘겨야
+   * 슬라이더 죽은 구간이 안 생긴다(claude-review PR #487 P1 — DesignRail/DesktopDesignPanel에서
+   * 이미 한 번 고친 버그가 이 신규 UI 표면에서 재발). signature는 단독 렌더라(체인+포맷처럼 폭
+   * 예산을 공유하지 않음, __tests__/stampWidthCap.test.tsx 예산 계산 대상 아님) 클램프가 필요
+   * 없어 기본값 그대로 쓴다.
+   */
+  maxScale?: number;
 }) {
   // 로고 업로드 → 자유 크롭 → PNG. 픽커들과 동일한 useLogoCrop 흐름(#220).
   const { rawSrc, isCropping, openFile, handleComplete, handleCancel } = useLogoCrop(image.onChange);
@@ -483,11 +498,11 @@ function StampEditor({
         </div>
         <BrightnessSlider
           label="크기"
-          id={`stamp-scale-${ariaLabel}`}
-          value={Math.min(scale.value ?? 1, 1.3)}
+          id={`stamp-scale-${idSlug}`}
+          value={Math.min(scale.value ?? 1, maxScale)}
           onChange={scale.onChange}
           min={0.6}
-          max={1.3}
+          max={maxScale}
         />
       </div>
     );
@@ -539,10 +554,15 @@ function StampEditor({
 function StampSheet({ target, photo }: { target: StampTarget; photo: Photo }) {
   const components = photo.state.components;
   const keys = STAMP_KEYS[target];
+  // Minimal 무드는 실제 렌더가 MINIMAL_STAMP_MAX_SCALE(1.1)로 클램프된다(MoodMinimal.tsx) —
+  // DesignRail/DesktopDesignPanel과 동일 계산(claude-review PR #487 P1, 이 시트에서 재발했던 버그).
+  const stampScaleMax = components.layout === 'minimal' ? MINIMAL_STAMP_MAX_SCALE : 1.3;
 
   return (
     <StampEditor
       ariaLabel={STAMP_LABELS[target]}
+      idSlug={target}
+      maxScale={stampScaleMax}
       label={{ value: String(components[keys.label] ?? ''), onChange: (v) => photo.updateComponents({ [keys.label]: v } as Partial<TicketComponents>) }}
       image={{ value: String(components[keys.image] ?? ''), onChange: (v) => photo.updateComponents({ [keys.image]: v } as Partial<TicketComponents>) }}
       scale={{ value: Number(components[keys.scale] ?? 1), onChange: (v) => photo.updateComponents({ [keys.scale]: v } as Partial<TicketComponents>) }}
@@ -560,6 +580,7 @@ function SignatureSheet({ photo }: { photo: Photo }) {
   return (
     <StampEditor
       ariaLabel={FIELD_LABELS.signature}
+      idSlug="signature"
       maxLength={20}
       label={{
         value: photo.state.movieInfo.signature ?? '',
