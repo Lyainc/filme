@@ -32,8 +32,8 @@ function Section({ eyebrow, children }: { eyebrow: string; children: ReactNode }
 export function DesktopDesignPanel({ photo }: { photo: ReturnType<typeof usePhototicket> }) {
   const { components, croppedImageUrl, recommendedColors } = photo.state;
   const setComp = photo.updateComponents;
-  // claude-review PR #486 P1 — DesignRail과 동일 이유: Minimal은 MoodMinimal이 실효 scale을
-  // MINIMAL_STAMP_MAX_SCALE로 클램프하므로 슬라이더 상한도 같이 낮춘다(죽은 구간 방지).
+  // claude-review PR #486 P1 — DesignRail과 동일 이유(상한 하향 + value 표시 클램프로 라벨·thumb·
+  // 실제 렌더 일치, 저장된 raw 값은 안 건드림). 상세 근거는 DesignRail.tsx 주석 참고.
   const stampScaleMax = components.layout === 'minimal' ? MINIMAL_STAMP_MAX_SCALE : 1.3;
 
   return (
@@ -124,7 +124,7 @@ export function DesktopDesignPanel({ photo }: { photo: ReturnType<typeof usePhot
           <BrightnessSlider
             label="체인 로고 크기"
             id="desktop-chain-scale"
-            value={components.chainScale ?? 1}
+            value={Math.min(components.chainScale ?? 1, stampScaleMax)}
             onChange={(chainScale) => setComp({ chainScale })}
             min={0.6}
             max={stampScaleMax}
@@ -132,7 +132,7 @@ export function DesktopDesignPanel({ photo }: { photo: ReturnType<typeof usePhot
           <BrightnessSlider
             label="포맷 로고 크기"
             id="desktop-format-scale"
-            value={components.formatScale ?? 1}
+            value={Math.min(components.formatScale ?? 1, stampScaleMax)}
             onChange={(formatScale) => setComp({ formatScale })}
             min={0.6}
             max={stampScaleMax}
