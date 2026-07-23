@@ -1,0 +1,112 @@
+# Output conforms to thinking-tools/reference/common-schema.md
+skill: build-spec
+schema_version: 1
+version: 4.1.0
+generated: 2026-07-24
+input:
+  target: 실물 인쇄 캘리브레이션 도안 — /calibration 단일 dev 페이지(무드 통합 없음)
+  options: []
+output:
+  type: spec
+  structure: templates/SEED_SPEC.yaml
+
+# build-spec extensions
+spec_version: 1
+created: 2026-07-24
+target: 실물 인쇄 캘리브레이션 도안 (/calibration dev 페이지)
+domain: tech
+brownfield: true
+refine_generation: 1   # v1은 무드 통합안 → 오버엔지니어링 지적으로 단일 페이지로 축소
+issue: 510
+
+goal:
+  statement: >
+    실제로 인쇄해서 눈으로(그리고 사진으로 Claude에게) 치수·여백·이미지 노출범위·폰트
+    크기/굵기·색 재현을 검증할 수 있는 dev 디버그 페이지 /calibration을 추가한다. 목적은
+    (1) CGV 프리미엄(풀블리드) 기준 파이프라인이 메가박스·롯데·CGV 일반(비풀스크린, 카드와
+    다른 사이즈 가능)에도 호환되는지 실물 판정, (2) 인쇄→촬영→Claude 재입력 시 비전이 사진만
+    보고 배율·여백·폰트·색 캐스트를 스스로 읽어내도록 자기설명적 측정 타깃 제공.
+    무드 시스템(LayoutId/layouts/디스패처/피커)엔 엮지 않는다 — 캘리브레이션은 티켓 데이터와
+    무관한 독립 도안이라 무드일 이유가 없다. 대신 프로덕트 export 유틸(captureToImage)만
+    재사용해 다운로드 산출물을 프로덕트 티켓과 byte 포맷 동일하게 만든다.
+  clarity_score: 0.9
+
+constraints:
+  - id: c1
+    type: technical
+    description: >
+      [export 동일] 다운로드는 프로덕트와 같은 downloadTicketAsJpeg(node, {width:960,
+      height:1534})를 호출 → 내부 EXPORT_MARGIN_PX(10) 양변 + pixelRatio 2 + q0.95로
+      1960×3108 JPEG. 즉 이 도안 인쇄 결과가 실제 프리미엄 세로 티켓 인쇄와 같은 크기·양식.
+    hard: true
+    rationale: 사이즈·양식이 프로덕트와 다르면 이 이미지로 인쇄한 게 실제 티켓과 다른 물건이라 캘리브레이션이 무의미(사용자 명시).
+  - id: c2
+    type: technical
+    description: >
+      [무드 미통합·단일 파일] 구현은 src/pages/calibration.tsx 한 파일. Pages Router라
+      파일=라우트(/calibration). LayoutId union·layouts.ts·TicketRenderer·LayoutPicker
+      전부 무변경. 프로덕트 무드 6종 셋 불변.
+    hard: true
+    rationale: export 동일성은 유틸(captureToImage) 재사용만으로 충족 — 무드 시스템은 티켓 변종 선택/디스패치용이라 이 독립 도안엔 불필요.
+  - id: c3
+    type: technical
+    description: >
+      [스케일 자명·mm 하드코딩 금지] 극장별 실제 인쇄 크기가 미상이므로 특정 mm를 박지
+      않는다. 도안은 티켓 자연 px(960×1534) 그대로, 가장자리 px 눈금자(0점=콘텐츠 edge)를
+      자로 재서 mm/px 배율을 역산. 폰트·요소 크기는 px 라벨이라 실측 배율만 알면 물리 크기가 따라 나온다.
+    hard: true
+    rationale: 크기 미상이 테스트의 출발점. mm 하드코딩은 거짓 눈금이 된다. 카드 종횡비는 참고 사각형으로만(물리 크기 아님).
+  - id: c4
+    type: technical
+    description: >
+      [폰트 매트릭스·최우선] 앱 실제 폰트 토큰(FONT_MONO/FONT_SANS/FONT_KR을 _shared에서
+      import) × 크기 사다리 × 굵기(Pretendard 300~900, JetBrains 400/500)를 한글·영문·숫자
+      글리프로 깔고 각 샘플에 family/px/weight 라벨. 인쇄 시 한글 가독성 하한·굵기 구분 판정.
+    hard: true
+    rationale: 사용자가 "폰트 관련은 가급적 다" 최우선 지정. 리터럴 폰트 스택이 프로덕트 무드에서 렌더되므로 같은 _app 트리인 이 페이지도 동일.
+  - id: c5
+    type: functional
+    description: >
+      [측정 요소] 자기설명 라벨(전 요소 스펙값 in-image), 그레이스케일 램프+암/명부 클리핑
+      스텝, RGB/CMY/중립(WB 보정용 white·gray·black)/앱 팔레트(#B0423F accent 등) 스와치 +
+      hex 라벨, 코너 fiducial(비대칭 — 사진 원근·회전 복원), 라인페어 해상도 테스트,
+      메타/인쇄지시 블록(100% 실제크기·페이지맞춤 끄기), 카드 종횡비 참고선.
+    hard: false
+    rationale: 요청 항목 + 사진 재입력 워크플로 보조(중립 패치=WB 보정 기준, fiducial=좌표 복원, 라벨=의도값↔렌더 대조).
+
+success_criteria:
+  - id: s1
+    statement: /calibration 접속 시 960×1534 도안이 실제 앱 폰트로 렌더되고, 다운로드가 프로덕트와 동일한 1960×3108 JPEG로 나온다.
+    measurable_via: 브라우저 렌더 육안(완료) + 다운로드 산출물 치수 검사
+  - id: s2
+    statement: 인쇄 후 눈금 100px 실측폭으로 mm/px 배율을 역산할 수 있고, 카드 종횡비 참고선이 티켓 자연비와 일치한다.
+    measurable_via: 실물 인쇄 후 물리 측정
+  - id: s3
+    statement: 인쇄물을 촬영해 Claude에 넣으면 비전이 배율·폰트 의도값(라벨)·색 캐스트(중립 패치 기준)를 스스로 서술한다.
+    measurable_via: 인쇄→촬영→재입력 1회 시도, 판독 결과 육안 검증
+
+context:
+  existing_stack: >
+    Next.js 16 Pages Router. 재사용: src/utils/captureToImage.ts의 downloadTicketAsJpeg
+    (EXPORT_MARGIN_PX=10 내부 적용, layout 무관), src/components/moods/_shared.tsx의
+    FONT_MONO/FONT_SANS/FONT_KR. 폰트는 _app.tsx next/font가 전역 로드해 이 페이지도 상속.
+  integration_points:
+    - "src/pages/calibration.tsx — 신규 단일 파일(전부 여기)"
+    - "src/utils/captureToImage.ts — downloadTicketAsJpeg 재사용(무변경)"
+    - "src/components/moods/_shared.tsx — 폰트 토큰 import(무변경)"
+  dependencies: 신규 의존성 없음.
+  backlog_scan: >
+    open 이슈 100건 스캔 — calibration/ruler/도안 키워드 충돌 없음. 무드 작업(#492·#497·
+    #498·#499·#505)은 프리미엄 디자인이라 이 dev 페이지와 스코프 분리.
+  clarity_score: 0.85
+
+blindspots:
+  - area: assumptions
+    question: 인쇄 대화상자 fit-to-page가 mm자를 무력화 → 도안에 "100% 실제크기·페이지맞춤 끄기" 지시 + 눈금 실측 안내 포함. 유지.
+    disposition: 메타 블록에 반영됨.
+  - area: trade-offs
+    question: sRGB→CMYK 시프트는 버그 아닌 관측 대상. 스와치 hex 라벨로 시프트 자체가 데이터. 유지.
+    disposition: c5 반영됨.
+  - area: edge-cases
+    question: export 10px 흰 여백은 콘텐츠 바깥 → 종이 물리 가장자리 ≠ 눈금 0점. 자 0점을 콘텐츠 edge로 확정, 도안에 명시. 유지.
+    disposition: 도안 노트 + c3 반영됨.
