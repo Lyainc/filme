@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /**
  * `?debug=1` 붙었을 때만 뜨는 화면 내 콘솔 오버레이(#439). iOS Safari 실기기에서 원격 디버깅
@@ -11,6 +11,14 @@ export default function DebugConsole() {
   const [lines, setLines] = useState<string[]>([]);
   const [enabled, setEnabled] = useState(false);
   const [lastCapture, setLastCapture] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // pointerEvents:none라 수동 스크롤이 막히므로, 새 로그가 오면 자동으로 바닥까지 스크롤한다 —
+  // 진단에 중요한 최신 로그([capture:probe] 두 줄)가 Vercel Analytics 노이즈에 묻히지 않고 보이게.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [lines, lastCapture]);
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get('debug') !== '1') return;
@@ -65,6 +73,7 @@ export default function DebugConsole() {
 
   return (
     <div
+      ref={scrollRef}
       style={{
         position: 'fixed',
         left: 0,
@@ -81,6 +90,9 @@ export default function DebugConsole() {
         zIndex: 999999,
         whiteSpace: 'pre-wrap',
         wordBreak: 'break-all',
+        // 읽기 전용 진단 오버레이 — 화면 하단 최대 50vh를 덮으므로 pointerEvents:auto면 그 아래
+        // 세로 중앙 업로드 버튼의 탭을 가로채 "?debug=1에서 업로드가 안 됨"이 된다. 절대 탭을 먹지 않게.
+        pointerEvents: 'none',
       }}
     >
       {lastCapture && (
