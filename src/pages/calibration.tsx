@@ -1,6 +1,14 @@
 import { useRef, useState } from 'react';
+import type { GetServerSideProps } from 'next';
 import { downloadTicketAsJpeg } from '@/utils/captureToImage';
 import { FONT_MONO, FONT_SANS, FONT_KR } from '@/components/moods/_shared';
+
+// dev 전용(#510) — Pages Router는 파일 존재 = 공개 라우트라, 프로덕션·프리뷰 배포에선
+// notFound로 닫는다(claude-review PR #511 P1). t/[id].tsx의 notFound 게이트와 같은 패턴.
+export const getServerSideProps: GetServerSideProps = async () => {
+  if (process.env.NODE_ENV !== 'development') return { notFound: true };
+  return { props: {} };
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /calibration — 실물 인쇄 캘리브레이션 도안(dev 디버그 전용, #510).
@@ -166,7 +174,22 @@ function FontRow({
       >
         {familyLabel} {size}px/{weight}
       </div>
-      <div style={{ fontFamily, fontWeight: weight, fontSize: size, color: INK, lineHeight: 1.15 }}>
+      {/* 폭 초과 시 줄바꿈(→컬럼 높이 증가→하단 overflow 잘림) 대신 한 줄로 fit해 ellipsis로 자른다
+          (PR #511 선택 스코프). 폰트 크기는 안 줄인다 — 라벨 px = 실제 렌더 px라야 물리크기 역산이 성립. */}
+      <div
+        style={{
+          fontFamily,
+          fontWeight: weight,
+          fontSize: size,
+          color: INK,
+          lineHeight: 1.15,
+          flex: '1 1 0',
+          minWidth: 0,
+          overflow: 'hidden',
+          whiteSpace: 'nowrap',
+          textOverflow: 'ellipsis',
+        }}
+      >
         {text}
       </div>
     </div>
@@ -222,9 +245,13 @@ function LinePairs({ w, vertical }: { w: number; vertical: boolean }) {
 export default function CalibrationPage() {
   const ref = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
+  // 중복 실행 가드는 ref로(연타 레이스) — setBusy는 비동기라 클로저의 busy를 읽으면
+  // 리렌더 전 두 번째 클릭이 통과한다(claude-review PR #511 P1, ResultPanel #167 패턴).
+  const capturingRef = useRef(false);
 
   async function handleDownload() {
-    if (!ref.current || busy) return;
+    if (!ref.current || capturingRef.current) return;
+    capturingRef.current = true;
     setBusy(true);
     try {
       await downloadTicketAsJpeg(ref.current, {
@@ -235,6 +262,7 @@ export default function CalibrationPage() {
     } catch (err) {
       console.error('[calibration:download]', err);
     } finally {
+      capturingRef.current = false;
       setBusy(false);
     }
   }
