@@ -438,6 +438,47 @@ export async function captureNodeToJpeg(
     } catch (err) {
       console.warn('[capture:band] getImageData failed', err);
     }
+    // 색 divergence 자가보정(#490/#495 후속) — 저장 포스터가 프리뷰보다 밝은 원인을 iOS 플랫폼 3후보로
+    // 가른다: (a) ctx.filter 드롭 (b) blend가 CSS보다 밝게 태움 (c) 색공간. 육안으론 안 갈려 숫자로 찍는다.
+    // 같은 포스터 픽셀을 filter 유무로 그려 비교 → brightness(0.5)가 절반이 아니면 iOS가 ctx.filter를 무시.
+    // soft-light white/128이 255면 blend no-op. 둘 다 정상이면 색공간(P3) 쪽. #439 blur 우회와 동형 진단.
+    try {
+      const probe = posters[0];
+      if (probe) {
+        const sample = (f: string): Uint8ClampedArray | null => {
+          const c = document.createElement('canvas');
+          c.width = 8;
+          c.height = 8;
+          const cx = c.getContext('2d');
+          if (!cx) return null;
+          cx.filter = f;
+          cx.drawImage(probe, 0, 0, 8, 8);
+          cx.filter = 'none';
+          return cx.getImageData(4, 4, 1, 1).data;
+        };
+        const plain = sample('none');
+        const dark = sample('brightness(0.5)');
+        if (plain && dark) {
+          console.log(`[capture:probe] ctxFilter drawImage none=(${plain[0]},${plain[1]},${plain[2]}) brightness0.5=(${dark[0]},${dark[1]},${dark[2]}) → honored if ~half`);
+        }
+      }
+      const bc = document.createElement('canvas');
+      bc.width = 8;
+      bc.height = 8;
+      const bx = bc.getContext('2d');
+      if (bx) {
+        bx.fillStyle = 'rgb(128,128,128)';
+        bx.fillRect(0, 0, 8, 8);
+        bx.globalCompositeOperation = 'soft-light';
+        bx.fillStyle = 'rgb(255,255,255)';
+        bx.fillRect(0, 0, 8, 8);
+        bx.globalCompositeOperation = 'source-over';
+        const b = bx.getImageData(4, 4, 1, 1).data;
+        console.log(`[capture:probe] soft-light white/128 = ${b[0]} (honored ~180, no-op = 255)`);
+      }
+    } catch (err) {
+      console.warn('[capture:probe] failed', err);
+    }
   }
   // 후가공 sheen 오버레이(#434 c1, #475 c2) — 포스터 위·base 텍스트 아래, 재질→코팅 순 2회 합성.
   // poster-root 서브트리는 위 toPng filter에서 제외됐으므로(그 안의 CSS 오버레이도 저장물에서
