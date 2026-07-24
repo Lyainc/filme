@@ -532,6 +532,48 @@ async function compositeOverlay(
   }
 }
 
+interface BgCarrier { el: HTMLElement; color: string }
+
+/** `rgb()`/`rgba()` 문자열이 실질적으로 불투명한지. 파싱 실패·미지정은 투명 취급(안전). */
+function isOpaqueColor(color: string): boolean {
+  if (!color) return false;
+  const m = color.match(/rgba?\(([^)]+)\)/);
+  if (!m) return false;
+  const parts = m[1].split(',').map((s) => parseFloat(s));
+  if (parts.length < 3 || parts.some((n) => !Number.isFinite(n))) return false;
+  return parts.length < 4 || parts[3] >= 0.99;
+}
+
+/**
+ * 포스터(data-poster-root)를 덮는 불투명 배경을 가진 조상들을 캡처 노드까지 거슬러 모은다.
+ * 이 배경들이 base PNG에 남으면 raw canvas로 먼저 깐 포스터를 통째로 가린다(#490/#495).
+ * 반투명 배경은 건드리지 않는다 — 포스터를 완전히 가리지 않고, 옮기면 합성 결과가 달라진다.
+ */
+function collectOpaquePosterBackdrops(node: HTMLElement): BgCarrier[] {
+  const out: BgCarrier[] = [];
+  const seen = new Set<HTMLElement>();
+  const roots = Array.from(node.querySelectorAll('[data-poster-root]')) as HTMLElement[];
+  for (const root of roots) {
+    let el: HTMLElement | null = root.parentElement;
+    while (el) {
+      if (!seen.has(el)) {
+        seen.add(el);
+        let color = '';
+        try {
+          color = getComputedStyle(el).backgroundColor;
+        } catch {
+          color = '';
+        }
+        if (isOpaqueColor(color)) out.push({ el, color });
+      }
+      if (el === node) break;
+      el = el.parentElement;
+    }
+  }
+  // 문서 순서(바깥→안쪽)로 칠해야 안쪽 배경이 위에 온다.
+  return out.reverse();
+}
+
 /**
  * 후가공 오버레이는 '장식'이라 실패해도 저장 전체를 죽이면 안 된다(#490/#495 후속). noise 재질은
  * SVG 타일을 `await loadImage`하는데 그게 reject하면 compositeOverlay가 throw하고, 그 throw가
@@ -598,26 +640,46 @@ export async function captureNodeToJpeg(
   // base(CSS 레이어)는 여백 없이 티켓 자연 크기로 뽑는다 — 여백(흰 프레임)은 아래에서 최종 캔버스에
   // 직접 소유한다. html-to-image의 margin+backgroundColor 프레임에 기대면(#382 방식) base를 투명으로
   // 뽑을 때 여백이 조용히 사라져(실기기 확인), 티켓을 여백 안쪽에 배치하고 여백은 흰 fill로 채운다.
+  // 포스터 위를 덮는 불투명 배경을 base에서 캔버스 레이어로 내린다(#490/#495). #439가 포스터를
+  // raw canvas로 base '아래' 합성하도록 바꿨는데, 그건 base가 포스터 자리에서 투명할 때만 성립한다.
+  // 무드 루트에 불투명 배경을 깐 무드(editorial·stub = PAPER, 35mm·35mm Wide = FS_BASE)는 그 배경이
+  // base PNG 전면을 칠해 합성된 포스터를 통째로 덮어버렸다 — 실기기에서 "editorial은 포스터가 아예
+  // 안 뜬다"던 증상. data-poster-root 제외는 포스터 '서브트리'만 빼므로 조상의 배경은 그대로 남는다.
+  // 그래서 그 배경만 잠시 투명으로 돌려 base에서 빼고, 아래에서 포스터보다 먼저 캔버스에 직접 칠한다
+  // (배경 → 포스터 → base 텍스트·스크림 순서가 되어 미리보기와 z-order가 같아진다).
+  const bgCarriers = collectOpaquePosterBackdrops(node);
+  const prevInlineBg = bgCarriers.map((c) => c.el.style.backgroundColor);
+  bgCarriers.forEach((c) => { c.el.style.backgroundColor = 'transparent'; });
+  if (debug && bgCarriers.length) {
+    console.log(`[capture:bg] carried=${bgCarriers.length} colors=${bgCarriers.map((c) => c.color).join('|')}`);
+  }
+
   const { toPng } = await import('html-to-image');
-  const basePngUrl = await toPng(node, {
-    quality,
-    pixelRatio,
-    width,
-    height,
-    canvasWidth: width * pixelRatio,
-    canvasHeight: height * pixelRatio,
-    // 포스터/로고 자리를 투명 구멍으로 남겨야 합성한 raster가 비쳐 보인다.
-    backgroundColor: undefined,
-    cacheBust: false,
-    skipFonts: false,
-    style: { transform: 'none', transformOrigin: '0 0' },
-    filter: (n: unknown) => {
-      if (n instanceof Element && n.hasAttribute('data-hide-on-export')) return false; // 대시 placeholder
-      if (n instanceof Element && n.hasAttribute('data-poster-root')) return false; // 포스터 서브트리(배경색 포함)
-      if (n instanceof HTMLImageElement && n.src.startsWith('blob:')) return false; // 로고 스탬프 — 직접 합성
-      return true;
-    },
-  });
+  let basePngUrl: string;
+  try {
+    basePngUrl = await toPng(node, {
+      quality,
+      pixelRatio,
+      width,
+      height,
+      canvasWidth: width * pixelRatio,
+      canvasHeight: height * pixelRatio,
+      // 포스터/로고 자리를 투명 구멍으로 남겨야 합성한 raster가 비쳐 보인다.
+      backgroundColor: undefined,
+      cacheBust: false,
+      skipFonts: false,
+      style: { transform: 'none', transformOrigin: '0 0' },
+      filter: (n: unknown) => {
+        if (n instanceof Element && n.hasAttribute('data-hide-on-export')) return false; // 대시 placeholder
+        if (n instanceof Element && n.hasAttribute('data-poster-root')) return false; // 포스터 서브트리(배경색 포함)
+        if (n instanceof HTMLImageElement && n.src.startsWith('blob:')) return false; // 로고 스탬프 — 직접 합성
+        return true;
+      },
+    });
+  } finally {
+    // 실패해도 화면(미리보기)의 배경을 반드시 되돌린다 — 안 그러면 티켓이 투명해진 채 남는다.
+    bgCarriers.forEach((c, i) => { c.el.style.backgroundColor = prevInlineBg[i]; });
+  }
 
   const marginDev = EXPORT_MARGIN_PX * pixelRatio;
   const canvas = document.createElement('canvas');
@@ -632,7 +694,24 @@ export async function captureNodeToJpeg(
   // 티켓 내용 영역(여백 안쪽) — 모든 raster·base를 여기 맞춰 그린다.
   const ticketRect: DeviceRect = { x: marginDev, y: marginDev, w: width * pixelRatio, h: height * pixelRatio };
   const nodeRect = node.getBoundingClientRect();
-  // z-order: 포스터(뒤) → CSS 레이어(base) → 로고 스탬프(앞).
+  // base에서 빼낸 불투명 배경을 포스터보다 먼저 칠한다(#490/#495) — 티켓 영역으로 클립해
+  // 여백(흰 프레임)을 침범하지 않게 한다. 이게 없으면 포스터가 흰 여백 위에 뜬다.
+  for (const carrier of bgCarriers) {
+    const r = carrier.el.getBoundingClientRect();
+    const bx = (EXPORT_MARGIN_PX + ((r.left - nodeRect.left) / nodeRect.width) * width) * pixelRatio;
+    const by = (EXPORT_MARGIN_PX + ((r.top - nodeRect.top) / nodeRect.height) * height) * pixelRatio;
+    const bw = (r.width / nodeRect.width) * width * pixelRatio;
+    const bh = (r.height / nodeRect.height) * height * pixelRatio;
+    const x = Math.max(bx, ticketRect.x);
+    const y = Math.max(by, ticketRect.y);
+    const w2 = Math.min(bx + bw, ticketRect.x + ticketRect.w) - x;
+    const h2 = Math.min(by + bh, ticketRect.y + ticketRect.h) - y;
+    if (w2 > 0 && h2 > 0) {
+      ctx.fillStyle = carrier.color;
+      ctx.fillRect(x, y, w2, h2);
+    }
+  }
+  // z-order: 배경 → 포스터(뒤) → CSS 레이어(base) → 로고 스탬프(앞).
   for (const img of posters) compositeRaster(ctx, img, nodeRect, width, height, pixelRatio, ticketRect, debug);
   if (debug) {
     // base를 덮기 전, 레터박스 밴드(티켓 상단 안쪽) 픽셀을 찍어 blur 배경이 실제로 그려졌는지 확인한다
