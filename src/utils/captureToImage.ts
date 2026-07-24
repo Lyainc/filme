@@ -117,6 +117,173 @@ function scaleFilterPx(filter: string, pixelRatio: number): string {
   return filter.replace(/([\d.]+)px/g, (_m, n) => `${parseFloat(n) * pixelRatio}px`);
 }
 
+// ─── iOS ctx.filter 우회(#490/#495) ───────────────────────────────────────────
+// iOS Safari는 canvas `ctx.filter`를 drawImage에 적용하지 않는다 — 실기기 프로브에서 같은 포스터
+// 픽셀을 none/brightness(0.5)로 그린 결과가 (205,192,188)로 **동일**하게 나와 확정됐다. 그래서
+// 포스터 색보정(saturate/contrast/brightness…)이 프리뷰(CSS filter)엔 걸리고 저장물엔 빠져,
+// 저장 포스터가 프리뷰보다 밝게 나온다. #439가 blur를 ctx.filter에서 떼어낸 것과 동형으로,
+// 색보정도 확실히 먹는 경로(getImageData 픽셀 연산)로 옮긴다.
+//
+// 단 UA 스니핑이 아니라 **실제 능력 검사**로 가른다: ctx.filter가 먹는 환경(데스크톱)은 기존
+// 경로를 그대로 타 출력이 바뀌지 않고, 안 먹는 환경(iOS)만 픽셀로 굽는다. 판정 불가(캔버스
+// 미지원·getImageData 없음)면 기존 경로로 폴백한다.
+let ctxFilterHonored: boolean | null = null;
+function isCtxFilterHonored(): boolean {
+  if (ctxFilterHonored !== null) return ctxFilterHonored;
+  ctxFilterHonored = true; // 알 수 없으면 기존(ctx.filter) 경로 유지
+  try {
+    const src = document.createElement('canvas');
+    src.width = 1;
+    src.height = 1;
+    const sctx = src.getContext('2d');
+    const dst = document.createElement('canvas');
+    dst.width = 1;
+    dst.height = 1;
+    const dctx = dst.getContext('2d');
+    if (!sctx || !dctx || typeof dctx.getImageData !== 'function') return ctxFilterHonored;
+    sctx.fillStyle = 'rgb(200,200,200)';
+    sctx.fillRect(0, 0, 1, 1);
+    dctx.filter = 'brightness(0.5)';
+    dctx.drawImage(src, 0, 0);
+    dctx.filter = 'none';
+    // 먹으면 200→100, 드롭되면 200 그대로.
+    ctxFilterHonored = dctx.getImageData(0, 0, 1, 1).data[0] < 150;
+  } catch {
+    /* 기본값(true) 유지 — 진단 실패로 저장 경로를 바꾸지 않는다 */
+  }
+  return ctxFilterHonored;
+}
+
+type ColorOpKind = 'saturate' | 'contrast' | 'brightness' | 'sepia' | 'grayscale';
+interface ColorOp { k: ColorOpKind; v: number }
+
+// 포스터가 실제로 쓰는 색보정 함수만 다룬다(_shared.tsx: PRINT_SIM·TEXTURE_FILTERS·brightness
+// 슬라이더 → saturate·contrast·brightness·sepia·grayscale, 좌→우 순서·중복 허용). blur는 호출
+// 전에 이미 분리돼 여기 오지 않는다. 목록에 없는 함수는 건너뛴다 — 전부 무시되던 기존 iOS
+// 동작보다는 항상 낫다.
+function parseColorOps(filter: string): ColorOp[] {
+  const ops: ColorOp[] = [];
+  const re = /(saturate|contrast|brightness|sepia|grayscale)\(\s*([\d.]+)(%?)\s*\)/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(filter)) !== null) {
+    const raw = parseFloat(m[2]);
+    if (!Number.isFinite(raw)) continue;
+    ops.push({ k: m[1] as ColorOpKind, v: m[3] === '%' ? raw / 100 : raw });
+  }
+  return ops;
+}
+
+const clamp01 = (n: number) => (n < 0 ? 0 : n > 1 ? 1 : n);
+
+/**
+ * CSS filter 색보정 체인을 픽셀 하나에 적용한다(0..255 in/out). CSS/SVG Filter Effects 스펙의
+ * 행렬을 그대로 쓴다 — 프리뷰의 네이티브 CSS filter와 결과가 같아야 저장물이 프리뷰와 일치한다.
+ * 각 함수는 하나의 filter primitive라 매 단계 [0,1]로 클램프한다(스펙 동작).
+ * export는 순수 함수라 유닛 테스트가 이 수식을 직접 검증하기 위함.
+ */
+export function applyCssColorFilterToPixel(
+  filter: string,
+  r: number,
+  g: number,
+  b: number,
+): [number, number, number] {
+  const px = new Uint8ClampedArray([r, g, b, 255]);
+  applyColorOpsInto(parseColorOps(filter), px, 0);
+  return [px[0], px[1], px[2]];
+}
+
+/** 픽셀을 제자리에서 보정한다 — 수백만 픽셀을 도는 핫 루프라 픽셀당 배열을 만들지 않는다. */
+function applyColorOpsInto(ops: ColorOp[], d: Uint8ClampedArray, i: number): void {
+  let r = d[i] / 255;
+  let g = d[i + 1] / 255;
+  let b = d[i + 2] / 255;
+  for (const op of ops) {
+    const v = op.v;
+    if (op.k === 'brightness') {
+      r *= v; g *= v; b *= v;
+    } else if (op.k === 'contrast') {
+      const off = 0.5 - 0.5 * v;
+      r = r * v + off; g = g * v + off; b = b * v + off;
+    } else if (op.k === 'saturate') {
+      const nr = (0.213 + 0.787 * v) * r + (0.715 - 0.715 * v) * g + (0.072 - 0.072 * v) * b;
+      const ng = (0.213 - 0.213 * v) * r + (0.715 + 0.285 * v) * g + (0.072 - 0.072 * v) * b;
+      const nb = (0.213 - 0.213 * v) * r + (0.715 - 0.715 * v) * g + (0.072 + 0.928 * v) * b;
+      r = nr; g = ng; b = nb;
+    } else if (op.k === 'grayscale') {
+      const k = 1 - v; // v=1이면 완전 휘도
+      const nr = (0.2126 + 0.7874 * k) * r + (0.7152 - 0.7152 * k) * g + (0.0722 - 0.0722 * k) * b;
+      const ng = (0.2126 - 0.2126 * k) * r + (0.7152 + 0.2848 * k) * g + (0.0722 - 0.0722 * k) * b;
+      const nb = (0.2126 - 0.2126 * k) * r + (0.7152 - 0.7152 * k) * g + (0.0722 + 0.9278 * k) * b;
+      r = nr; g = ng; b = nb;
+    } else {
+      const k = 1 - v; // sepia
+      const nr = (0.393 + 0.607 * k) * r + (0.769 - 0.769 * k) * g + (0.189 - 0.189 * k) * b;
+      const ng = (0.349 - 0.349 * k) * r + (0.686 + 0.314 * k) * g + (0.168 - 0.168 * k) * b;
+      const nb = (0.272 - 0.272 * k) * r + (0.534 - 0.534 * k) * g + (0.131 + 0.869 * k) * b;
+      r = nr; g = ng; b = nb;
+    }
+    r = clamp01(r); g = clamp01(g); b = clamp01(b);
+  }
+  d[i] = Math.round(r * 255);
+  d[i + 1] = Math.round(g * 255);
+  d[i + 2] = Math.round(b * 255);
+}
+
+/**
+ * 캔버스 전체 픽셀에 색보정을 구워 넣는다(알파는 건드리지 않는다 — 페더 알파는 이후 단계가 칠한다).
+ * ponytail: 픽셀당 op 체인을 도는 단순 루프. 포스터 1장(~5.5M px)에 수백 ms 수준이고 export는
+ * 원래 수초짜리 작업이라 충분하다. 느려지면 op 체인을 3×3 행렬 하나로 접는 최적화가 다음 수순.
+ */
+function bakeColorFilter(ctx: CanvasRenderingContext2D, w: number, h: number, filter: string): void {
+  const ops = parseColorOps(filter);
+  if (!ops.length || w <= 0 || h <= 0) return;
+  const image = ctx.getImageData(0, 0, w, h);
+  const d = image.data;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] === 0) continue; // 완전 투명은 계산 생략
+    applyColorOpsInto(ops, d, i);
+  }
+  ctx.putImageData(image, 0, 0);
+}
+
+/**
+ * 색보정을 걸어 raster를 그린다. ctx.filter가 먹는 환경(데스크톱)은 기존 경로 그대로 — 출력이
+ * 바뀌지 않는다. 안 먹는 환경(iOS)만 오프스크린에 그려 픽셀로 구운 뒤 얹는다. 메인 캔버스에 직접
+ * 굽지 않는 이유 — 그 아래 이미 그려진 픽셀(먼저 합성된 블러 배경 등)까지 같이 보정돼버린다.
+ */
+function drawImageColorFiltered(
+  dctx: CanvasRenderingContext2D,
+  src: CanvasImageSource,
+  dx: number,
+  dy: number,
+  dw: number,
+  dh: number,
+  filter: string,
+): void {
+  if (filter === 'none' || isCtxFilterHonored()) {
+    dctx.filter = filter;
+    dctx.drawImage(src, dx, dy, dw, dh);
+    return;
+  }
+  const w = Math.max(1, Math.round(dw));
+  const h = Math.max(1, Math.round(dh));
+  const off = document.createElement('canvas');
+  off.width = w;
+  off.height = h;
+  const octx = off.getContext('2d');
+  if (!octx) {
+    dctx.filter = filter; // 오프스크린 실패 — 기존 경로로라도 그린다
+    dctx.drawImage(src, dx, dy, dw, dh);
+    return;
+  }
+  octx.imageSmoothingEnabled = true;
+  octx.imageSmoothingQuality = 'high';
+  octx.drawImage(src, 0, 0, w, h);
+  bakeColorFilter(octx, w, h, filter);
+  dctx.filter = 'none';
+  dctx.drawImage(off, dx, dy, dw, dh);
+}
+
 /** object-position('x% y%')을 0..1 분율로. 미지정/파싱 실패는 중앙(0.5, 0.5). */
 function parseObjectPosition(pos: string): [number, number] {
   const m = pos.match(/([\d.]+)%\s+([\d.]+)%/);
@@ -210,7 +377,12 @@ function compositeRaster(
       tctx.imageSmoothingEnabled = true;
       tctx.imageSmoothingQuality = 'high';
       tctx.drawImage(img, 0, 0, tmp.width, tmp.height);
-      ctx.filter = nonBlur;
+      // iOS는 ctx.filter를 무시하므로(#490/#495) 색보정을 축소 tmp에 직접 굽는다. 업스케일 후가
+      // 아니라 축소본에 적용하는 건 픽셀 수가 f² 배 적어 훨씬 싸고, 어차피 크게 흐려질 배경이라
+      // 육안 차이가 없기 때문. ctx.filter가 먹는 데스크톱은 아래 기존 경로 그대로.
+      const bakeBgColor = nonBlur !== 'none' && !isCtxFilterHonored();
+      if (bakeBgColor) bakeColorFilter(tctx, tmp.width, tmp.height, nonBlur);
+      ctx.filter = bakeBgColor ? 'none' : nonBlur;
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(tmp, dx, dy, dw, dh); // 작은 캔버스를 크게 업스케일 → 보간이 블러가 된다
@@ -238,10 +410,16 @@ function compositeRaster(
       const tctx = tmp.getContext('2d');
       if (tctx) {
         // 색보정은 tmp에 그릴 때 적용(전경 포스터 filter엔 blur 없음). 그다음 destination-in으로
-        // 가장자리 알파만 깎고, 메인엔 filter 없이 1:1로 얹는다.
-        tctx.filter = scaled;
-        tctx.drawImage(img, 0, 0, tw, th);
-        tctx.filter = 'none';
+        // 가장자리 알파만 깎고, 메인엔 filter 없이 1:1로 얹는다. iOS는 ctx.filter를 무시하므로
+        // (#490/#495) 그린 뒤 픽셀로 굽는다 — tmp가 이미 있어 오프스크린을 더 만들지 않는다.
+        if (scaled !== 'none' && !isCtxFilterHonored()) {
+          tctx.drawImage(img, 0, 0, tw, th);
+          bakeColorFilter(tctx, tw, th, scaled);
+        } else {
+          tctx.filter = scaled;
+          tctx.drawImage(img, 0, 0, tw, th);
+          tctx.filter = 'none';
+        }
         tctx.globalCompositeOperation = 'destination-in';
         const span = axes.y ? th : tw;
         const grad = axes.y ? tctx.createLinearGradient(0, 0, 0, th) : tctx.createLinearGradient(0, 0, tw, 0);
@@ -255,12 +433,10 @@ function compositeRaster(
         ctx.filter = 'none';
         ctx.drawImage(tmp, dx, dy, dw, dh);
       } else {
-        ctx.filter = scaled;
-        ctx.drawImage(img, dx, dy, dw, dh);
+        drawImageColorFiltered(ctx, img, dx, dy, dw, dh, scaled);
       }
     } else {
-      ctx.filter = scaled;
-      ctx.drawImage(img, dx, dy, dw, dh);
+      drawImageColorFiltered(ctx, img, dx, dy, dw, dh, scaled);
     }
   }
   ctx.restore();
@@ -356,6 +532,77 @@ async function compositeOverlay(
   }
 }
 
+interface BgCarrier { el: HTMLElement; color: string }
+
+/** `rgb()`/`rgba()` 문자열이 실질적으로 불투명한지. 파싱 실패·미지정은 투명 취급(안전). */
+function isOpaqueColor(color: string): boolean {
+  if (!color) return false;
+  const m = color.match(/rgba?\(([^)]+)\)/);
+  if (!m) return false;
+  const parts = m[1].split(',').map((s) => parseFloat(s));
+  if (parts.length < 3 || parts.some((n) => !Number.isFinite(n))) return false;
+  return parts.length < 4 || parts[3] >= 0.99;
+}
+
+/**
+ * 포스터(data-poster-root)를 덮는 불투명 배경을 가진 조상들을 캡처 노드까지 거슬러 모은다.
+ * 이 배경들이 base PNG에 남으면 raw canvas로 먼저 깐 포스터를 통째로 가린다(#490/#495).
+ * 반투명 배경은 건드리지 않는다 — 포스터를 완전히 가리지 않고, 옮기면 합성 결과가 달라진다.
+ */
+function collectOpaquePosterBackdrops(node: HTMLElement): BgCarrier[] {
+  const out: BgCarrier[] = [];
+  const seen = new Set<HTMLElement>();
+  const roots = Array.from(node.querySelectorAll('[data-poster-root]')) as HTMLElement[];
+  for (const root of roots) {
+    let el: HTMLElement | null = root.parentElement;
+    while (el) {
+      if (!seen.has(el)) {
+        seen.add(el);
+        let color = '';
+        try {
+          color = getComputedStyle(el).backgroundColor;
+        } catch {
+          color = '';
+        }
+        if (isOpaqueColor(color)) out.push({ el, color });
+      }
+      if (el === node) break;
+      el = el.parentElement;
+    }
+  }
+  // 문서 순서(바깥→안쪽)로 칠해야 안쪽 배경이 위에 온다.
+  return out.reverse();
+}
+
+/**
+ * 후가공 오버레이는 '장식'이라 실패해도 저장 전체를 죽이면 안 된다(#490/#495 후속). noise 재질은
+ * SVG 타일을 `await loadImage`하는데 그게 reject하면 compositeOverlay가 throw하고, 그 throw가
+ * captureNodeToJpeg를 통째로 무너뜨려 **결과물이 아예 안 나온다** — 실기기에서 로그가
+ * `[capture:probe]` 직후 끊기고 `[capture:overlay]`·`[capture:main]`이 없던 증상이 이 모양이다.
+ * 여기서 삼켜 sheen만 빠진 저장물이라도 나오게 하고, 원인은 로그로 남긴다.
+ */
+async function safeOverlay(
+  ctx: CanvasRenderingContext2D,
+  root: HTMLElement,
+  texture: string,
+  intensity: number,
+  nodeRect: DOMRect,
+  width: number,
+  height: number,
+  pixelRatio: number,
+  debug: boolean,
+): Promise<void> {
+  try {
+    await compositeOverlay(ctx, root, texture, intensity, nodeRect, width, height, pixelRatio, debug);
+  } catch (err) {
+    console.error(`[capture:overlay] FAILED texture=${texture} — 이 오버레이만 건너뛴다`, err);
+    // blend/alpha가 중간 상태로 남아 다음 합성을 오염시키지 않게 되돌린다.
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+    ctx.filter = 'none';
+  }
+}
+
 export async function captureNodeToJpeg(
   node: HTMLElement,
   options: CaptureOptions
@@ -393,26 +640,46 @@ export async function captureNodeToJpeg(
   // base(CSS 레이어)는 여백 없이 티켓 자연 크기로 뽑는다 — 여백(흰 프레임)은 아래에서 최종 캔버스에
   // 직접 소유한다. html-to-image의 margin+backgroundColor 프레임에 기대면(#382 방식) base를 투명으로
   // 뽑을 때 여백이 조용히 사라져(실기기 확인), 티켓을 여백 안쪽에 배치하고 여백은 흰 fill로 채운다.
+  // 포스터 위를 덮는 불투명 배경을 base에서 캔버스 레이어로 내린다(#490/#495). #439가 포스터를
+  // raw canvas로 base '아래' 합성하도록 바꿨는데, 그건 base가 포스터 자리에서 투명할 때만 성립한다.
+  // 무드 루트에 불투명 배경을 깐 무드(editorial·stub = PAPER, 35mm·35mm Wide = FS_BASE)는 그 배경이
+  // base PNG 전면을 칠해 합성된 포스터를 통째로 덮어버렸다 — 실기기에서 "editorial은 포스터가 아예
+  // 안 뜬다"던 증상. data-poster-root 제외는 포스터 '서브트리'만 빼므로 조상의 배경은 그대로 남는다.
+  // 그래서 그 배경만 잠시 투명으로 돌려 base에서 빼고, 아래에서 포스터보다 먼저 캔버스에 직접 칠한다
+  // (배경 → 포스터 → base 텍스트·스크림 순서가 되어 미리보기와 z-order가 같아진다).
+  const bgCarriers = collectOpaquePosterBackdrops(node);
+  const prevInlineBg = bgCarriers.map((c) => c.el.style.backgroundColor);
+  bgCarriers.forEach((c) => { c.el.style.backgroundColor = 'transparent'; });
+  if (debug && bgCarriers.length) {
+    console.log(`[capture:bg] carried=${bgCarriers.length} colors=${bgCarriers.map((c) => c.color).join('|')}`);
+  }
+
   const { toPng } = await import('html-to-image');
-  const basePngUrl = await toPng(node, {
-    quality,
-    pixelRatio,
-    width,
-    height,
-    canvasWidth: width * pixelRatio,
-    canvasHeight: height * pixelRatio,
-    // 포스터/로고 자리를 투명 구멍으로 남겨야 합성한 raster가 비쳐 보인다.
-    backgroundColor: undefined,
-    cacheBust: false,
-    skipFonts: false,
-    style: { transform: 'none', transformOrigin: '0 0' },
-    filter: (n: unknown) => {
-      if (n instanceof Element && n.hasAttribute('data-hide-on-export')) return false; // 대시 placeholder
-      if (n instanceof Element && n.hasAttribute('data-poster-root')) return false; // 포스터 서브트리(배경색 포함)
-      if (n instanceof HTMLImageElement && n.src.startsWith('blob:')) return false; // 로고 스탬프 — 직접 합성
-      return true;
-    },
-  });
+  let basePngUrl: string;
+  try {
+    basePngUrl = await toPng(node, {
+      quality,
+      pixelRatio,
+      width,
+      height,
+      canvasWidth: width * pixelRatio,
+      canvasHeight: height * pixelRatio,
+      // 포스터/로고 자리를 투명 구멍으로 남겨야 합성한 raster가 비쳐 보인다.
+      backgroundColor: undefined,
+      cacheBust: false,
+      skipFonts: false,
+      style: { transform: 'none', transformOrigin: '0 0' },
+      filter: (n: unknown) => {
+        if (n instanceof Element && n.hasAttribute('data-hide-on-export')) return false; // 대시 placeholder
+        if (n instanceof Element && n.hasAttribute('data-poster-root')) return false; // 포스터 서브트리(배경색 포함)
+        if (n instanceof HTMLImageElement && n.src.startsWith('blob:')) return false; // 로고 스탬프 — 직접 합성
+        return true;
+      },
+    });
+  } finally {
+    // 실패해도 화면(미리보기)의 배경을 반드시 되돌린다 — 안 그러면 티켓이 투명해진 채 남는다.
+    bgCarriers.forEach((c, i) => { c.el.style.backgroundColor = prevInlineBg[i]; });
+  }
 
   const marginDev = EXPORT_MARGIN_PX * pixelRatio;
   const canvas = document.createElement('canvas');
@@ -427,7 +694,24 @@ export async function captureNodeToJpeg(
   // 티켓 내용 영역(여백 안쪽) — 모든 raster·base를 여기 맞춰 그린다.
   const ticketRect: DeviceRect = { x: marginDev, y: marginDev, w: width * pixelRatio, h: height * pixelRatio };
   const nodeRect = node.getBoundingClientRect();
-  // z-order: 포스터(뒤) → CSS 레이어(base) → 로고 스탬프(앞).
+  // base에서 빼낸 불투명 배경을 포스터보다 먼저 칠한다(#490/#495) — 티켓 영역으로 클립해
+  // 여백(흰 프레임)을 침범하지 않게 한다. 이게 없으면 포스터가 흰 여백 위에 뜬다.
+  for (const carrier of bgCarriers) {
+    const r = carrier.el.getBoundingClientRect();
+    const bx = (EXPORT_MARGIN_PX + ((r.left - nodeRect.left) / nodeRect.width) * width) * pixelRatio;
+    const by = (EXPORT_MARGIN_PX + ((r.top - nodeRect.top) / nodeRect.height) * height) * pixelRatio;
+    const bw = (r.width / nodeRect.width) * width * pixelRatio;
+    const bh = (r.height / nodeRect.height) * height * pixelRatio;
+    const x = Math.max(bx, ticketRect.x);
+    const y = Math.max(by, ticketRect.y);
+    const w2 = Math.min(bx + bw, ticketRect.x + ticketRect.w) - x;
+    const h2 = Math.min(by + bh, ticketRect.y + ticketRect.h) - y;
+    if (w2 > 0 && h2 > 0) {
+      ctx.fillStyle = carrier.color;
+      ctx.fillRect(x, y, w2, h2);
+    }
+  }
+  // z-order: 배경 → 포스터(뒤) → CSS 레이어(base) → 로고 스탬프(앞).
   for (const img of posters) compositeRaster(ctx, img, nodeRect, width, height, pixelRatio, ticketRect, debug);
   if (debug) {
     // base를 덮기 전, 레터박스 밴드(티켓 상단 안쪽) 픽셀을 찍어 blur 배경이 실제로 그려졌는지 확인한다
@@ -437,6 +721,47 @@ export async function captureNodeToJpeg(
       console.log(`[capture:band] topBand rgba=${p[0]},${p[1]},${p[2]},${p[3]}`);
     } catch (err) {
       console.warn('[capture:band] getImageData failed', err);
+    }
+    // 색 divergence 자가보정(#490/#495 후속) — 저장 포스터가 프리뷰보다 밝은 원인을 iOS 플랫폼 3후보로
+    // 가른다: (a) ctx.filter 드롭 (b) blend가 CSS보다 밝게 태움 (c) 색공간. 육안으론 안 갈려 숫자로 찍는다.
+    // 같은 포스터 픽셀을 filter 유무로 그려 비교 → brightness(0.5)가 절반이 아니면 iOS가 ctx.filter를 무시.
+    // soft-light white/128이 255면 blend no-op. 둘 다 정상이면 색공간(P3) 쪽. #439 blur 우회와 동형 진단.
+    try {
+      const probe = posters[0];
+      if (probe) {
+        const sample = (f: string): Uint8ClampedArray | null => {
+          const c = document.createElement('canvas');
+          c.width = 8;
+          c.height = 8;
+          const cx = c.getContext('2d');
+          if (!cx) return null;
+          cx.filter = f;
+          cx.drawImage(probe, 0, 0, 8, 8);
+          cx.filter = 'none';
+          return cx.getImageData(4, 4, 1, 1).data;
+        };
+        const plain = sample('none');
+        const dark = sample('brightness(0.5)');
+        if (plain && dark) {
+          console.log(`[capture:probe] ctxFilter drawImage none=(${plain[0]},${plain[1]},${plain[2]}) brightness0.5=(${dark[0]},${dark[1]},${dark[2]}) → honored if ~half`);
+        }
+      }
+      const bc = document.createElement('canvas');
+      bc.width = 8;
+      bc.height = 8;
+      const bx = bc.getContext('2d');
+      if (bx) {
+        bx.fillStyle = 'rgb(128,128,128)';
+        bx.fillRect(0, 0, 8, 8);
+        bx.globalCompositeOperation = 'soft-light';
+        bx.fillStyle = 'rgb(255,255,255)';
+        bx.fillRect(0, 0, 8, 8);
+        bx.globalCompositeOperation = 'source-over';
+        const b = bx.getImageData(4, 4, 1, 1).data;
+        console.log(`[capture:probe] soft-light white/128 = ${b[0]} (honored ~180, no-op = 255)`);
+      }
+    } catch (err) {
+      console.warn('[capture:probe] failed', err);
     }
   }
   // 후가공 sheen 오버레이(#434 c1, #475 c2) — 포스터 위·base 텍스트 아래, 재질→코팅 순 2회 합성.
@@ -450,16 +775,18 @@ export async function captureNodeToJpeg(
     if (material) {
       const rawIntensity = root.dataset.materialIntensity;
       const intensity = rawIntensity != null ? parseFloat(rawIntensity) : 1;
-      await compositeOverlay(ctx, root, material, intensity, nodeRect, width, height, pixelRatio, debug);
+      await safeOverlay(ctx, root, material, intensity, nodeRect, width, height, pixelRatio, debug);
     }
     const coating = root.dataset.coating;
     if (coating) {
       const rawIntensity = root.dataset.coatingIntensity;
       const intensity = rawIntensity != null ? parseFloat(rawIntensity) : 1;
-      await compositeOverlay(ctx, root, coating, intensity, nodeRect, width, height, pixelRatio, debug);
+      await safeOverlay(ctx, root, coating, intensity, nodeRect, width, height, pixelRatio, debug);
     }
   }
+  if (debug) console.log(`[capture:stage] overlays done (roots=${posterRoots.length})`);
   const baseImg = await loadImage(basePngUrl);
+  if (debug) console.log('[capture:stage] base loaded');
   ctx.drawImage(baseImg, ticketRect.x, ticketRect.y, ticketRect.w, ticketRect.h);
   for (const img of stamps) compositeRaster(ctx, img, nodeRect, width, height, pixelRatio, ticketRect, debug);
 
