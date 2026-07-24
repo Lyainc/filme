@@ -117,6 +117,173 @@ function scaleFilterPx(filter: string, pixelRatio: number): string {
   return filter.replace(/([\d.]+)px/g, (_m, n) => `${parseFloat(n) * pixelRatio}px`);
 }
 
+// ─── iOS ctx.filter 우회(#490/#495) ───────────────────────────────────────────
+// iOS Safari는 canvas `ctx.filter`를 drawImage에 적용하지 않는다 — 실기기 프로브에서 같은 포스터
+// 픽셀을 none/brightness(0.5)로 그린 결과가 (205,192,188)로 **동일**하게 나와 확정됐다. 그래서
+// 포스터 색보정(saturate/contrast/brightness…)이 프리뷰(CSS filter)엔 걸리고 저장물엔 빠져,
+// 저장 포스터가 프리뷰보다 밝게 나온다. #439가 blur를 ctx.filter에서 떼어낸 것과 동형으로,
+// 색보정도 확실히 먹는 경로(getImageData 픽셀 연산)로 옮긴다.
+//
+// 단 UA 스니핑이 아니라 **실제 능력 검사**로 가른다: ctx.filter가 먹는 환경(데스크톱)은 기존
+// 경로를 그대로 타 출력이 바뀌지 않고, 안 먹는 환경(iOS)만 픽셀로 굽는다. 판정 불가(캔버스
+// 미지원·getImageData 없음)면 기존 경로로 폴백한다.
+let ctxFilterHonored: boolean | null = null;
+function isCtxFilterHonored(): boolean {
+  if (ctxFilterHonored !== null) return ctxFilterHonored;
+  ctxFilterHonored = true; // 알 수 없으면 기존(ctx.filter) 경로 유지
+  try {
+    const src = document.createElement('canvas');
+    src.width = 1;
+    src.height = 1;
+    const sctx = src.getContext('2d');
+    const dst = document.createElement('canvas');
+    dst.width = 1;
+    dst.height = 1;
+    const dctx = dst.getContext('2d');
+    if (!sctx || !dctx || typeof dctx.getImageData !== 'function') return ctxFilterHonored;
+    sctx.fillStyle = 'rgb(200,200,200)';
+    sctx.fillRect(0, 0, 1, 1);
+    dctx.filter = 'brightness(0.5)';
+    dctx.drawImage(src, 0, 0);
+    dctx.filter = 'none';
+    // 먹으면 200→100, 드롭되면 200 그대로.
+    ctxFilterHonored = dctx.getImageData(0, 0, 1, 1).data[0] < 150;
+  } catch {
+    /* 기본값(true) 유지 — 진단 실패로 저장 경로를 바꾸지 않는다 */
+  }
+  return ctxFilterHonored;
+}
+
+type ColorOpKind = 'saturate' | 'contrast' | 'brightness' | 'sepia' | 'grayscale';
+interface ColorOp { k: ColorOpKind; v: number }
+
+// 포스터가 실제로 쓰는 색보정 함수만 다룬다(_shared.tsx: PRINT_SIM·TEXTURE_FILTERS·brightness
+// 슬라이더 → saturate·contrast·brightness·sepia·grayscale, 좌→우 순서·중복 허용). blur는 호출
+// 전에 이미 분리돼 여기 오지 않는다. 목록에 없는 함수는 건너뛴다 — 전부 무시되던 기존 iOS
+// 동작보다는 항상 낫다.
+function parseColorOps(filter: string): ColorOp[] {
+  const ops: ColorOp[] = [];
+  const re = /(saturate|contrast|brightness|sepia|grayscale)\(\s*([\d.]+)(%?)\s*\)/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(filter)) !== null) {
+    const raw = parseFloat(m[2]);
+    if (!Number.isFinite(raw)) continue;
+    ops.push({ k: m[1] as ColorOpKind, v: m[3] === '%' ? raw / 100 : raw });
+  }
+  return ops;
+}
+
+const clamp01 = (n: number) => (n < 0 ? 0 : n > 1 ? 1 : n);
+
+/**
+ * CSS filter 색보정 체인을 픽셀 하나에 적용한다(0..255 in/out). CSS/SVG Filter Effects 스펙의
+ * 행렬을 그대로 쓴다 — 프리뷰의 네이티브 CSS filter와 결과가 같아야 저장물이 프리뷰와 일치한다.
+ * 각 함수는 하나의 filter primitive라 매 단계 [0,1]로 클램프한다(스펙 동작).
+ * export는 순수 함수라 유닛 테스트가 이 수식을 직접 검증하기 위함.
+ */
+export function applyCssColorFilterToPixel(
+  filter: string,
+  r: number,
+  g: number,
+  b: number,
+): [number, number, number] {
+  const px = new Uint8ClampedArray([r, g, b, 255]);
+  applyColorOpsInto(parseColorOps(filter), px, 0);
+  return [px[0], px[1], px[2]];
+}
+
+/** 픽셀을 제자리에서 보정한다 — 수백만 픽셀을 도는 핫 루프라 픽셀당 배열을 만들지 않는다. */
+function applyColorOpsInto(ops: ColorOp[], d: Uint8ClampedArray, i: number): void {
+  let r = d[i] / 255;
+  let g = d[i + 1] / 255;
+  let b = d[i + 2] / 255;
+  for (const op of ops) {
+    const v = op.v;
+    if (op.k === 'brightness') {
+      r *= v; g *= v; b *= v;
+    } else if (op.k === 'contrast') {
+      const off = 0.5 - 0.5 * v;
+      r = r * v + off; g = g * v + off; b = b * v + off;
+    } else if (op.k === 'saturate') {
+      const nr = (0.213 + 0.787 * v) * r + (0.715 - 0.715 * v) * g + (0.072 - 0.072 * v) * b;
+      const ng = (0.213 - 0.213 * v) * r + (0.715 + 0.285 * v) * g + (0.072 - 0.072 * v) * b;
+      const nb = (0.213 - 0.213 * v) * r + (0.715 - 0.715 * v) * g + (0.072 + 0.928 * v) * b;
+      r = nr; g = ng; b = nb;
+    } else if (op.k === 'grayscale') {
+      const k = 1 - v; // v=1이면 완전 휘도
+      const nr = (0.2126 + 0.7874 * k) * r + (0.7152 - 0.7152 * k) * g + (0.0722 - 0.0722 * k) * b;
+      const ng = (0.2126 - 0.2126 * k) * r + (0.7152 + 0.2848 * k) * g + (0.0722 - 0.0722 * k) * b;
+      const nb = (0.2126 - 0.2126 * k) * r + (0.7152 - 0.7152 * k) * g + (0.0722 + 0.9278 * k) * b;
+      r = nr; g = ng; b = nb;
+    } else {
+      const k = 1 - v; // sepia
+      const nr = (0.393 + 0.607 * k) * r + (0.769 - 0.769 * k) * g + (0.189 - 0.189 * k) * b;
+      const ng = (0.349 - 0.349 * k) * r + (0.686 + 0.314 * k) * g + (0.168 - 0.168 * k) * b;
+      const nb = (0.272 - 0.272 * k) * r + (0.534 - 0.534 * k) * g + (0.131 + 0.869 * k) * b;
+      r = nr; g = ng; b = nb;
+    }
+    r = clamp01(r); g = clamp01(g); b = clamp01(b);
+  }
+  d[i] = Math.round(r * 255);
+  d[i + 1] = Math.round(g * 255);
+  d[i + 2] = Math.round(b * 255);
+}
+
+/**
+ * 캔버스 전체 픽셀에 색보정을 구워 넣는다(알파는 건드리지 않는다 — 페더 알파는 이후 단계가 칠한다).
+ * ponytail: 픽셀당 op 체인을 도는 단순 루프. 포스터 1장(~5.5M px)에 수백 ms 수준이고 export는
+ * 원래 수초짜리 작업이라 충분하다. 느려지면 op 체인을 3×3 행렬 하나로 접는 최적화가 다음 수순.
+ */
+function bakeColorFilter(ctx: CanvasRenderingContext2D, w: number, h: number, filter: string): void {
+  const ops = parseColorOps(filter);
+  if (!ops.length || w <= 0 || h <= 0) return;
+  const image = ctx.getImageData(0, 0, w, h);
+  const d = image.data;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] === 0) continue; // 완전 투명은 계산 생략
+    applyColorOpsInto(ops, d, i);
+  }
+  ctx.putImageData(image, 0, 0);
+}
+
+/**
+ * 색보정을 걸어 raster를 그린다. ctx.filter가 먹는 환경(데스크톱)은 기존 경로 그대로 — 출력이
+ * 바뀌지 않는다. 안 먹는 환경(iOS)만 오프스크린에 그려 픽셀로 구운 뒤 얹는다. 메인 캔버스에 직접
+ * 굽지 않는 이유 — 그 아래 이미 그려진 픽셀(먼저 합성된 블러 배경 등)까지 같이 보정돼버린다.
+ */
+function drawImageColorFiltered(
+  dctx: CanvasRenderingContext2D,
+  src: CanvasImageSource,
+  dx: number,
+  dy: number,
+  dw: number,
+  dh: number,
+  filter: string,
+): void {
+  if (filter === 'none' || isCtxFilterHonored()) {
+    dctx.filter = filter;
+    dctx.drawImage(src, dx, dy, dw, dh);
+    return;
+  }
+  const w = Math.max(1, Math.round(dw));
+  const h = Math.max(1, Math.round(dh));
+  const off = document.createElement('canvas');
+  off.width = w;
+  off.height = h;
+  const octx = off.getContext('2d');
+  if (!octx) {
+    dctx.filter = filter; // 오프스크린 실패 — 기존 경로로라도 그린다
+    dctx.drawImage(src, dx, dy, dw, dh);
+    return;
+  }
+  octx.imageSmoothingEnabled = true;
+  octx.imageSmoothingQuality = 'high';
+  octx.drawImage(src, 0, 0, w, h);
+  bakeColorFilter(octx, w, h, filter);
+  dctx.filter = 'none';
+  dctx.drawImage(off, dx, dy, dw, dh);
+}
+
 /** object-position('x% y%')을 0..1 분율로. 미지정/파싱 실패는 중앙(0.5, 0.5). */
 function parseObjectPosition(pos: string): [number, number] {
   const m = pos.match(/([\d.]+)%\s+([\d.]+)%/);
@@ -210,7 +377,12 @@ function compositeRaster(
       tctx.imageSmoothingEnabled = true;
       tctx.imageSmoothingQuality = 'high';
       tctx.drawImage(img, 0, 0, tmp.width, tmp.height);
-      ctx.filter = nonBlur;
+      // iOS는 ctx.filter를 무시하므로(#490/#495) 색보정을 축소 tmp에 직접 굽는다. 업스케일 후가
+      // 아니라 축소본에 적용하는 건 픽셀 수가 f² 배 적어 훨씬 싸고, 어차피 크게 흐려질 배경이라
+      // 육안 차이가 없기 때문. ctx.filter가 먹는 데스크톱은 아래 기존 경로 그대로.
+      const bakeBgColor = nonBlur !== 'none' && !isCtxFilterHonored();
+      if (bakeBgColor) bakeColorFilter(tctx, tmp.width, tmp.height, nonBlur);
+      ctx.filter = bakeBgColor ? 'none' : nonBlur;
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(tmp, dx, dy, dw, dh); // 작은 캔버스를 크게 업스케일 → 보간이 블러가 된다
@@ -238,10 +410,16 @@ function compositeRaster(
       const tctx = tmp.getContext('2d');
       if (tctx) {
         // 색보정은 tmp에 그릴 때 적용(전경 포스터 filter엔 blur 없음). 그다음 destination-in으로
-        // 가장자리 알파만 깎고, 메인엔 filter 없이 1:1로 얹는다.
-        tctx.filter = scaled;
-        tctx.drawImage(img, 0, 0, tw, th);
-        tctx.filter = 'none';
+        // 가장자리 알파만 깎고, 메인엔 filter 없이 1:1로 얹는다. iOS는 ctx.filter를 무시하므로
+        // (#490/#495) 그린 뒤 픽셀로 굽는다 — tmp가 이미 있어 오프스크린을 더 만들지 않는다.
+        if (scaled !== 'none' && !isCtxFilterHonored()) {
+          tctx.drawImage(img, 0, 0, tw, th);
+          bakeColorFilter(tctx, tw, th, scaled);
+        } else {
+          tctx.filter = scaled;
+          tctx.drawImage(img, 0, 0, tw, th);
+          tctx.filter = 'none';
+        }
         tctx.globalCompositeOperation = 'destination-in';
         const span = axes.y ? th : tw;
         const grad = axes.y ? tctx.createLinearGradient(0, 0, 0, th) : tctx.createLinearGradient(0, 0, tw, 0);
@@ -255,12 +433,10 @@ function compositeRaster(
         ctx.filter = 'none';
         ctx.drawImage(tmp, dx, dy, dw, dh);
       } else {
-        ctx.filter = scaled;
-        ctx.drawImage(img, dx, dy, dw, dh);
+        drawImageColorFiltered(ctx, img, dx, dy, dw, dh, scaled);
       }
     } else {
-      ctx.filter = scaled;
-      ctx.drawImage(img, dx, dy, dw, dh);
+      drawImageColorFiltered(ctx, img, dx, dy, dw, dh, scaled);
     }
   }
   ctx.restore();
