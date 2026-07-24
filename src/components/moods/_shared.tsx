@@ -1462,9 +1462,6 @@ function resolveBookingNo(d: MovieInfo): string {
 /**
  * 4종 무드가 공통으로 파생하던 티켓 데이터를 한 곳으로 모은 것.
  * 신규 무드는 `const { ... } = resolveTicketData(d)` 한 줄로 동일 파생값을 얻는다.
- *
- * watchYear는 watchDate가 정규화된 YYYY-MM-DD 형식이므로 `slice(0,4)`로 통일
- * (이전 MoodCriterion의 `match(/\d{4}/)`와 ISO 입력에서 결과 동일).
  */
 export function resolveTicketData(d: MovieInfo) {
   const watchToken = d.watchDateFormat || 'kr-compact';
@@ -1475,7 +1472,6 @@ export function resolveTicketData(d: MovieInfo) {
     watchDateClean: formatDate(d.watchDate, watchToken, 'date'),
     releaseClean: formatDate(d.releaseDate, releaseToken, releaseGran),
     reissueClean: d.isReissue ? formatDate(d.reissueDate, releaseToken, releaseGran) : '',
-    watchYear: d.watchDate ? d.watchDate.slice(0, 4) : '',
   };
 }
 

@@ -80,10 +80,11 @@ export const LAUNCHER_GROUPS: { title: string; fields: TicketField[] }[] = [
  */
 export const MOOD_EXCLUDED_FIELDS: Partial<Record<LayoutId, readonly TicketField[]>> = {
   minimal: ['bookingNo', 'quote'], // #286: 마스터 Minimal은 푸터 바코드 없음 → bookingNo 미렌더.
-  // Criterion(#281 재동기화 완료): 마스터 v2 하단 필름 셀은 RATED·RUNTIME·RELEASED·RE-RELEASED라
-  // RUNTIME 셀을 렌더하므로 runtime은 제외 아님. watchTime은 마스터에 독립 TIME 셀이 없어(WATCHED 값에만
-  // 병합) 편집 타깃이 없으므로 제외 유지. quote(한줄평, #391)는 Criterion 전용이라 여기만 제외 없음.
-  criterion: ['watchTime'],
+  // Criterion(한줄평 중심 재레이아웃 #497): 좌측 스파인 밴드(세로 바코드가 있던 자리)를 제거하고
+  // 그 폭을 한줄평·타이틀 블록에 합류했다 — bookingNo는 다른 무드로 옮길 자리가 없어 Minimal·35mm·
+  // 35mm Wide와 동일하게 제외. watchTime은 마스터에 독립 TIME 셀이 없어(WATCHED 값에만 병합) 편집
+  // 타깃이 없으므로 제외 유지. quote(한줄평, #391)는 Criterion 전용이라 여기만 제외 없음.
+  criterion: ['bookingNo', 'watchTime'],
   '35mm': ['bookingNo', 'quote'], // #281: 마스터 35mm는 푸터 바코드 없음 → bookingNo 미렌더(MADE WITH FILME·서명 푸터는 유지).
   editorial: ['quote'], // #391: 한줄평은 Criterion 전용 — 다른 무드는 렌더하지 않으므로 런처에서 제외.
   stub: ['quote'], // #391: 위와 동일.
