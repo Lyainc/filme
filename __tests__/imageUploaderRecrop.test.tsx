@@ -72,6 +72,21 @@ function Harness() {
   return <ImageUploader onUpload={setUrl} isProcessing={false} imageUrl={url} layout="minimal" />;
 }
 
+// #489: DesktopStudioShell가 자동저장 복원 후 넘겨주는 형태 — 세션 내 업로드 없이 imageUrl과
+// initialOriginalSrc가 처음부터 채워져 있다(IndexedDB 복원 결과를 그대로 흉내).
+function RestoredHarness({ initialOriginalSrc }: { initialOriginalSrc: string | null }) {
+  const [url, setUrl] = useState<string | null>('blob:restored-poster');
+  return (
+    <ImageUploader
+      onUpload={setUrl}
+      isProcessing={false}
+      imageUrl={url}
+      layout="minimal"
+      initialOriginalSrc={initialOriginalSrc}
+    />
+  );
+}
+
 const fileInput = () =>
   document.querySelector('input[type="file"]') as HTMLInputElement;
 const pngFile = (name: string) => new File([name], name, { type: 'image/png' });
@@ -161,5 +176,27 @@ describe('ImageUploader re-crop target (#182 PR #191)', () => {
       releaseCrop?.();
     });
     expect(cropN).toBe(1);
+  });
+
+  // #489: 자동저장 복원이 IndexedDB에서 원본 포스터를 되살리면, 새로고침 세션에서 한 번도
+  // 업로드하지 않았어도 재크롭이 바로 가능해야 한다(원본이 살아있으므로).
+  test('자동저장 복원 직후에도(세션 내 업로드 없이) 재크롭이 바로 가능하다(#489)', async () => {
+    render(<RestoredHarness initialOriginalSrc="blob:restored-original" />);
+
+    const recrop = await screen.findByRole('button', { name: '재크롭' });
+    expect(recrop.hasAttribute('disabled')).toBe(false);
+
+    const user = userEvent.setup();
+    await user.click(recrop);
+    expect((await screen.findByTestId('crop-src')).textContent).toBe('blob:restored-original');
+  });
+
+  // IndexedDB 복원 실패(#489 결정 5)로 원본이 안 돌아온 경우 — 재크롭 대신 재업로드를 유도해야
+  // 하므로 disabled 유지가 맞다(교체-후-취소 케이스와 동일한 가드).
+  test('원본 복원이 안 됐으면(initialOriginalSrc null) 재크롭은 계속 비활성', async () => {
+    render(<RestoredHarness initialOriginalSrc={null} />);
+
+    const recrop = await screen.findByRole('button', { name: '재크롭' });
+    expect(recrop.hasAttribute('disabled')).toBe(true);
   });
 });
