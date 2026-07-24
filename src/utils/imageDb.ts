@@ -29,47 +29,58 @@ function openDb(): Promise<IDBDatabase> {
  */
 export async function saveImages(entries: Partial<Record<ImageDbKey, Blob | undefined>>): Promise<void> {
   const db = await openDb();
-  await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(STORE, 'readwrite');
-    const store = tx.objectStore(STORE);
-    store.clear();
-    for (const [key, blob] of Object.entries(entries)) {
-      if (blob) store.put(blob, key);
-    }
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-  db.close();
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readwrite');
+      const store = tx.objectStore(STORE);
+      store.clear();
+      for (const [key, blob] of Object.entries(entries)) {
+        if (blob) store.put(blob, key);
+      }
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } finally {
+    // 트랜잭션 실패(용량 초과 등)로 위 await가 reject해도 커넥션은 닫는다 — 안 그러면
+    // autosave가 반복 재시도할 때마다 열린 채로 방치된 IndexedDB 커넥션이 쌓인다(claude-review
+    // PR #515 P1).
+    db.close();
+  }
 }
 
 export async function loadImages(): Promise<Partial<Record<ImageDbKey, Blob>>> {
   const db = await openDb();
-  const result = await new Promise<Partial<Record<ImageDbKey, Blob>>>((resolve, reject) => {
-    const tx = db.transaction(STORE, 'readonly');
-    const out: Partial<Record<ImageDbKey, Blob>> = {};
-    const req = tx.objectStore(STORE).openCursor();
-    req.onsuccess = () => {
-      const cursor = req.result;
-      if (cursor) {
-        out[cursor.key as ImageDbKey] = cursor.value as Blob;
-        cursor.continue();
-      } else {
-        resolve(out);
-      }
-    };
-    req.onerror = () => reject(req.error);
-  });
-  db.close();
-  return result;
+  try {
+    return await new Promise<Partial<Record<ImageDbKey, Blob>>>((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readonly');
+      const out: Partial<Record<ImageDbKey, Blob>> = {};
+      const req = tx.objectStore(STORE).openCursor();
+      req.onsuccess = () => {
+        const cursor = req.result;
+        if (cursor) {
+          out[cursor.key as ImageDbKey] = cursor.value as Blob;
+          cursor.continue();
+        } else {
+          resolve(out);
+        }
+      };
+      req.onerror = () => reject(req.error);
+    });
+  } finally {
+    db.close();
+  }
 }
 
 export async function clearImages(): Promise<void> {
   const db = await openDb();
-  await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(STORE, 'readwrite');
-    tx.objectStore(STORE).clear();
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-  db.close();
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).clear();
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } finally {
+    db.close();
+  }
 }
