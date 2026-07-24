@@ -1,11 +1,32 @@
-import { describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, test } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MoodStub } from '../src/components/moods/MoodStub';
 import { buildBarcodeWidths, buildBarcodeWidths128C } from '../src/components/moods/_shared';
 import { FULL_MOVIE, makeMoodBase } from './fixtures';
 
+// fitFontSizeToWidth.test.ts와 동일 패턴 — happy-dom의 null canvas 2D 컨텍스트를 가짜
+// measureText로 교체해야 truncateActorsToWidth의 실제 폭 계산 경로를 태울 수 있다.
+const CHAR_WIDTH_FACTOR = 0.6;
+function installFakeCanvasContext() {
+  let currentFont = '400 16px sans-serif';
+  const fakeCtx = {
+    set font(v: string) { currentFont = v; },
+    get font() { return currentFont; },
+    measureText(text: string) {
+      const sizeMatch = /(\d+(?:\.\d+)?)px/.exec(currentFont);
+      const size = sizeMatch ? parseFloat(sizeMatch[1]) : 16;
+      return { width: text.length * size * CHAR_WIDTH_FACTOR };
+    },
+  } as unknown as CanvasRenderingContext2D;
+  const original = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, kind: string) {
+    return kind === '2d' ? fakeCtx : null;
+  } as typeof HTMLCanvasElement.prototype.getContext;
+  return () => { HTMLCanvasElement.prototype.getContext = original; };
+}
+
 // 마스터 시안(Ticket Design Master.dc.html v2 · 2026-07-08 resync) 05 STUB 재동기화 회귀(#281, 에픽 #281).
-// Stub 델타(대규모 재구조): 포스터 760(텍스트 없음) · 절취 3px dashed 반원 노치 제거 · 페이퍼 스텁 flex.
+// Stub 델타(대규모 재구조): 포스터 760(텍스트 없음, #493에서 900으로 확대) · 절취 3px dashed 반원 노치 제거 · 페이퍼 스텁 flex.
 // 제목이 포스터→페이퍼로 이동(42/700 2줄), 홀로그램 티커 신규(무지개 + ✦), Admission(SEAT 칩 48/900 on
 // #1A1612 + DATE/TIME/HALL 점선), The Film(RUNTIME/RATED/RELEASED/RE-RELEASED 2열 + STARRING),
 // 푸터(made with FILME · collected by · 스텁 바코드 300×40 텍스트 없음). ink #1A1612 고정 · monochrome.
@@ -19,9 +40,9 @@ const markup = () =>
   );
 
 describe('MoodStub 마스터 resync (#281)', () => {
-  test('flex 컬럼 재구조 — 포스터 760(텍스트 없음)', () => {
+  test('flex 컬럼 재구조 — 포스터 900(텍스트 없음, #493 확대)', () => {
     const html = markup();
-    expect(html).toContain('flex:0 0 760px'); // 포스터 영역
+    expect(html).toContain('flex:0 0 900px'); // 포스터 영역
     expect(html).toContain('flex-direction:column'); // root flex 컬럼
   });
 
@@ -141,13 +162,31 @@ describe('MoodStub 마스터 resync (#281)', () => {
     expect(html).toContain('background:#B0423F');
   });
 
-  // stub 배우 truncate 상한 5(#446) — 5명까지는 원본 그대로, 6명째부터 "외 N명"으로 줄어드는지 경계 고정.
-  test('배우 truncate 상한 5 — 5명 원본 유지·6명째부터 truncate(#446)', () => {
+  // 배우 폭 인식 truncate(#493) — 고정 count 캡(옛 max=5) 폐기, STARRING 값 가용폭(700px) 기준.
+  describe('배우 truncate — 폭 인식(#493, 고정 count 캡 대체)', () => {
+    let restore: () => void;
+    afterEach(() => restore?.());
+
     const markupWithActors = (actors: string) =>
       renderToStaticMarkup(
         <MoodStub movieInfo={{ ...FULL_MOVIE, actors }} components={BASE} croppedImageUrl="blob:x" onField={() => {}} />
       );
-    expect(markupWithActors('가, 나, 다, 라, 마')).toContain('가, 나, 다, 라, 마');
-    expect(markupWithActors('가, 나, 다, 라, 마, 바')).toContain('가, 나, 다, 라, 마 외 1명');
+
+    test('6명이어도 짧으면 안 잘린다 — 예전 고정 5캡 버그 회귀', () => {
+      restore = installFakeCanvasContext();
+      // fontSize 20 · factor 0.6 → char당 12px. "가, 나, 다, 라, 마, 바"=16자 → 192px, 700px 예산에 여유.
+      const html = markupWithActors('가, 나, 다, 라, 마, 바');
+      expect(html).toContain('가, 나, 다, 라, 마, 바');
+      expect(html).not.toContain('외 1명');
+    });
+
+    test('가용폭(700px)을 넘치면 들어맞는 N까지만 남기고 "외 M명"으로 자른다', () => {
+      restore = installFakeCanvasContext();
+      // 7자×8명 — 풀텍스트 840px(>700, 자름 발동). n=6 버전 684px(fit) · n=7 버전 792px(초과) → n=6에 수렴.
+      const parts = ['가나다라마바사', '아자차카타파하', '거너더러머버서', '고노도로모보소', '구누두루무부수', '기니디리미비시', '갸냐댜랴먀뱌샤', '겨녀뎌려며벼셔'];
+      const html = markupWithActors(parts.join(', '));
+      expect(html).toContain(`${parts.slice(0, 6).join(', ')} 외 2명`);
+      expect(html).not.toContain(parts[6]);
+    });
   });
 });

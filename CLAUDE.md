@@ -64,7 +64,7 @@ bun run typecheck # tsc --noEmit
   2. 무드 캔버스 = **0.626**(신용카드, `TARGET_WIDTH`×`TARGET_HEIGHT` = 960×1534). 6무드 전부 이 값 또는 그 역수(가로).
   3. 풀블리드 포스터는 0.667이 0.626 캔버스에 들어가 좌우 레터박스가 생긴다 — **blur 포스터 배경이 덮는다**(#440).
   4. 풀블리드가 아닌 무드도 캔버스는 0.626으로 통일.
-  5. 무드 안에 별도 삽입되는 프레임/도판/컬럼도 0.667. 슬롯 **박스**가 아니라 그 안에 서는 **포스터 프레임**이 판정 대상이다 — contain이면 프레임이 자동으로 0.667이라, Stub처럼 가로 밴드(960×760)여도 룰 5를 만족한다.
+  5. 무드 안에 별도 삽입되는 프레임/도판/컬럼도 0.667. 슬롯 **박스**가 아니라 그 안에 서는 **포스터 프레임**이 판정 대상이다 — contain이면 프레임이 자동으로 0.667이라, Stub처럼 가로 밴드(960×900, #493)여도 룰 5를 만족한다.
 - **포스터 fit은 contain 단일 정책**(#440 → #525) — `posterFitProps`가 6무드 공통으로 `fit: 'contain'` + blur 레터박스 배경을 준다. 옛 `components.posterFit`('cover' opt-in)은 #525에서 **폐지**됐다: 사용자가 0.667로 잡은 프레임을 슬롯 비율에 맞춰 다시 잘라내 크롭 화면과 결과가 어긋났고, 그 잘림이 룰 5 위반의 유일한 출처였다. 크롭 모달의 "원본 비율 보존" 토글은 이제 **크롭 프레임 비율만** 정한다(ON=이미지 자연비 + `maxSide` 출력, OFF=0.667 표준 + 960×1440). **예외**: v5(#524) 이후 35mm·35mm Wide·Criterion은 풀블리드 슬롯이 아니라 고정 비율 컷/도판이라 `posterFitProps` 자체를 안 태우고 `Poster`를 직접 부른다(옵션이 고정 비율 컷엔 의미가 없고 `frameInsetY`를 실으면 레터박스 0이 깨진다). 그중 35mm Wide의 포스터 컷만 **`fit="cover"`**다 — 컷이 포스터 표준의 가로 판(3:2)인데 표준 크롭은 세로(2:3)라 방향이 어긋나고, 시안이 cover를 골라(c1 시안 충실) 세로 포스터의 위아래가 잘리는 대가를 감수한다(근본 해소는 #529의 가로 크롭 프리셋). 35mm·Criterion은 컷/도판이 각각 세로·정사각에 가까워 contain으로도 레터박스 0이 선다.
 - **Layout catalog**: `src/utils/layouts.ts` — `LAYOUTS` defines 6 mood ids (`minimal`/`criterion`/`35mm`/`editorial`/`stub`/`35mm-landscape`) with dimensions and orientation. `LayoutId` union lives in `src/types/index.ts`.
 - **Mood components**: `src/components/moods/Mood{Minimal,Criterion,35mm,Editorial,Stub,35mmLandscape}.tsx` — each mood is a self-contained DOM tree at the layout's natural pixel size (4 portrait 960×1534, 2 landscape 1534×960: Editorial and 35mm Wide).
