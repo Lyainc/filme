@@ -32,36 +32,62 @@ const NATURAL_H = 1534;
 const RULER = 34; // 가장자리 눈금자 폭(px)
 const INK = '#111111';
 const FAINT = '#9AA1AC';
+const MARGIN_ACCENT = '#B0423F'; // 앱 accent — 여백 경계선 전용(흰 여백과 대비 최대화)
+const SAFE_A_COLOR = '#2A6FDB';
+const SAFE_B_COLOR = '#8FB0E8';
 
 // 눈금자 — 티켓 콘텐츠 edge(px=0) 기준. export 10px 흰 여백은 이 바깥에 붙으므로 종이 물리
-// 가장자리 ≠ 눈금 0점이다(콘텐츠 edge = 0점).
-function Ruler({ orientation, length }: { orientation: 'h' | 'v'; length: number }) {
-  const minor = 20;
+// 가장자리 ≠ 눈금 0점이다(콘텐츠 edge = 0점). 테두리를 accent 색 2px로 둬서, 인쇄물에서
+// "흰 여백 ↔ 콘텐츠"의 경계선이 잉크 얼룩과 안 헷갈리고 사진에서도 뚜렷이 잡히게 한다(#521) —
+// 이 선이 곧 EXPORT_MARGIN_PX 여백의 안쪽 경계이므로, 자로 재는 기준점이 된다.
+//
+// 모서리 첫 5px 구간엔 눈금을 안 찍는다(오빠 피드백) — 눈금이 모서리 픽셀에 딱 붙어있으면
+// 비풀블리드 기계가 가장자리를 조금만 잘라내도 기준 눈금 자체가 통째로 사라져 측정 불능이
+// 된다. 5px부터 살짝 띄우고, 0~100px 구간은 5px 간격 촘촘한 눈금(숫자 없는 실측용, 20px마다
+// 중간 눈금·100마다 라벨)을 둬서, 인쇄물에서 "어느 눈금까지 살아남았는지"를 세면 바로 그게
+// 그 변의 실측 크롭량(px)이 된다. `align`으로 네 변 모두(top/bottom/left/right)에 붙일 수
+// 있어 크롭이 비대칭이거나 용지가 살짝 돌아갔을 때도 드러난다.
+function Ruler({
+  orientation,
+  length,
+  align = orientation === 'h' ? 'top' : 'left',
+}: {
+  orientation: 'h' | 'v';
+  length: number;
+  align?: 'top' | 'bottom' | 'left' | 'right';
+}) {
+  const fine = 5;
   const ticks: number[] = [];
-  for (let p = 0; p <= length; p += minor) ticks.push(p);
+  for (let p = fine; p <= length; p += fine) ticks.push(p);
+  const pinH = align === 'bottom' ? 'bottom' : 'top';
+  const pinV = align === 'right' ? 'right' : 'left';
   return (
     <div
       style={{
         position: 'absolute',
-        top: 0,
-        left: 0,
+        [pinH]: 0,
+        [pinV]: 0,
         width: orientation === 'h' ? length : RULER,
         height: orientation === 'h' ? RULER : length,
-        borderRight: orientation === 'v' ? `1px solid ${INK}` : undefined,
-        borderBottom: orientation === 'h' ? `1px solid ${INK}` : undefined,
+        borderRight: orientation === 'v' && align === 'left' ? `2px solid ${MARGIN_ACCENT}` : undefined,
+        borderLeft: orientation === 'v' && align === 'right' ? `2px solid ${MARGIN_ACCENT}` : undefined,
+        borderBottom: orientation === 'h' && align === 'top' ? `2px solid ${MARGIN_ACCENT}` : undefined,
+        borderTop: orientation === 'h' && align === 'bottom' ? `2px solid ${MARGIN_ACCENT}` : undefined,
       }}
     >
       {ticks.map((p) => {
         const major = p % 100 === 0;
-        const len = major ? 14 : p % 100 === 50 ? 9 : 5;
+        const mid = !major && p % 20 === 0;
+        const len = major ? 16 : mid ? 10 : 5;
+        const tickEdge = orientation === 'h' ? pinH : pinV;
         return (
           <div key={p}>
             <div
               style={{
                 position: 'absolute',
                 ...(orientation === 'h'
-                  ? { left: p, bottom: 0, width: 1, height: len }
-                  : { top: p, right: 0, height: 1, width: len }),
+                  ? { left: p, [tickEdge]: 0, width: 1, height: len }
+                  : { top: p, [tickEdge]: 0, height: 1, width: len }),
                 background: INK,
               }}
             />
@@ -70,11 +96,11 @@ function Ruler({ orientation, length }: { orientation: 'h' | 'v'; length: number
                 style={{
                   position: 'absolute',
                   ...(orientation === 'h'
-                    ? { left: p + 2, top: 2 }
-                    : { top: p + 1, left: 2 }),
+                    ? { left: p + 2, [pinH === 'top' ? 'top' : 'bottom']: 2 }
+                    : { top: p + 1, [pinV === 'left' ? 'left' : 'right']: 2 }),
                   fontFamily: FONT_MONO,
                   fontWeight: 500,
-                  fontSize: 9,
+                  fontSize: 11,
                   color: INK,
                   lineHeight: 1,
                 }}
@@ -85,6 +111,44 @@ function Ruler({ orientation, length }: { orientation: 'h' | 'v'; length: number
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// 비풀블리드 안전영역 참고선 2단(#521) — CGV 프리미엄 외 기계는 가장자리 근처가 안 찍힐 수
+// 있어, 콘텐츠 edge(0점) 안쪽으로 인셋된 가이드를 둔다. 정확한 인셋은 실물 인쇄 전엔 모르므로
+// 추정값 2단(5%/10%)만 두고, 인쇄 테스트로 "어느 선까지 살아남는지" 확정하는 게 후속 스텝이다.
+// 가이드선이 본문 텍스트를 가로질러도 의도된 동작이다(뷰파인더 그리드처럼, 인쇄 후 어느 요소가
+// 선 안/밖인지 그대로 보여야 실측이 된다) — 다만 라벨은 헤더와 안 겹치게 각 박스 하단에 둔다.
+function SafeAreaGuide({ inset, color, label, labelAlign }: { inset: number; color: string; label: string; labelAlign: 'left' | 'right' }) {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: inset,
+        top: inset,
+        right: inset,
+        bottom: inset,
+        border: `1.5px dashed ${color}`,
+        pointerEvents: 'none',
+      }}
+    >
+      <div
+        style={{
+          position: 'absolute',
+          bottom: -8,
+          ...(labelAlign === 'left' ? { left: 6 } : { right: 6 }),
+          fontFamily: FONT_MONO,
+          fontWeight: 700,
+          fontSize: 9,
+          color,
+          background: '#FFFFFF',
+          padding: '0 3px',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {label}
+      </div>
     </div>
   );
 }
@@ -113,9 +177,9 @@ function Fiducials() {
   return (
     <>
       {corner({ top: inset, left: inset }, 'L')}
-      {corner({ top: inset, right: 8 }, 'L')}
-      {corner({ bottom: 8, left: inset }, 'L')}
-      {corner({ bottom: 8, right: 8 }, 'block')}
+      {corner({ top: inset, right: inset }, 'L')}
+      {corner({ bottom: inset, left: inset }, 'L')}
+      {corner({ bottom: inset, right: inset }, 'block')}
     </>
   );
 }
@@ -126,7 +190,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
       style={{
         fontFamily: FONT_MONO,
         fontWeight: 700,
-        fontSize: 11,
+        fontSize: 13,
         letterSpacing: 1,
         color: INK,
         borderBottom: `1px solid ${INK}`,
@@ -165,9 +229,9 @@ function FontRow({
         style={{
           fontFamily: FONT_MONO,
           fontWeight: 500,
-          fontSize: 9,
+          fontSize: 11,
           color: FAINT,
-          width: 118,
+          width: 138,
           flexShrink: 0,
           whiteSpace: 'nowrap',
         }}
@@ -198,16 +262,16 @@ function FontRow({
 
 function Swatch({ color, label, dark }: { color: string; label: string; dark?: boolean }) {
   return (
-    <div style={{ width: 78 }}>
-      <div style={{ width: 78, height: 42, background: color, border: `1px solid ${FAINT}` }} />
+    <div style={{ width: 92 }}>
+      <div style={{ width: 92, height: 52, background: color, border: `1px solid ${FAINT}` }} />
       <div
         style={{
           fontFamily: FONT_MONO,
           fontWeight: 500,
-          fontSize: 8.5,
+          fontSize: 10.5,
           color: INK,
           marginTop: 2,
-          lineHeight: 1.15,
+          lineHeight: 1.2,
         }}
       >
         {label}
@@ -222,20 +286,20 @@ function Swatch({ color, label, dark }: { color: string; label: string; dark?: b
 function LinePairs({ w, vertical }: { w: number; vertical: boolean }) {
   const bars = Array.from({ length: 8 });
   return (
-    <div style={{ display: 'inline-block', textAlign: 'center', marginRight: 16 }}>
+    <div style={{ display: 'inline-block', textAlign: 'center', marginRight: 18 }}>
       <div style={{ display: 'flex', flexDirection: vertical ? 'row' : 'column' }}>
         {bars.map((_, i) => (
           <div
             key={i}
             style={{
-              width: vertical ? w : 56,
-              height: vertical ? 34 : w,
+              width: vertical ? w : 64,
+              height: vertical ? 40 : w,
               background: i % 2 === 0 ? INK : '#FFFFFF',
             }}
           />
         ))}
       </div>
-      <div style={{ fontFamily: FONT_MONO, fontWeight: 500, fontSize: 8.5, color: INK, marginTop: 2 }}>
+      <div style={{ fontFamily: FONT_MONO, fontWeight: 500, fontSize: 10.5, color: INK, marginTop: 2 }}>
         {w}px {vertical ? '│' : '─'}
       </div>
     </div>
@@ -318,7 +382,11 @@ export default function CalibrationPage() {
       >
         <Ruler orientation="h" length={NATURAL_W} />
         <Ruler orientation="v" length={NATURAL_H} />
+        <Ruler orientation="h" length={NATURAL_W} align="bottom" />
+        <Ruler orientation="v" length={NATURAL_H} align="right" />
         <Fiducials />
+        <SafeAreaGuide inset={50} color={SAFE_A_COLOR} label="SAFE-A ~5% (est., 실측 전)" labelAlign="left" />
+        <SafeAreaGuide inset={100} color={SAFE_B_COLOR} label="SAFE-B ~10% (est., 실측 전)" labelAlign="right" />
 
         {/* 콘텐츠 영역 — 눈금자 안쪽 */}
         <div
@@ -326,8 +394,8 @@ export default function CalibrationPage() {
             position: 'absolute',
             left: RULER + 6,
             top: RULER + 6,
-            right: 10,
-            bottom: 8,
+            right: RULER + 6,
+            bottom: RULER + 6,
             display: 'flex',
             flexDirection: 'column',
             gap: 16,
@@ -338,12 +406,19 @@ export default function CalibrationPage() {
             <div style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 22, letterSpacing: 2, color: INK }}>
               FILME · PRINT CALIBRATION
             </div>
-            <div style={{ fontFamily: FONT_MONO, fontWeight: 500, fontSize: 10.5, color: INK, marginTop: 6, lineHeight: 1.5 }}>
-              natural 960×1534 px · export = product (+10px margin ×2 → 1960×3108 JPEG q0.95) · v1 2026-07-24
+            <div style={{ fontFamily: FONT_MONO, fontWeight: 500, fontSize: 12.5, color: INK, marginTop: 6, lineHeight: 1.55 }}>
+              natural 960×1534 px · export = product (+10px margin ×2 → 1960×3108 JPEG q0.95) · v2 2026-07-25
               <br />
               눈금자 0점 = 티켓 콘텐츠 edge (10px 흰 여백은 이 바깥) · 눈금 100px 실측폭 ÷ 100 = mm/px 배율
               <br />
               모든 크기는 px = 티켓 자연좌표 · 물리 크기 = px × (측정한 mm/px)
+              <br />
+              <span style={{ color: MARGIN_ACCENT }}>빨간 테두리선</span> = 여백 경계(자로 재는 기준) ·{' '}
+              <span style={{ color: SAFE_A_COLOR }}>파란 점선</span> = 비풀블리드 안전영역 추정(실측 전, #521)
+              <br />
+              눈금은 모서리 픽셀엔 안 찍고 5px부터 시작(작은 크롭에도 기준이 안 사라지게) · 0~100px 구간은 5px
+              간격 촘촘한 눈금이라, 인쇄물에서 어느 눈금까지 살아남았는지 세면 그 변의 실측 크롭량(px)이 된다.
+              네 변 모두 눈금이 있어 크롭이 비대칭이거나 용지가 돌아갔을 때도 드러난다.
             </div>
           </div>
 
@@ -378,15 +453,15 @@ export default function CalibrationPage() {
                 const hex = `#${v.toString(16).padStart(2, '0').repeat(3)}`;
                 return (
                   <div key={g} style={{ flex: 1 }}>
-                    <div style={{ height: 40, background: hex }} />
-                    <div style={{ fontFamily: FONT_MONO, fontWeight: 500, fontSize: 8.5, color: INK, textAlign: 'center', marginTop: 2 }}>
+                    <div style={{ height: 50, background: hex }} />
+                    <div style={{ fontFamily: FONT_MONO, fontWeight: 500, fontSize: 10.5, color: INK, textAlign: 'center', marginTop: 2 }}>
                       {g}%
                     </div>
                   </div>
                 );
               })}
             </div>
-            <div style={{ fontFamily: FONT_MONO, fontWeight: 500, fontSize: 8.5, color: FAINT, marginTop: 2 }}>
+            <div style={{ fontFamily: FONT_MONO, fontWeight: 500, fontSize: 10.5, color: FAINT, marginTop: 2 }}>
               2·5% 구분되면 암부 안 뭉갬 · 95·98% 구분되면 명부 안 날아감
             </div>
           </div>
@@ -407,7 +482,7 @@ export default function CalibrationPage() {
               <Swatch color="#B0423F" label="app accent" />
               <Swatch color="#14171A" label="app fg" />
             </div>
-            <div style={{ fontFamily: FONT_MONO, fontWeight: 500, fontSize: 8.5, color: FAINT, marginTop: 4 }}>
+            <div style={{ fontFamily: FONT_MONO, fontWeight: 500, fontSize: 10.5, color: FAINT, marginTop: 4 }}>
               WB white·gray·black = 사진 화이트밸런스 보정 기준 · app accent(#B0423F)는 CMYK에서 시프트 관찰용
             </div>
           </div>
@@ -439,7 +514,7 @@ export default function CalibrationPage() {
                 justifyContent: 'center',
                 fontFamily: FONT_MONO,
                 fontWeight: 500,
-                fontSize: 8.5,
+                fontSize: 10,
                 color: FAINT,
                 textAlign: 'center',
                 padding: 4,
@@ -451,15 +526,15 @@ export default function CalibrationPage() {
               <br />
               종횡비
             </div>
-            <div style={{ fontFamily: FONT_SANS, fontWeight: 400, fontSize: 11, color: INK, lineHeight: 1.5 }}>
+            <div style={{ fontFamily: FONT_SANS, fontWeight: 400, fontSize: 12.5, color: INK, lineHeight: 1.55 }}>
               왼쪽은 신용카드(ID-1) 세로 종횡비 참고. 물리 크기는 인쇄 배율에 따르니 눈금자로 측정.
               티켓 자연비 960:1534(≈0.626)는 카드 세로비 54:85.6(≈0.631)과 거의 같다.
               export 흰 여백 10px는 콘텐츠 바깥 → 실제 종이 재단선은 눈금 0점보다 10px 더 바깥.
             </div>
           </div>
 
-          <div style={{ marginTop: 'auto', fontFamily: FONT_MONO, fontWeight: 500, fontSize: 9, color: FAINT }}>
-            made with FILME · calibration mood · issue #510
+          <div style={{ marginTop: 'auto', fontFamily: FONT_MONO, fontWeight: 500, fontSize: 10.5, color: FAINT }}>
+            made with FILME · calibration mood · issue #510, #521
           </div>
         </div>
       </div>
