@@ -36,17 +36,35 @@ const MARGIN_ACCENT = '#B0423F'; // 앱 accent — 여백 경계선 전용(흰 �
 const SAFE_A_COLOR = '#2A6FDB';
 const SAFE_B_COLOR = '#8FB0E8';
 
+// 근접 크롭 체크포인트 — 모서리에서 15/30/60/100px 지점에 굵은 계단식 막대+숫자를 둔다.
+// 이전엔 5px 간격 가는 눈금을 세는 방식이었는데, 실측 스케일을 따져보니(카드 물리비 기준
+// 1px≈0.056mm) 5px 간격은 0.28mm짜리 1px 굵기 선이라 인쇄+촬영(+LLM 재입력)으로는 셀 수가
+// 없다 — 심지어 가독성 하한을 재는 KR 10px(≈0.56mm)보다도 가늘다(오빠 피드백, #521 재설계).
+// 그래서 카운팅이 아니라 "이 숫자가 살아있나 없나"로 바로 읽는 4단 체크포인트로 바꿨다.
+// 막대 길이도 단계마다 커져서(15→가장 짧음, 100→가장 김) 라벨이 안 보여도 상대적 크기로
+// 대략적인 크롭량을 가늠할 수 있다.
+const CROP_CHECKPOINTS = [15, 30, 60, 100];
+
+// 비풀블리드 안전영역 추정 체크포인트(#521 재재설계) — 처음엔 콘텐츠 위에 4점 브래킷을
+// 그렸는데, 콘텐츠가 카드 가장자리까지 꽉 차 있어서(시인성 요구 때문에 일부러 그렇게 함)
+// 어느 위치에 둬도 헤더 제목이나 푸터 텍스트 중 하나와는 겹쳤다(오빠 피드백) — 브래킷을
+// 콘텐츠 위에 얹는 방식 자체가 이 도안과는 구조적으로 안 맞는다. 그래서 이미 충돌 없이 검증된
+// 눈금자 밴드(콘텐츠 흐름 밖의 전용 공간) 안으로 옮겨, 크롭 체크포인트와 같은 자리에 색만
+// 다르게(파랑) 찍는다. 50px≈960폭의 5.2%, 100px≈10.4%로 라벨(~5%/~10%)과도 맞는다.
+const SAFE_CHECKPOINTS: { d: number; color: string }[] = [
+  { d: 45, color: SAFE_A_COLOR },
+  { d: 90, color: SAFE_B_COLOR },
+];
+
 // 눈금자 — 티켓 콘텐츠 edge(px=0) 기준. export 10px 흰 여백은 이 바깥에 붙으므로 종이 물리
 // 가장자리 ≠ 눈금 0점이다(콘텐츠 edge = 0점). 테두리를 accent 색 2px로 둬서, 인쇄물에서
 // "흰 여백 ↔ 콘텐츠"의 경계선이 잉크 얼룩과 안 헷갈리고 사진에서도 뚜렷이 잡히게 한다(#521) —
-// 이 선이 곧 EXPORT_MARGIN_PX 여백의 안쪽 경계이므로, 자로 재는 기준점이 된다.
-//
-// 모서리 첫 5px 구간엔 눈금을 안 찍는다(오빠 피드백) — 눈금이 모서리 픽셀에 딱 붙어있으면
-// 비풀블리드 기계가 가장자리를 조금만 잘라내도 기준 눈금 자체가 통째로 사라져 측정 불능이
-// 된다. 5px부터 살짝 띄우고, 0~100px 구간은 5px 간격 촘촘한 눈금(숫자 없는 실측용, 20px마다
-// 중간 눈금·100마다 라벨)을 둬서, 인쇄물에서 "어느 눈금까지 살아남았는지"를 세면 바로 그게
-// 그 변의 실측 크롭량(px)이 된다. `align`으로 네 변 모두(top/bottom/left/right)에 붙일 수
-// 있어 크롭이 비대칭이거나 용지가 살짝 돌아갔을 때도 드러난다.
+// 이 선이 곧 EXPORT_MARGIN_PX 여백의 안쪽 경계이므로, 자로 재는 기준점이 된다. 모서리 픽셀
+// 자체엔 아무것도 안 찍는다 — 비풀블리드 기계가 가장자리를 조금만 잘라내도 기준이 통째로
+// 사라지면 안 되니, 첫 체크포인트(15px)부터 시작한다. 체크포인트 구간(~100px) 밖은 기존처럼
+// 20px 간격 중간눈금 + 100px 간격 라벨(전체 배율 계산용, 카운팅 부담 없는 굵은 단위). `align`
+// 으로 네 변 모두(top/bottom/left/right)에 붙일 수 있어 크롭이 비대칭이거나 용지가 돌아갔을
+// 때도 드러난다.
 function Ruler({
   orientation,
   length,
@@ -56,11 +74,12 @@ function Ruler({
   length: number;
   align?: 'top' | 'bottom' | 'left' | 'right';
 }) {
-  const fine = 5;
+  const minor = 20;
   const ticks: number[] = [];
-  for (let p = fine; p <= length; p += fine) ticks.push(p);
+  for (let p = 120; p <= length; p += minor) ticks.push(p);
   const pinH = align === 'bottom' ? 'bottom' : 'top';
   const pinV = align === 'right' ? 'right' : 'left';
+  const tickEdge = orientation === 'h' ? pinH : pinV;
   return (
     <div
       style={{
@@ -75,11 +94,55 @@ function Ruler({
         borderTop: orientation === 'h' && align === 'bottom' ? `2px solid ${MARGIN_ACCENT}` : undefined,
       }}
     >
+      {/* top:0+bottom:0(h) / left:0+right:0(v)로 밴드를 꽉 채운다 — 특정 변에 고정폭(top:0,
+          height:RULER)으로 두면 그 변에 accent 테두리(2px)가 있는 정렬(bottom/right)에서
+          테두리만큼 밀려 나가 밴드 밖으로 2px 넘친다(align='bottom'/'right' 눈금자에서 실측
+          확인). stretch로 두면 어느 변에 테두리가 있든 항상 밴드 안에 들어맞는다. */}
+      {SAFE_CHECKPOINTS.map(({ d, color }) => (
+        <div
+          key={`safe-${d}`}
+          style={{
+            position: 'absolute',
+            ...(orientation === 'h' ? { left: d, top: 0, bottom: 0, width: 2 } : { top: d, left: 0, right: 0, height: 2 }),
+            background: color,
+          }}
+        />
+      ))}
+      {CROP_CHECKPOINTS.map((d, i) => {
+        const barLen = 8 + i * 4; // 단계별로 커지는 막대 — 라벨 없이도 상대 크기로 가늠 가능
+        const stagger = i % 2 === 0 ? 2 : 15; // 라벨 2줄 지그재그 — 좁은 간격에서도 안 겹치게
+        return (
+          <div key={d}>
+            <div
+              style={{
+                position: 'absolute',
+                ...(orientation === 'h'
+                  ? { left: d, [tickEdge]: 0, width: 3, height: barLen }
+                  : { top: d, [tickEdge]: 0, height: 3, width: barLen }),
+                background: MARGIN_ACCENT,
+              }}
+            />
+            <div
+              style={{
+                position: 'absolute',
+                ...(orientation === 'h'
+                  ? { left: d + 3, [pinH === 'top' ? 'top' : 'bottom']: stagger }
+                  : { top: d + 3, [pinV === 'left' ? 'left' : 'right']: stagger }),
+                fontFamily: FONT_MONO,
+                fontWeight: 700,
+                fontSize: 10,
+                color: MARGIN_ACCENT,
+                lineHeight: 1,
+              }}
+            >
+              {d}
+            </div>
+          </div>
+        );
+      })}
       {ticks.map((p) => {
         const major = p % 100 === 0;
-        const mid = !major && p % 20 === 0;
-        const len = major ? 16 : mid ? 10 : 5;
-        const tickEdge = orientation === 'h' ? pinH : pinV;
+        const len = major ? 16 : 10;
         return (
           <div key={p}>
             <div
@@ -111,44 +174,6 @@ function Ruler({
           </div>
         );
       })}
-    </div>
-  );
-}
-
-// 비풀블리드 안전영역 참고선 2단(#521) — CGV 프리미엄 외 기계는 가장자리 근처가 안 찍힐 수
-// 있어, 콘텐츠 edge(0점) 안쪽으로 인셋된 가이드를 둔다. 정확한 인셋은 실물 인쇄 전엔 모르므로
-// 추정값 2단(5%/10%)만 두고, 인쇄 테스트로 "어느 선까지 살아남는지" 확정하는 게 후속 스텝이다.
-// 가이드선이 본문 텍스트를 가로질러도 의도된 동작이다(뷰파인더 그리드처럼, 인쇄 후 어느 요소가
-// 선 안/밖인지 그대로 보여야 실측이 된다) — 다만 라벨은 헤더와 안 겹치게 각 박스 하단에 둔다.
-function SafeAreaGuide({ inset, color, label, labelAlign }: { inset: number; color: string; label: string; labelAlign: 'left' | 'right' }) {
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        left: inset,
-        top: inset,
-        right: inset,
-        bottom: inset,
-        border: `1.5px dashed ${color}`,
-        pointerEvents: 'none',
-      }}
-    >
-      <div
-        style={{
-          position: 'absolute',
-          bottom: -8,
-          ...(labelAlign === 'left' ? { left: 6 } : { right: 6 }),
-          fontFamily: FONT_MONO,
-          fontWeight: 700,
-          fontSize: 9,
-          color,
-          background: '#FFFFFF',
-          padding: '0 3px',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {label}
-      </div>
     </div>
   );
 }
@@ -385,8 +410,6 @@ export default function CalibrationPage() {
         <Ruler orientation="h" length={NATURAL_W} align="bottom" />
         <Ruler orientation="v" length={NATURAL_H} align="right" />
         <Fiducials />
-        <SafeAreaGuide inset={50} color={SAFE_A_COLOR} label="SAFE-A ~5% (est., 실측 전)" labelAlign="left" />
-        <SafeAreaGuide inset={100} color={SAFE_B_COLOR} label="SAFE-B ~10% (est., 실측 전)" labelAlign="right" />
 
         {/* 콘텐츠 영역 — 눈금자 안쪽 */}
         <div
@@ -413,12 +436,15 @@ export default function CalibrationPage() {
               <br />
               모든 크기는 px = 티켓 자연좌표 · 물리 크기 = px × (측정한 mm/px)
               <br />
-              <span style={{ color: MARGIN_ACCENT }}>빨간 테두리선</span> = 여백 경계(자로 재는 기준) ·{' '}
-              <span style={{ color: SAFE_A_COLOR }}>파란 점선</span> = 비풀블리드 안전영역 추정(실측 전, #521)
+              <span style={{ color: MARGIN_ACCENT }}>빨간 테두리선</span> = 여백 경계(자로 재는 기준)
               <br />
-              눈금은 모서리 픽셀엔 안 찍고 5px부터 시작(작은 크롭에도 기준이 안 사라지게) · 0~100px 구간은 5px
-              간격 촘촘한 눈금이라, 인쇄물에서 어느 눈금까지 살아남았는지 세면 그 변의 실측 크롭량(px)이 된다.
-              네 변 모두 눈금이 있어 크롭이 비대칭이거나 용지가 돌아갔을 때도 드러난다.
+              <span style={{ color: MARGIN_ACCENT }}>빨간 계단식 막대+숫자(15/30/60/100px)</span> = 근접 크롭 체크포인트 —
+              세지 않고 "이 숫자가 살아있나"로 바로 읽는다. 모서리 픽셀엔 아무것도 안 찍어 작은 크롭에도 기준이
+              안 사라진다. 100px 밖은 배율 계산용 일반 눈금(네 변 모두) · 크롭이 비대칭이거나 용지가 돌아갔을 때도 드러난다.
+              <br />
+              눈금자 밴드 안 <span style={{ color: SAFE_A_COLOR }}>진한 파란 세로선(45px)</span> = SAFE-A ~5% ·{' '}
+              <span style={{ color: SAFE_B_COLOR }}>연한 파란 세로선(90px)</span> = SAFE-B ~10% — 비풀블리드 안전영역
+              추정(실측 전, #521). 본문 위가 아니라 눈금자 전용 공간에 둬서 폰트 매트릭스 텍스트를 안 가린다.
             </div>
           </div>
 
