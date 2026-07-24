@@ -158,8 +158,8 @@ describe('#489 자동저장 이미지 복원', () => {
     expect(second.result.current.restoredOriginalPosterUrl).toBeNull();
 
     // 사용자가 업로드 화면에서 포스터를 다시 올린다 — croppedImageUrl===null이라 겉보기엔
-    // "첫 업로드"지만, 복원된 draft가 있었으므로(hasRestoredDraftRef) fieldVisibility를
-    // DEFAULT_VISIBILITY_ON_UPLOAD로 리셋하면 안 된다.
+    // "첫 업로드"지만, 복원된 draft에 포스터가 있었으므로(restoredDraftHadPosterRef)
+    // fieldVisibility를 DEFAULT_VISIBILITY_ON_UPLOAD로 리셋하면 안 된다.
     act(() => {
       second.result.current.handleImageUpload('blob:poster-reuploaded');
     });
@@ -185,11 +185,44 @@ describe('#489 자동저장 이미지 복원', () => {
       expect(fakeStore).toEqual({});
     });
 
-    // 초기화는 진짜 새 문서 시작이라 hasRestoredDraftRef도 리셋돼야 한다 — 안 그러면 이후
-    // 업로드가 영원히 "복원된 draft가 있었다"로 오판돼 기본 가시성 세트가 다시는 안 켜진다(#310/#178 회귀).
+    // 초기화는 진짜 새 문서 시작이라 restoredDraftHadPosterRef도 리셋돼야 한다 — 안 그러면 이후
+    // 업로드가 영원히 "복원된 draft에 포스터가 있었다"로 오판돼 기본 가시성 세트가 다시는
+    // 안 켜진다(#310/#178 회귀).
     act(() => {
       result.current.handleImageUpload('blob:new-poster', 'blob:new-original');
     });
     expect(result.current.state.fieldVisibility.actors).toBe(false); // DEFAULT_VISIBILITY_ON_UPLOAD
+  });
+
+  // claude-review PR #515 P1 — restoredDraftHadPosterRef 게이트는 "draft가 있었는지"가 아니라
+  // "그 draft에 포스터가 있었는지"로 좁혀야 한다. 텍스트만 입력하고 포스터는 한 번도 안 올린
+  // draft가 복원된 상태에서 이번 세션 첫 포스터 업로드를 하면, 그건 진짜 첫 업로드이므로
+  // DEFAULT_VISIBILITY_ON_UPLOAD가 정상 적용돼야 한다(과하게 넓은 게이트로 이게 깨졌던 회귀).
+  test('포스터 없이 텍스트만 있던 draft를 복원한 뒤 첫 포스터 업로드는 기본 가시성 세트를 정상 적용한다', async () => {
+    const first = renderHook(() => usePhototicket());
+    act(() => {
+      first.result.current.updateMovieInfo({ theater: 'CGV 용산' });
+      first.result.current.updateFieldVisibility({ actors: true });
+    });
+    act(() => {
+      first.result.current.saveDraft();
+    });
+    // 포스터를 한 번도 안 올렸으므로 이미지 저장소엔 아무것도 안 실린다.
+    expect(fakeStore.poster).toBeUndefined();
+    first.unmount();
+
+    const second = renderHook(() => usePhototicket());
+    await waitFor(() => {
+      expect(second.result.current.state.movieInfo.theater).toBe('CGV 용산');
+      expect(second.result.current.state.fieldVisibility.actors).toBe(true);
+    });
+    expect(second.result.current.state.croppedImageUrl).toBeNull();
+
+    // 이번 세션 첫 포스터 업로드 — "복원된 draft가 있었다"는 사실과 무관하게 진짜 첫 업로드다.
+    act(() => {
+      second.result.current.handleImageUpload('blob:first-real-poster');
+    });
+    expect(second.result.current.state.fieldVisibility.actors).toBe(false); // DEFAULT_VISIBILITY_ON_UPLOAD
+    second.unmount();
   });
 });
