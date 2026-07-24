@@ -60,6 +60,22 @@ describe('#507 BrightnessSlider — 드래그 커밋 저빈도화', () => {
     expect(input.value).toBe('0.77');
     expect(screen.getByText('77%')).toBeTruthy();
   });
+
+  // claude-review PR #516 P1 — 마운트된 채로 부모가 value를 외부에서 바꾸는 경로(재질/코팅
+  // 전환 시 기본 강도 재적용, undo/redo 복원)에서 thumb·%가 구값을 계속 보여주면 안 된다.
+  test('마운트된 채로 부모가 value를 외부에서 바꾸면 thumb·%가 그 값을 즉시 반영한다', () => {
+    const onChange = mock(() => {});
+    const { rerender } = render(
+      <BrightnessSlider value={0.5} onChange={onChange} label="Test" id="external-test" />
+    );
+    rerender(<BrightnessSlider value={0.8} onChange={onChange} label="Test" id="external-test" />);
+
+    const input = screen.getByLabelText('Test') as HTMLInputElement;
+    expect(input.value).toBe('0.8');
+    expect(screen.getByText('80%')).toBeTruthy();
+    // 외부에서 온 value는 이미 커밋된 값이므로 되돌려 부를 필요 없음.
+    expect(onChange).not.toHaveBeenCalled();
+  });
 });
 
 function RailRenderCountHarness() {
