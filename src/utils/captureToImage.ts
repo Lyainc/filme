@@ -532,6 +532,35 @@ async function compositeOverlay(
   }
 }
 
+/**
+ * 후가공 오버레이는 '장식'이라 실패해도 저장 전체를 죽이면 안 된다(#490/#495 후속). noise 재질은
+ * SVG 타일을 `await loadImage`하는데 그게 reject하면 compositeOverlay가 throw하고, 그 throw가
+ * captureNodeToJpeg를 통째로 무너뜨려 **결과물이 아예 안 나온다** — 실기기에서 로그가
+ * `[capture:probe]` 직후 끊기고 `[capture:overlay]`·`[capture:main]`이 없던 증상이 이 모양이다.
+ * 여기서 삼켜 sheen만 빠진 저장물이라도 나오게 하고, 원인은 로그로 남긴다.
+ */
+async function safeOverlay(
+  ctx: CanvasRenderingContext2D,
+  root: HTMLElement,
+  texture: string,
+  intensity: number,
+  nodeRect: DOMRect,
+  width: number,
+  height: number,
+  pixelRatio: number,
+  debug: boolean,
+): Promise<void> {
+  try {
+    await compositeOverlay(ctx, root, texture, intensity, nodeRect, width, height, pixelRatio, debug);
+  } catch (err) {
+    console.error(`[capture:overlay] FAILED texture=${texture} — 이 오버레이만 건너뛴다`, err);
+    // blend/alpha가 중간 상태로 남아 다음 합성을 오염시키지 않게 되돌린다.
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+    ctx.filter = 'none';
+  }
+}
+
 export async function captureNodeToJpeg(
   node: HTMLElement,
   options: CaptureOptions
@@ -667,16 +696,18 @@ export async function captureNodeToJpeg(
     if (material) {
       const rawIntensity = root.dataset.materialIntensity;
       const intensity = rawIntensity != null ? parseFloat(rawIntensity) : 1;
-      await compositeOverlay(ctx, root, material, intensity, nodeRect, width, height, pixelRatio, debug);
+      await safeOverlay(ctx, root, material, intensity, nodeRect, width, height, pixelRatio, debug);
     }
     const coating = root.dataset.coating;
     if (coating) {
       const rawIntensity = root.dataset.coatingIntensity;
       const intensity = rawIntensity != null ? parseFloat(rawIntensity) : 1;
-      await compositeOverlay(ctx, root, coating, intensity, nodeRect, width, height, pixelRatio, debug);
+      await safeOverlay(ctx, root, coating, intensity, nodeRect, width, height, pixelRatio, debug);
     }
   }
+  if (debug) console.log(`[capture:stage] overlays done (roots=${posterRoots.length})`);
   const baseImg = await loadImage(basePngUrl);
+  if (debug) console.log('[capture:stage] base loaded');
   ctx.drawImage(baseImg, ticketRect.x, ticketRect.y, ticketRect.w, ticketRect.h);
   for (const img of stamps) compositeRaster(ctx, img, nodeRect, width, height, pixelRatio, ticketRect, debug);
 
