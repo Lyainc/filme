@@ -592,14 +592,19 @@ async function safeOverlay(
   pixelRatio: number,
   debug: boolean,
 ): Promise<void> {
+  // save/restore로 감싸 실패 시 캔버스 상태를 통째로 되돌린다. compositeOverlay는 내부에서
+  // ctx.save()→clip()→…→restore()로 감싸는데, 그 사이(clip 이후~restore 이전)에서 throw하면
+  // restore가 안 돌아 clip이 캔버스에 남아 이후 base·스탬프 draw를 잘라먹는다. composite op/alpha/
+  // filter만 리셋해선 clip·transform이 안 되돌려진다(claude-review PR #513 P1). 여기 save를 하나
+  // 더 쌓아 finally에서 되돌리면 현재 상태가 오버레이 이전으로 확실히 복원된다(내부 save가 불균형해도
+  // 현재 상태는 정확히 복원 — 남는 스택 항목은 캡처 끝에 캔버스째 버려져 무해).
+  ctx.save();
   try {
     await compositeOverlay(ctx, root, texture, intensity, nodeRect, width, height, pixelRatio, debug);
   } catch (err) {
     console.error(`[capture:overlay] FAILED texture=${texture} — 이 오버레이만 건너뛴다`, err);
-    // blend/alpha가 중간 상태로 남아 다음 합성을 오염시키지 않게 되돌린다.
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.globalAlpha = 1;
-    ctx.filter = 'none';
+  } finally {
+    ctx.restore();
   }
 }
 
