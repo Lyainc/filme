@@ -1,13 +1,16 @@
 import { describe, expect, test } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MoodCriterion } from '../src/components/moods/MoodCriterion';
-import { buildBarcodeWidths, buildBarcodeWidths128C } from '../src/components/moods/_shared';
 import { FULL_MOVIE, makeMoodBase } from './fixtures';
 
 // 마스터 시안(Ticket Design Master.dc.html v2 · 2026-07-08 resync) 재동기화 회귀(#281, 에픽 #281).
 // Criterion 델타: 하단 필름 셀에 RUNTIME 추가(RATED·RUNTIME·RELEASED·RE-RELEASED), RE-REL.→RE-RELEASED,
-// 타이틀 pickTitleSize 스케일 폐기→고정 58/lh1.14, 스파인 폭 150·바코드 66×440, 메타 라벨 20/값 30,
-// 원제 29·cast 31, 푸터 22–32. watchTime은 마스터에 독립 TIME 셀이 없어 미렌더 유지. stale로 되돌아오면 여기서 잡는다.
+// 타이틀 pickTitleSize 스케일 폐기→고정 58/lh1.14, 원제 29·cast 31, 푸터 22–32. watchTime은 마스터에
+// 독립 TIME 셀이 없어 미렌더 유지. stale로 되돌아오면 여기서 잡는다.
+//
+// v6(#497) — 한줄평 중심 재레이아웃: 좌측 DVD 스파인 밴드(폭 150·세로 바코드 66×440) 전면 제거,
+// 타이틀 블록 left 200→64, 하단 caps 메타 라벨/값 20/30→16/24로 축소. 관련 회귀는 아래
+// 'v6(#497)' describe 블록에서 검증.
 
 const BASE = makeMoodBase('criterion');
 
@@ -41,27 +44,10 @@ describe('MoodCriterion 마스터 resync (#281)', () => {
     expect(html).toContain('line-height:1.14');
   });
 
-  test('메타 라벨 20 / 값 30', () => {
+  test('메타 라벨 16 / 값 24 (#497 축소)', () => {
     const html = markup();
-    expect(html).toContain('font-size:20px'); // metaLabel
-    expect(html).toContain('font-size:30px'); // metaValue
-  });
-
-  test('스파인 폭 150', () => {
-    expect(markup()).toContain('width:150px');
-  });
-
-  // 세로 바코드 66×440(#444) — CGV 16자리 판매번호 기준 231유닛(128B)로는 440/231≈1.9px/모듈로
-  // 화면 표시 최소 기준(2px/모듈)에 못 미쳐 encoding="code128c"로 전환했다(nit
-  // criterion-barcode-below-2px). Barcode는 <rect>만 심볼 막대를 그리므로(_shared.tsx), 렌더된
-  // rect 개수가 같은 bookingNumber를 128B로 인코딩했을 때보다 적어야 전환이 유효하다.
-  test('세로 바코드 rect 개수가 Code128B 대비 줄어든다 — Code128C 적용 확인', () => {
-    const html = markup();
-    const rectCount = (html.match(/<rect/g) || []).length;
-    const rects128C = buildBarcodeWidths128C(FULL_MOVIE.bookingNumber!).filter((b) => b.ink).length;
-    const rects128B = buildBarcodeWidths(FULL_MOVIE.bookingNumber!).filter((b) => b.ink).length;
-    expect(rectCount).toBe(rects128C);
-    expect(rectCount).toBeLessThan(rects128B);
+    expect(html).toContain('font-size:16px'); // metaLabel
+    expect(html).toContain('font-size:24px'); // metaValue
   });
 
   test('made with FILME + collected by 서명 푸터 유지', () => {
@@ -75,5 +61,26 @@ describe('MoodCriterion 마스터 resync (#281)', () => {
   test('푸터 워드마크는 BI v2 로고타입(MoodWordmark) — #386', () => {
     const html = markup();
     expect(html).toMatch(/made with<\/span><span aria-label="FILME"/);
+  });
+});
+
+describe('MoodCriterion 한줄평 중심 재레이아웃 (#497)', () => {
+  test('좌측 스파인 밴드 제거 — bookingNo 탭 타깃·세로 바코드 미렌더', () => {
+    const html = markup();
+    expect(html).not.toContain('예매 번호 편집'); // bookingNo FieldTap aria-label
+    expect(html).not.toContain('writing-mode:vertical-rl');
+  });
+
+  test('타이틀·하단 caps 블록이 스파인 자리(left:64)까지 확장', () => {
+    const html = markup();
+    expect(html).toContain('left:64px');
+    expect(html).not.toContain('left:200px');
+  });
+
+  test('한줄평이 장식 인용부호 + 2줄 클램프로 승격', () => {
+    const html = markup();
+    expect(html).toContain('aria-hidden="true" style="font-family:var(--font-display)');
+    expect(html).toContain('-webkit-line-clamp:2');
+    expect(html).toContain('font-size:50px'); // 영문 프리셋 quote
   });
 });

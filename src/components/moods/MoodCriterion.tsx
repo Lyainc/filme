@@ -1,7 +1,6 @@
 import { CSSProperties, memo, useState } from 'react';
 import type { SheetTarget } from '@/constants/fields';
 import {
-  Barcode,
   FieldGhost,
   FieldTap,
   FONT_DISPLAY,
@@ -34,8 +33,10 @@ import {
 
 // 하단 caps 메타 그리드(관람·영화 청킹)의 라벨/값 스타일. 인라인 리터럴에서 추출해 VENUE 분해 셀·
 // screeningRows·filmRows가 한 소스를 공유한다 — 값 스타일이 어긋나면 데스크톱 바이트가 깨지므로 단일화.
-const metaLabel: CSSProperties = { fontWeight: 700, fontSize: 20, fontFamily: FONT_MONO, letterSpacing: 2, textTransform: 'uppercase', opacity: 0.74 };
-const metaValue: CSSProperties = { fontWeight: 700, fontSize: 30, fontFamily: FONT_SANS, letterSpacing: -0.2, opacity: 0.95, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' };
+// 한줄평 승격(#497)으로 무게중심이 이동해 20/30→16/24로 축소(비중 하향, 스파인 제거로 확보한 폭은
+// 잘림 방지 여유로 남긴다 — 굳이 키워 다시 존재감을 주장할 필요 없음).
+const metaLabel: CSSProperties = { fontWeight: 700, fontSize: 16, fontFamily: FONT_MONO, letterSpacing: 1.8, textTransform: 'uppercase', opacity: 0.7 };
+const metaValue: CSSProperties = { fontWeight: 700, fontSize: 24, fontFamily: FONT_SANS, letterSpacing: -0.2, opacity: 0.92, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' };
 
 // 한줄평 폴백 2단계(#391) — 유저 입력이 없으면 평점(0.5 단위)별 프리셋, 평점도 없으면 기본 quote.
 // 전문가 패널 결론: 프리셋·기본값은 항상 영문(무드 보이스 통일, 콘텐츠 비용은 Criterion 1세트로 절감).
@@ -53,10 +54,16 @@ const RATING_QUOTES: Record<string, string> = {
   '4.5': 'nearly perfect, and knows it',
   '5': 'the film every other film will be measured against',
 };
-// claude-review PR #407 P1(2차): 675px/696px로 여유가 3%뿐이라 안전 마진을 위해 축약(552px 실측).
 const DEFAULT_QUOTE = 'the paying customer is the last honest critic';
 
 /**
+ * v6 — 한줄평(quote) 중심 재레이아웃(#497). 좌측 DVD 스파인 밴드(원제 세로 임프린트·세로 바코드·
+ * 연도)를 통째로 제거해 확보한 폭을 타이틀 블록에 합류(left 200→64) — 한줄평이 이제 무드의 시각적
+ * 중심이라 스파인이 두던 장식(원제·연도)은 이미 타이틀 블록·WATCHED 셀에 중복이라 정보 손실 없음.
+ * bookingNo(예매 번호 바코드)도 스파인 전용 필드라 함께 제외(Minimal·35mm·35mm Wide와 동일 패턴,
+ * `MOOD_EXCLUDED_FIELDS`). 한줄평은 장식 인용부호 + 확대(46/50→50/54)·2줄 클램프로 승격하고, 하단
+ * caps 메타(VENUE·WATCHED·RATED 등)는 라벨/값 20/30→16/24로 축소해 비중을 넘긴다.
+ *
  * v5 — 마스터 시안 Ticket Design Master.dc.html v2(2026-07-08 resync) 재동기화(에픽 #281).
  * 마스터 델타: 스파인 폭 96→150·패딩 재조정·원제 34→40·바코드 46×430→66×440, 타이틀 pickTitleSize
  * 스케일 폐기→고정 58/lh1.14, 하단 필름 셀에 RUNTIME 추가(RATED·RUNTIME·RELEASED·RE-RELEASED),
@@ -79,18 +86,16 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
   const globalScrim = inkIsDark
     ? 'linear-gradient(180deg, rgba(245,240,232,0.45) 0%, rgba(245,240,232,0.2) 30%, rgba(245,240,232,0.32) 60%, rgba(245,240,232,0.72) 100%)'
     : 'linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.18) 30%, rgba(0,0,0,0.3) 60%, rgba(0,0,0,0.7) 100%)';
-  const spineBg = inkIsDark ? 'rgba(245,240,232,0.75)' : 'rgba(0,0,0,0.55)';
-  const spineDivider = inkIsDark ? '#0d0c0a' : ink;
   const stampSurface = inkIsDark ? 'paper' : 'dark';
 
-  const { bookingNo, watchDateClean, releaseClean, reissueClean, watchYear } = resolveTicketData(d);
+  const { watchDateClean, releaseClean, reissueClean } = resolveTicketData(d);
 
   const titleVal       = gate(fv?.title, d.title);
   // 타이틀 폭 맞춤(#318) — 마스터 v2 기본값 58/800·lh1.14·ls-1.5는 maxSize로 유지하고, 제목
-  // 블록 가용폭(960 - left200 - right64)을 넘는 긴 제목만 이진탐색으로 축소한다. 3줄 클램프라
-  // 가용폭×3을 maxWidth로 넘겨 가장 긴 한 줄 기준으로 안전하게 축소한다(_shared.tsx 참고).
+  // 블록 가용폭(960 - left64 - right64, 스파인 제거 후 #497)을 넘는 긴 제목만 이진탐색으로
+  // 축소한다. 3줄 클램프라 가용폭×3을 maxWidth로 넘겨 가장 긴 한 줄 기준으로 안전하게 축소한다.
   const fontsReady     = useFontsReady();
-  const titleSize      = fitFontSizeToWidth(titleVal, 696 * 3, { fontFamily: FONT_KR, fontWeight: 800, minSize: 36, maxSize: 58 }, fontsReady);
+  const titleSize      = fitFontSizeToWidth(titleVal, 832 * 3, { fontFamily: FONT_KR, fontWeight: 800, minSize: 36, maxSize: 58 }, fontsReady);
   const titleOgVal     = gate(fv?.titleOg, d.titleOg);
   const actorsVal      = truncateActors(gate(fv?.actors, d.actors));
   const watchDateVal   = gate(fv?.watchDate, watchDateClean);
@@ -124,9 +129,6 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
   const gRuntime   = showFieldGhost(fv?.runtime, d.runtime, ghost);
   const gRelease   = showFieldGhost(fv?.releaseDate, releaseClean, ghost);
   const gReissue   = showFieldGhost(fv?.reissue, reissueClean, ghost);
-
-  // 스파인 임프린트 — 넘버링 없이 원제(없으면 제목)로 진짜 카탈로그 스파인처럼.
-  const spineText = titleOgVal || titleVal;
 
   // mono 캡스 메타 — 값이 있거나 ghost 행일 때만. ghost 행은 값이 비었고 기여 필드가 visible일 때.
   const ratingText = ratingVisible ? `★ ${d.rating.toFixed(1)}` : '';
@@ -186,33 +188,6 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
       <TopBandTone heightPx={topBandH} tone={letterboxToneMatch(inkIsDark)} />
       <div style={{ position: 'absolute', inset: 0, background: globalScrim, pointerEvents: 'none' }} />
 
-      {/* Spine band — DVD 스파인 임프린트(원제 + 연도), 넘버링 제거 */}
-      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 150, background: spineBg, borderRight: `1px solid ${spineDivider}`, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '48px 0 52px', color: ink }}>
-        {spineText && (
-          // 원제(라틴)면 디스플레이 세리프, 원제 없어 한글 제목이 올라오면 FONT_KR로 — FONT_DISPLAY는
-          // 한글 글리프가 없어 시스템 세리프로 어긋난다(_shared FONT_DISPLAY 경고, #205 리뷰 P1).
-          <FieldTap field={titleOgVal ? 'titleOg' : 'title'} onField={onField}>
-            <div style={{ fontFamily: titleOgVal ? FONT_DISPLAY : FONT_KR, fontStyle: 'italic', fontWeight: 400, fontSize: 40, letterSpacing: 0.5, writingMode: 'vertical-rl', transform: 'rotate(180deg)', whiteSpace: 'nowrap', maxHeight: 600, overflow: 'hidden' }}>
-              {spineText}
-            </div>
-          </FieldTap>
-        )}
-        <div style={{ flex: 1 }} />
-        {(fv?.bookingNo ?? true) && (
-          <FieldTap field="bookingNo" onField={onField}>
-            <Barcode value={bookingNo} color={ink} orientation="vertical" width={66} height={440} showText={false} encoding="code128c" />
-          </FieldTap>
-        )}
-        <div style={{ flex: 1 }} />
-        {(fv?.watchDate ?? true) && watchYear && (
-          <FieldTap field="watchDate" onField={onField}>
-            <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 400, fontSize: 66, letterSpacing: 1, writingMode: 'vertical-rl', lineHeight: 1 }}>
-              {watchYear}
-            </div>
-          </FieldTap>
-        )}
-      </div>
-
       {/* Top-right paired stamps */}
       <div style={{ position: 'absolute', right: 52, top: 48, display: 'flex', alignItems: 'center', gap: 28 }}>
         <StampRow
@@ -235,28 +210,38 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
       </div>
 
       {/* Title block — catalog double-rule frame */}
-      <div style={{ position: 'absolute', left: 200, right: 64, top: '42%', transform: 'translateY(-42%)' }}>
+      <div style={{ position: 'absolute', left: 64, right: 64, top: '42%', transform: 'translateY(-42%)' }}>
         <div style={{ height: 1, background: ink, opacity: 0.6, marginBottom: 4 }} />
         <div style={{ height: 3, background: ink, opacity: 0.6, marginBottom: 22 }} />
 
-        <FieldTap field="quote" onField={onField}>
-          <div
-            style={{
-              fontFamily: quoteIsKr ? FONT_QUOTE_KR : FONT_DISPLAY,
-              fontStyle: quoteIsKr ? 'normal' : 'italic',
-              fontWeight: 400,
-              fontSize: quoteIsKr ? 40 : 36,
-              opacity: 0.8,
-              marginBottom: 18,
-              letterSpacing: quoteIsKr ? 0 : 0.3,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            {quoteText}
-          </div>
-        </FieldTap>
+        {/* 한줄평 pull-quote(#497) — 무드의 시각적 중심으로 승격: 장식 인용부호는 FieldTap 밖의
+            형제(#417/#268 패턴, InPlaceFieldEditor의 measureField가 tap.firstElementChild 전체
+            박스를 재므로 실측 텍스트만 FieldTap 안에 남긴다), 2줄 클램프로 잘림 없이 문장이 끝까지
+            보이게 한다. */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 30 }}>
+          <span aria-hidden style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 84, lineHeight: 0.68, opacity: 0.26, flexShrink: 0 }}>
+            &ldquo;
+          </span>
+          <FieldTap field="quote" onField={onField}>
+            <div
+              style={{
+                fontFamily: quoteIsKr ? FONT_QUOTE_KR : FONT_DISPLAY,
+                fontStyle: quoteIsKr ? 'normal' : 'italic',
+                fontWeight: 400,
+                fontSize: quoteIsKr ? 54 : 50,
+                lineHeight: 1.25,
+                opacity: 0.95,
+                letterSpacing: quoteIsKr ? 0 : 0.3,
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}
+            >
+              {quoteText}
+            </div>
+          </FieldTap>
+        </div>
 
         {titleVal ? (
           <FieldTap field="title" onField={onField}>
@@ -305,7 +290,7 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
       </div>
 
       {/* Bottom caps block — 관람/영화 청킹, 값은 Pretendard로 통일 */}
-      <div style={{ position: 'absolute', left: 200, right: 64, bottom: 52 }}>
+      <div style={{ position: 'absolute', left: 64, right: 64, bottom: 52 }}>
         {hasScreening && (
           <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: 26, rowGap: 14, alignItems: 'baseline' }}>
             {venueCell.hasAny && (
