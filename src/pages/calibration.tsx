@@ -50,7 +50,9 @@ const CROP_CHECKPOINTS = [15, 30, 60, 100];
 // 어느 위치에 둬도 헤더 제목이나 푸터 텍스트 중 하나와는 겹쳤다(오빠 피드백) — 브래킷을
 // 콘텐츠 위에 얹는 방식 자체가 이 도안과는 구조적으로 안 맞는다. 그래서 이미 충돌 없이 검증된
 // 눈금자 밴드(콘텐츠 흐름 밖의 전용 공간) 안으로 옮겨, 크롭 체크포인트와 같은 자리에 색만
-// 다르게(파랑) 찍는다. 50px≈960폭의 5.2%, 100px≈10.4%로 라벨(~5%/~10%)과도 맞는다.
+// 다르게(파랑) 찍는다. 빨간 크롭 체크포인트(15/30/60/100px)와 안 겹치게 45/90을 골랐고,
+// 45px≈960폭의 4.7%, 90px≈9.4%로 라벨(~5%/~10%)과도 맞는다(claude-review PR #522 P2 — 주석
+// 숫자가 실제 값과 어긋나 있던 것 정정).
 const SAFE_CHECKPOINTS: { d: number; color: string }[] = [
   { d: 45, color: SAFE_A_COLOR },
   { d: 90, color: SAFE_B_COLOR },
@@ -79,7 +81,10 @@ function Ruler({
   for (let p = 120; p <= length; p += minor) ticks.push(p);
   const pinH = align === 'bottom' ? 'bottom' : 'top';
   const pinV = align === 'right' ? 'right' : 'left';
-  const tickEdge = orientation === 'h' ? pinH : pinV;
+  // 눈금/체크포인트 막대는 accent 테두리(0점, 항상 pin의 반대쪽 변)에 닿아야 자로 잴 때
+  // 의미가 있다 — pin과 같은 변에 붙이면 라벨 쪽(캔버스 바깥 가장자리)에 뜨고 만다
+  // (claude-review PR #522 P1).
+  const tickEdge = orientation === 'h' ? (pinH === 'top' ? 'bottom' : 'top') : (pinV === 'left' ? 'right' : 'left');
   return (
     <div
       style={{
