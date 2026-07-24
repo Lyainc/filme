@@ -12,13 +12,33 @@
 import { describe, expect, mock, test, afterEach } from 'bun:test';
 import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import BrightnessSlider from '../src/components/wizard/BrightnessSlider';
+import BrightnessSlider, { shouldCommitSliderValue } from '../src/components/wizard/BrightnessSlider';
 import { DesignRail } from '../src/components/v2/DesignRail';
 import { usePhototicket } from '../src/hooks/usePhototicket';
 
 afterEach(() => {
   cleanup();
   window.localStorage.clear();
+});
+
+// claude-review PR #516 P1(3차) — "deferredValue가 localValue에 수렴했을 때만 커밋" 가드의
+// 실제 대상 시나리오(드래그로 localValue≠deferredValue인 과도기에 부모가 value를 외부에서 바꾸는
+// 경우)는 happy-dom act()가 React 트랜지션을 동기적으로 다 flush해버려 렌더 타이밍으로는 결정론적
+// 재현이 안 된다(리뷰도 인정). 판정 로직을 순수 함수로 뽑아 타이밍과 분리해 직접 검증한다 —
+// 가드를 실수로 제거·완화해도 이 스위트가 즉시 실패하도록.
+describe('#507 shouldCommitSliderValue — 수렴 가드', () => {
+  test('과도기(deferredValue가 아직 localValue를 못 따라잡음)에는 커밋하지 않는다', () => {
+    // 드래그로 localValue=0.9가 됐지만 deferredValue는 아직 이전 값(0.5)에 머무른 상태.
+    expect(shouldCommitSliderValue(0.5, 0.9, 0.5)).toBe(false);
+  });
+
+  test('수렴 완료 + 부모 value와 다르면 커밋한다', () => {
+    expect(shouldCommitSliderValue(0.9, 0.9, 0.5)).toBe(true);
+  });
+
+  test('수렴 완료했지만 이미 부모 value와 같으면(라운드트립) 커밋하지 않는다', () => {
+    expect(shouldCommitSliderValue(0.8, 0.8, 0.8)).toBe(false);
+  });
 });
 
 describe('#507 BrightnessSlider — 드래그 커밋 저빈도화', () => {

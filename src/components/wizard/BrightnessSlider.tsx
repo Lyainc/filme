@@ -19,6 +19,19 @@ interface BrightnessSliderProps {
 // localValue로 즉시 반응시키고, 실제 커밋(onChange 호출)은 useDeferredValue로 낮은 우선순위
 // 렌더에 미뤄 React 스케줄러가 프레임당 최대 1회로 합쳐 내보내게 한다. 마운트 시 오탐 커밋을
 // 막기 위해 deferredValue를 부모가 준 value와 비교해 실제로 달라졌을 때만 onChange를 부른다.
+
+/**
+ * deferredValue가 커밋해도 되는 상태인지 판정하는 순수 함수(claude-review PR #516 P1 후속) —
+ * effect 밖으로 뽑은 이유는 "deferredValue가 localValue를 아직 못 따라잡은 과도기" 조건을
+ * happy-dom act()의 동기 flush 없이 결정론적으로 테스트하기 위함. act()는 React 트랜지션을
+ * 완전히 flush해버려 그 과도기 자체를 렌더 타이밍으로는 재현할 수 없다 — 판정 로직만 분리해
+ * 값 조합으로 직접 검증한다. deferredValue !== localValue(아직 수렴 전)면 절대 커밋하지 않고,
+ * 수렴했어도 이미 부모 value와 같으면(우리 자신의 커밋이 되돌아온 라운드트립) 커밋하지 않는다.
+ */
+export function shouldCommitSliderValue(deferredValue: number, localValue: number, value: number): boolean {
+  return deferredValue === localValue && deferredValue !== value;
+}
+
 export default function BrightnessSlider({
   value,
   onChange,
@@ -38,11 +51,8 @@ export default function BrightnessSlider({
   }
   const deferredValue = useDeferredValue(localValue);
 
-  // deferredValue는 렌더 중 조정으로 localValue가 바뀐 직후 곧바로 따라잡지 못하고 한두 렌더
-  // 뒤처진 채 커밋될 수 있다 — 그 과도기에 커밋하면 외부에서 갓 들어온 value를 구 deferredValue로
-  // 즉시 덮어써버린다. deferredValue가 localValue에 완전히 수렴했을 때만(=지연이 끝났을 때만) 커밋한다.
   useEffect(() => {
-    if (deferredValue === localValue && deferredValue !== value) onChange(deferredValue);
+    if (shouldCommitSliderValue(deferredValue, localValue, value)) onChange(deferredValue);
   }, [deferredValue, localValue, value, onChange]);
 
   return (
