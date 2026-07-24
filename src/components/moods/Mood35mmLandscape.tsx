@@ -1,7 +1,6 @@
 import { CSSProperties, memo, useState } from 'react';
 import type { SheetTarget } from '@/constants/fields';
 import {
-  ChainStamp,
   FieldGhost,
   FieldTap,
   FilmStripBand,
@@ -9,12 +8,12 @@ import {
   FONT_KR,
   FONT_MONO,
   FONT_SANS,
-  FormatStamp,
   letterboxToneMatch,
   MoodProps,
   MoodWordmark,
   Poster,
   POSTER_LETTERBOX_BG,
+  StampRow,
   buildEdgeCodes,
   fieldPieces,
   fitFontSizeToWidth,
@@ -158,9 +157,6 @@ export const Mood35mmLandscape = memo(function Mood35mmLandscape({ movieInfo: d,
   const hasStamp =
     stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost) ||
     stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost);
-  const bothStamps =
-    stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost) &&
-    stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost);
 
   const captionScrim =
     'linear-gradient(180deg, rgba(7,7,7,0) 0%, rgba(7,7,7,0.55) 42%, rgba(7,7,7,0.95) 100%)';
@@ -211,13 +207,23 @@ export const Mood35mmLandscape = memo(function Mood35mmLandscape({ movieInfo: d,
             {/* Chain + format, top-left (마스터 left:46 top:34) */}
             {hasStamp && (
               <div style={{ position: 'absolute', left: 46, top: 34, display: 'flex', alignItems: 'center', gap: 28 }}>
-                <FieldTap field="chain" onField={onField}>
-                  <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={50} surface="dark" ghost={ghost} scale={components.chainScale ?? 1} />
-                </FieldTap>
-                {bothStamps && <span style={{ width: 1, height: 30, background: FS_INK, opacity: 0.5 }} />}
-                <FieldTap field="format" onField={onField}>
-                  <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.85} surface="dark" ghost={ghost} scale={components.formatScale ?? 1} />
-                </FieldTap>
+                <StampRow
+                  chain={components.chain}
+                  chainLabel={components.chainLabel}
+                  chainVisible={components.chainVisible}
+                  chainHeight={50}
+                  chainScale={components.chainScale ?? 1}
+                  format={components.format}
+                  formatLabel={components.formatLabel}
+                  formatVisible={components.formatVisible}
+                  formatSize={0.85}
+                  formatScale={components.formatScale ?? 1}
+                  surface="dark"
+                  ghost={ghost}
+                  onField={onField}
+                  dividerColor={FS_INK}
+                  dividerOpacity={0.5}
+                />
               </div>
             )}
 

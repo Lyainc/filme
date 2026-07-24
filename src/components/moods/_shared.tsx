@@ -276,6 +276,12 @@ interface ChainStampProps {
   visible: boolean;
   /** 빈 항목 미리보기(#216). false면 dashed placeholder를 숨긴다. undefined/true면 오늘처럼 표시. */
   ghost?: boolean;
+  /**
+   * 실제 렌더 높이(px) 리포트(#505, Poster의 onTopBandHeight와 동일 패턴). stampHeightDelta로
+   * 로고 종횡비에 따라 ±16px 변하는 최종 높이를 그대로 콜백에 넘긴다 — 별도 DOM 실측(ref+
+   * ResizeObserver) 없이 이미 계산 중인 값을 재사용. 렌더 안 함(null)이면 0을 리포트한다.
+   */
+  onRenderedHeight?: (h: number) => void;
 }
 
 const LOGO_SHADOW = 'drop-shadow(0 2px 8px rgba(0,0,0,0.85))';
@@ -480,14 +486,12 @@ export function ChainStamp({
   height = 48,
   visible,
   ghost,
+  onRenderedHeight,
 }: ChainStampProps) {
   // Rules of Hooks — stampWillRender의 조기 return보다 앞에서 무조건 호출(#392).
   // 결과(willRender)를 그대로 로드 여부에도 재사용 — 완전 비노출(null 렌더)이면 로드 자체를 생략한다(#190 nit).
   const willRender = stampWillRender(visible, chain, label, ghost);
   const aspect = useNaturalAspect(chain, willRender);
-  // null 판정을 stampWillRender로 일원화(무드 구분선 게이팅과 동일 조건). 여기를 통과하면
-  // 이미지·라벨·placeholder(ghost!==false) 중 하나는 반드시 렌더된다.
-  if (!willRender) return null;
   // 무드 고정 size(디자인 상수)와 사용자 조작 scale(#441)을 분리해 받되, 실제 렌더 계산은
   // 곱연산 결합값 하나로 통일 — 아래 h·placeholder·라벨이 전부 같은 비율로 스케일된다.
   const scaledSize = size * scale;
@@ -495,6 +499,15 @@ export function ChainStamp({
   // 훨씬 큰 상대 변화를 만들어 이 PR이 피하려는 회귀 카테고리를 좁은 size에서 재현한다(claude-review
   // PR #408 P1, 2차 라운드).
   const h = (height + stampHeightDelta(aspect)) * scaledSize;
+  // early return(willRender===false) 전에 계산·리포트 — Rules of Hooks(#392)와 동일 이유로
+  // useEffect도 조기 return보다 앞에 둔다. 렌더 안 하는 프레임은 0을 리포트해 StampRow의
+  // 구분선이 사라진 스탬프 높이에 걸려 남지 않게 한다.
+  useEffect(() => {
+    onRenderedHeight?.(willRender ? h : 0);
+  }, [onRenderedHeight, willRender, h]);
+  // null 판정을 stampWillRender로 일원화(무드 구분선 게이팅과 동일 조건). 여기를 통과하면
+  // 이미지·라벨·placeholder(ghost!==false) 중 하나는 반드시 렌더된다.
+  if (!willRender) return null;
 
   // 노출 off(#369) — 여기 도달했으면 ghost===true(stampWillRender 계약). 이미지·라벨이 있어도
   // 노출하지 않고 흐린 placeholder + 값 존재 배지로만 암시한다(탭→재노출 #266 유지).
@@ -540,6 +553,8 @@ interface FormatStampProps {
   visible: boolean;
   /** 빈 항목 미리보기(#216). false면 dashed placeholder를 숨긴다. undefined/true면 오늘처럼 표시. */
   ghost?: boolean;
+  /** 실제 렌더 높이(px) 리포트(#505) — ChainStamp의 onRenderedHeight와 동일 계약. */
+  onRenderedHeight?: (h: number) => void;
 }
 
 export function FormatStamp({
@@ -550,18 +565,23 @@ export function FormatStamp({
   surface = 'paper',
   visible,
   ghost,
+  onRenderedHeight,
 }: FormatStampProps) {
   // Rules of Hooks — stampWillRender의 조기 return보다 앞에서 무조건 호출(#392).
   // 결과(willRender)를 그대로 로드 여부에도 재사용 — 완전 비노출(null 렌더)이면 로드 자체를 생략한다(#190 nit).
   const willRender = stampWillRender(visible, format, label, ghost);
   const aspect = useNaturalAspect(format, willRender);
-  // null 판정을 stampWillRender로 일원화(무드 구분선 게이팅과 동일 조건). 통과하면
-  // 이미지·라벨·placeholder(ghost!==false) 중 하나는 반드시 렌더된다.
-  if (!willRender) return null;
   // ChainStamp와 동일 — 무드 고정 size와 사용자 scale(#441)을 곱연산 결합값 하나로 통일.
   const scaledSize = size * scale;
   // delta도 스케일 — ChainStamp와 동일 이유(claude-review PR #408 P1, 2차 라운드).
   const h = (64 + stampHeightDelta(aspect)) * scaledSize;
+  // ChainStamp와 동일 — 조기 return 전에 리포트(#505).
+  useEffect(() => {
+    onRenderedHeight?.(willRender ? h : 0);
+  }, [onRenderedHeight, willRender, h]);
+  // null 판정을 stampWillRender로 일원화(무드 구분선 게이팅과 동일 조건). 통과하면
+  // 이미지·라벨·placeholder(ghost!==false) 중 하나는 반드시 렌더된다.
+  if (!willRender) return null;
 
   // 노출 off(#369) — ChainStamp와 동일: 값이 있어도 흐린 placeholder + 배지로만 암시.
   if (visible === false) {
@@ -593,6 +613,99 @@ export function FormatStamp({
   }
 
   return <DashedPlaceholder text="FORMAT" width={140 * scaledSize} height={h} size={scaledSize} surface={surface} />;
+}
+
+export interface StampRowProps {
+  chain: string;
+  chainLabel?: string;
+  chainVisible: boolean;
+  /** ChainStamp의 height prop — 무드마다 고정값(39~74)이 다르다. */
+  chainHeight: number;
+  chainScale?: number;
+  format: string;
+  formatLabel?: string;
+  formatVisible: boolean;
+  /** FormatStamp의 size prop. */
+  formatSize?: number;
+  formatScale?: number;
+  surface: Surface;
+  ghost?: boolean;
+  onField?: (field: SheetTarget) => void;
+  /** 구분선 색 (무드 잉크 색상 변수를 그대로 넘긴다). */
+  dividerColor: string;
+  /** 구분선 opacity — 무드마다 0.35~0.55로 다르다. */
+  dividerOpacity: number;
+}
+
+/**
+ * Chain+format 스탬프 쌍 + 사이 구분선(#505). 5개 무드(Stub·Criterion·35mm·35mm Wide·Minimal —
+ * Editorial은 세로 스택+dot이라 별도)가 각자 하드코딩 상수로 구분선 height를 그리던 걸 공유 추출.
+ *
+ * 구분선이 어긋나던 원인은 stampHeightDelta(로고 종횡비에 따라 ±16px)로 두 스탬프의 실제 렌더
+ * 높이가 갈리는데 구분선은 무드별 고정 상수였던 것 — ChainStamp/FormatStamp가 onRenderedHeight로
+ * 그 계산값(이미 자기 내부에서 구하는 h)을 그대로 리포트하게 하고, 구분선 height를 둘 중 큰 값에
+ * 맞춘다(Poster의 onTopBandHeight와 동일 패턴, 별도 DOM 실측 불필요).
+ *
+ * 바깥 flex 컨테이너(gap·marginBottom·position 등 무드마다 다른 값)는 각 무드가 계속 소유하고,
+ * 이 컴포넌트는 "체인 + 구분선 + 포맷" 세 조각만 Fragment로 반환한다.
+ */
+export function StampRow({
+  chain,
+  chainLabel,
+  chainVisible,
+  chainHeight,
+  chainScale = 1,
+  format,
+  formatLabel,
+  formatVisible,
+  formatSize = 1,
+  formatScale = 1,
+  surface,
+  ghost,
+  onField,
+  dividerColor,
+  dividerOpacity,
+}: StampRowProps) {
+  const [chainH, setChainH] = useState(0);
+  const [formatH, setFormatH] = useState(0);
+  const bothStamps =
+    stampWillRender(chainVisible, chain, chainLabel, ghost) &&
+    stampWillRender(formatVisible, format, formatLabel, ghost);
+
+  return (
+    <>
+      <FieldTap field="chain" onField={onField}>
+        <ChainStamp
+          chain={chain}
+          label={chainLabel}
+          visible={chainVisible}
+          height={chainHeight}
+          surface={surface}
+          ghost={ghost}
+          scale={chainScale}
+          onRenderedHeight={setChainH}
+        />
+      </FieldTap>
+      {bothStamps && (
+        <span
+          data-stamp-divider="true"
+          style={{ width: 1, height: Math.max(chainH, formatH), background: dividerColor, opacity: dividerOpacity, flexShrink: 0 }}
+        />
+      )}
+      <FieldTap field="format" onField={onField}>
+        <FormatStamp
+          format={format}
+          label={formatLabel}
+          visible={formatVisible}
+          size={formatSize}
+          surface={surface}
+          ghost={ghost}
+          scale={formatScale}
+          onRenderedHeight={setFormatH}
+        />
+      </FieldTap>
+    </>
+  );
 }
 
 /**
