@@ -147,6 +147,35 @@ describe('별 롱터치 → 소수 입력 펼침(모바일 경로, #496)', () =>
   });
 });
 
+// claude-review PR #517 P1 — 키보드 활성화 클릭(detail===0) 분기가 무테스트였다. 실제 포인터
+// 클릭(detail>=1)은 row 레벨 핸들러가 이미 커밋하므로 버튼 onClick에서 걸러져야 하고, 키보드
+// Enter/Space(detail===0)만 버튼 onClick 경로로 정수 별점을 커밋해야 한다.
+describe('키보드 전용 별점 선택 (#496, claude-review PR #517 P1)', () => {
+  test('detail===0(키보드 활성화) 클릭은 정수 별점으로 즉시 커밋된다', () => {
+    const onValueChange = mock((_next: number) => {});
+    render(<RatingPicker value={0} onValueChange={onValueChange} visible={true} onVisibleChange={() => {}} />);
+    const star = screen.getByRole('radio', { name: '4점' });
+
+    act(() => {
+      fireEvent.click(star, { detail: 0 });
+    });
+
+    expect(onValueChange).toHaveBeenCalledWith(4);
+  });
+
+  test('detail>=1(실제 포인터 클릭)은 버튼 onClick에서 무시된다 — row 핸들러가 이미 처리해 이중 커밋 방지', () => {
+    const onValueChange = mock((_next: number) => {});
+    render(<RatingPicker value={0} onValueChange={onValueChange} visible={true} onVisibleChange={() => {}} />);
+    const star = screen.getByRole('radio', { name: '4점' });
+
+    act(() => {
+      fireEvent.click(star, { detail: 1 });
+    });
+
+    expect(onValueChange).not.toHaveBeenCalled();
+  });
+});
+
 describe('캡션 토글 — 데스크톱/키보드/스크린리더 대체 경로 (#496)', () => {
   test('캡션 버튼을 누르면 소수 입력이 펼쳐지고 다시 누르면 접힌다', () => {
     render(<Harness />);
