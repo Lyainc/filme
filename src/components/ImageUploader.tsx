@@ -8,7 +8,7 @@ const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ss
 
 interface ImageUploaderProps {
   /** preserveRatio는 #420 "원본 비율 보존" 프리셋 토글 결과 — posterFit 컴포넌트 상태로 이어서 저장할 것. */
-  onUpload: (croppedImageUrl: string, preserveRatio: boolean) => void;
+  onUpload: (croppedImageUrl: string, preserveRatio: boolean, originalImageUrl: string) => void;
   isProcessing: boolean;
   /** 업로드 후 프리뷰로 보여줄 크롭 결과(부모 소유 objectURL). */
   imageUrl?: string | null;
@@ -19,14 +19,23 @@ interface ImageUploaderProps {
    * 재크롭마다 unchecked로 열려 posterFit이 조용히 'cover'로 되돌아간다(claude-review PR #429 P1).
    */
   posterFit?: 'cover' | 'contain';
+  /**
+   * 자동저장 복원(#489)이 IndexedDB에서 되살린 원본(크롭 전) 포스터 URL. 비동기 복원이라 첫
+   * 렌더엔 없다가 나중에 도착하므로, 로컬 originalSrc가 아직 비어 있을 때만 1회 시드한다.
+   */
+  initialOriginalSrc?: string | null;
 }
 
 const ACCEPT = 'image/jpeg,image/png,image/jpg,image/webp';
 
-export default function ImageUploader({ onUpload, isProcessing, imageUrl, layout, posterFit }: ImageUploaderProps) {
+export default function ImageUploader({ onUpload, isProcessing, imageUrl, layout, posterFit, initialOriginalSrc }: ImageUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   // 크롭 모달의 소스이자 재크롭을 위해 유지되는 원본 objectURL. 크롭 완료 후에도 버리지 않는다.
   const [originalSrc, setOriginalSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialOriginalSrc && !originalSrc) setOriginalSrc(initialOriginalSrc);
+  }, [initialOriginalSrc, originalSrc]);
   const [cropOpen, setCropOpen] = useState(false);
   const [isCropping, setIsCropping] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -68,7 +77,7 @@ export default function ImageUploader({ onUpload, isProcessing, imageUrl, layout
         croppedAreaPixels,
         preserveRatio ? { maxSide: TARGET_HEIGHT * 2 } : undefined
       );
-      onUpload(croppedUrl, preserveRatio);
+      onUpload(croppedUrl, preserveRatio, originalSrc);
       setPendingNewFile(false);
       setCropOpen(false); // originalSrc는 유지 — 재크롭에 재사용
     } catch (error) {

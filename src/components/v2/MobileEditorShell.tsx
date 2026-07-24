@@ -271,6 +271,15 @@ export function MobileEditorShell({
     };
   }, [posterOriginalSrc]);
 
+  // 자동저장 복원(#489) — IndexedDB에서 되살린 원본 포스터를 로컬 state로 1회 시드해야
+  // 새로고침 후에도 재크롭이 된다. 비동기 복원이라 photo.restoredOriginalPosterUrl은 마운트
+  // 직후엔 비어 있다가 나중에 도착한다.
+  useEffect(() => {
+    if (photo.restoredOriginalPosterUrl && !posterOriginalSrc) {
+      setPosterOriginalSrc(photo.restoredOriginalPosterUrl);
+    }
+  }, [photo.restoredOriginalPosterUrl, posterOriginalSrc]);
+
   function flashToast(msg: string) {
     setToast(msg);
     clearTimeout(toastTimer.current);
@@ -345,7 +354,7 @@ export function MobileEditorShell({
         preserveRatio ? { maxSide: TARGET_HEIGHT * 2 } : undefined
       );
       const isFirstUpload = !photo.state.croppedImageUrl;
-      photo.handleImageUpload(url);
+      photo.handleImageUpload(url, posterOriginalSrc);
       photo.updateComponents({ posterFit: preserveRatio ? 'contain' : 'cover' });
       // 첫 업로드는 문서 시작 — 같이 일어나는 fieldVisibility 기본셋 리셋이 undo 1스텝으로
       // 잡히면 시작하자마자 undo가 활성돼 어색하다(#356). 교체는 히스토리 유지(포스터 자체는
