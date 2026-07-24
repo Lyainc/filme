@@ -22,13 +22,13 @@ import {
   SignatureStamp,
   StampRow,
   stampWillRender,
-  truncateActors,
+  truncateActorsToWidth,
   useFontsReady,
 } from './_shared';
 
 /**
  * v05 — 티켓 스텁(마스터 Ticket Design Master.dc.html v2 · 2026-07-08 resync, 에픽 #281).
- * 재구조: 포스터 760(텍스트 없음) → 절취 16(3px dashed, 반원 노치 없음) → 페이퍼 스텁 flex:1.
+ * 재구조: 포스터 900(텍스트 없음) → 절취 16(3px dashed, 반원 노치 없음) → 페이퍼 스텁 flex:1.
  * 제목이 포스터 오버레이에서 페이퍼 스텁으로 이동(42/700 2줄). 페이퍼: 홀로그램 티커(장식) → 워드마크
  * + 제목/원제 → Admission(SEAT 칩 + DATE/TIME/HALL 점선) → The Film(RUNTIME/RATED/RELEASED/
  * RE-RELEASED 2열 + STARRING) → 푸터(made with FILME · collected by · 스텁 바코드 300×40 텍스트 없음).
@@ -47,10 +47,18 @@ export const BARCODE_WIDTH = 300;
 // 단일 토큰은 개수 캡을 안 타므로(#381 리뷰 P1), minSize까지 줄여도 못 들어가면 span에 걸린
 // overflow:hidden + ellipsis가 최종 방어선이 된다.
 const SEAT_MAX_WIDTH = 520;
+// STARRING 값 가용폭(#493) — Row(라벨+점선필러+값) 실측 기준. 컨테이너 848(960-PAD_X*2)에서
+// 라벨 "STARRING"(78.4px) + gap*2(24) + 점선필러 최소폭(12)을 빼면 실제 상한은 ≈733.6px
+// (headless Chrome 실측) — 여유를 두고 700으로 고정.
+const STARRING_MAX_WIDTH = 700;
 // 본문 좌우 패딩(#446 톤업, 40→56) — 패딩·티커 풀블리드 음수마진·타이틀 가용폭 세 곳이 공유하는 단일 소스.
 const PAD_X = 56;
 
-const POSTER_H = 760;
+// 상단 포스터 확대(#493) — 세로 포스터(2:3≈0.667) contain 시 좌우 여백을 줄이려 키울수록 좋지만,
+// 하단 스텁(전 필드+체인·포맷 스탬프 채움 기준)이 overflow:hidden에 잘리지 않는 실측 상한이
+// ≈924px(스텁 콘텐츠가 그 지점부터 바닥을 넘침, headless Chrome + FULL_MOVIE 픽스처로 실측)라
+// 24px 여유를 두고 900으로 고정.
+const POSTER_H = 900;
 // 홀로그램 티커 무지개 그라디언트(마스터 1:1) — 절취 정보 스트립 배경.
 const HOLO = 'linear-gradient(100deg,#9ff0df 0%,#f6c4e4 14%,#c9baf7 30%,#b7e3f8 47%,#f7e2b3 64%,#b6f7c6 81%,#9ff0df 100%)';
 
@@ -91,7 +99,8 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
   const fontsReady = useFontsReady();
   const titleFontSize = fitFontSizeToWidth(titleVal, (960 - PAD_X * 2) * 2, { fontFamily: FONT_KR, fontWeight: 700, minSize: 26, maxSize: 42 }, fontsReady);
   const titleOgVal = gate(fv?.titleOg, d.titleOg);
-  const actorsVal = truncateActors(gate(fv?.actors, d.actors), 5);
+  // 배우 폭 인식 truncate(#493) — 고정 5명 캡 대신 STARRING 값 가용폭 기준으로 "외 N명" 결정.
+  const actorsVal = truncateActorsToWidth(gate(fv?.actors, d.actors), STARRING_MAX_WIDTH, { fontFamily: FONT_SANS, fontWeight: 700, fontSize: 20 }, fontsReady);
   const seatVal = gate(fv?.seat, d.seat);
   // 좌석 폭 맞춤(#381) — SEAT 칩은 flex:0 0 auto라 길어지면 그대로 커져 옆 DATE/TIME/HALL
   // 컬럼을 짓누른다. SEAT_MAX_WIDTH는 실측(4석 "J101, J102, J103, J104" 스타일도 485px로
@@ -159,7 +168,7 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
           배경은 Poster의 letterboxBg가 칠하므로 래퍼 자체엔 안 둔다(nit poster-letterbox-bg, #440 —
           editorial과 동일하게 죽은 스타일이던 래퍼 background 제거). */}
       <div style={{ flex: `0 0 ${POSTER_H}px`, position: 'relative', overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
-        {/* 가로 밴드(960×760)지만 contain이라 포스터 프레임은 높이에 맞춰 507×760 = 0.667로
+        {/* 가로 밴드(960×900, #493)지만 contain이라 포스터 프레임은 높이에 맞춰 600×900 = 0.667로
             서고, 남는 좌우는 blur 배경이 덮는다(#440). 그래서 밴드 높이는 #525 룰 5와 무관한
             자유 변수다(#493 확대 가능). 자연 간극이 커 frameInsetY는 불필요(editorial/
             35mm-landscape와 동일). */}
@@ -323,7 +332,7 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
                 <div style={{ marginTop: 12 }}>
                   <Row label="STARRING">
                     {actorsVal ? (
-                      <FieldTap field="actors" onField={onField}><span style={{ ...rowValue(20), flexShrink: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{actorsVal}</span></FieldTap>
+                      <FieldTap field="actors" onField={onField}><span style={{ ...rowValue(20), flexShrink: 1, minWidth: 0, maxWidth: STARRING_MAX_WIDTH, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{actorsVal}</span></FieldTap>
                     ) : (
                       <FieldTap field="actors" onField={onField}><FieldGhost text="CAST" width={200} height={30} surface="paper" state={gActors} /></FieldTap>
                     )}

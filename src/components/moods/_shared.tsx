@@ -1871,3 +1871,47 @@ export function truncateActors(actors: string, max = 3): string {
   if (parts.length <= max) return parts.join(', ');
   return `${parts.slice(0, max).join(', ')} 외 ${parts.length - max}명`;
 }
+
+const truncateActorsWidthCache = new Map<string, string>();
+
+/**
+ * `truncateActors`의 폭 인식 버전(#493) — 고정 인원수 대신 실제 렌더 폭(canvas measureText)
+ * 기준으로 "외 N명"을 결정한다. fitFontSizeToWidth와 같은 캐시·SSR-fallback·fontsReady 정책을
+ * 공유한다(letter-spacing 미반영도 동일 — 보수적으로 여유 있게 측정됨).
+ */
+export function truncateActorsToWidth(
+  actors: string,
+  maxWidth: number,
+  font: { fontFamily: string; fontWeight?: number; fontSize: number },
+  fontsReady = true,
+): string {
+  if (!actors) return '';
+  const parts = actors.split(',').map(s => s.trim()).filter(Boolean);
+  if (parts.length <= 1) return parts.join(', ');
+  const full = parts.join(', ');
+
+  const ctx = getMeasureCtx();
+  if (!ctx) return full;
+
+  const fontWeight = font.fontWeight ?? 400;
+  const key = `${actors}|${maxWidth}|${font.fontFamily}|${fontWeight}|${font.fontSize}`;
+  const cached = truncateActorsWidthCache.get(key);
+  if (cached !== undefined) return cached;
+
+  ctx.font = `${fontWeight} ${font.fontSize}px ${font.fontFamily}`;
+  const widthOf = (s: string) => ctx.measureText(s).width;
+  const withMore = (n: number) => `${parts.slice(0, n).join(', ')} 외 ${parts.length - n}명`;
+
+  let result = full;
+  if (widthOf(full) > maxWidth) {
+    result = withMore(1);
+    for (let n = 2; n < parts.length; n++) {
+      const candidate = withMore(n);
+      if (widthOf(candidate) > maxWidth) break;
+      result = candidate;
+    }
+  }
+
+  if (fontsReady) truncateActorsWidthCache.set(key, result);
+  return result;
+}
