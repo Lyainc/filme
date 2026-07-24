@@ -3,6 +3,20 @@ import { PhototicketState, MovieInfo, TicketComponents, TicketField } from '@/ty
 import { defaultBrightnessForTexture } from '@/components/moods/_shared';
 import { defaultIntensityForTexture, migrateLegacyComponents } from '@/utils/textureRecipes';
 import { ALL_FIELDS_ON } from '@/constants/fieldVisibility';
+import { saveImages, loadImages, clearImages } from '@/utils/imageDb';
+
+// blob: URL을 다시 Blob으로 — 페이지가 만든 objectURL을 읽는 것뿐이라 네트워크를 안 타고,
+// captureToImage.ts가 피하는 fetch(data:) CSP 제약과도 무관하다. 실패(이미 revoke된 URL 등)는
+// undefined로 흡수해 saveImages가 그 키를 건너뛰게 한다.
+async function blobUrlToBlob(url: string | null | undefined): Promise<Blob | undefined> {
+  if (!url || !url.startsWith('blob:')) return undefined;
+  try {
+    const res = await fetch(url);
+    return await res.blob();
+  } catch {
+    return undefined;
+  }
+}
 
 const DEFAULT_VISIBILITY_ON_UPLOAD: Record<TicketField, boolean> = {
   title: true,
@@ -124,6 +138,16 @@ export function usePhototicket() {
   // 바꾸지만 이 카운터는 안 건드려서, 자동저장 effect가 그 둘에는 재발동하지 않는다
   // (claude-review PR #488 P1: clearDraft 직후 지운 저장 키가 1초 뒤 재생성되던 문제).
   const [dirtyTick, setDirtyTick] = useState(0);
+  // 크롭 전 원본 포스터 — 재크롭에만 쓰이고 미리보기/export엔 안 들어가 reactive state로 두지
+  // 않는다(handleImageUpload가 갱신, saveDraft가 읽어 IndexedDB에 영속).
+  const originalPosterUrlRef = useRef<string | null>(null);
+  // 마운트 시 복원된 draft가 있었는지 — #489 서브버그: 복원 후 재업로드가 isFirstUpload로
+  // 오판돼 방금 복원한 fieldVisibility를 DEFAULT_VISIBILITY_ON_UPLOAD로 덮어쓰는 것을 막는 게이트.
+  const hasRestoredDraftRef = useRef(false);
+  // IndexedDB에서 복원된 원본 포스터 URL — ImageUploader/MobileEditorShell이 자기 로컬
+  // originalSrc state를 이 값으로 1회 시드해야 재크롭이 살아난다. 비동기 복원이라 ref가 아니라
+  // state여야 완료 시 소비자가 리렌더로 알아챈다.
+  const [restoredOriginalPosterUrl, setRestoredOriginalPosterUrl] = useState<string | null>(null);
   const latestUrlRef = useRef<string | null>(null);
   // chain/format은 picker가 교체 시점에만 revoke하므로, 언마운트 정리를 위해
   // 상태 소유자(hook)가 마지막 blob URL을 추적한다 (latestUrlRef와 동일 패턴).
@@ -147,6 +171,10 @@ export function usePhototicket() {
   useEffect(() => {
     const saved = loadPersisted();
     if (!saved) return;
+    // 복원된 draft가 있다는 표시 — handleImageUpload의 isFirstUpload 판정이 이걸로 게이트된다
+    // (#489 서브버그: IDB 이미지 복원이 실패해도 croppedImageUrl은 null인 채로 재업로드를 유도하는데,
+    // 그 재업로드를 "첫 업로드"로 오판해 방금 복원한 fieldVisibility를 리셋하면 안 된다).
+    hasRestoredDraftRef.current = true;
     // 옛 단일 texture 저장분을 {material, coating, ...Intensity}로 매핑(#475 c4) — 이미 새
     // shape면 그대로 통과. 이후 touched 판정·merge 모두 이 결과를 쓴다.
     const migratedComponents = saved.components
@@ -198,15 +226,69 @@ export function usePhototicket() {
     }
   }, []);
 
-  const handleImageUpload = useCallback((croppedUrl: string) => {
+  // 이미지(포스터·원본·로고·서명) 복원 — IndexedDB는 비동기라 localStorage 복원과 별도 effect다.
+  // 실패(미지원·프라이빗 모드·용량 초과)는 catch에서 조용히 흡수 — croppedImageUrl이 null인 채로
+  // 남아 현재(lossy) 동작대로 재업로드를 유도한다(#489 결정 5). StrictMode 이중 마운트에서 두
+  // 번째 실행이 먼저 끝나 setState한 뒤 첫 번째 실행이 뒤늦게 도착하는 경우를 cancelled로 막는다.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let cancelled = false;
+    loadImages()
+      .then((images) => {
+        if (cancelled) return;
+        const componentsPatch: Partial<TicketComponents> = {};
+        if (images.chain) {
+          const url = URL.createObjectURL(images.chain);
+          latestChainUrlRef.current = url;
+          componentsPatch.chain = url;
+        }
+        if (images.format) {
+          const url = URL.createObjectURL(images.format);
+          latestFormatUrlRef.current = url;
+          componentsPatch.format = url;
+        }
+        if (images.signature) {
+          const url = URL.createObjectURL(images.signature);
+          latestSignatureUrlRef.current = url;
+          componentsPatch.signatureImage = url;
+        }
+        const posterUrl = images.poster ? URL.createObjectURL(images.poster) : null;
+        if (posterUrl) latestUrlRef.current = posterUrl;
+        const originalUrl = images.posterOriginal ? URL.createObjectURL(images.posterOriginal) : null;
+        // saveDraft가 이 ref를 읽어 다음 저장에도 원본을 실어보낸다 — 안 세팅하면 복원 직후(재크롭
+        // 전) 첫 자동저장이 원본을 빈 값으로 갈아치워 IndexedDB에서 지워버린다.
+        originalPosterUrlRef.current = originalUrl;
+        if (originalUrl) setRestoredOriginalPosterUrl(originalUrl);
+        if (posterUrl || Object.keys(componentsPatch).length > 0) {
+          setState((prev) => ({
+            ...prev,
+            ...(posterUrl ? { croppedImageUrl: posterUrl } : {}),
+            components: { ...prev.components, ...componentsPatch },
+          }));
+        }
+      })
+      .catch(() => {
+        // IndexedDB 미지원·프라이빗 모드·용량 초과 — 무시하고 현재 lossy 동작으로 폴백.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleImageUpload = useCallback((croppedUrl: string, originalUrl?: string | null) => {
     // 새 포스터 업로드는 밝기 슬레이트를 초기화한다 — 이후 texture 전환에서 그 texture의
     // 기본 밝기가 다시 적용된다(#146 리뷰). fieldVisibility(첫 업로드에만 리셋)와 달리
     // 밝기는 포스터 콘텐츠(어두운/밝은 포스터)에 종속적이라 매 업로드마다 리셋한다.
     brightnessTouchedRef.current = false;
+    // 재크롭 시 호출부가 같은 원본을 다시 넘겨줄 뿐이라도, saveDraft가 읽는 최신값이므로 갱신.
+    originalPosterUrlRef.current = originalUrl ?? null;
     setState((prev) => {
       if (prev.croppedImageUrl) URL.revokeObjectURL(prev.croppedImageUrl);
       latestUrlRef.current = croppedUrl;
-      const isFirstUpload = prev.croppedImageUrl === null;
+      // 복원된 draft가 있었으면(hasRestoredDraftRef) 이번 업로드가 croppedImageUrl===null이어도
+      // "첫 업로드"가 아니다 — IDB 이미지 복원이 실패해 재업로드를 유도한 경우, 이미 복원된
+      // fieldVisibility를 덮어쓰면 안 된다(#489 서브버그).
+      const isFirstUpload = prev.croppedImageUrl === null && !hasRestoredDraftRef.current;
       return {
         ...prev,
         croppedImageUrl: croppedUrl,
@@ -330,7 +412,26 @@ export function usePhototicket() {
     } catch {
       // 저장 실패(쿼터 초과·프라이빗 모드)는 무시 — 영속화는 best-effort다.
     }
-  }, [state.movieInfo, state.components, state.fieldVisibility]);
+
+    // 이미지는 텍스트와 별도로 IndexedDB에 저장 — 위 localStorage 쓰기가 이미 끝났으므로 여기서
+    // 실패해도(미지원·프라이빗 모드·용량 초과) 텍스트/설정 복원은 지켜진다(#489 결정 5).
+    // blob: URL을 Blob으로 되돌려 저장하고, 다음 새로고침에서 위 IDB 복원 effect가 새
+    // objectURL을 재발급한다.
+    void (async () => {
+      try {
+        const [poster, posterOriginal, chain, format, signature] = await Promise.all([
+          blobUrlToBlob(state.croppedImageUrl),
+          blobUrlToBlob(originalPosterUrlRef.current),
+          blobUrlToBlob(state.components.chain),
+          blobUrlToBlob(state.components.format),
+          blobUrlToBlob(state.components.signatureImage),
+        ]);
+        await saveImages({ poster, posterOriginal, chain, format, signature });
+      } catch {
+        // IndexedDB 미지원·프라이빗 모드·용량 초과 — 무시.
+      }
+    })();
+  }, [state.movieInfo, state.components, state.fieldVisibility, state.croppedImageUrl]);
 
   // 디바운스 타이머 콜백이 항상 최신 saveDraft를 호출하도록 하는 latest-ref 패턴 — 매 렌더 갱신.
   // dirtyTick은 "언제 예약할지"만 게이팅하고, 실행 시점엔 이 ref로 그 사이 바뀐 최신 state를
@@ -381,12 +482,20 @@ export function usePhototicket() {
         // 삭제 실패(프라이빗 모드 등)는 무시 — best-effort.
       }
     }
+    void clearImages().catch(() => {
+      // IndexedDB 삭제 실패(미지원·프라이빗 모드)는 무시 — best-effort.
+    });
     // 편집 직후(디바운스 대기 중) clearDraft가 호출되는 경우, 예약된 자동저장이 옛 state로
     // 저장 키를 되살리지 못하게 직접 취소한다(claude-review PR #488 P1).
     if (autoSaveTimerRef.current) {
       clearTimeout(autoSaveTimerRef.current);
       autoSaveTimerRef.current = null;
     }
+    // 복원 관련 상태도 전체 슬레이트 리셋 대상 — 안 하면 초기화 후 새로 업로드해도 "복원된 draft가
+    // 있었다"는 표시가 남아 isFirstUpload가 영구히 오판된다(#489).
+    hasRestoredDraftRef.current = false;
+    originalPosterUrlRef.current = null;
+    setRestoredOriginalPosterUrl(null);
     brightnessTouchedRef.current = false;
     // 초기화는 전체 슬레이트 리셋이라 강도 touched도 함께 되돌린다(#434 PR #472 리뷰 P1, #475 축분리) —
     // 안 하면 초기화 후 축을 바꿔도 그 축 기본 강도가 적용되지 않고 리셋 전 touched가 남는다.
@@ -429,5 +538,6 @@ export function usePhototicket() {
     autoSaveEnabled,
     lastSavedAt,
     toggleAutoSave,
+    restoredOriginalPosterUrl,
   };
 }
