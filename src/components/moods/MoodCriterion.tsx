@@ -2,7 +2,6 @@ import { CSSProperties, memo, useState } from 'react';
 import type { SheetTarget } from '@/constants/fields';
 import {
   Barcode,
-  ChainStamp,
   FieldGhost,
   FieldTap,
   FONT_DISPLAY,
@@ -10,7 +9,6 @@ import {
   FONT_MONO,
   FONT_QUOTE_KR,
   FONT_SANS,
-  FormatStamp,
   letterboxToneMatch,
   MoodProps,
   MoodWordmark,
@@ -27,7 +25,7 @@ import {
   resolveTicketData,
   showFieldGhost,
   SignatureStamp,
-  stampWillRender,
+  StampRow,
   TopBandTone,
   truncateActors,
   useFontsReady,
@@ -217,13 +215,23 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
 
       {/* Top-right paired stamps */}
       <div style={{ position: 'absolute', right: 52, top: 48, display: 'flex', alignItems: 'center', gap: 28 }}>
-        <FieldTap field="chain" onField={onField}>
-          <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={50} surface={stampSurface} ghost={ghost} scale={components.chainScale ?? 1} />
-        </FieldTap>
-        {stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost) && stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost) && <span style={{ width: 1, height: 30, background: ink, opacity: 0.55 }} />}
-        <FieldTap field="format" onField={onField}>
-          <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.9} surface={stampSurface} ghost={ghost} scale={components.formatScale ?? 1} />
-        </FieldTap>
+        <StampRow
+          chain={components.chain}
+          chainLabel={components.chainLabel}
+          chainVisible={components.chainVisible}
+          chainHeight={50}
+          chainScale={components.chainScale ?? 1}
+          format={components.format}
+          formatLabel={components.formatLabel}
+          formatVisible={components.formatVisible}
+          formatSize={0.9}
+          formatScale={components.formatScale ?? 1}
+          surface={stampSurface}
+          ghost={ghost}
+          onField={onField}
+          dividerColor={ink}
+          dividerOpacity={0.55}
+        />
       </div>
 
       {/* Title block — catalog double-rule frame */}

@@ -1,14 +1,12 @@
 import { CSSProperties, Fragment, ReactNode, memo } from 'react';
 import {
   Barcode,
-  ChainStamp,
   FieldGhost,
   FieldTap,
   FONT_DISPLAY,
   FONT_KR,
   FONT_MONO,
   FONT_SANS,
-  FormatStamp,
   MoodProps,
   MoodWordmark,
   Poster,
@@ -22,6 +20,7 @@ import {
   resolveTicketData,
   showFieldGhost,
   SignatureStamp,
+  StampRow,
   stampWillRender,
   truncateActors,
   useFontsReady,
@@ -124,7 +123,6 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
 
   const chainOn = stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost);
   const formatOn = stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost);
-  const bothStamps = chainOn && formatOn;
 
   // HALL 셀 분해(#266 PR-B) — theater·screen을 · 로 붙이되 각각 독립 FieldTap + 개별 ghost(surface paper).
   const screenCell = fieldPieces(
@@ -198,13 +196,23 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
         <div style={{ marginTop: 6 }}>
           {(chainOn || formatOn) && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 13, marginBottom: 22 }}>
-              <FieldTap field="chain" onField={onField}>
-                <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={39} surface="paper" ghost={ghost} scale={components.chainScale ?? 1} />
-              </FieldTap>
-              {bothStamps && <span style={{ width: 1, height: 24, background: INK, opacity: 0.35, flexShrink: 0 }} />}
-              <FieldTap field="format" onField={onField}>
-                <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.6} surface="paper" ghost={ghost} scale={components.formatScale ?? 1} />
-              </FieldTap>
+              <StampRow
+                chain={components.chain}
+                chainLabel={components.chainLabel}
+                chainVisible={components.chainVisible}
+                chainHeight={39}
+                chainScale={components.chainScale ?? 1}
+                format={components.format}
+                formatLabel={components.formatLabel}
+                formatVisible={components.formatVisible}
+                formatSize={0.6}
+                formatScale={components.formatScale ?? 1}
+                surface="paper"
+                ghost={ghost}
+                onField={onField}
+                dividerColor={INK}
+                dividerOpacity={0.35}
+              />
             </div>
           )}
           {titleVal ? (
