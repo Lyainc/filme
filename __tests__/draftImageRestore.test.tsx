@@ -20,10 +20,23 @@ const KEY = 'filme:phototicket:v1';
 // imageDb는 인메모리 Map으로 대체 — usePhototicket이 saveImages/loadImages/clearImages를
 // 올바른 시점에 호출하는지만 본다. shouldFail 토글로 IndexedDB 미지원/프라이빗 모드/용량초과를
 // 흉내낸다(#489 결정 5: 그럴 때도 throw 없이 조용히 폴백해야 한다).
+// saveGate/releaseSave: claude-review PR #515 P1 ② 직렬화 테스트 전용 — armSaveGate() 후 첫
+// saveImages 호출을 붙잡아뒀다가 releaseSave()로 풀어준다. 평소엔 이미 resolved라 no-op.
+// saveImagesCallCount: P1 ③ fingerprint 스킵 테스트 전용 — 실제로 saveImages까지 도달한 횟수.
 let fakeStore: Record<string, Blob> = {};
 let shouldFail = false;
+let saveGate: Promise<void> = Promise.resolve();
+let releaseSave: (() => void) | null = null;
+function armSaveGate() {
+  saveGate = new Promise((resolve) => {
+    releaseSave = resolve;
+  });
+}
+let saveImagesCallCount = 0;
 mock.module('@/utils/imageDb', () => ({
   saveImages: async (entries: Record<string, Blob | undefined>) => {
+    saveImagesCallCount += 1;
+    await saveGate;
     if (shouldFail) throw new Error('IDB unavailable (mock)');
     fakeStore = {};
     for (const [k, v] of Object.entries(entries)) if (v) fakeStore[k] = v;
@@ -58,6 +71,9 @@ afterEach(() => {
   window.localStorage.clear();
   fakeStore = {};
   shouldFail = false;
+  saveGate = Promise.resolve();
+  releaseSave = null;
+  saveImagesCallCount = 0;
   mock.restore();
 });
 
@@ -121,8 +137,9 @@ describe('#489 자동저장 이미지 복원', () => {
     expect(second.result.current.state.fieldVisibility.watchTime).toBe(true);
 
     // 복원 후 포스터를 다시 올리는 것(교체/재크롭) — isFirstUpload가 croppedImageUrl===null만
-    // 보면 여긴 해당 안 되지만, IDB 실패 폴백 경로(다음 테스트)에서는 null이 되므로 hasRestoredDraftRef
-    // 게이트가 그 경우에도 이 값을 지켜야 한다. 여기서는 정상 경로에서 회귀가 없는지 확인.
+    // 보면 여긴 해당 안 되지만, IDB 실패 폴백 경로(다음 테스트)에서는 null이 되므로
+    // restoredDraftHadPosterRef 게이트가 그 경우에도 이 값을 지켜야 한다. 여기서는 정상 경로에서
+    // 회귀가 없는지 확인.
     act(() => {
       second.result.current.handleImageUpload('blob:poster-recropped', 'blob:poster-original');
     });
@@ -224,5 +241,59 @@ describe('#489 자동저장 이미지 복원', () => {
     });
     expect(second.result.current.state.fieldVisibility.actors).toBe(false); // DEFAULT_VISIBILITY_ON_UPLOAD
     second.unmount();
+  });
+
+  // claude-review PR #515 P1 재검토 지적 — imagePersistChainRef 직렬화(②)에 대한 회귀 테스트 공백.
+  // 늦게 끝나는 이전 저장이 나중 저장을 덮어쓰지 않는지, 호출 순서대로 직렬화되는지 확인한다.
+  test('claude-review PR #515 P1 ② — 겹치는 saveDraft() 호출도 호출 순서대로 직렬화돼 나중 호출이 이긴다', async () => {
+    const { result } = renderHook(() => usePhototicket());
+    act(() => {
+      result.current.handleImageUpload('blob:poster-A');
+    });
+    // 첫 saveDraft의 IndexedDB 쓰기를 붙잡아둔다 — 그동안 상태를 B로 바꾸고 두 번째
+    // saveDraft를 호출해, "늦게 끝나는 A가 나중 호출 B를 덮어쓰지 않는지"를 재현한다.
+    armSaveGate();
+    act(() => {
+      result.current.saveDraft(); // A — saveGate에서 대기 중.
+    });
+    act(() => {
+      result.current.handleImageUpload('blob:poster-B');
+    });
+    act(() => {
+      result.current.saveDraft(); // B — A 뒤에 체이닝돼야 한다.
+    });
+    releaseSave?.(); // A가 먼저 끝나고, 체인을 따라 B가 이어서 실행된다.
+
+    await waitFor(() => expect(fakeStore.poster).toBeTruthy());
+    // fetch mock이 blob 내용을 요청 URL 그대로 채우므로, 마지막에 저장된 포스터가 어느 호출의
+    // 것인지 내용으로 구분할 수 있다 — A가 늦게 끝나도 최종 결과는 나중 호출 B여야 한다.
+    expect(await fakeStore.poster.text()).toBe('blob:poster-B');
+  });
+
+  // claude-review PR #515 P1 재검토 지적 — fingerprint 스킵(③)에 대한 회귀 테스트 공백.
+  // 이미지 URL이 그대로면 텍스트만 바뀐 저장에서 saveImages(fetch+IndexedDB 재기록) 자체가
+  // 호출되지 않는지 확인한다.
+  test('claude-review PR #515 P1 ③ — 이미지 URL이 안 바뀌면 텍스트만 바뀐 저장은 IndexedDB 재기록을 스킵한다', async () => {
+    const { result } = renderHook(() => usePhototicket());
+    act(() => {
+      result.current.handleImageUpload('blob:poster-same');
+    });
+    act(() => {
+      result.current.saveDraft();
+    });
+    await waitFor(() => expect(fakeStore.poster).toBeTruthy());
+    const callsAfterFirstSave = saveImagesCallCount;
+
+    // 이미지는 하나도 안 건드리고 텍스트만 바꿔서 다시 저장 — 이미지 지문이 직전과 동일하므로
+    // saveImages 자체가 다시 호출되면 안 된다.
+    act(() => {
+      result.current.updateMovieInfo({ title: '다른 제목' });
+    });
+    act(() => {
+      result.current.saveDraft();
+    });
+    // 비동기 체인이 있다면 잡아낼 만큼(짧게) 기다린다.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(saveImagesCallCount).toBe(callsAfterFirstSave);
   });
 });
