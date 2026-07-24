@@ -22,12 +22,18 @@ function starFillWidth(starIndex: number): string {
   return (overlay as HTMLElement).style.width;
 }
 
+// #496 — 소수 입력은 기본 접힘. 롱터치 대신 캡션 토글 버튼(키보드/스크린리더 대체 경로)을 눌러 편다.
+function openDecimalInput() {
+  fireEvent.click(screen.getByRole('button', { name: '평점 소수 입력 토글' }));
+}
+
 afterEach(cleanup);
 
 describe('RatingPicker (#384)', () => {
   test('(a) 숫자 입력값이 그대로 텍스트 표시에 반영', async () => {
     const user = userEvent.setup();
     render(<Harness />);
+    openDecimalInput();
 
     const input = screen.getByRole('spinbutton', { name: '평점 직접 입력 (0.1 단위)' });
     await user.clear(input);
@@ -39,6 +45,7 @@ describe('RatingPicker (#384)', () => {
   test('(b) 별 채움은 0.5 단위로 내림 — 3.3 → 별 3개(반개 없음)', async () => {
     const user = userEvent.setup();
     render(<Harness />);
+    openDecimalInput();
 
     const input = screen.getByRole('spinbutton', { name: '평점 직접 입력 (0.1 단위)' });
     await user.clear(input);
@@ -54,6 +61,7 @@ describe('RatingPicker (#384)', () => {
   test('(c) 별 채움은 0.5 단위로 내림 — 3.7 → 별 3개 반', async () => {
     const user = userEvent.setup();
     render(<Harness />);
+    openDecimalInput();
 
     const input = screen.getByRole('spinbutton', { name: '평점 직접 입력 (0.1 단위)' });
     await user.clear(input);
@@ -66,6 +74,7 @@ describe('RatingPicker (#384)', () => {
 
   test('(d) 숫자 입력 clamp — 음수는 0으로, 5 초과는 5로 제한', () => {
     render(<Harness />);
+    openDecimalInput();
 
     // fireEvent.change로 값을 직접 주입 — user.type은 number input이 '-' 키 입력을
     // 문자 단위로 걸러내(happy-dom 네이티브 검증) 음수 조합이 실제로 안 들어간다.
@@ -80,6 +89,7 @@ describe('RatingPicker (#384)', () => {
 
   test('(e) 지우는 중엔 0을 커밋하지 않는다 — 값을 지운 채 블러해도 이전 값 유지(#190 nit)', () => {
     render(<Harness />);
+    openDecimalInput();
     const input = screen.getByRole('spinbutton', { name: '평점 직접 입력 (0.1 단위)' });
 
     fireEvent.change(input, { target: { value: '4' } });

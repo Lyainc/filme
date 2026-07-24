@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useDeferredValue, useEffect, useRef, useState, type PointerEvent } from 'react';
 import { Eyebrow } from '@/components/v2/Eyebrow';
 import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
+import { shouldCommitSliderValue } from './BrightnessSlider';
 
 interface RatingPickerProps {
   value: number;
@@ -10,12 +11,107 @@ interface RatingPickerProps {
 }
 
 const STARS = [1, 2, 3, 4, 5];
+const LONG_PRESS_MS = 500;
+const DRAG_MOVE_THRESHOLD = 8; // px — 이 이상 움직여야 드래그로 보고 롱프레스 타이머를 취소한다.
+
+/**
+ * 별 줄(row) 폭 기준 0.5 단위 별점(#496) — 별 5개×반개=10등분해 offsetX가 속한 구간을 그대로 반환.
+ * 개별 버튼 rect 대신 row 전체 폭 하나만 재는 이유는 드래그 중 5개 버튼 rect를 매 pointermove마다
+ * 다시 재는 것보다 싸고, gap을 포함해 전체 폭을 매끄러운 스케일로 다루는 편이 터치 드래그에 자연스럽기
+ * 때문. 순수 함수로 뽑아 happy-dom의 getBoundingClientRect(항상 0) 제약 없이 직접 테스트한다.
+ */
+export function ratingFromRowOffset(offsetX: number, rowWidth: number): number {
+  if (rowWidth <= 0) return 0;
+  const segments = STARS.length * 2;
+  const halfWidth = rowWidth / segments;
+  const segment = Math.min(segments - 1, Math.floor(Math.max(0, offsetX) / halfWidth));
+  return (segment + 1) * 0.5;
+}
+
+interface DragState {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  moved: boolean;
+}
 
 export default function RatingPicker({ value, onValueChange, visible, onVisibleChange }: RatingPickerProps) {
-  const [hover, setHover] = useState(0);
-  const current = hover || value || 0;
+  const [hoverPreview, setHoverPreview] = useState(0);
+  const [numberInputOpen, setNumberInputOpen] = useState(false);
+
+  // #507과 동일한 지연 커밋 패턴(BrightnessSlider) — 드래그 중 매 pointermove마다 onValueChange를
+  // 바로 부르면 부모 state가 틱마다 바뀌어 티켓이 리렌더로 튄다. 별점은 0.5 단위(최대 11값)라 슬라이더
+  // 만큼 틱이 몰리진 않지만 같은 위험이라 같은 가드를 재사용한다.
+  const [localValue, setLocalValue] = useState(value);
+  const [prevValue, setPrevValue] = useState(value);
+  if (value !== prevValue) {
+    setPrevValue(value);
+    setLocalValue(value);
+  }
+  const deferredValue = useDeferredValue(localValue);
+  useEffect(() => {
+    if (shouldCommitSliderValue(deferredValue, localValue, value)) onValueChange(deferredValue);
+  }, [deferredValue, localValue, value, onValueChange]);
+
+  const dragRef = useRef<DragState | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // 별 채움은 0.5 단위로 내림(#384 결정 스펙: 3.3 → 별 3개, 3.5~3.9 → 별 3개 반) — 저장값(텍스트)은 입력 그대로 유지.
+  const current = hoverPreview || localValue || 0;
   const starRating = Math.floor(current * 2) / 2;
+
+  function clearLongPressTimer() {
+    if (longPressTimer.current != null) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }
+
+  useEffect(() => clearLongPressTimer, []);
+
+  function handlePointerDown(e: PointerEvent<HTMLDivElement>) {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    setHoverPreview(0);
+    dragRef.current = { pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, moved: false };
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setLocalValue(ratingFromRowOffset(e.clientX - rect.left, rect.width));
+    // 롱터치(#496) — 움직이지 않은 채 LONG_PRESS_MS가 지나면 소수 입력을 편다. 드래그로 판정되면
+    // handlePointerMove가 이 타이머를 취소한다.
+    clearLongPressTimer();
+    longPressTimer.current = setTimeout(() => {
+      if (dragRef.current && !dragRef.current.moved) setNumberInputOpen(true);
+    }, LONG_PRESS_MS);
+  }
+
+  function handlePointerMove(e: PointerEvent<HTMLDivElement>) {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) {
+      // 눌림 없이 지나가는 마우스는 미리보기만(클릭 전 확정 안 함) — 터치엔 hover 개념이 없다.
+      if (e.pointerType === 'mouse') {
+        const rect = e.currentTarget.getBoundingClientRect();
+        setHoverPreview(ratingFromRowOffset(e.clientX - rect.left, rect.width));
+      }
+      return;
+    }
+    if (!drag.moved) {
+      const dx = e.clientX - drag.startX;
+      const dy = e.clientY - drag.startY;
+      if (Math.abs(dx) > DRAG_MOVE_THRESHOLD || Math.abs(dy) > DRAG_MOVE_THRESHOLD) {
+        drag.moved = true;
+        clearLongPressTimer();
+      }
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    setLocalValue(ratingFromRowOffset(e.clientX - rect.left, rect.width));
+  }
+
+  function endDrag(e: PointerEvent<HTMLDivElement>) {
+    if (dragRef.current?.pointerId === e.pointerId) {
+      dragRef.current = null;
+      clearLongPressTimer();
+    }
+  }
 
   return (
     <div className="space-y-field">
@@ -27,7 +123,14 @@ export default function RatingPicker({ value, onValueChange, visible, onVisibleC
           // 노출 토글(VisibilityCheckbox)은 음수 마진으로 탭타깃만 넓혀 아이콘이 좌측에 그대로
           // 붙는다 — 두 행의 좌측 시작선을 맞추려 그 8px만큼 별 그룹 전체를 당긴다.
           className="-ml-2 flex gap-1.5"
-          onMouseLeave={() => setHover(0)}
+          style={{ touchAction: 'none' }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+          onPointerLeave={() => {
+            if (!dragRef.current) setHoverPreview(0);
+          }}
           role="radiogroup"
           aria-label="별점"
         >
@@ -36,9 +139,12 @@ export default function RatingPicker({ value, onValueChange, visible, onVisibleC
               key={star}
               type="button"
               role="radio"
-              aria-checked={value >= star}
-              onClick={(e) => onValueChange(computeRating(e, star))}
-              onMouseMove={(e) => setHover(computeRating(e, star))}
+              aria-checked={localValue >= star}
+              // 키보드 접근성 전용 — 포인터/터치 클릭은 위 row 핸들러가 처리한다. 실제 포인터 클릭도
+              // click 이벤트를 내지만 detail>=1이라 여기선 걸러지고, 키보드 Enter/Space는 detail===0.
+              onClick={(e) => {
+                if (e.detail === 0) setLocalValue(star);
+              }}
               aria-label={`${star}점`}
               data-touch="44"
               className="relative inline-flex min-h-touch min-w-touch items-center justify-center"
@@ -62,41 +168,50 @@ export default function RatingPicker({ value, onValueChange, visible, onVisibleC
             </button>
           ))}
         </div>
-        <input
-          type="number"
-          min={0}
-          max={5}
-          step={0.1}
-          value={value || 0}
-          onChange={(e) => {
-            const raw = e.target.value;
-            // 지우는 중(raw==='')엔 커밋하지 않는다 — Number('')===0이라 그대로 두면
-            // 재입력 전 순간적으로 평점이 0으로 찍힌다(#190 nit, PR #409 claude-review).
-            if (raw === '') return;
-            const next = Number(raw);
-            if (!Number.isNaN(next)) onValueChange(Math.min(5, Math.max(0, next)));
-          }}
-          aria-label="평점 직접 입력 (0.1 단위)"
-          // 16px 미만이면 iOS Safari가 포커스 시 자동 줌인해 레이아웃이 틀어진다(#274) — FieldEditorBody의
-          // INPUT_CLS와 동일 톤(글래스 서피스·풀폭·16px)으로 통일(#435). RatingPicker→FieldEditorBody
-          // 순환 import를 피하려 리터럴을 중복하니, 톤을 바꿀 땐 두 곳을 같이 고칠 것.
-          className="text-mono w-full rounded-field border border-[var(--glass-border)] bg-[var(--glass-fill)] px-3.5 py-3 text-[16px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
-        />
-        {/* tone="faint" — FieldEditorBody.tsx의 다른 "현재값 미리보기" 캡션(L155 표기 칩·L187 검색결과
-            부제)과 같은 톤(claude-review PR #464 P2 nit). 분수 텍스트를 별도 span으로 두는 건 텍스트
-            노드를 갈라 회귀 테스트(getByText('3.3'))가 숫자만 단독으로 찾게 하기 위함. */}
-        <Eyebrow size={11} tone="faint">
-          {current.toFixed(1)} <span>/ 5.0</span>
-        </Eyebrow>
+
+        {/* 소수 입력 토글(#496) — 항상 뜨는 풀폭 number 박스가 과하다는 지적으로 접어 두고, 별
+            롱터치(위 핸들러) 또는 이 캡션 탭으로 편다. aria-label을 고정해 두는 이유는 표시값(예:
+            "3.3 / 5.0")이 바뀔 때마다 접근명이 같이 흔들리면 스크린리더 사용자가 매번 다른 라벨을
+            듣기 때문 — 값은 시각 전용, 의미는 라벨 하나로 고정. */}
+        <button
+          type="button"
+          onClick={() => setNumberInputOpen((open) => !open)}
+          aria-expanded={numberInputOpen}
+          aria-controls="rating-decimal-input"
+          aria-label="평점 소수 입력 토글"
+          className="text-mono inline-flex min-h-touch items-center text-left"
+        >
+          <Eyebrow size={11} tone="faint">
+            {current.toFixed(1)} <span>/ 5.0</span>
+          </Eyebrow>
+        </button>
+
+        {numberInputOpen && (
+          <input
+            id="rating-decimal-input"
+            type="number"
+            min={0}
+            max={5}
+            step={0.1}
+            value={localValue || 0}
+            onChange={(e) => {
+              const raw = e.target.value;
+              // 지우는 중(raw==='')엔 커밋하지 않는다 — Number('')===0이라 그대로 두면
+              // 재입력 전 순간적으로 평점이 0으로 찍힌다(#190 nit, PR #409 claude-review).
+              if (raw === '') return;
+              const next = Number(raw);
+              if (!Number.isNaN(next)) setLocalValue(Math.min(5, Math.max(0, next)));
+            }}
+            aria-label="평점 직접 입력 (0.1 단위)"
+            // 16px 미만이면 iOS Safari가 포커스 시 자동 줌인해 레이아웃이 틀어진다(#274) — FieldEditorBody의
+            // INPUT_CLS와 동일 톤(글래스 서피스·풀폭·16px)으로 통일(#435). RatingPicker→FieldEditorBody
+            // 순환 import를 피하려 리터럴을 중복하니, 톤을 바꿀 땐 두 곳을 같이 고칠 것.
+            className="text-mono w-full rounded-field border border-[var(--glass-border)] bg-[var(--glass-fill)] px-3.5 py-3 text-[16px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
+          />
+        )}
       </div>
     </div>
   );
-}
-
-function computeRating(e: React.MouseEvent<HTMLElement>, star: number): number {
-  const rect = e.currentTarget.getBoundingClientRect();
-  const isHalf = e.clientX - rect.left < rect.width / 2;
-  return isHalf ? star - 0.5 : star;
 }
 
 function StarSVG({ className = '' }: { className?: string }) {
