@@ -10,7 +10,7 @@ import { DateInput } from '@/components/ui/DateInput';
 import RatingPicker from '@/components/wizard/RatingPicker';
 import BrightnessSlider from '@/components/wizard/BrightnessSlider';
 import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
-import { MINIMAL_STAMP_MAX_SCALE } from '@/components/moods/MoodMinimal';
+import { stampScaleMaxFor } from './designRailItems';
 import {
   FIELD_LABELS,
   FIELD_SHEET_TYPE,
@@ -554,8 +554,9 @@ function StampSheet({ target, photo }: { target: StampTarget; photo: Photo }) {
   const components = photo.state.components;
   const keys = STAMP_KEYS[target];
   // Minimal 무드는 실제 렌더가 MINIMAL_STAMP_MAX_SCALE(1.1)로 클램프된다(MoodMinimal.tsx) —
-  // DesignRail/DesktopDesignPanel과 동일 계산(claude-review PR #487 P1, 이 시트에서 재발했던 버그).
-  const stampScaleMax = components.layout === 'minimal' ? MINIMAL_STAMP_MAX_SCALE : 1.3;
+  // designRailItems.tsx의 stampScaleMaxFor와 단일 소스(claude-review PR #487 P1, 이 시트에서
+  // 재발했던 버그 — 사본이 갈리면 또 재발한다).
+  const stampScaleMax = stampScaleMaxFor(components.layout);
 
   return (
     <StampEditor
