@@ -107,14 +107,22 @@ describe('Mood35mmLandscape 제목 폭 맞춤 통합 (#318, #450)', () => {
   let restore: () => void;
   afterEach(() => restore?.());
 
-  test('긴 제목은 새 가용폭(842*2=1684) 기준으로 59px에 수렴 — 구 예산(785*2=1570)이면 55px', () => {
-    restore = installFakeCanvasContext();
-    const longTitle = 'A'.repeat(47);
-    const html = renderToStaticMarkup(
-      <Mood35mmLandscape movieInfo={{ ...FULL_MOVIE, title: longTitle }} components={makeMoodBase('35mm-landscape')} croppedImageUrl="blob:x" onField={() => {}} />,
+  // v5 재설계(#524)로 제목이 포스터 캡션(60px 고정)에서 크레딧 컷 조판(compact, max 28 / min 17)으로
+  // 옮겨졌다. 가용폭은 컷 411 - 좌우 패딩 60 = 351, 2줄 클램프라 예산은 351*2.
+  const renderTitle = (title: string) =>
+    renderToStaticMarkup(
+      <Mood35mmLandscape movieInfo={{ ...FULL_MOVIE, title }} components={makeMoodBase('35mm-landscape')} croppedImageUrl="blob:x" onField={() => {}} />,
     );
-    expect(html).toContain('font-size:59px');
-    expect(html).not.toContain('font-size:55px');
-    expect(html).not.toContain('font-size:60px');
+
+  test('짧은 제목은 상한 28px 유지', () => {
+    restore = installFakeCanvasContext();
+    expect(renderTitle('짧은 제목')).toContain('font-size:28px');
+  });
+
+  test('긴 제목은 하한 17px까지 축소되고 상한으로 안 남는다', () => {
+    restore = installFakeCanvasContext();
+    const html = renderTitle('A'.repeat(47));
+    expect(html).not.toContain('font-size:28px');
+    expect(html).toContain('font-size:17px');
   });
 });
