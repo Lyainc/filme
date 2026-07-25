@@ -8,9 +8,10 @@
  *     react-image-crop의 aspect=undefined는 defaultProps로 덮이지 않으므로(react-easy-crop과
  *     달리) 자연비를 직접 계산해 잠근다(ImageCropModal의 mediaAspect).
  *  3) 로고 편집 본문(StampSheet — chain/format)이 파일 선택 시 그 모달을 연다(#231).
- *  4) 원본 비율 보존 토글(#420 → #440) — 포스터 크롭(layout 전달)이면 전 무드 노출,
- *     initialPreserveRatio로 재크롭 시 이전 선택을 이어받는다(claude-review PR #429 P1 —
- *     안 이어받으면 크롭 영역만 조정해도 posterFit이 조용히 되돌아간다).
+ *  4) 원본 비율 보존 토글(#420 → #440 → #525) — 포스터 크롭(layout 전달)이면 stub 포함
+ *     전 무드 노출. 토글은 크롭 프레임 비율만 정하고(ON=자연비, OFF=포스터 표준 0.667),
+ *     렌더 설정으로는 안 새어나간다 — 그래서 재크롭은 표준 프리셋으로 연다.
+ *  5) 크롭 프레임 비율과 출력 해상도가 같은 상수에서 나온다(#525) — 갈리면 늘어나 그려진다.
  *
  * ImageCropModal이 렌더하는 <img>에 직접 load 이벤트를 흘려(naturalWidth/naturalHeight를
  * defineProperty로 스텁) 실제 react-image-crop을 그대로 태운다 — 라이브러리를 목킹하지 않고
