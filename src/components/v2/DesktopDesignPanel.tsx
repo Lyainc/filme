@@ -9,6 +9,7 @@ import { Eyebrow } from './Eyebrow';
 import { MINIMAL_STAMP_MAX_SCALE } from '@/components/moods/MoodMinimal';
 import type { LayoutId } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
+import { TONE_FIXED_MOODS } from '@/constants/fields';
 
 // 데스크톱 DESIGN 패널(#228): 모바일 DesignRail은 가로 rail로 한 번에 한 축만 펼쳐 380px 세로
 // 인스펙터를 낭비한다. 데스크톱은 무드·컬러·후보정·투명도 4섹션을 세로 스택으로 상시 노출한다.
@@ -92,7 +93,7 @@ export function DesktopDesignPanel({ photo }: { photo: ReturnType<typeof usePhot
           value={components.themeColor}
           onChange={(themeColor) => setComp({ themeColor })}
           recommended={recommendedColors}
-          disabled={components.layout === '35mm'}
+          disabled={TONE_FIXED_MOODS.has(components.layout)}
           disabledNote="35mm 무드는 필름 톤(크림·먹색)이 고정이라 잉크 색을 바꿀 수 없어요."
         />
       </Section>
