@@ -1,10 +1,13 @@
 import { useRef, useState, type ReactNode } from 'react';
-import { RAIL_ITEMS, type RailItemId } from './designRailItems';
+import { RAIL_ITEMS, filterItemsForMood, type RailItem, type RailItemId } from './designRailItems';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 
 // 모바일 디자인 레일(#217+): 무드·컬러·후보정·투명도·크기 편집 콘텐츠를 인라인 폼 밖으로 빼
 // 가로 원형 아이콘 + 단일 공용 확장 패널로 호스팅한다. 항목 정의(아이콘·라벨·eyebrow·본문)는
 // #523에서 ./designRailItems.tsx 공용 목록으로 이관 — 이 파일은 배치(아이콘 행 + 토글 패널)만.
+// #523 AC4 — 아이콘 행은 filterItemsForMood를 통과한 항목만 그린다(appliesTo 없는 실사용
+// 항목 5개는 전부 통과, 실제 숨김 0건). items prop은 기본값 RAIL_ITEMS를 쓰되, 합성 항목으로
+// 무드 전환→숨김→패널 자동 닫힘→값 보존을 검증하는 테스트가 주입할 수 있게 열어둔다.
 
 const PANEL_ID = 'design-rail-panel';
 
@@ -84,9 +87,25 @@ function RailExpandPanel({
   );
 }
 
-export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket> }) {
+export function DesignRail({
+  photo,
+  items = RAIL_ITEMS,
+}: {
+  photo: ReturnType<typeof usePhototicket>;
+  items?: readonly RailItem[];
+}) {
   const [pop, setPop] = useState<RailItemId | null>(null);
-  const { themeColor } = photo.state.components;
+  const { themeColor, layout } = photo.state.components;
+  const visibleItems = filterItemsForMood(items, layout);
+
+  // #523 hard 제약 — 패널이 열린 채 무드가 바뀌어 활성 항목이 숨겨지면 패널을 닫는다(pop→null).
+  // 숨겨진 항목의 값 자체는 photo.state.components에 그대로 남아있어 무드 복귀 시 복원된다 —
+  // 여기서 지우는 건 UI 열림 상태뿐. useEffect가 아니라 렌더 중 조정(React의 "adjusting state
+  // when a prop changes" 패턴, 아래 lastPopRef도 같은 렌더 중 갱신 관용구) — 커밋 후 effect를
+  // 기다리면 아이콘은 이미 사라진 프레임에 패널만 열린 채로 한 번 더 그려진다(/simplify F1).
+  if (pop !== null && !visibleItems.some((it) => it.id === pop)) {
+    setPop(null);
+  }
 
   // 접히는 중에도 콘텐츠를 마운트한 채 높이만 줄여 부드럽게 닫는다(패널이 비면 점프한다).
   // 마지막 활성 섹션을 기억 — pop이 null이 돼도 애니메이션 동안 직전 섹션이 남는다.
@@ -95,7 +114,7 @@ export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket>
   const active = lastPopRef.current;
   // #523 c5 — id로 배열을 조회해 항목을 찾는다. 매칭 안 되는 id(이론상 Pop 유니온 밖)가 와도
   // 조용히 마지막 항목을 렌더하던 예전 삼항 체인 final-else 대신, 못 찾으면 아무것도 안 그린다.
-  const activeItem = RAIL_ITEMS.find((it) => it.id === active);
+  const activeItem = items.find((it) => it.id === active);
   const eyebrow = activeItem?.eyebrow ?? '';
 
   const ringColor = themeColor || 'var(--accent)';
@@ -104,7 +123,7 @@ export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket>
   return (
     <div className="space-y-3">
       <div className="flex items-start justify-center gap-6">
-        {RAIL_ITEMS.map((it) => (
+        {visibleItems.map((it) => (
           <RailIconButton
             key={it.id}
             icon={it.icon}
