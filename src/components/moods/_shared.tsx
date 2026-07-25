@@ -1269,31 +1269,91 @@ export const HorizontalSprockets = memo(function HorizontalSprockets({
  */
 const KK_PATTERN = '31122112132113112212311213212112'.split('').map(Number);
 
+/** 필름 계열(35mm · 35mm Wide) 공용 색 토큰 — v5 시안 하드코딩(#524 c8). themeColor 파생 아님. */
+export const FILM_AMBER = '#a97433';
+/** 스트립 본체(필름 베이스). */
+export const FILM_BASE = '#0b0a09';
+/** 스트립 바깥 암부(절단면 너머). */
+export const FILM_DARK = '#050403';
+export const FILM_INK = '#e9e7e2';
+const FILM_HOLE = '#e9e8e4';
+/** 컷(프레임) 박스 공통 — 검은 바탕 + 안쪽 1px 암선 + 바깥 1px amber 헤어라인. */
+export const CUT_SHADOW = 'inset 0 0 0 1px rgba(0,0,0,.9), 0 0 0 1px rgba(120,96,64,.18)';
+/** 크레딧 컷 위 암부 그라디언트(포스터를 brightness(.34)로 깐 뒤 조판 대비 확보). */
+export const CREDIT_SCRIM = 'linear-gradient(180deg,rgba(5,4,3,.78) 0%,rgba(5,4,3,.9) 55%,rgba(5,4,3,.95) 100%)';
+
+/**
+ * 필름 키코드(KL 23 롤 로트+풋) — 시안 스크립트는 Math.random()으로 렌더마다 새로 만들지만
+ * html-to-image가 캡처 시점에 DOM을 다시 그려 프리뷰와 결과물이 갈린다(#524 c2). 티켓 문자열
+ * 시드로 결정론화해 같은 티켓이면 항상 같은 코드가 나오게 한다.
+ */
+export function buildFilmKeycode(seed: string): string {
+  const h = seedFromString(seed || 'FILME');
+  const roll = String(h % 10000).padStart(4, '0');
+  const lot = String(Math.floor(h / 10000) % 10000).padStart(4, '0');
+  const foot = ((h >>> 8) % 8) + 1;
+  return `KL 23 ${roll} ${lot}+0${foot}`;
+}
+
+/** 세로 레일 엣지 프린트 1줄 — 코드 런을 4회 반복해 레일 전 구간을 채운다(시안 railPrint). */
+export function buildRailPrint(codes: string[]): string {
+  const run = codes.join(' ◆ ');
+  return Array.from({ length: 4 }, () => run).join(' ◆ ');
+}
+
+/** 프레임 번호 라벨(236+i → 118, 118A, 119…) — 시안 FilmStripBand·레일 공통. */
+function frameLabel(i: number): string {
+  const f = 236 + i;
+  return f % 2 === 0 ? String(f >> 1) : `${f >> 1}A`;
+}
+
+/**
+ * 35mm 필름 스트립 밴드(에픽 #281 → v5 재설계 #524). 밴드에 천공 + 프레임번호 + KEYKODE 바 +
+ * 엣지 스크롤 코드(×4, ◆ 구분) + 그레인. accent는 무드가 넘긴다. pos로 상/하단을 뒤집는다 —
+ * 천공·프레임·키코드는 바깥 모서리, 엣지 텍스트는 안쪽 모서리.
+ *
+ * v5 델타: 홀 치수·개수를 props로 열고(35mm Wide는 51×36 ×18, #498이 확정한 확대치), `bleed`로
+ * 천공·프레임번호 행을 밴드 밖으로 흘려 좌우 절단면에서 반쯤 잘리게, `edgePrint=false`로 하단
+ * 밴드는 프레임번호만 남긴다.
+ */
 export const FilmStripBand = memo(function FilmStripBand({
   pos,
   accent,
   codes,
   base = '#0a0a0a',
   height = 92,
+  holeW = 44,
+  holeH = 24,
+  holeR = 6,
+  count = 15,
+  bleed = 0,
+  edgePrint = true,
+  keycode = 'KL 23 4587 1234+05',
 }: {
   pos: 'top' | 'bottom';
   accent: string;
   codes: string[];
   base?: string;
   height?: number;
+  holeW?: number;
+  holeH?: number;
+  holeR?: number;
+  count?: number;
+  /** 천공·프레임번호 행을 밴드 좌우 밖으로 흘리는 폭(px) — 절단면에서 구멍이 반쯤 잘린다. */
+  bleed?: number;
+  /** false면 KEYKODE·엣지 스크롤을 빼고 천공+프레임번호만(시안 5b 하단 밴드). */
+  edgePrint?: boolean;
+  keycode?: string;
 }) {
   const outer: 'top' | 'bottom' = pos;
   const inner: 'top' | 'bottom' = pos === 'top' ? 'bottom' : 'top';
-  const N = 15;
 
-  const holes = Array.from({ length: N }, (_, i) => (
-    <div key={i} style={{ width: 44, height: 24, borderRadius: 6, background: '#f1ead9', flexShrink: 0, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.5), inset 0 2px 4px rgba(0,0,0,.6)' }} />
+  const holes = Array.from({ length: count }, (_, i) => (
+    <div key={i} style={{ width: holeW, height: holeH, borderRadius: holeR, background: '#f1ead9', flexShrink: 0, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.5), inset 0 2px 4px rgba(0,0,0,.6)' }} />
   ));
-  const frameNums = Array.from({ length: N }, (_, i) => {
-    const f = 236 + i;
-    const label = f % 2 === 0 ? String(f >> 1) : `${f >> 1}A`;
-    return <span key={i} style={{ fontFamily: FONT_LCD, fontSize: 9, fontWeight: 400, letterSpacing: 0.5, color: accent, flexShrink: 0 }}>{label}</span>;
-  });
+  const frameNums = Array.from({ length: count }, (_, i) => (
+    <span key={i} style={{ width: holeW, textAlign: 'center', fontFamily: FONT_LCD, fontSize: 11, fontWeight: 400, letterSpacing: 0.6, color: accent, flexShrink: 0 }}>{frameLabel(i)}</span>
+  ));
   let inkBar = true;
   const kkBars = KK_PATTERN.map((w, i) => {
     const seg = <span key={i} style={{ width: w * 1.5, height: 8, background: inkBar ? accent : 'transparent', flexShrink: 0 }} />;
@@ -1311,12 +1371,13 @@ export const FilmStripBand = memo(function FilmStripBand({
       );
     });
 
-  const holesStyle: CSSProperties = { position: 'absolute', left: 0, right: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px' };
+  const bleedMargin = `0 ${-bleed}px`;
+  const holesStyle: CSSProperties = { position: 'absolute', left: 0, right: 0, margin: bleedMargin, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px' };
   holesStyle[outer] = 6;
-  const frameStyle: CSSProperties = { position: 'absolute', left: 0, right: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 27px', opacity: 0.7, pointerEvents: 'none' };
-  frameStyle[outer] = 32;
+  const frameStyle: CSSProperties = { position: 'absolute', left: 0, right: 0, margin: bleedMargin, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', opacity: 0.88, pointerEvents: 'none' };
+  frameStyle[outer] = 6 + holeH + 3;
   const kkStyle: CSSProperties = { position: 'absolute', left: 16, display: 'flex', alignItems: 'center', gap: 8, opacity: 0.9, pointerEvents: 'none' };
-  kkStyle[outer] = 45;
+  kkStyle[outer] = 6 + holeH + 3 + 17;
   const edgeStyle: CSSProperties = { position: 'absolute', left: 0, right: 0, display: 'flex', alignItems: 'center', padding: '0 14px', fontFamily: FONT_LCD, fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', opacity: 0.92, pointerEvents: 'none' };
   edgeStyle[inner] = 6;
   const rootStyle: CSSProperties = { position: 'absolute', left: 0, right: 0, height, background: base, overflow: 'hidden' };
@@ -1328,15 +1389,255 @@ export const FilmStripBand = memo(function FilmStripBand({
     <div aria-hidden="true" style={rootStyle}>
       <div style={holesStyle}>{holes}</div>
       <div style={frameStyle}>{frameNums}</div>
-      <div style={kkStyle}>
-        <div style={{ display: 'flex', alignItems: 'flex-end' }}>{kkBars}</div>
-        <span style={{ fontFamily: FONT_LCD, fontSize: 10, fontWeight: 400, letterSpacing: 1.6, color: accent }}>KL 23 4587 1234+05</span>
-      </div>
-      <div style={edgeStyle}>{cells}</div>
+      {edgePrint && (
+        <>
+          <div style={kkStyle}>
+            <div style={{ display: 'flex', alignItems: 'flex-end' }}>{kkBars}</div>
+            <span style={{ fontFamily: FONT_LCD, fontSize: 10, fontWeight: 400, letterSpacing: 1.6, color: accent }}>{keycode}</span>
+          </div>
+          <div style={edgeStyle}>{cells}</div>
+        </>
+      )}
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.5, mixBlendMode: 'overlay', backgroundImage: 'repeating-linear-gradient(90deg, rgba(255,255,255,.06) 0 1px, rgba(0,0,0,.07) 1px 3px), repeating-linear-gradient(0deg, rgba(255,255,255,.04) 0 1px, rgba(0,0,0,.05) 1px 3px)' }} />
     </div>
   );
 });
+
+/**
+ * 35mm 세로 레일(v5 시안 5a) — FilmStripBand를 90° 돌린 형태. 100px 폭 안에 천공(36×51) +
+ * 프레임번호 세로 컬럼, 좌측 레일에만 엣지 프린트 세로 스크롤(실물도 편측 인쇄).
+ * 천공/번호 컬럼은 위·아래로 24px 흘려 절단면에서 반쯤 잘린다.
+ */
+export const FilmRail = memo(function FilmRail({
+  side,
+  accent,
+  print,
+  width = 100,
+  count = 19,
+}: {
+  side: 'left' | 'right';
+  accent: string;
+  /** 좌측 레일 세로 엣지 프린트 문자열. 우측 레일은 넘기지 않는다(편측 인쇄). */
+  print?: string;
+  width?: number;
+  count?: number;
+}) {
+  const holeShadow = `inset 0 0 0 1px rgba(0,0,0,.55), inset ${side === 'left' ? 2 : -2}px 0 5px rgba(0,0,0,.5)`;
+  const colStyle = (offset: number, w: number): CSSProperties => ({
+    position: 'absolute',
+    [side]: offset,
+    top: -24,
+    bottom: -24,
+    width: w,
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+  });
+  return (
+    <div aria-hidden="true" style={{ position: 'absolute', [side]: 0, top: 0, bottom: 0, width, overflow: 'hidden' }}>
+      <div style={colStyle(8, 36)}>
+        {Array.from({ length: count }, (_, i) => (
+          <div key={i} style={{ width: 36, height: 51, borderRadius: 9, background: FILM_HOLE, flexShrink: 0, boxShadow: holeShadow }} />
+        ))}
+      </div>
+      <div style={colStyle(50, 13)}>
+        {Array.from({ length: count }, (_, i) => (
+          <span
+            key={i}
+            style={{ height: 51, display: 'flex', alignItems: 'center', writingMode: 'vertical-rl', ...(side === 'right' ? { transform: 'rotate(180deg)' } : null), fontFamily: FONT_LCD, fontSize: 11, letterSpacing: 0.6, color: accent, opacity: 0.88, flexShrink: 0 }}
+          >
+            {frameLabel(i)}
+          </span>
+        ))}
+      </div>
+      {print && (
+        // FONT_LCD(Share Tech Mono)엔 한글 글리프가 없다 — 서명·제목이 섞여 들어오는 한 줄이라
+        // 한글이 하나라도 있으면 줄 전체를 FONT_KR로 돌린다(FilmStripBand는 code 단위로 갈라
+        // 개별 폴백하지만, 레일은 한 문자열이라 갈 자리가 없다, #393 같은 취지).
+        <div style={{ position: 'absolute', left: 68, top: -40, bottom: -40, width: 16, writingMode: 'vertical-rl', fontFamily: containsHangul(print) ? FONT_KR : FONT_LCD, fontSize: 12, fontWeight: 600, letterSpacing: 2.5, color: accent, opacity: 0.92, whiteSpace: 'nowrap', overflow: 'hidden' }}>
+          {print}
+        </div>
+      )}
+    </div>
+  );
+});
+
+/**
+ * 크레딧 컷(v5 시안 5a/5b 공용, #524) — 위 컷과 **같은 포스터를 상단정렬 cover**로 깔아 프레임
+ * 중간에서 잘리게 하고(의도된 절단), 암부 그라디언트 위에 엔딩 크레딧을 조판한다. 구분선 0개.
+ *
+ * 두 무드가 이 블록을 통째로 공유하고 치수만 갈리므로(compact=35mm Wide) 조판을 여기 한 번만 둔다.
+ * 병합 라벨(Exhibited·Screened·The Film)은 fieldPieces로 분해해 필드별 독립 탭 타깃 + 개별
+ * ghost를 유지한다(#524 c3).
+ */
+export function FilmCreditCut({
+  movieInfo: d,
+  components,
+  croppedImageUrl,
+  fieldVisibility: fv,
+  ghost,
+  onField,
+  compact = false,
+  innerWidth,
+}: MoodProps & { compact?: boolean; innerWidth: number }) {
+  const { watchDateClean, releaseClean, reissueClean } = resolveTicketData(d);
+  const titleVal = gate(fv?.title, d.title);
+  const titleOgVal = gate(fv?.titleOg, d.titleOg);
+  const actorsVal = truncateActors(gate(fv?.actors, d.actors));
+  const signatureVal = gate(fv?.signature, d.signature);
+  const ratingVisible = (fv?.rating ?? true) && d.rating > 0;
+
+  const fontsReady = useFontsReady();
+  const titleMax = compact ? 28 : 30;
+  // 2줄 클램프라 가용폭×2를 maxWidth로 넘겨 가장 긴 한 줄 기준으로 축소한다(#318 관례).
+  const titleFontSize = fitFontSizeToWidth(titleVal, innerWidth * 2, { fontFamily: FONT_KR, fontWeight: 500, minSize: 17, maxSize: titleMax }, fontsReady);
+
+  const labelStyle: CSSProperties = { textAlign: 'right', fontFamily: FONT_MONO, fontSize: 9.5, fontWeight: 600, letterSpacing: 2.6, textTransform: 'uppercase', color: 'rgba(233,231,226,.45)' };
+  const valueStyle: CSSProperties = { textAlign: 'left', fontSize: 17, fontWeight: 500, letterSpacing: -0.1, lineHeight: 1.25, fontFamily: FONT_KR };
+
+  const exhibited = fieldPieces(
+    [
+      { field: 'theater', value: gate(fv?.theater, d.theater), ghost: showFieldGhost(fv?.theater, d.theater, ghost), label: 'THEATER' },
+      { field: 'screen', value: gate(fv?.screen, d.screen), ghost: showFieldGhost(fv?.screen, d.screen, ghost), label: 'SCREEN' },
+      { field: 'seat', value: gate(fv?.seat, d.seat), ghost: showFieldGhost(fv?.seat, d.seat, ghost), label: 'SEAT' },
+    ],
+    onField,
+    { surface: 'dark' }
+  );
+  const screened = fieldPieces(
+    [
+      { field: 'watchDate', value: gate(fv?.watchDate, watchDateClean), ghost: showFieldGhost(fv?.watchDate, watchDateClean, ghost), label: 'DATE' },
+      { field: 'watchTime', value: gate(fv?.watchTime, d.watchTime), ghost: showFieldGhost(fv?.watchTime, d.watchTime, ghost), label: 'TIME' },
+    ],
+    onField,
+    { surface: 'dark' }
+  );
+  // The Film = 러닝타임 · 평점 · 개봉일 병합(시안). 재개봉은 값이 있을 때만 조각을 더한다(#524 c6) —
+  // 편집 자리는 releaseDate 시트(reissue는 그 안에서)라 탭 타깃도 releaseDate로 둔다.
+  const reissueVal = gate(fv?.reissue, reissueClean);
+  const film = fieldPieces(
+    [
+      { field: 'runtime', value: gate(fv?.runtime, d.runtime), ghost: showFieldGhost(fv?.runtime, d.runtime, ghost), label: 'RUNTIME' },
+      { field: 'rating', value: ratingVisible ? `★ ${d.rating.toFixed(1)}` : '', ghost: showFieldGhost(fv?.rating, d.rating > 0, ghost), label: 'RATED' },
+      { field: 'releaseDate', value: gate(fv?.releaseDate, releaseClean), ghost: showFieldGhost(fv?.releaseDate, releaseClean, ghost), label: 'RELEASED' },
+      ...(reissueVal ? [{ field: 'releaseDate' as SheetTarget, value: reissueVal, label: 'REISSUE' }] : []),
+    ],
+    onField,
+    { surface: 'dark' }
+  );
+
+  const gActors = showFieldGhost(fv?.actors, d.actors, ghost);
+  const gSignature = showFieldGhost(fv?.signature, d.signature, ghost);
+  const gTitle = showFieldGhost(fv?.title, d.title, ghost);
+  const gTitleOg = showFieldGhost(fv?.titleOg, d.titleOg, ghost);
+
+  // gap:10px는 병합 셀 분해 flex 컨테이너의 유일 시그니처(ghostMode #266 PR-C 불변식)라 분해 셀
+  // (fieldPieces)에서만 쓰고, 단일 필드 행(Starring·Collected by)은 12로 회피한다.
+  const row = (label: string, node: ReactNode, flexGap: number | false) => (
+    <>
+      <div style={labelStyle}>{label}</div>
+      <div style={{ ...valueStyle, ...(flexGap ? { display: 'flex', alignItems: 'center', gap: flexGap, flexWrap: 'wrap' } : null) }}>{node}</div>
+    </>
+  );
+
+  const hasStamp =
+    stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost) ||
+    stampWillRender(components.formatVisible, components.format, components.formatLabel, ghost);
+
+  return (
+    <>
+      <Poster
+        src={croppedImageUrl}
+        fit="cover"
+        align="top"
+        background="#000"
+        material={components.material}
+        coating={components.coating}
+        materialIntensity={components.materialIntensity}
+        coatingIntensity={components.coatingIntensity}
+        posterOpacity={(components.posterOpacity ?? defaultBrightnessForTexture(components.material ?? 'original', components.coating ?? 'none')) * 0.34}
+      />
+      {/* #219 componentOpacity: 크레딧 컷의 스크림·조판만 페이드(배경 포스터는 유지). */}
+      <div style={{ position: 'absolute', inset: 0, opacity: components.componentOpacity ?? 1 }}>
+      <div style={{ position: 'absolute', inset: 0, background: CREDIT_SCRIM }} />
+      <div style={{ position: 'absolute', inset: 0, padding: compact ? '32px 30px 26px' : '28px 36px 24px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', color: FILM_INK }}>
+        <div style={{ textAlign: 'center', textShadow: '0 2px 10px rgba(0,0,0,.7)' }}>
+          {titleVal ? (
+            <FieldTap field="title" onField={onField}>
+              <div style={{ fontSize: titleFontSize, fontWeight: 500, letterSpacing: 0.3, lineHeight: 1.15, fontFamily: FONT_KR, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{titleVal}</div>
+            </FieldTap>
+          ) : gTitle ? (
+            <FieldTap field="title" onField={onField}>
+              <div style={{ display: 'flex', justifyContent: 'center' }}><FieldGhost text="TITLE" width="70%" height={34} surface="dark" state={gTitle} /></div>
+            </FieldTap>
+          ) : null}
+          {titleOgVal ? (
+            <FieldTap field="titleOg" onField={onField}>
+              <div style={{ fontFamily: FONT_MONO, fontSize: compact ? 10 : 10.5, fontWeight: 600, letterSpacing: compact ? 3.8 : 4, textTransform: 'uppercase', color: 'rgba(233,231,226,.55)', marginTop: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{titleOgVal}</div>
+            </FieldTap>
+          ) : gTitleOg ? (
+            <FieldTap field="titleOg" onField={onField}>
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}><FieldGhost text="ORIGINAL TITLE" width={200} height={18} surface="dark" state={gTitleOg} /></div>
+            </FieldTap>
+          ) : null}
+        </div>
+
+        <div style={{ flex: 1 }} />
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', justifyContent: 'center', columnGap: compact ? 22 : 24, rowGap: 22, alignItems: 'baseline' }}>
+          {exhibited.hasAny && row('Exhibited', exhibited.node, exhibited.hasGhost && 10)}
+          {screened.hasAny && row('Screened', screened.node, screened.hasGhost && 10)}
+          {film.hasAny && row('The Film', film.node, film.hasGhost && 10)}
+          {actorsVal
+            ? row('Starring', <FieldTap field="actors" onField={onField}>{actorsVal}</FieldTap>, false)
+            : gActors
+            ? row('Starring', <FieldTap field="actors" onField={onField}><FieldGhost text="CAST" width={180} height={26} surface="dark" state={gActors} /></FieldTap>, 12)
+            : null}
+          {components.signatureImage
+            ? row('Collected by', <FieldTap field="signature" onField={onField}><SignatureStamp image={components.signatureImage} height={26} scale={components.signatureScale ?? 1} surface="dark" /></FieldTap>, 12)
+            : signatureVal
+            ? row('Collected by', <FieldTap field="signature" onField={onField}><span style={{ fontFamily: FONT_QUOTE_KR, fontSize: 26, lineHeight: 1 }}>{signatureVal}</span></FieldTap>, false)
+            : gSignature
+            ? row('Collected by', <FieldTap field="signature" onField={onField}><FieldGhost text="SIGNATURE" width={140} height={26} surface="dark" state={gSignature} /></FieldTap>, 12)
+            : null}
+        </div>
+
+        <div style={{ flex: 1 }} />
+
+        {/* 푸터 — 시안의 "CINE ROYALE · 70MM" 자리(#524 c5). 상단 좌측 스탬프 슬롯이 사라지고
+            체인·포맷이 여기로 온다. 로고 미업로드면 StampRow가 라벨 텍스트로 폴백해 시안과 같은 그림. */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: compact ? 14 : 16, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+            {hasStamp && (
+              <StampRow
+                chain={components.chain}
+                chainLabel={components.chainLabel}
+                chainVisible={components.chainVisible}
+                chainHeight={22}
+                chainScale={components.chainScale ?? 1}
+                format={components.format}
+                formatLabel={components.formatLabel}
+                formatVisible={components.formatVisible}
+                formatSize={0.5}
+                formatScale={components.formatScale ?? 1}
+                surface="dark"
+                ghost={ghost}
+                onField={onField}
+                dividerColor={FILM_INK}
+                dividerOpacity={0.5}
+              />
+            )}
+          </div>
+          <span style={{ display: 'flex', alignItems: 'baseline', gap: compact ? 7 : 8, opacity: 0.6, flexShrink: 0 }}>
+            <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: compact ? 14 : 15 }}>made with</span>
+            <MoodWordmark size={compact ? 13 : 14} color={FILM_INK} />
+          </span>
+        </div>
+      </div>
+      </div>
+    </>
+  );
+}
 
 /**
  * FilmStripBand의 엣지 스크롤 코드 배열 조립(35mm·35mm Wide 공용, #393) — 두 무드가 완전히 같은
