@@ -316,6 +316,9 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 11, opacity: 0.8, flexShrink: 0 }}>
             <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 23 }}>made with</span>
+            {/* accent — 시안 5c의 `<dc-import name="Wordmark" ... accent="#B0423F">`를 그대로 반영(c1).
+                흰 종이 위 워드마크만 BI 포인트 컬러("me")를 살리고, 35mm·35mm Wide는 시안 자체가
+                accent 없이 크림 잉크 단색이라 의도된 무드별 차이다. */}
             <MoodWordmark size={23} color={INK} accent={WORDMARK_ACCENT} />
           </div>
         </div>

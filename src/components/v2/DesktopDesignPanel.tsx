@@ -87,14 +87,15 @@ export function DesktopDesignPanel({ photo }: { photo: ReturnType<typeof usePhot
       </Section>
 
       {/* 컬러·잉크(#229) — 잉크는 별도 상태 축 없이 단일 themeColor. White↔Black 프리셋이 곧
-          라이트/다크 잉크 원터치, 추천 추출색·커스텀 hex는 포인트 컬러. 35mm는 톤 고정이라 disabled. */}
+          라이트/다크 잉크 원터치, 추천 추출색·커스텀 hex는 포인트 컬러. TONE_FIXED_MOODS(#524)
+          소속 무드는 톤 고정이라 disabled. */}
       <Section eyebrow="Color">
         <ColorPicker
           value={components.themeColor}
           onChange={(themeColor) => setComp({ themeColor })}
           recommended={recommendedColors}
           disabled={TONE_FIXED_MOODS.has(components.layout)}
-          disabledNote="35mm 무드는 필름 톤(크림·먹색)이 고정이라 잉크 색을 바꿀 수 없어요."
+          disabledNote="이 무드는 톤이 고정이라 잉크 색을 바꿀 수 없어요."
         />
       </Section>
 

@@ -214,13 +214,14 @@ export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket>
         {active === 'mood' ? (
           <LayoutStrip value={components.layout} onChange={(id: LayoutId) => setComp({ layout: id })} />
         ) : active === 'color' ? (
-          // DesktopStudioShell과 동일 배선 — 잉크색 단일 축(themeColor). 35mm는 톤 고정이라 disabled.
+          // DesktopStudioShell과 동일 배선 — 잉크색 단일 축(themeColor). TONE_FIXED_MOODS(#524)
+          // 소속 무드는 톤 고정이라 disabled.
           <ColorPicker
             value={components.themeColor}
             onChange={(themeColor) => setComp({ themeColor })}
             recommended={recommendedColors}
             disabled={TONE_FIXED_MOODS.has(components.layout)}
-            disabledNote="35mm 무드는 필름 톤(크림·먹색)이 고정이라 잉크 색을 바꿀 수 없어요."
+            disabledNote="이 무드는 톤이 고정이라 잉크 색을 바꿀 수 없어요."
           />
         ) : active === 'texture' ? (
           // 재질×코팅 2축 피커 + 축별 강도 슬라이더(#434, #471, #475). 각 강도 슬라이더는 그 축

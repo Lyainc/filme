@@ -107,6 +107,22 @@ describe('DesignRail (#217)', () => {
     expect(color.getAttribute('aria-expanded')).toBe('false');
   });
 
+  // #524 리뷰 P1 — TONE_FIXED_MOODS 확장(35mm 전용 disabled → 표 기반)이 실제로 rail의
+  // ColorPicker disabled prop까지 이어지는지는 어떤 테스트도 exercise 안 했다(무드 렌더 결과가
+  // themeColor를 무시하는지만 보는 inkColorFidelity.test.tsx와는 다른 층). 표에 새로 들어온
+  // criterion으로 확인 — 톤 고정 무드 전환 시 실제 컨트롤이 잠기는지가 여기서 처음 exercise된다.
+  test('무드를 criterion으로 바꾸면 ColorPicker가 disabled (#524 TONE_FIXED_MOODS)', async () => {
+    const user = userEvent.setup();
+    render(<RailHarness />);
+
+    await user.click(screen.getByRole('button', { name: '무드' }));
+    await user.click(screen.getByRole('radio', { name: /크라이테리언/ }));
+    expect(screen.getByTestId('layout').textContent).toBe('criterion');
+
+    await user.click(screen.getByRole('button', { name: '컬러' }));
+    expect((screen.getByRole('button', { name: 'White' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
   test('(e) 투명도 아이콘 클릭 → 듀얼 슬라이더 패널 열림 · 무드와 배타 (#219)', async () => {
     const user = userEvent.setup();
     render(<RailHarness />);
