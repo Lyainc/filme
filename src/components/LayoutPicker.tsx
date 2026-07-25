@@ -2,6 +2,9 @@ import { ReactNode, TouchEvent, memo, useEffect, useRef } from 'react';
 import { LAYOUTS, type LayoutSpec } from '@/utils/layouts';
 import type { LayoutId } from '@/types';
 import { Eyebrow } from './v2/Eyebrow';
+// 무드 실루엣을 흉내 내는 자리라 색은 무드와 같은 토큰을 쓴다 — 리터럴로 두면 무드 색을
+// 고칠 때 썸네일만 조용히 옛 색으로 남는다(#524).
+import { FILM_AMBER, FILM_BASE, FILM_HOLE } from './moods/_shared';
 
 interface LayoutPickerProps {
   value: LayoutId;
@@ -199,11 +202,11 @@ const MOOD_CHIP_BG: Record<LayoutId, string> = {
   criterion: 'linear-gradient(90deg, #f2ede2 0 22%, #23201c 22%)',
   // v5 재설계(#524): 35mm은 가로 밴드가 아니라 **세로 레일**(좌우 어두운 띠 + 가운데 포스터 컷),
   // 35mm Wide는 좌우 분할이 아니라 **가로 밴드 + 넓은 컷 / 좁은 크레딧 컷**이 실루엣이다.
-  '35mm': 'linear-gradient(90deg, #0b0a09 0 21%, #8a8175 21% 79%, #0b0a09 79%)',
+  '35mm': `linear-gradient(90deg, ${FILM_BASE} 0 21%, #8a8175 21% 79%, ${FILM_BASE} 79%)`,
   editorial: 'linear-gradient(90deg, #6e675e 0 40%, #A8312A 40% 44%, #f4ede0 44%)',
   stub: 'linear-gradient(180deg, #8a8175 0 50%, #c9baf7 50% 58%, #f2ede2 58%)',
   '35mm-landscape':
-    'linear-gradient(180deg, #0b0a09 0 18%, rgba(0,0,0,0) 18% 82%, #0b0a09 82%), linear-gradient(90deg, #0b0a09 0 5%, #8a8175 5% 66%, #14120f 66% 95%, #0b0a09 95%)',
+    `linear-gradient(180deg, ${FILM_BASE} 0 18%, rgba(0,0,0,0) 18% 82%, ${FILM_BASE} 82%), linear-gradient(90deg, ${FILM_BASE} 0 5%, #8a8175 5% 66%, #14120f 66% 95%, ${FILM_BASE} 95%)`,
 };
 
 // 모바일 무드 스트립(#262 갭2, #212 섹션 D) — 캐러셀 대신 가로 scroll-snap. 데스크톱은 캐러셀 유지.
@@ -321,18 +324,18 @@ const THUMBNAIL_RENDERERS: Record<LayoutId, (c: ThumbColors) => ReactNode> = {
   // v5 재설계(#524) — 세로 레일 2개 + 컷 2개(포스터 0.667 / 크레딧). 가로 밴드 실루엣 폐기.
   '35mm': ({ stroke, dim }) => (
     <>
-      <rect x="0" y="0" width="80" height="100" fill="#0b0a09" />
+      <rect x="0" y="0" width="80" height="100" fill={FILM_BASE} />
       {[3, 13, 23, 33, 43, 53, 63, 73, 83, 93].map((y) => (
-        <rect key={`l-${y}`} x="2" y={y} width="4" height="5.5" rx="1.2" fill="#e9e8e4" />
+        <rect key={`l-${y}`} x="2" y={y} width="4" height="5.5" rx="1.2" fill={FILM_HOLE} />
       ))}
       {[3, 13, 23, 33, 43, 53, 63, 73, 83, 93].map((y) => (
-        <rect key={`r-${y}`} x="74" y={y} width="4" height="5.5" rx="1.2" fill="#e9e8e4" />
+        <rect key={`r-${y}`} x="74" y={y} width="4" height="5.5" rx="1.2" fill={FILM_HOLE} />
       ))}
       {/* 포스터 컷 46×69 = 0.667 (#525 룰 5) */}
-      <rect x="4" y="4" width="12" height="0.8" fill="#a97433" />
+      <rect x="4" y="4" width="12" height="0.8" fill={FILM_AMBER} />
       <rect x="17" y="7" width="46" height="69" fill={dim} opacity="0.2" />
       {/* 크레딧 컷 — 제목 + 2단 크레딧 */}
-      <rect x="4" y="78" width="12" height="0.8" fill="#a97433" />
+      <rect x="4" y="78" width="12" height="0.8" fill={FILM_AMBER} />
       <rect x="17" y="81" width="46" height="15" fill="rgba(0,0,0,0.75)" />
       <rect x="30" y="83.5" width="20" height="2" fill={stroke} />
       <rect x="24" y="88" width="13" height="1.4" fill={dim} />
@@ -396,9 +399,9 @@ const THUMBNAIL_RENDERERS: Record<LayoutId, (c: ThumbColors) => ReactNode> = {
         <rect key={`b-${x}`} x={x} y="92" width="4" height="4" rx="0.6" fill="#f6f1e4" />
       ))}
       {/* v5 재설계(#524) — 우측 아카이브 패널 폐기(#499). 넓은 포스터 컷 48×32(3:2) + 좁은 크레딧 컷 */}
-      <rect x="4" y="29" width="10" height="0.8" fill="#a97433" />
+      <rect x="4" y="29" width="10" height="0.8" fill={FILM_AMBER} />
       <rect x="4" y="34" width="48" height="32" fill={dim} opacity="0.2" />
-      <rect x="56" y="29" width="7" height="0.8" fill="#a97433" />
+      <rect x="56" y="29" width="7" height="0.8" fill={FILM_AMBER} />
       <rect x="56" y="34" width="21" height="32" fill="rgba(0,0,0,0.75)" />
       <rect x="61" y="37" width="11" height="2" fill={stroke} />
       <rect x="58" y="46" width="8" height="1.4" fill={dim} />

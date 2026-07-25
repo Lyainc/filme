@@ -77,12 +77,13 @@ describe.each([
   });
 });
 
-// 풀블리드 3무드(minimal·criterion·35mm)만 frameInsetY로 상하 블러 레터박스 최소 노출을 보장한다.
-// 나머지 셋은 자연 간극이 이미 크거나 별도 컬럼 레이아웃이라 #449 스코프 밖(인셋 0).
+// 풀블리드 2무드(minimal·criterion)만 frameInsetY로 상하 블러 레터박스 최소 노출을 보장한다.
+// 나머지는 자연 간극이 이미 크거나 별도 컬럼 레이아웃이라 #449 스코프 밖(인셋 0) — 35mm은
+// v5(#524)에서 풀블리드가 아니라 고정 0.667 컷이 돼서 여기로 내려왔다(강제 띠 = 레터박스 0 파괴).
 describe.each([
   ['minimal', MoodMinimal, POSTER_FRAME_INSET_Y],
   ['criterion', MoodCriterion, POSTER_FRAME_INSET_Y],
-  ['35mm', Mood35mm, POSTER_FRAME_INSET_Y],
+  ['35mm', Mood35mm, 0],
   ['editorial', MoodEditorial, 0],
   ['stub', MoodStub, 0],
 ] as const)('#449 frameInsetY — %s', (_name, Mood, inset) => {

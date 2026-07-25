@@ -42,25 +42,25 @@ describe.each([
   });
 });
 
-// FilmRail(35mm 세로 v5, #524) — 엣지 프린트가 코드 배열이 아니라 한 문자열이라 code 단위 폴백을
-// 걸 자리가 없다. 한글이 하나라도 섞이면(서명·한글 제목) 줄 전체를 FONT_KR로 돌려 tofu를 막는다.
+// FilmRail(35mm 세로 v5, #524) — 레일도 밴드와 같은 edgeCells를 써서 code 단위로 FONT_KR
+// 폴백을 건다. 한 문자열로 이어 붙이면 한글이 하나만 섞여도 ASCII 런까지 Pretendard로 넘어가
+// 레일의 LCD 엣지 프린트 정체성이 통째로 사라진다.
 describe('Mood35mm FilmRail 엣지 프린트 폰트 폴백 (#524)', () => {
   const render = (movieInfo: typeof FULL_MOVIE) =>
     renderToStaticMarkup(<Mood35mm movieInfo={movieInfo} components={makeMoodBase('35mm')} croppedImageUrl="blob:x" onField={() => {}} />);
 
-  test('한글 서명이 섞이면 레일 프린트 줄 전체가 FONT_KR', () => {
+  test('한글 code만 FONT_KR로 갈리고 ASCII code는 FONT_LCD 상속', () => {
     const html = render(FULL_MOVIE);
-    expect(html).toMatch(/left:68px;top:-40px[^"]*font-family:&quot;Pretendard Variable&quot;/);
-    expect(html).toContain('COLLECTED BY 영화수집가');
+    expect(html).toMatch(/<span style="font-family:&quot;Pretendard Variable&quot;[^"]*">COLLECTED BY 영화수집가<\/span>/);
+    expect(html).toContain('<span>SAFETY FILM</span>');
+    expect(html).toContain('<span>THE GRAND BUDAPEST HOTEL</span>');
   });
 
-  test('한글이 없으면 FONT_LCD 유지', () => {
-    const html = render({ ...FULL_MOVIE, signature: 'JIWOO', title: 'GRAND BUDAPEST' });
-    expect(html).toMatch(/left:68px;top:-40px[^"]*font-family:var\(--font-lcd\)/);
+  test('레일 컨테이너 기본 폰트는 FONT_LCD', () => {
+    expect(render(FULL_MOVIE)).toMatch(/left:68px;top:-40px[^"]*font-family:var\(--font-lcd\)/);
   });
 
   test('레일 프린트도 원제를 쓴다(#423) — 코드 런 4회 반복', () => {
-    const html = render(FULL_MOVIE);
-    expect(html.match(/THE GRAND BUDAPEST HOTEL/g)?.length).toBe(4);
+    expect(render(FULL_MOVIE).match(/THE GRAND BUDAPEST HOTEL/g)?.length).toBe(4);
   });
 });

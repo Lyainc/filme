@@ -1217,56 +1217,6 @@ export const Barcode = memo(function Barcode({
   );
 });
 
-export const HorizontalSprockets = memo(function HorizontalSprockets({
-  count = 14,
-  height = 64,
-  base = '#0a0a0a',
-  hole = '#f6f1e4',
-}: {
-  count?: number;
-  height?: number;
-  base?: string;
-  hole?: string;
-}) {
-  // 무드 리렌더 시 count·hole이 고정이면 배열 재생성 안 함
-  const holes = useMemo(
-    () =>
-      Array.from({ length: count }, (_, i) => (
-        <div
-          key={i}
-          style={{
-            width: 50,
-            height: 38,
-            borderRadius: 2,
-            background: hole,
-            flexShrink: 0,
-          }}
-        />
-      )),
-    [count, hole]
-  );
-  return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-around',
-        padding: '0 18px',
-        height,
-        background: base,
-      }}
-    >
-      {holes}
-    </div>
-  );
-});
-
-/**
- * 35mm 필름 스트립 밴드(에픽 #281, 마스터 Ticket Design Master.dc.html v2 1:1). 상/하단 92px 밴드에
- * 천공(44×24 r6) + 프레임번호(236+i) + KEYKODE 바 + 엣지 스크롤 코드(×4, ◆ 구분) + 그레인 오버레이.
- * accent(amber)는 무드가 themeColor에서 파생해 넘긴다. pos로 상/하단을 뒤집는다 — 천공·프레임·키코드는
- * 바깥 모서리, 엣지 텍스트는 안쪽 모서리에 붙는다. HorizontalSprockets(단순 천공)와 달리 이건 35mm 전용.
- */
 const KK_PATTERN = '31122112132113112212311213212112'.split('').map(Number);
 
 /** 필름 계열(35mm · 35mm Wide) 공용 색 토큰 — v5 시안 하드코딩(#524 c8). themeColor 파생 아님. */
@@ -1276,11 +1226,11 @@ export const FILM_BASE = '#0b0a09';
 /** 스트립 바깥 암부(절단면 너머). */
 export const FILM_DARK = '#050403';
 export const FILM_INK = '#e9e7e2';
-const FILM_HOLE = '#e9e8e4';
+export const FILM_HOLE = '#e9e8e4';
 /** 컷(프레임) 박스 공통 — 검은 바탕 + 안쪽 1px 암선 + 바깥 1px amber 헤어라인. */
 export const CUT_SHADOW = 'inset 0 0 0 1px rgba(0,0,0,.9), 0 0 0 1px rgba(120,96,64,.18)';
 /** 크레딧 컷 위 암부 그라디언트(포스터를 brightness(.34)로 깐 뒤 조판 대비 확보). */
-export const CREDIT_SCRIM = 'linear-gradient(180deg,rgba(5,4,3,.78) 0%,rgba(5,4,3,.9) 55%,rgba(5,4,3,.95) 100%)';
+const CREDIT_SCRIM = 'linear-gradient(180deg,rgba(5,4,3,.78) 0%,rgba(5,4,3,.9) 55%,rgba(5,4,3,.95) 100%)';
 
 /**
  * 필름 키코드(KL 23 롤 로트+풋) — 시안 스크립트는 Math.random()으로 렌더마다 새로 만들지만
@@ -1295,16 +1245,37 @@ export function buildFilmKeycode(seed: string): string {
   return `KL 23 ${roll} ${lot}+0${foot}`;
 }
 
-/** 세로 레일 엣지 프린트 1줄 — 코드 런을 4회 반복해 레일 전 구간을 채운다(시안 railPrint). */
-export function buildRailPrint(codes: string[]): string {
-  const run = codes.join(' ◆ ');
-  return Array.from({ length: 4 }, () => run).join(' ◆ ');
-}
-
 /** 프레임 번호 라벨(236+i → 118, 118A, 119…) — 시안 FilmStripBand·레일 공통. */
 function frameLabel(i: number): string {
   const f = 236 + i;
   return f % 2 === 0 ? String(f >> 1) : `${f >> 1}A`;
+}
+
+/** KEYKODE 바코드 바(밴드 전용) — 잉크/여백 교대 폭 패턴. */
+function keycodeBars(accent: string): ReactNode[] {
+  let ink = true;
+  return KK_PATTERN.map((w, i) => {
+    const seg = <span key={i} style={{ width: w * 1.5, height: 8, background: ink ? accent : 'transparent', flexShrink: 0 }} />;
+    ink = !ink;
+    return seg;
+  });
+}
+
+/** 엣지 스크롤 코드 셀(밴드·레일 공용) — 런을 EDGE_REPEAT회 반복해 전 구간을 채운다.
+ *  FONT_LCD(Share Tech Mono)엔 한글 글리프가 없어 code 단위로 FONT_KR 폴백을 건다(#393). */
+const EDGE_REPEAT = 4;
+function edgeCells(codes: string[], accent: string): ReactNode[] {
+  const cells: ReactNode[] = [];
+  for (let r = 0; r < EDGE_REPEAT; r++)
+    codes.forEach((code, i) => {
+      cells.push(
+        <span key={`${r}-${i}`} style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0, color: accent, fontWeight: 600, letterSpacing: 2.5 }}>
+          <span style={containsHangul(code) ? { fontFamily: FONT_KR } : undefined}>{code}</span>
+          <span style={{ margin: '0 15px', opacity: 0.5 }}>◆</span>
+        </span>
+      );
+    });
+  return cells;
 }
 
 /**
@@ -1322,54 +1293,40 @@ export const FilmStripBand = memo(function FilmStripBand({
   codes,
   base = '#0a0a0a',
   height = 92,
-  holeW = 44,
-  holeH = 24,
-  holeR = 6,
-  count = 15,
-  bleed = 0,
+  holeW,
+  holeH,
+  holeR,
+  count,
+  bleed,
   edgePrint = true,
-  keycode = 'KL 23 4587 1234+05',
+  keycode,
 }: {
   pos: 'top' | 'bottom';
   accent: string;
-  codes: string[];
+  /** 엣지 스크롤 코드 — edgePrint=false면 안 쓴다(그래서 optional). */
+  codes?: string[];
   base?: string;
   height?: number;
-  holeW?: number;
-  holeH?: number;
-  holeR?: number;
-  count?: number;
+  holeW: number;
+  holeH: number;
+  holeR: number;
+  count: number;
   /** 천공·프레임번호 행을 밴드 좌우 밖으로 흘리는 폭(px) — 절단면에서 구멍이 반쯤 잘린다. */
-  bleed?: number;
+  bleed: number;
   /** false면 KEYKODE·엣지 스크롤을 빼고 천공+프레임번호만(시안 5b 하단 밴드). */
   edgePrint?: boolean;
+  /** edgePrint일 때만 쓰인다 — buildFilmKeycode로 티켓별 결정론 값을 넘긴다. */
   keycode?: string;
 }) {
   const outer: 'top' | 'bottom' = pos;
   const inner: 'top' | 'bottom' = pos === 'top' ? 'bottom' : 'top';
 
   const holes = Array.from({ length: count }, (_, i) => (
-    <div key={i} style={{ width: holeW, height: holeH, borderRadius: holeR, background: '#f1ead9', flexShrink: 0, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.5), inset 0 2px 4px rgba(0,0,0,.6)' }} />
+    <div key={i} style={{ width: holeW, height: holeH, borderRadius: holeR, background: FILM_HOLE, flexShrink: 0, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.5), inset 0 2px 4px rgba(0,0,0,.6)' }} />
   ));
   const frameNums = Array.from({ length: count }, (_, i) => (
     <span key={i} style={{ width: holeW, textAlign: 'center', fontFamily: FONT_LCD, fontSize: 11, fontWeight: 400, letterSpacing: 0.6, color: accent, flexShrink: 0 }}>{frameLabel(i)}</span>
   ));
-  let inkBar = true;
-  const kkBars = KK_PATTERN.map((w, i) => {
-    const seg = <span key={i} style={{ width: w * 1.5, height: 8, background: inkBar ? accent : 'transparent', flexShrink: 0 }} />;
-    inkBar = !inkBar;
-    return seg;
-  });
-  const cells: ReactNode[] = [];
-  for (let r = 0; r < 4; r++)
-    codes.forEach((code, i) => {
-      cells.push(
-        <span key={`${r}-${i}`} style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0, color: accent, fontWeight: 600, letterSpacing: 2.5 }}>
-          <span style={containsHangul(code) ? { fontFamily: FONT_KR } : undefined}>{code}</span>
-          <span style={{ margin: '0 15px', opacity: 0.5 }}>◆</span>
-        </span>
-      );
-    });
 
   const bleedMargin = `0 ${-bleed}px`;
   const holesStyle: CSSProperties = { position: 'absolute', left: 0, right: 0, margin: bleedMargin, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px' };
@@ -1389,13 +1346,15 @@ export const FilmStripBand = memo(function FilmStripBand({
     <div aria-hidden="true" style={rootStyle}>
       <div style={holesStyle}>{holes}</div>
       <div style={frameStyle}>{frameNums}</div>
+      {/* 하단 밴드(edgePrint=false)는 이 조각을 아예 안 만든다 — 예전엔 kkBars 32개 + 엣지 셀
+          4×codes를 만들고 버렸다. */}
       {edgePrint && (
         <>
           <div style={kkStyle}>
-            <div style={{ display: 'flex', alignItems: 'flex-end' }}>{kkBars}</div>
+            <div style={{ display: 'flex', alignItems: 'flex-end' }}>{keycodeBars(accent)}</div>
             <span style={{ fontFamily: FONT_LCD, fontSize: 10, fontWeight: 400, letterSpacing: 1.6, color: accent }}>{keycode}</span>
           </div>
-          <div style={edgeStyle}>{cells}</div>
+          <div style={edgeStyle}>{edgeCells(codes ?? [], accent)}</div>
         </>
       )}
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.5, mixBlendMode: 'overlay', backgroundImage: 'repeating-linear-gradient(90deg, rgba(255,255,255,.06) 0 1px, rgba(0,0,0,.07) 1px 3px), repeating-linear-gradient(0deg, rgba(255,255,255,.04) 0 1px, rgba(0,0,0,.05) 1px 3px)' }} />
@@ -1411,14 +1370,14 @@ export const FilmStripBand = memo(function FilmStripBand({
 export const FilmRail = memo(function FilmRail({
   side,
   accent,
-  print,
+  codes,
   width = 100,
   count = 19,
 }: {
   side: 'left' | 'right';
   accent: string;
-  /** 좌측 레일 세로 엣지 프린트 문자열. 우측 레일은 넘기지 않는다(편측 인쇄). */
-  print?: string;
+  /** 좌측 레일 세로 엣지 프린트 코드. 우측 레일은 넘기지 않는다(편측 인쇄). */
+  codes?: string[];
   width?: number;
   count?: number;
 }) {
@@ -1450,17 +1409,54 @@ export const FilmRail = memo(function FilmRail({
           </span>
         ))}
       </div>
-      {print && (
-        // FONT_LCD(Share Tech Mono)엔 한글 글리프가 없다 — 서명·제목이 섞여 들어오는 한 줄이라
-        // 한글이 하나라도 있으면 줄 전체를 FONT_KR로 돌린다(FilmStripBand는 code 단위로 갈라
-        // 개별 폴백하지만, 레일은 한 문자열이라 갈 자리가 없다, #393 같은 취지).
-        <div style={{ position: 'absolute', left: 68, top: -40, bottom: -40, width: 16, writingMode: 'vertical-rl', fontFamily: containsHangul(print) ? FONT_KR : FONT_LCD, fontSize: 12, fontWeight: 600, letterSpacing: 2.5, color: accent, opacity: 0.92, whiteSpace: 'nowrap', overflow: 'hidden' }}>
-          {print}
+      {codes && (
+        // 밴드와 같은 edgeCells를 쓴다 — code 단위 FONT_KR 폴백(#393)이 레일에서도 그대로 산다.
+        <div style={{ position: 'absolute', left: 68, top: -40, bottom: -40, width: 16, writingMode: 'vertical-rl', fontFamily: FONT_LCD, fontSize: 12, fontWeight: 600, letterSpacing: 2.5, color: accent, opacity: 0.92, whiteSpace: 'nowrap', overflow: 'hidden' }}>
+          {edgeCells(codes, accent)}
         </div>
       )}
     </div>
   );
 });
+
+/**
+ * 컷 머리 프레임 라벨(v5 시안 5a/5b 공용) — `FRAME 119` + amber 헤어라인. 두 무드가 축(top/left)과
+ * 룰 폭만 달라 스타일 전체를 복붙하고 있었다. 순수 장식이라 aria-hidden.
+ */
+export function CutFrameLabel({ text, ruleWidth, style }: { text: string; ruleWidth: number; style: CSSProperties }) {
+  return (
+    <div aria-hidden="true" style={{ position: 'absolute', display: 'flex', alignItems: 'center', gap: 12, ...style }}>
+      <span style={{ fontFamily: FONT_LCD, fontSize: 13, letterSpacing: 2.5, color: FILM_AMBER }}>{text}</span>
+      <span style={{ width: ruleWidth, height: 1, background: FILM_AMBER, opacity: 0.3 }} />
+    </div>
+  );
+}
+
+/** 필름 베이스 그레인 — 세로 스트립은 0deg, 가로 스트립은 90deg. */
+export function FilmGrain({ axis }: { axis: 'vertical' | 'horizontal' }) {
+  return (
+    <div aria-hidden="true" style={{ position: 'absolute', inset: 0, backgroundImage: `repeating-linear-gradient(${axis === 'vertical' ? 0 : 90}deg, rgba(255,255,255,.016) 0 1px, rgba(0,0,0,.06) 1px 3px)` }} />
+  );
+}
+
+/** 스트립 절단면 22px 그라디언트 한 쌍 — 세로 무드는 상/하, 가로 무드는 좌/우에서 잘린다. */
+export function FilmCutEdges({ axis, inset }: { axis: 'vertical' | 'horizontal'; inset: number }) {
+  const band = (side: 'top' | 'bottom' | 'left' | 'right', deg: number): CSSProperties =>
+    axis === 'vertical'
+      ? { position: 'absolute', left: 0, right: 0, [side]: inset, height: 22, background: `linear-gradient(${deg}deg, rgba(0,0,0,.72), rgba(0,0,0,0))`, pointerEvents: 'none' }
+      : { position: 'absolute', top: 0, bottom: 0, [side]: inset, width: 22, background: `linear-gradient(${deg}deg, rgba(0,0,0,.72), rgba(0,0,0,0))`, pointerEvents: 'none' };
+  return axis === 'vertical' ? (
+    <>
+      <div aria-hidden="true" style={band('top', 180)} />
+      <div aria-hidden="true" style={band('bottom', 0)} />
+    </>
+  ) : (
+    <>
+      <div aria-hidden="true" style={band('left', 90)} />
+      <div aria-hidden="true" style={band('right', 270)} />
+    </>
+  );
+}
 
 /**
  * 크레딧 컷(v5 시안 5a/5b 공용, #524) — 위 컷과 **같은 포스터를 상단정렬 cover**로 깔아 프레임
@@ -1478,8 +1474,8 @@ export function FilmCreditCut({
   ghost,
   onField,
   compact = false,
-  innerWidth,
-}: MoodProps & { compact?: boolean; innerWidth: number }) {
+  cutWidth,
+}: MoodProps & { compact?: boolean; cutWidth: number }) {
   const { watchDateClean, releaseClean, reissueClean } = resolveTicketData(d);
   const titleVal = gate(fv?.title, d.title);
   const titleOgVal = gate(fv?.titleOg, d.titleOg);
@@ -1489,8 +1485,11 @@ export function FilmCreditCut({
 
   const fontsReady = useFontsReady();
   const titleMax = compact ? 28 : 30;
+  // 패딩은 이 컴포넌트가 소유한다 — 호출자가 좌우 패딩을 다시 빼서 넘기면 소스가 둘로 갈려,
+  // 패딩을 손대는 순간 제목 자동 축소가 조용히 틀린 폭으로 맞춰진다.
+  const padX = compact ? 30 : 36;
   // 2줄 클램프라 가용폭×2를 maxWidth로 넘겨 가장 긴 한 줄 기준으로 축소한다(#318 관례).
-  const titleFontSize = fitFontSizeToWidth(titleVal, innerWidth * 2, { fontFamily: FONT_KR, fontWeight: 500, minSize: 17, maxSize: titleMax }, fontsReady);
+  const titleFontSize = fitFontSizeToWidth(titleVal, (cutWidth - padX * 2) * 2, { fontFamily: FONT_KR, fontWeight: 500, minSize: 17, maxSize: titleMax }, fontsReady);
 
   const labelStyle: CSSProperties = { textAlign: 'right', fontFamily: FONT_MONO, fontSize: 9.5, fontWeight: 600, letterSpacing: 2.6, textTransform: 'uppercase', color: 'rgba(233,231,226,.45)' };
   const valueStyle: CSSProperties = { textAlign: 'left', fontSize: 17, fontWeight: 500, letterSpacing: -0.1, lineHeight: 1.25, fontFamily: FONT_KR };
@@ -1557,10 +1556,11 @@ export function FilmCreditCut({
         coatingIntensity={components.coatingIntensity}
         posterOpacity={(components.posterOpacity ?? defaultBrightnessForTexture(components.material ?? 'original', components.coating ?? 'none')) * 0.34}
       />
-      {/* #219 componentOpacity: 크레딧 컷의 스크림·조판만 페이드(배경 포스터는 유지). */}
+      {/* #219 componentOpacity: 크레딧 컷의 스크림·조판만 페이드(배경 포스터는 유지). 이 컷은
+          자기 크롬을 스스로 페이드하므로 무드의 크롬 래퍼 **밖**에 둬야 한다(안에 넣으면 이중 적용). */}
       <div style={{ position: 'absolute', inset: 0, opacity: components.componentOpacity ?? 1 }}>
       <div style={{ position: 'absolute', inset: 0, background: CREDIT_SCRIM }} />
-      <div style={{ position: 'absolute', inset: 0, padding: compact ? '32px 30px 26px' : '28px 36px 24px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', color: FILM_INK }}>
+      <div style={{ position: 'absolute', inset: 0, padding: compact ? `32px ${padX}px 26px` : `28px ${padX}px 24px`, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', color: FILM_INK }}>
         <div style={{ textAlign: 'center', textShadow: '0 2px 10px rgba(0,0,0,.7)' }}>
           {titleVal ? (
             <FieldTap field="title" onField={onField}>
@@ -1667,67 +1667,6 @@ export function buildEdgeCodes({
     signatureVal && `COLLECTED BY ${signatureVal}`,
   ].filter(Boolean) as string[];
 }
-
-export const PerforationStrip = memo(function PerforationStrip({
-  vertical = true,
-  count = 30,
-  color = '#1a1612',
-  background = 'transparent',
-}: {
-  vertical?: boolean;
-  count?: number;
-  color?: string;
-  background?: string;
-}) {
-  // 무드 리렌더 시 count·color가 고정이면 dot 배열 재생성 안 함
-  const dots = useMemo(
-    () =>
-      Array.from({ length: count }, (_, i) => (
-        <div
-          key={i}
-          style={{
-            width: 5,
-            height: 5,
-            borderRadius: 999,
-            background: color,
-            opacity: 0.55,
-          }}
-        />
-      )),
-    [count, color]
-  );
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        background,
-        ...(vertical
-          ? {
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: 14,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'space-around',
-            }
-          : {
-              left: 0,
-              right: 0,
-              top: 0,
-              height: 14,
-              display: 'flex',
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-around',
-            }),
-      }}
-    >
-      {dots}
-    </div>
-  );
-});
 
 function seedFromString(s: string): number {
   let h = 0x9e3779b9 >>> 0;

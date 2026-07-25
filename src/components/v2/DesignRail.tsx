@@ -8,6 +8,7 @@ import { MATERIAL_OPTIONS, COATING_OPTIONS } from '@/utils/constants';
 import { MINIMAL_STAMP_MAX_SCALE } from '@/components/moods/MoodMinimal';
 import type { LayoutId } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
+import { TONE_FIXED_MOODS } from '@/constants/fields';
 
 // 모바일 디자인 레일(#217+): 무드·컬러·후보정·투명도·크기 편집 콘텐츠를 인라인 폼 밖으로 빼
 // 가로 원형 아이콘 + 단일 공용 확장 패널로 호스팅한다. 컬러(#218)·투명도(#219) 추가 완료.
@@ -218,7 +219,7 @@ export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket>
             value={components.themeColor}
             onChange={(themeColor) => setComp({ themeColor })}
             recommended={recommendedColors}
-            disabled={components.layout === '35mm'}
+            disabled={TONE_FIXED_MOODS.has(components.layout)}
             disabledNote="35mm 무드는 필름 톤(크림·먹색)이 고정이라 잉크 색을 바꿀 수 없어요."
           />
         ) : active === 'texture' ? (
