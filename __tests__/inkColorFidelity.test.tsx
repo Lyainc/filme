@@ -7,8 +7,9 @@ import { MoodEditorial } from '../src/components/moods/MoodEditorial';
 import { MoodMinimal } from '../src/components/moods/MoodMinimal';
 import { MoodStub } from '../src/components/moods/MoodStub';
 import { Mood35mmLandscape } from '../src/components/moods/Mood35mmLandscape';
-import { isInkDark } from '../src/components/moods/_shared';
-import type { MovieInfo, TicketComponents } from '../src/types';
+import { isInkDark, resolveInk } from '../src/components/moods/_shared';
+import { TONE_FIXED_MOODS } from '../src/constants/fields';
+import type { LayoutId, MovieInfo, TicketComponents } from '../src/types';
 
 // #8E4E69: 중간 톤 보라. luminance ≈ 0.12 < 0.18 이라 isInkDark=true 로 분류되지만,
 // 사용자가 고른 색이므로 ink로 그대로 반영돼야 한다(이전엔 '#0d0c0a'로 묻혔다, #177).
@@ -53,8 +54,14 @@ describe('#177 어두운 유채색 ink 반영', () => {
     expect(markup(Mood, layout)).toContain('8e4e69');
   });
 
-  // 타이핑/삭제 중 ColorPicker가 emit하는 불완전 hex('#8E')는 무효 CSS color라
-  // 잉크로 새면 텍스트가 투명해진다 — resolveInk가 fallback으로 떨궈야 한다(#177 리뷰 P1).
+  // 타이핑/삭제 중 ColorPicker가 emit하는 불완전 hex('#8E')는 무효 CSS color라 잉크로 새면
+  // 텍스트가 투명해진다(#177 리뷰 P1). 이건 resolveInk 자체의 계약이라 헬퍼에 직접 건다 —
+  // 무드 케이스만 남기면 그 무드가 톤 고정 무드로 넘어갈 때 가드도 같이 사라진다.
+  test('resolveInk가 불완전 hex(#8E)를 fallback으로 떨군다', () => {
+    expect(resolveInk('#8E', '#0d0c0a')).toBe('#0d0c0a');
+    expect(resolveInk(DARK_CHROMATIC, '#0d0c0a')).toBe(DARK_CHROMATIC);
+  });
+
   test.each([
     ['minimal', MoodMinimal],
   ] as const)('%s 가 불완전 hex(#8E)는 잉크로 안 쓴다', (layout, Mood) => {
@@ -77,5 +84,29 @@ describe('#177 어두운 유채색 ink 반영', () => {
     for (const Mood of [MoodMinimal, Mood35mm, MoodCriterion, MoodEditorial, MoodStub, Mood35mmLandscape]) {
       expect(() => markup(Mood as typeof MoodMinimal, BASE.layout)).not.toThrow();
     }
+  });
+});
+
+const MOODS = [
+  ['minimal', MoodMinimal],
+  ['criterion', MoodCriterion],
+  ['35mm', Mood35mm],
+  ['editorial', MoodEditorial],
+  ['stub', MoodStub],
+  ['35mm-landscape', Mood35mmLandscape],
+] as const;
+
+/**
+ * TONE_FIXED_MOODS 표-대-렌더 대조(#524) — 표가 렌더 동작과 어긋나면 두 방향 모두 사용자에게
+ * 샌다: 표에서 빠진 톤 고정 무드는 아무 일도 안 하는 ColorPicker를 남기고, 표에 잘못 들어간
+ * 무드는 살아있는 컨트롤을 잠근다. 앞으로 무드가 시안 색을 하드코딩할 때마다 편집자가 표를
+ * 같이 고쳤는지 여기서 잡는다(launcherFieldGating의 "런처 필드 = 무드 렌더 필드"와 같은 성격).
+ */
+describe('TONE_FIXED_MOODS = themeColor를 안 읽는 무드 (#524)', () => {
+  test.each(MOODS)('%s', (layout, Mood) => {
+    const ignoresTheme = markup(Mood as typeof MoodMinimal, layout as LayoutId) === renderToStaticMarkup(
+      <Mood movieInfo={MOVIE} components={{ ...BASE, layout, themeColor: '#FFFFFF' }} croppedImageUrl="blob:test" />
+    ).toLowerCase();
+    expect(ignoresTheme).toBe(TONE_FIXED_MOODS.has(layout as LayoutId));
   });
 });

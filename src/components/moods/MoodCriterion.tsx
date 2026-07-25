@@ -45,13 +45,15 @@ const DEFAULT_QUOTE = 'the paying customer is the last honest critic';
 
 // 시안 색 하드코딩(#524 c8) — themeColor 파생을 버린다. 흰 종이 위 검정 잉크가 5c의 정체성이라
 // 사용자 색이 끼면 무드가 성립하지 않는다. 죽은 ColorPicker는 TONE_FIXED_MOODS가 비활성화한다.
-const PAPER = CRITERION_PAPER;
+// 옐로(CRITERION_YELLOW)는 시안이 정확히 5곳(헤더 스퀘어·상단 룰·★·따옴표 쌍·콜로폰 짧은 룰)에만
+// 쓴다. 잉크 계열은 LayoutPicker가 안 읽어 토큰으로 올리지 않고 여기 남는다.
 const INK = '#14120f';
 const INK_SOFT = 'rgba(20,18,15,.84)';
 const INK_RULE = 'rgba(20,18,15,.4)';
-/** 옐로 액센트 — 시안이 정확히 5곳(헤더 스퀘어·상단 룰·★·따옴표 쌍·콜로폰 짧은 룰)에만 쓴다. */
-const YELLOW = CRITERION_YELLOW;
 const PLATE_BG = '#efeee9';
+// 종이 그레인 — 시안은 `opacity:.6` 레이어 + rgba(...,.022)지만, 불투명 종이 위 단일 레이어라
+// 알파를 곱해(.022×.6) 루트 배경에 합치면 픽셀은 같고 캔버스 전면 합성 레이어 하나가 준다.
+const PAPER_GRAIN = `repeating-linear-gradient(0deg, rgba(20,18,15,.0132) 0 1px, transparent 1px 4px), ${CRITERION_PAPER}`;
 
 const PAD = 84;
 // 도판(플레이트) — 500×750 = 0.667(#525 룰 5). contain이라 표준 크롭에서 레터박스가 0으로 선다.
@@ -64,9 +66,6 @@ const PLATE_SHADOW =
   '0 2px 3px rgba(20,18,15,.3), 0 14px 22px rgba(20,18,15,.26), 0 34px 54px rgba(20,18,15,.24), 0 70px 100px rgba(20,18,15,.16), inset 0 0 0 1px rgba(20,18,15,.22)';
 const PLATE_GLOSS =
   'linear-gradient(116deg, rgba(255,255,255,.5) 0%, rgba(255,255,255,.14) 13%, rgba(255,255,255,0) 30%, rgba(255,255,255,0) 74%, rgba(255,255,255,.14) 92%, rgba(255,255,255,.3) 100%)';
-
-const QUOTE_TOP = 1064;
-const QUOTE_H = 190;
 
 const headerMeta: CSSProperties = { fontFamily: FONT_MONO, fontSize: 13, fontWeight: 600, letterSpacing: 3 };
 const colophonLine: CSSProperties = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' };
@@ -84,9 +83,11 @@ const colophonLine: CSSProperties = { whiteSpace: 'nowrap', overflow: 'hidden', 
  * - 콜로폰: 모노 17.5 2줄. 병합 줄은 fieldPieces로 분해해 필드별 탭 타깃·ghost 유지(c3)
  * - 푸터: 체인·포맷 스탬프(c5와 같은 자리) + made with FILME
  *
- * 시안과의 의도적 차이 2건 — 둘 다 시안이 정적 목업이라 생긴 중복이다:
- * (1) 콜로폰 1행 끝의 "70MM"은 푸터 포맷 스탬프와 같은 값이라 뺐다. 남기면 같은 필드에 탭
- *     타깃이 둘이 되고, 로고를 올리면 푸터는 이미지·콜로폰은 텍스트로 갈린다.
+ * 시안과의 의도적 차이 2건:
+ * (1) 콜로폰 1행 끝의 "70MM"은 푸터 포맷 스탬프와 같은 값이라 뺐다. 포맷은 로고 이미지가
+ *     우선하는 스탬프라, 사용자가 로고를 올리면 푸터는 이미지·콜로폰은 텍스트로 갈린다.
+ *     (관람일이 헤더·콜로폰에 두 번 찍히는 건 시안 그대로 둔다 — 양쪽 다 순수 텍스트라
+ *     갈릴 표현이 없고, 인쇄물이 날짜를 머리와 판권면에 함께 찍는 건 자연스럽다.)
  * (2) 본문 서체는 시안의 Noto Serif KR 대신 Pretendard(FONT_KR)다 — c13 실측 결과는 커밋 메시지에.
  */
 export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap }: MoodProps) {
@@ -120,7 +121,7 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
 
   // 콜로폰 2줄 분해(c3) — 시안은 한 줄에 이어붙인 텍스트지만, 조각마다 제 FieldTap과 ghost를
   // 달아야 편집이 산다. 1행은 장소 · 관람일시(날짜+시간은 시안대로 공백으로 묶인 한 덩어리),
-  // 2행은 러닝타임 · RELEASED 개봉일 · 출연. 재개봉은 값이 있을 때만 조각을 더한다(c6).
+  // 2행은 러닝타임 · RELEASED 개봉일 · RE-RELEASED 재개봉일 · 출연.
   const venue = fieldPieces(
     [
       { field: 'theater', value: gate(fv?.theater, d.theater), ghost: showFieldGhost(fv?.theater, d.theater, ghost), label: 'THEATER' },
@@ -145,7 +146,8 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
       { field: 'runtime', value: gate(fv?.runtime, d.runtime), ghost: showFieldGhost(fv?.runtime, d.runtime, ghost), label: 'RUNTIME' },
       // 재개봉 편집 자리는 releaseDate 시트 안(reissue는 FIELD_SHEET_TYPE에 없어 단독 타깃이면 빈 시트).
       { field: 'releaseDate', value: releaseDateVal && `RELEASED ${releaseDateVal}`, ghost: showFieldGhost(fv?.releaseDate, releaseClean, ghost), label: 'RELEASED' },
-      ...(reissueVal ? [{ field: 'releaseDate' as const, value: `RE-RELEASED ${reissueVal}`, label: 'RE-RELEASED' }] : []),
+      // 재개봉은 값이 있을 때만 자리를 얻는다(c6) — ghost를 안 주면 fieldPieces가 빈 값을 알아서 뺀다.
+      { field: 'releaseDate', value: reissueVal && `RE-RELEASED ${reissueVal}`, label: 'RE-RELEASED' },
       { field: 'actors', value: truncateActors(gate(fv?.actors, d.actors)), ghost: showFieldGhost(fv?.actors, d.actors, ghost), label: 'CAST' },
     ],
     onField,
@@ -155,10 +157,7 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
   const componentOpacity = components.componentOpacity ?? 1;
 
   return (
-    <div style={{ position: 'absolute', inset: 0, background: PAPER, color: INK, fontFamily: FONT_KR, overflow: 'hidden' }}>
-      {/* 종이 그레인 — 결정론(c2), 난수 없음 */}
-      <div style={{ position: 'absolute', inset: 0, opacity: 0.6, backgroundImage: 'repeating-linear-gradient(0deg, rgba(20,18,15,.022) 0 1px, transparent 1px 4px)' }} />
-
+    <div style={{ position: 'absolute', inset: 0, background: PAPER_GRAIN, color: INK, fontFamily: FONT_KR, overflow: 'hidden' }}>
       {/* 도판 — Mood35mm의 컷과 같은 계약. 컷이 정확히 0.667이라 표준 크롭(#525 룰 1)에서 레터박스가
           0이고, 사용자가 자연비 크롭을 골라 어긋나면 남는 자리를 blur 포스터 배경이 덮는다.
           componentOpacity 래퍼 **밖** — 포스터 축과 크롬 축은 독립(#219). */}
@@ -182,7 +181,7 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
         {/* 헤더 — 옐로 스퀘어 + UNE SÉANCE / 관람일 */}
         <div style={{ position: 'absolute', left: PAD, right: PAD, top: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
-            <span style={{ width: 13, height: 13, background: YELLOW, display: 'block', flexShrink: 0 }} />
+            <span style={{ width: 13, height: 13, background: CRITERION_YELLOW, display: 'block', flexShrink: 0 }} />
             <span style={{ ...headerMeta, fontWeight: 700, letterSpacing: 4.4, textTransform: 'uppercase' }}>une séance</span>
           </div>
           {watchDateVal ? (
@@ -195,7 +194,7 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
             </FieldTap>
           ) : null}
         </div>
-        <div style={{ position: 'absolute', left: PAD, right: PAD, top: 94, height: 3, background: YELLOW }} />
+        <div style={{ position: 'absolute', left: PAD, right: PAD, top: 94, height: 3, background: CRITERION_YELLOW }} />
 
         {/* 마스트헤드 — 제목/원제 + ★ 평점 */}
         <div style={{ position: 'absolute', left: PAD, right: PAD, top: 118, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24 }}>
@@ -224,9 +223,9 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
           {ratingVisible ? (
             <FieldTap field="rating" onField={onField}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, flexShrink: 0 }}>
-                <span style={{ fontSize: 26, lineHeight: 1, color: YELLOW }}>★</span>
+                <span style={{ fontSize: 26, lineHeight: 1, color: CRITERION_YELLOW }}>★</span>
                 <span style={{ fontWeight: 700, fontSize: 50, lineHeight: 1, letterSpacing: -1.5 }}>{d.rating.toFixed(1)}</span>
-                <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 600, letterSpacing: 1.4, opacity: 0.5 }}>/5</span>
+                <span style={{ ...headerMeta, letterSpacing: 1.4, opacity: 0.5 }}>/5</span>
               </div>
             </FieldTap>
           ) : gRating ? (
@@ -237,9 +236,9 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
         </div>
 
         {/* 한줄평 — 190px 고정 블록. 따옴표는 문구 길이와 무관하게 좌상·우하에 고정된다. */}
-        <div style={{ position: 'absolute', left: PAD, right: PAD, top: QUOTE_TOP, height: QUOTE_H }}>
-          <span aria-hidden style={{ position: 'absolute', left: 0, top: 0, fontFamily: FONT_DISPLAY, fontSize: 104, lineHeight: 1, color: YELLOW }}>&ldquo;</span>
-          <span aria-hidden style={{ position: 'absolute', right: 0, bottom: 0, fontFamily: FONT_DISPLAY, fontSize: 104, lineHeight: 1, color: YELLOW, transform: 'rotate(180deg)' }}>&ldquo;</span>
+        <div style={{ position: 'absolute', left: PAD, right: PAD, top: 1064, height: 190 }}>
+          <span aria-hidden style={{ position: 'absolute', left: 0, top: 0, fontFamily: FONT_DISPLAY, fontSize: 104, lineHeight: 1, color: CRITERION_YELLOW }}>&ldquo;</span>
+          <span aria-hidden style={{ position: 'absolute', right: 0, bottom: 0, fontFamily: FONT_DISPLAY, fontSize: 104, lineHeight: 1, color: CRITERION_YELLOW, transform: 'rotate(180deg)' }}>&ldquo;</span>
           {/* 실측 텍스트만 FieldTap 안에 남긴다(#417/#268) — InPlaceFieldEditor의 measureField가
               tap.firstElementChild 전체 박스를 재므로 장식 따옴표는 형제로 뺀다. */}
           <FieldTap field="quote" onField={onField}>
@@ -284,7 +283,7 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
         </div>
 
         {/* 콜로폰 */}
-        <div style={{ position: 'absolute', left: PAD, top: 1358, width: 64, height: 3, background: YELLOW }} />
+        <div style={{ position: 'absolute', left: PAD, top: 1358, width: 64, height: 3, background: CRITERION_YELLOW }} />
         <div style={{ position: 'absolute', left: PAD, right: PAD, top: 1370, fontFamily: FONT_MONO, fontSize: 17.5, fontWeight: 600, letterSpacing: 0.9, lineHeight: 1.72, color: INK_SOFT }}>
           <div style={{ ...colophonLine, ...(venue.hasGhost || screened.hasGhost ? { display: 'flex', alignItems: 'center', gap: 10, whiteSpace: 'normal' } : null) }}>
             {venue.node}

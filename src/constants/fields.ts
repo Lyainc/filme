@@ -97,7 +97,15 @@ export const MOOD_EXCLUDED_FIELDS: Partial<Record<LayoutId, readonly TicketField
  * 다음 무드가 합류할 때 한쪽만 고쳐지고 죽은 컨트롤이 남는다(#524 열린 질문).
  * 6무드 액센트 통일 개편이 오면 이 표가 그 진입점이다.
  */
-export const TONE_FIXED_MOODS: ReadonlySet<LayoutId> = new Set<LayoutId>(['35mm', '35mm-landscape', 'criterion']);
+export const TONE_FIXED_MOODS: ReadonlySet<LayoutId> = new Set<LayoutId>([
+  '35mm',
+  '35mm-landscape',
+  'criterion',
+  // Stub은 v5 재설계 대상이 아닌데도 원래부터 themeColor를 안 읽는다(ink #1A1612 고정 ·
+  // ACCENT monochrome). 표가 이 무드를 놓쳐 ColorPicker가 아무 일도 안 하면서 살아 있었다 —
+  // 이제 inkColorFidelity의 표-대-렌더 대조가 이런 누락을 잡는다.
+  'stub',
+]);
 
 /** 현재 layout에 적용되는 런처 그룹 — MOOD_EXCLUDED_FIELDS의 필드를 걸러내고, 비게 된 그룹은 제거. */
 export function launcherGroupsFor(layout: LayoutId): { title: string; fields: TicketField[] }[] {
@@ -144,11 +152,15 @@ export const STAMP_LABELS: Record<StampTarget, string> = {
 export const STAMP_LABEL_MAX = 24;
 
 /**
- * Criterion 한줄평(#391) 글자수 상한 — 타이틀 블록 가용폭(960 - left200 - right64 = 696px) 기준
- * 역산. 한글 손글씨 폰트(나눔손글씨 펜체)가 라틴 세리프보다 글자당 advance가 넓어 더 보수적인
- * 쪽(한글 기준)으로 맞춰, 영문 프리셋/기본 quote는 여유가 남더라도 한글 입력이 한 줄을 넘지 않게 한다.
+ * Criterion 한줄평(#391) 글자수 상한 — v5(#524) 고정 블록 기하로 재도출. 한줄평은 height 190
+ * **고정** 블록에 들어가고 폰트는 50px 고정(제목과 달리 자동 축소 없음)이라, 넘치면 축소가 아니라
+ * 3번째 줄이 블록 밖으로 새서 따옴표·서명과 겹친다.
+ *   가용폭 = 960 - PAD 84×2 - 따옴표 인셋 96×2 = 600px, 한 줄 = 190 / (50×1.28) → 2줄까지
+ *   한글 손글씨(아이스자람) 50px advance ≈ 1em → 600/50 = 12자/줄 → 2줄 24자
+ * 라틴 세리프보다 글자당 advance가 넓은 한글 기준으로 맞추고, 공백·넓은 글리프 여유로 22자.
+ * 영문 프리셋/기본 quote는 여유가 남더라도 한글 입력이 블록을 넘지 않는 쪽을 택한다.
  */
-export const QUOTE_MAX_LENGTH = 26;
+export const QUOTE_MAX_LENGTH = 22;
 
 /** 스탬프 → TicketComponents 키(이미지 URL · 텍스트 라벨 · 노출 토글 · 크기 배율). */
 export const STAMP_KEYS: Record<
