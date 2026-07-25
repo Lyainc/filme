@@ -196,7 +196,7 @@ function MoodCardBody({ layout, active }: { layout: LayoutSpec; active: boolean 
 
 // 무드 칩 배경(#367) — 티켓 미니어처(THUMBNAIL_RENDERERS, 데스크톱 캐러셀 전용) 대신 무드의
 // 핵심 색면 2~3개만 남긴 추상 칩. 46px에선 텍스트 라인·퍼포레이션 재현이 노이즈라 과함(이슈 결정).
-// 색 값은 미니어처와 같은 성격의 아트워크 상수라 토큰이 아니라 리터럴이 맞다.
+// 무드가 색 토큰을 내보내면 그걸 쓰고(파일 상단 import 주석), 없으면 리터럴로 근사한다.
 const MOOD_CHIP_BG: Record<LayoutId, string> = {
   minimal: 'linear-gradient(180deg, #b9b3a8 0%, #b9b3a8 62%, #17150f 62%)',
   // v5 Revue 재설계(#524): 어두운 좌우 분할이 아니라 **흰 종이 + 옐로 룰 + 가운데 도판**이 실루엣이다.

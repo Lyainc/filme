@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MoodCriterion } from '../src/components/moods/MoodCriterion';
-import { CRITERION_YELLOW } from '../src/components/moods/_shared';
+import { CRITERION_PAPER, CRITERION_YELLOW } from '../src/components/moods/_shared';
 import { FULL_MOVIE, makeMoodBase } from './fixtures';
 
 // v5(Revue) 시안 `Mood Redesign v5.dc.html` 5c 재동기화 회귀(#524). 이전 v6(#497)의 포스터
@@ -18,7 +18,7 @@ const markup = () =>
 describe('MoodCriterion v5 Revue 재설계 (#524)', () => {
   test('종이 베이스 — 흰 바탕 + 잉크 하드코딩, 풀블리드 스크림 폐기', () => {
     const html = markup();
-    expect(html).toContain('background:#fdfdfc');
+    expect(html).toContain(CRITERION_PAPER);
     expect(html).toContain('color:#14120f');
     // 구 globalScrim(전면 그라디언트 오버레이)의 시그니처가 남아 있으면 스테일.
     expect(html).not.toContain('rgba(245,240,232,0.45)');

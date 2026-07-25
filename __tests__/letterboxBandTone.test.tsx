@@ -13,7 +13,6 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { render, cleanup, act } from '@testing-library/react';
 import { Poster, letterboxToneMatch } from '../src/components/moods/_shared';
 import { posterContainRect } from '../src/utils/posterFeather';
-import { MoodCriterion } from '../src/components/moods/MoodCriterion';
 import { MoodMinimal } from '../src/components/moods/MoodMinimal';
 import type { MovieInfo, TicketComponents } from '../src/types';
 

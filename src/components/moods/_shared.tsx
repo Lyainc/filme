@@ -775,8 +775,10 @@ interface PosterProps {
 }
 
 /**
- * 풀블리드 contain 무드(Minimal·Criterion·35mm) 공통 frameInsetY 값(#449 claude-review P2) —
- * 세 무드가 각자 22를 하드코딩하던 걸 단일 소스로. 20~25px 블러 레터박스 노출 목표의 중간값.
+ * 풀블리드 contain 무드의 frameInsetY 값(#449 claude-review P2) — 20~25px 블러 레터박스 노출
+ * 목표의 중간값. 세 무드(Minimal·Criterion·35mm)가 각자 22를 하드코딩하던 걸 단일 소스로 뽑았고,
+ * v5(#524)에서 Criterion·35mm이 고정 비율 컷/도판으로 바뀌며 인셋 0이 돼(강제 띠 = 레터박스 0
+ * 파괴) 지금 소비자는 Minimal 하나다. 상수는 다음 풀블리드 무드를 위해 남긴다.
  */
 export const POSTER_FRAME_INSET_Y = 22;
 
@@ -809,7 +811,11 @@ export function defaultBrightnessForTexture(material: string, coating: string): 
 }
 
 /**
- * 포스터 fit 공통 정책(#440 → #525) — 6무드가 제각각 하드코딩하던 fit/align/letterbox 배경을 한 곳으로.
+ * 포스터 fit 공통 정책(#440 → #525) — 무드가 제각각 하드코딩하던 fit/align/letterbox 배경을 한 곳으로.
+ * **풀블리드 슬롯 전용 계약**이다. v5(#524)의 고정 비율 컷 무드(35mm·35mm Wide·Criterion)는 이 헬퍼를
+ * 안 태우고 Poster를 직접 부르는데, 정책 이탈이 아니라 frameInsetY(강제 블러 띠)·letterboxBg 같은
+ * 옵션이 고정 비율 컷엔 의미가 없고 frameInsetY를 실으면 그게 곧 레터박스 0을 깨뜨리기 때문이다
+ * (fit 자체는 헬퍼와 같은 contain — 근거는 Mood35mm.tsx의 포스터 컷 주석).
  * 항상 **무손실(contain)** — 포스터를 좌우 안 잘리게 통째로 넣고 남는 공간은 무드 배경색
  * (letterboxBg)으로 흡수한다. #525에서 크롭이 포스터 표준 0.667로 서면서 'cover'(슬롯 꽉 채움)
  * 옵션은 사라졌다 — cover는 사용자가 방금 0.667로 잡은 프레임을 캔버스(0.626)·밴드 비율에 맞춰
