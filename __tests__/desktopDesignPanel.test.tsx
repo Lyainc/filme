@@ -64,6 +64,19 @@ describe('DesktopDesignPanel (#228)', () => {
     expect(region.querySelector('[aria-label="Black"]')).not.toBeNull();
   });
 
+  // #524 리뷰 P1 — TONE_FIXED_MOODS 확장이 실제 ColorPicker disabled prop까지 이어지는지는
+  // 어떤 테스트도 exercise 안 했다(무드 렌더 결과만 보는 inkColorFidelity.test.tsx와 다른 층).
+  // LAYOUTS 순서상 criterion이 2번째라 "다음 무드" 1클릭.
+  test('무드를 criterion으로 바꾸면 ColorPicker가 disabled (#524 TONE_FIXED_MOODS)', async () => {
+    const user = userEvent.setup();
+    render(<PanelHarness />);
+    await user.click(screen.getByRole('button', { name: '다음 무드' }));
+    expect(screen.getByTestId('layout').textContent).toBe('criterion');
+
+    const region = screen.getByRole('region', { name: 'Color' });
+    expect((region.querySelector('[aria-label="White"]') as HTMLButtonElement).disabled).toBe(true);
+  });
+
   // #230 — 투명도가 라벨 "Opacity" region이고, 포스터·컴포넌트 듀얼 슬라이더(기존 상태 재사용)를 담는다.
   test('(d) 투명도 섹션 = 라벨 "Opacity" region + 포스터·컴포넌트 듀얼 슬라이더', () => {
     render(<PanelHarness />);
