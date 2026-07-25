@@ -373,6 +373,16 @@ describe('MoodCriterion VENUE 셀 분해 ghost (#266 PR-D)', () => {
     const html = render(MoodCriterion, 'criterion', { ...FULL_MOVIE, screen: '' }, {}, undefined);
     expect(html).not.toContain('gap:10px');
   });
+
+  // claude-review PR #531 P1 — v5(#524)는 재개봉 조각에 ghost를 안 준다(값이 있을 때만 자리를
+  // 얻는다는 c6 그대로). isReissue=true인데 reissueDate가 비면(토글만 켜고 날짜 미입력) 예전
+  // 마스터(#281)는 RE-RELEASED ghost placeholder를 띄웠지만 v5는 조각 자체가 없다. FilmCreditCut
+  // (35mm·35mm Wide 공용)도 동일 패턴(`reissueVal ? [...] : []`, ghost 없음)이라 이 무드만의
+  // 누락이 아니라 v5 전역에서 일관된 의도된 동작 — 그대로 잠근다.
+  test('isReissue=true + reissueDate 빈값 + ghost=true → RE-RELEASED ghost도 안 뜬다(c6, v5 일관)', () => {
+    const html = render(MoodCriterion, 'criterion', EMPTY_MOVIE, {}, true);
+    expect(html).not.toContain('RE-RELEASED');
+  });
 });
 
 describe('MoodEditorial ghost (#266, 마스터 재동기화 #281)', () => {
