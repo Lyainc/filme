@@ -12,10 +12,15 @@ export const TARGET_HEIGHT = 1534;
 // 잘리고 있었다. 0.667 크롭이 0.626 풀블리드 캔버스에 들어가면 좌우 레터박스가 생기고, 그
 // 여백은 blur 배경이 덮는다(룰 3). 삽입 프레임/도판/컬럼도 이 비율이다(룰 5).
 export const POSTER_RATIO = 2 / 3; // 0.667:1
-// 크롭 출력 해상도 — 캔버스 폭과 같은 960에 POSTER_RATIO를 곱해 1440. 풀블리드 무드가
-// 960폭 슬롯에 contain으로 그리는 최대 크기(960×1440)와 일치해 확대도 축소도 안 생긴다.
-export const POSTER_WIDTH = 960;
+// 크롭 출력 해상도. 폭을 TARGET_WIDTH에 맞추는 건 두 축이 같은 개념이라서가 아니라, 포스터가
+// 가장 크게 그려지는 슬롯이 풀블리드(캔버스 폭)이기 때문이다 — 거기서 contain은 정확히
+// 캔버스 폭으로 서므로, 크롭 출력이 그보다 좁으면 확대돼 리샘플링된다. 캔버스 폭이 움직이면
+// (1477→1534 전례) 이 값도 같이 움직여야 하므로 리터럴을 다시 적지 않는다.
+export const POSTER_WIDTH = TARGET_WIDTH;
 export const POSTER_HEIGHT = POSTER_WIDTH / POSTER_RATIO; // 1440
+// "원본 비율 보존" 크롭의 긴 변 캡 — 표준 경로 해상도의 2배(export가 pixelRatio 2로 뜨는 것과 맞춤).
+// 데스크톱·모바일 셸이 같은 값을 따로 적던 걸 단일 소스로.
+export const POSTER_PRESERVE_MAX_SIDE = POSTER_HEIGHT * 2;
 
 // 후가공 텍스처 — 재질 축 × 코팅 축 2축(#475). 재질(종이 자체 색·톤·결)과 코팅(위에 얹는 광택)은
 // 동시에 조합 적용된다(components.material + components.coating).

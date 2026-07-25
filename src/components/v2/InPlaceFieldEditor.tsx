@@ -587,7 +587,6 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
           {logo.rawSrc && (
             <ImageCropModal
               imageSrc={logo.rawSrc}
-              aspect={undefined}
               title="로고 크롭"
               onClose={logo.handleCancel}
               onComplete={logo.handleComplete}

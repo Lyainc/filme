@@ -18,47 +18,32 @@ interface ImageCropModalProps {
   /** preserveRatio는 #420 "원본 비율 보존" 토글 상태 — 로고 크롭(layout 미전달)이면 항상 false. */
   onComplete: (croppedAreaPixels: Area, preserveRatio: boolean) => void;
   isProcessing?: boolean;
-  /**
-   * 크롭 종횡비. 생략 시 포스터 표준(POSTER_RATIO 0.667). 로고는 `undefined`를 넘겨
-   * "업로드 이미지의 자연 종횡비" 프레임으로 연다(#347).
-   * 주의: 구조분해 기본값을 쓰면 명시적 `undefined`가 기본값으로 덮이므로,
-   * 아래에서 `'aspect' in props`로 "미전달"과 "명시적 undefined"를 구분한다.
-   * layout이 전달되면(포스터 전용) 이 prop 대신 프리셋 토글이 aspect를 결정한다.
-   */
-  aspect?: number;
   /** aria 라벨(다이얼로그 접근성 이름). 기본 '포스터 크롭', 로고는 '로고 크롭'. 시각 헤딩은 #320에서 제거. */
   title?: string;
   /**
-   * 현재 무드(#420 → #440) — 포스터 크롭이면(layout 전달) 전 무드에서 "원본 비율 보존" 토글을
-   * 노출한다. 로고 크롭 호출부는 이 prop을 넘기지 않아 토글이 뜨지 않는다.
+   * 현재 무드(#420 → #440) — 포스터 크롭이면(layout 전달) "원본 비율 보존" 토글을 노출하고
+   * 그 토글이 크롭 종횡비를 정한다. 로고 크롭 호출부는 이 prop을 넘기지 않아, 토글 없이
+   * 업로드 이미지의 자연 종횡비로 열린다(#347).
    */
   layout?: LayoutId;
 }
 
-export default function ImageCropModal(props: ImageCropModalProps) {
-  const {
-    imageSrc,
-    onClose,
-    onComplete,
-    isProcessing = false,
-    title = '포스터 크롭',
-    layout,
-  } = props;
-
+export default function ImageCropModal({
+  imageSrc,
+  onClose,
+  onComplete,
+  isProcessing = false,
+  title = '포스터 크롭',
+  layout,
+}: ImageCropModalProps) {
   // 포스터 크롭(layout 전달)이면 전 무드에서 "원본 비율 보존" 토글 노출. #525 (a)로 stub 예외가
   // 사라졌다 — 이전엔 stub만 posterFit 'cover' 배선이 없어 원본 비율로 고정했는데(PR #448 P1),
   // 이제 모든 무드가 contain 단일 정책이라 stub도 같은 토글을 탄다.
   const showPreserveToggle = layout != null;
   const [preserveRatio, setPreserveRatio] = useState(false);
-  // 프리셋 토글이 요청 aspect를 정한다 — 켜짐=원본(자연) 비율, 꺼짐=포스터 표준 0.667(#525 룰 1).
-  // 토글이 없으면(로고) aspect prop('aspect' in props로 "미전달"과 명시적 undefined 구분) → 포스터 표준.
-  const requestedAspect = showPreserveToggle
-    ? preserveRatio
-      ? undefined
-      : POSTER_RATIO
-    : 'aspect' in props
-      ? props.aspect
-      : POSTER_RATIO;
+  // 포스터는 프리셋 토글이 요청 aspect를 정한다 — 켜짐=원본(자연) 비율, 꺼짐=포스터 표준
+  // 0.667(#525 룰 1). 로고는 항상 자연 비율(undefined → 아래 mediaAspect로 잠금).
+  const requestedAspect = showPreserveToggle && !preserveRatio ? POSTER_RATIO : undefined;
   // requestedAspect가 undefined(로고 자유 크롭 #347, 포스터 원본 비율 보존 #420)면 업로드
   // 이미지의 자연 종횡비로 잠근다 — 완전 자유형이 아니라 "그 비율의 박스를 리사이즈"(#421)다.
   const [mediaAspect, setMediaAspect] = useState<number | null>(null);
