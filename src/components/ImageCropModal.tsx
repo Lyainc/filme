@@ -8,18 +8,18 @@ import ReactCrop, {
   type PixelCrop,
 } from 'react-image-crop';
 import { Area } from '@/utils/imageCrop';
-import { TARGET_RATIO } from '@/utils/constants';
+import { POSTER_RATIO } from '@/utils/constants';
 import type { LayoutId } from '@/types';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 interface ImageCropModalProps {
   imageSrc: string;
   onClose: () => void;
-  /** preserveRatio는 #420 "원본 비율 보존" 토글 상태 — layout이 미전달되거나 대상 무드가 아니면 항상 false. */
+  /** preserveRatio는 #420 "원본 비율 보존" 토글 상태 — 로고 크롭(layout 미전달)이면 항상 false. */
   onComplete: (croppedAreaPixels: Area, preserveRatio: boolean) => void;
   isProcessing?: boolean;
   /**
-   * 크롭 종횡비. 생략 시 포스터 기본(TARGET_RATIO). 로고는 `undefined`를 넘겨
+   * 크롭 종횡비. 생략 시 포스터 표준(POSTER_RATIO 0.667). 로고는 `undefined`를 넘겨
    * "업로드 이미지의 자연 종횡비" 프레임으로 연다(#347).
    * 주의: 구조분해 기본값을 쓰면 명시적 `undefined`가 기본값으로 덮이므로,
    * 아래에서 `'aspect' in props`로 "미전달"과 "명시적 undefined"를 구분한다.
@@ -33,12 +33,6 @@ interface ImageCropModalProps {
    * 노출한다. 로고 크롭 호출부는 이 prop을 넘기지 않아 토글이 뜨지 않는다.
    */
   layout?: LayoutId;
-  /**
-   * 토글 초기 체크 상태 — 호출부가 현재 `components.posterFit === 'contain'`을 넘긴다.
-   * 없으면 재크롭 때마다 모달이 unchecked로 새로 열려, 크롭 영역만 조정해도 posterFit이
-   * 조용히 'cover'로 되돌아간다(claude-review PR #429 P1).
-   */
-  initialPreserveRatio?: boolean;
 }
 
 export default function ImageCropModal(props: ImageCropModalProps) {
@@ -49,27 +43,22 @@ export default function ImageCropModal(props: ImageCropModalProps) {
     isProcessing = false,
     title = '포스터 크롭',
     layout,
-    initialPreserveRatio = false,
   } = props;
 
-  // #440 포스터 크롭(layout 전달)이면 "원본 비율 보존" 토글 노출. stub은 MoodStub이 posterFit을
-  // 읽어 contain 시 blur 레터박스로 렌더하지만(#440 정교화), 크롭 UI에서 토글을 켜고 끄는 흐름은
-  // 아직 별도로 배선하지 않아 여기선 계속 제외 — 크롭은 원본 비율로 고정한다(포스터 전체를 받아
-  // usePhototicket 기본값 'contain'을 그대로 탄다) — claude-review PR #448 P1, 토글 노출은 후속 nit.
-  const isStubCrop = layout === 'stub';
-  const showPreserveToggle = layout != null && !isStubCrop;
-  const [preserveRatio, setPreserveRatio] = useState(initialPreserveRatio);
-  // stub은 원본 비율 고정. 그 외엔 프리셋 토글이 요청 aspect를 정하고(켜짐=원본 비율, 꺼짐=TARGET_RATIO
-  // 고정), 토글이 없으면 aspect prop('aspect' in props로 "미전달"과 명시적 undefined 구분) → 포스터 기본.
-  const requestedAspect = isStubCrop
-    ? undefined
-    : showPreserveToggle
-      ? preserveRatio
-        ? undefined
-        : TARGET_RATIO
-      : 'aspect' in props
-        ? props.aspect
-        : TARGET_RATIO;
+  // 포스터 크롭(layout 전달)이면 전 무드에서 "원본 비율 보존" 토글 노출. #525 (a)로 stub 예외가
+  // 사라졌다 — 이전엔 stub만 posterFit 'cover' 배선이 없어 원본 비율로 고정했는데(PR #448 P1),
+  // 이제 모든 무드가 contain 단일 정책이라 stub도 같은 토글을 탄다.
+  const showPreserveToggle = layout != null;
+  const [preserveRatio, setPreserveRatio] = useState(false);
+  // 프리셋 토글이 요청 aspect를 정한다 — 켜짐=원본(자연) 비율, 꺼짐=포스터 표준 0.667(#525 룰 1).
+  // 토글이 없으면(로고) aspect prop('aspect' in props로 "미전달"과 명시적 undefined 구분) → 포스터 표준.
+  const requestedAspect = showPreserveToggle
+    ? preserveRatio
+      ? undefined
+      : POSTER_RATIO
+    : 'aspect' in props
+      ? props.aspect
+      : POSTER_RATIO;
   // requestedAspect가 undefined(로고 자유 크롭 #347, 포스터 원본 비율 보존 #420)면 업로드
   // 이미지의 자연 종횡비로 잠근다 — 완전 자유형이 아니라 "그 비율의 박스를 리사이즈"(#421)다.
   const [mediaAspect, setMediaAspect] = useState<number | null>(null);
@@ -83,8 +72,9 @@ export default function ImageCropModal(props: ImageCropModalProps) {
   // — "원본 비율 보존"(#420, aspect=자연비) 또는 로고 자유 크롭(#347) — 전체 이미지(100%)로 연다.
   // makeAspectCrop({width:90})은 종횡비가 같아도 90%로 줄여 좌우·상하 5%씩 잘라내는데(=원본 손실),
   // "원본 비율 보존"의 취지(포스터를 통째로 넣기)와 정면으로 어긋난다 — 실사용에서 세로 포스터의
-  // 좌우 가장자리(예: 제목 첫·끝 글자)가 잘려 나가는 걸로 발견(#439). 종횡비가 다를 때(cover:
-  // TARGET_RATIO 고정)만 90% 중앙 크롭으로 열어 사용자가 프레임을 조정하게 한다.
+  // 좌우 가장자리(예: 제목 첫·끝 글자)가 잘려 나가는 걸로 발견(#439). 종횡비가 다를 때(POSTER_RATIO
+  // 고정)만 90% 중앙 크롭으로 열어 사용자가 프레임을 조정하게 한다. 실제 2:3 포스터라면 표준
+  // 프리셋에서도 matchesImage가 참이라 100%로 열린다 — 손실 0(#525).
   const initCrop = useCallback((forAspect: number | undefined, width: number, height: number) => {
     const matchesImage = forAspect != null && width > 0 && height > 0 && Math.abs(forAspect - width / height) < 0.005;
     const initial: Crop = forAspect && !matchesImage
@@ -123,8 +113,7 @@ export default function ImageCropModal(props: ImageCropModalProps) {
         width: Math.round(completedCrop.width * scaleX),
         height: Math.round(completedCrop.height * scaleY),
       },
-      // stub은 토글이 없지만 원본 비율을 유지해 밴드 cover에 온전한 포스터를 넘긴다(#448 P1).
-      isStubCrop ? true : preserveRatio,
+      preserveRatio,
     );
   };
 

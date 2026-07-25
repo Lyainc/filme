@@ -37,7 +37,7 @@ const WITH_LOGOS: TicketComponents = {
   layout: 'minimal', chain: 'blob:chain-logo', format: 'blob:format-logo',
   chainLabel: 'MEGABOX', formatLabel: 'DOLBY',
   material: 'original', coating: 'gloss', materialIntensity: 1, coatingIntensity: 1, posterOpacity: 0.5, componentOpacity: 1, themeColor: '#FFFFFF',
-  chainVisible: true, formatVisible: true, chainScale: 1, formatScale: 1, posterFit: 'cover',
+  chainVisible: true, formatVisible: true, chainScale: 1, formatScale: 1,
 };
 
 function renderMinimal(chainScale: number, formatScale: number) {

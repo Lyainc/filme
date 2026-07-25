@@ -1,4 +1,4 @@
-import { TARGET_WIDTH, TARGET_HEIGHT, TARGET_RATIO } from './constants';
+import { POSTER_WIDTH, POSTER_HEIGHT } from './constants';
 
 export interface Area {
   width: number;
@@ -21,8 +21,9 @@ export interface CropOutputOptions {
   /** JPEG 품질(0~1). PNG에선 무시. 기본 0.95. */
   quality?: number;
   /**
-   * 지정 시 출력 캔버스가 크롭의 종횡비를 그대로 보존하고(자유 크롭 로고용), 긴 변을
-   * 이 값(px) 이하로 축소만 한다(확대 안 함). 미지정 시 포스터 고정 해상도(960×1534).
+   * 지정 시 출력 캔버스가 크롭의 종횡비를 그대로 보존하고(자유 크롭 로고 · 포스터 "원본 비율
+   * 보존"), 긴 변을 이 값(px) 이하로 축소만 한다(확대 안 함). 미지정 시 포스터 표준 해상도
+   * (960×1440, 0.667).
    */
   maxSide?: number;
 }
@@ -31,7 +32,7 @@ export interface CropOutputOptions {
  * 선택된 픽셀 영역을 기반으로 이미지를 크롭하여 Object URL로 반환
  * Memory Optimized: Object URL 사용 (사용 후 revokeObjectURL 필요)
  *
- * 기본(opts 없음)은 포스터 경로 — 960×1534 고정, image/jpeg 0.95(기존 동작 그대로).
+ * 기본(opts 없음)은 포스터 표준 경로 — 960×1440(0.667) 고정, image/jpeg 0.95.
  * 로고는 `{ mimeType: 'image/png', maxSide: 640 }`로 종횡비 보존 + 알파 유지.
  *
  * @param imageSrc - 원본 이미지의 Object URL
@@ -56,9 +57,11 @@ export async function getCroppedImg(
   let outW: number;
   let outH: number;
   if (maxSide == null) {
-    // 포스터: 항상 고정된 출력 해상도 (960x1534)
-    outW = TARGET_WIDTH;
-    outH = TARGET_HEIGHT;
+    // 포스터 표준 크롭: 고정 960×1440(0.667, #525 룰 1). 크롭 프레임도 같은 비율로 잠겨 있어
+    // 그리기에서 늘어나지 않는다 — 캔버스 비율(0.626)로 뽑던 옛 1534는 0.667 크롭을 세로로
+    // 잡아늘였다.
+    outW = POSTER_WIDTH;
+    outH = POSTER_HEIGHT;
   } else {
     // 로고(자유 크롭): 크롭 종횡비 보존, 긴 변만 maxSide로 캡(확대는 안 함)
     const scale = Math.min(1, maxSide / Math.max(pixelCrop.width, pixelCrop.height));

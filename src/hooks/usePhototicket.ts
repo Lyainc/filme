@@ -126,8 +126,6 @@ const INITIAL_STATE: PhototicketState = {
     formatScale: 1,
     signatureImage: '',
     signatureScale: 1,
-    // #440 무손실이 기본 — 포스터 좌우를 안 자르고 통째로 넣는다. cover(꽉 채움)는 크롭 모달 토글 opt-in.
-    posterFit: 'contain',
   },
   recommendedColors: [],
   croppedImageUrl: null,

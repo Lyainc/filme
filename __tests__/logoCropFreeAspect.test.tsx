@@ -2,7 +2,7 @@
  * #220/#347/#421 — 극장/포맷 로고 업로드 자유 크롭 + 포스터 크롭박스 리사이즈(react-image-crop).
  *
  * 검증하는 정합성:
- *  1) 포스터(aspect 생략) → TARGET_RATIO 고정. 미디어가 로드돼도 안 바뀐다.
+ *  1) 포스터(aspect 생략) → POSTER_RATIO 고정. 미디어가 로드돼도 안 바뀐다.
  *  2) 로고(aspect={undefined}) → 크롭 프레임 = 업로드 이미지의 자연 종횡비(#347).
  *     완전 자유형(어떤 비율이든)이 아니라 "그 비율의 박스를 리사이즈"(#421)로 유지된다 —
  *     react-image-crop의 aspect=undefined는 defaultProps로 덮이지 않으므로(react-easy-crop과
@@ -23,7 +23,7 @@ import { useState } from 'react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { centerCrop, convertToPixelCrop, makeAspectCrop } from 'react-image-crop';
-import { TARGET_RATIO } from '@/utils/constants';
+import { POSTER_HEIGHT, POSTER_RATIO, POSTER_WIDTH } from '@/utils/constants';
 import type { Area } from '@/utils/imageCrop';
 
 mock.module('@/utils/imageCrop', () => ({
@@ -75,11 +75,18 @@ afterEach(() => {
 });
 
 describe('ImageCropModal 크롭 프레임 종횡비 (#220/#347)', () => {
-  test('aspect prop 생략 → 포스터 기본 TARGET_RATIO (미디어 로드돼도 고정)', () => {
+  // #525 — 크롭 프레임 비율과 출력 해상도 비율이 갈리면 getCroppedImg의 drawImage가 크롭을
+  // 늘여서 그린다(옛 구조: 프레임 0.667 × 출력 960×1534). 두 값이 한 상수에서 나오는지 못 박는다.
+  test('크롭 출력 해상도(960×1440)가 프레임 비율과 정확히 같다 — 그리기에서 안 늘어남', () => {
+    expect(POSTER_WIDTH / POSTER_HEIGHT).toBe(POSTER_RATIO);
+    expect(POSTER_HEIGHT).toBe(1440);
+  });
+
+  test('aspect prop 생략 → 포스터 기본 POSTER_RATIO (미디어 로드돼도 고정)', () => {
     render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} />);
-    expect(aspectOf(screen.getByTestId('crop-frame'))).toBe(TARGET_RATIO);
+    expect(aspectOf(screen.getByTestId('crop-frame'))).toBe(POSTER_RATIO);
     loadImage(800, 200);
-    expect(aspectOf(screen.getByTestId('crop-frame'))).toBe(TARGET_RATIO);
+    expect(aspectOf(screen.getByTestId('crop-frame'))).toBe(POSTER_RATIO);
   });
 
   // 정방형 / 좌우로 긴 워드마크 / 세로형 — #347이 요구한 세 경우.
@@ -132,42 +139,26 @@ describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
     expect(screen.queryByRole('checkbox')).not.toBeNull();
   });
 
-  test('layout이 stub → 토글 없음(항상 cover라 무효 컨트롤이므로 제외, #448 P1)', () => {
+  test('layout이 stub → 토글 노출(#525 (a)로 stub 예외 폐지, 6무드 동일 정책)', () => {
     render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} layout="stub" />);
-    expect(screen.queryByRole('checkbox')).toBeNull();
+    expect(screen.queryByRole('checkbox')).not.toBeNull();
   });
 
-  test('layout 전달(minimal) → 토글 노출, initialPreserveRatio 미전달이면 unchecked, aspect는 TARGET_RATIO', () => {
+  test('layout 전달(minimal) → 토글 노출, 기본 unchecked, aspect는 포스터 표준 POSTER_RATIO', () => {
     render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} layout="minimal" />);
     const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
     expect(checkbox.checked).toBe(false);
-    expect(aspectOf(screen.getByTestId('crop-frame'))).toBe(TARGET_RATIO);
+    expect(aspectOf(screen.getByTestId('crop-frame'))).toBe(POSTER_RATIO);
   });
 
-  test('initialPreserveRatio=true → 토글이 처음부터 checked(재크롭 시 posterFit 유지)', () => {
-    render(
-      <ImageCropModal
-        imageSrc="blob:x"
-        onClose={noop}
-        onComplete={noop}
-        layout="criterion"
-        initialPreserveRatio
-      />
-    );
-    const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
-    // 재크롭 버튼이 매번 initialPreserveRatio 없이 모달을 열면 여기서 unchecked로 깨진다 —
-    // 크롭 영역만 조정해도 posterFit이 조용히 'cover'로 되돌아가는 회귀(claude-review PR #429 P1).
-    expect(checkbox.checked).toBe(true);
-  });
-
-  test('토글 클릭 시 aspect가 TARGET_RATIO ↔ 자연비로 전환된다', () => {
+  test('토글 클릭 시 aspect가 POSTER_RATIO ↔ 자연비로 전환된다', () => {
     render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} layout="minimal" />);
     loadImage(2000, 3000);
-    expect(aspectOf(screen.getByTestId('crop-frame'))).toBe(TARGET_RATIO);
+    expect(aspectOf(screen.getByTestId('crop-frame'))).toBe(POSTER_RATIO);
     fireEvent.click(screen.getByRole('checkbox'));
     expect(aspectOf(screen.getByTestId('crop-frame'))).toBeCloseTo(2000 / 3000, 5);
     fireEvent.click(screen.getByRole('checkbox'));
-    expect(aspectOf(screen.getByTestId('crop-frame'))).toBe(TARGET_RATIO);
+    expect(aspectOf(screen.getByTestId('crop-frame'))).toBe(POSTER_RATIO);
   });
 
   test('원본 비율 보존 ON → 크롭 기본값이 전체 이미지(90% 축소 없음, 좌우 무손실) (#439)', () => {
@@ -220,9 +211,9 @@ describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
     Object.defineProperty(img, 'height', { value: renderH, configurable: true });
     fireEvent.load(img);
 
-    // ImageCropModal의 initCrop과 동일한 계산(TARGET_RATIO 고정, centerCrop 90%)을 독립적으로
+    // ImageCropModal의 initCrop과 동일한 계산(POSTER_RATIO 고정, centerCrop 90%)을 독립적으로
     // 재현해 "렌더 픽셀 기준 기대 크롭"을 구하고, scaleX/Y를 곱해 "자연 픽셀 기준 기대값"을 만든다.
-    const percent = centerCrop(makeAspectCrop({ unit: '%', width: 90 }, TARGET_RATIO, renderW, renderH), renderW, renderH);
+    const percent = centerCrop(makeAspectCrop({ unit: '%', width: 90 }, POSTER_RATIO, renderW, renderH), renderW, renderH);
     const renderPx = convertToPixelCrop(percent, renderW, renderH);
     const scaleX = naturalW / renderW;
     const scaleY = naturalH / renderH;
@@ -240,51 +231,25 @@ describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
     expect((received as unknown as Area).width).toBeGreaterThan(renderPx.width);
   });
 
-  // DesktopStudioShell과 동형 — onUpload에서 posterFit을 갱신하고, 그 posterFit을 다시
-  // ImageUploader에 넘겨(재크롭 시 initialPreserveRatio로 이어짐) 실제 배선을 재현한다.
+  // DesktopStudioShell과 동형 — #525에서 posterFit 저장이 사라져 onUpload는 URL만 받는다.
   function UploaderHarness() {
     const [url, setUrl] = useState<string | null>(null);
-    const [posterFit, setPosterFit] = useState<'cover' | 'contain'>('cover');
-    return (
-      <ImageUploader
-        onUpload={(u, preserveRatio) => {
-          setUrl(u);
-          setPosterFit(preserveRatio ? 'contain' : 'cover');
-        }}
-        isProcessing={false}
-        imageUrl={url}
-        layout="minimal"
-        posterFit={posterFit}
-      />
-    );
+    return <ImageUploader onUpload={setUrl} isProcessing={false} imageUrl={url} layout="minimal" />;
   }
 
-  test('ImageUploader: 원본 비율 보존으로 적용 후 재크롭하면 체크박스가 checked로 다시 열린다', async () => {
+  test('ImageUploader: 재크롭은 포스터 표준(unchecked)으로 열린다 — 크롭 비율이 결과에 이미 구워져 있어 되살릴 렌더 상태가 없다', async () => {
     const user = userEvent.setup();
     render(<UploaderHarness />);
 
     await user.upload(fileInput(), pngFile('poster.jpg'));
     await screen.findByTestId('crop-frame');
-    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('checkbox')); // 원본 비율 보존 ON으로 1차 크롭
     loadImage(2000, 3000);
     await user.click(screen.getByRole('button', { name: '적용' }));
 
-    // 포스터가 커밋된 뒤 재크롭 — 크롭 영역만 조정하려는 것이지 프리셋을 끄려는 게 아니므로
-    // 모달은 이전 선택(원본 비율 보존 on)을 유지한 채 다시 열려야 한다(claude-review PR #429 P1).
-    await user.click(await screen.findByRole('button', { name: '재크롭' }));
-    const checkbox = (await screen.findByRole('checkbox')) as HTMLInputElement;
-    expect(checkbox.checked).toBe(true);
-  });
-
-  test('ImageUploader: 기본(cover)으로 적용 후 재크롭하면 체크박스가 unchecked로 열린다', async () => {
-    const user = userEvent.setup();
-    render(<UploaderHarness />);
-
-    await user.upload(fileInput(), pngFile('poster.jpg'));
-    await screen.findByTestId('crop-frame');
-    loadImage(2000, 3000);
-    await user.click(await screen.findByRole('button', { name: '적용' }));
-
+    // 옛 구조에선 이 토글이 posterFit(렌더 설정)에 저장돼, 재크롭이 그걸 조용히 'cover'로
+    // 되돌리는 회귀가 있었다(claude-review PR #429 P1). #525로 posterFit 자체가 사라져
+    // 토글은 크롭 프레임만 정하므로, 되돌아갈 렌더 상태가 없다 — 표준 프리셋으로 여는 게 맞다.
     await user.click(await screen.findByRole('button', { name: '재크롭' }));
     const checkbox = (await screen.findByRole('checkbox')) as HTMLInputElement;
     expect(checkbox.checked).toBe(false);

@@ -29,7 +29,7 @@ const FULL_MOVIE: MovieInfo = {
 const baseComponents = (layout: LayoutId): TicketComponents => ({
   layout, chain: '', format: '', chainLabel: 'MEGABOX', formatLabel: 'DOLBY',
   material: 'original', coating: 'gloss', materialIntensity: 1, coatingIntensity: 1, posterOpacity: 0.5, componentOpacity: 1, themeColor: '#FFFFFF',
-  chainVisible: true, formatVisible: true, chainScale: 1, formatScale: 1, posterFit: 'cover',
+  chainVisible: true, formatVisible: true, chainScale: 1, formatScale: 1,
 });
 
 const MOODS: Record<LayoutId, ComponentType<MoodProps>> = {
