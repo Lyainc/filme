@@ -64,7 +64,6 @@ describe.each([
   ['criterion', MoodCriterion],
   ['35mm', Mood35mm],
   ['editorial', MoodEditorial],
-  ['35mm-landscape', Mood35mmLandscape],
   ['stub', MoodStub],
 ] as const)('#525 포스터 fit 단일 정책 — %s', (_name, Mood) => {
   test('object-fit:contain, 중앙 정렬(#449, 구 top 정렬 폐기)', () => {
@@ -85,7 +84,6 @@ describe.each([
   ['criterion', MoodCriterion, POSTER_FRAME_INSET_Y],
   ['35mm', Mood35mm, POSTER_FRAME_INSET_Y],
   ['editorial', MoodEditorial, 0],
-  ['35mm-landscape', Mood35mmLandscape, 0],
   ['stub', MoodStub, 0],
 ] as const)('#449 frameInsetY — %s', (_name, Mood, inset) => {
   test(`위/아래 인셋 ${inset}px`, () => {
@@ -106,8 +104,25 @@ describe('레터박스 배경색', () => {
     expect(render(Mood, '#000000').match(POSTER_WRAPPER_BG)?.[1]).toBe('#f5f0e8');
   });
 
-  test('35mm — FS_BASE(#0a0a0a) 고정, 테마 무관', () => {
-    expect(render(Mood35mm, '#FFFFFF').match(POSTER_WRAPPER_BG)?.[1]).toBe('#0a0a0a');
-    expect(render(Mood35mm, '#000000').match(POSTER_WRAPPER_BG)?.[1]).toBe('#0a0a0a');
+  test('35mm — 컷 배경 검정 고정, 테마 무관(v5부터 amber도 하드코딩, #524 c8)', () => {
+    expect(render(Mood35mm, '#FFFFFF').match(POSTER_WRAPPER_BG)?.[1]).toBe('#000');
+    expect(render(Mood35mm, '#000000').match(POSTER_WRAPPER_BG)?.[1]).toBe('#000');
+  });
+});
+
+// v5 재설계(#524)로 35mm 계열은 풀블리드 슬롯을 안 쓴다 — 포스터가 고정 비율 컷 안에 갇히므로
+// 컷이 fit을 정한다. 세로 컷 560×840은 정확히 0.667이라 표준 크롭이 contain으로 레터박스 0이 되고,
+// 가로 컷 926×617(3:2)은 세로 크롭을 cover로 채운다(#525 단일 정책의 명시적 예외 — 근거는 무드 주석).
+describe('#524 35mm 계열 컷 fit', () => {
+  test('35mm 포스터 컷(0.667) — contain이지만 frameInsetY는 0(강제 레터박스 띠가 레터박스 0을 깨뜨린다)', () => {
+    const m = render(Mood35mm).match(POSTER_FRAME_WRAPPER);
+    expect(m?.[1]).toBe('0');
+    expect(m?.[2]).toBe('0');
+  });
+
+  test('35mm Wide 포스터 컷(3:2) — object-fit:cover, blur 레터박스 배경 없음', () => {
+    const html = render(Mood35mmLandscape);
+    expect((html.match(POSTER_IMG)?.[0] ?? '')).toContain('object-fit:cover');
+    expect(html).not.toContain('data-poster-bg');
   });
 });

@@ -3,11 +3,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { Mood35mmLandscape } from '../src/components/moods/Mood35mmLandscape';
 import { FULL_MOVIE, makeMoodBase } from './fixtures';
 
-// 마스터 시안(Ticket Design Master.dc.html v2 · 2026-07-08 resync) 06 35MM WIDE 재동기화 회귀(#281, 에픽 #281).
-// 35mm Wide 델타: 바코드 없음, "SINGLE FRAME" 헤더 제거, 인라인 평점 → Rated 셀, 우 패널을 "From the Archive"
-// 아카이브 카드로 재구조화(collected by·made with FILME), Released/Re-released 셀 분리,
-// 타이틀 고정 60/800(pickTitleSize 폐기), 필드 라벨16/값27(Starring 25), 상/하단 92px 풀 필름 스트립.
-// 마스터 Spec 값: 라벨 16 / 값 27(Starring 25) — 목표문 "값26"은 35mm 세로 값 착오, 마스터 우선. stale로 되돌아오면 여기서 잡는다.
+// v5 시안(Mood Redesign v5.dc.html · 5b) 재설계 회귀(에픽 #524). 우측 600px "From the Archive"
+// 아카이브 패널이 통째로 사라지고(#499 흡수) 35mm 세로와 같은 "컷 + 크레딧 컷" 구조가 됐다.
+// 스프로켓은 #498이 확정한 51×36 ×18로 커지고 bleed 34로 절단면에서 반쯤 잘린다.
 
 const BASE = makeMoodBase('35mm-landscape');
 
@@ -16,63 +14,64 @@ const markup = () =>
     <Mood35mmLandscape movieInfo={FULL_MOVIE} components={BASE} croppedImageUrl="blob:x" onField={() => {}} />
   );
 
-describe('Mood35mmLandscape 마스터 resync (#281)', () => {
-  test('바코드 제거 — bookingNo FieldTap 0건, svg 0건', () => {
+describe('Mood35mmLandscape v5 재설계 (#524)', () => {
+  test('바코드 없음 — bookingNo FieldTap 0건, svg 0건', () => {
     const html = markup();
-    expect(html).not.toContain('예매 번호 편집'); // bookingNo FieldTap aria-label
-    expect(html).not.toContain('<svg');           // 바코드가 유일 svg였음
+    expect(html).not.toContain('예매 번호 편집');
+    expect(html).not.toContain('<svg');
   });
 
-  test('"SINGLE FRAME" 헤더 제거', () => {
-    expect(markup()).not.toContain('SINGLE FRAME');
-  });
-
-  test('인라인 평점 제거 → Rated 필드 셀', () => {
+  test('아카이브 패널 전량 제거(#499 흡수)', () => {
     const html = markup();
-    expect(html).toContain('Rated');
-    expect(html).toContain('★ 4.5'); // 평점이 셀 값으로
-    expect(html).toContain('평점 편집');    // 셀에 rating FieldTap 유지(게이팅 green)
+    expect(html).not.toContain('From the Archive');
+    expect(html).not.toContain('0 0 600px'); // PANEL_W flex-basis
+    expect(html).not.toContain('now showing');
   });
 
-  test('타이포 리스케일 — 타이틀 고정 60/800, 필드 라벨16/값27/Starring25', () => {
+  test('컷 2개 — 포스터 926×617(3:2) / 크레딧 411×617(2:3), 갭 45px', () => {
     const html = markup();
-    expect(html).toContain('font-size:60px'); // 고정 타이틀(pickTitleSize 폐기)
-    expect(html).toContain('font-size:16px'); // 필드 라벨
-    expect(html).toContain('font-size:27px'); // 필드 값
-    expect(html).toContain('font-size:25px'); // Starring 값
+    expect(html).toContain('left:61px;width:926px;top:171px;height:617px');
+    expect(html).toContain('left:1032px;width:411px;top:171px;height:617px');
+    expect(61 + 926 + 45).toBe(1032); // 컷 갭 45px
+    expect(1032 + 411 + 61).toBe(1504); // 우측 베이스도 61px (좌우 대칭)
   });
 
-  test('Released / Re-released 셀 분리', () => {
+  test('스프로켓 확대 51×36 ×18 + bleed 34(#498 흡수)', () => {
     const html = markup();
-    expect(html).toContain('Released');
-    expect(html).toContain('Re-released');
-    expect(html).not.toContain('· 재개봉'); // 과거 Released 셀에 병합하던 " · 재개봉 {날짜}" 제거
+    expect(html).toContain('width:51px;height:36px;border-radius:9px');
+    expect(html).toContain('margin:0 -34px'); // 절단면으로 흘리는 bleed
+    expect(html).not.toContain('width:44px;height:24px'); // 구 치수
+    // 밴드 2개 × 홀 18개
+    expect(html.match(/width:51px;height:36px/g)?.length).toBe(36);
   });
 
-  test('From the Archive 아카이브 카드 — collected by · made with FILME', () => {
+  test('하단 밴드는 edgePrint=false — KEYKODE는 상단 밴드에만 1회', () => {
     const html = markup();
-    expect(html).toContain('From the Archive');
-    expect(html).toContain('collected by');
-    expect(html).toContain('영화수집가');            // 서명 = collected by 값
-    expect(html).toContain('made with');
-    expect(html).toContain('FILME');
+    expect(html.match(/KL 23 /g)?.length).toBe(1);
   });
 
-  // 하드코딩 더미 장식 문구("FA·2024·0315") — 유저 데이터와 무관해 제거(#393).
-  test('ACCESSION No. 장식 문구 제거 — #393', () => {
-    expect(markup()).not.toContain('ACCESSION No');
+  test('키코드는 결정론(c2) — 같은 티켓이면 같은 값, 렌더마다 안 바뀐다', () => {
+    expect(markup()).toBe(markup());
+    expect(markup()).toMatch(/KL 23 \d{4} \d{4}\+0[1-8]/);
   });
 
-  // BI v2 워드마크 포팅(#386) — 필름 스트립 엣지 코드에도 대문자 'FILME'이 섞여 있어 위 toContain만으론
-  // 푸터 워드마크 특정이 안 된다. "made with" 바로 뒤에 MoodWordmark(aria-label="FILME")가 오는 구조로 고정.
-  test('푸터 워드마크는 BI v2 로고타입(MoodWordmark) — #386', () => {
+  test('컷 머리 프레임 라벨 FRAME 119 / 120', () => {
     const html = markup();
-    expect(html).toMatch(/made with<\/span><span aria-label="FILME"/);
+    expect(html).toContain('FRAME 119');
+    expect(html).toContain('FRAME 120');
   });
 
-  test('상/하단 92px 풀 필름 스트립 — KEYKODE + SAFETY FILM 엣지 코드', () => {
+  test('엔딩 크레딧 라벨 세트 + amber 하드코딩(c8)', () => {
     const html = markup();
-    expect(html).toContain('KL 23 4587 1234+05'); // FilmStripBand KEYKODE
-    expect(html).toContain('SAFETY FILM');          // 엣지 스크롤 코드
+    for (const label of ['Exhibited', 'Screened', 'The Film', 'Starring', 'Collected by']) {
+      expect(html).toContain(label);
+    }
+    expect(html).toContain('★ 4.5');
+    expect(html).toContain('#a97433');
+    expect(html).not.toContain('#C2802F');
+  });
+
+  test('made with FILME 워드마크는 크레딧 컷 푸터 — #386 구조 고정', () => {
+    expect(markup()).toMatch(/made with<\/span><span aria-label="FILME"/);
   });
 });
