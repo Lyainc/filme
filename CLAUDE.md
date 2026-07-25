@@ -59,6 +59,13 @@ bun run typecheck # tsc --noEmit
 - **Inline style — no `font` shorthand**: Always split into `fontWeight` / `fontStyle` / `fontSize` / `fontFamily`. CSS `font` shorthand resets `line-height` to `normal`, which collides with a sibling `lineHeight` prop and triggers React's "Removing font lineHeight" warning at every rerender.
 
 ### 🖼️ Core Mechanisms (6-Mood Ticket Rendering)
+- **사이즈 정책(#525)** — 포스터 비율과 캔버스 비율은 **다른 축**이다. `src/utils/constants.ts`가 둘을 별도 상수로 들고 있다(`POSTER_*` vs `TARGET_*`).
+  1. 일반 포스터 = **0.667**(세로 2:3 / 가로 3:2). 크롭 프리셋(`POSTER_RATIO`)과 크롭 출력 해상도(`POSTER_WIDTH`×`POSTER_HEIGHT` = 960×1440)가 같은 상수에서 나온다 — 갈리면 `getCroppedImg`가 크롭을 늘여 그린다.
+  2. 무드 캔버스 = **0.626**(신용카드, `TARGET_WIDTH`×`TARGET_HEIGHT` = 960×1534). 6무드 전부 이 값 또는 그 역수(가로).
+  3. 풀블리드 포스터는 0.667이 0.626 캔버스에 들어가 좌우 레터박스가 생긴다 — **blur 포스터 배경이 덮는다**(#440).
+  4. 풀블리드가 아닌 무드도 캔버스는 0.626으로 통일.
+  5. 무드 안에 별도 삽입되는 프레임/도판/컬럼도 0.667. 슬롯 **박스**가 아니라 그 안에 서는 **포스터 프레임**이 판정 대상이다 — contain이면 프레임이 자동으로 0.667이라, Stub처럼 가로 밴드(960×760)여도 룰 5를 만족한다.
+- **포스터 fit은 contain 단일 정책**(#440 → #525) — `posterFitProps`가 6무드 공통으로 `fit: 'contain'` + blur 레터박스 배경을 준다. 옛 `components.posterFit`('cover' opt-in)은 #525에서 **폐지**됐다: 사용자가 0.667로 잡은 프레임을 슬롯 비율에 맞춰 다시 잘라내 크롭 화면과 결과가 어긋났고, 그 잘림이 룰 5 위반의 유일한 출처였다. 크롭 모달의 "원본 비율 보존" 토글은 이제 **크롭 프레임 비율만** 정한다(ON=이미지 자연비 + `maxSide` 출력, OFF=0.667 표준 + 960×1440).
 - **Layout catalog**: `src/utils/layouts.ts` — `LAYOUTS` defines 6 mood ids (`minimal`/`criterion`/`35mm`/`editorial`/`stub`/`35mm-landscape`) with dimensions and orientation. `LayoutId` union lives in `src/types/index.ts`.
 - **Mood components**: `src/components/moods/Mood{Minimal,Criterion,35mm,Editorial,Stub,35mmLandscape}.tsx` — each mood is a self-contained DOM tree at the layout's natural pixel size (4 portrait 960×1534, 2 landscape 1534×960: Editorial and 35mm Wide).
 - **Shared primitives**: `src/components/moods/_shared.tsx` — `Barcode` (memoized), `ChainStamp`, `FormatStamp`, `Poster`, `HorizontalSprockets`, `PerforationStrip`, plus helpers (`fitFontSizeToWidth`, `isInkDark`, `truncateActors`) and font tokens (`FONT_MONO`, `FONT_SANS`, `FONT_KR`). **Add new shared helpers here**, not inline in moods.

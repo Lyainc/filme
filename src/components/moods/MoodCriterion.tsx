@@ -175,7 +175,7 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
     <div style={{ position: 'absolute', inset: 0, color: ink, fontFamily: FONT_SANS, overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
       <Poster
         src={croppedImageUrl}
-        {...posterFitProps(components.posterFit, { letterboxBg: posterBg, frameInsetY: POSTER_FRAME_INSET_Y })}
+        {...posterFitProps({ letterboxBg: posterBg, frameInsetY: POSTER_FRAME_INSET_Y })}
         material={components.material} coating={components.coating}
         materialIntensity={components.materialIntensity} coatingIntensity={components.coatingIntensity}
         posterOpacity={components.posterOpacity}

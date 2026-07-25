@@ -112,7 +112,7 @@ const MOVIE: MovieInfo = {
 const BASE: TicketComponents = {
   layout: 'minimal', chain: '', format: '', chainLabel: '', formatLabel: '',
   material: 'original', coating: 'gloss', materialIntensity: 1, coatingIntensity: 1, posterOpacity: 0.5, componentOpacity: 1, themeColor: '#FFFFFF',
-  chainVisible: false, formatVisible: false, chainScale: 1, formatScale: 1, posterFit: 'contain',
+  chainVisible: false, formatVisible: false, chainScale: 1, formatScale: 1,
 };
 
 function bandToneEl(container: HTMLElement): HTMLElement | null {
@@ -158,16 +158,6 @@ describe.each([
     expect(bandToneEl(container)!.style.background).toContain(letterboxToneMatch(true));
   });
 
-  test("posterFit='cover' → 오버레이 없음(레터박스 자체가 없음)", async () => {
-    let container!: HTMLElement;
-    await act(async () => {
-      container = render(
-        <Mood movieInfo={MOVIE} components={{ ...BASE, posterFit: 'cover' }} croppedImageUrl="blob:test" />
-      ).container;
-    });
-    await flush();
-    expect(bandToneEl(container)).toBeNull();
-  });
 });
 
 // 35mm-landscape는 frameInsetY를 안 쓰므로(자연 간극 의존, #461 goal) 밴드 높이가 insetY만이다
@@ -200,14 +190,4 @@ describe('#461 무드 배선 — 35mm-landscape 상단 밴드 톤 정합 오버�
     expect(bandToneEl(container)!.style.background).toContain(letterboxToneMatch(false));
   });
 
-  test("posterFit='cover' → 오버레이 없음(레터박스 자체가 없음)", async () => {
-    let container!: HTMLElement;
-    await act(async () => {
-      container = render(
-        <Mood35mmLandscape movieInfo={MOVIE} components={{ ...BASE, posterFit: 'cover' }} croppedImageUrl="blob:test" />
-      ).container;
-    });
-    await flush();
-    expect(bandToneEl(container)).toBeNull();
-  });
 });

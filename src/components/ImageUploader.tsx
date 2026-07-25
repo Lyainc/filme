@@ -1,24 +1,18 @@
 import { useRef, useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { getCroppedImg, Area } from '@/utils/imageCrop';
-import { TARGET_HEIGHT } from '@/utils/constants';
+import { POSTER_HEIGHT } from '@/utils/constants';
 import type { LayoutId } from '@/types';
 
 const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ssr: false });
 
 interface ImageUploaderProps {
-  /** preserveRatio는 #420 "원본 비율 보존" 프리셋 토글 결과 — posterFit 컴포넌트 상태로 이어서 저장할 것. */
-  onUpload: (croppedImageUrl: string, preserveRatio: boolean, originalImageUrl: string) => void;
+  onUpload: (croppedImageUrl: string, originalImageUrl: string) => void;
   isProcessing: boolean;
   /** 업로드 후 프리뷰로 보여줄 크롭 결과(부모 소유 objectURL). */
   imageUrl?: string | null;
   /** 현재 무드(#420 배선) — ImageCropModal에 그대로 전달해 프리셋 토글 노출 여부를 결정한다. */
   layout: LayoutId;
-  /**
-   * 현재 저장된 posterFit — 재크롭 시 토글 초기 상태로 이어준다. 없으면(호출부 미전달) 매
-   * 재크롭마다 unchecked로 열려 posterFit이 조용히 'cover'로 되돌아간다(claude-review PR #429 P1).
-   */
-  posterFit?: 'cover' | 'contain';
   /**
    * 자동저장 복원(#489)이 IndexedDB에서 되살린 원본(크롭 전) 포스터 URL. 비동기 복원이라 첫
    * 렌더엔 없다가 나중에 도착하므로, 로컬 originalSrc가 아직 비어 있을 때만 1회 시드한다.
@@ -28,7 +22,7 @@ interface ImageUploaderProps {
 
 const ACCEPT = 'image/jpeg,image/png,image/jpg,image/webp';
 
-export default function ImageUploader({ onUpload, isProcessing, imageUrl, layout, posterFit, initialOriginalSrc }: ImageUploaderProps) {
+export default function ImageUploader({ onUpload, isProcessing, imageUrl, layout, initialOriginalSrc }: ImageUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   // 크롭 모달의 소스이자 재크롭을 위해 유지되는 원본 objectURL. 크롭 완료 후에도 버리지 않는다.
   const [originalSrc, setOriginalSrc] = useState<string | null>(null);
@@ -71,13 +65,13 @@ export default function ImageUploader({ onUpload, isProcessing, imageUrl, layout
     if (!originalSrc) return;
     setIsCropping(true);
     try {
-      // 원본 비율 보존(#420): 고정 960×1534 스트레치 대신 크롭 종횡비를 유지하며 긴 변만 캡한다.
+      // 원본 비율 보존(#420): 포스터 표준 960×1440 대신 크롭 종횡비를 유지하며 긴 변만 캡한다.
       const croppedUrl = await getCroppedImg(
         originalSrc,
         croppedAreaPixels,
-        preserveRatio ? { maxSide: TARGET_HEIGHT * 2 } : undefined
+        preserveRatio ? { maxSide: POSTER_HEIGHT * 2 } : undefined
       );
-      onUpload(croppedUrl, preserveRatio, originalSrc);
+      onUpload(croppedUrl, originalSrc);
       setPendingNewFile(false);
       setCropOpen(false); // originalSrc는 유지 — 재크롭에 재사용
     } catch (error) {
@@ -219,7 +213,6 @@ export default function ImageUploader({ onUpload, isProcessing, imageUrl, layout
           onComplete={handleCropComplete}
           isProcessing={isCropping}
           layout={layout}
-          initialPreserveRatio={posterFit === 'contain'}
         />
       )}
     </section>

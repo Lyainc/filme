@@ -809,20 +809,17 @@ export function defaultBrightnessForTexture(material: string, coating: string): 
 }
 
 /**
- * 포스터 fit 공통 정책(#440) — 6무드가 제각각 하드코딩하던 fit/align/letterbox 배경을 한 곳으로.
- * 기본은 **무손실(contain)** — 포스터를 좌우 안 잘리게 통째로 넣고 남는 공간은 무드 배경색
- * (letterboxBg)으로 흡수한다. 사용자가 크롭 모달에서 "원본 비율 보존"을 끄면 posterFit이 'cover'가
- * 되어 슬롯을 꽉 채운다(opt-in). align은 세로 슬롯에서 레터박스를 어디로 몰지(top=하단 스크림이
- * 흡수) 무드가 정하고, cover면 항상 중앙(꽉 차 무의미)이다.
+ * 포스터 fit 공통 정책(#440 → #525) — 6무드가 제각각 하드코딩하던 fit/align/letterbox 배경을 한 곳으로.
+ * 항상 **무손실(contain)** — 포스터를 좌우 안 잘리게 통째로 넣고 남는 공간은 무드 배경색
+ * (letterboxBg)으로 흡수한다. #525에서 크롭이 포스터 표준 0.667로 서면서 'cover'(슬롯 꽉 채움)
+ * 옵션은 사라졌다 — cover는 사용자가 방금 0.667로 잡은 프레임을 캔버스(0.626)·밴드 비율에 맞춰
+ * 다시 잘라내 크롭 화면과 결과가 어긋났고, 그 잘림 때문에 Stub 밴드만 룰 5를 위반하고 있었다.
+ * align은 세로 슬롯에서 레터박스를 어디로 몰지(top=하단 스크림이 흡수) 무드가 정한다.
  */
 export function posterFitProps(
-  posterFit: 'cover' | 'contain' | undefined,
   opts: { letterboxBg: string; align?: 'center' | 'top'; frameInsetY?: number },
-): { fit: 'cover' | 'contain'; align: 'center' | 'top'; background?: string; frameInsetY?: number } {
-  const contain = posterFit !== 'cover';
-  return contain
-    ? { fit: 'contain', align: opts.align ?? 'center', background: opts.letterboxBg, frameInsetY: opts.frameInsetY }
-    : { fit: 'cover', align: 'center' };
+): { fit: 'contain'; align: 'center' | 'top'; background: string; frameInsetY?: number } {
+  return { fit: 'contain', align: opts.align ?? 'center', background: opts.letterboxBg, frameInsetY: opts.frameInsetY };
 }
 
 export const Poster = memo(function Poster({
