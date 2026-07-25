@@ -1,100 +1,12 @@
 import { useRef, useState, type ReactNode } from 'react';
-import { LayoutStrip } from '@/components/LayoutPicker';
-import TexturePicker from '@/components/wizard/TexturePicker';
-import ColorPicker from '@/components/wizard/ColorPicker';
-import BrightnessSlider from '@/components/wizard/BrightnessSlider';
-import { TEXTURE_RECIPES } from '@/utils/textureRecipes';
-import { MATERIAL_OPTIONS, COATING_OPTIONS } from '@/utils/constants';
-import { MINIMAL_STAMP_MAX_SCALE } from '@/components/moods/MoodMinimal';
-import type { LayoutId } from '@/types';
+import { RAIL_ITEMS, type RailItemId } from './designRailItems';
 import type { usePhototicket } from '@/hooks/usePhototicket';
-import { TONE_FIXED_MOODS } from '@/constants/fields';
 
 // 모바일 디자인 레일(#217+): 무드·컬러·후보정·투명도·크기 편집 콘텐츠를 인라인 폼 밖으로 빼
-// 가로 원형 아이콘 + 단일 공용 확장 패널로 호스팅한다. 컬러(#218)·투명도(#219) 추가 완료.
-// 크기(#441/#485 P2) — 체인/포맷 로고 크기 슬라이더는 원래 투명도 탭에 얹혀 있었으나 라벨-기능이
-// 어긋난다는 지적(claude-review PR #485 P2)으로 별도 탭 분리.
-type Pop = 'mood' | 'color' | 'texture' | 'opacity' | 'size';
+// 가로 원형 아이콘 + 단일 공용 확장 패널로 호스팅한다. 항목 정의(아이콘·라벨·eyebrow·본문)는
+// #523에서 ./designRailItems.tsx 공용 목록으로 이관 — 이 파일은 배치(아이콘 행 + 토글 패널)만.
 
 const PANEL_ID = 'design-rail-panel';
-
-const RAIL_ICON = {
-  width: 20,
-  height: 20,
-  viewBox: '0 0 24 24',
-  fill: 'none',
-  stroke: 'currentColor',
-  strokeWidth: 1.8,
-  strokeLinecap: 'round',
-  strokeLinejoin: 'round',
-  'aria-hidden': true,
-} as const;
-
-const RAIL_ITEMS: { id: Pop; label: string; eyebrow: string; icon: ReactNode }[] = [
-  {
-    id: 'mood',
-    label: '무드',
-    eyebrow: 'Mood',
-    // 사면체 힌트: 외곽 삼각 + 꼭짓점→밑변 중앙 능선
-    icon: (
-      <svg {...RAIL_ICON}>
-        <path d="M12 3 21 20H3Z" />
-        <path d="M12 3v17" />
-      </svg>
-    ),
-  },
-  {
-    id: 'color',
-    label: '컬러',
-    eyebrow: 'Color',
-    // 컬러: 겹친 두 원(잉크 색 혼합 힌트)
-    icon: (
-      <svg {...RAIL_ICON}>
-        <circle cx="9" cy="12" r="5" />
-        <circle cx="15" cy="12" r="5" />
-      </svg>
-    ),
-  },
-  {
-    id: 'texture',
-    label: '후보정',
-    eyebrow: 'Texture',
-    // 질감: 대각선 3줄
-    icon: (
-      <svg {...RAIL_ICON}>
-        <path d="M4 20 20 4" />
-        <path d="M4 14 14 4" />
-        <path d="M10 20 20 10" />
-      </svg>
-    ),
-  },
-  {
-    id: 'opacity',
-    label: '투명도',
-    eyebrow: 'Opacity',
-    // 투명도: 겹친 두 원 — 한쪽은 반투명 채움으로 컬러(윤곽만)와 구분.
-    icon: (
-      <svg {...RAIL_ICON}>
-        <circle cx="10" cy="12" r="6" />
-        <circle cx="14" cy="12" r="6" fill="currentColor" fillOpacity={0.25} />
-      </svg>
-    ),
-  },
-  {
-    id: 'size',
-    label: '크기',
-    eyebrow: 'Size',
-    // 크기: 네 모서리가 바깥으로 벌어지는 화살표 — 확대/축소 힌트.
-    icon: (
-      <svg {...RAIL_ICON}>
-        <path d="M4 20 10 20 10 14" />
-        <path d="M4 20 12 12" />
-        <path d="M20 4 14 4 14 10" />
-        <path d="M20 4 12 12" />
-      </svg>
-    ),
-  },
-];
 
 function RailIconButton({
   icon,
@@ -173,27 +85,21 @@ function RailExpandPanel({
 }
 
 export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket> }) {
-  const [pop, setPop] = useState<Pop | null>(null);
-  const { components, croppedImageUrl, recommendedColors } = photo.state;
-  const setComp = photo.updateComponents;
+  const [pop, setPop] = useState<RailItemId | null>(null);
+  const { themeColor } = photo.state.components;
 
   // 접히는 중에도 콘텐츠를 마운트한 채 높이만 줄여 부드럽게 닫는다(패널이 비면 점프한다).
   // 마지막 활성 섹션을 기억 — pop이 null이 돼도 애니메이션 동안 직전 섹션이 남는다.
-  const lastPopRef = useRef<Pop>('mood');
+  const lastPopRef = useRef<RailItemId>('mood');
   if (pop) lastPopRef.current = pop;
   const active = lastPopRef.current;
-  const eyebrow = RAIL_ITEMS.find((it) => it.id === active)?.eyebrow ?? '';
+  // #523 c5 — id로 배열을 조회해 항목을 찾는다. 매칭 안 되는 id(이론상 Pop 유니온 밖)가 와도
+  // 조용히 마지막 항목을 렌더하던 예전 삼항 체인 final-else 대신, 못 찾으면 아무것도 안 그린다.
+  const activeItem = RAIL_ITEMS.find((it) => it.id === active);
+  const eyebrow = activeItem?.eyebrow ?? '';
 
-  const ringColor = components.themeColor || 'var(--accent)';
-  const toggle = (id: Pop) => setPop((cur) => (cur === id ? null : id));
-  // claude-review PR #486 P1(1차) — Minimal은 MoodMinimal이 실효 scale을 MINIMAL_STAMP_MAX_SCALE로
-  // 클램프하므로, 슬라이더 상한도 같이 낮추지 않으면 110~130% 구간이 숫자만 오르고 렌더는 그대로인
-  // 죽은 구간이 된다.
-  // claude-review PR #486 P1(2차) — 상한만 낮추고 슬라이더 value는 raw 그대로 넘기면, 다른 무드에서
-  // 1.1~1.3으로 올려둔 뒤 Minimal로 돌아왔을 때 라벨은 raw%를 보여주는데 thumb은 max에 눌려 다른
-  // 위치 — 렌더 결과(1.1)와도 어긋난다. 아래 슬라이더의 value는 Math.min(raw, stampScaleMax)로
-  // 표시만 클램프한다(저장된 raw 값은 안 건드림 — 다른 무드로 돌아가면 원래 크기 그대로 복원).
-  const stampScaleMax = components.layout === 'minimal' ? MINIMAL_STAMP_MAX_SCALE : 1.3;
+  const ringColor = themeColor || 'var(--accent)';
+  const toggle = (id: RailItemId) => setPop((cur) => (cur === id ? null : id));
 
   return (
     <div className="space-y-3">
@@ -211,100 +117,7 @@ export function DesignRail({ photo }: { photo: ReturnType<typeof usePhototicket>
       </div>
 
       <RailExpandPanel open={pop !== null} eyebrow={eyebrow}>
-        {active === 'mood' ? (
-          <LayoutStrip value={components.layout} onChange={(id: LayoutId) => setComp({ layout: id })} />
-        ) : active === 'color' ? (
-          // DesktopStudioShell과 동일 배선 — 잉크색 단일 축(themeColor). TONE_FIXED_MOODS(#524)
-          // 소속 무드는 톤 고정이라 disabled.
-          <ColorPicker
-            value={components.themeColor}
-            onChange={(themeColor) => setComp({ themeColor })}
-            recommended={recommendedColors}
-            disabled={TONE_FIXED_MOODS.has(components.layout)}
-            disabledNote="이 무드는 톤이 고정이라 잉크 색을 바꿀 수 없어요."
-          />
-        ) : active === 'texture' ? (
-          // 재질×코팅 2축 피커 + 축별 강도 슬라이더(#434, #471, #475). 각 강도 슬라이더는 그 축
-          // 피커 바로 아래(c7) — 레시피 있는 옵션(원본/코팅없음 제외)에서만 유효해 레시피 밖에선
-          // 숨긴다. BrightnessSlider 재사용(0..1→%).
-          <div className="space-y-section">
-            <div className="space-y-group">
-              <TexturePicker
-                axis="material"
-                options={MATERIAL_OPTIONS}
-                value={components.material}
-                onChange={(material) => setComp({ material })}
-                croppedImageUrl={croppedImageUrl}
-                ariaLabel="재질"
-              />
-              {TEXTURE_RECIPES[components.material] && (
-                <BrightnessSlider
-                  label="재질 강도"
-                  id="rail-material-intensity"
-                  value={components.materialIntensity}
-                  onChange={(materialIntensity) => setComp({ materialIntensity })}
-                />
-              )}
-            </div>
-            <div className="space-y-group">
-              <TexturePicker
-                axis="coating"
-                options={COATING_OPTIONS}
-                value={components.coating}
-                onChange={(coating) => setComp({ coating })}
-                croppedImageUrl={croppedImageUrl}
-                ariaLabel="코팅"
-              />
-              {TEXTURE_RECIPES[components.coating] && (
-                <BrightnessSlider
-                  label="코팅 강도"
-                  id="rail-coating-intensity"
-                  value={components.coatingIntensity}
-                  onChange={(coatingIntensity) => setComp({ coatingIntensity })}
-                />
-              )}
-            </div>
-          </div>
-        ) : active === 'opacity' ? (
-          // 투명도(#219) — 듀얼 슬라이더. 포스터=밝기(posterOpacity, 기존 메커니즘 유지),
-          // 컴포넌트=오버레이 불투명도(componentOpacity). BrightnessSlider 재사용(둘 다 0..1→%).
-          <div className="space-y-group">
-            <BrightnessSlider
-              label="포스터"
-              id="rail-poster-opacity"
-              value={components.posterOpacity}
-              onChange={(posterOpacity) => setComp({ posterOpacity })}
-            />
-            <BrightnessSlider
-              label="컴포넌트"
-              id="rail-component-opacity"
-              value={components.componentOpacity ?? 1}
-              onChange={(componentOpacity) => setComp({ componentOpacity })}
-            />
-          </div>
-        ) : (
-          // 크기(#441, PR #485 P2 후속) — 체인/포맷 로고 렌더 크기. 여백 없이 꽉 찬 로고가
-          // 기대보다 크게 보이는 문제를 사용자가 직접 축소·확대로 조절. 투명도와 라벨-기능이
-          // 어긋난다는 지적으로 별도 탭 분리.
-          <div className="space-y-group">
-            <BrightnessSlider
-              label="체인 로고 크기"
-              id="rail-chain-scale"
-              value={Math.min(components.chainScale ?? 1, stampScaleMax)}
-              onChange={(chainScale) => setComp({ chainScale })}
-              min={0.6}
-              max={stampScaleMax}
-            />
-            <BrightnessSlider
-              label="포맷 로고 크기"
-              id="rail-format-scale"
-              value={Math.min(components.formatScale ?? 1, stampScaleMax)}
-              onChange={(formatScale) => setComp({ formatScale })}
-              min={0.6}
-              max={stampScaleMax}
-            />
-          </div>
-        )}
+        {activeItem ? activeItem.render(photo, 'mobile') : null}
       </RailExpandPanel>
     </div>
   );
