@@ -12,6 +12,11 @@ import type { MovieInfo, TicketComponents } from '../src/types';
 
 // #8E4E69: 중간 톤 보라. luminance ≈ 0.12 < 0.18 이라 isInkDark=true 로 분류되지만,
 // 사용자가 고른 색이므로 ink로 그대로 반영돼야 한다(이전엔 '#0d0c0a'로 묻혔다, #177).
+//
+// v5 재설계(#524 c10) — 35mm · 35mm Wide · Criterion 3무드는 시안 색을 하드코딩해 themeColor
+// 파생을 버렸다(c8). "6무드 전부 themeColor→ink 파생"이라는 이 파일의 단언은 그 3무드에
+// 성립하지 않으므로 대상을 Minimal(+ Editorial accent)로 좁힌다. 죽은 ColorPicker는 테스트가
+// 아니라 TONE_FIXED_MOODS(src/constants/fields.ts)가 비활성화로 막는다.
 const DARK_CHROMATIC = '#8E4E69';
 
 const MOVIE: MovieInfo = {
@@ -43,7 +48,6 @@ describe('#177 어두운 유채색 ink 반영', () => {
   // 어두운 유채색을 골라도 ink는 그 색이어야 한다(near-black '#0d0c0a' 로 묻히지 않음).
   test.each([
     ['minimal', MoodMinimal],
-    ['criterion', MoodCriterion],
   ] as const)('%s 가 #8E4E69 를 ink로 반영', (layout, Mood) => {
     // 고친 뒤엔 themeColor가 ink로 마크업에 등장한다(이전 분기에선 어디에도 안 나왔다).
     expect(markup(Mood, layout)).toContain('8e4e69');
@@ -53,7 +57,6 @@ describe('#177 어두운 유채색 ink 반영', () => {
   // 잉크로 새면 텍스트가 투명해진다 — resolveInk가 fallback으로 떨궈야 한다(#177 리뷰 P1).
   test.each([
     ['minimal', MoodMinimal],
-    ['criterion', MoodCriterion],
   ] as const)('%s 가 불완전 hex(#8E)는 잉크로 안 쓴다', (layout, Mood) => {
     const html = renderToStaticMarkup(
       <Mood movieInfo={MOVIE} components={{ ...BASE, layout, themeColor: '#8E' }} croppedImageUrl="blob:test" />

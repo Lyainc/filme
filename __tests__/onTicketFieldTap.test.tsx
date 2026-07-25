@@ -252,9 +252,10 @@ describe('MoodCriterion VENUE 셀 분해 (#266 PR-D)', () => {
     expect(calls).toEqual(['theater', 'screen', 'seat']);
   });
 
-  // 캡처 유출 불변식(:104-115) — onField 없으면 탭 UI 0건이고, 세 필드가 Criterion 고유 sep('  ·  ',
-  // 양쪽 공백 2칸)로 결합돼 산출물 픽셀이 보존된다(MoodStub의 단일 공백 ·와 구별).
-  test("onField 없으면 role=button 0건 + '  ·  ' 결합 텍스트 보존(캡처 안전)", () => {
+  // 캡처 유출 불변식(:104-115) — onField 없으면 탭 UI 0건이고, 세 필드가 · 결합 텍스트로 그대로
+  // 렌더돼 산출물 픽셀이 보존된다. v5(#524)에서 VENUE 셀이 콜로폰 1행으로 옮겨가며 Criterion 고유
+  // sep('  ·  ', 공백 2칸)가 fieldPieces 기본 sep(' · ')으로 통일됐다.
+  test("onField 없으면 role=button 0건 + ' · ' 결합 텍스트 보존(캡처 안전)", () => {
     const html = renderToStaticMarkup(
       <MoodCriterion
         movieInfo={FULL_MOVIE}
@@ -264,7 +265,7 @@ describe('MoodCriterion VENUE 셀 분해 (#266 PR-D)', () => {
       />
     );
     expect(html).not.toContain('role="button"');
-    expect(html).toContain('CGVDATA  ·  IMAXDATA  ·  G14'); // 극장·상영관·좌석 2칸 sep 결합 보존
+    expect(html).toContain('CGVDATA · IMAXDATA · G14'); // 극장·상영관·좌석 sep 결합 보존
   });
 });
 

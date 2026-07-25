@@ -80,11 +80,10 @@ export const LAUNCHER_GROUPS: { title: string; fields: TicketField[] }[] = [
  */
 export const MOOD_EXCLUDED_FIELDS: Partial<Record<LayoutId, readonly TicketField[]>> = {
   minimal: ['bookingNo', 'quote'], // #286: 마스터 Minimal은 푸터 바코드 없음 → bookingNo 미렌더.
-  // Criterion(한줄평 중심 재레이아웃 #497): 좌측 스파인 밴드(세로 바코드가 있던 자리)를 제거하고
-  // 그 폭을 한줄평·타이틀 블록에 합류했다 — bookingNo는 다른 무드로 옮길 자리가 없어 Minimal·35mm·
-  // 35mm Wide와 동일하게 제외. watchTime은 마스터에 독립 TIME 셀이 없어(WATCHED 값에만 병합) 편집
-  // 타깃이 없으므로 제외 유지. quote(한줄평, #391)는 Criterion 전용이라 여기만 제외 없음.
-  criterion: ['bookingNo', 'watchTime'],
+  // Criterion(v5 Revue 재설계 #524): 흰 종이 + 도판 한 장 구조에 바코드 자리가 없어 bookingNo 미렌더
+  // (Minimal·35mm·35mm Wide와 동일). watchTime은 v5 콜로폰 1행이 "관람일 관람시간"으로 렌더하므로
+  // 제외 해제. quote(한줄평, #391)는 Criterion 전용이라 여기만 제외 없음.
+  criterion: ['bookingNo'],
   '35mm': ['bookingNo', 'quote'], // #524 v5: 컷 2개 구조에 바코드 자리가 없다 → bookingNo 미렌더(서명은 크레딧 컷 Collected by로 유지).
   editorial: ['quote'], // #391: 한줄평은 Criterion 전용 — 다른 무드는 렌더하지 않으므로 런처에서 제외.
   stub: ['quote'], // #391: 위와 동일.
@@ -98,7 +97,7 @@ export const MOOD_EXCLUDED_FIELDS: Partial<Record<LayoutId, readonly TicketField
  * 다음 무드가 합류할 때 한쪽만 고쳐지고 죽은 컨트롤이 남는다(#524 열린 질문).
  * 6무드 액센트 통일 개편이 오면 이 표가 그 진입점이다.
  */
-export const TONE_FIXED_MOODS: ReadonlySet<LayoutId> = new Set<LayoutId>(['35mm', '35mm-landscape']);
+export const TONE_FIXED_MOODS: ReadonlySet<LayoutId> = new Set<LayoutId>(['35mm', '35mm-landscape', 'criterion']);
 
 /** 현재 layout에 적용되는 런처 그룹 — MOOD_EXCLUDED_FIELDS의 필드를 걸러내고, 비게 된 그룹은 제거. */
 export function launcherGroupsFor(layout: LayoutId): { title: string; fields: TicketField[] }[] {

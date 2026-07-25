@@ -4,7 +4,7 @@ import type { LayoutId } from '@/types';
 import { Eyebrow } from './v2/Eyebrow';
 // 무드 실루엣을 흉내 내는 자리라 색은 무드와 같은 토큰을 쓴다 — 리터럴로 두면 무드 색을
 // 고칠 때 썸네일만 조용히 옛 색으로 남는다(#524).
-import { FILM_AMBER, FILM_BASE, FILM_HOLE } from './moods/_shared';
+import { CRITERION_PAPER, CRITERION_YELLOW, FILM_AMBER, FILM_BASE, FILM_HOLE } from './moods/_shared';
 
 interface LayoutPickerProps {
   value: LayoutId;
@@ -199,7 +199,8 @@ function MoodCardBody({ layout, active }: { layout: LayoutSpec; active: boolean 
 // 색 값은 미니어처와 같은 성격의 아트워크 상수라 토큰이 아니라 리터럴이 맞다.
 const MOOD_CHIP_BG: Record<LayoutId, string> = {
   minimal: 'linear-gradient(180deg, #b9b3a8 0%, #b9b3a8 62%, #17150f 62%)',
-  criterion: 'linear-gradient(90deg, #f2ede2 0 22%, #23201c 22%)',
+  // v5 Revue 재설계(#524): 어두운 좌우 분할이 아니라 **흰 종이 + 옐로 룰 + 가운데 도판**이 실루엣이다.
+  criterion: `linear-gradient(#23201c, #23201c) 50% 42% / 52% 49% no-repeat, linear-gradient(180deg, ${CRITERION_PAPER} 0 13%, ${CRITERION_YELLOW} 13% 17%, ${CRITERION_PAPER} 17%)`,
   // v5 재설계(#524): 35mm은 가로 밴드가 아니라 **세로 레일**(좌우 어두운 띠 + 가운데 포스터 컷),
   // 35mm Wide는 좌우 분할이 아니라 **가로 밴드 + 넓은 컷 / 좁은 크레딧 컷**이 실루엣이다.
   '35mm': `linear-gradient(90deg, ${FILM_BASE} 0 21%, #8a8175 21% 79%, ${FILM_BASE} 79%)`,
@@ -278,47 +279,37 @@ const THUMBNAIL_RENDERERS: Record<LayoutId, (c: ThumbColors) => ReactNode> = {
       <rect x="58" y="86" width="14" height="6" fill={dim} />
     </>
   ),
+  // v5 Revue 재설계(#524) — 흰 종이 위 도판 한 장. 좌측 DVD 스파인·원형 씰 실루엣 폐기.
   criterion: ({ stroke, dim }) => (
     <>
-      <rect x="0" y="0" width="80" height="100" fill={dim} opacity="0.2" />
-      <rect x="0" y="0" width="9" height="100" fill="rgba(255,255,255,0.06)" />
-      <line x1="9" y1="0" x2="9" y2="100" stroke={stroke} strokeWidth="0.5" />
-      <text
-        x="4.5"
-        y="50"
-        textAnchor="middle"
-        fontSize="3"
-        fill={stroke}
-        transform="rotate(-90 4.5 50)"
-      >
-        PHOTOTICKET
-      </text>
-      <text
-        x="4.5"
-        y="84"
-        textAnchor="middle"
-        fontSize="1.8"
-        fill={dim}
-        transform="rotate(-90 4.5 84)"
-      >
-        Made by FILME
-      </text>
-      <rect x="14" y="14" width="3" height="3" fill="none" stroke={stroke} strokeWidth="0.4" />
-      <rect x="50" y="10" width="22" height="6" fill={stroke} opacity="0.7" />
-      <line x1="14" y1="38" x2="74" y2="38" stroke={stroke} strokeWidth="0.4" />
-      <rect x="14" y="42" width="40" height="6" fill={stroke} />
-      <line x1="14" y1="58" x2="74" y2="58" stroke={stroke} strokeWidth="0.4" />
-      <rect x="14" y="80" width="36" height="2" fill={dim} />
-      <circle cx="64" cy="84" r="9" fill="none" stroke={stroke} strokeWidth="0.5" />
-      <circle
-        cx="64"
-        cy="84"
-        r="6"
-        fill="none"
-        stroke={stroke}
-        strokeWidth="0.3"
-        strokeDasharray="0.8 1.4"
-      />
+      <rect x="0" y="0" width="80" height="100" fill={CRITERION_PAPER} />
+      {/* 헤더 — 옐로 스퀘어 + UNE SÉANCE / 관람일, 아래 옐로 룰 */}
+      <rect x="7" y="3.2" width="1.4" height="1.4" fill={CRITERION_YELLOW} />
+      <rect x="9.6" y="3.4" width="14" height="1" fill={stroke} />
+      <rect x="62" y="3.4" width="11" height="1" fill={dim} />
+      <rect x="7" y="6.1" width="66" height="0.6" fill={CRITERION_YELLOW} />
+      {/* 마스트헤드 — 제목 + 원제 / ★ 평점 */}
+      <rect x="7" y="8" width="34" height="3.2" fill={stroke} />
+      <rect x="7" y="12.4" width="24" height="1.2" fill={dim} />
+      <rect x="58" y="8" width="1.8" height="1.8" fill={CRITERION_YELLOW} />
+      <rect x="61" y="8" width="12" height="3.4" fill={stroke} />
+      {/* 도판 500×750 = 0.667 (#525 룰 5) */}
+      <rect x="19.2" y="17.1" width="41.7" height="48.9" fill={dim} opacity="0.55" />
+      {/* 한줄평 고정 블록 — 좌상·우하 옐로 따옴표 */}
+      <rect x="7" y="69.4" width="3" height="3" fill={CRITERION_YELLOW} />
+      <rect x="70" y="78.8" width="3" height="3" fill={CRITERION_YELLOW} />
+      <rect x="22" y="74" width="36" height="2.4" fill={stroke} opacity="0.75" />
+      {/* 서명(우측 룰 + 손글씨) */}
+      <line x1="52" y1="83.5" x2="58" y2="83.5" stroke={stroke} strokeWidth="0.4" />
+      <rect x="60" y="81.5" width="13" height="3.4" fill={stroke} opacity="0.8" />
+      {/* 콜로폰 — 짧은 옐로 룰 + 모노 2줄 */}
+      <rect x="7" y="88.5" width="5.3" height="0.6" fill={CRITERION_YELLOW} />
+      <rect x="7" y="90" width="60" height="1.1" fill={dim} />
+      <rect x="7" y="92.4" width="52" height="1.1" fill={dim} />
+      {/* 푸터 — 체인·포맷 스탬프 / made with FILME */}
+      <rect x="7" y="95.4" width="12" height="1.6" fill={stroke} />
+      <rect x="21" y="95.4" width="8" height="1.6" fill={stroke} />
+      <rect x="59" y="95.4" width="14" height="1.6" fill={dim} />
     </>
   ),
   // v5 재설계(#524) — 세로 레일 2개 + 컷 2개(포스터 0.667 / 크레딧). 가로 밴드 실루엣 폐기.
