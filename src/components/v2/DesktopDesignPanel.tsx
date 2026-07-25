@@ -1,6 +1,6 @@
 import { useId, type ReactNode } from 'react';
 import { Eyebrow } from './Eyebrow';
-import { RAIL_ITEMS, filterItemsForMood } from './designRailItems';
+import { RAIL_ITEMS, filterItemsForMood, type RailItem } from './designRailItems';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 
 // 데스크톱 DESIGN 패널(#228): 모바일 DesignRail은 가로 rail로 한 번에 한 축만 펼쳐 380px 세로
@@ -11,6 +11,8 @@ import type { usePhototicket } from '@/hooks/usePhototicket';
 // 두 화면에 자동 반영되게 한다(/simplify altitude 지적 — 실사용 5항목은 appliesTo 미설정이라
 // 오늘은 no-op, 첫 실사용 항목이 생겼을 때 모바일만 숨고 데스크톱은 계속 그리는 비대칭 방지).
 // 열림 state가 없는 상시 스택이라 DesignRail의 자동 닫힘 로직은 여기 대응물이 필요 없다.
+// items prop은 DesignRail과 동일한 이유로 열어둔다(기본값 RAIL_ITEMS) — 합성 항목으로 이
+// 배선 자체를 검증하는 상호작용 테스트가 주입할 수 있게(claude-review PR #533 P1).
 
 // 각 섹션은 eyebrow를 접근성 이름으로 갖는 region 랜드마크(#229) — <section>+aria-labelledby면
 // 이미 region이지만 role을 명시해 testing-library getByRole('region')·SR 노출을 확정한다.
@@ -26,8 +28,14 @@ function Section({ eyebrow, children }: { eyebrow: string; children: ReactNode }
   );
 }
 
-export function DesktopDesignPanel({ photo }: { photo: ReturnType<typeof usePhototicket> }) {
-  const visibleItems = filterItemsForMood(RAIL_ITEMS, photo.state.components.layout);
+export function DesktopDesignPanel({
+  photo,
+  items = RAIL_ITEMS,
+}: {
+  photo: ReturnType<typeof usePhototicket>;
+  items?: readonly RailItem[];
+}) {
+  const visibleItems = filterItemsForMood(items, photo.state.components.layout);
   return (
     <div className="space-y-section">
       {visibleItems.map((item) => (
