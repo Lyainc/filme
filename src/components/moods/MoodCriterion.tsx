@@ -1,42 +1,29 @@
-import { CSSProperties, memo, useState } from 'react';
-import type { SheetTarget } from '@/constants/fields';
+import { CSSProperties, memo } from 'react';
 import {
+  CRITERION_PAPER,
+  CRITERION_YELLOW,
   FieldGhost,
   FieldTap,
   FONT_DISPLAY,
   FONT_KR,
   FONT_MONO,
   FONT_QUOTE_KR,
-  FONT_SANS,
-  letterboxToneMatch,
   MoodProps,
   MoodWordmark,
   Poster,
+  WORDMARK_ACCENT,
   containsHangul,
   fieldPieces,
   fitFontSizeToWidth,
   gate,
-  isInkDark,
-  posterFitProps,
-  POSTER_FRAME_INSET_Y,
   posterTapProps,
-  resolveInk,
   resolveTicketData,
   showFieldGhost,
   SignatureStamp,
   StampRow,
-  TopBandTone,
   truncateActors,
   useFontsReady,
-  type FieldGhostState,
 } from './_shared';
-
-// 하단 caps 메타 그리드(관람·영화 청킹)의 라벨/값 스타일. 인라인 리터럴에서 추출해 VENUE 분해 셀·
-// screeningRows·filmRows가 한 소스를 공유한다 — 값 스타일이 어긋나면 데스크톱 바이트가 깨지므로 단일화.
-// 한줄평 승격(#497)으로 무게중심이 이동해 20/30→16/24로 축소(비중 하향, 스파인 제거로 확보한 폭은
-// 잘림 방지 여유로 남긴다 — 굳이 키워 다시 존재감을 주장할 필요 없음).
-const metaLabel: CSSProperties = { fontWeight: 700, fontSize: 16, fontFamily: FONT_MONO, letterSpacing: 1.8, textTransform: 'uppercase', opacity: 0.7 };
-const metaValue: CSSProperties = { fontWeight: 700, fontSize: 24, fontFamily: FONT_SANS, letterSpacing: -0.2, opacity: 0.92, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' };
 
 // 한줄평 폴백 2단계(#391) — 유저 입력이 없으면 평점(0.5 단위)별 프리셋, 평점도 없으면 기본 quote.
 // 전문가 패널 결론: 프리셋·기본값은 항상 영문(무드 보이스 통일, 콘텐츠 비용은 Criterion 1세트로 절감).
@@ -56,186 +43,221 @@ const RATING_QUOTES: Record<string, string> = {
 };
 const DEFAULT_QUOTE = 'the paying customer is the last honest critic';
 
+// 시안 색 하드코딩(#524 c8) — themeColor 파생을 버린다. 흰 종이 위 검정 잉크가 5c의 정체성이라
+// 사용자 색이 끼면 무드가 성립하지 않는다. 죽은 ColorPicker는 TONE_FIXED_MOODS가 비활성화한다.
+const PAPER = CRITERION_PAPER;
+const INK = '#14120f';
+const INK_SOFT = 'rgba(20,18,15,.84)';
+const INK_RULE = 'rgba(20,18,15,.4)';
+/** 옐로 액센트 — 시안이 정확히 5곳(헤더 스퀘어·상단 룰·★·따옴표 쌍·콜로폰 짧은 룰)에만 쓴다. */
+const YELLOW = CRITERION_YELLOW;
+const PLATE_BG = '#efeee9';
+
+const PAD = 84;
+// 도판(플레이트) — 500×750 = 0.667(#525 룰 5). contain이라 표준 크롭에서 레터박스가 0으로 선다.
+const PLATE_LEFT = 230;
+const PLATE_TOP = 262;
+const PLATE_W = 500;
+const PLATE_H = 750;
+// 도판 양감(#524 c7) — 4단 그림자 + inset 엣지. 무드 기본이라 항상 적용된다(#509의 유저 후가공과 별개).
+const PLATE_SHADOW =
+  '0 2px 3px rgba(20,18,15,.3), 0 14px 22px rgba(20,18,15,.26), 0 34px 54px rgba(20,18,15,.24), 0 70px 100px rgba(20,18,15,.16), inset 0 0 0 1px rgba(20,18,15,.22)';
+const PLATE_GLOSS =
+  'linear-gradient(116deg, rgba(255,255,255,.5) 0%, rgba(255,255,255,.14) 13%, rgba(255,255,255,0) 30%, rgba(255,255,255,0) 74%, rgba(255,255,255,.14) 92%, rgba(255,255,255,.3) 100%)';
+
+const QUOTE_TOP = 1064;
+const QUOTE_H = 190;
+
+const headerMeta: CSSProperties = { fontFamily: FONT_MONO, fontSize: 13, fontWeight: 600, letterSpacing: 3 };
+const colophonLine: CSSProperties = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' };
+
 /**
- * v6 — 한줄평(quote) 중심 재레이아웃(#497). 좌측 DVD 스파인 밴드(원제 세로 임프린트·세로 바코드·
- * 연도)를 통째로 제거해 확보한 폭을 타이틀 블록에 합류(left 200→64) — 한줄평이 이제 무드의 시각적
- * 중심이라 스파인이 두던 장식(원제·연도)은 이미 타이틀 블록·WATCHED 셀에 중복이라 정보 손실 없음.
- * bookingNo(예매 번호 바코드)도 스파인 전용 필드라 함께 제외(Minimal·35mm·35mm Wide와 동일 패턴,
- * `MOOD_EXCLUDED_FIELDS`). 한줄평은 장식 인용부호 + 확대(46/50→50/54)·2줄 클램프로 승격하고, 하단
- * caps 메타(VENUE·WATCHED·RATED 등)는 라벨/값 20/30→16/24로 축소해 비중을 넘긴다.
+ * v5(Revue) — 시안 `Mood Redesign v5.dc.html` 5c 재설계(에픽 #524). 이전 v6(#497)의
+ * "포스터 풀블리드 + 전면 스크림 + 더블룰 타이틀 블록 + 하단 caps 메타 그리드"를 통째로 버리고,
+ * **흰 종이(#fdfdfc) 위에 도판을 한 장 올린 인쇄물**로 갈아엎는다.
  *
- * v5 — 마스터 시안 Ticket Design Master.dc.html v2(2026-07-08 resync) 재동기화(에픽 #281).
- * 마스터 델타: 스파인 폭 96→150·패딩 재조정·원제 34→40·바코드 46×430→66×440, 타이틀 pickTitleSize
- * 스케일 폐기→고정 58/lh1.14, 하단 필름 셀에 RUNTIME 추가(RATED·RUNTIME·RELEASED·RE-RELEASED),
- * 메타 라벨/값·푸터 타이포 리스케일. watchTime은 마스터에 독립 TIME 셀이 없어 미렌더 유지.
+ * - 종이 그레인 베이스 + 잉크 #14120f 하드코딩(c8) — themeColor 파생·isInkDark 반전 전량 제거
+ * - 헤더: 옐로 13×13 스퀘어 + UNE SÉANCE / 우측 관람일, 아래 옐로 3px 룰
+ * - 마스트헤드: 제목 46/700 + 원제(Instrument Serif) / 우측 ★ 평점 50/700
+ * - 도판: 500×750(0.667, #525 룰 5) + 4단 그림자·inset 엣지·116deg 사선 글로스·하단 5px 두께 엣지(c7)
+ * - 한줄평: top1064 height190 **고정 블록** — 문구 길이가 변해도 따옴표(104px)는 좌상·우하에 고정
+ * - 콜로폰: 모노 17.5 2줄. 병합 줄은 fieldPieces로 분해해 필드별 탭 타깃·ghost 유지(c3)
+ * - 푸터: 체인·포맷 스탬프(c5와 같은 자리) + made with FILME
  *
- * v4 — 컬렉션 임프린트. 좌측 스파인 + 중앙 카탈로그 제목 블록.
- * 리뷰 반영: 가짜 넘버링(No.0315) 전면 제거(앱에 넘버링 기능 없음), 어색한 "THE FILME COLLECTION"
- * 대신 스파인을 원제(titleOg)·연도의 진짜 DVD 스파인처럼 구성, 중앙 eyebrow는 "from a film diary"로
- * 교체, 서명에 'collected by' 라벨, FILME에 phototicket 컨텍스트. 데이터=Pretendard, 장식=Instrument Serif.
+ * 시안과의 의도적 차이 2건 — 둘 다 시안이 정적 목업이라 생긴 중복이다:
+ * (1) 콜로폰 1행 끝의 "70MM"은 푸터 포맷 스탬프와 같은 값이라 뺐다. 남기면 같은 필드에 탭
+ *     타깃이 둘이 되고, 로고를 올리면 푸터는 이미지·콜로폰은 텍스트로 갈린다.
+ * (2) 본문 서체는 시안의 Noto Serif KR 대신 Pretendard(FONT_KR)다 — c13 실측 결과는 커밋 메시지에.
  */
 export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap }: MoodProps) {
-  const themeColor = components.themeColor || '#FFFFFF';
-  const inkIsDark = isInkDark(themeColor);
-  const ink = resolveInk(themeColor, inkIsDark ? '#0d0c0a' : '#FFFFFF');
-
-  // 톤다운(#442) — PR #448(#440)로 posterFit이 contain+blur 배경 기본이 되면서, 이전엔 스크림만
-  // 보이던 레터박스 영역에 이제 blur 포스터가 함께 깔린다. 원래 불투명도(0.7~0.95)는 포스터를
-  // 거의 덮어버려 blur 배경과 안 이어지고 붕 떴었다 — 전 구간 30~35% 낮춰 포스터가 스크림 아래로
-  // 비치게 하면서 텍스트 대비는 유지한다.
-  const globalScrim = inkIsDark
-    ? 'linear-gradient(180deg, rgba(245,240,232,0.45) 0%, rgba(245,240,232,0.2) 30%, rgba(245,240,232,0.32) 60%, rgba(245,240,232,0.72) 100%)'
-    : 'linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.18) 30%, rgba(0,0,0,0.3) 60%, rgba(0,0,0,0.7) 100%)';
-  const stampSurface = inkIsDark ? 'paper' : 'dark';
-
   const { watchDateClean, releaseClean, reissueClean } = resolveTicketData(d);
 
-  const titleVal       = gate(fv?.title, d.title);
-  // 타이틀 폭 맞춤(#318) — 마스터 v2 기본값 58/800·lh1.14·ls-1.5는 maxSize로 유지하고, 제목
-  // 블록 가용폭(960 - left64 - right64, 스파인 제거 후 #497)을 넘는 긴 제목만 이진탐색으로
-  // 축소한다. 3줄 클램프라 가용폭×3을 maxWidth로 넘겨 가장 긴 한 줄 기준으로 안전하게 축소한다.
-  const fontsReady     = useFontsReady();
-  const titleSize      = fitFontSizeToWidth(titleVal, 832 * 3, { fontFamily: FONT_KR, fontWeight: 800, minSize: 36, maxSize: 58 }, fontsReady);
-  const titleOgVal     = gate(fv?.titleOg, d.titleOg);
-  const actorsVal      = truncateActors(gate(fv?.actors, d.actors));
-  const watchDateVal   = gate(fv?.watchDate, watchDateClean);
-  const theaterVal     = gate(fv?.theater, d.theater);
-  const screenVal      = gate(fv?.screen, d.screen);
-  const seatVal        = gate(fv?.seat, d.seat);
-  const runtimeVal     = gate(fv?.runtime, d.runtime);
-  const releaseDateVal = gate(fv?.releaseDate, releaseClean);
-  const reissueVal     = gate(fv?.reissue, reissueClean);
-  const signatureVal   = gate(fv?.signature, d.signature);
-  const signatureIsKr  = containsHangul(signatureVal);
-  const ratingVisible  = (fv?.rating ?? true) && d.rating > 0;
+  const titleVal = gate(fv?.title, d.title);
+  const titleOgVal = gate(fv?.titleOg, d.titleOg);
+  const watchDateVal = gate(fv?.watchDate, watchDateClean);
+  const signatureVal = gate(fv?.signature, d.signature);
+  const signatureIsKr = containsHangul(signatureVal);
+  const ratingVisible = (fv?.rating ?? true) && d.rating > 0;
+
+  // 타이틀 폭 맞춤(#318) — 시안 46/700이 maxSize. 마스트헤드는 좌측 제목 블록과 우측 평점 블록이
+  // 한 줄에 서므로 가용폭은 (960 - 84*2) - 평점 블록(약 180) - gap 24 ≈ 588. 2줄 클램프라
+  // 가용폭×2를 maxWidth로 넘겨 가장 긴 한 줄 기준으로 축소한다.
+  const fontsReady = useFontsReady();
+  const titleSize = fitFontSizeToWidth(titleVal, 588 * 2, { fontFamily: FONT_KR, fontWeight: 700, minSize: 28, maxSize: 46 }, fontsReady);
 
   // 한줄평(#391) — 유저 입력 → 평점 구간(0.5 단위) 프리셋 → 기본 quote 순 폴백. 유저 입력에
   // 한글이 섞이면 FONT_QUOTE_KR(손글씨)로, 그 외(프리셋·기본값은 항상 영문)는 FONT_DISPLAY 그대로.
-  const userQuoteVal   = gate(fv?.quote, d.quote);
+  const userQuoteVal = gate(fv?.quote, d.quote);
   const ratingQuoteKey = d.rating > 0 ? String(Math.round(d.rating * 2) / 2) : '';
-  const quoteText      = userQuoteVal || RATING_QUOTES[ratingQuoteKey] || DEFAULT_QUOTE;
-  const quoteIsKr      = containsHangul(quoteText);
+  const quoteText = userQuoteVal || RATING_QUOTES[ratingQuoteKey] || DEFAULT_QUOTE;
+  const quoteIsKr = containsHangul(quoteText);
 
-  // 빈 항목 미리보기(#216) — 아톰 슬롯·셀 행 공통 판정. 노출 off도 dim placeholder로 남는다(#369).
-  const gTitle     = showFieldGhost(fv?.title, d.title, ghost);
-  const gTitleOg   = showFieldGhost(fv?.titleOg, d.titleOg, ghost);
-  const gActors    = showFieldGhost(fv?.actors, d.actors, ghost);
-  const gSignature = showFieldGhost(fv?.signature, d.signature, ghost);
-  const gTheater   = showFieldGhost(fv?.theater, d.theater, ghost);
-  const gScreen    = showFieldGhost(fv?.screen, d.screen, ghost);
-  const gSeat      = showFieldGhost(fv?.seat, d.seat, ghost);
+  const gTitle = showFieldGhost(fv?.title, d.title, ghost);
+  const gTitleOg = showFieldGhost(fv?.titleOg, d.titleOg, ghost);
   const gWatchDate = showFieldGhost(fv?.watchDate, watchDateClean, ghost);
-  const gRating    = showFieldGhost(fv?.rating, d.rating > 0, ghost);
-  const gRuntime   = showFieldGhost(fv?.runtime, d.runtime, ghost);
-  const gRelease   = showFieldGhost(fv?.releaseDate, releaseClean, ghost);
-  const gReissue   = showFieldGhost(fv?.reissue, reissueClean, ghost);
+  const gRating = showFieldGhost(fv?.rating, d.rating > 0, ghost);
+  const gSignature = showFieldGhost(fv?.signature, d.signature, ghost);
 
-  // mono 캡스 메타 — 값이 있거나 ghost 행일 때만. ghost 행은 값이 비었고 기여 필드가 visible일 때.
-  const ratingText = ratingVisible ? `★ ${d.rating.toFixed(1)}` : '';
-  // VENUE 셀 분해(#266 PR-D) — 극장·상영관·좌석을 시각은 Criterion 고유 sep('  ·  ')로 붙이되 각각
-  // 독립 FieldTap + 개별 ghost. sep·stampSurface를 조각에 물려 픽셀 보존, 바깥 셀 FieldTap을 없애
-  // 조각을 형제로 배치(이중 중첩 stopPropagation 삼킴 회피).
-  const venueCell = fieldPieces(
+  // 콜로폰 2줄 분해(c3) — 시안은 한 줄에 이어붙인 텍스트지만, 조각마다 제 FieldTap과 ghost를
+  // 달아야 편집이 산다. 1행은 장소 · 관람일시(날짜+시간은 시안대로 공백으로 묶인 한 덩어리),
+  // 2행은 러닝타임 · RELEASED 개봉일 · 출연. 재개봉은 값이 있을 때만 조각을 더한다(c6).
+  const venue = fieldPieces(
     [
-      { field: 'theater', value: theaterVal, ghost: gTheater, label: 'THEATER' },
-      { field: 'screen', value: screenVal, ghost: gScreen, label: 'SCREEN' },
-      { field: 'seat', value: seatVal, ghost: gSeat, label: 'SEAT' },
+      { field: 'theater', value: gate(fv?.theater, d.theater), ghost: showFieldGhost(fv?.theater, d.theater, ghost), label: 'THEATER' },
+      { field: 'screen', value: gate(fv?.screen, d.screen), ghost: showFieldGhost(fv?.screen, d.screen, ghost), label: 'SCREEN' },
+      { field: 'seat', value: gate(fv?.seat, d.seat), ghost: showFieldGhost(fv?.seat, d.seat, ghost), label: 'SEAT' },
     ],
     onField,
-    { sep: '  ·  ', surface: stampSurface }
+    { surface: 'paper' }
   );
-  type Row = { label: string; value?: string; ghost?: FieldGhostState; field: SheetTarget };
-  const screeningRows = ([
-    { label: 'WATCHED', value: watchDateVal, ghost: gWatchDate, field: 'watchDate' },
-  ] as Row[]).filter(r => r.value || r.ghost);
-  const hasScreening = venueCell.hasAny || screeningRows.length > 0;
-  // 마스터 v2 필름 셀 순서: RATED · RUNTIME · RELEASED · RE-RELEASED.
-  const filmRows = ([
-    { label: 'RATED', value: ratingText, ghost: gRating, field: 'rating' },
-    { label: 'RUNTIME', value: runtimeVal, ghost: gRuntime, field: 'runtime' },
-    { label: 'RELEASED', value: releaseDateVal, ghost: gRelease, field: 'releaseDate' },
-    // RE-RELEASED는 releaseDate로 매핑 — reissue는 FIELD_SHEET_TYPE에 없어 단독 타깃이면 빈 시트가 열린다
-    // (재개봉일 편집은 releaseDate 시트의 재개봉 토글 안, 35mm/Editorial과 정렬).
-    { label: 'RE-RELEASED', value: reissueVal, ghost: d.isReissue ? gReissue : false, field: 'releaseDate' },
-  ] as Row[]).filter(r => r.value || r.ghost);
+  const screened = fieldPieces(
+    [
+      { field: 'watchDate', value: watchDateVal, ghost: gWatchDate, label: 'DATE' },
+      { field: 'watchTime', value: gate(fv?.watchTime, d.watchTime), ghost: showFieldGhost(fv?.watchTime, d.watchTime, ghost), label: 'TIME' },
+    ],
+    onField,
+    { sep: ' ', surface: 'paper' }
+  );
+  const reissueVal = gate(fv?.reissue, reissueClean);
+  const releaseDateVal = gate(fv?.releaseDate, releaseClean);
+  const film = fieldPieces(
+    [
+      { field: 'runtime', value: gate(fv?.runtime, d.runtime), ghost: showFieldGhost(fv?.runtime, d.runtime, ghost), label: 'RUNTIME' },
+      // 재개봉 편집 자리는 releaseDate 시트 안(reissue는 FIELD_SHEET_TYPE에 없어 단독 타깃이면 빈 시트).
+      { field: 'releaseDate', value: releaseDateVal && `RELEASED ${releaseDateVal}`, ghost: showFieldGhost(fv?.releaseDate, releaseClean, ghost), label: 'RELEASED' },
+      ...(reissueVal ? [{ field: 'releaseDate' as const, value: `RE-RELEASED ${reissueVal}`, label: 'RE-RELEASED' }] : []),
+      { field: 'actors', value: truncateActors(gate(fv?.actors, d.actors)), ghost: showFieldGhost(fv?.actors, d.actors, ghost), label: 'CAST' },
+    ],
+    onField,
+    { surface: 'paper' }
+  );
 
   const componentOpacity = components.componentOpacity ?? 1;
 
-  // 포스터 fit 정책(#440) — 기본 무손실(contain)+중앙 정렬(#449, 구 top 정렬은 레터박스가
-  // 전부 하단에 몰림). globalScrim이 전체 높이에 걸쳐 있어 자투리 레터박스 배경을 스크림 끝
-  // 색조(테마별 크림/검정)와 맞춰 이질감을 줄인다. frameInsetY로 위/아래 블러 레터박스 노출을
-  // 20~25px 보장(#449).
-  const posterBg = inkIsDark ? '#f5f0e8' : '#0a0a0a';
-
-  // 상단 레터박스 밴드 톤 정합(#461) — globalScrim이 하단(0.7~0.72)만큼 진하지 않은 상단 구간의
-  // 블러 밴드가 도드라지는 문제를, 스크림을 대칭화하는 대신 밴드 실측 높이에만 별도 오버레이로 보정.
-  const [topBandH, setTopBandH] = useState(0);
-
   return (
-    <div style={{ position: 'absolute', inset: 0, color: ink, fontFamily: FONT_SANS, overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
-      <Poster
-        src={croppedImageUrl}
-        {...posterFitProps({ letterboxBg: posterBg, frameInsetY: POSTER_FRAME_INSET_Y })}
-        material={components.material} coating={components.coating}
-        materialIntensity={components.materialIntensity} coatingIntensity={components.coatingIntensity}
-        posterOpacity={components.posterOpacity}
-        onTopBandHeight={setTopBandH}
-      />
+    <div style={{ position: 'absolute', inset: 0, background: PAPER, color: INK, fontFamily: FONT_KR, overflow: 'hidden' }}>
+      {/* 종이 그레인 — 결정론(c2), 난수 없음 */}
+      <div style={{ position: 'absolute', inset: 0, opacity: 0.6, backgroundImage: 'repeating-linear-gradient(0deg, rgba(20,18,15,.022) 0 1px, transparent 1px 4px)' }} />
 
-      {/* #219 componentOpacity: 포스터를 뺀 오버레이 전체를 함께 페이드. 자식이 전부 position:absolute라
-          inset:0 래퍼가 루트를 채워 opacity 1에서 좌표·페인트 순서 동일(no-op). */}
-      <div style={{ position: 'absolute', inset: 0, opacity: componentOpacity }}>
-      <TopBandTone heightPx={topBandH} tone={letterboxToneMatch(inkIsDark)} />
-      <div style={{ position: 'absolute', inset: 0, background: globalScrim, pointerEvents: 'none' }} />
-
-      {/* Top-right paired stamps */}
-      <div style={{ position: 'absolute', right: 52, top: 48, display: 'flex', alignItems: 'center', gap: 28 }}>
-        <StampRow
-          chain={components.chain}
-          chainLabel={components.chainLabel}
-          chainVisible={components.chainVisible}
-          chainHeight={50}
-          chainScale={components.chainScale ?? 1}
-          format={components.format}
-          formatLabel={components.formatLabel}
-          formatVisible={components.formatVisible}
-          formatSize={0.9}
-          formatScale={components.formatScale ?? 1}
-          surface={stampSurface}
-          ghost={ghost}
-          onField={onField}
-          dividerColor={ink}
-          dividerOpacity={0.55}
+      {/* 도판 — Mood35mm의 컷과 같은 계약. 컷이 정확히 0.667이라 표준 크롭(#525 룰 1)에서 레터박스가
+          0이고, 사용자가 자연비 크롭을 골라 어긋나면 남는 자리를 blur 포스터 배경이 덮는다.
+          componentOpacity 래퍼 **밖** — 포스터 축과 크롬 축은 독립(#219). */}
+      <div style={{ position: 'absolute', left: PLATE_LEFT, top: PLATE_TOP, width: PLATE_W, height: PLATE_H, background: PLATE_BG, boxShadow: PLATE_SHADOW, overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
+        <Poster
+          src={croppedImageUrl}
+          fit="contain"
+          background={PLATE_BG}
+          material={components.material}
+          coating={components.coating}
+          materialIntensity={components.materialIntensity}
+          coatingIntensity={components.coatingIntensity}
+          posterOpacity={components.posterOpacity}
         />
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: PLATE_GLOSS }} />
+        <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 5, pointerEvents: 'none', background: 'linear-gradient(180deg, rgba(255,255,255,.22), rgba(20,18,15,.35))' }} />
       </div>
 
-      {/* Title block — catalog double-rule frame */}
-      <div style={{ position: 'absolute', left: 64, right: 64, top: '42%', transform: 'translateY(-42%)' }}>
-        <div style={{ height: 1, background: ink, opacity: 0.6, marginBottom: 4 }} />
-        <div style={{ height: 3, background: ink, opacity: 0.6, marginBottom: 22 }} />
+      {/* #219 componentOpacity: 포스터를 뺀 조판 전체를 함께 페이드. */}
+      <div style={{ position: 'absolute', inset: 0, opacity: componentOpacity }}>
+        {/* 헤더 — 옐로 스퀘어 + UNE SÉANCE / 관람일 */}
+        <div style={{ position: 'absolute', left: PAD, right: PAD, top: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
+            <span style={{ width: 13, height: 13, background: YELLOW, display: 'block', flexShrink: 0 }} />
+            <span style={{ ...headerMeta, fontWeight: 700, letterSpacing: 4.4, textTransform: 'uppercase' }}>une séance</span>
+          </div>
+          {watchDateVal ? (
+            <FieldTap field="watchDate" onField={onField}>
+              <span style={{ ...headerMeta, opacity: 0.6 }}>{watchDateVal}</span>
+            </FieldTap>
+          ) : gWatchDate ? (
+            <FieldTap field="watchDate" onField={onField}>
+              <FieldGhost text="WATCHED" width={150} height={20} surface="paper" state={gWatchDate} />
+            </FieldTap>
+          ) : null}
+        </div>
+        <div style={{ position: 'absolute', left: PAD, right: PAD, top: 94, height: 3, background: YELLOW }} />
 
-        {/* 한줄평 pull-quote(#497) — 무드의 시각적 중심으로 승격: 장식 인용부호는 FieldTap 밖의
-            형제(#417/#268 패턴, InPlaceFieldEditor의 measureField가 tap.firstElementChild 전체
-            박스를 재므로 실측 텍스트만 FieldTap 안에 남긴다), 2줄 클램프로 잘림 없이 문장이 끝까지
-            보이게 한다. */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 30 }}>
-          <span aria-hidden style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 84, lineHeight: 0.68, opacity: 0.26, flexShrink: 0 }}>
-            &ldquo;
-          </span>
+        {/* 마스트헤드 — 제목/원제 + ★ 평점 */}
+        <div style={{ position: 'absolute', left: PAD, right: PAD, top: 118, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24 }}>
+          <div style={{ minWidth: 0 }}>
+            {titleVal ? (
+              <FieldTap field="title" onField={onField}>
+                <div style={{ fontWeight: 700, fontSize: titleSize, lineHeight: 1.1, letterSpacing: -1, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{titleVal}</div>
+              </FieldTap>
+            ) : gTitle ? (
+              <FieldTap field="title" onField={onField}>
+                <FieldGhost text="TITLE" width={420} height={52} size={2} surface="paper" state={gTitle} />
+              </FieldTap>
+            ) : null}
+            {titleOgVal ? (
+              <FieldTap field="titleOg" onField={onField}>
+                <div style={{ fontFamily: FONT_DISPLAY, fontSize: 19, letterSpacing: 4.5, textTransform: 'uppercase', opacity: 0.55, marginTop: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{titleOgVal}</div>
+              </FieldTap>
+            ) : gTitleOg ? (
+              <FieldTap field="titleOg" onField={onField}>
+                <div style={{ marginTop: 8 }}>
+                  <FieldGhost text="ORIGINAL TITLE" width={260} height={24} surface="paper" state={gTitleOg} />
+                </div>
+              </FieldTap>
+            ) : null}
+          </div>
+          {ratingVisible ? (
+            <FieldTap field="rating" onField={onField}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, flexShrink: 0 }}>
+                <span style={{ fontSize: 26, lineHeight: 1, color: YELLOW }}>★</span>
+                <span style={{ fontWeight: 700, fontSize: 50, lineHeight: 1, letterSpacing: -1.5 }}>{d.rating.toFixed(1)}</span>
+                <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 600, letterSpacing: 1.4, opacity: 0.5 }}>/5</span>
+              </div>
+            </FieldTap>
+          ) : gRating ? (
+            <FieldTap field="rating" onField={onField}>
+              <FieldGhost text="RATING" width={130} height={44} surface="paper" state={gRating} />
+            </FieldTap>
+          ) : null}
+        </div>
+
+        {/* 한줄평 — 190px 고정 블록. 따옴표는 문구 길이와 무관하게 좌상·우하에 고정된다. */}
+        <div style={{ position: 'absolute', left: PAD, right: PAD, top: QUOTE_TOP, height: QUOTE_H }}>
+          <span aria-hidden style={{ position: 'absolute', left: 0, top: 0, fontFamily: FONT_DISPLAY, fontSize: 104, lineHeight: 1, color: YELLOW }}>&ldquo;</span>
+          <span aria-hidden style={{ position: 'absolute', right: 0, bottom: 0, fontFamily: FONT_DISPLAY, fontSize: 104, lineHeight: 1, color: YELLOW, transform: 'rotate(180deg)' }}>&ldquo;</span>
+          {/* 실측 텍스트만 FieldTap 안에 남긴다(#417/#268) — InPlaceFieldEditor의 measureField가
+              tap.firstElementChild 전체 박스를 재므로 장식 따옴표는 형제로 뺀다. */}
           <FieldTap field="quote" onField={onField}>
             <div
               style={{
+                position: 'absolute',
+                left: 96,
+                right: 96,
+                top: 0,
+                bottom: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
                 fontFamily: quoteIsKr ? FONT_QUOTE_KR : FONT_DISPLAY,
                 fontStyle: quoteIsKr ? 'normal' : 'italic',
-                fontWeight: 400,
-                fontSize: quoteIsKr ? 54 : 50,
-                lineHeight: 1.25,
-                opacity: 0.95,
-                letterSpacing: quoteIsKr ? 0 : 0.3,
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
+                fontSize: 50,
+                lineHeight: 1.28,
               }}
             >
               {quoteText}
@@ -243,124 +265,61 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
           </FieldTap>
         </div>
 
-        {titleVal ? (
-          <FieldTap field="title" onField={onField}>
-            <div style={{ fontWeight: 800, fontSize: titleSize, fontFamily: FONT_KR, lineHeight: 1.14, letterSpacing: -1.5, marginBottom: 18, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-              {titleVal}
-            </div>
-          </FieldTap>
-        ) : gTitle ? (
-          <FieldTap field="title" onField={onField}>
-            <div style={{ marginBottom: 18 }}>
-              <FieldGhost text="TITLE" width="66%" height={72} size={2} surface={stampSurface} state={gTitle} />
-            </div>
-          </FieldTap>
-        ) : null}
-        {titleOgVal ? (
-          <FieldTap field="titleOg" onField={onField}>
-            <div style={{ fontWeight: 500, fontSize: 29, fontFamily: FONT_SANS, letterSpacing: 1, opacity: 0.82, marginBottom: 18, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {titleOgVal}
-            </div>
-          </FieldTap>
-        ) : gTitleOg ? (
-          <FieldTap field="titleOg" onField={onField}>
-            <div style={{ marginBottom: 18 }}>
-              <FieldGhost text="ORIGINAL TITLE" width={280} height={32} surface={stampSurface} state={gTitleOg} />
-            </div>
-          </FieldTap>
-        ) : null}
-        {actorsVal ? (
-          <FieldTap field="actors" onField={onField}>
-            <div style={{ marginBottom: 22, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-              <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 29, opacity: 0.85, marginRight: 12 }}>featuring</span>
-              <span style={{ fontWeight: 500, fontSize: 31, fontFamily: FONT_KR, opacity: 0.95 }}>{actorsVal}</span>
-            </div>
-          </FieldTap>
-        ) : gActors ? (
-          <FieldTap field="actors" onField={onField}>
-            <div style={{ marginBottom: 22, display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 29, opacity: 0.85 }}>featuring</span>
-              <FieldGhost text="CAST" width={260} height={36} surface={stampSurface} state={gActors} />
-            </div>
-          </FieldTap>
-        ) : null}
-
-        <div style={{ height: 3, background: ink, opacity: 0.6, marginBottom: 4 }} />
-        <div style={{ height: 1, background: ink, opacity: 0.6 }} />
-      </div>
-
-      {/* Bottom caps block — 관람/영화 청킹, 값은 Pretendard로 통일 */}
-      <div style={{ position: 'absolute', left: 64, right: 64, bottom: 52 }}>
-        {hasScreening && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: 26, rowGap: 14, alignItems: 'baseline' }}>
-            {venueCell.hasAny && (
-              <>
-                {/* VENUE 라벨은 비인터랙티브(바깥 FieldTap 제거) — 값의 theater·screen·seat 조각이 각자
-                    제 FieldTap을 달아 탭 타깃을 연다. 실값+ghost 혼합 시에만 flex로 한 줄 정렬(#268 P1). */}
-                <div style={metaLabel}>VENUE</div>
-                <div style={{ ...metaValue, ...(venueCell.hasGhost ? { display: 'flex', alignItems: 'center', gap: 10, whiteSpace: 'normal' } : null) }}>
-                  {venueCell.node}
-                </div>
-              </>
-            )}
-            {screeningRows.map((r, i) => (
-              <FieldTap key={i} field={r.field} onField={onField}>
-                <div style={metaLabel}>{r.label}</div>
-                {r.ghost
-                  ? <FieldGhost width={180} height={32} surface={stampSurface} state={r.ghost} />
-                  : <div style={metaValue}>{r.value}</div>}
-              </FieldTap>
-            ))}
-          </div>
-        )}
-        {hasScreening && filmRows.length > 0 && (
-          <div style={{ height: 1, background: ink, opacity: 0.2, margin: '16px 0' }} />
-        )}
-        {filmRows.length > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: 26, rowGap: 14, alignItems: 'baseline' }}>
-            {filmRows.map((r, i) => (
-              <FieldTap key={i} field={r.field} onField={onField}>
-                <div style={metaLabel}>{r.label}</div>
-                {r.ghost
-                  ? <FieldGhost width={180} height={32} surface={stampSurface} state={r.ghost} />
-                  : <div style={metaValue}>{r.value}</div>}
-              </FieldTap>
-            ))}
-          </div>
-        )}
-        {/* 서명(라벨) + 작은 워터마크(made with FILME) */}
-        <div style={{ marginTop: 22, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 9, opacity: 0.72 }}>
-            <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 22, color: ink }}>made with</span>
-            <MoodWordmark size={22} color={ink} />
-          </div>
+        {/* 서명 */}
+        <div style={{ position: 'absolute', right: PAD, top: 1272, display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span style={{ width: 70, height: 1, background: INK_RULE, flexShrink: 0 }} />
           {components.signatureImage ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10 }}>
-              <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 25, opacity: 0.78, color: ink }}>collected by</span>
-              <FieldTap field="signature" onField={onField}>
-                <SignatureStamp image={components.signatureImage} height={34} scale={components.signatureScale ?? 1} surface={stampSurface} />
-              </FieldTap>
-            </div>
+            <FieldTap field="signature" onField={onField}>
+              <SignatureStamp image={components.signatureImage} height={48} scale={components.signatureScale ?? 1} surface="paper" />
+            </FieldTap>
           ) : signatureVal ? (
-            <div style={{ textAlign: 'right', maxWidth: 560, minWidth: 0 }}>
-              {/* 라벨은 FieldTap 밖(#417) — measureField가 tap.firstElementChild를 재는데
-                  라벨까지 같이 감싸면 캐럿이 값이 아니라 라벨 앞에 뜬다. venueCell fieldPieces와
-                  동일 원칙, 값이 한 조각뿐이라 fieldPieces 대신 직접 분리. */}
-              <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 25, opacity: 0.78, color: ink, marginRight: 10 }}>collected by</span>
-              <FieldTap field="signature" onField={onField}>
-                <span style={{ fontWeight: 600, fontSize: 32, fontFamily: signatureIsKr ? FONT_QUOTE_KR : FONT_DISPLAY, fontStyle: signatureIsKr ? 'normal' : 'italic', color: ink, letterSpacing: -0.2 }}>{signatureVal}</span>
-              </FieldTap>
-            </div>
+            <FieldTap field="signature" onField={onField}>
+              <span style={{ fontFamily: signatureIsKr ? FONT_QUOTE_KR : FONT_DISPLAY, fontStyle: signatureIsKr ? 'normal' : 'italic', fontSize: 56, lineHeight: 1 }}>{signatureVal}</span>
+            </FieldTap>
           ) : gSignature ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10 }}>
-              <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 25, opacity: 0.78, color: ink }}>collected by</span>
-              <FieldTap field="signature" onField={onField}>
-                <FieldGhost text="SIGNATURE" width={200} height={34} surface={stampSurface} state={gSignature} />
-              </FieldTap>
-            </div>
+            <FieldTap field="signature" onField={onField}>
+              <FieldGhost text="SIGNATURE" width={200} height={48} surface="paper" state={gSignature} />
+            </FieldTap>
           ) : null}
         </div>
-      </div>
+
+        {/* 콜로폰 */}
+        <div style={{ position: 'absolute', left: PAD, top: 1358, width: 64, height: 3, background: YELLOW }} />
+        <div style={{ position: 'absolute', left: PAD, right: PAD, top: 1370, fontFamily: FONT_MONO, fontSize: 17.5, fontWeight: 600, letterSpacing: 0.9, lineHeight: 1.72, color: INK_SOFT }}>
+          <div style={{ ...colophonLine, ...(venue.hasGhost || screened.hasGhost ? { display: 'flex', alignItems: 'center', gap: 10, whiteSpace: 'normal' } : null) }}>
+            {venue.node}
+            {venue.hasAny && screened.hasAny ? ' · ' : null}
+            {screened.node}
+          </div>
+          <div style={{ ...colophonLine, ...(film.hasGhost ? { display: 'flex', alignItems: 'center', gap: 10, whiteSpace: 'normal' } : null) }}>{film.node}</div>
+        </div>
+
+        {/* 푸터 — 체인·포맷 스탬프(c5와 같은 자리) + made with FILME */}
+        <div style={{ position: 'absolute', left: PAD, right: PAD, bottom: 48, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 18, minWidth: 0 }}>
+            <StampRow
+              chain={components.chain}
+              chainLabel={components.chainLabel}
+              chainVisible={components.chainVisible}
+              chainHeight={50}
+              chainScale={components.chainScale ?? 1}
+              format={components.format}
+              formatLabel={components.formatLabel}
+              formatVisible={components.formatVisible}
+              formatSize={50 / 64}
+              formatScale={components.formatScale ?? 1}
+              surface="paper"
+              ghost={ghost}
+              onField={onField}
+              dividerColor={INK}
+              dividerOpacity={0.4}
+            />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 11, opacity: 0.8, flexShrink: 0 }}>
+            <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 23 }}>made with</span>
+            <MoodWordmark size={23} color={INK} accent={WORDMARK_ACCENT} />
+          </div>
+        </div>
       </div>
     </div>
   );

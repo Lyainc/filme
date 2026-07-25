@@ -119,7 +119,6 @@ function bandToneEl(container: HTMLElement): HTMLElement | null {
 }
 
 describe.each([
-  ['criterion', MoodCriterion],
   ['minimal', MoodMinimal],
 ] as const)('#461 무드 배선 — %s 상단 밴드 톤 정합 오버레이', (_name, Mood) => {
   test('contain(레터박스 있음) → 실측 높이로 오버레이가 렌더된다', async () => {
@@ -159,5 +158,5 @@ describe.each([
 
 });
 
-// 35mm Wide(v5 #524)는 포스터가 고정 3:2 컷 안에서 cover로 서서 레터박스가 0이다 —
-// TopBandTone 배선 자체가 사라졌으므로 그 무드 케이스는 여기서 제외한다.
+// 35mm Wide·Criterion(v5 #524)은 포스터가 고정 비율 컷(3:2 · 0.667 도판) 안에 서서 레터박스가
+// 0이다 — TopBandTone 배선 자체가 사라졌으므로 두 무드 케이스는 여기서 제외한다.

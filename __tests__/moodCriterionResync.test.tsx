@@ -1,16 +1,12 @@
 import { describe, expect, test } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MoodCriterion } from '../src/components/moods/MoodCriterion';
+import { CRITERION_YELLOW } from '../src/components/moods/_shared';
 import { FULL_MOVIE, makeMoodBase } from './fixtures';
 
-// 마스터 시안(Ticket Design Master.dc.html v2 · 2026-07-08 resync) 재동기화 회귀(#281, 에픽 #281).
-// Criterion 델타: 하단 필름 셀에 RUNTIME 추가(RATED·RUNTIME·RELEASED·RE-RELEASED), RE-REL.→RE-RELEASED,
-// 타이틀 pickTitleSize 스케일 폐기→고정 58/lh1.14, 원제 29·cast 31, 푸터 22–32. watchTime은 마스터에
-// 독립 TIME 셀이 없어 미렌더 유지. stale로 되돌아오면 여기서 잡는다.
-//
-// v6(#497) — 한줄평 중심 재레이아웃: 좌측 DVD 스파인 밴드(폭 150·세로 바코드 66×440) 전면 제거,
-// 타이틀 블록 left 200→64, 하단 caps 메타 라벨/값 20/30→16/24로 축소. 관련 회귀는 아래
-// 'v6(#497)' describe 블록에서 검증.
+// v5(Revue) 시안 `Mood Redesign v5.dc.html` 5c 재동기화 회귀(#524). 이전 v6(#497)의 포스터
+// 풀블리드 + 전면 스크림 + 더블룰 타이틀 블록 + 하단 caps 메타 그리드가 통째로 폐기되고,
+// 흰 종이 위 도판 한 장 구조가 된다. stale로 되돌아오면 여기서 잡는다.
 
 const BASE = makeMoodBase('criterion');
 
@@ -19,68 +15,96 @@ const markup = () =>
     <MoodCriterion movieInfo={FULL_MOVIE} components={BASE} croppedImageUrl="blob:x" onField={() => {}} />
   );
 
-describe('MoodCriterion 마스터 resync (#281)', () => {
-  test('RUNTIME 필드 셀 추가 — 라벨·값·편집 타깃', () => {
+describe('MoodCriterion v5 Revue 재설계 (#524)', () => {
+  test('종이 베이스 — 흰 바탕 + 잉크 하드코딩, 풀블리드 스크림 폐기', () => {
     const html = markup();
-    expect(html).toContain('RUNTIME');
-    expect(html).toContain('99분');
-    expect(html).toContain('러닝타임 편집'); // runtime FieldTap aria-label(게이팅 green)
+    expect(html).toContain('background:#fdfdfc');
+    expect(html).toContain('color:#14120f');
+    // 구 globalScrim(전면 그라디언트 오버레이)의 시그니처가 남아 있으면 스테일.
+    expect(html).not.toContain('rgba(245,240,232,0.45)');
   });
 
-  test('RE-RELEASED 라벨 (구 RE-REL. 폐기)', () => {
+  test('헤더 — 옐로 스퀘어 + UNE SÉANCE / 관람일, 옐로 3px 룰', () => {
     const html = markup();
-    expect(html).toContain('RE-RELEASED');
-    expect(html).not.toContain('RE-REL.');
+    expect(html).toContain('une séance');
+    expect(html).toContain('top:56px');
+    expect(html).toContain(`top:94px;height:3px;background:${CRITERION_YELLOW}`);
   });
 
-  test('watchTime 미렌더 — 독립 TIME 셀·편집 타깃 없음', () => {
+  test('마스트헤드 — 제목 46/700 + ★ 평점 50/700', () => {
     const html = markup();
-    expect(html).not.toContain('관람 시간 편집'); // watchTime FieldTap aria-label
+    expect(html).toContain('top:118px');
+    expect(html).toContain('font-size:46px');
+    expect(html).toContain('font-size:50px;line-height:1;letter-spacing:-1.5px');
+    expect(html).toContain('4.5');
   });
 
-  test('타이틀 고정 58/lh1.14', () => {
+  test('도판 — left230 top262 500×750(0.667) + 4단 그림자 · 사선 글로스 · 하단 두께 엣지', () => {
     const html = markup();
-    expect(html).toContain('font-size:58px');
-    expect(html).toContain('line-height:1.14');
+    expect(html).toContain('left:230px;top:262px;width:500px;height:750px');
+    expect(html).toContain('0 70px 100px rgba(20,18,15,.16)'); // 4단 그림자 마지막 단
+    expect(html).toContain('inset 0 0 0 1px rgba(20,18,15,.22)'); // inset 엣지
+    expect(html).toContain('linear-gradient(116deg'); // 사선 글로스
+    expect(html).toContain('height:5px'); // 하단 두께 엣지
   });
 
-  test('메타 라벨 16 / 값 24 (#497 축소)', () => {
+  test('한줄평 — top1064 height190 고정 블록 + 104px 옐로 따옴표 좌상·우하', () => {
     const html = markup();
-    expect(html).toContain('font-size:16px'); // metaLabel
-    expect(html).toContain('font-size:24px'); // metaValue
+    expect(html).toContain('top:1064px;height:190px');
+    expect(html).toMatch(new RegExp(`left:0;top:0;font-family:var\\(--font-display\\)[^"]*font-size:104px;line-height:1;color:${CRITERION_YELLOW}`));
+    expect(html).toMatch(/right:0;bottom:0;font-family:var\(--font-display\)[^"]*font-size:104px/);
+    expect(html).toContain('rotate(180deg)');
   });
 
-  test('made with FILME + collected by 서명 푸터 유지', () => {
+  test('서명 56px + 콜로폰 룰(top1358) · 모노 17.5 2줄(top1370)', () => {
     const html = markup();
-    expect(html).toContain('made with');
-    expect(html).toContain('collected by');
+    expect(html).toContain('font-size:56px');
+    expect(html).toContain(`top:1358px;width:64px;height:3px;background:${CRITERION_YELLOW}`);
+    expect(html).toContain('top:1370px');
+    expect(html).toContain('font-size:17.5px');
     expect(html).toContain('영화수집가');
   });
 
-  // BI v2 워드마크 포팅(#386) — "made with" 바로 뒤에 MoodWordmark(aria-label="FILME")가 오는지 고정.
-  test('푸터 워드마크는 BI v2 로고타입(MoodWordmark) — #386', () => {
+  test('콜로폰 2줄이 fieldPieces로 분해 — 필드별 탭 타깃 (#524 c3)', () => {
     const html = markup();
+    // 1행: 극장 · 상영관 · 좌석 · 관람일 관람시간 (조각별 FieldTap이라 결합 텍스트 보존은
+    // onField 없는 캡처 경로에서 검증한다 — onTicketFieldTap.test의 "· 결합 텍스트 보존").
+    expect(html).toContain('메가박스 코엑스');
+    expect(html).toContain('Dolby Cinema');
+    expect(html).toContain('G14');
+    expect(html).toContain('극장 편집');
+    expect(html).toContain('상영관 편집');
+    expect(html).toContain('좌석 편집');
+    expect(html).toContain('관람 시간 편집'); // v5에서 watchTime 렌더 복귀
+    // 2행: 러닝타임 · RELEASED 개봉일 · RE-RELEASED 재개봉일 · 출연
+    expect(html).toContain('99분');
+    expect(html).toContain('RELEASED');
+    expect(html).toContain('RE-RELEASED');
+    expect(html).toContain('러닝타임 편집');
+    expect(html).toContain('출연 편집');
+  });
+
+  test('푸터 — 체인·포맷 스탬프 + made with FILME(BI v2 워드마크)', () => {
+    const html = markup();
+    expect(html).toContain('bottom:48px');
+    expect(html).toContain('MEGABOX');
+    expect(html).toContain('DOLBY');
     expect(html).toMatch(/made with<\/span><span aria-label="FILME"/);
   });
-});
 
-describe('MoodCriterion 한줄평 중심 재레이아웃 (#497)', () => {
-  test('좌측 스파인 밴드 제거 — bookingNo 탭 타깃·세로 바코드 미렌더', () => {
-    const html = markup();
-    expect(html).not.toContain('예매 번호 편집'); // bookingNo FieldTap aria-label
-    expect(html).not.toContain('writing-mode:vertical-rl');
+  test('옐로 액센트는 정확히 5곳 — 스퀘어 · 상단 룰 · ★ · 따옴표 쌍 · 콜로폰 룰', () => {
+    const hits = markup().split(CRITERION_YELLOW).length - 1;
+    // 따옴표는 좌상·우하 2개 엘리먼트가 한 자리(쌍)를 이룬다 → 엘리먼트 수는 6.
+    expect(hits).toBe(6);
   });
 
-  test('타이틀·하단 caps 블록이 스파인 자리(left:64)까지 확장', () => {
+  test('v6(#497) 구조 잔재 없음 — 더블룰 타이틀 블록 · caps 메타 그리드 · 스파인', () => {
     const html = markup();
-    expect(html).toContain('left:64px');
-    expect(html).not.toContain('left:200px');
-  });
-
-  test('한줄평이 장식 인용부호 + 2줄 클램프로 승격', () => {
-    const html = markup();
-    expect(html).toContain('aria-hidden="true" style="font-family:var(--font-display)');
-    expect(html).toContain('-webkit-line-clamp:2');
-    expect(html).toContain('font-size:50px'); // 영문 프리셋 quote
+    expect(html).not.toContain('left:64px'); // 구 타이틀/하단 블록 좌표
+    expect(html).not.toContain('VENUE'); // 구 caps 메타 라벨
+    expect(html).not.toContain('WATCHED');
+    expect(html).not.toContain('collected by'); // 구 서명 라벨(시안엔 룰만)
+    expect(html).not.toContain('writing-mode:vertical-rl'); // 스파인 세로 바코드
+    expect(html).not.toContain('예매 번호 편집'); // bookingNo 미렌더 유지
   });
 });

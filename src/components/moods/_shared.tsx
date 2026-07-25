@@ -1229,6 +1229,15 @@ export const FILM_INK = '#e9e7e2';
 export const FILM_HOLE = '#e9e8e4';
 /** 컷(프레임) 박스 공통 — 검은 바탕 + 안쪽 1px 암선 + 바깥 1px amber 헤어라인. */
 export const CUT_SHADOW = 'inset 0 0 0 1px rgba(0,0,0,.9), 0 0 0 1px rgba(120,96,64,.18)';
+/**
+ * Criterion(Revue) 색 토큰 — v5 시안 하드코딩(#524 c8). 옐로는 시안이 정확히 5곳
+ * (헤더 스퀘어 · 상단 룰 · ★ · 따옴표 쌍 · 콜로폰 짧은 룰)에만 쓴다. LayoutPicker 실루엣이
+ * 같은 토큰을 참조하므로 무드 색을 고치면 썸네일도 같이 따라온다.
+ */
+export const CRITERION_YELLOW = '#f2c200';
+/** 흰 종이 베이스. */
+export const CRITERION_PAPER = '#fdfdfc';
+
 /** 크레딧 컷 위 암부 그라디언트(포스터를 brightness(.34)로 깐 뒤 조판 대비 확보). */
 const CREDIT_SCRIM = 'linear-gradient(180deg,rgba(5,4,3,.78) 0%,rgba(5,4,3,.9) 55%,rgba(5,4,3,.95) 100%)';
 
