@@ -6,7 +6,6 @@ import BrightnessSlider from '@/components/wizard/BrightnessSlider';
 import { TEXTURE_RECIPES } from '@/utils/textureRecipes';
 import { MATERIAL_OPTIONS, COATING_OPTIONS } from '@/utils/constants';
 import { MINIMAL_STAMP_MAX_SCALE } from '@/components/moods/MoodMinimal';
-import { LAYOUTS } from '@/utils/layouts';
 import { TONE_FIXED_MOODS } from '@/constants/fields';
 import type { LayoutId } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
@@ -26,11 +25,18 @@ export interface RailItem {
   label: string;
   eyebrow: string;
   icon: ReactNode;
-  // 이 항목이 실제로 조작 가능한 무드 목록. 없으면 전 무드 적용. 현재 실사용은 컬러 하나뿐 —
-  // appliesTo 밖의 무드에서도 항목 자체는 숨기지 않고 disabled로 보여준다("숨김"이 아니라
-  // "잠금", 35mm 컬러의 disabledNote와 같은 이유. 개념은 있으나 그 무드가 값을 고정한 경우).
+  // 이 무드 목록에서만 항목 자체가 존재한다("숨김" — 개념이 아예 없는 무드). 없으면 전 무드
+  // 노출. filterItemsForMood가 이 필드로 실제 렌더 목록을 걸러낸다. "잠금"(개념은 있으나 그
+  // 무드가 값을 고정)은 이 필드가 아니라 항목 자신의 render 안에서 disabled로 표현 — 컬러가
+  // 그 예: TONE_FIXED_MOODS를 이 필드에 안 싣고 render 클로저 안에서만 직접 참조해, 아이콘은
+  // 그대로 두고 컨트롤만 잠근다(35mm 컬러의 disabledNote와 같은 이유).
   appliesTo?: readonly LayoutId[];
   render: (photo: Photo, surface: RailSurface) => ReactNode;
+}
+
+// #523 AC3 — appliesTo 기반 무드별 노출 필터. 순수 함수라 합성(가짜) RailItem만으로 검증 가능.
+export function filterItemsForMood(items: readonly RailItem[], layout: LayoutId): RailItem[] {
+  return items.filter((item) => !item.appliesTo || item.appliesTo.includes(layout));
 }
 
 // surface별 슬라이더 id prefix — rail-chain-scale/desktop-chain-scale 등 기존 id를 보존한다.
@@ -58,13 +64,6 @@ export function stampScaleMaxFor(layout: LayoutId) {
   return layout === 'minimal' ? MINIMAL_STAMP_MAX_SCALE : 1.3;
 }
 
-// TONE_FIXED_MOODS(#524, src/constants/fields.ts)의 여집합 — 컬러가 실제로 조작 가능한 무드.
-// 별도 리터럴 목록을 다시 적지 않고 LAYOUTS 전체에서 걸러내, 무드 능력 표가 TONE_FIXED_MOODS
-// 한 곳에만 남는다(inkColorFidelity.test.tsx도 같은 표를 참조).
-const COLOR_APPLIES_TO: readonly LayoutId[] = LAYOUTS.map((l) => l.id).filter(
-  (id) => !TONE_FIXED_MOODS.has(id),
-);
-
 const COLOR_ITEM: RailItem = {
   id: 'color',
   label: '컬러',
@@ -76,15 +75,16 @@ const COLOR_ITEM: RailItem = {
       <circle cx="15" cy="12" r="5" />
     </svg>
   ),
-  appliesTo: COLOR_APPLIES_TO,
   render: (photo) => (
-    // 데스크톱·모바일 동일 배선 — 잉크색 단일 축(themeColor). disabled는 이 항목 자신의
-    // appliesTo(= TONE_FIXED_MOODS(#524)의 여집합)를 직접 읽어 판정한다.
+    // 데스크톱·모바일 동일 배선 — 잉크색 단일 축(themeColor). disabled는 RailItem.appliesTo가
+    // 아니라 이 클로저가 직접 쥔 TONE_FIXED_MOODS(#524)로 판정한다 — appliesTo에 실으면
+    // filterItemsForMood가 아이콘 자체를 숨겨버려 "잠금"이 "숨김"이 된다(/simplify reuse 지적 —
+    // 여집합을 배열로 만들었다 다시 부정하는 왕복 대신 원래 Set 판정을 직접 쓴다).
     <ColorPicker
       value={photo.state.components.themeColor}
       onChange={(themeColor) => photo.updateComponents({ themeColor })}
       recommended={photo.state.recommendedColors}
-      disabled={!COLOR_ITEM.appliesTo!.includes(photo.state.components.layout)}
+      disabled={TONE_FIXED_MOODS.has(photo.state.components.layout)}
       disabledNote="이 무드는 톤이 고정이라 잉크 색을 바꿀 수 없어요."
     />
   ),
