@@ -291,7 +291,7 @@ export function DesktopStudioShell({
               <div className="space-y-group">
                 <div className="space-y-field">
                   <ImageUploader
-                    onUpload={(url, originalUrl) => photo.handleImageUpload(url, originalUrl)}
+                    onUpload={photo.handleImageUpload}
                     isProcessing={false}
                     imageUrl={croppedImageUrl}
                     layout={previewComponents.layout}

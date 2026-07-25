@@ -2,8 +2,8 @@
  * #220/#347/#421 — 극장/포맷 로고 업로드 자유 크롭 + 포스터 크롭박스 리사이즈(react-image-crop).
  *
  * 검증하는 정합성:
- *  1) 포스터(aspect 생략) → POSTER_RATIO 고정. 미디어가 로드돼도 안 바뀐다.
- *  2) 로고(aspect={undefined}) → 크롭 프레임 = 업로드 이미지의 자연 종횡비(#347).
+ *  1) 포스터(layout 전달) → 토글이 크롭 비율을 정한다(꺼짐=POSTER_RATIO, 켜짐=자연비).
+ *  2) 로고(layout 미전달) → 크롭 프레임 = 업로드 이미지의 자연 종횡비(#347).
  *     완전 자유형(어떤 비율이든)이 아니라 "그 비율의 박스를 리사이즈"(#421)로 유지된다 —
  *     react-image-crop의 aspect=undefined는 defaultProps로 덮이지 않으므로(react-easy-crop과
  *     달리) 자연비를 직접 계산해 잠근다(ImageCropModal의 mediaAspect).
@@ -11,7 +11,7 @@
  *  4) 원본 비율 보존 토글(#420 → #440 → #525) — 포스터 크롭(layout 전달)이면 stub 포함
  *     전 무드 노출. 토글은 크롭 프레임 비율만 정하고(ON=자연비, OFF=포스터 표준 0.667),
  *     렌더 설정으로는 안 새어나간다 — 그래서 재크롭은 표준 프리셋으로 연다.
- *  5) 크롭 프레임 비율과 출력 해상도가 같은 상수에서 나온다(#525) — 갈리면 늘어나 그려진다.
+ *  5) 크롭 출력 해상도가 POSTER_RATIO와 정합(#525) — 갈리면 drawImage가 크롭을 늘여 그린다.
  *
  * ImageCropModal이 렌더하는 <img>에 직접 load 이벤트를 흘려(naturalWidth/naturalHeight를
  * defineProperty로 스텁) 실제 react-image-crop을 그대로 태운다 — 라이브러리를 목킹하지 않고
@@ -24,7 +24,7 @@ import { useState } from 'react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { centerCrop, convertToPixelCrop, makeAspectCrop } from 'react-image-crop';
-import { POSTER_HEIGHT, POSTER_RATIO, POSTER_WIDTH } from '@/utils/constants';
+import { POSTER_HEIGHT, POSTER_RATIO } from '@/utils/constants';
 import type { Area } from '@/utils/imageCrop';
 
 mock.module('@/utils/imageCrop', () => ({
@@ -76,18 +76,17 @@ afterEach(() => {
 });
 
 describe('ImageCropModal 크롭 프레임 종횡비 (#220/#347)', () => {
-  // #525 — 크롭 프레임 비율과 출력 해상도 비율이 갈리면 getCroppedImg의 drawImage가 크롭을
-  // 늘여서 그린다(옛 구조: 프레임 0.667 × 출력 960×1534). 두 값이 한 상수에서 나오는지 못 박는다.
-  test('크롭 출력 해상도(960×1440)가 프레임 비율과 정확히 같다 — 그리기에서 안 늘어남', () => {
-    expect(POSTER_WIDTH / POSTER_HEIGHT).toBe(POSTER_RATIO);
+  // #525 — 크롭 프레임 비율(POSTER_RATIO)과 getCroppedImg 출력 해상도가 갈리면 drawImage가
+  // 크롭을 늘여 그린다(옛 구조: 프레임 0.667 × 출력 960×1534). 출력 높이가 파생식이라 비율
+  // 일치 자체는 항진명제 — 실제로 깨질 수 있는 건 부동소수 잔차와 리터럴 변경뿐이라 그걸 못 박는다.
+  test('크롭 출력 해상도가 정확히 960×1440(0.667) — 그리기에서 안 늘어남', () => {
     expect(POSTER_HEIGHT).toBe(1440);
   });
 
-  test('aspect prop 생략 → 포스터 기본 POSTER_RATIO (미디어 로드돼도 고정)', () => {
+  test('layout 미전달(로고) → 크롭 프레임이 업로드 이미지 자연 종횡비로 잠긴다', () => {
     render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} />);
-    expect(aspectOf(screen.getByTestId('crop-frame'))).toBe(POSTER_RATIO);
     loadImage(800, 200);
-    expect(aspectOf(screen.getByTestId('crop-frame'))).toBe(POSTER_RATIO);
+    expect(aspectOf(screen.getByTestId('crop-frame'))).toBeCloseTo(800 / 200, 5);
   });
 
   // 정방형 / 좌우로 긴 워드마크 / 세로형 — #347이 요구한 세 경우.
@@ -97,8 +96,8 @@ describe('ImageCropModal 크롭 프레임 종횡비 (#220/#347)', () => {
     ['세로형 300×900', 300, 900],
   ];
   for (const [name, w, h] of cases) {
-    test(`aspect={undefined} → 프레임이 원본 자연 종횡비: ${name}`, () => {
-      render(<ImageCropModal imageSrc="blob:x" aspect={undefined} onClose={noop} onComplete={noop} />);
+    test(`layout 미전달 → 프레임이 원본 자연 종횡비: ${name}`, () => {
+      render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} />);
       loadImage(w, h);
       // 자유형(완전 무관)으로 풀리면 여기서 깨진다 — #347/#421 회귀 가드.
       expect(aspectOf(screen.getByTestId('crop-frame'))).toBeCloseTo(w / h, 5);
@@ -131,7 +130,7 @@ describe('로고 본문(StampSheet) 파일 선택 → 자연비 크롭 모달 �
 
 describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
   test('layout 미전달 → 토글 없음(로고 컨텍스트)', () => {
-    render(<ImageCropModal imageSrc="blob:x" aspect={undefined} onClose={noop} onComplete={noop} />);
+    render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} />);
     expect(screen.queryByRole('checkbox')).toBeNull();
   });
 
@@ -202,7 +201,9 @@ describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
     const onCompleteSpy = (area: Area) => {
       received = area;
     };
-    render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={onCompleteSpy} />);
+    // layout을 명시해 포스터 표준 프리셋(POSTER_RATIO)을 실제로 태운다 — 안 주면 자연비로
+    // 열리는데 이 fixture의 2000×3000이 우연히 0.667이라 아래 기대값이 우연히 맞아버린다.
+    render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={onCompleteSpy} layout="minimal" />);
 
     const img = document.querySelector('img') as HTMLImageElement;
     const [naturalW, naturalH, renderW, renderH] = [2000, 3000, 1000, 1000]; // scaleX=2, scaleY=3

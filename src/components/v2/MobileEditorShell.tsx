@@ -21,7 +21,7 @@ import type { ViewMode } from './viewMode';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
 import { getLayout } from '@/utils/layouts';
 import { getCroppedImg, type Area } from '@/utils/imageCrop';
-import { POSTER_HEIGHT, TARGET_HEIGHT, TARGET_WIDTH } from '@/utils/constants';
+import { POSTER_PRESERVE_MAX_SIDE, TARGET_HEIGHT, TARGET_WIDTH } from '@/utils/constants';
 import { useEditHistory } from '@/hooks/useEditHistory';
 import { useOcrUndo } from '@/hooks/useOcrUndo';
 import type { usePhototicket } from '@/hooks/usePhototicket';
@@ -351,7 +351,7 @@ export function MobileEditorShell({
       const url = await getCroppedImg(
         posterOriginalSrc,
         area,
-        preserveRatio ? { maxSide: POSTER_HEIGHT * 2 } : undefined
+        preserveRatio ? { maxSide: POSTER_PRESERVE_MAX_SIDE } : undefined
       );
       const isFirstUpload = !photo.state.croppedImageUrl;
       photo.handleImageUpload(url, posterOriginalSrc);
@@ -983,7 +983,7 @@ export function MobileEditorShell({
       )}
 
       {/* 포스터 크롭 파이프라인(#259 on-ticket tap + #315 드롭존·서브메뉴 교체/재크롭 통합) — 숨김
-          파일 input + 크롭 모달. 탭 → input.click() → 파일 선택 → ImageCropModal(기본 0.65:1) →
+          파일 input + 크롭 모달. 탭 → input.click() → 파일 선택 → ImageCropModal(기본 0.667) →
           getCroppedImg → handleImageUpload. originalSrc는 크롭 완료 후에도 유지돼 재크롭에 재사용된다. */}
       <input
         ref={posterInputRef}

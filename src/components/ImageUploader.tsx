@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { getCroppedImg, Area } from '@/utils/imageCrop';
-import { POSTER_HEIGHT } from '@/utils/constants';
+import { POSTER_PRESERVE_MAX_SIDE } from '@/utils/constants';
 import type { LayoutId } from '@/types';
 
 const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ssr: false });
@@ -69,7 +69,7 @@ export default function ImageUploader({ onUpload, isProcessing, imageUrl, layout
       const croppedUrl = await getCroppedImg(
         originalSrc,
         croppedAreaPixels,
-        preserveRatio ? { maxSide: POSTER_HEIGHT * 2 } : undefined
+        preserveRatio ? { maxSide: POSTER_PRESERVE_MAX_SIDE } : undefined
       );
       onUpload(croppedUrl, originalSrc);
       setPendingNewFile(false);

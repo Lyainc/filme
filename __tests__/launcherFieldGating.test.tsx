@@ -10,27 +10,14 @@ import { MoodStub } from '../src/components/moods/MoodStub';
 import { FIELD_LABELS, LAUNCHER_GROUPS, launcherGroupsFor } from '../src/constants/fields';
 import { ALL_FIELDS_ON } from '../src/constants/fieldVisibility';
 import type { MoodProps } from '../src/components/moods/_shared';
-import type { LayoutId, MovieInfo, TicketComponents, TicketField } from '../src/types';
+import type { LayoutId, TicketField } from '../src/types';
+import { FULL_MOVIE, makeMoodBase } from './fixtures';
 
 // layout-aware 필드 런처 게이팅(#287, 에픽 #281). 무드 재동기화로 어떤 무드는 마스터 규격상 특정 필드를
 // 렌더하지 않기 시작한다(첫 사례: #286에서 Minimal이 푸터 바코드=bookingNo 제거). 런처(FieldAccordion)가
 // layout 구분 없이 전 무드 공용이면 그런 무드에 '죽은 컨트롤'(입력해도 티켓에 안 뜨는 편집 행)이 남는다.
 // launcherGroupsFor(layout)가 그 무드가 실제 렌더하는 필드와 정확히 일치하는지를 무드 마크업 대조로 검증한다.
 
-const FULL_MOVIE: MovieInfo = {
-  title: '그랜드 부다페스트 호텔', titleOg: 'The Grand Budapest Hotel', actors: '랄프 파인즈, 토니 레볼로리 외 3명', rating: 4.5,
-  releaseDate: '2014-03-20', releaseDateGranularity: 'date', releaseDateFormat: 'kr-compact',
-  reissueDate: '2023-09-15', isReissue: true,
-  watchDate: '2024-03-15', watchDateFormat: 'kr-compact', watchTime: '19:30',
-  theater: '메가박스 코엑스', screen: 'Dolby Cinema', seat: 'G14', runtime: '99분',
-  bookingNumber: 'BOOK-1234', signature: '영화수집가',
-};
-
-const baseComponents = (layout: LayoutId): TicketComponents => ({
-  layout, chain: '', format: '', chainLabel: 'MEGABOX', formatLabel: 'DOLBY',
-  material: 'original', coating: 'gloss', materialIntensity: 1, coatingIntensity: 1, posterOpacity: 0.5, componentOpacity: 1, themeColor: '#FFFFFF',
-  chainVisible: true, formatVisible: true, chainScale: 1, formatScale: 1,
-});
 
 const MOODS: Record<LayoutId, ComponentType<MoodProps>> = {
   minimal: MoodMinimal,
@@ -51,7 +38,7 @@ function renderedFields(layout: LayoutId): TicketField[] {
   const markup = renderToStaticMarkup(
     <Mood
       movieInfo={FULL_MOVIE}
-      components={baseComponents(layout)}
+      components={makeMoodBase(layout)}
       croppedImageUrl="blob:x"
       fieldVisibility={ALL_FIELDS_ON}
       onField={() => {}}

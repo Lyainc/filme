@@ -40,8 +40,10 @@ const INK = '#1a1612';
 const BROWN = '#6f6347';
 const CREAM = '#f7ece2';
 
-// 포스터 슬롯 폭(#440 잔여 스코프) — 캔버스 높이 960 기준 0.667 비율(무손실 크롭 정책 통일의
-// 일부). 재계산: mainAvailWidth = 1534 - POSTER_W - FOIL_W - STUB_W - padding52*2.
+// 포스터 슬롯 폭(#440 잔여 스코프) — 캔버스 높이 960 × POSTER_RATIO(#525 룰 5)로 640. 6무드
+// 중 유일하게 슬롯 자체가 0.667이라 레터박스가 0이다. 리터럴로 두는 건 2:3이 움직이지 않는
+// 실물 규격이라서고, 바꿀 일이 생기면 이 주석의 POSTER_RATIO로 grep이 걸린다.
+// 재계산: mainAvailWidth = 1534 - POSTER_W - FOIL_W - STUB_W - padding52*2.
 const POSTER_W = 640;
 /** 바코드 SVG 폭(px) — Code128C(#444) 기준 모듈당 2px 확보용 286. 테스트가 이 값을 직접 import. */
 export const BARCODE_WIDTH = 286;

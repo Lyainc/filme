@@ -308,7 +308,6 @@ function LogoRow({
       {rawSrc && (
         <ImageCropModal
           imageSrc={rawSrc}
-          aspect={undefined}
           title="로고 크롭"
           onClose={handleCancel}
           onComplete={handleComplete}

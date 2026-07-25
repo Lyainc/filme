@@ -159,13 +159,10 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
           배경은 Poster의 letterboxBg가 칠하므로 래퍼 자체엔 안 둔다(nit poster-letterbox-bg, #440 —
           editorial과 동일하게 죽은 스타일이던 래퍼 background 제거). */}
       <div style={{ flex: `0 0 ${POSTER_H}px`, position: 'relative', overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
-        {/* 밴드는 가로로 넓지만(960×760 = 1.263) 룰 5가 요구하는 건 **밴드**가 아니라 그 안의
-            포스터 프레임 비율이다 — contain이면 프레임이 높이에 맞춰 서서 760×0.667≈507 폭,
-            즉 항상 0.667이고 남는 좌우는 blur 포스터 배경이 덮는다(#440). 그래서 밴드 높이를
-            어떻게 잡아도(#493의 900 확대 포함) 룰 5는 그대로 성립하고, 재산정에도 기하 변경이
-            없다 — 위반은 잘라내던 cover 경로에서만 났고 그 경로는 #525에서 폐지됐다.
-            자연 간극이 이미 커 frameInsetY 최소 노출 보장은 불필요(editorial/35mm-landscape와
-            동일 패턴). */}
+        {/* 가로 밴드(960×760)지만 contain이라 포스터 프레임은 높이에 맞춰 507×760 = 0.667로
+            서고, 남는 좌우는 blur 배경이 덮는다(#440). 그래서 밴드 높이는 #525 룰 5와 무관한
+            자유 변수다(#493 확대 가능). 자연 간극이 커 frameInsetY는 불필요(editorial/
+            35mm-landscape와 동일). */}
         <Poster src={croppedImageUrl} {...posterFitProps({ letterboxBg: POSTER_LETTERBOX_BG })} material={components.material} coating={components.coating} materialIntensity={components.materialIntensity} coatingIntensity={components.coatingIntensity} posterOpacity={components.posterOpacity} />
       </div>
 

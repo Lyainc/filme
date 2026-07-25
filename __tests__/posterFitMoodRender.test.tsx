@@ -78,29 +78,20 @@ describe.each([
   });
 });
 
-// 풀블리드 3무드(minimal·criterion·35mm)는 frameInsetY로 상하 블러 레터박스를 최소 노출 보장한다(#449).
+// 풀블리드 3무드(minimal·criterion·35mm)만 frameInsetY로 상하 블러 레터박스 최소 노출을 보장한다.
+// 나머지 셋은 자연 간극이 이미 크거나 별도 컬럼 레이아웃이라 #449 스코프 밖(인셋 0).
 describe.each([
-  ['minimal', MoodMinimal],
-  ['criterion', MoodCriterion],
-  ['35mm', Mood35mm],
-] as const)('#449 frameInsetY — %s', (_name, Mood) => {
-  test('POSTER_FRAME_INSET_Y(22px)만큼 위/아래 인셋', () => {
+  ['minimal', MoodMinimal, POSTER_FRAME_INSET_Y],
+  ['criterion', MoodCriterion, POSTER_FRAME_INSET_Y],
+  ['35mm', Mood35mm, POSTER_FRAME_INSET_Y],
+  ['editorial', MoodEditorial, 0],
+  ['35mm-landscape', Mood35mmLandscape, 0],
+  ['stub', MoodStub, 0],
+] as const)('#449 frameInsetY — %s', (_name, Mood, inset) => {
+  test(`위/아래 인셋 ${inset}px`, () => {
     const m = render(Mood).match(POSTER_FRAME_WRAPPER);
-    expect(m?.[1]).toBe(String(POSTER_FRAME_INSET_Y));
-    expect(m?.[2]).toBe(String(POSTER_FRAME_INSET_Y));
-  });
-});
-
-// editorial/35mm-landscape/stub은 자연 간극이 이미 크거나 별도 컬럼 레이아웃이라 #449 스코프 밖.
-describe.each([
-  ['editorial', MoodEditorial],
-  ['35mm-landscape', Mood35mmLandscape],
-  ['stub', MoodStub],
-] as const)('#449 frameInsetY 미배선 — %s', (_name, Mood) => {
-  test('인셋 0', () => {
-    const m = render(Mood).match(POSTER_FRAME_WRAPPER);
-    expect(m?.[1]).toBe('0');
-    expect(m?.[2]).toBe('0');
+    expect(m?.[1]).toBe(String(inset));
+    expect(m?.[2]).toBe(String(inset));
   });
 });
 
