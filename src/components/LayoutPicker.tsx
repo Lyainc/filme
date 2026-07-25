@@ -197,11 +197,13 @@ function MoodCardBody({ layout, active }: { layout: LayoutSpec; active: boolean 
 const MOOD_CHIP_BG: Record<LayoutId, string> = {
   minimal: 'linear-gradient(180deg, #b9b3a8 0%, #b9b3a8 62%, #17150f 62%)',
   criterion: 'linear-gradient(90deg, #f2ede2 0 22%, #23201c 22%)',
-  '35mm': 'linear-gradient(180deg, #0a0a0a 0 18%, #8a8175 18% 82%, #0a0a0a 82%)',
+  // v5 재설계(#524): 35mm은 가로 밴드가 아니라 **세로 레일**(좌우 어두운 띠 + 가운데 포스터 컷),
+  // 35mm Wide는 좌우 분할이 아니라 **가로 밴드 + 넓은 컷 / 좁은 크레딧 컷**이 실루엣이다.
+  '35mm': 'linear-gradient(90deg, #0b0a09 0 21%, #8a8175 21% 79%, #0b0a09 79%)',
   editorial: 'linear-gradient(90deg, #6e675e 0 40%, #A8312A 40% 44%, #f4ede0 44%)',
   stub: 'linear-gradient(180deg, #8a8175 0 50%, #c9baf7 50% 58%, #f2ede2 58%)',
   '35mm-landscape':
-    'linear-gradient(180deg, #0a0a0a 0 18%, rgba(0,0,0,0) 18% 82%, #0a0a0a 82%), linear-gradient(90deg, #8a8175 0 55%, #070707 55%)',
+    'linear-gradient(180deg, #0b0a09 0 18%, rgba(0,0,0,0) 18% 82%, #0b0a09 82%), linear-gradient(90deg, #0b0a09 0 5%, #8a8175 5% 66%, #14120f 66% 95%, #0b0a09 95%)',
 };
 
 // 모바일 무드 스트립(#262 갭2, #212 섹션 D) — 캐러셀 대신 가로 scroll-snap. 데스크톱은 캐러셀 유지.
@@ -316,22 +318,27 @@ const THUMBNAIL_RENDERERS: Record<LayoutId, (c: ThumbColors) => ReactNode> = {
       />
     </>
   ),
+  // v5 재설계(#524) — 세로 레일 2개 + 컷 2개(포스터 0.667 / 크레딧). 가로 밴드 실루엣 폐기.
   '35mm': ({ stroke, dim }) => (
     <>
-      <rect x="0" y="0" width="80" height="9" fill="#0a0a0a" />
-      <rect x="0" y="91" width="80" height="9" fill="#0a0a0a" />
-      {[6, 16, 26, 36, 46, 56, 66, 76].map((x) => (
-        <rect key={`top-${x}`} x={x} y="3" width="4" height="3" rx="0.5" fill="#f6f1e4" />
+      <rect x="0" y="0" width="80" height="100" fill="#0b0a09" />
+      {[3, 13, 23, 33, 43, 53, 63, 73, 83, 93].map((y) => (
+        <rect key={`l-${y}`} x="2" y={y} width="4" height="5.5" rx="1.2" fill="#e9e8e4" />
       ))}
-      {[6, 16, 26, 36, 46, 56, 66, 76].map((x) => (
-        <rect key={`bot-${x}`} x={x} y="94" width="4" height="3" rx="0.5" fill="#f6f1e4" />
+      {[3, 13, 23, 33, 43, 53, 63, 73, 83, 93].map((y) => (
+        <rect key={`r-${y}`} x="74" y={y} width="4" height="5.5" rx="1.2" fill="#e9e8e4" />
       ))}
-      <rect x="0" y="9" width="80" height="82" fill={dim} opacity="0.18" />
-      <rect x="0" y="64" width="80" height="27" fill="rgba(0,0,0,0.7)" />
-      <rect x="6" y="68" width="22" height="2" fill={dim} />
-      <rect x="6" y="74" width="48" height="4" fill={stroke} />
-      <rect x="6" y="82" width="30" height="2" fill={dim} />
-      <rect x="58" y="82" width="14" height="4" fill={dim} />
+      {/* 포스터 컷 46×69 = 0.667 (#525 룰 5) */}
+      <rect x="4" y="4" width="12" height="0.8" fill="#a97433" />
+      <rect x="17" y="7" width="46" height="69" fill={dim} opacity="0.2" />
+      {/* 크레딧 컷 — 제목 + 2단 크레딧 */}
+      <rect x="4" y="78" width="12" height="0.8" fill="#a97433" />
+      <rect x="17" y="81" width="46" height="15" fill="rgba(0,0,0,0.75)" />
+      <rect x="30" y="83.5" width="20" height="2" fill={stroke} />
+      <rect x="24" y="88" width="13" height="1.4" fill={dim} />
+      <rect x="40" y="88" width="13" height="1.4" fill={dim} />
+      <rect x="24" y="91.5" width="13" height="1.4" fill={dim} />
+      <rect x="40" y="91.5" width="13" height="1.4" fill={dim} />
     </>
   ),
   editorial: ({ stroke, dim }) => (
@@ -388,16 +395,17 @@ const THUMBNAIL_RENDERERS: Record<LayoutId, (c: ThumbColors) => ReactNode> = {
       {[5, 15, 25, 35, 45, 55, 65, 75].map((x) => (
         <rect key={`b-${x}`} x={x} y="92" width="4" height="4" rx="0.6" fill="#f6f1e4" />
       ))}
-      <rect x="0" y="12" width="50" height="76" fill={dim} opacity="0.18" />
-      <rect x="0" y="66" width="50" height="22" fill="rgba(0,0,0,0.6)" />
-      <rect x="5" y="72" width="30" height="5" fill={stroke} />
-      <rect x="5" y="80" width="20" height="2" fill={dim} />
-      <rect x="50" y="12" width="30" height="76" fill="#070707" />
-      <rect x="55" y="20" width="16" height="2" fill={dim} />
-      <rect x="55" y="30" width="20" height="3" fill={stroke} />
-      <rect x="55" y="40" width="20" height="3" fill={stroke} />
-      <rect x="55" y="50" width="14" height="3" fill={stroke} />
-      <rect x="55" y="80" width="20" height="4" fill={dim} />
+      {/* v5 재설계(#524) — 우측 아카이브 패널 폐기(#499). 넓은 포스터 컷 48×32(3:2) + 좁은 크레딧 컷 */}
+      <rect x="4" y="29" width="10" height="0.8" fill="#a97433" />
+      <rect x="4" y="34" width="48" height="32" fill={dim} opacity="0.2" />
+      <rect x="56" y="29" width="7" height="0.8" fill="#a97433" />
+      <rect x="56" y="34" width="21" height="32" fill="rgba(0,0,0,0.75)" />
+      <rect x="61" y="37" width="11" height="2" fill={stroke} />
+      <rect x="58" y="46" width="8" height="1.4" fill={dim} />
+      <rect x="67" y="46" width="8" height="1.4" fill={dim} />
+      <rect x="58" y="50" width="8" height="1.4" fill={dim} />
+      <rect x="67" y="50" width="8" height="1.4" fill={dim} />
+      <rect x="58" y="61" width="10" height="1.6" fill={dim} />
     </>
   ),
 };
