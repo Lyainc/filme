@@ -5,11 +5,20 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type Poin
  * 배치설정(방향/위치)은 #387에서 햄버거 메뉴로 이전 — prefs는 부모(MobileEditorShell)가
  * 소유하는 controlled 값이라 이 컴포넌트는 렌더·드래그·리클램프만 담당한다.
  *
- * - 버튼 44px(시안 31px은 앱 현행 44~48px 대비 회귀 — 이슈 표), dark-glass 배경
+ * - 버튼·그립 32px(#508, 이전 44px — 세로 풋프린트 축소). WCAG 2.2 SC 2.5.8(AA) 최소 24×24를
+ *   8px 여유로 넘기므로 **간격 예외는 쓰지 않는다** — 타깃이 서로 맞붙어 있어도 각 타깃 자체가
+ *   기준을 만족한다. 44px(SC 2.5.5 AAA) 포기는 의도적 트레이드오프고 24px은 하한이지 목표가
+ *   아니다. 기각 이력 둘 중 하나는 여전히 유효하고 하나는 번복됐다:
+ *   (a) 시안 v8의 12px 그립은 SC 2.5.8 미달이라 **여전히 기각** — 그립도 버튼과 같은 32px.
+ *   (b) 시안 31px 버튼을 막았던 "앱 현행 44~48px 대비 회귀"(일관성 근거, #354 InPlaceFieldEditor
+ *       주석과 같은 논거)는 #508에서 **번복**했다 — 세로 공간이 툴바 하나에 35vh를 내주던 게 더
+ *       큰 손해라고 봤다. 대가로 인플레이스 편집 바(InPlaceFieldEditor, 44px)와 툴바가 z-40/45로
+ *       동시에 뜰 때 탭 타깃이 12px 어긋난다. 편집 바까지 32px로 맞출지는 별건(미결).
+ *   dark-glass 배경
  *   (--surface-translucent 재사용: README §Design Tokens, 시안 불투명 코드는 모순으로 기각).
  * - 방향(가로/세로) × 배치(고정/이동) 두 축. 기본 세로·고정·좌측 헤더 직하(#364).
- * - 이동식은 44px 그립 드래그(시안 12px은 WCAG 2.2 SC 2.5.8 미달) + 햄버거 메뉴의
- *   좌/우 가장자리 스냅(드래그 없는 단일 포인터 대체 경로, WCAG 2.2 SC 2.5.7).
+ * - 이동식은 32px 그립 드래그 + 햄버거 메뉴의 좌/우 가장자리 스냅(드래그 없는 단일 포인터
+ *   대체 경로, WCAG 2.2 SC 2.5.7).
  * - 숨김 → 툴바 top-left 원점에 앵커된 원형 버튼으로 접힘(중심 앵커는 탭 위치로 튄다 — 이슈).
  * - 위치·방향·숨김은 filme:toolbar:v1로 자동 영속(문서 키 filme:phototicket:v1과 분리, #310과
  *   무충돌 — 이건 UI 취향이라 phototicket:theme 선례를 따른다). 영속 저장은 부모가 담당(#387).
@@ -88,6 +97,8 @@ const TB_FALLBACK_TOP_V = 'calc(env(safe-area-inset-top, 0px) + 78px)';
 const TB_FALLBACK_TOP_H = 'calc(env(safe-area-inset-top, 0px) + 70px)';
 const TB_HEADER_MARGIN = 12; // 헤더 아래 여백
 const TB_CONTENT_MARGIN = 10; // 티켓 콘텐츠 위 여백
+// 탭 타깃 크기 — 버튼·그립·숨김 원형이 전부 이 값을 쓴다(헤더 참조: SC 2.5.8 AA 24px + 8px 여유).
+const TB_TARGET = 'h-8 w-8';
 
 export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(function FloatingToolbar(
   { prefs, onPrefsChange, canUndo, canRedo, onUndo, onRedo, onFieldList, onMaximize, headerEl, contentTopEl },
@@ -214,7 +225,7 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
         type="button"
         onClick={() => onPrefsChange((prev) => ({ ...prev, hidden: false }))}
         aria-label="툴바 표시"
-        className="fixed z-[45] flex h-11 w-11 items-center justify-center rounded-full border border-line text-fg-muted transition-colors hover:text-fg"
+        className={`fixed z-[45] flex ${TB_TARGET} items-center justify-center rounded-full border border-line text-fg-muted transition-colors hover:text-fg`}
         style={{ ...posStyle, ...glass }}
       >
         <svg {...ICON}>
@@ -226,8 +237,7 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
   }
 
   const horiz = orient === 'h';
-  const btn =
-    'flex h-11 w-11 items-center justify-center rounded-[10px] text-fg-muted transition-colors hover:text-fg disabled:text-fg-faint disabled:hover:text-fg-faint';
+  const btn = `flex ${TB_TARGET} items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:text-fg disabled:text-fg-faint disabled:hover:text-fg-faint`;
   const divider = horiz ? 'mx-0.5 h-[18px] w-px bg-line' : 'my-0.5 h-px w-[18px] bg-line';
 
   return (
@@ -236,7 +246,7 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
       role="toolbar"
       aria-label="편집 도구"
       aria-orientation={horiz ? 'horizontal' : 'vertical'}
-      className={`fixed z-[45] flex items-center rounded-[13px] border border-line p-1 ${
+      className={`fixed z-[45] flex items-center rounded-[11px] border border-line p-1 ${
         horiz ? 'flex-row' : 'flex-col'
       }`}
       style={{ ...posStyle, ...glass }}
@@ -248,9 +258,7 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
           onPointerUp={onGripUp}
           onPointerCancel={onGripUp}
           aria-hidden="true"
-          className={`flex shrink-0 cursor-grab items-center justify-center ${
-            horiz ? 'h-11 w-11' : 'h-11 w-11'
-          }`}
+          className={`flex shrink-0 cursor-grab items-center justify-center ${TB_TARGET}`}
           style={{ touchAction: 'none' }}
         >
           <span className={`flex gap-[3px] ${horiz ? 'flex-col' : 'flex-row'}`} aria-hidden="true">
