@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { RAIL_ITEMS, filterItemsForMood, type RailItem, type RailItemId } from './designRailItems';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 
@@ -8,32 +8,44 @@ import type { usePhototicket } from '@/hooks/usePhototicket';
 // #523 AC4 — 아이콘 행은 filterItemsForMood를 통과한 항목만 그린다(appliesTo 없는 실사용
 // 항목 5개는 전부 통과, 실제 숨김 0건). items prop은 기본값 RAIL_ITEMS를 쓰되, 합성 항목으로
 // 무드 전환→숨김→패널 자동 닫힘→값 보존을 검증하는 테스트가 주입할 수 있게 열어둔다.
+// #502 — 아이콘 행을 iOS 사진편집형 중앙정렬 캐러셀로 전환. 항목이 늘어도(#530 예고) 가로로
+// 잘리지 않고 스크롤되며, 활성 항목이 항상 화면 중앙에 오게 한다. 데스크톱 DesktopDesignPanel은
+// 세로 스택 상시노출이 존재 이유 자체가 "한 번에 하나만 펼치는 rail의 공간 낭비 회피"(#228)라
+// 캐러셀(단일 활성 중심)을 얹으면 그 설계와 충돌한다 — 캐러셀은 모바일 rail 전용, 데스크톱은
+// 그대로 둔다. 토글(open/close/exclusive) 로직 자체는 안 건드림 — 캐러셀은 입력 경로(스와이프로도
+// 전환 가능)를 하나 더 얹을 뿐, 클릭 시맨틱은 기존과 동일.
 
 const PANEL_ID = 'design-rail-panel';
 
 function RailIconButton({
+  id,
   icon,
   label,
   selected,
   ringColor,
   onClick,
+  onRef,
 }: {
+  id: RailItemId;
   icon: ReactNode;
   label: string;
   selected: boolean;
   ringColor: string;
   onClick: () => void;
+  onRef: (id: RailItemId, el: HTMLButtonElement | null) => void;
 }) {
   return (
     <button
       type="button"
+      data-rail-id={id}
+      ref={(el) => onRef(id, el)}
       onClick={onClick}
       aria-expanded={selected}
       aria-controls={PANEL_ID}
       data-touch="44"
       // outline-none 제거(#357) — 전역 :focus-visible 링이 dock 탭에도 걸리게 한다(키보드
       // 포커스에만 뜨므로 터치/마우스 시각 변화 없음).
-      className="flex flex-col items-center gap-1.5"
+      className="flex shrink-0 snap-center flex-col items-center gap-1.5"
     >
       <span
         aria-hidden="true"
@@ -120,17 +132,66 @@ export function DesignRail({
   const ringColor = themeColor || 'var(--accent)';
   const toggle = (id: RailItemId) => setPop((cur) => (cur === id ? null : id));
 
+  // id→버튼 엘리먼트 단일 소스(/simplify 재사용 지적) — TexturePicker.tsx의 activeRef 패턴과
+  // 같은 취지를 다중 항목에 맞게 Map으로 확장. querySelector 문자열 조회 없이 아래 effect와
+  // onRailScroll이 이 Map 하나만 본다.
+  const itemRefs = useRef(new Map<RailItemId, HTMLButtonElement>());
+  const setItemRef = (id: RailItemId, el: HTMLButtonElement | null) => {
+    if (el) itemRefs.current.set(id, el);
+    else itemRefs.current.delete(id);
+  };
+
+  // 패널이 열릴 때(클릭이든 스크롤 감지든)만 그 아이콘을 화면 중앙으로 당긴다 — pop이 null인
+  // 동안(마운트 직후 포함)은 건드리지 않는다. 안 그러면 마운트 시 이 effect가 첫 항목을
+  // scrollIntoView로 밀고, 그 스크롤이 아래 onRailScroll을 발화시켜 열려있지도 않은 패널을
+  // 시작하자마자 스스로 열어버리는 순환이 생긴다.
+  const railRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (pop === null) return;
+    itemRefs.current.get(pop)?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }, [pop]);
+
+  // 스와이프/스크롤만으로도 모듈이 전환되게(#502) — 정지 대기 없이 매 스크롤 이벤트에서 중앙에
+  // 가장 가까운 아이콘을 바로 활성화한다. 항목이 몇 개뿐이라 이벤트마다 재계산해도 가볍고,
+  // nearestId가 현재 pop과 같으면 setState가 no-op이라 별도 스로틀은 필요 없다.
+  // ponytail: 네이티브 scroll-snap 관성이 자리를 잡는 동안 이 프로그램적 리센터가 살짝 겹쳐
+  // 보일 수 있음 — 실제로 어색하게 보이면 그때 정지 감지(디바운스/scrollend)로 바꿀 것.
+  const onRailScroll = () => {
+    const rail = railRef.current;
+    if (!rail) return;
+    const railRect = rail.getBoundingClientRect();
+    const center = railRect.left + railRect.width / 2;
+    let nearestId: RailItemId | null = null;
+    let nearestDist = Infinity;
+    itemRefs.current.forEach((el, id) => {
+      const r = el.getBoundingClientRect();
+      const dist = Math.abs(r.left + r.width / 2 - center);
+      if (dist < nearestDist) {
+        nearestDist = dist;
+        nearestId = id;
+      }
+    });
+    if (nearestId) setPop(nearestId);
+  };
+
   return (
     <div className="space-y-3">
-      <div className="flex items-start justify-center gap-6">
+      <div
+        ref={railRef}
+        onScroll={onRailScroll}
+        // 50%-28px: 아이콘 원(44px) 절반을 근사한 패딩 — 양끝 항목도 중앙까지 스크롤될 여유를 준다.
+        className="flex items-start gap-6 overflow-x-auto snap-x snap-mandatory px-[calc(50%-28px)] pb-1 [scrollbar-width:thin]"
+      >
         {visibleItems.map((it) => (
           <RailIconButton
             key={it.id}
+            id={it.id}
             icon={it.icon}
             label={it.label}
             selected={pop === it.id}
             ringColor={ringColor}
             onClick={() => toggle(it.id)}
+            onRef={setItemRef}
           />
         ))}
       </div>
