@@ -7,15 +7,12 @@
  *     동일 — 즉 Poster는 opacity 래퍼 바깥에 있다(posterOpacity/밝기와 분리).
  */
 import React from 'react';
+import type { ComponentType } from 'react';
 import { describe, expect, test } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { Mood35mm } from '../src/components/moods/Mood35mm';
-import { MoodCriterion } from '../src/components/moods/MoodCriterion';
-import { MoodEditorial } from '../src/components/moods/MoodEditorial';
-import { MoodMinimal } from '../src/components/moods/MoodMinimal';
-import { MoodStub } from '../src/components/moods/MoodStub';
-import { Mood35mmLandscape } from '../src/components/moods/Mood35mmLandscape';
 import type { MovieInfo, TicketComponents } from '../src/types';
+import { ALL_MOODS } from './setup/moods';
+import type { MoodProps } from '../src/components/moods/_shared';
 
 const MOVIE: MovieInfo = {
   title: 'TITLE', titleOg: 'ORIGINAL', releaseDate: '2026-05-01',
@@ -32,16 +29,7 @@ const BASE: TicketComponents = {
   chainVisible: true, formatVisible: true, chainScale: 1, formatScale: 1,
 };
 
-const MOODS = [
-  ['minimal', MoodMinimal],
-  ['35mm', Mood35mm],
-  ['criterion', MoodCriterion],
-  ['editorial', MoodEditorial],
-  ['stub', MoodStub],
-  ['35mm-landscape', Mood35mmLandscape],
-] as const;
-
-function render(Mood: typeof MoodMinimal, componentOpacity: number) {
+function render(Mood: ComponentType<MoodProps>, componentOpacity: number) {
   return renderToStaticMarkup(
     <Mood
       movieInfo={MOVIE}
@@ -54,20 +42,20 @@ function render(Mood: typeof MoodMinimal, componentOpacity: number) {
 const POSTER_IMG = /<img[^>]*crossorigin="anonymous"[^>]*>/;
 
 describe('#219 componentOpacity', () => {
-  test.each(MOODS)('%s: opacity 1·0.5 둘 다 throw 없이 렌더', (_layout, Mood) => {
-    expect(() => render(Mood as typeof MoodMinimal, 1)).not.toThrow();
-    expect(() => render(Mood as typeof MoodMinimal, 0.5)).not.toThrow();
+  test.each(ALL_MOODS)('%s: opacity 1·0.5 둘 다 throw 없이 렌더', (_layout, Mood) => {
+    expect(() => render(Mood, 1)).not.toThrow();
+    expect(() => render(Mood, 0.5)).not.toThrow();
   });
 
-  test.each(MOODS)('%s: componentOpacity가 마크업에 반영(1 ≠ 0.5)', (_layout, Mood) => {
-    expect(render(Mood as typeof MoodMinimal, 1)).not.toBe(
-      render(Mood as typeof MoodMinimal, 0.5)
+  test.each(ALL_MOODS)('%s: componentOpacity가 마크업에 반영(1 ≠ 0.5)', (_layout, Mood) => {
+    expect(render(Mood, 1)).not.toBe(
+      render(Mood, 0.5)
     );
   });
 
-  test.each(MOODS)('%s: 포스터 <img>는 componentOpacity와 무관(래퍼 바깥)', (_layout, Mood) => {
-    const img1 = render(Mood as typeof MoodMinimal, 1).match(POSTER_IMG)?.[0];
-    const img05 = render(Mood as typeof MoodMinimal, 0.5).match(POSTER_IMG)?.[0];
+  test.each(ALL_MOODS)('%s: 포스터 <img>는 componentOpacity와 무관(래퍼 바깥)', (_layout, Mood) => {
+    const img1 = render(Mood, 1).match(POSTER_IMG)?.[0];
+    const img05 = render(Mood, 0.5).match(POSTER_IMG)?.[0];
     expect(img1).toBeTruthy();
     expect(img05).toBe(img1);
   });

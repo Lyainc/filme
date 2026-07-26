@@ -1,15 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { ComponentType } from 'react';
-import { MoodMinimal } from '../src/components/moods/MoodMinimal';
-import { MoodCriterion } from '../src/components/moods/MoodCriterion';
-import { Mood35mm } from '../src/components/moods/Mood35mm';
-import { MoodEditorial } from '../src/components/moods/MoodEditorial';
-import { MoodStub } from '../src/components/moods/MoodStub';
-import { Mood35mmLandscape } from '../src/components/moods/Mood35mmLandscape';
 import type { LayoutId } from '../src/types';
 import type { MoodProps } from '../src/components/moods/_shared';
 import { FULL_MOVIE, makeMoodBase } from './fixtures';
+import { ALL_MOODS } from './setup/moods';
 
 /**
  * 서명 텍스트 폰트 정합(#494) — 6무드 전부 라틴 서명은 'collected by' 라벨과 같은 FONT_DISPLAY
@@ -17,14 +12,6 @@ import { FULL_MOVIE, makeMoodBase } from './fixtures';
  * 이식 전엔 Minimal·Editorial·Stub이 양쪽 다 FONT_KR(Pretendard)이었고, 35mm 계열은 반대로
  * 양쪽 다 FONT_QUOTE_KR이라 라틴이 어긋나 있었다.
  */
-const MOODS: [LayoutId, ComponentType<MoodProps>][] = [
-  ['minimal', MoodMinimal],
-  ['criterion', MoodCriterion],
-  ['35mm', Mood35mm],
-  ['editorial', MoodEditorial],
-  ['stub', MoodStub],
-  ['35mm-landscape', Mood35mmLandscape],
-];
 
 const KR = '영화수집가';
 const LATIN = 'Alex Carter';
@@ -43,7 +30,7 @@ function markup(Mood: ComponentType<MoodProps>, layout: LayoutId, signature: str
 }
 
 describe('서명 텍스트 폰트 정합 (#494)', () => {
-  for (const [layout, Mood] of MOODS) {
+  for (const [layout, Mood] of ALL_MOODS) {
     // weight 400 고정도 같이 본다 — 두 폰트 다 단일 웨이트라 600/500 상속이 남으면 합성 볼드로
     // 라벨과 톤이 다시 갈린다.
     test(`${layout} — 한글 서명은 FONT_QUOTE_KR(손글씨)`, () => {

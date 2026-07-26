@@ -11,12 +11,8 @@
 import { describe, expect, test, beforeEach, afterEach } from 'bun:test';
 import { render, cleanup } from '@testing-library/react';
 import { stubImgNaturalBySrc } from './setup/posterStubs';
-import { Mood35mm } from '../src/components/moods/Mood35mm';
-import { MoodCriterion } from '../src/components/moods/MoodCriterion';
-import { MoodMinimal } from '../src/components/moods/MoodMinimal';
-import { MoodStub } from '../src/components/moods/MoodStub';
-import { Mood35mmLandscape } from '../src/components/moods/Mood35mmLandscape';
 import type { MovieInfo, TicketComponents } from '../src/types';
+import { ALL_MOODS } from './setup/moods';
 
 const DIMENSIONS: Record<string, [number, number]> = {
   'blob:chain-tall': [60, 240], // aspect 0.25 — delta +14
@@ -51,13 +47,8 @@ const BASE: TicketComponents = {
   chainVisible: true, formatVisible: true, chainScale: 1, formatScale: 1,
 };
 
-const MOODS = [
-  ['stub', MoodStub],
-  ['criterion', MoodCriterion],
-  ['35mm', Mood35mm],
-  ['35mm-landscape', Mood35mmLandscape],
-  ['minimal', MoodMinimal],
-] as const;
+// Editorial은 세로 스택 + dot 구분이라 StampRow 대상이 아니다(파일 상단 참고).
+const MOODS = ALL_MOODS.filter(([id]) => id !== 'editorial');
 
 describe('#505 StampRow 구분선 정렬', () => {
   test.each(MOODS)('%s: 구분선 높이가 두 스탬프의 실제 렌더 높이 중 큰 값과 일치', (_name, Mood) => {

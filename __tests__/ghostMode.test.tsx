@@ -18,6 +18,7 @@ import { MoodStub } from '../src/components/moods/MoodStub';
 import { Mood35mmLandscape } from '../src/components/moods/Mood35mmLandscape';
 import { showFieldGhost, stampWillRender } from '../src/components/moods/_shared';
 import type { MovieInfo, TicketComponents, TicketField, LayoutId } from '../src/types';
+import { ALL_MOODS } from './setup/moods';
 
 const FIELDS: TicketField[] = [
   'title', 'titleOg', 'actors', 'watchDate', 'watchTime', 'theater', 'screen',
@@ -46,15 +47,6 @@ const BASE: TicketComponents = {
   material: 'original', coating: 'gloss', materialIntensity: 1, coatingIntensity: 1, posterOpacity: 0.5, componentOpacity: 1, themeColor: '#FFFFFF',
   chainVisible: false, formatVisible: false, chainScale: 1, formatScale: 1,
 };
-
-const MOODS = [
-  ['minimal', MoodMinimal],
-  ['35mm', Mood35mm],
-  ['criterion', MoodCriterion],
-  ['editorial', MoodEditorial],
-  ['stub', MoodStub],
-  ['35mm-landscape', Mood35mmLandscape],
-] as const;
 
 type MoodFn = React.ComponentType<{
   movieInfo: MovieInfo;
@@ -89,26 +81,26 @@ function countGhosts(html: string): number {
 }
 
 describe('ghost mode field placeholders (#216)', () => {
-  test.each(MOODS)('%s: ghost=true + 빈 필드 → dashed 자리표시자 + TITLE 힌트 등장', (layout, Mood) => {
+  test.each(ALL_MOODS)('%s: ghost=true + 빈 필드 → dashed 자리표시자 + TITLE 힌트 등장', (layout, Mood) => {
     const html = render(Mood, layout, EMPTY_MOVIE, {}, true);
     expect(countGhosts(html)).toBeGreaterThan(0);
     // 모든 무드 공통: 제목 슬롯 아톰 ghost의 "TITLE" 힌트.
     expect(html).toContain('TITLE');
   });
 
-  test.each(MOODS)('%s: ghost=false → 어떤 placeholder도 없음(스탬프 off)', (layout, Mood) => {
+  test.each(ALL_MOODS)('%s: ghost=false → 어떤 placeholder도 없음(스탬프 off)', (layout, Mood) => {
     const html = render(Mood, layout, EMPTY_MOVIE, {}, false);
     expect(countGhosts(html)).toBe(0);
   });
 
-  test.each(MOODS)('%s: ghost=undefined(데스크톱) → 필드 placeholder 없음', (layout, Mood) => {
+  test.each(ALL_MOODS)('%s: ghost=undefined(데스크톱) → 필드 placeholder 없음', (layout, Mood) => {
     const html = render(Mood, layout, EMPTY_MOVIE, {}, undefined);
     // 스탬프 off라 아무 placeholder도 없어야 하고, 특히 필드 힌트(CAST/SIGNATURE/TITLE)가 없어야 함.
     expect(countGhosts(html)).toBe(0);
     expect(html).not.toContain('SIGNATURE');
   });
 
-  test.each(MOODS)('%s: 값이 채워진 필드는 ghost=true여도 placeholder 없음', (layout, Mood) => {
+  test.each(ALL_MOODS)('%s: 값이 채워진 필드는 ghost=true여도 placeholder 없음', (layout, Mood) => {
     // 스탬프도 "값 있음+노출 on"으로 채운다 — 노출 off 스탬프는 이제 ghost 모드에서 dim
     // placeholder로 남는 게 스펙이라(#369), off로 두면 이 "placeholder 0" 전제가 안 선다.
     const html = render(Mood, layout, FULL_MOVIE, { chainVisible: true, formatVisible: true, chainLabel: 'CGV', formatLabel: 'IMAX' }, true);
@@ -122,7 +114,7 @@ describe('ghost mode hidden-field ghost (#266 PR-A — 목록 없이 재켜기)'
   // ghost 모드에선 재켜기용 '+ 라벨' 점선이 떠야 한다(#266 확정 방향 (a)).
   const HIDE_TITLEOG = { ...ALL_ON, titleOg: false };
 
-  test.each(MOODS)('%s: 숨긴 titleOg + 값 있음 + ghost=true → ORIGINAL TITLE ghost 하나만 등장', (layout, Mood) => {
+  test.each(ALL_MOODS)('%s: 숨긴 titleOg + 값 있음 + ghost=true → ORIGINAL TITLE ghost 하나만 등장', (layout, Mood) => {
     // 스탬프는 "값 있음+노출 on"으로 채워 placeholder 셈에서 제외(#369 — off 스탬프는 dim ghost가 뜬다).
     const html = render(Mood, layout, FULL_MOVIE, { chainVisible: true, formatVisible: true, chainLabel: 'CGV', formatLabel: 'IMAX' }, true, HIDE_TITLEOG);
     expect(html).toContain('ORIGINAL TITLE');
@@ -133,7 +125,7 @@ describe('ghost mode hidden-field ghost (#266 PR-A — 목록 없이 재켜기)'
   });
 
   // 데스크톱 픽셀 보존 불변식(:103 확장) — 숨긴 필드가 있어도 ghost=undefined면 placeholder 0.
-  test.each(MOODS)('%s: 숨긴 titleOg + ghost=undefined(데스크톱) → 필드 placeholder 0', (layout, Mood) => {
+  test.each(ALL_MOODS)('%s: 숨긴 titleOg + ghost=undefined(데스크톱) → 필드 placeholder 0', (layout, Mood) => {
     const html = render(Mood, layout, FULL_MOVIE, {}, undefined, HIDE_TITLEOG);
     expect(countGhosts(html)).toBe(0);
     expect(html).not.toContain('ORIGINAL TITLE');
@@ -154,27 +146,27 @@ describe('ghost/visibility 4칸 매트릭스 (#369 옵션 B)', () => {
   const DIM = 'data-ghost-dim="true"';
   const HIDE_TITLEOG = { ...ALL_ON, titleOg: false };
 
-  test.each(MOODS)('%s: 없음+on → 일반 placeholder(dim 아님)', (layout, Mood) => {
+  test.each(ALL_MOODS)('%s: 없음+on → 일반 placeholder(dim 아님)', (layout, Mood) => {
     // 스탬프도 노출 on(라벨 없음 → 일반 LOGO/FORMAT placeholder)으로 — off면 dim이 떠서 전제가 안 선다.
     const html = render(Mood, layout, EMPTY_MOVIE, { chainVisible: true, formatVisible: true }, true);
     expect(html).not.toContain(DIM);
   });
 
-  test.each(MOODS)('%s: 없음+off → dim placeholder(eye-off), 값 배지 없음', (layout, Mood) => {
+  test.each(ALL_MOODS)('%s: 없음+off → dim placeholder(eye-off), 값 배지 없음', (layout, Mood) => {
     const html = render(Mood, layout, { ...EMPTY_MOVIE, isReissue: false }, {}, true, HIDE_TITLEOG);
     expect(html).toContain(DIM);
     // 값 배지(accent 점)는 값이 있을 때만.
     expect(html).not.toContain('background:var(--accent)');
   });
 
-  test.each(MOODS)('%s: 있음+off → dim placeholder + 값 존재 점 배지, 값 텍스트는 안 샘', (layout, Mood) => {
+  test.each(ALL_MOODS)('%s: 있음+off → dim placeholder + 값 존재 점 배지, 값 텍스트는 안 샘', (layout, Mood) => {
     const html = render(Mood, layout, FULL_MOVIE, {}, true, HIDE_TITLEOG);
     expect(html).toContain(DIM);
     expect(html).toContain('background:var(--accent)');
     expect(html).not.toContain(FULL_MOVIE.titleOg);
   });
 
-  test.each(MOODS)('%s: 데스크톱(ghost=undefined)은 dim 경로 자체가 없음(픽셀 보존)', (layout, Mood) => {
+  test.each(ALL_MOODS)('%s: 데스크톱(ghost=undefined)은 dim 경로 자체가 없음(픽셀 보존)', (layout, Mood) => {
     const html = render(Mood, layout, FULL_MOVIE, {}, undefined, HIDE_TITLEOG);
     expect(html).not.toContain(DIM);
   });
@@ -197,20 +189,20 @@ describe('ghost/visibility 4칸 매트릭스 (#369 옵션 B)', () => {
 
 describe('ghost mode stamp gating (#216)', () => {
   // 스탬프 placeholder는 ghost !== false일 때 렌더. chainVisible=true + 이미지/라벨 없음.
-  test.each(MOODS)('%s: ghost=undefined(데스크톱) → 스탬프 placeholder 유지', (layout, Mood) => {
+  test.each(ALL_MOODS)('%s: ghost=undefined(데스크톱) → 스탬프 placeholder 유지', (layout, Mood) => {
     const html = render(Mood, layout, EMPTY_MOVIE, { chainVisible: true, formatVisible: true }, undefined);
     expect(html).toContain(HIDE_ON_EXPORT);
     expect(html).toContain('LOGO');
     expect(html).toContain('FORMAT');
   });
 
-  test.each(MOODS)('%s: ghost=true → 스탬프 placeholder 유지', (layout, Mood) => {
+  test.each(ALL_MOODS)('%s: ghost=true → 스탬프 placeholder 유지', (layout, Mood) => {
     const html = render(Mood, layout, EMPTY_MOVIE, { chainVisible: true, formatVisible: true }, true);
     expect(html).toContain('LOGO');
     expect(html).toContain('FORMAT');
   });
 
-  test.each(MOODS)('%s: ghost=false → 스탬프 placeholder 숨김', (layout, Mood) => {
+  test.each(ALL_MOODS)('%s: ghost=false → 스탬프 placeholder 숨김', (layout, Mood) => {
     const html = render(Mood, layout, EMPTY_MOVIE, { chainVisible: true, formatVisible: true }, false);
     expect(html).not.toContain('LOGO');
     expect(html).not.toContain('FORMAT');
@@ -222,7 +214,7 @@ describe('ghost mode stamp divider gating (#216 P1.1)', () => {
   // 구분선 <span>은 인라인 스타일 `width:1px`가 유일 시그니처(무드별 vertical divider 전용).
   const DIVIDER = 'width:1px';
 
-  test.each(MOODS)('%s: ghost=undefined(데스크톱) + 로고 없음 → 스탬프 placeholder + 구분선 유지', (layout, Mood) => {
+  test.each(ALL_MOODS)('%s: ghost=undefined(데스크톱) + 로고 없음 → 스탬프 placeholder + 구분선 유지', (layout, Mood) => {
     const html = render(Mood, layout, EMPTY_MOVIE, { chainVisible: true, formatVisible: true }, undefined);
     expect(countGhosts(html)).toBe(2); // LOGO + FORMAT placeholder
     expect(html).toContain(DIVIDER);
@@ -230,7 +222,7 @@ describe('ghost mode stamp divider gating (#216 P1.1)', () => {
 
   // Editorial 스텁(마스터 #281)은 admis·le billet 구조 구분선이 항상 있어 '구분선 0'이 성립하지 않는다.
   // 여기선 스탬프 divider만 검증하는 다른 5무드를 대상으로 하고, Editorial은 아래에서 별도 검증한다.
-  const NON_EDITORIAL = MOODS.filter(([id]) => id !== 'editorial');
+  const NON_EDITORIAL = ALL_MOODS.filter(([id]) => id !== 'editorial');
   test.each(NON_EDITORIAL)('%s: ghost=false + 로고 없음 → 두 스탬프 null → 구분선도 사라짐', (layout, Mood) => {
     const html = render(Mood, layout, EMPTY_MOVIE, { chainVisible: true, formatVisible: true }, false);
     expect(html).not.toContain(DIVIDER);
