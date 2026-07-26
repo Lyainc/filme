@@ -12,6 +12,11 @@
  *     전 무드 노출. 토글은 크롭 프레임 비율만 정하고(ON=자연비, OFF=포스터 표준 0.667),
  *     렌더 설정으로는 안 새어나간다 — 그래서 재크롭은 표준 프리셋으로 연다.
  *  5) 크롭 출력 해상도가 POSTER_RATIO와 정합(#525) — 갈리면 drawImage가 크롭을 늘여 그린다.
+ *  6) 표준 프리셋의 **방향**이 무드의 포스터 슬롯을 따른다(#529) — 캔버스 방향이 아니다.
+ *
+ * #529 테스트를 새 파일로 안 뺀 이유: 여기가 이미 ImageCropModal을 실물로 렌더하는 harness이고,
+ * bun의 mock.module은 파일 간 격리가 안 돼서(다른 파일이 ImageCropModal·imageCrop을 스텁으로
+ * 갈아끼운다) 새 파일에선 실행 순서에 따라 스텁이 잡힌다.
  *
  * ImageCropModal이 렌더하는 <img>에 직접 load 이벤트를 흘려(naturalWidth/naturalHeight를
  * defineProperty로 스텁) 실제 react-image-crop을 그대로 태운다 — 라이브러리를 목킹하지 않고
@@ -24,7 +29,8 @@ import { useState } from 'react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { centerCrop, convertToPixelCrop, makeAspectCrop } from 'react-image-crop';
-import { POSTER_HEIGHT, POSTER_RATIO } from '@/utils/constants';
+import { POSTER_HEIGHT, POSTER_LANDSCAPE_RATIO, POSTER_RATIO, posterOutputSize } from '@/utils/constants';
+import { LAYOUTS } from '@/utils/layouts';
 import type { Area } from '@/utils/imageCrop';
 
 mock.module('@/utils/imageCrop', () => ({
@@ -255,5 +261,59 @@ describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
     await user.click(await screen.findByRole('button', { name: '재크롭' }));
     const checkbox = (await screen.findByRole('checkbox')) as HTMLInputElement;
     expect(checkbox.checked).toBe(false);
+  });
+});
+
+describe('가로 포스터 슬롯 크롭 프리셋 (#529)', () => {
+  test('35mm Wide → 크롭 프레임이 3:2(POSTER_LANDSCAPE_RATIO)', () => {
+    render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} layout="35mm-landscape" />);
+    loadImage(1200, 800);
+    expect(aspectOf(screen.getByTestId('crop-frame'))).toBeCloseTo(POSTER_LANDSCAPE_RATIO, 5);
+  });
+
+  // 이 프로젝트가 실제로 틀리기 쉬운 지점: editorial은 **캔버스**가 가로다. 캔버스 방향으로
+  // 판정하면 여기서 3:2가 나오고, 640×960(0.667) 포스터 컬럼의 레터박스 0이 깨진다.
+  test('editorial은 캔버스가 가로여도 포스터 컬럼이 0.667이라 세로 프리셋', () => {
+    expect(LAYOUTS.find((l) => l.id === 'editorial')!.orientation).toBe('landscape');
+    render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} layout="editorial" />);
+    loadImage(1200, 800);
+    expect(aspectOf(screen.getByTestId('crop-frame'))).toBeCloseTo(POSTER_RATIO, 5);
+  });
+
+  test('세로 무드 4종은 기존 POSTER_RATIO 경로 그대로(회귀 없음)', () => {
+    for (const id of ['minimal', 'criterion', '35mm', 'stub'] as const) {
+      render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} layout={id} />);
+      loadImage(1200, 800);
+      expect(aspectOf(screen.getByTestId('crop-frame'))).toBeCloseTo(POSTER_RATIO, 5);
+      cleanup();
+    }
+  });
+
+  test('가로 포스터 슬롯은 35mm Wide 하나 — 캔버스 가로 2종과 다른 축', () => {
+    expect(LAYOUTS.filter((l) => l.posterOrientation === 'landscape').map((l) => l.id)).toEqual(['35mm-landscape']);
+    expect(LAYOUTS.filter((l) => l.orientation === 'landscape')).toHaveLength(2);
+  });
+
+  test('가로 무드에서도 "원본 비율 보존" 토글이 자연비 ↔ 3:2를 전환한다', () => {
+    render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} layout="35mm-landscape" />);
+    loadImage(1200, 800);
+    fireEvent.click(screen.getByRole('checkbox'));
+    expect(aspectOf(screen.getByTestId('crop-frame'))).toBeCloseTo(1200 / 800, 5);
+    fireEvent.click(screen.getByRole('checkbox'));
+    expect(aspectOf(screen.getByTestId('crop-frame'))).toBeCloseTo(POSTER_LANDSCAPE_RATIO, 5);
+  });
+});
+
+// 출력 해상도가 프리셋 비율과 갈리면 drawImage가 크롭을 늘여 그린다(#525와 같은 사유).
+// 리터럴로 못 박는 게 요점 — 파생식끼리 비교하면 항진명제가 된다.
+describe('크롭 출력 해상도가 크롭 방향을 따른다 (#529 결정 3)', () => {
+  test('가로 크롭 → 1440×960, 세로 크롭 → 960×1440', () => {
+    expect(posterOutputSize({ width: 3000, height: 2000 })).toEqual({ width: 1440, height: 960 });
+    expect(posterOutputSize({ width: 2000, height: 3000 })).toEqual({ width: 960, height: 1440 });
+  });
+
+  test('가로 프리셋 비율이 정확히 1.5(세로 표준의 역수)', () => {
+    expect(POSTER_LANDSCAPE_RATIO).toBeCloseTo(1.5, 10);
+    expect(POSTER_LANDSCAPE_RATIO).toBeCloseTo(1 / POSTER_RATIO, 10);
   });
 });
