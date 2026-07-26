@@ -1,15 +1,14 @@
 import React from 'react';
+import type { ComponentType } from 'react';
 import { describe, expect, test } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { Mood35mm } from '../src/components/moods/Mood35mm';
-import { MoodCriterion } from '../src/components/moods/MoodCriterion';
 import { MoodEditorial } from '../src/components/moods/MoodEditorial';
 import { MoodMinimal } from '../src/components/moods/MoodMinimal';
-import { MoodStub } from '../src/components/moods/MoodStub';
-import { Mood35mmLandscape } from '../src/components/moods/Mood35mmLandscape';
 import { isInkDark, resolveInk } from '../src/components/moods/_shared';
 import { TONE_FIXED_MOODS } from '../src/constants/fields';
 import type { LayoutId, MovieInfo, TicketComponents } from '../src/types';
+import { ALL_MOODS } from './setup/moods';
+import type { MoodProps } from '../src/components/moods/_shared';
 
 // #8E4E69: 중간 톤 보라. luminance ≈ 0.12 < 0.18 이라 isInkDark=true 로 분류되지만,
 // 사용자가 고른 색이므로 ink로 그대로 반영돼야 한다(이전엔 '#0d0c0a'로 묻혔다, #177).
@@ -35,7 +34,7 @@ const BASE: TicketComponents = {
   chainVisible: false, formatVisible: false,
 } as TicketComponents;
 
-function markup(Mood: typeof MoodMinimal, layout: TicketComponents['layout']) {
+function markup(Mood: ComponentType<MoodProps>, layout: TicketComponents['layout']) {
   return renderToStaticMarkup(
     <Mood movieInfo={MOVIE} components={{ ...BASE, layout }} croppedImageUrl="blob:test" />
   ).toLowerCase();
@@ -81,20 +80,11 @@ describe('#177 어두운 유채색 ink 반영', () => {
   });
 
   test('어떤 무드도 유효 hex 에서 throw 하지 않는다', () => {
-    for (const Mood of [MoodMinimal, Mood35mm, MoodCriterion, MoodEditorial, MoodStub, Mood35mmLandscape]) {
-      expect(() => markup(Mood as typeof MoodMinimal, BASE.layout)).not.toThrow();
+    for (const [, Mood] of ALL_MOODS) {
+      expect(() => markup(Mood, BASE.layout)).not.toThrow();
     }
   });
 });
-
-const MOODS = [
-  ['minimal', MoodMinimal],
-  ['criterion', MoodCriterion],
-  ['35mm', Mood35mm],
-  ['editorial', MoodEditorial],
-  ['stub', MoodStub],
-  ['35mm-landscape', Mood35mmLandscape],
-] as const;
 
 /**
  * TONE_FIXED_MOODS 표-대-렌더 대조(#524) — 표가 렌더 동작과 어긋나면 두 방향 모두 사용자에게
@@ -103,8 +93,8 @@ const MOODS = [
  * 같이 고쳤는지 여기서 잡는다(launcherFieldGating의 "런처 필드 = 무드 렌더 필드"와 같은 성격).
  */
 describe('TONE_FIXED_MOODS = themeColor를 안 읽는 무드 (#524)', () => {
-  test.each(MOODS)('%s', (layout, Mood) => {
-    const ignoresTheme = markup(Mood as typeof MoodMinimal, layout as LayoutId) === renderToStaticMarkup(
+  test.each(ALL_MOODS)('%s', (layout, Mood) => {
+    const ignoresTheme = markup(Mood, layout as LayoutId) === renderToStaticMarkup(
       <Mood movieInfo={MOVIE} components={{ ...BASE, layout, themeColor: '#FFFFFF' }} croppedImageUrl="blob:test" />
     ).toLowerCase();
     expect(ignoresTheme).toBe(TONE_FIXED_MOODS.has(layout as LayoutId));

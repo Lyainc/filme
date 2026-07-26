@@ -21,6 +21,7 @@ import { MoodMinimal } from '../src/components/moods/MoodMinimal';
 import { MoodStub } from '../src/components/moods/MoodStub';
 import type { MovieInfo, TicketComponents, TicketField } from '../src/types';
 import { FIELD_SHEET_TYPE, isStampTarget, type SheetTarget } from '../src/constants/fields';
+import { ALL_MOODS } from './setup/moods';
 
 const FIELDS: TicketField[] = [
   'title', 'titleOg', 'actors', 'watchDate', 'watchTime', 'theater', 'screen',
@@ -53,19 +54,10 @@ type MoodFn = React.ComponentType<{
   onPosterTap?: () => void;
 }>;
 
-const MOODS: [string, MoodFn][] = [
-  ['minimal', MoodMinimal],
-  ['35mm', Mood35mm],
-  ['criterion', MoodCriterion],
-  ['editorial', MoodEditorial],
-  ['stub', MoodStub],
-  ['35mm-landscape', Mood35mmLandscape],
-];
-
 afterEach(cleanup);
 
 describe('온-티켓 필드 탭 (#259)', () => {
-  for (const [id, Mood] of MOODS) {
+  for (const [id, Mood] of ALL_MOODS) {
     test(`${id}: 제목 탭 → onField('title')`, () => {
       const calls: SheetTarget[] = [];
       render(

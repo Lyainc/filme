@@ -9,6 +9,7 @@
  * 포스터 표준 0.667로 서므로, 슬롯 비율과 어긋나 남는 여백은 항상 blur 배경이 덮는다(룰 3·5).
  */
 import { describe, expect, test } from 'bun:test';
+import type { ComponentType } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Mood35mm } from '../src/components/moods/Mood35mm';
 import { Mood35mmLandscape } from '../src/components/moods/Mood35mmLandscape';
@@ -19,6 +20,8 @@ import { MoodStub } from '../src/components/moods/MoodStub';
 import { POSTER_FRAME_INSET_Y } from '../src/components/moods/_shared';
 import { POSTER_FILL_MOODS } from '../src/constants/fields';
 import type { MovieInfo, TicketComponents } from '../src/types';
+import { ALL_MOODS } from './setup/moods';
+import type { MoodProps } from '../src/components/moods/_shared';
 
 const MOVIE: MovieInfo = {
   title: 'TITLE', titleOg: 'ORIGINAL', releaseDate: '2026-05-01',
@@ -35,7 +38,7 @@ const BASE: TicketComponents = {
   chainVisible: true, formatVisible: true, chainScale: 1, formatScale: 1,
 };
 
-function render(Mood: typeof MoodMinimal, over: Partial<TicketComponents> = {}) {
+function render(Mood: ComponentType<MoodProps>, over: Partial<TicketComponents> = {}) {
   return renderToStaticMarkup(
     <Mood
       movieInfo={MOVIE}
@@ -48,13 +51,7 @@ function render(Mood: typeof MoodMinimal, over: Partial<TicketComponents> = {}) 
 // posterFitProps(풀블리드 슬롯 계약)를 태우는 무드 전부 — 이 파일의 표-기반 검증이 전부 이 하나를
 // 돈다(목록이 갈리면 새 무드가 어느 한 검증에서만 조용히 빠진다). 35mm Wide는 계약 밖(고정 비율
 // 컷, cover 하드코딩)이라 아래 #524 describe가 따로 잡는다.
-const POSTER_FIT_MOODS = [
-  ['minimal', MoodMinimal],
-  ['criterion', MoodCriterion],
-  ['35mm', Mood35mm],
-  ['editorial', MoodEditorial],
-  ['stub', MoodStub],
-] as const;
+const POSTER_FIT_MOODS = ALL_MOODS.filter(([id]) => id !== '35mm-landscape');
 
 // 전경 포스터 <img> 특정 — 배경 blur <img>(data-poster-bg, object-position 없음)가
 // 앞서므로 object-position을 가진 전경만 잡는다(#440 레터박스 blur 배경).

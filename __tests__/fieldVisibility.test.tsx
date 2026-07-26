@@ -1,13 +1,9 @@
 import React from 'react';
 import { describe, expect, test } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { Mood35mm } from '../src/components/moods/Mood35mm';
-import { MoodCriterion } from '../src/components/moods/MoodCriterion';
 import { MoodEditorial } from '../src/components/moods/MoodEditorial';
-import { MoodMinimal } from '../src/components/moods/MoodMinimal';
-import { MoodStub } from '../src/components/moods/MoodStub';
-import { Mood35mmLandscape } from '../src/components/moods/Mood35mmLandscape';
 import type { MovieInfo, TicketComponents, TicketField, LayoutId } from '../src/types';
+import { ALL_MOODS } from './setup/moods';
 
 const FIELDS: TicketField[] = [
   'title',
@@ -71,15 +67,6 @@ const BASE_COMPONENTS: TicketComponents = {
   formatScale: 1,
 };
 
-const MOODS = [
-  ['minimal', MoodMinimal],
-  ['35mm', Mood35mm],
-  ['criterion', MoodCriterion],
-  ['editorial', MoodEditorial],
-  ['stub', MoodStub],
-  ['35mm-landscape', Mood35mmLandscape],
-] as const;
-
 const DATA_TOKENS = [
   'TITLE',
   'ORIGINAL',
@@ -117,7 +104,7 @@ function renderMood(
 }
 
 describe('fieldVisibility mood rendering', () => {
-  test.each(MOODS)('%s hides data fields when every field is off', (layout, Mood) => {
+  test.each(ALL_MOODS)('%s hides data fields when every field is off', (layout, Mood) => {
     const text = renderMood(Mood, layout, ALL_OFF);
 
     for (const token of DATA_TOKENS) {

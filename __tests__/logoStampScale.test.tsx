@@ -9,20 +9,18 @@
  *     컴포넌트 필드와 원자 복원하는지(스펙 s4) 훅 레벨로 검증한다.
  */
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
+import type { ComponentType } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { render, screen, cleanup, fireEvent, renderHook, act, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MINIMAL_STAMP_MAX_SCALE, MoodMinimal } from '../src/components/moods/MoodMinimal';
-import { Mood35mm } from '../src/components/moods/Mood35mm';
-import { MoodCriterion } from '../src/components/moods/MoodCriterion';
-import { MoodEditorial } from '../src/components/moods/MoodEditorial';
-import { MoodStub } from '../src/components/moods/MoodStub';
-import { Mood35mmLandscape } from '../src/components/moods/Mood35mmLandscape';
 import { STAMP_MAX_ASPECT } from '../src/components/moods/_shared';
 import { DesignRail } from '../src/components/v2/DesignRail';
 import { DesktopDesignPanel } from '../src/components/v2/DesktopDesignPanel';
 import { usePhototicket, type HistorySnapshot } from '../src/hooks/usePhototicket';
 import type { MovieInfo, TicketComponents } from '../src/types';
+import { ALL_MOODS } from './setup/moods';
+import type { MoodProps } from '../src/components/moods/_shared';
 
 const MOVIE: MovieInfo = {
   title: 'TITLE', titleOg: 'ORIGINAL', releaseDate: '2026-05-01',
@@ -72,16 +70,7 @@ describe('#441 chainScale/formatScale — 정적 마크업 반영 (MoodMinimal)'
   });
 });
 
-const MOODS = [
-  ['minimal', MoodMinimal],
-  ['35mm', Mood35mm],
-  ['criterion', MoodCriterion],
-  ['editorial', MoodEditorial],
-  ['stub', MoodStub],
-  ['35mm-landscape', Mood35mmLandscape],
-] as const;
-
-function renderMood(Mood: typeof MoodMinimal, chainScale: number, formatScale: number) {
+function renderMood(Mood: ComponentType<MoodProps>, chainScale: number, formatScale: number) {
   return renderToStaticMarkup(
     <Mood
       movieInfo={MOVIE}
@@ -92,9 +81,9 @@ function renderMood(Mood: typeof MoodMinimal, chainScale: number, formatScale: n
 }
 
 describe('#441 6개 무드 호출부 배선 — scale이 마크업에 반영(1 ≠ 1.3)', () => {
-  test.each(MOODS)('%s: chainScale/formatScale=1.3 마크업이 기본(1)과 다르다', (_layout, Mood) => {
-    const base = renderMood(Mood as typeof MoodMinimal, 1, 1);
-    const scaled = renderMood(Mood as typeof MoodMinimal, 1.3, 1.3);
+  test.each(ALL_MOODS)('%s: chainScale/formatScale=1.3 마크업이 기본(1)과 다르다', (_layout, Mood) => {
+    const base = renderMood(Mood, 1, 1);
+    const scaled = renderMood(Mood, 1.3, 1.3);
     expect(scaled).not.toBe(base);
   });
 });
