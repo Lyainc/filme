@@ -18,6 +18,7 @@ import { MoodEditorial } from '../src/components/moods/MoodEditorial';
 import { MoodStub } from '../src/components/moods/MoodStub';
 import { FULL_MOVIE, makeMoodBase } from './fixtures';
 import type { MovieInfo } from '../src/types';
+import { installFakeCanvasContext } from './setup/canvasStub';
 
 describe('capSeatTokens(#381)', () => {
   test('4토큰 이하는 원문 그대로 둔다', () => {
@@ -66,28 +67,6 @@ describe('usePhototicket.updateMovieInfo — 좌석 캡이 choke point에서 걸
   });
 });
 
-const CHAR_WIDTH_FACTOR = 0.6;
-
-function installFakeCanvasContext() {
-  let currentFont = '400 16px sans-serif';
-  const fakeCtx = {
-    set font(v: string) { currentFont = v; },
-    get font() { return currentFont; },
-    measureText(text: string) {
-      const sizeMatch = /(\d+(?:\.\d+)?)px/.exec(currentFont);
-      const size = sizeMatch ? parseFloat(sizeMatch[1]) : 16;
-      return { width: text.length * size * CHAR_WIDTH_FACTOR };
-    },
-  } as unknown as CanvasRenderingContext2D;
-
-  const original = HTMLCanvasElement.prototype.getContext;
-  HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, kind: string) {
-    return kind === '2d' ? fakeCtx : null;
-  } as typeof HTMLCanvasElement.prototype.getContext;
-
-  return () => { HTMLCanvasElement.prototype.getContext = original; };
-}
-
 function movieWithSeat(seat: string): MovieInfo {
   return { ...FULL_MOVIE, seat };
 }
@@ -97,7 +76,7 @@ describe('MoodEditorial 좌석 폭 맞춤 통합 (#381)', () => {
   afterEach(() => restore?.());
 
   test('짧은 좌석(1~2토큰)은 축소 없이 maxSize(56px) 그대로 렌더된다', () => {
-    restore = installFakeCanvasContext();
+    restore = installFakeCanvasContext().restore;
     // widthAt(56) = 5자 × 56 × 0.6 = 168 <= 260(예산) → 축소 없음.
     const html = renderToStaticMarkup(
       <MoodEditorial movieInfo={movieWithSeat('H1,H2')} components={makeMoodBase('editorial')} croppedImageUrl="blob:x" />,
@@ -106,7 +85,7 @@ describe('MoodEditorial 좌석 폭 맞춤 통합 (#381)', () => {
   });
 
   test('긴 좌석(4토큰)은 예산(260px) 안에 들어오도록 축소된다', () => {
-    restore = installFakeCanvasContext();
+    restore = installFakeCanvasContext().restore;
     // widthAt(size) = 11자 × size × 0.6 = 6.6×size. maxWidth=260 → size<=39에서 fit(39: 257.4, 40: 264).
     const html = renderToStaticMarkup(
       <MoodEditorial movieInfo={movieWithSeat('H1,H2,H3,H4')} components={makeMoodBase('editorial')} croppedImageUrl="blob:x" />,
@@ -118,7 +97,7 @@ describe('MoodEditorial 좌석 폭 맞춤 통합 (#381)', () => {
   // #381 리뷰 P1 — 쉼표 없는 단일 토큰은 capSeatTokens의 개수 캡을 안 타므로, minSize까지
   // 줄여도 폭을 못 맞추면 span 자체의 overflow:hidden + ellipsis가 최종 방어선이어야 한다.
   test('쉼표 없는 긴 단일 토큰은 minSize로 클램프되고 span에 ellipsis 캡이 걸린다', () => {
-    restore = installFakeCanvasContext();
+    restore = installFakeCanvasContext().restore;
     // widthAt(minSize=26) = 30자 × 26 × 0.6 = 468 > 260(예산) → minSize로 클램프.
     const longToken = 'ABCDEFGHIJKLMNOPQRSTUVWXYZABCD';
     const html = renderToStaticMarkup(
@@ -135,7 +114,7 @@ describe('MoodStub 좌석 폭 맞춤 통합 (#381)', () => {
   afterEach(() => restore?.());
 
   test('짧은 좌석(1~2토큰)은 축소 없이 maxSize(48px) 그대로 렌더된다', () => {
-    restore = installFakeCanvasContext();
+    restore = installFakeCanvasContext().restore;
     // widthAt(48) = 5자 × 48 × 0.6 = 144 <= 520(예산) → 축소 없음.
     const html = renderToStaticMarkup(
       <MoodStub movieInfo={movieWithSeat('H1,H2')} components={makeMoodBase('stub')} croppedImageUrl="blob:x" />,
@@ -144,7 +123,7 @@ describe('MoodStub 좌석 폭 맞춤 통합 (#381)', () => {
   });
 
   test('긴 좌석(4토큰, 자릿수 많은 실사용 예)은 예산(520px) 안에 들어오도록 축소된다', () => {
-    restore = installFakeCanvasContext();
+    restore = installFakeCanvasContext().restore;
     // widthAt(size) = 23자 × size × 0.6 = 13.8×size. maxWidth=520 → size<=37에서 fit(37: 510.6, 38: 524.4).
     const html = renderToStaticMarkup(
       <MoodStub movieInfo={movieWithSeat('H1,H2,H3,H4,H5,H6,H7,H8')} components={makeMoodBase('stub')} croppedImageUrl="blob:x" />,
@@ -155,7 +134,7 @@ describe('MoodStub 좌석 폭 맞춤 통합 (#381)', () => {
 
   // #381 리뷰 P1 — Stub도 Editorial과 동일하게 쉼표 없는 단일 토큰에 대한 최종 방어선이 필요하다.
   test('쉼표 없는 긴 단일 토큰은 minSize로 클램프되고 SEAT 칩 span에 ellipsis 캡이 걸린다', () => {
-    restore = installFakeCanvasContext();
+    restore = installFakeCanvasContext().restore;
     // widthAt(minSize=24) = 38자 × 24 × 0.6 = 547.2 > 520(예산) → minSize로 클램프.
     const longToken = 'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKL';
     const html = renderToStaticMarkup(
