@@ -205,7 +205,7 @@ const MOOD_CHIP_BG: Record<LayoutId, string> = {
   // 35mm Wide는 좌우 분할이 아니라 **가로 밴드 + 넓은 컷 / 좁은 크레딧 컷**이 실루엣이다.
   '35mm': `linear-gradient(90deg, ${FILM_BASE} 0 21%, #8a8175 21% 79%, ${FILM_BASE} 79%)`,
   editorial: 'linear-gradient(90deg, #6e675e 0 40%, #A8312A 40% 44%, #f4ede0 44%)',
-  stub: 'linear-gradient(180deg, #8a8175 0 50%, #c9baf7 50% 58%, #f2ede2 58%)',
+  stub: 'linear-gradient(180deg, #8a8175 0 41.7%, #c9baf7 41.7% 46%, #f2ede2 46%)',
   '35mm-landscape':
     `linear-gradient(180deg, ${FILM_BASE} 0 18%, rgba(0,0,0,0) 18% 82%, ${FILM_BASE} 82%), linear-gradient(90deg, ${FILM_BASE} 0 5%, #8a8175 5% 66%, #14120f 66% 95%, ${FILM_BASE} 95%)`,
 };
@@ -359,23 +359,24 @@ const THUMBNAIL_RENDERERS: Record<LayoutId, (c: ThumbColors) => ReactNode> = {
   // 상단 포스터(텍스트 없음) + 점선 절취선(노치 없음) + 홀로그램 티커 + 페이퍼 스텁(제목 이동 · SEAT 칩 · The Film · 바코드) — 마스터 재동기화 #281
   stub: ({ stroke, dim }) => (
     <>
-      {/* 포스터(텍스트 없음, 상단 ~52%) */}
-      <rect x="0" y="0" width="80" height="52" fill={dim} opacity="0.22" />
+      {/* 포스터 밴드 — viewBox 100 기준 41.7% = 640/1534(#527 가로 3:2 밴드). 실제 렌더 비율을
+          따라가야 픽커에서 고른 무드와 결과가 어긋나지 않는다(claude-review PR #535 P2). */}
+      <rect x="0" y="0" width="80" height="41.7" fill={dim} opacity="0.22" />
       {/* 절취선(점선) — 반원 노치 없음 */}
-      <line x1="3" y1="52" x2="77" y2="52" stroke={stroke} strokeWidth="0.5" strokeDasharray="1.4 1.2" />
+      <line x1="3" y1="41.7" x2="77" y2="41.7" stroke={stroke} strokeWidth="0.5" strokeDasharray="1.4 1.2" />
       {/* 홀로그램 티커 스트립 */}
-      <rect x="0" y="54" width="80" height="4" fill="#c9baf7" opacity="0.55" />
+      <rect x="0" y="43.7" width="80" height="4" fill="#c9baf7" opacity="0.55" />
       {/* 워드마크 + 제목(포스터→페이퍼 이동, 2줄) */}
-      <rect x="6" y="62" width="24" height="2" fill={dim} />
-      <rect x="6" y="67" width="46" height="4" fill={stroke} />
-      <rect x="6" y="73" width="32" height="4" fill={stroke} />
+      <rect x="6" y="53" width="24" height="2" fill={dim} />
+      <rect x="6" y="59" width="46" height="4" fill={stroke} />
+      <rect x="6" y="67" width="32" height="4" fill={stroke} />
       {/* SEAT 칩 + 점선 행(DATE/TIME/HALL) */}
-      <rect x="6" y="81" width="16" height="13" fill={stroke} />
-      <line x1="28" y1="83" x2="74" y2="83" stroke={stroke} strokeWidth="0.35" strokeDasharray="1 1" />
-      <line x1="28" y1="88" x2="74" y2="88" stroke={stroke} strokeWidth="0.35" strokeDasharray="1 1" />
-      <line x1="28" y1="93" x2="74" y2="93" stroke={stroke} strokeWidth="0.35" strokeDasharray="1 1" />
+      <rect x="6" y="76" width="16" height="13" fill={stroke} />
+      <line x1="28" y1="79" x2="74" y2="79" stroke={stroke} strokeWidth="0.35" strokeDasharray="1 1" />
+      <line x1="28" y1="85" x2="74" y2="85" stroke={stroke} strokeWidth="0.35" strokeDasharray="1 1" />
+      <line x1="28" y1="91" x2="74" y2="91" stroke={stroke} strokeWidth="0.35" strokeDasharray="1 1" />
       {/* 푸터 바코드 */}
-      <rect x="58" y="96" width="16" height="3" fill={dim} />
+      <rect x="58" y="95" width="16" height="3" fill={dim} />
     </>
   ),
   // 상·하 필름 스트립(스프로킷) + 좌 포스터 / 우 정보패널 좌우 분할
