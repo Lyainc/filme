@@ -825,19 +825,14 @@ export function defaultBrightnessForTexture(material: string, coating: string): 
  * 사용자가 방금 0.667로 잡은 프레임이 결과에선 말없이 잘려 크롭 화면과 어긋났다. 지금은 크롭이
  * 항상 포스터 표준으로 확정되고, 이 축은 DESIGN '크기' 섹션에서 프리뷰를 보며 즉시 되돌릴 수
  * 있는 렌더 옵션으로만 선다. cover면 레터박스가 아예 없으므로 그 위에 세운 장치
- * (blur 배경 #440 · 페더 #459 · 상단 밴드 톤 #461)는 Poster 안에서 통째로 스킵되고, 여기서도
- * frameInsetY(강제 블러 띠)를 안 넘긴다 — 넘기면 잘림 위에 검은 띠만 남는다.
+ * (blur 배경 #440 · 페더 #459 · frameInsetY #449 · 상단 밴드 톤 #461)는 전부 무의미해지는데,
+ * 그 게이트는 여기가 아니라 Poster 안에 산다 — 헬퍼를 안 태우는 무드(#524 고정 비율 컷)까지
+ * 포함해 모든 호출자가 거기로 모이므로, 같은 판정을 여기서 한 번 더 하면 갈래만 늘어난다.
  */
 export function posterFitProps(
   opts: { letterboxBg: string; align?: 'center' | 'top'; frameInsetY?: number; fit?: 'contain' | 'cover' },
 ): { fit: 'contain' | 'cover'; align: 'center' | 'top'; background: string; frameInsetY?: number } {
-  const fit = opts.fit ?? 'contain';
-  return {
-    fit,
-    align: opts.align ?? 'center',
-    background: opts.letterboxBg,
-    frameInsetY: fit === 'cover' ? undefined : opts.frameInsetY,
-  };
+  return { fit: opts.fit ?? 'contain', align: opts.align ?? 'center', background: opts.letterboxBg, frameInsetY: opts.frameInsetY };
 }
 
 export const Poster = memo(function Poster({
