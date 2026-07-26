@@ -124,6 +124,7 @@ class FakeCtx {
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     this.buf = new Uint8ClampedArray(Math.max(1, canvas.width) * Math.max(1, canvas.height) * 4);
+    allocatedCanvases.push(this);
   }
 
   save() {
@@ -321,12 +322,15 @@ function buildFixture(moodId: string, width: number, height: number): HTMLElemen
 }
 
 let mainCtx: FakeCtx | null = null;
+// SUT가 캡처 한 번에 만든 모든 2D 캔버스 — 오프스크린 크기 상한을 관찰하는 지점(#538).
+const allocatedCanvases: FakeCtx[] = [];
 let originalGetContext: typeof HTMLCanvasElement.prototype.getContext;
 let originalToDataURL: typeof HTMLCanvasElement.prototype.toDataURL;
 let originalImage: typeof Image;
 
 beforeEach(() => {
   mainCtx = null;
+  allocatedCanvases.length = 0;
   THROW_ON_BLEND = false;
   forcedBaseColor = null;
   forcedBaseHoleUMax = null;
@@ -440,6 +444,62 @@ describe('#512 — safeOverlay 실패 경로: 오버레이가 throw해도 clip�
     closeEnough(outsideSample[0], 50);
     closeEnough(outsideSample[1], 90);
     closeEnough(outsideSample[2], 160);
+
+    node.remove();
+  });
+});
+
+// ─── #538 — iOS 색보정 베이킹 오프스크린이 클립을 넘지 않는다 ────────────────────────────────
+// ctx.filter가 안 먹는 환경(이 스위트가 그 환경이다)에서 drawImageColorFiltered는 색보정을 픽셀로
+// 구우려고 오프스크린 캔버스를 잡는다. 예전엔 그 크기가 **목적지 사각형 전체**라, fit='cover'로
+// 슬롯 밖까지 넘치는 draw에선 어차피 클립에 잘려 버려질 픽셀까지 통째로 잡아 굽고 있었다.
+// 여기서 고정하는 건 "오프스크린은 클립 교집합 이하" — 넘치는 몫이 베이킹 시간·피크 메모리다.
+describe('#538 — 색보정 베이킹 오프스크린은 클립 교집합을 넘지 않는다', () => {
+  test('cover로 목적지가 슬롯 밖까지 넘쳐도 오프스크린은 슬롯 크기에 머문다', async () => {
+    const width = 1000;
+    const height = 1000;
+    const posterW = 400; // 포스터 슬롯 = 클립. 여기가 베이킹 상한이어야 한다.
+
+    const node = document.createElement('div');
+    stubRect(node, 0, 0, width, height);
+    const posterRoot = document.createElement('div');
+    posterRoot.setAttribute('data-poster-root', 'true');
+    stubRect(posterRoot, 0, 0, posterW, height);
+
+    const posterImg = document.createElement('img');
+    posterImg.src = 'blob:poster';
+    posterImg.dataset.role = 'poster';
+    // 아주 납작한 원본(1000×400)을 세로 슬롯(400×1000)에 cover → draw 사각형 2500×1000.
+    // 클립(400×1000)의 6.25배다. 수정 전 코드는 이 2500×1000을 통째로 오프스크린으로 잡았다.
+    Object.defineProperty(posterImg, 'naturalWidth', { value: 1000, configurable: true });
+    Object.defineProperty(posterImg, 'naturalHeight', { value: 400, configurable: true });
+    (posterImg as unknown as { decode: () => Promise<void> }).decode = () => Promise.resolve();
+    posterImg.style.objectFit = 'cover';
+    posterImg.style.filter = POSTER_FILTER;
+    (posterImg as unknown as { __testColor: RGBA }).__testColor = [...POSTER_RGB, 255];
+    stubRect(posterImg, 0, 0, posterW, height);
+    posterRoot.appendChild(posterImg);
+    node.appendChild(posterRoot);
+    document.body.appendChild(node);
+
+    await captureNodeToJpeg(node, { filename: 't.jpg', width, height, pixelRatio: 1 });
+
+    // 메인 캔버스(티켓 전체 + 여백)는 당연히 클립보다 크다 — 상한 대상은 그 외 오프스크린뿐.
+    const offscreens = allocatedCanvases.filter((c) => c !== mainCtx && c.canvas.width > 1 && c.canvas.height > 1);
+    expect(offscreens.length).toBeGreaterThan(0); // 베이킹 경로를 실제로 탔다는 확인
+    const clipArea = posterW * height;
+    for (const c of offscreens) {
+      // +2px는 소수 좌표를 정수 픽셀로 감싸며 생기는 여유.
+      expect(c.canvas.width).toBeLessThanOrEqual(posterW + 2);
+      expect(c.canvas.width * c.canvas.height).toBeLessThanOrEqual(clipArea + 2 * (posterW + height));
+    }
+
+    // 색보정은 그대로 걸려 있어야 한다 — 오프스크린을 줄인 게 보정을 건너뛴 게 되면 안 된다.
+    const sample = mainCtx!.getImageData(MARGIN + Math.round(posterW / 2), MARGIN + Math.round(height / 2), 1, 1).data;
+    const [er, eg, eb] = applyCssColorFilterToPixel(POSTER_FILTER, ...POSTER_RGB);
+    closeEnough(sample[0], er);
+    closeEnough(sample[1], eg);
+    closeEnough(sample[2], eb);
 
     node.remove();
   });
