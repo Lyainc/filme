@@ -36,13 +36,14 @@ describe('Mood35mmLandscape v5 재설계 (#524)', () => {
     expect(1032 + 411 + 61).toBe(1504); // 우측 베이스도 61px (좌우 대칭)
   });
 
-  test('스프로켓 확대 51×36 ×18 + bleed 34(#498 흡수)', () => {
+  test('스프로켓 51×36 ×18 + bleed 34 — 홀은 지터로 ±2 흔들린다(#498)', () => {
     const html = markup();
-    expect(html).toContain('width:51px;height:36px;border-radius:9px');
-    expect(html).toContain('margin:0 -34px'); // 절단면으로 흘리는 bleed
+    const holes = Array.from(html.matchAll(/width:(\d+)px;height:(\d+)px;margin:0 (-?\d+)px;border-radius:9px/g));
+    expect(holes.length).toBe(36); // 밴드 2개 × 홀 18개
+    expect(holes.every(m => Math.abs(+m[1] - 51) <= 2 && Math.abs(+m[2] - 36) <= 2 && Math.abs(+m[3]) <= 3)).toBe(true);
+    expect(new Set(holes.map(m => m[0])).size).toBeGreaterThan(1); // 완전 등간격이 아니다
+    expect(html).toContain('margin:0 -34px'); // 천공 행을 절단면으로 흘리는 bleed
     expect(html).not.toContain('width:44px;height:24px'); // 구 치수
-    // 밴드 2개 × 홀 18개
-    expect(html.match(/width:51px;height:36px/g)?.length).toBe(36);
   });
 
   test('하단 밴드는 edgePrint=false — KEYKODE는 상단 밴드에만 1회', () => {
