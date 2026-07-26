@@ -816,16 +816,28 @@ export function defaultBrightnessForTexture(material: string, coating: string): 
  * 안 태우고 Poster를 직접 부르는데, 정책 이탈이 아니라 frameInsetY(강제 블러 띠)·letterboxBg 같은
  * 옵션이 고정 비율 컷엔 의미가 없고 frameInsetY를 실으면 그게 곧 레터박스 0을 깨뜨리기 때문이다
  * (fit 자체는 헬퍼와 같은 contain — 근거는 Mood35mm.tsx의 포스터 컷 주석).
- * 항상 **무손실(contain)** — 포스터를 좌우 안 잘리게 통째로 넣고 남는 공간은 무드 배경색
- * (letterboxBg)으로 흡수한다. #525에서 크롭이 포스터 표준 0.667로 서면서 'cover'(슬롯 꽉 채움)
- * 옵션은 사라졌다 — cover는 사용자가 방금 0.667로 잡은 프레임을 캔버스(0.626)·밴드 비율에 맞춰
- * 다시 잘라내 크롭 화면과 결과가 어긋났고, 그 잘림 때문에 Stub 밴드만 룰 5를 위반하고 있었다.
- * align은 세로 슬롯에서 레터박스를 어디로 몰지(top=하단 스크림이 흡수) 무드가 정한다.
+ * 기본은 **무손실(contain)** — 포스터를 좌우 안 잘리게 통째로 넣고 남는 공간은 blur 배경 +
+ * 무드 배경색(letterboxBg)이 흡수한다. align은 세로 슬롯에서 레터박스를 어디로 몰지
+ * (top=하단 스크림이 흡수) 무드가 정한다.
+ *
+ * fit='cover'(#527)는 그 기본을 사용자가 명시적으로 뒤집는 옵션 — 슬롯을 꽉 채우고 넘치는 축을
+ * 잘라낸다. #525가 폐지한 건 이 동작 자체가 아니라 **크롭 모달 토글이 그걸 겸하던 자리**다:
+ * 사용자가 방금 0.667로 잡은 프레임이 결과에선 말없이 잘려 크롭 화면과 어긋났다. 지금은 크롭이
+ * 항상 포스터 표준으로 확정되고, 이 축은 DESIGN '크기' 섹션에서 프리뷰를 보며 즉시 되돌릴 수
+ * 있는 렌더 옵션으로만 선다. cover면 레터박스가 아예 없으므로 그 위에 세운 장치
+ * (blur 배경 #440 · 페더 #459 · 상단 밴드 톤 #461)는 Poster 안에서 통째로 스킵되고, 여기서도
+ * frameInsetY(강제 블러 띠)를 안 넘긴다 — 넘기면 잘림 위에 검은 띠만 남는다.
  */
 export function posterFitProps(
-  opts: { letterboxBg: string; align?: 'center' | 'top'; frameInsetY?: number },
-): { fit: 'contain'; align: 'center' | 'top'; background: string; frameInsetY?: number } {
-  return { fit: 'contain', align: opts.align ?? 'center', background: opts.letterboxBg, frameInsetY: opts.frameInsetY };
+  opts: { letterboxBg: string; align?: 'center' | 'top'; frameInsetY?: number; fit?: 'contain' | 'cover' },
+): { fit: 'contain' | 'cover'; align: 'center' | 'top'; background: string; frameInsetY?: number } {
+  const fit = opts.fit ?? 'contain';
+  return {
+    fit,
+    align: opts.align ?? 'center',
+    background: opts.letterboxBg,
+    frameInsetY: fit === 'cover' ? undefined : opts.frameInsetY,
+  };
 }
 
 export const Poster = memo(function Poster({

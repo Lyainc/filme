@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import LayoutPicker, { LayoutStrip } from '@/components/LayoutPicker';
 import TexturePicker from '@/components/wizard/TexturePicker';
 import ColorPicker from '@/components/wizard/ColorPicker';
@@ -6,7 +6,8 @@ import BrightnessSlider from '@/components/wizard/BrightnessSlider';
 import { TEXTURE_RECIPES } from '@/utils/textureRecipes';
 import { MATERIAL_OPTIONS, COATING_OPTIONS } from '@/utils/constants';
 import { MINIMAL_STAMP_MAX_SCALE } from '@/components/moods/MoodMinimal';
-import { TONE_FIXED_MOODS } from '@/constants/fields';
+import { Eyebrow } from './Eyebrow';
+import { POSTER_FILL_MOODS, TONE_FIXED_MOODS } from '@/constants/fields';
 import type { LayoutId } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 
@@ -62,6 +63,55 @@ const RAIL_ICON = {
 // P1 — 셋 중 하나만 고치면 재발하는 버그였다) — export해 단일 소스로.
 export function stampScaleMaxFor(layout: LayoutId) {
   return layout === 'minimal' ? MINIMAL_STAMP_MAX_SCALE : 1.3;
+}
+
+const POSTER_FIT_OPTIONS = [
+  { value: 'contain', label: '원본 비율' },
+  { value: 'cover', label: '꽉 채우기' },
+] as const;
+
+/**
+ * 포스터를 슬롯에 앉히는 방식(#527, #492) — "크롭을 어떤 비율로 잡나"와 "티켓에 어떻게 앉히나"는
+ * 축이 다른데 예전엔 크롭 모달 토글 하나가 둘을 겸해, 방금 확정한 프레임과 결과물이 어긋났다(#525).
+ * 그래서 크롭이 아니라 DESIGN '크기' 섹션에 둔다 — 프리뷰를 보며 즉시 되돌릴 수 있고, 두 이슈가
+ * 요구한 컨트롤 자리가 하나로 합쳐진다. 노출 판정은 POSTER_FILL_MOODS(값이 갈리는 무드만).
+ */
+function PosterFitToggle({
+  value,
+  onChange,
+}: {
+  value: 'contain' | 'cover';
+  onChange: (next: 'contain' | 'cover') => void;
+}) {
+  // 모바일 rail·데스크톱 패널이 같은 문서에 함께 뜰 수 있으므로(테스트 포함) 라벨 id는
+  // useId로 뽑는다 — Section(DesktopDesignPanel)과 같은 패턴.
+  const labelId = useId();
+  return (
+    <div className="space-y-field">
+      <Eyebrow as="div" id={labelId}>
+        포스터 채우기
+      </Eyebrow>
+      <div role="radiogroup" aria-labelledby={labelId} className="flex gap-2">
+        {POSTER_FIT_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            role="radio"
+            aria-checked={value === opt.value}
+            onClick={() => onChange(opt.value)}
+            data-touch="44"
+            className={`flex-1 rounded-chip border px-3 py-2.5 text-[12px] font-medium transition-colors ${
+              value === opt.value
+                ? 'border-transparent bg-accent-soft text-accent'
+                : 'border-line bg-surface-elevated text-fg-muted'
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 const COLOR_ITEM: RailItem = {
@@ -226,8 +276,17 @@ export const RAIL_ITEMS: readonly RailItem[] = [
       const stampScaleMax = stampScaleMaxFor(components.layout);
       // 체인/포맷 로고 렌더 크기(#441, PR #485 P2 후속). value는 Math.min(raw, stampScaleMax)로
       // 표시만 클램프 — 저장된 raw 값은 안 건드려 다른 무드로 돌아가면 원래 크기로 복원된다.
+      // 포스터 채우기(#527/#492)는 값이 갈리는 무드에서만 — 나머지 무드는 슬롯이 이미 포스터
+      // 표준 비율이라 토글해도 그림이 같다. 숨겨도 저장값은 남아 무드 복귀 시 그대로 살아난다
+      // (체인/포맷 스케일 클램프와 같은 원칙).
       return (
         <div className="space-y-group">
+          {POSTER_FILL_MOODS.has(components.layout) && (
+            <PosterFitToggle
+              value={components.posterFit ?? 'contain'}
+              onChange={(posterFit) => setComp({ posterFit })}
+            />
+          )}
           <BrightnessSlider
             label="체인 로고 크기"
             id={`${prefix}-chain-scale`}

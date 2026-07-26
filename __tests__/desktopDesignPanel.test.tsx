@@ -19,6 +19,7 @@ function PanelHarness() {
   return (
     <>
       <div data-testid="layout">{photo.state.components.layout}</div>
+      <div data-testid="posterFit">{photo.state.components.posterFit ?? '(unset)'}</div>
       <DesktopDesignPanel photo={photo} />
     </>
   );
@@ -96,5 +97,43 @@ describe('DesktopDesignPanel (#228)', () => {
     const opacityRegion = screen.getByRole('region', { name: 'Opacity' });
     expect(opacityRegion.querySelector('#desktop-chain-scale')).toBeNull();
     expect(opacityRegion.querySelector('#desktop-format-scale')).toBeNull();
+  });
+
+  // #527/#492 — 포스터 채우기(posterFit)는 크롭 모달이 아니라 이 크기 섹션이 정한다. 두 이슈가
+  // 각자 컨트롤 자리를 만들지 않게 여기 하나로 합쳤다.
+  test('(f) 크기 섹션 포스터 채우기 토글 — minimal에서만 뜨고 posterFit에 배선된다', async () => {
+    const user = userEvent.setup();
+    render(<PanelHarness />);
+    const group = screen.getByRole('radiogroup', { name: '포스터 채우기' });
+    expect(screen.getByRole('region', { name: 'Size' }).contains(group)).toBe(true);
+    // 기본은 원본 비율(contain) — 저장값이 없어도 선택 상태가 확정된다.
+    expect(screen.getByRole('radio', { name: '원본 비율' }).getAttribute('aria-checked')).toBe('true');
+
+    await user.click(screen.getByRole('radio', { name: '꽉 채우기' }));
+    expect(screen.getByRole('radio', { name: '꽉 채우기' }).getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByTestId('posterFit').textContent).toBe('cover');
+  });
+
+  // POSTER_FILL_MOODS 밖 무드에선 토글 자체가 없다(죽은 컨트롤 방지) — cover가 저장돼 있어도
+  // 그 무드는 값을 안 읽으므로(posterFitMoodRender.test.tsx), 컨트롤만 사라지고 값은 남는다.
+  test('(g) 포스터 채우기 토글은 stub 무드에서 사라지고, 되돌아오면 값이 살아있다', async () => {
+    const user = userEvent.setup();
+    render(<PanelHarness />);
+    await user.click(screen.getByRole('radio', { name: '꽉 채우기' }));
+
+    // 무드 이동은 (b)와 같은 캐러셀 버튼으로 — 썸네일 SVG 텍스트가 섞여 그리드 버튼의 접근성
+    // 이름은 안정적인 셀렉터가 못 된다(#354 E2E와 같은 함정).
+    const step = async (dir: '다음 무드' | '이전 무드', until: string) => {
+      for (let i = 0; i < 6 && screen.getByTestId('layout').textContent !== until; i++) {
+        await user.click(screen.getByRole('button', { name: dir }));
+      }
+    };
+    await step('다음 무드', 'stub');
+    expect(screen.getByTestId('layout').textContent).toBe('stub');
+    expect(screen.queryByRole('radiogroup', { name: '포스터 채우기' })).toBeNull();
+    expect(screen.getByTestId('posterFit').textContent).toBe('cover');
+
+    await step('이전 무드', 'minimal');
+    expect(screen.getByRole('radio', { name: '꽉 채우기' }).getAttribute('aria-checked')).toBe('true');
   });
 });
