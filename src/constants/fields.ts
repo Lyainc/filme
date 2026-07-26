@@ -107,6 +107,23 @@ export const TONE_FIXED_MOODS: ReadonlySet<LayoutId> = new Set<LayoutId>([
   'stub',
 ]);
 
+/**
+ * 포스터 "꽉 채우기"(components.posterFit='cover')를 제공하는 무드(#527) — TONE_FIXED_MOODS와
+ * 같은 성격의 무드 능력 표이고, DESIGN '크기' 섹션의 토글 노출과 무드의 posterFit 소비가 이
+ * 표에 맞춰 함께 움직여야 한다(한쪽만 늘리면 죽은 컨트롤이나 조용한 잘림이 남는다).
+ *
+ * 브라우저 실측(무드별 포스터 프레임 rect, 0.667 크롭 기준)이 목록을 minimal 하나로 좁혔다:
+ *   - minimal 960×1534(0.626) → cover가 **가로 6.13%**(좌우 각 3.07%)만 깎는다. 이슈가 말한 동작.
+ *   - editorial 640×960 · criterion 500×750 · 35mm 560×840 → 슬롯이 이미 0.667이라 잘림 0%,
+ *     cover=contain. 35mm Wide의 포스터 컷(926×617)도 크롭 프리셋이 3:2라 동일(#529).
+ *   - stub 960×900(1.067) → cover면 **세로 37.5%**가 날아가고 포스터 프레임이 0.667에서
+ *     1.067로 뜬다. 이건 "꽉 채우기"가 아니라 사용자가 확정한 크롭을 무르는 것이고, #525가
+ *     걷어낸 룰 5 위반(Stub 밴드)과 같은 그림이다. 밴드를 진짜로 채우려면 필요한 건 fit 옵션이
+ *     아니라 무드별 재크롭(#529 결정 2 — 범위 밖).
+ * 다음 풀블리드 무드가 생기면 여기에 한 줄 추가 + 그 무드가 posterFit을 posterFitProps로 넘기면 된다.
+ */
+export const POSTER_FILL_MOODS: ReadonlySet<LayoutId> = new Set<LayoutId>(['minimal']);
+
 /** 현재 layout에 적용되는 런처 그룹 — MOOD_EXCLUDED_FIELDS의 필드를 걸러내고, 비게 된 그룹은 제거. */
 export function launcherGroupsFor(layout: LayoutId): { title: string; fields: TicketField[] }[] {
   const excluded = MOOD_EXCLUDED_FIELDS[layout];

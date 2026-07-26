@@ -77,6 +77,13 @@ export interface TicketComponents {
   chainScale: number;
   /** 포맷 로고 렌더 크기 배율 0.6~1.3(기본 1) — 무드별 고정 size 상수와 곱연산 결합(#441). */
   formatScale: number;
+  /**
+   * 포스터를 슬롯에 앉히는 방식(#527) — 기본(미설정)은 무손실 contain. 'cover'는 슬롯을 꽉 채우고
+   * 넘치는 축을 잘라낸다. 크롭 비율(항상 포스터 표준 0.667/1.5)과는 **다른 축**이라 크롭 모달이
+   * 아니라 DESIGN 탭 '크기' 섹션이 정한다 — 크롭 토글이 이 둘을 겸하던 게 #525가 걷어낸 문제다.
+   * 실제로 값이 갈리는 무드는 POSTER_FILL_MOODS(constants/fields.ts)뿐.
+   */
+  posterFit?: 'contain' | 'cover';
   /** 서명 이미지 URL(blob: 또는 빈 문자열). 이미지가 텍스트 서명(MovieInfo.signature)보다 우선한다(#484). */
   signatureImage?: string;
   /** 서명 이미지 렌더 크기 배율 0.6~1.3(기본 1) — 무드별 고정 height와 곱연산 결합(#484). */

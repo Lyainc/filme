@@ -17,7 +17,8 @@ import { MoodEditorial } from '../src/components/moods/MoodEditorial';
 import { MoodMinimal } from '../src/components/moods/MoodMinimal';
 import { MoodStub } from '../src/components/moods/MoodStub';
 import { POSTER_FRAME_INSET_Y } from '../src/components/moods/_shared';
-import type { MovieInfo, TicketComponents } from '../src/types';
+import { POSTER_FILL_MOODS } from '../src/constants/fields';
+import type { LayoutId, MovieInfo, TicketComponents } from '../src/types';
 
 const MOVIE: MovieInfo = {
   title: 'TITLE', titleOg: 'ORIGINAL', releaseDate: '2026-05-01',
@@ -126,5 +127,70 @@ describe('#524 35mm 계열 컷 fit', () => {
     const html = render(Mood35mmLandscape);
     expect((html.match(POSTER_IMG)?.[0] ?? '')).toContain('object-fit:cover');
     expect(html).not.toContain('data-poster-bg');
+  });
+});
+
+// #527 — 사용자가 고르는 "꽉 채우기"(components.posterFit='cover'). 위 #525 단일 정책은 값이
+// 없을 때의 기본값이고, 이 describe는 값이 실렸을 때만의 동작을 고정한다.
+function renderWith(Mood: typeof MoodMinimal, posterFit: 'contain' | 'cover') {
+  return renderToStaticMarkup(
+    <Mood movieInfo={MOVIE} components={{ ...BASE, posterFit }} croppedImageUrl="blob:test" />
+  );
+}
+
+describe('#527 포스터 꽉 채우기(cover)', () => {
+  // 실측(브라우저, 포스터 프레임 rect): minimal 슬롯 960×1534(0.626)에 0.667 크롭이 cover로
+  // 서면 가로 6.13%(좌우 각 3.07%)만 잘린다 — 이슈가 말한 그 동작.
+  test('minimal — object-fit:cover + 중앙 정렬', () => {
+    const img = renderWith(MoodMinimal, 'cover').match(POSTER_IMG)?.[0] ?? '';
+    expect(img).toContain('object-fit:cover');
+    expect(img).toContain('object-position:50% 50%');
+  });
+
+  // cover면 레터박스가 없으므로 그 위에 세운 장치는 전부 무의미하다 — 남겨두면 잘린 포스터 위에
+  // 검은 띠/블러만 얹힌다. #440(blur 배경)·#449(frameInsetY)·#461(상단 밴드 톤)을 통째로 건너뛴다.
+  test('minimal cover — blur 레터박스 배경(#440)·frameInsetY(#449)·밴드 톤(#461) 전부 스킵', () => {
+    const html = renderWith(MoodMinimal, 'cover');
+    expect(html).not.toMatch(POSTER_BG_BLUR);
+    expect(html).not.toContain('data-poster-bg');
+    expect(html).not.toContain('data-letterbox-tone');
+    const m = html.match(POSTER_FRAME_WRAPPER);
+    expect(m?.[1]).toBe('0');
+    expect(m?.[2]).toBe('0');
+  });
+
+  // 회귀 가드 — posterFit을 명시적으로 contain으로 둔 경로가 #525 기본값과 완전히 같아야 한다.
+  test('minimal contain — 기본값 경로와 동일(blur 배경 + frameInsetY 유지)', () => {
+    const html = renderWith(MoodMinimal, 'contain');
+    expect(html).toMatch(POSTER_BG_BLUR);
+    expect(html.match(POSTER_FRAME_WRAPPER)?.[1]).toBe(String(POSTER_FRAME_INSET_Y));
+    expect(html).toBe(render(MoodMinimal));
+  });
+
+  // POSTER_FILL_MOODS 밖 무드는 저장된 cover를 **안 읽는다**. 값은 컴포넌트 전역이라 minimal에서
+  // 켠 뒤 무드를 옮기면 따라오는데, 그때 조용히 잘리면 안 된다 — stub 밴드(960×900)는 cover면
+  // 세로 37.5%가 날아가 포스터 프레임이 0.667에서 1.067로 뜬다(#525 룰 5 위반, 실측).
+  test.each([
+    ['criterion', MoodCriterion],
+    ['35mm', Mood35mm],
+    ['editorial', MoodEditorial],
+    ['stub', MoodStub],
+  ] as const)('%s — posterFit=cover가 실려도 contain 유지', (_name, Mood) => {
+    const html = renderWith(Mood, 'cover');
+    expect((html.match(POSTER_IMG)?.[0] ?? '')).toContain('object-fit:contain');
+    expect(html).toMatch(POSTER_BG_BLUR);
+  });
+
+  // 표(POSTER_FILL_MOODS)와 실제 렌더가 갈리면 죽은 컨트롤이나 조용한 잘림이 생긴다 — 표에 든
+  // 무드만 값을 읽는지 대조한다(#524 inkColorFidelity와 같은 표-대-렌더 검증).
+  test('POSTER_FILL_MOODS 표와 렌더가 일치한다', () => {
+    const rendered: [LayoutId, typeof MoodMinimal][] = [
+      ['minimal', MoodMinimal], ['criterion', MoodCriterion], ['35mm', Mood35mm],
+      ['editorial', MoodEditorial], ['stub', MoodStub],
+    ];
+    for (const [id, Mood] of rendered) {
+      const honors = (renderWith(Mood, 'cover').match(POSTER_IMG)?.[0] ?? '').includes('object-fit:cover');
+      expect([id, honors]).toEqual([id, POSTER_FILL_MOODS.has(id)]);
+    }
   });
 });
