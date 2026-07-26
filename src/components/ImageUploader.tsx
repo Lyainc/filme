@@ -65,7 +65,7 @@ export default function ImageUploader({ onUpload, isProcessing, imageUrl, layout
     if (!originalSrc) return;
     setIsCropping(true);
     try {
-      // 원본 비율 보존(#420): 포스터 표준 960×1440 대신 크롭 종횡비를 유지하며 긴 변만 캡한다.
+      // 원본 비율 보존(#420): 포스터 표준 해상도 대신 크롭 종횡비를 유지하며 긴 변만 캡한다.
       const croppedUrl = await getCroppedImg(
         originalSrc,
         croppedAreaPixels,

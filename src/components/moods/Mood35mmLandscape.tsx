@@ -91,13 +91,12 @@ export const Mood35mmLandscape = memo(function Mood35mmLandscape(props: MoodProp
 
         {/* 포스터 컷 — 분할 레이아웃이라 이 컷에만 포스터 탭(#259). */}
         <div style={{ position: 'absolute', left: BASE_X, width: POSTER_CUT_W, top: CUT_TOP, height: CUT_H, background: '#000', boxShadow: CUT_SHADOW, overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
-          {/* 컷은 포스터 표준의 가로 판(3:2, #525 룰 1)이라 컷 자체는 룰 5를 만족한다. 다만 표준
-              크롭은 세로 2:3이라 여기 넣으면 방향이 어긋나는데, contain이면 폭의 절반이 레터박스가
-              되고 cover면 세로가 잘린다. v5 시안이 cover를 골랐고(#524 c1: 시안 충실이 기본선)
-              이 무드의 완료 조건도 "레터박스 0"이라 cover로 간다 — 대가는 분명히 있다: 세로
-              포스터를 넣으면 사용자가 잡은 프레임의 위아래가 잘린다(#525가 posterFit 'cover'를
-              폐지하며 지목한 그 잘림과 같은 종류다). 근본 해소는 #499(A)가 남긴 "가로 무드엔
-              가로 크롭 프리셋" — 크롭 파이프라인 쪽 일이라 이 슬라이스 밖이다. */}
+          {/* 컷은 포스터 표준의 가로 판(3:2, #525 룰 1)이라 컷 자체는 룰 5를 만족한다. #529로
+              이 무드에선 크롭 프리셋도 3:2로 열리므로(LayoutSpec.posterOrientation) 정상 경로에선
+              크롭과 컷의 방향이 같아 cover가 아무것도 안 잘라낸다 — 6무드 중 포스터 슬롯이
+              가로인 건 여기뿐이다. cover가 남아 있는 건 방향이 어긋난 크롭이 여전히 들어올 수
+              있어서다(다른 무드에서 세로로 크롭한 뒤 이 무드로 전환 — 무드별 재크롭은 #529
+              결정 2로 범위 밖). 그때는 v5 시안대로 위아래를 잘라 레터박스 0을 지킨다(#524 c1). */}
           <Poster
             src={croppedImageUrl}
             fit="cover"

@@ -8,7 +8,8 @@ import ReactCrop, {
   type PixelCrop,
 } from 'react-image-crop';
 import { Area } from '@/utils/imageCrop';
-import { POSTER_RATIO } from '@/utils/constants';
+import { POSTER_LANDSCAPE_RATIO, POSTER_RATIO } from '@/utils/constants';
+import { getLayout } from '@/utils/layouts';
 import type { LayoutId } from '@/types';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
@@ -41,9 +42,14 @@ export default function ImageCropModal({
   // 이제 모든 무드가 contain 단일 정책이라 stub도 같은 토글을 탄다.
   const showPreserveToggle = layout != null;
   const [preserveRatio, setPreserveRatio] = useState(false);
-  // 포스터는 프리셋 토글이 요청 aspect를 정한다 — 켜짐=원본(자연) 비율, 꺼짐=포스터 표준
-  // 0.667(#525 룰 1). 로고는 항상 자연 비율(undefined → 아래 mediaAspect로 잠금).
-  const requestedAspect = showPreserveToggle && !preserveRatio ? POSTER_RATIO : undefined;
+  // 표준 프리셋의 방향은 **현재 무드의 포스터 슬롯**을 따른다(#529 결정 1) — 35mm Wide의 컷은
+  // 926×617(3:2)이라 세로 크롭을 넣으면 무드 쪽 fit="cover"가 사용자가 잡은 프레임의 위아래를
+  // 잘라낸다. 자동 프리셋이지 잠금이 아니다: 프레임은 그대로 드래그·리사이즈되고, 나중에 무드를
+  // 바꿔도 이미 확정된 크롭은 유지된다(무드별 재크롭은 #529 결정 2 — 범위 밖).
+  const presetAspect = layout && getLayout(layout).posterOrientation === 'landscape' ? POSTER_LANDSCAPE_RATIO : POSTER_RATIO;
+  // 포스터는 프리셋 토글이 요청 aspect를 정한다 — 켜짐=원본(자연) 비율, 꺼짐=포스터 표준(#525 룰 1).
+  // 로고는 항상 자연 비율(undefined → 아래 mediaAspect로 잠금).
+  const requestedAspect = showPreserveToggle && !preserveRatio ? presetAspect : undefined;
   // requestedAspect가 undefined(로고 자유 크롭 #347, 포스터 원본 비율 보존 #420)면 업로드
   // 이미지의 자연 종횡비로 잠근다 — 완전 자유형이 아니라 "그 비율의 박스를 리사이즈"(#421)다.
   const [mediaAspect, setMediaAspect] = useState<number | null>(null);

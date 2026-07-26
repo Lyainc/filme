@@ -18,6 +18,24 @@ export const POSTER_RATIO = 2 / 3; // 0.667:1
 // (1477→1534 전례) 이 값도 같이 움직여야 하므로 리터럴을 다시 적지 않는다.
 export const POSTER_WIDTH = TARGET_WIDTH;
 export const POSTER_HEIGHT = POSTER_WIDTH / POSTER_RATIO; // 1440
+// 포스터 가로 판(#529) — 표준 세로의 역수(3:2). #525 룰 1이 이미 정의해 둔 "가로 3:2"를 실제로
+// 쓰는 것이라 새 비율이 아니다. 어떤 무드가 이 판을 쓰는지는 `LayoutSpec.posterOrientation`이 든다.
+export const POSTER_LANDSCAPE_RATIO = 1 / POSTER_RATIO; // 1.5:1
+
+/**
+ * 표준 포스터 크롭의 출력 해상도 — 960×1440(세로 2:3) 또는 축을 뒤집은 1440×960(가로 3:2, #529
+ * 결정 3). 방향을 크롭에서 그대로 읽는 게 안전한 건, 표준 경로(`getCroppedImg`의 `maxSide`
+ * 미지정)로 들어오는 크롭은 ImageCropModal이 항상 프리셋 비율로 잠가서 보내기 때문이다 —
+ * 자유 비율 크롭(로고 · "원본 비율 보존")은 전부 maxSide 경로라 여기 오지 않는다. 덕분에
+ * 호출부가 무드를 다시 넘길 필요 없이 프리셋 판정이 ImageCropModal 한 곳에만 산다.
+ * 사이즈 정책이라 imageCrop이 아니라 여기 둔다(#525 룰 1과 같은 자리).
+ */
+export function posterOutputSize(crop: { width: number; height: number }): { width: number; height: number } {
+  return crop.width > crop.height
+    ? { width: POSTER_HEIGHT, height: POSTER_WIDTH }
+    : { width: POSTER_WIDTH, height: POSTER_HEIGHT };
+}
+
 // "원본 비율 보존" 크롭의 긴 변 캡 — 표준 경로 해상도의 2배(export가 pixelRatio 2로 뜨는 것과 맞춤).
 // 데스크톱·모바일 셸이 같은 값을 따로 적던 걸 단일 소스로.
 export const POSTER_PRESERVE_MAX_SIDE = POSTER_HEIGHT * 2;
