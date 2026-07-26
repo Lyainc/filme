@@ -50,6 +50,7 @@ interface FieldRect {
   textAlign: string;
   fontFamily: string;
   fontWeight: string;
+  fontStyle: string;
   /** 시각 자간(래퍼 로컬 px, #365). computed 'normal'은 0. */
   letterSpacingPx: number;
 }
@@ -111,6 +112,9 @@ function measureField(
     textAlign: st?.textAlign || 'left',
     fontFamily: st?.fontFamily || '',
     fontWeight: st?.fontWeight || '400',
+    // 이탤릭까지 복사해야 캐럿이 글자 끝에 선다(#494) — 서명·한줄평이 6무드에서 Instrument Serif
+    // 이탤릭으로 조판되는데 캐럿 입력이 로만이면 advance width가 갈려 캐럿이 어긋난다.
+    fontStyle: st?.fontStyle || 'normal',
     letterSpacingPx: (Number.isFinite(lsRaw) ? lsRaw : 0) * ticketScale,
   };
 }
@@ -385,6 +389,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
             fontSize: Math.max(16, rect.fontPx),
             fontFamily: rect.fontFamily || undefined,
             fontWeight: rect.fontWeight as CSSProperties['fontWeight'],
+            fontStyle: rect.fontStyle,
             letterSpacing: rect.letterSpacingPx ? `${rect.letterSpacingPx * inv}px` : undefined,
             textAlign: rect.textAlign as CSSProperties['textAlign'],
             transform: caretScale < 1 ? `scale(${caretScale})` : undefined,
