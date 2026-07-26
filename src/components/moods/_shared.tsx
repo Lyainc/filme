@@ -1346,13 +1346,22 @@ function sprocketJitter(key: string, count: number, w: number, h: number) {
 }
 
 /**
- * 35mm 필름 스트립 밴드(에픽 #281 → v5 재설계 #524). 밴드에 천공 + 프레임번호 + KEYKODE 바 +
- * 엣지 스크롤 코드(×4, ◆ 구분) + 그레인. accent는 무드가 넘긴다. pos로 상/하단을 뒤집는다 —
- * 천공·프레임·키코드는 바깥 모서리, 엣지 텍스트는 안쪽 모서리.
+ * 35mm 필름 스트립 밴드(에픽 #281 → v5 재설계 #524). 밴드는 **3행**이다 — 천공 / 프레임번호 /
+ * (KEYKODE 바+키코드 + 엣지 스크롤 코드 ×4, ◆ 구분) + 그레인. accent는 무드가 넘긴다. pos로 상/하단을
+ * 뒤집는다 — 천공·프레임번호는 바깥 모서리, 엣지 행은 안쪽 모서리.
  *
  * v5 델타: 홀 치수·개수를 props로 열고(35mm Wide는 51×36 ×18, #498이 확정한 확대치), `bleed`로
  * 천공·프레임번호 행을 밴드 밖으로 흘려 좌우 절단면에서 반쯤 잘리게, `edgePrint=false`로 하단
  * 밴드는 프레임번호만 남긴다.
+ *
+ * #557: KEYKODE가 독립 4행째로 서 있었는데 92px 밴드엔 그 세로 예산이 없었다 —
+ * `6 + 36(holeH) + 3 + 16.5(프레임) + 15(KEYKODE) + 18(엣지) + 6 = 100.5 > 92`라 KEYKODE 행 끝(77)이
+ * 엣지 행 시작(68)을 9px 밀고 들어와 캡처 결과물까지 글자가 포개졌다. 적자가 8.5px라 오프셋을 어떻게
+ * 재배분해도 4행으로는 안 풀린다. **KEYKODE를 엣지 행 안으로 넣어 3행으로 줄인다** — 실물 35mm도
+ * 키코드와 엣지 인쇄가 같은 가장자리를 따라 이어 찍히고, 같은 flex 행의 형제라 키코드 길이나 바 패턴이
+ * 바뀌어도 밀림 폭이 저절로 따라와 상수로 박아둔 x 오프셋처럼 어긋나지 않는다. 밴드 높이(92)·캔버스
+ * 레이아웃·하단 밴드(edgePrint=false)·FilmRail은 안 건드린다(KEYKODE의 좌측 시작만 엣지 행 padding을
+ * 따라 16→14px).
  */
 export const FilmStripBand = memo(function FilmStripBand({
   pos,
@@ -1397,16 +1406,17 @@ export const FilmStripBand = memo(function FilmStripBand({
   ));
 
   const bleedMargin = `0 ${-bleed}px`;
-  // 행 높이를 holeH로 고정 — 지터로 커진 홀은 alignItems:center 덕에 위아래 1px씩만 넘치고, 아래 행들의
-  // 오프셋 산수는 지터 진폭을 몰라도 된다(진폭을 바꿔도 프레임번호·KEYKODE 행이 따라 어긋나지 않는다).
+  // 세로 예산(#557): 바깥 모서리에서 BAND_PAD → 천공(holeH) → 3 → 프레임번호, 안쪽 모서리에서
+  // BAND_PAD → 엣지 행. 3행이라 92px 안에 6.5px 여유를 남기고 선다.
+  // 천공 행 높이를 holeH로 고정 — 지터로 커진 홀은 alignItems:center 덕에 위아래 1px씩만 넘치고,
+  // 아래 행들의 오프셋 산수는 지터 진폭을 몰라도 된다(진폭을 바꿔도 프레임번호 행이 안 따라 어긋난다).
+  const BAND_PAD = 6;
   const holesStyle: CSSProperties = { position: 'absolute', left: 0, right: 0, height: holeH, margin: bleedMargin, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px' };
-  holesStyle[outer] = 6;
+  holesStyle[outer] = BAND_PAD;
   const frameStyle: CSSProperties = { position: 'absolute', left: 0, right: 0, margin: bleedMargin, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', opacity: 0.88, pointerEvents: 'none' };
-  frameStyle[outer] = 6 + holeH + 3;
-  const kkStyle: CSSProperties = { position: 'absolute', left: 16, display: 'flex', alignItems: 'center', gap: 8, opacity: 0.9, pointerEvents: 'none' };
-  kkStyle[outer] = 6 + holeH + 3 + 17;
+  frameStyle[outer] = BAND_PAD + holeH + 3;
   const edgeStyle: CSSProperties = { position: 'absolute', left: 0, right: 0, display: 'flex', alignItems: 'center', padding: '0 14px', fontFamily: FONT_LCD, fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', opacity: 0.92, pointerEvents: 'none' };
-  edgeStyle[inner] = 6;
+  edgeStyle[inner] = BAND_PAD;
   const rootStyle: CSSProperties = { position: 'absolute', left: 0, right: 0, height, background: base, overflow: 'hidden' };
   rootStyle[outer] = 0;
 
@@ -1419,13 +1429,16 @@ export const FilmStripBand = memo(function FilmStripBand({
       {/* 하단 밴드(edgePrint=false)는 이 조각을 아예 안 만든다 — 예전엔 kkBars 32개 + 엣지 셀
           4×codes를 만들고 버렸다. */}
       {edgePrint && (
-        <>
-          <div style={kkStyle}>
-            <div style={{ display: 'flex', alignItems: 'flex-end' }}>{keycodeBars(accent)}</div>
+        <div style={edgeStyle}>
+          {/* KEYKODE는 엣지 스크롤의 앞 형제(#557) — 별도 행이 아니라 같은 줄 왼쪽에 서고, 뒤따르는
+              엣지 코드는 이 블록 폭만큼 자동으로 밀린다. */}
+          {/* opacity를 다시 얹지 않는다 — 엣지 행의 0.92와 곱해져 0.83으로 떨어진다(구 0.9 대비 8% 어둡다). */}
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginRight: 22 }}>
+            <span style={{ display: 'flex', alignItems: 'flex-end' }}>{keycodeBars(accent)}</span>
             <span style={{ fontFamily: FONT_LCD, fontSize: 10, fontWeight: 400, letterSpacing: 1.6, color: accent }}>{keycode}</span>
-          </div>
-          <div style={edgeStyle}>{edgeCells(codes ?? [], accent)}</div>
-        </>
+          </span>
+          {edgeCells(codes ?? [], accent)}
+        </div>
       )}
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.5, mixBlendMode: 'overlay', backgroundImage: 'repeating-linear-gradient(90deg, rgba(255,255,255,.06) 0 1px, rgba(0,0,0,.07) 1px 3px), repeating-linear-gradient(0deg, rgba(255,255,255,.04) 0 1px, rgba(0,0,0,.05) 1px 3px)' }} />
     </div>

@@ -51,6 +51,17 @@ describe('Mood35mmLandscape v5 재설계 (#524)', () => {
     expect(html.match(/KL 23 /g)?.length).toBe(1);
   });
 
+  test('KEYKODE는 엣지 행과 같은 줄 — 92px 밴드에 4행은 세로 예산이 없다(#557)', () => {
+    const html = markup();
+    const row = html.slice(html.indexOf('padding:0 14px')); // 엣지 행 하나
+    expect(row).toContain('KL 23 ');
+    expect(row.indexOf('KL 23 ')).toBeLessThan(row.indexOf('◆')); // 같은 행 안에서 KEYKODE가 먼저
+    // 3행 오프셋 — 바깥에서 천공 6, 프레임번호 6+36+3=45, 안쪽에서 엣지 6. 행 높이는 폰트 메트릭이라
+    // static markup으로 못 재니(실측은 #557 브라우저 검증) 코드가 소유한 오프셋만 고정한다.
+    expect(html).toContain('top:45px');
+    expect(html).toContain('bottom:45px'); // 하단 밴드 프레임번호 — 같은 산수가 뒤집혀 선다
+  });
+
   test('키코드는 결정론(c2) — 같은 티켓이면 같은 값, 렌더마다 안 바뀐다', () => {
     expect(markup()).toBe(markup());
     expect(markup()).toMatch(/KL 23 \d{4} \d{4}\+0[1-8]/);
