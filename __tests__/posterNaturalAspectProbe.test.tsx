@@ -10,31 +10,23 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { render, cleanup, act, fireEvent } from '@testing-library/react';
 import { Poster } from '../src/components/moods/_shared';
-import { stubBox } from './setup/posterStubs';
+import { stubBox, trapImageProbe } from './setup/posterStubs';
 
 const BOX_W = 960;
 const BOX_H = 1433;
 
-let decoded: string[];
-let origImage: typeof Image;
+// 프로브가 되살아나면 여기 src가 쌓인다. onload를 안 부르므로 프로브 경로는 종횡비도 못 얻는다.
+let probe: ReturnType<typeof trapImageProbe>;
 let restoreBox: () => void;
 
 beforeEach(() => {
-  decoded = [];
-  origImage = globalThis.Image;
-  // 프로브가 되살아나면 여기 src가 쌓인다. onload를 안 부르므로 프로브 경로는 종횡비도 못 얻는다.
-  (globalThis as { Image: unknown }).Image = class {
-    onload: (() => void) | null = null;
-    set src(v: string) {
-      decoded.push(v);
-    }
-  };
+  probe = trapImageProbe();
   restoreBox = stubBox(BOX_W, BOX_H);
 });
 
 afterEach(() => {
   cleanup();
-  (globalThis as { Image: unknown }).Image = origImage;
+  probe.restore();
   restoreBox();
 });
 
@@ -55,7 +47,7 @@ describe('#526 ① Poster 자연 종횡비 — 전경 <img>에서 읽고, 추가
     const { container } = render(<Poster src="blob:poster" fit="contain" />);
     await flush();
     expect(fgPoster(container)).not.toBeNull();
-    expect(decoded).toEqual([]);
+    expect(probe.decoded).toEqual([]);
   });
 
   test('꽉 채우기 토글(cover↔contain, #527)을 왕복해도 재디코드가 없다', async () => {
@@ -65,7 +57,7 @@ describe('#526 ① Poster 자연 종횡비 — 전경 <img>에서 읽고, 추가
     await act(async () => { rerender(<Poster src="blob:poster" fit="contain" />); });
     await flush();
     expect(container.querySelector('img[data-role="poster"]')).not.toBeNull();
-    expect(decoded).toEqual([]);
+    expect(probe.decoded).toEqual([]);
   });
 
   test('늦게 도착한 load 이벤트로 종횡비가 잡혀 페더 마스크가 선다', async () => {
@@ -82,6 +74,6 @@ describe('#526 ① Poster 자연 종횡비 — 전경 <img>에서 읽고, 추가
 
     expect(fg.style.maskImage).toContain('linear-gradient');
     expect(fg.style.maskImage).toContain('to bottom');
-    expect(decoded).toEqual([]);
+    expect(probe.decoded).toEqual([]);
   });
 });
