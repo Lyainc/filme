@@ -142,12 +142,23 @@ export default function TicketLanding({ imageUrl, title, pageUrl, width, height,
           </Link>
         </header>
 
-        <main className="flex flex-1 flex-col items-center justify-center gap-10 px-5 py-12">
+        {/* 세로 예산(#491): 진입 즉시 CTA가 폴드 위에 서야 한다. py-12/gap-10 + 높이 캡 없는
+            티켓(세로 무드 ~613px)이면 일반 폰에서 CTA가 스크롤 아래로 밀렸다 — 패딩·간격을
+            조이고 티켓엔 아래 max-h 캡을 건다. */}
+        <main className="flex flex-1 flex-col items-center justify-center gap-6 px-5 py-6">
           {/* heading 랜드마크 — 시각 워드마크는 홈 링크(nav)라 별도 sr-only h1로 페이지 주제를 노출(#199). */}
           <h1 className="sr-only">{ogTitle}</h1>
           {/* 그림자·perspective만으로 "프리미엄 티켓 한 장"의 물성을 표현한다(#389 — 기울임은
               브랜드 보이스인 정밀함과 불일치해 제거). */}
-          <div className="w-full max-w-sm" style={{ perspective: '1200px' }}>
+          {/* 높이 예산(#491)은 img가 아니라 **래퍼 폭**에 건다. img에 max-h를 걸려면 폭도 auto여야
+              비율이 유지되는데, 폭이 auto면 로드 전 고유 치수가 없어 슬롯이 0이 되고 #199의 비율
+              예약(width/height 속성)이 죽어 이미지가 도착하는 순간 ~600px CLS가 난다. 대신 45vh를
+              티켓 비율로 나눠 폭 상한으로 환산하면 img는 w-full/h-auto 그대로 두고도 높이가 45vh를
+              못 넘는다 — 예약도 살고 캡도 선다. 비율은 무드마다 달라 props에서 읽는다. */}
+          <div
+            className="w-full"
+            style={{ perspective: '1200px', maxWidth: `min(24rem, calc(45vh * ${width} / ${height}))` }}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element — Blob 원격 도메인이라 일반 img 사용 */}
             <img
               src={imageUrl}
@@ -166,9 +177,10 @@ export default function TicketLanding({ imageUrl, title, pageUrl, width, height,
             <p className="text-[14px] text-fg-muted">
               영화 포스터로 시네마틱한 포토티켓을, 너도 만들어봐.
             </p>
+            {/* CTA 슬림화(#491) — 44px는 탭 타깃 하한이라 더 낮추지 않는다. */}
             <Link
               href="/"
-              className="text-mono mt-1 inline-flex min-h-[48px] items-center justify-center rounded-field-sm bg-accent px-8 text-[12px] uppercase tracking-widest text-accent-ink transition-colors hover:bg-accent-hover"
+              className="text-mono mt-1 inline-flex min-h-[44px] items-center justify-center rounded-field-sm bg-accent px-6 text-[12px] uppercase tracking-widest text-accent-ink transition-colors hover:bg-accent-hover"
             >
               나도 티켓 만들기 →
             </Link>
