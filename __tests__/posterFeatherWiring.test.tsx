@@ -16,27 +16,25 @@ import { Poster } from '../src/components/moods/_shared';
 const BOX_W = 960;
 const BOX_H = 1433;
 
-class FakeImage {
-  onload: (() => void) | null = null;
-  onerror: (() => void) | null = null;
-  naturalWidth = 1200; // 0.75 > 슬롯 0.670 → 상하 레터박스 → 세로 페더 대상
-  naturalHeight = 1600;
-  set src(_v: string) {
-    queueMicrotask(() => this.onload?.());
-  }
-}
+// Poster는 전경 <img>가 이미 로드한 자연 치수를 그대로 읽는다(#526 ① — 같은 src를 new Image()로
+// 또 디코드하던 프로브 제거). happy-dom의 <img>는 complete=false·naturalWidth=0이라 프로토타입에
+// 치수를 실어준다. 프로브가 되살아나면 이 스텁만으론 natAspect가 안 잡혀 마스크가 사라진다.
+const NAT_W = 1200; // 0.75 > 슬롯 0.670 → 상하 레터박스 → 세로 페더 대상
+const NAT_H = 1600;
 
 let origW: PropertyDescriptor | undefined;
 let origH: PropertyDescriptor | undefined;
-let origImage: typeof Image;
+const origImgProps: Record<string, PropertyDescriptor | undefined> = {};
 
 beforeEach(() => {
   origW = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth');
   origH = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight');
   Object.defineProperty(HTMLElement.prototype, 'offsetWidth', { configurable: true, get: () => BOX_W });
   Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, get: () => BOX_H });
-  origImage = globalThis.Image;
-  (globalThis as { Image: unknown }).Image = FakeImage;
+  for (const [k, v] of Object.entries({ complete: true, naturalWidth: NAT_W, naturalHeight: NAT_H })) {
+    origImgProps[k] = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, k);
+    Object.defineProperty(HTMLImageElement.prototype, k, { configurable: true, get: () => v });
+  }
 });
 
 afterEach(() => {
@@ -45,7 +43,10 @@ afterEach(() => {
   else delete (HTMLElement.prototype as unknown as Record<string, unknown>).offsetWidth;
   if (origH) Object.defineProperty(HTMLElement.prototype, 'offsetHeight', origH);
   else delete (HTMLElement.prototype as unknown as Record<string, unknown>).offsetHeight;
-  (globalThis as { Image: unknown }).Image = origImage;
+  for (const [k, d] of Object.entries(origImgProps)) {
+    if (d) Object.defineProperty(HTMLImageElement.prototype, k, d);
+    else delete (HTMLImageElement.prototype as unknown as Record<string, unknown>)[k];
+  }
 });
 
 // 전경 포스터 <img>: data-role=poster지만 blur 배경(data-poster-bg)이 아닌 쪽.
@@ -59,7 +60,7 @@ async function renderPoster(props: Parameters<typeof Poster>[0]) {
   await act(async () => {
     container = render(<Poster {...props} />).container;
   });
-  // natAspect(FakeImage onload 마이크로태스크) + boxSize effect가 반영되도록 플러시.
+  // natAspect(<img> 마운트 시 complete 체크) + boxSize effect가 반영되도록 플러시.
   await act(async () => {
     await Promise.resolve();
     await Promise.resolve();

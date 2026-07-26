@@ -7,7 +7,7 @@
  * 밴드 높이(onTopBandHeight)에만 별도 톤 정합 오버레이(TopBandTone)를 얹는 방식이 실제로 배선됐는지,
  * (1) Poster가 밴드 높이를 정확히 리포트하는지, (2) 무드가 그 높이·테마별 톤으로 오버레이를 실제로
  * 그리는지 두 층에서 검증한다. posterFeatherWiring.test.tsx와 동일한 happy-dom 스텁 기법(오프셋
- * 스텁 + FakeImage)을 공유한다.
+ * 스텁 + <img> 자연치수 스텁)을 공유한다.
  */
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { render, cleanup, act } from '@testing-library/react';
@@ -23,27 +23,25 @@ const NAT_ASPECT = 1200 / 1600; // 0.75 > 슬롯 0.670 → 상하 레터박스
 const FRAME_INSET_Y = 22;
 const EXPECTED_BAND_H = FRAME_INSET_Y + posterContainRect(BOX_W, BOX_H, NAT_ASPECT).insetY; // 98.5
 
-class FakeImage {
-  onload: (() => void) | null = null;
-  onerror: (() => void) | null = null;
-  naturalWidth = 1200;
-  naturalHeight = 1600;
-  set src(_v: string) {
-    queueMicrotask(() => this.onload?.());
-  }
-}
+// Poster는 전경 <img>가 이미 로드한 자연 치수를 그대로 읽는다(#526 ① — 같은 src를 new Image()로
+// 또 디코드하던 프로브 제거). happy-dom의 <img>는 complete=false·naturalWidth=0이라 프로토타입에
+// 치수를 실어준다. 프로브가 되살아나면 이 스텁만으론 natAspect가 안 잡혀 마스크가 사라진다.
+const NAT_W = 1200; // 0.75 > 슬롯 0.670 → 상하 레터박스 → 세로 페더 대상
+const NAT_H = 1600;
 
 let origW: PropertyDescriptor | undefined;
 let origH: PropertyDescriptor | undefined;
-let origImage: typeof Image;
+const origImgProps: Record<string, PropertyDescriptor | undefined> = {};
 
 beforeEach(() => {
   origW = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth');
   origH = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight');
   Object.defineProperty(HTMLElement.prototype, 'offsetWidth', { configurable: true, get: () => BOX_W });
   Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, get: () => BOX_H });
-  origImage = globalThis.Image;
-  (globalThis as { Image: unknown }).Image = FakeImage;
+  for (const [k, v] of Object.entries({ complete: true, naturalWidth: NAT_W, naturalHeight: NAT_H })) {
+    origImgProps[k] = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, k);
+    Object.defineProperty(HTMLImageElement.prototype, k, { configurable: true, get: () => v });
+  }
 });
 
 afterEach(() => {
@@ -52,11 +50,14 @@ afterEach(() => {
   else delete (HTMLElement.prototype as unknown as Record<string, unknown>).offsetWidth;
   if (origH) Object.defineProperty(HTMLElement.prototype, 'offsetHeight', origH);
   else delete (HTMLElement.prototype as unknown as Record<string, unknown>).offsetHeight;
-  (globalThis as { Image: unknown }).Image = origImage;
+  for (const [k, d] of Object.entries(origImgProps)) {
+    if (d) Object.defineProperty(HTMLImageElement.prototype, k, d);
+    else delete (HTMLImageElement.prototype as unknown as Record<string, unknown>)[k];
+  }
 });
 
-// 마운트 effect의 measure()는 observe 이전에 동기 실행되지만, natAspect(FakeImage onload)는
-// 마이크로태스크라 한 박자 늦게 갱신된다 — posterFeatherWiring.test.tsx와 동일하게 두 틱 플러시.
+// 마운트 effect의 measure()·natAspect 읽기는 observe 이전에 동기 실행되지만, state 반영은 한 박자
+// 늦다 — posterFeatherWiring.test.tsx와 동일하게 두 틱 플러시.
 async function flush() {
   await act(async () => {
     await Promise.resolve();

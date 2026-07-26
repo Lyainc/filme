@@ -1,4 +1,4 @@
-import { CSSProperties, Fragment, ReactNode, memo, useEffect, useMemo, useRef, useState } from 'react';
+import { CSSProperties, Fragment, ReactNode, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 import { FIELD_LABELS, STAMP_LABELS, isStampTarget, type SheetTarget } from '@/constants/fields';
 import { formatDate } from '@/utils/dateFormat';
@@ -175,6 +175,10 @@ function useNaturalAspect(src: string, active: boolean = true): number | null {
     img.src = src;
     return () => {
       cancelled = true;
+      // 핸들러도 같이 끊는다 — 플래그만 세우면 진행 중인 로드가 완료될 때까지 브라우저가 이 Image를
+      // 잡고 있고, 그 핸들러 클로저가 setAspect(=언마운트된 컴포넌트)까지 물고 늘어진다(로고 재업로드
+      // 반복 시 누적, #526 ①).
+      img.onload = null;
     };
   }, [src, active]);
   return aspect;
@@ -864,7 +868,18 @@ export const Poster = memo(function Poster({
   // (포스터 서브트리는 html-to-image에서 제외되므로, #439). 두 경로가 posterFeather 헬퍼를 공유해 일치.
   const posterRef = useRef<HTMLImageElement>(null);
   const [boxSize, setBoxSize] = useState<{ w: number; h: number } | null>(null);
-  const natAspect = useNaturalAspect(src, fit === 'contain');
+  // 자연 종횡비는 아래 전경 <img>가 이미 로드한 값을 그대로 읽는다(onLoad + 캐시 히트용 complete
+  // 체크). 같은 src를 new Image()로 한 번 더 디코드하던 프로브를 없앤다(#526 ①) — 마운트당 1회,
+  // 에디터 프리뷰와 결과 렌더러가 따로 마운트되므로 최소 2회였다. fit 토글(cover↔contain, #527)에도
+  // 값이 유지돼 되돌린 첫 프레임부터 featherMask가 선다(예전엔 active가 뒤집혀 재디코드 1회 + 마스크
+  // 없는 프레임 1장). 스탬프는 <img>가 없는 계산이라 계속 useNaturalAspect를 쓴다.
+  const [natAspect, setNatAspect] = useState<number | null>(null);
+  const readNatAspect = useCallback((el: HTMLImageElement | null) => {
+    setNatAspect(el && el.complete && el.naturalWidth > 0 ? el.naturalWidth / el.naturalHeight : null);
+  }, []);
+  useEffect(() => {
+    readNatAspect(posterRef.current);
+  }, [src, readNatAspect]);
   useEffect(() => {
     const el = posterRef.current;
     if (fit !== 'contain' || !el) {
@@ -950,6 +965,7 @@ export const Poster = memo(function Poster({
           src={src}
           alt=""
           data-role="poster"
+          onLoad={(e) => readNatAspect(e.currentTarget)}
           style={{
             position: 'absolute',
             inset: 0,
