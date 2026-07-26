@@ -1,4 +1,4 @@
-import { CSSProperties, Fragment, ReactNode, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { CSSProperties, Fragment, ReactNode, SyntheticEvent, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 import { FIELD_LABELS, STAMP_LABELS, isStampTarget, type SheetTarget } from '@/constants/fields';
 import { formatDate } from '@/utils/dateFormat';
@@ -154,30 +154,39 @@ export function stampHeightDelta(aspect: number | null): number {
 }
 
 /**
- * 이미지 자연 종횡비(width/height) — 로드 전/실패/빈 src는 null(#392, 스탬프 높이 보정 입력).
- * `active=false`면 로드 자체를 생략한다(스탬프가 화면에 전혀 안 그려지는 상태에서의 낭비 로드
- * 방지, #190 nit).
+ * 렌더된 로고 `<img>`가 이미 로드한 자연 종횡비(width/height) — 미로드/실패/img 없음은
+ * null(#392, 스탬프 높이 보정 입력). 반환 `imgProps`를 그 `<img>`에 펼쳐 붙인다.
+ *
+ * 예전엔 같은 src를 `new Image()`로 한 번 더 디코드하는 프로브였다(#539) — 로고마다 2회,
+ * 스탬프 2종이면 티켓당 4회, 마운트마다(에디터 프리뷰 + 결과 렌더러) 배수였다. Poster가
+ * #526 ①에서 먼저 걷어낸 것과 같은 패턴으로 통일한다.
+ *
+ * ref는 콜백이라 `<img>`가 없는 분기(라벨·placeholder·노출 off의 dim 박스)로 넘어가면
+ * 언마운트에서 null로 불려 aspect가 함께 풀린다 — 로고를 숨긴 dim placeholder가 이전 로고의
+ * 종횡비 보정을 물고 있지 않게 하는 게 이 콜백의 몫이다(#539 판정: 로고가 안 보이는 박스에
+ * ±16px 보정은 두 고스트 박스 높이만 어긋나게 할 뿐 전달하는 정보가 없다).
+ *
+ * effect는 같은 `<img>`에서 src만 갈릴 때를 맡는다 — 그땐 ref가 다시 안 불리므로, 새 src의
+ * complete=false를 읽어 이전 값을 즉시 폐기한다(로고 교체 시 이전 높이가 잠깐 유지되던 #190 nit).
  */
-function useNaturalAspect(src: string, active: boolean = true): number | null {
+function useNaturalAspect(src: string) {
+  const imgRef = useRef<HTMLImageElement | null>(null);
   const [aspect, setAspect] = useState<number | null>(null);
+  const read = useCallback((el: HTMLImageElement | null) => {
+    imgRef.current = el;
+    // naturalHeight까지 보는 건 0 나눗셈 방어 — 치수가 반쪽만 잡히는 이미지(높이 없는 SVG 등)를
+    // Infinity(=cap까지 축소)가 아니라 "모름"(보정 없음)으로 떨어뜨린다.
+    setAspect(el && el.complete && el.naturalWidth > 0 && el.naturalHeight > 0 ? el.naturalWidth / el.naturalHeight : null);
+  }, []);
   useEffect(() => {
-    // src/active가 바뀔 때마다 이전 값부터 폐기 — 새 로드가 끝나기 전까지 stale aspect로
-    // 렌더되는 걸 막는다(로고 교체 시 이전 높이가 잠깐 유지되던 #190 nit).
-    setAspect(null);
-    if (!active || !src) return;
-    const img = new Image();
-    img.onload = () => {
-      if (img.naturalWidth > 0 && img.naturalHeight > 0) setAspect(img.naturalWidth / img.naturalHeight);
-    };
-    img.src = src;
-    // cleanup은 핸들러를 끊는다 — 진행 중인 로드 자체는 끝까지 가지만, 그 클로저가 물고 있던
-    // setAspect(=언마운트된 컴포넌트) 참조가 풀려 GC를 막지 않는다(로고 재업로드 반복 시 누적,
-    // #526 ①). 예전엔 cancelled 플래그만 세우고 핸들러를 그대로 남겨뒀다.
-    return () => {
-      img.onload = null;
-    };
-  }, [src, active]);
-  return aspect;
+    read(imgRef.current);
+  }, [src, read]);
+  return {
+    aspect,
+    /** ResizeObserver처럼 엘리먼트 자체가 필요한 쪽을 위해 같은 ref를 그대로 내준다(Poster). */
+    ref: imgRef,
+    imgProps: { ref: read, onLoad: (e: SyntheticEvent<HTMLImageElement>) => read(e.currentTarget) },
+  };
 }
 
 /**
@@ -503,9 +512,10 @@ export function ChainStamp({
   onRenderedHeight,
 }: ChainStampProps) {
   // Rules of Hooks — stampWillRender의 조기 return보다 앞에서 무조건 호출(#392).
-  // 결과(willRender)를 그대로 로드 여부에도 재사용 — 완전 비노출(null 렌더)이면 로드 자체를 생략한다(#190 nit).
+  // 낭비 로드 방지용 active 게이팅(#190 nit)은 필요 없어졌다 — 로드하는 <img>가 곧 렌더되는
+  // <img>라, 안 그려지면 로드도 없다(#539).
   const willRender = stampWillRender(visible, chain, label, ghost);
-  const aspect = useNaturalAspect(chain, willRender);
+  const { aspect, imgProps } = useNaturalAspect(chain);
   // 무드 고정 size(디자인 상수)와 사용자 조작 scale(#441)을 분리해 받되, 실제 렌더 계산은
   // 곱연산 결합값 하나로 통일 — 아래 h·placeholder·라벨이 전부 같은 비율로 스케일된다.
   const scaledSize = size * scale;
@@ -533,6 +543,7 @@ export function ChainStamp({
   if (chain) {
     return (
       <img
+        {...imgProps}
         src={chain}
         alt="Theater Chain"
         style={{
@@ -581,10 +592,9 @@ export function FormatStamp({
   ghost,
   onRenderedHeight,
 }: FormatStampProps) {
-  // Rules of Hooks — stampWillRender의 조기 return보다 앞에서 무조건 호출(#392).
-  // 결과(willRender)를 그대로 로드 여부에도 재사용 — 완전 비노출(null 렌더)이면 로드 자체를 생략한다(#190 nit).
+  // ChainStamp와 동일 — Rules of Hooks(#392).
   const willRender = stampWillRender(visible, format, label, ghost);
-  const aspect = useNaturalAspect(format, willRender);
+  const { aspect, imgProps } = useNaturalAspect(format);
   // ChainStamp와 동일 — 무드 고정 size와 사용자 scale(#441)을 곱연산 결합값 하나로 통일.
   const scaledSize = size * scale;
   // delta도 스케일 — ChainStamp와 동일 이유(claude-review PR #408 P1, 2차 라운드).
@@ -606,6 +616,7 @@ export function FormatStamp({
   if (format) {
     return (
       <img
+        {...imgProps}
         src={format}
         alt="Screening Format"
         style={{
@@ -876,22 +887,15 @@ export const Poster = memo(function Poster({
   // (SSR/첫 페인트)엔 마스크 없이 오늘과 동일 → SSR 마크업 불변(기존 렌더 스냅샷 테스트 보존).
   // export는 이 CSS 마스크가 아니라 captureToImage.compositeRaster가 canvas로 같은 씸을 다시 그린다
   // (포스터 서브트리는 html-to-image에서 제외되므로, #439). 두 경로가 posterFeather 헬퍼를 공유해 일치.
-  const posterRef = useRef<HTMLImageElement>(null);
   const [boxSize, setBoxSize] = useState<{ w: number; h: number } | null>(null);
   // 자연 종횡비는 아래 전경 <img>가 이미 로드한 값을 그대로 읽는다(onLoad + 캐시 히트용 complete
   // 체크). 같은 src를 new Image()로 한 번 더 디코드하던 프로브를 없앤다(#526 ①) — 마운트당 1회,
   // 에디터 프리뷰와 결과 렌더러가 따로 마운트되므로 최소 2회였다. fit 토글(cover↔contain, #527)에도
   // 값이 유지돼 되돌린 첫 프레임부터 featherMask가 선다(예전엔 active가 뒤집혀 재디코드 1회 + 마스크
-  // 없는 프레임 1장). 스탬프(ChainStamp/FormatStamp)는 로고 <img>를 안 그리는 분기(노출 off의 dim
-  // placeholder)에서도 같은 종횡비 보정을 쓰므로 useNaturalAspect를 그대로 둔다 — 로고 <img>가 서는
-  // 분기까지 같이 옮기는 건 #526 ①이 "Poster 로컬 변경"으로 그어둔 범위 밖이다.
-  const [natAspect, setNatAspect] = useState<number | null>(null);
-  const readNatAspect = useCallback((el: HTMLImageElement | null) => {
-    setNatAspect(el && el.complete && el.naturalWidth > 0 ? el.naturalWidth / el.naturalHeight : null);
-  }, []);
-  useEffect(() => {
-    readNatAspect(posterRef.current);
-  }, [src, readNatAspect]);
+  // 없는 프레임 1장). 스탬프(ChainStamp/FormatStamp)도 #539에서 같은 패턴으로 따라왔다 — 로고
+  // <img>를 안 그리는 분기(노출 off의 dim placeholder)는 보정 없이 고정 높이로 서는 게 맞다는
+  // 판정이라, 두 곳이 같은 메커니즘 하나(useNaturalAspect)로 통일됐다.
+  const { aspect: natAspect, ref: posterRef, imgProps: posterImgProps } = useNaturalAspect(src);
   useEffect(() => {
     const el = posterRef.current;
     if (fit !== 'contain' || !el) {
@@ -973,11 +977,10 @@ export const Poster = memo(function Poster({
           div(inset은 항상 신뢰 가능)가 맡고, img는 그 안에서 기존처럼 inset:0+100%로 채운다. */}
       <div style={{ position: 'absolute', top: fit === 'contain' ? frameInsetY : 0, bottom: fit === 'contain' ? frameInsetY : 0, left: 0, right: 0 }}>
         <img
-          ref={posterRef}
+          {...posterImgProps}
           src={src}
           alt=""
           data-role="poster"
-          onLoad={(e) => readNatAspect(e.currentTarget)}
           style={{
             position: 'absolute',
             inset: 0,
