@@ -161,8 +161,8 @@ describe('#527 포스터 꽉 채우기(cover)', () => {
 
   // 표(POSTER_FILL_MOODS)와 실제 렌더가 갈리면 죽은 컨트롤이나 조용한 잘림이 생긴다 — posterFit은
   // 컴포넌트 전역 값이라 minimal에서 켠 뒤 무드를 옮기면 따라오는데, 표 밖 무드는 그걸 안 읽어야
-  // 한다(stub 밴드 960×900은 cover면 세로 37.5%가 날아가 포스터 프레임이 1.067로 뜬다 — #525
-  // 룰 5 위반, 실측). #524 inkColorFidelity와 같은 표-대-렌더 대조.
+  // 한다(stub 밴드 960×640에 세로 크롭이 넘어온 경우 cover는 세로 55.6%를 날린다 — #525 룰 5
+  // 위반과 같은 그림). #524 inkColorFidelity와 같은 표-대-렌더 대조.
   // 35mm Wide는 이 표의 관할 밖이라 뺀다 — posterFitProps를 안 태우고 컷 자체가 cover 고정이다
   // (위 #524 describe가 그쪽을 잡는다).
   test.each(POSTER_FIT_MOODS)('%s — posterFit=cover 반영 여부가 POSTER_FILL_MOODS와 일치', (id, Mood) => {

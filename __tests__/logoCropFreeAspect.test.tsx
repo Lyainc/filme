@@ -280,8 +280,8 @@ describe('가로 포스터 슬롯 크롭 프리셋 (#529)', () => {
     expect(aspectOf(screen.getByTestId('crop-frame'))).toBeCloseTo(POSTER_RATIO, 5);
   });
 
-  test('세로 무드 4종은 기존 POSTER_RATIO 경로 그대로(회귀 없음)', () => {
-    for (const id of ['minimal', 'criterion', '35mm', 'stub'] as const) {
+  test('세로 포스터 슬롯 3종은 기존 POSTER_RATIO 경로 그대로(회귀 없음)', () => {
+    for (const id of ['minimal', 'criterion', '35mm'] as const) {
       render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} layout={id} />);
       loadImage(1200, 800);
       expect(aspectOf(screen.getByTestId('crop-frame'))).toBeCloseTo(POSTER_RATIO, 5);
@@ -289,9 +289,19 @@ describe('가로 포스터 슬롯 크롭 프리셋 (#529)', () => {
     }
   });
 
-  test('가로 포스터 슬롯은 35mm Wide 하나 — 캔버스 가로 2종과 다른 축', () => {
-    expect(LAYOUTS.filter((l) => l.posterOrientation === 'landscape').map((l) => l.id)).toEqual(['35mm-landscape']);
-    expect(LAYOUTS.filter((l) => l.orientation === 'landscape')).toHaveLength(2);
+  // 두 축이 정말 독립임을 보여주는 표 — 캔버스 가로 2종(editorial·35mm Wide)과 포스터 슬롯
+  // 가로 2종(35mm Wide·stub)이 서로 겹치지 않는다. stub은 캔버스가 세로인데 밴드가 960×640(3:2)
+  // 이라 가로 슬롯이고(#527), editorial은 그 반대다.
+  test('포스터 슬롯 가로 = 35mm Wide·stub — 캔버스 가로(editorial·35mm Wide)와 다른 축', () => {
+    expect(LAYOUTS.filter((l) => l.posterOrientation === 'landscape').map((l) => l.id)).toEqual(['stub', '35mm-landscape']);
+    expect(LAYOUTS.filter((l) => l.orientation === 'landscape').map((l) => l.id)).toEqual(['editorial', '35mm-landscape']);
+  });
+
+  test('stub은 캔버스가 세로여도 포스터 밴드가 3:2라 가로 프리셋(#527)', () => {
+    expect(LAYOUTS.find((l) => l.id === 'stub')!.orientation).toBe('portrait');
+    render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} layout="stub" />);
+    loadImage(1200, 800);
+    expect(aspectOf(screen.getByTestId('crop-frame'))).toBeCloseTo(POSTER_LANDSCAPE_RATIO, 5);
   });
 
   test('가로 무드에서도 "원본 비율 보존" 토글이 자연비 ↔ 3:2를 전환한다', () => {
