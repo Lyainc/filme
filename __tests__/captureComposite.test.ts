@@ -143,7 +143,7 @@ describe('#439 — toPng filter는 포스터 서브트리·로고·placeholder�
 });
 
 describe('#439/#459 — z-order + contain 포스터는 좌우가 안 잘리고, 상하 레터박스 씸은 페더된다', () => {
-  test('포스터(contain 레터박스)를 페더용 tmp 캔버스로 그려 base보다 먼저·로고를 나중에, 폭은 꽉 채운다(좌우 무손실)', async () => {
+  test('포스터(contain 레터박스)를 중앙 직접 + 밴드 오프스크린으로 그려 base보다 먼저·로고를 나중에, 폭은 꽉 채운다(좌우 무손실)', async () => {
     const node = document.createElement('div');
     stubRect(node, 0, 0, 960, 1477); // scale 1 (자연 크기)
 
@@ -162,25 +162,31 @@ describe('#439/#459 — z-order + contain 포스터는 좌우가 안 잘리고, 
     // 흰 배경 채움 = export 여백. canvasW=(960+20)*2=1960, canvasH=(1477+20)*2=2994.
     expect(fillRects.some((r) => r.x === 0 && r.y === 0 && r.w === 1960 && r.h === 2994)).toBe(true);
 
-    // #459 페더: 상하 레터박스 씸이 있으므로 포스터는 tmp 캔버스로 우회 그린다.
-    // 순서: (1) 원본 img→tmp 축소, (2) tmp(canvas)→메인, (3) base(FakeImage), (4) 로고.
-    expect(draws.length).toBe(4);
-    expect(draws[0].arg).toBe(fg); // 원본 <img>를 tmp에 그림
+    // #459 페더: 상하 레터박스 씸이 있으므로 알파 램프가 필요한 위아래 밴드만 오프스크린을 거친다.
+    // 순서: (1) 중앙을 메인에 직접, (2·3) 위 밴드 img→tmp→메인, (4·5) 아래 밴드, (6) base, (7) 로고.
+    expect(draws.length).toBe(7);
+    expect(draws[0].arg).toBe(fg); // 알파 1인 중앙은 오프스크린 없이 메인에 바로
     expect(draws[0].isCanvas).toBe(false);
-    expect(draws[1].isCanvas).toBe(true); // 페더된 tmp를 메인에 얹음
-    expect(draws[2].arg).toBeInstanceOf(FakeImage); // base(CSS 레이어)
-    expect(draws[3].arg).toBe(stamp); // 로고는 페더 안 함(role !== poster)
+    expect(draws[5].arg).toBeInstanceOf(FakeImage); // base(CSS 레이어)
+    expect(draws[6].arg).toBe(stamp); // 로고는 페더 안 함(role !== poster)
 
-    // 페더 알파 마스크가 실제로 적용됐다: destination-in + 가장자리 투명 그라데이션(하드 컷 아님).
+    // 페더 알파 마스크가 실제로 적용됐다: destination-in + 바깥 가장자리 투명 램프(하드 컷 아님).
     expect(gcos).toContain('destination-in');
-    expect(gradStops[0]).toEqual({ o: 0, c: 'rgba(0,0,0,0)' }); // 가장자리 투명
-    expect(gradStops[gradStops.length - 1]).toEqual({ o: 1, c: 'rgba(0,0,0,0)' });
-    expect(gradStops.some((s) => s.c === '#000' && s.o > 0 && s.o < 1)).toBe(true); // 중앙 불투명
+    expect(gradStops).toEqual([
+      { o: 0, c: 'rgba(0,0,0,0)' }, { o: 1, c: '#000' }, // 위 밴드
+      { o: 0, c: 'rgba(0,0,0,0)' }, { o: 1, c: '#000' }, // 아래 밴드
+    ]);
+
+    // 핵심 회귀(#526 ②): 오프스크린은 페더 밴드 크기여야 한다 — 예전엔 램프 하나 때문에 포스터
+    // 전체(1920×2752)를 잡았다. F=POSTER_EDGE_FEATHER(24)×pixelRatio(2)=48.
+    const bands = draws.filter((d) => d.isCanvas).map((d) => d.arg as HTMLCanvasElement);
+    expect(bands.length).toBe(2);
+    for (const b of bands) expect(b.height).toBe(48);
 
     // 핵심 회귀(#439): 페더 후에도 메인 draw 폭 = 박스 폭(1920) → 좌우 무손실. 세로는 레터박스로 더 작다.
     const boxW = 1920; // (960)*2, 여백 안쪽 폭
-    expect(draws[1].dw).toBeCloseTo(boxW, 0);
-    expect(draws[1].dh!).toBeLessThan(2954); // 박스 높이(1477*2)보다 작음 = 위아래 레터박스
+    expect(draws[0].dw).toBeCloseTo(boxW, 0);
+    expect(draws[0].dh!).toBeLessThan(2954); // 박스 높이(1477*2)보다 작음 = 위아래 레터박스
     // 포스터 clip 박스: (여백10)*2=20 시작, 티켓 내용 영역 1920×2954.
     expect(rects[0]).toEqual({ x: 20, y: 20, w: 1920, h: 2954 });
 
@@ -235,7 +241,7 @@ describe('#439 — 블러 배경은 ctx.filter blur 대신 다운스케일→업
     node.remove();
   });
 
-  test('#459 — blur 없는 contain 포스터라도 레터박스가 있으면 페더 tmp로 그리되, 색보정은 tmp에 적용·메인엔 filter 없이 얹는다', async () => {
+  test('#459 — blur 없는 contain 포스터라도 레터박스가 있으면 밴드를 페더 tmp로 그리되, 색보정은 tmp에 적용·메인엔 filter 없이 얹는다', async () => {
     const node = document.createElement('div');
     stubRect(node, 0, 0, 960, 1477);
     const fg = makeImg({ role: 'poster', w: 1800, h: 2580, style: { objectFit: 'contain', filter: 'brightness(0.5)' } });
@@ -245,13 +251,16 @@ describe('#439 — 블러 배경은 ctx.filter blur 대신 다운스케일→업
 
     await captureNodeToJpeg(node, OPTS);
 
-    // 페더 tmp 경로: (1) 원본 img→tmp(색보정 적용), (2) tmp→메인(filter none), (3) base.
-    expect(draws.length).toBe(3);
+    // 페더 경로: (1) 중앙을 메인에 직접(색보정 적용), (2) 밴드 img→tmp(색보정 적용),
+    // (3) tmp→메인(filter none) … 밴드 2개 → 총 5 + base 1.
+    expect(draws.length).toBe(6);
     expect(draws[0].arg).toBe(fg);
     expect(draws[0].isCanvas).toBe(false);
-    expect(draws[0].filter).toBe('brightness(0.5)'); // 색보정은 tmp에 그릴 때 적용(px 단위 없어 스케일 무변)
-    expect(draws[1].isCanvas).toBe(true);
-    expect(draws[1].filter).toBe('none'); // 페더된 tmp는 filter 없이 얹는다
+    expect(draws[0].filter).toBe('brightness(0.5)'); // 색보정(px 단위 없어 스케일 무변)
+    expect(draws[1].arg).toBe(fg);
+    expect(draws[1].filter).toBe('brightness(0.5)'); // 밴드 tmp에도 같은 색보정
+    expect(draws[2].isCanvas).toBe(true);
+    expect(draws[2].filter).toBe('none'); // 페더된 밴드 tmp는 filter 없이 얹는다
     expect(gcos).toContain('destination-in');
 
     node.remove();
