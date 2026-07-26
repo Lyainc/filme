@@ -165,19 +165,15 @@ function useNaturalAspect(src: string, active: boolean = true): number | null {
     // 렌더되는 걸 막는다(로고 교체 시 이전 높이가 잠깐 유지되던 #190 nit).
     setAspect(null);
     if (!active || !src) return;
-    let cancelled = false;
     const img = new Image();
     img.onload = () => {
-      if (!cancelled && img.naturalWidth > 0 && img.naturalHeight > 0) {
-        setAspect(img.naturalWidth / img.naturalHeight);
-      }
+      if (img.naturalWidth > 0 && img.naturalHeight > 0) setAspect(img.naturalWidth / img.naturalHeight);
     };
     img.src = src;
+    // cleanup은 핸들러를 끊는다 — 진행 중인 로드 자체는 끝까지 가지만, 그 클로저가 물고 있던
+    // setAspect(=언마운트된 컴포넌트) 참조가 풀려 GC를 막지 않는다(로고 재업로드 반복 시 누적,
+    // #526 ①). 예전엔 cancelled 플래그만 세우고 핸들러를 그대로 남겨뒀다.
     return () => {
-      cancelled = true;
-      // 핸들러도 같이 끊는다 — 플래그만 세우면 진행 중인 로드가 완료될 때까지 브라우저가 이 Image를
-      // 잡고 있고, 그 핸들러 클로저가 setAspect(=언마운트된 컴포넌트)까지 물고 늘어진다(로고 재업로드
-      // 반복 시 누적, #526 ①).
       img.onload = null;
     };
   }, [src, active]);
@@ -872,7 +868,9 @@ export const Poster = memo(function Poster({
   // 체크). 같은 src를 new Image()로 한 번 더 디코드하던 프로브를 없앤다(#526 ①) — 마운트당 1회,
   // 에디터 프리뷰와 결과 렌더러가 따로 마운트되므로 최소 2회였다. fit 토글(cover↔contain, #527)에도
   // 값이 유지돼 되돌린 첫 프레임부터 featherMask가 선다(예전엔 active가 뒤집혀 재디코드 1회 + 마스크
-  // 없는 프레임 1장). 스탬프는 <img>가 없는 계산이라 계속 useNaturalAspect를 쓴다.
+  // 없는 프레임 1장). 스탬프(ChainStamp/FormatStamp)는 로고 <img>를 안 그리는 분기(노출 off의 dim
+  // placeholder)에서도 같은 종횡비 보정을 쓰므로 useNaturalAspect를 그대로 둔다 — 로고 <img>가 서는
+  // 분기까지 같이 옮기는 건 #526 ①이 "Poster 로컬 변경"으로 그어둔 범위 밖이다.
   const [natAspect, setNatAspect] = useState<number | null>(null);
   const readNatAspect = useCallback((el: HTMLImageElement | null) => {
     setNatAspect(el && el.complete && el.naturalWidth > 0 ? el.naturalWidth / el.naturalHeight : null);
