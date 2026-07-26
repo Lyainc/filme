@@ -154,8 +154,23 @@ function isCtxFilterHonored(): boolean {
   return ctxFilterHonored;
 }
 
-type ColorOpKind = 'saturate' | 'contrast' | 'brightness' | 'sepia' | 'grayscale';
-interface ColorOp { k: ColorOpKind; v: number }
+// op 종류는 **정수**로 들고 다닌다. 정규식 match가 만드는 문자열은 V8이 인터닝하지 않아서,
+// `op.k === 'brightness'`가 포인터 비교가 아니라 문자 단위 비교로 떨어진다 — 픽셀마다 op 개수만큼
+// 그 비교를 도니 이 한 줄이 베이킹 시간의 46%였다(#538 실측, CPU 6× 스로틀·1920×2752: 605→326ms).
+// 문자열 리터럴 비교로 되돌리지 말 것.
+const OP_SATURATE = 0;
+const OP_CONTRAST = 1;
+const OP_BRIGHTNESS = 2;
+const OP_GRAYSCALE = 3;
+const OP_SEPIA = 4;
+const OP_KIND: Record<string, number> = {
+  saturate: OP_SATURATE,
+  contrast: OP_CONTRAST,
+  brightness: OP_BRIGHTNESS,
+  grayscale: OP_GRAYSCALE,
+  sepia: OP_SEPIA,
+};
+interface ColorOp { k: number; v: number }
 
 // 포스터가 실제로 쓰는 색보정 함수만 다룬다(_shared.tsx: PRINT_SIM·TEXTURE_FILTERS·brightness
 // 슬라이더 → saturate·contrast·brightness·sepia·grayscale, 좌→우 순서·중복 허용). blur는 호출
@@ -168,7 +183,7 @@ function parseColorOps(filter: string): ColorOp[] {
   while ((m = re.exec(filter)) !== null) {
     const raw = parseFloat(m[2]);
     if (!Number.isFinite(raw)) continue;
-    ops.push({ k: m[1] as ColorOpKind, v: m[3] === '%' ? raw / 100 : raw });
+    ops.push({ k: OP_KIND[m[1]], v: m[3] === '%' ? raw / 100 : raw });
   }
   return ops;
 }
@@ -188,62 +203,86 @@ export function applyCssColorFilterToPixel(
   b: number,
 ): [number, number, number] {
   const px = new Uint8ClampedArray([r, g, b, 255]);
-  applyColorOpsInto(parseColorOps(filter), px, 0);
+  applyColorOpsToBuffer(parseColorOps(filter), px);
   return [px[0], px[1], px[2]];
 }
 
-/** 픽셀을 제자리에서 보정한다 — 수백만 픽셀을 도는 핫 루프라 픽셀당 배열을 만들지 않는다. */
-function applyColorOpsInto(ops: ColorOp[], d: Uint8ClampedArray, i: number): void {
-  let r = d[i] / 255;
-  let g = d[i + 1] / 255;
-  let b = d[i + 2] / 255;
-  for (const op of ops) {
-    const v = op.v;
-    if (op.k === 'brightness') {
-      r *= v; g *= v; b *= v;
-    } else if (op.k === 'contrast') {
-      const off = 0.5 - 0.5 * v;
-      r = r * v + off; g = g * v + off; b = b * v + off;
-    } else if (op.k === 'saturate') {
-      const nr = (0.213 + 0.787 * v) * r + (0.715 - 0.715 * v) * g + (0.072 - 0.072 * v) * b;
-      const ng = (0.213 - 0.213 * v) * r + (0.715 + 0.285 * v) * g + (0.072 - 0.072 * v) * b;
-      const nb = (0.213 - 0.213 * v) * r + (0.715 - 0.715 * v) * g + (0.072 + 0.928 * v) * b;
-      r = nr; g = ng; b = nb;
-    } else if (op.k === 'grayscale') {
-      const k = 1 - v; // v=1이면 완전 휘도
-      const nr = (0.2126 + 0.7874 * k) * r + (0.7152 - 0.7152 * k) * g + (0.0722 - 0.0722 * k) * b;
-      const ng = (0.2126 - 0.2126 * k) * r + (0.7152 + 0.2848 * k) * g + (0.0722 - 0.0722 * k) * b;
-      const nb = (0.2126 - 0.2126 * k) * r + (0.7152 - 0.7152 * k) * g + (0.0722 + 0.9278 * k) * b;
-      r = nr; g = ng; b = nb;
-    } else {
-      const k = 1 - v; // sepia
-      const nr = (0.393 + 0.607 * k) * r + (0.769 - 0.769 * k) * g + (0.189 - 0.189 * k) * b;
-      const ng = (0.349 - 0.349 * k) * r + (0.686 + 0.314 * k) * g + (0.168 - 0.168 * k) * b;
-      const nb = (0.272 - 0.272 * k) * r + (0.534 - 0.534 * k) * g + (0.131 + 0.869 * k) * b;
-      r = nr; g = ng; b = nb;
+/**
+ * RGBA 버퍼 전체를 제자리에서 보정한다(알파는 안 건드린다). 수백만 픽셀을 도는 핫 루프라 픽셀당
+ * 할당도, 픽셀당 함수 호출도 만들지 않는다 — 예전엔 픽셀 하나짜리 헬퍼를 5.28M번 부르고 그 안에서
+ * op를 `for...of`로 돌았다(#538 실측 기여분 658→605ms, 위 정수화가 거기서 326ms까지). 픽셀 루프와
+ * op 루프를 한 함수 안에 두는 게 그 몫이니, 픽셀 단위 헬퍼로 다시 쪼개지 말 것.
+ *
+ * 수식은 쪼개기 전과 한 글자도 다르지 않아 출력은 비트 단위로 같다.
+ */
+function applyColorOpsToBuffer(ops: ColorOp[], d: Uint8ClampedArray): void {
+  if (!ops.length) return;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] === 0) continue; // 완전 투명은 계산 생략
+    let r = d[i] / 255;
+    let g = d[i + 1] / 255;
+    let b = d[i + 2] / 255;
+    for (let j = 0; j < ops.length; j++) {
+      const op = ops[j];
+      const v = op.v;
+      if (op.k === OP_BRIGHTNESS) {
+        r *= v; g *= v; b *= v;
+      } else if (op.k === OP_CONTRAST) {
+        const off = 0.5 - 0.5 * v;
+        r = r * v + off; g = g * v + off; b = b * v + off;
+      } else if (op.k === OP_SATURATE) {
+        const nr = (0.213 + 0.787 * v) * r + (0.715 - 0.715 * v) * g + (0.072 - 0.072 * v) * b;
+        const ng = (0.213 - 0.213 * v) * r + (0.715 + 0.285 * v) * g + (0.072 - 0.072 * v) * b;
+        const nb = (0.213 - 0.213 * v) * r + (0.715 - 0.715 * v) * g + (0.072 + 0.928 * v) * b;
+        r = nr; g = ng; b = nb;
+      } else if (op.k === OP_GRAYSCALE) {
+        const k = 1 - v; // v=1이면 완전 휘도
+        const nr = (0.2126 + 0.7874 * k) * r + (0.7152 - 0.7152 * k) * g + (0.0722 - 0.0722 * k) * b;
+        const ng = (0.2126 - 0.2126 * k) * r + (0.7152 + 0.2848 * k) * g + (0.0722 - 0.0722 * k) * b;
+        const nb = (0.2126 - 0.2126 * k) * r + (0.7152 - 0.7152 * k) * g + (0.0722 + 0.9278 * k) * b;
+        r = nr; g = ng; b = nb;
+      } else {
+        const k = 1 - v; // sepia
+        const nr = (0.393 + 0.607 * k) * r + (0.769 - 0.769 * k) * g + (0.189 - 0.189 * k) * b;
+        const ng = (0.349 - 0.349 * k) * r + (0.686 + 0.314 * k) * g + (0.168 - 0.168 * k) * b;
+        const nb = (0.272 - 0.272 * k) * r + (0.534 - 0.534 * k) * g + (0.131 + 0.869 * k) * b;
+        r = nr; g = ng; b = nb;
+      }
+      r = clamp01(r); g = clamp01(g); b = clamp01(b);
     }
-    r = clamp01(r); g = clamp01(g); b = clamp01(b);
+    d[i] = Math.round(r * 255);
+    d[i + 1] = Math.round(g * 255);
+    d[i + 2] = Math.round(b * 255);
   }
-  d[i] = Math.round(r * 255);
-  d[i + 1] = Math.round(g * 255);
-  d[i + 2] = Math.round(b * 255);
 }
+
+// 한 번에 굽는 행 수. 목적은 시간이 아니라 **피크 메모리 상한** — 통째로 getImageData하면 포스터
+// 크기 사본이 통으로 뜨는데(minimal·pixelRatio 2: 1920×2752×4 ≈ 21MB, 오프스크린 캔버스와 합쳐 42MB),
+// 스트립이면 1920×1024×4 ≈ 8MB로 고정된다. 픽셀 연산은 픽셀끼리 독립이라 결과는 비트 단위로 같다.
+//
+// 값은 시간↔메모리 다이얼이고 1024는 실측으로 고른 무릎이다(#538, CPU 6× 스로틀·1920×2752):
+// 256행 380ms(2MB) · 1024행 328.5ms(8MB) · 스트립 없음 326.4ms(21MB). 더 잘게 썰면 getImageData/
+// putImageData 왕복 횟수가 늘어 시간이 다시 붙는다.
+const BAKE_STRIP_ROWS = 1024;
 
 /**
  * 캔버스 전체 픽셀에 색보정을 구워 넣는다(알파는 건드리지 않는다 — 페더 알파는 이후 단계가 칠한다).
- * ponytail: 픽셀당 op 체인을 도는 단순 루프. 포스터 1장(~5.5M px)에 수백 ms 수준이고 export는
- * 원래 수초짜리 작업이라 충분하다. 느려지면 op 체인을 3×3 행렬 하나로 접는 최적화가 다음 수순.
+ * 가로 전체 × BAKE_STRIP_ROWS 행씩 끊어 getImageData → 루프 → putImageData를 반복한다.
+ *
+ * ponytail: op 체인을 픽셀마다 도는 단순 루프 그대로다. #538에서 체인을 단일 3×3 행렬로 접는 안을
+ * 실측했는데 인덱스 루프 대비 이득이 0이었고(363ms vs 353ms), 중간 clamp를 없앤 진짜 단일 행렬은
+ * 빨랐지만(219ms) contrast(>1) 뒤 흰색 끝에서 채널이 4레벨 어긋나 CSS 스펙과 갈렸다. 접기는 근거로
+ * 기각된 안이니 다시 꺼내려면 새 실측부터.
  */
 function bakeColorFilter(ctx: CanvasRenderingContext2D, w: number, h: number, filter: string): void {
   const ops = parseColorOps(filter);
   if (!ops.length || w <= 0 || h <= 0) return;
-  const image = ctx.getImageData(0, 0, w, h);
-  const d = image.data;
-  for (let i = 0; i < d.length; i += 4) {
-    if (d[i + 3] === 0) continue; // 완전 투명은 계산 생략
-    applyColorOpsInto(ops, d, i);
+  for (let y = 0; y < h; y += BAKE_STRIP_ROWS) {
+    const sh = Math.min(BAKE_STRIP_ROWS, h - y);
+    const image = ctx.getImageData(0, y, w, sh);
+    applyColorOpsToBuffer(ops, image.data);
+    ctx.putImageData(image, 0, y);
   }
-  ctx.putImageData(image, 0, 0);
 }
 
 /**
@@ -259,14 +298,22 @@ function drawImageColorFiltered(
   dw: number,
   dh: number,
   filter: string,
+  clip?: DeviceRect,
 ): void {
   if (filter === 'none' || isCtxFilterHonored()) {
     dctx.filter = filter;
     dctx.drawImage(src, dx, dy, dw, dh);
     return;
   }
-  const w = Math.max(1, Math.round(dw));
-  const h = Math.max(1, Math.round(dh));
+  // 오프스크린은 목적지 전체가 아니라 클립과의 교집합만 잡는다(#538). 클립 밖 픽셀은 어차피 버려지는데
+  // fit='cover'는 목적지가 슬롯 밖으로 넘쳐서 그 몫이 그대로 베이킹 시간·피크 메모리였다.
+  const dest: DeviceRect = { x: dx, y: dy, w: dw, h: dh };
+  const area = clip ? intersectRect(dest, clip) : dest;
+  if (!area) return; // 클립과 안 겹침 — 그려도 한 픽셀도 안 남는다
+  const x0 = Math.floor(area.x);
+  const y0 = Math.floor(area.y);
+  const w = Math.max(1, Math.ceil(area.x + area.w) - x0);
+  const h = Math.max(1, Math.ceil(area.y + area.h) - y0);
   const off = document.createElement('canvas');
   off.width = w;
   off.height = h;
@@ -278,10 +325,21 @@ function drawImageColorFiltered(
   }
   octx.imageSmoothingEnabled = true;
   octx.imageSmoothingQuality = 'high';
-  octx.drawImage(src, 0, 0, w, h);
+  // 이미지는 오프스크린 원점 기준으로 통째로 그리고 캔버스 밖은 래스터라이저가 버린다(밴드 클로저와
+  // 같은 패턴). 소수 좌표가 오프스크린 렌더에 그대로 실려, 정수 1:1 blit이 위치를 안 흔든다.
+  octx.drawImage(src, dx - x0, dy - y0, dw, dh);
   bakeColorFilter(octx, w, h, filter);
   dctx.filter = 'none';
-  dctx.drawImage(off, dx, dy, dw, dh);
+  dctx.drawImage(off, x0, y0);
+}
+
+/** 두 device px 사각형의 교집합. 안 겹치면 null. */
+function intersectRect(a: DeviceRect, b: DeviceRect): DeviceRect | null {
+  const x = Math.max(a.x, b.x);
+  const y = Math.max(a.y, b.y);
+  const w = Math.min(a.x + a.w, b.x + b.w) - x;
+  const h = Math.min(a.y + a.h, b.y + b.h) - y;
+  return w > 0 && h > 0 ? { x, y, w, h } : null;
 }
 
 /**
@@ -307,6 +365,7 @@ function drawPosterFeathered(
   filter: string,
   vertical: boolean,
   feather: number,
+  clip?: DeviceRect,
 ): void {
   const span = vertical ? dh : dw;
   const f = Math.min(feather, span / 2);
@@ -318,12 +377,15 @@ function drawPosterFeathered(
   const crossTo = Math.ceil(vertical ? dx + dw : dy + dh) + 1;
 
   if (far > near) {
+    const center: DeviceRect = vertical
+      ? { x: crossFrom, y: near, w: crossTo - crossFrom, h: far - near }
+      : { x: near, y: crossFrom, w: far - near, h: crossTo - crossFrom };
     ctx.save();
     ctx.beginPath();
-    if (vertical) ctx.rect(crossFrom, near, crossTo - crossFrom, far - near);
-    else ctx.rect(near, crossFrom, far - near, crossTo - crossFrom);
+    ctx.rect(center.x, center.y, center.w, center.h);
     ctx.clip();
-    drawImageColorFiltered(ctx, img, dx, dy, dw, dh, filter);
+    // 중앙 draw의 유효 클립 = 밴드 사이 구간 ∩ 호출부 클립. 베이킹 오프스크린이 이 밖으로 안 나간다.
+    drawImageColorFiltered(ctx, img, dx, dy, dw, dh, filter, clip ? intersectRect(center, clip) ?? center : center);
     ctx.restore();
   }
 
@@ -348,7 +410,7 @@ function drawPosterFeathered(
     if (!tctx) {
       // 오프스크린 실패 — 페더 없이 통째로 다시 그린다(하드 경계, 빈 구멍보다 낫다). 중앙은 같은
       // 픽셀로 덮여 결과가 안 바뀐다.
-      drawImageColorFiltered(ctx, img, dx, dy, dw, dh, filter);
+      drawImageColorFiltered(ctx, img, dx, dy, dw, dh, filter, clip);
       return;
     }
     // 색보정은 밴드에 그릴 때 적용(전경 포스터 filter엔 blur 없음). iOS는 ctx.filter를 무시하므로
@@ -493,10 +555,11 @@ function compositeRaster(
     const axes = img.dataset.role === 'poster' && fit === 'contain'
       ? posterFeatherAxes(bw, bh, sw / sh, py)
       : { x: false, y: false };
+    const clip: DeviceRect = { x: cx, y: cy, w: cw, h: ch };
     if (axes.x || axes.y) {
-      drawPosterFeathered(ctx, img, dx, dy, dw, dh, scaled, axes.y, POSTER_EDGE_FEATHER * pixelRatio);
+      drawPosterFeathered(ctx, img, dx, dy, dw, dh, scaled, axes.y, POSTER_EDGE_FEATHER * pixelRatio, clip);
     } else {
-      drawImageColorFiltered(ctx, img, dx, dy, dw, dh, scaled);
+      drawImageColorFiltered(ctx, img, dx, dy, dw, dh, scaled, clip);
     }
   }
   ctx.restore();
