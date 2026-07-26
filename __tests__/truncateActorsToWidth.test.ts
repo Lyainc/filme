@@ -1,43 +1,11 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { truncateActorsToWidth } from '../src/components/moods/_shared';
+import { CHAR_WIDTH_FACTOR, installFakeCanvasContext } from './setup/canvasStub';
 
 /**
  * truncateActorsToWidth(#493) 회귀 테스트 — fitFontSizeToWidth.test.ts와 동일 패턴으로
  * happy-dom의 null canvas 2D 컨텍스트를 가짜 measureText로 교체해 실제 폭 계산 경로를 태운다.
  */
-const CHAR_WIDTH_FACTOR = 0.6;
-
-function installFakeCanvasContext() {
-  let currentFont = '400 16px sans-serif';
-  let measureCalls = 0;
-
-  const fakeCtx = {
-    set font(v: string) {
-      currentFont = v;
-    },
-    get font() {
-      return currentFont;
-    },
-    measureText(text: string) {
-      measureCalls++;
-      const sizeMatch = /(\d+(?:\.\d+)?)px/.exec(currentFont);
-      const size = sizeMatch ? parseFloat(sizeMatch[1]) : 16;
-      return { width: text.length * size * CHAR_WIDTH_FACTOR };
-    },
-  } as unknown as CanvasRenderingContext2D;
-
-  const original = HTMLCanvasElement.prototype.getContext;
-  HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, kind: string) {
-    return kind === '2d' ? fakeCtx : null;
-  } as typeof HTMLCanvasElement.prototype.getContext;
-
-  return {
-    restore: () => {
-      HTMLCanvasElement.prototype.getContext = original;
-    },
-    getMeasureCalls: () => measureCalls,
-  };
-}
 
 describe('truncateActorsToWidth', () => {
   let fake: ReturnType<typeof installFakeCanvasContext>;

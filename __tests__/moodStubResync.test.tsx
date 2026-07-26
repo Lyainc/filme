@@ -3,27 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { MoodStub } from '../src/components/moods/MoodStub';
 import { buildBarcodeWidths, buildBarcodeWidths128C } from '../src/components/moods/_shared';
 import { FULL_MOVIE, makeMoodBase } from './fixtures';
-
-// fitFontSizeToWidth.test.ts와 동일 패턴 — happy-dom의 null canvas 2D 컨텍스트를 가짜
-// measureText로 교체해야 truncateActorsToWidth의 실제 폭 계산 경로를 태울 수 있다.
-const CHAR_WIDTH_FACTOR = 0.6;
-function installFakeCanvasContext() {
-  let currentFont = '400 16px sans-serif';
-  const fakeCtx = {
-    set font(v: string) { currentFont = v; },
-    get font() { return currentFont; },
-    measureText(text: string) {
-      const sizeMatch = /(\d+(?:\.\d+)?)px/.exec(currentFont);
-      const size = sizeMatch ? parseFloat(sizeMatch[1]) : 16;
-      return { width: text.length * size * CHAR_WIDTH_FACTOR };
-    },
-  } as unknown as CanvasRenderingContext2D;
-  const original = HTMLCanvasElement.prototype.getContext;
-  HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, kind: string) {
-    return kind === '2d' ? fakeCtx : null;
-  } as typeof HTMLCanvasElement.prototype.getContext;
-  return () => { HTMLCanvasElement.prototype.getContext = original; };
-}
+import { installFakeCanvasContext } from './setup/canvasStub';
 
 // 마스터 시안(Ticket Design Master.dc.html v2 · 2026-07-08 resync) 05 STUB 재동기화 회귀(#281, 에픽 #281).
 // Stub 델타(대규모 재구조): 포스터 760(텍스트 없음, #493에서 900 → #527에서 가로 3:2 밴드 640) · 절취 3px dashed 반원 노치 제거 · 페이퍼 스텁 flex.
@@ -174,6 +154,8 @@ describe('MoodStub 마스터 resync (#281)', () => {
 
   // 배우 폭 인식 truncate(#493) — 고정 count 캡(옛 max=5) 폐기, STARRING 값 가용폭(700px) 기준.
   describe('배우 truncate — 폭 인식(#493, 고정 count 캡 대체)', () => {
+    // 가짜 canvas measureText를 심어야 truncateActorsToWidth의 실제 폭 계산 경로를 태운다
+    // (happy-dom은 getContext('2d')가 null) — setup/canvasStub.ts.
     let restore: () => void;
     afterEach(() => restore?.());
 
@@ -183,7 +165,7 @@ describe('MoodStub 마스터 resync (#281)', () => {
       );
 
     test('6명이어도 짧으면 안 잘린다 — 예전 고정 5캡 버그 회귀', () => {
-      restore = installFakeCanvasContext();
+      restore = installFakeCanvasContext().restore;
       // fontSize 20 · factor 0.6 → char당 12px. "가, 나, 다, 라, 마, 바"=16자 → 192px, 700px 예산에 여유.
       const html = markupWithActors('가, 나, 다, 라, 마, 바');
       expect(html).toContain('가, 나, 다, 라, 마, 바');
@@ -191,7 +173,7 @@ describe('MoodStub 마스터 resync (#281)', () => {
     });
 
     test('가용폭(700px)을 넘치면 들어맞는 N까지만 남기고 "외 M명"으로 자른다', () => {
-      restore = installFakeCanvasContext();
+      restore = installFakeCanvasContext().restore;
       // 7자×8명 — 풀텍스트 840px(>700, 자름 발동). n=6 버전 684px(fit) · n=7 버전 792px(초과) → n=6에 수렴.
       const parts = ['가나다라마바사', '아자차카타파하', '거너더러머버서', '고노도로모보소', '구누두루무부수', '기니디리미비시', '갸냐댜랴먀뱌샤', '겨녀뎌려며벼셔'];
       const html = markupWithActors(parts.join(', '));

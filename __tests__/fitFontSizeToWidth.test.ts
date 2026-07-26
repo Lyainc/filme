@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { fitFontSizeToWidth } from '../src/components/moods/_shared';
+import { installFakeCanvasContext } from './setup/canvasStub';
 
 /**
  * fitFontSizeToWidth(#318) 이진탐색 회귀 테스트.
@@ -13,39 +14,6 @@ import { fitFontSizeToWidth } from '../src/components/moods/_shared';
  * fitFontSizeCache(캐시)와 다른 테스트 파일의 호출이 겹쳐도(bun test는 파일 간 모듈
  * 상태를 공유한다 — 격리 안 됨) 캐시 충돌이 나지 않게 한다.
  */
-const CHAR_WIDTH_FACTOR = 0.6;
-
-function installFakeCanvasContext() {
-  let currentFont = '400 16px sans-serif';
-  let measureCalls = 0;
-
-  const fakeCtx = {
-    set font(v: string) {
-      currentFont = v;
-    },
-    get font() {
-      return currentFont;
-    },
-    measureText(text: string) {
-      measureCalls++;
-      const sizeMatch = /(\d+(?:\.\d+)?)px/.exec(currentFont);
-      const size = sizeMatch ? parseFloat(sizeMatch[1]) : 16;
-      return { width: text.length * size * CHAR_WIDTH_FACTOR };
-    },
-  } as unknown as CanvasRenderingContext2D;
-
-  const original = HTMLCanvasElement.prototype.getContext;
-  HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, kind: string) {
-    return kind === '2d' ? fakeCtx : null;
-  } as typeof HTMLCanvasElement.prototype.getContext;
-
-  return {
-    restore: () => {
-      HTMLCanvasElement.prototype.getContext = original;
-    },
-    getMeasureCalls: () => measureCalls,
-  };
-}
 
 describe('fitFontSizeToWidth', () => {
   let fake: ReturnType<typeof installFakeCanvasContext>;
