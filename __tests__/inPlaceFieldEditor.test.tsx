@@ -16,6 +16,7 @@ import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
+import { MIN_AA, targetPx } from './tapTargets';
 
 function Harness() {
   const photo = usePhototicket();
@@ -196,5 +197,42 @@ describe('인플레이스 필드 에디터 (#354)', () => {
       expect(screen.getByTestId('signature-image').textContent).toBe('');
       expect(await screen.findByRole('textbox', { name: '서명' })).toBeTruthy();
     });
+  });
+});
+
+// #553 — 같은 화면에 동시에 뜨는 두 툴바의 탭 타깃 위계. #508이 플로팅 툴바를 32px로 내리면서
+// 생긴 12px 차이를 "통일"이 아니라 **의도된 위계**로 확정했다(근거는 FloatingToolbar.tsx 헤더와
+// 아래 필드바 주석). 위계라면 두 값이 다 고정돼야 의미가 있으므로 하한(24)만이 아니라 32/44
+// 자체를 못박는다 — 한쪽이 조용히 움직이면 위계가 우연이 된다. 판정기는 #508과 같은 것을 쓴다
+// (__tests__/tapTargets.ts — 클래스 파싱 + variant·scale 우회 금지).
+// 이 파일에 두는 이유: 필드바는 실제 티켓의 data-field-tap 앵커를 탭해야 뜨는데,
+// resultStageBack.test.tsx가 TicketRenderer를 전역 mock으로 스텁 치므로(bun mock.module은
+// 파일 간 격리가 안 된다) 그 뒤에 도는 파일에서는 앵커가 사라진다.
+describe('탭 타깃 위계: 떠 있는 보조 툴바 32 / 직접 편집 컨트롤 44 (#553)', () => {
+  test('플로팅 툴바 32px · 인플레이스 필드바 44px, 둘 다 SC 2.5.8을 넘는다', async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByText('seed'));
+
+    const floating = await screen.findByRole('toolbar', { name: '편집 도구' });
+    const floatingBtns = Array.from(floating.querySelectorAll('button'));
+    expect(floatingBtns.length).toBe(5);
+    for (const b of floatingBtns) {
+      const { w, h } = targetPx(b, b.getAttribute('aria-label') ?? 'floating');
+      expect([w, h]).toEqual([32, 32]);
+      expect(Math.min(w, h)).toBeGreaterThanOrEqual(MIN_AA);
+    }
+
+    // 필드 탭 → 인플레이스 편집. 이때 플로팅 툴바는 z-45로 여전히 화면에 있다(동시 노출이 설계).
+    fireEvent.click(await screen.findByRole('button', { name: '극장 편집' }));
+    const bar = await screen.findByRole('toolbar', { name: '필드 편집 도구' });
+    expect(screen.queryByRole('toolbar', { name: '편집 도구' })).not.toBeNull();
+
+    const barBtns = Array.from(bar.querySelectorAll('button'));
+    expect(barBtns.length).toBeGreaterThan(1);
+    for (const b of barBtns) {
+      const { w, h } = targetPx(b, b.getAttribute('aria-label') ?? 'field-bar');
+      expect([w, h]).toEqual([44, 44]);
+      expect(Math.min(w, h)).toBeGreaterThanOrEqual(MIN_AA);
+    }
   });
 });
