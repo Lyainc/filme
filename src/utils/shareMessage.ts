@@ -5,8 +5,6 @@ import type { MovieInfo } from '@/types';
 type ShareMovieInfo = Pick<MovieInfo, 'title' | 'titleOg' | 'releaseDate' | 'reissueDate'>;
 
 export interface ShareMessage {
-  /** OS 공유 시트·플랫폼 제목 슬롯에 들어갈 짧은 제목. */
-  title: string;
   /** 공유 본문 — permalink 유무와 무관하게 항상 생성한다. */
   text: string;
   /** 호출부가 발급한 permalink. 없으면 빈 문자열. */
@@ -33,8 +31,7 @@ function extractYear(movieInfo: ShareMovieInfo): string {
  * url에 그대로 싣고, 없으면 빈 문자열 — 링크 발급은 호출부 책임이다(문구 자체는 항상 생성).
  *
  * 예) buildShareMessage({ title: '인터스텔라', titleOg: 'Interstellar', releaseDate: '2014-11-06', ... }, 'https://filme.app/t/abc')
- *  → { title: '인터스텔라 포토티켓',
- *      text: '《인터스텔라》(Interstellar, 2014) 포토티켓 — made with FILME.',
+ *  → { text: '《인터스텔라》(Interstellar, 2014) 포토티켓 — made with FILME.',
  *      url: 'https://filme.app/t/abc' }
  */
 export function buildShareMessage(
@@ -55,19 +52,22 @@ export function buildShareMessage(
     text = '포토티켓 — made with FILME.';
   }
 
-  const title = movieTitle ? `${movieTitle} 포토티켓` : 'FILME 포토티켓';
-
-  return { title, text, url: permalink ?? '' };
+  return { text, url: permalink ?? '' };
 }
 
 /**
- * `navigator.share()`에 넘길 payload — `url`을 별도 필드로 전달하면 Chrome이 표준 동작으로
- * `text`와 `url` 사이에 개행을 끼워 넣어 카카오톡 등에서 어색한 줄바꿈이 생긴다(#394). `url`이
- * 있으면 `text` 끝에 공백으로 흡수시켜 단일 필드로 전달, 없으면 `text`만 그대로 둔다.
+ * `navigator.share()`에 넘길 payload — **필드가 하나뿐이어야 한다.**
+ *
+ * 개행의 원인은 특정 필드가 아니라 텍스트로 이어질 필드가 둘 이상이라는 것 자체다: 플랫폼이
+ * `title`/`text`/`url`을 수신 앱에 넘길 때 `\n`으로 이어 붙인다(파일 공유 경로처럼 `text`가
+ * 아예 없으면 이을 게 없어 무관하다 — `shareTicketAsJpeg`). #394는 Android Chrome이 `text`+`url`을 합치는 걸
+ * 보고 `url`만 `text`에 흡수시켰는데, `title`이 두 번째 필드로 남아 있어 iOS에서 같은 방식으로
+ * 개행이 재발했다(#504). 그래서 `title`은 payload에서도, `ShareMessage`에서도 없앴다 —
+ * 필드를 되살릴 수 없게 만드는 게 이 회귀를 못 쓰게 만드는 유일한 방법이다. 제목 정보는
+ * 이미 `text`의 《제목》에 들어 있고, 링크 프리뷰 카드는 /t/[id]의 og 태그가 만든다.
+ *
+ * 반환 타입에 `text` 외의 키를 추가하지 말 것 — 그게 곧 #394/#504의 재발이다.
  */
-export function toNativeSharePayload(message: ShareMessage): { title: string; text: string } {
-  return {
-    title: message.title,
-    text: message.url ? `${message.text} ${message.url}` : message.text,
-  };
+export function toNativeSharePayload(message: ShareMessage): { text: string } {
+  return { text: message.url ? `${message.text} ${message.url}` : message.text };
 }
