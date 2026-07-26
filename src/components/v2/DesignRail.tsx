@@ -102,9 +102,12 @@ function RailExpandPanel({
 export function DesignRail({
   photo,
   items = RAIL_ITEMS,
+  onRecropPoster,
 }: {
   photo: ReturnType<typeof usePhototicket>;
   items?: readonly RailItem[];
+  /** 포스터 재크롭 진입(#492) — 셸이 크롭 파이프라인을 소유하므로 항목엔 콜백만 흘려준다. */
+  onRecropPoster?: () => void;
 }) {
   const [pop, setPop] = useState<RailItemId | null>(null);
   const { themeColor, layout } = photo.state.components;
@@ -209,7 +212,7 @@ export function DesignRail({
       </div>
 
       <RailExpandPanel open={pop !== null} eyebrow={eyebrow}>
-        {activeItem ? activeItem.render(photo, 'mobile') : null}
+        {activeItem ? activeItem.render(photo, 'mobile', { onRecropPoster }) : null}
       </RailExpandPanel>
     </div>
   );

@@ -39,20 +39,25 @@ describe('DesktopStudioShell 줌 모드 (#225)', () => {
 
     const def = screen.getByRole('button', { name: '기본' });
     const max = screen.getByRole('button', { name: '최대화' });
+    // #492 — 인스펙터는 언마운트가 아니라 CSS hidden으로 숨는다(ImageUploader가 쥔 크롭 원본
+    // objectURL이 줌 왕복마다 revoke되면 재크롭이 죽는다). 테스트 환경엔 Tailwind CSS가 없어
+    // computed style로는 판정이 안 되므로 래퍼 클래스로 관측한다.
+    const inspectorHidden = () => screen.getByTestId('inspector').className.includes('hidden');
 
     // 초기값 기본 + 인스펙터(footer CTA "티켓 완성") 보임.
     expect(def.getAttribute('aria-pressed')).toBe('true');
+    expect(inspectorHidden()).toBe(false);
     expect(screen.getByRole('button', { name: '티켓 완성' })).toBeDefined();
 
-    // 최대화 → 인스펙터 숨김(CTA 소멸), 세그먼트는 캔버스에 남음.
+    // 최대화 → 인스펙터 숨김, 세그먼트는 캔버스에 남음.
     await user.click(max);
     expect(max.getAttribute('aria-pressed')).toBe('true');
-    expect(screen.queryByRole('button', { name: '티켓 완성' })).toBeNull();
+    expect(inspectorHidden()).toBe(true);
     expect(screen.getByRole('button', { name: '기본' })).toBeDefined();
 
     // 기본 복귀 → 인스펙터 재노출.
     await user.click(def);
     expect(def.getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByRole('button', { name: '티켓 완성' })).toBeDefined();
+    expect(inspectorHidden()).toBe(false);
   });
 });

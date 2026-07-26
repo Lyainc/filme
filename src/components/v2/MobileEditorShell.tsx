@@ -883,7 +883,9 @@ export function MobileEditorShell({
         className={`relative shrink-0 px-4 pt-3${isMax || !croppedImageUrl ? ' hidden' : ''}`}
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
       >
-        <DesignRail photo={photo} />
+        {/* 크기 섹션의 재크롭 진입(#492) — 헤더 메뉴 '재크롭'과 같은 handlePosterRecrop를 공유한다.
+            원본이 없으면 안 넘겨 버튼 자체가 안 뜬다(메뉴 쪽은 disabled + 재업로드 안내를 유지). */}
+        <DesignRail photo={photo} onRecropPoster={posterOriginalSrc ? handlePosterRecrop : undefined} />
       </div>
 
       {/* 필드 드로어 엣지 핸들(#364) — 우측 엣지에 드로어 존재를 암시하는 상시 인디케이터.

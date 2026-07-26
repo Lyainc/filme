@@ -18,11 +18,17 @@ interface ImageUploaderProps {
    * 렌더엔 없다가 나중에 도착하므로, 로컬 originalSrc가 아직 비어 있을 때만 1회 시드한다.
    */
   initialOriginalSrc?: string | null;
+  /**
+   * 재크롭 진입점을 부모로 올린다(#492) — DESIGN 탭 '크기' 섹션이 POSTER 탭 밖에서도 같은
+   * 크롭 모달을 열게. 원본이 없거나 처리 중이면 null을 올려 호출부가 컨트롤을 안 그리게 한다.
+   * 부모는 안정적인(useCallback) 콜백을 넘겨야 아래 effect가 매 렌더 재실행되지 않는다.
+   */
+  onRecropAvailable?: (recrop: (() => void) | null) => void;
 }
 
 const ACCEPT = 'image/jpeg,image/png,image/jpg,image/webp';
 
-export default function ImageUploader({ onUpload, isProcessing, imageUrl, layout, initialOriginalSrc }: ImageUploaderProps) {
+export default function ImageUploader({ onUpload, isProcessing, imageUrl, layout, initialOriginalSrc, onRecropAvailable }: ImageUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   // 크롭 모달의 소스이자 재크롭을 위해 유지되는 원본 objectURL. 크롭 완료 후에도 버리지 않는다.
   const [originalSrc, setOriginalSrc] = useState<string | null>(null);
@@ -103,6 +109,17 @@ export default function ImageUploader({ onUpload, isProcessing, imageUrl, layout
 
   const busy = isProcessing || isCropping;
   const showPreview = !!imageUrl;
+
+  // 재크롭 동작을 부모에도 올린다(#492) — 판정은 여기 하나뿐이라 진입점이 둘로 갈려도
+  // "버튼은 살아있는데 원본이 없는" 어긋남이 안 생긴다. 다만 게이트는 originalSrc 유무만
+  // 본다(아래 로컬 버튼의 busy까지 얹지 않는다, MobileEditorShell도 동일) — busy로 같이
+  // 꺼버리면 크롭 중에 원격 버튼이 자기 모달 밑에서 언마운트되고, 모달이 닫히며 포커스를
+  // 되돌릴 때 그 버튼이 이미 detached라 포커스가 body로 떨어진다.
+  const canRecrop = !!originalSrc;
+  useEffect(() => {
+    onRecropAvailable?.(canRecrop ? () => setCropOpen(true) : null);
+    return () => onRecropAvailable?.(null);
+  }, [canRecrop, onRecropAvailable]);
 
   return (
     <section>
