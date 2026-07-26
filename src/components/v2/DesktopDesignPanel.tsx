@@ -31,16 +31,19 @@ function Section({ eyebrow, children }: { eyebrow: string; children: ReactNode }
 export function DesktopDesignPanel({
   photo,
   items = RAIL_ITEMS,
+  onRecropPoster,
 }: {
   photo: ReturnType<typeof usePhototicket>;
   items?: readonly RailItem[];
+  /** 포스터 재크롭 진입(#492) — DesignRail과 동일 계약(셸이 크롭 파이프라인 소유). */
+  onRecropPoster?: () => void;
 }) {
   const visibleItems = filterItemsForMood(items, photo.state.components.layout);
   return (
     <div className="space-y-section">
       {visibleItems.map((item) => (
         <Section key={item.id} eyebrow={item.eyebrow}>
-          {item.render(photo, 'desktop')}
+          {item.render(photo, 'desktop', { onRecropPoster })}
         </Section>
       ))}
     </div>

@@ -21,6 +21,17 @@ export type RailItemId = 'mood' | 'color' | 'texture' | 'opacity' | 'size';
 type RailSurface = 'mobile' | 'desktop';
 type Photo = ReturnType<typeof usePhototicket>;
 
+/**
+ * 항목이 셸에서만 할 수 있는 동작을 부를 때 쓰는 통로(#492). photo(상태)로는 표현이 안 되는
+ * 것만 여기 온다 — 포스터 크롭 파이프라인은 원본 objectURL의 수명을 셸이 소유하기 때문이다.
+ * 못 하는 상황(원본 없음)이면 셸이 아예 안 넘기고, 항목은 그때 컨트롤을 안 그린다 — 죽은
+ * 컨트롤을 남기지 않는다는 점에서 POSTER_FILL_MOODS 게이트와 같은 규칙.
+ */
+export interface RailActions {
+  /** 포스터 재크롭 진입 — 셸의 크롭 모달을 기존 원본으로 다시 연다. */
+  onRecropPoster?: () => void;
+}
+
 export interface RailItem {
   id: RailItemId;
   label: string;
@@ -32,7 +43,7 @@ export interface RailItem {
   // 그 예: TONE_FIXED_MOODS를 이 필드에 안 싣고 render 클로저 안에서만 직접 참조해, 아이콘은
   // 그대로 두고 컨트롤만 잠근다(35mm 컬러의 disabledNote와 같은 이유).
   appliesTo?: readonly LayoutId[];
-  render: (photo: Photo, surface: RailSurface) => ReactNode;
+  render: (photo: Photo, surface: RailSurface, actions: RailActions) => ReactNode;
 }
 
 // #523 AC3 — appliesTo 기반 무드별 노출 필터. 순수 함수라 합성(가짜) RailItem만으로 검증 가능.
@@ -263,7 +274,7 @@ export const RAIL_ITEMS: readonly RailItem[] = [
         <path d="M20 4 12 12" />
       </svg>
     ),
-    render: (photo, surface) => {
+    render: (photo, surface, actions) => {
       const prefix = prefixFor(surface);
       const { components } = photo.state;
       const setComp = photo.updateComponents;
@@ -273,8 +284,22 @@ export const RAIL_ITEMS: readonly RailItem[] = [
       // 포스터 채우기(#527/#492)는 값이 갈리는 무드에서만 — 나머지 무드는 슬롯이 이미 포스터
       // 표준 비율이라 토글해도 그림이 같다. 숨겨도 저장값은 남아 무드 복귀 시 그대로 살아난다
       // (체인/포맷 스케일 클램프와 같은 원칙).
+      // 크롭 재진입(#492) — 포스터 크기·비율을 한 자리에서 다루게 하는 게 이 섹션의 취지라,
+      // "얼마나 크게"(스케일·채우기) 옆에 "어디를 쓸지"(크롭)를 같이 둔다. 원본이 없으면 셸이
+      // onRecropPoster를 안 넘겨 버튼 자체가 안 뜬다 — 재업로드 안내는 원래 진입점(모바일 헤더
+      // 메뉴 '재크롭', 데스크톱 POSTER 탭)이 disabled+title로 계속 들고 있다.
       return (
         <div className="space-y-group">
+          {actions.onRecropPoster && (
+            <button
+              type="button"
+              onClick={actions.onRecropPoster}
+              data-touch="44"
+              className="w-full rounded-chip border border-line bg-surface-elevated px-3 py-2.5 text-[12px] font-medium text-fg transition-colors hover:bg-accent-soft hover:text-accent"
+            >
+              포스터 다시 크롭
+            </button>
+          )}
           {POSTER_FILL_MOODS.has(components.layout) && (
             <PosterFitToggle
               value={components.posterFit ?? 'contain'}

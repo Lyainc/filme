@@ -44,22 +44,29 @@ describe('DesktopStudioShell (#224)', () => {
     const user = userEvent.setup();
     render(<Harness />);
 
+    // POSTER 패널만 언마운트가 아니라 CSS hidden으로 숨는다(#492) — ImageUploader가 쥔 크롭 전
+    // 원본 objectURL이 탭 전환마다 revoke되면 재크롭이 죽기 때문. 테스트 환경엔 Tailwind CSS가
+    // 없어 computed style로는 판정이 안 되므로 래퍼 클래스로 관측한다.
+    const posterHidden = () => screen.getByTestId('poster-panel').className.includes('hidden');
+
     // 기본 탭 = poster → ImageUploader 드롭존.
     expect(screen.getByText('포스터 업로드')).toBeDefined();
+    expect(posterHidden()).toBe(false);
 
-    // INFO → FieldAccordion(그룹 'Film'). poster 콘텐츠는 사라진다.
+    // INFO → FieldAccordion(그룹 'Film'). poster 패널은 숨는다.
     await user.click(screen.getByRole('button', { name: 'INFO' }));
     expect(screen.getByText('Film')).toBeDefined();
-    expect(screen.queryByText('포스터 업로드')).toBeNull();
+    expect(posterHidden()).toBe(true);
 
     // DESIGN → DesktopDesignPanel(첫 섹션 eyebrow 'Mood').
     await user.click(screen.getByRole('button', { name: 'DESIGN' }));
     expect(screen.getByText('Mood')).toBeDefined();
     expect(screen.queryByText('Film')).toBeNull();
+    expect(posterHidden()).toBe(true);
 
     // POSTER 복귀.
     await user.click(screen.getByRole('button', { name: 'POSTER' }));
-    expect(screen.getByText('포스터 업로드')).toBeDefined();
+    expect(posterHidden()).toBe(false);
   });
 
   test('canExport=false면 CTA disabled, true면 클릭 시 onDone 1회', async () => {
