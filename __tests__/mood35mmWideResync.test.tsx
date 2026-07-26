@@ -42,6 +42,9 @@ describe('Mood35mmLandscape v5 재설계 (#524)', () => {
     expect(holes.length).toBe(36); // 밴드 2개 × 홀 18개
     expect(holes.every(m => Math.abs(+m[1] - 51) <= 2 && Math.abs(+m[2] - 36) <= 2 && Math.abs(+m[3]) <= 3)).toBe(true);
     expect(new Set(holes.map(m => m[0])).size).toBeGreaterThan(1); // 완전 등간격이 아니다
+    // 상/하 밴드는 같은 지터 테이블 — 같은 프레임번호의 천공이 위아래 같은 x에 선다(#556 리뷰 P1,
+    // 레일의 좌/우 단언과 같은 축). 갈리면 스트립이 세로로 비틀린 것처럼 보인다.
+    expect(holes.slice(0, 18).map(m => m[0])).toEqual(holes.slice(18).map(m => m[0]));
     expect(html).toContain('margin:0 -34px'); // 천공 행을 절단면으로 흘리는 bleed
     expect(html).not.toContain('width:44px;height:24px'); // 구 치수
   });
