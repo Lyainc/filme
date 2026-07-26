@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import LayoutPicker, { LayoutStrip } from '@/components/LayoutPicker';
 import TexturePicker from '@/components/wizard/TexturePicker';
 import ColorPicker from '@/components/wizard/ColorPicker';
@@ -119,6 +119,114 @@ function PosterFitToggle({
   );
 }
 
+type TextureAxis = 'material' | 'coating';
+const TEXTURE_AXES: { key: TextureAxis; label: string; options: readonly { value: string; label: string }[] }[] = [
+  { key: 'material', label: '재질', options: MATERIAL_OPTIONS },
+  { key: 'coating', label: '코팅', options: COATING_OPTIONS },
+];
+
+/** 그 축이 지금 고르고 있는 옵션의 짧은 라벨 — 칩과 같은 표기(괄호 앞부분)를 쓴다. */
+function currentOptionLabel(photo: Photo, axis: TextureAxis) {
+  const value = axis === 'material' ? photo.state.components.material : photo.state.components.coating;
+  const meta = TEXTURE_AXES.find((a) => a.key === axis)!;
+  return (meta.options.find((o) => o.value === value)?.label ?? value).split('(')[0].trim();
+}
+
+/** 한 축(재질 또는 코팅)의 피커 + 그 축 강도 슬라이더. 축별 배치는 부모가 정한다. */
+function TextureAxisControls({ photo, prefix, axis }: { photo: Photo; prefix: string; axis: TextureAxis }) {
+  const { components, croppedImageUrl } = photo.state;
+  const setComp = photo.updateComponents;
+  const meta = TEXTURE_AXES.find((a) => a.key === axis)!;
+  const isMaterial = axis === 'material';
+  const value = isMaterial ? components.material : components.coating;
+  // 강도 슬라이더는 레시피 있는 옵션(원본/코팅없음 제외)에서만 유효해 레시피 밖에선 숨긴다.
+  return (
+    <div className="space-y-group">
+      <TexturePicker
+        axis={axis}
+        options={meta.options}
+        value={value}
+        onChange={(next) => setComp(isMaterial ? { material: next } : { coating: next })}
+        croppedImageUrl={croppedImageUrl}
+        ariaLabel={meta.label}
+      />
+      {TEXTURE_RECIPES[value] && (
+        <BrightnessSlider
+          label={`${meta.label} 강도`}
+          id={`${prefix}-${axis}-intensity`}
+          value={isMaterial ? components.materialIntensity : components.coatingIntensity}
+          onChange={(v) => setComp(isMaterial ? { materialIntensity: v } : { coatingIntensity: v })}
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * 후보정 패널(#434, #471, #475 → #500) — 재질×코팅 2축.
+ *
+ * 모바일은 두 축을 세로로 쌓으면 dock이 400×675 뷰포트에서 **413px**(양축 강도 슬라이더까지
+ * 뜬 최악)까지 자라 프리뷰 티켓이 114×182px로 쪼그라든다. 그래서 한 번에 한 축만 그리고 축
+ * 전환은 세그먼트가 맡는다 — 실측 결과 dock 413→**312px**, 티켓 114×182→**177×283px**
+ * (면적 2.4배). 강도 슬라이더를 투명도 탭으로 몰아내는 옵션 b는 강도를 그 축의 피커에서
+ * 떼어놓는 데다(고른 직후 조절이 탭 이동이 된다) 투명도 탭이 대신 4슬라이더로 자라 dock
+ * 최댓값이 별로 안 준다 — 실측 표와 판정 근거는 #500 코멘트.
+ *
+ * 데스크톱은 사이드 패널이라 이 세로 예산 문제가 없어(#500 "데스크톱 미해당") 두 축 상시
+ * 노출을 유지한다 — 축 컨트롤 자체는 TextureAxisControls 하나를 공유해 배치만 갈린다
+ * (모드 항목의 LayoutStrip/LayoutPicker 분기와 같은 이유·같은 모양).
+ */
+function TexturePanel({ photo, surface }: { photo: Photo; surface: RailSurface }) {
+  const [axis, setAxis] = useState<TextureAxis>('material');
+  const prefix = prefixFor(surface);
+
+  if (surface === 'desktop') {
+    return (
+      <div className="space-y-section">
+        {TEXTURE_AXES.map((a) => (
+          <TextureAxisControls key={a.key} photo={photo} prefix={prefix} axis={a.key} />
+        ))}
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-group">
+      {/* 축 전환 — PosterFitToggle과 같은 radiogroup 문법. 높이는 h-9(36px)로 명시해 SC 2.5.8
+          하한을 클래스 파싱만으로 검증할 수 있게 한다(__tests__/tapTargets.ts).
+          라벨에 그 축의 현재 값을 같이 실는 이유: 한 축만 그리는 배치의 유일한 대가가 "안 열린
+          축이 기본값이 아닌 걸 알 방법이 없다"는 것이라(홀로그램 코팅이 걸린 채 재질 축이 열려
+          있으면 티켓의 광택만 보이고 출처가 안 보인다), 값을 라벨에 올려 두 축 상태를 항상
+          노출한다 — 표시자를 따로 만드는 것보다 싸고, 열린 축 쪽은 아래 칩 선택과 중복이라
+          해가 없다. */}
+      <div role="radiogroup" aria-label="후보정 축" className="flex gap-2">
+        {TEXTURE_AXES.map((a) => (
+          <button
+            key={a.key}
+            type="button"
+            role="radio"
+            aria-checked={axis === a.key}
+            aria-controls={`${prefix}-texture-axis-panel`}
+            onClick={() => setAxis(a.key)}
+            data-touch="36"
+            className={`h-9 flex-1 truncate rounded-chip border px-3 text-[12px] font-medium transition-colors ${
+              axis === a.key
+                ? 'border-transparent bg-accent-soft text-accent'
+                : 'border-line bg-surface-elevated text-fg-muted'
+            }`}
+          >
+            {a.label} · {currentOptionLabel(photo, a.key)}
+          </button>
+        ))}
+      </div>
+      {/* key={axis} — 축이 바뀌면 컨트롤을 새로 세운다. 같은 range 노드를 재사용하면 id·label만
+          갈린 채 포커스가 남아 스크린리더가 바뀐 의미를 다시 안 읽는다. */}
+      <div id={`${prefix}-texture-axis-panel`}>
+        <TextureAxisControls key={axis} photo={photo} prefix={prefix} axis={axis} />
+      </div>
+    </div>
+  );
+}
+
 const COLOR_ITEM: RailItem = {
   id: 'color',
   label: '컬러',
@@ -179,53 +287,7 @@ export const RAIL_ITEMS: readonly RailItem[] = [
         <path d="M10 20 20 10" />
       </svg>
     ),
-    render: (photo, surface) => {
-      const prefix = prefixFor(surface);
-      const { components, croppedImageUrl } = photo.state;
-      const setComp = photo.updateComponents;
-      // 재질×코팅 2축 피커 + 축별 강도 슬라이더(#434, #471, #475). 각 강도 슬라이더는 그 축
-      // 피커 바로 아래 — 레시피 있는 옵션(원본/코팅없음 제외)에서만 유효해 레시피 밖에선 숨긴다.
-      return (
-        <div className="space-y-section">
-          <div className="space-y-group">
-            <TexturePicker
-              axis="material"
-              options={MATERIAL_OPTIONS}
-              value={components.material}
-              onChange={(material) => setComp({ material })}
-              croppedImageUrl={croppedImageUrl}
-              ariaLabel="재질"
-            />
-            {TEXTURE_RECIPES[components.material] && (
-              <BrightnessSlider
-                label="재질 강도"
-                id={`${prefix}-material-intensity`}
-                value={components.materialIntensity}
-                onChange={(materialIntensity) => setComp({ materialIntensity })}
-              />
-            )}
-          </div>
-          <div className="space-y-group">
-            <TexturePicker
-              axis="coating"
-              options={COATING_OPTIONS}
-              value={components.coating}
-              onChange={(coating) => setComp({ coating })}
-              croppedImageUrl={croppedImageUrl}
-              ariaLabel="코팅"
-            />
-            {TEXTURE_RECIPES[components.coating] && (
-              <BrightnessSlider
-                label="코팅 강도"
-                id={`${prefix}-coating-intensity`}
-                value={components.coatingIntensity}
-                onChange={(coatingIntensity) => setComp({ coatingIntensity })}
-              />
-            )}
-          </div>
-        </div>
-      );
-    },
+    render: (photo, surface) => <TexturePanel photo={photo} surface={surface} />,
   },
   {
     id: 'opacity',

@@ -14,6 +14,7 @@ import { usePhototicket } from '@/hooks/usePhototicket';
 import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
 import { FloatingToolbar, type TbPrefs } from '@/components/v2/FloatingToolbar';
 import type { PhototicketState } from '@/types';
+import { MIN_AA, targetPx } from './tapTargets';
 
 const TB_KEY = 'filme:toolbar:v1';
 
@@ -191,27 +192,11 @@ describe('플로팅 툴바 (#356)', () => {
 });
 
 // 탭 타깃 크기 회귀 (#508) — 풋프린트 축소가 WCAG 2.2 SC 2.5.8(AA, 24×24) 아래로 못 내려가게 못박는다.
-// happy-dom엔 실 레이아웃이 없어 px를 못 재므로 Tailwind 사이즈 클래스(h-N = N×4px)를 파싱해 판정한다.
+// 판정기(클래스 파싱 + variant·scale 우회 금지)는 #500·#553이 같은 형태로 재사용하도록
+// __tests__/tapTargets.ts로 뺐다 — 하한과 우회 금지 규칙이 파일마다 갈리면 안 된다.
 // 실제 렌더 px는 브라우저 실측으로 확인했다(#508: 세로·고정 239.6→179.6px, 이동식 283.6→211.6px).
 describe('탭 타깃 최소 크기 (#508, WCAG 2.2 SC 2.5.8 AA)', () => {
-  const MIN_AA = 24;
   const noop = () => {};
-
-  /**
-   * Tailwind 스케일: h-8 → 8 × 4px = 32px. 사이즈 클래스가 없으면 판정 불가라 실패시킨다.
-   * 클래스 파싱이라 실제 렌더 px를 못 보므로, 파서를 우회해 타깃을 줄일 수 있는 두 수단
-   * (브레이크포인트 variant `max-[380px]:h-5`, `scale-*` 변형)은 아예 금지해 구멍을 막는다.
-   */
-  function targetPx(el: Element, what: string) {
-    const cls = el.getAttribute('class') ?? '';
-    const at = (s: string) => `${what}: ${cls} — ${s}`;
-    expect(at('h-N 필요')).toMatch(/(?:^|\s)h-\d+(?:\s|$)/);
-    expect(at('w-N 필요')).toMatch(/(?:^|\s)w-\d+(?:\s|$)/);
-    // variant(`:`)나 scale은 파서가 못 보는 축소 경로 — 쓰려면 실 px 측정 방식으로 바꿀 것.
-    expect(at('variant 금지')).not.toMatch(/(?:^|\s)\S+:(?:h|w|size|scale)-/);
-    expect(at('scale 금지')).not.toMatch(/(?:^|\s)-?scale-/);
-    return { h: Number(cls.match(/(?:^|\s)h-(\d+)(?:\s|$)/)![1]) * 4, w: Number(cls.match(/(?:^|\s)w-(\d+)(?:\s|$)/)![1]) * 4 };
-  }
 
   function renderTb(prefs: Partial<TbPrefs>) {
     render(
