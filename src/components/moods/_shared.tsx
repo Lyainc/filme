@@ -1397,7 +1397,10 @@ export const FilmStripBand = memo(function FilmStripBand({
   const outer: 'top' | 'bottom' = pos;
   const inner: 'top' | 'bottom' = pos === 'top' ? 'bottom' : 'top';
 
-  const jitter = sprocketJitter(pos, count, holeW, holeH);
+  // 시드 키가 'band'로 고정 — 상/하 밴드는 같은 필름 스트립의 양 가장자리라 프레임 118의 천공이
+  // 위아래 같은 x에 서야 한다. pos를 키로 주면 두 밴드가 다른 해시열을 얻어 스트립이 세로로 비틀린
+  // 것처럼 보인다(FilmRail이 좌/우를 'rail'로 통일한 것과 같은 이유, #556 리뷰 P1).
+  const jitter = sprocketJitter('band', count, holeW, holeH);
   const holes = jitter.map((j, i) => (
     <div key={i} style={{ width: j.w, height: j.h, margin: `0 ${j.gap}px`, borderRadius: holeR, background: FILM_HOLE, flexShrink: 0, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.5), inset 0 2px 4px rgba(0,0,0,.6)' }} />
   ));
