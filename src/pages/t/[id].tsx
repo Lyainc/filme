@@ -152,12 +152,15 @@ export default function TicketLanding({ imageUrl, title, pageUrl, width, height,
               브랜드 보이스인 정밀함과 불일치해 제거). */}
           {/* 높이 예산(#491)은 img가 아니라 **래퍼 폭**에 건다. img에 max-h를 걸려면 폭도 auto여야
               비율이 유지되는데, 폭이 auto면 로드 전 고유 치수가 없어 슬롯이 0이 되고 #199의 비율
-              예약(width/height 속성)이 죽어 이미지가 도착하는 순간 ~600px CLS가 난다. 대신 45vh를
-              티켓 비율로 나눠 폭 상한으로 환산하면 img는 w-full/h-auto 그대로 두고도 높이가 45vh를
-              못 넘는다 — 예약도 살고 캡도 선다. 비율은 무드마다 달라 props에서 읽는다. */}
+              예약(width/height 속성)이 죽어 이미지가 도착하는 순간 ~600px CLS가 난다. 대신 45dvh를
+              티켓 비율로 나눠 폭 상한으로 환산하면 img는 w-full/h-auto 그대로 두고도 높이가 45dvh를
+              못 넘는다 — 예약도 살고 캡도 선다. 비율은 무드마다 달라 props에서 읽는다.
+              **vh가 아니라 dvh**(#550 리뷰 P1) — 정적 vh는 Safari 동적 툴바가 떠 있는 실기기에서
+              가시 높이보다 크게 잡혀 캡이 헐거워지고 CTA가 폴드 아래로 밀린다. 같은 클래스 결함이
+              `ResultStage.tsx`에 #380으로 기록돼 있고 이 파일 외곽 컨테이너도 이미 100dvh다. */}
           <div
             className="w-full"
-            style={{ perspective: '1200px', maxWidth: `min(24rem, calc(45vh * ${width} / ${height}))` }}
+            style={{ perspective: '1200px', maxWidth: `min(24rem, calc(45dvh * ${width} / ${height}))` }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element — Blob 원격 도메인이라 일반 img 사용 */}
             <img
