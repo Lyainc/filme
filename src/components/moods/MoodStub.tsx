@@ -249,7 +249,12 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
 
         <div style={{ height: 1, background: 'rgba(26,22,18,.2)', margin: '24px 0' }} />
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {/* 섹션 영역이 하단 스텁의 남는 세로를 직접 나눠 갖는다(#536) — 밴드가 900→640(#527)으로
+            내려가며 생긴 여유를 예전엔 푸터 앞 단일 flex:1 스페이서가 통으로 먹어 STARRING과 푸터
+            사이에만 구멍이 났다(브라우저 실측 234.5px = 페이퍼 스텁 878px의 26.7%). space-evenly면
+            섹션 위·사이·아래 세 자리로 갈리고, 필드를 많이 켜 여유가 0이 되면 예전과 같은 배치로
+            수렴한다(오버플로 회귀 없음). */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', gap: 20 }}>
           {/* Admission — SEAT 칩 + DATE/TIME/HALL */}
           {admissionOn && (
             <div>
@@ -349,8 +354,6 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
             </div>
           )}
         </div>
-
-        <div style={{ flex: 1 }} />
 
         {/* 푸터 — made with FILME · collected by 서명 + 스텁 바코드(300×40, 텍스트 없음) */}
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24 }}>

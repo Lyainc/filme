@@ -162,6 +162,16 @@ describe('MoodStub 마스터 resync (#281)', () => {
     expect(html).toContain('background:#B0423F');
   });
 
+  // 하단 스텁 세로 재분배(#536) — 밴드 900→640(#527)으로 생긴 여유를 푸터 앞 단일 flex:1
+  // 스페이서가 통으로 먹어 STARRING↔푸터 사이에만 구멍이 났다(브라우저 실측 234.5px). 섹션
+  // 컨테이너가 flex:1 + space-evenly로 직접 나눠 갖는 구조로 바뀌었는지 고정 — 단일 스페이서가
+  // 되살아나면 여백이 다시 한 자리로 몰린다.
+  test('하단 여유는 섹션 위·사이·아래로 분산 — 푸터 앞 단일 스페이서 없음(#536)', () => {
+    const html = markup();
+    expect(html).toContain('justify-content:space-evenly');
+    expect(html).not.toContain('<div style="flex:1"></div>');
+  });
+
   // 배우 폭 인식 truncate(#493) — 고정 count 캡(옛 max=5) 폐기, STARRING 값 가용폭(700px) 기준.
   describe('배우 truncate — 폭 인식(#493, 고정 count 캡 대체)', () => {
     let restore: () => void;
