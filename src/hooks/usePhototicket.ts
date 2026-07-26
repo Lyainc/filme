@@ -4,6 +4,7 @@ import { defaultBrightnessForTexture } from '@/components/moods/_shared';
 import { defaultIntensityForTexture, migrateLegacyComponents } from '@/utils/textureRecipes';
 import { ALL_FIELDS_ON } from '@/constants/fieldVisibility';
 import { saveImages, loadImages, clearImages } from '@/utils/imageDb';
+import { usePosterCrop } from '@/hooks/usePosterCrop';
 
 // blob: URL을 다시 Blob으로 — 페이지가 만든 objectURL을 읽는 것뿐이라 네트워크를 안 타고,
 // captureToImage.ts가 피하는 fetch(data:) CSP 제약과도 무관하다. 실패(이미 revoke된 URL 등)는
@@ -141,9 +142,6 @@ export function usePhototicket() {
   // 바꾸지만 이 카운터는 안 건드려서, 자동저장 effect가 그 둘에는 재발동하지 않는다
   // (claude-review PR #488 P1: clearDraft 직후 지운 저장 키가 1초 뒤 재생성되던 문제).
   const [dirtyTick, setDirtyTick] = useState(0);
-  // 크롭 전 원본 포스터 — 재크롭에만 쓰이고 미리보기/export엔 안 들어가 reactive state로 두지
-  // 않는다(handleImageUpload가 갱신, saveDraft가 읽어 IndexedDB에 영속).
-  const originalPosterUrlRef = useRef<string | null>(null);
   // 마운트 시 복원된 draft에 포스터가 있었는지 — #489 서브버그: 복원 후 재업로드가 isFirstUpload로
   // 오판돼 방금 복원한 fieldVisibility를 DEFAULT_VISIBILITY_ON_UPLOAD로 덮어쓰는 것을 막는 게이트.
   // "draft 존재 여부"가 아니라 "포스터 존재 여부"로 좁힌다(claude-review PR #515 P1) — 텍스트만
@@ -156,10 +154,6 @@ export function usePhototicket() {
   // saveDraft의 IndexedDB 쓰기를 호출 순서대로 직렬화 — 안 하면 autosave와 수동 저장이 겹칠 때
   // 늦게 시작한 쪽이 먼저 끝나 최신 상태를 옛 상태가 덮어쓸 수 있다(claude-review PR #515 P1).
   const imagePersistChainRef = useRef<Promise<void>>(Promise.resolve());
-  // IndexedDB에서 복원된 원본 포스터 URL — ImageUploader/MobileEditorShell이 자기 로컬
-  // originalSrc state를 이 값으로 1회 시드해야 재크롭이 살아난다. 비동기 복원이라 ref가 아니라
-  // state여야 완료 시 소비자가 리렌더로 알아챈다.
-  const [restoredOriginalPosterUrl, setRestoredOriginalPosterUrl] = useState<string | null>(null);
   const latestUrlRef = useRef<string | null>(null);
   // chain/format은 picker가 교체 시점에만 revoke하므로, 언마운트 정리를 위해
   // 상태 소유자(hook)가 마지막 blob URL을 추적한다 (latestUrlRef와 동일 패턴).
@@ -176,6 +170,39 @@ export function usePhototicket() {
   const coatingIntensityTouchedRef = useRef(false);
   // 자동저장 디바운스 타이머 핸들 — clearDraft가 직접 취소하는 용도(아래 effect 참고).
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 크롭 원본 시드 경로의 latest-ref(saveDraftRef와 동일 패턴) — handleImageUpload는 소비자가
+  // 많아 stable해야 하는데 아래 usePosterCrop보다 먼저 정의되므로 이 ref로 순환을 끊는다.
+  const seedOriginalRef = useRef<(url: string | null) => void>(() => {});
+
+  const handleImageUpload = useCallback((croppedUrl: string, originalUrl?: string | null) => {
+    // 새 포스터 업로드는 밝기 슬레이트를 초기화한다 — 이후 texture 전환에서 그 texture의
+    // 기본 밝기가 다시 적용된다(#146 리뷰). fieldVisibility(첫 업로드에만 리셋)와 달리
+    // 밝기는 포스터 콘텐츠(어두운/밝은 포스터)에 종속적이라 매 업로드마다 리셋한다.
+    brightnessTouchedRef.current = false;
+    // 크롭 파이프라인을 거친 호출은 이미 같은 원본을 쥔 채 들어오므로 이 시드는 no-op이고,
+    // 훅을 직접 부르는 경로(테스트·프로그램적 주입)만 여기서 원본을 채운다(#548).
+    seedOriginalRef.current(originalUrl ?? null);
+    setState((prev) => {
+      if (prev.croppedImageUrl) URL.revokeObjectURL(prev.croppedImageUrl);
+      latestUrlRef.current = croppedUrl;
+      // 복원된 draft에 포스터가 있었으면(restoredDraftHadPosterRef) 이번 업로드가
+      // croppedImageUrl===null이어도 "첫 업로드"가 아니다 — IDB 이미지 복원이 실패해 재업로드를
+      // 유도한 경우, 이미 복원된 fieldVisibility를 덮어쓰면 안 된다(#489 서브버그). 포스터가
+      // 없던 텍스트 전용 draft라면 이 게이트가 안 걸려 진짜 첫 업로드로 정상 처리된다.
+      const isFirstUpload = prev.croppedImageUrl === null && !restoredDraftHadPosterRef.current;
+      return {
+        ...prev,
+        croppedImageUrl: croppedUrl,
+        ...(isFirstUpload ? { fieldVisibility: DEFAULT_VISIBILITY_ON_UPLOAD } : {}),
+      };
+    });
+  }, []);
+
+  // 크롭 전 원본 objectURL과 크롭 모달 상태의 단일 소유자(#548) — 소비자(ImageUploader ·
+  // MobileEditorShell)가 아니라 이 훅과 같은 수명을 갖는다. 셸이 언마운트돼도(브레이크포인트
+  // 전환) 원본이 안 죽으므로, 아래 saveDraft가 읽는 URL도 항상 살아있다.
+  const posterCrop = usePosterCrop(handleImageUpload);
+  seedOriginalRef.current = posterCrop.seedOriginal;
 
   // 마운트 시 localStorage에서 텍스트·설정을 복원한다. SSR 하이드레이션 불일치를 피하려
   // useState 초기화가 아니라 effect에서 한다(서버는 INITIAL_STATE로 렌더, 클라가 마운트 후 복원).
@@ -268,15 +295,12 @@ export function usePhototicket() {
         }
         const posterUrl = images.poster ? URL.createObjectURL(images.poster) : null;
         if (posterUrl) latestUrlRef.current = posterUrl;
-        // IDB에 원본이 없으면(images.posterOriginal falsy) ref를 건드리지 않는다 — 이 effect는
-        // 비동기라, 그 사이 사용자가 이미 poster를 업로드해 originalPosterUrlRef를 세팅해뒀을 수
-        // 있다(레이스). null로 무조건 덮어쓰면 방금 올린 원본을 지워버린다.
+        // 크롭 원본 복원(#489) — 크롭 파이프라인(posterCrop)이 이 URL의 단일 소유자이고,
+        // saveDraft도 거기서 읽어 다음 저장에 다시 실어보낸다(안 하면 복원 직후 첫 자동저장이
+        // 원본을 빈 값으로 갈아치워 IndexedDB에서 지운다). seedOriginal은 이미 원본이 있으면
+        // 무시하므로, 이 비동기 복원이 그 사이 사용자가 올린 포스터를 덮어쓰지 않는다.
         if (images.posterOriginal) {
-          const originalUrl = URL.createObjectURL(images.posterOriginal);
-          // saveDraft가 이 ref를 읽어 다음 저장에도 원본을 실어보낸다 — 안 세팅하면 복원 직후
-          // (재크롭 전) 첫 자동저장이 원본을 빈 값으로 갈아치워 IndexedDB에서 지워버린다.
-          originalPosterUrlRef.current = originalUrl;
-          setRestoredOriginalPosterUrl(originalUrl);
+          seedOriginalRef.current(URL.createObjectURL(images.posterOriginal));
         }
         if (posterUrl || Object.keys(componentsPatch).length > 0) {
           setState((prev) => ({
@@ -292,29 +316,6 @@ export function usePhototicket() {
     return () => {
       cancelled = true;
     };
-  }, []);
-
-  const handleImageUpload = useCallback((croppedUrl: string, originalUrl?: string | null) => {
-    // 새 포스터 업로드는 밝기 슬레이트를 초기화한다 — 이후 texture 전환에서 그 texture의
-    // 기본 밝기가 다시 적용된다(#146 리뷰). fieldVisibility(첫 업로드에만 리셋)와 달리
-    // 밝기는 포스터 콘텐츠(어두운/밝은 포스터)에 종속적이라 매 업로드마다 리셋한다.
-    brightnessTouchedRef.current = false;
-    // 재크롭 시 호출부가 같은 원본을 다시 넘겨줄 뿐이라도, saveDraft가 읽는 최신값이므로 갱신.
-    originalPosterUrlRef.current = originalUrl ?? null;
-    setState((prev) => {
-      if (prev.croppedImageUrl) URL.revokeObjectURL(prev.croppedImageUrl);
-      latestUrlRef.current = croppedUrl;
-      // 복원된 draft에 포스터가 있었으면(restoredDraftHadPosterRef) 이번 업로드가
-      // croppedImageUrl===null이어도 "첫 업로드"가 아니다 — IDB 이미지 복원이 실패해 재업로드를
-      // 유도한 경우, 이미 복원된 fieldVisibility를 덮어쓰면 안 된다(#489 서브버그). 포스터가
-      // 없던 텍스트 전용 draft라면 이 게이트가 안 걸려 진짜 첫 업로드로 정상 처리된다.
-      const isFirstUpload = prev.croppedImageUrl === null && !restoredDraftHadPosterRef.current;
-      return {
-        ...prev,
-        croppedImageUrl: croppedUrl,
-        ...(isFirstUpload ? { fieldVisibility: DEFAULT_VISIBILITY_ON_UPLOAD } : {}),
-      };
-    });
   }, []);
 
   const updateFieldVisibility = useCallback((partial: Partial<Record<TicketField, boolean>>) => {
@@ -445,7 +446,7 @@ export function usePhototicket() {
     // 늦게 시작한 쪽이 먼저 끝나며 최신 상태를 옛 상태가 덮어쓸 수 있다(같은 리뷰 P1).
     const fingerprint = [
       state.croppedImageUrl,
-      originalPosterUrlRef.current,
+      posterCrop.originalSrc,
       state.components.chain,
       state.components.format,
       state.components.signatureImage,
@@ -455,7 +456,7 @@ export function usePhototicket() {
         try {
           const [poster, posterOriginal, chain, format, signature] = await Promise.all([
             blobUrlToBlob(state.croppedImageUrl),
-            blobUrlToBlob(originalPosterUrlRef.current),
+            blobUrlToBlob(posterCrop.originalSrc),
             blobUrlToBlob(state.components.chain),
             blobUrlToBlob(state.components.format),
             blobUrlToBlob(state.components.signatureImage),
@@ -468,7 +469,7 @@ export function usePhototicket() {
         }
       });
     }
-  }, [state.movieInfo, state.components, state.fieldVisibility, state.croppedImageUrl]);
+  }, [state.movieInfo, state.components, state.fieldVisibility, state.croppedImageUrl, posterCrop.originalSrc]);
 
   // 디바운스 타이머 콜백이 항상 최신 saveDraft를 호출하도록 하는 latest-ref 패턴 — 매 렌더 갱신.
   // dirtyTick은 "언제 예약할지"만 게이팅하고, 실행 시점엔 이 ref로 그 사이 바뀐 최신 state를
@@ -531,8 +532,8 @@ export function usePhototicket() {
     // 복원 관련 상태도 전체 슬레이트 리셋 대상 — 안 하면 초기화 후 새로 업로드해도 "복원된 draft에
     // 포스터가 있었다"는 표시가 남아 isFirstUpload가 영구히 오판된다(#489).
     restoredDraftHadPosterRef.current = false;
-    originalPosterUrlRef.current = null;
-    setRestoredOriginalPosterUrl(null);
+    // 크롭 원본·모달 상태도 전체 슬레이트 리셋 — 원본 blob은 posterCrop의 revoke effect가 푼다.
+    posterCrop.reset();
     // 이미지 지문도 리셋 — 안 하면 초기화 직후 저장(이미지 없음)이 "직전과 동일"로 오판돼
     // IndexedDB가 안 비워질 수 있다(claude-review PR #515 P1 fingerprint 최적화와의 상호작용).
     lastPersistedImageFingerprintRef.current = '';
@@ -554,7 +555,7 @@ export function usePhototicket() {
       latestSignatureUrlRef.current = null;
       return INITIAL_STATE;
     });
-  }, []);
+  }, [posterCrop.reset]);
 
   useEffect(() => {
     return () => {
@@ -578,6 +579,7 @@ export function usePhototicket() {
     autoSaveEnabled,
     lastSavedAt,
     toggleAutoSave,
-    restoredOriginalPosterUrl,
+    // 포스터 크롭 파이프라인(#548) — 원본 objectURL·모달 상태의 단일 소유자. 셸/패널은 소비만 한다.
+    posterCrop,
   };
 }

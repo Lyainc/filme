@@ -1,54 +1,33 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { getCroppedImg, Area } from '@/utils/imageCrop';
-import { POSTER_PRESERVE_MAX_SIDE } from '@/utils/constants';
+import type { PosterCrop } from '@/hooks/usePosterCrop';
 import type { LayoutId } from '@/types';
 
 const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ssr: false });
 
 interface ImageUploaderProps {
-  onUpload: (croppedImageUrl: string, originalImageUrl: string) => void;
+  /**
+   * 포스터 크롭 파이프라인(#548) — 원본 objectURL·모달 상태는 usePhototicket이 소유하고
+   * 이 컴포넌트는 소비만 한다. 예전엔 여기 로컬 state였는데, 그러면 이 컴포넌트가 언마운트될 때
+   * 훅이 아직 참조 중인 원본 blob이 revoke됐다(#548의 실패 모드).
+   */
+  crop: PosterCrop;
   isProcessing: boolean;
   /** 업로드 후 프리뷰로 보여줄 크롭 결과(부모 소유 objectURL). */
   imageUrl?: string | null;
   /** 현재 무드(#420 배선) — ImageCropModal에 그대로 전달해 프리셋 토글 노출 여부를 결정한다. */
   layout: LayoutId;
-  /**
-   * 자동저장 복원(#489)이 IndexedDB에서 되살린 원본(크롭 전) 포스터 URL. 비동기 복원이라 첫
-   * 렌더엔 없다가 나중에 도착하므로, 로컬 originalSrc가 아직 비어 있을 때만 1회 시드한다.
-   */
-  initialOriginalSrc?: string | null;
-  /**
-   * 재크롭 진입점을 부모로 올린다(#492) — DESIGN 탭 '크기' 섹션이 POSTER 탭 밖에서도 같은
-   * 크롭 모달을 열게. 원본이 없거나 처리 중이면 null을 올려 호출부가 컨트롤을 안 그리게 한다.
-   * 부모는 안정적인(useCallback) 콜백을 넘겨야 아래 effect가 매 렌더 재실행되지 않는다.
-   */
-  onRecropAvailable?: (recrop: (() => void) | null) => void;
 }
 
 const ACCEPT = 'image/jpeg,image/png,image/jpg,image/webp';
 
-export default function ImageUploader({ onUpload, isProcessing, imageUrl, layout, initialOriginalSrc, onRecropAvailable }: ImageUploaderProps) {
+export default function ImageUploader({ crop, isProcessing, imageUrl, layout }: ImageUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  // 크롭 모달의 소스이자 재크롭을 위해 유지되는 원본 objectURL. 크롭 완료 후에도 버리지 않는다.
-  const [originalSrc, setOriginalSrc] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (initialOriginalSrc && !originalSrc) setOriginalSrc(initialOriginalSrc);
-  }, [initialOriginalSrc, originalSrc]);
-  const [cropOpen, setCropOpen] = useState(false);
-  const [isCropping, setIsCropping] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  // 방금 고른 새 파일이 아직 크롭 확정 전인지. 첫 업로드·교체에서 true, 크롭 완료 시 false.
-  // 재크롭(새 파일 안 고름)에선 false로 남아 취소해도 원본을 유지한다.
-  const [pendingNewFile, setPendingNewFile] = useState(false);
+  const { originalSrc } = crop;
 
   const openFile = (file: File) => {
-    // 이전 originalSrc는 아래 effect cleanup이 단일 소유자로 revoke (이중 revoke 방지)
-    const objectUrl = URL.createObjectURL(file);
-    setOriginalSrc(objectUrl);
-    setPendingNewFile(true);
-    setCropOpen(true);
+    crop.openFile(file);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -67,59 +46,8 @@ export default function ImageUploader({ onUpload, isProcessing, imageUrl, layout
     if (file && ACCEPT.includes(file.type)) openFile(file);
   };
 
-  const handleCropComplete = async (croppedAreaPixels: Area, preserveRatio: boolean) => {
-    if (!originalSrc) return;
-    setIsCropping(true);
-    try {
-      // 원본 비율 보존(#420): 포스터 표준 해상도 대신 크롭 종횡비를 유지하며 긴 변만 캡한다.
-      const croppedUrl = await getCroppedImg(
-        originalSrc,
-        croppedAreaPixels,
-        preserveRatio ? { maxSide: POSTER_PRESERVE_MAX_SIDE } : undefined
-      );
-      onUpload(croppedUrl, originalSrc);
-      setPendingNewFile(false);
-      setCropOpen(false); // originalSrc는 유지 — 재크롭에 재사용
-    } catch (error) {
-      console.error('크롭 실패:', error);
-      alert('이미지 크롭에 실패했습니다.');
-    } finally {
-      setIsCropping(false);
-    }
-  };
-
-  const handleCropCancel = () => {
-    setCropOpen(false);
-    // 새 파일(첫 업로드·교체)을 고른 뒤 취소면 원본을 버린다 — 교체 취소 땐 직전 포스터의
-    // 원본이 이미 revoke됐으므로 재크롭 불가, originalSrc를 null로 둬 정합성을 맞춘다.
-    // 재크롭 취소(새 파일 안 고름)면 originalSrc를 유지해 다음 재크롭에 재사용.
-    if (pendingNewFile) {
-      setOriginalSrc(null);
-      setPendingNewFile(false);
-    }
-  };
-
-  // originalSrc blob의 단일 소유자: 값이 바뀌거나(새 파일 선택) 언마운트될 때 직전 URL을 revoke.
-  // 크롭 완료/취소는 값을 안 바꾸므로 원본이 살아남아 재크롭에 쓰인다.
-  useEffect(() => {
-    return () => {
-      if (originalSrc) URL.revokeObjectURL(originalSrc);
-    };
-  }, [originalSrc]);
-
-  const busy = isProcessing || isCropping;
+  const busy = isProcessing || crop.isCropping;
   const showPreview = !!imageUrl;
-
-  // 재크롭 동작을 부모에도 올린다(#492) — 판정은 여기 하나뿐이라 진입점이 둘로 갈려도
-  // "버튼은 살아있는데 원본이 없는" 어긋남이 안 생긴다. 다만 게이트는 originalSrc 유무만
-  // 본다(아래 로컬 버튼의 busy까지 얹지 않는다, MobileEditorShell도 동일) — busy로 같이
-  // 꺼버리면 크롭 중에 원격 버튼이 자기 모달 밑에서 언마운트되고, 모달이 닫히며 포커스를
-  // 되돌릴 때 그 버튼이 이미 detached라 포커스가 body로 떨어진다.
-  const canRecrop = !!originalSrc;
-  useEffect(() => {
-    onRecropAvailable?.(canRecrop ? () => setCropOpen(true) : null);
-    return () => onRecropAvailable?.(null);
-  }, [canRecrop, onRecropAvailable]);
 
   return (
     <section>
@@ -154,7 +82,7 @@ export default function ImageUploader({ onUpload, isProcessing, imageUrl, layout
               </button>
               <button
                 type="button"
-                onClick={() => originalSrc && setCropOpen(true)}
+                onClick={crop.openRecrop}
                 disabled={busy || !originalSrc}
                 data-touch="44"
                 className="text-mono inline-flex min-h-[32px] items-center rounded-chip border border-line bg-surface px-3 text-[10px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft focus-visible:ring-2 focus-visible:ring-accent-soft disabled:opacity-40"
@@ -223,12 +151,12 @@ export default function ImageUploader({ onUpload, isProcessing, imageUrl, layout
         />
       )}
 
-      {cropOpen && originalSrc && (
+      {crop.cropOpen && originalSrc && (
         <ImageCropModal
           imageSrc={originalSrc}
-          onClose={handleCropCancel}
-          onComplete={handleCropComplete}
-          isProcessing={isCropping}
+          onClose={crop.cancel}
+          onComplete={crop.complete}
+          isProcessing={crop.isCropping}
           layout={layout}
         />
       )}

@@ -103,7 +103,8 @@ describe('#489 자동저장 이미지 복원', () => {
     const second = renderHook(() => usePhototicket());
     await waitFor(() => {
       expect(second.result.current.state.croppedImageUrl).toBeTruthy();
-      expect(second.result.current.restoredOriginalPosterUrl).toBeTruthy();
+      // 크롭 원본은 #548에서 usePosterCrop(훅 내부)이 단일 소유자다 — 예전 restoredOriginalPosterUrl.
+      expect(second.result.current.posterCrop.originalSrc).toBeTruthy();
       expect(second.result.current.state.components.chain).toBeTruthy();
       expect(second.result.current.state.components.format).toBeTruthy();
       expect(second.result.current.state.components.signatureImage).toBeTruthy();
@@ -172,7 +173,7 @@ describe('#489 자동저장 이미지 복원', () => {
     });
     // 이미지 복원은 실패했으므로 현재(lossy) 동작대로 포스터는 null — 업로드 화면으로 유도된다.
     expect(second.result.current.state.croppedImageUrl).toBeNull();
-    expect(second.result.current.restoredOriginalPosterUrl).toBeNull();
+    expect(second.result.current.posterCrop.originalSrc).toBeNull();
 
     // 사용자가 업로드 화면에서 포스터를 다시 올린다 — croppedImageUrl===null이라 겉보기엔
     // "첫 업로드"지만, 복원된 draft에 포스터가 있었으므로(restoredDraftHadPosterRef)
