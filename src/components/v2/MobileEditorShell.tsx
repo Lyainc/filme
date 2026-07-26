@@ -392,8 +392,9 @@ export function MobileEditorShell({
   useEffect(() => {
     if (isMax) previewWrapEl?.focus();
   }, [isMax, previewWrapEl]);
-  // 컨테이너 width만으로 렌더 크기를 몰기(TicketRenderer는 width에 맞춰 스케일). max는 세로를
-  // TicketRenderer의 자체 maxHeight(min(72vh,720px)) 한도까지 채우는 width를 역산.
+  // 컨테이너 width만으로 렌더 크기를 몰기(TicketRenderer는 width에 맞춰 스케일). max는 세로 예산
+  // (TicketRenderer가 스스로 max-width로 거는 것과 같은 식)을 채우는 width를 역산 — 이 항은 래퍼
+  // (탭 타깃·포커스링)가 티켓 폭에 붙게 하는 몫이라 스테이지 자체 클램프와 별개로 필요하다(#532).
   const previewWidth = `min(90vw, calc(${PREVIEW_MAX_HEIGHT} * ${layout.width} / ${layout.height}))`;
   // 기본 모드 프리뷰 폭(#366) — 고정 280px 캡 대신 fit 스테이지(container-type:size)의 가용
   // 공간에서 역산한다: 가로는 스테이지 폭, 세로는 스테이지 높이 × 종횡비 중 작은 쪽. dock 패널이

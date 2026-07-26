@@ -72,7 +72,10 @@ const TicketRenderer = memo(forwardRef<HTMLDivElement, TicketRendererProps>(func
       className="relative w-full overflow-hidden bg-black shadow-2xl shadow-black/40"
       style={{
         aspectRatio: `${layout.width} / ${layout.height}`,
-        maxHeight: PREVIEW_MAX_HEIGHT,
+        // 세로 상한은 max-height가 아니라 '그 높이를 채우는 폭'으로 건다(#532). max-height로 걸면
+        // w-full이 잡은 폭은 그대로인 채 높이만 깎여 aspect-ratio가 깨지고, 폭 기준으로 잡힌
+        // scale이 컨테이너보다 큰 트리를 만들어 하단이 overflow-hidden에 잘린다.
+        maxWidth: `calc(${PREVIEW_MAX_HEIGHT} * ${layout.width} / ${layout.height})`,
       }}
     >
       <div

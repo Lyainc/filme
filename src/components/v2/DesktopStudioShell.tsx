@@ -150,8 +150,10 @@ export function DesktopStudioShell({
   const mode = resultOpen ? 'default' : viewMode;
   const layout = getLayout(previewComponents.layout);
   // 티켓 컨테이너 width로 렌더 크기를 몬다(TicketRenderer는 width에 맞춰 스케일, 모바일과 동일 방식).
-  // max는 TicketRenderer maxHeight 한도까지 채우는 width를 역산.
-  const previewWidth = `min(90vw, calc(${PREVIEW_MAX_HEIGHT} * ${layout.width} / ${layout.height}))`;
+  // max-width는 TicketRenderer가 스스로 거는 세로 예산(PREVIEW_MAX_HEIGHT)과 같은 식 — 기본 모드에도
+  // 걸어야 짧은 뷰포트에서 카드(PreviewFilmCell)가 티켓과 같이 줄어 좌우에 검은 띠가 안 생긴다(#532).
+  const previewWidth = mode === 'default' ? '380px' : '90vw';
+  const previewMaxWidth = `min(100%, calc(${PREVIEW_MAX_HEIGHT} * ${layout.width} / ${layout.height}))`;
 
   return (
     <div
@@ -256,10 +258,7 @@ export function DesktopStudioShell({
           )}
 
           {croppedImageUrl && (
-            <div
-              className={mode === 'default' ? 'w-full max-w-[380px]' : ''}
-              style={mode === 'default' ? undefined : { width: previewWidth }}
-            >
+            <div data-testid="desktop-preview-stage" style={{ width: previewWidth, maxWidth: previewMaxWidth }}>
               <PreviewFilmCell>
                 <TicketRenderer
                   croppedImageUrl={croppedImageUrl}
