@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import ImageUploader from '@/components/ImageUploader';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
 import { AppHeader } from './AppHeader';
@@ -146,15 +146,10 @@ export function DesktopStudioShell({
   // 빈 항목 미리보기(ghost, #227) — 셸 로컬, 미영속(기본 on).
   const [ghostMode, setGhostMode] = useState(true);
 
-  // DESIGN '크기' 섹션의 재크롭 진입(#492) — 크롭 파이프라인은 POSTER 탭의 ImageUploader가
-  // 소유하므로 그쪽이 올려준 트리거를 들고 있다가 패널에 넘긴다. 재크롭이 불가하면 null이
-  // 올라와 버튼 자체가 안 뜬다. 콜백을 state에 담을 땐 항상 () => fn으로 — 안 감싸면 React가
-  // 업데이터 함수로 오해한다.
-  const [recropPoster, setRecropPoster] = useState<(() => void) | null>(null);
-  const handleRecropAvailable = useCallback(
-    (recrop: (() => void) | null) => setRecropPoster(() => recrop),
-    [],
-  );
+  // DESIGN '크기' 섹션의 재크롭 진입(#492) — 크롭 파이프라인이 usePhototicket으로 올라가며(#548)
+  // ImageUploader가 트리거를 올려주고 셸이 state에 담아 되돌려주던 왕복이 사라졌다. 원본이
+  // 없으면 안 넘겨 버튼 자체가 안 뜬다(모바일 DesignRail과 동일 게이트).
+  const { posterCrop } = photo;
 
   // 줌은 편집 모드만 — 결과(resultOpen)에선 캔버스 hero 티켓이 기본 크기로 고정된다(인스펙터=ResultPanel).
   const mode = resultOpen ? 'default' : viewMode;
@@ -285,20 +280,21 @@ export function DesktopStudioShell({
         {/* 우: 컨텍스트 인스펙터 — 스크롤 body + 고정 footer(편집 모드만).
             최대화 모드에선 숨겨 캔버스를 넓힌다(state는 셸 레벨이라 유지, 렌더만 토글 — #225 제약). */}
         {/* 최대화에서도 언마운트가 아니라 CSS로만 숨긴다(#492) — 아래 POSTER 패널을 상시
-            마운트로 돌린 것과 같은 이유다. aside를 통째로 떼면 ImageUploader가 같이 죽어
-            크롭 원본 objectURL이 revoke되고, 기본 모드로 돌아왔을 때 복원 시드(#489)가 이미
-            죽은 URL을 다시 물어 재크롭 버튼만 살아있는 상태가 된다(모달이 빈 채로 열리고
-            '적용'이 영영 비활성). display 유틸은 hidden↔flex를 맞바꿔 충돌을 없앤다. */}
+            마운트로 돌린 것과 같은 이유다. #548이 크롭 원본 objectURL의 소유권을 usePhototicket으로
+            올려 "aside가 죽으면 원본도 죽는" 경로는 사라졌지만, 이 안의 OcrUploadCard는 여전히
+            in-flight KOBIS 보강을 mountedRef로 가드하므로(#372 P1) 왕복 언마운트가 결과를
+            조용히 버린다. display 유틸은 hidden↔flex를 맞바꿔 충돌을 없앤다. */}
         <aside
           data-testid="inspector"
           className={`h-full flex-none flex-col border-l border-line ${mode === 'max' ? 'hidden' : 'flex'}`}
           style={{ width: 380 }}
         >
           <div className="min-h-0 flex-1 overflow-y-auto p-6">
-            {/* POSTER 패널은 탭을 떠나도 언마운트하지 않는다(#492) — ImageUploader가 크롭 전
-                원본 objectURL을 소유하고 언마운트 cleanup에서 revoke하므로, 조건부 마운트면 탭을
-                한 번 옮기는 것만으로 재크롭 원본이 사라진다(모바일 셸에서 이미 겪은 함정 —
-                #297 P1·#372 P1과 동형). in-flight KOBIS 보강을 지키는 이유까지 같다.
+            {/* POSTER 패널은 탭을 떠나도 언마운트하지 않는다(#492) — 원래는 ImageUploader가 크롭
+                전 원본 objectURL을 소유해 탭을 한 번 옮기는 것만으로 재크롭 원본이 사라졌기
+                때문이고, 그 소유권은 #548에서 usePhototicket으로 올라갔다. 상시 마운트는 그대로
+                유지한다: 같이 사는 OcrUploadCard의 in-flight KOBIS 보강이 언마운트되면 조용히
+                버려지기 때문(#372 P1, 모바일 셸의 #297 P1과 동형).
                 CSS hidden(display:none)이라 브라우저에선 포커스·접근성 트리에서 빠지고, 크롭
                 모달은 body 포털이라 숨은 조상 밑에 있어도 그대로 뜬다. */}
             <div
@@ -306,12 +302,10 @@ export function DesktopStudioShell({
               className={resultOpen || activeTab !== 'poster' ? 'hidden' : 'space-y-field'}
             >
               <ImageUploader
-                onUpload={photo.handleImageUpload}
+                crop={posterCrop}
                 isProcessing={false}
                 imageUrl={croppedImageUrl}
                 layout={previewComponents.layout}
-                initialOriginalSrc={photo.restoredOriginalPosterUrl}
-                onRecropAvailable={handleRecropAvailable}
               />
               <OcrUploadCard
                 setInfo={photo.updateMovieInfo}
@@ -348,7 +342,10 @@ export function DesktopStudioShell({
               </div>
             ) : activeTab === 'design' ? (
               <div className="space-y-group">
-                <DesktopDesignPanel photo={photo} onRecropPoster={recropPoster ?? undefined} />
+                <DesktopDesignPanel
+                  photo={photo}
+                  onRecropPoster={posterCrop.originalSrc ? posterCrop.openRecrop : undefined}
+                />
               </div>
             ) : null}
           </div>

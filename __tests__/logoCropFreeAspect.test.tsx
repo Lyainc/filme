@@ -25,7 +25,6 @@
  * 전용 import라 이 mock으로 대체돼도 ImageCropModal 자체 로딩에는 영향이 없다.
  */
 import { describe, expect, test, afterEach, beforeEach, mock } from 'bun:test';
-import { useState } from 'react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { centerCrop, convertToPixelCrop, makeAspectCrop } from 'react-image-crop';
@@ -239,10 +238,17 @@ describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
     expect((received as unknown as Area).width).toBeGreaterThan(renderPx.width);
   });
 
-  // DesktopStudioShell과 동형 — #525에서 posterFit 저장이 사라져 onUpload는 URL만 받는다.
+  // DesktopStudioShell과 동형 — 크롭 파이프라인은 usePhototicket이 소유하고(#548) 여기선 소비만 한다.
   function UploaderHarness() {
-    const [url, setUrl] = useState<string | null>(null);
-    return <ImageUploader onUpload={setUrl} isProcessing={false} imageUrl={url} layout="minimal" />;
+    const photo = usePhototicket();
+    return (
+      <ImageUploader
+        crop={photo.posterCrop}
+        isProcessing={false}
+        imageUrl={photo.state.croppedImageUrl}
+        layout="minimal"
+      />
+    );
   }
 
   test('ImageUploader: 재크롭은 포스터 표준(unchecked)으로 열린다 — 크롭 비율이 결과에 이미 구워져 있어 되살릴 렌더 상태가 없다', async () => {

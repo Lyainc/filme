@@ -20,8 +20,8 @@ import { Wordmark } from './Wordmark';
 import type { ViewMode } from './viewMode';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
 import { getLayout } from '@/utils/layouts';
-import { getCroppedImg, type Area } from '@/utils/imageCrop';
-import { POSTER_PRESERVE_MAX_SIDE, TARGET_HEIGHT, TARGET_WIDTH } from '@/utils/constants';
+import type { Area } from '@/utils/imageCrop';
+import { TARGET_HEIGHT, TARGET_WIDTH } from '@/utils/constants';
 import { useEditHistory } from '@/hooks/useEditHistory';
 import { useOcrUndo } from '@/hooks/useOcrUndo';
 import type { usePhototicket } from '@/hooks/usePhototicket';
@@ -256,29 +256,11 @@ export function MobileEditorShell({
     setEditLift(0);
   }, []);
   // 포스터 크롭 파이프라인(#259 on-ticket tap + #315 서브메뉴 교체/재크롭 통합 단일 소스).
-  // originalSrc는 첫 업로드 이후에도 유지돼야 재크롭이 되므로(#315 설계, ImageUploader의
-  // pendingNewFile 패턴을 그대로 포팅) 크롭 완료 시 revoke하지 않는다 — 값이 바뀌거나(교체로
-  // 새 파일 선택) 언마운트될 때만 아래 effect가 이전 URL을 단일 소유자로 revoke한다.
+  // 상태머신(원본 objectURL·cropOpen·pendingNewFile·복원 시드·revoke)은 #548에서 usePhototicket의
+  // usePosterCrop으로 올라갔다 — 이 셸은 브레이크포인트 전환에서 통째로 언마운트되므로, 여기가
+  // 원본 blob을 소유하면 훅이 아직 참조 중인 URL이 revoke된다. 이제 소비만 한다.
   const posterInputRef = useRef<HTMLInputElement>(null);
-  const [posterOriginalSrc, setPosterOriginalSrc] = useState<string | null>(null);
-  const [posterCropOpen, setPosterCropOpen] = useState(false);
-  const [posterCropping, setPosterCropping] = useState(false);
-  const [posterPendingNewFile, setPosterPendingNewFile] = useState(false);
-
-  useEffect(() => {
-    return () => {
-      if (posterOriginalSrc) URL.revokeObjectURL(posterOriginalSrc);
-    };
-  }, [posterOriginalSrc]);
-
-  // 자동저장 복원(#489) — IndexedDB에서 되살린 원본 포스터를 로컬 state로 1회 시드해야
-  // 새로고침 후에도 재크롭이 된다. 비동기 복원이라 photo.restoredOriginalPosterUrl은 마운트
-  // 직후엔 비어 있다가 나중에 도착한다.
-  useEffect(() => {
-    if (photo.restoredOriginalPosterUrl && !posterOriginalSrc) {
-      setPosterOriginalSrc(photo.restoredOriginalPosterUrl);
-    }
-  }, [photo.restoredOriginalPosterUrl, posterOriginalSrc]);
+  const crop = photo.posterCrop;
 
   function flashToast(msg: string) {
     setToast(msg);
@@ -332,50 +314,16 @@ export function MobileEditorShell({
   }, []);
   function handlePosterFile(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (file) {
-      setPosterOriginalSrc(URL.createObjectURL(file));
-      setPosterPendingNewFile(true);
-      setPosterCropOpen(true);
-    }
+    if (file) crop.openFile(file);
     e.target.value = '';
   }
-  // 재크롭 — 새 파일 없이 기존 원본으로 크롭 모달만 재오픈(서브메뉴 전용 진입점).
-  const handlePosterRecrop = useCallback(() => {
-    if (posterOriginalSrc) setPosterCropOpen(true);
-  }, [posterOriginalSrc]);
   async function handlePosterCropComplete(area: Area, preserveRatio: boolean) {
-    if (!posterOriginalSrc) return;
-    setPosterCropping(true);
-    try {
-      // 원본 비율 보존(#420): 포스터 표준 해상도 대신 크롭 종횡비를 유지하며 긴 변만 캡한다.
-      const url = await getCroppedImg(
-        posterOriginalSrc,
-        area,
-        preserveRatio ? { maxSide: POSTER_PRESERVE_MAX_SIDE } : undefined
-      );
-      const isFirstUpload = !photo.state.croppedImageUrl;
-      photo.handleImageUpload(url, posterOriginalSrc);
-      // 첫 업로드는 문서 시작 — 같이 일어나는 fieldVisibility 기본셋 리셋이 undo 1스텝으로
-      // 잡히면 시작하자마자 undo가 활성돼 어색하다(#356). 교체는 히스토리 유지(포스터 자체는
-      // 스냅샷 밖이라 스텝도 안 생긴다).
-      if (isFirstUpload) history.clear();
-      setPosterPendingNewFile(false);
-      setPosterCropOpen(false); // 원본은 유지 — 재크롭에 재사용
-    } catch (err) {
-      console.error('포스터 크롭 실패:', err);
-    } finally {
-      setPosterCropping(false);
-    }
-  }
-  function handlePosterCropCancel() {
-    setPosterCropOpen(false);
-    // 새 파일(첫 업로드·교체) 취소면 원본을 버린다 — 직전 포스터의 원본은 이미 위 revoke effect가
-    // 정리했으므로 재크롭 불가, originalSrc를 null로 둬 정합성을 맞춘다(ImageUploader와 동일 패턴).
-    // 재크롭 취소(새 파일 안 고름)면 originalSrc를 유지해 다음 재크롭에 재사용.
-    if (posterPendingNewFile) {
-      setPosterOriginalSrc(null);
-      setPosterPendingNewFile(false);
-    }
+    const isFirstUpload = !photo.state.croppedImageUrl;
+    const ok = await crop.complete(area, preserveRatio);
+    // 첫 업로드는 문서 시작 — 같이 일어나는 fieldVisibility 기본셋 리셋이 undo 1스텝으로
+    // 잡히면 시작하자마자 undo가 활성돼 어색하다(#356). 교체는 히스토리 유지(포스터 자체는
+    // 스냅샷 밖이라 스텝도 안 생긴다).
+    if (ok && isFirstUpload) history.clear();
   }
 
   const doneEnabledStyle = canExport
@@ -660,11 +608,11 @@ export function MobileEditorShell({
                   <MenuRow
                     iconPath={MENU_ICONS.crop}
                     label="재크롭"
-                    disabled={!posterOriginalSrc}
-                    title={posterOriginalSrc ? undefined : '재크롭하려면 포스터를 다시 업로드해 주세요'}
+                    disabled={!crop.originalSrc}
+                    title={crop.originalSrc ? undefined : '재크롭하려면 포스터를 다시 업로드해 주세요'}
                     onClick={() => {
                       setMenuOpen(false);
-                      handlePosterRecrop();
+                      crop.openRecrop();
                     }}
                   />
                 </div>
@@ -883,9 +831,9 @@ export function MobileEditorShell({
         className={`relative shrink-0 px-4 pt-3${isMax || !croppedImageUrl ? ' hidden' : ''}`}
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
       >
-        {/* 크기 섹션의 재크롭 진입(#492) — 헤더 메뉴 '재크롭'과 같은 handlePosterRecrop를 공유한다.
+        {/* 크기 섹션의 재크롭 진입(#492) — 헤더 메뉴 '재크롭'과 같은 crop.openRecrop을 공유한다.
             원본이 없으면 안 넘겨 버튼 자체가 안 뜬다(메뉴 쪽은 disabled + 재업로드 안내를 유지). */}
-        <DesignRail photo={photo} onRecropPoster={posterOriginalSrc ? handlePosterRecrop : undefined} />
+        <DesignRail photo={photo} onRecropPoster={crop.originalSrc ? crop.openRecrop : undefined} />
       </div>
 
       {/* 필드 드로어 엣지 핸들(#364) — 우측 엣지에 드로어 존재를 암시하는 상시 인디케이터.
@@ -996,12 +944,12 @@ export function MobileEditorShell({
         className="sr-only"
         aria-hidden="true"
       />
-      {posterCropOpen && posterOriginalSrc && (
+      {crop.cropOpen && crop.originalSrc && (
         <ImageCropModal
-          imageSrc={posterOriginalSrc}
-          onClose={handlePosterCropCancel}
+          imageSrc={crop.originalSrc}
+          onClose={crop.cancel}
           onComplete={handlePosterCropComplete}
-          isProcessing={posterCropping}
+          isProcessing={crop.isCropping}
           layout={previewComponents.layout}
         />
       )}
