@@ -68,15 +68,6 @@ describe('Criterion 한줄평 폴백 체인 (#391)', () => {
     expect(html).toContain('한줄평 편집');
   });
 
-  // 서명(signature) 폰트도 한줄평과 동일하게 언어 분기(#423) — 값이 아니라 라벨(collected by)
-  // 자리는 항상 FONT_DISPLAY 이탤릭이므로, 값 쪽만 갈리는지로 좁혀서 확인.
-  test('한글 서명은 --font-quote-kr, 영문 서명은 FONT_DISPLAY 이탤릭으로 분기', () => {
-    const krHtml = markup({ ...FULL_MOVIE, signature: '박지수' });
-    expect(krHtml).toContain('박지수');
-    expect(krHtml).toContain('--font-quote-kr');
-
-    const enHtml = markup({ ...FULL_MOVIE, quote: '', signature: 'Alex Carter' });
-    expect(enHtml).toContain('Alex Carter');
-    expect(enHtml).not.toContain('--font-quote-kr');
-  });
+  // 서명 폰트 분기는 6무드 공통 규칙이라 __tests__/moodSignatureFont.test.tsx(#494)가 소유한다 —
+  // 여기선 quote 자체의 분기만 본다(위 두 테스트가 signature 값을 격리해두는 이유).
 });

@@ -236,6 +236,20 @@ export function containsHangul(text: string): boolean {
 }
 
 /**
+ * 유저가 직접 쓴 장식 텍스트(서명 #494 · Criterion 한줄평 #391)의 폰트 — 라틴은 옆에 서는 장식
+ * 라벨('collected by' 등)과 같은 FONT_DISPLAY 이탤릭으로 정합하고, 한글은 FONT_DISPLAY에 글리프가
+ * 없으므로(위 경고) 손글씨 FONT_QUOTE_KR로 분기한다. 무조건 치환은 한글을 시스템 세리프로 깨뜨리니
+ * 분기째로 공유해야 한다 — Criterion 한 무드에 있던 모델을 6무드 + 한줄평 공용으로 올린 것.
+ * 필드 이름이 아니라 "유저 입력 장식 텍스트"가 단위다. weight를 400으로 고정하는 건 두 폰트 다
+ * 단일 웨이트라 600/500을 상속하면 합성 볼드가 되어 라벨과 톤이 다시 갈리기 때문.
+ */
+export function userTextFont(text: string): CSSProperties {
+  return containsHangul(text)
+    ? { fontFamily: FONT_QUOTE_KR, fontStyle: 'normal', fontWeight: 400 }
+    : { fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400 };
+}
+
+/**
  * BI 마스터 v2 워드마크(`v2/Wordmark.tsx`)의 무드-세이프 포팅(#386). 캡처 파이프라인은 전부 inline
  * style이라 Tailwind className(`text-accent` 등)을 못 쓰므로, dotless-i + 색은 prop으로 받는다.
  * `accent` 생략 시 기존처럼 전체 단색(무드 잉크) 유지 — 전달하면 "me" + dot tittle만 그 색으로 칠해
@@ -1632,7 +1646,7 @@ export function FilmCreditCut({
           {components.signatureImage
             ? row('Collected by', <FieldTap field="signature" onField={onField}><SignatureStamp image={components.signatureImage} height={26} scale={components.signatureScale ?? 1} surface="dark" /></FieldTap>, 12)
             : signatureVal
-            ? row('Collected by', <FieldTap field="signature" onField={onField}><span style={{ fontFamily: FONT_QUOTE_KR, fontSize: 26, lineHeight: 1 }}>{signatureVal}</span></FieldTap>, false)
+            ? row('Collected by', <FieldTap field="signature" onField={onField}><span style={{ ...userTextFont(signatureVal), fontSize: 26, lineHeight: 1 }}>{signatureVal}</span></FieldTap>, false)
             : gSignature
             ? row('Collected by', <FieldTap field="signature" onField={onField}><FieldGhost text="SIGNATURE" width={140} height={26} surface="dark" state={gSignature} /></FieldTap>, 12)
             : null}

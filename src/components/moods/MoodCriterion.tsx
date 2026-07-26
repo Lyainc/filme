@@ -7,12 +7,10 @@ import {
   FONT_DISPLAY,
   FONT_KR,
   FONT_MONO,
-  FONT_QUOTE_KR,
   MoodProps,
   MoodWordmark,
   Poster,
   WORDMARK_ACCENT,
-  containsHangul,
   fieldPieces,
   fitFontSizeToWidth,
   gate,
@@ -22,6 +20,7 @@ import {
   SignatureStamp,
   StampRow,
   truncateActors,
+  userTextFont,
   useFontsReady,
 } from './_shared';
 
@@ -97,7 +96,6 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
   const titleOgVal = gate(fv?.titleOg, d.titleOg);
   const watchDateVal = gate(fv?.watchDate, watchDateClean);
   const signatureVal = gate(fv?.signature, d.signature);
-  const signatureIsKr = containsHangul(signatureVal);
   const ratingVisible = (fv?.rating ?? true) && d.rating > 0;
 
   // 타이틀 폭 맞춤(#318) — 시안 46/700이 maxSize. 마스트헤드는 좌측 제목 블록과 우측 평점 블록이
@@ -106,12 +104,11 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
   const fontsReady = useFontsReady();
   const titleSize = fitFontSizeToWidth(titleVal, 588 * 2, { fontFamily: FONT_KR, fontWeight: 700, minSize: 28, maxSize: 46 }, fontsReady);
 
-  // 한줄평(#391) — 유저 입력 → 평점 구간(0.5 단위) 프리셋 → 기본 quote 순 폴백. 유저 입력에
-  // 한글이 섞이면 FONT_QUOTE_KR(손글씨)로, 그 외(프리셋·기본값은 항상 영문)는 FONT_DISPLAY 그대로.
+  // 한줄평(#391) — 유저 입력 → 평점 구간(0.5 단위) 프리셋 → 기본 quote 순 폴백. 폰트는 서명과
+  // 같은 userTextFont 분기(프리셋·기본값은 항상 영문이라 FONT_DISPLAY로 떨어진다).
   const userQuoteVal = gate(fv?.quote, d.quote);
   const ratingQuoteKey = d.rating > 0 ? String(Math.round(d.rating * 2) / 2) : '';
   const quoteText = userQuoteVal || RATING_QUOTES[ratingQuoteKey] || DEFAULT_QUOTE;
-  const quoteIsKr = containsHangul(quoteText);
 
   const gTitle = showFieldGhost(fv?.title, d.title, ghost);
   const gTitleOg = showFieldGhost(fv?.titleOg, d.titleOg, ghost);
@@ -253,8 +250,7 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
                 alignItems: 'center',
                 justifyContent: 'center',
                 textAlign: 'center',
-                fontFamily: quoteIsKr ? FONT_QUOTE_KR : FONT_DISPLAY,
-                fontStyle: quoteIsKr ? 'normal' : 'italic',
+                ...userTextFont(quoteText),
                 fontSize: 50,
                 lineHeight: 1.28,
               }}
@@ -273,7 +269,7 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
             </FieldTap>
           ) : signatureVal ? (
             <FieldTap field="signature" onField={onField}>
-              <span style={{ fontFamily: signatureIsKr ? FONT_QUOTE_KR : FONT_DISPLAY, fontStyle: signatureIsKr ? 'normal' : 'italic', fontSize: 56, lineHeight: 1 }}>{signatureVal}</span>
+              <span style={{ ...userTextFont(signatureVal), fontSize: 56, lineHeight: 1 }}>{signatureVal}</span>
             </FieldTap>
           ) : gSignature ? (
             <FieldTap field="signature" onField={onField}>
