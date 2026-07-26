@@ -25,6 +25,7 @@ import {
   stampWillRender,
   TopBandTone,
   truncateActors,
+  userTextFont,
   useFontsReady,
   type FieldGhostState,
 } from './_shared';
@@ -344,7 +345,7 @@ export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components,
             <FieldTap field="signature" onField={onField}>
               <div style={{ textAlign: 'right', maxWidth: 440, minWidth: 0 }}>
                 <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400, fontSize: 25, opacity: 0.78, color: ink, marginRight: 10 }}>collected by</span>
-                <span style={{ fontWeight: 600, fontSize: 32, fontFamily: FONT_KR, color: ink, letterSpacing: -0.2 }}>{signatureVal}</span>
+                <span style={{ ...userTextFont(signatureVal), fontSize: 32, color: ink, letterSpacing: -0.2 }}>{signatureVal}</span>
               </div>
             </FieldTap>
           ) : gSignature ? (
