@@ -37,11 +37,13 @@ describe('공유 랜딩 세로 예산 (#491)', () => {
     const { container } = renderLanding();
     const img = screen.getByAltText('인터스텔라 · 포토티켓') as HTMLImageElement;
     const wrapper = img.parentElement as HTMLElement;
-    // 높이 예산 → 폭 상한 환산: calc(<N>vh * width / height). 티켓 비율이 반영돼야
-    // 가로 무드에서 캡이 과하게 좁아지지 않는다.
-    const cap = /calc\((\d+)vh\s*\*\s*(\d+)\s*\/\s*(\d+)\)/.exec(wrapper.style.maxWidth);
+    // 높이 예산 → 폭 상한 환산: calc(<N>dvh * width / height). 티켓 비율이 반영돼야
+    // 가로 무드에서 캡이 과하게 좁아지지 않는다. 단위는 **dvh만** 통과시킨다(#550 리뷰 P1) —
+    // 정적 vh는 Safari 동적 툴바 아래에서 캡이 헐거워져 CTA가 다시 폴드 밑으로 밀린다(#380과 동일 결함).
+    expect(wrapper.style.maxWidth).not.toMatch(/\d+vh/);
+    const cap = /calc\((\d+)dvh\s*\*\s*(\d+)\s*\/\s*(\d+)\)/.exec(wrapper.style.maxWidth);
     expect(cap).not.toBeNull();
-    // 45vh 기준. 50vh를 넘으면 세로 무드에서 CTA가 다시 폴드 아래로 밀린다.
+    // 45dvh 기준. 50dvh를 넘으면 세로 무드에서 CTA가 다시 폴드 아래로 밀린다.
     expect(Number(cap![1])).toBeLessThanOrEqual(50);
     expect([Number(cap![2]), Number(cap![3])]).toEqual([960, 1534]);
   });

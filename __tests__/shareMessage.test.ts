@@ -104,7 +104,7 @@ afterAll(() => {
 
 const FIELDS: TicketField[] = [
   'title', 'titleOg', 'actors', 'watchDate', 'watchTime', 'theater', 'screen',
-  'seat', 'runtime', 'rating', 'releaseDate', 'reissue', 'bookingNo', 'signature',
+  'seat', 'runtime', 'rating', 'releaseDate', 'reissue', 'bookingNo', 'signature', 'quote',
 ];
 const ALL_ON = Object.fromEntries(FIELDS.map((f) => [f, true])) as Record<TicketField, boolean>;
 
