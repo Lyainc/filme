@@ -76,6 +76,52 @@ export function stampScaleMaxFor(layout: LayoutId) {
   return layout === 'minimal' ? MINIMAL_STAMP_MAX_SCALE : 1.3;
 }
 
+/**
+ * 축 전환 세그먼트(#500 → #554) — 모바일 dock에서 한 번에 한 축만 그리는 배치의 공용 스위치.
+ * 후보정(재질↔코팅)과 크기(포스터↔로고)가 같은 처방을 쓰므로 마크업은 여기 하나만 둔다.
+ *
+ * 높이는 h-9(36px)로 명시해 SC 2.5.8 하한을 클래스 파싱만으로 검증할 수 있게 한다
+ * (__tests__/tapTargets.ts — 실렌더 px를 못 보는 파서라 선언이 곧 계약이다).
+ */
+function AxisSegment<K extends string>({
+  ariaLabel,
+  panelId,
+  options,
+  value,
+  onChange,
+}: {
+  ariaLabel: string;
+  panelId: string;
+  options: readonly { key: K; label: string }[];
+  value: K;
+  /** 호출부는 setState를 그대로 넘기지 말고 람다로 감쌀 것 — SetStateAction이 K 추론 후보로
+      끼어들면 K가 string으로 넓어져 축 유니온이 풀린다. */
+  onChange: (next: K) => void;
+}) {
+  return (
+    <div role="radiogroup" aria-label={ariaLabel} className="flex gap-2">
+      {options.map((o) => (
+        <button
+          key={o.key}
+          type="button"
+          role="radio"
+          aria-checked={value === o.key}
+          aria-controls={panelId}
+          onClick={() => onChange(o.key)}
+          data-touch="36"
+          className={`h-9 flex-1 truncate rounded-chip border px-3 text-[12px] font-medium transition-colors ${
+            value === o.key
+              ? 'border-transparent bg-accent-soft text-accent'
+              : 'border-line bg-surface-elevated text-fg-muted'
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 const POSTER_FIT_OPTIONS = [
   { value: 'contain', label: '원본 비율' },
   { value: 'cover', label: '꽉 채우기' },
@@ -104,8 +150,8 @@ function PosterFitToggle({
             role="radio"
             aria-checked={value === opt.value}
             onClick={() => onChange(opt.value)}
-            data-touch="44"
-            className={`flex-1 rounded-chip border px-3 py-2.5 text-[12px] font-medium transition-colors ${
+            data-touch="40"
+            className={`h-10 flex-1 rounded-chip border px-3 text-[12px] font-medium transition-colors ${
               value === opt.value
                 ? 'border-transparent bg-accent-soft text-accent'
                 : 'border-line bg-surface-elevated text-fg-muted'
@@ -189,39 +235,141 @@ function TexturePanel({ photo, surface }: { photo: Photo; surface: RailSurface }
       </div>
     );
   }
+  // aria-controls와 대상 id는 반드시 같은 상수에서 나와야 한다 — 따로 조립하면 한쪽만 고쳐도
+  // 아무 테스트가 안 깨진 채 세그먼트↔패널 관계만 조용히 끊긴다(SizePanel도 같은 이유로 hoist).
+  const panelId = `${prefix}-texture-axis-panel`;
   return (
     <div className="space-y-group">
-      {/* 축 전환 — PosterFitToggle과 같은 radiogroup 문법. 높이는 h-9(36px)로 명시해 SC 2.5.8
-          하한을 클래스 파싱만으로 검증할 수 있게 한다(__tests__/tapTargets.ts).
-          라벨에 그 축의 현재 값을 같이 실는 이유: 한 축만 그리는 배치의 유일한 대가가 "안 열린
+      {/* 라벨에 그 축의 현재 값을 같이 실는 이유: 한 축만 그리는 배치의 유일한 대가가 "안 열린
           축이 기본값이 아닌 걸 알 방법이 없다"는 것이라(홀로그램 코팅이 걸린 채 재질 축이 열려
           있으면 티켓의 광택만 보이고 출처가 안 보인다), 값을 라벨에 올려 두 축 상태를 항상
           노출한다 — 표시자를 따로 만드는 것보다 싸고, 열린 축 쪽은 아래 칩 선택과 중복이라
-          해가 없다. */}
-      <div role="radiogroup" aria-label="후보정 축" className="flex gap-2">
-        {TEXTURE_AXES.map((a) => (
-          <button
-            key={a.key}
-            type="button"
-            role="radio"
-            aria-checked={axis === a.key}
-            aria-controls={`${prefix}-texture-axis-panel`}
-            onClick={() => setAxis(a.key)}
-            data-touch="36"
-            className={`h-9 flex-1 truncate rounded-chip border px-3 text-[12px] font-medium transition-colors ${
-              axis === a.key
-                ? 'border-transparent bg-accent-soft text-accent'
-                : 'border-line bg-surface-elevated text-fg-muted'
-            }`}
-          >
-            {a.label} · {currentOptionLabel(photo, a.key)}
-          </button>
-        ))}
-      </div>
+          해가 없다. 크기 축(#554)은 두 묶음 다 값이 티켓에 그대로 보여서 이 보정이 필요 없다. */}
+      <AxisSegment
+        ariaLabel="후보정 축"
+        panelId={panelId}
+        options={TEXTURE_AXES.map((a) => ({
+          key: a.key,
+          label: `${a.label} · ${currentOptionLabel(photo, a.key)}`,
+        }))}
+        value={axis}
+        onChange={(next) => setAxis(next)}
+      />
       {/* key={axis} — 축이 바뀌면 컨트롤을 새로 세운다. 같은 range 노드를 재사용하면 id·label만
           갈린 채 포커스가 남아 스크린리더가 바뀐 의미를 다시 안 읽는다. */}
-      <div id={`${prefix}-texture-axis-panel`}>
+      <div id={panelId}>
         <TextureAxisControls key={axis} photo={photo} prefix={prefix} axis={axis} />
+      </div>
+    </div>
+  );
+}
+
+const SIZE_AXES = [
+  { key: 'poster', label: '포스터' },
+  { key: 'logo', label: '로고' },
+] as const;
+type SizeAxis = (typeof SIZE_AXES)[number]['key'];
+
+/**
+ * 크기 패널(#441, #492, #527 → #554) — 포스터축(재크롭·채우기) × 로고축(체인·포맷 스케일).
+ *
+ * 모바일은 네 컨트롤을 세로로 쌓으면 dock이 400×675 뷰포트에서 **361px**(minimal + 원본 보유,
+ * 즉 둘 다 뜨는 최악)까지 자라 프리뷰 티켓이 146×234px로 쪼그라든다 — #500이 후보정에서 걷어낸
+ * dock 최댓값이 그대로 이 탭으로 옮겨 앉은 것. 그래서 후보정과 **같은 처방**을 쓴다: 한 번에 한
+ * 축만 그리고 전환은 AxisSegment가 맡는다. 판정 근거(세 후보의 실측 절감이 −50~58px로 사실상
+ * 같아 px가 아니라 대가로 갈렸다)는 #554 코멘트.
+ *
+ * 포스터축이 통째로 빌 수 있다(원본 없음 + POSTER_FILL_MOODS 밖 무드) — 그땐 세그먼트를 아예
+ * 안 그리고 로고 슬라이더만 남긴다. 한 칸이 빈 축 전환은 죽은 컨트롤이라, 조건부 노출 규칙
+ * (onRecropPoster·POSTER_FILL_MOODS)을 세그먼트 층까지 그대로 밀어올린 것.
+ *
+ * 데스크톱은 사이드 패널이라 이 세로 예산 문제가 없어(#500 "데스크톱 미해당") 두 축 상시 노출을
+ * 유지한다 — 축 컨트롤 자체는 같은 JSX를 공유하고 배치만 갈린다(TexturePanel과 같은 모양).
+ */
+function SizePanel({ photo, surface, actions }: { photo: Photo; surface: RailSurface; actions: RailActions }) {
+  const [axis, setAxis] = useState<SizeAxis>('poster');
+  const prefix = prefixFor(surface);
+  const { components } = photo.state;
+  const setComp = photo.updateComponents;
+  const stampScaleMax = stampScaleMaxFor(components.layout);
+
+  // 크롭 재진입(#492) — "포스터 크기·비율을 한 자리에서" 다루게 하는 게 이 섹션의 취지라,
+  // "얼마나 크게"(스케일·채우기) 옆에 "어디를 쓸지"(크롭)를 같이 둔다. #554가 이 결정을 다시
+  // 열었고 **번복하지 않았다** — 후보 (b)(재크롭을 dock 밖으로)는 여기 축 분리와 절감이 같은데
+  // (−56 vs −58px) 진입점을 하나 잃는 대가가 붙어서, 진입점을 그대로 둔 채 축으로 접는 (a)를
+  // 골랐다. 원본이 없으면 셸이 onRecropPoster를 안 넘겨 버튼 자체가 안 뜬다 — 재업로드 안내는
+  // 원래 진입점(모바일 헤더 메뉴 '재크롭', 데스크톱 POSTER 탭)이 disabled+title로 계속 들고 있다.
+  // 포스터 채우기(#527/#492)는 값이 갈리는 무드에서만 — 나머지 무드는 슬롯이 이미 포스터 표준
+  // 비율이라 토글해도 그림이 같다. 숨겨도 저장값은 남아 무드 복귀 시 그대로 살아난다(체인/포맷
+  // 스케일 클램프와 같은 원칙).
+  const showFit = POSTER_FILL_MOODS.has(components.layout);
+  const posterAxis =
+    actions.onRecropPoster || showFit ? (
+      <div className="space-y-group">
+        {actions.onRecropPoster && (
+          <button
+            type="button"
+            onClick={actions.onRecropPoster}
+            data-touch="40"
+            className="h-10 w-full rounded-chip border border-line bg-surface-elevated px-3 text-[12px] font-medium text-fg transition-colors hover:bg-accent-soft hover:text-accent"
+          >
+            포스터 다시 크롭
+          </button>
+        )}
+        {showFit && (
+          <PosterFitToggle
+            value={components.posterFit ?? 'contain'}
+            onChange={(posterFit) => setComp({ posterFit })}
+          />
+        )}
+      </div>
+    ) : null;
+
+  // 체인/포맷 로고 렌더 크기(#441, PR #485 P2 후속). value는 Math.min(raw, stampScaleMax)로
+  // 표시만 클램프 — 저장된 raw 값은 안 건드려 다른 무드로 돌아가면 원래 크기로 복원된다.
+  const logoAxis = (
+    <div className="space-y-group">
+      <BrightnessSlider
+        label="체인 로고 크기"
+        id={`${prefix}-chain-scale`}
+        value={Math.min(components.chainScale ?? 1, stampScaleMax)}
+        onChange={(chainScale) => setComp({ chainScale })}
+        min={0.6}
+        max={stampScaleMax}
+      />
+      <BrightnessSlider
+        label="포맷 로고 크기"
+        id={`${prefix}-format-scale`}
+        value={Math.min(components.formatScale ?? 1, stampScaleMax)}
+        onChange={(formatScale) => setComp({ formatScale })}
+        min={0.6}
+        max={stampScaleMax}
+      />
+    </div>
+  );
+
+  if (surface === 'desktop' || !posterAxis) {
+    return (
+      <div className="space-y-group">
+        {posterAxis}
+        {logoAxis}
+      </div>
+    );
+  }
+  const panelId = `${prefix}-size-axis-panel`;
+  return (
+    <div className="space-y-group">
+      <AxisSegment
+        ariaLabel="크기 축"
+        panelId={panelId}
+        options={SIZE_AXES}
+        value={axis}
+        onChange={(next) => setAxis(next)}
+      />
+      {/* key={axis} — TexturePanel과 같은 이유(축이 갈리면 컨트롤을 새로 세워 포커스가 옛 의미를
+          물고 넘어가지 않게). */}
+      <div id={panelId} key={axis}>
+        {axis === 'poster' ? posterAxis : logoAxis}
       </div>
     </div>
   );
@@ -336,56 +484,6 @@ export const RAIL_ITEMS: readonly RailItem[] = [
         <path d="M20 4 12 12" />
       </svg>
     ),
-    render: (photo, surface, actions) => {
-      const prefix = prefixFor(surface);
-      const { components } = photo.state;
-      const setComp = photo.updateComponents;
-      const stampScaleMax = stampScaleMaxFor(components.layout);
-      // 체인/포맷 로고 렌더 크기(#441, PR #485 P2 후속). value는 Math.min(raw, stampScaleMax)로
-      // 표시만 클램프 — 저장된 raw 값은 안 건드려 다른 무드로 돌아가면 원래 크기로 복원된다.
-      // 포스터 채우기(#527/#492)는 값이 갈리는 무드에서만 — 나머지 무드는 슬롯이 이미 포스터
-      // 표준 비율이라 토글해도 그림이 같다. 숨겨도 저장값은 남아 무드 복귀 시 그대로 살아난다
-      // (체인/포맷 스케일 클램프와 같은 원칙).
-      // 크롭 재진입(#492) — 포스터 크기·비율을 한 자리에서 다루게 하는 게 이 섹션의 취지라,
-      // "얼마나 크게"(스케일·채우기) 옆에 "어디를 쓸지"(크롭)를 같이 둔다. 원본이 없으면 셸이
-      // onRecropPoster를 안 넘겨 버튼 자체가 안 뜬다 — 재업로드 안내는 원래 진입점(모바일 헤더
-      // 메뉴 '재크롭', 데스크톱 POSTER 탭)이 disabled+title로 계속 들고 있다.
-      return (
-        <div className="space-y-group">
-          {actions.onRecropPoster && (
-            <button
-              type="button"
-              onClick={actions.onRecropPoster}
-              data-touch="44"
-              className="w-full rounded-chip border border-line bg-surface-elevated px-3 py-2.5 text-[12px] font-medium text-fg transition-colors hover:bg-accent-soft hover:text-accent"
-            >
-              포스터 다시 크롭
-            </button>
-          )}
-          {POSTER_FILL_MOODS.has(components.layout) && (
-            <PosterFitToggle
-              value={components.posterFit ?? 'contain'}
-              onChange={(posterFit) => setComp({ posterFit })}
-            />
-          )}
-          <BrightnessSlider
-            label="체인 로고 크기"
-            id={`${prefix}-chain-scale`}
-            value={Math.min(components.chainScale ?? 1, stampScaleMax)}
-            onChange={(chainScale) => setComp({ chainScale })}
-            min={0.6}
-            max={stampScaleMax}
-          />
-          <BrightnessSlider
-            label="포맷 로고 크기"
-            id={`${prefix}-format-scale`}
-            value={Math.min(components.formatScale ?? 1, stampScaleMax)}
-            onChange={(formatScale) => setComp({ formatScale })}
-            min={0.6}
-            max={stampScaleMax}
-          />
-        </div>
-      );
-    },
+    render: (photo, surface, actions) => <SizePanel photo={photo} surface={surface} actions={actions} />,
   },
 ];
