@@ -284,6 +284,113 @@ function drawImageColorFiltered(
   dctx.drawImage(off, dx, dy, dw, dh);
 }
 
+/**
+ * 전경 포스터 가장자리 페더(#459)를 합성한다. 알파 램프가 필요한 건 레터박스 축 양끝 feather px
+ * 두 밴드뿐인데 예전엔 그 램프 하나 때문에 **포스터 전체** 오프스크린을 잡았다(minimal·pixelRatio 2:
+ * 1920×2880 ≈ 22MB, #526 ②). 이제 알파 1인 중앙은 메인 캔버스에 바로 그리고 밴드 둘만 밴드 크기
+ * 오프스크린으로 얹는다 — 램프 모양·세기·씸 위치는 그대로다.
+ *
+ * 밴드↔중앙 경계는 device px 정수로 자른다. 소수 좌표로 clip하면 그 한 줄이 양쪽에서 부분 커버리지로
+ * 두 번 합성돼(0.75·fg + 0.25·bg) 없던 씸선이 생긴다.
+ */
+function drawPosterFeathered(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  dx: number,
+  dy: number,
+  dw: number,
+  dh: number,
+  filter: string,
+  vertical: boolean,
+  feather: number,
+): void {
+  const span = vertical ? dh : dw;
+  const f = Math.min(feather, span / 2);
+  const start = vertical ? dy : dx;
+  const near = Math.round(start + f); // 앞 밴드 끝 = 중앙 시작
+  const far = Math.round(start + span - f); // 중앙 끝 = 뒤 밴드 시작
+  // 페더 축이 아닌 쪽은 원래 가장자리 AA를 그대로 두려고 1px 바깥까지 clip을 넓힌다.
+  const crossFrom = Math.floor(vertical ? dx : dy) - 1;
+  const crossTo = Math.ceil(vertical ? dx + dw : dy + dh) + 1;
+
+  if (far > near) {
+    ctx.save();
+    ctx.beginPath();
+    if (vertical) ctx.rect(crossFrom, near, crossTo - crossFrom, far - near);
+    else ctx.rect(near, crossFrom, far - near, crossTo - crossFrom);
+    ctx.clip();
+    drawImageColorFiltered(ctx, img, dx, dy, dw, dh, filter);
+    ctx.restore();
+  }
+  drawFeatherBand(ctx, img, dx, dy, dw, dh, filter, vertical, Math.floor(start), near, start, start + f, crossFrom, crossTo);
+  drawFeatherBand(ctx, img, dx, dy, dw, dh, filter, vertical, far, Math.ceil(start + span), start + span, start + span - f, crossFrom, crossTo);
+}
+
+/**
+ * 페더 밴드 한 줄 — `[bandLo, bandHi)`(정수 device px) 구간을 밴드 크기 오프스크린에 그려 메인에
+ * 1:1로 얹는다. 알파 램프는 `rampFrom`(투명, 포스터 바깥 가장자리)에서 `rampTo`(불투명)로 흐르고
+ * 이 둘은 소수 좌표 그대로라, 예전 전체 오프스크린 경로와 램프 위치·기울기가 같다. 이미지는 밴드
+ * 원점 기준으로 통째로 그리고 캔버스 밖은 래스터라이저가 버린다.
+ */
+function drawFeatherBand(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  dx: number,
+  dy: number,
+  dw: number,
+  dh: number,
+  filter: string,
+  vertical: boolean,
+  bandLo: number,
+  bandHi: number,
+  rampFrom: number,
+  rampTo: number,
+  crossFrom: number,
+  crossTo: number,
+): void {
+  const thickness = bandHi - bandLo;
+  if (thickness < 1) return;
+  const bx = vertical ? crossFrom : bandLo;
+  const by = vertical ? bandLo : crossFrom;
+  const bw = Math.max(1, vertical ? crossTo - crossFrom : thickness);
+  const bh = Math.max(1, vertical ? thickness : crossTo - crossFrom);
+
+  const tmp = document.createElement('canvas');
+  tmp.width = bw;
+  tmp.height = bh;
+  const tctx = tmp.getContext('2d');
+  if (!tctx) {
+    // 오프스크린 실패 — 페더 없이 그 구간만이라도 그린다(하드 경계, 빈 구멍보다 낫다).
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(bx, by, bw, bh);
+    ctx.clip();
+    drawImageColorFiltered(ctx, img, dx, dy, dw, dh, filter);
+    ctx.restore();
+    return;
+  }
+  // 색보정은 밴드에 그릴 때 적용(전경 포스터 filter엔 blur 없음). iOS는 ctx.filter를 무시하므로
+  // (#490/#495) 그린 뒤 픽셀로 굽는다 — 밴드 크기라 예전 전체 굽기의 1/30 수준이다.
+  if (filter !== 'none' && !isCtxFilterHonored()) {
+    tctx.drawImage(img, dx - bx, dy - by, dw, dh);
+    bakeColorFilter(tctx, bw, bh, filter);
+  } else {
+    tctx.filter = filter;
+    tctx.drawImage(img, dx - bx, dy - by, dw, dh);
+    tctx.filter = 'none';
+  }
+  tctx.globalCompositeOperation = 'destination-in';
+  const o = rampFrom - (vertical ? by : bx); // 밴드 로컬 좌표
+  const i = rampTo - (vertical ? by : bx);
+  const grad = vertical ? tctx.createLinearGradient(0, o, 0, i) : tctx.createLinearGradient(o, 0, i, 0);
+  grad.addColorStop(0, 'rgba(0,0,0,0)');
+  grad.addColorStop(1, '#000');
+  tctx.fillStyle = grad;
+  tctx.fillRect(0, 0, bw, bh);
+  ctx.filter = 'none';
+  ctx.drawImage(tmp, bx, by);
+}
+
 /** object-position('x% y%')을 0..1 분율로. 미지정/파싱 실패는 중앙(0.5, 0.5). */
 function parseObjectPosition(pos: string): [number, number] {
   const m = pos.match(/([\d.]+)%\s+([\d.]+)%/);
@@ -401,40 +508,7 @@ function compositeRaster(
       ? posterFeatherAxes(bw, bh, sw / sh, py)
       : { x: false, y: false };
     if (axes.x || axes.y) {
-      const F = POSTER_EDGE_FEATHER * pixelRatio;
-      const tw = Math.max(1, Math.round(dw));
-      const th = Math.max(1, Math.round(dh));
-      const tmp = document.createElement('canvas');
-      tmp.width = tw;
-      tmp.height = th;
-      const tctx = tmp.getContext('2d');
-      if (tctx) {
-        // 색보정은 tmp에 그릴 때 적용(전경 포스터 filter엔 blur 없음). 그다음 destination-in으로
-        // 가장자리 알파만 깎고, 메인엔 filter 없이 1:1로 얹는다. iOS는 ctx.filter를 무시하므로
-        // (#490/#495) 그린 뒤 픽셀로 굽는다 — tmp가 이미 있어 오프스크린을 더 만들지 않는다.
-        if (scaled !== 'none' && !isCtxFilterHonored()) {
-          tctx.drawImage(img, 0, 0, tw, th);
-          bakeColorFilter(tctx, tw, th, scaled);
-        } else {
-          tctx.filter = scaled;
-          tctx.drawImage(img, 0, 0, tw, th);
-          tctx.filter = 'none';
-        }
-        tctx.globalCompositeOperation = 'destination-in';
-        const span = axes.y ? th : tw;
-        const grad = axes.y ? tctx.createLinearGradient(0, 0, 0, th) : tctx.createLinearGradient(0, 0, tw, 0);
-        const f = Math.min(F, span / 2) / span;
-        grad.addColorStop(0, 'rgba(0,0,0,0)');
-        grad.addColorStop(f, '#000');
-        grad.addColorStop(1 - f, '#000');
-        grad.addColorStop(1, 'rgba(0,0,0,0)');
-        tctx.fillStyle = grad;
-        tctx.fillRect(0, 0, tw, th);
-        ctx.filter = 'none';
-        ctx.drawImage(tmp, dx, dy, dw, dh);
-      } else {
-        drawImageColorFiltered(ctx, img, dx, dy, dw, dh, scaled);
-      }
+      drawPosterFeathered(ctx, img, dx, dy, dw, dh, scaled, axes.y, POSTER_EDGE_FEATHER * pixelRatio);
     } else {
       drawImageColorFiltered(ctx, img, dx, dy, dw, dh, scaled);
     }
