@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import LayoutPicker, { LayoutStrip } from '@/components/LayoutPicker';
 import TexturePicker from '@/components/wizard/TexturePicker';
 import ColorPicker from '@/components/wizard/ColorPicker';
@@ -71,10 +71,8 @@ const POSTER_FIT_OPTIONS = [
 ] as const;
 
 /**
- * 포스터를 슬롯에 앉히는 방식(#527, #492) — "크롭을 어떤 비율로 잡나"와 "티켓에 어떻게 앉히나"는
- * 축이 다른데 예전엔 크롭 모달 토글 하나가 둘을 겸해, 방금 확정한 프레임과 결과물이 어긋났다(#525).
- * 그래서 크롭이 아니라 DESIGN '크기' 섹션에 둔다 — 프리뷰를 보며 즉시 되돌릴 수 있고, 두 이슈가
- * 요구한 컨트롤 자리가 하나로 합쳐진다. 노출 판정은 POSTER_FILL_MOODS(값이 갈리는 무드만).
+ * 포스터를 슬롯에 앉히는 방식(#527, #492) — 근거와 무드별 실측은 TicketComponents.posterFit
+ * 주석과 POSTER_FILL_MOODS에. 여기선 "크롭 모달이 아니라 DESIGN '크기' 섹션"이라는 자리만 잡는다.
  */
 function PosterFitToggle({
   value,
@@ -83,15 +81,11 @@ function PosterFitToggle({
   value: 'contain' | 'cover';
   onChange: (next: 'contain' | 'cover') => void;
 }) {
-  // 모바일 rail·데스크톱 패널이 같은 문서에 함께 뜰 수 있으므로(테스트 포함) 라벨 id는
-  // useId로 뽑는다 — Section(DesktopDesignPanel)과 같은 패턴.
-  const labelId = useId();
   return (
     <div className="space-y-field">
-      <Eyebrow as="div" id={labelId}>
-        포스터 채우기
-      </Eyebrow>
-      <div role="radiogroup" aria-labelledby={labelId} className="flex gap-2">
+      <Eyebrow as="div">포스터 채우기</Eyebrow>
+      {/* 이름은 컨테이너 aria-label로 — TexturePicker·FieldEditorBody의 radiogroup과 같은 문법. */}
+      <div role="radiogroup" aria-label="포스터 채우기" className="flex gap-2">
         {POSTER_FIT_OPTIONS.map((opt) => (
           <button
             key={opt.value}

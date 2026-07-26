@@ -18,7 +18,7 @@ import { MoodMinimal } from '../src/components/moods/MoodMinimal';
 import { MoodStub } from '../src/components/moods/MoodStub';
 import { POSTER_FRAME_INSET_Y } from '../src/components/moods/_shared';
 import { POSTER_FILL_MOODS } from '../src/constants/fields';
-import type { LayoutId, MovieInfo, TicketComponents } from '../src/types';
+import type { MovieInfo, TicketComponents } from '../src/types';
 
 const MOVIE: MovieInfo = {
   title: 'TITLE', titleOg: 'ORIGINAL', releaseDate: '2026-05-01',
@@ -35,15 +35,26 @@ const BASE: TicketComponents = {
   chainVisible: true, formatVisible: true, chainScale: 1, formatScale: 1,
 };
 
-function render(Mood: typeof MoodMinimal, themeColor = '#FFFFFF') {
+function render(Mood: typeof MoodMinimal, over: Partial<TicketComponents> = {}) {
   return renderToStaticMarkup(
     <Mood
       movieInfo={MOVIE}
-      components={{ ...BASE, themeColor }}
+      components={{ ...BASE, ...over }}
       croppedImageUrl="blob:test"
     />
   );
 }
+
+// posterFitProps(풀블리드 슬롯 계약)를 태우는 무드 전부 — 이 파일의 표-기반 검증이 전부 이 하나를
+// 돈다(목록이 갈리면 새 무드가 어느 한 검증에서만 조용히 빠진다). 35mm Wide는 계약 밖(고정 비율
+// 컷, cover 하드코딩)이라 아래 #524 describe가 따로 잡는다.
+const POSTER_FIT_MOODS = [
+  ['minimal', MoodMinimal],
+  ['criterion', MoodCriterion],
+  ['35mm', Mood35mm],
+  ['editorial', MoodEditorial],
+  ['stub', MoodStub],
+] as const;
 
 // 전경 포스터 <img> 특정 — 배경 blur <img>(data-poster-bg, object-position 없음)가
 // 앞서므로 object-position을 가진 전경만 잡는다(#440 레터박스 blur 배경).
@@ -60,13 +71,7 @@ const POSTER_BG_BLUR = /<img[^>]*data-poster-bg="true"[^>]*blur\(/;
 const POSTER_FRAME_WRAPPER = /<div style="position:absolute;top:(-?\d+)(?:px)?;bottom:(-?\d+)(?:px)?;left:0;right:0">/;
 
 // 6무드 전부가 만족해야 하는 단일 정책(#525) — contain + 중앙 정렬 + blur 레터박스 배경.
-describe.each([
-  ['minimal', MoodMinimal],
-  ['criterion', MoodCriterion],
-  ['35mm', Mood35mm],
-  ['editorial', MoodEditorial],
-  ['stub', MoodStub],
-] as const)('#525 포스터 fit 단일 정책 — %s', (_name, Mood) => {
+describe.each(POSTER_FIT_MOODS)('#525 포스터 fit 단일 정책 — %s', (_name, Mood) => {
   test('object-fit:contain, 중앙 정렬(#449, 구 top 정렬 폐기)', () => {
     const img = render(Mood).match(POSTER_IMG)?.[0] ?? '';
     expect(img).toContain('object-fit:contain');
@@ -102,14 +107,14 @@ describe('레터박스 배경색', () => {
     ['minimal', MoodMinimal],
   ] as const)('%s — 테마(ink)에 맞춰 갈린다', (_name, Mood) => {
     // themeColor='#FFFFFF'(밝은 잉크, inkIsDark=false) → 어두운 letterbox.
-    expect(render(Mood, '#FFFFFF').match(POSTER_WRAPPER_BG)?.[1]).toBe('#0a0a0a');
+    expect(render(Mood, { themeColor: '#FFFFFF' }).match(POSTER_WRAPPER_BG)?.[1]).toBe('#0a0a0a');
     // themeColor='#000000'(luminance 낮음 → inkIsDark=true, 어두운 잉크) → 크림 letterbox.
-    expect(render(Mood, '#000000').match(POSTER_WRAPPER_BG)?.[1]).toBe('#f5f0e8');
+    expect(render(Mood, { themeColor: '#000000' }).match(POSTER_WRAPPER_BG)?.[1]).toBe('#f5f0e8');
   });
 
   test('35mm — 컷 배경 검정 고정, 테마 무관(v5부터 amber도 하드코딩, #524 c8)', () => {
-    expect(render(Mood35mm, '#FFFFFF').match(POSTER_WRAPPER_BG)?.[1]).toBe('#000');
-    expect(render(Mood35mm, '#000000').match(POSTER_WRAPPER_BG)?.[1]).toBe('#000');
+    expect(render(Mood35mm, { themeColor: '#FFFFFF' }).match(POSTER_WRAPPER_BG)?.[1]).toBe('#000');
+    expect(render(Mood35mm, { themeColor: '#000000' }).match(POSTER_WRAPPER_BG)?.[1]).toBe('#000');
   });
 });
 
@@ -132,65 +137,40 @@ describe('#524 35mm 계열 컷 fit', () => {
 
 // #527 — 사용자가 고르는 "꽉 채우기"(components.posterFit='cover'). 위 #525 단일 정책은 값이
 // 없을 때의 기본값이고, 이 describe는 값이 실렸을 때만의 동작을 고정한다.
-function renderWith(Mood: typeof MoodMinimal, posterFit: 'contain' | 'cover') {
-  return renderToStaticMarkup(
-    <Mood movieInfo={MOVIE} components={{ ...BASE, posterFit }} croppedImageUrl="blob:test" />
-  );
-}
-
 describe('#527 포스터 꽉 채우기(cover)', () => {
   // 실측(브라우저, 포스터 프레임 rect): minimal 슬롯 960×1534(0.626)에 0.667 크롭이 cover로
-  // 서면 가로 6.13%(좌우 각 3.07%)만 잘린다 — 이슈가 말한 그 동작.
-  test('minimal — object-fit:cover + 중앙 정렬', () => {
-    const img = renderWith(MoodMinimal, 'cover').match(POSTER_IMG)?.[0] ?? '';
+  // 서면 가로 6.13%(좌우 각 3.07%)만 잘린다 — 이슈가 말한 그 동작. cover면 레터박스가 없으므로
+  // 그 위에 세운 blur 배경(#440)·frameInsetY(#449)도 함께 사라져야 한다(남으면 잘린 포스터 위에
+  // 검은 띠만 얹힌다). 밴드 톤(#461)은 실측 높이 기반이라 static markup에선 애초에 안 나온다.
+  test('minimal — object-fit:cover + blur 배경·frameInsetY 스킵', () => {
+    const html = render(MoodMinimal, { posterFit: 'cover' });
+    const img = html.match(POSTER_IMG)?.[0] ?? '';
     expect(img).toContain('object-fit:cover');
     expect(img).toContain('object-position:50% 50%');
-  });
-
-  // cover면 레터박스가 없으므로 그 위에 세운 장치는 전부 무의미하다 — 남겨두면 잘린 포스터 위에
-  // 검은 띠/블러만 얹힌다. #440(blur 배경)·#449(frameInsetY)·#461(상단 밴드 톤)을 통째로 건너뛴다.
-  test('minimal cover — blur 레터박스 배경(#440)·frameInsetY(#449)·밴드 톤(#461) 전부 스킵', () => {
-    const html = renderWith(MoodMinimal, 'cover');
-    expect(html).not.toMatch(POSTER_BG_BLUR);
     expect(html).not.toContain('data-poster-bg');
-    expect(html).not.toContain('data-letterbox-tone');
     const m = html.match(POSTER_FRAME_WRAPPER);
     expect(m?.[1]).toBe('0');
     expect(m?.[2]).toBe('0');
   });
 
-  // 회귀 가드 — posterFit을 명시적으로 contain으로 둔 경로가 #525 기본값과 완전히 같아야 한다.
-  test('minimal contain — 기본값 경로와 동일(blur 배경 + frameInsetY 유지)', () => {
-    const html = renderWith(MoodMinimal, 'contain');
-    expect(html).toMatch(POSTER_BG_BLUR);
-    expect(html.match(POSTER_FRAME_WRAPPER)?.[1]).toBe(String(POSTER_FRAME_INSET_Y));
-    expect(html).toBe(render(MoodMinimal));
+  // 회귀 가드 — posterFit을 명시적으로 contain으로 둔 경로가 #525 기본값과 **마크업까지** 같아야
+  // 한다. 이 한 줄이 blur 배경·frameInsetY·페더를 전부 포함해 대조한다.
+  test('minimal contain — 기본값 경로와 마크업 동일', () => {
+    expect(render(MoodMinimal, { posterFit: 'contain' })).toBe(render(MoodMinimal));
   });
 
-  // POSTER_FILL_MOODS 밖 무드는 저장된 cover를 **안 읽는다**. 값은 컴포넌트 전역이라 minimal에서
-  // 켠 뒤 무드를 옮기면 따라오는데, 그때 조용히 잘리면 안 된다 — stub 밴드(960×900)는 cover면
-  // 세로 37.5%가 날아가 포스터 프레임이 0.667에서 1.067로 뜬다(#525 룰 5 위반, 실측).
-  test.each([
-    ['criterion', MoodCriterion],
-    ['35mm', Mood35mm],
-    ['editorial', MoodEditorial],
-    ['stub', MoodStub],
-  ] as const)('%s — posterFit=cover가 실려도 contain 유지', (_name, Mood) => {
-    const html = renderWith(Mood, 'cover');
-    expect((html.match(POSTER_IMG)?.[0] ?? '')).toContain('object-fit:contain');
-    expect(html).toMatch(POSTER_BG_BLUR);
-  });
-
-  // 표(POSTER_FILL_MOODS)와 실제 렌더가 갈리면 죽은 컨트롤이나 조용한 잘림이 생긴다 — 표에 든
-  // 무드만 값을 읽는지 대조한다(#524 inkColorFidelity와 같은 표-대-렌더 검증).
-  test('POSTER_FILL_MOODS 표와 렌더가 일치한다', () => {
-    const rendered: [LayoutId, typeof MoodMinimal][] = [
-      ['minimal', MoodMinimal], ['criterion', MoodCriterion], ['35mm', Mood35mm],
-      ['editorial', MoodEditorial], ['stub', MoodStub],
-    ];
-    for (const [id, Mood] of rendered) {
-      const honors = (renderWith(Mood, 'cover').match(POSTER_IMG)?.[0] ?? '').includes('object-fit:cover');
-      expect([id, honors]).toEqual([id, POSTER_FILL_MOODS.has(id)]);
-    }
+  // 표(POSTER_FILL_MOODS)와 실제 렌더가 갈리면 죽은 컨트롤이나 조용한 잘림이 생긴다 — posterFit은
+  // 컴포넌트 전역 값이라 minimal에서 켠 뒤 무드를 옮기면 따라오는데, 표 밖 무드는 그걸 안 읽어야
+  // 한다(stub 밴드 960×900은 cover면 세로 37.5%가 날아가 포스터 프레임이 1.067로 뜬다 — #525
+  // 룰 5 위반, 실측). #524 inkColorFidelity와 같은 표-대-렌더 대조.
+  // 35mm Wide는 이 표의 관할 밖이라 뺀다 — posterFitProps를 안 태우고 컷 자체가 cover 고정이다
+  // (위 #524 describe가 그쪽을 잡는다).
+  test.each(POSTER_FIT_MOODS)('%s — posterFit=cover 반영 여부가 POSTER_FILL_MOODS와 일치', (id, Mood) => {
+    const html = render(Mood, { posterFit: 'cover' });
+    const img = html.match(POSTER_IMG)?.[0] ?? '';
+    const honors = img.includes('object-fit:cover');
+    expect(honors).toBe(POSTER_FILL_MOODS.has(id));
+    // 표 밖 무드는 contain 그대로 — blur 레터박스 배경도 유지된다.
+    if (!honors) expect(html).toMatch(POSTER_BG_BLUR);
   });
 });

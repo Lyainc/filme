@@ -4,6 +4,10 @@ import { formatDate } from '@/utils/dateFormat';
 /**
  * 필드 메타데이터 단일 소스(#215). 라벨은 필드 드로어(FieldDrawer)·데스크톱 아코디언
  * (FieldAccordion)·인플레이스 에디터가 공유하므로 여기 한 곳에 둔다.
+ *
+ * 필드 말고 **무드 능력 표**도 여기 산다(TONE_FIXED_MOODS · POSTER_FILL_MOODS · MOOD_EXCLUDED_FIELDS)
+ * — 셸마다 layout id 리터럴을 반복하면 한쪽만 고쳐져 죽은 컨트롤이 남기 때문. 네 번째 표가 생기면
+ * 그때 moodCapabilities로 한꺼번에 분리할 것.
  */
 export const FIELD_LABELS: Record<TicketField, string> = {
   title: '제목',

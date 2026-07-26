@@ -20,6 +20,13 @@ function PanelHarness() {
     <>
       <div data-testid="layout">{photo.state.components.layout}</div>
       <div data-testid="posterFit">{photo.state.components.posterFit ?? '(unset)'}</div>
+      {/* 무드 전환 프로브 — 썸네일 SVG 텍스트가 섞여 그리드 버튼의 접근성 이름은 안정적인
+          셀렉터가 못 된다. desktopDesignPanelMoodHiding.test.tsx의 하네스와 같은 관용구. */}
+      {(['stub', 'minimal'] as const).map((id) => (
+        <button key={id} type="button" onClick={() => photo.updateComponents({ layout: id })}>
+          {id}으로 전환
+        </button>
+      ))}
       <DesktopDesignPanel photo={photo} />
     </>
   );
@@ -121,19 +128,12 @@ describe('DesktopDesignPanel (#228)', () => {
     render(<PanelHarness />);
     await user.click(screen.getByRole('radio', { name: '꽉 채우기' }));
 
-    // 무드 이동은 (b)와 같은 캐러셀 버튼으로 — 썸네일 SVG 텍스트가 섞여 그리드 버튼의 접근성
-    // 이름은 안정적인 셀렉터가 못 된다(#354 E2E와 같은 함정).
-    const step = async (dir: '다음 무드' | '이전 무드', until: string) => {
-      for (let i = 0; i < 6 && screen.getByTestId('layout').textContent !== until; i++) {
-        await user.click(screen.getByRole('button', { name: dir }));
-      }
-    };
-    await step('다음 무드', 'stub');
+    await user.click(screen.getByRole('button', { name: 'stub으로 전환' }));
     expect(screen.getByTestId('layout').textContent).toBe('stub');
     expect(screen.queryByRole('radiogroup', { name: '포스터 채우기' })).toBeNull();
     expect(screen.getByTestId('posterFit').textContent).toBe('cover');
 
-    await step('이전 무드', 'minimal');
+    await user.click(screen.getByRole('button', { name: 'minimal으로 전환' }));
     expect(screen.getByRole('radio', { name: '꽉 채우기' }).getAttribute('aria-checked')).toBe('true');
   });
 });
