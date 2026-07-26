@@ -13,7 +13,11 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type Poin
  *   (b) 시안 31px 버튼을 막았던 "앱 현행 44~48px 대비 회귀"(일관성 근거, #354 InPlaceFieldEditor
  *       주석과 같은 논거)는 #508에서 **번복**했다 — 세로 공간이 툴바 하나에 35vh를 내주던 게 더
  *       큰 손해라고 봤다. 대가로 인플레이스 편집 바(InPlaceFieldEditor, 44px)와 툴바가 z-40/45로
- *       동시에 뜰 때 탭 타깃이 12px 어긋난다. 편집 바까지 32px로 맞출지는 별건(미결).
+ *       동시에 뜰 때 탭 타깃이 12px 어긋나는데, #553에서 이걸 **통일이 아니라 의도된 위계**로
+ *       확정했다: 상시 떠 있어 세로 예산을 먹는 보조 툴바는 32px, 그 순간의 주 조작면인 직접
+ *       편집 컨트롤은 44px(SC 2.5.5 AAA). 근거는 InPlaceFieldEditor.tsx 필드바 주석에, 두 값을
+ *       같이 못박는 회귀는 __tests__/inPlaceFieldEditor.test.tsx에 있다. 위계라서 TB_TARGET을 두
+ *       파일 공용 단일 소스로 빼지 않는다 — 합치면 한쪽을 고칠 때 다른 쪽이 딸려 간다.
  *   dark-glass 배경
  *   (--surface-translucent 재사용: README §Design Tokens, 시안 불투명 코드는 모순으로 기각).
  * - 방향(가로/세로) × 배치(고정/이동) 두 축. 기본 세로·고정·좌측 헤더 직하(#364).
