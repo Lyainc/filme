@@ -1332,6 +1332,20 @@ function edgeCells(codes: string[], accent: string): ReactNode[] {
 }
 
 /**
+ * 천공 지터 테이블(#498) — 실물 필름은 펀치·수축으로 구멍 크기와 간격이 미세하게 어긋나는데 시안의
+ * 완전 등간격(`space-between` + 동일 shape)은 공장제처럼 보였다. `Math.random`은 금지 — html-to-image가
+ * 캡처 시점에 DOM을 다시 그려 프리뷰와 결과물이 갈린다(#524 c2와 같은 규약). `seedFromString`으로 key와
+ * 인덱스만 받아 결정론적으로 만든다.
+ *
+ * `gap`은 각 홀의 양옆 margin(px)이라 `space-between`이 나눠줄 여유 폭을 홀마다 다르게 갉아 간격이
+ * 흐트러진다. 밴드·레일의 프레임번호 열은 천공 열과 같은 테이블을 써야 두 열이 계속 맞물린다.
+ */
+function sprocketJitter(key: string, count: number, w: number, h: number) {
+  const j = (axis: string, i: number, amp: number) => (seedFromString(`${key}${axis}${i}`) % (amp * 2 + 1)) - amp;
+  return Array.from({ length: count }, (_, i) => ({ w: w + j('w', i, 2), h: h + j('h', i, 2), gap: j('g', i, 3) }));
+}
+
+/**
  * 35mm 필름 스트립 밴드(에픽 #281 → v5 재설계 #524). 밴드에 천공 + 프레임번호 + KEYKODE 바 +
  * 엣지 스크롤 코드(×4, ◆ 구분) + 그레인. accent는 무드가 넘긴다. pos로 상/하단을 뒤집는다 —
  * 천공·프레임·키코드는 바깥 모서리, 엣지 텍스트는 안쪽 모서리.
@@ -1374,15 +1388,18 @@ export const FilmStripBand = memo(function FilmStripBand({
   const outer: 'top' | 'bottom' = pos;
   const inner: 'top' | 'bottom' = pos === 'top' ? 'bottom' : 'top';
 
-  const holes = Array.from({ length: count }, (_, i) => (
-    <div key={i} style={{ width: holeW, height: holeH, borderRadius: holeR, background: FILM_HOLE, flexShrink: 0, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.5), inset 0 2px 4px rgba(0,0,0,.6)' }} />
+  const jitter = sprocketJitter(pos, count, holeW, holeH);
+  const holes = jitter.map((j, i) => (
+    <div key={i} style={{ width: j.w, height: j.h, margin: `0 ${j.gap}px`, borderRadius: holeR, background: FILM_HOLE, flexShrink: 0, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.5), inset 0 2px 4px rgba(0,0,0,.6)' }} />
   ));
-  const frameNums = Array.from({ length: count }, (_, i) => (
-    <span key={i} style={{ width: holeW, textAlign: 'center', fontFamily: FONT_LCD, fontSize: 11, fontWeight: 400, letterSpacing: 0.6, color: accent, flexShrink: 0 }}>{frameLabel(i)}</span>
+  const frameNums = jitter.map((j, i) => (
+    <span key={i} style={{ width: j.w, margin: `0 ${j.gap}px`, textAlign: 'center', fontFamily: FONT_LCD, fontSize: 11, fontWeight: 400, letterSpacing: 0.6, color: accent, flexShrink: 0 }}>{frameLabel(i)}</span>
   ));
 
   const bleedMargin = `0 ${-bleed}px`;
-  const holesStyle: CSSProperties = { position: 'absolute', left: 0, right: 0, margin: bleedMargin, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px' };
+  // 행 높이를 holeH로 고정 — 지터로 커진 홀은 alignItems:center 덕에 위아래 1px씩만 넘치고, 아래 행들의
+  // 오프셋 산수는 지터 진폭을 몰라도 된다(진폭을 바꿔도 프레임번호·KEYKODE 행이 따라 어긋나지 않는다).
+  const holesStyle: CSSProperties = { position: 'absolute', left: 0, right: 0, height: holeH, margin: bleedMargin, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px' };
   holesStyle[outer] = 6;
   const frameStyle: CSSProperties = { position: 'absolute', left: 0, right: 0, margin: bleedMargin, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', opacity: 0.88, pointerEvents: 'none' };
   frameStyle[outer] = 6 + holeH + 3;
@@ -1435,6 +1452,9 @@ export const FilmRail = memo(function FilmRail({
   count?: number;
 }) {
   const holeShadow = `inset 0 0 0 1px rgba(0,0,0,.55), inset ${side === 'left' ? 2 : -2}px 0 5px rgba(0,0,0,.5)`;
+  // 좌우 레일이 같은 테이블을 쓴다 — 실물 천공은 한 번에 양쪽을 뚫으므로 같은 프레임번호가 양 끝에서
+  // 같은 높이에 서야 한다. side로 갈라두면 중간쯤에서 최대 24px 어긋나 스트립이 비틀린 것처럼 보인다.
+  const jitter = sprocketJitter('rail', count, 36, 51);
   const colStyle = (offset: number, w: number): CSSProperties => ({
     position: 'absolute',
     [side]: offset,
@@ -1448,15 +1468,15 @@ export const FilmRail = memo(function FilmRail({
   return (
     <div aria-hidden="true" style={{ position: 'absolute', [side]: 0, top: 0, bottom: 0, width, overflow: 'hidden' }}>
       <div style={colStyle(8, 36)}>
-        {Array.from({ length: count }, (_, i) => (
-          <div key={i} style={{ width: 36, height: 51, borderRadius: 9, background: FILM_HOLE, flexShrink: 0, boxShadow: holeShadow }} />
+        {jitter.map((j, i) => (
+          <div key={i} style={{ width: j.w, height: j.h, margin: `${j.gap}px 0`, borderRadius: 9, background: FILM_HOLE, flexShrink: 0, boxShadow: holeShadow }} />
         ))}
       </div>
       <div style={colStyle(50, 13)}>
-        {Array.from({ length: count }, (_, i) => (
+        {jitter.map((j, i) => (
           <span
             key={i}
-            style={{ height: 51, display: 'flex', alignItems: 'center', writingMode: 'vertical-rl', ...(side === 'right' ? { transform: 'rotate(180deg)' } : null), fontFamily: FONT_LCD, fontSize: 11, letterSpacing: 0.6, color: accent, opacity: 0.88, flexShrink: 0 }}
+            style={{ height: j.h, margin: `${j.gap}px 0`, display: 'flex', alignItems: 'center', writingMode: 'vertical-rl', ...(side === 'right' ? { transform: 'rotate(180deg)' } : null), fontFamily: FONT_LCD, fontSize: 11, letterSpacing: 0.6, color: accent, opacity: 0.88, flexShrink: 0 }}
           >
             {frameLabel(i)}
           </span>

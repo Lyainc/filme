@@ -31,7 +31,16 @@ describe('Mood35mm v5 재설계 (#524)', () => {
   test('세로 레일 — 스트립 90° 회전, 좌측만 엣지 프린트(실물도 편측 인쇄)', () => {
     const html = markup();
     expect(html).toContain('writing-mode:vertical-rl');
-    expect(html).toContain('width:36px;height:51px'); // 레일 천공(구 가로 밴드 44×24 아님)
+    // 레일 천공 36×51(구 가로 밴드 44×24 아님) — 지터로 ±2 흔들린다(#498).
+    const holes: RegExpMatchArray[] = Array.from(html.matchAll(/width:(\d+)px;height:(\d+)px;margin:(-?\d+)px 0;border-radius:9px/g));
+    expect(holes.length).toBe(38); // 레일 2개 × 홀 19개
+    expect(holes.every(m => Math.abs(+m[1] - 36) <= 2 && Math.abs(+m[2] - 51) <= 2 && Math.abs(+m[3]) <= 3)).toBe(true);
+    // 허용오차만 보면 기준 치수가 35×50으로 밀려도 통과하므로 평균으로 기준값을 못박는다.
+    const avg = (i: number) => holes.reduce((s: number, m) => s + +m[i], 0) / holes.length;
+    expect(Math.abs(avg(1) - 36)).toBeLessThan(1);
+    expect(Math.abs(avg(2) - 51)).toBeLessThan(1);
+    // 좌우 레일은 같은 지터 테이블 — 같은 프레임번호가 양 끝에서 같은 높이에 선다(#498 리뷰).
+    expect(holes.slice(0, 19).map(m => m[0])).toEqual(holes.slice(19).map(m => m[0]));
     // 엣지 프린트 컬럼(left:68px)은 좌측 레일에만 1개
     expect(html.match(/left:68px;top:-40px/g)?.length).toBe(1);
   });
