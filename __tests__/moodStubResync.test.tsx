@@ -26,7 +26,7 @@ function installFakeCanvasContext() {
 }
 
 // 마스터 시안(Ticket Design Master.dc.html v2 · 2026-07-08 resync) 05 STUB 재동기화 회귀(#281, 에픽 #281).
-// Stub 델타(대규모 재구조): 포스터 760(텍스트 없음, #493에서 900으로 확대) · 절취 3px dashed 반원 노치 제거 · 페이퍼 스텁 flex.
+// Stub 델타(대규모 재구조): 포스터 760(텍스트 없음, #493에서 900 → #527에서 가로 3:2 밴드 640) · 절취 3px dashed 반원 노치 제거 · 페이퍼 스텁 flex.
 // 제목이 포스터→페이퍼로 이동(42/700 2줄), 홀로그램 티커 신규(무지개 + ✦), Admission(SEAT 칩 48/900 on
 // #1A1612 + DATE/TIME/HALL 점선), The Film(RUNTIME/RATED/RELEASED/RE-RELEASED 2열 + STARRING),
 // 푸터(made with FILME · collected by · 스텁 바코드 300×40 텍스트 없음). ink #1A1612 고정 · monochrome.
@@ -40,9 +40,9 @@ const markup = () =>
   );
 
 describe('MoodStub 마스터 resync (#281)', () => {
-  test('flex 컬럼 재구조 — 포스터 900(텍스트 없음, #493 확대)', () => {
+  test('flex 컬럼 재구조 — 포스터 밴드 640(가로 3:2 풀블리드, #527)', () => {
     const html = markup();
-    expect(html).toContain('flex:0 0 900px'); // 포스터 영역
+    expect(html).toContain('flex:0 0 640px'); // 포스터 영역 — 960/1.5, 가로 포스터 풀블리드
     expect(html).toContain('flex-direction:column'); // root flex 컬럼
   });
 

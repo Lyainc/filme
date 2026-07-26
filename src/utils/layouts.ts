@@ -13,7 +13,8 @@ export interface LayoutSpec {
   /**
    * 포스터 슬롯 방향(#529) — 크롭 프리셋이 이걸 따른다(세로 2:3 / 가로 3:2, #525 룰 1).
    * `orientation`으로 대신하면 안 된다: editorial은 캔버스가 가로여도 포스터 컬럼이
-   * 640×960(0.667)이라 세로이고, 실제 가로 슬롯은 35mm Wide의 포스터 컷(926×617)뿐이다.
+   * 640×960(0.667)이라 세로이고, 거꾸로 stub은 캔버스가 세로인데 포스터 밴드가 960×640(3:2)이라
+   * 가로다. 가로 슬롯은 35mm Wide의 포스터 컷(926×617)과 stub 밴드 둘.
    * 필수 필드라 무드를 추가하면 컴파일러가 이 판단을 강제한다 — 캔버스가 아니라 그 무드의
    * **포스터 프레임**이 3:2인지 보고 적을 것.
    */
@@ -64,7 +65,9 @@ export const LAYOUTS: readonly LayoutSpec[] = [
     width: 960,
     height: 1534,
     orientation: 'portrait',
-    posterOrientation: 'portrait',
+    // 캔버스는 세로인데 포스터 슬롯은 가로다 — 상단 밴드가 960×640(3:2)이라(#527 오너 확정)
+    // 가로 크롭이 풀블리드로 들어간다. orientation과 갈리는 두 번째 사례(editorial의 반대 방향).
+    posterOrientation: 'landscape',
   },
   {
     id: '35mm-landscape',

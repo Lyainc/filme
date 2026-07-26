@@ -28,7 +28,7 @@ import {
 
 /**
  * v05 — 티켓 스텁(마스터 Ticket Design Master.dc.html v2 · 2026-07-08 resync, 에픽 #281).
- * 재구조: 포스터 900(텍스트 없음) → 절취 16(3px dashed, 반원 노치 없음) → 페이퍼 스텁 flex:1.
+ * 재구조: 포스터 640(가로 3:2 밴드, 텍스트 없음) → 절취 16(3px dashed, 반원 노치 없음) → 페이퍼 스텁 flex:1.
  * 제목이 포스터 오버레이에서 페이퍼 스텁으로 이동(42/700 2줄). 페이퍼: 홀로그램 티커(장식) → 워드마크
  * + 제목/원제 → Admission(SEAT 칩 + DATE/TIME/HALL 점선) → The Film(RUNTIME/RATED/RELEASED/
  * RE-RELEASED 2열 + STARRING) → 푸터(made with FILME · collected by · 스텁 바코드 300×40 텍스트 없음).
@@ -54,11 +54,19 @@ const STARRING_MAX_WIDTH = 700;
 // 본문 좌우 패딩(#446 톤업, 40→56) — 패딩·티커 풀블리드 음수마진·타이틀 가용폭 세 곳이 공유하는 단일 소스.
 const PAD_X = 56;
 
-// 상단 포스터 확대(#493) — 세로 포스터(2:3≈0.667) contain 시 좌우 여백을 줄이려 키울수록 좋지만,
-// 하단 스텁(전 필드+체인·포맷 스탬프 채움 기준)이 overflow:hidden에 잘리지 않는 실측 상한이
-// ≈924px(스텁 콘텐츠가 그 지점부터 바닥을 넘침, headless Chrome + FULL_MOVIE 픽스처로 실측)라
-// 24px 여유를 두고 900으로 고정.
-const POSTER_H = 900;
+/**
+ * 상단 포스터 밴드 높이 — **가로 포스터 슬롯**이다(#527 오너 확정). 밴드 폭이 캔버스 960으로
+ * 잠겨 있으므로, 가로 포스터 표준 3:2(= 세로 0.667의 가로 판, #525 룰 1)를 유지하면서 가장 큰
+ * 밴드는 960×640 하나뿐이다 — 그래서 이 값은 자유 변수가 아니라 960 / 1.5의 결과다.
+ * 밴드 자체가 3:2라 가로 크롭(LayoutSpec.posterOrientation='landscape'가 주는 프리셋)은
+ * contain으로도 레터박스 0인 풀블리드로 들어가고, 룰 5의 판정 대상인 포스터 프레임이 곧 밴드다.
+ * 다른 무드에서 세로로 크롭한 뒤 넘어오면(크롭은 무드 전환에도 유지 — #529 결정 2) 프레임이
+ * 427×640으로 서고 남는 좌우를 blur 배경이 덮는다(#440).
+ *
+ * #493이 세로 포스터 기준으로 밀어올렸던 900은 폐기됐다 — 그때의 상한 근거(하단 스텁이 넘치지
+ * 않는 실측 최대 ≈924px)는 지금 값이 그보다 한참 낮아 더는 구속하지 않는다.
+ */
+const POSTER_H = 640;
 // 홀로그램 티커 무지개 그라디언트(마스터 1:1) — 절취 정보 스트립 배경.
 const HOLO = 'linear-gradient(100deg,#9ff0df 0%,#f6c4e4 14%,#c9baf7 30%,#b7e3f8 47%,#f7e2b3 64%,#b6f7c6 81%,#9ff0df 100%)';
 
@@ -168,10 +176,9 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
           배경은 Poster의 letterboxBg가 칠하므로 래퍼 자체엔 안 둔다(nit poster-letterbox-bg, #440 —
           editorial과 동일하게 죽은 스타일이던 래퍼 background 제거). */}
       <div style={{ flex: `0 0 ${POSTER_H}px`, position: 'relative', overflow: 'hidden' }} {...posterTapProps(onPosterTap)}>
-        {/* 가로 밴드(960×900, #493)지만 contain이라 포스터 프레임은 높이에 맞춰 600×900 = 0.667로
-            서고, 남는 좌우는 blur 배경이 덮는다(#440). 그래서 밴드 높이는 #525 룰 5와 무관한
-            자유 변수다(#493 확대 가능). 자연 간극이 커 frameInsetY는 불필요(editorial/
-            35mm-landscape와 동일). */}
+        {/* 가로 포스터 밴드 960×640(3:2) — 가로 크롭이면 contain으로도 레터박스 0인 풀블리드고,
+            세로 크롭이 넘어오면 프레임 427×640 + 좌우 blur다(#440). frameInsetY는 안 쓴다 —
+            풀블리드 케이스에서 강제 띠가 곧 레터박스 0을 깨뜨린다(editorial/35mm-landscape와 동일). */}
         <Poster src={croppedImageUrl} {...posterFitProps({ letterboxBg: POSTER_LETTERBOX_BG })} material={components.material} coating={components.coating} materialIntensity={components.materialIntensity} coatingIntensity={components.coatingIntensity} posterOpacity={components.posterOpacity} />
       </div>
 
