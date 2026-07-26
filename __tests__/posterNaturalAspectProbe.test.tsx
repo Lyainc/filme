@@ -10,14 +10,14 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { render, cleanup, act, fireEvent } from '@testing-library/react';
 import { Poster } from '../src/components/moods/_shared';
+import { stubBox } from './setup/posterStubs';
 
 const BOX_W = 960;
 const BOX_H = 1433;
 
 let decoded: string[];
 let origImage: typeof Image;
-let origW: PropertyDescriptor | undefined;
-let origH: PropertyDescriptor | undefined;
+let restoreBox: () => void;
 
 beforeEach(() => {
   decoded = [];
@@ -29,19 +29,13 @@ beforeEach(() => {
       decoded.push(v);
     }
   };
-  origW = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth');
-  origH = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight');
-  Object.defineProperty(HTMLElement.prototype, 'offsetWidth', { configurable: true, get: () => BOX_W });
-  Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, get: () => BOX_H });
+  restoreBox = stubBox(BOX_W, BOX_H);
 });
 
 afterEach(() => {
   cleanup();
   (globalThis as { Image: unknown }).Image = origImage;
-  if (origW) Object.defineProperty(HTMLElement.prototype, 'offsetWidth', origW);
-  else delete (HTMLElement.prototype as unknown as Record<string, unknown>).offsetWidth;
-  if (origH) Object.defineProperty(HTMLElement.prototype, 'offsetHeight', origH);
-  else delete (HTMLElement.prototype as unknown as Record<string, unknown>).offsetHeight;
+  restoreBox();
 });
 
 function fgPoster(container: HTMLElement): HTMLImageElement {

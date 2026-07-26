@@ -10,43 +10,26 @@
  */
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { render, cleanup, act } from '@testing-library/react';
+import { stubBox, stubImgNatural } from './setup/posterStubs';
 import { Poster } from '../src/components/moods/_shared';
 
 // 슬롯 960×1433(≈0.670) — 프레임 인셋 반영된 wrapper 근사.
 const BOX_W = 960;
 const BOX_H = 1433;
 
-// Poster는 전경 <img>가 이미 로드한 자연 치수를 그대로 읽는다(#526 ① — 같은 src를 new Image()로
-// 또 디코드하던 프로브 제거). happy-dom의 <img>는 complete=false·naturalWidth=0이라 프로토타입에
-// 치수를 실어준다. 프로브가 되살아나면 이 스텁만으론 natAspect가 안 잡혀 마스크가 사라진다.
-const NAT_W = 1200; // 0.75 > 슬롯 0.670 → 상하 레터박스 → 세로 페더 대상
+// 0.75 > 슬롯 0.670 → 상하 레터박스 → 세로 페더 대상.
+const NAT_W = 1200;
 const NAT_H = 1600;
 
-let origW: PropertyDescriptor | undefined;
-let origH: PropertyDescriptor | undefined;
-const origImgProps: Record<string, PropertyDescriptor | undefined> = {};
+let restore: Array<() => void> = [];
 
 beforeEach(() => {
-  origW = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth');
-  origH = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight');
-  Object.defineProperty(HTMLElement.prototype, 'offsetWidth', { configurable: true, get: () => BOX_W });
-  Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, get: () => BOX_H });
-  for (const [k, v] of Object.entries({ complete: true, naturalWidth: NAT_W, naturalHeight: NAT_H })) {
-    origImgProps[k] = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, k);
-    Object.defineProperty(HTMLImageElement.prototype, k, { configurable: true, get: () => v });
-  }
+  restore = [stubBox(BOX_W, BOX_H), stubImgNatural(NAT_W, NAT_H)];
 });
 
 afterEach(() => {
   cleanup();
-  if (origW) Object.defineProperty(HTMLElement.prototype, 'offsetWidth', origW);
-  else delete (HTMLElement.prototype as unknown as Record<string, unknown>).offsetWidth;
-  if (origH) Object.defineProperty(HTMLElement.prototype, 'offsetHeight', origH);
-  else delete (HTMLElement.prototype as unknown as Record<string, unknown>).offsetHeight;
-  for (const [k, d] of Object.entries(origImgProps)) {
-    if (d) Object.defineProperty(HTMLImageElement.prototype, k, d);
-    else delete (HTMLImageElement.prototype as unknown as Record<string, unknown>)[k];
-  }
+  restore.forEach((r) => r());
 });
 
 // 전경 포스터 <img>: data-role=poster지만 blur 배경(data-poster-bg)이 아닌 쪽.
