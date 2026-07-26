@@ -130,7 +130,18 @@ export function DesignRail({
   const eyebrow = activeItem?.eyebrow ?? '';
 
   const ringColor = themeColor || 'var(--accent)';
-  const toggle = (id: RailItemId) => setPop((cur) => (cur === id ? null : id));
+  // 클릭으로 연 항목은 아래 effect가 smooth 스크롤로 중앙에 당기는데, 그 애니메이션이 만드는
+  // 중간 scroll 이벤트를 onRailScroll이 사용자 스와이프로 착각해 지나가던 아이콘을 활성화하면
+  // 목적지가 가로채인다(claude-review P1). 클릭 직후 이 구간 동안은 scroll 추적을 쉰다 —
+  // 스크롤로 연 항목은 이미 중앙 근처라 리센터 이동이 거의 없어 가드가 필요 없다(스와이프
+  // 연속 전환을 막지 않으려면 여기서만 걸어야 한다).
+  // ponytail: 600ms는 짧은 레일의 smooth 스크롤을 덮는 경험값 — scrollend가 전 브라우저에
+  // 깔리면 그 이벤트로 갈아탈 것.
+  const clickRecenterUntil = useRef(0);
+  const toggle = (id: RailItemId) => {
+    if (pop !== id) clickRecenterUntil.current = Date.now() + 600;
+    setPop((cur) => (cur === id ? null : id));
+  };
 
   // id→버튼 엘리먼트 단일 소스(/simplify 재사용 지적) — TexturePicker.tsx의 activeRef 패턴과
   // 같은 취지를 다중 항목에 맞게 Map으로 확장. querySelector 문자열 조회 없이 아래 effect와
@@ -157,6 +168,7 @@ export function DesignRail({
   // ponytail: 네이티브 scroll-snap 관성이 자리를 잡는 동안 이 프로그램적 리센터가 살짝 겹쳐
   // 보일 수 있음 — 실제로 어색하게 보이면 그때 정지 감지(디바운스/scrollend)로 바꿀 것.
   const onRailScroll = () => {
+    if (Date.now() < clickRecenterUntil.current) return;
     const rail = railRef.current;
     if (!rail) return;
     const railRect = rail.getBoundingClientRect();

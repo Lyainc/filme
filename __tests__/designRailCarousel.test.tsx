@@ -115,6 +115,23 @@ describe('DesignRail 캐러셀 전환 (#502)', () => {
     }
   });
 
+  test('클릭 직후의 리센터 스크롤은 목적지를 가로채지 못한다 (claude-review P1)', () => {
+    render(<RailHarness />);
+    const rail = screen.getByRole('button', { name: '무드' }).parentElement as HTMLElement;
+
+    // 클릭으로 '크기'를 연다 — effect가 smooth scrollIntoView를 쏘는 자리.
+    fireEvent.click(screen.getByRole('button', { name: '크기' }));
+    expect(screen.getByRole('button', { name: '크기' }).getAttribute('aria-expanded')).toBe('true');
+
+    // 그 애니메이션 도중 지나가는 아이콘이 중앙에 걸린 프레임 — 가드가 없으면 여기서
+    // 활성 모듈이 '무드'로 리타깃되고, 스크롤이 멈추면 그대로 고정된다.
+    centerRailOn(rail, 'mood');
+    fireEvent.scroll(rail);
+
+    expect(screen.getByRole('button', { name: '크기' }).getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByRole('button', { name: '무드' }).getAttribute('aria-expanded')).toBe('false');
+  });
+
   // 클릭 토글(배타·재클릭 닫힘) 자체의 회귀 커버리지는 designRail.test.tsx (a)가 이미 갖고
   // 있다 — 여기서는 캐러셀 고유 동작(스크롤 기반 전환·중앙 고정)만 다룬다.
 });
