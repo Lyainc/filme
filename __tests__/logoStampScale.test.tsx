@@ -110,6 +110,15 @@ function PanelHarness() {
   );
 }
 
+// #554 — 모바일 크기 탭은 포스터↔로고 축 전환이라 로고 슬라이더가 '로고' 축 안에 있다.
+// 포스터 축이 통째로 비는 무드(원본 없음 + POSTER_FILL_MOODS 밖)에선 세그먼트가 아예 없어
+// 슬라이더가 바로 보이므로, 세그먼트가 있을 때만 누른다.
+async function openLogoAxis(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: '크기' }));
+  const logoAxis = screen.queryByRole('radio', { name: '로고' });
+  if (logoAxis) await user.click(logoAxis);
+}
+
 beforeEach(() => window.localStorage.clear());
 afterEach(() => {
   cleanup();
@@ -124,7 +133,7 @@ describe('#441 DesignRail 슬라이더 배선', () => {
     const user = userEvent.setup();
     render(<RailHarness />);
     // 크기 탭 안에 있음(PR #485 P2 후속 — 투명도에서 분리) — 먼저 연다.
-    await user.click(screen.getByRole('button', { name: '크기' }));
+    await openLogoAxis(user);
 
     const chainInput = screen.getByLabelText('체인 로고 크기');
     const formatInput = screen.getByLabelText('포맷 로고 크기');
@@ -144,7 +153,7 @@ describe('#441 DesignRail 슬라이더 배선', () => {
     await user.click(screen.getByRole('button', { name: '무드' }));
     await user.click(screen.getByRole('radio', { name: /크라이테리언/ }));
     await user.click(screen.getByRole('button', { name: '무드' })); // 무드 닫고
-    await user.click(screen.getByRole('button', { name: '크기' })); // 크기 열기
+    await openLogoAxis(user);
 
     expect(screen.getByLabelText('체인 로고 크기').getAttribute('max')).toBe('1.3');
     expect(screen.getByLabelText('포맷 로고 크기').getAttribute('max')).toBe('1.3');
@@ -161,7 +170,7 @@ describe('#441 DesignRail 슬라이더 배선', () => {
     await user.click(screen.getByRole('button', { name: '무드' }));
     await user.click(screen.getByRole('radio', { name: /크라이테리언/ }));
     await user.click(screen.getByRole('button', { name: '무드' }));
-    await user.click(screen.getByRole('button', { name: '크기' }));
+    await openLogoAxis(user);
     fireEvent.change(screen.getByLabelText('체인 로고 크기'), { target: { value: '1.3' } });
     expect(screen.getByTestId('chainScale').textContent).toBe('1.3');
 
@@ -169,7 +178,7 @@ describe('#441 DesignRail 슬라이더 배선', () => {
     await user.click(screen.getByRole('button', { name: '무드' }));
     await user.click(screen.getByRole('radio', { name: /미니멀 시네마틱/ }));
     await user.click(screen.getByRole('button', { name: '무드' }));
-    await user.click(screen.getByRole('button', { name: '크기' }));
+    await openLogoAxis(user);
 
     const chainInput = screen.getByLabelText('체인 로고 크기') as HTMLInputElement;
     expect(chainInput.value).toBe(String(MINIMAL_STAMP_MAX_SCALE)); // thumb·라벨 = 클램프값
