@@ -1411,6 +1411,11 @@ export const FilmStripBand = memo(function FilmStripBand({
   const bleedMargin = `0 ${-bleed}px`;
   // 세로 예산(#557): 바깥 모서리에서 BAND_PAD → 천공(holeH) → 3 → 프레임번호, 안쪽 모서리에서
   // BAND_PAD → 엣지 행. 3행이라 92px 안에 6.5px 여유를 남기고 선다.
+  // ⚠️ 그 6.5px는 FONT_LCD 폴백 체인의 line-height:normal이 만드는 값이라 상수가 아니다 —
+  // 아래 프레임 11px·엣지 12px fontSize를 올리거나 폰트 스택을 갈면 여유가 음수로 떨어져 두
+  // 행이 다시 포개진다. 테스트는 코드가 소유한 오프셋만 고정하고 행 높이는 폰트 메트릭이라
+  // happy-dom이 line box를 안 계산해 static markup으로는 원리적으로 못 잰다. 폰트·크기를
+  // 건드리는 PR은 실브라우저에서 밴드를 눈으로 한 번 확인할 것.
   // 천공 행 높이를 holeH로 고정 — 지터로 커진 홀은 alignItems:center 덕에 위아래 1px씩만 넘치고,
   // 아래 행들의 오프셋 산수는 지터 진폭을 몰라도 된다(진폭을 바꿔도 프레임번호 행이 안 따라 어긋난다).
   const BAND_PAD = 6;
@@ -1448,6 +1453,11 @@ export const FilmStripBand = memo(function FilmStripBand({
   );
 });
 
+/** 레일 가장자리↔천공 컬럼 간격 · 천공 컬럼 폭 · 천공↔프레임번호 컬럼 간격. */
+const RAIL_PAD = 8;
+const RAIL_HOLE_W = 36;
+const RAIL_NUM_GAP = 6;
+
 /**
  * 35mm 세로 레일(v5 시안 5a) — FilmStripBand를 90° 돌린 형태. 100px 폭 안에 천공(36×51) +
  * 프레임번호 세로 컬럼, 좌측 레일에만 엣지 프린트 세로 스크롤(실물도 편측 인쇄).
@@ -1470,7 +1480,7 @@ export const FilmRail = memo(function FilmRail({
   const holeShadow = `inset 0 0 0 1px rgba(0,0,0,.55), inset ${side === 'left' ? 2 : -2}px 0 5px rgba(0,0,0,.5)`;
   // 좌우 레일이 같은 테이블을 쓴다 — 실물 천공은 한 번에 양쪽을 뚫으므로 같은 프레임번호가 양 끝에서
   // 같은 높이에 서야 한다. side로 갈라두면 중간쯤에서 최대 24px 어긋나 스트립이 비틀린 것처럼 보인다.
-  const jitter = sprocketJitter('rail', count, 36, 51);
+  const jitter = sprocketJitter('rail', count, RAIL_HOLE_W, 51);
   const colStyle = (offset: number, w: number): CSSProperties => ({
     position: 'absolute',
     [side]: offset,
@@ -1483,12 +1493,16 @@ export const FilmRail = memo(function FilmRail({
   });
   return (
     <div aria-hidden="true" style={{ position: 'absolute', [side]: 0, top: 0, bottom: 0, width, overflow: 'hidden' }}>
-      <div style={colStyle(8, 36)}>
+      {/* alignItems는 천공 컬럼에만 건다 — 밴드가 천공 행 높이를 holeH로 고정한 것(#557)의
+          세로판이다. 지터로 커진 홀이 컬럼 폭을 한쪽으로만 넘쳐 RAIL_NUM_GAP을 갉는 대신
+          좌우로 반씩 넘치므로, 아래 프레임번호 컬럼 오프셋이 지터 진폭을 몰라도 된다.
+          프레임번호 컬럼은 span 폭이 auto라 stretch(기본값)로 둬야 13px을 채워 세로 중앙에 선다. */}
+      <div style={{ ...colStyle(RAIL_PAD, RAIL_HOLE_W), alignItems: 'center' }}>
         {jitter.map((j, i) => (
           <div key={i} style={{ width: j.w, height: j.h, margin: `${j.gap}px 0`, borderRadius: 9, background: FILM_HOLE, flexShrink: 0, boxShadow: holeShadow }} />
         ))}
       </div>
-      <div style={colStyle(50, 13)}>
+      <div style={colStyle(RAIL_PAD + RAIL_HOLE_W + RAIL_NUM_GAP, 13)}>
         {jitter.map((j, i) => (
           <span
             key={i}
@@ -1964,13 +1978,14 @@ export function truncateActorsToWidth(
   if (parts.length <= 1) return parts.join(', ');
   const full = parts.join(', ');
 
-  const ctx = getMeasureCtx();
-  if (!ctx) return full;
-
+  // 캐시 조회가 getMeasureCtx()보다 앞이다 — 바로 위 fitFontSizeToWidth와 같은 순서.
   const fontWeight = font.fontWeight ?? 400;
   const key = `${actors}|${maxWidth}|${font.fontFamily}|${fontWeight}|${font.fontSize}`;
   const cached = truncateActorsWidthCache.get(key);
   if (cached !== undefined) return cached;
+
+  const ctx = getMeasureCtx();
+  if (!ctx) return full;
 
   ctx.font = `${fontWeight} ${font.fontSize}px ${font.fontFamily}`;
   const widthOf = (s: string) => ctx.measureText(s).width;
