@@ -37,8 +37,11 @@ yarn-error.log*
 *~
 
 # local env files (keep .env.example tracked as template)
-.env
-.env.*
+# 패턴을 `.env*` 한 줄로 두는 게 핵심이다(#551) — `vercel env pull`의 addToGitIgnore가
+# "정확히 이 문자열인 라인이 이미 있는가"로만 판정해서, 있으면 파일 끝에 다시 안 덧붙인다.
+# 끝에 붙으면 뒤 패턴이 이기는 gitignore 규칙 때문에 아래 `!.env.example` 예외가 무효화되고
+# 템플릿이 조용히 무시 대상이 된다. 쪼개 쓰면(`.env` + `.env.*`) 그 판정에 안 걸려 재발한다.
+.env*
 !.env.example
 
 # vercel
