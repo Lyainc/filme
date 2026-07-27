@@ -737,6 +737,16 @@ export async function captureNodeToJpeg(
 ): Promise<string> {
   const { width, height, quality = 0.95, pixelRatio = 2 } = options;
 
+  // 지연 로드(`preload:false`) 폰트에도 이 한 줄로 충분하다(#558 실측). 아이스자람체는 한줄평이
+  // 실제로 그 폰트를 쓸 때만 요청되는데, 프리뷰가 debounce 280ms(`index.tsx`) 뒤 새 폰트로 렌더되고
+  // 저장 화면은 탭 두 번 + 화면 전환 뒤라 손으로는 그 안에 못 닿는다(자동화로는 앞지를 수 있고, 그때는
+  // 폰트가 아니라 컴포넌트 값 자체가 디바운스 전 것으로 캡처된다). 그래서 캡처 시점엔 face가 loading이고
+  // fonts.ready가 pending이다
+  // — woff2 응답을 8초 지연시킨 실측에서 저장 클릭 시 `document.fonts.status === 'loading'`, 캡처가
+  // 24.6초 걸린 뒤 손글씨 글리프로 나왔다. 안전망이 하나 더 있다: html-to-image의 `getWebFontCSS`는
+  // @font-face URL을 스스로 받아 SVG에 인라인하고 그 대상 판정이 **클론 노드의 computed fontFamily**라
+  // 로드 상태와 무관하다(같은 실측에서 woff2 요청이 페이지 렌더분 1건에 그치지 않고 3건). 그래서 폰트별
+  // 명시적 `document.fonts.load()`를 여기 더할 이유가 없다 — 더하면 폰트가 늘 때마다 같이 늘어난다.
   if (typeof document !== 'undefined' && document.fonts?.ready) {
     await document.fonts.ready;
   }
