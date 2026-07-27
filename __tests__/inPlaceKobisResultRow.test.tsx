@@ -122,4 +122,16 @@ describe('InPlaceFieldEditor KOBIS 결과 행 — 장편/단편/옴니버스·�
     expect(row.textContent).toContain('단편');
     expect(row.textContent).toContain('감독 없음');
   });
+
+  test('typeNm 누락에도 선행 구분자 " · "가 남지 않는다 (PR #478 리뷰 P2)', async () => {
+    const { typeNm: _drop, ...noType } = MOVIE_MISSING_DIRECTORS_FIELD;
+    mockSearchFetch([noType]);
+    render(<Harness />);
+    fireEvent.change(titleInput(), { target: { value: '미상' } });
+    await flushDebounce();
+
+    // 조각마다 ' · '를 앞에 붙이던 옛 마크업이면 여기서 ' · 감독 없음 · 기타'가 돼 흠이 보인다.
+    const meta = screen.getByRole('option').querySelectorAll('div')[1];
+    expect(meta?.textContent).toBe('감독 없음 · 기타');
+  });
 });

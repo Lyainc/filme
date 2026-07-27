@@ -248,13 +248,16 @@ export function KobisResultList({
           >
             <div className="text-[15px] font-medium text-fg">{movie.movieNm}</div>
             {/* 동명·유사 제목 판별용 — 장편/단편/옴니버스, 감독, 개봉 여부(#476 ac2). */}
+            {/* 조각을 배열로 모아 filter→join한다 — 조각마다 ' · '를 앞에 붙이면 typeNm이
+                빠진 malformed 응답에서 선행 구분자만 남는다. directors는 KOBIS 응답 실측상 항상
+                배열이지만(#476), 외부 API 응답이라 런타임 검증 없이 캐스팅만 거치므로
+                (useKobisSearch.ts) 누락 시 크래시 대신 폴백한다(PR #478 리뷰 P1). */}
             <Eyebrow as="div" tone="faint" className="mt-1">
-              {movie.typeNm}
-              {/* directors는 KOBIS 응답 실측상 항상 배열이지만(#476), 외부 API 응답이라 런타임
-                  검증 없이 캐스팅만 거친다(useKobisSearch.ts) — 필드 누락 시 크래시 대신 폴백
-                  (PR #478 리뷰 P1). */}
-              {movie.directors?.length ? ` · ${movie.directors.map((d) => d.peopleNm).join(', ')}` : ' · 감독 없음'}
-              {movie.prdtStatNm ? ` · ${movie.prdtStatNm}` : ''}
+              {[
+                movie.typeNm,
+                movie.directors?.length ? movie.directors.map((d) => d.peopleNm).join(', ') : '감독 없음',
+                movie.prdtStatNm,
+              ].filter(Boolean).join(' · ')}
             </Eyebrow>
             <Eyebrow as="div" tone="faint" className="mt-0.5">
               {movie.openDt && formatDate(openDtToIso(movie.openDt), 'kr-compact', 'date')}
