@@ -232,7 +232,13 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
           ) : null}
         </div>
 
-        {/* 한줄평 — 190px 고정 블록. 따옴표는 문구 길이와 무관하게 좌상·우하에 고정된다. */}
+        {/* 한줄평 — 190px 고정 블록. 따옴표는 문구 길이와 무관하게 좌상·우하에 고정된다.
+            안전 마진(v5 #524 기준으로 재산정 — 옛 675/696px 근거는 pull-quote 레이아웃과 함께
+            사라졌다): 텍스트 폭 = 960 − PAD 84×2 − 인셋 96×2 = 600px, 50px/1.28이라 한 줄 64px →
+            2줄 128px로 190 안에 62px 남는다. 3줄이면 192px라 넘친다. 사용자 입력은
+            QUOTE_MAX_LENGTH=22자 상한이라 한글 최악(약 1100px)도 2줄에서 멈춘다. 넘칠 수 있는
+            건 RATING_QUOTES 프리셋뿐이니(영문 최장 49자), 프리셋 문구를 늘리거나 fontSize·인셋을
+            건드리면 여기부터 다시 잰다. */}
         <div style={{ position: 'absolute', left: PAD, right: PAD, top: 1064, height: 190 }}>
           <span aria-hidden style={{ position: 'absolute', left: 0, top: 0, fontFamily: FONT_DISPLAY, fontSize: 104, lineHeight: 1, color: CRITERION_YELLOW }}>&ldquo;</span>
           <span aria-hidden style={{ position: 'absolute', right: 0, bottom: 0, fontFamily: FONT_DISPLAY, fontSize: 104, lineHeight: 1, color: CRITERION_YELLOW, transform: 'rotate(180deg)' }}>&ldquo;</span>
