@@ -171,8 +171,9 @@ export default function RatingPicker({ value, onValueChange, visible, onVisibleC
 
         {/* 소수 입력 토글(#496) — 항상 뜨는 풀폭 number 박스가 과하다는 지적으로 접어 두고, 별
             롱터치(위 핸들러) 또는 이 캡션 탭으로 편다. aria-label을 고정해 두는 이유는 표시값(예:
-            "3.3 / 5.0")이 바뀔 때마다 접근명이 같이 흔들리면 스크린리더 사용자가 매번 다른 라벨을
-            듣기 때문 — 값은 시각 전용, 의미는 라벨 하나로 고정. */}
+            "★ 3.3")이 바뀔 때마다 접근명이 같이 흔들리면 스크린리더 사용자가 매번 다른 라벨을
+            듣기 때문 — 값은 시각 전용, 의미는 라벨 하나로 고정.
+            표기는 티켓 얼굴·fieldPreview와 같은 `★ N.N`(#445) — 분모는 위 별 5개가 이미 보여준다. */}
         <button
           type="button"
           onClick={() => setNumberInputOpen((open) => !open)}
@@ -182,7 +183,7 @@ export default function RatingPicker({ value, onValueChange, visible, onVisibleC
           className="text-mono inline-flex min-h-touch items-center text-left"
         >
           <Eyebrow size={11} tone="faint">
-            {current.toFixed(1)} <span>/ 5.0</span>
+            ★ {current.toFixed(1)}
           </Eyebrow>
         </button>
 
