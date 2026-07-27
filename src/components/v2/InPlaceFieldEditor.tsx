@@ -119,13 +119,17 @@ function measureField(
   };
 }
 
+// 지오메트리뿐 아니라 캐럿에 복사되는 폰트 3속성도 본다(#494) — 이탤릭↔로만 전환은 거의 항상
+// glyph advance width를 같이 바꿔 w·fontPx로도 잡히지만, 서명이 빈 문자열이면 양쪽 폭이 0이라
+// 그 경로가 안 걸려 캐럿이 이전 조판을 유지하는 좁은 창이 남는다.
 const rectEq = (a: FieldRect | null, b: FieldRect | null) =>
   a === b ||
   (!!a && !!b &&
     Math.abs(a.top - b.top) < 0.5 && Math.abs(a.left - b.left) < 0.5 &&
     Math.abs(a.w - b.w) < 0.5 && Math.abs(a.h - b.h) < 0.5 &&
     Math.abs(a.vpCenter - b.vpCenter) < 0.5 &&
-    Math.abs(a.fontPx - b.fontPx) < 0.5);
+    Math.abs(a.fontPx - b.fontPx) < 0.5 &&
+    a.fontStyle === b.fontStyle && a.fontFamily === b.fontFamily && a.fontWeight === b.fontWeight);
 
 interface InPlaceFieldEditorProps {
   photo: Photo;

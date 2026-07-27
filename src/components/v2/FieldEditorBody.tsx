@@ -98,9 +98,12 @@ function TitleSheet({ photo }: { photo: Photo }) {
   // 노출하고 Enter가 이 항목을 선택한다(#198). 결과가 갈리거나 드롭다운이 닫히면 리셋 —
   // 스테일 인덱스가 엉뚱한 항목을 가리키지 않게.
   const [highlightIndex, setHighlightIndex] = useState(-1);
+  // loading도 본다 — 새 결과가 이전과 같은 길이로 도착하면 results 참조는 갈려도 리스트 항목이
+  // 그대로 그려져, setResults 커밋 직후~이 effect 발화 전 한 프레임 동안 엉뚱한 항목이
+  // 하이라이트로 보일 수 있다. 검색 시작(loading=true) 시점에 미리 리셋해 그 창을 닫는다.
   useEffect(() => {
     setHighlightIndex(-1);
-  }, [results, open]);
+  }, [results, open, loading]);
 
   // OCR이 채운 제목을 들고 편집기를 열었을 때도 후보가 바로 보이도록, 마운트 시
   // 초기값이 있으면 한 번 자동 검색(#383). onChange/onCompositionEnd는 이후 입력에만 반응한다.
