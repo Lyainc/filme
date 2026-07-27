@@ -6,6 +6,7 @@ import BrightnessSlider from '@/components/wizard/BrightnessSlider';
 import { TEXTURE_RECIPES } from '@/utils/textureRecipes';
 import { MATERIAL_OPTIONS, COATING_OPTIONS } from '@/utils/constants';
 import { MINIMAL_STAMP_MAX_SCALE } from '@/components/moods/MoodMinimal';
+import { containsHangul } from '@/components/moods/_shared';
 import { Eyebrow } from './Eyebrow';
 import { POSTER_FILL_MOODS, TONE_FIXED_MOODS } from '@/constants/fields';
 import type { LayoutId } from '@/types';
@@ -17,7 +18,7 @@ import type { usePhototicket } from '@/hooks/usePhototicket';
 // 슬라이더 id는 surface별 prefix(rail-/desktop-)로 조립해 기존 id를 그대로 보존한다
 // (rail-chain-scale·desktop-chain-scale 등 — __tests__/desktopDesignPanel.test.tsx가 CSS
 // 선택자로 잡는다).
-export type RailItemId = 'mood' | 'color' | 'texture' | 'opacity' | 'size';
+export type RailItemId = 'mood' | 'color' | 'texture' | 'opacity' | 'size' | 'custom';
 type RailSurface = 'mobile' | 'desktop';
 type Photo = ReturnType<typeof usePhototicket>;
 
@@ -122,46 +123,96 @@ function AxisSegment<K extends string>({
   );
 }
 
-const POSTER_FIT_OPTIONS = [
-  { value: 'contain', label: '원본 비율' },
-  { value: 'cover', label: '꽉 채우기' },
-] as const;
-
 /**
- * 포스터를 슬롯에 앉히는 방식(#527, #492) — 근거와 무드별 실측은 TicketComponents.posterFit
- * 주석과 POSTER_FILL_MOODS에. 여기선 "크롭 모달이 아니라 DESIGN '크기' 섹션"이라는 자리만 잡는다.
+ * 값 칩 한 줄(라디오그룹) — 포스터 채우기(#527)와 한줄평 폰트(#558)가 같은 모양이라 하나만 둔다.
+ * AxisSegment(축 전환)와는 역할이 다르다: 저건 아래 패널을 갈아끼우는 스위치(aria-controls)고
+ * 이건 값 자체를 고르는 피커라, 개별 칩을 잠글 수 있다(disabled + 사유 문구 — ColorPicker가
+ * TONE_FIXED_MOODS를 다루는 문법과 같다. 잠금은 "숨김"이 아니므로 칩은 자리에 남는다).
  */
-function PosterFitToggle({
+function ChipRadio<V extends string>({
+  label,
+  options,
   value,
   onChange,
+  note,
 }: {
-  value: 'contain' | 'cover';
-  onChange: (next: 'contain' | 'cover') => void;
+  label: string;
+  options: readonly { value: V; label: string; disabled?: boolean }[];
+  value: V;
+  onChange: (next: V) => void;
+  /** 칩 하나 이상이 잠겼을 때의 사유. 잠긴 칩이 없으면 호출부가 undefined를 넘긴다. */
+  note?: string;
 }) {
   return (
     <div className="space-y-field">
-      <Eyebrow as="div">포스터 채우기</Eyebrow>
+      <Eyebrow as="div">{label}</Eyebrow>
+      {note && <p className="text-[12px] text-fg-muted">{note}</p>}
       {/* 이름은 컨테이너 aria-label로 — TexturePicker·FieldEditorBody의 radiogroup과 같은 문법. */}
-      <div role="radiogroup" aria-label="포스터 채우기" className="flex gap-2">
-        {POSTER_FIT_OPTIONS.map((opt) => (
+      <div role="radiogroup" aria-label={label} className="flex gap-2">
+        {options.map((opt) => (
           <button
             key={opt.value}
             type="button"
             role="radio"
             aria-checked={value === opt.value}
+            disabled={opt.disabled}
             onClick={() => onChange(opt.value)}
             data-touch="40"
-            className={`h-10 flex-1 rounded-chip border px-3 text-[12px] font-medium transition-colors ${
+            className={`h-10 flex-1 truncate rounded-chip border px-3 text-[12px] font-medium transition-colors ${
               value === opt.value
                 ? 'border-transparent bg-accent-soft text-accent'
                 : 'border-line bg-surface-elevated text-fg-muted'
-            }`}
+            } ${opt.disabled ? 'opacity-40' : ''}`}
           >
             {opt.label}
           </button>
         ))}
       </div>
     </div>
+  );
+}
+
+const POSTER_FIT_OPTIONS = [
+  { value: 'contain', label: '원본 비율' },
+  { value: 'cover', label: '꽉 채우기' },
+] as const;
+
+const QUOTE_FONT_OPTIONS = [
+  { value: 'auto', label: '자동' },
+  { value: 'hand', label: '손글씨' },
+  { value: 'gothic', label: '고딕' },
+  { value: 'serif', label: '세리프' },
+] as const;
+
+/**
+ * 한줄평 폰트가 존재하는 무드(#558) — quote를 렌더하는 무드와 같다. '커스텀' 항목의 appliesTo는
+ * **그 항목에 든 컨트롤들의 합집합**이고, 컨트롤은 render 안에서 제 표를 다시 본다(#523 c1과
+ * 같은 처방 — SizePanel의 showFit/POSTER_FILL_MOODS가 선례). 지금은 컨트롤이 하나뿐이라 둘이
+ * 같지만, #530 배경 패턴이 이 항목에 합류하면 합집합만 넓어지고 폰트 피커는 여기서 계속 걸린다.
+ */
+const QUOTE_FONT_MOODS: readonly LayoutId[] = ['criterion'];
+
+/**
+ * 커스텀 패널(#558) — 무드 전용 커스터마이즈가 모이는 자리. 지금은 Criterion 한줄평 폰트 하나.
+ *
+ * 텍스트 편집은 여기 안 둔다(스펙 c5): 레일은 하단 고정 dock이라 텍스트 인풋을 넣으면 소프트
+ * 키보드가 dock을 통째로 덮는다 — 한줄평 문구는 온티켓 탭(FieldTap → InPlaceFieldEditor)이 계속
+ * 소유한다. 대가로 한줄평 컨트롤이 두 자리로 갈린다.
+ */
+function CustomPanel({ photo }: { photo: Photo }) {
+  const { components, movieInfo } = photo.state;
+  if (!QUOTE_FONT_MOODS.includes(components.layout)) return null;
+  // 세리프(Instrument Serif)는 한글 글리프가 없어 시스템 세리프로 깨진다 → 숨기지 않고 잠근다.
+  // 판정은 사용자가 직접 쓴 문구만 본다 — 프리셋·기본 quote는 항상 영문이다(MoodCriterion).
+  const hangul = containsHangul(movieInfo.quote ?? '');
+  return (
+    <ChipRadio
+      label="한줄평 폰트"
+      options={QUOTE_FONT_OPTIONS.map((o) => (o.value === 'serif' ? { ...o, disabled: hangul } : o))}
+      value={components.quoteFont ?? 'auto'}
+      onChange={(quoteFont) => photo.updateComponents({ quoteFont })}
+      note={hangul ? '세리프는 한글 글리프가 없어 한글 한줄평에는 못 써요.' : undefined}
+    />
   );
 }
 
@@ -317,7 +368,9 @@ function SizePanel({ photo, surface, actions }: { photo: Photo; surface: RailSur
           </button>
         )}
         {showFit && (
-          <PosterFitToggle
+          <ChipRadio
+            label="포스터 채우기"
+            options={POSTER_FIT_OPTIONS}
             value={components.posterFit ?? 'contain'}
             onChange={(posterFit) => setComp({ posterFit })}
           />
@@ -485,5 +538,20 @@ export const RAIL_ITEMS: readonly RailItem[] = [
       </svg>
     ),
     render: (photo, surface, actions) => <SizePanel photo={photo} surface={surface} actions={actions} />,
+  },
+  {
+    id: 'custom',
+    label: '커스텀',
+    eyebrow: 'Custom',
+    // 커스텀: 슬라이더 두 줄(무드 전용 조절 힌트) — 크기(사방 화살표)·후보정(사선)과 안 겹친다.
+    icon: (
+      <svg {...RAIL_ICON}>
+        <path d="M4 8h11M19 8h1M4 16h5M13 16h7" />
+        <circle cx="17" cy="8" r="2" />
+        <circle cx="11" cy="16" r="2" />
+      </svg>
+    ),
+    appliesTo: QUOTE_FONT_MOODS,
+    render: (photo) => <CustomPanel photo={photo} />,
   },
 ];

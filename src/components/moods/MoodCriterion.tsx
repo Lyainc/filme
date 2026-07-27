@@ -105,7 +105,8 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
   const titleSize = fitFontSizeToWidth(titleVal, 588 * 2, { fontFamily: FONT_KR, fontWeight: 700, minSize: 28, maxSize: 46 }, fontsReady);
 
   // 한줄평(#391) — 유저 입력 → 평점 구간(0.5 단위) 프리셋 → 기본 quote 순 폴백. 폰트는 서명과
-  // 같은 userTextFont 분기(프리셋·기본값은 항상 영문이라 FONT_DISPLAY로 떨어진다).
+  // 같은 userTextFont 분기(프리셋·기본값은 항상 영문이라 FONT_DISPLAY로 떨어진다)이되, #558부터
+  // components.quoteFont가 그 자동분기를 덮을 수 있다(미설정=auto=기존 동작).
   const userQuoteVal = gate(fv?.quote, d.quote);
   const ratingQuoteKey = d.rating > 0 ? String(Math.round(d.rating * 2) / 2) : '';
   const quoteText = userQuoteVal || RATING_QUOTES[ratingQuoteKey] || DEFAULT_QUOTE;
@@ -235,10 +236,17 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
         {/* 한줄평 — 190px 고정 블록. 따옴표는 문구 길이와 무관하게 좌상·우하에 고정된다.
             안전 마진(v5 #524 기준으로 재산정 — 옛 675/696px 근거는 pull-quote 레이아웃과 함께
             사라졌다): 텍스트 폭 = 960 − PAD 84×2 − 인셋 96×2 = 600px, 50px/1.28이라 한 줄 64px →
-            2줄 128px로 190 안에 62px 남는다. 3줄이면 192px라 넘친다. 사용자 입력은
-            QUOTE_MAX_LENGTH=22자 상한이라 한글 최악(약 1100px)도 2줄에서 멈춘다. 넘칠 수 있는
-            건 RATING_QUOTES 프리셋뿐이니(영문 최장 49자), 프리셋 문구를 늘리거나 fontSize·인셋을
-            건드리면 여기부터 다시 잰다. */}
+            2줄 128px로 190 안에 62px 남는다. 3줄이면 192px라 넘친다.
+
+            #558로 폰트가 4택이 됐지만 **줄 높이는 폰트와 무관하다** — lineHeight가 배수라 넷 다
+            64px다. 갈리는 건 한 줄에 몇 자가 들어가느냐뿐이라, 폰트별로 다시 잰 건 무줄바꿈 폭이다
+            (브라우저 실측, 600px 폭, 2026-07-27):
+              · 프리셋 최장(영문 49자): 세리프 880 · 손글씨 820 · **고딕 1101px**
+              · 기본 quote(영문 44자): 766 / 705 / 979px
+              · 사용자 입력 최악(QUOTE_MAX_LENGTH 22자 — 한글 반복·M/W 반복): 셋 다 2줄에서 멈춤
+            최악이 고딕 프리셋 1101px(=1.84줄)이라 3줄이 되려면 1200px를 넘겨야 한다(여유 9%).
+            실제로 넘는 조합이 없어 클램프는 안 넣었다. 프리셋 문구를 늘리거나 fontSize·인셋·폰트
+            후보를 건드리면 여기부터 다시 잰다 — **고딕(Pretendard)이 가장 넓어 기준선이다**. */}
         <div style={{ position: 'absolute', left: PAD, right: PAD, top: 1064, height: 190 }}>
           <span aria-hidden style={{ position: 'absolute', left: 0, top: 0, fontFamily: FONT_DISPLAY, fontSize: 104, lineHeight: 1, color: CRITERION_YELLOW }}>&ldquo;</span>
           <span aria-hidden style={{ position: 'absolute', right: 0, bottom: 0, fontFamily: FONT_DISPLAY, fontSize: 104, lineHeight: 1, color: CRITERION_YELLOW, transform: 'rotate(180deg)' }}>&ldquo;</span>
@@ -256,7 +264,7 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
                 alignItems: 'center',
                 justifyContent: 'center',
                 textAlign: 'center',
-                ...userTextFont(quoteText),
+                ...userTextFont(quoteText, components.quoteFont),
                 fontSize: 50,
                 lineHeight: 1.28,
               }}

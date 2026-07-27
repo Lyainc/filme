@@ -40,11 +40,12 @@ describe('launcherGroupsFor 게이팅 로직 (#287)', () => {
     expect(launcherFields('35mm-landscape')).not.toContain('bookingNo'); // #281 마스터 재동기화 — 바코드 없음
   });
 
-  test('quote(한줄평)는 Criterion 전용 — 나머지 5무드는 런처에서 제외한다(#391)', () => {
-    for (const layout of ['minimal', '35mm', 'editorial', 'stub', '35mm-landscape'] as LayoutId[]) {
+  // #558 — Criterion까지 포함해 quote는 이제 전 무드 런처 제외다. 편집 경로는 온티켓 탭
+  // (FieldTap → InPlaceFieldEditor)이 갖고, 레일 '커스텀' 항목은 폰트만 다룬다.
+  test('quote(한줄평)는 전 무드 런처에서 제외한다(#391 → #558)', () => {
+    for (const layout of ['minimal', '35mm', 'editorial', 'stub', '35mm-landscape', 'criterion'] as LayoutId[]) {
       expect(launcherFields(layout)).not.toContain('quote');
     }
-    expect(launcherFields('criterion')).toContain('quote');
   });
 
   test('제외해도 빈 그룹만 사라지고 남는 필드는 순서 보존', () => {
@@ -56,10 +57,15 @@ describe('launcherGroupsFor 게이팅 로직 (#287)', () => {
   });
 });
 
+// #558 — 렌더는 되지만 런처엔 없는 필드(온티켓 탭 전용). 반대 방향(런처엔 있는데 렌더가 없음)이
+// '죽은 컨트롤'이고 그건 여전히 0건이어야 하므로, 이 목록만 빼고 등식을 유지한다.
+const ON_TICKET_ONLY: TicketField[] = ['quote'];
+
 describe('6무드 죽은 컨트롤 0건 — 런처 필드 = 무드 렌더 필드 (#287)', () => {
   for (const layout of Object.keys(MOOD_COMPONENTS) as LayoutId[]) {
     test(`${layout}: 런처가 노출하는 필드 = 무드가 실제 렌더하는 필드`, () => {
-      expect(renderedFields(layout).sort()).toEqual(launcherFields(layout).sort());
+      const rendered = renderedFields(layout).filter((f) => !ON_TICKET_ONLY.includes(f));
+      expect(rendered.sort()).toEqual(launcherFields(layout).sort());
     });
   }
 });

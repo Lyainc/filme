@@ -20,6 +20,14 @@ export type TicketField =
   | 'signature'
   | 'quote';
 
+/**
+ * Criterion 한줄평의 폰트 선택(#558) — 'auto'는 기존 containsHangul 자동분기(한글=손글씨 /
+ * 라틴=세리프 이탤릭) 그대로다. 나머지 셋은 이미 `_app.tsx`가 로드하는 폰트에 1:1 대응하고
+ * 새 폰트 파일은 추가하지 않는다: hand=FONT_QUOTE_KR(아이스자람체) · gothic=FONT_KR(Pretendard) ·
+ * serif=FONT_DISPLAY(Instrument Serif). 기본값이 'auto'라 기존 저장본의 렌더는 안 변한다.
+ */
+export type QuoteFont = 'auto' | 'hand' | 'gothic' | 'serif';
+
 export interface MovieInfo {
   title: string;
   titleOg: string;
@@ -84,6 +92,12 @@ export interface TicketComponents {
    * 실제로 값이 갈리는 무드는 POSTER_FILL_MOODS(constants/fields.ts)뿐.
    */
   posterFit?: 'contain' | 'cover';
+  /**
+   * Criterion 한줄평 폰트(#558) — 미설정은 'auto'로 읽는다(마이그레이션 없음). 서명은 이 값을
+   * 따르지 않고 항상 자동분기다: 폰트를 연 축이 quote 하나뿐이라 서명까지 끌고 가면 사용자가
+   * 안 만진 요소가 같이 바뀐다(서명 축은 #437에 남는다).
+   */
+  quoteFont?: QuoteFont;
   /** 서명 이미지 URL(blob: 또는 빈 문자열). 이미지가 텍스트 서명(MovieInfo.signature)보다 우선한다(#484). */
   signatureImage?: string;
   /** 서명 이미지 렌더 크기 배율 0.6~1.3(기본 1) — 무드별 고정 height와 곱연산 결합(#484). */

@@ -86,8 +86,12 @@ export const MOOD_EXCLUDED_FIELDS: Partial<Record<LayoutId, readonly TicketField
   minimal: ['bookingNo', 'quote'], // #286: 마스터 Minimal은 푸터 바코드 없음 → bookingNo 미렌더.
   // Criterion(v5 Revue 재설계 #524): 흰 종이 + 도판 한 장 구조에 바코드 자리가 없어 bookingNo 미렌더
   // (Minimal·35mm·35mm Wide와 동일). watchTime은 v5 콜로폰 1행이 "관람일 관람시간"으로 렌더하므로
-  // 제외 해제. quote(한줄평, #391)는 Criterion 전용이라 여기만 제외 없음.
-  criterion: ['bookingNo'],
+  // 제외 해제. quote(한줄평, #391)는 Criterion 전용이었지만 #558에서 **여기도 제외**로 바뀌었다 —
+  // 한줄평은 온티켓 탭(FieldTap → InPlaceFieldEditor)이 편집 경로를 이미 갖고 있어 런처 행이
+  // 중복이었고, 레일 '커스텀' 항목은 폰트만 다룬다(스펙 c5). 이 표는 런처 그룹만 거르므로
+  // 온티켓 경로는 그대로다. **알려진 대가**: 데스크톱엔 온티켓 탭이 없어 quote 텍스트 편집
+  // 경로가 0개가 된다(#558 c6 — 데스크톱 작업 때 복구).
+  criterion: ['bookingNo', 'quote'],
   '35mm': ['bookingNo', 'quote'], // #524 v5: 컷 2개 구조에 바코드 자리가 없다 → bookingNo 미렌더(서명은 크레딧 컷 Collected by로 유지).
   editorial: ['quote'], // #391: 한줄평은 Criterion 전용 — 다른 무드는 렌더하지 않으므로 런처에서 제외.
   stub: ['quote'], // #391: 위와 동일.
