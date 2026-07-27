@@ -179,6 +179,11 @@ export function usePhototicket() {
     // 기본 밝기가 다시 적용된다(#146 리뷰). fieldVisibility(첫 업로드에만 리셋)와 달리
     // 밝기는 포스터 콘텐츠(어두운/밝은 포스터)에 종속적이라 매 업로드마다 리셋한다.
     brightnessTouchedRef.current = false;
+    // 포스터 업로드도 실사용자 편집이라 dirtyTick을 올린다 — 첫 업로드는 fieldVisibility를
+    // DEFAULT_VISIBILITY_ON_UPLOAD로 갈아끼우는데(영속 대상), 안 올리면 "포스터만 올리고 다른
+    // 편집은 안 함" 케이스에서 그 변경이 다음 update*까지 자동저장에 안 실린다. 마운트 복원
+    // 경로는 setState로 croppedImageUrl을 직접 넣고 이 콜백을 안 거치므로 재발동 걱정은 없다.
+    setDirtyTick((t) => t + 1);
     // 크롭 파이프라인을 거친 호출은 이미 같은 원본을 쥔 채 들어오므로 이 시드는 no-op이고,
     // 훅을 직접 부르는 경로(테스트·프로그램적 주입)만 여기서 원본을 채운다(#548).
     seedOriginalRef.current(originalUrl ?? null);
