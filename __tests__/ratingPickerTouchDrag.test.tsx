@@ -100,7 +100,7 @@ describe('별 포인터/터치 드래그 선택 (#496)', () => {
     const row = screen.getByRole('radiogroup', { name: '별점' });
 
     down(row, 110);
-    expect(screen.getByText('2.5')).toBeTruthy();
+    expect(screen.getByText('★ 2.5')).toBeTruthy();
     up(row, 110);
   });
 });

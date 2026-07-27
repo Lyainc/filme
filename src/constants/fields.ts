@@ -204,7 +204,9 @@ export const STAMP_KEYS: Record<
  * claude-review PR #487 P1 — 이미지 업로드 후 텍스트를 비워도 '비어 있음'으로 잘못 보이던 버그).
  */
 export function fieldPreview(field: TicketField, info: MovieInfo, components?: TicketComponents): string {
-  if (field === 'rating') return `${(info.rating ?? 0).toFixed(1)} / 5.0`;
+  // 티켓 얼굴과 같은 `★ N.N`(#445) — 6무드가 분모를 버렸는데 편집 UI만 `/ 5.0`을 들고 있으면
+  // 같은 값이 화면마다 다른 표기로 보인다. RatingPicker도 같은 표기를 쓴다.
+  if (field === 'rating') return `★ ${(info.rating ?? 0).toFixed(1)}`;
   if (field === 'watchDate') return formatDate(info.watchDate, info.watchDateFormat || 'kr-compact', 'date');
   if (field === 'releaseDate') {
     return formatDate(info.releaseDate, info.releaseDateFormat || 'kr-compact', info.releaseDateGranularity || 'date');

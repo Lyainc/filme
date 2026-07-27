@@ -1,7 +1,7 @@
 /**
  * #384 회귀 테스트 — 평점 0.1단위 입력.
  *
- * (a) 숫자 입력(0.1 step)으로 타이핑한 값이 그대로 텍스트 표시(★ x.x / 5.0)에 반영.
+ * (a) 숫자 입력(0.1 step)으로 타이핑한 값이 그대로 텍스트 표시(★ x.x, #445로 분모 제거)에 반영.
  * (b) 별 아이콘 채움은 0.5 단위로 내림(#384 결정 스펙: 3.3 → 별 3개, 3.5~3.9 → 별 3개 반).
  * (d) 숫자 입력 clamp — 범위 밖 값(음수, 5 초과)은 0~5로 제한(claude-review PR #409 P1 2차).
  */
@@ -39,7 +39,7 @@ describe('RatingPicker (#384)', () => {
     await user.clear(input);
     await user.type(input, '3.3');
 
-    expect(screen.getByText('3.3')).toBeTruthy();
+    expect(screen.getByText('★ 3.3')).toBeTruthy();
   });
 
   test('(b) 별 채움은 0.5 단위로 내림 — 3.3 → 별 3개(반개 없음)', async () => {
@@ -81,10 +81,10 @@ describe('RatingPicker (#384)', () => {
     const input = screen.getByRole('spinbutton', { name: '평점 직접 입력 (0.1 단위)' });
 
     fireEvent.change(input, { target: { value: '-1' } });
-    expect(screen.getByText('0.0')).toBeTruthy();
+    expect(screen.getByText('★ 0.0')).toBeTruthy();
 
     fireEvent.change(input, { target: { value: '10' } });
-    expect(screen.getByText('5.0')).toBeTruthy();
+    expect(screen.getByText('★ 5.0')).toBeTruthy();
   });
 
   test('(e) 지우는 중엔 0을 커밋하지 않는다 — 값을 지운 채 블러해도 이전 값 유지(#190 nit)', () => {
@@ -93,10 +93,10 @@ describe('RatingPicker (#384)', () => {
     const input = screen.getByRole('spinbutton', { name: '평점 직접 입력 (0.1 단위)' });
 
     fireEvent.change(input, { target: { value: '4' } });
-    expect(screen.getByText('4.0')).toBeTruthy();
+    expect(screen.getByText('★ 4.0')).toBeTruthy();
 
     fireEvent.change(input, { target: { value: '' } });
     fireEvent.blur(input);
-    expect(screen.getByText('4.0')).toBeTruthy();
+    expect(screen.getByText('★ 4.0')).toBeTruthy();
   });
 });
