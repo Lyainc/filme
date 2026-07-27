@@ -1,5 +1,5 @@
 import { CSSProperties, Fragment, ReactNode, SyntheticEvent, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { MovieInfo, TicketComponents, TicketField } from '@/types';
+import type { MovieInfo, QuoteFont, TicketComponents, TicketField } from '@/types';
 import { FIELD_LABELS, STAMP_LABELS, isStampTarget, type SheetTarget } from '@/constants/fields';
 import { formatDate } from '@/utils/dateFormat';
 import { posterContainRect, posterFeatherMask } from '@/utils/posterFeather';
@@ -251,11 +251,27 @@ export function containsHangul(text: string): boolean {
  * 분기째로 공유해야 한다 — Criterion 한 무드에 있던 모델을 6무드 + 한줄평 공용으로 올린 것.
  * 필드 이름이 아니라 "유저 입력 장식 텍스트"가 단위다. weight를 400으로 고정하는 건 두 폰트 다
  * 단일 웨이트라 600/500을 상속하면 합성 볼드가 되어 라벨과 톤이 다시 갈리기 때문.
+ *
+ * `font`(#558)는 Criterion 한줄평이 넘기는 사용자 선택이고 기본 'auto'가 위 자동분기다 —
+ * 서명을 비롯한 나머지 호출부는 인자를 안 넘겨 픽셀이 그대로다. 'serif'는 한글이 섞이면
+ * 손글씨로 되돌린다: 피커가 칩을 disabled로 잠그는 건 **새로 고르는 것**만 막을 뿐, 라틴에서
+ * 세리프를 고른 뒤 한글을 입력하면 저장값이 'serif'인 채 남아 글리프 없는 폰트로 떨어진다.
  */
-export function userTextFont(text: string): CSSProperties {
-  return containsHangul(text)
-    ? { fontFamily: FONT_QUOTE_KR, fontStyle: 'normal', fontWeight: 400 }
-    : { fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400 };
+export function userTextFont(text: string, font: QuoteFont = 'auto'): CSSProperties {
+  const hangul = containsHangul(text);
+  const resolved = font === 'serif' && hangul ? 'auto' : font;
+  switch (resolved) {
+    case 'hand':
+      return { fontFamily: FONT_QUOTE_KR, fontStyle: 'normal', fontWeight: 400 };
+    case 'gothic':
+      return { fontFamily: FONT_KR, fontStyle: 'normal', fontWeight: 400 };
+    case 'serif':
+      return { fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400 };
+    default:
+      return hangul
+        ? { fontFamily: FONT_QUOTE_KR, fontStyle: 'normal', fontWeight: 400 }
+        : { fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400 };
+  }
 }
 
 /**
