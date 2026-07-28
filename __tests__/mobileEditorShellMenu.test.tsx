@@ -162,7 +162,12 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
 
     await user.click(screen.getByRole('button', { name: '초기화' }));
     // arm됨 — 메뉴는 열린 채, 실행은 아직.
-    expect(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' })).toBeTruthy();
+    const armedRow = screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' });
+    expect(armedRow).toBeTruthy();
+    // arm 표시는 채움 틴트가 아니라 링이다(#569) — 붉은 틴트가 배경을 밝히면 같은 붉은 danger
+    // 라벨 대비가 3.79:1로 떨어진다. 링이면 배경이 --surface 그대로라 4.66:1을 유지한다.
+    expect(armedRow.style.boxShadow).toContain('var(--danger)');
+    expect(armedRow.style.background).toBe('');
     expect(screen.queryByText('초기화했어요')).toBeNull();
 
     // 메뉴를 닫았다 다시 열면 arm이 풀려 원래 라벨로 돌아오고, 포스터도 그대로다(미실행 증거).
@@ -228,6 +233,44 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
   // 이 서브메뉴가 검증하던 라이트↔다크 전환·35mm disabled 동작 회귀 테스트는 ColorPicker
   // 쪽에 상응하는 게 없다 — desktopDesignPanel.test.tsx (c)는 White/Black 프리셋의 존재만
   // 확인하고 클릭 동작은 검증하지 않는다(#387 스코프 밖의 기존 커버리지 공백, 별도 이슈감).
+
+  test('#569 — 메뉴 패널은 오버레이 계층 토큰을 쓰고, 텍스트 행은 불투명 표면 위에 얹힌다', async () => {
+    // 패널이 --glass-fill(입력 함몰용 8%)이라 밝은 포스터 위에서 항목이 안 보였다(#569).
+    // 계층을 되돌리면(=패널을 다시 --glass-fill로) 같은 증상이 그대로 재발하므로 토큰 이름을
+    // 못박는다. 알파를 올려도 muted·accent·danger 잉크는 유리 위에서 AA를 못 넘어서(globals.css
+    // --overlay-* 주석의 실측표) 행 그룹이 불투명해야 한다 — 이게 FieldDrawer가 세운 규칙이다.
+    const user = userEvent.setup();
+    render(<Harness />);
+    fireEvent.click(screen.getByText('seed'));
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+
+    const panel = screen.getByRole('menu', { name: '편집 메뉴' });
+    expect(panel.style.background).toBe('var(--overlay-fill)');
+    expect(panel.style.borderColor).toBe('var(--overlay-border)');
+
+    // 모든 행이 불투명 그룹 안에 있다 — 패널 직계 자식으로 새는 행이 없어야 한다.
+    const rows = Array.from(panel.querySelectorAll('button'));
+    expect(rows.length).toBeGreaterThan(3); // 루프가 빈 채로 통과하지 않게
+    for (const row of rows) {
+      const group = row.closest('div.bg-surface');
+      expect(group === null ? `그룹 밖 행: ${row.textContent}` : true).toBe(true);
+    }
+
+    // 드로어 엣지 핸들도 같은 계층이다(#569 "같이 고칠 것") — 8% 유리로 되돌리면 밝은 포스터
+    // 위에서 핸들이 다시 사라진다.
+    const handle = screen.getByRole('button', { name: '티켓 항목 목록 열기' }).querySelector('span')!;
+    expect((handle as HTMLElement).style.background).toBe('var(--overlay-fill)');
+    // toContain('text-fg')이면 text-fg-muted로 되돌려도 통과한다 — 단어 경계로 못박는다.
+    expect(handle.className).toMatch(/(^|\s)text-fg(\s|$)/);
+
+    // 선택된 배치 라디오도 --fg로 — 다크에서 --accent는 불투명 표면 위에서도 3.97:1이다.
+    await user.click(screen.getByRole('button', { name: '툴바 설정' }));
+    const on = within(screen.getByRole('radiogroup', { name: '툴바 배치' }))
+      .getByRole('radio', { name: '세로형 · 고정식' });
+    expect(on.getAttribute('aria-checked')).toBe('true');
+    expect(on.className).toMatch(/(^|\s)text-fg(\s|$)/);
+    expect(on.className).not.toContain('text-accent');
+  });
 
   test('툴바 설정(#447): 기본 접힘 → 헤더 클릭으로 펼침(라디오 4종) → 메뉴 재오픈 시 항상 접힘 리셋', async () => {
     const user = userEvent.setup();

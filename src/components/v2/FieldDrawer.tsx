@@ -44,7 +44,9 @@ interface FieldDrawerProps {
  * 유리(blur+알파 틴트)는 패널에만 쓰고 행은 불투명 카드(bg-surface-elevated)에 얹는다 —
  * 시안값(패널 알파 .36~.40 위 직접 텍스트)은 포스터에 따라 대비가 4.5:1 밑으로 깨진다(이슈 표).
  * 행 사이 여백과 패널 가장자리로 티켓이 비쳐 "뒤가 보인다"는 목적은 유지된다.
- * 셸은 포스터가 있을 때만 드로어를 열므로(.chrome-dark 확정) 유리 틴트는 다크 하나로 고정한다.
+ * 패널 배경은 #580에서 하드코딩 rgba(18,22,24,.40)을 오버레이 계층 토큰(--overlay-fill)으로
+ * 회수했다 — 툴바·햄버거 메뉴와 같은 값이고, 다크 고정이 아니라 테마를 따라간다(#415에서
+ * .chrome-dark가 테마 조건부가 된 뒤로 라이트 테마에서 이 패널만 어두웠다).
  *
  * 닫기 경로: 스와이프 →(드래그) + 백드롭 탭·Escape(비드래그 대체 경로, WCAG 2.2 SC 2.5.7).
  */
@@ -111,10 +113,10 @@ export function FieldDrawer({ photo, onField, onClose, children }: FieldDrawerPr
         onTouchEnd={onTouchEnd}
         className="drawer-slide-in absolute inset-y-0 right-0 flex w-[min(78vw,320px)] flex-col outline-none"
         style={{
-          background: 'rgba(18, 22, 24, 0.40)',
+          background: 'var(--overlay-fill)',
           backdropFilter: 'blur(13px)',
           WebkitBackdropFilter: 'blur(13px)',
-          borderLeft: '1px solid rgba(255,255,255,0.10)',
+          borderLeft: '1px solid var(--overlay-border)',
           paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)',
         }}
       >
