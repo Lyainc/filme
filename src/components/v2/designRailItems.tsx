@@ -272,6 +272,11 @@ function TextureAxisControls({ photo, prefix, axis }: { photo: Photo; prefix: st
  * 데스크톱은 사이드 패널이라 이 세로 예산 문제가 없어(#500 "데스크톱 미해당") 두 축 상시
  * 노출을 유지한다 — 축 컨트롤 자체는 TextureAxisControls 하나를 공유해 배치만 갈린다
  * (모드 항목의 LayoutStrip/LayoutPicker 분기와 같은 이유·같은 모양).
+ *
+ * #563 이후 위 "dock이 413px까지 자란다"는 더는 성립하지 않는다 — 모바일 패널이 고정 높이
+ * 슬롯이라 dock은 콘텐츠와 무관하게 안 움직인다. 그래도 축 분리는 유지한다: 콘텐츠가 슬롯을
+ * 넘으면 대신 안에서 스크롤하게 되므로, 이 배치가 줄이는 건 이제 dock 높이가 아니라 스크롤
+ * 양이다(양축 세로 쌓기면 후보정 콘텐츠가 슬롯의 3배를 넘는다).
  */
 function TexturePanel({ photo, surface }: { photo: Photo; surface: RailSurface }) {
   const [axis, setAxis] = useState<TextureAxis>('material');
@@ -336,6 +341,9 @@ type SizeAxis = (typeof SIZE_AXES)[number]['key'];
  *
  * 데스크톱은 사이드 패널이라 이 세로 예산 문제가 없어(#500 "데스크톱 미해당") 두 축 상시 노출을
  * 유지한다 — 축 컨트롤 자체는 같은 JSX를 공유하고 배치만 갈린다(TexturePanel과 같은 모양).
+ *
+ * #563 이후 dock 높이 논거는 TexturePanel과 같이 읽을 것 — 축 분리가 줄이는 건 이제 dock이
+ * 아니라 고정 슬롯 안에서 스크롤할 양이다.
  */
 function SizePanel({ photo, surface, actions }: { photo: Photo; surface: RailSurface; actions: RailActions }) {
   const [axis, setAxis] = useState<SizeAxis>('poster');

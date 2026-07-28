@@ -216,7 +216,7 @@ const MOOD_CHIP_BG: Record<LayoutId, string> = {
 export const LayoutStrip = memo(function LayoutStrip({ value, onChange }: LayoutPickerProps) {
   return (
     <div
-      className="flex gap-3 overflow-x-auto px-1 pb-1 pt-1 snap-x [scrollbar-width:thin]"
+      className="flex gap-3 overflow-x-auto px-1 pb-1 pt-1 snap-x no-scrollbar"
       role="radiogroup"
       aria-label="Mood designs"
     >
