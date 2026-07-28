@@ -19,7 +19,8 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type Poin
  *       같이 못박는 회귀는 __tests__/inPlaceFieldEditor.test.tsx에 있다. 위계라서 TB_TARGET을 두
  *       파일 공용 단일 소스로 빼지 않는다 — 합치면 한쪽을 고칠 때 다른 쪽이 딸려 간다.
  *   dark-glass 배경
- *   (--surface-translucent 재사용: README §Design Tokens, 시안 불투명 코드는 모순으로 기각).
+ *   (오버레이 계층 토큰 --overlay-fill: globals.css, 시안 불투명 코드는 모순으로 기각. 구
+ *   --surface-translucent가 #580에서 이 이름으로 통합됐다 — 메뉴·드로어 패널과 같은 값).
  * - 방향(가로/세로) × 배치(고정/이동) 두 축. 기본 세로·고정·좌측 헤더 직하(#364).
  * - 이동식은 32px 그립 드래그 + 햄버거 메뉴의 좌/우 가장자리 스냅(드래그 없는 단일 포인터
  *   대체 경로, WCAG 2.2 SC 2.5.7).
@@ -216,7 +217,7 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
           };
 
   const glass: React.CSSProperties = {
-    background: 'var(--surface-translucent)',
+    background: 'var(--overlay-fill)',
     backdropFilter: 'blur(13px)',
     WebkitBackdropFilter: 'blur(13px)',
     boxShadow: '0 8px 20px -8px rgba(0,0,0,.5)',

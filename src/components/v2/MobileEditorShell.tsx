@@ -58,6 +58,13 @@ const MENU_ICONS = {
   gear: 'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
 };
 
+// 헤더 서브메뉴의 행 그룹(#569/#580) — 오버레이 패널(--overlay-fill)은 티켓 위에 뜨는 유리라
+// 그 위 직접 텍스트는 --fg만 AA를 넘는다(globals.css --overlay-* 주석의 실측표). muted 아이콘·
+// accent 라디오·danger 초기화 라벨까지 읽히게 텍스트 행은 불투명 표면에 얹는다 — FieldDrawer의
+// 처방과 같다. --surface-elevated가 아니라 --surface인 건 danger 잉크 때문:
+// #EF4444가 #1E2326에선 4.22:1(미달), #161A1C에선 4.66:1이다.
+const MENU_GROUP_CLS = 'rounded-[12px] bg-surface p-1'; // 행 반경(rounded-lg 8) + p-1(4)과 동심
+
 // 헤더 서브메뉴 공용 행(#374, 시안 Siyan-C-v8 설정 시트의 행 문법 이식) — 리딩 아이콘 +
 // 14px 라벨 + (토글 행이면) 트레일링 스위치. checked를 주면 role="switch" 토글 행,
 // 없으면 액션 행. 스위치 비주얼은 구 TogglePill 것을 그대로 승계.
@@ -94,7 +101,10 @@ function MenuRow({
       className={`flex h-11 w-full items-center justify-between gap-2 rounded-lg px-2.5 text-left transition-colors ${
         disabled ? 'opacity-40' : 'hover:bg-white/5'
       }`}
-      style={armed ? { background: 'rgba(229,103,95,.16)' } : undefined}
+      // arm 표시가 채움 틴트(rgba(229,103,95,.16))였을 땐 danger 잉크 대비가 3.79:1로 떨어졌다
+      // (#569 실측 — 붉은 틴트가 배경을 밝혀 같은 붉은 글자와 붙는다). 채움 대신 1px 링으로 바꾸면
+      // 배경이 그대로라 라벨은 4.66:1을 유지하고, 링 자체는 비텍스트 3:1 기준을 넘는다.
+      style={armed ? { boxShadow: 'inset 0 0 0 1px var(--danger)' } : undefined}
     >
       <span
         className={`flex min-w-0 items-center gap-2.5 text-[14px] ${danger ? 'text-danger' : 'text-fg'}`}
@@ -448,40 +458,47 @@ export function MobileEditorShell({
                 덮으면 z-index 없는 헤더 버튼(햄버거·완료)이 이 오버레이 밑에 깔려 탭이 메뉴만
                 닫고 버튼 클릭은 씹힌다(claude-review PR #331 P2 지적). */}
             <div className="fixed inset-x-0 bottom-0 top-14 z-40" onClick={() => setMenuOpen(false)} aria-hidden="true" />
-            {/* v8 dark-glass(#364) — 일반 카드 대신 글래스 토큰 + blur. 상시 다크 크롬(#363)이라
-                항상 white-alpha 유리. 햄버거가 우측으로 가며(#363) 앵커도 우측 정렬. */}
+            {/* v8 dark-glass(#364) — 일반 카드 대신 오버레이 계층 토큰(#580) + blur. 햄버거가
+                우측으로 가며(#363) 앵커도 우측 정렬.
+                #569 — 배경이 --glass-fill(8%)일 땐 밝은 포스터 위에서 항목이 아예 안 읽혔다
+                (흰 포스터 최악 케이스 1.02:1). 유리를 --overlay-fill(80%)로 올리고, 그래도 AA가
+                안 서는 잉크(muted·accent·danger)를 위해 행 그룹을 불투명 표면에 얹는다 —
+                FieldDrawer가 세운 규칙 그대로다(패널은 유리, 텍스트는 불투명 위에). */}
             {/* 내부 행 문법(#374) — 전 항목을 MenuRow(리딩 아이콘 + 14px 라벨 + 트레일링 스위치)로
-                통일하고 토글/포스터 액션/문서 액션 세 그룹을 헤어라인으로 구분(시안 L296-322 이식). */}
+                통일하고 토글/포스터 액션/문서 액션 세 그룹을 구분(시안 L296-322 이식). 구분은
+                헤어라인이었으나 #569에서 그룹이 불투명 카드가 되며 카드 사이 여백이 대신한다. */}
             <div
               id="editor-menu-panel"
               role="menu"
               aria-label="편집 메뉴"
               className="absolute right-3 top-[calc(100%+8px)] z-50 w-64 rounded-card border p-2 shadow-card"
               style={{
-                background: 'var(--glass-fill)',
-                borderColor: 'var(--glass-border)',
+                background: 'var(--overlay-fill)',
+                borderColor: 'var(--overlay-border)',
                 backdropFilter: 'blur(13px)',
                 WebkitBackdropFilter: 'blur(13px)',
               }}
             >
-              <MenuRow
-                iconPath={MENU_ICONS.moon}
-                label="다크모드"
-                checked={theme === 'dark'}
-                onClick={() => onThemeChange(theme === 'dark' ? 'light' : 'dark')}
-              />
-              {/* 빈 항목은 프리뷰(포스터)가 있어야 의미가 있으므로 기존과 동일하게 게이팅. 잉크는
-                  DesignRail 시절과 동일하게 포스터 유무와 무관하게 항상 노출. '전체 표시'는 필드
-                  목록이 있는 FieldDrawer로 이전(#424) — 필드 목록과 한 자리에 두는 게 더 직관적이다. */}
-              {croppedImageUrl && (
+              <div className={MENU_GROUP_CLS}>
                 <MenuRow
-                  iconPath={MENU_ICONS.eye}
-                  label="빈 항목"
-                  ariaLabel="빈 항목 미리보기"
-                  checked={ghostMode}
-                  onClick={() => setGhostMode((v) => !v)}
+                  iconPath={MENU_ICONS.moon}
+                  label="다크모드"
+                  checked={theme === 'dark'}
+                  onClick={() => onThemeChange(theme === 'dark' ? 'light' : 'dark')}
                 />
-              )}
+                {/* 빈 항목은 프리뷰(포스터)가 있어야 의미가 있으므로 기존과 동일하게 게이팅. 잉크는
+                    DesignRail 시절과 동일하게 포스터 유무와 무관하게 항상 노출. '전체 표시'는 필드
+                    목록이 있는 FieldDrawer로 이전(#424) — 필드 목록과 한 자리에 두는 게 더 직관적이다. */}
+                {croppedImageUrl && (
+                  <MenuRow
+                    iconPath={MENU_ICONS.eye}
+                    label="빈 항목"
+                    ariaLabel="빈 항목 미리보기"
+                    checked={ghostMode}
+                    onClick={() => setGhostMode((v) => !v)}
+                  />
+                )}
+              </div>
               {/* 배치설정(#387, 플로팅 툴바 gear에서 이전) — 방향(가로/세로) × 배치(고정/이동)
                   라디오 4종 + 이동식일 때 좌/우 가장자리 스냅(WCAG 2.2 SC 2.5.7 대체 경로).
                   잉크 토글은 컬러 패널(White/Black 프리셋)과 중복이라 이 자리에서 삭제.
@@ -491,7 +508,7 @@ export function MobileEditorShell({
                   LayoutPicker 등)과 맞춰 radio를 쓴다(menuitemradio는 옛 menu+menuitemradio 조합의
                   잔재였다, 같은 리뷰 지적). */}
               {croppedImageUrl && !isMax && (
-                <div className="mt-2 border-t border-[var(--glass-border)] pt-2">
+                <div className={`mt-2 ${MENU_GROUP_CLS}`}>
                   <button
                     type="button"
                     aria-expanded={tbSettingsOpen}
@@ -546,8 +563,12 @@ export function MobileEditorShell({
                                 role="radio"
                                 aria-checked={on}
                                 onClick={() => applyToolbarMode(m.orient, m.place)}
-                                className={`flex h-11 w-full items-center gap-2.5 rounded-[9px] px-2.5 text-[12px] font-semibold ${
-                                  on ? 'bg-accent-soft text-accent' : 'text-fg hover:bg-white/5'
+                                // 선택 라벨을 text-accent로 두면 다크에서 --accent(#C45550)가
+                                // 어떤 크롬 표면 위에서도 AA에 못 닿는다(불투명 --surface 위 3.97:1).
+                                // 선택 신호는 accent-soft 채움 + accent 점이 이미 주므로(둘 다
+                                // 비텍스트라 3:1 기준) 라벨은 --fg로 둔다(#569).
+                                className={`flex h-11 w-full items-center gap-2.5 rounded-[9px] px-2.5 text-[12px] font-semibold text-fg ${
+                                  on ? 'bg-accent-soft' : 'hover:bg-white/5'
                                 }`}
                               >
                                 <span
@@ -560,7 +581,7 @@ export function MobileEditorShell({
                           })}
                         </div>
                         {tbPrefs.place === 'movable' && (
-                          <div className="mt-1 flex gap-1 border-t border-[var(--glass-border)] pt-1.5">
+                          <div className="mt-1 flex gap-1 border-t border-line pt-1.5">
                             <button
                               type="button"
                               onClick={() => snapToolbarTo('left')}
@@ -596,7 +617,7 @@ export function MobileEditorShell({
               )}
 
               {croppedImageUrl && (
-                <div className="mt-2 border-t border-[var(--glass-border)] pt-2">
+                <div className={`mt-2 ${MENU_GROUP_CLS}`}>
                   <MenuRow
                     iconPath={MENU_ICONS.upload}
                     label="포스터 교체"
@@ -623,7 +644,7 @@ export function MobileEditorShell({
                   나머지 필드는 복원되므로(#310이 고치려는 시나리오 자체), 포스터 재업로드 전에도
                   초기화에 닿을 수 있어야 한다. 초기화 확인은 2탭 arm(#374, handleClearTap). 저장
                   피드백은 기존 flashToast 재사용. */}
-              <div className="mt-2 border-t border-[var(--glass-border)] pt-2">
+              <div className={`mt-2 ${MENU_GROUP_CLS}`}>
                 <MenuRow
                   iconPath={MENU_ICONS.save}
                   label="임시저장"
@@ -838,6 +859,9 @@ export function MobileEditorShell({
 
       {/* 필드 드로어 엣지 핸들(#364) — 우측 엣지에 드로어 존재를 암시하는 상시 인디케이터.
           툴바의 항목목록 버튼과 진입점 병존(툴바를 모르면 드로어를 못 찾는 문제의 직접 해소).
+          #569 — 탭 배경이 --glass-fill(8%)이라 밝은 포스터 위에서 핸들 자체가 안 보였다.
+          오버레이 계층 토큰으로 올리고, 셰브런 잉크도 --fg-muted → --fg로(라이트 테마 최악
+          케이스에서 muted는 2.77:1로 비텍스트 3:1도 못 넘긴다. --fg는 8.66/10.31:1).
           히트영역은 44px(왼쪽으로 투명 확장), 보이는 탭은 24px 글래스(#447 — 이전 20px는 눈에
           덜 띈다는 지적). z-30 — 편집 백드롭(z-40) 아래라 인플레이스 편집 중엔 가려지고,
           드로어(z-50)가 열리면 그 뒤에 깔린다. */}
@@ -850,9 +874,9 @@ export function MobileEditorShell({
         >
           <span
             aria-hidden="true"
-            className="flex h-full w-6 items-center justify-center rounded-l-[10px] border border-r-0 border-[var(--glass-border)] text-fg-muted"
+            className="flex h-full w-6 items-center justify-center rounded-l-[10px] border border-r-0 border-[var(--overlay-border)] text-fg"
             style={{
-              background: 'var(--glass-fill)',
+              background: 'var(--overlay-fill)',
               backdropFilter: 'blur(13px)',
               WebkitBackdropFilter: 'blur(13px)',
             }}
