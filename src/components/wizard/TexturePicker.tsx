@@ -89,7 +89,10 @@ function TexturePicker({ axis, options, value, onChange, croppedImageUrl, ariaLa
       {/* ponytail: 가로 스크롤 스트립 = 캐러셀(#180 (6)). 작은 스와치는 한 장씩 넘기는
           LayoutPicker식 캐러셀보다 한 줄 스크롤이 비교·선택에 낫고 세로도 절약된다(2줄 wrap→1줄). */}
       <div
-        className="flex gap-2 overflow-x-auto pb-1 snap-x no-scrollbar"
+        // py-1.5(#565): overflow-x:auto가 세로도 클리핑 박스로 만들어(CSS 스펙) 선택 링이 잘린다.
+        // 여기가 레일 아이콘 행보다 심하다 — 링이 4px(0 0 0 2px bg + 0 0 0 4px accent)에
+        // scale(1.05) 오버슈트 ≈1.15px까지 얹혀 5.15px, 게다가 상단 패딩이 0이었다.
+        className="flex gap-2 overflow-x-auto py-1.5 snap-x no-scrollbar"
         role="radiogroup"
         aria-label={ariaLabel}
       >

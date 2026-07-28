@@ -216,7 +216,9 @@ const MOOD_CHIP_BG: Record<LayoutId, string> = {
 export const LayoutStrip = memo(function LayoutStrip({ value, onChange }: LayoutPickerProps) {
   return (
     <div
-      className="flex gap-3 overflow-x-auto px-1 pb-1 pt-1 snap-x no-scrollbar"
+      // py-1.5(#565): TexturePicker와 같은 링(4px) + scale(1.05)이라 5.15px가 필요한데
+      // pt-1(4px)이라 1.15px 모자랐다. 전역 :focus-visible(3px + offset 2px)까지 덮는다.
+      className="flex gap-3 overflow-x-auto px-1 py-1.5 snap-x no-scrollbar"
       role="radiogroup"
       aria-label="Mood designs"
     >
