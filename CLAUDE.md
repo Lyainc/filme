@@ -17,6 +17,9 @@ Before making architectural changes or implementing new features, consult:
 - **모듈 mock**: bun `mock.module`은 hoisting 안 됨 — mock 등록 **후** `require(...)`로 대상(예: `runOcr`)을 import해야 가로채짐. top-level `await import`는 tsconfig `target:es5`에서 막히니 `require` 사용.
 - **회귀 테스트 예**: `__tests__/ocrUndoRestore.test.tsx` — OCR undo가 chainVisible/chainLabel + 폼 필드를 원자 복원하는지(#141 P1) 검증. 새 상호작용 테스트는 testing-library로 통일 권장.
 
+### 📏 크롬 측정 하네스 (400×675)
+- `scripts/measure-chrome.mjs` (`bun scripts/measure-chrome.mjs --theme dark|light`) — dock·프리뷰 rect, 레일 슬롯 넘침, 항목별 WCAG 대비, 모달 포커스/닫기/클릭통과를 한 번에 잰다. **레일 슬롯을 열고 재는 게 전제**다(#563 불변식 dock 232.6 / 프리뷰 226.8×362.3은 열린 상태 기준 — 안 열면 dock 114.5가 나오고 스크립트는 조용히 성공한다). 400×675면 불변식을 자동 대조하고 어긋나면 exit 1. 세션 tmp에 다시 쓰지 말 것(#586, 여섯 번 반복됨).
+
 ### 🔎 Code Review
 - **리뷰 게이트 = PR의 GitHub `claude-review` 액션**(main 브랜치 required check). 모든 PR에서 자동으로 돌아 correctness를 잡으니 이게 authoritative 리뷰다.
 - **push 전 claude 리뷰는 이 액션과 중복이라 습관으로 돌리지 않는다.** 특히 Workflow-backed `code-review`(`/code-review ultra`·high 워크플로, subagent 다수·고비용)는 같은 "claude가 diff 리뷰"를 한 번 더 하는 거라 아주 무겁거나 복잡한 변경에서 PR 전 깊이가 필요할 때만 쓴다(예: 3파일 변경에 에이전트 7개·38만 토큰 #287은 과투입).
