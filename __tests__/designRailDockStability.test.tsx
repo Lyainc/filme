@@ -41,7 +41,7 @@ describe('DesignRail dock 안정성 (#563/#564/#565)', () => {
     const panel = document.getElementById('design-rail-panel')!;
     // 고정 높이라야 탭 전환에 dock이 안 움직인다. min-h/max-h로 바꾸면 낮은 항목이 다시 줄어
     // 출렁임이 돌아오므로 h-* 선언 자체를 못박는다.
-    expect(panel.className).toMatch(/(^|\s)h-\[min\(206px,17\.5svh\)\]/);
+    expect(panel.className).toMatch(/(^|\s)h-\[min\(214px,17\.5svh\)\]/);
     // 넘치는 항목(컬러·후보정)은 dock을 밀지 않고 안에서 스크롤한다.
     expect(panel.className).toContain('overflow-y-auto');
     // #385 — range thumb가 트랙 아래로 8px 튀어나와 스크롤 박스 바닥에서 잘리는 것 방어.
