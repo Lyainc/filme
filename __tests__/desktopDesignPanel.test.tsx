@@ -49,6 +49,10 @@ describe('DesktopDesignPanel (#228)', () => {
     expect(screen.queryByLabelText('Hex color')).not.toBeNull();
     expect(screen.queryByLabelText('포스터')).not.toBeNull();
     expect(screen.queryByLabelText('컴포넌트')).not.toBeNull();
+    // #562 — 데스크톱도 같은 BrightnessSlider를 쓰므로 % 직접 입력이 함께 온다. 모바일 레일만
+    // 고치고 데스크톱을 두는 분기가 생기면 여기서 깨진다.
+    expect((screen.queryByLabelText('포스터 퍼센트') as HTMLInputElement)?.value).toBe('50');
+    expect(screen.queryByLabelText('컴포넌트 퍼센트')).not.toBeNull();
   });
 
   test('(b) 무드 선택 → photo.state.components.layout 반영 (setComp 배선)', async () => {

@@ -12,7 +12,12 @@
 import { describe, expect, mock, test, afterEach } from 'bun:test';
 import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import BrightnessSlider, { shouldCommitSliderValue } from '../src/components/wizard/BrightnessSlider';
+import BrightnessSlider, {
+  parsePercentInput,
+  shouldCommitSliderValue,
+  snapToStep,
+  stepFrom,
+} from '../src/components/wizard/BrightnessSlider';
 import { DesignRail } from '../src/components/v2/DesignRail';
 import { usePhototicket } from '../src/hooks/usePhototicket';
 
@@ -77,8 +82,10 @@ describe('#507 BrightnessSlider — 드래그 커밋 저빈도화', () => {
       fireEvent.change(input, { target: { value: '0.77' } });
     });
 
-    expect(input.value).toBe('0.77');
-    expect(screen.getByText('77%')).toBeTruthy();
+    // #562 — 드래그는 10%p 격자에 스냅하므로 0.77은 0.8로 선다.
+    expect(input.value).toBe('0.8');
+    // %는 이제 읽기 전용 텍스트가 아니라 입력 필드다(#562).
+    expect((screen.getByLabelText('Test 퍼센트') as HTMLInputElement).value).toBe('80');
   });
 
   // claude-review PR #516 P1 — 마운트된 채로 부모가 value를 외부에서 바꾸는 경로(재질/코팅
@@ -92,7 +99,7 @@ describe('#507 BrightnessSlider — 드래그 커밋 저빈도화', () => {
 
     const input = screen.getByLabelText('Test') as HTMLInputElement;
     expect(input.value).toBe('0.8');
-    expect(screen.getByText('80%')).toBeTruthy();
+    expect((screen.getByLabelText('Test 퍼센트') as HTMLInputElement).value).toBe('80');
     // 외부에서 온 value는 이미 커밋된 값이므로 되돌려 부를 필요 없음.
     expect(onChange).not.toHaveBeenCalled();
   });
@@ -132,5 +139,108 @@ describe('#507 DesignRail 통합 — 재질 강도 슬라이더 드래그가 다
     expect(screen.getByTestId('materialIntensity').textContent).toBe('1');
     // 20틱이 배치 하나로 합쳐지므로 이 구간의 리렌더는 한 자릿수 — 틱 수(20)보다 훨씬 적다.
     expect(renderCount - baseline).toBeLessThan(20);
+  });
+});
+
+/**
+ * #562 — 드래그·화살표 스텝 10% 고정 + 자연수 % 직접 입력.
+ *
+ * 둘은 같이 가야 한다: 10% 스텝이 세밀 조정 경로를 없애고 % 입력이 그 대체다. 그리고 % 입력은
+ * #507의 지연 커밋(useDeferredValue)을 우회하면 안 된다 — 우회하면 매 타건마다 티켓이 리렌더된다.
+ */
+describe('#562 parsePercentInput — 자연수 % → 값 축', () => {
+  test('범위 밖은 클램프한다(로고 크기 0.6..1.3)', () => {
+    expect(parsePercentInput('40', 0.6, 1.3)).toBe(0.6);
+    expect(parsePercentInput('200', 0.6, 1.3)).toBe(1.3);
+    expect(parsePercentInput('90', 0.6, 1.3)).toBe(0.9);
+  });
+
+  test('빈 문자열·비숫자는 커밋 대상이 아니다(null)', () => {
+    expect(parsePercentInput('', 0, 1)).toBeNull();
+    expect(parsePercentInput('abc', 0, 1)).toBeNull();
+  });
+
+  test('min·max는 부동소수 오차 없이 딱 떨어진다', () => {
+    // 0.6 * 100 === 60.00000000000001 — 반올림 없이 클램프하면 하한이 격자에서 미끄러진다.
+    expect(parsePercentInput('60', 0.6, 1.3)).toBe(0.6);
+  });
+});
+
+describe('#562 BrightnessSlider — 10% 스텝 + % 입력', () => {
+  // step 속성은 상호작용 단위가 아니라 값의 제약이라, 0.1로 잠그면 % 입력의 37%가 40%로 잘린다
+  // (브라우저 실측). "any"로 열어 두고 스냅을 코드가 맡는 게 두 요구사항이 공존하는 유일한 배치다.
+  test('range는 step="any" — 격자 밖 값(37%)을 요소가 잘라내지 않는다', () => {
+    render(<BrightnessSlider value={0.37} onChange={mock(() => {})} label="Test" id="step-test" />);
+    const range = screen.getByLabelText('Test') as HTMLInputElement;
+    expect(range.step).toBe('any');
+    expect(range.value).toBe('0.37');
+  });
+
+  test('드래그는 10%p 격자에 스냅한다', () => {
+    const onChange = mock(() => {});
+    render(<BrightnessSlider value={0.5} onChange={onChange} label="Test" id="snap-test" />);
+    const range = screen.getByLabelText('Test') as HTMLInputElement;
+    act(() => {
+      fireEvent.change(range, { target: { value: '0.73' } });
+    });
+    expect(range.value).toBe('0.7');
+  });
+
+  test('화살표 한 틱이 10%p — 격자 밖 값에서도 다음 눈금으로 간다', () => {
+    expect(stepFrom(0.37, 1, 0, 1)).toBe(0.4);
+    expect(stepFrom(0.37, -1, 0, 1)).toBe(0.3);
+    expect(stepFrom(0.4, 1, 0, 1)).toBe(0.5);
+    expect(stepFrom(0.4, -1, 0, 1)).toBe(0.3);
+    // 범위 끝에서는 클램프 — 로고 크기축(0.6..1.3).
+    expect(stepFrom(0.6, -1, 0.6, 1.3)).toBe(0.6);
+    expect(stepFrom(1.3, 1, 0.6, 1.3)).toBe(1.3);
+    expect(snapToStep(0.73, 0, 1)).toBe(0.7);
+    // 격자 밖 하한이 생겨도 그 아래로 안 내려간다.
+    expect(snapToStep(0.66, 0.65, 1)).toBe(0.7);
+    expect(snapToStep(0.66, 0.7, 1)).toBe(0.7);
+  });
+
+  test('키보드 화살표가 range에서 실제로 10%p 움직인다', async () => {
+    const user = userEvent.setup();
+    const onChange = mock(() => {});
+    render(<BrightnessSlider value={0.37} onChange={onChange} label="Test" id="kb-test" />);
+    const range = screen.getByLabelText('Test') as HTMLInputElement;
+    range.focus();
+    await user.keyboard('{ArrowRight}');
+    expect(range.value).toBe('0.4');
+    await user.keyboard('{ArrowRight}');
+    expect(range.value).toBe('0.5');
+    // PageUp/Down도 같은 10%p — step="any"의 네이티브 페이지 이동((max-min)/10)에 맡기면
+    // 로고 크기축(0.6..1.3)에서 0.07씩 격자 밖으로 나간다.
+    await user.keyboard('{PageDown}');
+    expect(range.value).toBe('0.4');
+  });
+
+  test('% 입력에 자연수를 넣고 Enter를 치면 그 값이 커밋된다', async () => {
+    const user = userEvent.setup();
+    const onChange = mock(() => {});
+    render(<BrightnessSlider value={0.5} onChange={onChange} label="Test" id="pct-test" />);
+    const pct = screen.getByLabelText('Test 퍼센트') as HTMLInputElement;
+
+    await user.click(pct);
+    await user.keyboard('{Control>}a{/Control}35{Enter}');
+
+    expect(onChange).toHaveBeenCalledWith(0.35);
+    expect((screen.getByLabelText('Test') as HTMLInputElement).value).toBe('0.35');
+  });
+
+  test('타이핑 중간 상태는 커밋하지 않는다 — blur/Enter에서 한 번만', async () => {
+    const user = userEvent.setup();
+    const onChange = mock(() => {});
+    render(<BrightnessSlider value={0.5} onChange={onChange} label="Test" id="pct-batch" />);
+    const pct = screen.getByLabelText('Test 퍼센트') as HTMLInputElement;
+
+    await user.click(pct);
+    await user.keyboard('{Control>}a{/Control}80');
+    expect(onChange).not.toHaveBeenCalled();
+
+    await user.keyboard('{Enter}');
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith(0.8);
   });
 });
