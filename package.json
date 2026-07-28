@@ -42,6 +42,7 @@
     "bun-types": "^1.3.14",
     "happy-dom": "^20.10.2",
     "postcss": "8.5.13",
+    "puppeteer-core": "^25.4.0",
     "typescript": "^5.9.3"
   }
 }
