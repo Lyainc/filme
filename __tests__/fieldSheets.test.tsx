@@ -117,6 +117,17 @@ describe('FieldEditorBody 타입별 편집 (#215 PART A)', () => {
     expect(screen.getByTestId('releaseDateFormat').textContent).toBe('cinema-mono');
   });
 
+  test('#583 — 날짜 표기 칩 스트립은 세로 여유를 위아래 대칭으로 둔다', () => {
+    // overflow-x:auto가 세로 클리핑 박스도 만들어(CSS 스펙) 전역 :focus-visible(outline 3px +
+    // offset 2px = 5px)이 잘렸다. pb만 두던 비대칭으로 되돌리면 상단 여유가 0이라 재발한다.
+    // #582가 나머지 세 스트립(레일 아이콘 행·TexturePicker·LayoutStrip)에 못박은 것과 같은 계약.
+    render(<BodyHarness field="watchDate" />);
+    const strip = screen.getByRole('radiogroup', { name: '관람일 표기' });
+    expect(strip.className).toContain('overflow-x-auto');
+    expect(strip.className).toContain('py-1.5');
+    expect(strip.className).not.toMatch(/(^|\s)pb-1(\s|$)/);
+  });
+
   test('rating 본문: 별점 클릭이 movieInfo.rating을 갱신', () => {
     render(<BodyHarness field="rating" />);
     // 기본값은 미입력(0, #368) — 직접 입력 전엔 티켓에 평점이 노출되지 않는다.
