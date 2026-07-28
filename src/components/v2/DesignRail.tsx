@@ -68,13 +68,24 @@ function RailIconButton({
 
 function RailExpandPanel({
   open,
+  activeId,
   eyebrow,
   children,
 }: {
   open: boolean;
+  /** 지금 그려지는 항목. 슬롯이 스크롤 컨테이너라 항목이 갈리면 스크롤을 위로 되돌린다. */
+  activeId: RailItemId;
   eyebrow: string;
   children: ReactNode;
 }) {
+  // 고정 슬롯은 같은 DOM 노드에 콘텐츠만 갈아끼우므로 scrollTop이 그대로 넘어간다 — 실측(400×675):
+  // 컬러를 바닥(40)까지 내리고 후보정으로 옮기면 33이 남아 새 항목이 중간부터 보인다. 짧은 항목은
+  // 브라우저가 0으로 클램프해 저절로 맞지만 넘치는 항목끼리는 안 맞아서, 항목이 갈릴 때 되돌린다.
+  const slotRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (slotRef.current) slotRef.current.scrollTop = 0;
+  }, [activeId]);
+
   return (
     // collapse = grid-rows 0fr↔1fr + overflow-hidden(필수) + 접힘 시 inert(포커스/Tab/SR 차단).
     // reduced-motion은 전역 가드 + motion-reduce:transition-none로 이중 차단(MobileEditorShell 패턴).
@@ -88,7 +99,21 @@ function RailExpandPanel({
             과거 박스형 룩(rounded-card border bg-surface-elevated) 복원 금지 — 언박스가 최종. */}
         {/* py: range thumb(globals.css, height 18px margin-top:-8px)이 트랙 아래로 8px
             튀어나와 overflow-hidden 바닥에서 잘림(#385) — 하단 패딩으로 여유 확보. */}
-        <div id={PANEL_ID} role="region" aria-label={eyebrow} className="py-3">
+        {/* 고정 슬롯(#563) — 항목마다 콘텐츠 높이가 89~205px로 갈려서(400×675 실측) 탭을 옮길
+            때마다 dock이 자라고 줄었고, dock이 움직이면 본문(flex-1)이 밀려 fit 스테이지의 cqh가
+            바뀌어 프리뷰 티켓까지 같이 커졌다 작아졌다. 높이를 하나로 못박고 넘치는 항목(컬러·
+            후보정)만 안에서 스크롤시키면 dock은 탭 전환에 무관해진다 — 이슈가 고른 후보 (b)고,
+            대가는 세로 스크롤 하나다. 값: 206px = 가장 높은 항목(후보정 최악 205.5)이라 이만큼
+            세로가 있는 화면에선 아무 항목도 안 스크롤되고, 17.5svh = 400×675에서 118px이라
+            6항목 중 4개(무드·크기·투명도·커스텀)가 그대로 들어간다. dvh가 아니라 svh인 이유는
+            브라우저 툴바가 접힐 때 슬롯이 따라 움직이면 그것도 출렁임이기 때문. */}
+        <div
+          ref={slotRef}
+          id={PANEL_ID}
+          role="region"
+          aria-label={eyebrow}
+          className="h-[min(206px,17.5svh)] overflow-y-auto py-3"
+        >
           {/* 닫기(x) 버튼 제거(#322) — 레일 아이콘 재클릭으로 이미 토글 닫힘이라 기능 중복.
               패널 자체 헤더도 없음(#367에서 LayoutStrip "Mood" 헤더 제거 — rail 탭 라벨과 중복),
               접근성 이름은 region aria-label(eyebrow)이 유지. */}
@@ -159,34 +184,46 @@ export function DesignRail({
   // 동안(마운트 직후 포함)은 건드리지 않는다. 안 그러면 마운트 시 이 effect가 첫 항목을
   // scrollIntoView로 밀고, 그 스크롤이 아래 onRailScroll을 발화시켜 열려있지도 않은 패널을
   // 시작하자마자 스스로 열어버리는 순환이 생긴다.
+  // visibleItems.length도 의존성에 든다(#558 열린 질문 → #564). **오늘은 이걸 빼도 안 깨진다** —
+  // 실측(400×675: criterion 6개에서 '크기'를 연 뒤 undo로 minimal 5개로): 어긋남 0px. appliesTo가
+  // 붙은 항목이 커스텀 하나뿐이고 그게 목록 끝이라, 붙고 빠져도 앞 아이콘들의 좌표가 안 변하고
+  // 줄어든 최대 스크롤은 브라우저가 클램프하기 때문이다. 그래도 의존성에 두는 건 이 effect의
+  // 일이 "활성 아이콘을 중앙에 유지"이고 그 입력에 항목 목록이 들어가서다 — 가운데 항목에
+  // appliesTo가 붙는 순간(#530이 커스텀 항목을 넓히면 그 앞에 새 항목이 설 수 있다) 뒤 항목이
+  // 통째로 밀리고, 그땐 scrollLeft가 그대로라 조용히 어긋난다.
   const railRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (pop === null) return;
     itemRefs.current.get(pop)?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-  }, [pop]);
+  }, [pop, visibleItems.length]);
 
-  // 스와이프/스크롤만으로도 모듈이 전환되게(#502) — 정지 대기 없이 매 스크롤 이벤트에서 중앙에
-  // 가장 가까운 아이콘을 바로 활성화한다. 항목이 몇 개뿐이라 이벤트마다 재계산해도 가볍고,
-  // nearestId가 현재 pop과 같으면 setState가 no-op이라 별도 스로틀은 필요 없다.
-  // ponytail: 네이티브 scroll-snap 관성이 자리를 잡는 동안 이 프로그램적 리센터가 살짝 겹쳐
-  // 보일 수 있음 — 실제로 어색하게 보이면 그때 정지 감지(디바운스/scrollend)로 바꿀 것.
+  // 스와이프/스크롤만으로도 모듈이 전환되게(#502). 예전엔 매 scroll 이벤트에서 바로 활성화했는데,
+  // 그러면 지나가는 아이콘마다 setPop이 돌고 그때마다 위 effect가 리센터를 걸어 스크롤이 스스로
+  // 되먹임하며 흔들렸다(#564) — 이 파일의 ponytail 노트가 예고한 업그레이드 경로대로 **정지 감지**로
+  // 바꾼다. scrollend 이벤트가 아직 전 브라우저에 안 깔려서 타이머 디바운스로 같은 걸 얻는다:
+  // snap-mandatory가 자리를 잡은 뒤 한 번만 판정하므로 관성 구간의 중간 값이 활성화되지 않는다.
+  const settleTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(settleTimer.current), []);
   const onRailScroll = () => {
-    if (Date.now() < clickRecenterUntil.current) return;
-    const rail = railRef.current;
-    if (!rail) return;
-    const railRect = rail.getBoundingClientRect();
-    const center = railRect.left + railRect.width / 2;
-    let nearestId: RailItemId | null = null;
-    let nearestDist = Infinity;
-    itemRefs.current.forEach((el, id) => {
-      const r = el.getBoundingClientRect();
-      const dist = Math.abs(r.left + r.width / 2 - center);
-      if (dist < nearestDist) {
-        nearestDist = dist;
-        nearestId = id;
-      }
-    });
-    if (nearestId) setPop(nearestId);
+    clearTimeout(settleTimer.current);
+    settleTimer.current = setTimeout(() => {
+      if (Date.now() < clickRecenterUntil.current) return;
+      const rail = railRef.current;
+      if (!rail) return;
+      const railRect = rail.getBoundingClientRect();
+      const center = railRect.left + railRect.width / 2;
+      let nearestId: RailItemId | null = null;
+      let nearestDist = Infinity;
+      itemRefs.current.forEach((el, id) => {
+        const r = el.getBoundingClientRect();
+        const dist = Math.abs(r.left + r.width / 2 - center);
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearestId = id;
+        }
+      });
+      if (nearestId) setPop(nearestId);
+    }, 120);
   };
 
   return (
@@ -194,8 +231,17 @@ export function DesignRail({
       <div
         ref={railRef}
         onScroll={onRailScroll}
-        // 50%-28px: 아이콘 원(44px) 절반을 근사한 패딩 — 양끝 항목도 중앙까지 스크롤될 여유를 준다.
-        className="flex items-start gap-6 overflow-x-auto snap-x snap-mandatory px-[calc(50%-28px)] pb-1 [scrollbar-width:thin]"
+        // 50%-22px: 아이콘 원(44px) 절반 = 양끝 항목도 정확히 중앙에 서는 패딩. #502는 28px였는데
+        // 그건 반지름보다 6px 커서 첫·마지막 아이콘이 scrollLeft 0/최대에서 6px 어긋난 채 멈췄다
+        // (400×675 실측: 가운데 4항목 0px, 양끝 ±6px). appliesTo가 마지막 항목을 갈아끼우므로
+        // (커스텀은 criterion에서만) 그 어긋남이 무드마다 자리를 옮겨 다닌다 — #558 열린 질문과
+        // 같은 뿌리라 여기서 같이 맞춘다. 값을 키우면 어긋남이 그만큼 돌아온다.
+        // py-1.5(#565): overflow-x:auto는 overflow-y를 visible로 둘 수 없어(CSS 스펙상 한 축이
+        // visible이 아니면 다른 축도 auto로 계산) 이 컨테이너가 세로 클리핑 박스가 된다. 선택 링
+        // (box-shadow 2px)과 전역 :focus-visible(outline 3px + offset 2px = 5px)이 버튼 밖으로
+        // 나가므로 위아래 6px씩 확보한다 — #385(패널 바닥에서 range thumb가 잘림)와 같은 함정의
+        // 미방어 지점이었다. no-scrollbar(#564): 스와이프 캐러셀이라 스크롤바가 정보를 안 준다.
+        className="flex items-start gap-6 overflow-x-auto snap-x snap-mandatory px-[calc(50%-22px)] py-1.5 no-scrollbar"
       >
         {visibleItems.map((it) => (
           <RailIconButton
@@ -211,7 +257,7 @@ export function DesignRail({
         ))}
       </div>
 
-      <RailExpandPanel open={pop !== null} eyebrow={eyebrow}>
+      <RailExpandPanel open={pop !== null} activeId={active} eyebrow={eyebrow}>
         {activeItem ? activeItem.render(photo, 'mobile', { onRecropPoster }) : null}
       </RailExpandPanel>
     </div>

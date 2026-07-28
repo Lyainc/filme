@@ -38,4 +38,36 @@ describe('TexturePicker', () => {
       expect(img.getAttribute('src')).toBe(posterUrl);
     }
   });
+
+  // #563 — 선택 칩 자동 노출은 **가로만** 움직여야 한다. scrollIntoView는 세로 스크롤 조상까지
+  // 끌어당기는데, 이 스트립이 rail의 고정 높이 슬롯 안에 들어간 뒤로는 그게 곧 "패널이 열리자마자
+  // 위가 잘려 보인다"였다.
+  test('선택 칩 자동 노출은 스트립의 가로 스크롤만 건드린다 (#563)', () => {
+    const nativeRect = Element.prototype.getBoundingClientRect;
+    const nativeScrollIntoView = Element.prototype.scrollIntoView;
+    let scrollIntoViewCalls = 0;
+    Element.prototype.scrollIntoView = () => {
+      scrollIntoViewCalls += 1;
+    };
+    // 스트립은 0~200, 선택 칩(마지막 옵션)은 260~320이라 오른쪽으로 120px 벗어나 있다.
+    Element.prototype.getBoundingClientRect = function (this: Element) {
+      if (this.getAttribute('role') === 'radiogroup') return { left: 0, right: 200, width: 200 } as DOMRect;
+      if (this.getAttribute('role') === 'radio' && this.getAttribute('aria-checked') === 'true')
+        return { left: 260, right: 320, width: 60 } as DOMRect;
+      return nativeRect.call(this);
+    };
+
+    try {
+      const last = MATERIAL_OPTIONS[MATERIAL_OPTIONS.length - 1].value;
+      const { container } = render(
+        <TexturePicker axis="material" options={MATERIAL_OPTIONS} value={last} onChange={() => {}} croppedImageUrl={null} ariaLabel="재질" />
+      );
+      const strip = container.querySelector('[role="radiogroup"]') as HTMLElement;
+      expect(strip.scrollLeft).toBe(120);
+      expect(scrollIntoViewCalls).toBe(0);
+    } finally {
+      Element.prototype.getBoundingClientRect = nativeRect;
+      Element.prototype.scrollIntoView = nativeScrollIntoView;
+    }
+  });
 });

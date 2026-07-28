@@ -5,12 +5,16 @@
  * 중앙에 가장 가까운 아이콘이 활성화되고(패널이 닫혀 있어도 열림), 활성 아이콘은
  * scrollIntoView(inline: 'center')로 화면 중앙에 고정된다.
  *
+ * #564에서 판정 시점이 "매 scroll 이벤트"에서 **스크롤 정지(120ms 디바운스)**로 바뀌었다 —
+ * 그래서 fireEvent.scroll 직후가 아니라 waitFor로 정지 후 상태를 본다. 반대로 "일어나면 안
+ * 되는 것"(클릭 가드)은 waitFor로 표현이 안 되므로 타이머가 확실히 지난 뒤 한 번 단언한다.
+ *
  * happy-dom의 getBoundingClientRect는 항상 {0,0,0,0}이라(floatingToolbar.test.tsx 선례와
  * 동일 제약) Element.prototype을 WeakMap 스텁으로 오버라이드해 rail 컨테이너·각 아이콘의
  * 위치를 모킹한다.
  */
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, waitFor, act } from '@testing-library/react';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { DesignRail } from '@/components/v2/DesignRail';
 
@@ -63,7 +67,7 @@ afterEach(() => {
 });
 
 describe('DesignRail 캐러셀 전환 (#502)', () => {
-  test('패널이 닫힌 상태에서도 스크롤만으로 중앙 아이콘이 열린다', () => {
+  test('패널이 닫힌 상태에서도 스크롤만으로 중앙 아이콘이 열린다', async () => {
     render(<RailHarness />);
     const rail = screen.getByRole('button', { name: '무드' }).parentElement as HTMLElement;
 
@@ -74,26 +78,32 @@ describe('DesignRail 캐러셀 전환 (#502)', () => {
     centerRailOn(rail, 'color');
     fireEvent.scroll(rail);
 
-    expect(screen.getByRole('button', { name: '컬러' }).getAttribute('aria-expanded')).toBe('true');
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: '컬러' }).getAttribute('aria-expanded')).toBe('true')
+    );
     expect(screen.getByRole('button', { name: '무드' }).getAttribute('aria-expanded')).toBe('false');
   });
 
-  test('스크롤로 다른 아이콘이 중앙에 오면 활성 모듈이 전환된다(배타 유지)', () => {
+  test('스크롤로 다른 아이콘이 중앙에 오면 활성 모듈이 전환된다(배타 유지)', async () => {
     render(<RailHarness />);
     const rail = screen.getByRole('button', { name: '무드' }).parentElement as HTMLElement;
 
     centerRailOn(rail, 'texture');
     fireEvent.scroll(rail);
-    expect(screen.getByRole('button', { name: '후보정' }).getAttribute('aria-expanded')).toBe('true');
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: '후보정' }).getAttribute('aria-expanded')).toBe('true')
+    );
 
     // 스와이프를 이어가 '투명도'가 중앙에 오면 '후보정'은 닫히고 '투명도'만 열린다.
     centerRailOn(rail, 'opacity');
     fireEvent.scroll(rail);
-    expect(screen.getByRole('button', { name: '투명도' }).getAttribute('aria-expanded')).toBe('true');
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: '투명도' }).getAttribute('aria-expanded')).toBe('true')
+    );
     expect(screen.getByRole('button', { name: '후보정' }).getAttribute('aria-expanded')).toBe('false');
   });
 
-  test('활성 모듈이 바뀌면 그 아이콘을 화면 중앙으로 당긴다(scrollIntoView center)', () => {
+  test('활성 모듈이 바뀌면 그 아이콘을 화면 중앙으로 당긴다(scrollIntoView center)', async () => {
     const calls: Array<ScrollIntoViewOptions | boolean | undefined> = [];
     const originalScrollIntoView = Element.prototype.scrollIntoView;
     Element.prototype.scrollIntoView = function (this: Element, opts?: ScrollIntoViewOptions | boolean) {
@@ -107,7 +117,9 @@ describe('DesignRail 캐러셀 전환 (#502)', () => {
       centerRailOn(rail, 'texture');
       fireEvent.scroll(rail);
 
-      expect(screen.getByRole('button', { name: '후보정' }).getAttribute('aria-expanded')).toBe('true');
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: '후보정' }).getAttribute('aria-expanded')).toBe('true')
+      );
       expect(calls.length).toBeGreaterThan(0);
       expect(calls[0]).toMatchObject({ inline: 'center' });
     } finally {
@@ -115,7 +127,7 @@ describe('DesignRail 캐러셀 전환 (#502)', () => {
     }
   });
 
-  test('클릭 직후의 리센터 스크롤은 목적지를 가로채지 못한다 (claude-review P1)', () => {
+  test('클릭 직후의 리센터 스크롤은 목적지를 가로채지 못한다 (claude-review P1)', async () => {
     render(<RailHarness />);
     const rail = screen.getByRole('button', { name: '무드' }).parentElement as HTMLElement;
 
@@ -127,6 +139,10 @@ describe('DesignRail 캐러셀 전환 (#502)', () => {
     // 활성 모듈이 '무드'로 리타깃되고, 스크롤이 멈추면 그대로 고정된다.
     centerRailOn(rail, 'mood');
     fireEvent.scroll(rail);
+    // 디바운스(120ms)가 지나도 가드가 살아있어 리타깃이 일어나지 않는 것을 본다.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 250));
+    });
 
     expect(screen.getByRole('button', { name: '크기' }).getAttribute('aria-expanded')).toBe('true');
     expect(screen.getByRole('button', { name: '무드' }).getAttribute('aria-expanded')).toBe('false');

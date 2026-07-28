@@ -176,6 +176,17 @@
 }
 
 @layer utilities {
+  /* 스와이프 캐러셀의 스크롤바 숨김(#564) — 가로 칩 스트립은 사용자가 직접 밀어 넘기는 UI라
+     스크롤바가 정보를 주지 않는데, 자리는 먹고(플랫폼에 따라) dock 하단에 밝은 띠로 보인다.
+     레일 아이콘 행·무드 스트립·텍스처 칩·필드 에디터 스탬프 행이 전부 같은 처방을 쓰므로
+     인라인 [scrollbar-width:thin] 네 벌 대신 여기 하나만 둔다. */
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
   .text-mono {
     font-family: theme('fontFamily.mono');
     font-feature-settings: "ss01", "zero", "cv11";

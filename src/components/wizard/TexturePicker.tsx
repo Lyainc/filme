@@ -68,9 +68,20 @@ const TexturePreview = memo(function TexturePreview({
 function TexturePicker({ axis, options, value, onChange, croppedImageUrl, ariaLabel }: TexturePickerProps) {
   const previewSrc = croppedImageUrl || SAMPLE_POSTER_SRC;
   // 기본값이 바뀌어 선택 칩이 뷰포트 밖에서 시작해도 항상 보이게(#190 nit, PR #189 리뷰).
+  // **가로만 움직인다**(#563): 예전엔 scrollIntoView({block:'nearest'})였는데, 그건 세로 스크롤
+  // 조상까지 끌어당긴다. rail 상세 패널이 고정 높이 슬롯(= 세로 스크롤 컨테이너)이 된 뒤로는
+  // 후보정 탭을 열자마자 패널이 16px 스크롤된 채 떠서 축 세그먼트 위가 잘려 보였다(400×675 실측).
+  // 이 effect의 일은 처음부터 가로 캐러셀 하나였으니 축을 그쪽으로 좁힌다 — 판정은 inline:'nearest'와
+  // 같다(왼쪽으로 벗어나면 왼쪽 끝에, 오른쪽으로 벗어나면 오른쪽 끝에 맞추고, 보이면 안 움직인다).
   const activeRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    activeRef.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    const chip = activeRef.current;
+    const strip = chip?.parentElement;
+    if (!chip || !strip) return;
+    const c = chip.getBoundingClientRect();
+    const s = strip.getBoundingClientRect();
+    if (c.left < s.left) strip.scrollLeft += c.left - s.left;
+    else if (c.right > s.right) strip.scrollLeft += c.right - s.right;
   }, [value]);
 
   return (
@@ -78,7 +89,7 @@ function TexturePicker({ axis, options, value, onChange, croppedImageUrl, ariaLa
       {/* ponytail: 가로 스크롤 스트립 = 캐러셀(#180 (6)). 작은 스와치는 한 장씩 넘기는
           LayoutPicker식 캐러셀보다 한 줄 스크롤이 비교·선택에 낫고 세로도 절약된다(2줄 wrap→1줄). */}
       <div
-        className="flex gap-2 overflow-x-auto pb-1 snap-x [scrollbar-width:thin]"
+        className="flex gap-2 overflow-x-auto pb-1 snap-x no-scrollbar"
         role="radiogroup"
         aria-label={ariaLabel}
       >

@@ -291,7 +291,7 @@ function FormatChips({
       </div>
       {/* 4번째 칩(en-long)이 좁은 폭에서 2줄로 감기던 문제(#390) — 가로 스크롤 레일로 전환.
           같은 레포 기존 패턴(LayoutPicker.tsx의 snap-start 레일)을 그대로 재사용. */}
-      <div className="flex gap-2 overflow-x-auto pb-1 snap-x [scrollbar-width:thin]" role="radiogroup" aria-label={label}>
+      <div className="flex gap-2 overflow-x-auto pb-1 snap-x no-scrollbar" role="radiogroup" aria-label={label}>
         {DATE_FORMAT_TOKENS.map((opt) => {
           const active = token === opt.value;
           return (
