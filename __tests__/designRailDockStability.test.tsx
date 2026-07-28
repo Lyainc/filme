@@ -63,6 +63,20 @@ describe('DesignRail dock 안정성 (#563/#564/#565)', () => {
     expect(row.className).toContain('px-[calc(50%-22px)]');
   });
 
+  test('#563 — 항목이 갈리면 슬롯 스크롤을 위로 되돌린다', async () => {
+    // 고정 슬롯은 같은 DOM 노드에 콘텐츠만 갈아끼워서 scrollTop이 그대로 넘어간다 — 컬러를
+    // 바닥까지 내리고 후보정으로 옮기면 새 항목이 중간부터 보였다. 짧은 항목은 브라우저가 0으로
+    // 클램프해 저절로 맞지만 넘치는 항목끼리는 안 맞는다.
+    const user = userEvent.setup();
+    render(<RailHarness />);
+    const panel = document.getElementById('design-rail-panel')!;
+
+    await user.click(screen.getByRole('button', { name: '컬러' }));
+    panel.scrollTop = 40;
+    await user.click(screen.getByRole('button', { name: '후보정' }));
+    expect(panel.scrollTop).toBe(0);
+  });
+
   test('#558 열린 질문 — appliesTo로 아이콘 수가 바뀌면 활성 아이콘을 다시 중앙으로 당긴다', async () => {
     // criterion에서만 존재하는 항목을 하나 더 얹어, 무드 전환이 아이콘 수를 5→6으로 바꾸게 한다.
     const items: RailItem[] = [
