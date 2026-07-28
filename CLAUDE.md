@@ -3,29 +3,12 @@
 ## 🎬 Project: FILME
 A Next.js web application for generating high-quality CGV Photoplay premium tickets.
 
-### 📌 Core Architecture & Tech Stack
-- **Framework**: Next.js 16 (Pages Router), React 19, TypeScript
-- **Styling**: Tailwind CSS v3
-- **Ticket Rendering**: DOM(JSX/CSS) + `html-to-image` 캡처. `react-image-crop`로 포스터 매뉴얼 크롭(크롭박스 리사이즈 지원, #421)
-- **OCR / AI**: 티켓 스크린샷 → Gemini 3.1 Flash Lite vision OCR. `ai` SDK v6 + `@ai-sdk/google`(Google AI Studio 직결), Upstash rate limit, Zod 스키마
-- **State Management**: React `useState` / Custom Hooks
-- **Package Manager**: Bun
-
 ### 📂 Key Documentation References
 Before making architectural changes or implementing new features, consult:
 - **`README.md`**: Project setup, running instructions, and tech stack overview.
 - **`docs/KOBIS_API.md`**: Instructions and examples for using the KOBIS movie search API.
 - Ticket design specs/layout coords/mood catalog live in this file's **"Core Mechanisms (6-Mood Ticket Rendering)"** section + `src/utils/layouts.ts` — not a separate doc.
 - **`docs/PRD.md`**, **`docs/DESIGN_SYSTEM.md`**: deprecated (2026-07-19) — pre-#281/#449 snapshots that no longer match current architecture/mood count. Kept for history only; do not treat as current spec.
-
-### 💻 Development Workflow & Commands
-```bash
-bun run dev       # Start development server
-bun run build     # Build production application
-bun run start     # Run production server (after build)
-bun test          # Unit + interaction tests
-bun run typecheck # tsc --noEmit
-```
 
 ### 🧪 Testing
 - **Runner**: `bun test`. Tests live in `__tests__/` (not co-located).
@@ -51,10 +34,6 @@ bun run typecheck # tsc --noEmit
 - **Iterative Delivery**: Prioritize working code over perfect architecture. Implement, verify, then refactor.
 - **No Over-abstraction**: Keep components direct and simple. Don't add complex design patterns (like Strategy/Factories) unless there is an immediate practical need.
 - **State Management**: Stick to `useState` unless the state logic becomes overwhelmingly complex.
-- **Naming Conventions**:
-  - Components: `PascalCase` (e.g., `ImageUploader.tsx`)
-  - Hooks: `camelCase` (e.g., `usePhototicket.ts`)
-  - Utils: `camelCase` (e.g., `captureToImage.ts`, `layouts.ts`)
 - **Types**: Define types locally in `src/types/index.ts` if shared. Use implicit inference where appropriate.
 - **Inline style — no `font` shorthand**: Always split into `fontWeight` / `fontStyle` / `fontSize` / `fontFamily`. CSS `font` shorthand resets `line-height` to `normal`, which collides with a sibling `lineHeight` prop and triggers React's "Removing font lineHeight" warning at every rerender.
 
@@ -67,8 +46,6 @@ bun run typecheck # tsc --noEmit
   5. 무드 안에 별도 삽입되는 프레임/도판/컬럼도 0.667(가로 슬롯이면 그 역수 1.5). 슬롯 **박스**가 아니라 그 안에 서는 **포스터 프레임**이 판정 대상이다 — contain이면 프레임이 자동으로 0.667이라, 슬롯 박스가 0.667이 아니어도 룰 5는 만족한다. 다만 그때 남는 여백은 전부 blur라, 슬롯 박스 자체를 0.667/1.5로 맞추면 풀블리드가 된다: Stub 밴드가 #527에서 960×900(1.067, 좌우 blur 37.5%) → **960×640(3:2)**으로 이동한 근거다(밴드 폭이 캔버스 960으로 잠겨 있어 3:2를 지키는 최대 크기가 유일하게 그것). 세로 크롭이 넘어오면 프레임 427×640 + 좌우 blur 55.6%.
 - **포스터 fit 기본은 contain**(#440 → #525 → #527) — `posterFitProps`가 6무드 공통으로 `fit: 'contain'` + blur 레터박스 배경을 준다. `components.posterFit`의 **전 무드 'cover' opt-in은 #525에서 폐지**됐다: 사용자가 0.667로 잡은 프레임을 슬롯 비율에 맞춰 다시 잘라내 크롭 화면과 결과가 어긋났고, 그 잘림이 룰 5 위반의 유일한 출처였다. 단 **#527이 minimal 한정으로 되살렸다** — DESIGN '크기' 섹션의 "꽉 채우기" 토글이고, 노출 무드는 `POSTER_FILL_MOODS`(`src/constants/fields.ts`)가 단일 소스로 쥔다(토글 노출과 무드의 `posterFit` 소비가 이 표에 맞춰 같이 움직여야 한다 — 한쪽만 늘리면 죽은 컨트롤이나 조용한 잘림이 남는다). 목록이 minimal 하나인 근거는 그 상수 주석의 실측이다: minimal(0.626 캔버스)만 cover가 가로 6.13%를 깎고, 나머지 무드는 슬롯이 이미 0.667이라 cover=contain이라 옵션에 의미가 없다. 크롭 모달의 "원본 비율 보존" 토글은 이제 **크롭 프레임 비율만** 정한다(ON=이미지 자연비 + `maxSide` 출력, OFF=0.667 표준 + 960×1440). **예외**: v5(#524) 이후 35mm·35mm Wide·Criterion은 풀블리드 슬롯이 아니라 고정 비율 컷/도판이라 `posterFitProps` 자체를 안 태우고 `Poster`를 직접 부른다(옵션이 고정 비율 컷엔 의미가 없고 `frameInsetY`를 실으면 레터박스 0이 깨진다). 그중 35mm Wide의 포스터 컷만 **`fit="cover"`**다 — 컷이 포스터 표준의 가로 판(3:2)이라 표준 세로 크롭(2:3)과 방향이 어긋났고, 시안이 cover를 골라(c1 시안 충실) 세로 포스터의 위아래가 잘렸다. #529가 크롭 쪽에서 해소했다(아래 항목). 35mm·Criterion은 컷/도판이 각각 세로·정사각에 가까워 contain으로도 레터박스 0이 선다.
 - **크롭 프리셋 방향은 캔버스가 아니라 포스터 슬롯을 따른다**(#529) — 판정 소스는 `LayoutSpec.posterOrientation`(`src/utils/layouts.ts`, 필수 필드라 무드 추가 시 컴파일러가 강제)이고, 캔버스 축인 `orientation`과 헷갈리면 안 되는 이유는 그 필드 주석에 있다. 가로면 프리셋이 `POSTER_LANDSCAPE_RATIO`(3:2), 출력이 `posterOutputSize`로 1440×960이 된다(결정 3). 실측(브라우저, 포스터 프레임 rect): 35mm Wide는 세로 크롭에서 세로 −125%(포스터 높이 55.6% 손실) → 가로 크롭에서 −0.05%, 반대로 editorial에 가로 크롭을 넣으면 레터박스 0이 55.6%로 깨진다. 자동 프리셋이지 잠금이 아니라 프레임은 그대로 조정되고, 무드를 바꿔도 확정된 크롭은 유지된다 — 무드별 재크롭(`posterOriginal` 기반 구조 변경)은 #529 결정 2로 **범위 밖**. 출력 해상도는 크롭 방향에서 읽으므로(표준 경로 크롭은 항상 프리셋 비율로 잠겨 들어온다) 프리셋 판정은 `ImageCropModal` 한 곳에만 산다. **가로 슬롯은 35mm Wide 컷(926×617)과 Stub 밴드(960×640, #527) 둘**이고, 캔버스 가로 2종(editorial·35mm Wide)과 목록이 겹치지 않는 게 두 축이 독립이라는 증거다 — Stub은 캔버스가 세로인데 슬롯이 가로, editorial은 그 반대.
-- **Layout catalog**: `src/utils/layouts.ts` — `LAYOUTS` defines 6 mood ids (`minimal`/`criterion`/`35mm`/`editorial`/`stub`/`35mm-landscape`) with dimensions and orientation. `LayoutId` union lives in `src/types/index.ts`.
-- **Mood components**: `src/components/moods/Mood{Minimal,Criterion,35mm,Editorial,Stub,35mmLandscape}.tsx` — each mood is a self-contained DOM tree at the layout's natural pixel size (4 portrait 960×1534, 2 landscape 1534×960: Editorial and 35mm Wide).
 - **Shared primitives**: `src/components/moods/_shared.tsx` — `Barcode` (memoized), `ChainStamp`, `FormatStamp`, `Poster`, 35mm 계열 필름 프리미티브(`FilmStripBand`·`FilmRail`·`FilmCreditCut`·`CutFrameLabel`·`FilmGrain`·`FilmCutEdges`), plus helpers (`fitFontSizeToWidth`, `isInkDark`, `truncateActors`) and font tokens (`FONT_MONO`, `FONT_SANS`, `FONT_KR`). **Add new shared helpers here**, not inline in moods.
 - **Renderer**: `src/components/TicketRenderer.tsx` — dispatches to active mood, uses `ResizeObserver` to scale the inner natural-pixel tree to fit the preview, and forwards the inner ref so the export pipeline captures the unscaled DOM.
 - **Picker**: `src/components/LayoutPicker.tsx` — typed `Record<LayoutId, ...>` thumbnail registry; renaming a layout id breaks the lookup at compile time.
@@ -78,18 +55,7 @@ bun run typecheck # tsc --noEmit
 - **Dashed Placeholders**: If a user toggles chain/format ON but doesn't upload a logo, a dashed placeholder appears in the preview. This placeholder is explicitly ignored during `html-to-image` capture via the `data-hide-on-export` attribute.
 
 ### 🔍 OCR Pipeline (티켓 스크린샷 자동 인식)
-> Tesseract.js 클라이언트 OCR → GPT-4o mini 서버 vision → **Gemini 3.1 Flash Lite 직결**로 두 번 교체됐다. 진입점은 `OcrUploadCard`.
-- **Flow**: 스크린샷 → 클라 전처리 → base64 JSON → `POST /api/ocr` → Gemini 3.1 Flash Lite vision → 채워진 필드만 반환.
-- **UX**: Bounding-box review is deprecated (A1~A3 unimplemented). OCR uses 'optimistic injection + instant revert' (fields are injected directly into the form, with an immediate undo toast).
-- **Client preprocess**: `src/utils/ocrPreprocess.ts` — `preprocessForOcr(file)`: width 512px 캡 → JPEG 0.92 재인코딩. SSR-safe(`window` 없으면 원본). 모든 실패 경로에서 throw 없이 원본 file fallback. **하단 18% 크롭은 #404에서 제거** — 실물 영수증형 티켓(가로 사진, EXIF orientation으로 세로 표시)에서 바코드·예매번호가 몰린 하단을 잘라먹어 순손해였다(스크린샷 STRICT 정확도는 크롭 유무 무관). 512 캡은 유지 — Gemini 토큰엔 영향 없지만 업로드 페이로드를 최대 17배 줄이고(약전계 네트워크 100s→4s), 영수증형 사진 예매번호 인식의 하한선(384부터 소실)이라 더 못 내린다.
-- **Client entry**: `src/utils/ocr.ts` — `runOcr(file)`가 전처리 → `/api/ocr` → `Partial<MovieInfo> & { chain? }`. **절대 throw 안 함** — 실패는 빈 객체로 흡수. 반환 필드 분기: `title`은 KOBIS 검색어로, 나머지는 폼에 직접, `chain`/`format`은 **MovieInfo가 아니라 TicketComponents로** 흘러 스탬프 라벨·노출을 자동 활성화(`{chain,format}Visible: true` + `{chain,format}Label`, #141·#348). 이 라벨은 export에 들어가므로 undo가 `prevComponents` 스냅샷으로 원자 복원한다(#141 리뷰 P1) — 새 스탬프 필드를 추가하면 그 스냅샷도 같이 넓힐 것.
-- **API route**: `src/pages/api/ocr.ts` — base64 JSON 수신(multipart 아님, `bodyParser.sizeLimit: '15mb'`). 가드 순서 method → 입력(MIME 화이트리스트·10MB) → rate limit → 인증 → 모델. **절대 throw 안 함**, 모든 에러를 status + `{ error }`로. Zod 스키마는 전 필드 `.nullable()`(`.optional()` 아님 — structured output의 `NoObjectGeneratedError` 회피). `chain`은 enum(에셋 슬러그와 1:1이라 4종으로 닫힘), **`format`은 자유 문자열**(#348 — 포맷·특별관 브랜드가 계속 늘어나고 목적지 `formatLabel`이 이미 자유 텍스트라 enum으로 닫으면 브랜드마다 코드를 고쳐야 한다. 인정 토큰은 스키마가 아니라 **프롬프트**가 닫는다 — 브랜드 추가는 프롬프트 한 줄).
-- **System prompt**: 지시문 영어 + 예시 한국어. 규칙이 전부 실측에서 나왔으니 **가볍게 고치지 말 것**(#125 A/B 15장 기준 STRICT 100%) — theater/screen 분리(CGV 앱은 지점명 줄 바로 아래 상영관 줄이 붙어서 "전도연관"을 지점명으로 오인함), 지점명 축약 금지, **로고 없는 CGV 티켓의 chain 판별**(CGV 앱 스크린샷엔 로고가 없어서 "판매번호" 라벨 + `연도-월일-4자리-4자리` 형식이 유일한 단서), 심야 상영 `25:00` 표기 보존. **format 규칙도 같은 15장 실측**(#348) — 값은 상영관 줄 안에 섞여 찍히고(`IMAX관`·`MEGA | LED 3관`·`전도연관[CGV아트하우스](Laser)`), CGV 배지는 IMAX/4DX일 때만 떠서 배지만 보면 나머지를 놓친다. 인정 어휘는 **닫힌 토큰 목록**(영사·음향 포맷 + 특별관 브랜드: IMAX·4DX·SCREENX·DOLBY·MEGA LED·아트하우스·르 리클라이너·광음시네마·템퍼시네마·샤롯데·부티크 등) — 예전 `formats_transparent/` 로고 에셋과 같은 어휘다. 자유 문자열로 열면 상영관 줄의 아무 토막이나 들어와 STRICT 채점이 성립하지 않는다. **LASER는 어휘에 없다**(옛 에셋에도 없었고 CGV 거의 모든 관에 붙어 정보량이 없음). 좌석등급(컴포트석)·이름관(전도연관)·목록 밖 브랜드(디즈니시네마·아르떼)도 제외 — 사용자가 직접 입력한다.
-- **AI provider**: **Google AI Studio 직결** — `@ai-sdk/google`의 `google('gemini-3.1-flash-lite')`, 인증 env `GOOGLE_GENERATIVE_AI_API_KEY` 하나(없으면 500). ⚠️ **`@ai-sdk/google`는 `3.0.91`로 고정** — 최신 4.x는 provider spec v4용이라 `ai@6`(spec v2/v3)와 `AI_UnsupportedModelVersionError`로 충돌한다. Vercel AI Gateway는 **더 이상 안 쓴다**(free tier의 모델별 요청 한도가 실사용에서 자주 걸렸고, 무료 크레딧 잔액과 무관하게 paid credits 구매 여부로 게이팅됨 — #125·#299). 대가로 Gateway의 provider fallback·통합 비용 관측·OIDC 무키 인증은 포기. `imageDetail`은 OpenAI 전용이라 제거됨. ⚠️ **`@opentelemetry/api`는 코드에서 직접 import 안 해도 `dependencies`에 유지** — `ai`@6 + Next 16 Turbopack에서 누락 시 API route 런타임 500.
-- **Rate limit**: `src/utils/ratelimit.ts` — Upstash Redis sliding window. OCR은 **per-IP(10/시간·20/일) + shared(키 전체 12/분·450/일)** 4겹이고, 하나라도 초과하면 429 + `Retry-After`. shared 윈도우는 IP 대신 고정 키 `'global'`로 세는 게 핵심 — **Google free tier 한도가 API 키(프로젝트) 단위(gemini-3.1-flash-lite: 15 RPM·500 RPD, 2026-07-13 실측)라 IP별 카운터만으론 키 소진을 원리적으로 못 막는다**(#299). 체크 순서는 per-IP 먼저 → shared 나중(IP에서 막힐 요청은 벤더를 안 부르므로 총량을 갉으면 안 된다). **env(`UPSTASH_REDIS_REST_URL`/`_TOKEN`) 미설정 시 graceful skip** — 로컬 dev가 막히지 않음. Google 쪽 429는 **재시도하지 않는다** — 벤더 한도가 키 전체 단위라 재시도가 소진을 가속시킨다. Tier 1(4K RPM·150K RPD)로 올릴 땐 shared 수치도 같이 올릴 것.
-- **Env**: `GOOGLE_GENERATIVE_AI_API_KEY`(OCR 필수) · `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`(선택) · `KOBIS_API_KEY`(title→KOBIS 조회).
-- **A/B 하네스**: `scripts/ab-ocr-model.ts` + `scripts/ab-ocr-groundtruth.json`(실 티켓 15장 정답지). `AB_MODELS`로 모델, `AB_PROMPT=en`으로 프롬프트 판본, `AB_OUT`으로 결과 파일을 고른다. 결과는 `(파일, 모델)` 단위로 캐시돼 재개 가능 — **프롬프트를 고쳤으면 반드시 새 `AB_OUT`으로** 돌릴 것(옛 프롬프트 결과와 섞이면 채점이 오염된다).
+- 규칙이 전부 실측(#125·#348, 실 티켓 15장 A/B)에서 나왔으니 **가볍게 고치지 말 것**. OCR 관련 파일(`src/utils/ocr.ts`·`ocrPreprocess.ts`·`ratelimit.ts`, `src/pages/api/ocr.ts`, `scripts/ab-ocr-*`)을 읽거나 고치기 전에 **`.claude/skills/ocr-pipeline/SKILL.md`를 읽을 것** — 프롬프트 규칙, Zod 전 필드 `.nullable()` 제약, `@ai-sdk/google` 3.0.91 고정, rate limit 4겹(per-IP + 키 전체 shared), A/B 하네스 사용법이 거기 있다.
 
 ### 🚧 Current Project Status
-- **Completed**: MVP + KOBIS API + Manual Cropping + TCG Premium Textures + Editorial Cinema redesign + 6-Mood layout system(#281: Stub·35mm Wide 등 마스터 시안 재동기화) + GPT-4o mini OCR(Tesseract 클라이언트에서 전환) + 단일 에디터 재편(#86: 2-step Phase 폐기 → 단일 에디터 셸, `useScreen` 훅) + 모바일 편집 셸 dead-code 정리(#283: 도달 불가 OCR·폼·rail 경로 제거, Poster 드롭존만 `MobileEditorShell`에 인라인) + Serial/Collection 입력·EditionMark 제거(#84) + K-means 색 추출 Web Worker 오프로드(#80: `src/utils/colorExtraction.worker.ts`) + 상호작용 테스트 인프라(#163: happy-dom + testing-library, OCR undo 회귀 테스트) + 업로드 영역 포스터 주연 재설계(#142: 드롭존 메인 + OCR 보조 액션) + 폼 입력 자유화(#316/#317: placeholder 제거, 극장/포맷 자유입력) + 명시적 임시저장/초기화 전환(#310/#344) + 제목 폭 맞춤 폰트 자동 축소(#318/#345) + 공유 액션 단일화(#325: 저장/링크/공유 3종) + disclaimer footer(#327).
 - **Next Up**: 확정 로드맵 없음 (이전 TMDB·Supabase 계획은 폐기).
