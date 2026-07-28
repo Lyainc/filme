@@ -136,13 +136,14 @@ describe('플로팅 툴바 (#356)', () => {
     expect(parseFloat(m![2])).toBeLessThanOrEqual(window.innerHeight - 8);
   });
 
-  test('배치 라디오(#387, 헤더 편집 메뉴로 이전)가 방향을 바꾸고 별도 키로 영속, 재마운트에 복원된다', async () => {
+  test('배치 라디오(#387→#574, 헤더 편집 메뉴 → 고급 설정 모달로 이전)가 방향을 바꾸고 별도 키로 영속, 재마운트에 복원된다', async () => {
     const user = userSetup();
     const { unmount } = render(<Harness />);
     const toolbar = await seedPoster(user);
     expect(toolbar.getAttribute('aria-orientation')).toBe('vertical'); // 기본 세로·고정
 
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    await user.click(screen.getByRole('button', { name: '고급 설정' }));
     expect(screen.getByRole('radiogroup', { name: '툴바 배치' })).toBeTruthy();
 
     await user.click(screen.getByRole('radio', { name: '가로형 · 고정식' }));
@@ -163,10 +164,12 @@ describe('플로팅 툴바 (#356)', () => {
     expect(toolbar2.getAttribute('aria-orientation')).toBe('horizontal');
   });
 
-  test('포스터 업로드 전엔 배치 섹션이 헤더 메뉴에 없다(claude-review PR #405 P1 — 마운트 전 스냅 no-op 방지)', async () => {
+  test('포스터 업로드 전엔 고급 설정 진입점 자체가 헤더 메뉴에 없다(claude-review PR #405 P1 — 마운트 전 스냅 no-op 방지, #574로 승계)', async () => {
     const user = userSetup();
     render(<Harness />);
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    // 모달 진입점을 막는 게 게이팅의 전부다 — 열려도 스냅이 조용히 no-op일 자리를 애초에 안 만든다.
+    expect(screen.queryByRole('button', { name: '고급 설정' })).toBeNull();
     expect(screen.queryByRole('radiogroup', { name: '툴바 배치' })).toBeNull();
   });
 
@@ -176,12 +179,16 @@ describe('플로팅 툴바 (#356)', () => {
     await seedPoster(user);
 
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    await user.click(screen.getByRole('button', { name: '고급 설정' }));
     await user.click(screen.getByRole('radio', { name: '세로형 · 이동식' }));
+    // 툴바 숨기기는 모달 뒤에 깔린 툴바가 아니라 모달을 닫고 눌러야 한다(#574 — 모달이 풀페이지).
+    await user.click(screen.getByRole('button', { name: '닫기' }));
     await user.click(screen.getByRole('button', { name: '툴바 숨기기' }));
     expect(screen.queryByRole('toolbar', { name: '편집 도구' })).toBeNull();
-    // "편집 메뉴"는 위 라디오 클릭으로 이미 열린 채 유지되므로(applyToolbarMode는 메뉴를 안 닫음)
-    // 다시 열면 오히려 토글로 닫힌다 — 스냅 버튼은 그대로 화면에 남아있다.
 
+    // 숨김 상태에서 다시 모달을 열어 스냅한다 — 툴바가 hidden 분기로 렌더돼도 ref가 살아있어야 한다.
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    await user.click(screen.getByRole('button', { name: '고급 설정' }));
     await user.click(screen.getByRole('button', { name: '왼쪽 가장자리로 이동' }));
 
     // hidden 분기에 ref가 안 붙어 있었다면 toolbarRef.current가 null이라 스냅이 no-op되고
@@ -228,8 +235,10 @@ describe('이동식 툴바 좌표계는 뷰포트가 아니라 폰 프레임 기
     const x = () => parseFloat(toolbar.style.transform.match(/translate\((-?[\d.]+)px, (-?[\d.]+)px\)/)![1]);
     expect(x()).toBe(MAX_X); // 뷰포트로 클램프했다면 1388이 그대로 통과한다
 
-    // 드래그 없는 대체 경로(WCAG 2.2 SC 2.5.7)도 같은 좌표계여야 한다.
+    // 드래그 없는 대체 경로(WCAG 2.2 SC 2.5.7)도 같은 좌표계여야 한다. 스냅 버튼은 #574에서
+    // 메뉴 직속이 아니라 '고급 설정' 모달 안으로 이사했다.
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    await user.click(screen.getByRole('button', { name: '고급 설정' }));
     await user.click(screen.getByRole('button', { name: '오른쪽 가장자리로 이동' }));
     await advance(310);
     expect(JSON.parse(window.localStorage.getItem(TB_KEY)!).x).toBe(MAX_X);

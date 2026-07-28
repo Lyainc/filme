@@ -270,7 +270,8 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     expect(handle.className).toMatch(/(^|\s)text-fg(\s|$)/);
 
     // 선택된 배치 라디오도 --fg로 — 다크에서 --accent는 불투명 표면 위에서도 3.97:1이다.
-    await user.click(screen.getByRole('button', { name: '툴바 설정' }));
+    // 배치 라디오는 #574에서 고급 설정 모달로 이사했으므로 거기서 확인한다.
+    await user.click(screen.getByRole('button', { name: '고급 설정' }));
     const on = within(screen.getByRole('radiogroup', { name: '툴바 배치' }))
       .getByRole('radio', { name: '세로형 · 고정식' });
     expect(on.getAttribute('aria-checked')).toBe('true');
@@ -278,32 +279,104 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     expect(on.className).not.toContain('text-accent');
   });
 
-  test('툴바 설정(#447): 기본 접힘 → 헤더 클릭으로 펼침(라디오 4종) → 메뉴 재오픈 시 항상 접힘 리셋', async () => {
+  test('고급 설정 모달(#574): 햄버거의 진입 행이 메뉴를 닫으며 모달을 열고, 배치 라디오 4종·스냅 경로가 그 안에 산다', async () => {
     const user = userEvent.setup();
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
 
-    const toggle = screen.getByRole('button', { name: '툴바 설정' });
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    // 접힘 상태의 실제 상호작용 차단은 grid-rows(#447, FieldAccordion과 동일 패턴)가 아니라
-    // inert 속성이 담당 — happy-dom은 inert를 접근성 트리에 반영하지 않으므로(getByRole만으론
-    // 관측 불가) 속성 자체를 직접 확인한다.
-    const panelId = toggle.getAttribute('aria-controls')!;
-    const inertWrapper = () => document.getElementById(panelId)!.parentElement!;
-    expect(inertWrapper().hasAttribute('inert')).toBe(true);
+    // 메뉴 안엔 더 이상 접이식 '툴바 설정' 섹션이 없다(#447 → #574로 이사).
+    expect(screen.queryByRole('button', { name: '툴바 설정' })).toBeNull();
+    expect(screen.queryByRole('radiogroup', { name: '툴바 배치' })).toBeNull();
+    // 남는 카드는 셋뿐이다(토글·포스터 액션·문서 액션) — 툴바 설정 카드가 빠진 자리가
+    // 네 번째 카드로 되살아나지 않게 개수를 못박는다(#574).
+    const panel = screen.getByRole('menu', { name: '편집 메뉴' });
+    expect(panel.querySelectorAll(':scope > div.bg-surface')).toHaveLength(3);
+
+    await user.click(screen.getByRole('button', { name: '고급 설정' }));
+    // 메뉴는 닫히고 모달만 남는다 — 중첩이 없어야 Escape 한 번이 둘을 같이 닫지 않는다.
+    expect(screen.queryByRole('menu', { name: '편집 메뉴' })).toBeNull();
+    const dialog = screen.getByRole('dialog', { name: '고급 설정' });
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
 
     const group = within(screen.getByRole('radiogroup', { name: '툴바 배치' }));
     expect(group.getAllByRole('radio')).toHaveLength(4);
-    expect(group.getByRole('radio', { name: '세로형 · 고정식' })).toBeTruthy();
-
-    await user.click(toggle);
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    expect(inertWrapper().hasAttribute('inert')).toBe(false);
-
-    // 메뉴를 닫았다 다시 열면 항상 접힘으로 리셋된다(#447).
-    await user.click(screen.getByRole('button', { name: '편집 메뉴' })); // 닫기
-    await user.click(screen.getByRole('button', { name: '편집 메뉴' })); // 재오픈
-    expect(screen.getByRole('button', { name: '툴바 설정' }).getAttribute('aria-expanded')).toBe('false');
+    // 고정식 기본값에선 스냅 버튼이 없고, 이동식으로 바꾸면 좌/우 대체 경로가 뜬다(SC 2.5.7).
+    expect(screen.queryByRole('button', { name: '왼쪽 가장자리로 이동' })).toBeNull();
+    await user.click(group.getByRole('radio', { name: '세로형 · 이동식' }));
+    expect(screen.getByRole('button', { name: '왼쪽 가장자리로 이동' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '오른쪽 가장자리로 이동' })).toBeTruthy();
   });
+
+  test('고급 설정 모달(#574): 닫기 버튼·백드롭 탭·Escape 세 경로로 닫힌다', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    fireEvent.click(screen.getByText('seed'));
+
+    const openModal = async () => {
+      await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+      await user.click(screen.getByRole('button', { name: '고급 설정' }));
+      return screen.getByRole('dialog', { name: '고급 설정' });
+    };
+
+    let dialog = await openModal();
+    await user.click(within(dialog).getByRole('button', { name: '닫기' }));
+    expect(screen.queryByRole('dialog', { name: '고급 설정' })).toBeNull();
+
+    dialog = await openModal();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('dialog', { name: '고급 설정' })).toBeNull();
+
+    // 백드롭 탭 — 풀페이지라도 포인터 대체 경로를 하나 더 남긴다.
+    dialog = await openModal();
+    fireEvent.click(dialog.parentElement!.querySelector('[aria-hidden="true"]')!);
+    expect(screen.queryByRole('dialog', { name: '고급 설정' })).toBeNull();
+  });
+
+  test('고급 설정 모달(#574): 패널은 오버레이 계층 토큰, 안의 텍스트 행은 불투명 표면 위 (#569 규칙 승계)', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    fireEvent.click(screen.getByText('seed'));
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    await user.click(screen.getByRole('button', { name: '고급 설정' }));
+
+    const dialog = screen.getByRole('dialog', { name: '고급 설정' });
+    expect(dialog.style.background).toBe('var(--overlay-fill)');
+    expect(dialog.style.borderColor).toBe('var(--overlay-border)');
+
+    // 새 리터럴 색을 만들지 않았다 — 인라인 style에 rgb/hex가 없어야 한다(토큰 var()만).
+    for (const el of Array.from(dialog.querySelectorAll<HTMLElement>('[style]'))) {
+      expect(el.getAttribute('style')).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
+    }
+
+    // 모든 버튼이 불투명 카드 안에 있다 — 유리 위 직접 텍스트로 새는 행이 없어야 한다.
+    const rows = Array.from(dialog.querySelectorAll('button'));
+    expect(rows.length).toBeGreaterThan(4);
+    for (const row of rows) {
+      expect(row.closest('div.bg-surface, section.bg-surface') === null
+        ? `그룹 밖 행: ${row.textContent}`
+        : true).toBe(true);
+    }
+  });
+
+  test('고급 설정 모달(#574): 포커스가 모달 안에 갇히고, 닫으면 트리거로 돌아온다', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    fireEvent.click(screen.getByText('seed'));
+    const hamburger = screen.getByRole('button', { name: '편집 메뉴' });
+    await user.click(hamburger);
+    await user.click(screen.getByRole('button', { name: '고급 설정' }));
+
+    const dialog = screen.getByRole('dialog', { name: '고급 설정' });
+    expect(dialog.contains(document.activeElement)).toBe(true);
+
+    // 모달 밖 요소로 포커스를 밀어도 패널로 되돌아온다(focusin 가두기).
+    act(() => hamburger.focus());
+    expect(dialog.contains(document.activeElement)).toBe(true);
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    // DOM 노드를 toBe로 비교하면 실패 시 bun이 서브트리를 통째로 직렬화해 러너가 멈춘다 — 불리언으로.
+    expect(document.activeElement === hamburger).toBe(true);
+  });
+
 });

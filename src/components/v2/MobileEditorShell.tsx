@@ -5,12 +5,11 @@ import { DesignRail } from './DesignRail';
 import { Landing } from './Landing';
 import { OcrUploadCard } from './OcrUploadCard';
 import { OcrUndoBanner } from './OcrUndoBanner';
+import { AdvancedSettingsModal } from './AdvancedSettingsModal';
 import {
   FloatingToolbar,
-  TOOLBAR_MODES,
   TB_STORAGE_KEY,
   TB_EDGE,
-  ICON as TB_ICON,
   loadPrefs as loadTbPrefs,
   type TbPrefs,
   type TbOrient,
@@ -219,6 +218,8 @@ export function MobileEditorShell({
     const frame = getFrameRect();
     const x = side === 'left' ? TB_EDGE : frame.width - rect.width - TB_EDGE;
     setTbPrefs((prev) => ({ ...prev, x, y: rect.top - frame.top }));
+    // 모달(#574)이 풀페이지라 스냅하는 순간 툴바가 안 보인다 — 이동했다는 사실만 토스트로 알린다.
+    flashToast(side === 'left' ? '왼쪽 가장자리로 옮겼어요' : '오른쪽 가장자리로 옮겼어요');
   };
   // 초기화 2탭 arm(#374, 시안 clearArm) — window.confirm 대체. 1탭에 arm(라벨이 확인 문구로
   // 바뀌고 3.2초 뒤 자동 해제), arm 상태에서 한 번 더 탭해야 실행. 메뉴가 닫히면 함께 해제.
@@ -230,15 +231,15 @@ export function MobileEditorShell({
   const clearArmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // 습관적 더블탭이 arm과 실행을 한 번에 뚫지 않게 arm 직후 재탭은 무시(claude-review PR #375 P1).
   const clearArmedAt = useRef(0);
-  // 툴바 설정 접기(#447) — 라디오 4종 + 스냅 버튼이 항상 펼쳐져 메뉴 세로 공간을 크게 차지하던 것을
-  // 접힘 기본값으로. 메뉴가 닫히면 함께 리셋(다음 열림은 항상 접힌 상태로 시작).
-  const [tbSettingsOpen, setTbSettingsOpen] = useState(false);
-  const tbSettingsPanelId = 'tb-settings-panel';
+  // 고급 설정 모달(#574) — 툴바 설정이 메뉴 안 접이식 섹션(#447)에서 이 모달로 이사했다.
+  // 메뉴를 닫으면서 열리므로 둘이 중첩되지 않는다(Escape 한 번이 둘 다 닫는 문제가 안 생긴다).
+  const [advOpen, setAdvOpen] = useState(false);
+  // 모달을 연 '고급 설정' 행은 메뉴와 함께 사라지므로 닫힘 포커스는 살아있는 햄버거로 되돌린다.
+  const hamburgerRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (!menuOpen) {
       clearTimeout(clearArmTimer.current);
       setClearArmed(false);
-      setTbSettingsOpen(false);
     }
   }, [menuOpen]);
   useEffect(() => () => clearTimeout(clearArmTimer.current), []);
@@ -463,6 +464,7 @@ export function MobileEditorShell({
           onToggle={photo.toggleAutoSave}
         />
         <button
+          ref={hamburgerRef}
           type="button"
           onClick={() => setMenuOpen((v) => !v)}
           aria-haspopup="menu"
@@ -543,124 +545,21 @@ export function MobileEditorShell({
                     onClick={() => setGhostMode((v) => !v)}
                   />
                 )}
+                {/* 고급 설정(#574) — 접이식 '툴바 설정' 섹션을 대체하는 풀페이지 모달 진입점.
+                    같은 게이팅(croppedImageUrl && !isMax)을 승계한다: 툴바가 안 떠 있으면
+                    모달 안 스냅이 조용히 no-op이 된다(claude-review PR #405 P1). 설정 성격이라
+                    다크모드·빈 항목과 같은 카드에 둔다 — 메뉴는 세 카드로 유지. */}
+                {croppedImageUrl && !isMax && (
+                  <MenuRow
+                    iconPath={MENU_ICONS.gear}
+                    label="고급 설정"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setAdvOpen(true);
+                    }}
+                  />
+                )}
               </div>
-              {/* 배치설정(#387, 플로팅 툴바 gear에서 이전) — 방향(가로/세로) × 배치(고정/이동)
-                  라디오 4종 + 이동식일 때 좌/우 가장자리 스냅(WCAG 2.2 SC 2.5.7 대체 경로).
-                  잉크 토글은 컬러 패널(White/Black 프리셋)과 중복이라 이 자리에서 삭제.
-                  FloatingToolbar 자체가 croppedImageUrl && !isMax일 때만 마운트되므로(아래) 이
-                  섹션도 동일 조건으로 게이팅 — 아니면 toolbarRef가 비어 스냅이 조용히 no-op된다
-                  (claude-review PR #405 P1). role은 이 메뉴의 다른 항목·레포 컨벤션(radiogroup+radio,
-                  LayoutPicker 등)과 맞춰 radio를 쓴다(menuitemradio는 옛 menu+menuitemradio 조합의
-                  잔재였다, 같은 리뷰 지적). */}
-              {croppedImageUrl && !isMax && (
-                <div className={`mt-2 ${MENU_GROUP_CLS}`}>
-                  <button
-                    type="button"
-                    aria-expanded={tbSettingsOpen}
-                    aria-controls={tbSettingsPanelId}
-                    onClick={() => setTbSettingsOpen((v) => !v)}
-                    className="flex w-full items-center gap-2.5 px-2.5 pb-1 text-[14px] font-medium text-fg"
-                  >
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.7"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                      className="shrink-0 text-fg-muted"
-                    >
-                      <path d={MENU_ICONS.gear} />
-                    </svg>
-                    <span className="flex-1 text-left">툴바 설정</span>
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                      className={`shrink-0 text-fg-faint transition-transform duration-200 motion-reduce:transition-none ${tbSettingsOpen ? 'rotate-180' : ''}`}
-                    >
-                      <path d="m6 9 6 6 6-6" />
-                    </svg>
-                  </button>
-                  {/* 펼침 애니메이션은 grid-rows 0fr↔1fr(레포 표준, #447). */}
-                  <div
-                    className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
-                    style={{ gridTemplateRows: tbSettingsOpen ? '1fr' : '0fr' }}
-                  >
-                    <div className="overflow-hidden" inert={!tbSettingsOpen || undefined}>
-                      <div id={tbSettingsPanelId}>
-                        <div role="radiogroup" aria-label="툴바 배치">
-                          {TOOLBAR_MODES.map((m) => {
-                            const on = tbPrefs.orient === m.orient && tbPrefs.place === m.place;
-                            return (
-                              <button
-                                key={m.label}
-                                type="button"
-                                role="radio"
-                                aria-checked={on}
-                                onClick={() => applyToolbarMode(m.orient, m.place)}
-                                // 선택 라벨을 text-accent로 두면 다크에서 --accent(#C45550)가
-                                // 어떤 크롬 표면 위에서도 AA에 못 닿는다(불투명 --surface 위 3.97:1).
-                                // 선택 신호는 accent-soft 채움 + accent 점이 이미 주므로(둘 다
-                                // 비텍스트라 3:1 기준) 라벨은 --fg로 둔다(#569).
-                                className={`flex h-11 w-full items-center gap-2.5 rounded-[9px] px-2.5 text-[12px] font-semibold text-fg ${
-                                  on ? 'bg-accent-soft' : 'hover:bg-white/5'
-                                }`}
-                              >
-                                <span
-                                  aria-hidden="true"
-                                  className={`h-[7px] w-[7px] shrink-0 rounded-full ${on ? 'bg-accent' : 'bg-border-strong'}`}
-                                />
-                                {m.label}
-                              </button>
-                            );
-                          })}
-                        </div>
-                        {tbPrefs.place === 'movable' && (
-                          <div className="mt-1 flex gap-1 border-t border-line pt-1.5">
-                            <button
-                              type="button"
-                              onClick={() => snapToolbarTo('left')}
-                              aria-label="왼쪽 가장자리로 이동"
-                              title="왼쪽 가장자리로 이동"
-                              className="flex h-11 flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:bg-white/5 hover:text-fg"
-                            >
-                              <svg {...TB_ICON}>
-                                <path d="M3 19V5" />
-                                <path d="m13 6-6 6 6 6" />
-                                <path d="M7 12h14" />
-                              </svg>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => snapToolbarTo('right')}
-                              aria-label="오른쪽 가장자리로 이동"
-                              title="오른쪽 가장자리로 이동"
-                              className="flex h-11 flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:bg-white/5 hover:text-fg"
-                            >
-                              <svg {...TB_ICON}>
-                                <path d="M21 5v14" />
-                                <path d="m11 18 6-6-6-6" />
-                                <path d="M17 12H3" />
-                              </svg>
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {croppedImageUrl && (
                 <div className={`mt-2 ${MENU_GROUP_CLS}`}>
                   <MenuRow
@@ -934,6 +833,19 @@ export function MobileEditorShell({
           onMaximize={() => handleViewModeChange('max')}
           headerEl={headerEl}
           contentTopEl={ticketBoxEl}
+        />
+      )}
+
+      {/* 고급 설정 모달(#574) — 햄버거의 '고급 설정' 행이 연다. 게이팅은 진입점과 동일하게
+          croppedImageUrl && !isMax: 툴바가 안 떠 있으면 toolbarRef가 비어 스냅이 조용히
+          no-op된다(claude-review PR #405 P1). tbPrefs 소유권은 셸에 남기고 값만 내려준다. */}
+      {advOpen && croppedImageUrl && !isMax && (
+        <AdvancedSettingsModal
+          triggerRef={hamburgerRef}
+          prefs={tbPrefs}
+          onModeChange={applyToolbarMode}
+          onSnap={snapToolbarTo}
+          onClose={() => setAdvOpen(false)}
         />
       )}
 
