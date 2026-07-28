@@ -351,13 +351,8 @@ describe('키보드 전용 포스터 업로드 경로 (#608)', () => {
     await tabTo(user, menu, '편집 메뉴');
     await user.keyboard('{Enter}');
 
-    // 접힌 '툴바 설정' 패널은 inert(#447)라 실제 브라우저에선 Tab이 건너뛰는데, happy-dom은 inert
-    // 엘리먼트에 focus()가 no-op이라 activeElement가 안 넘어가고 그 자리에 갇힌다. 그래서 여기선
-    // 패널을 먼저 키보드로 펼쳐 inert를 걷어낸 뒤 계속 Tab한다 — 어차피 같은 키보드 경로다.
-    const tbSettings = screen.getByRole('button', { name: /툴바 설정/ });
-    await tabTo(user, tbSettings, '툴바 설정');
-    await user.keyboard('{Enter}');
-
+    // '툴바 설정' 접이식 패널(#447)은 #574에서 '고급 설정' 모달 진입점으로 대체됐다 — inert 우회가
+    // 더 이상 필요 없다(고급 설정 행 자체가 일반 버튼이라 Tab이 그냥 통과한다).
     const replace = await screen.findByRole('button', { name: '포스터 교체' });
     const openFileDialog = spyOn(posterFileInput(), 'click');
     await tabTo(user, replace, '포스터 교체');
