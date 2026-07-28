@@ -4,8 +4,11 @@ import { Eyebrow } from '@/components/v2/Eyebrow';
 interface BrightnessSliderProps {
   value: number;
   onChange: (value: number) => void;
-  /** 슬라이더 라벨. 기본은 데스크톱의 'Poster brightness'. 레일 듀얼 슬라이더가 재사용(#219). */
-  label?: string;
+  /**
+   * 슬라이더 라벨. 필수 — 예전 기본값('Poster brightness')은 호출부가 전부 한국어 라벨을
+   * 넘겨서 아무도 안 쓰는 죽은 영어였고, 새 호출부가 빠뜨리면 영어가 튀어나왔다(#562).
+   */
+  label: string;
   /** input/label 연결 id. 한 화면에 두 슬라이더가 뜨면 고유해야 한다(#219). */
   id?: string;
   /** 슬라이더 하한. 기본 0(불투명도류). 로고 크기(#441)처럼 0..1을 벗어나는 범위도 재사용. */
@@ -32,15 +35,55 @@ export function shouldCommitSliderValue(deferredValue: number, localValue: numbe
   return deferredValue === localValue && deferredValue !== value;
 }
 
+/** 값 축의 10%p — 드래그·화살표 한 틱(#562). 0..1은 10단계, 0.6..1.3(로고 크기)은 7단계. */
+const SLIDER_STEP = 0.1;
+
+const STEP_UP_KEYS = new Set(['ArrowRight', 'ArrowUp', 'PageUp']);
+const STEP_DOWN_KEYS = new Set(['ArrowLeft', 'ArrowDown', 'PageDown']);
+
+/** 0.1 배수 연산이 남기는 부동소수 꼬리(0.7000000000000001)를 % 표기 정밀도로 자른다. */
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+/**
+ * 10% 스텝을 `<input type="range">`의 `step`이 아니라 여기서 거는 이유(#562) — `step`은 상호작용
+ * 단위가 아니라 **값의 제약**이라, `step=0.1`이면 % 입력이 넣은 37%를 요소가 40%로 잘라낸다
+ * (브라우저 실측). 그러면 "10% 스텝이 앗아간 세밀 조정을 % 입력이 대체한다"는 이슈의 전제가
+ * 무너져 둘 중 하나만 한 것과 같아진다. 그래서 요소는 `step="any"`로 열어 두고 드래그 스냅과
+ * 화살표 이동을 이 두 함수가 맡는다.
+ */
+export function snapToStep(value: number, min: number, max: number): number {
+  // 클램프가 필요한 이유 — 격자에 얹히지 않은 하한(예: 0.65)이 생기면 스냅이 그 아래(0.6)로
+  // 내려보낸다. 오늘 쓰는 범위는 셋 다 0.1 격자 위(0/1, 0.6/1.1, 0.6/1.3)라 안 걸리지만,
+  // 걸리면 슬라이더가 제 min 밖의 값을 조용히 커밋한다.
+  return Math.min(Math.max(round2(Math.round(value / SLIDER_STEP) * SLIDER_STEP), min), max);
+}
+
+/** 화살표 한 틱 — 격자 밖 값(% 직접 입력 직후)에서도 다음/이전 눈금으로 간다. */
+export function stepFrom(value: number, dir: 1 | -1, min: number, max: number): number {
+  const k = value / SLIDER_STEP;
+  const n = dir > 0 ? Math.floor(k + 1e-6) + 1 : Math.ceil(k - 1e-6) - 1;
+  return Math.min(Math.max(round2(n * SLIDER_STEP), min), max);
+}
+
+/** 자연수 % 입력을 값 축으로 되돌린다. 빈 문자열·비숫자는 null(= 커밋 안 함), 나머지는 범위로 클램프. */
+export function parsePercentInput(raw: string, min: number, max: number): number | null {
+  const n = parseInt(raw, 10);
+  if (Number.isNaN(n)) return null;
+  return Math.min(Math.max(n, Math.round(min * 100)), Math.round(max * 100)) / 100;
+}
+
 export default function BrightnessSlider({
   value,
   onChange,
-  label = 'Poster brightness',
+  label,
   id = 'posterOpacity',
   min = 0,
   max = 1,
 }: BrightnessSliderProps) {
   const [localValue, setLocalValue] = useState(value);
+  // % 입력 중의 날것 문자열. null이면 슬라이더 값을 그대로 보여준다 — 타이핑 중간 상태("", "1")를
+  // 곧바로 값으로 바꾸면 커서가 튀고 0%로 한 번씩 커밋된다.
+  const [draft, setDraft] = useState<string | null>(null);
   const [prevValue, setPrevValue] = useState(value);
   // 무드/재질 전환 기본값 적용, undo/redo 등 슬라이더 밖에서 value가 바뀌면 로컬도 맞춘다.
   // useEffect 동기화는 페인트 이후에야 반영돼 구값이 한 프레임 노출되므로(claude-review PR #516
@@ -55,22 +98,75 @@ export default function BrightnessSlider({
     if (shouldCommitSliderValue(deferredValue, localValue, value)) onChange(deferredValue);
   }, [deferredValue, localValue, value, onChange]);
 
+  const commitDraft = () => {
+    if (draft === null) return;
+    const next = parsePercentInput(draft, min, max);
+    setDraft(null);
+    if (next !== null) setLocalValue(next);
+  };
+
   return (
     <div className="space-y-field">
       <div className="flex items-baseline justify-between">
         <Eyebrow as="label" htmlFor={id}>
           {label}
         </Eyebrow>
-        <Eyebrow tone="accent">{Math.round(localValue * 100)}%</Eyebrow>
+        {/* % 직접 입력(#562) — 10% 스텝이 앗아간 세밀 조정의 대체 경로라 둘은 같이 간다.
+            라벨 줄에 인라인으로 얹는 배치가 필수다: 레일 상세 슬롯(#563)이 400×675에서 118px
+            고정인데 투명도 탭 콘텐츠가 정확히 118px이라 여유가 0이다 — 새 줄로 내리면 슬라이더당
+            +20~25px이라 그 탭부터 스크롤이 생긴다. Eyebrow와 같은 타이포를 그대로 입혀 줄 높이가
+            안 변하고(밑줄은 text-decoration이라 레이아웃 박스 밖), dock·프리뷰 실측도 그대로다.
+            소프트 키보드가 dock을 덮는 문제(#558)는 한 칸짜리 숫자 입력이라 감수한다 — 값이
+            라벨 줄에 그대로 보여서 키보드가 떠도 무엇을 고치는지가 안 가린다. */}
+        <span className="flex items-baseline">
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            aria-label={`${label} 퍼센트`}
+            value={draft ?? String(Math.round(localValue * 100))}
+            onChange={(e) => setDraft(e.target.value.replace(/\D/g, '').slice(0, 3))}
+            onFocus={(e) => e.currentTarget.select()}
+            onBlur={commitDraft}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                e.currentTarget.blur();
+              }
+            }}
+            // 폭 4.5ch — 로고 크기축 상한 "130"이 3자에 tracking-widest(0.1em)까지 얹혀 25px이라
+            // 3.5ch(21px)에선 잘렸다(브라우저 실측). 폭만 늘어나고 줄 높이는 안 변한다.
+            // 점선 밑줄이 "누르면 고칠 수 있다"는 유일한 정지 상태 신호다(text-decoration이라
+            // 레이아웃 박스를 안 건드려 줄 높이가 그대로다). 포커스 표시는 globals.css의 전역
+            // :focus-visible 링에 맡긴다 — outline-none으로 지우면 키보드 사용자가 위치를 잃는다.
+            className="text-mono w-[4.5ch] bg-transparent text-right text-[10px] uppercase tracking-widest text-accent underline decoration-dotted underline-offset-2"
+          />
+          <Eyebrow tone="accent" aria-hidden="true">
+            %
+          </Eyebrow>
+        </span>
       </div>
       <input
         id={id}
         type="range"
         min={min}
         max={max}
-        step="0.01"
+        // "any" + 수동 스냅(#562) — step 속성은 값 자체를 격자에 가둬서 % 입력의 37%를 40%로
+        // 잘라낸다(위 snapToStep 주석). 드래그는 onChange에서 10%p 격자로 스냅하고, 화살표는
+        // 아래 onKeyDown이 다음 눈금으로 옮긴다. 1%(0.01)는 100단계를 손가락으로 훑어야 해서
+        // 모바일 터치로 원하는 값에 못 세웠다 — 그게 이 이슈의 출발점.
+        step="any"
         value={localValue}
-        onChange={(e) => setLocalValue(parseFloat(e.target.value))}
+        onChange={(e) => setLocalValue(snapToStep(parseFloat(e.target.value), min, max))}
+        // PageUp/Down도 같이 잡는다 — step="any"에서 네이티브 페이지 이동은 (max-min)/10이라
+        // 로고 크기축(0.6..1.3)에선 0.07씩 움직여 격자 밖(0.67)에 선다. Home/End는 네이티브가
+        // min/max로 보내고 둘 다 격자 위라 그대로 둔다.
+        onKeyDown={(e) => {
+          const dir = STEP_UP_KEYS.has(e.key) ? 1 : STEP_DOWN_KEYS.has(e.key) ? -1 : 0;
+          if (!dir) return;
+          e.preventDefault();
+          setLocalValue(stepFrom(localValue, dir, min, max));
+        }}
         className="w-full"
       />
     </div>
