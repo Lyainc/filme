@@ -290,8 +290,12 @@ function FormatChips({
         <Eyebrow tone="faint">{preview || '—'}</Eyebrow>
       </div>
       {/* 4번째 칩(en-long)이 좁은 폭에서 2줄로 감기던 문제(#390) — 가로 스크롤 레일로 전환.
-          같은 레포 기존 패턴(LayoutPicker.tsx의 snap-start 레일)을 그대로 재사용. */}
-      <div className="flex gap-2 overflow-x-auto pb-1 snap-x no-scrollbar" role="radiogroup" aria-label={label}>
+          같은 레포 기존 패턴(LayoutPicker.tsx의 snap-start 레일)을 그대로 재사용.
+          py-1.5(#583) — overflow-x:auto가 세로 클리핑 박스도 만들어서(CSS 스펙) 전역
+          :focus-visible(outline 3px + offset 2px = 5px)이 잘렸다. 이 칩엔 box-shadow 선택 링이
+          없어 필요한 여유가 5px뿐이지만, #582가 나머지 세 스트립에 쓴 값(6px 대칭)으로 맞춘다 —
+          pb만 두는 비대칭으로 되돌리면 상단이 다시 0이 된다. */}
+      <div className="flex gap-2 overflow-x-auto py-1.5 snap-x no-scrollbar" role="radiogroup" aria-label={label}>
         {DATE_FORMAT_TOKENS.map((opt) => {
           const active = token === opt.value;
           return (
