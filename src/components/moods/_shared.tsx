@@ -134,6 +134,15 @@ export function stampWillRender(
 export const STAMP_MAX_ASPECT = 5;
 
 /**
+ * 스탬프 폭에 무드별 절대 상한을 겹쳐 건다(#589). STAMP_MAX_ASPECT는 높이 기반이라 사용자
+ * scale(최대 1.3)이 곱해지면 같이 커지는데, Editorial 스텁처럼 폭 예산이 px로 고정된 자리에선
+ * 그 상한이 예산을 넘긴다 — 그런 무드만 `maxWidth`(px)를 넘겨 scale과 무관한 천장을 얹는다.
+ * 미지정 무드는 지금까지와 동일(높이 기반 상한만).
+ */
+const capW = (aspectCap: number, absolute?: number) =>
+  absolute === undefined ? aspectCap : Math.min(aspectCap, absolute);
+
+/**
  * 로고 스탬프 높이 소폭 동적화(#392, ±16px cap). 완전 가변화는 6무드 전체의 스탬프-인접 요소 정렬을
  * 흔들어 이 저장소에 이미 두 차례 있었던 "레이아웃 구조 변경 → 예상 못 한 회귀"(#275 트리 depth
  * remount, #258 조건부 unmount state 손실) 카테고리를 다시 밟을 수 있다는 게 전문가 패널 결론이라,
@@ -315,6 +324,8 @@ interface ChainStampProps {
   visible: boolean;
   /** 빈 항목 미리보기(#216). false면 dashed placeholder를 숨긴다. undefined/true면 오늘처럼 표시. */
   ghost?: boolean;
+  /** 절대 폭 상한(px, #589) — FormatStamp와 동일 계약. 미지정이면 STAMP_MAX_ASPECT만 건다. */
+  maxWidth?: number;
   /**
    * 실제 렌더 높이(px) 리포트(#505, Poster의 onTopBandHeight와 동일 패턴). stampHeightDelta로
    * 로고 종횡비에 따라 ±16px 변하는 최종 높이를 그대로 콜백에 넘긴다 — 별도 DOM 실측(ref+
@@ -525,6 +536,7 @@ export function ChainStamp({
   height = 48,
   visible,
   ghost,
+  maxWidth,
   onRenderedHeight,
 }: ChainStampProps) {
   // Rules of Hooks — stampWillRender의 조기 return보다 앞에서 무조건 호출(#392).
@@ -552,7 +564,7 @@ export function ChainStamp({
   // 노출 off(#369) — 여기 도달했으면 ghost===true(stampWillRender 계약). 이미지·라벨이 있어도
   // 노출하지 않고 흐린 placeholder + 값 존재 배지로만 암시한다(탭→재노출 #266 유지).
   if (visible === false) {
-    return <DashedPlaceholder text="LOGO" width={120 * scaledSize} height={h} size={scaledSize} surface={surface} dim hasValue={!!(chain || label)} />;
+    return <DashedPlaceholder text="LOGO" width={capW(120 * scaledSize, maxWidth)} height={h} size={scaledSize} surface={surface} dim hasValue={!!(chain || label)} />;
   }
 
   // 우선순위: 이미지 > 텍스트 라벨 > dashed placeholder(미리보기 전용, ghost!==false 보장됨).
@@ -565,7 +577,7 @@ export function ChainStamp({
         style={{
           height: h,
           width: 'auto',
-          maxWidth: h * STAMP_MAX_ASPECT,
+          maxWidth: capW(h * STAMP_MAX_ASPECT, maxWidth),
           objectFit: 'contain', // 상한에 걸리면 잘리지 말고 종횡비 유지한 채 축소
           display: 'block',
           ...(surface === 'dark' ? { filter: LOGO_SHADOW } : {}),
@@ -580,7 +592,7 @@ export function ChainStamp({
     return <TextStamp label={label} height={h} size={scaledSize} surface={surface} />;
   }
 
-  return <DashedPlaceholder text="LOGO" width={120 * scaledSize} height={h} size={scaledSize} surface={surface} />;
+  return <DashedPlaceholder text="LOGO" width={capW(120 * scaledSize, maxWidth)} height={h} size={scaledSize} surface={surface} />;
 }
 
 interface FormatStampProps {
@@ -594,6 +606,8 @@ interface FormatStampProps {
   visible: boolean;
   /** 빈 항목 미리보기(#216). false면 dashed placeholder를 숨긴다. undefined/true면 오늘처럼 표시. */
   ghost?: boolean;
+  /** 절대 폭 상한(px, #589) — ChainStamp와 동일 계약. 미지정이면 STAMP_MAX_ASPECT만 건다. */
+  maxWidth?: number;
   /** 실제 렌더 높이(px) 리포트(#505) — ChainStamp의 onRenderedHeight와 동일 계약. */
   onRenderedHeight?: (h: number) => void;
 }
@@ -606,6 +620,7 @@ export function FormatStamp({
   surface = 'paper',
   visible,
   ghost,
+  maxWidth,
   onRenderedHeight,
 }: FormatStampProps) {
   // ChainStamp와 동일 — Rules of Hooks(#392).
@@ -625,7 +640,7 @@ export function FormatStamp({
 
   // 노출 off(#369) — ChainStamp와 동일: 값이 있어도 흐린 placeholder + 배지로만 암시.
   if (visible === false) {
-    return <DashedPlaceholder text="FORMAT" width={140 * scaledSize} height={h} size={scaledSize} surface={surface} dim hasValue={!!(format || label)} />;
+    return <DashedPlaceholder text="FORMAT" width={capW(140 * scaledSize, maxWidth)} height={h} size={scaledSize} surface={surface} dim hasValue={!!(format || label)} />;
   }
 
   // 우선순위: 이미지 > 텍스트 라벨 > dashed placeholder(미리보기 전용, ghost!==false 보장됨).
@@ -638,7 +653,7 @@ export function FormatStamp({
         style={{
           height: h,
           width: 'auto',
-          maxWidth: h * STAMP_MAX_ASPECT,
+          maxWidth: capW(h * STAMP_MAX_ASPECT, maxWidth),
           objectFit: 'contain', // 상한에 걸리면 잘리지 말고 종횡비 유지한 채 축소
           display: 'block',
           ...(surface === 'dark' ? { filter: LOGO_SHADOW } : {}),
@@ -653,7 +668,7 @@ export function FormatStamp({
     return <TextStamp label={label} height={h} size={scaledSize} surface={surface} />;
   }
 
-  return <DashedPlaceholder text="FORMAT" width={140 * scaledSize} height={h} size={scaledSize} surface={surface} />;
+  return <DashedPlaceholder text="FORMAT" width={capW(140 * scaledSize, maxWidth)} height={h} size={scaledSize} surface={surface} />;
 }
 
 export interface StampRowProps {
