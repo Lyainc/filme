@@ -77,20 +77,20 @@ describe('MoodEditorial 좌석 폭 맞춤 통합 (#381)', () => {
 
   test('짧은 좌석(1~2토큰)은 축소 없이 maxSize(56px) 그대로 렌더된다', () => {
     restore = installFakeCanvasContext().restore;
-    // widthAt(56) = 5자 × 56 × 0.6 = 168 <= 260(예산) → 축소 없음.
+    // widthAt(56) = 5자 × 56 × 0.6 = 168 <= 220(예산) → 축소 없음.
     const html = renderToStaticMarkup(
       <MoodEditorial movieInfo={movieWithSeat('H1,H2')} components={makeMoodBase('editorial')} croppedImageUrl="blob:x" />,
     );
     expect(html).toContain('font-size:56px');
   });
 
-  test('긴 좌석(4토큰)은 예산(260px) 안에 들어오도록 축소된다', () => {
+  test('긴 좌석(4토큰)은 예산(220px, #573) 안에 들어오도록 축소된다', () => {
     restore = installFakeCanvasContext().restore;
-    // widthAt(size) = 11자 × size × 0.6 = 6.6×size. maxWidth=260 → size<=39에서 fit(39: 257.4, 40: 264).
+    // widthAt(size) = 11자 × size × 0.6 = 6.6×size. maxWidth=220 → size<=33에서 fit(33: 217.8, 34: 224.4).
     const html = renderToStaticMarkup(
       <MoodEditorial movieInfo={movieWithSeat('H1,H2,H3,H4')} components={makeMoodBase('editorial')} croppedImageUrl="blob:x" />,
     );
-    expect(html).toContain('font-size:39px');
+    expect(html).toContain('font-size:33px');
     expect(html).not.toContain('font-size:56px');
   });
 
@@ -98,13 +98,13 @@ describe('MoodEditorial 좌석 폭 맞춤 통합 (#381)', () => {
   // 줄여도 폭을 못 맞추면 span 자체의 overflow:hidden + ellipsis가 최종 방어선이어야 한다.
   test('쉼표 없는 긴 단일 토큰은 minSize로 클램프되고 span에 ellipsis 캡이 걸린다', () => {
     restore = installFakeCanvasContext().restore;
-    // widthAt(minSize=26) = 30자 × 26 × 0.6 = 468 > 260(예산) → minSize로 클램프.
+    // widthAt(minSize=26) = 30자 × 26 × 0.6 = 468 > 220(예산) → minSize로 클램프.
     const longToken = 'ABCDEFGHIJKLMNOPQRSTUVWXYZABCD';
     const html = renderToStaticMarkup(
       <MoodEditorial movieInfo={movieWithSeat(longToken)} components={makeMoodBase('editorial')} croppedImageUrl="blob:x" />,
     );
     expect(html).toContain('font-size:26px');
-    expect(html).toContain('max-width:260px');
+    expect(html).toContain('max-width:220px');
     expect(html).toContain('text-overflow:ellipsis');
   });
 });
