@@ -12,6 +12,8 @@
  *
  *   --logo   체인 스탬프를 텍스트 라벨 대신 5:1 가로 로고로(#589). 자유비율 크롭 경로(useLogoCrop)를
  *            실제로 태우고, scale은 전역 상한 1.3으로 올려 최악을 만든다.
+ *   --long-label  체인·포맷 라벨을 STAMP_LABEL_MAX(24자)까지 채운다(#590). 로고와 같은 자리를 먹는
+ *            텍스트 경로의 최악이고, formatLabel은 OCR(#348)이 자동으로 채우는 실경로다.
  *
  * 출력은 stdout JSON. 길이축 합이 960을 넘으면 exit 1.
  * 함정 목록은 네이티브 메모리 e2e-browser-verification-setup 참고.
@@ -26,6 +28,9 @@ const arg = (name, dflt) => {
 
 const LABEL = arg('label', 'run');
 const LOGO = argv.includes('--logo');
+const LONG_LABEL = argv.includes('--long-label');
+/** STAMP_LABEL_MAX(24, src/constants/fields.ts)까지 찬 라벨 — input maxLength가 허용하는 최악. */
+const LABEL_24 = 'MEGABOX COEX DOLBY ATMOS';
 const URL = arg('url', 'http://localhost:3000/');
 const SHOT = arg('shot', null);
 const BUDGET = 960; // 캔버스 높이 = 스텁 길이축 예산
@@ -165,6 +170,15 @@ if (LOGO) {
   SEED.components.formatScale = 1.3;
 }
 
+// --long-label: 라벨 최악(#590). 로고와 달리 UI 조작 없이 seed로 끝난다 — 라벨은 blob:이 아니라
+// localStorage에 그대로 살아남는다. scale은 로고 케이스와 같은 이유로 전역 상한까지 올린다.
+if (LONG_LABEL) {
+  SEED.components.chainLabel = LABEL_24;
+  SEED.components.formatLabel = LABEL_24;
+  SEED.components.chainScale = 1.3;
+  SEED.components.formatScale = 1.3;
+}
+
 // --empty: 반대쪽 극단(값 없음 + ghost 자리표시자). 조건부 그룹 구성이 달라져 최악 케이스만
 // 재면 놓치는 조합이다(#573 대조 세트).
 if (argv.includes('--empty')) {
@@ -198,7 +212,7 @@ try {
   await page.evaluate(() => document.fonts.ready);
   await new Promise((r) => setTimeout(r, 1500));
 
-  const result = await page.evaluate((logo) => {
+  const result = await page.evaluate((logo, longLabel, label24) => {
     const px = (n) => Math.round(n * 10) / 10;
     // 프리뷰가 여럿이면(썸네일 등) 가장 넓은 회전 행이 실제 티켓이다.
     const row = [...document.querySelectorAll('[style*="rotate(-90deg)"]')].sort(
@@ -230,6 +244,14 @@ try {
       if (t.startsWith('le billet')) return 'le billet';
       return 'stamp';
     };
+    // --long-label이 스텁 안까지 도달했는지(--logo 가드와 같은 구조) — 라벨이 안 들어가면
+    // 'CGV' 3자를 다시 재고 조용히 통과한다.
+    if (longLabel) {
+      const stampEl = [...row.children].find((el) => name(el) === 'stamp');
+      if (!stampEl) throw new Error('스탬프 그룹이 없다 — 라벨 주입이 안 먹었다');
+      const txt = (stampEl.textContent || '').replace(/\s+/g, ' ').trim();
+      if (!txt.includes(label24)) throw new Error(`스탬프 라벨이 "${txt.slice(0, 30)}" — 24자 최악 케이스가 아니다`);
+    }
     // 그룹은 column flex라 **길이축 기여 = 가장 넓은 자식**이다(자식 높이 합이 아니다).
     // 그래서 admis 44 같은 큰 글자를 줄여도 그게 최광폭 자식이 아니면 1px도 안 준다.
     const items = [...row.children].map((el) => ({
@@ -264,7 +286,7 @@ try {
       titleFontSize: titleEl ? parseFloat(getComputedStyle(titleEl).fontSize) : null,
       seatFontSize: seatEl ? parseFloat(getComputedStyle(seatEl).fontSize) : null,
     };
-  }, LOGO);
+  }, LOGO, LONG_LABEL, LABEL_24);
 
   // 티켓만 잘라 찍는다. 프리뷰는 scale()로 줄여 보여주므로 그대로 찍으면 A/B 대조에 못 쓸 만큼
   // 작다 — 스케일 래퍼를 걷어내는 대신 deviceScaleFactor를 올려 해상도를 번다(래퍼를 지우면
