@@ -19,7 +19,8 @@ import {
   showFieldGhost,
   SignatureStamp,
   StampRow,
-  truncateActors,
+  measureTextWidth,
+  truncateActorsToWidth,
   userTextFont,
   useFontsReady,
 } from './_shared';
@@ -68,6 +69,24 @@ const PLATE_GLOSS =
 
 const headerMeta: CSSProperties = { fontFamily: FONT_MONO, fontSize: 13, fontWeight: 600, letterSpacing: 3 };
 const colophonLine: CSSProperties = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' };
+/**
+ * 콜로폰 조판(#566) — 배우 폭 예산(`castAvailW`)이 이 폰트로 측정하므로 스타일과 측정이 같은
+ * 상수를 읽어야 한다. 리터럴을 렌더에 따로 심으면 한쪽만 바뀌어 조용히 틀린다(#572와 같은 부류).
+ */
+const COLOPHON_FONT = { fontFamily: FONT_MONO, fontWeight: 600, fontSize: 17.5, letterSpacing: 0.9 };
+const COLOPHON_SEP = ' · ';
+/** 콜로폰 행 가용폭 — 렌더가 `left:PAD, right:PAD`로 잡는 그 폭(캔버스 TARGET_WIDTH 960). */
+const COLOPHON_W = 960 - PAD * 2; // 792
+/**
+ * 콜로폰 폰트 하한(#566). 13은 이 무드가 헤더(headerMeta)에서 이미 쓰는 크기라 판권면에서
+ * 이물감이 없는 선이고, 최악 실측(903px)에 13/17.5를 곱하면 671px으로 예산 792 안에 든다.
+ * 2줄 × lineHeight 1.72라 줄어드는 방향으로는 푸터(≈top 1438)와 겹칠 일이 없다.
+ *
+ * 축소는 2행(CAST가 서는 줄)의 폭으로 정하지만 **컨테이너에 걸어 1행까지 같이 줄인다** — 판권면
+ * 조판에서 두 행의 크기가 갈리는 게 둘 다 작은 것보다 어색하다. 1행은 줄어드는 방향이라 자기
+ * 예산을 새로 넘길 일이 없다.
+ */
+const COLOPHON_MIN_SIZE = 13;
 
 /**
  * v5(Revue) — 시안 `Mood Redesign v5.dc.html` 5c 재설계(에픽 #524). 이전 v6(#497)의
@@ -139,17 +158,48 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
   );
   const reissueVal = gate(fv?.reissue, reissueClean);
   const releaseDateVal = gate(fv?.releaseDate, releaseClean);
+  const runtimeVal = gate(fv?.runtime, d.runtime);
+  // 재개봉 편집 자리는 releaseDate 시트 안(reissue는 FIELD_SHEET_TYPE에 없어 단독 타깃이면 빈 시트).
+  const releasedPiece = releaseDateVal && `RELEASED ${releaseDateVal}`;
+  // 재개봉은 값이 있을 때만 자리를 얻는다(c6) — ghost를 안 주면 fieldPieces가 빈 값을 알아서 뺀다.
+  const reissuePiece = reissueVal && `RE-RELEASED ${reissueVal}`;
+  // 배우 폭 맞춤(#566) — CAST는 콜로폰 2행 **끝**에 서므로 예산은 행 폭에서 앞 조각들과 구분자를
+  // 뺀 나머지다(앞 조각 개수가 재개봉 유무로 조건부라 상수로는 안 나온다). 자간 0.9는 양수라
+  // 반드시 측정에 넘긴다 — 안 넘기면 측정치가 실렌더보다 좁아 예산 안이라 판정한 문자열이 실제로는
+  // 넘쳐 ellipsis에 걸린다(#590이 TextStamp에서 밟은 것과 같은 트랩).
+  // 앞 조각이 ghost면 텍스트가 아니라 점선 박스라 이 예산이 실제와 어긋나지만, 그 경우 행이
+  // whiteSpace:normal로 줄바꿈하므로(아래 hasGhost 분기) 이름이 중간에서 잘릴 일 자체가 없다.
+  const castPrefix = [runtimeVal, releasedPiece, reissuePiece].filter(Boolean).join(COLOPHON_SEP);
+  const castAvailW = COLOPHON_W - measureTextWidth(castPrefix && castPrefix + COLOPHON_SEP, COLOPHON_FONT);
+  const actorsVal = truncateActorsToWidth(gate(fv?.actors, d.actors), castAvailW, COLOPHON_FONT, fontsReady);
+  // 2단계 — 좌석 폭 맞춤(#381)·라벨 폭 맞춤(#590)과 같은 순서다. 1단계의 하한(첫 이름 + `외 N명`)
+  // 조차 안 들어가는 조합이 있다: 재개봉 ON이면 앞 조각이 627px을 먹어 CAST 몫이 165px뿐이라
+  // 긴 라틴 이름 한 개가 실측 111px 넘쳤다(`bun scripts/measure-actors-fit.mjs`). 그때는 이름을
+  // ellipsis로 자르는 대신 콜로폰 폰트를 줄여 행 전체를 예산 안에 넣는다.
+  //
+  // 축약이 끝난 문자열로 재므로 순서가 뒤집히면 안 된다 — 폰트를 먼저 줄이면 예산이 넓어져
+  // 1단계가 더 많은 이름을 남기고, 그 결과로 다시 축소가 필요해지는 순환이 된다. 반대로 이
+  // 순서는 1단계가 base 17.5 기준의 보수적인 개수를 고른 뒤 축소만 얹어 항상 수렴한다.
+  const filmLineText = [castPrefix, actorsVal].filter(Boolean).join(COLOPHON_SEP);
+  const colophonSize = fitFontSizeToWidth(
+    filmLineText,
+    // 자간 0.9는 양수라 예산에서 글자수만큼 먼저 뺀다(#590과 같은 규약).
+    COLOPHON_W - COLOPHON_FONT.letterSpacing * filmLineText.length,
+    { fontFamily: COLOPHON_FONT.fontFamily, fontWeight: COLOPHON_FONT.fontWeight, minSize: COLOPHON_MIN_SIZE, maxSize: COLOPHON_FONT.fontSize },
+    fontsReady,
+  );
+  // 자간도 축소분만큼 비례로 줄인다(#590) — base 기준 트래킹을 작은 크기에 그대로 두면 예산을
+  // 다시 넘긴다. 예산을 축소 전 자간으로 잡았으니 이 비례 축소는 항상 상한 안쪽으로만 움직인다.
+  const colophonLetterSpacing = COLOPHON_FONT.letterSpacing * (colophonSize / COLOPHON_FONT.fontSize);
   const film = fieldPieces(
     [
-      { field: 'runtime', value: gate(fv?.runtime, d.runtime), ghost: showFieldGhost(fv?.runtime, d.runtime, ghost), label: 'RUNTIME' },
-      // 재개봉 편집 자리는 releaseDate 시트 안(reissue는 FIELD_SHEET_TYPE에 없어 단독 타깃이면 빈 시트).
-      { field: 'releaseDate', value: releaseDateVal && `RELEASED ${releaseDateVal}`, ghost: showFieldGhost(fv?.releaseDate, releaseClean, ghost), label: 'RELEASED' },
-      // 재개봉은 값이 있을 때만 자리를 얻는다(c6) — ghost를 안 주면 fieldPieces가 빈 값을 알아서 뺀다.
-      { field: 'releaseDate', value: reissueVal && `RE-RELEASED ${reissueVal}`, label: 'RE-RELEASED' },
-      { field: 'actors', value: truncateActors(gate(fv?.actors, d.actors)), ghost: showFieldGhost(fv?.actors, d.actors, ghost), label: 'CAST' },
+      { field: 'runtime', value: runtimeVal, ghost: showFieldGhost(fv?.runtime, d.runtime, ghost), label: 'RUNTIME' },
+      { field: 'releaseDate', value: releasedPiece, ghost: showFieldGhost(fv?.releaseDate, releaseClean, ghost), label: 'RELEASED' },
+      { field: 'releaseDate', value: reissuePiece, label: 'RE-RELEASED' },
+      { field: 'actors', value: actorsVal, ghost: showFieldGhost(fv?.actors, d.actors, ghost), label: 'CAST' },
     ],
     onField,
-    { surface: 'paper' }
+    { sep: COLOPHON_SEP, surface: 'paper' }
   );
 
   const componentOpacity = components.componentOpacity ?? 1;
@@ -294,7 +344,7 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
 
         {/* 콜로폰 */}
         <div style={{ position: 'absolute', left: PAD, top: 1358, width: 64, height: 3, background: CRITERION_YELLOW }} />
-        <div style={{ position: 'absolute', left: PAD, right: PAD, top: 1370, fontFamily: FONT_MONO, fontSize: 17.5, fontWeight: 600, letterSpacing: 0.9, lineHeight: 1.72, color: INK_SOFT }}>
+        <div style={{ position: 'absolute', left: PAD, right: PAD, top: 1370, ...COLOPHON_FONT, fontSize: colophonSize, letterSpacing: colophonLetterSpacing, lineHeight: 1.72, color: INK_SOFT }}>
           <div style={{ ...colophonLine, ...(venue.hasGhost || screened.hasGhost ? { display: 'flex', alignItems: 'center', gap: 10, whiteSpace: 'normal' } : null) }}>
             {venue.node}
             {venue.hasAny && screened.hasAny ? ' · ' : null}

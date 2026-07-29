@@ -23,7 +23,7 @@ import {
   showFieldGhost,
   SignatureStamp,
   stampWillRender,
-  truncateActors,
+  truncateActorsToWidth,
   userTextFont,
   useFontsReady,
   type FieldGhostState,
@@ -77,6 +77,15 @@ const SEAT_MAX_WIDTH = 220;
 // 다시 예산을 넘기기 때문. 로고는 objectFit:contain이라 잘리지 않고 축소된다.
 export const STUB_STAMP_MAX_W = 64;
 
+// `avec` 행 예산(#566) — 라벨은 flexShrink:0이라 배우 span이 쓸 수 있는 폭은 열 가용폭에서
+// 라벨 폭과 gap을 뺀 나머지다. 라벨 폭이 리터럴인 건 라벨 폰트가 FONT_DISPLAY(`var(--font-display)`)
+// 라서다 — canvas `font`에 var()가 들어가면 대입이 조용히 무시돼 measureTextWidth로는 못 잰다.
+// 42px 실측(`bun scripts/measure-actors-fit.mjs`가 라벨 offsetWidth를 리포트한다) + 반올림 여유 1px.
+// 예산을 크게 잡으면 ellipsis가 나므로 오차는 항상 이쪽(작게)으로 남긴다.
+const AVEC_LABEL_W = 43;
+const AVEC_GAP = 12;
+const ACTORS_AVAIL_W = MAIN_AVAIL_W - AVEC_LABEL_W - AVEC_GAP; // 480 (실측 clientWidth 481)
+
 export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
   const accent = themeColor.toLowerCase() === '#ffffff' ? '#a8312a' : resolveInk(themeColor, '#a8312a');
@@ -101,7 +110,10 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
   const watchTimeVal = gate(fv?.watchTime, d.watchTime);
   const runtimeVal = gate(fv?.runtime, d.runtime);
   const releaseVal = gate(fv?.releaseDate, releaseClean);
-  const actorsVal = truncateActors(gate(fv?.actors, d.actors));
+  // 배우 폭 맞춤(#566) — 고정 3명 캡(truncateActors)은 폭을 몰라, 2명이어도 길면 CSS ellipsis가
+  // 이름 중간을 잘랐다. 자간은 -0.3(음수)이라 측정치가 실렌더보다 넓게 잡히는 쪽이므로 넘기지
+  // 않는다 — 오버플로 방향의 오차가 없다(양수 자간인 Criterion 콜로폰은 반대로 반드시 넘긴다).
+  const actorsVal = truncateActorsToWidth(gate(fv?.actors, d.actors), ACTORS_AVAIL_W, { fontFamily: FONT_KR, fontWeight: 600, fontSize: 33 }, fontsReady);
   const signatureVal = gate(fv?.signature, d.signature);
   const ratingVisible = (fv?.rating ?? true) && d.rating > 0;
 
