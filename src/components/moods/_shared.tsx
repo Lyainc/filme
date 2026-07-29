@@ -1956,10 +1956,12 @@ export function useFontsReady(): boolean {
  * (text, maxWidth, fontFamily, fontWeight, minSize, maxSize) 키로 메모이즈해 리렌더마다
  * 재계산하지 않는다.
  *
- * ponytail: letter-spacing은 측정에 반영하지 않는다 — 실제 호출부 값이 전부 0 이하(자간
- * 좁힘)라 canvas 기본 측정값이 실제보다 넓게(보수적으로) 잡히므로 오버플로 방향의 오차는
- * 없다. 완벽한 줄바꿈 시뮬레이션도 하지 않는다 — 호출부가 "가용폭 × 클램프 줄 수"를
- * maxWidth로 넘겨 가장 긴 한 줄 기준으로 안전하게 축소하는 근사를 쓴다.
+ * ponytail: letter-spacing은 측정에 반영하지 않는다 — 자간이 0 이하인 호출부는 canvas 기본
+ * 측정값이 실제보다 넓게(보수적으로) 잡히므로 오버플로 방향의 오차가 없다. **양수 자간
+ * 호출부**(TextStamp #590, Criterion 콜로폰 #566)는 `maxWidth`에서 `자간 × 글자수`를 직접 빼고
+ * 넘긴다 — 고정 크기 측정이 필요하면 그건 `measureTextWidth`가 `letterSpacing`으로 받는다.
+ * 완벽한 줄바꿈 시뮬레이션도 하지 않는다 — 호출부가 "가용폭 × 클램프 줄 수"를 maxWidth로
+ * 넘겨 가장 긴 한 줄 기준으로 안전하게 축소하는 근사를 쓴다.
  */
 export function fitFontSizeToWidth(
   text: string,
@@ -2035,17 +2037,51 @@ export function truncateActors(actors: string, max = 3): string {
   return `${parts.slice(0, max).join(', ')} 외 ${parts.length - max}명`;
 }
 
+export interface MeasureFontOptions {
+  fontFamily: string;
+  fontWeight?: number;
+  fontSize: number;
+  /**
+   * CSS letter-spacing(px). canvas `measureText`는 자간을 세지 않으므로 글자당 한 번씩 더한다
+   * (#590 TextStamp가 예산에서 `자간 × 글자수`를 뺀 것과 같은 규약, 부호만 반대 방향).
+   * 생략(0)하면 자간이 음수인 호출부는 측정치가 실렌더보다 넓어 보수적으로 잡힌다 — 오버플로
+   * 방향의 오차가 없으니 그대로 둬도 된다. **양수 자간은 반드시 넘겨야 한다**(#566): 넘기지
+   * 않으면 측정치가 실렌더보다 좁아, 예산 안이라고 판정한 문자열이 실제로는 넘쳐 ellipsis에
+   * 걸린다.
+   */
+  letterSpacing?: number;
+}
+
+/**
+ * 텍스트의 실제 렌더 폭(px)을 canvas `measureText`로 잰다(#566). 고정 크기 측정 전용이라
+ * `fitFontSizeToWidth`(크기를 이진탐색하며 재는 쪽)와는 별개고, SSR·canvas 미지원이면 0을
+ * 돌려준다(예산 계산의 중립값 — 호출부는 "빼는 게 없다"로 흘러 원본을 그대로 쓴다).
+ *
+ * 캐시는 없다 — 이 함수는 매 렌더 몇 번 불리는 순수 측정이고, 캐시가 있으면 폰트 로드 전
+ * 폴백 메트릭이 박히는 문제(PR #345 P1)를 호출부마다 다시 다뤄야 한다.
+ *
+ * **주의**: `FONT_DISPLAY`처럼 `var(--font-display)`가 들어간 패밀리는 canvas `font` 문법에서
+ * 무효라 대입 자체가 조용히 무시되고 직전 폰트로 재게 된다 — 그런 슬롯은 측정하지 말 것.
+ */
+export function measureTextWidth(text: string, { fontFamily, fontWeight = 400, fontSize, letterSpacing = 0 }: MeasureFontOptions): number {
+  if (!text) return 0;
+  const ctx = getMeasureCtx();
+  if (!ctx) return 0;
+  ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+  return ctx.measureText(text).width + letterSpacing * text.length;
+}
+
 const truncateActorsWidthCache = new Map<string, string>();
 
 /**
  * `truncateActors`의 폭 인식 버전(#493) — 고정 인원수 대신 실제 렌더 폭(canvas measureText)
  * 기준으로 "외 N명"을 결정한다. fitFontSizeToWidth와 같은 캐시·SSR-fallback·fontsReady 정책을
- * 공유한다(letter-spacing 미반영도 동일 — 보수적으로 여유 있게 측정됨).
+ * 공유한다. #566에서 Stub 외에 Editorial(`avec`)·Criterion(콜로폰 `CAST`)까지 이 경로를 쓴다.
  */
 export function truncateActorsToWidth(
   actors: string,
   maxWidth: number,
-  font: { fontFamily: string; fontWeight?: number; fontSize: number },
+  font: MeasureFontOptions,
   fontsReady = true,
 ): string {
   if (!actors) return '';
@@ -2053,17 +2089,18 @@ export function truncateActorsToWidth(
   if (parts.length <= 1) return parts.join(', ');
   const full = parts.join(', ');
 
-  // 캐시 조회가 getMeasureCtx()보다 앞이다 — 바로 위 fitFontSizeToWidth와 같은 순서.
+  // 캐시 조회가 측정보다 앞이다 — 위 fitFontSizeToWidth와 같은 순서.
   const fontWeight = font.fontWeight ?? 400;
-  const key = `${actors}|${maxWidth}|${font.fontFamily}|${fontWeight}|${font.fontSize}`;
+  const key = `${actors}|${maxWidth}|${font.fontFamily}|${fontWeight}|${font.fontSize}|${font.letterSpacing ?? 0}`;
   const cached = truncateActorsWidthCache.get(key);
   if (cached !== undefined) return cached;
 
-  const ctx = getMeasureCtx();
-  if (!ctx) return full;
+  // 컨텍스트가 없을 땐 **캐시에 쓰지 않고** 원본을 돌려준다 — measureTextWidth의 0 폴백에
+  // 맡기면 "안 넘친다"는 판정이 캐시에 박혀, context-lost가 회복돼도 안 다시 재게 된다
+  // (getMeasureCtx가 2D 컨텍스트를 영구 캐시하지 않는 이유와 같은 우려).
+  if (!getMeasureCtx()) return full;
 
-  ctx.font = `${fontWeight} ${font.fontSize}px ${font.fontFamily}`;
-  const widthOf = (s: string) => ctx.measureText(s).width;
+  const widthOf = (s: string) => measureTextWidth(s, font);
   const withMore = (n: number) => `${parts.slice(0, n).join(', ')} 외 ${parts.length - n}명`;
 
   let result = full;

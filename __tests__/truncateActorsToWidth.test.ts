@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import { truncateActorsToWidth } from '../src/components/moods/_shared';
+import { measureTextWidth, truncateActorsToWidth } from '../src/components/moods/_shared';
 import { CHAR_WIDTH_FACTOR, installFakeCanvasContext } from './setup/canvasStub';
 
 /**
@@ -74,5 +74,60 @@ describe('truncateActorsToWidth', () => {
     fake.restore(); // happy-dom의 실제 getContext('2d')는 null
     const actors = '가, 나, 다, 라, 마, 바';
     expect(truncateActorsToWidth(actors, 1, { fontFamily: 'TAWNoCtx', fontSize: 16 })).toBe(actors);
+  });
+
+  /**
+   * #566 — Criterion 콜로폰은 letterSpacing이 **양수**(0.9)라, 자간을 측정에 안 넣으면 예산 안이라
+   * 판정한 문자열이 실렌더에서 넘쳐 ellipsis가 이름 중간을 자른다. 같은 예산에서 자간을 넘긴 쪽이
+   * 더 적은 이름을 남겨야 한다.
+   */
+  test('양수 letterSpacing을 넘기면 자간만큼 예산을 더 쓴 것으로 계산한다', () => {
+    const parts = ['이름1', '이름2', '이름3', '이름4', '이름5', '이름6'];
+    const actors = parts.join(', ');
+    const fontSize = 16;
+    const opts = { fontFamily: 'TAWSpacing', fontSize };
+    const maxWidth = 200;
+    const without = truncateActorsToWidth(actors, maxWidth, opts, false);
+    const withSpacing = truncateActorsToWidth(actors, maxWidth, { ...opts, letterSpacing: 4 }, false);
+    // 글자당 9.6px(16 × 0.6) 기준으로 예산 200에 3명(18자 → 172.8)까지 들어가는데, 자간 4를 얹으면
+    // 글자당 13.6px이 되어 2명(13자 → 176.8)이 상한이다.
+    expect(without).toBe('이름1, 이름2, 이름3 외 3명');
+    expect(withSpacing).toBe('이름1, 이름2 외 4명');
+  });
+
+  test('letterSpacing이 캐시 키에 들어간다 — 자간만 다른 재호출이 같은 값을 돌려주지 않는다', () => {
+    const actors = '이름1, 이름2, 이름3, 이름4, 이름5, 이름6';
+    const opts = { fontFamily: 'TAWSpacingCache', fontSize: 16 };
+    const a = truncateActorsToWidth(actors, 200, { ...opts, letterSpacing: 0 });
+    const b = truncateActorsToWidth(actors, 200, { ...opts, letterSpacing: 4 });
+    expect(b).not.toBe(a);
+  });
+});
+
+describe('measureTextWidth', () => {
+  let fake: ReturnType<typeof installFakeCanvasContext>;
+
+  beforeEach(() => {
+    fake = installFakeCanvasContext();
+  });
+  afterEach(() => {
+    fake.restore();
+  });
+
+  test('글자수 × fontSize 근사를 그대로 돌려준다', () => {
+    expect(measureTextWidth('abcd', { fontFamily: 'MTW', fontSize: 20 })).toBe(4 * 20 * CHAR_WIDTH_FACTOR);
+  });
+
+  test('letterSpacing은 글자당 한 번씩 더해진다', () => {
+    const base = 4 * 20 * CHAR_WIDTH_FACTOR;
+    expect(measureTextWidth('abcd', { fontFamily: 'MTW', fontSize: 20, letterSpacing: 0.9 })).toBeCloseTo(base + 0.9 * 4);
+    // 음수 자간도 같은 식 — 실렌더가 좁아지는 쪽이라 예산 계산이 관대해진다.
+    expect(measureTextWidth('abcd', { fontFamily: 'MTW', fontSize: 20, letterSpacing: -0.3 })).toBeCloseTo(base - 0.3 * 4);
+  });
+
+  test('빈 문자열과 컨텍스트 없음은 모두 0 — 예산 계산의 중립값', () => {
+    expect(measureTextWidth('', { fontFamily: 'MTW', fontSize: 20 })).toBe(0);
+    fake.restore();
+    expect(measureTextWidth('abcd', { fontFamily: 'MTW', fontSize: 20 })).toBe(0);
   });
 });
