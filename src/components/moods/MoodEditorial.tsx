@@ -63,6 +63,19 @@ const NOTICE_MAX_W = Math.round(MAIN_AVAIL_W * 0.84); // 449
 // 260 → 220(#573): 최악(4석 16자)에서 스텁 길이축을 41px 회수한다. 이 아래로 더 내리면 4석이
 // minSize 26에서도 안 들어가 ellipsis로 좌석 정보가 잘리기 시작한다 — 실측 하한이다.
 const SEAT_MAX_WIDTH = 220;
+// 스탬프 길이축 상한(#589) — 아래 예산표에서 스탬프를 뺀 나머지가 888px(최악: 바코드 286 + 좌석
+// 184 + admis 96 + le billet 125 + 구분선 4 + gap 128 + padding 64)이라 스탬프 그룹 몫은 72px까지다.
+// 64로 잡아 8px을 반올림·폰트 메트릭 드리프트 몫으로 남긴다 — 72는 최악에서 합계가 정확히 960에
+// 앉아 여유가 0이고, 이 하네스는 CI가 아니라 수동이라 드리프트를 즉시 못 잡는다.
+//
+// **높이 기반 상한(STAMP_MAX_ASPECT)만으로는 안 막힌다**: 5:1 로고는 stampHeightDelta가 −16을
+// 물려 h = (48−16)×scale이 되고, scale 상한 1.3에서 폭이 41.6×5 = 208px까지 자란다(실측
+// `bun scripts/measure-editorial-stub.mjs --logo`). 스텁은 회전 -90°라 그 208이 **길이축**을
+// 먹어 합계가 1096, 즉 예산을 136px 넘겨 바코드와 le billet이 캔버스 밖으로 잘렸다. 다른 무드는
+// 스탬프가 티켓 폭(960·1477)을 쓰므로 이 상한이 필요 없다(__tests__/stampWidthCap.test.tsx).
+// 이 값은 px 절대값이라 사용자 scale이 곱해지지 않는다 — 아스펙트 기반으로 두면 scale 1.3에서
+// 다시 예산을 넘기기 때문. 로고는 objectFit:contain이라 잘리지 않고 축소된다.
+export const STUB_STAMP_MAX_W = 64;
 
 export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
@@ -198,12 +211,23 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
   // 전엔 39.5px씩 넘쳐 padding 22px을 다 먹고 실콘텐츠를 17.5px 잘라먹었다. 후에는 양끝 실여백이
   // 32 + 여유 20/2 = 42px.
   // 구 주석의 997px은 **값 없음 + ghost** 케이스였다(체인/포맷 자리표시자 120 · 좌석 ghost 116) —
-  // 값이 채워진 쪽이 1039로 더 나빴다. `--empty`로 그 반대 극단도 재고, 후에는 둘 다 940이다.
+  // 값이 채워진 쪽이 1039로 더 나빴다. `--empty`로 그 반대 극단도 재고, 후에는 둘 다 940이었다
+  // (#589로 자리표시자에도 폭 상한이 걸려 `--empty`는 지금 884다 — 아래 로고 표 참고).
   // 두께축(#572 재확인 요청): 회전 행의 높이 132 ≤ STUB_W 213 — 바코드 height 70·구분선 112도
   // 그 안이라 224→213에 여유가 있다. 하네스가 매 실행 이 축도 대조한다.
-  // **알려진 천장**: 위 표는 체인/포맷을 텍스트 라벨로 잡은 값이다. 업로드 로고는 ChainStamp의
-  // STAMP_MAX_ASPECT 클램프(height 48 × 5 = 240, chainScale까지 곱해짐)까지 넓어질 수 있어
-  // 스탬프 그룹 하나로 예산을 넘길 수 있다 — #573 스코프 밖(별도 이슈).
+  // 업로드 로고(#589) — 위 표의 스탬프 53px은 텍스트 라벨 기준이고, 로고는 그 자리를 이렇게 쓴다
+  // (`--logo`: 5:1 로고 + scale 1.3, 나머지는 위와 같은 최악 케이스).
+  //
+  //   스탬프 그룹     전     후    비고
+  //   체인 로고 img  208     64    STUB_STAMP_MAX_W (전: h 41.6 × STAMP_MAX_ASPECT 5)
+  //   합계          1096    952    (예산 960 / 여유 −136 → +8)
+  //
+  // 로고는 contain이라 잘리지 않고 64×12.8로 축소된다. 같은 상한이 ghost placeholder에도 걸린다
+  // — scale 1.3에서 폭이 120×1.56 = 187px이라 로고와 같은 방식으로 넘쳤다.
+  // ponytail: 남은 천장은 **긴 텍스트 라벨**이다. TextStamp는 nowrap에 폭 축소가 없어
+  // STAMP_LABEL_MAX(24자)까지 자랄 수 있고(예: 'MEGABOX' ≈ 100px), 상한을 걸면 브랜드명이
+  // ellipsis로 잘려 로고(contain 축소)와 달리 열화가 눈에 띈다. 실제로 넘치는 라벨이 나오면
+  // fitFontSizeToWidth로 줄이는 쪽으로.
   if (fv?.bookingNo ?? true)
     stubGroups.push(
       <FieldTap key="booking" field="bookingNo" onField={onField}>
@@ -214,12 +238,12 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
     stubGroups.push(
       <div key="stamp" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 22 }}>
         <FieldTap field="chain" onField={onField}>
-          <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={48} surface="paper" ghost={ghost} scale={components.chainScale ?? 1} />
+          <ChainStamp chain={components.chain} label={components.chainLabel} visible={components.chainVisible} height={48} surface="paper" ghost={ghost} scale={components.chainScale ?? 1} maxWidth={STUB_STAMP_MAX_W} />
         </FieldTap>
         {/* 두 스탬프가 다 렌더될 때만 장식 점(35mm의 amber divider dot과 같은 패턴) */}
         {stubChainOn && stubFormatOn && <span style={{ width: 5, height: 5, borderRadius: '50%', background: CREAM, opacity: 0.55, flexShrink: 0 }} />}
         <FieldTap field="format" onField={onField}>
-          <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.55} surface="paper" ghost={ghost} scale={components.formatScale ?? 1} />
+          <FormatStamp format={components.format} label={components.formatLabel} visible={components.formatVisible} size={0.55} surface="paper" ghost={ghost} scale={components.formatScale ?? 1} maxWidth={STUB_STAMP_MAX_W} />
         </FieldTap>
       </div>
     );

@@ -12,8 +12,9 @@
  */
 import { describe, expect, test } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { MoodEditorial, STUB_STAMP_MAX_W } from '../src/components/moods/MoodEditorial';
 import { MINIMAL_STAMP_MAX_SCALE, MoodMinimal } from '../src/components/moods/MoodMinimal';
-import { STAMP_MAX_ASPECT } from '../src/components/moods/_shared';
+import { STAMP_MAX_ASPECT, stampHeightDelta } from '../src/components/moods/_shared';
 import type { MovieInfo, TicketComponents } from '../src/types';
 
 const MOVIE: MovieInfo = {
@@ -58,7 +59,8 @@ describe('로고 스탬프 폭 상한 렌더 (#347)', () => {
 /**
  * 무드별 스탬프 그룹 폭 예산. edge = 그룹 시작 오프셋, gaps = 스탬프 사이 gap + 구분선(1px),
  * margin = 반대편에 남겨야 할 최소 여백. Editorial은 스탬프가 회전된 스텁 스트립 안에 세로로
- * 쌓여(폭이 아니라 스트립 길이를 먹는) 구조라 이 산술의 대상이 아님 — 상한(48×5=240)만 걸린다.
+ * 쌓여 티켓 폭이 아니라 스트립 길이를 먹는 구조라 이 산술의 대상이 아니고, 아래 #589 describe가
+ * 그 길이축 예산을 따로 본다.
  */
 const BUDGET = [
   { mood: 'Minimal',       avail: 960,  edge: 60, chainH: 74, formatH: 64 * 1.02, gaps: 34 + 1 + 34, margin: 60 },
@@ -103,5 +105,43 @@ describe('#441 scale(1.3) 확장 후 스탬프 그룹 폭 예산', () => {
     const used =
       b.edge + b.chainH * MINIMAL_STAMP_MAX_SCALE * STAMP_MAX_ASPECT + b.gaps + b.formatH * MINIMAL_STAMP_MAX_SCALE * STAMP_MAX_ASPECT + b.margin;
     expect(used).toBeLessThanOrEqual(b.avail);
+  });
+});
+
+/**
+ * #589 — Editorial 스텁의 길이축 예산. 스텁은 rotate(-90°)라 스탬프의 **폭**이 캔버스 높이(960)를
+ * 먹고, 다른 무드와 달리 그 예산이 px로 고정돼 있다. 높이 기반 상한(STAMP_MAX_ASPECT)은 사용자
+ * scale이 곱해지면 같이 커져서 예산을 못 지킨다 — MoodEditorial이 절대 px 상한(STUB_STAMP_MAX_W)을
+ * 겹쳐 걸고, 여기서 그 상한이 실측 예산(스탬프 제외 888px, scripts/measure-editorial-stub.mjs)
+ * 안에 남는지 본다. 무드 좌표를 바꾸면서 상한을 안 맞추면 여기서 깨진다.
+ */
+describe('Editorial 스텁 길이축 예산 (#589)', () => {
+  /** 최악 케이스에서 스탬프 그룹을 뺀 길이축 합 — 바코드 286 + 좌석 184 + admis 96 + le billet 125
+   *  + 구분선 4 + gap 128 + padding 64. 하네스 `--logo` 실측(2026-07-29)에서 나온 값. */
+  const EDITORIAL_STUB_REST = 888;
+  const CANVAS_H = 960;
+
+  test('scale 상한(1.3)에서 5:1 로고를 올려도 스텁 길이축이 캔버스 높이 안', () => {
+    // 실렌더 폭 = min(h × STAMP_MAX_ASPECT, STUB_STAMP_MAX_W). h는 stampHeightDelta(−16)까지
+    // 반영한 (48−16)×1.3 = 41.6이라 아스펙트 상한만으론 208px이 된다.
+    const aspectCap = (48 + stampHeightDelta(STAMP_MAX_ASPECT)) * 1.3 * STAMP_MAX_ASPECT;
+    expect(aspectCap).toBeGreaterThan(STUB_STAMP_MAX_W); // 절대 상한이 실제로 구속력을 갖는가
+    expect(EDITORIAL_STUB_REST + Math.min(aspectCap, STUB_STAMP_MAX_W)).toBeLessThanOrEqual(CANVAS_H);
+  });
+
+  test('ghost placeholder도 같은 상한을 탄다 (scale 1.3에서 120×1.56 = 187px)', () => {
+    expect(EDITORIAL_STUB_REST + Math.min(120 * 1.3, STUB_STAMP_MAX_W)).toBeLessThanOrEqual(CANVAS_H);
+  });
+
+  test('로고에 max-width가 STUB_STAMP_MAX_W로 붙고 contain으로 축소된다', () => {
+    const html = renderToStaticMarkup(
+      <MoodEditorial
+        movieInfo={MOVIE}
+        components={{ ...WITH_LOGOS, layout: 'editorial', chainScale: 1.3, formatScale: 1.3 }}
+        croppedImageUrl="blob:x"
+      />
+    );
+    expect(html).toContain(`max-width:${STUB_STAMP_MAX_W}px`);
+    expect(html).toContain('object-fit:contain');
   });
 });
