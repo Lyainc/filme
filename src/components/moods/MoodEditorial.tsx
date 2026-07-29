@@ -224,10 +224,18 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
   //
   // 로고는 contain이라 잘리지 않고 64×12.8로 축소된다. 같은 상한이 ghost placeholder에도 걸린다
   // — scale 1.3에서 폭이 120×1.56 = 187px이라 로고와 같은 방식으로 넘쳤다.
-  // ponytail: 남은 천장은 **긴 텍스트 라벨**이다. TextStamp는 nowrap에 폭 축소가 없어
-  // STAMP_LABEL_MAX(24자)까지 자랄 수 있고(예: 'MEGABOX' ≈ 100px), 상한을 걸면 브랜드명이
-  // ellipsis로 잘려 로고(contain 축소)와 달리 열화가 눈에 띈다. 실제로 넘치는 라벨이 나오면
-  // fitFontSizeToWidth로 줄이는 쪽으로.
+  //
+  // 긴 텍스트 라벨(#590) — 로고와 같은 자리를 먹는 텍스트 경로. STAMP_LABEL_MAX(24자)를 채우고
+  // scale 1.3인 최악(`--long-label`)이 이랬다. TextStamp가 nowrap에 폭 축소가 없어 그대로 자랐다.
+  //
+  //   스탬프 그룹     전     후    비고
+  //   체인 라벨      496     64    폰트 29 → 11px (fitFontSizeToWidth, 상한은 STUB_STAMP_MAX_W)
+  //   합계          1383    952    (예산 960 / 여유 −423 → +8)
+  //
+  // 폭 상한만 걸지 않은 이유는 TextStamp 주석에 있다 — 로고는 contain으로 축소되지만 텍스트는
+  // 잘려서 브랜드명이 사라진다. 상한 안에 드는 라벨(기본 케이스 'CGV' 53px)은 폰트가 안 바뀌고,
+  // 'MEGABOX'(#590이 지목한 실경로)는 11px·60px으로 잘림 없이 들어간다. 24자는 하한에서도 안
+  // 들어가 ellipsis가 받는다 — 그 천장의 근거는 TEXT_STAMP_MIN_SIZE 주석.
   if (fv?.bookingNo ?? true)
     stubGroups.push(
       <FieldTap key="booking" field="bookingNo" onField={onField}>
