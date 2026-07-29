@@ -47,6 +47,16 @@ describe('로고 스탬프 폭 상한 렌더 (#347)', () => {
     expect(html.match(/object-fit:contain/g)?.length).toBeGreaterThanOrEqual(2);
   });
 
+  test('폭 상한을 안 받는 무드는 라벨 폰트가 안 움직인다 (#590)', () => {
+    // #590은 TextStamp에 옵트인 maxWidth를 넣었다 — Editorial 스텁만 넘기므로, 안 넘기는 무드는
+    // 예전 그대로 height×0.46이어야 한다(Minimal 체인 74 → 34px).
+    const html = renderToStaticMarkup(
+      <MoodMinimal movieInfo={MOVIE} components={{ ...WITH_LOGOS, chain: '', format: '' }} croppedImageUrl="blob:x" />
+    );
+    expect(html).toContain('MEGABOX');
+    expect(html).toContain(`font-size:${Math.round(74 * 0.46)}px`);
+  });
+
   test('이미지가 라벨보다 우선 — 이미지가 있으면 텍스트 라벨은 안 그린다 (#141/#348)', () => {
     const html = minimalMarkup();
     expect(html).toContain('blob:chain-logo');
@@ -61,12 +71,13 @@ describe('로고 스탬프 폭 상한 렌더 (#347)', () => {
  * margin = 반대편에 남겨야 할 최소 여백. Editorial은 스탬프가 회전된 스텁 스트립 안에 세로로
  * 쌓여 티켓 폭이 아니라 스트립 길이를 먹는 구조라 이 산술의 대상이 아니고, 아래 #589 describe가
  * 그 길이축 예산을 따로 본다.
+ *
+ * 35mm·35mm Wide 행은 #590에서 걷어냈다 — v5(#524) 이후 두 무드는 체인/포맷 스탬프를 아예 안
+ * 그려(StampRow·ChainStamp 호출 없음) 산술만 통과하는 죽은 행이었다.
  */
 const BUDGET = [
   { mood: 'Minimal',       avail: 960,  edge: 60, chainH: 74, formatH: 64 * 1.02, gaps: 34 + 1 + 34, margin: 60 },
   { mood: 'Criterion',     avail: 960,  edge: 52, chainH: 50, formatH: 64 * 0.9,  gaps: 28 + 1 + 28, margin: 52 },
-  { mood: '35mm',          avail: 960,  edge: 50, chainH: 50, formatH: 64 * 0.85, gaps: 32 + 1 + 32, margin: 50 },
-  { mood: '35mmLandscape', avail: 1477, edge: 46, chainH: 50, formatH: 64 * 0.85, gaps: 28 + 1 + 28, margin: 46 },
   // Stub: 콘텐츠 컬럼(960 - padding 40×2 = 880) 안의 flow 배치라 edge/margin 0.
   { mood: 'Stub',          avail: 880,  edge: 0,  chainH: 39, formatH: 64 * 0.6,  gaps: 13 + 1 + 13, margin: 0 },
 ];
@@ -83,7 +94,7 @@ describe('스탬프 그룹 폭 예산 — 상한까지 늘어나도 티켓 경�
 
 /**
  * #441 — chainScale/formatScale(최대 1.3)이 위 예산에 곱연산으로 반영된다(claude-review PR #485
- * P1). 4/5 무드는 여유가 커 scale=1.3에서도 예산 안에 든다. Minimal만 edge/gaps/margin이
+ * P1). Minimal 외 무드는 여유가 커 scale=1.3에서도 예산 안에 든다. Minimal만 edge/gaps/margin이
  * 빡빡해(원래 예산도 avail에 딱 맞춰 설계됨, 위 describe 참고) 두 스탬프가 동시에
  * STAMP_MAX_ASPECT(5:1)에 근접하는 로고를 올리고 scale을 전역 상한(1.3)까지 올리면 그룹 폭이
  * avail을 실제로 넘었다(≈134px 초과). PR #485 리뷰 후속으로 공유 클램프 공식(spec c4)과 전역
@@ -131,6 +142,25 @@ describe('Editorial 스텁 길이축 예산 (#589)', () => {
 
   test('ghost placeholder도 같은 상한을 탄다 (scale 1.3에서 120×1.56 = 187px)', () => {
     expect(EDITORIAL_STUB_REST + Math.min(120 * 1.3, STUB_STAMP_MAX_W)).toBeLessThanOrEqual(CANVAS_H);
+  });
+
+  /**
+   * #590 — 텍스트 라벨은 같은 상한을 폰트 축소로 지킨다. 로고(contain 축소)와 달리 폭만 막으면
+   * 브랜드명이 잘리므로 TextStamp가 fitFontSizeToWidth로 먼저 줄이고, 하한(11px)에서도 안
+   * 들어가는 라벨만 ellipsis가 받는다. happy-dom엔 canvas 측정이 없어 폰트 크기 자체는 여기서
+   * 못 재고(하네스 `--long-label`이 실측: 496 → 64px), 상한과 폴백이 실제로 붙는지를 본다.
+   */
+  test('텍스트 라벨(24자)에 상한 + ellipsis 폴백이 붙는다 (#590)', () => {
+    const html = renderToStaticMarkup(
+      <MoodEditorial
+        movieInfo={MOVIE}
+        components={{ ...WITH_LOGOS, layout: 'editorial', chain: '', format: '', chainLabel: 'MEGABOX COEX DOLBY ATMOS', chainScale: 1.3, formatScale: 1.3 }}
+        croppedImageUrl="blob:x"
+      />
+    );
+    // 로고를 비웠으니 이 상한은 텍스트 스탬프에서만 나온다(placeholder는 width, max-width 아님).
+    expect(html).toContain(`max-width:${STUB_STAMP_MAX_W}px`);
+    expect(html).toMatch(/overflow:hidden;text-overflow:ellipsis">MEGABOX COEX DOLBY ATMOS</);
   });
 
   test('로고에 max-width가 STUB_STAMP_MAX_W로 붙고 contain으로 축소된다', () => {

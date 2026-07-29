@@ -324,7 +324,8 @@ interface ChainStampProps {
   visible: boolean;
   /** 빈 항목 미리보기(#216). false면 dashed placeholder를 숨긴다. undefined/true면 오늘처럼 표시. */
   ghost?: boolean;
-  /** 절대 폭 상한(px, #589) — FormatStamp와 동일 계약. 미지정이면 STAMP_MAX_ASPECT만 건다. */
+  /** 절대 폭 상한(px, #589·#590) — FormatStamp와 동일 계약. 로고는 폭 클램프, 텍스트 라벨은 폰트
+   *  축소(TextStamp)로 지킨다. 미지정이면 STAMP_MAX_ASPECT만 걸고 라벨은 자연폭 그대로. */
   maxWidth?: number;
   /**
    * 실제 렌더 높이(px) 리포트(#505, Poster의 onTopBandHeight와 동일 패턴). stampHeightDelta로
@@ -338,32 +339,73 @@ const LOGO_SHADOW = 'drop-shadow(0 2px 8px rgba(0,0,0,0.85))';
 const TEXT_SHADOW = '0 2px 8px rgba(0,0,0,0.85)';
 
 /**
+ * 폭 상한에 걸린 텍스트 라벨의 폰트 하한(#590). 11px은 Editorial 스텁이 이미 쓰는 가장 작은
+ * 라벨 크기('Édition Spéciale')라 브랜드명이 그 자리에서 이물감 없이 서는 선이다.
+ *
+ * ponytail: 이 하한에서 스텁 상한(64px) 안에 드는 건 대략 7자까지다('MEGABOX'가 60px으로 실측
+ * — 하네스 LABEL_24를 7자로 바꿔 확인). 더 긴 라벨은 ellipsis가 받는데, 하한을 더 내려도 못
+ * 담는다(9px×9자 ≈ 70px) — 스탬프 몫이 길이축 예산에서 72px뿐인 게 진짜 천장이라, 그걸 늘리려면
+ * 다른 그룹(바코드 286 등)에서 가져와야 한다.
+ */
+const TEXT_STAMP_MIN_SIZE = 11;
+
+/**
  * 로고 텍스트 fallback 스탬프(#141 (7)). 이미지가 없고 라벨만 있을 때 브랜드 워드마크처럼
  * 렌더한다. dashed placeholder와 달리 **export에 포함**된다(data-hide-on-export 없음) —
  * 라벨은 사용자가 의도한 실제 콘텐츠이기 때문. 색은 currentColor(무드 잉크)를 따라가고,
  * dark surface(35mm 등 포스터 위)에선 가독성을 위해 text-shadow를 얹는다.
+ *
+ * `maxWidth`(#590)를 받은 무드는 폭 상한을 **폰트 축소로** 지킨다 — 로고는 objectFit:contain이라
+ * 상한에 걸려도 줄어들 뿐이지만, 텍스트는 상한만 걸면 브랜드명이 ellipsis로 잘려 열화가 눈에
+ * 띈다. 그래서 좌석 폭 맞춤(#381)과 같은 순서다: fitFontSizeToWidth로 먼저 줄이고, 하한에서도
+ * 안 들어가면 span의 overflow+ellipsis가 최종 방어선. 상한을 안 넘긴 라벨('CGV' 등)은 이 경로가
+ * maxSize를 그대로 돌려주므로 크기가 안 변한다.
  */
 function TextStamp({
   label,
   height,
   size,
   surface,
+  maxWidth,
 }: {
   label: string;
   height: number;
   size: number;
   surface: Surface;
+  maxWidth?: number;
 }) {
+  const fontsReady = useFontsReady();
+  const baseSize = Math.round(height * 0.46);
+  const baseLetterSpacing = 1.5 * size;
+  // letterSpacing은 fitFontSizeToWidth가 측정에 안 넣는다(호출부 값이 전부 ≤0이라는 전제) — 여기선
+  // 양수라 글자당 한 번씩 붙는 몫을 예산에서 먼저 뺀다. 측정 문자열도 실제 렌더대로 대문자.
+  const fontSize =
+    maxWidth === undefined
+      ? baseSize
+      : fitFontSizeToWidth(
+          label.toUpperCase(),
+          maxWidth - baseLetterSpacing * label.length,
+          // min(하한, base) — scale 0.6의 포맷 스탬프는 base가 10px까지 내려가, 하한을 그대로 두면
+          // 상한에 걸린 라벨이 base보다 커진다(fitFontSizeToWidth는 안 들어가면 minSize를 준다).
+          { fontFamily: FONT_SANS, fontWeight: 800, minSize: Math.min(TEXT_STAMP_MIN_SIZE, baseSize), maxSize: baseSize },
+          fontsReady,
+        );
+  // 자간도 축소분만큼 같이 줄인다. 1.5×size는 base 크기(22~29px) 기준의 트래킹이라 11px에서
+  // 그대로 두면 자간이 글자 폭의 18%까지 차지해, 'MEGABOX'가 상한을 1px 넘겨 ellipsis로 잘렸다
+  // (`--long-label`로 실측). 예산은 위에서 **축소 전** 자간으로 잡았으니 이 비례 축소는 언제나
+  // 상한 안쪽으로만 움직인다(fontSize ≤ baseSize이므로 실렌더 폭 ≤ 예산).
+  const letterSpacing = baseLetterSpacing * (fontSize / baseSize);
   return (
     <div
       style={{
         height,
+        maxWidth,
         display: 'flex',
         alignItems: 'center',
-        fontSize: Math.round(height * 0.46),
+        fontSize,
         fontWeight: 800,
         fontFamily: FONT_SANS,
-        letterSpacing: 1.5 * size,
+        letterSpacing,
         textTransform: 'uppercase',
         whiteSpace: 'nowrap',
         color: 'currentColor',
@@ -371,7 +413,9 @@ function TextStamp({
         ...(surface === 'dark' ? { textShadow: TEXT_SHADOW } : {}),
       }}
     >
-      {label}
+      {/* minWidth:0이 없으면 flex item이 min-content(=nowrap 전체 폭) 아래로 안 줄어들어 상한을
+          넘겨 삐져나온다. 상한 없는 무드는 컨테이너 폭이 auto라 이 span이 아무것도 안 바꾼다. */}
+      <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
     </div>
   );
 }
@@ -589,7 +633,7 @@ export function ChainStamp({
   }
 
   if (label) {
-    return <TextStamp label={label} height={h} size={scaledSize} surface={surface} />;
+    return <TextStamp label={label} height={h} size={scaledSize} surface={surface} maxWidth={maxWidth} />;
   }
 
   return <DashedPlaceholder text="LOGO" width={capW(120 * scaledSize, maxWidth)} height={h} size={scaledSize} surface={surface} />;
@@ -606,7 +650,7 @@ interface FormatStampProps {
   visible: boolean;
   /** 빈 항목 미리보기(#216). false면 dashed placeholder를 숨긴다. undefined/true면 오늘처럼 표시. */
   ghost?: boolean;
-  /** 절대 폭 상한(px, #589) — ChainStamp와 동일 계약. 미지정이면 STAMP_MAX_ASPECT만 건다. */
+  /** 절대 폭 상한(px, #589·#590) — ChainStamp와 동일 계약(로고는 폭 클램프, 라벨은 폰트 축소). */
   maxWidth?: number;
   /** 실제 렌더 높이(px) 리포트(#505) — ChainStamp의 onRenderedHeight와 동일 계약. */
   onRenderedHeight?: (h: number) => void;
@@ -665,7 +709,7 @@ export function FormatStamp({
   }
 
   if (label) {
-    return <TextStamp label={label} height={h} size={scaledSize} surface={surface} />;
+    return <TextStamp label={label} height={h} size={scaledSize} surface={surface} maxWidth={maxWidth} />;
   }
 
   return <DashedPlaceholder text="FORMAT" width={capW(140 * scaledSize, maxWidth)} height={h} size={scaledSize} surface={surface} />;
