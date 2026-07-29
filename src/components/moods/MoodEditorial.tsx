@@ -31,7 +31,7 @@ import {
 
 /**
  * Editorial — 영화제 공식 티켓(마스터 Ticket Design Master.dc.html v2 · 2026-07-08 resync, 에픽 #281).
- * 4열 재구조: 포스터 640(#440 0.667 리사이즈, 구 516) | 골드포일 세로 스트립 42(장식) | 메인 flex | 절취 스텁 224(accent 배경).
+ * 4열 재구조: 포스터 640(#440 0.667 리사이즈, 구 516) | 골드포일 세로 스트립 42(장식) | 메인 flex | 절취 스텁 213(accent 배경, #572로 224에서 -5%).
  * 메인: 킥커(En Reprise) → 타이틀 72/900 → avec → Séance + 도착시간(시계) → 메타 그리드(Théâtre/Durée/
  * Note/Sortie 37/800) → 프랑스어 고지문 → 푸터(réalisé avec FILME / par). 좌석·바코드·체인/포맷·le billet은
  * 스텁(회전 -90°) 5그룹으로 이동. reissue는 마스터 메타 그리드에 슬롯이 없어(킥커 En Reprise는 장식) 미렌더.
@@ -44,16 +44,25 @@ const CREAM = '#f7ece2';
 // 포스터 슬롯 폭(#440 잔여 스코프) — 캔버스 높이 960 × POSTER_RATIO(#525 룰 5)로 640. 6무드
 // 중 유일하게 슬롯 자체가 0.667이라 레터박스가 0이다. 리터럴로 두는 건 2:3이 움직이지 않는
 // 실물 규격이라서고, 바꿀 일이 생기면 이 주석의 POSTER_RATIO로 grep이 걸린다.
-// 재계산: mainAvailWidth = 1534 - POSTER_W - FOIL_W - STUB_W - padding52*2.
 const POSTER_W = 640;
 /** 바코드 SVG 폭(px) — Code128C(#444) 기준 모듈당 2px 확보용 286. 테스트가 이 값을 직접 import. */
 export const BARCODE_WIDTH = 286;
 const FOIL_W = 42;
-const STUB_W = 224;
+/** 절취 스텁 폭 = 회전 콘텐츠의 두께축. 224 → 213(-4.9%, #572)로 그만큼 메인 열이 넓어진다. */
+const STUB_W = 213;
+const MAIN_PAD_X = 52;
+// 메인 열 가용폭 — #572 전엔 524가 상수 없이 두 곳(타이틀 예산·고지문 maxWidth)에 매직넘버로
+// 박혀 있어 STUB_W만 바꾸면 조용히 틀렸다. 캔버스 폭 1534는 가로 무드의 긴 변(TARGET_HEIGHT).
+const MAIN_AVAIL_W = 1534 - POSTER_W - FOIL_W - STUB_W - MAIN_PAD_X * 2; // 535
+// 고지문 폭. #440이 정한 "열 가용폭 대비 비율"(440/524 ≈ 0.84)을 그대로 유지하되, 리터럴 440이
+// 아니라 열 폭에 연동해 둔다 — 440은 처음부터 파생값이었지 시안이 준 절대값이 아니다.
+const NOTICE_MAX_W = Math.round(MAIN_AVAIL_W * 0.84); // 449
 // 좌석 폭 예산(#381) — fitFontSizeToWidth의 maxWidth이자 seat span 자체의 하드 캡. 쉼표 없는
 // 단일 토큰은 개수 캡을 안 타므로(#381 리뷰 P1), minSize까지 줄여도 못 들어가면 span에 걸린
 // overflow:hidden + ellipsis가 최종 방어선이 된다.
-const SEAT_MAX_WIDTH = 260;
+// 260 → 220(#573): 최악(4석 16자)에서 스텁 길이축을 41px 회수한다. 이 아래로 더 내리면 4석이
+// minSize 26에서도 안 들어가 ellipsis로 좌석 정보가 잘리기 시작한다 — 실측 하한이다.
+const SEAT_MAX_WIDTH = 220;
 
 export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
@@ -61,19 +70,19 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
   const { bookingNo, watchDateClean, releaseClean } = resolveTicketData(d);
 
   const titleVal = gate(fv?.title, d.title);
-  // 타이틀 폭 맞춤(#318) — 메인 열 가용폭(1534 - poster640 - foil42 - stub224 - padding52*2 = 524, #440 0.667 리사이즈로 648→524 재조정).
+  // 타이틀 폭 맞춤(#318) — 예산은 MAIN_AVAIL_W(#440 0.667 리사이즈로 648→524, #572로 535).
   // 2줄 클램프라 가용폭×2를 maxWidth로 넘겨 가장 긴 한 줄 기준으로 안전하게 축소한다(_shared.tsx 참고).
   const fontsReady = useFontsReady();
-  const titleFontSize = fitFontSizeToWidth(titleVal, 524 * 2, { fontFamily: FONT_KR, fontWeight: 900, minSize: 44, maxSize: 72 }, fontsReady);
+  const titleFontSize = fitFontSizeToWidth(titleVal, MAIN_AVAIL_W * 2, { fontFamily: FONT_KR, fontWeight: 900, minSize: 44, maxSize: 72 }, fontsReady);
   const titleOgVal = gate(fv?.titleOg, d.titleOg);
   const theaterVal = gate(fv?.theater, d.theater);
   const screenVal = gate(fv?.screen, d.screen);
   const seatVal = gate(fv?.seat, d.seat);
   // 좌석 폭 맞춤(#381) — 스텁이 -90° 회전되므로 좌석 텍스트의 (회전 전) 가로 폭이 스텁 전체
   // 그룹 행의 (회전 후) 세로 길이를 늘려, 길어지면 반대편 그룹(바코드·le billet)이 캔버스
-  // 세로(960) 밖으로 밀려 잘린다. SEAT_MAX_WIDTH는 실측(H12/H12,H13 등 1~2석 자연폭 ≤221px는
-  // 그대로 56px 유지, 3~4석부터 축소)으로 정한 예산 — 나머지 4그룹(바코드·스탬프·admis·le
-  // billet)의 실측 폭(~750px)을 뺀 960px 여유에 안전 마진을 둔 값.
+  // 세로(960) 밖으로 밀려 잘린다. 1~2석은 자연폭이 예산 안이라 56px 그대로고, 3~4석부터 축소된다
+  // — 4석(H12,H13,H14,H15)은 #573 후 minSize 26px·렌더폭 184px로, 예산 하한에 정확히 앉는다
+  // (근거는 아래 stubGroups의 길이축 예산표).
   const seatFontSize = fitFontSizeToWidth(seatVal, SEAT_MAX_WIDTH, { fontFamily: FONT_SANS, fontWeight: 900, minSize: 26, maxSize: 56 }, fontsReady);
   const watchDateVal = gate(fv?.watchDate, watchDateClean);
   const watchTimeVal = gate(fv?.watchTime, d.watchTime);
@@ -164,10 +173,37 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
   // 스텁 5그룹(회전 -90°) — DOM 좌→우 = 회전 후 아래→위. 존재하는 그룹만 담고 사이에만 구분선을 끼워
   // 허공 구분선을 원천 차단한다(#216 P1.1). admis·le billet은 장식이라 항상 렌더.
   const stubGroups: ReactNode[] = [];
-  // 바코드 폭 216->286(#444) — Code128C(143유닛) 기준 모듈당 2px을 채우는 최소값. 이 이상 넓히면
-  // 5그룹 로우 실측 폭(997px, CGV 16자리 기준)이 캔버스 960px을 넘는 몫이 늘어 padding 22px(양끝)을
-  // 더 잠식한다(현재 3.5px만 남음) — 실측 확인(2026-07-19): 초과분은 padding 안에서만 소진되고
-  // le billet 텍스트·바코드 바 자체는 안 잘리지만, 더 키우면 실콘텐츠까지 닿는다.
+  // 바코드 폭 216->286(#444) — Code128C(143유닛) 기준 모듈당 2px을 채우는 최소값. 스캐너 유효성
+  // 하한이라 아래 길이축 예산에서 유일하게 못 줄이는 항목이고, 그래서 예산의 30%를 혼자 쓴다.
+  //
+  // ── 스텁 길이축 예산 (캔버스 높이 960) · 실측 `bun scripts/measure-editorial-stub.mjs` ──
+  // 최악 케이스 = 5그룹 전부 + CGV 16자리 예매번호 + 좌석 4석(#573).
+  // **그룹은 column flex라 길이축 기여 = 가장 넓은 자식**이다(높이 합이 아니다) — 그래서 큰 글자
+  // (admis 44 · le billet 36)를 줄여도 안 줄고, 실제로 폭을 쥔 건 작은 모노 라벨이었다.
+  //
+  //   그룹        전(2026-07-29)  후    최광폭 자식(후)
+  //   바코드        286          286   svg (#444 하한, 고정)
+  //   스탬프         53           53   체인 텍스트 라벨
+  //   좌석          226          184   좌석값 26px (SEAT_MAX_WIDTH 260→220)
+  //   admis        112           96   non-transférable 15px (구: ADMIT ONE 14/ls4 = 112)
+  //   le billet    155          125   Édition Spéciale 11/ls1.2 (구: 12/ls2.5 = 155)
+  // admis 44→40은 회수에 5px 기여한다 — 44로 두면 그 글자(101)가 다시 최광폭이 돼 그룹이 101이
+  // 된다. 반면 le billet 36→32(95→84)는 길이축 기여 0이고, 짝인 모노 라벨을 줄인 만큼 큰 글자도
+  // 같이 줄여 그룹 안 비율을 유지하려는 시각 조정이다.
+  //   구분선 4개      4            4
+  //   gap ×8       160          128   gap 20→16 (분리는 두께가 아니라 대비로: opacity 0.32→0.6)
+  //   padding 양끝    44           64   0 22px → 0 32px
+  //   합계        1039          940   (예산 960 / 여유 −79 → +20)
+  //
+  // 전엔 39.5px씩 넘쳐 padding 22px을 다 먹고 실콘텐츠를 17.5px 잘라먹었다. 후에는 양끝 실여백이
+  // 32 + 여유 20/2 = 42px.
+  // 구 주석의 997px은 **값 없음 + ghost** 케이스였다(체인/포맷 자리표시자 120 · 좌석 ghost 116) —
+  // 값이 채워진 쪽이 1039로 더 나빴다. `--empty`로 그 반대 극단도 재고, 후에는 둘 다 940이다.
+  // 두께축(#572 재확인 요청): 회전 행의 높이 132 ≤ STUB_W 213 — 바코드 height 70·구분선 112도
+  // 그 안이라 224→213에 여유가 있다. 하네스가 매 실행 이 축도 대조한다.
+  // **알려진 천장**: 위 표는 체인/포맷을 텍스트 라벨로 잡은 값이다. 업로드 로고는 ChainStamp의
+  // STAMP_MAX_ASPECT 클램프(height 48 × 5 = 240, chainScale까지 곱해짐)까지 넓어질 수 있어
+  // 스탬프 그룹 하나로 예산을 넘길 수 있다 — #573 스코프 밖(별도 이슈).
   if (fv?.bookingNo ?? true)
     stubGroups.push(
       <FieldTap key="booking" field="bookingNo" onField={onField}>
@@ -201,18 +237,19 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
     );
   stubGroups.push(
     <div key="admis" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7 }}>
-      <span style={{ ...italic(CREAM, 44), lineHeight: 0.9 }}>admis</span>
-      <span style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 14, letterSpacing: 4, opacity: 0.82 }}>ADMIT ONE</span>
-      <span style={{ ...italic(CREAM, 16), opacity: 0.72, marginTop: 1 }}>non-transférable</span>
+      <span style={{ ...italic(CREAM, 40), lineHeight: 0.9 }}>admis</span>
+      <span style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 13, letterSpacing: 2.4, opacity: 0.82 }}>ADMIT ONE</span>
+      <span style={{ ...italic(CREAM, 15), opacity: 0.72, marginTop: 1 }}>non-transférable</span>
     </div>
   );
   stubGroups.push(
     <div key="billet" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-      <span style={{ ...italic(CREAM, 36), lineHeight: 0.9 }}>le billet</span>
-      <span style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 12, letterSpacing: 2.5, textTransform: 'uppercase', opacity: 0.85 }}>Édition Spéciale</span>
+      <span style={{ ...italic(CREAM, 32), lineHeight: 0.9 }}>le billet</span>
+      <span style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', opacity: 0.85 }}>Édition Spéciale</span>
     </div>
   );
-  const stubDivider = <span style={{ width: 1, height: 112, background: CREAM, opacity: 0.32, flexShrink: 0 }} />;
+  // 구분선은 대비로만 강화한다(#573) — 두께나 높이를 키우면 방금 회수한 길이축 여백을 도로 먹는다.
+  const stubDivider = <span style={{ width: 1, height: 112, background: CREAM, opacity: 0.6, flexShrink: 0 }} />;
 
   return (
     <div style={{ position: 'absolute', inset: 0, background: PAPER, color: INK, fontFamily: FONT_SANS, overflow: 'hidden', display: 'flex' }}>
@@ -236,7 +273,7 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
       </div>
 
       {/* C: Main */}
-      <div style={{ flex: '1 1 auto', minWidth: 0, position: 'relative', background: PAPER, color: INK, display: 'flex', flexDirection: 'column', padding: '44px 52px 36px', boxSizing: 'border-box', opacity: componentOpacity }}>
+      <div style={{ flex: '1 1 auto', minWidth: 0, position: 'relative', background: PAPER, color: INK, display: 'flex', flexDirection: 'column', padding: `44px ${MAIN_PAD_X}px 36px`, boxSizing: 'border-box', opacity: componentOpacity }}>
         {/* Kicker — 장식 큐레이션 라벨(bar + En Reprise) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
           <span style={{ width: 46, height: 2, background: accent, flexShrink: 0 }} />
@@ -317,8 +354,8 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
           <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: '22px 44px', alignItems: 'start' }}>{metaCells}</div>
         )}
 
-        {/* 프랑스어 고지문(장식 법적 문구) — maxWidth는 메인 열 가용폭 재조정 비율(524/648)로 재계산(#440). */}
-        <div style={{ marginTop: 20, fontWeight: 500, fontSize: 14, fontFamily: FONT_SANS, lineHeight: 1.5, color: BROWN, maxWidth: 440 }}>
+        {/* 프랑스어 고지문(장식 법적 문구) — maxWidth는 메인 열 가용폭에 연동(#440 → #572 NOTICE_MAX_W). */}
+        <div style={{ marginTop: 20, fontWeight: 500, fontSize: 14, fontFamily: FONT_SANS, lineHeight: 1.5, color: BROWN, maxWidth: NOTICE_MAX_W }}>
           Place garantie jusqu&apos;à 25min avant le début de la séance.<br />
           <span style={{ opacity: 0.72 }}>Seat guaranteed up to 25min before the beginning of the screening.</span>
         </div>
@@ -371,7 +408,7 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
         <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(125deg, rgba(0,0,0,.05) 0 2px, rgba(0,0,0,0) 2px 9px)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {/* DOM 좌→우 = 회전 후 아래→위 */}
-          <div style={{ transform: 'rotate(-90deg)', display: 'flex', alignItems: 'center', gap: 20, padding: '0 22px', boxSizing: 'border-box', whiteSpace: 'nowrap' }}>
+          <div style={{ transform: 'rotate(-90deg)', display: 'flex', alignItems: 'center', gap: 16, padding: '0 32px', boxSizing: 'border-box', whiteSpace: 'nowrap' }}>
             {stubGroups.map((g, i) => (
               <Fragment key={i}>
                 {i > 0 ? stubDivider : null}
