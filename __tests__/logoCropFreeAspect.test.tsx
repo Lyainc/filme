@@ -24,7 +24,7 @@
  * getCroppedImg(canvas)만 mock — happy-dom 한계(다른 크롭 테스트와 동일 사유). `Area`는 타입
  * 전용 import라 이 mock으로 대체돼도 ImageCropModal 자체 로딩에는 영향이 없다.
  */
-import { describe, expect, test, afterEach, beforeEach, mock } from 'bun:test';
+import { describe, expect, test, afterAll, afterEach, beforeEach, mock } from 'bun:test';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { centerCrop, convertToPixelCrop, makeAspectCrop } from 'react-image-crop';
@@ -32,7 +32,13 @@ import { POSTER_HEIGHT, POSTER_LANDSCAPE_RATIO, POSTER_RATIO, posterOutputSize }
 import { LAYOUTS } from '@/utils/layouts';
 import type { Area } from '@/utils/imageCrop';
 
+// 스프레드 스냅샷 + afterAll 복원(#611·#618) — `require()`가 주는 건 살아있는 네임스페이스라
+// mock.module이 그 객체를 제자리에서 갈아끼운다. 복사본으로 떠 둬야 복원이 진짜 복원이 된다.
+// 안 되돌리면 이 getCroppedImg 스텁이 프로세스 끝까지 남아, 같은 모듈을 쓰는 뒤 파일이
+// 실제 canvas 크롭 대신 `blob:cropped` 문자열을 받는다.
+const realImageCrop = { ...require('@/utils/imageCrop') };
 mock.module('@/utils/imageCrop', () => ({
+  ...realImageCrop,
   getCroppedImg: () => Promise.resolve('blob:cropped'),
 }));
 
@@ -77,6 +83,9 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   window.localStorage.clear();
+});
+afterAll(() => {
+  mock.module('@/utils/imageCrop', () => realImageCrop);
 });
 
 describe('ImageCropModal 크롭 프레임 종횡비 (#220/#347)', () => {

@@ -25,7 +25,7 @@
  * canvas에 의존하는 getCroppedImg만 mock하고, 실물 모달을 태우기 위한 <img> 자연 크기 스텁 +
  * load 이벤트 관용구를 그 파일들에서 그대로 가져왔다.
  */
-import { describe, expect, test, afterEach, mock, spyOn } from 'bun:test';
+import { describe, expect, test, afterAll, afterEach, mock, spyOn } from 'bun:test';
 import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mobileShellProps } from './shellHarness';
@@ -34,7 +34,13 @@ import { mobileShellProps } from './shellHarness';
 let cropN = 0;
 let holdCrop = false;
 let releaseCrop: (() => void) | null = null;
+// 스프레드 스냅샷 + afterAll 복원(#611·#618) — `require()`가 주는 건 살아있는 네임스페이스라
+// mock.module이 그 객체를 제자리에서 갈아끼운다. 복사본으로 떠 둬야 복원이 진짜 복원이 된다.
+// 안 되돌리면 이 getCroppedImg 스텁이 프로세스 끝까지 남아, 같은 모듈을 쓰는 뒤 파일이
+// 실제 canvas 크롭 대신 `blob:cropped-N` 문자열을 받는다.
+const realImageCrop = { ...require('@/utils/imageCrop') };
 mock.module('@/utils/imageCrop', () => ({
+  ...realImageCrop,
   getCroppedImg: () =>
     new Promise<string>((resolve) => {
       const url = `blob:cropped-${++cropN}`;
@@ -96,7 +102,11 @@ afterEach(() => {
   cropN = 0;
   holdCrop = false;
   releaseCrop = null;
-  mock.restore();
+  mock.restore(); // mock()/spyOn()만 되돌린다 — 모듈 mock은 아래 afterAll이 따로 푼다.
+});
+
+afterAll(() => {
+  mock.module('@/utils/imageCrop', () => realImageCrop);
 });
 
 describe('포스터 크롭 상태머신 (#182 PR #191 · #315, 실제 파일-선택 경로)', () => {

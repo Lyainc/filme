@@ -26,9 +26,14 @@ import userEvent from '@testing-library/user-event';
 // 그 변조를 피해 afterAll에서 진짜로 되돌릴 수 있다. 안 되돌리면 이 크롭 모달 스텁이 프로세스
 // 끝까지 남아, 진짜 모달을 기다리는 뒤 파일(posterCropPipeline의 #182·#315·#548 11개)이 통째로
 // asyncUtilTimeout까지 매달렸다가 깨진다. Linux CI에서만 터진 건 파일 실행 순서 차이일 뿐이다.
+// #618: 이 파일은 ImageCropModal만 되돌리는 반쪽이었다 — 아래 `@/utils/imageCrop` 스텁은 안
+// 풀려 프로세스 끝까지 남았고, 같은 모듈을 쓰는 뒤 파일이 실제 canvas 크롭 대신
+// `blob:cropped-result` 문자열을 받았다. 두 스냅샷을 같은 afterAll에서 함께 되돌린다.
 const realImageCropModal = { ...require('@/components/ImageCropModal') };
+const realImageCrop = { ...require('@/utils/imageCrop') };
 afterAll(() => {
   mock.module('@/components/ImageCropModal', () => realImageCropModal);
+  mock.module('@/utils/imageCrop', () => realImageCrop);
 });
 
 mock.module('@/components/ImageCropModal', () => ({
@@ -50,6 +55,7 @@ mock.module('@/components/ImageCropModal', () => ({
 }));
 
 mock.module('@/utils/imageCrop', () => ({
+  ...realImageCrop,
   getCroppedImg: () => Promise.resolve('blob:cropped-result'),
 }));
 
