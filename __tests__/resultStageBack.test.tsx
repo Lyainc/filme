@@ -15,7 +15,9 @@ let ResultStage: typeof import('@/components/v2/ResultStage').ResultStage;
 let realTicketRenderer: typeof import('@/components/TicketRenderer');
 
 beforeAll(() => {
-  realTicketRenderer = require('@/components/TicketRenderer');
+  // 스프레드 스냅샷 — 살아있는 네임스페이스를 붙들면 mock.module이 그 객체를 제자리에서 갈아끼워
+  // afterAll 복원이 no-op이 된다(#611, resultPanelShareGating.test.tsx에 같은 주석).
+  realTicketRenderer = { ...require('@/components/TicketRenderer') };
   mock.module('@/components/TicketRenderer', () => ({
     default: React.forwardRef<HTMLDivElement>((_props, ref) =>
       React.createElement('div', { ref, 'data-testid': 'ticket' }),
