@@ -12,7 +12,7 @@
  * 흉내낸다 — fakeStore(모듈 스코프)와 실제 window.localStorage는 그대로 남아있으므로 실제
  * 새로고침과 같은 조건이다.
  */
-import { afterEach, beforeEach, describe, expect, test, mock, spyOn } from 'bun:test';
+import { afterAll, afterEach, beforeEach, describe, expect, test, mock, spyOn } from 'bun:test';
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 
 const KEY = 'filme:phototicket:v1';
@@ -33,6 +33,11 @@ function armSaveGate() {
   });
 }
 let saveImagesCallCount = 0;
+// 스프레드 스냅샷 + afterAll 복원(#611·#618) — `require()`가 주는 건 살아있는 네임스페이스라
+// mock.module이 그 객체를 제자리에서 갈아끼운다. 복사본으로 떠 둬야 복원이 진짜 복원이 된다.
+// 안 되돌리면 이 인메모리 fakeStore가 프로세스 끝까지 남아, 뒤 파일이 실제 IndexedDB 경로 대신
+// 이 파일의 잔여 상태(shouldFail·saveGate 포함)를 받는다.
+const realImageDb = { ...require('@/utils/imageDb') };
 mock.module('@/utils/imageDb', () => ({
   saveImages: async (entries: Record<string, Blob | undefined>) => {
     saveImagesCallCount += 1;
@@ -75,6 +80,10 @@ afterEach(() => {
   releaseSave = null;
   saveImagesCallCount = 0;
   mock.restore();
+});
+
+afterAll(() => {
+  mock.module('@/utils/imageDb', () => realImageDb);
 });
 
 describe('#489 자동저장 이미지 복원', () => {
