@@ -6,7 +6,6 @@ import {
   FieldTap,
   FONT_DISPLAY,
   FONT_KR,
-  FONT_MONO,
   MoodProps,
   MoodWordmark,
   Poster,
@@ -67,20 +66,40 @@ const PLATE_SHADOW =
 const PLATE_GLOSS =
   'linear-gradient(116deg, rgba(255,255,255,.5) 0%, rgba(255,255,255,.14) 13%, rgba(255,255,255,0) 30%, rgba(255,255,255,0) 74%, rgba(255,255,255,.14) 92%, rgba(255,255,255,.3) 100%)';
 
-const headerMeta: CSSProperties = { fontFamily: FONT_MONO, fontSize: 13, fontWeight: 600, letterSpacing: 3 };
+/**
+ * 헤더·평점 메타 조판(#575) — `UNE SÉANCE`, 관람일, `/5`가 이 하나를 읽는다.
+ * 서체가 Pretendard(FONT_KR)인 건 무드 루트와 같은 값으로 맞춘 의도적 결정이다(#575) —
+ * 본문이 이미 시안의 세리프를 뒤집고 Pretendard로 갔는데(아래 "의도적 차이 2") 메타만 등폭이라
+ * 반쪽만 이동한 상태였다. `#114`/`#129`의 "티켓 렌더 폰트는 디자인 의도라 유지" 정책에 대한
+ * 무드 단위 예외이므로, 등폭으로 되돌릴 땐 그 정책이 아니라 이 결정을 근거로 다툴 것.
+ */
+const headerMeta: CSSProperties = { fontFamily: FONT_KR, fontSize: 13, fontWeight: 600, letterSpacing: 3 };
 const colophonLine: CSSProperties = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' };
 /**
  * 콜로폰 조판(#566) — 배우 폭 예산(`castAvailW`)이 이 폰트로 측정하므로 스타일과 측정이 같은
  * 상수를 읽어야 한다. 리터럴을 렌더에 따로 심으면 한쪽만 바뀌어 조용히 틀린다(#572와 같은 부류).
  */
-const COLOPHON_FONT = { fontFamily: FONT_MONO, fontWeight: 600, fontSize: 17.5, letterSpacing: 0.9 };
+const COLOPHON_FONT = { fontFamily: FONT_KR, fontWeight: 600, fontSize: 17.5, letterSpacing: 0.9 };
 const COLOPHON_SEP = ' · ';
 /** 콜로폰 행 가용폭 — 렌더가 `left:PAD, right:PAD`로 잡는 그 폭(캔버스 TARGET_WIDTH 960). */
 const COLOPHON_W = 960 - PAD * 2; // 792
 /**
  * 콜로폰 폰트 하한(#566). 13은 이 무드가 헤더(headerMeta)에서 이미 쓰는 크기라 판권면에서
- * 이물감이 없는 선이고, 최악 실측(903px)에 13/17.5를 곱하면 671px으로 예산 792 안에 든다.
+ * 이물감이 없는 선이다. #575로 헤더도 Pretendard가 되면서 이 근거는 **약해지지 않고 정확해졌다**
+ * — 전엔 "등폭 13"과 "비례폭 13"을 견주는 거라 기준점이 실은 어긋나 있었는데, 이제 두 자리가
+ * 같은 서체·같은 크기라 그대로 비교된다.
  * 2줄 × lineHeight 1.72라 줄어드는 방향으로는 푸터(≈top 1438)와 겹칠 일이 없다.
+ *
+ * 실측 갱신(`bun scripts/measure-actors-fit.mjs` 8케이스, Pretendard 기준): 8케이스 중 축소가
+ * 걸리는 건 **긴 한글 2명 + 재개봉 ON 하나뿐이고 16에서 멎는다**(나머지 criterion 3케이스는
+ * 17.5 그대로). 하한 13까지 세 단 남아 여유가 있다. 등폭 시절 근거였던 "최악 903px → 13/17.5배
+ * = 671px" 수치는 서체가 바뀌어 더 이상 유효하지 않다 — 다시 잴 땐 px이 아니라 이 하네스가
+ * 내는 fontSize를 기준으로 볼 것.
+ *
+ * **이 16이 `fitFontSizeToWidth`의 무한루프를 깨웠다**(#575). maxSize 17.5는 소수라 답이 정확히
+ * 16(=floor(17.5))일 때 정수 mid가 lo에 갇혀 while이 안 끝났다. 등폭 시절엔 같은 케이스가 14로
+ * 떨어져 우연히 비껴갔던 것뿐이다 — 근본 수정은 `_shared.tsx`의 `mid === lo` 탈출에 있고,
+ * 여기서 maxSize를 소수로 유지하는 이상 그 가드에 의존한다.
  *
  * 축소는 2행(CAST가 서는 줄)의 폭으로 정하지만 **컨테이너에 걸어 1행까지 같이 줄인다** — 판권면
  * 조판에서 두 행의 크기가 갈리는 게 둘 다 작은 것보다 어색하다. 1행은 줄어드는 방향이라 자기
@@ -98,7 +117,7 @@ const COLOPHON_MIN_SIZE = 13;
  * - 마스트헤드: 제목 46/700 + 원제(Instrument Serif) / 우측 ★ 평점 50/700
  * - 도판: 500×750(0.667, #525 룰 5) + 4단 그림자·inset 엣지·116deg 사선 글로스·하단 5px 두께 엣지(c7)
  * - 한줄평: top1064 height190 **고정 블록** — 문구 길이가 변해도 따옴표(104px)는 좌상·우하에 고정
- * - 콜로폰: 모노 17.5 2줄. 병합 줄은 fieldPieces로 분해해 필드별 탭 타깃·ghost 유지(c3)
+ * - 콜로폰: Pretendard 17.5 2줄(#575 — 시안·v5 초기값은 모노). 병합 줄은 fieldPieces로 분해해 필드별 탭 타깃·ghost 유지(c3)
  * - 푸터: 체인·포맷 스탬프(c5와 같은 자리) + made with FILME
  *
  * 시안과의 의도적 차이 2건:
