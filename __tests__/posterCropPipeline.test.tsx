@@ -88,7 +88,7 @@ function MobileHarness({ onPhoto }: { onPhoto?: (p: ReturnType<typeof usePhototi
 /** 재크롭은 헤더 편집 메뉴 안에 있다 — 데스크톱 ImageUploader의 인라인 버튼 자리를 이게 잇는다. */
 const openMenu = (user: ReturnType<typeof userEvent.setup>) =>
   user.click(screen.getByRole('button', { name: '편집 메뉴' }));
-const uploadCta = () => screen.getByRole('button', { name: /포스터 업로드/ });
+const uploadCta = () => screen.getByRole('button', { name: /포스터 올리기/ });
 
 afterEach(() => {
   cleanup();
@@ -152,10 +152,12 @@ describe('포스터 크롭 상태머신 (#182 PR #191 · #315, 실제 파일-선
     await user.click(uploadCta());
     await pickAndCancel(user, 'a.png');
 
-    // 포스터가 없으면 셸은 업로드 CTA로 되돌아간다(편집 메뉴의 포스터 액션도 게이팅된다).
+    // 포스터가 없으면 셸은 업로드 CTA로 되돌아간다 — #614 이후 그 CTA는 랜딩 오버레이의 것이고,
+    // 크롭을 취소하면 오버레이가 다시 덮인다(파생 showLanding). 원본이 폐기됐다는 증거는 메뉴의
+    // 재크롭이 비활성인 것 — 행 자체는 #614에서 포스터 '올리기'와 함께 상시 노출된다.
     expect(uploadCta()).toBeTruthy();
     await openMenu(user);
-    expect(screen.queryByRole('button', { name: '재크롭' })).toBeNull();
+    expect((screen.getByRole('button', { name: '재크롭' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   // 자동저장 복원(#489)과 같은 상태 — 세션 내 업로드 없이 원본만 훅에 들어와 있는 경우.
@@ -308,7 +310,7 @@ describe('키보드 전용 포스터 업로드 경로 (#608)', () => {
     render(<MobileHarness onPhoto={(p) => { photo = p; }} />);
 
     // ① 드롭존까지 Tab으로 도달 + Enter가 파일 선택을 실제로 연다.
-    await tabTo(user, uploadCta(), '포스터 업로드');
+    await tabTo(user, uploadCta(), '포스터 올리기');
     const openFileDialog = spyOn(posterFileInput(), 'click');
     await user.keyboard('{Enter}');
     expect(openFileDialog).toHaveBeenCalledTimes(1);

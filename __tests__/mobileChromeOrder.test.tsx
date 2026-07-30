@@ -50,10 +50,11 @@ function precedes(a: Element, b: Element): boolean {
 }
 
 describe('MobileEditorShell chrome 정보위계 (#261/#315/#363/#388)', () => {
-  test('업로드 전(랜딩, #363): 드롭존 주연 → OCR 보조 순서, 디자인 rail은 CSS hidden', async () => {
+  test('업로드 전(랜딩, #363→#614): CTA 주연 → OCR 보조 순서, 디자인 rail은 CSS hidden', async () => {
     render(<Harness />);
 
-    const poster = screen.getByText('포스터 업로드'); // 랜딩 히어로 드롭존
+    // #614에서 점선 드롭존 히어로가 랜딩 오버레이의 CTA로 흡수됐다 — 주연/보조 위계(#142)는 그대로다.
+    const poster = screen.getByRole('button', { name: '포스터 올리기' });
     const ocr = await screen.findByRole('button', { name: '티켓 스크린샷으로 자동입력' });
     const rail = screen.getByRole('button', { name: '무드' }); // 첫 rail 아이템
 
@@ -68,7 +69,10 @@ describe('MobileEditorShell chrome 정보위계 (#261/#315/#363/#388)', () => {
 
     const rail = await screen.findByRole('button', { name: '무드' });
 
-    expect(screen.queryByText('포스터 업로드')).toBeNull();
+    // 랜딩 오버레이는 unmount가 아니라 CSS hidden이다(#614) — 그 안의 OcrUploadCard가 같은 트리
+    // 위치의 단일 인스턴스로 남아야 하기 때문(아래 remount 테스트). 그래서 "사라졌다"는 DOM 부재가
+    // 아니라 hidden 조상으로 잰다(rail·OCR 카드와 같은 패턴).
+    expect(screen.getByTestId('landing').classList.contains('hidden')).toBe(true);
     // 테스트 환경엔 Tailwind CSS가 로드되지 않아 getComputedStyle로 display:none이 안 잡히므로
     // (testing-library의 hidden:true는 "숨김 요소도 검색에 포함"일 뿐 숨김 단언이 아니다), 이
     // 레포 컨벤션대로 .hidden 클래스를 가진 조상 존재 여부로 직접 단언한다(rail과 동일 패턴).

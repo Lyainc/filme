@@ -11,6 +11,10 @@ import { usePhototicket } from '@/hooks/usePhototicket';
 import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
 import { mobileShellProps } from './shellHarness';
 
+// 랜딩 오버레이 노출 여부(#614) — 숨김은 unmount가 아니라 display:none(`hidden` 유틸)이고,
+// 테스트엔 Tailwind CSS가 안 실려 getComputedStyle이 클래스를 안 반영하므로 className으로 본다.
+const landingShown = () => !screen.getByTestId('landing').classList.contains('hidden');
+
 const STORAGE_KEY = 'filme:phototicket:v1';
 
 function Harness() {
@@ -102,13 +106,19 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     expect(calls).toBe(1);
   });
 
-  test('업로드 전엔 포스터 교체/재크롭 액션이 없다', async () => {
+  // #614로 게이트가 바뀌었다: 점선 드롭존이 랜딩 오버레이에 흡수되면서, 랜딩이 걷혔는데 포스터는
+  // 아직 없는 상태(OCR로 먼저 들어온 경로 · 초기화 직후)에 포스터 진입점이 하나도 없게 됐다.
+  // 그래서 업로드 전엔 '교체'가 아니라 '올리기'로 열려 있고, 재크롭만 원본이 없어 비활성이다.
+  test('업로드 전엔 포스터 행이 올리기로 열리고 재크롭은 비활성이다 (#614)', async () => {
     const user = userEvent.setup();
     render(<Harness />);
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
 
     expect(screen.queryByRole('button', { name: '포스터 교체' })).toBeNull();
-    expect(screen.queryByRole('button', { name: '재크롭' })).toBeNull();
+    // 랜딩 CTA와 이름이 같으므로 메뉴 패널 안에서만 찾는다.
+    const menu = document.getElementById('editor-menu-panel') as HTMLElement;
+    expect(within(menu).getByRole('button', { name: '포스터 올리기' })).toBeTruthy();
+    expect((within(menu).getByRole('button', { name: '재크롭' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   test('업로드 전에도 임시저장/초기화는 노출된다(#310) — 포스터 전용 액션과 달리 게이팅하지 않는다', async () => {
@@ -120,9 +130,10 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
 
     expect(screen.getByRole('button', { name: '임시저장' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '초기화' })).toBeTruthy();
-    // 반면 포스터 전용 액션은 여전히 게이팅된다.
+    // 반면 포스터가 있어야 뜻이 서는 액션은 여전히 게이팅된다 — '교체'는 아예 없고, 재크롭은
+    // 행은 있되(#614에서 포스터 행이 '올리기'로 열렸다) 되살릴 원본이 없어 비활성이다.
     expect(screen.queryByRole('button', { name: '포스터 교체' })).toBeNull();
-    expect(screen.queryByRole('button', { name: '재크롭' })).toBeNull();
+    expect((screen.getByRole('button', { name: '재크롭' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   test('초기화(#310): 포스터 없이 복원된 stale 값만 있어도 초기화로 지워진다(핵심 시나리오 — 새로고침 직후)', async () => {
@@ -191,8 +202,10 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
 
     expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
     expect(screen.getAllByText('초기화했어요').length).toBeGreaterThan(0);
-    // 포스터가 사라져 업로드 드롭존이 다시 보인다(INITIAL_STATE 복귀 증거).
-    expect(screen.getByText('포스터 업로드')).toBeTruthy();
+    // 포스터도 draft도 사라져 랜딩이 다시 뜬다(INITIAL_STATE 복귀 증거). #614에서 이 복귀는
+    // 두 곳이 같이 되돌아야 성립한다 — usePhototicket.draftRestored와 셸의 landingDismissed.
+    // 한쪽만 남으면 포스터도 랜딩도 없는 빈 셸이 된다.
+    expect(landingShown()).toBe(true);
     // 실행 후 메뉴는 닫힌다.
     expect(screen.queryByRole('menu', { name: '편집 메뉴' })).toBeNull();
   });

@@ -112,7 +112,7 @@ describe('모바일 셸 html 배경 동기화 (#402→#415)', () => {
     setViewportWidth(1200);
     render(<Home />);
     expect(document.getElementById('phone-frame')).not.toBeNull();
-    expect(screen.getByRole('button', { name: /포스터 업로드/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /포스터 올리기/ })).toBeTruthy();
     expect(document.documentElement.classList.contains('chrome-dark')).toBe(false);
   });
 
@@ -122,7 +122,7 @@ describe('모바일 셸 html 배경 동기화 (#402→#415)', () => {
     const user = userEvent.setup();
     render(<Home />);
 
-    await user.click(screen.getByRole('button', { name: /포스터 업로드/ }));
+    await user.click(screen.getByRole('button', { name: /포스터 올리기/ }));
     fireEvent.change(posterFileInput(), { target: { files: [pngFile('poster.png')] } });
     await user.click(await screen.findByText('mock-apply'));
 
@@ -139,7 +139,7 @@ describe('모바일 셸 html 배경 동기화 (#402→#415)', () => {
     const user = userEvent.setup();
     const { unmount } = render(<Home />);
 
-    await user.click(screen.getByRole('button', { name: /포스터 업로드/ }));
+    await user.click(screen.getByRole('button', { name: /포스터 올리기/ }));
     fireEvent.change(posterFileInput(), { target: { files: [pngFile('poster.png')] } });
     await user.click(await screen.findByText('mock-apply'));
     await user.click(await screen.findByRole('button', { name: '완료' }));
