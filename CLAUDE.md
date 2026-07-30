@@ -21,6 +21,12 @@ Before making architectural changes or implementing new features, consult:
 - **모듈 스코프 메모를 테스트가 비워야 하면 `delete require.cache[...]` 말고 리셋 함수를 열 것**(#611). 그 모듈이 어딘가에서 한 번이라도 `mock.module`되면 캐시를 지워도 mock 레지스트리가 먼저 잡아 같은 인스턴스를 돌려줘 우회가 조용히 무력화된다 (`captureToImage.resetCtxFilterProbeForTest` 참고).
 - **회귀 테스트 예**: `__tests__/ocrUndoRestore.test.tsx` — OCR undo가 chainVisible/chainLabel + 폼 필드를 원자 복원하는지(#141 P1) 검증. 새 상호작용 테스트는 testing-library로 통일 권장.
 
+### 📱 셸은 한 벌이다 (#603 → #607)
+데스크톱/모바일 이원화는 **삭제됐다.** `DesktopStudioShell`·`ImageUploader`·`FieldAccordion`·`DesktopDesignPanel`·`AppHeader`·`ThemeToggle`·`src/utils/breakpoints.ts`가 사라졌고, `pages/index.tsx`의 `useMatchMedia` 셸 분기(`mounted`·`isMobile` SSR 왕복)도 없다. 데스크톱은 같은 `MobileEditorShell`을 `PhoneFrame`(400px, `container-type:size` + `contain:paint`)에 넣어 띄운다.
+- **뷰포트 브레이크포인트가 남은 자리는 `tailwind.config.js`의 `screens.rail`(1024px) 하나**고, 소비자도 `PhoneFrame`의 `rail:w-[400px]` 하나뿐이다. JS 미러(`RAIL_BREAKPOINT_PX`)가 없어져 #104의 dead zone 위험이 구조적으로 소멸했다.
+- **길이는 프레임으로 옮겨졌지만 조건은 아니다.** `contain:paint`는 fixed의 컨테이닝 블록과 cq 단위 기준점만 바꾸지 미디어쿼리를 안 옮긴다 — 프레임 형상에 따라 갈려야 하는 조건은 `@container`로 써야 한다(`--hero-dvh-budget`이 그 예: 1440×900 뷰포트는 landscape인데 400×900 프레임은 portrait이다). 새 `vw`/`vh`/`rail:`/`useMatchMedia`를 셸 안에 심기 전에 "이게 뷰포트 축인가 프레임 축인가"를 먼저 정할 것.
+- **fixed 오버레이 좌표도 프레임 기준**이다. 이동식 툴바의 드래그·클램프·스냅은 `PhoneFrame`의 `getFrameRect()`를 쓴다 — `window.innerWidth`로 계산하면 400px 프레임 밖 좌표가 `localStorage`에 영속된다.
+
 ### 📏 크롬 측정 하네스 (400×675)
 - `scripts/measure-chrome.mjs` (`bun scripts/measure-chrome.mjs --theme dark|light`) — dock·프리뷰 rect, 레일 슬롯 넘침, 항목별 WCAG 대비, 모달 포커스/닫기/클릭통과를 한 번에 잰다. **레일 슬롯을 열고 재는 게 전제**다(#563 불변식 dock 232.6 / 프리뷰 226.8×362.3은 열린 상태 기준 — 안 열면 dock 114.5가 나오고 스크립트는 조용히 성공한다). 400×675면 불변식을 자동 대조하고 어긋나면 exit 1. 세션 tmp에 다시 쓰지 말 것(#586, 여섯 번 반복됨).
 
@@ -59,7 +65,7 @@ Before making architectural changes or implementing new features, consult:
 - **Picker**: `src/components/LayoutPicker.tsx` — typed `Record<LayoutId, ...>` thumbnail registry; renaming a layout id breaks the lookup at compile time.
 - **Export**: `src/utils/captureToImage.ts` — awaits `document.fonts.ready` + image loads, then dynamically imports `html-to-image` and forces `transform: 'none'` during capture (otherwise the preview scale wrapper distorts output). Output is a JPEG data URL at the layout's natural pixel dimensions × `pixelRatio: 2`.
 - **Memory Management**: Always `URL.revokeObjectURL` on blob URLs created for cropped images. Download (`downloadTicketAsJpeg`) decodes the capture's base64 `data:` URL via `atob` → `Uint8Array` → `Blob` → `createObjectURL`, then revokes after the anchor click. **No `fetch(data:)`** — Vercel CSP `connect-src` blocks it, so base64 is decoded directly (CSP-safe).
-- **Asset manifest**: `public/assets/{chains,formats}_transparent/` filenames were the single source of truth, but to avoid copyright issues, **bundled logos are removed**. Users now upload logos directly via the field editor's Theater/Format stamp rows (`StampSheet` inside `src/components/v2/FieldEditorBody.tsx`, reached from `FieldAccordion` on desktop / on-ticket field tap→`FieldEditSheet` on mobile) with free-aspect crop (`useLogoCrop` + `ImageCropModal`). The old `TheaterChainPicker`/`FormatPicker` were removed in #231, and the file-based asset-manifest codegen (`scripts/generate-asset-manifest.ts` → `assets.generated.ts`, predev/prebuild hooks) was removed in #196.
+- **Asset manifest**: `public/assets/{chains,formats}_transparent/` filenames were the single source of truth, but to avoid copyright issues, **bundled logos are removed**. Users now upload logos directly via the field editor's Theater/Format stamp rows (`StampSheet` inside `src/components/v2/FieldEditorBody.tsx`, reached from the field drawer or an on-ticket field tap→`FieldEditSheet`) with free-aspect crop (`useLogoCrop` + `ImageCropModal`). The old `TheaterChainPicker`/`FormatPicker` were removed in #231, and the file-based asset-manifest codegen (`scripts/generate-asset-manifest.ts` → `assets.generated.ts`, predev/prebuild hooks) was removed in #196.
 - **Dashed Placeholders**: If a user toggles chain/format ON but doesn't upload a logo, a dashed placeholder appears in the preview. This placeholder is explicitly ignored during `html-to-image` capture via the `data-hide-on-export` attribute.
 
 ### 🔍 OCR Pipeline (티켓 스크린샷 자동 인식)
