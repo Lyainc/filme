@@ -22,7 +22,11 @@ let realTicketRenderer: typeof import('@/components/TicketRenderer');
 let realCaptureToImage: typeof import('@/utils/captureToImage');
 
 beforeAll(() => {
-  realTicketRenderer = require('@/components/TicketRenderer');
+  // **`{ ... }` 스프레드가 핵심이다(#611).** `require()`가 주는 건 살아있는 모듈 네임스페이스라,
+  // 뒤이은 `mock.module`이 그 객체의 export를 제자리에서 갈아끼운다 — 그대로 붙들고 있다가
+  // afterAll에서 되돌리면 이미 스텁이 된 자기 자신을 다시 설치하는 no-op이 되고, 스텁이 프로세스
+  // 끝까지 남는다. 얕은 복사본은 그 변조를 안 받으므로 복원이 실제로 복원이 된다.
+  realTicketRenderer = { ...require('@/components/TicketRenderer') };
   mock.module('@/components/TicketRenderer', () => ({
     default: React.forwardRef<HTMLDivElement>((_props, ref) =>
       React.createElement('div', { ref, 'data-testid': 'ticket' }),
@@ -34,7 +38,7 @@ beforeAll(() => {
   // toJpeg가 항상 성공으로 leak된다(claude-review PR #426 P1 대응 중 발견). downloadTicketAsJpeg만
   // 결정론적으로 실패하게 mock — captureNodeToJpeg 등 나머지는 실제 구현 유지해 위 permalink
   // 테스트(캡처 후 fetch 실패에 의존)는 그대로 둔다.
-  realCaptureToImage = require('@/utils/captureToImage');
+  realCaptureToImage = { ...require('@/utils/captureToImage') }; // 위와 같은 이유의 스냅샷(#611)
   mock.module('@/utils/captureToImage', () => ({
     ...realCaptureToImage,
     canShareTicketFile: () => false,
