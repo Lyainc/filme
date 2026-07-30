@@ -35,6 +35,17 @@ describe('fitFontSizeToWidth', () => {
     expect(size).toBe(60);
   });
 
+  test('소수 maxSize(17.5)에서도 수렴한다 — 정수 mid가 lo에 갇히는 무한루프 회귀 (#575)', () => {
+    // widthAt(size) = 10자 × size × 0.6 = 6×size. maxWidth=100 → size<=16.67에서 fit.
+    // 17.5는 넘치고(105) 13은 들어맞아(78) 이진탐색 구간에 들어간다. 수정 전엔 lo=16, hi=17.5에서
+    // mid=floor(16.75)=16이 계속 lo로 다시 대입돼 while이 끝나지 않았다(브라우저 메인 스레드 잠김).
+    // 이 테스트가 무한루프면 통과가 아니라 타임아웃으로 죽는다.
+    const size = fitFontSizeToWidth('a'.repeat(10), 100, { fontFamily: 'FitTestFractionalMax', minSize: 13, maxSize: 17.5 });
+    expect(size).toBe(16);
+    expect(6 * size).toBeLessThanOrEqual(100);
+    expect(6 * (size + 1)).toBeGreaterThan(100);
+  });
+
   test('폭을 넘치는 텍스트는 이진탐색으로 들어맞는 가장 큰 크기로 축소된다', () => {
     // widthAt(size) = 20자 × size × 0.6 = 12×size. maxWidth=300 → size<=25에서 fit.
     const text = 'a'.repeat(20);

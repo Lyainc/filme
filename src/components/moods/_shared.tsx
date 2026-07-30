@@ -1991,6 +1991,12 @@ export function fitFontSizeToWidth(
       let hi = maxSize;
       while (hi - lo > 1) {
         const mid = Math.floor((lo + hi) / 2);
+        // `mid === lo`면 더 좁힐 수 없다 — **정수 mid + 소수 maxSize의 조합에서 무한루프였다**:
+        // lo=16, hi=17.5면 mid가 계속 floor(16.75)=16이고 아래 첫 분기가 lo=16을 다시 써서
+        // 폭이 영원히 안 줄었다(#575에서 발견 — Criterion 콜로폰 maxSize 17.5가 실제로 축소를
+        // 요구하는 조합에서 브라우저 메인 스레드가 잠겼다). `mid === hi`는 mid < hi가 항상
+        // 참이라 생길 수 없고, 반대 분기는 hi=mid=lo로 즉시 탈출하므로 여기만 막으면 된다.
+        if (mid === lo) break;
         if (widthAt(mid) <= maxWidth) lo = mid;
         else hi = mid;
       }
