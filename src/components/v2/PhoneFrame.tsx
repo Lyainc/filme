@@ -30,9 +30,10 @@ export function getFrameRect(): { left: number; top: number; width: number; heig
  * - 데스크톱(rail=1024 이상): 폭 400px 고정 + 가로 센터링. #607에서 데스크톱 전용 셸이 삭제돼
  *   이제 이 프레임이 데스크톱의 유일한 레이아웃이다. 400인 근거는 `scripts/measure-chrome.mjs`의
  *   #563 불변식(dock 232.6 / 프리뷰 226.8×362.3)이 400×675 기준이라, 폭을 맞춰두면 같은 하네스가
- *   값 변경 없이 데스크톱 프레임에도 쓰이기 때문이다. **아직 게이트는 아니다** — 그 스크립트는
- *   불변식 대조를 뷰포트가 400×675일 때만 켜서(measure-chrome.mjs의 `checked:false` 분기), 데스크톱
- *   뷰포트로 돌리면 조용히 통과한다. 대조 기준을 뷰포트에서 프레임 rect로 옮기는 게 #609다.
+ *   값 변경 없이 데스크톱 프레임에도 쓰이기 때문이다. **#609에서 실제로 게이트가 됐다** — 그
+ *   스크립트가 대조 기준을 뷰포트에서 이 엘리먼트의 rect로 옮겨, `--viewport 1440x675`로 돌려도
+ *   프레임이 400×675면 같은 불변식을 그대로 대조하고 어긋나면 exit 1이다(실측: 프레임 400×675
+ *   at x=520, dock·프리뷰 값 무변경).
  *
  * 여기 걸린 두 속성은 **각자 다른 일을 하고 하나로 대체되지 않는다**:
  *
@@ -47,6 +48,8 @@ export function getFrameRect(): { left: number; top: number; width: number; heig
  * `paint`는 안 들어간다. `contain: paint` 없이 재면 프레임은 400px로 서고 cq 단위도 프레임
  * 기준으로 잘 풀리는데 fixed만 뷰포트로 탈출한다(1440×900 실측: 크롭 모달이 프레임에 포털됐는데도
  * 1440×900, 레일 핸들 x=1396, 드로어 x=1128). `contain: paint`를 얹으면 전부 프레임 안에 들어온다.
+ * 이 한 줄을 지우면 measure-chrome이 크롭 모달·필드 드로어·max 오버레이 셋을 좌 520px 넘침으로
+ * 잡아 exit 1이다(#609 실측) — 그때도 dock/프리뷰 불변식은 통과하므로, 그 숫자만으로는 못 잡는다.
  */
 export function PhoneFrame({ children }: { children: ReactNode }) {
   return (

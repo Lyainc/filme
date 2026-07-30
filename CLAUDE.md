@@ -28,7 +28,9 @@ Before making architectural changes or implementing new features, consult:
 - **fixed 오버레이 좌표도 프레임 기준**이다. 이동식 툴바의 드래그·클램프·스냅은 `PhoneFrame`의 `getFrameRect()`를 쓴다 — `window.innerWidth`로 계산하면 400px 프레임 밖 좌표가 `localStorage`에 영속된다.
 
 ### 📏 크롬 측정 하네스 (400×675)
-- `scripts/measure-chrome.mjs` (`bun scripts/measure-chrome.mjs --theme dark|light`) — dock·프리뷰 rect, 레일 슬롯 넘침, 항목별 WCAG 대비, 모달 포커스/닫기/클릭통과를 한 번에 잰다. **레일 슬롯을 열고 재는 게 전제**다(#563 불변식 dock 232.6 / 프리뷰 226.8×362.3은 열린 상태 기준 — 안 열면 dock 114.5가 나오고 스크립트는 조용히 성공한다). 400×675면 불변식을 자동 대조하고 어긋나면 exit 1. 세션 tmp에 다시 쓰지 말 것(#586, 여섯 번 반복됨).
+- `scripts/measure-chrome.mjs` (`bun scripts/measure-chrome.mjs --theme dark|light`) — dock·프리뷰 rect, 레일 슬롯 넘침, 항목별 WCAG 대비, 모달 포커스/닫기/클릭통과를 한 번에 잰다. **레일 슬롯을 열고 재는 게 전제**다(#563 불변식 dock 232.6 / 프리뷰 226.8×362.3은 열린 상태 기준 — 안 열면 dock 114.5가 나오고 스크립트는 조용히 성공한다). 세션 tmp에 다시 쓰지 말 것(#586, 여섯 번 반복됨).
+- **대조 기준은 뷰포트가 아니라 `#phone-frame` rect다**(#609). 예전엔 `VW===400 && VH===675`로 게이팅해 `--viewport 1440x675`로 돌리면 프레임이 망가져도 `checked:false` + exit 0으로 조용히 통과했다. 지금은 프레임이 400×675면 뷰포트와 무관하게 같은 불변식을 대조한다(1440×675 → 프레임 400×675 at x=520, dock·프리뷰 값 무변경). **`checked:false`는 통과가 아니라 실패다** — 못 재면 그대로 exit 1이라, 1440×900(프레임 400×900)은 이 불변식의 대상이 아니라 실패로 나온다.
+- **두 번째 축은 프레임 봉쇄다**(#609). 크롭 모달·필드 드로어·편집 메뉴·max 오버레이·결과 스테이지·결과 hero가 프레임 사각형 안인지 방향별 넘침으로 잰다. dock/프리뷰 숫자가 원리적으로 못 보는 축인 게 실측으로 증명돼 있다 — `PhoneFrame`의 `contain:paint`를 지우면 fixed 오버레이 3종이 좌 520px 넘치는데 **dock/프리뷰 불변식은 그대로 통과한다.**
 
 ### 🔎 Code Review
 - **게이트는 두 축이고 소유가 갈린다**(#593·#594). ① **`.github/workflows/ci.yml`이 결정적 correctness의 유일한 게이트다** — `bun install --frozen-lockfile` → `bun run typecheck` → `bun test`가 모든 PR에서 돌고, main 브랜치의 required check는 이것이다. ② **`claude-review` 액션은 그 위의 fresh-eyes 패스로 required가 아니다**(워크플로는 유지되고 코멘트도 계속 붙는다). required에서 뺀 근거는 그게 실제로 차단하던 명제가 "코드가 안전한가"가 아니라 "코멘트가 0개가 아닌가"였고(실측 PR 6개에서 P0 0건), 그래서 OAuth 토큰 만료나 API 장애가 코드와 무관한 머지 차단이 됐기 때문이다. 대신 그 리뷰에 기대는 축은 CI가 원리적으로 못 잡는 것 하나다: **없는 테스트, CLAUDE.md에만 사는 불변식 위반, 사라진 사용자 경로.**
