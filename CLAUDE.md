@@ -22,7 +22,8 @@ Before making architectural changes or implementing new features, consult:
 - `scripts/measure-chrome.mjs` (`bun scripts/measure-chrome.mjs --theme dark|light`) — dock·프리뷰 rect, 레일 슬롯 넘침, 항목별 WCAG 대비, 모달 포커스/닫기/클릭통과를 한 번에 잰다. **레일 슬롯을 열고 재는 게 전제**다(#563 불변식 dock 232.6 / 프리뷰 226.8×362.3은 열린 상태 기준 — 안 열면 dock 114.5가 나오고 스크립트는 조용히 성공한다). 400×675면 불변식을 자동 대조하고 어긋나면 exit 1. 세션 tmp에 다시 쓰지 말 것(#586, 여섯 번 반복됨).
 
 ### 🔎 Code Review
-- **리뷰 게이트 = PR의 GitHub `claude-review` 액션**(main 브랜치 required check). 모든 PR에서 자동으로 돌아 correctness를 잡으니 이게 authoritative 리뷰다.
+- **게이트는 두 축이고 소유가 갈린다**(#593·#594). ① **`.github/workflows/ci.yml`이 결정적 correctness의 유일한 게이트다** — `bun install --frozen-lockfile` → `bun run typecheck` → `bun test`가 모든 PR에서 돌고, main 브랜치의 required check는 이것이다. ② **`claude-review` 액션은 그 위의 fresh-eyes 패스로 required가 아니다**(워크플로는 유지되고 코멘트도 계속 붙는다). required에서 뺀 근거는 그게 실제로 차단하던 명제가 "코드가 안전한가"가 아니라 "코멘트가 0개가 아닌가"였고(실측 PR 6개에서 P0 0건), 그래서 OAuth 토큰 만료나 API 장애가 코드와 무관한 머지 차단이 됐기 때문이다. 대신 그 리뷰에 기대는 축은 CI가 원리적으로 못 잡는 것 하나다: **없는 테스트, CLAUDE.md에만 사는 불변식 위반, 사라진 사용자 경로.**
+- **`required_status_checks.strict`는 false다.** true면 머지 하나가 열린 PR 전부의 체크를 무효화해 하루 6머지(2026-07에 182 PR)에서 재검증이 연쇄한다. 대가로 stale base 머지가 허용되고, rebase 후 조합은 `push: main` 트리거가 **관측만** 한다 — 그때는 이미 prod 배포가 나간 뒤라 차단 수단이 아니다.
 - **push 전 claude 리뷰는 이 액션과 중복이라 습관으로 돌리지 않는다.** 특히 Workflow-backed `code-review`(`/code-review ultra`·high 워크플로, subagent 다수·고비용)는 같은 "claude가 diff 리뷰"를 한 번 더 하는 거라 아주 무겁거나 복잡한 변경에서 PR 전 깊이가 필요할 때만 쓴다(예: 3파일 변경에 에이전트 7개·38만 토큰 #287은 과투입).
 - `/simplify`(재사용·단순화·altitude 정리)는 액션의 correctness 축과 겹치지 않으니 품질 패스가 필요할 때 별도로 쓴다.
 
