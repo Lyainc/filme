@@ -69,7 +69,7 @@ describe('MobileEditorShell chrome 정보위계 (#261/#315/#363/#388)', () => {
 
     const rail = await screen.findByRole('button', { name: '무드' });
 
-    // 랜딩 오버레이는 unmount가 아니라 CSS hidden이다(#614) — 그 안의 OcrUploadCard가 같은 트리
+    // 랜딩은 unmount가 아니라 CSS hidden이다(#614) — 그 안의 OcrUploadCard가 같은 트리
     // 위치의 단일 인스턴스로 남아야 하기 때문(아래 remount 테스트). 그래서 "사라졌다"는 DOM 부재가
     // 아니라 hidden 조상으로 잰다(rail·OCR 카드와 같은 패턴).
     expect(screen.getByTestId('landing').classList.contains('hidden')).toBe(true);
