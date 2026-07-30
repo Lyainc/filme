@@ -112,6 +112,22 @@ export default function ImageCropModal({
   // 모달은 크롭 열림 상태에서만 마운트되므로 항상 열린 상태 — 스크롤 잠금
   useBodyScrollLock(true);
 
+  // 포털 타깃은 첫 렌더에 한 번만 정하고 고정한다(#604 리뷰). 매 렌더 getElementById를 다시 읽으면
+  // 프레임이 이 모달과 **같은 커밋에** 마운트되는 경로에서 컨테이너가 body→프레임으로 바뀌는데,
+  // createPortal은 컨테이너가 바뀌면 서브트리를 통째로 지우고 새로 만든다 — <img>가 재생성되며
+  // onImageLoad→initCrop이 다시 돌아 진행 중인 크롭 선택이 초기화되고, dialogRef도 새 노드를 가리켜
+  // 포커스가 body로 떨어진다. 그 경로는 데스크톱(≥1024)에서 크롭을 연 채 창을 1024 밑으로 줄이는
+  // 것으로, cropOpen이 usePhototicket에 올라가 있어(#548) 셸 교체를 넘어 살아남는다.
+  //
+  // 그 경로에선 렌더 시점에 프레임 노드가 아직 문서에 없어 body가 잡히고, 고정이라 그 모달은 끝까지
+  // body에 남는다 — 오늘(항상 body)과 같은 동작이라 회귀는 아니고 크롭 초기화·포커스 유실만 막는다.
+  // 정상 경로에선 프레임이 페이지 첫 렌더에 서고 모달은 늘 그 뒤에 열리므로 첫 렌더 조회로 충분하고,
+  // 이 예외 경로 자체가 데스크톱 셸과 함께 #607에서 사라진다.
+  const portalTargetRef = useRef<HTMLElement | null>(null);
+  if (!portalTargetRef.current) {
+    portalTargetRef.current = document.getElementById(PHONE_FRAME_ID) ?? document.body;
+  }
+
   const dialogRef = useRef<HTMLDivElement>(null);
   const getFocusables = useCallback(
     () =>
@@ -291,6 +307,6 @@ export default function ImageCropModal({
         </div>
       </div>
     </div>,
-    document.getElementById(PHONE_FRAME_ID) ?? document.body
+    portalTargetRef.current
   );
 }

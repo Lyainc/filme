@@ -43,6 +43,7 @@ const ImageCropModal = (
 ).default;
 const { FieldEditorBody } = require('@/components/v2/FieldEditorBody') as typeof import('@/components/v2/FieldEditorBody');
 const { usePhototicket } = require('@/hooks/usePhototicket') as typeof import('@/hooks/usePhototicket');
+const { PhoneFrame } = require('@/components/v2/PhoneFrame') as typeof import('@/components/v2/PhoneFrame');
 const ImageUploader = (
   require('@/components/ImageUploader') as {
     default: typeof import('@/components/ImageUploader').default;
@@ -55,8 +56,8 @@ const fileInput = () => document.querySelector('input[type="file"]') as HTMLInpu
 const aspectOf = (el: HTMLElement) => Number(el.getAttribute('data-aspect'));
 
 // 업로드 이미지의 자연 크기를 <img>에 스텁하고 load 이벤트를 흘려 ImageCropModal의
-// onImageLoad(mediaAspect 계산 → 크롭 초기화)를 실제로 태운다. 모달은 createPortal로
-// document.body에 붙으므로 render()의 container가 아니라 document 전체에서 찾는다.
+// onImageLoad(mediaAspect 계산 → 크롭 초기화)를 실제로 태운다. 모달은 createPortal로 폰 프레임
+// (없으면 document.body, #606)에 붙으므로 render()의 container가 아니라 document 전체에서 찾는다.
 function loadImage(naturalWidth: number, naturalHeight: number) {
   const img = document.querySelector('img') as HTMLImageElement;
   Object.defineProperty(img, 'naturalWidth', { value: naturalWidth, configurable: true });
@@ -331,5 +332,33 @@ describe('크롭 출력 해상도가 크롭 방향을 따른다 (#529 결정 3)'
   test('가로 프리셋 비율이 정확히 1.5(세로 표준의 역수)', () => {
     expect(POSTER_LANDSCAPE_RATIO).toBeCloseTo(1.5, 10);
     expect(POSTER_LANDSCAPE_RATIO).toBeCloseTo(1 / POSTER_RATIO, 10);
+  });
+});
+
+// 포털 타깃(#606) — 프레임의 contain:paint가 fixed 오버레이를 가두는 건 모달이 프레임 **안쪽**
+// DOM에 있을 때뿐이다. body에 붙으면 조상 사슬이 끊겨 데스크톱에서 400px 프레임 밖 전체 화면에
+// 뜬다. happy-dom은 CSS 레이아웃을 안 재므로 여기서 못 박는 건 "어느 노드에 붙는가" 하나다.
+//
+// 프레임을 먼저 마운트한 뒤 모달을 여는 건 프로덕션 순서 그대로다 — 프레임은 pages/index.tsx의
+// 셸 바깥이라 페이지 첫 렌더에 서고, 모달은 항상 그 뒤 사용자 조작으로 열린다. 같은 커밋에 둘이
+// 함께 마운트되면 렌더 시점엔 프레임 노드가 아직 문서에 없어 body 폴백이 잡히는데, 그건 아래
+// ImageCropModal 주석이 다루는 한계고 그 경로(#548 cropOpen 유지 + 1024 경계 리사이즈)는
+// 데스크톱 셸이 사라지는 #607에서 함께 없어진다.
+describe('크롭 모달 포털 타깃 (#606)', () => {
+  test('이미 떠 있는 폰 프레임 안에서 열면 프레임에 붙는다', () => {
+    const { rerender } = render(<PhoneFrame>{null}</PhoneFrame>);
+    rerender(
+      <PhoneFrame>
+        <ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} />
+      </PhoneFrame>,
+    );
+    expect(document.getElementById('phone-frame')).not.toBeNull();
+    expect(screen.getByRole('dialog').parentElement?.id).toBe('phone-frame');
+  });
+
+  test('프레임이 없으면 body로 폴백한다 (데스크톱 셸 경로)', () => {
+    render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} />);
+    expect(document.getElementById('phone-frame')).toBeNull();
+    expect(screen.getByRole('dialog').parentElement?.tagName).toBe('BODY');
   });
 });
