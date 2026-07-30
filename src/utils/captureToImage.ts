@@ -154,6 +154,23 @@ function isCtxFilterHonored(): boolean {
   return ctxFilterHonored;
 }
 
+/**
+ * 테스트 전용 — 위 감지 메모를 비워 다음 호출이 다시 재도록 한다. 실제 런타임에선 페이지 수명 내내
+ * 캔버스 환경이 안 바뀌므로 아무도 부르지 않는다.
+ *
+ * 필요한 이유(#611): 캡처 테스트들은 한 프로세스 안에서 서로 다른 캔버스 환경을 번갈아 태운다 —
+ * 진짜 소프트웨어 2D(getImageData 구현, 감지 결과 false), draw call만 기록하는 가짜 ctx(감지 실패 →
+ * true 폴백), 아무것도 없는 happy-dom(getContext('2d')가 null → true 폴백). 파일 경계에서 메모를
+ * 안 비우면 먼저 돈 파일의 판정이 뒤 파일로 샌다. 예전엔 테스트가 `delete require.cache[...]`로
+ * 모듈 인스턴스를 새로 받아 우회했는데, **다른 파일이 이 모듈을 `mock.module`로 한 번이라도
+ * 가로채면 그 우회가 조용히 무력화된다** — 캐시를 지워도 mock 레지스트리가 먼저 잡아 같은
+ * 인스턴스(=이미 메모된 값)를 돌려주기 때문이고, 그게 Linux CI에서 #512 픽셀 등가 검사 14개가
+ * 깨진 경로였다(macOS는 파일 순서가 달라 우연히 안 걸렸다).
+ */
+export function resetCtxFilterProbeForTest(): void {
+  ctxFilterHonored = null;
+}
+
 // op 종류는 **정수**로 들고 다닌다. 정규식 match가 만드는 문자열은 V8이 인터닝하지 않아서,
 // `op.k === 'brightness'`가 포인터 비교가 아니라 문자 단위 비교로 떨어진다 — 픽셀마다 op 개수만큼
 // 그 비교를 도니 이 한 줄이 베이킹 시간의 46%였다(#538 실측, CPU 6× 스로틀·1920×2752: 605→326ms).
