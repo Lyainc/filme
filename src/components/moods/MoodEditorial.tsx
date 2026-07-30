@@ -111,8 +111,7 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
   const runtimeVal = gate(fv?.runtime, d.runtime);
   const releaseVal = gate(fv?.releaseDate, releaseClean);
   // 배우 폭 맞춤(#566) — 고정 3명 캡(truncateActors)은 폭을 몰라, 2명이어도 길면 CSS ellipsis가
-  // 이름 중간을 잘랐다. 자간은 -0.3(음수)이라 측정치가 실렌더보다 넓게 잡히는 쪽이므로 넘기지
-  // 않는다 — 오버플로 방향의 오차가 없다(양수 자간인 Criterion 콜로폰은 반대로 반드시 넘긴다).
+  // 이름 중간을 잘랐다. 자간 -0.3은 음수라 측정에 안 넘긴다(근거는 MeasureFontOptions.letterSpacing).
   const actorsVal = truncateActorsToWidth(gate(fv?.actors, d.actors), ACTORS_AVAIL_W, { fontFamily: FONT_KR, fontWeight: 600, fontSize: 33 }, fontsReady);
   const signatureVal = gate(fv?.signature, d.signature);
   const ratingVisible = (fv?.rating ?? true) && d.rating > 0;
@@ -344,14 +343,14 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
         {/* avec — cast */}
         {actorsVal ? (
           <FieldTap field="actors" onField={onField}>
-            <div style={{ marginTop: 20, display: 'flex', alignItems: 'baseline', gap: 12 }}>
+            <div style={{ marginTop: 20, display: 'flex', alignItems: 'baseline', gap: AVEC_GAP }}>
               <span style={{ ...italic(accent, 26), flexShrink: 0 }}>avec</span>
               <span style={{ fontWeight: 600, fontSize: 33, fontFamily: FONT_KR, letterSpacing: -0.3, flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{actorsVal}</span>
             </div>
           </FieldTap>
         ) : gActors ? (
           <FieldTap field="actors" onField={onField}>
-            <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: AVEC_GAP }}>
               <span style={{ ...italic(accent, 26) }}>avec</span>
               <FieldGhost text="CAST" width={280} height={40} surface="paper" state={gActors} />
             </div>

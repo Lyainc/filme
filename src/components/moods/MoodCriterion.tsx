@@ -165,8 +165,7 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
   const reissuePiece = reissueVal && `RE-RELEASED ${reissueVal}`;
   // 배우 폭 맞춤(#566) — CAST는 콜로폰 2행 **끝**에 서므로 예산은 행 폭에서 앞 조각들과 구분자를
   // 뺀 나머지다(앞 조각 개수가 재개봉 유무로 조건부라 상수로는 안 나온다). 자간 0.9는 양수라
-  // 반드시 측정에 넘긴다 — 안 넘기면 측정치가 실렌더보다 좁아 예산 안이라 판정한 문자열이 실제로는
-  // 넘쳐 ellipsis에 걸린다(#590이 TextStamp에서 밟은 것과 같은 트랩).
+  // COLOPHON_FONT로 측정에 함께 넘긴다(근거는 MeasureFontOptions.letterSpacing).
   // 앞 조각이 ghost면 텍스트가 아니라 점선 박스라 이 예산이 실제와 어긋나지만, 그 경우 행이
   // whiteSpace:normal로 줄바꿈하므로(아래 hasGhost 분기) 이름이 중간에서 잘릴 일 자체가 없다.
   const castPrefix = [runtimeVal, releasedPiece, reissuePiece].filter(Boolean).join(COLOPHON_SEP);

@@ -13,9 +13,13 @@
  * 둘 중 하나라도 깨지면 exit 1. 케이스는 아래 CASES가 전부고, 재개봉 유무로 콜로폰 앞 조각
  * 길이가 갈리는 조합(Criterion 예산의 조건부 항)을 일부러 포함한다.
  *
- * 함정 목록은 네이티브 메모리 e2e-browser-verification-setup 참고. addPoster는
- * measure-editorial-stub.mjs·measure-chrome.mjs와 같은 코드다(프리뷰 게이트가 포스터라 셋 다
- * 필요하고, 하네스끼리 공유 모듈로 묶기보다 각자 자립하게 뒀다).
+ * 함정 목록은 네이티브 메모리 e2e-browser-verification-setup 참고.
+ *
+ * ponytail: addPoster가 `measure-editorial-stub.mjs`·`measure-chrome.mjs`에 이은 **3번째 복사본**
+ * 이다(프리뷰 게이트가 포스터라 하네스마다 필요하다). 천장은 "크롭 '적용'의 late-completedCrop
+ * 함정을 한 곳에서만 고칠 수 없다" — 그 대기 로직이 바뀌면 세 파일을 같이 손봐야 한다. 업그레이드
+ * 경로는 `scripts/lib/preview-seed.mjs`로 추출(−56줄). 지금 안 하는 건 도는 하네스 둘을 #566
+ * 범위에서 건드리는 값이 없어서고, **4번째 복사본이 생기면 그때는 추출할 것.**
  */
 import puppeteer from 'puppeteer-core';
 
