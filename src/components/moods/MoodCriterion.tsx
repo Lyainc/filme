@@ -72,6 +72,13 @@ const PLATE_GLOSS =
   'linear-gradient(116deg, rgba(255,255,255,.5) 0%, rgba(255,255,255,.14) 13%, rgba(255,255,255,0) 30%, rgba(255,255,255,0) 74%, rgba(255,255,255,.14) 92%, rgba(255,255,255,.3) 100%)';
 
 /**
+ * 한줄평 장식 따옴표 크기(#577, 104 → 125). 좌상·우하 한 쌍이 같은 값을 읽어야 하므로 상수다.
+ * 실측(브라우저, 자연px): `"` 한 글자의 span 박스는 fontSize의 0.317배 폭이라 125에서 39.6px —
+ * 텍스트 인셋 96px 안에 들어간다(104에서 33px). 바꿀 땐 아래 한줄평 블록 주석의 예산을 다시 잰다.
+ */
+const QUOTE_MARK_SIZE = 125;
+
+/**
  * 헤더·평점 메타 조판(#575) — `UNE SÉANCE`, 관람일, `/5`가 이 하나를 읽는다.
  * 서체가 Pretendard(FONT_KR)인 건 무드 루트와 같은 값으로 맞춘 의도적 결정이다(#575) —
  * 본문이 이미 시안의 세리프를 뒤집고 Pretendard로 갔는데(아래 "의도적 차이 2") 메타만 등폭이라
@@ -121,7 +128,7 @@ const COLOPHON_MIN_SIZE = 13;
  * - 헤더: 옐로 13×13 스퀘어 + UNE SÉANCE / 우측 관람일, 아래 옐로 3px 룰
  * - 마스트헤드: 제목 46/700 + 원제(Instrument Serif) / 우측 ★ 평점 50/700
  * - 도판: 500×750(0.667, #525 룰 5) + 4단 그림자·116deg 사선 글로스에 얹은 헤어라인(#576)·하단 5px 두께 엣지(c7)
- * - 한줄평: top1064 height190 **고정 블록** — 문구 길이가 변해도 따옴표(104px)는 좌상·우하에 고정
+ * - 한줄평: top1064 height190 **고정 블록** — 문구 길이가 변해도 따옴표(QUOTE_MARK_SIZE 125px, #577)는 좌상·우하에 고정
  * - 콜로폰: Pretendard 17.5 2줄(#575 — 시안·v5 초기값은 모노). 병합 줄은 fieldPieces로 분해해 필드별 탭 타깃·ghost 유지(c3)
  * - 푸터: 체인·포맷 스탬프(c5와 같은 자리) + made with FILME
  *
@@ -321,10 +328,18 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
               · 사용자 입력 최악(QUOTE_MAX_LENGTH 22자 — 한글 반복·M/W 반복): 셋 다 2줄에서 멈춤
             최악이 고딕 프리셋 1101px(=1.84줄)이라 3줄이 되려면 1200px를 넘겨야 한다(여유 9%).
             실제로 넘는 조합이 없어 클램프는 안 넣었다. 프리셋 문구를 늘리거나 fontSize·인셋·폰트
-            후보를 건드리면 여기부터 다시 잰다 — **고딕(Pretendard)이 가장 넓어 기준선이다**. */}
+            후보를 건드리면 여기부터 다시 잰다 — **고딕(Pretendard)이 가장 넓어 기준선이다**.
+
+            따옴표 104 → QUOTE_MARK_SIZE 125 재실측(브라우저, 자연px, 6조합):
+              · 따옴표 span 박스 40×125 — 텍스트 인셋 96 안이라 인셋을 키울 필요가 없었다(104에선 33×104)
+              · 줄 수는 전 조합 2줄 이하, 텍스트 잉크 폭 최대 596(기본 quote 고딕) ≤ 슬롯 600
+              · 따옴표 잉크 ↔ 문구 잉크 겹침 0 — 좌상·우하에 그대로 앉는다
+            위 표의 "22자는 셋 다 2줄에서 멈춤"은 **틀렸다**: 무공백 라틴(`W`×22)은 줄바꿈 기회가
+            없어 1줄 1006.5px로 슬롯을 넘고 따옴표와 140px 겹쳤다(따옴표 크기와 무관한 기존 결함).
+            아래 `overflowWrap: 'anywhere'`가 단어 안에서 끊어 2줄 594.8px·겹침 0으로 가둔다. */}
         <div style={{ position: 'absolute', left: PAD, right: PAD, top: 1064, height: 190 }}>
-          <span aria-hidden style={{ position: 'absolute', left: 0, top: 0, fontFamily: FONT_DISPLAY, fontSize: 104, lineHeight: 1, color: CRITERION_YELLOW }}>&ldquo;</span>
-          <span aria-hidden style={{ position: 'absolute', right: 0, bottom: 0, fontFamily: FONT_DISPLAY, fontSize: 104, lineHeight: 1, color: CRITERION_YELLOW, transform: 'rotate(180deg)' }}>&ldquo;</span>
+          <span aria-hidden style={{ position: 'absolute', left: 0, top: 0, fontFamily: FONT_DISPLAY, fontSize: QUOTE_MARK_SIZE, lineHeight: 1, color: CRITERION_YELLOW }}>&ldquo;</span>
+          <span aria-hidden style={{ position: 'absolute', right: 0, bottom: 0, fontFamily: FONT_DISPLAY, fontSize: QUOTE_MARK_SIZE, lineHeight: 1, color: CRITERION_YELLOW, transform: 'rotate(180deg)' }}>&ldquo;</span>
           {/* 실측 텍스트만 FieldTap 안에 남긴다(#417/#268) — InPlaceFieldEditor의 measureField가
               tap.firstElementChild 전체 박스를 재므로 장식 따옴표는 형제로 뺀다. */}
           <FieldTap field="quote" onField={onField}>
@@ -342,6 +357,9 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
                 ...userTextFont(quoteText, components.quoteFont),
                 fontSize: 50,
                 lineHeight: 1.28,
+                // 무공백 라틴 22자(`W`×22 등)는 줄바꿈 기회가 없어 슬롯 600을 넘고 따옴표와
+                // 겹쳤다(실측 1006.5px, 겹침 140px). 단어 안에서도 끊어 예산 안에 가둔다(#577).
+                overflowWrap: 'anywhere',
               }}
             >
               {quoteText}

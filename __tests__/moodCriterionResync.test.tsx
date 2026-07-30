@@ -52,12 +52,14 @@ describe('MoodCriterion v5 Revue 재설계 (#524)', () => {
     expect(html).toContain('height:5px'); // 하단 두께 엣지
   });
 
-  test('한줄평 — top1064 height190 고정 블록 + 104px 옐로 따옴표 좌상·우하', () => {
+  test('한줄평 — top1064 height190 고정 블록 + 125px 옐로 따옴표 좌상·우하 (#577)', () => {
     const html = markup();
     expect(html).toContain('top:1064px;height:190px');
-    expect(html).toMatch(new RegExp(`left:0;top:0;font-family:var\\(--font-display\\)[^"]*font-size:104px;line-height:1;color:${CRITERION_YELLOW}`));
-    expect(html).toMatch(/right:0;bottom:0;font-family:var\(--font-display\)[^"]*font-size:104px/);
+    expect(html).toMatch(new RegExp(`left:0;top:0;font-family:var\\(--font-display\\)[^"]*font-size:125px;line-height:1;color:${CRITERION_YELLOW}`));
+    expect(html).toMatch(/right:0;bottom:0;font-family:var\(--font-display\)[^"]*font-size:125px/);
     expect(html).toContain('rotate(180deg)');
+    // 무공백 라틴 입력이 슬롯을 넘어 따옴표와 겹치던 회귀 방어(#577 실측 1006.5px → 594.8px).
+    expect(html).toContain('overflow-wrap:anywhere');
   });
 
   test('서명 56px + 콜로폰 룰(top1358) · 모노 17.5 2줄(top1370)', () => {
