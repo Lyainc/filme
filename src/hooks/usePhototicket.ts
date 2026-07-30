@@ -145,6 +145,11 @@ export function usePhototicket() {
   // 바꾸지만 이 카운터는 안 건드려서, 자동저장 effect가 그 둘에는 재발동하지 않는다
   // (claude-review PR #488 P1: clearDraft 직후 지운 저장 키가 1초 뒤 재생성되던 문제).
   const [dirtyTick, setDirtyTick] = useState(0);
+  // 이번 마운트가 저장분에서 복원됐는지(#614 D7) — 랜딩 오버레이를 건너뛰는 유일한 근거다.
+  // "포스터가 있었나"(restoredDraftHadPosterRef)가 아니라 "저장분이 있었나"로 넓다: 텍스트만
+  // 입력하고 나간 재방문자도 랜딩을 다시 보면 안 된다. ref가 아니라 state인 이유는 소비자가
+  // 이 값으로 렌더 분기를 하기 때문. clearDraft가 false로 되돌려 랜딩이 복귀한다.
+  const [draftRestored, setDraftRestored] = useState(false);
   // 마운트 시 복원된 draft에 포스터가 있었는지 — #489 서브버그: 복원 후 재업로드가 isFirstUpload로
   // 오판돼 방금 복원한 fieldVisibility를 DEFAULT_VISIBILITY_ON_UPLOAD로 덮어쓰는 것을 막는 게이트.
   // "draft 존재 여부"가 아니라 "포스터 존재 여부"로 좁힌다(claude-review PR #515 P1) — 텍스트만
@@ -218,6 +223,7 @@ export function usePhototicket() {
   useEffect(() => {
     const saved = loadPersisted();
     if (!saved) return;
+    setDraftRestored(true);
     // 복원된 draft에 포스터가 있었다는 표시 — handleImageUpload의 isFirstUpload 판정이 이걸로
     // 게이트된다(#489 서브버그: IDB 이미지 복원이 실패해도 croppedImageUrl은 null인 채로
     // 재업로드를 유도하는데, 그 재업로드를 "첫 업로드"로 오판해 방금 복원한 fieldVisibility를
@@ -540,6 +546,9 @@ export function usePhototicket() {
     // 복원 관련 상태도 전체 슬레이트 리셋 대상 — 안 하면 초기화 후 새로 업로드해도 "복원된 draft에
     // 포스터가 있었다"는 표시가 남아 isFirstUpload가 영구히 오판된다(#489).
     restoredDraftHadPosterRef.current = false;
+    // 초기화는 저장분을 지우는 것이므로 "복원된 세션"도 아니게 된다 — 안 되돌리면 랜딩이
+    // 영영 안 뜨고, 포스터도 draft도 없는 빈 편집 셸에 남는다(#614).
+    setDraftRestored(false);
     // 크롭 원본·모달 상태도 전체 슬레이트 리셋 — 원본 blob은 posterCrop의 revoke effect가 푼다.
     posterCrop.reset();
     // 이미지 지문도 리셋 — 안 하면 초기화 직후 저장(이미지 없음)이 "직전과 동일"로 오판돼
@@ -587,6 +596,7 @@ export function usePhototicket() {
     autoSaveEnabled,
     lastSavedAt,
     toggleAutoSave,
+    draftRestored,
     // 포스터 크롭 파이프라인(#548) — 원본 objectURL·모달 상태의 단일 소유자. 셸/패널은 소비만 한다.
     posterCrop,
   };

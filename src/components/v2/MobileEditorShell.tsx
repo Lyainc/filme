@@ -1,8 +1,8 @@
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type DragEvent, type KeyboardEvent } from 'react';
-import { AppFooter } from './AppFooter';
 import { AutoSaveIndicator } from './AutoSaveIndicator';
 import { DesignRail } from './DesignRail';
+import { Landing } from './Landing';
 import { OcrUploadCard } from './OcrUploadCard';
 import { OcrUndoBanner } from './OcrUndoBanner';
 import {
@@ -22,7 +22,6 @@ import type { ViewMode } from './viewMode';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
 import { getLayout } from '@/utils/layouts';
 import type { Area } from '@/utils/imageCrop';
-import { TARGET_HEIGHT, TARGET_WIDTH } from '@/utils/constants';
 import { useEditHistory } from '@/hooks/useEditHistory';
 import { useOcrUndo } from '@/hooks/useOcrUndo';
 import type { usePhototicket } from '@/hooks/usePhototicket';
@@ -224,6 +223,10 @@ export function MobileEditorShell({
   // 초기화 2탭 arm(#374, 시안 clearArm) — window.confirm 대체. 1탭에 arm(라벨이 확인 문구로
   // 바뀌고 3.2초 뒤 자동 해제), arm 상태에서 한 번 더 탭해야 실행. 메뉴가 닫히면 함께 해제.
   const [clearArmed, setClearArmed] = useState(false);
+  // 랜딩 오버레이를 사용자가 걷었는지(#614). 걷는 조건 3가지 중 이 state가 필요한 건 OCR뿐이다 —
+  // 드래프 복원은 photo.draftRestored가, CTA 파일 선택은 crop.cropOpen/croppedImageUrl이 이미
+  // 말해준다(아래 showLanding). 초기화(handleClearTap)가 false로 되돌려 랜딩이 복귀한다.
+  const [landingDismissed, setLandingDismissed] = useState(false);
   const clearArmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // 습관적 더블탭이 arm과 실행을 한 번에 뚫지 않게 arm 직후 재탭은 무시(claude-review PR #375 P1).
   const clearArmedAt = useRef(0);
@@ -279,6 +282,15 @@ export function MobileEditorShell({
   // 원본 blob을 소유하면 훅이 아직 참조 중인 URL이 revoke된다. 이제 소비만 한다.
   const posterInputRef = useRef<HTMLInputElement>(null);
   const crop = photo.posterCrop;
+  // 랜딩 오버레이를 걷는 조건 3가지(#614)를 한 줄로 — 전부 "이미 편집에 들어왔다"의 다른 얼굴이다.
+  //  · croppedImageUrl: 포스터가 있다(정상 진입 완료 · 포스터 있던 draft 복원)
+  //  · crop.cropOpen: CTA로 파일을 골라 크롭 모달이 떴다 — onChange 그 프레임에 걷힌다. 파생값이라
+  //    크롭 취소(cropOpen→false, 포스터 없음)면 랜딩이 저절로 돌아온다. 안 그러면 포스터도 랜딩도
+  //    없는 빈 셸에 갇힌다.
+  //  · photo.draftRestored: 재방문자(텍스트만 있던 draft 포함) — 랜딩 생략, 마찰 0(D7)
+  //  · landingDismissed: OCR로 티켓 스크린샷이 인식됐다
+  const showLanding =
+    !croppedImageUrl && !crop.cropOpen && !photo.draftRestored && !landingDismissed;
 
   function flashToast(msg: string) {
     setToast(msg);
@@ -307,6 +319,8 @@ export function MobileEditorShell({
     clearTimeout(clearArmTimer.current);
     setMenuOpen(false); // 닫힘 effect가 clearArmed도 함께 해제
     photo.clearDraft();
+    // 초기화는 새 문서니까 랜딩도 처음 상태로 — 안 되돌리면 포스터도 draft도 없는 빈 셸에 남는다(#614).
+    setLandingDismissed(false);
     // 초기화는 새 문서 — undo로 못 돌아간다(로고·포스터 blob이 revoke돼
     // 복원해도 죽은 참조라 히스토리째 파기가 맞다).
     history.clear();
@@ -647,28 +661,29 @@ export function MobileEditorShell({
                 </div>
               )}
 
-              {croppedImageUrl && (
-                <div className={`mt-2 ${MENU_GROUP_CLS}`}>
-                  <MenuRow
-                    iconPath={MENU_ICONS.upload}
-                    label="포스터 교체"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      handlePosterTap();
-                    }}
-                  />
-                  <MenuRow
-                    iconPath={MENU_ICONS.crop}
-                    label="재크롭"
-                    disabled={!crop.originalSrc}
-                    title={crop.originalSrc ? undefined : '재크롭하려면 포스터를 다시 업로드해 주세요'}
-                    onClick={() => {
-                      setMenuOpen(false);
-                      crop.openRecrop();
-                    }}
-                  />
-                </div>
-              )}
+              {/* 포스터 진입점은 croppedImageUrl 없이도 열어둔다(#614) — 랜딩이 걷힌 뒤 포스터가
+                  아직 없는 상태(OCR로 먼저 들어온 경로)에서 점선 드롭존이 사라졌으므로, 이 행이
+                  없으면 포스터를 올릴 방법이 아예 없다. 라벨만 상태에 맞춘다. */}
+              <div className={`mt-2 ${MENU_GROUP_CLS}`}>
+                <MenuRow
+                  iconPath={MENU_ICONS.upload}
+                  label={croppedImageUrl ? '포스터 교체' : '포스터 올리기'}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    handlePosterTap();
+                  }}
+                />
+                <MenuRow
+                  iconPath={MENU_ICONS.crop}
+                  label="재크롭"
+                  disabled={!crop.originalSrc}
+                  title={crop.originalSrc ? undefined : '재크롭하려면 포스터를 다시 업로드해 주세요'}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    crop.openRecrop();
+                  }}
+                />
+              </div>
 
               {/* 임시저장/초기화(#310) — 자동저장 폐지에 따른 명시적 트리거. croppedImageUrl 유무와
                   무관하게 항상 노출한다 — 포스터(croppedImageUrl)는 새로고침에 안 남지만 movieInfo 등
@@ -813,63 +828,35 @@ export function MobileEditorShell({
           {/* 줌 pill(#328)은 #356에서 제거 — 최대화 진입은 플로팅 툴바가 흡수, max 탈출은
               기존 티켓 탭 복귀 그대로. */}
 
-          {/* OCR 섹션 — 랜딩에선 시안(Siyan-C-v8) 드롭존 히어로(포스터 비율 960/1534 점선 카드,
-              OCR은 보조 직하 — #142 위계)가 유일한 진입점이라 노출한다. 업로드 후(croppedImageUrl)엔
-              이 섹션을 통째로 CSS hidden — OCR 진입점은 드로어(#355) 쪽으로 일원화한다(#388, "업로드 후
-              프리뷰 직하 카드" 중복 제거). unmount가 아니라 hidden인 이유는 이 OcrUploadCard가 랜딩·
-              업로드 후에 걸쳐 같은 트리 위치의 단일 인스턴스(DOM 노드)로 남아야 하기 때문이다 —
-              분기별 별도 JSX로 심어 전환 순간 remount되면 in-flight KOBIS 보강의 mountedRef 가드가
-              setInfo를 조용히 버려 titleOg·releaseDate가 유실된다(releaseDate는 완료 게이트 필수
-              필드, titleOg는 #445에서 게이트 필수에서 빠졌지만 유실 문제 자체는 여전하다 — PR #372
-              리뷰 P1, 커밋 514baab #363). max(#328)도 같은 이유로 hidden — 최대화 왕복 중의 동일 레이스까지
-              함께 막는다. OCR 로직은 셸의 useOcrUndo가 소유. */}
-          <section
-            className={
-              isMax || croppedImageUrl
-                ? 'hidden'
-                : 'flex flex-1 flex-col items-center justify-center gap-5 px-6 py-8'
-            }
+          {/* 랜딩 오버레이(#614) — 점선 드롭존 히어로 + 랜딩 footer가 여기로 흡수됐다. 편집 셸을
+              덮는 fixed 레이어지만 **셸 안 이 자리에서** 렌더한다: 아래 OcrUploadCard가 랜딩·업로드
+              후에 걸쳐 같은 트리 위치의 단일 인스턴스(DOM 노드)로 남아야 하기 때문이다 — 분기별
+              별도 JSX로 심어 전환 순간 remount되면 in-flight KOBIS 보강의 mountedRef 가드가 setInfo를
+              조용히 버려 titleOg·releaseDate가 유실된다(releaseDate는 완료 게이트 필수 필드, titleOg는
+              #445에서 게이트 필수에서 빠졌지만 유실 문제 자체는 여전하다 — PR #372 리뷰 P1, 커밋
+              514baab #363). 그래서 Landing은 조건부 unmount가 아니라 항상 마운트 + CSS hidden이고,
+              OCR 카드를 children으로 받아 자리만 빌려준다. 업로드 후·max(#328)엔 통째로 hidden —
+              OCR 진입점은 드로어(#355)로 일원화된다(#388). OCR 로직은 셸의 useOcrUndo가 소유. */}
+          <Landing
+            hidden={isMax || !showLanding}
+            onCta={handlePosterTap}
+            dropProps={posterDropProps}
+            dragOver={posterDragOver}
           >
-            {!croppedImageUrl && (
-              <button
-                type="button"
-                onClick={handlePosterTap}
-                {...posterDropProps}
-                data-touch="44"
-                className={`group relative flex w-full max-w-[230px] flex-col items-center justify-center gap-3.5 overflow-hidden rounded-card border-2 border-dashed bg-surface p-6 text-center transition-colors ${
-                  posterDragOver ? 'border-accent bg-accent-soft' : 'border-border-strong hover:border-accent/40'
-                }`}
-                style={{ aspectRatio: `${TARGET_WIDTH} / ${TARGET_HEIGHT}` }}
-              >
-                <span
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-0"
-                  style={{ background: 'radial-gradient(70% 45% at 50% 34%, var(--accent-soft), transparent 72%)' }}
-                />
-                <span
-                  aria-hidden="true"
-                  className="relative flex h-[62px] w-[62px] items-center justify-center rounded-[18px] bg-accent text-accent-ink transition-transform group-hover:scale-105"
-                  style={{ boxShadow: '0 14px 30px -12px color-mix(in srgb, var(--accent) 70%, transparent)' }}
-                >
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 16V4M8 8l4-4 4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
-                  </svg>
-                </span>
-                <span className="relative text-[15.5px] font-bold leading-tight text-fg">포스터 업로드</span>
-              </button>
-            )}
             <OcrUploadCard
               setInfo={photo.updateMovieInfo}
               currentInfo={photo.state.movieInfo}
-              onOcrApply={ocr.apply}
+              // 스크린샷이 인식되면 랜딩을 걷는다(#614 걷는 조건 ③) — 사용자가 이미 편집에
+              // 들어온 것이고, 채워진 필드가 오버레이 뒤에 가려져 있으면 안 된다.
+              onOcrApply={(params) => {
+                setLandingDismissed(true);
+                ocr.apply(params);
+              }}
               setComponents={photo.updateComponents}
               currentComponents={photo.state.components}
               ocrEpochRef={ocr.epochRef}
             />
-          </section>
-
-          {/* 랜딩 footer — 편집 화면(업로드 후)엔 없음(rail dock 위에 고지가 끼는 위계 방지). */}
-          {!croppedImageUrl && <AppFooter ambient />}
+          </Landing>
         </div>
       </div>
 
