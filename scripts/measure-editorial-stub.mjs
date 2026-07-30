@@ -16,6 +16,12 @@
  *            텍스트 경로의 최악이고, formatLabel은 OCR(#348)이 자동으로 채우는 실경로다.
  *
  * 출력은 stdout JSON. 길이축 합이 960을 넘으면 exit 1.
+ * 서버 전제(#601): dev(:3000)·prod(`next start`) 어느 쪽이든 되지만 **지금 `.next`를 서빙하는
+ * 서버**여야 한다. 오래 떠 있던 next start는 옛 빌드의 HTML을 줘 chunk가 전부 404가 되고, 앱이
+ * 하이드레이션을 못 해 파일 input에 핸들러가 안 붙어 크롭 모달이 아예 안 열린다 — 포트가 이미
+ * 물려 있으면 새 `next start`는 EADDRINUSE로 죽고 앞 서버가 그대로 응답하므로 "새로 띄웠다"가
+ * 착각이 된다. 안 뜨면 앱을 의심하기 전에 콘솔의 chunk 404부터 볼 것. 자세한 건 CLAUDE.md 📏.
+ *
  * 함정 목록은 네이티브 메모리 e2e-browser-verification-setup 참고.
  */
 import puppeteer from 'puppeteer-core';
