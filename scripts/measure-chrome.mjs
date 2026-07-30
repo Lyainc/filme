@@ -106,17 +106,17 @@ try {
 
   /**
    * el이 프레임 사각형 안인지. 넘침은 변별 가능하게 방향별로 남긴다(어느 쪽으로 샜는지가
-   * 원인 추적의 절반이다). pick:'parent'는 라벨 붙은 자식으로 찾아 부모 루트를 재는 경우.
+   * 원인 추적의 절반이다). id가 없는 루트(max 오버레이·결과 스테이지)는 라벨 붙은 자식으로
+   * `:has(> …)`를 써서 부모를 직접 고른다 — 그래서 여기엔 부모 타기 옵션이 없다.
    * 못 찾은 표면은 pass:false다 — 있어야 할 게 없는 것도 게이트가 잡아야 할 회귀다.
    */
   const fits = [];
-  const measureFit = async (label, selector, pick = 'self') => {
+  const measureFit = async (label, selector) => {
     const r = await page.evaluate(
-      ({ sel, pick }) => {
+      (sel) => {
         const f = document.getElementById('phone-frame');
         if (!f) return { missing: '#phone-frame' };
-        let el = document.querySelector(sel);
-        if (el && pick === 'parent') el = el.parentElement;
+        const el = document.querySelector(sel);
         if (!el) return { missing: sel };
         const F = f.getBoundingClientRect();
         const R = el.getBoundingClientRect();
@@ -130,7 +130,7 @@ try {
           },
         };
       },
-      { sel: selector, pick },
+      selector,
     );
     const worst = r.overflow ? Math.max(...Object.values(r.overflow)) : null;
     const entry = { label, selector, ...r, worstOverflow: worst, pass: worst != null && worst <= 0.5 };
@@ -232,8 +232,9 @@ try {
   // 부모(=오버레이 루트)를 잰다. 가로 무드는 안쪽이 rotate(90deg)라 안쪽을 재면 회전 박스가
   // 나온다(#609 판정 대상은 오버레이 자신).
   await page.evaluate(() => document.querySelector('button[aria-label="최대화"]')?.click());
-  await sleep(500);
-  await measureFit('max 모드 오버레이', '[aria-label="기본 크기로 돌아가기"]', 'parent');
+  await page.waitForSelector('[aria-label="기본 크기로 돌아가기"]', { timeout: 10000 });
+  await sleep(300); // 진입 트랜지션이 끝난 rect를 잰다.
+  await measureFit('max 모드 오버레이', 'div:has(> [aria-label="기본 크기로 돌아가기"])');
   await measureFit('max 모드 티켓', '[aria-label="기본 크기로 돌아가기"]');
   await page.evaluate(() => document.querySelector('[aria-label="기본 크기로 돌아가기"]')?.click());
   await sleep(400);
@@ -425,7 +426,7 @@ try {
   );
   await page.waitForSelector('[data-testid="result-ambient"]', { timeout: 15000 });
   await sleep(600);
-  await measureFit('결과 스테이지', '[data-testid="result-ambient"]', 'parent');
+  await measureFit('결과 스테이지', 'div:has(> [data-testid="result-ambient"])');
   // hero는 --hero-dvh-budget을 든 유일한 요소고, 그 컨테이너 쿼리는 뷰포트가 아니라 프레임의
   // orientation을 읽는다 — 1440×900 뷰포트(landscape)의 400×900 프레임은 portrait이다(#607).
   await measureFit('결과 hero', '.result-hero');
