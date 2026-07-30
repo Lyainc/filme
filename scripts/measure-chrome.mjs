@@ -21,7 +21,8 @@
  *  3. 오버레이 표면 항목별 WCAG 대비비(불투명 조상 배경 기준)  (#569 · #580)
  *  4. 테마 파라미터화 — 다크·라이트를 같은 실행 경로로         (#574)
  *  5. 모달 포커스 트랩 · 닫기 3경로 · 가려진 버튼 클릭 통과    (#574, 모달 없는 판본이면 skip)
- *  6. 오버레이 6종이 #phone-frame 사각형 안인지               (#609)
+ *  6. 오버레이 7종이 #phone-frame 사각형 안인지               (#609 · 랜딩 #614)
+ *  7. 드래프 복원 시 랜딩 생략(D7)                            (#614)
  *
  * ── 대조 기준은 뷰포트가 아니라 프레임이다 (#609) ────────────────────────────
  * 예전엔 `VW===400 && VH===675`로 게이팅해서, `--viewport 1440x675`로 돌리면 프레임이
@@ -111,8 +112,8 @@ try {
    * 못 찾은 표면은 pass:false다 — 있어야 할 게 없는 것도 게이트가 잡아야 할 회귀다.
    */
   const fits = [];
-  const measureFit = async (label, selector) => {
-    const r = await page.evaluate(
+  const measureFit = async (label, selector, target = page) => {
+    const r = await target.evaluate(
       (sel) => {
         const f = document.getElementById('phone-frame');
         if (!f) return { missing: '#phone-frame' };
@@ -137,6 +138,35 @@ try {
     fits.push(entry);
     return entry;
   };
+
+  // ── 랜딩 오버레이(#614) — 드래프가 없을 때만 뜬다 ──────────────────────────
+  // 그래서 **시드 없는 별도 페이지**에서 잰다: 이 스크립트의 메인 페이지는 완료 게이트를 통과시키려
+  // draft를 심어 두고(위 evaluateOnNewDocument), D7에 따라 랜딩이 생략되므로 같은 페이지에선
+  // 영영 못 잰다. 오버레이는 fixed inset-0라 프레임과 정확히 같은 사각형이어야 한다 —
+  // PhoneFrame의 contain:paint가 끊기면 1440 뷰포트에서 좌 520px로 샌다.
+  // 격리 컨텍스트 — 같은 브라우저의 페이지는 origin localStorage를 공유하므로 그냥 newPage()를
+  // 하면 위에서 심은 draft가 그대로 보여 랜딩이 D7로 생략된다(실측: waitForSelector 타임아웃).
+  const landingCtx = await browser.createBrowserContext();
+  const landingPage = await landingCtx.newPage();
+  landingPage.on('dialog', (d) => d.dismiss());
+  await landingPage.setViewport({ width: VW, height: VH, deviceScaleFactor: 1 });
+  await landingPage.evaluateOnNewDocument((theme) => {
+    localStorage.setItem('phototicket:theme', theme);
+  }, THEME);
+  await landingPage.goto(URL, { waitUntil: 'networkidle2' });
+  // visible:true — 셀렉터는 숨김 상태에서도 DOM에 남으므로(단일 OcrUploadCard 제약상 unmount가
+  // 아니라 display:none이다) 존재만 기다리면 "안 뜨는데 통과"가 된다.
+  await landingPage.waitForSelector('[data-testid="landing"]', { visible: true, timeout: 15000 });
+  await sleep(300);
+  await measureFit('랜딩 오버레이', '[data-testid="landing"]', landingPage);
+  await landingCtx.close();
+
+  // D7 — 드래프가 복원된 메인 페이지엔 랜딩이 떠 있으면 안 된다. 떠 있으면 아래 측정 전부가
+  // 오버레이 뒤에서 돌아 숫자는 멀쩡한데 화면은 랜딩인 채로 "통과"한다.
+  const landingSkippedOnDraft = await page.evaluate(() => {
+    const el = document.querySelector('[data-testid="landing"]');
+    return !el || getComputedStyle(el).display === 'none';
+  });
 
   // 흰 포스터 = 대비 최악 케이스(#569가 세운 기준과 동일). ImageMagick 없이 canvas로 만든다.
   await page.evaluate(async () => {
@@ -462,11 +492,14 @@ try {
     contrast,
     modal,
     frameFit: { items: fits, fails: fitFails, pass: fitFails.length === 0 },
+    landingSkippedOnDraft,
     invariant,
   };
   console.log(JSON.stringify(out, null, 2));
   // checked:false도 실패다 — 못 잰 걸 0으로 넘기는 게 #609가 없앤 그 조용한 성공이다.
-  if (!invariant.checked || !invariant.pass || fitFails.length > 0) process.exitCode = 1;
+  if (!invariant.checked || !invariant.pass || fitFails.length > 0 || !landingSkippedOnDraft) {
+    process.exitCode = 1;
+  }
 } finally {
   await browser.close();
 }
