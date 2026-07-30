@@ -13,7 +13,7 @@
  * 갱신하므로, 그 인스턴스가 사라져도 응답이 여전히 최신이면(ocrEpochRef, #388 useOcrUndo.ts)
  * 반영돼야 한다.
  */
-import { describe, expect, test, afterEach, mock, spyOn } from 'bun:test';
+import { describe, expect, test, afterAll, afterEach, mock, spyOn } from 'bun:test';
 import { render, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/react';
 import type { PhototicketState } from '@/types';
 
@@ -21,7 +21,13 @@ import type { PhototicketState } from '@/types';
 // OcrUploadCard) is loaded — bun's mock.module is not hoisted, so the shell is
 // pulled in via require below, after this registration (ocrUndoRestore.test.tsx와 동일 패턴).
 let ocrImpl: (file: File) => Promise<Record<string, unknown>> = async () => ({});
+// 스프레드 스냅샷 + afterAll 복원(#611·#618) — `require()`가 주는 건 살아있는 네임스페이스라
+// mock.module이 그 객체를 제자리에서 갈아끼운다. 복사본으로 떠 둬야 복원이 진짜 복원이 된다.
+// 안 되돌리면 이 runOcr 스텁이 프로세스 끝까지 남아, 뒤 파일이 실제 OCR 호출 대신 이 파일이
+// 마지막에 심어둔 ocrImpl을 받는다.
+const realOcr = { ...require('@/utils/ocr') };
 mock.module('@/utils/ocr', () => ({
+  ...realOcr,
   runOcr: (file: File) => ocrImpl(file),
 }));
 
@@ -122,6 +128,10 @@ afterEach(() => {
   ocrImpl = async () => ({});
   clearKobisLookupCache();
   mock.restore();
+});
+
+afterAll(() => {
+  mock.module('@/utils/ocr', () => realOcr);
 });
 
 describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 반영된다 (#388)', () => {

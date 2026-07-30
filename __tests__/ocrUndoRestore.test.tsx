@@ -16,7 +16,7 @@
  * useOcrUndo + OcrUploadCard + OcrUndoBanner — the real wiring users hit. Guards the
  * shell's own prop wiring (ocr.apply / setComponents / currentComponents / banner onCancel).
  */
-import { describe, expect, test, afterEach, mock, spyOn } from 'bun:test';
+import { describe, expect, test, afterAll, afterEach, mock, spyOn } from 'bun:test';
 import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { PhototicketState } from '@/types';
@@ -26,7 +26,13 @@ import { STAMP_LABEL_MAX } from '@/constants/fields';
 // OcrUploadCard) is loaded — bun's mock.module is not hoisted, so the shell is
 // pulled in via require below, after this registration.
 let ocrImpl: (file: File) => Promise<Record<string, unknown>> = async () => ({});
+// 스프레드 스냅샷 + afterAll 복원(#611·#618) — `require()`가 주는 건 살아있는 네임스페이스라
+// mock.module이 그 객체를 제자리에서 갈아끼운다. 복사본으로 떠 둬야 복원이 진짜 복원이 된다.
+// 안 되돌리면 이 runOcr 스텁이 프로세스 끝까지 남아, 뒤 파일이 실제 OCR 호출 대신 이 파일이
+// 마지막에 심어둔 ocrImpl을 받는다.
+const realOcr = { ...require('@/utils/ocr') };
 mock.module('@/utils/ocr', () => ({
+  ...realOcr,
   runOcr: (file: File) => ocrImpl(file),
 }));
 
@@ -96,6 +102,10 @@ afterEach(() => {
   // fetch spy는 중간 단언이 실패해도 항상 복원되도록 afterEach에서 처리한다(claude-review
   // PR #397 P2 — 테스트 끝에서만 수동 mockRestore하면 실패 시 다음 테스트로 누수될 수 있었다).
   mock.restore();
+});
+
+afterAll(() => {
+  mock.module('@/utils/ocr', () => realOcr);
 });
 
 describe('OCR undo restoration (#163 / #141 P1)', () => {
