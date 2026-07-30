@@ -17,9 +17,19 @@
  * localStorage에 title/titleOg/releaseDate를 미리 심어 canExport를 채우고, 실제 파일 input +
  * mock 크롭 모달로 포스터만 업로드해 "완료" 탭까지 실제 UI 경로로 돈다.
  */
-import { describe, expect, test, afterEach, beforeEach, mock } from 'bun:test';
+import { describe, expect, test, afterAll, afterEach, beforeEach, mock } from 'bun:test';
 import { render, cleanup, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+
+// **스냅샷은 mock.module보다 먼저 떠야 하고, 스프레드여야 한다(#611).** `require()`가 주는 건
+// 살아있는 모듈 네임스페이스라 mock.module이 그 객체를 제자리에서 갈아끼운다 — 얕은 복사본만
+// 그 변조를 피해 afterAll에서 진짜로 되돌릴 수 있다. 안 되돌리면 이 크롭 모달 스텁이 프로세스
+// 끝까지 남아, 진짜 모달을 기다리는 뒤 파일(posterCropPipeline의 #182·#315·#548 11개)이 통째로
+// asyncUtilTimeout까지 매달렸다가 깨진다. Linux CI에서만 터진 건 파일 실행 순서 차이일 뿐이다.
+const realImageCropModal = { ...require('@/components/ImageCropModal') };
+afterAll(() => {
+  mock.module('@/components/ImageCropModal', () => realImageCropModal);
+});
 
 mock.module('@/components/ImageCropModal', () => ({
   default: ({
