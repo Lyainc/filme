@@ -103,3 +103,6 @@ autonomous-dev-loop.v4.md
 /public/assets/chains/
 /public/assets/formats/
 /public/assets/메가박스_BI/
+
+# 인쇄 캘리브레이션 도안 산출물 (scripts/make-calibration-sheet.py가 재생성 — 커밋 안 함, #591)
+/calibration-v3.jpg
