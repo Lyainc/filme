@@ -1956,12 +1956,11 @@ export function useFontsReady(): boolean {
  * (text, maxWidth, fontFamily, fontWeight, minSize, maxSize) 키로 메모이즈해 리렌더마다
  * 재계산하지 않는다.
  *
- * ponytail: letter-spacing은 측정에 반영하지 않는다 — 자간이 0 이하인 호출부는 canvas 기본
- * 측정값이 실제보다 넓게(보수적으로) 잡히므로 오버플로 방향의 오차가 없다. **양수 자간
- * 호출부**(TextStamp #590, Criterion 콜로폰 #566)는 `maxWidth`에서 `자간 × 글자수`를 직접 빼고
- * 넘긴다 — 고정 크기 측정이 필요하면 그건 `measureTextWidth`가 `letterSpacing`으로 받는다.
- * 완벽한 줄바꿈 시뮬레이션도 하지 않는다 — 호출부가 "가용폭 × 클램프 줄 수"를 maxWidth로
- * 넘겨 가장 긴 한 줄 기준으로 안전하게 축소하는 근사를 쓴다.
+ * ponytail: letter-spacing은 측정에 반영하지 않는다(근거·부호별 방향은 아래
+ * `MeasureFontOptions.letterSpacing`). **양수 자간 호출부**(TextStamp #590, Criterion 콜로폰
+ * #566)는 `maxWidth`에서 `자간 × 글자수`를 직접 빼고 넘긴다. 완벽한 줄바꿈 시뮬레이션도 하지
+ * 않는다 — 호출부가 "가용폭 × 클램프 줄 수"를 maxWidth로 넘겨 가장 긴 한 줄 기준으로 안전하게
+ * 축소하는 근사를 쓴다.
  */
 export function fitFontSizeToWidth(
   text: string,
