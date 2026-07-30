@@ -8,13 +8,8 @@
  *   - 교체(새 파일) 후 취소 → 재크롭 비활성 (직전 포스터의 원본은 이미 revoke돼 stale이다)
  *   - 재크롭 취소(새 파일 안 고름) → 원본 유지, 재크롭 계속 활성
  *   - 첫 업로드 취소 → 원본 폐기, 프리뷰 없음
+ *   - 크롭 진행 중 드롭 무시 (getCroppedImg가 읽는 중인 blob을 revoke하지 않게)
  *   - 마우스 없이 Tab + Enter만으로 업로드 → 크롭 → 적용 완주(#608, 파일 맨 아래 describe)
- *
- * 빠진 게 하나 있다: '크롭 진행 중 드롭 무시'(getCroppedImg가 읽는 중인 blob을 revoke하지 않게).
- * 그 케이스를 밟으려면 크롭 중에 파일을 다시 던질 수 있는 드롭존이 있어야 하는데, 드롭존은
- * ImageUploader에만 있었고 모바일 셸엔 없다(진입이 탭 → input.click()이라 모달이 떠 있는
- * 동안엔 도달 자체가 안 된다). usePosterCrop의 busy 가드는 그대로 남아 있지만 지금은
- * 사용자 경로가 없어 재현할 수 없어 이관 대신 삭제했다.
  *
  * 그리고 #548이 실제로 고치는 것: 원본 objectURL의 소유자가 컴포넌트가 아니라 usePhototicket
  * 이라는 것. 예전엔 셸이 소유해 셸이 죽을 때 revoke됐고, 그 결과
@@ -274,6 +269,35 @@ describe('드롭으로 포스터 업로드 (#607)', () => {
     drop(uploadCta(), [new File(['x'], 'doc.pdf', { type: 'application/pdf' })]);
 
     expect(cropDialog()).toBeNull();
+  });
+
+  // 크롭 진행 중 드롭 무시 — getCroppedImg가 읽고 있는 원본 blob을 openFile의 교체가 revoke하면
+  // 진행 중인 크롭이 죽은 URL을 읽는다. 구 ImageUploader의 같은 이름 테스트를 이 CTA로 이관한 것:
+  // 모달이 CTA를 시각적으로 가려 실사용 드래그로는 못 닿지만, CTA는 DOM에 그대로 남아 있어
+  // (croppedImageUrl이 아직 null) 이벤트를 직접 쏘면 가드를 그대로 밟는다 — 구 테스트도
+  // fireEvent.drop을 드롭존에 직접 쏘는 방식이었다(claude-review PR #619 P1).
+  test('크롭 진행 중 드롭은 무시된다 (in-flight 원본 보존)', async () => {
+    const user = userEvent.setup();
+    render(<MobileHarness />);
+
+    await user.click(uploadCta());
+    fireEvent.change(posterFileInput(), { target: { files: [pngFile('a.png')] } });
+    await screen.findByRole('dialog', { name: '포스터 크롭' });
+    loadImage();
+    const srcBefore = cropSrc();
+
+    // 적용을 붙잡아 isCropping(busy) 창을 열어둔다.
+    holdCrop = true;
+    await user.click(screen.getByRole('button', { name: '적용' }));
+    drop(uploadCta(), [pngFile('b.png')]);
+
+    // 가드가 막아야 crop.openFile이 안 불리고, 모달은 in-flight 원본을 계속 가리킨다.
+    expect(cropSrc()).toBe(srcBefore);
+
+    await act(async () => {
+      releaseCrop?.();
+    });
+    expect(cropN).toBe(1);
   });
 });
 
