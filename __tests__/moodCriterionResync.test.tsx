@@ -43,8 +43,12 @@ describe('MoodCriterion v5 Revue 재설계 (#524)', () => {
     const html = markup();
     expect(html).toContain('left:230px;top:262px;width:500px;height:750px');
     expect(html).toContain('0 70px 100px rgba(20,18,15,.16)'); // 4단 그림자 마지막 단
-    expect(html).toContain('inset 0 0 0 1px rgba(20,18,15,.22)'); // inset 엣지
     expect(html).toContain('linear-gradient(116deg'); // 사선 글로스
+    // 헤어라인은 플레이트 박스가 아니라 **글로스 오버레이**에 실려야 한다(#576) — 플레이트에 두면
+    // inset이 자식 Poster 아래에 깔려 화면에서 사라진다. 같은 style 속성 안에 둘이 함께 있는지로
+    // 판정한다(문자열 존재만 보면 플레이트로 되돌아가도 통과한다).
+    expect(html).toMatch(/linear-gradient\(116deg[^"]*box-shadow:inset 0 0 0 1px rgba\(20,18,15,\.22\)/);
+    expect(html).not.toMatch(/box-shadow:0 2px 3px[^"]*inset 0 0 0 1px/); // 플레이트 그림자엔 없다
     expect(html).toContain('height:5px'); // 하단 두께 엣지
   });
 

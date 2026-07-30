@@ -60,9 +60,14 @@ const PLATE_LEFT = 230;
 const PLATE_TOP = 262;
 const PLATE_W = 500;
 const PLATE_H = 750;
-// 도판 양감(#524 c7) — 4단 그림자 + inset 엣지. 무드 기본이라 항상 적용된다(#509의 유저 후가공과 별개).
+// 도판 양감(#524 c7) — 4단 드롭 그림자. 무드 기본이라 항상 적용된다(#509의 유저 후가공과 별개).
+// inset 헤어라인은 여기 있으면 안 된다(#576) — `box-shadow: inset`은 요소 background 위·**자식
+// 콘텐츠 아래**에 깔리는데, 이 박스의 자식 `Poster`가 inset:0에 자기 background까지 칠해서
+// 링을 통째로 덮었다(코드엔 있고 화면엔 없는 상태). PLATE_EDGE_RING으로 오버레이 형제에 올렸다.
 const PLATE_SHADOW =
-  '0 2px 3px rgba(20,18,15,.3), 0 14px 22px rgba(20,18,15,.26), 0 34px 54px rgba(20,18,15,.24), 0 70px 100px rgba(20,18,15,.16), inset 0 0 0 1px rgba(20,18,15,.22)';
+  '0 2px 3px rgba(20,18,15,.3), 0 14px 22px rgba(20,18,15,.26), 0 34px 54px rgba(20,18,15,.24), 0 70px 100px rgba(20,18,15,.16)';
+/** 도판 헤어라인(#576) — 시안 값 그대로. 오버레이라 박스 크기를 안 건드려 0.667이 유지된다(#525 룰 5). */
+const PLATE_EDGE_RING = 'inset 0 0 0 1px rgba(20,18,15,.22)';
 const PLATE_GLOSS =
   'linear-gradient(116deg, rgba(255,255,255,.5) 0%, rgba(255,255,255,.14) 13%, rgba(255,255,255,0) 30%, rgba(255,255,255,0) 74%, rgba(255,255,255,.14) 92%, rgba(255,255,255,.3) 100%)';
 
@@ -115,7 +120,7 @@ const COLOPHON_MIN_SIZE = 13;
  * - 종이 그레인 베이스 + 잉크 #14120f 하드코딩(c8) — themeColor 파생·isInkDark 반전 전량 제거
  * - 헤더: 옐로 13×13 스퀘어 + UNE SÉANCE / 우측 관람일, 아래 옐로 3px 룰
  * - 마스트헤드: 제목 46/700 + 원제(Instrument Serif) / 우측 ★ 평점 50/700
- * - 도판: 500×750(0.667, #525 룰 5) + 4단 그림자·inset 엣지·116deg 사선 글로스·하단 5px 두께 엣지(c7)
+ * - 도판: 500×750(0.667, #525 룰 5) + 4단 그림자·116deg 사선 글로스에 얹은 헤어라인(#576)·하단 5px 두께 엣지(c7)
  * - 한줄평: top1064 height190 **고정 블록** — 문구 길이가 변해도 따옴표(104px)는 좌상·우하에 고정
  * - 콜로폰: Pretendard 17.5 2줄(#575 — 시안·v5 초기값은 모노). 병합 줄은 fieldPieces로 분해해 필드별 탭 타깃·ghost 유지(c3)
  * - 푸터: 체인·포맷 스탬프(c5와 같은 자리) + made with FILME
@@ -238,7 +243,9 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
           coatingIntensity={components.coatingIntensity}
           posterOpacity={components.posterOpacity}
         />
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: PLATE_GLOSS }} />
+        {/* 글로스 + 헤어라인 — Poster **다음 형제**라 포스터 위에 선다(#576). data-poster-root
+            바깥이라 저장 경로가 포스터 서브트리를 재합성해도(#439) 링이 사라지지 않는다. */}
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: PLATE_GLOSS, boxShadow: PLATE_EDGE_RING }} />
         <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 5, pointerEvents: 'none', background: 'linear-gradient(180deg, rgba(255,255,255,.22), rgba(20,18,15,.35))' }} />
       </div>
 
