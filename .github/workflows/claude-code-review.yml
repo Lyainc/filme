@@ -3,10 +3,10 @@ name: Claude Code Review
 on:
   pull_request:
     types: [opened, synchronize, ready_for_review, reopened]
-    # Optional: Only run on specific file changes
-    # paths:
-    #   - "src/**/*.ts"
-    #   - "src/**/*.tsx"
+    # paths 필터를 넣지 마라 (#594). path 필터로 스킵된 job은 GitHub에 상태를
+    # 아예 리포트하지 않는다 — 이 워크플로가 required check로 돌아오는 날 무관한
+    # 파일만 바뀐 PR이 영구 pending으로 막힌다. "선택사항" 주석으로 남겨두면
+    # 언젠가 켜지는 함정이라 예시조차 지웠다.
 
 jobs:
   claude-review:
@@ -35,19 +35,38 @@ jobs:
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
 
+            ## 이 리뷰의 자리 (경계)
+            결정적 correctness는 **CI 워크플로가 소유한다** — `bun run typecheck`와 `bun test`
+            941개가 같은 PR에서 이미 돈다(`.github/workflows/ci.yml`, #593). 그 결과를 다시
+            주장하지 마라. 너는 그 위에 얹는 **fresh-eyes 패스**이고, 가치는 CI가 원리적으로
+            못 잡는 것에만 있다: 없는 테스트, 문서로만 존재하는 불변식 위반, 크로스파일
+            계약 파손, 사라진 사용자 경로. 도구도 `Bash(gh ...)`만 허용돼서 테스트를 돌릴
+            수단 자체가 없다 — 그러니 "테스트/빌드가 통과한다"거나 "PR 설명의 게이트 통과와
+            부합한다"는 문장은 검증이 아니라 추측이므로 쓰지 마라.
+
             이 PR을 리뷰해. 스타일보다 실질을 우선해서 다음을 본다:
+            - **변경 로직의 테스트 누락** (최우선 축 — 없는 테스트는 CI가 영원히 못 잡는다)
+            - 불변식·계약 위반
             - 버그·정확성 위험
             - 보안 문제
             - 성능
             - 코드 품질·관례
-            - 변경 로직의 테스트 커버리지
 
-            레포의 CLAUDE.md를 컨벤션·스타일 기준으로 참조해.
+            레포의 CLAUDE.md를 **불변식 소스**로 참조해 — 컨벤션 목록이 아니라, 실측으로
+            확정돼 코드만 읽어선 알 수 없는 제약이 거기 산다. 예: 무드 캔버스 0.626 vs
+            포스터 0.667(두 축이 독립), `LayoutSpec.posterOrientation`이 캔버스 축과 다르다는
+            것, `POSTER_FILL_MOODS`가 토글 노출과 무드 소비의 단일 소스라는 것, inline style
+            `font` shorthand 금지, TicketRenderer 조건부 JSX의 트리 depth가 갈리면 remount로
+            scale이 리셋된다는 것. 변경이 이 중 하나를 건드리면 그게 이 리뷰의 최고가치 지적이다.
 
             ## 심각도 태깅 (모든 지적에 부여)
-            - P0 (blocking): 실제 버그·보안 구멍·데이터 손실·빌드/테스트 깨짐. 이 PR에서 고쳐야 함.
-            - P1 (should-fix): 정확성 위험, 변경 로직의 테스트 누락, 계약/스펙 위반.
+            - P0 (blocking): 실제 버그·보안 구멍·데이터 손실. 이 PR에서 고쳐야 함.
+              (빌드/테스트 깨짐은 P0이 아니다 — CI 소유이고 너는 돌릴 수단이 없다.)
+            - P1 (should-fix): **변경 로직의 테스트 누락**, 정확성 위험, CLAUDE.md 불변식/계약 위반.
             - P2 (nit): 스타일·네이밍·주관적 선호. 이 PR에서 변경을 요구하지 말 것.
+              도착지는 코멘트의 `P2 (nit)` 섹션 한 줄뿐이다 — 세션 마무리에서 사람이 그 줄을
+              nit 원장으로 옮긴다. **nit으로 이슈를 만들지 마라**(옛 rolling 이슈 #190은
+              닫혔고 재개설 금지). 파일 경로를 반드시 붙여 옮길 수 있게 해라.
 
             ## 재플래그 금지
             이전 라운드에서 이미 지적했거나 해결된 점은 다시 올리지 마라. 먼저
@@ -59,6 +78,12 @@ jobs:
             묶어라. **지적할 게 없어도 반드시 "P0/P1 없음 — LGTM" 요약 코멘트를 남긴다.**
             침묵(코멘트 0)은 금지 — 초록불인데 리뷰가 없는 상태는 리뷰가 안 돈 것과 구분되지
             않기 때문이다 (#122).
+
+            **"확인한 것" 나열은 최대 3줄.** 침묵 방지는 아래 `Verify a review comment was
+            posted` step이 구조적으로 강제하니(코멘트 0개면 job이 red) 프롬프트가 장문
+            나열까지 요구할 필요가 없다. 실측상 LGTM 코멘트도 15~25줄이고 대부분이 "문제
+            없음" 목록이었다(#594). 가장 위험했던 지점 3개만 골라 한 줄씩 쓰고, 나머지는
+            쓰지 마라.
           # gh CLI만 허용 (MCP 인라인 코멘트 툴·gh issue create 제외 — 백로그 자동생성 안 함)
           claude_args: '--allowed-tools "Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh search:*)"'
 
