@@ -353,7 +353,7 @@ export function MobileEditorShell({
   // 컨테이너 width만으로 렌더 크기를 몰기(TicketRenderer는 width에 맞춰 스케일). max는 세로 예산
   // (TicketRenderer가 스스로 max-width로 거는 것과 같은 식)을 채우는 width를 역산 — 이 항은 래퍼
   // (탭 타깃·포커스링)가 티켓 폭에 붙게 하는 몫이라 스테이지 자체 클램프와 별개로 필요하다(#532).
-  const previewWidth = `min(90vw, calc(${PREVIEW_MAX_HEIGHT} * ${layout.width} / ${layout.height}))`;
+  const previewWidth = `min(90cqw, calc(${PREVIEW_MAX_HEIGHT} * ${layout.width} / ${layout.height}))`;
   // 기본 모드 프리뷰 폭(#366) — 고정 280px 캡 대신 fit 스테이지(container-type:size)의 가용
   // 공간에서 역산한다: 가로는 스테이지 폭, 세로는 스테이지 높이 × 종횡비 중 작은 쪽. dock 패널이
   // 열려 스테이지가 줄면 티켓이 통째로 축소돼 어떤 뷰포트에서도 하단(서명 등)이 dock에 안 가리고,
@@ -365,7 +365,7 @@ export function MobileEditorShell({
   // TicketRenderer 폭 — 회전 후 세로가 화면 상한을 채우도록 역산. rotatedStageWidth(회전 후 화면에
   // 보이는 폭)는 같은 비율로 calc 유도해 반올림을 피한다.
   const rotateLandscape = layout.orientation === 'landscape' && isMax;
-  const rotatedInnerWidth = `min(${PREVIEW_MAX_HEIGHT}, calc(90vw * ${layout.width} / ${layout.height}))`;
+  const rotatedInnerWidth = `min(${PREVIEW_MAX_HEIGHT}, calc(90cqw * ${layout.width} / ${layout.height}))`;
   const rotatedStageWidth = `calc(${rotatedInnerWidth} * ${layout.height} / ${layout.width})`;
 
   // 앰비언트 다크 크롬(#353→#363→#415) — theme==='dark'일 때만 .chrome-dark 스코프(데스크톱
@@ -380,7 +380,8 @@ export function MobileEditorShell({
         position: 'relative',
         // height 캡(#357) — minHeight면 콘텐츠가 길 때 문서 전체가 자라 하단 dock이 접근성만
         // 남고 화면 밖으로 밀린다. 캡을 걸어야 본문(flex-1)이 내부 스크롤하고 dock이 항상 보인다.
-        height: '100dvh',
+        // 기준은 뷰포트가 아니라 폰 프레임(#605) — 모바일에선 프레임 높이가 100dvh라 값이 같다.
+        height: '100cqh',
         display: 'flex',
         flexDirection: 'column',
         paddingTop: 'env(safe-area-inset-top, 0px)',

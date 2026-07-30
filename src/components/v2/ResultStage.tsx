@@ -37,9 +37,12 @@ export function ResultStage({
   // 세로(portrait)에서만 적용 — 가로(landscape) 폰은 100dvh가 이미 390px 안팎으로 작아
   // 예산이 0 이하로 떨어져 width가 0으로 clamp, hero가 통째로 사라지는 회귀가 생긴다(#380 리뷰).
   const isPortrait = useMatchMedia('(orientation: portrait)');
+  // 단위는 뷰포트가 아니라 폰 프레임 기준(cqw/cqh, #605) — 모바일에선 프레임이 뷰포트와 같은
+  // 사각형(100% × 100dvh)이라 위 #380 산수가 그대로 성립하고, 데스크톱에선 400px 프레임 안에서
+  // 84vw가 1600px으로 튀는 걸 막는다.
   const heroWidth = isPortrait
-    ? `min(84vw, calc(${PREVIEW_MAX_HEIGHT} * ${layout.width} / ${layout.height}), calc((100dvh - env(safe-area-inset-top, 0px) - 390px) * ${layout.width} / ${layout.height}))`
-    : `min(84vw, calc(${PREVIEW_MAX_HEIGHT} * ${layout.width} / ${layout.height}))`;
+    ? `min(84cqw, calc(${PREVIEW_MAX_HEIGHT} * ${layout.width} / ${layout.height}), calc((100cqh - env(safe-area-inset-top, 0px) - 390px) * ${layout.width} / ${layout.height}))`
+    : `min(84cqw, calc(${PREVIEW_MAX_HEIGHT} * ${layout.width} / ${layout.height}))`;
 
   return (
     // 결과화면 톤(#357) — 편집 셸과 같은 .chrome-dark 스코프 + 앰비언트. 결과화면은 항상
@@ -48,7 +51,7 @@ export function ResultStage({
     <div
       data-theme={theme}
       className="app-canvas chrome-dark"
-      style={{ position: 'relative', minHeight: '100dvh', display: 'flex', flexDirection: 'column', paddingTop: 'env(safe-area-inset-top, 0px)' }}
+      style={{ position: 'relative', minHeight: '100cqh', display: 'flex', flexDirection: 'column', paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
       {/* testid는 편집 셸의 chrome-ambient와 분리 — 모바일에서 resultOpen이면 편집 셸이
           hidden으로 동시 마운트라(index.tsx) 같은 testid가 DOM에 2개 생긴다(PR #362 리뷰 P2). */}
