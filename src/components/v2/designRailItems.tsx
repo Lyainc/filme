@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import LayoutPicker, { LayoutStrip } from '@/components/LayoutPicker';
+import { LayoutStrip } from '@/components/LayoutPicker';
 import TexturePicker from '@/components/wizard/TexturePicker';
 import ColorPicker from '@/components/wizard/ColorPicker';
 import BrightnessSlider from '@/components/wizard/BrightnessSlider';
@@ -12,14 +12,13 @@ import { POSTER_FILL_MOODS, TONE_FIXED_MOODS } from '@/constants/fields';
 import type { LayoutId } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 
-// #523 — 디자인 레일 항목 정의를 DesignRail(모바일)·DesktopDesignPanel(데스크톱) 공용 목록
-// 하나로 통합. 두 화면은 이 목록만 공유하고 배치(모바일=아이콘 행+단일 패널, 데스크톱=상시
-// 세로 스택)는 각자 유지 — render(photo, surface)가 화면별 분기를 항목 안으로 가둔다.
-// 슬라이더 id는 surface별 prefix(rail-/desktop-)로 조립해 기존 id를 그대로 보존한다
-// (rail-chain-scale·desktop-chain-scale 등 — __tests__/desktopDesignPanel.test.tsx가 CSS
-// 선택자로 잡는다).
+// #523 — 디자인 레일 항목 정의 목록. 원래는 모바일 rail과 데스크톱 패널이 이 목록만 공유하고
+// 배치는 각자 유지하려고 render(photo, surface, actions)에 surface 축을 뒀는데, #607에서
+// DesktopDesignPanel이 삭제되며 소비자가 DesignRail 하나가 됐다. 축과 그 분기(desktop 전용
+// 상시 스택 배치, desktop- id prefix)는 아무도 안 타는 죽은 코드라 같이 걷어냈다 — 남겨두면
+// 타입도 테스트도 안 건드리는 채로 두 셸 전제가 조용히 되살아난다.
+// 슬라이더 id의 rail- prefix는 그대로 유지한다(기존 id 보존).
 export type RailItemId = 'mood' | 'color' | 'texture' | 'opacity' | 'size' | 'custom';
-type RailSurface = 'mobile' | 'desktop';
 type Photo = ReturnType<typeof usePhototicket>;
 
 /**
@@ -44,7 +43,7 @@ export interface RailItem {
   // 그 예: TONE_FIXED_MOODS를 이 필드에 안 싣고 render 클로저 안에서만 직접 참조해, 아이콘은
   // 그대로 두고 컨트롤만 잠근다(35mm 컬러의 disabledNote와 같은 이유).
   appliesTo?: readonly LayoutId[];
-  render: (photo: Photo, surface: RailSurface, actions: RailActions) => ReactNode;
+  render: (photo: Photo, actions: RailActions) => ReactNode;
 }
 
 // #523 AC3 — appliesTo 기반 무드별 노출 필터. 순수 함수라 합성(가짜) RailItem만으로 검증 가능.
@@ -52,10 +51,8 @@ export function filterItemsForMood(items: readonly RailItem[], layout: LayoutId)
   return items.filter((item) => !item.appliesTo || item.appliesTo.includes(layout));
 }
 
-// surface별 슬라이더 id prefix — rail-chain-scale/desktop-chain-scale 등 기존 id를 보존한다.
-function prefixFor(surface: RailSurface) {
-  return surface === 'mobile' ? 'rail' : 'desktop';
-}
+// 슬라이더·패널 id prefix — rail-chain-scale 등 기존 id를 보존한다.
+const ID_PREFIX = 'rail';
 
 const RAIL_ICON = {
   width: 20,
@@ -278,19 +275,9 @@ function TextureAxisControls({ photo, prefix, axis }: { photo: Photo; prefix: st
  * 넘으면 대신 안에서 스크롤하게 되므로, 이 배치가 줄이는 건 이제 dock 높이가 아니라 스크롤
  * 양이다(양축 세로 쌓기면 후보정 콘텐츠가 슬롯의 3배를 넘는다).
  */
-function TexturePanel({ photo, surface }: { photo: Photo; surface: RailSurface }) {
+function TexturePanel({ photo }: { photo: Photo }) {
   const [axis, setAxis] = useState<TextureAxis>('material');
-  const prefix = prefixFor(surface);
-
-  if (surface === 'desktop') {
-    return (
-      <div className="space-y-section">
-        {TEXTURE_AXES.map((a) => (
-          <TextureAxisControls key={a.key} photo={photo} prefix={prefix} axis={a.key} />
-        ))}
-      </div>
-    );
-  }
+  const prefix = ID_PREFIX;
   // aria-controls와 대상 id는 반드시 같은 상수에서 나와야 한다 — 따로 조립하면 한쪽만 고쳐도
   // 아무 테스트가 안 깨진 채 세그먼트↔패널 관계만 조용히 끊긴다(SizePanel도 같은 이유로 hoist).
   const panelId = `${prefix}-texture-axis-panel`;
@@ -345,9 +332,9 @@ type SizeAxis = (typeof SIZE_AXES)[number]['key'];
  * #563 이후 dock 높이 논거는 TexturePanel과 같이 읽을 것 — 축 분리가 줄이는 건 이제 dock이
  * 아니라 고정 슬롯 안에서 스크롤할 양이다.
  */
-function SizePanel({ photo, surface, actions }: { photo: Photo; surface: RailSurface; actions: RailActions }) {
+function SizePanel({ photo, actions }: { photo: Photo; actions: RailActions }) {
   const [axis, setAxis] = useState<SizeAxis>('poster');
-  const prefix = prefixFor(surface);
+  const prefix = ID_PREFIX;
   const { components } = photo.state;
   const setComp = photo.updateComponents;
   const stampScaleMax = stampScaleMaxFor(components.layout);
@@ -409,7 +396,7 @@ function SizePanel({ photo, surface, actions }: { photo: Photo; surface: RailSur
     </div>
   );
 
-  if (surface === 'desktop' || !posterAxis) {
+  if (!posterAxis) {
     return (
       <div className="space-y-group">
         {posterAxis}
@@ -474,14 +461,12 @@ export const RAIL_ITEMS: readonly RailItem[] = [
         <path d="M12 3v17" />
       </svg>
     ),
-    render: (photo, surface) => {
-      const onChange = (id: LayoutId) => photo.updateComponents({ layout: id });
-      return surface === 'mobile' ? (
-        <LayoutStrip value={photo.state.components.layout} onChange={onChange} />
-      ) : (
-        <LayoutPicker value={photo.state.components.layout} onChange={onChange} />
-      );
-    },
+    render: (photo) => (
+      <LayoutStrip
+        value={photo.state.components.layout}
+        onChange={(id: LayoutId) => photo.updateComponents({ layout: id })}
+      />
+    ),
   },
   COLOR_ITEM,
   {
@@ -496,7 +481,7 @@ export const RAIL_ITEMS: readonly RailItem[] = [
         <path d="M10 20 20 10" />
       </svg>
     ),
-    render: (photo, surface) => <TexturePanel photo={photo} surface={surface} />,
+    render: (photo) => <TexturePanel photo={photo} />,
   },
   {
     id: 'opacity',
@@ -509,8 +494,8 @@ export const RAIL_ITEMS: readonly RailItem[] = [
         <circle cx="14" cy="12" r="6" fill="currentColor" fillOpacity={0.25} />
       </svg>
     ),
-    render: (photo, surface) => {
-      const prefix = prefixFor(surface);
+    render: (photo) => {
+      const prefix = ID_PREFIX;
       const { components } = photo.state;
       const setComp = photo.updateComponents;
       // 듀얼 슬라이더 — 포스터=밝기(posterOpacity), 컴포넌트=오버레이 불투명도(componentOpacity).
@@ -545,7 +530,7 @@ export const RAIL_ITEMS: readonly RailItem[] = [
         <path d="M20 4 12 12" />
       </svg>
     ),
-    render: (photo, surface, actions) => <SizePanel photo={photo} surface={surface} actions={actions} />,
+    render: (photo, actions) => <SizePanel photo={photo} actions={actions} />,
   },
   {
     id: 'custom',

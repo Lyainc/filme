@@ -4,7 +4,8 @@
  * claude-review PR #485 P1 지적 반영:
  * (1) scale이 실제 렌더 height/max-width에 반영되는지 정적 마크업으로,
  * (2) 6개 무드 호출부가 실제로 scale prop을 배선했는지(마크업 변화 유무로),
- * (3) DesignRail/DesktopDesignPanel 슬라이더가 setComp를 올바른 키로 호출하는지,
+ * (3) DesignRail 슬라이더가 setComp를 올바른 키로 호출하는지(#607 전엔 DesktopDesignPanel도
+ *     같은 명제를 한 번 더 돌렸는데, 그 패널이 삭제되며 중복 describe도 같이 지웠다),
  * (4) undo(#356) 스냅샷·saveDraft/restoreSnapshot이 chainScale/formatScale을 다른
  *     컴포넌트 필드와 원자 복원하는지(스펙 s4) 훅 레벨로 검증한다.
  */
@@ -16,7 +17,6 @@ import userEvent from '@testing-library/user-event';
 import { MINIMAL_STAMP_MAX_SCALE, MoodMinimal } from '../src/components/moods/MoodMinimal';
 import { STAMP_MAX_ASPECT } from '../src/components/moods/_shared';
 import { DesignRail } from '../src/components/v2/DesignRail';
-import { DesktopDesignPanel } from '../src/components/v2/DesktopDesignPanel';
 import { usePhototicket, type HistorySnapshot } from '../src/hooks/usePhototicket';
 import type { MovieInfo, TicketComponents } from '../src/types';
 import { ALL_MOODS } from './setup/moods';
@@ -99,17 +99,6 @@ function RailHarness() {
   );
 }
 
-function PanelHarness() {
-  const photo = usePhototicket();
-  return (
-    <>
-      <div data-testid="chainScale">{photo.state.components.chainScale}</div>
-      <div data-testid="formatScale">{photo.state.components.formatScale}</div>
-      <DesktopDesignPanel photo={photo} />
-    </>
-  );
-}
-
 // #554 — 모바일 크기 탭은 포스터↔로고 축 전환이라 로고 슬라이더가 '로고' 축 안에 있다.
 // 포스터 축이 통째로 비는 무드(원본 없음 + POSTER_FILL_MOODS 밖)에선 세그먼트가 아예 없어
 // 슬라이더가 바로 보이므로, 세그먼트가 있을 때만 누른다.
@@ -183,21 +172,6 @@ describe('#441 DesignRail 슬라이더 배선', () => {
     const chainInput = screen.getByLabelText('체인 로고 크기') as HTMLInputElement;
     expect(chainInput.value).toBe(String(MINIMAL_STAMP_MAX_SCALE)); // thumb·라벨 = 클램프값
     expect(screen.getByTestId('chainScale').textContent).toBe('1.3'); // 저장된 raw는 보존
-  });
-});
-
-describe('#441 DesktopDesignPanel 슬라이더 배선', () => {
-  test('체인/포맷 로고 크기 슬라이더 변경 → components에 반영, Minimal은 상한이 MINIMAL_STAMP_MAX_SCALE로 하향(상시 렌더 — 탭 없음)', () => {
-    render(<PanelHarness />);
-    const chainInput = screen.getByLabelText('체인 로고 크기');
-    const formatInput = screen.getByLabelText('포맷 로고 크기');
-    expect(formatInput.getAttribute('max')).toBe(String(MINIMAL_STAMP_MAX_SCALE));
-
-    fireEvent.change(chainInput, { target: { value: '0.6' } });
-    fireEvent.change(formatInput, { target: { value: '1.3' } }); // 상한 밖 입력 → max로 클램프
-
-    expect(screen.getByTestId('chainScale').textContent).toBe('0.6');
-    expect(screen.getByTestId('formatScale').textContent).toBe(String(MINIMAL_STAMP_MAX_SCALE));
   });
 });
 

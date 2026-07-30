@@ -1,13 +1,12 @@
 import type { ComponentProps } from 'react';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { MobileEditorShell } from '@/components/v2/MobileEditorShell';
-import type { DesktopStudioShell } from '@/components/v2/DesktopStudioShell';
 
 type Photo = ReturnType<typeof usePhototicket>;
 
 /**
- * MobileEditorShell*·desktopStudioShell* 계열 11파일이 각 16~31줄씩 복붙하던 props 뼈대만
- * 공유한다. 파일별 seed 버튼·프로브 div·assertion 같은 Harness 구조는 그대로 각 파일에 남긴다
+ * MobileEditorShell 계열 테스트가 각 16~31줄씩 복붙하던 props 뼈대만 공유한다.
+ * 짝이던 `desktopShellProps`는 #607에서 DesktopStudioShell과 함께 삭제됐다. 파일별 seed 버튼·프로브 div·assertion 같은 Harness 구조는 그대로 각 파일에 남긴다
  * (DRY는 반복되는 기본 props 값에만 — 로직·렌더 구조는 숨기지 않는다).
  *
  * import type만 써서 이 파일 자체는 런타임에 아무것도 require하지 않는다 —
@@ -25,26 +24,6 @@ export function mobileShellProps(
     onThemeChange: () => {},
     onDone: () => {},
     disabledReason: '',
-    previewMovieInfo: photo.state.movieInfo,
-    previewComponents: photo.state.components,
-    fieldVisibility: photo.state.fieldVisibility,
-    ...overrides,
-  };
-}
-
-export function desktopShellProps(
-  photo: Photo,
-  overrides: Partial<ComponentProps<typeof DesktopStudioShell>> = {}
-): ComponentProps<typeof DesktopStudioShell> {
-  return {
-    photo,
-    theme: 'light',
-    onThemeChange: () => {},
-    canExport: true,
-    disabledReason: '',
-    resultOpen: false,
-    onDone: () => {},
-    onBackToEdit: () => {},
     previewMovieInfo: photo.state.movieInfo,
     previewComponents: photo.state.components,
     fieldVisibility: photo.state.fieldVisibility,

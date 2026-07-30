@@ -1,4 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type PointerEvent } from 'react';
+import { getFrameRect } from './PhoneFrame';
 
 /**
  * 플로팅 툴바(#356, v8 시안 §4) — undo · redo | 항목목록 · 최대화 | 숨김.
@@ -123,18 +124,30 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
   useImperativeHandle(forwardedRef, () => rootRef.current as HTMLDivElement);
   const dragRef = useRef<{ px: number; py: number; ox: number; oy: number } | null>(null);
 
-  // 저장된 이동식 좌표는 뷰포트가 좁아지는 리사이즈·화면 회전에서 화면 밖으로 나갈 수 있고
-  // (PR #361 리뷰 P2), 영속된 좌표라 저장 당시보다 좁은 뷰포트로 다시 열 수도 있다(#190)
+  // 이동식 좌표는 프레임 원점 기준이다(#607) — `contain: paint`가 fixed의 컨테이닝 블록을
+  // 폰 프레임으로 바꿔 translate가 프레임 좌상단에서 풀리기 때문. 뷰포트로 클램프하면
+  // 데스크톱(1440)에서 400px 프레임 밖까지 허용된다.
+  const clampPos = (x: number, y: number) => {
+    const el = rootRef.current;
+    const w = el?.offsetWidth ?? 52;
+    const h = el?.offsetHeight ?? 52;
+    const frame = getFrameRect();
+    return {
+      x: Math.max(TB_EDGE, Math.min(frame.width - w - TB_EDGE, x)),
+      y: Math.max(TB_EDGE, Math.min(frame.height - h - TB_EDGE, y)),
+    };
+  };
+
+  // 저장된 이동식 좌표는 프레임이 좁아지는 리사이즈·화면 회전에서 프레임 밖으로 나갈 수 있고
+  // (PR #361 리뷰 P2), 영속된 좌표라 저장 당시보다 좁은 프레임으로 다시 열 수도 있다(#190)
   // — 마운트 시 1회 + resize마다 재클램프. 드래그 중 재실행은 이미 클램프된 좌표라 no-op.
+  // 데스크톱에서 뷰포트 기준으로 저장된 구 좌표(예 x=1388)도 이 마운트 클램프가 프레임 안으로
+  // 되돌린다(#607).
   useEffect(() => {
     if (place !== 'movable' || !pos) return;
     const reclamp = () => {
-      const el = rootRef.current;
-      const w = el?.offsetWidth ?? 52;
-      const h = el?.offsetHeight ?? 52;
-      const x = Math.max(TB_EDGE, Math.min(window.innerWidth - w - TB_EDGE, pos.x));
-      const y = Math.max(TB_EDGE, Math.min(window.innerHeight - h - TB_EDGE, pos.y));
-      if (x !== pos.x || y !== pos.y) onPrefsChange((prev) => ({ ...prev, x, y }));
+      const c = clampPos(pos.x, pos.y);
+      if (c.x !== pos.x || c.y !== pos.y) onPrefsChange((prev) => ({ ...prev, x: c.x, y: c.y }));
     };
     reclamp();
     window.addEventListener('resize', reclamp);
@@ -174,20 +187,13 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
     };
   }, [place, orient, headerEl, contentTopEl, hidden]);
 
-  const clampPos = (x: number, y: number) => {
-    const el = rootRef.current;
-    const w = el?.offsetWidth ?? 52;
-    const h = el?.offsetHeight ?? 52;
-    return {
-      x: Math.max(TB_EDGE, Math.min(window.innerWidth - w - TB_EDGE, x)),
-      y: Math.max(TB_EDGE, Math.min(window.innerHeight - h - TB_EDGE, y)),
-    };
-  };
-
   const onGripDown = (e: PointerEvent<HTMLElement>) => {
     const rect = rootRef.current?.getBoundingClientRect();
     if (!rect) return;
-    dragRef.current = { px: e.clientX, py: e.clientY, ox: rect.left, oy: rect.top };
+    // 드래그 원점도 프레임 기준으로 환산한다 — 뷰포트 좌표(데스크톱 예 534)를 그대로 원점으로
+    // 잡으면 첫 pointermove에 툴바가 프레임 left(520)만큼 오른쪽으로 튀고 contain:paint에 잘린다.
+    const frame = getFrameRect();
+    dragRef.current = { px: e.clientX, py: e.clientY, ox: rect.left - frame.left, oy: rect.top - frame.top };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
   const onGripMove = (e: PointerEvent<HTMLElement>) => {

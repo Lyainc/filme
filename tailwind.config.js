@@ -7,8 +7,10 @@ module.exports = {
   ],
   theme: {
     extend: {
-      // rail↔dock 단일 경계(#104). src/utils/breakpoints.ts의 RAIL_BREAKPOINT_PX와
-      // 반드시 같은 px — 한쪽만 바꾸면 그 사이 폭에 진입 CTA dead zone이 생긴다.
+      // 폰 프레임이 뷰포트를 그대로 채울지(모바일) 400px로 좁힐지(데스크톱) 가르는 유일한
+      // 경계다 — 소비자는 PhoneFrame의 `rail:w-[400px]` 하나뿐이다. #607 이전엔 JS 쪽
+      // src/utils/breakpoints.ts(RAIL_BREAKPOINT_PX)와 값을 미러링해야 했고 한쪽만 바꾸면 그
+      // 사이 폭에 dead zone이 생겼는데(#104), 셸 분기가 사라지며 JS 짝도 함께 삭제됐다.
       screens: {
         rail: '1024px',
       },

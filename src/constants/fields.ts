@@ -3,7 +3,7 @@ import { formatDate } from '@/utils/dateFormat';
 
 /**
  * 필드 메타데이터 단일 소스(#215). 라벨은 필드 드로어(FieldDrawer)·데스크톱 아코디언
- * (FieldAccordion)·인플레이스 에디터가 공유하므로 여기 한 곳에 둔다.
+ * 인플레이스 에디터·필드 드로어가 공유하므로 여기 한 곳에 둔다.
  *
  * 필드 말고 **무드 능력 표**도 여기 산다(TONE_FIXED_MOODS · POSTER_FILL_MOODS · MOOD_EXCLUDED_FIELDS)
  * — 셸마다 layout id 리터럴을 반복하면 한쪽만 고쳐져 죽은 컨트롤이 남기 때문. 네 번째 표가 생기면
@@ -78,7 +78,7 @@ export const LAUNCHER_GROUPS: { title: string; fields: TicketField[] }[] = [
 
 /**
  * 무드별 미적용(런처에서 숨길) 필드(#287, 에픽 #281). 마스터 규격상 그 무드가 렌더하지 않는 필드만
- * 등록해 데스크톱 런처(FieldAccordion)의 죽은 컨트롤을 없앤다. 기본은 전 필드 적용(등록 없음 = 제외 없음).
+ * 등록해 런처의 죽은 컨트롤을 없앤다. 기본은 전 필드 적용(등록 없음 = 제외 없음).
  * 무드 재동기화 슬라이스가 진행되며 렌더에서 빠지는 필드를 여기 등록한다(예: 35mm·35mm Wide도 곧 바코드 제거).
  * 모바일은 온-티켓 FieldTap이라 렌더 안 하는 필드는 탭 타깃 자체가 없어 구조상 이미 layout-aware — 여긴 데스크톱용.
  */
@@ -100,7 +100,7 @@ export const MOOD_EXCLUDED_FIELDS: Partial<Record<LayoutId, readonly TicketField
 
 /**
  * themeColor(잉크/액센트 색)를 무시하는 무드(#524) — 시안 색이 무드 정체성의 일부라 하드코딩된
- * 무드들. 여기 들어가면 DesignRail·DesktopDesignPanel의 ColorPicker가 비활성화된다.
+ * 무드들. 여기 들어가면 DesignRail의 ColorPicker가 비활성화된다.
  * MOOD_EXCLUDED_FIELDS와 같은 성격의 무드 능력 표 — 셸마다 layout id 리터럴을 반복하면
  * 다음 무드가 합류할 때 한쪽만 고쳐지고 죽은 컨트롤이 남는다(#524 열린 질문).
  * 6무드 액센트 통일 개편이 오면 이 표가 그 진입점이다.
@@ -203,7 +203,7 @@ export const STAMP_KEYS: Record<
 
 /**
  * 필드 현재값 미리보기 문자열. 비어 있으면 '' 반환(호출부가 placeholder로 대체).
- * 데스크톱 아코디언(FieldAccordion)·모바일 온-티켓 탭이 공유 — 컴포넌트에서 분리해
+ * 필드 드로어·온-티켓 탭이 공유 — 컴포넌트에서 분리해
  * 상수 모듈로 이전(#266 PR-A). components는 signature 이미지 우선순위 판정에만 쓴다(#484,
  * claude-review PR #487 P1 — 이미지 업로드 후 텍스트를 비워도 '비어 있음'으로 잘못 보이던 버그).
  */

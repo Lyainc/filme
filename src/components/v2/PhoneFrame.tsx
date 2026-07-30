@@ -2,17 +2,37 @@ import type { ReactNode } from 'react';
 
 /**
  * 크롭 모달처럼 `createPortal`로 트리를 갈아타는 오버레이가 프레임 안에 붙게 하는 앵커(#606).
- * 프레임이 아직 안 떠 있는 경로(데스크톱 셸, #607에서 삭제)에선 `document.body`로 폴백한다.
+ * 앱 경로에선 프레임이 항상 서 있고, 모달을 단독 렌더하는 테스트만 `document.body`로 폴백한다.
  */
 export const PHONE_FRAME_ID = 'phone-frame';
+
+/**
+ * 이동식 툴바의 좌표·클램프·스냅이 쓰는 기준 사각형(#607).
+ *
+ * `contain: paint`가 `position: fixed`의 컨테이닝 블록을 프레임으로 바꾸므로 그 위에 얹히는
+ * `translate(x, y)`도 뷰포트가 아니라 **프레임 원점 기준**이다. `window.innerWidth/innerHeight`로
+ * 클램프하면 1440 뷰포트에서 x가 1388까지 허용돼 400px 프레임 밖으로 나가고, 그 좌표가
+ * localStorage에 영속돼 다시 열어도 안 돌아온다.
+ *
+ * 모바일에선 프레임이 뷰포트와 같은 사각형(left/top 0, 100% × 100dvh)이라 반환값이 동일 —
+ * 기존 동작은 불변이다. 프레임이 없거나 아직 레이아웃 전(테스트 환경)이면 뷰포트로 폴백한다.
+ */
+export function getFrameRect(): { left: number; top: number; width: number; height: number } {
+  const r = document.getElementById(PHONE_FRAME_ID)?.getBoundingClientRect();
+  if (r && r.width > 0 && r.height > 0) return { left: r.left, top: r.top, width: r.width, height: r.height };
+  return { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
+}
 
 /**
  * 폰 프레임(#604) — 모바일 셸 한 벌을 데스크톱에서도 폰 폭으로 세우는 컨테이너.
  *
  * - 모바일: `width:100%` · `height:100dvh` — 프레임 사각형이 뷰포트와 같아 기존 동작 그대로다.
- * - 데스크톱(rail=1024 이상): 폭 400px 고정 + 가로 센터링. 400인 근거는 `scripts/measure-chrome.mjs`의
- *   #563 불변식(dock 232.6 / 프리뷰 226.8×362.3)이 400×675 기준이라, 같은 하네스가 값 변경 없이
- *   데스크톱 프레임의 회귀 게이트가 되기 때문(#609).
+ * - 데스크톱(rail=1024 이상): 폭 400px 고정 + 가로 센터링. #607에서 데스크톱 전용 셸이 삭제돼
+ *   이제 이 프레임이 데스크톱의 유일한 레이아웃이다. 400인 근거는 `scripts/measure-chrome.mjs`의
+ *   #563 불변식(dock 232.6 / 프리뷰 226.8×362.3)이 400×675 기준이라, 폭을 맞춰두면 같은 하네스가
+ *   값 변경 없이 데스크톱 프레임에도 쓰이기 때문이다. **아직 게이트는 아니다** — 그 스크립트는
+ *   불변식 대조를 뷰포트가 400×675일 때만 켜서(measure-chrome.mjs의 `checked:false` 분기), 데스크톱
+ *   뷰포트로 돌리면 조용히 통과한다. 대조 기준을 뷰포트에서 프레임 rect로 옮기는 게 #609다.
  *
  * 여기 걸린 두 속성은 **각자 다른 일을 하고 하나로 대체되지 않는다**:
  *

@@ -313,3 +313,20 @@
   border-radius: 9999px;
   box-shadow: 0 1px 3px rgba(44, 38, 34, 0.35);
 }
+
+/* 결과 hero 세로 예산(#380 → #607) — 원래 `useMatchMedia('(orientation: portrait)')`로 갈랐지만
+   그건 **뷰포트** 방향이다. 400×900 폰 프레임이 1440×900 데스크톱 뷰포트 안에 서면 뷰포트는
+   landscape라 프레임이 명백히 portrait인데도 이 예산 항이 통째로 빠지고, hero가 헤더+패딩+액션
+   3종까지 밀어내 세로를 넘긴다. 컨테이너 쿼리는 프레임 자신의 방향을 읽으므로 그게 실제 등가물이다.
+   landscape(가로 폰)에선 항을 무력화한다 — 100dvh가 390px 안팎이라 예산이 0 이하로 떨어져
+   hero width가 0으로 clamp되는 #380 리뷰의 회귀를 그대로 피한다. min()에서 절대 안 이기는
+   큰 값으로 두는 게 항을 빼는 것과 등가고, 분기 없이 한 식으로 유지된다.
+   @layer 밖인 이유는 위 .ReactCrop 블록과 같다(purge 회피). */
+.result-hero {
+  --hero-dvh-budget: 99999px;
+}
+@container (orientation: portrait) {
+  .result-hero {
+    --hero-dvh-budget: calc(100cqh - env(safe-area-inset-top, 0px) - 390px);
+  }
+}

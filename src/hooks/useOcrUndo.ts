@@ -5,7 +5,7 @@ import type { usePhototicket } from '@/hooks/usePhototicket';
 
 /**
  * OCR 낙관적 주입 + 되돌리기 로직의 단일 출처 — 스냅샷 상태·채워진 필드 집합·apply/cancel/confirm/
- * removeField 핸들러를 한 곳에 둔다. MobileEditorShell(모바일)과 DesktopStudioShell(데스크톱)이 이 훅만
+ * removeField 핸들러를 한 곳에 둔다. 셸과 그 하위 OCR 카드들이 이 훅만
  * 쓴다. 이전엔 두 컴포넌트가 동일 로직을 각자 복제했고, 그 drift가 #141-class 회귀(한쪽 고치면 다른
  * 쪽이 조용히 깨짐)를 낳는다. 배너·sr-only 표현은 OcrUndoBanner가, 로직은 여기가 소유한다.
  *
@@ -30,7 +30,7 @@ export interface UseOcrUndo {
    * cancel(undo) 시 증가시켜 in-flight KOBIS fetch를 무효화 — revert 후 폼을 다시 채우지 못하게.
    * confirm에선 안 올린다: confirm은 주입을 수락하고, KOBIS 보강(title 자체를 나르는)은 계속 착지해야 한다.
    *
-   * MobileEditorShell·DesktopStudioShell 모두 이 훅을 한 번만 호출해 랜딩·드로어 등 여러
+   * MobileEditorShell은 이 훅을 한 번만 호출해 랜딩·드로어 등 여러
    * OcrUploadCard 인스턴스에 같은 ref 객체를 넘긴다(#388) — OcrUploadCard도 새 OCR 실행 시작 시
    * 이 값을 직접 증가시켜(OcrUploadCard.tsx applyOcr) "가장 최신 실행"임을 표시한다. 인스턴스별
    * mountedRef 대신 이 셸 레벨 카운터로 최신성을 판단하므로, 실행을 시작한 인스턴스가 나중에

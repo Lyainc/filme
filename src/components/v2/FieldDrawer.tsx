@@ -39,7 +39,7 @@ interface FieldDrawerProps {
 
 /**
  * 모바일 필드 목록 우측 드로어(#355, v8 시안 §6). 마운트 = 열림 — 닫힘은 언마운트로 즉시
- * (FieldAccordion과 동일한 ponytail 판단: 여는 애니메이션만 CSS로 부드럽게).
+ * (ponytail 판단: 여는 애니메이션만 CSS로 부드럽게).
  *
  * 유리(blur+알파 틴트)는 패널에만 쓰고 행은 불투명 카드(bg-surface-elevated)에 얹는다 —
  * 시안값(패널 알파 .36~.40 위 직접 텍스트)은 포스터에 따라 대비가 4.5:1 밑으로 깨진다(이슈 표).

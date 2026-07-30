@@ -31,7 +31,7 @@ interface VisibilityCheckboxProps {
 /**
  * 입력란 라벨 옆에 붙는 "티켓 표시 여부" 눈 토글.
  * 네이티브 체크박스에서 눈+채운 동공 아이콘 스위치로 교체(#355, v8 시안 §5) — 데스크톱
- * FieldAccordion·모바일 필드 드로어가 공유한다. 항상 상호작용 가능해야 하므로
+ * 필드 드로어·인플레이스 에디터가 공유한다. 항상 상호작용 가능해야 하므로
  * 입력란을 흐리는 dim/disabled 래퍼 *바깥*(라벨 행)에 배치할 것.
  */
 export default function VisibilityCheckbox({ checked, onChange, label }: VisibilityCheckboxProps) {
