@@ -12,6 +12,7 @@ import { POSTER_LANDSCAPE_RATIO, POSTER_RATIO } from '@/utils/constants';
 import { getLayout } from '@/utils/layouts';
 import type { LayoutId } from '@/types';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { PHONE_FRAME_ID } from '@/components/v2/PhoneFrame';
 
 interface ImageCropModalProps {
   imageSrc: string;
@@ -173,7 +174,10 @@ export default function ImageCropModal({
     return () => document.removeEventListener('keydown', onKey);
   }, [isProcessing, onClose, getFocusables]);
 
-  // dynamic(ssr:false)로만 import되므로 document는 항상 존재 — mount 가드 불필요
+  // dynamic(ssr:false)로만 import되므로 document는 항상 존재 — mount 가드 불필요.
+  // 포털 타깃은 body가 아니라 폰 프레임(#606) — body에 붙으면 프레임의 contain:paint 조상이
+  // 사라져 모달이 프레임 밖 전체 화면에 뜬다. InPlaceFieldEditor가 쓰는 패턴과 같다.
+  // 프레임이 없는 경로(데스크톱 셸, #607에서 삭제)는 body로 폴백해 오늘 동작 그대로.
   return createPortal(
     <div
       ref={dialogRef}
@@ -184,7 +188,9 @@ export default function ImageCropModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm overscroll-contain animate-fade-in"
       style={{ background: 'rgba(44,38,34,0.55)' }}
     >
-      <div className="relative flex h-[85svh] max-h-[820px] w-full max-w-sm flex-col overflow-hidden rounded-card bg-paper shadow-card rail:h-[700px] rail:max-h-[88vh] rail:max-w-2xl">
+      {/* 세로 단위는 폰 프레임 기준(cqh, #605) — 프레임에 포털되면 프레임 높이, 프레임이 없는
+          경로(데스크톱 셸)에선 컨테이너가 없어 small viewport로 폴백해 기존 svh와 같은 값이 된다. */}
+      <div className="relative flex h-[85cqh] max-h-[820px] w-full max-w-sm flex-col overflow-hidden rounded-card bg-paper shadow-card rail:h-[700px] rail:max-h-[88cqh] rail:max-w-2xl">
         {/* Header — 정사각 닫기 버튼. 제목은 aria-label(다이얼로그 접근성 이름)로만 유지, 시각 헤딩은 제거(#320) */}
         <div className="flex items-center justify-end border-b border-line px-4 py-3">
           <button
@@ -285,6 +291,6 @@ export default function ImageCropModal({
         </div>
       </div>
     </div>,
-    document.body
+    document.getElementById(PHONE_FRAME_ID) ?? document.body
   );
 }
