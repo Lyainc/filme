@@ -111,7 +111,7 @@ export function FieldDrawer({ photo, onField, onClose, children }: FieldDrawerPr
         tabIndex={-1}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
-        className="drawer-slide-in absolute inset-y-0 right-0 flex w-[min(78vw,320px)] flex-col outline-none"
+        className="drawer-slide-in absolute inset-y-0 right-0 flex w-[min(78cqw,320px)] flex-col outline-none"
         style={{
           background: 'var(--overlay-fill)',
           backdropFilter: 'blur(13px)',

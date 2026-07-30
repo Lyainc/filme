@@ -39,6 +39,13 @@ const SCALE_EPSILON = 0.001;
 
 // 프리뷰 컨테이너의 세로 상한. MobileEditorShell의 max 모드 width 역산이 이 값을 그대로
 // 참조하므로(둘이 어긋나면 잘림/여백 발생) 단일 소스로 export한다.
+//
+// **여기만 cqh가 아니라 vh다**(#605). cq 단위는 이름으로 컨테이너를 고를 수 없고 항상 "가장 가까운"
+// 사이즈 컨테이너로 풀리는데, 아래 maxWidth를 쓰는 default 모드 TicketRenderer는 fit 스테이지
+// (`MobileEditorShell`의 `container-type:size`, #366) **안에** 있다. 72cqh로 바꾸면 프레임이 아니라
+// 그 스테이지 높이의 72%로 풀려 상한이 프리뷰 자신보다 작아지고 #563 불변식(226.8×362.3)이 깨진다.
+// 폰 프레임은 데스크톱에서도 높이가 100dvh(뷰포트 전체)라 세로 축은 vh가 이미 프레임 기준과 같다 —
+// 프레임이 좁히는 건 가로뿐이고, 그쪽은 이 상수를 안 쓴다.
 export const PREVIEW_MAX_HEIGHT = 'min(72vh, 720px)';
 
 const TicketRenderer = memo(forwardRef<HTMLDivElement, TicketRendererProps>(function TicketRenderer(
