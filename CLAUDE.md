@@ -16,6 +16,9 @@ Before making architectural changes or implementing new features, consult:
 - **두 부류**: (1) 순수 유닛·static-markup(`renderToStaticMarkup`), (2) **상호작용 테스트** — happy-dom + `@testing-library/react` + `user-event`로 사용자 동작→상태→결과를 검증(#163).
 - **DOM 환경**: `bunfig.toml`의 `[test] preload = ["./__tests__/setup/happydom.ts"]`가 happy-dom 글로벌 + `IS_REACT_ACT_ENVIRONMENT`를 등록. happy-dom 미구현 API(예: `scrollIntoView`)는 그 setup에 no-op 폴리필로 추가.
 - **모듈 mock**: bun `mock.module`은 hoisting 안 됨 — mock 등록 **후** `require(...)`로 대상(예: `runOcr`)을 import해야 가로채짐. top-level `await import`는 tsconfig `target:es5`에서 막히니 `require` 사용.
+- **mock.module 복원은 반드시 스프레드 스냅샷으로**(#611). `mock.module`은 프로세스 전역이고 파일이 끝나도 안 풀린다. `const real = require(p)`로 **살아있는 네임스페이스**를 붙들면 뒤이은 `mock.module(p, ...)`이 그 객체를 제자리에서 갈아끼우므로, `afterAll`의 `mock.module(p, () => real)`은 이미 스텁이 된 자기 자신을 다시 설치하는 **no-op**이다. 반드시 `const real = { ...require(p) }`로 복사해 두고 그걸로 되돌릴 것 — 안 그러면 스텁이 프로세스 끝까지 남아 뒤에 도는 파일이 깨진다.
+- **실패가 macOS/Linux로 갈리면 플랫폼이 아니라 실행 순서를 먼저 의심할 것**(#611). `bun test`의 파일 실행 순서는 플랫폼마다 다르고, **인자로 준 순서를 따르지도 않는다** — 그래서 "CI 순서를 로컬에서 재생했는데 통과했다"는 순서 의존을 배제하지 못한다. 대신 **깨진 파일을 단독 실행**해 보라(단독은 통과 = 전역 누수, 단독도 실패 = 진짜 환경 결합). #611의 42개는 전부 전자였다.
+- **모듈 스코프 메모를 테스트가 비워야 하면 `delete require.cache[...]` 말고 리셋 함수를 열 것**(#611). 그 모듈이 어딘가에서 한 번이라도 `mock.module`되면 캐시를 지워도 mock 레지스트리가 먼저 잡아 같은 인스턴스를 돌려줘 우회가 조용히 무력화된다 (`captureToImage.resetCtxFilterProbeForTest` 참고).
 - **회귀 테스트 예**: `__tests__/ocrUndoRestore.test.tsx` — OCR undo가 chainVisible/chainLabel + 폼 필드를 원자 복원하는지(#141 P1) 검증. 새 상호작용 테스트는 testing-library로 통일 권장.
 
 ### 📏 크롬 측정 하네스 (400×675)
