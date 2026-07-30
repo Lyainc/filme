@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { afterAll, afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 
 // #490/#495 — 무드 루트에 불투명 배경이 있으면 저장물에서 포스터가 통째로 사라지던 회귀.
 // #439가 포스터를 raw canvas로 base PNG '아래' 합성하도록 바꿨는데, 그건 base가 포스터 자리에서
@@ -9,6 +9,10 @@ import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 
 let bgDuringToPng: string | null = null;
 let backdropEl: HTMLElement | null = null;
+// 스프레드 스냅샷 + afterAll 복원 — 살아있는 네임스페이스를 붙들면 복원이 no-op이 된다(#611).
+// 안 되돌리면 이 toPng 스텁이 프로세스 끝까지 남아, 캡처의 자연 실패에 기대는 뒤 파일이
+// 항상 성공을 받는다(#618, captureComposite와 동일 사유).
+const realHtmlToImage = { ...require('html-to-image') };
 mock.module('html-to-image', () => ({
   toPng: () => {
     // toPng이 도는 순간의 배경 = base PNG에 실제로 찍히는 값.
@@ -17,7 +21,7 @@ mock.module('html-to-image', () => ({
   },
 }));
 
-const { captureNodeToJpeg } = require('../src/utils/captureToImage');
+const { captureNodeToJpeg, resetCtxFilterProbeForTest } = require('../src/utils/captureToImage');
 
 type Op = { kind: 'fill'; style: string; x: number; y: number; w: number; h: number } | { kind: 'draw'; isPoster: boolean };
 let ops: Op[];
@@ -36,6 +40,10 @@ class FakeImage {
 beforeEach(() => {
   ops = [];
   bgDuringToPng = null;
+  // 아래 가짜 ctx는 getImageData가 없어 isCtxFilterHonored() 감지가 실패하고 true로 폴백한다 —
+  // 이 파일은 그 데스크톱 경로를 전제한다. 판정은 모듈 스코프에 영구 메모되므로 먼저 돈 파일의
+  // false가 남아 있으면 조용히 iOS 경로를 탄다. 폴백에 암묵적으로 기대지 말고 매번 비운다(#618).
+  resetCtxFilterProbeForTest();
   const makeCtx = () => ({
     filter: 'none',
     fillStyle: '' as unknown,
@@ -65,6 +73,11 @@ afterEach(() => {
   HTMLCanvasElement.prototype.toDataURL = originalToDataURL;
   (globalThis as { Image: unknown }).Image = originalImage;
   backdropEl = null;
+});
+
+afterAll(() => {
+  mock.module('html-to-image', () => realHtmlToImage);
+  resetCtxFilterProbeForTest(); // 이 파일의 true 폴백을 뒤 파일로 안 흘린다.
 });
 
 function stubRect(el: Element, left: number, top: number, width: number, height: number) {

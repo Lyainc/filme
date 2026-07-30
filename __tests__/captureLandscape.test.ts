@@ -1,15 +1,19 @@
-import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { afterAll, afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 
 // #490/#495 후속 — "공유 발급본(pixelRatio 1)에서 포스터가 통째로 안 나온다" 재현 시도.
 // 다운로드(pixelRatio 2·세로 minimal)는 정상인데 공유 발급(pixelRatio 1·가로 editorial)만
 // 포스터가 빠진다는 실기기 보고. compositeRaster는 raster 박스 ∩ 티켓 영역으로 클립하는데,
 // 그 교집합 폭/높이가 0 이하면 아무것도 안 그려진다 — 가로 레이아웃·pixelRatio 1에서
 // 그 경계가 깨지는지 mock 캔버스로 확인한다(captureComposite.test.ts와 같은 하네스).
+// 스프레드 스냅샷 + afterAll 복원 — 살아있는 네임스페이스를 붙들면 복원이 no-op이 된다(#611).
+// 안 되돌리면 이 toPng 스텁이 프로세스 끝까지 남아, 캡처의 자연 실패에 기대는 뒤 파일이
+// 항상 성공을 받는다(#618, captureComposite와 동일 사유).
+const realHtmlToImage = { ...require('html-to-image') };
 mock.module('html-to-image', () => ({
   toPng: () => Promise.resolve('data:image/png;base64,BASE'),
 }));
 
-const { captureNodeToJpeg } = require('../src/utils/captureToImage');
+const { captureNodeToJpeg, resetCtxFilterProbeForTest } = require('../src/utils/captureToImage');
 
 interface DrawCall { arg: unknown; dw?: number; dh?: number; isCanvas: boolean }
 interface RectCall { x: number; y: number; w: number; h: number }
@@ -27,6 +31,10 @@ class FakeImage {
 }
 
 beforeEach(() => {
+  // 아래 가짜 ctx는 getImageData가 없어 isCtxFilterHonored() 감지가 실패하고 true로 폴백한다 —
+  // 이 파일은 그 데스크톱 경로를 전제한다. 판정은 모듈 스코프에 영구 메모되므로 먼저 돈 파일의
+  // false가 남아 있으면 조용히 iOS 경로를 탄다. 폴백에 암묵적으로 기대지 말고 매번 비운다(#618).
+  resetCtxFilterProbeForTest();
   draws = [];
   rects = [];
   const makeCtx = () => ({
@@ -58,6 +66,11 @@ afterEach(() => {
   HTMLCanvasElement.prototype.getContext = originalGetContext;
   HTMLCanvasElement.prototype.toDataURL = originalToDataURL;
   (globalThis as { Image: unknown }).Image = originalImage;
+});
+
+afterAll(() => {
+  mock.module('html-to-image', () => realHtmlToImage);
+  resetCtxFilterProbeForTest(); // 이 파일의 true 폴백을 뒤 파일로 안 흘린다.
 });
 
 function stubRect(el: Element, left: number, top: number, width: number, height: number) {

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { afterAll, afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 
 // #439: raster(포스터·로고)를 html-to-image의 foreignObject 경로에서 빼고 canvas 2D로 직접 합성한다.
 // 여기선 (1) toPng에 넘기는 filter가 올바른 노드를 제외하는지, (2) 합성 순서·좌표·좌우 안 잘림,
@@ -6,6 +6,10 @@ import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 // hoisting 안 됨 — 등록 후 require로 SUT를 가져와야 가로채진다(CLAUDE.md).
 let pngFilter: ((n: unknown) => boolean) | undefined;
 let pngBackground: unknown;
+// 스프레드 스냅샷 — 살아있는 네임스페이스를 붙들면 mock.module이 그 객체를 제자리에서 갈아끼워
+// 복원이 no-op이 된다(#611). 안 되돌리면 이 toPng 스텁이 프로세스 끝까지 남아, happy-dom의
+// 자연스러운 캡처 실패에 기대는 뒤 파일(resultPanelShareGating)이 항상 성공을 받는다(#618).
+const realHtmlToImage = { ...require('html-to-image') };
 mock.module('html-to-image', () => ({
   toPng: (_node: unknown, opts: { filter?: (n: unknown) => boolean; backgroundColor?: unknown }) => {
     pngFilter = opts.filter;
@@ -14,7 +18,7 @@ mock.module('html-to-image', () => ({
   },
 }));
 
-const { captureNodeToJpeg } = require('../src/utils/captureToImage');
+const { captureNodeToJpeg, resetCtxFilterProbeForTest } = require('../src/utils/captureToImage');
 
 const OPTS = { filename: 't.jpg', width: 960, height: 1477 };
 
@@ -40,6 +44,11 @@ class FakeImage {
 }
 
 beforeEach(() => {
+  // 아래 가짜 ctx는 getImageData를 구현 안 해 isCtxFilterHonored()의 감지가 실패하고 기본값 true로
+  // 폴백한다 — 이 파일의 9개 테스트는 그 true(=데스크톱 경로)를 전제로 한다. 그런데 그 판정은
+  // 모듈 스코프에 영구 메모되므로, 먼저 돈 파일(captureDualRendererPixelDiff는 false를 잰다)의
+  // 결과가 남아 있으면 조용히 iOS 경로를 타게 된다. 폴백에 암묵적으로 기대지 말고 매번 비운다(#618).
+  resetCtxFilterProbeForTest();
   draws = [];
   rects = [];
   fillRects = [];
@@ -95,6 +104,11 @@ afterEach(() => {
   HTMLCanvasElement.prototype.getContext = originalGetContext;
   HTMLCanvasElement.prototype.toDataURL = originalToDataURL;
   (globalThis as { Image: unknown }).Image = originalImage;
+});
+
+afterAll(() => {
+  mock.module('html-to-image', () => realHtmlToImage);
+  resetCtxFilterProbeForTest(); // 이 파일의 true 폴백을 뒤 파일로 안 흘린다.
 });
 
 function stubRect(el: Element, left: number, top: number, width: number, height: number) {
