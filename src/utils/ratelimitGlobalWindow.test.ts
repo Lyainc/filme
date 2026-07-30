@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 
 /**
  * OCR shared(키 전체) 윈도우 회귀 테스트.
@@ -12,6 +12,18 @@ import { beforeEach, describe, expect, it, mock } from 'bun:test';
 const calls: Array<{ prefix: string; id: string }> = [];
 /** 여기 담긴 prefix의 윈도우는 한도 초과(success:false)로 응답한다. */
 const exhausted = new Set<string>();
+
+// 스프레드 스냅샷 + afterAll 복원(#611·#618) — `require()`가 주는 건 살아있는 네임스페이스라
+// mock.module이 그 객체를 제자리에서 갈아끼운다. 복사본으로 떠 둬야 복원이 진짜 복원이 된다.
+// 이 파일은 `__tests__/` 밖에 있지만 bun test가 똑같이 집어가고 누수도 똑같이 전역이다 — 안
+// 되돌리면 두 스텁이 프로세스 끝까지 남아, 같은 모듈을 쓰는 ratelimit.test.ts가 실제 Upstash
+// 클라이언트 대신 여기 정의된 가짜 Ratelimit(calls 배열에 기록하는)을 받는다.
+const realRedis = { ...require('@upstash/redis') };
+const realRatelimit = { ...require('@upstash/ratelimit') };
+afterAll(() => {
+  mock.module('@upstash/redis', () => realRedis);
+  mock.module('@upstash/ratelimit', () => realRatelimit);
+});
 
 mock.module('@upstash/redis', () => ({ Redis: class {} }));
 mock.module('@upstash/ratelimit', () => ({
