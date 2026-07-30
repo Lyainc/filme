@@ -32,12 +32,15 @@ beforeAll(() => {
       React.createElement('div', { ref, 'data-testid': 'ticket' }),
     ),
   }));
-  // captureNodeToJpeg의 "자연 실패"는 happy-dom 환경 자체(canvas 2D 미지원 → getContext 2d null)에
-  // 기대는 것인데, captureComposite.test.ts가 파일 스코프에서 'html-to-image'를 mock.module로
-  // 영구 대체해(bun mock.module 전역 누수) 전체 스위트로 돌리면 이 파일보다 먼저 로드돼
-  // toJpeg가 항상 성공으로 leak된다(claude-review PR #426 P1 대응 중 발견). downloadTicketAsJpeg만
-  // 결정론적으로 실패하게 mock — captureNodeToJpeg 등 나머지는 실제 구현 유지해 위 permalink
-  // 테스트(캡처 후 fetch 실패에 의존)는 그대로 둔다.
+  // downloadTicketAsJpeg만 결정론적으로 실패하게 mock한다 — 나머지(captureNodeToJpeg 등)는 실제
+  // 구현을 유지해 위 permalink 테스트(캡처 후 fetch 실패에 의존)를 그대로 둔다.
+  //
+  // 이 mock은 원래 누수 대응이었다: happy-dom의 "자연 실패"(canvas 2D 미지원 → getContext 2d null)에
+  // 기대고 있었는데 captureComposite.test.ts가 'html-to-image'를 복원 없이 mock.module로 영구
+  // 대체해, 전체 스위트에선 그 파일이 먼저 로드되며 toJpeg가 항상 성공으로 leak됐다(claude-review
+  // PR #426 P1 대응 중 발견). #618에서 그 4개 캡처 파일이 전부 afterAll 복원을 갖게 돼 누수 자체는
+  // 사라졌지만, 이 mock은 **그대로 둔다** — 실패를 이 파일 안에서 만들면 파일 실행 순서와 무관하게
+  // 같은 결과가 나오고, 그게 누수에 기대는 것보다 옳다(#618 방침: 누수를 되살리지 말고 자급한다).
   realCaptureToImage = { ...require('@/utils/captureToImage') }; // 위와 같은 이유의 스냅샷(#611)
   mock.module('@/utils/captureToImage', () => ({
     ...realCaptureToImage,

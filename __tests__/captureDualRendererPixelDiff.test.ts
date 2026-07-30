@@ -81,6 +81,10 @@ function taggedUrl(c: RGBA | null): string {
   return c ? `data:image/png;base64,BASE#solid=${encodeURIComponent(JSON.stringify(c))}` : 'data:image/png;base64,BASE';
 }
 
+// 스프레드 스냅샷 + afterAll 복원 — 살아있는 네임스페이스를 붙들면 복원이 no-op이 된다(#611).
+// 안 되돌리면 이 toPng 스텁이 프로세스 끝까지 남아, 캡처의 자연 실패에 기대는 뒤 파일이
+// 항상 성공을 받는다(#618, captureComposite와 동일 사유).
+const realHtmlToImage = { ...require('html-to-image') };
 mock.module('html-to-image', () => ({
   toPng: () => {
     if (forcedBaseColor) return Promise.resolve(taggedUrl(forcedBaseColor));
@@ -103,6 +107,7 @@ const { captureNodeToJpeg, applyCssColorFilterToPixel, resetCtxFilterProbeForTes
   require('../src/utils/captureToImage') as typeof import('../src/utils/captureToImage');
 
 afterAll(() => {
+  mock.module('html-to-image', () => realHtmlToImage);
   resetCtxFilterProbeForTest();
 });
 
