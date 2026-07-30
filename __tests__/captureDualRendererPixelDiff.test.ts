@@ -90,17 +90,20 @@ mock.module('html-to-image', () => ({
 }));
 
 // captureToImage.ts는 isCtxFilterHonored()의 감지 결과를 모듈 스코프 변수에 영구 메모이즈한다
-// (실제 런타임에선 페이지 수명 내내 환경이 안 바뀌니 맞는 설계다). 그런데 bun test는 모든 파일이
-// require 캐시를 공유해, 다른 캡처 테스트 파일(getImageData 미구현 → true로 폴백)이 먼저 돌면 그
-// true가 이 파일에도 새고, 반대로 이 파일이 먼저 돌면 이 파일의 false가 저쪽에 샌다. require
-// 캐시를 비우고 다시 불러 이 파일 전용 모듈 인스턴스를 쓰고, 끝나면 다시 비워 이후 파일이 자기
-// 환경으로 새로 감지하게 한다(#512 — bun-mock-module-global-leak과 동형의 함정).
-const capturePath = require.resolve('../src/utils/captureToImage');
-delete require.cache[capturePath];
-const { captureNodeToJpeg, applyCssColorFilterToPixel } = require('../src/utils/captureToImage');
+// (실제 런타임에선 페이지 수명 내내 환경이 안 바뀌니 맞는 설계다). 그런데 bun test는 한 프로세스
+// 안에서 캡처 테스트들이 서로 다른 캔버스 환경을 번갈아 태우므로, 먼저 돈 파일의 판정(예:
+// getImageData 미구현 → true 폴백)이 이 파일로 샌다. 그래서 매 테스트 앞에서 감지를 비워 아래
+// FakeCtx 환경으로 다시 재게 하고, 끝나면 다시 비워 이후 파일이 자기 환경으로 새로 감지하게 한다.
+//
+// **`delete require.cache[...]`로 모듈 인스턴스를 새로 받는 방식이었는데 그건 못 쓴다(#611)** —
+// 다른 파일이 `@/utils/captureToImage`를 `mock.module`로 한 번이라도 가로채면(resultPanelShareGating)
+// 캐시를 지워도 mock 레지스트리가 먼저 잡아 같은(=이미 메모된) 인스턴스를 돌려주기 때문이다.
+// 리셋 함수는 그 인스턴스 자체의 메모를 비우므로 가로채기와 무관하게 동작한다.
+const { captureNodeToJpeg, applyCssColorFilterToPixel, resetCtxFilterProbeForTest } =
+  require('../src/utils/captureToImage') as typeof import('../src/utils/captureToImage');
 
 afterAll(() => {
-  delete require.cache[capturePath];
+  resetCtxFilterProbeForTest();
 });
 
 // ─── 진짜 소프트웨어 canvas 2D — 실제 Uint8ClampedArray backing buffer + getImageData/putImageData.
@@ -329,6 +332,7 @@ let originalToDataURL: typeof HTMLCanvasElement.prototype.toDataURL;
 let originalImage: typeof Image;
 
 beforeEach(() => {
+  resetCtxFilterProbeForTest(); // 아래 FakeCtx 환경으로 감지를 다시 재게 한다(#611)
   mainCtx = null;
   allocatedCanvases.length = 0;
   THROW_ON_BLEND = false;
