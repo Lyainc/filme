@@ -661,29 +661,28 @@ export function MobileEditorShell({
                 </div>
               )}
 
-              {/* 포스터 진입점은 croppedImageUrl 없이도 열어둔다(#614) — 랜딩이 걷힌 뒤 포스터가
-                  아직 없는 상태(OCR로 먼저 들어온 경로)에서 점선 드롭존이 사라졌으므로, 이 행이
-                  없으면 포스터를 올릴 방법이 아예 없다. 라벨만 상태에 맞춘다. */}
-              <div className={`mt-2 ${MENU_GROUP_CLS}`}>
-                <MenuRow
-                  iconPath={MENU_ICONS.upload}
-                  label={croppedImageUrl ? '포스터 교체' : '포스터 올리기'}
-                  onClick={() => {
-                    setMenuOpen(false);
-                    handlePosterTap();
-                  }}
-                />
-                <MenuRow
-                  iconPath={MENU_ICONS.crop}
-                  label="재크롭"
-                  disabled={!crop.originalSrc}
-                  title={crop.originalSrc ? undefined : '재크롭하려면 포스터를 다시 업로드해 주세요'}
-                  onClick={() => {
-                    setMenuOpen(false);
-                    crop.openRecrop();
-                  }}
-                />
-              </div>
+              {croppedImageUrl && (
+                <div className={`mt-2 ${MENU_GROUP_CLS}`}>
+                  <MenuRow
+                    iconPath={MENU_ICONS.upload}
+                    label="포스터 교체"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      handlePosterTap();
+                    }}
+                  />
+                  <MenuRow
+                    iconPath={MENU_ICONS.crop}
+                    label="재크롭"
+                    disabled={!crop.originalSrc}
+                    title={crop.originalSrc ? undefined : '재크롭하려면 포스터를 다시 업로드해 주세요'}
+                    onClick={() => {
+                      setMenuOpen(false);
+                      crop.openRecrop();
+                    }}
+                  />
+                </div>
+              )}
 
               {/* 임시저장/초기화(#310) — 자동저장 폐지에 따른 명시적 트리거. croppedImageUrl 유무와
                   무관하게 항상 노출한다 — 포스터(croppedImageUrl)는 새로고침에 안 남지만 movieInfo 등
@@ -838,7 +837,7 @@ export function MobileEditorShell({
               OCR 카드를 children으로 받아 자리만 빌려준다. 업로드 후·max(#328)엔 통째로 hidden —
               OCR 진입점은 드로어(#355)로 일원화된다(#388). OCR 로직은 셸의 useOcrUndo가 소유. */}
           <Landing
-            hidden={isMax || !showLanding}
+            mode={croppedImageUrl || isMax ? 'hidden' : showLanding ? 'overlay' : 'inline'}
             onCta={handlePosterTap}
             dropProps={posterDropProps}
             dragOver={posterDragOver}

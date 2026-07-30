@@ -161,11 +161,16 @@ try {
   await measureFit('랜딩 오버레이', '[data-testid="landing"]', landingPage);
   await landingCtx.close();
 
-  // D7 — 드래프가 복원된 메인 페이지엔 랜딩이 떠 있으면 안 된다. 떠 있으면 아래 측정 전부가
-  // 오버레이 뒤에서 돌아 숫자는 멀쩡한데 화면은 랜딩인 채로 "통과"한다.
+  // D7 — 드래프가 복원된 메인 페이지엔 랜딩이 **덮고 있으면** 안 된다. 덮고 있으면 아래 측정
+  // 전부가 오버레이 뒤에서 돌아 숫자는 멀쩡한데 화면은 랜딩인 채로 "통과"한다.
+  // 포스터가 아직 없으므로 랜딩은 사라지는 게 아니라 in-flow(진입 컨트롤만) 모드로 남는다 —
+  // 판정은 "fixed로 셸을 덮고 있나"다. 엘리먼트가 아예 없으면 실패로 친다(있어야 할 게 없는 것도
+  // 회귀이고, 여기서 true를 주면 이 스크립트가 없애려는 그 조용한 성공이 된다).
   const landingSkippedOnDraft = await page.evaluate(() => {
     const el = document.querySelector('[data-testid="landing"]');
-    return !el || getComputedStyle(el).display === 'none';
+    if (!el) return false;
+    const s = getComputedStyle(el);
+    return s.display === 'none' || s.position !== 'fixed';
   });
 
   // 흰 포스터 = 대비 최악 케이스(#569가 세운 기준과 동일). ImageMagick 없이 canvas로 만든다.

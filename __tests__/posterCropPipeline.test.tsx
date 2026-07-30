@@ -152,12 +152,11 @@ describe('포스터 크롭 상태머신 (#182 PR #191 · #315, 실제 파일-선
     await user.click(uploadCta());
     await pickAndCancel(user, 'a.png');
 
-    // 포스터가 없으면 셸은 업로드 CTA로 되돌아간다 — #614 이후 그 CTA는 랜딩 오버레이의 것이고,
-    // 크롭을 취소하면 오버레이가 다시 덮인다(파생 showLanding). 원본이 폐기됐다는 증거는 메뉴의
-    // 재크롭이 비활성인 것 — 행 자체는 #614에서 포스터 '올리기'와 함께 상시 노출된다.
+    // 포스터가 없으면 셸은 업로드 CTA로 되돌아간다 — #614 이후 그 CTA는 랜딩의 것이고, 크롭을
+    // 취소하면 오버레이가 다시 덮인다(파생 showLanding). 편집 메뉴의 포스터 액션도 그대로 게이팅.
     expect(uploadCta()).toBeTruthy();
     await openMenu(user);
-    expect((screen.getByRole('button', { name: '재크롭' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole('button', { name: '재크롭' })).toBeNull();
   });
 
   // 자동저장 복원(#489)과 같은 상태 — 세션 내 업로드 없이 원본만 훅에 들어와 있는 경우.
