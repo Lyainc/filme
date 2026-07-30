@@ -51,7 +51,13 @@ export function ResultStage({
     <div
       data-theme={theme}
       className="app-canvas chrome-dark"
-      style={{ position: 'relative', minHeight: '100cqh', display: 'flex', flexDirection: 'column', paddingTop: 'env(safe-area-inset-top, 0px)' }}
+      // minHeight가 아니라 height다(#604 리뷰). 프레임은 contain:paint라 넘치는 자식을 자르고 스스로
+      // 스크롤하지 않는데, minHeight면 콘텐츠가 길 때(공유 패널 확장 등) 스테이지가 프레임 밖으로
+      // 자라고 문서도 안 늘어나 하단 액션이 도달 불가가 된다. 400×560 실측: 스테이지 785px, 안쪽
+      // overflow-y-auto는 scrollHeight==clientHeight(불확정 높이의 flex-1이라 안 잡힘), 문서 560 고정.
+      // height로 확정하면 flex-1이 definite가 돼 기존 overflow-y-auto가 살아난다 —
+      // MobileEditorShell이 같은 이유로 이미 쓰는 패턴이다.
+      style={{ position: 'relative', height: '100cqh', display: 'flex', flexDirection: 'column', paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
       {/* testid는 편집 셸의 chrome-ambient와 분리 — 모바일에서 resultOpen이면 편집 셸이
           hidden으로 동시 마운트라(index.tsx) 같은 testid가 DOM에 2개 생긴다(PR #362 리뷰 P2). */}
