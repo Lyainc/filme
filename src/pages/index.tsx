@@ -7,6 +7,7 @@ import { useMatchMedia } from '@/hooks/useMatchMedia';
 import { BELOW_RAIL_QUERY } from '@/utils/breakpoints';
 import { DesktopStudioShell } from '@/components/v2/DesktopStudioShell';
 import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
+import { PhoneFrame } from '@/components/v2/PhoneFrame';
 import { ResultStage } from '@/components/v2/ResultStage';
 
 export default function Home() {
@@ -94,7 +95,9 @@ export default function Home() {
 
   if (showMobile) {
     return (
-      <>
+      // 폰 프레임(#604) — 셸·결과 스테이지를 한 컨테이너에 담아 fixed 오버레이의 컨테이닝 블록과
+      // cq 단위의 기준을 뷰포트에서 프레임으로 옮긴다. 모바일에선 프레임=뷰포트라 렌더 불변.
+      <PhoneFrame>
         {/* 완료(결과)는 편집 셸 위 오버레이가 아니라 편집 셸을 교체하는 전체화면 스테이지(#258)로
             "보이는" 전환이지만, MobileEditorShell은 resultOpen 중에도 unmount하지 않고 CSS로만
             숨긴다 — 언마운트하면 셸 로컬 state(viewMode·ghostMode·activeField·스크롤 위치)가
@@ -123,7 +126,7 @@ export default function Home() {
             fieldVisibility={fieldVisibility}
           />
         )}
-      </>
+      </PhoneFrame>
     );
   }
 
