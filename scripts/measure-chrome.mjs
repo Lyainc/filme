@@ -3,6 +3,7 @@
  *
  *   bun scripts/measure-chrome.mjs --label main --theme dark
  *   bun scripts/measure-chrome.mjs --theme light --viewport 400x675 --url http://localhost:3000/
+ *   bun scripts/measure-chrome.mjs --viewport 1440x675   # 데스크톱 뷰포트, 프레임은 같은 400×675
  *
  * dev 서버(:3000)가 워킹트리를 서빙하므로, before/after 표는 베이스 커밋으로 detached
  * checkout → 측정 → 복귀로 만든다(워크트리를 새로 파면 Turbopack이 심링크 node_modules를
@@ -20,8 +21,23 @@
  *  3. 오버레이 표면 항목별 WCAG 대비비(불투명 조상 배경 기준)  (#569 · #580)
  *  4. 테마 파라미터화 — 다크·라이트를 같은 실행 경로로         (#574)
  *  5. 모달 포커스 트랩 · 닫기 3경로 · 가려진 버튼 클릭 통과    (#574, 모달 없는 판본이면 skip)
+ *  6. 오버레이 6종이 #phone-frame 사각형 안인지               (#609)
  *
- * 출력은 stdout JSON 한 덩어리. 400×675일 때 #563 불변식을 자동 대조하고 어긋나면 exit 1.
+ * ── 대조 기준은 뷰포트가 아니라 프레임이다 (#609) ────────────────────────────
+ * 예전엔 `VW===400 && VH===675`로 게이팅해서, `--viewport 1440x675`로 돌리면 프레임이
+ * 아무리 망가져도 checked:false + exit 0으로 조용히 통과했다. 지금은 **측정한 #phone-frame
+ * rect**로 판정하므로 데스크톱 뷰포트에서도 같은 게이트가 켜진다 — PhoneFrame이
+ * height:100dvh + rail:w-[400px]라 1440×675 뷰포트의 프레임이 정확히 400×675가 되고,
+ * #563 불변식(dock 232.6 / 프리뷰 226.8×362.3)을 값 변경 없이 그대로 쓴다.
+ * (1440×900은 프레임이 400×900이라 이 불변식의 대상이 아니다.)
+ *
+ * 그리고 dock/프리뷰 숫자가 원리적으로 못 보는 축을 6번이 맡는다: fixed 오버레이는
+ * PhoneFrame의 contain:paint 덕에 프레임 안으로 들어오는 것이라, 그 결합이 끊기면 뷰포트
+ * 기준으로 돌아가 프레임 밖에 그려진다 — 그래도 dock/프리뷰 숫자는 멀쩡하다.
+ *
+ * 출력은 stdout JSON 한 덩어리. **checked:false는 통과가 아니라 실패다** — 프레임이
+ * 400×675가 아니면(=불변식을 대조할 수 없으면) 그대로 exit 1이다. 조용한 성공을 없애는 게
+ * 이 스크립트의 목적이므로 "못 쟀음"을 0으로 넘기지 않는다.
  * 함정 목록은 네이티브 메모리 e2e-browser-verification-setup 참고.
  */
 import puppeteer from 'puppeteer-core';
@@ -73,6 +89,49 @@ try {
   }, THEME);
   await page.goto(URL, { waitUntil: 'networkidle2' });
 
+  // ── #phone-frame rect — 이 스크립트의 모든 판정 원점(#609) ──────────────────
+  const readFrame = () =>
+    page.evaluate(() => {
+      const f = document.getElementById('phone-frame');
+      if (!f) return null;
+      const r = f.getBoundingClientRect();
+      return { x: +r.x.toFixed(1), y: +r.y.toFixed(1), w: +r.width.toFixed(1), h: +r.height.toFixed(1) };
+    });
+
+  /**
+   * el이 프레임 사각형 안인지. 넘침은 변별 가능하게 방향별로 남긴다(어느 쪽으로 샜는지가
+   * 원인 추적의 절반이다). pick:'parent'는 라벨 붙은 자식으로 찾아 부모 루트를 재는 경우.
+   * 못 찾은 표면은 pass:false다 — 있어야 할 게 없는 것도 게이트가 잡아야 할 회귀다.
+   */
+  const fits = [];
+  const measureFit = async (label, selector, pick = 'self') => {
+    const r = await page.evaluate(
+      ({ sel, pick }) => {
+        const f = document.getElementById('phone-frame');
+        if (!f) return { missing: '#phone-frame' };
+        let el = document.querySelector(sel);
+        if (el && pick === 'parent') el = el.parentElement;
+        if (!el) return { missing: sel };
+        const F = f.getBoundingClientRect();
+        const R = el.getBoundingClientRect();
+        return {
+          rect: { w: +R.width.toFixed(1), h: +R.height.toFixed(1) },
+          overflow: {
+            left: +(F.left - R.left).toFixed(1),
+            right: +(R.right - F.right).toFixed(1),
+            top: +(F.top - R.top).toFixed(1),
+            bottom: +(R.bottom - F.bottom).toFixed(1),
+          },
+        };
+      },
+      { sel: selector, pick },
+    );
+    const worst = r.overflow ? Math.max(...Object.values(r.overflow)) : null;
+    const entry = { label, selector, ...r, worstOverflow: worst, pass: worst != null && worst <= 0.5 };
+    fits.push(entry);
+    return entry;
+  };
+
   // 흰 포스터 = 대비 최악 케이스(#569가 세운 기준과 동일). ImageMagick 없이 canvas로 만든다.
   await page.evaluate(async () => {
     const c = document.createElement('canvas');
@@ -100,6 +159,9 @@ try {
     { timeout: 20000 },
   );
   await sleep(1400);
+  // 크롭 모달은 createPortal로 프레임에 직접 붙는다(#606) — 포털 타깃이 body로 폴백하면
+  // 여기서만 드러난다. 닫기 전에 잰다.
+  await measureFit('크롭 모달', 'div[role=dialog][aria-label="포스터 크롭"]');
   await page.evaluate(() =>
     [...document.querySelectorAll('button')].find((b) => b.textContent?.trim() === '적용').click(),
   );
@@ -147,6 +209,28 @@ try {
     });
 
   const base = await readRects();
+  const frame = await readFrame();
+  if (!frame) throw new Error('#phone-frame이 없다 — 셸이 프레임 밖에서 렌더됐거나 래퍼가 빠졌다(#607)');
+
+  // ── 필드 드로어 — 오른쪽 가장자리 핸들로 연다(플로팅 툴바 항목과 같은 setDrawerOpen). ──
+  const drawerHandle = 'button[aria-label="티켓 항목 목록 열기"]';
+  await page.evaluate((s) => document.querySelector(s)?.click(), drawerHandle);
+  // dynamic(ssr:false) 청크라 즉시 query하면 없다 — 뜰 때까지 기다린다.
+  await page.waitForSelector('div[role=dialog][aria-label="티켓 항목"]', { timeout: 10000 });
+  await sleep(300);
+  await measureFit('필드 드로어', 'div[role=dialog][aria-label="티켓 항목"]');
+  await page.keyboard.press('Escape');
+  await sleep(300);
+
+  // ── max 모드 — 티켓만 남는 fixed inset-0 오버레이. 라벨 붙은 건 안쪽 티켓 래퍼라
+  // 부모(=오버레이 루트)를 잰다. 가로 무드는 안쪽이 rotate(90deg)라 안쪽을 재면 회전 박스가
+  // 나온다(#609 판정 대상은 오버레이 자신).
+  await page.evaluate(() => document.querySelector('button[aria-label="최대화"]')?.click());
+  await sleep(500);
+  await measureFit('max 모드 오버레이', '[aria-label="기본 크기로 돌아가기"]', 'parent');
+  await measureFit('max 모드 티켓', '[aria-label="기본 크기로 돌아가기"]');
+  await page.evaluate(() => document.querySelector('[aria-label="기본 크기로 돌아가기"]')?.click());
+  await sleep(400);
 
   // ── 대비: 오버레이 표면의 항목별 WCAG 비 ────────────────────────────────────
   // 불투명(alpha=1) 조상 배경을 DOM에서 거슬러 찾는다. 조상이 없으면 "유리 위 직접 텍스트"라
@@ -207,6 +291,9 @@ try {
   // 햄버거 메뉴 열기 — 모달 진입점이자, 모달 없는 판본에서의 대비 측정 표면.
   await page.evaluate(() => document.querySelector('button[aria-label="편집 메뉴"]').click());
   await sleep(250);
+  // 편집 메뉴는 header 기준 absolute라 contain:paint가 아니라 컨테이닝 블록으로 프레임 안이다 —
+  // 그래서 오히려 header가 프레임 밖으로 나가면 이게 먼저 샌다.
+  await measureFit('편집 메뉴', '#editor-menu-panel');
 
   const hasModalRow = await page.evaluate(
     () => !![...document.querySelectorAll('button')].some((b) => b.textContent?.trim() === '고급 설정'),
@@ -305,7 +392,9 @@ try {
     const closeButton = closeBtnHit ? await closed() : null;
 
     await reopen();
-    await page.mouse.click(Math.round(VW / 2), 10); // 상단 백드롭 띠
+    // 상단 백드롭 띠 — 백드롭은 fixed지만 contain:paint로 **프레임** 안에 갇혀 있으므로
+    // 뷰포트 중앙(VW/2)이 아니라 프레임 중앙을 눌러야 한다(1440 뷰포트에선 720이 프레임 밖).
+    await page.mouse.click(Math.round(frame.x + frame.w / 2), Math.round(frame.y + 10));
     await sleep(250);
     const backdrop = await closed();
 
@@ -322,9 +411,23 @@ try {
   // 모달을 열고 닫은 뒤에도 dock/프리뷰가 그대로인지(#563 불변식 유지).
   const after = await readRects();
 
-  const at400 = VW === 400 && VH === 675;
+  // ── 결과 스테이지 · hero — 편집 화면을 떠나므로 맨 마지막에 잰다. ────────────
+  // 루트엔 id가 없고 .app-canvas.chrome-dark는 다크 테마 편집 셸도 달고 있다(그리고 그 셸은
+  // 결과 뒤에 hidden으로 남아 있다) — 결과 전용인 result-ambient의 부모를 루트로 쓴다.
+  await page.evaluate(() =>
+    [...document.querySelectorAll('button')].find((b) => b.textContent?.trim() === '완료')?.click(),
+  );
+  await page.waitForSelector('[data-testid="result-ambient"]', { timeout: 15000 });
+  await sleep(600);
+  await measureFit('결과 스테이지', '[data-testid="result-ambient"]', 'parent');
+  // hero는 --hero-dvh-budget을 든 유일한 요소고, 그 컨테이너 쿼리는 뷰포트가 아니라 프레임의
+  // orientation을 읽는다 — 1440×900 뷰포트(landscape)의 400×900 프레임은 portrait이다(#607).
+  await measureFit('결과 hero', '.result-hero');
+
   const near = (a, b) => a != null && Math.abs(a - b) <= 0.5;
-  const invariant = at400
+  // 게이팅은 뷰포트가 아니라 프레임이다(#609) — 1440×675 뷰포트도 프레임이 400×675면 대조한다.
+  const frameIs400 = near(frame.w, 400) && near(frame.h, 675);
+  const invariant = frameIs400
     ? {
         checked: true,
         expected: BASELINE,
@@ -333,11 +436,17 @@ try {
           near(base.rects.preview?.w, BASELINE.preview.w) &&
           near(base.rects.preview?.h, BASELINE.preview.h),
       }
-    : { checked: false, reason: `#563 불변식은 400×675 전용 (지금 ${VW}×${VH})` };
+    : {
+        checked: false,
+        reason: `#563 불변식은 프레임 400×675 전용 (지금 프레임 ${frame.w}×${frame.h}, 뷰포트 ${VW}×${VH})`,
+      };
+
+  const fitFails = fits.filter((f) => !f.pass).map((f) => f.label);
 
   const out = {
     label: LABEL,
     viewport: { w: VW, h: VH },
+    frame,
     theme: THEME,
     url: URL,
     railOpen,
@@ -345,10 +454,12 @@ try {
     afterMenu: after,
     contrast,
     modal,
+    frameFit: { items: fits, fails: fitFails, pass: fitFails.length === 0 },
     invariant,
   };
   console.log(JSON.stringify(out, null, 2));
-  if (invariant.checked && !invariant.pass) process.exitCode = 1;
+  // checked:false도 실패다 — 못 잰 걸 0으로 넘기는 게 #609가 없앤 그 조용한 성공이다.
+  if (!invariant.checked || !invariant.pass || fitFails.length > 0) process.exitCode = 1;
 } finally {
   await browser.close();
 }
