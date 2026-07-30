@@ -61,7 +61,7 @@ export function ResultPanel({
   // 동시에 돌리면 산출물이 깨진다. 노드 캡처 구간을 직렬화한다(#167).
   const capturingRef = useRef(false);
   const [ctaState, setCtaState] = useState<CtaState>('idle');
-  // 다운로드 실패 노출(#414 1단계) — PrimaryCta의 CtaState는 다른 소비자(DesktopStudioShell
+  // 다운로드 실패 노출(#414 1단계) — PrimaryCta의 CtaState는 다른 소비자(편집 셸의 완료 버튼
   // 임시저장 CTA)와 공유라 'error' variant를 얹지 않고, 별도 배너 + 재시도 버튼으로 분리한다.
   const [downloadError, setDownloadError] = useState(false);
   const [permaState, setPermaState] = useState<PermaState>('idle');

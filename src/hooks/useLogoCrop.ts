@@ -39,7 +39,7 @@ export function useLogoCrop(onChange: (url: string) => void) {
       onChange(cropped);
       setRawSrc(null); // effect cleanup이 원본 revoke
     } catch (err) {
-      // ImageUploader 포스터 크롭과 동일한 사용자 피드백(canvas/SVG 오류로 실패 가능).
+      // 포스터 크롭과 동일한 사용자 피드백(canvas/SVG 오류로 실패 가능).
       console.error('로고 크롭 실패:', err);
       alert('이미지 크롭에 실패했습니다.');
       setRawSrc(null);

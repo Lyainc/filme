@@ -13,6 +13,7 @@ import userEvent from '@testing-library/user-event';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
 import { FloatingToolbar, type TbPrefs } from '@/components/v2/FloatingToolbar';
+import { PhoneFrame, PHONE_FRAME_ID } from '@/components/v2/PhoneFrame';
 import type { PhototicketState } from '@/types';
 import { MIN_AA, targetPx } from './tapTargets';
 
@@ -188,6 +189,50 @@ describe('플로팅 툴바 (#356)', () => {
     await advance(310);
     const raw = JSON.parse(window.localStorage.getItem(TB_KEY)!);
     expect(raw.x).toBe(8);
+  });
+});
+
+// 이동식 좌표계 회귀 (#607) — 프레임(contain:paint)이 fixed의 컨테이닝 블록이라 translate가
+// 프레임 원점에서 풀린다. 클램프·스냅이 window.innerWidth를 읽으면 1440 뷰포트에서 400px 프레임
+// 밖(예 x=1388)이 허용되고 그 좌표가 localStorage에 영속돼 다시 열어도 안 돌아온다.
+// happy-dom엔 실 레이아웃이 없어 프레임 rect만 데스크톱 실측값(left 520 · 400×900)으로 스텁한다.
+describe('이동식 툴바 좌표계는 뷰포트가 아니라 폰 프레임 기준 (#607)', () => {
+  const nativeRect = Element.prototype.getBoundingClientRect;
+  beforeEach(() => {
+    Element.prototype.getBoundingClientRect = function (this: Element) {
+      if (this.id !== PHONE_FRAME_ID) return nativeRect.call(this);
+      return { x: 520, y: 0, left: 520, top: 0, right: 920, bottom: 900, width: 400, height: 900, toJSON: () => ({}) } as DOMRect;
+    };
+  });
+  afterEach(() => {
+    Element.prototype.getBoundingClientRect = nativeRect;
+  });
+
+  // 툴바 자신의 rect/offsetWidth는 happy-dom에서 0이라 상한은 frame.width - 0 - TB_EDGE = 392.
+  const MAX_X = 400 - 8;
+
+  test('영속된 뷰포트 좌표가 마운트 재클램프로 프레임 안에 들어오고, 우측 스냅도 프레임 우단에 붙는다', async () => {
+    // 데스크톱 뷰포트 기준으로 저장돼 있던 구 좌표(프레임 밖).
+    window.localStorage.setItem(
+      TB_KEY,
+      JSON.stringify({ orient: 'v', place: 'movable', x: 1388, y: 400, hidden: false })
+    );
+    const user = userSetup();
+    render(
+      <PhoneFrame>
+        <Harness />
+      </PhoneFrame>
+    );
+    const toolbar = await seedPoster(user);
+
+    const x = () => parseFloat(toolbar.style.transform.match(/translate\((-?[\d.]+)px, (-?[\d.]+)px\)/)![1]);
+    expect(x()).toBe(MAX_X); // 뷰포트로 클램프했다면 1388이 그대로 통과한다
+
+    // 드래그 없는 대체 경로(WCAG 2.2 SC 2.5.7)도 같은 좌표계여야 한다.
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    await user.click(screen.getByRole('button', { name: '오른쪽 가장자리로 이동' }));
+    await advance(310);
+    expect(JSON.parse(window.localStorage.getItem(TB_KEY)!).x).toBe(MAX_X);
   });
 });
 

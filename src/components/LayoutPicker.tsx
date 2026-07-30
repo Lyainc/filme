@@ -172,6 +172,10 @@ function LayoutPicker({ value, onChange }: LayoutPickerProps) {
   );
 }
 
+// ponytail: #607에서 마지막 소비자(DesktopDesignPanel → designRailItems의 desktop 분기)가
+// 사라져 이 캐러셀은 지금 아무도 안 쓴다. 같이 안 지운 건 THUMBNAIL_RENDERERS(무드별 티켓
+// 미니어처, ~140줄)가 여기 얽혀 있어 삭제 범위가 "캐러셀"이 아니라 "썸네일 레지스트리를 버릴
+// 것인가"가 되기 때문 — LayoutStrip은 46px 칩(MOOD_CHIP_BG)만 쓴다. 별건으로 정리할 것.
 export default memo(LayoutPicker);
 
 // 카드 본문(썸네일 + 라벨 + 캡션) — 캐러셀(LayoutPicker)·스트립(LayoutStrip) 공용.

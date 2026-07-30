@@ -1,5 +1,5 @@
 import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type DragEvent, type KeyboardEvent } from 'react';
 import { AppFooter } from './AppFooter';
 import { AutoSaveIndicator } from './AutoSaveIndicator';
 import { DesignRail } from './DesignRail';
@@ -16,6 +16,7 @@ import {
   type TbOrient,
   type TbPlace,
 } from './FloatingToolbar';
+import { getFrameRect } from './PhoneFrame';
 import { Wordmark } from './Wordmark';
 import type { ViewMode } from './viewMode';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
@@ -42,7 +43,7 @@ const InPlaceFieldEditor = dynamic(
   { ssr: false },
 );
 
-// 포스터 탭(#259) 크롭 모달 — ImageUploader와 동일 컴포넌트 재사용. 탭 전엔 안 쓰므로 dynamic.
+// 포스터 탭(#259) 크롭 모달 — 로고 크롭과 같은 컴포넌트다. 탭 전엔 안 쓰므로 dynamic.
 const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ssr: false });
 
 // 서브메뉴 행 리딩 아이콘(#374) — 시안 Siyan-C-v8 L296-322와 동일한 18px/stroke 1.7 계열.
@@ -63,6 +64,10 @@ const MENU_ICONS = {
 // accent 라디오·danger 초기화 라벨까지 읽히게 텍스트 행은 불투명 표면에 얹는다 — FieldDrawer의
 // 처방과 같다. --surface-elevated가 아니라 --surface인 건 danger 잉크 때문:
 // #EF4444가 #1E2326에선 4.22:1(미달), #161A1C에선 4.66:1이다.
+// 포스터 파일 입력의 accept이자 드롭 필터(#607) — input과 드롭이 서로 다른 목록을 쓰면
+// 드롭만 되는(혹은 안 되는) 포맷이 조용히 갈린다.
+const POSTER_ACCEPT = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+
 const MENU_GROUP_CLS = 'rounded-[12px] bg-surface p-1'; // 행 반경(rounded-lg 8) + p-1(4)과 동심
 
 // 헤더 서브메뉴 공용 행(#374, 시안 Siyan-C-v8 설정 시트의 행 문법 이식) — 리딩 아이콘 +
@@ -174,7 +179,7 @@ export function MobileEditorShell({
   fieldVisibility,
 }: MobileEditorShellProps) {
   const { croppedImageUrl } = photo.state;
-  // OCR 낙관적 주입 + 되돌리기 로직은 useOcrUndo가 소유(DesktopStudioShell과 공유, #141-class drift 방지).
+  // OCR 낙관적 주입 + 되돌리기 로직은 useOcrUndo가 소유(#141-class drift 방지).
   // OCR 카드는 셸 프리뷰 직하에 두고(#261) 이 훅도 셸이 쥔다.
   const ocr = useOcrUndo(photo);
   // 전역 undo/redo(#356) — usePhototicket 위 히스토리 레이어. useOcrUndo와는 독립(이슈 결정,
@@ -210,8 +215,11 @@ export function MobileEditorShell({
   const snapToolbarTo = (side: 'left' | 'right') => {
     const rect = toolbarRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const x = side === 'left' ? TB_EDGE : window.innerWidth - rect.width - TB_EDGE;
-    setTbPrefs((prev) => ({ ...prev, x, y: rect.top }));
+    // 스냅 좌표계도 프레임이다(#607) — 뷰포트로 계산하면 데스크톱에서 x=1388이 나와 400px 프레임
+    // 밖으로 나간다. 드래그 없는 대체 경로(WCAG 2.2 SC 2.5.7)라 그게 필요한 사용자부터 깨진다.
+    const frame = getFrameRect();
+    const x = side === 'left' ? TB_EDGE : frame.width - rect.width - TB_EDGE;
+    setTbPrefs((prev) => ({ ...prev, x, y: rect.top - frame.top }));
   };
   // 초기화 2탭 arm(#374, 시안 clearArm) — window.confirm 대체. 1탭에 arm(라벨이 확인 문구로
   // 바뀌고 3.2초 뒤 자동 해제), arm 상태에서 한 번 더 탭해야 실행. 메뉴가 닫히면 함께 해제.
@@ -327,6 +335,28 @@ export function MobileEditorShell({
     if (file) crop.openFile(file);
     e.target.value = '';
   }
+  // 파일 드롭 업로드(#607) — 데스크톱 ImageUploader의 드롭존이 지워지며 같이 사라졌던 경로다.
+  // 프레임 안이라도 데스크톱에선 Finder에서 끌어다 놓는 게 여전히 자연스러운 진입이라 되살린다.
+  // 되살린 건 **첫 업로드 CTA 하나**다. ImageUploader는 업로드 후 썸네일에도 드롭을 받았지만,
+  // 그 자리를 잇는 건 온-티켓 프리뷰이고 거기에 파일 드롭을 얹는 건 #365가 미스터치 때문에
+  // 걷어낸 온-티켓 포스터 제스처를 되돌리는 셈이다. 교체는 헤더 메뉴 '포스터 교체'가 담당한다.
+  // 크롭 진행 중 드롭은 막는다 — getCroppedImg가 읽고 있는 원본 blob을 openFile의 교체가
+  // revoke해버린다(버튼은 모달에 가려지지만 드롭은 따로 막아야 한다).
+  const [posterDragOver, setPosterDragOver] = useState(false);
+  const posterDropProps = {
+    onDragOver: (e: DragEvent) => {
+      e.preventDefault();
+      setPosterDragOver(true);
+    },
+    onDragLeave: () => setPosterDragOver(false),
+    onDrop: (e: DragEvent) => {
+      e.preventDefault();
+      setPosterDragOver(false);
+      if (crop.isCropping) return;
+      const file = e.dataTransfer.files?.[0];
+      if (file && POSTER_ACCEPT.includes(file.type)) crop.openFile(file);
+    },
+  };
   async function handlePosterCropComplete(area: Area, preserveRatio: boolean) {
     const isFirstUpload = !photo.state.croppedImageUrl;
     const ok = await crop.complete(area, preserveRatio);
@@ -369,7 +399,7 @@ export function MobileEditorShell({
   const rotatedStageWidth = `calc(${rotatedInnerWidth} * ${layout.height} / ${layout.width})`;
 
   // 앰비언트 다크 크롬(#353→#363→#415) — theme==='dark'일 때만 .chrome-dark 스코프(데스크톱
-  // DesktopStudioShell.tsx의 data-theme 바인딩 패턴과 통일). #363에서 "테마와 무관하게 상시
+  // 레포의 data-theme 바인딩 패턴과 통일). #363에서 "테마와 무관하게 상시
   // 다크"로 고정했던 게 다크모드 토글을 죽은 컨트롤로 만들어(#415) 원래 의도(라이트/다크 둘 다
   // 지원)로 되돌린다.
   return (
@@ -399,7 +429,7 @@ export function MobileEditorShell({
         />
       )}
       {/* 상단 네브(v8 §1, #363): 좌측 브랜드 워드마크 + 우측 [편집 메뉴 → 완료(최외곽)].
-          #315가 제거했던 워드마크는 #363에서 복귀 확정(데스크톱 AppHeader와 동일 컴포넌트 재사용,
+          #315가 제거했던 워드마크는 #363에서 복귀 확정(Wordmark 컴포넌트 재사용,
           셸은 상호배타 마운트라 h1 중복 없음). 상시 chrome-dark 스코프(#363)가 잉크를 이미 라이트로
           고정해 v8이 말한 --chrome-ink 신규 토큰은 추가하지 않는다. 다크모드·전체표시·빈 항목·잉크
           토글과 포스터 교체·재크롭 액션은 서브메뉴로 통합. max(#328)는 이 헤더(서브메뉴 포함)까지
@@ -547,7 +577,7 @@ export function MobileEditorShell({
                       <path d="m6 9 6 6 6-6" />
                     </svg>
                   </button>
-                  {/* 펼침 애니메이션은 FieldAccordion.tsx의 grid-rows 0fr↔1fr 패턴과 동일(레포 표준, #447). */}
+                  {/* 펼침 애니메이션은 grid-rows 0fr↔1fr(레포 표준, #447). */}
                   <div
                     className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
                     style={{ gridTemplateRows: tbSettingsOpen ? '1fr' : '0fr' }}
@@ -792,7 +822,7 @@ export function MobileEditorShell({
               setInfo를 조용히 버려 titleOg·releaseDate가 유실된다(releaseDate는 완료 게이트 필수
               필드, titleOg는 #445에서 게이트 필수에서 빠졌지만 유실 문제 자체는 여전하다 — PR #372
               리뷰 P1, 커밋 514baab #363). max(#328)도 같은 이유로 hidden — 최대화 왕복 중의 동일 레이스까지
-              함께 막는다. OCR 로직은 셸의 useOcrUndo가 소유(DesktopStudioShell과 동형). */}
+              함께 막는다. OCR 로직은 셸의 useOcrUndo가 소유. */}
           <section
             className={
               isMax || croppedImageUrl
@@ -804,8 +834,11 @@ export function MobileEditorShell({
               <button
                 type="button"
                 onClick={handlePosterTap}
+                {...posterDropProps}
                 data-touch="44"
-                className="group relative flex w-full max-w-[230px] flex-col items-center justify-center gap-3.5 overflow-hidden rounded-card border-2 border-dashed border-border-strong bg-surface p-6 text-center transition-colors hover:border-accent/40"
+                className={`group relative flex w-full max-w-[230px] flex-col items-center justify-center gap-3.5 overflow-hidden rounded-card border-2 border-dashed bg-surface p-6 text-center transition-colors ${
+                  posterDragOver ? 'border-accent bg-accent-soft' : 'border-border-strong hover:border-accent/40'
+                }`}
                 style={{ aspectRatio: `${TARGET_WIDTH} / ${TARGET_HEIGHT}` }}
               >
                 <span
@@ -964,7 +997,7 @@ export function MobileEditorShell({
       <input
         ref={posterInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/jpg,image/webp"
+        accept={POSTER_ACCEPT.join(',')}
         onChange={handlePosterFile}
         className="sr-only"
         aria-hidden="true"

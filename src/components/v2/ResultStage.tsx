@@ -1,5 +1,4 @@
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
-import { useMatchMedia } from '@/hooks/useMatchMedia';
 import { getLayout } from '@/utils/layouts';
 import { PreviewFilmCell } from './PreviewFilmCell';
 import { ResultPanel } from './ResultPanel';
@@ -18,7 +17,7 @@ interface ResultStageProps {
 /**
  * 모바일 결과 전체화면 스테이지(#258) — 편집 셸(MobileEditorShell)을 교체하는 별도 화면.
  * 상단 네브(뒤로가기+FILME+빈 스페이서) + 확대 hero(캡처 대상과 분리된 표시 전용
- * TicketRenderer, 데스크톱 hero와 동형 — DesktopStudioShell 참고) + 하단 액션(ResultPanel,
+ * TicketRenderer) + 하단 액션(ResultPanel,
  * hidePreview로 캡처 대상만 off-screen 유지). 구 ResultSheet(vaul 바텀시트, #197)를 대체.
  */
 export function ResultStage({
@@ -36,13 +35,12 @@ export function ResultStage({
   // 세로 예산(≈372px 실측 + 여유 18px)을 뺀 값도 min()에 추가해 남는 공간만큼만 hero를 채운다.
   // 세로(portrait)에서만 적용 — 가로(landscape) 폰은 100dvh가 이미 390px 안팎으로 작아
   // 예산이 0 이하로 떨어져 width가 0으로 clamp, hero가 통째로 사라지는 회귀가 생긴다(#380 리뷰).
-  const isPortrait = useMatchMedia('(orientation: portrait)');
+  // 그 방향 판정은 **프레임**의 것이라 뷰포트 미디어쿼리가 아니라 컨테이너 쿼리로 편다(#607) —
+  // 값은 globals.css의 `--hero-dvh-budget`이 들고, landscape에선 min()에서 지는 큰 값이 된다.
   // 단위는 뷰포트가 아니라 폰 프레임 기준(cqw/cqh, #605) — 모바일에선 프레임이 뷰포트와 같은
   // 사각형(100% × 100dvh)이라 위 #380 산수가 그대로 성립하고, 데스크톱에선 400px 프레임 안에서
   // 84vw가 1600px으로 튀는 걸 막는다.
-  const heroWidth = isPortrait
-    ? `min(84cqw, calc(${PREVIEW_MAX_HEIGHT} * ${layout.width} / ${layout.height}), calc((100cqh - env(safe-area-inset-top, 0px) - 390px) * ${layout.width} / ${layout.height}))`
-    : `min(84cqw, calc(${PREVIEW_MAX_HEIGHT} * ${layout.width} / ${layout.height}))`;
+  const heroWidth = `min(84cqw, calc(${PREVIEW_MAX_HEIGHT} * ${layout.width} / ${layout.height}), calc(var(--hero-dvh-budget, 99999px) * ${layout.width} / ${layout.height}))`;
 
   return (
     // 결과화면 톤(#357) — 편집 셸과 같은 .chrome-dark 스코프 + 앰비언트. 결과화면은 항상
@@ -89,7 +87,7 @@ export function ResultStage({
 
       <div className="relative min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-6">
         {croppedImageUrl && (
-          <div className="relative mx-auto mb-6" style={{ width: heroWidth }}>
+          <div className="result-hero relative mx-auto mb-6" style={{ width: heroWidth }}>
             <PreviewFilmCell promoted>
               <TicketRenderer
                 croppedImageUrl={croppedImageUrl}

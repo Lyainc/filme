@@ -73,8 +73,15 @@ export function FieldTap({
 /**
  * 포스터 영역 탭 props(#259). onPosterTap이 있을 때만 onClick+라벨을 얹는다. 풀블리드 무드는 root에,
  * editorial(다열)은 포스터 컬럼에 스프레드한다. role은 생략 — root엔 이미 role=button 필드 자식이 있어
- * 중첩 방지, 포스터 변경은 포인터 제스처(키보드 업로드 경로는 ImageUploader가 커버). data 속성은
- * 테스트 셀렉터용이며 캡처 렌더러엔 onPosterTap이 안 가 붙지 않는다.
+ * 중첩 방지, 포스터 변경은 포인터 제스처다. data 속성은 테스트 셀렉터용이며 캡처 렌더러엔
+ * onPosterTap이 안 가 붙지 않는다.
+ *
+ * 이게 키보드 사용자를 막지는 않는다(#608) — 셸은 #365 이후 onPosterTap 자체를 안 넘기고, 포스터
+ * 업로드·교체·재크롭 진입점은 전부 `<button>`(업로드 드롭존 · 헤더 편집 메뉴 행)이라 Enter/Space로
+ * 열린다. 그 완주 경로는 `__tests__/posterCropPipeline.test.tsx`의
+ * '키보드 전용 포스터 업로드 경로 (#608)' describe가 Tab+Enter만으로 못 박는다.
+ * 예전 주석이 "키보드 업로드 경로는 ImageUploader가 커버"라고 적었는데, 그 컴포넌트는 #607에서
+ * 삭제됐고 실제로 커버하고 있던 것도 아니었다.
  */
 export function posterTapProps(onPosterTap?: () => void) {
   return onPosterTap

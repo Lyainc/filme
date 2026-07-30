@@ -44,7 +44,7 @@ export const INPUT_CLS =
 
 /**
  * 필드 편집 본문(#226) — 필드/스탬프 타깃별 에디터 콘텐츠(text/date/title/rating + 스탬프)를
- * 렌더한다. 데스크톱 인라인 아코디언(FieldAccordion)과 모바일 인플레이스 에디터(#354)가 하우징만
+ * 렌더한다. 인플레이스 에디터(#354)와 필드 시트가 하우징만
  * 달리해 이 본문을 공유한다(구 FieldEditSheet vaul 하우징은 #355에서 제거).
  */
 export function FieldEditorBody({ target, photo }: { target: SheetTarget; photo: Photo }) {
@@ -470,7 +470,7 @@ function StampEditor({
   /**
    * 크기 슬라이더 상한. 기본 1.3(전역 상한, spec c5). chain/format은 무드가 Minimal일 때 실제
    * 렌더가 MINIMAL_STAMP_MAX_SCALE(1.1)로 클램프되므로(MoodMinimal.tsx) 호출부가 그 값을 넘겨야
-   * 슬라이더 죽은 구간이 안 생긴다(claude-review PR #487 P1 — DesignRail/DesktopDesignPanel에서
+   * 슬라이더 죽은 구간이 안 생긴다(claude-review PR #487 P1 — DesignRail에서
    * 이미 한 번 고친 버그가 이 신규 UI 표면에서 재발). signature는 단독 렌더라(체인+포맷처럼 폭
    * 예산을 공유하지 않음, __tests__/stampWidthCap.test.tsx 예산 계산 대상 아님) 클램프가 필요
    * 없어 기본값 그대로 쓴다.

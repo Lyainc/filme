@@ -103,9 +103,16 @@ describe('모바일 셸 html 배경 동기화 (#402→#415)', () => {
     expect(document.documentElement.classList.contains('chrome-dark')).toBe(false);
   });
 
-  test('데스크톱 렌더 시엔 documentElement에 chrome-dark 미적용', () => {
+  // #607 — 데스크톱 폭에서도 셸이 갈리지 않는다. 예전엔 이 자리에 "데스크톱 렌더 시엔 chrome-dark
+  // 미적용"이 있었는데, 그 명제 자체가 두 셸을 전제했다. 지금 확인할 건 두 가지다:
+  // (a) 폭과 무관하게 같은 모바일 셸이 뜨고, (b) 그게 폰 프레임 **안**에 뜬다. 프레임은 fixed
+  // 컨테이닝 블록이자 cq 기준점이고 ImageCropModal의 포털 타깃·getFrameRect의 좌표 원점이라,
+  // 래퍼가 빠지면 그 넷이 전부 조용히 뷰포트/ body 폴백으로 돌아간다(테스트는 다 통과한 채로).
+  test('데스크톱 폭에서도 같은 모바일 셸이 폰 프레임 안에 뜬다 (#607)', () => {
     setViewportWidth(1200);
     render(<Home />);
+    expect(document.getElementById('phone-frame')).not.toBeNull();
+    expect(screen.getByRole('button', { name: /포스터 업로드/ })).toBeTruthy();
     expect(document.documentElement.classList.contains('chrome-dark')).toBe(false);
   });
 

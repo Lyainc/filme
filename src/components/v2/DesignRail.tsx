@@ -9,7 +9,7 @@ import type { usePhototicket } from '@/hooks/usePhototicket';
 // 항목 5개는 전부 통과, 실제 숨김 0건). items prop은 기본값 RAIL_ITEMS를 쓰되, 합성 항목으로
 // 무드 전환→숨김→패널 자동 닫힘→값 보존을 검증하는 테스트가 주입할 수 있게 열어둔다.
 // #502 — 아이콘 행을 iOS 사진편집형 중앙정렬 캐러셀로 전환. 항목이 늘어도(#530 예고) 가로로
-// 잘리지 않고 스크롤되며, 활성 항목이 항상 화면 중앙에 오게 한다. 데스크톱 DesktopDesignPanel은
+// 잘리지 않고 스크롤되며, 활성 항목이 항상 화면 중앙에 오게 한다. 구 DesktopDesignPanel(#607 삭제)은
 // 세로 스택 상시노출이 존재 이유 자체가 "한 번에 하나만 펼치는 rail의 공간 낭비 회피"(#228)라
 // 캐러셀(단일 활성 중심)을 얹으면 그 설계와 충돌한다 — 캐러셀은 모바일 rail 전용, 데스크톱은
 // 그대로 둔다. 토글(open/close/exclusive) 로직 자체는 안 건드림 — 캐러셀은 입력 경로(스와이프로도
@@ -260,7 +260,7 @@ export function DesignRail({
       </div>
 
       <RailExpandPanel open={pop !== null} activeId={active} eyebrow={eyebrow}>
-        {activeItem ? activeItem.render(photo, 'mobile', { onRecropPoster }) : null}
+        {activeItem ? activeItem.render(photo, { onRecropPoster }) : null}
       </RailExpandPanel>
     </div>
   );

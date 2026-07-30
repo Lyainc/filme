@@ -119,10 +119,10 @@ export default function ImageCropModal({
   // 포커스가 body로 떨어진다. 그 경로는 데스크톱(≥1024)에서 크롭을 연 채 창을 1024 밑으로 줄이는
   // 것으로, cropOpen이 usePhototicket에 올라가 있어(#548) 셸 교체를 넘어 살아남는다.
   //
-  // 그 경로에선 렌더 시점에 프레임 노드가 아직 문서에 없어 body가 잡히고, 고정이라 그 모달은 끝까지
-  // body에 남는다 — 오늘(항상 body)과 같은 동작이라 회귀는 아니고 크롭 초기화·포커스 유실만 막는다.
-  // 정상 경로에선 프레임이 페이지 첫 렌더에 서고 모달은 늘 그 뒤에 열리므로 첫 렌더 조회로 충분하고,
-  // 이 예외 경로 자체가 데스크톱 셸과 함께 #607에서 사라진다.
+  // 그 예외 경로 자체는 데스크톱 셸과 함께 #607에서 사라졌다(셸이 한 벌이라 브레이크포인트 교체가
+  // 없다). 고정 조회는 그대로 둔다 — 정상 경로에선 프레임이 페이지 첫 렌더에 서고 모달은 늘 그 뒤에
+  // 열려 첫 렌더 조회로 충분하다. body 폴백도 남긴다: 이 모달을 프레임 없이 단독 렌더하는
+  // 테스트(logoCropFreeAspect 등)가 그 경로를 계속 탄다.
   const portalTargetRef = useRef<HTMLElement | null>(null);
   if (!portalTargetRef.current) {
     portalTargetRef.current = document.getElementById(PHONE_FRAME_ID) ?? document.body;
@@ -146,7 +146,7 @@ export default function ImageCropModal({
     const prev = document.activeElement as HTMLElement | null;
     (getFocusables()[0] ?? dialogRef.current)?.focus();
     // 성공 크롭 등으로 트리거가 언마운트되면(showPreview 전환) prev는 detached — 복원하면
-    // body로 떨어지므로 살아있을 때만 되돌린다. 그 경우 새 포커스 타깃은 부모(ImageUploader) 몫.
+    // body로 떨어지므로 살아있을 때만 되돌린다. 그 경우 새 포커스 타깃은 모달을 연 부모 몫.
     return () => {
       if (prev?.isConnected) prev.focus();
     };
@@ -204,9 +204,12 @@ export default function ImageCropModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm overscroll-contain animate-fade-in"
       style={{ background: 'rgba(44,38,34,0.55)' }}
     >
-      {/* 세로 단위는 폰 프레임 기준(cqh, #605) — 프레임에 포털되면 프레임 높이, 프레임이 없는
-          경로(데스크톱 셸)에선 컨테이너가 없어 small viewport로 폴백해 기존 svh와 같은 값이 된다. */}
-      <div className="relative flex h-[85cqh] max-h-[820px] w-full max-w-sm flex-col overflow-hidden rounded-card bg-paper shadow-card rail:h-[700px] rail:max-h-[88cqh] rail:max-w-2xl">
+      {/* 세로 단위는 폰 프레임 기준(cqh, #605) — 모달은 항상 프레임에 포털되므로 프레임 높이다.
+          `rail:h-[700px] rail:max-h-[88cqh] rail:max-w-2xl`는 #607에서 걷어냈다 — `rail:`은 1024px
+          **뷰포트** 미디어쿼리라 400px 프레임 안에서 데스크톱 분기가 떴고, 그게 안 깨진 건
+          `w-full`·`85cqh`가 각각 눌러준 우연이었지 의도가 아니었다. 셸이 한 벌이 된 지금 프레임
+          밖에서 뜨는 경로 자체가 없어 분기가 필요 없다. */}
+      <div className="relative flex h-[85cqh] max-h-[820px] w-full max-w-sm flex-col overflow-hidden rounded-card bg-paper shadow-card">
         {/* Header — 정사각 닫기 버튼. 제목은 aria-label(다이얼로그 접근성 이름)로만 유지, 시각 헤딩은 제거(#320) */}
         <div className="flex items-center justify-end border-b border-line px-4 py-3">
           <button
