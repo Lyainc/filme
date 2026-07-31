@@ -162,6 +162,33 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
     });
   });
 
+  // 랜딩을 걷는 세 번째 조건(#614 ③, claude-review PR #622 2R P1) — 앞의 두 조건(드래프 복원 D7,
+  // CTA 파일 선택)은 landingOverlay.test.tsx가 잡지만, OCR-only 경로는 포스터가 없는 채로
+  // landingDismissed만으로 걷혀야 해서 croppedImageUrl로는 대체 관측이 안 된다. 위 테스트는
+  // seed-poster를 먼저 눌러 croppedImageUrl이 앞서므로 이 축을 우회한다.
+  test('포스터 없이 OCR로 직접 필드가 인식되면 오버레이만 걷히고 진입 컨트롤은 남는다 (#614 걷는 조건 ③)', async () => {
+    render(<MobileHarness />);
+    const landing = () => screen.getByTestId('landing');
+    expect(landing().classList.contains('fixed')).toBe(true);
+
+    // 제목-only가 아니라 직접 필드 — KOBIS 검색을 안 타고 onOcrApply가 그 자리에서 호출된다.
+    ocrImpl = async () => ({ theater: 'CGV 용산아이파크몰' });
+
+    fireEvent.change(ocrFileInput(), {
+      target: { files: [new File(['x'], 'ticket.png', { type: 'image/png' })] },
+    });
+
+    await waitFor(() => {
+      expect(captured.movieInfo.theater).toBe('CGV 용산아이파크몰');
+    });
+    // 포스터는 여전히 없다 — 걷힌 근거가 croppedImageUrl이 아니라 landingDismissed임을 고정한다.
+    expect(captured.croppedImageUrl).toBeFalsy();
+    expect(landing().classList.contains('fixed')).toBe(false);
+    // inline으로 남아 진입 컨트롤을 들고 있어야 한다(#614 후속 27a6c63과 같은 계약).
+    expect(landing().classList.contains('hidden')).toBe(false);
+    expect(screen.getByRole('button', { name: '포스터 올리기' })).toBeDefined();
+  });
+
   test('드로어에서 OCR 시작 → KOBIS 응답 전에 드로어를 닫아도(unmount) 응답 도착 시 titleOg/releaseDate가 폼에 반영된다 (claude-review PR #413 P0)', async () => {
     const { resolveWithGrandBudapest } = mockPendingKobisFetch();
 
