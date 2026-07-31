@@ -75,6 +75,7 @@ Before making architectural changes or implementing new features, consult:
 
 ### 🔍 OCR Pipeline (티켓 스크린샷 자동 인식)
 - 규칙이 전부 실측(#125·#348, 실 티켓 15장 A/B)에서 나왔으니 **가볍게 고치지 말 것**. OCR 관련 파일(`src/utils/ocr.ts`·`ocrPreprocess.ts`·`ratelimit.ts`, `src/pages/api/ocr.ts`, `scripts/ab-ocr-*`)을 읽거나 고치기 전에 **`.claude/skills/ocr-pipeline/SKILL.md`를 읽을 것** — 프롬프트 규칙, Zod 전 필드 `.nullable()` 제약, `@ai-sdk/google` 3.0.91 고정, rate limit 4겹(per-IP + 키 전체 shared), A/B 하네스 사용법이 거기 있다.
+- **최신성 판정은 카드가 아니라 셸이 소유한다 — `mountedRef` 가드를 되살리지 말 것**(#388 / claude-review PR #413 P0, 커밋 `007f381`). in-flight KOBIS 보강의 적용 여부는 인스턴스 로컬 `mountedRef`가 아니라 셸이 쥔 `ocrEpochRef`(`useOcrUndo`의 `epochRef`)가 epoch 비교로 판정하므로, `OcrUploadCard`가 unmount돼도 `titleOg`·`releaseDate`는 유실되지 않는다 — 드로어 카드는 닫힐 때마다 그 자리에서 unmount되는데 보강이 살아남는 게 그 근거고, `setInfo`가 이 인스턴스가 아니라 셸의 photo 상태를 갱신하기 때문이다. remount의 실제 대가는 그 카드 로컬 상태(`isProcessing`·토스트) 리셋뿐이다. **따라서 "카드를 단일 인스턴스로 유지"는 레이스 방어가 아니라 같은 상태를 쓰는 진입점을 안 늘리려는 배치 결정이다** — #363/PR #372 리뷰 P1을 근거로 든 옛 서술("두 번째 인스턴스를 만들면 레이스가 되살아난다")은 2026-07-17부로 철회됐다(#624). 그 문구를 믿고 가드를 되살리면 #413 P0을 그대로 재도입한다.
 
 ### 🚧 Current Project Status
 - **Next Up**: 확정 로드맵 없음 (이전 TMDB·Supabase 계획은 폐기).
