@@ -1,10 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { list, del } from '@vercel/blob';
-import {
-  planTicketCleanup,
-  DEFAULT_TICKET_TTL_DAYS,
-  type CleanupBlob,
-} from '@/utils/ticketCleanup';
+import { planTicketCleanup, ttlDaysFromEnv, type CleanupBlob } from '@/utils/ticketCleanup';
 
 /**
  * 만료·orphan 티켓 Blob 정리 cron(#121 C3).
@@ -24,15 +20,6 @@ export const config = { maxDuration: 60 };
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DEL_BATCH = 1000; // @vercel/blob del 1회 호출 상한.
 
-/** TTL(ms). TICKET_TTL_DAYS env override, 기본은 DEFAULT_TICKET_TTL_DAYS(#179). 양수 유한값이
- *  아니면 기본값으로 폴백. ⚠️ 기본값을 줄이면 다음 cron 실행에서 그만큼 오래된 기존 blob이
- *  소급 삭제된다 — 점진 적용이 필요하면 prod에 TICKET_TTL_DAYS를 한시적으로 높게 둘 것. */
-function ttlMs(): number {
-  const raw = Number(process.env.TICKET_TTL_DAYS);
-  const days = Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_TICKET_TTL_DAYS;
-  return days * DAY_MS;
-}
-
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -49,6 +36,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
     return res.status(500).json({ error: 'Blob storage is not configured' });
+  }
+
+  // TTL도 같은 fail-closed 스탠스(#626): 값이 있는데 거부되면 의도하지 않은 기준으로 지우느니
+  // 이번 회차를 통째로 건너뛴다 — 밀린 정리는 되돌릴 수 있고 삭제는 아니다.
+  // ⚠️ 반대로 기본값 자체를 줄이면 다음 실행에서 그만큼 오래된 기존 blob이 소급 삭제된다 —
+  //    점진 적용이 필요하면 prod에 TICKET_TTL_DAYS를 한시적으로 높게 둘 것.
+  const ttlDays = ttlDaysFromEnv(process.env.TICKET_TTL_DAYS);
+  if (ttlDays === null) {
+    console.error(
+      `[api/cron/cleanup-tickets] TICKET_TTL_DAYS=${JSON.stringify(process.env.TICKET_TTL_DAYS)} 거부 — 1일 이상의 유한 수만 허용. 정리를 건너뜁니다.`,
+    );
+    return res.status(503).json({ error: 'TICKET_TTL_DAYS is misconfigured' });
   }
 
   // dryRun은 비가역 삭제 전 안전 점검용이라, 모호하면(배열 쿼리 등) dry-run 쪽으로 기운다.
@@ -68,7 +67,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } while (cursor);
 
     // 2) TTL·orphan 판정(순수 함수). now는 라우트에서 한 번만 찍어 일관 비교.
-    const plan = planTicketCleanup(all, { now: Date.now(), ttlMs: ttlMs() });
+    const plan = planTicketCleanup(all, { now: Date.now(), ttlMs: ttlDays * DAY_MS });
 
     // 3) del은 pathname을 직접 받는다(ticket.ts가 addRandomSuffix:false라 pathname이 결정적) —
     //    url 역참조 없이 바로 삭제. @vercel/blob del 1회 상한(1000)에 맞춰 배치.

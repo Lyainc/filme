@@ -22,6 +22,25 @@
  */
 export const DEFAULT_TICKET_TTL_DAYS = 3;
 
+/** TICKET_TTL_DAYS 하한(일). 30→7(#179)→3(#194)은 튜닝이지만 하루 미만은 튜닝이 아니라
+ *  오설정이다 — `"0.0001"`(8.6초)이 통과하면 살아있는 공유 링크가 전부 만료로 판정된다(#626). */
+const MIN_TICKET_TTL_DAYS = 1;
+
+/**
+ * TICKET_TTL_DAYS env → TTL(일). 유한하고 하한 이상이면 채택, env 미설정이면 기본값,
+ * **값이 있는데 거부되면 `null`**(오설정) — 호출자가 정리를 건너뛰게 한다.
+ *
+ * 거부를 기본값으로 폴백하지 않는 이유(#626): 폴백은 양쪽 방향으로 위험한데 한쪽이 비가역이다.
+ * `"0.0001"`은 TTL을 8.6초로 줄여 전부 만료시키고, 반대로 보존을 늘리려던 `"30d"`(NaN)는
+ * 기본 3일로 *줄어들어* 3~30일치를 소급 삭제한다. 어느 쪽이든 운영자가 의도하지 않은 값으로
+ * 지우는 것이라, 지우지 않고 멈추는 쪽을 고른다 — 밀린 정리는 되돌릴 수 있고 삭제는 아니다.
+ */
+export function ttlDaysFromEnv(raw: string | undefined): number | null {
+  if (raw === undefined) return DEFAULT_TICKET_TTL_DAYS;
+  const days = Number(raw);
+  return Number.isFinite(days) && days >= MIN_TICKET_TTL_DAYS ? days : null;
+}
+
 /** 비공식·양도불가·정보 무보증 고지 문구 — 공유 패널·수신자 페이지·앱 footer(#327)가 공유하는
  *  단일 출처. 정보 정확성·분실 면책(#425)은 OCR·수동입력 오기재나 링크 만료 후 분실을 사용자
  *  귀책으로 떠넘기지 않되, 서비스가 내용을 보증하지 않는다는 점은 명시해 기대를 맞춘다. */
