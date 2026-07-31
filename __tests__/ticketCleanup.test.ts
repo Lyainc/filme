@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { planTicketCleanup, type CleanupBlob } from './ticketCleanup';
+import { planTicketCleanup, type CleanupBlob } from '../src/utils/ticketCleanup';
 
 const DAY = 24 * 60 * 60 * 1000;
 const NOW = Date.UTC(2026, 5, 14, 3, 0, 0); // 고정 기준 시각.
