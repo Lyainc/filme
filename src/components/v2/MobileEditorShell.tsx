@@ -828,14 +828,17 @@ export function MobileEditorShell({
               기존 티켓 탭 복귀 그대로. */}
 
           {/* 랜딩 오버레이(#614) — 점선 드롭존 히어로 + 랜딩 footer가 여기로 흡수됐다. 편집 셸을
-              덮는 fixed 레이어지만 **셸 안 이 자리에서** 렌더한다: 아래 OcrUploadCard가 랜딩·업로드
-              후에 걸쳐 같은 트리 위치의 단일 인스턴스(DOM 노드)로 남아야 하기 때문이다 — 분기별
-              별도 JSX로 심어 전환 순간 remount되면 in-flight KOBIS 보강의 mountedRef 가드가 setInfo를
-              조용히 버려 titleOg·releaseDate가 유실된다(releaseDate는 완료 게이트 필수 필드, titleOg는
-              #445에서 게이트 필수에서 빠졌지만 유실 문제 자체는 여전하다 — PR #372 리뷰 P1, 커밋
-              514baab #363). 그래서 Landing은 조건부 unmount가 아니라 항상 마운트 + CSS hidden이고,
-              OCR 카드를 children으로 받아 자리만 빌려준다. 업로드 후·max(#328)엔 통째로 hidden —
-              OCR 진입점은 드로어(#355)로 일원화된다(#388). OCR 로직은 셸의 useOcrUndo가 소유. */}
+              덮는 fixed 레이어지만 **셸 안 이 자리에서** 렌더한다: Landing이 조건부 unmount가 아니라
+              항상 마운트 + CSS hidden이고 OCR 카드를 children으로 받아 자리만 빌려주므로, 아래
+              OcrUploadCard가 랜딩·업로드 후에 걸쳐 같은 트리 위치에 남아 로컬 상태(isProcessing·
+              토스트)를 전환 때마다 리셋하지 않는다 — 업로드 후·max(#328)엔 통째로 hidden이고 OCR
+              진입점은 드로어(#355)로 일원화된다(#388).
+              **in-flight KOBIS 보강은 remount에 안전하다**: 최신성 판정을 셸이 소유한 ocrEpochRef가
+              epoch 비교로 하므로(#388 / claude-review PR #413 P0, 커밋 007f381) 카드가 unmount돼도
+              setInfo는 셸의 photo 상태에 그대로 적용된다 — 드로어 카드는 닫힐 때마다 unmount되는데
+              titleOg·releaseDate가 살아남는 게 그 근거다. 인스턴스 로컬 mountedRef 가드를 되살리면
+              #413 P0을 재도입한다(옛 "단일 인스턴스가 아니면 레이스가 되살아난다" 서술은 #624로
+              철회 — CLAUDE.md 🔍 참조). OCR 로직은 셸의 useOcrUndo가 소유. */}
           <Landing
             mode={croppedImageUrl || isMax ? 'hidden' : showLanding ? 'overlay' : 'inline'}
             onCta={handlePosterTap}
