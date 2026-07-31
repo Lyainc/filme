@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'bun:test';
-import { planTicketCleanup, type CleanupBlob } from '../src/utils/ticketCleanup';
+import {
+  planTicketCleanup,
+  ttlDaysFromEnv,
+  DEFAULT_TICKET_TTL_DAYS,
+  type CleanupBlob,
+} from '../src/utils/ticketCleanup';
 
 const DAY = 24 * 60 * 60 * 1000;
 const NOW = Date.UTC(2026, 5, 14, 3, 0, 0); // 고정 기준 시각.
@@ -156,5 +161,34 @@ describe('planTicketCleanup', () => {
       { now: NOW, ttlMs: TTL },
     );
     expect(plan.deletePathnames).toEqual(['t/d.jpg']);
+  });
+});
+
+describe('ttlDaysFromEnv', () => {
+  it('env 미설정만 기본값으로 간다 — 이것만 폴백이고 나머지 거부는 null', () => {
+    expect(ttlDaysFromEnv(undefined)).toBe(DEFAULT_TICKET_TTL_DAYS);
+  });
+
+  it('하한 이상의 유한 수는 그대로 채택한다', () => {
+    expect(ttlDaysFromEnv('3')).toBe(3);
+    expect(ttlDaysFromEnv('1')).toBe(1); // 하한 경계 포함
+  });
+
+  // #626: 하한이 없으면 "0.0001"(8.6초)이 통과해 다음 cron이 살아있는 공유 링크를 전부
+  // 만료로 판정하고 비가역 삭제한다.
+  it('하루 미만은 오설정이라 거부한다', () => {
+    expect(ttlDaysFromEnv('0.0001')).toBeNull();
+    expect(ttlDaysFromEnv('0.5')).toBeNull();
+    expect(ttlDaysFromEnv('0')).toBeNull();
+    expect(ttlDaysFromEnv('-1')).toBeNull();
+  });
+
+  // 반대 방향의 오타도 거부해야 한다: 보존을 늘리려던 "30d"가 기본값 3일로 폴백되면
+  // 3~30일치가 소급 삭제된다 — 거부의 이유가 "너무 작아서"가 아니라 "의도를 모르겠어서"다.
+  it('비수치·빈 문자열·Infinity도 거부한다', () => {
+    expect(ttlDaysFromEnv('30d')).toBeNull(); // Number('30d') = NaN
+    expect(ttlDaysFromEnv('3d')).toBeNull();
+    expect(ttlDaysFromEnv('')).toBeNull(); // Number('') = 0
+    expect(ttlDaysFromEnv('Infinity')).toBeNull();
   });
 });
