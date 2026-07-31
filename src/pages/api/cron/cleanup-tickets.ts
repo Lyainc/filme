@@ -12,6 +12,8 @@ import { planTicketCleanup, ttlDaysFromEnv, type CleanupBlob } from '@/utils/tic
  * 보안: CRON_SECRET 필수. Vercel Cron은 `Authorization: Bearer <CRON_SECRET>`를 자동 첨부하고,
  * 외부 임의 호출은 이 헤더가 없어 401로 막힌다. CRON_SECRET 미설정 시엔 엔드포인트를 열어두지
  * 않고 503으로 닫는다(fail-closed). **절대 throw하지 않는다** — 모든 실패를 status + { error }로.
+ * TICKET_TTL_DAYS 거부도 같은 503이다(#626) — 버그가 아니라, 의도하지 않은 기준으로 지우느니
+ * 이번 회차를 건너뛰는 쪽이다. 되돌릴 수 있는 건 밀린 정리지 삭제가 아니다.
  *
  * 검증: `?dryRun=1`이면 삭제하지 않고 대상만 집계해 돌려준다(비가역 삭제 전 prod blob 확인용).
  */
