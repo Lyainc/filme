@@ -155,6 +155,9 @@ describe('포스터 크롭 상태머신 (#182 PR #191 · #315, 실제 파일-선
     // 포스터가 없으면 셸은 업로드 CTA로 되돌아간다 — #614 이후 그 CTA는 랜딩의 것이고, 크롭을
     // 취소하면 오버레이가 다시 덮인다(파생 showLanding). 편집 메뉴의 포스터 액션도 그대로 게이팅.
     expect(uploadCta()).toBeTruthy();
+    // CTA는 overlay·inline 양쪽에 다 있으므로 존재만으로는 "덮였다"를 못 잰다 — landingOverlay와
+    // 같이 fixed 여부로 판정한다(PR #622 claude-review P1).
+    expect(screen.getByTestId('landing').classList.contains('fixed')).toBe(true);
     await openMenu(user);
     expect(screen.queryByRole('button', { name: '재크롭' })).toBeNull();
   });
