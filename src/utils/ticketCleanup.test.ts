@@ -58,6 +58,16 @@ describe('planTicketCleanup', () => {
     expect(plan.orphanDeleted).toBe(1);
   });
 
+  it('og.jpg는 orphan 판정(jpg+json 짝)에 안 들어간다 — json 없는 그룹은 og가 있어도 orphan', () => {
+    const plan = planTicketCleanup(
+      [blob('t/solo.jpg', 40), blob('t/solo.og.jpg', 40)],
+      { now: NOW, ttlMs: TTL },
+    );
+    expect(plan.deletePathnames.sort()).toEqual(['t/solo.jpg', 't/solo.og.jpg']);
+    expect(plan.orphanDeleted).toBe(1);
+    expect(plan.expiredGroups).toBe(0);
+  });
+
   it('신선/만료가 섞이면 만료만 삭제한다', () => {
     const plan = planTicketCleanup(
       [
