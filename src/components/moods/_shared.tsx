@@ -468,12 +468,11 @@ function DashedPlaceholder({
         fontWeight: 600,
         fontFamily: FONT_MONO,
         letterSpacing: 1,
-        color: 'currentColor',
         ...(surface === 'dark'
           ? dim
             ? { borderColor: 'rgba(255,255,255,0.35)', color: 'rgba(255,255,255,0.45)' }
             : { borderColor: 'rgba(255,255,255,0.85)', color: 'rgba(255,255,255,0.95)' }
-          : {}),
+          : { color: 'currentColor' }),
       }}
     >
       {dim && <EyeIcon open={false} size={12 * size} />}
