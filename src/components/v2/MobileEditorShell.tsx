@@ -1,5 +1,14 @@
 import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type DragEvent, type KeyboardEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type DragEvent,
+  type KeyboardEvent,
+  type PointerEvent,
+} from 'react';
 import { AutoSaveIndicator } from './AutoSaveIndicator';
 import { DesignRail } from './DesignRail';
 import { Landing } from './Landing';
@@ -67,6 +76,26 @@ const MENU_ICONS = {
 const POSTER_ACCEPT = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
 
 const MENU_GROUP_CLS = 'rounded-[12px] bg-surface p-1'; // 행 반경(rounded-lg 8) + p-1(4)과 동심
+
+// 필드 드로어 엣지 핸들 세로 위치 영속(#579) — 툴바(filme:toolbar:v1)와 별도 키. 핸들은
+// y 좌표 하나뿐이라(가로 이동은 엣지 탭 구조상 의미가 없다) 툴바처럼 orient/place를 얹은
+// 객체가 아니라 단일 값이면 충분하다.
+const DRAWER_HANDLE_KEY = 'filme:drawer:v1';
+// 핸들의 탭(열기)/드래그(수평=열기, 수직=이동) 구분 임계 거리(px) — FloatingToolbar의
+// TB_TAP_SLOP(#568)과 같은 값, 같은 근거로 6px.
+const HANDLE_DRAG_SLOP = 6;
+
+function loadDrawerHandleY(): number | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(DRAWER_HANDLE_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw);
+    return p && typeof p === 'object' && typeof p.y === 'number' ? p.y : null;
+  } catch {
+    return null;
+  }
+}
 
 // 헤더 서브메뉴 공용 행(#374, 시안 Siyan-C-v8 설정 시트의 행 문법 이식) — 리딩 아이콘 +
 // 14px 라벨 + (토글 행이면) 트레일링 스위치. checked를 주면 role="switch" 토글 행,
@@ -256,6 +285,94 @@ export function MobileEditorShell({
   // 필드 목록 우측 드로어(#355). 진입은 헤더 목록 버튼 — #356 플로팅 툴바가 오면 그쪽
   // field-list 버튼이 이 진입점을 이어받는다.
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // 엣지 핸들 세로 위치(#579) — null이면 기존 화면 정중앙(top-1/2 -translate-y-1/2) 유지.
+  const drawerHandleRef = useRef<HTMLButtonElement>(null);
+  const [drawerHandleY, setDrawerHandleY] = useState<number | null>(loadDrawerHandleY);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try {
+        window.localStorage.setItem(DRAWER_HANDLE_KEY, JSON.stringify({ y: drawerHandleY }));
+      } catch {
+        // 영속 실패(쿼터·프라이빗 모드)는 무시 — best-effort, FloatingToolbar와 동일.
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [drawerHandleY]);
+  const clampHandleY = (y: number) => {
+    const h = drawerHandleRef.current?.offsetHeight ?? 96; // h-24 폴백
+    const frame = getFrameRect();
+    return Math.max(TB_EDGE, Math.min(frame.height - h - TB_EDGE, y));
+  };
+  // 저장된 y가 리사이즈·회전으로 프레임 밖에 나가면 재클램프 — FloatingToolbar clampPos
+  // 재클램프 이펙트(#190/#607)와 같은 패턴.
+  useEffect(() => {
+    if (drawerHandleY == null) return;
+    const reclamp = () => {
+      const c = clampHandleY(drawerHandleY);
+      if (c !== drawerHandleY) setDrawerHandleY(c);
+    };
+    reclamp();
+    window.addEventListener('resize', reclamp);
+    return () => window.removeEventListener('resize', reclamp);
+  }, [drawerHandleY]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 엣지 핸들 축 분리 드래그(#567·#579, 동반 설계 — 같은 핸들이 두 제스처를 축으로 갈라
+  // 쓴다). 첫 이동이 HANDLE_DRAG_SLOP을 넘는 순간 우세 축으로 잠그고(axis) 이후 이동은
+  // 그 축만 처리한다 — 대각선 드래그가 두 동작을 동시에 트리거하지 않게. 수평은 "임계
+  // 넘으면 그때 열기"(추적 없음, #567 설계 메모 권장안 — FieldDrawer가 마운트=열림이라
+  // 실시간 peek은 구조 변경이 필요하다), 수직은 FloatingToolbar 그립(onGripDown/Move/Up)처럼
+  // 손가락을 실시간으로 따라간다. 수평 우세인데 오른쪽(무의미한 방향)이면 axis를 잠그지
+  // 않는다 — 잠갔다면 이후 click까지 드래그로 오판돼 순수 탭이 흔들림 하나로 조용히
+  // 무시된다(실브라우저 CDP 트러스티드 클릭으로 재현·확인).
+  const handleDragRef = useRef<{ px: number; py: number; oy: number; axis: 'h' | 'v' | null } | null>(null);
+  // 드래그 끝의 click 억제(FloatingToolbar draggedRef, #568과 같은 패턴) — 수직 이동으로
+  // 끝난 제스처가 click에서 다시 드로어를 열면 탭=열기/드래그=이동 구분이 무너진다.
+  const handleDraggedRef = useRef(false);
+  const onHandlePointerDown = (e: PointerEvent<HTMLButtonElement>) => {
+    const rect = drawerHandleRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const frame = getFrameRect();
+    handleDragRef.current = { px: e.clientX, py: e.clientY, oy: rect.top - frame.top, axis: null };
+    handleDraggedRef.current = false;
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onHandlePointerMove = (e: PointerEvent<HTMLButtonElement>) => {
+    const d = handleDragRef.current;
+    if (!d) return;
+    const dx = e.clientX - d.px;
+    const dy = e.clientY - d.py;
+    if (!d.axis) {
+      if (Math.abs(dx) < HANDLE_DRAG_SLOP && Math.abs(dy) < HANDLE_DRAG_SLOP) return;
+      const axis = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+      if (axis === 'h' && dx >= 0) return; // 오른쪽(무의미한 방향) — 잠그지 않고 탭 취급으로 남겨 click 폴백이 살아있게 한다.
+      d.axis = axis;
+      handleDraggedRef.current = true;
+      if (d.axis === 'h') {
+        setDrawerOpen(true); // 왼쪽(화면 안쪽)으로 당기면 열기.
+        return; // 열기는 1회성 — 이 제스처 동안 더 볼 필요 없다.
+      }
+    }
+    if (d.axis === 'v') setDrawerHandleY(clampHandleY(d.oy + dy));
+  };
+  const onHandlePointerUp = () => {
+    handleDragRef.current = null;
+  };
+  const onHandleClick = () => {
+    if (handleDraggedRef.current) {
+      handleDraggedRef.current = false;
+      return;
+    }
+    setDrawerOpen(true);
+  };
+  // 비드래그 대체 경로(WCAG 2.2 SC 2.5.7) — 고급 설정 모달(#574)의 상/하 스냅 버튼이 호출.
+  const snapDrawerHandleTo = (edge: 'top' | 'bottom') => {
+    const rect = drawerHandleRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const frame = getFrameRect();
+    const y = edge === 'top' ? TB_EDGE : frame.height - rect.height - TB_EDGE;
+    setDrawerHandleY(y);
+    flashToast(edge === 'top' ? '위쪽 가장자리로 옮겼어요' : '아래쪽 가장자리로 옮겼어요');
+  };
   // 헤더 ref(#419) — 플로팅 툴바 세로·고정 기본 위치가 이 아래로 오도록 FloatingToolbar가 실측한다.
   const [headerEl, setHeaderEl] = useState<HTMLElement | null>(null);
   // pill 클릭 시 서브메뉴가 열린 채로 남지 않게 항상 같이 닫는다(claude-review PR #332 P2 —
@@ -786,13 +903,27 @@ export function MobileEditorShell({
           케이스에서 muted는 2.77:1로 비텍스트 3:1도 못 넘긴다. --fg는 8.66/10.31:1).
           히트영역은 44px(왼쪽으로 투명 확장), 보이는 탭은 24px 글래스(#447 — 이전 20px는 눈에
           덜 띈다는 지적). z-30 — 편집 백드롭(z-40) 아래라 인플레이스 편집 중엔 가려지고,
-          드로어(z-50)가 열리면 그 뒤에 깔린다. */}
+          드로어(z-50)가 열리면 그 뒤에 깔린다.
+          #567·#579 — 순수 탭은 여전히 onClick으로 열린다(비드래그 대체 경로, WCAG 2.2 SC
+          2.5.7). 수평 드래그(왼쪽으로 당기기)는 열기, 수직 드래그는 핸들 이동 — 위 onHandle*
+          핸들러가 축을 가른다. drawerHandleY가 null이면 기존 화면 정중앙 그대로. */}
       {croppedImageUrl && !isMax && (
         <button
+          ref={drawerHandleRef}
           type="button"
-          onClick={() => setDrawerOpen(true)}
+          onClick={onHandleClick}
+          onPointerDown={onHandlePointerDown}
+          onPointerMove={onHandlePointerMove}
+          onPointerUp={onHandlePointerUp}
+          onPointerCancel={onHandlePointerUp}
           aria-label="티켓 항목 목록 열기"
-          className="fixed right-0 top-1/2 z-30 flex h-24 w-11 -translate-y-1/2 items-center justify-end"
+          className={`fixed right-0 z-30 flex h-24 w-11 items-center justify-end ${
+            drawerHandleY == null ? 'top-1/2 -translate-y-1/2' : ''
+          }`}
+          style={{
+            touchAction: 'none',
+            ...(drawerHandleY != null ? { top: drawerHandleY, transform: 'none' } : undefined),
+          }}
         >
           <span
             aria-hidden="true"
@@ -845,6 +976,7 @@ export function MobileEditorShell({
           prefs={tbPrefs}
           onModeChange={applyToolbarMode}
           onSnap={snapToolbarTo}
+          onSnapDrawerHandle={snapDrawerHandleTo}
           onClose={() => setAdvOpen(false)}
         />
       )}
