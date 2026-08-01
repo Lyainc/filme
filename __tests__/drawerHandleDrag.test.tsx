@@ -1,0 +1,138 @@
+/**
+ * 필드 드로어 엣지 핸들 축 분리 드래그 회귀 (#567·#579, 동반 설계).
+ *
+ * - 수평 드래그(왼쪽으로 당기기)는 드로어를 연다(#567).
+ * - 수직 드래그는 핸들 y좌표를 옮긴다(#579) — 드로어는 열리지 않는다.
+ * - 순수 탭(이동 없음)은 기존대로 드로어를 연다(비드래그 대체 경로, WCAG 2.2 SC 2.5.7).
+ * - 영속된 y가 프레임 밖이면 마운트 시 재클램프된다(FloatingToolbar #190과 같은 패턴).
+ */
+import { describe, expect, test, afterEach, jest } from 'bun:test';
+import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { usePhototicket } from '@/hooks/usePhototicket';
+import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
+import { mobileShellProps } from './shellHarness';
+
+const DRAWER_KEY = 'filme:drawer:v1';
+
+function Harness() {
+  const photo = usePhototicket();
+  return (
+    <>
+      <button type="button" onClick={() => photo.handleImageUpload('blob:test-poster')}>
+        seed-poster
+      </button>
+      <MobileEditorShell {...mobileShellProps(photo)} />
+    </>
+  );
+}
+
+afterEach(cleanup);
+
+const advance = (ms: number) => act(() => jest.advanceTimersByTime(ms));
+
+async function seedPoster(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByText('seed-poster'));
+  return screen.getByRole('button', { name: '티켓 항목 목록 열기' });
+}
+
+describe('필드 드로어 엣지 핸들 (#567·#579)', () => {
+  test('순수 탭은 그대로 드로어를 연다(비드래그 대체 경로)', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    const handle = await seedPoster(user);
+
+    await user.click(handle);
+    expect(await screen.findByRole('dialog', { name: '티켓 항목' })).toBeTruthy();
+  });
+
+  test('수평 드래그(왼쪽으로 당기기)로 드로어가 열린다(#567)', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    const handle = await seedPoster(user);
+
+    fireEvent.pointerDown(handle, { pointerId: 1, clientX: 400, clientY: 300 });
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 370, clientY: 300 }); // dx=-30, dy=0
+    fireEvent.pointerUp(handle, { pointerId: 1, clientX: 370, clientY: 300 });
+
+    expect(await screen.findByRole('dialog', { name: '티켓 항목' })).toBeTruthy();
+  });
+
+  test('오른쪽(무의미한 방향) 수평 드래그는 그 자체로 열지 않지만, axis를 안 잠가 뒤이은 탭은 살아있다', async () => {
+    // 실브라우저 CDP 트러스티드 클릭 재현(#567/#579 구현 중 발견) — 오른쪽 흔들림에 axis를
+    // 'h'로 잠그면 이후 click까지 드래그로 오판돼 순수 탭 하나가 조용히 무시된다.
+    const user = userEvent.setup();
+    render(<Harness />);
+    const handle = await seedPoster(user);
+
+    fireEvent.pointerDown(handle, { pointerId: 1, clientX: 400, clientY: 300 });
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 430, clientY: 300 }); // dx=+30, 무의미한 방향
+    fireEvent.pointerUp(handle, { pointerId: 1, clientX: 430, clientY: 300 });
+    expect(screen.queryByRole('dialog', { name: '티켓 항목' })).toBeNull();
+
+    // 실브라우저는 pointerup 뒤 같은 타깃에 click을 이어 보낸다 — 흔들림으로 axis가 안
+    // 잠겼으면 이 click이 정상적인 탭으로 열려야 한다.
+    fireEvent.click(handle);
+    expect(await screen.findByRole('dialog', { name: '티켓 항목' })).toBeTruthy();
+  });
+
+  test('수직 드래그는 핸들을 이동시키고 드로어는 열지 않는다(#579)', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    const handle = await seedPoster(user);
+    const before = handle.style.top;
+
+    fireEvent.pointerDown(handle, { pointerId: 1, clientX: 400, clientY: 300 });
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 400, clientY: 340 }); // dy=+40, dx=0
+    fireEvent.pointerUp(handle, { pointerId: 1, clientX: 400, clientY: 340 });
+    // 실제 브라우저는 pointerup 뒤에도 같은 타깃에 click을 이어 보낸다 — 드래그로 판정됐으면
+    // 이 click이 드로어를 열면 안 된다(탭=열기/드래그=이동 구분이 핵심 요구사항).
+    fireEvent.click(handle);
+
+    expect(screen.queryByRole('dialog', { name: '티켓 항목' })).toBeNull();
+    expect(handle.style.top).not.toBe(before);
+    expect(handle.style.top).not.toBe('50%');
+  });
+
+  test('수직 드래그로 옮긴 y가 300ms 뒤 filme:drawer:v1로 영속된다', async () => {
+    jest.useFakeTimers();
+    const user = userEvent.setup({ delay: null });
+    render(<Harness />);
+    const handle = await seedPoster(user);
+
+    fireEvent.pointerDown(handle, { pointerId: 1, clientX: 400, clientY: 300 });
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 400, clientY: 340 });
+    fireEvent.pointerUp(handle, { pointerId: 1, clientX: 400, clientY: 340 });
+
+    advance(310);
+    const raw = window.localStorage.getItem(DRAWER_KEY);
+    expect(raw).toBeTruthy();
+    expect(typeof JSON.parse(raw!).y).toBe('number');
+    jest.useRealTimers();
+  });
+
+  test('고급 설정 모달의 상/하 스냅이 비드래그 대체 경로로 핸들을 옮긴다(WCAG 2.2 SC 2.5.7)', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    const handle = await seedPoster(user);
+    const before = handle.style.top;
+
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    await user.click(screen.getByRole('button', { name: '고급 설정' }));
+    await user.click(screen.getByRole('button', { name: '위쪽 가장자리로 이동' }));
+
+    expect(handle.style.top).not.toBe(before);
+    expect(await screen.findAllByText('위쪽 가장자리로 옮겼어요')).not.toHaveLength(0);
+  });
+
+  test('영속된 y가 프레임 밖이면 마운트 시 재클램프된다', async () => {
+    window.localStorage.setItem(DRAWER_KEY, JSON.stringify({ y: 999999 }));
+    const user = userEvent.setup();
+    render(<Harness />);
+    const handle = await seedPoster(user);
+
+    const top = parseFloat(handle.style.top);
+    expect(Number.isFinite(top)).toBe(true);
+    expect(top).toBeLessThanOrEqual(window.innerHeight - 8); // TB_EDGE=8
+  });
+});

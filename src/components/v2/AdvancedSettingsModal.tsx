@@ -19,6 +19,8 @@ interface AdvancedSettingsModalProps {
   prefs: TbPrefs;
   onModeChange: (orient: TbOrient, place: TbPlace) => void;
   onSnap: (side: 'left' | 'right') => void;
+  /** 필드 드로어 엣지 핸들 상/하 스냅(#579) — 드래그의 비드래그 대체 경로(WCAG 2.2 SC 2.5.7). */
+  onSnapDrawerHandle: (edge: 'top' | 'bottom') => void;
   onClose: () => void;
 }
 
@@ -44,6 +46,7 @@ export function AdvancedSettingsModal({
   prefs,
   onModeChange,
   onSnap,
+  onSnapDrawerHandle,
   onClose,
 }: AdvancedSettingsModalProps) {
   useBodyScrollLock(true);
@@ -177,6 +180,39 @@ export function AdvancedSettingsModal({
                 </button>
               </div>
             )}
+          </section>
+
+          {/* 필드 드로어 엣지 핸들(#579) — 수직 드래그로 위아래 이동(#567·#579 동반 설계, 셸의
+              onHandlePointerMove가 처리)의 비드래그 대체 경로. 툴바 좌/우 스냅과 같은 문법 —
+              가로 이동은 엣지 탭 구조상 의미가 없어 위/아래 두 버튼만 둔다. */}
+          <section className={CARD}>
+            <h3 className="px-2.5 pb-1 pt-1.5 text-[12px] font-semibold text-fg">드로어 핸들 위치</h3>
+            <div className="flex gap-1">
+              <button
+                type="button"
+                onClick={() => onSnapDrawerHandle('top')}
+                aria-label="위쪽 가장자리로 이동"
+                title="위쪽 가장자리로 이동"
+                className="flex h-11 flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:bg-white/5 hover:text-fg"
+              >
+                <svg {...TB_ICON}>
+                  <path d="M12 19V5" />
+                  <path d="m5 12 7-7 7 7" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={() => onSnapDrawerHandle('bottom')}
+                aria-label="아래쪽 가장자리로 이동"
+                title="아래쪽 가장자리로 이동"
+                className="flex h-11 flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:bg-white/5 hover:text-fg"
+              >
+                <svg {...TB_ICON}>
+                  <path d="M12 5v14" />
+                  <path d="m19 12-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
           </section>
         </div>
       </div>
