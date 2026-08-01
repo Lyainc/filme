@@ -1,21 +1,19 @@
 import type { PhototicketState } from '@/types';
 
 interface CanExportParams {
-  hasPoster: boolean;
   title: string;
   titleOg: string;
   releaseDate: string | undefined;
 }
 
+// 포스터는 완료 조건이 아니다(#631 D3) — 포스터 없이도 단색 바탕 티켓이 성립하므로 제목·개봉연도만 본다.
 export function canExport({
-  hasPoster,
   title,
   titleOg,
   releaseDate,
 }: CanExportParams): boolean {
   const release = (releaseDate ?? '').trim();
   return (
-    hasPoster &&
     title.trim().length > 0 &&
     release.length >= 4
   );
@@ -32,7 +30,6 @@ interface UseExportReadyOptions {
  */
 export function useExportReady({ state }: UseExportReadyOptions): boolean {
   return canExport({
-    hasPoster: !!state.croppedImageUrl,
     title: state.movieInfo.title,
     titleOg: state.movieInfo.titleOg,
     releaseDate: state.movieInfo.releaseDate,

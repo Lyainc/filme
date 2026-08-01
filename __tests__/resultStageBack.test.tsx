@@ -80,7 +80,7 @@ describe('ResultStage 뒤로가기 배선 (#258)', () => {
     expect(screen.getAllByTestId('ticket').length).toBe(2);
   });
 
-  test('croppedImageUrl이 없으면 hero 없이 ResultPanel의 안내 문구만 뜬다', async () => {
+  test('croppedImageUrl이 없어도 hero와 ResultPanel이 정상 렌더된다 (포스터리스, #631)', async () => {
     render(
       React.createElement(ResultStage, {
         theme: 'light',
@@ -91,8 +91,10 @@ describe('ResultStage 뒤로가기 배선 (#258)', () => {
         fieldVisibility: ALL_ON,
       }),
     );
-    await screen.findByText('포스터가 없어요. 편집 화면에서 포스터를 추가해 주세요.');
-    expect(screen.queryByTestId('ticket')).toBeNull();
+    // hero(표시용) + ResultPanel의 off-screen 캡처 대상, 포스터 없이도 둘 다 선다(#631 D3).
+    await screen.findAllByTestId('ticket');
+    expect(screen.getAllByTestId('ticket').length).toBe(2);
+    expect(screen.queryByText('포스터가 없어요. 편집 화면에서 포스터를 추가해 주세요.')).toBeNull();
   });
 
   // #380 원인1 — 상단 네브가 BI v2 이전 구형 mono 10px "FILME" 텍스트(WordmarkCompact)를 그대로

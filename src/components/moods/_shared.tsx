@@ -9,7 +9,8 @@ import { EyeIcon } from '@/components/ui/VisibilityCheckbox';
 export interface MoodProps {
   movieInfo: MovieInfo;
   components: TicketComponents;
-  croppedImageUrl: string;
+  /** null = 포스터 없음. Poster가 배경색만 칠한다(포스터를 안 쓰는 무드·사용자도 정상 경로). */
+  croppedImageUrl: string | null;
   fieldVisibility?: Record<TicketField, boolean>;
   /**
    * 빈 항목 미리보기(ghost, #216). 세 값의 의미가 다르다:
@@ -185,7 +186,7 @@ export function stampHeightDelta(aspect: number | null): number {
  * effect는 같은 `<img>`에서 src만 갈릴 때를 맡는다 — 그땐 ref가 다시 안 불리므로, 새 src의
  * complete=false를 읽어 이전 값을 즉시 폐기한다(로고 교체 시 이전 높이가 잠깐 유지되던 #190 nit).
  */
-function useNaturalAspect(src: string) {
+function useNaturalAspect(src: string | null) {
   const imgRef = useRef<HTMLImageElement | null>(null);
   const [aspect, setAspect] = useState<number | null>(null);
   const read = useCallback((el: HTMLImageElement | null) => {
@@ -850,7 +851,13 @@ export function SignatureStamp({
 }
 
 interface PosterProps {
-  src: string;
+  /**
+   * 포스터 없음(null)은 정상 상태다 — 사용자가 포스터를 안 주거나, 단색 바탕만 쓰는 무드.
+   * 그때는 아래 `background`만 칠하고 <img>를 아예 안 그린다(빈 문자열 src가 아니다: 브라우저가
+   * 문서 URL을 다시 받아오고, captureToImage의 decodeImage가 naturalWidth 0을 '깨진 이미지'로
+   * 보고 캡처를 통째로 중단시킨다).
+   */
+  src: string | null;
   fit?: 'cover' | 'contain';
   background?: string;
   /** 재질 축(#475) — 'original'|'artpaper'|'vintage'|'newspaper'. 포스터 CSS filter(색) + 결 오버레이(아래)를 만든다. */
@@ -1015,7 +1022,11 @@ export const Poster = memo(function Poster({
       // 큰 raster를 떨어뜨리므로, captureToImage가 이 포스터 서브트리(배경색 div + 포스터 <img>들)를
       // 통째로 제외하고 대신 canvas 2D로 직접 합성한다. 이 div의 background(#0a0a0a)까지 함께
       // 빠져야 그 자리가 '투명 구멍'으로 남아 합성한 포스터가 비쳐 보인다.
-      data-poster-root="true"
+      // 포스터가 없으면 이 속성을 안 단다 — captureToImage가 이 서브트리를 html-to-image에서
+      // 제외하고 canvas로 재합성하는 건 "여기 포스터 래스터가 들어온다"는 전제이고, 재합성할
+      // 이미지가 없으면 그 자리가 배경도 없는 구멍으로 남는다. 속성이 없으면 평범한 배경 div라
+      // 캡처가 그냥 그린다.
+      data-poster-root={src ? 'true' : undefined}
       // 저장 경로(captureToImage.compositeOverlay)가 이 서브트리를 제외하고 canvas로 재합성하므로,
       // 오버레이의 material/coating·강도를 DOM 속성으로 실어보내 캡처가 상태 없이 DOM만으로 재현하게
       // 한다(#434 c1, #471, #475 c2 — 재질→코팅 순 2회 합성). 레시피 밖 값(material=original,
@@ -1035,7 +1046,7 @@ export const Poster = memo(function Poster({
           채운다(#440 오너 결정). 밝기는 전경과 동일하게 둬 레터박스가 검정 여백이 아니라 포스터의
           흐릿한 연장으로 읽히게 한다(너무 어두우면 검정과 구분이 안 됨). scale(1.2)로 blur 가장자리
           투명을 덮는다. cover는 전경이 슬롯을 꽉 채워 배경이 안 보이므로 생략한다. */}
-      {fit === 'contain' && (
+      {fit === 'contain' && src && (
         <img
           src={src}
           alt=""
@@ -1057,6 +1068,7 @@ export const Poster = memo(function Poster({
       {/* img(replaced element)는 top+bottom만으론 안 늘어나 inset이 무시된다 — 사이징은 일반
           div(inset은 항상 신뢰 가능)가 맡고, img는 그 안에서 기존처럼 inset:0+100%로 채운다. */}
       <div style={{ position: 'absolute', top: fit === 'contain' ? frameInsetY : 0, bottom: fit === 'contain' ? frameInsetY : 0, left: 0, right: 0 }}>
+        {src && (
         <img
           {...posterImgProps}
           src={src}
@@ -1075,6 +1087,7 @@ export const Poster = memo(function Poster({
           draggable={false}
           crossOrigin="anonymous"
         />
+        )}
       </div>
       {/* z-order(#475 c2/c3): 재질 결(아래) → 코팅 광택(위). 코팅은 재질 CSS filter가 이미 적용된
           <img> 위에 얹히므로 "재질 최종색 위에 코팅 blend"(c3)가 DOM 순서 그대로 성립한다. */}

@@ -86,31 +86,30 @@ export function ResultStage({
       </header>
 
       <div className="relative min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-6">
-        {croppedImageUrl && (
-          <div className="result-hero relative mx-auto mb-6" style={{ width: heroWidth }}>
-            <PreviewFilmCell promoted>
-              <TicketRenderer
-                croppedImageUrl={croppedImageUrl}
-                movieInfo={movieInfo}
-                components={components}
-                fieldVisibility={fieldVisibility}
-              />
-            </PreviewFilmCell>
-            {/* 바닥 그림자 — hero가 화면에 떠 보이도록 아래에 흐린 타원 그림자를 깐다.
-                캡처 대상(ResultPanel의 off-screen 인스턴스) 밖이라 내보내기에 섞이지 않는다. */}
-            <div
-              aria-hidden="true"
-              className="mx-auto mt-3"
-              style={{
-                width: '78%',
-                height: 18,
-                borderRadius: '50%',
-                background: 'radial-gradient(closest-side, rgba(0,0,0,0.35), transparent 75%)',
-                filter: 'blur(2px)',
-              }}
+        {/* 포스터가 없어도(#631 D3) hero는 그대로 선다 — Poster가 배경색만 칠한다. */}
+        <div className="result-hero relative mx-auto mb-6" style={{ width: heroWidth }}>
+          <PreviewFilmCell promoted>
+            <TicketRenderer
+              croppedImageUrl={croppedImageUrl}
+              movieInfo={movieInfo}
+              components={components}
+              fieldVisibility={fieldVisibility}
             />
-          </div>
-        )}
+          </PreviewFilmCell>
+          {/* 바닥 그림자 — hero가 화면에 떠 보이도록 아래에 흐린 타원 그림자를 깐다.
+              캡처 대상(ResultPanel의 off-screen 인스턴스) 밖이라 내보내기에 섞이지 않는다. */}
+          <div
+            aria-hidden="true"
+            className="mx-auto mt-3"
+            style={{
+              width: '78%',
+              height: 18,
+              borderRadius: '50%',
+              background: 'radial-gradient(closest-side, rgba(0,0,0,0.35), transparent 75%)',
+              filter: 'blur(2px)',
+            }}
+          />
+        </div>
 
         <div className="mx-auto max-w-md">
           <ResultPanel

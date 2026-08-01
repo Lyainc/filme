@@ -17,7 +17,7 @@ const MoodStub = dynamic(() => import('./moods/MoodStub').then((m) => m.MoodStub
 const Mood35mmLandscape = dynamic(() => import('./moods/Mood35mmLandscape').then((m) => m.Mood35mmLandscape), { ssr: false });
 
 interface TicketRendererProps {
-  croppedImageUrl: string;
+  croppedImageUrl: string | null;
   movieInfo: MovieInfo;
   components: TicketComponents;
   fieldVisibility?: Record<TicketField, boolean>;
@@ -123,7 +123,7 @@ const Mood = memo(function Mood({
   onPosterTap,
 }: {
   layoutId: LayoutId;
-  croppedImageUrl: string;
+  croppedImageUrl: string | null;
   movieInfo: MovieInfo;
   components: TicketComponents;
   fieldVisibility?: Record<TicketField, boolean>;
