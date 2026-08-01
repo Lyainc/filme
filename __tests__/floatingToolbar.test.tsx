@@ -8,7 +8,7 @@
  *   filme:toolbar:v1로 영속, 재마운트 시 복원(새로고침 복원 완료 조건).
  */
 import { describe, expect, test, afterEach, beforeEach, jest } from 'bun:test';
-import { render, screen, cleanup, act } from '@testing-library/react';
+import { render, screen, cleanup, act, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
@@ -196,6 +196,46 @@ describe('플로팅 툴바 (#356)', () => {
     await advance(310);
     const raw = JSON.parse(window.localStorage.getItem(TB_KEY)!);
     expect(raw.x).toBe(8);
+  });
+
+  test('숨김 원형 버튼도 드래그로 위치를 옮길 수 있다 — 임계거리 넘으면 탭이 억제되고 고정식은 이동식으로 승격한다 (#568)', async () => {
+    const user = userSetup();
+    render(<Harness />);
+    await seedPoster(user);
+
+    // 기본값은 place:'fixed' — 숨겨도 위치 조정 수단이 없던 게 이슈였다.
+    await user.click(screen.getByRole('button', { name: '툴바 숨기기' }));
+    const hiddenBtn = screen.getByRole('button', { name: '툴바 표시' });
+
+    fireEvent.pointerDown(hiddenBtn, { clientX: 100, clientY: 100, pointerId: 1 });
+    fireEvent.pointerMove(hiddenBtn, { clientX: 140, clientY: 100, pointerId: 1 }); // dx=40 > 6px 임계
+    fireEvent.pointerUp(hiddenBtn, { clientX: 140, clientY: 100, pointerId: 1 });
+    // 실 브라우저는 pointerup 뒤 click을 마저 쏜다 — 드래그였으면 이 click이 표시 토글을 하면 안 된다.
+    fireEvent.click(hiddenBtn);
+
+    // 억제됐다면 여전히 숨김(원형 버튼)이고, 억제가 안 됐다면 펼쳐진 툴바가 나타난다.
+    expect(screen.queryByRole('toolbar', { name: '편집 도구' })).toBeNull();
+    expect(screen.getByRole('button', { name: '툴바 표시' })).toBeTruthy();
+
+    await advance(310);
+    const raw = JSON.parse(window.localStorage.getItem(TB_KEY)!);
+    expect(raw.place).toBe('movable'); // 드래그가 고정식을 이동식으로 승격시켰다.
+    expect(raw.x).toBeGreaterThan(0); // 오른쪽으로 40px 옮긴 만큼 반영됐다(클램프 전제로 정확값은 안 본다).
+  });
+
+  test('숨김 원형 버튼의 순수 탭(이동 없음)은 그대로 표시 토글로 처리된다 (#568)', async () => {
+    const user = userSetup();
+    render(<Harness />);
+    await seedPoster(user);
+
+    await user.click(screen.getByRole('button', { name: '툴바 숨기기' }));
+    const hiddenBtn = screen.getByRole('button', { name: '툴바 표시' });
+
+    fireEvent.pointerDown(hiddenBtn, { clientX: 100, clientY: 100, pointerId: 1 });
+    fireEvent.pointerUp(hiddenBtn, { clientX: 100, clientY: 100, pointerId: 1 }); // 이동 없음
+    fireEvent.click(hiddenBtn);
+
+    expect(screen.getByRole('toolbar', { name: '편집 도구' })).toBeTruthy();
   });
 });
 

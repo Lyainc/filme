@@ -39,6 +39,7 @@ export type TbPlace = 'fixed' | 'movable';
 
 export const TB_STORAGE_KEY = 'filme:toolbar:v1';
 export const TB_EDGE = 8; // 이동식 클램프·스냅 여백 — 배치 스냅(#387)도 부모가 이 값으로 계산한다.
+const TB_TAP_SLOP = 6; // 숨김 원형 버튼의 탭/드래그 임계 이동거리(px, #568).
 
 export interface TbPrefs {
   orient: TbOrient;
@@ -123,6 +124,11 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
   };
   useImperativeHandle(forwardedRef, () => rootRef.current as HTMLDivElement);
   const dragRef = useRef<{ px: number; py: number; ox: number; oy: number } | null>(null);
+  // 숨김 원형 버튼의 탭/드래그 구분(#568) — 임계 이동거리 안이면 탭(표시), 넘으면 드래그로 보고
+  // 뒤이은 click에서 표시 토글을 억제한다. pointerup에서 바로 토글하지 않는 이유: 탭이든 드래그
+  // 끝이든 pointerup은 항상 오고, 진짜 탭인지는 그 직후 오는 click까지 봐야 키보드 Enter/Space
+  // (pointer 이벤트 없이 click만 옴)와 같은 경로로 처리된다.
+  const draggedRef = useRef(false);
 
   // 이동식 좌표는 프레임 원점 기준이다(#607) — `contain: paint`가 fixed의 컨테이닝 블록을
   // 폰 프레임으로 바꿔 translate가 프레임 좌상단에서 풀리기 때문. 뷰포트로 클램프하면
@@ -193,13 +199,27 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
     // 드래그 원점도 프레임 기준으로 환산한다 — 뷰포트 좌표(데스크톱 예 534)를 그대로 원점으로
     // 잡으면 첫 pointermove에 툴바가 프레임 left(520)만큼 오른쪽으로 튀고 contain:paint에 잘린다.
     const frame = getFrameRect();
-    dragRef.current = { px: e.clientX, py: e.clientY, ox: rect.left - frame.left, oy: rect.top - frame.top };
+    const ox = rect.left - frame.left;
+    const oy = rect.top - frame.top;
+    dragRef.current = { px: e.clientX, py: e.clientY, ox, oy };
+    draggedRef.current = false;
     e.currentTarget.setPointerCapture(e.pointerId);
+    // 숨김 상태에서 고정식을 드래그하면 이동식으로 승격한다(#568) — 안 그러면 다음 렌더에서
+    // headerEl/contentTopEl 실측 위치로 되돌아가 드래그가 무의미해진다. 좌표를 place 전환과
+    // 같은 onPrefsChange 호출에 같이 실어, movable인데 x/y가 아직 없는 프레임(기본 우상단
+    // 코너로 튀는 프레임)이 안 생기게 한다. 펼친 상태의 그립은 place==='movable'일 때만
+    // 렌더되므로 이 분기는 hidden 원형 버튼 드래그에서만 탄다.
+    if (place === 'fixed') {
+      onPrefsChange((prev) => ({ ...prev, place: 'movable', x: ox, y: oy }));
+    }
   };
   const onGripMove = (e: PointerEvent<HTMLElement>) => {
     const d = dragRef.current;
     if (!d) return;
-    const c = clampPos(d.ox + (e.clientX - d.px), d.oy + (e.clientY - d.py));
+    const dx = e.clientX - d.px;
+    const dy = e.clientY - d.py;
+    if (Math.abs(dx) > TB_TAP_SLOP || Math.abs(dy) > TB_TAP_SLOP) draggedRef.current = true;
+    const c = clampPos(d.ox + dx, d.oy + dy);
     onPrefsChange((prev) => ({ ...prev, x: c.x, y: c.y }));
   };
   const onGripUp = () => {
@@ -234,10 +254,22 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
       <button
         ref={setRootEl}
         type="button"
-        onClick={() => onPrefsChange((prev) => ({ ...prev, hidden: false }))}
+        onPointerDown={onGripDown}
+        onPointerMove={onGripMove}
+        onPointerUp={onGripUp}
+        onPointerCancel={onGripUp}
+        onClick={() => {
+          // 드래그 끝의 click은 표시 토글을 억제한다(#568 설계 메모) — 순수 탭·키보드
+          // Enter/Space(pointer 이벤트 없이 click만 옴)만 여기서 실제로 토글한다.
+          if (draggedRef.current) {
+            draggedRef.current = false;
+            return;
+          }
+          onPrefsChange((prev) => ({ ...prev, hidden: false }));
+        }}
         aria-label="툴바 표시"
         className={`fixed z-[45] flex ${TB_TARGET} items-center justify-center rounded-full border border-line text-fg-muted transition-colors hover:text-fg`}
-        style={{ ...posStyle, ...glass }}
+        style={{ touchAction: 'none', ...posStyle, ...glass }}
       >
         <svg {...ICON}>
           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
