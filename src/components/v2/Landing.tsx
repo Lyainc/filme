@@ -34,6 +34,7 @@ import { Wordmark } from './Wordmark';
 export function Landing({
   mode,
   onCta,
+  onSkip,
   dropProps,
   dragOver,
   children,
@@ -41,6 +42,8 @@ export function Landing({
   mode: 'overlay' | 'inline' | 'hidden';
   /** CTA 탭 — 셸의 숨은 포스터 input을 그 자리에서 click()한다(같은 제스처, 라우트 전환 0). */
   onCta: () => void;
+  /** 포스터 없이 편집으로 진입(#631) — 셸의 canvasReady를 세운다. */
+  onSkip: () => void;
   /** 셸의 포스터 드롭 핸들러(#607) — 점선 드롭존이 여기로 흡수되며 같이 넘어왔다. */
   dropProps: {
     onDragOver: (e: DragEvent) => void;
@@ -111,6 +114,15 @@ export function Landing({
           <p className="mt-2 text-[12px] leading-snug text-fg-faint break-keep">
             영화 스틸컷이나 직접 찍은 사진도 돼요.
           </p>
+          {/* 포스터 없이 시작(#631) — 단색 바탕 + 조판만으로도 티켓이 성립하는 경로의 진입점. */}
+          <button
+            type="button"
+            onClick={onSkip}
+            data-testid="landing-skip-poster"
+            className="mt-3 text-[12px] underline text-fg-muted"
+          >
+            포스터 없이 시작
+          </button>
         </div>
 
         {/* OCR 보조 진입점 — 포스터 CTA가 주연이고 이건 직하 보조다(#142 위계). 모드가 갈려도

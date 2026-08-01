@@ -86,7 +86,7 @@ function renderMood(
   Mood: React.ComponentType<{
     movieInfo: MovieInfo;
     components: TicketComponents;
-    croppedImageUrl: string;
+    croppedImageUrl: string | null;
     fieldVisibility?: Record<TicketField, boolean>;
   }>,
   layout: LayoutId,

@@ -123,7 +123,7 @@ export function ResultPanel({
   const handleDownload = useCallback(async () => {
     const node = ticketRef.current;
     // 다른 캡처가 진행 중이면(연타·동시 공유) 무시 — 같은 노드 toJpeg 중복을 막는다(#167).
-    if (!node || !croppedImageUrl || capturingRef.current) return;
+    if (!node || capturingRef.current) return;
     const title = movieInfo.title || 'untitled';
     const filename = `phototicket_${layout.id}_${title}.jpg`;
     capturingRef.current = true;
@@ -166,7 +166,7 @@ export function ResultPanel({
   const issuePermalink = useCallback(async (): Promise<string | null> => {
     const node = ticketRef.current;
     // 다른 캡처가 진행 중이면 무시 — 같은 노드 toJpeg 중복을 막는다(#167).
-    if (!node || !croppedImageUrl || capturingRef.current) return null;
+    if (!node || capturingRef.current) return null;
     capturingRef.current = true;
     setPermaState('loading');
     const gen = permaGenRef.current; // 이 발급의 세대 — 업로드 중 내용이 바뀌면 reset effect가 증가시킨다
@@ -282,14 +282,6 @@ export function ResultPanel({
             ? '링크 다시 만들기'
             : '링크 만들기';
   const copyLabel = copyState === 'copied' ? '복사됨!' : '복사';
-
-  if (!croppedImageUrl) {
-    return (
-      <p className="text-[13px] text-fg-muted">
-        포스터가 없어요. 편집 화면에서 포스터를 추가해 주세요.
-      </p>
-    );
-  }
 
   return (
     <div className="space-y-group">

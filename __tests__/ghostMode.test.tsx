@@ -51,7 +51,7 @@ const BASE: TicketComponents = {
 type MoodFn = React.ComponentType<{
   movieInfo: MovieInfo;
   components: TicketComponents;
-  croppedImageUrl: string;
+  croppedImageUrl: string | null;
   fieldVisibility?: Record<TicketField, boolean>;
   ghost?: boolean;
 }>;

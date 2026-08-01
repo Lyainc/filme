@@ -257,6 +257,11 @@ export function MobileEditorShell({
   // 드래프 복원은 photo.draftRestored가, CTA 파일 선택은 crop.cropOpen/croppedImageUrl이 이미
   // 말해준다(아래 showLanding). 초기화(handleClearTap)가 false로 되돌려 랜딩이 복귀한다.
   const [landingDismissed, setLandingDismissed] = useState(false);
+  // 포스터가 없어도 편집 캔버스는 설 수 있다(#631) — "포스터가 있다"(croppedImageUrl)와 "편집할
+  // 캔버스가 섰다"는 다른 명제다. 랜딩의 "포스터 없이 시작"(onSkip)이 landingDismissed를 세워
+  // canvasReady를 연다. 랜딩 자체를 숨길지는 별개 판정(D1, 아래 Landing mode) — croppedImageUrl
+  // 없이 landingDismissed만으로는 랜딩을 안 숨긴다. #614 걷는 조건 ③과 계약이 같다.
+  const canvasReady = !!croppedImageUrl || landingDismissed;
   const clearArmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // 습관적 더블탭이 arm과 실행을 한 번에 뚫지 않게 arm 직후 재탭은 무시(claude-review PR #375 P1).
   const clearArmedAt = useRef(0);
@@ -389,7 +394,7 @@ export function MobileEditorShell({
   // 편집 중 티켓 lift(px, ≤0) — 에디터가 계산해 올리고 셸이 transform으로만 적용(폭 애니메이트 금지,
   // TicketRenderer의 ResizeObserver 스케일과 싸우지 않게).
   const [editLift, setEditLift] = useState(0);
-  const editing = activeField != null && viewMode === 'default' && !!croppedImageUrl;
+  const editing = activeField != null && viewMode === 'default' && canvasReady;
   const closeEditor = useCallback(() => {
     setActiveField(null);
     setEditLift(0);
@@ -598,7 +603,7 @@ export function MobileEditorShell({
         </button>
         {/* 완료(다음)는 포스터가 있어야 렌더(v8 §1·시안 nextShown) — 랜딩은 업로드 액션에만
             집중(#363). 업로드 후 canExport 전까지는 기존대로 aria-disabled + 사유 토스트. */}
-        {croppedImageUrl && (
+        {canvasReady && (
         <button
           type="button"
           onClick={handleDone}
@@ -653,7 +658,7 @@ export function MobileEditorShell({
                 {/* 빈 항목은 프리뷰(포스터)가 있어야 의미가 있으므로 기존과 동일하게 게이팅. 잉크는
                     DesignRail 시절과 동일하게 포스터 유무와 무관하게 항상 노출. '전체 표시'는 필드
                     목록이 있는 FieldDrawer로 이전(#424) — 필드 목록과 한 자리에 두는 게 더 직관적이다. */}
-                {croppedImageUrl && (
+                {canvasReady && (
                   <MenuRow
                     iconPath={MENU_ICONS.eye}
                     label="빈 항목"
@@ -663,10 +668,11 @@ export function MobileEditorShell({
                   />
                 )}
                 {/* 고급 설정(#574) — 접이식 '툴바 설정' 섹션을 대체하는 풀페이지 모달 진입점.
-                    같은 게이팅(croppedImageUrl && !isMax)을 승계한다: 툴바가 안 떠 있으면
-                    모달 안 스냅이 조용히 no-op이 된다(claude-review PR #405 P1). 설정 성격이라
+                    아래 FloatingToolbar와 **같은 조건**(canvasReady && !isMax)이어야 한다: 툴바가
+                    안 떠 있으면 모달 안 스냅이 조용히 no-op이 된다(claude-review PR #405 P1).
+                    #631이 툴바를 canvasReady로 옮겼으므로 이 진입점도 같이 옮긴다. 설정 성격이라
                     다크모드·빈 항목과 같은 카드에 둔다 — 메뉴는 세 카드로 유지. */}
-                {croppedImageUrl && !isMax && (
+                {canvasReady && !isMax && (
                   <MenuRow
                     iconPath={MENU_ICONS.gear}
                     label="고급 설정"
@@ -744,7 +750,7 @@ export function MobileEditorShell({
             업로드 전(랜딩 본문)도 같은 이유로 h-full을 쓰되, overflow-hidden은 걸지 않는다
             (짧은 뷰포트에서 콘텐츠가 클리핑되지 않고 바깥 스크롤 컨테이너로 넘어가야 하므로). */}
         <div className="flex h-full flex-col">
-          {croppedImageUrl && (
+          {canvasReady && (
             <div
               className={
                 isMax
@@ -856,8 +862,12 @@ export function MobileEditorShell({
               #413 P0을 재도입한다(옛 "단일 인스턴스가 아니면 레이스가 되살아난다" 서술은 #624로
               철회 — CLAUDE.md 🔍 참조). OCR 로직은 셸의 useOcrUndo가 소유. */}
           <Landing
+            // 포스터가 실제로 있어야(croppedImageUrl) 랜딩을 숨긴다 — canvasReady(D1, #631)로
+            // 걸면 "포스터 없이 시작" 직후에도 랜딩이 숨어 포스터를 나중에 추가할 진입점이
+            // 사라진다(D2 (a): 이 inline 상태 자체가 진입점). #614 걷는 조건 ③이 이 계약을 고정한다.
             mode={croppedImageUrl || isMax ? 'hidden' : showLanding ? 'overlay' : 'inline'}
             onCta={handlePosterTap}
+            onSkip={() => setLandingDismissed(true)}
             dropProps={posterDropProps}
             dragOver={posterDragOver}
           >
@@ -888,7 +898,7 @@ export function MobileEditorShell({
           pop(열린 패널) state가 왕복마다 리셋된다(#297 P1과 동일 패턴, PR #362 리뷰 P2).
           relative는 absolute 앰비언트(#353) 위에 그려지기 위함. */}
       <div
-        className={`relative shrink-0 px-4 pt-3${isMax || !croppedImageUrl ? ' hidden' : ''}`}
+        className={`relative shrink-0 px-4 pt-3${isMax || !canvasReady ? ' hidden' : ''}`}
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
       >
         {/* 크기 섹션의 재크롭 진입(#492) — 헤더 메뉴 '재크롭'과 같은 crop.openRecrop을 공유한다.
@@ -907,7 +917,7 @@ export function MobileEditorShell({
           #567·#579 — 순수 탭은 여전히 onClick으로 열린다(비드래그 대체 경로, WCAG 2.2 SC
           2.5.7). 수평 드래그(왼쪽으로 당기기)는 열기, 수직 드래그는 핸들 이동 — 위 onHandle*
           핸들러가 축을 가른다. drawerHandleY가 null이면 기존 화면 정중앙 그대로. */}
-      {croppedImageUrl && !isMax && (
+      {canvasReady && !isMax && (
         <button
           ref={drawerHandleRef}
           type="button"
@@ -945,7 +955,7 @@ export function MobileEditorShell({
           프리뷰가 있어야 의미가 있고, max는 티켓만 남기는 풀스크린이라 숨긴다(탈출은 티켓 탭).
           필드 편집·드로어 중에도 셸이 계속 렌더한다 — 겹침 규칙은 z-index로(툴바 45: 편집 백드롭 40 위,
           드로어 50 아래). */}
-      {croppedImageUrl && !isMax && (
+      {canvasReady && !isMax && (
         <FloatingToolbar
           ref={toolbarRef}
           prefs={tbPrefs}
@@ -968,9 +978,9 @@ export function MobileEditorShell({
       )}
 
       {/* 고급 설정 모달(#574) — 햄버거의 '고급 설정' 행이 연다. 게이팅은 진입점과 동일하게
-          croppedImageUrl && !isMax: 툴바가 안 떠 있으면 toolbarRef가 비어 스냅이 조용히
+          canvasReady && !isMax(#631): 툴바가 안 떠 있으면 toolbarRef가 비어 스냅이 조용히
           no-op된다(claude-review PR #405 P1). tbPrefs 소유권은 셸에 남기고 값만 내려준다. */}
-      {advOpen && croppedImageUrl && !isMax && (
+      {advOpen && canvasReady && !isMax && (
         <AdvancedSettingsModal
           triggerRef={hamburgerRef}
           prefs={tbPrefs}
@@ -999,7 +1009,7 @@ export function MobileEditorShell({
 
       {/* 필드 목록 우측 드로어(#355) — 행 탭은 handleField(자동 표시 on + 인플레이스 열기)로,
           상단 슬롯엔 OCR 카드를 꽂는다 — 업로드 후 유일한 OCR 진입점이다(#388, 본문 카드는 hidden). */}
-      {drawerOpen && croppedImageUrl && (
+      {drawerOpen && canvasReady && (
         <FieldDrawer
           photo={photo}
           onClose={() => setDrawerOpen(false)}
