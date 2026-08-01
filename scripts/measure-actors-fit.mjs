@@ -1,9 +1,10 @@
 /**
- * Editorial `avec` · Criterion 콜로폰 `CAST` 배우 줄 폭 측정 하네스 (#566).
+ * Editorial `avec` · Criterion 콜로폰 `CAST` · FilmCreditCut(35mm·35mm-landscape) `Starring` ·
+ * Minimal `Cast` 배우 줄 오버플로 측정 하네스 (#566 → #600).
  *
  *   bun scripts/measure-actors-fit.mjs [--url http://localhost:3000/]
  *
- * 판정은 두 가지다:
+ * editorial·criterion(폭 인식 truncateActorsToWidth 적용 완료)의 판정은 두 가지다:
  *   1. `scrollWidth <= clientWidth` — CSS ellipsis가 안 걸렸다(이름 중간이 안 잘렸다).
  *   2. 렌더 텍스트가 전체 목록이거나 `외 N명`으로 끝난다 — 축약이 의도된 표기로만 일어났다.
  *
@@ -12,6 +13,13 @@
  * "폭은 맞췄는데 `외 N명` 대신 이름을 깎아 맞추는" 반대쪽 회귀를 막는 짝이다.
  * 둘 중 하나라도 깨지면 exit 1. 케이스는 아래 CASES가 전부고, 재개봉 유무로 콜로폰 앞 조각
  * 길이가 갈리는 조합(Criterion 예산의 조건부 항)을 일부러 포함한다.
+ *
+ * 35mm·35mm-landscape·minimal(#600, 아직 고정 3명 캡)은 슬롯 형태가 달라 판정도 다르다:
+ *   - 35mm 계열: `FilmCreditCut`의 Starring 값엔 폭 제약이 없어 가로가 아니라 줄바꿈으로 터진다
+ *     — 그 줄바꿈이 아래 footer를 부모 컷 박스(고정 height + overflow:hidden) 밖으로 밀어내는지
+ *     (footerOverflow px) + Starring 자체가 1줄 예산을 넘겼는지(wrapped)로 잰다.
+ *   - minimal: Cast 값은 이미 `-webkit-line-clamp:2` + overflow:hidden이라 scrollHeight >
+ *     clientHeight가 표준 클램프-잘림 판정이다.
  *
  * 서버 전제(#601): dev(:3000)·prod(`next start`) 어느 쪽이든 되지만 **지금 `.next`를 서빙하는
  * 서버**여야 한다. 오래 떠 있던 next start는 옛 빌드의 HTML을 줘 chunk가 전부 404가 되고, 앱이
@@ -29,6 +37,8 @@
  */
 import puppeteer from 'puppeteer-core';
 
+const px = (n) => Math.round(n * 10) / 10;
+
 const argv = process.argv.slice(2);
 const arg = (name, dflt) => {
   const i = argv.indexOf(`--${name}`);
@@ -42,6 +52,10 @@ const CHROME =
 const TWO_LONG_LATIN = 'Timothee Chalamet, Gwyneth Paltrow';
 const FOUR_KR = '송강호, 임수정, 오정세, 전여빈';
 const TWO_LONG_KR = '가나다라마바사아자차카타파하, 나다라마바사아자차카타파하가';
+/** 고정 3명 캡을 그대로 통과하는(안 잘리는) 최악 조합 — 초장문 한글 3명. */
+const THREE_LONG_KR = '가나다라마바사아자차카타파하가나, 나다라마바사아자차카타파하가나다, 다라마바사아자차카타파하가나다라';
+/** THREE_LONG_KR의 1px 신호가 반올림 오차인지 가르는 훨씬 더 긴 변형(이름당 20자). */
+const THREE_LONGER_KR = '가나다라마바사아자차카타파하가나다라마바, 나다라마바사아자차카타파하가나다라마바사, 다라마바사아자차카타파하가나다라마바사아';
 /** Criterion 콜로폰의 조각 구분자 = MoodCriterion.COLOPHON_SEP. CAST 몫을 떼어낼 때 쓴다. */
 const COLOPHON_SEP = ' · ';
 
@@ -56,6 +70,23 @@ const CASES = [
   { mood: 'criterion', actors: TWO_LONG_LATIN, reissue: '2024-01-01' },
   { mood: 'criterion', actors: FOUR_KR, reissue: '2024-01-01' },
   { mood: 'criterion', actors: TWO_LONG_KR, reissue: '2024-01-01' },
+  // #600 — FilmCreditCut(35mm·35mm-landscape 공유)·Minimal은 아직 고정 3명 캡(truncateActors).
+  // 셋 다 여전히 폭 인식이 아니라, "슬롯을 실제로 넘기는가"부터 잰다.
+  { mood: '35mm', actors: TWO_LONG_LATIN },
+  { mood: '35mm', actors: FOUR_KR },
+  { mood: '35mm', actors: TWO_LONG_KR },
+  { mood: '35mm', actors: THREE_LONG_KR },
+  { mood: '35mm', actors: THREE_LONGER_KR },
+  { mood: '35mm-landscape', actors: TWO_LONG_LATIN },
+  { mood: '35mm-landscape', actors: FOUR_KR },
+  { mood: '35mm-landscape', actors: TWO_LONG_KR },
+  { mood: '35mm-landscape', actors: THREE_LONG_KR },
+  { mood: '35mm-landscape', actors: THREE_LONGER_KR },
+  { mood: 'minimal', actors: TWO_LONG_LATIN },
+  { mood: 'minimal', actors: FOUR_KR },
+  { mood: 'minimal', actors: TWO_LONG_KR },
+  { mood: 'minimal', actors: THREE_LONG_KR },
+  { mood: 'minimal', actors: THREE_LONGER_KR },
 ];
 
 const seedFor = ({ mood, actors, reissue = '' }) => ({
@@ -128,9 +159,83 @@ async function addPoster(page) {
 /**
  * 배우 줄 엘리먼트를 무드별로 집어 폭을 잰다. 못 찾으면 던진다 — 무드가 안 떴는데 조용히
  * 통과하는 게 이 하네스의 유일한 실패 모드다.
+ *
+ * #600: `FilmCreditCut`(35mm·35mm-landscape 공유)은 Starring 값에 폭 제약이 전혀 없다 —
+ * white-space가 기본(normal)이라 가로로는 넘치지 않고 대신 줄바꿈되며, 그 줄바꿈이 아래
+ * footer(made with)를 부모 컷 박스(고정 height + overflow:hidden) 밖으로 밀어 잘리게 할 수
+ * 있다. 그래서 이 두 무드는 scrollWidth 대신 "footer가 컷 박스 bottom을 넘겼는가"로 잰다.
+ * Minimal의 Cast는 반대로 `-webkit-line-clamp:2` + overflow:hidden이 이미 걸려 있어
+ * scrollHeight > clientHeight가 곧 표준적인 클램프-잘림 판정이다.
  */
 function measureInPage(mood) {
   const px = (n) => Math.round(n * 10) / 10;
+
+  if (mood === '35mm' || mood === '35mm-landscape') {
+    const label = [...document.querySelectorAll('div')].find(
+      (d) => d.children.length === 0 && d.textContent.trim() === 'Starring'
+    );
+    if (!label) throw new Error('Starring 라벨을 못 찾음 — 35mm 계열이 안 떴다');
+    const value = label.nextElementSibling;
+    if (!value) throw new Error('Starring 값 엘리먼트가 없다');
+    // 컷 박스 = Mood35mm(Landscape)가 그리는, overflow:hidden + 고정 px height인 가장 가까운 조상.
+    let cutBox = label.parentElement;
+    while (cutBox && !(getComputedStyle(cutBox).overflow === 'hidden' && /px$/.test(cutBox.style.height))) {
+      cutBox = cutBox.parentElement;
+    }
+    if (!cutBox) throw new Error('컷 박스(overflow:hidden 조상)를 못 찾음');
+    const footer = [...cutBox.querySelectorAll('span')].find((s) => s.textContent.trim() === 'made with');
+    if (!footer) throw new Error('footer(made with)를 못 찾음');
+    const cutBottom = cutBox.getBoundingClientRect().bottom;
+    const footerBottom = footer.getBoundingClientRect().bottom;
+    const cs = getComputedStyle(value);
+    const lineHeightPx = px(cs.lineHeight === 'normal' ? parseFloat(cs.fontSize) * 1.25 : parseFloat(cs.lineHeight));
+    // TicketRenderer가 미리보기에 맞춰 내부 트리를 transform:scale()로 축소한다 — getBoundingClientRect는
+    // 그 스케일이 반영된 화면 좌표라, 스케일 전(getComputedStyle) 단위인 lineHeightPx와 직접 비교하면
+    // 안 된다. cutBox의 인라인 height(자연 px)와 실측 rect 높이의 비율로 스케일을 역산해 보정한다.
+    const scale = cutBox.getBoundingClientRect().height / parseFloat(cutBox.style.height);
+    return {
+      text: (value.textContent || '').replace(/\s+/g, ' ').trim(),
+      valueHeight: px(value.getBoundingClientRect().height),
+      singleLineHeight: px(lineHeightPx * scale),
+      footerOverflow: px(footerBottom - cutBottom),
+      fontSize: px(parseFloat(getComputedStyle(value).fontSize)),
+      letterSpacing: getComputedStyle(value).letterSpacing,
+    };
+  }
+
+  if (mood === 'minimal') {
+    const label = [...document.querySelectorAll('div')].find(
+      (d) => d.children.length === 0 && d.textContent.trim() === 'Cast'
+    );
+    if (!label) throw new Error('Cast 라벨을 못 찾음 — minimal이 안 떴다');
+    const value = label.nextElementSibling;
+    if (!value) throw new Error('Cast 값 엘리먼트가 없다');
+    const clientHeight = value.clientHeight;
+    // scrollHeight - clientHeight는 -webkit-line-clamp 박스에서 반올림 오차로 1px 안팎이 항상
+    // 뜨는 구현 아티팩트라 그대로 못 믿는다(#600 실측: 15자×3명과 20자×3명이 똑같이 1px). 클램프를
+    // 잠깐 풀고 실제 필요한 자연 높이를 재서, 클램프 높이보다 유의미하게(半줄 이상) 큰지로 판정한다.
+    const cs = getComputedStyle(value);
+    const naturalLineHeight = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.15;
+    const prevClamp = value.style.webkitLineClamp;
+    const prevOverflow = value.style.overflow;
+    const prevDisplay = value.style.display;
+    value.style.webkitLineClamp = 'unset';
+    value.style.overflow = 'visible';
+    value.style.display = 'block';
+    const naturalHeight = value.scrollHeight;
+    value.style.webkitLineClamp = prevClamp;
+    value.style.overflow = prevOverflow;
+    value.style.display = prevDisplay;
+    return {
+      text: (value.textContent || '').replace(/\s+/g, ' ').trim(),
+      clientHeight,
+      naturalHeight: px(naturalHeight),
+      naturalLineHeight: px(naturalLineHeight),
+      fontSize: px(parseFloat(cs.fontSize)),
+      letterSpacing: cs.letterSpacing,
+    };
+  }
+
   let el;
   let labelW = null;
   if (mood === 'editorial') {
@@ -184,14 +289,31 @@ try {
     await new Promise((r) => setTimeout(r, 1500));
 
     const m = await page.evaluate(measureInPage, c.mood);
-    // Criterion은 한 행에 앞 조각들이 함께 서므로 마지막 ' · ' 뒤가 CAST 몫이다(이름엔 ' · '가
-    // 안 들어간다). Editorial은 span 자체가 배우 줄이라 그대로 쓴다.
-    const castText = c.mood === 'criterion' ? m.text.split(COLOPHON_SEP).pop() : m.text;
-    // 축약이 의도된 표기로만 일어났는지 — 전체 목록 그대로거나 '외 N명'으로 끝나야 한다.
-    const names = c.actors.split(',').map((s) => s.trim()).filter(Boolean);
-    const intact = castText === names.join(', ') || /외 \d+명$/.test(castText);
-    const overflow = m.scrollWidth - m.clientWidth;
-    results.push({ ...c, ...m, castText, overflow, intact, ok: overflow <= 0 && intact });
+
+    if (c.mood === '35mm' || c.mood === '35mm-landscape') {
+      // Starring엔 line-clamp가 없다 — 줄바꿈 자체는 위아래 flex:1 스페이서가 흡수하므로 버그가
+      // 아니다(row 레이아웃이 애초에 고정 1줄을 전제하지 않는다). 실제 오버플로는 그 줄바꿈이
+      // 스페이서 여유를 다 먹고 footer를 컷 박스(overflow:hidden) 밖으로 밀어낼 때뿐이라, `ok`는
+      // footerOverflow(footer bottom이 컷 박스 bottom을 넘긴 px)만 본다. `wrapped`는 참고용 진단.
+      const wrapped = m.valueHeight > m.singleLineHeight * 1.5; // 1.5줄 문턱 = 반올림 오차 흡수
+      const ok = m.footerOverflow <= 0.5;
+      results.push({ ...c, ...m, wrapped, ok });
+    } else if (c.mood === 'minimal') {
+      // 클램프 해제 상태의 자연 높이가 클램프 높이보다 반 줄(natural line-height의 절반) 이상
+      // 크면 실제로 3번째 줄이 잘렸다는 뜻 — 1px 안팎은 렌더 아티팩트로 무시한다(위 주석).
+      const overflow = px(m.naturalHeight - m.clientHeight);
+      const ok = overflow <= m.naturalLineHeight * 0.5;
+      results.push({ ...c, ...m, overflow, ok });
+    } else {
+      // Criterion은 한 행에 앞 조각들이 함께 서므로 마지막 ' · ' 뒤가 CAST 몫이다(이름엔 ' · '가
+      // 안 들어간다). Editorial은 span 자체가 배우 줄이라 그대로 쓴다.
+      const castText = c.mood === 'criterion' ? m.text.split(COLOPHON_SEP).pop() : m.text;
+      // 축약이 의도된 표기로만 일어났는지 — 전체 목록 그대로거나 '외 N명'으로 끝나야 한다.
+      const names = c.actors.split(',').map((s) => s.trim()).filter(Boolean);
+      const intact = castText === names.join(', ') || /외 \d+명$/.test(castText);
+      const overflow = m.scrollWidth - m.clientWidth;
+      results.push({ ...c, ...m, castText, overflow, intact, ok: overflow <= 0 && intact });
+    }
   }
 } finally {
   await browser.close();
