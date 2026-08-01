@@ -7,8 +7,10 @@ import type { MovieInfo } from '../src/types';
 // 있을 때 기존 동작이 그대로 유지되는지 검증.
 describe('resolveTicketData — bookingNo fallback (#379)', () => {
   test('bookingNumber 있으면 movieCd/watchDate와 무관하게 그대로 사용(기존 동작 유지)', () => {
-    const d: MovieInfo = { ...FULL_MOVIE, movieCd: '20123456', watchDate: '2024-03-15' };
-    expect(resolveTicketData(d).bookingNo).toBe(FULL_MOVIE.bookingNumber);
+    // bookingNumber를 fixture에 기대지 않고 이 테스트 안에서 명시한다 — fixture가 나중에
+    // bookingNumber를 비우더라도 "있으면 그대로 쓴다"는 이 명제가 조용히 무의미해지지 않게.
+    const d: MovieInfo = { ...FULL_MOVIE, bookingNumber: 'BOOK-1234', movieCd: '20123456', watchDate: '2024-03-15' };
+    expect(resolveTicketData(d).bookingNo).toBe('BOOK-1234');
   });
 
   test('bookingNumber 없고 movieCd+watchDate 있으면 movieCd(8)+watchDate(8)=16자리', () => {

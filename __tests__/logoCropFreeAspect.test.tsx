@@ -177,21 +177,22 @@ describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
   test('원본 비율 보존 ON → 크롭 기본값이 전체 이미지(90% 축소 없음, 좌우 무손실) (#439)', () => {
     // 크롭 종횡비가 이미지 자연비와 같을 때 makeAspectCrop({width:90})이 90%로 줄여 좌우·상하 5%씩
     // 잘라내던 회귀 — 세로 포스터의 제목 첫·끝 글자가 잘려 나가는 실사용 버그. 전체(100%)로 열어야 한다.
-    let received: Area | null = null;
+    const received: Area[] = [];
     render(
-      <ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={(a: Area) => { received = a; }} layout="minimal" />
+      <ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={(a: Area) => { received.push(a); }} layout="minimal" />
     );
     loadImage(2000, 2865); // 자연=렌더, 세로 포스터
     fireEvent.click(screen.getByRole('checkbox')); // 원본 비율 보존 ON → aspect=자연비
     fireEvent.click(screen.getByRole('button', { name: '적용' }));
     // 90% 축소면 x/y가 양수·width<2000이 된다. 전체 이미지여야 (0,0)에서 원본 크기 그대로.
-    expect(received).toEqual({ x: 0, y: 0, width: 2000, height: 2865 });
+    expect(received).toHaveLength(1);
+    expect(received[0]).toEqual({ x: 0, y: 0, width: 2000, height: 2865 });
   });
 
   test('적용 시 onComplete가 현재 토글 상태를 preserveRatio로 전달한다', () => {
-    let received: [unknown, boolean] | null = null;
+    const received: [unknown, boolean][] = [];
     const onCompleteSpy = (area: unknown, preserveRatio: boolean) => {
-      received = [area, preserveRatio];
+      received.push([area, preserveRatio]);
     };
     render(
       <ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={onCompleteSpy} layout="minimal" />
@@ -199,8 +200,8 @@ describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
     loadImage(2000, 3000);
     fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.click(screen.getByRole('button', { name: '적용' }));
-    expect(received).not.toBeNull();
-    expect((received as unknown as [unknown, boolean])[1]).toBe(true);
+    expect(received).toHaveLength(1);
+    expect(received[0][1]).toBe(true);
   });
 
   test('렌더 크기 ≠ 자연 크기: onComplete 좌표가 자연 픽셀로 스케일업된다 (claude-review PR #429 3차 P1)', () => {
@@ -210,9 +211,9 @@ describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
     // 이미지의 크롭 위치가 어긋난다. loadImage(자연=렌더)만 쓰는 다른 테스트는 scaleX/Y가
     // 항상 1로 고정돼 이 회귀를 못 잡는다. scaleX(2)≠scaleY(3)로 일부러 비대칭을 둬 축이
     // 뒤바뀌는 회귀(x에 scaleY를 곱하는 등)도 함께 잡는다(claude-review PR #429 4차 P2).
-    let received: Area | null = null;
+    const received: Area[] = [];
     const onCompleteSpy = (area: Area) => {
-      received = area;
+      received.push(area);
     };
     // layout을 명시해 포스터 표준 프리셋(POSTER_RATIO)을 실제로 태운다 — 안 주면 자연비로
     // 열리는데 이 fixture의 2000×3000이 우연히 0.667이라 아래 기대값이 우연히 맞아버린다.
@@ -240,10 +241,11 @@ describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
     };
 
     fireEvent.click(screen.getByRole('button', { name: '적용' }));
-    expect(received).toEqual(expected);
+    expect(received).toHaveLength(1);
+    expect(received[0]).toEqual(expected);
     // 렌더=자연이었다면 나왔을 값(스케일 누락 시의 버그 값)과는 달라야 한다 — 회귀 시 여기가 조용히
     // 통과하지 않도록 자연 픽셀 쪽이 실제로 더 커야 함을 명시적으로 확인.
-    expect((received as unknown as Area).width).toBeGreaterThan(renderPx.width);
+    expect(received[0].width).toBeGreaterThan(renderPx.width);
   });
 
   // 크롭 파이프라인은 usePhototicket이 소유하고(#548) 셸은 소비만 한다. #607 전엔 데스크톱

@@ -80,7 +80,9 @@ describe('dataUrlToJpegBlob — CSP-safe base64 decode (no fetch(data:))', () =>
 });
 
 describe('canShareTicketFile — Web Share API Level 2 guard', () => {
-  const nav = navigator as Navigator & {
+  // Omit으로 걷어내야 진짜 optional이 된다 — lib.dom의 Navigator는 canShare/share를 필수로
+  // 선언하므로 그대로 교차하면 `undefined` 대입(= API 없는 데스크톱 재현)이 타입 에러가 난다.
+  const nav = navigator as Omit<Navigator, 'canShare' | 'share'> & {
     canShare?: (data?: ShareData) => boolean;
     share?: (data?: ShareData) => Promise<void>;
   };
