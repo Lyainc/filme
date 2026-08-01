@@ -18,7 +18,7 @@
  * ── 재는 축 ──────────────────────────────────────────────────────────────────
  *  1. dock · 프리뷰 티켓 · 헤더 rect                       (#500 · #554 · #558 · #563)
  *  2. 레일 슬롯 scrollTop / scrollHeight / clientHeight     (#563 고정 슬롯 넘침 판정)
- *  3. 오버레이 표면 항목별 WCAG 대비비(불투명 조상 배경 기준)  (#569 · #580)
+ *  3. 오버레이·드로어 표면 항목별 WCAG 대비비(불투명 조상 배경 기준)     (#569 · #580)
  *  4. 테마 파라미터화 — 다크·라이트를 같은 실행 경로로         (#574)
  *  5. 모달 포커스 트랩 · 닫기 3경로 · 가려진 버튼 클릭 통과    (#574, 모달 없는 판본이면 skip)
  *  6. 오버레이 7종이 #phone-frame 사각형 안인지               (#609 · 랜딩 #614)
@@ -300,7 +300,9 @@ try {
       };
       const root = document.querySelector(sel);
       if (!root) return null;
-      const items = [...root.querySelectorAll('h2, h3, button')].map((el) => {
+      // input/select는 #580 3계층(입력 함몰, --glass-fill) 실측 대상 — sr-only 파일 인풋은
+      // 시각적으로 무의미한 잡음이라 제외.
+      const items = [...root.querySelectorAll('h2, h3, button, input:not(.sr-only), select')].map((el) => {
         const label = (el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 24);
         const fg = parse(getComputedStyle(el).color).slice(0, 3);
         const bg = opaqueBg(el);
@@ -329,6 +331,22 @@ try {
         fails: items.filter((i) => !i.pass).map((i) => i.label),
       };
     }, selector);
+
+  // ── 필드 드로어(#580 1계층 유리 + 2계층 행·카드) 대비 실측. 드로어는 위 §필드 드로어에서
+  // 이미 한 번 열었다 닫았다 — measureContrast가 그 시점엔 아직 정의되지 않아 여기서 다시
+  // 연다(패널 내용은 상태 비의존이라 재현에 부작용 없음). 3계층(--glass-fill 인풋)은 여기서
+  // 안 잰다 — InPlaceFieldEditor가 dynamic(ssr:false) 청크라 dev 서버에서 첫 컴파일 시
+  // Fast Refresh가 풀 리로드를 일으켜(실측: 클릭 직후 매번 동일 URL로 framenavigated 이벤트
+  // 발생, React 상태가 날아가 aid 박스가 다시는 안 뜬다) 이 스크립트와 무관한 원인으로 계속
+  // 깨진다. 3계층은 항상 이 드로어 밖 InPlaceFieldEditor의 불투명 aid 박스(bg-surface-elevated)
+  // 안에서만 렌더돼(#580 grep 확인, globals.css --glass-fill 주석) 포스터 노출이 없으므로
+  // 대비 하한은 그 결정론적 배경 위 합성색 계산으로 충분하다(같은 주석에 실측값 문서화).
+  await page.evaluate((s) => document.querySelector(s)?.click(), drawerHandle);
+  await page.waitForSelector('div[role=dialog][aria-label="티켓 항목"]', { timeout: 10000 });
+  await sleep(300);
+  const drawerContrast = await measureContrast('div[role=dialog][aria-label="티켓 항목"]');
+  await page.keyboard.press('Escape');
+  await sleep(300);
 
   // 햄버거 메뉴 열기 — 모달 진입점이자, 모달 없는 판본에서의 대비 측정 표면.
   await page.evaluate(() => document.querySelector('button[aria-label="편집 메뉴"]').click());
@@ -495,14 +513,22 @@ try {
     ...base,
     afterMenu: after,
     contrast,
+    drawerContrast,
     modal,
     frameFit: { items: fits, fails: fitFails, pass: fitFails.length === 0 },
     landingSkippedOnDraft,
     invariant,
   };
   console.log(JSON.stringify(out, null, 2));
+  const contrastFails = [contrast, drawerContrast].flatMap((c) => c?.fails ?? []);
   // checked:false도 실패다 — 못 잰 걸 0으로 넘기는 게 #609가 없앤 그 조용한 성공이다.
-  if (!invariant.checked || !invariant.pass || fitFails.length > 0 || !landingSkippedOnDraft) {
+  if (
+    !invariant.checked ||
+    !invariant.pass ||
+    fitFails.length > 0 ||
+    !landingSkippedOnDraft ||
+    contrastFails.length > 0
+  ) {
     process.exitCode = 1;
   }
 } finally {
