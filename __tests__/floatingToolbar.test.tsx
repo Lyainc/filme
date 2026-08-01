@@ -242,6 +242,9 @@ describe('이동식 툴바 좌표계는 뷰포트가 아니라 폰 프레임 기
     await user.click(screen.getByRole('button', { name: '오른쪽 가장자리로 이동' }));
     await advance(310);
     expect(JSON.parse(window.localStorage.getItem(TB_KEY)!).x).toBe(MAX_X);
+    // 모달이 풀페이지라 스냅 순간 툴바가 안 보인다(claude-review PR #630 P1) — 이동 사실을
+    // 알리는 토스트가 실제로 떴는지 검증.
+    expect(screen.getAllByText('오른쪽 가장자리로 옮겼어요').length).toBeGreaterThan(0);
   });
 });
 
