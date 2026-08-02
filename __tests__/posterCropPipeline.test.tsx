@@ -94,7 +94,7 @@ function MobileHarness({ onPhoto }: { onPhoto?: (p: ReturnType<typeof usePhototi
 /** 재크롭은 헤더 편집 메뉴 안에 있다 — 데스크톱 ImageUploader의 인라인 버튼 자리를 이게 잇는다. */
 const openMenu = (user: ReturnType<typeof userEvent.setup>) =>
   user.click(screen.getByRole('button', { name: '편집 메뉴' }));
-const uploadCta = () => screen.getByRole('button', { name: /포스터 올리기/ });
+const uploadCta = () => screen.getByRole('button', { name: /포스터부터 올리기/ });
 
 afterEach(() => {
   cleanup();
@@ -322,7 +322,7 @@ describe('키보드 전용 포스터 업로드 경로 (#608)', () => {
     render(<MobileHarness onPhoto={(p) => { photo = p; }} />);
 
     // ① 드롭존까지 Tab으로 도달 + Enter가 파일 선택을 실제로 연다.
-    await tabTo(user, uploadCta(), '포스터 올리기');
+    await tabTo(user, uploadCta(), '포스터부터 올리기');
     const openFileDialog = spyOn(posterFileInput(), 'click');
     await user.keyboard('{Enter}');
     expect(openFileDialog).toHaveBeenCalledTimes(1);

@@ -196,7 +196,7 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
     expect(landing().classList.contains('fixed')).toBe(false);
     // inline으로 남아 진입 컨트롤을 들고 있어야 한다(#614 후속 27a6c63과 같은 계약).
     expect(landing().classList.contains('hidden')).toBe(false);
-    expect(screen.getByRole('button', { name: '포스터 올리기' })).toBeDefined();
+    expect(screen.getByRole('button', { name: '포스터부터 올리기' })).toBeDefined();
   });
 
   test('드로어에서 OCR 시작 → KOBIS 응답 전에 드로어를 닫아도(unmount) 응답 도착 시 titleOg/releaseDate가 폼에 반영된다 (claude-review PR #413 P0)', async () => {

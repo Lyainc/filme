@@ -16,7 +16,7 @@
  * getComputedStyle이 클래스를 반영하지 않는다(레포 컨벤션, mobileChromeOrder와 동일).
  */
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { UNOFFICIAL_TICKET_NOTICE } from '@/utils/ticketCleanup';
 import { mobileShellProps } from './shellHarness';
 
@@ -50,15 +50,22 @@ afterEach(() => {
 });
 
 describe('랜딩 오버레이(#614)', () => {
-  test('드래프가 없으면 랜딩이 뜨고 카피·CTA·미인증 고지가 함께 있다', () => {
+  test('드래프가 없으면 랜딩이 뜨고 카피·히어로·주 CTA·이탈 경로·미인증 고지가 함께 있다', () => {
     render(<Harness />);
 
     expect(landingOverlayShown()).toBe(true);
     expect(landing().textContent).toContain('내 굿즈가 돼요');
-    expect(landing().textContent).toContain('영화 스틸컷이나 직접 찍은 사진도 돼요.');
+    // 실물 티켓 사진도 인식된다는 안내는 서브카피로 옮겨왔다(#635 c7).
+    expect(landing().textContent).toContain('사진으로 찍은 실물 티켓도 돼요.');
     // 법적 고지는 랜딩 레이아웃 정리 중 제일 지워지기 쉬운 자리라 명시적으로 잡아둔다(#614).
     expect(landing().textContent).toContain(UNOFFICIAL_TICKET_NOTICE);
-    expect(screen.getByRole('button', { name: '포스터 올리기' })).toBeDefined();
+    // OCR이 주 CTA(#635), 포스터 업로드·직접 입력은 그 아래 이탈 경로.
+    expect(ocrButton()).toBeDefined();
+    expect(screen.getByRole('button', { name: '포스터부터 올리기' })).toBeDefined();
+    expect(screen.getByTestId('landing-skip-poster').textContent).toBe('직접 입력');
+    // 히어로 무드칩(#615) — 6무드 라디오그룹이 랜딩에 함께 뜬다. DesignRail도 같은 role/name의
+    // LayoutStrip을 CSS hidden으로 갖고 있어(canvasReady 전) 전역 쿼리는 모호하다 — landing으로 스코프.
+    expect(within(landing()).getByRole('radiogroup', { name: 'Mood designs' })).toBeDefined();
   });
 
   test('드래프가 복원되면 오버레이를 생략하되 진입 컨트롤은 본문에 남는다 (D7)', () => {
@@ -72,11 +79,23 @@ describe('랜딩 오버레이(#614)', () => {
     // 마케팅 카피는 빠지고(편집 화면이다) 진입 컨트롤만 남는 inline 모드.
     expect(landing().classList.contains('hidden')).toBe(false);
     expect(landing().textContent).not.toContain('내 굿즈가 돼요');
-    expect(screen.getByRole('button', { name: '포스터 올리기' })).toBeDefined();
+    expect(screen.getByRole('button', { name: '포스터부터 올리기' })).toBeDefined();
     expect(ocrButton()).toBeDefined();
   });
 
-  test('CTA 1탭이 포스터 input을 그 자리에서 click하고, 파일 선택에 오버레이가 걷힌다', () => {
+  test('주 CTA 1탭이 포스터 input이 아니라 OCR 파일 input을 그 자리에서 연다', () => {
+    render(<Harness />);
+    const input = document.querySelector('input[type="file"][accept="image/*"]') as HTMLInputElement;
+    let clicked = 0;
+    input.addEventListener('click', () => {
+      clicked += 1;
+    });
+
+    fireEvent.click(ocrButton());
+    expect(clicked).toBe(1);
+  });
+
+  test('이탈 경로 "포스터부터 올리기" 1탭이 포스터 input을 그 자리에서 click하고, 파일 선택에 오버레이가 걷힌다', () => {
     render(<Harness />);
     const input = posterInput();
     let clicked = 0;
@@ -86,7 +105,7 @@ describe('랜딩 오버레이(#614)', () => {
       clicked += 1;
     });
 
-    fireEvent.click(screen.getByRole('button', { name: '포스터 올리기' }));
+    fireEvent.click(screen.getByRole('button', { name: '포스터부터 올리기' }));
     expect(clicked).toBe(1);
     expect(landingOverlayShown()).toBe(true); // 아직 안 고름 — 여기서 걷히면 빈 셸이 드러난다
 
