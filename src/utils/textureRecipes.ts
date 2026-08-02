@@ -270,6 +270,16 @@ export function gradientLineEndpoints(
   return { x1: 0.5 - dx, y1: 0.5 - dy, x2: 0.5 + dx, y2: 0.5 + dy };
 }
 
+/**
+ * gradient 굽기 해상도의 긴 변(px) — 레시피가 소유하는 굽기 파라미터(#506 c3).
+ *
+ * 값 자체보다 **있다는 것**이 중요하다: viewBox만 있는 SVG는 CSS background-image로는 뜨지만
+ * `new Image()`로는 고유 크기가 안 서서 저장 경로가 로드에서 막힌다. 512·1024·2048로 바꿔가며
+ * 프리뷰를 픽셀 대조했더니 델타가 완전히 동일했다 — 브라우저가 벡터 SVG 배경을 표시 크기에
+ * 맞춰 다시 래스터화하므로 이 값은 화질에 안 걸린다. 그래서 작게 둔다.
+ */
+const GRADIENT_BAKE_PX = 512;
+
 /** 굽기 캐시 — 키는 레시피 + 굽기 파라미터(aspect)까지만. intensity는 합성 시점 스칼라라 키가 아니다(#506 c2). */
 const gradientSvgCache = new Map<string, string>();
 
@@ -297,8 +307,15 @@ export function gradientBitmapSvg(recipe: GradientRecipe, aspect: number): strin
   const stops = recipe.stops
     .map((s) => `<stop offset="${s.at}%" stop-color="rgb(${s.rgb.join(',')})" stop-opacity="${s.alpha}"/>`)
     .join('');
+  // **고유 크기(width/height)는 필수다.** viewBox만 있는 SVG는 CSS background-image로는 멀쩡히
+  // 뜨지만(`background-size`가 크기를 준다) `new Image()`로 로드하면 고유 크기가 안 서서 저장
+  // 경로가 그대로 멈춘다 — 실브라우저에서 export가 "저장 중..."에서 안 끝나는 것으로 잡혔다.
+  // 긴 변 512는 굽기 해상도(c3): gradient는 저주파라 이 정도면 늘려도 육안 차이가 없고, 가장
+  // 좁은 밴드를 가진 scodix(38~60%, 라인의 22%)도 512 기준 110px이라 계단이 안 보인다.
+  const w = aspect >= 1 ? Math.round(GRADIENT_BAKE_PX / aspect) : GRADIENT_BAKE_PX;
+  const h = aspect >= 1 ? GRADIENT_BAKE_PX : Math.round(GRADIENT_BAKE_PX * aspect);
   const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1" preserveAspectRatio="none">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 1 1" preserveAspectRatio="none">` +
     `<defs><linearGradient id="g" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}">${stops}</linearGradient></defs>` +
     `<rect width="1" height="1" fill="url(#g)"/>` +
     `</svg>`;

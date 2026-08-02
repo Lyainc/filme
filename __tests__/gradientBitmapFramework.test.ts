@@ -80,6 +80,8 @@ describe('#506 c1/c2 — 굽기 산출물과 캐시 규율', () => {
     // 늘려 그리면 정규화 좌표가 그대로 박스 좌표가 되는 형태여야 한다.
     expect(svg).toContain('viewBox="0 0 1 1"');
     expect(svg).toContain('preserveAspectRatio="none"');
+    // 고유 크기가 없으면 CSS background로는 뜨지만 new Image() 로드가 서지 않아 저장이 멈춘다.
+    expect(svg).toMatch(/<svg[^>]*\swidth="\d+"[^>]*\sheight="\d+"/);
   });
 
   test('gradient 4종 전부 구워진다(레시피 누락 시 컴파일이 아니라 여기서 잡힌다)', () => {
