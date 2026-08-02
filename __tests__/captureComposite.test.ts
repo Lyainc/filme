@@ -282,7 +282,7 @@ describe('#439 — 블러 배경은 ctx.filter blur 대신 다운스케일→업
 });
 
 describe('#434/#475 — 후가공 sheen 오버레이(compositeOverlay)를 포스터 위에 canvas blend로 합성한다', () => {
-  test('data-coating/data-coating-intensity를 실은 poster-root는 그 레시피 blend·intensity 스케일로 오버레이 fillRect를 호출한다', async () => {
+  test('data-coating/data-coating-intensity를 실은 poster-root는 그 레시피 blend·intensity 스케일로 오버레이 비트맵을 그린다', async () => {
     const node = document.createElement('div');
     stubRect(node, 0, 0, 960, 1477); // scale 1
     const posterRoot = document.createElement('div');
@@ -301,12 +301,14 @@ describe('#434/#475 — 후가공 sheen 오버레이(compositeOverlay)를 포스
 
     // hologram blend(soft-light)로 globalCompositeOperation을 설정해 포스터 위에 blend.
     expect(gcos).toContain('soft-light');
-    // intensity(0.5) × hologram 첫 stop alpha(0.5) = 0.25가 canvas gradient stop에 반영된다.
-    const holoStop = gradStops.find((s) => s.c.startsWith('rgba(255, 150, 180'));
-    expect(holoStop).toBeDefined();
-    expect(holoStop!.c).toContain('0.25');
-    // 오버레이 fillRect가 poster-root 박스(여백20 시작, 티켓 내용 1920×2954)에 그려진다 — clip도 동일.
-    expect(fillRects.some((r) => r.x === 20 && r.y === 20 && r.w === 1920 && r.h === 2954)).toBe(true);
+    // #506 c2 — 굽기는 intensity=1 고정이고 intensity는 globalAlpha로 곱해진다(옛 stop alpha 곱과
+    // 최종 source alpha 동일). 그래서 stop이 아니라 globalAlpha 이력에 0.5가 남는다.
+    expect(gAlphas).toContain(0.5);
+    // #506 c1 — gradient도 noise처럼 비트맵 한 장이라 createLinearGradient를 더는 안 쓴다.
+    expect(gradStops).toHaveLength(0);
+    // 오버레이 비트맵이 poster-root 박스(여백20 시작, 티켓 내용 1920×2954)에 그려진다 — clip도 동일.
+    expect(rects.some((r) => r.x === 20 && r.y === 20 && r.w === 1920 && r.h === 2954)).toBe(true);
+    expect(draws.some((d) => d.dw === 1920 && d.dh === 2954)).toBe(true);
 
     node.remove();
   });
@@ -351,11 +353,15 @@ describe('#434/#475 — 후가공 sheen 오버레이(compositeOverlay)를 포스
 
     await captureNodeToJpeg(node, OPTS);
 
-    // 재질(noise pattern) 1회 + 코팅(gradient) 1회 = 오버레이 fillRect 2회, 둘 다 같은 poster-root 박스.
-    const overlayFills = fillRects.filter((r) => r.x === 20 && r.y === 20 && r.w === 1920 && r.h === 2954);
-    expect(overlayFills.length).toBe(2);
-    // 코팅(metal, gradient)만 createLinearGradient를 쓴다 — 재질(vintage, noise)은 안 쓴다.
-    expect(gradStops.length).toBeGreaterThan(0);
+    // 재질(noise pattern, fillRect) 1회 + 코팅(gradient 비트맵, drawImage) 1회 — 둘 다 같은
+    // poster-root 박스에 clip된다(#506 c1 이후 gradient는 fillRect가 아니라 drawImage다).
+    const isBox = (r: RectCall) => r.x === 20 && r.y === 20 && r.w === 1920 && r.h === 2954;
+    // 재질(noise)은 pattern fillRect 정확히 1회.
+    expect(fillRects.filter(isBox)).toHaveLength(1);
+    // 코팅(gradient)은 비트맵 drawImage — 포스터 raster도 같은 박스를 쓰므로 존재만 본다.
+    expect(draws.some((d) => d.dw === 1920 && d.dh === 2954)).toBe(true);
+    // 두 경로 다 비트맵을 쓰므로 canvas gradient는 더는 안 만들어진다(#506 c1).
+    expect(gradStops).toHaveLength(0);
     // globalAlpha 이력에 재질(vintage alpha 0.55 × intensity 1)이 기록돼 재질 패스가 실제로 그려졌음을 확인.
     expect(gAlphas).toContain(0.55);
 
