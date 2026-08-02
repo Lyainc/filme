@@ -99,7 +99,7 @@ export default function InfoTooltip({ text, label = '도움말', placement = 'bo
           id={id}
           role="tooltip"
           style={{ marginLeft: baseMl + shiftX }}
-          className={`absolute z-30 w-max max-w-[min(240px,calc(100vw_-_16px))] whitespace-normal rounded-card border border-line bg-surface-elevated px-3 py-2 text-[12px] font-normal normal-case leading-relaxed tracking-normal text-fg shadow-pop ${positionClass}`}
+          className={`absolute z-30 w-max max-w-[min(240px,calc(100vw_-_16px))] whitespace-normal rounded-card border border-line bg-surface-elevated px-3 py-2 text-caption font-normal normal-case leading-relaxed tracking-normal text-fg shadow-pop ${positionClass}`}
         >
           {text}
         </span>

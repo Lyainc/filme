@@ -40,7 +40,7 @@ export const INPUT_CLS =
   // 16px 미만이면 iOS Safari가 포커스 시 자동 줌인해 레이아웃이 틀어진다(#274) — 편집 폼 컨트롤은 16px 이상.
   // 글래스 톤(#367) — 입력 함몰 계층(#580 3계층) 토큰. 항상 InPlaceFieldEditor의 불투명
   // aid 박스(bg-surface-elevated) 안에서만 렌더돼 대비 하한 근거는 globals.css --glass-fill 주석 참고.
-  'w-full rounded-field border border-[var(--glass-border)] bg-[var(--glass-fill)] px-3.5 py-3 text-[16px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft';
+  'w-full rounded-field border border-[var(--glass-border)] bg-[var(--glass-fill)] px-3.5 py-3 text-title text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft';
 
 /**
  * 필드 편집 본문(#226) — 필드/스탬프 타깃별 에디터 콘텐츠(text/date/title/rating + 스탬프)를
@@ -191,11 +191,11 @@ function TitleSheet({ photo }: { photo: Photo }) {
       {open && (
         <div className="overflow-hidden rounded-card border border-line bg-surface-elevated">
           {loading ? (
-            <div role="status" aria-live="polite" className="text-mono px-4 py-5 text-center text-[11px] uppercase tracking-widest text-fg-faint">
+            <div role="status" aria-live="polite" className="text-mono px-4 py-5 text-center text-micro uppercase tracking-widest text-fg-faint">
               Loading…
             </div>
           ) : error ? (
-            <div role="alert" className="text-mono px-4 py-5 text-center text-[11px] uppercase tracking-widest text-danger">
+            <div role="alert" className="text-mono px-4 py-5 text-center text-micro uppercase tracking-widest text-danger">
               {error}
             </div>
           ) : results.length > 0 ? (
@@ -246,7 +246,7 @@ export function KobisResultList({
               i === highlightIndex ? 'bg-accent-soft' : ''
             }`}
           >
-            <div className="text-[15px] font-medium text-fg">{movie.movieNm}</div>
+            <div className="text-body font-medium text-fg">{movie.movieNm}</div>
             {/* 동명·유사 제목 판별용 — 장편/단편/옴니버스, 감독, 개봉 여부(#476 ac2). */}
             {/* 조각을 배열로 모아 filter→join한다 — 조각마다 ' · '를 앞에 붙이면 typeNm이
                 빠진 malformed 응답에서 선행 구분자만 남는다. directors는 KOBIS 응답 실측상 항상
@@ -306,7 +306,7 @@ function FormatChips({
               aria-checked={active}
               onClick={() => onChange(opt.value)}
               data-touch="44"
-              className={`text-mono inline-flex min-h-touch shrink-0 snap-start items-center rounded-chip border px-3 text-[10px] uppercase tracking-widest transition-colors ${
+              className={`text-mono inline-flex min-h-touch shrink-0 snap-start items-center rounded-chip border px-3 text-micro uppercase tracking-widest transition-colors ${
                 active
                   ? 'border-accent bg-accent text-accent-ink'
                   : 'border-[var(--glass-border)] bg-[var(--glass-fill)] text-fg hover:bg-accent-soft'
@@ -363,7 +363,7 @@ export function DateSheet({ field, photo }: { field: TicketField; photo: Photo }
           value={gran}
           onChange={(e) => set({ releaseDateGranularity: e.target.value as DateGranularity })}
           aria-label="개봉일 정밀도"
-          className="text-mono rounded-field border border-[var(--glass-border)] bg-[var(--glass-fill)] px-3 py-3 text-[16px] uppercase tracking-widest text-fg outline-none focus:border-accent"
+          className="text-mono rounded-field border border-[var(--glass-border)] bg-[var(--glass-fill)] px-3 py-3 text-title uppercase tracking-widest text-fg outline-none focus:border-accent"
         >
           {GRANULARITY_OPTIONS.map((g) => (
             <option key={g.value} value={g.value}>
@@ -501,7 +501,7 @@ function StampEditor({
           <button
             type="button"
             onClick={removeImage}
-            className="text-mono ml-auto rounded-chip border border-line px-3 py-1.5 text-[11px] uppercase tracking-widest text-fg-muted transition-colors hover:border-accent hover:text-accent"
+            className="ml-auto rounded-chip border border-line px-3 py-1.5 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent"
           >
             이미지 제거
           </button>
@@ -533,7 +533,7 @@ function StampEditor({
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
-        className="text-mono inline-flex min-h-touch items-center justify-center gap-2 rounded-chip border border-dashed border-line bg-surface-elevated px-4 text-[11px] uppercase tracking-widest text-fg-muted transition-colors hover:border-accent hover:text-accent"
+        className="inline-flex min-h-touch items-center justify-center gap-2 rounded-chip border border-dashed border-line bg-surface-elevated px-4 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent"
       >
         로고 업로드
       </button>

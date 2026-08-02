@@ -146,7 +146,7 @@ function MenuRow({
       style={armed ? { boxShadow: 'inset 0 0 0 1px var(--danger)' } : undefined}
     >
       <span
-        className={`flex min-w-0 items-center gap-2.5 text-[14px] ${danger ? 'text-danger' : 'text-fg'}`}
+        className={`flex min-w-0 items-center gap-2.5 text-body ${danger ? 'text-danger' : 'text-fg'}`}
         style={{ fontWeight: armed ? 700 : 500 }}
       >
         <svg
@@ -667,7 +667,7 @@ export function MobileEditorShell({
           type="button"
           onClick={handleDone}
           aria-disabled={!canExport}
-          className={`inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold transition-colors ${
+          className={`inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-body font-semibold transition-colors ${
             canExport ? '' : 'border border-line bg-surface-elevated text-fg-faint'
           }`}
           style={doneEnabledStyle}
@@ -1161,7 +1161,7 @@ export function MobileEditorShell({
       {!isMax && toast && (
         <div
           aria-hidden="true"
-          className="fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-full border border-line bg-surface-elevated px-4 py-2 text-[13px] text-fg"
+          className="fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-full border border-line bg-surface-elevated px-4 py-2 text-body text-fg"
           style={{ maxWidth: 'calc(100% - 32px)', boxShadow: 'var(--shadow-pop)' }}
         >
           {toast}

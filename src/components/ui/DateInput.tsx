@@ -21,7 +21,7 @@ export function DateInput({
   ariaLabel?: string;
 }) {
   const base =
-    'flex-1 min-w-[160px] rounded-field border border-line bg-paper px-3.5 py-3 text-[16px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft';
+    'flex-1 min-w-[160px] rounded-field border border-line bg-paper px-3.5 py-3 text-title text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft';
   const parts = value ? value.split('-') : [];
   if (granularity === 'year') {
     // Display only the year part; preserve stored month/day on edit.

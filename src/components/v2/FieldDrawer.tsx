@@ -138,7 +138,7 @@ export function FieldDrawer({ photo, onField, onClose, children }: FieldDrawerPr
             onClick={() =>
               photo.updateFieldVisibility(allVisOn ? ALL_FIELDS_OFF_KEEP_REQUIRED : ALL_FIELDS_ON)
             }
-            className="flex h-11 w-full items-center justify-between rounded-card bg-surface-elevated px-3 text-[11px] font-medium text-fg-muted transition-colors hover:text-fg"
+            className="flex h-11 w-full items-center justify-between rounded-card bg-surface-elevated px-3 text-micro font-medium text-fg-muted transition-colors hover:text-fg"
           >
             <span>전체 표시</span>
             <EyeIcon open={allVisOn} size={18} />
@@ -208,9 +208,9 @@ function DrawerRow({
         aria-label={`${label} 편집`}
         className="flex min-h-touch min-w-0 flex-1 items-center gap-2 py-2 pl-3 pr-1 text-left"
       >
-        <span className="shrink-0 text-[11px] font-medium text-fg-muted">{label}</span>
+        <span className="shrink-0 text-micro font-medium text-fg-muted">{label}</span>
         {/* 빈 값도 fg-muted — fg-faint(#6B7280)는 카드(#1E2326) 위 3.28:1로 4.5:1 미달(#355 완료 조건). */}
-        <span className={`ml-auto min-w-0 truncate text-right text-[13px] ${preview ? 'text-fg' : 'text-fg-muted'}`}>
+        <span className={`ml-auto min-w-0 truncate text-right text-body ${preview ? 'text-fg' : 'text-fg-muted'}`}>
           {preview || '비어 있음'}
         </span>
       </button>

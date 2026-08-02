@@ -515,9 +515,9 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
   let aid: ReactNode = null;
   if (field === 'title' && kobis.open) {
     aid = kobis.loading ? (
-      <div className="text-mono px-4 py-4 text-center text-[11px] uppercase tracking-widest text-fg-faint">Loading…</div>
+      <div className="text-mono px-4 py-4 text-center text-micro uppercase tracking-widest text-fg-faint">Loading…</div>
     ) : kobis.error ? (
-      <div role="alert" className="text-mono px-4 py-4 text-center text-[11px] uppercase tracking-widest text-danger">
+      <div role="alert" className="text-mono px-4 py-4 text-center text-micro uppercase tracking-widest text-danger">
         {kobis.error}
       </div>
     ) : kobis.results.length > 0 ? (
@@ -561,7 +561,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
         <button
           type="button"
           onClick={removeStampImage}
-          className="text-mono ml-auto rounded-chip border border-line px-3 py-1.5 text-[11px] uppercase tracking-widest text-fg-muted transition-colors hover:border-accent hover:text-accent"
+          className="ml-auto rounded-chip border border-line px-3 py-1.5 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent"
         >
           이미지 제거
         </button>

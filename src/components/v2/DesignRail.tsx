@@ -58,7 +58,7 @@ function RailIconButton({
         {icon}
       </span>
       <span
-        className={`text-[11px] font-medium transition-colors ${selected ? 'text-accent' : 'text-fg-muted'}`}
+        className={`text-micro font-medium transition-colors ${selected ? 'text-accent' : 'text-fg-muted'}`}
       >
         {label}
       </span>

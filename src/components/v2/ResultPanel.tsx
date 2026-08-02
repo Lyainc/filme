@@ -319,12 +319,12 @@ export function ResultPanel({
         />
 
         {downloadError && (
-          <p role="alert" className="flex items-center justify-between gap-2 text-[12px] text-danger">
+          <p role="alert" className="flex items-center justify-between gap-2 text-caption text-danger">
             <span>저장에 실패했어요.</span>
             <button
               type="button"
               onClick={handleDownload}
-              className="text-mono shrink-0 rounded-chip border border-danger px-2.5 py-1 text-[11px] uppercase tracking-widest text-danger transition-colors hover:bg-danger hover:text-white"
+              className="shrink-0 rounded-chip border border-danger px-2.5 py-1 text-caption font-medium text-danger transition-colors hover:bg-danger hover:text-white"
             >
               다시 시도
             </button>
@@ -344,7 +344,7 @@ export function ResultPanel({
           onClick={handlePermalink}
           disabled={isBusy}
           title="공유 링크를 만들어 클립보드에 복사해요"
-          className="text-mono flex min-h-[48px] w-full items-center justify-center gap-2 rounded-field-sm bg-accent-soft px-4 text-[11px] uppercase tracking-widest text-accent transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:opacity-50 [.chrome-dark_&]:min-h-[50px]"
+          className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-field-sm bg-accent-soft px-4 text-body font-medium text-accent transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:opacity-50 [.chrome-dark_&]:min-h-[50px]"
         >
           <LinkIcon />
           <span key={permaLabel} className="inline-block animate-fade-in">
@@ -360,7 +360,7 @@ export function ResultPanel({
           onClick={handleShareLink}
           disabled={isBusy}
           title="카톡·메신저 등으로 공유해요"
-          className="text-mono flex min-h-[48px] w-full items-center justify-center gap-2 rounded-field-sm border border-line bg-surface-elevated px-4 text-[11px] uppercase tracking-widest text-fg transition-colors hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:bg-transparent disabled:hover:text-fg-faint [.chrome-dark_&]:min-h-[50px]"
+          className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-field-sm border border-line bg-surface-elevated px-4 text-body font-medium text-fg transition-colors hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:bg-transparent disabled:hover:text-fg-faint [.chrome-dark_&]:min-h-[50px]"
         >
           <ShareIcon />
           <span>공유</span>
@@ -380,12 +380,12 @@ export function ResultPanel({
                 value={permalink}
                 onFocus={(e) => e.currentTarget.select()}
                 aria-label="공유 링크"
-                className="text-mono min-w-0 flex-1 rounded-field-sm border border-line bg-surface-elevated px-3 py-2 text-[12px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
+                className="text-mono min-w-0 flex-1 rounded-field-sm border border-line bg-surface-elevated px-3 py-2 text-caption text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
               />
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className="text-mono inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-field-sm border border-line bg-surface-elevated px-3.5 text-[11px] uppercase tracking-widest text-fg transition-colors hover:border-accent hover:text-accent"
+                className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-field-sm border border-line bg-surface-elevated px-3.5 text-caption font-medium text-fg transition-colors hover:border-accent hover:text-accent"
               >
                 <span key={copyLabel} className="inline-block animate-fade-in">
                   {copyLabel}
@@ -394,7 +394,7 @@ export function ResultPanel({
             </div>
             {/* 공유 링크 disclaimer(#179) — 만료·비공식·양도불가 고지. 만료일은 cleanup과 같은
                 단일 출처(DEFAULT_TICKET_TTL_DAYS)에서 가져와 표기와 실제 정책이 어긋나지 않게 한다. */}
-            <p className="break-keep text-[11px] leading-snug text-fg-faint">
+            <p className="break-keep text-micro leading-snug text-fg-faint">
               이 링크는 {DEFAULT_TICKET_TTL_DAYS}일 후 만료돼요. {UNOFFICIAL_TICKET_NOTICE}
             </p>
           </div>

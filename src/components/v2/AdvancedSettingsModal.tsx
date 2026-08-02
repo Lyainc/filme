@@ -99,7 +99,7 @@ export function AdvancedSettingsModal({
         <div className="shrink-0 px-4 pt-3">
           <div className={CARD}>
             <div className="flex h-11 items-center justify-between gap-2 px-2.5">
-              <h2 className="truncate text-[14px] font-semibold text-fg">고급 설정</h2>
+              <h2 className="truncate text-body font-semibold text-fg">고급 설정</h2>
               <button
                 type="button"
                 onClick={onClose}
@@ -124,7 +124,7 @@ export function AdvancedSettingsModal({
               게이팅(canvasReady && !isMax, #631)은 부모가 쥔다 — 툴바가 안 떠 있으면 스냅이 조용히
               no-op이 되므로(claude-review PR #405 P1) 모달 진입 자체를 막는 쪽이 맞다. */}
           <section className={CARD}>
-            <h3 className="px-2.5 pb-1 pt-1.5 text-[12px] font-semibold text-fg">툴바 설정</h3>
+            <h3 className="px-2.5 pb-1 pt-1.5 text-caption font-semibold text-fg">툴바 설정</h3>
             <div role="radiogroup" aria-label="툴바 배치">
               {TOOLBAR_MODES.map((m) => {
                 const on = prefs.orient === m.orient && prefs.place === m.place;
@@ -137,7 +137,7 @@ export function AdvancedSettingsModal({
                     onClick={() => onModeChange(m.orient, m.place)}
                     // 라벨은 --fg 고정(#569) — --accent는 불투명 표면 위에서도 3.97:1이라 AA에
                     // 못 닿는다. 선택 신호는 accent-soft 채움 + accent 점(둘 다 비텍스트 3:1 기준).
-                    className={`flex h-11 w-full items-center gap-2.5 rounded-[9px] px-2.5 text-[12px] font-semibold text-fg ${
+                    className={`flex h-11 w-full items-center gap-2.5 rounded-[9px] px-2.5 text-caption font-semibold text-fg ${
                       on ? 'bg-accent-soft' : 'hover:bg-white/5'
                     }`}
                   >
@@ -186,7 +186,7 @@ export function AdvancedSettingsModal({
               onHandlePointerMove가 처리)의 비드래그 대체 경로. 툴바 좌/우 스냅과 같은 문법 —
               가로 이동은 엣지 탭 구조상 의미가 없어 위/아래 두 버튼만 둔다. */}
           <section className={CARD}>
-            <h3 className="px-2.5 pb-1 pt-1.5 text-[12px] font-semibold text-fg">드로어 핸들 위치</h3>
+            <h3 className="px-2.5 pb-1 pt-1.5 text-caption font-semibold text-fg">드로어 핸들 위치</h3>
             <div className="flex gap-1">
               <button
                 type="button"

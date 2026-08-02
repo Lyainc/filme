@@ -182,7 +182,7 @@ export default function RatingPicker({ value, onValueChange, visible, onVisibleC
           aria-label="평점 소수 입력 토글"
           className="text-mono inline-flex min-h-touch items-center text-left"
         >
-          <Eyebrow size={11} tone="faint">
+          <Eyebrow tone="faint">
             ★ {current.toFixed(1)}
           </Eyebrow>
         </button>
@@ -207,7 +207,7 @@ export default function RatingPicker({ value, onValueChange, visible, onVisibleC
             // 16px 미만이면 iOS Safari가 포커스 시 자동 줌인해 레이아웃이 틀어진다(#274) — FieldEditorBody의
             // INPUT_CLS와 동일 톤(글래스 서피스·풀폭·16px)으로 통일(#435). RatingPicker→FieldEditorBody
             // 순환 import를 피하려 리터럴을 중복하니, 톤을 바꿀 땐 두 곳을 같이 고칠 것.
-            className="text-mono w-full rounded-field border border-[var(--glass-border)] bg-[var(--glass-fill)] px-3.5 py-3 text-[16px] text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
+            className="text-mono w-full rounded-field border border-[var(--glass-border)] bg-[var(--glass-fill)] px-3.5 py-3 text-title text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
           />
         )}
       </div>

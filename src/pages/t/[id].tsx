@@ -177,13 +177,13 @@ export default function TicketLanding({ imageUrl, title, pageUrl, width, height,
             <Eyebrow as="p" tone="faint">
               FILME · Photoplay Premium Ticket
             </Eyebrow>
-            <p className="text-[14px] text-fg-muted">
+            <p className="text-body text-fg-muted">
               영화 포스터로 시네마틱한 포토티켓을, 너도 만들어봐.
             </p>
             {/* CTA 슬림화(#491) — 44px는 탭 타깃 하한이라 더 낮추지 않는다. */}
             <Link
               href="/"
-              className="text-mono mt-1 inline-flex min-h-[44px] items-center justify-center rounded-field-sm bg-accent px-6 text-[12px] uppercase tracking-widest text-accent-ink transition-colors hover:bg-accent-hover"
+              className="mt-1 inline-flex min-h-[44px] items-center justify-center rounded-field-sm bg-accent px-6 text-body font-semibold text-accent-ink transition-colors hover:bg-accent-hover"
             >
               나도 티켓 만들기 →
             </Link>
@@ -194,7 +194,7 @@ export default function TicketLanding({ imageUrl, title, pageUrl, width, height,
             CTA 바로 아래의 눈에 띄는 위치는 긴급함을 만들어 브랜드 톤과 안 맞으므로 페이지
             최하단 저대비 캡션으로 내린다(#389). */}
         <footer className="shrink-0 px-5 pb-4 text-center">
-          <p className="break-keep text-[11px] leading-snug text-fg-faint">
+          <p className="break-keep text-micro leading-snug text-fg-faint">
             이 링크는 {DEFAULT_TICKET_TTL_DAYS}일 후 만료돼요. {UNOFFICIAL_TICKET_NOTICE}
           </p>
         </footer>

@@ -50,19 +50,6 @@ import { Wordmark } from './Wordmark';
  * (#529, Seed spec blindspot 3번 해소) — TMDB 검색(#537)도 같은 크롭 파이프라인으로 합류하므로
  * 동일하게 적용된다. 배경 타일 그리드는 #613 자산이 없어 이번 구현엔 없다 — #612에 남은 결정으로 기록.
  */
-/**
- * 톤 토큰(D8, #615) — 랜딩 전용 타이포 스케일 · 여백 리듬 · 강조색 사용법.
- * 편집 셸 적용은 범위 밖(#612 D8) — 여기 값을 편집 셸 컴포넌트에 재사용하지 말 것.
- */
-const LANDING_TONE = {
-  heading: 'text-[26px] font-bold leading-[1.25] tracking-tight text-fg break-keep',
-  body: 'max-w-[300px] text-[14px] leading-relaxed text-fg-muted break-keep',
-  caption: 'text-[12px] text-fg-muted',
-  // 카피 → 히어로 → 이탈경로 사이 기본 리듬. 섹션 사이 gap-4, 이탈경로 앞 mt-2/뒤 mt-3은 그 안의 미세 조정이라 그대로 둔다.
-  sectionGap: 'gap-4',
-  // 강조색은 상태(선택된 무드칩 링·포커스링)에만 쓴다 — 정적 카피·CTA 배경엔 안 쓰고 fg 대비로 위계를 잡는다(#635 OCR 주 CTA).
-} as const;
-
 export function Landing({
   mode,
   onCta,
@@ -133,16 +120,18 @@ export function Landing({
         </div>
       )}
 
-      <div className={`flex flex-1 flex-col items-center justify-center ${LANDING_TONE.sectionGap} px-6 py-6 text-center`}>
+      {/* 카피 → 히어로 → 이탈경로 사이 기본 리듬(D8, #615). gap-4는 #201 세로 리듬의 group(16px)과
+          같은 값이라 편집 셸과 이미 이어져 있고, 이탈경로 앞 mt-2/뒤 mt-3은 그 안의 미세 조정이다. */}
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-6 text-center">
         {overlay && (
           <>
             {/* 카피는 1줄+1줄로 압축(Seed spec c5) — 선택 가능한 히어로가 "그래서 뭘 얻나"를
                 문장보다 세게 답하므로 카피 의존도가 낮다. 세로 예산은 아래 히어로+무드칩이 새로
                 차지한다(400×675, measure-chrome.mjs로 실측). */}
-            <h1 className={LANDING_TONE.heading}>
+            <h1 className="text-display font-bold text-fg break-keep">
               티켓 한 장이, 내 굿즈가 돼요
             </h1>
-            <p className={LANDING_TONE.body}>
+            <p className="max-w-[300px] text-body leading-relaxed text-fg-muted break-keep">
               스크린샷으로 자동입력. 사진으로 찍은 실물 티켓도 돼요.
             </p>
 
@@ -169,7 +158,7 @@ export function Landing({
               "rate limit 초과"는 OcrUploadCard의 토스트 뒤에도 이 줄이 그대로 남아 이어진다.
               새 세로 공간 0 — 예전 포스터 CTA 자리(caption + "포스터 없이 시작")를 한 줄로 합쳤고,
               TMDB 검색(#537)도 별도 블록이 아니라 여기 세 번째 링크로 합류한다. */}
-          <div className={`mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 ${LANDING_TONE.caption}`}>
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-caption text-fg-muted">
             <button type="button" onClick={onCta} className="underline">
               포스터부터 올리기
             </button>
