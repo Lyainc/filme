@@ -1123,7 +1123,11 @@ export function MobileEditorShell({
           onClose={crop.cancel}
           onComplete={handlePosterCropComplete}
           isProcessing={crop.isCropping}
-          layout={previewComponents.layout}
+          // previewComponents(pages/index.tsx의 280ms debounce)가 아니라 실시간 state를 읽는다 —
+          // 드롭존의 commitHeroLayout()→crop.openFile(file)이 같은 동기 이벤트 핸들러 안이라
+          // debounced 값을 쓰면 모달이 방금 커밋한 무드가 아니라 직전 무드의 크롭 프리셋으로
+          // 열렸다가 ~280ms 뒤 갑자기 재계산됐다(#529 invariant 위반, claude-review PR #636 P0).
+          layout={photo.state.components.layout}
         />
       )}
 

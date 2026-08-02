@@ -7,6 +7,7 @@
  *    커밋한다(#615, Seed spec blindspot 3번) — 그래야 이후 "포스터부터 올리기"로 넘어갔을 때
  *    크롭 프리셋이 랜딩에서 고른 무드와 어긋나지 않는다(#529).
  */
+import { useState } from 'react';
 import { describe, expect, test, afterAll, afterEach, mock } from 'bun:test';
 import { render, screen, cleanup, fireEvent, waitFor, within, act } from '@testing-library/react';
 import type { PhototicketState } from '@/types';
@@ -159,5 +160,45 @@ describe('draft 복원 무드가 진입 시 덮이지 않는다 (fresh-context �
     // commitHeroLayout이 heroLayout(재동기화됐다면 'stub')과 실제 state('stub')가 같다고 보고
     // no-op해야 한다 — 재동기화가 안 됐다면 heroLayout이 'minimal'에 굳어 있어 여기서 되돌아간다.
     expect(captured.components.layout).toBe('stub');
+  });
+});
+
+// 드롭존 onDrop이 commitHeroLayout()과 crop.openFile(file)을 같은 동기 핸들러에서 연달아 부른다
+// (claude-review PR #636 2차 P0). ImageCropModal이 previewComponents.layout(pages/index.tsx의
+// 280ms debounce)을 읽으면 방금 커밋한 무드가 아니라 그 debounce가 아직 안 따라잡은 직전 무드의
+// 크롭 프리셋으로 열린다 — #529 invariant 위반. 실제 앱에선 debounce가 있지만 이 하네스의
+// mobileShellProps는 previewComponents를 photo.state.components로 그대로 넘겨 항상 동기라
+// 그 지연을 재현하지 못한다(2차 리뷰가 지적한 지점) — 그래서 여기서는 previewComponents를
+// 마운트 시점 값에 고정해 "debounce가 영원히 안 따라잡은" 극단 케이스로 그 레이스를 강제한다.
+describe('드롭존 진입이 debounce된 previewComponents가 아니라 실시간 무드로 크롭 프리셋을 연다 (claude-review PR #636 2차 P0)', () => {
+  function DropRaceHarness({ onPhoto }: { onPhoto?: (p: ReturnType<typeof usePhototicket>) => void }) {
+    const photo = usePhototicket();
+    onPhoto?.(photo);
+    // 마운트 시점('minimal', 세로 슬롯)에 고정 — 이후 photo.state.components.layout이 바뀌어도
+    // 이 값은 안 따라간다. previewComponents가 debounce 중 멈춰 있는 순간을 그대로 흉내낸다.
+    const [staleComponents] = useState(photo.state.components);
+    return <MobileEditorShell {...mobileShellProps(photo, { previewComponents: staleComponents })} />;
+  }
+
+  test('가로 슬롯 무드로 갈아탄 직후 드롭해도 크롭 모달이 가로 프리셋(1.5)으로 연다', async () => {
+    let photo!: ReturnType<typeof usePhototicket>;
+    render(<DropRaceHarness onPhoto={(p) => { photo = p; }} />);
+    expect(photo.state.components.layout).toBe('minimal'); // 기본값 — 세로 슬롯
+
+    fireEvent.click(within(landing()).getByRole('radio', { name: 'Stub · 티켓 스텁 절취' }));
+
+    fireEvent.drop(landing(), {
+      dataTransfer: { files: [new File(['x'], 'poster.png', { type: 'image/png' })] },
+    });
+
+    // commitHeroLayout이 먼저 실제 state를 'stub'으로 바꿨는지 확인 — previewComponents(고정된
+    // 'minimal')와 갈라진 게 이 테스트의 전제다.
+    expect(photo.state.components.layout).toBe('stub');
+
+    const dialog = await screen.findByRole('dialog', { name: '포스터 크롭' });
+    // ImageCropModal이 photo.state.components.layout('stub', 가로)을 읽으면 1.5, previewComponents
+    // ('minimal', 고정)를 읽으면 0.6666...(2/3) — 고침 전엔 후자가 나와 이 assertion이 깨진다.
+    const aspect = Number(within(dialog).getByTestId('crop-frame').getAttribute('data-aspect'));
+    expect(aspect).toBeCloseTo(1.5, 2);
   });
 });
