@@ -825,7 +825,11 @@ export function MobileEditorShell({
                   : // fit 스테이지(#366) — flex-1 + basis 0이라 높이가 "본문 - OCR·footer"로 확정되고,
                     // container-type:size라 자식(티켓)이 이 높이에 기여하지 않아 순환이 없다.
                     // 아래 fitWidth의 cqw/cqh가 이 박스를 컨테이너로 읽는다.
-                    { containerType: 'size' }
+                    // 작업면(#571) — 이 박스가 곧 "작업대"다. 배경에서 한 칸 갈린 면이라 헤더·dock과
+                    // 영역이 나뉘고, 그 위에서 티켓 그림자가 비로소 보인다(--workbench 주석 참고).
+                    // 패딩(px-4 py-3)은 못 건드린다 — cqw/cqh가 여기서 나오므로 #563 프리뷰 불변식
+                    // (226.8×362.3)이 패딩에 물려 있다.
+                    { containerType: 'size', background: 'var(--workbench)' }
               }
             >
               {/* 래퍼 트리는 rotate 여부와 무관하게 항상 바깥 div → 안쪽 div → TicketRenderer로 depth가
@@ -857,7 +861,7 @@ export function MobileEditorShell({
                 ref={setPreviewWrapEl}
                 className={`relative mx-auto block rounded-card ${
                   viewMode === 'default'
-                    ? 'transition-transform duration-300 ease-out motion-reduce:transition-none'
+                    ? 'crop-marks transition-transform duration-300 ease-out motion-reduce:transition-none'
                     : 'transition-transform active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-soft'
                 } ${rotateLandscape ? 'overflow-hidden' : ''}`}
                 style={
@@ -875,6 +879,10 @@ export function MobileEditorShell({
                           : 'translateY(0) scale(1)',
                         transformOrigin: 'top center',
                         zIndex: editing ? 41 : undefined,
+                        // 작업면 위에 놓인 인쇄물로 읽히게 하는 양감(#571). 캡처 대상(TicketRenderer
+                        // 내부 ref) 밖 래퍼라 export JPEG엔 안 섞인다. 토큰 재사용 — 결과 표면의
+                        // 승격 그림자(더 강한 값 + accent 링)와 세기가 갈려 위계가 유지된다(#98).
+                        boxShadow: 'var(--shadow-pop)',
                       }
                     : rotateLandscape
                       ? { width: rotatedStageWidth, height: rotatedInnerWidth }
