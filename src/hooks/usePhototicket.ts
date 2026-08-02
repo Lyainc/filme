@@ -363,7 +363,12 @@ export function usePhototicket() {
     setState((prev) => {
       const patch: Partial<MovieInfo> = {};
       for (const key of Object.keys(info) as (keyof MovieInfo)[]) {
-        if (!prev.movieInfo[key]) (patch as Record<string, unknown>)[key] = info[key];
+        const current = prev.movieInfo[key];
+        // truthy 체크(`!current`)는 숫자 0(rating의 미입력 sentinel과 우연히 같은 값)까지
+        // 빈 값으로 오판한다(#638 P2) — nullish/빈 문자열만 빈 값으로 본다.
+        if (current === undefined || current === null || current === '') {
+          (patch as Record<string, unknown>)[key] = info[key];
+        }
       }
       return Object.keys(patch).length === 0 ? prev : { ...prev, movieInfo: { ...prev.movieInfo, ...patch } };
     });
