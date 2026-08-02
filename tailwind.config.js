@@ -25,6 +25,13 @@ module.exports = {
           muted: 'var(--fg-muted)',
           faint: 'var(--fg-faint)',
         },
+        // 강조색 사용 규칙(D8, #615 → #616에서 실제 코드에 맞춰 정정) — accent가 나갈 자리는 둘뿐이다:
+        // ① 화면당 하나뿐인 주 액션의 채움(`bg-accent` + `text-accent-ink`) — 랜딩 OCR CTA와 결과
+        //    화면 "사진에 저장"이 그것이고, #635가 OCR을 주 CTA로 올릴 때 이 채움을 의도적으로 남겼다.
+        // ② 상태 표시 — 선택(무드칩 링·레일 활성 라벨), 포커스링, 드래그 오버 아웃라인.
+        // 정적 카피·장식·구조 요소엔 안 쓴다(위계는 fg/fg-muted/fg-faint 대비로 잡고, eyebrow·디바이더
+        // 같은 구조 요소는 neutral-2가 따로 맡는다). 2차 액션은 채움이 아니라 `accent-soft` 그라운드다.
+        // #615 원안 주석은 "CTA 배경엔 안 쓴다"였는데 셸·랜딩·결과 어디서도 그렇게 구현된 적이 없다.
         accent: {
           DEFAULT: 'var(--accent)',
           soft: 'var(--accent-soft)',
@@ -42,6 +49,22 @@ module.exports = {
 
         // 2nd 시네마틱 neutral(#203) — 구조 요소(eyebrow·디바이더) 전용, 액션 red와 별개
         'neutral-2': 'var(--neutral-2)',
+      },
+      // 서비스 UI(앱 chrome) 타이포 스케일(#616) — 랜딩(#615)이 실제로 쓰던 26/14/12를 앵커로
+      // 삼아 손으로 흩어져 있던 아홉 단(9.5·10·11·12·13·14·15·16·26)을 다섯 단으로 모은다.
+      // 랜딩→편집 전환에서 글자 크기가 연속되게 하는 게 목적이라, 소비자는 chrome 전체다.
+      // **티켓 렌더(src/components/moods/·_shared.tsx)는 이 스케일 밖이다** — 무드 서체·크기는
+      // 디자인 의도라 인라인 스타일로 따로 산다(#114/PR #129 결정, #616 함정 1).
+      // 값만 두고 line-height를 안 싣는 건 의도다: text-[11px] 같은 arbitrary 값도 font-size만
+      // 정하므로 이름만 바꾸는 자리는 픽셀이 1도 안 움직인다(#563 불변식 보호). 행간이 필요한
+      // 자리는 지금처럼 leading-* 를 따로 얹는다. display만 예외 — 호출처가 랜딩 h1 하나고
+      // 기존 leading-[1.25] tracking-tight를 그대로 흡수한다.
+      fontSize: {
+        display: ['26px', { lineHeight: '1.25', letterSpacing: '-0.025em' }],
+        title: '16px',    // 입력 필드 — 16px 미만이면 iOS가 포커스 시 화면을 확대한다
+        body: '14px',     // 본문·행·값·주요 액션
+        caption: '12px',  // 칩·노트·보조 링크
+        micro: '11px',    // dock 라벨·상태·eyebrow
       },
       fontFamily: {
         sans: ['var(--font-sans)', '"Pretendard Variable"', 'Pretendard', 'system-ui', '"Apple SD Gothic Neo"', '"Noto Sans KR"', 'sans-serif'],

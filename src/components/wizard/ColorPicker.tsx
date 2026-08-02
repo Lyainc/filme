@@ -35,7 +35,7 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
   return (
     <div className="space-y-field">
       {disabled && disabledNote && (
-        <p className="text-[12px] text-fg-muted">{disabledNote}</p>
+        <p className="text-caption text-fg-muted">{disabledNote}</p>
       )}
       <div className={`flex flex-wrap items-center gap-2.5 ${disabled ? 'opacity-40' : ''}`}>
         {swatches.map((s) => {
@@ -72,7 +72,7 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
               {active && (
                 <span
                   aria-hidden
-                  className="absolute inset-0 flex items-center justify-center text-[10px] mix-blend-difference text-white"
+                  className="absolute inset-0 flex items-center justify-center text-micro mix-blend-difference text-white"
                 >
                   ✓
                 </span>
@@ -112,7 +112,7 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
       <div className={`flex items-stretch gap-2 pt-1 ${disabled ? 'opacity-40' : ''}`}>
         <span
           aria-hidden
-          className="inline-flex shrink-0 items-center justify-center rounded-field border border-line px-3 text-[15px] text-fg-muted"
+          className="inline-flex shrink-0 items-center justify-center rounded-field border border-line px-3 text-body text-fg-muted"
           style={{ minWidth: 44 }}
         >
           #
@@ -128,7 +128,7 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
           maxLength={6}
           aria-label="Hex color"
           placeholder="FFFFFF"
-          className="text-mono w-full rounded-field border border-line bg-paper px-3.5 py-2.5 text-[16px] uppercase tracking-widest text-fg outline-none transition-colors placeholder:text-fg-faint focus:border-accent focus:ring-2 focus:ring-accent-soft disabled:cursor-not-allowed"
+          className="text-mono w-full rounded-field border border-line bg-paper px-3.5 py-2.5 text-title uppercase tracking-widest text-fg outline-none transition-colors placeholder:text-fg-faint focus:border-accent focus:ring-2 focus:ring-accent-soft disabled:cursor-not-allowed"
         />
       </div>
     </div>

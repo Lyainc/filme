@@ -269,7 +269,7 @@ export default function ImageCropModal({
           style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.875rem)' }}
         >
           {showPreserveToggle && (
-            <label className="flex items-center gap-2 text-[13px] text-fg">
+            <label className="flex items-center gap-2 text-body text-fg">
               <input
                 type="checkbox"
                 checked={preserveRatio}
@@ -286,7 +286,7 @@ export default function ImageCropModal({
               onClick={onClose}
               disabled={isProcessing}
               data-touch="44"
-              className="inline-flex min-h-btn items-center justify-center rounded-field border border-line bg-surface text-[13px] font-medium text-fg transition-colors hover:bg-accent-soft disabled:opacity-30"
+              className="inline-flex min-h-btn items-center justify-center rounded-field border border-line bg-surface text-body font-medium text-fg transition-colors hover:bg-accent-soft disabled:opacity-30"
             >
               다른 사진 선택
             </button>
@@ -295,7 +295,7 @@ export default function ImageCropModal({
               onClick={handleConfirm}
               disabled={isProcessing || !completedCrop?.width || !completedCrop?.height}
               data-touch="44"
-              className="inline-flex min-h-btn items-center justify-center gap-2 rounded-field bg-accent text-[13px] font-medium text-accent-ink transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex min-h-btn items-center justify-center gap-2 rounded-field bg-accent text-body font-medium text-accent-ink transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
             >
               {isProcessing ? (
                 <>

@@ -107,7 +107,7 @@ function AxisSegment<K extends string>({
           aria-controls={panelId}
           onClick={() => onChange(o.key)}
           data-touch="36"
-          className={`h-9 flex-1 truncate rounded-chip border px-3 text-[12px] font-medium transition-colors ${
+          className={`h-9 flex-1 truncate rounded-chip border px-3 text-caption font-medium transition-colors ${
             value === o.key
               ? 'border-transparent bg-accent-soft text-accent'
               : 'border-line bg-surface-elevated text-fg-muted'
@@ -143,7 +143,7 @@ function ChipRadio<V extends string>({
   return (
     <div className="space-y-field">
       <Eyebrow as="div">{label}</Eyebrow>
-      {note && <p className="text-[12px] text-fg-muted">{note}</p>}
+      {note && <p className="text-caption text-fg-muted">{note}</p>}
       {/* 이름은 컨테이너 aria-label로 — TexturePicker·FieldEditorBody의 radiogroup과 같은 문법. */}
       <div role="radiogroup" aria-label={label} className="flex gap-2">
         {options.map((opt) => (
@@ -155,7 +155,7 @@ function ChipRadio<V extends string>({
             disabled={opt.disabled}
             onClick={() => onChange(opt.value)}
             data-touch="40"
-            className={`h-10 flex-1 truncate rounded-chip border px-3 text-[12px] font-medium transition-colors ${
+            className={`h-10 flex-1 truncate rounded-chip border px-3 text-caption font-medium transition-colors ${
               value === opt.value
                 ? 'border-transparent bg-accent-soft text-accent'
                 : 'border-line bg-surface-elevated text-fg-muted'
@@ -357,7 +357,7 @@ function SizePanel({ photo, actions }: { photo: Photo; actions: RailActions }) {
             type="button"
             onClick={actions.onRecropPoster}
             data-touch="40"
-            className="h-10 w-full rounded-chip border border-line bg-surface-elevated px-3 text-[12px] font-medium text-fg transition-colors hover:bg-accent-soft hover:text-accent"
+            className="h-10 w-full rounded-chip border border-line bg-surface-elevated px-3 text-caption font-medium text-fg transition-colors hover:bg-accent-soft hover:text-accent"
           >
             포스터 다시 크롭
           </button>

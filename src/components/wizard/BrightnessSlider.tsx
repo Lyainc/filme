@@ -139,7 +139,7 @@ export default function BrightnessSlider({
             // 점선 밑줄이 "누르면 고칠 수 있다"는 유일한 정지 상태 신호다(text-decoration이라
             // 레이아웃 박스를 안 건드려 줄 높이가 그대로다). 포커스 표시는 globals.css의 전역
             // :focus-visible 링에 맡긴다 — outline-none으로 지우면 키보드 사용자가 위치를 잃는다.
-            className="text-mono w-[4.5ch] bg-transparent text-right text-[10px] uppercase tracking-widest text-accent underline decoration-dotted underline-offset-2"
+            className="text-mono w-[4.5ch] bg-transparent text-right text-micro uppercase tracking-widest text-accent underline decoration-dotted underline-offset-2"
           />
           <Eyebrow tone="accent" aria-hidden="true">
             %

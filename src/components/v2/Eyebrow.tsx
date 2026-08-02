@@ -10,23 +10,20 @@ const TONE_CLS: Record<EyebrowTone, string> = {
   accent: 'text-accent',
 };
 
-const SIZE_CLS: Record<10 | 11, string> = {
-  10: 'text-[10px]',
-  11: 'text-[11px]',
-};
-
 interface EyebrowProps extends Omit<HTMLAttributes<HTMLElement>, 'color'> {
   as?: EyebrowTag;
-  size?: 10 | 11;
   tone?: EyebrowTone;
   htmlFor?: string;
   children?: ReactNode;
 }
 
-/** Mono·대문자·와이드 트래킹 필름 슬러그 캡션. 필드 라벨·섹션 헤더·done 카피 등 ~30곳 복붙 정리(#201). */
+/**
+ * Mono·대문자·와이드 트래킹 필름 슬러그 캡션. 필드 라벨·섹션 헤더·done 카피 등 ~30곳 복붙 정리(#201).
+ * 크기는 스케일의 micro 한 단이다 — 10/11을 고르던 `size` prop은 #616이 스케일을 다섯 단으로
+ * 모으며 두 값이 같은 단(11px)이 돼 사라졌다.
+ */
 export function Eyebrow({
   as: Tag = 'span',
-  size = 10,
   tone = 'muted',
   className = '',
   htmlFor,
@@ -37,7 +34,7 @@ export function Eyebrow({
   return (
     <As
       htmlFor={htmlFor}
-      className={`text-mono ${SIZE_CLS[size]} uppercase tracking-widest ${TONE_CLS[tone]}${className ? ` ${className}` : ''}`}
+      className={`text-mono text-micro uppercase tracking-widest ${TONE_CLS[tone]}${className ? ` ${className}` : ''}`}
       {...rest}
     >
       {children}

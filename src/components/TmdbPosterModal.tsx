@@ -163,7 +163,7 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
               ←
             </button>
           ) : (
-            <h2 className="truncate text-[14px] font-semibold text-fg">영화 검색</h2>
+            <h2 className="truncate text-body font-semibold text-fg">영화 검색</h2>
           )}
           <button
             type="button"
@@ -190,18 +190,18 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="영화 제목"
                   aria-label="영화 제목 검색"
-                  className="min-h-touch flex-1 rounded-field-sm border border-line bg-surface px-3 text-[14px] text-fg"
+                  className="min-h-touch flex-1 rounded-field-sm border border-line bg-surface px-3 text-body text-fg"
                 />
                 <button
                   type="submit"
                   disabled={searching}
-                  className="min-h-touch rounded-field-sm bg-accent px-4 text-[13px] font-medium text-accent-ink disabled:opacity-50"
+                  className="min-h-touch rounded-field-sm bg-accent px-4 text-body font-medium text-accent-ink disabled:opacity-50"
                 >
                   검색
                 </button>
               </form>
 
-              {searchError && <p className="mt-3 text-[13px] text-fg-muted">{searchError}</p>}
+              {searchError && <p className="mt-3 text-body text-fg-muted">{searchError}</p>}
 
               {/* searchError 하나로 충분하다 — runSearch가 결과 0건일 때도 이걸 세팅하므로
                   "검색 전 초기 상태"(results도 비어 있다)와 "검색했지만 0건"이 안 섞인다. */}
@@ -209,7 +209,7 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
                 <button
                   type="button"
                   onClick={onFallbackUpload}
-                  className="mt-3 text-[13px] font-medium text-accent underline"
+                  className="mt-3 text-body font-medium text-accent underline"
                 >
                   파일 업로드로 전환
                 </button>
@@ -234,9 +234,9 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
                         <span className="h-14 w-10 shrink-0 rounded-field-sm border border-dashed border-line" aria-hidden="true" />
                       )}
                       <span className="min-w-0">
-                        <span className="block truncate text-[14px] font-medium text-fg">{movie.title}</span>
+                        <span className="block truncate text-body font-medium text-fg">{movie.title}</span>
                         {movie.release_date && (
-                          <span className="block text-[12px] text-fg-muted">{movie.release_date.slice(0, 4)}</span>
+                          <span className="block text-caption text-fg-muted">{movie.release_date.slice(0, 4)}</span>
                         )}
                       </span>
                     </button>
@@ -246,18 +246,18 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
             </>
           ) : (
             <>
-              {loadingPosters && <p className="text-[13px] text-fg-muted">포스터를 불러오는 중…</p>}
-              {applyError && <p className="text-[13px] text-fg-muted">{applyError}</p>}
+              {loadingPosters && <p className="text-body text-fg-muted">포스터를 불러오는 중…</p>}
+              {applyError && <p className="text-body text-fg-muted">{applyError}</p>}
 
               {/* postersError(요청 실패)와 진짜 0건을 분리한다 — 안 그러면 네트워크 에러도
                   "이 영화는 포스터가 없어요"로 잘못 안내한다. */}
               {!loadingPosters && postersError && (
                 <div className="flex flex-col items-start gap-2">
-                  <p className="text-[13px] text-fg-muted">{postersError}</p>
+                  <p className="text-body text-fg-muted">{postersError}</p>
                   <button
                     type="button"
                     onClick={onFallbackUpload}
-                    className="text-[13px] font-medium text-accent underline"
+                    className="text-body font-medium text-accent underline"
                   >
                     파일 업로드로 전환
                   </button>
@@ -265,11 +265,11 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
               )}
               {!loadingPosters && !postersError && posters.length === 0 && (
                 <div className="flex flex-col items-start gap-2">
-                  <p className="text-[13px] text-fg-muted">이 영화는 포스터가 없어요.</p>
+                  <p className="text-body text-fg-muted">이 영화는 포스터가 없어요.</p>
                   <button
                     type="button"
                     onClick={onFallbackUpload}
-                    className="text-[13px] font-medium text-accent underline"
+                    className="text-body font-medium text-accent underline"
                   >
                     파일 업로드로 전환
                   </button>
@@ -300,7 +300,7 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
         </div>
 
         {/* TMDB 필수 귀속 표시(#537 c3) — 실제로 TMDB를 쓰는 화면에서만, 생성된 티켓엔 안 들어간다. */}
-        <p className="shrink-0 border-t border-line px-4 py-2 text-[10px] leading-snug text-fg-faint">
+        <p className="shrink-0 border-t border-line px-4 py-2 text-micro leading-snug text-fg-faint">
           This product uses the TMDB API but is not endorsed or certified by TMDB.
         </p>
       </div>
