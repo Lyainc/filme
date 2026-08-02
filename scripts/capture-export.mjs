@@ -68,13 +68,13 @@ const mark = (name) => {
  * 두 JPEG의 채널 최대 절대차. 디코더는 Chrome 자신을 쓴다 — 저장물을 만든 것과 같은
  * 디코더라 디코더 차이가 대조에 안 섞이고, 새 의존성도 안 붙는다.
  */
-async function compare(pathA, pathB, tolerance) {
+async function compare(pathA, pathB, tolerance, diffOut) {
   const toDataUrl = (p) => `data:image/jpeg;base64,${readFileSync(p).toString('base64')}`;
   const browser = await launch();
   try {
     const page = await browser.newPage();
     const result = await page.evaluate(
-      async (a, b) => {
+      async (a, b, diffOut) => {
         const load = (src) =>
           new Promise((res, rej) => {
             const img = new Image();
@@ -98,10 +98,13 @@ async function compare(pathA, pathB, tolerance) {
         };
         const da = px(ia);
         const db = px(ib);
+        const W = ia.naturalWidth;
         let max = 0;
         let sum = 0;
         let n = 0;
         let over3 = 0;
+        // 넘는 픽셀의 bbox — "얼마나"만큼 "어디가" 갈렸는지가 원인 추적의 절반이다.
+        let x0 = Infinity, y0 = Infinity, x1 = -1, y1 = -1;
         for (let i = 0; i < da.length; i += 4) {
           let worst = 0;
           for (let k = 0; k < 3; k++) {
@@ -111,19 +114,52 @@ async function compare(pathA, pathB, tolerance) {
             n += 1;
           }
           if (worst > max) max = worst;
-          if (worst > 3) over3 += 1;
+          if (worst > 3) {
+            over3 += 1;
+            const p = i / 4;
+            const x = p % W;
+            const y = (p - x) / W;
+            if (x < x0) x0 = x;
+            if (x > x1) x1 = x;
+            if (y < y0) y0 = y;
+            if (y > y1) y1 = y;
+          }
         }
         return {
-          size: `${ia.naturalWidth}x${ia.naturalHeight}`,
+          size: `${W}x${ia.naturalHeight}`,
           maxAbsDiff: max,
           meanAbsDiff: +(sum / n).toFixed(4),
           pixelsOver3: over3,
           pixelsOver3Pct: +((over3 / (da.length / 4)) * 100).toFixed(4),
+          over3Bbox: over3 ? { x0, y0, x1, y1 } : null,
+          // 차이를 ×20 증폭한 PNG — "얼마나"만 보고 원인을 못 좁힐 때 어디가 갈렸는지 눈으로 본다.
+          diffPng: diffOut
+            ? (() => {
+                const c = document.createElement('canvas');
+                c.width = W;
+                c.height = ia.naturalHeight;
+                const g = c.getContext('2d');
+                const im = g.createImageData(W, c.height);
+                for (let i = 0; i < da.length; i += 4) {
+                  for (let k = 0; k < 3; k++) {
+                    im.data[i + k] = Math.min(255, Math.abs(da[i + k] - db[i + k]) * 20);
+                  }
+                  im.data[i + 3] = 255;
+                }
+                g.putImageData(im, 0, 0);
+                return c.toDataURL('image/png');
+              })()
+            : null,
         };
       },
       toDataUrl(pathA),
       toDataUrl(pathB),
+      Boolean(diffOut),
     );
+    if (diffOut && result.diffPng) {
+      writeFileSync(diffOut, Buffer.from(result.diffPng.split(',')[1], 'base64'));
+    }
+    delete result.diffPng;
     const pass = !result.sizeMismatch && result.maxAbsDiff <= tolerance;
     console.log(JSON.stringify({ mode: 'compare', a: pathA, b: pathB, tolerance, ...result, pass }, null, 2));
     if (!pass) process.exit(1);
@@ -284,7 +320,7 @@ const cmpIdx = argv.indexOf('--compare');
 if (cmpIdx >= 0) {
   const [a, b] = argv.slice(cmpIdx + 1, cmpIdx + 3);
   if (!a || !b) throw new Error('--compare <a.jpg> <b.jpg>');
-  await compare(a, b, Number(arg('tolerance', '3')));
+  await compare(a, b, Number(arg('tolerance', '3')), arg('diff-out', null));
 } else {
   const out = arg('out', null);
   if (!out) throw new Error('--out <경로> 필요');
