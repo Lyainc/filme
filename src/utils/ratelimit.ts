@@ -32,7 +32,7 @@ type LimitWindow = {
 };
 
 type LimitPolicy = {
-  scope: 'ocr' | 'kobis' | 'ticket';
+  scope: 'ocr' | 'kobis' | 'ticket' | 'tmdb' | 'tmdb-image';
   /** Upstash 미설정 시 production 동작: 'closed'=차단(misconfigured), 'open'=통과(fail-open). */
   failMode: 'closed' | 'open';
   windows: LimitWindow[];
@@ -138,6 +138,38 @@ export async function checkKobisRateLimit(ip: string): Promise<RateLimitResult> 
     windows: [
       { name: 'min', limit: 30, window: '1 m' },
       { name: 'day', limit: 1000, window: '1 d' },
+    ],
+  });
+}
+
+/**
+ * TMDB는 KOBIS와 같은 무료·사실상 무제한 quota라 fail-open(#537 c5). search·images는 JSON
+ * 응답이라 KOBIS와 같은 한도를 그대로 쓴다 — 대역폭 방어가 필요한 건 이미지 바이트 프록시뿐이라
+ * 그쪽만 별도 스코프(checkTmdbImageRateLimit)로 더 좁힌다.
+ */
+export async function checkTmdbRateLimit(ip: string): Promise<RateLimitResult> {
+  return checkConfiguredRateLimit(ip, {
+    scope: 'tmdb',
+    failMode: 'open',
+    windows: [
+      { name: 'min', limit: 30, window: '1 m' },
+      { name: 'day', limit: 1000, window: '1 d' },
+    ],
+  });
+}
+
+/**
+ * original 풀사이즈가 2~5MB라(#537 스코프) IP당 남용 시 Vercel function 대역폭을 직접 먹는다.
+ * TICKET과 같은 이유로 fail-closed — limiter 백엔드가 없으면 무제한 프록시가 열리는 게
+ * search·images(JSON, 저비용)의 fail-open보다 훨씬 비싸다.
+ */
+export async function checkTmdbImageRateLimit(ip: string): Promise<RateLimitResult> {
+  return checkConfiguredRateLimit(ip, {
+    scope: 'tmdb-image',
+    failMode: 'closed',
+    windows: [
+      { name: 'min', limit: 30, window: '1 m' },
+      { name: 'day', limit: 300, window: '1 d' },
     ],
   });
 }
