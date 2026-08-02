@@ -242,6 +242,76 @@ export function recipeToGradientCss(recipe: TextureRecipe, intensity: number): s
   return `linear-gradient(${recipe.angle}deg, ${stops})`;
 }
 
+/**
+ * CSS `linear-gradient(Ndeg, …)`의 gradient 라인 양 끝점을, 박스를 0..1로 정규화한 좌표로(#506 c1).
+ *
+ * CSS 규정: 각도는 0deg=위·시계방향, 라인은 박스 중심을 지나고, 길이는 `|W·sinθ| + |H·cosθ|`
+ * (네 꼭짓점이 0%/100% 밖으로 안 나가는 최소 길이). 그래서 **정규화 좌표에도 박스 종횡비가 남는다**
+ * — `L/W = |sinθ| + aspect·|cosθ|`. 이게 gradient를 정사각 비트맵 한 장으로 못 굽고 aspect를 굽기
+ * 파라미터로 받아야 하는 이유다(정사각으로 구워 늘리면 각도가 전단돼 결과가 달라진다 = c4 위반).
+ * 타일 반복이라 종횡비와 무관한 noise 경로와 갈리는 지점이다.
+ *
+ * 이 함수가 그 기하의 **유일한** 구현이다. 예전엔 프리뷰가 CSS 문자열로, 저장이 손으로 짠 sin/cos
+ * 투영으로 같은 기하를 각자 유도했고, 그 이중화가 divergence의 출처였다(#506 배경).
+ *
+ * @param aspect 박스 H/W.
+ */
+export function gradientLineEndpoints(
+  angle: number,
+  aspect: number,
+): { x1: number; y1: number; x2: number; y2: number } {
+  const t = (angle * Math.PI) / 180;
+  const sin = Math.sin(t);
+  const cos = Math.cos(t);
+  const lenOverW = Math.abs(sin) + aspect * Math.abs(cos);
+  // 방향 (sin, -cos) 위로 중심에서 ±L/2. x는 W로, y는 H(=W·aspect)로 나눠 정규화한다.
+  const dx = (sin * lenOverW) / 2;
+  const dy = (-cos * lenOverW) / 2 / aspect;
+  return { x1: 0.5 - dx, y1: 0.5 - dy, x2: 0.5 + dx, y2: 0.5 + dy };
+}
+
+/** 굽기 캐시 — 키는 레시피 + 굽기 파라미터(aspect)까지만. intensity는 합성 시점 스칼라라 키가 아니다(#506 c2). */
+const gradientSvgCache = new Map<string, string>();
+
+/**
+ * gradient 레시피를 **비트맵 한 장**(SVG data URL)으로 굽는다(#506 c1). 프리뷰는 이 URL을
+ * `background-image`로, 저장은 **같은 URL**을 `loadImage` → `drawImage`로 그린다 — 두 경로가 각자
+ * 픽셀을 유도하지 않으므로 어긋남이 구조적으로 불가능하다.
+ *
+ * **intensity=1로 굽는다**(#506 c2). intensity는 전 stop alpha에 곱해지는 스칼라라(`stopToRgba`),
+ * 합성 시점에 레이어 알파로 한 번 곱하는 것과 최종 source alpha가 같다. 그래서 강도 슬라이더를
+ * 끌어도 재굽기가 없다 — noise 경로가 이미 같은 규율이다(`opacity: alpha × intensity`).
+ *
+ * `viewBox="0 0 1 1"` + `preserveAspectRatio="none"`이라 박스에 늘려 그리면 정규화 좌표가 그대로
+ * 박스 좌표가 된다. 해상도를 안 정하는 이유(c3): gradient는 저주파라 벡터로 두고 소비 시점에
+ * 래스터화하는 게 가장 싸다(타일 반복형 noise가 tile px를 갖는 것과 대비).
+ *
+ * @param aspect 그릴 박스의 H/W. 캐시 키에 들어가므로 호출부가 반올림해서 넘긴다.
+ */
+export function gradientBitmapSvg(recipe: GradientRecipe, aspect: number): string {
+  const key = `${recipe.angle}|${aspect}|${recipe.stops.map((s) => `${s.at},${s.rgb.join('-')},${s.alpha}`).join(';')}`;
+  const cached = gradientSvgCache.get(key);
+  if (cached) return cached;
+
+  const { x1, y1, x2, y2 } = gradientLineEndpoints(recipe.angle, aspect);
+  const stops = recipe.stops
+    .map((s) => `<stop offset="${s.at}%" stop-color="rgb(${s.rgb.join(',')})" stop-opacity="${s.alpha}"/>`)
+    .join('');
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1" preserveAspectRatio="none">` +
+    `<defs><linearGradient id="g" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}">${stops}</linearGradient></defs>` +
+    `<rect width="1" height="1" fill="url(#g)"/>` +
+    `</svg>`;
+  const url = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  gradientSvgCache.set(key, url);
+  return url;
+}
+
+/** 캐시 계측용(#506 ac3) — intensity만 바뀔 때 미스가 0인지 테스트가 확인한다. */
+export function gradientSvgCacheSize(): number {
+  return gradientSvgCache.size;
+}
+
 export function isNoiseRecipe(recipe: TextureRecipe): recipe is NoiseRecipe {
   return recipe.kind === 'noise';
 }

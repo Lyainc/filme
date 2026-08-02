@@ -1,5 +1,5 @@
 import { POSTER_EDGE_FEATHER, posterFeatherAxes } from './posterFeather';
-import { TEXTURE_RECIPES, isNoiseRecipe, noiseTileSvg } from './textureRecipes';
+import { TEXTURE_RECIPES, gradientBitmapSvg, isNoiseRecipe, noiseTileSvg } from './textureRecipes';
 
 interface CaptureOptions {
   width: number;
@@ -640,31 +640,20 @@ async function compositeOverlay(
     return;
   }
 
-  // CSS linear-gradient 각도(0deg=위, 시계방향) → canvas gradient 라인 두 끝점. 방향 (sinθ, -cosθ),
-  // 라인 길이 |W·sinθ|+|H·cosθ|(박스를 완전히 덮는 투영), 중심 기준 대칭. 미리보기 CSS와 같은 기하.
-  const t = (recipe.angle * Math.PI) / 180;
-  const dirX = Math.sin(t);
-  const dirY = -Math.cos(t);
-  const len = Math.abs(bw * Math.sin(t)) + Math.abs(bh * Math.cos(t));
-  const cx = bx + bw / 2;
-  const cy = by + bh / 2;
-  const grad = ctx.createLinearGradient(
-    cx - (dirX * len) / 2,
-    cy - (dirY * len) / 2,
-    cx + (dirX * len) / 2,
-    cy + (dirY * len) / 2,
-  );
-  for (const s of recipe.stops) {
-    grad.addColorStop(s.at / 100, `rgba(${s.rgb[0]}, ${s.rgb[1]}, ${s.rgb[2]}, ${s.alpha * intensity})`);
-  }
-
+  // 코팅 광택(#434) — 프리뷰 GradientOverlay와 **같은 비트맵 한 장**을 그린다(#506 c1). 예전엔
+  // 여기서 CSS 각도를 canvas 끝점으로 손수 투영했고(sin/cos + 라인 길이) 프리뷰는 CSS 문자열로
+  // 같은 기하를 각자 유도했다 — 그 이중화가 divergence의 출처였다. 지금 기하는 SVG를 굽는
+  // gradientLineEndpoints 한 곳에만 살고, 양쪽은 그 결과를 박스에 늘려 그리기만 한다.
+  // intensity는 globalAlpha로 곱한다(#506 c2, 굽기는 intensity=1 고정) — 옛 stop alpha 곱과
+  // 최종 source alpha가 같다.
+  const gradImg = await loadImage(gradientBitmapSvg(recipe, bh / bw));
   ctx.save();
   ctx.beginPath();
   ctx.rect(bx, by, bw, bh);
   ctx.clip();
   ctx.globalCompositeOperation = recipe.blend;
-  ctx.fillStyle = grad;
-  ctx.fillRect(bx, by, bw, bh);
+  ctx.globalAlpha = intensity; // restore()가 원복
+  ctx.drawImage(gradImg, bx, by, bw, bh);
   ctx.restore();
 
   if (debug) {

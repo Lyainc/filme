@@ -1,9 +1,9 @@
-import { CSSProperties, Fragment, ReactNode, SyntheticEvent, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { CSSProperties, Fragment, ReactNode, SyntheticEvent, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { MovieInfo, QuoteFont, TicketComponents, TicketField } from '@/types';
 import { FIELD_LABELS, STAMP_LABELS, isStampTarget, type SheetTarget } from '@/constants/fields';
 import { formatDate } from '@/utils/dateFormat';
 import { posterContainRect, posterFeatherMask } from '@/utils/posterFeather';
-import { TEXTURE_RECIPES, recipeToGradientCss, isNoiseRecipe, noiseTileSvg } from '@/utils/textureRecipes';
+import { TEXTURE_RECIPES, gradientBitmapSvg, isNoiseRecipe, noiseTileSvg, type TextureRecipe } from '@/utils/textureRecipes';
 import { EyeIcon } from '@/components/ui/VisibilityCheckbox';
 
 export interface MoodProps {
@@ -1163,15 +1163,62 @@ function TextureOverlay({ texture, intensity = 1 }: { texture: string; intensity
     );
   }
 
+  // 코팅 광택(#434) — 저장 경로와 **같은 비트맵 한 장**을 그린다(#506 c1). 예전엔 여기가 CSS
+  // linear-gradient 문자열이고 저장이 손으로 짠 sin/cos 투영이라 같은 레시피를 각자 유도했다.
+  // intensity는 굽기가 아니라 레이어 알파로 곱한다(#506 c2) — 슬라이더를 끌어도 재굽기가 없고,
+  // stop alpha에 곱하던 옛 방식과 최종 source alpha가 같아 합성 결과가 그대로다.
+  return <GradientOverlay recipe={recipe} intensity={intensity} />;
+}
+
+// SSR/renderToStaticMarkup엔 레이아웃이 없어 useLayoutEffect가 경고만 남기므로 그때만 useEffect로 떨어뜨린다.
+const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
+
+/**
+ * gradient 오버레이. 굽기에 박스 종횡비가 필요해(`gradientLineEndpoints` 주석) 자기 rect을 재는데,
+ * 페인트 **전에** 잡아 첫 프레임 깜빡임을 없앤다. 종횡비는 2자리로 반올림해 캐시 키를 안정화한다.
+ *
+ * **ResizeObserver를 쓰지 않는다.** TicketRenderer가 무드 트리를 자연 픽셀로 그리고 바깥에서
+ * transform scale만 걸므로 이 박스는 리플로우하지 않고, 무드·레이아웃이 바뀌면 어차피 리렌더가
+ * 온다. 실제로 옵저버를 달았더니 happy-dom 전역에 관측자가 쌓여 후가공과 무관한 크롭 테스트가
+ * 깨졌고, bun test의 파일 순서가 실행마다 달라 재현이 갈렸다(#506 코멘트 · CLAUDE.md 🧪 #611).
+ * 그래서 deps 없이 매 렌더 측정하되, 값이 같으면 setState를 건너뛰어 루프를 막는다.
+ */
+function GradientOverlay({
+  recipe,
+  intensity,
+}: {
+  recipe: Extract<TextureRecipe, { kind: 'gradient' }>;
+  intensity: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [aspect, setAspect] = useState<number | null>(null);
+
+  useIsomorphicLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    if (r.width <= 0 || r.height <= 0) return;
+    const next = Math.round((r.height / r.width) * 100) / 100;
+    setAspect((prev) => (prev === next ? prev : next));
+  });
+
   return (
     <div
+      ref={ref}
       aria-hidden="true"
       style={{
         position: 'absolute',
         inset: 0,
         pointerEvents: 'none',
-        background: recipeToGradientCss(recipe, intensity),
+        ...(aspect
+          ? {
+              backgroundImage: `url("${gradientBitmapSvg(recipe, aspect)}")`,
+              backgroundSize: '100% 100%',
+              backgroundRepeat: 'no-repeat',
+            }
+          : null),
         mixBlendMode: recipe.blend,
+        opacity: intensity,
       }}
     />
   );
