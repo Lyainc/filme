@@ -1,8 +1,8 @@
 /**
  * #261 회귀 테스트 — 모바일 chrome 정보위계.
  * #315로 allVis(전체 표시)·ghost(빈 항목) 토글은 헤더 서브메뉴로 이전하고, Poster 드롭존은
- * 업로드 후 사라지도록 바뀌었다(#324). #363 랜딩 리디자인으로 업로드 전 위계가 뒤집혔다 —
- * 드롭존이 주연(히어로), OCR은 보조 액션으로 직하(#142 위계), 디자인 rail은 CSS hidden.
+ * 업로드 후 사라지도록 바뀌었다(#324). #635로 업로드 전 위계가 다시 뒤집혔다 —
+ * OCR이 주연(#142 위계), 포스터 CTA는 그 아래 이탈 경로로 보조, 디자인 rail은 CSS hidden.
  * allVis(전체 표시)는 #424에서 헤더 서브메뉴 → 필드 드로어로 다시 이전(필드 목록과 한 자리) —
  * 이 파일의 헤더 서브메뉴 검증에선 대상에서 빠지고, mobileEditorShellFieldCoverage.test.tsx가
  * 드로어 쪽에서 커버한다.
@@ -50,15 +50,15 @@ function precedes(a: Element, b: Element): boolean {
 }
 
 describe('MobileEditorShell chrome 정보위계 (#261/#315/#363/#388)', () => {
-  test('업로드 전(랜딩, #363→#614): CTA 주연 → OCR 보조 순서, 디자인 rail은 CSS hidden', async () => {
+  test('업로드 전(랜딩, #363→#614→#635): OCR 주연 → 포스터 CTA 보조 순서, 디자인 rail은 CSS hidden', async () => {
     render(<Harness />);
 
-    // #614에서 점선 드롭존 히어로가 랜딩 오버레이의 CTA로 흡수됐다 — 주연/보조 위계(#142)는 그대로다.
-    const poster = screen.getByRole('button', { name: '포스터 올리기' });
+    // #635로 위계가 뒤집혔다 — OCR이 주연(#142), 포스터 CTA는 그 아래 이탈 경로로 보조다.
+    const poster = screen.getByRole('button', { name: '포스터부터 올리기' });
     const ocr = await screen.findByRole('button', { name: '티켓 스크린샷으로 자동입력' });
     const rail = screen.getByRole('button', { name: '무드' }); // 첫 rail 아이템
 
-    expect(precedes(poster, ocr)).toBe(true);
+    expect(precedes(ocr, poster)).toBe(true);
     // rail dock은 마운트 유지(pop state 보존, #297 P1 패턴) + hidden 클래스로만 숨김.
     expect(rail.closest('.hidden')).not.toBeNull();
   });
