@@ -32,7 +32,7 @@ type LimitWindow = {
 };
 
 type LimitPolicy = {
-  scope: 'ocr' | 'kobis' | 'ticket' | 'tmdb' | 'tmdb-image';
+  scope: 'ocr' | 'kobis' | 'ticket' | 'tmdb' | 'tmdb-image-thumb' | 'tmdb-image-original';
   /** Upstash 미설정 시 production 동작: 'closed'=차단(misconfigured), 'open'=통과(fail-open). */
   failMode: 'closed' | 'open';
   windows: LimitWindow[];
@@ -159,19 +159,31 @@ export async function checkTmdbRateLimit(ip: string): Promise<RateLimitResult> {
 }
 
 /**
- * original 풀사이즈가 2~5MB라(#537 스코프) IP당 남용 시 Vercel function 대역폭을 직접 먹는다.
- * TICKET과 같은 이유로 fail-closed — limiter 백엔드가 없으면 무제한 프록시가 열리는 게
- * search·images(JSON, 저비용)의 fail-open보다 훨씬 비싸다.
+ * original 풀사이즈(2~5MB)와 w342 썸네일(수십 KB)은 대역폭 단가가 두 자릿수 배 차이라
+ * 하나의 예산을 공유하면 판본 그리드(포스터당 썸네일 1건, #537 c4)가 정상 사용만으로 분당
+ * 한도를 먼저 소진해 뒤이은 실제 적용(original)이 429를 맞는다(#638). 그래서 size별로 별도
+ * 스코프를 준다 — thumb은 원가가 낮아 넉넉하게, original은 TICKET과 같은 이유로 기존
+ * 한도를 유지한다(limiter 백엔드가 없으면 무제한 프록시가 열리는 게 fail-open보다 훨씬 비싸
+ * fail-closed).
  */
-export async function checkTmdbImageRateLimit(ip: string): Promise<RateLimitResult> {
-  return checkConfiguredRateLimit(ip, {
-    scope: 'tmdb-image',
-    failMode: 'closed',
-    windows: [
-      { name: 'min', limit: 30, window: '1 m' },
-      { name: 'day', limit: 300, window: '1 d' },
-    ],
-  });
+export async function checkTmdbImageRateLimit(ip: string, size: 'w342' | 'original'): Promise<RateLimitResult> {
+  return size === 'w342'
+    ? checkConfiguredRateLimit(ip, {
+        scope: 'tmdb-image-thumb',
+        failMode: 'closed',
+        windows: [
+          { name: 'min', limit: 120, window: '1 m' },
+          { name: 'day', limit: 1200, window: '1 d' },
+        ],
+      })
+    : checkConfiguredRateLimit(ip, {
+        scope: 'tmdb-image-original',
+        failMode: 'closed',
+        windows: [
+          { name: 'min', limit: 30, window: '1 m' },
+          { name: 'day', limit: 300, window: '1 d' },
+        ],
+      });
 }
 
 export async function checkTicketRateLimit(ip: string): Promise<RateLimitResult> {

@@ -6,7 +6,6 @@ import { clientIp } from '@/utils/ocrRoute';
 // 이 라우트가 임의 URL을 대신 받아오는 오픈 프록시(SSRF)가 된다 — 요청 오리진과 무관하게
 // image.tmdb.org 하위 경로만 허용한다.
 const TMDB_IMAGE_PATH_RE = /^\/[A-Za-z0-9]+\.(jpg|jpeg|png)$/;
-const ALLOWED_SIZES = new Set(['w342', 'original']); // c4: 그리드 썸네일 w342, 실제 적용 original.
 
 export const config = {
   api: { responseLimit: false },
@@ -25,10 +24,12 @@ export default async function handler(
   if (!path || typeof path !== 'string' || !TMDB_IMAGE_PATH_RE.test(path)) {
     return res.status(400).json({ error: 'invalid path' });
   }
-  const imgSize = typeof size === 'string' && ALLOWED_SIZES.has(size) ? size : 'original';
+  // c4: 그리드 썸네일 w342, 실제 적용 original — 그 외 값은 original로 취급(기존 동작 유지).
+  const imgSize: 'w342' | 'original' = size === 'w342' ? 'w342' : 'original';
 
   // fail-closed(ratelimit.ts) — production에서 limiter 미설정이면 대역폭 남용을 막기 위해 503.
-  const rl = await checkTmdbImageRateLimit(clientIp(req));
+  // size별 예산 분리(#638) — 판본 그리드의 썸네일 다발이 실제 적용(original) 예산을 깎지 않는다.
+  const rl = await checkTmdbImageRateLimit(clientIp(req), imgSize);
   if (!rl.ok) {
     if (rl.reason === 'misconfigured') {
       return res.status(503).json({ error: 'Rate limit is not configured' });
