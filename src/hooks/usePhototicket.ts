@@ -356,6 +356,20 @@ export function usePhototicket() {
     setDirtyTick((t) => t + 1);
   }, []);
 
+  // TMDB 포스터 확정 후 KOBIS 보강 전용(#537 c8) — updateMovieInfo와 달리 이미 값이 있는 필드는
+  // 덮지 않는다. 사용자가 TMDB 검색 전에 이미 손으로 채운 필드를 비동기 보강이 지워버리면 안 된다.
+  // prev 기준으로 빈 필드를 판정하므로 호출 시점 클로저가 stale해도 안전하다(레이스 없음).
+  const fillEmptyMovieInfo = useCallback((info: Partial<MovieInfo>) => {
+    setState((prev) => {
+      const patch: Partial<MovieInfo> = {};
+      for (const key of Object.keys(info) as (keyof MovieInfo)[]) {
+        if (!prev.movieInfo[key]) (patch as Record<string, unknown>)[key] = info[key];
+      }
+      return Object.keys(patch).length === 0 ? prev : { ...prev, movieInfo: { ...prev.movieInfo, ...patch } };
+    });
+    setDirtyTick((t) => t + 1);
+  }, []);
+
   const updateComponents = useCallback((components: Partial<TicketComponents>) => {
     // posterOpacity가 직접 실려오면 슬라이더 조작이므로 touched로 기록한다. ref 뮤테이션은
     // setState updater 밖에서 한다 — updater는 순수해야 하고(StrictMode 이중 호출), 이 갱신은
@@ -587,6 +601,7 @@ export function usePhototicket() {
     state,
     handleImageUpload,
     updateMovieInfo,
+    fillEmptyMovieInfo,
     updateComponents,
     setRecommendedColors,
     updateFieldVisibility,

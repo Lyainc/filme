@@ -34,6 +34,7 @@ import { Wordmark } from './Wordmark';
 export function Landing({
   mode,
   onCta,
+  onTmdbSearch,
   onSkip,
   dropProps,
   dragOver,
@@ -42,6 +43,8 @@ export function Landing({
   mode: 'overlay' | 'inline' | 'hidden';
   /** CTA 탭 — 셸의 숨은 포스터 input을 그 자리에서 click()한다(같은 제스처, 라우트 전환 0). */
   onCta: () => void;
+  /** TMDB 검색 모달 열기(#537) — 포스터 파일이 없어도 영화 검색으로 판본을 골라 같은 크롭 경로로 들어간다. */
+  onTmdbSearch: () => void;
   /** 포스터 없이 편집으로 진입(#631) — 셸의 canvasReady를 세운다. */
   onSkip: () => void;
   /** 셸의 포스터 드롭 핸들러(#607) — 점선 드롭존이 여기로 흡수되며 같이 넘어왔다. */
@@ -114,6 +117,15 @@ export function Landing({
           <p className="mt-2 text-[12px] leading-snug text-fg-faint break-keep">
             영화 스틸컷이나 직접 찍은 사진도 돼요.
           </p>
+          {/* TMDB 인앱 포스터 검색(#537) — 파일을 직접 못 구했을 때의 두 번째 진입로. 선택 후는
+              onCta와 같은 크롭 파이프라인(usePosterCrop.openFile)으로 합류한다. */}
+          <button
+            type="button"
+            onClick={onTmdbSearch}
+            className="mt-2 min-h-[44px] w-full rounded-field-sm border border-line text-[13px] font-medium text-fg hover:bg-accent-soft"
+          >
+            영화 검색해서 가져오기
+          </button>
           {/* 포스터 없이 시작(#631) — 단색 바탕 + 조판만으로도 티켓이 성립하는 경로의 진입점. */}
           <button
             type="button"

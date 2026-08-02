@@ -35,6 +35,7 @@ import { useOcrUndo } from '@/hooks/useOcrUndo';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 import { isStampTarget, STAMP_KEYS, type SheetTarget } from '@/constants/fields';
+import { triggerKobisLookup } from '@/utils/kobisLookup';
 
 // 필드 목록 우측 드로어(#355, 구 FieldEditSheet 대체) — 크롭 모달·로고 훅을 끌어오고 열기 전엔
 // 안 쓰므로 dynamic(ssr:false)로 분리, 첫 열기에 로드된다.
@@ -52,6 +53,12 @@ const InPlaceFieldEditor = dynamic(
 
 // 포스터 탭(#259) 크롭 모달 — 로고 크롭과 같은 컴포넌트다. 탭 전엔 안 쓰므로 dynamic.
 const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ssr: false });
+
+// TMDB 인앱 포스터 검색 모달(#537) — 랜딩의 보조 CTA를 누르기 전엔 안 쓰므로 dynamic.
+const TmdbPosterModal = dynamic(
+  () => import('@/components/TmdbPosterModal').then((m) => m.TmdbPosterModal),
+  { ssr: false },
+);
 
 // 서브메뉴 행 리딩 아이콘(#374) — 시안 Siyan-C-v8 L296-322와 동일한 18px/stroke 1.7 계열.
 // 멀티 서브패스도 단일 d 문자열로 합쳐 MenuRow가 <path> 하나로 렌더한다.
@@ -472,6 +479,25 @@ export function MobileEditorShell({
     if (file) crop.openFile(file);
     e.target.value = '';
   }
+
+  // TMDB 인앱 포스터 검색(#537) — 판본이 확정되면 그 Blob을 File로 감싸 기존 크롭 파이프라인에
+  // 그대로 태운다(c1·c7). 별도 상태머신을 안 만드는 이유: crop.openFile이 이미 objectURL 발급·
+  // 재크롭용 원본 보관·commit 시 posterOriginal 영속까지 다 하므로, 소스가 파일 선택이든 TMDB
+  // 다운로드든 이 지점부터는 완전히 같은 경로다.
+  const [tmdbOpen, setTmdbOpen] = useState(false);
+  const handleTmdbSelect = useCallback((file: File, title: string) => {
+    setTmdbOpen(false);
+    crop.openFile(file);
+    // KOBIS 보강(c8) — 이미 채워진 필드는 fillEmptyMovieInfo가 덮지 않는다. OcrUploadCard의
+    // 같은 트리거(triggerKobisLookup)를 재사용(c8 근거) — dedup 캐시도 같이 공유된다.
+    triggerKobisLookup(title).then((kobisInfo) => {
+      photo.fillEmptyMovieInfo(kobisInfo);
+    });
+  }, [crop, photo.fillEmptyMovieInfo]);
+  const handleTmdbFallback = useCallback(() => {
+    setTmdbOpen(false);
+    handlePosterTap();
+  }, [handlePosterTap]);
   // 파일 드롭 업로드(#607) — 데스크톱 ImageUploader의 드롭존이 지워지며 같이 사라졌던 경로다.
   // 프레임 안이라도 데스크톱에선 Finder에서 끌어다 놓는 게 여전히 자연스러운 진입이라 되살린다.
   // 되살린 건 **첫 업로드 CTA 하나**다. ImageUploader는 업로드 후 썸네일에도 드롭을 받았지만,
@@ -867,6 +893,7 @@ export function MobileEditorShell({
             // 사라진다(D2 (a): 이 inline 상태 자체가 진입점). #614 걷는 조건 ③이 이 계약을 고정한다.
             mode={croppedImageUrl || isMax ? 'hidden' : showLanding ? 'overlay' : 'inline'}
             onCta={handlePosterTap}
+            onTmdbSearch={() => setTmdbOpen(true)}
             onSkip={() => setLandingDismissed(true)}
             dropProps={posterDropProps}
             dragOver={posterDragOver}
@@ -1052,6 +1079,14 @@ export function MobileEditorShell({
           onComplete={handlePosterCropComplete}
           isProcessing={crop.isCropping}
           layout={previewComponents.layout}
+        />
+      )}
+
+      {tmdbOpen && (
+        <TmdbPosterModal
+          onClose={() => setTmdbOpen(false)}
+          onSelect={handleTmdbSelect}
+          onFallbackUpload={handleTmdbFallback}
         />
       )}
 
