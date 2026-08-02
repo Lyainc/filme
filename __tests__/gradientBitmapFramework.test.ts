@@ -77,11 +77,29 @@ describe('#506 c1/c2 — 굽기 산출물과 캐시 규율', () => {
     const svg = decodeURIComponent(gradientBitmapSvg(gloss, 1.5));
     // gloss 피크 alpha 0.42가 스케일 없이 그대로 있어야 한다.
     expect(svg).toContain('stop-opacity="0.42"');
-    // 늘려 그리면 정규화 좌표가 그대로 박스 좌표가 되는 형태여야 한다.
-    expect(svg).toContain('viewBox="0 0 1 1"');
-    expect(svg).toContain('preserveAspectRatio="none"');
+    // 끝점은 실좌표로 준다 — 기본 objectBoundingBox는 bbox를 단위 정사각으로 정규화한 뒤
+    // 뷰포트 전단을 얹어 각도가 어긋난다(격리 대조에서 scodix max 149/255로 잡혔다).
+    expect(svg).toContain('gradientUnits="userSpaceOnUse"');
+    // 굽는 캔버스가 목표 박스와 같은 종횡비여야 preserveAspectRatio="none" 늘리기가 각도를 보존한다.
+    const m = svg.match(/<svg[^>]*\swidth="(\d+)"[^>]*\sheight="(\d+)"[^>]*\sviewBox="0 0 (\d+) (\d+)"/);
+    expect(m).not.toBeNull();
+    const [, w, h, vw, vh] = m!.map(Number);
     // 고유 크기가 없으면 CSS background로는 뜨지만 new Image() 로드가 서지 않아 저장이 멈춘다.
-    expect(svg).toMatch(/<svg[^>]*\swidth="\d+"[^>]*\sheight="\d+"/);
+    expect(w).toBeGreaterThan(0);
+    expect(h).toBeGreaterThan(0);
+    expect(vw).toBe(w);
+    expect(vh).toBe(h);
+    expect(h / w).toBeCloseTo(1.5, 2); // 요청한 aspect
+    expect(svg).toContain('preserveAspectRatio="none"');
+  });
+
+  test('CSS의 premultiplied 알파 보간을 재현한다 — 색과 알파가 함께 변하는 구간의 중간색', () => {
+    // scodix 44%(검정 α0.22) → 49%(흰색 α0.85)의 중간 46.5%. premultiplied면
+    // α=0.535, rgb=(0×0.22×0.5 + 255×0.85×0.5)/0.535 ≈ 203. 색·알파를 따로 보간하면 128이 된다.
+    const svg = decodeURIComponent(gradientBitmapSvg(TEXTURE_RECIPES.scodix as GradientRecipe, 1.5));
+    const m = svg.match(/offset="46\.5%" stop-color="rgb\((\d+),/);
+    expect(m).not.toBeNull();
+    expect(Number(m![1])).toBeGreaterThan(190); // 128(비-premultiplied)과 확실히 갈린다
   });
 
   test('gradient 4종 전부 구워진다(레시피 누락 시 컴파일이 아니라 여기서 잡힌다)', () => {
