@@ -1069,24 +1069,24 @@ export const Poster = memo(function Poster({
           div(inset은 항상 신뢰 가능)가 맡고, img는 그 안에서 기존처럼 inset:0+100%로 채운다. */}
       <div style={{ position: 'absolute', top: fit === 'contain' ? frameInsetY : 0, bottom: fit === 'contain' ? frameInsetY : 0, left: 0, right: 0 }}>
         {src && (
-        <img
-          {...posterImgProps}
-          src={src}
-          alt=""
-          data-role="poster"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: fit,
-            objectPosition: align === 'top' ? '50% 0%' : '50% 50%',
-            filter,
-            ...(featherMask ? { maskImage: featherMask, WebkitMaskImage: featherMask } : {}),
-          }}
-          draggable={false}
-          crossOrigin="anonymous"
-        />
+          <img
+            {...posterImgProps}
+            src={src}
+            alt=""
+            data-role="poster"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: fit,
+              objectPosition: align === 'top' ? '50% 0%' : '50% 50%',
+              filter,
+              ...(featherMask ? { maskImage: featherMask, WebkitMaskImage: featherMask } : {}),
+            }}
+            draggable={false}
+            crossOrigin="anonymous"
+          />
         )}
       </div>
       {/* z-order(#475 c2/c3): 재질 결(아래) → 코팅 광택(위). 코팅은 재질 CSS filter가 이미 적용된

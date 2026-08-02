@@ -70,7 +70,8 @@ const posterFileInput = () =>
   document.querySelector('input[type="file"][accept*="jpeg"]') as HTMLInputElement;
 const pngFile = (name: string) => new File([name], name, { type: 'image/png' });
 
-// canExport(hasPoster·title·titleOg·releaseDate)를 채워 "완료" 탭이 실제로 onDone까지 도달하게 한다.
+// canExport(title·titleOg·releaseDate — 포스터는 #631로 조건에서 빠졌다)를 채워 "완료" 탭이
+// 실제로 onDone까지 도달하게 한다.
 function seedExportableDraft() {
   window.localStorage.setItem(
     'filme:phototicket:v1',

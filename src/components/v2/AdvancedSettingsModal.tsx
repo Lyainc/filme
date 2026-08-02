@@ -121,7 +121,7 @@ export function AdvancedSettingsModal({
         >
           {/* 툴바 설정(#387→#447→#574) — 방향(가로/세로) × 배치(고정/이동) 라디오 4종 +
               이동식일 때 좌/우 가장자리 스냅(WCAG 2.2 SC 2.5.7 비드래그 대체 경로).
-              게이팅(croppedImageUrl && !isMax)은 부모가 쥔다 — 툴바가 안 떠 있으면 스냅이 조용히
+              게이팅(canvasReady && !isMax, #631)은 부모가 쥔다 — 툴바가 안 떠 있으면 스냅이 조용히
               no-op이 되므로(claude-review PR #405 P1) 모달 진입 자체를 막는 쪽이 맞다. */}
           <section className={CARD}>
             <h3 className="px-2.5 pb-1 pt-1.5 text-[12px] font-semibold text-fg">툴바 설정</h3>

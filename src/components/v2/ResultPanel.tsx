@@ -157,7 +157,9 @@ export function ResultPanel({
     } finally {
       capturingRef.current = false;
     }
-  }, [croppedImageUrl, layout.id, layout.width, layout.height, movieInfo.title]);
+    // croppedImageUrl은 #631로 가드가 빠져 본문에서 안 쓴다 — deps에 남기면 포스터가 바뀔 때마다
+    // 콜백만 새로 만들어진다(캡처 대상은 ticketRef의 DOM이라 최신성과 무관).
+  }, [layout.id, layout.width, layout.height, movieInfo.title]);
 
   // 완성 티켓을 캡처 → Blob 업로드(/api/ticket) → 발급된 /t/<id> URL을 반환·상태 갱신.
   // og:image가 붙은 퍼마링크라 수신자가 미리보기를 보고 "나도 만들기"로 유입되는 루프(#91).
@@ -221,7 +223,8 @@ export function ResultPanel({
     setPermalink(url);
     setPermaState('success');
     return url;
-  }, [croppedImageUrl, layout.id, layout.width, layout.height, movieInfo.title, movieInfo.titleOg, movieInfo.releaseDate]);
+    // 위 handleDownload와 같은 이유로 croppedImageUrl은 뺀다(#631로 가드 제거, 본문 미사용).
+  }, [layout.id, layout.width, layout.height, movieInfo.title, movieInfo.titleOg, movieInfo.releaseDate]);
 
   // 공통 클립보드 복사 — 성공/거부에 따라 copyState 라벨을 갱신한다(기존 피드백 패턴 재사용).
   const copyToClipboard = useCallback(async (value: string) => {

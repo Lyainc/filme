@@ -7,9 +7,11 @@
  */
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
 import { render, screen, cleanup } from '@testing-library/react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import userEvent from '@testing-library/user-event';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
+import { Poster } from '@/components/moods/_shared';
 import { mobileShellProps } from './shellHarness';
 
 function Harness() {
@@ -59,5 +61,26 @@ describe('포스터 없이 시작 (#631)', () => {
     await user.click(screen.getByRole('button', { name: '고급 설정' }));
 
     expect(screen.getByRole('dialog', { name: '고급 설정' })).toBeTruthy();
+  });
+});
+
+describe('Poster src=null — export 필터 계약 (#631)', () => {
+  test('포스터가 없으면 data-poster-root를 안 달고 <img>도 안 그린다', () => {
+    const html = renderToStaticMarkup(<Poster src={null} background="#101010" />);
+
+    // captureToImage는 data-poster-root 서브트리를 html-to-image에서 제외하고 canvas로 재합성한다.
+    // 재합성할 래스터가 없는데 속성이 붙으면 그 자리가 배경도 없는 구멍으로 남는다.
+    expect(html).not.toContain('data-poster-root');
+    // src=""는 문서 URL을 다시 받아와 decodeImage가 naturalWidth 0을 '깨진 이미지'로 보고
+    // 캡처를 통째로 중단시킨다 — <img>를 아예 안 그리는 게 계약이다.
+    expect(html).not.toContain('<img');
+    expect(html).toContain('#101010');
+  });
+
+  test('포스터가 있으면 data-poster-root와 <img>가 그대로 붙는다(대조군)', () => {
+    const html = renderToStaticMarkup(<Poster src="blob:test-poster" background="#101010" />);
+
+    expect(html).toContain('data-poster-root="true"');
+    expect(html).toContain('blob:test-poster');
   });
 });

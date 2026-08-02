@@ -66,7 +66,7 @@ export default function Home() {
 
   // html 배경 동기화(#402→#415). MobileEditorShell은 이제 theme를 그대로 따르므로(#415) html의
   // 기존 .theme-dark 동기화(위 useEffect)와 저절로 맞아 별도 forcing이 필요 없다. ResultStage만
-  // 예외 — 포스터가 항상 있어 테마와 무관하게 상시 .chrome-dark다(#357, 이 이슈의 범위 밖) → html도
+  // 예외 — 테마와 무관하게 상시 .chrome-dark다(#357, 이 이슈의 범위 밖) → html도
   // resultOpen일 때만 같이 다크로 맞춰 라이트 테마에서 결과화면 진입 시 배경 블리드(#402)를 막는다.
   useEffect(() => {
     document.documentElement.classList.toggle('chrome-dark', resultOpen);
