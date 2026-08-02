@@ -601,8 +601,8 @@ export function MobileEditorShell({
             <line x1="4" y1="17" x2="20" y2="17" />
           </svg>
         </button>
-        {/* 완료(다음)는 포스터가 있어야 렌더(v8 §1·시안 nextShown) — 랜딩은 업로드 액션에만
-            집중(#363). 업로드 후 canExport 전까지는 기존대로 aria-disabled + 사유 토스트. */}
+        {/* 완료(다음)는 편집 캔버스가 서야 렌더(canvasReady, #631 — 포스터 유무가 아니다) — 랜딩은
+            진입 액션에만 집중(#363). 진입 후 canExport 전까지는 기존대로 aria-disabled + 사유 토스트. */}
         {canvasReady && (
         <button
           type="button"
