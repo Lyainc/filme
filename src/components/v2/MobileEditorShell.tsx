@@ -472,6 +472,11 @@ export function MobileEditorShell({
     clearTimeout(clearArmTimer.current);
     setMenuOpen(false); // 닫힘 effect가 clearArmed도 함께 해제
     photo.clearDraft();
+    // heroLayout도 함께 리셋 — 안 하면 편집 중 바꾼 무드가 로컬 미러에 남아, 리셋 직후 재진입
+    // (포스터부터 올리기·직접 입력)에서 commitHeroLayout이 리셋 직전 무드를 되살린다(claude-review
+    // PR #636 3차 P0). clearDraft가 되돌리는 INITIAL_STATE.components.layout과 같은 값으로 고정
+    // (usePhototicket.ts) — clearDraft 직후엔 photo.state가 아직 비동기라 그 값을 못 읽는다.
+    setHeroLayout('minimal');
     // 초기화는 새 문서니까 랜딩도 처음 상태로 — 안 되돌리면 포스터도 draft도 없는 빈 셸에 남는다(#614).
     setLandingDismissed(false);
     // 초기화는 새 문서 — undo로 못 돌아간다(로고·포스터 blob이 revoke돼
