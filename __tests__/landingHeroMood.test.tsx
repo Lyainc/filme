@@ -8,7 +8,7 @@
  *    크롭 프리셋이 랜딩에서 고른 무드와 어긋나지 않는다(#529).
  */
 import { describe, expect, test, afterAll, afterEach, mock } from 'bun:test';
-import { render, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, waitFor, within, act } from '@testing-library/react';
 import type { PhototicketState } from '@/types';
 import { mobileShellProps } from './shellHarness';
 
@@ -128,6 +128,36 @@ describe('랜딩 무드칩은 훑어보는 동안 진짜 state를 안 건드린�
       dataTransfer: { files: [new File(['x'], 'poster.png', { type: 'image/png' })] },
     });
 
+    expect(captured.components.layout).toBe('stub');
+  });
+});
+
+// draft 복원(usePhototicket 마운트 후 useEffect, 비동기)이 heroLayout의 useState 초기화보다
+// 늦게 끝나면, 무드칩을 한 번도 안 건드린 재방문자가 "직접 입력"·"포스터부터 올리기"를 눌렀을 때
+// commitHeroLayout이 굳어 있던 기본값('minimal')으로 복원된 무드를 되돌려버린다(fresh-context
+// 리뷰 P0). MobileEditorShell의 draftRestored 재동기화 effect가 이걸 막는지 검증한다.
+describe('draft 복원 무드가 진입 시 덮이지 않는다 (fresh-context 리뷰 P0)', () => {
+  const STORAGE_KEY = 'filme:phototicket:v1';
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  test('non-default 무드로 복원된 draft에서 "직접 입력"을 눌러도 무드가 유지된다', async () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ movieInfo: { title: '인터스텔라' }, components: { layout: 'stub' } })
+    );
+
+    await act(async () => {
+      render(<Harness />);
+    });
+    await waitFor(() => expect(captured.components.layout).toBe('stub'));
+
+    fireEvent.click(screen.getByTestId('landing-skip-poster'));
+
+    // commitHeroLayout이 heroLayout(재동기화됐다면 'stub')과 실제 state('stub')가 같다고 보고
+    // no-op해야 한다 — 재동기화가 안 됐다면 heroLayout이 'minimal'에 굳어 있어 여기서 되돌아간다.
     expect(captured.components.layout).toBe('stub');
   });
 });

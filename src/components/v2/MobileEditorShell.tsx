@@ -277,6 +277,16 @@ export function MobileEditorShell({
   // commitHeroLayout이 실제로 진입(포스터 CTA·직접 입력·OCR 성공)하는 시점에만 진짜 state로 흘려보내
   // 크롭 프리셋(#529)이 랜딩에서 고른 무드와 어긋나지 않게 한다.
   const [heroLayout, setHeroLayout] = useState<LayoutId>(previewComponents.layout);
+  // draft 복원(usePhototicket의 마운트 후 useEffect, 비동기)이 위 useState 초기화보다 늦게
+  // 끝나면 heroLayout이 INITIAL_STATE 기본값('minimal')에 굳은 채로 남는다 — 복원된 무드가
+  // 아니라 그 기본값으로 commitHeroLayout이 되돌려버린다(fresh-context 리뷰 P0). draftRestored가
+  // true로 바뀌는 시점(복원 완료)에 한 번 재동기화한다. 그 이후 무드칩 탐색은 이 effect가 다시
+  // 안 건드린다 — draftRestored는 마운트 이후 한 번만 false→true로 바뀌므로 사용자가 칩을
+  // 눌러 heroLayout이 바뀌어도 이 effect가 재발동해 되돌리는 일은 없다.
+  useEffect(() => {
+    if (photo.draftRestored) setHeroLayout(photo.state.components.layout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photo.draftRestored]);
   const commitHeroLayout = useCallback(() => {
     if (heroLayout !== photo.state.components.layout) {
       photo.updateComponents({ layout: heroLayout });
