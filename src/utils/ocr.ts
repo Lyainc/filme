@@ -9,6 +9,8 @@ import { preprocessForOcr } from './ocrPreprocess';
 export type OcrResult = Partial<MovieInfo> & {
   chain?: string;
   format?: string;
+  /** shared rate-limit 윈도우 소진(429) — "인식 실패"와 원인이 달라 별도 안내가 필요하다(#635 c2). */
+  rateLimited?: boolean;
 };
 
 /** Blob → 순수 base64 문자열(data URL prefix 제거). */
@@ -53,7 +55,7 @@ export async function runOcr(file: File): Promise<OcrResult> {
       body: JSON.stringify({ image: base64, mimeType }),
     });
 
-    if (!res.ok) return {};
+    if (!res.ok) return res.status === 429 ? { rateLimited: true } : {};
 
     // 서버는 채워진 string 필드만 담은 객체를 반환한다. 무검증 캐스트 대신
     // 최소한 객체 형태인지 확인하고, 아니면 빈 객체를 돌려준다.

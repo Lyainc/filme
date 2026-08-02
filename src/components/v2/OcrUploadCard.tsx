@@ -4,6 +4,8 @@ import { runOcr } from '@/utils/ocr';
 import { triggerKobisLookup } from '@/utils/kobisLookup';
 import { ALLOWED_MIME, MAX_BYTES, chainLabelFor } from '@/utils/ocrConstants';
 import { STAMP_LABEL_MAX } from '@/constants/fields';
+import { useMatchMedia } from '@/hooks/useMatchMedia';
+import { Sprocket } from './Sprocket';
 
 export type OcrDirectField = 'theater' | 'screen' | 'watchDate' | 'watchTime' | 'seat' | 'bookingNumber';
 export const OCR_DIRECT_FIELDS: OcrDirectField[] = [
@@ -166,6 +168,14 @@ export function OcrUploadCard({
     try {
       const result = await runOcr(file);
 
+      // shared 윈도우 소진(#635 c2) — "인식된 정보가 없어요"와 원인이 다르므로 갈라 안내하고,
+      // 아래 필드 적용 로직(전부 빈 결과이므로 어차피 no-op)은 타지 않는다. 이탈 경로는 이 토스트가
+      // 아니라 Landing의 exit row(포스터부터 올리기 · 직접 입력)가 상시 담당한다.
+      if (result.rateLimited) {
+        showToast('지금 요청이 많아요. 잠시 후 다시 시도하거나 직접 입력해 주세요.');
+        return;
+      }
+
       // 텍스트 라벨을 바로 채워 로고 없이도 체인/포맷이 표시되게 한다(#141 (7)·#348). 이미지를
       // 올리면 ChainStamp/FormatStamp가 이미지를 우선하므로 라벨은 자동으로 가려진다.
       // 변경 전 값을 스냅샷해 undo가 라벨/노출을 정확히 되돌리게 한다(#141 리뷰 P1).
@@ -237,6 +247,7 @@ export function OcrUploadCard({
   // 랜딩/드로어 문구 분기(#424) — aria-label도 같이 바꿔 보이는 텍스트와 접근명을 맞춘다
   // (WCAG 2.5.3 Label in Name — 스크린리더가 화면과 다른 문구를 읽으면 안 된다).
   const idleLabel = context === 'landing' ? '티켓 스크린샷으로 자동입력' : '스크린샷으로 채우기';
+  const prefersReducedMotion = useMatchMedia('(prefers-reduced-motion: reduce)');
 
   return (
     <div className={`relative ${className}`}>
@@ -249,27 +260,48 @@ export function OcrUploadCard({
         onChange={handleChange}
       />
 
-      {/* 포스터 드롭존이 주연, 자동입력은 보조 액션으로 위계를 낮춘다(#142 (18)).
-          큰 점선 카드 대신 한 줄짜리 텍스트 버튼 — 핵심 동작(파일 선택→runOcr→주입→undo)은 유지.
-          화살표(⤷)는 랜딩에서만 — 위 드롭존을 가리키는 용도라 드로어(가리킬 대상 없음)엔 안 맞는다(#424). */}
-      <button
-        type="button"
-        onClick={handleClick}
-        aria-disabled={isProcessing}
-        aria-busy={isProcessing}
-        aria-label={idleLabel}
-        data-touch="44"
-        className="group inline-flex min-h-touch items-center gap-1.5 rounded-chip text-[13px] text-fg-muted transition-colors hover:text-accent aria-disabled:cursor-default aria-disabled:opacity-70"
-      >
-        {context === 'landing' && <span aria-hidden="true" className="text-fg-faint">⤷</span>}
-        <span className={isProcessing ? 'text-accent animate-pulse' : 'text-fg-faint group-hover:text-accent'}>
-          <ScanIcon size={16} />
-        </span>
-        <span>{isProcessing ? '티켓 인식 중...' : idleLabel}</span>
-        {!isProcessing && (
-          <span aria-hidden="true" className="text-fg-faint transition-transform group-hover:translate-x-0.5">›</span>
-        )}
-      </button>
+      {context === 'landing' ? (
+        // OCR이 주 CTA다(#635, #142 위계 반전 — 포스터 CTA가 이제 보조). PrimaryCta와 같은
+        // 시각 언어(accent 채움 + 스프로킷 로딩)를 여기서 직접 낸다 — isProcessing/파일 input을
+        // OcrUploadCard가 쥐고 있어 별도 컴포넌트로 쪼개면 상태를 다시 끌어올려야 한다.
+        <button
+          type="button"
+          onClick={handleClick}
+          disabled={isProcessing}
+          aria-busy={isProcessing}
+          aria-label={idleLabel}
+          data-touch="44"
+          className="w-full min-h-[44px] rounded-field-sm flex items-center justify-center gap-2 font-semibold text-sm transition-[background-color,color,opacity,transform] duration-200 active:scale-[0.97] bg-accent text-accent-ink hover:bg-accent-hover cursor-pointer disabled:opacity-70 disabled:cursor-default"
+        >
+          {isProcessing ? (
+            <span className={prefersReducedMotion ? '' : 'animate-sprocket-spin'}>
+              <Sprocket size={16} />
+            </span>
+          ) : (
+            <ScanIcon size={16} />
+          )}
+          <span>{isProcessing ? '티켓 인식 중...' : idleLabel}</span>
+        </button>
+      ) : (
+        // 드로어 — 업로드 후 유일한 OCR 진입점이라 여전히 보조 문법(한 줄짜리 텍스트 버튼).
+        <button
+          type="button"
+          onClick={handleClick}
+          aria-disabled={isProcessing}
+          aria-busy={isProcessing}
+          aria-label={idleLabel}
+          data-touch="44"
+          className="group inline-flex min-h-touch items-center gap-1.5 rounded-chip text-[13px] text-fg-muted transition-colors hover:text-accent aria-disabled:cursor-default aria-disabled:opacity-70"
+        >
+          <span className={isProcessing ? 'text-accent animate-pulse' : 'text-fg-faint group-hover:text-accent'}>
+            <ScanIcon size={16} />
+          </span>
+          <span>{isProcessing ? '티켓 인식 중...' : idleLabel}</span>
+          {!isProcessing && (
+            <span aria-hidden="true" className="text-fg-faint transition-transform group-hover:translate-x-0.5">›</span>
+          )}
+        </button>
+      )}
 
       {toast && (
         <div className="absolute top-full left-0 mt-2 max-w-[260px] bg-fg text-surface-elevated text-xs font-medium px-3 py-1.5 rounded-chip shadow-lg animate-fade-in z-10">

@@ -33,7 +33,7 @@ import type { Area } from '@/utils/imageCrop';
 import { useEditHistory } from '@/hooks/useEditHistory';
 import { useOcrUndo } from '@/hooks/useOcrUndo';
 import type { usePhototicket } from '@/hooks/usePhototicket';
-import type { MovieInfo, TicketComponents, TicketField } from '@/types';
+import type { LayoutId, MovieInfo, TicketComponents, TicketField } from '@/types';
 import { isStampTarget, STAMP_KEYS, type SheetTarget } from '@/constants/fields';
 import { triggerKobisLookup } from '@/utils/kobisLookup';
 
@@ -269,6 +269,19 @@ export function MobileEditorShell({
   // canvasReady를 연다. 랜딩 자체를 숨길지는 별개 판정(D1, 아래 Landing mode) — croppedImageUrl
   // 없이 landingDismissed만으로는 랜딩을 안 숨긴다. #614 걷는 조건 ③과 계약이 같다.
   const canvasReady = !!croppedImageUrl || landingDismissed;
+  // 랜딩 히어로 무드 선택(#615) — 진짜 components.layout이 아니라 이 로컬 state를 미리보기가 읽는다.
+  // photo.updateComponents로 바로 커밋하면 dirtyTick이 올라 autosave-draft 이펙트(usePhototicket)가
+  // 1초 뒤 draft를 쓰고, 다음 방문에 draftRestored=true가 돼 무드칩만 훑어본 방문자에게도 랜딩(마케팅
+  // 카피·OCR CTA)이 영구히 숨는다(fresh-context 리뷰가 잡은 회귀) — 포스터/OCR/직접입력 어느 것도
+  // 안 건드렸는데 "이미 시작한 세션"으로 오판되면 안 된다. 그래서 탐색은 로컬로 두고, 아래
+  // commitHeroLayout이 실제로 진입(포스터 CTA·직접 입력·OCR 성공)하는 시점에만 진짜 state로 흘려보내
+  // 크롭 프리셋(#529)이 랜딩에서 고른 무드와 어긋나지 않게 한다.
+  const [heroLayout, setHeroLayout] = useState<LayoutId>(previewComponents.layout);
+  const commitHeroLayout = useCallback(() => {
+    if (heroLayout !== photo.state.components.layout) {
+      photo.updateComponents({ layout: heroLayout });
+    }
+  }, [heroLayout, photo.state.components.layout, photo.updateComponents]);
   const clearArmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // 습관적 더블탭이 arm과 실행을 한 번에 뚫지 않게 arm 직후 재탭은 무시(claude-review PR #375 P1).
   const clearArmedAt = useRef(0);
@@ -517,7 +530,12 @@ export function MobileEditorShell({
       setPosterDragOver(false);
       if (crop.isCropping) return;
       const file = e.dataTransfer.files?.[0];
-      if (file && POSTER_ACCEPT.includes(file.type)) crop.openFile(file);
+      if (!file || !POSTER_ACCEPT.includes(file.type)) return;
+      // 랜딩 히어로에서 훑어보던 무드를 커밋(#615) — 이 props는 랜딩 오버레이 한 곳에서만
+      // 쓰이므로(단일 소비처) onCta처럼 호출부를 감쌀 필요 없이 여기서 바로 불러도 안전하다.
+      // 캔버스가 선 뒤(포스터 교체 등)엔 이 드롭존 자체가 랜딩 안에만 있어 재진입하지 않는다.
+      commitHeroLayout();
+      crop.openFile(file);
     },
   };
   async function handlePosterCropComplete(area: Area, preserveRatio: boolean) {
@@ -892,11 +910,27 @@ export function MobileEditorShell({
             // 걸면 "포스터 없이 시작" 직후에도 랜딩이 숨어 포스터를 나중에 추가할 진입점이
             // 사라진다(D2 (a): 이 inline 상태 자체가 진입점). #614 걷는 조건 ③이 이 계약을 고정한다.
             mode={croppedImageUrl || isMax ? 'hidden' : showLanding ? 'overlay' : 'inline'}
-            onCta={handlePosterTap}
-            onTmdbSearch={() => setTmdbOpen(true)}
-            onSkip={() => setLandingDismissed(true)}
+            // commitHeroLayout은 이 세 진입점(handlePosterTap 자체는 아님 — '포스터 교체' 등
+            // 캔버스가 선 뒤의 재사용 호출까지 옛 heroLayout으로 되돌리면 안 된다)과 아래
+            // onOcrApply에서만 부른다 — 무드칩을 훑어보기만 한 방문은 실제 state를 안 건드린다.
+            onCta={() => {
+              commitHeroLayout();
+              handlePosterTap();
+            }}
+            onTmdbSearch={() => {
+              commitHeroLayout();
+              setTmdbOpen(true);
+            }}
+            onSkip={() => {
+              commitHeroLayout();
+              setLandingDismissed(true);
+            }}
             dropProps={posterDropProps}
             dragOver={posterDragOver}
+            heroMovieInfo={photo.state.movieInfo}
+            heroComponents={previewComponents}
+            heroLayout={heroLayout}
+            onLayoutChange={setHeroLayout}
           >
             <OcrUploadCard
               setInfo={photo.updateMovieInfo}
@@ -904,6 +938,7 @@ export function MobileEditorShell({
               // 스크린샷이 인식되면 랜딩을 걷는다(#614 걷는 조건 ③) — 사용자가 이미 편집에
               // 들어온 것이고, 채워진 필드가 오버레이 뒤에 가려져 있으면 안 된다.
               onOcrApply={(params) => {
+                commitHeroLayout();
                 setLandingDismissed(true);
                 ocr.apply(params);
               }}
