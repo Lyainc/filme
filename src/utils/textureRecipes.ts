@@ -271,6 +271,45 @@ export function gradientLineEndpoints(
 }
 
 /**
+ * CSS gradient의 **premultiplied 알파 보간**을 SVG stop 목록으로 재현한다(#506 c4).
+ *
+ * CSS `linear-gradient`는 인접 stop 사이를 premultiplied(색×알파) 공간에서 보간하는데, SVG
+ * `<linearGradient>`의 `stop-color`/`stop-opacity`는 색과 알파를 **따로** 보간한다. 그래서 색과
+ * 알파가 **함께** 변하는 구간에서만 갈린다 — 실측이 그대로다: 색이 고정인 gloss와 알파가 고정인
+ * hologram은 기하만 맞추면 max Δ 1(반올림)인데, 둘 다 변하는 metal(18)·scodix(45)만 남았다.
+ * 굽는 쪽에서 CSS와 같은 공식으로 촘촘히 샘플링해 그 차이를 없앤다.
+ *
+ * 샘플 간격은 0.25%다. 1%로 시작했더니 밴드가 제일 좁은 scodix(38~60%, 라인의 22%)만 max Δ 7이
+ * 남았고, 0.25%로 줄이니 나머지와 같은 반올림 수준으로 떨어졌다. 원래 stop 위치도 반드시 포함시킨다
+ * — 꺾이는 지점이 샘플 격자에 안 걸리면 피크가 뭉개진다.
+ */
+function premultipliedStops(stops: TextureStop[]): { at: number; rgb: [number, number, number]; alpha: number }[] {
+  const sorted = [...stops].sort((a, b) => a.at - b.at);
+  const marks: number[] = [];
+  for (let t = 0; t <= 400; t += 1) marks.push(t / 4);
+  for (const s of sorted) if (!marks.includes(s.at)) marks.push(s.at);
+  marks.sort((x, y) => x - y);
+
+  return marks.map((t) => {
+    let i = 0;
+    while (i < sorted.length - 1 && sorted[i + 1].at < t) i += 1;
+    const a = sorted[i];
+    const b = sorted[Math.min(i + 1, sorted.length - 1)];
+    if (b.at === a.at || t <= a.at) return { at: t, rgb: a.rgb, alpha: a.alpha };
+    if (t >= b.at) return { at: t, rgb: b.rgb, alpha: b.alpha };
+    const u = (t - a.at) / (b.at - a.at);
+    const alpha = a.alpha * (1 - u) + b.alpha * u;
+    // premultiplied 보간 후 되나누기. alpha=0이면 색이 무의미하므로 이웃 색을 그대로 쓴다.
+    const rgb = (alpha > 0
+      ? ([0, 1, 2] as const).map((k) =>
+          Math.round((a.rgb[k] * a.alpha * (1 - u) + b.rgb[k] * b.alpha * u) / alpha),
+        )
+      : [...a.rgb]) as [number, number, number];
+    return { at: t, rgb, alpha: Math.round(alpha * 1e4) / 1e4 };
+  });
+}
+
+/**
  * gradient 굽기 해상도의 긴 변(px) — 레시피가 소유하는 굽기 파라미터(#506 c3).
  *
  * 값 자체보다 **있다는 것**이 중요하다: viewBox만 있는 SVG는 CSS background-image로는 뜨지만
@@ -303,8 +342,14 @@ export function gradientBitmapSvg(recipe: GradientRecipe, aspect: number): strin
   const cached = gradientSvgCache.get(key);
   if (cached) return cached;
 
+  const w = aspect >= 1 ? Math.round(GRADIENT_BAKE_PX / aspect) : GRADIENT_BAKE_PX;
+  const h = aspect >= 1 ? GRADIENT_BAKE_PX : Math.round(GRADIENT_BAKE_PX * aspect);
+  // 끝점을 **실좌표(userSpaceOnUse)** 로 준다. 기본값 objectBoundingBox는 rect의 bbox를 단위
+  // 정사각으로 정규화한 뒤 뷰포트 전단을 얹어 각도가 어긋난다 — 격리 대조에서 밴드 각도가 눈에
+  // 띄게 갈리는 것으로 잡혔다(scodix max 149/255). 굽는 캔버스를 목표 박스와 같은 종횡비로 잡고
+  // 끝점을 그 픽셀 좌표로 주면, preserveAspectRatio="none" 늘리기가 각도를 보존한다.
   const { x1, y1, x2, y2 } = gradientLineEndpoints(recipe.angle, aspect);
-  const stops = recipe.stops
+  const stops = premultipliedStops(recipe.stops)
     .map((s) => `<stop offset="${s.at}%" stop-color="rgb(${s.rgb.join(',')})" stop-opacity="${s.alpha}"/>`)
     .join('');
   // **고유 크기(width/height)는 필수다.** viewBox만 있는 SVG는 CSS background-image로는 멀쩡히
@@ -312,12 +357,11 @@ export function gradientBitmapSvg(recipe: GradientRecipe, aspect: number): strin
   // 경로가 그대로 멈춘다 — 실브라우저에서 export가 "저장 중..."에서 안 끝나는 것으로 잡혔다.
   // 긴 변 512는 굽기 해상도(c3): gradient는 저주파라 이 정도면 늘려도 육안 차이가 없고, 가장
   // 좁은 밴드를 가진 scodix(38~60%, 라인의 22%)도 512 기준 110px이라 계단이 안 보인다.
-  const w = aspect >= 1 ? Math.round(GRADIENT_BAKE_PX / aspect) : GRADIENT_BAKE_PX;
-  const h = aspect >= 1 ? GRADIENT_BAKE_PX : Math.round(GRADIENT_BAKE_PX * aspect);
   const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 1 1" preserveAspectRatio="none">` +
-    `<defs><linearGradient id="g" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}">${stops}</linearGradient></defs>` +
-    `<rect width="1" height="1" fill="url(#g)"/>` +
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">` +
+    `<defs><linearGradient id="g" gradientUnits="userSpaceOnUse" ` +
+    `x1="${x1 * w}" y1="${y1 * h}" x2="${x2 * w}" y2="${y2 * h}">${stops}</linearGradient></defs>` +
+    `<rect width="${w}" height="${h}" fill="url(#g)"/>` +
     `</svg>`;
   const url = `data:image/svg+xml,${encodeURIComponent(svg)}`;
   gradientSvgCache.set(key, url);
