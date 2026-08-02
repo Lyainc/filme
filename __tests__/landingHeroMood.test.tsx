@@ -10,6 +10,7 @@
 import { useState } from 'react';
 import { describe, expect, test, afterAll, afterEach, mock } from 'bun:test';
 import { render, screen, cleanup, fireEvent, waitFor, within, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { PhototicketState } from '@/types';
 import { mobileShellProps } from './shellHarness';
 
@@ -200,5 +201,32 @@ describe('드롭존 진입이 debounce된 previewComponents가 아니라 실시�
     // ('minimal', 고정)를 읽으면 0.6666...(2/3) — 고침 전엔 후자가 나와 이 assertion이 깨진다.
     const aspect = Number(within(dialog).getByTestId('crop-frame').getAttribute('data-aspect'));
     expect(aspect).toBeCloseTo(1.5, 2);
+  });
+});
+
+// heroLayout은 초기화(handleClearTap) 경로에서 재동기화되지 않았다(claude-review PR #636 3차
+// P0) — 편집 중 바꾼 무드가 로컬 미러에 남은 채로 clearDraft가 실제 state만 'minimal'로 되돌리면,
+// 리셋 직후 재진입에서 commitHeroLayout이 리셋 직전 무드를 되살린다.
+describe('초기화(#310)가 heroLayout도 함께 되돌린다 (claude-review PR #636 3차 P0)', () => {
+  test('편집 중 바꾼 무드로 진입했다가 초기화하면, 재진입 시 리셋 직전 무드가 되살아나지 않는다', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+
+    // 무드를 'stub'으로 골라 랜딩에서 커밋 — heroLayout이 'stub'으로 굳는다.
+    fireEvent.click(within(landing()).getByRole('radio', { name: 'Stub · 티켓 스텁 절취' }));
+    fireEvent.click(screen.getByTestId('landing-skip-poster'));
+    expect(captured.components.layout).toBe('stub');
+
+    // 초기화 2탭(#374 arm) — clearDraft가 실제 state를 'minimal'로 되돌린다.
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    await user.click(screen.getByRole('button', { name: '초기화' }));
+    await new Promise((r) => setTimeout(r, 400));
+    await user.click(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' }));
+    expect(captured.components.layout).toBe('minimal');
+
+    // 랜딩이 다시 뜨고, 무드칩을 안 건드린 채 바로 재진입 — heroLayout이 같이 리셋 안 됐다면
+    // commitHeroLayout이 여기서 'stub'을 되살린다.
+    fireEvent.click(screen.getByTestId('landing-skip-poster'));
+    expect(captured.components.layout).toBe('minimal');
   });
 });
