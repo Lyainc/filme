@@ -145,12 +145,18 @@ export const TEXTURE_RECIPES: Record<string, TextureRecipe> = {
   // ponytail: 대조 시 결이 과하거나 약하면 alpha/defaultIntensity(세기), baseFrequency(촘촘함),
   // blend(overlay=밝고어둡게·soft-light=은은)만 조정. tile은 iOS raster 안전선(작게 유지).
   artpaper: {
-    // [강화] 미술용지 결이 metal 코팅과 뭉치던 문제(#475) — baseFrequency를 낮추고(0.55→0.4)
-    // numOctaves를 줄여(3→2) 더 굵고 거친 캔버스 결로, alpha를 올려(0.5→0.65) 결이 확실히 보이게
-    // 했다. defaultIntensity는 스펙 default_intensity 표(기존 값 재활용) 그대로 0.6 유지 — 세기는
-    // alpha가 담당. tile은 iOS raster 안전선 그대로 유지.
+    // [강화] 미술용지 결이 metal 코팅과 뭉치던 문제(#475) — numOctaves를 줄이고(3→2) alpha를
+    // 올려(0.5→0.65) 결이 확실히 보이게 했다. defaultIntensity는 0.6 유지 — 세기는 alpha가 담당.
+    // tile은 iOS raster 안전선 그대로 유지.
+    //
+    // [#561] baseFrequency는 0.55→0.4로 같이 내렸다가 **되올렸다(0.7)**. feTurbulence의 Perlin
+    // 격자는 축에 정렬돼 있고 셀 크기가 정확히 1/baseFrequency CSS px라, 0.4에선 2.5px가 돼 결이
+    // 아니라 **격자무늬**로 읽혔다(FFT 축상 에너지 1.38%, vintage 0.67·newspaper 0.78 대비 유일한
+    // 이상치). numOctaves를 4로 올려도 안 없어지고(1.17%, 주기 5.0px 그대로) baseFrequency만 듣는다.
+    // 0.7이면 0.77%로 newspaper와 같은 수준이 되고, **결의 굵기는 안 잃는다** — 국소 표준편차가
+    // 14.81→14.93으로 사실상 불변이다(굵기는 위 주석대로 alpha가 담당하지 baseFrequency가 아니다).
     kind: 'noise',
-    baseFrequency: 0.4,
+    baseFrequency: 0.7,
     numOctaves: 2,
     tile: 140,
     blend: 'overlay',
