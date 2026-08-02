@@ -1,0 +1,302 @@
+/**
+ * 저장물(export JPEG) 회수 · 픽셀 대조 하네스 (#506 acceptance 2).
+ *
+ *   bun scripts/capture-export.mjs --coating gloss --intensity 1 --out /tmp/gloss.jpg
+ *   bun scripts/capture-export.mjs --material artpaper --intensity 0.6 --out /tmp/artpaper.jpg
+ *   bun scripts/capture-export.mjs --compare /tmp/a.jpg /tmp/b.jpg
+ *
+ * 목적은 후가공(코팅 gradient 4종 · 재질 noise 3종)의 **저장물**을 브랜치별로 뽑아
+ * 픽셀로 대조하는 것 — 프리뷰가 아니라 `captureNodeToJpeg`가 실제로 뱉는 바이트다.
+ *
+ * ── 헤드리스에서 '사진에 저장'이 안 끝나는 이유 (실측 확정) ──────────────────
+ * 앱 버그가 아니다. macOS 헤드리스 Chrome에서 `navigator.canShare({files:[…]})`가
+ * **true**를 준다 — 그래서 ResultPanel이 `shareTicketAsJpeg` 경로를 타고
+ * `navigator.share(…)`를 부르는데, OS 공유 시트가 뜰 수 없는 환경이라 그 Promise가
+ * 영영 settle하지 않아 CTA가 "저장 중..."에 묶인다. 캡처 자체는 그 전에 이미 끝나 있다
+ * (진단 실행: `[capture:main] out=404483`이 t<3s에 찍히는데 CTA는 계속 "저장 중...").
+ * main에서도 같은 값이라 특정 변경 탓이 아니다.
+ *
+ * 그래서 하네스는 `navigator.canShare`를 false로 스텁해 다운로드 경로(공유 미지원
+ * 데스크톱과 동일)로 떨어뜨린다. 회수는 `?debug=1`에서 captureToImage가 이미 쏘는
+ * `capture-debug-result` 이벤트(detail = JPEG data URL)를 받아 파일로 쓴다 — 그 문자열이
+ * 곧 `dataUrlToJpegBlob`이 디코드해 파일로 나가는 바로 그 바이트다.
+ *
+ * 서버 전제(#601): dev(:3000)·prod 어느 쪽이든 되지만 **지금 워킹트리/`.next`를 서빙하는**
+ * 서버여야 한다. 브랜치별 대조는 detached checkout → 캡처 → 복귀로 만든다(dev 서버가
+ * 워킹트리를 그대로 서빙하므로 재기동이 필요 없다).
+ *
+ * 출력은 stdout JSON 한 덩어리. --compare는 채널 최대 절대차가 --tolerance(기본 3,
+ * JPEG 인코딩 잡음 수준)를 넘으면 exit 1.
+ */
+import { readFileSync, writeFileSync } from 'node:fs';
+import puppeteer from 'puppeteer-core';
+
+const argv = process.argv.slice(2);
+const arg = (name, dflt) => {
+  const i = argv.indexOf(`--${name}`);
+  return i >= 0 && argv[i + 1] ? argv[i + 1] : dflt;
+};
+
+const CHROME =
+  process.env.CHROME_PATH ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const URL_ = arg('url', 'http://localhost:3000/');
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+const launch = () =>
+  puppeteer.launch({
+    executablePath: CHROME,
+    headless: true,
+    args: ['--no-sandbox', '--force-device-scale-factor=1'],
+  });
+
+/**
+ * bun에서 `await browser.close()`가 **resolve하지 않는다**(실측: Chrome 프로세스는 죽는데
+ * 그 Promise가 안 풀려 스크립트가 7분 넘게 매달렸다). 배치 루프가 매 실행마다 그걸 기다리면
+ * 대조표를 못 만든다 — 닫기는 걸고 짧게만 기다린 뒤 넘어간다.
+ */
+const closeBrowser = (browser) =>
+  Promise.race([browser.close().catch(() => {}), sleep(3000)]);
+
+const t0 = Date.now();
+const marks = {};
+const mark = (name) => {
+  marks[name] = ((Date.now() - t0) / 1000).toFixed(1);
+};
+
+// ── 대조 모드 ────────────────────────────────────────────────────────────────
+/**
+ * 두 JPEG의 채널 최대 절대차. 디코더는 Chrome 자신을 쓴다 — 저장물을 만든 것과 같은
+ * 디코더라 디코더 차이가 대조에 안 섞이고, 새 의존성도 안 붙는다.
+ */
+async function compare(pathA, pathB, tolerance) {
+  const toDataUrl = (p) => `data:image/jpeg;base64,${readFileSync(p).toString('base64')}`;
+  const browser = await launch();
+  try {
+    const page = await browser.newPage();
+    const result = await page.evaluate(
+      async (a, b) => {
+        const load = (src) =>
+          new Promise((res, rej) => {
+            const img = new Image();
+            img.onload = () => res(img);
+            img.onerror = () => rej(new Error('decode failed'));
+            img.src = src;
+          });
+        const [ia, ib] = await Promise.all([load(a), load(b)]);
+        if (ia.naturalWidth !== ib.naturalWidth || ia.naturalHeight !== ib.naturalHeight) {
+          return {
+            sizeMismatch: `${ia.naturalWidth}x${ia.naturalHeight} vs ${ib.naturalWidth}x${ib.naturalHeight}`,
+          };
+        }
+        const px = (img) => {
+          const c = document.createElement('canvas');
+          c.width = img.naturalWidth;
+          c.height = img.naturalHeight;
+          const g = c.getContext('2d', { willReadFrequently: true });
+          g.drawImage(img, 0, 0);
+          return g.getImageData(0, 0, c.width, c.height).data;
+        };
+        const da = px(ia);
+        const db = px(ib);
+        let max = 0;
+        let sum = 0;
+        let n = 0;
+        let over3 = 0;
+        for (let i = 0; i < da.length; i += 4) {
+          let worst = 0;
+          for (let k = 0; k < 3; k++) {
+            const d = Math.abs(da[i + k] - db[i + k]);
+            if (d > worst) worst = d;
+            sum += d;
+            n += 1;
+          }
+          if (worst > max) max = worst;
+          if (worst > 3) over3 += 1;
+        }
+        return {
+          size: `${ia.naturalWidth}x${ia.naturalHeight}`,
+          maxAbsDiff: max,
+          meanAbsDiff: +(sum / n).toFixed(4),
+          pixelsOver3: over3,
+          pixelsOver3Pct: +((over3 / (da.length / 4)) * 100).toFixed(4),
+        };
+      },
+      toDataUrl(pathA),
+      toDataUrl(pathB),
+    );
+    const pass = !result.sizeMismatch && result.maxAbsDiff <= tolerance;
+    console.log(JSON.stringify({ mode: 'compare', a: pathA, b: pathB, tolerance, ...result, pass }, null, 2));
+    if (!pass) process.exit(1);
+  } finally {
+    await closeBrowser(browser);
+  }
+}
+
+// ── 캡처 모드 ────────────────────────────────────────────────────────────────
+/**
+ * 후가공이 실제로 보이려면 포스터가 톤 전 구간을 덮어야 한다 — overlay·soft-light는
+ * 0.5를 축으로 갈리고 screen은 어두운 쪽에서만 뜬다. 그래서 x축 회색 램프 × y축 색 램프
+ * 2D 그라데이션을 코드로 그린다(실행 간 비트 단위로 동일 = 대조의 전제).
+ */
+const POSTER_DRAW = `
+  const c = document.createElement('canvas');
+  c.width = 960; c.height = 1440;
+  const g = c.getContext('2d');
+  const img = g.createImageData(c.width, c.height);
+  for (let y = 0; y < c.height; y++) {
+    for (let x = 0; x < c.width; x++) {
+      const i = (y * c.width + x) * 4;
+      const gray = Math.round((x / (c.width - 1)) * 255);
+      const t = y / (c.height - 1);
+      img.data[i] = Math.round(gray * (1 - 0.4 * t) + 255 * 0.4 * t);
+      img.data[i + 1] = Math.round(gray * (1 - 0.2 * t));
+      img.data[i + 2] = Math.round(gray * (1 - 0.6 * t) + 200 * 0.6 * t);
+      img.data[i + 3] = 255;
+    }
+  }
+  g.putImageData(img, 0, 0);
+`;
+
+async function capture({ layout, material, coating, intensity, out, timeoutMs }) {
+  const seed = {
+    movieInfo: {
+      title: '인터스텔라',
+      titleOg: 'Interstellar',
+      releaseDate: '2014',
+      watchDate: '2024-03-15',
+      watchTime: '19:30',
+      theater: 'CGV 용산아이파크몰',
+      screen: '4관 IMAX',
+      seat: 'H12',
+      bookingNumber: '1234567890123456',
+    },
+    components: {
+      layout,
+      material,
+      coating,
+      materialIntensity: intensity,
+      coatingIntensity: intensity,
+    },
+    // 포스터 주입이 "첫 업로드"로 오판돼 fieldVisibility가 통째로 갈리는 걸 막는다
+    // (measure-editorial-stub.mjs와 같은 함정).
+    hadPoster: true,
+  };
+
+  const browser = await launch();
+  const logs = [];
+  try {
+    const page = await browser.newPage();
+    page.on('dialog', (d) => d.dismiss());
+    page.on('console', (m) => {
+      const t = m.text();
+      if (t.startsWith('[capture:')) logs.push(t);
+    });
+    await page.setViewport({ width: 400, height: 675, deviceScaleFactor: 1 });
+    await page.evaluateOnNewDocument((s) => {
+      localStorage.setItem('filme:phototicket:v1', JSON.stringify(s));
+      localStorage.setItem('phototicket:theme', 'dark');
+      // 헤드리스에선 navigator.share가 영영 settle하지 않는다(파일 상단 진단) — 공유 미지원
+      // 데스크톱과 같은 다운로드 경로로 떨어뜨려 CTA가 실제로 완료되게 한다.
+      Object.defineProperty(navigator, 'canShare', { value: () => false, configurable: true });
+    }, seed);
+    await page.goto(`${URL_}?debug=1`, { waitUntil: 'networkidle2' });
+    mark('loaded');
+
+    // 포스터 주입 → 크롭 '적용'. '적용'은 뜬 직후 누르면 completedCrop이 아직 안 서서 no-op이라
+    // (disabled는 false다) 대기 후 클릭한다.
+    await page.evaluate(async (drawSrc) => {
+      const el = [...document.querySelectorAll('input[type=file]')].find((i) =>
+        (i.accept || '').includes('image/jpeg'),
+      );
+      if (!el) throw new Error('포스터 input을 못 찾음(accept image/jpeg)');
+      const c = new Function(`${drawSrc}; return c;`)();
+      const blob = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.95));
+      const dt = new DataTransfer();
+      dt.items.add(new File([blob], 'poster.jpg', { type: 'image/jpeg' }));
+      el.files = dt.files;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    }, POSTER_DRAW);
+    const clickByText = async (text) => {
+      const ok = await page.evaluate((t) => {
+        const b = [...document.querySelectorAll('button')].find(
+          (x) => (x.textContent || '').trim().includes(t),
+        );
+        if (!b) return false;
+        b.click();
+        return true;
+      }, text);
+      if (!ok) throw new Error(`버튼을 못 찾음: ${text}`);
+    };
+    await page.waitForFunction(
+      () => [...document.querySelectorAll('button')].some((b) => b.textContent.trim() === '적용'),
+      { timeout: 30000 },
+    );
+    await sleep(1500);
+    await clickByText('적용');
+    await sleep(1500);
+
+    mark('cropped');
+    await clickByText('완료');
+    await page.waitForFunction(
+      () =>
+        [...document.querySelectorAll('button')].some((b) =>
+          (b.textContent || '').includes('사진에 저장'),
+        ),
+      { timeout: 20000 },
+    );
+    // 프리뷰 디바운스(280ms)와 폰트 로드가 끝난 뒤 캡처하도록 여유를 준다.
+    await sleep(1200);
+
+    await page.evaluate(() => {
+      window.__exportDataUrl = null;
+      window.addEventListener('capture-debug-result', (e) => {
+        window.__exportDataUrl = e.detail;
+      });
+    });
+    mark('resultOpen');
+    await clickByText('사진에 저장');
+    await page.waitForFunction(() => window.__exportDataUrl != null, { timeout: timeoutMs });
+    mark('captured');
+    const dataUrl = await page.evaluate(() => window.__exportDataUrl);
+    if (!dataUrl.startsWith('data:image/jpeg')) throw new Error(`JPEG이 아님: ${dataUrl.slice(0, 40)}`);
+    const bytes = Buffer.from(dataUrl.split(',')[1], 'base64');
+    writeFileSync(out, bytes);
+
+    // 오버레이가 실제로 합성됐는지 로그로 확인 — 안 걸린 채 "통과"하는 조용한 성공을 막는다.
+    const wanted = [material, coating].filter((t) => t !== 'original' && t !== 'none');
+    const drawn = logs.filter((l) => l.startsWith('[capture:overlay]'));
+    const missing = wanted.filter((t) => !drawn.some((l) => l.includes(`texture=${t}`)));
+    if (missing.length) throw new Error(`오버레이가 안 그려짐: ${missing.join(',')} (로그: ${drawn.join(' | ')})`);
+
+    console.log(
+      JSON.stringify(
+        { mode: 'capture', layout, material, coating, intensity, out, bytes: bytes.length, overlays: drawn, marks },
+        null,
+        2,
+      ),
+    );
+  } finally {
+    await closeBrowser(browser);
+  }
+}
+
+const cmpIdx = argv.indexOf('--compare');
+if (cmpIdx >= 0) {
+  const [a, b] = argv.slice(cmpIdx + 1, cmpIdx + 3);
+  if (!a || !b) throw new Error('--compare <a.jpg> <b.jpg>');
+  await compare(a, b, Number(arg('tolerance', '3')));
+} else {
+  const out = arg('out', null);
+  if (!out) throw new Error('--out <경로> 필요');
+  await capture({
+    layout: arg('layout', 'minimal'),
+    material: arg('material', 'original'),
+    coating: arg('coating', 'none'),
+    intensity: Number(arg('intensity', '1')),
+    out,
+    timeoutMs: Number(arg('timeout', '60000')),
+  });
+}
+// bun에선 browser.close() 뒤에도 프로세스가 안 끝난다(실측: Chrome은 죽었는데 bun이 5분 넘게
+// 살아 있어 파이프가 EOF를 못 받는다). 배치 루프가 매 실행 타임아웃을 기다리지 않게 명시적 종료.
+process.exit(0);
