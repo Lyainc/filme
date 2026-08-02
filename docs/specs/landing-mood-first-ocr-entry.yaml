@@ -44,10 +44,11 @@ constraints:
     hard: true
     rationale: >-
       빈 포스터 슬롯이 렌더돼야 (1) OCR 후킹이 벌어질 무대가 서고 (2) 랜딩 예시를
-      저작권 없는 형태로 만들 수 있다. `TicketRenderer.tsx:20`·`_shared.tsx:12`가
-      `croppedImageUrl: string` 논널 계약이라 포스터 없는 렌더 경로가 타입 수준에서
-      존재하지 않고, `captureToImage.ts:78`이 깨진 이미지에 throw하므로 저장·공유도
-      같이 죽는다. 이게 없으면 나머지가 원리적으로 불가능하다.
+      저작권 없는 형태로 만들 수 있다. (해소됨, 2026-08-02) 착수 전엔
+      `TicketRenderer.tsx:20`·`_shared.tsx:12`가 `croppedImageUrl: string` 논널
+      계약이라 포스터 없는 렌더 경로가 타입 수준에서 존재하지 않았고,
+      `captureToImage.ts:78`이 깨진 이미지에 throw해 저장·공유도 같이 죽었다 —
+      #631 D3(PR #632)로 둘 다 `string | null`로 열려 지금은 정상 렌더된다.
 
   - id: c2
     type: technical
@@ -155,7 +156,7 @@ context:
     - "src/components/v2/Landing.tsx — overlay/inline/hidden 3모드, CSS hidden(unmount 아님)"
     - "src/components/v2/OcrUploadCard.tsx — landing/drawer 2컨텍스트, :250-253 위계 낮춤 배치"
     - "src/components/v2/MobileEditorShell.tsx — croppedImageUrl 게이트 10곳"
-    - "src/components/moods/_shared.tsx:12 · src/components/TicketRenderer.tsx:20 — 논널 계약"
+    - "src/components/moods/_shared.tsx:12 · src/components/TicketRenderer.tsx:20 — croppedImageUrl: string | null (#631 D3로 nullable화, 이전엔 논널 계약)"
     - "src/utils/captureToImage.ts:78 — 깨진 이미지 throw, 저장·링크·공유 공통 벽"
     - "src/hooks/usePhototicket.ts:110 — INITIAL_STATE.components.layout: 'minimal'"
     - "src/hooks/useExportReady.ts:18 — canExport는 title·releaseDate만 본다(#631 D3로 hasPoster 게이트 제거, 2026-08-02 PR #632 머지)"
