@@ -1041,7 +1041,7 @@ export const Poster = memo(function Poster({
   // 없으면(첫 페인트 전) null — EmbossOverlay는 그동안 마스크를 안 그린다(SSR 불변식 유지).
   const effFrameInsetY = fit === 'contain' ? frameInsetY : 0;
   const embossContentFrac =
-    boxSize && natAspect
+    boxSize && boxSize.w > 0 && boxSize.h > 0 && natAspect
       ? posterContentFrac(boxSize.w, boxSize.h + effFrameInsetY * 2, effFrameInsetY, boxSize.h, natAspect, fit, 0.5, align === 'top' ? 0 : 0.5)
       : null;
 
