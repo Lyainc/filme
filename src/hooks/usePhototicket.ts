@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { PhototicketState, MovieInfo, TicketComponents, TicketField } from '@/types';
 import { defaultBrightnessForTexture } from '@/components/moods/_shared';
-import { defaultIntensityForTexture, migrateLegacyComponents } from '@/utils/textureRecipes';
+import { defaultIntensityForTexture, migrateLegacyComponents, type EmbossStamp } from '@/utils/textureRecipes';
 import { ALL_FIELDS_ON } from '@/constants/fieldVisibility';
 import { saveImages, loadImages, clearImages } from '@/utils/imageDb';
 import { usePosterCrop } from '@/hooks/usePosterCrop';
@@ -134,10 +134,18 @@ const INITIAL_STATE: PhototicketState = {
   recommendedColors: [],
   croppedImageUrl: null,
   fieldVisibility: ALL_FIELDS_ON,
+  embossStamps: [],
+  embossIntensity: 1,
 };
 
 export function usePhototicket() {
   const [state, setState] = useState<PhototicketState>(INITIAL_STATE);
+  // 형압 편집 모드(#509 c9) — 명시적 온/오프. autoSaveEnabled와 같은 UI 토글 패턴(state 자체는
+  // 세션 한정이라 PhototicketState/영속화 대상이 아니다). 켜져 있는 동안 셸이 브러시 레이어를
+  // 띄운다. 브러시 반경도 같은 이유로 여기 둔다 — rail 슬라이더와 셸의 브러시 레이어가 값을
+  // 공유해야 하는데, 마스크 자체(embossStamps)와 달리 저장할 필요 없는 "현재 펜 크기"다.
+  const [embossEditMode, setEmbossEditMode] = useState(false);
+  const [embossBrushRadius, setEmbossBrushRadius] = useState(0.07);
   // 자동저장 on/off(기본 ON) + 마지막 저장 시각(인디케이터 반짝임 트리거, #436).
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
@@ -207,6 +215,10 @@ export function usePhototicket() {
         ...prev,
         croppedImageUrl: croppedUrl,
         ...(isFirstUpload ? { fieldVisibility: DEFAULT_VISIBILITY_ON_UPLOAD } : {}),
+        // 형압 마스크 폐기(#509 c8) — 이 콜백이 포스터 교체·재크롭 양쪽의 단일 진입점이라(usePosterCrop
+        // → onCropComplete가 재크롭도 여기로 보낸다), 마스크가 옛 포스터 픽셀을 가리키는 채로
+        // 새 포스터에 얹히는 orphan을 여기 한 곳에서 막는다.
+        embossStamps: [],
       };
     });
   }, []);
@@ -422,6 +434,21 @@ export function usePhototicket() {
     setState((prev) => ({ ...prev, recommendedColors: colors }));
   }, []);
 
+  // 형압(#509) — 마스크는 dirtyTick(자동저장 트리거)을 안 올린다. embossStamps/embossIntensity는
+  // PersistedState/HistorySnapshot의 Pick 목록 밖이라(c8) 애초에 저장되지 않으므로, tick을 올려도
+  // 효과가 없는 헛 리렌더만 하나 더 생긴다.
+  const addEmbossStamp = useCallback((stamp: EmbossStamp) => {
+    setState((prev) => ({ ...prev, embossStamps: [...prev.embossStamps, stamp] }));
+  }, []);
+
+  const clearEmbossMask = useCallback(() => {
+    setState((prev) => (prev.embossStamps.length ? { ...prev, embossStamps: [] } : prev));
+  }, []);
+
+  const setEmbossIntensity = useCallback((embossIntensity: number) => {
+    setState((prev) => ({ ...prev, embossIntensity }));
+  }, []);
+
   // undo/redo(#356) 복원 전용 경로 — updateComponents를 거치지 않는다. 거치면 posterOpacity가
   // 항상 실려와 brightnessTouchedRef가 오염되고 texture 기본 밝기 로직이 스냅샷을 덮는다.
   // 언마운트 revoke 대상 ref만 복원된 로고에 맞춰 갱신한다.
@@ -568,6 +595,8 @@ export function usePhototicket() {
     // 초기화는 저장분을 지우는 것이므로 "복원된 세션"도 아니게 된다 — 안 되돌리면 랜딩이
     // 영영 안 뜨고, 포스터도 draft도 없는 빈 편집 셸에 남는다(#614).
     setDraftRestored(false);
+    // 형압 편집 모드도 전체 슬레이트 리셋 대상 — 안 하면 초기화 후에도 브러시 레이어가 뜬 채 남는다.
+    setEmbossEditMode(false);
     // 크롭 원본·모달 상태도 전체 슬레이트 리셋 — 원본 blob은 posterCrop의 revoke effect가 푼다.
     posterCrop.reset();
     // 이미지 지문도 리셋 — 안 하면 초기화 직후 저장(이미지 없음)이 "직전과 동일"로 오판돼
@@ -609,6 +638,13 @@ export function usePhototicket() {
     fillEmptyMovieInfo,
     updateComponents,
     setRecommendedColors,
+    addEmbossStamp,
+    clearEmbossMask,
+    setEmbossIntensity,
+    embossEditMode,
+    setEmbossEditMode,
+    embossBrushRadius,
+    setEmbossBrushRadius,
     updateFieldVisibility,
     restoreSnapshot,
     saveDraft,

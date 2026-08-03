@@ -42,7 +42,7 @@ const CUT_H = 617; // 926×617 = 1.5 (3:2), 411×617 = 0.666 (2:3)
 const WIDE_BAND = { holeW: 51, holeH: 36, holeR: 9, count: 18, bleed: 34 } as const;
 
 export const Mood35mmLandscape = memo(function Mood35mmLandscape(props: MoodProps) {
-  const { movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, onPosterTap } = props;
+  const { movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, onPosterTap, embossStamps, embossIntensity } = props;
   const { releaseClean, bookingNo } = resolveTicketData(d);
 
   const titleVal = gate(fv?.title, d.title);
@@ -106,6 +106,8 @@ export const Mood35mmLandscape = memo(function Mood35mmLandscape(props: MoodProp
             materialIntensity={components.materialIntensity}
             coatingIntensity={components.coatingIntensity}
             posterOpacity={components.posterOpacity}
+            embossStamps={embossStamps}
+            embossIntensity={embossIntensity}
           />
         </div>
 

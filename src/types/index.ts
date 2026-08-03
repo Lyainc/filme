@@ -1,3 +1,5 @@
+import type { EmbossStamp } from '@/utils/textureRecipes';
+
 export type LayoutId = 'minimal' | 'criterion' | '35mm' | 'editorial' | 'stub' | '35mm-landscape';
 
 export type DateFormatToken = 'iso' | 'kr-compact' | 'cinema-mono' | 'en-long';
@@ -110,6 +112,15 @@ export interface PhototicketState {
   components: TicketComponents;
   recommendedColors: string[];
   fieldVisibility: Record<TicketField, boolean>;
+  /**
+   * 형압(#509) 마스크 — croppedImageUrl과 나란한 세션 한정 필드다(c8). `components` 안에 두지
+   * 않는 이유: `components`는 undo 스냅샷(HistorySnapshot)·자동저장(PersistedState)에 통째로
+   * 실리는데, 마스크는 포스터 교체·재크롭 시 폐기되고 autosave·공유 블롭에 안 실려야 한다 —
+   * croppedImageUrl이 이미 같은 이유로 `components` 밖에 사는 선례를 따른다.
+   */
+  embossStamps: EmbossStamp[];
+  /** 형압 강도 0..1(#509) — 마스크가 없으면 의미 없으나, 마스크와 함께 폐기되는 세션 값이라 같이 둔다. */
+  embossIntensity: number;
 }
 
 export interface KobisMovie {

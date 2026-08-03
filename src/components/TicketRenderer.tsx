@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { getLayout } from '@/utils/layouts';
 import type { LayoutId, MovieInfo, TicketComponents, TicketField } from '@/types';
 import type { SheetTarget } from '@/constants/fields';
+import type { EmbossStamp } from '@/utils/textureRecipes';
 
 // 무드 4종은 한 번에 하나만 렌더되므로 각각 별도 청크로 분리해 초기 번들에서 제외.
 // ssr: false — 캡처(captureToImage)는 프리뷰가 이미 보이는(=청크 로드 완료) 시점의
@@ -33,6 +34,9 @@ interface TicketRendererProps {
    */
   onField?: (field: SheetTarget) => void;
   onPosterTap?: () => void;
+  /** 형압 마스크(#509) — croppedImageUrl과 동일하게 components 밖의 세션 한정 프롭. */
+  embossStamps?: EmbossStamp[];
+  embossIntensity?: number;
 }
 
 const SCALE_EPSILON = 0.001;
@@ -49,7 +53,7 @@ const SCALE_EPSILON = 0.001;
 export const PREVIEW_MAX_HEIGHT = 'min(72vh, 720px)';
 
 const TicketRenderer = memo(forwardRef<HTMLDivElement, TicketRendererProps>(function TicketRenderer(
-  { croppedImageUrl, movieInfo, components, fieldVisibility, ghost, onField, onPosterTap },
+  { croppedImageUrl, movieInfo, components, fieldVisibility, ghost, onField, onPosterTap, embossStamps, embossIntensity },
   ref
 ) {
   const layout = getLayout(components.layout);
@@ -106,6 +110,8 @@ const TicketRenderer = memo(forwardRef<HTMLDivElement, TicketRendererProps>(func
           ghost={ghost}
           onField={onField}
           onPosterTap={onPosterTap}
+          embossStamps={embossStamps}
+          embossIntensity={embossIntensity}
         />
       </div>
     </div>
@@ -121,6 +127,8 @@ const Mood = memo(function Mood({
   ghost,
   onField,
   onPosterTap,
+  embossStamps,
+  embossIntensity,
 }: {
   layoutId: LayoutId;
   croppedImageUrl: string | null;
@@ -130,8 +138,10 @@ const Mood = memo(function Mood({
   ghost?: boolean;
   onField?: (field: SheetTarget) => void;
   onPosterTap?: () => void;
+  embossStamps?: EmbossStamp[];
+  embossIntensity?: number;
 }) {
-  const props = { croppedImageUrl, movieInfo, components, fieldVisibility, ghost, onField, onPosterTap };
+  const props = { croppedImageUrl, movieInfo, components, fieldVisibility, ghost, onField, onPosterTap, embossStamps, embossIntensity };
   switch (layoutId) {
     case 'minimal':
       return <MoodMinimal {...props} />;

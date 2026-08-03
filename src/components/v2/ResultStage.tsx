@@ -4,6 +4,7 @@ import { PreviewFilmCell } from './PreviewFilmCell';
 import { ResultPanel } from './ResultPanel';
 import { Wordmark } from './Wordmark';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
+import type { EmbossStamp } from '@/utils/textureRecipes';
 
 interface ResultStageProps {
   theme: 'light' | 'dark';
@@ -12,6 +13,8 @@ interface ResultStageProps {
   movieInfo: MovieInfo;
   components: TicketComponents;
   fieldVisibility: Record<TicketField, boolean>;
+  embossStamps?: EmbossStamp[];
+  embossIntensity?: number;
 }
 
 /**
@@ -27,6 +30,8 @@ export function ResultStage({
   movieInfo,
   components,
   fieldVisibility,
+  embossStamps,
+  embossIntensity,
 }: ResultStageProps) {
   const layout = getLayout(components.layout);
   // PREVIEW_MAX_HEIGHT(72vh)는 정적 대형 뷰포트 기준이라 Safari 동적 툴바가 떠 있는 실기기에서는
@@ -94,6 +99,8 @@ export function ResultStage({
               movieInfo={movieInfo}
               components={components}
               fieldVisibility={fieldVisibility}
+              embossStamps={embossStamps}
+              embossIntensity={embossIntensity}
             />
           </PreviewFilmCell>
           {/* 바닥 그림자 — hero가 화면에 떠 보이도록 아래에 흐린 타원 그림자를 깐다.
@@ -117,6 +124,8 @@ export function ResultStage({
             movieInfo={movieInfo}
             components={components}
             fieldVisibility={fieldVisibility}
+            embossStamps={embossStamps}
+            embossIntensity={embossIntensity}
             hidePreview
           />
         </div>
