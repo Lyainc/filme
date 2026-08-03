@@ -425,7 +425,20 @@ export function usePhototicket() {
         nextComponents.coatingIntensity = defaultIntensityForTexture(components.coating!);
       }
 
-      return { ...prev, components: nextComponents };
+      // 형압 마스크 폐기(#509 c7/c8, fresh-context 리뷰 지적) — 마스크는 포스터 "자연 픽셀"이
+      // 아니라 지금 화면에 뜬 포스터 **박스**의 0..1 분율이라(EmbossBrushLayer), layout(무드)
+      // 전환이나 posterFit(#527 "꽉 채우기") 토글처럼 그 박스와 원본 이미지의 대응 관계 자체가
+      // 바뀌는 변경에서는 같은 분율이 다른 픽셀을 가리키게 된다 — 크롭 프리셋이 무드마다
+      // 갈리는 것(#529)과 같은 종류의 문제다. 픽셀이 조용히 어긋난 채 남는 것보다, 포스터
+      // 교체·재크롭 때처럼 마스크를 폐기하는 쪽이 c8과 같은 정직한 선택이다(정교한 재매핑은
+      // #509 acceptance의 "마스크가 fit·align 변경에도 정합 유지"를 문자 그대로 만족시키지만
+      // 이 세션에서 감당하기엔 별도 이슈 분량의 기하 작업이다).
+      const layoutChanged = components.layout !== undefined && components.layout !== prev.components.layout;
+      const posterFitChanged =
+        components.posterFit !== undefined && components.posterFit !== prev.components.posterFit;
+      const embossStamps = layoutChanged || posterFitChanged ? [] : prev.embossStamps;
+
+      return { ...prev, components: nextComponents, embossStamps };
     });
     setDirtyTick((t) => t + 1);
   }, []);

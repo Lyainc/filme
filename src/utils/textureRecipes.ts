@@ -452,7 +452,19 @@ export const EMBOSS_RECIPE: EmbossRecipe = {
  *  자체는 화질에 안 걸린다(실측, 위 EMBOSS_RECIPE 주석). */
 const EMBOSS_BAKE_PX = 512;
 
-/** 굽기 캐시 — 키는 스탬프 목록 + aspect까지만(#506 c2, intensity는 합성 시점 alpha). */
+/**
+ * 굽기 캐시 — 키는 스탬프 목록 + aspect까지만(#506 c2, intensity는 합성 시점 alpha).
+ *
+ * gradient/noise 캐시(레시피 몇 종 × 무드 aspect 몇 종, 유한 키 공간)와 달리 이 캐시의 키
+ * 공간은 **살아있는 스탬프 배열**이다 — 브러시 드래그 중 pointermove마다(MIN_STAMP_SPACING로
+ * 줄여도 스트로크 하나에 수십 개) 스탬프가 늘어난 새 배열이 매번 새 캐시 키를 치므로, 무제한
+ * Map이면 한 세션의 드래그 여러 번으로 항목이 계속 쌓이고(가장 최근 몇 개만 다시 그려지지,
+ * 이전 중간 상태는 다시 안 읽힌다) 페이로드 크기도 스탬프 수에 비례해 커진다(fresh-context
+ * 리뷰 지적 — 세션 수명 메모리 누수). MAX_EMBOSS_CACHE개를 넘으면 가장 오래된 항목(Map은
+ * 삽입 순서를 보존한다)부터 지운다 — 마스크가 세션 한정(c8)이라 캐시도 그 이상 오래 살 필요가
+ * 없다.
+ */
+const MAX_EMBOSS_CACHE = 64;
 const embossSvgCache = new Map<string, string>();
 
 /**
@@ -515,6 +527,10 @@ export function embossBitmapSvg(stamps: EmbossStamp[], rawAspect: number): strin
     `</filter></defs>` +
     `<g filter="url(#e)">${circles}</g></svg>`;
   const url = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  if (embossSvgCache.size >= MAX_EMBOSS_CACHE) {
+    const oldest = embossSvgCache.keys().next().value;
+    if (oldest !== undefined) embossSvgCache.delete(oldest);
+  }
   embossSvgCache.set(key, url);
   return url;
 }

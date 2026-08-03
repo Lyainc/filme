@@ -113,10 +113,21 @@ export interface PhototicketState {
   recommendedColors: string[];
   fieldVisibility: Record<TicketField, boolean>;
   /**
-   * 형압(#509) 마스크 — croppedImageUrl과 나란한 세션 한정 필드다(c8). `components` 안에 두지
-   * 않는 이유: `components`는 undo 스냅샷(HistorySnapshot)·자동저장(PersistedState)에 통째로
-   * 실리는데, 마스크는 포스터 교체·재크롭 시 폐기되고 autosave·공유 블롭에 안 실려야 한다 —
-   * croppedImageUrl이 이미 같은 이유로 `components` 밖에 사는 선례를 따른다.
+   * 형압(#509) 마스크 — `components` 밖에 두는 이유는 croppedImageUrl과 같다: `components`는
+   * undo 스냅샷(HistorySnapshot)·자동저장(PersistedState)에 통째로 실리는데, 마스크는 그
+   * 어느 쪽에도 실리면 안 된다(c8).
+   *
+   * **의도적으로 세션 한정 — #489 재검토를 거친 결정이다.** #489부터 포스터(croppedImageUrl)
+   * 자체는 IndexedDB로 영속돼 새로고침 후에도 복원된다(`usePhototicket.ts`의 IDB 복원
+   * effect) — 그래서 "포스터가 새로고침을 못 넘기니 마스크도 자연히 orphan이 안 생긴다"던
+   * c8의 원래 근거는 더 이상 성립하지 않는다(#509 이슈 코멘트가 이 점을 명시적으로 지적했다).
+   * 그럼에도 마스크를 IDB로 같이 영속시키지 않은 이유: 마스크는 포스터 박스의 0..1 분율이라
+   * (c7 — EmbossBrushLayer/embossBitmapSvg), 새로고침 후 fit·align·크롭 파이프라인이 조금이라도
+   * 다른 순서로 정착하면 같은 분율이 다른 픽셀을 가리킬 위험이 있다 — 픽셀이 조용히 어긋난
+   * 채 복원되는 것보다 새로고침 시 마스크가 사라지는 쪽(사용자가 바로 알아챌 수 있는 손실)이
+   * 더 안전하다고 판단했다. usePhototicket.ts:handleImageUpload가 포스터 교체·재크롭 양쪽의
+   * 단일 진입점이라 거기서 폐기하고, updateComponents도 layout·posterFit 전환 시 같은 이유로
+   * 폐기한다(포스터 박스와 원본 이미지의 대응 관계 자체가 바뀌는 지점들).
    */
   embossStamps: EmbossStamp[];
   /** 형압 강도 0..1(#509) — 마스크가 없으면 의미 없으나, 마스크와 함께 폐기되는 세션 값이라 같이 둔다. */
