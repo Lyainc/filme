@@ -5,6 +5,7 @@ import { defaultIntensityForTexture, migrateLegacyComponents, type EmbossPath, t
 import { ALL_FIELDS_ON } from '@/constants/fieldVisibility';
 import { saveImages, loadImages, clearImages } from '@/utils/imageDb';
 import { usePosterCrop } from '@/hooks/usePosterCrop';
+import { showError } from '@/utils/errorToast';
 
 // blob: URL을 다시 Blob으로 — 페이지가 만든 objectURL을 읽는 것뿐이라 네트워크를 안 타고,
 // captureToImage.ts가 피하는 fetch(data:) CSP 제약과도 무관하다. 실패(이미 revoke된 URL 등)는
@@ -343,7 +344,15 @@ export function usePhototicket() {
         }
       })
       .catch(() => {
-        // IndexedDB 미지원·프라이빗 모드·용량 초과 — 무시하고 현재 lossy 동작으로 폴백.
+        // IndexedDB 미지원·프라이빗 모드·용량 초과(#645 C5) — croppedImageUrl은 null인 채로
+        // 현재 lossy 동작(재업로드 유도)으로 폴백한다. restoredDraftHadPosterRef는 위 localStorage
+        // 복원 effect(선언 순서상 먼저 실행)가 동기로 채워두므로, 이 비동기 catch 시점엔 이미
+        // 확정돼 있다 — 포스터가 있던 draft에서만 알린다. 포스터가 아예 없던 draft·첫 방문(=이
+        // 환경이 그냥 IndexedDB를 지원 안 함)까지 "다시 올려주세요"를 띄우면 잃은 것도 없는데
+        // 매번 경고가 뜬다.
+        if (restoredDraftHadPosterRef.current) {
+          showError('저장된 포스터를 불러오지 못했어요. 포스터를 다시 올려주세요.', { persistent: true });
+        }
       });
     return () => {
       cancelled = true;
@@ -492,8 +501,13 @@ export function usePhototicket() {
   }, []);
 
   // #310이 폐지했던 자동저장을 #436이 enabled 게이트 뒤에 되살린다 — 명시적 트리거(버튼 클릭)는 그대로 유지.
-  const saveDraft = useCallback(() => {
-    if (typeof window === 'undefined') return;
+  // 반환값은 localStorage 쓰기(텍스트/설정, 동기) 성공 여부 — 호출부(자동저장 effect·임시저장
+  // 버튼)가 이걸로 "저장됐다"는 인디케이터/토스트를 게이팅한다(#645 C1: 실패해도 무조건 성공
+  // 표시하던 거짓 성공 제거). IndexedDB 이미지 쓰기는 비동기라 이 반환값엔 안 실린다 — 실패는
+  // 아래에서 별도로 showError한다.
+  const saveDraft = useCallback((): boolean => {
+    if (typeof window === 'undefined') return false;
+    let textSaved = true;
     try {
       const payload: PersistedState = {
         movieInfo: state.movieInfo,
@@ -510,7 +524,10 @@ export function usePhototicket() {
       };
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     } catch {
-      // 저장 실패(쿼터 초과·프라이빗 모드)는 무시 — 영속화는 best-effort다.
+      // 저장 실패(쿼터 초과·프라이빗 모드, #645 C1) — 예전엔 무시하고 아래 setLastSavedAt이
+      // 무조건 실행돼 인디케이터가 성공처럼 반짝였다. 이제 실패를 알리고 false를 돌려준다.
+      textSaved = false;
+      showError('저장에 실패했어요. 브라우저 저장 공간이 가득 찼거나 비공개 모드일 수 있어요.', { persistent: true });
     }
 
     // 이미지는 텍스트와 별도로 IndexedDB에 저장 — 위 localStorage 쓰기가 이미 끝났으므로 여기서
@@ -542,11 +559,15 @@ export function usePhototicket() {
           await saveImages({ poster, posterOriginal, chain, format, signature });
           lastPersistedImageFingerprintRef.current = fingerprint;
         } catch {
-          // IndexedDB 미지원·프라이빗 모드·용량 초과 — 무시. fingerprint를 안 갱신해 다음
-          // 저장 시도에서 다시 시도한다.
+          // IndexedDB 미지원·프라이빗 모드·용량 초과(#645 C1 자매) — fingerprint를 안 갱신해 다음
+          // 저장 시도에서 다시 시도한다. 비동기라 saveDraft의 반환값엔 안 실리므로 별도로 알린다.
+          // ephemeral인 이유: 실패가 이어지면 매 autosave tick마다 다시 호출되는데, showError의
+          // 동일 메시지 dedup이 재생 애니메이션 없이 타이머만 늘려 스팸 없이 계속 보인다.
+          showError('포스터 이미지 저장에 실패했어요.');
         }
       });
     }
+    return textSaved;
   }, [state.movieInfo, state.components, state.fieldVisibility, state.croppedImageUrl, posterCrop.originalSrc]);
 
   // 디바운스 타이머 콜백이 항상 최신 saveDraft를 호출하도록 하는 latest-ref 패턴 — 매 렌더 갱신.
@@ -580,8 +601,8 @@ export function usePhototicket() {
   useEffect(() => {
     if (!autoSaveEnabled || dirtyTick === 0) return;
     const timer = setTimeout(() => {
-      saveDraftRef.current();
-      setLastSavedAt(Date.now());
+      // 실패 시(#645 C1) 인디케이터를 안 반짝인다 — saveDraft 내부가 이미 showError로 알린다.
+      if (saveDraftRef.current()) setLastSavedAt(Date.now());
       autoSaveTimerRef.current = null;
     }, AUTOSAVE_DEBOUNCE_MS);
     autoSaveTimerRef.current = timer;
