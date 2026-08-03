@@ -4,7 +4,7 @@ import { PreviewFilmCell } from './PreviewFilmCell';
 import { ResultPanel } from './ResultPanel';
 import { Wordmark } from './Wordmark';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
-import type { EmbossStamp } from '@/utils/textureRecipes';
+import type { EmbossPath, EmbossStamp } from '@/utils/textureRecipes';
 
 interface ResultStageProps {
   theme: 'light' | 'dark';
@@ -14,6 +14,7 @@ interface ResultStageProps {
   components: TicketComponents;
   fieldVisibility: Record<TicketField, boolean>;
   embossStamps?: EmbossStamp[];
+  embossPaths?: EmbossPath[];
   embossIntensity?: number;
 }
 
@@ -31,6 +32,7 @@ export function ResultStage({
   components,
   fieldVisibility,
   embossStamps,
+  embossPaths,
   embossIntensity,
 }: ResultStageProps) {
   const layout = getLayout(components.layout);
@@ -100,6 +102,7 @@ export function ResultStage({
               components={components}
               fieldVisibility={fieldVisibility}
               embossStamps={embossStamps}
+              embossPaths={embossPaths}
               embossIntensity={embossIntensity}
             />
           </PreviewFilmCell>
@@ -125,6 +128,7 @@ export function ResultStage({
             components={components}
             fieldVisibility={fieldVisibility}
             embossStamps={embossStamps}
+            embossPaths={embossPaths}
             embossIntensity={embossIntensity}
             hidePreview
           />

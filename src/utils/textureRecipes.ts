@@ -432,6 +432,24 @@ export function projectEmbossStamps(stamps: EmbossStamp[], cf: EmbossContentFrac
 }
 
 /**
+ * 자석 올가미(#509 2단계, c10 soft)로 그린 닫힌 다각형. 좌표계는 EmbossStamp와 동일 —
+ * 포스터 자연 이미지 0..1 분율(c7). 브러시(원형 스탬프 유니온)와 달리 내부를 통째로 채우는
+ * 실루엣이라 별도 타입이지만, projectEmbossPaths·embossBitmapSvg가 같은 재투영·굽기 경로를
+ * 공유해 layout·posterFit 전환에 안 흔들리는 성질이 브러시와 동형으로 성립한다.
+ */
+export interface EmbossPath {
+  /** 3개 이상, 닫힌 다각형(SVG polygon처럼 첫 점과 마지막 점을 자동으로 잇는다). */
+  points: { x: number; y: number }[];
+}
+
+/** projectEmbossStamps와 동일한 자연 분율 → 박스 분율 투영을 다각형 정점에 적용한다. */
+export function projectEmbossPaths(paths: EmbossPath[], cf: EmbossContentFrac): EmbossPath[] {
+  return paths.map((p) => ({
+    points: p.points.map((pt) => ({ x: cf.fx + pt.x * cf.fw, y: cf.fy + pt.y * cf.fh })),
+  }));
+}
+
+/**
  * 균일 융기 베벨 레시피(#509) — material/coating과 달리 이름으로 고르는 프리셋이 아니라
  * 상수 하나다(사용자가 조절하는 건 마스크 모양과 intensity뿐). #591 인쇄 실측 반영: 톤 양 끝
  * 5%가 인쇄에서 붕괴하므로 하이라이트·섀도를 순백/순흑이 아니라 **미드톤 대비**로 잡는다 —
@@ -505,12 +523,17 @@ const embossSvgCache = new Map<string, string>();
  * 융기 + 가장자리 베벨" 룩 그대로. feComposite(operator="in", in2=SourceGraphic)로 최종
  * 알파를 원래(블러 전) 원 모양에 맞춰 잘라 경계가 또렷하게 선다.
  *
- * @param stamps 빈 배열이면 호출부가 오버레이 자체를 렌더하지 않아야 한다(빈 SVG를 안 굽는다).
+ * @param stamps 브러시(1단계) 원형 스탬프. stamps·paths가 둘 다 빈 배열이면 호출부가 오버레이
+ *   자체를 렌더하지 않아야 한다(빈 SVG를 안 굽는다).
+ * @param paths 자석 올가미(2단계, c10) 닫힌 다각형. 같은 filter 아래 stamps와 함께 굽는다 —
+ *   두 입력 다 흰 실루엣(union)일 뿐이라 블러+조명 필터엔 출처 구분이 없다.
  * @param rawAspect 그릴 박스의 H/W(raw). gradientBitmapSvg와 동일하게 반올림은 여기서 한다.
  */
-export function embossBitmapSvg(stamps: EmbossStamp[], rawAspect: number): string {
+export function embossBitmapSvg(stamps: EmbossStamp[], paths: EmbossPath[], rawAspect: number): string {
   const aspect = Math.round(rawAspect * 1e4) / 1e4;
-  const key = `${aspect}|${stamps.map((s) => `${Math.round(s.x * 1e3)},${Math.round(s.y * 1e3)},${Math.round(s.r * 1e3)},${s.newStroke ? 1 : 0}`).join(';')}`;
+  const stampKey = stamps.map((s) => `${Math.round(s.x * 1e3)},${Math.round(s.y * 1e3)},${Math.round(s.r * 1e3)},${s.newStroke ? 1 : 0}`).join(';');
+  const pathKey = paths.map((p) => p.points.map((pt) => `${Math.round(pt.x * 1e3)},${Math.round(pt.y * 1e3)}`).join(' ')).join('|');
+  const key = `${aspect}|${stampKey}|${pathKey}`;
   const cached = embossSvgCache.get(key);
   if (cached) return cached;
 
@@ -535,6 +558,11 @@ export function embossBitmapSvg(stamps: EmbossStamp[], rawAspect: number): strin
       return `<line x1="${px}" y1="${py}" x2="${cx}" y2="${cy}" stroke="#fff" stroke-width="${strokeW}" stroke-linecap="round"/>${circle}`;
     })
     .join('');
+  // 올가미(2단계) — 다각형 내부를 통째로 채운다(원 유니온이 아니라 실루엣 하나). 같은 filter
+  // 아래서 브러시 원과 나란히 굽으므로 겹쳐도 하나의 블러+조명 실루엣으로 합쳐진다.
+  const polygons = paths
+    .map((p) => `<polygon points="${p.points.map((pt) => `${(pt.x * w).toFixed(2)},${(pt.y * h).toFixed(2)}`).join(' ')}" fill="#fff"/>`)
+    .join('');
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
     `<defs><filter id="e" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">` +
@@ -547,7 +575,7 @@ export function embossBitmapSvg(stamps: EmbossStamp[], rawAspect: number): strin
     `<feFuncB type="linear" slope="${rec.midSlope}" intercept="${rec.midIntercept}"/></feComponentTransfer>` +
     `<feComposite in="mid" in2="SourceGraphic" operator="in"/>` +
     `</filter></defs>` +
-    `<g filter="url(#e)">${circles}</g></svg>`;
+    `<g filter="url(#e)">${circles}${polygons}</g></svg>`;
   const url = `data:image/svg+xml,${encodeURIComponent(svg)}`;
   if (embossSvgCache.size >= MAX_EMBOSS_CACHE) {
     const oldest = embossSvgCache.keys().next().value;

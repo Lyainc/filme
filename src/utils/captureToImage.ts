@@ -1,5 +1,5 @@
 import { POSTER_EDGE_FEATHER, parseObjectPosition, posterContentFrac, posterFeatherAxes } from './posterFeather';
-import { TEXTURE_RECIPES, gradientBitmapSvg, isNoiseRecipe, noiseTileSvg, EMBOSS_RECIPE, embossBitmapSvg, projectEmbossStamps, type EmbossStamp } from './textureRecipes';
+import { TEXTURE_RECIPES, gradientBitmapSvg, isNoiseRecipe, noiseTileSvg, EMBOSS_RECIPE, embossBitmapSvg, projectEmbossStamps, projectEmbossPaths, type EmbossStamp, type EmbossPath } from './textureRecipes';
 
 interface CaptureOptions {
   width: number;
@@ -662,7 +662,8 @@ async function compositeOverlay(
 async function compositeEmbossOverlay(
   ctx: CanvasRenderingContext2D,
   root: HTMLElement,
-  stampsRaw: string,
+  stampsRaw: string | undefined,
+  pathsRaw: string | undefined,
   intensity: number,
   nodeRect: DOMRect,
   width: number,
@@ -671,13 +672,17 @@ async function compositeEmbossOverlay(
   debug: boolean,
 ): Promise<void> {
   if (intensity <= 0) return;
-  let stamps: EmbossStamp[];
+  let stamps: EmbossStamp[] = [];
+  let paths: EmbossPath[] = [];
   try {
-    stamps = JSON.parse(stampsRaw);
+    if (stampsRaw) stamps = JSON.parse(stampsRaw);
+    if (pathsRaw) paths = JSON.parse(pathsRaw);
   } catch {
     return;
   }
-  if (!Array.isArray(stamps) || stamps.length === 0) return;
+  if (!Array.isArray(stamps)) stamps = [];
+  if (!Array.isArray(paths)) paths = [];
+  if (stamps.length === 0 && paths.length === 0) return;
 
   // stamps는 자연 이미지 분율(#509 재매핑) — compositeRaster가 poster <img>를 그리는 것과 같은
   // fit/align 매핑(posterContentFrac)으로 지금 박스(root) 분율로 투영한 뒤 굽는다. root 자체의
@@ -693,6 +698,7 @@ async function compositeEmbossOverlay(
   const [posX, posY] = parseObjectPosition(img.style.objectPosition || '');
   const cf = posterContentFrac(rootR.width, rootR.height, imgR.top - rootR.top, imgR.height, natAspect, fit, posX, posY);
   const boxStamps = projectEmbossStamps(stamps, cf);
+  const boxPaths = projectEmbossPaths(paths, cf);
 
   // compositeOverlay/compositeRaster와 동일한 분율 환산.
   const r = rootR;
@@ -701,7 +707,7 @@ async function compositeEmbossOverlay(
   const bw = (r.width / nodeRect.width) * width * pixelRatio;
   const bh = (r.height / nodeRect.height) * height * pixelRatio;
 
-  const embImg = await loadImage(embossBitmapSvg(boxStamps, bh / bw));
+  const embImg = await loadImage(embossBitmapSvg(boxStamps, boxPaths, bh / bw));
   ctx.save();
   ctx.beginPath();
   ctx.rect(bx, by, bw, bh);
@@ -712,7 +718,7 @@ async function compositeEmbossOverlay(
   ctx.restore();
 
   if (debug) {
-    console.log(`[capture:overlay] emboss stamps=${stamps.length} intensity=${intensity} blend=${EMBOSS_RECIPE.blend} box=${Math.round(bx)},${Math.round(by)},${Math.round(bw)}x${Math.round(bh)}`);
+    console.log(`[capture:overlay] emboss stamps=${stamps.length} paths=${paths.length} intensity=${intensity} blend=${EMBOSS_RECIPE.blend} box=${Math.round(bx)},${Math.round(by)},${Math.round(bw)}x${Math.round(bh)}`);
   }
 }
 
@@ -941,11 +947,12 @@ export async function captureNodeToJpeg(
     }
     // 형압(#509) — 재질·코팅 다음(z-order 최상단, Poster의 EmbossOverlay 배치와 동일).
     const embossStampsRaw = root.dataset.embossStamps;
-    if (embossStampsRaw) {
+    const embossPathsRaw = root.dataset.embossPaths;
+    if (embossStampsRaw || embossPathsRaw) {
       const rawIntensity = root.dataset.embossIntensity;
       const intensity = rawIntensity != null ? parseFloat(rawIntensity) : 1;
       await safeCompositeStep(ctx, 'emboss', () =>
-        compositeEmbossOverlay(ctx, root, embossStampsRaw, intensity, nodeRect, width, height, pixelRatio, debug));
+        compositeEmbossOverlay(ctx, root, embossStampsRaw, embossPathsRaw, intensity, nodeRect, width, height, pixelRatio, debug));
     }
   }
   if (debug) console.log(`[capture:stage] overlays done (roots=${posterRoots.length})`);

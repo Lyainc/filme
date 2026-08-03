@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { PhototicketState, MovieInfo, TicketComponents, TicketField } from '@/types';
 import { defaultBrightnessForTexture } from '@/components/moods/_shared';
-import { defaultIntensityForTexture, migrateLegacyComponents, type EmbossStamp } from '@/utils/textureRecipes';
+import { defaultIntensityForTexture, migrateLegacyComponents, type EmbossPath, type EmbossStamp } from '@/utils/textureRecipes';
 import { ALL_FIELDS_ON } from '@/constants/fieldVisibility';
 import { saveImages, loadImages, clearImages } from '@/utils/imageDb';
 import { usePosterCrop } from '@/hooks/usePosterCrop';
@@ -135,6 +135,7 @@ const INITIAL_STATE: PhototicketState = {
   croppedImageUrl: null,
   fieldVisibility: ALL_FIELDS_ON,
   embossStamps: [],
+  embossPaths: [],
   embossIntensity: 1,
 };
 
@@ -146,6 +147,9 @@ export function usePhototicket() {
   // 공유해야 하는데, 마스크 자체(embossStamps)와 달리 저장할 필요 없는 "현재 펜 크기"다.
   const [embossEditMode, setEmbossEditMode] = useState(false);
   const [embossBrushRadius, setEmbossBrushRadius] = useState(0.07);
+  // 형압 도구(#509 2단계) — 브러시/올가미 중 어느 쪽이 편집 레이어의 포인터를 소비할지. 같은
+  // 세션 한정 UI 토글 패턴(embossEditMode와 동일 근거) — 도구 선택 자체는 마스크가 아니다.
+  const [embossTool, setEmbossTool] = useState<'brush' | 'lasso'>('brush');
   // 자동저장 on/off(기본 ON) + 마지막 저장 시각(인디케이터 반짝임 트리거, #436).
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
@@ -217,8 +221,10 @@ export function usePhototicket() {
         ...(isFirstUpload ? { fieldVisibility: DEFAULT_VISIBILITY_ON_UPLOAD } : {}),
         // 형압 마스크 폐기(#509 c8) — 이 콜백이 포스터 교체·재크롭 양쪽의 단일 진입점이라(usePosterCrop
         // → onCropComplete가 재크롭도 여기로 보낸다), 마스크가 옛 포스터 픽셀을 가리키는 채로
-        // 새 포스터에 얹히는 orphan을 여기 한 곳에서 막는다.
+        // 새 포스터에 얹히는 orphan을 여기 한 곳에서 막는다. embossPaths(2단계 올가미)도 같은
+        // 좌표계·같은 orphan 위험이라 나란히 폐기한다.
         embossStamps: [],
+        embossPaths: [],
       };
     });
   }, []);
@@ -447,8 +453,14 @@ export function usePhototicket() {
     setState((prev) => ({ ...prev, embossStamps: [...prev.embossStamps, stamp] }));
   }, []);
 
+  // 올가미(2단계)는 브러시처럼 포인트마다 커밋하지 않는다 — 트레이스가 닫힌 다각형 하나로
+  // 완성된 뒤(포인터업) 한 번에 들어온다(EmbossBrushLayer의 onPath).
+  const addEmbossPath = useCallback((path: EmbossPath) => {
+    setState((prev) => ({ ...prev, embossPaths: [...prev.embossPaths, path] }));
+  }, []);
+
   const clearEmbossMask = useCallback(() => {
-    setState((prev) => (prev.embossStamps.length ? { ...prev, embossStamps: [] } : prev));
+    setState((prev) => (prev.embossStamps.length || prev.embossPaths.length ? { ...prev, embossStamps: [], embossPaths: [] } : prev));
   }, []);
 
   const setEmbossIntensity = useCallback((embossIntensity: number) => {
@@ -645,12 +657,15 @@ export function usePhototicket() {
     updateComponents,
     setRecommendedColors,
     addEmbossStamp,
+    addEmbossPath,
     clearEmbossMask,
     setEmbossIntensity,
     embossEditMode,
     setEmbossEditMode,
     embossBrushRadius,
     setEmbossBrushRadius,
+    embossTool,
+    setEmbossTool,
     updateFieldVisibility,
     restoreSnapshot,
     saveDraft,
