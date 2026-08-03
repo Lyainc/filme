@@ -59,8 +59,9 @@ module.exports = {
       // 정하므로 이름만 바꾸는 자리는 픽셀이 1도 안 움직인다(#563 불변식 보호). 행간이 필요한
       // 자리는 지금처럼 leading-* 를 따로 얹는다. display만 예외 — 호출처가 랜딩 h1 하나고
       // 기존 leading-[1.25] tracking-tight를 그대로 흡수한다.
+      // 22px(#615 auto-scroll 갤러리 사용자 피드백) — 갤러리 카드를 키울 세로 예산을 h1이 나눠준다.
       fontSize: {
-        display: ['26px', { lineHeight: '1.25', letterSpacing: '-0.025em' }],
+        display: ['22px', { lineHeight: '1.25', letterSpacing: '-0.025em' }],
         title: '16px',    // 입력 필드 — 16px 미만이면 iOS가 포커스 시 화면을 확대한다
         body: '14px',     // 본문·행·값·주요 액션
         caption: '12px',  // 칩·노트·보조 링크
@@ -132,6 +133,12 @@ module.exports = {
               '0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent), 0 16px 50px -16px rgba(0,0,0,0.6)',
           },
         },
+        // 랜딩 히어로 auto-scroll 갤러리(#615) — 리스트를 두 번 이어붙인 트랙을 -50%까지
+        // 옮기면 이음매 없이 순환한다(marquee 관용구).
+        'marquee': {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 0.4s ease-out forwards',
@@ -141,6 +148,9 @@ module.exports = {
         // backwards: 마운트 즉시 0% 프레임부터 적용하되, 종료 후엔 transform을 남기지
         // 않고 원래 스타일로 복귀 → screen-in identity-matrix 함정(forwards) 원천 차단.
         'settle': 'settle 0.42s cubic-bezier(0.2,0.9,0.3,1) backwards',
+        // 55s(#615 사용자 피드백) — 28s는 무드를 알아보기엔 너무 빨랐다. 카드 폭당 체류 시간이
+        // 늘어나 지나가는 무드를 눈으로 따라잡을 여유가 생긴다.
+        'marquee': 'marquee 55s linear infinite',
       },
     },
   },

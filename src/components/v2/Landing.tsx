@@ -1,10 +1,105 @@
 import type { DragEvent, ReactNode } from 'react';
 import type { LayoutId, MovieInfo, TicketComponents } from '@/types';
 import { ALL_FIELDS_ON } from '@/constants/fieldVisibility';
+import { useMatchMedia } from '@/hooks/useMatchMedia';
+import { LAYOUTS } from '@/utils/layouts';
 import TicketRenderer from '../TicketRenderer';
-import { LayoutStrip } from '../LayoutPicker';
 import { AppFooter } from './AppFooter';
 import { Wordmark } from './Wordmark';
+
+/** 트랙 카드 폭 — 라벨을 없앤 대신 샘플 자체를 키운다(사용자 피드백). 세로는 TicketRenderer가
+ *  각 무드의 실제 비율로 스스로 계산하므로 여기선 폭만 선언한다. */
+const TRACK_CARD_WIDTH = 140;
+/** 정지 그리드 카드 폭 — 트랙과 다른 값이다. 400×675 안에서 6장을 스크롤 없이 한 화면에 다 넣어야
+ *  하는 정지 폴백은 트랙만큼 키우면 넘친다(실측 회귀) — 3열 그리드가 들어가는 최대치로 별도로 잡는다. */
+const GRID_CARD_WIDTH = 92;
+
+/**
+ * 히어로 무드 auto-scroll 갤러리(#615 2026-08-04 개정) — 무드 6종을 실제 렌더 엔진(TicketRenderer,
+ * ghost + croppedImageUrl=null, #613 이미지 자산 대기 중)으로 노출하고 자동으로 흘려보낸다.
+ * 이전의 "칩으로 훑어보고 다른 CTA로 커밋"(LayoutStrip + heroLayout 로컬 미러)은 폐기됐다 — 샘플
+ * 클릭 자체가 `onEnterMood`를 통해 그 무드를 즉시 커밋하는 독립된 다섯 번째 진입점이라, 훑어보기용
+ * 중간 상태가 필요 없다. 무드 이름 라벨은 없다 — 이미지 자체를 키우는 쪽을 택했다(사용자 피드백):
+ * `aria-label`엔 여전히 실려 있어 접근성 정보 손실은 없다.
+ *
+ * **탭 타깃과 눌림 피드백이 서로 다른 엘리먼트에 산다** — `<button>`은 `active:scale-[0.97]`을
+ * 들고 있어(PrimaryCta·OcrUploadCard와 동일 패턴) `__tests__/tapTargets.ts`의 변형 금지 정규식
+ * (`\S+:(?:h|w|size|scale|max-[hw])-`)에 그대로 걸린다 — 그래서 폭 선언은 그 클래스가 없는 안쪽
+ * 카드 div가 인라인 style로 대신 지고(파서가 읽는 두 형태 중 인라인 px, TexturePicker 칩과 같은
+ * 경우), 테스트는 그 안쪽 div만 잰다(LayoutStrip/TexturePicker가 스와치를 재고 바깥 버튼은 안
+ * 재는 것과 같은 분리).
+ *
+ * **seamless loop의 뒤 절반은 접근성 트리에서 지운다** — 리스트를 두 벌 이어붙이는 marquee
+ * 관용구라 같은 이름의 `<button>`이 12개 존재하는데, 뒤 절반은 시각적 연속을 위한 복제일 뿐 키보드
+ * 사용자에게는 같은 무드로 가는 죽은 자리 6개가 더 생기는 셈이다(fresh-context 리뷰 지적). 뒤 절반만
+ * `aria-hidden` + `tabIndex={-1}`로 접근성 트리·탭 순서에서 뺀다 — 포인터로는 여전히 두 벌 다 눌린다
+ * (겹치는 시각 콘텐츠라 눌러도 같은 결과라 무해하다).
+ *
+ * **`prefers-reduced-motion`은 애니메이션만 죽이는 게 아니라 레이아웃을 바꾼다** — 전역 CSS 가드
+ * (`globals.css`의 `@media (prefers-reduced-motion: reduce)`)가 이미 모든 `animation-duration`을
+ * 0.01ms로 죽이지만, 그것만으로는 overflow-hidden 트랙이 스크롤 안 된 첫 프레임에 멈춰 6종 중 일부만
+ * 보인다. `useMatchMedia`(PrimaryCta와 동일 훅)로 감지해 정지 시엔 트랙 대신 줄바꿈 그리드로 6종을
+ * 한 화면에 전부 그린다 — 그리드 카드는 트랙보다 작은 별도 크기다(400×675 무스크롤 예산, 위 상수 참고).
+ */
+function MoodAutoScrollGallery({
+  heroMovieInfo,
+  heroComponents,
+  onEnterMood,
+}: {
+  heroMovieInfo: MovieInfo;
+  heroComponents: TicketComponents;
+  onEnterMood: (id: LayoutId) => void;
+}) {
+  const prefersReducedMotion = useMatchMedia('(prefers-reduced-motion: reduce)');
+
+  const sample = (layout: (typeof LAYOUTS)[number], key: string, width: number, decorative: boolean) => (
+    <button
+      key={key}
+      type="button"
+      onClick={() => onEnterMood(layout.id)}
+      aria-label={`${layout.label} 무드로 바로 시작 · ${layout.caption}`}
+      aria-hidden={decorative || undefined}
+      tabIndex={decorative ? -1 : undefined}
+      title={layout.caption}
+      data-touch={String(width)}
+      className="shrink-0 transition-transform active:scale-[0.97]"
+    >
+      {/* 라벨이 없어져 카드 높이가 TicketRenderer 하나로 끝나므로, 무드별 실제 캔버스 비율로
+          정확히 계산한다(가로 슬롯 2종은 세로 슬롯 4종보다 낮다) — 실측용 상수를 아무 무드에나
+          똑같이 씌우면 가로 슬롯에서 여백이 남거나 잘린다. */}
+      <div style={{ width, height: (width * layout.height) / layout.width }}>
+        <TicketRenderer
+          croppedImageUrl={null}
+          movieInfo={heroMovieInfo}
+          components={{ ...heroComponents, layout: layout.id }}
+          fieldVisibility={ALL_FIELDS_ON}
+          ghost
+        />
+      </div>
+    </button>
+  );
+
+  if (prefersReducedMotion) {
+    return (
+      <div data-testid="mood-gallery" className="flex flex-wrap items-start justify-center gap-3">
+        {LAYOUTS.map((layout) => sample(layout, layout.id, GRID_CARD_WIDTH, false))}
+      </div>
+    );
+  }
+
+  return (
+    <div data-testid="mood-gallery" className="w-full overflow-hidden">
+      {/* 리스트를 두 번 이어붙이고 -50%까지 트랜슬레이트하면 이음매 없는 순환 루프가 된다(marquee
+          관용구) — 새 라이브러리 없이 keyframes + animation만으로 충분(#615 구현 지침).
+          hover/focus-within에서 정지하는 건 SC 2.2.2(움직이는 콘텐츠 일시정지) 대응 — 계속 움직이는
+          트랙 위에서 Tab으로 포커스가 옮겨가면 포커스 링이 흐르는 채로 잡혀 따라가기 어렵다. */}
+      <div className="flex w-max animate-marquee gap-3 hover:[animation-play-state:paused] focus-within:[animation-play-state:paused]">
+        {LAYOUTS.map((layout) => sample(layout, `a-${layout.id}`, TRACK_CARD_WIDTH, false))}
+        {LAYOUTS.map((layout) => sample(layout, `b-${layout.id}`, TRACK_CARD_WIDTH, true))}
+      </div>
+    </div>
+  );
+}
 
 /**
  * 랜딩(#614 → #635 OCR 승격 → #615 무드 히어로) — 포스터가 아직 없을 때의 진입 화면.
@@ -38,17 +133,18 @@ import { Wordmark } from './Wordmark';
  * **히어로는 이미지 자산이 아니라 실제 렌더 엔진이다(#615)** — #613(예시 이미지 수동 제작·번들)이
  * 아직 안 끝나 저작권 없는 무드 이미지가 없다. 대신 #631이 이미 열어둔 posterless 렌더 경로를
  * 그대로 써서 `TicketRenderer`를 `croppedImageUrl=null` + `ghost`로 띄운다 — 포스터 없이도
- * 무드의 조판·타이포·필드 자리는 실물 그대로 보인다.
+ * 무드의 조판·타이포·필드 자리는 실물 그대로 보인다. 실제 히어로 마크업은 `MoodAutoScrollGallery`
+ * (아래) — 6종을 auto-scroll 트랙으로 동시에 보여준다(2026-08-04 설계 변경, D1 재검토: "동시에
+ * 더 많이 보인다" 요건은 트랙이 그대로 만족해 크로스페이드 캐러셀로 되돌아가는 게 아니다).
  *
- * **무드칩 탐색은 진짜 `components.layout`을 바로 안 건드린다** — 셸의 `heroLayout` 로컬 state를
- * 대신 읽고(`onLayoutChange`도 그 로컬 setter), "포스터부터 올리기"·"영화 검색해서 가져오기"·
- * "직접 입력"·OCR 성공 네 진입점에서만 셸이 `commitHeroLayout()`으로 실제 state에 흘려보낸다
- * (fresh-context 리뷰가 잡은 회귀: 바로 `updateComponents`를 태우면 dirtyTick이 올라
- * autosave-draft가 1초 뒤 draft를 쓰고, 다음 방문에 draftRestored=true가 돼 무드칩만 훑어본
- * 방문자에게도 랜딩이 영구히 숨었다). 네 진입점에서 커밋하는 이유는 그래야 크롭 프리셋
- * (`ImageCropModal`이 읽는 `posterOrientation`)이 랜딩에서 고른 무드와 어긋나지 않기 때문이다
- * (#529, Seed spec blindspot 3번 해소) — TMDB 검색(#537)도 같은 크롭 파이프라인으로 합류하므로
- * 동일하게 적용된다. 배경 타일 그리드는 #613 자산이 없어 이번 구현엔 없다 — #612에 남은 결정으로 기록.
+ * **샘플 클릭은 훑어보기가 아니라 즉시 커밋이다** — 예전 무드칩(`LayoutStrip`)은 셸의 `heroLayout`
+ * 로컬 미러만 바꾸고 실제 `components.layout` 커밋은 다른 CTA가 맡았지만, auto-scroll 갤러리의
+ * 샘플은 그 자체가 완결된 액션이다: 클릭하면 `onEnterMood(id)`가 그 무드를 바로 커밋하고 편집
+ * 화면으로 들어간다 — "포스터부터 올리기"·"영화 검색해서 가져오기"·"직접 입력"·OCR 성공과
+ * 나란한 **다섯 번째** 진입점이다(#631 경로, 같은 canvasReady 커밋). 크롭 프리셋
+ * (`ImageCropModal`이 읽는 `posterOrientation`)이 랜딩에서 고른 무드와 어긋나지 않는 이유(#529)도
+ * 동일 — 무드가 커밋된 채로 편집에 들어가므로 재크롭 없이 방향이 맞다. 배경 타일 그리드는 #613
+ * 자산이 없어 이번 구현엔 없다 — #612에 남은 결정으로 기록.
  */
 export function Landing({
   mode,
@@ -59,8 +155,7 @@ export function Landing({
   dragOver,
   heroMovieInfo,
   heroComponents,
-  heroLayout,
-  onLayoutChange,
+  onEnterMood,
   ocrApplied,
   children,
 }: {
@@ -80,12 +175,10 @@ export function Landing({
   dragOver: boolean;
   /** 히어로 프리뷰용 movieInfo — 업로드 전이라 사실상 항상 빈 값, ghost 자리표시만 보인다. */
   heroMovieInfo: MovieInfo;
-  /** 히어로 프리뷰의 색·스탬프 등 layout 이외 필드 — 셸의 실제 components(레이아웃은 아래 heroLayout이 대신 결정). */
+  /** 히어로 갤러리 샘플의 색·스탬프 등 layout 이외 필드 — 셸의 실제 components(레이아웃은 샘플마다 override). */
   heroComponents: TicketComponents;
-  /** 무드칩으로 탐색 중인 무드 — 셸의 로컬 state(진짜 components.layout이 아니다, 위 컴포넌트 주석). */
-  heroLayout: LayoutId;
-  /** 무드칩 선택 → 셸의 heroLayout 로컬 setter. 실제 state 커밋은 onCta/onSkip/OCR 성공 시점에 셸이 한다. */
-  onLayoutChange: (id: LayoutId) => void;
+  /** 갤러리 샘플 클릭 → 그 무드를 즉시 커밋 + 편집 화면 진입(다섯 번째 진입점, 위 컴포넌트 주석). */
+  onEnterMood: (id: LayoutId) => void;
   /** OCR이 이미 필드를 채운 적 있는가(#652) — true면 children(주 CTA)과 이탈 경로 줄을 통째로
    * CSS로만 숨겨 드로어를 유일한 재진입점으로 만든다(#388 > #631 D2 a, 이 상태에 한해). '직접
    * 입력'(onSkip)만 거친 상태는 이 값이 안 서므로 포스터 재진입 동선이 그대로 남는다. */
@@ -136,21 +229,19 @@ export function Landing({
             <h1 className="text-display font-bold text-fg break-keep">
               티켓 한 장이, 내 굿즈가 돼요
             </h1>
-            <p className="max-w-[300px] text-body leading-relaxed text-fg-muted break-keep">
+            {/* text-caption(#615 사용자 피드백) — 원래 text-body(14px)는 헤드카피 대비 존재감이
+                과했다. 카피 3종(헤드·서브·CTA) 크기를 낮춰 갤러리에 세로 예산을 넘긴다. */}
+            <p className="max-w-[300px] text-caption leading-relaxed text-fg-muted break-keep">
               스크린샷으로 자동입력. 사진으로 찍은 실물 티켓도 돼요.
             </p>
 
-            {/* 히어로(#615) — 실제 렌더 엔진, 이미지 자산 아님(위 컴포넌트 주석 참고). */}
-            <div className="w-full max-w-[120px]">
-              <TicketRenderer
-                croppedImageUrl={null}
-                movieInfo={heroMovieInfo}
-                components={heroComponents.layout === heroLayout ? heroComponents : { ...heroComponents, layout: heroLayout }}
-                fieldVisibility={ALL_FIELDS_ON}
-                ghost
-              />
-            </div>
-            <LayoutStrip value={heroLayout} onChange={onLayoutChange} />
+            {/* 히어로(#615, 2026-08-04 개정) — auto-scroll 갤러리 하나가 이전의 "전경 1장 + 무드칩
+                스트립" 두 축을 대체한다(위 컴포넌트 주석). */}
+            <MoodAutoScrollGallery
+              heroMovieInfo={heroMovieInfo}
+              heroComponents={heroComponents}
+              onEnterMood={onEnterMood}
+            />
           </>
         )}
 
