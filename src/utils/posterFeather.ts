@@ -19,17 +19,70 @@ export interface ContainRect {
 
 /** box(레터박스 포함 슬롯)에 natAspect(=natW/natH) 포스터를 object-fit:contain 했을 때의 실제 내용 사각형. */
 export function posterContainRect(boxW: number, boxH: number, natAspect: number): ContainRect {
-  const boxAspect = boxW / boxH;
-  let cw: number;
-  let ch: number;
-  if (natAspect >= boxAspect) {
-    cw = boxW; // 폭에 맞음 → 위아래 레터박스
-    ch = boxW / natAspect;
-  } else {
-    ch = boxH; // 높이에 맞음 → 좌우 레터박스
-    cw = boxH * natAspect;
-  }
-  return { cw, ch, insetX: Math.max(0, (boxW - cw) / 2), insetY: Math.max(0, (boxH - ch) / 2) };
+  const { cw, ch, offsetX, offsetY } = posterFitRect(boxW, boxH, natAspect, 'contain');
+  return { cw, ch, insetX: Math.max(0, offsetX), insetY: Math.max(0, offsetY) };
+}
+
+export interface FitRect {
+  cw: number;
+  ch: number;
+  offsetX: number;
+  offsetY: number;
+}
+
+/**
+ * box에 natAspect 포스터를 object-fit(contain|cover) + object-position(posX,posY)으로 배치했을 때
+ * 실제 내용 사각형(#509 재매핑). captureToImage.compositeRaster의 dx/dy/dw/dh와 완전히 동일한
+ * 공식 — 거기는 device px 절대값을 쓰고 여기는 임의 단위(비율 불변)를 쓸 뿐이라 스케일 걱정 없이
+ * 공유된다. contain은 offsetX/Y가 0 이상(레터박스), cover는 음수 가능(그만큼 넘쳐 잘림).
+ */
+export function posterFitRect(
+  boxW: number,
+  boxH: number,
+  natAspect: number,
+  fit: 'contain' | 'cover',
+  posX = 0.5,
+  posY = 0.5,
+): FitRect {
+  const s = fit === 'cover' ? Math.max(boxW / natAspect, boxH) : Math.min(boxW / natAspect, boxH);
+  const cw = natAspect * s;
+  const ch = s;
+  return { cw, ch, offsetX: (boxW - cw) * posX, offsetY: (boxH - ch) * posY };
+}
+
+export interface EmbossContentFrac {
+  fx: number;
+  fy: number;
+  fw: number;
+  fh: number;
+}
+
+/**
+ * 포스터 root 박스(EmbossBrushLayer/EmbossOverlay가 재는 그 박스) 대비, 실제 이미지 콘텐츠가
+ * 차지하는 사각형을 분율로(#509 재매핑). frameInsetY로 줄어든 내부 img 박스(rootH에서 imgTop만큼
+ * 내려가 imgH만큼 서는 그 박스) 안에서 다시 fit/align으로 배치되는 두 단계를 한 번에 계산한다.
+ * img 박스는 이 저장소에서 항상 좌우 인셋이 0이라(Poster의 wrapper div가 항상 left:0,right:0)
+ * 폭은 rootW를 그대로 쓴다.
+ */
+export function posterContentFrac(
+  rootW: number,
+  rootH: number,
+  imgTop: number,
+  imgH: number,
+  natAspect: number,
+  fit: 'contain' | 'cover',
+  posX = 0.5,
+  posY = 0.5,
+): EmbossContentFrac {
+  const { cw, ch, offsetX, offsetY } = posterFitRect(rootW, imgH, natAspect, fit, posX, posY);
+  return { fx: offsetX / rootW, fy: (imgTop + offsetY) / rootH, fw: cw / rootW, fh: ch / rootH };
+}
+
+/** object-position('x% y%')을 0..1 분율로. 미지정/파싱 실패는 중앙(0.5, 0.5). captureToImage.
+ *  compositeRaster·EmbossBrushLayer가 <img style.objectPosition>에서 같은 파서를 공유한다. */
+export function parseObjectPosition(pos: string): [number, number] {
+  const m = pos.match(/([\d.]+)%\s+([\d.]+)%/);
+  return m ? [parseFloat(m[1]) / 100, parseFloat(m[2]) / 100] : [0.5, 0.5];
 }
 
 // 세로 레터박스는 object-position y가 중앙일 때만 대칭이라 페더 대상이 된다. align='top'

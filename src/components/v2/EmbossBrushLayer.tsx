@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getFrameRect } from '@/components/v2/PhoneFrame';
+import { parseObjectPosition, posterContentFrac, type EmbossContentFrac } from '@/utils/posterFeather';
 import type { EmbossStamp } from '@/utils/textureRecipes';
 
 interface EmbossBrushLayerProps {
   /** 포스터 서브트리를 담은 컨테이너에서 [data-poster-root]를 찾아온다. 매 포인터 이벤트·매
    *  rAF 프레임마다 다시 부른다 — 별도 캐시 없이 항상 최신 레이아웃을 읽는다(무드·크롭 전환에도 안전). */
   getPosterEl: () => Element | null;
-  /** 포스터 폭 기준 분율 반경(#509 c7과 동일 좌표계). */
+  /** 포스터 root 박스 폭 기준 분율 반경 — clientToStamp이 저장 직전 자연 이미지 분율로 변환한다
+   *  (#509 재매핑). */
   brushRadius: number;
   onStamp: (stamp: EmbossStamp) => void;
 }
@@ -22,6 +24,25 @@ interface Rect {
 // 스탬프가 쌓여 마스크 배열이 금방 비대해진다. 0.3이면 원끼리 충분히 겹쳐 매끈한 선이 되면서도
 // 실사용 드래그 한 번이 수십 개 스탬프 수준으로 묶인다.
 const MIN_STAMP_SPACING = 0.3;
+
+/**
+ * 포스터 root 박스 대비 실제 이미지 콘텐츠 사각형을 실측한다(#509 재매핑) — Poster 컴포넌트가
+ * 프리뷰 렌더에서 쓰는 것과 같은 posterContentFrac이지만, 여긴 React state가 아니라 DOM을 직접
+ * 잰다(브러시는 Poster 트리 밖의 별도 오버레이라 그 내부 상태에 접근할 수 없다). 실제 사진 <img>의
+ * rect·natural 크기·style.objectFit/objectPosition을 읽는 게 captureToImage.compositeRaster와
+ * 동일한 근거 — 브라우저가 object-fit을 어디에 그렸는지는 이 값들로 계산하는 것 말고 알 방법이 없다.
+ */
+function measureEmbossContentFrac(posterEl: Element): EmbossContentFrac | null {
+  const img = posterEl.querySelector('img[data-role="poster"]:not([data-poster-bg])') as HTMLImageElement | null;
+  if (!img || !img.naturalWidth || !img.naturalHeight) return null;
+  const rootR = posterEl.getBoundingClientRect();
+  const imgR = img.getBoundingClientRect();
+  if (rootR.width <= 0 || rootR.height <= 0 || imgR.height <= 0) return null;
+  const natAspect = img.naturalWidth / img.naturalHeight;
+  const fit = img.style.objectFit === 'cover' ? 'cover' : 'contain';
+  const [posX, posY] = parseObjectPosition(img.style.objectPosition || '');
+  return posterContentFrac(rootR.width, rootR.height, imgR.top - rootR.top, imgR.height, natAspect, fit, posX, posY);
+}
 
 /**
  * 형압(#509) 1단계 브러시 — 포스터 위 포인터 드래그로 원형 스탬프를 찍는다. `position:fixed`지만
@@ -94,10 +115,14 @@ export default function EmbossBrushLayer({ getPosterEl, brushRadius, onStamp }: 
       if (!poster) return null;
       const r = poster.getBoundingClientRect();
       if (r.width <= 0 || r.height <= 0) return null;
-      const x = (clientX - r.left) / r.width;
-      const y = (clientY - r.top) / r.height;
-      if (x < 0 || x > 1 || y < 0 || y > 1) return null;
-      return { x, y, r: brushRadius };
+      const boxX = (clientX - r.left) / r.width;
+      const boxY = (clientY - r.top) / r.height;
+      // 그리기 가능 영역은 여전히 포스터 root 박스 전체(레터박스 포함) — 기존 UX와 동일. 다만
+      // 저장하는 좌표는 자연 이미지 분율(#509 재매핑)이라 아래 contentFrac으로 되돌린다.
+      if (boxX < 0 || boxX > 1 || boxY < 0 || boxY > 1) return null;
+      const cf = measureEmbossContentFrac(poster);
+      if (!cf || cf.fw <= 0 || cf.fh <= 0) return null; // 이미지 아직 안 뜬 상태 — 보류
+      return { x: (boxX - cf.fx) / cf.fw, y: (boxY - cf.fy) / cf.fh, r: brushRadius / cf.fw };
     },
     [getPosterEl, brushRadius],
   );
@@ -107,7 +132,10 @@ export default function EmbossBrushLayer({ getPosterEl, brushRadius, onStamp }: 
       const stamp = clientToStamp(clientX, clientY);
       if (!stamp) return;
       const last = lastPointRef.current;
-      if (last && Math.hypot(stamp.x - last.x, stamp.y - last.y) < brushRadius * MIN_STAMP_SPACING) return;
+      // 간격 판정도 stamp와 같은 자연 분율 단위로(stamp.r는 이미 그 스케일로 변환된 값) — box
+      // 분율 기준 브러시 반경(brushRadius)을 그대로 쓰면 cover 크롭처럼 자연 이미지가 박스보다
+      // 크게 표시되는 경우 두 좌표계의 스케일이 달라 간격 판정이 어긋난다.
+      if (last && Math.hypot(stamp.x - last.x, stamp.y - last.y) < stamp.r * MIN_STAMP_SPACING) return;
       // lastPointRef가 null이면 이 스트로크의 첫 스탬프 — embossBitmapSvg가 이걸로 앞(이전
       // 스트로크 마지막) 스탬프와 선으로 잇지 않게 게이트한다(#509 실측: 안 그르면 스트로크
       // 사이에 원치 않는 연결선이 남는다).
@@ -115,7 +143,7 @@ export default function EmbossBrushLayer({ getPosterEl, brushRadius, onStamp }: 
       lastPointRef.current = { x: stamp.x, y: stamp.y };
       onStamp({ ...stamp, newStroke });
     },
-    [clientToStamp, onStamp, brushRadius],
+    [clientToStamp, onStamp],
   );
 
   // 포스터를 못 찾았으면(마운트 전 첫 프레임·포스터 없음) 아무것도 안 그린다 — 크기 0인

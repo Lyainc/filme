@@ -1,5 +1,5 @@
-import { POSTER_EDGE_FEATHER, posterFeatherAxes } from './posterFeather';
-import { TEXTURE_RECIPES, gradientBitmapSvg, isNoiseRecipe, noiseTileSvg, EMBOSS_RECIPE, embossBitmapSvg, type EmbossStamp } from './textureRecipes';
+import { POSTER_EDGE_FEATHER, parseObjectPosition, posterContentFrac, posterFeatherAxes } from './posterFeather';
+import { TEXTURE_RECIPES, gradientBitmapSvg, isNoiseRecipe, noiseTileSvg, EMBOSS_RECIPE, embossBitmapSvg, projectEmbossStamps, type EmbossStamp } from './textureRecipes';
 
 interface CaptureOptions {
   width: number;
@@ -456,12 +456,6 @@ function drawPosterFeathered(
   band(far, Math.ceil(start + span), start + span, start + span - f);
 }
 
-/** object-position('x% y%')을 0..1 분율로. 미지정/파싱 실패는 중앙(0.5, 0.5). */
-function parseObjectPosition(pos: string): [number, number] {
-  const m = pos.match(/([\d.]+)%\s+([\d.]+)%/);
-  return m ? [parseFloat(m[1]) / 100, parseFloat(m[2]) / 100] : [0.5, 0.5];
-}
-
 // raster <img> 하나를, 브라우저가 자기 박스 안에 그리는 그대로(object-fit·object-position·
 // transform:scale·filter 반영) 합성 캔버스에 직접 그린다. 이게 이번 수정의 핵심 — html-to-image의
 // foreignObject→SVG→drawImage 경로는 iOS Safari에서 큰 raster를 조용히 떨어뜨리는데(#439, blob/
@@ -685,14 +679,29 @@ async function compositeEmbossOverlay(
   }
   if (!Array.isArray(stamps) || stamps.length === 0) return;
 
+  // stamps는 자연 이미지 분율(#509 재매핑) — compositeRaster가 poster <img>를 그리는 것과 같은
+  // fit/align 매핑(posterContentFrac)으로 지금 박스(root) 분율로 투영한 뒤 굽는다. root 자체의
+  // bx/by/bw/bh(합성 박스)는 그대로 poster-root 기준 — 프리뷰 EmbossOverlay의 배치와 일치해야
+  // 미리보기=저장물이 맞는다.
+  const img = root.querySelector('img[data-role="poster"]:not([data-poster-bg])') as HTMLImageElement | null;
+  if (!img || !img.naturalWidth || !img.naturalHeight) return;
+  const rootR = root.getBoundingClientRect();
+  const imgR = img.getBoundingClientRect();
+  if (rootR.width <= 0 || rootR.height <= 0 || imgR.height <= 0) return;
+  const natAspect = img.naturalWidth / img.naturalHeight;
+  const fit = img.style.objectFit === 'cover' ? 'cover' : 'contain';
+  const [posX, posY] = parseObjectPosition(img.style.objectPosition || '');
+  const cf = posterContentFrac(rootR.width, rootR.height, imgR.top - rootR.top, imgR.height, natAspect, fit, posX, posY);
+  const boxStamps = projectEmbossStamps(stamps, cf);
+
   // compositeOverlay/compositeRaster와 동일한 분율 환산.
-  const r = root.getBoundingClientRect();
+  const r = rootR;
   const bx = (EXPORT_MARGIN_PX + ((r.left - nodeRect.left) / nodeRect.width) * width) * pixelRatio;
   const by = (EXPORT_MARGIN_PX + ((r.top - nodeRect.top) / nodeRect.height) * height) * pixelRatio;
   const bw = (r.width / nodeRect.width) * width * pixelRatio;
   const bh = (r.height / nodeRect.height) * height * pixelRatio;
 
-  const embImg = await loadImage(embossBitmapSvg(stamps, bh / bw));
+  const embImg = await loadImage(embossBitmapSvg(boxStamps, bh / bw));
   ctx.save();
   ctx.beginPath();
   ctx.rect(bx, by, bw, bh);

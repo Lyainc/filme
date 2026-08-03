@@ -22,6 +22,8 @@
  * 브라우저 구현 미세차가 있을 수 있어, 최종 일치는 실측으로 확정한다(#434 슬라이스4).
  */
 
+import type { EmbossContentFrac } from './posterFeather';
+
 export type TextureBlend =
   | 'screen'
   | 'overlay'
@@ -391,9 +393,14 @@ export function isNoiseRecipe(recipe: TextureRecipe): recipe is NoiseRecipe {
 }
 
 /**
- * 형압(#509) — 사용자가 브러시로 칠한 원형 스탬프의 마스크. 포스터 자연 픽셀 0..1 분율
- * 좌표(c7) — x/y는 각각 포스터 폭/높이 기준, r은 **폭** 기준으로 둬 종횡비가 어떻든 원이
- * 찌그러지지 않는다(포스터가 화면에 어떻게 표시되든 자연 픽셀 공간 자체는 등방이므로).
+ * 형압(#509) — 사용자가 브러시로 칠한 원형 스탬프의 마스크. 포스터 **자연 이미지** 0..1 분율
+ * 좌표(c7) — x/y는 각각 실제 사진 콘텐츠의 폭/높이 기준, r도 그 폭 기준(종횡비가 어떻든 원이
+ * 찌그러지지 않는다). 박스(포스터 슬롯) 분율이 아니라 자연 이미지 분율이라 layout(무드)·
+ * posterFit("꽉 채우기") 전환처럼 박스와 이미지의 대응 관계 자체가 바뀌는 변경에도 좌표가
+ * 안 흔들린다 — 렌더 시점(EmbossOverlay/compositeEmbossOverlay)에 `projectEmbossStamps`가
+ * **그 순간의 fit/align**으로 박스 분율로 변환해서 굽는다(#509 재매핑, compositeRaster의
+ * dx/dy/dw/dh와 동일 공식). 브러시 입력(EmbossBrushLayer)은 반대 방향 변환(박스 분율 클릭 →
+ * 자연 분율)으로 이 좌표계에 맞춰 저장한다.
  *
  * `newStroke`(#509 실측 보정) — 이 스탬프가 포인터다운 직후 첫 스탬프인지. embossBitmapSvg가
  * 이걸로 "앞 스탬프와 선(round cap)으로 이어 매끈한 스트로크를 만들지"를 판정한다. 원만 겹쳐
@@ -407,6 +414,21 @@ export interface EmbossStamp {
   y: number;
   r: number;
   newStroke?: boolean;
+}
+
+/**
+ * 자연 이미지 분율(EmbossStamp)을 지금 박스의 fit/align 배치 기준 박스 분율로 투영한다(#509
+ * 재매핑). embossBitmapSvg는 박스 분율을 그리므로, 굽기 직전 항상 이 함수를 거친다 — 자연
+ * 좌표 자체는 안 바뀌고 렌더할 때만 "지금 박스에서 어디에 해당하는지"를 다시 계산하는 것이라
+ * layout·posterFit이 바뀌어도 마스크를 버릴 필요가 없다.
+ */
+export function projectEmbossStamps(stamps: EmbossStamp[], cf: EmbossContentFrac): EmbossStamp[] {
+  return stamps.map((s) => ({
+    x: cf.fx + s.x * cf.fw,
+    y: cf.fy + s.y * cf.fh,
+    r: s.r * cf.fw,
+    newStroke: s.newStroke,
+  }));
 }
 
 /**

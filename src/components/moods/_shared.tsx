@@ -2,8 +2,8 @@ import { CSSProperties, Fragment, ReactNode, SyntheticEvent, memo, useCallback, 
 import type { MovieInfo, QuoteFont, TicketComponents, TicketField } from '@/types';
 import { FIELD_LABELS, STAMP_LABELS, isStampTarget, type SheetTarget } from '@/constants/fields';
 import { formatDate } from '@/utils/dateFormat';
-import { posterContainRect, posterFeatherMask } from '@/utils/posterFeather';
-import { TEXTURE_RECIPES, gradientBitmapSvg, isNoiseRecipe, noiseTileSvg, EMBOSS_RECIPE, embossBitmapSvg, type TextureRecipe, type EmbossStamp } from '@/utils/textureRecipes';
+import { posterContainRect, posterContentFrac, posterFeatherMask, type EmbossContentFrac } from '@/utils/posterFeather';
+import { TEXTURE_RECIPES, gradientBitmapSvg, isNoiseRecipe, noiseTileSvg, EMBOSS_RECIPE, embossBitmapSvg, projectEmbossStamps, type TextureRecipe, type EmbossStamp } from '@/utils/textureRecipes';
 import { EyeIcon } from '@/components/ui/VisibilityCheckbox';
 
 export interface MoodProps {
@@ -1000,9 +1000,12 @@ export const Poster = memo(function Poster({
   // <img>를 안 그리는 분기(노출 off의 dim placeholder)는 보정 없이 고정 높이로 서는 게 맞다는
   // 판정이라, 두 곳이 같은 메커니즘 하나(useNaturalAspect)로 통일됐다.
   const { aspect: natAspect, ref: posterRef, imgProps: posterImgProps } = useNaturalAspect(src);
+  // fit 게이트 없이 항상 측정한다(#509 재매핑) — cover도 embossContentFrac(아래)에 img 박스 크기가
+  // 필요하다. fit==='contain'에서만 쓰던 featherMask/topBandHeight는 여전히 자기 조건에서 fit을
+  // 명시적으로 검사하므로(아래) cover에서 boxSize가 non-null이어도 동작이 안 바뀐다.
   useEffect(() => {
     const el = posterRef.current;
-    if (fit !== 'contain' || !el) {
+    if (!el) {
       setBoxSize(null);
       return;
     }
@@ -1030,6 +1033,17 @@ export const Poster = memo(function Poster({
     fit === 'contain' && boxSize && natAspect
       ? posterFeatherMask(boxSize.w, boxSize.h, natAspect, align === 'top' ? 0 : 0.5)
       : undefined;
+
+  // 형압 콘텐츠 사각형(#509 재매핑) — boxSize(img 박스, contain이면 frameInsetY만큼 이미 줄어든
+  // 크기)와 frameInsetY로 root(포스터 박스) 높이를 되돌린 뒤, posterContentFrac이 fit/align까지
+  // 반영해 "자연 이미지가 root 박스의 어디에 해당하는지"를 분율로 낸다. EmbossOverlay가 이 값으로
+  // 자연 분율 스탬프를 지금 박스 분율로 투영한다(projectEmbossStamps). boxSize/natAspect가 아직
+  // 없으면(첫 페인트 전) null — EmbossOverlay는 그동안 마스크를 안 그린다(SSR 불변식 유지).
+  const effFrameInsetY = fit === 'contain' ? frameInsetY : 0;
+  const embossContentFrac =
+    boxSize && natAspect
+      ? posterContentFrac(boxSize.w, boxSize.h + effFrameInsetY * 2, effFrameInsetY, boxSize.h, natAspect, fit, 0.5, align === 'top' ? 0 : 0.5)
+      : null;
 
   return (
     <div
@@ -1116,7 +1130,9 @@ export const Poster = memo(function Poster({
       {/* 형압(#509)은 재질·코팅 위(z-order 최상단)에 얹는다 — 실물 형압 다이는 코팅(라미네이팅)
           아래 종이 자체를 누르지만, 이 오버레이는 "융기부가 코팅 위로도 비쳐 보이는" 단순화한
           룩이라 가장 위가 자연스럽다(코팅 유무와 무관하게 항상 눈에 띔, c5 동시 적용 요구와 부합). */}
-      {embossStamps && embossStamps.length > 0 && <EmbossOverlay stamps={embossStamps} intensity={embossIntensity} />}
+      {embossStamps && embossStamps.length > 0 && (
+        <EmbossOverlay stamps={embossStamps} intensity={embossIntensity} contentFrac={embossContentFrac} />
+      )}
     </div>
   );
 });
@@ -1253,8 +1269,13 @@ function GradientOverlay({
  * 형압 베벨 오버레이(#509) — GradientOverlay와 동일 패턴(박스 aspect를 embossBitmapSvg에
  * 넘겨 저장 경로와 같은 비트맵을 그린다). ResizeObserver를 안 쓰는 이유도 GradientOverlay
  * 주석과 동일 — 무드 트리는 자연 픽셀 고정이라 리플로우하지 않는다.
+ *
+ * stamps는 자연 이미지 분율(#509 재매핑)이라 굽기 전 contentFrac(Poster가 계산해 넘긴다)으로
+ * 지금 박스 분율로 투영한다(projectEmbossStamps) — compositeEmbossOverlay(captureToImage.ts)가
+ * export에서 쓰는 것과 같은 변환이라 미리보기=저장물이 유지된다. contentFrac이 아직 없으면(첫
+ * 페인트 전) 마스크를 안 그린다.
  */
-function EmbossOverlay({ stamps, intensity }: { stamps: EmbossStamp[]; intensity: number }) {
+function EmbossOverlay({ stamps, intensity, contentFrac }: { stamps: EmbossStamp[]; intensity: number; contentFrac: EmbossContentFrac | null }) {
   const ref = useRef<HTMLDivElement>(null);
   const [aspect, setAspect] = useState<number | null>(null);
 
@@ -1267,6 +1288,8 @@ function EmbossOverlay({ stamps, intensity }: { stamps: EmbossStamp[]; intensity
     setAspect((prev) => (prev === next ? prev : next));
   });
 
+  const boxStamps = contentFrac ? projectEmbossStamps(stamps, contentFrac) : null;
+
   return (
     <div
       ref={ref}
@@ -1275,9 +1298,9 @@ function EmbossOverlay({ stamps, intensity }: { stamps: EmbossStamp[]; intensity
         position: 'absolute',
         inset: 0,
         pointerEvents: 'none',
-        ...(aspect
+        ...(aspect && boxStamps
           ? {
-              backgroundImage: `url("${embossBitmapSvg(stamps, aspect)}")`,
+              backgroundImage: `url("${embossBitmapSvg(boxStamps, aspect)}")`,
               backgroundSize: '100% 100%',
               backgroundRepeat: 'no-repeat',
             }
