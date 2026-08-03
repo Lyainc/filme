@@ -5,7 +5,15 @@
  *   bun scripts/capture-export.mjs --material artpaper --intensity 0.6 --out /tmp/artpaper.jpg
  *   bun scripts/capture-export.mjs --emboss --out /tmp/emboss.jpg
  *   bun scripts/capture-export.mjs --coating gloss --emboss --out /tmp/gloss-emboss.jpg
+ *   bun scripts/capture-export.mjs --layout minimal --emboss --switch-to "35mm Wide" --out /tmp/switched.jpg
+ *   bun scripts/capture-export.mjs --layout minimal --emboss --toggle-fill --out /tmp/filled.jpg
  *   bun scripts/capture-export.mjs --compare /tmp/a.jpg /tmp/b.jpg
+ *
+ * `--switch-to <무드 label>`·`--toggle-fill`(#509 재매핑 검증)은 초기 무드에서 형압을 칠한
+ * 뒤 리로드 없이 다른 무드로 전환하거나(layout) "포스터 채우기"를 켜고서(posterFit) 캡처한다
+ * — 재매핑 전이라면 updateComponents가 이 전환에서 embossStamps를 비워
+ * `[capture:overlay] emboss...` 로그 자체가 안 뜬다(마스크가 사라짐). 재매핑 후엔 전환해도
+ * 마스크가 남아 그 로그가 그대로 뜬다 — capture()의 emboss 로그 단언이 이 차이를 그대로 잡는다.
  *
  * 목적은 후가공(코팅 gradient 4종 · 재질 noise 3종 · 형압 #509)의 **저장물**을 브랜치별로
  * 뽑아 픽셀로 대조하는 것 — 프리뷰가 아니라 `captureNodeToJpeg`가 실제로 뱉는 바이트다.
@@ -264,7 +272,33 @@ async function paintEmboss(page) {
   await sleep(200);
 }
 
-async function capture({ layout, material, coating, intensity, emboss, out, timeoutMs }) {
+/**
+ * 무드 rail을 열어 다른 무드로 전환한다(#509 재매핑 검증) — LayoutStrip 버튼은
+ * `role="radio" aria-label="${label} · ${caption}"`라 label 접두 매칭으로 찾는다.
+ * 페이지 리로드 없이(React state 유지) 전환해야 "폐기 없이 정합 유지"를 실제로 재현한다.
+ */
+async function switchLayout(page, label) {
+  const clickRail = await page.evaluate(() => {
+    const b = document.querySelector('[data-rail-id="mood"]');
+    if (!b) return false;
+    b.click();
+    return true;
+  });
+  if (!clickRail) throw new Error('무드 rail 아이콘을 못 찾음(data-rail-id="mood")');
+  await sleep(400);
+  const clicked = await page.evaluate((label) => {
+    const b = [...document.querySelectorAll('button[role="radio"]')].find((x) =>
+      (x.getAttribute('aria-label') || '').startsWith(label),
+    );
+    if (!b) return false;
+    b.click();
+    return true;
+  }, label);
+  if (!clicked) throw new Error(`무드 라디오 버튼을 못 찾음: ${label}`);
+  await sleep(300);
+}
+
+async function capture({ layout, material, coating, intensity, emboss, switchTo, toggleFill, out, timeoutMs }) {
   const seed = {
     movieInfo: {
       title: '인터스텔라',
@@ -347,6 +381,25 @@ async function capture({ layout, material, coating, intensity, emboss, out, time
       await paintEmboss(page);
       mark('embossed');
     }
+    if (switchTo) {
+      await switchLayout(page, switchTo);
+      mark('switched');
+    }
+    if (toggleFill) {
+      // "포스터 채우기" 축은 'size' rail에만 있고 minimal 등 POSTER_FILL_MOODS 무드에서만 뜬다
+      // (#527) — contain→cover 전환도 layout 전환과 같은 재매핑 대상이다(#509).
+      const opened = await page.evaluate(() => {
+        const b = document.querySelector('[data-rail-id="size"]');
+        if (!b) return false;
+        b.click();
+        return true;
+      });
+      if (!opened) throw new Error('크기 rail 아이콘을 못 찾음(data-rail-id="size")');
+      await sleep(400);
+      await clickByText('꽉 채우기');
+      await sleep(300);
+      mark('fillToggled');
+    }
     await clickByText('완료');
     await page.waitForFunction(
       () =>
@@ -384,7 +437,7 @@ async function capture({ layout, material, coating, intensity, emboss, out, time
 
     console.log(
       JSON.stringify(
-        { mode: 'capture', layout, material, coating, intensity, emboss, out, bytes: bytes.length, overlays: drawn, marks },
+        { mode: 'capture', layout, material, coating, intensity, emboss, switchTo, toggleFill, out, bytes: bytes.length, overlays: drawn, marks },
         null,
         2,
       ),
@@ -408,6 +461,8 @@ if (cmpIdx >= 0) {
     coating: arg('coating', 'none'),
     intensity: Number(arg('intensity', '1')),
     emboss: argv.includes('--emboss'),
+    switchTo: arg('switch-to', null),
+    toggleFill: argv.includes('--toggle-fill'),
     out,
     timeoutMs: Number(arg('timeout', '60000')),
   });
