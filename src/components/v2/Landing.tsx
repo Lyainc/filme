@@ -64,9 +64,11 @@ function MoodAutoScrollGallery({
       data-touch={String(width)}
       className="shrink-0 transition-transform active:scale-[0.97]"
     >
-      {/* 라벨이 없어져 카드 높이가 TicketRenderer 하나로 끝나므로, 무드별 실제 캔버스 비율로
-          정확히 계산한다(가로 슬롯 2종은 세로 슬롯 4종보다 낮다) — 실측용 상수를 아무 무드에나
-          똑같이 씌우면 가로 슬롯에서 여백이 남거나 잘린다. */}
+      {/* 라벨 없음은 의도적 결정이다(사용자 피드백, 이슈 #615 코멘트에 기록) — 이미지 밑에 이름
+          한 줄을 두면 세로 공간을 먹어 카드가 작아지므로, 이름은 aria-label로만 싣고 카드는
+          이미지 하나로 키운다. 높이는 무드별 실제 캔버스 비율로 계산한다(가로 슬롯 2종은 세로
+          슬롯 4종보다 낮다) — 실측용 상수를 아무 무드에나 똑같이 씌우면 가로 슬롯에서 여백이
+          남거나 잘린다. */}
       <div style={{ width, height: (width * layout.height) / layout.width }}>
         <TicketRenderer
           croppedImageUrl={null}
