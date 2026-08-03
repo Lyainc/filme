@@ -63,9 +63,13 @@ describe('랜딩 오버레이(#614)', () => {
     expect(ocrButton()).toBeDefined();
     expect(screen.getByRole('button', { name: '포스터부터 올리기' })).toBeDefined();
     expect(screen.getByTestId('landing-skip-poster').textContent).toBe('직접 입력');
-    // 히어로 무드칩(#615) — 6무드 라디오그룹이 랜딩에 함께 뜬다. DesignRail도 같은 role/name의
-    // LayoutStrip을 CSS hidden으로 갖고 있어(canvasReady 전) 전역 쿼리는 모호하다 — landing으로 스코프.
-    expect(within(landing()).getByRole('radiogroup', { name: 'Mood designs' })).toBeDefined();
+    // 히어로 auto-scroll 갤러리(#615, 2026-08-04 개정) — 무드칩 대신 6종 샘플이 랜딩에 함께 뜬다.
+    // 각 샘플은 role 없는 순수 button(라디오그룹이 아니다, Landing.tsx 컴포넌트 주석). seamless
+    // loop를 위해 DOM엔 이름당 두 벌이 있지만 뒤 절반은 aria-hidden(fresh-context 리뷰 지적)이라
+    // role 쿼리엔 하나씩만 잡혀야 정상이다.
+    for (const name of ['Minimal', 'Criterion', '35mm', 'Editorial', 'Stub', '35mm Wide']) {
+      expect(within(landing()).getAllByRole('button', { name: new RegExp(`^${name} 무드로 바로 시작`) })).toHaveLength(1);
+    }
   });
 
   test('드래프가 복원되면 오버레이를 생략하되 진입 컨트롤은 본문에 남는다 (D7)', () => {

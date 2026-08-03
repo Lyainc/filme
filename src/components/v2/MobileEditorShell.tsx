@@ -279,29 +279,6 @@ export function MobileEditorShell({
   // canvasReady를 연다. 랜딩 자체를 숨길지는 별개 판정(D1, 아래 Landing mode) — croppedImageUrl
   // 없이 landingDismissed만으로는 랜딩을 안 숨긴다. #614 걷는 조건 ③과 계약이 같다.
   const canvasReady = !!croppedImageUrl || landingDismissed;
-  // 랜딩 히어로 무드 선택(#615) — 진짜 components.layout이 아니라 이 로컬 state를 미리보기가 읽는다.
-  // photo.updateComponents로 바로 커밋하면 dirtyTick이 올라 autosave-draft 이펙트(usePhototicket)가
-  // 1초 뒤 draft를 쓰고, 다음 방문에 draftRestored=true가 돼 무드칩만 훑어본 방문자에게도 랜딩(마케팅
-  // 카피·OCR CTA)이 영구히 숨는다(fresh-context 리뷰가 잡은 회귀) — 포스터/OCR/직접입력 어느 것도
-  // 안 건드렸는데 "이미 시작한 세션"으로 오판되면 안 된다. 그래서 탐색은 로컬로 두고, 아래
-  // commitHeroLayout이 실제로 진입(포스터 CTA·직접 입력·OCR 성공)하는 시점에만 진짜 state로 흘려보내
-  // 크롭 프리셋(#529)이 랜딩에서 고른 무드와 어긋나지 않게 한다.
-  const [heroLayout, setHeroLayout] = useState<LayoutId>(previewComponents.layout);
-  // draft 복원(usePhototicket의 마운트 후 useEffect, 비동기)이 위 useState 초기화보다 늦게
-  // 끝나면 heroLayout이 INITIAL_STATE 기본값('minimal')에 굳은 채로 남는다 — 복원된 무드가
-  // 아니라 그 기본값으로 commitHeroLayout이 되돌려버린다(fresh-context 리뷰 P0). draftRestored가
-  // true로 바뀌는 시점(복원 완료)에 한 번 재동기화한다. 그 이후 무드칩 탐색은 이 effect가 다시
-  // 안 건드린다 — draftRestored는 마운트 이후 한 번만 false→true로 바뀌므로 사용자가 칩을
-  // 눌러 heroLayout이 바뀌어도 이 effect가 재발동해 되돌리는 일은 없다.
-  useEffect(() => {
-    if (photo.draftRestored) setHeroLayout(photo.state.components.layout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [photo.draftRestored]);
-  const commitHeroLayout = useCallback(() => {
-    if (heroLayout !== photo.state.components.layout) {
-      photo.updateComponents({ layout: heroLayout });
-    }
-  }, [heroLayout, photo.state.components.layout, photo.updateComponents]);
   const clearArmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // 습관적 더블탭이 arm과 실행을 한 번에 뚫지 않게 arm 직후 재탭은 무시(claude-review PR #375 P1).
   const clearArmedAt = useRef(0);
@@ -482,11 +459,6 @@ export function MobileEditorShell({
     clearTimeout(clearArmTimer.current);
     setMenuOpen(false); // 닫힘 effect가 clearArmed도 함께 해제
     photo.clearDraft();
-    // heroLayout도 함께 리셋 — 안 하면 편집 중 바꾼 무드가 로컬 미러에 남아, 리셋 직후 재진입
-    // (포스터부터 올리기·직접 입력)에서 commitHeroLayout이 리셋 직전 무드를 되살린다(claude-review
-    // PR #636 3차 P0). clearDraft가 되돌리는 INITIAL_STATE.components.layout과 같은 값으로 고정
-    // (usePhototicket.ts) — clearDraft 직후엔 photo.state가 아직 비동기라 그 값을 못 읽는다.
-    setHeroLayout('minimal');
     // 초기화는 새 문서니까 랜딩도 처음 상태로 — 안 되돌리면 포스터도 draft도 없는 빈 셸에 남는다(#614).
     setLandingDismissed(false);
     setOcrApplied(false);
@@ -557,10 +529,6 @@ export function MobileEditorShell({
       if (crop.isCropping) return;
       const file = e.dataTransfer.files?.[0];
       if (!file || !POSTER_ACCEPT.includes(file.type)) return;
-      // 랜딩 히어로에서 훑어보던 무드를 커밋(#615) — 이 props는 랜딩 오버레이 한 곳에서만
-      // 쓰이므로(단일 소비처) onCta처럼 호출부를 감쌀 필요 없이 여기서 바로 불러도 안전하다.
-      // 캔버스가 선 뒤(포스터 교체 등)엔 이 드롭존 자체가 랜딩 안에만 있어 재진입하지 않는다.
-      commitHeroLayout();
       crop.openFile(file);
     },
   };
@@ -962,27 +930,20 @@ export function MobileEditorShell({
             // 걸면 "포스터 없이 시작" 직후에도 랜딩이 숨어 포스터를 나중에 추가할 진입점이
             // 사라진다(D2 (a): 이 inline 상태 자체가 진입점). #614 걷는 조건 ③이 이 계약을 고정한다.
             mode={croppedImageUrl || isMax ? 'hidden' : showLanding ? 'overlay' : 'inline'}
-            // commitHeroLayout은 이 세 진입점(handlePosterTap 자체는 아님 — '포스터 교체' 등
-            // 캔버스가 선 뒤의 재사용 호출까지 옛 heroLayout으로 되돌리면 안 된다)과 아래
-            // onOcrApply에서만 부른다 — 무드칩을 훑어보기만 한 방문은 실제 state를 안 건드린다.
-            onCta={() => {
-              commitHeroLayout();
-              handlePosterTap();
-            }}
-            onTmdbSearch={() => {
-              commitHeroLayout();
-              setTmdbOpen(true);
-            }}
-            onSkip={() => {
-              commitHeroLayout();
+            onCta={handlePosterTap}
+            onTmdbSearch={() => setTmdbOpen(true)}
+            onSkip={() => setLandingDismissed(true)}
+            // 갤러리 샘플 클릭 — 다섯 번째 진입점(#615). 다른 넷과 달리 "훑어보고 나중에 커밋"할
+            // 로컬 미러가 없다 — 샘플 자체가 훑어보기 없는 완결된 선택이라 클릭된 무드를 그 자리에서
+            // 바로 components.layout에 커밋한다.
+            onEnterMood={(id) => {
+              photo.updateComponents({ layout: id });
               setLandingDismissed(true);
             }}
             dropProps={posterDropProps}
             dragOver={posterDragOver}
             heroMovieInfo={photo.state.movieInfo}
             heroComponents={previewComponents}
-            heroLayout={heroLayout}
-            onLayoutChange={setHeroLayout}
             ocrApplied={ocrApplied}
           >
             <OcrUploadCard
@@ -992,7 +953,6 @@ export function MobileEditorShell({
               // 들어온 것이고, 채워진 필드가 오버레이 뒤에 가려져 있으면 안 된다. ocrApplied는
               // 그 뒤 이 카드 자신을 CSS로 숨겨 드로어가 유일한 재진입점이 되게 한다(#388, #652).
               onOcrApply={(params) => {
-                commitHeroLayout();
                 setLandingDismissed(true);
                 setOcrApplied(true);
                 ocr.apply(params);
@@ -1170,8 +1130,7 @@ export function MobileEditorShell({
           onComplete={handlePosterCropComplete}
           isProcessing={crop.isCropping}
           // previewComponents(pages/index.tsx의 280ms debounce)가 아니라 실시간 state를 읽는다 —
-          // 드롭존의 commitHeroLayout()→crop.openFile(file)이 같은 동기 이벤트 핸들러 안이라
-          // debounced 값을 쓰면 모달이 방금 커밋한 무드가 아니라 직전 무드의 크롭 프리셋으로
+          // debounced 값을 쓰면 모달이 방금 커밋된 무드가 아니라 직전 무드의 크롭 프리셋으로
           // 열렸다가 ~280ms 뒤 갑자기 재계산됐다(#529 invariant 위반, claude-review PR #636 P0).
           layout={photo.state.components.layout}
         />
