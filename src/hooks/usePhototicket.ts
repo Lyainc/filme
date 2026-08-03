@@ -425,20 +425,13 @@ export function usePhototicket() {
         nextComponents.coatingIntensity = defaultIntensityForTexture(components.coating!);
       }
 
-      // 형압 마스크 폐기(#509 c7/c8, fresh-context 리뷰 지적) — 마스크는 포스터 "자연 픽셀"이
-      // 아니라 지금 화면에 뜬 포스터 **박스**의 0..1 분율이라(EmbossBrushLayer), layout(무드)
-      // 전환이나 posterFit(#527 "꽉 채우기") 토글처럼 그 박스와 원본 이미지의 대응 관계 자체가
-      // 바뀌는 변경에서는 같은 분율이 다른 픽셀을 가리키게 된다 — 크롭 프리셋이 무드마다
-      // 갈리는 것(#529)과 같은 종류의 문제다. 픽셀이 조용히 어긋난 채 남는 것보다, 포스터
-      // 교체·재크롭 때처럼 마스크를 폐기하는 쪽이 c8과 같은 정직한 선택이다(정교한 재매핑은
-      // #509 acceptance의 "마스크가 fit·align 변경에도 정합 유지"를 문자 그대로 만족시키지만
-      // 이 세션에서 감당하기엔 별도 이슈 분량의 기하 작업이다).
-      const layoutChanged = components.layout !== undefined && components.layout !== prev.components.layout;
-      const posterFitChanged =
-        components.posterFit !== undefined && components.posterFit !== prev.components.posterFit;
-      const embossStamps = layoutChanged || posterFitChanged ? [] : prev.embossStamps;
+      // 형압 마스크는 layout(무드)·posterFit(#527 "꽉 채우기") 전환에도 안 비운다(#509 재매핑).
+      // 마스크가 이제 포스터 "박스" 분율이 아니라 자연 이미지 분율로 저장되고(EmbossStamp, c7 원래
+      // 의도), 렌더 시점에 그 순간의 fit/align으로 박스 분율로 다시 투영하므로(projectEmbossStamps,
+      // compositeRaster와 동일한 매핑) 박스-이미지 대응 관계가 바뀌어도 좌표가 안 흔들린다. 포스터
+      // 교체·재크롭(handleImageUpload)은 원본 자체가 달라지므로 그쪽 폐기는 그대로 유지한다.
 
-      return { ...prev, components: nextComponents, embossStamps };
+      return { ...prev, components: nextComponents };
     });
     setDirtyTick((t) => t + 1);
   }, []);
