@@ -217,8 +217,12 @@ export function OcrUploadCard({
       }
 
       applyOcr(direct, result.title, prevComponents);
-    } catch {
-      // silent fallback
+    } catch (err) {
+      // 무음 실패 제거(#645 C2) — 네트워크/서버 오류는 rateLimited·빈 결과와 달리 아무 토스트도
+      // 없었다. 트리거 바로 아래 위치를 유지해야 하는 로컬 토스트라(#645 논의) 셸 밖 showError
+      // 대신 이 컴포넌트의 기존 showToast를 그대로 쓴다.
+      console.error('[ocr]', err);
+      showToast('인식에 실패했어요. 다시 시도해 주세요.');
     } finally {
       if (mountedRef.current) setIsProcessing(false);
     }
