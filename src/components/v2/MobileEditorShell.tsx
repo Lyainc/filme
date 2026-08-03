@@ -37,6 +37,7 @@ import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { LayoutId, MovieInfo, TicketComponents, TicketField } from '@/types';
 import { isStampTarget, STAMP_KEYS, type SheetTarget } from '@/constants/fields';
 import { triggerKobisLookup } from '@/utils/kobisLookup';
+import { ErrorToastHost } from '@/utils/errorToast';
 
 // 필드 목록 우측 드로어(#355, 구 FieldEditSheet 대체) — 크롭 모달·로고 훅을 끌어오고 열기 전엔
 // 안 쓰므로 dynamic(ssr:false)로 분리, 첫 열기에 로드된다.
@@ -1194,6 +1195,11 @@ export function MobileEditorShell({
           {toast}
         </div>
       )}
+
+      {/* 실패 알림 단일 진입점(#645) — usePosterCrop·usePhototicket 등 셸 트리 밖 훅이 직접
+          부르는 모듈 싱글턴을 여기서 한 번만 구독해 렌더한다. PhoneFrame 안에 있어야 fixed
+          좌표가 contain:paint에 갇힌다(#609). */}
+      <ErrorToastHost />
     </div>
   );
 }
