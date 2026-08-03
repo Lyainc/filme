@@ -7,6 +7,8 @@
  *   bun scripts/capture-export.mjs --coating gloss --emboss --out /tmp/gloss-emboss.jpg
  *   bun scripts/capture-export.mjs --layout minimal --emboss --switch-to "35mm Wide" --out /tmp/switched.jpg
  *   bun scripts/capture-export.mjs --layout minimal --emboss --toggle-fill --out /tmp/filled.jpg
+ *   bun scripts/capture-export.mjs --lasso --out /tmp/lasso.jpg
+ *   bun scripts/capture-export.mjs --emboss --lasso --out /tmp/brush-and-lasso.jpg
  *   bun scripts/capture-export.mjs --compare /tmp/a.jpg /tmp/b.jpg
  *
  * `--switch-to <무드 label>`·`--toggle-fill`(#509 재매핑 검증)은 초기 무드에서 형압을 칠한
@@ -15,10 +17,15 @@
  * `[capture:overlay] emboss...` 로그 자체가 안 뜬다(마스크가 사라짐). 재매핑 후엔 전환해도
  * 마스크가 남아 그 로그가 그대로 뜬다 — capture()의 emboss 로그 단언이 이 차이를 그대로 잡는다.
  *
+ * `--lasso`(#509 2단계 c10)는 ChipRadio로 도구를 '올가미'로 바꾼 뒤 폐곡선을 그려 EmbossPath를
+ * 커밋한다 — `--emboss`와 함께 주면 브러시 스탬프 + 올가미 다각형이 같은 비트맵에 동시에
+ * 굽히는지(c5, 서로 다른 축이 아니라 같은 형압 축 안의 두 입력이 하나로 합쳐짐)까지 검증한다.
+ *
  * 목적은 후가공(코팅 gradient 4종 · 재질 noise 3종 · 형압 #509)의 **저장물**을 브랜치별로
  * 뽑아 픽셀로 대조하는 것 — 프리뷰가 아니라 `captureNodeToJpeg`가 실제로 뱉는 바이트다.
- * `--emboss`는 material/coating과 달리 localStorage 시드로 못 넣는다(형압 마스크는 c8로 세션
- * 한정이라 PersistedState 밖) — 대신 실제 rail UI를 몰아 브러시 드래그를 재현한다(paintEmboss).
+ * `--emboss`/`--lasso`는 material/coating과 달리 localStorage 시드로 못 넣는다(형압 마스크는
+ * c8로 세션 한정이라 PersistedState 밖) — 대신 실제 rail UI를 몰아 브러시 드래그·올가미
+ * 트레이스를 재현한다(paintEmboss/paintEmbossLasso).
  *
  * ── 헤드리스에서 '사진에 저장'이 안 끝나는 이유 (실측 확정) ──────────────────
  * 앱 버그가 아니다. macOS 헤드리스 Chrome에서 `navigator.canShare({files:[…]})`가
@@ -216,7 +223,14 @@ const POSTER_DRAW = `
  * 종료를 꼭 눌러야 하는 이유 — 브러시 레이어가 `position:fixed` 전체화면이라 안 끄면 이어지는
  * '완료'·'사진에 저장' 클릭을 그 레이어가 가로챈다.
  */
-async function paintEmboss(page) {
+async function ensureEmbossPanelOpen(page) {
+  const alreadyOpen = await page.evaluate(
+    () =>
+      ![...document.querySelectorAll('[role="radiogroup"]')].every(
+        (g) => (g.getAttribute('aria-label') || '') !== '형압 도구',
+      ),
+  );
+  if (alreadyOpen) return;
   const clickRail = await page.evaluate(() => {
     const b = document.querySelector('[data-rail-id="emboss"]');
     if (!b) return false;
@@ -225,6 +239,10 @@ async function paintEmboss(page) {
   });
   if (!clickRail) throw new Error('형압 rail 아이콘을 못 찾음(data-rail-id="emboss")');
   await sleep(400); // grid-rows 패널 펼침 트랜지션(300ms)
+}
+
+async function paintEmboss(page) {
+  await ensureEmbossPanelOpen(page);
 
   const clickStart = await page.evaluate(() => {
     const b = [...document.querySelectorAll('button')].find((x) =>
@@ -272,6 +290,86 @@ async function paintEmboss(page) {
   await sleep(200);
 }
 
+/** ChipRadio "형압 도구"에서 label과 정확히 같은 텍스트의 라디오 버튼을 클릭한다(#509 2단계). */
+async function selectEmbossTool(page, label) {
+  const clicked = await page.evaluate((label) => {
+    const group = [...document.querySelectorAll('[role="radiogroup"]')].find(
+      (g) => (g.getAttribute('aria-label') || '') === '형압 도구',
+    );
+    if (!group) return false;
+    const b = [...group.querySelectorAll('button[role="radio"]')].find((x) => (x.textContent || '').trim() === label);
+    if (!b) return false;
+    b.click();
+    return true;
+  }, label);
+  if (!clicked) throw new Error(`형압 도구 라디오를 못 찾음: ${label}`);
+  await sleep(150);
+}
+
+/**
+ * 자석 올가미(#509 2단계, c10) — paintEmboss와 같은 진입/종료 골격이지만 ChipRadio로 도구를
+ * '올가미'로 바꾼 뒤 사각형에 가까운 폐곡선을 그린다. EmbossBrushLayer의 계약상 포인터업
+ * 시점에 3점 미만이면 조용히 버려지므로, 네 변을 여러 스텝으로 지나 MIN_LASSO_SPACING(자연
+ * 분율 0.01)을 넘는 정점을 충분히 쌓는다 — 대각선 한 줄로 끝나는 paintEmboss와 다른 이유.
+ */
+async function paintEmbossLasso(page) {
+  await ensureEmbossPanelOpen(page);
+  await selectEmbossTool(page, '올가미');
+
+  const clickStart = await page.evaluate(() => {
+    const b = [...document.querySelectorAll('button')].find((x) => (x.textContent || '').includes('올가미로 선택 시작'));
+    if (!b) return false;
+    b.click();
+    return true;
+  });
+  if (!clickStart) throw new Error('"올가미로 선택 시작" 버튼을 못 찾음');
+  await sleep(200);
+
+  const rect = await page.evaluate(() => {
+    const el = document.querySelector('[data-poster-root]');
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return { left: r.left, top: r.top, width: r.width, height: r.height };
+  });
+  if (!rect || rect.width <= 0 || rect.height <= 0) throw new Error('포스터 rect를 못 얻음(올가미 대상 없음)');
+
+  const cx = rect.left + rect.width * 0.5;
+  const cy = rect.top + rect.height * 0.5;
+  const rx = rect.width * 0.2;
+  const ry = rect.height * 0.15;
+  // 사각형 네 꼭짓점 + 시작점 복귀 — 실제 닫힘 판정은 포인터업 하나로 이미 충족되지만(>=3점),
+  // 궤적을 시작점으로 되돌리는 게 사용자가 자석 올가미를 쓰는 실제 제스처와 더 가깝다.
+  const corners = [
+    [cx - rx, cy - ry],
+    [cx + rx, cy - ry],
+    [cx + rx, cy + ry],
+    [cx - rx, cy + ry],
+    [cx - rx, cy - ry],
+  ];
+  await page.mouse.move(corners[0][0], corners[0][1]);
+  await page.mouse.down();
+  for (let seg = 1; seg < corners.length; seg++) {
+    const [x0, y0] = corners[seg - 1];
+    const [x1, y1] = corners[seg];
+    const steps = 8;
+    for (let i = 1; i <= steps; i++) {
+      await page.mouse.move(x0 + ((x1 - x0) * i) / steps, y0 + ((y1 - y0) * i) / steps);
+      await sleep(15);
+    }
+  }
+  await page.mouse.up();
+  await sleep(200);
+
+  const clickEnd = await page.evaluate(() => {
+    const b = [...document.querySelectorAll('button')].find((x) => (x.textContent || '').includes('탭해서 종료'));
+    if (!b) return false;
+    b.click();
+    return true;
+  });
+  if (!clickEnd) throw new Error('형압 모드 종료 버튼을 못 찾음 — 브러시 레이어가 이후 클릭을 가로챌 수 있음');
+  await sleep(200);
+}
+
 /**
  * 무드 rail을 열어 다른 무드로 전환한다(#509 재매핑 검증) — LayoutStrip 버튼은
  * `role="radio" aria-label="${label} · ${caption}"`라 label 접두 매칭으로 찾는다.
@@ -298,7 +396,7 @@ async function switchLayout(page, label) {
   await sleep(300);
 }
 
-async function capture({ layout, material, coating, intensity, emboss, switchTo, toggleFill, out, timeoutMs }) {
+async function capture({ layout, material, coating, intensity, emboss, lasso, switchTo, toggleFill, out, timeoutMs }) {
   const seed = {
     movieInfo: {
       title: '인터스텔라',
@@ -381,6 +479,10 @@ async function capture({ layout, material, coating, intensity, emboss, switchTo,
       await paintEmboss(page);
       mark('embossed');
     }
+    if (lasso) {
+      await paintEmbossLasso(page);
+      mark('lassoed');
+    }
     if (switchTo) {
       await switchLayout(page, switchTo);
       mark('switched');
@@ -431,13 +533,18 @@ async function capture({ layout, material, coating, intensity, emboss, switchTo,
     const drawn = logs.filter((l) => l.startsWith('[capture:overlay]'));
     const missing = wanted.filter((t) => !drawn.some((l) => l.includes(`texture=${t}`)));
     if (missing.length) throw new Error(`오버레이가 안 그려짐: ${missing.join(',')} (로그: ${drawn.join(' | ')})`);
-    if (emboss && !drawn.some((l) => l.includes('emboss'))) {
+    if ((emboss || lasso) && !drawn.some((l) => l.includes('emboss'))) {
       throw new Error(`형압 오버레이가 안 그려짐(로그: ${drawn.join(' | ')})`);
+    }
+    // 올가미(2단계) — EmbossPath가 실제로 커밋·투영·굽기까지 갔는지는 stamps 유무와 별개로
+    // paths 카운트로만 확인된다(compositeEmbossOverlay의 debug 로그, captureToImage.ts).
+    if (lasso && !drawn.some((l) => l.includes('emboss') && /paths=[1-9]/.test(l))) {
+      throw new Error(`올가미 다각형이 안 커밋되거나 안 그려짐(로그: ${drawn.join(' | ')})`);
     }
 
     console.log(
       JSON.stringify(
-        { mode: 'capture', layout, material, coating, intensity, emboss, switchTo, toggleFill, out, bytes: bytes.length, overlays: drawn, marks },
+        { mode: 'capture', layout, material, coating, intensity, emboss, lasso, switchTo, toggleFill, out, bytes: bytes.length, overlays: drawn, marks },
         null,
         2,
       ),
@@ -461,6 +568,7 @@ if (cmpIdx >= 0) {
     coating: arg('coating', 'none'),
     intensity: Number(arg('intensity', '1')),
     emboss: argv.includes('--emboss'),
+    lasso: argv.includes('--lasso'),
     switchTo: arg('switch-to', null),
     toggleFill: argv.includes('--toggle-fill'),
     out,
