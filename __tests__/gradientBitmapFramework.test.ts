@@ -73,6 +73,15 @@ describe('#506 c1/c2 — 굽기 산출물과 캐시 규율', () => {
     expect(gradientBitmapSvg(gloss, 1.5)).not.toBe(gradientBitmapSvg(gloss, 0.667));
   });
 
+  test('반올림은 굽기 함수가 소유한다 — 미세하게 갈린 raw aspect가 같은 URL로 수렴', () => {
+    // 프리뷰의 getBoundingClientRect 비율과 저장 경로의 bh/bw는 float로 미세하게 갈린다.
+    // 반올림이 굽기 함수 안에 있어야 두 경로가 같은 캐시 항목을 친다 — 호출부 어느 한쪽에
+    // 반올림을 되돌리면(원래 버그, claude-review PR #643 P1) 여기가 깨진다.
+    expect(gradientBitmapSvg(gloss, 1.500041)).toBe(gradientBitmapSvg(gloss, 1.499979));
+    // 1e-4보다 크게 갈리면 여전히 다른 비트맵이다 — 반올림이 aspect를 뭉개 각도를 잃으면 안 된다.
+    expect(gradientBitmapSvg(gloss, 1.5)).not.toBe(gradientBitmapSvg(gloss, 1.5002));
+  });
+
   test('intensity=1로 굽는다 — stop alpha가 레시피 값 그대로 실린다(합성 시점에 곱한다)', () => {
     const svg = decodeURIComponent(gradientBitmapSvg(gloss, 1.5));
     // gloss 피크 alpha 0.42가 스케일 없이 그대로 있어야 한다.
