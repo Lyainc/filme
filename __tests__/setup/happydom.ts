@@ -1,6 +1,17 @@
+import { afterEach } from 'bun:test';
 import { GlobalRegistrator } from '@happy-dom/global-registrator';
+import { resetErrorToastForTest } from '@/utils/errorToast';
 
 GlobalRegistrator.register();
+
+// errorToast(#645)는 모듈 싱글턴이라 bun test 전체 프로세스 내내 남는다 — <ErrorToastHost/>를
+// 한 번도 안 마운트하는 renderHook 테스트(usePhototicket을 직접 부르는 draftImageRestore.test.tsx
+// 등)가 persistent showError를 남기면, 그걸 처음 마운트하는 뒤쪽의 무관한 테스트가 그 잔여물을
+// 그대로 받는다(captureToImage.resetCtxFilterProbeForTest와 같은 클래스, #611). 전역 setup이라
+// 모든 테스트 파일에 자동 적용된다 — 개별 파일이 따로 리셋을 부를 필요가 없다.
+afterEach(() => {
+  resetErrorToastForTest();
+});
 
 // testing-library의 `findBy*`/`waitFor` 기본 대기는 1000ms인데, 그건 로컬 머신 속도를
 // 전제한 값이다. CI 러너에서 스위트가 5배 느려지면(#593 실측: 186.9s vs 로컬 36.2s)
