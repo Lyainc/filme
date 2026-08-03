@@ -16,10 +16,12 @@ import {
   EMBOSS_RECIPE,
   embossBitmapSvg,
   embossSvgCacheSize,
+  projectEmbossStamps,
   type GradientRecipe,
   type NoiseRecipe,
   type EmbossStamp,
 } from '../src/utils/textureRecipes';
+import { posterContentFrac, posterFitRect } from '../src/utils/posterFeather';
 import { Poster } from '../src/components/moods/_shared';
 
 /** 이주 전 `compositeOverlay`가 쓰던 기하 — 회귀 대조군으로 그대로 보존한다. */
@@ -326,5 +328,76 @@ describe('#509 c1 — 형압 비트맵 굽기(#506 프레임워크 세 번째 �
     const svg = decodeURIComponent(embossBitmapSvg(twoStrokes, 1.5).slice('data:image/svg+xml,'.length));
     expect(svg).not.toContain('<line'); // 둘 다 newStroke라 잇는 선이 하나도 없어야 한다
     expect((svg.match(/<circle/g) ?? []).length).toBe(2);
+  });
+});
+
+describe('#509 재매핑 — posterFitRect/posterContentFrac/projectEmbossStamps(fit·align 인식 매핑)', () => {
+  test('posterFitRect contain — 가로로 넓은 이미지는 위아래 레터박스(offsetY만 양수)', () => {
+    // box 100×100, natAspect=2(가로로 넓음) → 폭에 맞춰 100×50, 세로로 25px씩 남는다.
+    const rect = posterFitRect(100, 100, 2, 'contain');
+    expect(rect.cw).toBeCloseTo(100, 6);
+    expect(rect.ch).toBeCloseTo(50, 6);
+    expect(rect.offsetX).toBeCloseTo(0, 6);
+    expect(rect.offsetY).toBeCloseTo(25, 6);
+  });
+
+  test('posterFitRect cover — 같은 box·natAspect는 좌우로 넘쳐 offsetX가 음수(compositeRaster의 dx와 동일 공식)', () => {
+    const rect = posterFitRect(100, 100, 2, 'cover');
+    expect(rect.cw).toBeCloseTo(200, 6);
+    expect(rect.ch).toBeCloseTo(100, 6);
+    expect(rect.offsetX).toBeCloseTo(-50, 6); // 중앙 정렬이라 좌우 50씩 잘림
+    expect(rect.offsetY).toBeCloseTo(0, 6);
+  });
+
+  test('posterFitRect posX/posY — align="top"(posY=0)이면 offsetY가 항상 0(레터박스가 전부 아래로)', () => {
+    const rect = posterFitRect(100, 100, 2, 'contain', 0.5, 0);
+    expect(rect.offsetY).toBeCloseTo(0, 6);
+  });
+
+  test('posterContentFrac — frameInsetY로 줄어든 img 박스를 root 분율로 되돌린다(#527 minimal 시나리오)', () => {
+    // root 960×1534, frameInsetY=22(위아래) → img 박스는 960×1490. natAspect가 그 img 박스와
+    // 정확히 같으면(무손실 크롭) 레터박스 0 — fx=0,fw=1, fy는 딱 insetY 분율, fh는 나머지 전부.
+    const rootW = 960;
+    const rootH = 1534;
+    const insetY = 22;
+    const imgH = rootH - insetY * 2;
+    const natAspect = rootW / imgH;
+    const cf = posterContentFrac(rootW, rootH, insetY, imgH, natAspect, 'contain');
+    expect(cf.fx).toBeCloseTo(0, 6);
+    expect(cf.fw).toBeCloseTo(1, 6);
+    expect(cf.fy).toBeCloseTo(insetY / rootH, 6);
+    expect(cf.fh).toBeCloseTo(imgH / rootH, 6);
+  });
+
+  test('projectEmbossStamps — 자연 분율(u,v,r)을 contentFrac으로 박스 분율로 투영한다', () => {
+    const cf = { fx: 0.1, fy: 0.05, fw: 0.8, fh: 0.6 };
+    const [projected] = projectEmbossStamps([{ x: 0.5, y: 0.5, r: 0.1, newStroke: true }], cf);
+    expect(projected.x).toBeCloseTo(0.1 + 0.5 * 0.8, 6);
+    expect(projected.y).toBeCloseTo(0.05 + 0.5 * 0.6, 6);
+    expect(projected.r).toBeCloseTo(0.1 * 0.8, 6);
+    expect(projected.newStroke).toBe(true);
+  });
+
+  test('무드·posterFit이 바뀌어도(contentFrac이 달라져도) 같은 자연 좌표는 각 박스에서 올바른 지점에 투영된다(#509 acceptance)', () => {
+    // 시나리오 1: minimal 풀블리드 contain, 무손실 크롭(레터박스 0).
+    const cfMinimal = posterContentFrac(960, 1534, 22, 1490, 960 / 1490, 'contain');
+    // 시나리오 2: 35mm Wide 926×617 cover, 세로로 크롭된 포스터가 넘어와 좌우가 넘친 경우.
+    const cfWide = posterContentFrac(926, 617, 0, 617, 0.6, 'cover');
+
+    const natural: EmbossStamp = { x: 0.5, y: 0.3, r: 0.05 }; // 포스터 상단 근처 한 점
+    const [a] = projectEmbossStamps([natural], cfMinimal);
+    const [b] = projectEmbossStamps([natural], cfWide);
+
+    // 두 박스에서 나온 픽셀 위치는 서로 다르다(박스 형태가 다르므로 당연) — 하지만 각 박스 안에서
+    // 역변환하면 정확히 원래 자연 좌표로 되돌아온다(정합 유지, 폐기 없이도 항상 맞는 지점).
+    const invert = (p: { x: number; y: number; r: number }, cf: typeof cfMinimal) => ({
+      x: (p.x - cf.fx) / cf.fw,
+      y: (p.y - cf.fy) / cf.fh,
+      r: p.r / cf.fw,
+    });
+    expect(invert(a, cfMinimal).x).toBeCloseTo(natural.x, 6);
+    expect(invert(a, cfMinimal).y).toBeCloseTo(natural.y, 6);
+    expect(invert(b, cfWide).x).toBeCloseTo(natural.x, 6);
+    expect(invert(b, cfWide).y).toBeCloseTo(natural.y, 6);
   });
 });
