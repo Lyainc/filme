@@ -267,14 +267,14 @@ describe('#509 c1 — 형압 비트맵 굽기(#506 프레임워크 세 번째 �
 
   test('스탬프+aspect가 같으면 같은 문자열(캐시 히트) — intensity는 굽기 파라미터가 아니다(합성 시점 alpha)', () => {
     const before = embossSvgCacheSize();
-    const a = embossBitmapSvg(stamps, 1.5);
-    const b = embossBitmapSvg(stamps, 1.5);
+    const a = embossBitmapSvg(stamps, [], 1.5);
+    const b = embossBitmapSvg(stamps, [], 1.5);
     expect(a).toBe(b);
     expect(embossSvgCacheSize()).toBe(before + 1);
   });
 
   test('스탬프 목록이 다르면 다른 비트맵이다', () => {
-    expect(embossBitmapSvg(stamps, 1.5)).not.toBe(embossBitmapSvg([{ x: 0.5, y: 0.5, r: 0.1 }], 1.5));
+    expect(embossBitmapSvg(stamps, [], 1.5)).not.toBe(embossBitmapSvg([{ x: 0.5, y: 0.5, r: 0.1 }], [], 1.5));
   });
 
   test('aspect 반올림은 gradientBitmapSvg와 동일 규율 — 1e-4 이내로 갈린 raw aspect가 같은 URL로 수렴', () => {
@@ -283,12 +283,12 @@ describe('#509 c1 — 형압 비트맵 굽기(#506 프레임워크 세 번째 �
     // 이미 같은 문자열이 나온다(그 자체로 무해 — 같은 결과가 같은 캐시 키 없이도 같다는 뜻일
     // 뿐이다). 그래서 수렴 주장은 정밀도 경계값(1e-4)로, 발산 주장은 굽기 박스 폭이 실제로
     // 바뀌는 큰 델타로 검증한다.
-    expect(embossBitmapSvg(stamps, 1.500041)).toBe(embossBitmapSvg(stamps, 1.499979));
-    expect(embossBitmapSvg(stamps, 1.5)).not.toBe(embossBitmapSvg(stamps, 1.7));
+    expect(embossBitmapSvg(stamps, [], 1.500041)).toBe(embossBitmapSvg(stamps, [], 1.499979));
+    expect(embossBitmapSvg(stamps, [], 1.5)).not.toBe(embossBitmapSvg(stamps, [], 1.7));
   });
 
   test('굽힌 SVG는 라이브 필터가 아니라 정적 data URL — feGaussianBlur+feDiffuseLighting을 담되 canvas drawImage로 소비 가능', () => {
-    const url = embossBitmapSvg(stamps, 1.5);
+    const url = embossBitmapSvg(stamps, [], 1.5);
     expect(url).toStartWith('data:image/svg+xml,');
     const svg = decodeURIComponent(url.slice('data:image/svg+xml,'.length));
     expect(svg).toStartWith('<svg');
@@ -299,7 +299,7 @@ describe('#509 c1 — 형압 비트맵 굽기(#506 프레임워크 세 번째 �
   });
 
   test('빈 스탬프도 굽기는 되지만(호출부가 게이트) 원이 하나도 없다', () => {
-    const svg = decodeURIComponent(embossBitmapSvg([], 1.5));
+    const svg = decodeURIComponent(embossBitmapSvg([], [], 1.5));
     expect(svg).not.toContain('<circle');
   });
 
@@ -315,7 +315,7 @@ describe('#509 c1 — 형압 비트맵 굽기(#506 프레임워크 세 번째 �
       { x: 0.35, y: 0.52, r: 0.1 },
       { x: 0.4, y: 0.54, r: 0.1 },
     ];
-    const svg = decodeURIComponent(embossBitmapSvg(stroke, 1.5).slice('data:image/svg+xml,'.length));
+    const svg = decodeURIComponent(embossBitmapSvg(stroke, [], 1.5).slice('data:image/svg+xml,'.length));
     expect((svg.match(/<line/g) ?? []).length).toBe(2); // 스탬프 3개 → 이음선 2개
     expect((svg.match(/<circle/g) ?? []).length).toBe(3);
   });
@@ -325,7 +325,7 @@ describe('#509 c1 — 형압 비트맵 굽기(#506 프레임워크 세 번째 �
       { x: 0.1, y: 0.1, r: 0.1, newStroke: true },
       { x: 0.9, y: 0.9, r: 0.1, newStroke: true }, // 포인터업→다운으로 멀리 떨어진 새 스트로크
     ];
-    const svg = decodeURIComponent(embossBitmapSvg(twoStrokes, 1.5).slice('data:image/svg+xml,'.length));
+    const svg = decodeURIComponent(embossBitmapSvg(twoStrokes, [], 1.5).slice('data:image/svg+xml,'.length));
     expect(svg).not.toContain('<line'); // 둘 다 newStroke라 잇는 선이 하나도 없어야 한다
     expect((svg.match(/<circle/g) ?? []).length).toBe(2);
   });

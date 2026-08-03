@@ -3,7 +3,7 @@ import type { MovieInfo, QuoteFont, TicketComponents, TicketField } from '@/type
 import { FIELD_LABELS, STAMP_LABELS, isStampTarget, type SheetTarget } from '@/constants/fields';
 import { formatDate } from '@/utils/dateFormat';
 import { posterContainRect, posterContentFrac, posterFeatherMask, type EmbossContentFrac } from '@/utils/posterFeather';
-import { TEXTURE_RECIPES, gradientBitmapSvg, isNoiseRecipe, noiseTileSvg, EMBOSS_RECIPE, embossBitmapSvg, projectEmbossStamps, type TextureRecipe, type EmbossStamp } from '@/utils/textureRecipes';
+import { TEXTURE_RECIPES, gradientBitmapSvg, isNoiseRecipe, noiseTileSvg, EMBOSS_RECIPE, embossBitmapSvg, projectEmbossStamps, projectEmbossPaths, type TextureRecipe, type EmbossStamp, type EmbossPath } from '@/utils/textureRecipes';
 import { EyeIcon } from '@/components/ui/VisibilityCheckbox';
 
 export interface MoodProps {
@@ -31,6 +31,8 @@ export interface MoodProps {
    * 필드다(PhototicketState 주석 참고). 각 무드가 자기 Poster() 호출에 그대로 전달한다.
    */
   embossStamps?: EmbossStamp[];
+  /** 자석 올가미(#509 2단계, c10) 닫힌 다각형 — embossStamps와 나란히 각 무드가 그대로 전달한다. */
+  embossPaths?: EmbossPath[];
   /** 형압 강도 0..1(#509). 미지정 시 Poster 기본값(1). */
   embossIntensity?: number;
 }
@@ -881,6 +883,11 @@ interface PosterProps {
    * c7). 비었거나 미지정이면 오버레이 자체를 렌더하지 않는다(빈 SVG를 안 굽는다).
    */
   embossStamps?: EmbossStamp[];
+  /**
+   * 자석 올가미(#509 2단계, c10) 닫힌 다각형 목록(포스터 자연 0..1 분율 좌표, embossStamps와
+   * 같은 좌표계). 브러시와 동시에 있어도 같은 비트맵 한 장으로 함께 굽는다.
+   */
+  embossPaths?: EmbossPath[];
   /** 형압 강도 0..1(#509) — material/coatingIntensity와 동일 계약. 미지정 시 1. */
   embossIntensity?: number;
   /** contain일 때 정렬(#420 원본 비율 보존 프리셋) — 'top'은 포스터 상단을 캔버스 상단에 붙인다. 기본 중앙. */
@@ -972,6 +979,7 @@ export const Poster = memo(function Poster({
   coatingIntensity = 1,
   posterOpacity,
   embossStamps,
+  embossPaths,
   embossIntensity = 1,
   align = 'center',
   frameInsetY = 0,
@@ -1068,6 +1076,8 @@ export const Poster = memo(function Poster({
       // 형압(#509) — 같은 DOM-속성 규율로 저장 경로(compositeEmbossOverlay)에 마스크를 실어보낸다.
       // 스탬프가 없으면 안 실어 저장 경로가 그 축을 건너뛴다(material/coating과 동일 게이트 패턴).
       data-emboss-stamps={embossStamps && embossStamps.length ? JSON.stringify(embossStamps) : undefined}
+      // 올가미(2단계) 다각형도 같은 규율 — 별도 data-* 로 실어 stamps와 독립적으로 게이트한다.
+      data-emboss-paths={embossPaths && embossPaths.length ? JSON.stringify(embossPaths) : undefined}
       data-emboss-intensity={embossIntensity}
       style={{
         position: 'absolute',
@@ -1130,8 +1140,8 @@ export const Poster = memo(function Poster({
       {/* 형압(#509)은 재질·코팅 위(z-order 최상단)에 얹는다 — 실물 형압 다이는 코팅(라미네이팅)
           아래 종이 자체를 누르지만, 이 오버레이는 "융기부가 코팅 위로도 비쳐 보이는" 단순화한
           룩이라 가장 위가 자연스럽다(코팅 유무와 무관하게 항상 눈에 띔, c5 동시 적용 요구와 부합). */}
-      {embossStamps && embossStamps.length > 0 && (
-        <EmbossOverlay stamps={embossStamps} intensity={embossIntensity} contentFrac={embossContentFrac} />
+      {((embossStamps && embossStamps.length > 0) || (embossPaths && embossPaths.length > 0)) && (
+        <EmbossOverlay stamps={embossStamps ?? []} paths={embossPaths ?? []} intensity={embossIntensity} contentFrac={embossContentFrac} />
       )}
     </div>
   );
@@ -1275,7 +1285,17 @@ function GradientOverlay({
  * export에서 쓰는 것과 같은 변환이라 미리보기=저장물이 유지된다. contentFrac이 아직 없으면(첫
  * 페인트 전) 마스크를 안 그린다.
  */
-function EmbossOverlay({ stamps, intensity, contentFrac }: { stamps: EmbossStamp[]; intensity: number; contentFrac: EmbossContentFrac | null }) {
+function EmbossOverlay({
+  stamps,
+  paths,
+  intensity,
+  contentFrac,
+}: {
+  stamps: EmbossStamp[];
+  paths: EmbossPath[];
+  intensity: number;
+  contentFrac: EmbossContentFrac | null;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const [aspect, setAspect] = useState<number | null>(null);
 
@@ -1289,6 +1309,7 @@ function EmbossOverlay({ stamps, intensity, contentFrac }: { stamps: EmbossStamp
   });
 
   const boxStamps = contentFrac ? projectEmbossStamps(stamps, contentFrac) : null;
+  const boxPaths = contentFrac ? projectEmbossPaths(paths, contentFrac) : null;
 
   return (
     <div
@@ -1298,9 +1319,9 @@ function EmbossOverlay({ stamps, intensity, contentFrac }: { stamps: EmbossStamp
         position: 'absolute',
         inset: 0,
         pointerEvents: 'none',
-        ...(aspect && boxStamps
+        ...(aspect && boxStamps && boxPaths
           ? {
-              backgroundImage: `url("${embossBitmapSvg(boxStamps, aspect)}")`,
+              backgroundImage: `url("${embossBitmapSvg(boxStamps, boxPaths, aspect)}")`,
               backgroundSize: '100% 100%',
               backgroundRepeat: 'no-repeat',
             }

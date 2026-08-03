@@ -1,4 +1,4 @@
-import type { EmbossStamp } from '@/utils/textureRecipes';
+import type { EmbossPath, EmbossStamp } from '@/utils/textureRecipes';
 
 export type LayoutId = 'minimal' | 'criterion' | '35mm' | 'editorial' | 'stub' | '35mm-landscape';
 
@@ -130,6 +130,11 @@ export interface PhototicketState {
    * 폐기한다(포스터 박스와 원본 이미지의 대응 관계 자체가 바뀌는 지점들).
    */
   embossStamps: EmbossStamp[];
+  /**
+   * 자석 올가미(#509 2단계, c10 soft) 닫힌 다각형 목록 — embossStamps와 나란한 세션 한정
+   * 필드(같은 c7/c8 계약: 자연 분율 좌표, 포스터 교체·재크롭 시 함께 폐기).
+   */
+  embossPaths: EmbossPath[];
   /** 형압 강도 0..1(#509) — 마스크가 없으면 의미 없으나, 마스크와 함께 폐기되는 세션 값이라 같이 둔다. */
   embossIntensity: number;
 }

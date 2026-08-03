@@ -107,6 +107,7 @@ export default function Home() {
           components={debouncedComponents}
           fieldVisibility={fieldVisibility}
           embossStamps={photo.state.embossStamps}
+          embossPaths={photo.state.embossPaths}
           embossIntensity={photo.state.embossIntensity}
         />
       )}
