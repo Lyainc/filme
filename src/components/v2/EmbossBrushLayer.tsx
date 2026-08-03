@@ -1,16 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getFrameRect } from '@/components/v2/PhoneFrame';
 import { parseObjectPosition, posterContentFrac, type EmbossContentFrac } from '@/utils/posterFeather';
-import type { EmbossStamp } from '@/utils/textureRecipes';
+import { buildLassoGradientMap, snapToEdge, LASSO_SNAP_RADIUS_PX, type GradientMap } from '@/utils/embossLasso';
+import type { EmbossPath, EmbossStamp } from '@/utils/textureRecipes';
 
 interface EmbossBrushLayerProps {
   /** 포스터 서브트리를 담은 컨테이너에서 [data-poster-root]를 찾아온다. 매 포인터 이벤트·매
    *  rAF 프레임마다 다시 부른다 — 별도 캐시 없이 항상 최신 레이아웃을 읽는다(무드·크롭 전환에도 안전). */
   getPosterEl: () => Element | null;
+  /** 포토샵풍 도구 전환(#509 2단계 c9/c10 UI 절반) — 브러시는 원형 스탬프를 찍고, 올가미는
+   *  드래그를 엣지-스냅해 닫힌 다각형 하나로 커밋한다. 같은 레이어가 포인터를 소비하되 해석만 갈린다. */
+  tool: 'brush' | 'lasso';
   /** 포스터 root 박스 폭 기준 분율 반경 — clientToStamp이 저장 직전 자연 이미지 분율로 변환한다
    *  (#509 재매핑). */
   brushRadius: number;
   onStamp: (stamp: EmbossStamp) => void;
+  /** 올가미 트레이스가 포인터업 시점에 닫힌 다각형(>=3점)으로 커밋될 때만 호출된다. */
+  onPath: (path: EmbossPath) => void;
 }
 
 interface Rect {
@@ -24,6 +30,11 @@ interface Rect {
 // 스탬프가 쌓여 마스크 배열이 금방 비대해진다. 0.3이면 원끼리 충분히 겹쳐 매끈한 선이 되면서도
 // 실사용 드래그 한 번이 수십 개 스탬프 수준으로 묶인다.
 const MIN_STAMP_SPACING = 0.3;
+
+// 올가미 정점 사이 최소 간격(자연 분율) — 브러시의 MIN_STAMP_SPACING과 같은 목적(pointermove
+// 빈도만큼 정점이 쌓이는 것 방지). 브러시는 반경에 상대적이지만 올가미엔 반경이 없어 절대값을
+// 쓴다 — 브러시 반경 범위(0.02~0.2)의 하단 근처로 잡아 촘촘한 트레이스에서도 굴곡을 살린다.
+const MIN_LASSO_SPACING = 0.01;
 
 /**
  * 포스터 root 박스 대비 실제 이미지 콘텐츠 사각형을 실측한다(#509 재매핑) — Poster 컴포넌트가
@@ -44,21 +55,34 @@ function measureEmbossContentFrac(posterEl: Element): EmbossContentFrac | null {
   return posterContentFrac(rootR.width, rootR.height, imgR.top - rootR.top, imgR.height, natAspect, fit, posX, posY);
 }
 
+/** 포스터의 실제 <img>(자연 픽셀) 엘리먼트 — measureEmbossContentFrac과 같은 쿼리, 그라디언트 맵 굽기용. */
+function getPosterImg(posterEl: Element): HTMLImageElement | null {
+  return posterEl.querySelector('img[data-role="poster"]:not([data-poster-bg])') as HTMLImageElement | null;
+}
+
 /**
- * 형압(#509) 1단계 브러시 — 포스터 위 포인터 드래그로 원형 스탬프를 찍는다. `position:fixed`지만
- * 전체 화면이 아니라 **포스터 rect에 맞춰 매 프레임 재배치**하는 레이어다 — 포스터가 무드마다
- * 다른 위치·크기(풀블리드 vs Stub/Criterion 도판)에 있어도 DOM 트리 삽입 지점과 무관하게 항상
- * 올바르게 겹친다. 전체 화면으로 덮으면 헤더·dock·자기 종료 버튼까지 z-index로 가려 클릭이
- * 전부 안 먹는다(실측으로 확인된 회귀 — `document.elementFromPoint`가 세 버튼 자리 전부에서
- * 이 레이어를 돌려줬다) — 포스터 rect 밖은 아예 안 덮는 게 고침이다. 드래그가 포스터 밖으로
- * 나가도 `setPointerCapture`가 이후 move/up을 이 엘리먼트로 계속 보내주므로(브라우저 표준
+ * 형압(#509) 1단계 브러시 + 2단계 자석 올가미(c10) — 포스터 위 포인터 드래그를 해석한다.
+ * `position:fixed`지만 전체 화면이 아니라 **포스터 rect에 맞춰 매 프레임 재배치**하는 레이어다 —
+ * 포스터가 무드마다 다른 위치·크기(풀블리드 vs Stub/Criterion 도판)에 있어도 DOM 트리 삽입 지점과
+ * 무관하게 항상 올바르게 겹친다. 전체 화면으로 덮으면 헤더·dock·자기 종료 버튼까지 z-index로
+ * 가려 클릭이 전부 안 먹힌다(실측으로 확인된 회귀 — `document.elementFromPoint`가 세 버튼 자리
+ * 전부에서 이 레이어를 돌려줬다) — 포스터 rect 밖은 아예 안 덮는 게 고침이다. 드래그가 포스터
+ * 밖으로 나가도 `setPointerCapture`가 이후 move/up을 이 엘리먼트로 계속 보내주므로(브라우저 표준
  * Pointer Capture 동작, 엘리먼트 크기와 무관) 좌표 변환·스트로크 추적은 안 끊긴다.
- * 포스터 자연 픽셀 0..1 분율(c7)로 스탬프를 내보내 material/coating과 같은 좌표계를 쓴다.
+ * 두 도구 모두 포스터 자연 픽셀 0..1 분율(c7)로 결과를 내보내 material/coating과 같은 좌표계를 쓴다.
  */
-export default function EmbossBrushLayer({ getPosterEl, brushRadius, onStamp }: EmbossBrushLayerProps) {
+export default function EmbossBrushLayer({ getPosterEl, tool, brushRadius, onStamp, onPath }: EmbossBrushLayerProps) {
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
   const paintingRef = useRef(false);
   const [rect, setRect] = useState<Rect | null>(null);
+
+  // 올가미 트레이스 상태 — lassoPointsRef(자연 분율)가 커밋 시 onPath로 나가는 원본이고,
+  // previewPoints(박스 분율 %, React state)는 실시간 시각 피드백(포토샵 자석 올가미처럼 트레이스
+  // 선이 보임)을 위한 렌더 트리거다. 스트로크마다 새로 굽는 그라디언트 맵은 gradMapRef에 캐시한다
+  // (같은 스트로크 안에서는 이미지가 안 바뀌므로 pointermove마다 다시 구울 이유가 없다).
+  const lassoPointsRef = useRef<{ x: number; y: number }[]>([]);
+  const gradMapRef = useRef<GradientMap | null>(null);
+  const [previewPoints, setPreviewPoints] = useState<{ x: number; y: number }[]>([]);
 
   // getPosterEl은 호출부(MobileEditorShell)가 매 렌더 새로 만드는 인라인 클로저라 참조가 매번
   // 바뀐다 — 아래 rAF 이펙트의 deps에 그대로 두면 이 셸처럼 자주 리렌더되는 부모 아래에서
@@ -109,22 +133,31 @@ export default function EmbossBrushLayer({ getPosterEl, brushRadius, onStamp }: 
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  const clientToStamp = useCallback(
-    (clientX: number, clientY: number): EmbossStamp | null => {
+  /** 클라이언트 좌표 → 포스터 자연 이미지 0..1 분율(반경 없이). 브러시·올가미 공용 1차 변환. */
+  const clientToNaturalFrac = useCallback(
+    (clientX: number, clientY: number): { x: number; y: number; cf: EmbossContentFrac } | null => {
       const poster = getPosterEl();
       if (!poster) return null;
       const r = poster.getBoundingClientRect();
       if (r.width <= 0 || r.height <= 0) return null;
       const boxX = (clientX - r.left) / r.width;
       const boxY = (clientY - r.top) / r.height;
-      // 그리기 가능 영역은 여전히 포스터 root 박스 전체(레터박스 포함) — 기존 UX와 동일. 다만
-      // 저장하는 좌표는 자연 이미지 분율(#509 재매핑)이라 아래 contentFrac으로 되돌린다.
+      // 그리기 가능 영역은 포스터 root 박스 전체(레터박스 포함) — 기존 UX와 동일.
       if (boxX < 0 || boxX > 1 || boxY < 0 || boxY > 1) return null;
       const cf = measureEmbossContentFrac(poster);
       if (!cf || cf.fw <= 0 || cf.fh <= 0) return null; // 이미지 아직 안 뜬 상태 — 보류
-      return { x: (boxX - cf.fx) / cf.fw, y: (boxY - cf.fy) / cf.fh, r: brushRadius / cf.fw };
+      return { x: (boxX - cf.fx) / cf.fw, y: (boxY - cf.fy) / cf.fh, cf };
     },
-    [getPosterEl, brushRadius],
+    [getPosterEl],
+  );
+
+  const clientToStamp = useCallback(
+    (clientX: number, clientY: number): EmbossStamp | null => {
+      const nat = clientToNaturalFrac(clientX, clientY);
+      if (!nat) return null;
+      return { x: nat.x, y: nat.y, r: brushRadius / nat.cf.fw };
+    },
+    [clientToNaturalFrac, brushRadius],
   );
 
   const paint = useCallback(
@@ -146,12 +179,39 @@ export default function EmbossBrushLayer({ getPosterEl, brushRadius, onStamp }: 
     [clientToStamp, onStamp],
   );
 
+  /** 올가미 정점 하나를 엣지-스냅해 추가한다 — 자연 분율(커밋용)과 박스 분율(미리보기용) 둘 다 갱신. */
+  const lassoAppend = useCallback(
+    (clientX: number, clientY: number) => {
+      const nat = clientToNaturalFrac(clientX, clientY);
+      if (!nat) return;
+      const map = gradMapRef.current;
+      let snapped = { x: nat.x, y: nat.y };
+      if (map) {
+        const s = snapToEdge(map, nat.x * map.width, nat.y * map.height, LASSO_SNAP_RADIUS_PX);
+        snapped = { x: s.x / map.width, y: s.y / map.height };
+      }
+      const last = lassoPointsRef.current[lassoPointsRef.current.length - 1];
+      if (last && Math.hypot(snapped.x - last.x, snapped.y - last.y) < MIN_LASSO_SPACING) return;
+      lassoPointsRef.current = [...lassoPointsRef.current, snapped];
+      const boxX = (nat.cf.fx + snapped.x * nat.cf.fw) * 100;
+      const boxY = (nat.cf.fy + snapped.y * nat.cf.fh) * 100;
+      setPreviewPoints((prev) => [...prev, { x: boxX, y: boxY }]);
+    },
+    [clientToNaturalFrac],
+  );
+
+  const resetLasso = useCallback(() => {
+    lassoPointsRef.current = [];
+    gradMapRef.current = null;
+    setPreviewPoints([]);
+  }, []);
+
   // 포스터를 못 찾았으면(마운트 전 첫 프레임·포스터 없음) 아무것도 안 그린다 — 크기 0인
   // 레이어를 fixed로 띄워봐야 클릭을 가로챌 일만 남는다.
   if (!rect || rect.width <= 0 || rect.height <= 0) return null;
 
   // 온-티켓 편집은 포인터 전용이라는 이 저장소의 기존 입장(_shared.tsx FieldTap/posterTapProps
-  // 주석)과 동일 — 브러시는 연속 좌표가 본질이라 키보드 대응 조작이 없다.
+  // 주석)과 동일 — 브러시·올가미 둘 다 연속 좌표가 본질이라 키보드 대응 조작이 없다.
   return (
     <div
       aria-hidden="true"
@@ -169,21 +229,61 @@ export default function EmbossBrushLayer({ getPosterEl, brushRadius, onStamp }: 
       onPointerDown={(e) => {
         e.currentTarget.setPointerCapture(e.pointerId);
         paintingRef.current = true;
-        lastPointRef.current = null;
-        paint(e.clientX, e.clientY);
+        if (tool === 'brush') {
+          lastPointRef.current = null;
+          paint(e.clientX, e.clientY);
+        } else {
+          resetLasso();
+          const poster = getPosterEl();
+          const img = poster && getPosterImg(poster);
+          // 그라디언트 맵을 스트로크 시작 시점에 1회 굽는다 — CORS 오염 등으로 못 구우면(null)
+          // lassoAppend가 스냅 없이 원좌표 그대로 트레이스한다(엣지-스냅은 향상 기능, 필수 아님).
+          gradMapRef.current = img ? buildLassoGradientMap(img) : null;
+          lassoAppend(e.clientX, e.clientY);
+        }
       }}
       onPointerMove={(e) => {
         if (!paintingRef.current) return;
-        paint(e.clientX, e.clientY);
+        if (tool === 'brush') paint(e.clientX, e.clientY);
+        else lassoAppend(e.clientX, e.clientY);
       }}
       onPointerUp={() => {
         paintingRef.current = false;
-        lastPointRef.current = null;
+        if (tool === 'brush') {
+          lastPointRef.current = null;
+        } else {
+          // 3점 미만이면 다각형이 아니다(면적 없는 클릭·짧은 드래그) — 조용히 버린다.
+          if (lassoPointsRef.current.length >= 3) onPath({ points: lassoPointsRef.current });
+          resetLasso();
+        }
       }}
       onPointerCancel={() => {
         paintingRef.current = false;
         lastPointRef.current = null;
+        if (tool === 'lasso') resetLasso();
       }}
-    />
+    >
+      {tool === 'lasso' && previewPoints.length > 0 && (
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+        >
+          <polyline
+            points={previewPoints.map((p) => `${p.x},${p.y}`).join(' ')}
+            fill="none"
+            stroke="#fff"
+            strokeWidth={2}
+            strokeDasharray="4 3"
+            vectorEffect="non-scaling-stroke"
+          />
+          {/* 시작점 표시 — 포토샵처럼 여기로 돌아오면 닫힌다는 시각 힌트. 실제 닫힘 판정은
+              포인터업 시점의 점 개수(>=3)로만 하고, 시작점 근접 클릭을 별도로 요구하진 않는다
+              (드래그 종료 = 닫기가 이 레이어의 유일한 계약이라 더 단순하다). */}
+          <circle cx={previewPoints[0].x} cy={previewPoints[0].y} r={1.4} fill="#fff" />
+        </svg>
+      )}
+    </div>
   );
 }
