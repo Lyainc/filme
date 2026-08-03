@@ -910,6 +910,7 @@ export function MobileEditorShell({
                     ghost={ghostMode || editing}
                     onField={viewMode === 'default' ? handleField : undefined}
                     embossStamps={photo.state.embossStamps}
+                    embossPaths={photo.state.embossPaths}
                     embossIntensity={photo.state.embossIntensity}
                   />
                 </div>
@@ -924,8 +925,10 @@ export function MobileEditorShell({
           {photo.embossEditMode && (
             <EmbossBrushLayer
               getPosterEl={() => ticketBoxEl?.querySelector('[data-poster-root]') ?? null}
+              tool={photo.embossTool}
               brushRadius={photo.embossBrushRadius}
               onStamp={photo.addEmbossStamp}
+              onPath={photo.addEmbossPath}
             />
           )}
 

@@ -307,19 +307,44 @@ function TexturePanel({ photo }: { photo: Photo }) {
   );
 }
 
+const EMBOSS_TOOL_OPTIONS = [
+  { value: 'brush', label: '브러시' },
+  { value: 'lasso', label: '올가미' },
+] as const;
+
 /**
  * 형압 패널(#509) — 재질·코팅 옆 독립 후가공 축(c5). 모드 토글이 c9(명시적 진입/종료)의 UI
  * 절반이고, 나머지 절반(모드 중 셸이 브러시 레이어를 띄우는 것)은 MobileEditorShell이 photo.
  * embossEditMode를 직접 읽어 담당한다 — 이 패널은 상태를 켜고 끌 뿐 브러시 자체를 그리지 않는다
  * (브러시는 티켓 프리뷰 위에 겹쳐야 해서 rail 패널 트리 밖에 산다).
+ *
+ * 도구 선택(브러시/올가미, #509 2단계 c10)은 포토샵 등 사진편집 서비스의 "먼저 도구를 고르고
+ * 캔버스에서 그린다" 관성을 그대로 따른다 — ChipRadio(포스터 fit·한줄평 폰트가 이미 쓰는 값
+ * 피커, ColorPicker와 동일 문법)로 진입 버튼 위에 상시 노출해, 편집 모드 진입 전에도 다음
+ * 드래그가 뭘 할지 미리 정할 수 있게 한다.
  */
 function EmbossPanel({ photo }: { photo: Photo }) {
-  const { embossEditMode, setEmbossEditMode, embossBrushRadius, setEmbossBrushRadius, clearEmbossMask, setEmbossIntensity } = photo;
-  const { embossStamps, embossIntensity } = photo.state;
-  const hasMask = embossStamps.length > 0;
+  const {
+    embossEditMode,
+    setEmbossEditMode,
+    embossBrushRadius,
+    setEmbossBrushRadius,
+    embossTool,
+    setEmbossTool,
+    clearEmbossMask,
+    setEmbossIntensity,
+  } = photo;
+  const { embossStamps, embossPaths, embossIntensity } = photo.state;
+  const hasMask = embossStamps.length > 0 || embossPaths.length > 0;
   const prefix = ID_PREFIX;
   return (
     <div className="space-y-group">
+      <ChipRadio
+        label="형압 도구"
+        options={EMBOSS_TOOL_OPTIONS}
+        value={embossTool}
+        onChange={setEmbossTool}
+      />
       <button
         type="button"
         onClick={() => setEmbossEditMode(!embossEditMode)}
@@ -330,19 +355,30 @@ function EmbossPanel({ photo }: { photo: Photo }) {
             : 'border-line bg-surface-elevated text-fg-muted hover:text-fg'
         }`}
       >
-        {embossEditMode ? '칠하는 중 · 탭해서 종료' : '형압 칠하기 시작'}
+        {embossEditMode
+          ? embossTool === 'lasso'
+            ? '선택하는 중 · 탭해서 종료'
+            : '칠하는 중 · 탭해서 종료'
+          : embossTool === 'lasso'
+            ? '올가미로 선택 시작'
+            : '형압 칠하기 시작'}
       </button>
-      {embossEditMode && (
-        <p className="text-caption text-fg-muted">티켓 포스터 위를 드래그해서 볼록하게 만들 영역을 칠하세요.</p>
+      {embossEditMode &&
+        (embossTool === 'lasso' ? (
+          <p className="text-caption text-fg-muted">포스터 오브젝트 윤곽을 따라 드래그하면 자동으로 가장자리에 붙어요. 손을 떼면 선택이 닫혀요.</p>
+        ) : (
+          <p className="text-caption text-fg-muted">티켓 포스터 위를 드래그해서 볼록하게 만들 영역을 칠하세요.</p>
+        ))}
+      {embossTool === 'brush' && (
+        <BrightnessSlider
+          label="브러시 크기"
+          id={`${prefix}-emboss-brush`}
+          value={embossBrushRadius}
+          onChange={setEmbossBrushRadius}
+          min={0.02}
+          max={0.2}
+        />
       )}
-      <BrightnessSlider
-        label="브러시 크기"
-        id={`${prefix}-emboss-brush`}
-        value={embossBrushRadius}
-        onChange={setEmbossBrushRadius}
-        min={0.02}
-        max={0.2}
-      />
       {hasMask && (
         <>
           <BrightnessSlider
