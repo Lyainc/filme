@@ -28,6 +28,7 @@ import { getFrameRect } from './PhoneFrame';
 import { Wordmark } from './Wordmark';
 import type { ViewMode } from './viewMode';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
+import EmbossBrushLayer from '@/components/v2/EmbossBrushLayer';
 import { getLayout } from '@/utils/layouts';
 import type { Area } from '@/utils/imageCrop';
 import { useEditHistory } from '@/hooks/useEditHistory';
@@ -882,6 +883,7 @@ export function MobileEditorShell({
                         // 작업면 위에 놓인 인쇄물로 읽히게 하는 양감(#571). 캡처 대상(TicketRenderer
                         // 내부 ref) 밖 래퍼라 export JPEG엔 안 섞인다. 토큰 재사용 — 결과 표면의
                         // 승격 그림자(더 강한 값 + accent 링)와 세기가 갈려 위계가 유지된다(#98).
+                        // #509의 유저 형압 후가공과 별개(MoodCriterion.tsx의 대칭 주석 참고).
                         boxShadow: 'var(--shadow-pop)',
                       }
                     : rotateLandscape
@@ -907,10 +909,24 @@ export function MobileEditorShell({
                     // 빈/숨김 필드도 탭·순회 타깃으로 티켓에 남는다.
                     ghost={ghostMode || editing}
                     onField={viewMode === 'default' ? handleField : undefined}
+                    embossStamps={photo.state.embossStamps}
+                    embossIntensity={photo.state.embossIntensity}
                   />
                 </div>
               </div>
             </div>
+          )}
+
+          {/* 형압 브러시(#509 c9) — 명시적 편집 모드일 때만 전체화면 포인터 캡처 레이어를 띄운다.
+              position:fixed라 DOM 삽입 위치는 무관하고, getPosterEl이 매 이벤트마다 ticketBoxEl
+              안의 [data-poster-root]를 다시 찾아 좌표를 낸다(무드마다 포스터 위치·크기가 달라도
+              별도 동기화 없이 항상 맞는다). */}
+          {photo.embossEditMode && (
+            <EmbossBrushLayer
+              getPosterEl={() => ticketBoxEl?.querySelector('[data-poster-root]') ?? null}
+              brushRadius={photo.embossBrushRadius}
+              onStamp={photo.addEmbossStamp}
+            />
           )}
 
           {/* 줌 pill(#328)은 #356에서 제거 — 최대화 진입은 플로팅 툴바가 흡수, max 탈출은
