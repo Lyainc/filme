@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getCroppedImg, Area } from '@/utils/imageCrop';
+import { showError } from '@/utils/errorToast';
 
 /**
  * 극장/포맷 로고 업로드용 자유 크롭 흐름(#220).
@@ -39,9 +40,10 @@ export function useLogoCrop(onChange: (url: string) => void) {
       onChange(cropped);
       setRawSrc(null); // effect cleanup이 원본 revoke
     } catch (err) {
-      // 포스터 크롭과 동일한 사용자 피드백(canvas/SVG 오류로 실패 가능).
+      // 포스터 크롭과 동일한 사용자 피드백. alert()는 폰 프레임 밖에 뜨고 블로킹이라(#645 M1)
+      // showError로 교체.
       console.error('로고 크롭 실패:', err);
-      alert('이미지 크롭에 실패했습니다.');
+      showError('이미지 크롭에 실패했어요. 다시 시도해 주세요.');
       setRawSrc(null);
     } finally {
       setIsCropping(false);
