@@ -1,4 +1,5 @@
-import type { DragEvent, ReactNode } from 'react';
+import type { DragEvent, PointerEvent as ReactPointerEvent, ReactNode } from 'react';
+import { useRef } from 'react';
 import type { LayoutId, MovieInfo, TicketComponents } from '@/types';
 import { ALL_FIELDS_ON } from '@/constants/fieldVisibility';
 import { LAYOUTS } from '@/utils/layouts';
@@ -6,6 +7,12 @@ import TicketRenderer from '../TicketRenderer';
 import { LayoutStrip, MOOD_CHIP_BG } from '../LayoutPicker';
 import { AppFooter } from './AppFooter';
 import { Wordmark } from './Wordmark';
+
+// 히어로를 좌우로 스와이프해도 무드칩과 같은 선택을 한다(D10 "사용자가 넘기고, 멈춘 무드가
+// 선택"). 400×675에서 칩 6개가 다 들어와 칩 스트립 자체는 안 넘치므로(스크롤 스와이프 여지가
+// 없다), 넘기는 동작의 실제 표면은 이 히어로가 맡는다 — 자동재생이 아니라 순수 제스처 기반이라
+// D10을 되돌리지 않는다.
+const SWIPE_THRESHOLD_PX = 40;
 
 /**
  * 배경 타일 그리드(#615) — placeholder. #613(예시 티켓 이미지 수동 제작·번들)이 아직
@@ -130,6 +137,34 @@ export function Landing({
 }) {
   const overlay = mode === 'overlay';
 
+  // 히어로 스와이프(D10) — 탭 선택(무드칩)과 같은 onLayoutChange를 타므로 실제 state는
+  // 여전히 진입 시점에만 커밋된다(위 컴포넌트 주석). 세로 스크롤과 겹치지 않게 가로 이동이
+  // 뚜렷할 때만(SWIPE_THRESHOLD_PX) 한 단계 넘긴다 — 탭·클릭은 pointerdown/up 사이 이동이
+  // 거의 0이라 그대로 안 걸린다.
+  const swipeStartX = useRef<number | null>(null);
+  const handleHeroPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    swipeStartX.current = e.clientX;
+    // capture 없이는 120px 박스 밖으로 나가는(=임계값을 실제로 넘기는) 정상 스와이프 궤적에서
+    // pointerup이 이 div가 아니라 그 순간 포인터 아래 있던 형제 요소에서 발화돼 놓친다
+    // (이 레포의 다른 포인터 드래그 — RatingPicker.tsx:77, FloatingToolbar.tsx — 와 같은 이유).
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const handleHeroPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const startX = swipeStartX.current;
+    swipeStartX.current = null;
+    if (startX == null) return;
+    const dx = e.clientX - startX;
+    if (Math.abs(dx) < SWIPE_THRESHOLD_PX) return;
+    const idx = LAYOUTS.findIndex((l) => l.id === heroLayout);
+    const step = dx < 0 ? 1 : -1;
+    onLayoutChange(LAYOUTS[(idx + step + LAYOUTS.length) % LAYOUTS.length].id);
+  };
+  // 브라우저가 제스처를 중간에 취소하면(예: 시스템 UI 개입) 완결된 스와이프로 취급하지 않는다 —
+  // 그냥 시작점만 지운다.
+  const handleHeroPointerCancel = () => {
+    swipeStartX.current = null;
+  };
+
   return (
     <div
       data-testid="landing"
@@ -181,8 +216,16 @@ export function Landing({
               스크린샷으로 자동입력. 사진으로 찍은 실물 티켓도 돼요.
             </p>
 
-            {/* 히어로(#615) — 실제 렌더 엔진, 이미지 자산 아님(위 컴포넌트 주석 참고). */}
-            <div className="w-full max-w-[120px]">
+            {/* 히어로(#615) — 실제 렌더 엔진, 이미지 자산 아님(위 컴포넌트 주석 참고).
+                좌우 스와이프로도 무드를 넘긴다(D10) — touch-action:pan-y로 세로 스크롤과
+                제스처가 안 겹치게 가로만 캡처한다. */}
+            <div
+              data-testid="landing-hero"
+              className="w-full max-w-[120px] touch-pan-y"
+              onPointerDown={handleHeroPointerDown}
+              onPointerUp={handleHeroPointerUp}
+              onPointerCancel={handleHeroPointerCancel}
+            >
               <TicketRenderer
                 croppedImageUrl={null}
                 movieInfo={heroMovieInfo}

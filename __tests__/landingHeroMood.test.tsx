@@ -230,3 +230,45 @@ describe('초기화(#310)가 heroLayout도 함께 되돌린다 (claude-review PR
     expect(captured.components.layout).toBe('minimal');
   });
 });
+
+// 히어로 좌우 스와이프(#615, D10 "사용자가 넘기고, 멈춘 무드가 선택") — 무드칩 탭과 같은
+// onLayoutChange를 타므로 진짜 state는 여전히 진입 시점에만 커밋된다.
+describe('히어로 스와이프로도 무드를 넘긴다 (#615)', () => {
+  const swipe = (dx: number) => {
+    const hero = within(landing()).getByTestId('landing-hero');
+    fireEvent.pointerDown(hero, { clientX: 200 });
+    fireEvent.pointerUp(hero, { clientX: 200 + dx });
+  };
+
+  test('왼쪽으로 크게 넘기면 LAYOUTS 순서상 다음 무드(criterion)로 미리보기가 바뀐다', () => {
+    render(<Harness />);
+    swipe(-80);
+    expect(
+      within(landing()).getByRole('radio', { name: 'Criterion · 크라이테리언 임프린트' }).getAttribute('aria-checked'),
+    ).toBe('true');
+    expect(captured.components.layout).toBe('minimal'); // 탭과 동일 — 커밋 전
+  });
+
+  test('오른쪽으로 넘기면 순서를 거꾸로 돌아 마지막 무드(35mm Wide)로 간다', () => {
+    render(<Harness />);
+    swipe(80);
+    expect(
+      within(landing()).getByRole('radio', { name: '35mm Wide · 35mm 가로 필름' }).getAttribute('aria-checked'),
+    ).toBe('true');
+  });
+
+  test('임계값(40px) 미만의 짧은 이동은 탭/클릭으로 보고 무드를 안 바꾼다', () => {
+    render(<Harness />);
+    swipe(10);
+    expect(
+      within(landing()).getByRole('radio', { name: 'Minimal · 미니멀 시네마틱' }).getAttribute('aria-checked'),
+    ).toBe('true');
+  });
+
+  test('스와이프로 넘긴 무드도 "직접 입력" 진입 시점에 실제 state로 커밋된다', () => {
+    render(<Harness />);
+    swipe(-80); // → criterion
+    fireEvent.click(screen.getByTestId('landing-skip-poster'));
+    expect(captured.components.layout).toBe('criterion');
+  });
+});
