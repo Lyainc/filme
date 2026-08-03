@@ -9,6 +9,7 @@ import {
 } from '@/utils/captureToImage';
 import { buildShareMessage, toNativeSharePayload } from '@/utils/shareMessage';
 import { DEFAULT_TICKET_TTL_DAYS, UNOFFICIAL_TICKET_NOTICE } from '@/utils/ticketCleanup';
+import { showError } from '@/utils/errorToast';
 import { Eyebrow } from './Eyebrow';
 import { PreviewFilmCell } from './PreviewFilmCell';
 import { PrimaryCta } from './PrimaryCta';
@@ -216,8 +217,11 @@ export function ResultPanel({
       const { id } = (await res.json()) as { id: string; url: string };
       url = `${window.location.origin}/t/${id}`;
     } catch (err) {
+      // 실패가 버튼 라벨에만 2초 노출되고 사라지던 것(#645 M6)을 셸 밖 showError로 보강 —
+      // 라벨은 그대로 idle 복귀하지만, 실패 사실은 사용자가 닫기 전까지 남는다.
       console.error('[permalink]', err);
       setPermaState('error');
+      showError('링크 생성에 실패했어요. 다시 시도해 주세요.', { persistent: true });
       return null;
     }
     // 업로드 중 티켓 내용이 바뀌었으면(reset effect가 gen 증가) 이 URL은 옛 스냅샷이다 —
