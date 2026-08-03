@@ -162,7 +162,10 @@ async function compare(pathA, pathB, tolerance, diffOut) {
     delete result.diffPng;
     const pass = !result.sizeMismatch && result.maxAbsDiff <= tolerance;
     console.log(JSON.stringify({ mode: 'compare', a: pathA, b: pathB, tolerance, ...result, pass }, null, 2));
-    if (!pass) process.exit(1);
+    // exit()가 아니라 exitCode다 — 여기서 즉시 종료하면 finally의 closeBrowser가 안 돌아,
+    // 이 파일이 길게 방어한 그 헤드리스 Chrome 잔류가 "대조 실패"라는 흔한 경로에서만 생긴다
+    // (claude-review PR #643 P2).
+    if (!pass) process.exitCode = 1;
   } finally {
     await closeBrowser(browser);
   }
@@ -335,4 +338,4 @@ if (cmpIdx >= 0) {
 }
 // bun에선 browser.close() 뒤에도 프로세스가 안 끝난다(실측: Chrome은 죽었는데 bun이 5분 넘게
 // 살아 있어 파이프가 EOF를 못 받는다). 배치 루프가 매 실행 타임아웃을 기다리지 않게 명시적 종료.
-process.exit(0);
+process.exit(process.exitCode ?? 0);
