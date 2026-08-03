@@ -98,7 +98,7 @@ function SectionHead({ label }: { label: string }) {
   );
 }
 
-export const MoodStub = memo(function MoodStub({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap }: MoodProps) {
+export const MoodStub = memo(function MoodStub({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap, embossStamps, embossIntensity }: MoodProps) {
   const { bookingNo, watchDateClean, releaseClean, reissueClean } = resolveTicketData(d);
 
   const titleVal = gate(fv?.title, d.title);
@@ -180,7 +180,7 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
         {/* 가로 포스터 밴드 960×640(3:2) — 가로 크롭이면 contain으로도 레터박스 0인 풀블리드고,
             세로 크롭이 넘어오면 프레임 427×640 + 좌우 blur다(#440). frameInsetY는 안 쓴다 —
             풀블리드 케이스에서 강제 띠가 곧 레터박스 0을 깨뜨린다(editorial/35mm-landscape와 동일). */}
-        <Poster src={croppedImageUrl} {...posterFitProps({ letterboxBg: POSTER_LETTERBOX_BG })} material={components.material} coating={components.coating} materialIntensity={components.materialIntensity} coatingIntensity={components.coatingIntensity} posterOpacity={components.posterOpacity} />
+        <Poster src={croppedImageUrl} {...posterFitProps({ letterboxBg: POSTER_LETTERBOX_BG })} material={components.material} coating={components.coating} materialIntensity={components.materialIntensity} coatingIntensity={components.coatingIntensity} posterOpacity={components.posterOpacity} embossStamps={embossStamps} embossIntensity={embossIntensity} />
       </div>
 
       {/* 절취선(점선) — 크림 밴드에 3px dashed, 반원 노치 없음(마스터 재동기화 #281). */}

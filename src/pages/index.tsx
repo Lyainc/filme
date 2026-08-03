@@ -106,6 +106,8 @@ export default function Home() {
           movieInfo={debouncedMovieInfo}
           components={debouncedComponents}
           fieldVisibility={fieldVisibility}
+          embossStamps={photo.state.embossStamps}
+          embossIntensity={photo.state.embossIntensity}
         />
       )}
     </PhoneFrame>
