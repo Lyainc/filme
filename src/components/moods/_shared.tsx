@@ -1175,7 +1175,8 @@ const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : us
 
 /**
  * gradient 오버레이. 굽기에 박스 종횡비가 필요해(`gradientLineEndpoints` 주석) 자기 rect을 재는데,
- * 페인트 **전에** 잡아 첫 프레임 깜빡임을 없앤다. 종횡비는 2자리로 반올림해 캐시 키를 안정화한다.
+ * 페인트 **전에** 잡아 첫 프레임 깜빡임을 없앤다. 종횡비는 **raw로 넘긴다** — 반올림은
+ * `gradientBitmapSvg`가 소유한다(여기서 따로 반올림하면 저장 경로와 캐시 키가 갈린다).
  *
  * **ResizeObserver를 쓰지 않는다.** TicketRenderer가 무드 트리를 자연 픽셀로 그리고 바깥에서
  * transform scale만 걸므로 이 박스는 리플로우하지 않고, 무드·레이아웃이 바뀌면 어차피 리렌더가
@@ -1198,7 +1199,7 @@ function GradientOverlay({
     if (!el) return;
     const r = el.getBoundingClientRect();
     if (r.width <= 0 || r.height <= 0) return;
-    const next = Math.round((r.height / r.width) * 100) / 100;
+    const next = r.height / r.width;
     setAspect((prev) => (prev === next ? prev : next));
   });
 

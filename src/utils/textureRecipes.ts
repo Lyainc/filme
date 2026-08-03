@@ -341,9 +341,16 @@ const gradientSvgCache = new Map<string, string>();
  * 박스 좌표가 된다. 해상도를 안 정하는 이유(c3): gradient는 저주파라 벡터로 두고 소비 시점에
  * 래스터화하는 게 가장 싸다(타일 반복형 noise가 tile px를 갖는 것과 대비).
  *
- * @param aspect 그릴 박스의 H/W. 캐시 키에 들어가므로 호출부가 반올림해서 넘긴다.
+ * `aspect` 반올림은 **여기가 소유한다**(claude-review PR #643 P1). 예전엔 프리뷰만 2자리로
+ * 반올림하고 저장 경로는 raw `bh/bw`를 넘겨서, 같은 박스인데 캐시 키가 갈려 두 경로가 서로 다른
+ * 비트맵을 받았다 — c1("한 비트맵")과 acceptance 4("같은 캐시를 통과")가 문자 그대로는 안 서 있던
+ * 자리다. 정밀도가 1e-4인 건 두 요구를 같이 만족하는 지점이라서다: 캐시가 float 지터로 무한히
+ * 늘지 않을 만큼 거칠면서, 저장 출력이 안 움직일 만큼 곱다(0.626 캔버스에서 기하 이동 0.03px 미만).
+ *
+ * @param aspect 그릴 박스의 H/W(raw). 호출부는 반올림하지 않는다.
  */
-export function gradientBitmapSvg(recipe: GradientRecipe, aspect: number): string {
+export function gradientBitmapSvg(recipe: GradientRecipe, rawAspect: number): string {
+  const aspect = Math.round(rawAspect * 1e4) / 1e4;
   const key = `${recipe.angle}|${aspect}|${recipe.stops.map((s) => `${s.at},${s.rgb.join('-')},${s.alpha}`).join(';')}`;
   const cached = gradientSvgCache.get(key);
   if (cached) return cached;
