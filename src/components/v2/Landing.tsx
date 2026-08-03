@@ -1,10 +1,44 @@
 import type { DragEvent, ReactNode } from 'react';
 import type { LayoutId, MovieInfo, TicketComponents } from '@/types';
 import { ALL_FIELDS_ON } from '@/constants/fieldVisibility';
+import { LAYOUTS } from '@/utils/layouts';
 import TicketRenderer from '../TicketRenderer';
-import { LayoutStrip } from '../LayoutPicker';
+import { LayoutStrip, MOOD_CHIP_BG } from '../LayoutPicker';
 import { AppFooter } from './AppFooter';
 import { Wordmark } from './Wordmark';
+
+/**
+ * 배경 타일 그리드(#615) — placeholder. #613(예시 티켓 이미지 수동 제작·번들)이 아직
+ * 안 끝나 실물 합성 시트가 없다 — 이번 세션 스코프 밖(#613 자체는 수동 이미지 제작 작업).
+ * 대신 이미 무드를 "안 읽히는 색면"으로 추상화해 둔 `MOOD_CHIP_BG`(무드 칩과 동일 토큰,
+ * #367)를 반복 타일링한다 — D5(원본 포스터 식별 불가)를 자산 없이도 만족하고, 실물 자산이
+ * 오면 이 함수 본문만 `<img src="/assets/landing/backdrop-tiles.webp">`로 바꾸면 된다.
+ *
+ * 프레임 안/밖(#612 열린 결정) — **안**으로 결정. 모바일(레일 미만 폭)에서는 PhoneFrame
+ * 자체가 뷰포트와 같은 사각형이라(#607) 안/밖 차이가 없고, 밖으로 빼려면 PhoneFrame의
+ * `contain:paint`를 escape하는 portal이 필요해(크롭 모달과 반대 방향) 리스크 대비 이득이
+ * 낮다 — 이번 슬라이스는 실제 검증 대상인 모바일 뷰포트 기준으로 "안"을 택한다. 데스크톱
+ * 풀블리드가 필요해지면 그때 portal로 다시 연다.
+ */
+function LandingBackdropTiles() {
+  const tiles = Array.from({ length: 24 }, (_, i) => LAYOUTS[i % LAYOUTS.length]);
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 -z-10 overflow-hidden opacity-20"
+    >
+      <div className="-m-8 grid grid-cols-4 gap-2 rotate-[-8deg] scale-125">
+        {tiles.map((layout, i) => (
+          <div
+            key={i}
+            className="aspect-[2/3] rounded-sm"
+            style={{ background: MOOD_CHIP_BG[layout.id] }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /**
  * 랜딩(#614 → #635 OCR 승격 → #615 무드 히어로) — 포스터가 아직 없을 때의 진입 화면.
@@ -48,7 +82,13 @@ import { Wordmark } from './Wordmark';
  * 방문자에게도 랜딩이 영구히 숨었다). 네 진입점에서 커밋하는 이유는 그래야 크롭 프리셋
  * (`ImageCropModal`이 읽는 `posterOrientation`)이 랜딩에서 고른 무드와 어긋나지 않기 때문이다
  * (#529, Seed spec blindspot 3번 해소) — TMDB 검색(#537)도 같은 크롭 파이프라인으로 합류하므로
- * 동일하게 적용된다. 배경 타일 그리드는 #613 자산이 없어 이번 구현엔 없다 — #612에 남은 결정으로 기록.
+ * 동일하게 적용된다.
+ *
+ * **전경 캐러셀은 자동재생이 아니다 — 진입 동선 재설계 D10(#612, 2026-08-02)이 "전시"를
+ * "선택"으로 뒤집었다.** 이슈 #615 본문의 "6무드 crossfade 순환"·"prefers-reduced-motion
+ * 정지"는 그 재설계로 폐기된 전제라 구현하지 않는다 — 사용자가 무드칩을 넘기고 멈춘 무드가
+ * 그대로 선택이다(위 문단). 배경 타일 그리드는 `LandingBackdropTiles`(위) 참고 — #613 실물
+ * 자산 부재로 placeholder.
  */
 export function Landing({
   mode,
@@ -89,6 +129,7 @@ export function Landing({
   children: ReactNode;
 }) {
   const overlay = mode === 'overlay';
+
   return (
     <div
       data-testid="landing"
@@ -110,6 +151,11 @@ export function Landing({
           : undefined
       }
     >
+      {/* 배경 타일 그리드(#615, D3 — 처음부터 무늬) — outer가 fixed(positioned)라 -z-10 자식은
+          이후 정적 흐름 형제(카피·히어로 등) 뒤로 자동 배치된다(음수 z-index는 non-positioned
+          in-flow 콘텐츠보다 아래 stacking tier). */}
+      {overlay && <LandingBackdropTiles />}
+
       {/* 마케팅 층은 오버레이에서만 — inline은 이미 편집 화면이라 브랜드·카피가 아니라 진입
           컨트롤만 필요하고, hidden에선 그리지도 않는다(숨은 채 매 렌더 reconcile되는 걸 피한다). */}
       {overlay && (

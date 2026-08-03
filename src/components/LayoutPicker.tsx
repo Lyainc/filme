@@ -13,7 +13,10 @@ interface LayoutPickerProps {
 // 무드 칩 배경(#367) — 티켓 미니어처 대신 무드의 핵심 색면 2~3개만 남긴 추상 칩.
 // 46px에선 텍스트 라인·퍼포레이션 재현이 노이즈라 과함(이슈 결정).
 // 무드가 색 토큰을 내보내면 그걸 쓰고(파일 상단 import 주석), 없으면 리터럴로 근사한다.
-const MOOD_CHIP_BG: Record<LayoutId, string> = {
+// export: Landing.tsx의 배경 타일 그리드(#615)가 같은 추상 색면을 재사용한다 — #613 합성
+// 시트 자산이 아직 없어, 이미 "무드를 안 읽히는 색면으로 추상화"해 둔 이 값이 그대로
+// placeholder 자격을 만족한다(D5, 원본 포스터 식별 불가).
+export const MOOD_CHIP_BG: Record<LayoutId, string> = {
   minimal: 'linear-gradient(180deg, #b9b3a8 0%, #b9b3a8 62%, #17150f 62%)',
   // v5 Revue 재설계(#524): 어두운 좌우 분할이 아니라 **흰 종이 + 옐로 룰 + 가운데 도판**이 실루엣이다.
   criterion: `linear-gradient(#23201c, #23201c) 50% 42% / 52% 49% no-repeat, linear-gradient(180deg, ${CRITERION_PAPER} 0 13%, ${CRITERION_YELLOW} 13% 17%, ${CRITERION_PAPER} 17%)`,
