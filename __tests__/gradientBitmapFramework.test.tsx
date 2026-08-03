@@ -17,9 +17,11 @@ import {
   embossBitmapSvg,
   embossSvgCacheSize,
   projectEmbossStamps,
+  projectEmbossPaths,
   type GradientRecipe,
   type NoiseRecipe,
   type EmbossStamp,
+  type EmbossPath,
 } from '../src/utils/textureRecipes';
 import { posterContentFrac, posterFitRect } from '../src/utils/posterFeather';
 import { Poster } from '../src/components/moods/_shared';
@@ -399,5 +401,59 @@ describe('#509 재매핑 — posterFitRect/posterContentFrac/projectEmbossStamps
     expect(invert(a, cfMinimal).y).toBeCloseTo(natural.y, 6);
     expect(invert(b, cfWide).x).toBeCloseTo(natural.x, 6);
     expect(invert(b, cfWide).y).toBeCloseTo(natural.y, 6);
+  });
+});
+
+describe('#509 2단계(c10) — projectEmbossPaths/embossBitmapSvg 올가미 다각형', () => {
+  test('projectEmbossPaths — 다각형 정점 각각을 projectEmbossStamps와 같은 공식으로 투영한다', () => {
+    const cf = { fx: 0.1, fy: 0.05, fw: 0.8, fh: 0.6 };
+    const path: EmbossPath = { points: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0.5, y: 1 }] };
+    const [projected] = projectEmbossPaths([path], cf);
+    expect(projected.points[0]).toEqual({ x: cf.fx, y: cf.fy });
+    expect(projected.points[1].x).toBeCloseTo(cf.fx + cf.fw, 6);
+    expect(projected.points[2].y).toBeCloseTo(cf.fy + cf.fh, 6);
+  });
+
+  test('무드·posterFit이 바뀌어도 같은 자연 다각형은 각 박스에서 올바른 지점으로 투영된다(브러시와 동형, #509 acceptance 5)', () => {
+    const cfMinimal = posterContentFrac(960, 1534, 22, 1490, 960 / 1490, 'contain');
+    const cfWide = posterContentFrac(926, 617, 0, 617, 0.6, 'cover');
+    const natural: EmbossPath = { points: [{ x: 0.4, y: 0.3 }, { x: 0.6, y: 0.3 }, { x: 0.5, y: 0.5 }] };
+    const [a] = projectEmbossPaths([natural], cfMinimal);
+    const [b] = projectEmbossPaths([natural], cfWide);
+    const invert = (p: { x: number; y: number }, cf: typeof cfMinimal) => ({
+      x: (p.x - cf.fx) / cf.fw,
+      y: (p.y - cf.fy) / cf.fh,
+    });
+    a.points.forEach((p, i) => {
+      expect(invert(p, cfMinimal).x).toBeCloseTo(natural.points[i].x, 6);
+      expect(invert(p, cfMinimal).y).toBeCloseTo(natural.points[i].y, 6);
+    });
+    b.points.forEach((p, i) => {
+      expect(invert(p, cfWide).x).toBeCloseTo(natural.points[i].x, 6);
+      expect(invert(p, cfWide).y).toBeCloseTo(natural.points[i].y, 6);
+    });
+  });
+
+  test('embossBitmapSvg — 올가미 다각형이 <polygon>으로, 브러시 스탬프가 <circle>로 같은 SVG에 함께 굽힌다(c5 동시 존재 검증)', () => {
+    const stamps: EmbossStamp[] = [{ x: 0.2, y: 0.2, r: 0.05 }];
+    const paths: EmbossPath[] = [{ points: [{ x: 0.6, y: 0.6 }, { x: 0.8, y: 0.6 }, { x: 0.7, y: 0.8 }] }];
+    const svg = decodeURIComponent(embossBitmapSvg(stamps, paths, 1.5).slice('data:image/svg+xml,'.length));
+    expect((svg.match(/<circle/g) ?? []).length).toBe(1);
+    expect((svg.match(/<polygon/g) ?? []).length).toBe(1);
+    // 다각형도 원과 같은 filter(<g filter="url(#e)">) 안에 있어야 같은 블러+조명 실루엣으로 합쳐진다.
+    expect(svg).toMatch(/<g filter="url\(#e\)">[\s\S]*<polygon/);
+  });
+
+  test('빈 stamps + 빈 paths면 원도 다각형도 없다(호출부 게이트 전제)', () => {
+    const svg = decodeURIComponent(embossBitmapSvg([], [], 1.5));
+    expect(svg).not.toContain('<circle');
+    expect(svg).not.toContain('<polygon');
+  });
+
+  test('stamps는 같고 paths만 다르면 다른 캐시 키(다른 비트맵)다', () => {
+    const stamps: EmbossStamp[] = [{ x: 0.5, y: 0.5, r: 0.1 }];
+    const pathA: EmbossPath[] = [{ points: [{ x: 0, y: 0 }, { x: 0.1, y: 0 }, { x: 0.05, y: 0.1 }] }];
+    const pathB: EmbossPath[] = [{ points: [{ x: 0, y: 0 }, { x: 0.2, y: 0 }, { x: 0.1, y: 0.2 }] }];
+    expect(embossBitmapSvg(stamps, pathA, 1.5)).not.toBe(embossBitmapSvg(stamps, pathB, 1.5));
   });
 });
