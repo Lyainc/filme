@@ -3,10 +3,14 @@
  *
  *   bun scripts/capture-export.mjs --coating gloss --intensity 1 --out /tmp/gloss.jpg
  *   bun scripts/capture-export.mjs --material artpaper --intensity 0.6 --out /tmp/artpaper.jpg
+ *   bun scripts/capture-export.mjs --emboss --out /tmp/emboss.jpg
+ *   bun scripts/capture-export.mjs --coating gloss --emboss --out /tmp/gloss-emboss.jpg
  *   bun scripts/capture-export.mjs --compare /tmp/a.jpg /tmp/b.jpg
  *
- * 목적은 후가공(코팅 gradient 4종 · 재질 noise 3종)의 **저장물**을 브랜치별로 뽑아
- * 픽셀로 대조하는 것 — 프리뷰가 아니라 `captureNodeToJpeg`가 실제로 뱉는 바이트다.
+ * 목적은 후가공(코팅 gradient 4종 · 재질 noise 3종 · 형압 #509)의 **저장물**을 브랜치별로
+ * 뽑아 픽셀로 대조하는 것 — 프리뷰가 아니라 `captureNodeToJpeg`가 실제로 뱉는 바이트다.
+ * `--emboss`는 material/coating과 달리 localStorage 시드로 못 넣는다(형압 마스크는 c8로 세션
+ * 한정이라 PersistedState 밖) — 대신 실제 rail UI를 몰아 브러시 드래그를 재현한다(paintEmboss).
  *
  * ── 헤드리스에서 '사진에 저장'이 안 끝나는 이유 (실측 확정) ──────────────────
  * 앱 버그가 아니다. macOS 헤드리스 Chrome에서 `navigator.canShare({files:[…]})`가
@@ -196,7 +200,71 @@ const POSTER_DRAW = `
   g.putImageData(img, 0, 0);
 `;
 
-async function capture({ layout, material, coating, intensity, out, timeoutMs }) {
+/**
+ * 형압(#509) 마스크는 c8(세션 한정)이라 PersistedState(localStorage 시드)에 안 실린다 —
+ * material/coating처럼 seed로 주입할 수 없다. 그래서 실제 UI를 그대로 몬다: rail 'emboss'
+ * 항목 열기 → "형압 칠하기 시작" → 포스터 위 대각선 드래그(page.mouse, 합성 PointerEvent가
+ * 아니라 CDP 실제 입력이라 React 핸들러가 진짜 유저 제스처와 동일하게 받는다) → 모드 종료.
+ * 종료를 꼭 눌러야 하는 이유 — 브러시 레이어가 `position:fixed` 전체화면이라 안 끄면 이어지는
+ * '완료'·'사진에 저장' 클릭을 그 레이어가 가로챈다.
+ */
+async function paintEmboss(page) {
+  const clickRail = await page.evaluate(() => {
+    const b = document.querySelector('[data-rail-id="emboss"]');
+    if (!b) return false;
+    b.click();
+    return true;
+  });
+  if (!clickRail) throw new Error('형압 rail 아이콘을 못 찾음(data-rail-id="emboss")');
+  await sleep(400); // grid-rows 패널 펼침 트랜지션(300ms)
+
+  const clickStart = await page.evaluate(() => {
+    const b = [...document.querySelectorAll('button')].find((x) =>
+      (x.textContent || '').includes('형압 칠하기 시작'),
+    );
+    if (!b) return false;
+    b.click();
+    return true;
+  });
+  if (!clickStart) throw new Error('"형압 칠하기 시작" 버튼을 못 찾음');
+  await sleep(200);
+
+  const rect = await page.evaluate(() => {
+    const el = document.querySelector('[data-poster-root]');
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return { left: r.left, top: r.top, width: r.width, height: r.height };
+  });
+  if (!rect || rect.width <= 0 || rect.height <= 0) throw new Error('포스터 rect를 못 얻음(형압 대상 없음)');
+
+  // 대각선 스와이프 하나 — 넓게 지나가 브러시(기본 반경 7%) 겹침으로 이어진 선을 만든다.
+  const x0 = rect.left + rect.width * 0.25;
+  const y0 = rect.top + rect.height * 0.25;
+  const x1 = rect.left + rect.width * 0.7;
+  const y1 = rect.top + rect.height * 0.75;
+  await page.mouse.move(x0, y0);
+  await page.mouse.down();
+  const steps = 12;
+  for (let i = 1; i <= steps; i++) {
+    await page.mouse.move(x0 + ((x1 - x0) * i) / steps, y0 + ((y1 - y0) * i) / steps);
+    await sleep(20);
+  }
+  await page.mouse.up();
+  await sleep(200);
+
+  const clickEnd = await page.evaluate(() => {
+    const b = [...document.querySelectorAll('button')].find((x) =>
+      (x.textContent || '').includes('탭해서 종료'),
+    );
+    if (!b) return false;
+    b.click();
+    return true;
+  });
+  if (!clickEnd) throw new Error('형압 모드 종료 버튼을 못 찾음 — 브러시 레이어가 이후 클릭을 가로챌 수 있음');
+  await sleep(200);
+}
+
+async function capture({ layout, material, coating, intensity, emboss, out, timeoutMs }) {
   const seed = {
     movieInfo: {
       title: '인터스텔라',
@@ -275,6 +343,10 @@ async function capture({ layout, material, coating, intensity, out, timeoutMs })
     await sleep(1500);
 
     mark('cropped');
+    if (emboss) {
+      await paintEmboss(page);
+      mark('embossed');
+    }
     await clickByText('완료');
     await page.waitForFunction(
       () =>
@@ -306,10 +378,13 @@ async function capture({ layout, material, coating, intensity, out, timeoutMs })
     const drawn = logs.filter((l) => l.startsWith('[capture:overlay]'));
     const missing = wanted.filter((t) => !drawn.some((l) => l.includes(`texture=${t}`)));
     if (missing.length) throw new Error(`오버레이가 안 그려짐: ${missing.join(',')} (로그: ${drawn.join(' | ')})`);
+    if (emboss && !drawn.some((l) => l.includes('emboss'))) {
+      throw new Error(`형압 오버레이가 안 그려짐(로그: ${drawn.join(' | ')})`);
+    }
 
     console.log(
       JSON.stringify(
-        { mode: 'capture', layout, material, coating, intensity, out, bytes: bytes.length, overlays: drawn, marks },
+        { mode: 'capture', layout, material, coating, intensity, emboss, out, bytes: bytes.length, overlays: drawn, marks },
         null,
         2,
       ),
@@ -332,6 +407,7 @@ if (cmpIdx >= 0) {
     material: arg('material', 'original'),
     coating: arg('coating', 'none'),
     intensity: Number(arg('intensity', '1')),
+    emboss: argv.includes('--emboss'),
     out,
     timeoutMs: Number(arg('timeout', '60000')),
   });
