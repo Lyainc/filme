@@ -1,5 +1,5 @@
 import { POSTER_EDGE_FEATHER, posterFeatherAxes } from './posterFeather';
-import { TEXTURE_RECIPES, gradientBitmapSvg, isNoiseRecipe, noiseTileSvg } from './textureRecipes';
+import { TEXTURE_RECIPES, gradientBitmapSvg, isNoiseRecipe, noiseTileSvg, EMBOSS_RECIPE, embossBitmapSvg, type EmbossStamp } from './textureRecipes';
 
 interface CaptureOptions {
   width: number;
@@ -661,6 +661,52 @@ async function compositeOverlay(
   }
 }
 
+// 형압(#509) — 프리뷰 EmbossOverlay와 **같은 비트맵 한 장**을 그린다(#506 c1 규율 재사용, 이
+// 프레임워크의 세 번째 소비자). poster-root의 data-emboss-stamps(JSON)를 파싱해 embossBitmapSvg로
+// 굽고 canvas blend로 합성한다. z-order상 재질·코팅 다음(포스터 위 최상단) — Poster의 EmbossOverlay
+// 배치와 동일해야 미리보기=저장물이 맞는다.
+async function compositeEmbossOverlay(
+  ctx: CanvasRenderingContext2D,
+  root: HTMLElement,
+  stampsRaw: string,
+  intensity: number,
+  nodeRect: DOMRect,
+  width: number,
+  height: number,
+  pixelRatio: number,
+  debug: boolean,
+): Promise<void> {
+  if (intensity <= 0) return;
+  let stamps: EmbossStamp[];
+  try {
+    stamps = JSON.parse(stampsRaw);
+  } catch {
+    return;
+  }
+  if (!Array.isArray(stamps) || stamps.length === 0) return;
+
+  // compositeOverlay/compositeRaster와 동일한 분율 환산.
+  const r = root.getBoundingClientRect();
+  const bx = (EXPORT_MARGIN_PX + ((r.left - nodeRect.left) / nodeRect.width) * width) * pixelRatio;
+  const by = (EXPORT_MARGIN_PX + ((r.top - nodeRect.top) / nodeRect.height) * height) * pixelRatio;
+  const bw = (r.width / nodeRect.width) * width * pixelRatio;
+  const bh = (r.height / nodeRect.height) * height * pixelRatio;
+
+  const embImg = await loadImage(embossBitmapSvg(stamps, bh / bw));
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(bx, by, bw, bh);
+  ctx.clip();
+  ctx.globalCompositeOperation = EMBOSS_RECIPE.blend;
+  ctx.globalAlpha = intensity;
+  ctx.drawImage(embImg, bx, by, bw, bh);
+  ctx.restore();
+
+  if (debug) {
+    console.log(`[capture:overlay] emboss stamps=${stamps.length} intensity=${intensity} blend=${EMBOSS_RECIPE.blend} box=${Math.round(bx)},${Math.round(by)},${Math.round(bw)}x${Math.round(bh)}`);
+  }
+}
+
 interface BgCarrier { el: HTMLElement; color: string }
 
 /** `rgb()`/`rgba()` 문자열이 실질적으로 불투명한지. 파싱 실패·미지정은 투명 취급(안전). */
@@ -710,28 +756,24 @@ function collectOpaquePosterBackdrops(node: HTMLElement): BgCarrier[] {
  * `[capture:probe]` 직후 끊기고 `[capture:overlay]`·`[capture:main]`이 없던 증상이 이 모양이다.
  * 여기서 삼켜 sheen만 빠진 저장물이라도 나오게 하고, 원인은 로그로 남긴다.
  */
-async function safeOverlay(
+/**
+ * 후가공 오버레이 합성 한 단계를 실패 격리한다(#490/#495 후속, #509에서 emboss 세 번째 소비자로
+ * 일반화). save/restore로 감싸 실패 시 캔버스 상태를 통째로 되돌린다 — compositeOverlay/
+ * compositeEmbossOverlay는 내부에서 ctx.save()→clip()→…→restore()로 감싸는데, 그 사이에서
+ * throw하면 restore가 안 돌아 clip이 캔버스에 남아 이후 base·스탬프 draw를 잘라먹는다. composite
+ * op/alpha/filter만 리셋해선 clip·transform이 안 되돌려진다(claude-review PR #513 P1). 여기 save를
+ * 하나 더 쌓아 finally에서 되돌리면 현재 상태가 오버레이 이전으로 확실히 복원된다.
+ */
+async function safeCompositeStep(
   ctx: CanvasRenderingContext2D,
-  root: HTMLElement,
-  texture: string,
-  intensity: number,
-  nodeRect: DOMRect,
-  width: number,
-  height: number,
-  pixelRatio: number,
-  debug: boolean,
+  label: string,
+  run: () => Promise<void>,
 ): Promise<void> {
-  // save/restore로 감싸 실패 시 캔버스 상태를 통째로 되돌린다. compositeOverlay는 내부에서
-  // ctx.save()→clip()→…→restore()로 감싸는데, 그 사이(clip 이후~restore 이전)에서 throw하면
-  // restore가 안 돌아 clip이 캔버스에 남아 이후 base·스탬프 draw를 잘라먹는다. composite op/alpha/
-  // filter만 리셋해선 clip·transform이 안 되돌려진다(claude-review PR #513 P1). 여기 save를 하나
-  // 더 쌓아 finally에서 되돌리면 현재 상태가 오버레이 이전으로 확실히 복원된다(내부 save가 불균형해도
-  // 현재 상태는 정확히 복원 — 남는 스택 항목은 캡처 끝에 캔버스째 버려져 무해).
   ctx.save();
   try {
-    await compositeOverlay(ctx, root, texture, intensity, nodeRect, width, height, pixelRatio, debug);
+    await run();
   } catch (err) {
-    console.error(`[capture:overlay] FAILED texture=${texture} — 이 오버레이만 건너뛴다`, err);
+    console.error(`[capture:overlay] FAILED ${label} — 이 오버레이만 건너뛴다`, err);
   } finally {
     ctx.restore();
   }
@@ -878,13 +920,23 @@ export async function captureNodeToJpeg(
     if (material) {
       const rawIntensity = root.dataset.materialIntensity;
       const intensity = rawIntensity != null ? parseFloat(rawIntensity) : 1;
-      await safeOverlay(ctx, root, material, intensity, nodeRect, width, height, pixelRatio, debug);
+      await safeCompositeStep(ctx, `texture=${material}`, () =>
+        compositeOverlay(ctx, root, material, intensity, nodeRect, width, height, pixelRatio, debug));
     }
     const coating = root.dataset.coating;
     if (coating) {
       const rawIntensity = root.dataset.coatingIntensity;
       const intensity = rawIntensity != null ? parseFloat(rawIntensity) : 1;
-      await safeOverlay(ctx, root, coating, intensity, nodeRect, width, height, pixelRatio, debug);
+      await safeCompositeStep(ctx, `texture=${coating}`, () =>
+        compositeOverlay(ctx, root, coating, intensity, nodeRect, width, height, pixelRatio, debug));
+    }
+    // 형압(#509) — 재질·코팅 다음(z-order 최상단, Poster의 EmbossOverlay 배치와 동일).
+    const embossStampsRaw = root.dataset.embossStamps;
+    if (embossStampsRaw) {
+      const rawIntensity = root.dataset.embossIntensity;
+      const intensity = rawIntensity != null ? parseFloat(rawIntensity) : 1;
+      await safeCompositeStep(ctx, 'emboss', () =>
+        compositeEmbossOverlay(ctx, root, embossStampsRaw, intensity, nodeRect, width, height, pixelRatio, debug));
     }
   }
   if (debug) console.log(`[capture:stage] overlays done (roots=${posterRoots.length})`);
