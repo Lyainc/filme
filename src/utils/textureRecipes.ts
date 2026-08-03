@@ -391,6 +391,140 @@ export function isNoiseRecipe(recipe: TextureRecipe): recipe is NoiseRecipe {
 }
 
 /**
+ * 형압(#509) — 사용자가 브러시로 칠한 원형 스탬프의 마스크. 포스터 자연 픽셀 0..1 분율
+ * 좌표(c7) — x/y는 각각 포스터 폭/높이 기준, r은 **폭** 기준으로 둬 종횡비가 어떻든 원이
+ * 찌그러지지 않는다(포스터가 화면에 어떻게 표시되든 자연 픽셀 공간 자체는 등방이므로).
+ *
+ * `newStroke`(#509 실측 보정) — 이 스탬프가 포인터다운 직후 첫 스탬프인지. embossBitmapSvg가
+ * 이걸로 "앞 스탬프와 선(round cap)으로 이어 매끈한 스트로크를 만들지"를 판정한다. 원만 겹쳐
+ * 찍으면(브러시 반경의 30% 간격) 블러+diffuseLighting이 겹친 원의 울퉁불퉁한 합집합 윤곽을 그대로
+ * 반영해 "구슬을 꿴" 것처럼 보인다(실캡처로 확인, `docs/PRINT_CALIBRATION.md` 급의 육안 문제라
+ * 슬쩍 넘길 수 없었다) — 연속 스탬프를 선분으로 이어 매끈한 캡슐 실루엣을 만들면 사라진다. 새
+ * 스트로크의 첫 스탬프는 앞(이전 스트로크의 마지막) 스탬프와 잇지 않아야 하므로 이 플래그가 필요.
+ */
+export interface EmbossStamp {
+  x: number;
+  y: number;
+  r: number;
+  newStroke?: boolean;
+}
+
+/**
+ * 균일 융기 베벨 레시피(#509) — material/coating과 달리 이름으로 고르는 프리셋이 아니라
+ * 상수 하나다(사용자가 조절하는 건 마스크 모양과 intensity뿐). #591 인쇄 실측 반영: 톤 양 끝
+ * 5%가 인쇄에서 붕괴하므로 하이라이트·섀도를 순백/순흑이 아니라 **미드톤 대비**로 잡는다 —
+ * midSlope/midIntercept가 feDiffuseLighting 원출력을 gray 0.35~0.7 근방으로 압축한다.
+ */
+export interface EmbossRecipe {
+  kind: 'emboss';
+  /** 베벨 폭 — 포스터 폭 기준 분율(feGaussianBlur stdDeviation). */
+  bevelFrac: number;
+  surfaceScale: number;
+  diffuseConstant: number;
+  /** feComponentTransfer linear — 원출력을 미드톤 대역으로 눌러 인쇄 톤 붕괴 구간을 피한다. */
+  midSlope: number;
+  midIntercept: number;
+  azimuth: number;
+  elevation: number;
+  blend: TextureBlend;
+  defaultIntensity: number;
+}
+
+// 브라우저 실측(300/512/960px 박스 3종 동일 룩 확인)으로 고른 값 — bevelFrac·surfaceScale은
+// 굽기 해상도(EMBOSS_BAKE_PX)와 무관하게 같은 비율로 재현된다(SVG 필터가 좌표계 상대이므로
+// gradientBitmapSvg의 해상도 무관 실측과 동형). ponytail: 룩이 과하거나 약하면 diffuseConstant
+// (세기)·bevelFrac(폭)만 조정 — azimuth/elevation은 광원 방향이라 다른 레시피의 각도(125~135deg
+// 사선)와 톤을 맞춘 값.
+export const EMBOSS_RECIPE: EmbossRecipe = {
+  kind: 'emboss',
+  bevelFrac: 0.02,
+  surfaceScale: 8,
+  diffuseConstant: 1.2,
+  midSlope: 0.35,
+  midIntercept: 0.35,
+  azimuth: 235,
+  elevation: 50,
+  blend: 'overlay',
+  defaultIntensity: 1,
+};
+
+/** gradientBitmapSvg와 동일 굽기 해상도 컨벤션(#506 c3) — 벡터/필터 좌표계가 상대적이라 값
+ *  자체는 화질에 안 걸린다(실측, 위 EMBOSS_RECIPE 주석). */
+const EMBOSS_BAKE_PX = 512;
+
+/** 굽기 캐시 — 키는 스탬프 목록 + aspect까지만(#506 c2, intensity는 합성 시점 alpha). */
+const embossSvgCache = new Map<string, string>();
+
+/**
+ * 형압 마스크(스탬프 목록)를 **비트맵 한 장**으로 굽는다(#509 c1, #506 c2 규율 재사용).
+ * 프리뷰는 이 URL을 background-image로, 저장은 같은 URL을 loadImage → drawImage로 그린다.
+ *
+ * SVG `<filter>`(feGaussianBlur+feDiffuseLighting)를 쓰지만 **라이브 필터가 아니다** — DOM
+ * 엘리먼트에 `filter: url(#x)`를 걸어 html-to-image가 캡처해야 하는 방식(c1이 금지하는 것,
+ * #495 증상의 원인)이 아니라, 정적 SVG data URL을 `new Image()`로 로드해 canvas
+ * `drawImage`로 합성하는 방식 — noiseTileSvg(feTurbulence)가 이미 이 경로로 저장물에
+ * 들어가고 있어(#471), 같은 규율의 세 번째 소비자다.
+ *
+ * 블러(feGaussianBlur)로 마스크 실루엣을 범프맵 삼아 feDiffuseLighting을 걸면, 평평한
+ * 중앙(블러 후 알파 기울기 0)은 광원 각도와 무관하게 일정한 톤 — "균일 융기" — 이 되고, 블러
+ * 폭만큼의 가장자리 구간만 광원 방향에 따라 밝기/어둡기가 갈린다 — 실물 형압 다이의 "평평한
+ * 융기 + 가장자리 베벨" 룩 그대로. feComposite(operator="in", in2=SourceGraphic)로 최종
+ * 알파를 원래(블러 전) 원 모양에 맞춰 잘라 경계가 또렷하게 선다.
+ *
+ * @param stamps 빈 배열이면 호출부가 오버레이 자체를 렌더하지 않아야 한다(빈 SVG를 안 굽는다).
+ * @param rawAspect 그릴 박스의 H/W(raw). gradientBitmapSvg와 동일하게 반올림은 여기서 한다.
+ */
+export function embossBitmapSvg(stamps: EmbossStamp[], rawAspect: number): string {
+  const aspect = Math.round(rawAspect * 1e4) / 1e4;
+  const key = `${aspect}|${stamps.map((s) => `${Math.round(s.x * 1e3)},${Math.round(s.y * 1e3)},${Math.round(s.r * 1e3)},${s.newStroke ? 1 : 0}`).join(';')}`;
+  const cached = embossSvgCache.get(key);
+  if (cached) return cached;
+
+  const w = aspect >= 1 ? Math.round(EMBOSS_BAKE_PX / aspect) : EMBOSS_BAKE_PX;
+  const h = aspect >= 1 ? EMBOSS_BAKE_PX : Math.round(EMBOSS_BAKE_PX * aspect);
+  const rec = EMBOSS_RECIPE;
+  const bevel = rec.bevelFrac * w;
+  // r은 폭(w) 기준(원 유지, 위 EmbossStamp 주석과 동일 근거). 원만 찍으면 겹친 원들의 합집합
+  // 윤곽이 울퉁불퉁해 블러+조명이 "구슬 꿴" 모양으로 도드라진다(실측, EmbossStamp.newStroke
+  // 주석) — 같은 스트로크의 연속 스탬프는 둥근 캡 선분으로 이어 캡슐 실루엣을 만든다.
+  const circles = stamps
+    .map((s, i) => {
+      const cx = (s.x * w).toFixed(2);
+      const cy = (s.y * h).toFixed(2);
+      const r = (s.r * w).toFixed(2);
+      const circle = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#fff"/>`;
+      const prev = stamps[i - 1];
+      if (i === 0 || s.newStroke || !prev) return circle;
+      const px = (prev.x * w).toFixed(2);
+      const py = (prev.y * h).toFixed(2);
+      const strokeW = (Math.max(s.r, prev.r) * w * 2).toFixed(2);
+      return `<line x1="${px}" y1="${py}" x2="${cx}" y2="${cy}" stroke="#fff" stroke-width="${strokeW}" stroke-linecap="round"/>${circle}`;
+    })
+    .join('');
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
+    `<defs><filter id="e" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">` +
+    `<feGaussianBlur in="SourceGraphic" stdDeviation="${bevel}" result="blur"/>` +
+    `<feDiffuseLighting in="blur" surfaceScale="${rec.surfaceScale}" diffuseConstant="${rec.diffuseConstant}" lighting-color="#ffffff" result="lit">` +
+    `<feDistantLight azimuth="${rec.azimuth}" elevation="${rec.elevation}"/></feDiffuseLighting>` +
+    `<feComponentTransfer in="lit" result="mid">` +
+    `<feFuncR type="linear" slope="${rec.midSlope}" intercept="${rec.midIntercept}"/>` +
+    `<feFuncG type="linear" slope="${rec.midSlope}" intercept="${rec.midIntercept}"/>` +
+    `<feFuncB type="linear" slope="${rec.midSlope}" intercept="${rec.midIntercept}"/></feComponentTransfer>` +
+    `<feComposite in="mid" in2="SourceGraphic" operator="in"/>` +
+    `</filter></defs>` +
+    `<g filter="url(#e)">${circles}</g></svg>`;
+  const url = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  embossSvgCache.set(key, url);
+  return url;
+}
+
+/** 캐시 계측용(테스트) — gradientSvgCacheSize와 동일 목적. */
+export function embossSvgCacheSize(): number {
+  return embossSvgCache.size;
+}
+
+/**
  * 물리재질 종이결 타일 SVG를 data:URL로(#471). feTurbulence(fractalNoise)를 saturate(0)로 회색 결로
  * 만들고 alpha를 1로 평탄화해 불투명 회색 노이즈 타일을 얻는다 — 세기·색은 오버레이 레이어의
  * opacity·blend·포스터 filter가 정한다. stitchTiles="stitch"로 작은 타일이 seam 없이 반복돼

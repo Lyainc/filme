@@ -3,7 +3,7 @@ import type { MovieInfo, QuoteFont, TicketComponents, TicketField } from '@/type
 import { FIELD_LABELS, STAMP_LABELS, isStampTarget, type SheetTarget } from '@/constants/fields';
 import { formatDate } from '@/utils/dateFormat';
 import { posterContainRect, posterFeatherMask } from '@/utils/posterFeather';
-import { TEXTURE_RECIPES, gradientBitmapSvg, isNoiseRecipe, noiseTileSvg, type TextureRecipe } from '@/utils/textureRecipes';
+import { TEXTURE_RECIPES, gradientBitmapSvg, isNoiseRecipe, noiseTileSvg, EMBOSS_RECIPE, embossBitmapSvg, type TextureRecipe, type EmbossStamp } from '@/utils/textureRecipes';
 import { EyeIcon } from '@/components/ui/VisibilityCheckbox';
 
 export interface MoodProps {
@@ -26,6 +26,13 @@ export interface MoodProps {
   onField?: (field: SheetTarget) => void;
   /** 포스터 영역 탭(#259) → 파일 선택 → 크롭. undefined면 포스터는 비인터랙티브(캡처/데스크톱). */
   onPosterTap?: () => void;
+  /**
+   * 형압 마스크(#509) — croppedImageUrl과 동일하게 `components`(TicketComponents) 밖의 세션 한정
+   * 필드다(PhototicketState 주석 참고). 각 무드가 자기 Poster() 호출에 그대로 전달한다.
+   */
+  embossStamps?: EmbossStamp[];
+  /** 형압 강도 0..1(#509). 미지정 시 Poster 기본값(1). */
+  embossIntensity?: number;
 }
 
 /**
@@ -869,6 +876,13 @@ interface PosterProps {
   /** 코팅 광택 오버레이 강도 0..1(#475) — TextureOverlay(코팅)로 관통. 미지정 시 1(강도 100%). */
   coatingIntensity?: number;
   posterOpacity?: number;
+  /**
+   * 형압 마스크(#509) — 사용자가 브러시로 칠한 원형 스탬프 목록(포스터 자연 0..1 분율 좌표,
+   * c7). 비었거나 미지정이면 오버레이 자체를 렌더하지 않는다(빈 SVG를 안 굽는다).
+   */
+  embossStamps?: EmbossStamp[];
+  /** 형압 강도 0..1(#509) — material/coatingIntensity와 동일 계약. 미지정 시 1. */
+  embossIntensity?: number;
   /** contain일 때 정렬(#420 원본 비율 보존 프리셋) — 'top'은 포스터 상단을 캔버스 상단에 붙인다. 기본 중앙. */
   align?: 'center' | 'top';
   /**
@@ -957,6 +971,8 @@ export const Poster = memo(function Poster({
   coating = 'none',
   coatingIntensity = 1,
   posterOpacity,
+  embossStamps,
+  embossIntensity = 1,
   align = 'center',
   frameInsetY = 0,
   onTopBandHeight,
@@ -1035,6 +1051,10 @@ export const Poster = memo(function Poster({
       data-material-intensity={materialIntensity}
       data-coating={coating && coating !== 'none' && TEXTURE_RECIPES[coating] ? coating : undefined}
       data-coating-intensity={coatingIntensity}
+      // 형압(#509) — 같은 DOM-속성 규율로 저장 경로(compositeEmbossOverlay)에 마스크를 실어보낸다.
+      // 스탬프가 없으면 안 실어 저장 경로가 그 축을 건너뛴다(material/coating과 동일 게이트 패턴).
+      data-emboss-stamps={embossStamps && embossStamps.length ? JSON.stringify(embossStamps) : undefined}
+      data-emboss-intensity={embossIntensity}
       style={{
         position: 'absolute',
         inset: 0,
@@ -1093,6 +1113,10 @@ export const Poster = memo(function Poster({
           <img> 위에 얹히므로 "재질 최종색 위에 코팅 blend"(c3)가 DOM 순서 그대로 성립한다. */}
       {material && material !== 'original' && <TextureOverlay texture={material} intensity={materialIntensity} />}
       {coating && coating !== 'none' && <TextureOverlay texture={coating} intensity={coatingIntensity} />}
+      {/* 형압(#509)은 재질·코팅 위(z-order 최상단)에 얹는다 — 실물 형압 다이는 코팅(라미네이팅)
+          아래 종이 자체를 누르지만, 이 오버레이는 "융기부가 코팅 위로도 비쳐 보이는" 단순화한
+          룩이라 가장 위가 자연스럽다(코팅 유무와 무관하게 항상 눈에 띔, c5 동시 적용 요구와 부합). */}
+      {embossStamps && embossStamps.length > 0 && <EmbossOverlay stamps={embossStamps} intensity={embossIntensity} />}
     </div>
   );
 });
@@ -1219,6 +1243,46 @@ function GradientOverlay({
             }
           : null),
         mixBlendMode: recipe.blend,
+        opacity: intensity,
+      }}
+    />
+  );
+}
+
+/**
+ * 형압 베벨 오버레이(#509) — GradientOverlay와 동일 패턴(박스 aspect를 embossBitmapSvg에
+ * 넘겨 저장 경로와 같은 비트맵을 그린다). ResizeObserver를 안 쓰는 이유도 GradientOverlay
+ * 주석과 동일 — 무드 트리는 자연 픽셀 고정이라 리플로우하지 않는다.
+ */
+function EmbossOverlay({ stamps, intensity }: { stamps: EmbossStamp[]; intensity: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [aspect, setAspect] = useState<number | null>(null);
+
+  useIsomorphicLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    if (r.width <= 0 || r.height <= 0) return;
+    const next = r.height / r.width;
+    setAspect((prev) => (prev === next ? prev : next));
+  });
+
+  return (
+    <div
+      ref={ref}
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        inset: 0,
+        pointerEvents: 'none',
+        ...(aspect
+          ? {
+              backgroundImage: `url("${embossBitmapSvg(stamps, aspect)}")`,
+              backgroundSize: '100% 100%',
+              backgroundRepeat: 'no-repeat',
+            }
+          : null),
+        mixBlendMode: EMBOSS_RECIPE.blend,
         opacity: intensity,
       }}
     />
