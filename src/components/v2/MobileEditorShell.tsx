@@ -778,8 +778,8 @@ export function MobileEditorShell({
                   label="임시저장"
                   onClick={() => {
                     setMenuOpen(false);
-                    photo.saveDraft();
-                    flashToast('임시저장했어요');
+                    // 실패 시(#645 C1) 성공 토스트를 안 띄운다 — saveDraft 내부가 이미 showError로 알린다.
+                    if (photo.saveDraft()) flashToast('임시저장했어요');
                   }}
                 />
                 <MenuRow
