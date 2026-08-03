@@ -13,6 +13,7 @@ import { getLayout } from '@/utils/layouts';
 import type { LayoutId } from '@/types';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { PHONE_FRAME_ID } from '@/components/v2/PhoneFrame';
+import { showError } from '@/utils/errorToast';
 
 interface ImageCropModalProps {
   imageSrc: string;
@@ -81,6 +82,12 @@ export default function ImageCropModal({
     const natural = img.naturalWidth > 0 && img.naturalHeight > 0 ? img.naturalWidth / img.naturalHeight : null;
     setMediaAspect(natural);
     initCrop(requestedAspect ?? natural ?? undefined, img.width, img.height);
+  };
+
+  // 이미지 로드 실패(#645 C4) — onLoad가 안 오면 completedCrop이 계속 undefined라 '적용'이
+  // 말없이 disabled로 굳는다. 회색 상자 앞에서 이유를 알 방법이 없었으므로 원인을 알린다.
+  const onImageError = () => {
+    showError('이미지를 불러오지 못했어요. 다른 사진을 선택해 주세요.', { persistent: true });
   };
 
   // 프리셋 토글(포스터 전용)로 requestedAspect가 바뀌면 이미 로드된 이미지 기준으로 재계산한다.
@@ -251,6 +258,7 @@ export default function ImageCropModal({
                 src={imageSrc}
                 alt=""
                 onLoad={onImageLoad}
+                onError={onImageError}
                 // cq 단위(프레임 = size container)로 contain 시킨다(#474). `100%`는 안 통한다 —
                 // `.ReactCrop`이 inline-block이라 높이가 content-based(indefinite)라서 퍼센트
                 // 높이가 해소되지 않고, 라이브러리의 `max-height:inherit` 체인도 `none`으로 끝난다.

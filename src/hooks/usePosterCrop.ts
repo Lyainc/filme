@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getCroppedImg, type Area } from '@/utils/imageCrop';
 import { POSTER_PRESERVE_MAX_SIDE } from '@/utils/constants';
+import { showError } from '@/utils/errorToast';
 
 /**
  * 포스터 크롭 파이프라인의 단일 소유자(#548).
@@ -96,9 +97,10 @@ export function usePosterCrop(commit: (croppedUrl: string, originalUrl: string) 
         setCropOpen(false); // originalSrc는 유지 — 재크롭에 재사용
         return true;
       } catch (error) {
-        // useLogoCrop과 동일한 사용자 피드백(canvas/SVG 오류로 실패 가능).
+        // useLogoCrop과 동일한 사용자 피드백(canvas/SVG 오류로 실패 가능). alert()는 폰 프레임
+        // 밖에 뜨고 블로킹이라(#645 M1) showError로 교체 — 모달이 열린 채 남으니 다시 시도 가능.
         console.error('포스터 크롭 실패:', error);
-        alert('이미지 크롭에 실패했습니다.');
+        showError('이미지 크롭에 실패했어요. 다시 시도해 주세요.');
         return false;
       } finally {
         setIsCropping(false);
