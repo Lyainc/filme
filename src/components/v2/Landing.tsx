@@ -267,15 +267,29 @@ export function Landing({
           <>
             {/* 카피는 1줄+1줄로 압축(Seed spec c5) — 선택 가능한 히어로가 "그래서 뭘 얻나"를
                 문장보다 세게 답하므로 카피 의존도가 낮다. 세로 예산은 아래 히어로+무드칩이 새로
-                차지한다(400×675, measure-chrome.mjs로 실측). */}
-            <h1 className="text-display font-bold text-fg break-keep">
-              티켓 한 장이, 내 굿즈가 돼요
-            </h1>
-            {/* text-caption(#615 사용자 피드백) — 원래 text-body(14px)는 헤드카피 대비 존재감이
-                과했다. 카피 3종(헤드·서브·CTA) 크기를 낮춰 갤러리에 세로 예산을 넘긴다. */}
-            <p className="max-w-[300px] text-caption leading-relaxed text-fg-muted break-keep">
-              스크린샷으로 자동입력. 사진으로 찍은 실물 티켓도 돼요.
-            </p>
+                차지한다(400×675, measure-chrome.mjs로 실측).
+
+                relative + 뒤 scrim(-z-[5])은 배경 타일(-z-10)이 카피 밑에서 그대로 비치는 걸
+                막는다 — 실측(픽셀 샘플링, measure-chrome.mjs의 대비 축은 랜딩 카피를 안 잰다)으로
+                text-fg-muted 서브카피가 타일 위에서 라이트 테마 기준 최저 2.89:1까지 떨어지는 걸
+                확인했다(WCAG AA 4.5 미달). globals.css 19-22행이 이미 세운 규칙과 같다 — muted 잉크는
+                불투명 표면 위에만. bg-bg는 이 오버레이 자신의 배경색과 같아 시각적 이음매가 없다. */}
+            <div className="relative">
+              <div aria-hidden="true" className="absolute inset-0 -z-[5] bg-bg" />
+              <h1 className="text-display font-bold text-fg break-keep">
+                티켓 한 장이, 내 굿즈가 돼요
+              </h1>
+              {/* text-caption(#615 사용자 피드백) — 원래 text-body(14px)는 헤드카피 대비 존재감이
+                  과했다. 카피 3종(헤드·서브·CTA) 크기를 낮춰 갤러리에 세로 예산을 넘긴다.
+
+                  스크림을 걷어도 라이트 테마는 4.43:1로 WCAG AA(4.5) 미달이다 — text-fg-muted vs
+                  --bg 자체가 이미 여유 없는 기존 토큰 관계라(globals.css 19행 대비표와 같은 급),
+                  배경 타일과 무관한 선행 갭이다. 이 스크림이 없애는 건 "타일이 추가로 깎는 폭"이지
+                  그 기존 갭 자체가 아니다 — 별도 이슈 대상. */}
+              <p className="max-w-[300px] text-caption leading-relaxed text-fg-muted break-keep">
+                스크린샷으로 자동입력. 사진으로 찍은 실물 티켓도 돼요.
+              </p>
+            </div>
 
             {/* 히어로(#615, 2026-08-04 개정) — auto-scroll 갤러리 하나가 이전의 "전경 1장 + 무드칩
                 스트립" 두 축을 대체한다(위 컴포넌트 주석). */}
