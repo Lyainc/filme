@@ -98,6 +98,38 @@ describe('FieldTap 키보드 접근 (#646 항목1)', () => {
     await user.keyboard('{Enter}');
     expect(calls).toEqual(['chain']);
   });
+
+  test('순수 텍스트 조각(fieldPieces) 경로도 Tab 순회로 도달 + Enter로 활성화 (claude-review round 2 P1)', async () => {
+    // FieldTap의 세 번째 분기 — children이 유효한 엘리먼트가 아니라 raw string일 때 FieldTap 자신이
+    // <span {...interactiveProps}>로 새로 감싼다(cloneElement 재사용이 아니라 신규 노드 생성). 앞의 두
+    // 테스트는 전부 isValidElement(cloneElement) 분기만 태우는데, 이 span 분기는 fieldPieces()(극장·
+    // 상영관·좌석 등 값 있는 필드의 실제 텍스트)를 거치는 가장 흔한 FieldTap 호출 경로다 — theater
+    // 필드(FULL_MOVIE.theater='메가박스 코엑스')로 실제로 검증한다.
+    const user = userEvent.setup();
+    const calls: SheetTarget[] = [];
+    render(
+      <MoodStub
+        movieInfo={FULL_MOVIE}
+        components={BASE}
+        croppedImageUrl="blob:x"
+        fieldVisibility={ALL_ON}
+        onField={(f) => calls.push(f)}
+      />
+    );
+    const target = screen.getByRole('button', { name: '극장 편집' });
+    expect(target.tagName).toBe('SPAN');
+    expect(target.tabIndex).toBe(0);
+
+    let reached = false;
+    for (let i = 0; i < 40 && !reached; i++) {
+      await user.tab();
+      if (document.activeElement === target) reached = true;
+    }
+    expect(reached).toBe(true);
+
+    await user.keyboard('{Enter}');
+    expect(calls).toEqual(['theater']);
+  });
 });
 
 describe('sr-only file input aria-hidden 제거 (#646 항목2)', () => {
