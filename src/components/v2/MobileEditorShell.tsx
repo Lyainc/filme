@@ -1142,13 +1142,14 @@ export function MobileEditorShell({
       {/* 포스터 크롭 파이프라인(#259 on-ticket tap + #315 드롭존·서브메뉴 교체/재크롭 통합) — 숨김
           파일 input + 크롭 모달. 탭 → input.click() → 파일 선택 → ImageCropModal(기본 0.667) →
           getCroppedImg → handleImageUpload. originalSrc는 크롭 완료 후에도 유지돼 재크롭에 재사용된다. */}
+      {/* sr-only여도 tabbable이라 aria-hidden 금지(axe aria-hidden-focus) — FieldDrawer.tsx:297와 동일 판단. */}
       <input
         ref={posterInputRef}
         type="file"
         accept={POSTER_ACCEPT.join(',')}
+        aria-label="포스터 이미지 파일"
         onChange={handlePosterFile}
         className="sr-only"
-        aria-hidden="true"
       />
       {crop.cropOpen && crop.originalSrc && (
         <ImageCropModal
