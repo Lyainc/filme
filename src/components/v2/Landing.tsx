@@ -274,7 +274,10 @@ export function Landing({
                 text-fg-muted 서브카피가 타일 위에서 라이트 테마 기준 최저 2.89:1까지 떨어지는 걸
                 확인했다(WCAG AA 4.5 미달). globals.css 19-22행이 이미 세운 규칙과 같다 — muted 잉크는
                 불투명 표면 위에만. bg-bg는 이 오버레이 자신의 배경색과 같아 시각적 이음매가 없다. */}
-            <div className="relative">
+            {/* flex flex-col gap-4 — h1·p가 바깥 flex 컬럼의 직계 자식에서 이 div 자식으로
+                한 단 내려오면서 원래 gap-4(16px)가 적용되던 h1↔p 사이 간격이 사라진다(부모 gap은
+                직계 자식 사이에만 걸린다) — 같은 리듬을 이 안에서 다시 선언해 되돌린다. */}
+            <div className="relative flex flex-col gap-4">
               <div aria-hidden="true" className="absolute inset-0 -z-[5] bg-bg" />
               <h1 className="text-display font-bold text-fg break-keep">
                 티켓 한 장이, 내 굿즈가 돼요
@@ -317,9 +320,17 @@ export function Landing({
           {/* 이탈 경로 3종(#635 c6 + #537) — "스크린샷 없음"은 이 세 링크로, "OCR 실패"·
               "rate limit 초과"는 OcrUploadCard의 토스트 뒤에도 이 줄이 그대로 남아 이어진다.
               새 세로 공간 0 — 예전 포스터 CTA 자리(caption + "포스터 없이 시작")를 한 줄로 합쳤고,
-              TMDB 검색(#537)도 별도 블록이 아니라 여기 세 번째 링크로 합류한다. */}
-          {/* WCAG 2.5.8(AA) 최소 24×24 미달 — 같은 파일 OCR CTA(min-h-[44px])와 동일하게 min-h-touch(44px)로 채운다(#646). */}
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-caption text-fg-muted">
+              TMDB 검색(#537)도 별도 블록이 아니라 여기 세 번째 링크로 합류한다.
+
+              relative + 첫 자식 scrim(-z-[5] bg-bg) — 위 카피와 같은 이유(#615 검증 코멘트).
+              text-fg-muted가 배경 타일(-z-10, overlay 모드에서만 존재) 위에 직접 떠 있어 실측
+              다크 4.05 / 라이트 2.83까지 떨어진다(WCAG AA 4.5 미달). scrim이 absolute라 flex-wrap
+              레이아웃엔 안 끼어든다. inline 모드는 타일 자체가 없어 무해한 중복일 뿐이다.
+
+              WCAG 2.5.8(AA) 최소 24×24 미달 — 같은 파일 OCR CTA(min-h-[44px])와 동일하게
+              min-h-touch(44px)로 채운다(#646). */}
+          <div className="relative mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-caption text-fg-muted">
+            <div aria-hidden="true" className="absolute inset-0 -z-[5] bg-bg" />
             <button type="button" onClick={onCta} className="min-h-touch inline-flex items-center underline">
               포스터부터 올리기
             </button>
