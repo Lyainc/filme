@@ -56,10 +56,10 @@ interface FieldRect {
 }
 
 /**
- * display:contents인 FieldTap 래퍼는 박스가 없어 rect가 0이다(#354 핵심 제약) — 래퍼를
- * data-field-tap으로 찾고 firstElementChild(실제 레이아웃 박스)를 측정한다. 래퍼의 현재
- * transform(리프트 중간값 포함)은 computed matrix로 읽어 스케일은 나누고 translateY는 빼서,
- * 트랜지션 중간에 측정돼도 좌표가 흔들리지 않는다.
+ * data-field-tap(#354)은 #646부터 FieldTap이 children 자신(실제 레이아웃 박스가 있는 노드)에
+ * 직접 붙인다 — 앵커를 찾으면 그게 곧 측정 대상이라 firstElementChild 인다이렉션이 필요 없다.
+ * 래퍼(wrapper)의 현재 transform(리프트 중간값 포함)은 computed matrix로 읽어 스케일은 나누고
+ * translateY는 빼서, 트랜지션 중간에 측정돼도 좌표가 흔들리지 않는다.
  */
 function measureField(
   wrapper: HTMLElement,
@@ -71,18 +71,8 @@ function measureField(
   // 0-크기 rect는 그대로 반환한다(레이아웃 미완·happy-dom 등, 다음 변경 관측에서 재측정).
   const tap = ticket.querySelector(`[data-field-tap="${field}"]`);
   if (!tap) return null;
-  const el = tap.firstElementChild;
   const wb = wrapper.getBoundingClientRect();
-  let eb: { top: number; left: number; width: number; height: number } = { top: wb.top, left: wb.left, width: 0, height: 0 };
-  if (el) {
-    eb = el.getBoundingClientRect();
-  } else if (typeof document.createRange === 'function') {
-    // fieldPieces의 실값 조각은 FieldTap이 텍스트 노드만 감싼다(엘리먼트 없음, 캡처 바이트 보존 설계)
-    // — Range로 텍스트 rect를 읽는다. DOM을 안 바꾸므로 캡처 계약·모바일 마크업 모두 그대로.
-    const range = document.createRange();
-    range.selectNodeContents(tap);
-    if (typeof range.getBoundingClientRect === 'function') eb = range.getBoundingClientRect();
-  }
+  const eb = tap.getBoundingClientRect();
   let scale = 1;
   let translateY = 0;
   const t = typeof getComputedStyle === 'function' ? getComputedStyle(wrapper).transform : 'none';
@@ -92,13 +82,10 @@ function measureField(
     translateY = m.f;
   }
   // 캐럿 폰트 힌트(#365) — 티켓 텍스트의 computed 스타일은 자연 픽셀(무드 960/1534 기준)이라
-  // 티켓 스케일(래퍼 로컬 폭 ÷ 자연 폭)로 환산한다. el이 없는 텍스트 조각(fieldPieces)은
-  // display:contents 래퍼(tap)의 상속 스타일이 곧 텍스트 스타일이다.
+  // 티켓 스케일(래퍼 로컬 폭 ÷ 자연 폭)로 환산한다.
   const tw = ticket.getBoundingClientRect().width / scale;
   const ticketScale = tw > 0 && naturalWidth > 0 ? tw / naturalWidth : 1;
-  const st = typeof getComputedStyle === 'function'
-    ? getComputedStyle((el instanceof HTMLElement ? el : null) ?? (tap as HTMLElement))
-    : null;
+  const st = typeof getComputedStyle === 'function' ? getComputedStyle(tap as HTMLElement) : null;
   const lsRaw = st ? parseFloat(st.letterSpacing) : NaN;
   return {
     top: (eb.top - wb.top) / scale,

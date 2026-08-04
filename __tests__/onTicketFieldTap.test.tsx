@@ -301,9 +301,10 @@ describe('MoodEditorial 필드 탭 (#266, 마스터 재동기화 #281)', () => {
 });
 
 describe('signature 캐럿 정렬 — 라벨 FieldTap 밖 분리 (#417)', () => {
-  // measureField(InPlaceFieldEditor.tsx)는 [data-field-tap="signature"]의 firstElementChild를
-  // 잰다 — "collected by"/"par" 라벨이 같은 FieldTap 안에 있으면 캐럿이 라벨 앞에 뜬다(#417 버그).
-  // 라벨이 밖으로 빠졌다면 tap 서브트리 textContent엔 값(또는 ghost)만 남고 라벨 문구는 없다.
+  // measureField(InPlaceFieldEditor.tsx)는 [data-field-tap="signature"] 자신을 잰다(#646부터 —
+  // 예전엔 firstElementChild) — "collected by"/"par" 라벨이 같은 FieldTap 안에 있으면 캐럿이
+  // 라벨 앞에 뜬다(#417 버그). 라벨이 밖으로 빠졌다면 tap 서브트리 textContent엔 값(또는 ghost)만
+  // 남고 라벨 문구는 없다.
   test('MoodCriterion: 값 있음 — tap 서브트리에 collected by 라벨 없음', () => {
     const { container } = render(
       <MoodCriterion

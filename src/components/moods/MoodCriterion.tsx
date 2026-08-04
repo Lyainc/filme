@@ -344,7 +344,7 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
           <span aria-hidden style={{ position: 'absolute', left: 0, top: 0, fontFamily: FONT_DISPLAY, fontSize: QUOTE_MARK_SIZE, lineHeight: 1, color: CRITERION_YELLOW }}>&ldquo;</span>
           <span aria-hidden style={{ position: 'absolute', right: 0, bottom: 0, fontFamily: FONT_DISPLAY, fontSize: QUOTE_MARK_SIZE, lineHeight: 1, color: CRITERION_YELLOW, transform: 'rotate(180deg)' }}>&ldquo;</span>
           {/* 실측 텍스트만 FieldTap 안에 남긴다(#417/#268) — InPlaceFieldEditor의 measureField가
-              tap.firstElementChild 전체 박스를 재므로 장식 따옴표는 형제로 뺀다. */}
+              FieldTap의 실제 자식 전체 박스를 재므로(#646) 장식 따옴표는 형제로 뺀다. */}
           <FieldTap field="quote" onField={onField}>
             <div
               style={{
