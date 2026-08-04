@@ -26,18 +26,21 @@ export function OcrUndoBanner({ snapshot, filledFields, onCancel, onConfirm }: O
       {snapshot && (
         <div className="fixed bottom-6 left-1/2 z-50 flex w-[90%] max-w-sm -translate-x-1/2 animate-slide-up items-center gap-4 rounded-card border border-accent bg-surface-elevated p-3 shadow-lg">
           <p className="flex-1 text-body text-fg">{message}</p>
-          <div className="flex shrink-0 gap-2">
+          {/* WCAG 2.5.8(AA) 최소 24×24 미달 → min-h-touch(44px)로 채운다(#646). cancel()은 확인 없이
+              바로 스냅샷으로 되돌려 방금 채운 값을 지우는 쪽이라(useOcrUndo.ts) 되돌리기가 더 작으면
+              안 된다 — 두 버튼을 동일 높이로 맞춘다. */}
+          <div className="flex shrink-0 items-stretch gap-2">
             <button
               type="button"
               onClick={onCancel}
-              className="text-caption font-medium text-fg-muted transition-colors hover:text-fg"
+              className="min-h-touch inline-flex items-center px-2 text-caption font-medium text-fg-muted transition-colors hover:text-fg"
             >
               되돌리기
             </button>
             <button
               type="button"
               onClick={onConfirm}
-              className="rounded-chip bg-accent px-3 py-1.5 text-caption font-medium text-accent-ink transition-colors hover:bg-accent-hover"
+              className="min-h-touch inline-flex items-center rounded-chip bg-accent px-3 text-caption font-medium text-accent-ink transition-colors hover:bg-accent-hover"
             >
               확인
             </button>
