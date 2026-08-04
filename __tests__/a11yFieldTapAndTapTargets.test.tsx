@@ -68,6 +68,36 @@ describe('FieldTap 키보드 접근 (#646 항목1)', () => {
     await user.keyboard('{Enter}');
     expect(calls).toEqual(['title']);
   });
+
+  test('스탬프(ChainStamp→TextStamp) 경로도 Tab 순회로 도달 + Enter로 활성화 (claude-review P1)', async () => {
+    // 위 테스트는 MoodStub의 title(순수 <div>)만 잰다 — 이 PR이 cloneElement 포워딩 배선을 가장 많이
+    // 추가한 대상은 StampRow가 감싸는 ChainStamp/FormatStamp의 3-branch 분기(이미지/텍스트라벨/
+    // placeholder)라, 그중 텍스트 라벨 분기(TextStamp, _shared.tsx)가 실제로 role/tabIndex를 받아
+    // Tab으로 도달 가능한지를 별도로 잰다.
+    const user = userEvent.setup();
+    const calls: SheetTarget[] = [];
+    render(
+      <MoodStub
+        movieInfo={FULL_MOVIE}
+        components={{ ...BASE, chainVisible: true, chainLabel: 'CGV' }}
+        croppedImageUrl="blob:x"
+        fieldVisibility={ALL_ON}
+        onField={(f) => calls.push(f)}
+      />
+    );
+    const target = screen.getByRole('button', { name: '극장 로고 편집' });
+    expect(target.tabIndex).toBe(0);
+
+    let reached = false;
+    for (let i = 0; i < 40 && !reached; i++) {
+      await user.tab();
+      if (document.activeElement === target) reached = true;
+    }
+    expect(reached).toBe(true);
+
+    await user.keyboard('{Enter}');
+    expect(calls).toEqual(['chain']);
+  });
 });
 
 describe('sr-only file input aria-hidden 제거 (#646 항목2)', () => {

@@ -52,6 +52,9 @@ export interface MoodProps {
  * children에 직접 부착하면 이 문제가 원천적으로 없다 — 부착 대상 자체가 실제 박스를 가진 노드라서.
  * FieldGhost·SignatureStamp처럼 커스텀 컴포넌트가 children으로 오는 경우 그 컴포넌트가 rest props를
  * DOM 루트로 포워드해야 role/tabIndex 등이 실제로 렌더된다 — 새 children을 추가할 땐 이 계약을 지킬 것.
+ * Fragment(`<>...</>`)는 이 계약을 못 받는다 — `isValidElement`는 Fragment도 true지만
+ * `cloneElement`는 Fragment에 role/tabIndex 등 임의 prop을 못 얹으므로(React가 조용히 무시), 클릭·
+ * 키보드가 둘 다 죽는다. FieldTap의 children으로 Fragment를 직접 넘기지 말 것.
  *
  * stopPropagation으로 포스터 root 탭(onPosterTap)과 겹치지 않게 한다.
  *
