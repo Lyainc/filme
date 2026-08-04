@@ -158,19 +158,20 @@ export function Landing({
               "rate limit 초과"는 OcrUploadCard의 토스트 뒤에도 이 줄이 그대로 남아 이어진다.
               새 세로 공간 0 — 예전 포스터 CTA 자리(caption + "포스터 없이 시작")를 한 줄로 합쳤고,
               TMDB 검색(#537)도 별도 블록이 아니라 여기 세 번째 링크로 합류한다. */}
+          {/* WCAG 2.5.8(AA) 최소 24×24 미달 — 같은 파일 OCR CTA(min-h-[44px])와 동일하게 min-h-touch(44px)로 채운다(#646). */}
           <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-caption text-fg-muted">
-            <button type="button" onClick={onCta} className="underline">
+            <button type="button" onClick={onCta} className="min-h-touch inline-flex items-center underline">
               포스터부터 올리기
             </button>
             <span aria-hidden="true" className="text-fg-faint">·</span>
             {/* TMDB 인앱 포스터 검색(#537) — 파일을 직접 못 구했을 때의 진입로. 선택 후는
                 onCta와 같은 크롭 파이프라인(usePosterCrop.openFile)으로 합류한다. */}
-            <button type="button" onClick={onTmdbSearch} className="underline">
+            <button type="button" onClick={onTmdbSearch} className="min-h-touch inline-flex items-center underline">
               영화 검색해서 가져오기
             </button>
             <span aria-hidden="true" className="text-fg-faint">·</span>
             {/* 포스터 없이 시작(#631) — 단색 바탕 + 조판만으로도 티켓이 성립하는 경로의 진입점. */}
-            <button type="button" onClick={onSkip} data-testid="landing-skip-poster" className="underline">
+            <button type="button" onClick={onSkip} data-testid="landing-skip-poster" className="min-h-touch inline-flex items-center underline">
               직접 입력
             </button>
           </div>
