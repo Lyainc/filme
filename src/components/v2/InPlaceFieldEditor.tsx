@@ -577,17 +577,18 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
       {/* 로고 업로드 파이프라인(스탬프+서명 전용) — 숨김 input + 자유비 크롭(useLogoCrop, StampSheet와 동형). */}
       {isImageField && (
         <>
+          {/* sr-only여도 tabbable이라 aria-hidden 금지(axe aria-hidden-focus) — FieldDrawer.tsx:297와 동일 판단. */}
           <input
             ref={logoInputRef}
             type="file"
             accept="image/png,image/jpeg,image/webp,image/svg+xml"
+            aria-label={`${label} 이미지 파일`}
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file && file.type.startsWith('image/')) logo.openFile(file);
               e.target.value = '';
             }}
             className="sr-only"
-            aria-hidden="true"
           />
           {logo.rawSrc && (
             <ImageCropModal

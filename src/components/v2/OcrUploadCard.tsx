@@ -255,12 +255,13 @@ export function OcrUploadCard({
 
   return (
     <div className={`relative ${className}`}>
+      {/* sr-only여도 tabbable이라 aria-hidden 금지(axe aria-hidden-focus) — FieldDrawer.tsx:297와 동일 판단. */}
       <input
         ref={inputRef}
         type="file"
         accept="image/*"
+        aria-label={idleLabel}
         className="sr-only"
-        aria-hidden="true"
         onChange={handleChange}
       />
 
