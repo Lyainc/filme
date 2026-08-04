@@ -6,6 +6,8 @@ import { ALLOWED_MIME, MAX_BYTES, chainLabelFor } from '@/utils/ocrConstants';
 import { STAMP_LABEL_MAX } from '@/constants/fields';
 import { useMatchMedia } from '@/hooks/useMatchMedia';
 import { Sprocket } from './Sprocket';
+import { cn } from '@/utils/cn';
+import { tapTarget } from '@/utils/tapTarget';
 
 export type OcrDirectField = 'theater' | 'screen' | 'watchDate' | 'watchTime' | 'seat' | 'bookingNumber';
 export const OCR_DIRECT_FIELDS: OcrDirectField[] = [
@@ -275,7 +277,7 @@ export function OcrUploadCard({
           aria-busy={isProcessing}
           aria-label={idleLabel}
           data-touch="44"
-          className="w-full min-h-[44px] rounded-field-sm flex items-center justify-center gap-2 font-semibold text-body transition-[background-color,color,opacity,transform] duration-200 active:scale-[0.97] bg-accent text-accent-ink hover:bg-accent-hover cursor-pointer disabled:opacity-70 disabled:cursor-default"
+          className={cn(tapTarget(), 'w-full rounded-field-sm flex items-center justify-center gap-2 font-semibold text-body transition-[background-color,color,opacity,transform] duration-200 active:scale-[0.97] bg-accent text-accent-ink hover:bg-accent-hover cursor-pointer disabled:opacity-70 disabled:cursor-default')}
         >
           {isProcessing ? (
             <span className={prefersReducedMotion ? '' : 'animate-sprocket-spin'}>
@@ -295,7 +297,7 @@ export function OcrUploadCard({
           aria-busy={isProcessing}
           aria-label={idleLabel}
           data-touch="44"
-          className="group inline-flex min-h-touch items-center gap-1.5 rounded-chip text-body text-fg-muted transition-colors hover:text-accent aria-disabled:cursor-default aria-disabled:opacity-70"
+          className={cn(tapTarget(), 'group inline-flex items-center gap-1.5 rounded-chip text-body text-fg-muted transition-colors hover:text-accent aria-disabled:cursor-default aria-disabled:opacity-70')}
         >
           <span className={isProcessing ? 'text-accent animate-pulse' : 'text-fg-faint group-hover:text-accent'}>
             <ScanIcon size={16} />

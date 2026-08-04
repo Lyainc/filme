@@ -2,6 +2,8 @@ import { useDeferredValue, useEffect, useRef, useState, type PointerEvent } from
 import { Eyebrow } from '@/components/v2/Eyebrow';
 import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
 import { shouldCommitSliderValue } from './BrightnessSlider';
+import { cn } from '@/utils/cn';
+import { tapTarget } from '@/utils/tapTarget';
 
 interface RatingPickerProps {
   value: number;
@@ -147,7 +149,7 @@ export default function RatingPicker({ value, onValueChange, visible, onVisibleC
               }}
               aria-label={`${star}점`}
               data-touch="44"
-              className="relative inline-flex min-h-touch min-w-touch items-center justify-center"
+              className={cn(tapTarget({ shape: 'square' }), 'relative inline-flex items-center justify-center')}
             >
               <span className="relative inline-block h-7 w-7">
                 <StarSVG className="absolute inset-0 text-fg-faint/40" />
@@ -180,7 +182,7 @@ export default function RatingPicker({ value, onValueChange, visible, onVisibleC
           aria-expanded={numberInputOpen}
           aria-controls="rating-decimal-input"
           aria-label="평점 소수 입력 토글"
-          className="text-mono inline-flex min-h-touch items-center text-left"
+          className={cn(tapTarget(), 'text-mono inline-flex items-center text-left')}
         >
           <Eyebrow tone="faint">
             ★ {current.toFixed(1)}

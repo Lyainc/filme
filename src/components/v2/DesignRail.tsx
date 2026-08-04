@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { RAIL_ITEMS, filterItemsForMood, type RailItem, type RailItemId } from './designRailItems';
 import type { usePhototicket } from '@/hooks/usePhototicket';
+import { cn } from '@/utils/cn';
+import { tapTarget } from '@/utils/tapTarget';
 
 // 모바일 디자인 레일(#217+): 무드·컬러·후보정·투명도·크기 편집 콘텐츠를 인라인 폼 밖으로 빼
 // 가로 원형 아이콘 + 단일 공용 확장 패널로 호스팅한다. 항목 정의(아이콘·라벨·eyebrow·본문)는
@@ -49,9 +51,11 @@ function RailIconButton({
     >
       <span
         aria-hidden="true"
-        className={`flex h-11 w-11 items-center justify-center rounded-full border transition-colors ${
+        className={cn(
+          tapTarget({ shape: 'square' }),
+          'flex items-center justify-center rounded-full border transition-colors',
           selected ? 'bg-accent-soft text-accent' : 'border-line bg-surface-elevated text-fg-muted'
-        }`}
+        )}
         // 선택 시 유저의 티켓 잉크색(themeColor) 링. 미설정이면 accent로 폴백.
         style={selected ? { borderColor: 'transparent', boxShadow: `0 0 0 2px ${ringColor}` } : undefined}
       >

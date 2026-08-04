@@ -14,6 +14,8 @@ import type { LayoutId } from '@/types';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { PHONE_FRAME_ID } from '@/components/v2/PhoneFrame';
 import { showError } from '@/utils/errorToast';
+import { cn } from '@/utils/cn';
+import { tapTarget } from '@/utils/tapTarget';
 
 interface ImageCropModalProps {
   imageSrc: string;
@@ -225,7 +227,7 @@ export default function ImageCropModal({
             disabled={isProcessing}
             aria-label="닫기"
             data-touch="44"
-            className="inline-flex min-h-touch min-w-touch items-center justify-center rounded-field-sm border border-line text-fg-muted transition-colors hover:bg-accent-soft hover:text-fg disabled:opacity-30"
+            className={cn(tapTarget({ shape: 'square' }), 'inline-flex items-center justify-center rounded-field-sm border border-line text-fg-muted transition-colors hover:bg-accent-soft hover:text-fg disabled:opacity-30')}
           >
             ✕
           </button>

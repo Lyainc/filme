@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { cn } from '@/utils/cn';
+import { tapTarget } from '@/utils/tapTarget';
 
 interface TmdbSearchResult {
   id: number;
@@ -158,7 +160,7 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
               disabled={applying}
               aria-label="검색으로 돌아가기"
               data-touch="44"
-              className="inline-flex min-h-touch min-w-touch items-center justify-center rounded-field-sm text-fg-muted hover:bg-accent-soft hover:text-fg disabled:opacity-30"
+              className={cn(tapTarget({ shape: 'square' }), 'inline-flex items-center justify-center rounded-field-sm text-fg-muted hover:bg-accent-soft hover:text-fg disabled:opacity-30')}
             >
               ←
             </button>
@@ -171,7 +173,7 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
             disabled={applying}
             aria-label="닫기"
             data-touch="44"
-            className="inline-flex min-h-touch min-w-touch items-center justify-center rounded-field-sm text-fg-muted hover:bg-accent-soft hover:text-fg disabled:opacity-30"
+            className={cn(tapTarget({ shape: 'square' }), 'inline-flex items-center justify-center rounded-field-sm text-fg-muted hover:bg-accent-soft hover:text-fg disabled:opacity-30')}
           >
             ✕
           </button>
@@ -190,12 +192,12 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="영화 제목"
                   aria-label="영화 제목 검색"
-                  className="min-h-touch flex-1 rounded-field-sm border border-line bg-surface px-3 text-body text-fg"
+                  className={cn(tapTarget(), 'flex-1 rounded-field-sm border border-line bg-surface px-3 text-body text-fg')}
                 />
                 <button
                   type="submit"
                   disabled={searching}
-                  className="min-h-touch rounded-field-sm bg-accent px-4 text-body font-medium text-accent-ink disabled:opacity-50"
+                  className={cn(tapTarget(), 'rounded-field-sm bg-accent px-4 text-body font-medium text-accent-ink disabled:opacity-50')}
                 >
                   검색
                 </button>

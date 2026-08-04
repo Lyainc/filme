@@ -11,6 +11,8 @@ import RatingPicker from '@/components/wizard/RatingPicker';
 import BrightnessSlider from '@/components/wizard/BrightnessSlider';
 import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
 import { stampScaleMaxFor } from './designRailItems';
+import { cn } from '@/utils/cn';
+import { tapTarget } from '@/utils/tapTarget';
 import {
   FIELD_LABELS,
   FIELD_SHEET_TYPE,
@@ -306,11 +308,13 @@ function FormatChips({
               aria-checked={active}
               onClick={() => onChange(opt.value)}
               data-touch="44"
-              className={`text-mono inline-flex min-h-touch shrink-0 snap-start items-center rounded-chip border px-3 text-micro uppercase tracking-widest transition-colors ${
+              className={cn(
+                tapTarget(),
+                'text-mono inline-flex shrink-0 snap-start items-center rounded-chip border px-3 text-micro uppercase tracking-widest transition-colors',
                 active
                   ? 'border-accent bg-accent text-accent-ink'
                   : 'border-[var(--glass-border)] bg-[var(--glass-fill)] text-fg hover:bg-accent-soft'
-              }`}
+              )}
             >
               {opt.sample}
             </button>
@@ -533,7 +537,7 @@ function StampEditor({
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
-        className="inline-flex min-h-touch items-center justify-center gap-2 rounded-chip border border-dashed border-line bg-surface-elevated px-4 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent"
+        className={cn(tapTarget(), 'inline-flex items-center justify-center gap-2 rounded-chip border border-dashed border-line bg-surface-elevated px-4 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent')}
       >
         로고 업로드
       </button>

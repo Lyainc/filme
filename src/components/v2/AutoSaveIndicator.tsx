@@ -1,3 +1,6 @@
+import { cn } from '@/utils/cn';
+import { tapTarget } from '@/utils/tapTarget';
+
 interface AutoSaveIndicatorProps {
   enabled: boolean;
   lastSavedAt: number | null;
@@ -15,7 +18,7 @@ export function AutoSaveIndicator({ enabled, lastSavedAt, onToggle }: AutoSaveIn
       aria-label={enabled ? '자동 임시저장 켜짐 — 클릭하면 꺼요' : '자동 임시저장 꺼짐 — 클릭하면 켜요'}
       title={enabled ? '자동 임시저장 켜짐' : '자동 임시저장 꺼짐'}
       onClick={onToggle}
-      className="inline-flex h-11 w-11 items-center justify-center transition-colors"
+      className={cn(tapTarget({ shape: 'square' }), 'inline-flex items-center justify-center transition-colors')}
     >
       <span className="relative inline-flex h-2.5 w-2.5">
         {enabled && lastSavedAt !== null && (

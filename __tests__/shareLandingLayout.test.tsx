@@ -70,9 +70,7 @@ describe('공유 랜딩 세로 예산 (#491)', () => {
   test('CTA는 슬림해지되 탭 타깃 하한(44px)은 지킨다', () => {
     renderLanding();
     const cta = screen.getByRole('link', { name: /나도 티켓 만들기/ });
-    const minH = /min-h-\[(\d+)px\]/.exec(cta.className);
-    expect(minH).not.toBeNull();
-    expect(Number(minH![1])).toBeGreaterThanOrEqual(44);
-    expect(Number(minH![1])).toBeLessThanOrEqual(48);
+    // #647 — 44px는 tapTarget() variant(min-h-touch, tailwind.config.js spacing.touch) 단일 소스다.
+    expect(cta.className).toMatch(/(?:^|\s)min-h-touch(?:\s|$)/);
   });
 });

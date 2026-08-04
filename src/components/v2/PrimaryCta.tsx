@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { useMatchMedia } from '@/hooks/useMatchMedia';
 import { Sprocket } from './Sprocket';
+import { cn } from '@/utils/cn';
+import { tapTarget } from '@/utils/tapTarget';
 
 type CtaState = 'idle' | 'loading' | 'success' | 'disabled';
 
@@ -39,13 +41,16 @@ export function PrimaryCta({
       onClick={isDisabled ? undefined : onClick}
       disabled={isDisabled}
       aria-busy={state === 'loading'}
-      className={`w-full min-h-[44px] rounded-field-sm flex items-center justify-center gap-2 font-semibold text-body transition-[background-color,color,opacity,transform] duration-200 active:scale-[0.97] ${
+      className={cn(
+        tapTarget(),
+        'w-full rounded-field-sm flex items-center justify-center gap-2 font-semibold text-body transition-[background-color,color,opacity,transform] duration-200 active:scale-[0.97]',
         state === 'disabled'
           ? 'opacity-50 cursor-not-allowed bg-accent text-accent-ink'
           : state === 'success'
           ? 'bg-success text-white cursor-default'
-          : 'bg-accent text-accent-ink hover:bg-accent-hover cursor-pointer'
-      } ${className}`}
+          : 'bg-accent text-accent-ink hover:bg-accent-hover cursor-pointer',
+        className
+      )}
     >
       {state === 'loading' && (
         <>

@@ -14,6 +14,9 @@ import { expect } from 'bun:test';
 /** WCAG 2.2 SC 2.5.8 (AA) 최소 타깃 — 24×24 CSS px. */
 export const MIN_AA = 24;
 
+/** tailwind.config.js `spacing.touch` — #647 tapTarget() variant(min-h-touch/min-w-touch)의 유일한 44px 소스. */
+const TOUCH_PX = 44;
+
 /**
  * 파서가 못 보는 축소 경로를 막는다 — 크기 자체가 아니라 "선언된 크기를 나중에 줄이는 수단"이
  * 대상이라, 타깃 엘리먼트뿐 아니라 그 서브트리(스와치 span 등)에도 따로 걸 수 있게 분리했다.
@@ -46,6 +49,7 @@ export function targetPx(el: Element, what: string): { w: number; h: number } {
 
   // size-N은 두 축을 한 번에 잡는 Tailwind 관용구 — h-N/w-N과 같은 선언이라 같이 읽는다.
   const fromClass = (axis: 'h' | 'w') => {
+    if (new RegExp(`(?:^|\\s)min-${axis}-touch(?:\\s|$)`).test(cls)) return TOUCH_PX;
     const m = cls.match(new RegExp(`(?:^|\\s)(?:${axis}|size)-(\\d+)(?:\\s|$)`));
     return m ? Number(m[1]) * 4 : null;
   };

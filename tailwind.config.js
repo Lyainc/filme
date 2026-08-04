@@ -4,6 +4,9 @@ module.exports = {
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx}",
     "./src/components/**/*.{js,ts,jsx,tsx}",
+    // #647 tapTarget() variant(src/utils/tapTarget.ts)가 클래스 문자열을 여기서 조립한다 —
+    // 빠지면 min-h-touch/min-w-touch가 컨텐츠 스캔에 안 잡혀 CSS 없이 조용히 무너진다.
+    "./src/utils/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {

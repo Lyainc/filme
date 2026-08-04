@@ -38,6 +38,8 @@ import type { LayoutId, MovieInfo, TicketComponents, TicketField } from '@/types
 import { isStampTarget, STAMP_KEYS, type SheetTarget } from '@/constants/fields';
 import { triggerKobisLookup } from '@/utils/kobisLookup';
 import { ErrorToastHost } from '@/utils/errorToast';
+import { cn } from '@/utils/cn';
+import { tapTarget } from '@/utils/tapTarget';
 
 // 필드 목록 우측 드로어(#355, 구 FieldEditSheet 대체) — 크롭 모달·로고 훅을 끌어오고 열기 전엔
 // 안 쓰므로 dynamic(ssr:false)로 분리, 첫 열기에 로드된다.
@@ -139,9 +141,11 @@ function MenuRow({
       title={title ?? ariaLabel ?? label}
       disabled={disabled}
       onClick={onClick}
-      className={`flex h-11 w-full items-center justify-between gap-2 rounded-lg px-2.5 text-left transition-colors ${
+      className={cn(
+        tapTarget(),
+        'flex w-full items-center justify-between gap-2 rounded-lg px-2.5 text-left transition-colors',
         disabled ? 'opacity-40' : 'hover:bg-white/5'
-      }`}
+      )}
       // arm 표시가 채움 틴트(rgba(229,103,95,.16))였을 땐 danger 잉크 대비가 3.79:1로 떨어졌다
       // (#569 실측 — 붉은 틴트가 배경을 밝혀 같은 붉은 글자와 붙는다). 채움 대신 1px 링으로 바꾸면
       // 배경이 그대로라 라벨은 4.66:1을 유지하고, 링 자체는 비텍스트 3:1 기준을 넘는다.
@@ -654,7 +658,7 @@ export function MobileEditorShell({
           aria-expanded={menuOpen}
           aria-controls="editor-menu-panel"
           aria-label="편집 메뉴"
-          className="flex h-11 w-11 items-center justify-center rounded-full text-fg-muted transition-colors hover:text-fg"
+          className={cn(tapTarget({ shape: 'square' }), 'flex items-center justify-center rounded-full text-fg-muted transition-colors hover:text-fg')}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <line x1="4" y1="7" x2="20" y2="7" />

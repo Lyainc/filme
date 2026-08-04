@@ -1,3 +1,6 @@
+import { cn } from '@/utils/cn';
+import { tapTarget } from '@/utils/tapTarget';
+
 interface ColorPickerProps {
   value: string;
   onChange: (value: string) => void;
@@ -49,11 +52,11 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
               title={s.label}
               aria-label={s.label}
               data-touch="44"
-              className={`relative inline-flex min-h-touch min-w-touch items-center justify-center rounded-chip border-2 transition-transform ${
-                active
-                  ? 'border-accent scale-105'
-                  : 'border-line hover:border-accent/40'
-              }`}
+              className={cn(
+                tapTarget({ shape: 'square' }),
+                'relative inline-flex items-center justify-center rounded-chip border-2 transition-transform',
+                active ? 'border-accent scale-105' : 'border-line hover:border-accent/40'
+              )}
               style={{
                 // 46px — rail 상세패널 공통 칩 크기(#367, 무드·후보정 칩과 동일).
                 width: 46,
@@ -85,7 +88,7 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
             'custom' 텍스트가 고아 줄바꿈을 만들던 Eyebrow는 제거(#190). */}
         <label
           title="Custom color"
-          className={`relative inline-flex min-h-touch min-w-touch items-center justify-center ${disabled ? 'cursor-default' : 'cursor-pointer'}`}
+          className={cn(tapTarget({ shape: 'square' }), 'relative inline-flex items-center justify-center', disabled ? 'cursor-default' : 'cursor-pointer')}
         >
           <input
             type="color"
