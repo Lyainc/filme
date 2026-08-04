@@ -1,4 +1,4 @@
-import { CSSProperties, Fragment, ReactNode, SyntheticEvent, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { CSSProperties, Fragment, HTMLAttributes, ImgHTMLAttributes, KeyboardEvent as ReactKeyboardEvent, ReactElement, ReactNode, SyntheticEvent, cloneElement, isValidElement, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { MovieInfo, QuoteFont, TicketComponents, TicketField } from '@/types';
 import { FIELD_LABELS, STAMP_LABELS, isStampTarget, type SheetTarget } from '@/constants/fields';
 import { formatDate } from '@/utils/dateFormat';
@@ -38,20 +38,25 @@ export interface MoodProps {
 }
 
 /**
- * 온-티켓 필드 탭 래퍼(#259). onField가 없으면(데스크톱/캡처) 래퍼 없이 children을 그대로 통과해
- * 레이아웃·래스터가 완전히 동일하다 — 캡처(ResultPanel의 별도 TicketRenderer)엔 onField가 안 가므로
- * 탭 UI가 산출물에 샐 수 없다. onField가 있으면 display:contents 래퍼로 감싼다: 박스를 만들지 않아
- * 무드의 절대배치·크기에 0 영향이고(포커스링도 그릴 박스가 없어 캡처 유출 원천 차단), 탭만 받는다.
+ * 온-티켓 필드 탭 래퍼(#259 → #646 키보드 접근성). onField가 없으면(데스크톱/캡처) children을 그대로
+ * 통과해 레이아웃·래스터가 완전히 동일하다 — 캡처(ResultPanel의 별도 TicketRenderer)엔 onField가 안
+ * 가므로 탭 UI가 산출물에 샐 수 없다.
+ *
+ * onField가 있으면 별도 래퍼 박스를 만들지 않고, role/aria-label/tabIndex/onClick/onKeyDown을
+ * children 자신에 cloneElement로 얹는다 — children이 유효한 단일 엘리먼트일 때, 무드의 절대배치·
+ * 크기엔 0 영향(기존 박스를 그대로 재사용). children이 순수 텍스트(fieldPieces의 값 조각)면 새
+ * `<span>`으로 감싼다 — 원래도 인라인 텍스트 흐름이라 레이아웃 영향이 없다.
+ *
+ * 예전엔 display:contents div로 감쌌는데, 그 div 자신은 CSS 스펙상 principal box가 없어 tabIndex를
+ * 얹어도 포커스를 받지 못했다(#646 항목1 — role="button"인데 키보드로 활성화가 안 되는 ARIA 위반).
+ * children에 직접 부착하면 이 문제가 원천적으로 없다 — 부착 대상 자체가 실제 박스를 가진 노드라서.
+ * FieldGhost·SignatureStamp처럼 커스텀 컴포넌트가 children으로 오는 경우 그 컴포넌트가 rest props를
+ * DOM 루트로 포워드해야 role/tabIndex 등이 실제로 렌더된다 — 새 children을 추가할 땐 이 계약을 지킬 것.
+ *
  * stopPropagation으로 포스터 root 탭(onPosterTap)과 겹치지 않게 한다.
  *
- * display:contents는 principal box를 만들지 않아 Tab 포커스를 받을 수 없다(CSS 스펙, 브라우저 공통) —
- * tabIndex/onKeyDown을 얹어도 죽은 코드라 두지 않는다. 클릭(터치·마우스)은 버블링으로, SR 브라우즈
- * 모드 활성화는 role+aria-label+click으로 동작한다. 온-티켓 편집은 포인터 전용이며(posterTapProps와
- * 동일 입장), 키보드 Tab 전용 필드 편집 목록은 #266에서 의도적으로 제거됐다(실사용 후 필요하면 재도입).
- *
- * data-field-tap(#354): 인플레이스 에디터의 측정 앵커. display:contents 래퍼 자신은 박스가 없어
- * getBoundingClientRect()가 0을 반환하므로, 에디터는 이 속성으로 래퍼를 찾은 뒤 firstElementChild
- * (실제 레이아웃 박스를 가진 노드)를 측정한다 — 박스를 벗기지 않아 캡처 계약이 유지된다.
+ * data-field-tap(#354): 인플레이스 에디터(measureField)의 측정 앵커 — children 자신에 붙으므로
+ * 에디터는 이제 별도 firstElementChild 인다이렉션 없이 이 엘리먼트를 곧바로 측정한다.
  */
 export function FieldTap({
   field,
@@ -62,22 +67,41 @@ export function FieldTap({
   onField?: (field: SheetTarget) => void;
   children: ReactNode;
 }) {
-  if (!onField) return <>{children}</>;
   const label = isStampTarget(field) ? STAMP_LABELS[field] : FIELD_LABELS[field];
-  return (
-    <div
-      role="button"
-      aria-label={`${label} 편집`}
-      data-field-tap={field}
-      onClick={(e) => {
-        e.stopPropagation();
-        onField(field);
-      }}
-      style={{ display: 'contents' }}
-    >
-      {children}
-    </div>
+  const activate = useCallback(
+    (e: SyntheticEvent) => {
+      e.stopPropagation();
+      onField?.(field);
+    },
+    [onField, field]
   );
+  const onKeyDown = useCallback(
+    (e: ReactKeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        activate(e);
+      }
+    },
+    [activate]
+  );
+  // 안정적인 참조(#646) — Barcode 등 memo 자식이 매 리렌더 새 prop 객체를 받아 memo bail-out이
+  // 무력화되지 않게 field/onField/label이 안 바뀌면 같은 객체를 유지한다.
+  const interactiveProps = useMemo(
+    () => ({
+      role: 'button' as const,
+      tabIndex: 0,
+      'aria-label': `${label} 편집`,
+      'data-field-tap': field,
+      onClick: activate,
+      onKeyDown,
+    }),
+    [label, field, activate, onKeyDown]
+  );
+  if (!onField) return <>{children}</>;
+  if (isValidElement(children)) {
+    return cloneElement(children as ReactElement<Record<string, unknown>>, interactiveProps);
+  }
+  return <span {...interactiveProps}>{children}</span>;
 }
 
 /**
@@ -329,7 +353,12 @@ export const WORDMARK_ACCENT = '#B0423F';
 
 export type Surface = 'paper' | 'dark';
 
-interface ChainStampProps {
+/** ChainStamp·FormatStamp·TextStamp가 FieldTap의 cloneElement 대상일 때 role/tabIndex/aria-label 등을
+ *  실제 렌더 루트(img/div)로 흘려보내는 통로(#646) — 렌더 브랜치가 갈려도(placeholder/이미지/텍스트)
+ *  어느 쪽이든 같은 방식으로 받는다. */
+type StampInteractiveProps = HTMLAttributes<HTMLElement>;
+
+interface ChainStampProps extends StampInteractiveProps {
   chain: string;
   /** 이미지 없을 때 출력할 텍스트 라벨(#141 (7)). 이미지가 있으면 무시된다. */
   label?: string;
@@ -384,13 +413,14 @@ function TextStamp({
   size,
   surface,
   maxWidth,
+  ...rest
 }: {
   label: string;
   height: number;
   size: number;
   surface: Surface;
   maxWidth?: number;
-}) {
+} & StampInteractiveProps) {
   const fontsReady = useFontsReady();
   const baseSize = Math.round(height * 0.46);
   const baseLetterSpacing = 1.5 * size;
@@ -414,6 +444,7 @@ function TextStamp({
   const letterSpacing = baseLetterSpacing * (fontSize / baseSize);
   return (
     <div
+      {...rest}
       style={{
         height,
         maxWidth,
@@ -445,6 +476,7 @@ function DashedPlaceholder({
   surface,
   dim = false,
   hasValue = false,
+  ...rest
 }: {
   text: string;
   width: number | string;
@@ -455,7 +487,7 @@ function DashedPlaceholder({
   dim?: boolean;
   /** dim이면서 값이 있음(#369) — accent 점 배지로 "값이 있는데 숨김"을 암시(값 자체는 노출 안 함). */
   hasValue?: boolean;
-}) {
+} & HTMLAttributes<HTMLDivElement>) {
   // 고스트 시인성 개선(#313): 박스 opacity(0.4)가 테두리·텍스트 색의 자체 알파와 곱연산으로 겹쳐
   // dark surface에서 실효 알파가 테두리 0.2·텍스트 0.28까지 떨어졌었다. 박스 opacity를 0.65로 올리고
   // (paper: currentColor 알파 1 × 0.65 = 0.65), dark 오버라이드의 자체 알파도 함께 올려(0.5→0.85,
@@ -463,6 +495,7 @@ function DashedPlaceholder({
   // dim(#369)은 새 색을 만들지 않고 같은 값들의 알파만 낮춘다(0.65→0.3, 0.85→0.35, 0.95→0.45).
   return (
     <div
+      {...rest}
       data-hide-on-export="true"
       data-ghost-dim={dim || undefined}
       style={{
@@ -513,6 +546,7 @@ export function FieldGhost({
   size = 1,
   surface = 'paper',
   state,
+  ...rest
 }: {
   text?: string;
   width?: number | string;
@@ -520,7 +554,7 @@ export function FieldGhost({
   size?: number;
   surface?: Surface;
   state?: FieldGhostState;
-}) {
+} & HTMLAttributes<HTMLDivElement>) {
   return (
     <DashedPlaceholder
       text={text}
@@ -530,6 +564,7 @@ export function FieldGhost({
       surface={surface}
       dim={state ? state.dim : false}
       hasValue={state ? state.hasValue : false}
+      {...rest}
     />
   );
 }
@@ -598,6 +633,7 @@ export function ChainStamp({
   ghost,
   maxWidth,
   onRenderedHeight,
+  ...rest
 }: ChainStampProps) {
   // Rules of Hooks — stampWillRender의 조기 return보다 앞에서 무조건 호출(#392).
   // 낭비 로드 방지용 active 게이팅(#190 nit)은 필요 없어졌다 — 로드하는 <img>가 곧 렌더되는
@@ -624,7 +660,7 @@ export function ChainStamp({
   // 노출 off(#369) — 여기 도달했으면 ghost===true(stampWillRender 계약). 이미지·라벨이 있어도
   // 노출하지 않고 흐린 placeholder + 값 존재 배지로만 암시한다(탭→재노출 #266 유지).
   if (visible === false) {
-    return <DashedPlaceholder text="LOGO" width={capW(120 * scaledSize, maxWidth)} height={h} size={scaledSize} surface={surface} dim hasValue={!!(chain || label)} />;
+    return <DashedPlaceholder {...rest} text="LOGO" width={capW(120 * scaledSize, maxWidth)} height={h} size={scaledSize} surface={surface} dim hasValue={!!(chain || label)} />;
   }
 
   // 우선순위: 이미지 > 텍스트 라벨 > dashed placeholder(미리보기 전용, ghost!==false 보장됨).
@@ -632,6 +668,7 @@ export function ChainStamp({
     return (
       <img
         {...imgProps}
+        {...rest}
         src={chain}
         alt="Theater Chain"
         style={{
@@ -649,13 +686,13 @@ export function ChainStamp({
   }
 
   if (label) {
-    return <TextStamp label={label} height={h} size={scaledSize} surface={surface} maxWidth={maxWidth} />;
+    return <TextStamp {...rest} label={label} height={h} size={scaledSize} surface={surface} maxWidth={maxWidth} />;
   }
 
-  return <DashedPlaceholder text="LOGO" width={capW(120 * scaledSize, maxWidth)} height={h} size={scaledSize} surface={surface} />;
+  return <DashedPlaceholder {...rest} text="LOGO" width={capW(120 * scaledSize, maxWidth)} height={h} size={scaledSize} surface={surface} />;
 }
 
-interface FormatStampProps {
+interface FormatStampProps extends StampInteractiveProps {
   format: string;
   /** 이미지 없을 때 출력할 텍스트 라벨(#141 (7)). 이미지가 있으면 무시된다. */
   label?: string;
@@ -682,6 +719,7 @@ export function FormatStamp({
   ghost,
   maxWidth,
   onRenderedHeight,
+  ...rest
 }: FormatStampProps) {
   // ChainStamp와 동일 — Rules of Hooks(#392).
   const willRender = stampWillRender(visible, format, label, ghost);
@@ -700,7 +738,7 @@ export function FormatStamp({
 
   // 노출 off(#369) — ChainStamp와 동일: 값이 있어도 흐린 placeholder + 배지로만 암시.
   if (visible === false) {
-    return <DashedPlaceholder text="FORMAT" width={capW(140 * scaledSize, maxWidth)} height={h} size={scaledSize} surface={surface} dim hasValue={!!(format || label)} />;
+    return <DashedPlaceholder {...rest} text="FORMAT" width={capW(140 * scaledSize, maxWidth)} height={h} size={scaledSize} surface={surface} dim hasValue={!!(format || label)} />;
   }
 
   // 우선순위: 이미지 > 텍스트 라벨 > dashed placeholder(미리보기 전용, ghost!==false 보장됨).
@@ -708,6 +746,7 @@ export function FormatStamp({
     return (
       <img
         {...imgProps}
+        {...rest}
         src={format}
         alt="Screening Format"
         style={{
@@ -725,10 +764,10 @@ export function FormatStamp({
   }
 
   if (label) {
-    return <TextStamp label={label} height={h} size={scaledSize} surface={surface} maxWidth={maxWidth} />;
+    return <TextStamp {...rest} label={label} height={h} size={scaledSize} surface={surface} maxWidth={maxWidth} />;
   }
 
-  return <DashedPlaceholder text="FORMAT" width={capW(140 * scaledSize, maxWidth)} height={h} size={scaledSize} surface={surface} />;
+  return <DashedPlaceholder {...rest} text="FORMAT" width={capW(140 * scaledSize, maxWidth)} height={h} size={scaledSize} surface={surface} />;
 }
 
 export interface StampRowProps {
@@ -834,15 +873,17 @@ export function SignatureStamp({
   height,
   scale = 1,
   surface = 'paper',
+  ...rest
 }: {
   image: string;
   height: number;
   scale?: number;
   surface?: Surface;
-}) {
+} & ImgHTMLAttributes<HTMLImageElement>) {
   const h = height * scale;
   return (
     <img
+      {...rest}
       src={image}
       alt="Signature"
       style={{
@@ -1333,7 +1374,7 @@ function EmbossOverlay({
   );
 }
 
-interface BarcodeProps {
+interface BarcodeProps extends HTMLAttributes<HTMLDivElement> {
   value?: string;
   color?: string;
   height?: number;
@@ -1441,6 +1482,7 @@ export const Barcode = memo(function Barcode({
   showText = true,
   textSize = 11,
   encoding = 'code128b',
+  ...rest
 }: BarcodeProps) {
   const widths = useMemo(
     () => (encoding === 'code128c' ? buildBarcodeWidths128C(value) : buildBarcodeWidths(value)),
@@ -1471,6 +1513,7 @@ export const Barcode = memo(function Barcode({
 
   return (
     <div
+      {...rest}
       style={{
         display: 'inline-flex',
         flexDirection: orientation === 'horizontal' ? 'column' : 'row',

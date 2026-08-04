@@ -417,8 +417,8 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
               </FieldTap>
             </div>
           ) : signatureVal ? (
-            // 라벨은 FieldTap 밖(#417, Criterion과 동일 형제 버그) — measureField가
-            // tap.firstElementChild를 재는데 "par"까지 감싸면 캐럿이 값이 아니라 라벨 앞에 뜬다.
+            // 라벨은 FieldTap 밖(#417, Criterion과 동일 형제 버그) — measureField가 FieldTap의
+            // 실제 자식을 재는데(#646) "par"까지 감싸면 캐럿이 값이 아니라 라벨 앞에 뜬다.
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, minWidth: 0 }}>
               <span style={{ ...italic(accent, 26), flexShrink: 0 }}>par</span>
               <FieldTap field="signature" onField={onField}>
