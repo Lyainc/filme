@@ -26,6 +26,10 @@ export interface TmdbPosterModalProps {
 
 const IMG_BASE = '/api/tmdb/image';
 
+/** 불투명 카드(#569/#580) — --overlay-fill 위 muted·accent·faint 잉크는 AA 대비를 못 넘으므로
+ *  텍스트 행은 --surface에 얹는다. AdvancedSettingsModal의 CARD와 같은 값·같은 근거(#656). */
+const CARD = 'rounded-[12px] bg-surface p-1';
+
 /**
  * TMDB 인앱 포스터 검색 모달(#537 c6) — search/posters 두 뷰를 한 모달 안에서 전환한다.
  * 모달을 두 개 띄우지 않는 이유: 국내 개봉작은 TMDB 대표 포스터가 해외판인 경우가 흔해
@@ -150,31 +154,33 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
           WebkitBackdropFilter: 'blur(13px)',
         }}
       >
-        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-line px-4 py-3">
-          {view === 'posters' ? (
+        <div className="shrink-0 px-4 pt-3">
+          <div className={`flex items-center justify-between gap-2 px-1.5 py-1 ${CARD}`}>
+            {view === 'posters' ? (
+              <button
+                type="button"
+                onClick={() => setView('search')}
+                disabled={applying}
+                aria-label="검색으로 돌아가기"
+                data-touch="44"
+                className="inline-flex min-h-touch min-w-touch items-center justify-center rounded-field-sm text-fg-muted hover:bg-accent-soft hover:text-fg disabled:opacity-30"
+              >
+                ←
+              </button>
+            ) : (
+              <h2 className="truncate text-body font-semibold text-fg">영화 검색</h2>
+            )}
             <button
               type="button"
-              onClick={() => setView('search')}
+              onClick={onClose}
               disabled={applying}
-              aria-label="검색으로 돌아가기"
+              aria-label="닫기"
               data-touch="44"
               className="inline-flex min-h-touch min-w-touch items-center justify-center rounded-field-sm text-fg-muted hover:bg-accent-soft hover:text-fg disabled:opacity-30"
             >
-              ←
+              ✕
             </button>
-          ) : (
-            <h2 className="truncate text-body font-semibold text-fg">영화 검색</h2>
-          )}
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={applying}
-            aria-label="닫기"
-            data-touch="44"
-            className="inline-flex min-h-touch min-w-touch items-center justify-center rounded-field-sm text-fg-muted hover:bg-accent-soft hover:text-fg disabled:opacity-30"
-          >
-            ✕
-          </button>
+          </div>
         </div>
 
         <div
@@ -201,75 +207,80 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
                 </button>
               </form>
 
-              {searchError && <p className="mt-3 text-body text-fg-muted">{searchError}</p>}
-
               {/* searchError 하나로 충분하다 — runSearch가 결과 0건일 때도 이걸 세팅하므로
-                  "검색 전 초기 상태"(results도 비어 있다)와 "검색했지만 0건"이 안 섞인다. */}
-              {searchError && (
-                <button
-                  type="button"
-                  onClick={onFallbackUpload}
-                  className="mt-3 text-body font-medium text-accent underline"
-                >
-                  파일 업로드로 전환
-                </button>
-              )}
-
-              <ul className="mt-3 space-y-1">
-                {results.map((movie) => (
-                  <li key={movie.id}>
+                  "검색 전 초기 상태"(results도 비어 있다)와 "검색했지만 0건"이 안 섞인다.
+                  muted·accent 잉크가 섞이는 행이라 --overlay-fill 위 직접 노출 대신 CARD에 얹는다(#656). */}
+              {(searchError || results.length > 0) && (
+                <div className={`mt-3 ${CARD}`}>
+                  {searchError && <p className="px-2.5 py-2 text-body text-fg-muted">{searchError}</p>}
+                  {searchError && (
                     <button
                       type="button"
-                      onClick={() => pickMovie(movie)}
-                      className="flex w-full items-center gap-3 rounded-field-sm px-2 py-2 text-left hover:bg-accent-soft"
+                      onClick={onFallbackUpload}
+                      className="px-2.5 pb-2 text-body font-medium text-fg underline"
                     >
-                      {movie.poster_path ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={`${IMG_BASE}?path=${encodeURIComponent(movie.poster_path)}&size=w342`}
-                          alt=""
-                          className="h-14 w-10 shrink-0 rounded-field-sm object-cover"
-                        />
-                      ) : (
-                        <span className="h-14 w-10 shrink-0 rounded-field-sm border border-dashed border-line" aria-hidden="true" />
-                      )}
-                      <span className="min-w-0">
-                        <span className="block truncate text-body font-medium text-fg">{movie.title}</span>
-                        {movie.release_date && (
-                          <span className="block text-caption text-fg-muted">{movie.release_date.slice(0, 4)}</span>
-                        )}
-                      </span>
+                      파일 업로드로 전환
                     </button>
-                  </li>
-                ))}
-              </ul>
+                  )}
+
+                  <ul className="space-y-1">
+                    {results.map((movie) => (
+                      <li key={movie.id}>
+                        <button
+                          type="button"
+                          onClick={() => pickMovie(movie)}
+                          className="flex w-full items-center gap-3 rounded-field-sm px-2 py-2 text-left hover:bg-accent-soft"
+                        >
+                          {movie.poster_path ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={`${IMG_BASE}?path=${encodeURIComponent(movie.poster_path)}&size=w342`}
+                              alt=""
+                              className="h-14 w-10 shrink-0 rounded-field-sm object-cover"
+                            />
+                          ) : (
+                            <span className="h-14 w-10 shrink-0 rounded-field-sm border border-dashed border-line" aria-hidden="true" />
+                          )}
+                          <span className="min-w-0">
+                            <span className="block truncate text-body font-medium text-fg">{movie.title}</span>
+                            {movie.release_date && (
+                              <span className="block text-caption text-fg-muted">{movie.release_date.slice(0, 4)}</span>
+                            )}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </>
           ) : (
             <>
-              {loadingPosters && <p className="text-body text-fg-muted">포스터를 불러오는 중…</p>}
-              {applyError && <p className="text-body text-fg-muted">{applyError}</p>}
+              {/* muted·accent 잉크가 섞이는 행이라 --overlay-fill 위 직접 노출 대신 CARD에 얹는다(#656). */}
+              {loadingPosters && <p className={`px-2.5 py-2 text-body text-fg-muted ${CARD}`}>포스터를 불러오는 중…</p>}
+              {applyError && <p className={`px-2.5 py-2 text-body text-fg-muted ${CARD}`}>{applyError}</p>}
 
               {/* postersError(요청 실패)와 진짜 0건을 분리한다 — 안 그러면 네트워크 에러도
                   "이 영화는 포스터가 없어요"로 잘못 안내한다. */}
               {!loadingPosters && postersError && (
-                <div className="flex flex-col items-start gap-2">
+                <div className={`flex flex-col items-start gap-2 px-2.5 py-2 ${CARD}`}>
                   <p className="text-body text-fg-muted">{postersError}</p>
                   <button
                     type="button"
                     onClick={onFallbackUpload}
-                    className="text-body font-medium text-accent underline"
+                    className="text-body font-medium text-fg underline"
                   >
                     파일 업로드로 전환
                   </button>
                 </div>
               )}
               {!loadingPosters && !postersError && posters.length === 0 && (
-                <div className="flex flex-col items-start gap-2">
+                <div className={`flex flex-col items-start gap-2 px-2.5 py-2 ${CARD}`}>
                   <p className="text-body text-fg-muted">이 영화는 포스터가 없어요.</p>
                   <button
                     type="button"
                     onClick={onFallbackUpload}
-                    className="text-body font-medium text-accent underline"
+                    className="text-body font-medium text-fg underline"
                   >
                     파일 업로드로 전환
                   </button>
@@ -299,10 +310,13 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
           )}
         </div>
 
-        {/* TMDB 필수 귀속 표시(#537 c3) — 실제로 TMDB를 쓰는 화면에서만, 생성된 티켓엔 안 들어간다. */}
-        <p className="shrink-0 border-t border-line px-4 py-2 text-micro leading-snug text-fg-faint">
-          This product uses the TMDB API but is not endorsed or certified by TMDB.
-        </p>
+        {/* TMDB 필수 귀속 표시(#537 c3) — 실제로 TMDB를 쓰는 화면에서만, 생성된 티켓엔 안 들어간다.
+            faint 잉크라 --overlay-fill 위 직접 노출 대신 CARD에 얹는다(#656). */}
+        <div className="shrink-0 px-4 pb-3 pt-2">
+          <p className={`px-2.5 py-2 text-micro leading-snug text-fg-muted ${CARD}`}>
+            This product uses the TMDB API but is not endorsed or certified by TMDB.
+          </p>
+        </div>
       </div>
     </div>
   );
