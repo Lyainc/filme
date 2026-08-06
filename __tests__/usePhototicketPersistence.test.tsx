@@ -89,6 +89,63 @@ describe('#310 usePhototicket saveDraft/clearDraft', () => {
     expect(result.current.lastSavedAt).toBeNull();
   });
 
+  test('#651 시나리오② — 슬라이더 드래그처럼 dirtyTick이 쉬지 않고 갱신돼도(매번 디바운스보다 짧은 간격) AUTOSAVE_MAX_WAIT_MS(5s) 안에 강제로 flush된다', () => {
+    jest.useFakeTimers();
+    const { result } = renderHook(() => usePhototicket());
+    const TICK_INTERVAL_MS = 400; // 디바운스(1000ms)보다 짧은 간격 — 상한이 없으면 매번 재예약돼 영원히 저장 안 됨.
+    const TICKS_BEFORE_CAP = 12; // 12 * 400ms = 4800ms, 아직 상한(5000ms) 전.
+    for (let i = 0; i < TICKS_BEFORE_CAP; i += 1) {
+      act(() => {
+        result.current.updateComponents({ themeColor: `#${String(i % 10).repeat(6)}` });
+      });
+      act(() => jest.advanceTimersByTime(TICK_INTERVAL_MS));
+    }
+    // 4800ms 시점 — 매 tick이 디바운스를 재시작시켜서 상한 전엔 아직 저장되지 않아야 한다.
+    expect(window.localStorage.getItem(KEY)).toBeNull();
+
+    // 드래그가 계속된다고 가정하고 한 번 더 갱신 — 상한까지 남은 200ms만큼만 지연이 걸려야 한다.
+    act(() => {
+      result.current.updateComponents({ themeColor: '#ffffff' });
+    });
+    act(() => jest.advanceTimersByTime(TICK_INTERVAL_MS));
+
+    const saved = JSON.parse(window.localStorage.getItem(KEY) || '{}');
+    expect(saved.components?.themeColor).toBe('#ffffff');
+    expect(result.current.lastSavedAt).not.toBeNull();
+  });
+
+  test('#651 — autoSaveEnabled를 끄고 상한(5s)보다 오래 있다가 다시 켜도, 정지 시간이 경과로 잡혀 즉시 강제 저장되지 않고 새 디바운스 창을 받는다', () => {
+    jest.useFakeTimers();
+    const { result } = renderHook(() => usePhototicket());
+    act(() => {
+      result.current.updateMovieInfo({ title: '기생충' });
+    });
+    // 디바운스가 끝나기 전에 끈다 — 예약된 타이머가 취소된다.
+    act(() => jest.advanceTimersByTime(200));
+    act(() => {
+      result.current.toggleAutoSave();
+    });
+    expect(result.current.autoSaveEnabled).toBe(false);
+
+    // 꺼진 채로 상한(5000ms)을 훌쩍 넘겨 흘려보낸다 — firstDirtyAt이 리셋 안 되면 이 정지 시간이
+    // 그대로 "경과"로 잡혀, 다시 켰을 때 상한을 이미 넘긴 것처럼 오판한다.
+    act(() => jest.advanceTimersByTime(6000));
+    expect(window.localStorage.getItem(KEY)).toBeNull();
+
+    act(() => {
+      result.current.toggleAutoSave();
+    });
+    expect(result.current.autoSaveEnabled).toBe(true);
+    // 재활성화 직후 — 새 디바운스(1000ms)가 아직 안 끝났으니 저장되지 않아야 한다. firstDirtyAt이
+    // 안 리셋됐다면 remaining이 이미 음수라 delay=0으로 여기서 즉시 저장돼버렸을 것이다.
+    act(() => jest.advanceTimersByTime(10));
+    expect(window.localStorage.getItem(KEY)).toBeNull();
+
+    act(() => jest.advanceTimersByTime(1000));
+    const saved = JSON.parse(window.localStorage.getItem(KEY) || '{}');
+    expect(saved.movieInfo?.title).toBe('기생충');
+  });
+
   test('#436 — autoSaveEnabled 기본 ON: 상태 변경 후 디바운스(1000ms)가 지나면 saveDraft() 없이도 자동 저장된다', () => {
     // 마운트 시점(초기 상태)의 디바운스 타이머부터 fake로 잡아야 실타이머와 안 섞인다.
     jest.useFakeTimers();
