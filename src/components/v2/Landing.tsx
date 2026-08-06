@@ -12,10 +12,17 @@ import { Wordmark } from './Wordmark';
  *
  *  - `overlay`: 편집 셸 위를 덮는 `fixed` 레이어. 마케팅 카피 + 히어로 + OCR(주 CTA) + 고지.
  *  - `inline`:  오버레이를 걷었는데 포스터는 아직 없는 상태(드래프 복원 D7 · OCR 진입)의 본문
- *               블록. 카피/히어로 없이 진입 컨트롤만. 이 모드가 없으면 그 두 경로가 헤더만 남은
- *               빈 화면으로 떨어진다 — 포스터가 없으면 프리뷰·dock·드로어·완료가 전부 게이팅되고,
+ *               블록. 카피/히어로 없이 이탈 경로 3종("포스터부터 올리기"·"영화 검색해서
+ *               가져오기"·"직접 입력")만 남는다 — 이 모드가 없으면 그 두 경로가 헤더만 남은
+ *               빈 화면으로 떨어진다. 포스터가 없으면 프리뷰·dock·드로어·완료가 전부 게이팅되고,
  *               특히 IndexedDB 포스터 복원 실패 시 "재업로드를 유도"하는 #489 결정 5의 경로가
- *               갈 곳을 잃는다.
+ *               갈 곳을 잃는다. OCR 카드(children)는 이 모드에선 마운트만 유지하고 `canvasReady`
+ *               prop으로 CSS hidden 처리된다(#652) — canvasReady(#631)가 서면 편집이 이미
+ *               시작된 것이라 OCR 진입점은 드로어 하나로 일원화된다(#388)는 계약이 mode 축만으론
+ *               안 지켜졌다: mode='inline'은 croppedImageUrl 없이 landingDismissed만으로도
+ *               걷히므로(#614 조건 ③), "포스터 없이 OCR로 진입"한 직후엔 본문에 OCR CTA가 다시
+ *               뜨는 회귀가 났다. 이탈 경로 3종은 #631이 정한 대로 이 모드에서 계속 보인다 —
+ *               숨는 건 OCR CTA 하나뿐이다.
  *  - `hidden`:  포스터가 있거나 max(#328). display:none이지 unmount가 아니다(아래).
  *
  * 새 라우트가 아니라 오버레이인 이유는 CTA가 파일 다이얼로그를 여는 데 있다: 라우트를 갈면
@@ -52,6 +59,7 @@ import { Wordmark } from './Wordmark';
  */
 export function Landing({
   mode,
+  canvasReady,
   onCta,
   onTmdbSearch,
   onSkip,
@@ -64,6 +72,11 @@ export function Landing({
   children,
 }: {
   mode: 'overlay' | 'inline' | 'hidden';
+  /** 편집 캔버스가 섰는지(#631) — 서면 OCR 주 CTA(children)는 CSS로 숨긴다(#652). #388이 "편집
+   *  진입 후 OCR 진입점은 드로어 하나"로 정했는데, inline 모드는 croppedImageUrl 없이도
+   *  landingDismissed만으로 걷혀서(#614 조건 ③) mode 축만으로는 그 계약을 못 지킨다 — mode는
+   *  전체 Landing(이탈 경로 3종 포함)의 가시성이고 OCR CTA 하나만 따로 죽여야 하므로 별도 prop. */
+  canvasReady: boolean;
   /** 이탈 경로 "포스터부터 올리기" — 셸의 숨은 포스터 input을 그 자리에서 click()한다(같은 제스처, 라우트 전환 0). */
   onCta: () => void;
   /** 이탈 경로 "영화 검색해서 가져오기"(#537) — 포스터 파일이 없어도 영화 검색으로 판본을 골라 같은 크롭 경로로 들어간다. */
@@ -151,8 +164,11 @@ export function Landing({
 
         <div className="mt-2 w-full max-w-[280px]">
           {/* OCR 주 진입점(#635) — 포스터 CTA가 보조로 내려가고 이게 주연이다(#142 위계 반전).
-              모드가 갈려도 이 슬롯의 트리 위치는 고정이라 카드가 remount되지 않는다. */}
-          {children}
+              모드가 갈려도 이 슬롯의 트리 위치는 고정이라 카드가 remount되지 않는다.
+              canvasReady면(#631) 편집이 이미 시작된 것이라 진입점은 드로어 하나로 일원화되고
+              (#388) 여기선 CSS로만 숨긴다 — unmount하면 in-flight KOBIS 응답이 인스턴스를 잃는다
+              (#652, 위 컴포넌트 주석의 mountedRef 경고와 같은 이유). */}
+          <div className={canvasReady ? 'hidden' : undefined}>{children}</div>
 
           {/* 이탈 경로 3종(#635 c6 + #537) — "스크린샷 없음"은 이 세 링크로, "OCR 실패"·
               "rate limit 초과"는 OcrUploadCard의 토스트 뒤에도 이 줄이 그대로 남아 이어진다.

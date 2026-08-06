@@ -940,8 +940,10 @@ export function MobileEditorShell({
               덮는 fixed 레이어지만 **셸 안 이 자리에서** 렌더한다: Landing이 조건부 unmount가 아니라
               항상 마운트 + CSS hidden이고 OCR 카드를 children으로 받아 자리만 빌려주므로, 아래
               OcrUploadCard가 랜딩·업로드 후에 걸쳐 같은 트리 위치에 남아 로컬 상태(isProcessing·
-              토스트)를 전환 때마다 리셋하지 않는다 — 업로드 후·max(#328)엔 통째로 hidden이고 OCR
-              진입점은 드로어(#355)로 일원화된다(#388).
+              토스트)를 전환 때마다 리셋하지 않는다 — 업로드 후·max(#328)엔 Landing이 통째로
+              hidden이고, canvasReady만 선 상태(포스터 없이 OCR/직접입력으로 진입, #631)에서도
+              OCR CTA는 canvasReady prop이 CSS hidden 처리해(#652) 두 경로 모두 진입점이
+              드로어(#355) 하나로 일원화된다(#388).
               **in-flight KOBIS 보강은 remount에 안전하다**: 최신성 판정을 셸이 소유한 ocrEpochRef가
               epoch 비교로 하므로(#388 / claude-review PR #413 P0, 커밋 007f381) 카드가 unmount돼도
               setInfo는 셸의 photo 상태에 그대로 적용된다 — 드로어 카드는 닫힐 때마다 unmount되는데
@@ -949,10 +951,13 @@ export function MobileEditorShell({
               #413 P0을 재도입한다(옛 "단일 인스턴스가 아니면 레이스가 되살아난다" 서술은 #624로
               철회 — CLAUDE.md 🔍 참조). OCR 로직은 셸의 useOcrUndo가 소유. */}
           <Landing
-            // 포스터가 실제로 있어야(croppedImageUrl) 랜딩을 숨긴다 — canvasReady(D1, #631)로
-            // 걸면 "포스터 없이 시작" 직후에도 랜딩이 숨어 포스터를 나중에 추가할 진입점이
-            // 사라진다(D2 (a): 이 inline 상태 자체가 진입점). #614 걷는 조건 ③이 이 계약을 고정한다.
+            // 포스터가 실제로 있어야(croppedImageUrl) 랜딩 전체(이탈 경로 3종 포함)를 숨긴다 —
+            // canvasReady(D1, #631)로 걸면 "포스터 없이 시작" 직후에도 랜딩이 통째로 숨어 포스터를
+            // 나중에 추가할 진입점이 사라진다(D2 (a): 이 inline 상태 자체가 진입점). #614 걷는
+            // 조건 ③이 이 계약을 고정한다. OCR CTA만 따로 죽이는 축은 아래 canvasReady prop — 이
+            // mode 판정은 안 건드린다(#652, Landing.tsx 컴포넌트 주석 참고).
             mode={croppedImageUrl || isMax ? 'hidden' : showLanding ? 'overlay' : 'inline'}
+            canvasReady={canvasReady}
             // commitHeroLayout은 이 세 진입점(handlePosterTap 자체는 아님 — '포스터 교체' 등
             // 캔버스가 선 뒤의 재사용 호출까지 옛 heroLayout으로 되돌리면 안 된다)과 아래
             // onOcrApply에서만 부른다 — 무드칩을 훑어보기만 한 방문은 실제 state를 안 건드린다.
