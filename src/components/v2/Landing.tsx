@@ -127,11 +127,20 @@ function MoodAutoScrollGallery({
     <div data-testid="mood-gallery" className="w-full overflow-hidden">
       {/* 리스트를 두 번 이어붙이고 -50%까지 트랜슬레이트하면 이음매 없는 순환 루프가 된다(marquee
           관용구) — 새 라이브러리 없이 keyframes + animation만으로 충분(#615 구현 지침).
+          **두 세트를 각자 wrapper로 감싸 pr-3(gap 폭)를 준다** — 바깥 트랙에 gap을 주면 총 11칸
+          중 세트 경계 칸도 세트 내부 칸과 같은 12px이라, 트랙 전체 폭의 50%(= 6c+5.5g)가 실제 세트
+          경계(= 6c+6g)보다 6px 짧아져 매 루프 리셋마다 6px 스냅이 생겼다(fresh-context 리뷰 지적).
+          wrapper마다 pr-3로 세트 끝에 고정 12px을 실으면 트랙 폭이 두 wrapper의 정확히 2배가 되어
+          -50%가 세트 경계와 정확히 일치한다.
           hover/focus-within에서 정지하는 건 SC 2.2.2(움직이는 콘텐츠 일시정지) 대응 — 계속 움직이는
           트랙 위에서 Tab으로 포커스가 옮겨가면 포커스 링이 흐르는 채로 잡혀 따라가기 어렵다. */}
-      <div className="flex w-max animate-marquee gap-3 hover:[animation-play-state:paused] focus-within:[animation-play-state:paused]">
-        {LAYOUTS.map((layout) => sample(layout, `a-${layout.id}`, TRACK_CARD_WIDTH, false))}
-        {LAYOUTS.map((layout) => sample(layout, `b-${layout.id}`, TRACK_CARD_WIDTH, true))}
+      <div className="flex w-max animate-marquee hover:[animation-play-state:paused] focus-within:[animation-play-state:paused]">
+        <div className="flex gap-3 pr-3">
+          {LAYOUTS.map((layout) => sample(layout, `a-${layout.id}`, TRACK_CARD_WIDTH, false))}
+        </div>
+        <div className="flex gap-3 pr-3">
+          {LAYOUTS.map((layout) => sample(layout, `b-${layout.id}`, TRACK_CARD_WIDTH, true))}
+        </div>
       </div>
     </div>
   );
