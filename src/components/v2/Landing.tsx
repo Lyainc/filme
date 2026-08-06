@@ -1,9 +1,7 @@
 import type { DragEvent, ReactNode } from 'react';
 import type { LayoutId, MovieInfo, TicketComponents } from '@/types';
-import { ALL_FIELDS_ON } from '@/constants/fieldVisibility';
-import TicketRenderer from '../TicketRenderer';
-import { LayoutStrip } from '../LayoutPicker';
 import { AppFooter } from './AppFooter';
+import { MoodGallery } from './MoodGallery';
 import { Wordmark } from './Wordmark';
 
 /**
@@ -37,18 +35,19 @@ import { Wordmark } from './Wordmark';
  *
  * **히어로는 이미지 자산이 아니라 실제 렌더 엔진이다(#615)** — #613(예시 이미지 수동 제작·번들)이
  * 아직 안 끝나 저작권 없는 무드 이미지가 없다. 대신 #631이 이미 열어둔 posterless 렌더 경로를
- * 그대로 써서 `TicketRenderer`를 `croppedImageUrl=null` + `ghost`로 띄운다 — 포스터 없이도
- * 무드의 조판·타이포·필드 자리는 실물 그대로 보인다.
+ * 그대로 써서 `MoodGallery`가 무드 6종을 `TicketRenderer`(`croppedImageUrl=null` + `ghost`)로
+ * 실제 렌더한다 — 포스터 없이도 무드의 조판·타이포·필드 자리는 실물 그대로 보인다.
  *
- * **무드칩 탐색은 진짜 `components.layout`을 바로 안 건드린다** — 셸의 `heroLayout` 로컬 state를
- * 대신 읽고(`onLayoutChange`도 그 로컬 setter), "포스터부터 올리기"·"영화 검색해서 가져오기"·
- * "직접 입력"·OCR 성공 네 진입점에서만 셸이 `commitHeroLayout()`으로 실제 state에 흘려보낸다
- * (fresh-context 리뷰가 잡은 회귀: 바로 `updateComponents`를 태우면 dirtyTick이 올라
- * autosave-draft가 1초 뒤 draft를 쓰고, 다음 방문에 draftRestored=true가 돼 무드칩만 훑어본
- * 방문자에게도 랜딩이 영구히 숨었다). 네 진입점에서 커밋하는 이유는 그래야 크롭 프리셋
- * (`ImageCropModal`이 읽는 `posterOrientation`)이 랜딩에서 고른 무드와 어긋나지 않기 때문이다
- * (#529, Seed spec blindspot 3번 해소) — TMDB 검색(#537)도 같은 크롭 파이프라인으로 합류하므로
- * 동일하게 적용된다. 배경 타일 그리드는 #613 자산이 없어 이번 구현엔 없다 — #612에 남은 결정으로 기록.
+ * **무드 갤러리 클릭은 미리보기가 아니라 즉시 커밋이다(#615 설계 변경)** — 옛 `LayoutStrip` 무드칩은
+ * 셸의 `heroLayout` 로컬 state만 바꾸고(`onLayoutChange`), 실제 `components.layout` 커밋은
+ * "포스터부터 올리기"·"영화 검색해서 가져오기"·"직접 입력"·OCR 성공 네 진입점에서만 셸이
+ * `commitHeroLayout()`으로 흘려보냈다(무드만 훑어보는 방문이 dirtyTick을 올려 autosave-draft가
+ * 랜딩을 영구히 숨기는 회귀를 막으려던 설계). 갤러리 샘플엔 그 "훑어보기" 중간 단계가 없다 —
+ * 클릭 즉시 그 무드가 posterless 상태로 커밋되고 편집 화면에 들어간다(`onSampleSelect`, #631 경로
+ * 재사용). 위 네 진입점과 별개인 다섯 번째 커밋 지점이다. 크롭 프리셋(`ImageCropModal`이 읽는
+ * `posterOrientation`)이 여기서 고른 무드와 어긋나지 않는 계약(#529)은 그대로 유지된다 — TMDB
+ * 검색(#537)도 같은 크롭 파이프라인으로 합류하므로 동일하게 적용된다. 배경 타일 그리드는 #613
+ * 자산이 없어 이번 구현엔 없다 — #612에 남은 결정으로 기록.
  */
 export function Landing({
   mode,
@@ -59,8 +58,7 @@ export function Landing({
   dragOver,
   heroMovieInfo,
   heroComponents,
-  heroLayout,
-  onLayoutChange,
+  onSampleSelect,
   children,
 }: {
   mode: 'overlay' | 'inline' | 'hidden';
@@ -77,14 +75,12 @@ export function Landing({
     onDrop: (e: DragEvent) => void;
   };
   dragOver: boolean;
-  /** 히어로 프리뷰용 movieInfo — 업로드 전이라 사실상 항상 빈 값, ghost 자리표시만 보인다. */
+  /** 히어로 갤러리용 movieInfo — 업로드 전이라 사실상 항상 빈 값, ghost 자리표시만 보인다. */
   heroMovieInfo: MovieInfo;
-  /** 히어로 프리뷰의 색·스탬프 등 layout 이외 필드 — 셸의 실제 components(레이아웃은 아래 heroLayout이 대신 결정). */
+  /** 히어로 갤러리의 색·스탬프 등 layout 이외 필드 — 셸의 실제 components(레이아웃은 샘플마다 갤러리가 덮어쓴다). */
   heroComponents: TicketComponents;
-  /** 무드칩으로 탐색 중인 무드 — 셸의 로컬 state(진짜 components.layout이 아니다, 위 컴포넌트 주석). */
-  heroLayout: LayoutId;
-  /** 무드칩 선택 → 셸의 heroLayout 로컬 setter. 실제 state 커밋은 onCta/onSkip/OCR 성공 시점에 셸이 한다. */
-  onLayoutChange: (id: LayoutId) => void;
+  /** 무드 샘플 클릭 — 다섯 번째 커밋 지점(위 컴포넌트 주석). 그 무드를 posterless 상태로 즉시 커밋하고 편집 화면에 진입시킨다. */
+  onSampleSelect: (id: LayoutId) => void;
   /** OCR 진입점 슬롯 — 셸이 소유한 단일 OcrUploadCard 인스턴스가 들어온다(이제 주 CTA, #635). */
   children: ReactNode;
 }) {
@@ -126,7 +122,7 @@ export function Landing({
         {overlay && (
           <>
             {/* 카피는 1줄+1줄로 압축(Seed spec c5) — 선택 가능한 히어로가 "그래서 뭘 얻나"를
-                문장보다 세게 답하므로 카피 의존도가 낮다. 세로 예산은 아래 히어로+무드칩이 새로
+                문장보다 세게 답하므로 카피 의존도가 낮다. 세로 예산은 아래 무드 갤러리가 새로
                 차지한다(400×675, measure-chrome.mjs로 실측). */}
             <h1 className="text-display font-bold text-fg break-keep">
               티켓 한 장이, 내 굿즈가 돼요
@@ -135,17 +131,9 @@ export function Landing({
               스크린샷으로 자동입력. 사진으로 찍은 실물 티켓도 돼요.
             </p>
 
-            {/* 히어로(#615) — 실제 렌더 엔진, 이미지 자산 아님(위 컴포넌트 주석 참고). */}
-            <div className="w-full max-w-[120px]">
-              <TicketRenderer
-                croppedImageUrl={null}
-                movieInfo={heroMovieInfo}
-                components={heroComponents.layout === heroLayout ? heroComponents : { ...heroComponents, layout: heroLayout }}
-                fieldVisibility={ALL_FIELDS_ON}
-                ghost
-              />
-            </div>
-            <LayoutStrip value={heroLayout} onChange={onLayoutChange} />
+            {/* 히어로 무드 갤러리(#615) — 실제 렌더 엔진, 이미지 자산 아님(위 컴포넌트 주석 참고).
+                클릭이 곧 다섯 번째 커밋 지점이다. */}
+            <MoodGallery movieInfo={heroMovieInfo} components={heroComponents} onSelect={onSampleSelect} />
           </>
         )}
 

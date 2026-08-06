@@ -294,6 +294,19 @@ export function MobileEditorShell({
       photo.updateComponents({ layout: heroLayout });
     }
   }, [heroLayout, photo.state.components.layout, photo.updateComponents]);
+  // 무드 갤러리 샘플 클릭 — 다섯 번째 커밋 지점(#615). 위 commitHeroLayout과 갈라서 따로 두는
+  // 이유는 클릭이 heroLayout을 거치지 않고 그 자리에서 특정 id를 바로 커밋해야 하기 때문이다 —
+  // setHeroLayout(id) 직후 같은 틱에서 commitHeroLayout()을 부르면 그 클로저가 아직 갱신 전
+  // heroLayout을 읽어(React state 배치) 방금 클릭한 무드가 아니라 직전 값이 커밋되는 레이스가
+  // 생긴다. heroLayout도 같이 동기화해두는 이유는 이후 무드칩 정합성(초기화·draft 재동기화)이
+  // 읽는 값이 실제 커밋과 갈리지 않게 하기 위해서다.
+  const handleSampleSelect = useCallback((id: LayoutId) => {
+    setHeroLayout(id);
+    if (id !== photo.state.components.layout) {
+      photo.updateComponents({ layout: id });
+    }
+    setLandingDismissed(true);
+  }, [photo.state.components.layout, photo.updateComponents]);
   const clearArmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // 습관적 더블탭이 arm과 실행을 한 번에 뚫지 않게 arm 직후 재탭은 무시(claude-review PR #375 P1).
   const clearArmedAt = useRef(0);
@@ -955,7 +968,8 @@ export function MobileEditorShell({
             mode={croppedImageUrl || isMax ? 'hidden' : showLanding ? 'overlay' : 'inline'}
             // commitHeroLayout은 이 세 진입점(handlePosterTap 자체는 아님 — '포스터 교체' 등
             // 캔버스가 선 뒤의 재사용 호출까지 옛 heroLayout으로 되돌리면 안 된다)과 아래
-            // onOcrApply에서만 부른다 — 무드칩을 훑어보기만 한 방문은 실제 state를 안 건드린다.
+            // onOcrApply에서만 부른다. 다섯 번째 진입점인 무드 갤러리 샘플 클릭(onSampleSelect,
+            // #615)은 heroLayout을 거치지 않고 handleSampleSelect가 클릭된 id를 직접 커밋한다.
             onCta={() => {
               commitHeroLayout();
               handlePosterTap();
@@ -972,8 +986,7 @@ export function MobileEditorShell({
             dragOver={posterDragOver}
             heroMovieInfo={photo.state.movieInfo}
             heroComponents={previewComponents}
-            heroLayout={heroLayout}
-            onLayoutChange={setHeroLayout}
+            onSampleSelect={handleSampleSelect}
           >
             <OcrUploadCard
               setInfo={photo.updateMovieInfo}
