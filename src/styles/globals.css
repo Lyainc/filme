@@ -23,8 +23,12 @@
     --overlay-fill: rgba(244, 245, 247, 0.8);
     --overlay-border: rgba(20, 23, 26, 0.12);
     --fg: #14171A;
-    --fg-muted: #6B7280;
-    --fg-faint: #9AA1AC;
+    /* WCAG AA(#650) — 순정 #6B7280/#9AA1AC은 --bg(#F4F5F7) 위에서 각 4.43:1/2.39:1로 미달.
+       fg-muted는 텍스트 하한 4.5:1(→4.62:1), fg-faint는 아이콘/장식 하한 3:1(→3.13:1)로
+       각각 다르게 다크닝 — 둘 다 4.5:1로 맞추면 같은 밝기로 수렴해 두 단계 위계가 사라진다.
+       fg-faint로 실제 문장 텍스트를 그리던 자리(고지·힌트·로딩 라벨 등)는 fg-muted로 옮겼다. */
+    --fg-muted: #64707F;
+    --fg-faint: #818C99;
     --border: #E4E6EA;
     --border-strong: #CDD1D8;
     --accent: #B0423F;
