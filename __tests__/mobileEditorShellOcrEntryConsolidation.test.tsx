@@ -199,6 +199,30 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
     expect(screen.getByRole('button', { name: '포스터부터 올리기' })).toBeDefined();
   });
 
+  // #652 회귀 — 위 테스트가 잡는 landingDismissed(canvasReady) 상태에서, mode='inline'은 랜딩
+  // 전체를 안 숨기지만 OCR 주 CTA(children)는 canvasReady prop으로 따로 숨어야 한다(#388: 편집
+  // 진입 후 OCR 진입점은 드로어 하나). 이 축이 없으면 본문 OCR CTA가 드로어와 나란히 다시
+  // 떠서, 사용자가 이미 편집에 들어온 뒤에도 같은 카드가 두 군데(본문+드로어)에서 보인다.
+  test('포스터 없이 OCR로 진입해 canvasReady가 서면 본문 OCR CTA는 숨고 이탈 경로만 남는다 (#652)', async () => {
+    render(<MobileHarness />);
+
+    ocrImpl = async () => ({ theater: 'CGV 용산아이파크몰' });
+    fireEvent.change(ocrFileInput(), {
+      target: { files: [new File(['x'], 'ticket.png', { type: 'image/png' })] },
+    });
+
+    await waitFor(() => {
+      expect(captured.movieInfo.theater).toBe('CGV 용산아이파크몰');
+    });
+    expect(captured.croppedImageUrl).toBeFalsy();
+
+    // 본문 OCR CTA는 마운트는 유지한 채(unmount면 in-flight KOBIS 보강이 위험해진다, #388) CSS로만 숨는다.
+    const ocrCard = screen.getByRole('button', { name: '티켓 스크린샷으로 자동입력' });
+    expect(ocrCard.closest('.hidden')).not.toBeNull();
+    // 이탈 경로(포스터 재진입점, #631)는 계속 보인다 — 숨는 건 OCR CTA 하나뿐이다.
+    expect(screen.getByRole('button', { name: '포스터부터 올리기' }).closest('.hidden')).toBeNull();
+  });
+
   test('드로어에서 OCR 시작 → KOBIS 응답 전에 드로어를 닫아도(unmount) 응답 도착 시 titleOg/releaseDate가 폼에 반영된다 (claude-review PR #413 P0)', async () => {
     const { resolveWithGrandBudapest } = mockPendingKobisFetch();
 
