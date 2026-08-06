@@ -502,7 +502,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
   let aid: ReactNode = null;
   if (field === 'title' && kobis.open) {
     aid = kobis.loading ? (
-      <div className="text-mono px-4 py-4 text-center text-micro uppercase tracking-widest text-fg-faint">Loading…</div>
+      <div className="text-mono px-4 py-4 text-center text-micro uppercase tracking-widest text-fg-muted">Loading…</div>
     ) : kobis.error ? (
       <div role="alert" className="text-mono px-4 py-4 text-center text-micro uppercase tracking-widest text-danger">
         {kobis.error}

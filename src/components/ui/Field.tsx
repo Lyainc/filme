@@ -23,7 +23,7 @@ const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
           {labelAccessory}
           <Eyebrow as="label" htmlFor={id}>
             {label}
-            {optional && <span className="ml-2 normal-case text-fg-faint">— optional</span>}
+            {optional && <span className="ml-2 normal-case text-fg-muted">— optional</span>}
           </Eyebrow>
         </span>
         {meta && <Eyebrow tone="faint">{meta}</Eyebrow>}
@@ -32,13 +32,13 @@ const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
         ref={ref}
         id={id}
         className={[
-          'w-full rounded-field border border-line bg-paper px-3.5 py-3 text-title text-fg outline-none transition-colors placeholder:text-fg-faint focus:border-accent focus:ring-2 focus:ring-accent-soft disabled:opacity-40 disabled:cursor-not-allowed',
+          'w-full rounded-field border border-line bg-paper px-3.5 py-3 text-title text-fg outline-none transition-colors placeholder:text-fg-muted focus:border-accent focus:ring-2 focus:ring-accent-soft disabled:opacity-40 disabled:cursor-not-allowed',
           dimmed && 'opacity-40',
           className,
         ].filter(Boolean).join(' ')}
         {...props}
       />
-      {hint && <p className="text-micro leading-relaxed text-fg-faint">{hint}</p>}
+      {hint && <p className="text-micro leading-relaxed text-fg-muted">{hint}</p>}
     </div>
   );
 });
