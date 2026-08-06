@@ -606,8 +606,30 @@ export function usePhototicket() {
       autoSaveTimerRef.current = null;
     }, AUTOSAVE_DEBOUNCE_MS);
     autoSaveTimerRef.current = timer;
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      // ref를 안 지우면 autoSaveEnabled를 끄는 순간(cleanup만 돌고 재예약은 안 됨) 죽은 타이머
+      // ID가 그대로 남아, 아래 visibilitychange flush(#651)가 "대기 중"으로 오판해 꺼둔 자동저장을
+      // 강행해버린다.
+      autoSaveTimerRef.current = null;
+    };
   }, [autoSaveEnabled, dirtyTick]);
+
+  // 탭 이탈 flush(#651) — 마지막 편집 후 AUTOSAVE_DEBOUNCE_MS(1s) 안에 탭을 벗어나면(전환·닫기)
+  // 위 디바운스 타이머가 아직 안 끝난 채로 페이지가 언마운트될 수 있어 그 편집분이 통째로
+  // 유실된다. visibilitychange(hidden)는 언마운트보다 먼저 오므로, 대기 중인 타이머가 있으면
+  // 기다리지 않고 즉시 saveDraftRef로 저장한다. autoSaveEnabled가 꺼져 있으면 애초에 타이머가
+  // 없어 autoSaveTimerRef.current가 null이라 별도 게이팅이 필요 없다.
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== 'hidden' || !autoSaveTimerRef.current) return;
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+      if (saveDraftRef.current()) setLastSavedAt(Date.now());
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
 
   // #310: 저장분 삭제 + 상태를 INITIAL_STATE로 되돌린다(파괴적 — 호출부에서 확인 UX를 거친다).
   // croppedImageUrl은 handleImageUpload의 revoke 패턴과 동일하게 교체 전 먼저 해제한다.
