@@ -61,6 +61,7 @@ export function Landing({
   heroComponents,
   heroLayout,
   onLayoutChange,
+  ocrApplied,
   children,
 }: {
   mode: 'overlay' | 'inline' | 'hidden';
@@ -85,6 +86,10 @@ export function Landing({
   heroLayout: LayoutId;
   /** 무드칩 선택 → 셸의 heroLayout 로컬 setter. 실제 state 커밋은 onCta/onSkip/OCR 성공 시점에 셸이 한다. */
   onLayoutChange: (id: LayoutId) => void;
+  /** OCR이 이미 필드를 채운 적 있는가(#652) — true면 children(주 CTA)과 이탈 경로 줄을 통째로
+   * CSS로만 숨겨 드로어를 유일한 재진입점으로 만든다(#388 > #631 D2 a, 이 상태에 한해). '직접
+   * 입력'(onSkip)만 거친 상태는 이 값이 안 서므로 포스터 재진입 동선이 그대로 남는다. */
+  ocrApplied: boolean;
   /** OCR 진입점 슬롯 — 셸이 소유한 단일 OcrUploadCard 인스턴스가 들어온다(이제 주 CTA, #635). */
   children: ReactNode;
 }) {
@@ -149,7 +154,15 @@ export function Landing({
           </>
         )}
 
-        <div className="mt-2 w-full max-w-[280px]">
+        {/* #652 — OCR이 실제로 필드를 채운 뒤(ocrApplied)엔 주 CTA도 이탈 경로 줄도 편집 본문에
+            남지 않는다: #388(편집 중 OCR 진입점은 드로어 하나)이 #631 D2(a)(랜딩 inline이 포스터
+            재진입 동선)를 이 상태에 한해 이긴다 — "6개 항목이 자동 입력되었어요" 배너 옆에 방금 쓴
+            그 CTA와 세 이탈 경로가 그대로 남으면 "입력이 안 끝났나"로 읽히던 게 #652의 재현이다.
+            unmount가 아니라 CSS hidden으로만 숨긴다 — children(OcrUploadCard)은 #614/#624가 지키는
+            "항상 마운트" 계약이 있어 트리에서 빼면 안 된다. '직접 입력'(onSkip)만 거친 상태는
+            ocrApplied가 안 서므로 이 블록이 그대로 보이고, #631 D2(a)의 포스터 재진입 동선은
+            그쪽에서 유지된다(posterlessCanvas.test.tsx). */}
+        <div className={`mt-2 w-full max-w-[280px]${ocrApplied ? ' hidden' : ''}`}>
           {/* OCR 주 진입점(#635) — 포스터 CTA가 보조로 내려가고 이게 주연이다(#142 위계 반전).
               모드가 갈려도 이 슬롯의 트리 위치는 고정이라 카드가 remount되지 않는다. */}
           {children}

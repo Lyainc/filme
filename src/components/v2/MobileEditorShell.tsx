@@ -266,6 +266,14 @@ export function MobileEditorShell({
   // 드래프 복원은 photo.draftRestored가, CTA 파일 선택은 crop.cropOpen/croppedImageUrl이 이미
   // 말해준다(아래 showLanding). 초기화(handleClearTap)가 false로 되돌려 랜딩이 복귀한다.
   const [landingDismissed, setLandingDismissed] = useState(false);
+  // OCR이 실제로 필드를 채운 적이 있는가(#652) — landingDismissed는 onSkip과 onOcrApply 둘 다
+  // 세우지만 이 신호는 후자만 세운다. #388(편집 중엔 OCR 진입점이 드로어 하나)과 #631 D2(a)
+  // (포스터 재진입 동선은 랜딩 inline 자체)가 부딪히는 지점인데, 이 신호가 서면 #388이 이긴다 —
+  // Landing 컨테이너 자체(mode)는 그대로 inline으로 두되(#631 D1 유지), 그 안의 주 CTA(children=
+  // OcrUploadCard)와 이탈 경로 줄을 통째로 CSS로 숨겨 드로어를 유일한 재진입점으로 만든다.
+  // '직접 입력'(onSkip)만 거친 상태는 이 신호가 안 서므로 #631의 포스터 재진입 동선이 그대로
+  // 남는다. 초기화(handleClearTap)가 false로 되돌린다.
+  const [ocrApplied, setOcrApplied] = useState(false);
   // 포스터가 없어도 편집 캔버스는 설 수 있다(#631) — "포스터가 있다"(croppedImageUrl)와 "편집할
   // 캔버스가 섰다"는 다른 명제다. 랜딩의 "포스터 없이 시작"(onSkip)이 landingDismissed를 세워
   // canvasReady를 연다. 랜딩 자체를 숨길지는 별개 판정(D1, 아래 Landing mode) — croppedImageUrl
@@ -481,6 +489,7 @@ export function MobileEditorShell({
     setHeroLayout('minimal');
     // 초기화는 새 문서니까 랜딩도 처음 상태로 — 안 되돌리면 포스터도 draft도 없는 빈 셸에 남는다(#614).
     setLandingDismissed(false);
+    setOcrApplied(false);
     // 초기화는 새 문서 — undo로 못 돌아간다(로고·포스터 blob이 revoke돼
     // 복원해도 죽은 참조라 히스토리째 파기가 맞다).
     history.clear();
@@ -974,15 +983,18 @@ export function MobileEditorShell({
             heroComponents={previewComponents}
             heroLayout={heroLayout}
             onLayoutChange={setHeroLayout}
+            ocrApplied={ocrApplied}
           >
             <OcrUploadCard
               setInfo={photo.updateMovieInfo}
               currentInfo={photo.state.movieInfo}
               // 스크린샷이 인식되면 랜딩을 걷는다(#614 걷는 조건 ③) — 사용자가 이미 편집에
-              // 들어온 것이고, 채워진 필드가 오버레이 뒤에 가려져 있으면 안 된다.
+              // 들어온 것이고, 채워진 필드가 오버레이 뒤에 가려져 있으면 안 된다. ocrApplied는
+              // 그 뒤 이 카드 자신을 CSS로 숨겨 드로어가 유일한 재진입점이 되게 한다(#388, #652).
               onOcrApply={(params) => {
                 commitHeroLayout();
                 setLandingDismissed(true);
+                setOcrApplied(true);
                 ocr.apply(params);
               }}
               setComponents={photo.updateComponents}
