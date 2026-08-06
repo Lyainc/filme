@@ -45,6 +45,10 @@ const STORAGE_KEY = 'filme:phototicket:v1';
 const AUTOSAVE_PREF_KEY = 'filme:autosave:v1';
 // 프리뷰 디바운스(280ms, index.tsx)보다 느슨하게 — 저장은 프리뷰만큼 즉각적일 필요가 없다(#436).
 const AUTOSAVE_DEBOUNCE_MS = 1000;
+// 연속 편집 상한(#651 시나리오②) — 슬라이더·브러시 드래그처럼 dirtyTick이 쉬지 않고 오르면
+// 아래 디바운스 effect가 매번 재예약돼 자동저장이 한 번도 안 걸린다. 최초 dirty 시점부터 이
+// 시간이 지나면 dirtyTick이 계속 올라와도 강제로 flush한다.
+const AUTOSAVE_MAX_WAIT_MS = AUTOSAVE_DEBOUNCE_MS * 5;
 
 // 좌석은 쉼표로 구분된 자리 표기(예: "H12, H13")까지만 허용 — 5번째 토큰부터는 조용히 버린다(#381).
 // Editorial/Stub의 좌석 렌더가 fitFontSizeToWidth로 안전하게 축소되는 상한이 4토큰이라, 그 상한을
@@ -191,6 +195,9 @@ export function usePhototicket() {
   const coatingIntensityTouchedRef = useRef(false);
   // 자동저장 디바운스 타이머 핸들 — clearDraft가 직접 취소하는 용도(아래 effect 참고).
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // AUTOSAVE_MAX_WAIT_MS 계산용 — 저장이 안 걸린 채로 dirtyTick이 연속 갱신되는 구간의 시작 시각.
+  // 저장(디바운스 fire·visibilitychange flush)이나 clearDraft가 일어나면 null로 되돌아간다.
+  const autoSaveFirstDirtyAtRef = useRef<number | null>(null);
   // 크롭 원본 시드 경로의 latest-ref(saveDraftRef와 동일 패턴) — handleImageUpload는 소비자가
   // 많아 stable해야 하는데 아래 usePosterCrop보다 먼저 정의되므로 이 ref로 순환을 끊는다.
   const seedOriginalRef = useRef<(url: string | null) => void>(() => {});
@@ -598,13 +605,31 @@ export function usePhototicket() {
   // 실행 시점엔 saveDraftRef로 항상 최신 state를 저장하므로, undo/redo처럼 dirtyTick을 안 올리는
   // 변경이 예약 중에 끼어들어도 그 옛 state가 아니라 최신 state가 저장된다(2차 P1). 편집 직후
   // clearDraft가 오면 예약된 타이머 자체를 clearDraft가 직접 취소해 지운 키가 재생성되지 않는다.
+  //
+  // 지연 시간은 고정 AUTOSAVE_DEBOUNCE_MS가 아니라 AUTOSAVE_MAX_WAIT_MS 상한까지 남은 시간과 비교한
+  // 더 짧은 쪽이다(#651 시나리오②) — 슬라이더 드래그처럼 dirtyTick이 쉬지 않고 오르면 매 tick마다
+  // cleanup이 타이머를 지우고 새로 걸어, 고정 지연만으로는 드래그가 끝날 때까지 한 번도 안 걸린다.
+  // firstDirtyAt을 기준으로 상한에 가까워질수록 지연이 짧아지므로, 드래그가 계속돼도 상한 시점에는
+  // 반드시 저장이 걸린다.
   useEffect(() => {
-    if (!autoSaveEnabled || dirtyTick === 0) return;
+    if (!autoSaveEnabled) {
+      // 꺼져 있던 동안 흐른 시간이 firstDirtyAt에 그대로 쌓이면, 나중에 다시 켰을 때 그 정지
+      // 시간까지 경과로 잡혀 remaining이 음수가 되고 재활성화 즉시 강제 저장이 걸려버린다 —
+      // 여기서 리셋해야 다시 켰을 때 새 5초 창을 받는다.
+      autoSaveFirstDirtyAtRef.current = null;
+      return;
+    }
+    if (dirtyTick === 0) return;
+    const now = Date.now();
+    if (autoSaveFirstDirtyAtRef.current === null) autoSaveFirstDirtyAtRef.current = now;
+    const remaining = AUTOSAVE_MAX_WAIT_MS - (now - autoSaveFirstDirtyAtRef.current);
+    const delay = Math.max(0, Math.min(AUTOSAVE_DEBOUNCE_MS, remaining));
     const timer = setTimeout(() => {
       // 실패 시(#645 C1) 인디케이터를 안 반짝인다 — saveDraft 내부가 이미 showError로 알린다.
       if (saveDraftRef.current()) setLastSavedAt(Date.now());
       autoSaveTimerRef.current = null;
-    }, AUTOSAVE_DEBOUNCE_MS);
+      autoSaveFirstDirtyAtRef.current = null;
+    }, delay);
     autoSaveTimerRef.current = timer;
     return () => {
       clearTimeout(timer);
@@ -625,6 +650,7 @@ export function usePhototicket() {
       if (document.visibilityState !== 'hidden' || !autoSaveTimerRef.current) return;
       clearTimeout(autoSaveTimerRef.current);
       autoSaveTimerRef.current = null;
+      autoSaveFirstDirtyAtRef.current = null;
       if (saveDraftRef.current()) setLastSavedAt(Date.now());
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -650,6 +676,7 @@ export function usePhototicket() {
       clearTimeout(autoSaveTimerRef.current);
       autoSaveTimerRef.current = null;
     }
+    autoSaveFirstDirtyAtRef.current = null;
     // 복원 관련 상태도 전체 슬레이트 리셋 대상 — 안 하면 초기화 후 새로 업로드해도 "복원된 draft에
     // 포스터가 있었다"는 표시가 남아 isFirstUpload가 영구히 오판된다(#489).
     restoredDraftHadPosterRef.current = false;
