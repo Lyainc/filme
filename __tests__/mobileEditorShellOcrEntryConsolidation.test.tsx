@@ -176,7 +176,16 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
   // CTA 파일 선택)은 landingOverlay.test.tsx가 잡지만, OCR-only 경로는 포스터가 없는 채로
   // landingDismissed만으로 걷혀야 해서 croppedImageUrl로는 대체 관측이 안 된다. 위 테스트는
   // seed-poster를 먼저 눌러 croppedImageUrl이 앞서므로 이 축을 우회한다.
-  test('포스터 없이 OCR로 직접 필드가 인식되면 오버레이만 걷히고 진입 컨트롤은 남는다 (#614 걷는 조건 ③)', async () => {
+  //
+  // #652로 이 테스트의 단언이 갱신됐다: OCR로 실제 필드가 채워지면(ocrApplied) 오버레이만 걷히는
+  // 게 아니라 본문 주 CTA(방금 쓴 그 카드)와 이탈 경로 3종까지 CSS로 숨어야 한다 — #388 계약
+  // (편집 중엔 OCR 진입점이 드로어 하나)이 이 상태에 한해 #631 D2(a)를 이긴다. "6개 항목이 자동
+  // 입력되었어요" 배너 옆에 방금 쓴 그 CTA와 이탈 경로 줄이 그대로 남아 "입력이 안 끝났나"로
+  // 읽히던 게 #652의 재현이었다. Landing 컨테이너 자체(testid=landing)는 hidden으로 가지 않는다
+  // — #631 D1이 결정한 "inline 유지"는 지키되, 그 안의 두 블록만 숨긴다. '직접 입력'(onSkip)만
+  // 거친 상태는 ocrApplied가 안 서므로 이 블록이 그대로 남는다(posterlessCanvas.test.tsx가 그
+  // 계약을 잠근다).
+  test('포스터 없이 OCR로 직접 필드가 인식되면 오버레이가 걷히고 본문 주 CTA·이탈 경로가 함께 숨는다 (#614 걷는 조건 ③, #652)', async () => {
     render(<MobileHarness />);
     const landing = () => screen.getByTestId('landing');
     expect(landing().classList.contains('fixed')).toBe(true);
@@ -184,6 +193,8 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
     // 제목-only가 아니라 직접 필드 — KOBIS 검색을 안 타고 onOcrApply가 그 자리에서 호출된다.
     ocrImpl = async () => ({ theater: 'CGV 용산아이파크몰' });
 
+    const ocrCard = screen.getByRole('button', { name: '티켓 스크린샷으로 자동입력' });
+    const posterExit = screen.getByRole('button', { name: '포스터부터 올리기' });
     fireEvent.change(ocrFileInput(), {
       target: { files: [new File(['x'], 'ticket.png', { type: 'image/png' })] },
     });
@@ -194,9 +205,11 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
     // 포스터는 여전히 없다 — 걷힌 근거가 croppedImageUrl이 아니라 landingDismissed임을 고정한다.
     expect(captured.croppedImageUrl).toBeFalsy();
     expect(landing().classList.contains('fixed')).toBe(false);
-    // inline으로 남아 진입 컨트롤을 들고 있어야 한다(#614 후속 27a6c63과 같은 계약).
+    // Landing 컨테이너 자체는 hidden으로 가지 않는다(#631 D1 유지 — 통째로 unmount/숨김이 아니다).
     expect(landing().classList.contains('hidden')).toBe(false);
-    expect(screen.getByRole('button', { name: '포스터부터 올리기' })).toBeDefined();
+    // 본문 주 CTA·이탈 경로는 unmount가 아니라 CSS hidden으로만 숨는다(#614/#624 remount 금지 계약 유지).
+    expect(ocrCard.closest('.hidden')).not.toBeNull();
+    expect(posterExit.closest('.hidden')).not.toBeNull();
   });
 
   test('드로어에서 OCR 시작 → KOBIS 응답 전에 드로어를 닫아도(unmount) 응답 도착 시 titleOg/releaseDate가 폼에 반영된다 (claude-review PR #413 P0)', async () => {
