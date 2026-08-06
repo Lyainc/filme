@@ -25,6 +25,9 @@ module.exports = {
           muted: 'var(--fg-muted)',
           faint: 'var(--fg-faint)',
         },
+        // 랜딩 서브카피·이탈경로 전용(#615) — --fg-muted vs --bg 자체가 라이트에서 AA 미달이라
+        // (globals.css --landing-muted 정의 참고) 그 자리에만 쓰는 로컬 오버라이드.
+        'landing-muted': 'var(--landing-muted)',
         // 강조색 사용 규칙(D8, #615 → #616에서 실제 코드에 맞춰 정정) — accent가 나갈 자리는 둘뿐이다:
         // ① 화면당 하나뿐인 주 액션의 채움(`bg-accent` + `text-accent-ink`) — 랜딩 OCR CTA와 결과
         //    화면 "사진에 저장"이 그것이고, #635가 OCR을 주 CTA로 올릴 때 이 채움을 의도적으로 남겼다.
