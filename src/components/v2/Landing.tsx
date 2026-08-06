@@ -282,7 +282,8 @@ export function Landing({
                 막는다 — 실측(픽셀 샘플링, measure-chrome.mjs의 대비 축은 랜딩 카피를 안 잰다)으로
                 text-fg-muted 서브카피가 타일 위에서 라이트 테마 기준 최저 2.89:1까지 떨어지는 걸
                 확인했다(WCAG AA 4.5 미달). globals.css 19-22행이 이미 세운 규칙과 같다 — muted 잉크는
-                불투명 표면 위에만. bg-bg는 이 오버레이 자신의 배경색과 같아 시각적 이음매가 없다. */}
+                불투명 표면 위에만. bg-bg는 이 오버레이 자신의 배경색과 같아 시각적 이음매가 없다.
+                text-landing-muted를 쓰는 이유는 아래 참고. */}
             {/* flex flex-col gap-4 — h1·p가 바깥 flex 컬럼의 직계 자식에서 이 div 자식으로
                 한 단 내려오면서 원래 gap-4(16px)가 적용되던 h1↔p 사이 간격이 사라진다(부모 gap은
                 직계 자식 사이에만 걸린다) — 같은 리듬을 이 안에서 다시 선언해 되돌린다. */}
@@ -294,11 +295,12 @@ export function Landing({
               {/* text-caption(#615 사용자 피드백) — 원래 text-body(14px)는 헤드카피 대비 존재감이
                   과했다. 카피 3종(헤드·서브·CTA) 크기를 낮춰 갤러리에 세로 예산을 넘긴다.
 
-                  스크림을 걷어도 라이트 테마는 4.43:1로 WCAG AA(4.5) 미달이다 — text-fg-muted vs
-                  --bg 자체가 이미 여유 없는 기존 토큰 관계라(globals.css 19행 대비표와 같은 급),
-                  배경 타일과 무관한 선행 갭이다. 이 스크림이 없애는 건 "타일이 추가로 깎는 폭"이지
-                  그 기존 갭 자체가 아니다 — 별도 이슈 대상. */}
-              <p className="max-w-[300px] text-caption leading-relaxed text-fg-muted break-keep">
+                  스크림을 걷어도 라이트 테마는 text-fg-muted vs --bg 자체가 4.43:1로 WCAG AA(4.5)
+                  미달이다(globals.css 19행 대비표와 같은 급 — 배경 타일과 무관한 선행 갭). 여기서만
+                  text-landing-muted(globals.css --landing-muted, tailwind.config.js 매핑)로
+                  바꿔 5.24:1을 확보한다 — --fg-muted 전역을 어둡히면 앱 전체 muted 텍스트 톤이
+                  흔들려서 이 자리만의 로컬 오버라이드로 좁혔다. */}
+              <p className="max-w-[300px] text-caption leading-relaxed text-landing-muted break-keep">
                 스크린샷으로 자동입력. 사진으로 찍은 실물 티켓도 돼요.
               </p>
             </div>
@@ -336,9 +338,12 @@ export function Landing({
               다크 4.05 / 라이트 2.83까지 떨어진다(WCAG AA 4.5 미달). scrim이 absolute라 flex-wrap
               레이아웃엔 안 끼어든다. inline 모드는 타일 자체가 없어 무해한 중복일 뿐이다.
 
+              text-landing-muted(위 서브카피와 동일 근거)로 라이트 4.43→5.24:1 확보 —
+              --fg-faint 구분자(·)는 aria-hidden 장식이라 텍스트 대비 대상이 아니라 그대로 둔다.
+
               WCAG 2.5.8(AA) 최소 24×24 미달 — 같은 파일 OCR CTA(min-h-[44px])와 동일하게
               min-h-touch(44px)로 채운다(#646). */}
-          <div className="relative mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-caption text-fg-muted">
+          <div className="relative mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-caption text-landing-muted">
             <div aria-hidden="true" className="absolute inset-0 -z-[5] bg-bg" />
             <button type="button" onClick={onCta} className="min-h-touch inline-flex items-center underline">
               포스터부터 올리기
