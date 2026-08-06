@@ -670,7 +670,7 @@ export function MobileEditorShell({
           onClick={handleDone}
           aria-disabled={!canExport}
           className={`inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-body font-semibold transition-colors ${
-            canExport ? '' : 'border border-line bg-surface-elevated text-fg-faint'
+            canExport ? '' : 'border border-line bg-surface-elevated text-fg-muted'
           }`}
           style={doneEnabledStyle}
         >
