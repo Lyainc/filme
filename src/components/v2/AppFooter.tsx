@@ -24,7 +24,7 @@ export function GithubLink({ className }: { className?: string }) {
 export function AppFooter({ ambient = false }: { ambient?: boolean }) {
   return (
     <footer
-      className={`flex shrink-0 flex-wrap items-center gap-2 px-4 py-2.5 text-micro leading-snug text-fg-faint ${
+      className={`flex shrink-0 flex-wrap items-center gap-2 px-4 py-2.5 text-micro leading-snug text-fg-muted ${
         ambient ? 'justify-center text-center' : 'justify-between border-t border-line bg-surface'
       }`}
     >

@@ -191,7 +191,7 @@ function TitleSheet({ photo }: { photo: Photo }) {
       {open && (
         <div className="overflow-hidden rounded-card border border-line bg-surface-elevated">
           {loading ? (
-            <div role="status" aria-live="polite" className="text-mono px-4 py-5 text-center text-micro uppercase tracking-widest text-fg-faint">
+            <div role="status" aria-live="polite" className="text-mono px-4 py-5 text-center text-micro uppercase tracking-widest text-fg-muted">
               Loading…
             </div>
           ) : error ? (

@@ -300,7 +300,7 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
         </div>
 
         {/* TMDB 필수 귀속 표시(#537 c3) — 실제로 TMDB를 쓰는 화면에서만, 생성된 티켓엔 안 들어간다. */}
-        <p className="shrink-0 border-t border-line px-4 py-2 text-micro leading-snug text-fg-faint">
+        <p className="shrink-0 border-t border-line px-4 py-2 text-micro leading-snug text-fg-muted">
           This product uses the TMDB API but is not endorsed or certified by TMDB.
         </p>
       </div>
