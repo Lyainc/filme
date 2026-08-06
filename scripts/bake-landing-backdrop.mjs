@@ -29,6 +29,9 @@ try {
   const page = await browser.newPage();
   // PhoneFrame 표준 뷰포트(400×675) — 배경 시트는 "뷰포트 폭 대응 1장"(#613)이라 이 프레임 폭에 맞춘다.
   await page.setViewport({ width: 400, height: 675, deviceScaleFactor: 1 });
+  // 다크로 고정한다 — 헤드리스 Chrome의 prefers-color-scheme 기본값은 OS 설정을 따르므로
+  // (실측: 이 값을 고정하지 않으면 실행 머신마다 결과가 갈린다), emulate 없이는 재현성이 없다.
+  await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
   await page.goto(URL_, { waitUntil: 'networkidle2' });
 
   const selector = '[data-testid="landing"] [aria-hidden="true"].opacity-20';
