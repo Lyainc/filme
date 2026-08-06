@@ -46,6 +46,49 @@ describe('#310 usePhototicket saveDraft/clearDraft', () => {
     expect(saved.recommendedColors).toBeUndefined();
   });
 
+  test('#651 — 디바운스(1s) 안에 탭을 벗어나면(visibilitychange hidden) 대기 중인 자동저장이 기다리지 않고 즉시 flush된다', () => {
+    jest.useFakeTimers();
+    const { result } = renderHook(() => usePhototicket());
+    act(() => {
+      result.current.updateMovieInfo({ title: '기생충' });
+    });
+    // 디바운스가 아직 안 끝난 시점 — 탭이 보이는 동안엔 저장되지 않아야 한다.
+    act(() => jest.advanceTimersByTime(300));
+    expect(window.localStorage.getItem(KEY)).toBeNull();
+
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+
+    const saved = JSON.parse(window.localStorage.getItem(KEY) || '{}');
+    expect(saved.movieInfo?.title).toBe('기생충');
+    expect(result.current.lastSavedAt).not.toBeNull();
+  });
+
+  test('#651 — 디바운스 대기 중 autoSaveEnabled를 끄면(toggleAutoSave) 그 뒤 탭을 벗어나도 저장을 강행하지 않는다', () => {
+    jest.useFakeTimers();
+    const { result } = renderHook(() => usePhototicket());
+    act(() => {
+      result.current.updateMovieInfo({ title: '기생충' });
+    });
+    act(() => jest.advanceTimersByTime(300));
+    act(() => {
+      result.current.toggleAutoSave();
+    });
+    expect(result.current.autoSaveEnabled).toBe(false);
+
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+
+    expect(window.localStorage.getItem(KEY)).toBeNull();
+    expect(result.current.lastSavedAt).toBeNull();
+  });
+
   test('#436 — autoSaveEnabled 기본 ON: 상태 변경 후 디바운스(1000ms)가 지나면 saveDraft() 없이도 자동 저장된다', () => {
     // 마운트 시점(초기 상태)의 디바운스 타이머부터 fake로 잡아야 실타이머와 안 섞인다.
     jest.useFakeTimers();
