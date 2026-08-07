@@ -649,7 +649,7 @@ export function MobileEditorShell({
 
         {/* '티켓 항목 목록' 헤더 버튼(#355/#360 임시 진입점)은 플로팅 툴바의 항목목록 버튼(#356)이
             대체 — 드로어 배선(handleField·OCR 슬롯)은 그대로 재사용한다. */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
         <AutoSaveIndicator
           enabled={photo.autoSaveEnabled}
           lastSavedAt={photo.lastSavedAt}
