@@ -46,9 +46,10 @@ describe('랜딩 히어로 갤러리 탭 타깃 (#615, WCAG 2.2 SC 2.5.8 AA)', (
     render(<Harness />);
 
     const gallery = within(landing()).getByTestId('mood-gallery');
-    const buttons = Array.from(gallery.querySelectorAll('button'));
-    // seamless loop를 위해 리스트가 두 벌(marquee 관용구).
-    expect(buttons.length).toBe(GALLERY_LAYOUTS.length * 2);
+    // data-touch가 붙은 건 무드 카드뿐이다(좌우 이동 버튼은 안 붙는다).
+    const buttons = Array.from(gallery.querySelectorAll('button[data-touch]'));
+    // 캐러셀은 카드 한 벌만 둔다 — marquee 시절의 복제 두 벌이 사라진 게 이 개편의 이득 중 하나다.
+    expect(buttons.length).toBe(GALLERY_LAYOUTS.length);
 
     for (const button of buttons) {
       const label = button.getAttribute('aria-label') ?? '';
@@ -88,18 +89,27 @@ describe('랜딩 히어로 갤러리 탭 타깃 (#615, WCAG 2.2 SC 2.5.8 AA)', (
     expect(inner.style.transform).toContain('rotate(90deg)');
   });
 
-  test('seamless loop 뒤 절반은 접근성 트리·탭 순서에서 빠진다(fresh-context 리뷰 지적)', () => {
+  test('카드가 한 벌뿐이라 접근성 트리에 죽은 복제가 없다', () => {
     render(<Harness />);
 
     const gallery = within(landing()).getByTestId('mood-gallery');
-    // role 쿼리는 aria-hidden 서브트리를 기본으로 건너뛴다 — 시각적으로는 두 벌이 실재해도
-    // 키보드·스크린리더 사용자에게는 무드당 하나만 보여야 정상이다.
-    expect(within(gallery).getAllByRole('button')).toHaveLength(GALLERY_LAYOUTS.length);
+    // marquee 시절엔 복제 절반을 aria-hidden + tabIndex=-1로 빼는 처리가 필요했다. 캐러셀은
+    // 애초에 한 벌뿐이라 그 예외가 없어야 정상이다 — 남아 있으면 처리가 덜 걷힌 것이다.
+    expect(gallery.querySelectorAll('button[aria-hidden="true"]')).toHaveLength(0);
+    expect(gallery.querySelectorAll('button[tabindex="-1"]')).toHaveLength(0);
+    // 무드 카드 + 좌우 이동 버튼 둘.
+    expect(within(gallery).getAllByRole('button')).toHaveLength(GALLERY_LAYOUTS.length + 2);
+  });
 
-    const hidden = Array.from(gallery.querySelectorAll('button[aria-hidden="true"]'));
-    expect(hidden).toHaveLength(GALLERY_LAYOUTS.length);
-    for (const button of hidden) {
-      expect(button.getAttribute('tabindex')).toBe('-1');
+  test('터치에서도 자동 전환을 멈출 수 있다 — 좌우 버튼이 hover 없는 유일한 수단이다 (SC 2.2.2)', () => {
+    render(<Harness />);
+
+    const gallery = within(landing()).getByTestId('mood-gallery');
+    for (const side of ['prev', 'next']) {
+      const btn = within(gallery).getByTestId(`mood-carousel-${side}`);
+      // 44px 하한 — 같은 파일의 카드와 같은 기준(#646).
+      expect(btn.className).toContain('min-h-touch');
+      expect(btn.getAttribute('aria-label')).toMatch(/무드 보기$/);
     }
   });
 });

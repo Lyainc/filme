@@ -1,5 +1,5 @@
 import type { DragEvent, ReactNode } from 'react';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { LayoutId, MovieInfo, TicketComponents } from '@/types';
 import { ALL_FIELDS_ON } from '@/constants/fieldVisibility';
 import { useMatchMedia } from '@/hooks/useMatchMedia';
@@ -15,6 +15,24 @@ const TRACK_CARD_WIDTH = 140;
 /** 정지 그리드 카드 폭 — 트랙과 다른 값이다. 400×675 안에서 6장을 스크롤 없이 한 화면에 다 넣어야
  *  하는 정지 폴백은 트랙만큼 키우면 넘친다(실측 회귀) — 3열 그리드가 들어가는 최대치로 별도로 잡는다. */
 const GRID_CARD_WIDTH = 92;
+/** 트랙 카드 높이 — 갤러리 카드는 무드와 무관하게 전부 세로 무드 비율로 선다(아래 GALLERY_ROTATED). */
+const CARD_HEIGHT = (TRACK_CARD_WIDTH * 1534) / 960;
+/** 자동 전환 간격 — 시안에서 고른 '보통' 속도(사용자 확인 2026-08-08). */
+const CAROUSEL_INTERVAL_MS = 2600;
+/**
+ * 중앙에서 n칸 떨어진 카드의 자리. `x`는 px이 아니라 **카드 폭의 배수**라 `TRACK_CARD_WIDTH`를
+ * 바꿔도 배치 비율이 그대로 따라온다.
+ *
+ * 시안 3종(코브플로 / 평면 원근 / 겹친 묶음) 중 **평면 원근**을 고르고 폭만 겹친 묶음 쪽으로
+ * 좁힌 값이다(사용자 선택 2026-08-08). 기울이지 않는 게 핵심 — 이 캐러셀의 목적이 무드가
+ * 어떻게 생겼는지 보여주는 거라, rotateY로 티켓 조판을 사다리꼴로 찌그러뜨리면 그 목적을
+ * 스스로 깎는다. 거리는 크기·불투명도·흐림 셋으로만 만든다.
+ */
+const CAROUSEL_SLOTS = [
+  { x: 0, scale: 1, opacity: 1, blur: 0, z: 3 },
+  { x: 0.59, scale: 0.78, opacity: 0.5, blur: 1.1, z: 2 },
+  { x: 1.01, scale: 0.6, opacity: 0.22, blur: 2.2, z: 1 },
+] as const;
 
 /**
  * 히어로 갤러리에 세우는 무드 — `LAYOUTS` 전체가 아니다(사용자 피드백 2026-08-08).
@@ -88,12 +106,21 @@ function LandingBackdropTiles() {
 }
 
 /**
- * 히어로 무드 auto-scroll 갤러리(#615 2026-08-04 개정) — 무드 6종을 실제 렌더 엔진(TicketRenderer,
- * ghost + croppedImageUrl=null, #613 이미지 자산 대기 중)으로 노출하고 자동으로 흘려보낸다.
- * 이전의 "칩으로 훑어보고 다른 CTA로 커밋"(LayoutStrip + heroLayout 로컬 미러)은 폐기됐다 — 샘플
- * 클릭 자체가 `onEnterMood`를 통해 그 무드를 즉시 커밋하는 독립된 다섯 번째 진입점이라, 훑어보기용
- * 중간 상태가 필요 없다. 무드 이름 라벨은 없다 — 이미지 자체를 키우는 쪽을 택했다(사용자 피드백):
- * `aria-label`엔 여전히 실려 있어 접근성 정보 손실은 없다.
+ * 히어로 무드 갤러리 캐러셀(#615, 2026-08-08 개정) — 무드를 실제 렌더 엔진(TicketRenderer,
+ * ghost + croppedImageUrl=null)으로 노출한다. 가운데가 제일 크고 좌우가 멀어 보이며, 오른쪽
+ * 카드가 중앙으로 오면서 커진다. 샘플 클릭은 `onEnterMood`로 그 무드를 즉시 커밋하는 독립된
+ * 다섯 번째 진입점이다(훑어보기용 중간 상태가 없다 — 폐기된 `LayoutStrip`+`heroLayout` 미러와
+ * 다른 점). 무드 이름 라벨은 없다(사용자 피드백) — `aria-label`엔 실려 있어 정보 손실은 없다.
+ *
+ * **끝없이 흐르는 marquee를 대체했다.** 예전엔 리스트를 두 벌 이어붙이고 `-50%`까지 트랜슬레이트해
+ * 이음매 없이 순환시켰는데, 그래서 같은 이름의 `<button>`이 두 벌 존재하고 뒤 절반을
+ * `aria-hidden`+`tabIndex={-1}`로 접근성 트리에서 빼는 처리가 필요했다. 캐러셀은 카드 한 벌만
+ * 두고 `transform`만 바꾸므로 그 복제와 예외 처리가 통째로 사라졌다 — 세트 경계에서 6px씩 튀던
+ * 루프 스냅(트랙 폭 50%가 실제 세트 경계와 안 맞던 문제)도 같이 없어졌다.
+ *
+ * **대신 "지금 어느 무드가 중앙인가"라는 상태가 새로 생겼다.** 그게 이 개편이 지불한 값이고,
+ * 자동 전환을 멈출 수단이 함께 필요해진 이유다: 포인터·키보드는 hover/focus로, 터치는 좌우
+ * 버튼으로 멈춘다(SC 2.2.2 — marquee 시절엔 hover뿐이라 터치에서 성립하지 않던 갭이다).
  *
  * **탭 타깃과 눌림 피드백이 서로 다른 엘리먼트에 산다** — `<button>`은 `active:scale-[0.97]`을
  * 들고 있어(PrimaryCta·OcrUploadCard와 동일 패턴) `__tests__/tapTargets.ts`의 변형 금지 정규식
@@ -102,19 +129,13 @@ function LandingBackdropTiles() {
  * 경우), 테스트는 그 안쪽 div만 잰다(LayoutStrip/TexturePicker가 스와치를 재고 바깥 버튼은 안
  * 재는 것과 같은 분리).
  *
- * **seamless loop의 뒤 절반은 접근성 트리에서 지운다** — 리스트를 두 벌 이어붙이는 marquee
- * 관용구라 같은 이름의 `<button>`이 12개 존재하는데, 뒤 절반은 시각적 연속을 위한 복제일 뿐 키보드
- * 사용자에게는 같은 무드로 가는 죽은 자리 6개가 더 생기는 셈이다(fresh-context 리뷰 지적). 뒤 절반만
- * `aria-hidden` + `tabIndex={-1}`로 접근성 트리·탭 순서에서 뺀다 — 포인터로는 여전히 두 벌 다 눌린다
- * (겹치는 시각 콘텐츠라 눌러도 같은 결과라 무해하다).
- *
- * **`prefers-reduced-motion`은 애니메이션만 죽이는 게 아니라 레이아웃을 바꾼다** — 전역 CSS 가드
- * (`globals.css`의 `@media (prefers-reduced-motion: reduce)`)가 이미 모든 `animation-duration`을
- * 0.01ms로 죽이지만, 그것만으로는 overflow-hidden 트랙이 스크롤 안 된 첫 프레임에 멈춰 6종 중 일부만
- * 보인다. `useMatchMedia`(PrimaryCta와 동일 훅)로 감지해 정지 시엔 트랙 대신 줄바꿈 그리드로 6종을
- * 한 화면에 전부 그린다 — 그리드 카드는 트랙보다 작은 별도 크기다(400×675 무스크롤 예산, 위 상수 참고).
+ * **`prefers-reduced-motion`은 애니메이션만 죽이는 게 아니라 레이아웃을 바꾼다** — 정지 시엔
+ * 캐러셀 대신 줄바꿈 그리드로 전부를 한 화면에 그린다. 캐러셀을 그대로 두고 자동 전환만 끄면
+ * 좌우 카드가 작고 흐린 채 고정돼 "이게 전부인가"로 읽히고, 중앙 아닌 무드를 보려면 버튼을
+ * 눌러야 해서 정지 사용자에게 오히려 단계가 는다. 그리드 카드는 캐러셀보다 작은 별도 크기다
+ * (400×675 무스크롤 예산, 위 상수 참고).
  */
-function MoodAutoScrollGallery({
+function MoodCarousel({
   heroMovieInfo,
   heroComponents,
   onEnterMood,
@@ -124,6 +145,21 @@ function MoodAutoScrollGallery({
   onEnterMood: (id: LayoutId) => void;
 }) {
   const prefersReducedMotion = useMatchMedia('(prefers-reduced-motion: reduce)');
+  // 지금 가운데 선 무드. 캐러셀이 되면서 "어느 무드가 중앙인가"라는 상태가 새로 생겼다 —
+  // marquee엔 없던 것이라 이게 이 개편의 유일한 새 state다.
+  const [active, setActive] = useState(0);
+  // 자동 전환을 사용자가 껐는가(좌우 버튼) — 껐으면 다시 안 켠다.
+  const [autoAdvance, setAutoAdvance] = useState(true);
+  const [hovering, setHovering] = useState(false);
+
+  useEffect(() => {
+    if (prefersReducedMotion || !autoAdvance || hovering) return;
+    const id = setInterval(
+      () => setActive((i) => (i + 1) % GALLERY_LAYOUTS.length),
+      CAROUSEL_INTERVAL_MS,
+    );
+    return () => clearInterval(id);
+  }, [prefersReducedMotion, autoAdvance, hovering]);
 
   // 무드별 components를 렌더마다 새로 만들면 `TicketRenderer`의 memo가 12벌 전부 miss한다
   // (fresh-context 리뷰 P1) — `Landing`은 memo가 아니고 셸에서 `onEnterMood`·`children` 등이
@@ -137,22 +173,48 @@ function MoodAutoScrollGallery({
     [heroComponents],
   );
 
-  const sample = (layout: (typeof LAYOUTS)[number], index: number, key: string, width: number, decorative: boolean) => {
+  /** 중앙에서 몇 칸 떨어졌는지 — 다섯 장이라 -2..+2로 접힌다(원형 거리). */
+  const distance = (index: number) => {
+    const n = GALLERY_LAYOUTS.length;
+    let d = index - active;
+    if (d > n / 2) d -= n;
+    if (d < -n / 2) d += n;
+    return d;
+  };
+
+  const sample = (layout: (typeof LAYOUTS)[number], index: number, key: string, width: number, carousel: boolean) => {
     const rotated = GALLERY_ROTATED.has(layout.id);
     // 돌린 무드는 카드 박스도 같이 뒤집힌다 — 가로 캔버스(1534×960)를 세로로 세우면 표시 높이가
     // 폭 × (width/height)라, 세로 무드들과 같은 1534/960 비율이 나와 줄의 리듬이 맞는다.
     const height = rotated ? (width * layout.width) / layout.height : (width * layout.height) / layout.width;
+    // 캐러셀에서만 자리를 계산한다 — reduced-motion 그리드는 흐름 배치 그대로다.
+    const d = distance(index);
+    const s = CAROUSEL_SLOTS[Math.min(Math.abs(d), CAROUSEL_SLOTS.length - 1)];
+    const slot = carousel
+      ? {
+          position: 'absolute' as const,
+          top: 0,
+          left: '50%',
+          marginLeft: -width / 2,
+          zIndex: s.z,
+          opacity: s.opacity,
+          filter: s.blur ? `blur(${s.blur}px)` : undefined,
+          transform: `translateX(${Math.sign(d) * s.x * width}px) scale(${s.scale})`,
+          transitionProperty: 'transform, opacity, filter',
+          transitionDuration: '620ms',
+          transitionTimingFunction: 'cubic-bezier(.22,.61,.36,1)',
+        }
+      : undefined;
     return (
     <button
       key={key}
       type="button"
       onClick={() => onEnterMood(layout.id)}
       aria-label={`${layout.label} 무드로 바로 시작 · ${layout.caption}`}
-      aria-hidden={decorative || undefined}
-      tabIndex={decorative ? -1 : undefined}
       title={layout.caption}
       data-touch={String(width)}
       className="shrink-0 transition-transform active:scale-[0.97]"
+      style={slot}
     >
       {/* 라벨 없음은 의도적 결정이다(사용자 피드백, 이슈 #615 코멘트에 기록) — 이미지 밑에 이름
           한 줄을 두면 세로 공간을 먹어 카드가 작아지므로, 이름은 aria-label로만 싣고 카드는
@@ -199,24 +261,42 @@ function MoodAutoScrollGallery({
   }
 
   return (
-    <div data-testid="mood-gallery" className="w-full overflow-hidden">
-      {/* 리스트를 두 번 이어붙이고 -50%까지 트랜슬레이트하면 이음매 없는 순환 루프가 된다(marquee
-          관용구) — 새 라이브러리 없이 keyframes + animation만으로 충분(#615 구현 지침).
-          **두 세트를 각자 wrapper로 감싸 pr-3(gap 폭)를 준다** — 바깥 트랙에 gap을 주면 총 11칸
-          중 세트 경계 칸도 세트 내부 칸과 같은 12px이라, 트랙 전체 폭의 50%(= 6c+5.5g)가 실제 세트
-          경계(= 6c+6g)보다 6px 짧아져 매 루프 리셋마다 6px 스냅이 생겼다(fresh-context 리뷰 지적).
-          wrapper마다 pr-3로 세트 끝에 고정 12px을 실으면 트랙 폭이 두 wrapper의 정확히 2배가 되어
-          -50%가 세트 경계와 정확히 일치한다.
-          hover/focus-within에서 정지하는 건 SC 2.2.2(움직이는 콘텐츠 일시정지) 대응 — 계속 움직이는
-          트랙 위에서 Tab으로 포커스가 옮겨가면 포커스 링이 흐르는 채로 잡혀 따라가기 어렵다. */}
-      <div className="flex w-max animate-marquee hover:[animation-play-state:paused] focus-within:[animation-play-state:paused]">
-        <div className="flex gap-3 pr-3">
-          {GALLERY_LAYOUTS.map((layout, i) => sample(layout, i, `a-${layout.id}`, TRACK_CARD_WIDTH, false))}
-        </div>
-        <div className="flex gap-3 pr-3">
-          {GALLERY_LAYOUTS.map((layout, i) => sample(layout, i, `b-${layout.id}`, TRACK_CARD_WIDTH, true))}
-        </div>
-      </div>
+    <div
+      data-testid="mood-gallery"
+      className="relative w-full overflow-hidden"
+      style={{ height: CARD_HEIGHT }}
+      // 포인터가 올라오거나 포커스가 들어오면 멈춘다 — 움직이는 카드를 겨냥해 누르기 어렵고,
+      // Tab으로 옮긴 포커스 링이 흐르는 채로 잡히면 따라가기 어렵다. 터치엔 hover가 없으므로
+      // 그쪽 정지 수단은 아래 좌우 버튼이 진다(SC 2.2.2, 두 입력 모두 커버).
+      onMouseEnter={() => setHovering(true)}
+      onMouseLeave={() => setHovering(false)}
+      onFocus={() => setHovering(true)}
+      onBlur={() => setHovering(false)}
+    >
+      {GALLERY_LAYOUTS.map((layout, i) => sample(layout, i, layout.id, TRACK_CARD_WIDTH, true))}
+
+      {/* 좌우 이동 — 터치 사용자의 유일한 정지 수단이라 장식이 아니다. 한 번 누르면 자동 전환이
+          영구히 꺼진다(다시 켜지 않는다): 직접 넘기기 시작한 사용자에게 카드가 다시 저 혼자
+          움직이면 방금 맞춰둔 자리를 뺏긴다. */}
+      {([['prev', -1, '이전'], ['next', 1, '다음']] as const).map(([side, delta, label]) => (
+        <button
+          key={side}
+          type="button"
+          data-testid={`mood-carousel-${side}`}
+          aria-label={`${label} 무드 보기`}
+          onClick={() => {
+            setAutoAdvance(false);
+            setActive((i) => (i + delta + GALLERY_LAYOUTS.length) % GALLERY_LAYOUTS.length);
+          }}
+          className={`absolute top-1/2 z-[4] flex min-h-touch w-11 -translate-y-1/2 items-center justify-center text-landing-muted ${
+            side === 'prev' ? 'left-0' : 'right-0'
+          }`}
+        >
+          <span aria-hidden="true" className="text-body leading-none">
+            {side === 'prev' ? '‹' : '›'}
+          </span>
+        </button>
+      ))}
     </div>
   );
 }
@@ -253,7 +333,7 @@ function MoodAutoScrollGallery({
  * **히어로는 이미지 자산이 아니라 실제 렌더 엔진이다(#615)** — #613(예시 이미지 수동 제작·번들)이
  * 아직 안 끝나 저작권 없는 무드 이미지가 없다. 대신 #631이 이미 열어둔 posterless 렌더 경로를
  * 그대로 써서 `TicketRenderer`를 `croppedImageUrl=null` + `ghost`로 띄운다 — 포스터 없이도
- * 무드의 조판·타이포·필드 자리는 실물 그대로 보인다. 실제 히어로 마크업은 `MoodAutoScrollGallery`
+ * 무드의 조판·타이포·필드 자리는 실물 그대로 보인다. 실제 히어로 마크업은 `MoodCarousel`
  * (아래) — 6종을 auto-scroll 트랙으로 동시에 보여준다(2026-08-04 설계 변경, D1 재검토: "동시에
  * 더 많이 보인다" 요건은 트랙이 그대로 만족해 크로스페이드 캐러셀로 되돌아가는 게 아니다).
  *
@@ -381,7 +461,7 @@ export function Landing({
 
             {/* 히어로(#615, 2026-08-04 개정) — auto-scroll 갤러리 하나가 이전의 "전경 1장 + 무드칩
                 스트립" 두 축을 대체한다(위 컴포넌트 주석). */}
-            <MoodAutoScrollGallery
+            <MoodCarousel
               heroMovieInfo={heroMovieInfo}
               heroComponents={heroComponents}
               onEnterMood={onEnterMood}
