@@ -375,6 +375,15 @@ function closeEnough(actual: number, expected: number, tolerance = 2) {
   expect(Math.abs(actual - expected)).toBeLessThanOrEqual(tolerance);
 }
 
+// #660 — @2x는 캔버스 면적이 @1x의 4배라 bun 기본 5000ms에 여유가 없다. 격리 5회 반복 2.04~2.46초,
+// 전체 스위트 동시 실행 3.04~3.46초로 측정했고, 이슈 본문이 기록한 실측 최악치(격리 5.1~5.6초,
+// 전체 스위트 리소스 경합 시 22초)까지 덮는다. **CI(.github/workflows/ci.yml)는 이미
+// `bun test --timeout 30000`으로 돌아 30초 여유가 있는데, bun은 테스트별 명시 timeout이
+// 크든 작든 CLI `--timeout`을 무조건 이긴다** — 여기 값을 30000보다 낮게 주면 CI에서 오히려
+// 마진이 줄어 #660이 없애려던 flakiness를 반대로 재도입한다. 그래서 CI 기준선(30000)보다
+// 위인 35000ms로 잡는다. @1x는 실측 0.5~0.8초로 여유가 커서 기본값 그대로 둔다.
+const PIXEL_RATIO_2X_TIMEOUT_MS = 35000;
+
 describe('#512 — 6무드 × 2 pixelRatio, iOS(ctx.filter 미적용) 환경에서 포스터 픽셀이 프리뷰와 일치', () => {
   for (const layout of LAYOUTS) {
     for (const pixelRatio of [1, 2] as const) {
@@ -399,7 +408,7 @@ describe('#512 — 6무드 × 2 pixelRatio, iOS(ctx.filter 미적용) 환경에�
         closeEnough(b, eb);
 
         node.remove();
-      });
+      }, pixelRatio === 2 ? PIXEL_RATIO_2X_TIMEOUT_MS : undefined);
     }
   }
 });
