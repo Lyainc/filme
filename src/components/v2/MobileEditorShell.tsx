@@ -34,7 +34,7 @@ import type { Area } from '@/utils/imageCrop';
 import { useEditHistory } from '@/hooks/useEditHistory';
 import { useOcrUndo } from '@/hooks/useOcrUndo';
 import type { usePhototicket } from '@/hooks/usePhototicket';
-import type { LayoutId, MovieInfo, TicketComponents, TicketField } from '@/types';
+import type { MovieInfo, TicketComponents, TicketField } from '@/types';
 import { isStampTarget, STAMP_KEYS, type SheetTarget } from '@/constants/fields';
 import { triggerKobisLookup } from '@/utils/kobisLookup';
 import { ErrorToastHost } from '@/utils/errorToast';
