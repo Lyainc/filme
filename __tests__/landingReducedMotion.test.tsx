@@ -44,7 +44,7 @@ afterEach(() => {
 });
 
 describe('랜딩 히어로 갤러리 reduced-motion 폴백 (#615)', () => {
-  test('reduce 활성화 시 marquee 트랙이 아니라 줄바꿈 그리드로 갤러리 무드가 한 번씩만 보인다', () => {
+  test('reduce 활성화 시 캐러셀이 아니라 줄바꿈 그리드로 갤러리 무드가 한 번씩만 보인다', () => {
     const restore = stubReducedMotion(true);
     try {
       render(<Harness />);
@@ -58,13 +58,14 @@ describe('랜딩 히어로 갤러리 reduced-motion 폴백 (#615)', () => {
     }
   });
 
-  test('reduce 비활성화 시 marquee 트랙으로 갤러리 무드 × 2벌이 렌더된다', () => {
+  test('reduce 비활성화 시 캐러셀로 갤러리 무드가 한 벌만 렌더된다', () => {
     const restore = stubReducedMotion(false);
     try {
       render(<Harness />);
       const gallery = within(landing()).getByTestId('mood-gallery');
       expect(gallery.className).toContain('overflow-hidden');
-      expect(gallery.querySelectorAll('button').length).toBe(GALLERY_LAYOUTS.length * 2);
+      // 카드 한 벌 + 좌우 이동 버튼 둘.
+      expect(gallery.querySelectorAll('button').length).toBe(GALLERY_LAYOUTS.length + 2);
     } finally {
       restore();
     }
