@@ -17,6 +17,23 @@ const TRACK_CARD_WIDTH = 140;
 const GRID_CARD_WIDTH = 92;
 
 /**
+ * 히어로 갤러리에 세우는 무드 — `LAYOUTS` 전체가 아니다(사용자 피드백 2026-08-08).
+ *
+ * 캔버스가 가로인 두 무드(`editorial` 1534×960, `35mm-landscape` 960 폭 기준 가로)가 세로 카드
+ * 사이에 섞이면, 같은 카드 폭에서 높이만 62%로 주저앉아 줄의 리듬이 깨지고 정작 그 무드도 너무
+ * 작아 안 읽힌다. 둘을 다르게 처리하는 이유는 대체 가능성이다: `35mm Wide`는 같은 필름 계열인
+ * `35mm`(세로)가 이미 줄에 있어 빼도 표현이 안 사라지지만, `editorial`은 유일한 편집 디자인이라
+ * 빼면 그 톤 자체가 갤러리에서 없어진다 — 그래서 빼는 대신 세로로 돌려 세운다.
+ *
+ * 돌리는 건 갤러리 전시용일 뿐 무드 자체(`LAYOUTS`의 `orientation`·크롭 프리셋 #529)는 그대로다.
+ */
+export const GALLERY_LAYOUTS = LAYOUTS.filter((l) => l.id !== '35mm-landscape');
+/** 갤러리에서만 90° 돌려 세로로 세우는 무드 — 위 주석 참고. 시계 방향(90deg)이라 원본의 오른쪽
+ *  끝이 아래로 간다: editorial의 붉은 stub 밴드가 오른쪽이라 돌리면 아래에 선다(사용자 요청).
+ *  반시계로 돌리면 같은 밴드가 위로 올라가니 부호를 바꿀 때 실물 확인 없이 뒤집지 말 것. */
+const GALLERY_ROTATED: ReadonlySet<LayoutId> = new Set<LayoutId>(['editorial']);
+
+/**
  * 배경 타일 그리드(#615) — 자산이 아니라 라이브 렌더다. 무드를 "안 읽히는 색면"으로 추상화해
  * 둔 `MOOD_CHIP_BG`(무드 칩과 동일 토큰, #367)를 반복 타일링해 D5(원본 포스터 식별 불가)를
  * 자산 없이 만족한다.
@@ -40,13 +57,24 @@ const GRID_CARD_WIDTH = 92;
  * 풀블리드가 필요해지면 그때 portal로 다시 연다.
  */
 function LandingBackdropTiles() {
-  const tiles = Array.from({ length: 24 }, (_, i) => LAYOUTS[i % LAYOUTS.length]);
+  const tiles = Array.from({ length: 15 }, (_, i) => LAYOUTS[i % LAYOUTS.length]);
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-0 -z-10 overflow-hidden opacity-20"
+      className="pointer-events-none absolute inset-0 -z-10 overflow-hidden opacity-[0.09]"
+      // 히어로 갤러리가 서는 가운데를 비워주는 스포트라이트 마스크 — 배경이 화면 전체에 같은
+      // 세기로 깔리면 앞의 샘플과 명도가 붙어 시선이 안 모인다(사용자 피드백). 가장자리에서만
+      // 텍스처가 살고 중앙 타원 안은 거의 지워진다. mask-image는 네이티브라 JS·라이브러리 0.
+      style={{
+        maskImage:
+          'radial-gradient(ellipse 68% 52% at 50% 46%, transparent 12%, rgba(0,0,0,0.45) 58%, #000 100%)',
+        WebkitMaskImage:
+          'radial-gradient(ellipse 68% 52% at 50% 46%, transparent 12%, rgba(0,0,0,0.45) 58%, #000 100%)',
+      }}
     >
-      <div className="-m-8 grid grid-cols-4 gap-2 rotate-[-8deg] scale-125">
+      {/* 3열 · gap-5 — 4열 gap-2는 400px 프레임에서 타일이 92px까지 잘게 쪼개져 "빼곡한 무늬"로
+          읽혔다. 열을 줄여 타일을 키우고 간격을 벌리면 같은 면적이 훨씬 성기게 보인다. */}
+      <div className="-m-10 grid grid-cols-3 gap-5 rotate-[-8deg] scale-125">
         {tiles.map((layout, i) => (
           <div
             key={i}
@@ -105,11 +133,16 @@ function MoodAutoScrollGallery({
   // 실제 무드 변경에만 걸린다. 나머지 props(`heroMovieInfo`=실시간 state 객체, `ALL_FIELDS_ON`=
   // 모듈 상수, `croppedImageUrl`=null, `ghost`)는 이미 참조가 안정적이다.
   const sampleComponents = useMemo(
-    () => LAYOUTS.map((layout) => ({ ...heroComponents, layout: layout.id })),
+    () => GALLERY_LAYOUTS.map((layout) => ({ ...heroComponents, layout: layout.id })),
     [heroComponents],
   );
 
-  const sample = (layout: (typeof LAYOUTS)[number], index: number, key: string, width: number, decorative: boolean) => (
+  const sample = (layout: (typeof LAYOUTS)[number], index: number, key: string, width: number, decorative: boolean) => {
+    const rotated = GALLERY_ROTATED.has(layout.id);
+    // 돌린 무드는 카드 박스도 같이 뒤집힌다 — 가로 캔버스(1534×960)를 세로로 세우면 표시 높이가
+    // 폭 × (width/height)라, 세로 무드들과 같은 1534/960 비율이 나와 줄의 리듬이 맞는다.
+    const height = rotated ? (width * layout.width) / layout.height : (width * layout.height) / layout.width;
+    return (
     <button
       key={key}
       type="button"
@@ -126,22 +159,41 @@ function MoodAutoScrollGallery({
           이미지 하나로 키운다. 높이는 무드별 실제 캔버스 비율로 계산한다(가로 슬롯 2종은 세로
           슬롯 4종보다 낮다) — 실측용 상수를 아무 무드에나 똑같이 씌우면 가로 슬롯에서 여백이
           남거나 잘린다. */}
-      <div style={{ width, height: (width * layout.height) / layout.width }}>
-        <TicketRenderer
-          croppedImageUrl={null}
-          movieInfo={heroMovieInfo}
-          components={sampleComponents[index]}
-          fieldVisibility={ALL_FIELDS_ON}
-          ghost
-        />
+      <div style={{ width, height, position: 'relative', overflow: 'hidden' }}>
+        {/* 돌린 무드는 회전 전 크기를 뒤집어(높이×폭) 절대배치로 가운데에 놓고 -90° 돌린다 —
+            transform은 레이아웃 크기를 안 바꾸므로 TicketRenderer의 ResizeObserver는 회전 전
+            박스를 그대로 재고, 돌아간 결과가 바깥 세로 박스를 정확히 채운다. */}
+        <div
+          style={
+            rotated
+              ? {
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  width: height,
+                  height: width,
+                  transform: 'translate(-50%, -50%) rotate(90deg)',
+                }
+              : { width: '100%', height: '100%' }
+          }
+        >
+          <TicketRenderer
+            croppedImageUrl={null}
+            movieInfo={heroMovieInfo}
+            components={sampleComponents[index]}
+            fieldVisibility={ALL_FIELDS_ON}
+            ghost
+          />
+        </div>
       </div>
     </button>
-  );
+    );
+  };
 
   if (prefersReducedMotion) {
     return (
       <div data-testid="mood-gallery" className="flex flex-wrap items-start justify-center gap-3">
-        {LAYOUTS.map((layout, i) => sample(layout, i, layout.id, GRID_CARD_WIDTH, false))}
+        {GALLERY_LAYOUTS.map((layout, i) => sample(layout, i, layout.id, GRID_CARD_WIDTH, false))}
       </div>
     );
   }
@@ -159,10 +211,10 @@ function MoodAutoScrollGallery({
           트랙 위에서 Tab으로 포커스가 옮겨가면 포커스 링이 흐르는 채로 잡혀 따라가기 어렵다. */}
       <div className="flex w-max animate-marquee hover:[animation-play-state:paused] focus-within:[animation-play-state:paused]">
         <div className="flex gap-3 pr-3">
-          {LAYOUTS.map((layout, i) => sample(layout, i, `a-${layout.id}`, TRACK_CARD_WIDTH, false))}
+          {GALLERY_LAYOUTS.map((layout, i) => sample(layout, i, `a-${layout.id}`, TRACK_CARD_WIDTH, false))}
         </div>
         <div className="flex gap-3 pr-3">
-          {LAYOUTS.map((layout, i) => sample(layout, i, `b-${layout.id}`, TRACK_CARD_WIDTH, true))}
+          {GALLERY_LAYOUTS.map((layout, i) => sample(layout, i, `b-${layout.id}`, TRACK_CARD_WIDTH, true))}
         </div>
       </div>
     </div>
