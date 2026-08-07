@@ -9,7 +9,7 @@
  *    커밋" 미러 단계는 이 개정으로 폐기됐다(heroLayout/commitHeroLayout 삭제).
  */
 import { useState } from 'react';
-import { describe, expect, test, afterAll, afterEach, mock } from 'bun:test';
+import { describe, expect, test, afterAll, afterEach, mock, jest } from 'bun:test';
 import { render, screen, cleanup, fireEvent, waitFor, within, act } from '@testing-library/react';
 import type { PhototicketState } from '@/types';
 import { mobileShellProps } from './shellHarness';
@@ -97,11 +97,12 @@ describe('히어로 갤러리 샘플 클릭이 무드를 즉시 커밋한다 (#6
   });
 });
 
-// draft 복원(usePhototicket 마운트 후 useEffect, 비동기)이 heroLayout의 useState 초기화보다
-// 늦게 끝나면, 무드칩을 한 번도 안 건드린 재방문자가 "직접 입력"·"포스터부터 올리기"를 눌렀을 때
-// commitHeroLayout이 굳어 있던 기본값('minimal')으로 복원된 무드를 되돌려버린다(fresh-context
-// 리뷰 P0). MobileEditorShell의 draftRestored 재동기화 effect가 이걸 막는지 검증한다.
-describe('draft 복원 무드가 진입 시 덮이지 않는다 (fresh-context 리뷰 P0)', () => {
+// 블랙박스 명제로만 남긴다 — 예전엔 이 자리가 heroLayout useState 초기화 레이스와 draftRestored
+// 재동기화 effect라는 특정 구현을 잠갔지만, #615 개정이 그 미러 단계를 통째로 지웠다(진입 CTA는
+// 이제 layout을 아예 안 건드린다). 구현을 지목하던 옛 서술을 그대로 두면 없는 코드를 설명하는
+// 주석이 되므로, "재방문자의 복원된 무드가 진입만으로 기본값으로 되돌아가지 않는다"는 사용자
+// 관측 명제만 남긴다 — 어떤 구현으로 가든 지켜져야 하는 계약이다.
+describe('복원된 draft의 무드가 진입만으로 되돌아가지 않는다 (#615)', () => {
   const STORAGE_KEY = 'filme:phototicket:v1';
 
   afterEach(() => {
@@ -121,9 +122,55 @@ describe('draft 복원 무드가 진입 시 덮이지 않는다 (fresh-context �
 
     fireEvent.click(screen.getByTestId('landing-skip-poster'));
 
-    // commitHeroLayout이 heroLayout(재동기화됐다면 'stub')과 실제 state('stub')가 같다고 보고
-    // no-op해야 한다 — 재동기화가 안 됐다면 heroLayout이 'minimal'에 굳어 있어 여기서 되돌아간다.
     expect(captured.components.layout).toBe('stub');
+  });
+});
+
+/**
+ * 같은 무드 재탭이 draft를 쓰면 안 된다(#615 fresh-context 리뷰) — `updateComponents`는 값이
+ * 같아도 dirtyTick을 올리고, 그러면 1초 디바운스 뒤 autosave가 draft를 써서 **다음 방문부터**
+ * `draftRestored=true`로 랜딩(마케팅 카피·OCR 주 CTA)이 영구히 안 뜬다. 갤러리 첫 카드가 현재
+ * 무드(minimal)라 오탭 한 번의 대가가 그거였다. 폐기된 `commitHeroLayout`의 동일값 가드를
+ * 셸의 `onEnterMood`로 되살린 게 이 테스트가 잠그는 것.
+ *
+ * 두 번째 테스트가 짝이다 — 가드가 "아무것도 저장 안 함"으로 과하게 걸리면 실제 무드 변경까지
+ * 안 남을 텐데, 그러면 그쪽이 깨진다.
+ */
+describe('갤러리 동일 무드 재탭은 draft를 만들지 않는다 (#615)', () => {
+  const STORAGE_KEY = 'filme:phototicket:v1';
+  const sampleFor = (name: string) =>
+    within(landing()).getByRole('button', { name: new RegExp(`^${name} 무드로 바로 시작`) });
+
+  afterEach(() => {
+    jest.useRealTimers();
+    localStorage.clear();
+  });
+
+  test('이미 켜져 있는 무드 카드를 눌러도 autosave가 draft를 안 쓴다', () => {
+    jest.useFakeTimers();
+    render(<Harness />);
+    expect(captured.components.layout).toBe('minimal');
+
+    fireEvent.click(sampleFor('Minimal'));
+
+    // 디바운스(1s) + 여유. 가드가 없으면 dirtyTick이 올라 여기서 draft가 쓰인다.
+    act(() => jest.advanceTimersByTime(2000));
+
+    expect(localStorage.getItem(STORAGE_KEY)).toBe(null);
+    // 진입 자체는 정상적으로 일어나야 한다 — 가드는 저장만 막지 화면 전환을 막지 않는다.
+    expect(landing().classList.contains('fixed')).toBe(false);
+  });
+
+  test('다른 무드 카드를 누르면 draft가 쓰인다 — 가드가 저장 자체를 막은 게 아니다', () => {
+    jest.useFakeTimers();
+    render(<Harness />);
+
+    fireEvent.click(sampleFor('Stub'));
+    act(() => jest.advanceTimersByTime(2000));
+
+    const raw = localStorage.getItem(STORAGE_KEY);
+    expect(raw).not.toBe(null);
+    expect(JSON.parse(raw!).components.layout).toBe('stub');
   });
 });
 
