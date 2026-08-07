@@ -295,11 +295,10 @@ export function Landing({
               {/* text-caption(#615 사용자 피드백) — 원래 text-body(14px)는 헤드카피 대비 존재감이
                   과했다. 카피 3종(헤드·서브·CTA) 크기를 낮춰 갤러리에 세로 예산을 넘긴다.
 
-                  스크림을 걷어도 라이트 테마는 text-fg-muted vs --bg 자체가 4.43:1로 WCAG AA(4.5)
-                  미달이다(globals.css 19행 대비표와 같은 급 — 배경 타일과 무관한 선행 갭). 여기서만
                   text-landing-muted(globals.css --landing-muted, tailwind.config.js 매핑)로
-                  바꿔 5.24:1을 확보한다 — --fg-muted 전역을 어둡히면 앱 전체 muted 텍스트 톤이
-                  흔들려서 이 자리만의 로컬 오버라이드로 좁혔다. */}
+                  --bg 위 5.24:1을 확보한다. 이 오버라이드를 처음 넣을 땐 --fg-muted가 4.43:1로
+                  WCAG AA(4.5) 미달이라 유일한 통과 경로였고, #650이 그 값을 4.62:1로 다크닝한
+                  지금은 그 위에 얹은 여유분이다. */}
               <p className="max-w-[300px] text-caption leading-relaxed text-landing-muted break-keep">
                 스크린샷으로 자동입력. 사진으로 찍은 실물 티켓도 돼요.
               </p>
@@ -338,7 +337,7 @@ export function Landing({
               다크 4.05 / 라이트 2.83까지 떨어진다(WCAG AA 4.5 미달). scrim이 absolute라 flex-wrap
               레이아웃엔 안 끼어든다. inline 모드는 타일 자체가 없어 무해한 중복일 뿐이다.
 
-              text-landing-muted(위 서브카피와 동일 근거)로 라이트 4.43→5.24:1 확보 —
+              text-landing-muted(위 서브카피와 동일 근거)로 라이트 5.24:1 확보 —
               --fg-faint 구분자(·)는 aria-hidden 장식이라 텍스트 대비 대상이 아니라 그대로 둔다.
 
               WCAG 2.5.8(AA) 최소 24×24 미달 — 같은 파일 OCR CTA(min-h-[44px])와 동일하게
