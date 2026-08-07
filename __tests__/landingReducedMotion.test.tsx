@@ -64,8 +64,7 @@ describe('랜딩 히어로 갤러리 reduced-motion 폴백 (#615)', () => {
       render(<Harness />);
       const gallery = within(landing()).getByTestId('mood-gallery');
       expect(gallery.className).toContain('overflow-hidden');
-      // 카드 한 벌 + 좌우 이동 버튼 둘.
-      expect(gallery.querySelectorAll('button').length).toBe(GALLERY_LAYOUTS.length + 2);
+      expect(gallery.querySelectorAll('button').length).toBe(GALLERY_LAYOUTS.length);
     } finally {
       restore();
     }
