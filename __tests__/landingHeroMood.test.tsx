@@ -3,14 +3,14 @@
  *
  *  - rate limit(shared 윈도우 소진)이 "인식된 정보가 없어요"와 다른 안내로 갈리고, 그 뒤에도
  *    이탈 경로(포스터부터 올리기 · 직접 입력)가 막히지 않는다(#635 c2 · ac2).
- *  - 랜딩 히어로의 무드칩 선택이 랜딩 로컬 state가 아니라 셸의 진짜 components.layout을
- *    커밋한다(#615, Seed spec blindspot 3번) — 그래야 이후 "포스터부터 올리기"로 넘어갔을 때
- *    크롭 프리셋이 랜딩에서 고른 무드와 어긋나지 않는다(#529).
+ *  - 랜딩 히어로 auto-scroll 갤러리(#615, 2026-08-04 개정)의 샘플 클릭은 훑어보기가 아니라
+ *    그 자리에서 셸의 진짜 components.layout을 커밋한다 — 그래야 크롭 프리셋이 방금 고른
+ *    무드와 어긋나지 않는다(#529). 예전 무드칩(LayoutStrip)의 "훑어보고 다른 CTA가 나중에
+ *    커밋" 미러 단계는 이 개정으로 폐기됐다(heroLayout/commitHeroLayout 삭제).
  */
 import { useState } from 'react';
-import { describe, expect, test, afterAll, afterEach, mock } from 'bun:test';
+import { describe, expect, test, afterAll, afterEach, mock, jest } from 'bun:test';
 import { render, screen, cleanup, fireEvent, waitFor, within, act } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import type { PhototicketState } from '@/types';
 import { mobileShellProps } from './shellHarness';
 
@@ -74,71 +74,35 @@ describe('OCR rate limit 이탈 경로 (#635 c2)', () => {
   });
 });
 
-describe('랜딩 무드칩은 훑어보는 동안 진짜 state를 안 건드린다 (#615, fresh-context 리뷰가 잡은 회귀)', () => {
-  test('무드칩 탭은 히어로 미리보기만 바꾸고 photo.state.components.layout·DesignRail은 그대로다', () => {
+describe('히어로 갤러리 샘플 클릭이 무드를 즉시 커밋한다 (#615, 2026-08-04 개정)', () => {
+  const stubSample = () =>
+    within(landing()).getByRole('button', { name: /^Stub 무드로 바로 시작/ });
+
+  test('클릭 즉시 photo.state.components.layout이 그 무드로 바뀐다', () => {
     render(<Harness />);
     expect(captured.components.layout).toBe('minimal');
 
-    const stubChipInLanding = within(landing()).getByRole('radio', { name: 'Stub · 티켓 스텁 절취' });
-    fireEvent.click(stubChipInLanding);
+    fireEvent.click(stubSample());
 
-    // 즉시 커밋하면 dirtyTick이 올라 autosave-draft가 1초 뒤 draft를 써, 무드칩만 훑어본
-    // 방문자에게도 다음 방문에 랜딩이 영구히 숨는다(회귀) — 그래서 여기서 실제 state는 안 바뀐다.
-    expect(captured.components.layout).toBe('minimal');
-    expect(stubChipInLanding.getAttribute('aria-checked')).toBe('true');
-    // DesignRail의 같은 이름 라디오는 진짜 state(minimal)를 그대로 반영 — 랜딩 히어로와 갈린다.
-    const allStubRadios = screen.getAllByRole('radio', { name: 'Stub · 티켓 스텁 절취' });
-    expect(allStubRadios.length).toBeGreaterThan(1);
-    const outsideLanding = allStubRadios.filter((r) => r !== stubChipInLanding);
-    expect(outsideLanding.length).toBeGreaterThan(0);
-    for (const radio of outsideLanding) {
-      expect(radio.getAttribute('aria-checked')).toBe('false');
-    }
+    expect(captured.components.layout).toBe('stub');
+  });
 
-    // 무드 탐색은 이탈이 아니다 — 랜딩은 여전히 오버레이로 남는다.
+  test('클릭이 랜딩 오버레이를 걷는다 — 훑어보기용 중간 상태 없이 바로 편집 화면 진입', () => {
+    render(<Harness />);
     expect(landing().classList.contains('fixed')).toBe(true);
-  });
 
-  test('"직접 입력"으로 진입하는 순간 훑어보던 무드가 진짜 state에 커밋된다', () => {
-    render(<Harness />);
-    fireEvent.click(within(landing()).getByRole('radio', { name: 'Stub · 티켓 스텁 절취' }));
-    expect(captured.components.layout).toBe('minimal'); // 아직 커밋 전
+    fireEvent.click(stubSample());
 
-    fireEvent.click(screen.getByTestId('landing-skip-poster'));
-
-    // 진입 시점에 셸이 실제 state로 흘려보낸다 — 이후 크롭 프리셋·에디터가 이 무드를 쓴다(#529).
-    expect(captured.components.layout).toBe('stub');
-  });
-
-  test('"포스터부터 올리기"로 진입하는 순간에도 커밋된다', () => {
-    render(<Harness />);
-    fireEvent.click(within(landing()).getByRole('radio', { name: 'Stub · 티켓 스텁 절취' }));
-
-    fireEvent.click(screen.getByRole('button', { name: '포스터부터 올리기' }));
-
-    expect(captured.components.layout).toBe('stub');
-  });
-
-  // 데스크톱 드래그드롭도 랜딩을 벗어나는 네 번째 경로다(#607) — CTA 클릭 3종만 잡으면 놓친다
-  // (2차 fresh-context 리뷰가 잡은 회귀).
-  test('랜딩에 포스터 파일을 드롭해 진입할 때도 커밋된다', () => {
-    render(<Harness />);
-    fireEvent.click(within(landing()).getByRole('radio', { name: 'Stub · 티켓 스텁 절취' }));
-    expect(captured.components.layout).toBe('minimal'); // 아직 커밋 전
-
-    fireEvent.drop(landing(), {
-      dataTransfer: { files: [new File(['x'], 'poster.png', { type: 'image/png' })] },
-    });
-
-    expect(captured.components.layout).toBe('stub');
+    expect(landing().classList.contains('fixed')).toBe(false);
   });
 });
 
-// draft 복원(usePhototicket 마운트 후 useEffect, 비동기)이 heroLayout의 useState 초기화보다
-// 늦게 끝나면, 무드칩을 한 번도 안 건드린 재방문자가 "직접 입력"·"포스터부터 올리기"를 눌렀을 때
-// commitHeroLayout이 굳어 있던 기본값('minimal')으로 복원된 무드를 되돌려버린다(fresh-context
-// 리뷰 P0). MobileEditorShell의 draftRestored 재동기화 effect가 이걸 막는지 검증한다.
-describe('draft 복원 무드가 진입 시 덮이지 않는다 (fresh-context 리뷰 P0)', () => {
+// 블랙박스 명제로만 남긴다 — 예전엔 이 자리가 heroLayout useState 초기화 레이스와 draftRestored
+// 재동기화 effect라는 특정 구현을 잠갔지만, #615 개정이 그 미러 단계를 통째로 지웠다(진입 CTA는
+// 이제 layout을 아예 안 건드린다). 구현을 지목하던 옛 서술을 그대로 두면 없는 코드를 설명하는
+// 주석이 되므로, "재방문자의 복원된 무드가 진입만으로 기본값으로 되돌아가지 않는다"는 사용자
+// 관측 명제만 남긴다 — 어떤 구현으로 가든 지켜져야 하는 계약이다.
+describe('복원된 draft의 무드가 진입만으로 되돌아가지 않는다 (#615)', () => {
   const STORAGE_KEY = 'filme:phototicket:v1';
 
   afterEach(() => {
@@ -158,9 +122,55 @@ describe('draft 복원 무드가 진입 시 덮이지 않는다 (fresh-context �
 
     fireEvent.click(screen.getByTestId('landing-skip-poster'));
 
-    // commitHeroLayout이 heroLayout(재동기화됐다면 'stub')과 실제 state('stub')가 같다고 보고
-    // no-op해야 한다 — 재동기화가 안 됐다면 heroLayout이 'minimal'에 굳어 있어 여기서 되돌아간다.
     expect(captured.components.layout).toBe('stub');
+  });
+});
+
+/**
+ * 같은 무드 재탭이 draft를 쓰면 안 된다(#615 fresh-context 리뷰) — `updateComponents`는 값이
+ * 같아도 dirtyTick을 올리고, 그러면 1초 디바운스 뒤 autosave가 draft를 써서 **다음 방문부터**
+ * `draftRestored=true`로 랜딩(마케팅 카피·OCR 주 CTA)이 영구히 안 뜬다. 갤러리 첫 카드가 현재
+ * 무드(minimal)라 오탭 한 번의 대가가 그거였다. 폐기된 `commitHeroLayout`의 동일값 가드를
+ * 셸의 `onEnterMood`로 되살린 게 이 테스트가 잠그는 것.
+ *
+ * 두 번째 테스트가 짝이다 — 가드가 "아무것도 저장 안 함"으로 과하게 걸리면 실제 무드 변경까지
+ * 안 남을 텐데, 그러면 그쪽이 깨진다.
+ */
+describe('갤러리 동일 무드 재탭은 draft를 만들지 않는다 (#615)', () => {
+  const STORAGE_KEY = 'filme:phototicket:v1';
+  const sampleFor = (name: string) =>
+    within(landing()).getByRole('button', { name: new RegExp(`^${name} 무드로 바로 시작`) });
+
+  afterEach(() => {
+    jest.useRealTimers();
+    localStorage.clear();
+  });
+
+  test('이미 켜져 있는 무드 카드를 눌러도 autosave가 draft를 안 쓴다', () => {
+    jest.useFakeTimers();
+    render(<Harness />);
+    expect(captured.components.layout).toBe('minimal');
+
+    fireEvent.click(sampleFor('Minimal'));
+
+    // 디바운스(1s) + 여유. 가드가 없으면 dirtyTick이 올라 여기서 draft가 쓰인다.
+    act(() => jest.advanceTimersByTime(2000));
+
+    expect(localStorage.getItem(STORAGE_KEY)).toBe(null);
+    // 진입 자체는 정상적으로 일어나야 한다 — 가드는 저장만 막지 화면 전환을 막지 않는다.
+    expect(landing().classList.contains('fixed')).toBe(false);
+  });
+
+  test('다른 무드 카드를 누르면 draft가 쓰인다 — 가드가 저장 자체를 막은 게 아니다', () => {
+    jest.useFakeTimers();
+    render(<Harness />);
+
+    fireEvent.click(sampleFor('Stub'));
+    act(() => jest.advanceTimersByTime(2000));
+
+    const raw = localStorage.getItem(STORAGE_KEY);
+    expect(raw).not.toBe(null);
+    expect(JSON.parse(raw!).components.layout).toBe('stub');
   });
 });
 
@@ -181,18 +191,18 @@ describe('드롭존 진입이 debounce된 previewComponents가 아니라 실시�
     return <MobileEditorShell {...mobileShellProps(photo, { previewComponents: staleComponents })} />;
   }
 
-  test('가로 슬롯 무드로 갈아탄 직후 드롭해도 크롭 모달이 가로 프리셋(1.5)으로 연다', async () => {
+  test('가로 슬롯 무드 샘플을 고른 직후 드롭해도 크롭 모달이 가로 프리셋(1.5)으로 연다', async () => {
     let photo!: ReturnType<typeof usePhototicket>;
     render(<DropRaceHarness onPhoto={(p) => { photo = p; }} />);
     expect(photo.state.components.layout).toBe('minimal'); // 기본값 — 세로 슬롯
 
-    fireEvent.click(within(landing()).getByRole('radio', { name: 'Stub · 티켓 스텁 절취' }));
+    fireEvent.click(within(landing()).getByRole('button', { name: /^Stub 무드로 바로 시작/ }));
 
     fireEvent.drop(landing(), {
       dataTransfer: { files: [new File(['x'], 'poster.png', { type: 'image/png' })] },
     });
 
-    // commitHeroLayout이 먼저 실제 state를 'stub'으로 바꿨는지 확인 — previewComponents(고정된
+    // 갤러리 클릭이 먼저 실제 state를 'stub'으로 바꿨는지 확인 — previewComponents(고정된
     // 'minimal')와 갈라진 게 이 테스트의 전제다.
     expect(photo.state.components.layout).toBe('stub');
 
@@ -204,29 +214,82 @@ describe('드롭존 진입이 debounce된 previewComponents가 아니라 실시�
   });
 });
 
-// heroLayout은 초기화(handleClearTap) 경로에서 재동기화되지 않았다(claude-review PR #636 3차
-// P0) — 편집 중 바꾼 무드가 로컬 미러에 남은 채로 clearDraft가 실제 state만 'minimal'로 되돌리면,
-// 리셋 직후 재진입에서 commitHeroLayout이 리셋 직전 무드를 되살린다.
-describe('초기화(#310)가 heroLayout도 함께 되돌린다 (claude-review PR #636 3차 P0)', () => {
-  test('편집 중 바꾼 무드로 진입했다가 초기화하면, 재진입 시 리셋 직전 무드가 되살아나지 않는다', async () => {
-    const user = userEvent.setup();
+/**
+ * 캐러셀 손짓 3종(#615, 2026-08-08) — 탭/길게 누름/스와이프를 시간과 거리로 가른다. 자동 전환은
+ * 정지 대상이 아니라(시각 효과) 길게 누름이 늦출 뿐이고, 여기서 잠그는 건 **손짓이 서로를
+ * 오염시키지 않는다**는 것: 넘기려던 손짓과 천천히 보려던 손짓이 편집 화면 진입으로 떨어지면
+ * 사용자는 되돌리기 위해 초기화까지 가야 한다.
+ */
+describe('캐러셀 손짓 — 탭만 진입시킨다 (#615)', () => {
+  const gallery = () => within(landing()).getByTestId('mood-gallery');
+  const minimalCard = () =>
+    within(gallery()).getByRole('button', { name: /^Minimal 무드로 바로 시작/ });
+
+  test('그냥 탭하면 그 무드로 진입한다', () => {
     render(<Harness />);
+    const card = minimalCard();
 
-    // 무드를 'stub'으로 골라 랜딩에서 커밋 — heroLayout이 'stub'으로 굳는다.
-    fireEvent.click(within(landing()).getByRole('radio', { name: 'Stub · 티켓 스텁 절취' }));
-    fireEvent.click(screen.getByTestId('landing-skip-poster'));
-    expect(captured.components.layout).toBe('stub');
+    fireEvent.pointerDown(card, { clientX: 100 });
+    fireEvent.pointerUp(card, { clientX: 100 });
+    fireEvent.click(card);
 
-    // 초기화 2탭(#374 arm) — clearDraft가 실제 state를 'minimal'로 되돌린다.
-    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
-    await user.click(screen.getByRole('button', { name: '초기화' }));
-    await new Promise((r) => setTimeout(r, 400));
-    await user.click(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' }));
+    expect(landing().classList.contains('fixed')).toBe(false);
+  });
+
+  /** 지금 가운데 선 카드 — 중앙 슬롯만 불투명도 1이다(CAROUSEL_SLOTS). */
+  const centered = () =>
+    (Array.from(gallery().querySelectorAll('button[data-touch]')) as HTMLElement[])
+      .find((b) => b.style.opacity === '1')!
+      .getAttribute('aria-label')!
+      .split(' 무드로')[0];
+
+  test('왼쪽으로 끌면 다음 무드가 중앙으로 오고, 손을 떼도 진입하지 않는다', () => {
+    render(<Harness />);
+    const card = minimalCard();
+    expect(centered()).toBe('Minimal');
+
+    fireEvent.pointerDown(gallery(), { clientX: 200 });
+    fireEvent.pointerMove(gallery(), { clientX: 140 }); // 임계값(28px) 초과
+    fireEvent.pointerUp(gallery(), { clientX: 140 });
+    fireEvent.click(card);
+
+    // 끈 방향(왼쪽)으로 한 칸 — GALLERY_LAYOUTS 순서상 Minimal 다음은 Criterion이다.
+    expect(centered()).toBe('Criterion');
+    // 그리고 랜딩은 그대로 떠 있어야 한다 — 넘기려던 손짓이 진입으로 새면 안 된다.
+    expect(landing().classList.contains('fixed')).toBe(true);
     expect(captured.components.layout).toBe('minimal');
+  });
 
-    // 랜딩이 다시 뜨고, 무드칩을 안 건드린 채 바로 재진입 — heroLayout이 같이 리셋 안 됐다면
-    // commitHeroLayout이 여기서 'stub'을 되살린다.
-    fireEvent.click(screen.getByTestId('landing-skip-poster'));
-    expect(captured.components.layout).toBe('minimal');
+  test('오른쪽으로 끌면 반대 방향으로 넘어간다', () => {
+    render(<Harness />);
+    expect(centered()).toBe('Minimal');
+
+    fireEvent.pointerDown(gallery(), { clientX: 140 });
+    fireEvent.pointerMove(gallery(), { clientX: 200 });
+
+    // 목록의 처음에서 뒤로 가면 마지막으로 감긴다(원형).
+    expect(centered()).toBe('Stub');
+  });
+
+  test('길게 누르고 떼면 진입하지 않는다 — 천천히 보려던 손짓이다', () => {
+    jest.useFakeTimers();
+    try {
+      render(<Harness />);
+      const card = minimalCard();
+
+      fireEvent.pointerDown(gallery(), { clientX: 100 });
+      act(() => jest.advanceTimersByTime(500)); // LONG_PRESS_MS(350) 초과
+      fireEvent.pointerUp(gallery(), { clientX: 100 });
+      fireEvent.click(card);
+
+      expect(landing().classList.contains('fixed')).toBe(true);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test('세로 페이지 스크롤은 캐러셀이 가로채지 않는다 (touch-action: pan-y)', () => {
+    render(<Harness />);
+    expect((gallery() as HTMLElement).style.touchAction).toBe('pan-y');
   });
 });

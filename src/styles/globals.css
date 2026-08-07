@@ -29,6 +29,10 @@
        fg-faint로 실제 문장 텍스트를 그리던 자리(고지·힌트·로딩 라벨 등)는 fg-muted로 옮겼다. */
     --fg-muted: #64707F;
     --fg-faint: #818C99;
+    /* 랜딩 전용(#615) — 랜딩 서브카피·이탈경로 줄에만 쓰는 로컬 오버라이드(#606673, --bg 위
+       5.24:1). #650이 --fg-muted를 4.62:1로 다크닝하기 전엔 그 값(4.43:1)이 AA 미달이라 이
+       오버라이드가 유일한 통과 경로였고, 지금은 그 위에 얹은 여유분이다. */
+    --landing-muted: #606673;
     --border: #E4E6EA;
     --border-strong: #CDD1D8;
     --accent: #B0423F;
@@ -97,6 +101,9 @@
     --fg: #E8EAED;
     --fg-muted: #9AA1AC;
     --fg-faint: #6B7280;
+    /* 다크는 --fg-muted 자체가 이미 AA를 넉넉히 넘는다(스크림 위 실측 7.32:1, #615 검증 코멘트) —
+       라이트처럼 별도로 어둡힐 필요가 없어 --fg-muted를 그대로 재사용한다. */
+    --landing-muted: var(--fg-muted);
     --border: #272D30;
     --border-strong: #353D41;
     --accent: #C45550;
