@@ -44,6 +44,25 @@ function Harness() {
 
 const landing = () => screen.getByTestId('landing');
 
+/** __tests__/landingReducedMotion.test.tsx와 동일 — 로직은 파일마다 복제하는 게 이 레포 관례다
+ *  (shellHarness.ts 주석: DRY는 반복되는 props 뼈대에만, 로직·렌더 구조는 숨기지 않는다). */
+function stubReducedMotion(matches: boolean) {
+  const original = window.matchMedia;
+  window.matchMedia = ((query: string) => ({
+    matches: query.includes('prefers-reduced-motion') ? matches : false,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  })) as typeof window.matchMedia;
+  return () => {
+    window.matchMedia = original;
+  };
+}
+
 beforeEach(() => window.localStorage.clear());
 afterEach(() => {
   cleanup();
@@ -111,5 +130,25 @@ describe('랜딩 히어로 갤러리 탭 타깃 (#615, WCAG 2.2 SC 2.5.8 AA)', (
     // 히어로엔 무드 카드 말고 다른 컨트롤을 두지 않는다(사용자 결정 2026-08-08) — 좌우 이동
     // 버튼·인디케이터를 다시 넣으면 여기서 걸린다.
     expect(within(gallery).getAllByRole('button')).toHaveLength(GALLERY_LAYOUTS.length);
+  });
+
+  test('reduced-motion 그리드 카드도 24px 하한을 넘는다(GRID_CARD_WIDTH, #653)', () => {
+    // 캐러셀 트랙(TRACK_CARD_WIDTH=140)만 위에서 잰다 — reduced-motion 폴백은 별도 상수
+    // (GRID_CARD_WIDTH=92)를 쓰는 별도 분기(Landing.tsx)라 여기서 안 줄어드는지 따로 잠가야 한다.
+    const restore = stubReducedMotion(true);
+    try {
+      render(<Harness />);
+      const gallery = within(landing()).getByTestId('mood-gallery');
+      const buttons = Array.from(gallery.querySelectorAll('button[data-touch]'));
+      expect(buttons.length).toBe(GALLERY_LAYOUTS.length);
+      for (const button of buttons) {
+        const card = button.firstElementChild;
+        if (!card) throw new Error('그리드 카드에 안쪽 div가 없다');
+        // expectMeetsAA가 MIN_AA(24px) 미달이면 던진다 — GRID_CARD_WIDTH를 그 밑으로 줄이면 여기서 죽는다.
+        expectMeetsAA(card, `그리드 카드 ${button.getAttribute('aria-label')}`);
+      }
+    } finally {
+      restore();
+    }
   });
 });
