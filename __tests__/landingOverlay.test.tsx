@@ -18,6 +18,7 @@
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
 import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { UNOFFICIAL_TICKET_NOTICE } from '@/utils/ticketCleanup';
+import { GALLERY_LAYOUTS } from '@/components/v2/Landing';
 import { mobileShellProps } from './shellHarness';
 
 const { usePhototicket } = require('@/hooks/usePhototicket') as typeof import('@/hooks/usePhototicket');
@@ -63,13 +64,15 @@ describe('랜딩 오버레이(#614)', () => {
     expect(ocrButton()).toBeDefined();
     expect(screen.getByRole('button', { name: '포스터부터 올리기' })).toBeDefined();
     expect(screen.getByTestId('landing-skip-poster').textContent).toBe('직접 입력');
-    // 히어로 auto-scroll 갤러리(#615, 2026-08-04 개정) — 무드칩 대신 6종 샘플이 랜딩에 함께 뜬다.
+    // 히어로 auto-scroll 갤러리(#615, 2026-08-04 개정) — 무드칩 대신 무드 샘플이 랜딩에 함께 뜬다.
+    // 목록은 LAYOUTS 전체가 아니라 GALLERY_LAYOUTS다(35mm Wide 제외, 2026-08-08 사용자 피드백).
     // 각 샘플은 role 없는 순수 button(라디오그룹이 아니다, Landing.tsx 컴포넌트 주석). seamless
     // loop를 위해 DOM엔 이름당 두 벌이 있지만 뒤 절반은 aria-hidden(fresh-context 리뷰 지적)이라
     // role 쿼리엔 하나씩만 잡혀야 정상이다.
-    for (const name of ['Minimal', 'Criterion', '35mm', 'Editorial', 'Stub', '35mm Wide']) {
-      expect(within(landing()).getAllByRole('button', { name: new RegExp(`^${name} 무드로 바로 시작`) })).toHaveLength(1);
+    for (const layout of GALLERY_LAYOUTS) {
+      expect(within(landing()).getAllByRole('button', { name: new RegExp(`^${layout.label} 무드로 바로 시작`) })).toHaveLength(1);
     }
+    expect(within(landing()).queryAllByRole('button', { name: /^35mm Wide 무드로 바로 시작/ })).toHaveLength(0);
   });
 
   test('드래프가 복원되면 오버레이를 생략하되 진입 컨트롤은 본문에 남는다 (D7)', () => {
