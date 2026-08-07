@@ -22,10 +22,16 @@ const GRID_CARD_WIDTH = 92;
  * 자산 없이 만족한다.
  *
  * **정적 webp로 굽지 않는다** — 한때 같은 그리드를 `public/assets/landing/backdrop-tiles.webp`로
- * 구워 번들했지만 뺐다: 구운 시트는 굽는 시점의 한 테마로 고정되는데 이 라이브 렌더는 테마별
- * 대비를 스스로 맞춰서, `<img>`로 갈아끼우면 라이트 테마가 깨진다(연결할 수 없는 자산이었고
- * `LAYOUTS`/`MOOD_CHIP_BG` 변경에 조용히 stale해지기까지 했다). 24 div의 렌더 비용이 실측으로
- * 문제가 되면 그때 테마별 두 장을 굽는 것부터 다시 설계할 것 — 한 장으로는 안 된다.
+ * 구워 번들했지만 뺐다. 이유는 원리적 제약이 아니라 값어치다: 소비처가 0인 채로 번들에만 남아
+ * 있었고(`Landing.tsx`는 계속 이 라이브 div를 그렸다), 수동 번들이라 `LAYOUTS`/`MOOD_CHIP_BG`가
+ * 바뀌면 조용히 stale해지는데, 정작 대체 대상인 24 div는 전부 CSS 그라디언트라 아낄 비용이
+ * 없었다.
+ *
+ * 되살릴 거면 알아야 할 것: `MOOD_CHIP_BG`는 하드코딩 색이라 테마와 무관하고, 이 레이어의 유일한
+ * 테마 의존은 `opacity-20`이 그 아래 `bg-bg`와 합성되는 것뿐이다. 삭제된 굽기 스크립트는 그 합성을
+ * 이미 마친 불투명 스크린샷을 떠서 한 테마에 굳었던 거라, `omitBackground`로 알파를 살려 구우면
+ * 브라우저가 같은 20% 합성을 테마별로 해준다 — 즉 **한 장으로도 된다**. 24 div의 렌더 비용이
+ * 실측으로 문제가 될 때 그 방식으로 다시 열 것.
  *
  * 프레임 안/밖(#612 열린 결정) — **안**으로 결정. 모바일(레일 미만 폭)에서는 PhoneFrame
  * 자체가 뷰포트와 같은 사각형이라(#607) 안/밖 차이가 없고, 밖으로 빼려면 PhoneFrame의
@@ -206,8 +212,8 @@ function MoodAutoScrollGallery({
  * 나란한 **다섯 번째** 진입점이다(#631 경로, 같은 canvasReady 커밋). 크롭 프리셋
  * (`ImageCropModal`이 읽는 `posterOrientation`)이 랜딩에서 고른 무드와 어긋나지 않는 이유(#529)도
  * 동일 — 무드가 커밋된 채로 편집에 들어가므로 재크롭 없이 방향이 맞다. 배경 타일 그리드는
- * `LandingBackdropTiles`(위) 참고 — #613 실물 자산 부재로 placeholder(landing-epic-cta #615에서
- * 이식).
+ * `LandingBackdropTiles`(위) 참고 — 자산 대기 중인 placeholder가 아니라 라이브 렌더가 완성형이다
+ * (#613이 아직 막고 있는 건 전경 `hero-*.webp` 6장뿐이다).
  */
 export function Landing({
   mode,

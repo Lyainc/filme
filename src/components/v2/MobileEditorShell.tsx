@@ -943,6 +943,11 @@ export function MobileEditorShell({
               // 안 뜬다(#615 fresh-context 리뷰). 첫 카드는 현재 무드라 오탭 한 번의 대가가 그거였다.
               // 폐기된 commitHeroLayout에 있던 동일값 가드를 이 자리로 되살린다 — 비교 대상은
               // previewComponents(280ms debounce)가 아니라 실시간 state여야 방금 바꾼 무드를 읽는다.
+              //
+              // **다른 무드 탭에는 일부러 안 건다.** 그쪽도 같은 경로로 draft를 쓰지만 그건 버그가
+              // 아니라 autosave가 하라는 일이다 — 사용자가 실제로 고른 선택이라 다음 방문에 그
+              // 무드로 돌아오는 게 맞다. 막아야 할 건 "아무것도 안 고른 탭이 상태를 만드는 것"
+              // 하나뿐이고, 그래서 가드가 동일값에만 걸린다(claude-review가 물은 비대칭의 답).
               if (id !== photo.state.components.layout) photo.updateComponents({ layout: id });
               setLandingDismissed(true);
             }}
