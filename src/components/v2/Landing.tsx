@@ -17,21 +17,26 @@ const TRACK_CARD_WIDTH = 140;
 const GRID_CARD_WIDTH = 92;
 /** 트랙 카드 높이 — 갤러리 카드는 무드와 무관하게 전부 세로 무드 비율로 선다(아래 GALLERY_ROTATED). */
 const CARD_HEIGHT = (TRACK_CARD_WIDTH * 1534) / 960;
-/** 자동 전환 간격 — 시안에서 고른 '보통' 속도(사용자 확인 2026-08-08). */
-const CAROUSEL_INTERVAL_MS = 2600;
+/** 자동 전환 간격 — 티켓 한 장을 알아볼 시간을 넉넉히 준다(사용자 확인 2026-08-08). */
+const CAROUSEL_INTERVAL_MS = 3500;
+/** 자리 이동에 걸리는 시간 — 시안(620ms)의 2배. 간격과 같은 이유로 느긋하게 간다. */
+const CAROUSEL_TRANSITION_MS = 1240;
 /**
  * 중앙에서 n칸 떨어진 카드의 자리. `x`는 px이 아니라 **카드 폭의 배수**라 `TRACK_CARD_WIDTH`를
  * 바꿔도 배치 비율이 그대로 따라온다.
  *
- * 시안 3종(코브플로 / 평면 원근 / 겹친 묶음) 중 **평면 원근**을 고르고 폭만 겹친 묶음 쪽으로
- * 좁힌 값이다(사용자 선택 2026-08-08). 기울이지 않는 게 핵심 — 이 캐러셀의 목적이 무드가
- * 어떻게 생겼는지 보여주는 거라, rotateY로 티켓 조판을 사다리꼴로 찌그러뜨리면 그 목적을
- * 스스로 깎는다. 거리는 크기·불투명도·흐림 셋으로만 만든다.
+ * 시안 3종(코브플로 / 평면 원근 / 겹친 묶음) 중 **평면 원근**을 고르고, 폭은 평면 원근과 겹친
+ * 묶음의 중간에 둔다(사용자 조정 2026-08-08 — 처음엔 겹친 묶음 쪽에 더 붙였는데 너무 좁았다).
+ * 시안 기준 배수로 평면 원근이 0.70/1.20, 겹친 묶음이 0.41/0.70이고 아래가 그 사이다.
+ *
+ * 기울이지 않는 게 핵심 — 이 캐러셀의 목적이 무드가 어떻게 생겼는지 보여주는 거라, rotateY로
+ * 티켓 조판을 사다리꼴로 찌그러뜨리면 그 목적을 스스로 깎는다. 거리는 크기·불투명도·흐림
+ * 셋으로만 만든다.
  */
 const CAROUSEL_SLOTS = [
   { x: 0, scale: 1, opacity: 1, blur: 0, z: 3 },
-  { x: 0.59, scale: 0.78, opacity: 0.5, blur: 1.1, z: 2 },
-  { x: 1.01, scale: 0.6, opacity: 0.22, blur: 2.2, z: 1 },
+  { x: 0.64, scale: 0.78, opacity: 0.5, blur: 1.1, z: 2 },
+  { x: 1.1, scale: 0.6, opacity: 0.27, blur: 2.2, z: 1 },
 ] as const;
 
 /**
@@ -118,9 +123,13 @@ function LandingBackdropTiles() {
  * 두고 `transform`만 바꾸므로 그 복제와 예외 처리가 통째로 사라졌다 — 세트 경계에서 6px씩 튀던
  * 루프 스냅(트랙 폭 50%가 실제 세트 경계와 안 맞던 문제)도 같이 없어졌다.
  *
- * **대신 "지금 어느 무드가 중앙인가"라는 상태가 새로 생겼다.** 그게 이 개편이 지불한 값이고,
- * 자동 전환을 멈출 수단이 함께 필요해진 이유다: 포인터·키보드는 hover/focus로, 터치는 좌우
- * 버튼으로 멈춘다(SC 2.2.2 — marquee 시절엔 hover뿐이라 터치에서 성립하지 않던 갭이다).
+ * **대신 "지금 어느 무드가 중앙인가"라는 상태가 새로 생겼다.** 그게 이 개편이 지불한 값이다.
+ *
+ * **정지 수단은 hover/focus뿐이다** — 좌우 이동 버튼을 한 번 넣었다가 뺐다(사용자 결정
+ * 2026-08-08: 히어로에 컨트롤을 두지 않고 단순하게). 그래서 터치 사용자에게는 SC 2.2.2를
+ * 만족시킬 수단이 없다는 걸 알고 남긴 상태다 — marquee 시절과 같은 갭이고, 닫으려면 컨트롤을
+ * 되살리거나(그때 뺀 이유와 충돌) 자동 전환을 아예 없애야 한다. 대신 전환 간격·속도를 넉넉히
+ * 잡아(3.5초 / 1.24초) 따라가기 어려운 정도는 낮췄다.
  *
  * **탭 타깃과 눌림 피드백이 서로 다른 엘리먼트에 산다** — `<button>`은 `active:scale-[0.97]`을
  * 들고 있어(PrimaryCta·OcrUploadCard와 동일 패턴) `__tests__/tapTargets.ts`의 변형 금지 정규식
@@ -148,18 +157,16 @@ function MoodCarousel({
   // 지금 가운데 선 무드. 캐러셀이 되면서 "어느 무드가 중앙인가"라는 상태가 새로 생겼다 —
   // marquee엔 없던 것이라 이게 이 개편의 유일한 새 state다.
   const [active, setActive] = useState(0);
-  // 자동 전환을 사용자가 껐는가(좌우 버튼) — 껐으면 다시 안 켠다.
-  const [autoAdvance, setAutoAdvance] = useState(true);
   const [hovering, setHovering] = useState(false);
 
   useEffect(() => {
-    if (prefersReducedMotion || !autoAdvance || hovering) return;
+    if (prefersReducedMotion || hovering) return;
     const id = setInterval(
       () => setActive((i) => (i + 1) % GALLERY_LAYOUTS.length),
       CAROUSEL_INTERVAL_MS,
     );
     return () => clearInterval(id);
-  }, [prefersReducedMotion, autoAdvance, hovering]);
+  }, [prefersReducedMotion, hovering]);
 
   // 무드별 components를 렌더마다 새로 만들면 `TicketRenderer`의 memo가 12벌 전부 miss한다
   // (fresh-context 리뷰 P1) — `Landing`은 memo가 아니고 셸에서 `onEnterMood`·`children` 등이
@@ -201,7 +208,7 @@ function MoodCarousel({
           filter: s.blur ? `blur(${s.blur}px)` : undefined,
           transform: `translateX(${Math.sign(d) * s.x * width}px) scale(${s.scale})`,
           transitionProperty: 'transform, opacity, filter',
-          transitionDuration: '620ms',
+          transitionDuration: `${CAROUSEL_TRANSITION_MS}ms`,
           transitionTimingFunction: 'cubic-bezier(.22,.61,.36,1)',
         }
       : undefined;
@@ -274,29 +281,6 @@ function MoodCarousel({
       onBlur={() => setHovering(false)}
     >
       {GALLERY_LAYOUTS.map((layout, i) => sample(layout, i, layout.id, TRACK_CARD_WIDTH, true))}
-
-      {/* 좌우 이동 — 터치 사용자의 유일한 정지 수단이라 장식이 아니다. 한 번 누르면 자동 전환이
-          영구히 꺼진다(다시 켜지 않는다): 직접 넘기기 시작한 사용자에게 카드가 다시 저 혼자
-          움직이면 방금 맞춰둔 자리를 뺏긴다. */}
-      {([['prev', -1, '이전'], ['next', 1, '다음']] as const).map(([side, delta, label]) => (
-        <button
-          key={side}
-          type="button"
-          data-testid={`mood-carousel-${side}`}
-          aria-label={`${label} 무드 보기`}
-          onClick={() => {
-            setAutoAdvance(false);
-            setActive((i) => (i + delta + GALLERY_LAYOUTS.length) % GALLERY_LAYOUTS.length);
-          }}
-          className={`absolute top-1/2 z-[4] flex min-h-touch w-11 -translate-y-1/2 items-center justify-center text-landing-muted ${
-            side === 'prev' ? 'left-0' : 'right-0'
-          }`}
-        >
-          <span aria-hidden="true" className="text-body leading-none">
-            {side === 'prev' ? '‹' : '›'}
-          </span>
-        </button>
-      ))}
     </div>
   );
 }

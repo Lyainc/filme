@@ -97,19 +97,8 @@ describe('랜딩 히어로 갤러리 탭 타깃 (#615, WCAG 2.2 SC 2.5.8 AA)', (
     // 애초에 한 벌뿐이라 그 예외가 없어야 정상이다 — 남아 있으면 처리가 덜 걷힌 것이다.
     expect(gallery.querySelectorAll('button[aria-hidden="true"]')).toHaveLength(0);
     expect(gallery.querySelectorAll('button[tabindex="-1"]')).toHaveLength(0);
-    // 무드 카드 + 좌우 이동 버튼 둘.
-    expect(within(gallery).getAllByRole('button')).toHaveLength(GALLERY_LAYOUTS.length + 2);
-  });
-
-  test('터치에서도 자동 전환을 멈출 수 있다 — 좌우 버튼이 hover 없는 유일한 수단이다 (SC 2.2.2)', () => {
-    render(<Harness />);
-
-    const gallery = within(landing()).getByTestId('mood-gallery');
-    for (const side of ['prev', 'next']) {
-      const btn = within(gallery).getByTestId(`mood-carousel-${side}`);
-      // 44px 하한 — 같은 파일의 카드와 같은 기준(#646).
-      expect(btn.className).toContain('min-h-touch');
-      expect(btn.getAttribute('aria-label')).toMatch(/무드 보기$/);
-    }
+    // 히어로엔 무드 카드 말고 다른 컨트롤을 두지 않는다(사용자 결정 2026-08-08) — 좌우 이동
+    // 버튼·인디케이터를 다시 넣으면 여기서 걸린다.
+    expect(within(gallery).getAllByRole('button')).toHaveLength(GALLERY_LAYOUTS.length);
   });
 });
