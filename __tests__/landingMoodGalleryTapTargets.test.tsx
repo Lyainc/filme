@@ -15,6 +15,15 @@
  * 그 반대인 "전부 같은 비율"을 잠근다.
  *
  * 실제 렌더 px는 브라우저 실측 몫이다(measure-chrome.mjs).
+ *
+ * **TicketRenderer 자신의 scale 보정은 이 스윕 대상이 아니다**(#653). `TicketRenderer`는 카드
+ * 컨테이너의 `clientWidth`로 무드 캔버스(960px 폭)를 카드 폭(140px)에 맞춰 축소하는데, 실브라우저면
+ * 그 비율(~0.146)이 1 미만이라 `assertNoShrink`의 "인라인 scale 축소 금지" 규칙에 그대로 걸린다 —
+ * 그런데 그건 탭 타깃을 몰래 줄이는 우회가 아니라 렌더 엔진의 정상 동작이고, 카드의 실제 탭
+ * 영역(`expectMeetsAA`가 재는 `card` 자신의 width/height)은 `overflow:hidden`으로 이미 고정돼 있어
+ * 안쪽 축소와 무관하다. happy-dom은 `clientWidth`가 항상 0이라 이 축소가 1로 읽혀 지금까지
+ * 우연히 안 걸렸을 뿐이다(실측 대조는 scripts/measure-chrome.mjs로 옮겼다) — 그래서 이 스윕은
+ * `TicketRenderer`가 자신에게 다는 `[data-ticket-scale-wrapper]` 마커를 만나면 건너뛴다.
  */
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
 import { render, screen, cleanup, within } from '@testing-library/react';
@@ -60,6 +69,8 @@ describe('랜딩 히어로 갤러리 탭 타깃 (#615, WCAG 2.2 SC 2.5.8 AA)', (
       const card = button.firstElementChild;
       if (!card) throw new Error('갤러리 버튼에 카드 div가 없다');
       for (const el of [card, ...Array.from(card.querySelectorAll('*'))]) {
+        // 위 파일 주석 — TicketRenderer 자신의 scale 보정은 탭 타깃 축소가 아니다.
+        if (el.hasAttribute('data-ticket-scale-wrapper')) continue;
         assertNoShrink(el, `갤러리 카드 ${label}`);
       }
       const { w, h } = expectMeetsAA(card, `갤러리 카드 ${label}`);
