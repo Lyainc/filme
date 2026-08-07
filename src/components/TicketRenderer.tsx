@@ -93,6 +93,10 @@ const TicketRenderer = memo(forwardRef<HTMLDivElement, TicketRendererProps>(func
     >
       <div
         ref={ref}
+        // happy-dom엔 실 레이아웃이 없어 clientWidth가 항상 0이라 위 scale이 초기값 1에 고정된다
+        // (실브라우저에선 컨테이너 폭에 맞춰 <1로 보정). __tests__/landingMoodGalleryTapTargets.test.tsx의
+        // 탭 타깃 축소 스윕이 이 마커를 보고 스킵한다 — 실 폭·비율은 scripts/measure-chrome.mjs가 잰다.
+        data-ticket-scale-wrapper
         style={{
           position: 'absolute',
           top: 0,
