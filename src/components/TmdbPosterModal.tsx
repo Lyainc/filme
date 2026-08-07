@@ -150,7 +150,11 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
           WebkitBackdropFilter: 'blur(13px)',
         }}
       >
-        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-line px-4 py-3">
+        {/* 패널 자체는 --overlay-fill 유리다 — muted 잉크가 섞인 행은 불투명 표면에 얹는다
+            (FieldDrawer/AdvancedSettingsModal과 같은 근거, globals.css:15-22, #656). 헤더·귀속
+            표시는 이미 테두리로 나뉜 전폭 바라 bg-surface 하나만 더하면 되고, 본문 메시지·목록은
+            아래에서 개별 카드로 감싼다. */}
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-line bg-surface px-4 py-3">
           {view === 'posters' ? (
             <button
               type="button"
@@ -201,21 +205,29 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
                 </button>
               </form>
 
-              {searchError && <p className="mt-3 text-body text-fg-muted">{searchError}</p>}
-
               {/* searchError 하나로 충분하다 — runSearch가 결과 0건일 때도 이걸 세팅하므로
-                  "검색 전 초기 상태"(results도 비어 있다)와 "검색했지만 0건"이 안 섞인다. */}
+                  "검색 전 초기 상태"(results도 비어 있다)와 "검색했지만 0건"이 안 섞인다.
+                  muted·accent 잉크가 섞이므로 불투명 카드에 얹는다(#656) — accent는 불투명
+                  표면 위에서도 다크 테마 3.97:1로 AA(4.5:1)에 못 닿아(AdvancedSettingsModal과
+                  동일 근거) 링크 잉크를 fg로 바꿨다. */}
               {searchError && (
-                <button
-                  type="button"
-                  onClick={onFallbackUpload}
-                  className="mt-3 text-body font-medium text-accent underline"
-                >
-                  파일 업로드로 전환
-                </button>
+                <div className="mt-3 rounded-card bg-surface-elevated p-3">
+                  <p className="text-body text-fg-muted">{searchError}</p>
+                  <button
+                    type="button"
+                    onClick={onFallbackUpload}
+                    className="mt-2 text-body font-medium text-fg underline"
+                  >
+                    파일 업로드로 전환
+                  </button>
+                </div>
               )}
 
-              <ul className="mt-3 space-y-1">
+              {/* 빈 배열이면 카드를 아예 안 그린다 — results.length===0일 땐 항상 searchError가
+                  세팅돼 있어(위 주석) 이 자리에 빈 불투명 바만 뜨는 일은 없지만, 그 불변식이
+                  깨져도 빈 카드가 새로 보이면 안 된다. */}
+              {results.length > 0 && (
+              <ul className="mt-3 space-y-1 rounded-card bg-surface-elevated p-1">
                 {results.map((movie) => (
                   <li key={movie.id}>
                     <button
@@ -243,36 +255,45 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
                   </li>
                 ))}
               </ul>
+              )}
             </>
           ) : (
             <>
-              {loadingPosters && <p className="text-body text-fg-muted">포스터를 불러오는 중…</p>}
-              {applyError && <p className="text-body text-fg-muted">{applyError}</p>}
+              {/* 메시지 잉크(muted·accent)가 섞이므로 불투명 카드 하나에 몰아 얹는다(#656) —
+                  아래 셋은 서로 배타(loadingPosters가 나머지 둘을 가리고, postersError·empty는
+                  이미 !postersError로 갈라져 있다)라 카드도 하나만 뜬다. applyError는 포스터가
+                  이미 로딩된 뒤에만 세팅되므로 이 셋과 실질적으로 안 겹친다. */}
+              {(loadingPosters || applyError || postersError || posters.length === 0) && (
+                <div className="flex flex-col items-start gap-2 rounded-card bg-surface-elevated p-3">
+                  {loadingPosters && <p className="text-body text-fg-muted">포스터를 불러오는 중…</p>}
+                  {applyError && <p className="text-body text-fg-muted">{applyError}</p>}
 
-              {/* postersError(요청 실패)와 진짜 0건을 분리한다 — 안 그러면 네트워크 에러도
-                  "이 영화는 포스터가 없어요"로 잘못 안내한다. */}
-              {!loadingPosters && postersError && (
-                <div className="flex flex-col items-start gap-2">
-                  <p className="text-body text-fg-muted">{postersError}</p>
-                  <button
-                    type="button"
-                    onClick={onFallbackUpload}
-                    className="text-body font-medium text-accent underline"
-                  >
-                    파일 업로드로 전환
-                  </button>
-                </div>
-              )}
-              {!loadingPosters && !postersError && posters.length === 0 && (
-                <div className="flex flex-col items-start gap-2">
-                  <p className="text-body text-fg-muted">이 영화는 포스터가 없어요.</p>
-                  <button
-                    type="button"
-                    onClick={onFallbackUpload}
-                    className="text-body font-medium text-accent underline"
-                  >
-                    파일 업로드로 전환
-                  </button>
+                  {/* postersError(요청 실패)와 진짜 0건을 분리한다 — 안 그러면 네트워크 에러도
+                      "이 영화는 포스터가 없어요"로 잘못 안내한다. */}
+                  {!loadingPosters && postersError && (
+                    <>
+                      <p className="text-body text-fg-muted">{postersError}</p>
+                      <button
+                        type="button"
+                        onClick={onFallbackUpload}
+                        className="text-body font-medium text-fg underline"
+                      >
+                        파일 업로드로 전환
+                      </button>
+                    </>
+                  )}
+                  {!loadingPosters && !postersError && posters.length === 0 && (
+                    <>
+                      <p className="text-body text-fg-muted">이 영화는 포스터가 없어요.</p>
+                      <button
+                        type="button"
+                        onClick={onFallbackUpload}
+                        className="text-body font-medium text-fg underline"
+                      >
+                        파일 업로드로 전환
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -299,8 +320,11 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
           )}
         </div>
 
-        {/* TMDB 필수 귀속 표시(#537 c3) — 실제로 TMDB를 쓰는 화면에서만, 생성된 티켓엔 안 들어간다. */}
-        <p className="shrink-0 border-t border-line px-4 py-2 text-micro leading-snug text-fg-muted">
+        {/* TMDB 필수 귀속 표시(#537 c3) — 실제로 TMDB를 쓰는 화면에서만, 생성된 티켓엔 안 들어간다.
+            잉크는 #650/PR #655가 이미 fg-faint→fg-muted로 옮겼다(문장 텍스트는 3:1이 아니라 4.5:1
+            기준). 이 커밋은 배경만 더한다 — 불투명 표면(bg-surface, #656)이 없으면 유리(--overlay-fill)
+            위에 직접 얹혀 fg-muted 4.5:1도 못 지킨다(__tests__/tmdbPosterModalOverlayContrast.test.tsx). */}
+        <p className="shrink-0 border-t border-line bg-surface px-4 py-2 text-micro leading-snug text-fg-muted">
           This product uses the TMDB API but is not endorsed or certified by TMDB.
         </p>
       </div>
