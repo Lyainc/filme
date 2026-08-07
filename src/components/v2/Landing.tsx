@@ -1,4 +1,5 @@
 import type { DragEvent, ReactNode } from 'react';
+import { useMemo } from 'react';
 import type { LayoutId, MovieInfo, TicketComponents } from '@/types';
 import { ALL_FIELDS_ON } from '@/constants/fieldVisibility';
 import { useMatchMedia } from '@/hooks/useMatchMedia';
@@ -16,11 +17,15 @@ const TRACK_CARD_WIDTH = 140;
 const GRID_CARD_WIDTH = 92;
 
 /**
- * 배경 타일 그리드(#615) — placeholder. #613(예시 티켓 이미지 수동 제작·번들)이 아직
- * 안 끝나 실물 합성 시트가 없다 — 이번 세션 스코프 밖(#613 자체는 수동 이미지 제작 작업).
- * 대신 이미 무드를 "안 읽히는 색면"으로 추상화해 둔 `MOOD_CHIP_BG`(무드 칩과 동일 토큰,
- * #367)를 반복 타일링한다 — D5(원본 포스터 식별 불가)를 자산 없이도 만족하고, 실물 자산이
- * 오면 이 함수 본문만 `<img src="/assets/landing/backdrop-tiles.webp">`로 바꾸면 된다.
+ * 배경 타일 그리드(#615) — 자산이 아니라 라이브 렌더다. 무드를 "안 읽히는 색면"으로 추상화해
+ * 둔 `MOOD_CHIP_BG`(무드 칩과 동일 토큰, #367)를 반복 타일링해 D5(원본 포스터 식별 불가)를
+ * 자산 없이 만족한다.
+ *
+ * **정적 webp로 굽지 않는다** — 한때 같은 그리드를 `public/assets/landing/backdrop-tiles.webp`로
+ * 구워 번들했지만 뺐다: 구운 시트는 굽는 시점의 한 테마로 고정되는데 이 라이브 렌더는 테마별
+ * 대비를 스스로 맞춰서, `<img>`로 갈아끼우면 라이트 테마가 깨진다(연결할 수 없는 자산이었고
+ * `LAYOUTS`/`MOOD_CHIP_BG` 변경에 조용히 stale해지기까지 했다). 24 div의 렌더 비용이 실측으로
+ * 문제가 되면 그때 테마별 두 장을 굽는 것부터 다시 설계할 것 — 한 장으로는 안 된다.
  *
  * 프레임 안/밖(#612 열린 결정) — **안**으로 결정. 모바일(레일 미만 폭)에서는 PhoneFrame
  * 자체가 뷰포트와 같은 사각형이라(#607) 안/밖 차이가 없고, 밖으로 빼려면 PhoneFrame의
@@ -86,7 +91,19 @@ function MoodAutoScrollGallery({
 }) {
   const prefersReducedMotion = useMatchMedia('(prefers-reduced-motion: reduce)');
 
-  const sample = (layout: (typeof LAYOUTS)[number], key: string, width: number, decorative: boolean) => (
+  // 무드별 components를 렌더마다 새로 만들면 `TicketRenderer`의 memo가 12벌 전부 miss한다
+  // (fresh-context 리뷰 P1) — `Landing`은 memo가 아니고 셸에서 `onEnterMood`·`children` 등이
+  // 매번 새 값으로 내려오므로, 랜딩이 떠 있는 동안 셸 state가 한 번 바뀔 때마다(OCR
+  // `isProcessing`·토스트) 무드 트리 12벌이 통째로 재렌더됐다. `heroComponents`는 index.tsx의
+  // 280ms debounce 값이라 편집 사이엔 참조가 안 바뀌므로, 여기서 한 번 고정하면 그 재렌더가
+  // 실제 무드 변경에만 걸린다. 나머지 props(`heroMovieInfo`=실시간 state 객체, `ALL_FIELDS_ON`=
+  // 모듈 상수, `croppedImageUrl`=null, `ghost`)는 이미 참조가 안정적이다.
+  const sampleComponents = useMemo(
+    () => LAYOUTS.map((layout) => ({ ...heroComponents, layout: layout.id })),
+    [heroComponents],
+  );
+
+  const sample = (layout: (typeof LAYOUTS)[number], index: number, key: string, width: number, decorative: boolean) => (
     <button
       key={key}
       type="button"
@@ -107,7 +124,7 @@ function MoodAutoScrollGallery({
         <TicketRenderer
           croppedImageUrl={null}
           movieInfo={heroMovieInfo}
-          components={{ ...heroComponents, layout: layout.id }}
+          components={sampleComponents[index]}
           fieldVisibility={ALL_FIELDS_ON}
           ghost
         />
@@ -118,7 +135,7 @@ function MoodAutoScrollGallery({
   if (prefersReducedMotion) {
     return (
       <div data-testid="mood-gallery" className="flex flex-wrap items-start justify-center gap-3">
-        {LAYOUTS.map((layout) => sample(layout, layout.id, GRID_CARD_WIDTH, false))}
+        {LAYOUTS.map((layout, i) => sample(layout, i, layout.id, GRID_CARD_WIDTH, false))}
       </div>
     );
   }
@@ -136,10 +153,10 @@ function MoodAutoScrollGallery({
           트랙 위에서 Tab으로 포커스가 옮겨가면 포커스 링이 흐르는 채로 잡혀 따라가기 어렵다. */}
       <div className="flex w-max animate-marquee hover:[animation-play-state:paused] focus-within:[animation-play-state:paused]">
         <div className="flex gap-3 pr-3">
-          {LAYOUTS.map((layout) => sample(layout, `a-${layout.id}`, TRACK_CARD_WIDTH, false))}
+          {LAYOUTS.map((layout, i) => sample(layout, i, `a-${layout.id}`, TRACK_CARD_WIDTH, false))}
         </div>
         <div className="flex gap-3 pr-3">
-          {LAYOUTS.map((layout) => sample(layout, `b-${layout.id}`, TRACK_CARD_WIDTH, true))}
+          {LAYOUTS.map((layout, i) => sample(layout, i, `b-${layout.id}`, TRACK_CARD_WIDTH, true))}
         </div>
       </div>
     </div>
