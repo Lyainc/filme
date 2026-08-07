@@ -120,3 +120,58 @@ describe('랜딩 오버레이(#614)', () => {
     expect(landingOverlayShown()).toBe(false);
   });
 });
+
+/**
+ * 배경 타일 그리드(#615) 위에서 카피가 읽히게 만든 세 수정은 전부 브라우저 픽셀 샘플링·rect
+ * 실측으로만 검증됐고 자동 가드가 없었다(claude-review 지적) — 같은 PR의 marquee 6px 스냅과
+ * reduced-motion 폴백은 테스트를 받았는데 이 셋만 안 받아서, 토큰을 되돌리거나 스크림·gap을
+ * 지워도 `bun test`가 그대로 통과했다. 여기서 클래스 문자열로 고정한다(이 레포엔 jest-dom도
+ * Tailwind CSS도 테스트에 안 실려 getComputedStyle이 클래스를 반영하지 않는다 — 위 파일 주석의
+ * 같은 컨벤션).
+ *
+ * 재는 건 "왜 그 값인가"가 아니라 "그 장치가 아직 거기 있는가"다: 대비 수치 자체(라이트 5.24:1
+ * 등)는 브라우저에서만 잴 수 있으므로, 그 수치를 만들어낸 구조(불투명 스크림 · landing-muted
+ * 토큰 · 헤드↔서브 간격)가 사라지는 걸 잡는 데까지가 이 테스트의 사정거리다.
+ */
+describe('배경 타일 위 카피 대비 장치 (#615)', () => {
+  const scrimOf = (el: Element) => el.firstElementChild as HTMLElement;
+
+  test('헤드·서브카피 블록이 불투명 스크림을 깔고 gap-4로 간격을 유지한다', () => {
+    render(<Harness />);
+
+    const copyBlock = within(landing()).getByRole('heading', { level: 1 }).parentElement!;
+
+    // 스크림이 없으면 배경 타일이 카피 밑에서 그대로 비쳐 서브카피가 라이트 2.89:1까지 떨어진다.
+    // absolute 스크림을 얹으려면 부모가 relative여야 하므로 둘을 같이 잡는다.
+    expect(copyBlock.className).toContain('relative');
+    expect(scrimOf(copyBlock).getAttribute('aria-hidden')).toBe('true');
+    expect(scrimOf(copyBlock).className).toContain('bg-bg');
+    expect(scrimOf(copyBlock).className).toContain('-z-[5]');
+
+    // h1·p가 바깥 flex 컬럼에서 이 블록 자식으로 한 단 내려오면서 부모 gap-4가 안 걸리게 됐다 —
+    // 같은 리듬을 이 안에서 다시 선언한 것이라, 지우면 헤드와 서브카피가 붙는다.
+    expect(copyBlock.className).toContain('gap-4');
+  });
+
+  test('서브카피와 이탈 경로 줄이 text-fg-muted가 아니라 text-landing-muted를 쓴다', () => {
+    render(<Harness />);
+
+    const sub = within(landing()).getByText(/^스크린샷으로 자동입력/);
+    expect(sub.className).toContain('text-landing-muted');
+    expect(sub.className).not.toContain('text-fg-muted');
+
+    const exitRow = screen.getByTestId('landing-skip-poster').parentElement!;
+    expect(exitRow.className).toContain('text-landing-muted');
+    expect(exitRow.className).not.toContain('text-fg-muted');
+  });
+
+  test('이탈 경로 줄도 자기 스크림을 깔고 있다', () => {
+    render(<Harness />);
+
+    const exitRow = screen.getByTestId('landing-skip-poster').parentElement!;
+    expect(exitRow.className).toContain('relative');
+    expect(scrimOf(exitRow).getAttribute('aria-hidden')).toBe('true');
+    expect(scrimOf(exitRow).className).toContain('bg-bg');
+    expect(scrimOf(exitRow).className).toContain('-z-[5]');
+  });
+});
