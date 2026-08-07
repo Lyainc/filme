@@ -10,6 +10,7 @@ import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
 import { render, screen, cleanup, within } from '@testing-library/react';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
+import { GALLERY_LAYOUTS } from '@/components/v2/Landing';
 import { mobileShellProps } from './shellHarness';
 
 function Harness() {
@@ -43,7 +44,7 @@ afterEach(() => {
 });
 
 describe('랜딩 히어로 갤러리 reduced-motion 폴백 (#615)', () => {
-  test('reduce 활성화 시 marquee 트랙이 아니라 줄바꿈 그리드로 6종이 한 번씩만 보인다', () => {
+  test('reduce 활성화 시 marquee 트랙이 아니라 줄바꿈 그리드로 갤러리 무드가 한 번씩만 보인다', () => {
     const restore = stubReducedMotion(true);
     try {
       render(<Harness />);
@@ -51,19 +52,19 @@ describe('랜딩 히어로 갤러리 reduced-motion 폴백 (#615)', () => {
       expect(gallery.className).toContain('flex-wrap');
       expect(gallery.className).not.toContain('overflow-hidden');
       // seamless loop 복제가 없어야 한다 — 그리드 폴백은 무드당 카드 하나.
-      expect(gallery.querySelectorAll('button').length).toBe(6);
+      expect(gallery.querySelectorAll('button').length).toBe(GALLERY_LAYOUTS.length);
     } finally {
       restore();
     }
   });
 
-  test('reduce 비활성화 시 marquee 트랙으로 12개(6무드 × 2벌)가 렌더된다', () => {
+  test('reduce 비활성화 시 marquee 트랙으로 갤러리 무드 × 2벌이 렌더된다', () => {
     const restore = stubReducedMotion(false);
     try {
       render(<Harness />);
       const gallery = within(landing()).getByTestId('mood-gallery');
       expect(gallery.className).toContain('overflow-hidden');
-      expect(gallery.querySelectorAll('button').length).toBe(12);
+      expect(gallery.querySelectorAll('button').length).toBe(GALLERY_LAYOUTS.length * 2);
     } finally {
       restore();
     }
