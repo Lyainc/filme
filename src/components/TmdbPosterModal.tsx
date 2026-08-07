@@ -227,34 +227,34 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
                   세팅돼 있어(위 주석) 이 자리에 빈 불투명 바만 뜨는 일은 없지만, 그 불변식이
                   깨져도 빈 카드가 새로 보이면 안 된다. */}
               {results.length > 0 && (
-              <ul className="mt-3 space-y-1 rounded-card bg-surface-elevated p-1">
-                {results.map((movie) => (
-                  <li key={movie.id}>
-                    <button
-                      type="button"
-                      onClick={() => pickMovie(movie)}
-                      className="flex w-full items-center gap-3 rounded-field-sm px-2 py-2 text-left hover:bg-accent-soft"
-                    >
-                      {movie.poster_path ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={`${IMG_BASE}?path=${encodeURIComponent(movie.poster_path)}&size=w342`}
-                          alt=""
-                          className="h-14 w-10 shrink-0 rounded-field-sm object-cover"
-                        />
-                      ) : (
-                        <span className="h-14 w-10 shrink-0 rounded-field-sm border border-dashed border-line" aria-hidden="true" />
-                      )}
-                      <span className="min-w-0">
-                        <span className="block truncate text-body font-medium text-fg">{movie.title}</span>
-                        {movie.release_date && (
-                          <span className="block text-caption text-fg-muted">{movie.release_date.slice(0, 4)}</span>
+                <ul className="mt-3 space-y-1 rounded-card bg-surface-elevated p-1">
+                  {results.map((movie) => (
+                    <li key={movie.id}>
+                      <button
+                        type="button"
+                        onClick={() => pickMovie(movie)}
+                        className="flex w-full items-center gap-3 rounded-field-sm px-2 py-2 text-left hover:bg-accent-soft"
+                      >
+                        {movie.poster_path ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={`${IMG_BASE}?path=${encodeURIComponent(movie.poster_path)}&size=w342`}
+                            alt=""
+                            className="h-14 w-10 shrink-0 rounded-field-sm object-cover"
+                          />
+                        ) : (
+                          <span className="h-14 w-10 shrink-0 rounded-field-sm border border-dashed border-line" aria-hidden="true" />
                         )}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+                        <span className="min-w-0">
+                          <span className="block truncate text-body font-medium text-fg">{movie.title}</span>
+                          {movie.release_date && (
+                            <span className="block text-caption text-fg-muted">{movie.release_date.slice(0, 4)}</span>
+                          )}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               )}
             </>
           ) : (
