@@ -23,6 +23,7 @@
  *  5. 모달 포커스 트랩 · 닫기 3경로 · 가려진 버튼 클릭 통과    (#574, 모달 없는 판본이면 skip)
  *  6. 오버레이 7종이 #phone-frame 사각형 안인지               (#609 · 랜딩 #614)
  *  7. 드래프 복원 시 랜딩 생략(D7)                            (#614)
+ *  8. 랜딩 무드 캐러셀 카드 5장의 비율·폭·불투명도·프레임 봉쇄  (#615 · #653)
  *
  * ── 대조 기준은 뷰포트가 아니라 프레임이다 (#609) ────────────────────────────
  * 예전엔 `VW===400 && VH===675`로 게이팅해서, `--viewport 1440x675`로 돌리면 프레임이
@@ -65,6 +66,18 @@ const CHROME =
 
 // #563 실측 불변식 — 400×675 · 레일 열림 기준. 다른 뷰포트에선 대조하지 않는다.
 const BASELINE = { dock: 232.6, preview: { w: 226.8, h: 362.3 } };
+
+// 랜딩 무드 캐러셀(#615) — Landing.tsx의 TRACK_CARD_WIDTH/CAROUSEL_SLOTS를 그대로 미러링한다.
+// 값이 바뀌면 이 상수도 같이 바꿀 것(BASELINE과 같은 관례). happy-dom은 clientWidth가 항상 0이라
+// TicketRenderer의 scale 보정을 못 재므로(__tests__/landingMoodGalleryTapTargets.test.tsx 참고),
+// 카드의 실 폭·비율·불투명도는 여기서만 실측으로 대조한다.
+const CAROUSEL_TRACK_WIDTH = 140;
+const CAROUSEL_CARD_RATIO = 1534 / 960; // getLayout('minimal').height / width
+const CAROUSEL_SLOTS = [
+  { opacity: 1, scale: 1 },
+  { opacity: 0.5, scale: 0.78 },
+  { opacity: 0.27, scale: 0.6 },
+];
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -159,6 +172,65 @@ try {
   await landingPage.waitForSelector('[data-testid="landing"]', { visible: true, timeout: 15000 });
   await sleep(300);
   await measureFit('랜딩 오버레이', '[data-testid="landing"]', landingPage);
+
+  // ── 랜딩 무드 캐러셀(#615/#653) ────────────────────────────────────────────
+  // 갤러리 컨테이너 자신이 프레임 밖으로 새는지는 기존 measureFit 축을 그대로 재사용한다
+  // (overflow-hidden이 있어도 컨테이너 자체가 잘못 배치되면 여기서 걸린다).
+  await measureFit('무드 갤러리', '[data-testid="mood-gallery"]', landingPage);
+  // 카드 개별 폭·비율·불투명도는 CAROUSEL_SLOTS 대조가 필요해 별도로 잰다 — active=0인
+  // 마운트 직후 상태를 잰다(자동 전환 간격 CAROUSEL_INTERVAL_MS=3500ms보다 훨씬 이르다).
+  // 카드 각각을 프레임 사각형과도 대조한다(measureFit과 같은 overflow 계산) — 갤러리
+  // 컨테이너 자신은 안 새도(위) 개별 카드가 안 새는 건 별개다: 갤러리의 overflow-hidden이
+  // 없어지면 컨테이너 rect는 그대로인 채 카드만 밖으로 삐져나갈 수 있다.
+  const carouselCards = await landingPage.evaluate(() => {
+    const gallery = document.querySelector('[data-testid="mood-gallery"]');
+    const frame = document.getElementById('phone-frame');
+    if (!gallery || !frame) return null;
+    const F = frame.getBoundingClientRect();
+    return [...gallery.querySelectorAll('button[data-touch]')].map((b) => {
+      const r = b.getBoundingClientRect();
+      const overflow = {
+        left: +(F.left - r.left).toFixed(1),
+        right: +(r.right - F.right).toFixed(1),
+        top: +(F.top - r.top).toFixed(1),
+        bottom: +(r.bottom - F.bottom).toFixed(1),
+      };
+      return {
+        label: (b.getAttribute('aria-label') ?? '').split(' 무드로')[0],
+        w: +r.width.toFixed(1),
+        h: +r.height.toFixed(1),
+        opacity: +Number(getComputedStyle(b).opacity).toFixed(2),
+        overflow,
+        worstOverflow: Math.max(...Object.values(overflow)),
+      };
+    });
+  });
+  if (!carouselCards) throw new Error('mood-gallery 캐러셀 버튼 또는 #phone-frame을 못 찾았다');
+  const nearestSlot = (opacity) =>
+    CAROUSEL_SLOTS.reduce((best, s) =>
+      Math.abs(s.opacity - opacity) < Math.abs(best.opacity - opacity) ? s : best,
+    );
+  const carousel = {
+    count: carouselCards.length,
+    cards: carouselCards.map((c) => {
+      const slot = nearestSlot(c.opacity);
+      const expected = { w: +(CAROUSEL_TRACK_WIDTH * slot.scale).toFixed(1), opacity: slot.opacity };
+      const ratio = +(c.h / c.w).toFixed(3);
+      return {
+        ...c,
+        ratio,
+        expected,
+        passRatio: Math.abs(ratio - CAROUSEL_CARD_RATIO) < 0.01,
+        passWidth: Math.abs(c.w - expected.w) <= 1.5,
+        passOpacity: Math.abs(c.opacity - expected.opacity) <= 0.02,
+        passFrame: c.worstOverflow <= 0.5,
+      };
+    }),
+  };
+  carousel.pass =
+    carousel.count === 5 &&
+    carousel.cards.every((c) => c.passRatio && c.passWidth && c.passOpacity && c.passFrame);
+
   await landingCtx.close();
 
   // D7 — 드래프가 복원된 메인 페이지엔 랜딩이 **덮고 있으면** 안 된다. 덮고 있으면 아래 측정
@@ -517,6 +589,7 @@ try {
     modal,
     frameFit: { items: fits, fails: fitFails, pass: fitFails.length === 0 },
     landingSkippedOnDraft,
+    carousel,
     invariant,
   };
   console.log(JSON.stringify(out, null, 2));
@@ -527,7 +600,8 @@ try {
     !invariant.pass ||
     fitFails.length > 0 ||
     !landingSkippedOnDraft ||
-    contrastFails.length > 0
+    contrastFails.length > 0 ||
+    !carousel.pass
   ) {
     process.exitCode = 1;
   }
