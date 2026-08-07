@@ -15,6 +15,7 @@
  */
 import { describe, expect, test, afterAll, afterEach, mock, spyOn } from 'bun:test';
 import { render, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { PhototicketState } from '@/types';
 
 // runOcr must be mocked BEFORE MobileEditorShell (which transitively imports it via
@@ -210,6 +211,36 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
     // 본문 주 CTA·이탈 경로는 unmount가 아니라 CSS hidden으로만 숨는다(#614/#624 remount 금지 계약 유지).
     expect(ocrCard.closest('.hidden')).not.toBeNull();
     expect(posterExit.closest('.hidden')).not.toBeNull();
+  });
+
+  // claude-review PR #658 P1 — ocrApplied는 handleClearTap이 landingDismissed와 함께
+  // false로 되돌리는데(#652), 그 리셋 줄을 잠그는 테스트가 없었다. 안 되돌아가면 초기화로 새
+  // 문서를 열어도 오버레이 랜딩의 OCR 카드·이탈 경로가 영구히 숨은 채로 남는다.
+  test('OCR로 CTA·이탈 경로가 숨은 뒤 초기화하면 ocrApplied도 되돌아가 오버레이 랜딩이 온전히 복귀한다 (#652)', async () => {
+    const user = userEvent.setup();
+    render(<MobileHarness />);
+
+    ocrImpl = async () => ({ theater: 'CGV 용산아이파크몰' });
+    fireEvent.change(ocrFileInput(), {
+      target: { files: [new File(['x'], 'ticket.png', { type: 'image/png' })] },
+    });
+    await waitFor(() => {
+      expect(captured.movieInfo.theater).toBe('CGV 용산아이파크몰');
+    });
+    const landing = () => screen.getByTestId('landing');
+    expect(landing().classList.contains('fixed')).toBe(false);
+    expect(screen.getByRole('button', { name: '포스터부터 올리기' }).closest('.hidden')).not.toBeNull();
+
+    // 초기화 2탭(#374) — 더블탭 가드(350ms) 밖에서 재탭해야 실행된다.
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    await user.click(screen.getByRole('button', { name: '초기화' }));
+    await new Promise((r) => setTimeout(r, 400));
+    await user.click(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' }));
+
+    // 새 문서 — 오버레이 랜딩이 다시 뜨고, 그 안 CTA·이탈 경로도 더 이상 숨어 있지 않다.
+    expect(landing().classList.contains('fixed')).toBe(true);
+    expect(screen.getByRole('button', { name: '티켓 스크린샷으로 자동입력' }).closest('.hidden')).toBeNull();
+    expect(screen.getByRole('button', { name: '포스터부터 올리기' }).closest('.hidden')).toBeNull();
   });
 
   test('드로어에서 OCR 시작 → KOBIS 응답 전에 드로어를 닫아도(unmount) 응답 도착 시 titleOg/releaseDate가 폼에 반영된다 (claude-review PR #413 P0)', async () => {
