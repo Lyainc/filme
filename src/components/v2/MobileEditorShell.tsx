@@ -937,7 +937,13 @@ export function MobileEditorShell({
             // 로컬 미러가 없다 — 샘플 자체가 훑어보기 없는 완결된 선택이라 클릭된 무드를 그 자리에서
             // 바로 components.layout에 커밋한다.
             onEnterMood={(id) => {
-              photo.updateComponents({ layout: id });
+              // 이미 켜져 있는 무드를 다시 누른 건 편집이 아니라 진입이다 — updateComponents는
+              // 값이 같아도 dirtyTick을 올리고(usePhototicket.ts), 그러면 1초 뒤 autosave가 draft를
+              // 써서 다음 방문에 draftRestored=true가 돼 랜딩(마케팅 카피·OCR 주 CTA)이 영구히
+              // 안 뜬다(#615 fresh-context 리뷰). 첫 카드는 현재 무드라 오탭 한 번의 대가가 그거였다.
+              // 폐기된 commitHeroLayout에 있던 동일값 가드를 이 자리로 되살린다 — 비교 대상은
+              // previewComponents(280ms debounce)가 아니라 실시간 state여야 방금 바꾼 무드를 읽는다.
+              if (id !== photo.state.components.layout) photo.updateComponents({ layout: id });
               setLandingDismissed(true);
             }}
             dropProps={posterDropProps}
