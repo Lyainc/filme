@@ -213,3 +213,83 @@ describe('드롭존 진입이 debounce된 previewComponents가 아니라 실시�
     expect(aspect).toBeCloseTo(1.5, 2);
   });
 });
+
+/**
+ * 캐러셀 손짓 3종(#615, 2026-08-08) — 탭/길게 누름/스와이프를 시간과 거리로 가른다. 자동 전환은
+ * 정지 대상이 아니라(시각 효과) 길게 누름이 늦출 뿐이고, 여기서 잠그는 건 **손짓이 서로를
+ * 오염시키지 않는다**는 것: 넘기려던 손짓과 천천히 보려던 손짓이 편집 화면 진입으로 떨어지면
+ * 사용자는 되돌리기 위해 초기화까지 가야 한다.
+ */
+describe('캐러셀 손짓 — 탭만 진입시킨다 (#615)', () => {
+  const gallery = () => within(landing()).getByTestId('mood-gallery');
+  const minimalCard = () =>
+    within(gallery()).getByRole('button', { name: /^Minimal 무드로 바로 시작/ });
+
+  test('그냥 탭하면 그 무드로 진입한다', () => {
+    render(<Harness />);
+    const card = minimalCard();
+
+    fireEvent.pointerDown(card, { clientX: 100 });
+    fireEvent.pointerUp(card, { clientX: 100 });
+    fireEvent.click(card);
+
+    expect(landing().classList.contains('fixed')).toBe(false);
+  });
+
+  /** 지금 가운데 선 카드 — 중앙 슬롯만 불투명도 1이다(CAROUSEL_SLOTS). */
+  const centered = () =>
+    (Array.from(gallery().querySelectorAll('button[data-touch]')) as HTMLElement[])
+      .find((b) => b.style.opacity === '1')!
+      .getAttribute('aria-label')!
+      .split(' 무드로')[0];
+
+  test('왼쪽으로 끌면 다음 무드가 중앙으로 오고, 손을 떼도 진입하지 않는다', () => {
+    render(<Harness />);
+    const card = minimalCard();
+    expect(centered()).toBe('Minimal');
+
+    fireEvent.pointerDown(gallery(), { clientX: 200 });
+    fireEvent.pointerMove(gallery(), { clientX: 140 }); // 임계값(28px) 초과
+    fireEvent.pointerUp(gallery(), { clientX: 140 });
+    fireEvent.click(card);
+
+    // 끈 방향(왼쪽)으로 한 칸 — GALLERY_LAYOUTS 순서상 Minimal 다음은 Criterion이다.
+    expect(centered()).toBe('Criterion');
+    // 그리고 랜딩은 그대로 떠 있어야 한다 — 넘기려던 손짓이 진입으로 새면 안 된다.
+    expect(landing().classList.contains('fixed')).toBe(true);
+    expect(captured.components.layout).toBe('minimal');
+  });
+
+  test('오른쪽으로 끌면 반대 방향으로 넘어간다', () => {
+    render(<Harness />);
+    expect(centered()).toBe('Minimal');
+
+    fireEvent.pointerDown(gallery(), { clientX: 140 });
+    fireEvent.pointerMove(gallery(), { clientX: 200 });
+
+    // 목록의 처음에서 뒤로 가면 마지막으로 감긴다(원형).
+    expect(centered()).toBe('Stub');
+  });
+
+  test('길게 누르고 떼면 진입하지 않는다 — 천천히 보려던 손짓이다', () => {
+    jest.useFakeTimers();
+    try {
+      render(<Harness />);
+      const card = minimalCard();
+
+      fireEvent.pointerDown(gallery(), { clientX: 100 });
+      act(() => jest.advanceTimersByTime(500)); // LONG_PRESS_MS(350) 초과
+      fireEvent.pointerUp(gallery(), { clientX: 100 });
+      fireEvent.click(card);
+
+      expect(landing().classList.contains('fixed')).toBe(true);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test('세로 페이지 스크롤은 캐러셀이 가로채지 않는다 (touch-action: pan-y)', () => {
+    render(<Harness />);
+    expect((gallery() as HTMLElement).style.touchAction).toBe('pan-y');
+  });
+});

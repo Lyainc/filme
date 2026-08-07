@@ -1,5 +1,5 @@
-import type { DragEvent, ReactNode } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import type { DragEvent, PointerEvent, ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { LayoutId, MovieInfo, TicketComponents } from '@/types';
 import { ALL_FIELDS_ON } from '@/constants/fieldVisibility';
 import { useMatchMedia } from '@/hooks/useMatchMedia';
@@ -21,6 +21,12 @@ const CARD_HEIGHT = (TRACK_CARD_WIDTH * 1534) / 960;
 const CAROUSEL_INTERVAL_MS = 3500;
 /** 자리 이동에 걸리는 시간 — 시안(620ms)의 2배. 간격과 같은 이유로 느긋하게 간다. */
 const CAROUSEL_TRANSITION_MS = 1240;
+/** 길게 누르고 있는 동안의 간격 — 멈추는 게 아니라 느려진다(정지는 안 한다, 아래 컴포넌트 주석). */
+const CAROUSEL_SLOW_INTERVAL_MS = 7000;
+/** 이 시간을 넘겨 누르고 있으면 "길게 누름"이다. 그 뒤 손을 떼도 무드로 진입하지 않는다. */
+const LONG_PRESS_MS = 350;
+/** 이만큼 가로로 끌면 스와이프다 — 넘길 때마다 원점을 다시 잡아 한 제스처로 여러 칸이 넘어간다. */
+const SWIPE_STEP_PX = 28;
 /**
  * 중앙에서 n칸 떨어진 카드의 자리. `x`는 px이 아니라 **카드 폭의 배수**라 `TRACK_CARD_WIDTH`를
  * 바꿔도 배치 비율이 그대로 따라온다.
@@ -125,11 +131,21 @@ function LandingBackdropTiles() {
  *
  * **대신 "지금 어느 무드가 중앙인가"라는 상태가 새로 생겼다.** 그게 이 개편이 지불한 값이다.
  *
- * **정지 수단은 hover/focus뿐이다** — 좌우 이동 버튼을 한 번 넣었다가 뺐다(사용자 결정
- * 2026-08-08: 히어로에 컨트롤을 두지 않고 단순하게). 그래서 터치 사용자에게는 SC 2.2.2를
- * 만족시킬 수단이 없다는 걸 알고 남긴 상태다 — marquee 시절과 같은 갭이고, 닫으려면 컨트롤을
- * 되살리거나(그때 뺀 이유와 충돌) 자동 전환을 아예 없애야 한다. 대신 전환 간격·속도를 넉넉히
- * 잡아(3.5초 / 1.24초) 따라가기 어려운 정도는 낮췄다.
+ * **멈추지 않는다 — 이건 정보가 아니라 시각 효과다**(사용자 결정 2026-08-08). 그래서 정지
+ * 버튼도, 인디케이터도, hover/focus 일시정지도 없다. 대신 손짓 셋이 흐름을 조절한다. 셋을
+ * 가르는 건 시간과 거리 하나씩이다:
+ *
+ *  - **탭** — 그 무드로 바로 시작(`onEnterMood`). 아래 둘 중 어느 것도 아니었을 때만이다.
+ *  - **길게 누름**(`LONG_PRESS_MS` 초과) — 누르고 있는 동안 간격이 `CAROUSEL_SLOW_INTERVAL_MS`로
+ *    늘어난다. 멈추는 게 아니라 느려지는 것이고, 떼면 원래 속도로 돌아온다. 손을 떼도 진입하지
+ *    않는다 — 천천히 보려던 손짓이 편집 화면으로 떨어지면 안 된다.
+ *  - **스와이프**(`SWIPE_STEP_PX` 초과) — 끄는 방향으로 넘어간다. 임계값마다 원점을 다시 잡아
+ *    한 번 쭉 끌면 여러 칸이 연달아 넘어가므로, 자동 전환을 기다리는 것보다 빠르게 훑을 수 있다.
+ *
+ * 판정이 `gesture` **ref**에 사는 이유는 `click`이 `pointerup` 뒤에 오기 때문이다 — state로
+ * 두면 리렌더를 기다리는 사이에 click이 먼저 지나가 스와이프 끝자락에서 엉뚱한 무드로 진입한다.
+ * 컨테이너의 `touch-action: pan-y`도 같은 묶음이다: 안 주면 브라우저가 가로 끌기를 스크롤로
+ * 가로채 `pointermove`가 아예 안 온다.
  *
  * **탭 타깃과 눌림 피드백이 서로 다른 엘리먼트에 산다** — `<button>`은 `active:scale-[0.97]`을
  * 들고 있어(PrimaryCta·OcrUploadCard와 동일 패턴) `__tests__/tapTargets.ts`의 변형 금지 정규식
@@ -157,16 +173,57 @@ function MoodCarousel({
   // 지금 가운데 선 무드. 캐러셀이 되면서 "어느 무드가 중앙인가"라는 상태가 새로 생겼다 —
   // marquee엔 없던 것이라 이게 이 개편의 유일한 새 state다.
   const [active, setActive] = useState(0);
-  const [hovering, setHovering] = useState(false);
+  // 길게 누르고 있는 동안만 true — 멈추는 게 아니라 간격만 늘어난다.
+  const [slowed, setSlowed] = useState(false);
+  // 이번 제스처가 무엇이었는지. state가 아니라 ref인 이유는 click 핸들러가 pointerup **뒤에**
+  // 실행되기 때문이다 — 리렌더를 기다리면 늦어서 진입을 못 막는다. 다음 pointerdown에서 리셋한다.
+  const gesture = useRef({ x: 0, swiped: false, longPressed: false });
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
-    if (prefersReducedMotion || hovering) return;
+    if (prefersReducedMotion) return;
     const id = setInterval(
       () => setActive((i) => (i + 1) % GALLERY_LAYOUTS.length),
-      CAROUSEL_INTERVAL_MS,
+      slowed ? CAROUSEL_SLOW_INTERVAL_MS : CAROUSEL_INTERVAL_MS,
     );
     return () => clearInterval(id);
-  }, [prefersReducedMotion, hovering]);
+  }, [prefersReducedMotion, slowed]);
+
+  // 타이머가 남은 채로 언마운트되면 사라진 컴포넌트의 state를 건드린다.
+  useEffect(() => () => clearTimeout(pressTimer.current), []);
+
+  const step = (delta: number) =>
+    setActive((i) => (i + delta + GALLERY_LAYOUTS.length) % GALLERY_LAYOUTS.length);
+
+  const gestureProps = {
+    onPointerDown: (e: PointerEvent) => {
+      gesture.current = { x: e.clientX, swiped: false, longPressed: false };
+      clearTimeout(pressTimer.current);
+      pressTimer.current = setTimeout(() => {
+        gesture.current.longPressed = true;
+        setSlowed(true);
+      }, LONG_PRESS_MS);
+    },
+    onPointerMove: (e: PointerEvent) => {
+      const dx = e.clientX - gesture.current.x;
+      if (Math.abs(dx) < SWIPE_STEP_PX) return;
+      // 끄는 중엔 길게 누름으로 안 친다 — 손가락이 움직였으면 그건 넘기려는 것이다.
+      clearTimeout(pressTimer.current);
+      gesture.current.swiped = true;
+      // 원점을 지금 자리로 다시 잡아, 한 번 쭉 끄는 동안 SWIPE_STEP_PX마다 한 칸씩 넘어간다.
+      gesture.current.x = e.clientX;
+      step(dx < 0 ? 1 : -1);
+    },
+    onPointerUp: () => {
+      clearTimeout(pressTimer.current);
+      setSlowed(false);
+    },
+    onPointerCancel: () => {
+      clearTimeout(pressTimer.current);
+      gesture.current.swiped = true; // 취소된 제스처로는 진입시키지 않는다
+      setSlowed(false);
+    },
+  };
 
   // 무드별 components를 렌더마다 새로 만들면 `TicketRenderer`의 memo가 12벌 전부 miss한다
   // (fresh-context 리뷰 P1) — `Landing`은 memo가 아니고 셸에서 `onEnterMood`·`children` 등이
@@ -216,7 +273,12 @@ function MoodCarousel({
     <button
       key={key}
       type="button"
-      onClick={() => onEnterMood(layout.id)}
+      onClick={() => {
+        // 넘기려던 손짓이나 길게 누름은 진입이 아니다 — click은 pointerup 뒤에 오므로 여기서
+        // 걸러야 스와이프 끝에 손을 뗀 자리의 무드로 갑자기 들어가는 일이 없다.
+        if (gesture.current.swiped || gesture.current.longPressed) return;
+        onEnterMood(layout.id);
+      }}
       aria-label={`${layout.label} 무드로 바로 시작 · ${layout.caption}`}
       title={layout.caption}
       data-touch={String(width)}
@@ -271,14 +333,10 @@ function MoodCarousel({
     <div
       data-testid="mood-gallery"
       className="relative w-full overflow-hidden"
-      style={{ height: CARD_HEIGHT }}
-      // 포인터가 올라오거나 포커스가 들어오면 멈춘다 — 움직이는 카드를 겨냥해 누르기 어렵고,
-      // Tab으로 옮긴 포커스 링이 흐르는 채로 잡히면 따라가기 어렵다. 터치엔 hover가 없으므로
-      // 그쪽 정지 수단은 아래 좌우 버튼이 진다(SC 2.2.2, 두 입력 모두 커버).
-      onMouseEnter={() => setHovering(true)}
-      onMouseLeave={() => setHovering(false)}
-      onFocus={() => setHovering(true)}
-      onBlur={() => setHovering(false)}
+      // touch-action: pan-y — 가로 제스처는 이 캐러셀이 받고 세로 페이지 스크롤은 브라우저에
+      // 남긴다. 안 주면 브라우저가 가로 끌기도 스크롤로 먹어 pointermove가 안 온다.
+      style={{ height: CARD_HEIGHT, touchAction: 'pan-y' }}
+      {...gestureProps}
     >
       {GALLERY_LAYOUTS.map((layout, i) => sample(layout, i, layout.id, TRACK_CARD_WIDTH, true))}
     </div>
