@@ -251,7 +251,7 @@ describe('캐러셀 손짓 — 탭만 진입시킨다 (#615)', () => {
     fireEvent.pointerDown(gallery(), { clientX: 200 });
     fireEvent.pointerMove(gallery(), { clientX: 140 }); // 임계값(28px) 초과
     fireEvent.pointerUp(gallery(), { clientX: 140 });
-    fireEvent.click(card);
+    fireEvent.click(card, { detail: 1 }); // 실제 포인터 클릭(브라우저는 detail>=1) — 키보드는 0.
 
     // 끈 방향(왼쪽)으로 한 칸 — GALLERY_LAYOUTS 순서상 Minimal 다음은 Criterion이다.
     expect(centered()).toBe('Criterion');
@@ -280,12 +280,56 @@ describe('캐러셀 손짓 — 탭만 진입시킨다 (#615)', () => {
       fireEvent.pointerDown(gallery(), { clientX: 100 });
       act(() => jest.advanceTimersByTime(500)); // LONG_PRESS_MS(350) 초과
       fireEvent.pointerUp(gallery(), { clientX: 100 });
-      fireEvent.click(card);
+      fireEvent.click(card, { detail: 1 }); // 실제 포인터 클릭(브라우저는 detail>=1) — 키보드는 0.
 
       expect(landing().classList.contains('fixed')).toBe(true);
     } finally {
       jest.useRealTimers();
     }
+  });
+
+  test('스와이프 후 pointerdown 없이 키보드 Enter로 다른 카드에 진입해도 stale swiped를 안 읽는다 (claude-review PR #653 7차 P1)', () => {
+    render(<Harness />);
+    const card = minimalCard();
+
+    // 스와이프로 gesture.current.swiped = true를 남긴다 — 다음 pointerdown 전까지 안 풀린다.
+    fireEvent.pointerDown(gallery(), { clientX: 200 });
+    fireEvent.pointerMove(gallery(), { clientX: 140 });
+    fireEvent.pointerUp(gallery(), { clientX: 140 });
+
+    // 이후 새 pointerdown 없이 키보드로 카드를 활성화 — 브라우저는 이 click을 detail: 0으로 낸다.
+    fireEvent.click(card, { detail: 0 });
+
+    expect(landing().classList.contains('fixed')).toBe(false);
+  });
+
+  test('pointerdown이 오면 컨테이너가 그 포인터를 캡처한다 — 밖에서 떼도 pointerup을 받기 위함', () => {
+    render(<Harness />);
+    const el = gallery() as HTMLElement & { hasPointerCapture: (id: number) => boolean };
+
+    fireEvent.pointerDown(gallery(), { clientX: 100, pointerId: 7 });
+
+    expect(el.hasPointerCapture(7)).toBe(true);
+  });
+
+  test('pointerup에서 캡처를 다시 놓는다 — 안 놓으면 브라우저가 뒤이은 click의 타깃을 컨테이너로 재지정해 카드 클릭이 죽는다', () => {
+    render(<Harness />);
+    const el = gallery() as HTMLElement & { hasPointerCapture: (id: number) => boolean };
+
+    fireEvent.pointerDown(gallery(), { clientX: 100, pointerId: 7 });
+    fireEvent.pointerUp(gallery(), { clientX: 100, pointerId: 7 });
+
+    expect(el.hasPointerCapture(7)).toBe(false);
+  });
+
+  test('pointercancel에서도 캡처를 놓는다', () => {
+    render(<Harness />);
+    const el = gallery() as HTMLElement & { hasPointerCapture: (id: number) => boolean };
+
+    fireEvent.pointerDown(gallery(), { clientX: 100, pointerId: 7 });
+    fireEvent.pointerCancel(gallery(), { pointerId: 7 });
+
+    expect(el.hasPointerCapture(7)).toBe(false);
   });
 
   test('세로 페이지 스크롤은 캐러셀이 가로채지 않는다 (touch-action: pan-y)', () => {
