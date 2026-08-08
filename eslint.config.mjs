@@ -29,25 +29,23 @@ function checkClassNameValue(context, node, value) {
 }
 
 /**
- * className 값의 원본 소스 텍스트 전체를 스캔한다(AST 분기별로 Literal/TemplateLiteral만 따로
- * 훑지 않는 이유) — 삼항 분기 안에 박힌 문자열(`` `flex ${cond ? 'h-11' : 'h-9'}` ``)처럼
- * 어디에 있든 걸려야, cva 함수 호출이나 새 조건부 패턴이 생겨도 우회가 안 생긴다.
+ * 문자열 리터럴/템플릿 리터럴 자체를 파일 전체에서 스캔한다 — JSX className 위치로 좁히지
+ * 않는 이유는 이 리포의 실제 관용구가 그걸 우회하기 때문이다(#647 리뷰 발견). FloatingToolbar의
+ * `TB_TARGET`/`btn`, InPlaceFieldEditor의 `barBtnCls`, FieldEditorBody의 `INPUT_CLS`처럼 클래스
+ * 문자열을 const로 뽑아 `className={btn}`으로 참조하는 패턴이 이미 이 코드베이스의 표준이라,
+ * className 어트리뷰트만 보면 그 const 선언 자체(정작 값이 사는 자리)는 그냥 통과한다. 두
+ * 패턴(`min-h-[44px]`/`h-11`)이 클래스 문자열 아닌 곳에 우연히 등장할 가능성은 사실상 0이라
+ * (특이한 하이픈+대괄호 조합), 스코프를 넓혀도 오탐 위험보다 우회를 막는 이득이 크다.
  */
 const noRawTouchTargetSize = {
   meta: { type: 'problem', docs: { description: 'min-h-[44px]/h-11 직접 사용 금지 — min-h-touch/h-touch를 쓸 것' } },
   create(context) {
     return {
-      JSXAttribute(node) {
-        if (node.name.type !== 'JSXIdentifier' || node.name.name !== 'className') return;
-        const value = node.value;
-        if (!value) return;
-        const text =
-          value.type === 'Literal' && typeof value.value === 'string'
-            ? value.value
-            : value.type === 'JSXExpressionContainer'
-              ? context.sourceCode.getText(value.expression)
-              : null;
-        if (text !== null) checkClassNameValue(context, node, text);
+      Literal(node) {
+        if (typeof node.value === 'string') checkClassNameValue(context, node, node.value);
+      },
+      TemplateElement(node) {
+        checkClassNameValue(context, node, node.value.raw);
       },
     };
   },
@@ -58,7 +56,9 @@ export default tseslint.config(
     ignores: ['node_modules/**', '.next/**', 'public/**'],
   },
   {
-    files: ['src/**/*.tsx'],
+    // .ts도 포함 — variants.ts 자체가 이 규칙이 지키려는 "44px 표현의 단일 소스"라, .tsx만
+    // 보면 정작 그 파일은 안 걸린다(#647 리뷰 발견).
+    files: ['src/**/*.{ts,tsx}'],
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: { ecmaFeatures: { jsx: true } },

@@ -45,7 +45,6 @@ mock.module('@upstash/ratelimit', () => ({
 process.env.UPSTASH_REDIS_REST_URL = 'https://fake.upstash.io';
 process.env.UPSTASH_REDIS_REST_TOKEN = 'fake-token';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { checkOcrRateLimit, resetRateLimitCacheForTests } = require('./ratelimit');
 
 describe('OCR shared(키 전체) rate limit 윈도우', () => {
