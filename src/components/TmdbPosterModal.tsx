@@ -162,7 +162,7 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
               disabled={applying}
               aria-label="검색으로 돌아가기"
               data-touch="44"
-              className="inline-flex min-h-touch min-w-touch items-center justify-center rounded-field-sm text-fg-muted hover:bg-accent-soft hover:text-fg disabled:opacity-30"
+              className="inline-flex min-h-touch min-w-touch items-center justify-center rounded-field-sm text-fg-muted hover:bg-accent-soft hover:text-fg disabled:opacity-30 active:scale-[0.97]"
             >
               ←
             </button>
@@ -175,7 +175,7 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
             disabled={applying}
             aria-label="닫기"
             data-touch="44"
-            className="inline-flex min-h-touch min-w-touch items-center justify-center rounded-field-sm text-fg-muted hover:bg-accent-soft hover:text-fg disabled:opacity-30"
+            className="inline-flex min-h-touch min-w-touch items-center justify-center rounded-field-sm text-fg-muted hover:bg-accent-soft hover:text-fg disabled:opacity-30 active:scale-[0.97]"
           >
             ✕
           </button>
@@ -199,7 +199,7 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
                 <button
                   type="submit"
                   disabled={searching}
-                  className="min-h-touch rounded-field-sm bg-accent px-4 text-body font-medium text-accent-ink disabled:opacity-50"
+                  className="min-h-touch rounded-field-sm bg-accent px-4 text-body font-medium text-accent-ink disabled:opacity-50 active:scale-[0.97]"
                 >
                   검색
                 </button>
@@ -216,7 +216,7 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
                   <button
                     type="button"
                     onClick={onFallbackUpload}
-                    className="mt-2 text-body font-medium text-fg underline"
+                    className="mt-2 text-body font-medium text-fg underline active:scale-[0.97]"
                   >
                     파일 업로드로 전환
                   </button>
@@ -233,7 +233,7 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
                       <button
                         type="button"
                         onClick={() => pickMovie(movie)}
-                        className="flex w-full items-center gap-3 rounded-field-sm px-2 py-2 text-left hover:bg-accent-soft"
+                        className="flex w-full items-center gap-3 rounded-field-sm px-2 py-2 text-left hover:bg-accent-soft active:scale-[0.97]"
                       >
                         {movie.poster_path ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -276,7 +276,7 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
                       <button
                         type="button"
                         onClick={onFallbackUpload}
-                        className="text-body font-medium text-fg underline"
+                        className="text-body font-medium text-fg underline active:scale-[0.97]"
                       >
                         파일 업로드로 전환
                       </button>
@@ -288,7 +288,7 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
                       <button
                         type="button"
                         onClick={onFallbackUpload}
-                        className="text-body font-medium text-fg underline"
+                        className="text-body font-medium text-fg underline active:scale-[0.97]"
                       >
                         파일 업로드로 전환
                       </button>
@@ -305,7 +305,7 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
                     onClick={() => pickPoster(poster)}
                     disabled={applying}
                     aria-label={`포스터 판본 선택 ${poster.file_path}`}
-                    className="aspect-[2/3] overflow-hidden rounded-field-sm border border-line disabled:opacity-50"
+                    className="aspect-[2/3] overflow-hidden rounded-field-sm border border-line disabled:opacity-50 active:scale-[0.97]"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img

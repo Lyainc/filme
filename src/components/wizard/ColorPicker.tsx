@@ -52,7 +52,7 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
               title={s.label}
               aria-label={s.label}
               data-touch="44"
-              className={`relative inline-flex min-h-touch min-w-touch items-center justify-center rounded-chip border-2 transition-transform ${
+              className={`relative inline-flex min-h-touch min-w-touch items-center justify-center rounded-chip border-2 transition-transform active:scale-[0.97] ${
                 active
                   ? 'border-accent scale-105'
                   : 'border-line hover:border-accent/40'

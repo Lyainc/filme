@@ -74,7 +74,7 @@ export function ZoomSegment({
             aria-pressed={selected}
             aria-label={m.label}
             title={m.label}
-            className={`flex h-9 items-center justify-center rounded-full px-3.5 transition-colors ${
+            className={`flex h-9 items-center justify-center rounded-full px-3.5 transition-colors active:scale-[0.97] ${
               selected ? 'bg-accent-soft text-accent' : 'text-fg-muted hover:text-fg'
             }`}
           >

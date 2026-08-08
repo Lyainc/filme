@@ -107,7 +107,7 @@ function AxisSegment<K extends string>({
           aria-controls={panelId}
           onClick={() => onChange(o.key)}
           data-touch="36"
-          className={`h-9 flex-1 truncate rounded-chip border px-3 text-caption font-medium transition-colors ${
+          className={`h-9 flex-1 truncate rounded-chip border px-3 text-caption font-medium transition-colors active:scale-[0.97] ${
             value === o.key
               ? 'border-transparent bg-accent-soft text-accent'
               : 'border-line bg-surface-elevated text-fg-muted'
@@ -155,7 +155,7 @@ function ChipRadio<V extends string>({
             disabled={opt.disabled}
             onClick={() => onChange(opt.value)}
             data-touch="40"
-            className={`h-10 flex-1 truncate rounded-chip border px-3 text-caption font-medium transition-colors ${
+            className={`h-10 flex-1 truncate rounded-chip border px-3 text-caption font-medium transition-colors active:scale-[0.97] ${
               value === opt.value
                 ? 'border-transparent bg-accent-soft text-accent'
                 : 'border-line bg-surface-elevated text-fg-muted'
@@ -349,7 +349,7 @@ function EmbossPanel({ photo }: { photo: Photo }) {
         type="button"
         onClick={() => setEmbossEditMode(!embossEditMode)}
         data-touch="40"
-        className={`h-10 w-full rounded-chip border px-3 text-caption font-medium transition-colors ${
+        className={`h-10 w-full rounded-chip border px-3 text-caption font-medium transition-colors active:scale-[0.97] ${
           embossEditMode
             ? 'border-transparent bg-accent-soft text-accent'
             : 'border-line bg-surface-elevated text-fg-muted hover:text-fg'
@@ -391,7 +391,7 @@ function EmbossPanel({ photo }: { photo: Photo }) {
             type="button"
             onClick={clearEmbossMask}
             data-touch="36"
-            className="h-9 w-full rounded-chip border border-line bg-surface-elevated px-3 text-caption font-medium text-fg-muted transition-colors hover:text-fg"
+            className="h-9 w-full rounded-chip border border-line bg-surface-elevated px-3 text-caption font-medium text-fg-muted transition-colors hover:text-fg active:scale-[0.97]"
           >
             칠한 영역 지우기
           </button>
@@ -451,7 +451,7 @@ function SizePanel({ photo, actions }: { photo: Photo; actions: RailActions }) {
             type="button"
             onClick={actions.onRecropPoster}
             data-touch="40"
-            className="h-10 w-full rounded-chip border border-line bg-surface-elevated px-3 text-caption font-medium text-fg transition-colors hover:bg-accent-soft hover:text-accent"
+            className="h-10 w-full rounded-chip border border-line bg-surface-elevated px-3 text-caption font-medium text-fg transition-colors hover:bg-accent-soft hover:text-accent active:scale-[0.97]"
           >
             포스터 다시 크롭
           </button>

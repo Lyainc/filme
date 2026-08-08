@@ -18,7 +18,7 @@ export function AutoSaveIndicator({ enabled, lastSavedAt, onToggle }: AutoSaveIn
         aria-label={enabled ? '자동 임시저장 켜짐 — 클릭하면 꺼요' : '자동 임시저장 꺼짐 — 클릭하면 켜요'}
         title={enabled ? '자동 임시저장 켜짐' : '자동 임시저장 꺼짐'}
         onClick={onToggle}
-        className="inline-flex h-touch w-touch items-center justify-end pr-1 transition-colors"
+        className="inline-flex h-touch w-touch items-center justify-end pr-1 transition-colors active:scale-[0.97]"
       >
         <span className="relative inline-flex h-2 w-2">
           {enabled && lastSavedAt !== null && (

@@ -149,7 +149,7 @@ export default function RatingPicker({ value, onValueChange, visible, onVisibleC
               }}
               aria-label={`${star}점`}
               data-touch="44"
-              className="relative inline-flex min-h-touch min-w-touch items-center justify-center"
+              className="relative inline-flex min-h-touch min-w-touch items-center justify-center active:scale-[0.97]"
             >
               <span className="relative inline-block h-7 w-7">
                 <StarSVG className="absolute inset-0 text-fg-faint/40" />
@@ -182,7 +182,7 @@ export default function RatingPicker({ value, onValueChange, visible, onVisibleC
           aria-expanded={numberInputOpen}
           aria-controls="rating-decimal-input"
           aria-label="평점 소수 입력 토글"
-          className="text-mono inline-flex min-h-touch items-center text-left"
+          className="text-mono inline-flex min-h-touch items-center text-left active:scale-[0.97]"
         >
           <Eyebrow tone="faint">
             ★ {current.toFixed(1)}

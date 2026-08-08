@@ -287,12 +287,16 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
           onPrefsChange((prev) => ({ ...prev, hidden: false }));
         }}
         aria-label="툴바 표시"
-        // transform에 transition을 걸면 안 된다 — 이 버튼은 모든 배치 상태에서 자기 자신이
-        // 드래그 핸들이라(onGripMove가 pointermove마다 translate(x,y)를 이 transform에 직접
-        // 쓴다), transition-transform을 얹으면 드래그 중 매 프레임이 새 위치로 150ms씩
-        // ease되어 손가락보다 눈에 띄게 뒤처진다(code-review 발견). 눌림 scale은 애니메이션
+        // active:scale-[0.97](#647)은 남겨둔다 — 인라인 transform이 없는 세로·고정 도킹에서
+        // 키보드 Space-hold 같은 순수 :active 경로(gripPressed JS state가 안 잡는 입력)의
+        // 폴백으로 여전히 유효하고, gripPressed가 true인 동안엔 아래 style.transform이 항상
+        // 명시적 scale(0.97)을 실어 인라인이 이겨 클래스와 안 겹친다. 다만 transform엔
+        // transition을 걸면 안 된다 — 이 버튼은 모든 배치 상태에서 자기 자신이 드래그
+        // 핸들이라(onGripMove가 pointermove마다 translate(x,y)를 이 transform에 직접 쓴다),
+        // transition-transform을 얹으면 드래그 중 매 프레임이 새 위치로 150ms씩 ease되어
+        // 손가락보다 눈에 띄게 뒤처진다(#662 code-review 발견). 눌림 scale은 애니메이션
         // 없이 순간 전환된다.
-        className={`fixed z-[45] flex ${TB_TARGET} items-center justify-center rounded-full border border-line text-fg-muted transition-colors hover:text-fg`}
+        className={`fixed z-[45] flex ${TB_TARGET} items-center justify-center rounded-full border border-line text-fg-muted transition-colors hover:text-fg active:scale-[0.97]`}
         style={{ touchAction: 'none', ...posStyle, transform: gripTransform, ...glass }}
       >
         <svg {...ICON}>
@@ -304,7 +308,7 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
   }
 
   const horiz = orient === 'h';
-  const btn = `flex ${TB_TARGET} items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:text-fg disabled:text-fg-faint disabled:hover:text-fg-faint`;
+  const btn = `flex ${TB_TARGET} items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:text-fg disabled:text-fg-faint disabled:hover:text-fg-faint active:scale-[0.97]`;
   const divider = horiz ? 'mx-0.5 h-[18px] w-px bg-line' : 'my-0.5 h-px w-[18px] bg-line';
 
   return (
