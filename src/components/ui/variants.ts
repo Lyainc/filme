@@ -18,28 +18,6 @@ export const pressableVariants = cva('active:scale-[0.97]', {
 });
 
 /**
- * 탭 타깃 44px(#647 축 2). height/width를 독립 축으로 둔 이유 — 정사각 아이콘 버튼(h-11 w-11)과
- * 풀폭 CTA(min-h-[44px]만, width는 w-full 별도)가 섞여 있어 h+w를 한 variant로 묶으면 후자에
- * 원치 않는 width 클래스가 붙는다. 값은 전부 tailwind.config.js의 spacing.touch(44px) 하나에서 나옴.
- */
-export const touchTargetVariants = cva('', {
-  variants: {
-    height: {
-      fixed: 'h-touch',
-      min: 'min-h-touch',
-    },
-    width: {
-      fixed: 'w-touch',
-      min: 'min-w-touch',
-      none: '',
-    },
-  },
-  defaultVariants: {
-    width: 'none',
-  },
-});
-
-/**
  * 입력창 포커스 링(#647 축 3). 마우스 클릭에도 뜨던 focus:를 focus-visible:로 바꾸는 것만 스코프 —
  * 패딩·폰트·transition-colors·disabled 상태는 컴포넌트별로 다르므로 여기 안 넣고 각자 cn()으로 얹는다.
  * 링이 원래 없던 자리(FieldEditorBody.tsx select)는 이 variant를 쓰지 않고 focus: → focus-visible:만

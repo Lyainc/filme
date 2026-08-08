@@ -49,7 +49,7 @@ function RailIconButton({
     >
       <span
         aria-hidden="true"
-        className={`flex h-11 w-11 items-center justify-center rounded-full border transition-colors ${
+        className={`flex h-touch w-touch items-center justify-center rounded-full border transition-colors ${
           selected ? 'bg-accent-soft text-accent' : 'border-line bg-surface-elevated text-fg-muted'
         }`}
         // 선택 시 유저의 티켓 잉크색(themeColor) 링. 미설정이면 accent로 폴백.

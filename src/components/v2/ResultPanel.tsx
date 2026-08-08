@@ -399,7 +399,7 @@ export function ResultPanel({
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-field-sm border border-line bg-surface-elevated px-3.5 text-caption font-medium text-fg transition-colors hover:border-accent hover:text-accent"
+                className="inline-flex min-h-touch shrink-0 items-center justify-center rounded-field-sm border border-line bg-surface-elevated px-3.5 text-caption font-medium text-fg transition-colors hover:border-accent hover:text-accent"
               >
                 <span key={copyLabel} className="inline-block animate-fade-in">
                   {copyLabel}

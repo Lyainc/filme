@@ -554,7 +554,7 @@ export function Landing({
               text-landing-muted(위 서브카피와 동일 근거)로 라이트 5.24:1 확보 —
               --fg-faint 구분자(·)는 aria-hidden 장식이라 텍스트 대비 대상이 아니라 그대로 둔다.
 
-              WCAG 2.5.8(AA) 최소 24×24 미달 — 같은 파일 OCR CTA(min-h-[44px])와 동일하게
+              WCAG 2.5.8(AA) 최소 24×24 미달 — 같은 파일 OCR CTA와 동일하게
               min-h-touch(44px)로 채운다(#646). */}
           <div className="relative mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-caption text-landing-muted">
             <div aria-hidden="true" className="absolute inset-0 -z-[5] bg-bg" />
