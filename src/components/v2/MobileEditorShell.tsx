@@ -336,7 +336,7 @@ export function MobileEditorShell({
     reclamp();
     window.addEventListener('resize', reclamp);
     return () => window.removeEventListener('resize', reclamp);
-  }, [drawerHandleY]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [drawerHandleY]);
 
   // 엣지 핸들 축 분리 드래그(#567·#579, 동반 설계 — 같은 핸들이 두 제스처를 축으로 갈라
   // 쓴다). 첫 이동이 HANDLE_DRAG_SLOP을 넘는 순간 우세 축으로 잠그고(axis) 이후 이동은

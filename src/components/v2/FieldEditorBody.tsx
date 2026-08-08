@@ -114,7 +114,6 @@ function TitleSheet({ photo }: { photo: Photo }) {
   useEffect(() => {
     const v = title.trim();
     if (v) scheduleSearch(v);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 하이라이트 이동 + 스크롤 동기화 — 리스트가 overflow-y-auto(max-h-56)라 결과가 많으면

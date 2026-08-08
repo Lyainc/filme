@@ -163,7 +163,7 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
     reclamp();
     window.addEventListener('resize', reclamp);
     return () => window.removeEventListener('resize', reclamp);
-  }, [place, pos?.x, pos?.y]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [place, pos?.x, pos?.y]);
 
   // 고정식 top 실측(#419) — 헤더/티켓 콘텐츠 ref의 실제 렌더 위치로 계산해 매직넘버 겹침을 없앤다.
   // 세로는 헤더 바로 아래, 가로는 티켓 콘텐츠(LOGO/FORMAT 스탬프 포함) 위쪽에 오도록 클램프.
