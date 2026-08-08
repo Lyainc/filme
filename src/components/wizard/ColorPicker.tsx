@@ -52,10 +52,15 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
               title={s.label}
               aria-label={s.label}
               data-touch="44"
-              className={`relative inline-flex min-h-touch min-w-touch items-center justify-center rounded-chip border-2 transition-transform active:scale-[0.97] ${
+              // active:scale-[0.97]은 선택 스와치엔 안 얹는다(#647 리뷰) — 선택 상태의 정적
+              // scale-105와 :active 규칙이 동시에 걸리면 특이성상 :active가 이겨(scale-105보다
+              // scale-[0.97]의 명시성이 높음) 눌렀을 때 105%에서 105%가 아니라 그 미만인 97%로
+              // 순간 줄었다 튀는 깜빡임이 생긴다. 선택 스와치는 이미 scale-105로 상태가
+              // 또렷하니 나머지(미선택)만 눌림 피드백을 받는다.
+              className={`relative inline-flex min-h-touch min-w-touch items-center justify-center rounded-chip border-2 transition-transform ${
                 active
                   ? 'border-accent scale-105'
-                  : 'border-line hover:border-accent/40'
+                  : 'border-line hover:border-accent/40 active:scale-[0.97]'
               }`}
               style={{
                 // 46px — rail 상세패널 공통 칩 크기(#367, 무드·후보정 칩과 동일).
