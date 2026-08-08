@@ -558,18 +558,18 @@ export function Landing({
               min-h-touch(44px)로 채운다(#646). */}
           <div className="relative mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-caption text-landing-muted">
             <div aria-hidden="true" className="absolute inset-0 -z-[5] bg-bg" />
-            <button type="button" onClick={onCta} className="min-h-touch inline-flex items-center underline">
+            <button type="button" onClick={onCta} className="min-h-touch inline-flex items-center underline active:scale-[0.97]">
               포스터부터 올리기
             </button>
             <span aria-hidden="true" className="text-fg-faint">·</span>
             {/* TMDB 인앱 포스터 검색(#537) — 파일을 직접 못 구했을 때의 진입로. 선택 후는
                 onCta와 같은 크롭 파이프라인(usePosterCrop.openFile)으로 합류한다. */}
-            <button type="button" onClick={onTmdbSearch} className="min-h-touch inline-flex items-center underline">
+            <button type="button" onClick={onTmdbSearch} className="min-h-touch inline-flex items-center underline active:scale-[0.97]">
               영화 검색해서 가져오기
             </button>
             <span aria-hidden="true" className="text-fg-faint">·</span>
             {/* 포스터 없이 시작(#631) — 단색 바탕 + 조판만으로도 티켓이 성립하는 경로의 진입점. */}
-            <button type="button" onClick={onSkip} data-testid="landing-skip-poster" className="min-h-touch inline-flex items-center underline">
+            <button type="button" onClick={onSkip} data-testid="landing-skip-poster" className="min-h-touch inline-flex items-center underline active:scale-[0.97]">
               직접 입력
             </button>
           </div>

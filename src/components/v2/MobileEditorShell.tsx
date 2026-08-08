@@ -139,7 +139,7 @@ function MenuRow({
       title={title ?? ariaLabel ?? label}
       disabled={disabled}
       onClick={onClick}
-      className={`flex h-touch w-full items-center justify-between gap-2 rounded-lg px-2.5 text-left transition-colors ${
+      className={`flex h-touch w-full items-center justify-between gap-2 rounded-lg px-2.5 text-left transition-colors active:scale-[0.97] ${
         disabled ? 'opacity-40' : 'hover:bg-white/5'
       }`}
       // arm 표시가 채움 틴트(rgba(229,103,95,.16))였을 땐 danger 잉크 대비가 3.79:1로 떨어졌다
@@ -635,7 +635,7 @@ export function MobileEditorShell({
           aria-expanded={menuOpen}
           aria-controls="editor-menu-panel"
           aria-label="편집 메뉴"
-          className="flex h-touch w-touch items-center justify-center rounded-full text-fg-muted transition-colors hover:text-fg"
+          className="flex h-touch w-touch items-center justify-center rounded-full text-fg-muted transition-colors hover:text-fg active:scale-[0.97]"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <line x1="4" y1="7" x2="20" y2="7" />
@@ -650,7 +650,7 @@ export function MobileEditorShell({
           type="button"
           onClick={handleDone}
           aria-disabled={!canExport}
-          className={`inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-body font-semibold transition-colors ${
+          className={`inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-body font-semibold transition-colors active:scale-[0.97] ${
             canExport ? '' : 'border border-line bg-surface-elevated text-fg-muted'
           }`}
           style={doneEnabledStyle}
@@ -1028,13 +1028,18 @@ export function MobileEditorShell({
             onHandlePointerUp();
           }}
           aria-label="티켓 항목 목록 열기"
-          // transform에 transition을 걸지 않는다(PR #663 fresh-eyes 리뷰 P1) — drawerHandleY가
+          // active:scale-[0.97](#647)은 남겨둔다 — drawerHandleY==null(초기 중앙 위치)에서
+          // 키보드 Space-hold 같은 순수 :active 경로(handlePressed JS state가 안 잡는 입력)의
+          // 폴백으로 유효하다. drawerHandleY!=null에서는 인라인 transform:'none'/'scale(0.97)'이
+          // 항상 이 클래스를 덮어써 사실상 무력화되는데, 그게 바로 #662 자체가 고친 문제라 예상된
+          // 동작이다(handlePressed JS가 그 상태의 유일한 경로).
+          // transform엔 transition을 걸지 않는다(PR #663 fresh-eyes 리뷰 P1) — drawerHandleY가
           // null→값으로 처음 바뀌는 axis-lock 순간, top은 즉시 절대값으로 점프하지만(transition
           // 없음) transform은 'translateY(-50%) scale(0.97)' → 'scale(0.97)'로 값이 바뀌면서
           // transition을 타, top과 transform이 같은 프레임에 안 맞아 핸들이 48px(h-24 절반) 위로
           // 튀었다 슬라이드하는 글리치가 최초 드래그 1회 생긴다. "top으로만 움직여서 안전하다"는
           // drawerHandleY가 이미 값이 있는 이후 드래그엔 맞지만 null→값 전환 그 자체는 못 피한다.
-          className={`fixed right-0 z-30 flex h-24 w-11 items-center justify-end ${
+          className={`fixed right-0 z-30 flex h-24 w-11 items-center justify-end active:scale-[0.97] ${
             drawerHandleY == null ? 'top-1/2 -translate-y-1/2' : ''
           }`}
           style={{

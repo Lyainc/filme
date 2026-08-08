@@ -186,7 +186,7 @@ function TitleSheet({ photo }: { photo: Photo }) {
         <button
           type="button"
           onClick={() => runSearch(title.trim())}
-          className="rounded-chip bg-accent px-3 py-1.5 text-accent-ink transition-colors hover:bg-accent-hover"
+          className="rounded-chip bg-accent px-3 py-1.5 text-accent-ink transition-colors hover:bg-accent-hover active:scale-[0.97]"
         >
           ↗ 검색
         </button>
@@ -246,7 +246,7 @@ export function KobisResultList({
             type="button"
             onClick={() => onSelect(movie)}
             data-touch="44"
-            className={`block w-full border-b border-line px-4 py-3 text-left transition-colors last:border-0 hover:bg-accent-soft ${
+            className={`block w-full border-b border-line px-4 py-3 text-left transition-colors last:border-0 hover:bg-accent-soft active:scale-[0.97] ${
               i === highlightIndex ? 'bg-accent-soft' : ''
             }`}
           >
@@ -310,7 +310,7 @@ function FormatChips({
               aria-checked={active}
               onClick={() => onChange(opt.value)}
               data-touch="44"
-              className={`text-mono inline-flex min-h-touch shrink-0 snap-start items-center rounded-chip border px-3 text-micro uppercase tracking-widest transition-colors ${
+              className={`text-mono inline-flex min-h-touch shrink-0 snap-start items-center rounded-chip border px-3 text-micro uppercase tracking-widest transition-colors active:scale-[0.97] ${
                 active
                   ? 'border-accent bg-accent text-accent-ink'
                   : 'border-[var(--glass-border)] bg-[var(--glass-fill)] text-fg hover:bg-accent-soft'
@@ -505,7 +505,7 @@ function StampEditor({
           <button
             type="button"
             onClick={removeImage}
-            className="ml-auto rounded-chip border border-line px-3 py-1.5 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent"
+            className="ml-auto rounded-chip border border-line px-3 py-1.5 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent active:scale-[0.97]"
           >
             이미지 제거
           </button>
@@ -537,7 +537,7 @@ function StampEditor({
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
-        className="inline-flex min-h-touch items-center justify-center gap-2 rounded-chip border border-dashed border-line bg-surface-elevated px-4 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent"
+        className="inline-flex min-h-touch items-center justify-center gap-2 rounded-chip border border-dashed border-line bg-surface-elevated px-4 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent active:scale-[0.97]"
       >
         로고 업로드
       </button>

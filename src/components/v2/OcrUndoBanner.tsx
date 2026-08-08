@@ -33,14 +33,14 @@ export function OcrUndoBanner({ snapshot, filledFields, onCancel, onConfirm }: O
             <button
               type="button"
               onClick={onCancel}
-              className="min-h-touch inline-flex items-center px-2 text-caption font-medium text-fg-muted transition-colors hover:text-fg"
+              className="min-h-touch inline-flex items-center px-2 text-caption font-medium text-fg-muted transition-colors hover:text-fg active:scale-[0.97]"
             >
               되돌리기
             </button>
             <button
               type="button"
               onClick={onConfirm}
-              className="min-h-touch inline-flex items-center rounded-chip bg-accent px-3 text-caption font-medium text-accent-ink transition-colors hover:bg-accent-hover"
+              className="min-h-touch inline-flex items-center rounded-chip bg-accent px-3 text-caption font-medium text-accent-ink transition-colors hover:bg-accent-hover active:scale-[0.97]"
             >
               확인
             </button>

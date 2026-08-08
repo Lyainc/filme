@@ -57,7 +57,7 @@ export const LayoutStrip = memo(function LayoutStrip({ value, onChange }: Layout
             title={layout.caption}
             onClick={() => onChange(layout.id)}
             data-touch="44"
-            className="flex shrink-0 snap-start flex-col items-center gap-1.5"
+            className="flex shrink-0 snap-start flex-col items-center gap-1.5 active:scale-[0.97]"
           >
             <span
               aria-hidden="true"

@@ -45,7 +45,7 @@ function RailIconButton({
       data-touch="44"
       // outline-none 제거(#357) — 전역 :focus-visible 링이 dock 탭에도 걸리게 한다(키보드
       // 포커스에만 뜨므로 터치/마우스 시각 변화 없음).
-      className="flex shrink-0 snap-center flex-col items-center gap-1.5"
+      className="flex shrink-0 snap-center flex-col items-center gap-1.5 active:scale-[0.97]"
     >
       <span
         aria-hidden="true"

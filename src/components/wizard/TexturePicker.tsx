@@ -112,7 +112,7 @@ function TexturePicker({ axis, options, value, onChange, croppedImageUrl, ariaLa
               onClick={() => onChange(tex.value)}
               data-touch="44"
               title={tex.label}
-              className="flex shrink-0 snap-start flex-col items-center gap-1.5"
+              className="flex shrink-0 snap-start flex-col items-center gap-1.5 active:scale-[0.97]"
             >
               <span
                 aria-hidden="true"

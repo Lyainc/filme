@@ -45,7 +45,7 @@ export default function VisibilityCheckbox({ checked, onChange, label }: Visibil
       onClick={() => onChange(!checked)}
       aria-label={`${label} 티켓에 표시`}
       title={checked ? '티켓에 표시 중 — 끄면 숨겨져요' : '티켓에서 숨김 — 켜면 표시돼요'}
-      className={`-m-[13px] inline-flex shrink-0 cursor-pointer p-[13px] transition-colors ${
+      className={`-m-[13px] inline-flex shrink-0 cursor-pointer p-[13px] transition-colors active:scale-[0.97] ${
         checked ? 'text-fg' : 'text-fg-faint'
       }`}
     >
