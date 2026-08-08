@@ -236,7 +236,6 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
                         className="flex w-full items-center gap-3 rounded-field-sm px-2 py-2 text-left hover:bg-accent-soft active:scale-[0.97]"
                       >
                         {movie.poster_path ? (
-                          // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={`${IMG_BASE}?path=${encodeURIComponent(movie.poster_path)}&size=w342`}
                             alt=""
@@ -307,7 +306,6 @@ export function TmdbPosterModal({ onClose, onSelect, onFallbackUpload }: TmdbPos
                     aria-label={`포스터 판본 선택 ${poster.file_path}`}
                     className="aspect-[2/3] overflow-hidden rounded-field-sm border border-line disabled:opacity-50 active:scale-[0.97]"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={`${IMG_BASE}?path=${encodeURIComponent(poster.file_path)}&size=w342`}
                       alt=""

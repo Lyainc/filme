@@ -94,7 +94,6 @@ export default function ImageCropModal({
   useEffect(() => {
     const img = imgRef.current;
     if (img && img.complete && img.naturalWidth > 0) initCrop(aspect, img.width, img.height);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestedAspect]);
 
   const handleConfirm = () => {
@@ -252,7 +251,6 @@ export default function ImageCropModal({
               minHeight={20}
               disabled={isProcessing}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 ref={imgRef}
                 src={imageSrc}

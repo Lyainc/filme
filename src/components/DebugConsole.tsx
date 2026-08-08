@@ -154,7 +154,7 @@ export default function DebugConsole() {
           {lastCapture && (
             <div style={{ marginBottom: 6 }}>
               <div>↓ 최종 합성 결과(저장/공유 전):</div>
-              {/* eslint-disable-next-line @next/next/no-img-element -- 디버그 오버레이, next/image 불필요 */}
+              {/* next/image 미사용 — 디버그 오버레이, next/image 불필요 */}
               <img src={lastCapture} alt="last capture" style={{ maxWidth: '100%', border: '1px solid #0f0' }} />
             </div>
           )}

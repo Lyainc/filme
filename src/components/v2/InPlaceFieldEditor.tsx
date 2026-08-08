@@ -230,7 +230,6 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
     const visH = vvBox?.h ?? window.innerHeight;
     const target = Math.max(96, visH * 0.35);
     onLift(Math.min(0, Math.round(target - r.vpCenter)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [field, hasRect, vvBox?.h]);
 
   // ── 값 바인딩 ──────────────────────────────────────────────────────────────

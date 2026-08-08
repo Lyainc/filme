@@ -162,7 +162,7 @@ export default function TicketLanding({ imageUrl, title, pageUrl, width, height,
             className="w-full"
             style={{ perspective: '1200px', maxWidth: `min(24rem, calc(45dvh * ${width} / ${height}))` }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element — Blob 원격 도메인이라 일반 img 사용 */}
+            {/* next/image 미사용 — Blob 원격 도메인이라 일반 img 사용 */}
             <img
               src={imageUrl}
               alt={ogTitle}
