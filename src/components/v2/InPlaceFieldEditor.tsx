@@ -323,7 +323,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
   }, [rect, field, wrapperEl, isStamp, showEye]);
 
   const barBtnCls =
-    'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-fg-muted transition-colors hover:text-fg';
+    'inline-flex h-touch w-touch shrink-0 items-center justify-center rounded-full text-fg-muted transition-colors hover:text-fg';
 
   // 캐럿 스케일(#365) — caret 위치는 input 자신의 텍스트 폭 계산을 따르므로, 티켓 렌더 텍스트와
   // 같은 폰트·자간·정렬로 흘려야 caret이 실제 텍스트 끝에 온다. 단 16px 미만 input은 iOS Safari가
@@ -406,7 +406,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
         />
       )}
 
-      {/* 필드바 — 버튼 44px(h-11 w-11). 시안 30px를 막았던 #354의 근거는 "앱 현행 44~48px 대비
+      {/* 필드바 — 버튼 44px(h-touch w-touch). 시안 30px를 막았던 #354의 근거는 "앱 현행 44~48px 대비
           회귀"(일관성)였는데, 그 일관성 논거 자체는 #508이 플로팅 툴바를 32px로 내리며 번복했다.
           그래도 여기 44px은 **유지**한다 — 근거가 일관성에서 다음 둘로 갈아탔다(#553):
           (1) 이 바는 편집 중에만 뜨는 absolute 오버레이라, 줄여도 세로 예산을 한 픽셀도 안 돌려준다.
@@ -487,7 +487,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
           aria-label="편집 완료"
           onPointerDown={(e) => e.preventDefault()}
           onClick={onClose}
-          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
+          className="inline-flex h-touch w-touch shrink-0 items-center justify-center rounded-full"
           style={{ background: 'linear-gradient(135deg, var(--accent-hover), var(--accent))', color: 'var(--accent-ink)' }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

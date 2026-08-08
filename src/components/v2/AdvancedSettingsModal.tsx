@@ -98,14 +98,14 @@ export function AdvancedSettingsModal({
       >
         <div className="shrink-0 px-4 pt-3">
           <div className={CARD}>
-            <div className="flex h-11 items-center justify-between gap-2 px-2.5">
+            <div className="flex h-touch items-center justify-between gap-2 px-2.5">
               <h2 className="truncate text-body font-semibold text-fg">고급 설정</h2>
               <button
                 type="button"
                 onClick={onClose}
                 aria-label="닫기"
                 data-touch="44"
-                className="-mr-1.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-fg transition-colors hover:bg-white/5"
+                className="-mr-1.5 flex h-touch w-touch shrink-0 items-center justify-center rounded-lg text-fg transition-colors hover:bg-white/5"
               >
                 <svg {...TB_ICON}>
                   <path d="M18 6 6 18M6 6l12 12" />
@@ -137,7 +137,7 @@ export function AdvancedSettingsModal({
                     onClick={() => onModeChange(m.orient, m.place)}
                     // 라벨은 --fg 고정(#569) — --accent는 불투명 표면 위에서도 3.97:1이라 AA에
                     // 못 닿는다. 선택 신호는 accent-soft 채움 + accent 점(둘 다 비텍스트 3:1 기준).
-                    className={`flex h-11 w-full items-center gap-2.5 rounded-[9px] px-2.5 text-caption font-semibold text-fg ${
+                    className={`flex h-touch w-full items-center gap-2.5 rounded-[9px] px-2.5 text-caption font-semibold text-fg ${
                       on ? 'bg-accent-soft' : 'hover:bg-white/5'
                     }`}
                   >
@@ -157,7 +157,7 @@ export function AdvancedSettingsModal({
                   onClick={() => onSnap('left')}
                   aria-label="왼쪽 가장자리로 이동"
                   title="왼쪽 가장자리로 이동"
-                  className="flex h-11 flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:bg-white/5 hover:text-fg"
+                  className="flex h-touch flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:bg-white/5 hover:text-fg"
                 >
                   <svg {...TB_ICON}>
                     <path d="M3 19V5" />
@@ -170,7 +170,7 @@ export function AdvancedSettingsModal({
                   onClick={() => onSnap('right')}
                   aria-label="오른쪽 가장자리로 이동"
                   title="오른쪽 가장자리로 이동"
-                  className="flex h-11 flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:bg-white/5 hover:text-fg"
+                  className="flex h-touch flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:bg-white/5 hover:text-fg"
                 >
                   <svg {...TB_ICON}>
                     <path d="M21 5v14" />
@@ -193,7 +193,7 @@ export function AdvancedSettingsModal({
                 onClick={() => onSnapDrawerHandle('top')}
                 aria-label="위쪽 가장자리로 이동"
                 title="위쪽 가장자리로 이동"
-                className="flex h-11 flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:bg-white/5 hover:text-fg"
+                className="flex h-touch flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:bg-white/5 hover:text-fg"
               >
                 <svg {...TB_ICON}>
                   <path d="M12 19V5" />
@@ -205,7 +205,7 @@ export function AdvancedSettingsModal({
                 onClick={() => onSnapDrawerHandle('bottom')}
                 aria-label="아래쪽 가장자리로 이동"
                 title="아래쪽 가장자리로 이동"
-                className="flex h-11 flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:bg-white/5 hover:text-fg"
+                className="flex h-touch flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:bg-white/5 hover:text-fg"
               >
                 <svg {...TB_ICON}>
                   <path d="M12 5v14" />

@@ -44,12 +44,12 @@ describe('AutoSaveIndicator (#436)', () => {
     expect(screen.getByText('자동저장').className).toContain('whitespace-nowrap');
   });
 
-  test('#570 — 점 크기는 h-2(8px)로 줄고 44px 히트 타깃(h-11 w-11)은 유지된다', () => {
+  test('#570 — 점 크기는 h-2(8px)로 줄고 44px 히트 타깃(h-touch w-touch)은 유지된다', () => {
     render(<AutoSaveIndicator enabled lastSavedAt={null} onToggle={() => {}} />);
 
     const button = screen.getByRole('switch');
-    expect(button.className).toContain('h-11');
-    expect(button.className).toContain('w-11');
+    expect(button.className).toContain('h-touch');
+    expect(button.className).toContain('w-touch');
     const dot = button.querySelector('span > span:last-child') as HTMLElement;
     expect(dot.className).toContain('h-2 w-2');
     expect(dot.className).not.toContain('h-2.5');

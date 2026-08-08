@@ -138,7 +138,7 @@ export function FieldDrawer({ photo, onField, onClose, children }: FieldDrawerPr
             onClick={() =>
               photo.updateFieldVisibility(allVisOn ? ALL_FIELDS_OFF_KEEP_REQUIRED : ALL_FIELDS_ON)
             }
-            className="flex h-11 w-full items-center justify-between rounded-card bg-surface-elevated px-3 text-micro font-medium text-fg-muted transition-colors hover:text-fg"
+            className="flex h-touch w-full items-center justify-between rounded-card bg-surface-elevated px-3 text-micro font-medium text-fg-muted transition-colors hover:text-fg"
           >
             <span>전체 표시</span>
             <EyeIcon open={allVisOn} size={18} />
@@ -217,7 +217,7 @@ function DrawerRow({
       {extra}
       {locked ? (
         <span
-          className="inline-flex h-11 w-11 shrink-0 items-center justify-center text-fg-muted"
+          className="inline-flex h-touch w-touch shrink-0 items-center justify-center text-fg-muted"
           title="필수 항목 — 항상 표시돼요"
           aria-label={`${label} 필수 항목`}
           role="img"
@@ -234,7 +234,7 @@ function DrawerRow({
           aria-checked={checked}
           aria-label={`${label} 티켓에 표시`}
           onClick={() => onToggle(!checked)}
-          className={`inline-flex h-11 w-11 shrink-0 items-center justify-center transition-colors ${
+          className={`inline-flex h-touch w-touch shrink-0 items-center justify-center transition-colors ${
             checked ? 'text-fg' : 'text-fg-muted'
           }`}
         >
@@ -284,7 +284,7 @@ function LogoRow({
             type="button"
             aria-label={`${STAMP_LABELS[target]} 이미지 업로드`}
             onClick={() => fileInputRef.current?.click()}
-            className="inline-flex h-11 w-11 shrink-0 items-center justify-center text-fg-muted transition-colors hover:text-fg"
+            className="inline-flex h-touch w-touch shrink-0 items-center justify-center text-fg-muted transition-colors hover:text-fg"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <rect x="3" y="3" width="18" height="18" rx="3" />

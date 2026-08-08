@@ -276,7 +276,7 @@ export function OcrUploadCard({
           aria-busy={isProcessing}
           aria-label={idleLabel}
           data-touch="44"
-          className="w-full min-h-[44px] rounded-field-sm flex items-center justify-center gap-2 font-semibold text-body transition-[background-color,color,opacity,transform] duration-200 active:scale-[0.97] bg-accent text-accent-ink hover:bg-accent-hover cursor-pointer disabled:opacity-70 disabled:cursor-default"
+          className="w-full min-h-touch rounded-field-sm flex items-center justify-center gap-2 font-semibold text-body transition-[background-color,color,opacity,transform] duration-200 active:scale-[0.97] bg-accent text-accent-ink hover:bg-accent-hover cursor-pointer disabled:opacity-70 disabled:cursor-default"
         >
           {isProcessing ? (
             <span className={prefersReducedMotion ? '' : 'animate-sprocket-spin'}>

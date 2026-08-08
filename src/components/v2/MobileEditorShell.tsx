@@ -139,7 +139,7 @@ function MenuRow({
       title={title ?? ariaLabel ?? label}
       disabled={disabled}
       onClick={onClick}
-      className={`flex h-11 w-full items-center justify-between gap-2 rounded-lg px-2.5 text-left transition-colors ${
+      className={`flex h-touch w-full items-center justify-between gap-2 rounded-lg px-2.5 text-left transition-colors ${
         disabled ? 'opacity-40' : 'hover:bg-white/5'
       }`}
       // arm 표시가 채움 틴트(rgba(229,103,95,.16))였을 땐 danger 잉크 대비가 3.79:1로 떨어졌다
@@ -635,7 +635,7 @@ export function MobileEditorShell({
           aria-expanded={menuOpen}
           aria-controls="editor-menu-panel"
           aria-label="편집 메뉴"
-          className="flex h-11 w-11 items-center justify-center rounded-full text-fg-muted transition-colors hover:text-fg"
+          className="flex h-touch w-touch items-center justify-center rounded-full text-fg-muted transition-colors hover:text-fg"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <line x1="4" y1="7" x2="20" y2="7" />

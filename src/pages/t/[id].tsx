@@ -183,7 +183,7 @@ export default function TicketLanding({ imageUrl, title, pageUrl, width, height,
             {/* CTA 슬림화(#491) — 44px는 탭 타깃 하한이라 더 낮추지 않는다. */}
             <Link
               href="/"
-              className="mt-1 inline-flex min-h-[44px] items-center justify-center rounded-field-sm bg-accent px-6 text-body font-semibold text-accent-ink transition-colors hover:bg-accent-hover"
+              className="mt-1 inline-flex min-h-touch items-center justify-center rounded-field-sm bg-accent px-6 text-body font-semibold text-accent-ink transition-colors hover:bg-accent-hover"
             >
               나도 티켓 만들기 →
             </Link>
