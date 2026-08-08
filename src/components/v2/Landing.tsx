@@ -1,4 +1,4 @@
-import type { DragEvent, PointerEvent, ReactNode } from 'react';
+import type { DragEvent, MouseEvent, PointerEvent, ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { LayoutId, MovieInfo, TicketComponents } from '@/types';
 import { ALL_FIELDS_ON } from '@/constants/fieldVisibility';
@@ -197,6 +197,11 @@ function MoodCarousel({
 
   const gestureProps = {
     onPointerDown: (e: PointerEvent) => {
+      // 컨테이너 밖으로 끌고 나가 놓아도 이 엘리먼트가 계속 pointer를 받게 캡처한다 — 안 잡으면
+      // 마우스로 길게 누른 채(slowed=true) 밖에서 떼는 순간 onPointerUp/onPointerCancel이 아예
+      // 안 와 slowed가 다음 완전한 press-release 전까지 눌러앉는다(터치는 touch-action:pan-y가
+      // 사실상 암묵 캡처라 안 겪는다).
+      e.currentTarget.setPointerCapture(e.pointerId);
       gesture.current = { x: e.clientX, swiped: false, longPressed: false };
       clearTimeout(pressTimer.current);
       pressTimer.current = setTimeout(() => {
@@ -214,11 +219,17 @@ function MoodCarousel({
       gesture.current.x = e.clientX;
       step(dx < 0 ? 1 : -1);
     },
-    onPointerUp: () => {
+    onPointerUp: (e: PointerEvent) => {
+      // 캡처를 여기서 안 풀면, pointerup 뒤 브라우저가 만드는 click의 타깃이 캡처한 이 컨테이너로
+      // 재지정된다(Pointer Events 스펙 — 캡처 상태에서 pointerup이 끝나면 합성 click은 캡처
+      // 엘리먼트를 타깃으로 잡는다) — 그러면 안쪽 카드 <button>의 onClick이 평범한 클릭에서도
+      // 영영 안 불린다. pointerup 처리 중에 동기로 풀어야 뒤이은 click은 원래대로 button을 탄다.
+      e.currentTarget.releasePointerCapture(e.pointerId);
       clearTimeout(pressTimer.current);
       setSlowed(false);
     },
-    onPointerCancel: () => {
+    onPointerCancel: (e: PointerEvent) => {
+      e.currentTarget.releasePointerCapture(e.pointerId);
       clearTimeout(pressTimer.current);
       gesture.current.swiped = true; // 취소된 제스처로는 진입시키지 않는다
       setSlowed(false);
@@ -273,10 +284,16 @@ function MoodCarousel({
     <button
       key={key}
       type="button"
-      onClick={() => {
+      onClick={(e: MouseEvent<HTMLButtonElement>) => {
         // 넘기려던 손짓이나 길게 누름은 진입이 아니다 — click은 pointerup 뒤에 오므로 여기서
-        // 걸러야 스와이프 끝에 손을 뗀 자리의 무드로 갑자기 들어가는 일이 없다.
-        if (gesture.current.swiped || gesture.current.longPressed) return;
+        // 걸러야 스와이프 끝에 손을 뗀 자리의 무드로 갑자기 들어가는 일이 없다. 단 이 가드는
+        // pointerdown을 거친 클릭에만 건다 — 키보드 활성화(Enter/Space)는 detail이 0이라 pointer
+        // 클릭과 구분되는데, gesture는 오직 다음 pointerdown에서만 리셋되므로 안 걸러주면 스와이프
+        // 한 번 뒤엔 pointerdown 없이 온 키보드 Enter가 stale swiped=true를 읽어 조용히 막힌다.
+        // detail===0은 실제 브라우저 키보드 활성화 신호로 널리 쓰이는 관용구(Radix 등)지만 100%
+        // 보장은 아니다(프로그래매틱 .click()도 0을 낸다) — 이 앱엔 그런 자동화 호출 경로가 없어
+        // 실사용 리스크는 없다고 판단했다.
+        if (e.detail !== 0 && (gesture.current.swiped || gesture.current.longPressed)) return;
         onEnterMood(layout.id);
       }}
       aria-label={`${layout.label} 무드로 바로 시작 · ${layout.caption}`}
