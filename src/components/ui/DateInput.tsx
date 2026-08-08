@@ -1,4 +1,6 @@
 import type { DateGranularity } from '@/types';
+import { cn } from '@/utils/cn';
+import { inputVariants } from './variants';
 
 // Merges coarser-granularity edits onto a full-ISO value so switching year↔date doesn't discard precision.
 function mergeDatePrefix(stored: string, edit: string): string {
@@ -20,8 +22,10 @@ export function DateInput({
   /** placeholder만 있던 스핀버튼에 접근명을 부여 — SR이 무라벨로 읽지 않게(#198). */
   ariaLabel?: string;
 }) {
-  const base =
-    'flex-1 min-w-[160px] rounded-field border border-line bg-paper px-3.5 py-3 text-title text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft';
+  const base = cn(
+    inputVariants({ surface: 'paper' }),
+    'flex-1 min-w-[160px] rounded-field px-3.5 py-3 text-title text-fg',
+  );
   const parts = value ? value.split('-') : [];
   if (granularity === 'year') {
     // Display only the year part; preserve stored month/day on edit.

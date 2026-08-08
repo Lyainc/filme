@@ -1,3 +1,6 @@
+import { cn } from '@/utils/cn';
+import { inputVariants } from '@/components/ui/variants';
+
 interface ColorPickerProps {
   value: string;
   onChange: (value: string) => void;
@@ -128,7 +131,10 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
           maxLength={6}
           aria-label="Hex color"
           placeholder="FFFFFF"
-          className="text-mono w-full rounded-field border border-line bg-paper px-3.5 py-2.5 text-title uppercase tracking-widest text-fg outline-none transition-colors placeholder:text-fg-muted focus:border-accent focus:ring-2 focus:ring-accent-soft disabled:cursor-not-allowed"
+          className={cn(
+            inputVariants({ surface: 'paper' }),
+            'text-mono w-full rounded-field px-3.5 py-2.5 text-title uppercase tracking-widest text-fg transition-colors placeholder:text-fg-muted disabled:cursor-not-allowed',
+          )}
         />
       </div>
     </div>

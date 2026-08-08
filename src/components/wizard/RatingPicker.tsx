@@ -2,6 +2,8 @@ import { useDeferredValue, useEffect, useRef, useState, type PointerEvent } from
 import { Eyebrow } from '@/components/v2/Eyebrow';
 import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
 import { shouldCommitSliderValue } from './BrightnessSlider';
+import { cn } from '@/utils/cn';
+import { inputVariants } from '@/components/ui/variants';
 
 interface RatingPickerProps {
   value: number;
@@ -205,9 +207,11 @@ export default function RatingPicker({ value, onValueChange, visible, onVisibleC
             }}
             aria-label="평점 직접 입력 (0.1 단위)"
             // 16px 미만이면 iOS Safari가 포커스 시 자동 줌인해 레이아웃이 틀어진다(#274) — FieldEditorBody의
-            // INPUT_CLS와 동일 톤(글래스 서피스·풀폭·16px)으로 통일(#435). RatingPicker→FieldEditorBody
-            // 순환 import를 피하려 리터럴을 중복하니, 톤을 바꿀 땐 두 곳을 같이 고칠 것.
-            className="text-mono w-full rounded-field border border-[var(--glass-border)] bg-[var(--glass-fill)] px-3.5 py-3 text-title text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
+            // INPUT_CLS와 동일 톤(글래스 서피스·풀폭·16px)으로 통일(#435). 서피스+포커스 링은 이제
+            // inputVariants(ui/variants.ts) 공유라 순환 import 없이 한 곳에서만 바뀐다 — 나머지
+            // 레이아웃 클래스(px/py/text)는 여전히 FieldEditorBody의 INPUT_CLS와 리터럴 중복이니
+            // 톤을 바꿀 땐 두 곳을 같이 고칠 것.
+            className={cn(inputVariants({ surface: 'glass' }), 'text-mono w-full rounded-field px-3.5 py-3 text-title text-fg')}
           />
         )}
       </div>
