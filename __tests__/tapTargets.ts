@@ -17,12 +17,17 @@ export const MIN_AA = 24;
 /**
  * 파서가 못 보는 축소 경로를 막는다 — 크기 자체가 아니라 "선언된 크기를 나중에 줄이는 수단"이
  * 대상이라, 타깃 엘리먼트뿐 아니라 그 서브트리(스와치 span 등)에도 따로 걸 수 있게 분리했다.
+ *
+ * `active:scale-*`는 예외다(#647) — breakpoint/variant로 선언 크기 자체를 몰래 줄이는 우회
+ * (`max-[380px]:h-5` 류)를 막는 게 이 정규식의 원래 의도고, `:active` 순간에만 걸리는 눌림
+ * 피드백은 정적 선언 크기를 바꾸지 않는다. 다른 콜론-variant(hover:/focus:/breakpoint:) 축소는
+ * 여전히 막힌다.
  */
 export function assertNoShrink(el: Element, what: string) {
   const cls = el.getAttribute('class') ?? '';
   const style = el.getAttribute('style') ?? '';
   const at = (s: string) => `${what}: ${cls || style} — ${s}`;
-  expect(at('variant 금지')).not.toMatch(/(?:^|\s)\S+:(?:h|w|size|scale|max-[hw])-/);
+  expect(at('variant 금지')).not.toMatch(/(?:^|\s)(?!active:scale-)\S+:(?:h|w|size|scale|max-[hw])-/);
   expect(at('scale 클래스 금지')).not.toMatch(/(?:^|\s)-?scale-/);
   // max-h/max-w는 h-N을 그대로 둔 채 실렌더만 줄인다 — 파서엔 안 보이는 축소라 같이 막는다.
   expect(at('max-h/max-w 금지')).not.toMatch(/(?:^|\s)max-[hw]-/);
@@ -33,8 +38,15 @@ export function assertNoShrink(el: Element, what: string) {
 }
 
 /**
- * 선언된 타깃 크기를 px로 돌려준다. 축마다 셋 중 하나로 선언돼 있어야 한다:
+ * tailwind.config.js theme.extend.spacing의 named 토큰 — h-N처럼 숫자×4px가 아니라 리터럴
+ * px값이라 별도 조회 테이블로 읽는다(#647 축 2: min-h-touch/h-touch 도입으로 처음 필요해짐).
+ */
+const NAMED_SPACING_PX: Record<string, number> = { touch: 44 };
+
+/**
+ * 선언된 타깃 크기를 px로 돌려준다. 축마다 다음 중 하나로 선언돼 있어야 한다:
  *  - Tailwind `h-N`/`w-N` (N×4px)
+ *  - Tailwind named spacing `h-touch`/`w-touch`(NAMED_SPACING_PX 참고)
  *  - 인라인 `style="width:46px"` (TexturePicker 칩처럼 상수로 크기를 잡는 경우)
  *  - 가로만: `flex-1`/`w-full` — 부모 폭을 채우는 선언이라 축소 경로가 아니다(Infinity로 통과)
  */
@@ -46,6 +58,8 @@ export function targetPx(el: Element, what: string): { w: number; h: number } {
 
   // size-N은 두 축을 한 번에 잡는 Tailwind 관용구 — h-N/w-N과 같은 선언이라 같이 읽는다.
   const fromClass = (axis: 'h' | 'w') => {
+    const named = cls.match(new RegExp(`(?:^|\\s)(?:min-)?${axis}-(${Object.keys(NAMED_SPACING_PX).join('|')})(?:\\s|$)`));
+    if (named) return NAMED_SPACING_PX[named[1]];
     const m = cls.match(new RegExp(`(?:^|\\s)(?:${axis}|size)-(\\d+)(?:\\s|$)`));
     return m ? Number(m[1]) * 4 : null;
   };
