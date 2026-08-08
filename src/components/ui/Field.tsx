@@ -1,5 +1,7 @@
 import { forwardRef, type ReactNode } from 'react';
 import { Eyebrow } from '../v2/Eyebrow';
+import { cn } from '@/utils/cn';
+import { inputVariants } from './variants';
 
 interface FieldProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
   label: string;
@@ -31,11 +33,12 @@ const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
       <input
         ref={ref}
         id={id}
-        className={[
-          'w-full rounded-field border border-line bg-paper px-3.5 py-3 text-title text-fg outline-none transition-colors placeholder:text-fg-muted focus:border-accent focus:ring-2 focus:ring-accent-soft disabled:opacity-40 disabled:cursor-not-allowed',
+        className={cn(
+          inputVariants({ surface: 'paper' }),
+          'w-full rounded-field px-3.5 py-3 text-title text-fg transition-colors placeholder:text-fg-muted disabled:opacity-40 disabled:cursor-not-allowed',
           dimmed && 'opacity-40',
           className,
-        ].filter(Boolean).join(' ')}
+        )}
         {...props}
       />
       {hint && <p className="text-micro leading-relaxed text-fg-muted">{hint}</p>}
