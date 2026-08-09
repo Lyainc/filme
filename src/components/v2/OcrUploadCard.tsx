@@ -172,7 +172,7 @@ export function OcrUploadCard({
 
       // shared 윈도우 소진(#635 c2) — "인식된 정보가 없어요"와 원인이 다르므로 갈라 안내하고,
       // 아래 필드 적용 로직(전부 빈 결과이므로 어차피 no-op)은 타지 않는다. 이탈 경로는 이 토스트가
-      // 아니라 Landing의 exit row(포스터 있으면 올리기 · 직접 입력)가 상시 담당한다.
+      // 아니라 Landing의 exit row(포스터 있으면 올리기 · 포스터 없이 직접 입력)가 상시 담당한다.
       if (result.rateLimited) {
         showToast('지금 요청이 많아요. 잠시 후 다시 시도하거나 직접 입력해 주세요.');
         return;

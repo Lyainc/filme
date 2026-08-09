@@ -911,7 +911,7 @@ export function MobileEditorShell({
             mode={croppedImageUrl || isMax ? 'hidden' : showLanding ? 'overlay' : 'inline'}
             onCta={handlePosterTap}
             onSkip={() => setLandingDismissed(true)}
-            // 갤러리 샘플 클릭 — 다섯 번째 진입점(#615). 다른 넷과 달리 "훑어보고 나중에 커밋"할
+            // 갤러리 샘플 클릭 — 네 번째 진입점(#615). 다른 셋과 달리 "훑어보고 나중에 커밋"할
             // 로컬 미러가 없다 — 샘플 자체가 훑어보기 없는 완결된 선택이라 클릭된 무드를 그 자리에서
             // 바로 components.layout에 커밋한다.
             onEnterMood={(id) => {
