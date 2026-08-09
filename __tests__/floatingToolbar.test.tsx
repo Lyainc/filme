@@ -343,6 +343,18 @@ describe('숨김 토글 버튼 눌림 scale 합성 (#662)', () => {
     fireEvent.pointerUp(btn, { clientX: 0, clientY: 0, pointerId: 1 });
     expect(btn.style.transform).toBe('translateX(-50%)');
   });
+
+  test('transform에 transition을 거는 클래스를 다시 붙이지 않는다(드래그 랙 회귀, #647 rebase 화해)', () => {
+    // 이 버튼은 모든 배치 상태에서 자기 자신이 드래그 핸들이라(onGripMove가 pointermove마다
+    // translate(x,y)를 이 transform에 직접 쓴다), transition-transform 계열 클래스가 붙으면
+    // 드래그 중 매 프레임이 150ms씩 ease되어 손가락보다 눈에 띄게 뒤처진다. #647을 rebase해
+    // active:scale-[0.97] 클래스를 다시 들여올 때 transition-transform까지 같이 들어오지
+    // 않았는지 잠근다 — transition-colors만 허용.
+    const btn = renderHidden({});
+    const cls = btn.getAttribute('class') ?? '';
+    expect(cls).toMatch(/transition-colors/);
+    expect(cls).not.toMatch(/transition-transform|transition-\[[^\]]*transform[^\]]*\]|transition-all/);
+  });
 });
 
 // 탭 타깃 크기 회귀 (#508) — 풋프린트 축소가 WCAG 2.2 SC 2.5.8(AA, 24×24) 아래로 못 내려가게 못박는다.
