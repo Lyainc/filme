@@ -405,7 +405,8 @@ Vision이 주는 건 "무슨 글자가 어디 있나"까지다. 우리 OCR의 �
 - **`src/utils/ratelimit.ts`** — `LimitPolicy.scope`에서 `'tmdb' | 'tmdb-image-thumb' | 'tmdb-image-original'`
   세 값, `checkTmdbRateLimit`·`checkTmdbImageRateLimit` 두 함수. **#638에서 썸네일/원본으로 쪼갠
   스코프 분리도 같이 사라진다**
-- **환경변수** — `TMDB_API_KEY`(Vercel 프로젝트 설정에서도 제거)
+- **환경변수** — TMDB API 키 항목(`.env.example`과 Vercel 프로젝트 설정 양쪽에서 제거. 키 이름을
+  여기 다시 적지 않는 건 "코드·문서 어디에도 안 남는다"가 #665의 완료 조건이라서다)
 - **문서** — `CLAUDE.md`의 "Current Project Status" TMDB 두 항목(#537·#638),
   `docs/specs/landing-mood-first-ocr-entry.yaml`의 TMDB 합류 서술
 
