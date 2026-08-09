@@ -390,9 +390,14 @@ export function usePhototicket() {
     setDirtyTick((t) => t + 1);
   }, []);
 
-  // TMDB 포스터 확정 후 KOBIS 보강 전용(#537 c8) — updateMovieInfo와 달리 이미 값이 있는 필드는
-  // 덮지 않는다. 사용자가 TMDB 검색 전에 이미 손으로 채운 필드를 비동기 보강이 지워버리면 안 된다.
+  // 비동기 자동 보강 전용 — updateMovieInfo와 달리 이미 값이 있는 필드는 덮지 않는다. 사용자가
+  // 먼저 손으로 채운 필드를 뒤늦게 도착한 보강이 지워버리면 안 되기 때문이다.
   // prev 기준으로 빈 필드를 판정하므로 호출 시점 클로저가 stale해도 안전하다(레이스 없음).
+  //
+  // **지금 호출부가 0이다** — 유일한 소비자였던 TMDB 포스터 확정 경로(#537 c8)가 #665에서
+  // 철거됐다. 그래도 남긴다: 이 규칙과 아래 #638 P2 회귀(숫자 0 오판 금지)는 다음 자동 보강
+  // 경로(#635의 OCR 체인이 첫 후보)가 붙을 때 그대로 다시 필요하고,
+  // __tests__/fillEmptyMovieInfoRatingZero.test.tsx가 계속 그걸 지킨다.
   const fillEmptyMovieInfo = useCallback((info: Partial<MovieInfo>) => {
     setState((prev) => {
       const patch: Partial<MovieInfo> = {};
