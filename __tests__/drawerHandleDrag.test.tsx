@@ -172,4 +172,18 @@ describe('필드 드로어 핸들 눌림 scale 합성 (#662)', () => {
     fireEvent.pointerUp(handle, { pointerId: 1, clientX: 400, clientY: 340 });
     expect(handle.style.transform).toBe('none');
   });
+
+  test('transform에 transition을 거는 클래스를 다시 붙이지 않는다(핸들 점프 회귀, PR #664 리뷰 P1)', async () => {
+    // floatingToolbar.test.tsx의 같은 잠금과 대칭 — 이유는 이쪽이 더 좁다. 핸들은
+    // drawerHandleY가 null→값으로 처음 바뀌는 axis-lock 순간 top이 즉시 절대값으로 점프하는데
+    // (top엔 transition이 없다) transform만 transition을 타면 둘이 같은 프레임에 안 맞아 핸들이
+    // 48px(h-24 절반) 위로 튄다(PR #663 리뷰 P1). active:scale을 다시 손댈 때 transition-transform이
+    // 딸려 들어오지 않았는지 잠근다.
+    const user = userEvent.setup();
+    render(<Harness />);
+    const handle = await seedPoster(user);
+    const cls = handle.getAttribute('class') ?? '';
+    expect(cls).toMatch(/active:scale-\[0\.97\]/);
+    expect(cls).not.toMatch(/transition-transform|transition-\[[^\]]*transform[^\]]*\]|transition-all/);
+  });
 });

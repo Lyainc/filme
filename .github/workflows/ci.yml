@@ -51,6 +51,11 @@ jobs:
 
       - run: bun run typecheck
 
+      # eslint.config.mjs의 no-raw-touch-target-size는 "44px 표현 단일화"(#647)를 지키는 유일한
+      # 자동 장치인데, 여기에 결선하지 않으면 required check를 통과하는 한 누구든 min-h-[44px]/h-11을
+      # 다시 넣어도 머지된다(PR #664 리뷰 P1). typecheck·test 어느 쪽도 원리적으로 못 잡는 축이다.
+      - run: bun run lint
+
       # __tests__/에 process.env 참조가 없어 시크릿 없이 통과한다 (#593 실측).
       # --timeout은 bun 기본 5000ms를 올린 것 — happydom setup이 testing-library의
       # asyncUtilTimeout을 5000ms로 올려서, 그대로 두면 테스트 캡이 그보다 먼저 걸린다.
