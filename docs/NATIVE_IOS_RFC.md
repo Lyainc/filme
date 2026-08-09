@@ -15,8 +15,9 @@
 |---|---|---|
 | WebView | **안 쓴다.** 넘어가면 네이티브 구현 | 초판 경로 A·B 폐기 → §4 |
 | 웹 운영 | **계속 운영.** 웹은 거의 같은 기능을 제공하되 앱 설치로 유도 | 로직 이중 관리가 영구 비용 → §5가 뒤집힘 |
-| OCR | 앱 전환 시 provider 교체 검토(OpenRouter 등 전용 모델) | → §7 |
+| OCR | 앱 전환 시 provider 교체 검토(OpenRouter 등 전용 모델) | → §7.2 |
 | 데스크톱 UX | 모바일 규격으로 띄우거나 차단 | **이미 구현돼 있다** — `PhoneFrame` 400px |
+| **TMDB** (2026-08-10 추가) | **폐기.** 수익화를 고려하면 약관과 양립하지 않는다. **웹에서도 지금 걷어낸다** | 철수 범위 → §9 |
 
 ---
 
@@ -212,7 +213,8 @@ SwiftUI는 iOS 17부터 뷰에 Metal 셰이더를 직접 붙이는 세 modifier�
    `Pretendard Variable`·`IceJaram`(로컬 woff2) + `JetBrains Mono`·`Instrument Serif`·`Nunito`·
    `Share Tech Mono`(`next/font/google`) + 시스템 폴백. **woff2는 iOS 앱에 직접 못 번들한다**(ttf/otf
    필요) 하고, Google Fonts를 앱에 번들하는 건 웹 서빙과 라이선스 조건이 다를 수 있다
-3. **TMDB 라이선스 결론**(§7.1) — 코드보다 먼저 닫아야 하는 항목이다
+3. **TMDB 철거**(§9). 라이선스 결론이 "폐기"로 났고, 위험이 웹/앱 공통이라 앱을 기다릴 이유가
+   없다. 앱 착수와 독립적으로 지금 실행 가능한 유일한 코드 작업이다
 
 ### 여전히 하지 말 것
 
@@ -234,7 +236,10 @@ SwiftUI는 iOS 17부터 뷰에 Metal 셰이더를 직접 붙이는 세 modifier�
 
 ## 7. 경로와 무관한 리스크
 
-### 7.1 TMDB — 조항을 확인했고, 세 군데가 걸린다
+### 7.1 TMDB — 조항을 확인했고, 폐기하기로 했다
+
+**결론부터: 오너 결정으로 TMDB 기능은 철수한다(2026-08-10). 철수 범위는 §9.**
+아래는 그 결정의 근거이고, 결정이 뒤집힐 경우를 대비해 남긴다.
 
 [TMDB API Terms of Use](https://www.themoviedb.org/api-terms-of-use) 원문 기준이다. 초판은 "앱스토어
 심사가 더 엄격하다"고만 적었는데, 실제 위험은 심사가 아니라 **약관 자체**에 있다.
@@ -244,8 +249,9 @@ SwiftUI는 iOS 17부터 뷰에 Metal 셰이더를 직접 붙이는 세 modifier�
    FILME는 OCR에 Gemini vision을 쓴다. **지금은 안전 쪽에 가깝다** — #537의 TMDB 검색은 OCR과
    분리된 독립 CTA로 구현됐기 때문이다. 그런데 `docs/specs/landing-mood-first-ocr-entry.yaml`이
    그리는 "OCR 제목 → 자동 TMDB 검색" 체인을 구현하면 AI 출력이 TMDB API 호출을 직접 먹이는
-   구조가 되어 *in connection with*에 정면으로 들어간다. **그 체인은 라이선스 결론 전에는 만들면
-   안 된다.**
+   구조가 되어 *in connection with*에 정면으로 들어간다. 이 조항이 특히 무거운 건, 그 체인이
+   **우리가 원래 만들려던 것**이기 때문이다 — 즉 TMDB를 안고 가면 스펙이 그린 동선을 영영 못 만든다.
+   §9의 철수로 이 위험은 소멸한다.
 2. **파생물 금지.** *"Make derivatives of the TMDB APIs or TMDB Content."* 포스터를 티켓에 합성하는
    게 여기 걸리는지는 해석이 갈린다. 유리한 사정: TMDB는 포스터 이미지의 저작권자가 아니라
    호스팅 주체이고, 이 조항의 무게중심은 메타데이터 쪽으로 읽힌다. 불리한 사정: 문구가 Content를
@@ -257,6 +263,12 @@ SwiftUI는 iOS 17부터 뷰에 Metal 셰이더를 직접 붙이는 세 modifier�
 
 안전한 것도 확인해두자. **캐시 6개월 제한은 위반이 아니다** — `/api/tmdb/image`는
 `s-maxage=86400`(1일)이고 search/images는 1시간이다. 귀속 문구도 이미 요구 문장 그대로 넣었다.
+
+**폐기가 합리적인 이유.** 위 셋 중 어느 하나도 코드로 못 푼다. AI 조항은 OCR을 빼지 않는 한
+해석 위험이 남고, 상업적 사용은 서면 합의라는 외부 절차에 걸리고, 파생물 조항은 우리가
+포스터를 티켓에 합성한다는 기능의 본질 자체를 겨눈다. 셋 다 "지금은 회색, 수익화하면 적색"이라
+**수익화 계획이 있는 이상 미루는 게 이득이 아니다.** 대체 경로도 이미 있다 — 사용자 직접 업로드가
+원래 주 경로이고, 포스터 없이 시작하는 길도 #631에서 열렸다. §9가 철수 범위를 정리한다.
 
 ### 7.2 rate limit — OpenRouter는 이 문제를 풀지 않는다
 
@@ -277,10 +289,45 @@ OpenRouter로 옮기면 이 구조에서 바뀌는 것과 안 바뀌는 것이 �
   앱이면 기기 단위 식별자나 App Attest로 옮겨야 풀린다
 
 **진짜 지렛대는 다른 데 있다: iOS Vision 온디바이스 OCR과의 하이브리드.**
-`VNRecognizeTextRequest`는 한국어를 지원하고 온디바이스로 돌아 무료·무제한·오프라인이다. 다만
-그대로는 못 쓴다 — 우리 OCR의 값어치는 글자를 읽는 데 있지 않고 **필드 구조화**에 있기 때문이다
-(theater/screen 분리, 지점명 축약 금지, 로고 없는 CGV 티켓의 chain 판별, 심야 `25:00` 보존 — 전부
-실 티켓 15장 A/B로 잡힌 규칙이다).
+
+### 7.2.1 Vision은 앱에서 바로 부를 수 있나 — 그렇다
+
+Vision은 **iOS에 내장된 시스템 프레임워크**다. `import Vision` 한 줄이면 되고 SDK 설치·계정 발급·
+API 키·서버가 전부 없다. 호출 비용 0, 호출 횟수 제한 0, 네트워크 0 — 기기 안에서 돈다.
+그래서 우리가 지금 rate limit으로 방어하는 대상(벤더 키 소진, 대역폭, 비용)이 이 축에선 **애초에
+존재하지 않는다.**
+
+| 항목 | 내용 |
+|---|---|
+| 진입 API | `VNRecognizeTextRequest`(iOS 13+). iOS 18부터 Swift-native 재설계판 `RecognizeTextRequest`가 async/await로 제공 |
+| 한국어 | `VNRecognizeTextRequestRevision3`(iOS 16+)의 지원 언어에 한국어 포함. **실기기에서 `supportedRecognitionLanguages(for:revision:)`로 직접 확인할 것** — 리비전마다 목록이 다르고(revision2엔 한국어가 없다) 2차 자료가 엇갈린다 |
+| 반환 | `VNRecognizedTextObservation` 배열. 관측마다 **인식 후보 문자열 + `confidence` + `boundingBox`**(정규화 좌표) |
+| 정확도 조절 | `recognitionLevel`이 `.accurate` / `.fast` 둘. `.accurate`가 느리지만 정확 — 티켓 한 장짜리 작업이라 `.accurate`가 맞다 |
+| 구조화 | **`RecognizeDocumentsRequest`(iOS 18+)** 가 한 단계 위다. 줄을 문단·리스트·**표 행**으로 묶어 `DocumentObservation`으로 준다. 영수증·양식을 겨냥한 API라 티켓 레이아웃과 성격이 맞는다 |
+| 알려진 함정 | `.accurate`에서 bounding box가 기대와 다르게 나온다는 보고가 있다. bbox를 규칙에 쓸 거면 실측으로 먼저 확인할 것 |
+
+부르는 모양은 이 정도로 짧다.
+
+```swift
+import Vision
+
+let request = VNRecognizeTextRequest { req, _ in
+    let lines = (req.results as? [VNRecognizedTextObservation] ?? []).compactMap {
+        $0.topCandidates(1).first.map { c in (c.string, c.confidence, $0.boundingBox) }
+    }
+    // lines → 텍스트 + 신뢰도 + 위치. 이걸 직렬화해 서버 LLM으로 보낸다
+}
+request.recognitionLevel = .accurate
+request.recognitionLanguages = ["ko-KR", "en-US"]
+try VNImageRequestHandler(cgImage: image).perform([request])
+```
+
+### 7.2.2 그대로는 못 쓴다 — 우리가 필요한 건 구조화다
+
+Vision이 주는 건 "무슨 글자가 어디 있나"까지다. 우리 OCR의 값어치는 거기가 아니라 **필드 구조화**에
+있다 — theater/screen 분리(CGV 앱은 지점명 줄 바로 아래 상영관 줄이 붙어서 "전도연관"을 지점명으로
+오인한다), 지점명 축약 금지, **로고 없는 CGV 티켓의 chain 판별**("판매번호" 라벨 + `연도-월일-4자리-4자리`
+형식이 유일한 단서), 심야 상영 `25:00` 표기 보존. 전부 실 티켓 15장 A/B로 잡힌 규칙이다(#125·#348).
 
 그래서 이런 분업이 성립한다.
 
@@ -303,7 +350,7 @@ OpenRouter로 옮기면 이 구조에서 바뀌는 것과 안 바뀌는 것이 �
 
 - **비용 포스처.** 공유 파이프라인은 Hobby 한도를 넘지 않으려고 의도적으로 조여둔 상태다(#194 —
   자동 발급 폐기, TTL 3일). 앱 사용자당 호출 패턴이 웹과 다르면 이 가정이 다시 계산돼야 한다
-- **오프라인.** 지금은 OCR·KOBIS·TMDB가 전부 서버 왕복이다. §7.2의 하이브리드로 가면 OCR의 읽기
+- **오프라인.** 지금은 OCR·KOBIS가 서버 왕복이다(TMDB는 §9로 빠진다). §7.2의 하이브리드로 가면 OCR의 읽기
   절반은 오프라인이 되지만 구조화는 여전히 서버다. 렌더·저장은 앱에서 완전히 로컬이 된다
 
 ---
@@ -316,8 +363,65 @@ OpenRouter로 옮기면 이 구조에서 바뀌는 것과 안 바뀌는 것이 �
    앱 결과가 같아야 하는가" 하나로 좁혀졌다. "같아야 한다"면 웹/앱 산출물을 대조하는 하네스가
    필요하고, "앱이 더 좋아도 된다"면 Metal 재튜닝을 자유롭게 할 수 있다. §6-1의 스펙 단일화 형태도
    이 답에 따라 갈린다
-2. **수익화 계획이 있는가.** 있으면 TMDB 서면 합의가 앱 착수보다 앞선다(§7.1-3)
-3. **OCR 경로.** provider만 교체(OpenRouter)인지, Vision 하이브리드까지 가는지. 어느 쪽이든 착수
+2. **OCR 경로.** provider만 교체(OpenRouter)인지, Vision 하이브리드까지 가는지. 어느 쪽이든 착수
    전에 A/B 하네스로 재는 게 선행이다(§7.2)
-4. **최소 지원 iOS 버전.** `.colorEffect`/`.layerEffect`가 iOS 17+다. 재질을 Metal로 구현하려면
-   17 미만은 대체 경로(사전 래스터화 타일)가 필요하고, 그 경로는 intensity 연속 조절을 잃는다
+3. **최소 지원 iOS 버전.** 두 기능이 서로 다른 하한을 요구한다 — `.colorEffect`/`.layerEffect`가
+   **iOS 17+**, `RecognizeDocumentsRequest`(문단·표 구조화)가 **iOS 18+**다. 한국어 텍스트 인식
+   자체는 revision3(iOS 16+)이라 하한을 올리지 않는다. **iOS 17을 하한으로 잡으면** 재질은 Metal로
+   가되 OCR 구조화는 `VNRecognizeTextRequest` + 자체 정렬로 가야 하고, **18로 잡으면** 둘 다 최신
+   경로를 쓰되 기기 커버리지를 그만큼 포기한다
+4. ~~수익화 계획이 있는가~~ — **닫힘.** 수익화를 고려한다는 답이 나왔고, 그래서 TMDB는 폐기로
+   결정됐다(§7.1 · §9)
+
+---
+
+## 9. TMDB 철수 범위
+
+오너 결정(2026-08-10): **TMDB 기능은 폐기하고, 앱을 기다리지 않고 웹에서 지금 걷어낸다.**
+약관 위험이 웹/앱 공통이라 미룰 이유가 없다(§7.1).
+
+이 절은 **작업 범위 목록이지 실행 결과가 아니다** — 이 RFC 브랜치는 문서만 다루고, 실제 철거는
+별도 이슈·PR로 간다.
+
+### 삭제 (1,000줄)
+
+| 대상 | 줄 |
+|---|---|
+| `src/components/TmdbPosterModal.tsx` | 333 |
+| `src/pages/api/tmdb/{search,images,image}.ts` | 161 |
+| `__tests__/tmdbPosterEntry.test.tsx` | 191 |
+| `__tests__/tmdbRoutes.test.ts` | 182 |
+| `__tests__/tmdbPosterModalOverlayContrast.test.tsx` | 133 |
+
+### 수정
+
+- **`src/components/v2/MobileEditorShell.tsx`** — dynamic import, `tmdbOpen` 상태, `handleTmdbSelect`·
+  `handleTmdbFallback`, `onTmdbSearch` 전달, 모달 렌더 블록
+- **`src/components/v2/Landing.tsx`** — `onTmdbSearch` prop과 "영화 검색해서 가져오기" 버튼
+- **`src/utils/ratelimit.ts`** — `LimitPolicy.scope`에서 `'tmdb' | 'tmdb-image-thumb' | 'tmdb-image-original'`
+  세 값, `checkTmdbRateLimit`·`checkTmdbImageRateLimit` 두 함수. **#638에서 썸네일/원본으로 쪼갠
+  스코프 분리도 같이 사라진다**
+- **환경변수** — `TMDB_API_KEY`(Vercel 프로젝트 설정에서도 제거)
+- **문서** — `CLAUDE.md`의 "Current Project Status" TMDB 두 항목(#537·#638),
+  `docs/specs/landing-mood-first-ocr-entry.yaml`의 TMDB 합류 서술
+
+### 판단이 필요한 두 곳 — 단순 삭제가 아니다
+
+1. **랜딩 이탈 경로가 3종 → 2종이 된다.** `Landing.tsx`의 세 링크("포스터부터 올리기 · 영화 검색해서
+   가져오기 · 직접 입력")는 #635 c6이 "스크린샷 없음"의 이탈로 설계한 묶음이고, TMDB가 그중
+   **"파일을 직접 못 구했을 때의 진입로"**를 맡고 있다. 그게 빠지면 그 사용자는 갈 곳이 "직접
+   입력"(포스터 없이 시작, #631)뿐이다. 구멍이 치명적이진 않다 — #631이 이미 포스터 없는 경로를
+   정식으로 열어놨기 때문이다. 다만 **문구는 손봐야 한다**: 남는 두 링크가 "포스터를 못 구한
+   사용자"를 여전히 받아준다는 걸 읽히게 할 것
+2. **`usePhototicket.fillEmptyMovieInfo`가 고아가 된다.** 이 함수는 범용으로 쓰였지만(빈 필드만
+   KOBIS 값으로 보강) 실제 호출부는 `MobileEditorShell`의 TMDB 확정 경로 **하나뿐**이다. TMDB가
+   빠지면 호출부가 0이 되고 `__tests__/fillEmptyMovieInfoRatingZero.test.tsx`(#638 P2 회귀)도 같이
+   뜬다. **그런데 지우기 아까운 코드다** — "이미 사용자가 채운 필드는 덮지 않는다"는 규칙과 그
+   회귀(숫자 0을 빈 값으로 오판하지 않기)는 앞으로 어떤 자동 보강 경로가 생겨도 다시 필요하다.
+   **권장: 함수와 테스트는 남기고, 다음 보강 경로(#635 OCR 체인 등)가 붙을 때까지 미사용으로 둔다.**
+   미사용 export가 하나 생기는 건 감수할 값이다
+
+### 남기는 것
+
+KOBIS는 그대로다. 영화 메타데이터(제목·개봉일·배우·러닝타임) 축은 KOBIS가 담당하고 약관 문제도
+없다. 사라지는 건 **포스터 이미지를 외부에서 가져오는 기능** 하나다.
