@@ -54,7 +54,7 @@ describe('MobileEditorShell chrome 정보위계 (#261/#315/#363/#388)', () => {
     render(<Harness />);
 
     // #635로 위계가 뒤집혔다 — OCR이 주연(#142), 포스터 CTA는 그 아래 이탈 경로로 보조다.
-    const poster = screen.getByRole('button', { name: '포스터부터 올리기' });
+    const poster = screen.getByRole('button', { name: '포스터 있으면 올리기' });
     const ocr = await screen.findByRole('button', { name: '티켓 스크린샷으로 자동입력' });
     const rail = screen.getByRole('button', { name: '무드' }); // 첫 rail 아이템
 

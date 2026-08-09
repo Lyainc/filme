@@ -49,7 +49,7 @@ describe('포스터 없이 시작 (#631)', () => {
     // 숨기는 판정은 croppedImageUrl이 소유한다 — canvasReady로 걸면 이 진입점이 사라진다.
     const landing = screen.getByTestId('landing');
     expect(landing.classList.contains('hidden')).toBe(false);
-    expect(screen.getByRole('button', { name: /포스터부터 올리기/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /포스터 있으면 올리기/ })).toBeTruthy();
   });
 
   test("'고급 설정'이 죽은 컨트롤이 아니다 — 툴바와 같은 조건(canvasReady)이라 모달이 실제로 열린다", async () => {
