@@ -498,7 +498,7 @@ export function Landing({
             {/* flex flex-col gap-4 — h1·p가 바깥 flex 컬럼의 직계 자식에서 이 div 자식으로
                 한 단 내려오면서 원래 gap-4(16px)가 적용되던 h1↔p 사이 간격이 사라진다(부모 gap은
                 직계 자식 사이에만 걸린다) — 같은 리듬을 이 안에서 다시 선언해 되돌린다. */}
-            <div className="relative flex flex-col gap-4">
+            <div data-testid="landing-copy" className="relative flex flex-col gap-4">
               <div aria-hidden="true" className="absolute inset-0 -z-[5] bg-bg" />
               <h1 className="text-display font-bold text-fg break-keep">
                 티켓 한 장이, 내 굿즈가 돼요
@@ -556,7 +556,10 @@ export function Landing({
 
               WCAG 2.5.8(AA) 최소 24×24 미달 — 같은 파일 OCR CTA와 동일하게
               min-h-touch(44px)로 채운다(#646). */}
-          <div className="relative mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-caption text-landing-muted">
+          <div
+            data-testid="landing-exit-paths"
+            className="relative mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-caption text-landing-muted"
+          >
             <div aria-hidden="true" className="absolute inset-0 -z-[5] bg-bg" />
             <button type="button" onClick={onCta} className="min-h-touch inline-flex items-center underline active:scale-[0.97]">
               포스터 있으면 올리기
