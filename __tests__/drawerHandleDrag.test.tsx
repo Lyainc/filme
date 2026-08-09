@@ -136,3 +136,40 @@ describe('필드 드로어 엣지 핸들 (#567·#579)', () => {
     expect(top).toBeLessThanOrEqual(window.innerHeight - 8); // TB_EDGE=8
   });
 });
+
+// 눌림 scale 합성 회귀 (#662) — 위치 고정용 인라인 transform은 어떤 CSS 특이성보다도 이겨
+// class 기반 active:scale을 무효화한다. pointer down/up을 state로 추적해 같은 인라인
+// transform 문자열에 scale(0.97)을 이어붙이는지, 뗄 때 원복되는지를 검증한다.
+describe('필드 드로어 핸들 눌림 scale 합성 (#662)', () => {
+  test('인라인 transform이 없는 상태(핸들 미이동)에서도 눌림 중엔 scale(0.97)이 걸리고 뗄 때 원복된다', async () => {
+    window.localStorage.removeItem(DRAWER_KEY); // 앞선 테스트가 남긴 영속 y로 drawerHandleY가 초기부터 non-null이 되는 걸 방지
+    const user = userEvent.setup();
+    render(<Harness />);
+    const handle = await seedPoster(user);
+    expect(handle.style.transform).toBe('');
+
+    fireEvent.pointerDown(handle, { pointerId: 1, clientX: 400, clientY: 300 });
+    expect(handle.style.transform).toBe('translateY(-50%) scale(0.97)');
+
+    fireEvent.pointerUp(handle, { pointerId: 1, clientX: 400, clientY: 300 });
+    expect(handle.style.transform).toBe('');
+  });
+
+  test('인라인 transform이 있는 상태(핸들을 한 번 옮긴 뒤)에서도 scale(0.97)이 걸리고 뗄 때 원복된다', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    const handle = await seedPoster(user);
+
+    // 수직 드래그로 한 번 옮겨 인라인 top + transform:'none'을 건다(#579).
+    fireEvent.pointerDown(handle, { pointerId: 1, clientX: 400, clientY: 300 });
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 400, clientY: 340 });
+    fireEvent.pointerUp(handle, { pointerId: 1, clientX: 400, clientY: 340 });
+    expect(handle.style.transform).toBe('none');
+
+    fireEvent.pointerDown(handle, { pointerId: 1, clientX: 400, clientY: 340 });
+    expect(handle.style.transform).toBe('scale(0.97)');
+
+    fireEvent.pointerUp(handle, { pointerId: 1, clientX: 400, clientY: 340 });
+    expect(handle.style.transform).toBe('none');
+  });
+});
