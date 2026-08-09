@@ -350,6 +350,10 @@ export function MobileEditorShell({
   // 드래그 끝의 click 억제(FloatingToolbar draggedRef, #568과 같은 패턴) — 수직 이동으로
   // 끝난 제스처가 click에서 다시 드로어를 열면 탭=열기/드래그=이동 구분이 무너진다.
   const handleDraggedRef = useRef(false);
+  // 눌림 스케일(#662) — drawerHandleY가 세팅되면 위치 고정용 인라인 transform:'none'이 class
+  // 기반 active:scale을 항상 이긴다. pointer down/up을 state로 직접 추적해 같은 인라인
+  // transform 값에 scale(0.97)을 합성한다(CSS :active엔 JS 동등물이 없다).
+  const [handlePressed, setHandlePressed] = useState(false);
   const onHandlePointerDown = (e: PointerEvent<HTMLButtonElement>) => {
     const rect = drawerHandleRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -1010,17 +1014,40 @@ export function MobileEditorShell({
           ref={drawerHandleRef}
           type="button"
           onClick={onHandleClick}
-          onPointerDown={onHandlePointerDown}
+          onPointerDown={(e) => {
+            setHandlePressed(true);
+            onHandlePointerDown(e);
+          }}
           onPointerMove={onHandlePointerMove}
-          onPointerUp={onHandlePointerUp}
-          onPointerCancel={onHandlePointerUp}
+          onPointerUp={() => {
+            setHandlePressed(false);
+            onHandlePointerUp();
+          }}
+          onPointerCancel={() => {
+            setHandlePressed(false);
+            onHandlePointerUp();
+          }}
           aria-label="티켓 항목 목록 열기"
+          // transform에 transition을 걸지 않는다(PR #663 fresh-eyes 리뷰 P1) — drawerHandleY가
+          // null→값으로 처음 바뀌는 axis-lock 순간, top은 즉시 절대값으로 점프하지만(transition
+          // 없음) transform은 'translateY(-50%) scale(0.97)' → 'scale(0.97)'로 값이 바뀌면서
+          // transition을 타, top과 transform이 같은 프레임에 안 맞아 핸들이 48px(h-24 절반) 위로
+          // 튀었다 슬라이드하는 글리치가 최초 드래그 1회 생긴다. "top으로만 움직여서 안전하다"는
+          // drawerHandleY가 이미 값이 있는 이후 드래그엔 맞지만 null→값 전환 그 자체는 못 피한다.
           className={`fixed right-0 z-30 flex h-24 w-11 items-center justify-end ${
             drawerHandleY == null ? 'top-1/2 -translate-y-1/2' : ''
           }`}
           style={{
             touchAction: 'none',
-            ...(drawerHandleY != null ? { top: drawerHandleY, transform: 'none' } : undefined),
+            ...(drawerHandleY != null ? { top: drawerHandleY } : undefined),
+            transform:
+              drawerHandleY != null
+                ? handlePressed
+                  ? 'scale(0.97)'
+                  : 'none'
+                : handlePressed
+                  ? 'translateY(-50%) scale(0.97)'
+                  : undefined,
           }}
         >
           <span
