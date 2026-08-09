@@ -12,9 +12,13 @@ import tseslint from 'typescript-eslint';
 // 경계를 공백이 아니라 "단어문자·하이픈이 아님"으로 잡는다 — 추출된 클래스 문자열(공백 구분)뿐
 // 아니라 JSXExpressionContainer의 raw 소스 텍스트(따옴표·백틱·중괄호로 둘러싸인)에도 같은
 // 정규식을 그대로 쓰기 때문. 공백 전용 경계였으면 `'h-11'`처럼 따옴표에 붙은 경우를 놓친다.
+//
+// 경계에 `/`가 들어간 건 Tailwind 분수 유틸리티 때문이다(PR #664 리뷰 2라운드 P1) — `h-11/12`는
+// `h-11`(2.75rem)이 아니라 완전히 다른 클래스인데, `/`를 안 빼면 접두 일치로 오탐이 난다. 지금
+// 레포에 그런 클래스가 없어서 안 터질 뿐이라 경계 쪽에서 미리 막는다.
 const BANNED_CLASS_PATTERNS = [
-  { pattern: /(?<![\w-])min-h-\[44px\](?![\w-])/, suggestion: 'min-h-touch' },
-  { pattern: /(?<![\w-])h-11(?![\w-])/, suggestion: 'h-touch' },
+  { pattern: /(?<![\w-])min-h-\[44px\](?![\w\-/])/, suggestion: 'min-h-touch' },
+  { pattern: /(?<![\w-])h-11(?![\w\-/])/, suggestion: 'h-touch' },
 ];
 
 function checkClassNameValue(context, node, value) {
