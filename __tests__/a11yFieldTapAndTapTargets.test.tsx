@@ -197,13 +197,13 @@ describe('sr-only file input aria-hidden 제거 (#646 항목2)', () => {
 });
 
 describe('탭 타깃 44px 미달 채움 (#646 항목3)', () => {
-  test('랜딩 이탈경로 3종 — min-h-touch(44px)', () => {
+  test('랜딩 이탈경로 2종 — min-h-touch(44px)', () => {
     function Harness() {
       const photo = usePhototicket();
       return <MobileEditorShell {...mobileShellProps(photo)} />;
     }
     render(<Harness />);
-    for (const name of ['포스터부터 올리기', '영화 검색해서 가져오기', '직접 입력']) {
+    for (const name of ['포스터부터 올리기', '직접 입력']) {
       expect(screen.getByRole('button', { name }).className).toContain('min-h-touch');
     }
   });

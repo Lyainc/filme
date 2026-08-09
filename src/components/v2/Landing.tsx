@@ -399,8 +399,8 @@ function MoodCarousel({
  * **샘플 클릭은 훑어보기가 아니라 즉시 커밋이다** — 예전 무드칩(`LayoutStrip`)은 셸의 `heroLayout`
  * 로컬 미러만 바꾸고 실제 `components.layout` 커밋은 다른 CTA가 맡았지만, auto-scroll 갤러리의
  * 샘플은 그 자체가 완결된 액션이다: 클릭하면 `onEnterMood(id)`가 그 무드를 바로 커밋하고 편집
- * 화면으로 들어간다 — "포스터부터 올리기"·"영화 검색해서 가져오기"·"직접 입력"·OCR 성공과
- * 나란한 **다섯 번째** 진입점이다(#631 경로, 같은 canvasReady 커밋). 크롭 프리셋
+ * 화면으로 들어간다 — "포스터부터 올리기"·"직접 입력"·OCR 성공과 나란한 **네 번째**
+ * 진입점이다(#631 경로, 같은 canvasReady 커밋). 크롭 프리셋
  * (`ImageCropModal`이 읽는 `posterOrientation`)이 랜딩에서 고른 무드와 어긋나지 않는 이유(#529)도
  * 동일 — 무드가 커밋된 채로 편집에 들어가므로 재크롭 없이 방향이 맞다. 배경 타일 그리드는
  * `LandingBackdropTiles`(위) 참고 — 자산 대기 중인 placeholder가 아니라 라이브 렌더가 완성형이다
@@ -409,7 +409,6 @@ function MoodCarousel({
 export function Landing({
   mode,
   onCta,
-  onTmdbSearch,
   onSkip,
   dropProps,
   dragOver,
@@ -422,8 +421,6 @@ export function Landing({
   mode: 'overlay' | 'inline' | 'hidden';
   /** 이탈 경로 "포스터부터 올리기" — 셸의 숨은 포스터 input을 그 자리에서 click()한다(같은 제스처, 라우트 전환 0). */
   onCta: () => void;
-  /** 이탈 경로 "영화 검색해서 가져오기"(#537) — 포스터 파일이 없어도 영화 검색으로 판본을 골라 같은 크롭 경로로 들어간다. */
-  onTmdbSearch: () => void;
   /** 이탈 경로 "직접 입력" — 포스터 없이 편집으로 진입(#631). 셸의 canvasReady를 세운다. */
   onSkip: () => void;
   /** 셸의 포스터 드롭 핸들러(#607) — 점선 드롭존이 여기로 흡수되며 같이 넘어왔다. */
@@ -531,7 +528,7 @@ export function Landing({
         {/* #652 — OCR이 실제로 필드를 채운 뒤(ocrApplied)엔 주 CTA도 이탈 경로 줄도 편집 본문에
             남지 않는다: #388(편집 중 OCR 진입점은 드로어 하나)이 #631 D2(a)(랜딩 inline이 포스터
             재진입 동선)를 이 상태에 한해 이긴다 — "6개 항목이 자동 입력되었어요" 배너 옆에 방금 쓴
-            그 CTA와 세 이탈 경로가 그대로 남으면 "입력이 안 끝났나"로 읽히던 게 #652의 재현이다.
+            그 CTA와 이탈 경로가 그대로 남으면 "입력이 안 끝났나"로 읽히던 게 #652의 재현이다.
             unmount가 아니라 CSS hidden으로만 숨긴다 — children(OcrUploadCard)은 #614/#624가 지키는
             "항상 마운트" 계약이 있어 트리에서 빼면 안 된다. '직접 입력'(onSkip)만 거친 상태는
             ocrApplied가 안 서므로 이 블록이 그대로 보이고, #631 D2(a)의 포스터 재진입 동선은
@@ -541,10 +538,10 @@ export function Landing({
               모드가 갈려도 이 슬롯의 트리 위치는 고정이라 카드가 remount되지 않는다. */}
           {children}
 
-          {/* 이탈 경로 3종(#635 c6 + #537) — "스크린샷 없음"은 이 세 링크로, "OCR 실패"·
+          {/* 이탈 경로 2종(#635 c6) — "스크린샷 없음"은 이 두 링크로, "OCR 실패"·
               "rate limit 초과"는 OcrUploadCard의 토스트 뒤에도 이 줄이 그대로 남아 이어진다.
-              새 세로 공간 0 — 예전 포스터 CTA 자리(caption + "포스터 없이 시작")를 한 줄로 합쳤고,
-              TMDB 검색(#537)도 별도 블록이 아니라 여기 세 번째 링크로 합류한다.
+              새 세로 공간 0 — 예전 포스터 CTA 자리(caption + "포스터 없이 시작")를 한 줄로 합쳤다.
+              세 번째 링크였던 TMDB 검색(#537)은 약관 위험으로 철거됐다(#665).
 
               relative + 첫 자식 scrim(-z-[5] bg-bg) — 위 카피와 같은 이유(#615 검증 코멘트).
               text-fg-muted가 배경 타일(-z-10, overlay 모드에서만 존재) 위에 직접 떠 있어 실측
@@ -560,12 +557,6 @@ export function Landing({
             <div aria-hidden="true" className="absolute inset-0 -z-[5] bg-bg" />
             <button type="button" onClick={onCta} className="min-h-touch inline-flex items-center underline active:scale-[0.97]">
               포스터부터 올리기
-            </button>
-            <span aria-hidden="true" className="text-fg-faint">·</span>
-            {/* TMDB 인앱 포스터 검색(#537) — 파일을 직접 못 구했을 때의 진입로. 선택 후는
-                onCta와 같은 크롭 파이프라인(usePosterCrop.openFile)으로 합류한다. */}
-            <button type="button" onClick={onTmdbSearch} className="min-h-touch inline-flex items-center underline active:scale-[0.97]">
-              영화 검색해서 가져오기
             </button>
             <span aria-hidden="true" className="text-fg-faint">·</span>
             {/* 포스터 없이 시작(#631) — 단색 바탕 + 조판만으로도 티켓이 성립하는 경로의 진입점. */}
