@@ -120,7 +120,7 @@ function LandingBackdropTiles() {
  * 히어로 무드 갤러리 캐러셀(#615, 2026-08-08 개정) — 무드를 실제 렌더 엔진(TicketRenderer,
  * ghost + croppedImageUrl=null)으로 노출한다. 가운데가 제일 크고 좌우가 멀어 보이며, 오른쪽
  * 카드가 중앙으로 오면서 커진다. 샘플 클릭은 `onEnterMood`로 그 무드를 즉시 커밋하는 독립된
- * 다섯 번째 진입점이다(훑어보기용 중간 상태가 없다 — 폐기된 `LayoutStrip`+`heroLayout` 미러와
+ * 네 번째 진입점이다(훑어보기용 중간 상태가 없다 — 폐기된 `LayoutStrip`+`heroLayout` 미러와
  * 다른 점). 무드 이름 라벨은 없다(사용자 피드백) — `aria-label`엔 실려 있어 정보 손실은 없다.
  *
  * **끝없이 흐르는 marquee를 대체했다.** 예전엔 리스트를 두 벌 이어붙이고 `-50%`까지 트랜슬레이트해
@@ -434,7 +434,7 @@ export function Landing({
   heroMovieInfo: MovieInfo;
   /** 히어로 갤러리 샘플의 색·스탬프 등 layout 이외 필드 — 셸의 실제 components(레이아웃은 샘플마다 override). */
   heroComponents: TicketComponents;
-  /** 갤러리 샘플 클릭 → 그 무드를 즉시 커밋 + 편집 화면 진입(다섯 번째 진입점, 위 컴포넌트 주석). */
+  /** 갤러리 샘플 클릭 → 그 무드를 즉시 커밋 + 편집 화면 진입(네 번째 진입점, 위 컴포넌트 주석). */
   onEnterMood: (id: LayoutId) => void;
   /** OCR이 이미 필드를 채운 적 있는가(#652) — true면 children(주 CTA)과 이탈 경로 줄을 통째로
    * CSS로만 숨겨 드로어를 유일한 재진입점으로 만든다(#388 > #631 D2 a, 이 상태에 한해). '직접
