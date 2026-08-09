@@ -288,6 +288,63 @@ describe('이동식 툴바 좌표계는 뷰포트가 아니라 폰 프레임 기
   });
 });
 
+// 눌림 scale 합성 회귀 (#662) — 접힌 토글 버튼은 위치 이동용 인라인 transform(translate)을
+// 이미 쓰고 있어, 어떤 CSS 특이성보다도 이기는 인라인이 class 기반 active:scale을 무효화한다.
+// pointer down/up을 state로 추적해 같은 인라인 transform 문자열에 scale(0.97)을 이어붙이는지,
+// 뗄 때 원복되는지를 검증한다.
+describe('숨김 토글 버튼 눌림 scale 합성 (#662)', () => {
+  const noop = () => {};
+
+  function renderHidden(prefs: Partial<TbPrefs>) {
+    render(
+      <FloatingToolbar
+        prefs={{ orient: 'v', place: 'fixed', x: null, y: null, hidden: true, ...prefs }}
+        onPrefsChange={noop}
+        canUndo={false}
+        canRedo={false}
+        onUndo={noop}
+        onRedo={noop}
+        onFieldList={noop}
+        onMaximize={noop}
+      />
+    );
+    return screen.getByRole('button', { name: '툴바 표시' });
+  }
+
+  test('인라인 transform이 없는 상태(세로·고정)에서도 눌림 중엔 scale(0.97)이 걸리고 뗄 때 원복된다', () => {
+    const btn = renderHidden({ orient: 'v', place: 'fixed' });
+    expect(btn.style.transform).toBe('');
+
+    fireEvent.pointerDown(btn, { clientX: 0, clientY: 0, pointerId: 1 });
+    expect(btn.style.transform).toBe('scale(0.97)');
+
+    fireEvent.pointerUp(btn, { clientX: 0, clientY: 0, pointerId: 1 });
+    expect(btn.style.transform).toBe('');
+  });
+
+  test('인라인 transform이 있는 상태(이동식+저장된 위치)에서도 scale(0.97)이 이어붙는다', () => {
+    const btn = renderHidden({ place: 'movable', x: 20, y: 30 });
+    expect(btn.style.transform).toBe('translate(20px, 30px)');
+
+    fireEvent.pointerDown(btn, { clientX: 20, clientY: 30, pointerId: 1 });
+    expect(btn.style.transform).toBe('translate(20px, 30px) scale(0.97)');
+
+    fireEvent.pointerUp(btn, { clientX: 20, clientY: 30, pointerId: 1 });
+    expect(btn.style.transform).toBe('translate(20px, 30px)');
+  });
+
+  test('인라인 transform이 있는 상태(가로·고정 도킹)에서도 scale(0.97)이 이어붙는다', () => {
+    const btn = renderHidden({ orient: 'h', place: 'fixed' });
+    expect(btn.style.transform).toBe('translateX(-50%)');
+
+    fireEvent.pointerDown(btn, { clientX: 0, clientY: 0, pointerId: 1 });
+    expect(btn.style.transform).toBe('translateX(-50%) scale(0.97)');
+
+    fireEvent.pointerUp(btn, { clientX: 0, clientY: 0, pointerId: 1 });
+    expect(btn.style.transform).toBe('translateX(-50%)');
+  });
+});
+
 // 탭 타깃 크기 회귀 (#508) — 풋프린트 축소가 WCAG 2.2 SC 2.5.8(AA, 24×24) 아래로 못 내려가게 못박는다.
 // 판정기(클래스 파싱 + variant·scale 우회 금지)는 #500·#553이 같은 형태로 재사용하도록
 // __tests__/tapTargets.ts로 뺐다 — 하한과 우회 금지 규칙이 파일마다 갈리면 안 된다.

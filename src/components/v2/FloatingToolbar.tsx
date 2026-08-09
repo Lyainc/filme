@@ -129,6 +129,11 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
   // 끝이든 pointerup은 항상 오고, 진짜 탭인지는 그 직후 오는 click까지 봐야 키보드 Enter/Space
   // (pointer 이벤트 없이 click만 옴)와 같은 경로로 처리된다.
   const draggedRef = useRef(false);
+  // 접힌 토글 버튼 눌림 스케일(#662) — posStyle.transform이 위치 이동으로 이미 점유돼 있으면
+  // class 기반 active:scale은 인라인에 밀려 무효화된다(인라인이 항상 이긴다). CSS :active엔
+  // JS 동등물이 없어, pointer down/up을 직접 추적해 같은 인라인 transform 문자열에
+  // scale(0.97)을 이어붙이는 방식으로만 합성 가능하다.
+  const [gripPressed, setGripPressed] = useState(false);
 
   // 이동식 좌표는 프레임 원점 기준이다(#607) — `contain: paint`가 fixed의 컨테이닝 블록을
   // 폰 프레임으로 바꿔 translate가 프레임 좌상단에서 풀리기 때문. 뷰포트로 클램프하면
@@ -250,14 +255,28 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
   };
 
   if (hidden) {
+    // 위치용 transform(translate/translateX)에 눌림 scale을 이어붙인다(#662) — 인라인
+    // transform이 없는 상태(세로 고정 도킹)에서도 gripPressed만으로 scale(0.97)이 그대로 걸린다.
+    const gripTransform = gripPressed
+      ? [posStyle.transform, 'scale(0.97)'].filter(Boolean).join(' ')
+      : posStyle.transform;
     return (
       <button
         ref={setRootEl}
         type="button"
-        onPointerDown={onGripDown}
+        onPointerDown={(e) => {
+          setGripPressed(true);
+          onGripDown(e);
+        }}
         onPointerMove={onGripMove}
-        onPointerUp={onGripUp}
-        onPointerCancel={onGripUp}
+        onPointerUp={() => {
+          setGripPressed(false);
+          onGripUp();
+        }}
+        onPointerCancel={() => {
+          setGripPressed(false);
+          onGripUp();
+        }}
         onClick={() => {
           // 드래그 끝의 click은 표시 토글을 억제한다(#568 설계 메모) — 순수 탭·키보드
           // Enter/Space(pointer 이벤트 없이 click만 옴)만 여기서 실제로 토글한다.
@@ -268,8 +287,13 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
           onPrefsChange((prev) => ({ ...prev, hidden: false }));
         }}
         aria-label="툴바 표시"
+        // transform에 transition을 걸면 안 된다 — 이 버튼은 모든 배치 상태에서 자기 자신이
+        // 드래그 핸들이라(onGripMove가 pointermove마다 translate(x,y)를 이 transform에 직접
+        // 쓴다), transition-transform을 얹으면 드래그 중 매 프레임이 새 위치로 150ms씩
+        // ease되어 손가락보다 눈에 띄게 뒤처진다(code-review 발견). 눌림 scale은 애니메이션
+        // 없이 순간 전환된다.
         className={`fixed z-[45] flex ${TB_TARGET} items-center justify-center rounded-full border border-line text-fg-muted transition-colors hover:text-fg`}
-        style={{ touchAction: 'none', ...posStyle, ...glass }}
+        style={{ touchAction: 'none', ...posStyle, transform: gripTransform, ...glass }}
       >
         <svg {...ICON}>
           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
