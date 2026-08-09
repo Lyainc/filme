@@ -32,7 +32,7 @@ type LimitWindow = {
 };
 
 type LimitPolicy = {
-  scope: 'ocr' | 'kobis' | 'ticket' | 'tmdb' | 'tmdb-image-thumb' | 'tmdb-image-original';
+  scope: 'ocr' | 'kobis' | 'ticket';
   /** Upstash 미설정 시 production 동작: 'closed'=차단(misconfigured), 'open'=통과(fail-open). */
   failMode: 'closed' | 'open';
   windows: LimitWindow[];
@@ -140,50 +140,6 @@ export async function checkKobisRateLimit(ip: string): Promise<RateLimitResult> 
       { name: 'day', limit: 1000, window: '1 d' },
     ],
   });
-}
-
-/**
- * TMDB는 KOBIS와 같은 무료·사실상 무제한 quota라 fail-open(#537 c5). search·images는 JSON
- * 응답이라 KOBIS와 같은 한도를 그대로 쓴다 — 대역폭 방어가 필요한 건 이미지 바이트 프록시뿐이라
- * 그쪽만 별도 스코프(checkTmdbImageRateLimit)로 더 좁힌다.
- */
-export async function checkTmdbRateLimit(ip: string): Promise<RateLimitResult> {
-  return checkConfiguredRateLimit(ip, {
-    scope: 'tmdb',
-    failMode: 'open',
-    windows: [
-      { name: 'min', limit: 30, window: '1 m' },
-      { name: 'day', limit: 1000, window: '1 d' },
-    ],
-  });
-}
-
-/**
- * original 풀사이즈(2~5MB)와 w342 썸네일(수십 KB)은 대역폭 단가가 두 자릿수 배 차이라
- * 하나의 예산을 공유하면 판본 그리드(포스터당 썸네일 1건, #537 c4)가 정상 사용만으로 분당
- * 한도를 먼저 소진해 뒤이은 실제 적용(original)이 429를 맞는다(#638). 그래서 size별로 별도
- * 스코프를 준다 — thumb은 원가가 낮아 넉넉하게, original은 TICKET과 같은 이유로 기존
- * 한도를 유지한다(limiter 백엔드가 없으면 무제한 프록시가 열리는 게 fail-open보다 훨씬 비싸
- * fail-closed).
- */
-export async function checkTmdbImageRateLimit(ip: string, size: 'w342' | 'original'): Promise<RateLimitResult> {
-  return size === 'w342'
-    ? checkConfiguredRateLimit(ip, {
-        scope: 'tmdb-image-thumb',
-        failMode: 'closed',
-        windows: [
-          { name: 'min', limit: 120, window: '1 m' },
-          { name: 'day', limit: 1200, window: '1 d' },
-        ],
-      })
-    : checkConfiguredRateLimit(ip, {
-        scope: 'tmdb-image-original',
-        failMode: 'closed',
-        windows: [
-          { name: 'min', limit: 30, window: '1 m' },
-          { name: 'day', limit: 300, window: '1 d' },
-        ],
-      });
 }
 
 export async function checkTicketRateLimit(ip: string): Promise<RateLimitResult> {
