@@ -6,7 +6,7 @@
  *    cloneElement로 얹는다 — 실제 Tab 순회로 도달 가능한지, Enter로 활성화되는지를 잰다.
  * 2. sr-only file input 3곳의 aria-hidden 제거(FieldDrawer.tsx:297 판단 재적용) — tabbable인데
  *    aria-hidden이면 axe aria-hidden-focus 위반이라, 이제 aria-hidden이 없고 aria-label이 있다.
- * 3. 랜딩 이탈경로 3종 + OcrUndoBanner 버튼의 WCAG 2.5.8 최소 24×24 미달을 min-h-touch(44px)로
+ * 3. 랜딩 이탈경로 2종 + OcrUndoBanner 버튼의 WCAG 2.5.8 최소 24×24 미달을 min-h-touch(44px)로
  *    채웠다 — 이 레포는 jest-dom·Tailwind가 테스트에 안 실려 getComputedStyle이 클래스를 반영하지
  *    않으므로(landingOverlay.test.tsx 컨벤션과 동일) className으로 잰다.
  */
@@ -203,7 +203,7 @@ describe('탭 타깃 44px 미달 채움 (#646 항목3)', () => {
       return <MobileEditorShell {...mobileShellProps(photo)} />;
     }
     render(<Harness />);
-    for (const name of ['포스터부터 올리기', '직접 입력']) {
+    for (const name of ['포스터 있으면 올리기', '포스터 없이 직접 입력']) {
       expect(screen.getByRole('button', { name }).className).toContain('min-h-touch');
     }
   });
