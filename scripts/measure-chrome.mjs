@@ -24,6 +24,8 @@
  *  6. 오버레이 7종이 #phone-frame 사각형 안인지               (#609 · 랜딩 #614)
  *  7. 드래프 복원 시 랜딩 생략(D7)                            (#614)
  *  8. 랜딩 무드 캐러셀 카드 5장의 비율·폭·불투명도·프레임 봉쇄  (#615 · #653)
+ *  9. 랜딩 이탈 경로 2종의 프레임 봉쇄·줄바꿈 줄 수·44px 탭 타깃              (#665)
+ * 10. 랜딩 세로 예산 — 카피+히어로+이탈경로가 675 프레임을 스크롤 없이 담는지  (#665)
  *
  * ── 대조 기준은 뷰포트가 아니라 프레임이다 (#609) ────────────────────────────
  * 예전엔 `VW===400 && VH===675`로 게이팅해서, `--viewport 1440x675`로 돌리면 프레임이
@@ -170,6 +172,9 @@ try {
   // visible:true — 셀렉터는 숨김 상태에서도 DOM에 남으므로(단일 OcrUploadCard 제약상 unmount가
   // 아니라 display:none이다) 존재만 기다리면 "안 뜨는데 통과"가 된다.
   await landingPage.waitForSelector('[data-testid="landing"]', { visible: true, timeout: 15000 });
+  // 웹폰트 로딩 전에 재면 fallback 폰트 폭으로 줄바꿈이 갈릴 수 있다(아래 이탈 경로 lineCount가
+  // 텍스트 폭에 좌우됨) — captureToImage.ts와 같은 전제.
+  await landingPage.evaluate(() => document.fonts.ready);
   await sleep(300);
   await measureFit('랜딩 오버레이', '[data-testid="landing"]', landingPage);
 
@@ -230,6 +235,45 @@ try {
   carousel.pass =
     carousel.count === 5 &&
     carousel.cards.every((c) => c.passRatio && c.passWidth && c.passOpacity && c.passFrame);
+
+  // ── 랜딩 이탈 경로 2종(#665 문구 재정리 회귀) ────────────────────────────────
+  // 프레임 봉쇄는 기존 measureFit 재사용. exitPaths 자신은 그 줄만의 두 축: (a) flex-wrap
+  // 줄바꿈 후 줄 수 — 버튼 top을 반올림해 그룹핑(같은 줄이면 top이 같다), (b) 두 링크의
+  // 44px 탭 타깃(#646 min-h-touch).
+  await measureFit('이탈 경로', '[data-testid="landing-exit-paths"]', landingPage);
+  const exitPaths = await landingPage.evaluate(() => {
+    const row = document.querySelector('[data-testid="landing-exit-paths"]');
+    if (!row) return null;
+    const buttons = [...row.querySelectorAll('button')].map((b) => {
+      const r = b.getBoundingClientRect();
+      return { label: b.textContent.trim(), top: Math.round(r.top), height: +r.height.toFixed(1) };
+    });
+    return { buttons, lineCount: new Set(buttons.map((b) => b.top)).size };
+  });
+  if (!exitPaths) throw new Error('이탈 경로 줄을 못 찾음');
+  exitPaths.tapTargetsPass = exitPaths.buttons.length === 2 && exitPaths.buttons.every((b) => b.height >= 43.5);
+  exitPaths.pass = exitPaths.lineCount === 1 && exitPaths.tapTargetsPass;
+
+  // ── 랜딩 세로 예산(#665) — 카피+히어로+이탈경로가 675 프레임 안에 스크롤 없이 드는지.
+  // exitPaths와 스코프가 다르므로(오버레이 전체 = 브랜드 헤더+AppFooter까지 포함) 별도 축으로
+  // 둔다 — 여기 묶여 있으면 헤더·푸터 변경으로 떨어졌을 때 "이탈 경로 회귀"로 오인하기 쉽다.
+  // 세 블록 높이를 낱개로 더하는 것보다 오버레이 자신의 overflow-y-auto(위 클래스)가 실제로
+  // 스크롤을 만드는지(scrollHeight vs clientHeight)가 "예산 초과"의 더 정확한 판정이다.
+  const landingBudget = await landingPage.evaluate(() => {
+    const overlay = document.querySelector('[data-testid="landing"]');
+    const copy = document.querySelector('[data-testid="landing-copy"]');
+    const hero = document.querySelector('[data-testid="mood-gallery"]');
+    const exitRow = document.querySelector('[data-testid="landing-exit-paths"]');
+    if (!overlay || !copy || !hero || !exitRow) return null;
+    const h = (el) => +el.getBoundingClientRect().height.toFixed(1);
+    return {
+      blocks: { copy: h(copy), hero: h(hero), exitPaths: h(exitRow) },
+      scrollHeight: overlay.scrollHeight,
+      clientHeight: overlay.clientHeight,
+    };
+  });
+  if (!landingBudget) throw new Error('카피/히어로/이탈경로/랜딩 오버레이 중 하나를 못 찾음');
+  landingBudget.pass = landingBudget.scrollHeight <= landingBudget.clientHeight + 0.5;
 
   await landingCtx.close();
 
@@ -590,6 +634,8 @@ try {
     frameFit: { items: fits, fails: fitFails, pass: fitFails.length === 0 },
     landingSkippedOnDraft,
     carousel,
+    exitPaths,
+    landingBudget,
     invariant,
   };
   console.log(JSON.stringify(out, null, 2));
@@ -601,7 +647,9 @@ try {
     fitFails.length > 0 ||
     !landingSkippedOnDraft ||
     contrastFails.length > 0 ||
-    !carousel.pass
+    !carousel.pass ||
+    !exitPaths.pass ||
+    !landingBudget.pass
   ) {
     process.exitCode = 1;
   }
