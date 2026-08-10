@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { useExportReady } from '@/hooks/useExportReady';
 import { useResultView } from '@/hooks/useResultView';
 import { useDebounce } from '@/hooks/useDebounce';
-import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
+import { MobileEditorShell, type MobileEditorShellHandle } from '@/components/v2/MobileEditorShell';
 import { PhoneFrame } from '@/components/v2/PhoneFrame';
 import { ResultStage } from '@/components/v2/ResultStage';
 
@@ -13,6 +13,25 @@ export default function Home() {
   const photo = usePhototicket();
   const canExport = useExportReady({ state: photo.state });
   const { open: resultOpen, openView, closeView } = useResultView();
+  // ResultStage(#669) 워드마크가 이 셸의 초기화 판정·confirm 로직을 그대로 재사용하는 통로 —
+  // 셸은 결과화면이 열려도 언마운트되지 않는다(위 return 주석, #297). confirm과 실제 clear를
+  // 나눈 이유: clear(photo.state)는 동기, 결과화면을 닫는 closeView(history.back())의 popstate는
+  // 비동기라, 둘을 한 번에 하면 croppedImageUrl(라이브 prop)은 이미 비었는데 movieInfo 등
+  // (280ms useDebounce)은 안 비어 있는 화면이 그 사이 잠깐 보인다(#669 code-review 발견).
+  // 그래서 confirm 통과 → closeView() 먼저 → resultOpen이 실제로 false가 된 뒤(아래 effect)에야
+  // clear를 실행해, 그 flash가 뜰 상대(ResultStage)가 이미 사라진 뒤로 미룬다.
+  const shellRef = useRef<MobileEditorShellHandle>(null);
+  const pendingWordmarkResetRef = useRef(false);
+  function handleResultWordmarkTap() {
+    if (!shellRef.current?.confirmWordmarkReset()) return;
+    pendingWordmarkResetRef.current = true;
+    closeView();
+  }
+  useEffect(() => {
+    if (resultOpen || !pendingWordmarkResetRef.current) return;
+    pendingWordmarkResetRef.current = false;
+    shellRef.current?.commitWordmarkReset();
+  }, [resultOpen]);
 
   const { croppedImageUrl } = photo.state;
   const { setRecommendedColors } = photo;
@@ -87,6 +106,7 @@ export default function Home() {
           Done↔뒤로가기 왕복마다 리셋된다(claude-review #297 P1). */}
       <div className={resultOpen ? 'hidden' : undefined}>
         <MobileEditorShell
+          ref={shellRef}
           photo={photo}
           canExport={canExport}
           theme={theme}
@@ -102,6 +122,7 @@ export default function Home() {
         <ResultStage
           theme={theme}
           onBack={closeView}
+          onWordmarkTap={handleResultWordmarkTap}
           croppedImageUrl={croppedImageUrl}
           movieInfo={debouncedMovieInfo}
           components={debouncedComponents}

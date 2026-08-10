@@ -1,7 +1,9 @@
 import dynamic from 'next/dynamic';
 import {
+  forwardRef,
   useCallback,
   useEffect,
+  useImperativeHandle,
   useRef,
   useState,
   type ChangeEvent,
@@ -206,7 +208,19 @@ interface MobileEditorShellProps {
   fieldVisibility: Record<TicketField, boolean>;
 }
 
-export function MobileEditorShell({
+/** ResultStage(#669) 같은 형제 화면이 이 셸의 워드마크 초기화를 그대로 재사용하는 진입점.
+ * MobileEditorShell은 결과 화면이 열려도 언마운트되지 않고 CSS로만 숨는다(pages/index.tsx,
+ * #297 로컬 state 보존) — 그래서 이력 판정(croppedImageUrl/canUndo/isDirty/movieInfo)과
+ * performClear를 여기 그대로 둔 채로 ref 하나로 밖에 노출하면, ResultStage 쪽에 같은 로직을
+ * 복제할 필요가 없다(로직이 두 곳으로 갈라져 드리프트하는 걸 막는다). */
+export interface MobileEditorShellHandle {
+  /** 이력 판정 + confirm만 한다(clear는 안 함) — 이력 있는데 취소하면 false, 그 외엔 true. */
+  confirmWordmarkReset: () => boolean;
+  /** confirmWordmarkReset이 true를 반환한 뒤에만 부를 것 — 실제 초기화(clearDraft 등) 실행. */
+  commitWordmarkReset: () => void;
+}
+
+export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEditorShellProps>(function MobileEditorShell({
   photo,
   canExport,
   theme,
@@ -216,7 +230,7 @@ export function MobileEditorShell({
   previewMovieInfo,
   previewComponents,
   fieldVisibility,
-}: MobileEditorShellProps) {
+}, ref) {
   const { croppedImageUrl } = photo.state;
   // OCR 낙관적 주입 + 되돌리기 로직은 useOcrUndo가 소유(#141-class drift 방지).
   // OCR 카드는 셸 프리뷰 직하에 두고(#261) 이 훅도 셸이 쥔다.
@@ -485,12 +499,26 @@ export function MobileEditorShell({
   // 작업 이력 판정은 네 축의 합집합 — canUndo만 보면 포스터만 올린 직후(history.clear()로
   // 리셋된 상태)나 방금 만든 편집이 아직 350ms 디바운스 창 안(history.isDirty)일 때 경고 없이
   // 날아간다.
-  function handleWordmarkTap() {
+  function confirmWordmarkReset(): boolean {
     const hasWork = !!croppedImageUrl || history.canUndo || history.isDirty || hasMovieInfoContent(photo.state.movieInfo);
-    if (hasWork && !window.confirm('지금까지 작업한 내용이 사라져요. 처음 화면으로 돌아갈까요?')) return;
+    return !hasWork || window.confirm('지금까지 작업한 내용이 사라져요. 처음 화면으로 돌아갈까요?');
+  }
+  function commitWordmarkReset() {
     setMenuOpen(false); // handleClearTap과 동일하게 닫는다 — 안 닫으면 초기화된 화면 위에 메뉴가 뜬 채 남는다.
     performClear();
   }
+  function handleWordmarkTap() {
+    if (!confirmWordmarkReset()) return;
+    commitWordmarkReset();
+  }
+
+  // ResultStage(#669)는 confirm/commit을 나눠 쓴다 — croppedImageUrl은 즉시(라이브 prop)
+  // 반영되지만 movieInfo/components는 index.tsx의 280ms useDebounce를 거치고, 결과화면을
+  // 닫는 useResultView.closeView는 history.back()의 popstate(비동기)를 기다린다. confirm 직후
+  // 바로 clear(commitWordmarkReset)해버리면 그 사이 창에서 포스터는 사라졌는데 옛 영화 정보는
+  // 그대로 남은 결과화면이 잠깐 보인다(#669 code-review 발견) — index.tsx가 closeView() 이후
+  // resultOpen이 실제로 false가 된 다음에야 commitWordmarkReset을 부르게 한다.
+  useImperativeHandle(ref, () => ({ confirmWordmarkReset, commitWordmarkReset }));
 
   // 온-티켓 필드 탭(#259). 숨김 필드 탭 시 자동 표시 on(시안 setActive) 후 시트를 연다 — 스탬프는
   // chainVisible/formatVisible, 나머지는 fieldVisibility. 이미 켜진 필드면 no-op이라 안전하다.
@@ -1210,4 +1238,4 @@ export function MobileEditorShell({
       <ErrorToastHost />
     </div>
   );
-}
+});
