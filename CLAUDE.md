@@ -47,10 +47,11 @@ Before making architectural changes or implementing new features, consult:
 ### 🌱 Git & Commit Conventions
 - **Merge policy = rebase merge** (squash/merge-commit는 GitHub에서 비활성화). PR의 커밋이 **main에 그대로(verbatim) 올라오므로**, 각 커밋은 atomic하고 메시지가 깔끔해야 한다. WIP·"fix typo" 같은 커밋은 push 전 정리(squash/reword)할 것.
 - **Conventional Commits 필수**: `type(scope): 설명` 형식. 설명은 한국어/영어 모두 허용(레포 혼용).
-  - **type**: `feat` · `fix` · `docs` · `perf` · `chore` · `refactor` (관찰된 어휘 — 새 type은 신중히)
+  - **type**: `feat` · `fix` · `docs` · `perf` · `chore` · `refactor` · `test` (관찰된 어휘 — 새 type은 신중히)
   - **scope**: 변경 영역 소문자 (예: `result`, `ui`, `ocr`, `kobis`, `form`, `share`, `moods`, `editor`, `chrome`, `color`, `typography`, `server`, `blob`)
   - **이슈 참조**: 관련 이슈는 메시지 끝에 `(#NN)`로 표기 (예: `fix(ocr): undo 배너 위치 개선 (#96, #97)`)
 - **머지 후 브랜치 자동삭제**(`delete_branch_on_merge: true`). 로컬 stale 정리는 `git fetch --prune`.
+- **자동 semver 릴리즈**(#595, claude-kit `Lyainc/claude-kit` 선례) — `.github/workflows/auto-release.yml` + `scripts/next-version.mjs`. 트리거는 둘: 머지된 PR의 `release` 라벨(주 트리거, 항상 릴리즈) 또는 미릴리즈 user-visible 커밋 70개(백스톱, 라벨 무관). user-visible은 `feat`/`fix`/`perf`/`refactor`+breaking뿐이고 `docs`/`chore`/`test`/`ci`/`build`/`style`은 단독으로 안 일으키되 다음 릴리즈에 실려간다. bump는 breaking>feat(minor)>그외(patch) 중 가장 큰 변화가 이긴다. **`package.json`의 `version`은 올리지 않는다**(`private:true`라 배포·설치 어디에도 안 쓰여 태그와 이중 관리할 값이 없다) — 그래서 이 워크플로는 main에 커밋을 push하지 않고 태그+`gh release create --generate-notes`만 한다(claude-kit의 release.yml이 겪던 "bump 커밋이 push 트리거를 재발화" 문제 자체가 없다).
 
 ### 🧑‍💻 Coding Standards & Vibe Coding
 - **Iterative Delivery**: Prioritize working code over perfect architecture. Implement, verify, then refactor.
