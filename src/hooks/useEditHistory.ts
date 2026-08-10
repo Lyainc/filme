@@ -73,6 +73,12 @@ export function useEditHistory(photo: ReturnType<typeof usePhototicket>) {
   return {
     canUndo: hist.at > 0,
     canRedo: hist.at < hist.stack.length - 1,
+    // canUndo는 커밋된(디바운스가 이미 push한) 스텝 사이만 비교해서, 방금 만든 편집이 아직
+    // 350ms 디바운스 창 안에 있으면 "이력 없음"으로 잘못 읽힌다(#578 리뷰에서 발견 — 포스터
+    // 없이 mood/테마만 바꾸고 바로 워드마크를 탭하는 경우). 스택에 커밋된 베이스라인이 있는데
+    // 지금 상태가 그것과 다르면(디바운스가 아직 안 밀어넣은 진행 중 편집) 실시간으로 잡는다.
+    // 스택이 비어 있으면(마운트 직후 베이스라인 확정 전) 비교 기준이 아직 없어 false.
+    isDirty: hist.stack.length > 0 && JSON.stringify({ movieInfo, components, fieldVisibility }) !== hist.stack[hist.at],
     undo,
     redo,
     clear,
