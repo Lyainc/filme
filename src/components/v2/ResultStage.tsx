@@ -9,6 +9,10 @@ import type { EmbossPath, EmbossStamp } from '@/utils/textureRecipes';
 interface ResultStageProps {
   theme: 'light' | 'dark';
   onBack: () => void;
+  /** 워드마크 탭 = 초기화의 세 번째 진입점(#669, #578과 동형). MobileEditorShell이 언마운트
+   * 없이 숨어 있을 뿐이라(index.tsx) 그 셸의 requestWordmarkReset을 그대로 호출하는
+   * 부모(index.tsx) 콜백 — 이 컴포넌트는 이력 판정·confirm 로직을 복제하지 않는다. */
+  onWordmarkTap: () => void;
   croppedImageUrl: string | null;
   movieInfo: MovieInfo;
   components: TicketComponents;
@@ -27,6 +31,7 @@ interface ResultStageProps {
 export function ResultStage({
   theme,
   onBack,
+  onWordmarkTap,
   croppedImageUrl,
   movieInfo,
   components,
@@ -87,7 +92,7 @@ export function ResultStage({
           </svg>
         </button>
         <div className="flex items-center gap-2">
-          <Wordmark as="h1" />
+          <Wordmark as="h1" onClick={onWordmarkTap} />
         </div>
         <div aria-hidden="true" className="h-9 w-9" />
       </header>
