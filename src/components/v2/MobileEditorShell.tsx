@@ -99,6 +99,16 @@ function loadDrawerHandleY(): number | null {
   }
 }
 
+// releaseDateGranularity/releaseDateFormat/watchDateFormat은 포맷 설정이라 미입력 상태에서도
+// 항상 truthy 기본값을 갖는다(usePhototicket INITIAL_STATE) — 포함하면 "채워짐" 판정이 항상
+// true가 돼 쓸모없어진다. 나머지 필드는 빈 문자열/0/false가 기본값이라 Boolean()으로 충분하다.
+const MOVIE_INFO_FORMAT_KEYS = new Set(['releaseDateGranularity', 'releaseDateFormat', 'watchDateFormat']);
+
+/** 워드마크 탭(#578) 손실 확인 판정의 세 축 중 하나 — movieInfo 필드가 하나라도 채워졌는가. */
+function hasMovieInfoContent(info: MovieInfo): boolean {
+  return Object.entries(info).some(([key, value]) => !MOVIE_INFO_FORMAT_KEYS.has(key) && Boolean(value));
+}
+
 // 헤더 서브메뉴 공용 행(#374, 시안 Siyan-C-v8 설정 시트의 행 문법 이식) — 리딩 아이콘 +
 // 14px 라벨 + (토글 행이면) 트레일링 스위치. checked를 주면 role="switch" 토글 행,
 // 없으면 액션 행. 스위치 비주얼은 구 TogglePill 것을 그대로 승계.
@@ -444,6 +454,18 @@ export function MobileEditorShell({
     onDone();
   }
 
+  // 메뉴 초기화 행·워드마크 탭(#578) 두 진입점이 공유하는 실제 초기화 절차.
+  function performClear() {
+    photo.clearDraft();
+    // 초기화는 새 문서니까 랜딩도 처음 상태로 — 안 되돌리면 포스터도 draft도 없는 빈 셸에 남는다(#614).
+    setLandingDismissed(false);
+    setOcrApplied(false);
+    // 초기화는 새 문서 — undo로 못 돌아간다(로고·포스터 blob이 revoke돼
+    // 복원해도 죽은 참조라 히스토리째 파기가 맞다).
+    history.clear();
+    flashToast('초기화했어요');
+  }
+
   function handleClearTap() {
     if (!clearArmed) {
       setClearArmed(true);
@@ -455,14 +477,19 @@ export function MobileEditorShell({
     if (Date.now() - clearArmedAt.current < 350) return;
     clearTimeout(clearArmTimer.current);
     setMenuOpen(false); // 닫힘 effect가 clearArmed도 함께 해제
-    photo.clearDraft();
-    // 초기화는 새 문서니까 랜딩도 처음 상태로 — 안 되돌리면 포스터도 draft도 없는 빈 셸에 남는다(#614).
-    setLandingDismissed(false);
-    setOcrApplied(false);
-    // 초기화는 새 문서 — undo로 못 돌아간다(로고·포스터 blob이 revoke돼
-    // 복원해도 죽은 참조라 히스토리째 파기가 맞다).
-    history.clear();
-    flashToast('초기화했어요');
+    performClear();
+  }
+
+  // 워드마크 탭(#578) = 초기화의 두 번째 진입점, 같은 동작·다른 문구. 라벨을 확인 문구로
+  // 바꾸는 2탭 arm(handleClearTap)은 브랜드 라벨엔 못 쓰므로 native confirm으로 대체한다.
+  // 작업 이력 판정은 네 축의 합집합 — canUndo만 보면 포스터만 올린 직후(history.clear()로
+  // 리셋된 상태)나 방금 만든 편집이 아직 350ms 디바운스 창 안(history.isDirty)일 때 경고 없이
+  // 날아간다.
+  function handleWordmarkTap() {
+    const hasWork = !!croppedImageUrl || history.canUndo || history.isDirty || hasMovieInfoContent(photo.state.movieInfo);
+    if (hasWork && !window.confirm('지금까지 작업한 내용이 사라져요. 처음 화면으로 돌아갈까요?')) return;
+    setMenuOpen(false); // handleClearTap과 동일하게 닫는다 — 안 닫으면 초기화된 화면 위에 메뉴가 뜬 채 남는다.
+    performClear();
   }
 
   // 온-티켓 필드 탭(#259). 숨김 필드 탭 시 자동 표시 on(시안 setActive) 후 시트를 연다 — 스탬프는
@@ -591,7 +618,7 @@ export function MobileEditorShell({
       {!isMax && (
       <header ref={setHeaderEl} className="relative flex h-14 shrink-0 items-center justify-between border-b border-line px-3">
         <div className="flex items-center gap-2 pl-1.5">
-          <Wordmark as="h1" />
+          <Wordmark as="h1" onClick={handleWordmarkTap} />
         </div>
 
         {/* '티켓 항목 목록' 헤더 버튼(#355/#360 임시 진입점)은 플로팅 툴바의 항목목록 버튼(#356)이
