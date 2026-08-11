@@ -28,6 +28,7 @@ import {
   useFontsReady,
   type FieldGhostState,
 } from './_shared';
+import { backgroundPatternStyle } from '@/utils/backgroundPatterns';
 
 /**
  * Editorial — 영화제 공식 티켓(마스터 Ticket Design Master.dc.html v2 · 2026-07-08 resync, 에픽 #281).
@@ -139,6 +140,7 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
   const seanceOn = !!watchDateVal || gWatchDate;
   const arrivalOn = !!watchTimeVal || gWatchTime;
   const componentOpacity = components.componentOpacity ?? 1;
+  const backgroundPattern = components.backgroundPattern ?? 'none';
   // 스텁 스탬프는 실제 렌더 조건(stampWillRender)으로 게이팅 — chainVisible=true여도 로고·라벨 없고
   // ghost=false면 null이라, 이 group을 안 그려야 허공 구분선/빈 컨테이너가 안 남는다(#216 P1.1).
   const stubChainOn = stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost);
@@ -315,8 +317,14 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
         </div>
       </div>
 
-      {/* C: Main */}
-      <div style={{ flex: '1 1 auto', minWidth: 0, position: 'relative', background: PAPER, color: INK, display: 'flex', flexDirection: 'column', padding: `44px ${MAIN_PAD_X}px 36px`, boxSizing: 'border-box', opacity: componentOpacity }}>
+      {/* C: Main — #530 형제 레이어 분할: 패턴은 componentOpacity 밖(종이에 이미 인쇄된 바탕),
+          콘텐츠만 안(오버레이). 두 레이어 다 outer의 position:relative 박스를 absolute inset:0으로
+          꽉 채워 패딩·투명도 이관 전과 픽셀이 동일하다. */}
+      <div style={{ flex: '1 1 auto', minWidth: 0, position: 'relative', background: PAPER }}>
+        {backgroundPattern !== 'none' && (
+          <div data-bg-pattern="true" aria-hidden="true" style={{ position: 'absolute', inset: 0, ...backgroundPatternStyle(backgroundPattern, INK) }} />
+        )}
+        <div style={{ position: 'absolute', inset: 0, color: INK, display: 'flex', flexDirection: 'column', padding: `44px ${MAIN_PAD_X}px 36px`, boxSizing: 'border-box', opacity: componentOpacity }}>
         {/* Kicker — 장식 큐레이션 라벨(bar + En Reprise) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
           <span style={{ width: 46, height: 2, background: accent, flexShrink: 0 }} />
@@ -440,6 +448,7 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
           <span style={{ position: 'absolute', right: 0, top: 10, width: 22, height: 1, background: INK }} />
           <span style={{ position: 'absolute', right: 10, top: 0, width: 1, height: 22, background: INK }} />
           <span style={{ position: 'absolute', right: 6, top: 6, width: 9, height: 9, border: `1px solid ${INK}`, borderRadius: '50%' }} />
+        </div>
         </div>
       </div>
 
