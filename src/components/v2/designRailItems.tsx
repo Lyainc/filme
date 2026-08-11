@@ -9,6 +9,7 @@ import { MINIMAL_STAMP_MAX_SCALE } from '@/components/moods/MoodMinimal';
 import { containsHangul } from '@/components/moods/_shared';
 import { Eyebrow } from './Eyebrow';
 import { POSTER_FILL_MOODS, TONE_FIXED_MOODS } from '@/constants/fields';
+import { BACKGROUND_PATTERN_OPTIONS } from '@/utils/backgroundPatterns';
 import type { LayoutId } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 
@@ -18,7 +19,7 @@ import type { usePhototicket } from '@/hooks/usePhototicket';
 // 상시 스택 배치, desktop- id prefix)는 아무도 안 타는 죽은 코드라 같이 걷어냈다 — 남겨두면
 // 타입도 테스트도 안 건드리는 채로 두 셸 전제가 조용히 되살아난다.
 // 슬라이더 id의 rail- prefix는 그대로 유지한다(기존 id 보존).
-export type RailItemId = 'mood' | 'color' | 'texture' | 'emboss' | 'opacity' | 'size' | 'custom';
+export type RailItemId = 'mood' | 'color' | 'texture' | 'emboss' | 'opacity' | 'size' | 'pattern' | 'custom';
 type Photo = ReturnType<typeof usePhototicket>;
 
 /**
@@ -517,6 +518,25 @@ function SizePanel({ photo, actions }: { photo: Photo; actions: RailActions }) {
   );
 }
 
+/**
+ * 배경 기하 패턴이 존재하는 무드(#530 PR 1) — 판정 기준은 "패턴을 깔 종이 바탕이 그 무드에
+ * 실재하는가" 하나(이슈 본문). Editorial·Criterion v5·Stub는 셋 다 종이 면이 이미 서 있다.
+ * 이번 PR은 이 셋을 appliesTo에 전부 등록하되 Editorial 렌더링만 붙인다 — Criterion·Stub는
+ * 무드 자체가 재설계 대상이라(#524 03, Stub 리디자인) 값은 저장되지만 아직 티켓에 안 그려진다.
+ */
+const BACKGROUND_PATTERN_MOODS: readonly LayoutId[] = ['editorial', 'criterion', 'stub'];
+
+function BackgroundPatternPanel({ photo }: { photo: Photo }) {
+  return (
+    <ChipRadio
+      label="배경 패턴"
+      options={BACKGROUND_PATTERN_OPTIONS}
+      value={photo.state.components.backgroundPattern ?? 'none'}
+      onChange={(backgroundPattern) => photo.updateComponents({ backgroundPattern })}
+    />
+  );
+}
+
 const COLOR_ITEM: RailItem = {
   id: 'color',
   label: '컬러',
@@ -638,6 +658,27 @@ export const RAIL_ITEMS: readonly RailItem[] = [
       </svg>
     ),
     render: (photo, actions) => <SizePanel photo={photo} actions={actions} />,
+  },
+  {
+    id: 'pattern',
+    label: '패턴',
+    eyebrow: 'Pattern',
+    // 패턴: 격자 점 — 도트/사선/그리드 카탈로그를 아우르는 중립 힌트.
+    icon: (
+      <svg {...RAIL_ICON}>
+        <circle cx="7" cy="7" r="1.4" fill="currentColor" stroke="none" />
+        <circle cx="12" cy="7" r="1.4" fill="currentColor" stroke="none" />
+        <circle cx="17" cy="7" r="1.4" fill="currentColor" stroke="none" />
+        <circle cx="7" cy="12" r="1.4" fill="currentColor" stroke="none" />
+        <circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" />
+        <circle cx="17" cy="12" r="1.4" fill="currentColor" stroke="none" />
+        <circle cx="7" cy="17" r="1.4" fill="currentColor" stroke="none" />
+        <circle cx="12" cy="17" r="1.4" fill="currentColor" stroke="none" />
+        <circle cx="17" cy="17" r="1.4" fill="currentColor" stroke="none" />
+      </svg>
+    ),
+    appliesTo: BACKGROUND_PATTERN_MOODS,
+    render: (photo) => <BackgroundPatternPanel photo={photo} />,
   },
   {
     id: 'custom',
