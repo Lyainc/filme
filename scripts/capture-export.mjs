@@ -7,6 +7,7 @@
  *   bun scripts/capture-export.mjs --coating gloss --emboss --out /tmp/gloss-emboss.jpg
  *   bun scripts/capture-export.mjs --layout minimal --emboss --switch-to "35mm Wide" --out /tmp/switched.jpg
  *   bun scripts/capture-export.mjs --layout minimal --emboss --toggle-fill --out /tmp/filled.jpg
+ *   bun scripts/capture-export.mjs --layout editorial --pattern dots --out /tmp/dots.jpg
  *   bun scripts/capture-export.mjs --lasso --out /tmp/lasso.jpg
  *   bun scripts/capture-export.mjs --emboss --lasso --out /tmp/brush-and-lasso.jpg
  *   bun scripts/capture-export.mjs --compare /tmp/a.jpg /tmp/b.jpg
@@ -396,7 +397,7 @@ async function switchLayout(page, label) {
   await sleep(300);
 }
 
-async function capture({ layout, material, coating, intensity, emboss, lasso, switchTo, toggleFill, out, timeoutMs }) {
+async function capture({ layout, material, coating, intensity, pattern, emboss, lasso, switchTo, toggleFill, out, timeoutMs }) {
   const seed = {
     movieInfo: {
       title: '인터스텔라',
@@ -415,6 +416,7 @@ async function capture({ layout, material, coating, intensity, emboss, lasso, sw
       coating,
       materialIntensity: intensity,
       coatingIntensity: intensity,
+      backgroundPattern: pattern, // #530 — dots/diagonal/grid/none
     },
     // 포스터 주입이 "첫 업로드"로 오판돼 fieldVisibility가 통째로 갈리는 걸 막는다
     // (measure-editorial-stub.mjs와 같은 함정).
@@ -567,6 +569,7 @@ if (cmpIdx >= 0) {
     material: arg('material', 'original'),
     coating: arg('coating', 'none'),
     intensity: Number(arg('intensity', '1')),
+    pattern: arg('pattern', 'none'),
     emboss: argv.includes('--emboss'),
     lasso: argv.includes('--lasso'),
     switchTo: arg('switch-to', null),
