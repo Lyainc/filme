@@ -1,4 +1,5 @@
 import type { EmbossPath, EmbossStamp } from '@/utils/textureRecipes';
+import type { BackgroundPatternId } from '@/utils/backgroundPatterns';
 
 export type LayoutId = 'minimal' | 'criterion' | '35mm' | 'editorial' | 'stub' | '35mm-landscape';
 
@@ -104,6 +105,11 @@ export interface TicketComponents {
   signatureImage?: string;
   /** 서명 이미지 렌더 크기 배율 0.6~1.3(기본 1) — 무드별 고정 height와 곱연산 결합(#484). */
   signatureScale?: number;
+  /**
+   * 배경 기하 패턴(#530) — Editorial·Criterion·Stub 공통 축. 미설정은 'none'으로 읽는다
+   * (마이그레이션 없음, backgroundPatterns.ts가 단일 소스).
+   */
+  backgroundPattern?: BackgroundPatternId;
 }
 
 export interface PhototicketState {
