@@ -14,8 +14,11 @@ import { showError } from '@/utils/errorToast';
  * 재크롭은 범위 밖(#220): 크롭 완료/취소 후 원본을 유지하지 않으므로 다시 업로드로 재크롭.
  *
  * @param onChange 크롭 완료 시 새 로고 URL 전달.
+ * @param maxSide 긴 변 상한(px). 기본 640은 티켓에서 100px 남짓 서는 **로고 스탬프** 기준이라,
+ *   캔버스 전면을 cover로 채우는 소비자는 반드시 자기 값을 넘겨야 한다 — 안 그러면 저장물
+ *   (pixelRatio 2)에서 3~5배 확대돼 뭉갠다(#671 배경 패턴이 첫 사례).
  */
-export function useLogoCrop(onChange: (url: string) => void) {
+export function useLogoCrop(onChange: (url: string) => void, maxSide = 640) {
   // 크롭 모달 소스이자 getCroppedImg가 읽는 원본. 완료/취소 시 null로 비워 revoke.
   const [rawSrc, setRawSrc] = useState<string | null>(null);
   const [isCropping, setIsCropping] = useState(false);
@@ -31,7 +34,7 @@ export function useLogoCrop(onChange: (url: string) => void) {
     try {
       const cropped = await getCroppedImg(rawSrc, croppedAreaPixels, {
         mimeType: 'image/png', // 투명 PNG 로고의 알파 보존
-        maxSide: 640, // 자유 종횡비 유지, 긴 변만 캡해 파일 크기 제한
+        maxSide, // 자유 종횡비 유지, 긴 변만 캡해 파일 크기 제한
       });
       // 직전 로고(value)는 교체 시점에 revoke하지 않는다 — undo 히스토리(#356)가 이전 URL을
       // 참조하므로 여기서 풀면 undo가 죽은 이미지를 복원한다. 최신 로고는 usePhototicket이

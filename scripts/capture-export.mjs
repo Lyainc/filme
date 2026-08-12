@@ -463,7 +463,15 @@ async function capture({ layout, material, coating, intensity, pattern, emboss, 
       // #671 — 'custom'은 그릴 이미지가 있어야 레이어가 선다(없으면 스타일이 비어 안 그려진다).
       if (s.components.backgroundPattern === 'custom') {
         const c = new Function(`${bgDrawSrc}; return c;`)();
-        s.components.backgroundPatternImage = c.toDataURL('image/png');
+        // **blob:이어야 한다 — data:가 아니라.** html-to-image의 parseURLs는 data:를 처리 대상에서
+        // 아예 빼므로(embed-resources), data:로 재면 실제 앱이 만드는 blob:의 fetch→인라인 경로를
+        // 통째로 건너뛴 걸 재게 된다. useLogoCrop/getCroppedImg 산출물이 blob:이라 여기도 맞춘다.
+        // 이 URL은 evaluateOnNewDocument가 도는 그 document에 속하므로 페이지 수명 동안 살아 있다.
+        const blob = c.toDataURL('image/png');
+        const bin = atob(blob.split(',')[1]);
+        const buf = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+        s.components.backgroundPatternImage = URL.createObjectURL(new Blob([buf], { type: 'image/png' }));
       }
       localStorage.setItem('filme:phototicket:v1', JSON.stringify(s));
       localStorage.setItem('phototicket:theme', 'dark');
