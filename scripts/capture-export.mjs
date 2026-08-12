@@ -8,6 +8,7 @@
  *   bun scripts/capture-export.mjs --layout minimal --emboss --switch-to "35mm Wide" --out /tmp/switched.jpg
  *   bun scripts/capture-export.mjs --layout minimal --emboss --toggle-fill --out /tmp/filled.jpg
  *   bun scripts/capture-export.mjs --layout editorial --pattern dots --out /tmp/dots.jpg
+ *   bun scripts/capture-export.mjs --layout stub --pattern custom --out /tmp/custom.jpg
  *   bun scripts/capture-export.mjs --lasso --out /tmp/lasso.jpg
  *   bun scripts/capture-export.mjs --emboss --lasso --out /tmp/brush-and-lasso.jpg
  *   bun scripts/capture-export.mjs --compare /tmp/a.jpg /tmp/b.jpg
@@ -217,6 +218,31 @@ const POSTER_DRAW = `
 `;
 
 /**
+ * #671 `--pattern custom` 전용 배경 이미지. 포스터(회색 그라디언트)와 **색이 확실히 갈리는**
+ * 굵은 사선 줄무늬라, 저장물에서 이게 포스터 슬롯 안으로 새면 --compare 증폭 diff에 바로 뜬다
+ * (클립이 빠지면 정확히 그 증상이 난다 — #490/#495 z-order).
+ *
+ * 실제 업로드가 useLogoCrop → getCroppedImg로 만드는 것과 같은 PNG다. 브라우저 안에서 그려
+ * data: URL로 굽는 이유는 seed가 localStorage에 실려야 하는데 blob:은 페이지 수명이 갈리기
+ * 때문이고, data:는 saveDraft의 blob: 비우기 대상도 아니라 복원 왕복에도 그대로 남는다.
+ */
+const BG_PATTERN_DRAW = `
+  const c = document.createElement('canvas');
+  c.width = 480; c.height = 480;
+  const g = c.getContext('2d');
+  g.fillStyle = '#1f6feb';
+  g.fillRect(0, 0, c.width, c.height);
+  g.strokeStyle = '#f78166';
+  g.lineWidth = 28;
+  for (let i = -c.height; i < c.width * 2; i += 72) {
+    g.beginPath();
+    g.moveTo(i, 0);
+    g.lineTo(i + c.height, c.height);
+    g.stroke();
+  }
+`;
+
+/**
  * 형압(#509) 마스크는 c8(세션 한정)이라 PersistedState(localStorage 시드)에 안 실린다 —
  * material/coating처럼 seed로 주입할 수 없다. 그래서 실제 UI를 그대로 몬다: rail 'emboss'
  * 항목 열기 → "형압 칠하기 시작" → 포스터 위 대각선 드래그(page.mouse, 합성 PointerEvent가
@@ -416,7 +442,7 @@ async function capture({ layout, material, coating, intensity, pattern, emboss, 
       coating,
       materialIntensity: intensity,
       coatingIntensity: intensity,
-      backgroundPattern: pattern, // #530 — dots/diagonal/grid/none
+      backgroundPattern: pattern, // #530 — dots/diagonal/grid/none, #671 — custom
     },
     // 포스터 주입이 "첫 업로드"로 오판돼 fieldVisibility가 통째로 갈리는 걸 막는다
     // (measure-editorial-stub.mjs와 같은 함정).
@@ -433,13 +459,18 @@ async function capture({ layout, material, coating, intensity, pattern, emboss, 
       if (t.startsWith('[capture:')) logs.push(t);
     });
     await page.setViewport({ width: 400, height: 675, deviceScaleFactor: 1 });
-    await page.evaluateOnNewDocument((s) => {
+    await page.evaluateOnNewDocument((s, bgDrawSrc) => {
+      // #671 — 'custom'은 그릴 이미지가 있어야 레이어가 선다(없으면 스타일이 비어 안 그려진다).
+      if (s.components.backgroundPattern === 'custom') {
+        const c = new Function(`${bgDrawSrc}; return c;`)();
+        s.components.backgroundPatternImage = c.toDataURL('image/png');
+      }
       localStorage.setItem('filme:phototicket:v1', JSON.stringify(s));
       localStorage.setItem('phototicket:theme', 'dark');
       // 헤드리스에선 navigator.share가 영영 settle하지 않는다(파일 상단 진단) — 공유 미지원
       // 데스크톱과 같은 다운로드 경로로 떨어뜨려 CTA가 실제로 완료되게 한다.
       Object.defineProperty(navigator, 'canShare', { value: () => false, configurable: true });
-    }, seed);
+    }, seed, BG_PATTERN_DRAW);
     await page.goto(`${URL_}?debug=1`, { waitUntil: 'networkidle2' });
     mark('loaded');
 
