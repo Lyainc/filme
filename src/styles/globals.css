@@ -381,3 +381,18 @@
     --hero-dvh-budget: calc(100cqh - env(safe-area-inset-top, 0px) - 390px);
   }
 }
+
+/* 랜딩 오버레이 첫 페인트 게이트(#675) — `has-draft`는 _document.tsx의 blocking 인라인 스크립트가
+   localStorage에서 draft를 보고 찍는다(테마 FOUC 방어와 같은 자리·같은 이유). React가 복원
+   effect로 `photo.draftRestored`를 세우기 전까지, 그리고 그보다 먼저 그려지는 **SSR HTML**에서
+   랜딩이 뜨는 걸 이 한 줄이 막는다.
+   `.fixed`(= 오버레이 모드)만 겨눈다. 랜딩은 inline 모드로도 서는데(텍스트만 있던 draft를 복원한
+   재방문 — 포스터도 캔버스도 없어 그 블록이 유일한 진입 표면이다), 셀렉터에서 `.fixed`를 빼면
+   바로 그 재방문자가 빈 셸을 본다. 없애려는 건 "뜰 필요 없는 오버레이가 떴다 걷히는 것" 하나다.
+   클래스는 명제가 뒤집힐 때만 usePhototicket이 거둔다(저장분이 실제로 없었을 때·초기화) —
+   그 두 경로가 빠지면 랜딩이 영영 안 뜨는 빈 셸이 되므로 같이 볼 것.
+   @layer 밖인 이유는 위 .ReactCrop·.result-hero와 같다(purge 회피) — 그리고 레이어 밖이라
+   utilities의 `flex`(오버레이 모드 클래스)를 순서로 이긴다. */
+html.has-draft [data-testid='landing'].fixed {
+  display: none;
+}
