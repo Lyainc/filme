@@ -59,6 +59,8 @@ mock.module('@/utils/imageDb', () => ({
 // require (mock.module은 hoisting 안 됨) — usePhototicket이 이 시점 이후 로드돼야 위 mock을 받는다.
 const { usePhototicket } =
   require('@/hooks/usePhototicket') as typeof import('@/hooks/usePhototicket');
+const { useEditHistory } =
+  require('@/hooks/useEditHistory') as typeof import('@/hooks/useEditHistory');
 
 // usePhototicket의 blobUrlToBlob은 blob: URL을 fetch(url).then(r=>r.blob())으로 되돌린다 —
 // 실제 브라우저에선 자기 자신이 만든 objectURL을 읽는 것뿐이라 네트워크를 안 타지만, 테스트의
@@ -310,5 +312,97 @@ describe('#489 자동저장 이미지 복원', () => {
     // 비동기 체인이 있다면 잡아낼 만큼(짧게) 기다린다.
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(saveImagesCallCount).toBe(callsAfterFirstSave);
+  });
+});
+
+/**
+ * #673 — 업로드 이미지를 제거해도 objectURL이 영영 안 풀리던 문제.
+ *
+ * 제거 순간에 revoke하면 undo(#356)가 죽은 이미지를 복원하므로, 조건은 "제거 시 푼다"가 아니라
+ * "히스토리 어디에서도 더는 참조되지 않는 URL만 푼다"다. 아래 두 테스트가 그 양쪽 끝을 잡는다.
+ */
+describe('#673 제거된 이미지의 blob 수명', () => {
+  // 히스토리 push는 350ms 디바운스 — 스냅샷이 실제로 쌓일 때까지 기다린다.
+  const settleHistory = async () => {
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    });
+  };
+
+  function useHarness() {
+    const photo = usePhototicket();
+    const history = useEditHistory(photo);
+    return { photo, history };
+  }
+
+  test('제거해도 히스토리가 쥐고 있는 동안은 안 풀리고(undo로 되살아난다), 그 스냅샷이 사라지면 revoke된다', async () => {
+    const revoke = spyOn(URL, 'revokeObjectURL');
+    const { result } = renderHook(() => useHarness());
+
+    // 베이스라인(로고 없음) → 로고 업로드 → 로고 제거. 스냅샷 3개가 쌓인다.
+    act(() => {
+      result.current.photo.updateMovieInfo({ title: '기생충' });
+    });
+    await settleHistory();
+    act(() => {
+      result.current.photo.updateComponents({ chain: 'blob:chain-1' });
+    });
+    await settleHistory();
+    act(() => {
+      result.current.photo.updateComponents({ chain: '' });
+    });
+    await settleHistory();
+
+    // 제거했지만 가운데 스냅샷이 아직 이 URL을 쥐고 있으므로 풀면 안 된다.
+    expect(revoke).not.toHaveBeenCalledWith('blob:chain-1');
+
+    // undo하면 그 이미지가 그대로 살아 있어야 한다(#673 [hard] 제약).
+    act(() => {
+      result.current.history.undo();
+    });
+    expect(result.current.photo.state.components.chain).toBe('blob:chain-1');
+    expect(revoke).not.toHaveBeenCalledWith('blob:chain-1');
+
+    // 로고가 없던 시점까지 undo한 뒤 새 편집을 하면 redo 가지가 잘려, 이 URL을 쥔 스냅샷이
+    // 히스토리에서 통째로 사라진다 — 이제는 어떤 undo/redo로도 못 되살아나므로 풀어야 한다.
+    act(() => {
+      result.current.history.undo();
+    });
+    expect(result.current.photo.state.components.chain).toBe('');
+    act(() => {
+      result.current.photo.updateMovieInfo({ title: '살인의 추억' });
+    });
+    await settleHistory();
+    expect(revoke).toHaveBeenCalledWith('blob:chain-1');
+  });
+
+  test('제거 직후 IndexedDB 쓰기가 in-flight인 채로 탭이 닫혀도, 리마운트에서 지운 이미지가 안 되살아난다', async () => {
+    const first = renderHook(() => usePhototicket());
+    act(() => {
+      first.result.current.handleImageUpload('blob:poster-1');
+      first.result.current.updateComponents({ chain: 'blob:chain-1' });
+    });
+    act(() => {
+      first.result.current.saveDraft();
+    });
+    await waitFor(() => expect(fakeStore.chain).toBeTruthy());
+
+    // 로고 제거 → 그 직후 저장. IndexedDB 쓰기를 붙잡아 "큐에 남은 채 탭이 닫히는" 순간을
+    // 재현한다(쿼터 throw도 IDB에 옛 Blob이 남는다는 점에서 같은 상황이다).
+    act(() => {
+      first.result.current.updateComponents({ chain: '' });
+    });
+    armSaveGate();
+    act(() => {
+      first.result.current.saveDraft();
+    });
+    first.unmount(); // releaseSave는 영영 안 온다 — 탭이 닫혔다.
+    expect(fakeStore.chain).toBeTruthy(); // IndexedDB엔 지운 로고가 그대로 남아 있다.
+
+    // 새로고침 — 포스터는 복원되지만(복원 effect가 실제로 돌았다는 증거) 지운 로고는 아니다.
+    const second = renderHook(() => usePhototicket());
+    await waitFor(() => expect(second.result.current.state.croppedImageUrl).toBeTruthy());
+    expect(second.result.current.state.components.chain).toBe('');
+    second.unmount();
   });
 });
