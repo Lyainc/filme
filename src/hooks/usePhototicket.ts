@@ -337,6 +337,13 @@ export function usePhototicket() {
           latestSignatureUrlRef.current = url;
           componentsPatch.signatureImage = url;
         }
+        // 배경 이미지(#672) — 로고 3종과 완전히 같은 모양이다. 여기서 재발급한 URL을 ref에도
+        // 걸어야 언마운트 revoke가 새 URL을 대상으로 삼는다.
+        if (images.background) {
+          const url = URL.createObjectURL(images.background);
+          latestBgPatternUrlRef.current = url;
+          componentsPatch.backgroundPatternImage = url;
+        }
         const posterUrl = images.poster ? URL.createObjectURL(images.poster) : null;
         if (posterUrl) latestUrlRef.current = posterUrl;
         // 크롭 원본 복원(#489) — 크롭 파이프라인(posterCrop)이 이 URL의 단일 소유자이고,
@@ -536,13 +543,10 @@ export function usePhototicket() {
           chain: state.components.chain.startsWith('blob:') ? '' : state.components.chain,
           format: state.components.format.startsWith('blob:') ? '' : state.components.format,
           signatureImage: state.components.signatureImage?.startsWith('blob:') ? '' : state.components.signatureImage,
-          // #671 — 배경 패턴 커스텀 이미지도 blob:이면 비운다(재시작 후 죽은 참조라서).
-          // **로고 3종과 대칭이 아니다**: 그쪽은 saveImages/loadImages로 IndexedDB 왕복 복원돼
-          // 새로고침을 넘기고, 못 넘겨도 티켓에 dashed placeholder가 남는다. 배경은 IDB에 안 실어서
-          // 새로고침하면 backgroundPattern:'custom'만 남고 레이어가 조용히 사라진다 — 티켓 위에
-          // 흔적도 없어서, 레일 '패턴' 패널을 직접 열어야 알 수 있다.
-          // ponytail: 새로고침 유실이 실제로 걸리면 saveImages/loadImages 스키마에 한 칸과
-          // fingerprint 한 줄을 더하면 된다(로고와 완전히 같은 모양).
+          // 배경 이미지도 blob:이면 비운다(재시작 후 죽은 참조라서) — 대신 아래 IndexedDB에
+          // Blob으로 실어 새로고침에 왕복 복원한다(#672). #671이 남겼던 비대칭(배경만 IDB에 안
+          // 실려 새로고침에 조용히 사라짐)이 여기서 닫힌다: 프리셋이 없어진 뒤로 배경 이미지가
+          // 이 축의 전부라, 유실되면 티켓 위에 흔적조차 안 남아 레일을 열어야만 알 수 있었다.
           backgroundPatternImage: state.components.backgroundPatternImage?.startsWith('blob:')
             ? ''
             : state.components.backgroundPatternImage,
@@ -573,18 +577,20 @@ export function usePhototicket() {
       state.components.chain,
       state.components.format,
       state.components.signatureImage,
+      state.components.backgroundPatternImage,
     ].join('|');
     if (fingerprint !== lastPersistedImageFingerprintRef.current) {
       imagePersistChainRef.current = imagePersistChainRef.current.then(async () => {
         try {
-          const [poster, posterOriginal, chain, format, signature] = await Promise.all([
+          const [poster, posterOriginal, chain, format, signature, background] = await Promise.all([
             blobUrlToBlob(state.croppedImageUrl),
             blobUrlToBlob(posterCrop.originalSrc),
             blobUrlToBlob(state.components.chain),
             blobUrlToBlob(state.components.format),
             blobUrlToBlob(state.components.signatureImage),
+            blobUrlToBlob(state.components.backgroundPatternImage),
           ]);
-          await saveImages({ poster, posterOriginal, chain, format, signature });
+          await saveImages({ poster, posterOriginal, chain, format, signature, background });
           lastPersistedImageFingerprintRef.current = fingerprint;
         } catch {
           // IndexedDB 미지원·프라이빗 모드·용량 초과(#645 C1 자매) — fingerprint를 안 갱신해 다음
