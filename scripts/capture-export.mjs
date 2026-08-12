@@ -7,8 +7,7 @@
  *   bun scripts/capture-export.mjs --coating gloss --emboss --out /tmp/gloss-emboss.jpg
  *   bun scripts/capture-export.mjs --layout minimal --emboss --switch-to "35mm Wide" --out /tmp/switched.jpg
  *   bun scripts/capture-export.mjs --layout minimal --emboss --toggle-fill --out /tmp/filled.jpg
- *   bun scripts/capture-export.mjs --layout editorial --pattern dots --out /tmp/dots.jpg
- *   bun scripts/capture-export.mjs --layout stub --pattern custom --out /tmp/custom.jpg
+ *   bun scripts/capture-export.mjs --layout stub --bg --out /tmp/bg.jpg
  *   bun scripts/capture-export.mjs --lasso --out /tmp/lasso.jpg
  *   bun scripts/capture-export.mjs --emboss --lasso --out /tmp/brush-and-lasso.jpg
  *   bun scripts/capture-export.mjs --compare /tmp/a.jpg /tmp/b.jpg
@@ -218,7 +217,7 @@ const POSTER_DRAW = `
 `;
 
 /**
- * #671 `--pattern custom` 전용 배경 이미지. 포스터(회색 그라디언트)와 **색이 확실히 갈리는**
+ * `--bg` 전용 티켓 배경 이미지(#671·#672). 포스터(회색 그라디언트)와 **색이 확실히 갈리는**
  * 굵은 사선 줄무늬라, 저장물에서 이게 포스터 슬롯 안으로 새면 --compare 증폭 diff에 바로 뜬다
  * (클립이 빠지면 정확히 그 증상이 난다 — #490/#495 z-order).
  *
@@ -423,7 +422,7 @@ async function switchLayout(page, label) {
   await sleep(300);
 }
 
-async function capture({ layout, material, coating, intensity, pattern, emboss, lasso, switchTo, toggleFill, out, timeoutMs }) {
+async function capture({ layout, material, coating, intensity, bg, emboss, lasso, switchTo, toggleFill, out, timeoutMs }) {
   const seed = {
     movieInfo: {
       title: '인터스텔라',
@@ -442,7 +441,6 @@ async function capture({ layout, material, coating, intensity, pattern, emboss, 
       coating,
       materialIntensity: intensity,
       coatingIntensity: intensity,
-      backgroundPattern: pattern, // #530 — dots/diagonal/grid/none, #671 — custom
     },
     // 포스터 주입이 "첫 업로드"로 오판돼 fieldVisibility가 통째로 갈리는 걸 막는다
     // (measure-editorial-stub.mjs와 같은 함정).
@@ -459,9 +457,9 @@ async function capture({ layout, material, coating, intensity, pattern, emboss, 
       if (t.startsWith('[capture:')) logs.push(t);
     });
     await page.setViewport({ width: 400, height: 675, deviceScaleFactor: 1 });
-    await page.evaluateOnNewDocument((s, bgDrawSrc) => {
-      // #671 — 'custom'은 그릴 이미지가 있어야 레이어가 선다(없으면 스타일이 비어 안 그려진다).
-      if (s.components.backgroundPattern === 'custom') {
+    await page.evaluateOnNewDocument((s, bgDrawSrc, bg) => {
+      // 배경 레이어는 그릴 이미지가 있어야 선다(없으면 스타일이 비어 안 그려진다, #672).
+      if (bg) {
         const c = new Function(`${bgDrawSrc}; return c;`)();
         // **blob:이어야 한다 — data:가 아니라.** html-to-image의 parseURLs는 data:를 처리 대상에서
         // 아예 빼므로(embed-resources), data:로 재면 실제 앱이 만드는 blob:의 fetch→인라인 경로를
@@ -478,7 +476,7 @@ async function capture({ layout, material, coating, intensity, pattern, emboss, 
       // 헤드리스에선 navigator.share가 영영 settle하지 않는다(파일 상단 진단) — 공유 미지원
       // 데스크톱과 같은 다운로드 경로로 떨어뜨려 CTA가 실제로 완료되게 한다.
       Object.defineProperty(navigator, 'canShare', { value: () => false, configurable: true });
-    }, seed, BG_PATTERN_DRAW);
+    }, seed, BG_PATTERN_DRAW, bg);
     await page.goto(`${URL_}?debug=1`, { waitUntil: 'networkidle2' });
     mark('loaded');
 
@@ -608,7 +606,7 @@ if (cmpIdx >= 0) {
     material: arg('material', 'original'),
     coating: arg('coating', 'none'),
     intensity: Number(arg('intensity', '1')),
-    pattern: arg('pattern', 'none'),
+    bg: argv.includes('--bg'),
     emboss: argv.includes('--emboss'),
     lasso: argv.includes('--lasso'),
     switchTo: arg('switch-to', null),
