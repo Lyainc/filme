@@ -290,7 +290,7 @@ export function OcrUploadCard({
           ) : (
             <ScanIcon size={16} />
           )}
-          <span>{isProcessing ? '티켓 인식 중...' : idleLabel}</span>
+          <span>{isProcessing ? '티켓 인식 중…' : idleLabel}</span>
         </button>
       ) : (
         // 드로어 — 업로드 후 유일한 OCR 진입점이라 여전히 보조 문법(한 줄짜리 텍스트 버튼).
@@ -306,7 +306,7 @@ export function OcrUploadCard({
           <span className={isProcessing ? 'text-accent animate-pulse' : 'text-fg-faint group-hover:text-accent'}>
             <ScanIcon size={16} />
           </span>
-          <span>{isProcessing ? '티켓 인식 중...' : idleLabel}</span>
+          <span>{isProcessing ? '티켓 인식 중…' : idleLabel}</span>
           {!isProcessing && (
             <span aria-hidden="true" className="text-fg-faint transition-transform group-hover:translate-x-0.5">›</span>
           )}
