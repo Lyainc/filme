@@ -7,7 +7,7 @@ A Next.js web application for generating high-quality CGV Photoplay premium tick
 Before making architectural changes or implementing new features, consult:
 - **`README.md`**: Project setup, running instructions, and tech stack overview.
 - **`docs/KOBIS_API.md`**: Instructions and examples for using the KOBIS movie search API.
-- **`docs/PRINT_CALIBRATION.md`**: 실물 인쇄 캘리브레이션 — `scripts/make-calibration-sheet.py` 사용법 + 도안 판독표 + 실측 기록(메가박스 실측·풀블리드 예측·선폭/폰트/톤 하한). 무드 선 굵기·폰트 크기·코너·export 여백을 건드리기 전에 읽을 것.
+- **`docs/PRINT_CALIBRATION.md`**: 실물 인쇄 캘리브레이션 — `scripts/make-calibration-sheet.py` 사용법 + 도안 판독표 + 실측 기록(메가박스 실측·풀블리드 예측·선폭/폰트/톤 하한). 무드 선 굵기·폰트 크기·코너·export 여백을 건드리기 전에 읽을 것. **배경 도상(#530)은 "배경 도상 설계 하한" 절이 hard 제약** — stroke≥3px·주기 하한 2종(톤 8px/무늬 16px)·alpha 0.08~0.14·계조는 밀도로만·도트 지름 0.37mm(7.9px) 정규 격자·**선폭은 상수가 아니라 배치 폭에서 역산**(`viewBox 선폭 ≥ 602 ÷ 렌더폭px`). 규칙 5·6은 실측 없인 안 나오고 둘 다 한 번씩 틀린 뒤에 나왔으니(3.6px는 하한을 설계값으로 오독한 값, viewBox 상수 선폭은 9개 배치 중 6개에서 하한을 깼다), 시안을 그리기 **전에** 읽어야 한다.
 - Ticket design specs/layout coords/mood catalog live in this file's **"Core Mechanisms (6-Mood Ticket Rendering)"** section + `src/utils/layouts.ts` — not a separate doc.
 - **`docs/PRD.md`**, **`docs/DESIGN_SYSTEM.md`**: deprecated (2026-07-19) — pre-#281/#449 snapshots that no longer match current architecture/mood count. Kept for history only; do not treat as current spec.
 
