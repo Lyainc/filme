@@ -831,10 +831,17 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
         <div className="flex h-full flex-col">
           {canvasReady && (
             <div
+              // 포스터 드롭(#607)은 원래 랜딩 루트에만 걸려 있었는데, #674로 캔버스가 서면 랜딩이
+              // 숨으므로 그대로 두면 display:none 위의 죽은 핸들러가 된다 — '직접 입력'·OCR·무드
+              // 샘플로 들어온 세 경로가 첫 업로드 전에 드롭을 잃는다. 랜딩이 보이는 상태와 이
+              // 스테이지가 뜨는 상태는 canvasReady로 배타라 중복 발화가 없다.
+              {...posterDropProps}
               className={
                 isMax
                   ? 'fixed inset-0 z-50 flex items-center justify-center bg-surface px-6'
-                  : 'flex min-h-0 flex-1 items-center justify-center px-4 py-3'
+                  : `flex min-h-0 flex-1 items-center justify-center px-4 py-3${
+                      posterDragOver ? ' outline outline-2 -outline-offset-2 outline-accent' : ''
+                    }`
               }
               style={
                 isMax
