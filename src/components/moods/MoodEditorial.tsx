@@ -140,7 +140,14 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
   const seanceOn = !!watchDateVal || gWatchDate;
   const arrivalOn = !!watchTimeVal || gWatchTime;
   const componentOpacity = components.componentOpacity ?? 1;
-  const backgroundPattern = components.backgroundPattern ?? 'none';
+  // #671 — 프리셋 3종과 사용자 업로드 이미지를 **같은 스타일 하나**로 합쳐 뽑는다. 레이어를 그릴지
+  // 말지는 id가 아니라 backgroundImage로 판정한다: 'custom'을 골라두고 아직 업로드 전이면 스타일이
+  // 비어, 예전의 `!== 'none'` 판정으로는 빈 div가 남았다.
+  const patternStyle = backgroundPatternStyle(
+    components.backgroundPattern ?? 'none',
+    INK,
+    components.backgroundPatternImage,
+  );
   // 스텁 스탬프는 실제 렌더 조건(stampWillRender)으로 게이팅 — chainVisible=true여도 로고·라벨 없고
   // ghost=false면 null이라, 이 group을 안 그려야 허공 구분선/빈 컨테이너가 안 남는다(#216 P1.1).
   const stubChainOn = stampWillRender(components.chainVisible, components.chain, components.chainLabel, ghost);
@@ -321,8 +328,8 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
           콘텐츠만 안(오버레이). 두 레이어 다 outer의 position:relative 박스를 absolute inset:0으로
           꽉 채워 패딩·투명도 이관 전과 픽셀이 동일하다. */}
       <div style={{ flex: '1 1 auto', minWidth: 0, position: 'relative', background: PAPER }}>
-        {backgroundPattern !== 'none' && (
-          <div data-bg-pattern="true" aria-hidden="true" style={{ position: 'absolute', inset: 0, ...backgroundPatternStyle(backgroundPattern, INK) }} />
+        {patternStyle.backgroundImage && (
+          <div data-bg-pattern="true" aria-hidden="true" style={{ position: 'absolute', inset: 0, ...patternStyle }} />
         )}
         <div style={{ position: 'absolute', inset: 0, color: INK, display: 'flex', flexDirection: 'column', padding: `44px ${MAIN_PAD_X}px 36px`, boxSizing: 'border-box', opacity: componentOpacity }}>
         {/* Kicker — 장식 큐레이션 라벨(bar + En Reprise) */}
