@@ -647,10 +647,13 @@ export function usePhototicket() {
           chain: state.components.chain.startsWith('blob:') ? '' : state.components.chain,
           format: state.components.format.startsWith('blob:') ? '' : state.components.format,
           signatureImage: state.components.signatureImage?.startsWith('blob:') ? '' : state.components.signatureImage,
-          // #671 — 배경 패턴 커스텀 이미지도 blob:이면 비운다. backgroundPattern:'custom'은 남으므로
-          // 복원 후엔 패턴 레이어가 안 그려지고(스타일이 비어 호출부가 스킵) 재업로드를 유도한다.
-          // ponytail: IndexedDB 왕복 복원은 안 넣었다. 로고 3종처럼 되살리고 싶어지면 그때
-          // saveImages/loadImages 스키마에 한 칸 더 붙이면 된다.
+          // #671 — 배경 패턴 커스텀 이미지도 blob:이면 비운다(재시작 후 죽은 참조라서).
+          // **로고 3종과 대칭이 아니다**: 그쪽은 saveImages/loadImages로 IndexedDB 왕복 복원돼
+          // 새로고침을 넘기고, 못 넘겨도 티켓에 dashed placeholder가 남는다. 배경은 IDB에 안 실어서
+          // 새로고침하면 backgroundPattern:'custom'만 남고 레이어가 조용히 사라진다 — 티켓 위에
+          // 흔적도 없어서, 레일 '패턴' 패널을 직접 열어야 알 수 있다.
+          // ponytail: 새로고침 유실이 실제로 걸리면 saveImages/loadImages 스키마에 한 칸과
+          // fingerprint 한 줄을 더하면 된다(로고와 완전히 같은 모양).
           backgroundPatternImage: state.components.backgroundPatternImage?.startsWith('blob:')
             ? ''
             : state.components.backgroundPatternImage,

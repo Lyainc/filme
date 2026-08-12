@@ -221,7 +221,10 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
       </div>
 
       {/* 절취선(점선) — 크림 밴드에 3px dashed, 반원 노치 없음(마스터 재동기화 #281). */}
-      <div aria-hidden="true" style={{ height: 16, flexShrink: 0, background: PAPER, display: 'flex', alignItems: 'center' }}>
+      {/* position:relative는 장식이 아니라 페인트 순서다(#671) — 이게 없으면 static이라 absolute인
+          배경 패턴 레이어 **아래**로 가서, 불투명한 커스텀 이미지가 점선을 통째로 덮는다(프리셋
+          3종은 6~12% 잉크라 안 보였던 축이다). 위 패턴 레이어 주석의 마지막 문장이 그 처방이다. */}
+      <div aria-hidden="true" style={{ height: 16, flexShrink: 0, position: 'relative', background: PAPER, display: 'flex', alignItems: 'center' }}>
         <span style={{ flex: 1, borderTop: `3px dashed rgba(26,22,18,.85)` }} />
       </div>
 
