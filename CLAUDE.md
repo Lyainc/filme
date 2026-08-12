@@ -10,6 +10,12 @@ Before making architectural changes or implementing new features, consult:
 - **`docs/PRINT_CALIBRATION.md`**: 실물 인쇄 캘리브레이션 — `scripts/make-calibration-sheet.py` 사용법 + 도안 판독표 + 실측 기록(메가박스 실측·풀블리드 예측·선폭/폰트/톤 하한). 무드 선 굵기·폰트 크기·코너·export 여백을 건드리기 전에 읽을 것.
 - Ticket design specs/layout coords/mood catalog live in this file's **"Core Mechanisms (6-Mood Ticket Rendering)"** section + `src/utils/layouts.ts` — not a separate doc.
 - **`docs/PRD.md`**, **`docs/DESIGN_SYSTEM.md`**: deprecated (2026-07-19) — pre-#281/#449 snapshots that no longer match current architecture/mood count. Kept for history only; do not treat as current spec.
+- **UI 패턴 레퍼런스 3종** (외부): **앱 chrome UI**(시트·드로어·모달·랜딩 진입·필드 에디터 = `src/components/v2/*`, `MobileEditorShell`)를 새로 만들거나 재설계할 때 본다. 셋은 축이 달라 서로 대체가 아니다 — **이름 → 규범 → 실무** 순으로 필요한 것만 집어 쓸 것.
+  - **The Component Gallery** `https://component.gallery/components/<slug>` — **이름**. 컴포넌트마다 별칭(Drawer = Tray·Flyout·Sheet)과 수십 개 디자인 시스템의 정의·usage guidelines 링크를 모아둔 인덱스. 지금 만들려는 게 업계에서 뭐라 불리는지, 남들은 어디까지를 그 패턴으로 보는지 맞출 때.
+  - **W3C ARIA APG** `https://www.w3.org/WAI/ARIA/apg/patterns/<slug>/` — **동작 규범**. 32개 패턴의 키보드 상호작용 + ARIA 역할/상태/속성이 규범적으로 적혀 있다. **이 레포엔 이게 실질 스펙이다** — Radix·Base UI 같은 headless 프리미티브 없이 직접 구현하니까(`FieldDrawer`의 `role="dialog"`·`aria-modal`·Escape·`focusin` 포커스 유지가 그 예), 라이브러리가 대신 지켜주던 걸 우리가 지켜야 한다.
+  - **UX Patterns for Developers** `https://uxpatterns.dev/en/patterns/<category>/<slug>` — **실무**. 패턴당 한 페이지에 anatomy·best practice·접근성·테스트·안티패턴이 있고, APG가 안 덮는 축(빈 상태·로딩·검증 메시지·토스트)까지 있다. 오픈소스(`thedaviddias/ux-patterns-for-developers`).
+  - **접근 방법이 사이트마다 정반대다**(실측): component.gallery는 `curl -sL -A '<브라우저 UA>'`만 되고 WebFetch는 403, w3.org APG는 WebFetch만 되고 curl은 403, uxpatterns.dev는 둘 다 된다. 403 한 번 보고 "접근 불가"로 접지 말 것.
+  - **범위 밖 둘**: ① 티켓 렌더 6무드는 디자인 시안이 소유하니 대상이 아니고(폰트 스코프가 티켓 vs UI로 갈리는 것과 같은 축), ② **여기서 본 걸 근거로 UI 라이브러리를 새로 넣지 말 것** — 거기 걸린 시스템(shadcn/ui·Radix·Base UI·Ant·Chakra…)은 정의·ARIA·네이밍 참고용이고, 이 레포는 `cva`+`cn`(`src/utils/cn.ts`, `src/components/ui/variants.ts`)으로 직접 구현하는 자세다.
 
 ### 🧪 Testing
 - **Runner**: `bun test`. Tests live in `__tests__/` (not co-located).
