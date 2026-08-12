@@ -39,7 +39,15 @@ const DEFAULT_VISIBILITY_ON_UPLOAD: Record<TicketField, boolean> = {
 };
 
 // 영속화 키 — 스키마가 깨지게 바뀌면 버전을 올려 옛 데이터를 자연히 무시한다(복원 시 키 불일치 → null).
-const STORAGE_KEY = 'filme:phototicket:v1';
+// export인 이유는 _document.tsx의 첫 페인트 스크립트(#675)가 같은 키를 읽기 때문 — 리터럴을
+// 양쪽에 두면 키를 올릴 때 한쪽만 바뀌어 랜딩 게이트가 조용히 죽는다.
+export const STORAGE_KEY = 'filme:phototicket:v1';
+
+/** `has-draft`(#675) 걷기 — 저장분이 없다는 게 확인된 순간에만 부른다. 이 클래스가 남아 있으면
+ *  globals.css가 랜딩을 계속 숨겨, 랜딩도 캔버스도 없는 빈 셸에 갇힌다. */
+function clearDraftPaintGate() {
+  if (typeof document !== 'undefined') document.documentElement.classList.remove('has-draft');
+}
 
 // 자동저장 on/off는 문서(STORAGE_KEY)가 아니라 UI 취향값이라 별도 키로 영속(TB_STORAGE_KEY 선례, #436).
 const AUTOSAVE_PREF_KEY = 'filme:autosave:v1';
@@ -248,7 +256,13 @@ export function usePhototicket() {
   // 얕은 병합이라 누락/추가 필드는 INITIAL_STATE 기본값으로 자연히 메워진다(#178).
   useEffect(() => {
     const saved = loadPersisted();
-    if (!saved) return;
+    // 스크립트는 키의 **존재**만 봤으므로 손상·구버전이면 여기서 복원이 실패한다 — 그때 게이트를
+    // 안 거두면 랜딩이 영영 안 뜬다(#675). 복원에 성공한 경로는 아래 draftRestored가 랜딩을 자기
+    // 판정으로 숨기므로 게이트를 그대로 둬도 무해하고, 여기서 거두면 리렌더 전 한 프레임이 샌다.
+    if (!saved) {
+      clearDraftPaintGate();
+      return;
+    }
     setDraftRestored(true);
     // 복원된 draft에 포스터가 있었다는 표시 — handleImageUpload의 isFirstUpload 판정이 이걸로
     // 게이트된다(#489 서브버그: IDB 이미지 복원이 실패해도 croppedImageUrl은 null인 채로
@@ -686,8 +700,10 @@ export function usePhototicket() {
     // 포스터가 있었다"는 표시가 남아 isFirstUpload가 영구히 오판된다(#489).
     restoredDraftHadPosterRef.current = false;
     // 초기화는 저장분을 지우는 것이므로 "복원된 세션"도 아니게 된다 — 안 되돌리면 랜딩이
-    // 영영 안 뜨고, 포스터도 draft도 없는 빈 편집 셸에 남는다(#614).
+    // 영영 안 뜨고, 포스터도 draft도 없는 빈 편집 셸에 남는다(#614). 첫 페인트 게이트(#675)도
+    // 같은 명제를 CSS 쪽에서 들고 있으므로 나란히 거둔다 — 한쪽만 되돌리면 같은 빈 셸이 된다.
     setDraftRestored(false);
+    clearDraftPaintGate();
     // 형압 편집 모드도 전체 슬레이트 리셋 대상 — 안 하면 초기화 후에도 브러시 레이어가 뜬 채 남는다.
     setEmbossEditMode(false);
     // 크롭 원본·모달 상태도 전체 슬레이트 리셋 — 원본 blob은 posterCrop의 revoke effect가 푼다.
