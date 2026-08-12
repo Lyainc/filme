@@ -339,24 +339,10 @@ export function usePhototicket() {
     loadImages()
       .then((images) => {
         if (cancelled) return;
-        const componentsPatch: Partial<TicketComponents> = {};
-        if (images.chain) {
-          const url = URL.createObjectURL(images.chain);
-          latestChainUrlRef.current = url;
-          componentsPatch.chain = url;
-        }
-        if (images.format) {
-          const url = URL.createObjectURL(images.format);
-          latestFormatUrlRef.current = url;
-          componentsPatch.format = url;
-        }
-        if (images.signature) {
-          const url = URL.createObjectURL(images.signature);
-          latestSignatureUrlRef.current = url;
-          componentsPatch.signatureImage = url;
-        }
+        const chainUrl = images.chain ? URL.createObjectURL(images.chain) : null;
+        const formatUrl = images.format ? URL.createObjectURL(images.format) : null;
+        const signatureUrl = images.signature ? URL.createObjectURL(images.signature) : null;
         const posterUrl = images.poster ? URL.createObjectURL(images.poster) : null;
-        if (posterUrl) latestUrlRef.current = posterUrl;
         // 크롭 원본 복원(#489) — 크롭 파이프라인(posterCrop)이 이 URL의 단일 소유자이고,
         // saveDraft도 거기서 읽어 다음 저장에 다시 실어보낸다(안 하면 복원 직후 첫 자동저장이
         // 원본을 빈 값으로 갈아치워 IndexedDB에서 지운다). seedOriginal은 이미 원본이 있으면
@@ -364,13 +350,52 @@ export function usePhototicket() {
         if (images.posterOriginal) {
           seedOriginalRef.current(URL.createObjectURL(images.posterOriginal));
         }
-        if (posterUrl || Object.keys(componentsPatch).length > 0) {
-          setState((prev) => ({
+        if (!chainUrl && !formatUrl && !signatureUrl && !posterUrl) return;
+        // #683 fresh-context 리뷰 — 이 복원은 IndexedDB라 도착까지 시간이 걸리는데, 그 창이 이제
+        // (awaitingPosterRestore, 위 canvasReady) 조작 가능한 편집 캔버스 + 필드 드로어로 열려
+        // 있다. posterOriginal과 같은 "이미 있으면 무시" 처방을 나머지 네 축에도 준다 — prev를
+        // setState 콜백 안에서 봐야 그사이 사용자가 실제로 채운 값을 정확히 판정할 수 있다(effect
+        // 바깥에서 만든 시점의 state는 이미 stale할 수 있다). 버려지는 objectURL은 여기서 바로
+        // revoke하고, 실제로 쓰는 URL만 latestXUrlRef에 등록해 언마운트 cleanup이 orphan이 아니라
+        // 화면에 진짜 쓰이는 URL을 revoke하게 한다.
+        setState((prev) => {
+          const componentsPatch: Partial<TicketComponents> = {};
+          if (chainUrl) {
+            if (prev.components.chain) URL.revokeObjectURL(chainUrl);
+            else {
+              latestChainUrlRef.current = chainUrl;
+              componentsPatch.chain = chainUrl;
+            }
+          }
+          if (formatUrl) {
+            if (prev.components.format) URL.revokeObjectURL(formatUrl);
+            else {
+              latestFormatUrlRef.current = formatUrl;
+              componentsPatch.format = formatUrl;
+            }
+          }
+          if (signatureUrl) {
+            if (prev.components.signatureImage) URL.revokeObjectURL(signatureUrl);
+            else {
+              latestSignatureUrlRef.current = signatureUrl;
+              componentsPatch.signatureImage = signatureUrl;
+            }
+          }
+          let croppedImageUrlPatch: string | null = null;
+          if (posterUrl) {
+            if (prev.croppedImageUrl) URL.revokeObjectURL(posterUrl);
+            else {
+              latestUrlRef.current = posterUrl;
+              croppedImageUrlPatch = posterUrl;
+            }
+          }
+          if (!croppedImageUrlPatch && Object.keys(componentsPatch).length === 0) return prev;
+          return {
             ...prev,
-            ...(posterUrl ? { croppedImageUrl: posterUrl } : {}),
+            ...(croppedImageUrlPatch ? { croppedImageUrl: croppedImageUrlPatch } : {}),
             components: { ...prev.components, ...componentsPatch },
-          }));
-        }
+          };
+        });
       })
       .catch(() => {
         // IndexedDB 미지원·프라이빗 모드·용량 초과(#645 C5) — croppedImageUrl은 null인 채로
