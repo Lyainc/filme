@@ -1,7 +1,9 @@
 import dynamic from 'next/dynamic';
 import {
+  forwardRef,
   useCallback,
   useEffect,
+  useImperativeHandle,
   useRef,
   useState,
   type ChangeEvent,
@@ -97,6 +99,16 @@ function loadDrawerHandleY(): number | null {
   } catch {
     return null;
   }
+}
+
+// releaseDateGranularity/releaseDateFormat/watchDateFormat은 포맷 설정이라 미입력 상태에서도
+// 항상 truthy 기본값을 갖는다(usePhototicket INITIAL_STATE) — 포함하면 "채워짐" 판정이 항상
+// true가 돼 쓸모없어진다. 나머지 필드는 빈 문자열/0/false가 기본값이라 Boolean()으로 충분하다.
+const MOVIE_INFO_FORMAT_KEYS = new Set(['releaseDateGranularity', 'releaseDateFormat', 'watchDateFormat']);
+
+/** 워드마크 탭(#578) 손실 확인 판정의 세 축 중 하나 — movieInfo 필드가 하나라도 채워졌는가. */
+function hasMovieInfoContent(info: MovieInfo): boolean {
+  return Object.entries(info).some(([key, value]) => !MOVIE_INFO_FORMAT_KEYS.has(key) && Boolean(value));
 }
 
 // 헤더 서브메뉴 공용 행(#374, 시안 Siyan-C-v8 설정 시트의 행 문법 이식) — 리딩 아이콘 +
@@ -196,7 +208,19 @@ interface MobileEditorShellProps {
   fieldVisibility: Record<TicketField, boolean>;
 }
 
-export function MobileEditorShell({
+/** ResultStage(#669) 같은 형제 화면이 이 셸의 워드마크 초기화를 그대로 재사용하는 진입점.
+ * MobileEditorShell은 결과 화면이 열려도 언마운트되지 않고 CSS로만 숨는다(pages/index.tsx,
+ * #297 로컬 state 보존) — 그래서 이력 판정(croppedImageUrl/canUndo/isDirty/movieInfo)과
+ * performClear를 여기 그대로 둔 채로 ref 하나로 밖에 노출하면, ResultStage 쪽에 같은 로직을
+ * 복제할 필요가 없다(로직이 두 곳으로 갈라져 드리프트하는 걸 막는다). */
+export interface MobileEditorShellHandle {
+  /** 이력 판정 + confirm만 한다(clear는 안 함) — 이력 있는데 취소하면 false, 그 외엔 true. */
+  confirmWordmarkReset: () => boolean;
+  /** confirmWordmarkReset이 true를 반환한 뒤에만 부를 것 — 실제 초기화(clearDraft 등) 실행. */
+  commitWordmarkReset: () => void;
+}
+
+export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEditorShellProps>(function MobileEditorShell({
   photo,
   canExport,
   theme,
@@ -206,7 +230,7 @@ export function MobileEditorShell({
   previewMovieInfo,
   previewComponents,
   fieldVisibility,
-}: MobileEditorShellProps) {
+}, ref) {
   const { croppedImageUrl } = photo.state;
   // OCR 낙관적 주입 + 되돌리기 로직은 useOcrUndo가 소유(#141-class drift 방지).
   // OCR 카드는 셸 프리뷰 직하에 두고(#261) 이 훅도 셸이 쥔다.
@@ -271,7 +295,13 @@ export function MobileEditorShell({
   // 캔버스가 섰다"는 다른 명제다. 랜딩의 "포스터 없이 시작"(onSkip)이 landingDismissed를 세워
   // canvasReady를 연다. 랜딩 자체를 숨길지는 별개 판정(D1, 아래 Landing mode) — croppedImageUrl
   // 없이 landingDismissed만으로는 랜딩을 안 숨긴다. #614 걷는 조건 ③과 계약이 같다.
-  const canvasReady = !!croppedImageUrl || landingDismissed;
+  // photo.awaitingPosterRestore(#683, #675 잔여) — 포스터가 있던 draft 재방문은 draftRestored가
+  // 동기로 서서 오버레이는 안 뜨지만(#675), croppedImageUrl은 IndexedDB에서 비동기로 온다. 그 창
+  // 동안 이 신호가 없으면 canvasReady=false라 Landing이 "텍스트만 있던 draft" 전용 inline 모드로
+  // 떨어져 포스터 도착까지 잠깐 보였다 사라진다. 포스터리스 캔버스(#631)는 이미 croppedImageUrl=
+  // null을 지원하므로, 대기 중엔 그 화면을 먼저 보여주는 쪽이 "곧 없어질 inline 블록"보다 낫다.
+  // IDB 복원이 실패하면 훅이 이 신호를 스스로 false로 풀어 기존 재업로드 유도 inline이 되살아난다.
+  const canvasReady = !!croppedImageUrl || landingDismissed || photo.awaitingPosterRestore;
   const clearArmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // 습관적 더블탭이 arm과 실행을 한 번에 뚫지 않게 arm 직후 재탭은 무시(claude-review PR #375 P1).
   const clearArmedAt = useRef(0);
@@ -444,6 +474,18 @@ export function MobileEditorShell({
     onDone();
   }
 
+  // 메뉴 초기화 행·워드마크 탭(#578) 두 진입점이 공유하는 실제 초기화 절차.
+  function performClear() {
+    photo.clearDraft();
+    // 초기화는 새 문서니까 랜딩도 처음 상태로 — 안 되돌리면 포스터도 draft도 없는 빈 셸에 남는다(#614).
+    setLandingDismissed(false);
+    setOcrApplied(false);
+    // 초기화는 새 문서 — undo로 못 돌아간다(로고·포스터 blob이 revoke돼
+    // 복원해도 죽은 참조라 히스토리째 파기가 맞다).
+    history.clear();
+    flashToast('초기화했어요');
+  }
+
   function handleClearTap() {
     if (!clearArmed) {
       setClearArmed(true);
@@ -455,15 +497,34 @@ export function MobileEditorShell({
     if (Date.now() - clearArmedAt.current < 350) return;
     clearTimeout(clearArmTimer.current);
     setMenuOpen(false); // 닫힘 effect가 clearArmed도 함께 해제
-    photo.clearDraft();
-    // 초기화는 새 문서니까 랜딩도 처음 상태로 — 안 되돌리면 포스터도 draft도 없는 빈 셸에 남는다(#614).
-    setLandingDismissed(false);
-    setOcrApplied(false);
-    // 초기화는 새 문서 — undo로 못 돌아간다(로고·포스터 blob이 revoke돼
-    // 복원해도 죽은 참조라 히스토리째 파기가 맞다).
-    history.clear();
-    flashToast('초기화했어요');
+    performClear();
   }
+
+  // 워드마크 탭(#578) = 초기화의 두 번째 진입점, 같은 동작·다른 문구. 라벨을 확인 문구로
+  // 바꾸는 2탭 arm(handleClearTap)은 브랜드 라벨엔 못 쓰므로 native confirm으로 대체한다.
+  // 작업 이력 판정은 네 축의 합집합 — canUndo만 보면 포스터만 올린 직후(history.clear()로
+  // 리셋된 상태)나 방금 만든 편집이 아직 350ms 디바운스 창 안(history.isDirty)일 때 경고 없이
+  // 날아간다.
+  function confirmWordmarkReset(): boolean {
+    const hasWork = !!croppedImageUrl || history.canUndo || history.isDirty || hasMovieInfoContent(photo.state.movieInfo);
+    return !hasWork || window.confirm('지금까지 작업한 내용이 사라져요. 처음 화면으로 돌아갈까요?');
+  }
+  function commitWordmarkReset() {
+    setMenuOpen(false); // handleClearTap과 동일하게 닫는다 — 안 닫으면 초기화된 화면 위에 메뉴가 뜬 채 남는다.
+    performClear();
+  }
+  function handleWordmarkTap() {
+    if (!confirmWordmarkReset()) return;
+    commitWordmarkReset();
+  }
+
+  // ResultStage(#669)는 confirm/commit을 나눠 쓴다 — croppedImageUrl은 즉시(라이브 prop)
+  // 반영되지만 movieInfo/components는 index.tsx의 280ms useDebounce를 거치고, 결과화면을
+  // 닫는 useResultView.closeView는 history.back()의 popstate(비동기)를 기다린다. confirm 직후
+  // 바로 clear(commitWordmarkReset)해버리면 그 사이 창에서 포스터는 사라졌는데 옛 영화 정보는
+  // 그대로 남은 결과화면이 잠깐 보인다(#669 code-review 발견) — index.tsx가 closeView() 이후
+  // resultOpen이 실제로 false가 된 다음에야 commitWordmarkReset을 부르게 한다.
+  useImperativeHandle(ref, () => ({ confirmWordmarkReset, commitWordmarkReset }));
 
   // 온-티켓 필드 탭(#259). 숨김 필드 탭 시 자동 표시 on(시안 setActive) 후 시트를 연다 — 스탬프는
   // chainVisible/formatVisible, 나머지는 fieldVisibility. 이미 켜진 필드면 no-op이라 안전하다.
@@ -591,7 +652,7 @@ export function MobileEditorShell({
       {!isMax && (
       <header ref={setHeaderEl} className="relative flex h-14 shrink-0 items-center justify-between border-b border-line px-3">
         <div className="flex items-center gap-2 pl-1.5">
-          <Wordmark as="h1" />
+          <Wordmark as="h1" onClick={handleWordmarkTap} />
         </div>
 
         {/* '티켓 항목 목록' 헤더 버튼(#355/#360 임시 진입점)은 플로팅 툴바의 항목목록 버튼(#356)이
@@ -700,26 +761,36 @@ export function MobileEditorShell({
                   />
                 )}
               </div>
-              {croppedImageUrl && (
+              {/* 포스터 진입/교체(#674) — 게이트가 croppedImageUrl에서 canvasReady로 넓어졌다.
+                  포스터 없이 진입한 세션(#631 onSkip · OCR)에서 랜딩 inline이 숨으면서(위 Landing
+                  mode) 그 자리가 갖고 있던 D2(a) 재진입 동선이 이 행으로 옮겨온다 — 없으면 포스터를
+                  나중에 추가할 길이 초기화밖에 안 남는다. 재크롭은 포스터가 있어야 의미가 있으므로
+                  croppedImageUrl에 그대로 묶어 둔다. */}
+              {canvasReady && (
                 <div className={`mt-2 ${MENU_GROUP_CLS}`}>
                   <MenuRow
                     iconPath={MENU_ICONS.upload}
-                    label="포스터 교체"
+                    // awaitingPosterRestore(#683 fresh-context 리뷰) — 이 창 동안 croppedImageUrl은
+                    // 아직 null이지만 복원 중인 포스터가 있다. '포스터 추가'로 두면 없는 걸 새로
+                    // 올리는 것처럼 읽혀 도착 순간 라벨이 설명 없이 바뀐다 — 교체로 미리 맞춘다.
+                    label={croppedImageUrl || photo.awaitingPosterRestore ? '포스터 교체' : '포스터 추가'}
                     onClick={() => {
                       setMenuOpen(false);
                       handlePosterTap();
                     }}
                   />
-                  <MenuRow
-                    iconPath={MENU_ICONS.crop}
-                    label="재크롭"
-                    disabled={!crop.originalSrc}
-                    title={crop.originalSrc ? undefined : '재크롭하려면 포스터를 다시 업로드해 주세요'}
-                    onClick={() => {
-                      setMenuOpen(false);
-                      crop.openRecrop();
-                    }}
-                  />
+                  {croppedImageUrl && (
+                    <MenuRow
+                      iconPath={MENU_ICONS.crop}
+                      label="재크롭"
+                      disabled={!crop.originalSrc}
+                      title={crop.originalSrc ? undefined : '재크롭하려면 포스터를 다시 업로드해 주세요'}
+                      onClick={() => {
+                        setMenuOpen(false);
+                        crop.openRecrop();
+                      }}
+                    />
+                  )}
                 </div>
               )}
 
@@ -769,10 +840,19 @@ export function MobileEditorShell({
         <div className="flex h-full flex-col">
           {canvasReady && (
             <div
+              // 포스터 드롭(#607)은 원래 랜딩 루트에만 걸려 있었는데, #674로 캔버스가 서면 랜딩이
+              // 숨으므로 그대로 두면 display:none 위의 죽은 핸들러가 된다 — '직접 입력'·OCR·무드
+              // 샘플로 들어온 세 경로가 첫 업로드 전에 드롭을 잃는다. 랜딩이 보이는 상태와 이
+              // 스테이지가 뜨는 상태는 canvasReady로 배타라 중복 발화가 없다.
+              {...posterDropProps}
               className={
                 isMax
-                  ? 'fixed inset-0 z-50 flex items-center justify-center bg-surface px-6'
-                  : 'flex min-h-0 flex-1 items-center justify-center px-4 py-3'
+                  ? `fixed inset-0 z-50 flex items-center justify-center bg-surface px-6${
+                      posterDragOver ? ' outline outline-2 -outline-offset-2 outline-accent' : ''
+                    }`
+                  : `flex min-h-0 flex-1 items-center justify-center px-4 py-3${
+                      posterDragOver ? ' outline outline-2 -outline-offset-2 outline-accent' : ''
+                    }`
               }
               style={
                 isMax
@@ -905,10 +985,17 @@ export function MobileEditorShell({
               #413 P0을 재도입한다(옛 "단일 인스턴스가 아니면 레이스가 되살아난다" 서술은 #624로
               철회 — CLAUDE.md 🔍 참조). OCR 로직은 셸의 useOcrUndo가 소유. */}
           <Landing
-            // 포스터가 실제로 있어야(croppedImageUrl) 랜딩을 숨긴다 — canvasReady(D1, #631)로
-            // 걸면 "포스터 없이 시작" 직후에도 랜딩이 숨어 포스터를 나중에 추가할 진입점이
-            // 사라진다(D2 (a): 이 inline 상태 자체가 진입점). #614 걷는 조건 ③이 이 계약을 고정한다.
-            mode={croppedImageUrl || isMax ? 'hidden' : showLanding ? 'overlay' : 'inline'}
+            // 캔버스가 서면(canvasReady) 랜딩은 숨는다(#674) — 예전엔 croppedImageUrl로 걸어
+            // "포스터 없이 시작" 직후에도 inline으로 남겼지만(#631 D2 a), 그 inline 컨테이너가
+            // flex-1이라 같은 flex-1인 티켓 스테이지와 본문 높이를 정확히 반씩 나눠 가졌다
+            // (실측 393×659: 스테이지 373.2→198.6, 티켓 218.5×349.2→109.3×174.6). ocrApplied면
+            // 그 절반이 통째로 빈 블록이었다(#652가 안쪽만 숨기고 바깥 flex-1은 남겼으므로).
+            // **포스터 재진입 동선은 사라지지 않고 헤더 메뉴로 옮겼다** — 아래 '포스터 추가' 행이
+            // canvasReady를 따라 뜬다(포스터가 있으면 같은 자리가 '포스터 교체'). 즉 이제
+            // 포스터 유무와 무관하게 재진입점이 한 곳이다.
+            // 랜딩을 **걷는** 조건(showLanding, #614 ③)은 그대로다 — 여기서 바뀐 건 걷힌 뒤에
+            // inline으로 남느냐 숨느냐뿐이고, mode='hidden'은 unmount가 아니라 CSS다(#297 P1).
+            mode={canvasReady || isMax ? 'hidden' : showLanding ? 'overlay' : 'inline'}
             onCta={handlePosterTap}
             onSkip={() => setLandingDismissed(true)}
             // 갤러리 샘플 클릭 — 네 번째 진입점(#615). 다른 셋과 달리 "훑어보고 나중에 커밋"할
@@ -1183,4 +1270,4 @@ export function MobileEditorShell({
       <ErrorToastHost />
     </div>
   );
-}
+});

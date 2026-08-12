@@ -53,7 +53,15 @@ const DEFAULT_VISIBILITY_ON_UPLOAD: Record<TicketField, boolean> = {
 };
 
 // 영속화 키 — 스키마가 깨지게 바뀌면 버전을 올려 옛 데이터를 자연히 무시한다(복원 시 키 불일치 → null).
-const STORAGE_KEY = 'filme:phototicket:v1';
+// export인 이유는 _document.tsx의 첫 페인트 스크립트(#675)가 같은 키를 읽기 때문 — 리터럴을
+// 양쪽에 두면 키를 올릴 때 한쪽만 바뀌어 랜딩 게이트가 조용히 죽는다.
+export const STORAGE_KEY = 'filme:phototicket:v1';
+
+/** `has-draft`(#675) 걷기 — 저장분이 없다는 게 확인된 순간에만 부른다. 이 클래스가 남아 있으면
+ *  globals.css가 랜딩을 계속 숨겨, 랜딩도 캔버스도 없는 빈 셸에 갇힌다. */
+function clearDraftPaintGate() {
+  if (typeof document !== 'undefined') document.documentElement.classList.remove('has-draft');
+}
 
 // 자동저장 on/off는 문서(STORAGE_KEY)가 아니라 UI 취향값이라 별도 키로 영속(TB_STORAGE_KEY 선례, #436).
 const AUTOSAVE_PREF_KEY = 'filme:autosave:v1';
@@ -195,6 +203,13 @@ export function usePhototicket() {
   // 입력하고 포스터는 한 번도 안 올린 draft가 있는 상태에서 이번 세션 첫 업로드를 하면, 그건
   // 진짜 첫 업로드이므로 DEFAULT_VISIBILITY_ON_UPLOAD가 정상 적용돼야 한다.
   const restoredDraftHadPosterRef = useRef(false);
+  // 포스터가 있던 draft를 복원 중인가(#683) — localStorage 복원(동기 effect)이 hadPoster를 보고
+  // true로 세우고, 뒤이은 IndexedDB 이미지 복원(비동기 effect)이 끝나면(성공·실패 무관) false로
+  // 되돌린다. 셸의 canvasReady가 이 신호를 보고 그 창 동안 랜딩을 inline으로 안 내린다 — 안 보면
+  // draftRestored는 이미 동기로 서 있는데 croppedImageUrl만 비동기로 늦게 와서, 그 사이 랜딩이
+  // "텍스트만 있던 draft" 전용 inline 모드로 잘못 떨어져 잠깐 보였다 사라진다(#675와 원인이 다른
+  // 잔여 플래시, IDB 복원 실패 시엔 그대로 false로 풀려 기존 재업로드 유도 inline이 살아난다).
+  const [awaitingPosterRestore, setAwaitingPosterRestore] = useState(false);
   // saveDraft가 마지막으로 IndexedDB에 실제로 쓴 이미지 조합의 지문 — 텍스트만 바뀐 autosave
   // tick마다 이미지 5종을 무조건 재컨버팅·재기록하던 것을 막는다(claude-review PR #515 P1).
   const lastPersistedImageFingerprintRef = useRef('');
@@ -281,7 +296,13 @@ export function usePhototicket() {
   // 얕은 병합이라 누락/추가 필드는 INITIAL_STATE 기본값으로 자연히 메워진다(#178).
   useEffect(() => {
     const saved = loadPersisted();
-    if (!saved) return;
+    // 스크립트는 키의 **존재**만 봤으므로 손상·구버전이면 여기서 복원이 실패한다 — 그때 게이트를
+    // 안 거두면 랜딩이 영영 안 뜬다(#675). 복원에 성공한 경로는 아래 draftRestored가 랜딩을 자기
+    // 판정으로 숨기므로 게이트를 그대로 둬도 무해하고, 여기서 거두면 리렌더 전 한 프레임이 샌다.
+    if (!saved) {
+      clearDraftPaintGate();
+      return;
+    }
     setDraftRestored(true);
     // 복원된 draft에 포스터가 있었다는 표시 — handleImageUpload의 isFirstUpload 판정이 이걸로
     // 게이트된다(#489 서브버그: IDB 이미지 복원이 실패해도 croppedImageUrl은 null인 채로
@@ -292,6 +313,7 @@ export function usePhototicket() {
     // 아래 IDB 복원 effect가 되살려도 되는 축의 화이트리스트(#673). 이 effect는 선언 순서상 먼저
     // 돌고 동기라, 비동기 IDB 복원이 읽을 땐 이미 확정돼 있다(restoredDraftHadPosterRef와 동일 패턴).
     restoredImageKeysRef.current = Array.isArray(saved.imageKeys) ? saved.imageKeys : null;
+    if (restoredDraftHadPosterRef.current) setAwaitingPosterRestore(true);
     // 옛 단일 texture 저장분을 {material, coating, ...Intensity}로 매핑(#475 c4) — 이미 새
     // shape면 그대로 통과. 이후 touched 판정·merge 모두 이 결과를 쓴다.
     const migratedComponents = saved.components
@@ -358,32 +380,13 @@ export function usePhototicket() {
         // 이미지가 새로고침에 되돌아온다. 목록이 없는 옛 저장분(null)은 전부 허용해 하위호환.
         const allowedKeys = restoredImageKeysRef.current;
         const allows = (key: ImageDbKey) => allowedKeys === null || allowedKeys.includes(key);
-        const owned = ownedComponentBlobUrlsRef.current;
-        const componentsPatch: Partial<TicketComponents> = {};
-        if (images.chain && allows('chain')) {
-          const url = URL.createObjectURL(images.chain);
-          trackComponentBlobUrl(latestChainUrlRef, url, owned);
-          componentsPatch.chain = url;
-        }
-        if (images.format && allows('format')) {
-          const url = URL.createObjectURL(images.format);
-          trackComponentBlobUrl(latestFormatUrlRef, url, owned);
-          componentsPatch.format = url;
-        }
-        if (images.signature && allows('signature')) {
-          const url = URL.createObjectURL(images.signature);
-          trackComponentBlobUrl(latestSignatureUrlRef, url, owned);
-          componentsPatch.signatureImage = url;
-        }
-        // 배경 이미지(#672) — 로고 3종과 완전히 같은 모양이다. 여기서 재발급한 URL을 ref에도
-        // 걸어야 언마운트 revoke가 새 URL을 대상으로 삼는다.
-        if (images.background && allows('background')) {
-          const url = URL.createObjectURL(images.background);
-          trackComponentBlobUrl(latestBgPatternUrlRef, url, owned);
-          componentsPatch.backgroundPatternImage = url;
-        }
+        const chainUrl = images.chain && allows('chain') ? URL.createObjectURL(images.chain) : null;
+        const formatUrl = images.format && allows('format') ? URL.createObjectURL(images.format) : null;
+        const signatureUrl =
+          images.signature && allows('signature') ? URL.createObjectURL(images.signature) : null;
+        // 배경 이미지(#672) — 로고 3종과 완전히 같은 모양이다.
+        const bgUrl = images.background && allows('background') ? URL.createObjectURL(images.background) : null;
         const posterUrl = images.poster && allows('poster') ? URL.createObjectURL(images.poster) : null;
-        if (posterUrl) latestUrlRef.current = posterUrl;
         // 크롭 원본 복원(#489) — 크롭 파이프라인(posterCrop)이 이 URL의 단일 소유자이고,
         // saveDraft도 거기서 읽어 다음 저장에 다시 실어보낸다(안 하면 복원 직후 첫 자동저장이
         // 원본을 빈 값으로 갈아치워 IndexedDB에서 지운다). seedOriginal은 이미 원본이 있으면
@@ -391,13 +394,60 @@ export function usePhototicket() {
         if (images.posterOriginal && allows('posterOriginal')) {
           seedOriginalRef.current(URL.createObjectURL(images.posterOriginal));
         }
-        if (posterUrl || Object.keys(componentsPatch).length > 0) {
-          setState((prev) => ({
+        if (!chainUrl && !formatUrl && !signatureUrl && !bgUrl && !posterUrl) return;
+        // #683 fresh-context 리뷰 — 이 복원은 IndexedDB라 도착까지 시간이 걸리는데, 그 창이 이제
+        // (awaitingPosterRestore, 위 canvasReady) 조작 가능한 편집 캔버스 + 필드 드로어로 열려
+        // 있다. posterOriginal과 같은 "이미 있으면 무시" 처방을 나머지 네 축에도 준다 — prev를
+        // setState 콜백 안에서 봐야 그사이 사용자가 실제로 채운 값을 정확히 판정할 수 있다(effect
+        // 바깥에서 만든 시점의 state는 이미 stale할 수 있다). 버려지는 objectURL은 여기서 바로
+        // revoke하고, 실제로 쓰는 URL만 owned 집합(#673)에 등록해 언마운트/히스토리 이탈 revoke가
+        // orphan이 아니라 화면에 진짜 쓰이는 URL을 대상으로 삼게 한다.
+        const owned = ownedComponentBlobUrlsRef.current;
+        setState((prev) => {
+          const componentsPatch: Partial<TicketComponents> = {};
+          if (chainUrl) {
+            if (prev.components.chain) URL.revokeObjectURL(chainUrl);
+            else {
+              trackComponentBlobUrl(latestChainUrlRef, chainUrl, owned);
+              componentsPatch.chain = chainUrl;
+            }
+          }
+          if (formatUrl) {
+            if (prev.components.format) URL.revokeObjectURL(formatUrl);
+            else {
+              trackComponentBlobUrl(latestFormatUrlRef, formatUrl, owned);
+              componentsPatch.format = formatUrl;
+            }
+          }
+          if (signatureUrl) {
+            if (prev.components.signatureImage) URL.revokeObjectURL(signatureUrl);
+            else {
+              trackComponentBlobUrl(latestSignatureUrlRef, signatureUrl, owned);
+              componentsPatch.signatureImage = signatureUrl;
+            }
+          }
+          if (bgUrl) {
+            if (prev.components.backgroundPatternImage) URL.revokeObjectURL(bgUrl);
+            else {
+              trackComponentBlobUrl(latestBgPatternUrlRef, bgUrl, owned);
+              componentsPatch.backgroundPatternImage = bgUrl;
+            }
+          }
+          let croppedImageUrlPatch: string | null = null;
+          if (posterUrl) {
+            if (prev.croppedImageUrl) URL.revokeObjectURL(posterUrl);
+            else {
+              latestUrlRef.current = posterUrl;
+              croppedImageUrlPatch = posterUrl;
+            }
+          }
+          if (!croppedImageUrlPatch && Object.keys(componentsPatch).length === 0) return prev;
+          return {
             ...prev,
-            ...(posterUrl ? { croppedImageUrl: posterUrl } : {}),
+            ...(croppedImageUrlPatch ? { croppedImageUrl: croppedImageUrlPatch } : {}),
             components: { ...prev.components, ...componentsPatch },
-          }));
-        }
+          };
+        });
       })
       .catch(() => {
         // IndexedDB 미지원·프라이빗 모드·용량 초과(#645 C5) — croppedImageUrl은 null인 채로
@@ -409,6 +459,10 @@ export function usePhototicket() {
         if (restoredDraftHadPosterRef.current) {
           showError('저장된 포스터를 불러오지 못했어요. 포스터를 다시 올려주세요.', { persistent: true });
         }
+      })
+      .finally(() => {
+        // 복원 시도가 끝났다 — 성공(포스터 도착)이든 실패(재업로드 유도)든 대기 게이트를 푼다.
+        if (!cancelled) setAwaitingPosterRestore(false);
       });
     return () => {
       cancelled = true;
@@ -789,9 +843,12 @@ export function usePhototicket() {
     // 복원 관련 상태도 전체 슬레이트 리셋 대상 — 안 하면 초기화 후 새로 업로드해도 "복원된 draft에
     // 포스터가 있었다"는 표시가 남아 isFirstUpload가 영구히 오판된다(#489).
     restoredDraftHadPosterRef.current = false;
+    setAwaitingPosterRestore(false);
     // 초기화는 저장분을 지우는 것이므로 "복원된 세션"도 아니게 된다 — 안 되돌리면 랜딩이
-    // 영영 안 뜨고, 포스터도 draft도 없는 빈 편집 셸에 남는다(#614).
+    // 영영 안 뜨고, 포스터도 draft도 없는 빈 편집 셸에 남는다(#614). 첫 페인트 게이트(#675)도
+    // 같은 명제를 CSS 쪽에서 들고 있으므로 나란히 거둔다 — 한쪽만 되돌리면 같은 빈 셸이 된다.
     setDraftRestored(false);
+    clearDraftPaintGate();
     // 형압 편집 모드도 전체 슬레이트 리셋 대상 — 안 하면 초기화 후에도 브러시 레이어가 뜬 채 남는다.
     setEmbossEditMode(false);
     // 크롭 원본·모달 상태도 전체 슬레이트 리셋 — 원본 blob은 posterCrop의 revoke effect가 푼다.
@@ -852,6 +909,7 @@ export function usePhototicket() {
     lastSavedAt,
     toggleAutoSave,
     draftRestored,
+    awaitingPosterRestore,
     // 포스터 크롭 파이프라인(#548) — 원본 objectURL·모달 상태의 단일 소유자. 셸/패널은 소비만 한다.
     posterCrop,
   };

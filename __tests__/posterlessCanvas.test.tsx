@@ -40,16 +40,33 @@ describe('포스터 없이 시작 (#631)', () => {
     expect(screen.getByRole('button', { name: '티켓 항목 목록 열기' })).toBeTruthy();
   });
 
-  test('랜딩은 inline으로 남아 포스터를 나중에 추가할 진입점이 유지된다(D2 a)', async () => {
+  // #674로 D2(a)의 **자리**가 바뀌었다. 랜딩 inline은 컨테이너가 flex-1이라 같은 flex-1인 티켓
+  // 스테이지와 본문 높이를 반씩 나눠 가졌으므로(실측 393×659: 티켓 218.5×349.2 → 109.3×174.6),
+  // 캔버스가 서면 랜딩은 숨고 포스터 재진입 동선은 헤더 메뉴 '포스터 추가'가 이어받는다.
+  // 아래 두 테스트가 "숨었다"와 "그래서 어디로 가느냐"를 쌍으로 잠근다 — 하나만 두면 진입점이
+  // 사라진 채로도 통과한다.
+  test('캔버스가 서면 랜딩은 숨는다 — 스테이지와 본문을 나눠 갖지 않는다(#674)', async () => {
     const user = userEvent.setup();
     render(<Harness />);
 
     await user.click(screen.getByTestId('landing-skip-poster'));
 
-    // 숨기는 판정은 croppedImageUrl이 소유한다 — canvasReady로 걸면 이 진입점이 사라진다.
     const landing = screen.getByTestId('landing');
-    expect(landing.classList.contains('hidden')).toBe(false);
-    expect(screen.getByRole('button', { name: /포스터 있으면 올리기/ })).toBeTruthy();
+    expect(landing.classList.contains('hidden')).toBe(true);
+    // flex-1을 들고 흐름에 남으면 안 된다 — #674의 원인이 정확히 이 클래스 조합이었다.
+    expect(landing.classList.contains('flex-1')).toBe(false);
+  });
+
+  test('포스터 재진입 동선은 헤더 메뉴로 옮겨 유지된다(D2 a → #674)', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+
+    await user.click(screen.getByTestId('landing-skip-poster'));
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+
+    expect(screen.getByRole('button', { name: '포스터 추가' })).toBeTruthy();
+    // 재크롭은 포스터가 있어야 의미가 있으므로 이 상태엔 없다(죽은 컨트롤 금지).
+    expect(screen.queryByRole('button', { name: '재크롭' })).toBeNull();
   });
 
   test("'고급 설정'이 죽은 컨트롤이 아니다 — 툴바와 같은 조건(canvasReady)이라 모달이 실제로 열린다", async () => {

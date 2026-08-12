@@ -7,15 +7,13 @@
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
 import { render, screen, cleanup, fireEvent, act, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { usePhototicket } from '@/hooks/usePhototicket';
+import { usePhototicket, STORAGE_KEY } from '@/hooks/usePhototicket';
 import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
 import { mobileShellProps } from './shellHarness';
 
 // 랜딩 오버레이 노출 여부(#614) — 랜딩은 overlay/inline/hidden 세 모드라 "덮고 있나"는 fixed로
 // 잰다. 테스트엔 Tailwind CSS가 안 실려 getComputedStyle이 클래스를 안 반영하므로 className으로.
 const landingShown = () => screen.getByTestId('landing').classList.contains('fixed');
-
-const STORAGE_KEY = 'filme:phototicket:v1';
 
 function Harness() {
   const photo = usePhototicket();

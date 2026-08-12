@@ -26,6 +26,7 @@
  *  8. 랜딩 무드 캐러셀 카드 5장의 비율·폭·불투명도·프레임 봉쇄  (#615 · #653)
  *  9. 랜딩 이탈 경로 2종의 프레임 봉쇄·줄바꿈 줄 수·44px 탭 타깃              (#665)
  * 10. 랜딩 세로 예산 — 카피+히어로+이탈경로가 675 프레임을 스크롤 없이 담는지  (#665)
+ * 11. 포스터 없이 진입 — 랜딩이 숨고 스테이지가 본문 전체(+--workbench)를 받는지  (#674)
  *
  * ── 대조 기준은 뷰포트가 아니라 프레임이다 (#609) ────────────────────────────
  * 예전엔 `VW===400 && VH===675`로 게이팅해서, `--viewport 1440x675`로 돌리면 프레임이
@@ -68,6 +69,15 @@ const CHROME =
 
 // #563 실측 불변식 — 400×675 · 레일 열림 기준. 다른 뷰포트에선 대조하지 않는다.
 const BASELINE = { dock: 232.6, preview: { w: 226.8, h: 362.3 } };
+
+// #674 실측 불변식 — 포스터 없이 진입한 직후(랜딩 '직접 입력'), 400×675 · **레일 닫힘** 기준.
+// BASELINE(레일 열림)과 같은 화면의 다른 상태라 값이 다르다. 이 축이 잡는 회귀는 "랜딩 inline이
+// 티켓 스테이지와 본문 flex를 반씩 나눠 갖는 것"이라, 반토막(가로세로 각 1/2)이 나면 여기서 걸린다.
+// 값이 레일 닫힘 상태의 포스터 있는 화면(300.7×480.5, 위 헤더 주석)과 같은 게 이 축의 요점이다 —
+// 포스터 유무가 스테이지 크기를 안 바꾼다.
+const POSTERLESS_BASELINE = { preview: { w: 300.7, h: 480.5 } };
+
+const near = (a, b) => a != null && Math.abs(a - b) <= 0.5;
 
 // 랜딩 무드 캐러셀(#615) — Landing.tsx의 TRACK_CARD_WIDTH/CAROUSEL_SLOTS를 그대로 미러링한다.
 // 값이 바뀌면 이 상수도 같이 바꿀 것(BASELINE과 같은 관례). happy-dom은 clientWidth가 항상 0이라
@@ -275,6 +285,54 @@ try {
   if (!landingBudget) throw new Error('카피/히어로/이탈경로/랜딩 오버레이 중 하나를 못 찾음');
   landingBudget.pass = landingBudget.scrollHeight <= landingBudget.clientHeight + 0.5;
 
+  // ── 포스터 없이 진입(#674) — '직접 입력' 뒤 스테이지가 본문을 통째로 받는지 ──────────
+  // 같은 컨텍스트에서 이어 잰다: 여긴 draft 시드가 없어 랜딩이 오버레이로 떠 있고, '포스터 없이
+  // 직접 입력'이 정확히 이 이슈의 진입 경로다(OCR 성공도 landingDismissed로 같은 상태에 떨어진다).
+  // 메인 페이지에선 못 재는 상태다 — 거긴 완료 게이트용 포스터를 올려 croppedImageUrl이 선다.
+  await landingPage.evaluate(() =>
+    document.querySelector('[data-testid="landing-skip-poster"]').click(),
+  );
+  await landingPage.waitForSelector('div.relative.mx-auto.block.rounded-card', { timeout: 15000 });
+  await sleep(900); // TicketRenderer의 ResizeObserver 스케일이 정착한 rect를 잰다.
+  const posterless = await landingPage.evaluate(() => {
+    const landing = document.querySelector('[data-testid="landing"]');
+    const preview = document.querySelector('div.relative.mx-auto.block.rounded-card');
+    const f = document.getElementById('phone-frame');
+    if (!landing || !preview || !f) return null;
+    // 프리뷰 래퍼의 부모가 작업면(container-type:size + --workbench), 그 부모가 본문 컬럼이다.
+    const stage = preview.parentElement;
+    const body = stage.parentElement;
+    const r = (el) => ({
+      w: +el.getBoundingClientRect().width.toFixed(1),
+      h: +el.getBoundingClientRect().height.toFixed(1),
+    });
+    return {
+      landingDisplay: getComputedStyle(landing).display,
+      frame: r(f),
+      stage: r(stage),
+      body: r(body),
+      preview: r(preview),
+      stageBg: getComputedStyle(stage).backgroundColor,
+    };
+  });
+  if (!posterless) throw new Error('포스터 없이 진입 상태에서 랜딩/프리뷰/프레임 중 하나를 못 찾음');
+  // 랜딩이 흐름에 남아 있으면 그 자체로 회귀다 — 스테이지와 높이를 나눠 갖는 게 #674였다.
+  posterless.landingHidden = posterless.landingDisplay === 'none';
+  posterless.stageFillsBody = near(posterless.stage.h, posterless.body.h);
+  // --workbench가 실제로 칠해졌는지. 투명이면 본문이 --bg로 비쳐 "아래쪽만 회색 블록"으로 갈린다
+  // (#674의 두 번째 증상) — 스테이지가 본문을 다 받아도 배경이 없으면 그 증상은 그대로다.
+  posterless.stagePainted = !['rgba(0, 0, 0, 0)', 'transparent'].includes(posterless.stageBg);
+  const posterlessFrameIs400 = near(posterless.frame.w, 400) && near(posterless.frame.h, 675);
+  posterless.checked = posterlessFrameIs400;
+  posterless.expected = POSTERLESS_BASELINE;
+  posterless.pass =
+    posterless.landingHidden &&
+    posterless.stageFillsBody &&
+    posterless.stagePainted &&
+    posterlessFrameIs400 &&
+    near(posterless.preview.w, POSTERLESS_BASELINE.preview.w) &&
+    near(posterless.preview.h, POSTERLESS_BASELINE.preview.h);
+
   await landingCtx.close();
 
   // D7 — 드래프가 복원된 메인 페이지엔 랜딩이 **덮고 있으면** 안 된다. 덮고 있으면 아래 측정
@@ -282,11 +340,14 @@ try {
   // 포스터가 아직 없으므로 랜딩은 사라지는 게 아니라 in-flow(진입 컨트롤만) 모드로 남는다 —
   // 판정은 "fixed로 셸을 덮고 있나"다. 엘리먼트가 아예 없으면 실패로 친다(있어야 할 게 없는 것도
   // 회귀이고, 여기서 true를 주면 이 스크립트가 없애려는 그 조용한 성공이 된다).
+  // #675로 축이 하나 더 붙었다: 오버레이로 덮고 있으면 안 되지만 **숨어서도 안 된다**. 첫 페인트
+  // 게이트(html.has-draft)가 .fixed 대신 랜딩 전체를 먹으면 이 상태(포스터도 캔버스도 없는 재방문)의
+  // 유일한 진입 표면이 사라져 빈 셸이 된다 — display:none을 통과로 치던 옛 판정은 그걸 못 봤다.
   const landingSkippedOnDraft = await page.evaluate(() => {
     const el = document.querySelector('[data-testid="landing"]');
     if (!el) return false;
     const s = getComputedStyle(el);
-    return s.display === 'none' || s.position !== 'fixed';
+    return s.position !== 'fixed' && s.display !== 'none';
   });
 
   // 흰 포스터 = 대비 최악 케이스(#569가 세운 기준과 동일). ImageMagick 없이 canvas로 만든다.
@@ -600,7 +661,6 @@ try {
   // orientation을 읽는다 — 1440×900 뷰포트(landscape)의 400×900 프레임은 portrait이다(#607).
   await measureFit('결과 hero', '.result-hero');
 
-  const near = (a, b) => a != null && Math.abs(a - b) <= 0.5;
   // 게이팅은 뷰포트가 아니라 프레임이다(#609) — 1440×675 뷰포트도 프레임이 400×675면 대조한다.
   const frameIs400 = near(frame.w, 400) && near(frame.h, 675);
   const invariant = frameIs400
@@ -633,6 +693,7 @@ try {
     modal,
     frameFit: { items: fits, fails: fitFails, pass: fitFails.length === 0 },
     landingSkippedOnDraft,
+    posterless,
     carousel,
     exitPaths,
     landingBudget,
@@ -646,6 +707,7 @@ try {
     !invariant.pass ||
     fitFails.length > 0 ||
     !landingSkippedOnDraft ||
+    !posterless.pass ||
     contrastFails.length > 0 ||
     !carousel.pass ||
     !exitPaths.pass ||

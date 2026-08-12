@@ -73,6 +73,7 @@ function ResultHarness() {
     <ResultStage
       theme="light"
       onBack={() => {}}
+      onWordmarkTap={() => {}}
       croppedImageUrl="blob:test-poster"
       movieInfo={photo.state.movieInfo}
       components={photo.state.components}

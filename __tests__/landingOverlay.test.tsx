@@ -21,11 +21,9 @@ import { UNOFFICIAL_TICKET_NOTICE } from '@/utils/ticketCleanup';
 import { GALLERY_LAYOUTS } from '@/components/v2/Landing';
 import { mobileShellProps } from './shellHarness';
 
-const { usePhototicket } = require('@/hooks/usePhototicket') as typeof import('@/hooks/usePhototicket');
+const { usePhototicket, STORAGE_KEY } = require('@/hooks/usePhototicket') as typeof import('@/hooks/usePhototicket');
 const { MobileEditorShell } =
   require('@/components/v2/MobileEditorShell') as typeof import('@/components/v2/MobileEditorShell');
-
-const STORAGE_KEY = 'filme:phototicket:v1';
 
 function Harness() {
   const photo = usePhototicket();
