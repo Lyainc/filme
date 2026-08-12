@@ -341,7 +341,10 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
           autoFocus
           type={field === 'watchTime' ? 'time' : 'text'}
           // runtime(러닝타임)만 정수 전용(#684) — bookingNo는 OCR 스키마가 구분자 보존을 요구해 제외.
-          inputMode={field === 'runtime' ? 'numeric' : undefined}
+          // 값이 순수 숫자(또는 빈 값)일 때만 numeric — KOBIS 자동 채움은 "169 MIN"처럼 문자가 섞여
+          // 있어(kobisLookup.ts extractKobisActorsRuntime) 그 값을 고치는 중엔 문자 키패드가 필요하다
+          // (#685 fresh-eyes 리뷰). FieldEditorBody TextSheet와 같은 판정.
+          inputMode={field === 'runtime' && /^\d*$/.test(value) ? 'numeric' : undefined}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           // 한글 IME 조합 커밋 시 trailing change 없이 값만 반영되는 IME가 있어(#82) 커밋 값으로 재검색.
