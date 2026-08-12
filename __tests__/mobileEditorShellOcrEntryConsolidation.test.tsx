@@ -210,8 +210,13 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
     expect(landing().classList.contains('hidden')).toBe(true);
     expect(screen.getByTestId('landing')).toBeTruthy();
     // 본문 주 CTA·이탈 경로는 unmount가 아니라 CSS hidden으로만 숨는다(#614/#624 remount 금지 계약 유지).
-    expect(ocrCard.closest('.hidden')).not.toBeNull();
-    expect(posterExit.closest('.hidden')).not.toBeNull();
+    // **안쪽 블록 자신**을 재야 한다 — closest('.hidden')은 self-or-ancestor라 #674로 Landing 루트가
+    // hidden을 달면서 그것만으로 통과하게 됐다(fresh-context 리뷰). ocrApplied 분기를 지워도 초록이던
+    // 단언이라, 두 요소가 공유하는 그 래퍼(mt-2 max-w-[280px])를 직접 집는다.
+    const ctaWrap = screen.getByTestId('landing-exit-paths').parentElement!;
+    expect(ctaWrap.contains(ocrCard)).toBe(true);
+    expect(ctaWrap.contains(posterExit)).toBe(true);
+    expect(ctaWrap.classList.contains('hidden')).toBe(true);
   });
 
   // claude-review PR #658 P1 — ocrApplied는 handleClearTap이 landingDismissed와 함께
