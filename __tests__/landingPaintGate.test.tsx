@@ -13,9 +13,16 @@
  */
 import { readFileSync } from 'fs';
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
+import { act, cleanup, render, renderHook, screen, waitFor } from '@testing-library/react';
 import { STORAGE_KEY, usePhototicket } from '@/hooks/usePhototicket';
+import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
 import { themeScript } from '@/pages/_document';
+import { mobileShellProps } from './shellHarness';
+
+function Harness() {
+  const photo = usePhototicket();
+  return <MobileEditorShell {...mobileShellProps(photo)} />;
+}
 
 const gateOn = () => document.documentElement.classList.contains('has-draft');
 const armGate = () => document.documentElement.classList.add('has-draft');
@@ -39,6 +46,16 @@ describe('랜딩 첫 페인트 게이트 (#675)', () => {
   test('globals.css가 그 클래스로 오버레이만 숨긴다 — 규칙이 없으면 게이트가 조용히 죽고, .fixed가 빠지면 inline 재방문자가 빈 셸을 본다', () => {
     const css = readFileSync('src/styles/globals.css', 'utf8');
     expect(css).toContain("html.has-draft [data-testid='landing'].fixed");
+  });
+
+  // 게이트는 셀렉터가 Landing의 오버레이 클래스(.fixed)에 붙어야 성립한다 — 세 파일이 문자열로만
+  // 맞아 있으면 오버레이가 absolute로 바뀌는 흔한 리팩터에 규칙이 조용히 빗나간다(fresh-context 리뷰).
+  test('오버레이 모드 랜딩이 실제로 .fixed를 단다 — CSS 게이트가 잡는 그 클래스다', () => {
+    render(<Harness />);
+
+    const landing = screen.getByTestId('landing');
+    expect(landing.classList.contains('fixed')).toBe(true);
+    expect(getComputedStyle(landing).display).not.toBe('none');
   });
 
   test('저장분이 있으면 게이트를 유지한다 — 복원된 세션은 랜딩을 자기 판정으로 숨긴다', async () => {
