@@ -408,6 +408,25 @@ for (const { mood, clip } of CUSTOM_CASES) {
       expect(patternLayer(container)!.style.backgroundImage).toContain('blob:bgimg');
     });
 
+    test('절취선은 위치지정 형제라 불투명 배경에 안 덮인다 (stub 전용)', async () => {
+      if (mood !== 'stub') return;
+      const user = userEvent.setup();
+      const { container } = render(<Harness mood={mood} />);
+      await openPatternPanel(user, mood);
+      await user.click(screen.getByRole('button', { name: '배경 이미지 적용' }));
+
+      // 절취선이 static이면 absolute인 패턴 레이어 **아래**로 가서, 불투명한 커스텀 이미지가 점선을
+      // 통째로 덮는다(프리셋 3종은 6~12% 잉크라 이 축이 안 보였다). 덮고 덮이는 걸 정하는 건 트리
+      // 순서가 아니라 position이다.
+      const perforation = container.querySelector('div[style*="dashed"], div:has(> span[style*="dashed"])');
+      const dashed = Array.from(container.querySelectorAll('span')).find((el) =>
+        (el as HTMLElement).style.borderTop.includes('dashed'),
+      );
+      expect(dashed).not.toBeUndefined();
+      expect((dashed!.parentElement as HTMLElement).style.position).toBe('relative');
+      expect(perforation).not.toBeNull();
+    });
+
     test('이미지를 제거하면 레이어가 사라지고 다시 업로드를 유도한다', async () => {
       const user = userEvent.setup();
       const { container } = render(<Harness mood={mood} />);
