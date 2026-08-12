@@ -11,7 +11,6 @@ import { MINIMAL_STAMP_MAX_SCALE } from '@/components/moods/MoodMinimal';
 import { containsHangul } from '@/components/moods/_shared';
 import { Eyebrow } from './Eyebrow';
 import { POSTER_FILL_MOODS, TONE_FIXED_MOODS } from '@/constants/fields';
-import { BACKGROUND_PATTERN_OPTIONS } from '@/utils/backgroundPatterns';
 import type { LayoutId } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 
@@ -525,24 +524,22 @@ function SizePanel({ photo, actions }: { photo: Photo; actions: RailActions }) {
 }
 
 /**
- * 배경 기하 패턴이 존재하는 무드(#530 PR 1) — 판정 기준은 "패턴을 깔 종이 바탕이 그 무드에
- * 실재하는가" 하나(이슈 본문). Editorial·Criterion v5·Stub는 셋 다 종이 면이 이미 서 있다.
- * 이번 PR은 이 셋을 appliesTo에 전부 등록하되 Editorial 렌더링만 붙인다 — Criterion·Stub는
- * 무드 자체가 재설계 대상이라(#524 03, Stub 리디자인) 값은 저장되지만 아직 티켓에 안 그려진다.
+ * 배경 이미지를 실을 수 있는 무드(#530 PR 1) — 판정 기준은 "배경을 깔 종이 바탕이 그 무드에
+ * 실재하는가" 하나(이슈 본문). Editorial·Criterion v5·Stub는 셋 다 종이 면이 이미 서 있고,
+ * 셋 다 렌더링까지 붙어 있다.
  */
 const BACKGROUND_PATTERN_MOODS: readonly LayoutId[] = ['editorial', 'criterion', 'stub'];
 
 function BackgroundPatternPanel({ photo }: { photo: Photo }) {
-  const pattern = photo.state.components.backgroundPattern ?? 'none';
   const image = photo.state.components.backgroundPatternImage;
   // 업로드는 로고 스탬프와 **같은** 자유비 크롭 흐름(useLogoCrop, #220)을 그대로 탄다 — 새 의존성도
-  // 새 크롭 경로도 없다. 크롭 결과가 곧 배경 이미지고, 고르는 순간 backgroundPattern도 'custom'으로
-  // 같이 넘긴다(다른 프리셋을 보고 있는데 업로드만 되고 안 그려지는 상태를 안 만든다).
+  // 새 크롭 경로도 없다. 크롭 결과가 곧 배경 이미지다(#672로 프리셋 id 축이 사라져 같이 넘길 값도
+  // 없어졌다 — 이미지 유무가 곧 배경 유무다).
   // maxSide는 로고 기본값(640)을 쓰면 안 된다 — 배경은 캔버스 **전면**을 cover로 채우고 저장물은
   // pixelRatio 2라, criterion 기준 1920×3068 device px를 640짜리로 늘리면 3~5배 확대돼 뭉갠다.
   // 포스터가 같은 급 슬롯에 960×1440을 쓰는 것과 같은 이유로 캔버스 긴 변(TARGET_HEIGHT)에 맞춘다.
   const { rawSrc, isCropping, openFile, handleComplete, handleCancel } = useLogoCrop(
-    (backgroundPatternImage) => photo.updateComponents({ backgroundPattern: 'custom', backgroundPatternImage }),
+    (backgroundPatternImage) => photo.updateComponents({ backgroundPatternImage }),
     TARGET_HEIGHT,
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -555,59 +552,47 @@ function BackgroundPatternPanel({ photo }: { photo: Photo }) {
   };
 
   return (
-    <div className="space-y-field">
-      <ChipRadio
-        label="배경 패턴"
-        options={BACKGROUND_PATTERN_OPTIONS}
-        value={pattern}
-        onChange={(backgroundPattern) => photo.updateComponents({ backgroundPattern })}
-      />
-
-      {/* '내 이미지'를 고른 동안만 업로드 컨트롤을 그린다 — 다른 프리셋에서 죽은 컨트롤을 안 남긴다. */}
-      {pattern === 'custom' && (
-        <div className="space-y-3">
-          {image && (
-            <div className="flex items-center gap-3 rounded-field border border-line bg-surface-elevated px-3.5 py-3">
-              <img src={image} alt="배경 패턴 이미지" className="h-10 w-auto object-contain" />
-              <button
-                type="button"
-                // blob revoke는 여기서 하지 않는다 — undo 히스토리(#356)가 이 URL을 참조한다
-                // (useLogoCrop 주석과 같은 이유). 최신 URL은 usePhototicket이 언마운트·clearDraft에서 푼다.
-                onClick={() => photo.updateComponents({ backgroundPatternImage: '' })}
-                className="ml-auto rounded-chip border border-line px-3 py-1.5 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent active:scale-[0.97]"
-              >
-                이미지 제거
-              </button>
-            </div>
-          )}
-
+    <div className="space-y-3">
+      {image && (
+        <div className="flex items-center gap-3 rounded-field border border-line bg-surface-elevated px-3.5 py-3">
+          <img src={image} alt="배경 이미지" className="h-10 w-auto object-contain" />
           <button
             type="button"
-            onClick={() => fileInputRef.current?.click()}
-            data-touch="40"
-            className="inline-flex min-h-touch w-full items-center justify-center gap-2 rounded-chip border border-dashed border-line bg-surface-elevated px-4 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent active:scale-[0.97]"
+            // blob revoke는 여기서 하지 않는다 — undo 히스토리(#356)가 이 URL을 참조한다
+            // (useLogoCrop 주석과 같은 이유). 최신 URL은 usePhototicket이 언마운트·clearDraft에서 푼다.
+            onClick={() => photo.updateComponents({ backgroundPatternImage: '' })}
+            className="ml-auto rounded-chip border border-line px-3 py-1.5 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent active:scale-[0.97]"
           >
-            {image ? '이미지 교체' : '이미지 업로드'}
+            이미지 제거
           </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp,image/svg+xml"
-            onChange={handleFileChange}
-            aria-label="배경 패턴 이미지 업로드"
-            className="sr-only"
-          />
-
-          {rawSrc && (
-            <ImageCropModal
-              imageSrc={rawSrc}
-              title="배경 이미지 크롭"
-              onClose={handleCancel}
-              onComplete={handleComplete}
-              isProcessing={isCropping}
-            />
-          )}
         </div>
+      )}
+
+      <button
+        type="button"
+        onClick={() => fileInputRef.current?.click()}
+        data-touch="40"
+        className="inline-flex min-h-touch w-full items-center justify-center gap-2 rounded-chip border border-dashed border-line bg-surface-elevated px-4 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent active:scale-[0.97]"
+      >
+        {image ? '이미지 교체' : '이미지 업로드'}
+      </button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/svg+xml"
+        onChange={handleFileChange}
+        aria-label="배경 이미지 업로드"
+        className="sr-only"
+      />
+
+      {rawSrc && (
+        <ImageCropModal
+          imageSrc={rawSrc}
+          title="배경 이미지 크롭"
+          onClose={handleCancel}
+          onComplete={handleComplete}
+          isProcessing={isCropping}
+        />
       )}
     </div>
   );
@@ -736,21 +721,17 @@ export const RAIL_ITEMS: readonly RailItem[] = [
     render: (photo, actions) => <SizePanel photo={photo} actions={actions} />,
   },
   {
+    // id는 'pattern' 그대로 둔다(#672) — 저장·URL 어디에도 안 실리는 내부 키인데, 같이 남은
+    // `backgroundPatternImage`(draft 키라 개명 불가)와 이름이 갈리면 오히려 두 벌이 된다.
     id: 'pattern',
-    label: '패턴',
-    eyebrow: 'Pattern',
-    // 패턴: 격자 점 — 도트/사선/그리드 카탈로그를 아우르는 중립 힌트.
+    label: '배경',
+    eyebrow: 'Background',
+    // 배경: 액자 안에 얹힌 사진(산 능선 + 해) — 더 이상 기하 패턴이 아니라 사용자가 올린 이미지다.
     icon: (
       <svg {...RAIL_ICON}>
-        <circle cx="7" cy="7" r="1.4" fill="currentColor" stroke="none" />
-        <circle cx="12" cy="7" r="1.4" fill="currentColor" stroke="none" />
-        <circle cx="17" cy="7" r="1.4" fill="currentColor" stroke="none" />
-        <circle cx="7" cy="12" r="1.4" fill="currentColor" stroke="none" />
-        <circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" />
-        <circle cx="17" cy="12" r="1.4" fill="currentColor" stroke="none" />
-        <circle cx="7" cy="17" r="1.4" fill="currentColor" stroke="none" />
-        <circle cx="12" cy="17" r="1.4" fill="currentColor" stroke="none" />
-        <circle cx="17" cy="17" r="1.4" fill="currentColor" stroke="none" />
+        <rect x="3.5" y="5" width="17" height="14" rx="2" />
+        <circle cx="8.5" cy="10" r="1.5" />
+        <path d="M4 16.5l4.5-4 3.5 3 3-2.5 5 4.5" />
       </svg>
     ),
     appliesTo: BACKGROUND_PATTERN_MOODS,
