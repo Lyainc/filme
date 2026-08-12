@@ -135,6 +135,26 @@ describe('FieldEditorBody 타입별 편집 (#215 PART A)', () => {
     expect(input.getAttribute('inputmode')).toBe('numeric');
   });
 
+  test('text 본문(러닝타임): KOBIS 자동 채움("169 MIN")엔 inputMode 없음 — 문자 편집 가능해야(#685 리뷰)', () => {
+    // kobisLookup.ts의 extractKobisActorsRuntime이 showTm에 " MIN"을 붙여 movieInfo.runtime에
+    // 그대로 저장한다 — numeric 키패드로 고정하면 그 값을 고치는 중 "MIN"을 못 지운다.
+    function RuntimeMinHarness() {
+      const photo = usePhototicket();
+      const seeded = useRef(false);
+      useEffect(() => {
+        if (!seeded.current) {
+          seeded.current = true;
+          photo.updateMovieInfo({ runtime: '169 MIN' });
+        }
+      }, [photo]);
+      return <FieldEditorBody target="runtime" photo={photo} />;
+    }
+    render(<RuntimeMinHarness />);
+    const input = screen.getByRole('textbox', { name: '러닝타임' }) as HTMLInputElement;
+    expect(input.value).toBe('169 MIN');
+    expect(input.getAttribute('inputmode')).toBeNull();
+  });
+
   test('text 본문(예매 번호): inputMode 없음 — 구분자 포함 형식이라 numeric 제외(#684)', () => {
     render(<BodyHarness field="bookingNo" />);
     const input = screen.getByRole('textbox', { name: '예매 번호' });
@@ -275,5 +295,44 @@ describe('InPlaceFieldEditor 인플레이스 입력 — 드로어 시트와 inpu
   test('예매 번호: inputMode 없음 — FieldEditorBody TextSheet와 같은 판정', () => {
     render(<InPlaceHarness field="bookingNo" />);
     expect(screen.getByRole('textbox', { name: '예매 번호' }).getAttribute('inputmode')).toBeNull();
+  });
+
+  test('러닝타임: KOBIS 자동 채움("169 MIN")엔 inputMode 없음 — FieldEditorBody와 같은 판정(#685 리뷰)', () => {
+    function InPlaceRuntimeMinHarness() {
+      const photo = usePhototicket();
+      const seeded = useRef(false);
+      useEffect(() => {
+        if (!seeded.current) {
+          seeded.current = true;
+          photo.updateMovieInfo({ runtime: '169 MIN' });
+        }
+      }, [photo]);
+      const [wrapperEl, setWrapperEl] = useState<HTMLDivElement | null>(null);
+      const [ticketEl, setTicketEl] = useState<HTMLDivElement | null>(null);
+      return (
+        <div>
+          <div ref={setWrapperEl}>
+            <div ref={setTicketEl}>
+              <span data-field-tap="runtime"><span>x</span></span>
+            </div>
+          </div>
+          {wrapperEl && ticketEl && (
+            <InPlaceFieldEditor
+              photo={photo}
+              field="runtime"
+              wrapperEl={wrapperEl}
+              ticketEl={ticketEl}
+              onField={() => {}}
+              onClose={() => {}}
+              onLift={() => {}}
+            />
+          )}
+        </div>
+      );
+    }
+    render(<InPlaceRuntimeMinHarness />);
+    const input = screen.getByRole('textbox', { name: '러닝타임' }) as HTMLInputElement;
+    expect(input.value).toBe('169 MIN');
+    expect(input.getAttribute('inputmode')).toBeNull();
   });
 });

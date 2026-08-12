@@ -79,7 +79,10 @@ function TextSheet({ field, photo }: { field: TicketField; photo: Photo }) {
       autoFocus
       type={field === 'watchTime' ? 'time' : 'text'}
       // runtime(러닝타임)만 정수 전용(#684) — bookingNo는 OCR 스키마가 구분자 보존을 요구해 제외.
-      inputMode={field === 'runtime' ? 'numeric' : undefined}
+      // 값이 순수 숫자(또는 빈 값)일 때만 numeric — KOBIS 자동 채움은 "169 MIN"처럼 문자가 섞여
+      // 있어(kobisLookup.ts extractKobisActorsRuntime) 그 값을 고치는 중엔 문자 키패드가 필요하다
+      // (#685 fresh-eyes 리뷰).
+      inputMode={field === 'runtime' && /^\d*$/.test(value) ? 'numeric' : undefined}
       value={value}
       // key는 문자열 필드(title/titleOg/... bookingNumber/signature)만 — 값이 늘 string이라 안전.
       onChange={(e) => photo.updateMovieInfo({ [key]: e.target.value } as Partial<MovieInfo>)}
