@@ -12,8 +12,9 @@ import { usePhototicket } from '@/hooks/usePhototicket';
 import { DesignRail } from '@/components/v2/DesignRail';
 import { MoodEditorial } from '@/components/moods/MoodEditorial';
 import { MoodCriterion } from '@/components/moods/MoodCriterion';
+import { MoodStub } from '@/components/moods/MoodStub';
 
-const MOOD_COMPONENTS = { editorial: MoodEditorial, criterion: MoodCriterion } as const;
+const MOOD_COMPONENTS = { editorial: MoodEditorial, criterion: MoodCriterion, stub: MoodStub } as const;
 type PatternMood = keyof typeof MOOD_COMPONENTS;
 
 function Harness({ mood = 'editorial' }: { mood?: PatternMood }) {
@@ -187,6 +188,85 @@ describe('레일 패턴 — Criterion (#530 PR 2)', () => {
     expect(screen.getByTestId('background-pattern').textContent).toBe('diagonal');
 
     await user.click(screen.getByRole('button', { name: 'criterion로 전환' }));
+    await user.click(screen.getByRole('button', { name: '패턴' }));
+    expect((screen.getByRole('radio', { name: '사선' }) as HTMLButtonElement).getAttribute('aria-checked')).toBe('true');
+    expect(patternLayer(container)!.style.backgroundImage).toContain('repeating-linear-gradient');
+  });
+});
+
+describe('레일 패턴 — Stub (#530 PR 3)', () => {
+  test('패턴 항목이 stub에서도 레일에 뜬다', async () => {
+    const user = userEvent.setup();
+    render(<Harness mood="stub" />);
+
+    expect(screen.queryByRole('button', { name: '패턴' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'stub로 전환' }));
+    expect(screen.getByRole('button', { name: '패턴' })).not.toBeNull();
+  });
+
+  test('기본값은 none이고 패턴 레이어가 렌더되지 않는다', () => {
+    const { container } = render(<Harness mood="stub" />);
+    expect(screen.getByTestId('background-pattern').textContent).toBe('none');
+    expect(patternLayer(container)).toBeNull();
+  });
+
+  test('3택 각각이 Stub 렌더에 반영된다', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<Harness mood="stub" />);
+    await openPatternPanel(user, 'stub');
+
+    await user.click(screen.getByRole('radio', { name: '도트' }));
+    expect(screen.getByTestId('background-pattern').textContent).toBe('dots');
+    expect(patternLayer(container)!.style.backgroundImage).toContain('radial-gradient');
+
+    await user.click(screen.getByRole('radio', { name: '사선' }));
+    expect(patternLayer(container)!.style.backgroundImage).toContain('repeating-linear-gradient');
+
+    await user.click(screen.getByRole('radio', { name: '그리드' }));
+    expect(patternLayer(container)!.style.backgroundImage.split('repeating-linear-gradient').length - 1).toBe(2);
+
+    // 색은 Stub INK(#1a1612 = rgb(26,22,18)) 하드코딩 — themeColor 파생이 아니다.
+    expect(patternLayer(container)!.style.backgroundImage).toContain('rgba(26, 22, 18');
+
+    await user.click(screen.getByRole('radio', { name: '없음' }));
+    expect(patternLayer(container)).toBeNull();
+  });
+
+  test('패턴 레이어는 포스터 밴드 사각형을 구멍으로 판다', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<Harness mood="stub" />);
+    await openPatternPanel(user, 'stub');
+    await user.click(screen.getByRole('radio', { name: '그리드' }));
+
+    // 이 클립이 없으면 저장물에서 패턴이 포스터 **위에** 인쇄된다 — captureToImage가 포스터를
+    // 먼저 깔고 base PNG를 위에 얹는데, 포스터 조상의 불투명 배경은 base에서 빠져 있기 때문
+    // (#490/#495). 밴드 사각형(960×640, #527)이 evenodd 두 번째 서브패스로 뚫려 있어야 한다.
+    const clip = patternLayer(container)!.style.clipPath;
+    expect(clip).toContain('evenodd');
+    expect(clip).toContain('M0 0H960V640H0Z');
+  });
+
+  test('패턴 레이어는 componentOpacity 래퍼 밖에 선다', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<Harness mood="stub" />);
+    await openPatternPanel(user, 'stub');
+    await user.click(screen.getByRole('radio', { name: '도트' }));
+
+    // 조판 래퍼(inline opacity)의 자손이면 componentOpacity가 패턴까지 페이드시킨다.
+    expect(patternLayer(container)!.closest('[style*="opacity"]')).toBeNull();
+  });
+
+  test('무드를 왕복해도 고른 패턴이 보존된다', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<Harness mood="stub" />);
+    await openPatternPanel(user, 'stub');
+
+    await user.click(screen.getByRole('radio', { name: '사선' }));
+    await user.click(screen.getByRole('button', { name: 'minimal로 전환' }));
+    expect(screen.queryByRole('button', { name: '패턴' })).toBeNull();
+    expect(screen.getByTestId('background-pattern').textContent).toBe('diagonal');
+
+    await user.click(screen.getByRole('button', { name: 'stub로 전환' }));
     await user.click(screen.getByRole('button', { name: '패턴' }));
     expect((screen.getByRole('radio', { name: '사선' }) as HTMLButtonElement).getAttribute('aria-checked')).toBe('true');
     expect(patternLayer(container)!.style.backgroundImage).toContain('repeating-linear-gradient');
