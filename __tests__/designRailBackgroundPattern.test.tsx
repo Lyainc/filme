@@ -28,6 +28,18 @@ function Harness({ mood = 'editorial' }: { mood?: PatternMood }) {
       <button type="button" onClick={() => photo.updateComponents({ layout: 'minimal' })}>
         minimal로 전환
       </button>
+      {/* #671 — BackgroundPatternPanel이 크롭 완료(useLogoCrop onChange)에서 하는 것과 **똑같은**
+          updateComponents 호출. 여기서 실제 크롭(canvas)까지 태우려면 `@/utils/imageCrop`을
+          mock.module해야 하는데, 그건 프로세스 전역이라 다른 파일로 샌다(#611) — 그 실물 경로는
+          이미 logoCropFreeAspect.test.tsx가 자기 harness 안에서 검증하므로, 여기서는 크롭이 뱉은
+          URL이 상태에 실린 뒤를 본다. */}
+      <button
+        type="button"
+        onClick={() => photo.updateComponents({ backgroundPattern: 'custom', backgroundPatternImage: 'blob:bgimg' })}
+      >
+        배경 이미지 적용
+      </button>
+      <div data-testid="background-pattern-image">{photo.state.components.backgroundPatternImage ?? '(미설정)'}</div>
       <div data-testid="background-pattern">{photo.state.components.backgroundPattern ?? '(미설정)'}</div>
       <DesignRail photo={photo} />
       <Mood
@@ -287,3 +299,127 @@ describe('레일 패턴 — Stub (#530 PR 3)', () => {
     expect(patternLayer(container)!.style.backgroundImage).toContain('repeating-linear-gradient');
   });
 });
+
+/**
+ * #671 — 배경 패턴에 사용자 이미지 축 추가. 세 무드 전부에 같은 계약을 건다:
+ * 레일 노출 → 업로드 후 레이어 렌더 → componentOpacity 밖 → 무드별 clip-path 유지 → 무드 왕복 보존.
+ *
+ * 핵심은 커스텀 이미지가 **프리셋과 같은 레이어**에 실린다는 것이다. 다른 레이어로 새로 그리면
+ * 저장물에서 포스터 위에 인쇄된다(#490/#495 z-order) — 그래서 클립 검증을 프리셋과 똑같이 건다.
+ */
+const CUSTOM_CASES = [
+  // clip: 이 무드의 패턴 레이어가 들고 있어야 하는 구멍(없으면 '' — Editorial은 패턴 열과 포스터
+  // 열이 안 겹쳐 클립이 필요 없다).
+  { mood: 'editorial' as const, clip: '' },
+  { mood: 'criterion' as const, clip: 'M230 262H730V1012H230Z' },
+  { mood: 'stub' as const, clip: 'M0 0H960V640H0Z' },
+];
+
+for (const { mood, clip } of CUSTOM_CASES) {
+  describe(`레일 패턴 — 커스텀 이미지 · ${mood} (#671)`, () => {
+    test("'내 이미지' 칩이 레일 패턴 패널에 뜬다", async () => {
+      const user = userEvent.setup();
+      render(<Harness mood={mood} />);
+      await openPatternPanel(user, mood);
+
+      expect(screen.getByRole('radio', { name: '내 이미지' })).not.toBeNull();
+    });
+
+    test('이미지를 올리기 전에는 레이어를 안 그리고 업로드 컨트롤만 뜬다', async () => {
+      const user = userEvent.setup();
+      const { container } = render(<Harness mood={mood} />);
+      await openPatternPanel(user, mood);
+
+      // 다른 프리셋에선 업로드 컨트롤이 없다(죽은 컨트롤 금지).
+      expect(screen.queryByRole('button', { name: '이미지 업로드' })).toBeNull();
+
+      await user.click(screen.getByRole('radio', { name: '내 이미지' }));
+      expect(screen.getByTestId('background-pattern').textContent).toBe('custom');
+      // id는 'custom'인데 그릴 이미지가 없다 — 예전의 `!== 'none'` 판정이면 여기서 빈 div가 남는다.
+      expect(patternLayer(container)).toBeNull();
+      expect(screen.getByRole('button', { name: '이미지 업로드' })).not.toBeNull();
+    });
+
+    test('업로드한 이미지가 패턴 레이어에 그대로 실린다', async () => {
+      const user = userEvent.setup();
+      const { container } = render(<Harness mood={mood} />);
+      await openPatternPanel(user, mood);
+      await user.click(screen.getByRole('button', { name: '배경 이미지 적용' }));
+
+      const layer = patternLayer(container)!;
+      expect(layer).not.toBeNull();
+      expect(layer.style.backgroundImage).toContain('blob:bgimg');
+      // 임의의 사진이라 타일링하지 않는다 — 이음매가 그대로 보인다.
+      expect(layer.style.backgroundSize).toBe('cover');
+      expect(layer.style.backgroundRepeat).toBe('no-repeat');
+      // 프리셋 잉크 그라디언트는 같이 실리지 않는다(이미지 하나로 대체).
+      expect(layer.style.backgroundImage).not.toContain('gradient');
+    });
+
+    test('커스텀 레이어도 componentOpacity 래퍼 밖에 선다', async () => {
+      const user = userEvent.setup();
+      const { container } = render(<Harness mood={mood} />);
+      await openPatternPanel(user, mood);
+      await user.click(screen.getByRole('button', { name: '배경 이미지 적용' }));
+
+      // 조판 래퍼(inline opacity)의 자손이면 componentOpacity가 배경까지 페이드시킨다 —
+      // 패턴은 "종이에 이미 인쇄된 바탕"이라 그 밖이어야 한다(#530 계약).
+      expect(patternLayer(container)!.closest('[style*="opacity"]')).toBeNull();
+    });
+
+    test(`커스텀 레이어도 프리셋과 같은 clip-path를 유지한다${clip ? '' : ' (이 무드는 클립 없음)'}`, async () => {
+      const user = userEvent.setup();
+      const { container } = render(<Harness mood={mood} />);
+      await openPatternPanel(user, mood);
+
+      // 프리셋(그리드)에서 먼저 읽고, 커스텀으로 바꿔도 같은 값인지 본다 — 커스텀이 별도 레이어로
+      // 새로 그려지면 여기서 갈린다(그리고 저장물에서 포스터 위에 인쇄된다).
+      await user.click(screen.getByRole('radio', { name: '그리드' }));
+      const presetClip = patternLayer(container)!.style.clipPath;
+
+      await user.click(screen.getByRole('button', { name: '배경 이미지 적용' }));
+      const customClip = patternLayer(container)!.style.clipPath;
+
+      expect(customClip).toBe(presetClip);
+      if (clip) {
+        expect(customClip).toContain('evenodd');
+        expect(customClip).toContain(clip);
+      } else {
+        expect(customClip).toBe('');
+      }
+    });
+
+    test('무드를 왕복해도 커스텀 이미지가 보존된다', async () => {
+      const user = userEvent.setup();
+      const { container } = render(<Harness mood={mood} />);
+      await openPatternPanel(user, mood);
+      await user.click(screen.getByRole('button', { name: '배경 이미지 적용' }));
+
+      await user.click(screen.getByRole('button', { name: 'minimal로 전환' }));
+      expect(screen.queryByRole('button', { name: '패턴' })).toBeNull();
+      expect(screen.getByTestId('background-pattern').textContent).toBe('custom');
+      expect(screen.getByTestId('background-pattern-image').textContent).toBe('blob:bgimg');
+
+      await user.click(screen.getByRole('button', { name: `${mood}로 전환` }));
+      await user.click(screen.getByRole('button', { name: '패턴' }));
+      expect((screen.getByRole('radio', { name: '내 이미지' }) as HTMLButtonElement).getAttribute('aria-checked')).toBe(
+        'true',
+      );
+      expect(patternLayer(container)!.style.backgroundImage).toContain('blob:bgimg');
+    });
+
+    test('이미지를 제거하면 레이어가 사라지고 다시 업로드를 유도한다', async () => {
+      const user = userEvent.setup();
+      const { container } = render(<Harness mood={mood} />);
+      await openPatternPanel(user, mood);
+      await user.click(screen.getByRole('button', { name: '배경 이미지 적용' }));
+      expect(patternLayer(container)).not.toBeNull();
+
+      await user.click(screen.getByRole('button', { name: '이미지 제거' }));
+      // id는 'custom'으로 남고 레이어만 사라진다 — 로고 dashed placeholder와 같은 재업로드 유도.
+      expect(screen.getByTestId('background-pattern').textContent).toBe('custom');
+      expect(patternLayer(container)).toBeNull();
+      expect(screen.getByRole('button', { name: '이미지 업로드' })).not.toBeNull();
+    });
+  });
+}
