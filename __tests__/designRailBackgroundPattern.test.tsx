@@ -6,8 +6,9 @@
  *
  * #530이 넣었던 기하 프리셋 3종은 #672에서 걷어냈고, 그 describe 3개도 같이 지웠다 — 남은 축은
  * 사용자가 올린 이미지 하나뿐이라 id 필드(`backgroundPattern`) 자체가 사라졌다. 여기서 지키는
- * 계약은 넷이다: 레일 노출 → 업로드 후 레이어 렌더 → componentOpacity 밖 → 무드별 clip-path.
- * 뒤 둘이 핵심으로, 어기면 저장물에서 배경이 포스터 **위에** 인쇄된다(#490/#495 z-order).
+ * 계약은 다섯이다: 레일 노출 → 업로드 후 레이어 렌더 → componentOpacity 밖 → 무드별 clip-path →
+ * 그리고 Stub 전용 둘(절취선·페이퍼 스텁이 배경을 안 덮는다). clip-path를 어기면 저장물에서
+ * 배경이 포스터 **위에** 인쇄되고(#490/#495 z-order), Stub 둘을 어기면 배경이 통째로 안 보인다.
  */
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
 import { render, screen, cleanup } from '@testing-library/react';
@@ -179,6 +180,24 @@ for (const { mood, clip } of MOOD_CASES) {
       expect(dashed).not.toBeUndefined();
       expect((dashed!.parentElement as HTMLElement).style.position).toBe('relative');
       expect(perforation).not.toBeNull();
+    });
+
+    test('페이퍼 스텁은 배경을 다시 칠하지 않는다 (stub 전용)', async () => {
+      if (mood !== 'stub') return;
+      const user = userEvent.setup();
+      const { container } = render(<Harness mood={mood} />);
+      await openBackgroundPanel(user, mood);
+      await user.click(screen.getByRole('button', { name: '배경 이미지 적용' }));
+
+      // 하단 페이퍼 스텁은 배경 레이어보다 뒤에 오는 **포지셔닝된** 형제라 paint 순서상 위다.
+      // 여기에 background를 다시 두면 종이 아래쪽 전체에서 배경이 안 보인다(루트가 이미 PAPER를
+      // 칠하므로 색은 어차피 같다). 그리고 상단 640 밴드는 PATTERN_CLIP이 파내고 절취선 띠는
+      // PAPER를 다시 칠하므로, 그 아래가 Stub에서 배경이 보이는 **유일한** 자리다 — 여기가
+      // 덮이면 배경이 100% 안 보인다. 다른 테스트는 레이어 자기 스타일만 봐서 이걸 못 잡는다.
+      const stub = backgroundLayer(container)!.parentElement!.lastElementChild as HTMLElement;
+      expect(stub.style.opacity).toBe('1'); // componentOpacity 래퍼를 제대로 집었는지 확인
+      expect(stub.style.background).toBe('');
+      expect(stub.style.backgroundColor).toBe('');
     });
 
     test('이미지를 제거하면 레이어가 사라지고 다시 업로드를 유도한다', async () => {

@@ -215,7 +215,11 @@ const LEGACY_COATING_TEXTURES = new Set(['none', 'hologram', 'metal', 'scodix'])
  * `{material, coating, materialIntensity?, coatingIntensity?}`로 매핑해 반환한다(#475 c4). 이미
  * 새 shape(`material` 존재)면 그대로 통과 — 하위호환 마이그레이션은 1회성이라 재적용해도 안전.
  */
-export function migrateLegacyComponents(saved: Record<string, unknown>): Record<string, unknown> {
+export function migrateLegacyComponents(input: Record<string, unknown>): Record<string, unknown> {
+  // #672로 폐기된 배경 프리셋 id는 무조건 걷어낸다 — 아무도 안 읽는데 남기면 매 saveDraft()마다
+  // localStorage에 계속 재기록된다(아래 texture/textureIntensity와 같은 처리, PR #483 P2).
+  // 아래 이른 return들보다 **앞**에 서야 한다: 그것들은 이미 현대 저장본을 그대로 돌려보낸다.
+  const { backgroundPattern: _backgroundPattern, ...saved } = input;
   if (typeof saved.material === 'string') return saved;
   const legacyTexture = typeof saved.texture === 'string' ? saved.texture : undefined;
   if (!legacyTexture) return saved;
