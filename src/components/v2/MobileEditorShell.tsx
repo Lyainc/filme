@@ -26,7 +26,7 @@ import {
   type TbOrient,
   type TbPlace,
 } from './FloatingToolbar';
-import { getFrameRect } from './PhoneFrame';
+import { getFrameRect, APP_BACKGROUND_ID } from './PhoneFrame';
 import { Wordmark } from './Wordmark';
 import type { ViewMode } from './viewMode';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
@@ -626,6 +626,11 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
         paddingTop: 'env(safe-area-inset-top, 0px)',
       }}
     >
+      {/* 앱 배경 래퍼(#685) — 다이얼로그가 열리면 이 안(헤더·본문·dock·툴바)만 inert된다.
+          display:contents라 app-canvas의 flex 레이아웃엔 안 끼어든다(레이아웃용 박스가 아니라
+          inert 타깃 하나 잡으려는 용도). 토스트류는 이 래퍼 밖(아래)에 남겨 다이얼로그가 열려도
+          계속 살아있게 한다 — PhoneFrame.tsx의 APP_BACKGROUND_ID 주석 참고. */}
+      <div id={APP_BACKGROUND_ID} className="contents">
       {/* 앰비언트 배경(#353→#415) — .chrome-ambient는 테마 무관 리터럴 다크 그라디언트라
           (globals.css) chrome-dark 토글만으론 안 가려진다. theme==='dark'일 때만 렌더하고,
           라이트 테마는 데스크톱과 톤을 맞춰(#415 권장) app-canvas의 --bg 그대로 노출한다.
@@ -1125,6 +1130,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
           contentTopEl={ticketBoxEl}
         />
       )}
+      </div>
 
       {/* 고급 설정 모달(#574) — 햄버거의 '고급 설정' 행이 연다. 게이팅은 진입점과 동일하게
           canvasReady && !isMax(#631): 툴바가 안 떠 있으면 toolbarRef가 비어 스냅이 조용히

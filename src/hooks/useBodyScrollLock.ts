@@ -1,17 +1,18 @@
 import { useEffect, type RefObject } from 'react';
+import { APP_BACKGROUND_ID } from '@/components/v2/PhoneFrame';
 
 // 중첩 오버레이(예: 필드 드로어 위 로고 크롭 모달, #355 리뷰 P1) 카운트 — 안쪽 오버레이가
 // 언마운트하며 바깥 lock까지 풀지 않도록, 첫 lock만 잠그고 마지막 unlock만 복원한다.
 let lockCount = 0;
 let savedScrollY = 0;
 
-// 배경 inert 스택(#685) — 스크린리더 가상 커서(VoiceOver·TalkBack 스와이프 탐색)는 포커스
-// 트랩을 안 타므로 별도로 막아야 한다. 세 다이얼로그(ImageCropModal·AdvancedSettingsModal·
-// FieldDrawer)는 DOM 깊이도 포털 대상도 서로 다르므로(크롭 모달은 #phone-frame에 포털, 나머지
-// 둘은 그 안 어딘가에 인라인) "부모의 형제"가 아니라 "루트까지 경로 위 형제 전부"를 inert 대상으로
-// 삼는다 — 그러면 중첩(드로어 위 크롭 모달)에서 드로어가 크롭 모달의 조상 트리에 얹혀 있든 아니든
-// 자동으로 걸린다: 크롭 모달이 열리면 그 경로 밖 전부(드로어를 감싼 트리 포함)가 inert되고,
-// 닫히면 스택 최상위(드로어) 기준으로 다시 계산해 드로어만 풀린다.
+// 배경 inert 스택(#685) — 두 층으로 나눠 관리한다.
+// 1. 스택 안 다이얼로그끼리: 최상위 하나만 남기고 나머지(예: 크롭 모달 밑 드로어)는 inert.
+// 2. "앱 배경"(APP_BACKGROUND_ID, 헤더·본문·dock·툴바) 전체: 스택이 비어있지 않으면 통째로 inert.
+// 앱 배경 밖(OcrUndoBanner·에러 토스트·ErrorToastHost)은 일부러 안 건드린다 — z-60/70이 다이얼로그
+// 위에 계속 보이는 계약이라 안내·해제 기능이 다이얼로그 열림과 무관하게 살아있어야 한다. DOM
+// 조상 경로를 걸어 올라가며 형제를 지우는 방식은 그 토스트 레이어까지 같이 삼켜(#685 fresh-eyes
+// 리뷰 지적) 폐기했다 — 대신 앱 배경을 고정 id 하나로 직접 지목한다(DOM 깊이·포털 대상 무관).
 const dialogStack: HTMLElement[] = [];
 let inertedEls: HTMLElement[] = [];
 
@@ -20,20 +21,28 @@ function recomputeInert() {
     el.inert = false;
   });
   inertedEls = [];
-  const top = dialogStack[dialogStack.length - 1];
-  if (!top) return;
-  let node: HTMLElement | null = top;
-  while (node && node !== document.body) {
-    const parent: HTMLElement | null = node.parentElement;
-    if (!parent) break;
-    Array.from(parent.children).forEach((sib) => {
-      if (sib instanceof HTMLElement && sib !== node) {
-        sib.inert = true;
-        inertedEls.push(sib);
-      }
-    });
-    node = parent;
+  if (dialogStack.length === 0) return;
+  dialogStack.slice(0, -1).forEach((el) => {
+    el.inert = true;
+    inertedEls.push(el);
+  });
+  const bg = document.getElementById(APP_BACKGROUND_ID);
+  if (bg) {
+    bg.inert = true;
+    inertedEls.push(bg);
   }
+}
+
+/** 테스트 전용 — 모듈 싱글턴이라 프로세스(=bun test 전체 실행) 내내 남는다. unmount cleanup을
+ *  안 거치고 죽는 테스트(assert가 act() 안에서 던지는 경우 등)가 있으면 dialogStack에 잔여
+ *  엘리먼트가 남아 뒤 테스트의 inert 판정이 조용히 틀어진다(errorToast.tsx의 resetErrorToastForTest
+ *  와 같은 클래스, #611) — __tests__/setup/happydom.ts의 전역 afterEach가 매 테스트 뒤 이걸 부른다. */
+export function resetDialogInertForTest(): void {
+  inertedEls.forEach((el) => {
+    el.inert = false;
+  });
+  inertedEls = [];
+  dialogStack.length = 0;
 }
 
 /**
@@ -41,9 +50,9 @@ function recomputeInert() {
  * iOS Safari는 overflow:hidden만으로는 안 막혀서 position:fixed로 고정하고,
  * 해제 시 원래 스크롤 위치로 복원한다. (모달·라이트박스 공용, 중첩 안전)
  *
- * `dialogRef`를 같이 넘기면 그 엘리먼트만 남기고 나머지 전부에 `inert`를 건다(#685) —
- * `aria-modal`·포커스 트랩만으론 스크린리더 가상 커서가 배경을 읽는 걸 못 막는다. 중첩 시
- * 최상위 하나만 상호작용 가능하고 나머지(바깥 다이얼로그 포함)는 자동으로 inert된다.
+ * `dialogRef`를 같이 넘기면 앱 배경 전체와(그 다이얼로그가 최상위가 아니면) 자기 자신까지
+ * `inert`를 건다(#685) — `aria-modal`·포커스 트랩만으론 스크린리더 가상 커서가 배경을 읽는 걸
+ * 못 막는다. 토스트/에러 레이어는 앱 배경 밖이라 안 걸린다(recomputeInert 주석 참고).
  */
 export function useBodyScrollLock(locked: boolean, dialogRef?: RefObject<HTMLElement | null>) {
   useEffect(() => {
