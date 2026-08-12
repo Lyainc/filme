@@ -108,6 +108,7 @@ describe('#489 자동저장 이미지 복원', () => {
         chain: 'blob:chain-logo',
         format: 'blob:format-logo',
         signatureImage: 'blob:signature-img',
+        backgroundPatternImage: 'blob:bg-image',
       });
     });
     act(() => {
@@ -116,7 +117,7 @@ describe('#489 자동저장 이미지 복원', () => {
     // saveDraft의 이미지 저장은 비동기(fetch→IDB) — fakeStore에 다 실릴 때까지 기다린다.
     await waitFor(() => {
       expect(Object.keys(fakeStore).sort()).toEqual(
-        ['chain', 'format', 'poster', 'posterOriginal', 'signature'].sort()
+        ['background', 'chain', 'format', 'poster', 'posterOriginal', 'signature'].sort()
       );
     });
     first.unmount();
@@ -130,6 +131,10 @@ describe('#489 자동저장 이미지 복원', () => {
       expect(second.result.current.state.components.chain).toBeTruthy();
       expect(second.result.current.state.components.format).toBeTruthy();
       expect(second.result.current.state.components.signatureImage).toBeTruthy();
+      // 티켓 배경 이미지(#672) — 프리셋 축이 사라진 뒤로 이게 배경의 전부라, 새로고침에 유실되면
+      // 로고 3종과 비대칭인 채로 흔적조차 안 남는다.
+      expect(second.result.current.state.components.backgroundPatternImage).toBeTruthy();
+      expect(second.result.current.state.components.backgroundPatternImage).not.toBe('blob:bg-image');
     });
     // 업로드 화면으로 튕기지 않는다 — croppedImageUrl이 null이 아니면 편집 셸이 렌더된다
     // (MobileEditorShell/DesktopStudioShell의 게이팅 조건).
