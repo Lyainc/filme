@@ -1,5 +1,7 @@
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
+import dynamic from 'next/dynamic';
 import { LayoutStrip } from '@/components/LayoutPicker';
+import { useLogoCrop } from '@/hooks/useLogoCrop';
 import TexturePicker from '@/components/wizard/TexturePicker';
 import ColorPicker from '@/components/wizard/ColorPicker';
 import BrightnessSlider from '@/components/wizard/BrightnessSlider';
@@ -12,6 +14,10 @@ import { POSTER_FILL_MOODS, TONE_FIXED_MOODS } from '@/constants/fields';
 import { BACKGROUND_PATTERN_OPTIONS } from '@/utils/backgroundPatterns';
 import type { LayoutId } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
+
+// 크롭 모달은 레일 첫 페인트에 필요 없으니 지연 로드 — FieldEditorBody가 로고 업로드에서 쓰는
+// 것과 같은 모듈·같은 방식이라 청크도 공유된다.
+const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ssr: false });
 
 // #523 — 디자인 레일 항목 정의 목록. 원래는 모바일 rail과 데스크톱 패널이 이 목록만 공유하고
 // 배치는 각자 유지하려고 render(photo, surface, actions)에 surface 축을 뒀는데, #607에서
@@ -547,13 +553,79 @@ function SizePanel({ photo, actions }: { photo: Photo; actions: RailActions }) {
 const BACKGROUND_PATTERN_MOODS: readonly LayoutId[] = ['editorial', 'criterion', 'stub'];
 
 function BackgroundPatternPanel({ photo }: { photo: Photo }) {
+  const pattern = photo.state.components.backgroundPattern ?? 'none';
+  const image = photo.state.components.backgroundPatternImage;
+  // 업로드는 로고 스탬프와 **같은** 자유비 크롭 흐름(useLogoCrop, #220)을 그대로 탄다 — 새 의존성도
+  // 새 크롭 경로도 없다. 크롭 결과가 곧 배경 이미지고, 고르는 순간 backgroundPattern도 'custom'으로
+  // 같이 넘긴다(다른 프리셋을 보고 있는데 업로드만 되고 안 그려지는 상태를 안 만든다).
+  const { rawSrc, isCropping, openFile, handleComplete, handleCancel } = useLogoCrop((backgroundPatternImage) =>
+    photo.updateComponents({ backgroundPattern: 'custom', backgroundPatternImage }),
+  );
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) openFile(file);
+    // 같은 파일을 다시 골라도 change가 뜨게 비운다(StampSheet와 같은 처리).
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   return (
-    <ChipRadio
-      label="배경 패턴"
-      options={BACKGROUND_PATTERN_OPTIONS}
-      value={photo.state.components.backgroundPattern ?? 'none'}
-      onChange={(backgroundPattern) => photo.updateComponents({ backgroundPattern })}
-    />
+    <div className="space-y-field">
+      <ChipRadio
+        label="배경 패턴"
+        options={BACKGROUND_PATTERN_OPTIONS}
+        value={pattern}
+        onChange={(backgroundPattern) => photo.updateComponents({ backgroundPattern })}
+      />
+
+      {/* '내 이미지'를 고른 동안만 업로드 컨트롤을 그린다 — 다른 프리셋에서 죽은 컨트롤을 안 남긴다. */}
+      {pattern === 'custom' && (
+        <div className="space-y-3">
+          {image && (
+            <div className="flex items-center gap-3 rounded-field border border-line bg-surface-elevated px-3.5 py-3">
+              <img src={image} alt="배경 패턴 이미지" className="h-10 w-auto object-contain" />
+              <button
+                type="button"
+                // blob revoke는 여기서 하지 않는다 — undo 히스토리(#356)가 이 URL을 참조한다
+                // (useLogoCrop 주석과 같은 이유). 최신 URL은 usePhototicket이 언마운트·clearDraft에서 푼다.
+                onClick={() => photo.updateComponents({ backgroundPatternImage: '' })}
+                className="ml-auto rounded-chip border border-line px-3 py-1.5 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent active:scale-[0.97]"
+              >
+                이미지 제거
+              </button>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            data-touch="40"
+            className="inline-flex min-h-touch w-full items-center justify-center gap-2 rounded-chip border border-dashed border-line bg-surface-elevated px-4 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent active:scale-[0.97]"
+          >
+            {image ? '이미지 교체' : '이미지 업로드'}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+            onChange={handleFileChange}
+            aria-label="배경 패턴 이미지 업로드"
+            className="sr-only"
+          />
+
+          {rawSrc && (
+            <ImageCropModal
+              imageSrc={rawSrc}
+              title="배경 이미지 크롭"
+              onClose={handleCancel}
+              onComplete={handleComplete}
+              isProcessing={isCropping}
+            />
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
