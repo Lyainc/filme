@@ -106,3 +106,10 @@ autonomous-dev-loop.v4.md
 
 # 인쇄 캘리브레이션 도안 산출물 (scripts/make-calibration-sheet.py가 재생성 — 커밋 안 함, #591)
 /calibration-v3.jpg
+
+# Xcode (네이티브 iOS 전환, docs/NATIVE_IOS_RFC.md 경로 D)
+ios/DerivedData/
+ios/**/xcuserdata/
+ios/**/*.xcuserstate
+ios/.build/
+ios/.swiftpm/
