@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { usePhototicket, HistorySnapshot } from './usePhototicket';
 
 /**
@@ -37,20 +37,11 @@ export function useEditHistory(photo: ReturnType<typeof usePhototicket>) {
   // 임시저장 복원(마운트 직후 setState)이 히스토리 1스텝으로 잡혀, 새로고침하자마자 undo가
   // 활성되고 누르면 빈 폼이 된다 — 복원은 문서 열기지 편집이 아니다.
   const [hist, setHist] = useState<HistoryStack>({ stack: [], at: -1 });
-  // clear() 예약 — 초기화(clearDraft)처럼 "다음 상태를 새 베이스라인으로" 삼아야 하는 경우.
-  // 즉시 리셋하면 clearDraft의 setState가 아직 반영 전이라 이전 상태가 베이스라인이 된다.
-  const resetPendingRef = useRef(false);
 
   useEffect(() => {
     const t = setTimeout(() => {
       const json = JSON.stringify({ movieInfo, components, fieldVisibility });
-      setHist((prev) => {
-        if (resetPendingRef.current) {
-          resetPendingRef.current = false;
-          return { stack: [json], at: 0 };
-        }
-        return pushSnapshot(prev, json);
-      });
+      setHist((prev) => pushSnapshot(prev, json));
     }, DEBOUNCE_MS);
     return () => clearTimeout(t);
   }, [movieInfo, components, fieldVisibility]);
@@ -73,9 +64,15 @@ export function useEditHistory(photo: ReturnType<typeof usePhototicket>) {
   function redo() {
     if (hist.at < hist.stack.length - 1) goTo(hist.at + 1);
   }
-  /** 히스토리 파기 예약 — 초기화(clearDraft) 직후 호출. 다음 디바운스 스냅샷이 새 베이스라인. */
+  /** 히스토리 파기 — 초기화(clearDraft) 직후 호출. 다음 디바운스 스냅샷이 새 베이스라인. */
   function clear() {
-    resetPendingRef.current = true;
+    // 예약이 아니라 즉시 비운다. 예약만 하면 다음 디바운스까지 350ms 동안 옛 스택이 그대로
+    // 남아 canUndo가 true인데, 그 사이 undo를 누르면 clearDraft가 방금 revoke한 blob URL을
+    // 죽은 채로 복원한다(#673). 빈 스택은 마운트 직후와 같은 상태라, 다음 디바운스 발화가
+    // pushSnapshot의 at:-1 경로로 새 베이스라인을 자연히 잡는다 — 예전에 즉시 리셋을 피했던
+    // 이유(clearDraft의 setState가 아직 반영 전이라 옛 상태가 베이스라인이 된다)는 스택을
+    // 옛 상태로 채우지 않으니 해당되지 않는다.
+    setHist({ stack: [], at: -1 });
   }
 
   return {

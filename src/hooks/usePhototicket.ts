@@ -661,7 +661,10 @@ export function usePhototicket() {
     // imagePersistChainRef에 이어붙여 호출 순서를 지킨다 — 안 하면 autosave와 수동 저장이 겹쳐
     // 늦게 시작한 쪽이 먼저 끝나며 최신 상태를 옛 상태가 덮어쓸 수 있다(같은 리뷰 P1).
     const fingerprint = imageSources.map(([, url]) => url).join('|');
-    if (fingerprint !== lastPersistedImageFingerprintRef.current) {
+    // textSaved 게이트(#673 리뷰) — imageKeys가 localStorage에 있으므로, 그 쓰기가 실패한
+    // 저장에서 이미지만 IndexedDB에 넣으면 다음 복원이 그 이미지를 목록 밖이라고 버린다.
+    // 쓰고 나서 못 읽는 결과가 되므로 아예 안 쓴다. 지문도 안 갱신돼 다음 저장이 다시 시도한다.
+    if (textSaved && fingerprint !== lastPersistedImageFingerprintRef.current) {
       imagePersistChainRef.current = imagePersistChainRef.current.then(async () => {
         try {
           const blobs = await Promise.all(imageSources.map(([, url]) => blobUrlToBlob(url)));

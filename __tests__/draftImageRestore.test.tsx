@@ -376,6 +376,29 @@ describe('#673 제거된 이미지의 blob 수명', () => {
     expect(revoke).toHaveBeenCalledWith('blob:chain-1');
   });
 
+  // clearDraft는 소유 집합을 통째로 revoke하므로, 그 직후 히스토리가 아직 살아 있으면 undo가
+  // 죽은 URL을 복원한다 — useEditHistory.clear()가 예약이 아니라 즉시 스택을 비워야 하는 이유다.
+  test('clearDraft 직후 history.clear()는 즉시 undo를 막는다 — revoke된 URL이 복원될 창이 없다', async () => {
+    const { result } = renderHook(() => useHarness());
+    act(() => {
+      result.current.photo.updateComponents({ chain: 'blob:chain-1' });
+    });
+    await settleHistory();
+    act(() => {
+      result.current.photo.updateMovieInfo({ title: '기생충' });
+    });
+    await settleHistory();
+    expect(result.current.history.canUndo).toBe(true);
+
+    act(() => {
+      result.current.photo.clearDraft();
+      result.current.history.clear();
+    });
+    // 다음 디바운스를 기다리지 않고 그 자리에서 막혀야 한다.
+    expect(result.current.history.canUndo).toBe(false);
+    expect(result.current.history.canRedo).toBe(false);
+  });
+
   test('제거 직후 IndexedDB 쓰기가 in-flight인 채로 탭이 닫혀도, 리마운트에서 지운 이미지가 안 되살아난다', async () => {
     const first = renderHook(() => usePhototicket());
     act(() => {
