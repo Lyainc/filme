@@ -57,7 +57,7 @@ export function PrimaryCta({
           <span className={prefersReducedMotion ? '' : 'animate-sprocket-spin'}>
             <Sprocket size={16} />
           </span>
-          <span>저장 중...</span>
+          <span>저장 중…</span>
         </>
       )}
       {state === 'success' && (

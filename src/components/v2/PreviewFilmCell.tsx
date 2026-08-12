@@ -52,7 +52,7 @@ export function PreviewFilmCell({ saving = false, promoted = false, label, child
         {saving && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60 backdrop-blur-sm z-10">
             <span className="text-white"><Spinner /></span>
-            <span className="text-white text-body font-medium">저장 중...</span>
+            <span className="text-white text-body font-medium">저장 중…</span>
           </div>
         )}
       </div>
