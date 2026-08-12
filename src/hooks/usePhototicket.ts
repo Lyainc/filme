@@ -244,6 +244,8 @@ export function usePhototicket() {
       }
     });
   }, []);
+  // #671 배경 패턴 커스텀 이미지 — 로고 3종과 같은 blob 수명 규칙(선언부터 revoke까지 대칭).
+  const latestBgPatternUrlRef = useRef<string | null>(null);
   // 사용자가 밝기 슬라이더를 직접 만졌는지 추적(#146). 한번 만지면 이후 material/coating 전환에서
   // 기본 밝기를 덮어쓰지 않고 사용자 값을 존중한다.
   const brightnessTouchedRef = useRef(false);
@@ -545,6 +547,7 @@ export function usePhototicket() {
       latestChainUrlRef.current = nextComponents.chain.startsWith('blob:') ? nextComponents.chain : null;
       latestFormatUrlRef.current = nextComponents.format.startsWith('blob:') ? nextComponents.format : null;
       latestSignatureUrlRef.current = nextComponents.signatureImage?.startsWith('blob:') ? nextComponents.signatureImage : null;
+      latestBgPatternUrlRef.current = nextComponents.backgroundPatternImage?.startsWith('blob:') ? nextComponents.backgroundPatternImage : null;
 
       const materialChanged = components.material !== undefined && components.material !== prev.components.material;
       const coatingChanged = components.coating !== undefined && components.coating !== prev.components.coating;
@@ -608,6 +611,7 @@ export function usePhototicket() {
     latestChainUrlRef.current = snap.components.chain.startsWith('blob:') ? snap.components.chain : null;
     latestFormatUrlRef.current = snap.components.format.startsWith('blob:') ? snap.components.format : null;
     latestSignatureUrlRef.current = snap.components.signatureImage?.startsWith('blob:') ? snap.components.signatureImage : null;
+    latestBgPatternUrlRef.current = snap.components.backgroundPatternImage?.startsWith('blob:') ? snap.components.backgroundPatternImage : null;
     // touched도 스냅샷 시점 기준으로 재유도(#178의 loadPersisted 패턴, PR #361 리뷰 P1) —
     // 안 하면 밝기 조작 이전 시점으로 undo해도 ref가 true로 남아, 이후 전환에서 기본 밝기
     // 적용이 스킵된다.
@@ -643,6 +647,13 @@ export function usePhototicket() {
           chain: state.components.chain.startsWith('blob:') ? '' : state.components.chain,
           format: state.components.format.startsWith('blob:') ? '' : state.components.format,
           signatureImage: state.components.signatureImage?.startsWith('blob:') ? '' : state.components.signatureImage,
+          // #671 — 배경 패턴 커스텀 이미지도 blob:이면 비운다. backgroundPattern:'custom'은 남으므로
+          // 복원 후엔 패턴 레이어가 안 그려지고(스타일이 비어 호출부가 스킵) 재업로드를 유도한다.
+          // ponytail: IndexedDB 왕복 복원은 안 넣었다. 로고 3종처럼 되살리고 싶어지면 그때
+          // saveImages/loadImages 스키마에 한 칸 더 붙이면 된다.
+          backgroundPatternImage: state.components.backgroundPatternImage?.startsWith('blob:')
+            ? ''
+            : state.components.backgroundPatternImage,
         },
         fieldVisibility: state.fieldVisibility,
         hadPoster: state.croppedImageUrl !== null,
@@ -824,9 +835,11 @@ export function usePhototicket() {
       if (prev.components.chain.startsWith('blob:')) URL.revokeObjectURL(prev.components.chain);
       if (prev.components.format.startsWith('blob:')) URL.revokeObjectURL(prev.components.format);
       if (prev.components.signatureImage?.startsWith('blob:')) URL.revokeObjectURL(prev.components.signatureImage);
+      if (prev.components.backgroundPatternImage?.startsWith('blob:')) URL.revokeObjectURL(prev.components.backgroundPatternImage);
       latestChainUrlRef.current = null;
       latestFormatUrlRef.current = null;
       latestSignatureUrlRef.current = null;
+      latestBgPatternUrlRef.current = null;
       return INITIAL_STATE;
     });
   }, [posterCrop.reset]);
@@ -837,6 +850,7 @@ export function usePhototicket() {
       if (latestChainUrlRef.current) URL.revokeObjectURL(latestChainUrlRef.current);
       if (latestFormatUrlRef.current) URL.revokeObjectURL(latestFormatUrlRef.current);
       if (latestSignatureUrlRef.current) URL.revokeObjectURL(latestSignatureUrlRef.current);
+      if (latestBgPatternUrlRef.current) URL.revokeObjectURL(latestBgPatternUrlRef.current);
     };
   }, []);
 
