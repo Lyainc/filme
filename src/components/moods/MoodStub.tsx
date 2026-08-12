@@ -187,26 +187,21 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
     runtimeVal || gRuntime || ratingVisible || gRating || releaseVal || gRelease || reissueVal || actorsVal || gActors;
 
   const componentOpacity = components.componentOpacity ?? 1;
-  // #671 — 프리셋 3종과 사용자 업로드 이미지를 **같은 스타일 하나**로 합쳐 뽑는다. 레이어를 그릴지
-  // 말지는 id가 아니라 backgroundImage로 판정한다: 'custom'을 골라두고 아직 업로드 전이면 스타일이
-  // 비어, 예전의 `!== 'none'` 판정으로는 빈 div가 남았다.
-  const patternStyle = backgroundPatternStyle(
-    components.backgroundPattern ?? 'none',
-    INK,
-    components.backgroundPatternImage,
-  );
+  // 배경 이미지(#671·#672) — 레이어를 그릴지 말지는 backgroundImage로 판정한다(업로드 전이면
+  // 스타일이 비어 빈 div가 안 남는다).
+  const patternStyle = backgroundPatternStyle(components.backgroundPatternImage);
 
   return (
     <div style={{ position: 'absolute', inset: 0, background: PAPER, color: INK, fontFamily: FONT_SANS, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      {/* 배경 패턴(#530) — 종이(PAPER) 바로 위에 깔리고, 포스터 밴드 자리는 PATTERN_CLIP이 구멍으로
-          파낸다(그 주석의 저장물 z-order 참고). componentOpacity 밖(종이에 이미 인쇄된 바탕)인 건
-          Editorial·Criterion과 같은 계약이고, 색은 이 무드의 INK 하드코딩.
+      {/* 배경 이미지(#530→#672) — 종이(PAPER) 바로 위에 깔리고, 포스터 밴드 자리는 PATTERN_CLIP이
+          구멍으로 파낸다(그 주석의 저장물 z-order 참고). componentOpacity 밖(종이에 이미 인쇄된
+          바탕)인 건 Editorial·Criterion과 같은 계약이다.
 
           **덮고 덮이는 건 트리 순서가 아니라 포지셔닝이 정한다.** 이 레이어는 absolute라, 뒤에 오는
-          포스터 밴드·페이퍼 스텁(둘 다 relative)만 위에 오고 static인 절취선은 **아래**로 간다 —
-          절취선의 점선 위엔 패턴이 얹힌다(6~12% 잉크라 무해, 미리보기=저장물). 그래서 페이퍼 스텁이
-          PAPER를 다시 칠하면 패턴이 종이 어디에도 안 보여, 그 중복 배경은 루트 하나로 합쳤다.
-          여기에 불투명한 장식을 새로 넣어 패턴을 가리려면 순서가 아니라 position을 줘야 한다. */}
+          형제 중 위로 오는 건 포지셔닝된 것들(포스터 밴드·절취선·페이퍼 스텁, 전부 relative)뿐이다.
+          그래서 페이퍼 스텁이 PAPER를 다시 칠하면 배경이 종이 어디에도 안 보여, 그 중복 배경은
+          루트 하나로 합쳤다. 여기에 불투명한 장식을 새로 넣어 배경을 가리려면 순서가 아니라
+          position을 줘야 한다. */}
       {patternStyle.backgroundImage && (
         <div data-bg-pattern="true" aria-hidden="true" style={{ position: 'absolute', inset: 0, clipPath: PATTERN_CLIP, ...patternStyle }} />
       )}

@@ -167,7 +167,6 @@ const INITIAL_STATE: PhototicketState = {
     quoteFont: 'auto',
     // #530 — 배경 기하 패턴. 저장본에 이 키가 없어도 소비부가 `?? 'none'`으로 읽어 마이그레이션이
     // 필요 없다(quoteFont와 동일 원칙).
-    backgroundPattern: 'none',
   },
   recommendedColors: [],
   croppedImageUrl: null,

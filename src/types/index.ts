@@ -1,5 +1,4 @@
 import type { EmbossPath, EmbossStamp } from '@/utils/textureRecipes';
-import type { BackgroundPatternId } from '@/utils/backgroundPatterns';
 
 export type LayoutId = 'minimal' | 'criterion' | '35mm' | 'editorial' | 'stub' | '35mm-landscape';
 
@@ -106,14 +105,13 @@ export interface TicketComponents {
   /** 서명 이미지 렌더 크기 배율 0.6~1.3(기본 1) — 무드별 고정 height와 곱연산 결합(#484). */
   signatureScale?: number;
   /**
-   * 배경 기하 패턴(#530) — Editorial·Criterion·Stub 공통 축. 미설정은 'none'으로 읽는다
-   * (마이그레이션 없음, backgroundPatterns.ts가 단일 소스).
-   */
-  backgroundPattern?: BackgroundPatternId;
-  /**
-   * `backgroundPattern: 'custom'`이 그릴 사용자 업로드 이미지 URL(#671) — 로고 스탬프와 같은
-   * useLogoCrop 자유비 크롭 산출물(blob:)이다. 그래서 blob 수명도 로고와 같은 규칙을 탄다:
-   * saveDraft가 blob:을 비우고, clearDraft·언마운트가 revoke한다(usePhototicket).
+   * 티켓 배경 이미지 URL(#671) — Editorial·Criterion·Stub 공통 축이고, **이 필드 하나가 축
+   * 전체다**(#672가 프리셋 id 필드 `backgroundPattern`을 걷어냈다 — 'none'/'custom' 2택이 이
+   * 필드의 유무와 정보가 완전히 겹쳤다). 비면 배경 레이어를 아예 안 그린다.
+   *
+   * 로고 스탬프와 같은 useLogoCrop 자유비 크롭 산출물(blob:)이라 blob 수명도 로고와 같은 규칙을
+   * 탄다: saveDraft가 blob:을 비우고 대신 IndexedDB에 Blob으로 실어(#672) 새로고침에 왕복
+   * 복원하며, clearDraft·언마운트가 revoke한다(usePhototicket).
    */
   backgroundPatternImage?: string;
 }
