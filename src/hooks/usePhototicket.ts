@@ -181,6 +181,13 @@ export function usePhototicket() {
   // 입력하고 포스터는 한 번도 안 올린 draft가 있는 상태에서 이번 세션 첫 업로드를 하면, 그건
   // 진짜 첫 업로드이므로 DEFAULT_VISIBILITY_ON_UPLOAD가 정상 적용돼야 한다.
   const restoredDraftHadPosterRef = useRef(false);
+  // 포스터가 있던 draft를 복원 중인가(#683) — localStorage 복원(동기 effect)이 hadPoster를 보고
+  // true로 세우고, 뒤이은 IndexedDB 이미지 복원(비동기 effect)이 끝나면(성공·실패 무관) false로
+  // 되돌린다. 셸의 canvasReady가 이 신호를 보고 그 창 동안 랜딩을 inline으로 안 내린다 — 안 보면
+  // draftRestored는 이미 동기로 서 있는데 croppedImageUrl만 비동기로 늦게 와서, 그 사이 랜딩이
+  // "텍스트만 있던 draft" 전용 inline 모드로 잘못 떨어져 잠깐 보였다 사라진다(#675와 원인이 다른
+  // 잔여 플래시, IDB 복원 실패 시엔 그대로 false로 풀려 기존 재업로드 유도 inline이 살아난다).
+  const [awaitingPosterRestore, setAwaitingPosterRestore] = useState(false);
   // saveDraft가 마지막으로 IndexedDB에 실제로 쓴 이미지 조합의 지문 — 텍스트만 바뀐 autosave
   // tick마다 이미지 5종을 무조건 재컨버팅·재기록하던 것을 막는다(claude-review PR #515 P1).
   const lastPersistedImageFingerprintRef = useRef('');
@@ -270,6 +277,7 @@ export function usePhototicket() {
     // 리셋하면 안 된다). 텍스트만 있던 draft(hadPoster=false/undefined)는 그대로 첫 업로드로
     // 취급해 DEFAULT_VISIBILITY_ON_UPLOAD가 정상 적용되게 한다(claude-review PR #515 P1).
     restoredDraftHadPosterRef.current = saved.hadPoster === true;
+    if (restoredDraftHadPosterRef.current) setAwaitingPosterRestore(true);
     // 옛 단일 texture 저장분을 {material, coating, ...Intensity}로 매핑(#475 c4) — 이미 새
     // shape면 그대로 통과. 이후 touched 판정·merge 모두 이 결과를 쓴다.
     const migratedComponents = saved.components
@@ -374,6 +382,10 @@ export function usePhototicket() {
         if (restoredDraftHadPosterRef.current) {
           showError('저장된 포스터를 불러오지 못했어요. 포스터를 다시 올려주세요.', { persistent: true });
         }
+      })
+      .finally(() => {
+        // 복원 시도가 끝났다 — 성공(포스터 도착)이든 실패(재업로드 유도)든 대기 게이트를 푼다.
+        if (!cancelled) setAwaitingPosterRestore(false);
       });
     return () => {
       cancelled = true;
@@ -699,6 +711,7 @@ export function usePhototicket() {
     // 복원 관련 상태도 전체 슬레이트 리셋 대상 — 안 하면 초기화 후 새로 업로드해도 "복원된 draft에
     // 포스터가 있었다"는 표시가 남아 isFirstUpload가 영구히 오판된다(#489).
     restoredDraftHadPosterRef.current = false;
+    setAwaitingPosterRestore(false);
     // 초기화는 저장분을 지우는 것이므로 "복원된 세션"도 아니게 된다 — 안 되돌리면 랜딩이
     // 영영 안 뜨고, 포스터도 draft도 없는 빈 편집 셸에 남는다(#614). 첫 페인트 게이트(#675)도
     // 같은 명제를 CSS 쪽에서 들고 있으므로 나란히 거둔다 — 한쪽만 되돌리면 같은 빈 셸이 된다.
@@ -765,6 +778,7 @@ export function usePhototicket() {
     lastSavedAt,
     toggleAutoSave,
     draftRestored,
+    awaitingPosterRestore,
     // 포스터 크롭 파이프라인(#548) — 원본 objectURL·모달 상태의 단일 소유자. 셸/패널은 소비만 한다.
     posterCrop,
   };

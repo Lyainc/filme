@@ -295,7 +295,13 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   // 캔버스가 섰다"는 다른 명제다. 랜딩의 "포스터 없이 시작"(onSkip)이 landingDismissed를 세워
   // canvasReady를 연다. 랜딩 자체를 숨길지는 별개 판정(D1, 아래 Landing mode) — croppedImageUrl
   // 없이 landingDismissed만으로는 랜딩을 안 숨긴다. #614 걷는 조건 ③과 계약이 같다.
-  const canvasReady = !!croppedImageUrl || landingDismissed;
+  // photo.awaitingPosterRestore(#683, #675 잔여) — 포스터가 있던 draft 재방문은 draftRestored가
+  // 동기로 서서 오버레이는 안 뜨지만(#675), croppedImageUrl은 IndexedDB에서 비동기로 온다. 그 창
+  // 동안 이 신호가 없으면 canvasReady=false라 Landing이 "텍스트만 있던 draft" 전용 inline 모드로
+  // 떨어져 포스터 도착까지 잠깐 보였다 사라진다. 포스터리스 캔버스(#631)는 이미 croppedImageUrl=
+  // null을 지원하므로, 대기 중엔 그 화면을 먼저 보여주는 쪽이 "곧 없어질 inline 블록"보다 낫다.
+  // IDB 복원이 실패하면 훅이 이 신호를 스스로 false로 풀어 기존 재업로드 유도 inline이 되살아난다.
+  const canvasReady = !!croppedImageUrl || landingDismissed || photo.awaitingPosterRestore;
   const clearArmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // 습관적 더블탭이 arm과 실행을 한 번에 뚫지 않게 arm 직후 재탭은 무시(claude-review PR #375 P1).
   const clearArmedAt = useRef(0);
