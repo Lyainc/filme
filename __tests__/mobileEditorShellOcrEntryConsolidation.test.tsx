@@ -182,10 +182,10 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
   // 게 아니라 본문 주 CTA(방금 쓴 그 카드)와 이탈 경로 3종까지 CSS로 숨어야 한다 — #388 계약
   // (편집 중엔 OCR 진입점이 드로어 하나)이 이 상태에 한해 #631 D2(a)를 이긴다. "6개 항목이 자동
   // 입력되었어요" 배너 옆에 방금 쓴 그 CTA와 이탈 경로 줄이 그대로 남아 "입력이 안 끝났나"로
-  // 읽히던 게 #652의 재현이었다. Landing 컨테이너 자체(testid=landing)는 hidden으로 가지 않는다
-  // — #631 D1이 결정한 "inline 유지"는 지키되, 그 안의 두 블록만 숨긴다. '직접 입력'(onSkip)만
-  // 거친 상태는 ocrApplied가 안 서므로 이 블록이 그대로 남는다(posterlessCanvas.test.tsx가 그
-  // 계약을 잠근다).
+  // 읽히던 게 #652의 재현이었다. #674로 한 단 더 나아갔다: 캔버스가 서면(canvasReady) Landing
+  // 컨테이너 **자체**가 hidden이다 — inline으로 남기면 그 flex-1이 티켓 스테이지와 본문 높이를
+  // 반씩 나눠 갖고, ocrApplied면 그 절반이 통째로 빈 블록이 된다. 안쪽 두 블록의 hidden은 그대로
+  // 유지돼 중복 방어로 남는다(Landing.tsx ocrApplied 주석).
   test('포스터 없이 OCR로 직접 필드가 인식되면 오버레이가 걷히고 본문 주 CTA·이탈 경로가 함께 숨는다 (#614 걷는 조건 ③, #652)', async () => {
     render(<MobileHarness />);
     const landing = () => screen.getByTestId('landing');
@@ -206,8 +206,9 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
     // 포스터는 여전히 없다 — 걷힌 근거가 croppedImageUrl이 아니라 landingDismissed임을 고정한다.
     expect(captured.croppedImageUrl).toBeFalsy();
     expect(landing().classList.contains('fixed')).toBe(false);
-    // Landing 컨테이너 자체는 hidden으로 가지 않는다(#631 D1 유지 — 통째로 unmount/숨김이 아니다).
-    expect(landing().classList.contains('hidden')).toBe(false);
+    // 캔버스가 섰으므로 컨테이너 자체가 hidden — unmount는 아니다(#674, #297 P1).
+    expect(landing().classList.contains('hidden')).toBe(true);
+    expect(screen.getByTestId('landing')).toBeTruthy();
     // 본문 주 CTA·이탈 경로는 unmount가 아니라 CSS hidden으로만 숨는다(#614/#624 remount 금지 계약 유지).
     expect(ocrCard.closest('.hidden')).not.toBeNull();
     expect(posterExit.closest('.hidden')).not.toBeNull();

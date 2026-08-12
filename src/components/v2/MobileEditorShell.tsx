@@ -755,26 +755,33 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
                   />
                 )}
               </div>
-              {croppedImageUrl && (
+              {/* 포스터 진입/교체(#674) — 게이트가 croppedImageUrl에서 canvasReady로 넓어졌다.
+                  포스터 없이 진입한 세션(#631 onSkip · OCR)에서 랜딩 inline이 숨으면서(위 Landing
+                  mode) 그 자리가 갖고 있던 D2(a) 재진입 동선이 이 행으로 옮겨온다 — 없으면 포스터를
+                  나중에 추가할 길이 초기화밖에 안 남는다. 재크롭은 포스터가 있어야 의미가 있으므로
+                  croppedImageUrl에 그대로 묶어 둔다. */}
+              {canvasReady && (
                 <div className={`mt-2 ${MENU_GROUP_CLS}`}>
                   <MenuRow
                     iconPath={MENU_ICONS.upload}
-                    label="포스터 교체"
+                    label={croppedImageUrl ? '포스터 교체' : '포스터 추가'}
                     onClick={() => {
                       setMenuOpen(false);
                       handlePosterTap();
                     }}
                   />
-                  <MenuRow
-                    iconPath={MENU_ICONS.crop}
-                    label="재크롭"
-                    disabled={!crop.originalSrc}
-                    title={crop.originalSrc ? undefined : '재크롭하려면 포스터를 다시 업로드해 주세요'}
-                    onClick={() => {
-                      setMenuOpen(false);
-                      crop.openRecrop();
-                    }}
-                  />
+                  {croppedImageUrl && (
+                    <MenuRow
+                      iconPath={MENU_ICONS.crop}
+                      label="재크롭"
+                      disabled={!crop.originalSrc}
+                      title={crop.originalSrc ? undefined : '재크롭하려면 포스터를 다시 업로드해 주세요'}
+                      onClick={() => {
+                        setMenuOpen(false);
+                        crop.openRecrop();
+                      }}
+                    />
+                  )}
                 </div>
               )}
 
@@ -960,10 +967,17 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
               #413 P0을 재도입한다(옛 "단일 인스턴스가 아니면 레이스가 되살아난다" 서술은 #624로
               철회 — CLAUDE.md 🔍 참조). OCR 로직은 셸의 useOcrUndo가 소유. */}
           <Landing
-            // 포스터가 실제로 있어야(croppedImageUrl) 랜딩을 숨긴다 — canvasReady(D1, #631)로
-            // 걸면 "포스터 없이 시작" 직후에도 랜딩이 숨어 포스터를 나중에 추가할 진입점이
-            // 사라진다(D2 (a): 이 inline 상태 자체가 진입점). #614 걷는 조건 ③이 이 계약을 고정한다.
-            mode={croppedImageUrl || isMax ? 'hidden' : showLanding ? 'overlay' : 'inline'}
+            // 캔버스가 서면(canvasReady) 랜딩은 숨는다(#674) — 예전엔 croppedImageUrl로 걸어
+            // "포스터 없이 시작" 직후에도 inline으로 남겼지만(#631 D2 a), 그 inline 컨테이너가
+            // flex-1이라 같은 flex-1인 티켓 스테이지와 본문 높이를 정확히 반씩 나눠 가졌다
+            // (실측 393×659: 스테이지 373.2→198.6, 티켓 218.5×349.2→109.3×174.6). ocrApplied면
+            // 그 절반이 통째로 빈 블록이었다(#652가 안쪽만 숨기고 바깥 flex-1은 남겼으므로).
+            // **포스터 재진입 동선은 사라지지 않고 헤더 메뉴로 옮겼다** — 아래 '포스터 추가' 행이
+            // canvasReady를 따라 뜬다(포스터가 있으면 같은 자리가 '포스터 교체'). 즉 이제
+            // 포스터 유무와 무관하게 재진입점이 한 곳이다.
+            // 랜딩을 **걷는** 조건(showLanding, #614 ③)은 그대로다 — 여기서 바뀐 건 걷힌 뒤에
+            // inline으로 남느냐 숨느냐뿐이고, mode='hidden'은 unmount가 아니라 CSS다(#297 P1).
+            mode={canvasReady || isMax ? 'hidden' : showLanding ? 'overlay' : 'inline'}
             onCta={handlePosterTap}
             onSkip={() => setLandingDismissed(true)}
             // 갤러리 샘플 클릭 — 네 번째 진입점(#615). 다른 셋과 달리 "훑어보고 나중에 커밋"할
