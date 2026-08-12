@@ -340,6 +340,8 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
           key={`inplace-${field}`}
           autoFocus
           type={field === 'watchTime' ? 'time' : 'text'}
+          // runtime(러닝타임)만 정수 전용(#684) — bookingNo는 OCR 스키마가 구분자 보존을 요구해 제외.
+          inputMode={field === 'runtime' ? 'numeric' : undefined}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           // 한글 IME 조합 커밋 시 trailing change 없이 값만 반영되는 IME가 있어(#82) 커밋 값으로 재검색.

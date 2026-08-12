@@ -9,11 +9,12 @@
  * usePhototicket 디바운스 저장분 격리를 위해 매 테스트 전후로 clear.
  */
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import type { SheetTarget } from '@/constants/fields';
 import { FieldEditorBody } from '@/components/v2/FieldEditorBody';
+import { InPlaceFieldEditor } from '@/components/v2/InPlaceFieldEditor';
 import { MINIMAL_STAMP_MAX_SCALE } from '@/components/moods/MoodMinimal';
 import type { TicketComponents } from '@/types';
 
@@ -128,6 +129,18 @@ describe('FieldEditorBody 타입별 편집 (#215 PART A)', () => {
     expect(strip.className).not.toMatch(/(^|\s)pb-1(\s|$)/);
   });
 
+  test('text 본문(러닝타임): inputMode=numeric — 정수 전용(#684)', () => {
+    render(<BodyHarness field="runtime" />);
+    const input = screen.getByRole('textbox', { name: '러닝타임' });
+    expect(input.getAttribute('inputmode')).toBe('numeric');
+  });
+
+  test('text 본문(예매 번호): inputMode 없음 — 구분자 포함 형식이라 numeric 제외(#684)', () => {
+    render(<BodyHarness field="bookingNo" />);
+    const input = screen.getByRole('textbox', { name: '예매 번호' });
+    expect(input.getAttribute('inputmode')).toBeNull();
+  });
+
   test('rating 본문: 별점 클릭이 movieInfo.rating을 갱신', () => {
     render(<BodyHarness field="rating" />);
     // 기본값은 미입력(0, #368) — 직접 입력 전엔 티켓에 평점이 노출되지 않는다.
@@ -221,5 +234,46 @@ describe('SignatureSheet (#484)', () => {
     expect(slider.getAttribute('max')).toBe('1.3');
     fireEvent.change(slider, { target: { value: '1.3' } });
     expect(screen.getByTestId('signatureScale').textContent).toBe('1.3');
+  });
+});
+
+// 온-티켓 인플레이스 경로(#354) — 드로어 시트(FieldEditorBody)와 별개 진입점이라, 같은 필드가
+// 두 경로에서 inputMode가 갈리면(#684 원인) 더 나쁜 UX가 된다. inPlaceKobisResultRow.test.tsx와
+// 동일 하네스 패턴(0-크기 rect로도 overlay input은 렌더).
+function InPlaceHarness({ field }: { field: SheetTarget }) {
+  const photo = usePhototicket();
+  const [wrapperEl, setWrapperEl] = useState<HTMLDivElement | null>(null);
+  const [ticketEl, setTicketEl] = useState<HTMLDivElement | null>(null);
+  return (
+    <div>
+      <div ref={setWrapperEl}>
+        <div ref={setTicketEl}>
+          <span data-field-tap={field}><span>x</span></span>
+        </div>
+      </div>
+      {wrapperEl && ticketEl && (
+        <InPlaceFieldEditor
+          photo={photo}
+          field={field}
+          wrapperEl={wrapperEl}
+          ticketEl={ticketEl}
+          onField={() => {}}
+          onClose={() => {}}
+          onLift={() => {}}
+        />
+      )}
+    </div>
+  );
+}
+
+describe('InPlaceFieldEditor 인플레이스 입력 — 드로어 시트와 inputMode 동기화(#684)', () => {
+  test('러닝타임: inputMode=numeric — FieldEditorBody TextSheet와 같은 판정', () => {
+    render(<InPlaceHarness field="runtime" />);
+    expect(screen.getByRole('textbox', { name: '러닝타임' }).getAttribute('inputmode')).toBe('numeric');
+  });
+
+  test('예매 번호: inputMode 없음 — FieldEditorBody TextSheet와 같은 판정', () => {
+    render(<InPlaceHarness field="bookingNo" />);
+    expect(screen.getByRole('textbox', { name: '예매 번호' }).getAttribute('inputmode')).toBeNull();
   });
 });

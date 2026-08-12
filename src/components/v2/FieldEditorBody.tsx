@@ -78,6 +78,8 @@ function TextSheet({ field, photo }: { field: TicketField; photo: Photo }) {
     <input
       autoFocus
       type={field === 'watchTime' ? 'time' : 'text'}
+      // runtime(러닝타임)만 정수 전용(#684) — bookingNo는 OCR 스키마가 구분자 보존을 요구해 제외.
+      inputMode={field === 'runtime' ? 'numeric' : undefined}
       value={value}
       // key는 문자열 필드(title/titleOg/... bookingNumber/signature)만 — 값이 늘 string이라 안전.
       onChange={(e) => photo.updateMovieInfo({ [key]: e.target.value } as Partial<MovieInfo>)}
