@@ -187,7 +187,14 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
     runtimeVal || gRuntime || ratingVisible || gRating || releaseVal || gRelease || reissueVal || actorsVal || gActors;
 
   const componentOpacity = components.componentOpacity ?? 1;
-  const backgroundPattern = components.backgroundPattern ?? 'none';
+  // #671 — 프리셋 3종과 사용자 업로드 이미지를 **같은 스타일 하나**로 합쳐 뽑는다. 레이어를 그릴지
+  // 말지는 id가 아니라 backgroundImage로 판정한다: 'custom'을 골라두고 아직 업로드 전이면 스타일이
+  // 비어, 예전의 `!== 'none'` 판정으로는 빈 div가 남았다.
+  const patternStyle = backgroundPatternStyle(
+    components.backgroundPattern ?? 'none',
+    INK,
+    components.backgroundPatternImage,
+  );
 
   return (
     <div style={{ position: 'absolute', inset: 0, background: PAPER, color: INK, fontFamily: FONT_SANS, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -200,8 +207,8 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
           절취선의 점선 위엔 패턴이 얹힌다(6~12% 잉크라 무해, 미리보기=저장물). 그래서 페이퍼 스텁이
           PAPER를 다시 칠하면 패턴이 종이 어디에도 안 보여, 그 중복 배경은 루트 하나로 합쳤다.
           여기에 불투명한 장식을 새로 넣어 패턴을 가리려면 순서가 아니라 position을 줘야 한다. */}
-      {backgroundPattern !== 'none' && (
-        <div data-bg-pattern="true" aria-hidden="true" style={{ position: 'absolute', inset: 0, clipPath: PATTERN_CLIP, ...backgroundPatternStyle(backgroundPattern, INK) }} />
+      {patternStyle.backgroundImage && (
+        <div data-bg-pattern="true" aria-hidden="true" style={{ position: 'absolute', inset: 0, clipPath: PATTERN_CLIP, ...patternStyle }} />
       )}
       {/* 상단 포스터 — 텍스트 없음. 분할 레이아웃이라 root가 아닌 이 영역에만 포스터 탭(#259).
           배경은 Poster의 letterboxBg가 칠하므로 래퍼 자체엔 안 둔다(nit poster-letterbox-bg, #440 —
