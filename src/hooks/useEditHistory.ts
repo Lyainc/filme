@@ -55,6 +55,14 @@ export function useEditHistory(photo: ReturnType<typeof usePhototicket>) {
     return () => clearTimeout(t);
   }, [movieInfo, components, fieldVisibility]);
 
+  // blob URL 회수 기회(#673) — 스택이 바뀔 때마다 그 시점 스냅샷 전부를 넘긴다. 캡 초과 축출·redo
+  // 가지 절단으로 스냅샷이 사라지면 그 안에만 있던 로고·서명·배경 URL은 어떤 undo로도 못 되살아나므로,
+  // usePhototicket이 그때 revoke한다. 제거 순간에 풀지 않는 이유가 이 훅에 있다 — 제거 직후의 undo가
+  // 그 이미지를 그대로 되살려야 해서다.
+  useEffect(() => {
+    photo.releaseBlobUrlsOutsideHistory(hist.stack);
+  }, [hist, photo.releaseBlobUrlsOutsideHistory]);
+
   function goTo(at: number) {
     photo.restoreSnapshot(JSON.parse(hist.stack[at]) as HistorySnapshot);
     setHist({ stack: hist.stack, at });

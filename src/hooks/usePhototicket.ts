@@ -20,6 +20,20 @@ async function blobUrlToBlob(url: string | null | undefined): Promise<Blob | und
   }
 }
 
+// 로고 2종·서명·배경의 "현재 URL" ref 갱신과 소유 집합 등록을 한 번에 한다(#673) — updateComponents ·
+// restoreSnapshot · IndexedDB 복원 세 경로가 같은 규칙을 쓰게 하는 choke point다. 소유 집합은
+// 현재 상태에서 빠진 URL도 계속 들고 있는다: 그게 revoke 대상 후보의 전부이고, 실제로 풀지 말지는
+// releaseBlobUrlsOutsideHistory가 히스토리를 보고 판정한다.
+function trackComponentBlobUrl(
+  ref: { current: string | null },
+  value: string | undefined,
+  owned: Set<string>
+) {
+  const url = value?.startsWith('blob:') ? value : null;
+  ref.current = url;
+  if (url) owned.add(url);
+}
+
 const DEFAULT_VISIBILITY_ON_UPLOAD: Record<TicketField, boolean> = {
   title: true,
   titleOg: true,
@@ -187,6 +201,12 @@ export function usePhototicket() {
   const latestSignatureUrlRef = useRef<string | null>(null);
   // #671 배경 패턴 커스텀 이미지 — 로고 3종과 같은 blob 수명 규칙(선언부터 revoke까지 대칭).
   const latestBgPatternUrlRef = useRef<string | null>(null);
+  // 이 훅이 위 4축에 실었던 blob URL 전부(#673). 제거 순간 revoke하면 undo(#356)가 죽은 이미지를
+  // 복원하고, 그렇다고 안 풀면 탭이 닫힐 때까지 붙들린다 — 그래서 판정 기준이 "지금 화면이 쓰는가"가
+  // 아니라 "히스토리 어디에도 안 남았는가"다. 그 판정자가 releaseBlobUrlsOutsideHistory이고, 이
+  // 집합이 그 후보 목록이다. 포스터는 HistorySnapshot 밖이라(스냅샷에 croppedImageUrl이 없다)
+  // 여기 안 들고 기존대로 latestUrlRef가 혼자 소유한다.
+  const ownedComponentBlobUrlsRef = useRef<Set<string>>(new Set());
   // 사용자가 밝기 슬라이더를 직접 만졌는지 추적(#146). 한번 만지면 이후 material/coating 전환에서
   // 기본 밝기를 덮어쓰지 않고 사용자 값을 존중한다.
   const brightnessTouchedRef = useRef(false);
@@ -319,27 +339,28 @@ export function usePhototicket() {
     loadImages()
       .then((images) => {
         if (cancelled) return;
+        const owned = ownedComponentBlobUrlsRef.current;
         const componentsPatch: Partial<TicketComponents> = {};
         if (images.chain) {
           const url = URL.createObjectURL(images.chain);
-          latestChainUrlRef.current = url;
+          trackComponentBlobUrl(latestChainUrlRef, url, owned);
           componentsPatch.chain = url;
         }
         if (images.format) {
           const url = URL.createObjectURL(images.format);
-          latestFormatUrlRef.current = url;
+          trackComponentBlobUrl(latestFormatUrlRef, url, owned);
           componentsPatch.format = url;
         }
         if (images.signature) {
           const url = URL.createObjectURL(images.signature);
-          latestSignatureUrlRef.current = url;
+          trackComponentBlobUrl(latestSignatureUrlRef, url, owned);
           componentsPatch.signatureImage = url;
         }
         // 배경 이미지(#672) — 로고 3종과 완전히 같은 모양이다. 여기서 재발급한 URL을 ref에도
         // 걸어야 언마운트 revoke가 새 URL을 대상으로 삼는다.
         if (images.background) {
           const url = URL.createObjectURL(images.background);
-          latestBgPatternUrlRef.current = url;
+          trackComponentBlobUrl(latestBgPatternUrlRef, url, owned);
           componentsPatch.backgroundPatternImage = url;
         }
         const posterUrl = images.poster ? URL.createObjectURL(images.poster) : null;
@@ -438,10 +459,12 @@ export function usePhototicket() {
     }
     setState((prev) => {
       const nextComponents = { ...prev.components, ...components };
-      latestChainUrlRef.current = nextComponents.chain.startsWith('blob:') ? nextComponents.chain : null;
-      latestFormatUrlRef.current = nextComponents.format.startsWith('blob:') ? nextComponents.format : null;
-      latestSignatureUrlRef.current = nextComponents.signatureImage?.startsWith('blob:') ? nextComponents.signatureImage : null;
-      latestBgPatternUrlRef.current = nextComponents.backgroundPatternImage?.startsWith('blob:') ? nextComponents.backgroundPatternImage : null;
+      // 제거(빈 문자열)면 ref는 null이 되지만 소유 집합엔 옛 URL이 남는다 — 그게 #673의 핵심이다.
+      const owned = ownedComponentBlobUrlsRef.current;
+      trackComponentBlobUrl(latestChainUrlRef, nextComponents.chain, owned);
+      trackComponentBlobUrl(latestFormatUrlRef, nextComponents.format, owned);
+      trackComponentBlobUrl(latestSignatureUrlRef, nextComponents.signatureImage, owned);
+      trackComponentBlobUrl(latestBgPatternUrlRef, nextComponents.backgroundPatternImage, owned);
 
       const materialChanged = components.material !== undefined && components.material !== prev.components.material;
       const coatingChanged = components.coating !== undefined && components.coating !== prev.components.coating;
@@ -502,10 +525,11 @@ export function usePhototicket() {
   // 항상 실려와 brightnessTouchedRef가 오염되고 texture 기본 밝기 로직이 스냅샷을 덮는다.
   // 언마운트 revoke 대상 ref만 복원된 로고에 맞춰 갱신한다.
   const restoreSnapshot = useCallback((snap: HistorySnapshot) => {
-    latestChainUrlRef.current = snap.components.chain.startsWith('blob:') ? snap.components.chain : null;
-    latestFormatUrlRef.current = snap.components.format.startsWith('blob:') ? snap.components.format : null;
-    latestSignatureUrlRef.current = snap.components.signatureImage?.startsWith('blob:') ? snap.components.signatureImage : null;
-    latestBgPatternUrlRef.current = snap.components.backgroundPatternImage?.startsWith('blob:') ? snap.components.backgroundPatternImage : null;
+    const owned = ownedComponentBlobUrlsRef.current;
+    trackComponentBlobUrl(latestChainUrlRef, snap.components.chain, owned);
+    trackComponentBlobUrl(latestFormatUrlRef, snap.components.format, owned);
+    trackComponentBlobUrl(latestSignatureUrlRef, snap.components.signatureImage, owned);
+    trackComponentBlobUrl(latestBgPatternUrlRef, snap.components.backgroundPatternImage, owned);
     // touched도 스냅샷 시점 기준으로 재유도(#178의 loadPersisted 패턴, PR #361 리뷰 P1) —
     // 안 하면 밝기 조작 이전 시점으로 undo해도 ref가 true로 남아, 이후 전환에서 기본 밝기
     // 적용이 스킵된다.
@@ -521,6 +545,41 @@ export function usePhototicket() {
       components: snap.components,
       fieldVisibility: snap.fieldVisibility,
     }));
+  }, []);
+
+  // 소유 집합을 통째로 회수 — 히스토리째 버리는 두 순간(clearDraft·언마운트) 전용.
+  const releaseAllOwnedBlobUrls = useCallback(() => {
+    ownedComponentBlobUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    ownedComponentBlobUrlsRef.current.clear();
+    latestChainUrlRef.current = null;
+    latestFormatUrlRef.current = null;
+    latestSignatureUrlRef.current = null;
+    latestBgPatternUrlRef.current = null;
+  }, []);
+
+  // 히스토리에서 완전히 빠져나간 blob URL만 회수한다(#673) — 제거 순간이 아니라 여기가 revoke
+  // 시점인 이유는, 제거 직후 undo(#356)가 그 이미지를 그대로 되살려야 하기 때문이다. 인자는
+  // useEditHistory가 쥔 스냅샷 JSON 배열이고, 캡 초과 축출·redo 가지 절단으로 스냅샷이 사라진
+  // 뒤에야 그 안에만 있던 URL이 풀린다.
+  //
+  // 스냅샷에서 URL을 뽑는 건 JSON.parse가 아니라 문자열 훑기다 — 스냅샷은 JSON.stringify 결과이고
+  // blob: URL엔 이스케이프될 문자가 없어 정확히 잡히는데, 매 변경마다 최대 80개를 파싱하는 것보다
+  // 싸다. 사용자 텍스트에 우연히 'blob:'가 들어가면 오탐이 나지만 그건 URL을 더 살려두는 방향이라
+  // 안전하고(누수 지연일 뿐), 반대로 놓쳐서 살아있는 URL을 푸는 일은 구조상 없다.
+  const releaseBlobUrlsOutsideHistory = useCallback((snapshots: string[]) => {
+    const owned = ownedComponentBlobUrlsRef.current;
+    if (owned.size === 0) return;
+    const kept = new Set(snapshots.join('\n').match(/blob:[^"]+/g) ?? []);
+    // 지금 화면이 쓰는 URL은 아직 어느 스냅샷에도 없을 수 있다 — 히스토리 push는 350ms 디바운스라
+    // 방금 올린 로고가 그 창 안에서는 스택 밖이다.
+    for (const ref of [latestChainUrlRef, latestFormatUrlRef, latestSignatureUrlRef, latestBgPatternUrlRef]) {
+      if (ref.current) kept.add(ref.current);
+    }
+    owned.forEach((url) => {
+      if (kept.has(url)) return;
+      URL.revokeObjectURL(url);
+      owned.delete(url);
+    });
   }, []);
 
   // #310이 폐지했던 자동저장을 #436이 enabled 게이트 뒤에 되살린다 — 명시적 트리거(버튼 클릭)는 그대로 유지.
@@ -721,31 +780,26 @@ export function usePhototicket() {
     // (handleImageUpload은 강도를 의도적으로 유지하지만 clearDraft는 밝기와 대칭으로 리셋한다.)
     materialIntensityTouchedRef.current = false;
     coatingIntensityTouchedRef.current = false;
+    // 로고·서명·배경은 소유 집합을 통째로 푼다 — 초기화는 히스토리도 같이 파기하므로(호출부가
+    // useEditHistory.clear()를 잇달아 부른다) 과거 스냅샷만 쥐고 있던 URL까지 여기서 회수한다.
+    // 예전엔 현재 상태의 4개만 풀어서, 그 사이 제거·교체된 옛 URL은 그대로 남았다(#673).
+    // setState updater 밖에서 하는 이유는 prev에 안 기대기 때문(updateComponents의 ref 갱신과 동일).
+    releaseAllOwnedBlobUrls();
     setState((prev) => {
       if (prev.croppedImageUrl) URL.revokeObjectURL(prev.croppedImageUrl);
       latestUrlRef.current = null;
-      // chain/format 로고도 poster와 동일하게 처리 — 안 하면 blob이 탭 닫힐 때까지 안 풀린다.
-      if (prev.components.chain.startsWith('blob:')) URL.revokeObjectURL(prev.components.chain);
-      if (prev.components.format.startsWith('blob:')) URL.revokeObjectURL(prev.components.format);
-      if (prev.components.signatureImage?.startsWith('blob:')) URL.revokeObjectURL(prev.components.signatureImage);
-      if (prev.components.backgroundPatternImage?.startsWith('blob:')) URL.revokeObjectURL(prev.components.backgroundPatternImage);
-      latestChainUrlRef.current = null;
-      latestFormatUrlRef.current = null;
-      latestSignatureUrlRef.current = null;
-      latestBgPatternUrlRef.current = null;
       return INITIAL_STATE;
     });
-  }, [posterCrop.reset]);
+  }, [posterCrop.reset, releaseAllOwnedBlobUrls]);
 
   useEffect(() => {
     return () => {
       if (latestUrlRef.current) URL.revokeObjectURL(latestUrlRef.current);
-      if (latestChainUrlRef.current) URL.revokeObjectURL(latestChainUrlRef.current);
-      if (latestFormatUrlRef.current) URL.revokeObjectURL(latestFormatUrlRef.current);
-      if (latestSignatureUrlRef.current) URL.revokeObjectURL(latestSignatureUrlRef.current);
-      if (latestBgPatternUrlRef.current) URL.revokeObjectURL(latestBgPatternUrlRef.current);
+      // 현재값 4개가 아니라 소유 집합 전체 — 히스토리도 이 훅과 함께 죽으므로 과거 스냅샷만
+      // 쥐고 있던 URL도 여기서 같이 회수한다(#673).
+      releaseAllOwnedBlobUrls();
     };
-  }, []);
+  }, [releaseAllOwnedBlobUrls]);
 
   return {
     state,
@@ -766,6 +820,7 @@ export function usePhototicket() {
     setEmbossTool,
     updateFieldVisibility,
     restoreSnapshot,
+    releaseBlobUrlsOutsideHistory,
     saveDraft,
     clearDraft,
     autoSaveEnabled,
