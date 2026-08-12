@@ -7,6 +7,16 @@ import type { ReactNode } from 'react';
 export const PHONE_FRAME_ID = 'phone-frame';
 
 /**
+ * 다이얼로그가 열렸을 때 inert를 걸 "앱 배경" 앵커(#685) — 헤더·본문·dock·플로팅 툴바를 감싸는
+ * MobileEditorShell 내부 래퍼의 id. 토스트류(OcrUndoBanner·에러 토스트·ErrorToastHost)는 이
+ * 래퍼 **밖**에 남는다 — z-60/70이 다이얼로그(z-50/55) 위에 계속 보이는 계약(AdvancedSettingsModal.tsx
+ * 주석)이라 다이얼로그가 열려도 안내·해제 기능이 죽으면 안 된다. useBodyScrollLock이 이 id로
+ * 앱 배경 전체를 inert 대상 하나로 취급한다 — DOM 조상 경로를 걸어 올라가며 형제를 지우는 방식은
+ * 토스트 레이어까지 같이 삼켜(#685 fresh-eyes 리뷰) 폐기했다.
+ */
+export const APP_BACKGROUND_ID = 'app-background';
+
+/**
  * 이동식 툴바의 좌표·클램프·스냅이 쓰는 기준 사각형(#607).
  *
  * `contain: paint`가 `position: fixed`의 컨테이닝 블록을 프레임으로 바꾸므로 그 위에 얹히는

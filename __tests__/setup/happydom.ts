@@ -1,6 +1,7 @@
 import { afterEach } from 'bun:test';
 import { GlobalRegistrator } from '@happy-dom/global-registrator';
 import { resetErrorToastForTest } from '@/utils/errorToast';
+import { resetDialogInertForTest } from '@/hooks/useBodyScrollLock';
 
 GlobalRegistrator.register();
 
@@ -11,6 +12,8 @@ GlobalRegistrator.register();
 // 모든 테스트 파일에 자동 적용된다 — 개별 파일이 따로 리셋을 부를 필요가 없다.
 afterEach(() => {
   resetErrorToastForTest();
+  // useBodyScrollLock의 다이얼로그 inert 스택도 같은 클래스의 모듈 싱글턴(#685) — 위와 동일 이유.
+  resetDialogInertForTest();
 });
 
 // testing-library의 `findBy*`/`waitFor` 기본 대기는 1000ms인데, 그건 로컬 머신 속도를

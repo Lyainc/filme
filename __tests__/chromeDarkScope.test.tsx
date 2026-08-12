@@ -53,14 +53,17 @@ describe('앰비언트 다크 크롬 스코프 — theme 바인딩 (#415)', () =
     render(<Harness theme="dark" />);
     const ambient = screen.getByTestId('chrome-ambient');
     expect(ambient.style.opacity).toBe('');
-    expect((ambient.parentElement as HTMLElement).classList.contains('chrome-dark')).toBe(true);
+    // 앰비언트 직계 부모가 아니라 셸 루트(.app-canvas)를 찾는다 — #685가 헤더/본문/dock/툴바를
+    // display:contents 래퍼(APP_BACKGROUND_ID)로 한 겹 더 감싸 앰비언트의 바로 위 부모가
+    // app-canvas 자신이 아니게 됐다(시각·클래스 상속에는 영향 없음, 순수 inert 타깃용).
+    expect(ambient.closest('.chrome-dark')).not.toBeNull();
   });
 
   test('다크 테마 + 포스터 업로드 후에도 동일 유지', () => {
     render(<Harness theme="dark" />);
     fireEvent.click(screen.getByText('seed'));
     const ambient = screen.getByTestId('chrome-ambient');
-    expect((ambient.parentElement as HTMLElement).classList.contains('chrome-dark')).toBe(true);
+    expect(ambient.closest('.chrome-dark')).not.toBeNull();
   });
 });
 
