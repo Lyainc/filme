@@ -256,6 +256,21 @@ describe('레일 패턴 — Stub (#530 PR 3)', () => {
     expect(patternLayer(container)!.closest('[style*="opacity"]')).toBeNull();
   });
 
+  test('페이퍼 스텁은 배경을 다시 칠하지 않는다', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<Harness mood="stub" />);
+    await openPatternPanel(user, 'stub');
+    await user.click(screen.getByRole('radio', { name: '도트' }));
+
+    // 하단 페이퍼 스텁은 패턴 레이어보다 뒤에 오는 **포지셔닝된** 형제라 paint 순서상 위다.
+    // 여기에 background를 다시 두면 종이 아래쪽 전체에서 패턴이 안 보인다(루트가 이미 PAPER를
+    // 칠하므로 색은 어차피 같다). 위 세 테스트는 레이어 자기 스타일만 봐서 이 회귀를 못 잡는다.
+    const stub = patternLayer(container)!.parentElement!.lastElementChild as HTMLElement;
+    expect(stub.style.opacity).toBe('1'); // componentOpacity 래퍼를 제대로 집었는지 확인
+    expect(stub.style.background).toBe('');
+    expect(stub.style.backgroundColor).toBe('');
+  });
+
   test('무드를 왕복해도 고른 패턴이 보존된다', async () => {
     const user = userEvent.setup();
     const { container } = render(<Harness mood="stub" />);
