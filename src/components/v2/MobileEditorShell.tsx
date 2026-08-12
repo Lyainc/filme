@@ -770,7 +770,10 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
                 <div className={`mt-2 ${MENU_GROUP_CLS}`}>
                   <MenuRow
                     iconPath={MENU_ICONS.upload}
-                    label={croppedImageUrl ? '포스터 교체' : '포스터 추가'}
+                    // awaitingPosterRestore(#683 fresh-context 리뷰) — 이 창 동안 croppedImageUrl은
+                    // 아직 null이지만 복원 중인 포스터가 있다. '포스터 추가'로 두면 없는 걸 새로
+                    // 올리는 것처럼 읽혀 도착 순간 라벨이 설명 없이 바뀐다 — 교체로 미리 맞춘다.
+                    label={croppedImageUrl || photo.awaitingPosterRestore ? '포스터 교체' : '포스터 추가'}
                     onClick={() => {
                       setMenuOpen(false);
                       handlePosterTap();
