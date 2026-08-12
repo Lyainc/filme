@@ -6,7 +6,7 @@ import TexturePicker from '@/components/wizard/TexturePicker';
 import ColorPicker from '@/components/wizard/ColorPicker';
 import BrightnessSlider from '@/components/wizard/BrightnessSlider';
 import { TEXTURE_RECIPES } from '@/utils/textureRecipes';
-import { MATERIAL_OPTIONS, COATING_OPTIONS } from '@/utils/constants';
+import { MATERIAL_OPTIONS, COATING_OPTIONS, TARGET_HEIGHT } from '@/utils/constants';
 import { MINIMAL_STAMP_MAX_SCALE } from '@/components/moods/MoodMinimal';
 import { containsHangul } from '@/components/moods/_shared';
 import { Eyebrow } from './Eyebrow';
@@ -558,8 +558,12 @@ function BackgroundPatternPanel({ photo }: { photo: Photo }) {
   // 업로드는 로고 스탬프와 **같은** 자유비 크롭 흐름(useLogoCrop, #220)을 그대로 탄다 — 새 의존성도
   // 새 크롭 경로도 없다. 크롭 결과가 곧 배경 이미지고, 고르는 순간 backgroundPattern도 'custom'으로
   // 같이 넘긴다(다른 프리셋을 보고 있는데 업로드만 되고 안 그려지는 상태를 안 만든다).
-  const { rawSrc, isCropping, openFile, handleComplete, handleCancel } = useLogoCrop((backgroundPatternImage) =>
-    photo.updateComponents({ backgroundPattern: 'custom', backgroundPatternImage }),
+  // maxSide는 로고 기본값(640)을 쓰면 안 된다 — 배경은 캔버스 **전면**을 cover로 채우고 저장물은
+  // pixelRatio 2라, criterion 기준 1920×3068 device px를 640짜리로 늘리면 3~5배 확대돼 뭉갠다.
+  // 포스터가 같은 급 슬롯에 960×1440을 쓰는 것과 같은 이유로 캔버스 긴 변(TARGET_HEIGHT)에 맞춘다.
+  const { rawSrc, isCropping, openFile, handleComplete, handleCancel } = useLogoCrop(
+    (backgroundPatternImage) => photo.updateComponents({ backgroundPattern: 'custom', backgroundPatternImage }),
+    TARGET_HEIGHT,
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
