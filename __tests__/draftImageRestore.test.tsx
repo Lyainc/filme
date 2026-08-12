@@ -33,6 +33,16 @@ function armSaveGate() {
   });
 }
 let saveImagesCallCount = 0;
+// loadGate/releaseLoad — #683 fresh-context 리뷰 레이스 재현 전용. armSaveGate와 동일 패턴이지만
+// loadImages(IndexedDB 이미지 복원, usePhototicket.ts의 별도 effect)를 붙잡아, 그 대기 창 동안
+// 사용자가 먼저 업로드한 값이 뒤늦게 도착한 복원본에 덮이지 않는지를 결정적으로 재현한다.
+let loadGate: Promise<void> = Promise.resolve();
+let releaseLoad: (() => void) | null = null;
+function armLoadGate() {
+  loadGate = new Promise((resolve) => {
+    releaseLoad = resolve;
+  });
+}
 // 스프레드 스냅샷 + afterAll 복원(#611·#618) — `require()`가 주는 건 살아있는 네임스페이스라
 // mock.module이 그 객체를 제자리에서 갈아끼운다. 복사본으로 떠 둬야 복원이 진짜 복원이 된다.
 // 안 되돌리면 이 인메모리 fakeStore가 프로세스 끝까지 남아, 뒤 파일이 실제 IndexedDB 경로 대신
@@ -47,6 +57,7 @@ mock.module('@/utils/imageDb', () => ({
     for (const [k, v] of Object.entries(entries)) if (v) fakeStore[k] = v;
   },
   loadImages: async () => {
+    await loadGate;
     if (shouldFail) throw new Error('IDB unavailable (mock)');
     return { ...fakeStore };
   },
@@ -79,6 +90,8 @@ afterEach(() => {
   saveGate = Promise.resolve();
   releaseSave = null;
   saveImagesCallCount = 0;
+  loadGate = Promise.resolve();
+  releaseLoad = null;
   mock.restore();
 });
 
@@ -305,5 +318,42 @@ describe('#489 자동저장 이미지 복원', () => {
     // 비동기 체인이 있다면 잡아낼 만큼(짧게) 기다린다.
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(saveImagesCallCount).toBe(callsAfterFirstSave);
+  });
+
+  // #683 fresh-context 리뷰 — IndexedDB 이미지 복원은 비동기라(loadGate로 인위적으로 늦춘다),
+  // 그 도착 전에 사용자가 같은 축(포스터·로고)을 이미 새로 채웠으면 뒤늦게 온 복원본이 그 값을
+  // 덮으면 안 된다. awaitingPosterRestore(#683)가 이 대기 창을 조작 가능한 편집 캔버스로 열어
+  // 두므로("포스터 추가"·필드 드로어), 예전엔 거의 안 열리던 이 레이스가 실제로 트리거 가능해졌다.
+  test('#683 fresh-context 리뷰 — IDB 복원 대기 중 사용자가 올린 포스터·로고를 뒤늦은 복원본이 덮지 않는다', async () => {
+    const first = renderHook(() => usePhototicket());
+    act(() => {
+      first.result.current.handleImageUpload('blob:old-poster', 'blob:old-original');
+      first.result.current.updateComponents({ chain: 'blob:old-chain' });
+    });
+    act(() => {
+      first.result.current.saveDraft();
+    });
+    await waitFor(() => expect(fakeStore.poster).toBeTruthy());
+    first.unmount();
+
+    armLoadGate();
+    const second = renderHook(() => usePhototicket());
+
+    // IDB 복원이 아직 게이트에 묶여 대기 중인 동안 사용자가 새 포스터·로고를 올린다.
+    act(() => {
+      second.result.current.handleImageUpload('blob:user-new-poster');
+      second.result.current.updateComponents({ chain: 'blob:user-new-chain' });
+    });
+
+    // 복원본(old-poster/old-chain)이 이제 도착한다 — 게이트를 풀고 그 처리가 끝나길 기다린다.
+    await act(async () => {
+      releaseLoad?.();
+      await loadGate;
+    });
+    await waitFor(() => {
+      expect(second.result.current.state.croppedImageUrl).toBe('blob:user-new-poster');
+    });
+    expect(second.result.current.state.components.chain).toBe('blob:user-new-chain');
+    second.unmount();
   });
 });
