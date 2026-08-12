@@ -26,7 +26,7 @@ mock.module('@/utils/ocr', () => ({
 
 const { MobileEditorShell } =
   require('@/components/v2/MobileEditorShell') as typeof import('@/components/v2/MobileEditorShell');
-const { usePhototicket } =
+const { usePhototicket, STORAGE_KEY } =
   require('@/hooks/usePhototicket') as typeof import('@/hooks/usePhototicket');
 
 let captured: PhototicketState;
@@ -103,8 +103,6 @@ describe('히어로 갤러리 샘플 클릭이 무드를 즉시 커밋한다 (#6
 // 주석이 되므로, "재방문자의 복원된 무드가 진입만으로 기본값으로 되돌아가지 않는다"는 사용자
 // 관측 명제만 남긴다 — 어떤 구현으로 가든 지켜져야 하는 계약이다.
 describe('복원된 draft의 무드가 진입만으로 되돌아가지 않는다 (#615)', () => {
-  const STORAGE_KEY = 'filme:phototicket:v1';
-
   afterEach(() => {
     localStorage.clear();
   });
@@ -137,7 +135,6 @@ describe('복원된 draft의 무드가 진입만으로 되돌아가지 않는다
  * 안 남을 텐데, 그러면 그쪽이 깨진다.
  */
 describe('갤러리 동일 무드 재탭은 draft를 만들지 않는다 (#615)', () => {
-  const STORAGE_KEY = 'filme:phototicket:v1';
   const sampleFor = (name: string) =>
     within(landing()).getByRole('button', { name: new RegExp(`^${name} 무드로 바로 시작`) });
 
