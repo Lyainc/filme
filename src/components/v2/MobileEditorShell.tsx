@@ -847,7 +847,9 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
               {...posterDropProps}
               className={
                 isMax
-                  ? 'fixed inset-0 z-50 flex items-center justify-center bg-surface px-6'
+                  ? `fixed inset-0 z-50 flex items-center justify-center bg-surface px-6${
+                      posterDragOver ? ' outline outline-2 -outline-offset-2 outline-accent' : ''
+                    }`
                   : `flex min-h-0 flex-1 items-center justify-center px-4 py-3${
                       posterDragOver ? ' outline outline-2 -outline-offset-2 outline-accent' : ''
                     }`
