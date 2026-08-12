@@ -248,20 +248,15 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
   );
 
   const componentOpacity = components.componentOpacity ?? 1;
-  // #671 — 프리셋 3종과 사용자 업로드 이미지를 **같은 스타일 하나**로 합쳐 뽑는다. 레이어를 그릴지
-  // 말지는 id가 아니라 backgroundImage로 판정한다: 'custom'을 골라두고 아직 업로드 전이면 스타일이
-  // 비어, 예전의 `!== 'none'` 판정으로는 빈 div가 남았다.
-  const patternStyle = backgroundPatternStyle(
-    components.backgroundPattern ?? 'none',
-    INK,
-    components.backgroundPatternImage,
-  );
+  // 배경 이미지(#671·#672) — 레이어를 그릴지 말지는 backgroundImage로 판정한다(업로드 전이면
+  // 스타일이 비어 빈 div가 안 남는다).
+  const patternStyle = backgroundPatternStyle(components.backgroundPatternImage);
 
   return (
     <div style={{ position: 'absolute', inset: 0, background: PAPER_GRAIN, color: INK, fontFamily: FONT_KR, overflow: 'hidden' }}>
-      {/* 배경 패턴(#530) — 루트의 첫 형제라 종이 그레인 바로 위, 도판·조판 **아래**에 깔린다.
+      {/* 배경 이미지(#530→#672) — 루트의 첫 형제라 종이 그레인 바로 위, 도판·조판 **아래**에 깔린다.
           componentOpacity 밖(종이에 이미 인쇄된 바탕)인 건 Editorial과 같은 계약이다. 도판 자리는
-          PATTERN_CLIP이 구멍으로 파낸다(그 주석의 저장물 z-order 참고). 색은 이 무드의 INK 하드코딩. */}
+          PATTERN_CLIP이 구멍으로 파낸다(그 주석의 저장물 z-order 참고). */}
       {patternStyle.backgroundImage && (
         <div data-bg-pattern="true" aria-hidden="true" style={{ position: 'absolute', inset: 0, clipPath: PATTERN_CLIP, ...patternStyle }} />
       )}
