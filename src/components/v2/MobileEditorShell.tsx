@@ -1162,6 +1162,41 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
           contentTopEl={ticketBoxEl}
         />
       )}
+
+      {/* 온티켓 인플레이스 에디터(#354) — 필드 탭이 시트 대신 이걸 연다. 투명 input + 필드바 +
+          aid 패널(KOBIS/별점/날짜). 위치는 래퍼/티켓 ref 기반 측정, lift는 setEditLift로 위 transform에.
+          onField는 handleField가 아니라 setActiveField — prev/next 순회는 순수 탐색이라 경유 필드의
+          가시성을 켜면 안 된다(PR #359 리뷰 P1). 자동 표시 on은 FieldTap 직접 탭(handleField)에만.
+          앱 배경 래퍼 안에 둔다(#685 fresh-eyes 리뷰) — 플로팅 툴바(z-45)는 편집 중에도 클릭 가능해
+          이 편집기가 열린 채로 드로어를 열 수 있는데(onFieldList가 activeField를 안 지운다), 래퍼
+          밖에 남으면 드로어가 열려도 이 투명 input이 계속 탭 가능한 채로 남는다. */}
+      {editing && activeField && (
+        <InPlaceFieldEditor
+          photo={photo}
+          field={activeField}
+          wrapperEl={previewWrapEl}
+          ticketEl={ticketBoxEl}
+          onField={setActiveField}
+          onClose={closeEditor}
+          onLift={setEditLift}
+        />
+      )}
+
+      {/* 포스터 크롭 파이프라인(#259 on-ticket tap + #315 드롭존·서브메뉴 교체/재크롭 통합) — 숨김
+          파일 input. 탭 → input.click() → 파일 선택 → ImageCropModal(기본 0.667, 아래 다이얼로그
+          구역에서 렌더) → getCroppedImg → handleImageUpload. originalSrc는 크롭 완료 후에도 유지돼
+          재크롭에 재사용된다. */}
+      {/* sr-only여도 tabbable이라 aria-hidden 금지(axe aria-hidden-focus) — FieldDrawer.tsx:297와
+          동일 판단. 앱 배경 래퍼 안에 둔다(#685 fresh-eyes 리뷰) — 래퍼 밖이면 다이얼로그가 열려도
+          이 input이 계속 탭 순서에 남는다. */}
+      <input
+        ref={posterInputRef}
+        type="file"
+        accept={POSTER_ACCEPT.join(',')}
+        aria-label="포스터 이미지 파일"
+        onChange={handlePosterFile}
+        className="sr-only"
+      />
       </div>
 
       {/* 고급 설정 모달(#574) — 햄버거의 '고급 설정' 행이 연다. 게이팅은 진입점과 동일하게
@@ -1175,22 +1210,6 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
           onSnap={snapToolbarTo}
           onSnapDrawerHandle={snapDrawerHandleTo}
           onClose={() => setAdvOpen(false)}
-        />
-      )}
-
-      {/* 온티켓 인플레이스 에디터(#354) — 필드 탭이 시트 대신 이걸 연다. 투명 input + 필드바 +
-          aid 패널(KOBIS/별점/날짜). 위치는 래퍼/티켓 ref 기반 측정, lift는 setEditLift로 위 transform에.
-          onField는 handleField가 아니라 setActiveField — prev/next 순회는 순수 탐색이라 경유 필드의
-          가시성을 켜면 안 된다(PR #359 리뷰 P1). 자동 표시 on은 FieldTap 직접 탭(handleField)에만. */}
-      {editing && activeField && (
-        <InPlaceFieldEditor
-          photo={photo}
-          field={activeField}
-          wrapperEl={previewWrapEl}
-          ticketEl={ticketBoxEl}
-          onField={setActiveField}
-          onClose={closeEditor}
-          onLift={setEditLift}
         />
       )}
 
@@ -1220,19 +1239,6 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
           />
         </FieldDrawer>
       )}
-
-      {/* 포스터 크롭 파이프라인(#259 on-ticket tap + #315 드롭존·서브메뉴 교체/재크롭 통합) — 숨김
-          파일 input + 크롭 모달. 탭 → input.click() → 파일 선택 → ImageCropModal(기본 0.667) →
-          getCroppedImg → handleImageUpload. originalSrc는 크롭 완료 후에도 유지돼 재크롭에 재사용된다. */}
-      {/* sr-only여도 tabbable이라 aria-hidden 금지(axe aria-hidden-focus) — FieldDrawer.tsx:297와 동일 판단. */}
-      <input
-        ref={posterInputRef}
-        type="file"
-        accept={POSTER_ACCEPT.join(',')}
-        aria-label="포스터 이미지 파일"
-        onChange={handlePosterFile}
-        className="sr-only"
-      />
       {crop.cropOpen && crop.originalSrc && (
         <ImageCropModal
           imageSrc={crop.originalSrc}
