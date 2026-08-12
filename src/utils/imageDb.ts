@@ -1,5 +1,5 @@
 /**
- * 자동저장 이미지 영속화(#489) — 포스터(크롭·원본)·체인/포맷 로고·서명 이미지의 Blob을
+ * 자동저장 이미지 영속화(#489) — 포스터(크롭·원본)·체인/포맷 로고·서명·티켓 배경 이미지(#672)의 Blob을
  * IndexedDB에 저장한다. localStorage(filme:phototicket:v1)는 텍스트·설정 전용(용량 한계로
  * 포스터가 못 들어간다) — 이미지는 별도 스토어에 두되 같은 draft 개념으로 usePhototicket이
  * 함께 저장/복원/삭제한다(부분 복원 방지).
@@ -8,7 +8,7 @@
  * 별개로, 여기는 fetch(blob:) 자체가 네트워크를 안 타 문제없다.
  */
 
-export type ImageDbKey = 'poster' | 'posterOriginal' | 'chain' | 'format' | 'signature';
+export type ImageDbKey = 'poster' | 'posterOriginal' | 'chain' | 'format' | 'signature' | 'background';
 
 const DB_NAME = 'filme-images';
 const STORE = 'images';
