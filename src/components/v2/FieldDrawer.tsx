@@ -52,7 +52,11 @@ interface FieldDrawerProps {
  */
 export function FieldDrawer({ photo, onField, onClose, children }: FieldDrawerProps) {
   const { movieInfo, fieldVisibility, components } = photo.state;
-  useBodyScrollLock(true);
+  // rootRef는 배경 inert(#685) 대상 판정용 — 드로어 전체(백드롭+패널)의 루트. 위에 로고 크롭
+  // 모달이 뜨면(#355 중첩) 크롭 모달이 최상위가 되면서 이 루트도 자동으로 inert되고, 크롭 모달이
+  // 닫히면 다시 풀린다 — useBodyScrollLock의 스택이 판정(포커스 트랩은 panelRef가 그대로 담당).
+  const rootRef = useRef<HTMLDivElement>(null);
+  useBodyScrollLock(true, rootRef);
   // 표시 항목 일괄 단일 스위치(#261, #260 연계, #424에서 편집 메뉴→필드 목록 자리로 이전) — 전체
   // 켜짐 여부. 끄기는 필수 필드(title)를 켠 채 유지한다.
   const allVisOn = ALL_FIELDS.every((f) => fieldVisibility[f]);
@@ -100,7 +104,7 @@ export function FieldDrawer({ photo, onField, onClose, children }: FieldDrawerPr
   };
 
   return (
-    <div className="fixed inset-0 z-50">
+    <div ref={rootRef} className="fixed inset-0 z-50">
       {/* 백드롭 탭 닫기 — 스와이프의 비드래그 대체 경로(WCAG 2.2 SC 2.5.7). */}
       <div className="absolute inset-0 bg-black/30" onClick={onClose} aria-hidden="true" />
       <div

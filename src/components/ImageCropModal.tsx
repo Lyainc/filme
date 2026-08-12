@@ -115,9 +115,6 @@ export default function ImageCropModal({
     );
   };
 
-  // 모달은 크롭 열림 상태에서만 마운트되므로 항상 열린 상태 — 스크롤 잠금
-  useBodyScrollLock(true);
-
   // 포털 타깃은 첫 렌더에 한 번만 정하고 고정한다(#604 리뷰). 매 렌더 getElementById를 다시 읽으면
   // 프레임이 이 모달과 **같은 커밋에** 마운트되는 경로에서 컨테이너가 body→프레임으로 바뀌는데,
   // createPortal은 컨테이너가 바뀌면 서브트리를 통째로 지우고 새로 만든다 — <img>가 재생성되며
@@ -135,6 +132,9 @@ export default function ImageCropModal({
   }
 
   const dialogRef = useRef<HTMLDivElement>(null);
+  // 스크롤 잠금 + 배경 inert(#685) — dialogRef(포커스 트랩과 같은 루트)를 그대로 재사용.
+  // 모달은 크롭 열림 상태에서만 마운트되므로 항상 열린 상태.
+  useBodyScrollLock(true, dialogRef);
   const getFocusables = useCallback(
     () =>
       dialogRef.current

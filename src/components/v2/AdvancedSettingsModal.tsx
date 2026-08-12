@@ -49,7 +49,10 @@ export function AdvancedSettingsModal({
   onSnapDrawerHandle,
   onClose,
 }: AdvancedSettingsModalProps) {
-  useBodyScrollLock(true);
+  // rootRef는 배경 inert(#685) 대상 판정용 — 다이얼로그 전체(백드롭+패널)의 루트. 포커스
+  // 트랩은 panelRef(패널만)가 그대로 담당, 둘은 다른 엘리먼트라 분리한다.
+  const rootRef = useRef<HTMLDivElement>(null);
+  useBodyScrollLock(true, rootRef);
   // 초기 포커스 + 포커스 가두기 — 패널 밖으로 새면 패널로 되돌린다(FieldDrawer와 동일 패턴,
   // #355). Tab 순환 트랩(ImageCropModal)보다 짧고 이 셸에서 이미 검증된 쪽이다.
   const panelRef = useRef<HTMLDivElement>(null);
@@ -77,7 +80,7 @@ export function AdvancedSettingsModal({
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-[55]">
+    <div ref={rootRef} className="fixed inset-0 z-[55]">
       {/* 상단에 남긴 띠가 백드롭 탭 타깃이다 — 풀페이지라도 닫기 버튼 말고 포인터 대체 경로를
           하나 더 둔다(WCAG 2.2 SC 2.5.7 계열의 여분 경로). */}
       <div className="absolute inset-0 bg-black/30" onClick={onClose} aria-hidden="true" />
