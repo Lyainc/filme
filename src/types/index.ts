@@ -110,6 +110,12 @@ export interface TicketComponents {
    * (마이그레이션 없음, backgroundPatterns.ts가 단일 소스).
    */
   backgroundPattern?: BackgroundPatternId;
+  /**
+   * `backgroundPattern: 'custom'`이 그릴 사용자 업로드 이미지 URL(#671) — 로고 스탬프와 같은
+   * useLogoCrop 자유비 크롭 산출물(blob:)이다. 그래서 blob 수명도 로고와 같은 규칙을 탄다:
+   * saveDraft가 blob:을 비우고, clearDraft·언마운트가 revoke한다(usePhototicket).
+   */
+  backgroundPatternImage?: string;
 }
 
 export interface PhototicketState {
