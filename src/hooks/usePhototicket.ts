@@ -3,7 +3,7 @@ import { PhototicketState, MovieInfo, TicketComponents, TicketField } from '@/ty
 import { defaultBrightnessForTexture } from '@/components/moods/_shared';
 import { defaultIntensityForTexture, migrateLegacyComponents, type EmbossPath, type EmbossStamp } from '@/utils/textureRecipes';
 import { ALL_FIELDS_ON } from '@/constants/fieldVisibility';
-import { saveImages, loadImages, clearImages } from '@/utils/imageDb';
+import { saveImages, loadImages, clearImages, type ImageDbKey } from '@/utils/imageDb';
 import { usePosterCrop } from '@/hooks/usePosterCrop';
 import { showError } from '@/utils/errorToast';
 
@@ -82,6 +82,14 @@ export function capSeatTokens(raw: string): string {
 // 복원이 실패한 draft"를 구분한다(#489, claude-review PR #515 P1).
 type PersistedState = Pick<PhototicketState, 'movieInfo' | 'components' | 'fieldVisibility'> & {
   hadPoster?: boolean;
+  /**
+   * 저장 시점에 실제로 이미지가 있던 축(#673). localStorage 쓰기는 동기·확정인데 IndexedDB 쓰기는
+   * imagePersistChainRef 뒤에 큐잉된 best-effort라, 이미지를 제거한 직후 탭이 닫히거나 saveImages가
+   * 쿼터로 throw하면 IDB엔 옛 Blob이 그대로 남는다. 복원이 IDB만 믿으면 지운 이미지가 새로고침에
+   * 되살아나므로, "무엇이 있어야 하는가"는 확정적인 이쪽이 정한다.
+   * undefined = 이 필드가 없던 옛 저장분 → 하위호환으로 IDB를 그대로 믿는다.
+   */
+  imageKeys?: ImageDbKey[];
 };
 
 // undo/redo(#356) 스냅샷 = 편집 가능한 문서 상태 전부. 포스터(croppedImageUrl)는 blob 수명
@@ -207,6 +215,9 @@ export function usePhototicket() {
   // 집합이 그 후보 목록이다. 포스터는 HistorySnapshot 밖이라(스냅샷에 croppedImageUrl이 없다)
   // 여기 안 들고 기존대로 latestUrlRef가 혼자 소유한다.
   const ownedComponentBlobUrlsRef = useRef<Set<string>>(new Set());
+  // 마지막 저장이 "있다"고 기록한 이미지 축(#673) — 위 imageKeys를 IDB 복원 effect로 나르는 통로다.
+  // null이면 저장분이 없거나 그 필드가 없던 옛 저장분이라 IDB를 그대로 믿는다.
+  const restoredImageKeysRef = useRef<ImageDbKey[] | null>(null);
   // 사용자가 밝기 슬라이더를 직접 만졌는지 추적(#146). 한번 만지면 이후 material/coating 전환에서
   // 기본 밝기를 덮어쓰지 않고 사용자 값을 존중한다.
   const brightnessTouchedRef = useRef(false);
@@ -278,6 +289,9 @@ export function usePhototicket() {
     // 리셋하면 안 된다). 텍스트만 있던 draft(hadPoster=false/undefined)는 그대로 첫 업로드로
     // 취급해 DEFAULT_VISIBILITY_ON_UPLOAD가 정상 적용되게 한다(claude-review PR #515 P1).
     restoredDraftHadPosterRef.current = saved.hadPoster === true;
+    // 아래 IDB 복원 effect가 되살려도 되는 축의 화이트리스트(#673). 이 effect는 선언 순서상 먼저
+    // 돌고 동기라, 비동기 IDB 복원이 읽을 땐 이미 확정돼 있다(restoredDraftHadPosterRef와 동일 패턴).
+    restoredImageKeysRef.current = Array.isArray(saved.imageKeys) ? saved.imageKeys : null;
     // 옛 단일 texture 저장분을 {material, coating, ...Intensity}로 매핑(#475 c4) — 이미 새
     // shape면 그대로 통과. 이후 touched 판정·merge 모두 이 결과를 쓴다.
     const migratedComponents = saved.components
@@ -339,37 +353,42 @@ export function usePhototicket() {
     loadImages()
       .then((images) => {
         if (cancelled) return;
+        // 마지막 저장이 기록한 축만 되살린다(#673) — 이미지를 제거한 뒤 IDB 쓰기가 큐에 걸린 채
+        // 탭이 닫혔거나 쿼터로 throw했으면 IDB엔 옛 Blob이 남아 있는데, 그걸 그대로 믿으면 지운
+        // 이미지가 새로고침에 되돌아온다. 목록이 없는 옛 저장분(null)은 전부 허용해 하위호환.
+        const allowedKeys = restoredImageKeysRef.current;
+        const allows = (key: ImageDbKey) => allowedKeys === null || allowedKeys.includes(key);
         const owned = ownedComponentBlobUrlsRef.current;
         const componentsPatch: Partial<TicketComponents> = {};
-        if (images.chain) {
+        if (images.chain && allows('chain')) {
           const url = URL.createObjectURL(images.chain);
           trackComponentBlobUrl(latestChainUrlRef, url, owned);
           componentsPatch.chain = url;
         }
-        if (images.format) {
+        if (images.format && allows('format')) {
           const url = URL.createObjectURL(images.format);
           trackComponentBlobUrl(latestFormatUrlRef, url, owned);
           componentsPatch.format = url;
         }
-        if (images.signature) {
+        if (images.signature && allows('signature')) {
           const url = URL.createObjectURL(images.signature);
           trackComponentBlobUrl(latestSignatureUrlRef, url, owned);
           componentsPatch.signatureImage = url;
         }
         // 배경 이미지(#672) — 로고 3종과 완전히 같은 모양이다. 여기서 재발급한 URL을 ref에도
         // 걸어야 언마운트 revoke가 새 URL을 대상으로 삼는다.
-        if (images.background) {
+        if (images.background && allows('background')) {
           const url = URL.createObjectURL(images.background);
           trackComponentBlobUrl(latestBgPatternUrlRef, url, owned);
           componentsPatch.backgroundPatternImage = url;
         }
-        const posterUrl = images.poster ? URL.createObjectURL(images.poster) : null;
+        const posterUrl = images.poster && allows('poster') ? URL.createObjectURL(images.poster) : null;
         if (posterUrl) latestUrlRef.current = posterUrl;
         // 크롭 원본 복원(#489) — 크롭 파이프라인(posterCrop)이 이 URL의 단일 소유자이고,
         // saveDraft도 거기서 읽어 다음 저장에 다시 실어보낸다(안 하면 복원 직후 첫 자동저장이
         // 원본을 빈 값으로 갈아치워 IndexedDB에서 지운다). seedOriginal은 이미 원본이 있으면
         // 무시하므로, 이 비동기 복원이 그 사이 사용자가 올린 포스터를 덮어쓰지 않는다.
-        if (images.posterOriginal) {
+        if (images.posterOriginal && allows('posterOriginal')) {
           seedOriginalRef.current(URL.createObjectURL(images.posterOriginal));
         }
         if (posterUrl || Object.keys(componentsPatch).length > 0) {
@@ -589,6 +608,16 @@ export function usePhototicket() {
   // 아래에서 별도로 showError한다.
   const saveDraft = useCallback((): boolean => {
     if (typeof window === 'undefined') return false;
+    // 이미지 6축의 (IndexedDB 키, 현재 URL) — 아래 imageKeys·지문·IDB 쓰기가 전부 이 하나를 읽어,
+    // 축이 늘 때 세 곳이 갈리지 않는다.
+    const imageSources: [ImageDbKey, string | null | undefined][] = [
+      ['poster', state.croppedImageUrl],
+      ['posterOriginal', posterCrop.originalSrc],
+      ['chain', state.components.chain],
+      ['format', state.components.format],
+      ['signature', state.components.signatureImage],
+      ['background', state.components.backgroundPatternImage],
+    ];
     let textSaved = true;
     try {
       const payload: PersistedState = {
@@ -610,6 +639,9 @@ export function usePhototicket() {
         },
         fieldVisibility: state.fieldVisibility,
         hadPoster: state.croppedImageUrl !== null,
+        // 아래 IndexedDB 쓰기가 못 끝나도(탭 닫힘·쿼터 throw) 이 목록은 이미 확정 저장돼, 다음
+        // 복원이 IDB의 옛 Blob을 되살리지 못하게 막는다(#673).
+        imageKeys: imageSources.filter(([, url]) => url?.startsWith('blob:')).map(([key]) => key),
       };
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     } catch {
@@ -628,26 +660,16 @@ export function usePhototicket() {
     // 재기록을 매번 반복하지 않는다(claude-review PR #515 P1). 실제로 쓸 게 있을 때만
     // imagePersistChainRef에 이어붙여 호출 순서를 지킨다 — 안 하면 autosave와 수동 저장이 겹쳐
     // 늦게 시작한 쪽이 먼저 끝나며 최신 상태를 옛 상태가 덮어쓸 수 있다(같은 리뷰 P1).
-    const fingerprint = [
-      state.croppedImageUrl,
-      posterCrop.originalSrc,
-      state.components.chain,
-      state.components.format,
-      state.components.signatureImage,
-      state.components.backgroundPatternImage,
-    ].join('|');
+    const fingerprint = imageSources.map(([, url]) => url).join('|');
     if (fingerprint !== lastPersistedImageFingerprintRef.current) {
       imagePersistChainRef.current = imagePersistChainRef.current.then(async () => {
         try {
-          const [poster, posterOriginal, chain, format, signature, background] = await Promise.all([
-            blobUrlToBlob(state.croppedImageUrl),
-            blobUrlToBlob(posterCrop.originalSrc),
-            blobUrlToBlob(state.components.chain),
-            blobUrlToBlob(state.components.format),
-            blobUrlToBlob(state.components.signatureImage),
-            blobUrlToBlob(state.components.backgroundPatternImage),
-          ]);
-          await saveImages({ poster, posterOriginal, chain, format, signature, background });
+          const blobs = await Promise.all(imageSources.map(([, url]) => blobUrlToBlob(url)));
+          const entries: Partial<Record<ImageDbKey, Blob | undefined>> = {};
+          imageSources.forEach(([key], i) => {
+            entries[key] = blobs[i];
+          });
+          await saveImages(entries);
           lastPersistedImageFingerprintRef.current = fingerprint;
         } catch {
           // IndexedDB 미지원·프라이빗 모드·용량 초과(#645 C1 자매) — fingerprint를 안 갱신해 다음
