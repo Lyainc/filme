@@ -15,6 +15,12 @@ interface BrightnessSliderProps {
   min?: number;
   /** 슬라이더 상한. 기본 1. */
   max?: number;
+  /**
+   * 라벨 줄에 붙는 보조 텍스트 액션(#682 다이어트) — 형압 패널의 "칠한 영역 지우기"처럼 이
+   * 슬라이더에 종속된 동작을 별도 전폭 버튼(줄+간격 52px)으로 안 두고 라벨 옆에 접어, 슬라이더
+   * 하나만큼의 세로 예산으로 둘을 같이 담는다. 옵션이라 기존 호출부는 전부 그대로다.
+   */
+  action?: { label: string; onClick: () => void };
 }
 
 // #507 — 드래그 중 매 onChange 틱마다 onChange(부모의 updateComponents)를 바로 부르면
@@ -79,6 +85,7 @@ export default function BrightnessSlider({
   id = 'posterOpacity',
   min = 0,
   max = 1,
+  action,
 }: BrightnessSliderProps) {
   const [localValue, setLocalValue] = useState(value);
   // % 입력 중의 날것 문자열. null이면 슬라이더 값을 그대로 보여준다 — 타이핑 중간 상태("", "1")를
@@ -108,9 +115,25 @@ export default function BrightnessSlider({
   return (
     <div className="space-y-field">
       <div className="flex items-baseline justify-between">
-        <Eyebrow as="label" htmlFor={id}>
-          {label}
-        </Eyebrow>
+        <span className="flex items-baseline gap-2">
+          <Eyebrow as="label" htmlFor={id}>
+            {label}
+          </Eyebrow>
+          {action && (
+            // 라벨 옆 인라인 텍스트 액션이라 WCAG 2.5.8(AA)의 "문장/텍스트 블록 안" 예외 대상이라
+            // 너비를 따로 강제할 필요는 없지만(폭은 텍스트 길이를 따라간다), 높이는 명시 클래스로
+            // 못박는다 — line-height만으로 맞추면 24px 하한과 마진이 1px 미만이라 나중에 폰트
+            // 토큰이 바뀌면 하한 밑으로 조용히 떨어질 수 있다(fresh-context 리뷰). h-7(28px)로
+            // 하한보다 4px 여유를 두고 `flex items-center`로 line-height와 무관하게 채운다.
+            <button
+              type="button"
+              onClick={action.onClick}
+              className="-my-1 flex h-7 items-center px-1 text-micro text-fg-muted underline decoration-dotted underline-offset-2 transition-colors hover:text-fg"
+            >
+              {action.label}
+            </button>
+          )}
+        </span>
         {/* % 직접 입력(#562) — 10% 스텝이 앗아간 세밀 조정의 대체 경로라 둘은 같이 간다.
             라벨 줄에 인라인으로 얹는 배치가 필수다: 레일 상세 슬롯(#563)이 400×675에서 118px
             고정인데 투명도 탭 콘텐츠가 정확히 118px이라 여유가 0이다 — 새 줄로 내리면 슬라이더당

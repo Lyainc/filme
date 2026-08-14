@@ -156,8 +156,10 @@ function ChipRadio<V extends string>({
             aria-checked={value === opt.value}
             disabled={opt.disabled}
             onClick={() => onChange(opt.value)}
-            data-touch="40"
-            className={`h-10 flex-1 truncate rounded-chip border px-3 text-caption font-medium transition-colors active:scale-[0.97] ${
+            // h-9(#682 다이어트 — 이전 h-10에서 4px 축소, AxisSegment 형제 버튼과 같은 높이로
+            // 맞춘다). AA 하한(24)의 1.5배라 여전히 여유 있다.
+            data-touch="36"
+            className={`h-9 flex-1 truncate rounded-chip border px-3 text-caption font-medium transition-colors active:scale-[0.97] ${
               value === opt.value
                 ? 'border-transparent bg-accent-soft text-accent'
                 : 'border-line bg-surface-elevated text-fg-muted'
@@ -327,6 +329,16 @@ const EMBOSS_TOOL_OPTIONS = [
  * 판단. 이미 편집 중인 도구 칩을 다시 탭하면 종료된다 — 칩 자체가 진입·종료 어포던스를 겸해
  * 별도 버튼 없이 상태 전체를 표현한다(ChipRadio는 포스터 fit·한줄평 폰트가 이미 쓰는 값 피커
  * 문법, ColorPicker와 동일).
+ *
+ * **컨트롤 4종이 동시에 다 뜨지 않는다(#682 다이어트)** — 실측(393×659)해보니 다 뜬 상태가
+ * 최대 308px로 슬롯(171px) 대비 137px 넘쳤다. 편집 중/편집 후가 서로 다른 관심사라는 게
+ * 근거다: 칠하는 동안은 브러시 크기(칠하는 도구 자체를 조절)만 필요하고, 칠한 걸 검토·조정하는
+ * 건 편집을 끝낸 뒤(형압 강도·지우기)다 — 그래서 브러시 크기는 `embossEditMode` 동안만,
+ * 강도·지우기는 `!embossEditMode` 동안만 뜬다. "지우기"도 전폭 버튼(52px)이 아니라 형압 강도
+ * 슬라이더 라벨 줄에 접힌다(BrightnessSlider의 action prop). 최악(편집 중, 마스크 有)이 177px로
+ * 줄어든다 — 슬롯보다 6px 남는데, 이건 칠하는 손이 캔버스(EmbossBrushLayer, zIndex 45)에 있어
+ * 이 패널을 보고 있지 않을 확률이 높은 유일한 잔여 상태라 CSS 스크롤 어포던스(DesignRail.tsx)로
+ * 감수한다 — "편집 중이 아닌" 모든 상태는 슬롯 안에 다 들어간다(실측 171px, 넘침 0).
  */
 function EmbossPanel({ photo }: { photo: Photo }) {
   const {
@@ -361,14 +373,19 @@ function EmbossPanel({ photo }: { photo: Photo }) {
           }
         }}
       />
-      <p className="text-caption text-fg-muted">
-        {embossEditMode
-          ? embossTool === 'lasso'
-            ? '포스터 오브젝트 윤곽을 따라 드래그하면 자동으로 가장자리에 붙어요. 손을 떼면 선택이 닫혀요. 도구를 다시 탭하면 끝나요.'
-            : '티켓 포스터 위를 드래그해서 볼록하게 만들 영역을 칠하세요. 도구를 다시 탭하면 끝나요.'
-          : '도구를 탭하면 바로 편집을 시작해요.'}
-      </p>
-      {embossTool === 'brush' && (
+      {/* hasMask && !embossEditMode(=강도·지우기가 뜨는 상태)일 땐 안내문을 아예 안 그린다 —
+          <p>를 비운 채 두면 빈 줄도 space-y-group 간격을 그대로 먹어(#682 다이어트가 지운
+          28px 중 하나) 안내가 필요 없어진 상태에서까지 자리를 차지한다. */}
+      {(embossEditMode || !hasMask) && (
+        <p className="text-caption text-fg-muted">
+          {embossEditMode
+            ? embossTool === 'lasso'
+              ? '윤곽을 따라 드래그하면 자동으로 붙어요. 다시 탭하면 끝나요.'
+              : '드래그해서 칠하세요. 도구를 다시 탭하면 끝나요.'
+            : '도구를 탭하면 바로 편집을 시작해요.'}
+        </p>
+      )}
+      {embossEditMode && embossTool === 'brush' && (
         <BrightnessSlider
           label="브러시 크기"
           id={`${prefix}-emboss-brush`}
@@ -378,23 +395,16 @@ function EmbossPanel({ photo }: { photo: Photo }) {
           max={0.2}
         />
       )}
-      {hasMask && (
-        <>
-          <BrightnessSlider
-            label="형압 강도"
-            id={`${prefix}-emboss-intensity`}
-            value={embossIntensity}
-            onChange={setEmbossIntensity}
-          />
-          <button
-            type="button"
-            onClick={clearEmbossMask}
-            data-touch="36"
-            className="h-9 w-full rounded-chip border border-line bg-surface-elevated px-3 text-caption font-medium text-fg-muted transition-colors hover:text-fg active:scale-[0.97]"
-          >
-            칠한 영역 지우기
-          </button>
-        </>
+      {hasMask && !embossEditMode && (
+        // "지우기"를 별도 전폭 버튼(#682 이전엔 52px) 대신 슬라이더 라벨 줄에 접는다 —
+        // BrightnessSlider의 action prop(같은 목적으로 새로 연 옵션).
+        <BrightnessSlider
+          label="형압 강도"
+          id={`${prefix}-emboss-intensity`}
+          value={embossIntensity}
+          onChange={setEmbossIntensity}
+          action={{ label: '지우기', onClick: clearEmbossMask }}
+        />
       )}
     </div>
   );
