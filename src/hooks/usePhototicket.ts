@@ -82,6 +82,28 @@ type PersistedState = Pick<PhototicketState, 'movieInfo' | 'components' | 'field
 // 관리가 히스토리와 얽혀 제외(이슈 결정), recommendedColors는 포스터 파생값이라 제외.
 export type HistorySnapshot = Pick<PhototicketState, 'movieInfo' | 'components' | 'fieldVisibility'>;
 
+// #673 — 히스토리 스택(useEditHistory의 HistoryStack.stack, JSON 직렬화된 HistorySnapshot 배열)이
+// 지금 붙들고 있는 chain/format/signatureImage blob URL의 합집합. updateComponents가 제거(빈 값으로
+// 되돌리기) 시점에 이 집합에 없는 URL만 revoke한다 — 있으면 undo가 아직 그 URL을 가리키는 것이므로
+// 풀면 undo가 죽은 blob을 복원한다.
+export function getReferencedBlobUrls(snapshotJsons: string[]): Set<string> {
+  const urls = new Set<string>();
+  for (const json of snapshotJsons) {
+    try {
+      const snap = JSON.parse(json) as HistorySnapshot;
+      const { chain, format, signatureImage } = snap.components ?? {};
+      if (chain?.startsWith('blob:')) urls.add(chain);
+      if (format?.startsWith('blob:')) urls.add(format);
+      if (signatureImage?.startsWith('blob:')) urls.add(signatureImage);
+    } catch {
+      // 문법 오류든 구조 불일치(components 없음 등)든 이 스냅샷은 그냥 건너뛴다 — 히스토리
+      // JSON은 useEditHistory 자신이 만들므로 실질적으로는 발생하지 않는다.
+      continue;
+    }
+  }
+  return urls;
+}
+
 function loadPersisted(): Partial<PersistedState> | null {
   if (typeof window === 'undefined') return null;
   try {
@@ -200,6 +222,25 @@ export function usePhototicket() {
   const latestChainUrlRef = useRef<string | null>(null);
   const latestFormatUrlRef = useRef<string | null>(null);
   const latestSignatureUrlRef = useRef<string | null>(null);
+  // useEditHistory가 매 렌더 최신 HistoryStack.stack을 여기 채운다(seedOriginalRef와 동일한 외부
+  // 주입 ref 패턴, #548) — updateComponents가 제거 시점 revoke 판정에 읽는다(#673).
+  const historySnapshotsRef = useRef<string[]>([]);
+  // 제거 시점엔 히스토리가 참조해 revoke를 보류한 URL — 스택이 실제로 바뀔 때마다(캡 초과 축출·
+  // redo 가지 절단·초기화 후 새 베이스라인) 다시 걸러 그사이 참조를 잃은 것만 회수한다. 안 하면
+  // 딱 그 순간의 참조 여부만 보고 영영 다시 안 보므로, 참조가 나중에 끊겨도 탭 수명 내내 안 풀린다.
+  const pendingRevokeUrlsRef = useRef<Set<string>>(new Set());
+  const setHistorySnapshots = useCallback((snapshots: string[]) => {
+    if (snapshots === historySnapshotsRef.current) return; // 스택 배열 참조 불변 = pushSnapshot no-op/undo·redo(캡·절단 없음)
+    historySnapshotsRef.current = snapshots;
+    if (pendingRevokeUrlsRef.current.size === 0) return;
+    const referenced = getReferencedBlobUrls(snapshots);
+    pendingRevokeUrlsRef.current.forEach((url) => {
+      if (!referenced.has(url)) {
+        URL.revokeObjectURL(url);
+        pendingRevokeUrlsRef.current.delete(url);
+      }
+    });
+  }, []);
   // 사용자가 밝기 슬라이더를 직접 만졌는지 추적(#146). 한번 만지면 이후 material/coating 전환에서
   // 기본 밝기를 덮어쓰지 않고 사용자 값을 존중한다.
   const brightnessTouchedRef = useRef(false);
@@ -480,6 +521,24 @@ export function usePhototicket() {
     }
     setState((prev) => {
       const nextComponents = { ...prev.components, ...components };
+
+      // 제거(빈 값으로 되돌리기)만 대상 — 교체(새 업로드)는 useLogoCrop 주석과 동일 이유로 직전
+      // URL을 그대로 둔다. 히스토리가 더는 참조하지 않는 URL만 여기서 회수하고, 아직 참조 중이면
+      // pendingRevokeUrlsRef에 넣어 나중에 그 참조가 끊길 때(setHistorySnapshots) 회수되게 한다(#673).
+      const clearedChain = components.chain === '' && prev.components.chain.startsWith('blob:');
+      const clearedFormat = components.format === '' && prev.components.format.startsWith('blob:');
+      const clearedSignature = components.signatureImage === '' && !!prev.components.signatureImage?.startsWith('blob:');
+      if (clearedChain || clearedFormat || clearedSignature) {
+        const referenced = getReferencedBlobUrls(historySnapshotsRef.current);
+        const releaseOrDefer = (url: string) => {
+          if (referenced.has(url)) pendingRevokeUrlsRef.current.add(url);
+          else URL.revokeObjectURL(url);
+        };
+        if (clearedChain) releaseOrDefer(prev.components.chain);
+        if (clearedFormat) releaseOrDefer(prev.components.format);
+        if (clearedSignature) releaseOrDefer(prev.components.signatureImage!);
+      }
+
       latestChainUrlRef.current = nextComponents.chain.startsWith('blob:') ? nextComponents.chain : null;
       latestFormatUrlRef.current = nextComponents.format.startsWith('blob:') ? nextComponents.format : null;
       latestSignatureUrlRef.current = nextComponents.signatureImage?.startsWith('blob:') ? nextComponents.signatureImage : null;
@@ -797,6 +856,7 @@ export function usePhototicket() {
     setEmbossTool,
     updateFieldVisibility,
     restoreSnapshot,
+    setHistorySnapshots,
     saveDraft,
     clearDraft,
     autoSaveEnabled,

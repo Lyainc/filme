@@ -186,7 +186,7 @@ describe('StampSheet 극장/포맷 (#215 PART B)', () => {
     expect(screen.getByTestId('formatLabel').textContent).toBe('Dolby');
   });
 
-  test('이미지 있음: "이미지 제거" 클릭 → 이미지 URL 클리어(텍스트 복귀), revoke는 안 한다(#356)', async () => {
+  test('이미지 있음: "이미지 제거" 클릭 → 이미지 URL 클리어(텍스트 복귀), 히스토리가 참조 안 하면 revoke한다(#673)', async () => {
     const revoked: string[] = [];
     const origRevoke = URL.revokeObjectURL;
     URL.revokeObjectURL = ((u: string) => revoked.push(u)) as typeof URL.revokeObjectURL;
@@ -196,9 +196,10 @@ describe('StampSheet 극장/포맷 (#215 PART B)', () => {
       const removeBtn = await screen.findByText('이미지 제거');
       expect(screen.getByTestId('chain-img').textContent).toBe('blob:seeded-logo');
       fireEvent.click(removeBtn);
-      // 이미지 URL만 비워 텍스트 대표로 복귀. blob은 revoke하지 않는다 —
-      // undo 히스토리(#356)가 이전 URL을 참조하므로 여기서 풀면 undo가 죽은 이미지를 복원한다.
-      expect(revoked).toEqual([]);
+      // 이 하네스는 useEditHistory를 안 쓰므로 히스토리 참조 집합이 항상 비어 있다 — 제거된 URL이
+      // 어디에도 참조되지 않으므로 즉시 revoke된다(#673, undo-aware 판정 회귀는
+      // blobRevokeUndoAware.test.tsx가 커버).
+      expect(revoked).toEqual(['blob:seeded-logo']);
       expect(screen.getByTestId('chain-img').textContent).toBe('');
     } finally {
       URL.revokeObjectURL = origRevoke;
