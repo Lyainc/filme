@@ -26,8 +26,15 @@ import { getFrameRect } from './PhoneFrame';
  * - 이동식은 32px 그립 드래그 + 햄버거 메뉴의 좌/우 가장자리 스냅(드래그 없는 단일 포인터
  *   대체 경로, WCAG 2.2 SC 2.5.7).
  * - 숨김 → 툴바 top-left 원점에 앵커된 원형 버튼으로 접힘(중심 앵커는 탭 위치로 튄다 — 이슈).
- * - 위치·방향·숨김은 filme:toolbar:v1로 자동 영속(문서 키 filme:phototicket:v1과 분리, #310과
+ *   이 원형 버튼만 44px(h-touch, SC 2.5.5 AAA) — 위 32px 위계는 "상시 떠 있는 보조 툴바"를
+ *   전제하는데, 접힌 상태의 이 버튼은 그 반대(펼친 툴바를 치워 세로 예산을 되찾은 결과)라
+ *   InPlaceFieldEditor 필드바·헤더 햄버거·드로어 핸들과 같은 "복귀 진입점" 부류다(#681). 32px
+ *   위계 자체(펼친 상태 5버튼)는 그대로다 — __tests__/inPlaceFieldEditor.test.tsx의
+ *   '탭 타깃 위계' 회귀가 이 원형 버튼을 포함하지 않는 이유이기도 하다.
+ * - 위치·방향은 filme:toolbar:v1로 자동 영속(문서 키 filme:phototicket:v1과 분리, #310과
  *   무충돌 — 이건 UI 취향이라 phototicket:theme 선례를 따른다). 영속 저장은 부모가 담당(#387).
+ *   숨김(hidden)은 #681부터 세션 한정 — 영속 대상에서 뺐다(부모 MobileEditorShell 참고): 방문마다
+ *   숨김으로 시작하는 게 되돌리는 수단이 좁은 것보다 더 큰 문제였다.
  * - 겹침 규칙(이슈 "설계가 필요한 것"): 티켓과는 반투명 글래스로 위에 뜨는 걸 수용(옵션 b,
  *   기어/드래그/숨김으로 회피 가능). z-45 — 인플레이스 편집 백드롭(z-40) 위(편집 중에도 동작),
  *   FieldDrawer(z-50) 아래(드로어는 모달이라 위가 맞다). max 모드에선 셸이 툴바를 렌더하지
@@ -57,7 +64,10 @@ export function loadPrefs(): TbPrefs {
     const raw = window.localStorage.getItem(TB_STORAGE_KEY);
     if (!raw) return DEFAULT_PREFS;
     const p = JSON.parse(raw);
-    return p && typeof p === 'object' ? { ...DEFAULT_PREFS, ...p } : DEFAULT_PREFS;
+    // hidden은 세션 한정(#681)이라 저장분에 남아 있어도 무시한다 — 안 하면 이 변경 이전에
+    // 숨긴 적 있는 사용자는 옛 payload의 hidden:true가 DEFAULT_PREFS를 덮어써, 새 persist
+    // effect가 다음 저장에서 지우기 전까지 딱 한 번 더 숨김으로 시작해버린다(fresh-context 리뷰 발견).
+    return p && typeof p === 'object' ? { ...DEFAULT_PREFS, ...p, hidden: false } : DEFAULT_PREFS;
   } catch {
     return DEFAULT_PREFS;
   }
@@ -296,7 +306,7 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
         // transition-transform을 얹으면 드래그 중 매 프레임이 새 위치로 150ms씩 ease되어
         // 손가락보다 눈에 띄게 뒤처진다(#662 code-review 발견). 눌림 scale은 애니메이션
         // 없이 순간 전환된다.
-        className={`fixed z-[45] flex ${TB_TARGET} items-center justify-center rounded-full border border-line text-fg-muted transition-colors hover:text-fg active:scale-[0.97]`}
+        className="fixed z-[45] flex h-touch w-touch items-center justify-center rounded-full border border-line text-fg-muted transition-colors hover:text-fg active:scale-[0.97]"
         style={{ touchAction: 'none', ...posStyle, transform: gripTransform, ...glass }}
       >
         <svg {...ICON}>
