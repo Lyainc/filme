@@ -581,11 +581,12 @@ export const RAIL_ITEMS: readonly RailItem[] = [
     id: 'emboss',
     label: '형압',
     eyebrow: 'Emboss',
-    // 형압: 볼록 원 힌트 — 큰 원(융기 영역) 안에 작은 채움 원(빛 반사 포인트).
+    // 형압: 볼록 단면 — 기준선에서 솟아오르는 돔 곡선(측면에서 본 융기 프로필). 컬러·투명도와
+    // 원 계열을 공유하지 않도록 #676에서 교체.
     icon: (
       <svg {...RAIL_ICON}>
-        <circle cx="12" cy="12" r="7" />
-        <circle cx="9.5" cy="9.5" r="1.6" fill="currentColor" stroke="none" />
+        <path d="M4 18h16" />
+        <path d="M4 18c0-7 4-12 8-12s8 5 8 12" />
       </svg>
     ),
     render: (photo) => <EmbossPanel photo={photo} />,
