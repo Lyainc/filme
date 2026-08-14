@@ -37,6 +37,14 @@ export function useEditHistory(photo: ReturnType<typeof usePhototicket>) {
   // 임시저장 복원(마운트 직후 setState)이 히스토리 1스텝으로 잡혀, 새로고침하자마자 undo가
   // 활성되고 누르면 빈 폼이 된다 — 복원은 문서 열기지 편집이 아니다.
   const [hist, setHist] = useState<HistoryStack>({ stack: [], at: -1 });
+  // usePhototicket이 제거 시점 revoke 판정에 쓰도록 최신 스택을 커밋 후에 채운다(#673). 렌더
+  // 바디에서 직접 부르면 안 된다 — setHistorySnapshots가 조건부로 URL.revokeObjectURL을 부르는데
+  // (usePhototicket.ts), 렌더 바디는 커밋 안 되고 버려질 수 있어(StrictMode 이중 렌더, 이 레포는
+  // next.config.js reactStrictMode:true) 그 경우 되돌릴 수 없는 revoke가 커밋되지도 않은 전환에
+  // 대해 확정돼버린다. seedOriginalRef 대입 같은 순수 ref 쓰기와 달리 이건 effect에서 해야 한다.
+  useEffect(() => {
+    photo.setHistorySnapshots(hist.stack);
+  }, [hist.stack, photo.setHistorySnapshots]);
   // clear() 예약 — 초기화(clearDraft)처럼 "다음 상태를 새 베이스라인으로" 삼아야 하는 경우.
   // 즉시 리셋하면 clearDraft의 setState가 아직 반영 전이라 이전 상태가 베이스라인이 된다.
   const resetPendingRef = useRef(false);

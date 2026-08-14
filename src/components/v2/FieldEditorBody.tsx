@@ -496,7 +496,8 @@ function StampEditor({
   };
 
   const removeImage = () => {
-    // blob revoke는 하지 않는다 — undo 히스토리(#356)가 이 URL을 참조한다(useLogoCrop 참고).
+    // revoke는 여기서 안 한다 — usePhototicket.updateComponents가 히스토리(#356) 참조 여부를 보고
+    // 판정한다(#673).
     image.onChange('');
   };
 
