@@ -5,7 +5,7 @@ import { ALL_FIELDS_ON } from '@/constants/fieldVisibility';
 import { useMatchMedia } from '@/hooks/useMatchMedia';
 import { LAYOUTS } from '@/utils/layouts';
 import TicketRenderer from '../TicketRenderer';
-import { MOOD_CHIP_BG } from '../LayoutPicker';
+import { MOOD_BACKDROP_BG } from '../LayoutPicker';
 import { AppFooter } from './AppFooter';
 import { Wordmark } from './Wordmark';
 
@@ -64,16 +64,18 @@ const GALLERY_ROTATED: ReadonlySet<LayoutId> = new Set<LayoutId>(['editorial']);
 
 /**
  * 배경 타일 그리드(#615) — 자산이 아니라 라이브 렌더다. 무드를 "안 읽히는 색면"으로 추상화해
- * 둔 `MOOD_CHIP_BG`(무드 칩과 동일 토큰, #367)를 반복 타일링해 D5(원본 포스터 식별 불가)를
- * 자산 없이 만족한다.
+ * 둔 `MOOD_BACKDROP_BG`(무드 칩과 같은 뿌리, #367)를 반복 타일링해 D5(원본 포스터 식별 불가)를
+ * 자산 없이 만족한다. #676부터는 칩 쪽 `MOOD_CHIP_BG`가 퍼포레이션·노치 같은 식별 표식을 얹어
+ * "안 읽히는 색면"과 반대 방향으로 움직이므로, 이 배경은 그 이전 값을 얼려 둔 `MOOD_BACKDROP_BG`를
+ * 따로 쓴다 — 칩을 더 손봐도 이 배경 타일은 안 바뀐다.
  *
  * **정적 webp로 굽지 않는다** — 한때 같은 그리드를 `public/assets/landing/backdrop-tiles.webp`로
  * 구워 번들했지만 뺐다. 이유는 원리적 제약이 아니라 값어치다: 소비처가 0인 채로 번들에만 남아
- * 있었고(`Landing.tsx`는 계속 이 라이브 div를 그렸다), 수동 번들이라 `LAYOUTS`/`MOOD_CHIP_BG`가
+ * 있었고(`Landing.tsx`는 계속 이 라이브 div를 그렸다), 수동 번들이라 `LAYOUTS`/`MOOD_BACKDROP_BG`가
  * 바뀌면 조용히 stale해지는데, 정작 대체 대상인 24 div는 전부 CSS 그라디언트라 아낄 비용이
  * 없었다.
  *
- * 되살릴 거면 알아야 할 것: `MOOD_CHIP_BG`는 하드코딩 색이라 테마와 무관하고, 이 레이어의 유일한
+ * 되살릴 거면 알아야 할 것: `MOOD_BACKDROP_BG`는 하드코딩 색이라 테마와 무관하고, 이 레이어의 유일한
  * 테마 의존은 `opacity-20`이 그 아래 `bg-bg`와 합성되는 것뿐이다. 삭제된 굽기 스크립트는 그 합성을
  * 이미 마친 불투명 스크린샷을 떠서 한 테마에 굳었던 거라, `omitBackground`로 알파를 살려 구우면
  * 브라우저가 같은 20% 합성을 테마별로 해준다 — 즉 **한 장으로도 된다**. 24 div의 렌더 비용이
@@ -108,7 +110,7 @@ function LandingBackdropTiles() {
           <div
             key={i}
             className="aspect-[2/3] rounded-sm"
-            style={{ background: MOOD_CHIP_BG[layout.id] }}
+            style={{ background: MOOD_BACKDROP_BG[layout.id] }}
           />
         ))}
       </div>
