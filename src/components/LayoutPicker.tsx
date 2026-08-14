@@ -10,18 +10,48 @@ interface LayoutPickerProps {
   onChange: (id: LayoutId) => void;
 }
 
-// 무드 칩 배경(#367) — 티켓 미니어처 대신 무드의 핵심 색면 2~3개만 남긴 추상 칩.
-// 46px에선 텍스트 라인·퍼포레이션 재현이 노이즈라 과함(이슈 결정).
+// 필름 퍼포레이션 점열 한 줄(#676) — 위치와 반복축만 갈라 35mm(세로 줄)·35mm Wide(가로 줄)가
+// 공유한다. 점 색은 CRITERION_PAPER(거의 흰색)로 고정 — 어두운 필름 레일 위에 뚫린 구멍으로
+// 빛이 새어 나오는 것처럼 보이게 하는 게 목적이라 무드 색과 무관하게 항상 같다.
+function perfDots(position: string, repeat: 'repeat-x' | 'repeat-y') {
+  return `repeating-radial-gradient(circle at 3px 3px, ${CRITERION_PAPER} 0 1.2px, transparent 1.2px 100%) ${position} / 7px 7px ${repeat}`;
+}
+
+// 무드 칩 배경(#367 → #676) — 티켓 미니어처 대신 무드의 핵심 색면 2~3개만 남긴 추상 칩에,
+// 색만으로 안 갈리던 쌍(35mm↔35mm Wide, editorial↔stub)에 한해 구조 표식을 얹는다(#676).
 // 무드가 색 토큰을 내보내면 그걸 쓰고(파일 상단 import 주석), 없으면 리터럴로 근사한다.
-// export: Landing.tsx의 배경 타일 그리드(#615)가 같은 추상 색면을 재사용한다 — 이미 "무드를
-// 안 읽히는 색면으로 추상화"해 둔 값이라 D5(원본 포스터 식별 불가)를 자산 없이 만족한다.
-// 자산 대기 중인 placeholder가 아니라 이게 완성형이다(Landing.tsx의 LandingBackdropTiles 주석).
+//
+// export: 예전엔 Landing.tsx의 배경 타일 그리드(#615)도 이 값을 그대로 재사용했지만, 그쪽은
+// "안 읽히는 색면"이 요건(D5 원본 포스터 식별 불가)이라 이번 구조 표식(퍼포레이션·노치)과
+// 의도가 정반대다 — 소비처를 MOOD_BACKDROP_BG로 갈랐다(아래). 칩을 계속 손볼수록 배경이 조용히
+// 따라 바뀌는 걸 막는 게 분리의 목적이라, 값이 우연히 같아 보여도 두 상수는 합치지 않는다.
 export const MOOD_CHIP_BG: Record<LayoutId, string> = {
   minimal: 'linear-gradient(180deg, #b9b3a8 0%, #b9b3a8 62%, #17150f 62%)',
   // v5 Revue 재설계(#524): 어두운 좌우 분할이 아니라 **흰 종이 + 옐로 룰 + 가운데 도판**이 실루엣이다.
   criterion: `linear-gradient(#23201c, #23201c) 50% 42% / 52% 49% no-repeat, linear-gradient(180deg, ${CRITERION_PAPER} 0 13%, ${CRITERION_YELLOW} 13% 17%, ${CRITERION_PAPER} 17%)`,
-  // v5 재설계(#524): 35mm은 가로 밴드가 아니라 **세로 레일**(좌우 어두운 띠 + 가운데 포스터 컷),
-  // 35mm Wide는 좌우 분할이 아니라 **가로 밴드 + 넓은 컷 / 좁은 크레딧 컷**이 실루엣이다.
+  // v5 재설계(#524) + #676 퍼포레이션: 35mm은 **세로 레일**(좌우 어두운 띠 + 가운데 포스터 컷)에
+  // 좌우 가장자리를 따라 세로로 도는 퍼포레이션 점열을 얹는다 — 35mm Wide와 색 구성이 가장
+  // 비슷했던 쌍이라, 점열의 방향(세로 vs 가로)이 둘을 가르는 1차 단서가 되게 한다.
+  '35mm': `${perfDots('left 4px top 3px', 'repeat-y')}, ${perfDots('right 4px top 3px', 'repeat-y')}, linear-gradient(90deg, ${FILM_BASE} 0 21%, #8a8175 21% 79%, ${FILM_BASE} 79%)`,
+  // 색 구성은 그대로(좌우 두 갈래 + 얇은 레드 룰) — stub이 노치를 얻어 갈라진 뒤로는 editorial과
+  // 더는 안 겹친다(아래 stub 주석).
+  editorial: 'linear-gradient(90deg, #6e675e 0 40%, #A8312A 40% 44%, #f4ede0 44%)',
+  // #676: editorial과 "두 갈래 + 얇은 색 룰"이라는 같은 문법을 공유해 색만으로 갈리던 쌍이라,
+  // 티켓 스텁 특유의 절취선 펀치를 상단 가장자리에 실제로 파낸 노치로 얹는다. var(--bg)로 채워
+  // 뒤 배경과 합성되므로 테마가 바뀌어도 "구멍"처럼 보인다.
+  stub: `radial-gradient(circle 3px at 50% 0%, var(--bg) 99%, transparent 100%), linear-gradient(180deg, #8a8175 0 41.7%, #c9baf7 41.7% 46%, #f2ede2 46%)`,
+  // 35mm과 같은 퍼포레이션 문법이지만 가로 필름이라 위아래 가장자리를 따라 가로로 돈다 —
+  // 점열 방향이 35mm(세로)와 정반대라 그 자체로 "같은 필름 계열, 다른 판형"을 지시한다.
+  '35mm-landscape':
+    `${perfDots('top 3px left 4px', 'repeat-x')}, ${perfDots('bottom 3px left 4px', 'repeat-x')}, linear-gradient(180deg, ${FILM_BASE} 0 18%, rgba(0,0,0,0) 18% 82%, ${FILM_BASE} 82%), linear-gradient(90deg, ${FILM_BASE} 0 5%, #8a8175 5% 66%, #14120f 66% 95%, ${FILM_BASE} 95%)`,
+};
+
+// 배경 타일 그리드(#615) 전용 — MOOD_CHIP_BG가 #676 이전에 쓰던 값을 그대로 얼려 둔 사본이다.
+// Landing.tsx는 이 값을 opacity-[0.09]로 타일링해 "안 읽히는 색면"을 만드는데, 그 요건은 칩의
+// "식별 가능해야 한다"와 정반대라 칩을 더 손봐도 이쪽은 절대 따라 바뀌면 안 된다.
+export const MOOD_BACKDROP_BG: Record<LayoutId, string> = {
+  minimal: 'linear-gradient(180deg, #b9b3a8 0%, #b9b3a8 62%, #17150f 62%)',
+  criterion: `linear-gradient(#23201c, #23201c) 50% 42% / 52% 49% no-repeat, linear-gradient(180deg, ${CRITERION_PAPER} 0 13%, ${CRITERION_YELLOW} 13% 17%, ${CRITERION_PAPER} 17%)`,
   '35mm': `linear-gradient(90deg, ${FILM_BASE} 0 21%, #8a8175 21% 79%, ${FILM_BASE} 79%)`,
   editorial: 'linear-gradient(90deg, #6e675e 0 40%, #A8312A 40% 44%, #f4ede0 44%)',
   stub: 'linear-gradient(180deg, #8a8175 0 41.7%, #c9baf7 41.7% 46%, #f2ede2 46%)',
