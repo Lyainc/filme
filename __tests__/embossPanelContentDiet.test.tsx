@@ -83,6 +83,19 @@ describe('형압 패널 콘텐츠 조건부 렌더 (#682)', () => {
     expect(screen.queryByText('도구를 탭하면 바로 편집을 시작해요.')).toBeNull();
   });
 
+  // 올가미 안내문 정보 손실 회귀 (claude-review PR #692 P1) — #682 다이어트로 줄이면서 "손을 떼면
+  // 선택이 닫혀요"가 통째로 빠졌었다. EmbossBrushLayer.tsx의 onPointerUp이 실제로 그 순간
+  // 다각형을 커밋하고 미리보기 선을 지우는데(닫혔다는 시각 피드백이 따로 없다), 안내문이 유일한
+  // 전달 수단이라 다시 잠근다.
+  test('올가미 편집 중 안내문에 "손을 떼면 닫혀요"가 남아 있다(#692 P1)', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await openEmbossPanel(user);
+    await user.click(screen.getByRole('radio', { name: '올가미' }));
+
+    expect(screen.getByText('윤곽을 따라 드래그하면 자동으로 붙고, 손을 떼면 닫혀요. 다시 탭하면 끝나요.')).not.toBeNull();
+  });
+
   test('"지우기"를 누르면 마스크가 실제로 비워지고 강도·지우기가 사라진다', async () => {
     const user = userEvent.setup();
     render(<Harness />);
