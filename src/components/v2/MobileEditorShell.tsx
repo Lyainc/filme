@@ -254,13 +254,27 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   useEffect(() => {
     const t = setTimeout(() => {
       try {
-        window.localStorage.setItem(TB_STORAGE_KEY, JSON.stringify(tbPrefs));
+        // hidden은 세션 한정(#681) — 영속 대상에서 뺀다. 매 방문 숨김으로 시작하는 게
+        // 되돌리는 수단이 좁은 것보다 더 큰 문제였다. loadPrefs가 DEFAULT_PREFS와 병합해
+        // 항상 false로 시작한다.
+        const { hidden: _hidden, ...persisted } = tbPrefs;
+        window.localStorage.setItem(TB_STORAGE_KEY, JSON.stringify(persisted));
       } catch {
         // 영속 실패(쿼터·프라이빗 모드)는 무시 — best-effort.
       }
     }, 300);
     return () => clearTimeout(t);
   }, [tbPrefs]);
+  // 최초 숨김 안내 토스트(#681) — 복귀 수단(44px 원형 버튼)을 세션당 한 번은 알려준다. hidden을
+  // 세게 프로그램적으로 true로 만드는 경로가 FloatingToolbar의 '툴바 숨기기' 버튼 하나뿐이라
+  // (grep 확인), state 전환을 그대로 신호로 써도 다른 경로와 안 겹친다.
+  const hideToastShownRef = useRef(false);
+  useEffect(() => {
+    if (tbPrefs.hidden && !hideToastShownRef.current) {
+      hideToastShownRef.current = true;
+      flashToast('그 자리를 다시 누르면 툴바가 돌아와요');
+    }
+  }, [tbPrefs.hidden]);
   const applyToolbarMode = (o: TbOrient, p: TbPlace) => {
     // 모드 전환은 프리셋 기본 위치로 리셋(x/y null) — 방향이 바뀌면 이전 좌표는 클램프 밖일 수 있다.
     setTbPrefs((prev) => ({ ...prev, orient: o, place: p, x: null, y: null }));
