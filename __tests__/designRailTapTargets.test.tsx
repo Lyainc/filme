@@ -78,11 +78,13 @@ describe('DESIGN dock 탭 타깃 (#500, WCAG 2.2 SC 2.5.8 AA)', () => {
  *
  * 재크롭 버튼·채우기 라디오는 이전에 `py-2.5`로만 높이가 결정돼(=실렌더 40px) 파서가 못 읽었고
  * `data-touch`는 44라고 적혀 있었다. 선언을 실렌더에 맞춰 `h-10`(40px)으로 내려 둘을 일치시켰다 —
- * 반대로 44로 올리면 세로 예산을 회수하는 이 변경이 스스로 8px을 도로 먹는다. 40은 AA 하한(24)의
- * 1.67배라 여유가 있다.
+ * 반대로 44로 올리면 세로 예산을 회수하는 이 변경이 스스로 8px을 도로 먹는다.
+ *
+ * #682 다이어트가 40→36(h-9)으로 한 번 더 내렸다 — 위 크기 축 세그먼트(h-9)와 높이를 맞추면서
+ * 4px씩 아낀다. 36은 AA 하한(24)의 1.5배라 여전히 여유 있다.
  *
  * 실제 렌더 px는 브라우저 실측 몫이다(#554: 400×675에서 크기 dock 361.5→303.5px,
- * 같은 자리 프리뷰 티켓 146×234→196×314px).
+ * 같은 자리 프리뷰 티켓 146×234→196×314px. #682: 393×659에서 크기 패널 199→?px, 아래 실측 참고).
  */
 describe('크기 dock 탭 타깃 (#554, WCAG 2.2 SC 2.5.8 AA)', () => {
   test('크기 축 세그먼트(포스터·로고)가 24px 하한을 넘고, 한 번에 한 축만 그린다', async () => {
@@ -113,7 +115,7 @@ describe('크기 dock 탭 타깃 (#554, WCAG 2.2 SC 2.5.8 AA)', () => {
     await user.click(screen.getByRole('button', { name: '크기' }));
 
     const recrop = screen.getByRole('button', { name: '포스터 다시 크롭' });
-    expect(expectMeetsAA(recrop, '재크롭 버튼').h).toBe(40);
+    expect(expectMeetsAA(recrop, '재크롭 버튼').h).toBe(36);
 
     // 기본 무드 minimal이 POSTER_FILL_MOODS 안이라 채우기 토글도 같이 선다.
     const fit = Array.from(
@@ -122,7 +124,7 @@ describe('크기 dock 탭 타깃 (#554, WCAG 2.2 SC 2.5.8 AA)', () => {
     expect(fit.map((t) => t.textContent)).toEqual(['원본 비율', '꽉 채우기']);
     for (const t of fit) {
       for (const el of [t, ...Array.from(t.querySelectorAll('*'))]) assertNoShrink(el, '채우기 라디오 서브트리');
-      expect(expectMeetsAA(t, `채우기 라디오 ${t.textContent}`).h).toBe(40);
+      expect(expectMeetsAA(t, `채우기 라디오 ${t.textContent}`).h).toBe(36);
     }
   });
 

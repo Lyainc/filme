@@ -452,15 +452,18 @@ function SizePanel({ photo, actions }: { photo: Photo; actions: RailActions }) {
   // 비율이라 토글해도 그림이 같다. 숨겨도 저장값은 남아 무드 복귀 시 그대로 살아난다(체인/포맷
   // 스케일 클램프와 같은 원칙).
   const showFit = POSTER_FILL_MOODS.has(components.layout);
+  // space-y-field(#682 다이어트) — 재크롭 버튼과 포스터 채우기 칩은 같은 "포스터" 축 안의
+  // 형제 컨트롤이라 space-y-group(16px)보다 좁은 field 간격(10px)이 맞다. h-10→h-9도 같이
+  // 줄인다 — 위 AxisSegment(형제 버튼들도 h-9)와 높이를 맞추면서 4px을 아낀다.
   const posterAxis =
     actions.onRecropPoster || showFit ? (
-      <div className="space-y-group">
+      <div className="space-y-field">
         {actions.onRecropPoster && (
           <button
             type="button"
             onClick={actions.onRecropPoster}
-            data-touch="40"
-            className="h-10 w-full rounded-chip border border-line bg-surface-elevated px-3 text-caption font-medium text-fg transition-colors hover:bg-accent-soft hover:text-accent active:scale-[0.97]"
+            data-touch="36"
+            className="h-9 w-full rounded-chip border border-line bg-surface-elevated px-3 text-caption font-medium text-fg transition-colors hover:bg-accent-soft hover:text-accent active:scale-[0.97]"
           >
             포스터 다시 크롭
           </button>
@@ -509,7 +512,10 @@ function SizePanel({ photo, actions }: { photo: Photo; actions: RailActions }) {
   }
   const panelId = `${prefix}-size-axis-panel`;
   return (
-    <div className="space-y-group">
+    // space-y-field(#682 다이어트, TexturePanel의 같은 축-스위처+콘텐츠 구조는 그대로 group을
+    // 쓰지만 여긴 예산이 더 빠듯해 6px을 더 줄인다) — 세그먼트와 그 아래 콘텐츠는 서로 다른
+    // 관심사 묶음이 아니라 같은 축의 헤더·본문이라 field 간격이 더 맞다.
+    <div className="space-y-field">
       <AxisSegment
         ariaLabel="크기 축"
         panelId={panelId}
