@@ -135,7 +135,9 @@ function ChipRadio<V extends string>({
 }: {
   label: string;
   options: readonly { value: V; label: string; disabled?: boolean }[];
-  value: V;
+  /** null = 어떤 칩도 "선택됨"으로 표시하지 않는다(형압처럼 값 선택이 곧 실행 상태를 뜻해,
+      실행 중이 아닐 땐 마지막으로 쓴 도구를 선택된 것처럼 보이면 안 되는 경우). */
+  value: V | null;
   onChange: (next: V) => void;
   /** 칩 하나 이상이 잠겼을 때의 사유. 잠긴 칩이 없으면 호출부가 undefined를 넘긴다. */
   note?: string;
@@ -313,15 +315,18 @@ const EMBOSS_TOOL_OPTIONS = [
 ] as const;
 
 /**
- * 형압 패널(#509) — 재질·코팅 옆 독립 후가공 축(c5). 모드 토글이 c9(명시적 진입/종료)의 UI
- * 절반이고, 나머지 절반(모드 중 셸이 브러시 레이어를 띄우는 것)은 MobileEditorShell이 photo.
- * embossEditMode를 직접 읽어 담당한다 — 이 패널은 상태를 켜고 끌 뿐 브러시 자체를 그리지 않는다
- * (브러시는 티켓 프리뷰 위에 겹쳐야 해서 rail 패널 트리 밖에 산다).
+ * 형압 패널(#509 → #679) — 재질·코팅 옆 독립 후가공 축(c5). 모드는 c9(명시적 진입/종료)를
+ * 유지하지만, 진입 어포던스를 별도 전폭 CTA에서 뗐다(#679: 값 칩 → 전폭 CTA → 안내문 → 슬라이더
+ * 4단 구성이 다른 패널의 AxisSegment/ChipRadio 문법과 어긋나고, 그 CTA가 393×659에서 화면 밖으로
+ * 잘렸다 — bottom 666.2 > 659). 셸이 브러시 레이어를 띄우는 절반(MobileEditorShell이 photo.
+ * embossEditMode를 직접 읽는 부분)은 그대로다 — 이 패널은 상태를 켜고 끌 뿐 브러시 자체를 그리지
+ * 않는다(브러시는 티켓 프리뷰 위에 겹쳐야 해서 rail 패널 트리 밖에 산다).
  *
- * 도구 선택(브러시/올가미, #509 2단계 c10)은 포토샵 등 사진편집 서비스의 "먼저 도구를 고르고
- * 캔버스에서 그린다" 관성을 그대로 따른다 — ChipRadio(포스터 fit·한줄평 폰트가 이미 쓰는 값
- * 피커, ColorPicker와 동일 문법)로 진입 버튼 위에 상시 노출해, 편집 모드 진입 전에도 다음
- * 드래그가 뭘 할지 미리 정할 수 있게 한다.
+ * 도구 칩(브러시/올가미) 탭 자체가 그 도구로 편집 모드에 진입한다(#679 방향 1) — "도구를 고른다
+ * → 시작 버튼을 누른다"의 2단계를 1단계로 접는다: 도구를 고르는 행위 자체가 이미 의도 표명이라는
+ * 판단. 이미 편집 중인 도구 칩을 다시 탭하면 종료된다 — 칩 자체가 진입·종료 어포던스를 겸해
+ * 별도 버튼 없이 상태 전체를 표현한다(ChipRadio는 포스터 fit·한줄평 폰트가 이미 쓰는 값 피커
+ * 문법, ColorPicker와 동일).
  */
 function EmbossPanel({ photo }: { photo: Photo }) {
   const {
@@ -342,33 +347,27 @@ function EmbossPanel({ photo }: { photo: Photo }) {
       <ChipRadio
         label="형압 도구"
         options={EMBOSS_TOOL_OPTIONS}
-        value={embossTool}
-        onChange={setEmbossTool}
+        // 편집 중이 아니면 null — 값 선택이 곧 실행 상태라, 마지막으로 쓴 도구가 계속
+        // 선택된 것처럼 보이면 지금 칠하는 중인지 칩만 보고 구분이 안 된다(fresh-context 리뷰).
+        value={embossEditMode ? embossTool : null}
+        onChange={(next) => {
+          // 편집 중인 도구를 다시 탭 = 종료. 그 외(다른 도구 탭, 또는 편집 중이 아닐 때 탭)는
+          // 그 도구로 진입 — 칩 하나가 도구 선택 + 진입/종료 토글을 모두 담당한다.
+          if (next === embossTool && embossEditMode) {
+            setEmbossEditMode(false);
+          } else {
+            setEmbossTool(next);
+            setEmbossEditMode(true);
+          }
+        }}
       />
-      <button
-        type="button"
-        onClick={() => setEmbossEditMode(!embossEditMode)}
-        data-touch="40"
-        className={`h-10 w-full rounded-chip border px-3 text-caption font-medium transition-colors active:scale-[0.97] ${
-          embossEditMode
-            ? 'border-transparent bg-accent-soft text-accent'
-            : 'border-line bg-surface-elevated text-fg-muted hover:text-fg'
-        }`}
-      >
+      <p className="text-caption text-fg-muted">
         {embossEditMode
           ? embossTool === 'lasso'
-            ? '선택하는 중 · 탭해서 종료'
-            : '칠하는 중 · 탭해서 종료'
-          : embossTool === 'lasso'
-            ? '올가미로 선택 시작'
-            : '형압 칠하기 시작'}
-      </button>
-      {embossEditMode &&
-        (embossTool === 'lasso' ? (
-          <p className="text-caption text-fg-muted">포스터 오브젝트 윤곽을 따라 드래그하면 자동으로 가장자리에 붙어요. 손을 떼면 선택이 닫혀요.</p>
-        ) : (
-          <p className="text-caption text-fg-muted">티켓 포스터 위를 드래그해서 볼록하게 만들 영역을 칠하세요.</p>
-        ))}
+            ? '포스터 오브젝트 윤곽을 따라 드래그하면 자동으로 가장자리에 붙어요. 손을 떼면 선택이 닫혀요. 도구를 다시 탭하면 끝나요.'
+            : '티켓 포스터 위를 드래그해서 볼록하게 만들 영역을 칠하세요. 도구를 다시 탭하면 끝나요.'
+          : '도구를 탭하면 바로 편집을 시작해요.'}
+      </p>
       {embossTool === 'brush' && (
         <BrightnessSlider
           label="브러시 크기"
