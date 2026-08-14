@@ -37,9 +37,6 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
 
   return (
     <div className="space-y-field">
-      {disabled && disabledNote && (
-        <p className="text-caption text-fg-muted">{disabledNote}</p>
-      )}
       <div className={`flex flex-wrap items-center gap-2.5 ${disabled ? 'opacity-40' : ''}`}>
         {swatches.map((s) => {
           const active = s.value.toLowerCase() === lowerValue;
@@ -115,33 +112,48 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
             aria-hidden
           />
         </label>
+
+        {/* 헥스 직접 입력 — 스와치 줄에 인라인(#678). 예전엔 전폭 행(w-full, text-title
+            16px + py-2.5 + tracking-widest)이 슬롯 폭 361px를 혼자 다 먹었다. 폰트는
+            16px(text-title) 그대로 둔다 — iOS가 16px 미만 입력에 포커스 시 화면을 자동
+            확대하는 걸 막는 하한(variants.ts 주석)이라 줄일 수 있는 건 폭뿐이다. */}
+        <div
+          className={`inline-flex h-[46px] items-stretch overflow-hidden rounded-chip border-2 border-line ${disabled ? '' : 'focus-within:border-accent'}`}
+        >
+          <span
+            aria-hidden
+            className="inline-flex shrink-0 items-center justify-center border-r border-line px-2 text-body text-fg-muted"
+          >
+            #
+          </span>
+          <input
+            type="text"
+            disabled={disabled}
+            value={displayHex.replace('#', '')}
+            onChange={(e) => {
+              const sanitized = e.target.value.replace(/[^0-9a-fA-F]/g, '').slice(0, 6);
+              onChange(`#${sanitized}`);
+            }}
+            maxLength={6}
+            aria-label="Hex color"
+            placeholder="FFFFFF"
+            className={cn(
+              inputVariants({ surface: 'paper' }),
+              // focus-visible:ring-2(inputVariants 기본)는 부모의 overflow-hidden에 잘려
+              // 오른쪽·아래가 끊긴 채로 보인다 — 링을 끄고 부모의 focus-within:border-accent
+              // 하나로 포커스 표시를 통일한다.
+              'text-mono w-[92px] border-0 px-2.5 text-title uppercase text-fg transition-colors placeholder:text-fg-muted focus-visible:ring-0 disabled:cursor-not-allowed',
+            )}
+          />
+        </div>
       </div>
 
-      <div className={`flex items-stretch gap-2 pt-1 ${disabled ? 'opacity-40' : ''}`}>
-        <span
-          aria-hidden
-          className="inline-flex shrink-0 items-center justify-center rounded-field border border-line px-3 text-body text-fg-muted"
-          style={{ minWidth: 44 }}
-        >
-          #
-        </span>
-        <input
-          type="text"
-          disabled={disabled}
-          value={displayHex.replace('#', '')}
-          onChange={(e) => {
-            const sanitized = e.target.value.replace(/[^0-9a-fA-F]/g, '').slice(0, 6);
-            onChange(`#${sanitized}`);
-          }}
-          maxLength={6}
-          aria-label="Hex color"
-          placeholder="FFFFFF"
-          className={cn(
-            inputVariants({ surface: 'paper' }),
-            'text-mono w-full rounded-field px-3.5 py-2.5 text-title uppercase tracking-widest text-fg transition-colors placeholder:text-fg-muted disabled:cursor-not-allowed',
-          )}
-        />
-      </div>
+      {/* 잠금 안내는 컨트롤(스와치·헥스) 바로 뒤에 붙인다(#678) — 예전엔 패널 맨 위에 있어
+          슬롯이 넘칠 때 아래로 스크롤해 헥스 입력을 보면 문구가 화면 밖으로 나갔다. 컨트롤
+          바로 다음 형제로 두면 둘 중 어느 쪽을 보려고 스크롤해도 같이 딸려온다. */}
+      {disabled && disabledNote && (
+        <p className="text-caption text-fg-muted">{disabledNote}</p>
+      )}
     </div>
   );
 }
