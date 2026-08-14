@@ -595,11 +595,12 @@ export const RAIL_ITEMS: readonly RailItem[] = [
     id: 'opacity',
     label: '투명도',
     eyebrow: 'Opacity',
-    // 투명도: 겹친 두 원 — 한쪽은 반투명 채움으로 컬러(윤곽만)와 구분.
+    // 투명도: 체커보드 — 테두리 사각형 + 대각 두 칸 채움 path 하나(포토샵류 투명 배경 표기).
+    // 컬러·형압과 원 계열을 공유하지 않도록 #676에서 교체.
     icon: (
       <svg {...RAIL_ICON}>
-        <circle cx="10" cy="12" r="6" />
-        <circle cx="14" cy="12" r="6" fill="currentColor" fillOpacity={0.25} />
+        <rect x="3.5" y="3.5" width="17" height="17" rx="1.5" />
+        <path d="M3.5 3.5h8.5v8.5h-8.5ZM12 12h8.5v8.5H12Z" fill="currentColor" stroke="none" />
       </svg>
     ),
     render: (photo) => {
