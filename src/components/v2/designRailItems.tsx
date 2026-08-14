@@ -380,7 +380,12 @@ function EmbossPanel({ photo }: { photo: Photo }) {
         <p className="text-caption text-fg-muted">
           {embossEditMode
             ? embossTool === 'lasso'
-              ? '윤곽을 따라 드래그하면 자동으로 붙어요. 다시 탭하면 끝나요.'
+              // #682 다이어트로 줄였을 때 "손을 떼면 선택이 닫혀요"가 통째로 빠졌었다(claude-review
+              // PR #692 P1) — EmbossBrushLayer.tsx의 onPointerUp이 실제로 그 순간 다각형을
+              // 커밋하고 미리보기 선을 지우는데(스냅해서 닫힌다는 시각 피드백이 따로 없다), 그걸
+              // 안내하는 유일한 수단이 이 문구라 정보 손실이었다. 다시 채워 넣되 원문(68자)만큼
+              // 늘리지 않고 한 문장에 접어 44자로 복원한다.
+              ? '윤곽을 따라 드래그하면 자동으로 붙고, 손을 떼면 닫혀요. 다시 탭하면 끝나요.'
               : '드래그해서 칠하세요. 도구를 다시 탭하면 끝나요.'
             : '도구를 탭하면 바로 편집을 시작해요.'}
         </p>
