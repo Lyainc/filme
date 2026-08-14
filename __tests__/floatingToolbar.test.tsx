@@ -239,6 +239,67 @@ describe('플로팅 툴바 (#356)', () => {
   });
 });
 
+// #681 — 숨김을 한 번 누르면 이후 모든 방문이 숨김으로 시작하던 버그. hidden을 세션 한정으로
+// 영속 대상에서 빼고, 복귀 수단(원형 버튼)을 44px로 키우며 최초 숨김 시 복귀 방법을 토스트로 알린다.
+describe('숨김은 세션 한정 + 복귀 어포던스 (#681)', () => {
+  test('숨김은 영속되지 않는다 — 저장 payload에 hidden이 없고, 재마운트하면 다시 펼쳐진 채로 시작한다', async () => {
+    const user = userSetup();
+    const { unmount } = render(<Harness />);
+    await seedPoster(user);
+
+    await user.click(screen.getByRole('button', { name: '툴바 숨기기' }));
+    expect(screen.queryByRole('toolbar', { name: '편집 도구' })).toBeNull();
+
+    await advance(310); // 300ms 영속 디바운스
+    const raw = JSON.parse(window.localStorage.getItem(TB_KEY)!);
+    expect('hidden' in raw).toBe(false);
+
+    unmount();
+    const user2 = userSetup();
+    render(<Harness />);
+    await seedPoster(user2); // seedPoster 자체가 role="toolbar"를 찾으므로 펼쳐진 상태가 전제
+    expect(screen.queryByRole('button', { name: '툴바 표시' })).toBeNull();
+  });
+
+  test('이 변경 전에 숨긴 적 있는 사용자도 이번 방문은 펼쳐진 채로 시작한다(fresh-context 리뷰 발견 — 옛 hidden:true 저장분 마이그레이션)', async () => {
+    window.localStorage.setItem(TB_KEY, JSON.stringify({ orient: 'v', place: 'fixed', x: null, y: null, hidden: true }));
+    const user = userSetup();
+    render(<Harness />);
+    await seedPoster(user); // 펼쳐진 상태(role="toolbar")를 전제로 하므로, 숨김으로 시작했다면 여기서 타임아웃한다.
+    expect(screen.queryByRole('button', { name: '툴바 표시' })).toBeNull();
+  });
+
+  test('최초 숨김 클릭에 복귀 방법을 토스트로 알린다', async () => {
+    const user = userSetup();
+    render(<Harness />);
+    await seedPoster(user);
+
+    expect(screen.queryByText(/다시 누르면/)).toBeNull();
+    await user.click(screen.getByRole('button', { name: '툴바 숨기기' }));
+    expect(screen.getAllByText(/다시 누르면/).length).toBeGreaterThan(0);
+
+    // 재표시 → 재숨김에도 같은 세션에선 다시 안 뜬다(스팸 방지) — 토스트가 먼저 사라진(2.6s) 뒤
+    // 재숨김에도 다시 나타나지 않아야 "한 번만"이 의미를 가진다.
+    await advance(2700);
+    expect(screen.queryByText(/다시 누르면/)).toBeNull();
+    await user.click(screen.getByRole('button', { name: '툴바 표시' }));
+    await user.click(screen.getByRole('button', { name: '툴바 숨기기' }));
+    expect(screen.queryByText(/다시 누르면/)).toBeNull();
+  });
+
+  test('복귀 원형 버튼은 44px 타깃이다(SC 2.5.5 AAA) — 펼친 툴바의 32px 위계와 별개', async () => {
+    const user = userSetup();
+    render(<Harness />);
+    await seedPoster(user);
+
+    await user.click(screen.getByRole('button', { name: '툴바 숨기기' }));
+    const hiddenBtn = screen.getByRole('button', { name: '툴바 표시' });
+    const { w, h } = targetPx(hiddenBtn, '툴바 표시');
+    expect([w, h]).toEqual([44, 44]);
+    expect(Math.min(w, h)).toBeGreaterThanOrEqual(MIN_AA);
+  });
+});
+
 // 이동식 좌표계 회귀 (#607) — 프레임(contain:paint)이 fixed의 컨테이닝 블록이라 translate가
 // 프레임 원점에서 풀린다. 클램프·스냅이 window.innerWidth를 읽으면 1440 뷰포트에서 400px 프레임
 // 밖(예 x=1388)이 허용되고 그 좌표가 localStorage에 영속돼 다시 열어도 안 돌아온다.
