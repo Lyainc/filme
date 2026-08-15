@@ -17,7 +17,7 @@ describe('getReferencedBlobUrls (순수 코어)', () => {
     JSON.stringify({
       movieInfo: {},
       fieldVisibility: {},
-      components: { chain: '', format: '', signatureImage: '', ...over },
+      components: { chain: '', format: '', signatureImage: '', backgroundPatternImage: '', ...over },
     });
 
   test('빈 스택 → 빈 집합', () => {
@@ -29,8 +29,9 @@ describe('getReferencedBlobUrls (순수 코어)', () => {
       snap({ chain: 'blob:1' }),
       snap({ chain: 'blob:1', format: 'blob:2' }),
       snap({ signatureImage: 'blob:3' }),
+      snap({ backgroundPatternImage: 'blob:4' }),
     ]);
-    expect(urls).toEqual(new Set(['blob:1', 'blob:2', 'blob:3']));
+    expect(urls).toEqual(new Set(['blob:1', 'blob:2', 'blob:3', 'blob:4']));
   });
 
   test('blob:이 아닌 값(빈 문자열·서버 URL)은 무시한다', () => {
@@ -73,6 +74,15 @@ function Harness() {
       </button>
       <button type="button" onClick={() => photo.updateComponents({ signatureImage: '' })}>
         remove-signature
+      </button>
+      <button
+        type="button"
+        onClick={() => photo.updateComponents({ backgroundPatternImage: URL.createObjectURL(new Blob()) })}
+      >
+        upload-bg
+      </button>
+      <button type="button" onClick={() => photo.updateComponents({ backgroundPatternImage: '' })}>
+        remove-bg
       </button>
       <button type="button" onClick={() => photo.updateMovieInfo({ theater: photo.state.movieInfo.theater + 'x' })}>
         edit-other
@@ -120,6 +130,14 @@ const FIELDS = [
     upload: 'upload-signature',
     remove: 'remove-signature',
     get: (s: PhototicketState) => s.components.signatureImage ?? '',
+  },
+  // 배경 이미지(#671/#672)는 로고 3종보다 나중에 생긴 blob 필드라 #673 가드에서 빠져 있었다 —
+  // 같은 축으로 세워 "새 blob 필드가 늘면 가드도 는다"를 테이블이 강제하게 한다.
+  {
+    name: 'backgroundPatternImage',
+    upload: 'upload-bg',
+    remove: 'remove-bg',
+    get: (s: PhototicketState) => s.components.backgroundPatternImage ?? '',
   },
 ];
 
