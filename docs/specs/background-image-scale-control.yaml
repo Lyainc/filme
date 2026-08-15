@@ -1,0 +1,196 @@
+# Seed Spec — 티켓 배경 이미지 배율 컨트롤 (#680)
+---
+skill: build-spec
+schema_version: 1
+version: 4.7.0
+generated: 2026-08-15
+input:
+  target: 티켓 배경 이미지 배율 컨트롤
+  options: []
+output:
+  type: spec
+  structure: templates/SEED_SPEC.yaml
+
+spec_version: 1
+created: 2026-08-15
+target: 티켓 배경 이미지 배율 컨트롤
+domain: tech
+brownfield: true
+refine_generation: 0
+
+goal:
+  statement: >-
+    배경 이미지를 올린 사용자가 Editorial·Criterion·Stub 세 무드에서 그 이미지의 표시 배율을
+    1.0~1.5로 정해, 캔버스 전면 cover 고정 하나뿐이라 "이미지의 어느 부분이 보일지"를 못 정하던
+    상태를 없앤다.
+  clarity_score: 0.9
+
+constraints:
+  - id: c1
+    type: technical
+    description: >-
+      PATTERN_CLIP은 배율과 무관하게 원래 좌표를 유지한다. clip-path는 요소의 로컬 좌표계에서
+      정의된 뒤 요소 전체가 transform되므로, 배경 레이어에 transform: scale을 직접 걸면 clip
+      영역까지 같이 확대된다. 따라서 clip을 바깥 래퍼로 올리고 배율은 안쪽 레이어에만 건다.
+    hard: true
+    rationale: >-
+      clip이 어긋나면 저장물에서 배경이 포스터 위에 인쇄된다(#490/#495 collectOpaquePosterBackdrops
+      z-order). 기존 테스트가 이 값을 못 박고 있는 이유가 그것이다.
+  - id: c2
+    type: technical
+    description: >-
+      배경 레이어는 componentOpacity 래퍼 밖에 선다. 배율 도입이 이 배치를 바꾸면 안 된다.
+    hard: true
+    rationale: 배경은 "종이에 이미 인쇄된 바탕"이라 조판 오버레이 페이드에 딸려가면 안 된다(#530 계약).
+  - id: c3
+    type: technical
+    description: >-
+      상한은 1.5. 2.0은 채택하지 않는다.
+    hard: true
+    rationale: >-
+      배경은 maxSide = TARGET_HEIGHT(1534)로 굽는데 저장물은 pixelRatio 2라 배율 1.0에서 이미
+      약 2배 업스케일 상태다. 2.0이면 4배가 돼 눈에 띄게 뭉갠다. 1.5로 잡으면 굽는 해상도를
+      안 올려도 되므로 blob 용량과 크롭 시간이 그대로고, #673이 지적한 "배경이 제일 큰 payload"를
+      더 키우지 않는다.
+  - id: c4
+    type: technical
+    description: >-
+      값은 TicketComponents.backgroundPatternScale?: number로 싣는다. 소비부는 `?? 1`로 읽어
+      기존 저장본 마이그레이션을 만들지 않는다.
+    hard: true
+    rationale: >-
+      quoteFont·signatureScale·posterFit이 전부 같은 옵셔널 처방이고(types/index.ts), 그래야
+      영속·undo 스냅샷에 자동으로 실리면서 옛 draft가 조용히 깨지지 않는다.
+  - id: c5
+    type: technical
+    description: >-
+      확대 전용(하한 1.0)이며 타일 반복·축소는 범위 밖이다.
+    hard: true
+    rationale: >-
+      cover 미만이면 캔버스에 빈 자리가 생겨 반복·단색·blur 중 하나를 새로 정해야 하는데,
+      타일 반복은 backgroundPatterns.ts:27이 이미 기각해뒀다("임의의 사진이라 타일링하면 이음매가
+      그대로 보인다"). 하한을 1.0으로 잠그면 이 결정 자체가 사라진다. 이슈 본문이 후보로 든
+      "축소해서 무늬로 반복"은 그 주석보다 먼저 쓰여 이 기각을 모르고 남은 항목이다.
+  - id: c6
+    type: technical
+    description: >-
+      위치(오프셋) 컨트롤은 열지 않는다. transform-origin과 backgroundPosition 모두 center 고정.
+    hard: false
+    rationale: >-
+      크기 패널은 이미 scrollHeight 199 vs 슬롯 115px로 넘치고(#682) 컨트롤 2개는 세로 예산을
+      두 배로 먹는다. 확대만 먼저 내보고 "보고 싶은 부분이 아니다"가 실제로 오면 그때 별도 이슈로
+      여는 게 싸다.
+  - id: c7
+    type: technical
+    description: >-
+      컨트롤은 배경 패널 안에, 이미지가 있을 때만 렌더한다. 크기 패널에는 넣지 않는다.
+    hard: false
+    rationale: >-
+      배경 패널은 지금 업로드·제거 둘뿐이라 세로 여유가 있고, RailItem의 appliesTo가 이미
+      BACKGROUND_PATTERN_MOODS로 3무드 게이팅을 하고 있어 노출 조건을 새로 짤 게 없다. 크기 패널에
+      두면 배경이 없는 3무드에서 죽은 컨트롤이 되지 않게 게이팅을 새로 짜야 하고, 넘치는 패널을
+      더 넘치게 한다.
+  - id: c8
+    type: technical
+    description: >-
+      무드별 스케일 상한(stampScaleMaxFor 같은 단일 소스)은 만들지 않는다.
+    hard: false
+    rationale: >-
+      로고가 그 장치를 가진 건 MoodMinimal이 실효 scale을 따로 클램프해 110~130%가 죽은 구간이
+      되기 때문이다(PR #486 P1). 배경은 minimal에 아예 안 실리고 3무드가 같은 0.626 캔버스를 써서
+      값이 갈릴 이유가 없다. 안 갈리는 값에 단일 소스를 만드는 건 죽은 추상이다.
+
+success_criteria:
+  - id: ac1
+    description: >-
+      배율을 올리면 clip 영역은 그대로인 채 배경 이미지만 확대된다. 세 무드 모두에서 성립한다.
+    verifiable: true
+    measurable_via: >-
+      __tests__/designRailBackgroundPattern.test.tsx 확장 — 바깥 래퍼의 clipPath가 PATTERN_CLIP
+      값을 유지하고, 안쪽 [data-bg-pattern] 요소만 transform: scale을 갖는지 대조.
+  - id: ac2
+    description: >-
+      배율 값이 무드 왕복과 새로고침을 넘어 살아남는다.
+    verifiable: true
+    measurable_via: >-
+      같은 테스트 파일의 기존 "무드를 왕복해도 배경 이미지가 보존된다" 케이스와 같은 형태로
+      backgroundPatternScale을 함께 확인.
+  - id: ac3
+    description: >-
+      확대가 프리뷰뿐 아니라 저장물(JPEG)에도 반영되고, 확대된 배경이 포스터 영역을 침범하지 않는다.
+    verifiable: true
+    measurable_via: >-
+      scripts/capture-export.mjs로 배율 1.0과 1.5의 저장물을 각각 떨어뜨려 --compare로 대조.
+      배경 영역은 달라지고 포스터 영역은 안 달라지는 것이 판정 기준. 하네스 잡음 바닥이 maxΔ 2라
+      허용치 3.
+  - id: ac4
+    description: >-
+      배경 이미지가 없으면 배율 슬라이더가 뜨지 않는다.
+    verifiable: true
+    measurable_via: 같은 테스트 파일 — 이미지 제거 후 슬라이더 부재 확인.
+  - id: ac5
+    description: >-
+      componentOpacity를 낮춰도 배경 배율 레이어는 페이드되지 않는다(c2 회귀).
+    verifiable: true
+    measurable_via: >-
+      기존 케이스가 [data-bg-pattern]의 closest('[style*="opacity"]')를 null로 검사한다. 래퍼가
+      하나 늘어도 이 명제가 유지되는지 그대로 확인.
+
+context:
+  existing_stack:
+    - Next.js (pages router) + React + TypeScript
+    - Tailwind + cva/cn (src/utils/cn.ts, src/components/ui/variants.ts)
+    - bun test + happy-dom + @testing-library/react
+    - html-to-image (captureToImage.ts)
+  dependencies:
+    - useLogoCrop (자유비 크롭, maxSide = TARGET_HEIGHT) — 배율은 숫자 하나라 이 경로를 안 건드린다
+    - BrightnessSlider (components/wizard/BrightnessSlider.tsx) — shouldCommitSliderValue가 드래그 중
+      undo 폭주를 이미 막아둔다(#507). 새로 만들 것 없음
+    - html-to-image의 options.style은 캡처 루트에만 적용되므로 자손 transform은 저장물에 살아남는다
+      (captureToImage.ts:48-56, 이미 blur 배경의 scale(1.2)가 같은 경로를 탄다 — :495)
+  integration_points:
+    - src/types/index.ts — TicketComponents.backgroundPatternScale 추가
+    - src/utils/backgroundPatterns.ts — 유일한 스타일 소스. 중첩을 여기 한 번만 두려면 .tsx로 바꿔
+      레이어 컴포넌트를 내보낸다
+    - src/components/moods/MoodEditorial.tsx:327 / MoodStub.tsx:206 / MoodCriterion.tsx:261 — 호출부 3곳
+    - src/components/v2/designRailItems.tsx BackgroundPatternPanel (:553) — 슬라이더 추가 자리
+    - __tests__/designRailBackgroundPattern.test.tsx — clip·stub 쿼리가 한 칸 위로 이동
+  backlog_scan: >-
+    충돌 없음. 열린 후보 #673(같은 blob 축이지만 objectURL revoke 수명 문제라 직교 — 배율은 숫자
+    하나라 blob 경로를 안 건드린다)·#128(무관). 닫힌 후보 중 유일하게 의심스럽던 #311
+    "실제 크기 모드의 보정(크기조정) 슬라이더 제거 검토"는 본문 확인 결과 프리뷰 실제크기 모드의
+    물리 DPI 캘리브레이션 슬라이더라 축이 다르다(viewMode.tsx / usePhysicalSizeCorrection).
+    #671·#530은 이 기능의 선행이고 #484(서명 이미지 크기 조절)는 같은 처방의 선례다.
+    한계: 예산 절삭으로 열린 이슈 본문은 앞 320자만 봤고 닫힌 이슈는 제목만 봤다. 용어가 안 겹치는
+    충돌 이슈는 prefilter에 안 올라온다.
+
+blindspots:
+  - area: blind-spots
+    question: >-
+      transform: scale이 iOS Safari 저장물의 배경 누락 리스크를 키우는가? backgroundPatterns.ts:14-19이
+      이미 "CSS background-image는 포스터·로고가 쓰는 compositeRaster 탈출구가 없어 iOS가 조용히
+      떨어뜨릴 수 있다"를 미확인 리스크로 인계해뒀고, macOS Chrome 하네스로는 원리적으로 못 보는
+      축이다. 이번 스펙은 그 위에 transform을 하나 더 얹는다. 실기기 저장 확인은 이 스펙의 완료
+      조건에서 의도적으로 제외했고 #672 머지 조건으로 남긴다 — 배율이 그 리스크를 만든 게 아니라
+      물려받는 것이기 때문이다.
+
+ambiguity:
+  overall: 0.10
+  gate_passed: true
+
+clarity_breakdown:
+  goal: 0.9
+  constraint: 0.9
+  success: 0.9
+  context: 0.9
+
+metadata:
+  interview_rounds: 1
+  questions_asked: 5
+  generated_by: thinking-tools/build-spec
+  source_session: >-
+    feature-dev(#680) Phase 1-4에서 Goal·Constraint·Context가 이미 채워진 상태로 진입해 Success
+    한 축만 인터뷰했다. 격리 게이트 판정과 Phase 2.5 blind-spot pass는 이 세션의 서브에이전트가
+    전부 보고서 없이 idle로 떨어져 unavailable로 보고 인라인 처리했다(reference.md §2 fallback,
+    scoring_isolated: false). 게이트 2회 연속 조건은 Round 2에 새로 물을 항목이 없어 확정 처리했다.
+---
