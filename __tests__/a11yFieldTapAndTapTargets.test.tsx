@@ -203,7 +203,7 @@ describe('탭 타깃 44px 미달 채움 (#646 항목3)', () => {
       return <MobileEditorShell {...mobileShellProps(photo)} />;
     }
     render(<Harness />);
-    for (const name of ['포스터 있으면 올리기', '포스터 없이 직접 입력']) {
+    for (const name of ['포스터 업로드', '포스터 없이 직접 입력']) {
       expect(screen.getByRole('button', { name }).className).toContain('min-h-touch');
     }
   });

@@ -259,7 +259,7 @@ describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
     const user = userEvent.setup();
     render(<ShellHarness />);
 
-    await user.click(screen.getByRole('button', { name: /포스터 있으면 올리기/ }));
+    await user.click(screen.getByRole('button', { name: /포스터 업로드/ }));
     // 셸엔 OCR 카드의 image/* input도 있어 첫 input을 잡으면 그쪽으로 간다 — 포스터 전용(jpeg 포함)만.
     const posterInput = document.querySelector('input[type="file"][accept*="jpeg"]') as HTMLInputElement;
     await user.upload(posterInput, pngFile('poster.jpg'));

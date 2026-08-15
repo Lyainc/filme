@@ -113,7 +113,7 @@ describe('플로팅 툴바 (#356)', () => {
     render(<Harness />);
     await seedPoster(user);
 
-    await user.click(screen.getByRole('button', { name: '툴바 숨기기' }));
+    await user.click(screen.getByRole('button', { name: '툴바 숨김' }));
     expect(screen.queryByRole('toolbar', { name: '편집 도구' })).toBeNull();
 
     await user.click(screen.getByRole('button', { name: '툴바 표시' }));
@@ -181,9 +181,9 @@ describe('플로팅 툴바 (#356)', () => {
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
     await user.click(screen.getByRole('button', { name: '고급 설정' }));
     await user.click(screen.getByRole('radio', { name: '세로형 · 이동식' }));
-    // 툴바 숨기기는 모달 뒤에 깔린 툴바가 아니라 모달을 닫고 눌러야 한다(#574 — 모달이 풀페이지).
+    // 툴바 숨김은 모달 뒤에 깔린 툴바가 아니라 모달을 닫고 눌러야 한다(#574 — 모달이 풀페이지).
     await user.click(screen.getByRole('button', { name: '닫기' }));
-    await user.click(screen.getByRole('button', { name: '툴바 숨기기' }));
+    await user.click(screen.getByRole('button', { name: '툴바 숨김' }));
     expect(screen.queryByRole('toolbar', { name: '편집 도구' })).toBeNull();
 
     // 숨김 상태에서 다시 모달을 열어 스냅한다 — 툴바가 hidden 분기로 렌더돼도 ref가 살아있어야 한다.
@@ -204,7 +204,7 @@ describe('플로팅 툴바 (#356)', () => {
     await seedPoster(user);
 
     // 기본값은 place:'fixed' — 숨겨도 위치 조정 수단이 없던 게 이슈였다.
-    await user.click(screen.getByRole('button', { name: '툴바 숨기기' }));
+    await user.click(screen.getByRole('button', { name: '툴바 숨김' }));
     const hiddenBtn = screen.getByRole('button', { name: '툴바 표시' });
 
     fireEvent.pointerDown(hiddenBtn, { clientX: 100, clientY: 100, pointerId: 1 });
@@ -228,7 +228,7 @@ describe('플로팅 툴바 (#356)', () => {
     render(<Harness />);
     await seedPoster(user);
 
-    await user.click(screen.getByRole('button', { name: '툴바 숨기기' }));
+    await user.click(screen.getByRole('button', { name: '툴바 숨김' }));
     const hiddenBtn = screen.getByRole('button', { name: '툴바 표시' });
 
     fireEvent.pointerDown(hiddenBtn, { clientX: 100, clientY: 100, pointerId: 1 });
@@ -476,7 +476,7 @@ describe('탭 타깃 최소 크기 (#508, WCAG 2.2 SC 2.5.8 AA)', () => {
       '다시 실행',
       '티켓 항목 목록',
       '최대화',
-      '툴바 숨기기',
+      '툴바 숨김',
     ]);
 
     cleanup();
