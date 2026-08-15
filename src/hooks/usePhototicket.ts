@@ -83,18 +83,23 @@ type PersistedState = Pick<PhototicketState, 'movieInfo' | 'components' | 'field
 export type HistorySnapshot = Pick<PhototicketState, 'movieInfo' | 'components' | 'fieldVisibility'>;
 
 // #673 — 히스토리 스택(useEditHistory의 HistoryStack.stack, JSON 직렬화된 HistorySnapshot 배열)이
-// 지금 붙들고 있는 chain/format/signatureImage blob URL의 합집합. updateComponents가 제거(빈 값으로
-// 되돌리기) 시점에 이 집합에 없는 URL만 revoke한다 — 있으면 undo가 아직 그 URL을 가리키는 것이므로
-// 풀면 undo가 죽은 blob을 복원한다.
+// 지금 붙들고 있는 업로드 이미지 blob URL의 합집합. updateComponents가 제거(빈 값으로 되돌리기)
+// 시점에 이 집합에 없는 URL만 revoke한다 — 있으면 undo가 아직 그 URL을 가리키는 것이므로 풀면
+// undo가 죽은 blob을 복원한다.
+//
+// **사용자가 올리는 blob 필드가 늘면 여기도 같이 는다.** `backgroundPatternImage`(#671/#672)가
+// 그 예다 — 로고 3종과 같은 수명 규칙을 타는데 이 목록에 없으면 undo가 참조하는 배경 이미지를
+// 제거 시점에 그냥 풀어버려 #673이 그 필드에서만 되살아난다.
 export function getReferencedBlobUrls(snapshotJsons: string[]): Set<string> {
   const urls = new Set<string>();
   for (const json of snapshotJsons) {
     try {
       const snap = JSON.parse(json) as HistorySnapshot;
-      const { chain, format, signatureImage } = snap.components ?? {};
+      const { chain, format, signatureImage, backgroundPatternImage } = snap.components ?? {};
       if (chain?.startsWith('blob:')) urls.add(chain);
       if (format?.startsWith('blob:')) urls.add(format);
       if (signatureImage?.startsWith('blob:')) urls.add(signatureImage);
+      if (backgroundPatternImage?.startsWith('blob:')) urls.add(backgroundPatternImage);
     } catch {
       // 문법 오류든 구조 불일치(components 없음 등)든 이 스냅샷은 그냥 건너뛴다 — 히스토리
       // JSON은 useEditHistory 자신이 만들므로 실질적으로는 발생하지 않는다.
@@ -539,7 +544,11 @@ export function usePhototicket() {
       const clearedChain = components.chain === '' && prev.components.chain.startsWith('blob:');
       const clearedFormat = components.format === '' && prev.components.format.startsWith('blob:');
       const clearedSignature = components.signatureImage === '' && !!prev.components.signatureImage?.startsWith('blob:');
-      if (clearedChain || clearedFormat || clearedSignature) {
+      // 배경 이미지(#671/#672)도 같은 규칙 — 이 줄이 없으면 제거해도 revoke가 아예 안 걸려
+      // 탭 수명 동안 blob이 남는다(#673이 로고 3종에서 없앤 바로 그 누수).
+      const clearedBgPattern =
+        components.backgroundPatternImage === '' && !!prev.components.backgroundPatternImage?.startsWith('blob:');
+      if (clearedChain || clearedFormat || clearedSignature || clearedBgPattern) {
         const referenced = getReferencedBlobUrls(historySnapshotsRef.current);
         const releaseOrDefer = (url: string) => {
           if (referenced.has(url)) pendingRevokeUrlsRef.current.add(url);
@@ -548,6 +557,7 @@ export function usePhototicket() {
         if (clearedChain) releaseOrDefer(prev.components.chain);
         if (clearedFormat) releaseOrDefer(prev.components.format);
         if (clearedSignature) releaseOrDefer(prev.components.signatureImage!);
+        if (clearedBgPattern) releaseOrDefer(prev.components.backgroundPatternImage!);
       }
 
       latestChainUrlRef.current = nextComponents.chain.startsWith('blob:') ? nextComponents.chain : null;
