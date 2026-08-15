@@ -247,7 +247,7 @@ describe('숨김은 세션 한정 + 복귀 어포던스 (#681)', () => {
     const { unmount } = render(<Harness />);
     await seedPoster(user);
 
-    await user.click(screen.getByRole('button', { name: '툴바 숨기기' }));
+    await user.click(screen.getByRole('button', { name: '툴바 숨김' }));
     expect(screen.queryByRole('toolbar', { name: '편집 도구' })).toBeNull();
 
     await advance(310); // 300ms 영속 디바운스
@@ -275,7 +275,7 @@ describe('숨김은 세션 한정 + 복귀 어포던스 (#681)', () => {
     await seedPoster(user);
 
     expect(screen.queryByText(/다시 누르면/)).toBeNull();
-    await user.click(screen.getByRole('button', { name: '툴바 숨기기' }));
+    await user.click(screen.getByRole('button', { name: '툴바 숨김' }));
     expect(screen.getAllByText(/다시 누르면/).length).toBeGreaterThan(0);
 
     // 재표시 → 재숨김에도 같은 세션에선 다시 안 뜬다(스팸 방지) — 토스트가 먼저 사라진(2.6s) 뒤
@@ -283,7 +283,7 @@ describe('숨김은 세션 한정 + 복귀 어포던스 (#681)', () => {
     await advance(2700);
     expect(screen.queryByText(/다시 누르면/)).toBeNull();
     await user.click(screen.getByRole('button', { name: '툴바 표시' }));
-    await user.click(screen.getByRole('button', { name: '툴바 숨기기' }));
+    await user.click(screen.getByRole('button', { name: '툴바 숨김' }));
     expect(screen.queryByText(/다시 누르면/)).toBeNull();
   });
 
@@ -292,7 +292,7 @@ describe('숨김은 세션 한정 + 복귀 어포던스 (#681)', () => {
     render(<Harness />);
     await seedPoster(user);
 
-    await user.click(screen.getByRole('button', { name: '툴바 숨기기' }));
+    await user.click(screen.getByRole('button', { name: '툴바 숨김' }));
     const hiddenBtn = screen.getByRole('button', { name: '툴바 표시' });
     const { w, h } = targetPx(hiddenBtn, '툴바 표시');
     expect([w, h]).toEqual([44, 44]);
