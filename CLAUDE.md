@@ -44,6 +44,8 @@ Before making architectural changes or implementing new features, consult:
 - **하네스는 dev 전용이 아니다 — 함정은 stale 서버다**(#601, 2026-07-31 실측 정정). `bun run build && next start`로 **새로** 띄운 prod에서 세 하네스가 다 돌고, px 불변식도 dev와 같은 값이 나온다(dock 232.6 / 프리뷰 226.8×362.3 동일, frameFit 전부 통과). #601이 "prod에선 크롭 '적용'이 끝까지 안 뜬다"로 잡았던 건 앱 버그도 DataTransfer 주입 아티팩트도 아니고, **하루 전부터 떠 있던 `next start`가 옛 빌드의 HTML을 주던 것**이었다 — `_next/static/chunks/*.js`가 전부 404라 앱이 하이드레이션을 못 하고, 그래서 파일 input에 핸들러가 안 붙어 **모달이 아예 안 열린다**(`dialogOpen:false`). 같은 서버에서 DataTransfer 주입과 CDP 실제 파일 선택이 **똑같이** 실패하고, 새 서버에선 **둘 다** 통과한 게 근거다.
   - 착각이 성립하는 이유: 포트가 이미 물려 있으면 새 `next start`는 `EADDRINUSE`로 죽는데 **앞 서버가 그대로 200을 준다.** "방금 띄운 서버"라고 믿은 게 남의 프로세스였다. 재는 대상이 진짜 지금 빌드인지부터 확인할 것.
   - 진단 순서: 크롭 모달이 안 열리면 앱을 뒤지기 전에 **콘솔의 chunk 404**를 본다. 그게 있으면 서버 문제고, 앱 코드는 무관하다.
+- **워크트리에서 dev를 띄우는 건 이제 그냥 `bun run dev`다**(#708). 예전엔 `.claude/worktrees/` 안에서만 모든 요청이 500이었다(`Failed to load external module clsx-<해시>`) — 원인은 심링크 node_modules도 Turbopack 워크스페이스 루트 추론도 아니고 스크립트가 강제하던 **`bun --bun`(bun 런타임)**이었다. 워크트리 경로에서만 Turbopack의 external 핸들 해석이 깨지고, 같은 플래그로 메인 체크아웃은 200이 뜬다(`turbopack.root`를 워크트리로 명시해도 500 그대로, `node node_modules/.bin/next dev`는 200 — 그래서 `dev` 스크립트에서 `--bun`을 뺐다). `build`/`start`는 `--bun`으로도 멀쩡해 그대로 뒀다.
+  - **포트는 나눠 쓸 것.** :3000은 메인 체크아웃이 물고 있기 쉬운데, 물려 있으면 새 서버가 죽고 앞 서버가 그대로 200을 준다(위 #601 착각과 같은 함정, 이번엔 남의 브랜치를 재게 된다). 워크트리는 `bun run dev --port 3010` 식으로 띄우고 하네스에 `--url http://localhost:3010/`을 준다.
 - **두 번째 축은 프레임 봉쇄다**(#609). 크롭 모달·필드 드로어·편집 메뉴·max 오버레이·결과 스테이지·결과 hero가 프레임 사각형 안인지 방향별 넘침으로 잰다. dock/프리뷰 숫자가 원리적으로 못 보는 축인 게 실측으로 증명돼 있다 — `PhoneFrame`의 `contain:paint`를 지우면 fixed 오버레이 3종이 좌 520px 넘치는데 **dock/프리뷰 불변식은 그대로 통과한다.**
 
 ### 🔎 Code Review
