@@ -23,7 +23,7 @@ import {
   userTextFont,
   useFontsReady,
 } from './_shared';
-import { backgroundPatternStyle } from '@/utils/backgroundPatterns';
+import { BackgroundPatternLayer } from '@/utils/backgroundPatterns';
 import { TARGET_HEIGHT, TARGET_WIDTH } from '@/utils/constants';
 
 // 한줄평 폴백 2단계(#391) — 유저 입력이 없으면 평점(0.5 단위)별 프리셋, 평점도 없으면 기본 quote.
@@ -248,18 +248,17 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
   );
 
   const componentOpacity = components.componentOpacity ?? 1;
-  // 배경 이미지(#671·#672) — 레이어를 그릴지 말지는 backgroundImage로 판정한다(업로드 전이면
-  // 스타일이 비어 빈 div가 안 남는다).
-  const patternStyle = backgroundPatternStyle(components.backgroundPatternImage);
 
   return (
     <div style={{ position: 'absolute', inset: 0, background: PAPER_GRAIN, color: INK, fontFamily: FONT_KR, overflow: 'hidden' }}>
       {/* 배경 이미지(#530→#672) — 루트의 첫 형제라 종이 그레인 바로 위, 도판·조판 **아래**에 깔린다.
           componentOpacity 밖(종이에 이미 인쇄된 바탕)인 건 Editorial과 같은 계약이다. 도판 자리는
           PATTERN_CLIP이 구멍으로 파낸다(그 주석의 저장물 z-order 참고). */}
-      {patternStyle.backgroundImage && (
-        <div data-bg-pattern="true" aria-hidden="true" style={{ position: 'absolute', inset: 0, clipPath: PATTERN_CLIP, ...patternStyle }} />
-      )}
+      <BackgroundPatternLayer
+        image={components.backgroundPatternImage}
+        scale={components.backgroundPatternScale ?? 1}
+        clipPath={PATTERN_CLIP}
+      />
       {/* 도판 — Mood35mm의 컷과 같은 계약. 컷이 정확히 0.667이라 표준 크롭(#525 룰 1)에서 레터박스가
           0이고, 사용자가 자연비 크롭을 골라 어긋나면 남는 자리를 blur 포스터 배경이 덮는다.
           componentOpacity 래퍼 **밖** — 포스터 축과 크롬 축은 독립(#219). */}

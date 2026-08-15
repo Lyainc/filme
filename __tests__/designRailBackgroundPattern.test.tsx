@@ -41,16 +41,35 @@ function Harness({ mood = 'editorial' }: { mood?: BackgroundMood }) {
       <button type="button" onClick={() => photo.updateComponents({ backgroundPatternImage: 'blob:bgimg' })}>
         배경 이미지 적용
       </button>
+      {/* 배율(#680) — 슬라이더는 드래그 중 커밋을 useDeferredValue로 미루는 구조라(#507) happy-dom
+          에서 값 주입이 렌더 타이밍에 얽힌다. 여기서 보려는 건 "배율이 상태에 실린 뒤 무엇이
+          변하는가"라 위 이미지 버튼과 같은 방식으로 상태만 직접 민다. 슬라이더 자체의 커밋 로직은
+          shouldCommitSliderValue 단위 테스트가 이미 덮는다. */}
+      <button type="button" onClick={() => photo.updateComponents({ backgroundPatternScale: 1.5 })}>
+        배경 배율 적용
+      </button>
       <div data-testid="background-pattern-image">{photo.state.components.backgroundPatternImage ?? '(미설정)'}</div>
+      <div data-testid="background-pattern-scale">{photo.state.components.backgroundPatternScale ?? 1}</div>
       <DesignRail photo={photo} />
       <Mood movieInfo={photo.state.movieInfo} components={photo.state.components} croppedImageUrl="blob:x" />
     </>
   );
 }
 
-/** aria-hidden 배경 레이어 — 이미지가 없으면 아예 안 그려진다. */
+/**
+ * aria-hidden 배경 레이어(바깥 겹) — 이미지가 없으면 아예 안 그려진다.
+ * clip·레이어 배치를 쥐는 쪽이라 clipPath·componentOpacity·형제 순서 검사는 전부 이걸 본다.
+ */
 function backgroundLayer(container: HTMLElement): HTMLElement | null {
   return container.querySelector('[data-bg-pattern="true"]');
+}
+
+/**
+ * 배경 이미지를 실제로 칠하는 안쪽 겹(#680). 배율(transform)이 여기 걸린다 — 바깥에 걸면
+ * clip-path가 같이 확대돼 포스터 보호가 깨지기 때문이고, 그 분리가 이 두 헬퍼가 갈리는 이유다.
+ */
+function backgroundImageLayer(container: HTMLElement): HTMLElement | null {
+  return container.querySelector('[data-bg-pattern-image="true"]');
 }
 
 async function openBackgroundPanel(user: ReturnType<typeof userEvent.setup>, mood: BackgroundMood = 'editorial') {
@@ -109,7 +128,8 @@ for (const { mood, clip } of MOOD_CASES) {
       await openBackgroundPanel(user, mood);
       await user.click(screen.getByRole('button', { name: '배경 이미지 적용' }));
 
-      const layer = backgroundLayer(container)!;
+      expect(backgroundLayer(container)).not.toBeNull();
+      const layer = backgroundImageLayer(container)!;
       expect(layer).not.toBeNull();
       expect(layer.style.backgroundImage).toContain('blob:bgimg');
       // 임의의 사진이라 타일링하지 않는다 — 이음매가 그대로 보인다.
@@ -147,6 +167,41 @@ for (const { mood, clip } of MOOD_CASES) {
       }
     });
 
+    test('배율은 안쪽 겹에만 걸리고 clip은 확대에 안 딸려간다 (#680)', async () => {
+      const user = userEvent.setup();
+      const { container } = render(<Harness mood={mood} />);
+      await openBackgroundPanel(user, mood);
+      await user.click(screen.getByRole('button', { name: '배경 이미지 적용' }));
+
+      const outer = backgroundLayer(container)!;
+      const clipBefore = outer.style.clipPath;
+
+      await user.click(screen.getByRole('button', { name: '배경 배율 적용' }));
+
+      // 배율이 이미지 겹에 실제로 걸린다.
+      expect(backgroundImageLayer(container)!.style.transform).toContain('scale(1.5)');
+
+      // **이게 이 테스트의 본체다.** clip-path는 요소의 로컬 좌표계에서 정의된 뒤 요소 전체가
+      // transform되므로, 배율을 clip과 같은 요소에 걸면 포스터를 지키는 구멍까지 1.5배로 커져
+      // 저장물에서 배경이 포스터 위에 인쇄된다(#490/#495). 겹을 합치는 리팩터링이 이 명제를
+      // 조용히 깨는 걸 막는 자리라, 배율 전후 clip이 **같은 값**인지까지 못 박는다.
+      const outerAfter = backgroundLayer(container)!;
+      expect(outerAfter.style.clipPath).toBe(clipBefore);
+      expect(outerAfter.style.transform).toBe('');
+    });
+
+    test('배율 슬라이더는 이미지가 있을 때만 뜬다 (#680)', async () => {
+      const user = userEvent.setup();
+      render(<Harness mood={mood} />);
+      await openBackgroundPanel(user, mood);
+
+      // 조절할 대상이 없으면 죽은 컨트롤이라 아예 안 그린다.
+      expect(screen.queryByLabelText('배경 크기')).toBeNull();
+
+      await user.click(screen.getByRole('button', { name: '배경 이미지 적용' }));
+      expect(screen.getByLabelText('배경 크기')).not.toBeNull();
+    });
+
     test('무드를 왕복해도 배경 이미지가 보존된다', async () => {
       const user = userEvent.setup();
       const { container } = render(<Harness mood={mood} />);
@@ -160,7 +215,7 @@ for (const { mood, clip } of MOOD_CASES) {
       await user.click(screen.getByRole('button', { name: `${mood}로 전환` }));
       await user.click(screen.getByRole('button', { name: '배경' }));
       expect(screen.getByRole('button', { name: '이미지 교체' })).not.toBeNull();
-      expect(backgroundLayer(container)!.style.backgroundImage).toContain('blob:bgimg');
+      expect(backgroundImageLayer(container)!.style.backgroundImage).toContain('blob:bgimg');
     });
 
     test('절취선은 위치지정 형제라 불투명 배경에 안 덮인다 (stub 전용)', async () => {
