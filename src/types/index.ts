@@ -114,6 +114,16 @@ export interface TicketComponents {
    * 복원하며, clearDraft·언마운트가 revoke한다(usePhototicket).
    */
   backgroundPatternImage?: string;
+  /**
+   * 배경 이미지 표시 배율 1.0~1.5(#680) — 미설정은 1.0으로 읽는다(마이그레이션 없음). 1.0이 곧
+   * 지금까지의 캔버스 전면 cover라 기존 저장본의 렌더는 안 변한다.
+   *
+   * 상한이 로고(1.3)와 다른 건 취향이 아니라 해상도다: 배경은 maxSide = TARGET_HEIGHT(1534)로 굽는데
+   * 저장물은 pixelRatio 2라 배율 1.0에서 이미 약 2배 업스케일이고, 2.0이면 4배가 돼 눈에 띄게
+   * 뭉갠다. 1.5는 굽는 해상도를 안 올리고 버티는 선이다 — 더 키우려면 useLogoCrop의 maxSide부터
+   * 올려야 하고 그러면 blob 용량(#673이 지목한 제일 큰 payload)이 같이 커진다.
+   */
+  backgroundPatternScale?: number;
 }
 
 export interface PhototicketState {

@@ -18,23 +18,49 @@
  * 못 보는 축이라 **머지 전 실기기 저장 1회 확인이 필요**하고, 깨지면 `data-bg-pattern`도
  * `filter`에서 빼고 compositeRaster 계열로 내려야 한다.
  */
-import type { CSSProperties } from 'react';
-
 /**
- * 배경 이미지 URL → CSS 배경 스타일. 이미지가 없으면 빈 스타일이고, 호출부는 **`backgroundImage`가
- * 비면 레이어 자체를 안 그린다** — 그래야 업로드 전에 빈 div가 안 남는다.
+ * 배경 이미지 레이어. 이미지가 없으면 아무것도 안 그린다 — 그래야 업로드 전에 빈 div가 안 남는다.
  *
  * cover/center/no-repeat인 이유: 여기 들어오는 건 임의의 사진이라 타일링하면 이음매가 그대로
  * 보인다. 알파는 안 깎는다 — 사용자가 고른 이미지를 임의로 흐리면 "내가 올린 게 왜 안 보이지"가 된다.
  * ponytail: 농도 슬라이더는 안 넣었다. 원하는 목소리가 나오면 그때.
+ *
+ * **두 겹인 이유는 clip이다**(#680). `clip-path`는 요소의 로컬 좌표계에서 정의된 뒤 요소 전체가
+ * transform되므로, 배율을 이미지와 같은 요소에 걸면 PATTERN_CLIP까지 같이 확대돼 저장물에서 배경이
+ * 포스터 **위에** 인쇄된다(#490/#495 z-order). 그래서 clip은 바깥이 쥐고 배율은 안쪽만 건다.
+ * 배율 1.0에서도 겹은 그대로다 — 배율에 따라 DOM 모양이 갈리면 조건부 JSX의 depth 분기가 되고,
+ * 이 레포는 그걸로 이미 한 번 remount에 데였다.
+ *
+ * `data-bg-pattern`이 바깥에 붙는 것도 같은 이유다: 이 속성을 쓰는 쪽(iOS에서 배경이 떨어지면
+ * compositeRaster로 내려야 한다는 아래 [risk])이 필요한 건 서브트리 전체지 안쪽 한 겹이 아니다.
  */
-export function backgroundPatternStyle(image?: string): CSSProperties {
-  return image
-    ? {
-        backgroundImage: `url("${image}")`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-      }
-    : {};
+export function BackgroundPatternLayer({
+  image,
+  scale = 1,
+  clipPath,
+}: {
+  image?: string;
+  /** 표시 배율 1.0~1.5(#680). 1.0 = 지금까지의 cover 렌더 그대로. */
+  scale?: number;
+  clipPath?: string;
+}) {
+  if (!image) return null;
+  return (
+    <div data-bg-pattern="true" aria-hidden="true" style={{ position: 'absolute', inset: 0, clipPath, overflow: 'hidden' }}>
+      <div
+        data-bg-pattern-image="true"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          // transform-origin 기본값 center가 backgroundPosition center와 같은 기준점이라,
+          // 확대해도 화면 중앙이 그대로 중앙이다(오프셋 컨트롤을 안 여는 근거 — #680 D6).
+          transform: `scale(${scale})`,
+          backgroundImage: `url("${image}")`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+        }}
+      />
+    </div>
+  );
 }

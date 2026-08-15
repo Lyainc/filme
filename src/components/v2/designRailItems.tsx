@@ -550,6 +550,22 @@ function SizePanel({ photo, actions }: { photo: Photo; actions: RailActions }) {
  */
 const BACKGROUND_PATTERN_MOODS: readonly LayoutId[] = ['editorial', 'criterion', 'stub'];
 
+/**
+ * 배경 배율 상한(#680) — 로고 스탬프의 1.3과 다른 건 취향이 아니라 해상도다. 배경은 캔버스 전면을
+ * 채우느라 maxSide = TARGET_HEIGHT(1534)로 굽는데 저장물은 pixelRatio 2라 배율 1.0에서 이미 약
+ * 2배 업스케일이고, 2.0이면 4배가 돼 눈에 띄게 뭉갠다. 이 값을 올리려면 useLogoCrop의 maxSide부터
+ * 올려야 하고, 그러면 #673이 "제일 큰 payload"로 지목한 배경 blob이 같이 커진다.
+ *
+ * 하한이 1.0인 건 cover 미만으로 내리면 캔버스에 빈 자리가 생겨 반복·단색·blur 중 하나를 새로
+ * 정해야 하기 때문이다. 타일 반복은 backgroundPatterns.tsx가 이미 기각해뒀다(임의의 사진이라
+ * 이음매가 보인다). 하한을 1.0으로 잠그면 그 결정 자체가 없어진다.
+ *
+ * 무드별로 안 갈리므로 stampScaleMaxFor 같은 함수로 감싸지 않는다 — 로고가 그 장치를 가진 건
+ * MoodMinimal이 실효 scale을 따로 클램프하기 때문인데(PR #486 P1), 배경은 minimal에 안 실리고
+ * 세 무드가 같은 0.626 캔버스를 쓴다.
+ */
+const BACKGROUND_SCALE_MAX = 1.5;
+
 function BackgroundPatternPanel({ photo }: { photo: Photo }) {
   const image = photo.state.components.backgroundPatternImage;
   // 업로드는 로고 스탬프와 **같은** 자유비 크롭 흐름(useLogoCrop, #220)을 그대로 탄다 — 새 의존성도
@@ -586,6 +602,20 @@ function BackgroundPatternPanel({ photo }: { photo: Photo }) {
             이미지 제거
           </button>
         </div>
+      )}
+
+      {/* 배율(#680) — 이미지가 있을 때만. 없으면 조절할 대상이 없어 죽은 컨트롤이 된다.
+          크기 패널이 아니라 여기 두는 건 그 패널이 이미 넘치기도 하지만(#682), RailItem.appliesTo가
+          이미 BACKGROUND_PATTERN_MOODS로 3무드 게이팅을 해줘 노출 조건을 새로 짤 게 없어서다. */}
+      {image && (
+        <BrightnessSlider
+          label="배경 크기"
+          id={`${ID_PREFIX}-background-scale`}
+          value={photo.state.components.backgroundPatternScale ?? 1}
+          onChange={(backgroundPatternScale) => photo.updateComponents({ backgroundPatternScale })}
+          min={1}
+          max={BACKGROUND_SCALE_MAX}
+        />
       )}
 
       <button
