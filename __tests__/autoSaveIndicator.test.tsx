@@ -24,6 +24,16 @@ describe('AutoSaveIndicator (#436)', () => {
     expect(onToggle).toHaveBeenCalledTimes(1);
   });
 
+  // #677 — aria-label에서 조건절("클릭하면 꺼요")을 걷어내면서 그 안내를 title로 옮겼다.
+  // 라벨만 검사하면 정보가 사라져도 통과하므로 title 쪽을 같이 잠근다(claude-review PR #700 P2).
+  test('끄고 켜는 방법은 title이 지고 있다', () => {
+    const { rerender } = render(<AutoSaveIndicator enabled lastSavedAt={null} onToggle={() => {}} />);
+    expect(screen.getByRole('switch').getAttribute('title')).toBe('자동 임시저장 켜짐 — 클릭하면 꺼요');
+
+    rerender(<AutoSaveIndicator enabled={false} lastSavedAt={null} onToggle={() => {}} />);
+    expect(screen.getByRole('switch').getAttribute('title')).toBe('자동 임시저장 꺼짐 — 클릭하면 켜요');
+  });
+
   test('enabled=false면 꺼짐 상태 라벨을 노출', () => {
     render(<AutoSaveIndicator enabled={false} lastSavedAt={null} onToggle={() => {}} />);
 
