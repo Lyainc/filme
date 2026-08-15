@@ -803,12 +803,26 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
                       iconPath={MENU_ICONS.crop}
                       label="재크롭"
                       disabled={!crop.originalSrc}
-                      title={crop.originalSrc ? undefined : '포스터 원본이 없어요. 포스터를 다시 업로드해 주세요.'}
                       onClick={() => {
                         setMenuOpen(false);
                         crop.openRecrop();
                       }}
                     />
+                  )}
+                  {/* 비활성 사유를 화면에 둔다(#706) — 이 문구는 원래 위 행의 title에만 있었다.
+                      #607부터 데스크톱도 PhoneFrame 400px 규격으로 띄우고 주 입력이 터치라, hover가
+                      안 오는 사용자에겐 "왜 안 눌리는지"가 아예 존재하지 않았다. #677 톤 정비가 이
+                      문구를 축 3(무슨 일 + 다음 행동)으로 고쳤지만 그건 문구 축이고 노출 채널은
+                      그대로였다 — AutoSaveIndicator가 #570에서 한 자리에서만 세운 규칙("title 툴팁에
+                      기대지 않는다")을 여기에도 적용한다.
+                      title은 같이 지운다: 같은 문구가 두 자리에 복제되면 한쪽만 고쳐져 갈린다
+                      (COPY_TONE_GUIDE 축 3 "같은 문구가 두 호출부에 복제돼 있으면 그 복제부터 없앨 것").
+                      disabled 버튼은 포커스를 못 받아 aria-describedby가 닿지 않으므로, 형제 문단으로
+                      두는 것이 스크린리더 읽기 순서상으로도 맞다. */}
+                  {croppedImageUrl && !crop.originalSrc && (
+                    <p className="px-2.5 pb-1 pt-0.5 text-caption text-fg-muted">
+                      포스터 원본이 없어요. 포스터를 다시 업로드해 주세요.
+                    </p>
                   )}
                 </div>
               )}
