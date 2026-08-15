@@ -443,10 +443,10 @@ export function usePhototicket() {
         // 현재 lossy 동작(재업로드 유도)으로 폴백한다. restoredDraftHadPosterRef는 위 localStorage
         // 복원 effect(선언 순서상 먼저 실행)가 동기로 채워두므로, 이 비동기 catch 시점엔 이미
         // 확정돼 있다 — 포스터가 있던 draft에서만 알린다. 포스터가 아예 없던 draft·첫 방문(=이
-        // 환경이 그냥 IndexedDB를 지원 안 함)까지 "다시 올려주세요"를 띄우면 잃은 것도 없는데
+        // 환경이 그냥 IndexedDB를 지원 안 함)까지 "다시 올려 주세요"를 띄우면 잃은 것도 없는데
         // 매번 경고가 뜬다.
         if (restoredDraftHadPosterRef.current) {
-          showError('저장된 포스터를 불러오지 못했어요. 포스터를 다시 올려주세요.', { persistent: true });
+          showError('저장된 포스터를 불러오지 못했어요. 포스터를 다시 올려 주세요.', { persistent: true });
         }
       })
       .finally(() => {
@@ -685,7 +685,7 @@ export function usePhototicket() {
           // 저장 시도에서 다시 시도한다. 비동기라 saveDraft의 반환값엔 안 실리므로 별도로 알린다.
           // ephemeral인 이유: 실패가 이어지면 매 autosave tick마다 다시 호출되는데, showError의
           // 동일 메시지 dedup이 재생 애니메이션 없이 타이머만 늘려 스팸 없이 계속 보인다.
-          showError('포스터 이미지 저장에 실패했어요.');
+          showError('포스터 저장에 실패했어요. 저장 공간이 찼거나 비공개 모드일 수 있어요.');
         }
       });
     }

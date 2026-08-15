@@ -101,7 +101,7 @@ describe('MobileEditorShell 필드 커버리지 (#266 PR-E)', () => {
     const drawer = await screen.findByRole('dialog', { name: '티켓 항목' });
     // 상단 슬롯의 OCR 진입점(#388: 업로드 후 유일한 OCR 진입점)이 드로어 안에 있다. 문구는 드로어
     // 컨텍스트(#424)로 분기 — 랜딩 인스턴스와 다르다.
-    expect(within(drawer).getByRole('button', { name: '스크린샷으로 채우기' })).toBeDefined();
+    expect(within(drawer).getByRole('button', { name: '스크린샷으로 자동입력' })).toBeDefined();
 
     // 행 본문 탭('상영관'은 티켓 FieldTap과 접근명이 겹치므로 드로어 스코프로 특정) →
     // 드로어 닫힘 + handleField가 자동 표시 on + 인플레이스 필드바 오픈.

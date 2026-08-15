@@ -803,7 +803,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
                       iconPath={MENU_ICONS.crop}
                       label="재크롭"
                       disabled={!crop.originalSrc}
-                      title={crop.originalSrc ? undefined : '재크롭하려면 포스터를 다시 업로드해 주세요'}
+                      title={crop.originalSrc ? undefined : '포스터 원본이 없어요. 포스터를 다시 업로드해 주세요.'}
                       onClick={() => {
                         setMenuOpen(false);
                         crop.openRecrop();

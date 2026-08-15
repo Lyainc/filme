@@ -81,7 +81,7 @@ export default function Home() {
   }, [croppedImageUrl, setRecommendedColors]);
 
   // 포스터는 완료 조건이 아니다(#631 D3) — 없어도 제목·개봉연도만 채우면 준비완료.
-  const railMessage = !canExport ? '제목 · 개봉연도를 채워주세요' : '티켓이 준비됐어요';
+  const railMessage = !canExport ? '제목과 개봉연도가 필요해요' : '티켓이 준비됐어요';
 
   // html 배경 동기화(#402→#415). MobileEditorShell은 이제 theme를 그대로 따르므로(#415) html의
   // 기존 .theme-dark 동기화(위 useEffect)와 저절로 맞아 별도 forcing이 필요 없다. ResultStage만
