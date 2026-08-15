@@ -330,4 +330,23 @@ describe('TitleSheet 키보드 접근성 (#198 재구현)', () => {
 
     await act(async () => { resolveSearch(jsonResponse(SEARCH_RESPONSE)); });
   });
+
+  // #677 — 에러 문구가 호출부 옵션에서 useKobisSearch의 DEFAULT_MESSAGES로 올라갔다.
+  // 호출부(FieldEditorBody·InPlaceFieldEditor)가 override를 안 주므로 이 기본값이 유일한
+  // 소스이고, 그게 실제로 화면까지 오는지 잠근다(claude-review PR #700 P1).
+  test('검색 결과가 없으면 훅 기본 문구가 그대로 뜬다 (override 없음)', async () => {
+    globalThis.fetch = ((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.startsWith('/api/kobis/search')) {
+        return Promise.resolve(jsonResponse({ movieListResult: { movieList: [] } }));
+      }
+      return Promise.reject(new Error(`unexpected fetch: ${url}`));
+    }) as typeof fetch;
+
+    render(<Harness />);
+    fireEvent.change(titleInput(), { target: { value: '없는영화' } });
+    await flushDebounce();
+
+    expect(screen.getByText('검색 결과가 없어요. 제목을 다시 확인해 주세요.')).toBeTruthy();
+  });
 });
