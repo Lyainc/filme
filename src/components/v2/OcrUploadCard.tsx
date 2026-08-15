@@ -92,10 +92,10 @@ export function OcrUploadCard({
       return 'HEIC 파일은 지원하지 않아요. PNG/JPG로 저장해 주세요.';
     }
     if (!ALLOWED_MIME.has(file.type)) {
-      return 'PNG, JPG, WebP 파일만 인식할 수 있어요.';
+      return 'PNG, JPG, WebP 파일만 인식할 수 있어요. 다른 파일을 골라 주세요.';
     }
     if (file.size > MAX_BYTES) {
-      return '파일 크기가 10MB를 초과해요.';
+      return '파일 크기가 10MB를 초과해요. 더 작은 이미지를 골라 주세요.';
     }
     return null;
   }
@@ -152,7 +152,7 @@ export function OcrUploadCard({
         setInfo(kobisInfo);
         if (!kobisInfo.titleOg && !kobisInfo.actors) {
           if (onNeedManualTitle) onNeedManualTitle();
-          else showToast('영화 제목을 확인 후 검색해 주세요.');
+          else showToast('영화 정보를 찾지 못했어요. 제목을 확인하고 다시 검색해 주세요.');
         }
       });
     }
@@ -172,7 +172,7 @@ export function OcrUploadCard({
 
       // shared 윈도우 소진(#635 c2) — "인식된 정보가 없어요"와 원인이 다르므로 갈라 안내하고,
       // 아래 필드 적용 로직(전부 빈 결과이므로 어차피 no-op)은 타지 않는다. 이탈 경로는 이 토스트가
-      // 아니라 Landing의 exit row(포스터 있으면 올리기 · 포스터 없이 직접 입력)가 상시 담당한다.
+      // 아니라 Landing의 exit row(포스터 업로드 · 포스터 없이 직접 입력)가 상시 담당한다.
       if (result.rateLimited) {
         showToast('지금 요청이 많아요. 잠시 후 다시 시도하거나 직접 입력해 주세요.');
         return;
@@ -252,7 +252,7 @@ export function OcrUploadCard({
 
   // 랜딩/드로어 문구 분기(#424) — aria-label도 같이 바꿔 보이는 텍스트와 접근명을 맞춘다
   // (WCAG 2.5.3 Label in Name — 스크린리더가 화면과 다른 문구를 읽으면 안 된다).
-  const idleLabel = context === 'landing' ? '티켓 스크린샷으로 자동입력' : '스크린샷으로 채우기';
+  const idleLabel = context === 'landing' ? '티켓 스크린샷으로 자동입력' : '스크린샷으로 자동입력';
   const prefersReducedMotion = useMatchMedia('(prefers-reduced-motion: reduce)');
 
   return (

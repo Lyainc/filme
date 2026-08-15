@@ -10,7 +10,10 @@ import { extractKobisActorsRuntime } from '@/utils/kobisLookup';
  * 그 drift가 #242의 onCompositionEnd 회귀를 낳았다(MovieInfoForm은 #479 이후 미사용 dead
  * code가 되어 제거됨).
  *
- * ARIA 키보드 내비(#198), 에러 문구 톤, 드롭다운 마크업 같은 표현 계층은 각 컴포넌트가 소유한다.
+ * ARIA 키보드 내비(#198), 드롭다운 마크업 같은 표현 계층은 각 컴포넌트가 소유한다. 에러 문구는
+ * #677 톤 정비로 이 훅이 기본값을 쥔다 — 호출부 둘이 같은 문자열을 각자 들고 있어 한쪽만 고치면
+ * 같은 KOBIS 무매칭이 자리에 따라 다른 격으로 떴다(docs/COPY_TONE_GUIDE.md 축 3). 자리마다
+ * 달라야 하면 `messages`로 덮어쓴다.
  */
 
 export interface KobisSearchMessages {
@@ -20,10 +23,16 @@ export interface KobisSearchMessages {
   requestFailed: string;
 }
 
+/** 축 3([무슨 일] + [다음 행동]) 기본 문구 — 덮어쓰지 않으면 이게 쓰인다. */
+const DEFAULT_MESSAGES: KobisSearchMessages = {
+  noResults: '검색 결과가 없어요. 제목을 다시 확인해 주세요.',
+  requestFailed: '검색 중 문제가 생겼어요. 잠시 후 다시 시도해 주세요.',
+};
+
 export interface UseKobisSearchOptions {
   /** 결과 선택 시 폼에 부분 반영 — 먼저 제목/원제/개봉일, detail 도착 후 배우/러닝타임. */
   apply: (patch: Partial<MovieInfo>) => void;
-  messages: KobisSearchMessages;
+  messages?: Partial<KobisSearchMessages>;
   /** detail 보강 in-flight 여부를 부모에 알림(데스크톱 위저드 '다음' 게이팅용, #198). */
   onDetailPending?: (pending: boolean) => void;
 }
@@ -42,7 +51,8 @@ export interface UseKobisSearch {
   selectMovie: (movie: KobisMovie) => void;
 }
 
-export function useKobisSearch({ apply, messages, onDetailPending }: UseKobisSearchOptions): UseKobisSearch {
+export function useKobisSearch({ apply, messages: overrides, onDetailPending }: UseKobisSearchOptions): UseKobisSearch {
+  const messages = { ...DEFAULT_MESSAGES, ...overrides };
   const [results, setResults] = useState<KobisMovie[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

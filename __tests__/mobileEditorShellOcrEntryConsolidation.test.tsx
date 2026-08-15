@@ -195,7 +195,7 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
     ocrImpl = async () => ({ theater: 'CGV 용산아이파크몰' });
 
     const ocrCard = screen.getByRole('button', { name: '티켓 스크린샷으로 자동입력' });
-    const posterExit = screen.getByRole('button', { name: '포스터 있으면 올리기' });
+    const posterExit = screen.getByRole('button', { name: '포스터 업로드' });
     fireEvent.change(ocrFileInput(), {
       target: { files: [new File(['x'], 'ticket.png', { type: 'image/png' })] },
     });
@@ -235,7 +235,7 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
     });
     const landing = () => screen.getByTestId('landing');
     expect(landing().classList.contains('fixed')).toBe(false);
-    expect(screen.getByRole('button', { name: '포스터 있으면 올리기' }).closest('.hidden')).not.toBeNull();
+    expect(screen.getByRole('button', { name: '포스터 업로드' }).closest('.hidden')).not.toBeNull();
 
     // 초기화 2탭(#374) — 더블탭 가드(350ms) 밖에서 재탭해야 실행된다.
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
@@ -246,7 +246,7 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
     // 새 문서 — 오버레이 랜딩이 다시 뜨고, 그 안 CTA·이탈 경로도 더 이상 숨어 있지 않다.
     expect(landing().classList.contains('fixed')).toBe(true);
     expect(screen.getByRole('button', { name: '티켓 스크린샷으로 자동입력' }).closest('.hidden')).toBeNull();
-    expect(screen.getByRole('button', { name: '포스터 있으면 올리기' }).closest('.hidden')).toBeNull();
+    expect(screen.getByRole('button', { name: '포스터 업로드' }).closest('.hidden')).toBeNull();
   });
 
   test('드로어에서 OCR 시작 → KOBIS 응답 전에 드로어를 닫아도(unmount) 응답 도착 시 titleOg/releaseDate가 폼에 반영된다 (claude-review PR #413 P0)', async () => {

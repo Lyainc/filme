@@ -100,7 +100,6 @@ function TitleSheet({ photo }: { photo: Photo }) {
   // 직접 소유 — useKobisSearch는 검색 상태만 내고 ARIA/키보드는 각 호출부 몫(훅 주석 참고).
   const { results, loading, error, open, setOpen, scheduleSearch, runSearch, selectMovie } = useKobisSearch({
     apply: photo.updateMovieInfo,
-    messages: { noResults: '검색 결과가 없어요.', requestFailed: '검색 중 문제가 생겼어요.' },
   });
 
   // 자동완성 키보드 내비 — 하이라이트된 결과 인덱스(-1 = 없음). aria-activedescendant로
