@@ -387,10 +387,28 @@ try {
   await sleep(900);
 
   // ── 전제: 레일 슬롯 열기 ────────────────────────────────────────────────────
-  await page.evaluate(() => document.querySelector('[data-rail-id]').click());
+  // 기본은 첫 항목(무드)이다 — #563 불변식(dock 232.6 / 프리뷰 226.8×362.3)이 그 상태 기준이라
+  // 기본값을 바꾸면 표가 통째로 갈린다. `--rail <id>`(mood·color·texture·emboss·opacity·size…)로
+  // 다른 항목을 열면 **그 패널의** 슬롯 넘침을 잴 수 있다(#706에서 추가 — 후보정 패널에 선택
+  // 옵션 설명 줄이 붙어 예산을 다시 재야 했다. #682가 항목별 높이를 실측할 때 세션 스크립트를
+  // 다시 쓴 자리이기도 하다).
+  // dock은 #563 이후 고정 높이 슬롯이라 어느 항목을 열어도 232.6이고, 항목마다 갈리는 건
+  // railSlot.scrollHeight 하나다 — 그래서 이 옵션은 아래 불변식 대조를 안 건드린다.
+  const railId = arg('rail', '');
+  const railSel = railId ? `[data-rail-id="${railId}"]` : '[data-rail-id]';
+  const railFound = await page.evaluate((sel) => {
+    const el = document.querySelector(sel);
+    if (!el) return false;
+    el.click();
+    return true;
+  }, railSel);
+  if (!railFound) {
+    throw new Error(`레일 항목을 못 찾았다: ${railSel} — appliesTo로 이 무드에서 숨겨진 항목일 수 있다`);
+  }
   await sleep(700);
   const railOpen = await page.evaluate(
-    () => document.querySelector('[data-rail-id]')?.getAttribute('aria-expanded') === 'true',
+    (sel) => document.querySelector(sel)?.getAttribute('aria-expanded') === 'true',
+    railSel,
   );
   if (!railOpen) {
     throw new Error(
