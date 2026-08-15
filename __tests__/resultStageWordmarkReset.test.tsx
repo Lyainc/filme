@@ -73,7 +73,7 @@ function seedExportableDraft() {
 async function enterResultStage(user: ReturnType<typeof userEvent.setup>) {
   seedExportableDraft();
   render(<Home />);
-  await user.click(screen.getByRole('button', { name: /포스터 있으면 올리기/ }));
+  await user.click(screen.getByRole('button', { name: /포스터 업로드/ }));
   fireEvent.change(posterFileInput(), { target: { files: [pngFile('poster.png')] } });
   await user.click(await screen.findByText('mock-apply'));
   await user.click(await screen.findByRole('button', { name: '완료' }));

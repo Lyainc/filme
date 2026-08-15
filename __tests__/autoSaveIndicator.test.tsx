@@ -19,7 +19,7 @@ describe('AutoSaveIndicator (#436)', () => {
     const user = userEvent.setup();
     render(<AutoSaveIndicator enabled lastSavedAt={null} onToggle={onToggle} />);
 
-    await user.click(screen.getByRole('switch', { name: '자동 임시저장 켜짐 — 클릭하면 꺼요' }));
+    await user.click(screen.getByRole('switch', { name: '자동 임시저장 켜짐' }));
 
     expect(onToggle).toHaveBeenCalledTimes(1);
   });
@@ -27,7 +27,7 @@ describe('AutoSaveIndicator (#436)', () => {
   test('enabled=false면 꺼짐 상태 라벨을 노출', () => {
     render(<AutoSaveIndicator enabled={false} lastSavedAt={null} onToggle={() => {}} />);
 
-    expect(screen.getByRole('switch', { name: '자동 임시저장 꺼짐 — 클릭하면 켜요' })).toBeTruthy();
+    expect(screen.getByRole('switch', { name: '자동 임시저장 꺼짐' })).toBeTruthy();
   });
 
   test('#570 — title 툴팁 없이도 "자동저장" 캡션이 항상 보인다', () => {

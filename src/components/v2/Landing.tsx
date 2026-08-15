@@ -298,7 +298,7 @@ function MoodCarousel({
         if (e.detail !== 0 && (gesture.current.swiped || gesture.current.longPressed)) return;
         onEnterMood(layout.id);
       }}
-      aria-label={`${layout.label} 무드로 바로 시작 · ${layout.caption}`}
+      aria-label={`${layout.label} 무드로 바로 시작 — ${layout.caption}`}
       title={layout.caption}
       data-touch={String(width)}
       className="shrink-0 transition-transform active:scale-[0.97]"
@@ -404,7 +404,7 @@ function MoodCarousel({
  * **샘플 클릭은 훑어보기가 아니라 즉시 커밋이다** — 예전 무드칩(`LayoutStrip`)은 셸의 `heroLayout`
  * 로컬 미러만 바꾸고 실제 `components.layout` 커밋은 다른 CTA가 맡았지만, auto-scroll 갤러리의
  * 샘플은 그 자체가 완결된 액션이다: 클릭하면 `onEnterMood(id)`가 그 무드를 바로 커밋하고 편집
- * 화면으로 들어간다 — "포스터 있으면 올리기"·"포스터 없이 직접 입력"·OCR 성공과 나란한 **네 번째**
+ * 화면으로 들어간다 — "포스터 업로드"·"포스터 없이 직접 입력"·OCR 성공과 나란한 **네 번째**
  * 진입점이다(#631 경로, 같은 canvasReady 커밋). 크롭 프리셋
  * (`ImageCropModal`이 읽는 `posterOrientation`)이 랜딩에서 고른 무드와 어긋나지 않는 이유(#529)도
  * 동일 — 무드가 커밋된 채로 편집에 들어가므로 재크롭 없이 방향이 맞다. 배경 타일 그리드는
@@ -424,7 +424,7 @@ export function Landing({
   children,
 }: {
   mode: 'overlay' | 'inline' | 'hidden';
-  /** 이탈 경로 "포스터 있으면 올리기" — 셸의 숨은 포스터 input을 그 자리에서 click()한다(같은 제스처, 라우트 전환 0). */
+  /** 이탈 경로 "포스터 업로드" — 셸의 숨은 포스터 input을 그 자리에서 click()한다(같은 제스처, 라우트 전환 0). */
   onCta: () => void;
   /** 이탈 경로 "포스터 없이 직접 입력" — 포스터 없이 편집으로 진입(#631). 셸의 canvasReady를 세운다. */
   onSkip: () => void;
@@ -551,8 +551,11 @@ export function Landing({
               새 세로 공간 0 — 예전 포스터 CTA 자리(caption + "포스터 없이 시작")를 한 줄로 합쳤다.
               세 번째 링크였던 TMDB 검색(#537)은 약관 위험으로 철거됐다(#665). 그게 맡던
               "포스터 파일을 직접 못 구한 사용자"를 남은 두 링크가 나눠 받으므로 문구도 그 쌍으로
-              읽히게 잡았다 — "포스터 있으면 올리기 · 포스터 없이 직접 입력"은 있고 없고를 그
-              자리에서 갈라주고, 없는 쪽도 막다른 길이 아니라는 걸 링크 이름만으로 말한다(#631 경로).
+              읽히게 잡았다 — "포스터 업로드 · 포스터 없이 직접 입력"은 있고 없고를 그 자리에서
+              갈라주고, 없는 쪽도 막다른 길이 아니라는 걸 링크 이름만으로 말한다(#631 경로).
+              #677 톤 정비로 "포스터 있으면 올리기" → "포스터 업로드": 조건절이 사용자에게 판정을
+              시키는 말투였고(docs/COPY_TONE_GUIDE.md 축 2), 있고 없고의 대비는 조건절이 아니라
+              짝의 "없이"가 이미 지고 있어 쌍의 의미가 안 줄었다.
 
               relative + 첫 자식 scrim(-z-[5] bg-bg) — 위 카피와 같은 이유(#615 검증 코멘트).
               text-fg-muted가 배경 타일(-z-10, overlay 모드에서만 존재) 위에 직접 떠 있어 실측
@@ -570,7 +573,7 @@ export function Landing({
           >
             <div aria-hidden="true" className="absolute inset-0 -z-[5] bg-bg" />
             <button type="button" onClick={onCta} className="min-h-touch inline-flex items-center underline active:scale-[0.97]">
-              포스터 있으면 올리기
+              포스터 업로드
             </button>
             <span aria-hidden="true" className="text-fg-faint">·</span>
             {/* 포스터 없이 시작(#631) — 단색 바탕 + 조판만으로도 티켓이 성립하는 경로의 진입점. */}

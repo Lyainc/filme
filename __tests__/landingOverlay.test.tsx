@@ -60,7 +60,7 @@ describe('랜딩 오버레이(#614)', () => {
     expect(landing().textContent).toContain(UNOFFICIAL_TICKET_NOTICE);
     // OCR이 주 CTA(#635), 포스터 업로드·직접 입력은 그 아래 이탈 경로.
     expect(ocrButton()).toBeDefined();
-    expect(screen.getByRole('button', { name: '포스터 있으면 올리기' })).toBeDefined();
+    expect(screen.getByRole('button', { name: '포스터 업로드' })).toBeDefined();
     expect(screen.getByTestId('landing-skip-poster').textContent).toBe('포스터 없이 직접 입력');
     // 히어로 auto-scroll 갤러리(#615, 2026-08-04 개정) — 무드칩 대신 무드 샘플이 랜딩에 함께 뜬다.
     // 목록은 LAYOUTS 전체가 아니라 GALLERY_LAYOUTS다(35mm Wide 제외, 2026-08-08 사용자 피드백).
@@ -84,7 +84,7 @@ describe('랜딩 오버레이(#614)', () => {
     // 마케팅 카피는 빠지고(편집 화면이다) 진입 컨트롤만 남는 inline 모드.
     expect(landing().classList.contains('hidden')).toBe(false);
     expect(landing().textContent).not.toContain('내 굿즈가 돼요');
-    expect(screen.getByRole('button', { name: '포스터 있으면 올리기' })).toBeDefined();
+    expect(screen.getByRole('button', { name: '포스터 업로드' })).toBeDefined();
     expect(ocrButton()).toBeDefined();
   });
 
@@ -100,7 +100,7 @@ describe('랜딩 오버레이(#614)', () => {
     expect(clicked).toBe(1);
   });
 
-  test('이탈 경로 "포스터 있으면 올리기" 1탭이 포스터 input을 그 자리에서 click하고, 파일 선택에 오버레이가 걷힌다', () => {
+  test('이탈 경로 "포스터 업로드" 1탭이 포스터 input을 그 자리에서 click하고, 파일 선택에 오버레이가 걷힌다', () => {
     render(<Harness />);
     const input = posterInput();
     let clicked = 0;
@@ -110,7 +110,7 @@ describe('랜딩 오버레이(#614)', () => {
       clicked += 1;
     });
 
-    fireEvent.click(screen.getByRole('button', { name: '포스터 있으면 올리기' }));
+    fireEvent.click(screen.getByRole('button', { name: '포스터 업로드' }));
     expect(clicked).toBe(1);
     expect(landingOverlayShown()).toBe(true); // 아직 안 고름 — 여기서 걷히면 빈 셸이 드러난다
 

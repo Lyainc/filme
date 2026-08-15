@@ -15,8 +15,8 @@ export function AutoSaveIndicator({ enabled, lastSavedAt, onToggle }: AutoSaveIn
         type="button"
         role="switch"
         aria-checked={enabled}
-        aria-label={enabled ? '자동 임시저장 켜짐 — 클릭하면 꺼요' : '자동 임시저장 꺼짐 — 클릭하면 켜요'}
-        title={enabled ? '자동 임시저장 켜짐' : '자동 임시저장 꺼짐'}
+        aria-label={enabled ? '자동 임시저장 켜짐' : '자동 임시저장 꺼짐'}
+        title={enabled ? '자동 임시저장 켜짐 — 클릭하면 꺼요' : '자동 임시저장 꺼짐 — 클릭하면 켜요'}
         onClick={onToggle}
         className="inline-flex h-touch w-touch items-center justify-end pr-1 transition-colors active:scale-[0.97]"
       >

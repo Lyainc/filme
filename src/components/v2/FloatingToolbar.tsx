@@ -391,7 +391,7 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
       <button
         type="button"
         onClick={() => onPrefsChange((prev) => ({ ...prev, hidden: true }))}
-        aria-label="툴바 숨기기"
+        aria-label="툴바 숨김"
         className={btn}
       >
         <svg {...ICON}>

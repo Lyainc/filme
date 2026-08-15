@@ -2,7 +2,7 @@
  * #635·#615 회귀 테스트.
  *
  *  - rate limit(shared 윈도우 소진)이 "인식된 정보가 없어요"와 다른 안내로 갈리고, 그 뒤에도
- *    이탈 경로(포스터 있으면 올리기 · 직접 입력)가 막히지 않는다(#635 c2 · ac2).
+ *    이탈 경로(포스터 업로드 · 직접 입력)가 막히지 않는다(#635 c2 · ac2).
  *  - 랜딩 히어로 auto-scroll 갤러리(#615, 2026-08-04 개정)의 샘플 클릭은 훑어보기가 아니라
  *    그 자리에서 셸의 진짜 components.layout을 커밋한다 — 그래야 크롭 프리셋이 방금 고른
  *    무드와 어긋나지 않는다(#529). 예전 무드칩(LayoutStrip)의 "훑어보고 다른 CTA가 나중에
@@ -68,7 +68,7 @@ describe('OCR rate limit 이탈 경로 (#635 c2)', () => {
 
     // 필드가 하나도 안 채워졌으니 랜딩은 계속 오버레이 — 이탈 경로가 여전히 화면에 있어야 한다.
     expect(landing().classList.contains('fixed')).toBe(true);
-    expect(screen.getByRole('button', { name: '포스터 있으면 올리기' })).toBeDefined();
+    expect(screen.getByRole('button', { name: '포스터 업로드' })).toBeDefined();
     expect(screen.getByTestId('landing-skip-poster')).toBeDefined();
     expect(captured.movieInfo.theater).toBe('');
   });
