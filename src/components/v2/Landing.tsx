@@ -92,6 +92,7 @@ function LandingBackdropTiles() {
   return (
     <div
       aria-hidden="true"
+      data-testid="landing-backdrop"
       className="pointer-events-none absolute inset-0 -z-10 overflow-hidden opacity-[0.09]"
       // 히어로 갤러리가 서는 가운데를 비워주는 스포트라이트 마스크 — 배경이 화면 전체에 같은
       // 세기로 깔리면 앞의 샘플과 명도가 붙어 시선이 안 모인다(사용자 피드백). 가장자리에서만

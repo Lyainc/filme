@@ -97,6 +97,11 @@ const CAROUSEL_SLOTS = [
   { opacity: 0.27, scale: 0.6 },
 ];
 
+// 배경 타일 그리드(#615 LandingBackdropTiles)의 타일 개수 — Landing.tsx의 `{ length: 15 }`를
+// 미러링한다(CAROUSEL_* 상수와 같은 관례). 레이어가 통째로 지워지거나 타일이 0장으로 줄어드는
+// 회귀를 잡는 용도라, 개수를 바꾸면 여기도 같이 바꿀 것.
+const BACKDROP_TILE_COUNT = 15;
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const browser = await puppeteer.launch({
@@ -193,6 +198,36 @@ try {
   await landingPage.evaluate(() => document.fonts.ready);
   await sleep(300);
   await measureFit('랜딩 오버레이', '[data-testid="landing"]', landingPage);
+
+  // ── 배경 타일 그리드(#615 LandingBackdropTiles) — 프레임 봉쇄 ────────────────
+  // 레이어 자신은 absolute inset-0라 프레임과 같은 사각형이어야 한다(위 measureFit 축 재사용).
+  // **그것만으로는 이 레이어의 봉쇄를 못 잰다.** 안쪽 그리드는 `-m-10 rotate-[-8deg] scale-125`라
+  // 설계상 레이어보다 크고, 그게 프레임 밖으로 안 나가는 건 오직 레이어의 `overflow-hidden`
+  // 덕분이다. getBoundingClientRect는 조상 클리핑을 반영하지 않으므로 안쪽 그리드를 measureFit에
+  // 넣으면 멀쩡한 트리에서도 항상 실패한다 — 그래서 봉쇄를 두 명제로 쪼개 잰다:
+  //   (a) 레이어가 hidden으로 자른다(클립이 살아 있다),
+  //   (b) 그리드가 레이어보다 크다(자를 게 실제로 있다 = 회전 후 모서리에 빈칸이 안 생긴다).
+  // (b)가 없으면 누가 rotate/scale을 지웠을 때 (a)만 통과하며 조용히 넘어간다.
+  await measureFit('배경 타일', '[data-testid="landing-backdrop"]', landingPage);
+  const backdrop = await landingPage.evaluate(() => {
+    const layer = document.querySelector('[data-testid="landing-backdrop"]');
+    const grid = layer?.firstElementChild;
+    if (!layer || !grid) return null;
+    const L = layer.getBoundingClientRect();
+    const G = grid.getBoundingClientRect();
+    const cs = getComputedStyle(layer);
+    return {
+      tiles: grid.childElementCount,
+      overflow: { x: cs.overflowX, y: cs.overflowY },
+      layer: { w: +L.width.toFixed(1), h: +L.height.toFixed(1) },
+      grid: { w: +G.width.toFixed(1), h: +G.height.toFixed(1) },
+      gridExceedsLayer: G.width > L.width + 0.5 && G.height > L.height + 0.5,
+    };
+  });
+  if (!backdrop) throw new Error('배경 타일 레이어 또는 그 안쪽 그리드를 못 찾음');
+  backdrop.clipped = backdrop.overflow.x === 'hidden' && backdrop.overflow.y === 'hidden';
+  backdrop.pass =
+    backdrop.clipped && backdrop.gridExceedsLayer && backdrop.tiles === BACKDROP_TILE_COUNT;
 
   // ── 랜딩 무드 캐러셀(#615/#653) ────────────────────────────────────────────
   // 갤러리 컨테이너 자신이 프레임 밖으로 새는지는 기존 measureFit 축을 그대로 재사용한다
@@ -718,6 +753,7 @@ try {
     frameFit: { items: fits, fails: fitFails, pass: fitFails.length === 0 },
     landingSkippedOnDraft,
     posterless,
+    backdrop,
     carousel,
     exitPaths,
     landingBudget,
@@ -732,6 +768,7 @@ try {
     fitFails.length > 0 ||
     !landingSkippedOnDraft ||
     !posterless.pass ||
+    !backdrop.pass ||
     contrastFails.length > 0 ||
     !carousel.pass ||
     !exitPaths.pass ||
