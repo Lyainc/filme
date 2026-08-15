@@ -144,8 +144,9 @@ describe('OCR undo restoration (#163 / #141 P1)', () => {
     expect(captured.movieInfo.theater).toBe('');
     expect(captured.movieInfo.seat).toBe('');
 
+    // `!!` 강제 변환 — 사유는 #693(CLAUDE.md 테스트 절).
     await waitFor(() => {
-      expect(screen.queryByRole('button', { name: '되돌리기' })).toBeNull();
+      expect(!!screen.queryByRole('button', { name: '되돌리기' })).toBe(false);
     });
   });
 
