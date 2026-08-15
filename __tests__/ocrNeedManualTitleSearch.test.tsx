@@ -98,8 +98,10 @@ describe('KOBIS 무매칭 → 제목 검색 UI 연결 (#445)', () => {
     await user.upload(ocrFileInput(dialog), new File(['x'], 'ticket.png', { type: 'image/png' }));
 
     // 드로어가 닫힌다(onNeedManualTitle이 setDrawerOpen(false) + handleField('title') 호출).
+    // `!!` 강제 변환 — waitFor 첫 검사 실패 시 엘리먼트를 received로 넘기면 bun이 노드 그래프
+    // 전체를 직렬화해 4.6초를 먹는다(#693, CLAUDE.md 테스트 절).
     await waitFor(() => {
-      expect(screen.queryByRole('dialog', { name: '티켓 항목' })).toBeNull();
+      expect(!!screen.queryByRole('dialog', { name: '티켓 항목' })).toBe(false);
     });
     expect(screen.queryByText('영화 제목을 확인 후 검색해 주세요.')).toBeNull();
 
