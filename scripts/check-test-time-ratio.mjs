@@ -69,45 +69,61 @@ export function findOutliers(cases, threshold = DEFAULT_THRESHOLD) {
   return { baseline, outliers };
 }
 
-const entry = process.argv[1] && process.argv[1].endsWith('check-test-time-ratio.mjs');
-if (entry) {
-  const path = process.argv[2] || 'junit.xml';
-  const threshold = Number(process.argv[3] || DEFAULT_THRESHOLD);
-  const cases = parseJunit(readFileSync(path, 'utf8'));
+/**
+ * 판정 전부 — exit code와 출력 줄만 돌려주고 프로세스는 안 건드린다. CLI에서 뽑아낸 이유는
+ * 이 함수가 잡는 게 **조용한 통과 4경로**(문턱 NaN · testcase 0 · 표본 11개 미만 · 기준선 0)라서다.
+ * 그 넷은 전부 리뷰가 잡은 실제 구멍이었는데, `if (entry)` 안에 두면 이 스크립트만 "수동 검증에
+ * 기대는 게이트"로 남는다 — 이 레포가 지금 없애고 있는 바로 그 모양이다(#714·#707).
+ */
+export function run(cases, threshold, { path = 'junit.xml', rawThreshold } = {}) {
   const { baseline, outliers } = findOutliers(cases, threshold);
-  console.log(
-    `[test-time] ${cases.length} testcases · p90 기준선 ${baseline.toFixed(1)}ms · 문턱 ${threshold}×`
-  );
+  const out = [
+    `[test-time] ${cases.length} testcases · p90 기준선 ${baseline.toFixed(1)}ms · 문턱 ${threshold}×`,
+  ];
+  const fail = (msg) => ({ code: 1, out, err: [msg] });
+
   if (!Number.isFinite(threshold) || threshold <= 0) {
-    console.error(`[test-time] 문턱이 숫자가 아니다(${process.argv[3]}) — 배수 비교가 전부 false가 된다.`);
-    process.exit(1);
+    return fail(`[test-time] 문턱이 숫자가 아니다(${rawThreshold}) — 배수 비교가 전부 false가 된다.`);
   }
   if (!cases.length) {
-    console.error(`[test-time] ${path}에 testcase가 없다 — 리포터 출력이 비었는지 확인할 것.`);
-    process.exit(1);
+    return fail(`[test-time] ${path}에 testcase가 없다 — 리포터 출력이 비었는지 확인할 것.`);
   }
   // 11개 미만이면 `floor(0.9n)`이 최댓값 자리라 아무도 기준선을 못 넘는다 — 게이트가 도는데
   // 구조적으로 못 우는 상태다. 필터링 실행(`bun test <파일>`)이나 샤딩에 그대로 물리면 조용히
   // 통과하므로 실패로 친다. CI는 전수(1180개)라 걸릴 일이 없다.
   if (cases.length <= 10) {
-    console.error(`[test-time] testcase가 ${cases.length}개뿐이라 p90이 최댓값에 앉는다 — 전수 실행의 XML을 줄 것.`);
-    process.exit(1);
+    return fail(`[test-time] testcase가 ${cases.length}개뿐이라 p90이 최댓값에 앉는다 — 전수 실행의 XML을 줄 것.`);
   }
   // 기준선 0이면 모든 배수가 0으로 떨어져 무엇도 못 잡는다 — 못 재는 건 통과가 아니라 실패다
   // (하네스의 `checked:false`를 실패로 치는 것과 같은 자세, CLAUDE.md 📏 절).
   if (baseline <= 0) {
-    console.error(`[test-time] p90 기준선이 0이다 — 리포터가 time을 안 실었는지 확인할 것.`);
-    process.exit(1);
+    return fail(`[test-time] p90 기준선이 0이다 — 리포터가 time을 안 실었는지 확인할 것.`);
   }
   if (outliers.length) {
-    console.error(`[test-time] 기준선의 ${threshold}배를 넘는 테스트 ${outliers.length}개:`);
-    for (const o of outliers) {
-      console.error(`  ${o.ratio.toFixed(1)}× (${o.ms.toFixed(0)}ms) ${o.file} › ${o.name}`);
-    }
-    process.exit(1);
+    return {
+      code: 1,
+      out,
+      err: [
+        `[test-time] 기준선의 ${threshold}배를 넘는 테스트 ${outliers.length}개:`,
+        ...outliers.map((o) => `  ${o.ratio.toFixed(1)}× (${o.ms.toFixed(0)}ms) ${o.file} › ${o.name}`),
+      ],
+    };
   }
   const top = findOutliers(cases, 0).outliers.slice(0, 3);
-  console.log(
-    `[test-time] 통과. 최댓값 ${top.map((t) => `${t.ratio.toFixed(1)}× ${t.name}`).join(' / ')}`
-  );
+  out.push(`[test-time] 통과. 최댓값 ${top.map((t) => `${t.ratio.toFixed(1)}× ${t.name}`).join(' / ')}`);
+  return { code: 0, out, err: [] };
+}
+
+const entry = process.argv[1] && process.argv[1].endsWith('check-test-time-ratio.mjs');
+if (entry) {
+  const path = process.argv[2] || 'junit.xml';
+  const rawThreshold = process.argv[3];
+  const cases = parseJunit(readFileSync(path, 'utf8'));
+  const { code, out, err } = run(cases, Number(rawThreshold || DEFAULT_THRESHOLD), {
+    path,
+    rawThreshold,
+  });
+  for (const l of out) console.log(l);
+  for (const l of err) console.error(l);
+  if (code) process.exit(code);
 }
