@@ -773,8 +773,11 @@ try {
     modal.present &&
     modal.focus.initialInside &&
     modal.focus.returnsAfterPush &&
-    modal.clickThrough.dialogClosed &&
-    !modal.clickThrough.leaked &&
+    // 헤더 '완료'를 못 찾으면 clickThrough가 null이다 — 옵셔널 체이닝 없이 읽으면 TypeError로
+    // 스크립트가 통째로 죽어 나머지 축(dock·프리뷰·frameFit·대비) 진단까지 같이 날아간다.
+    // 못 잰 건 통과가 아니므로(`checked:false`와 같은 자세) null은 pass:false로 떨어뜨린다.
+    modal.clickThrough?.dialogClosed &&
+    !(modal.clickThrough?.leaked ?? true) &&
     modal.close.escape &&
     modal.close.closeButton &&
     modal.close.backdrop &&
