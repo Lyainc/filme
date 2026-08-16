@@ -19,7 +19,9 @@ Before making architectural changes or implementing new features, consult:
   - **범위 밖 둘**: ① 티켓 렌더 6무드는 디자인 시안이 소유하니 대상이 아니고(폰트 스코프가 티켓 vs UI로 갈리는 것과 같은 축), ② **여기서 본 걸 근거로 UI 라이브러리를 새로 넣지 말 것** — 거기 걸린 시스템(shadcn/ui·Radix·Base UI·Ant·Chakra…)은 정의·ARIA·네이밍 참고용이고, 이 레포는 `cva`+`cn`(`src/utils/cn.ts`, `src/components/ui/variants.ts`)으로 직접 구현하는 자세다.
 
 ### 🧪 Testing
-- **Runner**: `bun test`. Tests live in `__tests__/` (not co-located).
+- **Runner**: `bun run test`(= `bun test --timeout 30000`). Tests live in `__tests__/` (not co-located).
+- **맨 `bun test`로 재지 말 것 — CI와 다른 문턱을 잰다**(#714). CI는 `bun test --timeout 30000`으로 도는데 bun 기본은 5000ms라, 맨 `bun test`는 게이트보다 6배 엄한 걸 재고 부하가 걸리면 **CI가 원리적으로 못 내는 실패**를 로컬에서만 낸다(2026-08-16 실측: dev 서버 3대 + 헤드리스 Chrome과 함께 돌린 전 스위트 1172개에서 최댓값 4.976초 — 기본 5000ms까지 여유 **24ms**. 부하 배수는 중앙 1.42× · p90 1.88×인데 개별로는 33×까지 튄다). `package.json`의 `test`/`test:watch`가 CI와 같은 값을 들고 있고, 한쪽만 바뀌면 `__tests__/ciLocalTimeoutParity.test.ts`가 깨진다.
+  - **테스트별 명시 timeout이 CLI `--timeout`을 이긴다**(bun 1.3.14 실측 — `--timeout 100`에서 명시값 없는 6개는 죽고 명시 35000을 가진 6개는 산다). 예전 주석은 이걸 정반대로 적어놨었다. 그래서 호출 방법에 안 기대는 유일한 방어는 **파일에 명시값을 거는 것**이고, `captureDualRendererPixelDiff.test.ts`가 그 예다(무드 캔버스를 통째로 합성하는 부류라 파일 전체가 같은 값을 쓴다 — @1x/@2x로 보호를 가르면 부하 순간 안 가른 쪽만 죽고, 실제로 그렇게 됐다).
 - **두 부류**: (1) 순수 유닛·static-markup(`renderToStaticMarkup`), (2) **상호작용 테스트** — happy-dom + `@testing-library/react` + `user-event`로 사용자 동작→상태→결과를 검증(#163).
 - **DOM 환경**: `bunfig.toml`의 `[test] preload = ["./__tests__/setup/happydom.ts"]`가 happy-dom 글로벌 + `IS_REACT_ACT_ENVIRONMENT`를 등록. happy-dom 미구현 API(예: `scrollIntoView`)는 그 setup에 no-op 폴리필로 추가.
 - **모듈 mock**: bun `mock.module`은 hoisting 안 됨 — mock 등록 **후** `require(...)`로 대상(예: `runOcr`)을 import해야 가로채짐. top-level `await import`는 tsconfig `target:es5`에서 막히니 `require` 사용.

@@ -375,14 +375,29 @@ function closeEnough(actual: number, expected: number, tolerance = 2) {
   expect(Math.abs(actual - expected)).toBeLessThanOrEqual(tolerance);
 }
 
-// #660 — @2x는 캔버스 면적이 @1x의 4배라 bun 기본 5000ms에 여유가 없다. 격리 5회 반복 2.04~2.46초,
-// 전체 스위트 동시 실행 3.04~3.46초로 측정했고, 이슈 본문이 기록한 실측 최악치(격리 5.1~5.6초,
-// 전체 스위트 리소스 경합 시 22초)까지 덮는다. **CI(.github/workflows/ci.yml)는 이미
-// `bun test --timeout 30000`으로 돌아 30초 여유가 있는데, bun은 테스트별 명시 timeout이
-// 크든 작든 CLI `--timeout`을 무조건 이긴다** — 여기 값을 30000보다 낮게 주면 CI에서 오히려
-// 마진이 줄어 #660이 없애려던 flakiness를 반대로 재도입한다. 그래서 CI 기준선(30000)보다
-// 위인 35000ms로 잡는다. @1x는 실측 0.5~0.8초로 여유가 커서 기본값 그대로 둔다.
-const PIXEL_RATIO_2X_TIMEOUT_MS = 35000;
+// 이 파일 전체의 per-test timeout(#660 → #714). **파일 안의 모든 test가 같은 값을 쓴다** — 여기
+// 테스트는 무드 캔버스를 통째로 합성하는 같은 부류라, @1x/@2x로 보호를 가르면 부하가 걸린 순간
+// 안 가른 쪽만 죽는다. 실제로 그렇게 됐다(#714).
+//
+// **선례가 된 주석이 두 가지를 거꾸로 적고 있었다. 2026-08-16 bun 1.3.14 실측으로 정정한다.**
+//
+// ① 우선순위: "bun은 테스트별 명시 timeout이 크든 작든 CLI `--timeout`을 무조건 이긴다"는 **반대**다.
+//    `bun test <이 파일> --timeout 100`을 돌리면 명시값이 없는 @1x 6개는 전부 100ms로 죽고, 명시
+//    35000을 가진 @2x 6개는 전부 산다. 즉 **테스트별 명시값이 CLI를 이긴다.** 그래서 여기 값을
+//    CI의 30000보다 낮게 잡아도 CI 마진이 줄지 않고, 반대로 이 값은 스위트를 어떻게 호출하든
+//    (`bun test` 기본 5000 · `bun run test` · CI `--timeout 30000`) 그대로 적용된다. 이게 명시값을
+//    파일 전체에 거는 근거다 — 호출 방법에 안 기대는 유일한 방어다.
+//
+// ② 여유: "@1x는 실측 0.5~0.8초로 여유가 커서 기본값 그대로 둔다"는 **유휴 상태에서만** 맞다.
+//    dev 서버 3대 + 헤드리스 Chrome 하네스를 함께 돌린 실부하(load avg ~13)에서 전 스위트 1172개를
+//    재면 이 파일이 꼬리를 통째로 차지한다: @2x 4.14~4.98초, @1x 1.01~1.34초. **최댓값 4.976초는
+//    bun 기본 5000ms까지 여유가 24ms다.** 부하 배수는 중앙 1.42× · p90 1.88×인데 개별로는 33×까지
+//    튀고(같은 실측), @1x가 5.56초로 실제로 문턱을 넘은 관측이 #714다. 유휴 여유는 안전의 근거가
+//    못 된다.
+//
+// 값이 35000인 건 CI 기준선(30000)보다 위라서다. 이 파일이 30초 넘게 걸리면 그건 타임아웃으로
+// 덮을 문제가 아니라 성능 회귀다.
+const CAPTURE_TIMEOUT_MS = 35000;
 
 describe('#512 — 6무드 × 2 pixelRatio, iOS(ctx.filter 미적용) 환경에서 포스터 픽셀이 프리뷰와 일치', () => {
   for (const layout of LAYOUTS) {
@@ -408,7 +423,7 @@ describe('#512 — 6무드 × 2 pixelRatio, iOS(ctx.filter 미적용) 환경에�
         closeEnough(b, eb);
 
         node.remove();
-      }, pixelRatio === 2 ? PIXEL_RATIO_2X_TIMEOUT_MS : undefined);
+      }, CAPTURE_TIMEOUT_MS);
     }
   }
 });
@@ -464,7 +479,7 @@ describe('#512 — safeOverlay 실패 경로: 오버레이가 throw해도 clip�
     closeEnough(outsideSample[2], 160);
 
     node.remove();
-  });
+  }, CAPTURE_TIMEOUT_MS);
 });
 
 // ─── #538 — iOS 색보정 베이킹 오프스크린이 클립을 넘지 않는다 ────────────────────────────────
@@ -520,5 +535,5 @@ describe('#538 — 색보정 베이킹 오프스크린은 클립 교집합을 �
     closeEnough(sample[2], eb);
 
     node.remove();
-  });
+  }, CAPTURE_TIMEOUT_MS);
 });
