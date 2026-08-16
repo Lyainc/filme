@@ -40,4 +40,18 @@ describe('check-test-time-ratio (#716)', () => {
     expect(baseline).toBe(0);
     expect(outliers.length).toBe(0);
   });
+
+  // 기준선 0은 "무엇도 못 잡는" 상태다 — 배수가 전부 0으로 떨어져 조용히 통과한다.
+  // 그래서 CLI가 이 경우를 실패로 치는데(스크립트 본문), 그 전제인 "배수가 0이 된다"를 잠근다.
+  it('기준선이 0이면 아무리 느린 테스트도 배수 0이라 안 잡힌다 (CLI가 별도로 실패시킨다)', () => {
+    const { baseline, outliers } = findOutliers(
+      [
+        ...Array.from({ length: 10 }, (_, i) => ({ file: 'a', name: `0ms ${i}`, ms: 0 })),
+        { file: 'a', name: '느림', ms: 99999 },
+      ],
+      1,
+    );
+    expect(baseline).toBe(0);
+    expect(outliers.length).toBe(0);
+  });
 });
