@@ -20,6 +20,13 @@
 // 관측 최악값 위로 1.8× 여유를 둔 값이라, 잡는 건 "가장 느린 테스트가 2배 느려졌다"급이다.
 // 더 조이면 게이트가 아니라 러너 소음을 잡는다.
 //
+// **부하가 걸린 러너에선 이 게이트가 원리적으로 못 운다 — 그 구간은 timeout이 덮는다.**
+// CI 캡이 `--timeout 30000`이라 어떤 테스트도 30초를 못 넘는데, 부하 p90이 227ms면 도달 가능한
+// 최대 배수가 30000/227 = 132×로 문턱 아래다(명시 35000ms를 가진 captureDualRendererPixelDiff도
+// 154×). 즉 부하 상태의 성능 회귀는 이 게이트가 아니라 timeout이 먼저 잡아 CI를 빨갛게 만든다.
+// 이 게이트가 사는 자리는 한산한 러너다 — 거기선 p90 91.8ms라 0.8초짜리가 20초가 되면 218×로
+// 걸린다. 문턱을 낮춰 부하 구간까지 덮으려 하면 관측 최악값 109×에 붙어 러너 소음을 잡는다.
+//
 // ponytail: p90은 스위트 구성이 크게 바뀌면(예: 무거운 테스트가 절반이 되면) 같이 움직인다.
 // 그때는 위 표를 다시 재고 기준선/문턱을 고칠 것.
 
@@ -71,8 +78,19 @@ if (entry) {
   console.log(
     `[test-time] ${cases.length} testcases · p90 기준선 ${baseline.toFixed(1)}ms · 문턱 ${threshold}×`
   );
+  if (!Number.isFinite(threshold) || threshold <= 0) {
+    console.error(`[test-time] 문턱이 숫자가 아니다(${process.argv[3]}) — 배수 비교가 전부 false가 된다.`);
+    process.exit(1);
+  }
   if (!cases.length) {
     console.error(`[test-time] ${path}에 testcase가 없다 — 리포터 출력이 비었는지 확인할 것.`);
+    process.exit(1);
+  }
+  // 11개 미만이면 `floor(0.9n)`이 최댓값 자리라 아무도 기준선을 못 넘는다 — 게이트가 도는데
+  // 구조적으로 못 우는 상태다. 필터링 실행(`bun test <파일>`)이나 샤딩에 그대로 물리면 조용히
+  // 통과하므로 실패로 친다. CI는 전수(1180개)라 걸릴 일이 없다.
+  if (cases.length <= 10) {
+    console.error(`[test-time] testcase가 ${cases.length}개뿐이라 p90이 최댓값에 앉는다 — 전수 실행의 XML을 줄 것.`);
     process.exit(1);
   }
   // 기준선 0이면 모든 배수가 0으로 떨어져 무엇도 못 잡는다 — 못 재는 건 통과가 아니라 실패다
