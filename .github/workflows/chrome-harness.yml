@@ -1,0 +1,54 @@
+name: Chrome harness
+
+# `scripts/measure-chrome.mjs`를 러너에서 실제로 돌린다. 지금까지 이 하네스는 **사람이 기억할 때만**
+# 돌았고, 그 대가가 #682다 — 슬롯 높이만 바꾸고 불변식을 안 고쳐서 main이 건강한데도 두 주 넘게
+# 항상 exit 1이었다. `__tests__/measureChromeBaselineCoupling.test.ts`가 그 결합을 잠그긴 하지만
+# 그건 "다시 재라"고 말할 뿐 재지는 않는다(#714). 재는 건 여기다.
+#
+# ci.yml과 파일을 나눈 이유는 정체성이다. 저기는 결정적 correctness 게이트(required check)이고,
+# 여긴 브라우저·서버·타이밍이 끼는 축이라 실패 성격이 다르다 — 한 job에 섞으면 브라우저 잡음이
+# required를 흔든다. **이 워크플로는 required가 아니다**(#593의 두 축 분리와 같은 자세).
+#
+# 트리거가 push인 건 PR 없이도 브랜치에서 돌려보기 위해서다. pull_request를 따로 안 다는 건
+# 브랜치 push가 이미 같은 커밋을 덮기 때문이고, required가 아니라 fork PR 리포팅도 필요 없다.
+on: [push, workflow_dispatch]
+
+jobs:
+  harness:
+    name: Chrome harness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - run: bun install --frozen-lockfile
+
+      # prod로 재는 게 맞다 — dev는 Turbopack이 요청 시점에 컴파일해 첫 측정이 서버 상태를 같이
+      # 잰다. #601에서 prod·dev가 같은 px를 낸다는 게 이미 실측돼 있다(함정은 stale 서버였다).
+      - run: bun run build
+
+      - name: prod 서버 기동
+        run: |
+          bun run start &
+          # 안 뜬 서버를 재면 스크립트가 엉뚱한 데서 죽어 원인이 안 보인다. 200을 받고 나서 잰다.
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:3000/ > /dev/null && exit 0
+            sleep 1
+          done
+          echo "서버가 60초 안에 안 떴다"
+          exit 1
+
+      # ubuntu-latest 이미지에 google-chrome-stable이 들어 있다. 스크립트는 CHROME_PATH를 읽고
+      # 없으면 macOS 경로로 폴백하므로 여기서 명시한다.
+      - name: 하네스 — dark
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: bun scripts/measure-chrome.mjs --theme dark --url http://localhost:3000/
+
+      - name: 하네스 — light
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: bun scripts/measure-chrome.mjs --theme light --url http://localhost:3000/
