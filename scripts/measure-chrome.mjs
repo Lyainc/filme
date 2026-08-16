@@ -76,6 +76,21 @@ const CHROME =
 // 232.6 − 118.0 + 175.5 = 290.1로 차이가 정확히 슬롯 증분이다(#707).
 const BASELINE = { dock: 290, preview: { w: 190.9, h: 305 } };
 
+// 위 종속을 **문서가 아니라 코드로** 잠근다(#707 → #714). 슬롯 높이가 바뀌면 여기 문자열이
+// DesignRail.tsx와 어긋나고 `__tests__/measureChromeBaselineCoupling.test.ts`가 깨져, BASELINE을
+// 다시 재라는 신호가 `bun test`(= CI required check)에서 나온다.
+//
+// 이 장치가 없어서 실제로 무슨 일이 있었나: #682가 슬롯만 118px → min(214px,26svh)로 올리고 위
+// 세 숫자를 안 고쳤다. 그래서 main이 건강한데도 `measure-chrome.mjs`가 **두 주 넘게 항상 exit 1**
+// 이었고, 아무도 못 알아챘다 — 하네스는 CI에 결선돼 있지 않아 사람이 손으로 돌릴 때만 보이는데,
+// 그 사람은 빨간불을 보고 "원래 저래"로 넘겼다. 침묵이 아니라 **상시 거짓 실패**가 증상이라
+// 더 나빴다: 그 두 주 동안 이 하네스는 어떤 진짜 회귀도 알릴 수 없는 상태였다.
+//
+// 문자열 그대로 비교하는 이유 — 값을 파싱해 숫자로 비교하면 `min(214px,26svh)` 같은 식에서
+// "무엇이 이겼는지"를 알아야 하는데 그건 뷰포트에 달렸고, 여기서 잠그려는 건 계산 결과가 아니라
+// **선언이 바뀌었다는 사실**이다. 바뀌면 무조건 다시 재는 게 맞다.
+const BASELINE_SLOT_HEIGHT_CLASS = 'h-[min(214px,26svh)]';
+
 // #674 실측 불변식 — 포스터 없이 진입한 직후(랜딩 '직접 입력'), 400×675 · **레일 닫힘** 기준.
 // BASELINE(레일 열림)과 같은 화면의 다른 상태라 값이 다르다. 이 축이 잡는 회귀는 "랜딩 inline이
 // 티켓 스테이지와 본문 flex를 반씩 나눠 갖는 것"이라, 반토막(가로세로 각 1/2)이 나면 여기서 걸린다.
@@ -731,6 +746,9 @@ try {
     ? {
         checked: true,
         expected: BASELINE,
+        // 이 기대값이 어느 슬롯 높이를 전제로 재진 값인지 출력에 같이 남긴다 — 실패를 읽는 사람이
+        // DesignRail.tsx와 대조할 대상을 바로 알게 된다(#707이 두 주 동안 없던 단서).
+        slotHeightClass: BASELINE_SLOT_HEIGHT_CLASS,
         pass:
           near(base.rects.dock?.h, BASELINE.dock) &&
           near(base.rects.preview?.w, BASELINE.preview.w) &&
