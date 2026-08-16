@@ -17,6 +17,10 @@ jobs:
   harness:
     name: Chrome harness
     runs-on: ubuntu-latest
+    # CLAUDE.md 📏에 적힌 실측 — bun에선 `await browser.close()`가 resolve 안 하는 경우가 있다.
+    # 그러면 exitCode 1을 이미 세운 **실패**가 빨간 X 대신 6시간짜리 job이 된다. 실측 66초라
+    # 넉넉한 값이면 충분하다.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
