@@ -22,9 +22,13 @@ import { readFileSync } from 'node:fs';
 const RAIL_PATH = 'src/components/v2/DesignRail.tsx';
 const HARNESS_PATH = 'scripts/measure-chrome.mjs';
 
-/** DesignRail의 고정 슬롯 높이 클래스. 파일에 `h-[min(...)]`는 이 슬롯 하나뿐이다. */
+/**
+ * DesignRail의 고정 슬롯 높이 클래스. 파일에 `h-[min(...)]`는 이 슬롯 하나뿐이다.
+ * `matchAll` 스프레드가 아니라 `match(/g)`를 쓰는 건 tsconfig `target: es5`에서 이터레이터
+ * 스프레드가 TS2802로 막히기 때문이다(다운레벨 플래그를 이 테스트 하나 때문에 켜지 않는다).
+ */
 function slotHeightClassFromRail(src: string): string[] {
-  return [...src.matchAll(/h-\[min\([^\]]+\)\]/g)].map((m) => m[0]);
+  return src.match(/h-\[min\([^\]]+\)\]/g) ?? [];
 }
 
 describe('measure-chrome 불변식 ↔ DesignRail 슬롯 높이 결합 (#707)', () => {
