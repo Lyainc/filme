@@ -206,8 +206,13 @@ try {
   // 덕분이다. getBoundingClientRect는 조상 클리핑을 반영하지 않으므로 안쪽 그리드를 measureFit에
   // 넣으면 멀쩡한 트리에서도 항상 실패한다 — 그래서 봉쇄를 두 명제로 쪼개 잰다:
   //   (a) 레이어가 hidden으로 자른다(클립이 살아 있다),
-  //   (b) 그리드가 레이어보다 크다(자를 게 실제로 있다 = 회전 후 모서리에 빈칸이 안 생긴다).
-  // (b)가 없으면 누가 rotate/scale을 지웠을 때 (a)만 통과하며 조용히 넘어간다.
+  //   (b) 그리드가 레이어를 덮는다(자를 게 실제로 있다 = 모서리에 빈칸이 안 생긴다).
+  // (b)를 실제로 세우는 건 회전이 아니라 `-m-10`이다(2026-08-16 DOM 변형 실측) — rotate/scale만
+  // 지우면 그리드가 799.4×1544.1 → 480×1180으로 줄지만 레이어 400×675는 여전히 덮어 (b)가
+  // 통과하고, 회전이 없으면 모서리 빈칸 자체가 안 생기므로 그게 옳은 판정이다. 이 축이 잡는 건
+  // 봉쇄가 실제로 깨지는 셋이다: overflow-hidden 소실(a 실패), 타일 0장(그리드가 594.2×83.5로
+  // 주저앉아 b 실패), `-m-10`과 transform 동시 소실(400×980으로 폭이 딱 맞아떨어져 b 실패).
+  // 회전 각도만 사라지는 건 봉쇄가 아니라 시각 디자인 회귀라 이 축의 대상이 아니다.
   await measureFit('배경 타일', '[data-testid="landing-backdrop"]', landingPage);
   const backdrop = await landingPage.evaluate(() => {
     const layer = document.querySelector('[data-testid="landing-backdrop"]');
