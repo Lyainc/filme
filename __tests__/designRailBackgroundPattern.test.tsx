@@ -207,15 +207,23 @@ for (const { mood, clip } of MOOD_CASES) {
       const { container } = render(<Harness mood={mood} />);
       await openBackgroundPanel(user, mood);
       await user.click(screen.getByRole('button', { name: '배경 이미지 적용' }));
+      // 배율도 같이 실어 왕복시킨다(#680 ac2) — 이미지만 살아남고 배율이 기본값으로 되돌아가면
+      // 사용자가 보기엔 "무드 한 번 훑었더니 배경이 도로 작아졌다"라 이미지 유실과 같은 증상이다.
+      await user.click(screen.getByRole('button', { name: '배경 배율 적용' }));
 
       await user.click(screen.getByRole('button', { name: 'minimal로 전환' }));
       expect(screen.queryByRole('button', { name: '배경' })).toBeNull();
       expect(screen.getByTestId('background-pattern-image').textContent).toBe('blob:bgimg');
+      expect(screen.getByTestId('background-pattern-scale').textContent).toBe('1.5');
 
       await user.click(screen.getByRole('button', { name: `${mood}로 전환` }));
       await user.click(screen.getByRole('button', { name: '배경' }));
       expect(screen.getByRole('button', { name: '이미지 교체' })).not.toBeNull();
       expect(backgroundImageLayer(container)!.style.backgroundImage).toContain('blob:bgimg');
+      expect(backgroundImageLayer(container)!.style.transform).toContain('scale(1.5)');
+      // 슬라이더도 복원된 값을 들고 다시 뜬다 — 상태만 살고 컨트롤이 1.0을 보이면 다음 조작이
+      // 그 1.0을 커밋해 값이 조용히 되돌아간다.
+      expect((screen.getByLabelText('배경 크기') as HTMLInputElement).value).toBe('1.5');
     });
 
     test('절취선은 위치지정 형제라 불투명 배경에 안 덮인다 (stub 전용)', async () => {

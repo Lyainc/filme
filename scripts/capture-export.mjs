@@ -8,6 +8,7 @@
  *   bun scripts/capture-export.mjs --layout minimal --emboss --switch-to "35mm Wide" --out /tmp/switched.jpg
  *   bun scripts/capture-export.mjs --layout minimal --emboss --toggle-fill --out /tmp/filled.jpg
  *   bun scripts/capture-export.mjs --layout stub --bg --out /tmp/bg.jpg
+ *   bun scripts/capture-export.mjs --layout editorial --bg --bg-scale 1.5 --out /tmp/bg15.jpg
  *   bun scripts/capture-export.mjs --lasso --out /tmp/lasso.jpg
  *   bun scripts/capture-export.mjs --emboss --lasso --out /tmp/brush-and-lasso.jpg
  *   bun scripts/capture-export.mjs --compare /tmp/a.jpg /tmp/b.jpg
@@ -422,7 +423,7 @@ async function switchLayout(page, label) {
   await sleep(300);
 }
 
-async function capture({ layout, material, coating, intensity, bg, emboss, lasso, switchTo, toggleFill, out, timeoutMs }) {
+async function capture({ layout, material, coating, intensity, bg, bgScale, emboss, lasso, switchTo, toggleFill, out, timeoutMs }) {
   const seed = {
     movieInfo: {
       title: '인터스텔라',
@@ -441,6 +442,9 @@ async function capture({ layout, material, coating, intensity, bg, emboss, lasso
       coating,
       materialIntensity: intensity,
       coatingIntensity: intensity,
+      // 배경 배율(#680) — `--bg`가 이미지를 주입할 때만 의미가 있다. 저장물에 확대가 실제로
+      // 실리는지(ac3)를 재려면 같은 트리를 1.0/1.5로 두 번 떠서 --compare해야 해서 knob을 연다.
+      backgroundPatternScale: bgScale,
     },
     // 포스터 주입이 "첫 업로드"로 오판돼 fieldVisibility가 통째로 갈리는 걸 막는다
     // (measure-editorial-stub.mjs와 같은 함정).
@@ -607,6 +611,7 @@ if (cmpIdx >= 0) {
     coating: arg('coating', 'none'),
     intensity: Number(arg('intensity', '1')),
     bg: argv.includes('--bg'),
+    bgScale: Number(arg('bg-scale', '1')),
     emboss: argv.includes('--emboss'),
     lasso: argv.includes('--lasso'),
     switchTo: arg('switch-to', null),
