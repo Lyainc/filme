@@ -59,4 +59,8 @@ jobs:
       # __tests__/에 process.env 참조가 없어 시크릿 없이 통과한다 (#593 실측).
       # --timeout은 bun 기본 5000ms를 올린 것 — happydom setup이 testing-library의
       # asyncUtilTimeout을 5000ms로 올려서, 그대로 두면 테스트 캡이 그보다 먼저 걸린다.
-      - run: bun test --timeout 30000
+      - run: bun test --timeout 30000 --reporter=junit --reporter-outfile=junit.xml
+
+      # 실행 시간 회귀 게이트 (#716). 절대 문턱은 러너 상태를 재게 되므로, 같은 실행 안에서
+      # p90 대비 배수만 본다 — 기준선을 median이 아니라 p90으로 고른 실측 근거는 스크립트 주석에.
+      - run: node scripts/check-test-time-ratio.mjs junit.xml
