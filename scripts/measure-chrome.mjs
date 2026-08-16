@@ -761,6 +761,25 @@ try {
 
   const fitFails = fits.filter((f) => !f.pass).map((f) => f.label);
 
+  // 모달 축은 #609부터 재기만 하고 **exitCode엔 안 실려 있었다**(#714 실측). `AdvancedSettingsModal`
+  // 에서 Escape 닫기를 실제로 없애 보면 `close.escape:false` + `focusRestoredToTrigger:false`가
+  // 뜨는데 스크립트는 그대로 exit 0을 냈다 — 진짜 회귀를 통과시키는 죽은 축이라 게이트에 싣는다.
+  //
+  // `present:false`(= '고급 설정' 진입 버튼이 없다)도 실패로 친다. 원래 "모달 없는 판본" 대비
+  // 관용이었는데 지금 판본엔 그 행이 있으므로, present가 false로 뒤집히는 건 곧 **진입점이
+  // 사라졌다**는 뜻이다. 그건 이 하네스가 잡아야 할 회귀지 건너뛸 사유가 아니고, `!invariant.checked`
+  // 를 실패로 치는 자세(#609)와 같은 판정이다.
+  modal.pass =
+    modal.present &&
+    modal.focus.initialInside &&
+    modal.focus.returnsAfterPush &&
+    modal.clickThrough.dialogClosed &&
+    !modal.clickThrough.leaked &&
+    modal.close.escape &&
+    modal.close.closeButton &&
+    modal.close.backdrop &&
+    modal.focusRestoredToTrigger;
+
   const out = {
     label: LABEL,
     viewport: { w: VW, h: VH },
@@ -786,6 +805,7 @@ try {
   const contrastFails = [contrast, drawerContrast].flatMap((c) => c?.fails ?? []);
   // checked:false도 실패다 — 못 잰 걸 0으로 넘기는 게 #609가 없앤 그 조용한 성공이다.
   if (
+    !modal.pass ||
     !invariant.checked ||
     !invariant.pass ||
     fitFails.length > 0 ||
