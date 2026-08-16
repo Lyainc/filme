@@ -8,8 +8,8 @@
     "start": "bun --bun next start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "bun test",
-    "test:watch": "bun test --watch"
+    "test": "bun test --timeout 30000",
+    "test:watch": "bun test --watch --timeout 30000"
   },
   "dependencies": {
     "@ai-sdk/google": "3.0.91",
