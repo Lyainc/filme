@@ -112,3 +112,37 @@ describe('형압 패널 — 도구 칩이 진입/종료를 겸함 (#679)', () =>
     expect(screen.getByText('도구를 탭하면 바로 편집을 시작해요.')).not.toBeNull();
   });
 });
+
+/**
+ * #722 — 형압 편집 모드는 레일 선택이 형압을 떠나는 순간 풀려야 한다.
+ *
+ * 안 풀리면 EmbossBrushLayer(z-45)가 포스터 rect를 계속 덮어, 크기·투명도를 조절하러 들어와
+ * 포스터를 누른 사용자에게 형압이 찍힌다. 모드 state를 셸의 훅이 소유하므로 패널이 언마운트돼도
+ * 저절로 정리되지 않는다 — 그래서 값이 아니라 edit-mode를 직접 본다.
+ */
+describe('형압 편집 모드 해제 — 레일 선택 전환 (#722)', () => {
+  test('다른 항목을 선택하면 편집 모드가 풀린다', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await openEmbossPanel(user);
+
+    await user.click(screen.getByRole('radio', { name: '브러시' }));
+    expect(screen.getByTestId('edit-mode').textContent).toBe('true');
+
+    await user.click(screen.getByRole('button', { name: '크기' }));
+    expect(screen.getByTestId('edit-mode').textContent).toBe('false');
+  });
+
+  test('형압 아이콘 재탭으로 패널만 접는 건 편집 모드를 유지한다', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await openEmbossPanel(user);
+
+    await user.click(screen.getByRole('radio', { name: '브러시' }));
+    expect(screen.getByTestId('edit-mode').textContent).toBe('true');
+
+    // pop → null. "패널 접고 넓은 화면에서 칠하기"가 막히면 안 된다.
+    await user.click(screen.getByRole('button', { name: '형압' }));
+    expect(screen.getByTestId('edit-mode').textContent).toBe('true');
+  });
+});
