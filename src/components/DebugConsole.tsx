@@ -155,7 +155,7 @@ export default function DebugConsole() {
             <div style={{ marginBottom: 6 }}>
               <div>↓ 최종 합성 결과(저장/공유 전):</div>
               {/* next/image 미사용 — 디버그 오버레이, next/image 불필요 */}
-              <img src={lastCapture} alt="last capture" style={{ maxWidth: '100%', border: '1px solid #0f0' }} />
+              <img src={lastCapture} alt="최종 합성 결과" style={{ maxWidth: '100%', border: '1px solid #0f0' }} />
             </div>
           )}
           {lines.length === 0 ? '(no logs yet)' : lines.join('\n')}
