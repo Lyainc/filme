@@ -29,9 +29,15 @@ cleanup() {
     pkill -P "$pid" 2>/dev/null
     kill "$pid" 2>/dev/null
   done
-  [ ${#LOAD_PIDS[@]} -gt 0 ] && pkill -x yes 2>/dev/null
+  # 이름으로 훑는 `pkill -x yes`를 여기 두면 안 된다 — 남이 띄운 `yes`까지 죽인다. 이 하네스는
+  # 여러 벌을 동시에 돌리는 게 정상 사용법이라(전략 B가 스위트 3벌 동시), 한쪽 cleanup이 다른
+  # 쪽 부하를 조용히 걷어가면 재현 조건 자체가 달라진다. 위 루프가 LOAD_PIDS를 개별로 들고
+  # 있으므로 이름 기반 광역 kill은 애초에 필요가 없다(fresh-context 리뷰 지적).
   if [ -n "$SCRATCH" ] && [ -d "$SCRATCH" ]; then
-    rm -f "$SCRATCH"/chunk.* 2>/dev/null   # 이 스크립트가 만든 파일만, 재귀 없이
+    # P4(trash-put)의 예외 — mktemp -d로 방금 만든 제 스크래치 안의, 제가 만든 chunk.* 뿐이고
+    # 재귀도 없다. dd가 쌓는 수백 MB~GB를 휴지통으로 보내면 디스크 압박을 재현하려고 만든
+    # 파일이 그대로 디스크에 남아 목적과 정면으로 어긋난다.
+    rm -f "$SCRATCH"/chunk.* 2>/dev/null
     rmdir "$SCRATCH" 2>/dev/null
   fi
   return 0
