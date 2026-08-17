@@ -113,16 +113,21 @@ export function FieldTap({
  * 중첩 방지, 포스터 변경은 포인터 제스처다. data 속성은 테스트 셀렉터용이며 캡처 렌더러엔
  * onPosterTap이 안 가 붙지 않는다.
  *
- * 이게 키보드 사용자를 막지는 않는다(#608) — 셸은 #365 이후 onPosterTap 자체를 안 넘기고, 포스터
- * 업로드·교체·재크롭 진입점은 전부 `<button>`(업로드 드롭존 · 헤더 편집 메뉴 행)이라 Enter/Space로
- * 열린다. 그 완주 경로는 `__tests__/posterCropPipeline.test.tsx`의
+ * 셸이 이걸 넘기는 조건은 **포스터가 없을 때뿐이다**(#723, MobileEditorShell의 TicketRenderer 호출부).
+ * #365가 없앤 건 "포스터가 **있는** 상태에서 빈 곳을 오탭해 파일선택창이 뜨는 것"이라, 그 게이트를
+ * 유지하는 한 미스터치는 되돌아오지 않는다. 라벨이 '변경'이 아니라 '추가'인 것도 같은 이유다 —
+ * 이 props가 붙는 순간 그 자리엔 아직 포스터가 없다. 게이트를 넓히려면 라벨도 같이 볼 것.
+ *
+ * 이게 키보드 사용자를 막지는 않는다(#608) — 위 게이트 때문에 키보드 완주가 이 경로에 의존하지
+ * 않고, 포스터 업로드·교체·재크롭 진입점은 전부 `<button>`(업로드 드롭존 · 헤더 편집 메뉴 행)이라
+ * Enter/Space로 열린다. 그 완주 경로는 `__tests__/posterCropPipeline.test.tsx`의
  * '키보드 전용 포스터 업로드 경로 (#608)' describe가 Tab+Enter만으로 못 박는다.
  * 예전 주석이 "키보드 업로드 경로는 ImageUploader가 커버"라고 적었는데, 그 컴포넌트는 #607에서
  * 삭제됐고 실제로 커버하고 있던 것도 아니었다.
  */
 export function posterTapProps(onPosterTap?: () => void) {
   return onPosterTap
-    ? { onClick: onPosterTap, 'aria-label': '포스터 변경', 'data-poster-tap': 'true' }
+    ? { onClick: onPosterTap, 'aria-label': '포스터 추가', 'data-poster-tap': 'true' }
     : {};
 }
 
