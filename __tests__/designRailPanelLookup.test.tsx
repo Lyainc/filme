@@ -24,14 +24,12 @@ const ITEMS_WITHOUT_MOOD: RailItem[] = [
   {
     id: 'color',
     label: '컬러',
-    eyebrow: 'Color',
     icon: <span />,
     render: () => <div data-testid="body-color" />,
   },
   {
     id: 'size',
     label: '크기',
-    eyebrow: 'Size',
     icon: <span />,
     render: () => <div data-testid="body-size" />,
   },
@@ -42,7 +40,7 @@ function RailHarness() {
   return <DesignRail photo={photo} items={ITEMS_WITHOUT_MOOD} />;
 }
 
-// 패널의 접근성 이름 = 활성 항목의 eyebrow. 조회 실패 시 폴백 없이 ''(activeItem?.eyebrow ?? '').
+// 패널의 접근성 이름 = 활성 항목의 label. 조회 실패 시 폴백 없이 ''(activeItem?.label ?? '').
 const panelLabel = () => document.getElementById('design-rail-panel')?.getAttribute('aria-label');
 
 beforeEach(() => window.localStorage.clear());
@@ -62,7 +60,7 @@ describe('DesignRail 패널 본문 조회 (#523)', () => {
     // 닫힌 패널: 어느 항목 본문도 DOM에 없다. 폴백이 있으면 마지막 항목('크기')이 그려진다.
     expect(screen.queryByTestId('body-color')).toBeNull();
     expect(screen.queryByTestId('body-size')).toBeNull();
-    // eyebrow도 폴백 없이 빈 문자열.
+    // 패널 aria-label도 폴백 없이 빈 문자열.
     expect(panelLabel()).toBe('');
   });
 
@@ -74,13 +72,13 @@ describe('DesignRail 패널 본문 조회 (#523)', () => {
     await user.click(color);
     const opened = screen.getByTestId('body-color');
     expect(opened.closest('[inert]')).toBeNull();
-    expect(panelLabel()).toBe('Color');
+    expect(panelLabel()).toBe('컬러');
 
-    // 재클릭으로 닫기 → 본문은 마운트된 채 inert, eyebrow도 직전 항목 것을 유지한다.
+    // 재클릭으로 닫기 → 본문은 마운트된 채 inert, 패널 aria-label도 직전 항목 것을 유지한다.
     await user.click(color);
     expect(color.getAttribute('aria-expanded')).toBe('false');
     const closing = screen.getByTestId('body-color');
     expect(closing.closest('[inert]')).not.toBeNull();
-    expect(panelLabel()).toBe('Color');
+    expect(panelLabel()).toBe('컬러');
   });
 });

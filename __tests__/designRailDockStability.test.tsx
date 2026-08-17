@@ -84,14 +84,12 @@ describe('DesignRail dock 안정성 (#563/#564/#565)', () => {
       {
         id: 'mood',
         label: '무드',
-        eyebrow: 'Mood',
         icon: <span />,
         render: () => <div>무드 패널</div>,
       },
       {
         id: 'custom',
         label: '커스텀',
-        eyebrow: 'Custom',
         icon: <span />,
         appliesTo: ['criterion'],
         render: () => <div>커스텀 패널</div>,

@@ -9,7 +9,6 @@ function fakeItem(overrides: Partial<RailItem> = {}): RailItem {
   return {
     id: 'size',
     label: 'fake',
-    eyebrow: 'Fake',
     icon: null,
     render: () => null,
     ...overrides,
