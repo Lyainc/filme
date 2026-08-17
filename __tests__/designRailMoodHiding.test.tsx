@@ -18,7 +18,6 @@ const FAKE_ITEMS: RailItem[] = [
   {
     id: 'size',
     label: '전용 항목',
-    eyebrow: 'Restricted',
     icon: <span data-testid="icon-restricted" />,
     appliesTo: ['minimal'],
     render: (photo) => (

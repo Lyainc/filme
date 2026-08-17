@@ -41,7 +41,6 @@ export interface RailActions {
 export interface RailItem {
   id: RailItemId;
   label: string;
-  eyebrow: string;
   icon: ReactNode;
   // 이 무드 목록에서만 항목 자체가 존재한다("숨김" — 개념이 아예 없는 무드). 없으면 전 무드
   // 노출. filterItemsForMood가 이 필드로 실제 렌더 목록을 걸러낸다. "잠금"(개념은 있으나 그
@@ -651,7 +650,6 @@ function BackgroundPatternPanel({ photo }: { photo: Photo }) {
 const COLOR_ITEM: RailItem = {
   id: 'color',
   label: '컬러',
-  eyebrow: 'Color',
   // 컬러: 스포이드 — 닫힌 path 하나(도구 실루엣) + 픽업 지점 선. 형압·투명도와 원 계열을
   // 공유하지 않도록 #676에서 교체(잉크 색을 "찍는" 동작을 직접 지시).
   icon: (
@@ -679,7 +677,6 @@ export const RAIL_ITEMS: readonly RailItem[] = [
   {
     id: 'mood',
     label: '무드',
-    eyebrow: 'Mood',
     // 사면체 힌트: 외곽 삼각 + 꼭짓점→밑변 중앙 능선
     icon: (
       <svg {...RAIL_ICON}>
@@ -698,7 +695,6 @@ export const RAIL_ITEMS: readonly RailItem[] = [
   {
     id: 'texture',
     label: '후보정',
-    eyebrow: 'Texture',
     // 질감: 대각선 3줄
     icon: (
       <svg {...RAIL_ICON}>
@@ -712,7 +708,6 @@ export const RAIL_ITEMS: readonly RailItem[] = [
   {
     id: 'emboss',
     label: '형압',
-    eyebrow: 'Emboss',
     // 형압: 볼록 단면 — 기준선에서 솟아오르는 돔 곡선(측면에서 본 융기 프로필). 컬러·투명도와
     // 원 계열을 공유하지 않도록 #676에서 교체.
     icon: (
@@ -726,7 +721,6 @@ export const RAIL_ITEMS: readonly RailItem[] = [
   {
     id: 'opacity',
     label: '투명도',
-    eyebrow: 'Opacity',
     // 투명도: 체커보드 — 테두리 사각형 + 대각 두 칸 채움 path 하나(포토샵류 투명 배경 표기).
     // 컬러·형압과 원 계열을 공유하지 않도록 #676에서 교체.
     icon: (
@@ -761,7 +755,6 @@ export const RAIL_ITEMS: readonly RailItem[] = [
   {
     id: 'size',
     label: '크기',
-    eyebrow: 'Size',
     // 크기: 네 모서리가 바깥으로 벌어지는 화살표 — 확대/축소 힌트.
     icon: (
       <svg {...RAIL_ICON}>
@@ -778,7 +771,6 @@ export const RAIL_ITEMS: readonly RailItem[] = [
     // `backgroundPatternImage`(draft 키라 개명 불가)와 이름이 갈리면 오히려 두 벌이 된다.
     id: 'pattern',
     label: '배경',
-    eyebrow: 'Background',
     // 배경: 액자 안에 얹힌 사진(산 능선 + 해) — 더 이상 기하 패턴이 아니라 사용자가 올린 이미지다.
     icon: (
       <svg {...RAIL_ICON}>
@@ -793,7 +785,6 @@ export const RAIL_ITEMS: readonly RailItem[] = [
   {
     id: 'custom',
     label: '커스텀',
-    eyebrow: 'Custom',
     // 커스텀: 슬라이더 두 줄(무드 전용 조절 힌트) — 크기(사방 화살표)·후보정(사선)과 안 겹친다.
     icon: (
       <svg {...RAIL_ICON}>

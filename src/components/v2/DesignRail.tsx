@@ -3,7 +3,7 @@ import { RAIL_ITEMS, filterItemsForMood, type RailItem, type RailItemId } from '
 import type { usePhototicket } from '@/hooks/usePhototicket';
 
 // 모바일 디자인 레일(#217+): 무드·컬러·후보정·투명도·크기 편집 콘텐츠를 인라인 폼 밖으로 빼
-// 가로 원형 아이콘 + 단일 공용 확장 패널로 호스팅한다. 항목 정의(아이콘·라벨·eyebrow·본문)는
+// 가로 원형 아이콘 + 단일 공용 확장 패널로 호스팅한다. 항목 정의(아이콘·라벨·본문)는
 // #523에서 ./designRailItems.tsx 공용 목록으로 이관 — 이 파일은 배치(아이콘 행 + 토글 패널)만.
 // #523 AC4 — 아이콘 행은 filterItemsForMood를 통과한 항목만 그린다(appliesTo 없는 실사용
 // 항목 5개는 전부 통과, 실제 숨김 0건). items prop은 기본값 RAIL_ITEMS를 쓰되, 합성 항목으로
@@ -69,13 +69,13 @@ function RailIconButton({
 function RailExpandPanel({
   open,
   activeId,
-  eyebrow,
+  regionLabel,
   children,
 }: {
   open: boolean;
   /** 지금 그려지는 항목. 슬롯이 스크롤 컨테이너라 항목이 갈리면 스크롤을 위로 되돌린다. */
   activeId: RailItemId;
-  eyebrow: string;
+  regionLabel: string;
   children: ReactNode;
 }) {
   // 고정 슬롯은 같은 DOM 노드에 콘텐츠만 갈아끼우므로 scrollTop이 그대로 넘어간다 — 실측(400×675):
@@ -120,7 +120,7 @@ function RailExpandPanel({
           ref={slotRef}
           id={PANEL_ID}
           role="region"
-          aria-label={eyebrow}
+          aria-label={regionLabel}
           className="h-[min(214px,26svh)] overflow-y-auto py-3"
           // 스크롤 어포던스(#682 방향 3) — 넘칠 때만 위/아래 가장자리에 옅은 그림자가 뜨는
           // CSS 전용 기법(JS 없이 background-attachment local/scroll의 스크롤 동기화 차이를
@@ -145,7 +145,10 @@ function RailExpandPanel({
         >
           {/* 닫기(x) 버튼 제거(#322) — 레일 아이콘 재클릭으로 이미 토글 닫힘이라 기능 중복.
               패널 자체 헤더도 없음(#367에서 LayoutStrip "Mood" 헤더 제거 — rail 탭 라벨과 중복),
-              접근성 이름은 region aria-label(eyebrow)이 유지. */}
+              접근성 이름은 region aria-label(활성 항목의 label)이 유지. 예전엔 RailItem에
+              영문 전용 eyebrow 필드를 따로 뒀는데(#367이 label만 한국어로 바꾸며 갈라짐 —
+              #701에서 발견) label과 내용이 완전히 같아 중복이었다, 그래서 제거하고 label을
+              그대로 쓴다. */}
           {children}
         </div>
       </div>
@@ -184,7 +187,7 @@ export function DesignRail({
   // #523 c5 — id로 배열을 조회해 항목을 찾는다. 매칭 안 되는 id(이론상 Pop 유니온 밖)가 와도
   // 조용히 마지막 항목을 렌더하던 예전 삼항 체인 final-else 대신, 못 찾으면 아무것도 안 그린다.
   const activeItem = items.find((it) => it.id === active);
-  const eyebrow = activeItem?.eyebrow ?? '';
+  const regionLabel = activeItem?.label ?? '';
 
   const ringColor = themeColor || 'var(--accent)';
   // 클릭으로 연 항목은 아래 effect가 smooth 스크롤로 중앙에 당기는데, 그 애니메이션이 만드는
@@ -286,7 +289,7 @@ export function DesignRail({
         ))}
       </div>
 
-      <RailExpandPanel open={pop !== null} activeId={active} eyebrow={eyebrow}>
+      <RailExpandPanel open={pop !== null} activeId={active} regionLabel={regionLabel}>
         {activeItem ? activeItem.render(photo, { onRecropPoster }) : null}
       </RailExpandPanel>
     </div>
