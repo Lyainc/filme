@@ -245,10 +245,22 @@ const BG_PATTERN_DRAW = `
 /**
  * 형압(#509) 마스크는 c8(세션 한정)이라 PersistedState(localStorage 시드)에 안 실린다 —
  * material/coating처럼 seed로 주입할 수 없다. 그래서 실제 UI를 그대로 몬다: rail 'emboss'
- * 항목 열기 → "형압 칠하기 시작" → 포스터 위 대각선 드래그(page.mouse, 합성 PointerEvent가
- * 아니라 CDP 실제 입력이라 React 핸들러가 진짜 유저 제스처와 동일하게 받는다) → 모드 종료.
- * 종료를 꼭 눌러야 하는 이유 — 브러시 레이어가 `position:fixed` 전체화면이라 안 끄면 이어지는
- * '완료'·'사진에 저장' 클릭을 그 레이어가 가로챈다.
+ * 항목 열기 → 도구 칩 탭으로 진입 → 포스터 위 드래그(page.mouse, 합성 PointerEvent가
+ * 아니라 CDP 실제 입력이라 React 핸들러가 진짜 유저 제스처와 동일하게 받는다) → 같은 칩
+ * 재탭으로 종료. 종료를 꼭 해야 하는 이유 — 브러시 레이어가 `position:fixed`라 안 끄면
+ * 이어지는 '완료'·'사진에 저장' 클릭을 그 레이어가 가로챈다.
+ */
+
+/**
+ * 진입/종료가 도구 칩 탭 하나로 접혔다(#679) — 이 스크립트는 2026-08-18까지 못 따라갔다.
+ *
+ * 예전엔 "형압 칠하기 시작"·"올가미로 선택 시작"·"탭해서 종료" 전폭 CTA가 있었고 이 하네스가
+ * 그 문구를 textContent로 찾았는데, #679가 CTA를 없애고 칩 탭 자체가 진입/종료를 겸하게
+ * 바꿨다(`__tests__/embossPanelTapToEnter.test.tsx:36`이 그 부재를 잠근다). 그래서
+ * `--emboss`·`--lasso`가 **반드시 throw했다** — 두 플래그가 통째로 죽어 있었다.
+ *
+ * 지금은 아래 `selectEmbossTool` 하나가 진입·도구전환·종료를 전부 맡는다. 같은 칩을 다시
+ * 누르는 게 종료이므로 별도 종료 헬퍼가 필요 없다.
  */
 async function ensureEmbossPanelOpen(page) {
   const alreadyOpen = await page.evaluate(
@@ -271,16 +283,7 @@ async function ensureEmbossPanelOpen(page) {
 async function paintEmboss(page) {
   await ensureEmbossPanelOpen(page);
 
-  const clickStart = await page.evaluate(() => {
-    const b = [...document.querySelectorAll('button')].find((x) =>
-      (x.textContent || '').includes('형압 칠하기 시작'),
-    );
-    if (!b) return false;
-    b.click();
-    return true;
-  });
-  if (!clickStart) throw new Error('"형압 칠하기 시작" 버튼을 못 찾음');
-  await sleep(200);
+  await selectEmbossTool(page, '브러시');
 
   const rect = await page.evaluate(() => {
     const el = document.querySelector('[data-poster-root]');
@@ -305,16 +308,8 @@ async function paintEmboss(page) {
   await page.mouse.up();
   await sleep(200);
 
-  const clickEnd = await page.evaluate(() => {
-    const b = [...document.querySelectorAll('button')].find((x) =>
-      (x.textContent || '').includes('탭해서 종료'),
-    );
-    if (!b) return false;
-    b.click();
-    return true;
-  });
-  if (!clickEnd) throw new Error('형압 모드 종료 버튼을 못 찾음 — 브러시 레이어가 이후 클릭을 가로챌 수 있음');
-  await sleep(200);
+  // 같은 칩 재탭 = 종료. 안 끄면 브러시 레이어가 이후 '완료'·'사진에 저장' 클릭을 가로챈다.
+  await selectEmbossTool(page, '브러시');
 }
 
 /** ChipRadio "형압 도구"에서 label과 정확히 같은 텍스트의 라디오 버튼을 클릭한다(#509 2단계). */
@@ -342,15 +337,6 @@ async function selectEmbossTool(page, label) {
 async function paintEmbossLasso(page) {
   await ensureEmbossPanelOpen(page);
   await selectEmbossTool(page, '올가미');
-
-  const clickStart = await page.evaluate(() => {
-    const b = [...document.querySelectorAll('button')].find((x) => (x.textContent || '').includes('올가미로 선택 시작'));
-    if (!b) return false;
-    b.click();
-    return true;
-  });
-  if (!clickStart) throw new Error('"올가미로 선택 시작" 버튼을 못 찾음');
-  await sleep(200);
 
   const rect = await page.evaluate(() => {
     const el = document.querySelector('[data-poster-root]');
@@ -387,14 +373,8 @@ async function paintEmbossLasso(page) {
   await page.mouse.up();
   await sleep(200);
 
-  const clickEnd = await page.evaluate(() => {
-    const b = [...document.querySelectorAll('button')].find((x) => (x.textContent || '').includes('탭해서 종료'));
-    if (!b) return false;
-    b.click();
-    return true;
-  });
-  if (!clickEnd) throw new Error('형압 모드 종료 버튼을 못 찾음 — 브러시 레이어가 이후 클릭을 가로챌 수 있음');
-  await sleep(200);
+  // 같은 칩 재탭 = 종료(위 paintEmboss와 같은 이유).
+  await selectEmbossTool(page, '올가미');
 }
 
 /**
