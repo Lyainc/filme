@@ -103,9 +103,33 @@ describe('포스터 있던 draft 재방문의 비동기 복원 창 (#683)', () =
     // 정상적으로 실패하는데, 그때 received가 happy-dom 엘리먼트면 bun이 노드 그래프 전체를
     // 직렬화한다(실측 697MB · 한 번에 4.6초). 재시도까지 두 번이면 5초 per-test 타임아웃을 넘겨
     // 테스트가 죽는다. 불리언으로 받으면 같은 실패 메시지가 64자다.
-    await waitFor(() => {
-      expect(!!screen.queryByRole('button', { name: '완료' })).toBe(false);
-    });
+    try {
+      await waitFor(() => {
+        expect(!!screen.queryByRole('button', { name: '완료' })).toBe(false);
+      });
+    } catch (err) {
+      const all = document.querySelectorAll('[data-testid="landing"]');
+      console.error(
+        `[#717] n=${all.length} cls=${JSON.stringify(Array.from(all).map((e) => e.className))}` +
+        ` ls=${JSON.stringify(window.localStorage.getItem(STORAGE_KEY))}` +
+        ` done=${!!screen.queryByRole('button', { name: '완료' })}`
+      );
+      throw err;
+    }
+    // getByTestId는 n≠1이면 그 자리에서 throw하므로, querySelectorAll로 먼저 개수를 세야
+    // "landing이 중복/소실됐다"는 가설도 진단할 수 있다(#717, landingOverlay.test.tsx와 동일 이유).
+    const diagAll = document.querySelectorAll('[data-testid="landing"]');
+    if (
+      diagAll.length !== 1 ||
+      diagAll[0].classList.contains('hidden') ||
+      !diagAll[0].classList.contains('flex-1')
+    ) {
+      console.error(
+        `[#717] n=${diagAll.length} cls=${JSON.stringify(Array.from(diagAll).map((e) => e.className))}` +
+        ` ls=${JSON.stringify(window.localStorage.getItem(STORAGE_KEY))}` +
+        ` done=${!!screen.queryByRole('button', { name: '완료' })}`
+      );
+    }
     const landing = screen.getByTestId('landing');
     expect(landing.classList.contains('hidden')).toBe(false);
     expect(landing.classList.contains('flex-1')).toBe(true);

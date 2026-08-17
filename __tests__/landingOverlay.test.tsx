@@ -80,6 +80,16 @@ describe('랜딩 오버레이(#614)', () => {
 
     render(<Harness />);
 
+    // landingOverlayShown()은 getByTestId를 거쳐 n≠1이면 그 자리에서 throw하므로, 그보다 먼저
+    // querySelectorAll로 개수를 세야 "landing이 중복/소실됐다"는 가설 자체를 진단할 수 있다(#717).
+    const diagAll = document.querySelectorAll('[data-testid="landing"]');
+    if (diagAll.length !== 1 || diagAll[0].classList.contains('fixed')) {
+      console.error(
+        `[#717] n=${diagAll.length} cls=${JSON.stringify(Array.from(diagAll).map((e) => e.className))}` +
+        ` ls=${JSON.stringify(localStorage.getItem(STORAGE_KEY))}` +
+        ` done=${!!screen.queryByRole('button', { name: '완료' })}`
+      );
+    }
     expect(landingOverlayShown()).toBe(false);
     // 마케팅 카피는 빠지고(편집 화면이다) 진입 컨트롤만 남는 inline 모드.
     expect(landing().classList.contains('hidden')).toBe(false);
@@ -118,6 +128,16 @@ describe('랜딩 오버레이(#614)', () => {
       target: { files: [new File(['x'], 'poster.png', { type: 'image/png' })] },
     });
 
+    // landingOverlayShown()은 getByTestId를 거쳐 n≠1이면 그 자리에서 throw하므로, 그보다 먼저
+    // querySelectorAll로 개수를 세야 "landing이 중복/소실됐다"는 가설 자체를 진단할 수 있다(#717).
+    const diagAll = document.querySelectorAll('[data-testid="landing"]');
+    if (diagAll.length !== 1 || diagAll[0].classList.contains('fixed')) {
+      console.error(
+        `[#717] n=${diagAll.length} cls=${JSON.stringify(Array.from(diagAll).map((e) => e.className))}` +
+        ` ls=${JSON.stringify(localStorage.getItem(STORAGE_KEY))}` +
+        ` done=${!!screen.queryByRole('button', { name: '완료' })}`
+      );
+    }
     expect(landingOverlayShown()).toBe(false);
   });
 });
