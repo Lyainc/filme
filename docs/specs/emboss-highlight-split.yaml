@@ -1,0 +1,399 @@
+# Seed Spec — 형압/하이라이트 분리 (에픽)
+---
+skill: build-spec
+schema_version: 1
+version: 4.7.0
+generated: 2026-08-18
+input:
+  target: 형압/하이라이트 분리 — 현행 효과 개명 + 볼록 압인 신설
+  options: []
+output:
+  type: spec
+  structure: templates/SEED_SPEC.yaml
+
+spec_version: 1
+created: 2026-08-18
+target: 형압/하이라이트 분리 — 현행 효과 개명 + 볼록 압인 신설
+domain: tech
+brownfield: true
+refine_generation: 0
+
+goal:
+  statement: >-
+    지금 '형압'이라는 이름으로 나가는 효과를 '하이라이트'로 개명하고, 면이 바깥으로 솟아오른
+    양감을 내는 진짜 '형압'을 새로 설계해, 상위 레일 메뉴 '하이라이트' 안에서 두 효과를 각자의
+    마스크로 동시에 적용할 수 있게 한다.
+  clarity_score: 0.85
+  rationale: >-
+    현행 렌더는 feDiffuseLighting 하나로 끝난다(textureRecipes.ts:574-575, feDistantLight
+    azimuth 235 / elevation 50 단일 광원). 확산 반사는 표면이 광원 쪽으로 기울면 밝아지고
+    반대로 기울면 **덜 밝아질 뿐 어두워지지 않는다** — 그래서 결과가 부드러운 광택이지 양감이
+    아니다. 볼록 압인이 서려면 경사면의 부호가 갈려 밝은 면과 어두운 면이 마스크 경계의 서로
+    반대편에 **동시에** 서야 한다. 이름과 룩이 어긋난 상태를 이름 쪽으로 정리하고(하이라이트),
+    비어 있는 자리에 진짜 형압을 넣는 것이 이 에픽이다.
+  decomposition:
+    - id: d1
+      title: 현행 효과를 '하이라이트'로 개명 + 하네스 복구
+      target: >-
+        사용자 노출 문자열, 레일 항목 라벨/id, 그리고 개명에 딸려 깨지는 하네스 셀렉터.
+      scope:
+        - >-
+          src/ 안의 '형압' 문자열 44곳(실측 `grep -rn "형압" src/ | wc -l`) 중 사용자에게 보이는
+          것을 '하이라이트'로. 레일 항목 라벨(designRailItems.tsx:709 근방)과 ChipRadio
+          aria-label '형압 도구'가 여기 포함된다.
+        - >-
+          scripts/capture-export.mjs의 emboss 구동부 복구. **지금 깨져 있다** — :276-282가
+          "형압 칠하기 시작" 버튼을, :308-316이 "탭해서 종료" 버튼을 찾는데 #679가 그 CTA를
+          없애고 도구 칩 탭으로 접었다(EmbossPanel의 ChipRadio.onChange,
+          designRailItems.tsx:371-380). `__tests__/embossPanelTapToEnter.test.tsx:36`
+          "전폭 CTA 버튼이 없다"가 그 부재를 잠그고 있으므로, `--emboss`는 현재 반드시
+          throw한다. d2·d3의 측정 수단이 이것이라 여기서 먼저 고친다.
+        - >-
+          테스트 6파일의 문자열 갱신(embossPanelTapToEnter · embossPanelContentDiet ·
+          embossLasso · designRailSlotBudget · gradientBitmapFramework · designRailDockStability).
+      out_of_scope: >-
+        렌더 물리 변경 0. 저장물 픽셀이 안 바뀌는 것이 이 하위의 완료 조건이다(ac1).
+      depends_on: []
+    - id: d2
+      title: 새 형압의 시각 물리 — 볼록 압인 굽기
+      target: >-
+        src/utils/textureRecipes.ts — embossBitmapSvg(:536-590) 옆에 두 번째 굽기 함수와
+        레시피 상수를 세우고, 프리뷰(_shared.tsx의 EmbossOverlay, :1340-1380)와
+        저장(captureToImage.ts:662-710 compositeEmbossOverlay) 양쪽이 그 한 함수를 공유한다.
+      scope:
+        - >-
+          필터 체인 후보 둘. (A) feDiffuseLighting에 feSpecularLighting을 더해 정반사 하이라이트와
+          그림자를 각각 세운다. (B) 블러한 alpha를 feOffset으로 광원 방향 ±로 두 벌 복제해
+          밝은 쪽·어두운 쪽을 각각 합성한다. **어느 쪽이 인쇄 하한을 통과하는지는 실측 전엔 모른다**
+          (blindspots b1). 외부 선례로 Kinetics(https://kinetics.colorion.co/)의 'Letterpress
+          Emboss'가 CSS text-shadow 이중 오프셋으로 같은 물리를 낸다 —
+          `calc(var(--lx)*1px) calc(var(--ly)*1px) 1px rgba(255,255,255,.85),
+          calc(var(--lx)*-1px) calc(var(--ly)*-1px) 2px rgba(60,40,20,.42)`이고, 부호를 뒤집으면
+          deboss↔emboss가 갈린다. 이 레포는 라이브 CSS filter를 못 쓰므로(c2) 같은 물리를
+          SVG 필터로 옮기는 것이 이 하위의 일이다.
+        - >-
+          굽기 캐시·해상도 규율(EMBOSS_BAKE_PX 512, MAX_EMBOSS_CACHE 64, textureRecipes.ts:497-512)은
+          그대로 재사용한다.
+      out_of_scope: 마스크 데이터 분리(d3)와 UI(d3). d2는 같은 마스크를 새 물리로 굽는 데까지다.
+      depends_on: [d1]
+    - id: d3
+      title: 마스크 분리 + 두 효과 동시 적용 UI
+      target: >-
+        src/types/index.ts(:152-159) · src/hooks/usePhototicket.ts(:177-179, :188-192, :295-298) ·
+        src/components/v2/designRailItems.tsx EmbossPanel(:349-422) ·
+        src/components/v2/EmbossBrushLayer.tsx · 무드 6개의 Poster 호출부.
+      scope:
+        - >-
+          세션 한정 마스크 필드가 3개(embossStamps/embossPaths/embossIntensity)에서 6개로
+          늘어난다. 오너가 "마스크 분리"를 명시적으로 골랐고(데이터·UI가 두 벌이 되는 비용을 알고
+          고른 것), 두 벌 다 c6의 폐기 계약을 지켜야 한다.
+        - >-
+          Poster에 넘기는 emboss 프롭이 3개에서 6개로 늘어난다 — MoodMinimal.tsx:192 ·
+          MoodCriterion.tsx:275-277 · Mood35mm.tsx:103-105 · Mood35mmLandscape.tsx:109-111 ·
+          MoodEditorial.tsx:303 · MoodStub.tsx:214.
+        - >-
+          패널 안에서 "어느 효과의 마스크를 칠하는가"를 고르는 축이 하나 는다. 슬롯 예산(c5)이
+          여기서 제일 세게 걸린다.
+      out_of_scope: 브러시·올가미 도구 자체와 좌표계 변경(c3).
+      depends_on: [d1, d2]
+
+constraints:
+  - id: c1
+    type: technical
+    description: >-
+      새 형압도 저장 경로(captureToImage.ts:662-710 compositeEmbossOverlay)에 같이 실린다.
+      프리뷰와 저장이 **같은 굽기 함수**의 산출물을 그린다.
+    hard: true
+    rationale: >-
+      현행 형압이 이미 그 계약 위에 서 있다 — 프리뷰는 embossBitmapSvg의 URL을
+      background-image로(_shared.tsx:1358-1377), 저장은 같은 URL을 loadImage → drawImage로
+      그린다. 프리뷰만 바꾸면 저장물과 갈리고, 그 어긋남은 사용자가 저장한 뒤에야 발견한다.
+  - id: c2
+    type: technical
+    description: >-
+      라이브 CSS/DOM 필터(`filter: url(#x)`)를 쓰지 않는다. 정적 SVG data URL을 new Image()로
+      로드해 canvas drawImage로 합성하는 규율(#506 c1)을 그대로 따른다.
+    hard: true
+    rationale: >-
+      html-to-image가 DOM에 걸린 라이브 필터를 캡처해야 하는 방식이 #495 증상의 원인이었고,
+      textureRecipes.ts:514-528이 그 근거를 명시해뒀다. noiseTileSvg(feTurbulence) ·
+      gradientBitmapSvg · embossBitmapSvg가 이미 이 경로의 소비자 셋이라 새 형압이 네 번째다.
+  - id: c3
+    type: technical
+    description: >-
+      칠하는 도구(브러시/올가미)와 좌표계는 그대로 쓴다. 재설계 범위는 디자인(시각 물리)뿐이다.
+    hard: true
+    rationale: >-
+      좌표계는 포스터 **자연 이미지** 0..1 분율이고(textureRecipes.ts:400-415),
+      projectEmbossStamps(:429-436)·projectEmbossPaths(:450-454)가 렌더 시점의 fit/align으로
+      박스 분율에 투영한다. 이 재매핑 덕에 무드·posterFit 전환에도 마스크가 안 흔들린다 —
+      오너 결정 5가 도구·좌표계를 범위 밖으로 둔 이유고, 여기 손대면 그 불변식을 다시 세워야 한다.
+  - id: c4
+    type: technical
+    description: >-
+      새 형압의 필터 체인은 마스크 경계의 서로 반대편에 밝은 면과 어두운 면을 **동시에** 세운다.
+      feDiffuseLighting 단독으로는 이 명제가 원리적으로 성립하지 않으므로 그 체인을 그대로
+      복제하는 방식은 채택하지 않는다.
+    hard: true
+    rationale: >-
+      확산 반사는 광원 반대편을 어둡게 만드는 게 아니라 덜 밝게 만들 뿐이다. 이 성질이 현행
+      효과를 "광택"으로 만든 원인이고, 곧 이 에픽이 존재하는 이유다(goal.rationale). 오너 결정
+      4의 시각 목표는 볼록하게 튀어나온 압인이며 눌린 자국(deboss)이 아니다.
+  - id: c5
+    type: technical
+    description: >-
+      레일 슬롯 높이 클래스 `h-[min(214px,26svh)]`(DesignRail.tsx:124)는 바꾸지 않는다.
+      UI가 두 벌이 되면서 넘치는 분량은 이미 있는 CSS 스크롤 어포던스로 감수하거나, 패널
+      콘텐츠를 조건부로 접어(#682 다이어트 방식) 해결한다.
+    hard: true
+    rationale: >-
+      슬롯 클래스를 바꾸면 `scripts/measure-chrome.mjs`의 BASELINE_SLOT_HEIGHT_CLASS와 문자로
+      어긋나 `__tests__/measureChromeBaselineCoupling.test.ts`가 깨지고, 하네스 BASELINE
+      (dock 290 / 프리뷰 190.9×305)을 전부 다시 재야 한다. 그 결합은 #682가 슬롯만 바꾸고
+      불변식을 안 고쳐 main이 건강한데도 두 주 넘게 exit 1이 나던 사고에서 나왔다. 형압 패널은
+      편집 중 203px로 이미 슬롯(393×659에서 171px, py-3 빼면 실효 147px)을 넘고 있어
+      (#682 실측, DesignRail.tsx:105-120 주석), 마스크 분리가 이 압박을 더 키운다.
+  - id: c6
+    type: technical
+    description: >-
+      두 마스크 모두 포스터 교체·재크롭 시 함께 폐기한다. usePhototicket.ts:295-298의 폐기가
+      6필드 전부를 덮어야 한다.
+    hard: true
+    rationale: >-
+      그 콜백이 포스터 교체·재크롭 양쪽의 단일 진입점이라(usePosterCrop → onCropComplete가
+      재크롭도 여기로 보낸다), 마스크가 옛 포스터 픽셀을 가리키는 채 새 포스터에 얹히는 orphan을
+      한 곳에서 막는다. 새 필드 3개 중 하나라도 빠지면 그 축만 orphan이 살아남는데, 두 효과가
+      겹쳐 뜨는 화면에서는 어느 쪽이 남았는지 눈으로 가리기가 더 어렵다.
+  - id: c7
+    type: technical
+    description: >-
+      레일 항목 id를 'emboss'에서 'highlight'로 바꾸고, 그 id를 읽는 세 자리를 같이 고친다 —
+      DesignRail.tsx:245의 `pop !== null && pop !== 'emboss'` 조건(#722, 방금 머지 대기 중),
+      scripts/capture-export.mjs:262의 `[data-rail-id="emboss"]` 셀렉터, 그리고 항목 정의
+      designRailItems.tsx:709.
+    hard: false
+    rationale: >-
+      안 바꾸면 'emboss'가 두 뜻을 갖는다 — 상위 메뉴는 하이라이트인데 하위 효과 하나도 형압이라,
+      코드에서 `pop === 'emboss'`가 어느 쪽을 가리키는지 읽는 사람마다 갈린다. 대가는 세 자리와
+      그걸 기대하는 테스트뿐이라 지금이 제일 싸다. #722의 effect는 셋 중 유일하게 조용히 깨지는
+      자리다(id가 안 맞으면 조건이 항상 참이 돼 형압 편집 모드가 자기 패널에서도 꺼진다).
+  - id: c8
+    type: technical
+    description: >-
+      새 형압의 톤은 `docs/PRINT_CALIBRATION.md` "배경 도상 설계 하한"의 규칙 3·4·6을 통과해야
+      한다 — alpha 0.08~0.14 대역, 계조는 밀도로만, 그리고 절대 치수를 굽기 좌표계에 상수로 박지
+      않고 배치 폭에서 역산한다.
+    hard: false
+    rationale: >-
+      규칙 3의 근거가 "톤 램프 양 끝 5%가 인쇄에서 붕괴한다(0/1/3% 구분 불가)"이고, 현행
+      EMBOSS_RECIPE의 midSlope 0.35 / midIntercept 0.35(textureRecipes.ts:487-488)가 정확히
+      그 붕괴를 피하려고 출력을 gray 0.35~0.7로 압축한 값이다(:456-460 주석, #591 인쇄 실측).
+      새 형압은 어두운 면을 **새로** 만드는 것이라 하한의 아래쪽 끝에 처음 닿는다 — 순흑에
+      가까운 그림자는 인쇄에서 뭉개진다. 규칙 6("viewBox에 절대 치수를 박지 말라")은 이미
+      bevelFrac(폭 분율, :484)이 지키고 있는 형태라, 새 오프셋 폭도 px 상수가 아니라 분율로
+      둬야 같은 성질이 유지된다.
+  - id: c9
+    type: technical
+    description: >-
+      두 마스크 모두 세션 한정으로 남긴다. IndexedDB·draft·undo 스냅샷에 싣지 않는다.
+    hard: false
+    rationale: >-
+      types/index.ts:140-152가 #489 재검토를 거쳐 내린 결정을 적어뒀다 — 마스크는 분율 좌표라
+      새로고침 후 fit·align·크롭 파이프라인이 조금이라도 다른 순서로 정착하면 같은 분율이 다른
+      픽셀을 가리킨다. 픽셀이 조용히 어긋난 채 복원되는 것보다 사라지는 쪽이 안전하다는 판단이고,
+      마스크가 두 벌이 되면 어긋남이 두 겹으로 겹쳐 판독이 더 어려워지므로 근거가 강해진다.
+  - id: c10
+    type: technical
+    description: >-
+      새 형압도 6무드 전부에 적용한다. minimal 한정 같은 무드 게이팅을 새로 만들지 않는다.
+    hard: false
+    rationale: >-
+      현행 형압이 이미 6무드 전부에 실려 있고(무드별 Poster 호출부 6곳), 마스크가 포스터 자연
+      이미지 좌표라 무드 캔버스 비율과 독립이다(c3). 갈릴 이유가 없는 값에 무드별 단일 소스를
+      만드는 건 죽은 추상이다(#680 c8과 같은 판단).
+
+success_criteria:
+  - id: ac1
+    description: >-
+      개명(d1) 후 저장물 픽셀이 안 바뀐다. 사용자 노출 문구에는 옛 의미의 '형압'이 남지 않는다.
+    verifiable: true
+    measurable_via: >-
+      `bun scripts/capture-export.mjs --emboss --out /tmp/before.jpg`를 개명 전 트리에서,
+      같은 명령을 개명 후 트리에서 돌려 `--compare /tmp/before.jpg /tmp/after.jpg`.
+      하네스 잡음 바닥이 같은 트리 2회 캡처 기준 maxΔ 2라 허용치 3(기본값과 동일). 단
+      **개명 전 캡처를 먼저 떠야 한다** — d1이 하네스 자체를 고치는 하위라, 복구 커밋 이전
+      트리에서는 `--emboss`가 :282에서 throw한다. 문구 쪽은 테스트 6파일의 문자열 단언이 잠근다.
+  - id: ac2
+    description: >-
+      새 형압 단독 적용 시 마스크 경계의 서로 반대편에 밝은 픽셀과 어두운 픽셀이 동시에 선다(c4).
+    verifiable: true
+    measurable_via: >-
+      두 갈래로 나눠 잰다. ① 부호 판정은 유닛이 맡는다 — gradientBitmapFramework.test.tsx의
+      "#509 c1 형압 비트맵 굽기" describe와 같은 형태로, 굽힌 SVG 문자열에 밝은 성분과 어두운
+      성분이 둘 다 들어갔는지(feSpecularLighting 노드, 또는 feOffset dx/dy가 부호 반대인 쌍)를
+      단언한다. ② 저장물 쪽은 `--compare`로는 부호를 못 가른다 — 스크립트가 내는 건 **채널 최대
+      절대차**·넘침 bbox·×20 증폭 diff뿐이라(capture-export.mjs 헤더 주석) 밝아졌는지 어두워졌는지가
+      구분되지 않는다. 그래서 하네스가 재는 명제는 "무가공 대비 실제로 픽셀이 바뀌었다 +
+      변화가 포스터 박스 밖으로 안 샜다"로 한정한다(넘침 bbox가 poster-root 안).
+  - id: ac3
+    description: >-
+      하이라이트와 형압을 동시에 켜면 두 효과가 각자의 마스크 실루엣으로 각자 뜬다. 한쪽 마스크를
+      지워도 다른 쪽은 남는다.
+    verifiable: true
+    measurable_via: >-
+      ① 유닛 — 같은 aspect·다른 마스크로 두 굽기 함수를 부르면 서로 다른 data URL이 나오는지
+      (embossLasso 계열의 "stamps는 같고 paths만 다르면 다른 캐시 키다"와 동형,
+      gradientBitmapFramework.test.tsx:453). ② 하네스 — capture-export.mjs가 이미 갖고 있는
+      `[capture:overlay] emboss ...` 로그 단언 골격(:579, :584)을 두 축으로 늘려, 두 효과를 각각
+      칠한 캡처에서 합성 줄이 둘 다 뜨는지 확인한다. 그 골격이 지금도 `paths=[1-9]`로 올가미
+      존재를 정규식으로 잠그고 있어 형태를 그대로 쓴다.
+  - id: ac4
+    description: >-
+      프리뷰와 저장물이 같은 굽기 산출물을 그린다(c1). 두 효과 모두에서 성립한다.
+    verifiable: true
+    measurable_via: >-
+      gradientBitmapFramework.test.tsx:216-253의 "EmbossOverlay 배선 DOM 검증"과 같은 형태로,
+      프리뷰 오버레이가 레시피의 blend·intensity를 그대로 쓰고 마스크가 비면 오버레이 자체가
+      안 뜨는지를 두 축 각각에 대해 단언한다. 저장 쪽은 poster-root의 data-* 속성이 두 벌 다
+      실리는지(현행 data-emboss-stamps / data-emboss-paths / data-emboss-intensity,
+      _shared.tsx:1120-1125와 같은 게이트 패턴)로 잠근다.
+  - id: ac5
+    description: >-
+      포스터를 교체하거나 재크롭하면 두 마스크가 **둘 다** 비워진다(c6).
+    verifiable: true
+    measurable_via: >-
+      usePhototicket 상호작용 테스트 — handleImageUpload 후 6필드 중 마스크 4종이 전부 빈 배열인지.
+      하네스 쪽 교차 확인은 `--emboss --switch-to "35mm Wide"`가 이미 재매핑 축을 돌고 있어
+      그 로그 단언에 새 축을 얹으면 된다(capture-export.mjs 헤더 :17-20).
+  - id: ac6
+    description: >-
+      UI가 두 벌이 돼도 슬롯 높이 클래스는 안 바뀌고(c5) 크롬 하네스 불변식이 그대로다.
+    verifiable: true
+    measurable_via: >-
+      `__tests__/designRailSlotBudget.test.tsx`(슬롯이 26svh인지) ·
+      `__tests__/measureChromeBaselineCoupling.test.ts`(BASELINE_SLOT_HEIGHT_CLASS 문자 일치)가
+      둘 다 통과. 추가로 `bun scripts/measure-chrome.mjs --theme dark`가 dock 290 /
+      프리뷰 190.9×305로 exit 0.
+  - id: ac7
+    description: >-
+      `--emboss`·`--lasso` 하네스 경로가 다시 돈다.
+    verifiable: true
+    measurable_via: >-
+      `bun scripts/capture-export.mjs --emboss --out /tmp/e.jpg`가 throw 없이 JSON을 내고
+      overlays 배열에 emboss 합성 줄이 들어 있는지. 현재는 :282
+      `"형압 칠하기 시작" 버튼을 못 찾음`에서 반드시 실패한다.
+
+context:
+  existing_stack:
+    - Next.js (pages router) + React + TypeScript
+    - Tailwind + cva/cn (src/utils/cn.ts, src/components/ui/variants.ts)
+    - bun test + happy-dom + @testing-library/react
+    - html-to-image (captureToImage.ts) + 정적 SVG data URL 굽기 프레임워크(#506)
+  dependencies:
+    - >-
+      SVG 1.1 필터 프리미티브(feSpecularLighting · feOffset · feComposite)는 브라우저 내장이라
+      새 의존성이 0이다. 현행 체인이 이미 feGaussianBlur → feDiffuseLighting →
+      feComponentTransfer → feComposite를 쓴다(textureRecipes.ts:570-582).
+    - >-
+      BrightnessSlider(components/wizard/BrightnessSlider.tsx) — action prop이 #682에서 열려
+      "지우기"를 라벨 줄에 접고 있다. 두 번째 강도 슬라이더가 같은 처방을 재사용한다.
+    - >-
+      ChipRadio — 도구 칩이 진입 CTA를 겸하는 문법(#679). 효과 선택 축을 새로 넣는다면 같은
+      프리미티브가 후보다.
+    - >-
+      굽기 캐시(MAX_EMBOSS_CACHE 64, textureRecipes.ts:511-512) — 키 공간이 살아 있는 스탬프
+      배열이라 상한이 필요했다. 마스크가 두 벌이 되면 같은 상한을 두 캐시가 나눠 쓸지 각자 가질지
+      정해야 한다.
+  integration_points:
+    - >-
+      src/utils/textureRecipes.ts — EmbossStamp(:416-421) · EmbossPath(:444-447) ·
+      projectEmbossStamps(:429-436) · projectEmbossPaths(:450-454) · EMBOSS_RECIPE(:482-493) ·
+      embossBitmapSvg(:536-590). 새 레시피·굽기 함수가 여기 선다.
+    - >-
+      src/components/moods/_shared.tsx — EmbossOverlay(:1340-1380, backgroundImage +
+      mixBlendMode + opacity) · data-emboss-* 속성(:1120-1125) · z-order 최상단 배치(:1183-1189).
+    - >-
+      src/utils/captureToImage.ts:662-710 — compositeEmbossOverlay. DOM 속성만 읽어 상태 없이
+      재현하는 계약이라, 새 축도 data-* 로 실어야 한다.
+    - >-
+      src/types/index.ts:152-159 — embossStamps / embossPaths / embossIntensity. TicketComponents
+      **밖**이라 undo 스냅샷·자동저장 Pick 밖(세션 한정, c9).
+    - >-
+      src/hooks/usePhototicket.ts — 초기값 :177-179 · 세션 state :188-192(embossEditMode ·
+      embossBrushRadius 0.07 · embossTool) · 마스크 폐기 :295-298.
+    - >-
+      src/components/v2/designRailItems.tsx — EmbossPanel(:349-422), 항목 정의(:709의 id 'emboss').
+    - >-
+      src/components/v2/DesignRail.tsx — 슬롯 높이 :124, #722 편집 모드 해제 effect :245.
+    - >-
+      src/components/v2/EmbossBrushLayer.tsx — clientToNaturalFrac(:137-152) ·
+      clientToStamp(:154-161) · measureEmbossContentFrac. 도구는 c3로 범위 밖이지만, 어느
+      마스크에 스탬프를 넣을지는 d3에서 갈린다.
+    - >-
+      무드 6개의 Poster 호출부 — MoodMinimal.tsx:192 · MoodCriterion.tsx:275-277 ·
+      Mood35mm.tsx:103-105 · Mood35mmLandscape.tsx:109-111 · MoodEditorial.tsx:303 ·
+      MoodStub.tsx:214.
+    - >-
+      scripts/capture-export.mjs — ensureEmbossPanelOpen(:253-269) · paintEmboss(:271-318) ·
+      selectEmbossTool(:320-333) · paintEmbossLasso · 로그 단언(:579-585).
+    - scripts/measure-chrome.mjs — emboss 참조 있음(개명 시 같이 볼 것) + BASELINE_SLOT_HEIGHT_CLASS.
+    - >-
+      개명 surface 실측: src/ + scripts/ 에서 emboss 식별자를 가진 파일 23개, __tests__ 6개,
+      src/ 안 '형압' 한국어 문자열 44곳.
+  backlog_scan: >-
+    prefilter 실행됨(open 9 · closed 369). 충돌 없음. 관련: #722(형압 모드 해제, 방금 수정 —
+    레일 항목 id 변경 시 같이 볼 것) · #679(도구 칩이 진입 CTA를 겸함) · #682(슬롯 예산) ·
+    #509(형압 도입).
+
+blindspots:
+  - area: 시각 물리 후보 선택
+    question: >-
+      feSpecularLighting 추가와 blurred alpha 양방향 feOffset 복제 중 어느 쪽이 인쇄 하한(c8)을
+      통과하는가? **실측 전엔 모른다 — 추측이다.** 정반사는 좁고 밝은 점을 만들어 alpha 0.08~0.14
+      대역에서 뭉개질 수 있고, 양방향 오프셋은 폭을 분율로 잡으면 규칙 6을 구조적으로 만족하지만
+      광원 각도가 마스크 곡률과 무관해져 실루엣이 복잡할 때 부자연스러울 수 있다. 두 판을 다
+      구워 저장물로 비교하는 게 가장 싼 판정이고, `docs/PRINT_CALIBRATION.md`가 요구하는 건
+      화면 판정이 아니라 실물 인쇄 판정이라는 점도 남는다.
+  - area: 두 효과 중첩
+    question: >-
+      blend 'overlay' 레이어가 두 겹 쌓이면 톤이 어떻게 누적되는가? 현행 형압은 재질·코팅 위
+      최상단 한 겹이고(_shared.tsx:1183-1189), 두 겹은 이 레포에 선례가 없다. 특히 두 마스크가
+      **겹치는 영역**에서 미드톤 압축(c8)이 두 번 걸리면 압축 의도가 무너질 수 있다. 겹침을
+      허용할지, 겹치면 어느 쪽이 위인지, 강도 슬라이더를 두 개 둘지가 여기서 갈린다.
+  - area: iOS Safari
+    question: >-
+      새 필터 프리미티브가 iOS Safari 저장물에서 현행과 같게 렌더되는가? macOS Chrome 하네스로는
+      원리적으로 못 보는 축이다. 다만 이 리스크는 새로 만드는 게 아니라 물려받는 것이다 — 현행
+      형압도 같은 정적 data URL 경로를 이미 타고 있다(#439 큰 raster 함정 회피가 그 경로를 고른
+      이유). 실기기 확인은 이 스펙의 완료 조건에서 의도적으로 제외한다.
+  - area: 슬롯 예산의 실제 초과폭
+    question: >-
+      마스크 분리 UI가 슬롯(실효 147px)을 얼마나 더 넘치는가? 편집 중 203px이 #682 다이어트로
+      177px(+6px)까지 내려온 상태인데(DesignRail.tsx:105-120), 효과 선택 축 하나와 강도 슬라이더
+      하나가 더 붙으면 다이어트 여지가 남아 있는지는 실측 전엔 모른다. 남아 있지 않다면 c5를
+      지키는 방법은 "패널을 두 화면으로 접는다" 쪽뿐이고, 그건 d3의 설계 결정이 된다.
+ambiguity:
+  overall: 0.18
+  gate_passed: true
+  note: >-
+    goal·context는 확정됐고(오너 결정 5개 + 파일:줄 실측), 남은 불확실은 d2의 필터 체인 후보
+    선택 하나에 몰려 있다. 그 하나는 실측으로만 갈리는 값이라 인터뷰로 더 줄일 수 없다고 보고
+    blindspots b1로 인계한다.
+
+clarity_breakdown:
+  goal: 0.95
+  constraint: 0.9
+  success: 0.85
+  context: 0.95
+
+metadata:
+  interview_rounds: 0
+  questions_asked: 0
+  generated_by: thinking-tools/build-spec
+  source_session: >-
+    오너가 결정 5개(개명 · 신설 · 마스크 분리 · 볼록 목표 · 디자인 한정 범위)와 에픽 분해 형태
+    ("에픽 1 + 하위 2~3개")를 확정한 상태로 진입해 인터뷰 없이 조사·작성만 했다. 조사 중
+    계획에 없던 사실 하나가 나왔다 — scripts/capture-export.mjs의 `--emboss` 경로가 #679의
+    CTA 제거 이후 갱신되지 않아 지금 반드시 throw한다(:276-282, :308-316). 이 스펙의
+    measurable_via 다수가 그 하네스에 의존하므로 d1의 범위에 복구를 넣었다.
+---

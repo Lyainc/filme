@@ -1,0 +1,323 @@
+# Seed Spec — 알림 표면 정리 + 눌림 피드백 잔여 (진단 권장 1·3번의 잔여분)
+---
+skill: build-spec
+schema_version: 1
+version: 4.7.0
+generated: 2026-08-18
+input:
+  target: 알림 표면 정리 + 눌림 피드백 잔여
+  options: []
+output:
+  type: spec
+  structure: templates/SEED_SPEC.yaml
+
+spec_version: 1
+created: 2026-08-18
+target: 알림 표면 정리 + 눌림 피드백 잔여
+domain: tech
+brownfield: true
+refine_generation: 0
+
+goal:
+  statement: >-
+    볼트 진단문서(~/vault/notes/filme-app-ui-diagnosis.md, 2026-08-04)의 권장 순서 1번(실패 알림
+    유틸)과 3번(탭 타깃·상태 스타일 공통화)은 #645·#646·#647로 **이미 끝났다.** 남은 것은 그
+    셋이 만들고 간 잔여 둘이다 — ① 알림 표면이 4벌로 늘면서 OCR 되돌리기 배너와 셸 스낵바가
+    같은 좌표에 서서 스낵바가 배너를 통째로 덮고, ② 눌림 피드백이 cva variant로 강제되지 않고
+    62곳이 리터럴로 흩어져 있다. 이 둘만 정리한다.
+  clarity_score: 0.9
+
+constraints:
+  - id: c1
+    type: scope
+    description: >-
+      진단문서가 지목한 9개 항목 중 8개는 이미 해소됐으므로 이 스펙의 범위가 아니다.
+      C1·C2·C4·C5·M1·M6은 #645가, M4·M5는 #646이, m3은 #647이 닫았다. 되살려 다시 짜지 않는다.
+    hard: true
+    rationale: >-
+      live source 대조 결과(2026-08-18). 진단문서는 2026-08-04에 쓰였고 #645는 그날
+      (closed 2026-08-03T22:11:09Z = KST 08-04 07:11) 머지돼, 문서가 자기를 낳은 수정보다 먼저
+      찍힌 스냅샷이다 — stale이 아니라 애초에 수정 전 상태를 적은 것이다. 대조 근거:
+      C1 usePhototicket.ts:775 `if (saveDraftRef.current()) setLastSavedAt(...)` + :682 showError,
+      C2 OcrUploadCard.tsx:224-228 `console.error` + showToast('인식에 실패했어요…'),
+      C4 ImageCropModal.tsx:90 showError(persistent),
+      C5 usePhototicket.ts:465 showError(persistent, restoredDraftHadPosterRef 게이트),
+      M1 usePosterCrop.ts:103 / useLogoCrop.ts:49 — alert() 소멸,
+      M6 ResultPanel.tsx:224 showError(persistent),
+      M4 Landing.tsx:576·581 min-h-touch(이탈 경로는 #665로 2종),
+      M5 OcrUndoBanner.tsx:36·43 두 버튼 모두 min-h-touch,
+      m3 `focus:` 리터럴 전수 0건(focus-visible: 14곳).
+      showError는 src/utils/errorToast.tsx(107줄)에 이미 있고 5개 파일이 소비한다 — 새로 만들 것이 없다.
+  - id: c2
+    type: technical
+    description: >-
+      알림 표면은 4벌 그대로 두고 **좌표만** 나눈다. 하나로 합치지 않는다.
+    hard: true
+    rationale: >-
+      넷은 의도적으로 갈라져 있다 — ErrorToastHost(fixed top-4, z-[70], persistent 지원)는 셸 밖
+      훅에서도 prop 없이 부르는 실패 전용 진입점이고(errorToast.tsx:27-32 주석), OcrUploadCard의
+      로컬 토스트(absolute top-full, z-10, 3000ms)는 "방금 누른 버튼 옆에서 결과"라는 UX 의도라
+      #645가 명시적으로 showError를 안 태웠고, 셸 스낵바(fixed bottom-6, z-[60], 2600ms)는
+      성공·안내 통보고, OcrUndoBanner(fixed bottom-6, z-50)는 되돌릴 수 있는 창을 여는 별개
+      계약이다. 진단문서 부록 1도 Sonner 통합을 기각하며 "파일 하나 정리로 해결(OCR 토스트
+      위치도 유지)"로 판정했다. 합치면 그 넷이 각자 지키던 명제를 잃는다.
+  - id: c3
+    type: technical
+    description: >-
+      OcrUndoBanner(z-50)와 셸 스낵바(z-[60])가 같은 `fixed bottom-6 left-1/2 -translate-x-1/2`
+      좌표에 서지 않게 한다. 배너가 떠 있는 동안 스낵바가 배너의 두 버튼을 가리면 안 된다.
+    hard: true
+    rationale: >-
+      실측 대조: OcrUndoBanner.tsx:27과 MobileEditorShell.tsx:1310이 문자까지 같은 좌표 클래스를
+      쓰고 스낵바가 z-index로 위다. 배너는 자동으로 안 사라진다 — useOcrUndo.ts에 타이머가 없고
+      snapshot은 cancel()/confirm()으로만 null이 되므로, 배너가 떠 있는 창은 사용자가 결정할
+      때까지 무한이다. 그 창에서 flashToast를 부르는 자리가 8곳 있고(MobileEditorShell.tsx:275,
+      291, 437, 485, 500, 845, 1191, 1195), 그중 :1191 '되돌렸어요'가 제일 나쁘다 — 전역 undo를
+      누른 순간 스낵바가 **OCR 되돌리기 배너를 정확히 덮는다.** 둘 다 "되돌리기"를 말하는데
+      한쪽이 다른 쪽을 지우는 셈이라, 진단문서가 "되돌리기가 세 갈래로 분리"라고 적은 축의
+      실제 충돌 지점이다.
+  - id: c4
+    type: technical
+    description: >-
+      눌림 피드백은 pressableVariants로 강제한다. 새 값을 만들지 않고 지금 리터럴
+      `active:scale-[0.97]`을 그대로 이식한다.
+    hard: false
+    rationale: >-
+      #647이 variant를 만들었지만 소비자가 둘뿐이다(OcrUploadCard.tsx:282, PrimaryCta.tsx:45).
+      나머지 60곳은 여전히 리터럴이라, #647 Critical Practitioner 조건 2("variant만 만들고 직접
+      클래스를 계속 쓰면 4벌째가 생긴다")가 아직 안 지켜졌다. eslint local rule
+      no-raw-touch-target-size(eslint.config.mjs:71,74)는 탭 타깃 **크기**만 막고 눌림 클래스는
+      안 막는다. hard가 아닌 이유는 60곳 치환이 diff 크기로 리뷰 품질을 떨어뜨릴 수 있어서다 —
+      진단문서 부록 2에서 Maintainability가 든 근거("diff 크기가 리뷰 품질의 천장")가 그대로
+      적용된다. 한 커밋에 몰지 말고 나눌 것.
+  - id: c5
+    type: technical
+    description: >-
+      모션은 눌림 피드백의 **이징 하나만** 손댄다. 스프링 정착
+      cubic-bezier(0.34, 1.56, 0.64, 1)을 얹되 pressableVariants의 **base가 아니라
+      `transition: 'cta'` variant에만** 넣는다. translateY 같은 새 transform 축은 안 만든다.
+    hard: true
+    rationale: >-
+      오너 결정("애니메이션이 너무 많으면 느려질 수 있으니, 애니메이션보다 UI 측면에서의
+      개선에 주력"). base에 넣으면 안 되는 이유는 variants.ts:6-11이 못박아뒀다 — base는
+      transition-property를 일부러 안 들고 있고, Tailwind의 transition-colors와
+      transition-transform이 같은 CSS `transition-property` 선언이라 이미 transition-colors를
+      쓰는 버튼(대다수)에 얹으면 나중 것이 통째로 이겨 호버 색 전환이 조용히 사라진다.
+      `transition: 'cta'`는 이미 확장 property 목록(transform 포함)을 명시적으로 들고 있어
+      이징만 갈아끼우면 되는 유일하게 안전한 자리다. 참고 값 출처는 외부
+      (https://kinetics.colorion.co/ Push Button: transform 0.06s ease + :active translateY(5px)),
+      그중 translateY는 채택하지 않는다 — 축을 하나 더 여는 만큼 실기기에서 잰 적 없는 비용이
+      늘고, 오너가 최소로 하라고 한 자리다.
+  - id: c6
+    type: technical
+    description: >-
+      아직 무음인 실패 하나 — 포스터 추천색 추출 실패(src/pages/index.tsx:77 `.catch(() => {})`)
+      — 를 기존 showError에 태운다. 새 진입점을 만들지 않는다.
+    hard: false
+    rationale: >-
+      진단문서 Minor 목록(m4~m11)의 "색상 추출 실패 무음"이 유일하게 남은 무음 경로다
+      (src 전수 스캔 결과 빈 catch는 index.tsx:64 테마 localStorage · :77 색상 추출 ·
+      _document.tsx:23 인라인 테마 스크립트 셋뿐이고, 앞뒤 둘은 사용자가 잃는 게 없어 대상이
+      아니다). 실패하면 ColorPicker의 추천색 2칸이 조용히 안 뜨는데, 사용자는 "이 포스터엔
+      추천색이 원래 없나 보다"로 읽는다. 한 줄이라 c4와 달리 diff 비용 논쟁이 없다.
+  - id: c7
+    type: scope
+    description: >-
+      C3(좌석 5번째부터 무음 절삭, usePhototicket.ts:53-57·:350 capSeatTokens)은 범위 밖이다.
+    hard: true
+    rationale: >-
+      진단문서가 "오너 정책: 4개 이상 verbose 처리 검토 중(미확정)"으로 남겨뒀고, 권장 순서
+      2번도 "정책 확정 후"가 조건이다. 안내 문구는 상한을 유지하느냐 verbose로 가느냐에 따라
+      정반대로 쓰이므로, 정책을 정하지 않고 문구부터 만들면 두 번 쓰게 된다. blindspots에 남긴다.
+  - id: c8
+    type: technical
+    description: >-
+      정당화 논리 — 실패 알림·상태 경로는 iOS로 이식되지만 웹 UI 스타일 리팩터링은 이식되지
+      않는다. 그래서 c3·c6(상태·에러 경로)은 하고, c4·c5(스타일)는 최소로 한다.
+    hard: true
+    rationale: >-
+      docs/NATIVE_IOS_RFC.md §1이 `src/components/v2/*`·`ui/*`·`wizard/*` **7,174줄을
+      "재작성 대상 — 가장 큰 덩어리"**로 분류했고, 훅 1,448줄은 "상태 로직은 이식, 영속은 교체"다.
+      §6 "여전히 하지 말 것"은 영속 계층 추상화·API 클라이언트 계층 신설·캡처 파이프라인
+      인터페이스화를 순손실로 분류했다 — 앱에서 사라질 것에 구조를 씌우지 말라는 규율이고,
+      같은 잣대를 대면 v2/* 스타일 통일도 앱으로 안 넘어간다. 반대로 "언제 무엇이 실패했고
+      사용자에게 무엇을 말하나"는 훅·상태 축이라 SwiftUI에서도 같은 판단을 다시 쓴다.
+      이 논리가 c4를 soft로, c5를 "이징 하나"로 묶는 근거다.
+  - id: c9
+    type: technical
+    description: >-
+      새 사용자 노출 문구는 docs/COPY_TONE_GUIDE.md를 따른다 — 실패·차단은 [무슨 일] +
+      [다음 행동] 두 문장, 한 문장 33자 · 전체 44자 상한. 라벨에는 조건절·종결어미·마침표를
+      쓰지 않는다.
+    hard: true
+    rationale: >-
+      가이드 축 3·축 2. 상한은 현행 최댓값 추인이라(가이드:137-139) 넘기면 좁은 400px 프레임에서
+      줄 수가 늘고, 넘기려면 상한을 먼저 다시 재야 한다. 기존 문구가 이미 상한선에 있다 —
+      `저장에 실패했어요. 브라우저 저장 공간이 가득 찼거나 비공개 모드일 수 있어요.`가 44자 동률.
+  - id: c10
+    type: technical
+    description: >-
+      fixed 좌표는 PhoneFrame 기준으로 유지한다. ErrorToastHost는 MobileEditorShell 트리 안에
+      한 번만 마운트한다.
+    hard: true
+    rationale: >-
+      errorToast.tsx:82-83 주석 — fixed 좌표가 프레임의 contain:paint에 갇혀야 데스크톱에서도
+      400px 프레임 밖으로 안 샌다(#609). c3이 좌표를 옮기는 작업이라 이 제약을 직접 건드린다.
+      measure-chrome.mjs의 frameFit 축이 프레임 봉쇄를 재고, contain:paint를 지우면 fixed
+      오버레이 3종이 좌 520px 넘치는 게 실측돼 있다(CLAUDE.md).
+
+success_criteria:
+  - id: ac1
+    description: >-
+      OCR 되돌리기 배너가 떠 있는 동안 셸 스낵바가 떠도 배너의 '되돌리기'·'확인' 두 버튼이
+      가려지지 않는다.
+    verifiable: true
+    measurable_via: >-
+      크롬 하네스 — 400×675에서 OCR 적용으로 배너를 띄운 뒤 전역 undo를 눌러 스낵바를 띄우고,
+      두 요소의 getBoundingClientRect가 겹치지 않는지 대조. happy-dom엔 실 레이아웃이 없어
+      rect를 못 재므로 유닛 테스트로는 못 잠근다 — 유닛 쪽은 두 좌표 클래스가 문자로 같지
+      않은지만 대조하는 얕은 가드까지가 한계다.
+  - id: ac2
+    description: >-
+      진단문서 8개 항목(C1·C2·C4·C5·M1·M6·M4·M5·m3)이 해소 상태로 유지된다 — 이번 작업이
+      되돌리지 않는다.
+    verifiable: true
+    measurable_via: >-
+      기존 테스트 유지 + 전수 grep 2종 — src에 `alert(`가 없고, 빈 catch가 index.tsx:64 ·
+      _document.tsx:23 둘로만 남고(c6 뒤 :77도 소멸), 리터럴 `focus:` 0건.
+  - id: ac3
+    description: >-
+      스프링 이징이 pressableVariants base가 아니라 `transition: 'cta'` variant에만 붙는다.
+      base에 transition-property가 생기지 않는다.
+    verifiable: true
+    measurable_via: >-
+      variants.ts를 읽는 단위 테스트 — pressableVariants()의 기본 반환 문자열에
+      `transition-`이 없고, pressableVariants({transition:'cta'})에만 있는지 대조.
+      variants.ts:6-11이 경고하는 회귀를 문자로 잠근다.
+  - id: ac4
+    description: >-
+      추천색 추출이 실패하면 사용자에게 한 번 알린다. 성공 경로에는 아무 알림도 안 뜬다.
+    verifiable: true
+    measurable_via: >-
+      index.tsx의 동적 import 경로를 mock해 reject시키고 ErrorToastHost에 문구가 뜨는지.
+      mock.module 복원은 반드시 `const real = { ...require(p) }` 스프레드 스냅샷으로(#611).
+  - id: ac5
+    description: >-
+      새 문구가 톤 가이드 상한(한 문장 33자 · 전체 44자)과 축 3 두 문장 구조를 지킨다.
+    verifiable: true
+    measurable_via: >-
+      문구 상수에 대한 길이 단언. 기존 showError 호출 6곳의 문구가 이미 그 형태라 같은 틀을 쓴다.
+  - id: ac6
+    description: >-
+      프레임 봉쇄가 유지된다 — 좌표를 옮긴 알림 표면이 400px 프레임 밖으로 안 샌다.
+    verifiable: true
+    measurable_via: >-
+      scripts/measure-chrome.mjs의 frameFit 축. dock 290 / 프리뷰 190.9×305 불변식은 이 작업이
+      안 건드리는 값이지만 같이 통과해야 한다.
+
+context:
+  existing_stack:
+    - Next.js (pages router) + React + TypeScript
+    - >-
+      src/utils/errorToast.tsx — useSyncExternalStore 모듈 싱글턴 + ErrorToastHost(107줄, #645)
+    - cva + clsx + tailwind-merge (#647). Radix·shadcn·Sonner 0개
+    - eslint local rule no-raw-touch-target-size (#647)
+    - bun test + happy-dom. __tests__/setup/happydom.ts의 전역 afterEach가
+      resetErrorToastForTest()를 부른다 — 모듈 싱글턴이 프로세스 내내 남기 때문(#611 클래스)
+  dependencies:
+    - 새 의존성 0. 진단문서 최종 판정("shadcn/ui 전면 도입은 지금 하지 않는다")과 부록 2
+      expert-panel 7표 중 6표 (B) cva만을 그대로 승계한다. 재검토 조건도 그대로 —
+      "#612에서 새 오버레이·다이얼로그 계열이 3개 이상 필요할 때"(부록 2 ④ 교정)
+    - docs/NATIVE_IOS_RFC.md §1·§6 — c8 정당화 논리의 유일한 출처
+    - docs/COPY_TONE_GUIDE.md — c9. "테스트가 잠근 문구" 표(:239-)를 문구 변경 전에 먼저 볼 것
+  integration_points:
+    - src/components/v2/OcrUndoBanner.tsx:27 — 좌표(c3). 두 버튼의 min-h-touch(:36,:43)는
+      #646이 넣은 것이라 안 건드린다
+    - src/components/v2/MobileEditorShell.tsx:1310 — 스낵바 좌표. flashToast 호출 8곳
+      (:275, :291, :437, :485, :500, :845, :1191, :1195)이 이 표면의 전체 소비자다
+    - src/utils/errorToast.tsx:91 — ErrorToastHost 좌표(fixed top-4 z-[70]). 지금은 위아래로
+      갈려 있어 c3의 충돌 대상이 아니다
+    - src/components/ui/variants.ts:16-22 — c4·c5. 소비자 2곳(OcrUploadCard.tsx:282,
+      PrimaryCta.tsx:45)
+    - src/pages/index.tsx:77 — c6
+    - scripts/measure-chrome.mjs — ac1·ac6. 새 축을 넣으면 출력만 하지 말고 종료 조건
+      (process.exitCode)에도 실을 것(#714가 모달 축에서 겪은 조용한 성공)
+  backlog_scan: >-
+    prefilter 실행됨(open 9 · closed 369, 2026-08-18 gh issue list 실측).
+    이 스펙의 전제였던 작업들이 전부 닫혀 있는 게 최대 발견이다 — #645(무음 실패 6종 제거 +
+    실패 알림 단일화, closed 2026-08-04) · #646(티켓 필드 키보드 접근 + aria-hidden input +
+    탭 타깃 미달 3종, closed 2026-08-04) · #647(cva 도입 + 상태 스타일 강제 — shadcn/ui 전면
+    도입 대신, closed 2026-08-09). 커밋 12개로 확인했다(461098d·6a1d47d·43260ee·30f3f24·
+    d23cbec·4275a87 / 25b82da·b58f330·ffaf783·66440c5 / 428ce64·1045eb7·d65fa04·2a5ef01·
+    0881853·7f01b13·6f7d333·527e7eb).
+    이후 정합성에 영향을 준 것: #665(TMDB 철거 — 진단문서 M8 "TMDB 썸네일 실패 처리 없음"의
+    대상 자체가 소멸, 랜딩 이탈 경로 3종 → 2종) · #677(문구 톤 정비 — 랜딩 문구가
+    "포스터 있으면 올리기" → **"포스터 업로드"**로 바뀌었다. CLAUDE.md와 진단문서 둘 다 옛
+    문구를 들고 있으니 인용할 때 live source를 볼 것) · #681(툴바 숨김 영속 — 진단문서 M9의
+    대상) · #701(영문 aria-label 3종 한국어화).
+    열린 9개 중 이 스펙과 충돌하는 것은 없다. #717(부하 상태에서 랜딩·포스터 복원 테스트 3개가
+    AssertionError)이 인접하나 테스트 타이밍 축이라 직교하고, #723(포스터 영역 탭으로 업로드
+    진입)은 진입점 축이다.
+    한계: 검색은 키워드 9종(컬러·헥스·색상·radiogroup·접근성·토스트·알림·좌석·탭타깃)으로
+    돌렸고 닫힌 369개 본문은 안 봤다. 용어가 안 겹치는 충돌 이슈는 prefilter에 안 올라온다.
+
+blindspots:
+  - area: blind-spots
+    question: >-
+      C3(좌석 5번째부터 무음 절삭)의 정책이 아직 없다 — 4개 상한을 유지하고 안내만 붙일지,
+      4개 이상을 verbose로 처리할지. 진단문서 부록 2 UNRESOLVED 3번에도 같은 항목이 올라 있다.
+      제약 자체는 타당하고 문제는 침묵뿐이므로 어느 쪽으로 가든 안내는 필요한데, 문구가 정반대라
+      정책이 먼저다. 이 스펙이 c7로 명시적으로 제외했다.
+  - area: blind-spots
+    question: >-
+      ac1을 유닛 테스트로 못 잠근다. happy-dom엔 실 레이아웃이 없어 rect가 전부 0이고,
+      크롬 하네스(chrome-harness.yml)는 required check가 아니다(#593의 두 축 분리 — 브라우저·
+      서버·타이밍 잡음이 required를 흔들면 안 된다는 자세). 그래서 이 회귀는 머지를 못 막는다.
+      #714가 같은 문제를 만나 "결합만이라도 bun test로 내리는" 우회를 썼는데
+      (measureChromeBaselineCoupling.test.ts가 문자 비교로 '다시 재라'를 띄운다), 좌표 클래스
+      문자 비교도 같은 급의 얕은 가드다 — 실제로 겹치는지가 아니라 선언이 같은지만 본다.
+  - area: blind-spots
+    question: >-
+      스낵바를 어디로 옮길 것인가가 미정이다. 위(top)로 올리면 ErrorToastHost(fixed top-4
+      z-[70])와 새로 겹치고, 배너 위로 올리면 400×675 프레임에서 티켓 프리뷰를 덮으며,
+      배너 아래는 자리가 없다. "배너가 떠 있을 때만 스낵바를 밀어 올린다"는 조건부 좌표가
+      제일 좁은 답 같지만 상태 결합을 하나 새로 만든다. 이 선택은 실제 프레임에서 보고 정해야 한다.
+  - area: blind-spots
+    question: >-
+      c4를 실제로 60곳 치환할 값어치가 있는가. 값이 전부 같은 `active:scale-[0.97]`이라
+      사용자에겐 지금도 동일하고(진단문서 부록 2 ②에서 UX가 탭 타깃 3벌을 두고 편 논리와 같다),
+      c8의 이식 논리로 보면 v2/* 스타일은 앱으로 안 넘어간다. 강제력이 필요하다는 명제는 참이나
+      그것이 60곳 치환을 함의하지는 않는다 — eslint 규칙으로 새 리터럴만 막고 기존은 그대로
+      두는 쪽이 더 쌀 수 있다(부록 2 ②의 "강제력의 최소 단위는 라이브러리가 아니라 lint 규칙").
+      c4를 soft로 둔 이유가 이것이고, 착수 전에 한 번 더 판단할 자리다.
+  - area: blind-spots
+    question: >-
+      진단문서에 아직 안 닫힌 항목이 더 있다 — C6(Web Share 타임아웃 부재, 실기기 미확인) ·
+      M7(InPlaceFieldEditor만 Escape 미지원) · M9(툴바 숨김 시 undo 진입점 소멸, #681이 부분
+      처리) · M10(자동저장 토글 고급설정 이동) · m1·m2(폰트·무드 청크 로딩) · m4~m11 잔여.
+      이 스펙은 권장 1·3번의 잔여만 다루므로 그것들은 범위 밖이고, 대신 진단문서 자체가
+      2026-08-04 스냅샷이라 다음에 인용할 때도 live source 대조를 먼저 할 것.
+
+ambiguity:
+  overall: 0.22
+  gate_passed: true
+
+clarity_breakdown:
+  goal: 0.9
+  constraint: 0.9
+  success: 0.75
+  context: 0.9
+
+metadata:
+  interview_rounds: 0
+  questions_asked: 0
+  generated_by: thinking-tools/build-spec
+  source_session: >-
+    오너가 진단문서 권장 1·3번을 가져가라는 결정과 항목 목록(C1·C2·C4·C5·M1·M6 + M4·M5·m3)을
+    확정해 전달했으나, live source 대조 결과 **아홉 항목 전부가 이미 해소돼 있었다**(#645·#646·
+    #647, 커밋 18개). 그래서 인터뷰 대신 대조를 스펙 작업의 절반으로 쓰고, 목표를 "그 셋이
+    남긴 잔여"로 다시 잡았다 — 오너 지시의 "이미 해소됐으면 명세에서 제외할 것"을 그대로 적용한
+    결과다. success 확신도가 0.75로 낮은 건 ac1을 required check로 못 내리기 때문이고
+    (blindspots 2번), 스낵바의 새 좌표가 미정인 것(blindspots 3번)이 overall ambiguity 0.22의
+    주된 출처다. 격리 게이트·blind-spot pass는 인라인 처리(scoring_isolated: false).
+---

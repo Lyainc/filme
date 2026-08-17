@@ -1,0 +1,280 @@
+# Seed Spec — 형압 편집용 포스터 확대(기존 max 뷰모드 재사용)
+---
+skill: build-spec
+schema_version: 1
+version: 4.7.0
+generated: 2026-08-18
+input:
+  target: 형압 편집용 포스터 확대
+  options: []
+output:
+  type: spec
+  structure: templates/SEED_SPEC.yaml
+
+spec_version: 1
+created: 2026-08-18
+target: 형압 편집용 포스터 확대
+domain: tech
+brownfield: true
+refine_generation: 0
+
+goal:
+  statement: >-
+    형압을 칠하는 사용자가 이미 있는 max 뷰모드(#328)를 그대로 작업면으로 써서, 기본 프리뷰에서
+    포스터가 99.5×149.2px(criterion)~191×305.2px(minimal)밖에 안 돼 정밀하게 못 칠하던 상태를
+    없앤다. 전용 확대 화면은 새로 만들지 않는다.
+  clarity_score: 0.9
+
+constraints:
+  - id: c1
+    type: technical
+    description: >-
+      확대 수단은 기존 `viewMode: 'default' | 'max'`(MobileEditorShell.tsx:242) 재사용이다.
+      새 뷰모드 값도, 형압 전용 확대 화면도 만들지 않는다.
+    hard: true
+    rationale: >-
+      오너 확정. max는 이미 티켓만 남기는 fixed 오버레이(MobileEditorShell.tsx:886)이고 진입(플로팅
+      툴바 '최대화')·탈출(티켓 탭)·포커스 이관(:612-614)·회전 배치(:629-631)가 전부 서 있다.
+      실측 확대 배율이 세로형 4무드에서 1.59×(아래 c4 표)라 새 화면을 만들어 얻을 것이 배율 말고
+      없다.
+  - id: c2
+    type: technical
+    description: >-
+      max 스테이지(`fixed inset-0 z-50`, MobileEditorShell.tsx:886)가 EmbossBrushLayer(zIndex 45,
+      EmbossBrushLayer.tsx:225)를 덮어 브러시가 안 먹는 현재 상태를 고친다. 고치는 방향은 max에
+      한해 브러시 레이어를 스테이지 위로 올리는 것이고, 기본 모드의 45는 그대로 둔다.
+    hard: true
+    rationale: >-
+      **미보고 버그이고 브라우저 실측으로 확인됐다**(2026-08-18, dev :3010, 뷰포트 400×675, 6무드
+      전부). 기본 모드에서는 포스터 중앙의 `document.elementFromPoint`가 브러시 레이어를 돌려주는데
+      (`brushLayer: true`), max에 들어가면 같은 좌표가 `aria-label="기본 크기로 돌아가기"`를 돌려준다.
+      이어서 max 상태로 포스터 위를 실제 드래그해 보면 스탬프가 하나도 안 찍히고(`embossMaskInTicket:
+      false`) 대신 max에서 빠져나온다(`stillMax: false`) — 칠하려는 손짓이 통째로 "기본 크기로
+      돌아가기"로 흡수된다. 6무드 전부 같은 결과다.
+      기본 모드의 45를 유지해야 하는 이유는 필드 드로어(z-50)다 — 브러시를 상시 51로 올리면 드로어가
+      열린 상태에서 포스터 rect만큼 구멍이 뚫린다. max에선 드로어·툴바·dock이 전부 안 뜨므로 그 자리에서만
+      올리는 게 안전하다.
+  - id: c3
+    type: technical
+    description: >-
+      max에서 형압을 칠하는 동안에도 나가는 길이 항상 하나 이상 살아 있어야 한다. 새 종료 버튼을
+      만들지 않고, **포스터 rect 밖 탭**과 래퍼의 키보드 Enter/Space(:927-932)를 그 길로 쓴다.
+    hard: true
+    rationale: >-
+      max에선 dock·레일·플로팅 툴바가 전부 사라지므로 형압 모드를 끌 수단이 화면에 없다 — 실측:
+      max에서 `button[aria-label="최대화"]`는 사라지고(`maxToolbar: false`),
+      `[data-rail-id="emboss"]`는 DOM에 남지만 rect가 0×0에 `elementFromPoint`가 스테이지를
+      돌려준다(display:none). 그래서 c2로 브러시가 포스터 탭을 먹기 시작하면 탈출구가 0이 된다.
+      다만 **브러시 레이어는 포스터 rect만 덮지 전체 화면을 안 덮으므로**(EmbossBrushLayer.tsx:216-228,
+      그 자리 주석이 전체화면 버전에서 겪은 회귀를 기록해뒀다) 포스터 바깥은 그대로 스테이지다.
+      실측 여백(400×675 프레임, 포스터 rect 기준)이 minimal·stub·editorial 47.9px, 35mm 111.3px,
+      criterion 120.8px, 35mm Wide 102.4px로 전부 터치 타깃(44px)을 넘어, 새 UI 없이 이 조건이
+      이미 성립한다.
+  - id: c4
+    type: technical
+    description: >-
+      좌표 변환은 새로 짜지 않는다. `EmbossBrushLayer`가 rAF로 매 프레임 `[data-poster-root]`의
+      `getBoundingClientRect()`를 다시 재고(:112-134) `clientToNaturalFrac`이 실제 `<img>`의
+      rect·naturalWidth·objectFit을 읽는(:137-152) 현재 구조를 그대로 둔다.
+    hard: true
+    rationale: >-
+      `getBoundingClientRect`는 조상 transform이 반영된 값이라 확대가 자동으로 흡수된다 — **실측으로
+      확인됐다**: max 진입 전후 6무드 전부에서 브러시 레이어 rect가 포스터 rect와 소수점까지 일치했다.
+      같은 실측에서 나온 배율표(기본 → max, px):
+      minimal 191×305.2 → 304×485.8 (1.592×) ·
+      criterion 99.5×149.2 → 158.3×237.5 (1.591×) ·
+      stub 191×127.3 → 304×202.7 (1.592×) ·
+      35mm 111.4×167.1 → 177.3×266 (1.592×) ·
+      editorial 153.5×230.3 → 회전 후 bbox 304.1×202.8 (회전 전 기준 1.321×) ·
+      35mm Wide 222.1×148 → 회전 후 bbox 195.5×293.4 (회전 전 기준 1.321×).
+  - id: c5
+    type: technical
+    description: >-
+      가로형 무드 2종(editorial · 35mm Wide)은 이번 범위에서 뺀다. max에서 형압 편집 모드면
+      회전(`rotateLandscape`, MobileEditorShell.tsx:629)을 걸지 않거나, 그 두 무드에서는 max를
+      형압 작업면으로 열지 않는다 — 둘 중 하나를 구현 시점에 고른다.
+    hard: true
+    rationale: >-
+      `clientToNaturalFrac`이 쓰는 `getBoundingClientRect`는 **회전된 요소의 축정렬 bbox**를 줄 뿐
+      회전 좌표계를 안 준다. 90° 회전에서는 bbox가 회전한 사각형과 픽셀이 겹쳐서 레이어가 제자리로
+      보이지만(실측: editorial·35mm Wide도 layer rect == poster rect), 그 안에서
+      `boxX = (clientX - r.left) / r.width`가 화면 가로를 포스터 로컬 x로 읽는 반면 로컬 x축은
+      화면 세로로 서 있다 — 찍히는 스탬프가 90° 어긋난다. **이건 아직 실측이 아니라 추론이다**:
+      c2 때문에 회전 무드에서 브러시가 애초에 안 먹혀 어긋난 스탬프를 관측할 수 없었다. c2를 고친
+      직후 이 두 무드에서 한 번 찍어 보는 게 이 판정의 확인 절차다.
+      오늘 기본 모드에는 회전이 없으므로(`rotateLandscape`는 `isMax`를 요구한다) 이건 새로 만드는
+      결함이지 기존 결함이 아니다 — max를 작업면으로 여는 이 스펙이 만들어내는 것이라 이 스펙이
+      막아야 한다.
+  - id: c6
+    type: technical
+    description: >-
+      `handleViewModeChange`(MobileEditorShell.tsx:443-447)가 `embossEditMode`를 안 끄는 현재
+      동작을 유지한다.
+    hard: false
+    rationale: >-
+      실측으로 "모드가 max 왕복을 넘어 살아남는다"가 확인됐다(max에서 나온 뒤에도
+      `[data-emboss-brush-layer]`가 그대로 있다). 지금은 그게 탈출구 없는 함정이라 결함이지만,
+      c2·c3을 넣고 나면 정확히 이 동작이 "칠하다가 확대해서 계속 칠한다"를 성립시킨다.
+      #722가 DesignRail.tsx:244-246에 넣은 "다른 레일 항목으로 옮기면 끈다"는 그대로 둔다 —
+      max 전환은 `pop`을 안 거치므로 그 effect와 경로가 갈린다.
+  - id: c7
+    type: technical
+    description: >-
+      패닝·핀치줌·배율 슬라이더는 열지 않는다. max가 주는 고정 배율 하나로 끝낸다.
+    hard: false
+    rationale: >-
+      패닝을 열면 브러시 레이어의 `touchAction: 'none'` + `setPointerCapture`(EmbossBrushLayer.tsx:227,
+      :230)가 포인터를 독점하는 것과 정면으로 부딪혀 제스처 분기(칠하기 vs 밀기)를 새로 설계해야
+      하는데, max 배율이 1.59×라 프레임 안에 포스터가 통째로 들어온다(실측 여백 47.9~120.8px) —
+      밀 곳이 없다. 1.59×로 부족하다는 목소리가 실제로 오면 그때 별도 이슈로 여는 게 싸다.
+  - id: c8
+    type: technical
+    description: >-
+      저장 경로(`captureToImage.compositeEmbossOverlay`)와 프리뷰 오버레이는 안 건드린다.
+    hard: false
+    rationale: >-
+      형압 마스크는 포스터 자연 픽셀 0..1 분율로 저장되고(EmbossBrushLayer.tsx:72 주석) 캡처는
+      스케일 안 걸린 자연 픽셀 트리를 뜬다 — 화면 배율은 이 축에 원리적으로 안 실린다.
+
+success_criteria:
+  - id: ac1
+    description: >-
+      max + 형압 편집 모드에서 포스터 중앙의 `document.elementFromPoint`가 브러시 레이어를 돌려준다
+      (세로형 4무드: minimal · criterion · stub · 35mm).
+    verifiable: true
+    measurable_via: >-
+      오늘 이 버그를 잡은 것과 같은 브라우저 프로브 — 포스터 주입 → 크롭 '적용' → 레일 emboss →
+      "형압 도구" radiogroup의 '브러시' 라디오 클릭 → '최대화' 클릭 → 포스터 중앙
+      `elementFromPoint`가 `closest('[data-emboss-brush-layer]')`를 갖는지. 지금은
+      `aria-label="기본 크기로 돌아가기"`가 나온다.
+  - id: ac2
+    description: >-
+      max 상태로 포스터 위를 드래그하면 스탬프가 실제로 찍히고, max에서 안 빠져나온다.
+    verifiable: true
+    measurable_via: >-
+      같은 프로브의 드래그 단계 — 현재 값은 `embossMaskInTicket: false` + `stillMax: false`이고,
+      고침 뒤 기대값은 마스크가 생기고 `stillMax: true`다.
+  - id: ac3
+    description: >-
+      max에서 포스터 rect **밖**을 탭하면 형압 편집 중이어도 기본 크기로 돌아간다. 키보드
+      Enter/Space도 같다.
+    verifiable: true
+    measurable_via: >-
+      같은 프로브에서 포스터 rect 좌측 여백(실측 최솟값 47.9px의 중앙)을 클릭한 뒤
+      `[aria-label="기본 크기로 돌아가기"]`가 사라지는지. c3의 탈출구가 실제로 열려 있다는 유일한
+      증거다.
+  - id: ac4
+    description: >-
+      가로형 무드 2종에서 c5가 고른 처리가 실제로 걸린다 — 회전을 끄는 쪽이면 max에서
+      `rotateLandscape` 배치가 안 나오고, max를 안 여는 쪽이면 그 무드에서 형압 편집 중 '최대화'가
+      비활성이다.
+    verifiable: true
+    measurable_via: >-
+      `scripts/measure-chrome.mjs`의 max 축이 이미 두 rect를 잰다(`max 모드 오버레이` ·
+      `max 모드 티켓`, :528-529) — 회전을 끄면 안쪽 티켓 rect가 회전 bbox에서 자연 방향으로 바뀐다.
+      비활성 쪽이면 상호작용 테스트로 버튼 disabled를 확인한다.
+  - id: ac5
+    description: >-
+      max 스테이지와 브러시 레이어의 z 관계가 소스에서 어긋나면 `bun test`가 깨진다.
+    verifiable: true
+    measurable_via: >-
+      `__tests__/measureChromeBaselineCoupling.test.ts`(#714)와 같은 처방 — `MobileEditorShell.tsx`의
+      max 스테이지 클래스 문자열과 `EmbossBrushLayer.tsx`의 zIndex 선언을 읽어 브러시가 스테이지
+      위인지 대조한다. happy-dom은 레이아웃·스태킹을 안 계산해 hit-test로는 원리적으로 못 잡는 축이고,
+      하네스는 `ci.yml`에 결선돼 있지 않다 — required 안에서 잡을 수 있는 건 선언의 결합뿐이다.
+      이 테스트가 브라우저 실측을 대신하지 않는다(#714의 같은 단서).
+  - id: ac6
+    description: >-
+      `scripts/measure-chrome.mjs`의 frameFit·dock·프리뷰 불변식이 그대로 통과한다.
+    verifiable: true
+    measurable_via: >-
+      `bun scripts/measure-chrome.mjs --theme dark` · `--theme light`. dock 290 / 프리뷰
+      190.9×305 무변경 + `frameFit.pass`. 이 스펙은 max에서만 z를 바꾸므로 기본 모드 rect는
+      안 움직여야 한다.
+
+context:
+  existing_stack:
+    - Next.js (pages router) + React + TypeScript
+    - Tailwind + cva/cn — 다만 z는 인라인 `zIndex`(브러시)와 Tailwind `z-50`(스테이지)로 갈려 있다
+    - bun test + happy-dom + @testing-library/react
+    - puppeteer-core + 시스템 Chrome (scripts/measure-chrome.mjs · capture-export.mjs)
+  dependencies:
+    - EmbossBrushLayer.tsx — rAF 재측정(:112-134)·`clientToNaturalFrac`(:137-152)·
+      `setPointerCapture`(:230)·`touchAction:'none'`(:227). 좌표 축은 c4로 무변경
+    - PhoneFrame `getFrameRect()` — 브러시가 fixed 좌표를 프레임 원점 기준으로 보정하는 데 이미 쓴다
+      (EmbossBrushLayer.tsx:119-120). max도 같은 프레임 안이라 이 항이 그대로 성립한다
+    - viewMode.tsx — `ViewMode` 타입. 값을 안 늘리는 게 c1이다
+  integration_points:
+    - src/components/v2/MobileEditorShell.tsx:886 — max 스테이지 `fixed inset-0 z-50`(c2의 한쪽)
+    - src/components/v2/MobileEditorShell.tsx:920-934 — 래퍼의 탭/키보드 "기본 크기로 돌아가기"(c3)
+    - src/components/v2/MobileEditorShell.tsx:1005-1013 — EmbossBrushLayer 마운트 지점. max 여부를
+      넘겨야 한다면 여기가 유일한 호출부다
+    - src/components/v2/MobileEditorShell.tsx:443-447 — handleViewModeChange(c6, 무변경)
+    - src/components/v2/MobileEditorShell.tsx:629-631 — rotateLandscape(c5)
+    - src/components/v2/EmbossBrushLayer.tsx:225 — zIndex 45(c2의 반대쪽)
+    - scripts/measure-chrome.mjs:522-531 — max 축. 지금은 rect만 재고 hit-test는 안 한다
+  backlog_scan: >-
+    prefilter 실행됨(open 9 · closed 369). 관련 이슈 셋. **#509**가 형압 축 자체(브러시·올가미·
+    좌표 재매핑)를 세웠고 이 스펙은 그 작업면을 확대하는 후속이다. **#679**는 같은 형압 UX 축의
+    열린 항목이라 문구·컨트롤 배치가 겹칠 수 있으니 착수 전에 본문을 대조할 것. **#722**는 방금
+    머지돼 "레일 항목이 바뀌면 형압 편집을 끈다"를 DesignRail.tsx:244-246에 넣었는데, max 전환은
+    `pop`을 안 거치므로 이 스펙과 경로가 갈린다(c6). 충돌 없음.
+    한계: 예산 절삭으로 열린 이슈 본문은 앞부분만, 닫힌 이슈는 제목만 봤다. 용어가 안 겹치는 충돌
+    이슈는 prefilter에 안 올라온다.
+
+blindspots:
+  - area: 검증 도구가 이미 깨져 있다
+    question: >-
+      `scripts/capture-export.mjs`의 `--emboss`/`--lasso` 경로가 지금 못 돈다. `paintEmboss`(:271,
+      술어 :276, throw :282)와 `paintEmbossLasso`(:342, 술어 :347, throw :352)가
+      `'형압 칠하기 시작'` · `'올가미로 선택 시작'` 버튼을 찾고 없으면 throw하는데, 그리고 종료도
+      `'탭해서 종료'`(:310·:391)를 찾는데, **그 버튼들은 더 이상 없다** — #692가 진입을 ChipRadio "형압 도구"
+      칩 탭으로 바꿔서(designRailItems.tsx:365-380) 도구 칩 하나가 선택과 진입/종료를 다 맡는다.
+      오늘 프로브 1회차가 같은 술어로 못 찾아(`embossStarted: false`) 확인된 사실이고, 라디오
+      클릭으로 바꾼 2회차부터 진입했다. 이 스펙의 검증이 그 스크립트를 타면 시작부터 걸리므로,
+      착수 시 먼저 고칠 것 — 다만 이건 이 스펙이 만든 결함이 아니라 물려받는 것이고, 별도 이슈로
+      떼는 게 맞는지는 정하지 않았다.
+  - area: 하네스가 못 보는 축
+    question: >-
+      `measure-chrome.mjs`의 max 축은 rect만 재고 **누가 그 픽셀을 받는지**는 안 잰다 — 그래서
+      이 버그가 하네스 전부 통과 상태로 살아 있었다. ac1~ac3은 원리적으로 hit-test 축이라
+      기존 게이트 어디에도 안 실린다. ac5가 그 대신 선언 결합만 required에 내리지만, 실제 히트
+      테스트를 required 안에서 잴 방법은 이번 스펙 범위에 없다. 하네스에 hit-test 축을 새로 세울지는
+      "잰다 ≠ 게이트에 실린다"(#714)와 같은 결정이라 별도 판단이 필요하다.
+  - area: 클리핑과 히트 영역
+    question: >-
+      `getBoundingClientRect`는 조상 `overflow` 클리핑을 반영하지 않으므로, 원래는 "확대한 포스터가
+      스테이지 밖으로 나가면 브러시 레이어가 안 보이는 자리의 UI 클릭을 먹는다"가 실비용이었다.
+      **max 재사용이 이 비용을 대부분 지운다** — max 스테이지는 `inset-0`이라 프레임 전체이고 그
+      위에 다른 UI가 없어서 가려질 것 자체가 없다. 남는 건 PhoneFrame `contain:paint` 밖으로 나가는
+      경우인데 실측 배율 1.59×에서 포스터가 프레임 안에 여유 있게 들어와(여백 47.9~120.8px) 지금은
+      발생하지 않는다. c7이 패닝을 안 여는 한 이 항은 잠들어 있다 — 패닝을 여는 순간 되살아난다.
+  - area: 접근성
+    question: >-
+      max 진입 시 포커스가 티켓 래퍼로 옮겨가고(:612-614) 그 래퍼의 접근성 이름이 "기본 크기로
+      돌아가기"인데, c2 이후 그 래퍼의 포스터 부분은 탭하면 칠해진다 — 이름과 동작이 자리마다
+      갈린다. 브러시 레이어는 `aria-hidden="true"`고 이 저장소는 온-티켓 편집을 포인터 전용으로
+      두기로 이미 정했으므로(EmbossBrushLayer.tsx:213-214) 키보드 경로는 여전히 "돌아가기" 하나로
+      일관되지만, 스크린리더 사용자가 포스터 자리를 탭했을 때 무슨 일이 나는지는 안 정했다.
+
+ambiguity:
+  overall: 0.15
+  gate_passed: true
+
+clarity_breakdown:
+  goal: 0.95
+  constraint: 0.9
+  success: 0.9
+  context: 0.85
+
+metadata:
+  interview_rounds: 0
+  questions_asked: 0
+  generated_by: thinking-tools/build-spec
+  source_session: >-
+    오너가 "기존 max 재사용"을 확정한 상태로 진입해 인터뷰 없이 조사→명세로 갔다. c2·c3·c4의
+    실측은 이 세션에서 일회성 puppeteer 프로브(포스터 주입 → 크롭 적용 → 형압 브러시 진입 →
+    최대화 → elementFromPoint/드래그)로 6무드 전부 돌려 얻었다(2026-08-18, dev :3010, 400×675,
+    dark). 그 프로브는 스크래치패드에만 있고 레포에 안 들어간다 — 남길 가치가 있는지는 ac1~ac3
+    구현 시점에 판단할 것. c5만 추론으로 남아 있고 확인 절차를 그 자리에 적어뒀다.
+---
