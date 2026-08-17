@@ -166,7 +166,7 @@ export function FieldDrawer({ photo, onField, onClose, children }: FieldDrawerPr
           ))}
 
           <section className="space-y-1.5">
-            <Eyebrow className="px-1">Logos</Eyebrow>
+            <Eyebrow className="px-1">로고</Eyebrow>
             {STAMP_TARGETS.map((target) => (
               <LogoRow
                 key={target}
