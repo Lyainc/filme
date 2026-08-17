@@ -196,6 +196,14 @@
 샌 자리였다. `직접 지정`·`색상 코드`·`무드 목록`으로 정리됨(#701) — 셋 다 아이콘/스와치 전용이라
 시각 라벨이 없어 label-in-name 제약은 안 걸린다.
 
+**리터럴 문자열 grep은 계산된 aria-label을 못 잡는다.** #701 정리 중 `aria-label="Custom color"`
+같은 리터럴만 훑고 끝냈다가, `aria-label={s.label}`처럼 변수로 들어가는 자리(`ColorPicker`
+프리셋 스와치 White/Black/Gold·추천색 Pick 1/Pick 2, `DesignRail`의 상세 패널 region 이름
+eyebrow 필드 8종)를 놓쳤다 — fresh-context 리뷰가 낮은 확신으로 짚어줘서 뒤늦게 찾아 같이
+정리했다. 다음에 aria-label 잔여를 훑을 땐 `aria-label="..."` 리터럴 grep 하나로 끝내지 말고
+`aria-label={` 꼴로 한 번 더 훑어 그 변수의 출처(상수 배열의 `label`/`eyebrow` 필드 등)까지
+따라가 볼 것.
+
 ## 제약 ② — 법적 고지는 대상이 아니다
 
 `ticketCleanup.ts`의 `UNOFFICIAL_TICKET_NOTICE`와 공유 만료 고지는 톤 정비 대상이 아니다.
