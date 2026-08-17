@@ -38,7 +38,7 @@ describe('#678 ColorPicker 레이아웃', () => {
     render(
       <ColorPicker value="#FFFFFF" onChange={(v) => { picked = v; }} recommended={[]} />,
     );
-    const input = screen.getByLabelText('Hex color');
+    const input = screen.getByLabelText('색상 코드');
     fireEvent.change(input, { target: { value: 'zzAB12CDzz' } });
     expect(picked).toBe('#AB12CD');
   });
@@ -47,7 +47,7 @@ describe('#678 ColorPicker 레이아웃', () => {
     const { container } = render(
       <ColorPicker value="#FFFFFF" onChange={() => {}} recommended={[]} />,
     );
-    const input = screen.getByLabelText('Hex color');
+    const input = screen.getByLabelText('색상 코드');
     expect(input.className).not.toContain('w-full');
     // 스와치·커스텀·헥스가 전부 같은 flex-wrap 행 안에 있다 — 헥스 전용 행이 따로 없다.
     const root = container.firstElementChild as HTMLElement;
@@ -67,7 +67,7 @@ describe('#678 ColorPicker 레이아웃', () => {
       />,
     );
     expect((screen.getByRole('button', { name: 'White' }) as HTMLButtonElement).disabled).toBe(true);
-    expect((screen.getByLabelText('Hex color') as HTMLInputElement).disabled).toBe(true);
+    expect((screen.getByLabelText('색상 코드') as HTMLInputElement).disabled).toBe(true);
 
     const note = screen.getByText(NOTE);
     const root = container.firstElementChild as HTMLElement;
@@ -75,6 +75,6 @@ describe('#678 ColorPicker 레이아웃', () => {
     // 되돌아가면 이 테스트가 깨진다.
     expect(root.children.length).toBe(2);
     expect(root.children[1]).toBe(note);
-    expect(root.children[0].contains(screen.getByLabelText('Hex color'))).toBe(true);
+    expect(root.children[0].contains(screen.getByLabelText('색상 코드'))).toBe(true);
   });
 });

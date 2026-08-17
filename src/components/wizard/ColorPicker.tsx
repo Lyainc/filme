@@ -89,12 +89,12 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
         {/* 시각 라벨 없이 title/aria로만 — 스와치·무드·후보정 칩과 같은 문법. 375px에서
             'custom' 텍스트가 고아 줄바꿈을 만들던 Eyebrow는 제거(#190). */}
         <label
-          title="Custom color"
+          title="직접 지정"
           className={`relative inline-flex min-h-touch min-w-touch items-center justify-center ${disabled ? 'cursor-default' : 'cursor-pointer'}`}
         >
           <input
             type="color"
-            aria-label="Custom color"
+            aria-label="직접 지정"
             disabled={disabled}
             value={isCustom ? value : '#FFFFFF'}
             onChange={(e) => onChange(e.target.value)}
@@ -135,7 +135,7 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
               onChange(`#${sanitized}`);
             }}
             maxLength={6}
-            aria-label="Hex color"
+            aria-label="색상 코드"
             placeholder="FFFFFF"
             className={cn(
               inputVariants({ surface: 'paper' }),
