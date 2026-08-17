@@ -229,6 +229,22 @@ export function DesignRail({
     itemRefs.current.get(pop)?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
   }, [pop, visibleItems.length]);
 
+  // 형압이 아닌 항목으로 옮기면 형압 편집 모드를 끈다(#722). 안 끄면 EmbossBrushLayer(z-45)가
+  // 포스터 rect를 계속 덮어, 크기·투명도를 조절하러 들어와 포스터를 누른 사용자에게 형압이 찍힌다.
+  // 레일 선택이 바뀌는 경로 셋(아이콘 클릭 toggle · 스와이프 정착 · 무드 전환으로 항목이 숨겨짐)이
+  // 전부 pop으로 합류하므로 여기 한 곳이면 된다 — 호출부마다 가드를 넣는 것보다 작다.
+  //
+  // `pop !== null`을 함께 보는 이유: 형압 아이콘 재탭으로 **패널만 접는 건** pop=null이고, 그때까지
+  // 모드를 끄면 "패널 접고 넓은 화면에서 칠하기"가 막힌다. 보고된 명제("다른 메뉴를 선택하면")만
+  // 정확히 덮는 게 이 조건이다.
+  //
+  // 위 175행처럼 렌더 중 조정으로는 못 쓴다 — setEmbossEditMode는 부모(MobileEditorShell)가 소유한
+  // state라 렌더 중 호출하면 React가 경고한다. 같은 값으로의 set은 React가 bail out하므로
+  // embossEditMode를 의존성에 넣지 않아도 여분 렌더가 생기지 않는다.
+  useEffect(() => {
+    if (pop !== null && pop !== 'emboss') photo.setEmbossEditMode(false);
+  }, [pop, photo.setEmbossEditMode]);
+
   // 스와이프/스크롤만으로도 모듈이 전환되게(#502). 예전엔 매 scroll 이벤트에서 바로 활성화했는데,
   // 그러면 지나가는 아이콘마다 setPop이 돌고 그때마다 위 effect가 리센터를 걸어 스크롤이 스스로
   // 되먹임하며 흔들렸다(#564) — 이 파일의 ponytail 노트가 예고한 업그레이드 경로대로 **정지 감지**로
