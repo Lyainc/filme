@@ -1,0 +1,303 @@
+# Seed Spec — 컬러 픽커 헥스 입력 제거 + 선택 상태 접근성
+---
+skill: build-spec
+schema_version: 1
+version: 4.7.0
+generated: 2026-08-18
+input:
+  target: 컬러 픽커 헥스 입력 제거 + 선택 상태 접근성
+  options: []
+output:
+  type: spec
+  structure: templates/SEED_SPEC.yaml
+
+spec_version: 1
+created: 2026-08-18
+target: 컬러 픽커 헥스 입력 제거 + 선택 상태 접근성
+domain: tech
+brownfield: true
+refine_generation: 0
+
+goal:
+  statement: >-
+    컬러 픽커의 hex 텍스트 입력을 없애 세로 예산을 회수하고, 지금 시각 신호로만 존재하는
+    선택 상태를 role="radio"/aria-checked로 스크린리더에 들리게 한다. 색을 임의 값으로 지정하는
+    길은 이미 있는 네이티브 <input type="color">가 단독으로 맡는다.
+  clarity_score: 0.9
+
+constraints:
+  - id: c1
+    type: technical
+    description: >-
+      hex 텍스트 입력(ColorPicker.tsx:120-148)을 통째로 지운다. `#` 접두 span·w-[92px] 입력·
+      inputVariants 소비·aria-label "색상 코드"가 한 묶음으로 사라진다. 레이아웃을 재배치하는
+      게 아니라 없애서 푼다.
+    hard: true
+    rationale: >-
+      오너 결정("컬러값 입력하는 걸 빼도 되지 않아? 컬러 셀렉터가 있잖아"). 근거는 폭 산술이다 —
+      슬롯 폭 361px(colorPickerLockedNoteAdjacency.test.tsx:5-6)에 46px 칩 6개(276px) + gap-2.5
+      5칸(50px) = 326px이라 스와치만으로는 1행에 들어가는데, hex 그룹이 border-2 4px + `#` span
+      px-2 16px + border-r 1px + input 92px = 113px에 gap 10px까지 123px을 더해 449px을 만들어
+      혼자 2행 접힘을 일으킨다. 폰트는 16px(text-title) 고정이라 못 줄인다 — iOS가 16px 미만
+      입력에 포커스 시 화면을 자동 확대하는 걸 막는 하한(:116-119 주석)이라 줄일 수 있는 건
+      폭뿐이었고, #678이 이미 전폭 행에서 w-[92px]까지 줄인 뒤였다. 더 줄일 폭이 없다.
+  - id: c2
+    type: technical
+    description: >-
+      스와치 행에 role="radiogroup"(aria-label 포함)을, 각 프리셋·추천색 버튼에 role="radio" +
+      aria-checked를 단다. 지금은 aria-label={s.label}(:50) 하나뿐이라 선택 상태가 프로그램적으로
+      전혀 안 들린다.
+    hard: true
+    rationale: >-
+      선택 표시가 4겹인데 전부 시각 신호다 — border-accent, scale-105, 이중 box-shadow 링,
+      aria-hidden ✓(:52-84). 형제 픽커 둘은 이미 제대로 돼 있어(TexturePicker.tsx:96-97,110-111 /
+      LayoutPicker.tsx:71-72,82-83) 이건 새 설계가 아니라 세 자매 중 하나만 관용구를 안 지킨
+      것이다. CLAUDE.md가 "이 레포엔 W3C ARIA APG가 실질 스펙"이라고 못박은 근거 자리가 정확히
+      여기다(headless 프리미티브 없이 직접 구현하니 라이브러리가 대신 지켜주던 걸 우리가 지킨다).
+      대안으로 검토한 aria-pressed 토글 버튼 묶음은 방향키 계약을 안 물려받아 싸지만, 형제 둘과
+      문법이 갈려 "관용구 미준수"라는 결함 자체를 반대 방향으로 되풀이한다.
+  - id: c3
+    type: technical
+    description: >-
+      radiogroup을 선언하면 APG Radio Group의 키보드 계약(방향키 이동 + roving tabindex, 그룹은
+      Tab 한 번만 받는다)을 같은 PR에서 **세 픽커 전부**에 넣는다. ColorPicker만 넣고 끝내지 않는다.
+    hard: true
+    rationale: >-
+      TexturePicker·LayoutPicker는 role="radiogroup"을 선언해두고 방향키를 안 지켜 선언과 동작이
+      이미 어긋나 있다. ColorPicker에 role만 얹으면 같은 어긋남이 2벌에서 3벌이 된다 — 없던 위반을
+      새로 만드는 쪽이다. 반대로 핸들러는 컨테이너에서 [role="radio"] 자식을 찾아 포커스를 옮기는
+      한 벌이면 되고 세 픽커가 같은 DOM 모양이라, 한 자리에 두고 셋이 부르는 게 각자 고치는
+      것보다 작은 diff다. 이 계약을 안 넣을 거면 c2를 aria-pressed로 되돌리는 게 맞다 — 둘 중
+      하나만 고르는 것이지 "role만 얹고 키보드는 다음에"는 선택지가 아니다.
+  - id: c4
+    type: technical
+    description: >-
+      커스텀 색 label(:91-114, sr-only <input type="color">)은 radiogroup 밖에 세운다. radio가
+      아니라 값을 여는 입력이다.
+    hard: true
+    rationale: >-
+      radiogroup 안의 non-radio 자식은 APG 위반이고, 스크린리더가 "N개 중 M번째"를 셀 때
+      집합이 어긋난다. 실제로도 성격이 다르다 — 프리셋·추천색은 확정된 값 중 하나를 고르는
+      것이고 커스텀은 OS 피커를 여는 트리거다.
+  - id: c5
+    type: technical
+    description: >-
+      세 픽커가 세 벌로 들고 있는 선택 상태 문자열
+      ('0 0 0 2px var(--bg), 0 0 0 4px var(--accent)' · scale(1.05) · data-touch="44")을
+      src/components/ui/variants.ts로 모은다. 단 새 값을 만들지 않고 지금 값을 그대로 옮긴다.
+    hard: false
+    rationale: >-
+      variants.ts(41줄)의 자세가 그 파일 주석(:24-29)에 좁혀져 있다 — "여러 컴포넌트가 이미
+      리터럴로 똑같이 들고 있던 값을 한 자리로 모은다"이지 "새 디자인을 여기서 발명한다"가
+      아니다. 셋이 문자까지 동일한 리터럴을 세 벌 들고 있으니 정확히 그 조건에 든다. #647
+      Critical Practitioner 조건 1("variant 정의는 지금 클래스값을 그대로 이식 — 새 값을
+      만들지 말 것, px 불변식 보호")과 같은 규율이다.
+  - id: c6
+    type: technical
+    description: >-
+      scale-* **클래스**를 쓰지 않는다. 확대는 인라인 transform으로만 건다.
+      transition-colors와 transition-transform을 함께 얹지 않는다 — 필요하면
+      transition-[a,b,c] 한 선언으로 쓴다.
+    hard: true
+    rationale: >-
+      두 함정이 각각 코드에 못박혀 있다. ① __tests__/tapTargets.ts:31이 `scale-*` 클래스를
+      통째로 금지한다(active:scale-*만 예외, :21-24) — 클래스 파싱으로 탭 타깃을 재는 파서라
+      선언 크기를 나중에 줄이는 수단을 막는 규칙이고, 인라인 transform은 :34-37이 1 미만만
+      막으므로 scale(1.05)는 통과한다. 형제 픽커 둘이 이미 인라인 transform을 쓰는 이유가 그것이다.
+      ② variants.ts:6-11 — Tailwind의 transition-colors와 transition-transform은 같은 CSS
+      `transition-property` 선언이라 둘을 얹으면 나중 것이 통째로 이기고 앞이 사라진다(합쳐지지
+      않는다). ColorPicker의 스와치 버튼은 지금 transition-transform(:57)을, 하위 라벨은
+      transition-colors를 쓴다.
+  - id: c7
+    type: technical
+    description: >-
+      스와치의 색 면적을 46px 칩 전체로 넓힌다. 지금은 46px 칩 안에 h-7 w-7(28px) span이라
+      면적의 37%만 색이다.
+    hard: false
+    rationale: >-
+      형제 픽커 둘은 스와치가 46×46을 꽉 채운다(TexturePreview·MOOD_CHIP_BG). 색을 고르는
+      컨트롤인데 색이 제일 안 보이는 게 세 자매 중 컬러뿐이라는 게 앞뒤가 안 맞고, 헥스가
+      사라져 남는 시각 예산이 정확히 이 자리로 간다. hard가 아닌 이유는 이중 링(4px)이 칩
+      테두리와 겹치는 자리라 링 가독성을 실제로 보고 정해야 하기 때문이다.
+  - id: c8
+    type: technical
+    description: >-
+      스와치 헤어라인의 고정 리터럴 'inset 0 0 0 1px rgba(44,38,34,0.08)'(:74)을 테마 변수
+      기반으로 바꾼다.
+    hard: false
+    rationale: >-
+      다크에서 검정 8%가 다크 배경(#0E1012 근방)에 얹혀 사실상 안 보인다 — 흰색 스와치와
+      배경 경계가 사라진다는 뜻이다. DesignRail.tsx:130-133이 스크롤 그림자에서 똑같은 함정을
+      겪고 var(--fg-faint)로 고쳤고, 그 자리 주석이 "고정 rgba(0,0,0,…)를 다크 앰비언트에
+      얹으면 대비가 거의 0"이라고 근거를 남겨뒀다. 같은 함정의 두 번째 사례다.
+  - id: c9
+    type: technical
+    description: >-
+      컨테이너는 flex flex-wrap items-center gap-2.5(:40) 그대로 둔다. 형제 픽커의
+      overflow-x-auto snap-x 가로 스크롤로 바꾸지 않는다.
+    hard: false
+    rationale: >-
+      형제 둘이 가로 스크롤인 건 항목 수가 가변이기 때문이고(무드 6 + 앞으로 늘 수 있음,
+      텍스처 N), 컬러는 프리셋 3 + 추천색 최대 2 + 커스텀 1 = **최대 6으로 상한이 잠겨 있다**.
+      c1 뒤 326px ≤ 361px이라 wrap이 아예 안 일어나므로 스크롤은 있어도 안 쓰이는 장치가 되고,
+      overflow-x:auto는 세로도 클리핑 박스로 만들어(CSS 스펙) 선택 링을 자르는 대가만 남는다 —
+      #565가 형제 둘에서 py-1.5로 메꾼 그 문제를 이유 없이 들여오게 된다.
+  - id: c10
+    type: technical
+    description: >-
+      #678이 잠근 두 명제 중 "잠금 안내가 컨트롤 행 바로 다음 형제"는 유지한다. "헥스가 슬롯
+      폭을 혼자 먹지 않는다"는 대상이 사라져 소멸하되, 테스트에서 지울 때 소멸 근거를 주석으로
+      남긴다.
+    hard: true
+    rationale: >-
+      두 명제는 같은 이슈에서 왔지만 수명이 다르다. 안내 인접은 "어느 쪽을 보려고 스크롤해도
+      문구가 같이 딸려온다"(:151-153)라 컨트롤 구성과 무관하게 계속 유효하고, 헥스 폭 명제는
+      헥스가 있어야만 성립한다. 근거 없이 지우면 다음 사람이 "#678이 잠근 걸 왜 지웠나"를 이슈
+      본문에서부터 되짚어야 한다.
+
+success_criteria:
+  - id: ac1
+    description: >-
+      컬러 패널의 컨트롤 행이 슬롯 폭 361px에서 1행에 들어간다(2행 접힘 소멸).
+    verifiable: true
+    measurable_via: >-
+      브라우저 실측 — 400×675 프레임에서 컬러 패널을 열고 스와치 6개(추천색 2개가 잡히는
+      포스터 사용)의 rect top이 전부 같은지 대조. 산술 예측은 46×6 + 10×5 = 326px ≤ 361px.
+  - id: ac2
+    description: >-
+      컬러 패널 콘텐츠 높이가 minimal·35mm 두 상태 모두 슬롯 실효 높이 147px 이하로 들어온다.
+    verifiable: true
+    measurable_via: >-
+      #682가 쓴 것과 같은 방법(레일 슬롯 scrollHeight 실측). 기준값은 그 실측의 minimal 126px /
+      35mm 154px이고, 행 하나(46px + gap 10px = 56px)가 사라지므로 각각 70px·98px 예측.
+      슬롯은 h-[min(214px,26svh)](DesignRail.tsx:124)에 py-3이라 실효 147px.
+  - id: ac3
+    description: >-
+      선택된 스와치가 aria-checked="true"로 노출되고, 나머지는 "false"다. 커스텀 label은
+      radiogroup 밖에 있다.
+    verifiable: true
+    measurable_via: >-
+      __tests__/colorPickerLockedNoteAdjacency.test.tsx 확장 —
+      getAllByRole('radio')의 길이와 aria-checked 분포, getByRole('radiogroup') 안에
+      type="color" 입력이 없는지 대조.
+  - id: ac4
+    description: >-
+      세 픽커 모두에서 방향키로 항목 간 포커스가 이동하고, Tab은 그룹당 한 번만 멈춘다.
+    verifiable: true
+    measurable_via: >-
+      testing-library + user-event — 그룹에 Tab 진입 후 {ArrowRight} 두 번에 document
+      activeElement가 세 번째 radio인지, 다시 Tab이 그룹을 벗어나는지. 세 픽커 각각 1케이스.
+  - id: ac5
+    description: >-
+      헥스 입력이 사라진 뒤에도 프리셋·추천색에 없는 임의 색을 지정할 수 있다.
+    verifiable: true
+    measurable_via: >-
+      기존 커스텀 입력 경로 그대로 — getByLabelText('직접 지정')에 fireEvent.change로
+      임의 hex를 넣어 onChange가 그 값으로 불리는지. 실기기 도달성은 blindspots 참고.
+  - id: ac6
+    description: >-
+      disabled 무드(TONE_FIXED_MOODS)에서 잠금 안내가 여전히 컨트롤 행 바로 다음 형제다(#678).
+    verifiable: true
+    measurable_via: >-
+      같은 파일의 disabled 케이스(:59-79) 유지 — root.children.length === 2 · children[1]이
+      안내 · children[0]이 컨트롤 행. 헥스가 빠져도 이 명제는 그대로 성립한다.
+  - id: ac7
+    description: >-
+      스와치 탭 타깃이 46px를 유지하고 축소 우회가 안 생긴다.
+    verifiable: true
+    measurable_via: >-
+      __tests__/tapTargets.ts의 expectMeetsAA/assertNoShrink를 스와치와 그 서브트리에 적용.
+      c6의 scale-* 클래스 금지가 여기서 잠긴다.
+
+context:
+  existing_stack:
+    - Next.js (pages router) + React + TypeScript
+    - Tailwind + cva/cn (src/utils/cn.ts, src/components/ui/variants.ts — cva 2종 41줄)
+    - bun test + happy-dom + @testing-library/react + user-event
+    - >-
+      eslint local rule no-raw-touch-target-size (eslint.config.mjs:71,74 — #647)
+  dependencies:
+    - >-
+      새 의존성 0. cva·clsx·tailwind-merge는 #647에서 이미 들어와 있고, headless 프리미티브
+      (Radix·Base UI)는 #645 부록 2 판정으로 도입하지 않는다 — 이 스펙이 그 판정을 뒤집지 않는다
+    - APG Radio Group 패턴(https://www.w3.org/WAI/ARIA/apg/patterns/radio/) — 규범 소스.
+      CLAUDE.md 실측 — w3.org는 WebFetch만 되고 curl은 403
+    - TONE_FIXED_MOODS(src/constants/fields.ts:108-116) — 35mm·35mm-landscape·criterion·stub.
+      컬러 픽커가 실제로 작동하는 무드는 minimal·editorial 둘뿐이라, 이 스펙의 세로 예산 회수는
+      나머지 4무드에선 잠금 안내 한 줄이 든 패널에 적용된다
+  integration_points:
+    - src/components/wizard/ColorPicker.tsx — 유일한 편집 대상 컴포넌트(159줄 → hex 제거로 축소)
+    - src/components/ui/variants.ts — 선택 링·확대·탭 타깃 공통화(c5)
+    - src/components/wizard/TexturePicker.tsx:95-97,110-111 / src/components/LayoutPicker.tsx:70-72,
+      82-83 — c3 키보드 계약과 c5 공통화의 나머지 두 소비자
+    - __tests__/colorPickerLockedNoteAdjacency.test.tsx — 4케이스 중 2개(:36-44 hex 새니타이즈,
+      :46-57 hex 폭)가 대상 소멸로 사라지고, 2개(:26-34 스와치 클릭, :59-79 disabled 인접)는 유지
+    - __tests__/designRail.test.tsx:102 — getByLabelText('색상 코드')를 "컬러 패널이 열렸다"의
+      셀렉터로 쓴다. 다른 앵커로 교체 필요(:123의 getByRole('button',{name:'흰색'})은 role이
+      radio로 바뀌므로 함께 교체)
+    - __tests__/tapTargets.ts — 파서 규칙(c6)의 소유자. 파일 자체는 안 고친다
+  backlog_scan: >-
+    prefilter 실행됨(open 9 · closed 369, 2026-08-18 gh issue list 실측). 충돌 없음.
+    직계 선행은 #678(컬러 패널 재설계 — 헥스를 전폭 행에서 인라인 w-[92px]로 줄인 그 작업,
+    closed 2026-08-14)이고 이 스펙은 그 뒤를 잇는다: #678이 폭을 줄여 산 시간을 이번에 제거로
+    끝낸다. #682(레일 슬롯 높이 17.5svh → min(214px,26svh))가 세로 예산 숫자의 출처고,
+    #647(cva 도입 + 상태 스타일 강제)이 c5·c6의 자세와 파서 규칙을 세웠고, #701(영문 aria-label
+    3종 → 한국어)이 '색상 코드'·'직접 지정'이라는 지금 이름을 만들었다 — c1이 그중 '색상 코드'를
+    소멸시키므로 #701 표에서도 한 행이 빠진다(docs/COPY_TONE_GUIDE.md:195-197).
+    #367(레일 상세패널 공통 문법 46px 칩 + 이중 링)이 c5가 모으려는 값들의 출처다.
+    열린 9개 중 관련 후보는 #585(% 입력 포커스 시 소프트 키보드가 레일 dock을 덮는지 실기기
+    확인) 하나인데 방향이 오히려 같다 — 헥스가 사라지면 컬러 패널에서 소프트 키보드를 부르는
+    입력 자체가 없어져 그 축의 표면이 줄어든다. #706(hover에만 사는 정보 4곳)은 title 속성
+    축이라 직교하지만, 스와치의 title={s.label}이 그 목록에 들어 있었는지는 확인하지 않았다.
+    한계: 검색은 키워드 9종(컬러·헥스·색상·radiogroup·접근성·토스트·알림·좌석·탭타깃)으로
+    돌렸고 닫힌 369개 본문은 안 봤다. 용어가 안 겹치는 충돌 이슈는 prefilter에 안 올라온다.
+
+blindspots:
+  - area: blind-spots
+    question: >-
+      네이티브 피커에서 hex에 닿는 비용이 얼마인가. 웹 검색으로 확인한 범위에선 전제가 선다 —
+      iOS의 UIColorPickerViewController는 Sliders 탭에 RGB 슬라이더와 함께 hex 입력 필드를
+      두고, 데스크톱 Chrome의 자체 피커에도 hex 입력이 있다. 다만 **iOS는 Grid 탭이 기본이라
+      hex까지 탭 전환이 한 번 더 든다** — 지금은 패널에 항상 떠 있던 필드가 "피커 열기 → 탭
+      전환 → 입력"이 되므로, 디자인 시안의 hex를 복붙하는 흐름은 확실히 느려진다. 오너가 그
+      흐름을 실제로 쓰는지가 이 결정의 유일한 되돌림 조건이고, 실기기 확인은 안 했다.
+  - area: blind-spots
+    question: >-
+      Android Chrome·삼성 인터넷·카카오/인스타 인앱 웹뷰의 color picker에도 hex 필드가 있는가.
+      확인한 건 iOS와 데스크톱 Chrome뿐이다. 없는 브라우저가 있으면 그 환경에선 임의 색 지정이
+      슬라이더로만 가능해져 ac5의 "지정할 수 있다"는 성립하되 정밀도가 떨어진다. 공유 링크로
+      들어오는 경로가 있는 앱이라 인앱 웹뷰 비중이 낮지 않다.
+  - area: blind-spots
+    question: >-
+      c3의 roving tabindex가 기존 테스트의 Tab 기반 순회를 깨는가. 세 픽커 중 LayoutStrip은
+      designRail.test.tsx:119가 getByRole('radio', {name: /크라이테리언/})로 직접 클릭하므로
+      영향이 없지만, 포커스 순서를 세는 테스트가 다른 파일에 있는지는 전수로 안 봤다.
+      radiogroup이 Tab을 하나만 받게 되면 그룹 안 항목 수만큼 있던 탭 스톱이 1개로 줄어든다.
+  - area: blind-spots
+    question: >-
+      c7로 색 면적을 46px 전체로 넓히면 흰색 스와치(#FFFFFF)와 라이트 테마 배경의 경계가
+      c8의 헤어라인에만 의존하게 된다. 지금은 28px span이라 칩 테두리(border-line)가 경계를
+      한 겹 더 대주는데, 색이 테두리까지 꽉 차면 그 여벌이 사라진다. c7과 c8은 따로 판단할
+      수 있는 항목처럼 보이지만 실은 c7이 c8을 필수로 만든다.
+
+ambiguity:
+  overall: 0.12
+  gate_passed: true
+
+clarity_breakdown:
+  goal: 0.95
+  constraint: 0.9
+  success: 0.9
+  context: 0.85
+
+metadata:
+  interview_rounds: 0
+  questions_asked: 0
+  generated_by: thinking-tools/build-spec
+  source_session: >-
+    오너가 결정(헥스 제거 + 네이티브 셀렉터 통합)과 조사 결과를 이미 확정한 상태로 전달해
+    인터뷰 없이 Seed로 굳혔다. 조사에서 넘어온 사실은 전부 live source에 대조했고
+    (ColorPicker.tsx 159줄 · variants.ts 41줄 · tapTargets.ts:31 · DesignRail.tsx:124 ·
+    fields.ts:108-116 · 테스트 2파일), 네이티브 피커의 hex 필드 유무만 웹 검색으로 확인해
+    blindspots에 조건을 달았다. 격리 게이트·blind-spot pass는 인라인 처리(scoring_isolated: false).
+---

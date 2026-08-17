@@ -1,0 +1,354 @@
+# Seed Spec — 배경 이미지를 '스탬프'로 재설계
+---
+skill: build-spec
+schema_version: 1
+version: 4.7.0
+generated: 2026-08-18
+input:
+  target: 배경 이미지를 '스탬프'로 재설계
+  options: []
+output:
+  type: spec
+  structure: templates/SEED_SPEC.yaml
+
+spec_version: 1
+created: 2026-08-18
+target: 배경 이미지를 '스탬프'로 재설계
+domain: tech
+brownfield: true
+refine_generation: 0
+
+goal:
+  statement: >-
+    사용자가 올린 이미지를 캔버스 전면 cover로 깔던 '배경'을, Criterion·Editorial·Stub 세 무드에서
+    각각 그 무드가 정한 고정 자리에 박히는 '스탬프'로 바꾼다. 사용자는 위치를 고르지 않고 크기와
+    투명도만 정하며, 새로 올린 스탬프는 반투명으로 시작하되 이미 저장된 배경은 지금 렌더 그대로
+    보인다.
+  clarity_score: 0.9
+
+constraints:
+  - id: c1
+    type: business
+    description: >-
+      사용자에게 보이는 이름은 '스탬프'로 간다. 레일 항목 라벨 '배경'(designRailItems.tsx:779)과
+      슬라이더 라벨 '배경 크기'(:612), `img alt` '배경 이미지'(:596),
+      `aria-label` '배경 이미지 업로드'(:634)가 그 이름으로 옮겨간다.
+    hard: true
+    rationale: >-
+      오너 확정. 이 저장소에서 '스탬프'가 이미 두 가지를 뜻해 3중 충돌이라고 보고했고, 오너가
+      그대로 가기로 했다. 충돌의 실제 모양과 그게 어디를 문다는 판단은 blindspots에 전수로 적어뒀다
+      — 요약하면 **사용자 노출 문자열 층에서는 충돌이 0이고**(전수 확인: '스탬프'라는 단어를
+      사용자에게 보여주는 자리가 src에 하나도 없다. 로고 축은 '로고', 형압 축은 '형압'으로 노출된다)
+      **내부 식별자 층에서만 문다.**
+  - id: c2
+    type: technical
+    description: >-
+      대상 무드는 Criterion · Editorial · Stub 셋이다. 이건 **이미 그 상태라 코드 변경이 0인 절이다**
+      — `BACKGROUND_PATTERN_MOODS`(designRailItems.tsx:550)가 정확히 그 셋이고 minimal·35mm·35mm Wide는
+      배경 코드가 한 줄도 없다. 원 요청의 "그 셋에만 추가"는 no-op으로 기록하고 넘어간다.
+    hard: true
+    rationale: >-
+      no-op을 명시적으로 안 적으면 착수자가 "세 무드에 추가"를 할 일로 읽고 없는 작업을 찾는다.
+      판정 기준("배경을 깔 종이 바탕이 그 무드에 실재하는가", :545-549 주석)도 그대로 유효하다.
+  - id: c3
+    type: technical
+    description: >-
+      위치는 무드가 정한다. 사용자에게 오프셋·정렬 컨트롤을 열지 않는다.
+    hard: true
+    rationale: >-
+      오너 확정. #680이 같은 판단을 이미 한 번 했고(그 스펙 c6 — 크기 패널이 scrollHeight 199 vs
+      슬롯 115px로 넘치는데 컨트롤 2개는 세로 예산을 두 배로 먹는다) 슬롯 사정은 그대로다.
+      고정 배치라 `transform-origin`·`backgroundPosition` center 고정도 그대로 성립한다.
+  - id: c4
+    type: technical
+    description: >-
+      투명도는 새 옵셔널 필드(`TicketComponents`)로 싣고 렌더는 `?? 1`로 읽는다. 기존 저장본은
+      필드가 없으니 1.0 = 지금 렌더 그대로다. "새로 올린 것만 반투명"은 마이그레이션이나 렌더
+      분기가 아니라 **업로드 콜백에서 값을 명시적으로 써 넣어** 만든다 —
+      `useLogoCrop`의 완료 콜백(designRailItems.tsx:576-579)이 이미지와 투명도를 한 번에 커밋하되,
+      사용자가 이미 값을 고른 적이 있으면(`?? 기본값`) 그 값을 유지한다.
+    hard: true
+    rationale: >-
+      `backgroundPatternScale`이 `?? 1`로 기존 렌더 무변경을 지킨 것과 같은 관용구다
+      (types/index.ts:118-127, quoteFont·signatureScale·posterFit이 전부 같은 처방).
+      "새 업로드에만"을 렌더 쪽에서 분기하려면 "이 이미지가 언제 올라왔는가"를 새로 저장해야 하는데,
+      쓰기 시점에 값을 확정하면 그 축이 통째로 사라진다. 커밋을 한 번에 묶는 건 undo 히스토리
+      때문이다 — 이미지와 투명도를 따로 쓰면 undo 한 번이 반쯤 되돌린 상태를 만든다.
+  - id: c5
+    type: technical
+    description: >-
+      크기·투명도 컨트롤은 `BrightnessSlider`를 그대로 쓴다. 새 컴포넌트·새 모듈 0.
+    hard: true
+    rationale: >-
+      오너 확정이고 이미 크기 슬라이더가 그걸 쓴다(designRailItems.tsx:607-618).
+      `shouldCommitSliderValue`가 드래그 중 undo 폭주를 이미 막아뒀고(#507), 라벨 줄에 액션을
+      접는 `action` prop도 있어(형압 패널의 '지우기'가 쓰는 자리) 패널 세로 예산에도 유리하다.
+  - id: c6
+    type: technical
+    description: >-
+      스탬프 레이어는 `componentOpacity` 래퍼 **밖**에 선다. 세 무드 공통 계약이고 이번 재설계가
+      이걸 바꾸면 안 된다.
+    hard: true
+    rationale: >-
+      "종이에 이미 인쇄된 바탕"이라 조판 오버레이 페이드에 딸려가면 안 된다(#530 계약).
+      `__tests__/designRailBackgroundPattern.test.tsx:142-150`이
+      `closest('[style*="opacity"]')`를 null로 잠그고 있다. **다만 스탬프는 배경보다 조판에 가까운
+      물건이라 이 계약이 여전히 맞는지는 재확인 대상이다** — 자리를 옮기는 것과 투명도 축이 새로
+      생기는 것이 겹치므로, 계약을 바꾸기로 하면 그 테스트도 같이 뒤집는 것이지 조용히 넘어갈
+      일이 아니다.
+  - id: c7
+    type: technical
+    description: >-
+      상태 필드 `backgroundPatternImage`(types/index.ts:105-117)는 개명하지 않는다. 새 필드
+      (투명도)만 붙인다.
+    hard: true
+    rationale: >-
+      이미 저장된 draft의 키라 개명하면 기존 저장물이 조용히 유실된다 —
+      `backgroundPatterns.tsx:11-12`가 #672에서 정확히 같은 이유로 "사용자에게 보이는 이름만
+      바꿨다"고 적어뒀다. 이번 개명도 그 선례를 그대로 탄다. IDB 키 `'background'`
+      (`src/utils/imageDb.ts:11`)도 같은 이유로 그대로다.
+  - id: c8
+    type: technical
+    description: >-
+      고정 배치가 포스터와 안 겹치는 게 확정되면 `PATTERN_CLIP` 둘(MoodCriterion.tsx:92-94,
+      MoodStub.tsx:84-86)을 지운다. 다만 Stub의 계약 둘 — 절취선이 위치지정 형제라 안 덮인다
+      (MoodStub.tsx:221), 페이퍼 스텁이 배경을 다시 칠하지 않는다(:225-229) — 은 **전면 배경을
+      전제로 쓰인 것**이라 같이 재검토한다.
+    hard: false
+    rationale: >-
+      clip은 "전면 배경이 포스터 자리를 파낸다"는 명제의 구현이라, 배경이 전면이 아니게 되면
+      존재 이유가 소멸해 오히려 단순해진다. 지우는 게 위험한 건 저장물 z-order 때문인데
+      (#490/#495 `collectOpaquePosterBackdrops` — 포스터 조상의 불투명 배경은 base에서 빠지므로
+      그 자리에 깔린 레이어가 포스터 **위**로 인쇄된다) 스탬프 박스가 포스터 슬롯과 안 겹치면
+      그 경로 자체가 안 열린다. `__tests__/designRailBackgroundPattern.test.tsx:153-166`(clip-path
+      값)·`:229-247`(stub 둘)이 이 셋을 잠그고 있어 셋 다 테스트를 같이 고쳐야 한다.
+  - id: c9
+    type: technical
+    description: >-
+      Stub의 스탬프 자리는 **저장물 실측으로 확정한다.** `scripts/capture-export.mjs`로 Stub 저장물을
+      떨어뜨려 실제로 비는 자리를 재는 것이 이 스펙의 완료 조건이다(ac5).
+    hard: true
+    rationale: >-
+      오너 확정이고, Stub만 자리를 도면에서 못 읽는다. 하단 페이퍼 스텁이 절대 좌표가 아니라
+      플로우 레이아웃이고 `justifyContent: 'space-evenly'`(MoodStub.tsx:295)가 남는 세로를 필드
+      개수에 따라 재분배하며, `Row`가 `label + 점선 필러(flex:1) + 값`이라 가로도 항상 꽉 찬다 —
+      필드를 몇 개 켰느냐로 빈자리가 움직인다. 안정적 앵커 후보 셋과 각각의 함정은 context에
+      적어뒀다.
+  - id: c10
+    type: technical
+    description: >-
+      `BackgroundPatternLayer`의 두 겹 구조(backgroundPatterns.tsx:49-63)는 clip이 남는 한 유지한다.
+      c8로 clip이 사라지면 그때 한 겹으로 합칠지 정한다.
+    hard: false
+    rationale: >-
+      두 겹인 이유가 clip 하나뿐이다(`:28-32` — clip-path는 로컬 좌표계에서 정의된 뒤 요소 전체가
+      transform되므로 배율을 같은 요소에 걸면 clip까지 확대된다). 그 주석은 "배율에 따라 DOM 모양이
+      갈리면 조건부 JSX depth 분기가 되고 이 레포는 그걸로 이미 한 번 remount에 데였다"도 같이
+      적어뒀으니, 합치더라도 상태별로 겹 수가 갈리면 안 된다.
+
+success_criteria:
+  - id: ac1
+    description: >-
+      세 무드에서 스탬프가 무드별 고정 박스 안에만 그려지고, 캔버스 전면을 덮지 않는다.
+    verifiable: true
+    measurable_via: >-
+      `__tests__/designRailBackgroundPattern.test.tsx` 확장 — 지금 `backgroundSize: 'cover'` +
+      `inset: 0`을 기대하는 자리(:136-137)를 무드별 고정 좌표 기대로 바꾼다. 12케이스 중
+      `:125`(이미지 반영)·`:153`(clip-path)·`:170`(배율이 안쪽 겹에만)이 직접 대상이다.
+  - id: ac2
+    description: >-
+      기존 저장본(투명도 필드 없음)의 렌더가 안 변한다 — 투명도 1.0으로 읽힌다.
+    verifiable: true
+    measurable_via: >-
+      같은 테스트 파일 — 투명도를 안 건드린 채 이미지만 올린 상태의 레이어 `opacity`가 기본값인지.
+      `backgroundPatternScale`의 `?? 1`이 같은 명제를 이미 지키는 방식과 대칭이다.
+  - id: ac3
+    description: >-
+      새로 업로드한 스탬프는 반투명으로 시작하고, 사용자가 값을 고친 뒤 이미지를 교체하면 그 값이
+      유지된다.
+    verifiable: true
+    measurable_via: >-
+      상호작용 테스트 — 업로드 → 투명도 슬라이더 값이 기본값(1.0 아님) → 슬라이더 조작 → 이미지
+      교체 → 조작한 값 유지. c4의 "쓰기 시점 확정"이 실제로 그렇게 도는지 잠그는 유일한 케이스다.
+  - id: ac4
+    description: >-
+      크기·투명도 값이 무드 왕복과 새로고침을 넘어 살아남는다.
+    verifiable: true
+    measurable_via: >-
+      같은 테스트 파일의 기존 "무드를 왕복해도 배경 이미지가 보존된다"(:205-227)에 투명도를 추가.
+      그 케이스가 이미 `background-pattern-scale` testid를 왕복 확인하고 있다.
+  - id: ac5
+    description: >-
+      Stub의 스탬프 자리가 실제 저장물에서 조판과 안 겹친다. **자리는 실측으로 정하고, 정한 뒤
+      실측으로 확인한다.**
+    verifiable: true
+    measurable_via: >-
+      `bun scripts/capture-export.mjs --layout stub --bg --out <경로>`로 저장물을 떨어뜨려 빈자리를
+      읽고, 자리를 정한 뒤 `--compare`로 스탬프 있는 판/없는 판을 대조해 조판 영역의 채널 최대
+      절대차가 허용치 3(하네스 잡음 바닥 maxΔ 2) 안인지 본다. 필드를 다 켠 상태와 최소로 켠 상태
+      둘 다 떠야 한다 — `space-evenly`가 빈자리를 필드 개수로 재분배하므로 한 판만 보면 c9의
+      함정에 그대로 빠진다.
+  - id: ac6
+    description: >-
+      Criterion·Editorial에서도 스탬프가 조판을 안 가린다.
+    verifiable: true
+    measurable_via: >-
+      같은 `capture-export.mjs --bg --compare`. 두 무드는 자리를 도면에서 읽을 수 있으므로(context의
+      좌표) 확인만 하면 된다.
+  - id: ac7
+    description: >-
+      레일 라벨·슬라이더 라벨·`alt`·`aria-label`이 '스탬프' 어휘로 일관되게 바뀌고, 라벨 규칙을
+      어기지 않는다.
+    verifiable: true
+    measurable_via: >-
+      `docs/COPY_TONE_GUIDE.md` 판별 두 가지 — 라벨(`aria-label` 포함)에 조건절·종결어미·마침표가
+      없을 것, 실패·차단 문구는 [무슨 일] + [다음 행동] 두 문장이고 길이 상한(한 문장 33자·전체
+      44자)을 지킬 것. 테스트 쪽 대상은 `designRailBackgroundPattern.test.tsx:77`·`:92`·`:95`가
+      `name: '배경'`으로 버튼을 찾는 자리다(문자열이 바뀌면 같이 깨진다).
+
+context:
+  existing_stack:
+    - Next.js (pages router) + React + TypeScript
+    - Tailwind + cva/cn
+    - bun test + happy-dom + @testing-library/react
+    - puppeteer-core + 시스템 Chrome (scripts/capture-export.mjs)
+  dependencies:
+    - useLogoCrop(cb, TARGET_HEIGHT) — 로고 스탬프와 **같은** 자유비 크롭 흐름, maxSide 1534.
+      스탬프가 작아지면 이 값을 내려도 되는지가 열린 질문이다(#673이 배경을 "제일 큰 payload"로
+      지목했으므로 줄이는 쪽으로 갈 여지가 생긴다)
+    - BrightnessSlider — c5. `shouldCommitSliderValue`(#507)가 드래그 중 undo 폭주를 이미 막는다
+    - src/utils/imageDb.ts:11 — IDB 키 `'background'`. c7로 무변경
+    - TicketComponents 안에 사는 필드라 undo·자동저장에 자동으로 실린다(types/index.ts:105-127)
+  integration_points:
+    - src/utils/backgroundPatterns.tsx — 유일한 스타일 소스. 두 겹 구조(:49-63)와 알파를 안 깎는
+      결정(:22-26)이 여기 있다
+    - src/components/moods/MoodCriterion.tsx:253-261(호출부) · :92-94(PATTERN_CLIP).
+      도판 PLATE_LEFT 230 / PLATE_TOP 262 / PLATE_W 500 / PLATE_H 750, PAD 84(:59-64)
+    - src/components/moods/MoodStub.tsx:202-206(호출부) · :84-86(PATTERN_CLIP) ·
+      :210(포스터 밴드 POSTER_H 640) · :221(절취선 16px) · :229·:295(페이퍼 스텁 + space-evenly)
+    - src/components/moods/MoodEditorial.tsx:322-326(호출부, clip 없음) ·
+      :447(이미 있는 absolute 장식 `right:22, top:22, opacity .32`) · :54(MAIN_PAD_X 52) ·
+      :57(MAIN_AVAIL_W 535)
+    - src/components/v2/designRailItems.tsx:550(BACKGROUND_PATTERN_MOODS) · :568(BackgroundPatternPanel) ·
+      :607-618(배율 슬라이더) · :775-793(레일 항목 등록, id `'pattern'`·label '배경')
+    - src/types/index.ts — 투명도 필드 추가
+    - __tests__/designRailBackgroundPattern.test.tsx(278줄·12케이스) ·
+      __tests__/blobRevokeUndoAware.test.tsx · __tests__/draftImageRestore.test.tsx
+    - scripts/capture-export.mjs:10-11(사용례) · :221·:229(BG_PATTERN_DRAW) · :445-447(bgScale 시드) ·
+      :464-483(주입) · :613-614(플래그)
+  backlog_scan: >-
+    prefilter 실행됨(open 9 · closed 369). 관련 이슈 다섯. **#530**이 배경 축을 처음 세웠고(그때는
+    기하 프리셋 3종), **#671**이 사용자 업로드 이미지로 바꿨고, **#672**가 프리셋과 `backgroundPattern`
+    id 필드를 걷어내 "이미지 하나가 축 전체"로 만들었고, **#680**이 배율 슬라이더를 붙였다.
+    **#673**은 blob 수명·용량 축으로 열려 있고 배경을 "제일 큰 payload"로 지목하므로, 스탬프가
+    작아지면서 `useLogoCrop`의 maxSide를 내릴 수 있는지가 그 이슈와 만난다 — 직교가 아니라 닿는다.
+    한계: 예산 절삭으로 열린 이슈 본문은 앞부분만, 닫힌 이슈는 제목만 봤다.
+
+blindspots:
+  - area: 무드별 스탬프 자리가 아직 안 정해졌다
+    question: >-
+      c3이 "무드가 정한다"고만 했지 어디인지는 안 정했다. 조사에서 나온 후보와 각각의 대가.
+      **Criterion** — 도판이 x 230..730이라 좌우 각 230px 대칭 여백이 남는다(PAD 84 기준
+      좌 x 84..214 / 우 x 746..876, y 262..1012). 상수(PLATE_LEFT 230 · PLATE_W 500 · PAD 84)에서
+      바로 나오는 **계산값이지 실측이 아니다.** 2순위는 서명 행 좌측(y 1272 근방, 서명이 우측
+      정렬이라 좌측이 빈다)인데 `signatureScale`이 0.6~1.3으로 가변이라 자리가 흔들린다.
+      **Editorial** — 메인 컬럼 콘텐츠 박스가 x 734..1269, y 44..924다(MAIN_PAD_X 52 ·
+      MAIN_AVAIL_W 535 · padding `44px 52px 36px` · 캔버스 높이 960에서 유도한 계산값).
+      `MoodEditorial.tsx:447`에 이미 `position:absolute, right:22, top:22`인 장식(십자+원,
+      opacity .32)이 그 컬럼 안에 있어 **absolute 오버레이 선례가 존재한다** — 같은 방식이 가장
+      낮은 위험이다. 단 우상단은 그 장식이 점유하고 있다.
+      **Stub** — 안정적 앵커가 셋뿐이고 셋 다 대가가 있다. ① 포스터 밴드 y 0..640은 유일한 고정
+      좌표지만 지금 PATTERN_CLIP이 **일부러 파내는** 자리라 저장물 z-order 계약(#490/#495)을 정면으로
+      뒤집는다. ② 절취선 띠 y 640..656은 16px라 스탬프가 설 높이가 아니다. ③ 페이퍼 스텁에
+      `position:relative`가 이미 있어 absolute 자식을 붙일 수 있지만 우하단에 바코드 300×40,
+      좌하단에 워드마크가 있다. 그래서 c9·ac5가 Stub만 실측을 완료 조건으로 건다.
+  - area: 이름 충돌 — '스탬프'가 세 번째 뜻을 갖는다
+    question: >-
+      **결론 먼저: 사용자 노출 문자열 층에서는 충돌이 0이다.** '스탬프'라는 단어를 사용자에게
+      보여주는 자리가 src에 하나도 없다(전수 확인). 로고 축은 화면에서 **'로고'**로만 노출되고
+      (`극장 로고`·`포맷 로고` = `src/constants/fields.ts:166-167`,
+      `극장 로고 편집` = `_shared.tsx:97`, `LOGO`/`FORMAT` 점선 자리표시 = `_shared.tsx:671`·`:749`,
+      `로고 크롭` = `FieldDrawer.tsx:317` · `FieldEditorBody.tsx:559` · `InPlaceFieldEditor.tsx:600`,
+      `로고 업로드` = `FieldEditorBody.tsx:546`,
+      `체인 로고 크기`/`포맷 로고 크기` = `designRailItems.tsx:497`·`:505`,
+      크기 패널 축 칩 `로고` = `:424`), 형압 축은 **'형압'**으로만 노출된다
+      (`형압` 레일 라벨 `:710`, `형압 도구` `:365`, `브러시`/`올가미` `:320-321`,
+      `브러시 크기` `:401`, `형압 강도` `:412`, `지우기` `:416`).
+      과거 유일하게 '스탬프'를 노출하던 OCR 토스트는 제거됐고, 지금은
+      `__tests__/ocrNeedManualTitleSearch.test.tsx:129`가 `/스탬프를 채웠어요/`의 **부재**를
+      단언하는 회귀 가드로만 남아 있다.
+      **무는 건 내부 식별자 층이다.** 네 파일이 두 뜻을 이미 동시에 들고 있다 —
+      `src/components/moods/_shared.tsx`(`ChainStamp`·`StampRow`·`STAMP_MAX_ASPECT` vs
+      `embossStamps`·`projectEmbossStamps`),
+      `src/components/v2/MobileEditorShell.tsx`(`isStampTarget` vs `onStamp={photo.addEmbossStamp}`),
+      `src/components/v2/designRailItems.tsx`(`stampScaleMaxFor` vs `embossStamps`),
+      `FieldEditorBody.tsx`/`InPlaceFieldEditor.tsx`(`isStamp`는 로고 전용인데 파일이 `EmbossStamp`
+      import 트리 안이라 grep 오탐이 난다).
+      그래서 **접두어 없는 `stamp`/`stamps`는 세 번째 뜻에 절대 쓰면 안 된다** — 무접두 `stamps`
+      49회·`stamp` 39회가 대부분 형압인데 `textureRecipes.ts`·`EmbossBrushLayer.tsx` 밖에서는
+      로고로 읽힌다. 코드 쪽 이름은 c7대로 `backgroundPattern*`을 유지하는 게 이 충돌을 안 키우는
+      가장 싼 길이고, 사용자 이름만 '스탬프'로 가는 건 #672가 이미 한 번 한 분리다.
+      남은 진짜 부채 하나: `docs/specs/logo-stamp-scale-control.yaml`이라는 파일명이 specs 디렉터리에서
+      "stamp = 로고"를 뜻하는데, 이 스펙 파일명(`background-to-stamp.yaml`)이 같은 단어로 다른 걸
+      가리킨다. 파일명은 안 바꾼다(둘 다 이미 굳었다) — 대신 이 문단이 그 뜻갈림의 유일한 색인이다.
+  - area: 알파를 안 깎기로 한 결정을 뒤집는다
+    question: >-
+      `backgroundPatterns.tsx:22-26`이 **명시적 결정으로** "알파는 안 깎는다 — 사용자가 고른 이미지를
+      임의로 흐리면 '내가 올린 게 왜 안 보이지'가 된다. ponytail: 농도 슬라이더는 안 넣었다. 원하는
+      목소리가 나오면 그때."를 적어뒀다. 이번 스펙이 그 결정을 뒤집으므로 근거를 남긴다:
+      **전제가 달라졌다.** 그때 배경은 캔버스 전면이라 흐리면 존재 자체가 안 보였는데, 스탬프는
+      고정 박스라 반투명이어도 그 자리에 있는 게 보인다 — "왜 안 보이지"의 발생 조건이 사라졌다.
+      그리고 그 주석이 예고한 "원하는 목소리"가 이번 요청이다. 다만 슬라이더를 **여는 것**과
+      기본값을 **반투명으로 두는 것**은 별개 결정이고, 뒤집는 건 후자다. 착수할 때 그 주석을
+      지우지 말고 이 판단으로 갱신할 것.
+  - area: iOS Safari 저장물에서 이 레이어만 빠질 수 있다
+    question: >-
+      `backgroundPatterns.tsx:14-19`이 미확인 리스크로 인계해둔 축이 그대로 살아 있다 — CSS
+      `background-image`는 포스터·로고가 쓰는 `compositeRaster` 탈출구가 없어 iOS가 조용히 떨어뜨릴
+      수 있고, macOS Chrome 하네스로는 원리적으로 못 본다. 이 스펙은 그 위에 투명도를 하나 더
+      얹는다. 자리를 옮기면서 `<img>`로 바꾸는 선택지가 생기는데(고정 박스라 cover 배경이 꼭
+      필요하지 않다) 그러면 이 리스크가 오히려 줄어든다 — 검토할 가치가 있지만 이 스펙이 정하진
+      않았다. 실기기 저장 확인은 #672 머지 조건으로 남아 있던 그대로 인계한다.
+  - area: 인쇄 하한이 스탬프에도 걸리는가
+    question: >-
+      `docs/PRINT_CALIBRATION.md`의 "배경 도상 설계 하한"(§174-211) 규칙 여섯은 **코드로 그리는
+      기하 도상**(stroke·주기·망점 지름·viewBox 역산)을 겨냥한 것이라, 사용자가 올린 사진에는
+      직접 안 걸린다 — #672가 그 프리셋을 걷어낸 뒤로 소비처가 없다. 다만 규칙 3의
+      **alpha 0.08–0.14**는 성격이 다르다: "아래는 톤 램프 양 끝 5% 붕괴, 위는 본문 가독성"이라
+      잉크 농도 자체의 실측 범위고, 이번에 여는 투명도 슬라이더의 값 범위가 그 창과 어떻게 만나는지는
+      **정하지 않았다.** 그 문서는 같은 줄에서 "창이 좁아 강도 슬라이더를 열 수 없다"고까지
+      적어뒀는데, 그건 배경 전면 도상 얘기지 고정 박스 스탬프 얘기가 아니다 — 다르다고 보고
+      넘어갈 근거는 있지만 실측은 없다. 슬라이더 범위를 정할 때 이 절을 다시 읽을 것.
+  - area: P15 — 앞선 스펙이 stale해진다
+    question: >-
+      `docs/specs/background-image-scale-control.yaml`(#680)이 이 재설계로 낡는다. 그 스펙의
+      c1(clip과 배율의 두 겹)·c5(하한 1.0, 타일 반복 기각)·c6(오프셋 안 열기)은 **전면 cover 배경을
+      전제**로 쓰였고, c3(상한 1.5)의 근거인 "전면을 채우느라 1534로 굽는다"도 스탬프가 작아지면
+      다시 계산해야 한다. P15(artifact vs generator) 판단 대상이라는 뜻이고, 여기서 고를 것은
+      셋이다 — ① 그 파일에 "#530→#671→#672→#680→이 스펙"의 이력 한 줄만 덧붙이고 놔둔다
+      ② 무효가 된 절을 표시한다 ③ 통합한다. 이 스펙은 고르지 않았다. 다만 그냥 두면
+      `docs/specs/`를 읽는 다음 사람이 폐기된 전제를 현행 스펙으로 읽는다.
+
+ambiguity:
+  overall: 0.25
+  gate_passed: true
+
+clarity_breakdown:
+  goal: 0.9
+  constraint: 0.9
+  success: 0.85
+  context: 0.7
+
+metadata:
+  interview_rounds: 0
+  questions_asked: 0
+  generated_by: thinking-tools/build-spec
+  source_session: >-
+    오너가 결정 여섯(이름 '스탬프' · 대상 3무드 · 고정 위치 · 투명도 기본값 처리 · BrightnessSlider
+    재사용 · Stub 자리 실측)을 확정한 상태로 진입해 인터뷰 없이 조사→명세로 갔다.
+    context.자리_후보의 Criterion·Editorial 좌표는 소스 상수에서 유도한 **계산값**이지 브라우저
+    실측이 아니고, Stub 자리는 c9·ac5가 실측을 완료 조건으로 건다. 이름 충돌 전수는 서브에이전트
+    한 명이 `스탬프`/`stamp` 753매치를 훑어 사용자 노출층과 내부 식별자층으로 갈라 확인했고,
+    "노출 문자열 충돌 0"이 그 조사의 결론이라 보고 당시의 "3중 충돌" 서술을 그 층에 한해 정정한다.
+    context.clarity가 0.7인 건 Stub 자리 하나 때문이다 — 나머지 축은 소스에서 다 읽힌다.
+---
