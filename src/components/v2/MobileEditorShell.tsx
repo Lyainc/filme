@@ -551,9 +551,12 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
     setActiveField(target);
   }, [photo.updateComponents, photo.updateFieldVisibility]);
 
-  // 첫 업로드·교체(새 파일 선택) — 포스터 드롭존 탭, 서브메뉴 "교체" 둘 다 이 경로.
-  // 온-티켓 빈 공간 탭 경로(#259)는 미스터치로 파일선택창이 떠서 제거(#365) — TicketRenderer에
-  // onPosterTap을 더는 넘기지 않는다.
+  // 첫 업로드·교체(새 파일 선택) — 포스터 드롭존 탭, 서브메뉴 "교체", 그리고 포스터가 없을 때의
+  // 온-티켓 탭(#723)이 전부 이 경로.
+  // 온-티켓 탭은 #259가 넣었다가 미스터치로 파일선택창이 떠서 제거됐는데(#365), 그때 문제가 된 건
+  // "포스터가 **있는** 상태에서 빈 곳 오탭"이다. #723이 `!croppedImageUrl` 게이트를 달아 되살렸다 —
+  // 포스터 없이 진입한 세션(#631 '직접 입력' · OCR)에선 그 자리가 단색 바탕이라 오탭할 '빈 곳'이
+  // 아니라 그 자체가 비어 있는 포스터 슬롯이고, 재진입 동선이 헤더 메뉴 한 곳뿐이었다(#674).
   const handlePosterTap = useCallback(() => {
     posterInputRef.current?.click();
   }, []);
@@ -979,6 +982,13 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
                     // 빈/숨김 필드도 탭·순회 타깃으로 티켓에 남는다.
                     ghost={ghostMode || editing}
                     onField={viewMode === 'default' ? handleField : undefined}
+                    // 포스터가 없을 때만 온-티켓 탭으로 업로드를 연다(#723) — 게이트가 #365의
+                    // 미스터치(포스터가 있는데 빈 곳을 눌러 파일선택창이 뜨던 것)를 되도입하지
+                    // 않게 막는다. viewMode 조건은 위 onField와 같은 이유 — max에선 티켓 탭이
+                    // "기본 크기로 돌아가기"라 그쪽이 먼저다.
+                    onPosterTap={
+                      viewMode === 'default' && !croppedImageUrl ? handlePosterTap : undefined
+                    }
                     embossStamps={photo.state.embossStamps}
                     embossPaths={photo.state.embossPaths}
                     embossIntensity={photo.state.embossIntensity}

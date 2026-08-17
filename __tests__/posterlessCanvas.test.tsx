@@ -6,7 +6,7 @@
  * 아니라 후자를 따라야 한다. 아래 세 항목이 그 계약을 고정한다.
  */
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import userEvent from '@testing-library/user-event';
 import { usePhototicket } from '@/hooks/usePhototicket';
@@ -16,7 +16,15 @@ import { mobileShellProps } from './shellHarness';
 
 function Harness() {
   const photo = usePhototicket();
-  return <MobileEditorShell {...mobileShellProps(photo)} />;
+  return (
+    <>
+      {/* #723 대조군 시드 — 포스터가 **있는** 상태를 만들어 온-티켓 탭이 안 붙는지 본다. */}
+      <button type="button" onClick={() => photo.handleImageUpload('blob:test-poster')}>
+        포스터 시드
+      </button>
+      <MobileEditorShell {...mobileShellProps(photo)} />
+    </>
+  );
 }
 
 beforeEach(() => window.localStorage.clear());
@@ -99,5 +107,41 @@ describe('Poster src=null — export 필터 계약 (#631)', () => {
 
     expect(html).toContain('data-poster-root="true"');
     expect(html).toContain('blob:test-poster');
+  });
+});
+
+/**
+ * #723 — 온-티켓 포스터 탭은 **포스터가 없을 때만** 선다.
+ *
+ * #259가 넣었던 이 경로는 #365에서 "포스터가 있는데 빈 곳을 오탭하면 파일선택창이 뜬다"는
+ * 미스터치로 제거됐다. #723은 게이트(`!croppedImageUrl`)를 달아 되살린 것이므로, 두 명제를
+ * **쌍으로** 잠근다 — 긍정만 두면 게이트가 사라져도 통과해 #365가 조용히 재도입된다.
+ *
+ * 단언에 엘리먼트를 직접 넣지 않고 `!!`로 강제 변환하는 이유는 #693이다(happy-dom 노드를
+ * 실패 직렬화에 넣으면 한 번에 697MB·4.6초가 든다).
+ */
+describe('온-티켓 포스터 탭 게이트 (#723)', () => {
+  test('포스터 없이 진입한 세션엔 포스터 영역 탭 타깃이 선다', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+
+    await user.click(screen.getByTestId('landing-skip-poster'));
+
+    await waitFor(() => {
+      expect(!!document.querySelector('[data-poster-tap]')).toBe(true);
+    });
+  });
+
+  test('포스터가 있으면 탭 타깃이 안 붙는다 — #365 오탭 회귀 방지', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+
+    await user.click(screen.getByRole('button', { name: '포스터 시드' }));
+
+    // 무드가 실제로 그려진 뒤에 부재를 본다 — 렌더 전이면 아무것도 없어서 무조건 통과한다.
+    await waitFor(() => {
+      expect(!!document.querySelector('[data-poster-root]')).toBe(true);
+    });
+    expect(!!document.querySelector('[data-poster-tap]')).toBe(false);
   });
 });
