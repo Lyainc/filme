@@ -50,13 +50,9 @@
        스파이크 원안 #96805F는 --bg(#F4F5F7) 대비 3.47:1로 AA(4.5:1) 미달(PR #306 리뷰) —
        Eyebrow 기본 톤으로 전역 적용되며 동일 색상 계열 안에서 더 어둡게 조정해 4.98:1 확보. */
     --neutral-2: #7A6748;
-    --r-field: 10px;
     --r-card: 14px;
-    --r-shell: 20px;
     --r-pill: 999px;
-    --shadow-card: 0 1px 3px rgba(0,0,0,0.05), 0 8px 24px -6px rgba(0,0,0,0.08);
     --shadow-pop: 0 4px 8px -2px rgba(0,0,0,0.10), 0 16px 40px -8px rgba(0,0,0,0.14);
-    --preview-glow: 0 0 0 1px rgba(0,0,0,0.06), 0 12px 40px -8px rgba(0,0,0,0.18);
     /* v8 글래스 표면 쌍(#364, 핸드오프 §Design Tokens) — **입력 함몰 계층(#580 3계층) 전용**:
        카드 위에 얕게 파이는 인풋·셀렉트·칩의 fill/border. 8%는 카드 위 함몰로는 맞지만 포스터
        위에 뜨는 패널 배경으로는 텍스트가 안 읽힌다(#569) — 그 자리엔 --overlay-*를 쓸 것.
@@ -82,7 +78,6 @@
 
     /* Backward compat aliases */
     --paper: var(--surface-elevated);
-    --r-modal: 22px;
   }
 
   /* .chrome-dark(#353) — 앰비언트 다크 크롬 컨테이너의 로컬 토큰 재정의. 테마 다크와 같은
@@ -116,9 +111,7 @@
     --danger: #EF4444;
     --focus-ring: color-mix(in srgb, #C45550 35%, transparent);
     --neutral-2: #C2A67A;
-    --shadow-card: 0 1px 3px rgba(0,0,0,0.20), 0 8px 24px -6px rgba(0,0,0,0.30);
     --shadow-pop: 0 4px 8px -2px rgba(0,0,0,0.30), 0 16px 40px -8px rgba(0,0,0,0.40);
-    --preview-glow: 0 0 0 1px rgba(255,255,255,0.06), 0 12px 40px -8px rgba(0,0,0,0.40);
     --glass-fill: rgba(255, 255, 255, 0.08);
     --glass-border: rgba(255, 255, 255, 0.15);
     --workbench: rgba(255, 255, 255, 0.05);
@@ -280,18 +273,6 @@
       linear-gradient(var(--fg-faint), var(--fg-faint)) right 0 bottom 0 / 1px 16px no-repeat;
   }
 
-  /* OCR 드롭존 진행 중 스캔라인 — "티켓 스캔" 컨텍스트 */
-  .ocr-scanline {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, var(--accent), transparent);
-    box-shadow: 0 0 8px var(--accent);
-    animation: ocr-scan 1.8s cubic-bezier(.4,0,.6,1) infinite;
-  }
-
 }
 
 @layer base {
@@ -321,14 +302,6 @@
   @keyframes drawer-in {
     from { transform: translateX(100%); }
     to   { transform: translateX(0); }
-  }
-
-  /* OCR 스캔라인 상하 왕복 */
-  @keyframes ocr-scan {
-    0%   { top: 4%; opacity: 0; }
-    15%  { opacity: 1; }
-    85%  { opacity: 1; }
-    100% { top: 96%; opacity: 0; }
   }
 
   @media (prefers-reduced-motion: reduce) {
