@@ -11,9 +11,9 @@ interface ColorPickerProps {
 }
 
 const PRESETS = [
-  { label: 'White', value: '#FFFFFF' },
-  { label: 'Black', value: '#000000' },
-  { label: 'Gold', value: '#E5B469' },
+  { label: '흰색', value: '#FFFFFF' },
+  { label: '검정', value: '#000000' },
+  { label: '골드', value: '#E5B469' },
 ];
 
 export default function ColorPicker({ value, onChange, recommended, disabled = false, disabledNote }: ColorPickerProps) {
@@ -23,8 +23,8 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
   const seen = new Set<string>();
   const swatches = [
     ...PRESETS,
-    ...(recommended[0] ? [{ label: 'Pick 1', value: recommended[0] }] : []),
-    ...(recommended[1] ? [{ label: 'Pick 2', value: recommended[1] }] : []),
+    ...(recommended[0] ? [{ label: '추천색 1', value: recommended[0] }] : []),
+    ...(recommended[1] ? [{ label: '추천색 2', value: recommended[1] }] : []),
   ].filter((s) => {
     const key = s.value.toLowerCase();
     if (seen.has(key)) return false;

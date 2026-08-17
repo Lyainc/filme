@@ -120,7 +120,7 @@ describe('DesignRail (#217)', () => {
     expect(screen.getByTestId('layout').textContent).toBe('criterion');
 
     await user.click(screen.getByRole('button', { name: '컬러' }));
-    expect((screen.getByRole('button', { name: 'White' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: '흰색' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   test('(e) 투명도 아이콘 클릭 → 듀얼 슬라이더 패널 열림 · 무드와 배타 (#219)', async () => {

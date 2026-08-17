@@ -29,7 +29,7 @@ describe('#678 ColorPicker 레이아웃', () => {
     render(
       <ColorPicker value="#FFFFFF" onChange={(v) => { picked = v; }} recommended={[]} />,
     );
-    await user.click(screen.getByRole('button', { name: 'Black' }));
+    await user.click(screen.getByRole('button', { name: '검정' }));
     expect(picked).toBe('#000000');
   });
 
@@ -53,7 +53,7 @@ describe('#678 ColorPicker 레이아웃', () => {
     const root = container.firstElementChild as HTMLElement;
     expect(root.children.length).toBe(1);
     expect(root.children[0].contains(input)).toBe(true);
-    expect(root.children[0].contains(screen.getByRole('button', { name: 'White' }))).toBe(true);
+    expect(root.children[0].contains(screen.getByRole('button', { name: '흰색' }))).toBe(true);
   });
 
   test('disabled: 스와치·헥스 입력이 비활성화되고 잠금 안내가 컨트롤 바로 다음 형제로 붙는다', () => {
@@ -66,7 +66,7 @@ describe('#678 ColorPicker 레이아웃', () => {
         disabledNote={NOTE}
       />,
     );
-    expect((screen.getByRole('button', { name: 'White' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: '흰색' }) as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByLabelText('색상 코드') as HTMLInputElement).disabled).toBe(true);
 
     const note = screen.getByText(NOTE);
