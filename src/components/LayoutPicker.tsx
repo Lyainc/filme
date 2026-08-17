@@ -71,7 +71,7 @@ export const LayoutStrip = memo(function LayoutStrip({ value, onChange }: Layout
       // pt-1(4px)이라 1.15px 모자랐다. 전역 :focus-visible(3px + offset 2px)까지 덮는다.
       className="flex gap-3 overflow-x-auto px-1 py-1.5 snap-x no-scrollbar"
       role="radiogroup"
-      aria-label="Mood designs"
+      aria-label="무드 목록"
     >
       {LAYOUTS.map((layout) => {
         const active = value === layout.id;
