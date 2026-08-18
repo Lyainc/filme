@@ -177,6 +177,9 @@ const INITIAL_STATE: PhototicketState = {
   embossStamps: [],
   embossPaths: [],
   embossIntensity: 1,
+  reliefStamps: [],
+  reliefPaths: [],
+  reliefIntensity: 1,
 };
 
 export function usePhototicket() {
@@ -190,6 +193,11 @@ export function usePhototicket() {
   // 형압 도구(#509 2단계) — 브러시/올가미 중 어느 쪽이 편집 레이어의 포인터를 소비할지. 같은
   // 세션 한정 UI 토글 패턴(embossEditMode와 동일 근거) — 도구 선택 자체는 마스크가 아니다.
   const [embossTool, setEmbossTool] = useState<'brush' | 'lasso'>('brush');
+  // 효과 축(#732 d3 · #735) — 브러시/올가미가 지금 어느 마스크(하이라이트/형압)에 커밋되는지.
+  // embossTool과 동일한 세션 한정 UI 토글 패턴이고, addEmbossStamp/addEmbossPath/clearEmbossMask/
+  // setEmbossIntensity가 이 값으로 두 마스크 벌 중 하나를 고른다 — 마스크 자체는 c7/c8 계약대로
+  // 분리돼 있고, 이건 "지금 어느 쪽을 칠하는 중인가"를 가리키는 선택자일 뿐이다.
+  const [embossEffect, setEmbossEffect] = useState<'highlight' | 'relief'>('highlight');
   // 자동저장 on/off(기본 ON) + 마지막 저장 시각(인디케이터 반짝임 트리거, #436).
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
@@ -293,9 +301,12 @@ export function usePhototicket() {
         // 형압 마스크 폐기(#509 c8) — 이 콜백이 포스터 교체·재크롭 양쪽의 단일 진입점이라(usePosterCrop
         // → onCropComplete가 재크롭도 여기로 보낸다), 마스크가 옛 포스터 픽셀을 가리키는 채로
         // 새 포스터에 얹히는 orphan을 여기 한 곳에서 막는다. embossPaths(2단계 올가미)도 같은
-        // 좌표계·같은 orphan 위험이라 나란히 폐기한다.
+        // 좌표계·같은 orphan 위험이라 나란히 폐기한다. reliefStamps/Paths(#735)도 같은 자연 분율
+        // 좌표계·같은 orphan 위험이라 두 마스크 벌 다 비운다.
         embossStamps: [],
         embossPaths: [],
+        reliefStamps: [],
+        reliefPaths: [],
       };
     });
   }, []);
@@ -602,23 +613,39 @@ export function usePhototicket() {
   // 형압(#509) — 마스크는 dirtyTick(자동저장 트리거)을 안 올린다. embossStamps/embossIntensity는
   // PersistedState/HistorySnapshot의 Pick 목록 밖이라(c8) 애초에 저장되지 않으므로, tick을 올려도
   // 효과가 없는 헛 리렌더만 하나 더 생긴다.
+  // 아래 네 함수는 embossEffect(#735 효과 축)로 하이라이트/형압 마스크 벌 중 하나를 고른다 — 도구
+  // (브러시/올가미) 자체는 그대로고, 커밋 대상 배열만 갈린다.
   const addEmbossStamp = useCallback((stamp: EmbossStamp) => {
-    setState((prev) => ({ ...prev, embossStamps: [...prev.embossStamps, stamp] }));
-  }, []);
+    setState((prev) =>
+      embossEffect === 'relief'
+        ? { ...prev, reliefStamps: [...prev.reliefStamps, stamp] }
+        : { ...prev, embossStamps: [...prev.embossStamps, stamp] }
+    );
+  }, [embossEffect]);
 
   // 올가미(2단계)는 브러시처럼 포인트마다 커밋하지 않는다 — 트레이스가 닫힌 다각형 하나로
   // 완성된 뒤(포인터업) 한 번에 들어온다(EmbossBrushLayer의 onPath).
   const addEmbossPath = useCallback((path: EmbossPath) => {
-    setState((prev) => ({ ...prev, embossPaths: [...prev.embossPaths, path] }));
-  }, []);
+    setState((prev) =>
+      embossEffect === 'relief'
+        ? { ...prev, reliefPaths: [...prev.reliefPaths, path] }
+        : { ...prev, embossPaths: [...prev.embossPaths, path] }
+    );
+  }, [embossEffect]);
 
+  // 한쪽 마스크만 지운다(#735 완료조건) — 다른 효과의 마스크는 그대로 남는다.
   const clearEmbossMask = useCallback(() => {
-    setState((prev) => (prev.embossStamps.length || prev.embossPaths.length ? { ...prev, embossStamps: [], embossPaths: [] } : prev));
-  }, []);
+    setState((prev) => {
+      if (embossEffect === 'relief') {
+        return prev.reliefStamps.length || prev.reliefPaths.length ? { ...prev, reliefStamps: [], reliefPaths: [] } : prev;
+      }
+      return prev.embossStamps.length || prev.embossPaths.length ? { ...prev, embossStamps: [], embossPaths: [] } : prev;
+    });
+  }, [embossEffect]);
 
-  const setEmbossIntensity = useCallback((embossIntensity: number) => {
-    setState((prev) => ({ ...prev, embossIntensity }));
-  }, []);
+  const setEmbossIntensity = useCallback((intensity: number) => {
+    setState((prev) => (embossEffect === 'relief' ? { ...prev, reliefIntensity: intensity } : { ...prev, embossIntensity: intensity }));
+  }, [embossEffect]);
 
   // undo/redo(#356) 복원 전용 경로 — updateComponents를 거치지 않는다. 거치면 posterOpacity가
   // 항상 실려와 brightnessTouchedRef가 오염되고 texture 기본 밝기 로직이 스냅샷을 덮는다.
@@ -889,6 +916,8 @@ export function usePhototicket() {
     setEmbossBrushRadius,
     embossTool,
     setEmbossTool,
+    embossEffect,
+    setEmbossEffect,
     updateFieldVisibility,
     restoreSnapshot,
     setHistorySnapshots,
