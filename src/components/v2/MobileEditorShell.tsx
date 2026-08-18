@@ -441,6 +441,9 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   // pill 클릭 시 서브메뉴가 열린 채로 남지 않게 항상 같이 닫는다(claude-review PR #332 P2 —
   // 메뉴 오버레이가 마우스 클릭은 막아도 키보드 포커스는 막지 않아 Tab으로 pill까지 도달 가능).
   function handleViewModeChange(mode: ViewMode) {
+    // max를 벗어나면 형압 편집 모드를 정리한다(#729) — 진입(default→max) 방향은 그대로 둔다,
+    // "칠하다가 확대해서 계속 칠한다"가 그쪽의 의도된 동작이라(#729 명세 c6).
+    if (viewMode === 'max' && mode === 'default') photo.setEmbossEditMode(false);
     setViewMode(mode);
     setMenuOpen(false);
     setActiveField(null); // 인플레이스 편집(#354)은 default 줌 전용 — 줌 전환 시 닫는다.
@@ -881,6 +884,13 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
               // 샘플로 들어온 세 경로가 첫 업로드 전에 드롭을 잃는다. 랜딩이 보이는 상태와 이
               // 스테이지가 뜨는 상태는 canvasReady로 배타라 중복 발화가 없다.
               {...posterDropProps}
+              // max 스테이지 자체도 "포스터 rect 밖 탭" 탈출구여야 한다(#729 ac3) — 안쪽 wrapper
+              // (setPreviewWrapEl)는 풀블리드 무드(minimal·stub·editorial)에서 포스터와 거의 같은
+              // 크기라, 포스터와 스테이지 사이 여백(실측 47.9~120.8px)을 탭하면 이 바깥 div가
+              // 먼저 잡혀 wrapper의 onClick까지 안 닿는다(elementFromPoint 실측으로 확인된 버그 —
+              // 비풀블리드 무드는 wrapper가 더 커서 우연히 가려져 있었다). wrapper 자체 클릭은
+              // 버블링으로 여기도 같이 타지만 handleViewModeChange가 멱등이라 무해하다.
+              onClick={isMax ? () => handleViewModeChange('default') : undefined}
               className={
                 isMax
                   ? `fixed inset-0 z-50 flex items-center justify-center bg-surface px-6${
@@ -923,11 +933,13 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
                   : {
                       role: 'button' as const,
                       tabIndex: 0,
-                      onClick: () => setViewMode('default'),
+                      // handleViewModeChange 경유(#729) — 직접 setViewMode를 부르면 max→default
+                      // 탈출이 embossEditMode 정리를 못 탄다(위 handleViewModeChange 주석).
+                      onClick: () => handleViewModeChange('default'),
                       onKeyDown: (e: KeyboardEvent) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
-                          setViewMode('default');
+                          handleViewModeChange('default');
                         }
                       },
                       'aria-label': '기본 크기로 돌아가기',
@@ -1009,6 +1021,8 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
               brushRadius={photo.embossBrushRadius}
               onStamp={photo.addEmbossStamp}
               onPath={photo.addEmbossPath}
+              isMax={isMax}
+              rotated={rotateLandscape}
             />
           )}
 
