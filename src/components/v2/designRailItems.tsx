@@ -321,8 +321,17 @@ const EMBOSS_TOOL_OPTIONS = [
   { value: 'lasso', label: '올가미' },
 ] as const;
 
+// 효과 축(#732 d3 · #735) — 하이라이트(기존 광택)와 형압(볼록 압인, #734)은 마스크가 분리돼 있어
+// 브러시/올가미가 지금 어느 쪽에 커밋되는지 먼저 골라야 한다. 도구 칩과 달리 값이 항상 선택돼
+// 있다 — "지금 칠하는 중"만 뜻하는 도구 칩(null=idle)과 달리, 편집을 끝낸 뒤에도 강도 슬라이더가
+// 어느 효과를 가리키는지 계속 표시해야 하기 때문이다.
+const EMBOSS_EFFECT_OPTIONS = [
+  { value: 'highlight', label: '하이라이트' },
+  { value: 'relief', label: '형압' },
+] as const;
+
 /**
- * 형압 패널(#509 → #679) — 재질·코팅 옆 독립 후가공 축(c5). 모드는 c9(명시적 진입/종료)를
+ * 형압 패널(#509 → #679 → #735 마스크 분리) — 재질·코팅 옆 독립 후가공 축(c5). 모드는 c9(명시적 진입/종료)를
  * 유지하지만, 진입 어포던스를 별도 전폭 CTA에서 뗐다(#679: 값 칩 → 전폭 CTA → 안내문 → 슬라이더
  * 4단 구성이 다른 패널의 AxisSegment/ChipRadio 문법과 어긋나고, 그 CTA가 393×659에서 화면 밖으로
  * 잘렸다 — bottom 666.2 > 659). 셸이 브러시 레이어를 띄우는 절반(MobileEditorShell이 photo.
@@ -344,6 +353,15 @@ const EMBOSS_TOOL_OPTIONS = [
  * 줄어든다 — 슬롯보다 6px 남는데, 이건 칠하는 손이 캔버스(EmbossBrushLayer, zIndex 45)에 있어
  * 이 패널을 보고 있지 않을 확률이 높은 유일한 잔여 상태라 CSS 스크롤 어포던스(DesignRail.tsx)로
  * 감수한다 — "편집 중이 아닌" 모든 상태는 슬롯 안에 다 들어간다(실측 171px, 넘침 0).
+ *
+ * **#735가 이 마지막 문장을 깼다.** 하이라이트·형압이 마스크를 분리하며(각자 embossStamps/Paths·
+ * reliefStamps/Paths, `usePhototicket.embossEffect`가 지금 어느 쪽에 커밋되는지 고른다) "효과"
+ * ChipRadio 한 줄이 상시로 붙었다 — 도구 칩과 달리 편집 중이 아닐 때도 항상 떠 있어야 강도
+ * 슬라이더가 어느 효과를 가리키는지 계속 보인다(도구 칩의 null=idle 관례를 그대로 못 씀). 그
+ * 결과 "편집 중이 아닌" 상태도 이제 슬롯을 넘친다(실측 2026-08-18, 400×675: railSlot
+ * clientHeight 176 / scrollHeight 199, +23px — DesignRail.tsx의 슬롯 예산 주석 참고).
+ * railSlot은 게이트가 아니라 관측값이라(CLAUDE.md "📏 크롬 측정 하네스") 하네스 exit code는
+ * 그대로지만, 이 문서 위 "슬롯 안에 다 들어간다"는 형압에 한해 더는 사실이 아니다.
  */
 function EmbossPanel({ photo }: { photo: Photo }) {
   const {
@@ -353,16 +371,27 @@ function EmbossPanel({ photo }: { photo: Photo }) {
     setEmbossBrushRadius,
     embossTool,
     setEmbossTool,
+    embossEffect,
+    setEmbossEffect,
     clearEmbossMask,
     setEmbossIntensity,
   } = photo;
-  const { embossStamps, embossPaths, embossIntensity } = photo.state;
-  const hasMask = embossStamps.length > 0 || embossPaths.length > 0;
+  const { embossStamps, embossPaths, embossIntensity, reliefStamps, reliefPaths, reliefIntensity } = photo.state;
+  // 지금 선택된 효과의 마스크·강도만 본다 — 두 마스크는 분리돼 있으니(#735) "지우기"·강도 슬라이더가
+  // 다른 효과 쪽을 건드리면 안 된다.
+  const hasMask = embossEffect === 'relief' ? reliefStamps.length > 0 || reliefPaths.length > 0 : embossStamps.length > 0 || embossPaths.length > 0;
+  const intensity = embossEffect === 'relief' ? reliefIntensity : embossIntensity;
   const prefix = ID_PREFIX;
   return (
     <div className="space-y-group">
       <ChipRadio
-        label="하이라이트 도구"
+        label="효과"
+        options={EMBOSS_EFFECT_OPTIONS}
+        value={embossEffect}
+        onChange={setEmbossEffect}
+      />
+      <ChipRadio
+        label="도구"
         options={EMBOSS_TOOL_OPTIONS}
         // 편집 중이 아니면 null — 값 선택이 곧 실행 상태라, 마지막으로 쓴 도구가 계속
         // 선택된 것처럼 보이면 지금 칠하는 중인지 칩만 보고 구분이 안 된다(fresh-context 리뷰).
@@ -407,11 +436,13 @@ function EmbossPanel({ photo }: { photo: Photo }) {
       )}
       {hasMask && !embossEditMode && (
         // "지우기"를 별도 전폭 버튼(#682 이전엔 52px) 대신 슬라이더 라벨 줄에 접는다 —
-        // BrightnessSlider의 action prop(같은 목적으로 새로 연 옵션).
+        // BrightnessSlider의 action prop(같은 목적으로 새로 연 옵션). id에 effect를 실어야
+        // 효과를 오가며 열어도 React가 다른 슬라이더로 보고 localValue를 다시 seed한다.
         <BrightnessSlider
-          label="하이라이트 강도"
-          id={`${prefix}-emboss-intensity`}
-          value={embossIntensity}
+          key={embossEffect}
+          label={embossEffect === 'relief' ? '형압 강도' : '하이라이트 강도'}
+          id={`${prefix}-emboss-intensity-${embossEffect}`}
+          value={intensity}
           onChange={setEmbossIntensity}
           action={{ label: '지우기', onClick: clearEmbossMask }}
         />
