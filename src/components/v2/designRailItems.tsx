@@ -24,7 +24,7 @@ const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ss
 // 상시 스택 배치, desktop- id prefix)는 아무도 안 타는 죽은 코드라 같이 걷어냈다 — 남겨두면
 // 타입도 테스트도 안 건드리는 채로 두 셸 전제가 조용히 되살아난다.
 // 슬라이더 id의 rail- prefix는 그대로 유지한다(기존 id 보존).
-export type RailItemId = 'mood' | 'color' | 'texture' | 'emboss' | 'opacity' | 'size' | 'pattern' | 'custom';
+export type RailItemId = 'mood' | 'color' | 'texture' | 'highlight' | 'opacity' | 'size' | 'pattern' | 'custom';
 type Photo = ReturnType<typeof usePhototicket>;
 
 /**
@@ -362,7 +362,7 @@ function EmbossPanel({ photo }: { photo: Photo }) {
   return (
     <div className="space-y-group">
       <ChipRadio
-        label="형압 도구"
+        label="하이라이트 도구"
         options={EMBOSS_TOOL_OPTIONS}
         // 편집 중이 아니면 null — 값 선택이 곧 실행 상태라, 마지막으로 쓴 도구가 계속
         // 선택된 것처럼 보이면 지금 칠하는 중인지 칩만 보고 구분이 안 된다(fresh-context 리뷰).
@@ -409,7 +409,7 @@ function EmbossPanel({ photo }: { photo: Photo }) {
         // "지우기"를 별도 전폭 버튼(#682 이전엔 52px) 대신 슬라이더 라벨 줄에 접는다 —
         // BrightnessSlider의 action prop(같은 목적으로 새로 연 옵션).
         <BrightnessSlider
-          label="형압 강도"
+          label="하이라이트 강도"
           id={`${prefix}-emboss-intensity`}
           value={embossIntensity}
           onChange={setEmbossIntensity}
@@ -706,8 +706,8 @@ export const RAIL_ITEMS: readonly RailItem[] = [
     render: (photo) => <TexturePanel photo={photo} />,
   },
   {
-    id: 'emboss',
-    label: '형압',
+    id: 'highlight',
+    label: '하이라이트',
     // 형압: 볼록 단면 — 기준선에서 솟아오르는 돔 곡선(측면에서 본 융기 프로필). 컬러·투명도와
     // 원 계열을 공유하지 않도록 #676에서 교체.
     icon: (

@@ -23,7 +23,7 @@ function Harness() {
 }
 
 async function openEmbossPanel(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: '형압' }));
+  await user.click(screen.getByRole('button', { name: '하이라이트' }));
 }
 
 beforeEach(() => window.localStorage.clear());
@@ -142,7 +142,7 @@ describe('형압 편집 모드 해제 — 레일 선택 전환 (#722)', () => {
     expect(screen.getByTestId('edit-mode').textContent).toBe('true');
 
     // pop → null. "패널 접고 넓은 화면에서 칠하기"가 막히면 안 된다.
-    await user.click(screen.getByRole('button', { name: '형압' }));
+    await user.click(screen.getByRole('button', { name: '하이라이트' }));
     expect(screen.getByTestId('edit-mode').textContent).toBe('true');
   });
 });
