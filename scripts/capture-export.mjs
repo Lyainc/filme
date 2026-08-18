@@ -11,6 +11,8 @@
  *   bun scripts/capture-export.mjs --layout editorial --bg --bg-scale 1.5 --out /tmp/bg15.jpg
  *   bun scripts/capture-export.mjs --lasso --out /tmp/lasso.jpg
  *   bun scripts/capture-export.mjs --emboss --lasso --out /tmp/brush-and-lasso.jpg
+ *   bun scripts/capture-export.mjs --relief --out /tmp/relief.jpg
+ *   bun scripts/capture-export.mjs --emboss --relief --out /tmp/both-effects.jpg
  *   bun scripts/capture-export.mjs --compare /tmp/a.jpg /tmp/b.jpg
  *
  * `--switch-to <무드 label>`·`--toggle-fill`(#509 재매핑 검증)은 초기 무드에서 형압을 칠한
@@ -266,7 +268,7 @@ async function ensureEmbossPanelOpen(page) {
   const alreadyOpen = await page.evaluate(
     () =>
       ![...document.querySelectorAll('[role="radiogroup"]')].every(
-        (g) => (g.getAttribute('aria-label') || '') !== '하이라이트 도구',
+        (g) => (g.getAttribute('aria-label') || '') !== '도구',
       ),
   );
   if (alreadyOpen) return;
@@ -312,11 +314,11 @@ async function paintEmboss(page) {
   await selectEmbossTool(page, '브러시');
 }
 
-/** ChipRadio "하이라이트 도구"에서 label과 정확히 같은 텍스트의 라디오 버튼을 클릭한다(#509 2단계). */
+/** ChipRadio "도구"에서 label과 정확히 같은 텍스트의 라디오 버튼을 클릭한다(#509 2단계). */
 async function selectEmbossTool(page, label) {
   const clicked = await page.evaluate((label) => {
     const group = [...document.querySelectorAll('[role="radiogroup"]')].find(
-      (g) => (g.getAttribute('aria-label') || '') === '하이라이트 도구',
+      (g) => (g.getAttribute('aria-label') || '') === '도구',
     );
     if (!group) return false;
     const b = [...group.querySelectorAll('button[role="radio"]')].find((x) => (x.textContent || '').trim() === label);
@@ -324,7 +326,27 @@ async function selectEmbossTool(page, label) {
     b.click();
     return true;
   }, label);
-  if (!clicked) throw new Error(`하이라이트 도구 라디오를 못 찾음: ${label}`);
+  if (!clicked) throw new Error(`도구 라디오를 못 찾음: ${label}`);
+  await sleep(150);
+}
+
+/**
+ * ChipRadio "효과"(#732 d3 · #735)에서 label('하이라이트'|'형압')과 정확히 같은 텍스트의 라디오
+ * 버튼을 클릭한다 — 이후 selectEmbossTool로 진입해 칠하는 스트로크가 어느 마스크 벌에 커밋될지
+ * 정한다(usePhototicket의 embossEffect).
+ */
+async function selectEmbossEffect(page, label) {
+  const clicked = await page.evaluate((label) => {
+    const group = [...document.querySelectorAll('[role="radiogroup"]')].find(
+      (g) => (g.getAttribute('aria-label') || '') === '효과',
+    );
+    if (!group) return false;
+    const b = [...group.querySelectorAll('button[role="radio"]')].find((x) => (x.textContent || '').trim() === label);
+    if (!b) return false;
+    b.click();
+    return true;
+  }, label);
+  if (!clicked) throw new Error(`효과 라디오를 못 찾음: ${label}`);
   await sleep(150);
 }
 
@@ -378,6 +400,43 @@ async function paintEmbossLasso(page) {
 }
 
 /**
+ * 볼록 압인(#732 d2 · #735) — paintEmboss와 같은 브러시 스와이프지만, 커밋 전에 효과 축을
+ * '형압'으로 돌려 별도 마스크(reliefStamps)에 쌓이게 한다. --emboss와 함께 주면 같은 포스터
+ * 위에 두 마스크가 각자 커밋되는지(#735 완료조건 "두 효과가 동시에")까지 검증한다.
+ */
+async function paintRelief(page) {
+  await ensureEmbossPanelOpen(page);
+  await selectEmbossEffect(page, '형압');
+  await selectEmbossTool(page, '브러시');
+
+  const rect = await page.evaluate(() => {
+    const el = document.querySelector('[data-poster-root]');
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return { left: r.left, top: r.top, width: r.width, height: r.height };
+  });
+  if (!rect || rect.width <= 0 || rect.height <= 0) throw new Error('포스터 rect를 못 얻음(형압 대상 없음)');
+
+  // 하이라이트(paintEmboss)와 겹치지 않는 반대쪽 대각선을 그어 두 마스크가 서로 다른 영역임을
+  // 눈으로도 구분할 수 있게 한다 — 로그 단언 자체는 겹쳐도 통과하지만, --compare 대조 시 유용.
+  const x0 = rect.left + rect.width * 0.75;
+  const y0 = rect.top + rect.height * 0.25;
+  const x1 = rect.left + rect.width * 0.3;
+  const y1 = rect.top + rect.height * 0.75;
+  await page.mouse.move(x0, y0);
+  await page.mouse.down();
+  const steps = 12;
+  for (let i = 1; i <= steps; i++) {
+    await page.mouse.move(x0 + ((x1 - x0) * i) / steps, y0 + ((y1 - y0) * i) / steps);
+    await sleep(20);
+  }
+  await page.mouse.up();
+  await sleep(200);
+
+  await selectEmbossTool(page, '브러시');
+}
+
+/**
  * 무드 rail을 열어 다른 무드로 전환한다(#509 재매핑 검증) — LayoutStrip 버튼은
  * `role="radio" aria-label="${label} · ${caption}"`라 label 접두 매칭으로 찾는다.
  * 페이지 리로드 없이(React state 유지) 전환해야 "폐기 없이 정합 유지"를 실제로 재현한다.
@@ -403,7 +462,7 @@ async function switchLayout(page, label) {
   await sleep(300);
 }
 
-async function capture({ layout, material, coating, intensity, bg, bgScale, emboss, lasso, switchTo, toggleFill, out, timeoutMs }) {
+async function capture({ layout, material, coating, intensity, bg, bgScale, emboss, lasso, relief, switchTo, toggleFill, out, timeoutMs }) {
   const seed = {
     movieInfo: {
       title: '인터스텔라',
@@ -506,6 +565,10 @@ async function capture({ layout, material, coating, intensity, bg, bgScale, embo
       await paintEmbossLasso(page);
       mark('lassoed');
     }
+    if (relief) {
+      await paintRelief(page);
+      mark('reliefed');
+    }
     if (switchTo) {
       await switchLayout(page, switchTo);
       mark('switched');
@@ -557,17 +620,22 @@ async function capture({ layout, material, coating, intensity, bg, bgScale, embo
     const missing = wanted.filter((t) => !drawn.some((l) => l.includes(`texture=${t}`)));
     if (missing.length) throw new Error(`오버레이가 안 그려짐: ${missing.join(',')} (로그: ${drawn.join(' | ')})`);
     if ((emboss || lasso) && !drawn.some((l) => l.includes('emboss'))) {
-      throw new Error(`형압 오버레이가 안 그려짐(로그: ${drawn.join(' | ')})`);
+      throw new Error(`하이라이트 오버레이가 안 그려짐(로그: ${drawn.join(' | ')})`);
     }
     // 올가미(2단계) — EmbossPath가 실제로 커밋·투영·굽기까지 갔는지는 stamps 유무와 별개로
-    // paths 카운트로만 확인된다(compositeEmbossOverlay의 debug 로그, captureToImage.ts).
+    // paths 카운트로만 확인된다(compositeMaskOverlay의 debug 로그, captureToImage.ts).
     if (lasso && !drawn.some((l) => l.includes('emboss') && /paths=[1-9]/.test(l))) {
       throw new Error(`올가미 다각형이 안 커밋되거나 안 그려짐(로그: ${drawn.join(' | ')})`);
+    }
+    // 볼록 압인(#732 d2 · #735) — 별도 마스크·별도 합성 로그(relief)라 emboss 로그와 독립 검증.
+    // --emboss --relief를 함께 주면 두 로그 줄이 같은 저장물에 함께 뜬다(#735 완료조건).
+    if (relief && !drawn.some((l) => l.includes('relief'))) {
+      throw new Error(`형압 오버레이가 안 그려짐(로그: ${drawn.join(' | ')})`);
     }
 
     console.log(
       JSON.stringify(
-        { mode: 'capture', layout, material, coating, intensity, emboss, lasso, switchTo, toggleFill, out, bytes: bytes.length, overlays: drawn, marks },
+        { mode: 'capture', layout, material, coating, intensity, emboss, lasso, relief, switchTo, toggleFill, out, bytes: bytes.length, overlays: drawn, marks },
         null,
         2,
       ),
@@ -594,6 +662,7 @@ if (cmpIdx >= 0) {
     bgScale: Number(arg('bg-scale', '1')),
     emboss: argv.includes('--emboss'),
     lasso: argv.includes('--lasso'),
+    relief: argv.includes('--relief'),
     switchTo: arg('switch-to', null),
     toggleFill: argv.includes('--toggle-fill'),
     out,
