@@ -157,6 +157,13 @@ export interface PhototicketState {
   embossPaths: EmbossPath[];
   /** 형압 강도 0..1(#509) — 마스크가 없으면 의미 없으나, 마스크와 함께 폐기되는 세션 값이라 같이 둔다. */
   embossIntensity: number;
+  /**
+   * 볼록 압인(#732 d2 · #735) 마스크 — embossStamps/Paths/Intensity(하이라이트)와 나란한 두 번째
+   * 세션 한정 필드 벌. 좌표계·폐기 계약(c7/c8, 위 embossStamps 주석 참고)은 동일하고 마스크만 별도다.
+   */
+  reliefStamps: EmbossStamp[];
+  reliefPaths: EmbossPath[];
+  reliefIntensity: number;
 }
 
 export interface KobisMovie {
