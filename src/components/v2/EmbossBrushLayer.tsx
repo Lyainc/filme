@@ -17,6 +17,14 @@ interface EmbossBrushLayerProps {
   onStamp: (stamp: EmbossStamp) => void;
   /** 올가미 트레이스가 포인터업 시점에 닫힌 다각형(>=3점)으로 커밋될 때만 호출된다. */
   onPath: (path: EmbossPath) => void;
+  /** max 뷰모드(#729 c2) — max 스테이지가 `z-50`이라 이 레이어도 그 위(51)로 올라가야 포스터
+   *  탭이 "기본 크기로 돌아가기"가 아니라 이 레이어에 먼저 닿는다. 기본 모드의 45는 필드
+   *  드로어(z-50)를 가리지 않으려고 그대로 둔다. */
+  isMax: boolean;
+  /** 가로형 무드가 max에서 90도 회전됐는지(#729 c5). getBoundingClientRect는 회전된 요소의
+   *  축정렬 bbox만 주므로, 참이면 클라이언트 좌표를 로컬(자연) 좌표로 되돌리기 전에 축을
+   *  90도 되돌려야 한다. */
+  rotated: boolean;
 }
 
 interface Rect {
@@ -37,13 +45,38 @@ const MIN_STAMP_SPACING = 0.3;
 const MIN_LASSO_SPACING = 0.01;
 
 /**
+ * 화면(축정렬 bbox) 사각형을, 포스터 root 자신의 화면 중심을 회전축 삼아 90도(시계방향)
+ * 회전 이전 로컬 좌표계로 되돌린다(#729 c5) — clientToNaturalFrac의 boxX/boxY 역변환과 같은
+ * 가정(회전축 ≈ 포스터 root 중심)이다. 풀블리드 무드(editorial·35mm Wide)만 이 경로를 타는데,
+ * 그 두 무드는 포스터 root가 티켓 캔버스 전체에 가까워 root 중심이 실제 회전축(ticketBoxEl
+ * 중심)과 실측상 일치한다 — 브러시 레이어 위치 자체가 이미 그 가정으로 서 있다(#729 c4).
+ * 절대 좌표는 임의 원점이라 의미 없고, posterContentFrac이 쓰는 폭/높이/상대 오프셋만 맞으면 된다.
+ */
+function toLocalRect(pivotCx: number, pivotCy: number, r: DOMRect): { left: number; top: number; width: number; height: number } {
+  const corners = [
+    { x: r.left, y: r.top },
+    { x: r.left + r.width, y: r.top + r.height },
+  ].map((p) => ({ x: p.y - pivotCy, y: -(p.x - pivotCx) }));
+  const xs = corners.map((c) => c.x);
+  const ys = corners.map((c) => c.y);
+  const left = Math.min(...xs);
+  const top = Math.min(...ys);
+  return { left, top, width: Math.max(...xs) - left, height: Math.max(...ys) - top };
+}
+
+/**
  * 포스터 root 박스 대비 실제 이미지 콘텐츠 사각형을 실측한다(#509 재매핑) — Poster 컴포넌트가
  * 프리뷰 렌더에서 쓰는 것과 같은 posterContentFrac이지만, 여긴 React state가 아니라 DOM을 직접
  * 잰다(브러시는 Poster 트리 밖의 별도 오버레이라 그 내부 상태에 접근할 수 없다). 실제 사진 <img>의
  * rect·natural 크기·style.objectFit/objectPosition을 읽는 게 captureToImage.compositeRaster와
  * 동일한 근거 — 브라우저가 object-fit을 어디에 그렸는지는 이 값들로 계산하는 것 말고 알 방법이 없다.
+ *
+ * `rotated`(#729 c5)일 때 rootR/imgR는 getBoundingClientRect가 주는 **회전된 축정렬 bbox**라
+ * width/height가 로컬 폭/높이와 뒤바뀌어 있다 — 그대로 posterContentFrac에 먹이면 contain/cover
+ * fit 판정 자체가 뒤집혀 오프셋이 어긋난다(실측: avgX가 예측 사분면을 벗어남, 심하면 음수).
+ * toLocalRect로 두 rect를 같은 회전 이전 좌표계로 되돌린 뒤 넘긴다.
  */
-function measureEmbossContentFrac(posterEl: Element): EmbossContentFrac | null {
+function measureEmbossContentFrac(posterEl: Element, rotated: boolean): EmbossContentFrac | null {
   const img = posterEl.querySelector('img[data-role="poster"]:not([data-poster-bg])') as HTMLImageElement | null;
   if (!img || !img.naturalWidth || !img.naturalHeight) return null;
   const rootR = posterEl.getBoundingClientRect();
@@ -52,7 +85,14 @@ function measureEmbossContentFrac(posterEl: Element): EmbossContentFrac | null {
   const natAspect = img.naturalWidth / img.naturalHeight;
   const fit = img.style.objectFit === 'cover' ? 'cover' : 'contain';
   const [posX, posY] = parseObjectPosition(img.style.objectPosition || '');
-  return posterContentFrac(rootR.width, rootR.height, imgR.top - rootR.top, imgR.height, natAspect, fit, posX, posY);
+  if (!rotated) {
+    return posterContentFrac(rootR.width, rootR.height, imgR.top - rootR.top, imgR.height, natAspect, fit, posX, posY);
+  }
+  const pivotCx = rootR.left + rootR.width / 2;
+  const pivotCy = rootR.top + rootR.height / 2;
+  const rootLocal = toLocalRect(pivotCx, pivotCy, rootR);
+  const imgLocal = toLocalRect(pivotCx, pivotCy, imgR);
+  return posterContentFrac(rootLocal.width, rootLocal.height, imgLocal.top - rootLocal.top, imgLocal.height, natAspect, fit, posX, posY);
 }
 
 /** 포스터의 실제 <img>(자연 픽셀) 엘리먼트 — measureEmbossContentFrac과 같은 쿼리, 그라디언트 맵 굽기용. */
@@ -71,7 +111,15 @@ function getPosterImg(posterEl: Element): HTMLImageElement | null {
  * Pointer Capture 동작, 엘리먼트 크기와 무관) 좌표 변환·스트로크 추적은 안 끊긴다.
  * 두 도구 모두 포스터 자연 픽셀 0..1 분율(c7)로 결과를 내보내 material/coating과 같은 좌표계를 쓴다.
  */
-export default function EmbossBrushLayer({ getPosterEl, tool, brushRadius, onStamp, onPath }: EmbossBrushLayerProps) {
+export default function EmbossBrushLayer({
+  getPosterEl,
+  tool,
+  brushRadius,
+  onStamp,
+  onPath,
+  isMax,
+  rotated,
+}: EmbossBrushLayerProps) {
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
   const paintingRef = useRef(false);
   const [rect, setRect] = useState<Rect | null>(null);
@@ -140,15 +188,20 @@ export default function EmbossBrushLayer({ getPosterEl, tool, brushRadius, onSta
       if (!poster) return null;
       const r = poster.getBoundingClientRect();
       if (r.width <= 0 || r.height <= 0) return null;
-      const boxX = (clientX - r.left) / r.width;
-      const boxY = (clientY - r.top) / r.height;
+      const u = (clientX - r.left) / r.width;
+      const v = (clientY - r.top) / r.height;
       // 그리기 가능 영역은 포스터 root 박스 전체(레터박스 포함) — 기존 UX와 동일.
-      if (boxX < 0 || boxX > 1 || boxY < 0 || boxY > 1) return null;
-      const cf = measureEmbossContentFrac(poster);
+      if (u < 0 || u > 1 || v < 0 || v > 1) return null;
+      // 회전 가로 무드(#729 c5) — getBoundingClientRect는 회전된 요소의 축정렬 bbox를 주므로
+      // 화면 x/y가 로컬 x/y와 90도 어긋난다. rotate(90deg) 시계방향의 역변환: 로컬 x = 화면 y,
+      // 로컬 y = 1 - 화면 x (중심 기준 회전행렬 (x,y)→(-y,x)에서 역산, #729 실측으로 방향 확인).
+      const boxX = rotated ? v : u;
+      const boxY = rotated ? 1 - u : v;
+      const cf = measureEmbossContentFrac(poster, rotated);
       if (!cf || cf.fw <= 0 || cf.fh <= 0) return null; // 이미지 아직 안 뜬 상태 — 보류
       return { x: (boxX - cf.fx) / cf.fw, y: (boxY - cf.fy) / cf.fh, cf };
     },
-    [getPosterEl],
+    [getPosterEl, rotated],
   );
 
   const clientToStamp = useCallback(
@@ -193,11 +246,16 @@ export default function EmbossBrushLayer({ getPosterEl, tool, brushRadius, onSta
       const last = lassoPointsRef.current[lassoPointsRef.current.length - 1];
       if (last && Math.hypot(snapped.x - last.x, snapped.y - last.y) < MIN_LASSO_SPACING) return;
       lassoPointsRef.current = [...lassoPointsRef.current, snapped];
-      const boxX = (nat.cf.fx + snapped.x * nat.cf.fw) * 100;
-      const boxY = (nat.cf.fy + snapped.y * nat.cf.fh) * 100;
-      setPreviewPoints((prev) => [...prev, { x: boxX, y: boxY }]);
+      // 미리보기 SVG는 이 레이어 자신의(화면 방향) 박스에 viewBox 0 0 100 100으로 얹힌다 —
+      // 로컬(자연) 분율이 아니라 화면 분율이 필요하므로, 회전 무드에선 clientToNaturalFrac의
+      // 역변환을 한 번 더 거친다(#729 c5, 위 boxX/boxY 주석과 대칭).
+      const localBoxX = nat.cf.fx + snapped.x * nat.cf.fw;
+      const localBoxY = nat.cf.fy + snapped.y * nat.cf.fh;
+      const screenX = (rotated ? 1 - localBoxY : localBoxX) * 100;
+      const screenY = (rotated ? localBoxX : localBoxY) * 100;
+      setPreviewPoints((prev) => [...prev, { x: screenX, y: screenY }]);
     },
-    [clientToNaturalFrac],
+    [clientToNaturalFrac, rotated],
   );
 
   const resetLasso = useCallback(() => {
@@ -222,7 +280,9 @@ export default function EmbossBrushLayer({ getPosterEl, tool, brushRadius, onSta
         top: rect.top,
         width: rect.width,
         height: rect.height,
-        zIndex: 45,
+        // max 스테이지가 z-50이라(MobileEditorShell.tsx) max에서는 그 위(51)로 올려야 포스터
+        // 탭이 이 레이어에 먼저 닿는다(#729 c2) — 기본 모드는 필드 드로어(z-50)를 안 가리려고 45 유지.
+        zIndex: isMax ? 51 : 45,
         cursor: 'crosshair',
         touchAction: 'none',
       }}
