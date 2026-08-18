@@ -33,7 +33,7 @@ function Harness() {
 }
 
 async function openEmbossPanel(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: '형압' }));
+  await user.click(screen.getByRole('button', { name: '하이라이트' }));
 }
 
 beforeEach(() => window.localStorage.clear());
@@ -49,7 +49,7 @@ describe('형압 패널 콘텐츠 조건부 렌더 (#682)', () => {
     await openEmbossPanel(user);
 
     expect(screen.queryByLabelText('브러시 크기')).toBeNull();
-    expect(screen.queryByLabelText('형압 강도')).toBeNull();
+    expect(screen.queryByLabelText('하이라이트 강도')).toBeNull();
     expect(screen.queryByText('지우기')).toBeNull();
     expect(screen.getByText('도구를 탭하면 바로 편집을 시작해요.')).not.toBeNull();
   });
@@ -62,7 +62,7 @@ describe('형압 패널 콘텐츠 조건부 렌더 (#682)', () => {
     await user.click(screen.getByRole('radio', { name: '브러시' }));
 
     expect(screen.getByLabelText('브러시 크기')).not.toBeNull();
-    expect(screen.queryByLabelText('형압 강도')).toBeNull();
+    expect(screen.queryByLabelText('하이라이트 강도')).toBeNull();
     expect(screen.queryByText('지우기')).toBeNull();
   });
 
@@ -75,7 +75,7 @@ describe('형압 패널 콘텐츠 조건부 렌더 (#682)', () => {
     await user.click(screen.getByRole('radio', { name: '브러시' })); // 종료
 
     expect(screen.queryByLabelText('브러시 크기')).toBeNull();
-    expect(screen.getByLabelText('형압 강도')).not.toBeNull();
+    expect(screen.getByLabelText('하이라이트 강도')).not.toBeNull();
     const clearBtn = screen.getByText('지우기');
     expect(clearBtn).not.toBeNull();
     // h-7(28px, AA 24px 하한보다 4px 여유) — fresh-context 리뷰가 잡은 마진 부족을 못박는다.
@@ -109,7 +109,7 @@ describe('형압 패널 콘텐츠 조건부 렌더 (#682)', () => {
     await user.click(screen.getByText('지우기'));
 
     expect(screen.getByTestId('stamp-count').textContent).toBe('0');
-    expect(screen.queryByLabelText('형압 강도')).toBeNull();
+    expect(screen.queryByLabelText('하이라이트 강도')).toBeNull();
     expect(screen.queryByText('지우기')).toBeNull();
   });
 });

@@ -242,7 +242,7 @@ export function DesignRail({
   // state라 렌더 중 호출하면 React가 경고한다. 같은 값으로의 set은 React가 bail out하므로
   // embossEditMode를 의존성에 넣지 않아도 여분 렌더가 생기지 않는다.
   useEffect(() => {
-    if (pop !== null && pop !== 'emboss') photo.setEmbossEditMode(false);
+    if (pop !== null && pop !== 'highlight') photo.setEmbossEditMode(false);
   }, [pop, photo.setEmbossEditMode]);
 
   // 스와이프/스크롤만으로도 모듈이 전환되게(#502). 예전엔 매 scroll 이벤트에서 바로 활성화했는데,

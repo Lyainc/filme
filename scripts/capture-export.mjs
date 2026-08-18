@@ -244,7 +244,7 @@ const BG_PATTERN_DRAW = `
 
 /**
  * 형압(#509) 마스크는 c8(세션 한정)이라 PersistedState(localStorage 시드)에 안 실린다 —
- * material/coating처럼 seed로 주입할 수 없다. 그래서 실제 UI를 그대로 몬다: rail 'emboss'
+ * material/coating처럼 seed로 주입할 수 없다. 그래서 실제 UI를 그대로 몬다: rail 'highlight'
  * 항목 열기 → 도구 칩 탭으로 진입 → 포스터 위 드래그(page.mouse, 합성 PointerEvent가
  * 아니라 CDP 실제 입력이라 React 핸들러가 진짜 유저 제스처와 동일하게 받는다) → 같은 칩
  * 재탭으로 종료. 종료를 꼭 해야 하는 이유 — 브러시 레이어가 `position:fixed`라 안 끄면
@@ -266,17 +266,17 @@ async function ensureEmbossPanelOpen(page) {
   const alreadyOpen = await page.evaluate(
     () =>
       ![...document.querySelectorAll('[role="radiogroup"]')].every(
-        (g) => (g.getAttribute('aria-label') || '') !== '형압 도구',
+        (g) => (g.getAttribute('aria-label') || '') !== '하이라이트 도구',
       ),
   );
   if (alreadyOpen) return;
   const clickRail = await page.evaluate(() => {
-    const b = document.querySelector('[data-rail-id="emboss"]');
+    const b = document.querySelector('[data-rail-id="highlight"]');
     if (!b) return false;
     b.click();
     return true;
   });
-  if (!clickRail) throw new Error('형압 rail 아이콘을 못 찾음(data-rail-id="emboss")');
+  if (!clickRail) throw new Error('하이라이트 rail 아이콘을 못 찾음(data-rail-id="highlight")');
   await sleep(400); // grid-rows 패널 펼침 트랜지션(300ms)
 }
 
@@ -312,11 +312,11 @@ async function paintEmboss(page) {
   await selectEmbossTool(page, '브러시');
 }
 
-/** ChipRadio "형압 도구"에서 label과 정확히 같은 텍스트의 라디오 버튼을 클릭한다(#509 2단계). */
+/** ChipRadio "하이라이트 도구"에서 label과 정확히 같은 텍스트의 라디오 버튼을 클릭한다(#509 2단계). */
 async function selectEmbossTool(page, label) {
   const clicked = await page.evaluate((label) => {
     const group = [...document.querySelectorAll('[role="radiogroup"]')].find(
-      (g) => (g.getAttribute('aria-label') || '') === '형압 도구',
+      (g) => (g.getAttribute('aria-label') || '') === '하이라이트 도구',
     );
     if (!group) return false;
     const b = [...group.querySelectorAll('button[role="radio"]')].find((x) => (x.textContent || '').trim() === label);
@@ -324,7 +324,7 @@ async function selectEmbossTool(page, label) {
     b.click();
     return true;
   }, label);
-  if (!clicked) throw new Error(`형압 도구 라디오를 못 찾음: ${label}`);
+  if (!clicked) throw new Error(`하이라이트 도구 라디오를 못 찾음: ${label}`);
   await sleep(150);
 }
 
