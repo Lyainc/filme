@@ -29,6 +29,9 @@ interface ResultPanelProps {
   embossStamps?: EmbossStamp[];
   embossPaths?: EmbossPath[];
   embossIntensity?: number;
+  reliefStamps?: EmbossStamp[];
+  reliefPaths?: EmbossPath[];
+  reliefIntensity?: number;
   /**
    * 데스크톱 done(#233)·모바일 ResultStage(#258) 둘 다 켠다 — hero 티켓(캔버스/스테이지 상단)과
    * 인스펙터/액션 블록의 이중 노출을 없앤다. true면 캡처 타깃 프리뷰는 DOM에 유지하되 화면
@@ -56,6 +59,9 @@ export function ResultPanel({
   embossStamps,
   embossPaths,
   embossIntensity,
+  reliefStamps,
+  reliefPaths,
+  reliefIntensity,
   hidePreview = false,
 }: ResultPanelProps) {
   // 캡처 원본 — 여기 달린 TicketRenderer의 (스케일 전) 내부 DOM이 내보내기 대상이다.
@@ -123,7 +129,7 @@ export function ResultPanel({
     // 네트워크에서 permaState가 'loading'에 묶여, 백그라운드 업로드가 끝날 때까지
     // 재발급을 못 한다(스테일 발급의 idle 복귀가 그 완료 시점에야 일어나므로).
     setPermaState('idle');
-  }, [croppedImageUrl, movieInfo, components, fieldVisibility, embossStamps, embossPaths, embossIntensity]);
+  }, [croppedImageUrl, movieInfo, components, fieldVisibility, embossStamps, embossPaths, embossIntensity, reliefStamps, reliefPaths, reliefIntensity]);
 
   // "사진에 저장" — 파일 공유 지원 환경(모바일)이면 OS 공유 시트로 보내 사진앱 저장을
   // 가능하게 하고, 미지원(데스크톱)이면 기존 a[download] 파일 저장으로 떨어진다. 웹은
@@ -317,6 +323,9 @@ export function ResultPanel({
             embossStamps={embossStamps}
             embossPaths={embossPaths}
             embossIntensity={embossIntensity}
+            reliefStamps={reliefStamps}
+            reliefPaths={reliefPaths}
+            reliefIntensity={reliefIntensity}
           />
         </PreviewFilmCell>
       </div>

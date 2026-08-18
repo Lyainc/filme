@@ -130,6 +130,9 @@ export default function Home() {
           embossStamps={photo.state.embossStamps}
           embossPaths={photo.state.embossPaths}
           embossIntensity={photo.state.embossIntensity}
+          reliefStamps={photo.state.reliefStamps}
+          reliefPaths={photo.state.reliefPaths}
+          reliefIntensity={photo.state.reliefIntensity}
         />
       )}
     </PhoneFrame>

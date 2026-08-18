@@ -1004,6 +1004,9 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
                     embossStamps={photo.state.embossStamps}
                     embossPaths={photo.state.embossPaths}
                     embossIntensity={photo.state.embossIntensity}
+                    reliefStamps={photo.state.reliefStamps}
+                    reliefPaths={photo.state.reliefPaths}
+                    reliefIntensity={photo.state.reliefIntensity}
                   />
                 </div>
               </div>
