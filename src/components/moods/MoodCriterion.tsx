@@ -154,7 +154,7 @@ const COLOPHON_MIN_SIZE = 13;
  *     갈릴 표현이 없고, 인쇄물이 날짜를 머리와 판권면에 함께 찍는 건 자연스럽다.)
  * (2) 본문 서체는 시안의 Noto Serif KR 대신 Pretendard(FONT_KR)다 — c13 실측 결과는 커밋 메시지에.
  */
-export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap, embossStamps, embossPaths, embossIntensity }: MoodProps) {
+export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap, embossStamps, embossPaths, embossIntensity, reliefStamps, reliefPaths, reliefIntensity }: MoodProps) {
   const { watchDateClean, releaseClean, reissueClean } = resolveTicketData(d);
 
   const titleVal = gate(fv?.title, d.title);
@@ -275,6 +275,9 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
           embossStamps={embossStamps}
           embossPaths={embossPaths}
           embossIntensity={embossIntensity}
+          reliefStamps={reliefStamps}
+          reliefPaths={reliefPaths}
+          reliefIntensity={reliefIntensity}
         />
         {/* 글로스 + 헤어라인 — Poster **다음 형제**라 포스터 위에 선다(#576). data-poster-root
             바깥이라 저장 경로가 포스터 서브트리를 재합성해도(#439) 링이 사라지지 않는다. */}
