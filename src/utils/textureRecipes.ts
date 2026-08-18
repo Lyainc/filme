@@ -595,6 +595,146 @@ export function embossSvgCacheSize(): number {
 }
 
 /**
+ * 볼록 압인(#732 에픽 d2) 레시피 — `embossBitmapSvg`(이제 '하이라이트' 효과, #733)의
+ * feDiffuseLighting 단독 체인은 광원 반대쪽이 "덜 밝아질 뿐 어두워지지 않아"(c4) 광택이지
+ * 양감이 아니다. 이 레시피는 블러한 알파를 광원 방향 ±로 복제(feOffset)해 밝은 면·어두운
+ * 면을 마스크 경계의 서로 반대편에 동시에 세운다 — Kinetics `Letterpress Emboss`의 이중
+ * text-shadow와 같은 물리를 SVG 필터로 옮긴 것(c2, 라이브 CSS filter 금지).
+ *
+ * 대안(feSpecularLighting을 광원 정방향/역방향 두 번 구워 arithmetic 차감)도 구워봤으나
+ * (스크래치 프로브, 2026-08-18) 원형 대칭 벌지에서 두 specular가 거의 상쇄돼 대비가
+ * 0.03 폭(0.796~0.824)에 그쳤다 — 정반사는 좁고 방향성이 강해 이 azimuth-반전 차감과
+ * 안 맞는다. 이 레시피(offset 복제)는 같은 조건에서 0.28~0.80 폭을 냈다.
+ *
+ * 절대색을 직접 골라(brightGray/darkGray/coreGray) 인쇄 하한(PRINT_CALIBRATION.md 규칙 3 —
+ * 톤 램프 양 끝 5% 붕괴)을 구조적으로 지킨다 — EMBOSS_RECIPE의 midSlope/midIntercept처럼
+ * 사후에 압축하는 대신, 애초에 안전 대역 안의 색만 굽는다. offsetFrac·erodeFrac·bevelFrac
+ * 전부 분율이다(규칙 6) — px 상수를 굽기 좌표계에 박지 않는다.
+ */
+export interface ReliefRecipe {
+  kind: 'relief';
+  /** 알파 실루엣을 부드럽게 하는 블러 폭 — 포스터 폭 기준 분율. */
+  bevelFrac: number;
+  /** 밝은/어두운 복제본을 광원 방향으로 밀어내는 거리 — 포스터 폭 기준 분율. bevelFrac보다
+   *  작으면 두 복제본이 코어 안쪽에서 과하게 겹쳐 밝은 쪽이 'over' 순서상 어두운 쪽을 가린다
+   *  (스크래치 프로브 실측 — offsetFrac 0.03(<bevelFrac 0.06)에서 비대칭 0.076/0.286,
+   *  0.07(>bevelFrac 0.05)에서 0.218/0.294로 개선). */
+  offsetFrac: number;
+  /** 평평한 코어(중립 톤)를 안쪽으로 줄이는 폭 — 포스터 폭 기준 분율. 이 폭만큼만 가장자리에
+   *  밝은/어두운 크레센트가 노출된다. */
+  erodeFrac: number;
+  /** 밝은 면 절대 톤(0..1 gray). */
+  brightGray: number;
+  /** 어두운 면 절대 톤(0..1 gray). */
+  darkGray: number;
+  /** 평평한 코어 절대 톤(0..1 gray) — 'overlay' 블렌드에서 0.5에 가까울수록 중립(원본 무변화). */
+  coreGray: number;
+  azimuth: number;
+  blend: TextureBlend;
+  defaultIntensity: number;
+}
+
+// 스크래치 프로브(puppeteer, 400×400 원 하나, 스캔라인 샘플링)로 실측한 값 — azimuth는
+// EMBOSS_RECIPE(하이라이트)와 맞춰 두 효과를 함께 켰을 때(#735) 광원 방향이 어긋나지 않게 한다.
+// ponytail: 대비가 과하거나 약하면 brightGray/darkGray만 조정 — 0.5(coreGray) 기준 대칭을 벗어나면
+// overlay 블렌드에서 밝은/어두운 쪽 세기가 갈린다.
+export const RELIEF_RECIPE: ReliefRecipe = {
+  kind: 'relief',
+  bevelFrac: 0.05,
+  offsetFrac: 0.07,
+  erodeFrac: 0.045,
+  brightGray: 0.8,
+  darkGray: 0.2,
+  coreGray: 0.5,
+  azimuth: 235,
+  blend: 'overlay',
+  defaultIntensity: 1,
+};
+
+const MAX_RELIEF_CACHE = 64;
+const reliefSvgCache = new Map<string, string>();
+
+/**
+ * 형압(볼록 압인, #732 d2) 마스크를 비트맵 한 장으로 굽는다 — embossBitmapSvg(하이라이트)와
+ * 같은 굽기 캐시·해상도 규율(EMBOSS_BAKE_PX, #506 c2)을 재사용하되 별도 캐시를 쓴다(레시피가
+ * 달라 같은 스탬프 키라도 다른 비트맵이 나오므로).
+ *
+ * @param stamps 브러시 원형 스탬프. embossBitmapSvg와 동일 좌표계(c3, 포스터 자연 이미지 분율).
+ * @param paths 자석 올가미 다각형.
+ * @param rawAspect 그릴 박스의 H/W(raw).
+ */
+export function reliefBitmapSvg(stamps: EmbossStamp[], paths: EmbossPath[], rawAspect: number): string {
+  const aspect = Math.round(rawAspect * 1e4) / 1e4;
+  const stampKey = stamps.map((s) => `${Math.round(s.x * 1e3)},${Math.round(s.y * 1e3)},${Math.round(s.r * 1e3)},${s.newStroke ? 1 : 0}`).join(';');
+  const pathKey = paths.map((p) => p.points.map((pt) => `${Math.round(pt.x * 1e3)},${Math.round(pt.y * 1e3)}`).join(' ')).join('|');
+  const key = `${aspect}|${stampKey}|${pathKey}`;
+  const cached = reliefSvgCache.get(key);
+  if (cached) return cached;
+
+  const w = aspect >= 1 ? Math.round(EMBOSS_BAKE_PX / aspect) : EMBOSS_BAKE_PX;
+  const h = aspect >= 1 ? EMBOSS_BAKE_PX : Math.round(EMBOSS_BAKE_PX * aspect);
+  const rec = RELIEF_RECIPE;
+  const bevel = rec.bevelFrac * w;
+  const erode = rec.erodeFrac * w;
+  const az = (rec.azimuth * Math.PI) / 180;
+  const dx = (rec.offsetFrac * w * Math.cos(az)).toFixed(2);
+  const dy = (rec.offsetFrac * w * Math.sin(az)).toFixed(2);
+  const toHex = (g: number) => Math.round(g * 255).toString(16).padStart(2, '0');
+  const bright = `#${toHex(rec.brightGray).repeat(3)}`;
+  const dark = `#${toHex(rec.darkGray).repeat(3)}`;
+  const core = `#${toHex(rec.coreGray).repeat(3)}`;
+
+  // 실루엣 자체는 embossBitmapSvg와 같은 원/선분/다각형 유니온(newStroke 캡슐 이음도 동일).
+  const circles = stamps
+    .map((s, i) => {
+      const cx = (s.x * w).toFixed(2);
+      const cy = (s.y * h).toFixed(2);
+      const r = (s.r * w).toFixed(2);
+      const circle = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#fff"/>`;
+      const prev = stamps[i - 1];
+      if (i === 0 || s.newStroke || !prev) return circle;
+      const px = (prev.x * w).toFixed(2);
+      const py = (prev.y * h).toFixed(2);
+      const strokeW = (Math.max(s.r, prev.r) * w * 2).toFixed(2);
+      return `<line x1="${px}" y1="${py}" x2="${cx}" y2="${cy}" stroke="#fff" stroke-width="${strokeW}" stroke-linecap="round"/>${circle}`;
+    })
+    .join('');
+  const polygons = paths
+    .map((p) => `<polygon points="${p.points.map((pt) => `${(pt.x * w).toFixed(2)},${(pt.y * h).toFixed(2)}`).join(' ')}" fill="#fff"/>`)
+    .join('');
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
+    `<defs><filter id="r" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">` +
+    `<feGaussianBlur in="SourceGraphic" stdDeviation="${bevel}" result="blur"/>` +
+    `<feOffset in="blur" dx="${dx}" dy="${dy}" result="blurHi"/>` +
+    `<feOffset in="blur" dx="${-dx}" dy="${-dy}" result="blurLo"/>` +
+    `<feFlood flood-color="${bright}" result="floodHi"/>` +
+    `<feComposite in="floodHi" in2="blurHi" operator="in" result="hi"/>` +
+    `<feFlood flood-color="${dark}" result="floodLo"/>` +
+    `<feComposite in="floodLo" in2="blurLo" operator="in" result="lo"/>` +
+    `<feComposite in="hi" in2="lo" operator="over" result="edges"/>` +
+    `<feMorphology in="SourceGraphic" operator="erode" radius="${erode}" result="core"/>` +
+    `<feFlood flood-color="${core}" result="floodCore"/>` +
+    `<feComposite in="floodCore" in2="core" operator="in" result="coreFill"/>` +
+    `<feComposite in="coreFill" in2="edges" operator="over" result="raw"/>` +
+    `<feComposite in="raw" in2="SourceGraphic" operator="in"/>` +
+    `</filter></defs>` +
+    `<g filter="url(#r)">${circles}${polygons}</g></svg>`;
+  const url = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  if (reliefSvgCache.size >= MAX_RELIEF_CACHE) {
+    const oldest = reliefSvgCache.keys().next().value;
+    if (oldest !== undefined) reliefSvgCache.delete(oldest);
+  }
+  reliefSvgCache.set(key, url);
+  return url;
+}
+
+/** 캐시 계측용(테스트). */
+export function reliefSvgCacheSize(): number {
+  return reliefSvgCache.size;
+}
+
+/**
  * 물리재질 종이결 타일 SVG를 data:URL로(#471). feTurbulence(fractalNoise)를 saturate(0)로 회색 결로
  * 만들고 alpha를 1로 평탄화해 불투명 회색 노이즈 타일을 얻는다 — 세기·색은 오버레이 레이어의
  * opacity·blend·포스터 filter가 정한다. stitchTiles="stitch"로 작은 타일이 seam 없이 반복돼

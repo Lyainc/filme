@@ -16,6 +16,9 @@ import {
   EMBOSS_RECIPE,
   embossBitmapSvg,
   embossSvgCacheSize,
+  RELIEF_RECIPE,
+  reliefBitmapSvg,
+  reliefSvgCacheSize,
   projectEmbossStamps,
   projectEmbossPaths,
   type GradientRecipe,
@@ -455,5 +458,66 @@ describe('#509 2단계(c10) — projectEmbossPaths/embossBitmapSvg 올가미 다
     const pathA: EmbossPath[] = [{ points: [{ x: 0, y: 0 }, { x: 0.1, y: 0 }, { x: 0.05, y: 0.1 }] }];
     const pathB: EmbossPath[] = [{ points: [{ x: 0, y: 0 }, { x: 0.2, y: 0 }, { x: 0.1, y: 0.2 }] }];
     expect(embossBitmapSvg(stamps, pathA, 1.5)).not.toBe(embossBitmapSvg(stamps, pathB, 1.5));
+  });
+});
+
+describe('#732 d2 — 형압(볼록 압인) 비트맵 굽기(embossBitmapSvg=하이라이트와 별도 함수·별도 캐시)', () => {
+  const stamps: EmbossStamp[] = [{ x: 0.5, y: 0.5, r: 0.1 }];
+
+  test('caches by stamp/path/aspect key — 같은 입력은 재굽기 없이 같은 URL', () => {
+    const before = reliefSvgCacheSize();
+    const a = reliefBitmapSvg(stamps, [], 1.5);
+    const b = reliefBitmapSvg(stamps, [], 1.5);
+    expect(a).toBe(b);
+    expect(reliefSvgCacheSize()).toBe(before + 1);
+  });
+
+  test('빈 stamps + 빈 paths면 원도 다각형도 없다(호출부 게이트 전제, embossBitmapSvg와 동일 계약)', () => {
+    const svg = decodeURIComponent(reliefBitmapSvg([], [], 1.5));
+    expect(svg).not.toContain('<circle');
+    expect(svg).not.toContain('<polygon');
+  });
+
+  // 양감의 부호 잠금(#734 ac2) — --compare는 채널 최대 절대차만 내 부호를 못 가르므로, 굽힌
+  // SVG 문자열을 직접 검사한다. feDiffuseLighting 단독(하이라이트)과 달리 이 레시피는 블러한
+  // 알파를 광원 방향 ±로 복제한 feOffset 쌍이 밝은 면·어두운 면을 동시에 세운다는 게 핵심 —
+  // dx/dy 부호가 반대인 feOffset 두 개 + 서로 다른 flood-color 두 개가 그 물리의 직접 증거다.
+  test('밝은 면과 어두운 면이 마스크 경계의 서로 반대편에 동시에 선다 — feOffset dx/dy 부호가 반대인 쌍 + 서로 다른 flood-color 두 개', () => {
+    const svg = decodeURIComponent(reliefBitmapSvg(stamps, [], 1.5));
+    const offsets = Array.from(svg.matchAll(/<feOffset[^>]*dx="(-?[\d.]+)"\s+dy="(-?[\d.]+)"/g)).map((m) => ({
+      dx: Number(m[1]),
+      dy: Number(m[2]),
+    }));
+    expect(offsets.length).toBe(2);
+    // 같은 azimuth에서 나온 반대 방향 이동이라 성분별로 부호만 다르고 크기는 같다.
+    expect(offsets[0].dx).toBeCloseTo(-offsets[1].dx, 1);
+    expect(offsets[0].dy).toBeCloseTo(-offsets[1].dy, 1);
+    expect(offsets[0].dx === 0 && offsets[0].dy === 0).toBe(false); // 실제로 밀려 있어야 한다(0이면 겹쳐서 무의미)
+
+    const floodColors = Array.from(
+      new Set(Array.from(svg.matchAll(/flood-color="(#[0-9a-f]{6})"/g)).map((m) => m[1])),
+    );
+    // 밝은 면·어두운 면·평평한 코어 — 최소 밝은/어두운 둘은 서로 달라야 "동시에 선다"가 성립한다.
+    expect(floodColors.length).toBeGreaterThanOrEqual(2);
+  });
+
+  test('RELIEF_RECIPE 절대 톤이 인쇄 하한(톤 램프 양 끝 5% 붕괴 구간) 밖이다', () => {
+    // docs/PRINT_CALIBRATION.md 규칙 3 — 0~5%·95~100%는 인쇄에서 안 갈린다. 여유를 두고 대조.
+    expect(RELIEF_RECIPE.brightGray).toBeLessThanOrEqual(0.9);
+    expect(RELIEF_RECIPE.darkGray).toBeGreaterThanOrEqual(0.1);
+    expect(RELIEF_RECIPE.brightGray).toBeGreaterThan(RELIEF_RECIPE.coreGray);
+    expect(RELIEF_RECIPE.darkGray).toBeLessThan(RELIEF_RECIPE.coreGray);
+  });
+
+  test('embossBitmapSvg(하이라이트)와 다른 비트맵 — 같은 스탬프라도 레시피가 달라 다른 URL', () => {
+    expect(reliefBitmapSvg(stamps, [], 1.5)).not.toBe(embossBitmapSvg(stamps, [], 1.5));
+  });
+
+  test('offsetFrac은 px 상수가 아니라 분율이다(#734 c8, 규칙 6) — 굽기 폭에서 역산된다', () => {
+    const narrow = decodeURIComponent(reliefBitmapSvg(stamps, [], 3)); // 가로가 좁은 aspect
+    const wide = decodeURIComponent(reliefBitmapSvg(stamps, [], 1 / 3)); // 가로가 넓은 aspect
+    const dxOf = (svg: string) => Number(svg.match(/<feOffset[^>]*dx="(-?[\d.]+)"/)?.[1]);
+    // 렌더 폭이 다르면 절대 dx px도 달라야 한다 — 상수면 이 값이 항상 같다.
+    expect(dxOf(narrow)).not.toBeCloseTo(dxOf(wide), 0);
   });
 });
