@@ -20,6 +20,9 @@ interface ResultStageProps {
   embossStamps?: EmbossStamp[];
   embossPaths?: EmbossPath[];
   embossIntensity?: number;
+  reliefStamps?: EmbossStamp[];
+  reliefPaths?: EmbossPath[];
+  reliefIntensity?: number;
 }
 
 /**
@@ -39,6 +42,9 @@ export function ResultStage({
   embossStamps,
   embossPaths,
   embossIntensity,
+  reliefStamps,
+  reliefPaths,
+  reliefIntensity,
 }: ResultStageProps) {
   const layout = getLayout(components.layout);
   // PREVIEW_MAX_HEIGHT(72vh)는 정적 대형 뷰포트 기준이라 Safari 동적 툴바가 떠 있는 실기기에서는
@@ -109,6 +115,9 @@ export function ResultStage({
               embossStamps={embossStamps}
               embossPaths={embossPaths}
               embossIntensity={embossIntensity}
+              reliefStamps={reliefStamps}
+              reliefPaths={reliefPaths}
+              reliefIntensity={reliefIntensity}
             />
           </PreviewFilmCell>
           {/* 바닥 그림자 — hero가 화면에 떠 보이도록 아래에 흐린 타원 그림자를 깐다.
@@ -135,6 +144,9 @@ export function ResultStage({
             embossStamps={embossStamps}
             embossPaths={embossPaths}
             embossIntensity={embossIntensity}
+            reliefStamps={reliefStamps}
+            reliefPaths={reliefPaths}
+            reliefIntensity={reliefIntensity}
             hidePreview
           />
         </div>
