@@ -40,7 +40,7 @@ const CREDIT_CUT_TOP = 988;
 const CREDIT_CUT_H = 420;
 
 export const Mood35mm = memo(function Mood35mm(props: MoodProps) {
-  const { movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, onPosterTap, embossStamps, embossPaths, embossIntensity } = props;
+  const { movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, onPosterTap, embossStamps, embossPaths, embossIntensity, reliefStamps, reliefPaths, reliefIntensity } = props;
   const { releaseClean } = resolveTicketData(d);
 
   const titleVal = gate(fv?.title, d.title);
@@ -103,6 +103,9 @@ export const Mood35mm = memo(function Mood35mm(props: MoodProps) {
             embossStamps={embossStamps}
             embossPaths={embossPaths}
             embossIntensity={embossIntensity}
+            reliefStamps={reliefStamps}
+            reliefPaths={reliefPaths}
+            reliefIntensity={reliefIntensity}
           />
         </div>
 

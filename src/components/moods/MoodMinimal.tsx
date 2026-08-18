@@ -75,7 +75,7 @@ const TITLE_MIN_SIZE = 38;
 // 역산한 안전 상한 — 두 로고가 동시에 5:1 근접 종횡비여도 폭 예산 안에 든다.
 export const MINIMAL_STAMP_MAX_SCALE = 1.1;
 
-export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap, embossStamps, embossPaths, embossIntensity }: MoodProps) {
+export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components, croppedImageUrl, fieldVisibility: fv, ghost, onField, onPosterTap, embossStamps, embossPaths, embossIntensity, reliefStamps, reliefPaths, reliefIntensity }: MoodProps) {
   const themeColor = components.themeColor || '#FFFFFF';
   const inkIsDark = isInkDark(themeColor);
   const ink = resolveInk(themeColor, inkIsDark ? '#0d0c0a' : '#FFFFFF');
@@ -190,6 +190,7 @@ export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components,
         materialIntensity={components.materialIntensity} coatingIntensity={components.coatingIntensity}
         posterOpacity={components.posterOpacity}
         embossStamps={embossStamps} embossPaths={embossPaths} embossIntensity={embossIntensity}
+        reliefStamps={reliefStamps} reliefPaths={reliefPaths} reliefIntensity={reliefIntensity}
         onTopBandHeight={setTopBandH}
       />
 

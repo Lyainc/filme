@@ -39,6 +39,10 @@ interface TicketRendererProps {
   /** 자석 올가미(#509 2단계, c10) — embossStamps와 나란한 세션 한정 프롭. */
   embossPaths?: EmbossPath[];
   embossIntensity?: number;
+  /** 볼록 압인 마스크(#732 d2 · #735) — embossStamps와 나란한 두 번째 벌. */
+  reliefStamps?: EmbossStamp[];
+  reliefPaths?: EmbossPath[];
+  reliefIntensity?: number;
 }
 
 const SCALE_EPSILON = 0.001;
@@ -55,7 +59,7 @@ const SCALE_EPSILON = 0.001;
 export const PREVIEW_MAX_HEIGHT = 'min(72vh, 720px)';
 
 const TicketRenderer = memo(forwardRef<HTMLDivElement, TicketRendererProps>(function TicketRenderer(
-  { croppedImageUrl, movieInfo, components, fieldVisibility, ghost, onField, onPosterTap, embossStamps, embossPaths, embossIntensity },
+  { croppedImageUrl, movieInfo, components, fieldVisibility, ghost, onField, onPosterTap, embossStamps, embossPaths, embossIntensity, reliefStamps, reliefPaths, reliefIntensity },
   ref
 ) {
   const layout = getLayout(components.layout);
@@ -119,6 +123,9 @@ const TicketRenderer = memo(forwardRef<HTMLDivElement, TicketRendererProps>(func
           embossStamps={embossStamps}
           embossPaths={embossPaths}
           embossIntensity={embossIntensity}
+          reliefStamps={reliefStamps}
+          reliefPaths={reliefPaths}
+          reliefIntensity={reliefIntensity}
         />
       </div>
     </div>
@@ -137,6 +144,9 @@ const Mood = memo(function Mood({
   embossStamps,
   embossPaths,
   embossIntensity,
+  reliefStamps,
+  reliefPaths,
+  reliefIntensity,
 }: {
   layoutId: LayoutId;
   croppedImageUrl: string | null;
@@ -149,8 +159,11 @@ const Mood = memo(function Mood({
   embossStamps?: EmbossStamp[];
   embossPaths?: EmbossPath[];
   embossIntensity?: number;
+  reliefStamps?: EmbossStamp[];
+  reliefPaths?: EmbossPath[];
+  reliefIntensity?: number;
 }) {
-  const props = { croppedImageUrl, movieInfo, components, fieldVisibility, ghost, onField, onPosterTap, embossStamps, embossPaths, embossIntensity };
+  const props = { croppedImageUrl, movieInfo, components, fieldVisibility, ghost, onField, onPosterTap, embossStamps, embossPaths, embossIntensity, reliefStamps, reliefPaths, reliefIntensity };
   switch (layoutId) {
     case 'minimal':
       return <MoodMinimal {...props} />;
