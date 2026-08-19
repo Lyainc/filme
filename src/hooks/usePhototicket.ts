@@ -852,10 +852,12 @@ export function usePhototicket() {
    * @param opts.layout          새 문서를 이 무드로 시작한다(무드 갤러리 탭). `updateComponents`가
    *                             아니라 여기로 싣는 이유는 그쪽이 dirtyTick을 올려 1초 뒤 자동저장이
    *                             걸리고, 그러면 c7이 지키려던 오탭 복구 창이 1초로 줄기 때문이다.
-   * @param opts.keepCropOriginal 크롭 원본을 유지한다. 포스터 경로는 `crop.openFile`이 이미 원본을
-   *                             새 파일로 갈아놨으므로 여기서 reset하면 크롭 중인 blob이 revoke된다.
+   * @param opts.keepPoster      방금 확정한 포스터 위에서 되돌린다 — 포스터 경로 전용. 크롭
+   *                             **성공 뒤에** 부르므로 `croppedImageUrl`과 크롭 원본은 이미 새 문서의
+   *                             것이라 유지하고(revoke도 안 한다), 노출셋은 첫 업로드 기본값으로 세운다.
+   *                             크롭 실패·취소면 애초에 안 불린다(복원된 문서가 그대로 남아야 한다).
    */
-  const resetDocument = useCallback((opts?: { layout?: TicketComponents['layout']; keepCropOriginal?: boolean }) => {
+  const resetDocument = useCallback((opts?: { layout?: TicketComponents['layout']; keepPoster?: boolean }) => {
     // 진행 중인 IndexedDB 복원 무효화(#727 c8) — 이걸 안 올리면 옛 포스터가 새 문서에 끼어든다.
     docEpochRef.current += 1;
     // 편집 직후(디바운스 대기 중) 리셋이 호출되는 경우, 예약된 자동저장이 옛 state로
@@ -875,7 +877,7 @@ export function usePhototicket() {
     // 형압 편집 모드도 전체 슬레이트 리셋 대상 — 안 하면 리셋 후에도 브러시 레이어가 뜬 채 남는다.
     setEmbossEditMode(false);
     // 크롭 원본·모달 상태도 전체 슬레이트 리셋 — 원본 blob은 posterCrop의 revoke effect가 푼다.
-    if (!opts?.keepCropOriginal) posterCrop.reset();
+    if (!opts?.keepPoster) posterCrop.reset();
     // 이미지 지문도 리셋 — 안 하면 리셋 직후 저장(이미지 없음)이 "직전과 동일"로 오판돼
     // IndexedDB가 안 비워질 수 있다(claude-review PR #515 P1 fingerprint 최적화와의 상호작용).
     lastPersistedImageFingerprintRef.current = '';
@@ -886,8 +888,10 @@ export function usePhototicket() {
     materialIntensityTouchedRef.current = false;
     coatingIntensityTouchedRef.current = false;
     setState((prev) => {
-      if (prev.croppedImageUrl) URL.revokeObjectURL(prev.croppedImageUrl);
-      latestUrlRef.current = null;
+      if (!opts?.keepPoster) {
+        if (prev.croppedImageUrl) URL.revokeObjectURL(prev.croppedImageUrl);
+        latestUrlRef.current = null;
+      }
       // chain/format 로고도 poster와 동일하게 처리 — 안 하면 blob이 탭 닫힐 때까지 안 풀린다.
       if (prev.components.chain.startsWith('blob:')) URL.revokeObjectURL(prev.components.chain);
       if (prev.components.format.startsWith('blob:')) URL.revokeObjectURL(prev.components.format);
@@ -897,6 +901,16 @@ export function usePhototicket() {
       latestFormatUrlRef.current = null;
       latestSignatureUrlRef.current = null;
       latestBgPatternUrlRef.current = null;
+      if (opts?.keepPoster) {
+        // 새 문서 + 방금 올린 포스터 = 첫 업로드 상태다 — handleImageUpload의 isFirstUpload가
+        // 세우는 것과 같은 노출셋을 여기서 명시한다. prev의 노출셋을 물려받으면 옛 draft의
+        // 필드 구성이 새 문서로 새어 들어온다.
+        return {
+          ...INITIAL_STATE,
+          croppedImageUrl: prev.croppedImageUrl,
+          fieldVisibility: DEFAULT_VISIBILITY_ON_UPLOAD,
+        };
+      }
       return opts?.layout
         ? { ...INITIAL_STATE, components: { ...INITIAL_STATE.components, layout: opts.layout } }
         : INITIAL_STATE;

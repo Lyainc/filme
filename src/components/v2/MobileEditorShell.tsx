@@ -587,7 +587,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   // 랜딩의 "새로 시작" 네 경로가 공유하는 진입 커밋(#727 c7) — 메모리 문서만 새 문서로 되돌리고
   // localStorage/IndexedDB 저장분은 그대로 둔다. 저장분이 덮이는 건 새 문서의 첫 자동저장이라,
   // 자동 회전 캐러셀 오탭 같은 사고가 새로고침 한 번으로 복구된다. "이어서 만들기"는 이걸 안 부른다.
-  function startFreshDoc(opts?: { layout?: LayoutId; keepCropOriginal?: boolean }) {
+  function startFreshDoc(opts?: { layout?: LayoutId; keepPoster?: boolean }) {
     photo.resetDocument(opts);
     // 새 문서 — 복원된 문서로 undo해 돌아가면 안 된다(#356 clear는 다음 상태를 새 베이스라인으로 잡는다).
     history.clear();
@@ -597,13 +597,21 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
     // 랜딩에서 올라온 첫 포스터는 "새로 시작"이다(c7). 교체·재크롭은 이미 이탈한 상태라 문서를
     // 안 건드린다 — 여기를 게이트 없이 리셋하면 포스터를 바꿀 때마다 문서가 통째로 날아간다.
     const fresh = !landingDismissed;
-    // keepCropOriginal: crop.openFile이 이미 원본을 새 파일로 갈아놨다 — 여기서 reset하면 지금
-    // getCroppedImg가 읽고 있는 blob이 revoke된다.
-    if (fresh) startFreshDoc({ keepCropOriginal: true });
-    const isFirstUpload = fresh || !photo.state.croppedImageUrl;
+    const isFirstUpload = !photo.state.croppedImageUrl;
     const ok = await crop.complete(area, preserveRatio);
-    if (!ok) return; // 실패 — 모달이 열린 채 남아 재시도 가능하고, 랜딩도 그대로다
-    if (fresh) setLandingDismissed(true);
+    // 실패(getCroppedImg 예외·await 사이 원본 교체)면 모달이 열린 채 남아 재시도 가능하고,
+    // 랜딩도 문서도 손대지 않은 그대로다.
+    if (!ok) return;
+    if (fresh) {
+      // **크롭이 성공한 뒤에** 되돌린다. 먼저 되돌리면 실패 토스트("다시 시도해 주세요") 뒤에
+      // 랜딩은 그대로인데 문서만 비어, "이어서 만들기"가 제목 없는 라벨로 빈 편집 화면을 열고
+      // 그 상태의 첫 편집이 멀쩡한 저장분을 덮는다(c7이 막으려는 그 유실). keepPoster는 방금
+      // 확정한 포스터·크롭 원본을 유지하고 노출셋만 첫 업로드 기본값으로 세운다 — setState가
+      // 전부 함수형이라 커밋 뒤에 큐에 들어가도 결과는 같다.
+      startFreshDoc({ keepPoster: true });
+      setLandingDismissed(true);
+      return; // startFreshDoc이 이미 history.clear()를 했다
+    }
     // 첫 업로드는 문서 시작 — 같이 일어나는 fieldVisibility 기본셋 리셋이 undo 1스텝으로
     // 잡히면 시작하자마자 undo가 활성돼 어색하다(#356). 교체는 히스토리 유지(포스터 자체는
     // 스냅샷 밖이라 스텝도 안 생긴다).

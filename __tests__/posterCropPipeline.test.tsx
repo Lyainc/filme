@@ -34,6 +34,9 @@ import { mobileShellProps } from './shellHarness';
 let cropN = 0;
 let holdCrop = false;
 let releaseCrop: (() => void) | null = null;
+// failCrop: getCroppedImg를 던지게 한다 — usePosterCrop.complete가 false를 돌려주는 실패 분기
+// (canvas/SVG 오류)를 재현한다. #727에서 그 분기가 문서를 건드리면 안 된다는 계약이 생겼다.
+let failCrop = false;
 // 스프레드 스냅샷 + afterAll 복원(#611·#618) — `require()`가 주는 건 살아있는 네임스페이스라
 // mock.module이 그 객체를 제자리에서 갈아끼운다. 복사본으로 떠 둬야 복원이 진짜 복원이 된다.
 // 안 되돌리면 이 getCroppedImg 스텁이 프로세스 끝까지 남아, 같은 모듈을 쓰는 뒤 파일이
@@ -42,7 +45,11 @@ const realImageCrop = { ...require('@/utils/imageCrop') };
 mock.module('@/utils/imageCrop', () => ({
   ...realImageCrop,
   getCroppedImg: () =>
-    new Promise<string>((resolve) => {
+    new Promise<string>((resolve, reject) => {
+      if (failCrop) {
+        reject(new Error('canvas unavailable (mock)'));
+        return;
+      }
       const url = `blob:cropped-${++cropN}`;
       if (holdCrop) releaseCrop = () => resolve(url);
       else resolve(url);
@@ -102,11 +109,73 @@ afterEach(() => {
   cropN = 0;
   holdCrop = false;
   releaseCrop = null;
+  failCrop = false;
   mock.restore(); // mock()/spyOn()만 되돌린다 — 모듈 mock은 아래 afterAll이 따로 푼다.
 });
 
 afterAll(() => {
   mock.module('@/utils/imageCrop', () => realImageCrop);
+});
+
+/**
+ * 랜딩 이탈이 걸리는 시점(#727 c2) — 다섯 이탈 중 포스터 축은 **크롭 확정**에 붙는다. 파일 선택
+ * (c4)도, 크롭 취소도, 크롭 실패도 아니다. 이 셋을 갈라 재지 않으면 "언제 걷히나"가 통째로
+ * 검증 밖으로 나간다 — landingOverlay는 파일 선택까지만, 위 상태머신 describe는 원본 수명만 본다.
+ *
+ * 실패 분기가 특히 중요하다: 문서 리셋을 크롭 **전**에 걸면 실패 토스트 뒤에 랜딩은 그대로인데
+ * 복원된 문서만 비어, "이어서 만들기"가 빈 편집 화면을 열고 그 첫 편집이 멀쩡한 저장분을 덮는다.
+ */
+describe('랜딩 이탈은 크롭 확정에만 걸린다 (#727 c2)', () => {
+  const STORAGE_KEY = 'filme:phototicket:v1';
+  const landing = () => screen.getByTestId('landing');
+  const seedDraft = () =>
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ movieInfo: { title: '인터스텔라' } })
+    );
+
+  test('크롭 확정이 랜딩을 걷고, 복원된 문서는 새 문서로 되돌아간다', async () => {
+    seedDraft();
+    const user = userEvent.setup();
+    render(<MobileHarness />);
+    expect(landing().classList.contains('fixed')).toBe(true);
+
+    await user.click(uploadCta());
+    await pickAndApply(user, 'a.png');
+
+    expect(landing().classList.contains('hidden')).toBe(true);
+    // 새 문서다 — 옛 draft의 제목이 안 따라온다. 저장분은 그대로 살아 있다(c7).
+    expect(document.body.textContent).not.toContain('인터스텔라');
+    expect(window.localStorage.getItem(STORAGE_KEY)).toContain('인터스텔라');
+  });
+
+  test('크롭이 실패하면 랜딩도 복원된 문서도 손대지 않는다', async () => {
+    seedDraft();
+    failCrop = true;
+    const user = userEvent.setup();
+    render(<MobileHarness />);
+
+    await user.click(uploadCta());
+    await pickAndApply(user, 'a.png');
+
+    // 모달은 열린 채로 남아 재시도 가능하고, 랜딩은 오버레이 그대로다.
+    expect(!!cropDialog()).toBe(true);
+    expect(landing().classList.contains('fixed')).toBe(true);
+    // 복원된 문서가 살아 있다 — 복원 행 라벨이 제목을 그대로 싣고 있는 게 근거다.
+    expect(screen.getByTestId('landing-restore').textContent).toContain('인터스텔라');
+  });
+
+  test('크롭을 취소해도 랜딩은 오버레이 그대로다', async () => {
+    seedDraft();
+    const user = userEvent.setup();
+    render(<MobileHarness />);
+
+    await user.click(uploadCta());
+    await pickAndCancel(user, 'a.png');
+
+    expect(landing().classList.contains('fixed')).toBe(true);
+    expect(screen.getByTestId('landing-restore').textContent).toContain('인터스텔라');
+  });
 });
 
 describe('포스터 크롭 상태머신 (#182 PR #191 · #315, 실제 파일-선택 경로)', () => {
