@@ -269,6 +269,11 @@ export function usePhototicket() {
   // AUTOSAVE_MAX_WAIT_MS 계산용 — 저장이 안 걸린 채로 dirtyTick이 연속 갱신되는 구간의 시작 시각.
   // 저장(디바운스 fire·visibilitychange flush)이나 clearDraft가 일어나면 null로 되돌아간다.
   const autoSaveFirstDirtyAtRef = useRef<number | null>(null);
+  // 문서 세대(#727 c8) — resetDocument가 올린다. 진행 중인 IndexedDB 복원이 `.then`에서 주입하기
+  // 직전에 이 값을 대조해, 새 문서로 갈아탄 뒤 도착한 옛 이미지를 버린다. 기존 `cancelled` 플래그는
+  // 언마운트/StrictMode 이중 마운트만 막지 "같은 마운트 안에서 문서가 바뀐 것"을 모른다.
+  // 같은 처방의 선례가 OCR 보강의 ocrEpochRef다(#388 / claude-review PR #413 P0, 커밋 007f381).
+  const docEpochRef = useRef(0);
   // 크롭 원본 시드 경로의 latest-ref(saveDraftRef와 동일 패턴) — handleImageUpload는 소비자가
   // 많아 stable해야 하는데 아래 usePosterCrop보다 먼저 정의되므로 이 ref로 순환을 끊는다.
   const seedOriginalRef = useRef<(url: string | null) => void>(() => {});
@@ -395,9 +400,13 @@ export function usePhototicket() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     let cancelled = false;
+    // 이 복원이 시작된 시점의 문서 세대(#727 c8) — 도착 전에 사용자가 랜딩에서 "새로 시작"을
+    // 골랐으면(resetDocument) 세대가 어긋나 여기서 통째로 버린다. objectURL을 만들기 **전에**
+    // 반환해야 orphan blob URL이 안 생긴다.
+    const epoch = docEpochRef.current;
     loadImages()
       .then((images) => {
-        if (cancelled) return;
+        if (cancelled || docEpochRef.current !== epoch) return;
         const chainUrl = images.chain ? URL.createObjectURL(images.chain) : null;
         const formatUrl = images.format ? URL.createObjectURL(images.format) : null;
         const signatureUrl = images.signature ? URL.createObjectURL(images.signature) : null;
@@ -831,46 +840,49 @@ export function usePhototicket() {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
-  // #310: 저장분 삭제 + 상태를 INITIAL_STATE로 되돌린다(파괴적 — 호출부에서 확인 UX를 거친다).
-  // croppedImageUrl은 handleImageUpload의 revoke 패턴과 동일하게 교체 전 먼저 해제한다.
-  const clearDraft = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        window.localStorage.removeItem(STORAGE_KEY);
-      } catch {
-        // 삭제 실패(프라이빗 모드 등)는 무시 — best-effort.
-      }
-    }
-    void clearImages().catch(() => {
-      // IndexedDB 삭제 실패(미지원·프라이빗 모드)는 무시 — best-effort.
-    });
-    // 편집 직후(디바운스 대기 중) clearDraft가 호출되는 경우, 예약된 자동저장이 옛 state로
+  /**
+   * 메모리 문서만 새 문서로 되돌린다 — `localStorage`/IndexedDB 저장분은 **안 건드린다**(#727 c7).
+   *
+   * 랜딩의 "새로 시작" 네 경로(OCR·포스터 크롭 확정·직접 입력·무드 갤러리 탭)가 부른다. 저장분을
+   * 그 자리에서 지우면 석 달 전 draft가 오탭 한 번에 되돌릴 수 없이 사라지므로, 덮이는 시점은
+   * **새 문서의 첫 자동저장**으로 미룬다(그 전까지는 새로고침 한 번으로 "이어서 만들기"가 돌아온다).
+   * 랜딩에 머무는 동안 아무것도 안 써지는 근거는 자동저장의 `dirtyTick === 0` 게이트다 — 복원·리셋은
+   * dirtyTick을 안 올린다.
+   *
+   * @param opts.layout          새 문서를 이 무드로 시작한다(무드 갤러리 탭). `updateComponents`가
+   *                             아니라 여기로 싣는 이유는 그쪽이 dirtyTick을 올려 1초 뒤 자동저장이
+   *                             걸리고, 그러면 c7이 지키려던 오탭 복구 창이 1초로 줄기 때문이다.
+   * @param opts.keepCropOriginal 크롭 원본을 유지한다. 포스터 경로는 `crop.openFile`이 이미 원본을
+   *                             새 파일로 갈아놨으므로 여기서 reset하면 크롭 중인 blob이 revoke된다.
+   */
+  const resetDocument = useCallback((opts?: { layout?: TicketComponents['layout']; keepCropOriginal?: boolean }) => {
+    // 진행 중인 IndexedDB 복원 무효화(#727 c8) — 이걸 안 올리면 옛 포스터가 새 문서에 끼어든다.
+    docEpochRef.current += 1;
+    // 편집 직후(디바운스 대기 중) 리셋이 호출되는 경우, 예약된 자동저장이 옛 state로
     // 저장 키를 되살리지 못하게 직접 취소한다(claude-review PR #488 P1).
     if (autoSaveTimerRef.current) {
       clearTimeout(autoSaveTimerRef.current);
       autoSaveTimerRef.current = null;
     }
     autoSaveFirstDirtyAtRef.current = null;
-    // 복원 관련 상태도 전체 슬레이트 리셋 대상 — 안 하면 초기화 후 새로 업로드해도 "복원된 draft에
+    // 복원 관련 상태도 전체 슬레이트 리셋 대상 — 안 하면 리셋 후 새로 업로드해도 "복원된 draft에
     // 포스터가 있었다"는 표시가 남아 isFirstUpload가 영구히 오판된다(#489).
     restoredDraftHadPosterRef.current = false;
     setAwaitingPosterRestore(false);
-    // 초기화는 저장분을 지우는 것이므로 "복원된 세션"도 아니게 된다 — 안 되돌리면 랜딩이
-    // 영영 안 뜨고, 포스터도 draft도 없는 빈 편집 셸에 남는다(#614). 첫 페인트 게이트(#675)도
-    // 같은 명제를 CSS 쪽에서 들고 있으므로 나란히 거둔다 — 한쪽만 되돌리면 같은 빈 셸이 된다.
+    // 새 문서는 "복원된 세션"이 아니다 — 안 되돌리면 이 문서를 저장한 적도 없는데 재방문으로
+    // 취급된다.
     setDraftRestored(false);
-    clearDraftPaintGate();
-    // 형압 편집 모드도 전체 슬레이트 리셋 대상 — 안 하면 초기화 후에도 브러시 레이어가 뜬 채 남는다.
+    // 형압 편집 모드도 전체 슬레이트 리셋 대상 — 안 하면 리셋 후에도 브러시 레이어가 뜬 채 남는다.
     setEmbossEditMode(false);
     // 크롭 원본·모달 상태도 전체 슬레이트 리셋 — 원본 blob은 posterCrop의 revoke effect가 푼다.
-    posterCrop.reset();
-    // 이미지 지문도 리셋 — 안 하면 초기화 직후 저장(이미지 없음)이 "직전과 동일"로 오판돼
+    if (!opts?.keepCropOriginal) posterCrop.reset();
+    // 이미지 지문도 리셋 — 안 하면 리셋 직후 저장(이미지 없음)이 "직전과 동일"로 오판돼
     // IndexedDB가 안 비워질 수 있다(claude-review PR #515 P1 fingerprint 최적화와의 상호작용).
     lastPersistedImageFingerprintRef.current = '';
     brightnessTouchedRef.current = false;
-    // 초기화는 전체 슬레이트 리셋이라 강도 touched도 함께 되돌린다(#434 PR #472 리뷰 P1, #475 축분리) —
-    // 안 하면 초기화 후 축을 바꿔도 그 축 기본 강도가 적용되지 않고 리셋 전 touched가 남는다.
-    // (handleImageUpload은 강도를 의도적으로 유지하지만 clearDraft는 밝기와 대칭으로 리셋한다.)
+    // 새 문서는 전체 슬레이트 리셋이라 강도 touched도 함께 되돌린다(#434 PR #472 리뷰 P1, #475 축분리) —
+    // 안 하면 리셋 후 축을 바꿔도 그 축 기본 강도가 적용되지 않고 리셋 전 touched가 남는다.
+    // (handleImageUpload은 강도를 의도적으로 유지하지만 이쪽은 밝기와 대칭으로 리셋한다.)
     materialIntensityTouchedRef.current = false;
     coatingIntensityTouchedRef.current = false;
     setState((prev) => {
@@ -885,9 +897,30 @@ export function usePhototicket() {
       latestFormatUrlRef.current = null;
       latestSignatureUrlRef.current = null;
       latestBgPatternUrlRef.current = null;
-      return INITIAL_STATE;
+      return opts?.layout
+        ? { ...INITIAL_STATE, components: { ...INITIAL_STATE.components, layout: opts.layout } }
+        : INITIAL_STATE;
     });
   }, [posterCrop.reset]);
+
+  // #310: 저장분 삭제 + 문서 리셋(파괴적 — 호출부에서 확인 UX를 거친다). 문서 리셋 조각은
+  // resetDocument와 공유하고, 여기만 저장분과 첫 페인트 게이트까지 지운다(#727 c7이 가른 축).
+  const clearDraft = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.removeItem(STORAGE_KEY);
+      } catch {
+        // 삭제 실패(프라이빗 모드 등)는 무시 — best-effort.
+      }
+    }
+    void clearImages().catch(() => {
+      // IndexedDB 삭제 실패(미지원·프라이빗 모드)는 무시 — best-effort.
+    });
+    // 저장분이 없어졌으니 첫 페인트 게이트(#675 → #727 c9로 의미가 "복원 행을 드러낸다"로 뒤집혔다)도
+    // 나란히 거둔다 — 안 거두면 새 문서인데 랜딩에 "이어서 만들기"가 남아 없는 draft를 가리킨다.
+    clearDraftPaintGate();
+    resetDocument();
+  }, [resetDocument]);
 
   useEffect(() => {
     return () => {
@@ -923,6 +956,8 @@ export function usePhototicket() {
     setHistorySnapshots,
     saveDraft,
     clearDraft,
+    // 저장분을 남긴 채 문서만 되돌린다(#727 c7) — 랜딩의 "새로 시작" 네 경로가 쓴다.
+    resetDocument,
     autoSaveEnabled,
     lastSavedAt,
     toggleAutoSave,
