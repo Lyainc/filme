@@ -396,20 +396,57 @@ try {
 
   await landingCtx.close();
 
-  // D7 — 드래프가 복원된 메인 페이지엔 랜딩이 **덮고 있으면** 안 된다. 덮고 있으면 아래 측정
-  // 전부가 오버레이 뒤에서 돌아 숫자는 멀쩡한데 화면은 랜딩인 채로 "통과"한다.
-  // 포스터가 아직 없으므로 랜딩은 사라지는 게 아니라 in-flow(진입 컨트롤만) 모드로 남는다 —
-  // 판정은 "fixed로 셸을 덮고 있나"다. 엘리먼트가 아예 없으면 실패로 친다(있어야 할 게 없는 것도
-  // 회귀이고, 여기서 true를 주면 이 스크립트가 없애려는 그 조용한 성공이 된다).
-  // #675로 축이 하나 더 붙었다: 오버레이로 덮고 있으면 안 되지만 **숨어서도 안 된다**. 첫 페인트
-  // 게이트(html.has-draft)가 .fixed 대신 랜딩 전체를 먹으면 이 상태(포스터도 캔버스도 없는 재방문)의
-  // 유일한 진입 표면이 사라져 빈 셸이 된다 — display:none을 통과로 치던 옛 판정은 그걸 못 봤다.
-  const landingSkippedOnDraft = await page.evaluate(() => {
+  // #727 c1 — **뒤집힌 명제다.** 예전 `landingSkippedOnDraft`는 "draft가 있으면 랜딩이 안 덮는다"
+  // (#675 D7)를 잠갔는데, #727이 그 정책을 뒤집어 랜딩을 상시 노출로 바꿨다. 그래서 지금 재는 건
+  // 정반대다: draft를 심은 이 페이지에서 랜딩이 **fixed로 덮고 있고, 숨지 않았고, 복원 진입점을
+  // 담고 있는가.** 엘리먼트가 아예 없으면 실패로 친다(있어야 할 게 없는 것도 회귀이고, 여기서
+  // true를 주면 이 스크립트가 없애려는 그 조용한 성공이 된다).
+  //
+  // 복원 행은 React state가 아니라 CSS(html.has-draft, globals.css)로 드러나므로(c9), 이 축이
+  // 첫 페인트 게이트 세 파일의 합의를 브라우저에서 실제로 확인하는 유일한 자리이기도 하다 —
+  // `bun test`의 landingPaintGate는 문자열 대조까지만 한다.
+  const landingShownOnDraft = await page.evaluate(() => {
     const el = document.querySelector('[data-testid="landing"]');
-    if (!el) return false;
+    if (!el) return { present: false, pass: false };
     const s = getComputedStyle(el);
-    return s.position !== 'fixed' && s.display !== 'none';
+    const restore = el.querySelector('[data-testid="landing-restore"]');
+    const restoreShown = !!restore && getComputedStyle(restore).display !== 'none';
+    return {
+      present: true,
+      position: s.position,
+      display: s.display,
+      restoreShown,
+      // ac9 — 복원 행을 얹어도 오버레이가 스크롤을 만들면 안 된다(c11). 오버레이는 overflow-y-auto라
+      // 넘쳐도 조용히 흡수돼, 주 CTA가 접힌 아래로 내려간 걸 rect만으로는 못 본다.
+      scrollHeight: el.scrollHeight,
+      clientHeight: el.clientHeight,
+      pass:
+        s.position === 'fixed' &&
+        s.display !== 'none' &&
+        restoreShown &&
+        el.scrollHeight <= el.clientHeight + 0.5,
+    };
   });
+
+  // ac9 — 복원 행과 주 CTA가 프레임 사각형 안인지. **draft를 심은 이 페이지에서 재야 한다** —
+  // 위 landingCtx는 저장분이 없어 복원 행이 display:none이고, 거기서 재면 조용히 통과한다.
+  await measureFit('복원 행', '[data-testid="landing-restore"]');
+  await measureFit('랜딩 주 CTA', '[data-testid="landing"] button[aria-label="티켓 스크린샷으로 자동입력"]');
+
+  // 여기서 draft를 **이어받아** 편집으로 들어간다(c5). 아래 측정 전부가 랜딩 오버레이 뒤에서 돌면
+  // 안 되고, 그렇다고 "새로 시작" 네 경로로 들어가면 문서가 새 문서로 되돌아가(c7) 이 페이지가
+  // 심어둔 title·titleOg·releaseDate가 사라져 완료 게이트가 안 선다 — 결과 스테이지 축이 통째로
+  // 죽는다. 이어받기는 그 둘을 동시에 만족하는 유일한 경로다.
+  await page.evaluate(() => document.querySelector('[data-testid="landing-restore"]')?.click());
+  // 실패해도 던지지 않는다 — 위 축이 이미 pass:false로 exit 1을 내고, 여기서 throw하면 나머지 축
+  // (dock·프리뷰·frameFit·대비·모달) 진단까지 같이 날아간다. 파괴 실험에서 실제로 그랬다.
+  landingShownOnDraft.dismissed = await page
+    .waitForFunction(
+      () => getComputedStyle(document.querySelector('[data-testid="landing"]')).display === 'none',
+      { timeout: 15000 },
+    )
+    .then(() => true)
+    .catch(() => false);
 
   // 흰 포스터 = 대비 최악 케이스(#569가 세운 기준과 동일). ImageMagick 없이 canvas로 만든다.
   await page.evaluate(async () => {
@@ -796,7 +833,7 @@ try {
     drawerContrast,
     modal,
     frameFit: { items: fits, fails: fitFails, pass: fitFails.length === 0 },
-    landingSkippedOnDraft,
+    landingShownOnDraft,
     posterless,
     backdrop,
     carousel,
@@ -812,7 +849,7 @@ try {
     !invariant.checked ||
     !invariant.pass ||
     fitFails.length > 0 ||
-    !landingSkippedOnDraft ||
+    !landingShownOnDraft.pass ||
     !posterless.pass ||
     !backdrop.pass ||
     contrastFails.length > 0 ||
