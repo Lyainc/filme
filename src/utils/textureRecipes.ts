@@ -610,6 +610,14 @@ export function embossSvgCacheSize(): number {
  * 톤 램프 양 끝 5% 붕괴)을 구조적으로 지킨다 — EMBOSS_RECIPE의 midSlope/midIntercept처럼
  * 사후에 압축하는 대신, 애초에 안전 대역 안의 색만 굽는다. offsetFrac·erodeFrac·bevelFrac
  * 전부 분율이다(규칙 6) — px 상수를 굽기 좌표계에 박지 않는다.
+ *
+ * 재확인(에픽 #732, 2026-08-19): brightGray/darkGray는 각각 극단(0/1)에서 0.2만큼 떨어져 있어
+ * 규칙 3의 붕괴 하한(0.08)보다 4배 여유다 — 규칙 3이 원래 겨눈 대상은 "배경 도상" 절의 패턴
+ * alpha지만(다른 렌더 경로), 같은 물리(톤 극단 근처 붕괴)를 재사용하는 거라 이 여유로 안전하다고
+ * 본다. intensity(사용자 강도 슬라이더, `<= 0`이면 아예 안 그림)는 이 절대색 자체를 흔들지
+ * 않고 globalAlpha로 베이스와 섞는 세기만 조절하므로 위 마진과 무관하다. bevelFrac·offsetFrac·
+ * erodeFrac은 reliefBitmapSvg에서 전부 `frac * w`(w = 굽기 해상도에서 계산한 렌더폭)로만
+ * 쓰여 규칙 6도 코드로 확인됨 — viewBox·필터 좌표계 어디에도 절대 px 상수가 없다.
  */
 export interface ReliefRecipe {
   kind: 'relief';
