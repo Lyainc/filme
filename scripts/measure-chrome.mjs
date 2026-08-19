@@ -447,6 +447,10 @@ try {
     )
     .then(() => true)
     .catch(() => false);
+  // **게이트에 싣는다**(#714 — "잰다"와 "게이트에 실린다"는 다르다). 안 실으면 onRestore가 랜딩을
+  // 못 걷어도 pass는 위 evaluate 시점 값 그대로 true이고, 아래 축 전부가 `el.click()`(fixed
+  // 오버레이가 안 가로챈다)으로 계속 돌아 "숫자는 멀쩡한데 화면은 랜딩인 채로" exit 0이 난다.
+  landingShownOnDraft.pass = landingShownOnDraft.pass && landingShownOnDraft.dismissed;
 
   // 흰 포스터 = 대비 최악 케이스(#569가 세운 기준과 동일). ImageMagick 없이 canvas로 만든다.
   await page.evaluate(async () => {

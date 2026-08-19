@@ -208,10 +208,13 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
     expect(screen.getByTestId('landing')).toBeTruthy();
     // 주 CTA·이탈 경로는 unmount가 아니라 그 루트의 CSS hidden 안에 남는다(#614/#624 remount 금지
     // 계약 유지) — 트리에서 빠지면 OcrUploadCard 단일 인스턴스 계약이 깨진다.
+    // `closest('.hidden')`으로 재는 게 하중이다 — 둘이 같은 래퍼에 있다는 것만 재면 그 래퍼가
+    // testid로 잡은 형제라 구조상 항상 참이라, 숨김이 통째로 사라져도 통과한다.
     const ctaWrap = screen.getByTestId('landing-exit-paths').parentElement!;
     expect(ctaWrap.contains(ocrCard)).toBe(true);
     expect(ctaWrap.contains(posterExit)).toBe(true);
-    expect(landing().contains(ctaWrap)).toBe(true);
+    expect(!!ocrCard.closest('.hidden')).toBe(true);
+    expect(!!posterExit.closest('.hidden')).toBe(true);
   });
 
   // claude-review PR #658 P1 — 초기화(handleClearTap)가 landingDismissed를 false로 되돌리는 줄을
