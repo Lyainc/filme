@@ -38,7 +38,7 @@ import type { Area } from '@/utils/imageCrop';
 import { useEditHistory } from '@/hooks/useEditHistory';
 import { useOcrUndo } from '@/hooks/useOcrUndo';
 import type { usePhototicket } from '@/hooks/usePhototicket';
-import type { MovieInfo, TicketComponents, TicketField } from '@/types';
+import type { LayoutId, MovieInfo, TicketComponents, TicketField } from '@/types';
 import { isStampTarget, STAMP_KEYS, type SheetTarget } from '@/constants/fields';
 import { ErrorToastHost } from '@/utils/errorToast';
 
@@ -295,28 +295,22 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   // 초기화 2탭 arm(#374, 시안 clearArm) — window.confirm 대체. 1탭에 arm(라벨이 확인 문구로
   // 바뀌고 3.2초 뒤 자동 해제), arm 상태에서 한 번 더 탭해야 실행. 메뉴가 닫히면 함께 해제.
   const [clearArmed, setClearArmed] = useState(false);
-  // 랜딩 오버레이를 사용자가 걷었는지(#614). 걷는 조건 3가지 중 이 state가 필요한 건 OCR뿐이다 —
-  // 드래프 복원은 photo.draftRestored가, CTA 파일 선택은 crop.cropOpen/croppedImageUrl이 이미
-  // 말해준다(아래 showLanding). 초기화(handleClearTap)가 false로 되돌려 랜딩이 복귀한다.
+  // 랜딩을 사용자가 **떠났는가** — 랜딩 표시 판정의 단일 소스다(#727 c2, #675 D7 뒤집기).
+  // 예전엔 draftRestored·croppedImageUrl·crop.cropOpen 같은 파생값을 섞었는데, 그러면 "사용자가
+  // 방금 크롭했다"와 "IndexedDB 복원이 포스터를 늦게 가져왔다"가 구분되지 않아 포스터 있던 draft
+  // 재방문에서 랜딩이 도로 숨었다. 이탈을 state로 명시하면 그 구분이 공짜로 생긴다.
+  // 세우는 다섯 경로: OCR 적용 · 포스터 크롭 확정 · 직접 입력 · 무드 갤러리 탭 · 이어서 만들기.
+  // 초기화(handleClearTap)가 false로 되돌려 랜딩이 복귀한다.
   const [landingDismissed, setLandingDismissed] = useState(false);
-  // OCR이 실제로 필드를 채운 적이 있는가(#652) — landingDismissed는 onSkip과 onOcrApply 둘 다
-  // 세우지만 이 신호는 후자만 세운다. #388(편집 중엔 OCR 진입점이 드로어 하나)과 #631 D2(a)
-  // (포스터 재진입 동선은 랜딩 inline 자체)가 부딪히는 지점인데, 이 신호가 서면 #388이 이긴다 —
-  // Landing 컨테이너 자체(mode)는 그대로 inline으로 두되(#631 D1 유지), 그 안의 주 CTA(children=
-  // OcrUploadCard)와 이탈 경로 줄을 통째로 CSS로 숨겨 드로어를 유일한 재진입점으로 만든다.
-  // '직접 입력'(onSkip)만 거친 상태는 이 신호가 안 서므로 #631의 포스터 재진입 동선이 그대로
-  // 남는다. 초기화(handleClearTap)가 false로 되돌린다.
-  const [ocrApplied, setOcrApplied] = useState(false);
-  // 포스터가 없어도 편집 캔버스는 설 수 있다(#631) — "포스터가 있다"(croppedImageUrl)와 "편집할
-  // 캔버스가 섰다"는 다른 명제다. 랜딩의 "포스터 없이 시작"(onSkip)이 landingDismissed를 세워
-  // canvasReady를 연다. 랜딩 자체를 숨길지는 별개 판정(D1, 아래 Landing mode) — croppedImageUrl
-  // 없이 landingDismissed만으로는 랜딩을 안 숨긴다. #614 걷는 조건 ③과 계약이 같다.
-  // photo.awaitingPosterRestore(#683, #675 잔여) — 포스터가 있던 draft 재방문은 draftRestored가
-  // 동기로 서서 오버레이는 안 뜨지만(#675), croppedImageUrl은 IndexedDB에서 비동기로 온다. 그 창
-  // 동안 이 신호가 없으면 canvasReady=false라 Landing이 "텍스트만 있던 draft" 전용 inline 모드로
-  // 떨어져 포스터 도착까지 잠깐 보였다 사라진다. 포스터리스 캔버스(#631)는 이미 croppedImageUrl=
-  // null을 지원하므로, 대기 중엔 그 화면을 먼저 보여주는 쪽이 "곧 없어질 inline 블록"보다 낫다.
-  // IDB 복원이 실패하면 훅이 이 신호를 스스로 false로 풀어 기존 재업로드 유도 inline이 되살아난다.
+  // ocrApplied(#652)는 #727에서 삭제됐다 — 그 신호가 하던 일(OCR 적용 후 랜딩 본문의 주 CTA·이탈
+  // 경로를 CSS로 숨겨 드로어를 유일한 재진입점으로 만들기, #388 > #631 D2 a)은 이제 Landing
+  // 컨테이너 자체가 한다: OCR 적용은 landingDismissed를 세우고 그게 곧 mode='hidden'이라
+  // 안쪽 블록을 따로 숨길 상태가 코드상 존재하지 않는다(inline 소멸, c3).
+  // 편집 크롬(완료·드로어·툴바·레일)을 열지 판정하는 **셸 게이트**다 — #727부터 랜딩 표시와는
+  // 완전히 갈렸다(랜딩은 landingDismissed 하나로만 판정한다, c2). 포스터가 없어도 편집 캔버스는
+  // 설 수 있다(#631) — "포스터가 있다"(croppedImageUrl)와 "편집할 캔버스가 섰다"는 다른 명제다.
+  // photo.awaitingPosterRestore(#683)는 포스터 있던 draft 재방문에서 croppedImageUrl이 IndexedDB
+  // 왕복을 기다리는 창을 메운다 — 그 창에도 크롬이 서 있어야 랜딩 뒤가 빈 셸이 아니다.
   const canvasReady = !!croppedImageUrl || landingDismissed || photo.awaitingPosterRestore;
   const clearArmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // 습관적 더블탭이 arm과 실행을 한 번에 뚫지 않게 arm 직후 재탭은 무시(claude-review PR #375 P1).
@@ -468,15 +462,12 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   // 원본 blob을 소유하면 훅이 아직 참조 중인 URL이 revoke된다. 이제 소비만 한다.
   const posterInputRef = useRef<HTMLInputElement>(null);
   const crop = photo.posterCrop;
-  // 랜딩 오버레이를 걷는 조건 3가지(#614)를 한 줄로 — 전부 "이미 편집에 들어왔다"의 다른 얼굴이다.
-  //  · croppedImageUrl: 포스터가 있다(정상 진입 완료 · 포스터 있던 draft 복원)
-  //  · crop.cropOpen: CTA로 파일을 골라 크롭 모달이 떴다 — onChange 그 프레임에 걷힌다. 파생값이라
-  //    크롭 취소(cropOpen→false, 포스터 없음)면 랜딩이 저절로 돌아온다. 안 그러면 포스터도 랜딩도
-  //    없는 빈 셸에 갇힌다.
-  //  · photo.draftRestored: 재방문자(텍스트만 있던 draft 포함) — 랜딩 생략, 마찰 0(D7)
-  //  · landingDismissed: OCR로 티켓 스크린샷이 인식됐다
-  const showLanding =
-    !croppedImageUrl && !crop.cropOpen && !photo.draftRestored && !landingDismissed;
+  // 랜딩을 걷는 조건은 이제 하나다(#727 c1·c2·c4) — 사용자가 실제로 떠났는가.
+  //  · croppedImageUrl을 뺀 이유: IndexedDB 복원이 포스터를 늦게 가져오는 것과 사용자가 방금
+  //    크롭한 것을 구분하지 못해, 포스터 있던 draft 재방문에서 랜딩이 다시 숨었다(c1).
+  //  · crop.cropOpen을 뺀 이유: 크롭 모달은 z-50 + DOM 순서상 랜딩보다 뒤라 걷지 않아도 위에
+  //    그려진다. 이 항이 하던 일(취소 시 빈 셸 방지)은 이탈 state가 안 서 있으므로 저절로 성립한다(c4).
+  //  · draftRestored를 뺀 이유: 그게 #675 D7이고, 이 작업이 뒤집는 명제 자체다(c1).
 
   function flashToast(msg: string) {
     setToast(msg);
@@ -498,7 +489,6 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
     photo.clearDraft();
     // 초기화는 새 문서니까 랜딩도 처음 상태로 — 안 되돌리면 포스터도 draft도 없는 빈 셸에 남는다(#614).
     setLandingDismissed(false);
-    setOcrApplied(false);
     // 초기화는 새 문서 — undo로 못 돌아간다(로고·포스터 blob이 revoke돼
     // 복원해도 죽은 참조라 히스토리째 파기가 맞다).
     history.clear();
@@ -594,13 +584,30 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
       crop.openFile(file);
     },
   };
+  // 랜딩의 "새로 시작" 네 경로가 공유하는 진입 커밋(#727 c7) — 메모리 문서만 새 문서로 되돌리고
+  // localStorage/IndexedDB 저장분은 그대로 둔다. 저장분이 덮이는 건 새 문서의 첫 자동저장이라,
+  // 자동 회전 캐러셀 오탭 같은 사고가 새로고침 한 번으로 복구된다. "이어서 만들기"는 이걸 안 부른다.
+  function startFreshDoc(opts?: { layout?: LayoutId; keepCropOriginal?: boolean }) {
+    photo.resetDocument(opts);
+    // 새 문서 — 복원된 문서로 undo해 돌아가면 안 된다(#356 clear는 다음 상태를 새 베이스라인으로 잡는다).
+    history.clear();
+  }
+
   async function handlePosterCropComplete(area: Area, preserveRatio: boolean) {
-    const isFirstUpload = !photo.state.croppedImageUrl;
+    // 랜딩에서 올라온 첫 포스터는 "새로 시작"이다(c7). 교체·재크롭은 이미 이탈한 상태라 문서를
+    // 안 건드린다 — 여기를 게이트 없이 리셋하면 포스터를 바꿀 때마다 문서가 통째로 날아간다.
+    const fresh = !landingDismissed;
+    // keepCropOriginal: crop.openFile이 이미 원본을 새 파일로 갈아놨다 — 여기서 reset하면 지금
+    // getCroppedImg가 읽고 있는 blob이 revoke된다.
+    if (fresh) startFreshDoc({ keepCropOriginal: true });
+    const isFirstUpload = fresh || !photo.state.croppedImageUrl;
     const ok = await crop.complete(area, preserveRatio);
+    if (!ok) return; // 실패 — 모달이 열린 채 남아 재시도 가능하고, 랜딩도 그대로다
+    if (fresh) setLandingDismissed(true);
     // 첫 업로드는 문서 시작 — 같이 일어나는 fieldVisibility 기본셋 리셋이 undo 1스텝으로
     // 잡히면 시작하자마자 undo가 활성돼 어색하다(#356). 교체는 히스토리 유지(포스터 자체는
     // 스냅샷 밖이라 스텝도 안 생긴다).
-    if (ok && isFirstUpload) history.clear();
+    if (isFirstUpload) history.clear();
   }
 
   const doneEnabledStyle = canExport
@@ -1047,52 +1054,60 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
               #413 P0을 재도입한다(옛 "단일 인스턴스가 아니면 레이스가 되살아난다" 서술은 #624로
               철회 — CLAUDE.md 🔍 참조). OCR 로직은 셸의 useOcrUndo가 소유. */}
           <Landing
-            // 캔버스가 서면(canvasReady) 랜딩은 숨는다(#674) — 예전엔 croppedImageUrl로 걸어
-            // "포스터 없이 시작" 직후에도 inline으로 남겼지만(#631 D2 a), 그 inline 컨테이너가
-            // flex-1이라 같은 flex-1인 티켓 스테이지와 본문 높이를 정확히 반씩 나눠 가졌다
-            // (실측 393×659: 스테이지 373.2→198.6, 티켓 218.5×349.2→109.3×174.6). ocrApplied면
-            // 그 절반이 통째로 빈 블록이었다(#652가 안쪽만 숨기고 바깥 flex-1은 남겼으므로).
-            // **포스터 재진입 동선은 사라지지 않고 헤더 메뉴로 옮겼다** — 아래 '포스터 추가' 행이
-            // canvasReady를 따라 뜬다(포스터가 있으면 같은 자리가 '포스터 교체'). 즉 이제
-            // 포스터 유무와 무관하게 재진입점이 한 곳이다.
-            // 랜딩을 **걷는** 조건(showLanding, #614 ③)은 그대로다 — 여기서 바뀐 건 걷힌 뒤에
-            // inline으로 남느냐 숨느냐뿐이고, mode='hidden'은 unmount가 아니라 CSS다(#297 P1).
-            mode={canvasReady || isMax ? 'hidden' : showLanding ? 'overlay' : 'inline'}
+            // 랜딩은 두 모드뿐이다(#727 c3) — 떠났으면 hidden, 아니면 overlay. inline은 삭제됐다:
+            // 새 판정에선 도달 불가능하고(landingDismissed ⇒ hidden), 실제 화면도 헤드카피·히어로·
+            // 배경 타일·AppFooter를 전부 안 그려 "랜딩이 안 뜬 것"처럼 보였다. inline이 지키던 두
+            // 명제(텍스트만 있던 draft의 진입 표면, IDB 복원 실패 시 #489 결정 5의 재업로드 유도)는
+            // 이제 상시 노출되는 오버레이 랜딩 자신이 더 낫게 받는다.
+            // mode='hidden'은 unmount가 아니라 CSS다(#297 P1) — children(OcrUploadCard) 단일
+            // 인스턴스 계약(#614/#624)이 여기 걸려 있다.
+            // **포스터 재진입 동선은 헤더 메뉴에 있다** — '포스터 추가' 행이 canvasReady를 따라 뜬다.
+            mode={isMax || landingDismissed ? 'hidden' : 'overlay'}
             onCta={handlePosterTap}
-            onSkip={() => setLandingDismissed(true)}
+            // "이어서 만들기"(#727 c5) — 유일하게 문서를 안 되돌리는 이탈이다. 복원된 draft를
+            // 그대로 들고 편집으로 들어간다.
+            onRestore={() => setLandingDismissed(true)}
+            restoreTitle={photo.state.movieInfo.title}
+            onSkip={() => {
+              startFreshDoc();
+              setLandingDismissed(true);
+            }}
             // 갤러리 샘플 클릭 — 네 번째 진입점(#615). 다른 셋과 달리 "훑어보고 나중에 커밋"할
             // 로컬 미러가 없다 — 샘플 자체가 훑어보기 없는 완결된 선택이라 클릭된 무드를 그 자리에서
             // 바로 components.layout에 커밋한다.
             onEnterMood={(id) => {
-              // 이미 켜져 있는 무드를 다시 누른 건 편집이 아니라 진입이다 — updateComponents는
-              // 값이 같아도 dirtyTick을 올리고(usePhototicket.ts), 그러면 1초 뒤 autosave가 draft를
-              // 써서 다음 방문에 draftRestored=true가 돼 랜딩(마케팅 카피·OCR 주 CTA)이 영구히
-              // 안 뜬다(#615 fresh-context 리뷰). 첫 카드는 현재 무드라 오탭 한 번의 대가가 그거였다.
-              // 폐기된 commitHeroLayout에 있던 동일값 가드를 이 자리로 되살린다 — 비교 대상은
-              // previewComponents(280ms debounce)가 아니라 실시간 state여야 방금 바꾼 무드를 읽는다.
-              //
-              // **다른 무드 탭에는 일부러 안 건다.** 그쪽도 같은 경로로 draft를 쓰지만 그건 버그가
-              // 아니라 autosave가 하라는 일이다 — 사용자가 실제로 고른 선택이라 다음 방문에 그
-              // 무드로 돌아오는 게 맞다. 막아야 할 건 "아무것도 안 고른 탭이 상태를 만드는 것"
-              // 하나뿐이고, 그래서 가드가 동일값에만 걸린다(claude-review가 물은 비대칭의 답).
-              if (id !== photo.state.components.layout) photo.updateComponents({ layout: id });
+              // 무드 탭은 "새 문서를 이 무드로 시작"이다 — #615의 동일값 가드는 #727에서 필요
+              // 없어졌다. 그 가드가 막던 건 updateComponents가 dirtyTick을 올려 1초 뒤 autosave가
+              // draft를 쓰고, 그 draft 때문에 다음 방문에 랜딩이 영영 안 뜨는 연쇄였다. 이제
+              // ① 랜딩은 draft 유무와 무관하게 뜨고(c1) ② 무드는 updateComponents가 아니라
+              // resetDocument의 layout 인자로 실려 dirtyTick을 아예 안 올린다(c7) — 연쇄의 두 고리가
+              // 다 끊겼다. 덕분에 오탭해도 자동저장이 안 걸려 새로고침 한 번으로 draft가 돌아온다.
+              startFreshDoc({ layout: id });
               setLandingDismissed(true);
             }}
             dropProps={posterDropProps}
             dragOver={posterDragOver}
             heroMovieInfo={photo.state.movieInfo}
             heroComponents={previewComponents}
-            ocrApplied={ocrApplied}
           >
             <OcrUploadCard
               setInfo={photo.updateMovieInfo}
               currentInfo={photo.state.movieInfo}
-              // 스크린샷이 인식되면 랜딩을 걷는다(#614 걷는 조건 ③) — 사용자가 이미 편집에
-              // 들어온 것이고, 채워진 필드가 오버레이 뒤에 가려져 있으면 안 된다. ocrApplied는
-              // 그 뒤 이 카드 자신을 CSS로 숨겨 드로어가 유일한 재진입점이 되게 한다(#388, #652).
+              // 스크린샷이 인식되면 랜딩을 걷는다 — 사용자가 이미 편집에 들어온 것이고, 채워진
+              // 필드가 오버레이 뒤에 가려져 있으면 안 된다. 랜딩을 떠나는 "새로 시작" 경로이므로
+              // 복원된 문서를 먼저 새 문서로 되돌린다(#727 c7). 이게 성립하려면 OcrUploadCard가
+              // **필드를 쓰기 전에** 이 콜백을 불러야 한다 — 그래서 그쪽 applyOcr의 호출 순서가
+              // #727에서 바뀌었다(같은 배치의 마지막 setState가 이기므로). update*는 전부 함수형
+              // 갱신이라 리셋 위에 OCR 결과가 정확히 얹힌다.
+              //
+              // ponytail: undo 스냅샷(prevValues)은 리셋 **전** 값이라, 새로 시작한 뒤 '되돌리기'를
+              // 누르면 방금 떠난 옛 draft의 필드가 되살아난다. 데이터 유실은 없고(저장분도 그대로)
+              // 사용자가 다시 편집하면 그만이라 그대로 둔다 — 정확히 맞추려면 카드가 넘기는
+              // 스냅샷을 셸이 새 문서 기준으로 다시 만들어야 하는데, 필드별 빈 값 표현(''/undefined)을
+              // 셸이 알아야 해서 리셋 자체보다 커진다. 실제로 헷갈린다는 보고가 오면 그때 연다.
               onOcrApply={(params) => {
+                if (!landingDismissed) startFreshDoc();
                 setLandingDismissed(true);
-                setOcrApplied(true);
                 ocr.apply(params);
               }}
               setComponents={photo.updateComponents}

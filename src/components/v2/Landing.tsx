@@ -3,9 +3,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { LayoutId, MovieInfo, TicketComponents } from '@/types';
 import { ALL_FIELDS_ON } from '@/constants/fieldVisibility';
 import { useMatchMedia } from '@/hooks/useMatchMedia';
-import { LAYOUTS } from '@/utils/layouts';
 import { cn } from '@/utils/cn';
 import { pressableVariants } from '@/components/ui/variants';
+import { LAYOUTS } from '@/utils/layouts';
 import TicketRenderer from '../TicketRenderer';
 import { MOOD_BACKDROP_BG } from '../LayoutPicker';
 import { AppFooter } from './AppFooter';
@@ -366,19 +366,20 @@ function MoodCarousel({
 }
 
 /**
- * 랜딩(#614 → #635 OCR 승격 → #615 무드 히어로) — 포스터가 아직 없을 때의 진입 화면.
- * 세 모드를 한 컴포넌트가 든다.
+ * 랜딩(#614 → #635 OCR 승격 → #615 무드 히어로 → #727 상시 노출) — 서비스의 진입 화면.
+ * 두 모드를 한 컴포넌트가 든다.
  *
- *  - `overlay`: 편집 셸 위를 덮는 `fixed` 레이어. 마케팅 카피 + 히어로 + OCR(주 CTA) + 고지.
- *  - `inline`:  오버레이를 걷었는데 **캔버스도 아직 안 선** 상태 = 텍스트만 있던 draft 복원(D7)의
- *               본문 블록. 카피/히어로 없이 진입 컨트롤만. 이 모드가 없으면 그 경로가 헤더만 남은
- *               빈 화면으로 떨어진다 — 포스터가 없으면 프리뷰·dock·드로어·완료가 전부 게이팅되고,
- *               특히 IndexedDB 포스터 복원 실패 시 "재업로드를 유도"하는 #489 결정 5의 경로가
- *               갈 곳을 잃는다.
- *  - `hidden`:  캔버스가 섰거나(canvasReady, #674) max(#328). display:none이지 unmount가 아니다(아래).
- *               #674 전에는 "포스터 없이 시작"(#631 onSkip)·OCR 진입도 inline이었는데, 그 컨테이너의
- *               flex-1이 티켓 스테이지와 본문 높이를 반씩 나눠 가져 캔버스가 반토막 났다. 그 상태의
- *               포스터 재진입 동선은 셸 헤더 메뉴의 '포스터 추가' 행이 이어받는다.
+ *  - `overlay`: 편집 셸 위를 덮는 `fixed` 레이어. 복원 행 + 마케팅 카피 + 히어로 + OCR(주 CTA) + 고지.
+ *               **draft 유무와 무관하게 뜬다**(#727 c1) — "draft가 있으면 랜딩을 생략한다"는 #675 D7이
+ *               뒤집혔다. 재방문자는 여기서 "이어서 만들기"와 네 진입 경로를 같은 화면에서 고른다.
+ *  - `hidden`:  사용자가 랜딩을 떠났거나(landingDismissed) max(#328). display:none이지 unmount가
+ *               아니다(아래) — children(OcrUploadCard) 단일 인스턴스 계약(#614/#624).
+ *
+ * `inline`(오버레이를 걷었는데 캔버스도 아직 안 선 상태)은 #727 c3에서 **삭제**됐다. 새 판정에선
+ * 도달 불가능하고(랜딩 표시가 landingDismissed 하나로 갈리므로 걷혔다 = hidden), 그 모드가 지키던 두
+ * 명제 — 텍스트만 있던 draft의 진입 표면, IndexedDB 포스터 복원 실패 시 #489 결정 5의 재업로드 유도 —
+ * 는 이제 상시 노출되는 오버레이 자신이 더 낫게 받는다. inline은 헤드카피·히어로·배경 타일·고지를
+ * 전부 안 그려 실측(390×844)에서 "랜딩이 안 뜬 것"처럼 보이던 화면이었다.
  *
  * 새 라우트가 아니라 오버레이인 이유는 CTA가 파일 다이얼로그를 여는 데 있다: 라우트를 갈면
  * 사용자 제스처 컨텍스트가 끊겨 `input.click()`이 무시되는 브라우저가 있고, 오버레이면 셸이 이미
@@ -418,19 +419,26 @@ export function Landing({
   mode,
   onCta,
   onSkip,
+  onRestore,
+  restoreTitle,
   dropProps,
   dragOver,
   heroMovieInfo,
   heroComponents,
   onEnterMood,
-  ocrApplied,
   children,
 }: {
-  mode: 'overlay' | 'inline' | 'hidden';
+  mode: 'overlay' | 'hidden';
   /** 이탈 경로 "포스터 업로드" — 셸의 숨은 포스터 input을 그 자리에서 click()한다(같은 제스처, 라우트 전환 0). */
   onCta: () => void;
   /** 이탈 경로 "포스터 없이 직접 입력" — 포스터 없이 편집으로 진입(#631). 셸의 canvasReady를 세운다. */
   onSkip: () => void;
+  /** 복원 진입점 "이어서 만들기"(#727 c5) — 저장된 draft를 그대로 들고 편집으로. 다섯 이탈 중
+   *  유일하게 문서를 새 문서로 되돌리지 않는 경로다. */
+  onRestore: () => void;
+  /** 복원 라벨에 실을 제목(#727 c6) — draft에 TTL이 없어 석 달 전 작업도 그대로 올라오므로,
+   *  "지금 이게 뭔지"를 말하는 유일한 장치다. 빈 값이면 기본형 "이어서 만들기"만 쓴다. */
+  restoreTitle: string;
   /** 셸의 포스터 드롭 핸들러(#607) — 점선 드롭존이 여기로 흡수되며 같이 넘어왔다. */
   dropProps: {
     onDragOver: (e: DragEvent) => void;
@@ -444,13 +452,6 @@ export function Landing({
   heroComponents: TicketComponents;
   /** 갤러리 샘플 클릭 → 그 무드를 즉시 커밋 + 편집 화면 진입(네 번째 진입점, 위 컴포넌트 주석). */
   onEnterMood: (id: LayoutId) => void;
-  /** #674 이후 이 신호는 **중복 방어**다: ocrApplied가 서는 경로는 landingDismissed도 세우므로
-   *  셸이 이미 mode='hidden'을 준다. 지우지 않는 이유는 inline이 canvasReady 상태로 다시 열릴 때
-   *  #652가 조용히 재발하는 걸 막는 게 이 프로퍼티이기 때문이다.
-   *  OCR이 이미 필드를 채운 적 있는가(#652) — true면 children(주 CTA)과 이탈 경로 줄을 통째로
-   * CSS로만 숨겨 드로어를 유일한 재진입점으로 만든다(#388 > #631 D2 a, 이 상태에 한해). '직접
-   * 입력'(onSkip)만 거친 상태는 이 값이 안 서므로 포스터 재진입 동선이 그대로 남는다. */
-  ocrApplied: boolean;
   /** OCR 진입점 슬롯 — 셸이 소유한 단일 OcrUploadCard 인스턴스가 들어온다(이제 주 CTA, #635). */
   children: ReactNode;
 }) {
@@ -536,15 +537,39 @@ export function Landing({
           </>
         )}
 
-        {/* #652 — OCR이 실제로 필드를 채운 뒤(ocrApplied)엔 주 CTA도 이탈 경로 줄도 편집 본문에
-            남지 않는다: #388(편집 중 OCR 진입점은 드로어 하나)이 #631 D2(a)(랜딩 inline이 포스터
-            재진입 동선)를 이 상태에 한해 이긴다 — "6개 항목이 자동 입력되었어요" 배너 옆에 방금 쓴
-            그 CTA와 이탈 경로가 그대로 남으면 "입력이 안 끝났나"로 읽히던 게 #652의 재현이다.
-            unmount가 아니라 CSS hidden으로만 숨긴다 — children(OcrUploadCard)은 #614/#624가 지키는
-            "항상 마운트" 계약이 있어 트리에서 빼면 안 된다. '직접 입력'(onSkip)만 거친 상태는
-            ocrApplied가 안 서므로 이 블록이 그대로 보이고, #631 D2(a)의 포스터 재진입 동선은
-            그쪽에서 유지된다(posterlessCanvas.test.tsx). */}
-        <div className={`mt-2 w-full max-w-[280px]${ocrApplied ? ' hidden' : ''}`}>
+        {/* #652가 쓰던 `ocrApplied ? 'hidden'` 분기는 #727에서 삭제됐다 — OCR 적용은 이제
+            landingDismissed를 세우고 그게 곧 랜딩 컨테이너 자체의 hidden이라, 안쪽만 숨겨야 하는
+            상태가 코드상 존재하지 않는다(inline 소멸, c3). */}
+        <div className="mt-2 w-full max-w-[280px]">
+          {/* 복원 진입점(#727 c5) — 주 CTA **위** 별도 층이다. 편집 진입 시점의 확인 모달을 안
+              만드는 이유: 랜딩 진입 경로가 4종이라 어느 걸 눌러도 무관한 질문이 끼어들고,
+              "이전에 작업한 게 있으니 불러올까요?"는 조건절 + 의문 종결어미라 COPY_TONE_GUIDE 축 2
+              위반이다(축 1의 질문형 예외는 비가역 확인 한 자리 — confirmWordmarkReset — 뿐이다).
+
+              **표시 판정이 React가 아니라 CSS다**(c9, globals.css) — 이 행의 근거인 draft 복원은
+              SSR 하이드레이션 불일치를 피하려 effect로 미뤄져 있고 #675가 그 지연을 299ms로
+              실측했다. React로 그리면 그 사이 행이 없다가 뒤늦게 끼어들어 주 CTA가 아래로 밀리는데,
+              299ms는 이미 탭할 수 있는 시간이라 오탭이 난다. 서버 HTML에 행을 담아두고
+              _document.tsx의 blocking 스크립트가 찍는 `has-draft`로 드러내면 자리 이동이 0이다.
+              손상된 저장분에서 게이트를 거두는 경로(clearDraftPaintGate)도 그대로 유효하다.
+
+              라벨은 조건절·종결어미·마침표 없는 명령형이다(c6, 축 2) — `-하기`는 금지가 아니다
+              (`꽉 채우기`·`처음 화면으로 돌아가기` 선례). 부연을 잇는 부호는 ` — `이고 양쪽이
+              명사구다(동명사 + 고유명사). min-h-touch는 같은 랜딩 이탈 경로 2종의 선례(#646, c12). */}
+          <button
+            type="button"
+            data-testid="landing-restore"
+            data-touch="44"
+            onClick={onRestore}
+            className={cn(
+              pressableVariants({ transition: 'cta' }),
+              'mb-2 w-full min-h-touch items-center justify-center gap-2 rounded-field-sm border border-line bg-paper px-3 text-body font-semibold text-fg hover:border-accent',
+            )}
+          >
+            <span className="truncate">
+              이어서 만들기{restoreTitle ? ` — ${restoreTitle}` : ''}
+            </span>
+          </button>
           {/* OCR 주 진입점(#635) — 포스터 CTA가 보조로 내려가고 이게 주연이다(#142 위계 반전).
               모드가 갈려도 이 슬롯의 트리 위치는 고정이라 카드가 remount되지 않는다. */}
           {children}

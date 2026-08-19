@@ -44,6 +44,17 @@ afterEach(() => {
   window.localStorage.clear();
 });
 
+/**
+ * "업로드 후" 상태를 만든다 — #727부터 두 단계다. 랜딩은 이제 포스터 유무와 무관하게 뜨므로
+ * (croppedImageUrl이 랜딩 판정에서 빠졌다, c1) 이탈을 먼저 세우고 그 다음 포스터를 심는다.
+ * **순서가 중요하다**: 이탈은 "새로 시작"이라 문서를 새 문서로 되돌리므로(c7) 포스터를 먼저
+ * 심으면 그 자리에서 지워진다. 실제 사용자 경로(크롭 확정)는 이 둘을 한 번에 한다.
+ */
+function seedUploaded() {
+  fireEvent.click(screen.getByTestId('landing-skip-poster'));
+  fireEvent.click(screen.getByText('seed'));
+}
+
 /** compareDocumentPosition: DOCUMENT_POSITION_FOLLOWING(4) 비트가 서면 b가 a보다 DOM 뒤. */
 function precedes(a: Element, b: Element): boolean {
   return (a.compareDocumentPosition(b) & 4) !== 0;
@@ -65,7 +76,7 @@ describe('MobileEditorShell chrome 정보위계 (#261/#315/#363/#388)', () => {
 
   test('업로드 후: Poster 드롭존은 사라지고(#324) 본문 OCR 카드는 CSS hidden(#388, 드로어로 일원화), rail hidden 해제', async () => {
     render(<Harness />);
-    fireEvent.click(screen.getByText('seed'));
+    seedUploaded();
 
     const rail = await screen.findByRole('button', { name: '무드' });
 
@@ -91,7 +102,7 @@ describe('MobileEditorShell chrome 정보위계 (#261/#315/#363/#388)', () => {
     render(<Harness />);
     const before = await screen.findByRole('button', { name: '티켓 스크린샷으로 자동입력' });
 
-    fireEvent.click(screen.getByText('seed'));
+    seedUploaded();
     const afterSeed = screen.getByRole('button', { name: '티켓 스크린샷으로 자동입력' });
     expect(afterSeed === before).toBe(true);
     expect(afterSeed.closest('.hidden')).not.toBeNull();
@@ -105,7 +116,7 @@ describe('MobileEditorShell chrome 정보위계 (#261/#315/#363/#388)', () => {
 
   test('업로드 후: 헤더 서브메뉴에서 빈 항목·포스터 교체/재크롭 접근 가능(#315, 잉크는 #387에서 삭제 — 컬러 패널 White/Black 프리셋과 중복. 전체 표시는 #424에서 필드 드로어로 이전해 대상 밖)', async () => {
     render(<Harness />);
-    fireEvent.click(screen.getByText('seed'));
+    seedUploaded();
     await screen.findByRole('button', { name: '티켓 스크린샷으로 자동입력' });
 
     fireEvent.click(screen.getByRole('button', { name: '편집 메뉴' }));
