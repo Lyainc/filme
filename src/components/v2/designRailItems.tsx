@@ -354,14 +354,18 @@ const EMBOSS_EFFECT_OPTIONS = [
  * 이 패널을 보고 있지 않을 확률이 높은 유일한 잔여 상태라 CSS 스크롤 어포던스(DesignRail.tsx)로
  * 감수한다 — "편집 중이 아닌" 모든 상태는 슬롯 안에 다 들어간다(실측 171px, 넘침 0).
  *
- * **#735가 이 마지막 문장을 깼다.** 하이라이트·형압이 마스크를 분리하며(각자 embossStamps/Paths·
- * reliefStamps/Paths, `usePhototicket.embossEffect`가 지금 어느 쪽에 커밋되는지 고른다) "효과"
- * ChipRadio 한 줄이 상시로 붙었다 — 도구 칩과 달리 편집 중이 아닐 때도 항상 떠 있어야 강도
- * 슬라이더가 어느 효과를 가리키는지 계속 보인다(도구 칩의 null=idle 관례를 그대로 못 씀). 그
- * 결과 "편집 중이 아닌" 상태도 이제 슬롯을 넘친다(실측 2026-08-18, 400×675: railSlot
- * clientHeight 176 / scrollHeight 199, +23px — DesignRail.tsx의 슬롯 예산 주석 참고).
- * railSlot은 게이트가 아니라 관측값이라(CLAUDE.md "📏 크롬 측정 하네스") 하네스 exit code는
- * 그대로지만, 이 문서 위 "슬롯 안에 다 들어간다"는 형압에 한해 더는 사실이 아니다.
+ * **#735가 한때 이 마지막 문장을 깼다가, 같은 이슈에서 되돌려놨다.** 하이라이트·형압이 마스크를
+ * 분리하며(각자 embossStamps/Paths·reliefStamps/Paths, `usePhototicket.embossEffect`가 지금
+ * 어느 쪽에 커밋되는지 고른다) "효과" 선택 한 줄이 상시로 붙었다 — 도구 칩과 달리 편집 중이
+ * 아닐 때도 항상 떠 있어야 강도 슬라이더가 어느 효과를 가리키는지 계속 보인다(도구 칩의
+ * null=idle 관례를 그대로 못 씀). ChipRadio(자체 Eyebrow 라벨)로 처음 얹었을 땐 정상 상태가
+ * 199px로 슬롯(176px)을 +23px 넘쳤다(2026-08-18 실측) — "효과"가 실질적으로는 SizePanel
+ * (포스터/로고)·TexturePanel(재질/코팅)과 같은 **축 전환**(선택이 아래 마스크·강도 전체를
+ * 갈아끼움)이라, 같은 역할에 이미 쓰던 AxisSegment(라벨 없는 세그먼트 한 줄)로 바꾸고 바깥
+ * 감쌈도 SizePanel과 같은 이유로 space-y-field로 좁혀 26.5px+6px를 되찾았다. 실측(puppeteer,
+ * 400×675 다크): 정상 상태 176/176(넘침 0, 393×659에서도 171/171)로 복귀했고, 최악(편집 중
+ * 브러시, 마스크 有)은 223/176(+47px)로 줄었다 — 여전히 슬롯을 넘치지만 위 문단이 감수하기로
+ * 한 바로 그 "칠하는 손이 캔버스에 있어 패널을 안 보는" 잔여 상태라 카테고리는 그대로다.
  */
 function EmbossPanel({ photo }: { photo: Photo }) {
   const {
@@ -382,71 +386,83 @@ function EmbossPanel({ photo }: { photo: Photo }) {
   const hasMask = embossEffect === 'relief' ? reliefStamps.length > 0 || reliefPaths.length > 0 : embossStamps.length > 0 || embossPaths.length > 0;
   const intensity = embossEffect === 'relief' ? reliefIntensity : embossIntensity;
   const prefix = ID_PREFIX;
+  const panelId = `${prefix}-emboss-effect-panel`;
   return (
-    <div className="space-y-group">
-      <ChipRadio
-        label="효과"
-        options={EMBOSS_EFFECT_OPTIONS}
+    // space-y-field(SizePanel과 같은 이유 — 세그먼트와 그 아래 콘텐츠는 같은 축의 헤더·본문이라
+    // group(16px)보다 field(10px)가 맞고, #735로 예산이 빠듯해진 지금은 그 6px도 필요하다).
+    <div className="space-y-field">
+      {/* 효과 축은 AxisSegment로(#735 다이어트) — 하이라이트/형압 선택이 아래 마스크·강도 전체를
+          갈아끼우는 축 전환이라 SizePanel(포스터/로고)·TexturePanel(재질/코팅)과 같은 역할이다.
+          ChipRadio(자체 Eyebrow 라벨 한 줄)보다 26.5px 짧다 — 레일 슬롯 정상 상태가 199px로
+          넘치던 것(위 문서 주석)의 원인이 이 한 줄이었다. */}
+      <AxisSegment
+        ariaLabel="효과"
+        panelId={panelId}
+        options={EMBOSS_EFFECT_OPTIONS.map((o) => ({ key: o.value, label: o.label }))}
         value={embossEffect}
-        onChange={setEmbossEffect}
+        // setState를 그대로 넘기지 않고 람다로 감싼다(AxisSegment 독스트링 경고 — SetStateAction이
+        // K 추론에 끼어들면 'highlight'|'relief' 유니온이 string으로 풀린다, TexturePanel과 동형).
+        onChange={(next) => setEmbossEffect(next)}
       />
-      <ChipRadio
-        label="도구"
-        options={EMBOSS_TOOL_OPTIONS}
-        // 편집 중이 아니면 null — 값 선택이 곧 실행 상태라, 마지막으로 쓴 도구가 계속
-        // 선택된 것처럼 보이면 지금 칠하는 중인지 칩만 보고 구분이 안 된다(fresh-context 리뷰).
-        value={embossEditMode ? embossTool : null}
-        onChange={(next) => {
-          // 편집 중인 도구를 다시 탭 = 종료. 그 외(다른 도구 탭, 또는 편집 중이 아닐 때 탭)는
-          // 그 도구로 진입 — 칩 하나가 도구 선택 + 진입/종료 토글을 모두 담당한다.
-          if (next === embossTool && embossEditMode) {
-            setEmbossEditMode(false);
-          } else {
-            setEmbossTool(next);
-            setEmbossEditMode(true);
-          }
-        }}
-      />
-      {/* hasMask && !embossEditMode(=강도·지우기가 뜨는 상태)일 땐 안내문을 아예 안 그린다 —
-          <p>를 비운 채 두면 빈 줄도 space-y-group 간격을 그대로 먹어(#682 다이어트가 지운
-          28px 중 하나) 안내가 필요 없어진 상태에서까지 자리를 차지한다. */}
-      {(embossEditMode || !hasMask) && (
-        <p className="text-caption text-fg-muted">
-          {embossEditMode
-            ? embossTool === 'lasso'
-              // #682 다이어트로 줄였을 때 "손을 떼면 선택이 닫혀요"가 통째로 빠졌었다(claude-review
-              // PR #692 P1) — EmbossBrushLayer.tsx의 onPointerUp이 실제로 그 순간 다각형을
-              // 커밋하고 미리보기 선을 지우는데(스냅해서 닫힌다는 시각 피드백이 따로 없다), 그걸
-              // 안내하는 유일한 수단이 이 문구라 정보 손실이었다. 다시 채워 넣되 원문(68자)만큼
-              // 늘리지 않고 한 문장에 접어 44자로 복원한다.
-              ? '윤곽을 따라 드래그하면 자동으로 붙고, 손을 떼면 닫혀요. 다시 탭하면 끝나요.'
-              : '드래그해서 칠하세요. 도구를 다시 탭하면 끝나요.'
-            : '도구를 탭하면 바로 편집을 시작해요.'}
-        </p>
-      )}
-      {embossEditMode && embossTool === 'brush' && (
-        <BrightnessSlider
-          label="브러시 크기"
-          id={`${prefix}-emboss-brush`}
-          value={embossBrushRadius}
-          onChange={setEmbossBrushRadius}
-          min={0.02}
-          max={0.2}
+      <div id={panelId} className="space-y-group">
+        <ChipRadio
+          label="도구"
+          options={EMBOSS_TOOL_OPTIONS}
+          // 편집 중이 아니면 null — 값 선택이 곧 실행 상태라, 마지막으로 쓴 도구가 계속
+          // 선택된 것처럼 보이면 지금 칠하는 중인지 칩만 보고 구분이 안 된다(fresh-context 리뷰).
+          value={embossEditMode ? embossTool : null}
+          onChange={(next) => {
+            // 편집 중인 도구를 다시 탭 = 종료. 그 외(다른 도구 탭, 또는 편집 중이 아닐 때 탭)는
+            // 그 도구로 진입 — 칩 하나가 도구 선택 + 진입/종료 토글을 모두 담당한다.
+            if (next === embossTool && embossEditMode) {
+              setEmbossEditMode(false);
+            } else {
+              setEmbossTool(next);
+              setEmbossEditMode(true);
+            }
+          }}
         />
-      )}
-      {hasMask && !embossEditMode && (
-        // "지우기"를 별도 전폭 버튼(#682 이전엔 52px) 대신 슬라이더 라벨 줄에 접는다 —
-        // BrightnessSlider의 action prop(같은 목적으로 새로 연 옵션). id에 effect를 실어야
-        // 효과를 오가며 열어도 React가 다른 슬라이더로 보고 localValue를 다시 seed한다.
-        <BrightnessSlider
-          key={embossEffect}
-          label={embossEffect === 'relief' ? '형압 강도' : '하이라이트 강도'}
-          id={`${prefix}-emboss-intensity-${embossEffect}`}
-          value={intensity}
-          onChange={setEmbossIntensity}
-          action={{ label: '지우기', onClick: clearEmbossMask }}
-        />
-      )}
+        {/* hasMask && !embossEditMode(=강도·지우기가 뜨는 상태)일 땐 안내문을 아예 안 그린다 —
+            <p>를 비운 채 두면 빈 줄도 space-y-group 간격을 그대로 먹어(#682 다이어트가 지운
+            28px 중 하나) 안내가 필요 없어진 상태에서까지 자리를 차지한다. */}
+        {(embossEditMode || !hasMask) && (
+          <p className="text-caption text-fg-muted">
+            {embossEditMode
+              ? embossTool === 'lasso'
+                // #682 다이어트로 줄였을 때 "손을 떼면 선택이 닫혀요"가 통째로 빠졌었다(claude-review
+                // PR #692 P1) — EmbossBrushLayer.tsx의 onPointerUp이 실제로 그 순간 다각형을
+                // 커밋하고 미리보기 선을 지우는데(스냅해서 닫힌다는 시각 피드백이 따로 없다), 그걸
+                // 안내하는 유일한 수단이 이 문구라 정보 손실이었다. 다시 채워 넣되 원문(68자)만큼
+                // 늘리지 않고 한 문장에 접어 44자로 복원한다.
+                ? '윤곽을 따라 드래그하면 자동으로 붙고, 손을 떼면 닫혀요. 다시 탭하면 끝나요.'
+                : '드래그해서 칠하세요. 도구를 다시 탭하면 끝나요.'
+              : '도구를 탭하면 바로 편집을 시작해요.'}
+          </p>
+        )}
+        {embossEditMode && embossTool === 'brush' && (
+          <BrightnessSlider
+            label="브러시 크기"
+            id={`${prefix}-emboss-brush`}
+            value={embossBrushRadius}
+            onChange={setEmbossBrushRadius}
+            min={0.02}
+            max={0.2}
+          />
+        )}
+        {hasMask && !embossEditMode && (
+          // "지우기"를 별도 전폭 버튼(#682 이전엔 52px) 대신 슬라이더 라벨 줄에 접는다 —
+          // BrightnessSlider의 action prop(같은 목적으로 새로 연 옵션). id에 effect를 실어야
+          // 효과를 오가며 열어도 React가 다른 슬라이더로 보고 localValue를 다시 seed한다.
+          <BrightnessSlider
+            key={embossEffect}
+            label={embossEffect === 'relief' ? '형압 강도' : '하이라이트 강도'}
+            id={`${prefix}-emboss-intensity-${embossEffect}`}
+            value={intensity}
+            onChange={setEmbossIntensity}
+            action={{ label: '지우기', onClick: clearEmbossMask }}
+          />
+        )}
+      </div>
     </div>
   );
 }
