@@ -122,7 +122,8 @@ function loadPersisted(): Partial<PersistedState> | null {
   }
 }
 
-const INITIAL_STATE: PhototicketState = {
+// export — OCR "새로 시작" 되돌리기(#737)가 리셋 후의 정확한 빈 값을 스냅샷에 담으려면 필요하다.
+export const INITIAL_STATE: PhototicketState = {
   movieInfo: {
     title: '',
     titleOg: '',

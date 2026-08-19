@@ -38,6 +38,7 @@ import type { Area } from '@/utils/imageCrop';
 import { useEditHistory } from '@/hooks/useEditHistory';
 import { useOcrUndo } from '@/hooks/useOcrUndo';
 import type { usePhototicket } from '@/hooks/usePhototicket';
+import { INITIAL_STATE } from '@/hooks/usePhototicket';
 import type { LayoutId, MovieInfo, TicketComponents, TicketField } from '@/types';
 import { isStampTarget, STAMP_KEYS, type SheetTarget } from '@/constants/fields';
 import { ErrorToastHost } from '@/utils/errorToast';
@@ -1108,15 +1109,36 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
               // #727에서 바뀌었다(같은 배치의 마지막 setState가 이기므로). update*는 전부 함수형
               // 갱신이라 리셋 위에 OCR 결과가 정확히 얹힌다.
               //
-              // ponytail: undo 스냅샷(prevValues)은 리셋 **전** 값이라, 새로 시작한 뒤 '되돌리기'를
-              // 누르면 방금 떠난 옛 draft의 필드가 되살아난다. 데이터 유실은 없고(저장분도 그대로)
-              // 사용자가 다시 편집하면 그만이라 그대로 둔다 — 정확히 맞추려면 카드가 넘기는
-              // 스냅샷을 셸이 새 문서 기준으로 다시 만들어야 하는데, 필드별 빈 값 표현(''/undefined)을
-              // 셸이 알아야 해서 리셋 자체보다 커진다. 실제로 헷갈린다는 보고가 오면 그때 연다.
+              // 새 문서 위의 적용이면 되돌리기 스냅샷도 "빈 새 문서" 기준이어야 한다(#737) — 카드가
+              // 만든 prevValues/prevComponents는 리셋 **전** currentInfo에서 뜬 값이라 옛 draft를
+              // 담고 있다. 문서 전체를 다시 리셋하는 대신(그러면 OCR 적용~되돌리기 사이에 사용자가
+              // 한 다른 편집까지 undo가 통째로 삼킨다 — fresh-context 리뷰 지적), 카드가 이미 골라둔
+              // 같은 키 집합을 유지한 채 값만 INITIAL_STATE 기준으로 다시 채운다 — 그러면 cancel()은
+              // 여느 때와 똑같이 부분 병합(updateMovieInfo/updateComponents)만 하고, OCR이 안 건드린
+              // 필드(포스터·형압·밝기 등)는 그대로 남는다.
               onOcrApply={(params) => {
-                if (!landingDismissed) startFreshDoc();
+                const fresh = !landingDismissed;
+                if (fresh) startFreshDoc();
                 setLandingDismissed(true);
-                ocr.apply(params);
+                if (!fresh) {
+                  ocr.apply(params);
+                  return;
+                }
+                const prevValues = Object.fromEntries(
+                  Object.keys(params.prevValues).map((k) => [
+                    k,
+                    INITIAL_STATE.movieInfo[k as keyof MovieInfo],
+                  ]),
+                ) as Partial<MovieInfo>;
+                const prevComponents = params.prevComponents
+                  ? (Object.fromEntries(
+                      Object.keys(params.prevComponents).map((k) => [
+                        k,
+                        INITIAL_STATE.components[k as keyof TicketComponents],
+                      ]),
+                    ) as Partial<TicketComponents>)
+                  : undefined;
+                ocr.apply({ ...params, prevValues, prevComponents });
               }}
               setComponents={photo.updateComponents}
               currentComponents={photo.state.components}
