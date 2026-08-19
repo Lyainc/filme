@@ -101,6 +101,21 @@ function getPosterImg(posterEl: Element): HTMLImageElement | null {
 }
 
 /**
+ * 화면(u,v 0..1, getBoundingClientRect 축정렬 bbox 기준) → 로컬(자연) 박스 분율(#729 c5).
+ * `getBoundingClientRect`는 회전된 요소의 축정렬 bbox를 주므로 화면 x/y가 로컬 x/y와 90도
+ * 어긋난다. rotate(90deg) 시계방향의 역변환: 로컬 x = 화면 y, 로컬 y = 1 - 화면 x
+ * (중심 기준 회전행렬 (x,y)→(-y,x)에서 역산, #729 실측으로 방향 확인).
+ */
+export function screenFracToBoxFrac(u: number, v: number, rotated: boolean): { boxX: number; boxY: number } {
+  return rotated ? { boxX: v, boxY: 1 - u } : { boxX: u, boxY: v };
+}
+
+/** `screenFracToBoxFrac`의 역변환 — 올가미 미리보기(#729 c5)가 로컬 박스 분율을 화면 분율로 되돌릴 때 쓴다. */
+export function boxFracToScreenFrac(boxX: number, boxY: number, rotated: boolean): { u: number; v: number } {
+  return rotated ? { u: 1 - boxY, v: boxX } : { u: boxX, v: boxY };
+}
+
+/**
  * 형압(#509) 1단계 브러시 + 2단계 자석 올가미(c10) — 포스터 위 포인터 드래그를 해석한다.
  * `position:fixed`지만 전체 화면이 아니라 **포스터 rect에 맞춰 매 프레임 재배치**하는 레이어다 —
  * 포스터가 무드마다 다른 위치·크기(풀블리드 vs Stub/Criterion 도판)에 있어도 DOM 트리 삽입 지점과
@@ -192,11 +207,8 @@ export default function EmbossBrushLayer({
       const v = (clientY - r.top) / r.height;
       // 그리기 가능 영역은 포스터 root 박스 전체(레터박스 포함) — 기존 UX와 동일.
       if (u < 0 || u > 1 || v < 0 || v > 1) return null;
-      // 회전 가로 무드(#729 c5) — getBoundingClientRect는 회전된 요소의 축정렬 bbox를 주므로
-      // 화면 x/y가 로컬 x/y와 90도 어긋난다. rotate(90deg) 시계방향의 역변환: 로컬 x = 화면 y,
-      // 로컬 y = 1 - 화면 x (중심 기준 회전행렬 (x,y)→(-y,x)에서 역산, #729 실측으로 방향 확인).
-      const boxX = rotated ? v : u;
-      const boxY = rotated ? 1 - u : v;
+      // 회전 가로 무드(#729 c5) — screenFracToBoxFrac 참고.
+      const { boxX, boxY } = screenFracToBoxFrac(u, v, rotated);
       const cf = measureEmbossContentFrac(poster, rotated);
       if (!cf || cf.fw <= 0 || cf.fh <= 0) return null; // 이미지 아직 안 뜬 상태 — 보류
       return { x: (boxX - cf.fx) / cf.fw, y: (boxY - cf.fy) / cf.fh, cf };
@@ -247,12 +259,12 @@ export default function EmbossBrushLayer({
       if (last && Math.hypot(snapped.x - last.x, snapped.y - last.y) < MIN_LASSO_SPACING) return;
       lassoPointsRef.current = [...lassoPointsRef.current, snapped];
       // 미리보기 SVG는 이 레이어 자신의(화면 방향) 박스에 viewBox 0 0 100 100으로 얹힌다 —
-      // 로컬(자연) 분율이 아니라 화면 분율이 필요하므로, 회전 무드에선 clientToNaturalFrac의
-      // 역변환을 한 번 더 거친다(#729 c5, 위 boxX/boxY 주석과 대칭).
+      // 로컬(자연) 분율이 아니라 화면 분율이 필요하므로, boxFracToScreenFrac으로 역변환한다.
       const localBoxX = nat.cf.fx + snapped.x * nat.cf.fw;
       const localBoxY = nat.cf.fy + snapped.y * nat.cf.fh;
-      const screenX = (rotated ? 1 - localBoxY : localBoxX) * 100;
-      const screenY = (rotated ? localBoxX : localBoxY) * 100;
+      const { u: su, v: sv } = boxFracToScreenFrac(localBoxX, localBoxY, rotated);
+      const screenX = su * 100;
+      const screenY = sv * 100;
       setPreviewPoints((prev) => [...prev, { x: screenX, y: screenY }]);
     },
     [clientToNaturalFrac, rotated],
