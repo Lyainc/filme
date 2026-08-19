@@ -97,44 +97,56 @@ describe('히어로 갤러리 샘플 클릭이 무드를 즉시 커밋한다 (#6
   });
 });
 
-// 블랙박스 명제로만 남긴다 — 예전엔 이 자리가 heroLayout useState 초기화 레이스와 draftRestored
-// 재동기화 effect라는 특정 구현을 잠갔지만, #615 개정이 그 미러 단계를 통째로 지웠다(진입 CTA는
-// 이제 layout을 아예 안 건드린다). 구현을 지목하던 옛 서술을 그대로 두면 없는 코드를 설명하는
-// 주석이 되므로, "재방문자의 복원된 무드가 진입만으로 기본값으로 되돌아가지 않는다"는 사용자
-// 관측 명제만 남긴다 — 어떤 구현으로 가든 지켜져야 하는 계약이다.
-describe('복원된 draft의 무드가 진입만으로 되돌아가지 않는다 (#615)', () => {
+// #615는 "재방문자의 복원된 무드가 진입만으로 기본값으로 되돌아가지 않는다"를 잠갔는데, #727이
+// 진입의 의미 자체를 갈랐다 — 랜딩의 네 경로는 이제 **새 문서 시작**이고(c7), 복원된 문서를
+// 이어받는 길은 "이어서 만들기" 하나다(c5). 그래서 명제가 진입 경로별로 둘로 쪼개진다.
+// #615가 막으려던 사고(재방문자가 고른 무드가 소리 없이 minimal로 돌아감)는 아래 첫 케이스가
+// 그대로 진다 — 복원 경로에서 무드가 유지되는지가 그 계약의 현재 얼굴이다.
+describe('복원된 draft의 무드는 이어받을 때만 유지된다 (#615 → #727)', () => {
   afterEach(() => {
     localStorage.clear();
   });
 
-  test('non-default 무드로 복원된 draft에서 "직접 입력"을 눌러도 무드가 유지된다', async () => {
+  const seedStubDraft = async () => {
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({ movieInfo: { title: '인터스텔라' }, components: { layout: 'stub' } })
     );
-
     await act(async () => {
       render(<Harness />);
     });
     await waitFor(() => expect(captured.components.layout).toBe('stub'));
+  };
+
+  test('"이어서 만들기"로 이어받으면 복원된 무드가 그대로다', async () => {
+    await seedStubDraft();
+
+    fireEvent.click(screen.getByTestId('landing-restore'));
+
+    expect(captured.components.layout).toBe('stub');
+  });
+
+  test('"직접 입력"은 새 문서라 기본 무드로 시작한다', async () => {
+    await seedStubDraft();
 
     fireEvent.click(screen.getByTestId('landing-skip-poster'));
 
-    expect(captured.components.layout).toBe('stub');
+    // 저장분은 그대로 살아 있다(c7) — 오탭이면 새로고침 한 번으로 stub draft가 돌아온다.
+    expect(captured.components.layout).toBe('minimal');
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).components.layout).toBe('stub');
   });
 });
 
 /**
- * 같은 무드 재탭이 draft를 쓰면 안 된다(#615 fresh-context 리뷰) — `updateComponents`는 값이
- * 같아도 dirtyTick을 올리고, 그러면 1초 디바운스 뒤 autosave가 draft를 써서 **다음 방문부터**
- * `draftRestored=true`로 랜딩(마케팅 카피·OCR 주 CTA)이 영구히 안 뜬다. 갤러리 첫 카드가 현재
- * 무드(minimal)라 오탭 한 번의 대가가 그거였다. 폐기된 `commitHeroLayout`의 동일값 가드를
- * 셸의 `onEnterMood`로 되살린 게 이 테스트가 잠그는 것.
- *
- * 두 번째 테스트가 짝이다 — 가드가 "아무것도 저장 안 함"으로 과하게 걸리면 실제 무드 변경까지
- * 안 남을 텐데, 그러면 그쪽이 깨진다.
+ * 갤러리 탭은 draft를 만들지 않는다 — #615는 **같은** 무드 재탭만 막았지만(동일값 가드), #727이
+ * 그 비대칭을 없앴다: 무드는 이제 `updateComponents`가 아니라 `resetDocument`의 layout 인자로
+ * 실려 dirtyTick을 아예 안 올린다(c7). 근거는 오탭 복구다 — 갤러리는 화면 가운데를 덮는 자동
+ * 회전 캐러셀이라 오탭 확률이 낮지 않은데, 탭 한 번이 1초 뒤 autosave로 이어지면 석 달 전 draft가
+ * 그 자리에서 덮인다. 저장분이 덮이는 시점은 새 문서의 **첫 자동저장**, 즉 사용자가 실제로 편집한
+ * 뒤여야 한다. #615가 막으려던 사고(오탭이 draft를 만들어 랜딩이 영영 안 뜸)는 이제 두 겹으로
+ * 막힌다 — 애초에 draft를 안 쓰고, 써도 랜딩은 draft와 무관하게 뜬다(c1).
  */
-describe('갤러리 동일 무드 재탭은 draft를 만들지 않는다 (#615)', () => {
+describe('갤러리 무드 탭은 draft를 만들지 않는다 (#615 → #727)', () => {
   const sampleFor = (name: string) =>
     within(landing()).getByRole('button', { name: new RegExp(`^${name} 무드로 바로 시작`) });
 
@@ -150,24 +162,24 @@ describe('갤러리 동일 무드 재탭은 draft를 만들지 않는다 (#615)'
 
     fireEvent.click(sampleFor('Minimal'));
 
-    // 디바운스(1s) + 여유. 가드가 없으면 dirtyTick이 올라 여기서 draft가 쓰인다.
+    // 디바운스(1s) + 여유. 무드가 dirtyTick을 올리면 여기서 draft가 쓰인다.
     act(() => jest.advanceTimersByTime(2000));
 
     expect(localStorage.getItem(STORAGE_KEY)).toBe(null);
-    // 진입 자체는 정상적으로 일어나야 한다 — 가드는 저장만 막지 화면 전환을 막지 않는다.
+    // 진입 자체는 정상적으로 일어나야 한다 — 미룬 건 저장이지 화면 전환이 아니다.
     expect(landing().classList.contains('fixed')).toBe(false);
   });
 
-  test('다른 무드 카드를 누르면 draft가 쓰인다 — 가드가 저장 자체를 막은 게 아니다', () => {
+  test('다른 무드 카드도 draft를 안 쓴다 — 화면은 그 무드로 시작하되 저장은 첫 편집까지 미룬다', () => {
     jest.useFakeTimers();
     render(<Harness />);
 
     fireEvent.click(sampleFor('Stub'));
     act(() => jest.advanceTimersByTime(2000));
 
-    const raw = localStorage.getItem(STORAGE_KEY);
-    expect(raw).not.toBe(null);
-    expect(JSON.parse(raw!).components.layout).toBe('stub');
+    // 고른 무드는 화면에 즉시 선다 — 미룬 건 저장이지 선택이 아니다.
+    expect(captured.components.layout).toBe('stub');
+    expect(localStorage.getItem(STORAGE_KEY)).toBe(null);
   });
 });
 

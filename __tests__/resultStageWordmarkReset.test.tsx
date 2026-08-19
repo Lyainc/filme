@@ -73,7 +73,12 @@ function seedExportableDraft() {
 async function enterResultStage(user: ReturnType<typeof userEvent.setup>) {
   seedExportableDraft();
   render(<Home />);
-  await user.click(screen.getByRole('button', { name: /포스터 업로드/ }));
+  // 재방문자는 랜딩에서 "이어서 만들기"로 draft를 이어받는다(#727 c5) — 나머지 네 진입 경로는
+  // "새로 시작"이라 문서를 새 문서로 되돌려(c7) 완료 게이트가 요구하는 title·titleOg·releaseDate가
+  // 사라진다. 여기서 재려는 건 워드마크 초기화 배선이지 진입 경로가 아니므로 draft를 이어받는다.
+  await user.click(screen.getByTestId('landing-restore'));
+  // 랜딩을 떠난 뒤의 포스터 진입점은 헤더 메뉴 '포스터 추가' 한 곳이다(#674) — 그 경로가 여는
+  // input이 이것이라, 여기선 파일 선택만 직접 일으킨다(진입점 자체는 다른 스위트가 잠근다).
   fireEvent.change(posterFileInput(), { target: { files: [pngFile('poster.png')] } });
   await user.click(await screen.findByText('mock-apply'));
   await user.click(await screen.findByRole('button', { name: '완료' }));

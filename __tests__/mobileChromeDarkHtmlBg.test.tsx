@@ -129,7 +129,9 @@ describe('모바일 셸 html 배경 동기화 (#402→#415)', () => {
     const user = userEvent.setup();
     render(<Home />);
 
-    await user.click(screen.getByRole('button', { name: /포스터 업로드/ }));
+    // 재방문자는 "이어서 만들기"로 draft를 이어받는다(#727 c5) — 랜딩의 다른 네 경로는 "새로
+    // 시작"이라 문서를 되돌려(c7) 완료 게이트가 요구하는 title·titleOg·releaseDate가 사라진다.
+    await user.click(screen.getByTestId('landing-restore'));
     fireEvent.change(posterFileInput(), { target: { files: [pngFile('poster.png')] } });
     await user.click(await screen.findByText('mock-apply'));
 
@@ -146,7 +148,9 @@ describe('모바일 셸 html 배경 동기화 (#402→#415)', () => {
     const user = userEvent.setup();
     const { unmount } = render(<Home />);
 
-    await user.click(screen.getByRole('button', { name: /포스터 업로드/ }));
+    // 재방문자는 "이어서 만들기"로 draft를 이어받는다(#727 c5) — 랜딩의 다른 네 경로는 "새로
+    // 시작"이라 문서를 되돌려(c7) 완료 게이트가 요구하는 title·titleOg·releaseDate가 사라진다.
+    await user.click(screen.getByTestId('landing-restore'));
     fireEvent.change(posterFileInput(), { target: { files: [pngFile('poster.png')] } });
     await user.click(await screen.findByText('mock-apply'));
     await user.click(await screen.findByRole('button', { name: '완료' }));

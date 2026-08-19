@@ -124,18 +124,23 @@ export function OcrUploadCard({
       }
     }
 
-    if (filled.size > 0) {
-      setInfo(toApply);
-    }
-
     // Surface the undo banner whenever OCR will mutate the form — direct fields
     // applied now, a title that schedules async KOBIS injection, or a chain that
     // set chainLabel/chainVisible on components. With zero direct fields the KOBIS
     // path still needs an undo affordance: keys is an empty Set, but prevValues
     // already carries the KOBIS snapshot (#100). chain-only도 라벨이 export에
     // 반영되므로 undo가 필요하다(#141 리뷰 P1).
+    //
+    // **필드를 쓰기 전에 부른다**(#727) — 랜딩에서 온 OCR은 "새로 시작"이라 셸이 이 콜백 안에서
+    // 문서를 새 문서로 되돌린다(usePhototicket.resetDocument). 뒤에 부르면 그 리셋이 같은 배치의
+    // 마지막 setState가 돼 방금 채운 필드를 통째로 지운다. 아래 setInfo/호출부 setComponents는
+    // 전부 함수형 갱신이라 리셋 위에 정확히 얹힌다.
     if (filled.size > 0 || title || prevComponents) {
       onOcrApply({ keys: filled, prevValues, prevComponents });
+    }
+
+    if (filled.size > 0) {
+      setInfo(toApply);
     }
 
     if (title) {
@@ -208,7 +213,6 @@ export function OcrUploadCard({
       let prevComponents: Partial<TicketComponents> | undefined;
       if (labels.length > 0 && setComponents) {
         prevComponents = prev;
-        setComponents(next);
       }
 
       const direct: Partial<MovieInfo> = {};
@@ -219,6 +223,9 @@ export function OcrUploadCard({
       }
 
       applyOcr(direct, result.title, prevComponents);
+      // applyOcr 뒤다(#727) — 그 안의 onOcrApply가 셸의 문서 리셋을 부르므로, 컴포넌트 패치도
+      // 리셋 **뒤에** 큐에 들어가야 살아남는다(위 applyOcr 주석과 같은 이유).
+      if (prevComponents && setComponents) setComponents(next);
     } catch (err) {
       // 무음 실패 제거(#645 C2) — 네트워크/서버 오류는 rateLimited·빈 결과와 달리 아무 토스트도
       // 없었다. 트리거 바로 아래 위치를 유지해야 하는 로컬 토스트라(#645 논의) 셸 밖 showError

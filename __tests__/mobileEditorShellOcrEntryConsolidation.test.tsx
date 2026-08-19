@@ -178,15 +178,12 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
   // landingDismissed만으로 걷혀야 해서 croppedImageUrl로는 대체 관측이 안 된다. 위 테스트는
   // seed-poster를 먼저 눌러 croppedImageUrl이 앞서므로 이 축을 우회한다.
   //
-  // #652로 이 테스트의 단언이 갱신됐다: OCR로 실제 필드가 채워지면(ocrApplied) 오버레이만 걷히는
-  // 게 아니라 본문 주 CTA(방금 쓴 그 카드)와 이탈 경로 3종까지 CSS로 숨어야 한다 — #388 계약
-  // (편집 중엔 OCR 진입점이 드로어 하나)이 이 상태에 한해 #631 D2(a)를 이긴다. "6개 항목이 자동
-  // 입력되었어요" 배너 옆에 방금 쓴 그 CTA와 이탈 경로 줄이 그대로 남아 "입력이 안 끝났나"로
-  // 읽히던 게 #652의 재현이었다. #674로 한 단 더 나아갔다: 캔버스가 서면(canvasReady) Landing
-  // 컨테이너 **자체**가 hidden이다 — inline으로 남기면 그 flex-1이 티켓 스테이지와 본문 높이를
-  // 반씩 나눠 갖고, ocrApplied면 그 절반이 통째로 빈 블록이 된다. 안쪽 두 블록의 hidden은 그대로
-  // 유지돼 중복 방어로 남는다(Landing.tsx ocrApplied 주석).
-  test('포스터 없이 OCR로 직접 필드가 인식되면 오버레이가 걷히고 본문 주 CTA·이탈 경로가 함께 숨는다 (#614 걷는 조건 ③, #652)', async () => {
+  // #652가 요구하던 "본문 주 CTA·이탈 경로도 함께 숨는다"는 #674(Landing 컨테이너 자체가 hidden)를
+  // 거쳐 #727에서 **컨테이너 하나로 일원화**됐다: 랜딩 모드가 overlay/hidden 2값이 되면서 안쪽만
+  // 숨겨야 하는 상태(inline)가 코드에서 사라졌고, 그래서 ocrApplied 프로퍼티도 함께 삭제됐다.
+  // 지키려던 명제("6개 항목이 자동 입력되었어요" 배너 옆에 방금 쓴 그 CTA가 남으면 안 된다)는
+  // 그대로다 — 이제 루트 hidden이 그걸 통째로 진다. unmount는 아니다(#297 P1, #614/#624 계약).
+  test('포스터 없이 OCR로 직접 필드가 인식되면 랜딩 컨테이너가 통째로 걷힌다 (#614 걷는 조건 ③, #652 → #727)', async () => {
     render(<MobileHarness />);
     const landing = () => screen.getByTestId('landing');
     expect(landing().classList.contains('fixed')).toBe(true);
@@ -209,20 +206,17 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
     // 캔버스가 섰으므로 컨테이너 자체가 hidden — unmount는 아니다(#674, #297 P1).
     expect(landing().classList.contains('hidden')).toBe(true);
     expect(screen.getByTestId('landing')).toBeTruthy();
-    // 본문 주 CTA·이탈 경로는 unmount가 아니라 CSS hidden으로만 숨는다(#614/#624 remount 금지 계약 유지).
-    // **안쪽 블록 자신**을 재야 한다 — closest('.hidden')은 self-or-ancestor라 #674로 Landing 루트가
-    // hidden을 달면서 그것만으로 통과하게 됐다(fresh-context 리뷰). ocrApplied 분기를 지워도 초록이던
-    // 단언이라, 두 요소가 공유하는 그 래퍼(mt-2 max-w-[280px])를 직접 집는다.
+    // 주 CTA·이탈 경로는 unmount가 아니라 그 루트의 CSS hidden 안에 남는다(#614/#624 remount 금지
+    // 계약 유지) — 트리에서 빠지면 OcrUploadCard 단일 인스턴스 계약이 깨진다.
     const ctaWrap = screen.getByTestId('landing-exit-paths').parentElement!;
     expect(ctaWrap.contains(ocrCard)).toBe(true);
     expect(ctaWrap.contains(posterExit)).toBe(true);
-    expect(ctaWrap.classList.contains('hidden')).toBe(true);
+    expect(landing().contains(ctaWrap)).toBe(true);
   });
 
-  // claude-review PR #658 P1 — ocrApplied는 handleClearTap이 landingDismissed와 함께
-  // false로 되돌리는데(#652), 그 리셋 줄을 잠그는 테스트가 없었다. 안 되돌아가면 초기화로 새
-  // 문서를 열어도 오버레이 랜딩의 OCR 카드·이탈 경로가 영구히 숨은 채로 남는다.
-  test('OCR로 CTA·이탈 경로가 숨은 뒤 초기화하면 ocrApplied도 되돌아가 오버레이 랜딩이 온전히 복귀한다 (#652)', async () => {
+  // claude-review PR #658 P1 — 초기화(handleClearTap)가 landingDismissed를 false로 되돌리는 줄을
+  // 잠근다. 안 되돌아가면 새 문서를 열어도 랜딩이 영영 안 뜨고 빈 셸에 남는다(#614 → #727).
+  test('OCR로 랜딩이 걷힌 뒤 초기화하면 오버레이 랜딩이 온전히 복귀한다 (#652 → #727)', async () => {
     const user = userEvent.setup();
     render(<MobileHarness />);
 
@@ -235,7 +229,7 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
     });
     const landing = () => screen.getByTestId('landing');
     expect(landing().classList.contains('fixed')).toBe(false);
-    expect(screen.getByRole('button', { name: '포스터 업로드' }).closest('.hidden')).not.toBeNull();
+    expect(!!screen.getByRole('button', { name: '포스터 업로드' }).closest('.hidden')).toBe(true);
 
     // 초기화 2탭(#374) — 더블탭 가드(350ms) 밖에서 재탭해야 실행된다.
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
@@ -245,8 +239,8 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
 
     // 새 문서 — 오버레이 랜딩이 다시 뜨고, 그 안 CTA·이탈 경로도 더 이상 숨어 있지 않다.
     expect(landing().classList.contains('fixed')).toBe(true);
-    expect(screen.getByRole('button', { name: '티켓 스크린샷으로 자동입력' }).closest('.hidden')).toBeNull();
-    expect(screen.getByRole('button', { name: '포스터 업로드' }).closest('.hidden')).toBeNull();
+    expect(!!screen.getByRole('button', { name: '티켓 스크린샷으로 자동입력' }).closest('.hidden')).toBe(false);
+    expect(!!screen.getByRole('button', { name: '포스터 업로드' }).closest('.hidden')).toBe(false);
   });
 
   test('드로어에서 OCR 시작 → KOBIS 응답 전에 드로어를 닫아도(unmount) 응답 도착 시 titleOg/releaseDate가 폼에 반영된다 (claude-review PR #413 P0)', async () => {

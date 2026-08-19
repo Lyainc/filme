@@ -4,12 +4,13 @@ import { STORAGE_KEY } from '@/hooks/usePhototicket';
 /**
  * 첫 페인트 전에 서야 하는 판정 둘 — 테마(FOUC)와 draft 유무(#675).
  *
- * draft 축: 랜딩 표시 판정(`showLanding`)이 읽는 `photo.draftRestored`는 localStorage 복원
- * effect에서 서는데, 그 복원은 SSR 하이드레이션 불일치를 피하려 일부러 effect로 미룬 것이다.
- * 그래서 **서버 HTML은 항상 랜딩 오버레이를 담고**, 재방문자도 그게 페인트된 뒤 effect가 돌 때까지
- * 오버레이를 본다(실측 299ms). React 쪽을 앞당겨도 이미 그려진 SSR HTML은 못 막으므로, 판정을
- * 스크립트로 내려 `has-draft` 클래스로 표시하고 globals.css가 그 동안만 오버레이를 숨긴다.
- * 클래스를 거두는 건 그 명제가 실제로 뒤집힐 때뿐이다(usePhototicket: 저장분이 없거나 초기화).
+ * draft 축(#675 → #727 c9로 의미가 뒤집혔다): 이 스탬프가 예전엔 "랜딩 오버레이를 숨긴다"였는데,
+ * #727이 "draft가 있으면 랜딩을 생략한다"는 D7 자체를 뒤집었으므로 지금은 **복원 진입점
+ * ("이어서 만들기")을 첫 페인트에 드러낸다**. 행의 표시 근거인 draft 복원은 SSR 하이드레이션
+ * 불일치를 피하려 일부러 effect로 미룬 것이라, React로 그리면 재방문자는 행이 없는 랜딩을 먼저
+ * 보고 299ms 뒤 행이 끼어들며 주 CTA가 아래로 밀린다(실측) — 그만큼이면 이미 탭할 수 있는
+ * 시간이라 오탭이 난다. 서버 HTML에 행을 담아두고 이 클래스로 드러내면 자리 이동이 0이다.
+ * 클래스를 거두는 건 그 명제가 실제로 뒤집힐 때뿐이다(usePhototicket: 저장분이 없거나 손상, 초기화).
  */
 export const themeScript = `
 (function(){try{

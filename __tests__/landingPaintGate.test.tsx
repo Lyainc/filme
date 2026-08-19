@@ -1,15 +1,18 @@
 /**
- * #675 회귀 — draft 복원 재방문에서 랜딩 오버레이가 첫 페인트에 뜨지 않는다.
+ * #675 첫 페인트 게이트 — #727 c9로 **방향이 뒤집혔다.**
  *
- * 랜딩 표시 판정이 읽는 `draftRestored`는 localStorage 복원 effect에서 서고, 그 복원은 SSR
- * 하이드레이션 불일치를 피하려 일부러 effect로 미룬 것이다 — 그래서 서버 HTML은 항상 랜딩
- * 오버레이를 담고, 재방문자도 그게 페인트된 뒤 effect가 돌 때까지 오버레이를 본다(실측 299ms).
- * 해법은 테마 FOUC와 같은 자리다: `_document.tsx`의 blocking 스크립트가 draft를 보고 `has-draft`를
- * 찍고, globals.css가 그 동안만 오버레이를 숨긴다.
+ * #675는 "draft가 있으면 랜딩 오버레이를 숨긴다"(D7)를 첫 페인트에서 지키는 장치였다. #727이
+ * 그 D7 자체를 뒤집어 랜딩을 상시 노출로 바꿨으므로, 같은 `has-draft` 스탬프가 이제 **복원 행
+ * ("이어서 만들기")을 첫 페인트에 드러내는** 일을 한다. 오버레이를 숨기던 옛 규칙은 남아 있으면
+ * 죽은 코드가 아니라 정면 충돌이라 삭제됐고, 아래 두 번째 테스트가 그 부재를 잠근다.
+ *
+ * 뒤집혀도 이유는 같다: 행의 근거인 draft 복원은 SSR 하이드레이션 불일치를 피하려 effect로 미룬
+ * 것이고 #675가 그 지연을 299ms로 실측했다. React로 그리면 그 사이 행이 없다가 뒤늦게 끼어들어
+ * 주 CTA가 아래로 밀리는데, 299ms면 이미 탭할 수 있는 시간이라 오탭이 난다.
  *
  * 이 게이트는 **세 파일이 동시에 맞아야** 성립한다(스크립트가 찍는 클래스 · CSS 규칙 · 걷는 쪽).
- * 아래 첫 두 테스트가 그 합의를, 나머지가 "걷어야 할 때 걷는가"를 잠근다 — 안 걷으면 랜딩도
- * 캔버스도 없는 빈 셸에 갇히므로 플래시보다 나쁜 회귀다.
+ * 아래 앞 세 테스트가 그 합의를, 나머지가 "걷어야 할 때 걷는가"를 잠근다 — 안 걷으면 없는 draft를
+ * 가리키는 복원 진입점이 남는다.
  */
 import { readFileSync } from 'fs';
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
@@ -43,22 +46,31 @@ describe('랜딩 첫 페인트 게이트 (#675)', () => {
     expect(themeScript).toContain('has-draft');
   });
 
-  test('globals.css가 그 클래스로 오버레이만 숨긴다 — 규칙이 없으면 게이트가 조용히 죽고, .fixed가 빠지면 inline 재방문자가 빈 셸을 본다', () => {
+  // 옛 규칙이 남아 있으면 #727이 뒤집은 명제와 정면으로 부딪힌다 — draft 있는 재방문자에게
+  // 랜딩이 통째로 안 뜨고, 그건 이 작업이 없애려는 바로 그 상태다(c9).
+  test('globals.css에 오버레이를 숨기던 옛 규칙이 없다 (#727 c9)', () => {
     const css = readFileSync('src/styles/globals.css', 'utf8');
-    expect(css).toContain("html.has-draft [data-testid='landing'].fixed");
+    expect(css).not.toContain("html.has-draft [data-testid='landing'].fixed");
   });
 
-  // 게이트는 셀렉터가 Landing의 오버레이 클래스(.fixed)에 붙어야 성립한다 — 세 파일이 문자열로만
-  // 맞아 있으면 오버레이가 absolute로 바뀌는 흔한 리팩터에 규칙이 조용히 빗나간다(fresh-context 리뷰).
-  test('오버레이 모드 랜딩이 실제로 .fixed를 단다 — CSS 게이트가 잡는 그 클래스다', () => {
+  test('globals.css가 그 클래스로 복원 행을 드러낸다 — 규칙이 없으면 행이 영영 안 보인다', () => {
+    const css = readFileSync('src/styles/globals.css', 'utf8');
+    expect(css).toContain("[data-testid='landing-restore']");
+    expect(css).toContain("html.has-draft [data-testid='landing-restore']");
+  });
+
+  // 세 파일이 문자열로만 맞아 있으면 testid가 바뀌는 흔한 리팩터에 규칙이 조용히 빗나간다
+  // (fresh-context 리뷰). 랜딩이 오버레이로 뜨고 그 안에 그 testid가 실제로 있는지까지 잰다.
+  test('랜딩이 오버레이로 뜨고 CSS 게이트가 잡는 복원 행을 실제로 담고 있다', () => {
     render(<Harness />);
 
     const landing = screen.getByTestId('landing');
     expect(landing.classList.contains('fixed')).toBe(true);
     expect(getComputedStyle(landing).display).not.toBe('none');
+    expect(landing.contains(screen.getByTestId('landing-restore'))).toBe(true);
   });
 
-  test('저장분이 있으면 게이트를 유지한다 — 복원된 세션은 랜딩을 자기 판정으로 숨긴다', async () => {
+  test('저장분이 있으면 게이트를 유지한다 — 복원 행이 계속 보여야 한다', async () => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ movieInfo: { title: '인터스텔라' } }));
     armGate();
 
@@ -87,7 +99,7 @@ describe('랜딩 첫 페인트 게이트 (#675)', () => {
     expect(result.current.draftRestored).toBe(false);
   });
 
-  test('초기화가 게이트를 걷는다 — 안 걷으면 새 문서인데 랜딩이 영영 안 뜬다', async () => {
+  test('초기화가 게이트를 걷는다 — 안 걷으면 지운 draft를 가리키는 복원 행이 남는다', async () => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ movieInfo: { title: '인터스텔라' } }));
     armGate();
 

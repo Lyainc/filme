@@ -3,11 +3,12 @@
  *
  * 세 경로:
  *   1. 드래프 없음 → 랜딩이 뜬다(헤드카피 + CTA)
- *   2. 드래프 복원(D7) → 오버레이 생략, 재방문자는 편집으로 직행. 단 포스터가 없으면 진입
- *      컨트롤(CTA·OCR)은 본문에 남아야 한다 — 안 그러면 헤더만 있는 빈 화면이고, IndexedDB
- *      포스터 복원 실패 시 재업로드를 유도하는 #489 결정 5의 경로가 갈 곳을 잃는다.
+ *   2. 드래프 복원 → **랜딩이 그대로 뜨고**(#727 c1, #675 D7 뒤집기) 주 CTA 위에 복원 진입점
+ *      ("이어서 만들기")이 선다. 눌러야 편집으로 들어가고, 그때 복원된 필드가 그대로 남는다.
  *   3. CTA 1탭 → 셸의 숨은 포스터 input이 **같은 제스처 안에서** click된다(라우트 전환이 없어야
- *      파일 다이얼로그가 열린다는 게 /studio 분리안을 버린 이유다) → 파일 선택 시 오버레이가 걷힌다
+ *      파일 다이얼로그가 열린다는 게 /studio 분리안을 버린 이유다) → 크롭 확정에 오버레이가 걷힌다.
+ *      파일 선택만으로는 안 걷힌다(#727 c4) — 크롭 모달은 DOM 순서로 랜딩 위에 그려지고, 취소하면
+ *      랜딩이 그 자리에 그대로 남아 빈 셸이 안 생긴다.
  *
  * 랜딩↔편집 전환에서 OcrUploadCard가 remount되지 않는 건 mobileChromeOrder.test.tsx가 이미
  * 노드 동일성으로 잡고 있어 여기서 겹쳐 재지 않는다.
@@ -31,10 +32,10 @@ function Harness() {
 }
 
 const landing = () => screen.getByTestId('landing');
-// 오버레이로 떠 있는지 — 랜딩은 세 모드다(overlay / inline / hidden). 걷혔다는 건 hidden이 아니라
-// "더는 셸을 덮지 않는다"이므로 fixed 여부로 잰다. 포스터 없이 걷힌 상태는 inline으로 남아
-// 진입 컨트롤을 그대로 들고 있다.
+// 랜딩은 두 모드다(overlay / hidden, #727 c3 — inline 삭제). 걷혔다 = 셸을 더는 안 덮는다이므로
+// fixed 여부로 잰다. hidden도 unmount가 아니라 CSS다(#297 P1).
 const landingOverlayShown = () => landing().classList.contains('fixed');
+const restoreRow = () => screen.getByTestId('landing-restore');
 const posterInput = () =>
   document.querySelector('input[type="file"][accept*="jpeg"]') as HTMLInputElement;
 const ocrButton = () => screen.getByRole('button', { name: '티켓 스크린샷으로 자동입력' });
@@ -73,29 +74,52 @@ describe('랜딩 오버레이(#614)', () => {
     expect(within(landing()).queryAllByRole('button', { name: /^35mm Wide 무드로 바로 시작/ })).toHaveLength(0);
   });
 
-  test('드래프가 복원되면 오버레이를 생략하되 진입 컨트롤은 본문에 남는다 (D7)', () => {
-    // 포스터 없이 텍스트만 있던 draft도 "재방문자"다 — croppedImageUrl로는 구분되지 않으므로
-    // usePhototicket.draftRestored가 이 경로의 유일한 근거다.
+  // ac1 — #675 D7의 정확한 반대. 텍스트만 있던 draft가 여기, 포스터가 있던 draft는
+  // awaitingPosterRestore.test.tsx가 IDB 게이트를 쥐고 잰다(복원이 **끝난 뒤에도** 유지되는지).
+  test('드래프가 복원돼도 랜딩이 오버레이로 그대로 뜬다 (#727 c1, D7 뒤집기)', () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ movieInfo: { title: '인터스텔라' } }));
 
     render(<Harness />);
 
-    // landingOverlayShown()은 getByTestId를 거쳐 n≠1이면 그 자리에서 throw하므로, 그보다 먼저
-    // querySelectorAll로 개수를 세야 "landing이 중복/소실됐다"는 가설 자체를 진단할 수 있다(#717).
-    const diagAll = document.querySelectorAll('[data-testid="landing"]');
-    if (diagAll.length !== 1 || diagAll[0].classList.contains('fixed')) {
-      console.error(
-        `[#717] n=${diagAll.length} cls=${JSON.stringify(Array.from(diagAll).map((e) => e.className))}` +
-        ` ls=${JSON.stringify(localStorage.getItem(STORAGE_KEY))}` +
-        ` done=${!!screen.queryByRole('button', { name: '완료' })}`
-      );
-    }
+    expect(landingOverlayShown()).toBe(true);
+    // 마케팅 층도 그대로다 — 재방문자도 무드 갤러리·OCR·업로드·직접 입력을 같은 화면에서 고른다.
+    expect(landing().textContent).toContain('내 굿즈가 돼요');
+    expect(!!screen.queryByRole('button', { name: '포스터 업로드' })).toBe(true);
+    expect(!!ocrButton()).toBe(true);
+  });
+
+  // ac2 — 복원 진입점의 자리와 라벨. 라벨 규칙은 docs/COPY_TONE_GUIDE.md 축 2의 기계적 판별을
+  // 그대로 옮긴 것이다(조건절·종결어미·마침표 금지). `-하기`는 금지가 아니다.
+  test('복원 진입점이 주 CTA 위에 있고, 라벨이 조건절 없는 명령형에 제목을 싣는다', () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ movieInfo: { title: '인터스텔라' } }));
+
+    render(<Harness />);
+
+    const label = restoreRow().textContent ?? '';
+    expect(label.startsWith('이어서 만들기')).toBe(true);
+    expect(label).toContain('인터스텔라');
+    expect(/[.]|있으면|없으면|세요|까요/.test(label)).toBe(false);
+    // DOCUMENT_POSITION_FOLLOWING(4) — 복원 행이 주 CTA보다 DOM 앞이다(= 위).
+    expect((restoreRow().compareDocumentPosition(ocrButton()) & 4) !== 0).toBe(true);
+    // 탭 타깃 44px(#646 선례, c12) — 테스트에 Tailwind가 안 실려 클래스로 잰다(레포 컨벤션).
+    expect(restoreRow().className).toContain('min-h-touch');
+  });
+
+  // ac3 — 눌렀을 때 랜딩이 걷히고 복원된 문서가 그대로 편집 화면에 있다. 다섯 이탈 중 유일하게
+  // 문서를 새 문서로 안 되돌리는 경로다(c7의 "새로 시작" 넷과 갈리는 지점).
+  test('복원 진입점을 누르면 랜딩이 걷히고 복원된 필드가 편집 화면에 남는다', () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ movieInfo: { title: '인터스텔라' } }));
+
+    render(<Harness />);
+    fireEvent.click(restoreRow());
+
+    expect(landing().classList.contains('hidden')).toBe(true);
     expect(landingOverlayShown()).toBe(false);
-    // 마케팅 카피는 빠지고(편집 화면이다) 진입 컨트롤만 남는 inline 모드.
-    expect(landing().classList.contains('hidden')).toBe(false);
-    expect(landing().textContent).not.toContain('내 굿즈가 돼요');
-    expect(screen.getByRole('button', { name: '포스터 업로드' })).toBeDefined();
-    expect(ocrButton()).toBeDefined();
+    // 편집 크롬이 실제로 열렸는지 — posterlessCanvas.test.tsx와 같은 두 진입점으로 잰다.
+    expect(!!screen.queryByRole('button', { name: '완료' })).toBe(true);
+    expect(!!screen.queryByRole('button', { name: '티켓 항목 목록 열기' })).toBe(true);
+    // 복원된 제목이 문서에 살아 있다 — 티켓 프리뷰가 그 값을 그린다.
+    expect(document.body.textContent).toContain('인터스텔라');
   });
 
   test('주 CTA 1탭이 포스터 input이 아니라 OCR 파일 input을 그 자리에서 연다', () => {
@@ -110,7 +134,7 @@ describe('랜딩 오버레이(#614)', () => {
     expect(clicked).toBe(1);
   });
 
-  test('이탈 경로 "포스터 업로드" 1탭이 포스터 input을 그 자리에서 click하고, 파일 선택에 오버레이가 걷힌다', () => {
+  test('이탈 경로 "포스터 업로드" 1탭이 포스터 input을 그 자리에서 click하고, 파일 선택 뒤에도 오버레이가 남는다 (#727 c4)', () => {
     render(<Harness />);
     const input = posterInput();
     let clicked = 0;
@@ -122,23 +146,30 @@ describe('랜딩 오버레이(#614)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '포스터 업로드' }));
     expect(clicked).toBe(1);
-    expect(landingOverlayShown()).toBe(true); // 아직 안 고름 — 여기서 걷히면 빈 셸이 드러난다
+    expect(landingOverlayShown()).toBe(true); // 아직 안 고름
 
     fireEvent.change(input, {
       target: { files: [new File(['x'], 'poster.png', { type: 'image/png' })] },
     });
 
-    // landingOverlayShown()은 getByTestId를 거쳐 n≠1이면 그 자리에서 throw하므로, 그보다 먼저
-    // querySelectorAll로 개수를 세야 "landing이 중복/소실됐다"는 가설 자체를 진단할 수 있다(#717).
+    // #727 c4 — 예전엔 crop.cropOpen이 랜딩 판정에 들어 있어 이 프레임에 걷혔다. 지금은 크롭
+    // 모달이 z-50 + DOM 순서로 랜딩 위에 그려지므로 걷을 필요가 없고, 걷지 않으니 크롭 취소가
+    // 저절로 랜딩으로 되돌아간다(파생 판정 없이). 실제로 걷히는 건 크롭 **확정** 시점이고
+    // posterCropPipeline.test.tsx가 그 축을 크롭 모달까지 태워 잠근다.
+    //
+    // #717 진단 프로브 — 이 케이스는 #727이 흡수하지 않고 #717에 남긴 셋 중 하나다(단언 방향은
+    // c4가 뒤집었지만 부하 상태 전 스위트에서만 깨지는 원인 조사는 그쪽 소유다). landingOverlayShown()은
+    // getByTestId를 거쳐 n≠1이면 그 자리에서 throw하므로, 그보다 먼저 querySelectorAll로 개수를
+    // 세야 "landing이 중복/소실됐다"는 가설 자체를 진단할 수 있다.
     const diagAll = document.querySelectorAll('[data-testid="landing"]');
-    if (diagAll.length !== 1 || diagAll[0].classList.contains('fixed')) {
+    if (diagAll.length !== 1 || !diagAll[0].classList.contains('fixed')) {
       console.error(
         `[#717] n=${diagAll.length} cls=${JSON.stringify(Array.from(diagAll).map((e) => e.className))}` +
         ` ls=${JSON.stringify(localStorage.getItem(STORAGE_KEY))}` +
         ` done=${!!screen.queryByRole('button', { name: '완료' })}`
       );
     }
-    expect(landingOverlayShown()).toBe(false);
+    expect(landingOverlayShown()).toBe(true);
   });
 });
 

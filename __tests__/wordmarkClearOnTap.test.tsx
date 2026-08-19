@@ -60,6 +60,9 @@ describe('워드마크 탭 초기화 (#578)', () => {
   test('작업 이력이 있으면 confirm을 거치고, 취소하면 상태가 보존된다', async () => {
     const user = userEvent.setup();
     render(<Harness />);
+    // 랜딩 이탈 → 포스터 주입 순서다(#727) — 랜딩은 포스터 유무와 무관하게 뜨므로(c1) 이탈이
+    // 있어야 편집 화면이 되고, 이탈은 문서를 새 문서로 되돌리므로(c7) 포스터는 그 뒤에 심는다.
+    fireEvent.click(screen.getByTestId('landing-skip-poster'));
     fireEvent.click(screen.getByText('seed')); // croppedImageUrl 축
 
     const confirmSpy = spyOn(window, 'confirm').mockImplementation(() => false);
@@ -67,7 +70,7 @@ describe('워드마크 탭 초기화 (#578)', () => {
 
     expect(confirmSpy).toHaveBeenCalledWith('지금까지 작업한 내용이 사라져요. 처음 화면으로 돌아갈까요?');
     expect(screen.queryByText('초기화했어요')).toBeNull();
-    expect(landingShown()).toBe(false); // 포스터가 그대로 있으니 랜딩은 계속 숨겨진 채.
+    expect(landingShown()).toBe(false); // 취소했으니 이탈 상태 그대로 — 랜딩은 계속 숨겨진 채.
 
     confirmSpy.mockImplementation(() => true);
     await user.click(wordmarkButton());
