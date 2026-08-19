@@ -70,6 +70,14 @@ function MobileHarness() {
       <button type="button" onClick={() => photo.updateComponents({ formatVisible: false })}>
         seed-format-off
       </button>
+      {/* #737 전용 시드 — 랜딩이 아직 안 걷힌 상태(landingDismissed=false)에서 이미 movieInfo가
+          채워져 있는 걸 흉내낸다(복원된 draft). "새로 시작" OCR 경로가 이 값을 리셋해야 한다. */}
+      <button
+        type="button"
+        onClick={() => photo.updateMovieInfo({ theater: '인터스텔라 극장', title: '인터스텔라' })}
+      >
+        seed-draft-theater
+      </button>
       <MobileEditorShell
         photo={photo}
         canExport
@@ -156,6 +164,11 @@ describe('OCR undo restoration (#163 / #141 P1)', () => {
   test('OCR이 인식한 format이 포맷 스탬프를 켜고, undo가 라벨·노출을 되돌린다', async () => {
     const user = userEvent.setup();
     render(<MobileHarness />);
+
+    // 랜딩을 먼저 걷어야 한다 — #737부터 랜딩이 안 걷힌 채(landingDismissed=false) OCR을 돌리면
+    // "새로 시작" 경로가 문서를 리셋해 아래 시드가 지워진다. 실제 프로덕션에서도 포스터가 있는
+    // 문서는 항상 landingDismissed=true를 동반하므로(handlePosterCropComplete) 이 순서가 실제 흐름과 맞다.
+    await user.click(screen.getByTestId('landing-skip-poster'));
 
     // 티켓 프리뷰(TicketRenderer)는 croppedImageUrl이 있어야 렌더된다 — 스탬프를 눈으로 보려면 필요.
     await user.click(screen.getByText('seed-poster'));
@@ -276,5 +289,60 @@ describe('OCR undo restoration (#163 / #141 P1)', () => {
 
     await user.click(screen.getByRole('button', { name: '기본 크기로 돌아가기' }));
     expect(screen.getByRole('button', { name: '되돌리기' })).toBeTruthy();
+  });
+});
+
+describe('OCR undo가 새 문서 리셋 위에서 일어나면 옛 draft가 아니라 빈 문서로 돌아간다 (#737)', () => {
+  test('랜딩이 안 걷힌 채(새로 시작) OCR을 적용하면, 되돌리기가 리셋 전 draft 값이 아니라 빈 값으로 돌아간다', async () => {
+    const user = userEvent.setup();
+    render(<MobileHarness />);
+
+    // "이어서 만들기" 없이 곧장 OCR로 진입하는 시나리오 — landingDismissed는 아직 false다.
+    // 그 상태에서 movieInfo가 이미 채워져 있는 건 방금 떠난 옛 draft를 흉내낸다.
+    await user.click(screen.getByText('seed-draft-theater'));
+    expect(captured.movieInfo.theater).toBe('인터스텔라 극장');
+
+    // 새 티켓의 실제 인식 결과 — 옛 draft와 다른 극장이라 restore-vs-reset 차이가 드러난다.
+    ocrImpl = async () => ({ theater: 'CGV 강남', seat: 'H12' });
+
+    await user.upload(
+      ocrFileInput(),
+      new File(['x'], 'ticket.png', { type: 'image/png' })
+    );
+
+    const undoButton = await screen.findByRole('button', { name: '되돌리기' });
+    // "새로 시작" 경로가 옛 draft를 먼저 지운 위에 OCR 값이 얹힌다.
+    expect(captured.movieInfo.theater).toBe('CGV 강남');
+    expect(captured.movieInfo.seat).toBe('H12');
+
+    await user.click(undoButton);
+
+    // 회귀 지점: 고치기 전엔 prevValues가 리셋 전 currentInfo에서 떠서 '인터스텔라 극장'이 되살아났다.
+    expect(captured.movieInfo.theater).toBe('');
+    expect(captured.movieInfo.seat).toBe('');
+    expect(captured.movieInfo.title).toBe('');
+  });
+
+  // fresh-context 리뷰 지적 — resetFresh를 문서 전체 리셋으로 구현하면, OCR 적용~되돌리기 사이에
+  // 사용자가 한 다른 편집(포스터 추가 등)까지 undo가 통째로 삼킨다. undo는 OCR이 채운 필드만
+  // 되돌려야 한다.
+  test('OCR 적용 뒤 다른 편집(포스터 추가)을 했다면, 되돌리기가 그 편집까지 지우지 않는다', async () => {
+    const user = userEvent.setup();
+    render(<MobileHarness />);
+
+    ocrImpl = async () => ({ theater: 'CGV 강남' });
+    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+    const undoButton = await screen.findByRole('button', { name: '되돌리기' });
+    expect(captured.movieInfo.theater).toBe('CGV 강남');
+
+    // OCR 배너가 뜬 채로 무관한 편집을 한다 — 포스터 추가.
+    await user.click(screen.getByText('seed-poster'));
+    expect(captured.croppedImageUrl).toBe('blob:test-poster');
+
+    await user.click(undoButton);
+
+    // OCR이 채운 필드만 되돌아가고, 그 뒤에 한 편집(포스터)은 살아남는다.
+    expect(captured.movieInfo.theater).toBe('');
+    expect(captured.croppedImageUrl).toBe('blob:test-poster');
   });
 });
