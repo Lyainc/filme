@@ -116,12 +116,15 @@ function RailExpandPanel({
             레이어에 있어 이 패널을 안 보고 있을 확률이 높은 두 잔여 상태뿐이다: 형압을 실제로
             칠하는 동안(177px, +6px)과 재크롭 직후 채우기 칩까지 겹치는 순간(179px, +8px). 항목
             콘텐츠를 더 키우면 이 상한도 같이 올릴 것 — 안 올리면 조용히 스크롤이 돌아온다.
-            #735(하이라이트·형압 마스크 분리)가 형압 패널에 "효과" ChipRadio 행을 상시 추가하며 위
-            171px 이하 전제가 형압에서 깨졌다 — 정상 상태(편집 중 아님, 마스크 無)도 이제 넘친다
-            (실측 2026-08-18, `measure-chrome.mjs --rail highlight --url :3010`, 400×675:
-            railSlot clientHeight 176 / scrollHeight 199, +23px). railSlot은 게이트가 아니라
-            관측값이라(CLAUDE.md "📏 크롬 측정 하네스" 절) exit code엔 안 실리지만, 형압만은
-            이제 "정상 상태도 스크롤"이 기본이다. */}
+            #735(하이라이트·형압 마스크 분리)가 형압 패널에 "효과" 선택 행을 상시 추가하며 위
+            171px 이하 전제가 한때 형압에서 깨졌었다(정상 상태 199/176, +23px, 2026-08-18 1차
+            실측) — 그 행을 ChipRadio(자체 라벨)에서 SizePanel·TexturePanel과 같은 축-전환
+            문법인 AxisSegment(라벨 없음)로 바꾸고 감쌈도 SizePanel처럼 space-y-field로 좁혀
+            해소했다(designRailItems.tsx의 EmbossPanel 주석 참고). 재실측(`measure-chrome.mjs
+            --rail highlight --url :3010`): 정상 상태 176/176(넘침 0, 393×659 171/171)로
+            복귀, 편집 중 브러시(마스크 有)는 223/176(+47px)로 위 두 잔여 상태와 같은 카테고리에
+            남는다. railSlot은 게이트가 아니라 관측값(CLAUDE.md "📏 크롬 측정 하네스" 절)이라
+            exit code는 원래부터 이 값에 안 실린다. */}
         <div
           ref={slotRef}
           id={PANEL_ID}
