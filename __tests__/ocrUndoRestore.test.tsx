@@ -346,3 +346,38 @@ describe('OCR undo가 새 문서 리셋 위에서 일어나면 옛 draft가 아�
     expect(captured.croppedImageUrl).toBe('blob:test-poster');
   });
 });
+
+describe('OCR 되돌리기 배너와 전역 스낵바가 좌표 충돌하지 않는다 (#731)', () => {
+  test('OCR 배너가 뜬 채로 전역 토스트가 뜨면, 토스트가 배너 위로 올라가고 배너를 가리지 않는다', async () => {
+    const user = userEvent.setup();
+    render(<MobileHarness />);
+
+    ocrImpl = async () => ({ theater: 'CGV 용산아이파크몰' });
+    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+    await screen.findByRole('button', { name: '되돌리기' });
+
+    // 전역 스낵바 트리거 — 임시저장(#310)은 arm 없이 바로 flashToast를 띄운다.
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    await user.click(screen.getByRole('button', { name: '임시저장' }));
+
+    const toast = await screen.findByTestId('global-toast');
+    expect(toast.textContent).toBe('임시저장했어요');
+    // 회귀 지점: 고치기 전엔 배너와 똑같이 bottom-6이라 좌표가 겹쳤다(#731).
+    expect(toast.className).toContain('bottom-28');
+    expect(toast.className).not.toContain('bottom-6');
+    // 배너 자신은 토스트에 안 가리고 그대로 남아 있다.
+    expect(screen.getByRole('button', { name: '되돌리기' })).toBeTruthy();
+  });
+
+  test('배너가 없을 때는 전역 토스트가 원래 자리(bottom-6)를 쓴다', async () => {
+    const user = userEvent.setup();
+    render(<MobileHarness />);
+
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    await user.click(screen.getByRole('button', { name: '임시저장' }));
+
+    const toast = await screen.findByTestId('global-toast');
+    expect(toast.className).toContain('bottom-6');
+    expect(toast.className).not.toContain('bottom-28');
+  });
+});

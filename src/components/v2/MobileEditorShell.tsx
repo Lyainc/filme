@@ -1368,10 +1368,17 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
       {/* 완료 비활성 사유 — SR 라이브리전은 콘텐츠와 함께 삽입되면 mutation을 놓치므로(#199)
           항상 마운트하고 텍스트만 토글한다. 시각 토스트는 별도로 aria-hidden, max(#328)에선 숨김. */}
       <div role="status" aria-live="polite" className="sr-only">{toast ?? ''}</div>
+      {/* OCR 배너(bottom-6, p-3 + min-h-touch 44px ≈ 70px 높이)와 좌표가 문자까지 같았다(#731) —
+          배너가 떠 있으면 그 위로 띄워 서로 안 가리게 한다. 배너엔 자동 소멸이 없어서(useOcrUndo에
+          타이머 없음) 그 창에서 뜨는 어떤 flashToast(전역 undo '되돌렸어요' 포함, 8곳)도 이 조건
+          하나로 같이 걷힌다 — 호출부마다 따로 고칠 필요가 없다. */}
       {!isMax && toast && (
         <div
           aria-hidden="true"
-          className="fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-full border border-line bg-surface-elevated px-4 py-2 text-body text-fg"
+          data-testid="global-toast"
+          className={`fixed left-1/2 z-[60] -translate-x-1/2 rounded-full border border-line bg-surface-elevated px-4 py-2 text-body text-fg ${
+            ocr.snapshot ? 'bottom-28' : 'bottom-6'
+          }`}
           style={{ maxWidth: 'calc(100% - 32px)', boxShadow: 'var(--shadow-pop)' }}
         >
           {toast}
