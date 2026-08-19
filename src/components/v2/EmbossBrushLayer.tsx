@@ -52,7 +52,7 @@ const MIN_LASSO_SPACING = 0.01;
  * 중심)과 실측상 일치한다 — 브러시 레이어 위치 자체가 이미 그 가정으로 서 있다(#729 c4).
  * 절대 좌표는 임의 원점이라 의미 없고, posterContentFrac이 쓰는 폭/높이/상대 오프셋만 맞으면 된다.
  */
-function toLocalRect(pivotCx: number, pivotCy: number, r: DOMRect): { left: number; top: number; width: number; height: number } {
+export function toLocalRect(pivotCx: number, pivotCy: number, r: DOMRect): { left: number; top: number; width: number; height: number } {
   const corners = [
     { x: r.left, y: r.top },
     { x: r.left + r.width, y: r.top + r.height },
