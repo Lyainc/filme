@@ -5,7 +5,7 @@
  * (claude-review #736 P1 — 순수 함수인데 비export라 테스트가 없었다).
  */
 import { describe, expect, test } from 'bun:test';
-import { toLocalRect } from '@/components/v2/EmbossBrushLayer';
+import { toLocalRect, screenFracToBoxFrac, boxFracToScreenFrac } from '@/components/v2/EmbossBrushLayer';
 
 function rect(left: number, top: number, width: number, height: number): DOMRect {
   return { left, top, width, height, right: left + width, bottom: top + height, x: left, y: top, toJSON: () => ({}) } as DOMRect;
@@ -35,5 +35,27 @@ describe('toLocalRect — 90도 회전 축정렬 bbox 역변환 (#729 c5)', () =
     const origin = toLocalRect(0, 0, r);
     expect(centered.left).toBeCloseTo(origin.left - 1); // y-pivotCy 방향
     expect(centered.top).toBeCloseTo(origin.top + 2); // -(x-pivotCx) 방향
+  });
+});
+
+describe('screenFracToBoxFrac / boxFracToScreenFrac — 포인터·올가미 미리보기 축 스왑 (#729 c5, claude-review #736 2차 P1)', () => {
+  test('rotated=false는 항등 변환이다', () => {
+    expect(screenFracToBoxFrac(0.3, 0.7, false)).toEqual({ boxX: 0.3, boxY: 0.7 });
+    expect(boxFracToScreenFrac(0.3, 0.7, false)).toEqual({ u: 0.3, v: 0.7 });
+  });
+
+  test('rotated=true는 로컬 x=화면 y, 로컬 y=1-화면 x로 스왑한다', () => {
+    expect(screenFracToBoxFrac(0.2, 0.9, true)).toEqual({ boxX: 0.9, boxY: 0.8 });
+  });
+
+  test('boxFracToScreenFrac은 screenFracToBoxFrac의 정확한 역변환이다(왕복 항등, rotated 양쪽)', () => {
+    for (const rotated of [false, true]) {
+      for (const [u, v] of [[0.1, 0.4], [0.5, 0.5], [0.9, 0.05]] as const) {
+        const { boxX, boxY } = screenFracToBoxFrac(u, v, rotated);
+        const back = boxFracToScreenFrac(boxX, boxY, rotated);
+        expect(back.u).toBeCloseTo(u);
+        expect(back.v).toBeCloseTo(v);
+      }
+    }
   });
 });
