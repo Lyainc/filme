@@ -27,6 +27,7 @@
  *  9. 랜딩 이탈 경로 2종의 프레임 봉쇄·줄바꿈 줄 수·44px 탭 타깃              (#665)
  * 10. 랜딩 세로 예산 — 카피+히어로+이탈경로가 675 프레임을 스크롤 없이 담는지  (#665)
  * 11. 포스터 없이 진입 — 랜딩이 숨고 스테이지가 본문 전체(+--workbench)를 받는지  (#674)
+ * 12. OCR 되돌리기 배너 · 전역 토스트 동시 노출 시 겹침 여부                    (#731 · #737)
  *
  * ── 대조 기준은 뷰포트가 아니라 프레임이다 (#609) ────────────────────────────
  * 예전엔 `VW===400 && VH===675`로 게이팅해서, `--viewport 1440x675`로 돌리면 프레임이
@@ -393,6 +394,65 @@ try {
     posterlessFrameIs400 &&
     near(posterless.preview.w, POSTERLESS_BASELINE.preview.w) &&
     near(posterless.preview.h, POSTERLESS_BASELINE.preview.h);
+
+  // #731 · #737 — OCR 되돌리기 배너와 전역 토스트가 겹치는지. 둘 다 fixed bottom-6이었던 게
+  // 원 버그라, 완전히 격리된 새 컨텍스트에서 깨끗한 랜딩부터 시작해 실제로 둘을 동시에 띄워
+  // 잰다. /api/ocr는 request interception으로 스텁해 Gemini를 안 태운다.
+  const bannerCtx = await browser.createBrowserContext();
+  const bannerPage = await bannerCtx.newPage();
+  bannerPage.on('dialog', (d) => d.dismiss());
+  await bannerPage.setViewport({ width: VW, height: VH, deviceScaleFactor: 1 });
+  await bannerPage.evaluateOnNewDocument((theme) => {
+    localStorage.setItem('phototicket:theme', theme);
+  }, THEME);
+  await bannerPage.setRequestInterception(true);
+  bannerPage.on('request', (req) => {
+    if (req.method() === 'POST' && req.url().endsWith('/api/ocr')) {
+      req.respond({ status: 200, contentType: 'application/json', body: JSON.stringify({ theater: 'CGV 강남' }) });
+    } else {
+      req.continue();
+    }
+  });
+  await bannerPage.goto(URL, { waitUntil: 'networkidle2' });
+  await bannerPage.waitForSelector('[data-testid="landing"]', { visible: true, timeout: 15000 });
+  await bannerPage.evaluate(() => document.fonts.ready);
+  await bannerPage.evaluate(async () => {
+    const c = document.createElement('canvas');
+    c.width = 100;
+    c.height = 100;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, c.width, c.height);
+    const blob = await new Promise((r) => c.toBlob((b) => r(b), 'image/png'));
+    // OCR input은 accept="image/*"라 포스터 input(accept="image/jpeg")과 구분된다.
+    const target = [...document.querySelectorAll('input[type=file]')].find((i) => i.accept === 'image/*');
+    if (!target) throw new Error('OCR input[type=file] 못 찾음');
+    const dt = new DataTransfer();
+    dt.items.add(new File([blob], 'ocr.png', { type: 'image/png' }));
+    target.files = dt.files;
+    target.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await bannerPage.waitForSelector('[data-testid="ocr-undo-banner"]', { timeout: 15000 });
+  await bannerPage.evaluate(() =>
+    [...document.querySelectorAll('button')].find((b) => b.getAttribute('aria-label') === '편집 메뉴').click(),
+  );
+  await bannerPage.evaluate(() =>
+    [...document.querySelectorAll('button')].find((b) => b.textContent?.trim() === '임시저장').click(),
+  );
+  await bannerPage.waitForSelector('[data-testid="global-toast"]', { timeout: 5000 });
+  const bannerToastCollision = await bannerPage.evaluate(() => {
+    const r = (el) => {
+      const b = el.getBoundingClientRect();
+      return { top: +b.top.toFixed(1), bottom: +b.bottom.toFixed(1), left: +b.left.toFixed(1), right: +b.right.toFixed(1) };
+    };
+    return {
+      banner: r(document.querySelector('[data-testid="ocr-undo-banner"]')),
+      toast: r(document.querySelector('[data-testid="global-toast"]')),
+    };
+  });
+  bannerToastCollision.gap = +(bannerToastCollision.banner.top - bannerToastCollision.toast.bottom).toFixed(1);
+  bannerToastCollision.pass = bannerToastCollision.toast.bottom <= bannerToastCollision.banner.top;
+  await bannerCtx.close();
 
   await landingCtx.close();
 
@@ -844,6 +904,7 @@ try {
     exitPaths,
     landingBudget,
     invariant,
+    bannerToastCollision,
   };
   console.log(JSON.stringify(out, null, 2));
   const contrastFails = [contrast, drawerContrast].flatMap((c) => c?.fails ?? []);
@@ -859,7 +920,8 @@ try {
     contrastFails.length > 0 ||
     !carousel.pass ||
     !exitPaths.pass ||
-    !landingBudget.pass
+    !landingBudget.pass ||
+    !bannerToastCollision.pass
   ) {
     process.exitCode = 1;
   }
