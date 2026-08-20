@@ -39,6 +39,10 @@ export function showError(message: string, opts: ShowErrorOptions = {}): void {
     if (!persistent) armDismiss();
     return;
   }
+  // 우선순위(#731 code-review 발견) — persistent 경고는 사용자가 직접 닫기 전까지 남아야
+  // 하는데, 그 사이 다른 곳에서 온 ephemeral 호출이 무조건 덮어쓰면 4초 뒤 자동으로 사라져
+  // 더 중요한 경고를 조용히 지운다. persistent가 떠 있는 동안 ephemeral 호출은 무시한다.
+  if (state?.persistent && !persistent) return;
   state = { message, persistent };
   emit();
   if (persistent) clearTimeout(dismissTimer);

@@ -3,6 +3,7 @@ import { usePhototicket } from '@/hooks/usePhototicket';
 import { useExportReady } from '@/hooks/useExportReady';
 import { useResultView } from '@/hooks/useResultView';
 import { useDebounce } from '@/hooks/useDebounce';
+import { showError } from '@/utils/errorToast';
 import { MobileEditorShell, type MobileEditorShellHandle } from '@/components/v2/MobileEditorShell';
 import { PhoneFrame } from '@/components/v2/PhoneFrame';
 import { ResultStage } from '@/components/v2/ResultStage';
@@ -74,7 +75,11 @@ export default function Home() {
       .then((colors) => {
         if (!cancelled) setRecommendedColors(colors);
       })
-      .catch(() => {});
+      .catch(() => {
+        // 무음 실패 제거(#645 C2와 같은 축, #731) — 실패해도 흐름은 안 막히지만(추천 색상 없이도
+        // 직접 고를 수 있다) 이유를 알 방법이 아예 없었다.
+        if (!cancelled) showError('추천 색상을 만들지 못했어요. 색상은 직접 골라 주세요.');
+      });
     return () => {
       cancelled = true;
     };
