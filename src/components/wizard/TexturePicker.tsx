@@ -2,7 +2,13 @@ import { memo, useEffect, useRef } from 'react';
 import { Poster } from '@/components/moods/_shared';
 import { defaultIntensityForTexture } from '@/utils/textureRecipes';
 import { cn } from '@/utils/cn';
-import { pressableVariants } from '@/components/ui/variants';
+import { handleRadioGroupKeyDown } from '@/utils/radioGroupKeyboard';
+import {
+  RAIL_CHIP_SELECTED_RING,
+  RAIL_CHIP_SELECTED_SCALE,
+  RAIL_CHIP_TOUCH,
+  pressableVariants,
+} from '@/components/ui/variants';
 
 interface TextureOption {
   value: string;
@@ -97,11 +103,18 @@ function TexturePicker({ axis, options, value, onChange, croppedImageUrl, ariaLa
         className="flex gap-2 overflow-x-auto py-1.5 snap-x no-scrollbar"
         role="radiogroup"
         aria-label={ariaLabel}
+        onKeyDown={handleRadioGroupKeyDown}
       >
-        {options.map((tex) => {
+        {options.map((tex, index) => {
           const active = value === tex.value;
           // Show only short label (first parenthesis-free portion) on chip
           const short = tex.label.split('(')[0].trim();
+          // roving tabindex 폴백(claude-review 발견) — 복원된 draft의 value가 지금
+          // options에 없는 값이면(#475 마이그레이션이 실제로 겪었던 부류) active가 전부
+          // false가 돼 탭 스톱이 사라진다. ColorPicker의 isCustom 폴백과 같은 처방으로,
+          // 아무 칩도 안 맞을 때만 첫 칩이 탭 스톱을 대신 맡는다.
+          const anyActive = options.some((o) => o.value === value);
+          const tabIndex = active ? 0 : anyActive ? -1 : index === 0 ? 0 : -1;
 
           // rail 공통 선택 문법(#367) — 카드 프레임·채움 반전 대신 칩 이중 링 + 라벨 색 전환.
           return (
@@ -111,8 +124,9 @@ function TexturePicker({ axis, options, value, onChange, croppedImageUrl, ariaLa
               type="button"
               role="radio"
               aria-checked={active}
+              tabIndex={tabIndex}
               onClick={() => onChange(tex.value)}
-              data-touch="44"
+              data-touch={RAIL_CHIP_TOUCH}
               title={tex.label}
               className={cn(pressableVariants(), 'flex shrink-0 snap-start flex-col items-center gap-1.5')}
             >
@@ -121,8 +135,8 @@ function TexturePicker({ axis, options, value, onChange, croppedImageUrl, ariaLa
                 className="block rounded-[12px] border transition-transform"
                 style={{
                   borderColor: active ? 'transparent' : 'var(--glass-border)',
-                  boxShadow: active ? '0 0 0 2px var(--bg), 0 0 0 4px var(--accent)' : undefined,
-                  transform: active ? 'scale(1.05)' : undefined,
+                  boxShadow: active ? RAIL_CHIP_SELECTED_RING : undefined,
+                  transform: active ? RAIL_CHIP_SELECTED_SCALE : undefined,
                 }}
               >
                 <TexturePreview src={previewSrc} axis={axis} texture={tex.value} />

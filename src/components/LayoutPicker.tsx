@@ -2,10 +2,16 @@ import { memo } from 'react';
 import { LAYOUTS } from '@/utils/layouts';
 import type { LayoutId } from '@/types';
 import { cn } from '@/utils/cn';
-import { pressableVariants } from '@/components/ui/variants';
 // 무드 실루엣을 흉내 내는 자리라 색은 무드와 같은 토큰을 쓴다 — 리터럴로 두면 무드 색을
 // 고칠 때 썸네일만 조용히 옛 색으로 남는다(#524).
 import { CRITERION_PAPER, CRITERION_YELLOW, FILM_BASE } from './moods/_shared';
+import { handleRadioGroupKeyDown } from '@/utils/radioGroupKeyboard';
+import {
+  RAIL_CHIP_SELECTED_RING,
+  RAIL_CHIP_SELECTED_SCALE,
+  RAIL_CHIP_TOUCH,
+  pressableVariants,
+} from '@/components/ui/variants';
 
 interface LayoutPickerProps {
   value: LayoutId;
@@ -74,9 +80,15 @@ export const LayoutStrip = memo(function LayoutStrip({ value, onChange }: Layout
       className="flex gap-3 overflow-x-auto px-1 py-1.5 snap-x no-scrollbar"
       role="radiogroup"
       aria-label="무드 목록"
+      onKeyDown={handleRadioGroupKeyDown}
     >
-      {LAYOUTS.map((layout) => {
+      {LAYOUTS.map((layout, index) => {
         const active = value === layout.id;
+        // roving tabindex 폴백(claude-review 발견) — 복원된 draft의 layout이 지금
+        // LAYOUTS에 없는 id면 active가 전부 false가 돼 탭 스톱이 사라진다. ColorPicker의
+        // isCustom 폴백과 같은 처방으로, 아무 칩도 안 맞을 때만 첫 칩이 탭 스톱을 대신 맡는다.
+        const anyActive = LAYOUTS.some((l) => l.id === value);
+        const tabIndex = active ? 0 : anyActive ? -1 : index === 0 ? 0 : -1;
         return (
           <button
             key={layout.id}
@@ -88,7 +100,8 @@ export const LayoutStrip = memo(function LayoutStrip({ value, onChange }: Layout
             aria-label={`${layout.label} · ${layout.caption}`}
             title={layout.caption}
             onClick={() => onChange(layout.id)}
-            data-touch="44"
+            tabIndex={tabIndex}
+            data-touch={RAIL_CHIP_TOUCH}
             className={cn(pressableVariants(), 'flex shrink-0 snap-start flex-col items-center gap-1.5')}
           >
             <span
@@ -97,8 +110,8 @@ export const LayoutStrip = memo(function LayoutStrip({ value, onChange }: Layout
               style={{
                 background: MOOD_CHIP_BG[layout.id],
                 borderColor: active ? 'transparent' : 'var(--glass-border)',
-                boxShadow: active ? '0 0 0 2px var(--bg), 0 0 0 4px var(--accent)' : undefined,
-                transform: active ? 'scale(1.05)' : undefined,
+                boxShadow: active ? RAIL_CHIP_SELECTED_RING : undefined,
+                transform: active ? RAIL_CHIP_SELECTED_SCALE : undefined,
               }}
             />
             <span
