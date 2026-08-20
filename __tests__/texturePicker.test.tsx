@@ -6,14 +6,39 @@
  * is now axis-parametrized (material/coating) — this test drives it via the
  * material axis's option list, but the sample/crop-swap behavior is axis-agnostic.
  */
+import { useState } from 'react';
 import { describe, expect, test, afterEach } from 'bun:test';
-import { render, cleanup } from '@testing-library/react';
+import { render, screen, cleanup } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import TexturePicker from '@/components/wizard/TexturePicker';
 import { MATERIAL_OPTIONS } from '@/utils/constants';
 
 afterEach(cleanup);
 
+function ControlledTexturePicker() {
+  const [value, setValue] = useState('original');
+  return (
+    <TexturePicker axis="material" options={MATERIAL_OPTIONS} value={value} onChange={setValue} croppedImageUrl={null} ariaLabel="재질" />
+  );
+}
+
 describe('TexturePicker', () => {
+  // #730 ac4 — 방향키가 칩 간 포커스와 선택을 같이 옮긴다(APG radiogroup 계약).
+  test('방향키로 칩 간 포커스+선택이 이동한다', async () => {
+    const user = userEvent.setup();
+    render(<ControlledTexturePicker />);
+    const radios = screen.getAllByRole('radio');
+
+    await user.tab();
+    expect(document.activeElement).toBe(radios[0]);
+    expect(radios[0].getAttribute('aria-checked')).toBe('true');
+
+    await user.keyboard('{ArrowRight}');
+    expect(document.activeElement).toBe(radios[1]);
+    expect(radios[1].getAttribute('aria-checked')).toBe('true');
+    expect(radios[0].getAttribute('aria-checked')).toBe('false');
+  });
+
   test('renders bundled sample thumbnails when no poster is uploaded', () => {
     const { container } = render(
       <TexturePicker axis="material" options={MATERIAL_OPTIONS} value="original" onChange={() => {}} croppedImageUrl={null} ariaLabel="재질" />

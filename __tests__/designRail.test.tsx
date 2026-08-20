@@ -87,6 +87,26 @@ describe('DesignRail (#217)', () => {
     expect(minimal.getAttribute('aria-checked')).toBe('false');
   });
 
+  test('(c3) 스트립: 방향키로 무드 카드 간 포커스+선택이 이동한다 (#730 ac4)', async () => {
+    const user = userEvent.setup();
+    render(<RailHarness />);
+    await user.click(screen.getByRole('button', { name: '무드' }));
+
+    const minimal = screen.getByRole('radio', { name: /미니멀 시네마틱/ });
+    const criterion = screen.getByRole('radio', { name: /크라이테리언/ });
+    minimal.focus();
+    expect(document.activeElement).toBe(minimal);
+
+    await user.keyboard('{ArrowRight}');
+    expect(document.activeElement).toBe(criterion);
+    expect(criterion.getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByTestId('layout').textContent).toBe('criterion');
+
+    await user.keyboard('{ArrowLeft}');
+    expect(document.activeElement).toBe(minimal);
+    expect(screen.getByTestId('layout').textContent).toBe('minimal');
+  });
+
   test('(d) 컬러 아이콘 클릭 → 컬러 패널 열림 · 무드/후보정과 배타 (#218)', async () => {
     const user = userEvent.setup();
     render(<RailHarness />);
@@ -99,7 +119,7 @@ describe('DesignRail (#217)', () => {
     expect(color.getAttribute('aria-expanded')).toBe('true');
     expect(mood.getAttribute('aria-expanded')).toBe('false');
     expect(texture.getAttribute('aria-expanded')).toBe('false');
-    expect(screen.getByLabelText('색상 코드')).not.toBeNull();
+    expect(screen.getByRole('radiogroup', { name: '잉크 색' })).not.toBeNull();
 
     // 무드 열기 → 컬러 닫힘(한 번에 하나)
     await user.click(mood);
@@ -120,7 +140,7 @@ describe('DesignRail (#217)', () => {
     expect(screen.getByTestId('layout').textContent).toBe('criterion');
 
     await user.click(screen.getByRole('button', { name: '컬러' }));
-    expect((screen.getByRole('button', { name: '흰색' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('radio', { name: '흰색' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   test('(e) 투명도 아이콘 클릭 → 듀얼 슬라이더 패널 열림 · 무드와 배타 (#219)', async () => {
