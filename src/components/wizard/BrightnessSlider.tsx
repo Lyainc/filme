@@ -59,8 +59,8 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
  */
 export function snapToStep(value: number, min: number, max: number): number {
   // 클램프가 필요한 이유 — 격자에 얹히지 않은 하한(예: 0.65)이 생기면 스냅이 그 아래(0.6)로
-  // 내려보낸다. 오늘 쓰는 범위는 셋 다 0.1 격자 위(0/1, 0.6/1.1, 0.6/1.3)라 안 걸리지만,
-  // 걸리면 슬라이더가 제 min 밖의 값을 조용히 커밋한다.
+  // 내려보낸다. 오늘 쓰는 범위는 넷 다 0.1 격자 위(0/1, 0.6/1.1, 0.6/1.3, 0.2/1 — #728 스탬프
+  // 투명도)라 안 걸리지만, 걸리면 슬라이더가 제 min 밖의 값을 조용히 커밋한다.
   return Math.min(Math.max(round2(Math.round(value / SLIDER_STEP) * SLIDER_STEP), min), max);
 }
 
