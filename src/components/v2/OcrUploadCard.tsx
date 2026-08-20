@@ -301,7 +301,7 @@ export function OcrUploadCard({
           aria-busy={isProcessing}
           aria-label={idleLabel}
           data-touch="44"
-          className="group inline-flex min-h-touch items-center gap-1.5 rounded-chip text-body text-fg-muted transition-colors hover:text-accent aria-disabled:cursor-default aria-disabled:opacity-70 active:scale-[0.97]"
+          className={cn(pressableVariants(), 'group inline-flex min-h-touch items-center gap-1.5 rounded-chip text-body text-fg-muted transition-colors hover:text-accent aria-disabled:cursor-default aria-disabled:opacity-70')}
         >
           <span className={isProcessing ? 'text-accent animate-pulse' : 'text-fg-faint group-hover:text-accent'}>
             <ScanIcon size={16} />

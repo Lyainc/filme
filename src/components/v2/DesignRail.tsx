@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { RAIL_ITEMS, filterItemsForMood, type RailItem, type RailItemId } from './designRailItems';
 import type { usePhototicket } from '@/hooks/usePhototicket';
+import { cn } from '@/utils/cn';
+import { pressableVariants } from '@/components/ui/variants';
 
 // 모바일 디자인 레일(#217+): 무드·컬러·후보정·투명도·크기 편집 콘텐츠를 인라인 폼 밖으로 빼
 // 가로 원형 아이콘 + 단일 공용 확장 패널로 호스팅한다. 항목 정의(아이콘·라벨·본문)는
@@ -45,7 +47,7 @@ function RailIconButton({
       data-touch="44"
       // outline-none 제거(#357) — 전역 :focus-visible 링이 dock 탭에도 걸리게 한다(키보드
       // 포커스에만 뜨므로 터치/마우스 시각 변화 없음).
-      className="flex shrink-0 snap-center flex-col items-center gap-1.5 active:scale-[0.97]"
+      className={cn(pressableVariants(), 'flex shrink-0 snap-center flex-col items-center gap-1.5')}
     >
       <span
         aria-hidden="true"

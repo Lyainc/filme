@@ -1,5 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type PointerEvent } from 'react';
 import { getFrameRect } from './PhoneFrame';
+import { cn } from '@/utils/cn';
+import { pressableVariants } from '@/components/ui/variants';
 
 /**
  * 플로팅 툴바(#356, v8 시안 §4) — undo · redo | 항목목록 · 최대화 | 숨김.
@@ -306,7 +308,7 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
         // transition-transform을 얹으면 드래그 중 매 프레임이 새 위치로 150ms씩 ease되어
         // 손가락보다 눈에 띄게 뒤처진다(#662 code-review 발견). 눌림 scale은 애니메이션
         // 없이 순간 전환된다.
-        className="fixed z-[45] flex h-touch w-touch items-center justify-center rounded-full border border-line text-fg-muted transition-colors hover:text-fg active:scale-[0.97]"
+        className={cn(pressableVariants(), 'fixed z-[45] flex h-touch w-touch items-center justify-center rounded-full border border-line text-fg-muted transition-colors hover:text-fg')}
         style={{ touchAction: 'none', ...posStyle, transform: gripTransform, ...glass }}
       >
         <svg {...ICON}>
@@ -318,7 +320,7 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
   }
 
   const horiz = orient === 'h';
-  const btn = `flex ${TB_TARGET} items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:text-fg disabled:text-fg-faint disabled:hover:text-fg-faint active:scale-[0.97]`;
+  const btn = cn(pressableVariants(), `flex ${TB_TARGET} items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:text-fg disabled:text-fg-faint disabled:hover:text-fg-faint`);
   const divider = horiz ? 'mx-0.5 h-[18px] w-px bg-line' : 'my-0.5 h-px w-[18px] bg-line';
 
   return (

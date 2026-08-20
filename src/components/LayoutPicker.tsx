@@ -1,6 +1,8 @@
 import { memo } from 'react';
 import { LAYOUTS } from '@/utils/layouts';
 import type { LayoutId } from '@/types';
+import { cn } from '@/utils/cn';
+import { pressableVariants } from '@/components/ui/variants';
 // 무드 실루엣을 흉내 내는 자리라 색은 무드와 같은 토큰을 쓴다 — 리터럴로 두면 무드 색을
 // 고칠 때 썸네일만 조용히 옛 색으로 남는다(#524).
 import { CRITERION_PAPER, CRITERION_YELLOW, FILM_BASE } from './moods/_shared';
@@ -87,7 +89,7 @@ export const LayoutStrip = memo(function LayoutStrip({ value, onChange }: Layout
             title={layout.caption}
             onClick={() => onChange(layout.id)}
             data-touch="44"
-            className="flex shrink-0 snap-start flex-col items-center gap-1.5 active:scale-[0.97]"
+            className={cn(pressableVariants(), 'flex shrink-0 snap-start flex-col items-center gap-1.5')}
           >
             <span
               aria-hidden="true"

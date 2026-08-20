@@ -1,6 +1,8 @@
 import { memo, useEffect, useRef } from 'react';
 import { Poster } from '@/components/moods/_shared';
 import { defaultIntensityForTexture } from '@/utils/textureRecipes';
+import { cn } from '@/utils/cn';
+import { pressableVariants } from '@/components/ui/variants';
 
 interface TextureOption {
   value: string;
@@ -112,7 +114,7 @@ function TexturePicker({ axis, options, value, onChange, croppedImageUrl, ariaLa
               onClick={() => onChange(tex.value)}
               data-touch="44"
               title={tex.label}
-              className="flex shrink-0 snap-start flex-col items-center gap-1.5 active:scale-[0.97]"
+              className={cn(pressableVariants(), 'flex shrink-0 snap-start flex-col items-center gap-1.5')}
             >
               <span
                 aria-hidden="true"

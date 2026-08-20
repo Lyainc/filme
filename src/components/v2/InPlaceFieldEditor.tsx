@@ -4,6 +4,8 @@ import { createPortal } from 'react-dom';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { MovieInfo, TicketComponents } from '@/types';
 import { getLayout } from '@/utils/layouts';
+import { cn } from '@/utils/cn';
+import { pressableVariants } from '@/components/ui/variants';
 import { useKobisSearch } from '@/hooks/useKobisSearch';
 import { useLogoCrop } from '@/hooks/useLogoCrop';
 import RatingPicker from '@/components/wizard/RatingPicker';
@@ -321,8 +323,10 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
     setBarPos({ left, top });
   }, [rect, field, wrapperEl, isStamp, showEye]);
 
-  const barBtnCls =
-    'inline-flex h-touch w-touch shrink-0 items-center justify-center rounded-full text-fg-muted transition-colors hover:text-fg active:scale-[0.97]';
+  const barBtnCls = cn(
+    pressableVariants(),
+    'inline-flex h-touch w-touch shrink-0 items-center justify-center rounded-full text-fg-muted transition-colors hover:text-fg'
+  );
 
   // 캐럿 스케일(#365) — caret 위치는 input 자신의 텍스트 폭 계산을 따르므로, 티켓 렌더 텍스트와
   // 같은 폰트·자간·정렬로 흘려야 caret이 실제 텍스트 끝에 온다. 단 16px 미만 input은 iOS Safari가
@@ -491,7 +495,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
           aria-label="편집 완료"
           onPointerDown={(e) => e.preventDefault()}
           onClick={onClose}
-          className="inline-flex h-touch w-touch shrink-0 items-center justify-center rounded-full active:scale-[0.97]"
+          className={cn(pressableVariants(), 'inline-flex h-touch w-touch shrink-0 items-center justify-center rounded-full')}
           style={{ background: 'linear-gradient(135deg, var(--accent-hover), var(--accent))', color: 'var(--accent-ink)' }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -552,7 +556,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
         <button
           type="button"
           onClick={removeStampImage}
-          className="ml-auto rounded-chip border border-line px-3 py-1.5 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent active:scale-[0.97]"
+          className={cn(pressableVariants(), 'ml-auto rounded-chip border border-line px-3 py-1.5 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent')}
         >
           이미지 제거
         </button>

@@ -1,4 +1,6 @@
 import dynamic from 'next/dynamic';
+import { cn } from '@/utils/cn';
+import { pressableVariants } from '@/components/ui/variants';
 import { useEffect, useRef, useState, type ReactNode, type TouchEvent } from 'react';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { TicketComponents, TicketField } from '@/types';
@@ -142,7 +144,7 @@ export function FieldDrawer({ photo, onField, onClose, children }: FieldDrawerPr
             onClick={() =>
               photo.updateFieldVisibility(allVisOn ? ALL_FIELDS_OFF_KEEP_REQUIRED : ALL_FIELDS_ON)
             }
-            className="flex h-touch w-full items-center justify-between rounded-card bg-surface-elevated px-3 text-micro font-medium text-fg-muted transition-colors hover:text-fg active:scale-[0.97]"
+            className={cn(pressableVariants(), 'flex h-touch w-full items-center justify-between rounded-card bg-surface-elevated px-3 text-micro font-medium text-fg-muted transition-colors hover:text-fg')}
           >
             <span>전체 표시</span>
             <EyeIcon open={allVisOn} size={18} />
@@ -210,7 +212,7 @@ function DrawerRow({
         type="button"
         onClick={onOpen}
         aria-label={`${label} 편집`}
-        className="flex min-h-touch min-w-0 flex-1 items-center gap-2 py-2 pl-3 pr-1 text-left active:scale-[0.97]"
+        className={cn(pressableVariants(), 'flex min-h-touch min-w-0 flex-1 items-center gap-2 py-2 pl-3 pr-1 text-left')}
       >
         <span className="shrink-0 text-micro font-medium text-fg-muted">{label}</span>
         {/* 빈 값도 fg-muted — fg-faint(#6B7280)는 카드(#1E2326) 위 3.28:1로 4.5:1 미달(#355 완료 조건). */}
@@ -238,9 +240,9 @@ function DrawerRow({
           aria-checked={checked}
           aria-label={`${label} 티켓에 표시`}
           onClick={() => onToggle(!checked)}
-          className={`inline-flex h-touch w-touch shrink-0 items-center justify-center transition-colors active:scale-[0.97] ${
+          className={cn(pressableVariants(), `inline-flex h-touch w-touch shrink-0 items-center justify-center transition-colors ${
             checked ? 'text-fg' : 'text-fg-muted'
-          }`}
+          }`)}
         >
           <EyeIcon open={checked} size={18} />
         </button>
@@ -288,7 +290,7 @@ function LogoRow({
             type="button"
             aria-label={`${STAMP_LABELS[target]} 이미지 업로드`}
             onClick={() => fileInputRef.current?.click()}
-            className="inline-flex h-touch w-touch shrink-0 items-center justify-center text-fg-muted transition-colors hover:text-fg active:scale-[0.97]"
+            className={cn(pressableVariants(), 'inline-flex h-touch w-touch shrink-0 items-center justify-center text-fg-muted transition-colors hover:text-fg')}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <rect x="3" y="3" width="18" height="18" rx="3" />

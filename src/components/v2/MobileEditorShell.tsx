@@ -32,6 +32,8 @@ import type { ViewMode } from './viewMode';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
 import EmbossBrushLayer from '@/components/v2/EmbossBrushLayer';
 import { getLayout } from '@/utils/layouts';
+import { cn } from '@/utils/cn';
+import { pressableVariants } from '@/components/ui/variants';
 import type { Area } from '@/utils/imageCrop';
 import { useEditHistory } from '@/hooks/useEditHistory';
 import { useOcrUndo } from '@/hooks/useOcrUndo';
@@ -144,9 +146,9 @@ function MenuRow({
       title={title ?? ariaLabel ?? label}
       disabled={disabled}
       onClick={onClick}
-      className={`flex h-touch w-full items-center justify-between gap-2 rounded-lg px-2.5 text-left transition-colors active:scale-[0.97] ${
+      className={cn(pressableVariants(), `flex h-touch w-full items-center justify-between gap-2 rounded-lg px-2.5 text-left transition-colors ${
         disabled ? 'opacity-40' : 'hover:bg-white/5'
-      }`}
+      }`)}
       // arm 표시가 채움 틴트(rgba(229,103,95,.16))였을 땐 danger 잉크 대비가 3.79:1로 떨어졌다
       // (#569 실측 — 붉은 틴트가 배경을 밝혀 같은 붉은 글자와 붙는다). 채움 대신 1px 링으로 바꾸면
       // 배경이 그대로라 라벨은 4.66:1을 유지하고, 링 자체는 비텍스트 3:1 기준을 넘는다.
@@ -696,7 +698,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
           aria-expanded={menuOpen}
           aria-controls="editor-menu-panel"
           aria-label="편집 메뉴"
-          className="flex h-touch w-touch items-center justify-center rounded-full text-fg-muted transition-colors hover:text-fg active:scale-[0.97]"
+          className={cn(pressableVariants(), 'flex h-touch w-touch items-center justify-center rounded-full text-fg-muted transition-colors hover:text-fg')}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <line x1="4" y1="7" x2="20" y2="7" />
@@ -711,9 +713,9 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
           type="button"
           onClick={handleDone}
           aria-disabled={!canExport}
-          className={`inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-body font-semibold transition-colors active:scale-[0.97] ${
+          className={cn(pressableVariants(), `inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-body font-semibold transition-colors ${
             canExport ? '' : 'border border-line bg-surface-elevated text-fg-muted'
-          }`}
+          }`)}
           style={doneEnabledStyle}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -1160,9 +1162,9 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
           // transition을 타, top과 transform이 같은 프레임에 안 맞아 핸들이 48px(h-24 절반) 위로
           // 튀었다 슬라이드하는 글리치가 최초 드래그 1회 생긴다. "top으로만 움직여서 안전하다"는
           // drawerHandleY가 이미 값이 있는 이후 드래그엔 맞지만 null→값 전환 그 자체는 못 피한다.
-          className={`fixed right-0 z-30 flex h-24 w-11 items-center justify-end active:scale-[0.97] ${
+          className={cn(pressableVariants(), `fixed right-0 z-30 flex h-24 w-11 items-center justify-end ${
             drawerHandleY == null ? 'top-1/2 -translate-y-1/2' : ''
-          }`}
+          }`)}
           style={{
             touchAction: 'none',
             ...(drawerHandleY != null ? { top: drawerHandleY } : undefined),
