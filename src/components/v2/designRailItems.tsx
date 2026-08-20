@@ -1,4 +1,6 @@
 import { useRef, useState, type ReactNode } from 'react';
+import { cn } from '@/utils/cn';
+import { pressableVariants } from '@/components/ui/variants';
 import dynamic from 'next/dynamic';
 import { LayoutStrip } from '@/components/LayoutPicker';
 import { useLogoCrop } from '@/hooks/useLogoCrop';
@@ -112,11 +114,11 @@ function AxisSegment<K extends string>({
           aria-controls={panelId}
           onClick={() => onChange(o.key)}
           data-touch="36"
-          className={`h-9 flex-1 truncate rounded-chip border px-3 text-caption font-medium transition-colors active:scale-[0.97] ${
+          className={cn(pressableVariants(), `h-9 flex-1 truncate rounded-chip border px-3 text-caption font-medium transition-colors ${
             value === o.key
               ? 'border-transparent bg-accent-soft text-accent'
               : 'border-line bg-surface-elevated text-fg-muted'
-          }`}
+          }`)}
         >
           {o.label}
         </button>
@@ -164,11 +166,11 @@ function ChipRadio<V extends string>({
             // h-9(#682 다이어트 — 이전 h-10에서 4px 축소, AxisSegment 형제 버튼과 같은 높이로
             // 맞춘다). AA 하한(24)의 1.5배라 여전히 여유 있다.
             data-touch="36"
-            className={`h-9 flex-1 truncate rounded-chip border px-3 text-caption font-medium transition-colors active:scale-[0.97] ${
+            className={cn(pressableVariants(), `h-9 flex-1 truncate rounded-chip border px-3 text-caption font-medium transition-colors ${
               value === opt.value
                 ? 'border-transparent bg-accent-soft text-accent'
                 : 'border-line bg-surface-elevated text-fg-muted'
-            } ${opt.disabled ? 'opacity-40' : ''}`}
+            } ${opt.disabled ? 'opacity-40' : ''}`)}
           >
             {opt.label}
           </button>
@@ -520,7 +522,7 @@ function SizePanel({ photo, actions }: { photo: Photo; actions: RailActions }) {
             type="button"
             onClick={actions.onRecropPoster}
             data-touch="36"
-            className="h-9 w-full rounded-chip border border-line bg-surface-elevated px-3 text-caption font-medium text-fg transition-colors hover:bg-accent-soft hover:text-accent active:scale-[0.97]"
+            className={cn(pressableVariants(), 'h-9 w-full rounded-chip border border-line bg-surface-elevated px-3 text-caption font-medium text-fg transition-colors hover:bg-accent-soft hover:text-accent')}
           >
             포스터 다시 크롭
           </button>
@@ -663,7 +665,7 @@ function BackgroundPatternPanel({ photo }: { photo: Photo }) {
             // blob revoke는 여기서 하지 않는다 — undo 히스토리(#356)가 이 URL을 참조한다
             // (useLogoCrop 주석과 같은 이유). 최신 URL은 usePhototicket이 언마운트·clearDraft에서 푼다.
             onClick={() => photo.updateComponents({ backgroundPatternImage: '' })}
-            className="ml-auto rounded-chip border border-line px-3 py-1.5 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent active:scale-[0.97]"
+            className={cn(pressableVariants(), 'ml-auto rounded-chip border border-line px-3 py-1.5 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent')}
           >
             이미지 제거
           </button>
@@ -698,7 +700,7 @@ function BackgroundPatternPanel({ photo }: { photo: Photo }) {
         type="button"
         onClick={() => fileInputRef.current?.click()}
         data-touch="40"
-        className="inline-flex min-h-touch w-full items-center justify-center gap-2 rounded-chip border border-dashed border-line bg-surface-elevated px-4 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent active:scale-[0.97]"
+        className={cn(pressableVariants(), 'inline-flex min-h-touch w-full items-center justify-center gap-2 rounded-chip border border-dashed border-line bg-surface-elevated px-4 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent')}
       >
         {image ? '이미지 교체' : '이미지 업로드'}
       </button>

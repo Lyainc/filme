@@ -25,7 +25,7 @@ import {
 } from '@/constants/fields';
 import { DATE_FORMAT_TOKENS, GRANULARITY_OPTIONS } from '@/constants/dateTokens';
 import { cn } from '@/utils/cn';
-import { inputVariants } from '@/components/ui/variants';
+import { inputVariants, pressableVariants } from '@/components/ui/variants';
 
 // 로고 크롭 모달 — 픽커들과 동일하게 dynamic(ssr:false)로 로드(react-image-crop을 시트 청크에서 뺀다).
 const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ssr: false });
@@ -189,7 +189,7 @@ function TitleSheet({ photo }: { photo: Photo }) {
         <button
           type="button"
           onClick={() => runSearch(title.trim())}
-          className="rounded-chip bg-accent px-3 py-1.5 text-accent-ink transition-colors hover:bg-accent-hover active:scale-[0.97]"
+          className={cn(pressableVariants(), 'rounded-chip bg-accent px-3 py-1.5 text-accent-ink transition-colors hover:bg-accent-hover')}
         >
           ↗ 검색
         </button>
@@ -249,9 +249,9 @@ export function KobisResultList({
             type="button"
             onClick={() => onSelect(movie)}
             data-touch="44"
-            className={`block w-full border-b border-line px-4 py-3 text-left transition-colors last:border-0 hover:bg-accent-soft active:scale-[0.97] ${
+            className={cn(pressableVariants(), `block w-full border-b border-line px-4 py-3 text-left transition-colors last:border-0 hover:bg-accent-soft ${
               i === highlightIndex ? 'bg-accent-soft' : ''
-            }`}
+            }`)}
           >
             <div className="text-body font-medium text-fg">{movie.movieNm}</div>
             {/* 동명·유사 제목 판별용 — 장편/단편/옴니버스, 감독, 개봉 여부(#476 ac2). */}
@@ -313,11 +313,11 @@ function FormatChips({
               aria-checked={active}
               onClick={() => onChange(opt.value)}
               data-touch="44"
-              className={`text-mono inline-flex min-h-touch shrink-0 snap-start items-center rounded-chip border px-3 text-micro uppercase tracking-widest transition-colors active:scale-[0.97] ${
+              className={cn(pressableVariants(), `text-mono inline-flex min-h-touch shrink-0 snap-start items-center rounded-chip border px-3 text-micro uppercase tracking-widest transition-colors ${
                 active
                   ? 'border-accent bg-accent text-accent-ink'
                   : 'border-[var(--glass-border)] bg-[var(--glass-fill)] text-fg hover:bg-accent-soft'
-              }`}
+              }`)}
             >
               {opt.sample}
             </button>
@@ -509,7 +509,7 @@ function StampEditor({
           <button
             type="button"
             onClick={removeImage}
-            className="ml-auto rounded-chip border border-line px-3 py-1.5 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent active:scale-[0.97]"
+            className={cn(pressableVariants(), 'ml-auto rounded-chip border border-line px-3 py-1.5 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent')}
           >
             이미지 제거
           </button>
@@ -541,7 +541,7 @@ function StampEditor({
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
-        className="inline-flex min-h-touch items-center justify-center gap-2 rounded-chip border border-dashed border-line bg-surface-elevated px-4 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent active:scale-[0.97]"
+        className={cn(pressableVariants(), 'inline-flex min-h-touch items-center justify-center gap-2 rounded-chip border border-dashed border-line bg-surface-elevated px-4 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent')}
       >
         로고 업로드
       </button>

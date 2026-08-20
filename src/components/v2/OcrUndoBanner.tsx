@@ -1,5 +1,7 @@
 import type { OcrDirectField } from './OcrUploadCard';
 import type { MovieInfo } from '@/types';
+import { cn } from '@/utils/cn';
+import { pressableVariants } from '@/components/ui/variants';
 
 interface OcrUndoBannerProps {
   /** non-null이면 배너를 노출한다 — useOcrUndo.snapshot을 그대로 넘긴다. */
@@ -33,14 +35,14 @@ export function OcrUndoBanner({ snapshot, filledFields, onCancel, onConfirm }: O
             <button
               type="button"
               onClick={onCancel}
-              className="min-h-touch inline-flex items-center px-2 text-caption font-medium text-fg-muted transition-colors hover:text-fg active:scale-[0.97]"
+              className={cn(pressableVariants(), 'min-h-touch inline-flex items-center px-2 text-caption font-medium text-fg-muted transition-colors hover:text-fg')}
             >
               되돌리기
             </button>
             <button
               type="button"
               onClick={onConfirm}
-              className="min-h-touch inline-flex items-center rounded-chip bg-accent px-3 text-caption font-medium text-accent-ink transition-colors hover:bg-accent-hover active:scale-[0.97]"
+              className={cn(pressableVariants(), 'min-h-touch inline-flex items-center rounded-chip bg-accent px-3 text-caption font-medium text-accent-ink transition-colors hover:bg-accent-hover')}
             >
               확인
             </button>

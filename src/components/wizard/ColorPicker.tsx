@@ -1,5 +1,5 @@
 import { cn } from '@/utils/cn';
-import { inputVariants } from '@/components/ui/variants';
+import { inputVariants, pressableVariants } from '@/components/ui/variants';
 
 interface ColorPickerProps {
   value: string;
@@ -54,11 +54,10 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
               // scale-[0.97]의 명시성이 높음) 눌렀을 때 105%에서 105%가 아니라 그 미만인 97%로
               // 순간 줄었다 튀는 깜빡임이 생긴다. 선택 스와치는 이미 scale-105로 상태가
               // 또렷하니 나머지(미선택)만 눌림 피드백을 받는다.
-              className={`relative inline-flex min-h-touch min-w-touch items-center justify-center rounded-chip border-2 transition-transform ${
-                active
-                  ? 'border-accent scale-105'
-                  : 'border-line hover:border-accent/40 active:scale-[0.97]'
-              }`}
+              className={cn(
+                'relative inline-flex min-h-touch min-w-touch items-center justify-center rounded-chip border-2 transition-transform',
+                active ? 'border-accent scale-105' : ['border-line hover:border-accent/40', pressableVariants()],
+              )}
               style={{
                 // 46px — rail 상세패널 공통 칩 크기(#367, 무드·후보정 칩과 동일).
                 width: 46,

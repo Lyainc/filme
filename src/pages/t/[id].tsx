@@ -8,6 +8,8 @@ import { DEFAULT_TICKET_TTL_DAYS, UNOFFICIAL_TICKET_NOTICE } from '@/utils/ticke
 import { getLayout, LAYOUTS } from '@/utils/layouts';
 import { buildShareMessage } from '@/utils/shareMessage';
 import { OG_IMAGE_WIDTH, OG_IMAGE_HEIGHT } from '@/utils/ogImage';
+import { cn } from '@/utils/cn';
+import { pressableVariants } from '@/components/ui/variants';
 
 interface TicketLandingProps {
   imageUrl: string;
@@ -183,7 +185,7 @@ export default function TicketLanding({ imageUrl, title, pageUrl, width, height,
             {/* CTA 슬림화(#491) — 44px는 탭 타깃 하한이라 더 낮추지 않는다. */}
             <Link
               href="/"
-              className="mt-1 inline-flex min-h-touch items-center justify-center rounded-field-sm bg-accent px-6 text-body font-semibold text-accent-ink transition-colors hover:bg-accent-hover active:scale-[0.97]"
+              className={cn(pressableVariants(), 'mt-1 inline-flex min-h-touch items-center justify-center rounded-field-sm bg-accent px-6 text-body font-semibold text-accent-ink transition-colors hover:bg-accent-hover')}
             >
               나도 티켓 만들기 →
             </Link>

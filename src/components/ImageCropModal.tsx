@@ -8,6 +8,8 @@ import ReactCrop, {
   type PixelCrop,
 } from 'react-image-crop';
 import { Area } from '@/utils/imageCrop';
+import { cn } from '@/utils/cn';
+import { pressableVariants } from '@/components/ui/variants';
 import { POSTER_LANDSCAPE_RATIO, POSTER_RATIO } from '@/utils/constants';
 import { getLayout } from '@/utils/layouts';
 import type { LayoutId } from '@/types';
@@ -224,7 +226,7 @@ export default function ImageCropModal({
             disabled={isProcessing}
             aria-label="닫기"
             data-touch="44"
-            className="inline-flex min-h-touch min-w-touch items-center justify-center rounded-field-sm border border-line text-fg-muted transition-colors hover:bg-accent-soft hover:text-fg disabled:opacity-30 active:scale-[0.97]"
+            className={cn(pressableVariants(), 'inline-flex min-h-touch min-w-touch items-center justify-center rounded-field-sm border border-line text-fg-muted transition-colors hover:bg-accent-soft hover:text-fg disabled:opacity-30')}
           >
             ✕
           </button>
@@ -292,7 +294,7 @@ export default function ImageCropModal({
               onClick={onClose}
               disabled={isProcessing}
               data-touch="44"
-              className="inline-flex min-h-btn items-center justify-center rounded-field border border-line bg-surface text-body font-medium text-fg transition-colors hover:bg-accent-soft disabled:opacity-30 active:scale-[0.97]"
+              className={cn(pressableVariants(), 'inline-flex min-h-btn items-center justify-center rounded-field border border-line bg-surface text-body font-medium text-fg transition-colors hover:bg-accent-soft disabled:opacity-30')}
             >
               다른 사진 선택
             </button>
@@ -301,7 +303,7 @@ export default function ImageCropModal({
               onClick={handleConfirm}
               disabled={isProcessing || !completedCrop?.width || !completedCrop?.height}
               data-touch="44"
-              className="inline-flex min-h-btn items-center justify-center gap-2 rounded-field bg-accent text-body font-medium text-accent-ink transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40 active:scale-[0.97]"
+              className={cn(pressableVariants(), 'inline-flex min-h-btn items-center justify-center gap-2 rounded-field bg-accent text-body font-medium text-accent-ink transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40')}
             >
               {isProcessing ? (
                 <>

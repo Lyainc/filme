@@ -10,6 +10,8 @@ import {
 import { buildShareMessage, toNativeSharePayload } from '@/utils/shareMessage';
 import { DEFAULT_TICKET_TTL_DAYS, UNOFFICIAL_TICKET_NOTICE } from '@/utils/ticketCleanup';
 import { showError } from '@/utils/errorToast';
+import { cn } from '@/utils/cn';
+import { pressableVariants } from '@/components/ui/variants';
 import { Eyebrow } from './Eyebrow';
 import { PreviewFilmCell } from './PreviewFilmCell';
 import { PrimaryCta } from './PrimaryCta';
@@ -347,7 +349,7 @@ export function ResultPanel({
             <button
               type="button"
               onClick={handleDownload}
-              className="shrink-0 rounded-chip border border-danger px-2.5 py-1 text-caption font-medium text-danger transition-colors hover:bg-danger hover:text-white active:scale-[0.97]"
+              className={cn(pressableVariants(), 'shrink-0 rounded-chip border border-danger px-2.5 py-1 text-caption font-medium text-danger transition-colors hover:bg-danger hover:text-white')}
             >
               다시 시도
             </button>
@@ -367,7 +369,7 @@ export function ResultPanel({
           onClick={handlePermalink}
           disabled={isBusy}
           title="공유 링크를 만들어 클립보드에 복사해요"
-          className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-field-sm bg-accent-soft px-4 text-body font-medium text-accent transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:opacity-50 [.chrome-dark_&]:min-h-[50px] active:scale-[0.97]"
+          className={cn(pressableVariants(), 'flex min-h-[48px] w-full items-center justify-center gap-2 rounded-field-sm bg-accent-soft px-4 text-body font-medium text-accent transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:opacity-50 [.chrome-dark_&]:min-h-[50px]')}
         >
           <LinkIcon />
           <span key={permaLabel} className="inline-block animate-fade-in">
@@ -383,7 +385,7 @@ export function ResultPanel({
           onClick={handleShareLink}
           disabled={isBusy}
           title="카톡·메신저 등으로 공유해요"
-          className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-field-sm border border-line bg-surface-elevated px-4 text-body font-medium text-fg transition-colors hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:bg-transparent disabled:hover:text-fg-faint [.chrome-dark_&]:min-h-[50px] active:scale-[0.97]"
+          className={cn(pressableVariants(), 'flex min-h-[48px] w-full items-center justify-center gap-2 rounded-field-sm border border-line bg-surface-elevated px-4 text-body font-medium text-fg transition-colors hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:bg-transparent disabled:hover:text-fg-faint [.chrome-dark_&]:min-h-[50px]')}
         >
           <ShareIcon />
           <span>공유</span>
@@ -408,7 +410,7 @@ export function ResultPanel({
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className="inline-flex min-h-touch shrink-0 items-center justify-center rounded-field-sm border border-line bg-surface-elevated px-3.5 text-caption font-medium text-fg transition-colors hover:border-accent hover:text-accent active:scale-[0.97]"
+                className={cn(pressableVariants(), 'inline-flex min-h-touch shrink-0 items-center justify-center rounded-field-sm border border-line bg-surface-elevated px-3.5 text-caption font-medium text-fg transition-colors hover:border-accent hover:text-accent')}
               >
                 <span key={copyLabel} className="inline-block animate-fade-in">
                   {copyLabel}

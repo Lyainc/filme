@@ -4,6 +4,8 @@ import type { LayoutId, MovieInfo, TicketComponents } from '@/types';
 import { ALL_FIELDS_ON } from '@/constants/fieldVisibility';
 import { useMatchMedia } from '@/hooks/useMatchMedia';
 import { LAYOUTS } from '@/utils/layouts';
+import { cn } from '@/utils/cn';
+import { pressableVariants } from '@/components/ui/variants';
 import TicketRenderer from '../TicketRenderer';
 import { MOOD_BACKDROP_BG } from '../LayoutPicker';
 import { AppFooter } from './AppFooter';
@@ -302,7 +304,7 @@ function MoodCarousel({
       aria-label={`${layout.label} 무드로 바로 시작 — ${layout.caption}`}
       title={layout.caption}
       data-touch={String(width)}
-      className="shrink-0 transition-transform active:scale-[0.97]"
+      className={cn(pressableVariants(), 'shrink-0 transition-transform')}
       style={slot}
     >
       {/* 라벨 없음은 의도적 결정이다(사용자 피드백, 이슈 #615 코멘트에 기록) — 이미지 밑에 이름
@@ -573,12 +575,12 @@ export function Landing({
             className="relative mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-caption text-landing-muted"
           >
             <div aria-hidden="true" className="absolute inset-0 -z-[5] bg-bg" />
-            <button type="button" onClick={onCta} className="min-h-touch inline-flex items-center underline active:scale-[0.97]">
+            <button type="button" onClick={onCta} className={cn(pressableVariants(), 'min-h-touch inline-flex items-center underline')}>
               포스터 업로드
             </button>
             <span aria-hidden="true" className="text-fg-faint">·</span>
             {/* 포스터 없이 시작(#631) — 단색 바탕 + 조판만으로도 티켓이 성립하는 경로의 진입점. */}
-            <button type="button" onClick={onSkip} data-testid="landing-skip-poster" className="min-h-touch inline-flex items-center underline active:scale-[0.97]">
+            <button type="button" onClick={onSkip} data-testid="landing-skip-poster" className={cn(pressableVariants(), 'min-h-touch inline-flex items-center underline')}>
               포스터 없이 직접 입력
             </button>
           </div>

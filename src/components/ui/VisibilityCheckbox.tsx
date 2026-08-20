@@ -1,3 +1,6 @@
+import { cn } from '@/utils/cn';
+import { pressableVariants } from '@/components/ui/variants';
+
 /**
  * 눈 아이콘(#355, v8 시안 §5·§6) — 윤곽만으론 작은 크기에서 눈으로 안 읽혀 뜬 상태는 동공을
  * 채운다. 인플레이스 필드바(InPlaceFieldEditor)·눈 토글(VisibilityCheckbox)·필드 드로어가 공유.
@@ -45,9 +48,9 @@ export default function VisibilityCheckbox({ checked, onChange, label }: Visibil
       onClick={() => onChange(!checked)}
       aria-label={`${label} 티켓에 표시`}
       title={checked ? '티켓에 표시 중 — 끄면 숨겨져요' : '티켓에서 숨김 — 켜면 표시돼요'}
-      className={`-m-[13px] inline-flex shrink-0 cursor-pointer p-[13px] transition-colors active:scale-[0.97] ${
+      className={cn(pressableVariants(), `-m-[13px] inline-flex shrink-0 cursor-pointer p-[13px] transition-colors ${
         checked ? 'text-fg' : 'text-fg-faint'
-      }`}
+      }`)}
     >
       <EyeIcon open={checked} size={18} />
     </button>
