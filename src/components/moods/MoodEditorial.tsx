@@ -320,9 +320,23 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
           콘텐츠만 안(오버레이). 두 레이어 다 outer의 position:relative 박스를 absolute inset:0으로
           꽉 채워 패딩·투명도 이관 전과 픽셀이 동일하다. */}
       <div style={{ flex: '1 1 auto', minWidth: 0, position: 'relative', background: PAPER }}>
+        {/* box는 캔버스 절대좌표가 아니라 **이 Main 컬럼 자신의 박스** 기준이다 — 레이어가 컬럼
+            (position:relative, 캔버스 x682에서 시작)의 자식이라 absolute 포지셔닝의 containing
+            block이 캔버스가 아니라 컬럼이기 때문이다.
+
+            콘텐츠 박스(로컬 x52..587, 캔버스 x734..1269) 자체엔 안 세운다 — 실측해보니(#728 첫
+            구현) 킥커·타이틀·avec·séance·메타 그리드·고지문·푸터가 필드 조합에 따라 세로 전체를
+            채워서, 300×300 박스를 어디 둬도 "réalisé avec FILME" 푸터나 다른 텍스트에 걸렸다
+            (겹쳐도 스탬프가 조판 **아래**라 안 가려지긴 하지만, 사용자가 투명도를 1.0까지 올리면
+            그 텍스트가 실제로 안 보이게 된다 — ac6이 막으려는 바로 그 상황).
+            대신 오른쪽 패딩 거터(로컬 x587..639, 캔버스 x1269..1321)를 쓴다 — padding 영역이라
+            일반 흐름 콘텐츠가 원천적으로 못 들어오는 자리다. top:44부터 시작해 우상단 크로스헤어
+            장식(right:22 top:22, 로컬 y22..44에서 끝난다)과도 안 겹친다. */}
         <BackgroundPatternLayer
           image={components.backgroundPatternImage}
+          box={{ left: MAIN_PAD_X + MAIN_AVAIL_W, top: 44, width: MAIN_PAD_X, height: 880 }}
           scale={components.backgroundPatternScale ?? 1}
+          opacity={components.backgroundPatternOpacity ?? 1}
         />
         <div style={{ position: 'absolute', inset: 0, color: INK, display: 'flex', flexDirection: 'column', padding: `44px ${MAIN_PAD_X}px 36px`, boxSizing: 'border-box', opacity: componentOpacity }}>
         {/* Kicker — 장식 큐레이션 라벨(bar + En Reprise) */}
