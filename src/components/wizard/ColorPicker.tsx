@@ -1,5 +1,11 @@
 import { cn } from '@/utils/cn';
-import { inputVariants, pressableVariants } from '@/components/ui/variants';
+import {
+  RAIL_CHIP_SELECTED_RING,
+  RAIL_CHIP_SELECTED_SCALE,
+  RAIL_CHIP_TOUCH,
+  pressableVariants,
+} from '@/components/ui/variants';
+import { handleRadioGroupKeyDown } from '@/utils/radioGroupKeyboard';
 
 interface ColorPickerProps {
   value: string;
@@ -33,60 +39,88 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
   });
   const lowerValue = value.toLowerCase();
   const isCustom = !swatches.some((s) => s.value.toLowerCase() === lowerValue);
-  const displayHex = value.toUpperCase();
 
   return (
     <div className="space-y-field">
       <div className={`flex flex-wrap items-center gap-2.5 ${disabled ? 'opacity-40' : ''}`}>
-        {swatches.map((s) => {
-          const active = s.value.toLowerCase() === lowerValue;
-          return (
-            <button
-              key={s.value}
-              type="button"
-              disabled={disabled}
-              onClick={() => onChange(s.value)}
-              title={s.label}
-              aria-label={s.label}
-              data-touch="44"
-              // active:scale-[0.97]은 선택 스와치엔 안 얹는다(#647 리뷰) — 선택 상태의 정적
-              // scale-105와 :active 규칙이 동시에 걸리면 특이성상 :active가 이겨(scale-105보다
-              // scale-[0.97]의 명시성이 높음) 눌렀을 때 105%에서 105%가 아니라 그 미만인 97%로
-              // 순간 줄었다 튀는 깜빡임이 생긴다. 선택 스와치는 이미 scale-105로 상태가
-              // 또렷하니 나머지(미선택)만 눌림 피드백을 받는다.
-              className={cn(
-                'relative inline-flex min-h-touch min-w-touch items-center justify-center rounded-chip border-2 transition-transform',
-                active ? 'border-accent scale-105' : ['border-line hover:border-accent/40', pressableVariants()],
-              )}
-              style={{
-                // 46px — rail 상세패널 공통 칩 크기(#367, 무드·후보정 칩과 동일).
-                width: 46,
-                height: 46,
-                // 이중 링: 내부 bg-gap + accent 링으로 작은 원에서도 활성 상태 또렷
-                boxShadow: active ? '0 0 0 2px var(--bg), 0 0 0 4px var(--accent)' : undefined,
-              }}
-            >
-              <span
-                className="block h-7 w-7 rounded-chip"
+        {/* display:contents — 시각 레이아웃은 부모의 flex-wrap 행에 그대로 맡기고, ARIA
+            트리에서만 스와치를 커스텀 라벨과 분리한다(#730 c4: radiogroup 안엔 radio만). */}
+        <div
+          role="radiogroup"
+          aria-label="잉크 색"
+          className="contents"
+          onKeyDown={handleRadioGroupKeyDown}
+        >
+          {swatches.map((s, index) => {
+            const active = s.value.toLowerCase() === lowerValue;
+            // roving tabindex(#730 c3) — 선택된 스와치가 유일한 탭 스톱. 커스텀 색을 쓰는 중이라
+            // 어떤 스와치도 선택 상태가 아니면(isCustom) 첫 스와치가 대신 탭 스톱을 맡는다.
+            const tabIndex = active ? 0 : isCustom && index === 0 ? 0 : -1;
+            return (
+              <button
+                key={s.value}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                tabIndex={tabIndex}
+                disabled={disabled}
+                onClick={() => onChange(s.value)}
+                title={s.label}
+                aria-label={s.label}
+                data-touch={RAIL_CHIP_TOUCH}
+                // active:scale-[0.97]은 선택 스와치엔 안 얹는다(#647 리뷰) — 선택 상태의 정적
+                // scale과 :active 규칙이 동시에 걸리면 특이성상 :active가 이겨 눌렀을 때 105%에서
+                // 105%가 아니라 그 미만인 97%로 순간 줄었다 튀는 깜빡임이 생긴다. 선택 스와치는
+                // 이미 확대로 상태가 또렷하니 나머지(미선택)만 눌림 피드백을 받는다.
+                // min-h-touch/min-w-touch(44px 하한)는 안 붙인다 — 아래 인라인 46px가 이미
+                // 하한을 넘고, 두 선언이 같이 있으면 __tests__/tapTargets.ts의 클래스 우선
+                // 판정이 44를 읽어 실제 46px 렌더와 어긋난다(#730 ac7 실측).
+                className={cn(
+                  'relative inline-flex items-center justify-center rounded-chip border-2 transition-transform',
+                  active
+                    ? 'border-accent'
+                    : ['border-line hover:border-accent/40', pressableVariants()],
+                )}
                 style={{
-                  backgroundColor: s.value,
-                  boxShadow: 'inset 0 0 0 1px rgba(44,38,34,0.08)',
+                  // 46px — rail 상세패널 공통 칩 크기(#367, 무드·후보정 칩과 동일).
+                  width: 46,
+                  height: 46,
+                  // scale-* 클래스가 아니라 인라인 transform — __tests__/tapTargets.ts가 클래스
+                  // 파싱으로 축소 우회를 막는 판정기라(#730 c6), 정적 확대는 클래스가 아니라
+                  // 여기로만 걸어야 파서를 우회하지 않는다(TexturePicker·LayoutPicker와 동일 패턴).
+                  transform: active ? RAIL_CHIP_SELECTED_SCALE : undefined,
+                  // 이중 링: 내부 bg-gap + accent 링으로 작은 원에서도 활성 상태 또렷
+                  boxShadow: active ? RAIL_CHIP_SELECTED_RING : undefined,
                 }}
-              />
-              {active && (
+              >
                 <span
-                  aria-hidden
-                  className="absolute inset-0 flex items-center justify-center text-micro mix-blend-difference text-white"
-                >
-                  ✓
-                </span>
-              )}
-            </button>
-          );
-        })}
+                  // 46px 칩을 꽉 채운다(#730 c7) — 헥스 입력이 사라져 남는 시각 예산을 색
+                  // 면적으로 돌린다. absolute inset-0가 border-2(4px)만큼 안쪽에서 딱 맞는다.
+                  className="absolute inset-0 rounded-chip"
+                  style={{
+                    backgroundColor: s.value,
+                    // 다크 테마 대응(#730 c8) — 고정 rgba(0,0,0,0.08)은 다크 앰비언트에서
+                    // 대비가 거의 0이라 흰 스와치와 배경 경계가 안 보인다. DesignRail.tsx의
+                    // 스크롤 그림자가 같은 함정을 var(--fg-faint)로 고친 선례를 따른다.
+                    boxShadow: 'inset 0 0 0 1px var(--fg-faint)',
+                  }}
+                />
+                {active && (
+                  <span
+                    aria-hidden
+                    className="absolute inset-0 flex items-center justify-center text-micro mix-blend-difference text-white"
+                  >
+                    ✓
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
 
         {/* 시각 라벨 없이 title/aria로만 — 스와치·무드·후보정 칩과 같은 문법. 375px에서
-            'custom' 텍스트가 고아 줄바꿈을 만들던 Eyebrow는 제거(#190). */}
+            'custom' 텍스트가 고아 줄바꿈을 만들던 Eyebrow는 제거(#190). radiogroup 밖(#730 c4) —
+            확정된 값 중 하나를 고르는 라디오가 아니라 OS 피커를 여는 트리거다. */}
         <label
           title="직접 지정"
           className={`relative inline-flex min-h-touch min-w-touch items-center justify-center ${disabled ? 'cursor-default' : 'cursor-pointer'}`}
@@ -101,55 +135,22 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
           />
           <span
             className={`flex h-[46px] w-[46px] items-center justify-center rounded-chip border-2 transition-transform ${
-              isCustom ? 'border-accent scale-105' : 'border-line hover:border-accent/40'
+              isCustom ? 'border-accent' : 'border-line hover:border-accent/40'
             }`}
             style={{
               background:
                 'conic-gradient(from 0deg, #C08079, #D4B483, #8FA99E, #7E93A8, #9A8BA3, #C08079)',
-              boxShadow: isCustom ? '0 0 0 2px var(--bg), 0 0 0 4px var(--accent)' : undefined,
+              transform: isCustom ? RAIL_CHIP_SELECTED_SCALE : undefined,
+              boxShadow: isCustom ? RAIL_CHIP_SELECTED_RING : undefined,
             }}
             aria-hidden
           />
         </label>
-
-        {/* 헥스 직접 입력 — 스와치 줄에 인라인(#678). 예전엔 전폭 행(w-full, text-title
-            16px + py-2.5 + tracking-widest)이 슬롯 폭 361px를 혼자 다 먹었다. 폰트는
-            16px(text-title) 그대로 둔다 — iOS가 16px 미만 입력에 포커스 시 화면을 자동
-            확대하는 걸 막는 하한(variants.ts 주석)이라 줄일 수 있는 건 폭뿐이다. */}
-        <div
-          className={`inline-flex h-[46px] items-stretch overflow-hidden rounded-chip border-2 border-line ${disabled ? '' : 'focus-within:border-accent'}`}
-        >
-          <span
-            aria-hidden
-            className="inline-flex shrink-0 items-center justify-center border-r border-line px-2 text-body text-fg-muted"
-          >
-            #
-          </span>
-          <input
-            type="text"
-            disabled={disabled}
-            value={displayHex.replace('#', '')}
-            onChange={(e) => {
-              const sanitized = e.target.value.replace(/[^0-9a-fA-F]/g, '').slice(0, 6);
-              onChange(`#${sanitized}`);
-            }}
-            maxLength={6}
-            aria-label="색상 코드"
-            placeholder="FFFFFF"
-            className={cn(
-              inputVariants({ surface: 'paper' }),
-              // focus-visible:ring-2(inputVariants 기본)는 부모의 overflow-hidden에 잘려
-              // 오른쪽·아래가 끊긴 채로 보인다 — 링을 끄고 부모의 focus-within:border-accent
-              // 하나로 포커스 표시를 통일한다.
-              'text-mono w-[92px] border-0 px-2.5 text-title uppercase text-fg transition-colors placeholder:text-fg-muted focus-visible:ring-0 disabled:cursor-not-allowed',
-            )}
-          />
-        </div>
       </div>
 
-      {/* 잠금 안내는 컨트롤(스와치·헥스) 바로 뒤에 붙인다(#678) — 예전엔 패널 맨 위에 있어
-          슬롯이 넘칠 때 아래로 스크롤해 헥스 입력을 보면 문구가 화면 밖으로 나갔다. 컨트롤
-          바로 다음 형제로 두면 둘 중 어느 쪽을 보려고 스크롤해도 같이 딸려온다. */}
+      {/* 잠금 안내는 컨트롤(스와치) 바로 뒤에 붙인다(#678, 헥스 제거 후에도 안내 인접 명제는
+          유지 — #730 c10) — 예전엔 패널 맨 위에 있어 슬롯이 넘칠 때 아래로 스크롤해 컨트롤을
+          보면 문구가 화면 밖으로 나갔다. 컨트롤 바로 다음 형제로 두면 스크롤해도 같이 딸려온다. */}
       {disabled && disabledNote && (
         <p className="text-caption text-fg-muted">{disabledNote}</p>
       )}
