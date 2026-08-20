@@ -8,6 +8,7 @@
  *   bun scripts/capture-export.mjs --layout minimal --emboss --switch-to "35mm Wide" --out /tmp/switched.jpg
  *   bun scripts/capture-export.mjs --layout minimal --emboss --toggle-fill --out /tmp/filled.jpg
  *   bun scripts/capture-export.mjs --layout stub --bg --out /tmp/bg.jpg
+ *   bun scripts/capture-export.mjs --layout stub --full-fields --out /tmp/stub-full.jpg
  *   bun scripts/capture-export.mjs --layout editorial --bg --bg-scale 1.5 --out /tmp/bg15.jpg
  *   bun scripts/capture-export.mjs --lasso --out /tmp/lasso.jpg
  *   bun scripts/capture-export.mjs --emboss --lasso --out /tmp/brush-and-lasso.jpg
@@ -462,7 +463,7 @@ async function switchLayout(page, label) {
   await sleep(300);
 }
 
-async function capture({ layout, material, coating, intensity, bg, bgScale, emboss, lasso, relief, switchTo, toggleFill, out, timeoutMs }) {
+async function capture({ layout, material, coating, intensity, bg, bgScale, fullFields, emboss, lasso, relief, switchTo, toggleFill, out, timeoutMs }) {
   const seed = {
     movieInfo: {
       title: '인터스텔라',
@@ -474,6 +475,16 @@ async function capture({ layout, material, coating, intensity, bg, bgScale, embo
       screen: '4관 IMAX',
       seat: 'H12',
       bookingNumber: '1234567890123456',
+      // --full-fields(#728 Stub 실측) — 최소 seed는 rating/runtime/actors/reissue가 전부 비어
+      // "필드 최소" 변형만 낸다. 필드가 다 켜졌을 때 space-evenly가 어떻게 눌리는지를 보려면
+      // 반대 극단이 필요해서 여기서 채운다.
+      ...(fullFields ? {
+        rating: 4.5,
+        runtime: '132분',
+        actors: '매튜 매커너히, 앤 해서웨이, 제시카 차스테인, 마이클 케인, 케이시 애플렉',
+        isReissue: true,
+        reissueDate: '2024-12-25',
+      } : {}),
     },
     components: {
       layout,
@@ -484,6 +495,12 @@ async function capture({ layout, material, coating, intensity, bg, bgScale, embo
       // 배경 배율(#680) — `--bg`가 이미지를 주입할 때만 의미가 있다. 저장물에 확대가 실제로
       // 실리는지(ac3)를 재려면 같은 트리를 1.0/1.5로 두 번 떠서 --compare해야 해서 knob을 연다.
       backgroundPatternScale: bgScale,
+      ...(fullFields ? {
+        chainVisible: true,
+        chainLabel: 'CGV',
+        formatVisible: true,
+        formatLabel: 'IMAX',
+      } : {}),
     },
     // 포스터 주입이 "첫 업로드"로 오판돼 fieldVisibility가 통째로 갈리는 걸 막는다
     // (measure-editorial-stub.mjs와 같은 함정).
@@ -635,7 +652,7 @@ async function capture({ layout, material, coating, intensity, bg, bgScale, embo
 
     console.log(
       JSON.stringify(
-        { mode: 'capture', layout, material, coating, intensity, emboss, lasso, relief, switchTo, toggleFill, out, bytes: bytes.length, overlays: drawn, marks },
+        { mode: 'capture', layout, material, coating, intensity, fullFields, emboss, lasso, relief, switchTo, toggleFill, out, bytes: bytes.length, overlays: drawn, marks },
         null,
         2,
       ),
@@ -660,6 +677,7 @@ if (cmpIdx >= 0) {
     intensity: Number(arg('intensity', '1')),
     bg: argv.includes('--bg'),
     bgScale: Number(arg('bg-scale', '1')),
+    fullFields: argv.includes('--full-fields'),
     emboss: argv.includes('--emboss'),
     lasso: argv.includes('--lasso'),
     relief: argv.includes('--relief'),

@@ -27,7 +27,6 @@ import {
   useFontsReady,
 } from './_shared';
 import { BackgroundPatternLayer } from '@/utils/backgroundPatterns';
-import { TARGET_HEIGHT, TARGET_WIDTH } from '@/utils/constants';
 
 /**
  * v05 — 티켓 스텁(마스터 Ticket Design Master.dc.html v2 · 2026-07-08 resync, 에픽 #281).
@@ -72,18 +71,20 @@ const PAD_X = 56;
 const POSTER_H = 640;
 
 /**
- * 배경 패턴(#530) 클립 — 캔버스 전면에서 **포스터 밴드 사각형만 구멍으로 판다**(evenodd, Criterion
- * PATTERN_CLIP과 같은 계약). 미리보기에선 밴드가 어차피 위에서 덮으니 픽셀이 같지만, **저장물에선
- * 이게 없으면 패턴이 포스터 위에 인쇄된다**: `captureToImage`가 포스터를 raw canvas로 먼저 깔고 base
- * PNG를 그 위에 얹는데(z-order `배경 → 포스터 → CSS 레이어`), 포스터 조상의 불투명 배경은 포스터를
- * 가리지 않도록 base에서 빠져 나가 있다(#490/#495 `collectOpaquePosterBackdrops`). 그래서 밴드 자리의
- * base는 투명이고, 그 아래 깔린 패턴이 그대로 비쳐 포스터를 덮는다.
- *
- * 좌표를 POSTER_H에서 뽑는 게 핵심 — 밴드 높이가 바뀌면 클립이 같이 따라가서 조용히 어긋나지 않는다.
+ * 배경 스탬프(#530→#728) 고정 박스 — "사이" space-evenly 간격(#536) 안, 페이퍼 스텁의 Admission/
+ * The Film 두 섹션 사이. 처음엔 두 섹션 bounding box만 재고 y1150..1230으로 잡았다가 실제 캡처를
+ * 눈으로 보니 HALL 값 텍스트에 거의 붙어 있었다 — DATE/TIME/HALL 컬럼이 justifyContent:'center'라
+ * SEAT 칩과 같은 높이(126px)로 묶여 있고, 그 안에서 HALL이 컬럼 맨 아래 줄이라 admission 섹션의
+ * bounding box 바닥(≈1147)과 HALL 텍스트 자체의 바닥이 사실상 같았다("섹션 바닥"이 곧 "글자
+ * 바닥") — 게다가 그 DOM 측정은 `document.fonts.ready` 전이라 실제 캡처(폰트 로드 후) 렌더보다
+ * 신뢰도가 낮았다. 그래서 최종 값은 `--compare` 실측(diff bbox, 폰트 로드 완료 후의 진짜 저장물
+ * 픽셀)으로 다시 잡았다 — y1188..1230, 위로 HALL 텍스트와 40px대, 아래로 The Film 섹션 헤드
+ * (top min 1238)와 8px 여유. x는 바코드 우측 정렬(904 = 960 - PAD_X)에 맞춰 604..904. 포스터
+ * 밴드(y<656)·바코드(y1468~)·워드마크와도 안 겹친다. 이 박스는 두 섹션이 안 겹치는 자리를
+ * 실측으로 찾은 결과라 POSTER_H 등 다른 상수에서 유도되지 않는다 — 페이퍼 스텁 레이아웃
+ * (Row/SectionHead 구성)이 바뀌면 다시 재야 한다.
  */
-const PATTERN_CLIP =
-  `path(evenodd, "M0 0H${TARGET_WIDTH}V${TARGET_HEIGHT}H0Z` +
-  ` M0 0H${TARGET_WIDTH}V${POSTER_H}H0Z")`;
+const PATTERN_BOX = { left: 604, top: 1188, width: 300, height: 42 };
 
 // 홀로그램 티커 무지개 그라디언트(마스터 1:1) — 절취 정보 스트립 배경.
 const HOLO = 'linear-gradient(100deg,#9ff0df 0%,#f6c4e4 14%,#c9baf7 30%,#b7e3f8 47%,#f7e2b3 64%,#b6f7c6 81%,#9ff0df 100%)';
@@ -190,9 +191,10 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
 
   return (
     <div style={{ position: 'absolute', inset: 0, background: PAPER, color: INK, fontFamily: FONT_SANS, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      {/* 배경 이미지(#530→#672) — 종이(PAPER) 바로 위에 깔리고, 포스터 밴드 자리는 PATTERN_CLIP이
-          구멍으로 파낸다(그 주석의 저장물 z-order 참고). componentOpacity 밖(종이에 이미 인쇄된
-          바탕)인 건 Editorial·Criterion과 같은 계약이다.
+      {/* 배경 스탬프(#530→#672→#728) — 종이(PAPER) 바로 위에 깔리고, PATTERN_BOX가 정하는 고정
+          자리 하나에만 선다(#728로 캔버스 전면 cover가 폐지돼 포스터 밴드를 구멍으로 팔 필요가
+          없어졌다 — PATTERN_BOX 주석 참고). componentOpacity 밖(종이에 이미 인쇄된 바탕)인 건
+          Editorial·Criterion과 같은 계약이다.
 
           **덮고 덮이는 건 트리 순서가 아니라 포지셔닝이 정한다.** 이 레이어는 absolute라, 뒤에 오는
           형제 중 위로 오는 건 포지셔닝된 것들(포스터 밴드·절취선·페이퍼 스텁, 전부 relative)뿐이다.
@@ -201,8 +203,9 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
           position을 줘야 한다. */}
       <BackgroundPatternLayer
         image={components.backgroundPatternImage}
+        box={PATTERN_BOX}
         scale={components.backgroundPatternScale ?? 1}
-        clipPath={PATTERN_CLIP}
+        opacity={components.backgroundPatternOpacity ?? 1}
       />
       {/* 상단 포스터 — 텍스트 없음. 분할 레이아웃이라 root가 아닌 이 영역에만 포스터 탭(#259).
           배경은 Poster의 letterboxBg가 칠하므로 래퍼 자체엔 안 둔다(nit poster-letterbox-bg, #440 —
@@ -217,7 +220,8 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
       {/* 절취선(점선) — 크림 밴드에 3px dashed, 반원 노치 없음(마스터 재동기화 #281). */}
       {/* position:relative는 장식이 아니라 페인트 순서다(#671) — 이게 없으면 static이라 absolute인
           배경 패턴 레이어 **아래**로 가서, 불투명한 커스텀 이미지가 점선을 통째로 덮는다(프리셋
-          3종은 6~12% 잉크라 안 보였던 축이다). 위 패턴 레이어 주석의 마지막 문장이 그 처방이다. */}
+          3종은 6~12% 잉크라 안 보였던 축이다). 위 패턴 레이어 주석의 마지막 문장이 그 처방이다.
+          #728로 박스가 작아져도 이 페인팅 규칙 자체는 그대로 유효하다. */}
       <div aria-hidden="true" style={{ height: 16, flexShrink: 0, position: 'relative', background: PAPER, display: 'flex', alignItems: 'center' }}>
         <span style={{ flex: 1, borderTop: `3px dashed rgba(26,22,18,.85)` }} />
       </div>
@@ -225,7 +229,7 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
       {/* 하단 페이퍼 스텁 — 배경은 루트의 PAPER가 그대로 비친다(#530). 여기서 다시 칠하면 그게
           포지셔닝된 형제로서 배경 패턴 레이어를 통째로 덮어 패턴이 안 보인다. 저장물도 같다 —
           루트 PAPER는 포스터 조상이라 base에서 빠져 캔버스에 먼저 칠해지므로(#490/#495) 이 자리의
-          종이색은 유지된다. */}
+          종이색은 유지된다. #728로 박스가 작아져도 이 페인팅 규칙 자체는 그대로 유효하다. */}
       <div style={{ flex: 1, minHeight: 0, position: 'relative', padding: `22px ${PAD_X}px 26px`, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', opacity: componentOpacity }}>
         {/* 홀로그램 티커 — 풀블리드 장식 스트립. 필드값을 복제하므로 aria-hidden(스크린리더 중복 읽기 방지, #289). */}
         <div aria-hidden="true" style={{ position: 'relative', height: 42, overflow: 'hidden', margin: `-22px -${PAD_X}px 22px`, boxShadow: 'inset 0 1px 0 rgba(26,22,18,.22), inset 0 -1px 0 rgba(26,22,18,.22)', background: HOLO }}>

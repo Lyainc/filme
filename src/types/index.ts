@@ -124,6 +124,13 @@ export interface TicketComponents {
    * 올려야 하고 그러면 blob 용량(#673이 지목한 제일 큰 payload)이 같이 커진다.
    */
   backgroundPatternScale?: number;
+  /**
+   * 스탬프(구 배경) 투명도 0.2~1.0(#728) — 미설정은 1.0으로 읽는다(마이그레이션 없음,
+   * `backgroundPatternScale`의 `?? 1`과 같은 관용구). 기존 저장본은 이 필드가 없어 렌더가
+   * 안 바뀌고, "새로 올린 것만 반투명"은 여기서 분기하지 않는다 — `BackgroundPatternPanel`의
+   * `useLogoCrop` 완료 콜백이 이미지와 이 값을 한 번에 write-time으로 커밋한다(undo 원자성).
+   */
+  backgroundPatternOpacity?: number;
 }
 
 export interface PhototicketState {

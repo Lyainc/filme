@@ -24,7 +24,6 @@ import {
   useFontsReady,
 } from './_shared';
 import { BackgroundPatternLayer } from '@/utils/backgroundPatterns';
-import { TARGET_HEIGHT, TARGET_WIDTH } from '@/utils/constants';
 
 // 한줄평 폴백 2단계(#391) — 유저 입력이 없으면 평점(0.5 단위)별 프리셋, 평점도 없으면 기본 quote.
 // 전문가 패널 결론: 프리셋·기본값은 항상 영문(무드 보이스 통일, 콘텐츠 비용은 Criterion 1세트로 절감).
@@ -81,17 +80,12 @@ const PLATE_GLOSS =
 const QUOTE_MARK_SIZE = 125;
 
 /**
- * 배경 패턴(#530) 클립 — 캔버스 전면에서 **도판 사각형만 구멍으로 판다**(evenodd).
- * 미리보기에선 불투명한 도판이 어차피 덮으니 픽셀이 같지만, **저장물에선 이게 없으면 패턴이
- * 포스터 위에 인쇄된다**: `captureToImage`가 포스터를 raw canvas로 먼저 깔고 base PNG를 그 위에
- * 얹는데(z-order `배경 → 포스터 → CSS 레이어`), 도판의 불투명 배경은 포스터를 가리지 않도록
- * base에서 빠져 나가 있다(#490/#495 `collectOpaquePosterBackdrops`). 그래서 도판 자리의 base는
- * 투명이고, 그 아래 깔린 패턴이 그대로 비쳐 포스터를 덮었다(실측: grid에서 도판 내부까지
- * 격자가 찍힘). Editorial은 패턴 열과 포스터 열이 겹치지 않아 이 문제가 없다.
+ * 배경 패턴(#530→#728) — 예전엔 캔버스 전면 레이어에서 도판 사각형을 evenodd로 파내는
+ * PATTERN_CLIP이 필요했다(저장물에서 포스터가 raw canvas로 먼저 깔리고 도판의 불투명 배경이
+ * base PNG에서 빠져 있어, 클립이 없으면 패턴이 그 구멍으로 비쳐 포스터를 덮었다). #728로
+ * 패턴이 도판 왼쪽 여백(x84..214)에 고정된 좁은 박스가 되면서 도판(x230..730)과 원천적으로
+ * 안 겹치게 됐고, 클립은 더 이상 필요 없다.
  */
-const PATTERN_CLIP =
-  `path(evenodd, "M0 0H${TARGET_WIDTH}V${TARGET_HEIGHT}H0Z` +
-  ` M${PLATE_LEFT} ${PLATE_TOP}H${PLATE_LEFT + PLATE_W}V${PLATE_TOP + PLATE_H}H${PLATE_LEFT}Z")`;
 
 /**
  * 헤더·평점 메타 조판(#575) — `UNE SÉANCE`, 관람일, `/5`가 이 하나를 읽는다.
@@ -251,13 +245,14 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
 
   return (
     <div style={{ position: 'absolute', inset: 0, background: PAPER_GRAIN, color: INK, fontFamily: FONT_KR, overflow: 'hidden' }}>
-      {/* 배경 이미지(#530→#672) — 루트의 첫 형제라 종이 그레인 바로 위, 도판·조판 **아래**에 깔린다.
-          componentOpacity 밖(종이에 이미 인쇄된 바탕)인 건 Editorial과 같은 계약이다. 도판 자리는
-          PATTERN_CLIP이 구멍으로 파낸다(그 주석의 저장물 z-order 참고). */}
+      {/* 배경 이미지(#530→#672→#728) — 루트의 첫 형제라 종이 그레인 바로 위, 도판·조판 **아래**에
+          깔린다. componentOpacity 밖(종이에 이미 인쇄된 바탕)인 건 Editorial과 같은 계약이다.
+          box는 도판 왼쪽 여백에 고정된 스탬프 자리라(위 PATTERN_CLIP 주석 참고) 도판과 안 겹친다. */}
       <BackgroundPatternLayer
         image={components.backgroundPatternImage}
+        box={{ left: PAD, top: PLATE_TOP, width: PLATE_LEFT - PAD - 16, height: PLATE_H }}
         scale={components.backgroundPatternScale ?? 1}
-        clipPath={PATTERN_CLIP}
+        opacity={components.backgroundPatternOpacity ?? 1}
       />
       {/* 도판 — Mood35mm의 컷과 같은 계약. 컷이 정확히 0.667이라 표준 크롭(#525 룰 1)에서 레터박스가
           0이고, 사용자가 자연비 크롭을 골라 어긋나면 남는 자리를 blur 포스터 배경이 덮는다.
