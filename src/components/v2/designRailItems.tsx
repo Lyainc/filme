@@ -612,16 +612,36 @@ const BACKGROUND_PATTERN_MOODS: readonly LayoutId[] = ['editorial', 'criterion',
  */
 const BACKGROUND_SCALE_MAX = 1.5;
 
+/**
+ * 스탬프 투명도 범위(#728 c4·ac3). 하한 0.2는 완전히 안 보일 정도로 내려가면 "왜 스탬프가
+ * 안 보이지"가 되는 반대쪽 함정이라 바닥을 둔다. **새로 올린 이미지의 write-time 기본값**은
+ * 이 범위 중간인 0.5 — 고정 박스에 반투명하게 앉아 있는 게 스탬프라는 이번 재설계의 취지를
+ * 업로드 즉시 보여준다. 상한 1.0(불투명)은 기존 저장본이 `?? 1`로 읽는 값과 같아, 사용자가
+ * 슬라이더를 끝까지 올리면 옛 배경 렌더와 픽셀이 같아진다.
+ */
+const BACKGROUND_OPACITY_MIN = 0.2;
+const BACKGROUND_OPACITY_DEFAULT = 0.5;
+
 function BackgroundPatternPanel({ photo }: { photo: Photo }) {
   const image = photo.state.components.backgroundPatternImage;
   // 업로드는 로고 스탬프와 **같은** 자유비 크롭 흐름(useLogoCrop, #220)을 그대로 탄다 — 새 의존성도
-  // 새 크롭 경로도 없다. 크롭 결과가 곧 배경 이미지다(#672로 프리셋 id 축이 사라져 같이 넘길 값도
-  // 없어졌다 — 이미지 유무가 곧 배경 유무다).
-  // maxSide는 로고 기본값(640)을 쓰면 안 된다 — 배경은 캔버스 **전면**을 cover로 채우고 저장물은
+  // 새 크롭 경로도 없다. 크롭 결과가 곧 스탬프 이미지다(#672로 프리셋 id 축이 사라져 같이 넘길 값도
+  // 없어졌다 — 이미지 유무가 곧 스탬프 유무다).
+  // maxSide는 로고 기본값(640)을 쓰면 안 된다 — 무드별 고정 박스라도 cover로 채워 그리므로 저장물은
   // pixelRatio 2라, criterion 기준 1920×3068 device px를 640짜리로 늘리면 3~5배 확대돼 뭉갠다.
   // 포스터가 같은 급 슬롯에 960×1440을 쓰는 것과 같은 이유로 캔버스 긴 변(TARGET_HEIGHT)에 맞춘다.
+  //
+  // 투명도 write-time 커밋(#728 c4) — 이미지와 투명도를 같은 updateComponents 호출에 묶는다.
+  // 사용자가 이미 값을 고른 적이 있으면(`?? 기본값`) 그 값을 유지하고, 없으면(첫 업로드) 반투명
+  // 기본값을 새로 써 넣는다. 렌더 쪽에서 "언제 올라온 이미지인가"로 분기하지 않는 이유는 그 축을
+  // 저장할 필요가 아예 없어지기 때문이고, 이미지·투명도를 한 번에 커밋하는 이유는 undo 히스토리
+  // 때문이다 — 따로 쓰면 undo 한 번이 반쯤 되돌린 상태를 만든다.
   const { rawSrc, isCropping, openFile, handleComplete, handleCancel } = useLogoCrop(
-    (backgroundPatternImage) => photo.updateComponents({ backgroundPatternImage }),
+    (backgroundPatternImage) =>
+      photo.updateComponents({
+        backgroundPatternImage,
+        backgroundPatternOpacity: photo.state.components.backgroundPatternOpacity ?? BACKGROUND_OPACITY_DEFAULT,
+      }),
     TARGET_HEIGHT,
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -637,7 +657,7 @@ function BackgroundPatternPanel({ photo }: { photo: Photo }) {
     <div className="space-y-3">
       {image && (
         <div className="flex items-center gap-3 rounded-field border border-line bg-surface-elevated px-3.5 py-3">
-          <img src={image} alt="배경 이미지" className="h-10 w-auto object-contain" />
+          <img src={image} alt="스탬프 이미지" className="h-10 w-auto object-contain" />
           <button
             type="button"
             // blob revoke는 여기서 하지 않는다 — undo 히스토리(#356)가 이 URL을 참조한다
@@ -650,18 +670,28 @@ function BackgroundPatternPanel({ photo }: { photo: Photo }) {
         </div>
       )}
 
-      {/* 배율(#680) — 이미지가 있을 때만. 없으면 조절할 대상이 없어 죽은 컨트롤이 된다.
+      {/* 크기·투명도(#680·#728) — 이미지가 있을 때만. 없으면 조절할 대상이 없어 죽은 컨트롤이 된다.
           크기 패널이 아니라 여기 두는 건 그 패널이 이미 넘치기도 하지만(#682), RailItem.appliesTo가
           이미 BACKGROUND_PATTERN_MOODS로 3무드 게이팅을 해줘 노출 조건을 새로 짤 게 없어서다. */}
       {image && (
-        <BrightnessSlider
-          label="배경 크기"
-          id={`${ID_PREFIX}-background-scale`}
-          value={photo.state.components.backgroundPatternScale ?? 1}
-          onChange={(backgroundPatternScale) => photo.updateComponents({ backgroundPatternScale })}
-          min={1}
-          max={BACKGROUND_SCALE_MAX}
-        />
+        <div className="space-y-group">
+          <BrightnessSlider
+            label="스탬프 크기"
+            id={`${ID_PREFIX}-background-scale`}
+            value={photo.state.components.backgroundPatternScale ?? 1}
+            onChange={(backgroundPatternScale) => photo.updateComponents({ backgroundPatternScale })}
+            min={1}
+            max={BACKGROUND_SCALE_MAX}
+          />
+          <BrightnessSlider
+            label="스탬프 투명도"
+            id={`${ID_PREFIX}-background-opacity`}
+            value={photo.state.components.backgroundPatternOpacity ?? 1}
+            onChange={(backgroundPatternOpacity) => photo.updateComponents({ backgroundPatternOpacity })}
+            min={BACKGROUND_OPACITY_MIN}
+            max={1}
+          />
+        </div>
       )}
 
       <button
@@ -677,14 +707,14 @@ function BackgroundPatternPanel({ photo }: { photo: Photo }) {
         type="file"
         accept="image/png,image/jpeg,image/webp,image/svg+xml"
         onChange={handleFileChange}
-        aria-label="배경 이미지 업로드"
+        aria-label="스탬프 이미지 업로드"
         className="sr-only"
       />
 
       {rawSrc && (
         <ImageCropModal
           imageSrc={rawSrc}
-          title="배경 이미지 크롭"
+          title="스탬프 이미지 크롭"
           onClose={handleCancel}
           onComplete={handleComplete}
           isProcessing={isCropping}
@@ -817,8 +847,8 @@ export const RAIL_ITEMS: readonly RailItem[] = [
     // id는 'pattern' 그대로 둔다(#672) — 저장·URL 어디에도 안 실리는 내부 키인데, 같이 남은
     // `backgroundPatternImage`(draft 키라 개명 불가)와 이름이 갈리면 오히려 두 벌이 된다.
     id: 'pattern',
-    label: '배경',
-    // 배경: 액자 안에 얹힌 사진(산 능선 + 해) — 더 이상 기하 패턴이 아니라 사용자가 올린 이미지다.
+    label: '스탬프',
+    // 스탬프: 액자 안에 얹힌 사진(산 능선 + 해) — 무드가 정한 고정 박스에 앉는 사용자 이미지다.
     icon: (
       <svg {...RAIL_ICON}>
         <rect x="3.5" y="5" width="17" height="14" rx="2" />
