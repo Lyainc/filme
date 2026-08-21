@@ -78,6 +78,17 @@ function MobileHarness() {
       >
         seed-draft-theater
       </button>
+      {/* 같은 #737 시드의 components 축 — 옛 draft가 극장/포맷 스탬프 라벨까지 들고 있던 경우.
+          fresh-reset 재구성이 prevValues(movieInfo)뿐 아니라 prevComponents도 INITIAL_STATE에서
+          떠야 한다는 걸 재는 자리다(claude-review PR #742 P1). */}
+      <button
+        type="button"
+        onClick={() =>
+          photo.updateComponents({ chainLabel: '메가박스', formatLabel: 'Dolby', formatVisible: true })
+        }
+      >
+        seed-draft-stamps
+      </button>
       <MobileEditorShell
         photo={photo}
         canExport
@@ -321,6 +332,38 @@ describe('OCR undo가 새 문서 리셋 위에서 일어나면 옛 draft가 아�
     expect(captured.movieInfo.theater).toBe('');
     expect(captured.movieInfo.seat).toBe('');
     expect(captured.movieInfo.title).toBe('');
+  });
+
+  // claude-review PR #742 P1 — 위 케이스는 movieInfo 축(theater/seat/title)만 잰다. fresh-reset
+  // 재구성은 prevComponents(chainLabel/formatLabel/formatVisible)도 같은 방식으로 INITIAL_STATE에서
+  // 뜨는데, 그 축은 어느 테스트도 fresh 분기로 통과시키지 않았다 — 기존 chain/format undo 케이스는
+  // 시작 상태가 이미 비어 있거나(구분력 없음) landing-skip-poster를 먼저 눌러 non-fresh로 우회한다.
+  test('스탬프 라벨도 마찬가지다 — 되돌리기가 옛 draft의 chain/format 라벨을 되살리지 않는다', async () => {
+    const user = userEvent.setup();
+    render(<MobileHarness />);
+
+    // 랜딩을 안 걷은 채(landingDismissed=false) 옛 draft가 스탬프 라벨을 들고 있는 상태.
+    await user.click(screen.getByText('seed-draft-stamps'));
+    expect(captured.components.chainLabel).toBe('메가박스');
+    expect(captured.components.formatLabel).toBe('Dolby');
+
+    // 옛 draft와 다른 값이라 restore-vs-reset 차이가 드러난다.
+    ocrImpl = async () => ({ chain: 'cgv', format: 'IMAX' });
+
+    await user.upload(
+      ocrFileInput(),
+      new File(['x'], 'ticket.png', { type: 'image/png' })
+    );
+
+    const undoButton = await screen.findByRole('button', { name: '되돌리기' });
+    expect(captured.components.chainLabel).toBe('CGV');
+    expect(captured.components.formatLabel).toBe('IMAX');
+
+    await user.click(undoButton);
+
+    // 회귀 지점: prevComponents가 리셋 **전** 값에서 뜨면 여기서 '메가박스'/'Dolby'가 되살아난다.
+    expect(captured.components.chainLabel).toBe('');
+    expect(captured.components.formatLabel).toBe('');
   });
 
   // fresh-context 리뷰 지적 — resetFresh를 문서 전체 리셋으로 구현하면, OCR 적용~되돌리기 사이에
