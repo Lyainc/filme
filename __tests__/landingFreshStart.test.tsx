@@ -13,7 +13,7 @@
  * 실패할 수 있는 단언의 received에 DOM 엘리먼트를 넣지 않는다(#693) — `!!`로 강제 변환한다.
  */
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
-import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/react';
 import { mobileShellProps } from './shellHarness';
 
 const { usePhototicket, STORAGE_KEY } =
@@ -87,6 +87,24 @@ describe('랜딩 "새로 시작"은 저장분을 그 자리에서 지우지 않�
     await new Promise((r) => setTimeout(r, 1500));
 
     expect(window.localStorage.getItem(STORAGE_KEY)).toBe(before);
+  });
+
+  // 무드 갤러리 탭은 #727부터 `updateComponents`의 동일값 가드를 거치지 않고 무조건
+  // `resetDocument(layout)`을 부른다. 그 변경이 c7 계약을 지키는지 — 즉 draft가 **있던** 상태에서
+  // 탭해도 옛 필드가 새 문서로 안 새어나오고 저장분은 남는지 — 를 이 자리에서 잠근다
+  // (claude-review P1: 다섯 이탈 중 이 경로만 draft 있는 상태를 안 재고 있었다).
+  test('무드 갤러리 탭도 저장분을 안 지우고, 새 문서가 이전 필드를 안 물려받는다', () => {
+    seedDraft();
+    render(<Harness />);
+
+    expect(screen.getByTestId('landing-restore').textContent).toContain('인터스텔라');
+
+    const landing = screen.getByTestId('landing');
+    fireEvent.click(within(landing).getByRole('button', { name: /^Stub 무드로 바로 시작/ }));
+
+    expect(window.localStorage.getItem(STORAGE_KEY)).toContain('인터스텔라');
+    expect(document.body.textContent).not.toContain('인터스텔라');
+    expect(document.body.textContent).not.toContain('CGV 용산아이파크몰');
   });
 
   test('"이어서 만들기"는 새 문서가 아니다 — 복원된 필드를 그대로 들고 들어간다', () => {
