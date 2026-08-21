@@ -39,7 +39,7 @@ const { clearKobisLookupCache } =
   require('@/utils/kobisLookup') as typeof import('@/utils/kobisLookup');
 const { MobileEditorShell } =
   require('@/components/v2/MobileEditorShell') as typeof import('@/components/v2/MobileEditorShell');
-const { usePhototicket } =
+const { usePhototicket, STORAGE_KEY } =
   require('@/hooks/usePhototicket') as typeof import('@/hooks/usePhototicket');
 
 let captured: PhototicketState;
@@ -128,6 +128,9 @@ afterEach(() => {
   cleanup();
   ocrImpl = async () => ({});
   clearKobisLookupCache();
+  // draft를 심는 케이스가 있으므로 파일 안에서 반드시 비운다 — 안 비우면 같은 프로세스의
+  // 뒤 테스트가 남은 저장분을 복원해 랜딩이 다른 상태로 시작한다.
+  window.localStorage.clear();
   mock.restore();
 });
 
@@ -215,6 +218,39 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
     expect(ctaWrap.contains(posterExit)).toBe(true);
     expect(!!ocrCard.closest('.hidden')).toBe(true);
     expect(!!posterExit.closest('.hidden')).toBe(true);
+  });
+
+  // claude-review P1(#727) — 다섯 이탈 중 OCR 경로만 "draft가 **있던** 상태"를 안 재고 있었다.
+  // c7이 지키려는 건 두 명제고 여기서 함께 잠근다: ① 진입 커밋이 저장분을 안 지운다(오탭이
+  // 새로고침 한 번으로 복구된다) ② 새 문서가 옛 필드를 안 물려받는다(리셋 위에 OCR 패치가
+  // 얹히는 순서라, 뒤집히면 옛 극장명이 화면에 남는다).
+  test('draft가 있어도 OCR 진입은 저장분을 안 지우고 새 문서로 시작한다 (#727 c7)', async () => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ movieInfo: { title: '인터스텔라', theater: 'CGV 용산아이파크몰' } })
+    );
+    render(<MobileHarness />);
+
+    // 복원이 끝난 근거 — 랜딩 복원 행이 그 제목을 싣고 있다.
+    await waitFor(() => {
+      expect(screen.getByTestId('landing-restore').textContent).toContain('인터스텔라');
+    });
+
+    // 옛 draft와 겹치지 않는 값이어야 "새어나옴"과 "OCR이 채운 값"이 구분된다.
+    ocrImpl = async () => ({ theater: 'CGV 왕십리' });
+    fireEvent.change(ocrFileInput(), {
+      target: { files: [new File(['x'], 'ticket.png', { type: 'image/png' })] },
+    });
+
+    await waitFor(() => {
+      expect(captured.movieInfo.theater).toBe('CGV 왕십리');
+    });
+
+    // ① 저장분은 그대로다.
+    expect(window.localStorage.getItem(STORAGE_KEY)).toContain('인터스텔라');
+    // ② 새 문서는 옛 필드를 안 물려받았다 — 제목은 비었고 극장은 OCR 값으로만 서 있다.
+    expect(captured.movieInfo.title).toBeFalsy();
+    expect(document.body.textContent).not.toContain('인터스텔라');
   });
 
   // claude-review PR #658 P1 — 초기화(handleClearTap)가 landingDismissed를 false로 되돌리는 줄을
