@@ -14,7 +14,7 @@
  */
 import { useState } from 'react';
 import { describe, expect, test, afterEach } from 'bun:test';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { LayoutId } from '@/types';
 import { LayoutStrip } from '@/components/LayoutPicker';
@@ -96,6 +96,95 @@ describe('값이 옵션 목록에 없어도 그룹이 Tab으로 닿는다 (#730 
     // 첫 칩이 아니라 **선택된** 칩이다 — 폴백이 무조건 걸리면 여기서 갈린다.
     expect(tabStops[0] === radios[1]).toBe(true);
     expect(tabStops[0] === radios[0]).toBe(false);
+  });
+});
+
+// claude-review PR #743 P1 라운드 2 — `radioGroupKeyboard.ts`는 세 픽커가 공유하는 신규
+// 인프라라 계약이 깨지면 셋이 동시에 깨진다. 그런데 잠겨 있던 건 편도 이동(한 칸 좌/우)뿐이고
+// Home/End·경계 순환·disabled 배제는 어디서도 안 재고 있었다. 소비처 하나(후보정 픽커)로
+// 계약 전체를 잠근다 — 셋이 같은 핸들러를 쓰므로 계약 하나로 셋을 검증한다.
+describe('공유 키보드 계약 전체 — Home/End · 경계 순환 · disabled 배제 (#730 c3)', () => {
+  function Controlled({ initial }: { initial?: string }) {
+    const [value, setValue] = useState<string>(initial ?? MATERIAL_OPTIONS[0].value);
+    return (
+      <TexturePicker
+        axis="material"
+        options={MATERIAL_OPTIONS}
+        value={value}
+        onChange={setValue}
+        croppedImageUrl={null}
+        ariaLabel="재질"
+      />
+    );
+  }
+
+  const checked = () =>
+    screen.getAllByRole('radio').findIndex((r) => r.getAttribute('aria-checked') === 'true');
+  const last = () => screen.getAllByRole('radio').length - 1;
+
+  test('End는 마지막으로, Home은 첫 항목으로 간다', async () => {
+    const user = userEvent.setup();
+    render(<Controlled />);
+    await user.tab();
+
+    await user.keyboard('{End}');
+    expect(checked()).toBe(last());
+
+    await user.keyboard('{Home}');
+    expect(checked()).toBe(0);
+  });
+
+  test('마지막에서 오른쪽은 첫 항목으로 순환한다', async () => {
+    const user = userEvent.setup();
+    render(<Controlled initial={MATERIAL_OPTIONS[MATERIAL_OPTIONS.length - 1].value} />);
+    await user.tab();
+    expect(checked()).toBe(last());
+
+    await user.keyboard('{ArrowRight}');
+    expect(checked()).toBe(0);
+  });
+
+  test('첫 항목에서 왼쪽은 마지막으로 순환한다', async () => {
+    const user = userEvent.setup();
+    render(<Controlled />);
+    await user.tab();
+    expect(checked()).toBe(0);
+
+    await user.keyboard('{ArrowLeft}');
+    expect(checked()).toBe(last());
+  });
+
+  test('세로 방향키도 같은 축으로 동작한다 — 소비처가 전부 가로 한 줄이라 등가다', async () => {
+    const user = userEvent.setup();
+    render(<Controlled />);
+    await user.tab();
+
+    await user.keyboard('{ArrowDown}');
+    expect(checked()).toBe(1);
+
+    await user.keyboard('{ArrowUp}');
+    expect(checked()).toBe(0);
+  });
+
+  // disabled 그룹(색이 고정된 35mm 무드)에서 방향키가 색을 바꾸지 않는다는 사용자 명제를 잰다.
+  //
+  // **핸들러의 `:not([disabled])` 배제 자체는 이 자리에서 잠기지 않는다** — 배제를 걷어내도
+  // 이 테스트는 통과한다(실측). 순회 대상에 들어가더라도 disabled 버튼의 `.click()`이 no-op이라
+  // 결과가 같아서다. 배제가 관측 가능한 차이를 내려면 **일부만** disabled인 그룹이 필요한데
+  // 세 소비처 중 그런 구조가 없다(컬러 픽커는 전부 disabled이거나 전부 아니다). 그 축을 재려면
+  // 먼저 그런 소비처가 생겨야 한다.
+  test('전부 disabled면 방향키가 선택을 안 바꾼다', () => {
+    render(
+      <ColorPicker value="#FFFFFF" onChange={() => {}} recommended={[]} disabled disabledNote="고정" />
+    );
+
+    const group = screen.getByRole('radiogroup', { name: '잉크 색' });
+    const before = screen.getAllByRole('radio').map((r) => r.getAttribute('aria-checked')).join();
+
+    // disabled 칩은 포커스를 못 받으므로 컨테이너에 직접 키를 보낸다(핸들러가 붙은 자리다).
+    fireEvent.keyDown(group, { key: 'ArrowRight' });
+
+    expect(screen.getAllByRole('radio').map((r) => r.getAttribute('aria-checked')).join()).toBe(before);
   });
 });
 
