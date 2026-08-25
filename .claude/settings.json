@@ -12,6 +12,8 @@
     "chrome-devtools-mcp@claude-plugins-official": true,
     "vault-bridge@Lyainc-claude-kit": true,
     "vercel@claude-plugins-official": true,
-    "ponytail@ponytail": true
+    "ponytail@ponytail": true,
+    "playwright@claude-plugins-official": true,
+    "humanize-korean@im-not-ai": true
   }
 }
