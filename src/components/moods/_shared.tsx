@@ -2047,7 +2047,7 @@ export function FilmCreditCut({
           {components.signatureImage
             ? row('Collected by', <FieldTap field="signature" onField={onField}><SignatureStamp image={components.signatureImage} height={26} scale={components.signatureScale ?? 1} surface="dark" /></FieldTap>, 12)
             : signatureVal
-            ? row('Collected by', <FieldTap field="signature" onField={onField}><span style={{ ...userTextFont(signatureVal), fontSize: 26, lineHeight: 1 }}>{signatureVal}</span></FieldTap>, false)
+            ? row('Collected by', <FieldTap field="signature" onField={onField}><span style={{ ...userTextFont(signatureVal, components.signatureFont), fontSize: 26, lineHeight: 1 }}>{signatureVal}</span></FieldTap>, false)
             : gSignature
             ? row('Collected by', <FieldTap field="signature" onField={onField}><FieldGhost text="SIGNATURE" width={140} height={26} surface="dark" state={gSignature} /></FieldTap>, 12)
             : null}
