@@ -95,11 +95,17 @@ export interface TicketComponents {
    */
   posterFit?: 'contain' | 'cover';
   /**
-   * Criterion 한줄평 폰트(#558) — 미설정은 'auto'로 읽는다(마이그레이션 없음). 서명은 이 값을
-   * 따르지 않고 항상 자동분기다: 폰트를 연 축이 quote 하나뿐이라 서명까지 끌고 가면 사용자가
-   * 안 만진 요소가 같이 바뀐다(서명 축은 #437에 남는다).
+   * Criterion 한줄평 폰트(#558) — 미설정은 'auto'로 읽는다(마이그레이션 없음). signatureFont와
+   * 값을 공유하지 않는다 — 노출 무드 집합 자체가 다르고(quote는 Criterion 1개, signature는
+   * 6무드 전부), 사용자가 한줄평·서명에 서로 다른 폰트를 고르는 조합을 정상 범위로 본다
+   * (#437, docs/specs/quote-signature-font-selection.md §3).
    */
   quoteFont?: QuoteFont;
+  /**
+   * 서명 폰트(#437) — 미설정은 'auto'로 읽는다(마이그레이션 없음). quoteFont와 독립.
+   * `userTextFont(text, font)`가 quote와 signature 공용 진입점이라 값 해석 규칙은 동일하다.
+   */
+  signatureFont?: QuoteFont;
   /** 서명 이미지 URL(blob: 또는 빈 문자열). 이미지가 텍스트 서명(MovieInfo.signature)보다 우선한다(#484). */
   signatureImage?: string;
   /** 서명 이미지 렌더 크기 배율 0.6~1.3(기본 1) — 무드별 고정 height와 곱연산 결합(#484). */
