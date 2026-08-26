@@ -201,26 +201,65 @@ const QUOTE_FONT_OPTIONS = [
 const QUOTE_FONT_MOODS: readonly LayoutId[] = ['criterion'];
 
 /**
- * 커스텀 패널(#558) — 무드 전용 커스터마이즈가 모이는 자리. 지금은 Criterion 한줄평 폰트 하나.
+ * 서명 폰트가 존재하는 무드(#437) — signature를 텍스트 스팬으로 렌더하는 무드 전부. 35mm·
+ * 35mm-landscape는 필름 엣지 스텐실(FONT_LCD 고정, 대상 아님)과 별개로 FilmCreditCut의
+ * "Collected by" 행이 다른 4무드와 같은 userTextFont 경로를 타서 포함된다
+ * (docs/specs/quote-signature-font-selection.md §6).
+ */
+const SIGNATURE_FONT_MOODS: readonly LayoutId[] = ['criterion', 'minimal', 'stub', 'editorial', '35mm', '35mm-landscape'];
+
+/** '커스텀' 항목의 appliesTo — 안에 든 컨트롤(quote 폰트·signature 폰트)의 노출 무드 합집합. */
+const CUSTOM_PANEL_MOODS: readonly LayoutId[] = Array.from(new Set([...QUOTE_FONT_MOODS, ...SIGNATURE_FONT_MOODS]));
+
+/**
+ * 커스텀 패널(#558·#437) — 무드 전용 커스터마이즈가 모이는 자리. Criterion 한줄평 폰트 +
+ * 서명 폰트 둘. 컨트롤별 노출은 각자 무드 표(QUOTE_FONT_MOODS·SIGNATURE_FONT_MOODS)를
+ * render 안에서 다시 본다(#523 c1 패턴 — appliesTo는 합집합, 게이팅은 컨트롤 자신).
  *
  * 텍스트 편집은 여기 안 둔다(스펙 c5): 레일은 하단 고정 dock이라 텍스트 인풋을 넣으면 소프트
- * 키보드가 dock을 통째로 덮는다 — 한줄평 문구는 온티켓 탭(FieldTap → InPlaceFieldEditor)이 계속
- * 소유한다. 대가로 한줄평 컨트롤이 두 자리로 갈린다.
+ * 키보드가 dock을 통째로 덮는다 — 한줄평·서명 문구는 온티켓 탭(FieldTap → InPlaceFieldEditor)이
+ * 계속 소유한다.
  */
 function CustomPanel({ photo }: { photo: Photo }) {
   const { components, movieInfo } = photo.state;
-  if (!QUOTE_FONT_MOODS.includes(components.layout)) return null;
+  const showQuote = QUOTE_FONT_MOODS.includes(components.layout);
+  const showSignature = SIGNATURE_FONT_MOODS.includes(components.layout);
+  if (!showQuote && !showSignature) return null;
   // 세리프(Instrument Serif)는 한글 글리프가 없어 시스템 세리프로 깨진다 → 숨기지 않고 잠근다.
-  // 판정은 사용자가 직접 쓴 문구만 본다 — 프리셋·기본 quote는 항상 영문이다(MoodCriterion).
-  const hangul = containsHangul(movieInfo.quote ?? '');
+  // 판정은 각 필드가 직접 쓴 문구만 본다(quote·signature 독립) — 프리셋·기본값은 항상 영문이다.
+  const quoteHangul = containsHangul(movieInfo.quote ?? '');
+  const signatureHangul = containsHangul(movieInfo.signature ?? '');
+  // 서명 이미지가 있으면 텍스트 서명 자체가 안 그려지니(#484 우선순위) 피커를 통째로 잠근다.
+  const signatureLocked = !!components.signatureImage;
   return (
-    <ChipRadio
-      label="한줄평 폰트"
-      options={QUOTE_FONT_OPTIONS.map((o) => (o.value === 'serif' ? { ...o, disabled: hangul } : o))}
-      value={components.quoteFont ?? 'auto'}
-      onChange={(quoteFont) => photo.updateComponents({ quoteFont })}
-      note={hangul ? '세리프는 한글 글리프가 없어 한글 한줄평에는 못 써요.' : undefined}
-    />
+    <>
+      {showQuote && (
+        <ChipRadio
+          label="한줄평 폰트"
+          options={QUOTE_FONT_OPTIONS.map((o) => (o.value === 'serif' ? { ...o, disabled: quoteHangul } : o))}
+          value={components.quoteFont ?? 'auto'}
+          onChange={(quoteFont) => photo.updateComponents({ quoteFont })}
+          note={quoteHangul ? '세리프는 한글 글리프가 없어 한글 한줄평에는 못 써요.' : undefined}
+        />
+      )}
+      {showSignature && (
+        <ChipRadio
+          label="서명 폰트"
+          options={QUOTE_FONT_OPTIONS.map((o) =>
+            signatureLocked ? { ...o, disabled: true } : o.value === 'serif' ? { ...o, disabled: signatureHangul } : o
+          )}
+          value={components.signatureFont ?? 'auto'}
+          onChange={(signatureFont) => photo.updateComponents({ signatureFont })}
+          note={
+            signatureLocked
+              ? '서명 이미지가 있으면 폰트가 적용되지 않아요.'
+              : signatureHangul
+              ? '세리프는 한글 글리프가 없어 한글 서명에는 못 써요.'
+              : undefined
+          }
+        />
+      )}
+    </>
   );
 }
 
@@ -872,7 +911,7 @@ export const RAIL_ITEMS: readonly RailItem[] = [
         <circle cx="11" cy="16" r="2" />
       </svg>
     ),
-    appliesTo: QUOTE_FONT_MOODS,
+    appliesTo: CUSTOM_PANEL_MOODS,
     render: (photo) => <CustomPanel photo={photo} />,
   },
 ];
