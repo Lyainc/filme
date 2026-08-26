@@ -378,8 +378,7 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
                 alignItems: 'center',
                 justifyContent: 'center',
                 textAlign: 'center',
-                ...userTextFont(quoteText, components.quoteFont),
-                fontSize: 50,
+                ...userTextFont(quoteText, components.quoteFont, 50),
                 lineHeight: 1.28,
                 // 무공백 라틴 22자(`W`×22 등)는 줄바꿈 기회가 없어 슬롯 600을 넘고 따옴표와
                 // 겹쳤다(실측 1006.5px, 겹침 140px). 단어 안에서도 끊어 예산 안에 가둔다(#577).
@@ -400,7 +399,7 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
             </FieldTap>
           ) : signatureVal ? (
             <FieldTap field="signature" onField={onField}>
-              <span style={{ ...userTextFont(signatureVal, components.signatureFont), fontSize: 56, lineHeight: 1 }}>{signatureVal}</span>
+              <span style={{ ...userTextFont(signatureVal, components.signatureFont, 56), lineHeight: 1 }}>{signatureVal}</span>
             </FieldTap>
           ) : gSignature ? (
             <FieldTap field="signature" onField={onField}>

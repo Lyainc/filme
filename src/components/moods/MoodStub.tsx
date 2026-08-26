@@ -420,7 +420,7 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
                 <FieldTap field="signature" onField={onField}>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 11, minWidth: 0 }}>
                     <span style={{ fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontSize: 22, color: BROWN, flexShrink: 0 }}>collected by</span>
-                    <span style={{ ...userTextFont(signatureVal, components.signatureFont), fontSize: 24, letterSpacing: -0.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{signatureVal}</span>
+                    <span style={{ ...userTextFont(signatureVal, components.signatureFont, 24), letterSpacing: -0.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{signatureVal}</span>
                   </div>
                 </FieldTap>
               </>

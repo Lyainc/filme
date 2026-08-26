@@ -303,6 +303,20 @@ export const FONT_BRAND = 'var(--font-brand), Nunito, sans-serif';
  */
 export const FONT_QUOTE_KR = 'var(--font-quote-kr), cursive';
 
+// ── 한줄평·서명 사용자 선택 폰트(#437) ───────────────────────────────────────────
+// `_app.tsx`가 next/font로 자체 호스팅하고 CSS 변수로 노출한다(전부 preload:false).
+// 출처·라이선스 조항은 public/fonts/LICENSES.md — 특히 잉크립퀴드체는 장평·기울기 변형이
+// 금지라 이 폰트들엔 fontStyle:'italic'이나 transform:scaleX를 걸면 안 된다.
+export const FONT_BATANG = 'var(--font-batang), serif';
+export const FONT_INK = 'var(--font-ink), cursive';
+export const FONT_EUNYOUNG = 'var(--font-eunyoung), cursive';
+export const FONT_BRUSH = 'var(--font-brush), cursive';
+export const FONT_COOLGUY = 'var(--font-coolguy), cursive';
+// 꽃길만 완성형 전체가 아니라 KS X 1001 상용 2352자다(실측: `뷁`·`쀓` 없음). 없는 음절은
+// 브라우저가 글리프 단위로 다음 폰트에서 찾으므로 FONT_KR을 뒤에 붙여 두부를 막는다 —
+// 나머지 7종은 11172자를 다 덮어서 이 꼬리가 필요 없다.
+export const FONT_FLOWER = `var(--font-flower), ${FONT_KR}`;
+
 /** 한글(자모·호환 자모·완성형) 포함 여부 — 한줄평 폰트 분기(FONT_QUOTE_KR vs FONT_DISPLAY)에 사용. */
 export function containsHangul(text: string): boolean {
   return /[ᄀ-ᇿ㄰-㆏가-힣]/.test(text);
@@ -316,27 +330,103 @@ export function containsHangul(text: string): boolean {
  * 필드 이름이 아니라 "유저 입력 장식 텍스트"가 단위다. weight를 400으로 고정하는 건 두 폰트 다
  * 단일 웨이트라 600/500을 상속하면 합성 볼드가 되어 라벨과 톤이 다시 갈리기 때문.
  *
- * `font`(#558)는 Criterion 한줄평이 넘기는 사용자 선택이고 기본 'auto'가 위 자동분기다 —
- * 서명을 비롯한 나머지 호출부는 인자를 안 넘겨 픽셀이 그대로다. 'serif'는 한글이 섞이면
- * 손글씨로 되돌린다: 피커가 칩을 disabled로 잠그는 건 **새로 고르는 것**만 막을 뿐, 라틴에서
- * 세리프를 고른 뒤 한글을 입력하면 저장값이 'serif'인 채 남아 글리프 없는 폰트로 떨어진다.
+ * `font`(#558 4택 → #437 9택)는 한줄평·서명 피커가 넘기는 사용자 선택이고, 기본 'auto'가 위
+ * 자동분기다. 유니온에 없는 옛 값('serif')은 default로 떨어져 auto와 같게 렌더된다 —
+ * 그게 예전 'serif'의 렌더와 픽셀이 같아서 마이그레이션이 필요 없다(`QuoteFont` 주석 참고).
+ *
+ * `baseFontSize`를 넘기면 아래 실측 배율을 곱한 `fontSize`까지 같이 돌려준다. 호출부는
+ * 자기 리터럴 fontSize를 이 인자로 옮기고 스타일 객체에선 뺀다 — 스프레드 뒤에 fontSize를
+ * 다시 쓰면 보정이 덮여 조용히 무력화된다.
  */
-export function userTextFont(text: string, font: QuoteFont = 'auto'): CSSProperties {
+export function userTextFont(
+  text: string,
+  font: QuoteFont = 'auto',
+  baseFontSize?: number
+): CSSProperties {
   const hangul = containsHangul(text);
-  const resolved = font === 'serif' && hangul ? 'auto' : font;
-  switch (resolved) {
-    case 'hand':
-      return { fontFamily: FONT_QUOTE_KR, fontStyle: 'normal', fontWeight: 400 };
-    case 'gothic':
-      return { fontFamily: FONT_KR, fontStyle: 'normal', fontWeight: 400 };
-    case 'serif':
-      return { fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400 };
-    default:
-      return hangul
-        ? { fontFamily: FONT_QUOTE_KR, fontStyle: 'normal', fontWeight: 400 }
-        : { fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400 };
-  }
+  // `font in USER_TEXT_FONTS`가 유니온에 없는 옛 저장값(#558의 'serif')까지 여기서 걸러
+  // auto와 같은 길로 보낸다 — 그게 예전 'serif'의 렌더와 픽셀이 같아 마이그레이션이 없다.
+  const chosen = font !== 'auto' && font in USER_TEXT_FONTS ? (font as UserTextFontKey) : null;
+  const resolved: UserTextFontKey = chosen ?? (hangul ? 'hand' : 'latin');
+  const scale = (hangul ? HANGUL_SIZE_SCALE : LATIN_SIZE_SCALE)[resolved] ?? 1;
+  return {
+    ...USER_TEXT_FONTS[resolved],
+    ...(baseFontSize === undefined
+      ? null
+      : // 소수점 둘째 자리까지 — 배율이 세 자리라 26 * 0.838 처럼 나누어떨어지지 않고,
+        // 브라우저는 소수 fontSize를 그대로 쓴다(반올림하면 작은 base에서 보정이 사라진다).
+        { fontSize: Math.round(baseFontSize * scale * 100) / 100 }),
+  };
 }
+
+/**
+ * QuoteFont 값 → 폰트 스택. 'auto'는 여기 없다 — `userTextFont`가 한글 여부로 hand/latin
+ * 중 하나로 먼저 풀고 들어온다. 'latin'은 피커에 없는 내부 키(라틴 auto의 도착지)다.
+ * weight 400 고정은 이 폰트들이 전부 단일 웨이트라 600/500을 상속하면 합성 볼드가 되어
+ * 옆에 선 장식 라벨과 톤이 갈리기 때문이다(#391부터의 이유, 9택에서도 같다).
+ */
+const USER_TEXT_FONTS = {
+  latin: { fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontWeight: 400 },
+  gothic: { fontFamily: FONT_KR, fontStyle: 'normal', fontWeight: 400 },
+  batang: { fontFamily: FONT_BATANG, fontStyle: 'normal', fontWeight: 400 },
+  hand: { fontFamily: FONT_QUOTE_KR, fontStyle: 'normal', fontWeight: 400 },
+  ink: { fontFamily: FONT_INK, fontStyle: 'normal', fontWeight: 400 },
+  eunyoung: { fontFamily: FONT_EUNYOUNG, fontStyle: 'normal', fontWeight: 400 },
+  brush: { fontFamily: FONT_BRUSH, fontStyle: 'normal', fontWeight: 400 },
+  coolguy: { fontFamily: FONT_COOLGUY, fontStyle: 'normal', fontWeight: 400 },
+  flower: { fontFamily: FONT_FLOWER, fontStyle: 'normal', fontWeight: 400 },
+} as const satisfies Record<string, CSSProperties>;
+
+type UserTextFontKey = keyof typeof USER_TEXT_FONTS;
+
+/**
+ * 서체별 체감 크기 보정 배율(#437) — `bun scripts/measure-font-metrics.mjs`의 실측값이다.
+ * 그 스크립트가 단일 소스이고, 폰트를 더하거나 갈아치우면 **다시 돌려서 이 표를 갱신**한다.
+ *
+ * 재는 값은 OS/2의 sxHeight/sCapHeight가 아니라 캔버스 잉크 박스다. 실측에서 잉크립퀴드체와
+ * KCC은영체는 OS/2 두 값이 **모두 0**이었고(제작사 미기입), 애초에 한글은 라틴 x-height가
+ * 체감 크기를 대표하지 않는다 — 한글 음절은 em 사각형을 채우는 글자면이라, 같은 fontSize에서
+ * 커 보이고 작아 보이는 건 그 글자면이 em의 몇 %를 쓰느냐다. 그래서 대표 음절 10자의 세로
+ * 잉크 높이 평균(em 200 기준)을 재고, 라틴도 cap-height 하나가 아니라 어센더~디센더가 다
+ * 걸리는 10자 평균으로 잰다(붓글씨는 대문자가 작은 대신 디센더가 길어 cap만 보면 1.5배로
+ * 잘못 키우게 된다).
+ *
+ * 기준이 축마다 다른 건 `auto`의 도착지가 다르기 때문이다 — 한글은 hand(아이스자람체),
+ * 라틴은 display(Instrument Serif)를 1.000으로 둬서, **기존 저장본의 렌더가 안 변한다.**
+ *
+ * 확대만 1.25에서 자른다(hand·brush·flower의 라틴이 걸렸다: 원시 1.252·1.353·1.468).
+ * 줄이는 쪽은 어떤 무드의 텍스트 예산도 안 깨지지만 키우는 쪽은 깬다 — Criterion 한줄평은
+ * fontSize 50이 600px 슬롯에 서고(#577이 overflowWrap으로 겨우 가둔 자리다) 서명은 무드마다
+ * nowrap + ellipsis 예산이 잡혀 있다. 남는 오차는 최대 17%.
+ *
+ * 2026-08-26 실측(Chrome, em 200 기준 세로 잉크 높이):
+ *   한글  hand 139.84 · eunyoung 148.32 · flower 152.34 · coolguy 154.60 · ink 154.92 ·
+ *         brush 157.08 · gothic 166.93 · batang 184.68
+ *   라틴  flower 88.86 · brush 96.42 · hand 104.24 · coolguy 104.72 · eunyoung 105.40 ·
+ *         ink 114.12 · batang 125.54 · gothic 130.16 · display 130.48
+ */
+const HANGUL_SIZE_SCALE: Partial<Record<UserTextFontKey, number>> = {
+  hand: 1,
+  gothic: 0.838,
+  batang: 0.757,
+  ink: 0.903,
+  eunyoung: 0.943,
+  brush: 0.89,
+  coolguy: 0.905,
+  flower: 0.918,
+};
+
+const LATIN_SIZE_SCALE: Partial<Record<UserTextFontKey, number>> = {
+  latin: 1,
+  hand: 1.25,
+  gothic: 1.002,
+  batang: 1.039,
+  ink: 1.143,
+  eunyoung: 1.238,
+  brush: 1.25,
+  coolguy: 1.246,
+  flower: 1.25,
+};
 
 /**
  * BI 마스터 v2 워드마크(`v2/Wordmark.tsx`)의 무드-세이프 포팅(#386). 캡처 파이프라인은 전부 inline
@@ -2047,7 +2137,7 @@ export function FilmCreditCut({
           {components.signatureImage
             ? row('Collected by', <FieldTap field="signature" onField={onField}><SignatureStamp image={components.signatureImage} height={26} scale={components.signatureScale ?? 1} surface="dark" /></FieldTap>, 12)
             : signatureVal
-            ? row('Collected by', <FieldTap field="signature" onField={onField}><span style={{ ...userTextFont(signatureVal, components.signatureFont), fontSize: 26, lineHeight: 1 }}>{signatureVal}</span></FieldTap>, false)
+            ? row('Collected by', <FieldTap field="signature" onField={onField}><span style={{ ...userTextFont(signatureVal, components.signatureFont, 26), lineHeight: 1 }}>{signatureVal}</span></FieldTap>, false)
             : gSignature
             ? row('Collected by', <FieldTap field="signature" onField={onField}><FieldGhost text="SIGNATURE" width={140} height={26} surface="dark" state={gSignature} /></FieldTap>, 12)
             : null}
