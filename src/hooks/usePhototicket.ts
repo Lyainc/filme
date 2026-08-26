@@ -171,6 +171,8 @@ export const INITIAL_STATE: PhototicketState = {
     // #558 — 'auto'가 기존 containsHangul 자동분기라 기본 렌더는 안 변한다. 저장본에 이 키가
     // 없어도 소비부가 `?? 'auto'`로 읽어 마이그레이션이 필요 없다.
     quoteFont: 'auto',
+    // #437 — quoteFont와 같은 이유로 기본값 'auto', 같은 이유로 마이그레이션 불필요.
+    signatureFont: 'auto',
   },
   recommendedColors: [],
   croppedImageUrl: null,
