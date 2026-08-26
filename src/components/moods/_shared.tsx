@@ -271,7 +271,17 @@ export function gate(
 export const FONT_MONO = '"JetBrains Mono", "SF Mono", ui-monospace, monospace';
 export const FONT_SANS = '"Pretendard Variable", "Pretendard", "Noto Sans KR", sans-serif';
 // Inter는 한글 글리프가 없어 폴백 시 한글이 시스템 폰트로 어긋남 → 한글 지원 폰트로 교체.
-export const FONT_KR = '"Pretendard Variable", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
+//
+// **맨 앞이 `var(--font-sans)`인 게 핵심이다**(#437). 뒤의 `"Pretendard Variable"`은 `_app.tsx`가
+// 번들한 폰트를 못 가리킨다 — next/font는 난독화된 패밀리명(`pretendard`)으로 @font-face를
+// 등록하므로, 리터럴 이름은 **OS에 Pretendard가 따로 설치된 기기에서만** 맞는다(실측:
+// 브라우저의 등록 패밀리 목록에 'Pretendard Variable'이 없고 'pretendard'만 있다). 그래서
+// 예전엔 폰트가 깔린 개발 맥에서만 의도대로 보이고 안 깔린 기기에선 조용히 시스템 폰트로
+// 떨어졌다. 9택의 'gothic'이 이 상수를 쓰고 크기 보정까지 진짜 Pretendard 기준으로 재므로
+// (HANGUL_SIZE_SCALE.gothic), 엉뚱한 서체에 배율이 걸리지 않게 여기서 닫는다.
+// 뒤의 리터럴 셋은 그대로 둔다 — CSS 변수가 못 닿는 자리(변수를 안 건 트리)의 폴백이다.
+export const FONT_KR =
+  'var(--font-sans), "Pretendard Variable", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
 
 /**
  * 35mm 필름 스트립 엣지 텍스트(FilmStripBand) 전용 기술 모노 폰트(#443, 이전 DSEG7 7-세그먼트 LCD

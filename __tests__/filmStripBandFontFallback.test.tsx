@@ -4,6 +4,8 @@ import { Mood35mm } from '../src/components/moods/Mood35mm';
 import { Mood35mmLandscape } from '../src/components/moods/Mood35mmLandscape';
 import { FULL_MOVIE, makeMoodBase } from './fixtures';
 
+// 폴백 앵커가 `var(--font-sans)`인 건 FONT_KR의 첫 토큰이라서다(#437에서 리터럴
+// "Pretendard Variable"이 next/font 번들 폰트를 못 가리키는 게 실측돼 앞에 붙었다).
 // FilmStripBand 엣지 코드 폰트 교체(#393) — DSEG7(LCD, ASCII 전용)엔 한글 글리프가 없어 title/signature
 // 등 유저 입력이 섞인 code만 containsHangul로 감지해 FONT_KR로 개별 폴백한다. FULL_MOVIE는 signature가
 // 실제 한글(영화수집가)이라 이 분기를 그대로 태운다. title은 두 35mm 무드(세로·Wide) 모두 원제(titleOgVal,
@@ -21,13 +23,13 @@ describe.each([
   test('title code는 titleOg(영문)라 FONT_KR 폴백 없이 상속, signature는 한글이라 개별 폴백', () => {
     const html = markup();
     expect(html).toContain('<span>THE GRAND BUDAPEST HOTEL</span>');
-    expect(html).not.toMatch(/<span style="font-family:&quot;Pretendard Variable&quot;[^"]*">그랜드 부다페스트 호텔<\/span>/);
-    expect(html).toMatch(/<span style="font-family:&quot;Pretendard Variable&quot;[^"]*">COLLECTED BY 영화수집가<\/span>/);
+    expect(html).not.toMatch(/<span style="font-family:var\(--font-sans\)[^"]*">그랜드 부다페스트 호텔<\/span>/);
+    expect(html).toMatch(/<span style="font-family:var\(--font-sans\)[^"]*">COLLECTED BY 영화수집가<\/span>/);
   });
 
   test('titleOg가 없으면 title로 폴백(toUpperCase는 한글엔 no-op, #443 팔로업)', () => {
     const html = render({ ...FULL_MOVIE, titleOg: '' });
-    expect(html).toMatch(/<span style="font-family:&quot;Pretendard Variable&quot;[^"]*">그랜드 부다페스트 호텔<\/span>/);
+    expect(html).toMatch(/<span style="font-family:var\(--font-sans\)[^"]*">그랜드 부다페스트 호텔<\/span>/);
   });
 
   test('ASCII code(SAFETY FILM 등)는 개별 style 없이 상속(FONT_LCD)', () => {
@@ -51,7 +53,7 @@ describe('Mood35mm FilmRail 엣지 프린트 폰트 폴백 (#524)', () => {
 
   test('한글 code만 FONT_KR로 갈리고 ASCII code는 FONT_LCD 상속', () => {
     const html = render(FULL_MOVIE);
-    expect(html).toMatch(/<span style="font-family:&quot;Pretendard Variable&quot;[^"]*">COLLECTED BY 영화수집가<\/span>/);
+    expect(html).toMatch(/<span style="font-family:var\(--font-sans\)[^"]*">COLLECTED BY 영화수집가<\/span>/);
     expect(html).toContain('<span>SAFETY FILM</span>');
     expect(html).toContain('<span>THE GRAND BUDAPEST HOTEL</span>');
   });

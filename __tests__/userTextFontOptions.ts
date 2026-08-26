@@ -25,7 +25,10 @@ export interface FontChip {
 
 /** 'auto'를 뺀 8종 — auto는 텍스트에 따라 도착지가 갈려 케이스별로 따로 본다. */
 export const FONT_CHIPS: readonly FontChip[] = [
-  { label: '고딕', value: 'gothic', family: 'Pretendard', hangul: 0.838, latin: 1.002 },
+  // `Pretendard`가 아니라 `--font-sans`를 기대하는 게 요점이다(#437) — 리터럴
+  // "Pretendard Variable"은 next/font가 등록한 난독화 패밀리(`pretendard`)를 못 가리켜서,
+  // OS에 폰트가 따로 깔린 기기에서만 맞고 나머지는 시스템 폰트로 조용히 떨어졌다.
+  { label: '고딕', value: 'gothic', family: '--font-sans', hangul: 0.838, latin: 1.002 },
   { label: '바탕', value: 'batang', family: '--font-batang', hangul: 0.757, latin: 1.039 },
   { label: '자람', value: 'hand', family: '--font-quote-kr', hangul: 1, latin: 1.25 },
   { label: '잉크', value: 'ink', family: '--font-ink', hangul: 0.903, latin: 1.143 },
