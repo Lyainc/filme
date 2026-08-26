@@ -10,7 +10,6 @@ import BrightnessSlider from '@/components/wizard/BrightnessSlider';
 import { TEXTURE_RECIPES } from '@/utils/textureRecipes';
 import { MATERIAL_OPTIONS, COATING_OPTIONS, TARGET_HEIGHT } from '@/utils/constants';
 import { MINIMAL_STAMP_MAX_SCALE } from '@/components/moods/MoodMinimal';
-import { containsHangul } from '@/components/moods/_shared';
 import { Eyebrow } from './Eyebrow';
 import { POSTER_FILL_MOODS, TONE_FIXED_MOODS } from '@/constants/fields';
 import type { LayoutId } from '@/types';
@@ -154,7 +153,10 @@ function ChipRadio<V extends string>({
       <Eyebrow as="div">{label}</Eyebrow>
       {note && <p className="text-caption text-fg-muted">{note}</p>}
       {/* 이름은 컨테이너 aria-label로 — TexturePicker·FieldEditorBody의 radiogroup과 같은 문법. */}
-      <div role="radiogroup" aria-label={label} className="flex gap-2">
+      {/* 폰트 피커가 9택이 되면서(#437) 한 줄에 다 못 선다 — basis 6rem은 400px 프레임에서
+          한 줄에 3칩이 서는 값이고, 나머지 소비자(도구·포스터 채우기)는 전부 2택이라 grow가
+          예전 flex-1과 똑같이 반씩 채운다. basis 0(=flex-1)이면 wrap이 영영 안 일어난다. */}
+      <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-2">
         {options.map((opt) => (
           <button
             key={opt.value}
@@ -166,7 +168,7 @@ function ChipRadio<V extends string>({
             // h-9(#682 다이어트 — 이전 h-10에서 4px 축소, AxisSegment 형제 버튼과 같은 높이로
             // 맞춘다). AA 하한(24)의 1.5배라 여전히 여유 있다.
             data-touch="36"
-            className={cn(pressableVariants(), `h-9 flex-1 truncate rounded-chip border px-3 text-caption font-medium transition-colors ${
+            className={cn(pressableVariants(), `h-9 grow basis-[6rem] truncate rounded-chip border px-3 text-caption font-medium transition-colors ${
               value === opt.value
                 ? 'border-transparent bg-accent-soft text-accent'
                 : 'border-line bg-surface-elevated text-fg-muted'
@@ -185,11 +187,28 @@ const POSTER_FIT_OPTIONS = [
   { value: 'cover', label: '꽉 채우기' },
 ] as const;
 
+/**
+ * 한줄평·서명 폰트 9택(#558 4택 → #437). 값의 뜻과 실제 폰트는 `_shared.tsx`의 `userTextFont`가
+ * 단일 소스이고, 여기는 라벨만 쥔다.
+ *
+ * 라벨이 스타일 이름이 아니라 폰트 이름인 건 8종 중 5종이 손글씨 계열이기 때문이다 —
+ * '손글씨'·'캘리그라피' 같은 스타일어로는 서로 구분이 안 돼서, 사용자가 눈누에서 보고 고른
+ * 이름 그대로 쓴다. 그래서 #558의 'hand'는 값은 그대로 두고 라벨만 '손글씨'→'자람'이 됐다.
+ *
+ * 'serif'(Instrument Serif)는 빠졌다 — 한글 글리프가 없어 한글에선 항상 잠겨 있던 칩인데,
+ * 한글 되는 세리프('바탕' = 경기천년바탕)가 들어오면서 자리를 넘겼다. 라틴 세리프는 'auto'가
+ * 계속 준다(QuoteFont 주석 — 저장돼 있던 'serif'는 렌더가 안 변한다).
+ */
 const QUOTE_FONT_OPTIONS = [
   { value: 'auto', label: '자동' },
-  { value: 'hand', label: '손글씨' },
   { value: 'gothic', label: '고딕' },
-  { value: 'serif', label: '세리프' },
+  { value: 'batang', label: '바탕' },
+  { value: 'hand', label: '자람' },
+  { value: 'ink', label: '잉크' },
+  { value: 'eunyoung', label: '은영' },
+  { value: 'brush', label: '붓' },
+  { value: 'coolguy', label: '쿨가이' },
+  { value: 'flower', label: '꽃길' },
 ] as const;
 
 /**
@@ -221,42 +240,32 @@ const CUSTOM_PANEL_MOODS: readonly LayoutId[] = Array.from(new Set([...QUOTE_FON
  * 계속 소유한다.
  */
 function CustomPanel({ photo }: { photo: Photo }) {
-  const { components, movieInfo } = photo.state;
+  const { components } = photo.state;
   const showQuote = QUOTE_FONT_MOODS.includes(components.layout);
   const showSignature = SIGNATURE_FONT_MOODS.includes(components.layout);
   if (!showQuote && !showSignature) return null;
-  // 세리프(Instrument Serif)는 한글 글리프가 없어 시스템 세리프로 깨진다 → 숨기지 않고 잠근다.
-  // 판정은 각 필드가 직접 쓴 문구만 본다(quote·signature 독립) — 프리셋·기본값은 항상 영문이다.
-  const quoteHangul = containsHangul(movieInfo.quote ?? '');
-  const signatureHangul = containsHangul(movieInfo.signature ?? '');
   // 서명 이미지가 있으면 텍스트 서명 자체가 안 그려지니(#484 우선순위) 피커를 통째로 잠근다.
+  // 9택이 되면서 잠금 사유는 이것 하나만 남았다 — 8종 전부 한글 글리프를 갖고 있어 #558의
+  // "세리프는 한글에서 잠금"이 사라졌다(그 칩 자체가 없어졌다, QUOTE_FONT_OPTIONS 주석).
   const signatureLocked = !!components.signatureImage;
+  const lockAll = QUOTE_FONT_OPTIONS.map((o) => ({ ...o, disabled: true }));
   return (
     <>
       {showQuote && (
         <ChipRadio
           label="한줄평 폰트"
-          options={QUOTE_FONT_OPTIONS.map((o) => (o.value === 'serif' ? { ...o, disabled: quoteHangul } : o))}
+          options={QUOTE_FONT_OPTIONS}
           value={components.quoteFont ?? 'auto'}
           onChange={(quoteFont) => photo.updateComponents({ quoteFont })}
-          note={quoteHangul ? '세리프는 한글 글리프가 없어 한글 한줄평에는 못 써요.' : undefined}
         />
       )}
       {showSignature && (
         <ChipRadio
           label="서명 폰트"
-          options={QUOTE_FONT_OPTIONS.map((o) =>
-            signatureLocked ? { ...o, disabled: true } : o.value === 'serif' ? { ...o, disabled: signatureHangul } : o
-          )}
+          options={signatureLocked ? lockAll : QUOTE_FONT_OPTIONS}
           value={components.signatureFont ?? 'auto'}
           onChange={(signatureFont) => photo.updateComponents({ signatureFont })}
-          note={
-            signatureLocked
-              ? '서명 이미지가 있으면 폰트가 적용되지 않아요.'
-              : signatureHangul
-              ? '세리프는 한글 글리프가 없어 한글 서명에는 못 써요.'
-              : undefined
-          }
+          note={signatureLocked ? '서명 이미지가 있으면 폰트가 적용되지 않아요.' : undefined}
         />
       )}
     </>
