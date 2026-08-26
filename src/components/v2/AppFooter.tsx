@@ -18,7 +18,34 @@ export function GithubLink({ className }: { className?: string }) {
   );
 }
 
-/** 앱 chrome 공통 footer(#327) — 비공식 고지 + copyright + GitHub.
+/**
+ * 폰트 출처 고지(#437) — 한줄평·서명 9택이 쓰는 8종 중 **KCC은영체만 CCL 저작자표시**라
+ * 저작자·제목·출처 표기가 라이선스 의무다. 나머지 7종은 고지 없이 써도 되는 조건이라 여기
+ * 안 싣는다(전체 목록·조항은 `public/fonts/LICENSES.md`) — 의무인 것만 적어야 이 줄이
+ * "지워도 되는 장식"으로 보이지 않는다.
+ *
+ * 그 폰트를 실제로 고른 사용자에게만 띄우지 않고 상시 표기하는 건, 저장본을 나중에 열거나
+ * 공유 페이지로 볼 때도 고지가 따라가야 하는데 그 경로마다 선택값을 읽는 것보다 한 줄을
+ * 늘 두는 게 확실해서다.
+ */
+function FontCredit() {
+  return (
+    <p className="break-keep">
+      글꼴{' '}
+      <a
+        href="https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13072022&menuNo=200133"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline underline-offset-2 hover:text-fg transition-colors"
+      >
+        KCC은영체
+      </a>{' '}
+      한국저작권위원회 (CC BY)
+    </p>
+  );
+}
+
+/** 앱 chrome 공통 footer(#327) — 비공식 고지 + copyright + 폰트 크레딧 + GitHub.
  *  ambient(#363): 상시 앰비언트 다크가 깔린 모바일 셸용 — 바(배경·상단 보더) 없이 중앙 정렬로
  *  조용히 얹힌다. 기본형(바)은 데스크톱 셸이 쓰던 형태로, #607 이후 소비자는 ambient뿐이다. */
 export function AppFooter({ ambient = false }: { ambient?: boolean }) {
@@ -29,6 +56,7 @@ export function AppFooter({ ambient = false }: { ambient?: boolean }) {
       }`}
     >
       <p className="break-keep">{UNOFFICIAL_TICKET_NOTICE} © FILME</p>
+      <FontCredit />
       <GithubLink />
     </footer>
   );
