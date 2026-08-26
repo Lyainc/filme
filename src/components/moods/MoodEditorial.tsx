@@ -444,7 +444,7 @@ export const MoodEditorial = memo(function MoodEditorial({ movieInfo: d, compone
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, minWidth: 0 }}>
               <span style={{ ...italic(accent, 26), flexShrink: 0 }}>par</span>
               <FieldTap field="signature" onField={onField}>
-                <span style={{ ...userTextFont(signatureVal), fontSize: 30, letterSpacing: -0.3, color: INK, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 360 }}>{signatureVal}</span>
+                <span style={{ ...userTextFont(signatureVal, components.signatureFont), fontSize: 30, letterSpacing: -0.3, color: INK, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 360 }}>{signatureVal}</span>
               </FieldTap>
             </div>
           ) : gSignature ? (

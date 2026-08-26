@@ -400,7 +400,7 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
             </FieldTap>
           ) : signatureVal ? (
             <FieldTap field="signature" onField={onField}>
-              <span style={{ ...userTextFont(signatureVal), fontSize: 56, lineHeight: 1 }}>{signatureVal}</span>
+              <span style={{ ...userTextFont(signatureVal, components.signatureFont), fontSize: 56, lineHeight: 1 }}>{signatureVal}</span>
             </FieldTap>
           ) : gSignature ? (
             <FieldTap field="signature" onField={onField}>
