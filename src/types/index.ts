@@ -23,12 +23,27 @@ export type TicketField =
   | 'quote';
 
 /**
- * Criterion 한줄평의 폰트 선택(#558) — 'auto'는 기존 containsHangul 자동분기(한글=손글씨 /
- * 라틴=세리프 이탤릭) 그대로다. 나머지 셋은 이미 `_app.tsx`가 로드하는 폰트에 1:1 대응하고
- * 새 폰트 파일은 추가하지 않는다: hand=FONT_QUOTE_KR(아이스자람체) · gothic=FONT_KR(Pretendard) ·
- * serif=FONT_DISPLAY(Instrument Serif). 기본값이 'auto'라 기존 저장본의 렌더는 안 변한다.
+ * 한줄평·서명의 폰트 선택(#558 4택 → #437 9택). 'auto'는 기존 containsHangul 자동분기
+ * (한글=아이스자람체 / 라틴=Instrument Serif 이탤릭) 그대로고, 나머지 8종은 눈누에서
+ * 상업이용·웹폰트 임베딩이 허용된 것만 골랐다(출처·조항은 `public/fonts/LICENSES.md`).
+ * 값 → 폰트 매핑은 `_shared.tsx`의 `userTextFont`가 단일 소스다.
+ *
+ * **#558의 'serif'(Instrument Serif)는 이 유니온에서 빠졌다.** 지우는 게 픽셀 중립이라서다 —
+ * 라틴에서 'serif'가 주던 건 auto가 주는 것과 같은 FONT_DISPLAY 이탤릭이었고, 한글에선 이미
+ * auto로 되돌려지고 있었다. 그래서 저장돼 있던 'serif'는 switch의 default(=auto)로 떨어져
+ * **예전과 똑같이 렌더된다** — 마이그레이션 코드가 필요 없는 이유고, 덤으로 "세리프는 한글
+ * 글리프가 없어 잠금" UI가 통째로 사라졌다(한글 되는 세리프는 이제 'batang'이다).
  */
-export type QuoteFont = 'auto' | 'hand' | 'gothic' | 'serif';
+export type QuoteFont =
+  | 'auto'
+  | 'gothic'
+  | 'batang'
+  | 'hand'
+  | 'ink'
+  | 'eunyoung'
+  | 'brush'
+  | 'coolguy'
+  | 'flower';
 
 export interface MovieInfo {
   title: string;
