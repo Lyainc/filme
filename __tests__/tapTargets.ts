@@ -49,6 +49,10 @@ const NAMED_SPACING_PX: Record<string, number> = { touch: 44 };
  *  - Tailwind named spacing `h-touch`/`w-touch`(NAMED_SPACING_PX 참고)
  *  - 인라인 `style="width:46px"` (TexturePicker 칩처럼 상수로 크기를 잡는 경우)
  *  - 가로만: `flex-1`/`w-full` — 부모 폭을 채우는 선언이라 축소 경로가 아니다(Infinity로 통과)
+ *  - 가로만: `basis-[Nrem]`/`basis-[Npx]` — flex 기준 폭. `flex-1`(basis 0)보다 **넓은** 선언이라
+ *    같은 자리에 온다(#437에서 ChipRadio가 9택을 wrap시키려고 flex-1을 이걸로 바꿨다 —
+ *    basis 0은 wrap이 영영 안 일어난다). 옆에 `grow`가 붙으면 커지기만 하고, 줄어드는 쪽은
+ *    flex-shrink가 content width(칩 라벨 2~3자 + px-3)에서 멈춰 24px 하한 위다.
  */
 export function targetPx(el: Element, what: string): { w: number; h: number } {
   const cls = el.getAttribute('class') ?? '';
@@ -68,11 +72,14 @@ export function targetPx(el: Element, what: string): { w: number; h: number } {
     return m ? Number(m[1]) : null;
   };
 
+  const basis = cls.match(/(?:^|\s)basis-\[([\d.]+)(rem|px)\](?:\s|$)/);
+  const fromBasis = basis ? Number(basis[1]) * (basis[2] === 'rem' ? 16 : 1) : null;
+
   const h = fromClass('h') ?? fromStyle('height');
   const fills = /(?:^|\s)(?:flex-1|w-full)(?:\s|$)/.test(cls);
-  const w = fromClass('w') ?? fromStyle('width') ?? (fills ? Infinity : null);
+  const w = fromClass('w') ?? fromStyle('width') ?? fromBasis ?? (fills ? Infinity : null);
   if (h === null) throw new Error(at('h-N 또는 인라인 height 필요'));
-  if (w === null) throw new Error(at('w-N·인라인 width·flex-1 중 하나 필요'));
+  if (w === null) throw new Error(at('w-N·인라인 width·basis-[N]·flex-1 중 하나 필요'));
   return { h, w };
 }
 
