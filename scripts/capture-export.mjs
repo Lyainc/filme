@@ -540,6 +540,17 @@ async function capture({ layout, material, coating, intensity, bg, bgScale, full
     await page.goto(`${URL_}?debug=1`, { waitUntil: 'networkidle2' });
     mark('loaded');
 
+    // 랜딩은 draft가 있어도 fixed로 덮은 채 뜬다(#727 landingShownOnDraft) — hadPoster:true로
+    // 시드해도 이 오버레이가 편집 화면을 그대로 가린다. "이어서 만들기"로 넘어가야 이후 클릭들이
+    // 실제 사용자 플로우와 같아진다(랜딩 뒤에 숨은 요소를 evaluate로 직접 눌러도 기능은 타지만,
+    // 그건 이 하네스가 검증하려는 "실사용 경로"가 아니다).
+    await page.evaluate(() => {
+      const b = [...document.querySelectorAll('button')].find((x) => (x.textContent || '').includes('이어서 만들기'));
+      if (b) b.click();
+    });
+    await sleep(300);
+    mark('landingDismissed');
+
     // 포스터 주입 → 크롭 '적용'. '적용'은 뜬 직후 누르면 completedCrop이 아직 안 서서 no-op이라
     // (disabled는 false다) 대기 후 클릭한다.
     await page.evaluate(async (drawSrc) => {
