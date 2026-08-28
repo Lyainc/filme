@@ -2303,7 +2303,7 @@ let resolvedCssVarCache: Map<string, string> | undefined;
  * `getMeasureCtx`에서 걸러진다)에선 빈 문자열이라 원래 토큰을 그대로 남기고, 그 결과는 이전과
  * 같은 "무시됨" 동작이라 회귀가 아니다.
  */
-function resolveCanvasFontFamily(fontFamily: string): string {
+export function resolveCanvasFontFamily(fontFamily: string): string {
   if (typeof document === 'undefined' || !fontFamily.includes('var(--')) return fontFamily;
   return fontFamily.replace(/var\(--([\w-]+)\)/g, (token, name: string) => {
     if (!resolvedCssVarCache) resolvedCssVarCache = new Map();
@@ -2315,6 +2315,16 @@ function resolveCanvasFontFamily(fontFamily: string): string {
     }
     return resolved || token;
   });
+}
+
+/**
+ * 테스트 전용 — `resolvedCssVarCache`는 모듈 스코프 영구 캐시라(위 함수) `<main>` 없는 DOM에서
+ * 먼저 도는 테스트가 빈 문자열을 캐시해버리면, bun이 테스트 파일 전체를 한 프로세스에서 돌리는
+ * 특성상(#611과 같은 부류) 뒤이어 `<main>`을 실제로 세운 테스트까지 그 오염된 값을 그대로
+ * 받는다. `resetCtxFilterProbeForTest`(captureToImage.ts)와 같은 규약.
+ */
+export function resetResolvedCssVarCacheForTest(): void {
+  resolvedCssVarCache = undefined;
 }
 
 const fitFontSizeCache = new Map<string, number>();
