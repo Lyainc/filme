@@ -269,7 +269,14 @@ export function gate(
 }
 
 export const FONT_MONO = '"JetBrains Mono", "SF Mono", ui-monospace, monospace';
-export const FONT_SANS = '"Pretendard Variable", "Pretendard", "Noto Sans KR", sans-serif';
+// **맨 앞이 `var(--font-sans)`인 게 핵심이다**(#751, FONT_KR에 적용된 #437과 같은 모양). 뒤의
+// `"Pretendard Variable"`은 `_app.tsx`가 번들한 폰트를 못 가리킨다 — next/font는 난독화된
+// 패밀리명(`pretendard`)으로 @font-face를 등록하므로, 리터럴 이름은 **OS에 Pretendard가 따로
+// 설치된 기기에서만** 맞는다. 그래서 예전엔 폰트가 깔린 개발 맥에서만 의도대로 보이고 안 깔린
+// 기기에선 조용히 시스템 폰트로 떨어졌다. 뒤의 리터럴 셋은 그대로 둔다 — CSS 변수가 못 닿는
+// 자리(변수를 안 건 트리, canvas measureText — `resolveCanvasFontFamily` 참고)의 폴백이다.
+export const FONT_SANS =
+  'var(--font-sans), "Pretendard Variable", "Pretendard", "Noto Sans KR", sans-serif';
 // Inter는 한글 글리프가 없어 폴백 시 한글이 시스템 폰트로 어긋남 → 한글 지원 폰트로 교체.
 //
 // **맨 앞이 `var(--font-sans)`인 게 핵심이다**(#437). 뒤의 `"Pretendard Variable"`은 `_app.tsx`가
@@ -2289,6 +2296,32 @@ function getMeasureCtx(): CanvasRenderingContext2D | null {
   return measureCanvas ? measureCanvas.getContext('2d') : null;
 }
 
+let resolvedCssVarCache: Map<string, string> | undefined;
+
+/**
+ * Canvas 2D `font` 대입 문법은 `var()`를 못 읽는다 — 브라우저 실측(Chrome 152)으로 확인: 대입
+ * 자체가 조용히 무시되고 `ctx.font`는 직전 값 그대로 남는다(측정 캔버스는 모듈 스코프로 재사용돼
+ * 직전 호출의 폰트가 새 호출에 새는 형태로 드러난다). `FONT_SANS`처럼 `var(--font-sans)`가 앞에
+ * 붙은 패밀리를 이 함수로 실제 등록 패밀리명(예: `"pretendard", "pretendard Fallback"`)으로
+ * 치환해서 넘긴다 — 변수가 `<main>`(`_app.tsx`)에서 정의되므로 `document.body`/`documentElement`가
+ * 아니라 `<main>`에서 읽는다. `<main>`이 없는 자리(테스트 DOM, `renderToStaticMarkup`은 애초에
+ * `getMeasureCtx`에서 걸러진다)에선 빈 문자열이라 원래 토큰을 그대로 남기고, 그 결과는 이전과
+ * 같은 "무시됨" 동작이라 회귀가 아니다.
+ */
+function resolveCanvasFontFamily(fontFamily: string): string {
+  if (typeof document === 'undefined' || !fontFamily.includes('var(--')) return fontFamily;
+  return fontFamily.replace(/var\(--([\w-]+)\)/g, (token, name: string) => {
+    if (!resolvedCssVarCache) resolvedCssVarCache = new Map();
+    let resolved = resolvedCssVarCache.get(name);
+    if (resolved === undefined) {
+      const host = document.querySelector('main') ?? document.documentElement;
+      resolved = getComputedStyle(host).getPropertyValue(`--${name}`).trim();
+      resolvedCssVarCache.set(name, resolved);
+    }
+    return resolved || token;
+  });
+}
+
 const fitFontSizeCache = new Map<string, number>();
 
 /**
@@ -2355,8 +2388,9 @@ export function fitFontSizeToWidth(
   const ctx = getMeasureCtx();
   if (!ctx) return maxSize;
 
+  const resolvedFontFamily = resolveCanvasFontFamily(fontFamily);
   const widthAt = (size: number) => {
-    ctx.font = `${fontWeight} ${size}px ${fontFamily}`;
+    ctx.font = `${fontWeight} ${size}px ${resolvedFontFamily}`;
     return ctx.measureText(text).width;
   };
 
@@ -2444,14 +2478,16 @@ export interface MeasureFontOptions {
  * 캐시는 없다 — 이 함수는 매 렌더 몇 번 불리는 순수 측정이고, 캐시가 있으면 폰트 로드 전
  * 폴백 메트릭이 박히는 문제(PR #345 P1)를 호출부마다 다시 다뤄야 한다.
  *
- * **주의**: `FONT_DISPLAY`처럼 `var(--font-display)`가 들어간 패밀리는 canvas `font` 문법에서
- * 무효라 대입 자체가 조용히 무시되고 직전 폰트로 재게 된다 — 그런 슬롯은 측정하지 말 것.
+ * **주의**: `FONT_SANS`·`FONT_DISPLAY`처럼 `var(--font-*)`가 들어간 패밀리는 canvas `font`
+ * 문법에서 무효라 대입 자체가 조용히 무시되고 직전 폰트로 재게 된다(#751) — 그래서 이 함수는
+ * `resolveCanvasFontFamily`로 실제 등록 패밀리명으로 먼저 치환한 뒤에만 `ctx.font`에 넘긴다.
+ * `<main>`이 없어 치환이 안 되는 자리(테스트 DOM)는 여전히 이 무시됨 동작 그대로다.
  */
 export function measureTextWidth(text: string, { fontFamily, fontWeight = 400, fontSize, letterSpacing = 0 }: MeasureFontOptions): number {
   if (!text) return 0;
   const ctx = getMeasureCtx();
   if (!ctx) return 0;
-  ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+  ctx.font = `${fontWeight} ${fontSize}px ${resolveCanvasFontFamily(fontFamily)}`;
   return ctx.measureText(text).width + letterSpacing * text.length;
 }
 
