@@ -540,14 +540,25 @@ async function capture({ layout, material, coating, intensity, bg, bgScale, full
     await page.goto(`${URL_}?debug=1`, { waitUntil: 'networkidle2' });
     mark('loaded');
 
+    const clickByText = async (text) => {
+      const ok = await page.evaluate((t) => {
+        const b = [...document.querySelectorAll('button')].find(
+          (x) => (x.textContent || '').trim().includes(t),
+        );
+        if (!b) return false;
+        b.click();
+        return true;
+      }, text);
+      if (!ok) throw new Error(`버튼을 못 찾음: ${text}`);
+    };
+
     // 랜딩은 draft가 있어도 fixed로 덮은 채 뜬다(#727 landingShownOnDraft) — hadPoster:true로
     // 시드해도 이 오버레이가 편집 화면을 그대로 가린다. "이어서 만들기"로 넘어가야 이후 클릭들이
     // 실제 사용자 플로우와 같아진다(랜딩 뒤에 숨은 요소를 evaluate로 직접 눌러도 기능은 타지만,
-    // 그건 이 하네스가 검증하려는 "실사용 경로"가 아니다).
-    await page.evaluate(() => {
-      const b = [...document.querySelectorAll('button')].find((x) => (x.textContent || '').includes('이어서 만들기'));
-      if (b) b.click();
-    });
+    // 그건 이 하네스가 검증하려는 "실사용 경로"가 아니다). clickByText라 못 찾으면 조용히
+    // no-op하는 대신 throw한다 — 안 그러면 오버레이가 남은 채로 이후 emboss/lasso의 좌표 기반
+    // page.mouse 드래그가 잘못된 대상 위에서 돌아 "픽셀은 나오는데 틀린" 실패로 숨는다.
+    await clickByText('이어서 만들기');
     await sleep(300);
     mark('landingDismissed');
 
@@ -565,17 +576,6 @@ async function capture({ layout, material, coating, intensity, bg, bgScale, full
       el.files = dt.files;
       el.dispatchEvent(new Event('change', { bubbles: true }));
     }, POSTER_DRAW);
-    const clickByText = async (text) => {
-      const ok = await page.evaluate((t) => {
-        const b = [...document.querySelectorAll('button')].find(
-          (x) => (x.textContent || '').trim().includes(t),
-        );
-        if (!b) return false;
-        b.click();
-        return true;
-      }, text);
-      if (!ok) throw new Error(`버튼을 못 찾음: ${text}`);
-    };
     await page.waitForFunction(
       () => [...document.querySelectorAll('button')].some((b) => b.textContent.trim() === '적용'),
       { timeout: 30000 },
