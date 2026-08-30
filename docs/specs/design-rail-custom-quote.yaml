@@ -120,6 +120,9 @@ constraints:
       Pretendard 한글도 같은 1em이고 Instrument Serif는 라틴이라 더 좁아, 4택 어느 쪽도
       기존 상한을 넘지 않는다. (검증 완료 — 이 스펙에서 확인)
 
+      **뒤집힘(#754)**: 위 1em 가정 자체가 실측(0.56~0.70em)과 어긋났던 것으로 드러나
+      QUOTE_MAX_LENGTH는 22 → 31로 올랐다. 이 항목은 당시 결정 기록으로 남긴다.
+
   - id: c9
     type: technical
     description: >
