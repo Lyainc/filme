@@ -552,13 +552,17 @@ async function capture({ layout, material, coating, intensity, bg, bgScale, full
       if (!ok) throw new Error(`버튼을 못 찾음: ${text}`);
     };
 
-    // 랜딩은 draft가 있어도 fixed로 덮은 채 뜬다(#727 landingShownOnDraft) — hadPoster:true로
-    // 시드해도 이 오버레이가 편집 화면을 그대로 가린다. "이어서 만들기"로 넘어가야 이후 클릭들이
-    // 실제 사용자 플로우와 같아진다(랜딩 뒤에 숨은 요소를 evaluate로 직접 눌러도 기능은 타지만,
-    // 그건 이 하네스가 검증하려는 "실사용 경로"가 아니다). clickByText라 못 찾으면 조용히
-    // no-op하는 대신 throw한다 — 안 그러면 오버레이가 남은 채로 이후 emboss/lasso의 좌표 기반
-    // page.mouse 드래그가 잘못된 대상 위에서 돌아 "픽셀은 나오는데 틀린" 실패로 숨는다.
-    await clickByText('이어서 만들기');
+    // 랜딩을 먼저 지운다(#727 landingShownOnDraft) — 랜딩은 draft 존재와 무관하게 항상 fixed로
+    // 뜨고 `landingDismissed`를 사용자가 명시로 세워야 내려간다. 이 게이트를 안 거치고 바로
+    // 포스터 input을 주입해 크롭까지 마치면, MobileEditorShell의 handlePosterCropComplete가
+    // `fresh = !landingDismissed`를 true로 읽어 "랜딩에서 올라온 첫 포스터"로 오판해
+    // `startFreshDoc({keepPoster:true})`를 불러 seed movieInfo(title·releaseDate 등)를 통째로
+    // 지운다 — croppedImageUrl은 남아 '완료' 버튼은 뜨지만 canExport(title·releaseDate 필요)가
+    // 계속 false라 '완료'가 무한 no-op한다. data-testid는 문구와 독립이라(#677 톤 정비로
+    // 랜딩 이탈 문구가 이미 한 번 바뀐 이력이 있다) 텍스트 매칭(clickByText)보다 안전하고,
+    // waitForSelector(visible)로 렌더 완료를 명시로 기다려 즉시 클릭보다 느린 환경에 덜 취약하다.
+    await page.waitForSelector('[data-testid="landing-restore"]', { visible: true, timeout: 10000 });
+    await page.click('[data-testid="landing-restore"]');
     await sleep(300);
     mark('landingDismissed');
 
