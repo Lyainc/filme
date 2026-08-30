@@ -18,6 +18,9 @@ Before making architectural changes or implementing new features, consult:
   - **접근 방법이 사이트마다 정반대다**(실측): component.gallery는 `curl -sL -A '<브라우저 UA>'`만 되고 WebFetch는 403, w3.org APG는 WebFetch만 되고 curl은 403, uxpatterns.dev는 둘 다 된다. 403 한 번 보고 "접근 불가"로 접지 말 것.
   - **범위 밖 둘**: ① 티켓 렌더 6무드는 디자인 시안이 소유하니 대상이 아니고(폰트 스코프가 티켓 vs UI로 갈리는 것과 같은 축), ② **여기서 본 걸 근거로 UI 라이브러리를 새로 넣지 말 것** — 거기 걸린 시스템(shadcn/ui·Radix·Base UI·Ant·Chakra…)은 정의·ARIA·네이밍 참고용이고, 이 레포는 `cva`+`cn`(`src/utils/cn.ts`, `src/components/ui/variants.ts`)으로 직접 구현하는 자세다.
 
+### 🔌 Claude Code 로컬 툴링
+- **typescript-lsp 플러그인 "로드 안 됨" ≠ `LSP` 도구 고장.** 이 프로젝트(+워크트리들)엔 typescript-lsp 플러그인이 project/local 스코프로 핀돼 있는데, `LSP` 도구 자체는 그거와 별개로 글로벌 설치돼 있어서 플러그인 로드 여부와 무관하게 동작한다. harness-doctor가 `typescript-lsp@claude-plugins-official`을 "로드 안 됨"(`installPath`에 `.claude-plugin/plugin.json` 없음)으로 찍어도, `LSP` 도구(documentSymbol·hover·findReferences)는 정상 동작하는 걸 실측 확인함(2026-08-26, `@/types` path alias 해석·9개 파일 18개 참조 정확히 조회). 플러그인 등록 문제와 LSP 기능 동작 여부는 다른 층위라, harness-doctor 경고만 보고 LSP가 죽었다고 판단하지 말고 실제로 한 번 찔러볼 것.
+
 ### 🧪 Testing
 - **Runner**: `bun run test`(= `bun test --timeout 30000`). Tests live in `__tests__/` (not co-located).
 - **맨 `bun test`로 재지 말 것 — CI와 다른 문턱을 잰다**(#714). CI는 `bun test --timeout 30000`으로 도는데 bun 기본은 5000ms라, 맨 `bun test`는 게이트보다 6배 엄한 걸 재고 부하가 걸리면 **CI가 원리적으로 못 내는 실패**를 로컬에서만 낸다(2026-08-16 실측: dev 서버 3대 + 헤드리스 Chrome과 함께 돌린 전 스위트 1172개에서 최댓값 4.976초 — 기본 5000ms까지 여유 **24ms**. 부하 배수는 중앙 1.42× · p90 1.88×인데 개별로는 33×까지 튄다). `package.json`의 `test`/`test:watch`가 CI와 같은 값을 들고 있고, 한쪽만 바뀌면 `__tests__/ciLocalTimeoutParity.test.ts`가 깨진다.
