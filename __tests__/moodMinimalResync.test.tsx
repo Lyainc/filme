@@ -45,4 +45,12 @@ describe('MoodMinimal 마스터 resync (#281)', () => {
     const html = markup();
     expect(html).toMatch(/made with<\/span><span aria-label="FILME"/);
   });
+
+  // 정보 블록 여백/정렬 정리(#753) — Screening/Venue/Seat가 flex-wrap이면 Venue 값 길이에 따라
+  // Seat이 다음 줄로 밀려 오른쪽이 통째로 빈 L자 구멍이 생겼다. grid로 셀 개수만큼(FULL_MOVIE
+  // 기준 3열) 항상 한 줄에 고정하는지 잠근다 — flex-wrap으로 되돌아가면 값 길이 의존 회귀가 재발한다.
+  test('Screening/Venue/Seat는 grid 3열 고정 — flex-wrap 회귀 방어(#753)', () => {
+    const html = markup();
+    expect(html).toContain('display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:12px 44px');
+  });
 });
