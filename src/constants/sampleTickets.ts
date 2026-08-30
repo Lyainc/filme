@@ -13,8 +13,8 @@ import type { LayoutId, MovieInfo, TicketComponents } from '@/types';
  * `chainVisible`/`formatVisible`을 false로 두면 렌더 경로 자체가 없다. 극장 정보는 스탬프가
  * 아니라 `theater`/`screen` 텍스트 필드가 나른다.
  *
- * 동시에 **레이아웃 스트레스 테스트**를 겸한다 — 제목 2~17자, 배우 1~4명(외국 이름 포함),
- * 극장명 6~18자, 날짜 포맷 4종 전부, `quote` 상한(22자) 정확히, `truncateActors` 발동(4명)이
+ * 동시에 **레이아웃 스트레스 테스트**를 겸한다 — 제목 2~18자, 배우 1~4명(외국 이름 포함),
+ * 극장명 6~18자, 날짜 포맷 4종 전부, `quote` 상한(31자, #754) 정확히, `truncateActors` 발동(4명)이
  * 표본 안에 다 들어 있다. 값을 고칠 때 이 폭을 좁히지 말 것 — 좁히면 자동 축소·말줄임이
  * 안 걸리는 데이터만 남아 회귀를 못 잡는다.
  */
@@ -81,7 +81,7 @@ export const SAMPLE_TICKETS: readonly SampleTicket[] = [
   },
   {
     id: 'criterion',
-    stress: 'quote 상한 정확히 31자(#754) + 원제 32자 + 배우 3명(truncate 직전)',
+    stress: 'quote 상한 정확히 31자(#754) + 원제 33자 + 배우 3명(truncate 직전)',
     posterSrc: '/assets/posters/sample-kitchen.jpg',
     components: components('criterion', 1),
     movieInfo: {
@@ -105,7 +105,7 @@ export const SAMPLE_TICKETS: readonly SampleTicket[] = [
   },
   {
     id: '35mm',
-    stress: '최장 제목(17자) + 배우 1명(최소) + 긴 서명(7자)',
+    stress: '최장 제목(18자) + 배우 1명(최소) + 긴 서명(7자)',
     posterSrc: '/assets/posters/sample-bus.jpg',
     components: components('35mm', 1),
     movieInfo: {
