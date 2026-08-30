@@ -540,6 +540,19 @@ async function capture({ layout, material, coating, intensity, bg, bgScale, full
     await page.goto(`${URL_}?debug=1`, { waitUntil: 'networkidle2' });
     mark('loaded');
 
+    // 랜딩을 먼저 지운다(#755) — #727부터 랜딩은 draft 존재와 무관하게 항상 fixed로 뜨고
+    // `landingDismissed`를 사용자가 명시로 세워야 내려간다. 이 게이트를 안 거치고 바로 포스터
+    // input을 주입해 크롭까지 마치면, MobileEditorShell의 handlePosterCropComplete가
+    // `fresh = !landingDismissed`를 true로 읽어 "랜딩에서 올라온 첫 포스터"로 오판해
+    // `startFreshDoc({keepPoster:true})`를 불러 seed movieInfo(title·releaseDate 등)를 통째로
+    // 지운다 — croppedImageUrl은 남아 '완료' 버튼은 뜨지만 canExport(title·releaseDate 필요)가
+    // 계속 false라 '완료'가 무한 no-op한다(실측: aria-disabled=true + "제목과 개봉연도가
+    // 필요해요" 토스트). "이어서 만들기"(data-testid="landing-restore")는 onRestore가
+    // `setLandingDismissed(true)` 하나뿐이라 다른 부작용이 없다.
+    await page.waitForSelector('[data-testid="landing-restore"]', { visible: true, timeout: 10000 });
+    await page.click('[data-testid="landing-restore"]');
+    await sleep(200);
+
     // 포스터 주입 → 크롭 '적용'. '적용'은 뜬 직후 누르면 completedCrop이 아직 안 서서 no-op이라
     // (disabled는 false다) 대기 후 클릭한다.
     await page.evaluate(async (drawSrc) => {
