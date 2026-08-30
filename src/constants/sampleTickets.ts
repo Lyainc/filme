@@ -46,7 +46,6 @@ const BASE: Omit<TicketComponents, 'layout' | 'posterOpacity'> = {
   signatureImage: '',
   signatureScale: 1,
   quoteFont: 'auto',
-  signatureFont: 'auto',
 };
 
 function components(layout: LayoutId, posterOpacity: number): TicketComponents {
