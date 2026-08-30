@@ -82,8 +82,15 @@ const POSTER_H = 640;
  * 않는다 — 페이퍼 스텁 레이아웃(Row/SectionHead 구성·섹션 간 여백 배분)이 바뀌면 다시 재야 한다.
  * Admission 필드를 전부 꺼서 Film이 divider를 곧바로 무는 조합도 실측했다 — 이 경우 Film이 옛
  * Admission 자리(y854~874)로 당겨 올라와 PATTERN_BOX보다 한참 위에서 끝나 안 겹친다(코드리뷰
- * 지적으로 확인, 2026-08-30). 다만 이 박스는 여전히 6종 예시 티켓 기준 리터럴이라 임의의 필드
- * 조합·긴 값까지 수학적으로 보장하진 않는다 — capture-export.mjs --full-fields가 최종 권위다.
+ * 지적으로 확인, 2026-08-30). 스파스 Admission 조합(SEAT만·DATE/TIME만·HALL만 켜짐) 실측 완료,
+ * 안전 확인(#755) — capture-export.mjs --field-off(신설)로 세 조합을 각각 캡처해 The Film 섹션
+ * 헤드 top을 쟀다: SEAT만 y1185.8, DATE/TIME만 y1191.8, HALL만 y1185.8(전부 켜짐 기준 y1191.8과
+ * 최대 6px 차이). PATTERN_BOX 바닥(y1102)까지 여유가 셋 다 83.8px 이상이라 겹치지 않는다 —
+ * SEAT 칩이 alignItems:stretch로 Admission 블록 높이를 사실상 고정하고, Row 한두 줄만 남아도 그
+ * 높이 근방이라 필드 하나만 꺼도 스페이서 재분배 폭이 작다(전부 꺼짐의 y854~874 극단과 달리
+ * SectionHead 자체는 계속 서 있어 삭제되는 콘텐츠가 적다). 다만 이 박스는 여전히 6종 예시 티켓
+ * 기준 리터럴이라 임의의 필드 조합·긴 값까지 수학적으로 보장하진 않는다 —
+ * capture-export.mjs --full-fields --field-off가 최종 권위다.
  */
 const PATTERN_BOX = { left: 604, top: 1060, width: 300, height: 42 };
 
