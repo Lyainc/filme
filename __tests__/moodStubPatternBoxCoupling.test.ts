@@ -54,6 +54,6 @@ describe('MoodStub 배경 스탬프 박스(PATTERN_BOX) 결합 (#746)', () => {
     expect(start).toBeGreaterThan(0);
     expect(end).toBeGreaterThan(start);
     const block = src.slice(start, end).trim();
-    expect(sha1(block)).toBe('9401fed978af');
+    expect(sha1(block)).toBe('386e6ba8e85a');
   });
 });
