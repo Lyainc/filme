@@ -329,7 +329,6 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, flexShrink: 0 }}>
                 <span style={{ fontSize: 26, lineHeight: 1, color: CRITERION_YELLOW }}>★</span>
                 <span style={{ fontWeight: 700, fontSize: 50, lineHeight: 1, letterSpacing: -1.5 }}>{d.rating.toFixed(1)}</span>
-                <span style={{ ...headerMeta, letterSpacing: 1.4, opacity: 0.5 }}>/5</span>
               </div>
             </FieldTap>
           ) : gRating ? (
@@ -349,18 +348,26 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
             (브라우저 실측, 600px 폭, 2026-07-27):
               · 프리셋 최장(영문 49자): 세리프 880 · 손글씨 820 · **고딕 1101px**
               · 기본 quote(영문 44자): 766 / 705 / 979px
-              · 사용자 입력 최악(QUOTE_MAX_LENGTH 22자 — 한글 반복·M/W 반복): 셋 다 2줄에서 멈춤
             최악이 고딕 프리셋 1101px(=1.84줄)이라 3줄이 되려면 1200px를 넘겨야 한다(여유 9%).
-            실제로 넘는 조합이 없어 클램프는 안 넣었다. 프리셋 문구를 늘리거나 fontSize·인셋·폰트
-            후보를 건드리면 여기부터 다시 잰다 — **고딕(Pretendard)이 가장 넓어 기준선이다**.
+            실제로 넘는 조합이 없어 프리셋·기본 quote는 안전하다. 프리셋 문구를 늘리거나
+            fontSize·인셋·폰트 후보를 건드리면 여기부터 다시 잰다 — **고딕(Pretendard)이 가장
+            넓어 기준선이다**.
 
             따옴표 104 → QUOTE_MARK_SIZE 125 재실측(브라우저, 자연px, 6조합):
               · 따옴표 span 박스 40×125 — 텍스트 인셋 96 안이라 인셋을 키울 필요가 없었다(104에선 33×104)
               · 줄 수는 전 조합 2줄 이하, 텍스트 잉크 폭 최대 596(기본 quote 고딕) ≤ 슬롯 600
               · 따옴표 잉크 ↔ 문구 잉크 겹침 0 — 좌상·우하에 그대로 앉는다
-            위 표의 "22자는 셋 다 2줄에서 멈춤"은 **틀렸다**: 무공백 라틴(`W`×22)은 줄바꿈 기회가
-            없어 1줄 1006.5px로 슬롯을 넘고 따옴표와 140px 겹쳤다(따옴표 크기와 무관한 기존 결함).
-            아래 `overflowWrap: 'anywhere'`가 단어 안에서 끊어 2줄 594.8px·겹침 0으로 가둔다. */}
+
+            **사용자 입력(QUOTE_MAX_LENGTH 31자, #754)은 프리셋과 다른 문제다**: 무공백 반복
+            (한글 동일 글자 반복·`W`/`M` 반복 등 줄바꿈 기회가 없는 최악)을 고딕(가장 넓음) 기준
+            headless Chrome으로 27자부터 34자까지 실측한 결과 27자에서 이미 3줄(192px)로
+            블록을 넘긴다 — 26자가 2줄(128px) 안에 드는 마지막 값이다. 31자 상한 자체는 공백이
+            섞인 실제 문구 기준(2줄 용량 34자, fields.ts 실측표)으로 도출된 값이라 정상적인
+            문장에서는 문제없지만, 최악의 무공백 반복 입력은 31자 안에서도 슬롯을 넘길 수 있다.
+            22자 시절엔 이 최악 케이스도 우연히 2줄에 걸렸을 뿐 하드 캡이 없었다(#577) — 31자로
+            올리며 그 우연에 기대는 대신 아래 `WebkitLineClamp: 2`로 2줄을 넘는 입력은 무엇이든
+            말줄임표로 가둔다. `overflowWrap: 'anywhere'`는 그대로 둬 잘리기 전까지는 단어 중간도
+            끊어 슬롯 안에서 최대한 채운다. */}
         <div style={{ position: 'absolute', left: PAD, right: PAD, top: 1064, height: 190 }}>
           <span aria-hidden style={{ position: 'absolute', left: 0, top: 0, fontFamily: FONT_DISPLAY, fontSize: QUOTE_MARK_SIZE, lineHeight: 1, color: CRITERION_YELLOW }}>&ldquo;</span>
           <span aria-hidden style={{ position: 'absolute', right: 0, bottom: 0, fontFamily: FONT_DISPLAY, fontSize: QUOTE_MARK_SIZE, lineHeight: 1, color: CRITERION_YELLOW, transform: 'rotate(180deg)' }}>&ldquo;</span>
@@ -377,15 +384,26 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                textAlign: 'center',
-                ...userTextFont(quoteText, components.quoteFont, 50),
-                lineHeight: 1.28,
-                // 무공백 라틴 22자(`W`×22 등)는 줄바꿈 기회가 없어 슬롯 600을 넘고 따옴표와
-                // 겹쳤다(실측 1006.5px, 겹침 140px). 단어 안에서도 끊어 예산 안에 가둔다(#577).
-                overflowWrap: 'anywhere',
               }}
             >
-              {quoteText}
+              <div
+                style={{
+                  textAlign: 'center',
+                  ...userTextFont(quoteText, components.quoteFont, 50),
+                  lineHeight: 1.28,
+                  // 무공백 라틴 22자(`W`×22 등)는 줄바꿈 기회가 없어 슬롯 600을 넘고 따옴표와
+                  // 겹쳤다(실측 1006.5px, 겹침 140px). 단어 안에서도 끊어 예산 안에 가둔다(#577).
+                  overflowWrap: 'anywhere',
+                  // 31자 상한(#754)에서도 무공백 최악 반복은 27자부터 3줄로 넘친다(실측) — 2줄로
+                  // 하드 캡해 넘는 입력은 말줄임표로 가둔다(제목 필드와 같은 관례, #318).
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                }}
+              >
+                {quoteText}
+              </div>
             </div>
           </FieldTap>
         </div>
