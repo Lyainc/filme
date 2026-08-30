@@ -9,7 +9,7 @@
  * 박스 좌표 자체, 그리고 그 좌표가 안 겹칠 거라고 전제한 나머지 전부(POSTER_H·절취선 높이 →
  * Row/SectionHead 스타일 상수 → 페이퍼 스텁 본문의 티커·제목/원제·구분선·Admission/The Film
  * 섹션 구성) — 이 처음 측정 당시와 같은지를 잠근다. 두 번째 축의 시작점이 `POSTER_H` 선언까지
- * 올라가는 이유: PATTERN_BOX는 루트 기준 절대좌표(top:1188)라 페이퍼 스텁이 어디서 시작하든 안
+ * 올라가는 이유: PATTERN_BOX는 루트 기준 절대좌표(top:1060)라 페이퍼 스텁이 어디서 시작하든 안
  * 따라가는데, 페이퍼 스텁의 시작 y는 `POSTER_H`(640, 포스터 밴드)와 절취선 스트립 높이(16,
  * `height:16`)의 합으로 고정된다 — 처음엔 `space-evenly` 컨테이너부터만 잠갔다가 리뷰(PR #747)가
  * 두 라운드에 걸쳐 "Row/SectionHead도 섹션 구성도 안 건드리는 한 줄 변경이 조용히 새고 있다"는
@@ -54,6 +54,6 @@ describe('MoodStub 배경 스탬프 박스(PATTERN_BOX) 결합 (#746)', () => {
     expect(start).toBeGreaterThan(0);
     expect(end).toBeGreaterThan(start);
     const block = src.slice(start, end).trim();
-    expect(sha1(block)).toBe('784bb0019083');
+    expect(sha1(block)).toBe('9401fed978af');
   });
 });

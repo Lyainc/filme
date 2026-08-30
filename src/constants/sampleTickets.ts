@@ -81,14 +81,14 @@ export const SAMPLE_TICKETS: readonly SampleTicket[] = [
   },
   {
     id: 'criterion',
-    stress: 'quote 상한 정확히 22자 + 원제 32자 + 배우 3명(truncate 직전)',
+    stress: 'quote 상한 정확히 31자(#754) + 원제 32자 + 배우 3명(truncate 직전)',
     posterSrc: '/assets/posters/sample-kitchen.jpg',
     components: components('criterion', 1),
     movieInfo: {
       title: '빈 방의 오후',
       titleOg: 'AN EMPTY AFTERNOON IN LATE AUTUMN',
       actors: '오해린, Jonas Lindqvist, 강도협',
-      quote: '남은 온기가 더 오래 아프다는 걸 알았다',
+      quote: '남은 온기가 생각보다 더 오래 아프다는 걸 그제야 알았다',
       releaseDate: '2025-11-07',
       releaseDateGranularity: 'date',
       releaseDateFormat: 'en-long',
