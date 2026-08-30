@@ -269,7 +269,9 @@ export const MoodMinimal = memo(function MoodMinimal({ movieInfo: d, components,
         {(screeningCells.length > 0 || filmCells.length > 0) && (
           <div style={{ marginBottom: 18 }}>
             {screeningCells.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px 44px' }}>
+              // grid로 항상 한 줄 고정(#753) — flex-wrap이면 Venue 값 길이에 따라 Seat이 다음 줄로
+              // 밀려 오른쪽이 통째로 빈 L자 구멍이 생겼다. 열 개수를 셀 수에 맞춰 항상 3열 이하로 채운다.
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${screeningCells.length}, minmax(0, 1fr))`, gap: '12px 44px' }}>
                 {screeningCells.map((c, i) => c.node !== undefined ? (
                   <div key={i} style={{ minWidth: 0 }}>
                     <div style={labelSerif(ink)}>{c.label}</div>

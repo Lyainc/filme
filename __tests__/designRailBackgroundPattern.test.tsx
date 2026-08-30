@@ -141,7 +141,7 @@ const MOOD_CASES = [
   // (MoodEditorial.tsx 주석 참고) — 오른쪽 패딩 거터(로컬 x587..639)에 세운다.
   { mood: 'editorial' as const, box: { left: 587, top: 44, width: 52, height: 880 } },
   { mood: 'criterion' as const, box: { left: 84, top: 262, width: 130, height: 750 } },
-  { mood: 'stub' as const, box: { left: 604, top: 1188, width: 300, height: 42 } },
+  { mood: 'stub' as const, box: { left: 604, top: 1060, width: 300, height: 42 } },
 ];
 
 for (const { mood, box } of MOOD_CASES) {

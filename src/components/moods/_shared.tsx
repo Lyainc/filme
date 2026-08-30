@@ -2112,14 +2112,14 @@ export function FilmCreditCut({
       <div style={{ position: 'absolute', inset: 0, opacity: components.componentOpacity ?? 1 }}>
       <div style={{ position: 'absolute', inset: 0, background: CREDIT_SCRIM }} />
       <div style={{ position: 'absolute', inset: 0, padding: compact ? `32px ${padX}px 26px` : `28px ${padX}px 24px`, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', color: FILM_INK }}>
-        <div style={{ textAlign: 'center', textShadow: '0 2px 10px rgba(0,0,0,.7)' }}>
+        <div style={{ textAlign: compact ? 'left' : 'center', textShadow: '0 2px 10px rgba(0,0,0,.7)' }}>
           {titleVal ? (
             <FieldTap field="title" onField={onField}>
               <div style={{ fontSize: titleFontSize, fontWeight: 500, letterSpacing: 0.3, lineHeight: 1.15, fontFamily: FONT_KR, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{titleVal}</div>
             </FieldTap>
           ) : gTitle ? (
             <FieldTap field="title" onField={onField}>
-              <div style={{ display: 'flex', justifyContent: 'center' }}><FieldGhost text="TITLE" width="70%" height={34} surface="dark" state={gTitle} /></div>
+              <div style={{ display: 'flex', justifyContent: compact ? 'flex-start' : 'center' }}><FieldGhost text="TITLE" width="70%" height={34} surface="dark" state={gTitle} /></div>
             </FieldTap>
           ) : null}
           {titleOgVal ? (
@@ -2128,14 +2128,19 @@ export function FilmCreditCut({
             </FieldTap>
           ) : gTitleOg ? (
             <FieldTap field="titleOg" onField={onField}>
-              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}><FieldGhost text="ORIGINAL TITLE" width={200} height={18} surface="dark" state={gTitleOg} /></div>
+              <div style={{ display: 'flex', justifyContent: compact ? 'flex-start' : 'center', marginTop: 8 }}><FieldGhost text="ORIGINAL TITLE" width={200} height={18} surface="dark" state={gTitleOg} /></div>
             </FieldTap>
           ) : null}
         </div>
 
-        <div style={{ flex: 1 }} />
+        {!compact && <div style={{ flex: 1 }} />}
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', justifyContent: 'center', columnGap: compact ? 22 : 24, rowGap: 22, alignItems: 'baseline' }}>
+        {/* #753 — compact(35mm Wide)는 title-grid-footer 사이 flex:1 스페이서 두 개가 위/아래에
+            큰 통짜 공백을 만들어 컷이 잘린 것처럼 보였다(실측 아래쪽 169px/27%). grid 자신을
+            flex:1로 키우고 alignContent:space-evenly로 바꾸면 같은 여유가 행 사이사이로 갈려
+            "채워진" 느낌이 된다. 세로 35mm(!compact)는 기존 두 스페이서 배치를 그대로 유지한다.
+            justifyContent도 title 좌정렬과 축을 맞춰 start로 내린다(정렬 축 통일, #753). */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', justifyContent: compact ? 'start' : 'center', columnGap: compact ? 22 : 24, rowGap: 22, alignItems: 'baseline', ...(compact ? { flex: 1, alignContent: 'space-evenly' } : null) }}>
           {exhibited.hasAny && row('Exhibited', exhibited.node, exhibited.hasGhost && 10)}
           {screened.hasAny && row('Screened', screened.node, screened.hasGhost && 10)}
           {film.hasAny && row('The Film', film.node, film.hasGhost && 10)}
@@ -2153,7 +2158,7 @@ export function FilmCreditCut({
             : null}
         </div>
 
-        <div style={{ flex: 1 }} />
+        {!compact && <div style={{ flex: 1 }} />}
 
         {/* 푸터 — 시안의 "CINE ROYALE · 70MM" 자리(#524 c5). 상단 좌측 스탬프 슬롯이 사라지고
             체인·포맷이 여기로 온다. 로고 미업로드면 StampRow가 라벨 텍스트로 폴백해 시안과 같은 그림. */}

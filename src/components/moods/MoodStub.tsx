@@ -71,20 +71,17 @@ const PAD_X = 56;
 const POSTER_H = 640;
 
 /**
- * 배경 스탬프(#530→#728) 고정 박스 — "사이" space-evenly 간격(#536) 안, 페이퍼 스텁의 Admission/
- * The Film 두 섹션 사이. 처음엔 두 섹션 bounding box만 재고 y1150..1230으로 잡았다가 실제 캡처를
- * 눈으로 보니 HALL 값 텍스트에 거의 붙어 있었다 — DATE/TIME/HALL 컬럼이 justifyContent:'center'라
- * SEAT 칩과 같은 높이(126px)로 묶여 있고, 그 안에서 HALL이 컬럼 맨 아래 줄이라 admission 섹션의
- * bounding box 바닥(≈1147)과 HALL 텍스트 자체의 바닥이 사실상 같았다("섹션 바닥"이 곧 "글자
- * 바닥") — 게다가 그 DOM 측정은 `document.fonts.ready` 전이라 실제 캡처(폰트 로드 후) 렌더보다
- * 신뢰도가 낮았다. 그래서 최종 값은 `--compare` 실측(diff bbox, 폰트 로드 완료 후의 진짜 저장물
- * 픽셀)으로 다시 잡았다 — y1188..1230, 위로 HALL 텍스트와 40px대, 아래로 The Film 섹션 헤드
- * (top min 1238)와 8px 여유. x는 바코드 우측 정렬(904 = 960 - PAD_X)에 맞춰 604..904. 포스터
- * 밴드(y<656)·바코드(y1468~)·워드마크와도 안 겹친다. 이 박스는 두 섹션이 안 겹치는 자리를
- * 실측으로 찾은 결과라 POSTER_H 등 다른 상수에서 유도되지 않는다 — 페이퍼 스텁 레이아웃
- * (Row/SectionHead 구성)이 바뀌면 다시 재야 한다.
+ * 배경 스탬프(#530→#728→#753) 고정 박스 — 페이퍼 스텁의 Admission/The Film 두 섹션 사이 빈
+ * 구간 안. #753이 섹션 간 여백 배분을 space-evenly에서 flex:1 스페이서 두 개(Admission-Film
+ * 사이·Film-푸터 사이)로 바꾸면서 이 구간 자체가 이동해 옛 y1188..1230이 RATED 값("★ 3.5")과
+ * 겹쳤다(headless Chrome 실측, 2026-08-30) — 재캡처로 다시 잡았다: HALL 값 텍스트 바닥 y≈1013,
+ * The Film 섹션 헤드 top y≈1161(둘 다 document.fonts.ready 후 실측, 6종 예시 티켓 기준). 그
+ * 사이 148px 구간의 중앙에 47px·59px 여유를 두고 y1060..1102로 잡았다. x는 바코드 우측 정렬
+ * (904 = 960 - PAD_X)에 맞춰 604..904. 포스터 밴드(y<656)·바코드(y1468~)·워드마크와도 안 겹친다.
+ * 이 박스는 두 섹션이 안 겹치는 자리를 실측으로 찾은 결과라 POSTER_H 등 다른 상수에서 유도되지
+ * 않는다 — 페이퍼 스텁 레이아웃(Row/SectionHead 구성·섹션 간 여백 배분)이 바뀌면 다시 재야 한다.
  */
-const PATTERN_BOX = { left: 604, top: 1188, width: 300, height: 42 };
+const PATTERN_BOX = { left: 604, top: 1060, width: 300, height: 42 };
 
 // 홀로그램 티커 무지개 그라디언트(마스터 1:1) — 절취 정보 스트립 배경.
 const HOLO = 'linear-gradient(100deg,#9ff0df 0%,#f6c4e4 14%,#c9baf7 30%,#b7e3f8 47%,#f7e2b3 64%,#b6f7c6 81%,#9ff0df 100%)';
@@ -291,12 +288,13 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
 
         <div style={{ height: 1, background: 'rgba(26,22,18,.2)', margin: '24px 0' }} />
 
-        {/* 섹션 영역이 하단 스텁의 남는 세로를 직접 나눠 갖는다(#536) — 밴드가 900→640(#527)으로
-            내려가며 생긴 여유를 예전엔 푸터 앞 단일 flex:1 스페이서가 통으로 먹어 STARRING과 푸터
-            사이에만 구멍이 났다(브라우저 실측 234.5px = 페이퍼 스텁 878px의 26.7%). space-evenly면
-            섹션 위·사이·아래 세 자리로 갈리고, 필드를 많이 켜 여유가 0이 되면 예전과 같은 배치로
-            수렴한다(오버플로 회귀 없음). */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', gap: 20 }}>
+        {/* 섹션 영역이 하단 스텁의 남는 세로를 직접 나눠 갖는다(#536 → #753 재조정). space-evenly가
+            만들던 "위·사이·아래" 세 틈 중 divider 바로 아래 123px이 콘텐츠보다 먼저 나와 특히
+            목적이 없었다(#753) — 그 자리는 아예 없애 divider가 Admission을 곧바로 문다. 남는
+            세로(원래 세 틈의 합, 약 380px)를 flex-start로 전부 몰아 STARRING 아래 한 곳에 다
+            모으면 그게 더 큰 단일 공백이 돼 역효과였다(실측) — 그래서 Admission-Film 사이와
+            Film-푸터 사이 두 flex:1로 절반씩(약 190px)만 나눠 갖는다. */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           {/* Admission — SEAT 칩 + DATE/TIME/HALL */}
           {admissionOn && (
             <div>
@@ -344,6 +342,8 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
               </div>
             </div>
           )}
+
+          {admissionOn && filmOn && <div style={{ flex: 1, minHeight: 24 }} />}
 
           {/* The Film — RUNTIME / RATED / RELEASED / RE-RELEASED 2열 + STARRING */}
           {filmOn && (
@@ -395,6 +395,8 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
               )}
             </div>
           )}
+
+          <div style={{ flex: 1, minHeight: 24 }} />
         </div>
 
         {/* 푸터 — made with FILME · collected by 서명 + 스텁 바코드(300×40, 텍스트 없음) */}
