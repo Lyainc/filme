@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MoodCriterion } from '../src/components/moods/MoodCriterion';
 import { CRITERION_PAPER, CRITERION_YELLOW } from '../src/components/moods/_shared';
+import { QUOTE_MAX_LENGTH } from '../src/constants/fields';
 import { FULL_MOVIE, makeMoodBase } from './fixtures';
 
 // v5(Revue) 시안 `Mood Redesign v5.dc.html` 5c 재동기화 회귀(#524). 이전 v6(#497)의 포스터
@@ -37,6 +38,9 @@ describe('MoodCriterion v5 Revue 재설계 (#524)', () => {
     expect(html).toContain('font-size:46px');
     expect(html).toContain('font-size:50px;line-height:1;letter-spacing:-1.5px');
     expect(html).toContain('4.5');
+    // 분모 재추가 회귀 방어(#752) — criterion만 "/5"를 그려 나머지 5무드(★ N.N)와 표기가
+    // 어긋났던 문제. 별+숫자만 남는 게 맞고, /5가 되살아나면 이 단언이 잡는다.
+    expect(html).not.toContain('/5</span>');
   });
 
   test('도판 — left230 top262 500×750(0.667) + 4단 그림자 · 사선 글로스 · 하단 두께 엣지', () => {
@@ -60,6 +64,14 @@ describe('MoodCriterion v5 Revue 재설계 (#524)', () => {
     expect(html).toContain('rotate(180deg)');
     // 무공백 라틴 입력이 슬롯을 넘어 따옴표와 겹치던 회귀 방어(#577 실측 1006.5px → 594.8px).
     expect(html).toContain('overflow-wrap:anywhere');
+  });
+
+  // 상한 재도출 + 하드 캡(#754) — 22자 시절 우연히 2줄에 걸리던 무공백 최악 입력이 31자에서도
+  // 3줄로 새는 걸 line-clamp가 막는다. 값·CSS 둘 다 되돌아가면 여기서 잡는다.
+  test('한줄평 — 상한 31자(#754) + 2줄 하드 캡(WebkitLineClamp)', () => {
+    expect(QUOTE_MAX_LENGTH).toBe(31);
+    const html = markup();
+    expect(html).toContain('display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden');
   });
 
   test('서명 56px + 콜로폰 룰(top1358) · 모노 17.5 2줄(top1370)', () => {
