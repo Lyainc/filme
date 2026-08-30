@@ -142,14 +142,17 @@ describe('MoodStub 마스터 resync (#281)', () => {
     expect(html).toContain('background:#B0423F');
   });
 
-  // 하단 스텁 세로 재분배(#536) — 밴드 900→640(#527)으로 생긴 여유를 푸터 앞 단일 flex:1
-  // 스페이서가 통으로 먹어 STARRING↔푸터 사이에만 구멍이 났다(브라우저 실측 234.5px). 섹션
-  // 컨테이너가 flex:1 + space-evenly로 직접 나눠 갖는 구조로 바뀌었는지 고정 — 단일 스페이서가
-  // 되살아나면 여백이 다시 한 자리로 몰린다.
-  test('하단 여유는 섹션 위·사이·아래로 분산 — 푸터 앞 단일 스페이서 없음(#536)', () => {
+  // 하단 스텁 세로 재분배(#536 → #753) — 밴드 900→640(#527)으로 생긴 여유를 푸터 앞 단일 flex:1
+  // 스페이서가 통으로 먹어 STARRING↔푸터 사이에만 구멍이 났다(브라우저 실측 234.5px). #536의
+  // space-evenly는 divider 바로 아래에도 123px 빈 구간을 만들어 "덜 채워진 것"으로 읽혔다(#753
+  // 실측) — 지금은 divider가 Admission을 곧바로 물고, 남는 세로를 Admission-Film 사이·Film-푸터
+  // 사이 두 flex:1 스페이서가 나눠 갖는다. 단일 스페이서(#536 이전)나 space-evenly(#536)가
+  // 되살아나면 여백이 다시 한 자리로 몰리거나 divider 바로 아래에 목적 없는 공백이 생긴다.
+  test('하단 여유는 Admission-Film·Film-푸터 두 곳으로 분산 — 단일/3분할 스페이서 없음(#753)', () => {
     const html = markup();
-    expect(html).toContain('justify-content:space-evenly');
-    expect(html).not.toContain('<div style="flex:1"></div>');
+    expect(html).not.toContain('justify-content:space-evenly');
+    const spacerCount = (html.match(/flex:1;min-height:24px/g) || []).length;
+    expect(spacerCount).toBe(2);
   });
 
   // 배우 폭 인식 truncate(#493) — 고정 count 캡(옛 max=5) 폐기, STARRING 값 가용폭(700px) 기준.

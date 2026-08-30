@@ -1,8 +1,8 @@
 /**
  * `MoodStub.tsx`의 배경 스탬프 고정 박스(`PATTERN_BOX`)가 Row/SectionHead 레이아웃·섹션 구성과
- * 안 겹치는 자리인지는 `capture-export.mjs --full-fields` 실측으로만 확인된다(#728 후속 #746) —
- * `space-evenly`가 필드 개수에 따라 빈 공간을 매 렌더 재분배해 코드로 좌표를 못 뽑기 때문에
- * PATTERN_BOX 자체가 눈으로 찾은 리터럴이다.
+ * 안 겹치는 자리인지는 `capture-export.mjs --full-fields` 실측으로만 확인된다(#728 후속 #746 → #753) —
+ * flex:1 스페이서가 필드 개수·섹션 간 여백 배분에 따라 빈 공간을 매 렌더 재계산해 코드로 좌표를
+ * 못 뽑기 때문에 PATTERN_BOX 자체가 눈으로 찾은 리터럴이다.
  *
  * `__tests__/designRailBackgroundPattern.test.tsx`는 "이 좌표가 DOM에 그대로 렌더되는가"만 잠그고
  * "그 좌표가 실제로 텍스트와 안 겹치는가"는 못 잡는다. 이 테스트는 PATTERN_BOX가 기대는 두 축 —
@@ -40,7 +40,7 @@ describe('MoodStub 배경 스탬프 박스(PATTERN_BOX) 결합 (#746)', () => {
 
   test(`박스 좌표 리터럴 — ${RECHECK}`, () => {
     const box = src.match(/const PATTERN_BOX = (\{[^}]+\});/)?.[1];
-    expect(box).toBe('{ left: 604, top: 1188, width: 300, height: 42 }');
+    expect(box).toBe('{ left: 604, top: 1060, width: 300, height: 42 }');
   });
 
   test(`POSTER_H → Row/SectionHead 상수 → 페이퍼 스텁 본문 전체 — ${RECHECK}`, () => {
@@ -54,6 +54,6 @@ describe('MoodStub 배경 스탬프 박스(PATTERN_BOX) 결합 (#746)', () => {
     expect(start).toBeGreaterThan(0);
     expect(end).toBeGreaterThan(start);
     const block = src.slice(start, end).trim();
-    expect(sha1(block)).toBe('0b92b1c2624c');
+    expect(sha1(block)).toBe('784bb0019083');
   });
 });
