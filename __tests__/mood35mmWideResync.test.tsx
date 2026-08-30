@@ -89,4 +89,14 @@ describe('Mood35mmLandscape v5 재설계 (#524)', () => {
   test('made with FILME 워드마크는 크레딧 컷 푸터 — #386 구조 고정', () => {
     expect(markup()).toMatch(/made with<\/span><span aria-label="FILME"/);
   });
+
+  // 정보 블록 여백/정렬 정리(#753) — compact(35mm Wide)는 title-grid-footer 사이 flex:1 스페이서
+  // 두 개가 위/아래에 큰 통짜 공백을 만들어 컷이 잘린 것처럼 보였다(실측 아래쪽 169px/27%). 제목
+  // 좌정렬 + 라벨-값 grid가 flex:1·space-evenly로 행 사이사이에 여유를 분산하는지 고정 — 되돌아가면
+  // 정렬 축이 둘로 갈리고 통짜 공백이 재발한다.
+  test('정보 블록 여백/정렬 — 제목 좌정렬 + grid flex:1 space-evenly (#753)', () => {
+    const html = markup();
+    expect(html).toContain('text-align:left;text-shadow:0 2px 10px rgba(0,0,0,.7)');
+    expect(html).toContain('justify-content:start;column-gap:22px;row-gap:22px;align-items:baseline;flex:1;align-content:space-evenly');
+  });
 });
