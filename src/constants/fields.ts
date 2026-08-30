@@ -177,15 +177,20 @@ export const STAMP_LABELS: Record<StampTarget, string> = {
 export const STAMP_LABEL_MAX = 24;
 
 /**
- * Criterion 한줄평(#391) 글자수 상한 — v5(#524) 고정 블록 기하로 재도출. 한줄평은 height 190
- * **고정** 블록에 들어가고 폰트는 50px 고정(제목과 달리 자동 축소 없음)이라, 넘치면 축소가 아니라
- * 3번째 줄이 블록 밖으로 새서 따옴표·서명과 겹친다.
- *   가용폭 = 960 - PAD 84×2 - 따옴표 인셋 96×2 = 600px, 한 줄 = 190 / (50×1.28) → 2줄까지
- *   한글 손글씨(아이스자람) 50px advance ≈ 1em → 600/50 = 12자/줄 → 2줄 24자
- * 라틴 세리프보다 글자당 advance가 넓은 한글 기준으로 맞추고, 공백·넓은 글리프 여유로 22자.
- * 영문 프리셋/기본 quote는 여유가 남더라도 한글 입력이 블록을 넘지 않는 쪽을 택한다.
+ * Criterion 한줄평(#391) 글자수 상한 — v5(#524) 고정 블록 기하 + 실측 재도출(#754). 한줄평은
+ * height 190 **고정** 블록에 들어가고 폰트는 50px 고정(제목과 달리 자동 축소 없음)이라, 넘치면
+ * 축소가 아니라 3번째 줄이 블록 밖으로 새서 따옴표·서명과 겹친다.
+ *   가용폭 = 960 - PAD 84×2 - 따옴표 인셋 96×2 = 600px
+ * 옛 주석은 "한글 손글씨 50px advance ≈ 1em → 12자/줄"을 가정해 24자를 냈는데, 실측(headless
+ * Chrome, document.fonts.ready 후 canvas measureText, 가용폭 600px·fontSize 50)과 어긋나
+ * 폐기됐다:
+ *   hand(아이스자람)      28.1px/자(0.56em) · 한 줄 21자 · 2줄 용량 42자
+ *   gothic(Pretendard)   35.1px/자(0.70em) · 한 줄 17자 · 2줄 용량 34자 ← 최악
+ *   serif(Instrument)    34.1px/자(0.68em) · 한 줄 17자 · 2줄 용량 34자
+ * 최악 폰트(고딕/세리프 한글)의 2줄 용량 34자에 옛 24→22가 쓰던 여유 정책(약 8%)을 그대로
+ * 적용해 31자로 재도출했다.
  */
-export const QUOTE_MAX_LENGTH = 22;
+export const QUOTE_MAX_LENGTH = 31;
 
 /** 스탬프 → TicketComponents 키(이미지 URL · 텍스트 라벨 · 노출 토글 · 크기 배율). */
 export const STAMP_KEYS: Record<
