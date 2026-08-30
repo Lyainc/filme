@@ -71,7 +71,10 @@ describe('MoodCriterion v5 Revue 재설계 (#524)', () => {
   test('한줄평 — 상한 31자(#754) + 2줄 하드 캡(WebkitLineClamp)', () => {
     expect(QUOTE_MAX_LENGTH).toBe(31);
     const html = markup();
-    expect(html).toContain('display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden');
+    // 클램프 메커니즘 자체만 잠근다 — display/-webkit-box-orient/overflow까지 통짜로 물면
+    // 무관한 리팩터링(예: 공통 스타일 스프레드로 이동)에도 깨진다(moodStubResync.test.tsx:49와
+    // 같은 관례로 -webkit-line-clamp:2 단일 속성만 확인).
+    expect(html).toContain('-webkit-line-clamp:2');
   });
 
   test('서명 56px + 콜로폰 룰(top1358) · 모노 17.5 2줄(top1370)', () => {
