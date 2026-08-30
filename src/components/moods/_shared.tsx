@@ -2483,10 +2483,13 @@ export interface MeasureFontOptions {
  * 캐시는 없다 — 이 함수는 매 렌더 몇 번 불리는 순수 측정이고, 캐시가 있으면 폰트 로드 전
  * 폴백 메트릭이 박히는 문제(PR #345 P1)를 호출부마다 다시 다뤄야 한다.
  *
- * **주의**: `FONT_SANS`·`FONT_DISPLAY`처럼 `var(--font-*)`가 들어간 패밀리는 canvas `font`
- * 문법에서 무효라 대입 자체가 조용히 무시되고 직전 폰트로 재게 된다(#751) — 그래서 이 함수는
+ * **주의**: `FONT_SANS`처럼 `var(--font-*)`가 들어간 패밀리는 canvas `font` 문법에서 무효라
+ * 대입 자체가 조용히 무시되고 직전 폰트로 재게 된다(#751) — 그래서 이 함수는
  * `resolveCanvasFontFamily`로 실제 등록 패밀리명으로 먼저 치환한 뒤에만 `ctx.font`에 넘긴다.
- * `<main>`이 없어 치환이 안 되는 자리(테스트 DOM)는 여전히 이 무시됨 동작 그대로다.
+ * `<main>`이 없어 치환이 안 되는 자리(테스트 DOM)는 여전히 이 무시됨 동작 그대로다. `FONT_DISPLAY`도
+ * 같은 `var(--font-*)` 모양이라 이 함수를 거치면 안전하지만, 지금은 canvas 측정 경로(이 함수·
+ * `fitFontSizeToWidth`) 어디에도 `FONT_DISPLAY`를 넘기는 호출부가 없다 — 실제로 그 경로를 타는
+ * 값이 아니라, 같은 함정에 빠질 수 있는 패밀리의 예시일 뿐이다.
  */
 export function measureTextWidth(text: string, { fontFamily, fontWeight = 400, fontSize, letterSpacing = 0 }: MeasureFontOptions): number {
   if (!text) return 0;
