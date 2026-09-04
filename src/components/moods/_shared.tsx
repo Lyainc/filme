@@ -2303,18 +2303,24 @@ let resolvedCssVarCache: Map<string, string> | undefined;
  * 자체가 조용히 무시되고 `ctx.font`는 직전 값 그대로 남는다(측정 캔버스는 모듈 스코프로 재사용돼
  * 직전 호출의 폰트가 새 호출에 새는 형태로 드러난다). `FONT_SANS`처럼 `var(--font-sans)`가 앞에
  * 붙은 패밀리를 이 함수로 실제 등록 패밀리명(예: `"pretendard", "pretendard Fallback"`)으로
- * 치환해서 넘긴다 — 변수가 `<main>`(`_app.tsx`)에서 정의되므로 `document.body`/`documentElement`가
- * 아니라 `<main>`에서 읽는다. `<main>`이 없는 자리(테스트 DOM, `renderToStaticMarkup`은 애초에
+ * 치환해서 넘긴다 — 변수가 `<main data-font-root>`(`_app.tsx`)에서 정의되므로 `document.body`/
+ * `documentElement`가 아니라 그 자리에서 읽는다. **태그명(`main`)이 아니라 `data-font-root`
+ * 속성으로 스코프한다**(#751 code-review) — `src/pages/t/[id].tsx`가 `_app.tsx`의 `<main>` 안에
+ * 중첩된 두 번째 `<main>`을 렌더해서, 태그 셀렉터는 document order 우연(바깥쪽이 먼저 잡힘)에
+ * 기대는 상태였다. `data-font-root`가 없는 자리(테스트 DOM, `renderToStaticMarkup`은 애초에
  * `getMeasureCtx`에서 걸러진다)에선 빈 문자열이라 원래 토큰을 그대로 남기고, 그 결과는 이전과
  * 같은 "무시됨" 동작이라 회귀가 아니다.
  */
 export function resolveCanvasFontFamily(fontFamily: string): string {
   if (typeof document === 'undefined' || !fontFamily.includes('var(--')) return fontFamily;
-  return fontFamily.replace(/var\(--([\w-]+)\)/g, (token, name: string) => {
+  // CSS 네이티브 2-인자 폼 var(--name, fallback)도 매치한다 — 지금 FONT_* 상수는 전부 1-인자라
+  // 안 걸리지만, 폴백 인자가 붙은 var()가 이 정규식을 빗나가면 원본 토큰이 그대로 ctx.font에
+  // 남아 이 함수가 고치려던 "조용히 무시됨" 버그가 그대로 재발한다(#751 code-review).
+  return fontFamily.replace(/var\(--([\w-]+)(?:\s*,[^)]*)?\)/g, (token, name: string) => {
     if (!resolvedCssVarCache) resolvedCssVarCache = new Map();
     let resolved = resolvedCssVarCache.get(name);
     if (resolved === undefined) {
-      const host = document.querySelector('main') ?? document.documentElement;
+      const host = document.querySelector('[data-font-root]') ?? document.documentElement;
       resolved = getComputedStyle(host).getPropertyValue(`--${name}`).trim();
       resolvedCssVarCache.set(name, resolved);
     }
@@ -2391,14 +2397,18 @@ export function fitFontSizeToWidth(
 ): number {
   if (!text) return maxSize;
 
-  const key = `${text} ${maxWidth} ${fontFamily} ${fontWeight} ${minSize} ${maxSize}`;
+  // resolveCanvasFontFamily(#751) 전에 캐시 키를 만들면 var(--font-sans) 같은 원본 토큰이 키에
+  // 박힌다 — 치환된 실제 값이 나중에 달라지는 경로가 생겨도(지금은 없지만, useFontsReady 주석의
+  // PR #345 P1과 같은 부류) 이 키로는 구분이 안 돼 stale 크기를 계속 돌려주게 된다. 치환을 먼저
+  // 하고 그 결과로 키를 만든다.
+  const resolvedFontFamily = resolveCanvasFontFamily(fontFamily);
+  const key = `${text} ${maxWidth} ${resolvedFontFamily} ${fontWeight} ${minSize} ${maxSize}`;
   const cached = fitFontSizeCache.get(key);
   if (cached !== undefined) return cached;
 
   const ctx = getMeasureCtx();
   if (!ctx) return maxSize;
 
-  const resolvedFontFamily = resolveCanvasFontFamily(fontFamily);
   const widthAt = (size: number) => {
     ctx.font = `${fontWeight} ${size}px ${resolvedFontFamily}`;
     return ctx.measureText(text).width;

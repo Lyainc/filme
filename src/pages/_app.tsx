@@ -149,6 +149,7 @@ export default function App({ Component, pageProps }: AppProps) {
         <meta name="description" content="영화 포스터로 시네마틱한 포토티켓을 만드세요." />
       </Head>
       <main
+        data-font-root
         className={`${pretendard.variable} ${jetBrainsMono.variable} ${instrumentSerif.variable} ${nunito.variable} ${iceJaram.variable} ${shareTechMono.variable} ${gyeonggiBatang.variable} ${inkLipquid.variable} ${kccEunyoung.variable} ${coolGuy.variable} ${sangSangFlowerRoad.variable} ${nanumBrush.variable} font-sans bg-bg text-fg min-h-dvh antialiased`}
       >
         <Component {...pageProps} />
