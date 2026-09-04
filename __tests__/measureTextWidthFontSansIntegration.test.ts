@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { measureTextWidth, resetResolvedCssVarCacheForTest } from '../src/components/moods/_shared';
 
 /**
@@ -34,6 +34,15 @@ describe('measureTextWidth × resolveCanvasFontFamily 배선 (#751)', () => {
   let main: HTMLElement | null = null;
   let fake: ReturnType<typeof installFontCapturingCanvas>;
 
+  // bun은 테스트 파일 전체를 한 프로세스에서 실행 순서 무관하게 돈다(#611과 같은 부류) — 이 파일
+  // 앞에 <main> 없이 FONT_KR/FONT_SANS로 fitFontSizeToWidth를 부르는 기존 테스트(moodStubResync
+  // 등, #751 code-review 지적)가 먼저 돌면 resolvedCssVarCache['font-sans']가 빈 문자열로 이미
+  // 오염된 채 이 파일이 시작할 수 있다. beforeEach에서도 리셋해 그 프로세스 전역 오염과 무관하게
+  // 매 테스트가 깨끗한 캐시로 시작하게 한다.
+  beforeEach(() => {
+    resetResolvedCssVarCacheForTest();
+  });
+
   afterEach(() => {
     fake.restore();
     main?.remove();
@@ -44,6 +53,7 @@ describe('measureTextWidth × resolveCanvasFontFamily 배선 (#751)', () => {
   test('var(--x)가 <main>에 정의돼 있으면 ctx.font에 치환된 값이 들어간다 — 원본 토큰이 새지 않는다', () => {
     fake = installFontCapturingCanvas();
     main = document.createElement('main');
+    main.setAttribute('data-font-root', '');
     main.style.setProperty('--mtw-test', '"ResolvedFamily"');
     document.body.appendChild(main);
 
@@ -65,5 +75,22 @@ describe('measureTextWidth × resolveCanvasFontFamily 배선 (#751)', () => {
     measureTextWidth('hi', { fontFamily: '"JetBrains Mono", monospace', fontSize: 50 });
 
     expect(fake.getLastFont()).toContain('"JetBrains Mono", monospace');
+  });
+
+  // #751 code-review 지적 — 지금까지의 테스트는 전부 가짜 var 이름(--mtw-test 등)만 써서 프로덕션
+  // 실제 var 이름(--font-sans)이 진짜 리졸브되는지는 어떤 bun test도 안 봤다(브라우저 --compare
+  // 실측으로만 확인됨). beforeEach 리셋 덕에 다른 파일의 오염과 무관하게 안전하게 실제 이름으로
+  // 검증할 수 있다 — FONT_SANS/FONT_KR가 실제로 이 경로를 타는지 잠근다.
+  test('실제 프로덕션 var 이름(--font-sans)도 <main data-font-root>에서 치환된다', () => {
+    fake = installFontCapturingCanvas();
+    main = document.createElement('main');
+    main.setAttribute('data-font-root', '');
+    main.style.setProperty('--font-sans', '"pretendard", "pretendard Fallback"');
+    document.body.appendChild(main);
+
+    measureTextWidth('hi', { fontFamily: 'var(--font-sans), "Pretendard Variable", sans-serif', fontSize: 50 });
+
+    expect(fake.getLastFont()).toContain('"pretendard", "pretendard Fallback"');
+    expect(fake.getLastFont()).not.toContain('var(--font-sans)');
   });
 });

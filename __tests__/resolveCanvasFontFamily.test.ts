@@ -6,8 +6,10 @@ import { resetResolvedCssVarCacheForTest, resolveCanvasFontFamily } from '../src
  * 실측, Chrome 152)를 우회하려고 이 함수가 var(--x)를 <main>에서 읽은 실제 값으로 치환한다.
  *
  * happy-dom의 getComputedStyle은 인라인 style로 건 커스텀 프로퍼티를 그 엘리먼트 자신에게서는
- * 그대로 돌려주므로(캐스케이드 없이도), <main>에 직접 세팅하는 것만으로 이 함수의 대상 조회
- * 경로(`document.querySelector('main')`)를 그대로 재현할 수 있다.
+ * 그대로 돌려주므로(캐스케이드 없이도), `data-font-root` 속성을 단 <main>에 직접 세팅하는
+ * 것만으로 이 함수의 대상 조회 경로(`document.querySelector('[data-font-root]')`, #751
+ * code-review — 태그 셀렉터는 `t/[id].tsx`의 중첩 `<main>`과 충돌 가능해 속성으로 좁혔다)를
+ * 그대로 재현할 수 있다.
  */
 describe('resolveCanvasFontFamily', () => {
   let main: HTMLElement | null = null;
@@ -24,6 +26,7 @@ describe('resolveCanvasFontFamily', () => {
 
   test('<main>에 정의된 값으로 var(--x)를 치환한다', () => {
     main = document.createElement('main');
+    main.setAttribute('data-font-root', '');
     main.style.setProperty('--rcf-test-a', '"pretendard", "pretendard Fallback"');
     document.body.appendChild(main);
 
@@ -38,6 +41,7 @@ describe('resolveCanvasFontFamily', () => {
 
   test('같은 변수명은 캐시되어 두 번째 호출은 재조회 없이도 같은 값을 낸다', () => {
     main = document.createElement('main');
+    main.setAttribute('data-font-root', '');
     main.style.setProperty('--rcf-test-c', '"First"');
     document.body.appendChild(main);
 
@@ -53,6 +57,7 @@ describe('resolveCanvasFontFamily', () => {
     // 빈 문자열을 캐시시킨 뒤, reset 없이 재호출하면 <main>이 생겨도 여전히 원본 토큰을 반환한다.
     resolveCanvasFontFamily('var(--rcf-test-d)');
     main = document.createElement('main');
+    main.setAttribute('data-font-root', '');
     main.style.setProperty('--rcf-test-d', '"Real"');
     document.body.appendChild(main);
 
