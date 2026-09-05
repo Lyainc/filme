@@ -53,20 +53,17 @@
  * 함정 목록은 네이티브 메모리 e2e-browser-verification-setup 참고.
  */
 import puppeteer from 'puppeteer-core';
+import { parseArgs, resolveChromePath, dismissLanding, closeBrowserSafely } from './lib/capture-harness.mjs';
 
 const argv = process.argv.slice(2);
-const arg = (name, dflt) => {
-  const i = argv.indexOf(`--${name}`);
-  return i >= 0 && argv[i + 1] ? argv[i + 1] : dflt;
-};
+const arg = parseArgs(argv);
 
 const LABEL = arg('label', 'run');
 const THEME = arg('theme', 'dark');
 const URL = arg('url', 'http://localhost:3000/');
 const SHOT = arg('shot', null); // 스크린샷 경로(선택)
 const [VW, VH] = arg('viewport', '400x675').split('x').map(Number);
-const CHROME =
-  process.env.CHROME_PATH ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const CHROME = resolveChromePath();
 
 // 실측 불변식 — 400×675 · 레일 열림 기준. 다른 뷰포트에선 대조하지 않는다.
 // **이 값은 레일 상세 슬롯 높이에 종속이다**(`DesignRail.tsx`의 슬롯 className). 슬롯이 커진
@@ -497,9 +494,21 @@ try {
   // 안 되고, 그렇다고 "새로 시작" 네 경로로 들어가면 문서가 새 문서로 되돌아가(c7) 이 페이지가
   // 심어둔 title·titleOg·releaseDate가 사라져 완료 게이트가 안 선다 — 결과 스테이지 축이 통째로
   // 죽는다. 이어받기는 그 둘을 동시에 만족하는 유일한 경로다.
-  await page.evaluate(() => document.querySelector('[data-testid="landing-restore"]')?.click());
-  // 실패해도 던지지 않는다 — 위 축이 이미 pass:false로 exit 1을 내고, 여기서 throw하면 나머지 축
-  // (dock·프리뷰·frameFit·대비·모달) 진단까지 같이 날아간다. 파괴 실험에서 실제로 그랬다.
+  // 공유 dismissLanding은 버튼을 못 찾으면 throw한다(#756 — 예전엔 `?.click()`으로 조용히
+  // no-op해 위 축들이 이미 fail을 기록했는데도 나머지 측정을 랜딩이 안 걷힌 채로 계속 진행했다).
+  // 다만 여기서는 그 throw를 잡아 기록만 하고 계속 진행한다 — 그대로 던지면 이 지점 이후의
+  // 핵심 축(dock·프리뷰·frameFit·대비·모달·결과 스테이지)이 통째로 날아간다는 게 파괴 실험으로
+  // 확인돼 있다(code-review 재확인: unguarded throw는 12개 축 진단을 통째로 죽인다). #756이
+  // 요구한 건 "조용히 no-op하지 않는 것"이지 "스크립트 전체가 죽는 것"이 아니다 — dismissError를
+  // 기록해 두면 위 restoreShown 체크와 별개로도 최종 exitCode가 실패로 떨어진다(아래 pass 강제).
+  try {
+    await dismissLanding(page);
+  } catch (err) {
+    landingShownOnDraft.dismissError = String(err?.message ?? err);
+    landingShownOnDraft.pass = false;
+  }
+  // 버튼은 찾았지만 클릭 효과(display:none 전환)가 15초 안에 안 오는 경우는 별개 축이라 여기서
+  // 는 그대로 던지지 않는다 — 같은 이유로 나머지 축 진단을 지킨다.
   landingShownOnDraft.dismissed = await page
     .waitForFunction(
       () => getComputedStyle(document.querySelector('[data-testid="landing"]')).display === 'none',
@@ -926,5 +935,8 @@ try {
     process.exitCode = 1;
   }
 } finally {
-  await browser.close();
+  await closeBrowserSafely(browser);
 }
+// bun에선 browser.close() 뒤에도 프로세스가 안 끝날 수 있다(capture-export.mjs와 같은 함정) —
+// 배치로 돌릴 때 매달리지 않게 명시적 종료.
+process.exit(process.exitCode ?? 0);
