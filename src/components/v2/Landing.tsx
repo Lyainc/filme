@@ -1,12 +1,10 @@
 import type { DragEvent, MouseEvent, PointerEvent, ReactNode } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import type { LayoutId, MovieInfo, TicketComponents } from '@/types';
-import { ALL_FIELDS_ON } from '@/constants/fieldVisibility';
+import { useEffect, useRef, useState } from 'react';
+import type { LayoutId } from '@/types';
 import { useMatchMedia } from '@/hooks/useMatchMedia';
 import { cn } from '@/utils/cn';
 import { pressableVariants } from '@/components/ui/variants';
 import { LAYOUTS } from '@/utils/layouts';
-import TicketRenderer from '../TicketRenderer';
 import { MOOD_BACKDROP_BG } from '../LayoutPicker';
 import { AppFooter } from './AppFooter';
 import { Wordmark } from './Wordmark';
@@ -59,6 +57,19 @@ const CAROUSEL_SLOTS = [
  * 돌리는 건 갤러리 전시용일 뿐 무드 자체(`LAYOUTS`의 `orientation`·크롭 프리셋 #529)는 그대로다.
  */
 export const GALLERY_LAYOUTS = LAYOUTS.filter((l) => l.id !== '35mm-landscape');
+/**
+ * 갤러리 전경 이미지(#613 → 콘택트 시트 검토 완료, 2026-09-05) — `public/assets/landing/`의
+ * 실제 무드 렌더 결과물. 라이브 `TicketRenderer` 대신 이 고정 자산을 쓰므로, 무드 조판이
+ * 바뀌면 여기도 다시 구워야 한다(README 참고) — `LandingBackdropTiles`의 배경 타일과 달리
+ * 이 전경은 원본 포스터가 그대로 보이는 실사 자산이라 라이브 렌더로 되돌릴 이유가 없다.
+ */
+const HERO_IMAGES: Partial<Record<LayoutId, string>> = {
+  minimal: '/assets/landing/hero-minimal.webp',
+  criterion: '/assets/landing/hero-criterion.webp',
+  '35mm': '/assets/landing/hero-35mm.webp',
+  editorial: '/assets/landing/hero-editorial.webp',
+  stub: '/assets/landing/hero-stub.webp',
+};
 /** 갤러리에서만 90° 돌려 세로로 세우는 무드 — 위 주석 참고. 시계 방향(90deg)이라 원본의 오른쪽
  *  끝이 아래로 간다: editorial의 붉은 stub 밴드가 오른쪽이라 돌리면 아래에 선다(사용자 요청).
  *  반시계로 돌리면 같은 밴드가 위로 올라가니 부호를 바꿀 때 실물 확인 없이 뒤집지 말 것. */
@@ -165,15 +176,7 @@ function LandingBackdropTiles() {
  * 눌러야 해서 정지 사용자에게 오히려 단계가 는다. 그리드 카드는 캐러셀보다 작은 별도 크기다
  * (400×675 무스크롤 예산, 위 상수 참고).
  */
-function MoodCarousel({
-  heroMovieInfo,
-  heroComponents,
-  onEnterMood,
-}: {
-  heroMovieInfo: MovieInfo;
-  heroComponents: TicketComponents;
-  onEnterMood: (id: LayoutId) => void;
-}) {
+function MoodCarousel({ onEnterMood }: { onEnterMood: (id: LayoutId) => void }) {
   const prefersReducedMotion = useMatchMedia('(prefers-reduced-motion: reduce)');
   // 지금 가운데 선 무드. 캐러셀이 되면서 "어느 무드가 중앙인가"라는 상태가 새로 생겼다 —
   // marquee엔 없던 것이라 이게 이 개편의 유일한 새 state다.
@@ -241,18 +244,6 @@ function MoodCarousel({
     },
   };
 
-  // 무드별 components를 렌더마다 새로 만들면 `TicketRenderer`의 memo가 12벌 전부 miss한다
-  // (fresh-context 리뷰 P1) — `Landing`은 memo가 아니고 셸에서 `onEnterMood`·`children` 등이
-  // 매번 새 값으로 내려오므로, 랜딩이 떠 있는 동안 셸 state가 한 번 바뀔 때마다(OCR
-  // `isProcessing`·토스트) 무드 트리 12벌이 통째로 재렌더됐다. `heroComponents`는 index.tsx의
-  // 280ms debounce 값이라 편집 사이엔 참조가 안 바뀌므로, 여기서 한 번 고정하면 그 재렌더가
-  // 실제 무드 변경에만 걸린다. 나머지 props(`heroMovieInfo`=실시간 state 객체, `ALL_FIELDS_ON`=
-  // 모듈 상수, `croppedImageUrl`=null, `ghost`)는 이미 참조가 안정적이다.
-  const sampleComponents = useMemo(
-    () => GALLERY_LAYOUTS.map((layout) => ({ ...heroComponents, layout: layout.id })),
-    [heroComponents],
-  );
-
   /** 중앙에서 몇 칸 떨어졌는지 — 다섯 장이라 -2..+2로 접힌다(원형 거리). */
   const distance = (index: number) => {
     const n = GALLERY_LAYOUTS.length;
@@ -314,8 +305,9 @@ function MoodCarousel({
           남거나 잘린다. */}
       <div style={{ width, height, position: 'relative', overflow: 'hidden' }}>
         {/* 돌린 무드는 회전 전 크기를 뒤집어(높이×폭) 절대배치로 가운데에 놓고 -90° 돌린다 —
-            transform은 레이아웃 크기를 안 바꾸므로 TicketRenderer의 ResizeObserver는 회전 전
-            박스를 그대로 재고, 돌아간 결과가 바깥 세로 박스를 정확히 채운다. */}
+            자산 자체가 무드 원본 방향(가로)이라 회전 전 박스도 그 원본 비율(layout.width×height)
+            그대로다. transform은 레이아웃 크기를 안 바꾸므로 이 박스가 바깥 세로 카드를 정확히
+            채운다. */}
         <div
           style={
             rotated
@@ -330,12 +322,11 @@ function MoodCarousel({
               : { width: '100%', height: '100%' }
           }
         >
-          <TicketRenderer
-            croppedImageUrl={null}
-            movieInfo={heroMovieInfo}
-            components={sampleComponents[index]}
-            fieldVisibility={ALL_FIELDS_ON}
-            ghost
+          <img
+            src={HERO_IMAGES[layout.id]}
+            alt=""
+            draggable={false}
+            className="block h-full w-full object-cover"
           />
         </div>
       </div>
@@ -398,12 +389,14 @@ function MoodCarousel({
  * 1440 뷰포트에서도 오버레이가 400px 프레임 안에 선다. `measure-chrome.mjs`의 frameFit 축이
  * 이걸 판정한다.
  *
- * **히어로는 이미지 자산이 아니라 실제 렌더 엔진이다(#615)** — #613(예시 이미지 수동 제작·번들)이
- * 아직 안 끝나 저작권 없는 무드 이미지가 없다. 대신 #631이 이미 열어둔 posterless 렌더 경로를
- * 그대로 써서 `TicketRenderer`를 `croppedImageUrl=null` + `ghost`로 띄운다 — 포스터 없이도
- * 무드의 조판·타이포·필드 자리는 실물 그대로 보인다. 실제 히어로 마크업은 `MoodCarousel`
- * (아래) — 6종을 auto-scroll 트랙으로 동시에 보여준다(2026-08-04 설계 변경, D1 재검토: "동시에
- * 더 많이 보인다" 요건은 트랙이 그대로 만족해 크로스페이드 캐러셀로 되돌아가는 게 아니다).
+ * **히어로는 이제 고정 이미지 자산이다(#613, 2026-09-05 전환)** — #615 도입 당시엔 저작권 없는
+ * 무드 이미지가 없어 `TicketRenderer`를 `croppedImageUrl=null` + `ghost`로 띄우는 라이브 렌더로
+ * 대신했지만, 실사 예시 6장(콘택트 시트 검토 완료)이 생기면서 `public/assets/landing/hero-*.webp`
+ * 정적 자산으로 교체했다(`MoodCarousel` 아래, `HERO_IMAGES`). 무드 조판·색·스탬프가 바뀌어도 이
+ * 자산은 저절로 안 따라오니 — 무드를 개편하는 PR은 `public/assets/landing/README.md`의 갱신
+ * 절차대로 이 6장도 같이 다시 구울 것. 실제 히어로 마크업은 `MoodCarousel`(아래) — 6종을
+ * auto-scroll 트랙으로 동시에 보여준다(2026-08-04 설계 변경, D1 재검토: "동시에 더 많이 보인다"
+ * 요건은 트랙이 그대로 만족해 크로스페이드 캐러셀로 되돌아가는 게 아니다).
  *
  * **샘플 클릭은 훑어보기가 아니라 즉시 커밋이다** — 예전 무드칩(`LayoutStrip`)은 셸의 `heroLayout`
  * 로컬 미러만 바꾸고 실제 `components.layout` 커밋은 다른 CTA가 맡았지만, auto-scroll 갤러리의
@@ -423,8 +416,6 @@ export function Landing({
   restoreTitle,
   dropProps,
   dragOver,
-  heroMovieInfo,
-  heroComponents,
   onEnterMood,
   children,
 }: {
@@ -446,10 +437,6 @@ export function Landing({
     onDrop: (e: DragEvent) => void;
   };
   dragOver: boolean;
-  /** 히어로 프리뷰용 movieInfo — 업로드 전이라 사실상 항상 빈 값, ghost 자리표시만 보인다. */
-  heroMovieInfo: MovieInfo;
-  /** 히어로 갤러리 샘플의 색·스탬프 등 layout 이외 필드 — 셸의 실제 components(레이아웃은 샘플마다 override). */
-  heroComponents: TicketComponents;
   /** 갤러리 샘플 클릭 → 그 무드를 즉시 커밋 + 편집 화면 진입(네 번째 진입점, 위 컴포넌트 주석). */
   onEnterMood: (id: LayoutId) => void;
   /** OCR 진입점 슬롯 — 셸이 소유한 단일 OcrUploadCard 인스턴스가 들어온다(이제 주 CTA, #635). */
@@ -529,11 +516,7 @@ export function Landing({
 
             {/* 히어로(#615, 2026-08-04 개정) — auto-scroll 갤러리 하나가 이전의 "전경 1장 + 무드칩
                 스트립" 두 축을 대체한다(위 컴포넌트 주석). */}
-            <MoodCarousel
-              heroMovieInfo={heroMovieInfo}
-              heroComponents={heroComponents}
-              onEnterMood={onEnterMood}
-            />
+            <MoodCarousel onEnterMood={onEnterMood} />
           </>
         )}
 
