@@ -70,4 +70,14 @@ describe('Criterion 한줄평 폴백 체인 (#391)', () => {
 
   // 서명 폰트 분기는 6무드 공통 규칙이라 __tests__/moodSignatureFont.test.tsx(#494)가 소유한다 —
   // 여기선 quote 자체의 분기만 본다(위 두 테스트가 signature 값을 격리해두는 이유).
+
+  // 안전마진 실측 대상 문구 고정(#757) — MoodCriterion.tsx:346-364의 9택 폭 표(bun
+  // scripts/measure-quote-preset-widths.mjs)는 이 문구가 "프리셋 최장"이라는 전제로 잰 값이다.
+  // 문구가 바뀌면(길이가 늘든 줄든) 그 표가 조용히 stale해지므로, 바뀌면 이 테스트가 먼저
+  // 깨져 스크립트 재실행 + 주석 갱신을 상기시킨다. 기본 quote(위 34번째 줄 테스트가 이미 고정)와
+  // 합쳐 표의 두 대표행이 전부 잠긴다.
+  test('평점 5.0 프리셋(9택 폭 표의 "프리셋 최장" 대상 문구) 고정 (#757)', () => {
+    const html = markup({ ...FULL_MOVIE, quote: '', rating: 5 });
+    expect(html).toContain('the film every other film will be measured against');
+  });
 });
