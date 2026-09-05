@@ -57,15 +57,12 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import puppeteer from 'puppeteer-core';
+import { parseArgs, resolveChromePath, dismissLanding, closeBrowserSafely } from './lib/capture-harness.mjs';
 
 const argv = process.argv.slice(2);
-const arg = (name, dflt) => {
-  const i = argv.indexOf(`--${name}`);
-  return i >= 0 && argv[i + 1] ? argv[i + 1] : dflt;
-};
+const arg = parseArgs(argv);
 
-const CHROME =
-  process.env.CHROME_PATH ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const CHROME = resolveChromePath();
 const URL_ = arg('url', 'http://localhost:3000/');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -75,14 +72,6 @@ const launch = () =>
     headless: true,
     args: ['--no-sandbox', '--force-device-scale-factor=1'],
   });
-
-/**
- * bun에서 `await browser.close()`가 **resolve하지 않는다**(실측: Chrome 프로세스는 죽는데
- * 그 Promise가 안 풀려 스크립트가 7분 넘게 매달렸다). 배치 루프가 매 실행마다 그걸 기다리면
- * 대조표를 못 만든다 — 닫기는 걸고 짧게만 기다린 뒤 넘어간다.
- */
-const closeBrowser = (browser) =>
-  Promise.race([browser.close().catch(() => {}), sleep(3000)]);
 
 const t0 = Date.now();
 const marks = {};
@@ -189,12 +178,12 @@ async function compare(pathA, pathB, tolerance, diffOut) {
     delete result.diffPng;
     const pass = !result.sizeMismatch && result.maxAbsDiff <= tolerance;
     console.log(JSON.stringify({ mode: 'compare', a: pathA, b: pathB, tolerance, ...result, pass }, null, 2));
-    // exit()가 아니라 exitCode다 — 여기서 즉시 종료하면 finally의 closeBrowser가 안 돌아,
+    // exit()가 아니라 exitCode다 — 여기서 즉시 종료하면 finally의 closeBrowserSafely가 안 돌아,
     // 이 파일이 길게 방어한 그 헤드리스 Chrome 잔류가 "대조 실패"라는 흔한 경로에서만 생긴다
     // (claude-review PR #643 P2).
     if (!pass) process.exitCode = 1;
   } finally {
-    await closeBrowser(browser);
+    await closeBrowserSafely(browser);
   }
 }
 
@@ -599,8 +588,7 @@ async function capture({ layout, material, coating, intensity, bg, bgScale, full
     // 계속 false라 '완료'가 무한 no-op한다(실측: aria-disabled=true + "제목과 개봉연도가
     // 필요해요" 토스트). "이어서 만들기"(data-testid="landing-restore")는 onRestore가
     // `setLandingDismissed(true)` 하나뿐이라 다른 부작용이 없다.
-    await page.waitForSelector('[data-testid="landing-restore"]', { visible: true, timeout: 10000 });
-    await page.click('[data-testid="landing-restore"]');
+    await dismissLanding(page);
     await sleep(200);
 
     // 포스터 주입 → 크롭 '적용'. '적용'은 뜬 직후 누르면 completedCrop이 아직 안 서서 no-op이라
@@ -722,7 +710,7 @@ async function capture({ layout, material, coating, intensity, bg, bgScale, full
       ),
     );
   } finally {
-    await closeBrowser(browser);
+    await closeBrowserSafely(browser);
   }
 }
 
