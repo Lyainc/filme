@@ -13,19 +13,14 @@
  */
 import puppeteer from 'puppeteer-core';
 import { mkdir } from 'node:fs/promises';
+import { parseArgs, resolveChromePath, closeBrowserSafely } from './lib/capture-harness.mjs';
 
-// capture-export.mjs와 같은 호출 규약(이름만 넘기면 내부에서 `--`를 붙임) — 두 스크립트가
-// 서로 다른 규약을 쓰면 옮겨 쓸 때 조용히 기본값으로 빠진다(code-review 지적).
 const argv = process.argv.slice(2);
-const arg = (name, dflt) => {
-  const i = argv.indexOf(`--${name}`);
-  return i >= 0 && argv[i + 1] ? argv[i + 1] : dflt;
-};
+const arg = parseArgs(argv);
 
 const URL = arg('url', 'http://localhost:3020/sample-sheet');
 const OUT = arg('out', '/tmp/samples');
-const CHROME =
-  process.env.CHROME_PATH ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const CHROME = resolveChromePath();
 
 await mkdir(OUT, { recursive: true });
 
@@ -77,6 +72,6 @@ try {
   console.error('[capture-samples] 캡처 실패:', err);
   exitCode = 1;
 } finally {
-  await Promise.race([browser.close(), new Promise((r) => setTimeout(r, 3000))]);
+  await closeBrowserSafely(browser);
 }
 process.exit(exitCode);
