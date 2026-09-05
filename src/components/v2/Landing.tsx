@@ -56,14 +56,24 @@ const CAROUSEL_SLOTS = [
  *
  * 돌리는 건 갤러리 전시용일 뿐 무드 자체(`LAYOUTS`의 `orientation`·크롭 프리셋 #529)는 그대로다.
  */
-export const GALLERY_LAYOUTS = LAYOUTS.filter((l) => l.id !== '35mm-landscape');
+// 갤러리에 실제로 오르는 무드의 id만 — HERO_IMAGES가 이 타입으로 완전성을 강제한다(아래).
+type GalleryLayoutId = Exclude<LayoutId, '35mm-landscape'>;
+type GalleryLayout = (typeof LAYOUTS)[number] & { id: GalleryLayoutId };
+export const GALLERY_LAYOUTS = LAYOUTS.filter(
+  (l): l is GalleryLayout => l.id !== '35mm-landscape'
+);
 /**
  * 갤러리 전경 이미지(#613 → 콘택트 시트 검토 완료, 2026-09-05) — `public/assets/landing/`의
  * 실제 무드 렌더 결과물. 라이브 `TicketRenderer` 대신 이 고정 자산을 쓰므로, 무드 조판이
  * 바뀌면 여기도 다시 구워야 한다(README 참고) — `LandingBackdropTiles`의 배경 타일과 달리
  * 이 전경은 원본 포스터가 그대로 보이는 실사 자산이라 라이브 렌더로 되돌릴 이유가 없다.
+ *
+ * `Record<GalleryLayoutId, string>`(Partial 아님, claude-review PR #759 P1) — 이웃 룩업
+ * `MOOD_CHIP_BG`/`MOOD_BACKDROP_BG`(`LayoutPicker.tsx`)와 같은 관례로, 갤러리에 새 무드가
+ * 추가되거나 키가 오타 나면 컴파일러가 엔트리 누락을 그 자리에서 잡는다 — Partial이면 그런
+ * 사고가 `src={undefined}`로 조용히 화면에만 나타난다.
  */
-const HERO_IMAGES: Partial<Record<LayoutId, string>> = {
+const HERO_IMAGES: Record<GalleryLayoutId, string> = {
   minimal: '/assets/landing/hero-minimal.webp',
   criterion: '/assets/landing/hero-criterion.webp',
   '35mm': '/assets/landing/hero-35mm.webp',
@@ -253,7 +263,7 @@ function MoodCarousel({ onEnterMood }: { onEnterMood: (id: LayoutId) => void }) 
     return d;
   };
 
-  const sample = (layout: (typeof LAYOUTS)[number], index: number, key: string, width: number, carousel: boolean) => {
+  const sample = (layout: GalleryLayout, index: number, key: string, width: number, carousel: boolean) => {
     const rotated = GALLERY_ROTATED.has(layout.id);
     // 돌린 무드는 카드 박스도 같이 뒤집힌다 — 가로 캔버스(1534×960)를 세로로 세우면 표시 높이가
     // 폭 × (width/height)라, 세로 무드들과 같은 1534/960 비율이 나와 줄의 리듬이 맞는다.

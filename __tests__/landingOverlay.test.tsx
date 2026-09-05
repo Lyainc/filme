@@ -69,7 +69,11 @@ describe('랜딩 오버레이(#614)', () => {
     // loop를 위해 DOM엔 이름당 두 벌이 있지만 뒤 절반은 aria-hidden(fresh-context 리뷰 지적)이라
     // role 쿼리엔 하나씩만 잡혀야 정상이다.
     for (const layout of GALLERY_LAYOUTS) {
-      expect(within(landing()).getAllByRole('button', { name: new RegExp(`^${layout.label} 무드로 바로 시작`) })).toHaveLength(1);
+      const buttons = within(landing()).getAllByRole('button', { name: new RegExp(`^${layout.label} 무드로 바로 시작`) });
+      expect(buttons).toHaveLength(1);
+      // 히어로 이미지 매핑(HERO_IMAGES, #613) 회귀 방어 — 무드 추가·오타로 엔트리가 빠지면
+      // <img src>가 비거나 잘못된 경로로 조용히 깨진다(claude-review PR #759 P1).
+      expect(buttons[0].querySelector('img')?.getAttribute('src')).toBe(`/assets/landing/hero-${layout.id}.webp`);
     }
     expect(within(landing()).queryAllByRole('button', { name: /^35mm Wide 무드로 바로 시작/ })).toHaveLength(0);
   });
