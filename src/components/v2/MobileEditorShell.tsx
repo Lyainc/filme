@@ -1096,8 +1096,6 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
             }}
             dropProps={posterDropProps}
             dragOver={posterDragOver}
-            heroMovieInfo={photo.state.movieInfo}
-            heroComponents={previewComponents}
           >
             <OcrUploadCard
               setInfo={photo.updateMovieInfo}

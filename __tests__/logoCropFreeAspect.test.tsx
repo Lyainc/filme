@@ -62,8 +62,11 @@ const aspectOf = (el: HTMLElement) => Number(el.getAttribute('data-aspect'));
 // 업로드 이미지의 자연 크기를 <img>에 스텁하고 load 이벤트를 흘려 ImageCropModal의
 // onImageLoad(mediaAspect 계산 → 크롭 초기화)를 실제로 태운다. 모달은 createPortal로 폰 프레임
 // (없으면 document.body, #606)에 붙으므로 render()의 container가 아니라 document 전체에서 찾는다.
+// role="dialog"로 스코프한다 — document 전체에서 첫 <img>를 집으면 랜딩 히어로 갤러리(#613
+// 정적 자산 전환 뒤 실제 <img> 5장을 그린다)가 아직 떠 있는 셸 하네스 플로우에서 엉뚱한 이미지를
+// 잡는다.
 function loadImage(naturalWidth: number, naturalHeight: number) {
-  const img = document.querySelector('img') as HTMLImageElement;
+  const img = screen.getByRole('dialog').querySelector('img') as HTMLImageElement;
   Object.defineProperty(img, 'naturalWidth', { value: naturalWidth, configurable: true });
   Object.defineProperty(img, 'naturalHeight', { value: naturalHeight, configurable: true });
   Object.defineProperty(img, 'width', { value: naturalWidth, configurable: true });
