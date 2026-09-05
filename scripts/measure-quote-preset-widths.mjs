@@ -58,7 +58,7 @@ const TARGETS = [
   { quoteFont: 'eunyoung', id: 'eunyoung', label: '은영', stack: 'var(--font-eunyoung), cursive', fontStyle: 'normal', scale: 1.238 },
   { quoteFont: 'brush', id: 'brush', label: '붓', stack: 'var(--font-brush), cursive', fontStyle: 'normal', scale: 1.25 },
   { quoteFont: 'coolguy', id: 'coolguy', label: '쿨가이', stack: 'var(--font-coolguy), cursive', fontStyle: 'normal', scale: 1.246 },
-  { quoteFont: 'flower', id: 'flower', label: '꽃길', stack: 'var(--font-flower), var(--font-sans), sans-serif', fontStyle: 'normal', scale: 1.25 },
+  { quoteFont: 'flower', id: 'flower', label: '꽃길', stack: 'var(--font-flower), var(--font-sans), "Pretendard Variable", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif', fontStyle: 'normal', scale: 1.25 },
 ];
 
 const BASE_FONT_SIZE = 50; // MoodCriterion.tsx: userTextFont(quoteText, components.quoteFont, 50)
