@@ -343,21 +343,25 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
             사라졌다): 텍스트 폭 = 960 − PAD 84×2 − 인셋 96×2 = 600px, 50px/1.28이라 한 줄 64px →
             2줄 128px로 190 안에 62px 남는다. 3줄이면 192px라 넘친다.
 
-            지금은 폰트가 9택(auto+8: gothic/batang/hand/ink/eunyoung/brush/coolguy/flower, #437)
-            이지만 **줄 높이는 폰트와 무관하다** — lineHeight가 배수라 다 64px다. 갈리는 건 한
-            줄에 몇 자가 들어가느냐뿐이라, 폰트별로 다시 잰 건 무줄바꿈 폭이다(브라우저 실측,
-            600px 폭, 2026-07-27 — 당시 4택이던 세리프/손글씨/고딕 3종만 커버, 이후 늘어난
-            batang/ink/eunyoung/coolguy/flower 5종은 아래 표에 없다):
-              · 프리셋 최장(영문 49자): 세리프 880 · 손글씨 820 · **고딕 1101px**
-              · 기본 quote(영문 44자): 766 / 705 / 979px
-            측정한 3종 중 최악이 고딕 프리셋 1101px(=1.84줄)이라 3줄이 되려면 1200px를 넘겨야
-            한다(여유 9%). 실제로 넘는 조합이 없어 프리셋·기본 quote는 안전하다 — 단 "고딕이
-            가장 넓다"는 이 3종 안에서만 참이다. #754 검증(2026-08-31)에서 무공백 최악 입력
-            기준으로 재보니 batang이 고딕보다 넓게 잡혔다(방법론이 이 표와 달라 절대값은 직접
-            비교 불가) — 프리셋은 사용자가 못 바꾸는 고정 문구라 당장 안전하지만(아래 클램프가
-            어차피 오버플로는 막는다), "어느 폰트가 최악이냐"를 근거로 새 프리셋 문구 길이를
-            정할 땐 9택 전체로 다시 재야 한다. 프리셋 문구를 늘리거나 fontSize·인셋을 건드려도
-            마찬가지.
+            QuoteFont 9택(auto+8: gothic/batang/hand/ink/eunyoung/brush/coolguy/flower, #437)
+            **줄 높이는 폰트와 무관하다** — lineHeight가 배수라 다 64px다. 갈리는 건 한 줄에
+            몇 자가 들어가느냐뿐이라, 폰트별로 재는 건 무줄바꿈 폭이다(canvas measureText, 600px
+            슬롯, `bun scripts/measure-quote-preset-widths.mjs`, 2026-09-05 — 9택 전체 × 프리셋
+            10종 + 기본 quote 재실측, #757. 구 표(2026-07-27, 3종만 커버)는 #437 크기 보정
+            배율 도입 **전** 값이라 배율이 1이 아닌 폰트(예: hand 1.25배)는 raw 50px 기준으로
+            재둬서 지금 렌더(hand는 62.5px)와 안 맞는다 — 새 표가 그 자리를 대신한다):
+              · 프리셋 최장(영문 50자, "the film every other film will be measured against")
+                auto 880 · gothic 1094 · **batang 1125** · hand 1025 · ink 937 · eunyoung 1038 ·
+                brush 1032 · coolguy 860 · flower 839px
+              · 기본 quote(영문 45자) auto 766 · gothic 974 · batang 983 · hand 882 · ink 812 ·
+                eunyoung 894 · brush 930 · coolguy 751 · flower 745px
+            9택 전부에서 프리셋 최장이 기본 quote보다 넓다 — 글자 수만으로 최악을 골라도
+            안전하다는 뜻. 최악은 더 이상 고딕이 아니라 **batang 1125px**(=1.88줄, 3줄 문턱
+            1200px에 여유 6.2%) — #754가 다른 방법론으로 이미 봤던 "batang이 gothic보다 넓다"가
+            여기서 같은 방법으로 확인됐다. "고딕이 가장 넓다"던 옛 단정은 근거 부족이었을 뿐
+            결론은 안 바뀐다 — 9택 전부 1200px 미만이라 프리셋·기본 quote는 여전히 안전하다
+            (margin 최소 6.2%). 프리셋 문구를 늘리거나 fontSize·인셋을 건드리면 위 스크립트를
+            다시 돌려 표를 갱신할 것.
 
             따옴표 104 → QUOTE_MARK_SIZE 125 재실측(브라우저, 자연px, 6조합):
               · 따옴표 span 박스 40×125 — 텍스트 인셋 96 안이라 인셋을 키울 필요가 없었다(104에선 33×104)
