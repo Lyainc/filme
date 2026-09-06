@@ -71,7 +71,7 @@ const PAD_X = 56;
 const POSTER_H = 640;
 
 /**
- * 배경 스탬프(#530→#728→#753) 고정 박스 — 페이퍼 스텁의 Admission/The Film 두 섹션 사이 빈
+ * 배경 스탬프(#530→#728→#753→#761) 고정 박스 — 페이퍼 스텁의 Admission/The Film 두 섹션 사이 빈
  * 구간 안. #753이 섹션 간 여백 배분을 space-evenly에서 flex:1 스페이서 두 개(Admission-Film
  * 사이·Film-푸터 사이)로 바꾸면서 이 구간 자체가 이동해 옛 y1188..1230이 RATED 값("★ 3.5")과
  * 겹쳤다(headless Chrome 실측, 2026-08-30) — 재캡처로 다시 잡았다: HALL 값 텍스트 바닥 y≈1013,
@@ -80,17 +80,30 @@ const POSTER_H = 640;
  * (904 = 960 - PAD_X)에 맞춰 604..904. 포스터 밴드(y<656)·바코드(y1468~)·워드마크와도 안 겹친다.
  * 이 박스는 두 섹션이 안 겹치는 자리를 실측으로 찾은 결과라 POSTER_H 등 다른 상수에서 유도되지
  * 않는다 — 페이퍼 스텁 레이아웃(Row/SectionHead 구성·섹션 간 여백 배분)이 바뀌면 다시 재야 한다.
- * Admission 필드를 전부 꺼서 Film이 divider를 곧바로 무는 조합도 실측했다 — 이 경우 Film이 옛
- * Admission 자리(y854~874)로 당겨 올라와 PATTERN_BOX보다 한참 위에서 끝나 안 겹친다(코드리뷰
- * 지적으로 확인, 2026-08-30). 스파스 Admission 조합(SEAT만·DATE/TIME만·HALL만 켜짐) 실측 완료,
- * 안전 확인(#755) — capture-export.mjs --field-off(신설)로 세 조합을 각각 캡처해 The Film 섹션
- * 헤드 top을 쟀다: SEAT만 y1185.8, DATE/TIME만 y1191.8, HALL만 y1185.8(전부 켜짐 기준 y1191.8과
- * 최대 6px 차이). PATTERN_BOX 바닥(y1102)까지 여유가 셋 다 83.8px 이상이라 겹치지 않는다 —
- * SEAT 칩이 alignItems:stretch로 Admission 블록 높이를 사실상 고정하고, Row 한두 줄만 남아도 그
- * 높이 근방이라 필드 하나만 꺼도 스페이서 재분배 폭이 작다(전부 꺼짐의 y854~874 극단과 달리
- * SectionHead 자체는 계속 서 있어 삭제되는 콘텐츠가 적다). 다만 이 박스는 여전히 6종 예시 티켓
- * 기준 리터럴이라 임의의 필드 조합·긴 값까지 수학적으로 보장하진 않는다 —
- * capture-export.mjs --full-fields --field-off가 최종 권위다.
+ * 스파스 Admission 조합(SEAT만·DATE/TIME만·HALL만 켜짐, filmOn은 그대로 true) 실측 완료, 안전
+ * 확인(#755) — The Film 섹션 헤드 top: SEAT만 y1185.8, DATE/TIME만 y1191.8, HALL만 y1185.8
+ * (전부 켜짐 기준 y1191.8과 최대 6px 차이). PATTERN_BOX 바닥(y1102)까지 여유가 전부 83.8px
+ * 이상이라 겹치지 않는다 — 이 조합들은 admissionOn·filmOn이 둘 다 true라 아래 #761 분기 밖이다.
+ *
+ * **#761(Admission·Film 스페이서 대칭화)이 이 박스의 전제 하나를 깼다.** admissionOn·filmOn
+ * 중 정확히 하나만 켜지면(XOR) 그 섹션 앞에도 leading spacer가 서서, 예전에 "그 섹션이 divider를
+ * 곧바로 문다"고 가정했던 두 조합(Admission 전부 꺼짐·Film 전부 꺼짐)이 전부 아래로 밀린다.
+ * 처음 재실측(capture-export.mjs --field-off, ghost 모드는 그대로 켠 채)은 y1185.8을 얻어
+ * "회귀 없음"으로 오판했었다 — showFieldGhost가 ghost===true일 땐 필드를 꺼도(fieldVisibility
+ * false) dim placeholder를 계속 돌려줘 admissionOn이 실제로는 안 꺼졌기 때문(코드리뷰 gap 분석,
+ * 2026-09-06). `--ghost-off`(신설, 편집 메뉴 '빈 항목' 토글을 실제로 끈다)로 진짜 XOR 상태를
+ * 재니 그림이 달랐다:
+ *   · Film-only(Admission 완전 꺼짐, --full-fields --field-off seat,watchDate,watchTime,screen
+ *     --ghost-off): filmHeadTop 1112.5 — PATTERN_BOX 바닥(1102)까지 여유 10.5px, 안 겹치지만
+ *     스파스 조합의 83.8px보다 훨씬 빠듯하다.
+ *   · Admission-only(Film 완전 꺼짐, --field-off releaseDate --ghost-off, Admission은 SEAT+
+ *     DATE/TIME/HALL 풀 콘텐츠): admissionHeadTop **1082** — PATTERN_BOX(1060~1102) **안쪽**이라
+ *     실제로 겹친다.
+ * 두 갈래 다 안전 마진이 스파스 조합과 질적으로 다르고, 리터럴 좌표 하나로 두 갈래·풀 콘텐츠까지
+ * 전부 커버할 여유 창이 좁아(겹치는 쪽까지 있으니 아예 없어) 좌표를 옮기는 대신 **이 XOR 조건에서
+ * 배경 패턴 자체를 끈다**(`bgPatternSafe`, 아래) — 장식 기능이라 드물게 사라지는 쪽이 겹쳐서
+ * 보이는 쪽보다 안전하다. 그래서 PATTERN_BOX 좌표 자체(y1060~1102)는 안 바뀌었고, 위 스파스·
+ * 둘 다 켜짐 실측도 그대로 유효하다 — bgPatternSafe가 꺼지는 조합에서만 이 좌표가 안 쓰인다.
  */
 const PATTERN_BOX = { left: 604, top: 1060, width: 300, height: 42 };
 
@@ -101,6 +114,8 @@ const rowLabel: CSSProperties = { fontFamily: FONT_MONO, fontSize: 13, letterSpa
 const dottedFill: CSSProperties = { flex: 1, minWidth: 12, borderBottom: `1px dotted ${DOT}` };
 const rowValue = (size = 24): CSSProperties => ({ fontWeight: 700, fontSize: size, letterSpacing: -0.3, flexShrink: 0 });
 const sectionLabel: CSSProperties = { fontFamily: FONT_MONO, fontWeight: 800, fontSize: 13, letterSpacing: 3, textTransform: 'uppercase' };
+// Admission-Film 사이·Film-푸터 사이·(#761) 단독 섹션 앞 세 자리가 공유하는 spacer 스타일.
+const SPACER: CSSProperties = { flex: 1, minHeight: 24 };
 
 /** label + 점선 필러 + 값 한 줄(DATE/TIME/HALL/RUNTIME/RATED/…). 값 노드는 호출부가 FieldTap로 감싼다. */
 function Row({ label, children }: { label: string; children: ReactNode }) {
@@ -194,6 +209,20 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
     seatVal || gSeat || watchDateVal || gWatchDate || watchTimeVal || gWatchTime || screenCell.hasAny;
   const filmOn =
     runtimeVal || gRuntime || ratingVisible || gRating || releaseVal || gRelease || reissueVal || actorsVal || gActors;
+  // 레이아웃 판정(spacer·PATTERN_BOX)은 ghost 포함 admissionOn/filmOn이 아니라 "진짜" 값으로 해야
+  // 한다(code-review 지적, #761). ghost=true(에디터 기본값)면 필드를 꺼도 dim placeholder가
+  // admissionOn을 계속 true로 만드는데, 내보내기 화면(ResultPanel의 TicketRenderer)은 ghost를
+  // 아예 안 넘겨 항상 false다 — 그래서 이 둘을 그대로 spacer/패턴 조건에 쓰면 에디터에서 보던
+  // 배치·배경 패턴이 "완료" 누르는 순간 조용히 달라진다. gSeat 등 ghost 항을 뺀 순수 값으로만
+  // 판정해 에디터 미리보기와 내보내기 결과가 항상 같은 배치를 보게 한다(콘텐츠 렌더 자체는 여전히
+  // admissionOn/filmOn을 쓴다 — ghost placeholder를 보여주는 건 맞는 동작이라 그대로 둔다).
+  const admissionReal = !!(seatVal || watchDateVal || watchTimeVal || screenCell.hasAny);
+  const filmReal = !!(runtimeVal || ratingVisible || releaseVal || reissueVal || actorsVal);
+  // 정확히 하나만 진짜로 켜졌을 때만 leading spacer가 서고(#761), 같은 조건에서 PATTERN_BOX가
+  // 실측상 위험해 배경 패턴을 끈다(bgPatternSafe) — 두 조건이 서로의 부정이라 하나로 묶어
+  // 어긋날 여지를 없앤다(code-review 지적).
+  const exactlyOneSectionOn = admissionReal !== filmReal;
+  const bgPatternSafe = !exactlyOneSectionOn;
 
   const componentOpacity = components.componentOpacity ?? 1;
 
@@ -209,12 +238,14 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
           그래서 페이퍼 스텁이 PAPER를 다시 칠하면 배경이 종이 어디에도 안 보여, 그 중복 배경은
           루트 하나로 합쳤다. 여기에 불투명한 장식을 새로 넣어 배경을 가리려면 순서가 아니라
           position을 줘야 한다. */}
-      <BackgroundPatternLayer
-        image={components.backgroundPatternImage}
-        box={PATTERN_BOX}
-        scale={components.backgroundPatternScale ?? 1}
-        opacity={components.backgroundPatternOpacity ?? 1}
-      />
+      {bgPatternSafe && (
+        <BackgroundPatternLayer
+          image={components.backgroundPatternImage}
+          box={PATTERN_BOX}
+          scale={components.backgroundPatternScale ?? 1}
+          opacity={components.backgroundPatternOpacity ?? 1}
+        />
+      )}
       {/* 상단 포스터 — 텍스트 없음. 분할 레이아웃이라 root가 아닌 이 영역에만 포스터 탭(#259).
           배경은 Poster의 letterboxBg가 칠하므로 래퍼 자체엔 안 둔다(nit poster-letterbox-bg, #440 —
           editorial과 동일하게 죽은 스타일이던 래퍼 background 제거). */}
@@ -306,6 +337,10 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
             모으면 그게 더 큰 단일 공백이 돼 역효과였다(실측) — 그래서 Admission-Film 사이와
             Film-푸터 사이 두 flex:1로 절반씩(약 190px)만 나눠 갖는다. */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          {/* Admission·Film 중 하나만 켜지면 위 spacer가 사라져 여백이 끝 spacer 하나로 몰렸다(#761).
+              둘 다 켜졌을 때는(원 설계) 위 여백 없이 divider가 첫 섹션을 바로 물게 그대로 두고,
+              정확히 하나만 켜졌을 때만 그 섹션 앞에도 같은 크기 spacer를 세워 위아래를 맞춘다. */}
+          {exactlyOneSectionOn && <div style={SPACER} />}
           {/* Admission — SEAT 칩 + DATE/TIME/HALL */}
           {admissionOn && (
             <div>
@@ -354,7 +389,10 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
             </div>
           )}
 
-          {admissionOn && filmOn && <div style={{ flex: 1, minHeight: 24 }} />}
+          {/* ghost가 아니라 real 값으로 판정한다 — 안 그러면 에디터 미리보기(ghost=true)에서
+              admissionOn만 ghost로 켜진 채 filmReal이 다르면 위 leading spacer와 이 middle
+              spacer가 동시에 서서(3개) #761이 지키려는 "항상 spacer 2개" 불변식이 깨진다. */}
+          {admissionReal && filmReal && <div style={SPACER} />}
 
           {/* The Film — RUNTIME / RATED / RELEASED / RE-RELEASED 2열 + STARRING */}
           {filmOn && (
@@ -407,7 +445,7 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
             </div>
           )}
 
-          <div style={{ flex: 1, minHeight: 24 }} />
+          <div style={SPACER} />
         </div>
 
         {/* 푸터 — made with FILME · collected by 서명 + 스텁 바코드(300×40, 텍스트 없음) */}

@@ -54,6 +54,17 @@ describe('MoodStub 배경 스탬프 박스(PATTERN_BOX) 결합 (#746)', () => {
     expect(start).toBeGreaterThan(0);
     expect(end).toBeGreaterThan(start);
     const block = src.slice(start, end).trim();
-    expect(sha1(block)).toBe('386e6ba8e85a');
+    // 해시 갱신 이력: #761(Admission/Film 스페이서 대칭화)이 이 구간을 바꿨다. 1차 재실측
+    // (--field-off만, ghost 모드는 켠 채)은 Film 헤드 y1185.8로 "안 겹침"이라 오판했는데,
+    // ghost===true면 꺼진 필드도 dim placeholder를 계속 반환해 admissionOn이 실제로는 안 꺼진
+    // 상태를 잰 것이었다(코드리뷰 gap 분석) — `--ghost-off`로 진짜 XOR 상태를 재니 Film-only는
+    // 여유 10.5px, Admission-only(풀 콘텐츠)는 PATTERN_BOX와 실제로 겹침(admissionHeadTop 1082 <
+    // 바닥 1102)을 확인했다. 좌표를 옮기는 대신 이 XOR 조건에서 배경 패턴 자체를 끄는
+    // `bgPatternSafe` 게이트를 추가해 해결. 이어서 2차 코드리뷰가 spacer·bgPatternSafe 조건이
+    // 여전히 ghost 포함 admissionOn/filmOn을 쓰는 걸 지적(에디터 미리보기 ghost=true vs 내보내기
+    // ghost=false가 갈리면 배치·패턴이 "완료" 누르는 순간 달라짐) — admissionReal/filmReal(ghost
+    // 제외) + 단일 exactlyOneSectionOn으로 통일하고 spacer 스타일도 SPACER 상수로 묶어 해시가 또
+    // 갱신됨. 두 실측 좌표(1112.5·1082)는 그 캡처가 애초에 --ghost-off였어서 안 바뀐다.
+    expect(sha1(block)).toBe('a435ef91a22c');
   });
 });

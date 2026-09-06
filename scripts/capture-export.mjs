@@ -12,6 +12,7 @@
  *   bun scripts/capture-export.mjs --layout stub --field-off watchDate,watchTime,screen --out /tmp/stub-seat-only.jpg
  *   bun scripts/capture-export.mjs --layout stub --field-off seat,screen --out /tmp/stub-datetime-only.jpg
  *   bun scripts/capture-export.mjs --layout stub --field-off seat,watchDate,watchTime --out /tmp/stub-hall-only.jpg
+ *   bun scripts/capture-export.mjs --layout stub --full-fields --field-off seat,watchDate,watchTime,screen --ghost-off --out /tmp/stub-admission-off.jpg
  *   bun scripts/capture-export.mjs --layout editorial --bg --bg-scale 1.5 --out /tmp/bg15.jpg
  *   bun scripts/capture-export.mjs --lasso --out /tmp/lasso.jpg
  *   bun scripts/capture-export.mjs --emboss --lasso --out /tmp/brush-and-lasso.jpg
@@ -467,21 +468,24 @@ async function switchLayout(page, label) {
 }
 
 /**
- * `--field-off <csv>`(#755) — Admission 하위 필드를 개별로 끄는 오버라이드. 나열한 필드만
+ * `--field-off <csv>`(#755 → #761) — 필드를 개별로 끄는 오버라이드. 나열한 필드만
  * `fieldVisibility[f]=false`로 심고 나머진 PersistedState 기본값(ALL_FIELDS_ON)을 그대로 둔다
  * (usePhototicket.ts의 `{ ...prev.fieldVisibility, ...(saved.fieldVisibility ?? {}) }` 병합이
  * 그 전제) — 그래서 아무것도 안 주면 기존 --full-fields 캡처와 동일하게 fieldVisibility 자체가
  * seed에 안 실려 회귀가 없다. `screen`을 끄면 `theater`도 같이 끈다 — MoodStub의 HALL 행은
  * theater·screen 두 값을 fieldPieces로 합성해서(_shared.tsx), screen만 꺼도 theater 값이 남으면
- * HALL 행이 그대로 산다. theater는 이 네 필드 목록에 없는 다섯 번째 필드라 독립 플래그를 안 열고
- * screen에 묶는다.
+ * HALL 행이 그대로 산다. theater는 admission 네 필드 목록에 없는 다섯 번째 필드라 독립 플래그를
+ * 안 열고 screen에 묶는다. `releaseDate`(#761)는 admission이 아니라 filmOn 쪽 — base seed가
+ * releaseDate:'2014'를 항상 심어서(fullFields 무관) --full-fields 없이도 filmOn이 releaseVal
+ * 하나로 계속 true였는데, 이걸 끄면(runtime/rating/actors/reissue는 --full-fields 없이는 애초에
+ * unset) filmOn을 admission은 안 건드리고 끌 수 있다 — Admission-only 조합을 만드는 유일한 길.
  */
-const ADMISSION_FIELDS = ['seat', 'watchDate', 'watchTime', 'screen'];
+const SUPPORTED_FIELD_OFF = ['seat', 'watchDate', 'watchTime', 'screen', 'releaseDate'];
 function buildFieldVisibilityOverride(fieldOff) {
   const overrides = {};
   for (const f of fieldOff) {
-    if (!ADMISSION_FIELDS.includes(f)) {
-      throw new Error(`--field-off는 admission 하위 필드만 지원: ${f} (허용: ${ADMISSION_FIELDS.join(',')})`);
+    if (!SUPPORTED_FIELD_OFF.includes(f)) {
+      throw new Error(`--field-off 지원 필드: ${f} (허용: ${SUPPORTED_FIELD_OFF.join(',')})`);
     }
     overrides[f] = false;
     if (f === 'screen') overrides.theater = false;
@@ -490,29 +494,39 @@ function buildFieldVisibilityOverride(fieldOff) {
 }
 
 /**
- * stub 무드 전용 실측(#755) — PATTERN_BOX(MoodStub.tsx, 고정 y1060~1102)와 "The Film" 섹션
- * 헤드 사이 겹침을 판정하려면 헤드의 자연 픽셀(960 캔버스 기준) top이 필요하다.
+ * stub 무드 전용 실측(#755 → #761) — PATTERN_BOX(MoodStub.tsx, 고정 y1060~1102)와 Admission/
+ * The Film 섹션 헤드 사이 겹침을 판정하려면 두 헤드의 자연 픽셀(960 캔버스 기준) top이 필요하다.
  * `data-ticket-scale-wrapper`(TicketRenderer.tsx)가 natural-pixel 루트고 `transform:scale()`만
  * 걸려 있어, `offsetWidth`(변환 전 레이아웃 폭)와 `getBoundingClientRect().width`(변환 후 렌더
  * 폭)의 비가 곧 현재 프리뷰 배율이다 — 그 배율로 나누면 배율과 무관한 자연 픽셀 좌표가 나온다.
+ * Admission 헤드는 admissionOn이 false면 DOM에 없으므로 못 찾으면 null.
  */
 async function measureStubFilmHead(page) {
   await page.evaluate(() => document.fonts.ready);
   return page.evaluate(() => {
     const wrapper = document.querySelector('[data-ticket-scale-wrapper]');
-    const filmHead = [...document.querySelectorAll('span')].find((el) => el.textContent.trim() === 'The Film');
-    if (!wrapper || !filmHead) return null;
+    if (!wrapper) return null;
     const wRect = wrapper.getBoundingClientRect();
-    const fRect = filmHead.getBoundingClientRect();
     const scale = wRect.width / wrapper.offsetWidth;
+    const headRect = (text) => {
+      const el = [...document.querySelectorAll('span')].find((e) => e.textContent.trim() === text);
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return { top: +((r.top - wRect.top) / scale).toFixed(1), bottom: +((r.bottom - wRect.top) / scale).toFixed(1) };
+    };
+    const film = headRect('The Film');
+    const admission = headRect('Admission');
+    if (!film && !admission) return null;
     return {
-      filmHeadTop: +((fRect.top - wRect.top) / scale).toFixed(1),
-      filmHeadBottom: +((fRect.bottom - wRect.top) / scale).toFixed(1),
+      filmHeadTop: film?.top ?? null,
+      filmHeadBottom: film?.bottom ?? null,
+      admissionHeadTop: admission?.top ?? null,
+      admissionHeadBottom: admission?.bottom ?? null,
     };
   });
 }
 
-async function capture({ layout, material, coating, intensity, bg, bgScale, fullFields, fieldOff, emboss, lasso, relief, switchTo, toggleFill, out, timeoutMs }) {
+async function capture({ layout, material, coating, intensity, bg, bgScale, fullFields, fieldOff, ghostOff, emboss, lasso, relief, switchTo, toggleFill, out, timeoutMs }) {
   const seed = {
     movieInfo: {
       title: '인터스텔라',
@@ -628,6 +642,18 @@ async function capture({ layout, material, coating, intensity, bg, bgScale, full
       }, text);
       if (!ok) throw new Error(`버튼을 못 찾음: ${text}`);
     };
+    // clickByText와 같은 계약(찾아서 클릭, 없으면 던짐)을 CSS selector로 — 편집 메뉴 햄버거처럼
+    // 텍스트가 아니라 aria-label로만 특정되는 요소(코드리뷰 지적: silent-swallow 방지 + 세 단계
+    // 모두 같은 에러 처리로 통일).
+    const clickBySelector = async (selector, label) => {
+      const ok = await page.evaluate((sel) => {
+        const b = document.querySelector(sel);
+        if (!b) return false;
+        b.click();
+        return true;
+      }, selector);
+      if (!ok) throw new Error(`버튼을 못 찾음: ${label} (${selector})`);
+    };
     await page.waitForFunction(
       () => [...document.querySelectorAll('button')].some((b) => b.textContent.trim() === '적용'),
       { timeout: 30000 },
@@ -637,6 +663,23 @@ async function capture({ layout, material, coating, intensity, bg, bgScale, full
     await sleep(1500);
 
     mark('cropped');
+    // `--ghost-off`(#761) — `--field-off`는 fieldVisibility만 끄는데, ghost 모드(MobileEditorShell
+    // ghostMode, 기본 true)가 켜진 채면 showFieldGhost가 숨긴 필드에도 dim placeholder를 계속
+    // 반환해 admissionOn/filmOn이 실제로는 안 꺼진다(gap-761 리뷰가 실측으로 확인) — PATTERN_BOX
+    // 겹침처럼 "그 섹션이 진짜로 꺼진 상태"를 재려면 이 토글도 같이 꺼야 한다.
+    if (ghostOff) {
+      // `button[aria-label="편집 메뉴"]`로 태그까지 좁힌다 — 메뉴가 열리면 패널 div(#editor-menu-panel)도
+      // 같은 aria-label을 써서(MobileEditorShell.tsx) 태그 없이 찾으면 DOM 순서에 우연히 기대게 된다
+      // (코드리뷰 지적). '빈 항목' 텍스트 대신 ariaLabel="빈 항목 미리보기"로 매칭하는 것도 같은 이유 —
+      // COPY_TONE_GUIDE 톤 정비로 라벨 문구가 바뀔 수 있지만 접근성 계약은 더 안정적이다.
+      await clickBySelector('button[aria-label="편집 메뉴"]', '편집 메뉴 햄버거');
+      await sleep(300);
+      await clickBySelector('[aria-label="빈 항목 미리보기"]', '빈 항목 토글');
+      await sleep(300);
+      await clickBySelector('button[aria-label="편집 메뉴"]', '편집 메뉴 닫기(같은 버튼 재클릭)');
+      await sleep(300);
+      mark('ghostOff');
+    }
     const stubMeasure = layout === 'stub' ? await measureStubFilmHead(page) : null;
     if (emboss) {
       await paintEmboss(page);
@@ -743,6 +786,7 @@ if (cmpIdx >= 0) {
     bgScale: Number(arg('bg-scale', '1')),
     fullFields: argv.includes('--full-fields'),
     fieldOff: (arg('field-off', '') || '').split(',').filter(Boolean),
+    ghostOff: argv.includes('--ghost-off'),
     emboss: argv.includes('--emboss'),
     lasso: argv.includes('--lasso'),
     relief: argv.includes('--relief'),

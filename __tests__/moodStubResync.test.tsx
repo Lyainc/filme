@@ -155,6 +155,91 @@ describe('MoodStub 마스터 resync (#281)', () => {
     expect(spacerCount).toBe(2);
   });
 
+  // Admission·Film 중 하나만 켜지면 옛 중간 spacer(admissionOn && filmOn 조건부)가 사라져
+  // 여백이 끝 spacer 하나로 몰렸다(#761) — 위쪽에도 대칭 spacer를 세워 고쳤다.
+  describe('Admission·Film 한쪽만 켜짐 — spacer 대칭(#761)', () => {
+    test('Admission만 켜짐 — spacer 2개, 하나는 Admission 앞', () => {
+      const html = renderToStaticMarkup(
+        <MoodStub
+          movieInfo={{ ...FULL_MOVIE, runtime: '', rating: 0, releaseDate: '', isReissue: false, reissueDate: '', actors: '' }}
+          components={BASE}
+          croppedImageUrl="blob:x"
+          onField={() => {}}
+        />
+      );
+      expect(html).not.toContain('The Film');
+      const spacerCount = (html.match(/flex:1;min-height:24px/g) || []).length;
+      expect(spacerCount).toBe(2);
+      const firstSpacerIdx = html.indexOf('flex:1;min-height:24px');
+      expect(firstSpacerIdx).toBeGreaterThan(-1);
+      expect(firstSpacerIdx).toBeLessThan(html.indexOf('>Admission<'));
+    });
+
+    test('Film만 켜짐 — spacer 2개, 하나는 The Film 앞', () => {
+      const html = renderToStaticMarkup(
+        <MoodStub
+          movieInfo={{ ...FULL_MOVIE, seat: '', watchDate: '', watchTime: '', theater: '', screen: '' }}
+          components={BASE}
+          croppedImageUrl="blob:x"
+          onField={() => {}}
+        />
+      );
+      expect(html).not.toContain('>Admission<');
+      const spacerCount = (html.match(/flex:1;min-height:24px/g) || []).length;
+      expect(spacerCount).toBe(2);
+      const firstSpacerIdx = html.indexOf('flex:1;min-height:24px');
+      expect(firstSpacerIdx).toBeGreaterThan(-1);
+      expect(firstSpacerIdx).toBeLessThan(html.indexOf('>The Film<'));
+    });
+
+    // 실측(capture-export.mjs --ghost-off, 2026-09-06) 결과 이 XOR 조합에서 PATTERN_BOX가 실제로
+    // 겹친다(Admission-only) — 좌표를 옮기는 대신 이 조합에서 배경 패턴 자체를 끈다(bgPatternSafe).
+    const withBgPattern = (movieInfo: typeof FULL_MOVIE) =>
+      renderToStaticMarkup(
+        <MoodStub
+          movieInfo={movieInfo}
+          components={{ ...BASE, backgroundPatternImage: 'blob:bg' }}
+          croppedImageUrl="blob:x"
+          onField={() => {}}
+        />
+      );
+
+    test('Admission만 켜짐 — PATTERN_BOX 배경 패턴이 안 뜬다(겹침 회귀)', () => {
+      const html = withBgPattern({ ...FULL_MOVIE, runtime: '', rating: 0, releaseDate: '', isReissue: false, reissueDate: '', actors: '' });
+      expect(html).not.toContain('data-bg-pattern');
+    });
+
+    test('Film만 켜짐 — PATTERN_BOX 배경 패턴이 안 뜬다(여유 10.5px로 빠듯함)', () => {
+      const html = withBgPattern({ ...FULL_MOVIE, seat: '', watchDate: '', watchTime: '', theater: '', screen: '' });
+      expect(html).not.toContain('data-bg-pattern');
+    });
+
+    test('둘 다 켜짐 — PATTERN_BOX 배경 패턴이 그대로 뜬다(회귀 아님)', () => {
+      const html = withBgPattern(FULL_MOVIE);
+      expect(html).toContain('data-bg-pattern');
+    });
+
+    // code-review 지적 — spacer·bgPatternSafe가 ghost 포함 admissionOn/filmOn을 쓰면 에디터
+    // 미리보기(ghost=true 기본값)와 내보내기(ResultPanel의 TicketRenderer, ghost 안 넘김→false)가
+    // 다른 배치를 보여준다. Admission을 진짜로 비우되 ghost=true로 렌더하면(placeholder가
+    // "Admission"을 여전히 그린다) admissionReal/filmReal 기준 판정이 유지되는지 — 안 그러면
+    // leading spacer(real 기준)와 middle spacer(옛 ghost 기준)가 동시에 서서 spacer 3개가 된다.
+    test('Admission 진짜 비었지만 ghost=true — spacer는 여전히 2개(real 기준 판정)', () => {
+      const html = renderToStaticMarkup(
+        <MoodStub
+          movieInfo={{ ...FULL_MOVIE, seat: '', watchDate: '', watchTime: '', theater: '', screen: '' }}
+          components={BASE}
+          croppedImageUrl="blob:x"
+          onField={() => {}}
+          ghost
+        />
+      );
+      expect(html).toContain('>Admission<'); // ghost placeholder라 헤딩 자체는 그대로 뜬다
+      const spacerCount = (html.match(/flex:1;min-height:24px/g) || []).length;
+      expect(spacerCount).toBe(2); // 3개(leading+middle+trailing)면 real/ghost 판정이 다시 갈린 것
+    });
+  });
+
   // 배우 폭 인식 truncate(#493) — 고정 count 캡(옛 max=5) 폐기, STARRING 값 가용폭(700px) 기준.
   describe('배우 truncate — 폭 인식(#493, 고정 count 캡 대체)', () => {
     // 가짜 canvas measureText를 심어야 truncateActorsToWidth의 실제 폭 계산 경로를 태운다
