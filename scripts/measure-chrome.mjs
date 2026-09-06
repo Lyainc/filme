@@ -497,9 +497,28 @@ try {
   // 안 되고, 그렇다고 "새로 시작" 네 경로로 들어가면 문서가 새 문서로 되돌아가(c7) 이 페이지가
   // 심어둔 title·titleOg·releaseDate가 사라져 완료 게이트가 안 선다 — 결과 스테이지 축이 통째로
   // 죽는다. 이어받기는 그 둘을 동시에 만족하는 유일한 경로다.
-  await page.evaluate(() => document.querySelector('[data-testid="landing-restore"]')?.click());
-  // 실패해도 던지지 않는다 — 위 축이 이미 pass:false로 exit 1을 내고, 여기서 throw하면 나머지 축
-  // (dock·프리뷰·frameFit·대비·모달) 진단까지 같이 날아간다. 파괴 실험에서 실제로 그랬다.
+  //
+  // #756 — 예전엔 `querySelector(...)?.click()`으로 셀렉터를 아예 못 찾아도 조용히 no-op하고
+  // 계속 진행했다. 파괴 실험으로 재현(data-testid를 존재하지 않는 값으로 변경): 조용히 넘어간 뒤
+  // 15초 넘게 흐른 다음 `result-ambient` 대기에서 **엉뚱한 셀렉터 이름으로** uncaught
+  // TimeoutError가 떠 진짜 원인(landing-restore 실종)을 가린다. capture-export.mjs(#751)와
+  // puppeteer-core 버전(25.4.0)·launch 옵션(`--no-sandbox --force-device-scale-factor=1`)·
+  // newPage() 라이프사이클이 전부 같아 실행 컨텍스트 차이는 이유가 못 되므로, capture-export.mjs
+  // 처럼 셀렉터가 DOM에 없으면 여기서 바로 던지도록 맞춘다.
+  //
+  // 단 `visible: true`는 안 쓴다 — capture-export.mjs와 달리 이 스크립트는 #727 파괴 실험
+  // (CLAUDE.md 실측: 삭제된 `html.has-draft [data-testid='landing'].fixed { display:none }`을
+  // 되살리는 것)을 이 자리에서 통과시켜야 한다. 그 실험에서 랜딩 오버레이 전체가 display:none이
+  // 되면 `landing-restore` 버튼은 DOM엔 있지만(그래서 클릭은 여전히 먹는다) 조상이 안 그려지니
+  // puppeteer 기준 "visible"은 아니다 — `visible:true`를 걸면 여기서 10초 뒤 무조건 던져
+  // CLAUDE.md가 실측 보증한 "나머지 축 8종은 true로 남는다"를 깨버린다. DOM 존재 여부만 보고,
+  // 클릭도 `page.click`(실제 히트테스트) 대신 이 파일의 다른 클릭들과 같은 방식인
+  // `el.click()`(조상 표시 여부 무관하게 항상 먹는다)으로 통일한다.
+  await page.waitForSelector('[data-testid="landing-restore"]', { timeout: 10000 });
+  await page.evaluate(() => document.querySelector('[data-testid="landing-restore"]').click());
+  // 클릭까지는 됐는데 [data-testid="landing"]이 실제로 안 걷힌 경우(onRestore 미동작)도 같은
+  // 이유로 던진다 — #727 실험은 랜딩이 애초에 display:none이라 이 대기가 즉시 통과하므로 여기서
+  // 걸리지 않는다. 걸린다면 진짜로 아래 축 전부가 이 page의 랜딩-걷힘을 전제해 못 쓰는 상태다.
   landingShownOnDraft.dismissed = await page
     .waitForFunction(
       () => getComputedStyle(document.querySelector('[data-testid="landing"]')).display === 'none',
@@ -507,10 +526,9 @@ try {
     )
     .then(() => true)
     .catch(() => false);
-  // **게이트에 싣는다**(#714 — "잰다"와 "게이트에 실린다"는 다르다). 안 실으면 onRestore가 랜딩을
-  // 못 걷어도 pass는 위 evaluate 시점 값 그대로 true이고, 아래 축 전부가 `el.click()`(fixed
-  // 오버레이가 안 가로챈다)으로 계속 돌아 "숫자는 멀쩡한데 화면은 랜딩인 채로" exit 0이 난다.
-  landingShownOnDraft.pass = landingShownOnDraft.pass && landingShownOnDraft.dismissed;
+  if (!landingShownOnDraft.dismissed) {
+    throw new Error('랜딩 복원 클릭 후에도 [data-testid="landing"]이 안 걷힘 (onRestore 미동작)');
+  }
 
   // 흰 포스터 = 대비 최악 케이스(#569가 세운 기준과 동일). ImageMagick 없이 canvas로 만든다.
   await page.evaluate(async () => {
