@@ -647,7 +647,14 @@ try {
   // ── max 모드 — 티켓만 남는 fixed inset-0 오버레이. 라벨 붙은 건 안쪽 티켓 래퍼라
   // 부모(=오버레이 루트)를 잰다. 가로 무드는 안쪽이 rotate(90deg)라 안쪽을 재면 회전 박스가
   // 나온다(#609 판정 대상은 오버레이 자신).
-  await page.evaluate(() => document.querySelector('button[aria-label="최대화"]')?.click());
+  // #763(#756과 같은 클래스) — 최대화 버튼이 no-op하면 바로 다음 줄 '기본 크기로 돌아가기'
+  // 대기가 엉뚱한 셀렉터 이름으로 타임아웃 난다. 이 버튼은 FloatingToolbar가
+  // {canvasReady && !isMax && (...)} 조건부 렌더(MobileEditorShell.tsx:1244)이고, 툴바 자체가
+  // hidden prefs일 땐 다른 버튼으로 통째로 치환된다(FloatingToolbar.tsx:269) — 둘 다
+  // 언마운트/치환이라 랜딩(#727)처럼 노드는 남고 조상만 display:none인 케이스가 아니다.
+  // visible:true를 걸어도 다른 파괴 실험을 안 깬다.
+  await page.waitForSelector('button[aria-label="최대화"]', { timeout: 10000, visible: true });
+  await page.evaluate(() => document.querySelector('button[aria-label="최대화"]').click());
   await page.waitForSelector('[aria-label="기본 크기로 돌아가기"]', { timeout: 10000 });
   await sleep(300); // 진입 트랜지션이 끝난 rect를 잰다.
   await measureFit('max 모드 오버레이', 'div:has(> [aria-label="기본 크기로 돌아가기"])');
