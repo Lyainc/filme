@@ -862,8 +862,25 @@ try {
   // ── 결과 스테이지 · hero — 편집 화면을 떠나므로 맨 마지막에 잰다. ────────────
   // 루트엔 id가 없고 .app-canvas.chrome-dark는 다크 테마 편집 셸도 달고 있다(그리고 그 셸은
   // 결과 뒤에 hidden으로 남아 있다) — 결과 전용인 result-ambient의 부모를 루트로 쓴다.
+  // #763(#756과 같은 클래스, 그리고 #756 재현 실험에서 실제로 걸린 자리 — landing-restore를
+  // 존재하지 않는 값으로 바꾸면 크래시가 여기서 났다) — 완료가 no-op하면 다음 줄 result-ambient
+  // 15초 대기가 엉뚱한 셀렉터 이름으로 타임아웃 나서 완료 실종이 진짜 원인인 걸 가린다. 텍스트
+  // 매치라 waitForSelector(CSS 셀렉터)를 못 써서 이 파일의 다른 축(landingShownOnDraft.dismissed)과
+  // 같은 waitForFunction으로 존재만 먼저 확인한다. 이 버튼은 {canvasReady && (...)}
+  // (MobileEditorShell.tsx:727) 조건부 렌더라 안 뜨면 DOM에 아예 없다 — 랜딩(#727)처럼 노드는
+  // 남고 조상만 display:none인 케이스가 없다. 다만 offsetParent 같은 손수 만든 visible 판정은
+  // fixed 포지션 요소에서 오판하는 걸 앞선 두 자리에서 확인했고 여기 대체할 CSS 셀렉터도 없어,
+  // puppeteer 내장 visible 판정 없이 존재 확인만으로 그친다.
+  await page
+    .waitForFunction(
+      () => [...document.querySelectorAll('button')].some((b) => b.textContent?.trim() === '완료'),
+      { timeout: 10000 },
+    )
+    .catch(() => {
+      throw new Error('완료 버튼(텍스트 매치)을 못 찾음 — result-ambient 15초 타임아웃 전에 여기서 먼저 던진다(#763)');
+    });
   await page.evaluate(() =>
-    [...document.querySelectorAll('button')].find((b) => b.textContent?.trim() === '완료')?.click(),
+    [...document.querySelectorAll('button')].find((b) => b.textContent?.trim() === '완료').click(),
   );
   await page.waitForSelector('[data-testid="result-ambient"]', { timeout: 15000 });
   await sleep(600);
