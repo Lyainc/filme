@@ -630,7 +630,13 @@ try {
 
   // ── 필드 드로어 — 오른쪽 가장자리 핸들로 연다(플로팅 툴바 항목과 같은 setDrawerOpen). ──
   const drawerHandle = 'button[aria-label="티켓 항목 목록 열기"]';
-  await page.evaluate((s) => document.querySelector(s)?.click(), drawerHandle);
+  // #763(#756과 같은 클래스) — 핸들이 no-op하면 바로 다음 줄 드로어 대기가 엉뚱한 셀렉터
+  // 이름으로 타임아웃 나서 핸들 실종이 진짜 원인인 걸 가린다. 이 버튼은
+  // {canvasReady && !isMax && (...)} 조건부 렌더(MobileEditorShell.tsx:1178)라 안 뜨면 DOM에
+  // 아예 없다 — 랜딩(#727)처럼 노드는 남고 조상만 display:none인 케이스가 없어, puppeteer
+  // 내장 visible 판정(fixed 포지션도 정확히 다룬다)을 그대로 걸어도 다른 파괴 실험을 안 깬다.
+  await page.waitForSelector(drawerHandle, { timeout: 10000, visible: true });
+  await page.evaluate((s) => document.querySelector(s).click(), drawerHandle);
   // dynamic(ssr:false) 청크라 즉시 query하면 없다 — 뜰 때까지 기다린다.
   await page.waitForSelector('div[role=dialog][aria-label="티켓 항목"]', { timeout: 10000 });
   await sleep(300);
