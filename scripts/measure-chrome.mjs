@@ -876,7 +876,11 @@ try {
       () => [...document.querySelectorAll('button')].some((b) => b.textContent?.trim() === '완료'),
       { timeout: 10000 },
     )
-    .catch(() => {
+    .catch((error) => {
+      // code-review high 지적 — 여기서 무조건 던지면 페이지 크래시·네비게이션 같은 다른 원인까지
+      // "버튼을 못 찾음"으로 덮어써 이 이슈가 고치려는 것과 같은 오탐지를 새로 만든다. 타임아웃(=버튼이
+      // 끝까지 안 나타남)일 때만 이 메시지로 바꾸고, 그 외엔 원래 에러를 그대로 던진다.
+      if (error.name !== 'TimeoutError') throw error;
       throw new Error('완료 버튼(텍스트 매치)을 못 찾음 — result-ambient 15초 타임아웃 전에 여기서 먼저 던진다(#763)');
     });
   await page.evaluate(() =>
