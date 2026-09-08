@@ -516,9 +516,12 @@ try {
   // `el.click()`(조상 표시 여부 무관하게 항상 먹는다)으로 통일한다.
   await page.waitForSelector('[data-testid="landing-restore"]', { timeout: 10000 });
   await page.evaluate(() => document.querySelector('[data-testid="landing-restore"]').click());
-  // 클릭까지는 됐는데 [data-testid="landing"]이 실제로 안 걷힌 경우(onRestore 미동작)도 같은
-  // 이유로 던진다 — #727 실험은 랜딩이 애초에 display:none이라 이 대기가 즉시 통과하므로 여기서
-  // 걸리지 않는다. 걸린다면 진짜로 아래 축 전부가 이 page의 랜딩-걷힘을 전제해 못 쓰는 상태다.
+  // 클릭까지는 됐는데 [data-testid="landing"]이 실제로 안 걷힌 경우(onRestore 미동작)는 여기서
+  // 던지지 않는다 — code-review high + requirement-gap-reviewer 공통 지적(2026-09-09): 이 파일은
+  // `try {...} finally { browser.close() }`뿐이라 여기서 throw하면 catch가 없어 나머지 8+개 축
+  // (dock·프리뷰·frameFit·대비·모달·carousel·결과 스테이지)의 측정·JSON 출력이 통째로 스킵된다.
+  // CLAUDE.md가 실측 보증한 "나머지 축 8종은 true로 남는다"가 정확히 이 자리의 관대함
+  // (dismissed:false만 기록하고 계속 진행) 덕분이라, 아래 AND-게이트로 되돌린다.
   landingShownOnDraft.dismissed = await page
     .waitForFunction(
       () => getComputedStyle(document.querySelector('[data-testid="landing"]')).display === 'none',
@@ -526,9 +529,7 @@ try {
     )
     .then(() => true)
     .catch(() => false);
-  if (!landingShownOnDraft.dismissed) {
-    throw new Error('랜딩 복원 클릭 후에도 [data-testid="landing"]이 안 걷힘 (onRestore 미동작)');
-  }
+  landingShownOnDraft.pass = landingShownOnDraft.pass && landingShownOnDraft.dismissed;
 
   // 흰 포스터 = 대비 최악 케이스(#569가 세운 기준과 동일). ImageMagick 없이 canvas로 만든다.
   await page.evaluate(async () => {
