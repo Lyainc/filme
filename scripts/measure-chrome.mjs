@@ -729,7 +729,10 @@ try {
   // 깨진다. 3계층은 항상 이 드로어 밖 InPlaceFieldEditor의 불투명 aid 박스(bg-surface-elevated)
   // 안에서만 렌더돼(#580 grep 확인, globals.css --glass-fill 주석) 포스터 노출이 없으므로
   // 대비 하한은 그 결정론적 배경 위 합성색 계산으로 충분하다(같은 주석에 실측값 문서화).
-  await page.evaluate((s) => document.querySelector(s)?.click(), drawerHandle);
+  // #764(#756·#763와 같은 클래스) — 핸들이 no-op하면 바로 다음 줄 드로어 대기가 엉뚱한
+  // 셀렉터 이름으로 타임아웃 나서 핸들 실종이 진짜 원인인 걸 가린다.
+  await page.waitForSelector(drawerHandle, { timeout: 10000, visible: true });
+  await page.evaluate((s) => document.querySelector(s).click(), drawerHandle);
   await page.waitForSelector('div[role=dialog][aria-label="티켓 항목"]', { timeout: 10000 });
   await sleep(300);
   const drawerContrast = await measureContrast('div[role=dialog][aria-label="티켓 항목"]');
