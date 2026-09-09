@@ -2276,11 +2276,11 @@ export function resolveTicketData(d: MovieInfo) {
 }
 
 /**
- * MoodStub의 Admission/Film 섹션 on/off 판정 + 그 조합이 PATTERN_BOX와 안전한지(#761→#762).
- * MoodStub과 DESIGN 레일의 BackgroundPatternPanel이 같은 계산을 각자 구현하면 드리프트가 생기므로
- * (#762 제약) 여기 하나로 모은다. `bgPatternSafe`는 PATTERN_BOX가 실측된 두 기준 조합(양쪽 다
- * 켜짐·양쪽 다 꺼짐)에서만 안전을 보장하고, 한쪽만 켜지면 그 섹션이 PATTERN_BOX 쪽으로 밀려나 겹칠
- * 수 있어(#762) false다.
+ * MoodStub의 Admission/Film 섹션 on/off 판정(#761→#762→#768). MoodStub과 DESIGN 레일의
+ * BackgroundPatternPanel이 같은 계산을 각자 구현하면 드리프트가 생기므로(#762 제약) 여기
+ * 하나로 모은다. 한때 이 반환값에 `bgPatternSafe`(PATTERN_BOX 리터럴이 실측된 두 기준 조합
+ * 에서만 안전을 보장하던 판정)가 있었는데, #768이 배경 스탬프 위치를 리터럴이 아니라 실제 빈
+ * 스페이서 실측으로 앵커링하면서 그 위험 자체가 없어져 걷어냈다(MoodStub.tsx 상단 주석 참고).
  *
  * 레일은 ghost 컨텍스트가 없어 `ghost=undefined`로 부른다 — showFieldGhost 계약상 undefined는
  * "필드 placeholder 없음"으로 떨어지므로, 실제 값 기준 판정이 된다(#369).
@@ -2289,7 +2289,7 @@ export function resolveStubSections(
   d: MovieInfo,
   fv: Record<TicketField, boolean> | undefined,
   ghost: boolean | undefined
-): { admissionOn: boolean; filmOn: boolean; bgPatternSafe: boolean } {
+): { admissionOn: boolean; filmOn: boolean } {
   const { watchDateClean, releaseClean, reissueClean } = resolveTicketData(d);
 
   const admissionOn = !!(
@@ -2316,7 +2316,7 @@ export function resolveStubSections(
     showFieldGhost(fv?.actors, d.actors, ghost)
   );
 
-  return { admissionOn, filmOn, bgPatternSafe: admissionOn === filmOn };
+  return { admissionOn, filmOn };
 }
 
 export interface FitFontSizeOptions {

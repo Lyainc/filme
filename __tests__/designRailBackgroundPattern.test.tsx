@@ -309,108 +309,11 @@ for (const { mood, box } of MOOD_CASES) {
   });
 }
 
-describe('레일 스탬프 — bgPatternSafe 인지 (#761→#762)', () => {
-  // Admission·The Film 둘 다 꺼진 기본 movieInfo에서 시작해, 버튼으로 한쪽만 켠다 — MoodStub의
-  // resolveStubSections와 같은 계산을 레일이 재사용하는지가 이 describe의 본체라 별도 Harness로
-  // 뺀다(위 공용 Harness는 movieInfo를 못 건드린다).
-  function StubHarness({ ghost }: { ghost?: boolean } = {}) {
-    const photo = usePhototicket();
-    return (
-      <>
-        <button type="button" onClick={() => photo.updateComponents({ layout: 'stub', backgroundPatternImage: 'blob:bgimg' })}>
-          stub 스탬프 세팅
-        </button>
-        <button
-          type="button"
-          onClick={() =>
-            photo.updateMovieInfo({
-              seat: 'G14', watchDate: '', watchTime: '', theater: '', screen: '',
-              runtime: '', rating: 0, releaseDate: '', isReissue: false, reissueDate: '', actors: '',
-            })
-          }
-        >
-          Admission만 켜기
-        </button>
-        <button
-          type="button"
-          onClick={() =>
-            photo.updateMovieInfo({
-              seat: '', watchDate: '', watchTime: '', theater: '', screen: '',
-              runtime: '99분', rating: 0, releaseDate: '', isReissue: false, reissueDate: '', actors: '',
-            })
-          }
-        >
-          Film만 켜기
-        </button>
-        {/* ghost는 실제 MobileEditorShell이 두 자리(DesignRail·TicketRenderer)에 같은 값을
-            넘기는 것과 동일하게 여기서도 같은 prop 하나로 맞춘다(#762 code-review high) — 값이
-            갈리면 레일의 bgPatternSafe 판정과 실제 프리뷰가 어긋난다. */}
-        <DesignRail photo={photo} ghost={ghost} />
-        <MoodStub movieInfo={photo.state.movieInfo} components={photo.state.components} croppedImageUrl="blob:x" onField={() => {}} ghost={ghost} />
-      </>
-    );
-  }
-
-  async function openStubPanel(user: ReturnType<typeof userEvent.setup>) {
-    await user.click(screen.getByRole('button', { name: 'stub 스탬프 세팅' }));
-    await user.click(screen.getByRole('button', { name: '스탬프' }));
-  }
-
-  test('기본 상태(Admission·Film 둘 다 꺼짐) — 안내 문구 없음, 스탬프 그려짐', async () => {
-    const user = userEvent.setup();
-    const { container } = render(<StubHarness />);
-    await openStubPanel(user);
-
-    expect(screen.queryByRole('status')).toBeNull();
-    expect(backgroundLayer(container)).not.toBeNull();
-  });
-
-  test('Admission만 켜짐 — 안내 문구가 뜨고 스탬프는 안 그려진다', async () => {
-    const user = userEvent.setup();
-    const { container } = render(<StubHarness />);
-    await openStubPanel(user);
-    await user.click(screen.getByRole('button', { name: 'Admission만 켜기' }));
-
-    expect(screen.getByRole('status').textContent).toContain('스탬프가 지금 안 보여요');
-    expect(backgroundLayer(container)).toBeNull();
-  });
-
-  test('Film만 켜짐 — 안내 문구가 뜨고 스탬프는 안 그려진다', async () => {
-    const user = userEvent.setup();
-    const { container } = render(<StubHarness />);
-    await openStubPanel(user);
-    await user.click(screen.getByRole('button', { name: 'Film만 켜기' }));
-
-    expect(screen.getByRole('status').textContent).toContain('스탬프가 지금 안 보여요');
-    expect(backgroundLayer(container)).toBeNull();
-  });
-
-  // 레일이 ghost를 무시하고 항상 undefined로 판정하면(code-review high 지적), 편집 중 기본값인
-  // ghostMode=true 프리뷰에서 실제로는 스탬프가 보이는데도 레일이 "안 보임" 경고를 잘못 띄운다 —
-  // ghost 실효값을 DesignRail→RailActions→BackgroundPatternPanel로 그대로 흘려 고쳤다(#762).
-  test('Admission만 켜짐 + ghost=true(편집 중 기본값) — 실제 프리뷰엔 Film placeholder도 보여 안내 문구 없음', async () => {
-    const user = userEvent.setup();
-    const { container } = render(<StubHarness ghost />);
-    await openStubPanel(user);
-    await user.click(screen.getByRole('button', { name: 'Admission만 켜기' }));
-
-    // ghost=true면 실제 프리뷰(MoodStub)도 같은 ghost로 렌더돼 빈 Film 필드가 placeholder로
-    // 보이고(filmOn 실질 true), bgPatternSafe=true(admissionOn===filmOn)라 스탬프가 그대로
-    // 보인다 — 레일과 프리뷰가 같은 ghost를 봐야 이 둘이 일치한다.
-    expect(screen.queryByRole('status')).toBeNull();
-    expect(backgroundLayer(container)).not.toBeNull();
-  });
-
-  test('editorial — Admission/Film 개념이 없어 항상 안내 문구 없음', async () => {
-    const user = userEvent.setup();
-    render(<Harness mood="editorial" />);
-    await user.click(screen.getByRole('button', { name: 'editorial로 전환' }));
-    await user.click(screen.getByRole('button', { name: '스탬프' }));
-    await user.click(screen.getByRole('button', { name: '배경 이미지 적용' }));
-
-    expect(screen.queryByRole('status')).toBeNull();
-  });
-});
+// bgPatternSafe 인지(#761→#762) describe는 #768로 걷어냈다 — Admission·Film 중 하나만 켜진
+// 조합에서 스탬프를 안 그리던 임시 마스킹이, 실측 앵커링(anchorStampBox)이 그 위험 자체를
+// 없애면서 필요 없어졌다(MoodStub.tsx 상단 주석·resolveStubSections 주석 참고). 그 조합에서도
+// 스탬프가 항상 그려지는지는 designRailBackgroundPattern.test.tsx의 다른 describe(위·아래)와
+// moodStubPatternBoxAnchoring.test.tsx의 배선 테스트가 이미 덮는다 — 별도 안내 문구는 없다.
 
 describe('레일 스탬프 — write-time 투명도 커밋 (#728 c4·ac2·ac3)', () => {
   test('기존 저장본(투명도 없이 이미지만)은 1.0 그대로 읽힌다', async () => {

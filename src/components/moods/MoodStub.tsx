@@ -1,4 +1,4 @@
-import { CSSProperties, Fragment, ReactNode, memo } from 'react';
+import { CSSProperties, Fragment, ReactNode, memo, useLayoutEffect, useRef, useState } from 'react';
 import {
   Barcode,
   FieldGhost,
@@ -28,6 +28,7 @@ import {
   useFontsReady,
 } from './_shared';
 import { BackgroundPatternLayer } from '@/utils/backgroundPatterns';
+import { TARGET_WIDTH } from '@/utils/constants';
 
 /**
  * v05 — 티켓 스텁(마스터 Ticket Design Master.dc.html v2 · 2026-07-08 resync, 에픽 #281).
@@ -72,35 +73,71 @@ const PAD_X = 56;
 const POSTER_H = 640;
 
 /**
- * 배경 스탬프(#530→#728→#753) 고정 박스 — 페이퍼 스텁의 Admission/The Film 두 섹션 사이 빈
- * 구간 안. #753이 섹션 간 여백 배분을 space-evenly에서 flex:1 스페이서 두 개(Admission-Film
- * 사이·Film-푸터 사이)로 바꾸면서 이 구간 자체가 이동해 옛 y1188..1230이 RATED 값("★ 3.5")과
- * 겹쳤다(headless Chrome 실측, 2026-08-30) — 재캡처로 다시 잡았다: HALL 값 텍스트 바닥 y≈1013,
- * The Film 섹션 헤드 top y≈1161(둘 다 document.fonts.ready 후 실측, 6종 예시 티켓 기준). 그
- * 사이 148px 구간의 중앙에 47px·59px 여유를 두고 y1060..1102로 잡았다. x는 바코드 우측 정렬
- * (904 = 960 - PAD_X)에 맞춰 604..904. 포스터 밴드(y<656)·바코드(y1468~)·워드마크와도 안 겹친다.
- * 이 박스는 두 섹션이 안 겹치는 자리를 실측으로 찾은 결과라 POSTER_H 등 다른 상수에서 유도되지
- * 않는다 — 페이퍼 스텁 레이아웃(Row/SectionHead 구성·섹션 간 여백 배분)이 바뀌면 다시 재야 한다.
- * Admission 필드를 전부 꺼서 Film이 divider를 곧바로 무는 조합도 실측했다 — 이 경우 Film이 옛
- * Admission 자리(y854~874)로 당겨 올라와 PATTERN_BOX보다 한참 위에서 끝나 안 겹친다(코드리뷰
- * 지적으로 확인, 2026-08-30). 스파스 Admission 조합(SEAT만·DATE/TIME만·HALL만 켜짐) 실측 완료,
- * 안전 확인(#755) — capture-export.mjs --field-off(신설)로 세 조합을 각각 캡처해 The Film 섹션
- * 헤드 top을 쟀다: SEAT만 y1185.8, DATE/TIME만 y1191.8, HALL만 y1185.8(전부 켜짐 기준 y1191.8과
- * 최대 6px 차이). PATTERN_BOX 바닥(y1102)까지 여유가 셋 다 83.8px 이상이라 겹치지 않는다 —
- * SEAT 칩이 alignItems:stretch로 Admission 블록 높이를 사실상 고정하고, Row 한두 줄만 남아도 그
- * 높이 근방이라 필드 하나만 꺼도 스페이서 재분배 폭이 작다(전부 꺼짐의 y854~874 극단과 달리
- * SectionHead 자체는 계속 서 있어 삭제되는 콘텐츠가 적다). 다만 이 박스는 여전히 6종 예시 티켓
- * 기준 리터럴이라 임의의 필드 조합·긴 값까지 수학적으로 보장하진 않는다 —
- * capture-export.mjs --full-fields --field-off가 최종 권위다.
+ * 배경 스탬프(#530→#728→#753→#761→#762→#768) — 리터럴 좌표를 손으로 재던 네 번의 반복
+ * (#530→#728→#753→#761)을 실측 앵커링으로 종결한다. #761이 고친 비대칭(Admission·Film 중
+ * 하나만 켜지면 그 섹션이 divider에 바로 붙던 것 — 아래 가운데 spacer의 `admissionOn ||
+ * filmOn` 렌더 조건 참고)과 #762의 `bgPatternSafe`(그 비대칭 조합에서 재측정 전까지 스탬프
+ * 이미지 자체를 안 그리던 임시 마스킹)는 이제 둘 다 이 실측 앵커링에 흡수됐다 — 스탬프 위치
+ * 자체가 항상 안전한 실제 빈 자리에서 나오므로 "안전이 확인된 두 조합만" 그리는 마스킹이
+ * 더는 필요 없다.
  *
- * **위 "Admission 전부 꺼짐" 실측은 #761로 더는 렌더되는 경로가 아니다.** #761이 스페이서 조건을
- * admissionOn && filmOn에서 ||로 완화하면서, Admission이 꺼지고 Film만 켜진 조합도 이제 위
- * 스페이서가 서 Film이 더는 divider에 바로 안 붙는다 — 옛 "한참 위에서 끝나 안 겹친다" 결론이 안
- * 맞을 수 있다. `resolveStubSections`의 `bgPatternSafe`(#762)가 Admission·Film 중 정확히 하나만
- * 켜진 조합 전부(이 조합 포함)에서 스탬프 이미지 자체를 안 그려 이 재측정 필요성을 우회한다 —
- * 그 두 조합을 다시 안전하다고 확인하기 전까진 마스킹을 걷지 말 것.
+ * Admission-Film 사이(둘 다 켜졌을 때, `admissionOn && filmOn` 조건의 가운데 spacer) 또는
+ * 콘텐츠 뒤(그 외 전부, 항상 렌더되는 트레일링 spacer)에 남는 flex:1 스페이서 하나에
+ * `spacerRef`를 걸어(두 spacer 모두 `data-pattern-spacer="true"`가 같은 조건으로 붙어 있어
+ * grep으로 바로 찾힌다) 그 실제 렌더 박스를 `getBoundingClientRect`로 재고, 우측(바코드
+ * 정렬)·세로 중앙에 스탬프를 앉힌다 — 스페이서보다 크면 스페이서 크기로 줄어들어(clamp) 어떤
+ * 필드 조합·긴 값에서도 구조적으로 못 넘친다. 좌표가 "겹치지 않는 자리를 찾아 손으로 옮겨
+ * 적은 값"에서 "실제로 비어 있는 그 자리 자체"로 바뀐 게 #768의 핵심 — 페이퍼 스텁 레이아웃이
+ * 앞으로 또 바뀌어도(가운데 spacer 조건이 `||`로 넓어진 #761처럼) 다시 잴 필요가 없다. 가운데
+ * spacer가 `admissionOn || filmOn`로 더 자주 서도(예: Admission만 켜진 조합은 가운데+트레일링
+ * 두 spacer가 함께 뜬다) ref는 여전히 `admissionOn && filmOn`일 때만 가운데를 골라 안전엔
+ * 영향이 없다 — 그 외엔 항상 트레일링이 유일한 참조점이라 어느 쪽이든 실제로 비어 있다.
+ *
+ * 스탬프 레이어 자체는 여전히 루트의 첫 형제로 렌더된다 — componentOpacity 래퍼 밖("이미 인쇄된
+ * 바탕" 계약, Editorial·Criterion과 동일, 아래 BackgroundPatternLayer 호출부 주석 참고). 스페이서
+ * 엘리먼트는 위치를 재는 자(ref)로만 쓰고, 실제 이미지는 그 자로 잰 좌표를 캔버스 절대좌표로
+ * 환산해 그린다 — 두 위치가 갈리므로(스페이서는 Admission/Film 안, 스탬프는 그 밖) DOM 포함
+ * 관계가 아니라 좌표 계산으로 잇는다.
+ *
+ * happy-dom(테스트)은 `getBoundingClientRect`가 항상 {0,0,0,0}이라 실측이 안 되는데, 그때는
+ * `anchorStampBox`가 `null`을 돌려주고 `FALLBACK_STAMP_BOX`(구 PATTERN_BOX 리터럴, 실측이 한 번도
+ * 안 된 스냅샷 기준)가 그대로 남는다 — 실브라우저에서만 실측값으로 갱신된다. 계산이 옳아도 엉뚱한
+ * 스페이서에 배선되면 소용없는데 그 축은 rect로 못 재므로(위 이유와 같음, 두 ref 조건문이
+ * 바뀌어도 FALLBACK로 계속 통과), 두 spacer div에 건 `data-pattern-spacer="true"` 마커(ref와
+ * 같은 조건)를 `__tests__/moodStubPatternBoxAnchoring.test.tsx`가 DOM 순서로 따로 검증한다.
  */
-const PATTERN_BOX = { left: 604, top: 1060, width: 300, height: 42 };
+const STAMP_WIDTH = 300;
+const STAMP_HEIGHT = 42;
+const FALLBACK_STAMP_BOX = { left: 604, top: 1060, width: STAMP_WIDTH, height: STAMP_HEIGHT };
+
+/**
+ * 스페이서의 실측 rect(브라우저 뷰포트 좌표, 현재 프리뷰 배율 반영)를 캔버스 절대좌표(960 자연폭
+ * 기준) 스탬프 박스로 환산한다. root 대비 분율로 계산해 배율을 상쇄하는 방식은
+ * captureToImage.ts의 compositeRaster와 같다 — root와 spacer가 항상 같은 배율 아래 있으므로
+ * 나눗셈 후 배율 자체가 사라진다(전달값이 CSS px든 실제 device px든 결과가 같다). 스탬프가
+ * 스페이서보다 크면 스페이서 크기로 줄어든다(clamp) — 절대 못 넘친다. 순수 함수라 실제 DOM/
+ * ResizeObserver 없이도 `__tests__/moodStubPatternBoxAnchoring.test.ts`가 직접 검증한다.
+ */
+export function anchorStampBox(
+  rootRect: { left: number; top: number; width: number },
+  spacerRect: { left: number; top: number; width: number; height: number }
+): { left: number; top: number; width: number; height: number } | null {
+  // happy-dom(테스트)은 항상 {0,0,0,0} — 실측 실패로 보고 null(호출부가 FALLBACK 유지).
+  if (rootRect.width <= 0 || spacerRect.width <= 0 || spacerRect.height <= 0) return null;
+  const scale = rootRect.width / TARGET_WIDTH;
+  const spacerLeft = (spacerRect.left - rootRect.left) / scale;
+  const spacerTop = (spacerRect.top - rootRect.top) / scale;
+  const spacerW = spacerRect.width / scale;
+  const spacerH = spacerRect.height / scale;
+  const w = Math.min(STAMP_WIDTH, spacerW);
+  const h = Math.min(STAMP_HEIGHT, spacerH);
+  return {
+    left: spacerLeft + spacerW - w, // 우측 정렬(바코드 우측과 같은 안쪽 여백선)
+    top: spacerTop + (spacerH - h) / 2, // 세로 중앙
+    width: w,
+    height: h,
+  };
+}
 
 // 홀로그램 티커 무지개 그라디언트(마스터 1:1) — 절취 정보 스트립 배경.
 const HOLO = 'linear-gradient(100deg,#9ff0df 0%,#f6c4e4 14%,#c9baf7 30%,#b7e3f8 47%,#f7e2b3 64%,#b6f7c6 81%,#9ff0df 100%)';
@@ -198,18 +235,49 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
     runtimeVal,
   ].filter(Boolean);
 
-  // admissionOn/filmOn/bgPatternSafe는 DESIGN 레일(BackgroundPatternPanel)과 같은 계산을 공유한다
-  // (#762) — 여기서 다시 풀어 쓰면 두 자리가 각자 드리프트한다.
-  const { admissionOn, filmOn, bgPatternSafe } = resolveStubSections(d, fv, ghost);
+  // admissionOn/filmOn은 DESIGN 레일(BackgroundPatternPanel)과 같은 계산을 공유한다(#762) —
+  // 여기서 다시 풀어 쓰면 두 자리가 각자 드리프트한다.
+  const { admissionOn, filmOn } = resolveStubSections(d, fv, ghost);
 
   const componentOpacity = components.componentOpacity ?? 1;
 
+  // 배경 스탬프 실측 앵커링(#768) — 위 STAMP_WIDTH/FALLBACK_STAMP_BOX 주석 참고. rootRef는
+  // 캔버스(960 자연폭) 기준점, spacerRef는 admissionOn/filmOn에 따라 두 spacer div(아래,
+  // `data-pattern-spacer="true"`로 표시) 중 그때 실제로 비어 있는 하나에만 걸린다.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const spacerRef = useRef<HTMLDivElement>(null);
+  const [stampBox, setStampBox] = useState(FALLBACK_STAMP_BOX);
+
+  // useEffect(페인트 후 실행)가 아니라 useLayoutEffect다(code-review high 지적) — admissionOn/
+  // filmOn이 토글되면 커밋은 즉시 일어나(Admission 블록이 사라지고 spacerRef가 다른 spacer로
+  // 옮겨가고 Film이 그 자리를 채우는 등) DOM은 이미 새 모양인데, stampBox state가 옛 측정값(또는
+  // 마운트 시점 FALLBACK_STAMP_BOX)에 머물러 있으면 이 실측 전까지 한 프레임 옛 좌표에 그려져
+  // 방금 밀려난 콘텐츠와 겹칠 수 있다 — "구조적으로 못 넘친다"는 위 주석의 전제가 그 한 프레임만
+  // 깨진다. useLayoutEffect는 커밋 직후·페인트 전에 동기 실행되므로 그 프레임 자체가 없다.
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    const spacer = spacerRef.current;
+    if (!root || !spacer) return;
+
+    const measure = () => {
+      const box = anchorStampBox(root.getBoundingClientRect(), spacer.getBoundingClientRect());
+      if (box) setStampBox(box);
+    };
+
+    measure(); // 초기 1회는 ResizeObserver 유무와 무관하게 동기 측정(_shared.tsx 선례와 동일)
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(root);
+    ro.observe(spacer);
+    return () => ro.disconnect();
+  }, [admissionOn, filmOn]);
+
   return (
-    <div style={{ position: 'absolute', inset: 0, background: PAPER, color: INK, fontFamily: FONT_SANS, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      {/* 배경 스탬프(#530→#672→#728) — 종이(PAPER) 바로 위에 깔리고, PATTERN_BOX가 정하는 고정
-          자리 하나에만 선다(#728로 캔버스 전면 cover가 폐지돼 포스터 밴드를 구멍으로 팔 필요가
-          없어졌다 — PATTERN_BOX 주석 참고). componentOpacity 밖(종이에 이미 인쇄된 바탕)인 건
-          Editorial·Criterion과 같은 계약이다.
+    <div ref={rootRef} style={{ position: 'absolute', inset: 0, background: PAPER, color: INK, fontFamily: FONT_SANS, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      {/* 배경 스탬프(#530→#672→#728→#768) — 종이(PAPER) 바로 위에 깔리고, stampBox(실측 기반,
+          위 STAMP_WIDTH 주석 참고)가 정하는 자리 하나에만 선다(#728로 캔버스 전면 cover가
+          폐지돼 포스터 밴드를 구멍으로 팔 필요가 없어졌다). componentOpacity 밖(종이에 이미
+          인쇄된 바탕)인 건 Editorial·Criterion과 같은 계약이다.
 
           **덮고 덮이는 건 트리 순서가 아니라 포지셔닝이 정한다.** 이 레이어는 absolute라, 뒤에 오는
           형제 중 위로 오는 건 포지셔닝된 것들(포스터 밴드·절취선·페이퍼 스텁, 전부 relative)뿐이다.
@@ -217,8 +285,8 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
           루트 하나로 합쳤다. 여기에 불투명한 장식을 새로 넣어 배경을 가리려면 순서가 아니라
           position을 줘야 한다. */}
       <BackgroundPatternLayer
-        image={bgPatternSafe ? components.backgroundPatternImage : undefined}
-        box={PATTERN_BOX}
+        image={components.backgroundPatternImage}
+        box={stampBox}
         scale={components.backgroundPatternScale ?? 1}
         opacity={components.backgroundPatternOpacity ?? 1}
       />
@@ -364,9 +432,18 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
           {/* Admission·Film 중 하나만 켜지면 그 섹션이 divider에 바로 붙던 것(#761) — 조건을
               admissionOn && filmOn에서 ||로 완화해 Film만 켜진 경우에도 위 스페이서를 세운다.
               Admission만 켜진 경우는 무변화다: 이 스페이서가 이제 서도 뒤에 아무 콘텐츠 없이
-              바로 410행 끝 스페이서와 이어지므로(둘 다 flex:1) 시각적으로 flex:2 한 덩어리와
-              같다 — Admission이 divider에 바로 붙는 건 둘 다 켜졌을 때도 같은 의도된 배치다. */}
-          {(admissionOn || filmOn) && <div style={{ flex: 1, minHeight: 24 }} />}
+              바로 트레일링 스페이서와 이어지므로(둘 다 flex:1) 시각적으로 flex:2 한 덩어리와
+              같다 — Admission이 divider에 바로 붙는 건 둘 다 켜졌을 때도 같은 의도된 배치다.
+              ref/마커는 이 렌더 조건과 별개다(#768) — admissionOn && filmOn일 때만 이 spacer가
+              "Admission-Film 사이"라는 유일한 빈 자리라 그때만 걸고, 그 외엔 트레일링 하나가
+              유일한 참조점이라 거기로 넘긴다(위 STAMP_WIDTH 주석 참고). */}
+          {(admissionOn || filmOn) && (
+            <div
+              ref={admissionOn && filmOn ? spacerRef : undefined}
+              data-pattern-spacer={admissionOn && filmOn ? 'true' : undefined}
+              style={{ flex: 1, minHeight: 24 }}
+            />
+          )}
 
           {/* The Film — RUNTIME / RATED / RELEASED / RE-RELEASED 2열 + STARRING */}
           {filmOn && (
@@ -419,7 +496,11 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
             </div>
           )}
 
-          <div style={{ flex: 1, minHeight: 24 }} />
+          <div
+            ref={admissionOn && filmOn ? undefined : spacerRef}
+            data-pattern-spacer={admissionOn && filmOn ? undefined : 'true'}
+            style={{ flex: 1, minHeight: 24 }}
+          />
         </div>
 
         {/* 푸터 — made with FILME · collected by 서명 + 스텁 바코드(300×40, 텍스트 없음) */}
