@@ -155,6 +155,40 @@ describe('MoodStub 마스터 resync (#281)', () => {
     expect(spacerCount).toBe(2);
   });
 
+  // Admission·Film 중 한쪽만 켜지면 스페이서가 비대칭이던 회귀(#761) — 중간 스페이서 조건을
+  // admissionOn && filmOn에서 ||로 완화해 고쳤다. Film만 켜진 경우엔 새로 선 스페이서가 Film을
+  // divider에서 띄워 위·아래 스페이서 2개로 나뉘고, Admission만 켜진 경우엔 스페이서가 하나 더
+  // 서도 뒤에 콘텐츠가 없어(둘 다 flex:1) 기존과 시각적으로 동일하다 — 두 케이스 모두 spacerCount는
+  // 2로 같아야 "둘 다 켜짐" 기준(#753)과 같은 스페이서 개수 계약을 지킨다.
+  describe('Admission·Film 한쪽만 켜진 경우 스페이서 대칭(#761)', () => {
+    const markupWith = (movieInfo: typeof FULL_MOVIE) =>
+      renderToStaticMarkup(
+        <MoodStub movieInfo={movieInfo} components={BASE} croppedImageUrl="blob:x" onField={() => {}} />
+      );
+
+    test('Admission만 켜짐 — Film 필드 전부 꺼도 스페이서 2개(무변화)', () => {
+      const html = markupWith({
+        ...FULL_MOVIE,
+        runtime: '', rating: 0, releaseDate: '', isReissue: false, reissueDate: '', actors: '',
+      });
+      expect(html).toContain('Admission');
+      expect(html).not.toContain('The Film');
+      const spacerCount = (html.match(/flex:1;min-height:24px/g) || []).length;
+      expect(spacerCount).toBe(2);
+    });
+
+    test('Film만 켜짐 — Admission 필드 전부 꺼도 스페이서 2개(위 스페이서가 새로 서 divider에서 띄운다)', () => {
+      const html = markupWith({
+        ...FULL_MOVIE,
+        seat: '', watchDate: '', watchTime: '', theater: '', screen: '',
+      });
+      expect(html).not.toContain('Admission');
+      expect(html).toContain('The Film');
+      const spacerCount = (html.match(/flex:1;min-height:24px/g) || []).length;
+      expect(spacerCount).toBe(2);
+    });
+  });
+
   // 배우 폭 인식 truncate(#493) — 고정 count 캡(옛 max=5) 폐기, STARRING 값 가용폭(700px) 기준.
   describe('배우 truncate — 폭 인식(#493, 고정 count 캡 대체)', () => {
     // 가짜 canvas measureText를 심어야 truncateActorsToWidth의 실제 폭 계산 경로를 태운다
