@@ -189,17 +189,19 @@ describe('MoodStub 마스터 resync (#281)', () => {
     });
   });
 
-  // PATTERN_BOX는 Admission·Film 둘 다 켜짐/둘 다 꺼짐 기준으로만 실측됐다(#728→#753→#761) — 한쪽만
-  // 켜지면 그 섹션이 PATTERN_BOX 쪽으로 밀려나 겹칠 수 있어(#762) resolveStubSections의
-  // bgPatternSafe가 스탬프 이미지 자체를 안 그리게 막는다.
-  describe('배경 스탬프는 bgPatternSafe=false면 안 그려진다(#762)', () => {
+  // 리터럴 PATTERN_BOX는 Admission·Film 둘 다 켜짐/둘 다 꺼짐 기준으로만 실측돼(#728→#753→#761)
+  // 한쪽만 켜지면 그 섹션이 겹칠 위험이 있어(#762) resolveStubSections의 bgPatternSafe가 스탬프
+  // 이미지 자체를 안 그리게 막았었다. #768이 리터럴을 실측 앵커링(anchorStampBox)으로 바꾸면서
+  // 그 위험 자체가 없어졌고(스페이서보다 크면 clamp돼 구조적으로 못 넘친다), bgPatternSafe와
+  // 그 마스킹은 걷어냈다 — 네 조합 전부에서 스탬프가 항상 그려지는지가 이제 새 불변식이다.
+  describe('배경 스탬프는 Admission/Film 조합과 무관하게 항상 그려진다(#768)', () => {
     const STAMP_BASE = { ...BASE, backgroundPatternImage: 'blob:pattern' };
     const markupWith = (movieInfo: typeof FULL_MOVIE) =>
       renderToStaticMarkup(
         <MoodStub movieInfo={movieInfo} components={STAMP_BASE} croppedImageUrl="blob:x" onField={() => {}} />
       );
 
-    test('둘 다 켜짐(기준 조합) — 스탬프 그려짐', () => {
+    test('둘 다 켜짐 — 스탬프 그려짐', () => {
       expect(markupWith(FULL_MOVIE)).toContain('data-bg-pattern="true"');
     });
 
@@ -212,20 +214,20 @@ describe('MoodStub 마스터 resync (#281)', () => {
       expect(html).toContain('data-bg-pattern="true"');
     });
 
-    test('Admission만 켜짐 — 스탬프 안 그려짐', () => {
+    test('Admission만 켜짐 — 스탬프 그려짐(#762의 bgPatternSafe 마스킹 폐지)', () => {
       const html = markupWith({
         ...FULL_MOVIE,
         runtime: '', rating: 0, releaseDate: '', isReissue: false, reissueDate: '', actors: '',
       });
-      expect(html).not.toContain('data-bg-pattern="true"');
+      expect(html).toContain('data-bg-pattern="true"');
     });
 
-    test('Film만 켜짐 — 스탬프 안 그려짐', () => {
+    test('Film만 켜짐 — 스탬프 그려짐(#762의 bgPatternSafe 마스킹 폐지)', () => {
       const html = markupWith({
         ...FULL_MOVIE,
         seat: '', watchDate: '', watchTime: '', theater: '', screen: '',
       });
-      expect(html).not.toContain('data-bg-pattern="true"');
+      expect(html).toContain('data-bg-pattern="true"');
     });
   });
 
