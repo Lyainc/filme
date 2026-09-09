@@ -38,6 +38,13 @@ type Photo = ReturnType<typeof usePhototicket>;
 export interface RailActions {
   /** 포스터 재크롭 진입 — 셸의 크롭 모달을 기존 원본으로 다시 연다. */
   onRecropPoster?: () => void;
+  /**
+   * 실제 티켓 프리뷰(TicketRenderer)에 넘어가는 실효 ghost 상태 — `ghostMode || editing`(#354
+   * 편집 중 강제 on 포함, MobileEditorShell.tsx 주석 참고). photo.state로는 표현이 안 되는
+   * 셸 로컬 UI 상태라 이 통로로 온다(#762) — 레일이 프리뷰와 다른 ghost 가정으로 안전 판정을
+   * 하면(예: BackgroundPatternPanel의 bgPatternSafe) 화면에 보이는 것과 안내 문구가 어긋난다.
+   */
+  ghost?: boolean;
 }
 
 export interface RailItem {
@@ -673,15 +680,18 @@ const BACKGROUND_SCALE_MAX = 1.5;
 const BACKGROUND_OPACITY_MIN = 0.2;
 const BACKGROUND_OPACITY_DEFAULT = 0.5;
 
-function BackgroundPatternPanel({ photo }: { photo: Photo }) {
+function BackgroundPatternPanel({ photo, ghost }: { photo: Photo; ghost: RailActions['ghost'] }) {
   const image = photo.state.components.backgroundPatternImage;
   // Stub 전용 위험(#761→#762) — Admission·The Film 중 정확히 하나만 켜지면 그 섹션이 PATTERN_BOX
   // 쪽으로 밀려나 겹칠 수 있어 MoodStub이 스탬프를 안 그린다(resolveStubSections의 bgPatternSafe,
   // MoodStub.tsx와 같은 계산 공유). 레일은 그 사실을 몰라 슬라이더가 죽은 것처럼 보이므로 여기서
   // 같은 판정을 재사용해 안내한다. 다른 두 무드(editorial·criterion)는 이 위험이 없어 항상 true.
+  // ghost는 actions로 받은 실효값을 그대로 쓴다(code-review high 지적) — undefined로 고정하면
+  // 편집 중 강제 ghost on(#354, ghostMode 기본값도 true)인 실제 프리뷰와 판정이 어긋나
+  // "이미 보이는데 안 보인다"는 안내가 뜰 수 있었다.
   const bgPatternSafe =
     photo.state.components.layout !== 'stub' ||
-    resolveStubSections(photo.state.movieInfo, photo.state.fieldVisibility, undefined).bgPatternSafe;
+    resolveStubSections(photo.state.movieInfo, photo.state.fieldVisibility, ghost).bgPatternSafe;
   // 업로드는 로고 스탬프와 **같은** 자유비 크롭 흐름(useLogoCrop, #220)을 그대로 탄다 — 새 의존성도
   // 새 크롭 경로도 없다. 크롭 결과가 곧 스탬프 이미지다(#672로 프리셋 id 축이 사라져 같이 넘길 값도
   // 없어졌다 — 이미지 유무가 곧 스탬프 유무다).
@@ -921,7 +931,7 @@ export const RAIL_ITEMS: readonly RailItem[] = [
       </svg>
     ),
     appliesTo: BACKGROUND_PATTERN_MOODS,
-    render: (photo) => <BackgroundPatternPanel photo={photo} />,
+    render: (photo, actions) => <BackgroundPatternPanel photo={photo} ghost={actions.ghost} />,
   },
   {
     id: 'custom',

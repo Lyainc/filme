@@ -313,7 +313,7 @@ describe('레일 스탬프 — bgPatternSafe 인지 (#761→#762)', () => {
   // Admission·The Film 둘 다 꺼진 기본 movieInfo에서 시작해, 버튼으로 한쪽만 켠다 — MoodStub의
   // resolveStubSections와 같은 계산을 레일이 재사용하는지가 이 describe의 본체라 별도 Harness로
   // 뺀다(위 공용 Harness는 movieInfo를 못 건드린다).
-  function StubHarness() {
+  function StubHarness({ ghost }: { ghost?: boolean } = {}) {
     const photo = usePhototicket();
     return (
       <>
@@ -342,8 +342,11 @@ describe('레일 스탬프 — bgPatternSafe 인지 (#761→#762)', () => {
         >
           Film만 켜기
         </button>
-        <DesignRail photo={photo} />
-        <MoodStub movieInfo={photo.state.movieInfo} components={photo.state.components} croppedImageUrl="blob:x" onField={() => {}} />
+        {/* ghost는 실제 MobileEditorShell이 두 자리(DesignRail·TicketRenderer)에 같은 값을
+            넘기는 것과 동일하게 여기서도 같은 prop 하나로 맞춘다(#762 code-review high) — 값이
+            갈리면 레일의 bgPatternSafe 판정과 실제 프리뷰가 어긋난다. */}
+        <DesignRail photo={photo} ghost={ghost} />
+        <MoodStub movieInfo={photo.state.movieInfo} components={photo.state.components} croppedImageUrl="blob:x" onField={() => {}} ghost={ghost} />
       </>
     );
   }
@@ -380,6 +383,22 @@ describe('레일 스탬프 — bgPatternSafe 인지 (#761→#762)', () => {
 
     expect(screen.getByRole('status').textContent).toContain('스탬프가 지금 안 보여요');
     expect(backgroundLayer(container)).toBeNull();
+  });
+
+  // 레일이 ghost를 무시하고 항상 undefined로 판정하면(code-review high 지적), 편집 중 기본값인
+  // ghostMode=true 프리뷰에서 실제로는 스탬프가 보이는데도 레일이 "안 보임" 경고를 잘못 띄운다 —
+  // ghost 실효값을 DesignRail→RailActions→BackgroundPatternPanel로 그대로 흘려 고쳤다(#762).
+  test('Admission만 켜짐 + ghost=true(편집 중 기본값) — 실제 프리뷰엔 Film placeholder도 보여 안내 문구 없음', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<StubHarness ghost />);
+    await openStubPanel(user);
+    await user.click(screen.getByRole('button', { name: 'Admission만 켜기' }));
+
+    // ghost=true면 실제 프리뷰(MoodStub)도 같은 ghost로 렌더돼 빈 Film 필드가 placeholder로
+    // 보이고(filmOn 실질 true), bgPatternSafe=true(admissionOn===filmOn)라 스탬프가 그대로
+    // 보인다 — 레일과 프리뷰가 같은 ghost를 봐야 이 둘이 일치한다.
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(backgroundLayer(container)).not.toBeNull();
   });
 
   test('editorial — Admission/Film 개념이 없어 항상 안내 문구 없음', async () => {
