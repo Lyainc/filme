@@ -171,11 +171,14 @@ export function DesignRail({
   photo,
   items = RAIL_ITEMS,
   onRecropPoster,
+  ghost,
 }: {
   photo: ReturnType<typeof usePhototicket>;
   items?: readonly RailItem[];
   /** 포스터 재크롭 진입(#492) — 셸이 크롭 파이프라인을 소유하므로 항목엔 콜백만 흘려준다. */
   onRecropPoster?: () => void;
+  /** 실제 프리뷰에 넘어가는 실효 ghost 상태(#762) — RailActions.ghost로 그대로 흘려준다. */
+  ghost?: boolean;
 }) {
   const [pop, setPop] = useState<RailItemId | null>(null);
   const { themeColor, layout } = photo.state.components;
@@ -317,7 +320,7 @@ export function DesignRail({
       </div>
 
       <RailExpandPanel open={pop !== null} activeId={active} regionLabel={regionLabel}>
-        {activeItem ? activeItem.render(photo, { onRecropPoster }) : null}
+        {activeItem ? activeItem.render(photo, { onRecropPoster, ghost }) : null}
       </RailExpandPanel>
     </div>
   );
