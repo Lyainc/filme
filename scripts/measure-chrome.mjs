@@ -660,7 +660,12 @@ try {
   await sleep(300); // 진입 트랜지션이 끝난 rect를 잰다.
   await measureFit('max 모드 오버레이', 'div:has(> [aria-label="기본 크기로 돌아가기"])');
   await measureFit('max 모드 티켓', '[aria-label="기본 크기로 돌아가기"]');
-  await page.evaluate(() => document.querySelector('[aria-label="기본 크기로 돌아가기"]')?.click());
+  // #766(#756/#763과 같은 클래스) — 나가기가 no-op하면 셸이 max 모드 오버레이에 계속 남은 채
+  // 이후 대비 측정·드로어 재오픈 셀렉터들이 그 위에서 돌아, 몇 단계 뒤 엉뚱한 셀렉터 이름으로
+  // 타임아웃 나는 지연된 버전의 같은 문제가 된다. 632-639행 드로어 핸들과 같은
+  // waitForSelector(visible:true) + 무가드 click 패턴으로 통일.
+  await page.waitForSelector('[aria-label="기본 크기로 돌아가기"]', { timeout: 10000, visible: true });
+  await page.evaluate(() => document.querySelector('[aria-label="기본 크기로 돌아가기"]').click());
   await sleep(400);
 
   // ── 대비: 오버레이 표면의 항목별 WCAG 비 ────────────────────────────────────
@@ -784,10 +789,26 @@ try {
     };
 
     // 이동식으로 바꿔 스냅 버튼까지 화면에 올린 뒤 잰다(최저 대비 항목이 거기 있다).
+    // #766 — 라디오가 no-op하면 다음 줄 measureContrast(DIALOG)가 크래시 대신 "모달이 이동식
+    // 상태로 안 바뀐 채 기본 상태의 대비값을 정상값처럼 조용히 리포트"하는, 크래시보다 나쁜
+    // 실패 모드가 된다. 텍스트 매치라 waitForSelector(CSS 셀렉터)를 못 써서 완료 버튼(#763,
+    // 81d8c0b)과 같은 waitForFunction + TimeoutError 한정 catch로 존재를 먼저 확인한다.
+    await page
+      .waitForFunction(
+        () =>
+          [...document.querySelectorAll('[role=radio]')].some((b) =>
+            b.textContent?.includes('세로형 · 이동식'),
+          ),
+        { timeout: 10000 },
+      )
+      .catch((error) => {
+        if (error.name !== 'TimeoutError') throw error;
+        throw new Error('세로형 · 이동식 라디오(텍스트 매치)를 못 찾음(#766)');
+      });
     await page.evaluate(() => {
       [...document.querySelectorAll('[role=radio]')]
         .find((b) => b.textContent?.includes('세로형 · 이동식'))
-        ?.click();
+        .click();
     });
     await sleep(300);
     if (SHOT) await page.screenshot({ path: SHOT });
