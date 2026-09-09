@@ -17,6 +17,7 @@ import {
   gate,
   posterFitProps,
   posterTapProps,
+  resolveStubSections,
   resolveTicketData,
   showFieldGhost,
   SignatureStamp,
@@ -95,7 +96,9 @@ const POSTER_H = 640;
  * **위 "Admission 전부 꺼짐" 실측은 #761로 더는 렌더되는 경로가 아니다.** #761이 스페이서 조건을
  * admissionOn && filmOn에서 ||로 완화하면서, Admission이 꺼지고 Film만 켜진 조합도 이제 위
  * 스페이서가 서 Film이 더는 divider에 바로 안 붙는다 — 옛 "한참 위에서 끝나 안 겹친다" 결론이 안
- * 맞을 수 있다(재측정 필요, #762로 추적).
+ * 맞을 수 있다. `resolveStubSections`의 `bgPatternSafe`(#762)가 Admission·Film 중 정확히 하나만
+ * 켜진 조합 전부(이 조합 포함)에서 스탬프 이미지 자체를 안 그려 이 재측정 필요성을 우회한다 —
+ * 그 두 조합을 다시 안전하다고 확인하기 전까진 마스킹을 걷지 말 것.
  */
 const PATTERN_BOX = { left: 604, top: 1060, width: 300, height: 42 };
 
@@ -195,10 +198,9 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
     runtimeVal,
   ].filter(Boolean);
 
-  const admissionOn =
-    seatVal || gSeat || watchDateVal || gWatchDate || watchTimeVal || gWatchTime || screenCell.hasAny;
-  const filmOn =
-    runtimeVal || gRuntime || ratingVisible || gRating || releaseVal || gRelease || reissueVal || actorsVal || gActors;
+  // admissionOn/filmOn/bgPatternSafe는 DESIGN 레일(BackgroundPatternPanel)과 같은 계산을 공유한다
+  // (#762) — 여기서 다시 풀어 쓰면 두 자리가 각자 드리프트한다.
+  const { admissionOn, filmOn, bgPatternSafe } = resolveStubSections(d, fv, ghost);
 
   const componentOpacity = components.componentOpacity ?? 1;
 
@@ -215,7 +217,7 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
           루트 하나로 합쳤다. 여기에 불투명한 장식을 새로 넣어 배경을 가리려면 순서가 아니라
           position을 줘야 한다. */}
       <BackgroundPatternLayer
-        image={components.backgroundPatternImage}
+        image={bgPatternSafe ? components.backgroundPatternImage : undefined}
         box={PATTERN_BOX}
         scale={components.backgroundPatternScale ?? 1}
         opacity={components.backgroundPatternOpacity ?? 1}
