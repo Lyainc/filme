@@ -54,6 +54,12 @@ describe('MoodStub 배경 스탬프 박스(PATTERN_BOX) 결합 (#746)', () => {
     expect(start).toBeGreaterThan(0);
     expect(end).toBeGreaterThan(start);
     const block = src.slice(start, end).trim();
-    expect(sha1(block)).toBe('386e6ba8e85a');
+    // #761 갱신 — 스페이서 조건이 admissionOn && filmOn → ||로 완화됐다. 재캡처 없이 해시만
+    // 갱신한 근거: PATTERN_BOX가 실측을 보장하는 기준 조합(양쪽 다 켜짐)은 조건이 참 그대로라
+    // 지오메트리가 안 바뀐다 — 바뀌는 건 한쪽만 켜진 두 조합(Admission-only는 스페이서만 하나
+    // 늘어 시각적으로 무변화, Film-only는 이제 위 스페이서가 서 divider에서 안 붙는다)인데,
+    // Film-only 쪽은 PATTERN_BOX 주석의 "한참 위에서 끝나 안 겹친다" 실측 전제가 깨진다 —
+    // 재측정이 필요하다는 걸 #762로 넘긴다(같은 주석 참고).
+    expect(sha1(block)).toBe('40288bd10a14');
   });
 });

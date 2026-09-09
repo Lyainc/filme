@@ -91,6 +91,11 @@ const POSTER_H = 640;
  * SectionHead 자체는 계속 서 있어 삭제되는 콘텐츠가 적다). 다만 이 박스는 여전히 6종 예시 티켓
  * 기준 리터럴이라 임의의 필드 조합·긴 값까지 수학적으로 보장하진 않는다 —
  * capture-export.mjs --full-fields --field-off가 최종 권위다.
+ *
+ * **위 "Admission 전부 꺼짐" 실측은 #761로 더는 렌더되는 경로가 아니다.** #761이 스페이서 조건을
+ * admissionOn && filmOn에서 ||로 완화하면서, Admission이 꺼지고 Film만 켜진 조합도 이제 위
+ * 스페이서가 서 Film이 더는 divider에 바로 안 붙는다 — 옛 "한참 위에서 끝나 안 겹친다" 결론이 안
+ * 맞을 수 있다(재측정 필요, #762로 추적).
  */
 const PATTERN_BOX = { left: 604, top: 1060, width: 300, height: 42 };
 
@@ -354,7 +359,12 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
             </div>
           )}
 
-          {admissionOn && filmOn && <div style={{ flex: 1, minHeight: 24 }} />}
+          {/* Admission·Film 중 하나만 켜지면 그 섹션이 divider에 바로 붙던 것(#761) — 조건을
+              admissionOn && filmOn에서 ||로 완화해 Film만 켜진 경우에도 위 스페이서를 세운다.
+              Admission만 켜진 경우는 무변화다: 이 스페이서가 이제 서도 뒤에 아무 콘텐츠 없이
+              바로 410행 끝 스페이서와 이어지므로(둘 다 flex:1) 시각적으로 flex:2 한 덩어리와
+              같다 — Admission이 divider에 바로 붙는 건 둘 다 켜졌을 때도 같은 의도된 배치다. */}
+          {(admissionOn || filmOn) && <div style={{ flex: 1, minHeight: 24 }} />}
 
           {/* The Film — RUNTIME / RATED / RELEASED / RE-RELEASED 2열 + STARRING */}
           {filmOn && (
