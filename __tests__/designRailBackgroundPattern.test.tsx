@@ -309,6 +309,90 @@ for (const { mood, box } of MOOD_CASES) {
   });
 }
 
+describe('레일 스탬프 — bgPatternSafe 인지 (#761→#762)', () => {
+  // Admission·The Film 둘 다 꺼진 기본 movieInfo에서 시작해, 버튼으로 한쪽만 켠다 — MoodStub의
+  // resolveStubSections와 같은 계산을 레일이 재사용하는지가 이 describe의 본체라 별도 Harness로
+  // 뺀다(위 공용 Harness는 movieInfo를 못 건드린다).
+  function StubHarness() {
+    const photo = usePhototicket();
+    return (
+      <>
+        <button type="button" onClick={() => photo.updateComponents({ layout: 'stub', backgroundPatternImage: 'blob:bgimg' })}>
+          stub 스탬프 세팅
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            photo.updateMovieInfo({
+              seat: 'G14', watchDate: '', watchTime: '', theater: '', screen: '',
+              runtime: '', rating: 0, releaseDate: '', isReissue: false, reissueDate: '', actors: '',
+            })
+          }
+        >
+          Admission만 켜기
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            photo.updateMovieInfo({
+              seat: '', watchDate: '', watchTime: '', theater: '', screen: '',
+              runtime: '99분', rating: 0, releaseDate: '', isReissue: false, reissueDate: '', actors: '',
+            })
+          }
+        >
+          Film만 켜기
+        </button>
+        <DesignRail photo={photo} />
+        <MoodStub movieInfo={photo.state.movieInfo} components={photo.state.components} croppedImageUrl="blob:x" onField={() => {}} />
+      </>
+    );
+  }
+
+  async function openStubPanel(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByRole('button', { name: 'stub 스탬프 세팅' }));
+    await user.click(screen.getByRole('button', { name: '스탬프' }));
+  }
+
+  test('기본 상태(Admission·Film 둘 다 꺼짐) — 안내 문구 없음, 스탬프 그려짐', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<StubHarness />);
+    await openStubPanel(user);
+
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(backgroundLayer(container)).not.toBeNull();
+  });
+
+  test('Admission만 켜짐 — 안내 문구가 뜨고 스탬프는 안 그려진다', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<StubHarness />);
+    await openStubPanel(user);
+    await user.click(screen.getByRole('button', { name: 'Admission만 켜기' }));
+
+    expect(screen.getByRole('status').textContent).toContain('스탬프가 지금 안 보여요');
+    expect(backgroundLayer(container)).toBeNull();
+  });
+
+  test('Film만 켜짐 — 안내 문구가 뜨고 스탬프는 안 그려진다', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<StubHarness />);
+    await openStubPanel(user);
+    await user.click(screen.getByRole('button', { name: 'Film만 켜기' }));
+
+    expect(screen.getByRole('status').textContent).toContain('스탬프가 지금 안 보여요');
+    expect(backgroundLayer(container)).toBeNull();
+  });
+
+  test('editorial — Admission/Film 개념이 없어 항상 안내 문구 없음', async () => {
+    const user = userEvent.setup();
+    render(<Harness mood="editorial" />);
+    await user.click(screen.getByRole('button', { name: 'editorial로 전환' }));
+    await user.click(screen.getByRole('button', { name: '스탬프' }));
+    await user.click(screen.getByRole('button', { name: '배경 이미지 적용' }));
+
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+});
+
 describe('레일 스탬프 — write-time 투명도 커밋 (#728 c4·ac2·ac3)', () => {
   test('기존 저장본(투명도 없이 이미지만)은 1.0 그대로 읽힌다', async () => {
     const user = userEvent.setup();

@@ -54,12 +54,14 @@ describe('MoodStub 배경 스탬프 박스(PATTERN_BOX) 결합 (#746)', () => {
     expect(start).toBeGreaterThan(0);
     expect(end).toBeGreaterThan(start);
     const block = src.slice(start, end).trim();
-    // #761 갱신 — 스페이서 조건이 admissionOn && filmOn → ||로 완화됐다. 재캡처 없이 해시만
-    // 갱신한 근거: PATTERN_BOX가 실측을 보장하는 기준 조합(양쪽 다 켜짐)은 조건이 참 그대로라
-    // 지오메트리가 안 바뀐다 — 바뀌는 건 한쪽만 켜진 두 조합(Admission-only는 스페이서만 하나
-    // 늘어 시각적으로 무변화, Film-only는 이제 위 스페이서가 서 divider에서 안 붙는다)인데,
-    // Film-only 쪽은 PATTERN_BOX 주석의 "한참 위에서 끝나 안 겹친다" 실측 전제가 깨진다 —
-    // 재측정이 필요하다는 걸 #762로 넘긴다(같은 주석 참고).
-    expect(sha1(block)).toBe('40288bd10a14');
+    // #761→#762 갱신 — admissionOn/filmOn 계산이 resolveStubSections(_shared.tsx)로 이동하고
+    // (#761) 스페이서 조건이 admissionOn && filmOn → ||로 완화됐고, BackgroundPatternLayer의
+    // image가 bgPatternSafe로 게이팅됐다(#762). 재캡처 없이 해시만 갱신한 근거: PATTERN_BOX가
+    // 실측을 보장하는 두 조합(양쪽 다 켜짐·양쪽 다 꺼짐)은 이 변경으로 지오메트리가 전혀 안
+    // 바뀐다(둘 다 조건이 참/거짓 그대로 유지) — 지오메트리가 바뀌는 건 한쪽만 켜진 두 조합뿐인데,
+    // 그 둘은 이제 bgPatternSafe=false로 스탬프 자체를 안 그린다(위 PATTERN_BOX 주석 참고).
+    // "그릴 때 안 겹친다"는 명제의 전제(양쪽 다 켜짐/꺼짐의 지오메트리)가 안 바뀌었으므로 재캡처
+    // 없이 해시만 다시 잠근다.
+    expect(sha1(block)).toBe('d75b1c9482a2');
   });
 });

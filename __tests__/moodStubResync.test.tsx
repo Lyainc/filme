@@ -189,6 +189,46 @@ describe('MoodStub 마스터 resync (#281)', () => {
     });
   });
 
+  // PATTERN_BOX는 Admission·Film 둘 다 켜짐/둘 다 꺼짐 기준으로만 실측됐다(#728→#753→#761) — 한쪽만
+  // 켜지면 그 섹션이 PATTERN_BOX 쪽으로 밀려나 겹칠 수 있어(#762) resolveStubSections의
+  // bgPatternSafe가 스탬프 이미지 자체를 안 그리게 막는다.
+  describe('배경 스탬프는 bgPatternSafe=false면 안 그려진다(#762)', () => {
+    const STAMP_BASE = { ...BASE, backgroundPatternImage: 'blob:pattern' };
+    const markupWith = (movieInfo: typeof FULL_MOVIE) =>
+      renderToStaticMarkup(
+        <MoodStub movieInfo={movieInfo} components={STAMP_BASE} croppedImageUrl="blob:x" onField={() => {}} />
+      );
+
+    test('둘 다 켜짐(기준 조합) — 스탬프 그려짐', () => {
+      expect(markupWith(FULL_MOVIE)).toContain('data-bg-pattern="true"');
+    });
+
+    test('둘 다 꺼짐 — 스탬프 그려짐', () => {
+      const html = markupWith({
+        ...FULL_MOVIE,
+        seat: '', watchDate: '', watchTime: '', theater: '', screen: '',
+        runtime: '', rating: 0, releaseDate: '', isReissue: false, reissueDate: '', actors: '',
+      });
+      expect(html).toContain('data-bg-pattern="true"');
+    });
+
+    test('Admission만 켜짐 — 스탬프 안 그려짐', () => {
+      const html = markupWith({
+        ...FULL_MOVIE,
+        runtime: '', rating: 0, releaseDate: '', isReissue: false, reissueDate: '', actors: '',
+      });
+      expect(html).not.toContain('data-bg-pattern="true"');
+    });
+
+    test('Film만 켜짐 — 스탬프 안 그려짐', () => {
+      const html = markupWith({
+        ...FULL_MOVIE,
+        seat: '', watchDate: '', watchTime: '', theater: '', screen: '',
+      });
+      expect(html).not.toContain('data-bg-pattern="true"');
+    });
+  });
+
   // 배우 폭 인식 truncate(#493) — 고정 count 캡(옛 max=5) 폐기, STARRING 값 가용폭(700px) 기준.
   describe('배우 truncate — 폭 인식(#493, 고정 count 캡 대체)', () => {
     // 가짜 canvas measureText를 심어야 truncateActorsToWidth의 실제 폭 계산 경로를 태운다

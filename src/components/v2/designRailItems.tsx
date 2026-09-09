@@ -10,6 +10,7 @@ import BrightnessSlider from '@/components/wizard/BrightnessSlider';
 import { TEXTURE_RECIPES } from '@/utils/textureRecipes';
 import { MATERIAL_OPTIONS, COATING_OPTIONS, TARGET_HEIGHT } from '@/utils/constants';
 import { MINIMAL_STAMP_MAX_SCALE } from '@/components/moods/MoodMinimal';
+import { resolveStubSections } from '@/components/moods/_shared';
 import { Eyebrow } from './Eyebrow';
 import { POSTER_FILL_MOODS, TONE_FIXED_MOODS } from '@/constants/fields';
 import type { LayoutId } from '@/types';
@@ -674,6 +675,13 @@ const BACKGROUND_OPACITY_DEFAULT = 0.5;
 
 function BackgroundPatternPanel({ photo }: { photo: Photo }) {
   const image = photo.state.components.backgroundPatternImage;
+  // Stub 전용 위험(#761→#762) — Admission·The Film 중 정확히 하나만 켜지면 그 섹션이 PATTERN_BOX
+  // 쪽으로 밀려나 겹칠 수 있어 MoodStub이 스탬프를 안 그린다(resolveStubSections의 bgPatternSafe,
+  // MoodStub.tsx와 같은 계산 공유). 레일은 그 사실을 몰라 슬라이더가 죽은 것처럼 보이므로 여기서
+  // 같은 판정을 재사용해 안내한다. 다른 두 무드(editorial·criterion)는 이 위험이 없어 항상 true.
+  const bgPatternSafe =
+    photo.state.components.layout !== 'stub' ||
+    resolveStubSections(photo.state.movieInfo, photo.state.fieldVisibility, undefined).bgPatternSafe;
   // 업로드는 로고 스탬프와 **같은** 자유비 크롭 흐름(useLogoCrop, #220)을 그대로 탄다 — 새 의존성도
   // 새 크롭 경로도 없다. 크롭 결과가 곧 스탬프 이미지다(#672로 프리셋 id 축이 사라져 같이 넘길 값도
   // 없어졌다 — 이미지 유무가 곧 스탬프 유무다).
@@ -718,6 +726,12 @@ function BackgroundPatternPanel({ photo }: { photo: Photo }) {
             이미지 제거
           </button>
         </div>
+      )}
+
+      {image && !bgPatternSafe && (
+        <p role="status" className="rounded-field border border-line bg-surface-elevated px-3.5 py-3 text-caption text-fg-muted">
+          스탬프가 지금 안 보여요. Admission·The Film을 함께 켜 주세요.
+        </p>
       )}
 
       {/* 크기·투명도(#680·#728) — 이미지가 있을 때만. 없으면 조절할 대상이 없어 죽은 컨트롤이 된다.
