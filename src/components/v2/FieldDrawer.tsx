@@ -68,11 +68,9 @@ export function FieldDrawer({ photo, onField, onClose, children }: FieldDrawerPr
   const [cropOpen, setCropOpen] = useState(false);
 
   // 초기 포커스 + 간이 포커스 유지 — 패널 밖으로 새면 패널로 되돌린다(vaul이 하던 최소한만).
-  // cropOpen이 풀리면 재실행돼 포커스가 드로어로 복귀한다.
   const panelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (cropOpen) return;
-    panelRef.current?.focus();
     const keepFocus = (e: FocusEvent) => {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
         panelRef.current.focus();
@@ -81,6 +79,21 @@ export function FieldDrawer({ photo, onField, onClose, children }: FieldDrawerPr
     document.addEventListener('focusin', keepFocus);
     return () => document.removeEventListener('focusin', keepFocus);
   }, [cropOpen]);
+
+  // APG modal dialog contract: 닫힐 때 호출 트리거로 돌아간다. `useBodyScrollLock`이 먼저
+  // cleanup되어 드로어/root의 inert를 풀고, 위 focusin listener가 먼저 제거된 다음 이 cleanup이
+  // 실행되도록 effect 순서를 둔다. cropOpen 전환은 드로어를 닫는 일이 아니므로 여기에 넣지 않는다 —
+  // ImageCropModal이 로고 업로드 버튼으로 복원한 포커스를 부모가 다시 패널로 덮으면 안 된다.
+  const openerRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const opener = document.activeElement;
+    openerRef.current = opener instanceof HTMLElement ? opener : null;
+    panelRef.current?.focus();
+    return () => {
+      const opener = openerRef.current;
+      if (opener?.isConnected) opener.focus();
+    };
+  }, []);
 
   useEffect(() => {
     if (cropOpen) return;
