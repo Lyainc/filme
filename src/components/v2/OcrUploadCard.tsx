@@ -182,6 +182,10 @@ export function OcrUploadCard({
         showToast('지금 요청이 많아요. 잠시 후 다시 시도하거나 직접 입력해 주세요.');
         return;
       }
+      if (result.failed) {
+        showToast('인식에 실패했어요. 다시 시도해 주세요.');
+        return;
+      }
 
       // 텍스트 라벨을 바로 채워 로고 없이도 체인/포맷이 표시되게 한다(#141 (7)·#348). 이미지를
       // 올리면 ChainStamp/FormatStamp가 이미지를 우선하므로 라벨은 자동으로 가려진다.
@@ -227,9 +231,7 @@ export function OcrUploadCard({
       // 리셋 **뒤에** 큐에 들어가야 살아남는다(위 applyOcr 주석과 같은 이유).
       if (prevComponents && setComponents) setComponents(next);
     } catch (err) {
-      // 무음 실패 제거(#645 C2) — 네트워크/서버 오류는 rateLimited·빈 결과와 달리 아무 토스트도
-      // 없었다. 트리거 바로 아래 위치를 유지해야 하는 로컬 토스트라(#645 논의) 셸 밖 showError
-      // 대신 이 컴포넌트의 기존 showToast를 그대로 쓴다.
+      // 예기치 않은 적용 오류도 기존 로컬 안내 위치를 유지한다(#645 C2).
       console.error('[ocr]', err);
       showToast('인식에 실패했어요. 다시 시도해 주세요.');
     } finally {
