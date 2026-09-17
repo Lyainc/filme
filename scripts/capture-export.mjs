@@ -9,6 +9,8 @@
  *   bun scripts/capture-export.mjs --layout minimal --emboss --toggle-fill --out /tmp/filled.jpg
  *   bun scripts/capture-export.mjs --layout stub --bg --out /tmp/bg.jpg
  *   bun scripts/capture-export.mjs --layout stub --full-fields --out /tmp/stub-full.jpg
+ *   bun scripts/capture-export.mjs --layout stub --bg --full-fields --stub-check --long-text --posterless --out /tmp/stub-check.jpg
+ *   # --stub-check: 실제 spacer/텍스트 겹침·프리뷰 배율·필드 토글·export의 스탬프 픽셀 검사
  *   bun scripts/capture-export.mjs --layout stub --field-off watchDate,watchTime,screen --out /tmp/stub-seat-only.jpg
  *   bun scripts/capture-export.mjs --layout stub --field-off seat,screen --out /tmp/stub-datetime-only.jpg
  *   bun scripts/capture-export.mjs --layout stub --field-off seat,watchDate,watchTime --out /tmp/stub-hall-only.jpg
@@ -467,21 +469,22 @@ async function switchLayout(page, label) {
 }
 
 /**
- * `--field-off <csv>`(#755) — Admission 하위 필드를 개별로 끄는 오버라이드. 나열한 필드만
+ * `--field-off <csv>`(#755, #768) — Admission/Film 필드를 개별로 끄는 오버라이드. 나열한 필드만
  * `fieldVisibility[f]=false`로 심고 나머진 PersistedState 기본값(ALL_FIELDS_ON)을 그대로 둔다
  * (usePhototicket.ts의 `{ ...prev.fieldVisibility, ...(saved.fieldVisibility ?? {}) }` 병합이
  * 그 전제) — 그래서 아무것도 안 주면 기존 --full-fields 캡처와 동일하게 fieldVisibility 자체가
  * seed에 안 실려 회귀가 없다. `screen`을 끄면 `theater`도 같이 끈다 — MoodStub의 HALL 행은
  * theater·screen 두 값을 fieldPieces로 합성해서(_shared.tsx), screen만 꺼도 theater 값이 남으면
  * HALL 행이 그대로 산다. theater는 이 네 필드 목록에 없는 다섯 번째 필드라 독립 플래그를 안 열고
- * screen에 묶는다.
+ * screen에 묶는다. Film 전체 off는 runtime,rating,releaseDate,reissue,actors다.
  */
 const ADMISSION_FIELDS = ['seat', 'watchDate', 'watchTime', 'screen'];
+const STUB_FIELDS = [...ADMISSION_FIELDS, 'theater', 'runtime', 'rating', 'releaseDate', 'reissue', 'actors'];
 function buildFieldVisibilityOverride(fieldOff) {
   const overrides = {};
   for (const f of fieldOff) {
-    if (!ADMISSION_FIELDS.includes(f)) {
-      throw new Error(`--field-off는 admission 하위 필드만 지원: ${f} (허용: ${ADMISSION_FIELDS.join(',')})`);
+    if (!STUB_FIELDS.includes(f)) {
+      throw new Error(`--field-off 알 수 없는 필드: ${f} (허용: ${STUB_FIELDS.join(',')})`);
     }
     overrides[f] = false;
     if (f === 'screen') overrides.theater = false;
@@ -490,8 +493,7 @@ function buildFieldVisibilityOverride(fieldOff) {
 }
 
 /**
- * stub 무드 전용 실측(#755) — PATTERN_BOX(MoodStub.tsx, 고정 y1060~1102)와 "The Film" 섹션
- * 헤드 사이 겹침을 판정하려면 헤드의 자연 픽셀(960 캔버스 기준) top이 필요하다.
+ * stub 무드 전용 실측(#755) — "The Film" 섹션 헤드의 자연 픽셀(960 캔버스 기준) 좌표.
  * `data-ticket-scale-wrapper`(TicketRenderer.tsx)가 natural-pixel 루트고 `transform:scale()`만
  * 걸려 있어, `offsetWidth`(변환 전 레이아웃 폭)와 `getBoundingClientRect().width`(변환 후 렌더
  * 폭)의 비가 곧 현재 프리뷰 배율이다 — 그 배율로 나누면 배율과 무관한 자연 픽셀 좌표가 나온다.
@@ -512,7 +514,105 @@ async function measureStubFilmHead(page) {
   });
 }
 
-async function capture({ layout, material, coating, intensity, bg, bgScale, fullFields, fieldOff, emboss, lasso, relief, switchTo, toggleFill, out, timeoutMs }) {
+// 실제 DOM의 빈 공간과 비교한다. 구현 함수(anchorStampBox)를 호출하지 않아 잘못된 배선도 잡는다.
+async function checkStubStamp(page) {
+  return page.evaluate(() => {
+    const wrapper = [...document.querySelectorAll('[data-ticket-scale-wrapper]')].at(-1);
+    const spacers = wrapper?.querySelectorAll('[data-pattern-spacer]');
+    const stamp = wrapper?.querySelector('[data-bg-pattern]');
+    if (spacers?.length !== 1 || !stamp) throw new Error('Stub spacer/stamp 없음 또는 중복');
+    const root = wrapper.getBoundingClientRect();
+    const scale = root.width / 960;
+    const natural = el => {
+      const r = el.getBoundingClientRect();
+      return { left: (r.left - root.left) / scale, top: (r.top - root.top) / scale, width: r.width / scale, height: r.height / scale };
+    };
+    const box = natural(stamp);
+    const spacer = natural(spacers[0]);
+    const expectedWidth = Math.min(300, spacer.width);
+    const expectedHeight = Math.min(42, spacer.height);
+    const near = (a, b) => Math.abs(a - b) < 0.1;
+    if (!(box.width > 0 && box.height > 0 && near(box.width, expectedWidth) && near(box.height, expectedHeight) &&
+      near(box.left + box.width, spacer.left + spacer.width) &&
+      near(box.top + box.height / 2, spacer.top + spacer.height / 2))) {
+      throw new Error(`스탬프가 실제 spacer를 안 따름: ${JSON.stringify({ box, spacer, scale })}`);
+    }
+    const overlaps = [];
+    const stampRect = stamp.getBoundingClientRect();
+    const walker = document.createTreeWalker(wrapper, NodeFilter.SHOW_TEXT);
+    for (let text = walker.nextNode(); text; text = walker.nextNode()) {
+      if (!text.textContent.trim() || text.parentElement.closest('[aria-hidden="true"]')) continue;
+      const range = document.createRange();
+      range.selectNodeContents(text);
+      for (const r of range.getClientRects()) {
+        if (Math.min(r.right, stampRect.right) - Math.max(r.left, stampRect.left) > 0.1 &&
+          Math.min(r.bottom, stampRect.bottom) - Math.max(r.top, stampRect.top) > 0.1) overlaps.push(text.textContent);
+      }
+    }
+    if (overlaps.length) throw new Error(`스탬프와 텍스트 겹침: ${overlaps.join(', ')}`);
+    return { box, spacer, scale, admission: wrapper.textContent.includes('Admission'), film: wrapper.textContent.includes('The Film'), overlaps };
+  });
+}
+
+async function checkStubInteractions(page) {
+  const measurements = [await checkStubStamp(page)];
+  const transform = await page.$eval('[data-ticket-scale-wrapper]', el => el.style.transform);
+  for (const scale of [0.25, 0.6, 1]) {
+    await page.$eval('[data-ticket-scale-wrapper]', (el, value) => { el.style.transform = `scale(${value})`; }, scale);
+    measurements.push(await checkStubStamp(page));
+  }
+  await page.$eval('[data-ticket-scale-wrapper]', (el, value) => { el.style.transform = value; }, transform);
+  await page.click('[data-rail-id="pattern"]');
+  await page.waitForSelector('#rail-background-scale', { visible: true });
+  const rail = await page.evaluate(() => ({
+    slider: !!document.querySelector('#rail-background-scale'),
+    warning: document.body.textContent.includes('스탬프가 지금 안 보여요'),
+  }));
+  if (!rail.slider || rail.warning) throw new Error(`DESIGN 레일 스탬프 상태 불일치: ${JSON.stringify(rail)}`);
+  await page.$eval('[aria-label="티켓 항목 목록 열기"]', el => el.click());
+  await page.waitForSelector('[aria-label="원제 티켓에 표시"]', { visible: true });
+  for (let i = 0; i < 2; i++) {
+    await page.$eval('[aria-label="원제 티켓에 표시"]', el => el.click());
+    await sleep(400); // 실제 앱의 280ms 디바운스 뒤, 같은 섹션 on/off에서 필드 높이가 변한다.
+    measurements.push(await checkStubStamp(page));
+  }
+  await page.keyboard.press('Escape');
+  return { measurements, rail };
+}
+
+async function checkStubExport(page, dataUrl, measurement) {
+  return page.evaluate(async (src, { box }) => {
+    const img = new Image();
+    img.src = src;
+    await img.decode();
+    if (img.naturalWidth !== 1960 || img.naturalHeight !== 3108) throw new Error('export 치수 불일치');
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    // fixture의 파랑 픽셀 bbox를 독립 검출한다. 주황은 FILME 로고와 겹치므로 제외한다.
+    let left = canvas.width, top = canvas.height, right = 0, bottom = 0, count = 0;
+    for (let y = 0; y < canvas.height; y++) for (let x = 0; x < canvas.width; x++) {
+      const i = (y * canvas.width + x) * 4;
+      const [r, g, b] = [data[i], data[i + 1], data[i + 2]];
+      if (!(b > 200 && r < 70 && g > 80 && g < 150)) continue;
+      left = Math.min(left, x); right = Math.max(right, x); top = Math.min(top, y); bottom = Math.max(bottom, y); count++;
+    }
+    const expected = { left: (box.left + 10) * 2, top: (box.top + 10) * 2, right: (box.left + box.width + 10) * 2 - 1, bottom: (box.top + box.height + 10) * 2 - 1 };
+    const actual = { left, top, right, bottom };
+    if (count < box.width * box.height || Object.keys(expected).some(k => Math.abs(expected[k] - actual[k]) > 3)) {
+      throw new Error(`export 스탬프 누락/좌표 불일치: ${JSON.stringify({ expected, actual, count })}`);
+    }
+    return { expected, actual, count, pass: true };
+  }, dataUrl, measurement);
+}
+
+async function capture({ layout, material, coating, intensity, bg, bgScale, fullFields, fieldOff, emboss, lasso, relief, switchTo, toggleFill, out, timeoutMs, posterless, longText, stubCheck, captureScale }) {
+  if (stubCheck && (layout !== 'stub' || !bg || !fullFields || switchTo)) {
+    throw new Error('--stub-check는 --layout stub --bg --full-fields와 함께 사용하고 무드를 전환하지 않는다');
+  }
+  if (captureScale != null && (!Number.isFinite(captureScale) || captureScale <= 0)) throw new Error('--capture-scale은 양수여야 한다');
   const seed = {
     movieInfo: {
       title: '인터스텔라',
@@ -533,6 +633,13 @@ async function capture({ layout, material, coating, intensity, bg, bgScale, full
         actors: '매튜 매커너히, 앤 해서웨이, 제시카 차스테인, 마이클 케인, 케이시 애플렉',
         isReissue: true,
         reissueDate: '2024-12-25',
+      } : {}),
+      ...(longText ? {
+        title: '아주 긴 제목으로 두 줄을 가득 채우는 영화와 우리가 함께 기억할 오래된 극장의 마지막 상영',
+        titleOg: 'A VERY LONG ORIGINAL TITLE ABOUT THE LAST SCREENING AT THE CINEMA WE REMEMBER',
+        seat: 'J101, J102, J103, J104',
+        theater: '아주 긴 극장 이름을 가진 특별한 영화관',
+        screen: '아이맥스 레이저 특별관',
       } : {}),
     },
     components: {
@@ -605,7 +712,7 @@ async function capture({ layout, material, coating, intensity, bg, bgScale, full
 
     // 포스터 주입 → 크롭 '적용'. '적용'은 뜬 직후 누르면 completedCrop이 아직 안 서서 no-op이라
     // (disabled는 false다) 대기 후 클릭한다.
-    await page.evaluate(async (drawSrc) => {
+    if (!posterless) await page.evaluate(async (drawSrc) => {
       const el = [...document.querySelectorAll('input[type=file]')].find((i) =>
         (i.accept || '').includes('image/jpeg'),
       );
@@ -628,15 +735,20 @@ async function capture({ layout, material, coating, intensity, bg, bgScale, full
       }, text);
       if (!ok) throw new Error(`버튼을 못 찾음: ${text}`);
     };
-    await page.waitForFunction(
-      () => [...document.querySelectorAll('button')].some((b) => b.textContent.trim() === '적용'),
-      { timeout: 30000 },
-    );
-    await sleep(1500);
-    await clickByText('적용');
-    await sleep(1500);
+    if (!posterless) {
+      await page.waitForFunction(
+        () => [...document.querySelectorAll('button')].some((b) => b.textContent.trim() === '적용'),
+        { timeout: 30000 },
+      );
+      await sleep(1500);
+      await clickByText('적용');
+      await sleep(1500);
+    }
 
     mark('cropped');
+    await page.evaluate(() => document.fonts.ready);
+    await sleep(400);
+    const stubInteractions = stubCheck ? await checkStubInteractions(page) : null;
     const stubMeasure = layout === 'stub' ? await measureStubFilmHead(page) : null;
     if (emboss) {
       await paintEmboss(page);
@@ -679,6 +791,16 @@ async function capture({ layout, material, coating, intensity, bg, bgScale, full
     );
     // 프리뷰 디바운스(280ms)와 폰트 로드가 끝난 뒤 캡처하도록 여유를 준다.
     await sleep(1200);
+    if (captureScale != null) {
+      await page.evaluate(scale => {
+        for (const el of document.querySelectorAll('[data-ticket-scale-wrapper]')) el.style.transform = `scale(${scale})`;
+      }, captureScale);
+    }
+    const stubResult = stubCheck ? await checkStubStamp(page) : null;
+    if (stubResult && (stubResult.admission !== !ADMISSION_FIELDS.every(f => fieldOff.includes(f)) ||
+      stubResult.film !== !['runtime', 'rating', 'releaseDate', 'reissue', 'actors'].every(f => fieldOff.includes(f)))) {
+      throw new Error(`결과 섹션 조합이 seed와 다름: ${JSON.stringify({ fieldOff, stubResult })}`);
+    }
 
     await page.evaluate(() => {
       window.__exportDataUrl = null;
@@ -694,6 +816,9 @@ async function capture({ layout, material, coating, intensity, bg, bgScale, full
     if (!dataUrl.startsWith('data:image/jpeg')) throw new Error(`JPEG이 아님: ${dataUrl.slice(0, 40)}`);
     const bytes = Buffer.from(dataUrl.split(',')[1], 'base64');
     writeFileSync(out, bytes);
+    const stubExport = stubCheck ? await checkStubExport(page, dataUrl, stubResult) : null;
+    const rasters = logs.filter(l => l.startsWith('[capture:composite]'));
+    if (stubCheck && !posterless && !rasters.some(l => l.includes('role=poster'))) throw new Error('포스터 raster 합성 누락');
 
     // 오버레이가 실제로 합성됐는지 로그로 확인 — 안 걸린 채 "통과"하는 조용한 성공을 막는다.
     const wanted = [material, coating].filter((t) => t !== 'original' && t !== 'none');
@@ -716,7 +841,7 @@ async function capture({ layout, material, coating, intensity, bg, bgScale, full
 
     console.log(
       JSON.stringify(
-        { mode: 'capture', layout, material, coating, intensity, fullFields, fieldOff, emboss, lasso, relief, switchTo, toggleFill, out, bytes: bytes.length, overlays: drawn, marks, stubMeasure },
+        { mode: 'capture', layout, material, coating, intensity, fullFields, fieldOff, posterless, longText, captureScale, stubInteractions, stubResult, stubExport, emboss, lasso, relief, switchTo, toggleFill, out, bytes: bytes.length, overlays: drawn, rasters, marks, stubMeasure },
         null,
         2,
       ),
@@ -750,6 +875,10 @@ if (cmpIdx >= 0) {
     toggleFill: argv.includes('--toggle-fill'),
     out,
     timeoutMs: Number(arg('timeout', '60000')),
+    posterless: argv.includes('--posterless'),
+    longText: argv.includes('--long-text'),
+    stubCheck: argv.includes('--stub-check'),
+    captureScale: arg('capture-scale', null) === null ? null : Number(arg('capture-scale', null)),
   });
 }
 // bun에선 browser.close() 뒤에도 프로세스가 안 끝난다(실측: Chrome은 죽었는데 bun이 5분 넘게
