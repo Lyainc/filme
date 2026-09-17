@@ -10,7 +10,7 @@
  * Harness가 usePhototicket()으로 실제 photo를 만들고 상태는 DOM probe로 읽는다(모듈 mock 없음).
  * localStorage는 usePhototicket 디바운스 저장분 격리를 위해 매 테스트 전후 clear.
  */
-import { describe, expect, test, afterEach, beforeEach, spyOn } from 'bun:test';
+import { describe, expect, test, afterEach, beforeEach, mock } from 'bun:test';
 import { act, render, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/react';
 import { StrictMode, useState } from 'react';
 import { INITIAL_STATE, usePhototicket } from '@/hooks/usePhototicket';
@@ -141,7 +141,9 @@ describe('FieldDrawer (#355)', () => {
   test('(h) 닫는 동안 opener가 사라져도 detached 노드에 포커스하지 않는다', () => {
     render(<CloseFocusHarness removeOpener />);
     const opener = screen.getByRole('button', { name: '드로어 열기' });
-    const focus = spyOn(opener, 'focus');
+    // user-event는 focus를 accessor로 감쌀 수 있어 spyOn 대신 이 노드의 메서드만 기록한다.
+    const focus = mock(opener.focus.bind(opener));
+    Object.defineProperty(opener, 'focus', { configurable: true, value: focus });
     opener.focus();
     focus.mockClear();
     act(() => {
