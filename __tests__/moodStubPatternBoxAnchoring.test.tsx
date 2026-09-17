@@ -1,28 +1,85 @@
-/**
- * `MoodStub.tsx`의 배경 스탬프 박스가 리터럴 좌표(#530→#728→#753→#761)에서 실측 앵커링(#768)으로
- * 바뀌면서, `moodStubPatternBoxCoupling.test.ts`(리터럴 해시 잠금)의 전제 자체가 사라졌다 — 박스는
- * 더 이상 "페이퍼 스텁 소스가 그때 그대로인가"가 아니라 "스페이서의 실제 렌더 rect에서 옳게
- * 유도되는가"로 검증해야 한다. 이 파일이 그 새 불변식이고, 두 축을 나눠 잠근다.
- *
- * ① `anchorStampBox`는 순수 함수라(부작용 없음, 입력 rect만으로 출력 결정) DOM 렌더·
- * ResizeObserver·happy-dom의 getBoundingClientRect 제약(항상 {0,0,0,0}, floatingToolbar.test.tsx
- * 선례와 동일 — 그래서 이 함수를 MoodStub 밖으로 안 빼고 export만 해서 직접 부른다) 없이 계산
- * 자체를 검증한다.
- *
- * ② 계산이 옳아도 **엉뚱한 스페이서에 배선**되면 소용없다 — admissionOn&&filmOn일 때 가운데
- * (Admission-Film 사이), 그 외엔 트레일링(콘텐츠 뒤, 항상 렌더) 중 실제로 비어 있는 쪽에
- * `spacerRef`가 걸리는지는
- * happy-dom에서 ①처럼 rect로 못 잰다(root/spacer 폭이 항상 0이라 `anchorStampBox`가 항상 null을
- * 반환해 FALLBACK_STAMP_BOX로 항상 통과 — 두 ref 조건문이 통째로 삭제되거나 뒤집혀도 안 걸린다,
- * requirement-gap 리뷰 지적). 그래서 지오메트리가 아니라 **DOM 구조**로 잰다 — 두 spacer div에
- * 걸어둔 `data-pattern-spacer="true"` 마커(ref와 같은 조건)가 admissionOn/filmOn 네 조합 각각에서
- * 정확히 하나만 서고, "Admission"/"The Film" 텍스트와의 문서 순서가 기대한 자리(둘 다 켜졌을 때는
- * 그 사이, 아니면 콘텐츠 뒤)인지 `renderToStaticMarkup` 문자열 순서로 확인한다.
- */
-import { describe, expect, test } from 'bun:test';
+/** #768: 좌표 환산·React 갱신·observer 수명·spacer 배선을 검증한다.
+ * happy-dom은 레이아웃을 계산하지 않으므로 실제 기하·텍스트·JPEG 대조는
+ * scripts/capture-export.mjs --stub-check가 담당한다. */
+import { afterEach, describe, expect, spyOn, test } from 'bun:test';
+import { act, cleanup, render } from '@testing-library/react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { anchorStampBox, MoodStub } from '@/components/moods/MoodStub';
 import { FULL_MOVIE, makeMoodBase } from './fixtures';
+
+afterEach(cleanup);
+
+test('크기 변화 없는 이동과 측정 불가 전환도 이전 좌표를 남기지 않는다 (#768)', () => {
+  let top = 1000;
+  let height = 80;
+  const rect = spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+    return (this.hasAttribute('data-pattern-spacer')
+      ? { left: 56, top, width: 848, height }
+      : { left: 0, top: 0, width: 960, height: 1534 }) as DOMRect;
+  });
+  try {
+    const props = { components: { ...makeMoodBase('stub'), backgroundPatternImage: 'blob:stamp' }, croppedImageUrl: null };
+    const { container, rerender } = render(<MoodStub {...props} movieInfo={FULL_MOVIE} />);
+    const layer = () => container.querySelector<HTMLElement>('[data-bg-pattern]')!;
+    expect(layer().style.top).toBe('1019px');
+    // Admission/Film 모두 on 유지, spacer 크기도 동일 — ResizeObserver는 위치 이동을 알리지 않는다.
+    top = 1100;
+    rerender(<MoodStub {...props} movieInfo={{ ...FULL_MOVIE, title: '새 제목' }} />);
+    expect(layer().style.top).toBe('1119px');
+    height = 0;
+    rerender(<MoodStub {...props} movieInfo={{ ...FULL_MOVIE, title: '공간 없음' }} />);
+    expect(layer().style.height).toBe('0px');
+  } finally {
+    cleanup();
+    rect.mockRestore();
+  }
+});
+
+test('네 섹션 조합과 ghost 전환마다 새 spacer를 관찰하고 비동기 크기 변화도 반영한다', () => {
+  const OriginalObserver = globalThis.ResizeObserver;
+  const observers: TestObserver[] = [];
+  class TestObserver {
+    targets: Element[] = [];
+    disconnected = false;
+    constructor(private callback: ResizeObserverCallback) { observers.push(this); }
+    observe(target: Element) { this.targets.push(target); }
+    unobserve() {}
+    disconnect() { this.disconnected = true; }
+    notify() { this.callback([], this); }
+  }
+  globalThis.ResizeObserver = TestObserver;
+  let height = 80;
+  const rect = spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+    return (this.hasAttribute('data-pattern-spacer')
+      ? { left: 56, top: 1200, width: 848, height }
+      : { left: 0, top: 0, width: 960, height: 1534 }) as DOMRect;
+  });
+  try {
+    const props = { components: { ...makeMoodBase('stub'), backgroundPatternImage: 'blob:stamp' }, croppedImageUrl: null };
+    const { container, rerender, unmount } = render(<MoodStub {...props} movieInfo={FULL_MOVIE} />);
+    const admissionOff = { seat: '', watchDate: '', watchTime: '', theater: '', screen: '' };
+    const filmOff = { runtime: '', rating: 0, releaseDate: '', isReissue: false, reissueDate: '', actors: '' };
+    for (const movieInfo of [FULL_MOVIE, { ...FULL_MOVIE, ...admissionOff }, { ...FULL_MOVIE, ...admissionOff, ...filmOff }, { ...FULL_MOVIE, ...filmOff }]) {
+      rerender(<MoodStub {...props} movieInfo={movieInfo} />);
+      const spacer = container.querySelector('[data-pattern-spacer]')!;
+      const observer = observers.findLast(o => !o.disconnected && o.targets.includes(spacer));
+      expect(observer).toBeDefined();
+      height += 10;
+      act(() => observer!.notify());
+      expect(container.querySelector<HTMLElement>('[data-bg-pattern]')!.style.top).toBe(`${1200 + (height - 42) / 2}px`);
+    }
+    rerender(<MoodStub {...props} movieInfo={{ ...FULL_MOVIE, ...admissionOff, ...filmOff }} ghost />);
+    expect(container.textContent).toContain('Admission');
+    expect(container.textContent).toContain('The Film');
+    expect(observers.filter(o => !o.disconnected && o.targets.includes(container.querySelector('[data-pattern-spacer]')!))).toHaveLength(1);
+    unmount();
+    expect(observers.every(o => o.disconnected)).toBe(true);
+  } finally {
+    cleanup();
+    rect.mockRestore();
+    globalThis.ResizeObserver = OriginalObserver;
+  }
+});
 
 describe('anchorStampBox — 스페이서 실측 → 스탬프 박스 환산 (#768)', () => {
   test('스페이서가 스탬프보다 크면 우측 정렬·세로 중앙에 앉는다', () => {
@@ -51,7 +108,7 @@ describe('anchorStampBox — 스페이서 실측 → 스탬프 박스 환산 (#7
     expect(anchorStampBox(root, spacer)).toEqual({ left: 700, top: 1200, width: 100, height: 10 });
   });
 
-  test('root/spacer 폭·높이가 0이면(happy-dom) null — 호출부가 FALLBACK_STAMP_BOX를 유지한다', () => {
+  test('root/spacer 폭·높이가 0이면 null — 호출부가 스탬프 크기를 비운다', () => {
     expect(anchorStampBox({ left: 0, top: 0, width: 0 }, { left: 0, top: 0, width: 0, height: 0 })).toBeNull();
     expect(anchorStampBox({ left: 0, top: 0, width: 960 }, { left: 56, top: 1000, width: 0, height: 190 })).toBeNull();
     expect(anchorStampBox({ left: 0, top: 0, width: 960 }, { left: 56, top: 1000, width: 848, height: 0 })).toBeNull();

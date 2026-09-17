@@ -2276,14 +2276,8 @@ export function resolveTicketData(d: MovieInfo) {
 }
 
 /**
- * MoodStub의 Admission/Film 섹션 on/off 판정(#761→#762→#768). MoodStub과 DESIGN 레일의
- * BackgroundPatternPanel이 같은 계산을 각자 구현하면 드리프트가 생기므로(#762 제약) 여기
- * 하나로 모은다. 한때 이 반환값에 `bgPatternSafe`(PATTERN_BOX 리터럴이 실측된 두 기준 조합
- * 에서만 안전을 보장하던 판정)가 있었는데, #768이 배경 스탬프 위치를 리터럴이 아니라 실제 빈
- * 스페이서 실측으로 앵커링하면서 그 위험 자체가 없어져 걷어냈다(MoodStub.tsx 상단 주석 참고).
- *
- * 레일은 ghost 컨텍스트가 없어 `ghost=undefined`로 부른다 — showFieldGhost 계약상 undefined는
- * "필드 placeholder 없음"으로 떨어지므로, 실제 값 기준 판정이 된다(#369).
+ * MoodStub의 Admission/Film 섹션 on/off 판정. 필드 숨김·빈 값·ghost를 렌더와 동일하게 반영한다.
+ * #768부터 스탬프는 이 조합의 실제 spacer를 따르므로 DESIGN 레일에 별도 안전 판정이 필요 없다.
  */
 export function resolveStubSections(
   d: MovieInfo,
