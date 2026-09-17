@@ -338,47 +338,25 @@ export const MoodCriterion = memo(function MoodCriterion({ movieInfo: d, compone
           ) : null}
         </div>
 
-        {/* 한줄평 — 190px 고정 블록. 따옴표는 문구 길이와 무관하게 좌상·우하에 고정된다.
-            안전 마진(v5 #524 기준으로 재산정 — 옛 675/696px 근거는 pull-quote 레이아웃과 함께
-            사라졌다): 텍스트 폭 = 960 − PAD 84×2 − 인셋 96×2 = 600px, 50px/1.28이라 한 줄 64px →
-            2줄 128px로 190 안에 62px 남는다. 3줄이면 192px라 넘친다.
+        {/* 한줄평 — 190px 고정 블록, 텍스트 슬롯 600px(960 − PAD 84×2 − 인셋 96×2).
+            프리셋 안전마진: scripts/measure-quote-preset-widths.mjs가 현재 MoodCriterion DOM을
+            렌더해 9택 × (평점 프리셋 10종 + 기본 quote) = 99조합의 실제 줄바꿈을 잰다(#757).
+            Chrome 재실측(2026-09-17): 모두 2줄 이하, 클램프에 잘리는 프리셋 없음.
+              · 최장 자연 폭: batang의 평점 5 프리셋 1125.1px
+              · 폰트별 최대 텍스트 높이(px): auto 128 · gothic 128.22 · batang 133 · hand 160 ·
+                ink 146.31 · eunyoung 158.47 · brush 160 · coolguy 159.47 · flower 160
+              · 블록 190px 대비 최소 세로 여유 30px
+            lineHeight 1.28은 보정된 fontSize에 곱해지므로 줄 높이는 64~80px로 폰트마다 다르다.
+            자연 폭이 1200px 미만이어도 단어 단위 줄바꿈 때문에 2줄을 보장하지는 않는다.
+            스크립트는 실제 폰트 로드, 클램프 해제 전후 높이, 가로 넘침과 블록 높이를 함께
+            검사하고 하나라도 실패하면 exit 1을 낸다. 문구·폰트·크기·인셋 변경 시 다시 잴 것.
 
-            QuoteFont 9택(auto+8: gothic/batang/hand/ink/eunyoung/brush/coolguy/flower, #437)
-            **줄 높이는 폰트와 무관하다** — lineHeight가 배수라 다 64px다. 갈리는 건 한 줄에
-            몇 자가 들어가느냐뿐이라, 폰트별로 재는 건 무줄바꿈 폭이다(canvas measureText, 600px
-            슬롯, `bun scripts/measure-quote-preset-widths.mjs`, 2026-09-05 — 9택 전체 × 프리셋
-            10종 + 기본 quote 재실측, #757. 구 표(2026-07-27, 3종만 커버)는 #437 크기 보정
-            배율 도입 **전** 값이라 배율이 1이 아닌 폰트(예: hand 1.25배)는 raw 50px 기준으로
-            재둬서 지금 렌더(hand는 62.5px)와 안 맞는다 — 새 표가 그 자리를 대신한다):
-              · 프리셋 최장(영문 50자, "the film every other film will be measured against")
-                auto 880 · gothic 1094 · **batang 1125** · hand 1025 · ink 937 · eunyoung 1038 ·
-                brush 1032 · coolguy 860 · flower 839px
-              · 기본 quote(영문 45자) auto 766 · gothic 974 · batang 983 · hand 882 · ink 812 ·
-                eunyoung 894 · brush 930 · coolguy 751 · flower 745px
-            9택 전부에서 프리셋 최장이 기본 quote보다 넓다 — 글자 수만으로 최악을 골라도
-            안전하다는 뜻. 최악은 더 이상 고딕이 아니라 **batang 1125px**(=1.88줄, 3줄 문턱
-            1200px에 여유 6.2%) — #754가 다른 방법론으로 이미 봤던 "batang이 gothic보다 넓다"가
-            여기서 같은 방법으로 확인됐다. "고딕이 가장 넓다"던 옛 단정은 근거 부족이었을 뿐
-            결론은 안 바뀐다 — 9택 전부 1200px 미만이라 프리셋·기본 quote는 여전히 안전하다
-            (margin 최소 6.2%). 프리셋 문구를 늘리거나 fontSize·인셋을 건드리면 위 스크립트를
-            다시 돌려 표를 갱신할 것.
+            따옴표는 QUOTE_MARK_SIZE 125, 좌상·우하 고정. 실제 텍스트 슬롯 밖의 96px 인셋에
+            두므로 프리셋 텍스트와 겹치지 않는다.
 
-            따옴표 104 → QUOTE_MARK_SIZE 125 재실측(브라우저, 자연px, 6조합):
-              · 따옴표 span 박스 40×125 — 텍스트 인셋 96 안이라 인셋을 키울 필요가 없었다(104에선 33×104)
-              · 줄 수는 전 조합 2줄 이하, 텍스트 잉크 폭 최대 596(기본 quote 고딕) ≤ 슬롯 600
-              · 따옴표 잉크 ↔ 문구 잉크 겹침 0 — 좌상·우하에 그대로 앉는다
-
-            **사용자 입력(QUOTE_MAX_LENGTH 31자, #754)은 프리셋과 다른 문제다**: 무공백 반복
-            (한글 동일 글자 반복·`W`/`M` 반복 등 줄바꿈 기회가 없는 최악)을 고딕 기준(위에서 밝혔듯
-            9택 중 일부만 확인된 값, 최댓값 단정 아님) headless Chrome으로 27자부터 34자까지
-            실측한 결과 27자에서 이미 3줄(192px)로
-            블록을 넘긴다 — 26자가 2줄(128px) 안에 드는 마지막 값이다. 31자 상한 자체는 공백이
-            섞인 실제 문구 기준(2줄 용량 34자, fields.ts 실측표)으로 도출된 값이라 정상적인
-            문장에서는 문제없지만, 최악의 무공백 반복 입력은 31자 안에서도 슬롯을 넘길 수 있다.
-            22자 시절엔 이 최악 케이스도 우연히 2줄에 걸렸을 뿐 하드 캡이 없었다(#577) — 31자로
-            올리며 그 우연에 기대는 대신 아래 `WebkitLineClamp: 2`로 2줄을 넘는 입력은 무엇이든
-            말줄임표로 가둔다. `overflowWrap: 'anywhere'`는 그대로 둬 잘리기 전까지는 단어 중간도
-            끊어 슬롯 안에서 최대한 채운다. */}
+            사용자 입력(QUOTE_MAX_LENGTH 31자, #754)은 별도: 무공백 반복 입력은 상한 안에서도
+            3줄이 될 수 있다. overflowWrap:anywhere로 폭을 제한하고 WebkitLineClamp:2로
+            넘는 줄은 말줄임표로 가둔다. 프리셋은 이 클램프에 걸리지 않아야 한다. */}
         <div style={{ position: 'absolute', left: PAD, right: PAD, top: 1064, height: 190 }}>
           <span aria-hidden style={{ position: 'absolute', left: 0, top: 0, fontFamily: FONT_DISPLAY, fontSize: QUOTE_MARK_SIZE, lineHeight: 1, color: CRITERION_YELLOW }}>&ldquo;</span>
           <span aria-hidden style={{ position: 'absolute', right: 0, bottom: 0, fontFamily: FONT_DISPLAY, fontSize: QUOTE_MARK_SIZE, lineHeight: 1, color: CRITERION_YELLOW, transform: 'rotate(180deg)' }}>&ldquo;</span>
