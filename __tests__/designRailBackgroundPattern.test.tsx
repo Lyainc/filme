@@ -11,7 +11,7 @@
  * 고정 박스가 무드 조판과 안 겹치는 걸 어기면 캔버스 전면 시절처럼 조판을 가리고,
  * Stub 둘을 어기면 스탬프가 통째로 안 보인다.
  */
-import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
+import { describe, expect, test, afterEach, beforeEach, spyOn } from 'bun:test';
 import { render, screen, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { usePhototicket } from '@/hooks/usePhototicket';
@@ -98,9 +98,20 @@ async function openBackgroundPanel(user: ReturnType<typeof userEvent.setup>, moo
   await user.click(screen.getByRole('button', { name: '스탬프' }));
 }
 
-beforeEach(() => window.localStorage.clear());
+let restoreRect: () => void;
+beforeEach(() => {
+  window.localStorage.clear();
+  // happy-dom에는 레이아웃 엔진이 없다. Stub은 리터럴 대신 이 실측 입력에서 박스를 유도한다.
+  const rect = spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+    return (this.hasAttribute('data-pattern-spacer')
+      ? { left: 56, top: 1200, width: 848, height: 100 }
+      : { left: 0, top: 0, width: 960, height: 1534 }) as DOMRect;
+  });
+  restoreRect = () => rect.mockRestore();
+});
 afterEach(() => {
   cleanup();
+  restoreRect();
   window.localStorage.clear();
 });
 
@@ -132,16 +143,14 @@ describe('레일 스탬프 — 항목 노출 (#672→#728)', () => {
 });
 
 /**
- * 세 무드 전부에 같은 계약을 건다. box는 이 무드의 스탬프가 서는 고정 박스(캔버스 절대좌표,
- * BackgroundPatternLayer box prop과 같은 값) — MoodCriterion/MoodEditorial/MoodStub 소스의
- * BackgroundPatternLayer 호출부와 반드시 같이 움직인다.
+ * Editorial·Criterion은 고정 박스, Stub은 beforeEach의 실측 rect에서 유도되는 박스다.
  */
 const MOOD_CASES = [
   // editorial의 box는 캔버스 절대좌표가 아니라 Main 컬럼(캔버스 x682에서 시작) 기준 로컬 좌표다
   // (MoodEditorial.tsx 주석 참고) — 오른쪽 패딩 거터(로컬 x587..639)에 세운다.
   { mood: 'editorial' as const, box: { left: 587, top: 44, width: 52, height: 880 } },
   { mood: 'criterion' as const, box: { left: 84, top: 262, width: 130, height: 750 } },
-  { mood: 'stub' as const, box: { left: 604, top: 1060, width: 300, height: 42 } },
+  { mood: 'stub' as const, box: { left: 604, top: 1229, width: 300, height: 42 } },
 ];
 
 for (const { mood, box } of MOOD_CASES) {
@@ -176,15 +185,13 @@ for (const { mood, box } of MOOD_CASES) {
       expect(backgroundLayer(container)!.parentElement?.closest('[style*="opacity"]') ?? null).toBeNull();
     });
 
-    test('무드가 정한 고정 박스에만 그려진다 (#728)', async () => {
+    test('무드가 정한 박스에만 그려진다 (#728, #768)', async () => {
       const user = userEvent.setup();
       const { container } = render(<Harness mood={mood} />);
       await openBackgroundPanel(user, mood);
       await user.click(screen.getByRole('button', { name: '배경 이미지 적용' }));
 
-      // 캔버스 전면(inset:0)이 아니라 무드가 정한 고정 박스 하나에만 선다 — 사용자는 이 자리를
-      // 고르지 않는다(#728 c3). 좌표가 바뀌면 이 테스트가 그 무드 소스의 BackgroundPatternLayer
-      // box prop과 같이 갱신됐는지를 강제한다.
+      // Stub은 고정 fallback이 아닌 주입된 spacer를 따르고, 나머지는 고정 box를 따른다.
       const layer = backgroundLayer(container)!;
       expect(layer.style.left).toBe(`${box.left}px`);
       expect(layer.style.top).toBe(`${box.top}px`);

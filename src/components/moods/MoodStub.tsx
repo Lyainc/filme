@@ -1,4 +1,4 @@
-import { CSSProperties, Fragment, ReactNode, memo, useLayoutEffect, useRef, useState } from 'react';
+import { CSSProperties, Fragment, ReactNode, memo, useCallback, useLayoutEffect, useRef, useState } from 'react';
 import {
   Barcode,
   FieldGhost,
@@ -73,42 +73,19 @@ const PAD_X = 56;
 const POSTER_H = 640;
 
 /**
- * 배경 스탬프(#530→#728→#753→#761→#762→#768) — 리터럴 좌표를 손으로 재던 네 번의 반복
- * (#530→#728→#753→#761)을 실측 앵커링으로 종결한다. #761이 고친 비대칭(Admission·Film 중
- * 하나만 켜지면 그 섹션이 divider에 바로 붙던 것 — 아래 가운데 spacer의 `admissionOn ||
- * filmOn` 렌더 조건 참고)과 #762의 `bgPatternSafe`(그 비대칭 조합에서 재측정 전까지 스탬프
- * 이미지 자체를 안 그리던 임시 마스킹)는 이제 둘 다 이 실측 앵커링에 흡수됐다 — 스탬프 위치
- * 자체가 항상 안전한 실제 빈 자리에서 나오므로 "안전이 확인된 두 조합만" 그리는 마스킹이
- * 더는 필요 없다.
+ * 배경 스탬프(#768) — 고정 좌표 대신 실제 flex spacer의 우측·세로 중앙에 앵커링한다.
+ * Admission·Film이 모두 켜지면 두 섹션 사이, 그 외엔 콘텐츠 뒤의 spacer를 측정한다.
+ * 박스 크기는 최대 300×42이고 spacer보다 크면 줄인다. #762의 조합별 마스킹은 필요 없다.
  *
- * Admission-Film 사이(둘 다 켜졌을 때, `admissionOn && filmOn` 조건의 가운데 spacer) 또는
- * 콘텐츠 뒤(그 외 전부, 항상 렌더되는 트레일링 spacer)에 남는 flex:1 스페이서 하나에
- * `spacerRef`를 걸어(두 spacer 모두 `data-pattern-spacer="true"`가 같은 조건으로 붙어 있어
- * grep으로 바로 찾힌다) 그 실제 렌더 박스를 `getBoundingClientRect`로 재고, 우측(바코드
- * 정렬)·세로 중앙에 스탬프를 앉힌다 — 스페이서보다 크면 스페이서 크기로 줄어들어(clamp) 어떤
- * 필드 조합·긴 값에서도 구조적으로 못 넘친다. 좌표가 "겹치지 않는 자리를 찾아 손으로 옮겨
- * 적은 값"에서 "실제로 비어 있는 그 자리 자체"로 바뀐 게 #768의 핵심 — 페이퍼 스텁 레이아웃이
- * 앞으로 또 바뀌어도(가운데 spacer 조건이 `||`로 넓어진 #761처럼) 다시 잴 필요가 없다. 가운데
- * spacer가 `admissionOn || filmOn`로 더 자주 서도(예: Admission만 켜진 조합은 가운데+트레일링
- * 두 spacer가 함께 뜬다) ref는 여전히 `admissionOn && filmOn`일 때만 가운데를 골라 안전엔
- * 영향이 없다 — 그 외엔 항상 트레일링이 유일한 참조점이라 어느 쪽이든 실제로 비어 있다.
+ * 레이어는 componentOpacity 밖의 루트 첫 형제로 유지한다("종이에 이미 인쇄된 바탕" 계약).
+ * spacer는 측정 기준일 뿐이며, 그 rect를 프리뷰 배율과 무관한 캔버스 자연좌표로 환산한다.
  *
- * 스탬프 레이어 자체는 여전히 루트의 첫 형제로 렌더된다 — componentOpacity 래퍼 밖("이미 인쇄된
- * 바탕" 계약, Editorial·Criterion과 동일, 아래 BackgroundPatternLayer 호출부 주석 참고). 스페이서
- * 엘리먼트는 위치를 재는 자(ref)로만 쓰고, 실제 이미지는 그 자로 잰 좌표를 캔버스 절대좌표로
- * 환산해 그린다 — 두 위치가 갈리므로(스페이서는 Admission/Film 안, 스탬프는 그 밖) DOM 포함
- * 관계가 아니라 좌표 계산으로 잇는다.
- *
- * happy-dom(테스트)은 `getBoundingClientRect`가 항상 {0,0,0,0}이라 실측이 안 되는데, 그때는
- * `anchorStampBox`가 `null`을 돌려주고 `FALLBACK_STAMP_BOX`(구 PATTERN_BOX 리터럴, 실측이 한 번도
- * 안 된 스냅샷 기준)가 그대로 남는다 — 실브라우저에서만 실측값으로 갱신된다. 계산이 옳아도 엉뚱한
- * 스페이서에 배선되면 소용없는데 그 축은 rect로 못 재므로(위 이유와 같음, 두 ref 조건문이
- * 바뀌어도 FALLBACK로 계속 통과), 두 spacer div에 건 `data-pattern-spacer="true"` 마커(ref와
- * 같은 조건)를 `__tests__/moodStubPatternBoxAnchoring.test.tsx`가 DOM 순서로 따로 검증한다.
+ * 측정 전·숨겨진 프리뷰·빈 공간 소진 시에는 0 크기로 둔다. 이전 좌표나 고정 fallback을
+ * 남기면 새 콘텐츠와 겹칠 수 있다. 테스트는 실제 rect를 주입해 갱신과 ref 전환을 검증한다.
  */
 const STAMP_WIDTH = 300;
 const STAMP_HEIGHT = 42;
-const FALLBACK_STAMP_BOX = { left: 604, top: 1060, width: STAMP_WIDTH, height: STAMP_HEIGHT };
+const EMPTY_STAMP_BOX = { left: 0, top: 0, width: 0, height: 0 };
 
 /**
  * 스페이서의 실측 rect(브라우저 뷰포트 좌표, 현재 프리뷰 배율 반영)를 캔버스 절대좌표(960 자연폭
@@ -116,13 +93,13 @@ const FALLBACK_STAMP_BOX = { left: 604, top: 1060, width: STAMP_WIDTH, height: S
  * captureToImage.ts의 compositeRaster와 같다 — root와 spacer가 항상 같은 배율 아래 있으므로
  * 나눗셈 후 배율 자체가 사라진다(전달값이 CSS px든 실제 device px든 결과가 같다). 스탬프가
  * 스페이서보다 크면 스페이서 크기로 줄어든다(clamp) — 절대 못 넘친다. 순수 함수라 실제 DOM/
- * ResizeObserver 없이도 `__tests__/moodStubPatternBoxAnchoring.test.ts`가 직접 검증한다.
+ * ResizeObserver 없이도 `__tests__/moodStubPatternBoxAnchoring.test.tsx`가 직접 검증한다.
  */
 export function anchorStampBox(
   rootRect: { left: number; top: number; width: number },
   spacerRect: { left: number; top: number; width: number; height: number }
 ): { left: number; top: number; width: number; height: number } | null {
-  // happy-dom(테스트)은 항상 {0,0,0,0} — 실측 실패로 보고 null(호출부가 FALLBACK 유지).
+  // 숨겨진 루트나 빈 공간이 없으면 호출부에서 스탬프를 0 크기로 지운다.
   if (rootRect.width <= 0 || spacerRect.width <= 0 || spacerRect.height <= 0) return null;
   const scale = rootRect.width / TARGET_WIDTH;
   const spacerLeft = (spacerRect.left - rootRect.left) / scale;
@@ -235,42 +212,38 @@ export const MoodStub = memo(function MoodStub({ movieInfo: d, components, cropp
     runtimeVal,
   ].filter(Boolean);
 
-  // admissionOn/filmOn은 DESIGN 레일(BackgroundPatternPanel)과 같은 계산을 공유한다(#762) —
-  // 여기서 다시 풀어 쓰면 두 자리가 각자 드리프트한다.
+  // 렌더되는 실제 필드와 ghost를 반영한 공유 섹션 판정.
   const { admissionOn, filmOn } = resolveStubSections(d, fv, ghost);
 
   const componentOpacity = components.componentOpacity ?? 1;
 
-  // 배경 스탬프 실측 앵커링(#768) — 위 STAMP_WIDTH/FALLBACK_STAMP_BOX 주석 참고. rootRef는
+  // 배경 스탬프 실측 앵커링(#768) — 위 STAMP_WIDTH 주석 참고. rootRef는
   // 캔버스(960 자연폭) 기준점, spacerRef는 admissionOn/filmOn에 따라 두 spacer div(아래,
   // `data-pattern-spacer="true"`로 표시) 중 그때 실제로 비어 있는 하나에만 걸린다.
   const rootRef = useRef<HTMLDivElement>(null);
   const spacerRef = useRef<HTMLDivElement>(null);
-  const [stampBox, setStampBox] = useState(FALLBACK_STAMP_BOX);
+  const [stampBox, setStampBox] = useState(EMPTY_STAMP_BOX);
 
-  // useEffect(페인트 후 실행)가 아니라 useLayoutEffect다(code-review high 지적) — admissionOn/
-  // filmOn이 토글되면 커밋은 즉시 일어나(Admission 블록이 사라지고 spacerRef가 다른 spacer로
-  // 옮겨가고 Film이 그 자리를 채우는 등) DOM은 이미 새 모양인데, stampBox state가 옛 측정값(또는
-  // 마운트 시점 FALLBACK_STAMP_BOX)에 머물러 있으면 이 실측 전까지 한 프레임 옛 좌표에 그려져
-  // 방금 밀려난 콘텐츠와 겹칠 수 있다 — "구조적으로 못 넘친다"는 위 주석의 전제가 그 한 프레임만
-  // 깨진다. useLayoutEffect는 커밋 직후·페인트 전에 동기 실행되므로 그 프레임 자체가 없다.
+  const measureStamp = useCallback(() => {
+    const root = rootRef.current;
+    const spacer = spacerRef.current;
+    const box = (root && spacer && anchorStampBox(root.getBoundingClientRect(), spacer.getBoundingClientRect())) || EMPTY_STAMP_BOX;
+    setStampBox(previous => previous.left === box.left && previous.top === box.top &&
+      previous.width === box.width && previous.height === box.height ? previous : box);
+  }, []);
+
+  // 섹션 on/off가 같아도 제목·필드·폰트 변경으로 위치만 바뀔 수 있다. RO는 크기만 알리므로
+  // 매 커밋의 페인트 전에 재측정하고, 같은 좌표면 state를 유지해 추가 렌더를 멈춘다.
+  useLayoutEffect(measureStamp);
   useLayoutEffect(() => {
     const root = rootRef.current;
     const spacer = spacerRef.current;
-    if (!root || !spacer) return;
-
-    const measure = () => {
-      const box = anchorStampBox(root.getBoundingClientRect(), spacer.getBoundingClientRect());
-      if (box) setStampBox(box);
-    };
-
-    measure(); // 초기 1회는 ResizeObserver 유무와 무관하게 동기 측정(_shared.tsx 선례와 동일)
-    if (typeof ResizeObserver === 'undefined') return;
-    const ro = new ResizeObserver(measure);
+    if (!root || !spacer || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(measureStamp);
     ro.observe(root);
     ro.observe(spacer);
     return () => ro.disconnect();
-  }, [admissionOn, filmOn]);
+  }, [admissionOn, filmOn, measureStamp]);
 
   return (
     <div ref={rootRef} style={{ position: 'absolute', inset: 0, background: PAPER, color: INK, fontFamily: FONT_SANS, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
