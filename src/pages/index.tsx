@@ -1,3 +1,4 @@
+import Head from 'next/head';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { useExportReady } from '@/hooks/useExportReady';
@@ -105,6 +106,22 @@ export default function Home() {
     // 폰 프레임(#604) — 셸·결과 스테이지를 한 컨테이너에 담아 fixed 오버레이의 컨테이닝 블록과
     // cq 단위의 기준을 뷰포트에서 프레임으로 옮긴다. 모바일에선 프레임=뷰포트라 렌더 불변.
     <PhoneFrame>
+      <Head>
+        <link rel="canonical" href="https://filme-web.vercel.app/" />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="FILME" />
+        <meta property="og:description" content="영화 포스터로 시네마틱한 포토티켓을 만드세요." />
+        <meta property="og:url" content="https://filme-web.vercel.app/" />
+        <meta property="og:image" content="https://filme-web.vercel.app/assets/landing/og.jpg" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="FILME 시네마틱 포토티켓" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="FILME" />
+        <meta name="twitter:description" content="영화 포스터로 시네마틱한 포토티켓을 만드세요." />
+        <meta name="twitter:image" content="https://filme-web.vercel.app/assets/landing/og.jpg" />
+        <meta name="twitter:image:alt" content="FILME 시네마틱 포토티켓" />
+      </Head>
       {/* 완료(결과)는 편집 셸 위 오버레이가 아니라 편집 셸을 교체하는 전체화면 스테이지(#258)로
           "보이는" 전환이지만, MobileEditorShell은 resultOpen 중에도 unmount하지 않고 CSS로만
           숨긴다 — 언마운트하면 셸 로컬 state(viewMode·ghostMode·activeField·스크롤 위치)가
