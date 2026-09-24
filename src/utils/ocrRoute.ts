@@ -103,9 +103,13 @@ export async function validateOcrRequest(
   }
 
   // Rate limit: per-IP(10/시간·20/일) + shared(키 전체 12/분·450/일) 4겹. shared는 Google
-  // free tier 한도가 API 키 단위라서 필요하다(#299). Production env 누락은 503으로 닫는다.
+  // free tier 한도가 API 키 단위라서 필요하다(#299). Production env 누락과 백엔드 장애(#783)는 503으로 닫는다.
   const rl = await checkOcrRateLimit(clientIp(req));
   if (!rl.ok) {
+    if (rl.reason === 'unavailable') {
+      res.status(503).json({ error: 'Rate limit is unavailable' });
+      return null;
+    }
     if (rl.reason === 'misconfigured') {
       res.status(503).json({ error: 'Rate limit is not configured' });
       return null;
