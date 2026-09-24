@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FILME — UXUI 전후 비교</title>
+  <link rel="stylesheet" href="tokens.css">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { background: var(--color-paper); padding: var(--space-6); }
+    main { max-width: 880px; margin: auto; }
+    h1 { margin-bottom: var(--space-3); }
+    p { color: var(--color-muted); font-size: 14px; line-height: 1.7; }
+    a { display: inline-flex; align-items: center; min-height: 44px; color: var(--color-accent); text-decoration: underline; }
+    section { margin-top: var(--space-10); padding-top: var(--space-6); border-top: 1px solid var(--color-rule); }
+    .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6); margin-top: var(--space-5); }
+    figure { margin: 0; min-width: 0; }
+    figcaption { font-size: 13px; font-weight: 600; margin-bottom: var(--space-3); }
+    figure img { width: 100%; height: auto; border: 1px solid var(--color-rule); }
+    @media(max-width: 600px) { .pair { grid-template-columns: minmax(0, 1fr); } figure { max-width: 393px; } }
+  </style>
+</head>
+<body><main>
+  <h1>화면을 나누고, 다음 행동을 분명하게.</h1>
+  <p>393 × 659px, 같은 영화 정보로 비교했어요. 편집 화면은 기존 앱에서 캡처한 동일 티켓을 새 목업에도 넣었어요. 실제 사용자 평가나 작업 시간 측정 결과는 아니에요.</p>
+  <a href="index.html">인터랙티브 목업 열기</a>
+  <section><h2>시작</h2><p>완성 예시와 ‘티켓 만들기’를 먼저 보여요. 스크린샷 입력은 보조 경로로 유지해요. 전후 모두 기존 랜딩 티켓 자산을 사용하지만 노출 방식은 달라요.</p><div class="pair"><figure><figcaption>기존 — 여러 진입 경로</figcaption><img src="verification/before-home.png" alt="기존 랜딩 화면"></figure><figure><figcaption>목업 — 하나의 주 액션</figcaption><img src="verification/393-home.png" alt="새 랜딩 화면"></figure></div></section>
+  <section><h2>꾸미기</h2><p>디자인 선택과 변경 취소를 상단에 모으고, 세부 옵션은 라벨 있는 행으로 정리했어요. 기본 미리보기는 작아졌고, 크게 보기는 별도로 제공해요.</p><div class="pair"><figure><figcaption>기존 — 티켓 주변에 분산된 도구</figcaption><img src="verification/before-editor.png" alt="기존 편집 화면, 먼 바다 티켓"></figure><figure><figcaption>목업 — 명확한 선택과 완료 경로</figcaption><img src="verification/after-editor-same-ticket.png" alt="동일한 먼 바다 티켓을 사용하는 새 편집 화면"></figure></div></section>
+  <section><h2>정보 입력</h2><p>티켓을 가리는 목록 대신, 필수 항목과 선택 항목을 구분한 폼을 사용해요. 입력과 꾸미기 사이에 화면 이동이 추가되는 점은 직접 사용하면서 평가할 부분이에요.</p><div class="pair"><figure><figcaption>기존 — 화면 위에 열린 항목 목록</figcaption><img src="verification/before-fields.png" alt="기존 티켓 항목 패널"></figure><figure><figcaption>목업 — 읽고 입력하는 전용 화면</figcaption><img src="verification/after-fields.png" alt="새 영화 정보 입력 화면"></figure></div></section>
+</main></body></html>

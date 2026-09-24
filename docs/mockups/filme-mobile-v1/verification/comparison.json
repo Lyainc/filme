@@ -1,0 +1,12 @@
+{
+  "width": 393,
+  "height": 659,
+  "before": "http://127.0.0.1:3792",
+  "after": "http://127.0.0.1:3791/docs/mockups/filme-mobile-v1/index.html",
+  "baseline": {
+    "canvas": "#fffcf7",
+    "ticket": "LOGOFORMATnow showing먼 바다THE FAR SEAScreening2026.02.14.  19:40Venue메가박스 코엑스 · Dolby Cinema관SeatH열 12번Runtime118Rated★ 4.5Released2025Cast윤재이, Élodie Marchand-Vasseurmade withfılmecollected by지윤"
+  },
+  "method": "Same sample fields. Existing local app ticket DOM captured to comparison-ticket.png and reused unchanged in the mockup editor screenshot. Comparison image override is in browser memory only.",
+  "limitation": "UI structure comparison, not a usability study or real-device test."
+}

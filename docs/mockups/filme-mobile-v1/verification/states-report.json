@@ -1,0 +1,25 @@
+{
+  "base": "http://127.0.0.1:3791/docs/mockups/filme-mobile-v1/index.html",
+  "mode": "Chrome viewport emulation, not real iPhone Safari",
+  "checks": [
+    {
+      "allSixDesigns": true,
+      "modalFocus": true,
+      "fontLoaded": true
+    },
+    {
+      "emptySearch": true,
+      "shareSimulation": true,
+      "shortViewportSheet": true
+    },
+    {
+      "comparisonPage": true
+    }
+  ],
+  "screenshots": [
+    "393-landscape.png",
+    "393-search-empty.png",
+    "393-share.png",
+    "320-short-settings.png"
+  ]
+}

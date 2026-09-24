@@ -1,0 +1,163 @@
+skill: build-spec
+schema_version: 1
+version: "5.2.0"
+generated: "2026-09-22"
+input:
+  target: FILME 모바일 UXUI 전면 재설계 목업
+  options: []
+output:
+  type: spec
+  structure: templates/SEED_SPEC.yaml
+spec_version: 1
+status: superseded
+superseded_by: ../mockups/filme-mobile-v2/design.md
+created: "2026-09-22"
+target: filme-mobile-redesign-mockup
+domain: tech
+brownfield: true
+refine_generation: 0
+
+goal:
+  statement: FILME의 첫 사용자가 자연스럽게 티켓을 완성할 수 있는 모바일 UXUI를 높은 시각적 완성도의 독립 인터랙티브 목업으로 검토한다.
+  clarity_score: 0.9
+priorities:
+  acceptance: [시각적 완성도, 쉬운 시작, 직관적인 편집]
+  experience: {쉬운 첫 완성: 80, 자유로운 꾸미기: 20}
+  rationale: 완성도의 판단 순위와 사용 경험의 비중은 별개다. 장식 때문에 사용성을 희생하지 않는다.
+
+scope:
+  included:
+    - 별도 HTML과 번들 JS/CSS로 실행하는 실제 shadcn/ui 기반 React 목업
+    - 시작, 영화 정보 입력, 꾸미기, 결과 화면과 연결되는 하단 시트
+    - 검색·OCR·저장·공유의 샘플 성공·로딩·실패 상태
+    - 필수 입력 검증, 뒤로 가기와 입력 유지, 디자인 선택과 변경 취소
+    - 기존 기능의 새 위치를 설명하는 기능 매핑과 전후 화면 비교
+  excluded:
+    - 실제 API 호출, OCR 복구, Redis 변경, 프로바이더 이전
+    - 실제 JPEG 생성이나 네이티브 공유 연동
+    - 입력·업로드에 따른 티켓 렌더러 신규 구현
+    - 프로덕션 UI 변경, 배포, 커밋, 기존 실기기 이슈 완료 처리
+    - iOS 앱 구현 또는 네이티브 프레임워크 확정
+
+constraints:
+  - id: c1
+    type: technical
+    hard: true
+    description: 기존 프로덕션 WIP를 보존하고 docs/mockups/filme-mobile-v1 아래에 독립 산출물을 만든다.
+    rationale: 사용자가 먼저 별도 HTML 목업을 요청했다.
+  - id: c2
+    type: technical
+    hard: true
+    description: 실제 shadcn/ui 컴포넌트 코드를 사용하고 출처와 수정 범위를 기록한다. 단순 CSS 모사를 shadcn 사용이라고 부르지 않는다.
+    rationale: 사용자가 shadcn 사용을 명시했다.
+  - id: c3
+    type: other
+    hard: true
+    description: 주요 강조색은 기존 코드의 '#B0423F'로 복원한다. UI 서체는 Pretendard로 한다.
+    rationale: 사용자는 마지막 색상 질문에서 주황색 재정의 대신 기존 값 복원을 선택했다.
+  - id: c4
+    type: other
+    hard: true
+    description: 기존 6종 티켓 조형·서체·색·자연 픽셀 규격은 보존한다. 목업에서는 기존 샘플 이미지를 재사용한다.
+    rationale: 이번 작업의 대상은 서비스 UXUI이며 티켓 자체가 아니다.
+  - id: c5
+    type: other
+    hard: true
+    description: 예측 가능한 모바일 웹의 탐색·폼·버튼·시트를 사용한다. 향후 iOS에서도 같은 작업 흐름과 정보 위계를 적용할 수 있게 한다.
+    rationale: 네이티브와 유사한 경험을 추구하되 웹 컴포넌트의 네이티브 코드 재사용을 보장하지 않는다.
+  - id: c6
+    type: technical
+    hard: true
+    description: 320·375·393·414px 모바일 화면에서 동작한다. PC에도 동일한 좁은 모바일 레이아웃을 제공한다.
+    rationale: 데스크톱 전용 지원은 종료하되 접근을 차단하지 않는다.
+  - id: c7
+    type: other
+    hard: true
+    description: 현재는 전체 앱 UI가 일관된 라이트 테마다. 다크 팔레트는 별도 후속 과제로 남긴다.
+    rationale: 이전 사용자 결정을 유지하며 부분 다크 혼합을 만들지 않는다.
+  - id: c8
+    type: other
+    hard: true
+    description: 형압·하이라이트 도구, 반복 티켓 배경, 최초 랜딩 좌상단 로고·워드마크는 다시 추가하지 않는다.
+    rationale: 명시적으로 제거 요청한 요소다.
+  - id: c9
+    type: technical
+    hard: true
+    description: 긴 값은 요약에서 말줄임하되 입력·상세 경로에서 전체 원문에 접근할 수 있다. 값 자체를 잘라 저장하지 않는다.
+    rationale: 작은 화면에서 조작과 값 확인을 함께 보장한다.
+  - id: c10
+    type: technical
+    hard: true
+    description: 샘플 동작을 실제 인식·저장·공유 성공으로 오인시키지 않는다. 시뮬레이션 경계와 고정 티켓 이미지를 목업 안내에서 밝힌다.
+    rationale: 사용자는 로직 연결보다 UI 완성도 검토를 선택했다.
+  - id: c11
+    type: other
+    hard: false
+    description: 단정한 면, 절제된 강조색, 일관된 둥근 모서리, 읽기 쉬운 위계를 사용한다. 과한 예술적 연출과 장식을 피한다.
+    rationale: 모던함과 모바일 앱의 익숙함을 우선한다.
+
+success_criteria:
+  - id: ac1
+    description: 화면과 시트의 글자·간격·아이콘·색상·버튼 위계가 일관되고 빈 화면·로딩·오류·완료 상태까지 설계되어 있다.
+    verifiable: true
+    measurable_via: 주요 화면과 상태별 캡처, 계산 스타일, 제작자 시각 검토와 사용자의 최종 목업 평가. 자동 검사를 미적 만족의 증명으로 취급하지 않는다.
+  - id: ac2
+    description: 처음 사용자가 별도 설명 없이 샘플 티켓의 시작부터 완료까지 이동하고 각 화면의 다음 행동을 찾을 수 있다.
+    verifiable: true
+    measurable_via: 브라우저 전체 경로 시연과 사용자의 직접 체험. 실사용자 연구 없이 작업 시간·전환율 개선을 주장하지 않는다.
+  - id: ac3
+    description: 정보 입력과 꾸미기를 쉽게 찾고 뒤로 돌아와도 입력과 선택이 유지된다.
+    verifiable: true
+    measurable_via: 입력 검증, 선택 변경, 되돌리기, 패널 닫기, 브라우저 뒤로 가기, 초안 이어하기 시나리오.
+  - id: ac4
+    description: 지정 모바일 폭에서 주요 입력과 액션이 가려지거나 페이지 밖으로 넘치지 않고 터치할 수 있다.
+    verifiable: true
+    measurable_via: 320x568·375x667·393x659·414x736에서 캡처와 DOM·히트 테스트. 축소된 높이, 긴 텍스트, 시트 스크롤도 확인한다. 실제 iPhone 검증은 별도 증거로 구분한다.
+  - id: ac5
+    description: 같은 폭과 티켓을 사용한 기존 화면과 새 목업 비교 자료가 있으며 각 변경의 이유를 설명한다.
+    verifiable: true
+    measurable_via: 기존 검증 캡처와 동일 샘플 티켓을 사용하는 비교 화면. 이미지·샘플 데이터가 다른 비교는 그 차이를 명시한다.
+  - id: ac6
+    description: 목업의 시연 상태와 실제 프로덕션 기능·데이터가 섞이지 않는다.
+    verifiable: true
+    measurable_via: 외부 API 요청 없음, 독립된 저장 키, 기존 파일 보존, 실제 저장하지 않는다는 안내, 기존 티켓 자산 무변경 확인.
+
+context:
+  existing_stack: [Next.js 16 Pages Router, React 19, Tailwind CSS 3, Bun]
+  dependencies: [shadcn/ui, Radix primitives, 기존 Pretendard, 기존 티켓 이미지]
+  integration_points:
+    - docs/mockups/filme-mobile-v1 신규 산출물
+    - public/assets/landing 기존 6종 샘플 자산 읽기
+    - public/fonts/PretendardVariable.woff2 읽기
+  inspected_features:
+    - 필수 제목·개봉연도, 원제·출연·러닝타임, 관람일시·극장·좌석·예매번호
+    - 영화 검색, 티켓 OCR, 포스터 업로드·크롭, 6종 무드
+    - 컬러·재질·코팅·투명도·크기·스탬프, 서명·한줄평·서체, 로고
+    - 항목 표시 여부, 실행 취소·다시 실행, 초안 복원, 결과 저장·공유
+  backlog_scan: >-
+    공개·종료 백로그 12 open / 400 closed를 필터링한 요약을 검토했다.
+    #775 입력, #779 슬라이더 터치, #780 서체 선택, #781 빈 로고 안내,
+    #782 자동저장 의미는 보존한다. 종료 #674·#652·#614·#476·#212의
+    과거 화면 구조는 사용자의 전면 재설계 요청이 대체한다.
+    본문 일부·제목 기반 요약이므로 모든 의미상 충돌을 배제했다는 뜻은 아니다.
+  supersedes:
+    - filme-syllabus-ui.yaml의 크림·노랑·틸 시각 체계와 기존 단일 셸 배치에 대한 제한
+  preserves:
+    - 기존 WIP와 티켓 디자인, 데이터 계약, 실기기 검증의 별도 완료 조건
+
+blindspots:
+  - area: assumptions
+    question: 주황색 요청과 기존 벽돌색 코드 중 무엇을 복원할 것인가?
+    resolution: 사용자가 2번을 선택하여 '#B0423F' 복원으로 확정했다.
+ambiguity:
+  overall: 0.1
+  gate_passed: true
+clarity_breakdown: {goal: 0.9, constraint: 0.9, success: 0.9, context: 0.9}
+metadata:
+  interview_rounds: 3
+  questions_asked: 4
+  generated_by: thinking-tools/build-spec
+  isolated_gate_judges: [mockup_spec_gate_r2, mockup_spec_gate_r3]
+  consecutive_qualifying_rounds: 2
+  blindspot_pass: done
+  source_session: "01a0ae9a-18c3-7901-a10b-bd112888e88a"

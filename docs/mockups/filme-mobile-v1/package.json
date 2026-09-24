@@ -1,0 +1,25 @@
+{
+  "name": "filme-mobile-mockup",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun build.mjs",
+    "preview": "bun serve.mjs",
+    "verify": "bun verify.mjs"
+  },
+  "dependencies": {
+    "@radix-ui/react-dialog": "1.1.17",
+    "@radix-ui/react-slot": "1.3.0",
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
+    "tailwind-merge": "3.6.0"
+  },
+  "devDependencies": {
+    "postcss": "8.5.13",
+    "puppeteer-core": "25.4.0",
+    "tailwindcss": "3.4.19"
+  },
+  "packageManager": "bun@1.3.14"
+}

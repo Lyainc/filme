@@ -1,0 +1,90 @@
+{
+  "base": "file:///Users/Lyainc/dev/prj/PhototicketMaker/docs/mockups/filme-mobile-v1/index.html",
+  "mode": "Chrome viewport emulation, not real iPhone Safari",
+  "checks": [
+    {
+      "width": 320,
+      "height": 568,
+      "scrollWidth": 320,
+      "frameWidth": 320,
+      "missingImages": [],
+      "primaryHit": true,
+      "font": "Pretendard, -apple-system, \"system-ui\", sans-serif"
+    },
+    {
+      "width": 375,
+      "height": 667,
+      "scrollWidth": 375,
+      "frameWidth": 375,
+      "missingImages": [],
+      "primaryHit": true,
+      "font": "Pretendard, -apple-system, \"system-ui\", sans-serif"
+    },
+    {
+      "width": 393,
+      "height": 659,
+      "scrollWidth": 393,
+      "frameWidth": 393,
+      "missingImages": [],
+      "primaryHit": true,
+      "font": "Pretendard, -apple-system, \"system-ui\", sans-serif"
+    },
+    {
+      "width": 414,
+      "height": 736,
+      "scrollWidth": 414,
+      "frameWidth": 414,
+      "missingImages": [],
+      "primaryHit": true,
+      "font": "Pretendard, -apple-system, \"system-ui\", sans-serif"
+    },
+    {
+      "width": 768,
+      "height": 900,
+      "scrollWidth": 768,
+      "frameWidth": 430,
+      "missingImages": [],
+      "primaryHit": true,
+      "font": "Pretendard, -apple-system, \"system-ui\", sans-serif"
+    },
+    {
+      "interactions": "required fields, selection, undo/redo, cancel/apply, back state, sample search, OCR success/error, save loading/success, OS dark, reduced motion",
+      "passed": true
+    }
+  ],
+  "screenshots": [
+    "320-home.png",
+    "320-info.png",
+    "320-design.png",
+    "320-preview.png",
+    "320-result.png",
+    "375-home.png",
+    "375-info.png",
+    "375-design.png",
+    "375-preview.png",
+    "375-result.png",
+    "393-home.png",
+    "393-info.png",
+    "393-design.png",
+    "393-preview.png",
+    "393-result.png",
+    "414-home.png",
+    "414-info.png",
+    "414-design.png",
+    "414-preview.png",
+    "414-result.png",
+    "768-home.png",
+    "768-info.png",
+    "768-design.png",
+    "768-preview.png",
+    "768-result.png",
+    "393-search-loading.png",
+    "393-search.png",
+    "393-moods.png",
+    "393-settings.png",
+    "393-ocr-error.png",
+    "393-ocr-review.png",
+    "393-save-loading.png",
+    "393-save-complete.png"
+  ]
+}

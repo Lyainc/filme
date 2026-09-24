@@ -1,0 +1,15 @@
+{
+  "date": "2026-09-22",
+  "scope": "isolated mobile mockup",
+  "source": {
+    "stack": "package.json",
+    "font": "public/fonts/PretendardVariable.woff2",
+    "accent": "User confirmed git HEAD globals.css accent #B0423F",
+    "ticketAssets": "public/assets/landing/README.md"
+  },
+  "genre": "modern-minimal",
+  "theme": "custom FILME brick",
+  "font": "Pretendard",
+  "motion": "CSS only, reduced-motion respected",
+  "constraints": "docs/specs/filme-mobile-redesign-mockup.yaml"
+}
