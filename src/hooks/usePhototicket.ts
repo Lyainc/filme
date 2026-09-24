@@ -277,6 +277,20 @@ export function usePhototicket() {
   // 언마운트/StrictMode 이중 마운트만 막지 "같은 마운트 안에서 문서가 바뀐 것"을 모른다.
   // 같은 처방의 선례가 OCR 보강의 ocrEpochRef다(#388 / claude-review PR #413 P0, 커밋 007f381).
   const docEpochRef = useRef(0);
+  // 패널 언마운트와 무관한 영화 선택 수명(#784). 제목 수정/재선택/undo가 이전 상세 보강을 무효화한다.
+  // 문서 교체는 docEpochRef가 따로 잡으므로 둘 다 그대로일 때만 늦은 상세를 적용한다.
+  const movieSelectionRef = useRef(0);
+  // 선택 번호는 영화가 실제로 바뀔 때만 올린다 — 같은 제목을 다시 쓰거나 같은 영화로 undo하는 건
+  // 선택을 끝낸 게 아니라서, 올리면 아직 유효한 상세가 버려져 출연·러닝타임이 영영 비는다.
+  // 비교 기준은 최신 movieInfo(latest-ref, saveDraftRef와 같은 패턴).
+  const movieInfoRef = useRef(state.movieInfo);
+  movieInfoRef.current = state.movieInfo;
+  const bumpMovieSelectionIfChanged = useCallback((next: Partial<Pick<MovieInfo, 'title' | 'movieCd'>>) => {
+    const cur = movieInfoRef.current;
+    if (('title' in next && next.title !== cur.title) || ('movieCd' in next && next.movieCd !== cur.movieCd)) {
+      movieSelectionRef.current += 1;
+    }
+  }, []);
   // 크롭 원본 시드 경로의 latest-ref(saveDraftRef와 동일 패턴) — handleImageUpload는 소비자가
   // 많아 stable해야 하는데 아래 usePosterCrop보다 먼저 정의되므로 이 ref로 순환을 끊는다.
   const seedOriginalRef = useRef<(url: string | null) => void>(() => {});
@@ -506,6 +520,7 @@ export function usePhototicket() {
   }, []);
 
   const updateMovieInfo = useCallback((info: Partial<MovieInfo>) => {
+    bumpMovieSelectionIfChanged(info);
     setState((prev) => {
       // title만 단독으로(movieCd 없이) 바뀌면 수동 편집이라 본다 — 이전 KOBIS 선택의 movieCd는
       // 더 이상 화면의 title과 대응하지 않으므로 같이 무효화한다. 안 그러면 바코드 fallback(#379)이
@@ -519,7 +534,20 @@ export function usePhototicket() {
       };
     });
     setDirtyTick((t) => t + 1);
-  }, []);
+  }, [bumpMovieSelectionIfChanged]);
+
+  // KOBIS 선택 전용(#784) — 기본 필드를 반영하고 선택 시점의 문서/영화를 캡처한다. 반환한 적용기는
+  // 둘 다 그대로일 때만 상세(출연·러닝타임)를 얹는다. 입력 패널을 닫아도 같은 문서에는 상세가 도착해야
+  // 하므로, 인스턴스 로컬인 useKobisSearch의 detailRunRef가 아니라 셸이 수명을 판정한다(ocrEpochRef와 같은 처방).
+  const beginMovieSelection = useCallback((info: Partial<MovieInfo>) => {
+    updateMovieInfo(info);
+    const selection = movieSelectionRef.current;
+    const docEpoch = docEpochRef.current;
+    return (detail: Partial<MovieInfo>) => {
+      if (movieSelectionRef.current !== selection || docEpochRef.current !== docEpoch) return;
+      updateMovieInfo(detail);
+    };
+  }, [updateMovieInfo]);
 
   // 비동기 자동 보강 전용 — updateMovieInfo와 달리 이미 값이 있는 필드는 덮지 않는다. 사용자가
   // 먼저 손으로 채운 필드를 뒤늦게 도착한 보강이 지워버리면 안 되기 때문이다.
@@ -663,6 +691,7 @@ export function usePhototicket() {
   // 항상 실려와 brightnessTouchedRef가 오염되고 texture 기본 밝기 로직이 스냅샷을 덮는다.
   // 언마운트 revoke 대상 ref만 복원된 로고에 맞춰 갱신한다.
   const restoreSnapshot = useCallback((snap: HistorySnapshot) => {
+    bumpMovieSelectionIfChanged({ title: snap.movieInfo.title, movieCd: snap.movieInfo.movieCd });
     latestChainUrlRef.current = snap.components.chain.startsWith('blob:') ? snap.components.chain : null;
     latestFormatUrlRef.current = snap.components.format.startsWith('blob:') ? snap.components.format : null;
     latestSignatureUrlRef.current = snap.components.signatureImage?.startsWith('blob:') ? snap.components.signatureImage : null;
@@ -682,7 +711,7 @@ export function usePhototicket() {
       components: snap.components,
       fieldVisibility: snap.fieldVisibility,
     }));
-  }, []);
+  }, [bumpMovieSelectionIfChanged]);
 
   // #310이 폐지했던 자동저장을 #436이 enabled 게이트 뒤에 되살린다 — 명시적 트리거(버튼 클릭)는 그대로 유지.
   // 반환값은 localStorage 쓰기(텍스트/설정, 동기) 성공 여부 — 호출부(자동저장 effect·임시저장
@@ -953,6 +982,7 @@ export function usePhototicket() {
     state,
     handleImageUpload,
     updateMovieInfo,
+    beginMovieSelection,
     fillEmptyMovieInfo,
     updateComponents,
     setRecommendedColors,
