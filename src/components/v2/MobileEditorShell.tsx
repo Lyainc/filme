@@ -205,8 +205,10 @@ interface MobileEditorShellProps {
   onDone: () => void;
   /** 완료 비활성 시 안내 문구(=railMessage). 탭하면 토스트로 노출. */
   disabledReason: string;
-  /** 인라인 프리뷰는 디바운스된 값으로 렌더(폼 입력이 프리뷰를 매타건 리렌더하지 않게). */
+  /** 인라인 프리뷰는 디바운스된 값으로 렌더(폼 입력이 프리뷰를 매타건 리렌더하지 않게). 티켓 위 직접 편집 중엔 부모가 debounce를 건너뛴다(#775). */
   previewMovieInfo: MovieInfo;
+  /** 티켓 위 직접 편집 진입/종료 알림 — 부모가 그동안 프리뷰 debounce를 건너뛴다(#775). */
+  onFieldEditingChange?: (editing: boolean) => void;
   previewComponents: TicketComponents;
   fieldVisibility: Record<TicketField, boolean>;
 }
@@ -231,6 +233,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   onDone,
   disabledReason,
   previewMovieInfo,
+  onFieldEditingChange,
   previewComponents,
   fieldVisibility,
 }, ref) {
@@ -453,6 +456,13 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   // TicketRenderer의 ResizeObserver 스케일과 싸우지 않게).
   const [editLift, setEditLift] = useState(0);
   const editing = activeField != null && viewMode === 'default' && canvasReady;
+  // 드로어가 열려 있으면 입력은 드로어 쪽이라 debounce를 그대로 둔다 — 인플레이스 편집기는 드로어를
+  // 열어도 activeField를 안 지워 editing이 참으로 남는다(아래 InPlaceFieldEditor 주석, #685).
+  const inPlaceTyping = editing && !drawerOpen;
+  useEffect(() => {
+    onFieldEditingChange?.(inPlaceTyping);
+    return () => onFieldEditingChange?.(false);
+  }, [inPlaceTyping, onFieldEditingChange]);
   const closeEditor = useCallback(() => {
     setActiveField(null);
     setEditLift(0);
@@ -530,12 +540,13 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
     commitWordmarkReset();
   }
 
-  // ResultStage(#669)는 confirm/commit을 나눠 쓴다 — croppedImageUrl은 즉시(라이브 prop)
-  // 반영되지만 movieInfo/components는 index.tsx의 280ms useDebounce를 거치고, 결과화면을
-  // 닫는 useResultView.closeView는 history.back()의 popstate(비동기)를 기다린다. confirm 직후
-  // 바로 clear(commitWordmarkReset)해버리면 그 사이 창에서 포스터는 사라졌는데 옛 영화 정보는
-  // 그대로 남은 결과화면이 잠깐 보인다(#669 code-review 발견) — index.tsx가 closeView() 이후
-  // resultOpen이 실제로 false가 된 다음에야 commitWordmarkReset을 부르게 한다.
+  // ResultStage(#669)는 confirm/commit을 나눠 쓴다 — 결과화면을 닫는 useResultView.closeView는
+  // history.back()의 popstate(비동기)를 기다린다. confirm 직후 바로 clear(commitWordmarkReset)해버리면
+  // 그 사이 창에서 초기화된 티켓이 결과화면에 잠깐 보인다. #669 당시엔 movieInfo/components가
+  // index.tsx의 280ms useDebounce를 거쳐 "포스터는 사라졌는데 옛 영화 정보는 남은" 화면이었고
+  // (#669 code-review 발견), #775부터 결과화면이 라이브 값을 읽어 섞이진 않지만 빈 티켓 flash는
+  // 그대로라 분리를 유지한다 — index.tsx가 closeView() 이후 resultOpen이 실제로 false가 된 다음에야
+  // commitWordmarkReset을 부르게 한다.
   useImperativeHandle(ref, () => ({ confirmWordmarkReset, commitWordmarkReset }));
 
   // 온-티켓 필드 탭(#259). 숨김 필드 탭 시 자동 표시 on(시안 setActive) 후 시트를 연다 — 스탬프는
