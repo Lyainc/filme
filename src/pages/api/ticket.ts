@@ -59,9 +59,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(413).json({ error: 'Image too large (max 10MB)' });
   }
 
-  // Rate limit: IP sliding window(분당 5·시간당 20·일당 60). Production env 누락은 503으로 닫는다.
+  // Rate limit: IP sliding window(분당 5·시간당 20·일당 60). Production env 누락과 백엔드 장애(#783)는 503으로 닫는다.
   const rl = await checkTicketRateLimit(clientIp(req));
   if (!rl.ok) {
+    if (rl.reason === 'unavailable') {
+      return res.status(503).json({ error: 'Rate limit is unavailable' });
+    }
     if (rl.reason === 'misconfigured') {
       return res.status(503).json({ error: 'Rate limit is not configured' });
     }

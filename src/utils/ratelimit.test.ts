@@ -30,9 +30,9 @@ afterEach(() => {
 });
 
 describe('provider API rate limits', () => {
-  // failMode 분기는 Upstash 미설정(limiter=null) 경로에서만 갈린다. env가 설정된 경로는
-  // 실제 Redis 호출이라 failMode와 무관(두 scope 모두 limiter를 그대로 거침)하므로
-  // 여기선 다루지 않는다. 매트릭스: production×dev × scope(ocr/kobis), env 미설정.
+  // 이 파일은 Upstash 미설정(limiter=null) 경로의 failMode 분기만 다룬다. env가 설정된 경로의
+  // 백엔드 장애(타임아웃·예외)도 failMode가 가르는데(#783), 그건 Redis/Ratelimit을 mock해야 해서
+  // ratelimitGlobalWindow.test.ts가 잠근다. 매트릭스: production×dev × scope(ocr/kobis), env 미설정.
 
   it('fails closed for OCR in production when Upstash is missing (실과금 보호)', async () => {
     setNodeEnv('production');
