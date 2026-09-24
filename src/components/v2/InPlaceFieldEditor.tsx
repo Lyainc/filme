@@ -244,7 +244,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
 
   // KOBIS 검색(제목 aid) — TitleSheet와 동일한 공용 훅(#242 drift 방지).
   const kobis = useKobisSearch({
-    apply: photo.updateMovieInfo,
+    apply: photo.beginMovieSelection,
   });
 
   const setValue = (v: string) => {
