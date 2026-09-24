@@ -1,6 +1,9 @@
 # FILME 모바일 편집 목업
 
 ```sh
+# 새 체크아웃에서 재빌드할 때: 루트 의존성 + v1의 shadcn 의존성
+bun install
+bun install --cwd docs/mockups/filme-mobile-v1
 bun docs/mockups/filme-mobile-v2/build.mjs
 bun docs/mockups/filme-mobile-v2/serve.mjs
 # 별도 터미널
@@ -20,6 +23,8 @@ bun docs/mockups/filme-mobile-v2/verify-refinement.mjs
 
 티켓 서체는 현재 앱과 같아요. 기존 Next 빌드의 Google Fonts 파일을 `fonts/`로 복사하고 OFL 라이선스 5개를 함께 포함해요. 한글 로컬 폰트는 `public/fonts`와 [라이선스](../../../public/fonts/LICENSES.md)를 재사용해요. 선택 서체 전체를 선로딩하지 않아요. UI 라이선스는 [v1 THIRD_PARTY.md](../filme-mobile-v1/THIRD_PARTY.md)에 있어요.
 
-현재 v7 반영 명세: `/private/tmp/filme-v6/seed.yaml` (임시 파일). 요구사항별 구현 대응은 design.md에 남겼어요.
+현재 v7 반영 명세: `docs/mockups/filme-mobile-v2/seed.yaml` (브랜치에 보존된 명세). 요구사항별 구현 대응은 design.md에 남겼어요.
 
 [Seed 최종 점검](./verification/seed-audit.md): r1–r16 대조, 두 결함 수정, Chrome 검증 40개와 실기기/사용성 평가의 검증 경계를 기록했어요.
+
+목업은 `main` 기반 `feat/mobile-editor-mockups` 브랜치에 분리했어요. 최신 명세는 [seed.yaml](./seed.yaml)에 보존했어요. Criterion의 한 줄 기록은 목업의 그룹 입력에서 노출하며, 프로덕션 항목 목록의 제외 규칙에 의존하지 않아요. [브랜치 분리 기록](./verification/branch-split.md)에 보존 범위와 확인 결과를 남겼어요.

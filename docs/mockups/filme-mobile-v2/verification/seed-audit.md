@@ -1,6 +1,6 @@
 # Seed 최종 대조 · 2026-09-24
 
-기준: `/private/tmp/filme-v6/seed.yaml`, spec_version 2, r1–r16 / ac1–ac7.
+기준: `docs/mockups/filme-mobile-v2/seed.yaml`, spec_version 2, r1–r16 / ac1–ac7.
 범위: `docs/mockups/filme-mobile-v2`의 로컬 목업. 프로덕션 코드·API·티켓 자연 픽셀 조판·JPEG 출력은 변경하지 않았어요.
 
 ## 수정한 결함

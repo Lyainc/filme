@@ -4,7 +4,7 @@ import { Button } from '../../filme-mobile-v1/src/ui/button';
 import { Input } from '../../filme-mobile-v1/src/ui/input';
 import { Dialog, DialogContent, DialogTitle } from '../../filme-mobile-v1/src/ui/dialog';
 import { Icon } from '../../filme-mobile-v1/src/icons';
-import { MOOD_EXCLUDED_FIELDS, TONE_FIXED_MOODS, POSTER_FILL_MOODS } from '../../../../src/constants/fields';
+import { MOOD_EXCLUDED_FIELDS as PRODUCTION_EXCLUDED_FIELDS, TONE_FIXED_MOODS, POSTER_FILL_MOODS } from '../../../../src/constants/fields';
 import { ALL_FIELDS_ON } from '../../../../src/constants/fieldVisibility';
 import { LiveTicket, SAMPLE_POSTER } from './LiveTicket';
 import { PhotoCrop } from './PhotoCrop';
@@ -13,6 +13,8 @@ import { Landing } from './Landing';
 import { Wordmark } from '../../../../src/components/v2/Wordmark';
 
 const MOODS = [['minimal','Minimal','hero-minimal.webp'],['criterion','Criterion','hero-criterion.webp'],['35mm','35mm','hero-35mm.webp'],['editorial','Editorial','hero-editorial.webp'],['stub','Stub','hero-stub.webp'],['35mm-landscape','35mm Wide','hero-35mm-wide.webp']];
+// Production hides Criterion's quote from its launcher; the mockup exposes it in the grouped form.
+const MOOD_EXCLUDED_FIELDS = {...PRODUCTION_EXCLUDED_FIELDS, criterion:(PRODUCTION_EXCLUDED_FIELDS.criterion||[]).filter(field=>field!=='quote')};
 const SAMPLE = { title:'먼 바다', original:'THE FAR SEA', release:'2025-11-19', reissue:'', actors:'윤재이, Élodie Marchand-Vasseur', runtime:'118', date:'2026-02-14', time:'19:40', theater:'메가박스 코엑스', screen:'Dolby Cinema관', seat:'H열 12번', booking:'', rating:'4.5', signature:'지윤', quote:'' };
 const DEFAULT = { mood:'minimal', color:'기본', customColor:'#b0423f', material:'원본', coating:'없음', materialIntensity:60, coatingIntensity:60, signatureFont:'auto', quoteFont:'auto', chainImage:'', formatImage:'', signatureImage:'', chainLabel:'FILME', formatLabel:'IMAX', chainVisible:true, formatVisible:true, chainScale:1, formatScale:1, signatureScale:1, componentOpacity:100, crop:'원본', brightness:100, poster:true, posterSource:SAMPLE_POSTER, releaseDateFormat:'iso', watchDateFormat:'iso' };
 const INLINE_TOOLS = ['정보','사진','디자인','색상','질감','로고'];

@@ -1,0 +1,101 @@
+skill: build-spec
+schema_version: 1
+version: '5.2.0'
+generated: '2026-09-24'
+spec_version: 2
+status: implemented-in-mockup
+target: filme-mobile-editor-usability-v6
+domain: tech
+brownfield: true
+refine_generation: 2
+refine_source: docs/specs/filme-mobile-redesign-mockup.yaml
+input:
+  target: Screenshot-based unified editor improvements approved for implementation
+  options: [temporary-file, preserve-existing-functions]
+output:
+  type: spec
+  structure: templates/SEED_SPEC.yaml
+goal:
+  statement: 모바일 사용자가 현재 편집 대상과 결과를 이해하고 정보 입력과 사진·디자인·색상·질감·로고 편집을 간결하게 수행하도록 기존 HTML 목업을 개선한다.
+constraints:
+  - {id: c1, hard: true, type: technical, description: 'docs/mockups/filme-mobile-v2만 수정한다. 프로덕션 WIP·API·자연 픽셀 티켓 조판·JPEG 코드는 보존한다.'}
+  - {id: c2, hard: true, type: other, description: '기존 브랜드색 #B0423F, Pretendard, 라이트 UI, shadcn 프리미티브와 모바일 단일 편집 화면을 유지한다.'}
+  - {id: c3, hard: true, type: other, description: '여섯 무드, 로고 업로드·자르기·크기·표시, 포맷 프리셋, 전체 메타데이터, 독립 서체·질감 강도, 사진 배치·불투명도, 되돌리기·초안·완료·미리보기 기능을 보존한다.'}
+  - {id: c4, hard: true, type: other, description: '요청 없이 기능을 삭제하지 않는다. 스탬프·형압·반복 랜딩 배경은 복원하지 않는다. 랜딩 캐러셀은 비상호작용 자동 재생을 유지한다.'}
+  - {id: c5, hard: true, type: technical, description: '320·375·393·414px 및 넓은 화면의 430px 앱 프레임을 지원한다. 키보드 높이·긴 입력·한글 조합을 고려한다.'}
+  - {id: c6, hard: true, type: other, description: '메뉴별 여백·닫기·선택부·조절부 기준은 통일하되 내용 없는 헤더나 동일 높이를 강제하지 않는다. 메뉴·설정·입력·긴 설명은 좌측 정렬, 상태·수치는 우측, 짧은 확인창·분류 탭·견본은 중앙 정렬한다.'}
+  - {id: c7, hard: true, type: technical, description: '외부 API 요청·프로덕션 배포 없이 로컬 목업으로 검증한다. OCR·검색·저장·공유 시뮬레이션 표시는 유지한다.'}
+requirements:
+  - id: r1
+    description: '공통 패널의 상단 여백, 닫기 위치, 분류·프리셋·실행 표현과 슬라이더 라벨/값/트랙을 통일한다. 불필요한 메뉴명 반복과 큰 공백은 피한다.'
+  - id: r2
+    description: '정보는 영화/관람/기록 그룹 아래 관련 필드를 함께 보이는 작은 폼으로 만든다. 세 번째 개별 필드 탭과 양옆 탐색 화살표 의존을 없애고 전체 필드·Enter 다음 입력·필드 설정을 유지한다.'
+  - id: r3
+    description: '현재 입력 필드·사진·극장/포맷 로고에 해당하는 티켓 위치를 편집용 오버레이로 강조한다. 저장되는 티켓 DOM을 바꾸지 않는다. 키보드 입력 시 해당 위치 확대를 유지한다.'
+  - id: r4
+    description: '사진 미등록 시 사진 선택과 보조 샘플만 강조한다. 등록 후 교체·자르기·제거·전체 보기/영역 채우기·불투명도를 관련 순서로 제공한다.'
+  - id: r5
+    description: '여섯 디자인을 같은 사진/메타데이터로 비교 가능한 썸네일로 제공한다. 목록 탐색과 디자인 선택을 구분하고 가로/세로 비율을 보존한다.'
+  - id: r6
+    description: '테마 색과 텍스트·로고 불투명도 영역을 구분한다. 사용자 지정 피커는 프리셋과 다른 진입 표현으로 하고 오렌지 표시명은 실제 브랜드 색에 맞춰 바꾼다. 이전 초안 색 값은 호환한다.'
+  - id: r7
+    description: '소재·코팅 별 선택과 독립 강도를 보존하고 옵션에 작은 시각 견본을 제공한다. 원본/없음 상태와 적용 가능한 강도를 구분한다.'
+  - id: r8
+    description: '극장/포맷 로고는 현재 이미지/텍스트를 분명히 보여준다. 텍스트 편집과 이미지 교체/자르기 경로를 상태에 맞게 노출하며 프리셋·업로드·표시·크기 기능은 모두 유지한다.'
+  - id: r9
+    description: '상단 가져오기를 정보 채우기처럼 대상을 드러내는 라벨로 바꾼다. 빈 제목에는 필수 입력 단서를 주고 편집 도구가 열린 동안 중앙 사진 추가 CTA가 현재 작업과 경쟁하지 않게 한다. 사진 기능은 하단 사진 도구에 유지한다. 완료 후 결과·공유 흐름을 유지한다.'
+  - id: r10
+    description: '미입력 출처는 불필요하게 반복하지 않고 입력된 값의 OCR/직접/검색/샘플 출처는 각 필드 가까이 보존한다. 숨김/서체/날짜 형식 설정에 접근 가능하다.'
+  - id: r11
+    description: '메뉴는 아이콘 옆 이름을 좌측 정렬하고 상태·화살표를 우측에 붙인다. 브랜드는 작은 보조 영역, 목업 안내와 이전 버전 링크는 접을 수 있는 안내 영역에 유지한다.'
+  - id: r12
+    description: '자동 저장은 즉시 반영되는 접근 가능한 스위치로 제공한다. 끄면 향후 저장만 중단하고 기존 초안을 삭제하지 않는다. 끈 상태의 수정·pagehide·새로고침은 마지막 저장본을 덮어쓰지 않는다. 다시 켜면 현재 문서를 저장한다.'
+  - id: r13
+    description: '새 티켓 확인 문구에 사진·입력·꾸미기 교체를 명시한다. 취소와 닫기를 유지하고, X는 44px 터치 영역을 유지하며 무거운 회색 배경만 제거한다.'
+  - id: r14
+    description: '색상 패널은 빈 헤더를 없애고 일반 212px·고정색 136px로 축소하여 티켓 미리보기 높이를 확보한다. 자동 확대나 티켓 조판 변경 없이 기존 전체 화면 미리보기를 유지한다.'
+  - id: r15
+    description: '색상 피커는 팔레트 아이콘과 작은 현재색 견본으로 구분한다. 점선 업로드 형태와 프리셋처럼 중복되는 큰 원은 제거한다. 선택 상태는 시각·접근성 모두 유지한다.'
+  - id: r16
+    description: '색상 적용 라벨은 실제 무드 동작에 맞춘다. Minimal은 잉크·배경 톤, Editorial은 강조색, 나머지는 고정 색상 디자인으로 표시한다. 텍스트·로고 불투명도 조절은 별도로 유지한다.'
+success_criteria:
+  - {id: ac1, description: '모든 요구사항 r1-r16에 대응하는 화면 또는 동작 증거가 있다.', verifiable: true, measurable_via: '요구사항 대조표, 전후 캡처, 독립 코드 검토'}
+  - {id: ac2, description: '320x568, 375x667, 393x659, 414x736, 768x900에서 페이지 가로 넘침과 조작부 가림이 없다.', verifiable: true, measurable_via: 'Chrome DOM geometry, hit testing, screenshots'}
+  - {id: ac3, description: '제목·날짜·숫자·긴 극장명과 한글 입력, 키보드 상태에서 티켓 피드백과 필드 이동을 확인한다.', verifiable: true, measurable_via: '실제 입력 이벤트, 축소 VisualViewport 모사, 표시/저장 원문 비교'}
+  - {id: ac4, description: '사진/로고 업로드·크롭·취소·뒤로가기, 여섯 무드, 질감 강도, 서체, 출처, undo/redo, 초안 복원, 완료와 공유 샘플이 유지된다.', verifiable: true, measurable_via: '기존 회귀 시나리오와 필요한 새 시나리오'}
+  - {id: ac5, description: '과업 중심 수동 화면 검토를 수행하고 기능 검사 통과를 주관적 사용성 개선 증명으로 주장하지 않는다.', verifiable: true, measurable_via: '동일 문서의 전후 캡처와 사용자 검토; 실제 iPhone 미검증 별도 표기'}
+  - {id: ac6, description: '자동 저장 끄기·수정·pagehide·새로고침에서 기존 초안이 보존되고 다시 켜면 현재 문서가 저장된다. 자동 저장을 끈 상태에서는 저장된 초안이 없어도 임의 저장하지 않는다.', verifiable: true, measurable_via: '분리된 Chrome 컨텍스트에서 localStorage 원문과 재진입 문서 비교'}
+  - {id: ac7, description: '메뉴 이름/아이콘 간격과 좌측 정렬, 스위치 상태, 닫기 터치 영역, 색상 패널 축소와 사진 CTA 조건을 모바일 4종 너비에서 확인한다.', verifiable: true, measurable_via: 'DOM geometry, hit testing, 전후 캡처'}
+context:
+  existing_stack: [React 19, Bun, shadcn-ui, native-inputs, react-image-crop]
+  integration_points: [src/app.jsx, src/styles.css, src/LiveTicket.jsx, standalone-build, browser-verifiers]
+  backlog_scan: '[backlog-scan SKIPPED] gh 부재 · GitHub 리모트 없음 · 또는 조회 실패 — 백로그를 못 읽었어요. X3(conflicts)는 코드만 보고 채점했고, 결정된-미빌드 제약은 확인되지 않았어요.'
+  decisions: '사용자가 직전 두 차례의 화면 분석·통합 작업 목록을 명세로 저장하고 구현하라고 명시했다. 기존 인터뷰 답변과 최신 지시를 재사용한다.'
+  references:
+    - 'https://helpx.adobe.com/lightroom/mobile/get-started/workspace-overview.html'
+    - 'https://support.vsco.co/en/articles/12698476-using-and-managing-presets'
+    - 'https://help.etsy.com/hc/en-us/articles/360016260113-How-to-Edit-Your-Listing-Photos'
+  reference_boundary: '확인한 기능/작업 흐름을 FILME에 응용하며 특정 앱의 시각 배치를 그대로 검증하거나 복제했다고 주장하지 않는다.'
+blindspots:
+  - {topic: thumbnail-rendering, resolution: '디자인 도구가 열릴 때만 여섯 현재 문서 썸네일을 렌더링한다.'}
+  - {topic: accessible-selection, resolution: '선택 이름과 상태를 접근성 속성으로 제공한다.'}
+ambiguity: {overall: 0.10, gate_passed: true}
+metadata:
+  generated_by: thinking-tools/build-spec
+  authorization: '임시 명세 저장 후 해당 명세를 참고해 목업 작업 진행'
+  isolated_review: previous-revision-passed
+  revision_review: passed-one-round
+  blindspot_pass: complete
+  gate_dimensions: {goal: 0.90, constraint: 0.90, success: 0.90, context: 0.90}
+
+implementation:
+  path: docs/mockups/filme-mobile-v2
+  url: http://127.0.0.1:3793/docs/mockups/filme-mobile-v2/index.html
+  requirement_map: docs/mockups/filme-mobile-v2/design.md
+  verification: [verification/experience-report.json, verification/redesign-report.json, verification/mobile-report.json, verification/refinement-report.json]
+  boundary: '로컬 Chrome 검증이며 실제 iPhone Safari, 프로덕션 API, JPEG 내보내기는 이번 검증 범위 밖이다.'
+
+revision:
+  source: '2026-09-24 세 캡처에 대한 감사 결과와 사용자 구현 승인'
+  scope: '역할별 정렬, 메뉴 위계, 초안 보존, 색상 패널 및 확인창 개선'
+  no_new_interview: '사용자가 직전 분석을 스펙에 반영하고 구현하라고 승인했다.'
