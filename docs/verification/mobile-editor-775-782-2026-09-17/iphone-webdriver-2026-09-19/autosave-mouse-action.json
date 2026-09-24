@@ -1,0 +1,18 @@
+{
+  "checked": "true",
+  "y": 28,
+  "screen": [
+    402,
+    874
+  ],
+  "x": 315,
+  "viewport": [
+    402,
+    660
+  ],
+  "scale": 1,
+  "after": {
+    "checked": "true",
+    "events": []
+  }
+}

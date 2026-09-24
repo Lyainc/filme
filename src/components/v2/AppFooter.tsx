@@ -55,7 +55,7 @@ export function AppFooter({ ambient = false }: { ambient?: boolean }) {
         ambient ? 'justify-center text-center' : 'justify-between border-t border-line bg-surface'
       }`}
     >
-      <p className="break-keep">{UNOFFICIAL_TICKET_NOTICE} © FILME</p>
+      <p className="break-keep text-[9px]">{UNOFFICIAL_TICKET_NOTICE} © FILME</p>
       <FontCredit />
       <GithubLink />
     </footer>

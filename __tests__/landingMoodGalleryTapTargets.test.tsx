@@ -17,7 +17,7 @@
  * 실제 렌더 px는 브라우저 실측 몫이다(measure-chrome.mjs).
  *
  * **TicketRenderer 자신의 scale 보정은 이 스윕 대상이 아니다**(#653). `TicketRenderer`는 카드
- * 컨테이너의 `clientWidth`로 무드 캔버스(960px 폭)를 카드 폭(140px)에 맞춰 축소하는데, 실브라우저면
+ * 컨테이너의 `clientWidth`로 무드 캔버스(960px 폭)를 카드 폭(170px)에 맞춰 축소하는데, 실브라우저면
  * 그 비율(~0.146)이 1 미만이라 `assertNoShrink`의 "인라인 scale 축소 금지" 규칙에 그대로 걸린다 —
  * 그런데 그건 탭 타깃을 몰래 줄이는 우회가 아니라 렌더 엔진의 정상 동작이고, 카드의 실제 탭
  * 영역(`expectMeetsAA`가 재는 `card` 자신의 width/height)은 `overflow:hidden`으로 이미 고정돼 있어
@@ -84,7 +84,7 @@ describe('랜딩 히어로 갤러리 탭 타깃 (#615, WCAG 2.2 SC 2.5.8 AA)', (
       const layout = GALLERY_LAYOUTS.find((l) => label.startsWith(`${l.label} 무드로 바로 시작`));
       if (!layout) throw new Error(`갤러리에 없어야 할 무드가 섰다: ${label}`);
 
-      expect(button.getAttribute('data-touch')).toBe('140');
+      expect(button.getAttribute('data-touch')).toBe('170');
       const card = button.firstElementChild;
       if (!card) throw new Error('갤러리 버튼에 카드 div가 없다');
       for (const el of [card, ...Array.from(card.querySelectorAll('*'))]) {
@@ -93,7 +93,7 @@ describe('랜딩 히어로 갤러리 탭 타깃 (#615, WCAG 2.2 SC 2.5.8 AA)', (
         assertNoShrink(el, `갤러리 카드 ${label}`);
       }
       const { w, h } = expectMeetsAA(card, `갤러리 카드 ${label}`);
-      expect(w).toBe(140);
+      expect(w).toBe(170);
       // 가로 캔버스(editorial)도 돌려 세우므로 여기서 갈리면 안 된다 — 갈리는 순간 그 무드만
       // 높이 62%로 주저앉아 줄의 리듬이 깨진다(2026-08-08 사용자 피드백).
       expect(h / w).toBeCloseTo(PORTRAIT_RATIO, 5);
@@ -133,7 +133,7 @@ describe('랜딩 히어로 갤러리 탭 타깃 (#615, WCAG 2.2 SC 2.5.8 AA)', (
   });
 
   test('reduced-motion 그리드 카드도 24px 하한을 넘는다(GRID_CARD_WIDTH, #653)', () => {
-    // 캐러셀 트랙(TRACK_CARD_WIDTH=140)만 위에서 잰다 — reduced-motion 폴백은 별도 상수
+    // 캐러셀 트랙(TRACK_CARD_WIDTH=170)만 위에서 잰다 — reduced-motion 폴백은 별도 상수
     // (GRID_CARD_WIDTH=92)를 쓰는 별도 분기(Landing.tsx)라 여기서 안 줄어드는지 따로 잠가야 한다.
     const restore = stubReducedMotion(true);
     try {

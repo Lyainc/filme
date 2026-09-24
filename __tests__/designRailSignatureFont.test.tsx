@@ -66,7 +66,7 @@ function Harness() {
 }
 
 function signatureStyle(text: string) {
-  return (screen.getByText(text) as HTMLElement).style;
+  return (screen.getByText(text, { selector: ":not([data-font-preview])" }) as HTMLElement).style;
 }
 
 async function openCustomPanel(user: ReturnType<typeof userEvent.setup>) {
@@ -173,4 +173,18 @@ describe('레일 커스텀 — 서명 폰트 9택 (#437)', () => {
     for (const label of ALL_FONT_LABELS) expect(signatureRadio(label).disabled).toBe(true);
     expect(!!screen.queryByText(/서명 이미지가 있으면 폰트가 적용되지 않아요/)).toBe(true);
   });
+});
+
+test('#780 — 빈 서명도 선택 서체 견본을 제공하고 이미지 잠금 때 견본을 감춘다', async () => {
+  const user = userEvent.setup();
+  render(<Harness />);
+  await openCustomPanel(user);
+  const preview = document.querySelector('[data-font-preview="signature"]') as HTMLElement;
+  expect(preview.textContent).toBe('영화의 순간 Film');
+  await user.click(signatureRadio('바탕'));
+  expect(preview.style.fontFamily).toContain('--font-batang');
+  expect(signatureRadio('바탕').getAttribute('aria-checked')).toBe('true');
+  await user.click(screen.getByRole('button', { name: '서명 이미지 첨부' }));
+  expect(!!document.querySelector('[data-font-preview="signature"]')).toBe(false);
+  expect(screen.getByText('서명 이미지가 있으면 폰트가 적용되지 않아요.').textContent).toBeTruthy();
 });

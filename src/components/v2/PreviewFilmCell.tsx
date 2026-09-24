@@ -32,7 +32,7 @@ export function PreviewFilmCell({ saving = false, promoted = false, label, child
     <div
       data-promoted={promoted || undefined}
       // promoted(결과 표면)로 마운트될 때 "철컥 안착" 모션 1회(#98 2단계). 편집 프리뷰는 끔.
-      className={`flex flex-col bg-black rounded-card overflow-hidden transition-shadow duration-300 ${promoted ? 'animate-settle' : ''} ${className}`}
+      className={`flex flex-col bg-black rounded-card overflow-hidden transition-shadow duration-300 ${promoted ? 'animate-fade-in' : ''} ${className}`}
       style={{
         position: 'relative',
         isolation: 'isolate',
@@ -41,7 +41,7 @@ export function PreviewFilmCell({ saving = false, promoted = false, label, child
         ...(promoted
           ? {
               boxShadow:
-                '0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent), 0 16px 50px -16px rgba(0,0,0,0.6)',
+                '0 0 0 1px var(--border-strong)',
             }
           : {}),
       }}

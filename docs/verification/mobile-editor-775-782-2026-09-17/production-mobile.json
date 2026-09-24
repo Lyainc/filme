@@ -1,0 +1,3914 @@
+[
+  {
+    "width": 320,
+    "height": 568,
+    "initial": {
+      "overflow": false,
+      "preview": {
+        "x": 43.140625,
+        "y": 68,
+        "w": 233.734375,
+        "h": 373.484375
+      },
+      "fields": [
+        {
+          "field": "chain",
+          "x": 57.765625,
+          "y": 80.67500305175781,
+          "w": 29.25,
+          "h": 18.037498474121094,
+          "hits": [
+            "chain",
+            "chain",
+            "chain"
+          ]
+        },
+        {
+          "field": "format",
+          "x": 103.83438110351562,
+          "y": 81.73759460449219,
+          "w": 34.806732177734375,
+          "h": 15.908500671386719,
+          "hits": [
+            "format",
+            "format",
+            "format"
+          ]
+        },
+        {
+          "field": "title",
+          "x": 60.203125,
+          "y": 318.94061279296875,
+          "w": 199.875,
+          "h": 17.550018310546875,
+          "hits": [
+            "title",
+            "title",
+            "title"
+          ]
+        },
+        {
+          "field": "titleOg",
+          "x": 60.203125,
+          "y": 338.9281311035156,
+          "w": 199.875,
+          "h": 6.337493896484375,
+          "hits": [
+            "titleOg",
+            "titleOg",
+            "titleOg"
+          ]
+        },
+        {
+          "field": "watchDate",
+          "x": 60.203125,
+          "y": 360.8656311035156,
+          "w": 28.518753051757812,
+          "h": 7.3125,
+          "hits": [
+            "watchDate",
+            "watchDate",
+            "watchDate"
+          ]
+        },
+        {
+          "field": "watchTime",
+          "x": 91.15937805175781,
+          "y": 360.8656311035156,
+          "w": 28.51874542236328,
+          "h": 7.3125,
+          "hits": [
+            "watchTime",
+            "watchTime",
+            "watchTime"
+          ]
+        },
+        {
+          "field": "theater",
+          "x": 130.40313720703125,
+          "y": 361.3036193847656,
+          "w": 26.351654052734375,
+          "h": 7.3125,
+          "hits": [
+            "theater",
+            "theater",
+            "theater"
+          ]
+        },
+        {
+          "field": "screen",
+          "x": 163.52645874023438,
+          "y": 361.3036193847656,
+          "w": 26.351669311523438,
+          "h": 7.3125,
+          "hits": [
+            "screen",
+            "screen",
+            "screen"
+          ]
+        },
+        {
+          "field": "seat",
+          "x": 200.60313415527344,
+          "y": 354.7718811035156,
+          "w": 59.47499084472656,
+          "h": 15.84375,
+          "hits": [
+            "seat",
+            "seat",
+            "seat"
+          ]
+        },
+        {
+          "field": "runtime",
+          "x": 60.203125,
+          "y": 377.68438720703125,
+          "w": 48.75,
+          "h": 15.84375,
+          "hits": [
+            "runtime",
+            "runtime",
+            "runtime"
+          ]
+        },
+        {
+          "field": "rating",
+          "x": 119.6781234741211,
+          "y": 377.68438720703125,
+          "w": 48.75000762939453,
+          "h": 15.84375,
+          "hits": [
+            "rating",
+            "rating",
+            "rating"
+          ]
+        },
+        {
+          "field": "releaseDate",
+          "x": 179.1531219482422,
+          "y": 377.68438720703125,
+          "w": 48.75,
+          "h": 15.84375,
+          "hits": [
+            "releaseDate",
+            "releaseDate",
+            "releaseDate"
+          ]
+        },
+        {
+          "field": "actors",
+          "x": 60.203125,
+          "y": 397.9156188964844,
+          "w": 199.875,
+          "h": 15.84375,
+          "hits": [
+            "actors",
+            "actors",
+            "actors"
+          ]
+        },
+        {
+          "field": "signature",
+          "x": 184.2033233642578,
+          "y": 418.6343688964844,
+          "w": 75.87480163574219,
+          "h": 9.140625,
+          "hits": [
+            "signature",
+            "signature",
+            "signature"
+          ]
+        }
+      ],
+      "panel": {
+        "x": 16,
+        "y": 556,
+        "w": 288,
+        "h": 147.671875,
+        "scroll": 148,
+        "client": 148
+      }
+    },
+    "header": [
+      {
+        "label": "FILME",
+        "left": 18,
+        "right": 102.171875,
+        "width": 84.171875,
+        "height": 30
+      },
+      {
+        "label": "자동 임시저장 켜짐",
+        "left": 123.0625,
+        "right": 181.09375,
+        "width": 58.03125,
+        "height": 44
+      },
+      {
+        "label": "편집 메뉴",
+        "left": 183.09375,
+        "right": 227.09375,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "label": "완료",
+        "left": 229.09375,
+        "right": 308,
+        "width": 78.90625,
+        "height": 36
+      }
+    ],
+    "autosave": {
+      "before": "true",
+      "hit": true,
+      "rect": {
+        "w": 58,
+        "h": 44
+      },
+      "toggles": [
+        "false",
+        "true"
+      ]
+    },
+    "typing": [
+      {
+        "input": "U",
+        "shown": "collected byU"
+      },
+      {
+        "input": "UX",
+        "shown": "collected byUX"
+      },
+      {
+        "input": "UXT",
+        "shown": "collected byUXT"
+      },
+      {
+        "input": "UXTE",
+        "shown": "collected byUXTE"
+      },
+      {
+        "input": "UXTES",
+        "shown": "collected byUXTES"
+      },
+      {
+        "input": "UXTEST",
+        "shown": "collected byUXTEST"
+      }
+    ],
+    "opacity": {
+      "overflow": false,
+      "preview": {
+        "x": 89.34375,
+        "y": 68.015625,
+        "w": 141.3125,
+        "h": 225.796875
+      },
+      "fields": [
+        {
+          "field": "chain",
+          "x": 98.15625,
+          "y": 75.65312194824219,
+          "w": 17.625,
+          "h": 10.868751525878906,
+          "hits": [
+            "chain",
+            "chain",
+            "chain"
+          ]
+        },
+        {
+          "field": "format",
+          "x": 125.91561889648438,
+          "y": 76.29341125488281,
+          "w": 20.973297119140625,
+          "h": 9.585884094238281,
+          "hits": [
+            "format",
+            "format",
+            "format"
+          ]
+        },
+        {
+          "field": "title",
+          "x": 99.625,
+          "y": 217.68124389648438,
+          "w": 120.4375,
+          "h": 10.574996948242188,
+          "hits": [
+            "title",
+            "title",
+            "title"
+          ]
+        },
+        {
+          "field": "titleOg",
+          "x": 99.625,
+          "y": 229.72499084472656,
+          "w": 120.4375,
+          "h": 3.818756103515625,
+          "hits": [
+            "titleOg",
+            "titleOg",
+            "titleOg"
+          ]
+        },
+        {
+          "field": "watchDate",
+          "x": 99.625,
+          "y": 242.94374084472656,
+          "w": 17.184371948242188,
+          "h": 4.40625,
+          "hits": [
+            "watchDate",
+            "watchDate",
+            "watchDate"
+          ]
+        },
+        {
+          "field": "watchTime",
+          "x": 118.27812194824219,
+          "y": 242.94374084472656,
+          "w": 17.184371948242188,
+          "h": 4.40625,
+          "hits": [
+            "watchTime",
+            "watchTime",
+            "watchTime"
+          ]
+        },
+        {
+          "field": "theater",
+          "x": 141.9250030517578,
+          "y": 243.20765686035156,
+          "w": 15.878555297851562,
+          "h": 4.40625,
+          "hits": [
+            "theater",
+            "theater",
+            "theater"
+          ]
+        },
+        {
+          "field": "screen",
+          "x": 161.88394165039062,
+          "y": 243.20765686035156,
+          "w": 15.878555297851562,
+          "h": 4.40625,
+          "hits": [
+            "screen",
+            "screen",
+            "screen"
+          ]
+        },
+        {
+          "field": "seat",
+          "x": 184.22500610351562,
+          "y": 239.27186584472656,
+          "w": 35.837493896484375,
+          "h": 9.546875,
+          "hits": [
+            "seat",
+            "seat",
+            "seat"
+          ]
+        },
+        {
+          "field": "runtime",
+          "x": 99.625,
+          "y": 253.078125,
+          "w": 29.375,
+          "h": 9.546875,
+          "hits": [
+            "runtime",
+            "runtime",
+            "runtime"
+          ]
+        },
+        {
+          "field": "rating",
+          "x": 135.46249389648438,
+          "y": 253.078125,
+          "w": 29.375,
+          "h": 9.546875,
+          "hits": [
+            "rating",
+            "rating",
+            "rating"
+          ]
+        },
+        {
+          "field": "releaseDate",
+          "x": 171.29998779296875,
+          "y": 253.078125,
+          "w": 29.375,
+          "h": 9.546875,
+          "hits": [
+            "releaseDate",
+            "releaseDate",
+            "releaseDate"
+          ]
+        },
+        {
+          "field": "actors",
+          "x": 99.625,
+          "y": 265.26873779296875,
+          "w": 120.4375,
+          "h": 9.546875,
+          "hits": [
+            "actors",
+            "actors",
+            "actors"
+          ]
+        },
+        {
+          "field": "signature",
+          "x": 190.68521118164062,
+          "y": 277.75311279296875,
+          "w": 29.377288818359375,
+          "h": 7.04998779296875,
+          "hits": [
+            "signature",
+            "signature",
+            "signature"
+          ]
+        }
+      ],
+      "panel": {
+        "x": 16,
+        "y": 408.328125,
+        "w": 288,
+        "h": 147.671875,
+        "scroll": 157,
+        "client": 148
+      }
+    },
+    "ranges": [
+      {
+        "id": "rail-poster-opacity",
+        "w": 288,
+        "h": 32,
+        "y": 446.828125,
+        "hits": [
+          {
+            "d": -20,
+            "hit": false
+          },
+          {
+            "d": -15,
+            "hit": true
+          },
+          {
+            "d": -10,
+            "hit": true
+          },
+          {
+            "d": -3,
+            "hit": true
+          },
+          {
+            "d": 0,
+            "hit": true
+          },
+          {
+            "d": 3,
+            "hit": true
+          },
+          {
+            "d": 10,
+            "hit": true
+          },
+          {
+            "d": 15,
+            "hit": true
+          },
+          {
+            "d": 20,
+            "hit": false
+          }
+        ]
+      },
+      {
+        "id": "rail-component-opacity",
+        "w": 288,
+        "h": 32,
+        "y": 521.328125,
+        "hits": [
+          {
+            "d": -20,
+            "hit": false
+          },
+          {
+            "d": -15,
+            "hit": true
+          },
+          {
+            "d": -10,
+            "hit": true
+          },
+          {
+            "d": -3,
+            "hit": true
+          },
+          {
+            "d": 0,
+            "hit": true
+          },
+          {
+            "d": 3,
+            "hit": true
+          },
+          {
+            "d": 10,
+            "hit": true
+          },
+          {
+            "d": 15,
+            "hit": true
+          },
+          {
+            "d": 20,
+            "hit": false
+          }
+        ]
+      }
+    ],
+    "sliderGestures": [
+      {
+        "id": "rail-poster-opacity",
+        "tapped": 0.2,
+        "dragged": 0.8
+      },
+      {
+        "id": "rail-component-opacity",
+        "tapped": 0.2,
+        "dragged": 0.8
+      }
+    ],
+    "logo": {
+      "overflow": false,
+      "preview": {
+        "x": 89.34375,
+        "y": 68.015625,
+        "w": 141.3125,
+        "h": 225.796875
+      },
+      "fields": [
+        {
+          "field": "chain",
+          "x": 98.15625,
+          "y": 75.65312194824219,
+          "w": 17.625,
+          "h": 10.868751525878906,
+          "hits": [
+            "chain",
+            "chain",
+            "chain"
+          ]
+        },
+        {
+          "field": "format",
+          "x": 125.91561889648438,
+          "y": 76.29341125488281,
+          "w": 20.973297119140625,
+          "h": 9.585884094238281,
+          "hits": [
+            "format",
+            "format",
+            "format"
+          ]
+        },
+        {
+          "field": "title",
+          "x": 99.625,
+          "y": 217.68124389648438,
+          "w": 120.4375,
+          "h": 10.574996948242188,
+          "hits": [
+            "title",
+            "title",
+            "title"
+          ]
+        },
+        {
+          "field": "titleOg",
+          "x": 99.625,
+          "y": 229.72499084472656,
+          "w": 120.4375,
+          "h": 3.818756103515625,
+          "hits": [
+            "titleOg",
+            "titleOg",
+            "titleOg"
+          ]
+        },
+        {
+          "field": "watchDate",
+          "x": 99.625,
+          "y": 242.94374084472656,
+          "w": 17.184371948242188,
+          "h": 4.40625,
+          "hits": [
+            "watchDate",
+            "watchDate",
+            "watchDate"
+          ]
+        },
+        {
+          "field": "watchTime",
+          "x": 118.27812194824219,
+          "y": 242.94374084472656,
+          "w": 17.184371948242188,
+          "h": 4.40625,
+          "hits": [
+            "watchTime",
+            "watchTime",
+            "watchTime"
+          ]
+        },
+        {
+          "field": "theater",
+          "x": 141.9250030517578,
+          "y": 243.20765686035156,
+          "w": 15.878555297851562,
+          "h": 4.40625,
+          "hits": [
+            "theater",
+            "theater",
+            "theater"
+          ]
+        },
+        {
+          "field": "screen",
+          "x": 161.88394165039062,
+          "y": 243.20765686035156,
+          "w": 15.878555297851562,
+          "h": 4.40625,
+          "hits": [
+            "screen",
+            "screen",
+            "screen"
+          ]
+        },
+        {
+          "field": "seat",
+          "x": 184.22500610351562,
+          "y": 239.27186584472656,
+          "w": 35.837493896484375,
+          "h": 9.546875,
+          "hits": [
+            "seat",
+            "seat",
+            "seat"
+          ]
+        },
+        {
+          "field": "runtime",
+          "x": 99.625,
+          "y": 253.078125,
+          "w": 29.375,
+          "h": 9.546875,
+          "hits": [
+            "runtime",
+            "runtime",
+            "runtime"
+          ]
+        },
+        {
+          "field": "rating",
+          "x": 135.46249389648438,
+          "y": 253.078125,
+          "w": 29.375,
+          "h": 9.546875,
+          "hits": [
+            "rating",
+            "rating",
+            "rating"
+          ]
+        },
+        {
+          "field": "releaseDate",
+          "x": 171.29998779296875,
+          "y": 253.078125,
+          "w": 29.375,
+          "h": 9.546875,
+          "hits": [
+            "releaseDate",
+            "releaseDate",
+            "releaseDate"
+          ]
+        },
+        {
+          "field": "actors",
+          "x": 99.625,
+          "y": 265.26873779296875,
+          "w": 120.4375,
+          "h": 9.546875,
+          "hits": [
+            "actors",
+            "actors",
+            "actors"
+          ]
+        },
+        {
+          "field": "signature",
+          "x": 190.68521118164062,
+          "y": 277.75311279296875,
+          "w": 29.377288818359375,
+          "h": 7.04998779296875,
+          "hits": [
+            "signature",
+            "signature",
+            "signature"
+          ]
+        }
+      ],
+      "panel": {
+        "x": 16,
+        "y": 408.328125,
+        "w": 288,
+        "h": 147.671875,
+        "scroll": 266,
+        "client": 148
+      }
+    },
+    "custom": {
+      "overflow": false,
+      "preview": {
+        "x": 89.34375,
+        "y": 68.015625,
+        "w": 141.3125,
+        "h": 225.796875
+      },
+      "fields": [
+        {
+          "field": "chain",
+          "x": 98.15625,
+          "y": 75.65312194824219,
+          "w": 17.625,
+          "h": 10.868751525878906,
+          "hits": [
+            "chain",
+            "chain",
+            "chain"
+          ]
+        },
+        {
+          "field": "format",
+          "x": 125.91561889648438,
+          "y": 76.29341125488281,
+          "w": 20.973297119140625,
+          "h": 9.585884094238281,
+          "hits": [
+            "format",
+            "format",
+            "format"
+          ]
+        },
+        {
+          "field": "title",
+          "x": 99.625,
+          "y": 217.68124389648438,
+          "w": 120.4375,
+          "h": 10.574996948242188,
+          "hits": [
+            "title",
+            "title",
+            "title"
+          ]
+        },
+        {
+          "field": "titleOg",
+          "x": 99.625,
+          "y": 229.72499084472656,
+          "w": 120.4375,
+          "h": 3.818756103515625,
+          "hits": [
+            "titleOg",
+            "titleOg",
+            "titleOg"
+          ]
+        },
+        {
+          "field": "watchDate",
+          "x": 99.625,
+          "y": 242.94374084472656,
+          "w": 17.184371948242188,
+          "h": 4.40625,
+          "hits": [
+            "watchDate",
+            "watchDate",
+            "watchDate"
+          ]
+        },
+        {
+          "field": "watchTime",
+          "x": 118.27812194824219,
+          "y": 242.94374084472656,
+          "w": 17.184371948242188,
+          "h": 4.40625,
+          "hits": [
+            "watchTime",
+            "watchTime",
+            "watchTime"
+          ]
+        },
+        {
+          "field": "theater",
+          "x": 141.9250030517578,
+          "y": 243.20765686035156,
+          "w": 15.878555297851562,
+          "h": 4.40625,
+          "hits": [
+            "theater",
+            "theater",
+            "theater"
+          ]
+        },
+        {
+          "field": "screen",
+          "x": 161.88394165039062,
+          "y": 243.20765686035156,
+          "w": 15.878555297851562,
+          "h": 4.40625,
+          "hits": [
+            "screen",
+            "screen",
+            "screen"
+          ]
+        },
+        {
+          "field": "seat",
+          "x": 184.22500610351562,
+          "y": 239.27186584472656,
+          "w": 35.837493896484375,
+          "h": 9.546875,
+          "hits": [
+            "seat",
+            "seat",
+            "seat"
+          ]
+        },
+        {
+          "field": "runtime",
+          "x": 99.625,
+          "y": 253.078125,
+          "w": 29.375,
+          "h": 9.546875,
+          "hits": [
+            "runtime",
+            "runtime",
+            "runtime"
+          ]
+        },
+        {
+          "field": "rating",
+          "x": 135.46249389648438,
+          "y": 253.078125,
+          "w": 29.375,
+          "h": 9.546875,
+          "hits": [
+            "rating",
+            "rating",
+            "rating"
+          ]
+        },
+        {
+          "field": "releaseDate",
+          "x": 171.29998779296875,
+          "y": 253.078125,
+          "w": 29.375,
+          "h": 9.546875,
+          "hits": [
+            "releaseDate",
+            "releaseDate",
+            "releaseDate"
+          ]
+        },
+        {
+          "field": "actors",
+          "x": 99.625,
+          "y": 265.26873779296875,
+          "w": 120.4375,
+          "h": 9.546875,
+          "hits": [
+            "actors",
+            "actors",
+            "actors"
+          ]
+        },
+        {
+          "field": "signature",
+          "x": 190.68521118164062,
+          "y": 277.75311279296875,
+          "w": 29.377288818359375,
+          "h": 7.04998779296875,
+          "hits": [
+            "signature",
+            "signature",
+            "signature"
+          ]
+        }
+      ],
+      "panel": {
+        "x": 16,
+        "y": 408.328125,
+        "w": 288,
+        "h": 147.671875,
+        "scroll": 305,
+        "client": 148
+      }
+    },
+    "fonts": [
+      {
+        "name": "자동",
+        "w": 140,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "고딕",
+        "w": 140,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "바탕",
+        "w": 140,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "자람",
+        "w": 140,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "잉크",
+        "w": 140,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "은영",
+        "w": 140,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "붓",
+        "w": 140,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "쿨가이",
+        "w": 140,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "꽃길",
+        "w": 140,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      }
+    ],
+    "fontSelection": {
+      "x": 86,
+      "y": 525.828125,
+      "result": {
+        "checked": "true",
+        "preview": "sangSangFlowerRoad, \"sangSangFlowerRoad Fallback\", pretendard, \"pretendard Fallback\", \"Pretendard Variable\", \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif",
+        "scrollTop": 157
+      }
+    }
+  },
+  {
+    "width": 375,
+    "height": 667,
+    "initial": {
+      "overflow": false,
+      "preview": {
+        "x": 39.65625,
+        "y": 68.015625,
+        "w": 295.6875,
+        "h": 472.46875
+      },
+      "fields": [
+        {
+          "field": "chain",
+          "x": 58.15625,
+          "y": 84.04895782470703,
+          "w": 37,
+          "h": 22.816673278808594,
+          "hits": [
+            "chain",
+            "chain",
+            "chain"
+          ]
+        },
+        {
+          "field": "format",
+          "x": 116.4312515258789,
+          "y": 85.39309692382812,
+          "w": 44.02904510498047,
+          "h": 20.123565673828125,
+          "hits": [
+            "format",
+            "format",
+            "format"
+          ]
+        },
+        {
+          "field": "title",
+          "x": 61.239585876464844,
+          "y": 385.4447937011719,
+          "w": 252.83331298828125,
+          "h": 22.20001220703125,
+          "hits": [
+            "title",
+            "title",
+            "title"
+          ]
+        },
+        {
+          "field": "titleOg",
+          "x": 61.239585876464844,
+          "y": 410.7281188964844,
+          "w": 252.83331298828125,
+          "h": 8.01666259765625,
+          "hits": [
+            "titleOg",
+            "titleOg",
+            "titleOg"
+          ]
+        },
+        {
+          "field": "watchDate",
+          "x": 61.239585876464844,
+          "y": 438.4781188964844,
+          "w": 36.07499694824219,
+          "h": 9.25,
+          "hits": [
+            "watchDate",
+            "watchDate",
+            "watchDate"
+          ]
+        },
+        {
+          "field": "watchTime",
+          "x": 100.39791870117188,
+          "y": 438.4781188964844,
+          "w": 36.07499694824219,
+          "h": 9.25,
+          "hits": [
+            "watchTime",
+            "watchTime",
+            "watchTime"
+          ]
+        },
+        {
+          "field": "theater",
+          "x": 150.03958129882812,
+          "y": 439.03216552734375,
+          "w": 33.33372497558594,
+          "h": 9.25,
+          "hits": [
+            "theater",
+            "theater",
+            "theater"
+          ]
+        },
+        {
+          "field": "screen",
+          "x": 191.93919372558594,
+          "y": 439.03216552734375,
+          "w": 33.33372497558594,
+          "h": 9.25,
+          "hits": [
+            "screen",
+            "screen",
+            "screen"
+          ]
+        },
+        {
+          "field": "seat",
+          "x": 238.83958435058594,
+          "y": 430.7698059082031,
+          "w": 75.23332214355469,
+          "h": 20.041656494140625,
+          "hits": [
+            "seat",
+            "seat",
+            "seat"
+          ]
+        },
+        {
+          "field": "runtime",
+          "x": 61.239585876464844,
+          "y": 459.7531433105469,
+          "w": 61.666664123535156,
+          "h": 20.041656494140625,
+          "hits": [
+            "runtime",
+            "runtime",
+            "runtime"
+          ]
+        },
+        {
+          "field": "rating",
+          "x": 136.47291564941406,
+          "y": 459.7531433105469,
+          "w": 61.66667175292969,
+          "h": 20.041656494140625,
+          "hits": [
+            "rating",
+            "rating",
+            "rating"
+          ]
+        },
+        {
+          "field": "releaseDate",
+          "x": 211.7062530517578,
+          "y": 459.7531433105469,
+          "w": 61.66667175292969,
+          "h": 20.041656494140625,
+          "hits": [
+            "releaseDate",
+            "releaseDate",
+            "releaseDate"
+          ]
+        },
+        {
+          "field": "actors",
+          "x": 61.239585876464844,
+          "y": 485.34478759765625,
+          "w": 252.83331298828125,
+          "h": 20.04168701171875,
+          "hits": [
+            "actors",
+            "actors",
+            "actors"
+          ]
+        },
+        {
+          "field": "signature",
+          "x": 218.0945281982422,
+          "y": 511.5531311035156,
+          "w": 95.97837829589844,
+          "h": 11.562469482421875,
+          "hits": [
+            "signature",
+            "signature",
+            "signature"
+          ]
+        }
+      ],
+      "panel": {
+        "x": 16,
+        "y": 655,
+        "w": 343,
+        "h": 173.40625,
+        "scroll": 173,
+        "client": 173
+      }
+    },
+    "header": [
+      {
+        "label": "FILME",
+        "left": 18,
+        "right": 102.171875,
+        "width": 84.171875,
+        "height": 30
+      },
+      {
+        "label": "자동 임시저장 켜짐",
+        "left": 178.0625,
+        "right": 236.09375,
+        "width": 58.03125,
+        "height": 44
+      },
+      {
+        "label": "편집 메뉴",
+        "left": 238.09375,
+        "right": 282.09375,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "label": "완료",
+        "left": 284.09375,
+        "right": 363,
+        "width": 78.90625,
+        "height": 36
+      }
+    ],
+    "autosave": {
+      "before": "true",
+      "hit": true,
+      "rect": {
+        "w": 58,
+        "h": 44
+      },
+      "toggles": [
+        "false",
+        "true"
+      ]
+    },
+    "typing": [
+      {
+        "input": "U",
+        "shown": "collected byU"
+      },
+      {
+        "input": "UX",
+        "shown": "collected byUX"
+      },
+      {
+        "input": "UXT",
+        "shown": "collected byUXT"
+      },
+      {
+        "input": "UXTE",
+        "shown": "collected byUXTE"
+      },
+      {
+        "input": "UXTES",
+        "shown": "collected byUXTES"
+      },
+      {
+        "input": "UXTEST",
+        "shown": "collected byUXTEST"
+      }
+    ],
+    "opacity": {
+      "overflow": false,
+      "preview": {
+        "x": 93.921875,
+        "y": 68,
+        "w": 187.171875,
+        "h": 299.078125
+      },
+      "fields": [
+        {
+          "field": "chain",
+          "x": 105.609375,
+          "y": 78.12916564941406,
+          "w": 23.375,
+          "h": 14.414581298828125,
+          "hits": [
+            "chain",
+            "chain",
+            "chain"
+          ]
+        },
+        {
+          "field": "format",
+          "x": 142.4250030517578,
+          "y": 78.97833251953125,
+          "w": 27.815628051757812,
+          "h": 12.713203430175781,
+          "hits": [
+            "format",
+            "format",
+            "format"
+          ]
+        },
+        {
+          "field": "title",
+          "x": 107.55728912353516,
+          "y": 266.4927062988281,
+          "w": 159.72915649414062,
+          "h": 14.024993896484375,
+          "hits": [
+            "title",
+            "title",
+            "title"
+          ]
+        },
+        {
+          "field": "titleOg",
+          "x": 107.55728912353516,
+          "y": 282.46563720703125,
+          "w": 159.72915649414062,
+          "h": 5.0645751953125,
+          "hits": [
+            "titleOg",
+            "titleOg",
+            "titleOg"
+          ]
+        },
+        {
+          "field": "watchDate",
+          "x": 107.55728912353516,
+          "y": 299.99688720703125,
+          "w": 22.790626525878906,
+          "h": 5.84375,
+          "hits": [
+            "watchDate",
+            "watchDate",
+            "watchDate"
+          ]
+        },
+        {
+          "field": "watchTime",
+          "x": 132.29583740234375,
+          "y": 299.99688720703125,
+          "w": 22.790618896484375,
+          "h": 5.84375,
+          "hits": [
+            "watchTime",
+            "watchTime",
+            "watchTime"
+          ]
+        },
+        {
+          "field": "theater",
+          "x": 163.65728759765625,
+          "y": 300.34686279296875,
+          "w": 21.058807373046875,
+          "h": 5.84375,
+          "hits": [
+            "theater",
+            "theater",
+            "theater"
+          ]
+        },
+        {
+          "field": "screen",
+          "x": 190.12765502929688,
+          "y": 300.34686279296875,
+          "w": 21.058807373046875,
+          "h": 5.84375,
+          "hits": [
+            "screen",
+            "screen",
+            "screen"
+          ]
+        },
+        {
+          "field": "seat",
+          "x": 219.75729370117188,
+          "y": 295.1270751953125,
+          "w": 47.529144287109375,
+          "h": 12.66143798828125,
+          "hits": [
+            "seat",
+            "seat",
+            "seat"
+          ]
+        },
+        {
+          "field": "runtime",
+          "x": 107.55728912353516,
+          "y": 313.4375,
+          "w": 38.958335876464844,
+          "h": 12.66143798828125,
+          "hits": [
+            "runtime",
+            "runtime",
+            "runtime"
+          ]
+        },
+        {
+          "field": "rating",
+          "x": 155.08645629882812,
+          "y": 313.4375,
+          "w": 38.95832824707031,
+          "h": 12.66143798828125,
+          "hits": [
+            "rating",
+            "rating",
+            "rating"
+          ]
+        },
+        {
+          "field": "releaseDate",
+          "x": 202.61563110351562,
+          "y": 313.4375,
+          "w": 38.95832824707031,
+          "h": 12.66143798828125,
+          "hits": [
+            "releaseDate",
+            "releaseDate",
+            "releaseDate"
+          ]
+        },
+        {
+          "field": "actors",
+          "x": 107.55728912353516,
+          "y": 329.6051940917969,
+          "w": 159.72915649414062,
+          "h": 12.661468505859375,
+          "hits": [
+            "actors",
+            "actors",
+            "actors"
+          ]
+        },
+        {
+          "field": "signature",
+          "x": 228.3250732421875,
+          "y": 346.1624755859375,
+          "w": 38.96136474609375,
+          "h": 9.350006103515625,
+          "hits": [
+            "signature",
+            "signature",
+            "signature"
+          ]
+        }
+      ],
+      "panel": {
+        "x": 16,
+        "y": 481.59375,
+        "w": 343,
+        "h": 173.40625,
+        "scroll": 173,
+        "client": 173
+      }
+    },
+    "ranges": [
+      {
+        "id": "rail-poster-opacity",
+        "w": 343,
+        "h": 32,
+        "y": 520.09375,
+        "hits": [
+          {
+            "d": -20,
+            "hit": false
+          },
+          {
+            "d": -15,
+            "hit": true
+          },
+          {
+            "d": -10,
+            "hit": true
+          },
+          {
+            "d": -3,
+            "hit": true
+          },
+          {
+            "d": 0,
+            "hit": true
+          },
+          {
+            "d": 3,
+            "hit": true
+          },
+          {
+            "d": 10,
+            "hit": true
+          },
+          {
+            "d": 15,
+            "hit": true
+          },
+          {
+            "d": 20,
+            "hit": false
+          }
+        ]
+      },
+      {
+        "id": "rail-component-opacity",
+        "w": 343,
+        "h": 32,
+        "y": 594.59375,
+        "hits": [
+          {
+            "d": -20,
+            "hit": false
+          },
+          {
+            "d": -15,
+            "hit": true
+          },
+          {
+            "d": -10,
+            "hit": true
+          },
+          {
+            "d": -3,
+            "hit": true
+          },
+          {
+            "d": 0,
+            "hit": true
+          },
+          {
+            "d": 3,
+            "hit": true
+          },
+          {
+            "d": 10,
+            "hit": true
+          },
+          {
+            "d": 15,
+            "hit": true
+          },
+          {
+            "d": 20,
+            "hit": false
+          }
+        ]
+      }
+    ],
+    "sliderGestures": [
+      {
+        "id": "rail-poster-opacity",
+        "tapped": 0.2,
+        "dragged": 0.8
+      },
+      {
+        "id": "rail-component-opacity",
+        "tapped": 0.2,
+        "dragged": 0.8
+      }
+    ],
+    "logo": {
+      "overflow": false,
+      "preview": {
+        "x": 93.921875,
+        "y": 68,
+        "w": 187.171875,
+        "h": 299.078125
+      },
+      "fields": [
+        {
+          "field": "chain",
+          "x": 105.609375,
+          "y": 78.12916564941406,
+          "w": 23.375,
+          "h": 14.414581298828125,
+          "hits": [
+            "chain",
+            "chain",
+            "chain"
+          ]
+        },
+        {
+          "field": "format",
+          "x": 142.4250030517578,
+          "y": 78.97833251953125,
+          "w": 27.815628051757812,
+          "h": 12.713203430175781,
+          "hits": [
+            "format",
+            "format",
+            "format"
+          ]
+        },
+        {
+          "field": "title",
+          "x": 107.55728912353516,
+          "y": 266.4927062988281,
+          "w": 159.72915649414062,
+          "h": 14.024993896484375,
+          "hits": [
+            "title",
+            "title",
+            "title"
+          ]
+        },
+        {
+          "field": "titleOg",
+          "x": 107.55728912353516,
+          "y": 282.46563720703125,
+          "w": 159.72915649414062,
+          "h": 5.0645751953125,
+          "hits": [
+            "titleOg",
+            "titleOg",
+            "titleOg"
+          ]
+        },
+        {
+          "field": "watchDate",
+          "x": 107.55728912353516,
+          "y": 299.99688720703125,
+          "w": 22.790626525878906,
+          "h": 5.84375,
+          "hits": [
+            "watchDate",
+            "watchDate",
+            "watchDate"
+          ]
+        },
+        {
+          "field": "watchTime",
+          "x": 132.29583740234375,
+          "y": 299.99688720703125,
+          "w": 22.790618896484375,
+          "h": 5.84375,
+          "hits": [
+            "watchTime",
+            "watchTime",
+            "watchTime"
+          ]
+        },
+        {
+          "field": "theater",
+          "x": 163.65728759765625,
+          "y": 300.34686279296875,
+          "w": 21.058807373046875,
+          "h": 5.84375,
+          "hits": [
+            "theater",
+            "theater",
+            "theater"
+          ]
+        },
+        {
+          "field": "screen",
+          "x": 190.12765502929688,
+          "y": 300.34686279296875,
+          "w": 21.058807373046875,
+          "h": 5.84375,
+          "hits": [
+            "screen",
+            "screen",
+            "screen"
+          ]
+        },
+        {
+          "field": "seat",
+          "x": 219.75729370117188,
+          "y": 295.1270751953125,
+          "w": 47.529144287109375,
+          "h": 12.66143798828125,
+          "hits": [
+            "seat",
+            "seat",
+            "seat"
+          ]
+        },
+        {
+          "field": "runtime",
+          "x": 107.55728912353516,
+          "y": 313.4375,
+          "w": 38.958335876464844,
+          "h": 12.66143798828125,
+          "hits": [
+            "runtime",
+            "runtime",
+            "runtime"
+          ]
+        },
+        {
+          "field": "rating",
+          "x": 155.08645629882812,
+          "y": 313.4375,
+          "w": 38.95832824707031,
+          "h": 12.66143798828125,
+          "hits": [
+            "rating",
+            "rating",
+            "rating"
+          ]
+        },
+        {
+          "field": "releaseDate",
+          "x": 202.61563110351562,
+          "y": 313.4375,
+          "w": 38.95832824707031,
+          "h": 12.66143798828125,
+          "hits": [
+            "releaseDate",
+            "releaseDate",
+            "releaseDate"
+          ]
+        },
+        {
+          "field": "actors",
+          "x": 107.55728912353516,
+          "y": 329.6051940917969,
+          "w": 159.72915649414062,
+          "h": 12.661468505859375,
+          "hits": [
+            "actors",
+            "actors",
+            "actors"
+          ]
+        },
+        {
+          "field": "signature",
+          "x": 228.3250732421875,
+          "y": 346.1624755859375,
+          "w": 38.96136474609375,
+          "h": 9.350006103515625,
+          "hits": [
+            "signature",
+            "signature",
+            "signature"
+          ]
+        }
+      ],
+      "panel": {
+        "x": 16,
+        "y": 481.59375,
+        "w": 343,
+        "h": 173.40625,
+        "scroll": 266,
+        "client": 173
+      }
+    },
+    "custom": {
+      "overflow": false,
+      "preview": {
+        "x": 93.921875,
+        "y": 68,
+        "w": 187.171875,
+        "h": 299.078125
+      },
+      "fields": [
+        {
+          "field": "chain",
+          "x": 105.609375,
+          "y": 78.12916564941406,
+          "w": 23.375,
+          "h": 14.414581298828125,
+          "hits": [
+            "chain",
+            "chain",
+            "chain"
+          ]
+        },
+        {
+          "field": "format",
+          "x": 142.4250030517578,
+          "y": 78.97833251953125,
+          "w": 27.815628051757812,
+          "h": 12.713203430175781,
+          "hits": [
+            "format",
+            "format",
+            "format"
+          ]
+        },
+        {
+          "field": "title",
+          "x": 107.55728912353516,
+          "y": 266.4927062988281,
+          "w": 159.72915649414062,
+          "h": 14.024993896484375,
+          "hits": [
+            "title",
+            "title",
+            "title"
+          ]
+        },
+        {
+          "field": "titleOg",
+          "x": 107.55728912353516,
+          "y": 282.46563720703125,
+          "w": 159.72915649414062,
+          "h": 5.0645751953125,
+          "hits": [
+            "titleOg",
+            "titleOg",
+            "titleOg"
+          ]
+        },
+        {
+          "field": "watchDate",
+          "x": 107.55728912353516,
+          "y": 299.99688720703125,
+          "w": 22.790626525878906,
+          "h": 5.84375,
+          "hits": [
+            "watchDate",
+            "watchDate",
+            "watchDate"
+          ]
+        },
+        {
+          "field": "watchTime",
+          "x": 132.29583740234375,
+          "y": 299.99688720703125,
+          "w": 22.790618896484375,
+          "h": 5.84375,
+          "hits": [
+            "watchTime",
+            "watchTime",
+            "watchTime"
+          ]
+        },
+        {
+          "field": "theater",
+          "x": 163.65728759765625,
+          "y": 300.34686279296875,
+          "w": 21.058807373046875,
+          "h": 5.84375,
+          "hits": [
+            "theater",
+            "theater",
+            "theater"
+          ]
+        },
+        {
+          "field": "screen",
+          "x": 190.12765502929688,
+          "y": 300.34686279296875,
+          "w": 21.058807373046875,
+          "h": 5.84375,
+          "hits": [
+            "screen",
+            "screen",
+            "screen"
+          ]
+        },
+        {
+          "field": "seat",
+          "x": 219.75729370117188,
+          "y": 295.1270751953125,
+          "w": 47.529144287109375,
+          "h": 12.66143798828125,
+          "hits": [
+            "seat",
+            "seat",
+            "seat"
+          ]
+        },
+        {
+          "field": "runtime",
+          "x": 107.55728912353516,
+          "y": 313.4375,
+          "w": 38.958335876464844,
+          "h": 12.66143798828125,
+          "hits": [
+            "runtime",
+            "runtime",
+            "runtime"
+          ]
+        },
+        {
+          "field": "rating",
+          "x": 155.08645629882812,
+          "y": 313.4375,
+          "w": 38.95832824707031,
+          "h": 12.66143798828125,
+          "hits": [
+            "rating",
+            "rating",
+            "rating"
+          ]
+        },
+        {
+          "field": "releaseDate",
+          "x": 202.61563110351562,
+          "y": 313.4375,
+          "w": 38.95832824707031,
+          "h": 12.66143798828125,
+          "hits": [
+            "releaseDate",
+            "releaseDate",
+            "releaseDate"
+          ]
+        },
+        {
+          "field": "actors",
+          "x": 107.55728912353516,
+          "y": 329.6051940917969,
+          "w": 159.72915649414062,
+          "h": 12.661468505859375,
+          "hits": [
+            "actors",
+            "actors",
+            "actors"
+          ]
+        },
+        {
+          "field": "signature",
+          "x": 228.3250732421875,
+          "y": 346.1624755859375,
+          "w": 38.96136474609375,
+          "h": 9.350006103515625,
+          "hits": [
+            "signature",
+            "signature",
+            "signature"
+          ]
+        }
+      ],
+      "panel": {
+        "x": 16,
+        "y": 481.59375,
+        "w": 343,
+        "h": 173.40625,
+        "scroll": 217,
+        "client": 173
+      }
+    },
+    "fonts": [
+      {
+        "name": "자동",
+        "w": 109,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "고딕",
+        "w": 109,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "바탕",
+        "w": 109,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "자람",
+        "w": 109,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "잉크",
+        "w": 109,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "은영",
+        "w": 109,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "붓",
+        "w": 109,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "쿨가이",
+        "w": 109,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "꽃길",
+        "w": 109,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      }
+    ],
+    "fontSelection": {
+      "x": 304.5,
+      "y": 624.09375,
+      "result": {
+        "checked": "true",
+        "preview": "sangSangFlowerRoad, \"sangSangFlowerRoad Fallback\", pretendard, \"pretendard Fallback\", \"Pretendard Variable\", \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif",
+        "scrollTop": 44
+      }
+    }
+  },
+  {
+    "width": 393,
+    "height": 659,
+    "initial": {
+      "overflow": false,
+      "preview": {
+        "x": 51.15625,
+        "y": 68,
+        "w": 290.6875,
+        "h": 464.484375
+      },
+      "fields": [
+        {
+          "field": "chain",
+          "x": 69.34375,
+          "y": 83.76249694824219,
+          "w": 36.375,
+          "h": 22.431251525878906,
+          "hits": [
+            "chain",
+            "chain",
+            "chain"
+          ]
+        },
+        {
+          "field": "format",
+          "x": 126.6343765258789,
+          "y": 85.08393859863281,
+          "w": 43.285301208496094,
+          "h": 19.78363800048828,
+          "hits": [
+            "format",
+            "format",
+            "format"
+          ]
+        },
+        {
+          "field": "title",
+          "x": 72.375,
+          "y": 380.0671691894531,
+          "w": 248.5625,
+          "h": 21.82501220703125,
+          "hits": [
+            "title",
+            "title",
+            "title"
+          ]
+        },
+        {
+          "field": "titleOg",
+          "x": 72.375,
+          "y": 404.9234313964844,
+          "w": 248.5625,
+          "h": 7.881256103515625,
+          "hits": [
+            "titleOg",
+            "titleOg",
+            "titleOg"
+          ]
+        },
+        {
+          "field": "watchDate",
+          "x": 72.375,
+          "y": 432.2046813964844,
+          "w": 35.46562194824219,
+          "h": 9.09375,
+          "hits": [
+            "watchDate",
+            "watchDate",
+            "watchDate"
+          ]
+        },
+        {
+          "field": "watchTime",
+          "x": 110.87187194824219,
+          "y": 432.2046813964844,
+          "w": 35.46562194824219,
+          "h": 9.09375,
+          "hits": [
+            "watchTime",
+            "watchTime",
+            "watchTime"
+          ]
+        },
+        {
+          "field": "theater",
+          "x": 159.67498779296875,
+          "y": 432.7493591308594,
+          "w": 32.770660400390625,
+          "h": 9.09375,
+          "hits": [
+            "theater",
+            "theater",
+            "theater"
+          ]
+        },
+        {
+          "field": "screen",
+          "x": 200.86683654785156,
+          "y": 432.7493591308594,
+          "w": 32.770660400390625,
+          "h": 9.09375,
+          "hits": [
+            "screen",
+            "screen",
+            "screen"
+          ]
+        },
+        {
+          "field": "seat",
+          "x": 246.97499084472656,
+          "y": 424.6265563964844,
+          "w": 73.96250915527344,
+          "h": 19.703125,
+          "hits": [
+            "seat",
+            "seat",
+            "seat"
+          ]
+        },
+        {
+          "field": "runtime",
+          "x": 72.375,
+          "y": 453.12030029296875,
+          "w": 60.625,
+          "h": 19.703125,
+          "hits": [
+            "runtime",
+            "runtime",
+            "runtime"
+          ]
+        },
+        {
+          "field": "rating",
+          "x": 146.33749389648438,
+          "y": 453.12030029296875,
+          "w": 60.625,
+          "h": 19.703125,
+          "hits": [
+            "rating",
+            "rating",
+            "rating"
+          ]
+        },
+        {
+          "field": "releaseDate",
+          "x": 220.3000030517578,
+          "y": 453.12030029296875,
+          "w": 60.62498474121094,
+          "h": 19.703125,
+          "hits": [
+            "releaseDate",
+            "releaseDate",
+            "releaseDate"
+          ]
+        },
+        {
+          "field": "actors",
+          "x": 72.375,
+          "y": 478.2796936035156,
+          "w": 248.5625,
+          "h": 19.703125,
+          "hits": [
+            "actors",
+            "actors",
+            "actors"
+          ]
+        },
+        {
+          "field": "signature",
+          "x": 226.5803680419922,
+          "y": 504.0453186035156,
+          "w": 94.35713195800781,
+          "h": 11.367156982421875,
+          "hits": [
+            "signature",
+            "signature",
+            "signature"
+          ]
+        }
+      ],
+      "panel": {
+        "x": 16,
+        "y": 647,
+        "w": 361,
+        "h": 171.328125,
+        "scroll": 171,
+        "client": 171
+      }
+    },
+    "header": [
+      {
+        "label": "FILME",
+        "left": 18,
+        "right": 102.171875,
+        "width": 84.171875,
+        "height": 30
+      },
+      {
+        "label": "자동 임시저장 켜짐",
+        "left": 196.0625,
+        "right": 254.09375,
+        "width": 58.03125,
+        "height": 44
+      },
+      {
+        "label": "편집 메뉴",
+        "left": 256.09375,
+        "right": 300.09375,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "label": "완료",
+        "left": 302.09375,
+        "right": 381,
+        "width": 78.90625,
+        "height": 36
+      }
+    ],
+    "autosave": {
+      "before": "true",
+      "hit": true,
+      "rect": {
+        "w": 58,
+        "h": 44
+      },
+      "toggles": [
+        "false",
+        "true"
+      ]
+    },
+    "typing": [
+      {
+        "input": "U",
+        "shown": "collected byU"
+      },
+      {
+        "input": "UX",
+        "shown": "collected byUX"
+      },
+      {
+        "input": "UXT",
+        "shown": "collected byUXT"
+      },
+      {
+        "input": "UXTE",
+        "shown": "collected byUXTE"
+      },
+      {
+        "input": "UXTES",
+        "shown": "collected byUXTES"
+      },
+      {
+        "input": "UXTEST",
+        "shown": "collected byUXTEST"
+      }
+    ],
+    "opacity": {
+      "overflow": false,
+      "preview": {
+        "x": 104.765625,
+        "y": 68,
+        "w": 183.46875,
+        "h": 293.15625
+      },
+      "fields": [
+        {
+          "field": "chain",
+          "x": 116.203125,
+          "y": 77.9124984741211,
+          "w": 22.875,
+          "h": 14.106254577636719,
+          "hits": [
+            "chain",
+            "chain",
+            "chain"
+          ]
+        },
+        {
+          "field": "format",
+          "x": 152.2312469482422,
+          "y": 78.7435073852539,
+          "w": 27.220657348632812,
+          "h": 12.441261291503906,
+          "hits": [
+            "format",
+            "format",
+            "format"
+          ]
+        },
+        {
+          "field": "title",
+          "x": 118.109375,
+          "y": 262.24688720703125,
+          "w": 156.3125,
+          "h": 13.7249755859375,
+          "hits": [
+            "title",
+            "title",
+            "title"
+          ]
+        },
+        {
+          "field": "titleOg",
+          "x": 118.109375,
+          "y": 277.87811279296875,
+          "w": 156.3125,
+          "h": 4.95623779296875,
+          "hits": [
+            "titleOg",
+            "titleOg",
+            "titleOg"
+          ]
+        },
+        {
+          "field": "watchDate",
+          "x": 118.109375,
+          "y": 295.03436279296875,
+          "w": 22.303131103515625,
+          "h": 5.71875,
+          "hits": [
+            "watchDate",
+            "watchDate",
+            "watchDate"
+          ]
+        },
+        {
+          "field": "watchTime",
+          "x": 142.31875610351562,
+          "y": 295.03436279296875,
+          "w": 22.303115844726562,
+          "h": 5.71875,
+          "hits": [
+            "watchTime",
+            "watchTime",
+            "watchTime"
+          ]
+        },
+        {
+          "field": "theater",
+          "x": 173.00936889648438,
+          "y": 295.37689208984375,
+          "w": 20.608352661132812,
+          "h": 5.71875,
+          "hits": [
+            "theater",
+            "theater",
+            "theater"
+          ]
+        },
+        {
+          "field": "screen",
+          "x": 198.91351318359375,
+          "y": 295.37689208984375,
+          "w": 20.608367919921875,
+          "h": 5.71875,
+          "hits": [
+            "screen",
+            "screen",
+            "screen"
+          ]
+        },
+        {
+          "field": "seat",
+          "x": 227.90936279296875,
+          "y": 290.26873779296875,
+          "w": 46.51251220703125,
+          "h": 12.390625,
+          "hits": [
+            "seat",
+            "seat",
+            "seat"
+          ]
+        },
+        {
+          "field": "runtime",
+          "x": 118.109375,
+          "y": 308.1875,
+          "w": 38.125,
+          "h": 12.390625,
+          "hits": [
+            "runtime",
+            "runtime",
+            "runtime"
+          ]
+        },
+        {
+          "field": "rating",
+          "x": 164.6218719482422,
+          "y": 308.1875,
+          "w": 38.125,
+          "h": 12.390625,
+          "hits": [
+            "rating",
+            "rating",
+            "rating"
+          ]
+        },
+        {
+          "field": "releaseDate",
+          "x": 211.13436889648438,
+          "y": 308.1875,
+          "w": 38.125,
+          "h": 12.390625,
+          "hits": [
+            "releaseDate",
+            "releaseDate",
+            "releaseDate"
+          ]
+        },
+        {
+          "field": "actors",
+          "x": 118.109375,
+          "y": 324.0093688964844,
+          "w": 156.3125,
+          "h": 12.390625,
+          "hits": [
+            "actors",
+            "actors",
+            "actors"
+          ]
+        },
+        {
+          "field": "signature",
+          "x": 236.2938995361328,
+          "y": 340.2124938964844,
+          "w": 38.12797546386719,
+          "h": 9.149993896484375,
+          "hits": [
+            "signature",
+            "signature",
+            "signature"
+          ]
+        }
+      ],
+      "panel": {
+        "x": 16,
+        "y": 475.671875,
+        "w": 361,
+        "h": 171.328125,
+        "scroll": 171,
+        "client": 171
+      }
+    },
+    "ranges": [
+      {
+        "id": "rail-poster-opacity",
+        "w": 361,
+        "h": 32,
+        "y": 514.171875,
+        "hits": [
+          {
+            "d": -20,
+            "hit": false
+          },
+          {
+            "d": -15,
+            "hit": true
+          },
+          {
+            "d": -10,
+            "hit": true
+          },
+          {
+            "d": -3,
+            "hit": true
+          },
+          {
+            "d": 0,
+            "hit": true
+          },
+          {
+            "d": 3,
+            "hit": true
+          },
+          {
+            "d": 10,
+            "hit": true
+          },
+          {
+            "d": 15,
+            "hit": true
+          },
+          {
+            "d": 20,
+            "hit": false
+          }
+        ]
+      },
+      {
+        "id": "rail-component-opacity",
+        "w": 361,
+        "h": 32,
+        "y": 588.671875,
+        "hits": [
+          {
+            "d": -20,
+            "hit": false
+          },
+          {
+            "d": -15,
+            "hit": true
+          },
+          {
+            "d": -10,
+            "hit": true
+          },
+          {
+            "d": -3,
+            "hit": true
+          },
+          {
+            "d": 0,
+            "hit": true
+          },
+          {
+            "d": 3,
+            "hit": true
+          },
+          {
+            "d": 10,
+            "hit": true
+          },
+          {
+            "d": 15,
+            "hit": true
+          },
+          {
+            "d": 20,
+            "hit": false
+          }
+        ]
+      }
+    ],
+    "sliderGestures": [
+      {
+        "id": "rail-poster-opacity",
+        "tapped": 0.2,
+        "dragged": 0.8
+      },
+      {
+        "id": "rail-component-opacity",
+        "tapped": 0.2,
+        "dragged": 0.8
+      }
+    ],
+    "logo": {
+      "overflow": false,
+      "preview": {
+        "x": 104.765625,
+        "y": 68,
+        "w": 183.46875,
+        "h": 293.15625
+      },
+      "fields": [
+        {
+          "field": "chain",
+          "x": 116.203125,
+          "y": 77.9124984741211,
+          "w": 22.875,
+          "h": 14.106254577636719,
+          "hits": [
+            "chain",
+            "chain",
+            "chain"
+          ]
+        },
+        {
+          "field": "format",
+          "x": 152.2312469482422,
+          "y": 78.7435073852539,
+          "w": 27.220657348632812,
+          "h": 12.441261291503906,
+          "hits": [
+            "format",
+            "format",
+            "format"
+          ]
+        },
+        {
+          "field": "title",
+          "x": 118.109375,
+          "y": 262.24688720703125,
+          "w": 156.3125,
+          "h": 13.7249755859375,
+          "hits": [
+            "title",
+            "title",
+            "title"
+          ]
+        },
+        {
+          "field": "titleOg",
+          "x": 118.109375,
+          "y": 277.87811279296875,
+          "w": 156.3125,
+          "h": 4.95623779296875,
+          "hits": [
+            "titleOg",
+            "titleOg",
+            "titleOg"
+          ]
+        },
+        {
+          "field": "watchDate",
+          "x": 118.109375,
+          "y": 295.03436279296875,
+          "w": 22.303131103515625,
+          "h": 5.71875,
+          "hits": [
+            "watchDate",
+            "watchDate",
+            "watchDate"
+          ]
+        },
+        {
+          "field": "watchTime",
+          "x": 142.31875610351562,
+          "y": 295.03436279296875,
+          "w": 22.303115844726562,
+          "h": 5.71875,
+          "hits": [
+            "watchTime",
+            "watchTime",
+            "watchTime"
+          ]
+        },
+        {
+          "field": "theater",
+          "x": 173.00936889648438,
+          "y": 295.37689208984375,
+          "w": 20.608352661132812,
+          "h": 5.71875,
+          "hits": [
+            "theater",
+            "theater",
+            "theater"
+          ]
+        },
+        {
+          "field": "screen",
+          "x": 198.91351318359375,
+          "y": 295.37689208984375,
+          "w": 20.608367919921875,
+          "h": 5.71875,
+          "hits": [
+            "screen",
+            "screen",
+            "screen"
+          ]
+        },
+        {
+          "field": "seat",
+          "x": 227.90936279296875,
+          "y": 290.26873779296875,
+          "w": 46.51251220703125,
+          "h": 12.390625,
+          "hits": [
+            "seat",
+            "seat",
+            "seat"
+          ]
+        },
+        {
+          "field": "runtime",
+          "x": 118.109375,
+          "y": 308.1875,
+          "w": 38.125,
+          "h": 12.390625,
+          "hits": [
+            "runtime",
+            "runtime",
+            "runtime"
+          ]
+        },
+        {
+          "field": "rating",
+          "x": 164.6218719482422,
+          "y": 308.1875,
+          "w": 38.125,
+          "h": 12.390625,
+          "hits": [
+            "rating",
+            "rating",
+            "rating"
+          ]
+        },
+        {
+          "field": "releaseDate",
+          "x": 211.13436889648438,
+          "y": 308.1875,
+          "w": 38.125,
+          "h": 12.390625,
+          "hits": [
+            "releaseDate",
+            "releaseDate",
+            "releaseDate"
+          ]
+        },
+        {
+          "field": "actors",
+          "x": 118.109375,
+          "y": 324.0093688964844,
+          "w": 156.3125,
+          "h": 12.390625,
+          "hits": [
+            "actors",
+            "actors",
+            "actors"
+          ]
+        },
+        {
+          "field": "signature",
+          "x": 236.2938995361328,
+          "y": 340.2124938964844,
+          "w": 38.12797546386719,
+          "h": 9.149993896484375,
+          "hits": [
+            "signature",
+            "signature",
+            "signature"
+          ]
+        }
+      ],
+      "panel": {
+        "x": 16,
+        "y": 475.671875,
+        "w": 361,
+        "h": 171.328125,
+        "scroll": 266,
+        "client": 171
+      }
+    },
+    "custom": {
+      "overflow": false,
+      "preview": {
+        "x": 104.765625,
+        "y": 68,
+        "w": 183.46875,
+        "h": 293.15625
+      },
+      "fields": [
+        {
+          "field": "chain",
+          "x": 116.203125,
+          "y": 77.9124984741211,
+          "w": 22.875,
+          "h": 14.106254577636719,
+          "hits": [
+            "chain",
+            "chain",
+            "chain"
+          ]
+        },
+        {
+          "field": "format",
+          "x": 152.2312469482422,
+          "y": 78.7435073852539,
+          "w": 27.220657348632812,
+          "h": 12.441261291503906,
+          "hits": [
+            "format",
+            "format",
+            "format"
+          ]
+        },
+        {
+          "field": "title",
+          "x": 118.109375,
+          "y": 262.24688720703125,
+          "w": 156.3125,
+          "h": 13.7249755859375,
+          "hits": [
+            "title",
+            "title",
+            "title"
+          ]
+        },
+        {
+          "field": "titleOg",
+          "x": 118.109375,
+          "y": 277.87811279296875,
+          "w": 156.3125,
+          "h": 4.95623779296875,
+          "hits": [
+            "titleOg",
+            "titleOg",
+            "titleOg"
+          ]
+        },
+        {
+          "field": "watchDate",
+          "x": 118.109375,
+          "y": 295.03436279296875,
+          "w": 22.303131103515625,
+          "h": 5.71875,
+          "hits": [
+            "watchDate",
+            "watchDate",
+            "watchDate"
+          ]
+        },
+        {
+          "field": "watchTime",
+          "x": 142.31875610351562,
+          "y": 295.03436279296875,
+          "w": 22.303115844726562,
+          "h": 5.71875,
+          "hits": [
+            "watchTime",
+            "watchTime",
+            "watchTime"
+          ]
+        },
+        {
+          "field": "theater",
+          "x": 173.00936889648438,
+          "y": 295.37689208984375,
+          "w": 20.608352661132812,
+          "h": 5.71875,
+          "hits": [
+            "theater",
+            "theater",
+            "theater"
+          ]
+        },
+        {
+          "field": "screen",
+          "x": 198.91351318359375,
+          "y": 295.37689208984375,
+          "w": 20.608367919921875,
+          "h": 5.71875,
+          "hits": [
+            "screen",
+            "screen",
+            "screen"
+          ]
+        },
+        {
+          "field": "seat",
+          "x": 227.90936279296875,
+          "y": 290.26873779296875,
+          "w": 46.51251220703125,
+          "h": 12.390625,
+          "hits": [
+            "seat",
+            "seat",
+            "seat"
+          ]
+        },
+        {
+          "field": "runtime",
+          "x": 118.109375,
+          "y": 308.1875,
+          "w": 38.125,
+          "h": 12.390625,
+          "hits": [
+            "runtime",
+            "runtime",
+            "runtime"
+          ]
+        },
+        {
+          "field": "rating",
+          "x": 164.6218719482422,
+          "y": 308.1875,
+          "w": 38.125,
+          "h": 12.390625,
+          "hits": [
+            "rating",
+            "rating",
+            "rating"
+          ]
+        },
+        {
+          "field": "releaseDate",
+          "x": 211.13436889648438,
+          "y": 308.1875,
+          "w": 38.125,
+          "h": 12.390625,
+          "hits": [
+            "releaseDate",
+            "releaseDate",
+            "releaseDate"
+          ]
+        },
+        {
+          "field": "actors",
+          "x": 118.109375,
+          "y": 324.0093688964844,
+          "w": 156.3125,
+          "h": 12.390625,
+          "hits": [
+            "actors",
+            "actors",
+            "actors"
+          ]
+        },
+        {
+          "field": "signature",
+          "x": 236.2938995361328,
+          "y": 340.2124938964844,
+          "w": 38.12797546386719,
+          "h": 9.149993896484375,
+          "hits": [
+            "signature",
+            "signature",
+            "signature"
+          ]
+        }
+      ],
+      "panel": {
+        "x": 16,
+        "y": 475.671875,
+        "w": 361,
+        "h": 171.328125,
+        "scroll": 217,
+        "client": 171
+      }
+    },
+    "fonts": [
+      {
+        "name": "자동",
+        "w": 115,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "고딕",
+        "w": 115,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "바탕",
+        "w": 115,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "자람",
+        "w": 115,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "잉크",
+        "w": 115,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "은영",
+        "w": 115,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "붓",
+        "w": 115,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "쿨가이",
+        "w": 115,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "꽃길",
+        "w": 115,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      }
+    ],
+    "fontSelection": {
+      "x": 319.5,
+      "y": 616.171875,
+      "result": {
+        "checked": "true",
+        "preview": "sangSangFlowerRoad, \"sangSangFlowerRoad Fallback\", pretendard, \"pretendard Fallback\", \"Pretendard Variable\", \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif",
+        "scrollTop": 46
+      }
+    }
+  },
+  {
+    "width": 414,
+    "height": 736,
+    "initial": {
+      "overflow": false,
+      "preview": {
+        "x": 37.5625,
+        "y": 73.796875,
+        "w": 338.875,
+        "h": 529.90625
+      },
+      "fields": [
+        {
+          "field": "chain",
+          "x": 58.3125,
+          "y": 91.78021240234375,
+          "w": 41.5,
+          "h": 25.591659545898438,
+          "hits": [
+            "chain",
+            "chain",
+            "chain"
+          ]
+        },
+        {
+          "field": "format",
+          "x": 123.67500305175781,
+          "y": 93.28782653808594,
+          "w": 49.3839111328125,
+          "h": 22.571029663085938,
+          "hits": [
+            "format",
+            "format",
+            "format"
+          ]
+        },
+        {
+          "field": "title",
+          "x": 61.770835876464844,
+          "y": 429.832275390625,
+          "w": 283.58331298828125,
+          "h": 24.9000244140625,
+          "hits": [
+            "title",
+            "title",
+            "title"
+          ]
+        },
+        {
+          "field": "titleOg",
+          "x": 61.770835876464844,
+          "y": 458.19061279296875,
+          "w": 283.58331298828125,
+          "h": 8.991668701171875,
+          "hits": [
+            "titleOg",
+            "titleOg",
+            "titleOg"
+          ]
+        },
+        {
+          "field": "watchDate",
+          "x": 61.770835876464844,
+          "y": 489.31561279296875,
+          "w": 40.462493896484375,
+          "h": 10.375,
+          "hits": [
+            "watchDate",
+            "watchDate",
+            "watchDate"
+          ]
+        },
+        {
+          "field": "watchTime",
+          "x": 105.69166564941406,
+          "y": 489.31561279296875,
+          "w": 40.46250915527344,
+          "h": 10.375,
+          "hits": [
+            "watchTime",
+            "watchTime",
+            "watchTime"
+          ]
+        },
+        {
+          "field": "theater",
+          "x": 161.37083435058594,
+          "y": 489.9370422363281,
+          "w": 37.3878173828125,
+          "h": 10.375,
+          "hits": [
+            "theater",
+            "theater",
+            "theater"
+          ]
+        },
+        {
+          "field": "screen",
+          "x": 208.3663330078125,
+          "y": 489.9370422363281,
+          "w": 37.38783264160156,
+          "h": 10.375,
+          "hits": [
+            "screen",
+            "screen",
+            "screen"
+          ]
+        },
+        {
+          "field": "seat",
+          "x": 260.9708251953125,
+          "y": 480.6697998046875,
+          "w": 84.38333129882812,
+          "h": 22.479156494140625,
+          "hits": [
+            "seat",
+            "seat",
+            "seat"
+          ]
+        },
+        {
+          "field": "runtime",
+          "x": 61.770835876464844,
+          "y": 513.1781005859375,
+          "w": 69.16666412353516,
+          "h": 22.47918701171875,
+          "hits": [
+            "runtime",
+            "runtime",
+            "runtime"
+          ]
+        },
+        {
+          "field": "rating",
+          "x": 146.1541748046875,
+          "y": 513.1781005859375,
+          "w": 69.16665649414062,
+          "h": 22.47918701171875,
+          "hits": [
+            "rating",
+            "rating",
+            "rating"
+          ]
+        },
+        {
+          "field": "releaseDate",
+          "x": 230.53750610351562,
+          "y": 513.1781005859375,
+          "w": 69.16665649414062,
+          "h": 22.47918701171875,
+          "hits": [
+            "releaseDate",
+            "releaseDate",
+            "releaseDate"
+          ]
+        },
+        {
+          "field": "actors",
+          "x": 61.770835876464844,
+          "y": 541.88232421875,
+          "w": 283.58331298828125,
+          "h": 22.4791259765625,
+          "hits": [
+            "actors",
+            "actors",
+            "actors"
+          ]
+        },
+        {
+          "field": "signature",
+          "x": 237.70272827148438,
+          "y": 571.2781372070312,
+          "w": 107.65142822265625,
+          "h": 12.96875,
+          "hits": [
+            "signature",
+            "signature",
+            "signature"
+          ]
+        }
+      ],
+      "panel": {
+        "x": 16,
+        "y": 724,
+        "w": 382,
+        "h": 191.359375,
+        "scroll": 191,
+        "client": 191
+      }
+    },
+    "header": [
+      {
+        "label": "FILME",
+        "left": 18,
+        "right": 102.171875,
+        "width": 84.171875,
+        "height": 30
+      },
+      {
+        "label": "자동 임시저장 켜짐",
+        "left": 217.0625,
+        "right": 275.09375,
+        "width": 58.03125,
+        "height": 44
+      },
+      {
+        "label": "편집 메뉴",
+        "left": 277.09375,
+        "right": 321.09375,
+        "width": 44,
+        "height": 44
+      },
+      {
+        "label": "완료",
+        "left": 323.09375,
+        "right": 402,
+        "width": 78.90625,
+        "height": 36
+      }
+    ],
+    "autosave": {
+      "before": "true",
+      "hit": true,
+      "rect": {
+        "w": 58,
+        "h": 44
+      },
+      "toggles": [
+        "false",
+        "true"
+      ]
+    },
+    "typing": [
+      {
+        "input": "U",
+        "shown": "collected byU"
+      },
+      {
+        "input": "UX",
+        "shown": "collected byUX"
+      },
+      {
+        "input": "UXT",
+        "shown": "collected byUXT"
+      },
+      {
+        "input": "UXTE",
+        "shown": "collected byUXTE"
+      },
+      {
+        "input": "UXTES",
+        "shown": "collected byUXTES"
+      },
+      {
+        "input": "UXTEST",
+        "shown": "collected byUXTEST"
+      }
+    ],
+    "opacity": {
+      "overflow": false,
+      "preview": {
+        "x": 97.453125,
+        "y": 68.015625,
+        "w": 219.109375,
+        "h": 350.109375
+      },
+      "fields": [
+        {
+          "field": "chain",
+          "x": 111.140625,
+          "y": 79.87812805175781,
+          "w": 27.375,
+          "h": 16.881248474121094,
+          "hits": [
+            "chain",
+            "chain",
+            "chain"
+          ]
+        },
+        {
+          "field": "format",
+          "x": 154.25625610351562,
+          "y": 80.87260437011719,
+          "w": 32.575531005859375,
+          "h": 14.888725280761719,
+          "hits": [
+            "format",
+            "format",
+            "format"
+          ]
+        },
+        {
+          "field": "title",
+          "x": 113.421875,
+          "y": 300.4750061035156,
+          "w": 187.0625,
+          "h": 16.425018310546875,
+          "hits": [
+            "title",
+            "title",
+            "title"
+          ]
+        },
+        {
+          "field": "titleOg",
+          "x": 113.421875,
+          "y": 319.1812744140625,
+          "w": 187.0625,
+          "h": 5.931243896484375,
+          "hits": [
+            "titleOg",
+            "titleOg",
+            "titleOg"
+          ]
+        },
+        {
+          "field": "watchDate",
+          "x": 113.421875,
+          "y": 339.7124938964844,
+          "w": 26.690628051757812,
+          "h": 6.84375,
+          "hits": [
+            "watchDate",
+            "watchDate",
+            "watchDate"
+          ]
+        },
+        {
+          "field": "watchTime",
+          "x": 142.3937530517578,
+          "y": 339.7124938964844,
+          "w": 26.690628051757812,
+          "h": 6.84375,
+          "hits": [
+            "watchTime",
+            "watchTime",
+            "watchTime"
+          ]
+        },
+        {
+          "field": "theater",
+          "x": 179.12188720703125,
+          "y": 340.1224060058594,
+          "w": 24.662445068359375,
+          "h": 6.84375,
+          "hits": [
+            "theater",
+            "theater",
+            "theater"
+          ]
+        },
+        {
+          "field": "screen",
+          "x": 210.12191772460938,
+          "y": 340.1224060058594,
+          "w": 24.662460327148438,
+          "h": 6.84375,
+          "hits": [
+            "screen",
+            "screen",
+            "screen"
+          ]
+        },
+        {
+          "field": "seat",
+          "x": 244.82188415527344,
+          "y": 334.0093688964844,
+          "w": 55.66249084472656,
+          "h": 14.828125,
+          "hits": [
+            "seat",
+            "seat",
+            "seat"
+          ]
+        },
+        {
+          "field": "runtime",
+          "x": 113.421875,
+          "y": 355.453125,
+          "w": 45.625,
+          "h": 14.828125,
+          "hits": [
+            "runtime",
+            "runtime",
+            "runtime"
+          ]
+        },
+        {
+          "field": "rating",
+          "x": 169.08438110351562,
+          "y": 355.453125,
+          "w": 45.625,
+          "h": 14.828125,
+          "hits": [
+            "rating",
+            "rating",
+            "rating"
+          ]
+        },
+        {
+          "field": "releaseDate",
+          "x": 224.74688720703125,
+          "y": 355.453125,
+          "w": 45.625,
+          "h": 14.828125,
+          "hits": [
+            "releaseDate",
+            "releaseDate",
+            "releaseDate"
+          ]
+        },
+        {
+          "field": "actors",
+          "x": 113.421875,
+          "y": 374.38751220703125,
+          "w": 187.0625,
+          "h": 14.828125,
+          "hits": [
+            "actors",
+            "actors",
+            "actors"
+          ]
+        },
+        {
+          "field": "signature",
+          "x": 254.85581970214844,
+          "y": 393.77813720703125,
+          "w": 45.62855529785156,
+          "h": 10.949981689453125,
+          "hits": [
+            "signature",
+            "signature",
+            "signature"
+          ]
+        }
+      ],
+      "panel": {
+        "x": 16,
+        "y": 532.640625,
+        "w": 382,
+        "h": 191.359375,
+        "scroll": 191,
+        "client": 191
+      }
+    },
+    "ranges": [
+      {
+        "id": "rail-poster-opacity",
+        "w": 382,
+        "h": 32,
+        "y": 571.140625,
+        "hits": [
+          {
+            "d": -20,
+            "hit": false
+          },
+          {
+            "d": -15,
+            "hit": true
+          },
+          {
+            "d": -10,
+            "hit": true
+          },
+          {
+            "d": -3,
+            "hit": true
+          },
+          {
+            "d": 0,
+            "hit": true
+          },
+          {
+            "d": 3,
+            "hit": true
+          },
+          {
+            "d": 10,
+            "hit": true
+          },
+          {
+            "d": 15,
+            "hit": true
+          },
+          {
+            "d": 20,
+            "hit": false
+          }
+        ]
+      },
+      {
+        "id": "rail-component-opacity",
+        "w": 382,
+        "h": 32,
+        "y": 645.640625,
+        "hits": [
+          {
+            "d": -20,
+            "hit": false
+          },
+          {
+            "d": -15,
+            "hit": true
+          },
+          {
+            "d": -10,
+            "hit": true
+          },
+          {
+            "d": -3,
+            "hit": true
+          },
+          {
+            "d": 0,
+            "hit": true
+          },
+          {
+            "d": 3,
+            "hit": true
+          },
+          {
+            "d": 10,
+            "hit": true
+          },
+          {
+            "d": 15,
+            "hit": true
+          },
+          {
+            "d": 20,
+            "hit": false
+          }
+        ]
+      }
+    ],
+    "sliderGestures": [
+      {
+        "id": "rail-poster-opacity",
+        "tapped": 0.2,
+        "dragged": 0.8
+      },
+      {
+        "id": "rail-component-opacity",
+        "tapped": 0.2,
+        "dragged": 0.8
+      }
+    ],
+    "logo": {
+      "overflow": false,
+      "preview": {
+        "x": 97.453125,
+        "y": 68.015625,
+        "w": 219.109375,
+        "h": 350.109375
+      },
+      "fields": [
+        {
+          "field": "chain",
+          "x": 111.140625,
+          "y": 79.87812805175781,
+          "w": 27.375,
+          "h": 16.881248474121094,
+          "hits": [
+            "chain",
+            "chain",
+            "chain"
+          ]
+        },
+        {
+          "field": "format",
+          "x": 154.25625610351562,
+          "y": 80.87260437011719,
+          "w": 32.575531005859375,
+          "h": 14.888725280761719,
+          "hits": [
+            "format",
+            "format",
+            "format"
+          ]
+        },
+        {
+          "field": "title",
+          "x": 113.421875,
+          "y": 300.4750061035156,
+          "w": 187.0625,
+          "h": 16.425018310546875,
+          "hits": [
+            "title",
+            "title",
+            "title"
+          ]
+        },
+        {
+          "field": "titleOg",
+          "x": 113.421875,
+          "y": 319.1812744140625,
+          "w": 187.0625,
+          "h": 5.931243896484375,
+          "hits": [
+            "titleOg",
+            "titleOg",
+            "titleOg"
+          ]
+        },
+        {
+          "field": "watchDate",
+          "x": 113.421875,
+          "y": 339.7124938964844,
+          "w": 26.690628051757812,
+          "h": 6.84375,
+          "hits": [
+            "watchDate",
+            "watchDate",
+            "watchDate"
+          ]
+        },
+        {
+          "field": "watchTime",
+          "x": 142.3937530517578,
+          "y": 339.7124938964844,
+          "w": 26.690628051757812,
+          "h": 6.84375,
+          "hits": [
+            "watchTime",
+            "watchTime",
+            "watchTime"
+          ]
+        },
+        {
+          "field": "theater",
+          "x": 179.12188720703125,
+          "y": 340.1224060058594,
+          "w": 24.662445068359375,
+          "h": 6.84375,
+          "hits": [
+            "theater",
+            "theater",
+            "theater"
+          ]
+        },
+        {
+          "field": "screen",
+          "x": 210.12191772460938,
+          "y": 340.1224060058594,
+          "w": 24.662460327148438,
+          "h": 6.84375,
+          "hits": [
+            "screen",
+            "screen",
+            "screen"
+          ]
+        },
+        {
+          "field": "seat",
+          "x": 244.82188415527344,
+          "y": 334.0093688964844,
+          "w": 55.66249084472656,
+          "h": 14.828125,
+          "hits": [
+            "seat",
+            "seat",
+            "seat"
+          ]
+        },
+        {
+          "field": "runtime",
+          "x": 113.421875,
+          "y": 355.453125,
+          "w": 45.625,
+          "h": 14.828125,
+          "hits": [
+            "runtime",
+            "runtime",
+            "runtime"
+          ]
+        },
+        {
+          "field": "rating",
+          "x": 169.08438110351562,
+          "y": 355.453125,
+          "w": 45.625,
+          "h": 14.828125,
+          "hits": [
+            "rating",
+            "rating",
+            "rating"
+          ]
+        },
+        {
+          "field": "releaseDate",
+          "x": 224.74688720703125,
+          "y": 355.453125,
+          "w": 45.625,
+          "h": 14.828125,
+          "hits": [
+            "releaseDate",
+            "releaseDate",
+            "releaseDate"
+          ]
+        },
+        {
+          "field": "actors",
+          "x": 113.421875,
+          "y": 374.38751220703125,
+          "w": 187.0625,
+          "h": 14.828125,
+          "hits": [
+            "actors",
+            "actors",
+            "actors"
+          ]
+        },
+        {
+          "field": "signature",
+          "x": 254.85581970214844,
+          "y": 393.77813720703125,
+          "w": 45.62855529785156,
+          "h": 10.949981689453125,
+          "hits": [
+            "signature",
+            "signature",
+            "signature"
+          ]
+        }
+      ],
+      "panel": {
+        "x": 16,
+        "y": 532.640625,
+        "w": 382,
+        "h": 191.359375,
+        "scroll": 266,
+        "client": 191
+      }
+    },
+    "custom": {
+      "overflow": false,
+      "preview": {
+        "x": 97.453125,
+        "y": 68.015625,
+        "w": 219.109375,
+        "h": 350.109375
+      },
+      "fields": [
+        {
+          "field": "chain",
+          "x": 111.140625,
+          "y": 79.87812805175781,
+          "w": 27.375,
+          "h": 16.881248474121094,
+          "hits": [
+            "chain",
+            "chain",
+            "chain"
+          ]
+        },
+        {
+          "field": "format",
+          "x": 154.25625610351562,
+          "y": 80.87260437011719,
+          "w": 32.575531005859375,
+          "h": 14.888725280761719,
+          "hits": [
+            "format",
+            "format",
+            "format"
+          ]
+        },
+        {
+          "field": "title",
+          "x": 113.421875,
+          "y": 300.4750061035156,
+          "w": 187.0625,
+          "h": 16.425018310546875,
+          "hits": [
+            "title",
+            "title",
+            "title"
+          ]
+        },
+        {
+          "field": "titleOg",
+          "x": 113.421875,
+          "y": 319.1812744140625,
+          "w": 187.0625,
+          "h": 5.931243896484375,
+          "hits": [
+            "titleOg",
+            "titleOg",
+            "titleOg"
+          ]
+        },
+        {
+          "field": "watchDate",
+          "x": 113.421875,
+          "y": 339.7124938964844,
+          "w": 26.690628051757812,
+          "h": 6.84375,
+          "hits": [
+            "watchDate",
+            "watchDate",
+            "watchDate"
+          ]
+        },
+        {
+          "field": "watchTime",
+          "x": 142.3937530517578,
+          "y": 339.7124938964844,
+          "w": 26.690628051757812,
+          "h": 6.84375,
+          "hits": [
+            "watchTime",
+            "watchTime",
+            "watchTime"
+          ]
+        },
+        {
+          "field": "theater",
+          "x": 179.12188720703125,
+          "y": 340.1224060058594,
+          "w": 24.662445068359375,
+          "h": 6.84375,
+          "hits": [
+            "theater",
+            "theater",
+            "theater"
+          ]
+        },
+        {
+          "field": "screen",
+          "x": 210.12191772460938,
+          "y": 340.1224060058594,
+          "w": 24.662460327148438,
+          "h": 6.84375,
+          "hits": [
+            "screen",
+            "screen",
+            "screen"
+          ]
+        },
+        {
+          "field": "seat",
+          "x": 244.82188415527344,
+          "y": 334.0093688964844,
+          "w": 55.66249084472656,
+          "h": 14.828125,
+          "hits": [
+            "seat",
+            "seat",
+            "seat"
+          ]
+        },
+        {
+          "field": "runtime",
+          "x": 113.421875,
+          "y": 355.453125,
+          "w": 45.625,
+          "h": 14.828125,
+          "hits": [
+            "runtime",
+            "runtime",
+            "runtime"
+          ]
+        },
+        {
+          "field": "rating",
+          "x": 169.08438110351562,
+          "y": 355.453125,
+          "w": 45.625,
+          "h": 14.828125,
+          "hits": [
+            "rating",
+            "rating",
+            "rating"
+          ]
+        },
+        {
+          "field": "releaseDate",
+          "x": 224.74688720703125,
+          "y": 355.453125,
+          "w": 45.625,
+          "h": 14.828125,
+          "hits": [
+            "releaseDate",
+            "releaseDate",
+            "releaseDate"
+          ]
+        },
+        {
+          "field": "actors",
+          "x": 113.421875,
+          "y": 374.38751220703125,
+          "w": 187.0625,
+          "h": 14.828125,
+          "hits": [
+            "actors",
+            "actors",
+            "actors"
+          ]
+        },
+        {
+          "field": "signature",
+          "x": 254.85581970214844,
+          "y": 393.77813720703125,
+          "w": 45.62855529785156,
+          "h": 10.949981689453125,
+          "hits": [
+            "signature",
+            "signature",
+            "signature"
+          ]
+        }
+      ],
+      "panel": {
+        "x": 16,
+        "y": 532.640625,
+        "w": 382,
+        "h": 191.359375,
+        "scroll": 217,
+        "client": 191
+      }
+    },
+    "fonts": [
+      {
+        "name": "자동",
+        "w": 122,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "고딕",
+        "w": 122,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "바탕",
+        "w": 122,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "자람",
+        "w": 122,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "잉크",
+        "w": 122,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "은영",
+        "w": 122,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "붓",
+        "w": 122,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "쿨가이",
+        "w": 122,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      },
+      {
+        "name": "꽃길",
+        "w": 122,
+        "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+      }
+    ],
+    "fontSelection": {
+      "x": 337,
+      "y": 693.140625,
+      "result": {
+        "checked": "true",
+        "preview": "sangSangFlowerRoad, \"sangSangFlowerRoad Fallback\", pretendard, \"pretendard Fallback\", \"Pretendard Variable\", \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif",
+        "scrollTop": 26
+      }
+    }
+  }
+]

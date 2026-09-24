@@ -1,9 +1,8 @@
 import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { MovieInfo, TicketComponents } from '@/types';
-import { getLayout } from '@/utils/layouts';
 import { cn } from '@/utils/cn';
 import { pressableVariants } from '@/components/ui/variants';
 import { useKobisSearch } from '@/hooks/useKobisSearch';
@@ -34,7 +33,7 @@ type Photo = ReturnType<typeof usePhototicket>;
  * 탭 앵커 자체가 없어 구조적으로 빠진다. reissue는 FieldTap 타깃이 releaseDate라 여기 없음.
  */
 const EDIT_ORDER: SheetTarget[] = [
-  'title', 'titleOg', 'releaseDate', 'actors', 'rating',
+  'title', 'titleOg', 'releaseDate', 'actors', 'rating', 'quote',
   'watchDate', 'watchTime', 'theater', 'screen', 'seat', 'runtime',
   'bookingNo', 'signature', 'chain', 'format',
 ];
@@ -47,14 +46,6 @@ interface FieldRect {
   h: number;
   /** 필드 세로 중심의 viewport Y — 래퍼 transform의 translateY 성분을 제거한 값(리프트 자기참조 방지). */
   vpCenter: number;
-  /** 티켓 렌더 텍스트의 시각 폰트 크기(래퍼 로컬 px, #365) — 캐럿 input의 텍스트 폭 계산을 티켓과 맞춘다. */
-  fontPx: number;
-  textAlign: string;
-  fontFamily: string;
-  fontWeight: string;
-  fontStyle: string;
-  /** 시각 자간(래퍼 로컬 px, #365). computed 'normal'은 0. */
-  letterSpacingPx: number;
 }
 
 /**
@@ -66,8 +57,7 @@ interface FieldRect {
 function measureField(
   wrapper: HTMLElement,
   ticket: HTMLElement,
-  field: SheetTarget,
-  naturalWidth: number
+  field: SheetTarget
 ): FieldRect | null {
   // null은 "앵커가 DOM에 없음"(그 무드가 필드를 안 렌더)일 때만 — 오버레이 렌더 게이트.
   // 0-크기 rect는 그대로 반환한다(레이아웃 미완·happy-dom 등, 다음 변경 관측에서 재측정).
@@ -83,12 +73,6 @@ function measureField(
     if (m.a > 0) scale = m.a;
     translateY = m.f;
   }
-  // 캐럿 폰트 힌트(#365) — 티켓 텍스트의 computed 스타일은 자연 픽셀(무드 960/1534 기준)이라
-  // 티켓 스케일(래퍼 로컬 폭 ÷ 자연 폭)로 환산한다.
-  const tw = ticket.getBoundingClientRect().width / scale;
-  const ticketScale = tw > 0 && naturalWidth > 0 ? tw / naturalWidth : 1;
-  const st = typeof getComputedStyle === 'function' ? getComputedStyle(tap as HTMLElement) : null;
-  const lsRaw = st ? parseFloat(st.letterSpacing) : NaN;
   return {
     top: (eb.top - wb.top) / scale,
     left: (eb.left - wb.left) / scale,
@@ -97,28 +81,16 @@ function measureField(
     // ponytail: scale(1.08)이 origin(top center) 기준으로 세로 위치를 최대 ~2% 미는 건 무시 —
     // 리프트는 "키보드 위로 띄우기"라 ±20px 오차가 체감 안 된다.
     vpCenter: eb.top + eb.height / 2 - translateY,
-    fontPx: (st ? parseFloat(st.fontSize) || 16 : 16) * ticketScale,
-    textAlign: st?.textAlign || 'left',
-    fontFamily: st?.fontFamily || '',
-    fontWeight: st?.fontWeight || '400',
-    // 이탤릭까지 복사해야 캐럿이 글자 끝에 선다(#494) — 서명·한줄평이 6무드에서 Instrument Serif
-    // 이탤릭으로 조판되는데 캐럿 입력이 로만이면 advance width가 갈려 캐럿이 어긋난다.
-    fontStyle: st?.fontStyle || 'normal',
-    letterSpacingPx: (Number.isFinite(lsRaw) ? lsRaw : 0) * ticketScale,
   };
 }
 
-// 지오메트리뿐 아니라 캐럿에 복사되는 폰트 3속성도 본다(#494) — 이탤릭↔로만 전환은 거의 항상
-// glyph advance width를 같이 바꿔 w·fontPx로도 잡히지만, 서명이 빈 문자열이면 양쪽 폭이 0이라
-// 그 경로가 안 걸려 캐럿이 이전 조판을 유지하는 좁은 창이 남는다.
+// 위치와 크기가 달라진 경우에만 입력 오버레이를 옮긴다.
 const rectEq = (a: FieldRect | null, b: FieldRect | null) =>
   a === b ||
   (!!a && !!b &&
     Math.abs(a.top - b.top) < 0.5 && Math.abs(a.left - b.left) < 0.5 &&
     Math.abs(a.w - b.w) < 0.5 && Math.abs(a.h - b.h) < 0.5 &&
-    Math.abs(a.vpCenter - b.vpCenter) < 0.5 &&
-    Math.abs(a.fontPx - b.fontPx) < 0.5 &&
-    a.fontStyle === b.fontStyle && a.fontFamily === b.fontFamily && a.fontWeight === b.fontWeight);
+    Math.abs(a.vpCenter - b.vpCenter) < 0.5);
 
 interface InPlaceFieldEditorProps {
   photo: Photo;
@@ -142,7 +114,7 @@ interface InPlaceFieldEditorProps {
 /**
  * 온티켓 인플레이스 필드 에디터(#354, 시안 §5).
  *
- * - 투명 input을 활성 필드 위에 얹어 caret만 보이고 텍스트는 티켓이 렌더한다.
+ * - 활성 필드에 16px Pretendard 입력칸을 얹는다. 긴 값은 네이티브 가로 스크롤로 편집한다.
  * - 필드바(prev · 로고 칩 · 노출 토글 · next · 완료)는 활성 필드 옆에 앵커링, 위 공간이 없으면 아래로.
  * - aid 패널(fixed, 키보드 위): 제목→KOBIS 결과, 평점→별점(RatingPicker), 날짜→DateSheet,
  *   이미지 스탬프→미리보기+제거. 페이드만(슬라이드 없음).
@@ -166,21 +138,19 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
   // ── 지오메트리: 필드 rect(래퍼 로컬 좌표) ──────────────────────────────────
   const [rect, setRect] = useState<FieldRect | null>(null);
   const rectRef = useRef<FieldRect | null>(null);
-  // 캐럿 폰트 환산용 티켓 자연 폭(#365) — computed 폰트 크기(자연 px)를 화면 px로 바꾸는 분모.
-  const naturalWidth = getLayout(components.layout).width;
 
   const remeasure = useCallback(() => {
     if (!wrapperEl || !ticketEl) return;
-    const next = measureField(wrapperEl, ticketEl, field, naturalWidth);
+    const next = measureField(wrapperEl, ticketEl, field);
     if (rectEq(rectRef.current, next)) return;
     rectRef.current = next;
     setRect(next);
-  }, [wrapperEl, ticketEl, field, naturalWidth]);
+  }, [wrapperEl, ticketEl, field]);
 
   useLayoutEffect(() => {
     // 필드 전환 시 무조건 상태 동기화 — remeasure의 epsilon 게이트를 우회해 stale rect(이전 필드
     // 위치에 오버레이가 남는 것)를 방지한다.
-    const next = wrapperEl && ticketEl ? measureField(wrapperEl, ticketEl, field, naturalWidth) : null;
+    const next = wrapperEl && ticketEl ? measureField(wrapperEl, ticketEl, field) : null;
     rectRef.current = next;
     setRect(next);
     if (!wrapperEl || !ticketEl) return;
@@ -195,7 +165,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
       mo.disconnect();
       ro.disconnect();
     };
-  }, [remeasure, wrapperEl, ticketEl, field, naturalWidth]);
+  }, [remeasure, wrapperEl, ticketEl, field]);
 
   // ── visualViewport: 키보드 높이(aid 패널 bottom) + 가시 높이(리프트 목표) ──
   const [vvBox, setVvBox] = useState<{ h: number; bottom: number } | null>(null);
@@ -244,7 +214,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
 
   // KOBIS 검색(제목 aid) — TitleSheet와 동일한 공용 훅(#242 drift 방지).
   const kobis = useKobisSearch({
-    apply: photo.updateMovieInfo,
+    apply: photo.beginMovieSelection,
   });
 
   const setValue = (v: string) => {
@@ -305,6 +275,10 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
     field !== 'actors' &&
     !(isImageField && !!stampImage);
 
+  const inputWidth = rect ? Math.min(Math.max(rect.w + 16, 160), wrapperEl?.offsetWidth || rect.w + 16) : 0;
+  const inputHeight = rect ? Math.max(44, rect.h + 12) : 44;
+  const inputLeft = rect ? Math.max(0, Math.min(rect.left - 8, (wrapperEl?.offsetWidth || inputWidth) - inputWidth)) : 0;
+
   // ── 필드바 배치: 필드 위 10px, 티켓 상단에 붙으면 아래로. 좌우는 래퍼 안으로 클램프. ──
   const barRef = useRef<HTMLDivElement>(null);
   const [barPos, setBarPos] = useState<{ left: number; top: number } | null>(null);
@@ -319,26 +293,18 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
     const ww = wrapperEl.offsetWidth;
     const left = Math.max(-8, Math.min(ww - bw + 8, rect.left + rect.w / 2 - bw / 2));
     let top = rect.top - bh - 10;
-    if (top < 8) top = rect.top + rect.h + 10;
+    if (top < 8) top = rect.top + (hasInput ? inputHeight - 6 : rect.h) + 10;
     setBarPos({ left, top });
-  }, [rect, field, wrapperEl, isStamp, showEye]);
+  }, [rect, field, wrapperEl, isStamp, showEye, hasInput, inputHeight]);
 
   const barBtnCls = cn(
     pressableVariants(),
     'inline-flex h-touch w-touch shrink-0 items-center justify-center rounded-full text-fg-muted transition-colors hover:text-fg'
   );
 
-  // 캐럿 스케일(#365) — caret 위치는 input 자신의 텍스트 폭 계산을 따르므로, 티켓 렌더 텍스트와
-  // 같은 폰트·자간·정렬로 흘려야 caret이 실제 텍스트 끝에 온다. 단 16px 미만 input은 iOS Safari가
-  // 포커스 시 자동 줌인하므로(#274) 폰트는 16px 이상으로 두고 transform: scale로 시각 크기만
-  // 낮춘다 — 레이아웃 값(width/height/padding/자간)은 역배율로 부풀려 화면 박스는 그대로다.
-  // ponytail: 여러 줄로 꺾인 필드는 단일라인 input의 한계로 첫 줄 기준 근사만 된다.
-  const caretScale = rect && rect.fontPx < 16 ? rect.fontPx / 16 : 1;
-  const inv = 1 / caretScale;
-
   const overlay = rect && (
     <>
-      {/* 활성 필드 하이라이트 + (텍스트류) 투명 input — 텍스트는 티켓이 렌더, caret만 보인다. */}
+      {/* 텍스트 입력은 UI 서체로 읽고 편집한다. 출력 티켓의 서체와 조판은 별도로 유지한다. */}
       {hasInput ? (
         <input
           key={`inplace-${field}`}
@@ -370,29 +336,21 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
           }
           style={{
             position: 'absolute',
-            left: rect.left - 8,
+            left: inputLeft,
             top: rect.top - 6,
-            width: (rect.w + 16) * inv,
-            height: (rect.h + 12) * inv,
-            // 하이라이트 박스는 필드보다 8px 넓다 — 텍스트 시작을 rect 가장자리(티켓 텍스트
-            // 시작점)에 맞추는 패딩. 스케일 좌표계라 역배율로 넣어 시각 8px을 유지한다.
-            padding: `0 ${8 * inv}px`,
+            width: inputWidth,
+            height: inputHeight,
+            padding: '0 8px',
             zIndex: 60,
-            border: 'none',
-            borderRadius: 6 * inv,
-            background: 'var(--accent-soft)',
-            color: 'transparent',
+            border: '1px solid var(--accent)',
+            borderRadius: 8,
+            background: 'var(--surface-elevated)',
+            color: 'var(--fg)',
             caretColor: 'var(--accent)',
-            // 16px 미만이면 iOS Safari가 포커스 시 자동 줌인해 레이아웃이 틀어진다(#274) —
-            // 실제 시각 크기는 위 transform scale이 담당한다.
-            fontSize: Math.max(16, rect.fontPx),
-            fontFamily: rect.fontFamily || undefined,
-            fontWeight: rect.fontWeight as CSSProperties['fontWeight'],
-            fontStyle: rect.fontStyle,
-            letterSpacing: rect.letterSpacingPx ? `${rect.letterSpacingPx * inv}px` : undefined,
-            textAlign: rect.textAlign as CSSProperties['textAlign'],
-            transform: caretScale < 1 ? `scale(${caretScale})` : undefined,
-            transformOrigin: 'top left',
+            fontSize: 16,
+            fontFamily: 'var(--font-sans)',
+            fontWeight: 400,
+            textAlign: 'left',
             outlineColor: 'var(--focus-ring)',
           }}
         />
@@ -407,7 +365,8 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
             height: rect.h + 12,
             zIndex: 60,
             borderRadius: 6,
-            background: 'var(--accent-soft)',
+            // 칩용 불투명 배경을 덮지 않고 원래 티켓의 날짜·평점·이미지를 보여준다.
+            background: 'transparent',
             outline: '2px solid var(--focus-ring)',
             pointerEvents: 'none',
           }}

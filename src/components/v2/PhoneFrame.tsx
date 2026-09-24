@@ -66,7 +66,7 @@ export function PhoneFrame({ children }: { children: ReactNode }) {
     <div
       id={PHONE_FRAME_ID}
       data-testid="phone-frame"
-      className="relative mx-auto w-full rail:w-[400px]"
+      className="relative mx-auto w-full max-w-[414px] rail:w-[400px]"
       style={{ height: '100dvh', containerType: 'size', contain: 'paint' }}
     >
       {children}

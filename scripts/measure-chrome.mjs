@@ -105,18 +105,13 @@ const near = (a, b) => a != null && Math.abs(a - b) <= 0.5;
 // 값이 바뀌면 이 상수도 같이 바꿀 것(BASELINE과 같은 관례). happy-dom은 clientWidth가 항상 0이라
 // TicketRenderer의 scale 보정을 못 재므로(__tests__/landingMoodGalleryTapTargets.test.tsx 참고),
 // 카드의 실 폭·비율·불투명도는 여기서만 실측으로 대조한다.
-const CAROUSEL_TRACK_WIDTH = 140;
+const CAROUSEL_TRACK_WIDTH = 170;
 const CAROUSEL_CARD_RATIO = 1534 / 960; // getLayout('minimal').height / width
 const CAROUSEL_SLOTS = [
   { opacity: 1, scale: 1 },
   { opacity: 0.5, scale: 0.78 },
   { opacity: 0.27, scale: 0.6 },
 ];
-
-// 배경 타일 그리드(#615 LandingBackdropTiles)의 타일 개수 — Landing.tsx의 `{ length: 15 }`를
-// 미러링한다(CAROUSEL_* 상수와 같은 관례). 레이어가 통째로 지워지거나 타일이 0장으로 줄어드는
-// 회귀를 잡는 용도라, 개수를 바꾸면 여기도 같이 바꿀 것.
-const BACKDROP_TILE_COUNT = 15;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -215,62 +210,35 @@ try {
   await sleep(300);
   await measureFit('랜딩 오버레이', '[data-testid="landing"]', landingPage);
 
-  // ── 배경 타일 그리드(#615 LandingBackdropTiles) — 프레임 봉쇄 ────────────────
-  // 레이어 자신은 absolute inset-0라 프레임과 같은 사각형이어야 한다(위 measureFit 축 재사용).
-  // **그것만으로는 이 레이어의 봉쇄를 못 잰다.** 안쪽 그리드는 `-m-10 rotate-[-8deg] scale-125`라
-  // 설계상 레이어보다 크고, 그게 프레임 밖으로 안 나가는 건 오직 레이어의 `overflow-hidden`
-  // 덕분이다. getBoundingClientRect는 조상 클리핑을 반영하지 않으므로 안쪽 그리드를 measureFit에
-  // 넣으면 멀쩡한 트리에서도 항상 실패한다 — 그래서 봉쇄를 두 명제로 쪼개 잰다:
-  //   (a) 레이어가 hidden으로 자른다(클립이 살아 있다),
-  //   (b) 그리드가 레이어를 덮는다(자를 게 실제로 있다 = 모서리에 빈칸이 안 생긴다).
-  // (b)를 실제로 세우는 건 회전이 아니라 `-m-10`이다(2026-08-16 DOM 변형 실측) — rotate/scale만
-  // 지우면 그리드가 799.4×1544.1 → 480×1180으로 줄지만 레이어 400×675는 여전히 덮어 (b)가
-  // 통과하고, 회전이 없으면 모서리 빈칸 자체가 안 생기므로 그게 옳은 판정이다. 이 축이 잡는 건
-  // 봉쇄가 실제로 깨지는 셋이다: overflow-hidden 소실(a 실패), 타일 0장(그리드가 594.2×83.5로
-  // 주저앉아 b 실패), `-m-10`과 transform 동시 소실(400×980으로 폭이 딱 맞아떨어져 b 실패).
-  // 회전 각도만 사라지는 건 봉쇄가 아니라 시각 디자인 회귀라 이 축의 대상이 아니다.
-  await measureFit('배경 타일', '[data-testid="landing-backdrop"]', landingPage);
-  const backdrop = await landingPage.evaluate(() => {
-    const layer = document.querySelector('[data-testid="landing-backdrop"]');
-    const grid = layer?.firstElementChild;
-    if (!layer || !grid) return null;
-    const L = layer.getBoundingClientRect();
-    const G = grid.getBoundingClientRect();
-    const cs = getComputedStyle(layer);
-    return {
-      tiles: grid.childElementCount,
-      overflow: { x: cs.overflowX, y: cs.overflowY },
-      layer: { w: +L.width.toFixed(1), h: +L.height.toFixed(1) },
-      grid: { w: +G.width.toFixed(1), h: +G.height.toFixed(1) },
-      gridExceedsLayer: G.width > L.width + 0.5 && G.height > L.height + 0.5,
-    };
-  });
-  if (!backdrop) throw new Error('배경 타일 레이어 또는 그 안쪽 그리드를 못 찾음');
-  backdrop.clipped = backdrop.overflow.x === 'hidden' && backdrop.overflow.y === 'hidden';
-  backdrop.pass =
-    backdrop.clipped && backdrop.gridExceedsLayer && backdrop.tiles === BACKDROP_TILE_COUNT;
+  // 반복 티켓 배경은 제거했다(2026-09-19 사용자 결정).
+  const backdrop = await landingPage.evaluate(() => ({
+    pass: document.querySelector('[data-testid="landing-backdrop"]') === null,
+  }));
 
   // ── 랜딩 무드 캐러셀(#615/#653) ────────────────────────────────────────────
   // 갤러리 컨테이너 자신이 프레임 밖으로 새는지는 기존 measureFit 축을 그대로 재사용한다
   // (overflow-hidden이 있어도 컨테이너 자체가 잘못 배치되면 여기서 걸린다).
   await measureFit('무드 갤러리', '[data-testid="mood-gallery"]', landingPage);
   // 카드 개별 폭·비율·불투명도는 CAROUSEL_SLOTS 대조가 필요해 별도로 잰다 — active=0인
-  // 마운트 직후 상태를 잰다(자동 전환 간격 CAROUSEL_INTERVAL_MS=3500ms보다 훨씬 이르다).
-  // 카드 각각을 프레임 사각형과도 대조한다(measureFit과 같은 overflow 계산) — 갤러리
-  // 컨테이너 자신은 안 새도(위) 개별 카드가 안 새는 건 별개다: 갤러리의 overflow-hidden이
-  // 없어지면 컨테이너 rect는 그대로인 채 카드만 밖으로 삐져나갈 수 있다.
+  // 마운트 직후 상태를 잰다(자동 전환 간격 CAROUSEL_INTERVAL_MS=10000ms보다 훨씬 이르다).
+  // 커진 카드의 양끝은 갤러리가 자른다. DOM rect는 클리핑 전 크기이므로 실제 보이는
+  // 영역을 프레임과 대조한다. overflow-hidden이 빠지면 원래 rect를 써서 누출을 잡는다.
   const carouselCards = await landingPage.evaluate(() => {
     const gallery = document.querySelector('[data-testid="mood-gallery"]');
     const frame = document.getElementById('phone-frame');
     if (!gallery || !frame) return null;
     const F = frame.getBoundingClientRect();
+    const G = gallery.getBoundingClientRect();
+    const style = getComputedStyle(gallery);
+    const clipsX = ['hidden', 'clip'].includes(style.overflowX);
+    const clipsY = ['hidden', 'clip'].includes(style.overflowY);
     return [...gallery.querySelectorAll('button[data-touch]')].map((b) => {
       const r = b.getBoundingClientRect();
       const overflow = {
-        left: +(F.left - r.left).toFixed(1),
-        right: +(r.right - F.right).toFixed(1),
-        top: +(F.top - r.top).toFixed(1),
-        bottom: +(r.bottom - F.bottom).toFixed(1),
+        left: +(F.left - (clipsX ? Math.max(r.left, G.left) : r.left)).toFixed(1),
+        right: +((clipsX ? Math.min(r.right, G.right) : r.right) - F.right).toFixed(1),
+        top: +(F.top - (clipsY ? Math.max(r.top, G.top) : r.top)).toFixed(1),
+        bottom: +((clipsY ? Math.min(r.bottom, G.bottom) : r.bottom) - F.bottom).toFixed(1),
       };
       return {
         label: (b.getAttribute('aria-label') ?? '').split(' 무드로')[0],
@@ -830,13 +798,13 @@ try {
 
   // ── 결과 스테이지 · hero — 편집 화면을 떠나므로 맨 마지막에 잰다. ────────────
   // 루트엔 id가 없고 .app-canvas.chrome-dark는 다크 테마 편집 셸도 달고 있다(그리고 그 셸은
-  // 결과 뒤에 hidden으로 남아 있다) — 결과 전용인 result-ambient의 부모를 루트로 쓴다.
+  // 결과 뒤에 hidden으로 남아 있다) — 결과 전용인 result-stage를 루트로 쓴다.
   await page.evaluate(() =>
     [...document.querySelectorAll('button')].find((b) => b.textContent?.trim() === '완료')?.click(),
   );
-  await page.waitForSelector('[data-testid="result-ambient"]', { timeout: 15000 });
+  await page.waitForSelector('[data-testid="result-stage"]', { timeout: 15000 });
   await sleep(600);
-  await measureFit('결과 스테이지', 'div:has(> [data-testid="result-ambient"])');
+  await measureFit('결과 스테이지', '[data-testid="result-stage"]');
   // hero는 --hero-dvh-budget을 든 유일한 요소고, 그 컨테이너 쿼리는 뷰포트가 아니라 프레임의
   // orientation을 읽는다 — 1440×900 뷰포트(landscape)의 400×900 프레임은 portrait이다(#607).
   await measureFit('결과 hero', '.result-hero');

@@ -62,6 +62,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Rate limit: IP sliding window(분당 5·시간당 20·일당 60). Production env 누락은 503으로 닫는다.
   const rl = await checkTicketRateLimit(clientIp(req));
   if (!rl.ok) {
+    if (rl.reason === 'unavailable') {
+      return res.status(503).json({ error: 'Rate limit is unavailable' });
+    }
     if (rl.reason === 'misconfigured') {
       return res.status(503).json({ error: 'Rate limit is not configured' });
     }

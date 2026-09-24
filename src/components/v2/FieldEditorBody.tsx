@@ -99,7 +99,7 @@ function TitleSheet({ photo }: { photo: Photo }) {
   // 검색 코어는 데스크톱 폼과 공용 훅을 쓴다(#242 drift 방지). 키보드 내비(#198)는 이 시트가
   // 직접 소유 — useKobisSearch는 검색 상태만 내고 ARIA/키보드는 각 호출부 몫(훅 주석 참고).
   const { results, loading, error, open, setOpen, scheduleSearch, runSearch, selectMovie } = useKobisSearch({
-    apply: photo.updateMovieInfo,
+    apply: photo.beginMovieSelection,
   });
 
   // 자동완성 키보드 내비 — 하이라이트된 결과 인덱스(-1 = 없음). aria-activedescendant로

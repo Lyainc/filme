@@ -9,9 +9,8 @@ import { PhoneFrame } from '@/components/v2/PhoneFrame';
 import { ResultStage } from '@/components/v2/ResultStage';
 
 export default function Home() {
-  // SSR safe: 초기값 'light', mount 후 localStorage/prefers-color-scheme 읽기
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const photo = usePhototicket();
+  const [fieldEditing, setFieldEditing] = useState(false);
   const canExport = useExportReady({ state: photo.state });
   const { open: resultOpen, openView, closeView } = useResultView();
   // ResultStage(#669) 워드마크가 이 셸의 초기화 판정·confirm 로직을 그대로 재사용하는 통로 —
@@ -43,27 +42,9 @@ export default function Home() {
     () => ({ movieInfo: photo.state.movieInfo, components: photo.state.components }),
     [photo.state.movieInfo, photo.state.components],
   );
-  const debounced = useDebounce(draft, 280);
+  const debounced = useDebounce(draft, 280, fieldEditing);
   const { movieInfo: debouncedMovieInfo, components: debouncedComponents } = debounced;
   const { fieldVisibility } = photo.state;
-
-  // FOUC 스크립트(_document.tsx)가 이미 적용한 클래스를 신뢰.
-  useEffect(() => {
-    setTheme(document.documentElement.classList.contains('theme-dark') ? 'dark' : 'light');
-  }, []);
-
-  // 사용자 토글 시 class + theme-color + localStorage 동기화
-  // 색상 값은 _document.tsx의 themeScript와 동일하게 유지할 것
-  useEffect(() => {
-    const isDark = theme === 'dark';
-    document.documentElement.classList.toggle('theme-dark', isDark);
-    document
-      .querySelector('meta[name="theme-color"]')
-      ?.setAttribute('content', isDark ? '#0E1012' : '#F4F5F7');
-    try {
-      localStorage.setItem('phototicket:theme', theme);
-    } catch {}
-  }, [theme]);
 
   // croppedImageUrl 변경 시 색상 추출
   // colorExtraction(~167줄 K-means)은 업로드 시점에만 동적 로드 → 초기 페이지 청크에서 제외
@@ -88,17 +69,6 @@ export default function Home() {
   // 포스터는 완료 조건이 아니다(#631 D3) — 없어도 제목·개봉연도만 채우면 준비완료.
   const railMessage = !canExport ? '제목과 개봉연도가 필요해요' : '티켓이 준비됐어요';
 
-  // html 배경 동기화(#402→#415). MobileEditorShell은 이제 theme를 그대로 따르므로(#415) html의
-  // 기존 .theme-dark 동기화(위 useEffect)와 저절로 맞아 별도 forcing이 필요 없다. ResultStage만
-  // 예외 — 테마와 무관하게 상시 .chrome-dark다(#357, 이 이슈의 범위 밖) → html도
-  // resultOpen일 때만 같이 다크로 맞춰 라이트 테마에서 결과화면 진입 시 배경 블리드(#402)를 막는다.
-  useEffect(() => {
-    document.documentElement.classList.toggle('chrome-dark', resultOpen);
-    return () => {
-      document.documentElement.classList.remove('chrome-dark');
-    };
-  }, [resultOpen]);
-
   // 셸은 한 벌이다(#607) — 데스크톱 3-pane(DesktopStudioShell)과 뷰포트 JS 분기(mounted·isMobile
   // SSR 왕복)는 삭제됐고, 데스크톱은 이 모바일 셸을 400px 폰 프레임에 넣어 그대로 띄운다.
   return (
@@ -112,10 +82,9 @@ export default function Home() {
       <div className={resultOpen ? 'hidden' : undefined}>
         <MobileEditorShell
           ref={shellRef}
+          onFieldEditingChange={setFieldEditing}
           photo={photo}
           canExport={canExport}
-          theme={theme}
-          onThemeChange={setTheme}
           onDone={openView}
           disabledReason={railMessage}
           previewMovieInfo={debouncedMovieInfo}
@@ -125,19 +94,12 @@ export default function Home() {
       </div>
       {resultOpen && (
         <ResultStage
-          theme={theme}
           onBack={closeView}
           onWordmarkTap={handleResultWordmarkTap}
           croppedImageUrl={croppedImageUrl}
-          movieInfo={debouncedMovieInfo}
-          components={debouncedComponents}
+          movieInfo={photo.state.movieInfo}
+          components={photo.state.components}
           fieldVisibility={fieldVisibility}
-          embossStamps={photo.state.embossStamps}
-          embossPaths={photo.state.embossPaths}
-          embossIntensity={photo.state.embossIntensity}
-          reliefStamps={photo.state.reliefStamps}
-          reliefPaths={photo.state.reliefPaths}
-          reliefIntensity={photo.state.reliefIntensity}
         />
       )}
     </PhoneFrame>

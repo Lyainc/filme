@@ -1,0 +1,20 @@
+{
+  "date": "2026-09-17",
+  "coreDevice": {
+    "command": "/Library/Developer/PrivateFrameworks/CoreDevice.framework/Versions/A/Resources/bin/devicectl list devices --timeout 10",
+    "sandbox": "require_escalated",
+    "exitCode": 0,
+    "stdout": "No devices found.\n"
+  },
+  "usb": {
+    "command": "system_profiler SPUSBDataType -json -timeout 10",
+    "exitCode": 0,
+    "result": { "SPUSBDataType": [] }
+  },
+  "wrapperAttempt": {
+    "command": "xcrun devicectl list devices --timeout 15",
+    "result": "No output after more than 75 seconds; terminated this attempt with SIGTERM (exit 143).",
+    "observation": "Xcode devicectl is a zsh wrapper that conditionally invokes xcodebuild -runFirstLaunch. A subsequent process check found no matching wrapper, device query, or first-launch process."
+  },
+  "conclusion": "No device discovered by CoreDevice in this environment. Actual iPhone Safari validation, including issue #585, remains unverified."
+}

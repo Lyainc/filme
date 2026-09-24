@@ -55,8 +55,6 @@ function MobileHarness() {
       <MobileEditorShell
         photo={photo}
         canExport
-        theme="light"
-        onThemeChange={() => {}}
         onDone={() => {}}
         disabledReason=""
         previewMovieInfo={photo.state.movieInfo}

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { RAIL_ITEMS, filterItemsForMood, type RailItem, type RailItemId } from './designRailItems';
+import { RAIL_ITEMS, filterItemsForMood, type RailItem, type RailItemId, type RailActions } from './designRailItems';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import { cn } from '@/utils/cn';
 import { pressableVariants } from '@/components/ui/variants';
@@ -24,7 +24,6 @@ function RailIconButton({
   icon,
   label,
   selected,
-  ringColor,
   onClick,
   onRef,
 }: {
@@ -32,7 +31,6 @@ function RailIconButton({
   icon: ReactNode;
   label: string;
   selected: boolean;
-  ringColor: string;
   onClick: () => void;
   onRef: (id: RailItemId, el: HTMLButtonElement | null) => void;
 }) {
@@ -54,8 +52,8 @@ function RailIconButton({
         className={`flex h-touch w-touch items-center justify-center rounded-full border transition-colors ${
           selected ? 'bg-accent-soft text-accent' : 'border-line bg-surface-elevated text-fg-muted'
         }`}
-        // 선택 시 유저의 티켓 잉크색(themeColor) 링. 미설정이면 accent로 폴백.
-        style={selected ? { borderColor: 'transparent', boxShadow: `0 0 0 2px ${ringColor}` } : undefined}
+        // 선택 상태는 티켓 잉크색과 독립적으로 충분한 대비를 유지한다.
+        style={selected ? { borderColor: 'transparent', boxShadow: '0 0 0 2px var(--accent)' } : undefined}
       >
         {icon}
       </span>
@@ -101,47 +99,13 @@ function RailExpandPanel({
             과거 박스형 룩(rounded-card border bg-surface-elevated) 복원 금지 — 언박스가 최종. */}
         {/* py: range thumb(globals.css, height 18px margin-top:-8px)이 트랙 아래로 8px
             튀어나와 overflow-hidden 바닥에서 잘림(#385) — 하단 패딩으로 여유 확보. */}
-        {/* 고정 슬롯(#563) — 항목마다 콘텐츠 높이가 89~205px로 갈려서(400×675 실측) 탭을 옮길
-            때마다 dock이 자라고 줄었고, dock이 움직이면 본문(flex-1)이 밀려 fit 스테이지의 cqh가
-            바뀌어 프리뷰 티켓까지 같이 커졌다 작아졌다. 높이를 하나로 못박고 넘치는 항목만 안에서
-            스크롤시키면 dock은 탭 전환에 무관해진다 — 이슈가 고른 후보 (b)고, 대가는 세로
-            스크롤이다. dvh가 아니라 svh인 이유는 브라우저 툴바가 접힐 때 슬롯이 따라 움직이면
-            그것도 출렁임이기 때문.
-            값(#682): 214px는 그 세로를 실기기가 절대 못 주는(214/0.26=823px) 죽은 상한 — 실기기는
-            항상 svh 쪽이 이긴다. 17.5svh(393×659에서 115px)는 "6항목 중 4개가 들어간다"고 적어
-            뒀었지만 #527(포스터 채우기)·#554(축 세그먼트)가 크기 패널을, #524가 컬러 패널을 키운
-            뒤로는 실측이 안 맞았다(무드 115·투명도 115만 들어가고 컬러 minimal 126·35mm 154·크기
-            199·형압 203은 넘침, #682 실측). 26svh(393×659에서 171px)로 올려 컬러(둘 다)까지
-            들어오게 한다.
-            크기·형압 콘텐츠 다이어트(#682 후속)로 두 패널의 정상 상태(형압: 편집 중이 아닐 때,
-            크기: 축 전환 직후)는 171px 이하로 들어왔다 — 남는 건 사용자 손이 캔버스 위 브러시
-            레이어에 있어 이 패널을 안 보고 있을 확률이 높은 두 잔여 상태뿐이다: 형압을 실제로
-            칠하는 동안(177px, +6px)과 재크롭 직후 채우기 칩까지 겹치는 순간(179px, +8px). 항목
-            콘텐츠를 더 키우면 이 상한도 같이 올릴 것 — 안 올리면 조용히 스크롤이 돌아온다.
-            #735(하이라이트·형압 마스크 분리)가 형압 패널에 "효과" 선택 행을 상시 추가하며 위
-            171px 이하 전제가 한때 형압에서 깨졌었다(정상 상태 199/176, +23px, 2026-08-18 1차
-            실측) — 그 행을 ChipRadio(자체 라벨)에서 SizePanel·TexturePanel과 같은 축-전환
-            문법인 AxisSegment(라벨 없음)로 바꾸고 감쌈도 SizePanel처럼 space-y-field로 좁혀
-            해소했다(designRailItems.tsx의 EmbossPanel 주석 참고). 재실측(`measure-chrome.mjs
-            --rail highlight --url :3010`): 정상 상태 176/176(넘침 0, 393×659 171/171)로
-            복귀, 편집 중 브러시(마스크 有)는 223/176(+47px)로 위 두 잔여 상태와 같은 카테고리에
-            남는다. railSlot은 게이트가 아니라 관측값(CLAUDE.md "📏 크롬 측정 하네스" 절)이라
-            exit code는 원래부터 이 값에 안 실린다. */}
+
         <div
           ref={slotRef}
           id={PANEL_ID}
           role="region"
           aria-label={regionLabel}
           className="h-[min(214px,26svh)] overflow-y-auto py-3"
-          // 스크롤 어포던스(#682 방향 3) — 넘칠 때만 위/아래 가장자리에 옅은 그림자가 뜨는
-          // CSS 전용 기법(JS 없이 background-attachment local/scroll의 스크롤 동기화 차이를
-          // 이용). 안 넘치면(스크롤 불가) 그림자 레이어가 커버 레이어에 항상 가려져 안 보인다 —
-          // 크기·형압이 위 다이어트 뒤에도 여전히 살짝 넘치는 잔여 상태(형압 편집 중 +6px,
-          // 크기 채우기 노출 +8px)에서 "더 있다"는 단서를 최소 침습으로 남긴다.
-          // 그림자 색은 고정 rgba(0,0,0,…) 대신 --fg-faint(아이콘/장식 3:1 하한, 라이트
-          // #818C99 / 다크 #6B7280)를 쓴다 — 다크 앰비언트(#0E1012 근방)에 검정 반투명을
-          // 얹으면 대비가 거의 0이라 정작 남아 있는 넘침(크기·형압)을 다크 테마에서만 못
-          // 알아채는 회귀가 났다(fresh-context 리뷰 발견).
           style={{
             background: `
               linear-gradient(var(--bg) 30%, rgba(0,0,0,0)),
@@ -171,14 +135,16 @@ export function DesignRail({
   photo,
   items = RAIL_ITEMS,
   onRecropPoster,
+  onEditField,
 }: {
   photo: ReturnType<typeof usePhototicket>;
   items?: readonly RailItem[];
   /** 포스터 재크롭 진입(#492) — 셸이 크롭 파이프라인을 소유하므로 항목엔 콜백만 흘려준다. */
   onRecropPoster?: () => void;
+  onEditField?: RailActions['onEditField'];
 }) {
   const [pop, setPop] = useState<RailItemId | null>(null);
-  const { themeColor, layout } = photo.state.components;
+  const { layout } = photo.state.components;
   const visibleItems = filterItemsForMood(items, layout);
 
   // #523 hard 제약 — 패널이 열린 채 무드가 바뀌어 활성 항목이 숨겨지면 패널을 닫는다(pop→null).
@@ -200,7 +166,6 @@ export function DesignRail({
   const activeItem = items.find((it) => it.id === active);
   const regionLabel = activeItem?.label ?? '';
 
-  const ringColor = themeColor || 'var(--accent)';
   // 클릭으로 연 항목은 아래 effect가 smooth 스크롤로 중앙에 당기는데, 그 애니메이션이 만드는
   // 중간 scroll 이벤트를 onRailScroll이 사용자 스와이프로 착각해 지나가던 아이콘을 활성화하면
   // 목적지가 가로채인다(claude-review P1). 클릭 직후 이 구간 동안은 scroll 추적을 쉰다 —
@@ -239,22 +204,6 @@ export function DesignRail({
     if (pop === null) return;
     itemRefs.current.get(pop)?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
   }, [pop, visibleItems.length]);
-
-  // 형압이 아닌 항목으로 옮기면 형압 편집 모드를 끈다(#722). 안 끄면 EmbossBrushLayer(z-45)가
-  // 포스터 rect를 계속 덮어, 크기·투명도를 조절하러 들어와 포스터를 누른 사용자에게 형압이 찍힌다.
-  // 레일 선택이 바뀌는 경로 셋(아이콘 클릭 toggle · 스와이프 정착 · 무드 전환으로 항목이 숨겨짐)이
-  // 전부 pop으로 합류하므로 여기 한 곳이면 된다 — 호출부마다 가드를 넣는 것보다 작다.
-  //
-  // `pop !== null`을 함께 보는 이유: 형압 아이콘 재탭으로 **패널만 접는 건** pop=null이고, 그때까지
-  // 모드를 끄면 "패널 접고 넓은 화면에서 칠하기"가 막힌다. 보고된 명제("다른 메뉴를 선택하면")만
-  // 정확히 덮는 게 이 조건이다.
-  //
-  // 위 175행처럼 렌더 중 조정으로는 못 쓴다 — setEmbossEditMode는 부모(MobileEditorShell)가 소유한
-  // state라 렌더 중 호출하면 React가 경고한다. 같은 값으로의 set은 React가 bail out하므로
-  // embossEditMode를 의존성에 넣지 않아도 여분 렌더가 생기지 않는다.
-  useEffect(() => {
-    if (pop !== null && pop !== 'highlight') photo.setEmbossEditMode(false);
-  }, [pop, photo.setEmbossEditMode]);
 
   // 스와이프/스크롤만으로도 모듈이 전환되게(#502). 예전엔 매 scroll 이벤트에서 바로 활성화했는데,
   // 그러면 지나가는 아이콘마다 setPop이 돌고 그때마다 위 effect가 리센터를 걸어 스크롤이 스스로
@@ -309,7 +258,6 @@ export function DesignRail({
             icon={it.icon}
             label={it.label}
             selected={pop === it.id}
-            ringColor={ringColor}
             onClick={() => toggle(it.id)}
             onRef={setItemRef}
           />
@@ -317,7 +265,7 @@ export function DesignRail({
       </div>
 
       <RailExpandPanel open={pop !== null} activeId={active} regionLabel={regionLabel}>
-        {activeItem ? activeItem.render(photo, { onRecropPoster }) : null}
+        {activeItem ? activeItem.render(photo, { onRecropPoster, onEditField }) : null}
       </RailExpandPanel>
     </div>
   );

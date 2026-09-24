@@ -10,9 +10,8 @@
  *
  * #728로 캔버스 전면 cover이던 배치를 무드별 고정 박스로 좁혔다 — 사용자는 위치를 고르지 않고
  * 크기·투명도만 정한다. 이름에 'pattern'이 남은 건 `backgroundPatternImage`가 이미 저장된 draft의
- * 키라서다 — 필드를 개명하면 기존 저장물이 조용히 유실된다. 사용자에게 보이는 이름은 '스탬프'다
- * (docs/specs/background-to-stamp.yaml c1 — 코드 쪽 식별자는 `stamp`가 형압/로고 두 뜻을 이미
- * 쥐고 있어 그대로 `backgroundPattern*`을 유지한다).
+ * 키라서다 — 필드를 개명하면 기존 저장물이 조용히 유실된다. 사용자에게 보이는 이름은 '스탬프'다.
+ * 코드 쪽 식별자 `stamp`는 로고에도 쓰여 `backgroundPattern*`을 유지한다.
  *
  * [risk] iOS Safari 저장물에서 이 레이어만 빠질 수 있다(#439·#671에서 인계). captureToImage가
  * 기록한 실측이 "raster를 foreignObject에 넣으면 iOS가 조용히 떨어뜨린다 — blob/data/canvas 세

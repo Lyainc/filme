@@ -15,11 +15,7 @@ interface BrightnessSliderProps {
   min?: number;
   /** 슬라이더 상한. 기본 1. */
   max?: number;
-  /**
-   * 라벨 줄에 붙는 보조 텍스트 액션(#682 다이어트) — 형압 패널의 "칠한 영역 지우기"처럼 이
-   * 슬라이더에 종속된 동작을 별도 전폭 버튼(줄+간격 52px)으로 안 두고 라벨 옆에 접어, 슬라이더
-   * 하나만큼의 세로 예산으로 둘을 같이 담는다. 옵션이라 기존 호출부는 전부 그대로다.
-   */
+  /** 라벨 옆에 표시하는 값 관련 액션(예: 로고 입력 열기). */
   action?: { label: string; onClick: () => void };
 }
 
@@ -128,6 +124,7 @@ export default function BrightnessSlider({
             <button
               type="button"
               onClick={action.onClick}
+              aria-label={`${label} — ${action.label}`}
               className="-my-1 flex h-7 items-center px-1 text-micro text-fg-muted underline decoration-dotted underline-offset-2 transition-colors hover:text-fg"
             >
               {action.label}
@@ -190,7 +187,7 @@ export default function BrightnessSlider({
           e.preventDefault();
           setLocalValue(stepFrom(localValue, dir, min, max));
         }}
-        className="w-full"
+        className="block h-8 w-full"
       />
     </div>
   );

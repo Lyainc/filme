@@ -54,7 +54,6 @@ const COMPONENTS: TicketComponents = {
 function renderStage(onBack: () => void) {
   return render(
     React.createElement(ResultStage, {
-      theme: 'light',
       onBack,
       onWordmarkTap: () => {},
       croppedImageUrl: 'blob:fake',
@@ -84,7 +83,6 @@ describe('ResultStage 뒤로가기 배선 (#258)', () => {
   test('croppedImageUrl이 없어도 hero와 ResultPanel이 정상 렌더된다 (포스터리스, #631)', async () => {
     render(
       React.createElement(ResultStage, {
-        theme: 'light',
         onBack: () => {},
         onWordmarkTap: () => {},
         croppedImageUrl: null,

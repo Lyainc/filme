@@ -52,10 +52,10 @@ const posterFileInput = () =>
   document.querySelector('input[type="file"][accept*="jpeg"]') as HTMLInputElement;
 const pngFile = (name: string) => new File([name], name, { type: 'image/png' });
 // MobileEditorShell은 결과화면 진입 후에도 hidden으로 계속 마운트돼 있어(#297) 같은 이름의
-// 워드마크 버튼이 DOM에 2개(숨은 편집 셸용 + 보이는 결과화면용) 있다 — result-ambient(ResultStage
+// 워드마크 버튼이 DOM에 2개(숨은 편집 셸용 + 보이는 결과화면용) 있다 — result-stage(ResultStage
 // 전용 testid)의 부모로 스코프를 좁혀 결과화면 쪽만 집는다.
 const resultWordmark = () =>
-  within(screen.getByTestId('result-ambient').parentElement!).getByRole('button', {
+  within(screen.getByTestId('result-stage')).getByRole('button', {
     name: 'FILME — 처음 화면으로 돌아가기',
   });
 
@@ -82,7 +82,7 @@ async function enterResultStage(user: ReturnType<typeof userEvent.setup>) {
   fireEvent.change(posterFileInput(), { target: { files: [pngFile('poster.png')] } });
   await user.click(await screen.findByText('mock-apply'));
   await user.click(await screen.findByRole('button', { name: '완료' }));
-  await screen.findByTestId('result-ambient'); // ResultStage 진입 확인
+  await screen.findByTestId('result-stage'); // ResultStage 진입 확인
 }
 
 beforeEach(() => window.localStorage.clear());

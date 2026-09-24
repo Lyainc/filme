@@ -1,0 +1,710 @@
+{
+  "results": [
+    {
+      "width": 320,
+      "locked": false,
+      "restored": {
+        "title": "복원한 제목",
+        "done": "false"
+      },
+      "preview": {
+        "w": 141.3125,
+        "h": 225.796875
+      },
+      "fonts": {
+        "loaded": [
+          "pretendard",
+          "JetBrains Mono",
+          "JetBrains Mono Fallback",
+          "Instrument Serif",
+          "Instrument Serif",
+          "Nunito",
+          "iceJaram",
+          "iceJaram Fallback"
+        ],
+        "groups": [
+          {
+            "label": "한줄평 폰트",
+            "disabled": [
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false
+            ],
+            "widths": [
+              140,
+              140,
+              140,
+              140,
+              140,
+              140,
+              140,
+              140,
+              140
+            ]
+          },
+          {
+            "label": "서명 폰트",
+            "disabled": [
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false
+            ],
+            "widths": [
+              140,
+              140,
+              140,
+              140,
+              140,
+              140,
+              140,
+              140,
+              140
+            ]
+          }
+        ]
+      },
+      "visibleNote": {
+        "text": "영화의 순간 Film",
+        "top": 466.328125,
+        "bottom": 498.328125,
+        "panelTop": 408.328125,
+        "panelBottom": 556,
+        "inside": true
+      },
+      "afterScroll": {
+        "w": 141.3125,
+        "h": 225.796875
+      },
+      "hiddenLogo": "극장 로고가 숨겨져 있어요.체인 로고 크기표시·편집%포맷 로고가 비어 있어요. 이미지나 텍스트를 입력하세요.포맷 로고 크기입력%"
+    },
+    {
+      "width": 320,
+      "locked": true,
+      "restored": {
+        "title": "복원한 제목",
+        "done": "false"
+      },
+      "preview": {
+        "w": 141.3125,
+        "h": 225.796875
+      },
+      "fonts": {
+        "loaded": [
+          "pretendard",
+          "JetBrains Mono",
+          "JetBrains Mono Fallback",
+          "Instrument Serif",
+          "Instrument Serif",
+          "Nunito",
+          "iceJaram"
+        ],
+        "groups": [
+          {
+            "label": "한줄평 폰트",
+            "disabled": [
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false
+            ],
+            "widths": [
+              140,
+              140,
+              140,
+              140,
+              140,
+              140,
+              140,
+              140,
+              140
+            ]
+          },
+          {
+            "label": "서명 폰트",
+            "disabled": [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            "widths": [
+              140,
+              140,
+              140,
+              140,
+              140,
+              140,
+              140,
+              140,
+              140
+            ]
+          }
+        ]
+      },
+      "visibleNote": {
+        "text": "서명 이미지가 있으면 폰트가 적용되지 않아요.",
+        "top": 473.328125,
+        "bottom": 491.328125,
+        "panelTop": 408.328125,
+        "panelBottom": 556,
+        "inside": true
+      },
+      "afterScroll": {
+        "w": 141.3125,
+        "h": 225.796875
+      },
+      "hiddenLogo": "극장 로고가 숨겨져 있어요.체인 로고 크기표시·편집%포맷 로고가 비어 있어요. 이미지나 텍스트를 입력하세요.포맷 로고 크기입력%"
+    },
+    {
+      "width": 375,
+      "locked": false,
+      "restored": {
+        "title": "복원한 제목",
+        "done": "false"
+      },
+      "preview": {
+        "w": 187.171875,
+        "h": 299.078125
+      },
+      "fonts": {
+        "loaded": [
+          "pretendard",
+          "JetBrains Mono",
+          "JetBrains Mono Fallback",
+          "Instrument Serif",
+          "Instrument Serif",
+          "Nunito",
+          "iceJaram"
+        ],
+        "groups": [
+          {
+            "label": "한줄평 폰트",
+            "disabled": [
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false
+            ],
+            "widths": [
+              109,
+              109,
+              109,
+              109,
+              109,
+              109,
+              109,
+              109,
+              109
+            ]
+          },
+          {
+            "label": "서명 폰트",
+            "disabled": [
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false
+            ],
+            "widths": [
+              109,
+              109,
+              109,
+              109,
+              109,
+              109,
+              109,
+              109,
+              109
+            ]
+          }
+        ]
+      },
+      "visibleNote": {
+        "text": "영화의 순간 Film",
+        "top": 552.59375,
+        "bottom": 584.59375,
+        "panelTop": 481.59375,
+        "panelBottom": 655,
+        "inside": true
+      },
+      "afterScroll": {
+        "w": 187.171875,
+        "h": 299.078125
+      },
+      "hiddenLogo": "극장 로고가 숨겨져 있어요.체인 로고 크기표시·편집%포맷 로고가 비어 있어요. 이미지나 텍스트를 입력하세요.포맷 로고 크기입력%"
+    },
+    {
+      "width": 375,
+      "locked": true,
+      "restored": {
+        "title": "복원한 제목",
+        "done": "false"
+      },
+      "preview": {
+        "w": 187.171875,
+        "h": 299.078125
+      },
+      "fonts": {
+        "loaded": [
+          "pretendard",
+          "JetBrains Mono",
+          "JetBrains Mono Fallback",
+          "Instrument Serif",
+          "Instrument Serif",
+          "Nunito",
+          "iceJaram"
+        ],
+        "groups": [
+          {
+            "label": "한줄평 폰트",
+            "disabled": [
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false
+            ],
+            "widths": [
+              109,
+              109,
+              109,
+              109,
+              109,
+              109,
+              109,
+              109,
+              109
+            ]
+          },
+          {
+            "label": "서명 폰트",
+            "disabled": [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            "widths": [
+              109,
+              109,
+              109,
+              109,
+              109,
+              109,
+              109,
+              109,
+              109
+            ]
+          }
+        ]
+      },
+      "visibleNote": {
+        "text": "서명 이미지가 있으면 폰트가 적용되지 않아요.",
+        "top": 559.59375,
+        "bottom": 577.59375,
+        "panelTop": 481.59375,
+        "panelBottom": 655,
+        "inside": true
+      },
+      "afterScroll": {
+        "w": 187.171875,
+        "h": 299.078125
+      },
+      "hiddenLogo": "극장 로고가 숨겨져 있어요.체인 로고 크기표시·편집%포맷 로고가 비어 있어요. 이미지나 텍스트를 입력하세요.포맷 로고 크기입력%"
+    },
+    {
+      "width": 393,
+      "locked": false,
+      "restored": {
+        "title": "복원한 제목",
+        "done": "false"
+      },
+      "preview": {
+        "w": 183.46875,
+        "h": 293.15625
+      },
+      "fonts": {
+        "loaded": [
+          "pretendard",
+          "JetBrains Mono",
+          "JetBrains Mono Fallback",
+          "Instrument Serif",
+          "Instrument Serif",
+          "Nunito",
+          "iceJaram"
+        ],
+        "groups": [
+          {
+            "label": "한줄평 폰트",
+            "disabled": [
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false
+            ],
+            "widths": [
+              115,
+              115,
+              115,
+              115,
+              115,
+              115,
+              115,
+              115,
+              115
+            ]
+          },
+          {
+            "label": "서명 폰트",
+            "disabled": [
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false
+            ],
+            "widths": [
+              115,
+              115,
+              115,
+              115,
+              115,
+              115,
+              115,
+              115,
+              115
+            ]
+          }
+        ]
+      },
+      "visibleNote": {
+        "text": "영화의 순간 Film",
+        "top": 545.671875,
+        "bottom": 577.671875,
+        "panelTop": 475.671875,
+        "panelBottom": 647,
+        "inside": true
+      },
+      "afterScroll": {
+        "w": 183.46875,
+        "h": 293.15625
+      },
+      "hiddenLogo": "극장 로고가 숨겨져 있어요.체인 로고 크기표시·편집%포맷 로고가 비어 있어요. 이미지나 텍스트를 입력하세요.포맷 로고 크기입력%"
+    },
+    {
+      "width": 393,
+      "locked": true,
+      "restored": {
+        "title": "복원한 제목",
+        "done": "false"
+      },
+      "preview": {
+        "w": 183.46875,
+        "h": 293.15625
+      },
+      "fonts": {
+        "loaded": [
+          "pretendard",
+          "JetBrains Mono",
+          "JetBrains Mono Fallback",
+          "Instrument Serif",
+          "Instrument Serif",
+          "Nunito",
+          "iceJaram"
+        ],
+        "groups": [
+          {
+            "label": "한줄평 폰트",
+            "disabled": [
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false
+            ],
+            "widths": [
+              115,
+              115,
+              115,
+              115,
+              115,
+              115,
+              115,
+              115,
+              115
+            ]
+          },
+          {
+            "label": "서명 폰트",
+            "disabled": [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            "widths": [
+              115,
+              115,
+              115,
+              115,
+              115,
+              115,
+              115,
+              115,
+              115
+            ]
+          }
+        ]
+      },
+      "visibleNote": {
+        "text": "서명 이미지가 있으면 폰트가 적용되지 않아요.",
+        "top": 552.671875,
+        "bottom": 570.671875,
+        "panelTop": 475.671875,
+        "panelBottom": 647,
+        "inside": true
+      },
+      "afterScroll": {
+        "w": 183.46875,
+        "h": 293.15625
+      },
+      "hiddenLogo": "극장 로고가 숨겨져 있어요.체인 로고 크기표시·편집%포맷 로고가 비어 있어요. 이미지나 텍스트를 입력하세요.포맷 로고 크기입력%"
+    },
+    {
+      "width": 414,
+      "locked": false,
+      "restored": {
+        "title": "복원한 제목",
+        "done": "false"
+      },
+      "preview": {
+        "w": 219.109375,
+        "h": 350.109375
+      },
+      "fonts": {
+        "loaded": [
+          "pretendard",
+          "JetBrains Mono",
+          "JetBrains Mono Fallback",
+          "Instrument Serif",
+          "Instrument Serif",
+          "Nunito",
+          "iceJaram"
+        ],
+        "groups": [
+          {
+            "label": "한줄평 폰트",
+            "disabled": [
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false
+            ],
+            "widths": [
+              122,
+              122,
+              122,
+              122,
+              122,
+              122,
+              122,
+              122,
+              122
+            ]
+          },
+          {
+            "label": "서명 폰트",
+            "disabled": [
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false
+            ],
+            "widths": [
+              122,
+              122,
+              122,
+              122,
+              122,
+              122,
+              122,
+              122,
+              122
+            ]
+          }
+        ]
+      },
+      "visibleNote": {
+        "text": "영화의 순간 Film",
+        "top": 612.640625,
+        "bottom": 644.640625,
+        "panelTop": 532.640625,
+        "panelBottom": 724,
+        "inside": true
+      },
+      "afterScroll": {
+        "w": 219.109375,
+        "h": 350.109375
+      },
+      "hiddenLogo": "극장 로고가 숨겨져 있어요.체인 로고 크기표시·편집%포맷 로고가 비어 있어요. 이미지나 텍스트를 입력하세요.포맷 로고 크기입력%"
+    },
+    {
+      "width": 414,
+      "locked": true,
+      "restored": {
+        "title": "복원한 제목",
+        "done": "false"
+      },
+      "preview": {
+        "w": 219.109375,
+        "h": 350.109375
+      },
+      "fonts": {
+        "loaded": [
+          "pretendard",
+          "JetBrains Mono",
+          "JetBrains Mono Fallback",
+          "Instrument Serif",
+          "Instrument Serif",
+          "Nunito",
+          "iceJaram"
+        ],
+        "groups": [
+          {
+            "label": "한줄평 폰트",
+            "disabled": [
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false
+            ],
+            "widths": [
+              122,
+              122,
+              122,
+              122,
+              122,
+              122,
+              122,
+              122,
+              122
+            ]
+          },
+          {
+            "label": "서명 폰트",
+            "disabled": [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            "widths": [
+              122,
+              122,
+              122,
+              122,
+              122,
+              122,
+              122,
+              122,
+              122
+            ]
+          }
+        ]
+      },
+      "visibleNote": {
+        "text": "서명 이미지가 있으면 폰트가 적용되지 않아요.",
+        "top": 619.640625,
+        "bottom": 637.640625,
+        "panelTop": 532.640625,
+        "panelBottom": 724,
+        "inside": true
+      },
+      "afterScroll": {
+        "w": 219.109375,
+        "h": 350.109375
+      },
+      "hiddenLogo": "극장 로고가 숨겨져 있어요.체인 로고 크기표시·편집%포맷 로고가 비어 있어요. 이미지나 텍스트를 입력하세요.포맷 로고 크기입력%"
+    }
+  ],
+  "fails": []
+}

@@ -17,7 +17,7 @@ export interface RateLimitResult {
   ok: boolean;
   /** 429 응답의 Retry-After(초). ok=false일 때만 의미가 있다. */
   retryAfterSec?: number;
-  reason?: 'limited' | 'misconfigured';
+  reason?: 'limited' | 'misconfigured' | 'unavailable';
 }
 
 type LimitWindow = {
@@ -33,7 +33,7 @@ type LimitWindow = {
 
 type LimitPolicy = {
   scope: 'ocr' | 'kobis' | 'ticket';
-  /** Upstash 미설정 시 production 동작: 'closed'=차단(misconfigured), 'open'=통과(fail-open). */
+  /** production 미설정 및 backend 장애 시: 'closed'=차단, 'open'=통과. */
   failMode: 'closed' | 'open';
   windows: LimitWindow[];
 };
@@ -73,31 +73,39 @@ function createLimiters(policy: LimitPolicy): LimitersCache | null {
 }
 
 async function checkConfiguredRateLimit(ip: string, policy: LimitPolicy): Promise<RateLimitResult> {
-  const configured = createLimiters(policy);
-  if (!configured) {
-    // dev/test는 항상 통과. production에서만 scope의 failMode가 가른다(#112).
-    const failClosed = process.env.NODE_ENV === 'production' && policy.failMode === 'closed';
-    return failClosed ? { ok: false, reason: 'misconfigured' } : { ok: true };
-  }
-
-  // 순서는 (1) per-IP 먼저, (2) 그 안에서 짧은 윈도우 먼저다. 이미 차단될 요청은 더 긴
-  // 윈도우 카운터를 소진하지 않고, per-IP에서 막힌 요청은 애초에 벤더를 안 부르므로
-  // shared(총량) 카운터도 소진하면 안 된다 — 그러면 실제보다 빨리 총량을 닫아버린다.
-  // 반대급부: shared가 혼잡하면 유저는 벤더 호출이 한 번도 성공 못 한 채 429만 받으면서
-  // 자기 per-IP 한도를 깎아먹는다. 완벽한 순서는 없고, 벤더 quota를 과소진하는 쪽이 더
-  // 나쁘다고 봐서 이쪽을 골랐다(총량이 닫히면 전체 유저가 죽는다).
-  for (const { limiter, shared } of configured.limiters) {
-    const result = await limiter.limit(shared ? 'global' : ip);
-    if (!result.success) {
-      return {
-        ok: false,
-        reason: 'limited',
-        retryAfterSec: Math.max(1, Math.ceil((result.reset - Date.now()) / 1000)),
-      };
+  try {
+    const configured = createLimiters(policy);
+    if (!configured) {
+      // dev/test는 항상 통과. production에서만 scope의 failMode가 가른다(#112).
+      const failClosed = process.env.NODE_ENV === 'production' && policy.failMode === 'closed';
+      return failClosed ? { ok: false, reason: 'misconfigured' } : { ok: true };
     }
-  }
 
-  return { ok: true };
+    // 순서는 (1) per-IP 먼저, (2) 그 안에서 짧은 윈도우 먼저다. 이미 차단될 요청은 더 긴
+    // 윈도우 카운터를 소진하지 않고, per-IP에서 막힌 요청은 애초에 벤더를 안 부르므로
+    // shared(총량) 카운터도 소진하면 안 된다 — 그러면 실제보다 빨리 총량을 닫아버린다.
+    // 반대급부: shared가 혼잡하면 유저는 벤더 호출이 한 번도 성공 못 한 채 429만 받으면서
+    // 자기 per-IP 한도를 깎아먹는다. 완벽한 순서는 없고, 벤더 quota를 과소진하는 쪽이 더
+    // 나쁘다고 봐서 이쪽을 골랐다(총량이 닫히면 전체 유저가 죽는다).
+    for (const { limiter, shared } of configured.limiters) {
+      const result = await limiter.limit(shared ? 'global' : ip);
+      // SDK는 timeout을 success:true로 반환하므로 비용 보호 경계에서는 성공이 아니다.
+      if (result.reason === 'timeout') throw new Error('Rate limit backend timed out');
+      if (!result.success) {
+        return {
+          ok: false,
+          reason: 'limited',
+          retryAfterSec: Math.max(1, Math.ceil((result.reset - Date.now()) / 1000)),
+        };
+      }
+    }
+
+    return { ok: true };
+  } catch {
+    // SDK 오류에 URL/토큰이 포함될 수 있어 원본 예외를 기록하지 않는다.
+    console.error(`[ratelimit] ${policy.scope} backend unavailable`);
+    return policy.failMode === 'closed' ? { ok: false, reason: 'unavailable' } : { ok: true };
+  }
 }
 
 export function resetRateLimitCacheForTests(): void {

@@ -7,114 +7,36 @@
 @layer base {
   :root {
     color-scheme: light;
-
-    /* v2.2 cool-neutral tokens */
-    --bg: #F4F5F7;
-    --surface: #F9FAFB;
-    --surface-elevated: #FFFFFF;
-    /* 오버레이 계층(#580) — 티켓(포스터) 위에 떠서 콘텐츠를 담는 표면: 플로팅 툴바 · 햄버거
-       메뉴 패널 · 필드 드로어 패널 · 드로어 엣지 핸들. 세 값(80/40/8%)이 흩어져 있던 걸 한
-       토큰으로 모은다 — 아래 --glass-*(입력 함몰)와 역할이 다르다.
-       대비 하한(흰 포스터 최악 케이스 실측, 다크 .8 합성 = rgb(62,64,65)):
-       --fg 8.66:1 ✓ / --fg-muted 4.01:1 ✗ / --accent 2.37:1 ✗ / --danger 2.77:1 ✗.
-       즉 이 표면 위 직접 텍스트는 --fg만 AA를 보장한다. muted·accent·danger 잉크를 쓰는 행은
-       불투명 표면(bg-surface / bg-surface-elevated) 위에 얹을 것 — FieldDrawer가 세운 규칙이고
-       (#355/#364), 햄버거 메뉴가 8% 위에 직접 텍스트를 얹어 깨진 게 #569다. */
-    --overlay-fill: rgba(244, 245, 247, 0.8);
-    --overlay-border: rgba(20, 23, 26, 0.12);
-    --fg: #14171A;
-    /* WCAG AA(#650) — 순정 #6B7280/#9AA1AC은 --bg(#F4F5F7) 위에서 각 4.43:1/2.39:1로 미달.
-       fg-muted는 텍스트 하한 4.5:1(→4.62:1), fg-faint는 아이콘/장식 하한 3:1(→3.13:1)로
-       각각 다르게 다크닝 — 둘 다 4.5:1로 맞추면 같은 밝기로 수렴해 두 단계 위계가 사라진다.
-       fg-faint로 실제 문장 텍스트를 그리던 자리(고지·힌트·로딩 라벨 등)는 fg-muted로 옮겼다. */
-    --fg-muted: #64707F;
-    --fg-faint: #818C99;
-    /* 랜딩 전용(#615) — 랜딩 서브카피·이탈경로 줄에만 쓰는 로컬 오버라이드(#606673, --bg 위
-       5.24:1). #650이 --fg-muted를 4.62:1로 다크닝하기 전엔 그 값(4.43:1)이 AA 미달이라 이
-       오버라이드가 유일한 통과 경로였고, 지금은 그 위에 얹은 여유분이다. */
-    --landing-muted: #606673;
-    --border: #E4E6EA;
-    --border-strong: #CDD1D8;
-    --accent: #B0423F;
-    --accent-soft: color-mix(in srgb, #B0423F 10%, transparent);
-    --accent-hover: #9A3936;
-    /* on-accent ink: bg-accent(빨강) 채움 위에 얹는 글자색 전용. 밝은 표면 위 단독 전경색으로 쓰면 라이트모드에서 흰 글자가 묻혀 비가시 — 그 자리엔 text-accent / text-fg-muted 사용 */
-    --accent-ink: #FFFFFF;
-    --success: #16A34A;
-    --warn: #B25500;
-    --danger: #DC2626;
-    --focus-ring: color-mix(in srgb, #B0423F 35%, transparent);
-    /* 2nd 시네마틱 neutral(#203) — 구조 요소(eyebrow·디바이더) 전용. warm projection amber vs
-       cool film-base teal 스파이크 비교(스크린샷 4장, 대비 계산) 후 amber 채택. 기존 cool-neutral
-       회색(--fg-muted/--border)과 온도가 갈려야 "2nd" 정체성이 서는데 teal은 그 계열에 묻힘.
-       스파이크 원안 #96805F는 --bg(#F4F5F7) 대비 3.47:1로 AA(4.5:1) 미달(PR #306 리뷰) —
-       Eyebrow 기본 톤으로 전역 적용되며 동일 색상 계열 안에서 더 어둡게 조정해 4.98:1 확보. */
-    --neutral-2: #7A6748;
-    --r-card: 14px;
-    --r-pill: 999px;
-    --shadow-pop: 0 4px 8px -2px rgba(0,0,0,0.10), 0 16px 40px -8px rgba(0,0,0,0.14);
-    /* v8 글래스 표면 쌍(#364, 핸드오프 §Design Tokens) — **입력 함몰 계층(#580 3계층) 전용**:
-       카드 위에 얕게 파이는 인풋·셀렉트·칩의 fill/border. 8%는 카드 위 함몰로는 맞지만 포스터
-       위에 뜨는 패널 배경으로는 텍스트가 안 읽힌다(#569) — 그 자리엔 --overlay-*를 쓸 것.
-       실사용처(RatingPicker, FieldEditorBody의 INPUT_CLS·FormatChips·select, #580 grep 확인)는
-       전부 InPlaceFieldEditor의 불투명 aid 박스(bg-surface-elevated) **안에서만** 렌더된다 —
-       포스터에 직접 노출되는 경로가 없다(구 "데스크톱 아코디언"은 #603/#607로 셸이 통합되며
-       소멸, 이 토큰이 포스터에 직접 뜨던 경로는 이제 없다). 그래서 대비 하한은 포스터 밝기가
-       아니라 저 불투명 배경 위 합성색이 기준이고, text-fg 사용 기준(라이트: 흰 유리 위 흰 카드라
-       합성은 항상 #FFFFFF, 17.99:1 고정 — 알파 무관). 다크(카드 #1E2326 위 흰 유리): 8%
-       합성 rgb(48,53,55) → 10.35:1. AA(4.5:1)는 알파 0.32(합성 rgb(102,105,107) → 4.57:1)까지
-       버티고 0.33(합성 rgb(104,108,110) → 4.42:1)부터 깨지므로, 현재 8%는 그 하한까지 4배
-       이상 여유가 있다. */
-    --glass-fill: rgba(255, 255, 255, 0.55);
-    --glass-border: rgba(20, 23, 26, 0.12);
-
-    /* 편집 프리뷰 작업면(#571) — 위 3계층(오버레이·패널·입력 함몰)과 축이 다르다: 저것들은 티켓
-       **위에** 뜨는 표면이고 이건 티켓 **뒤에** 깔리는 배경면이다. 그래서 alpha 합성 방향도
-       반대다 — 배경에서 한 칸 **멀어지는** 쪽(라이트는 어둡게, 다크는 밝게)이어야 면이 선다.
-       다크에서 --surface(#161A1C)를 그대로 썼더니 앰비언트 그라디언트(#1c2129~#0d0f11)와 밝기가
-       붙어 면이 아예 안 보였고, 안 보이는 면 위의 검은 그림자는 양감을 0으로 만든다(실측 시안
-       A·B가 그렇게 죽었다). 그림자가 보이려면 그 아래 면이 먼저 배경과 갈려야 한다. */
-    --workbench: rgba(20, 23, 26, 0.045);
-
-    /* Backward compat aliases */
-    --paper: var(--surface-elevated);
-  }
-
-  /* .chrome-dark(#353) — 앰비언트 다크 크롬 컨테이너의 로컬 토큰 재정의. 테마 다크와 같은
-     값을 셀렉터로 공유해 드리프트를 막는다. 색·그림자 토큰만 — 폰트 토큰(--font-display 등)은
-     무드가 쓰는 유일한 CSS var라 여기서 재정의하면 티켓 export가 바뀐다. Tailwind 색이 전부
-     var(--*) 참조라 이 컨테이너 안 공유 컴포넌트는 0줄 변경으로 다크 크롬으로 렌더된다. */
-  .theme-dark,
-  .chrome-dark {
-    color-scheme: dark;
-
-    --bg: #0E1012;
-    --surface: #161A1C;
-    --surface-elevated: #1E2326;
-    --overlay-fill: rgba(14, 16, 18, 0.8);
-    --overlay-border: rgba(255, 255, 255, 0.15);
-    --fg: #E8EAED;
-    --fg-muted: #9AA1AC;
-    --fg-faint: #6B7280;
-    /* 다크는 --fg-muted 자체가 이미 AA를 넉넉히 넘는다(스크림 위 실측 7.32:1, #615 검증 코멘트) —
-       라이트처럼 별도로 어둡힐 필요가 없어 --fg-muted를 그대로 재사용한다. */
+    /* Mobile UI palette. Ticket artwork owns its colors and typography. */
+    --bg: #fffcf7;
+    --surface: #f5f1e9;
+    --surface-elevated: #ffffff;
+    --overlay-fill: #fffcf7;
+    --overlay-border: #c7c1b7;
+    --fg: #0d0129;
+    --fg-muted: #625e69;
+    --fg-faint: #827b87;
     --landing-muted: var(--fg-muted);
-    --border: #272D30;
-    --border-strong: #353D41;
-    --accent: #C45550;
-    --accent-soft: color-mix(in srgb, #C45550 12%, transparent);
-    --accent-hover: #D46460;
-    /* on-accent ink: bg-accent(빨강) 채움 위에 얹는 글자색 전용. 밝은 표면 위 단독 전경색으로 쓰면 라이트모드에서 흰 글자가 묻혀 비가시 — 그 자리엔 text-accent / text-fg-muted 사용 */
-    --accent-ink: #FFFFFF;
-    --success: #22C55E;
-    --warn: #F59E0B;
-    --danger: #EF4444;
-    --focus-ring: color-mix(in srgb, #C45550 35%, transparent);
-    --neutral-2: #C2A67A;
-    --shadow-pop: 0 4px 8px -2px rgba(0,0,0,0.30), 0 16px 40px -8px rgba(0,0,0,0.40);
-    --glass-fill: rgba(255, 255, 255, 0.08);
-    --glass-border: rgba(255, 255, 255, 0.15);
-    --workbench: rgba(255, 255, 255, 0.05);
+    --border: #ddd7ce;
+    --border-strong: #8d8490;
+    --accent: #19615c;
+    --accent-soft: #e5eeea;
+    --accent-hover: #124c48;
+    --accent-ink: #ffffff;
+    --cta-fill: #fae59b;
+    --cta-hover: #f5db7e;
+    --success: #19615c;
+    --warn: #925000;
+    --danger: #b52b37;
+    --focus-ring: #19615c;
+    --neutral-2: #625e69;
+    --r-card: 10px;
+    --r-pill: 999px;
+    --shadow-pop: 0 2px 8px rgb(13 1 41 / 10%);
+    --glass-fill: #ffffff;
+    --glass-border: #8d8490;
+    --workbench: #f0ebe3;
+    --paper: var(--surface-elevated);
   }
 
   /* 하단 러버밴드 공백 + 상단 pull-to-refresh 동시 차단(#416) — draft는 수동 저장(#310)이라
@@ -234,21 +156,16 @@
     animation: drawer-in 240ms cubic-bezier(.32,.72,0,1);
   }
 
-  /* 앱 배경 — 단색 + 미세 SVG 노이즈(2~4%)로 평면 탈출. light/dark 공용(저대비 그레이 노이즈). */
-  .app-canvas {
-    background-color: var(--bg);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-  }
+  .app-canvas { background-color: var(--bg); }
 
-  /* 에디터 앰비언트 배경(#353→#415) — 다크 테마일 때만 렌더(MobileEditorShell이 theme==='dark'일
-     때만 이 div를 마운트). amber bloom은 1개, alpha .16 이하 유지(hallmark atmospheric 예외
-     조건 — 밝히면 채도 높은 포스터와 싸운다). amber는 새 리터럴 대신 --neutral-2에서
-     color-mix() 파생 — .chrome-dark 스코프 안에선 --neutral-2가 다크 값(#C2A67A)으로 고정된다. */
-  .chrome-ambient {
-    background:
-      radial-gradient(120% 50% at 50% 17%, color-mix(in srgb, var(--neutral-2) 16%, transparent), transparent 46%),
-      linear-gradient(180deg, #1c2129 0%, #14171b 42%, #0d0f11 100%);
+  .primary-action {
+    background: var(--cta-fill);
+    color: var(--fg);
+    border: 1px solid var(--fg);
+    box-shadow: 1px 2px 0 var(--fg);
   }
+  .primary-action:hover:not(:disabled) { background: var(--cta-hover); }
+  .primary-action:active:not(:disabled) { box-shadow: none; }
 
   /* 편집 프리뷰 재단 마크(#571) — 티켓 바깥 12px에 L자 4개. 인쇄 교정지 은유이고, 이게 이
      표면에 있는 이유 자체다: 무드·포스터 색이 배경과 겹쳐도 티켓 사각형이 확정된다(다크 앰비언트

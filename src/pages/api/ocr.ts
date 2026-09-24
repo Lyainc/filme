@@ -101,6 +101,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const { object } = await generateObject({
       model: google('gemini-3.1-flash-lite'),
+      maxRetries: 0, // 키 전체 한도 소진 시 재시도로 요청을 늘리지 않는다(#773).
       schema: TicketSchema,
       system: buildSystemPrompt(new Date().getFullYear()),
       messages: [

@@ -1,0 +1,221 @@
+{
+  "interaction": "DOM .click() synthetic; native WebDriver clicks and text entry did not take effect",
+  "build": "DgB7iqfFMQf27m2vdXtu_",
+  "autosave": [
+    {
+      "target": "span.relative",
+      "before": "true",
+      "after": "false"
+    },
+    {
+      "target": "span.whitespace-nowrap",
+      "before": "false",
+      "after": "true"
+    }
+  ],
+  "ranges": [
+    {
+      "id": "rail-poster-opacity",
+      "hits": [
+        {
+          "hit": true,
+          "offset": -15
+        },
+        {
+          "hit": true,
+          "offset": -10
+        },
+        {
+          "hit": true,
+          "offset": 0
+        },
+        {
+          "hit": true,
+          "offset": 10
+        },
+        {
+          "hit": true,
+          "offset": 15
+        }
+      ],
+      "rect": {
+        "x": 16,
+        "height": 32,
+        "bottom": 546.90625,
+        "y": 514.90625,
+        "width": 370,
+        "left": 16,
+        "top": 514.90625,
+        "right": 386
+      }
+    },
+    {
+      "id": "rail-component-opacity",
+      "hits": [
+        {
+          "hit": true,
+          "offset": -15
+        },
+        {
+          "hit": true,
+          "offset": -10
+        },
+        {
+          "hit": true,
+          "offset": 0
+        },
+        {
+          "hit": true,
+          "offset": 10
+        },
+        {
+          "hit": true,
+          "offset": 15
+        }
+      ],
+      "rect": {
+        "x": 16,
+        "height": 32,
+        "bottom": 621.40625,
+        "y": 589.40625,
+        "width": 370,
+        "left": 16,
+        "top": 589.40625,
+        "right": 386
+      }
+    }
+  ],
+  "fonts": [
+    {
+      "checked": "true",
+      "text": "자동",
+      "rect": {
+        "x": 16,
+        "height": 36,
+        "bottom": 592.40625,
+        "y": 556.40625,
+        "width": 118,
+        "left": 16,
+        "top": 556.40625,
+        "right": 134
+      }
+    },
+    {
+      "checked": "false",
+      "text": "고딕",
+      "rect": {
+        "x": 142,
+        "height": 36,
+        "bottom": 592.40625,
+        "y": 556.40625,
+        "width": 118,
+        "left": 142,
+        "top": 556.40625,
+        "right": 260
+      }
+    },
+    {
+      "checked": "false",
+      "text": "바탕",
+      "rect": {
+        "x": 268,
+        "height": 36,
+        "bottom": 592.40625,
+        "y": 556.40625,
+        "width": 118,
+        "left": 268,
+        "top": 556.40625,
+        "right": 386
+      }
+    },
+    {
+      "checked": "false",
+      "text": "자람",
+      "rect": {
+        "x": 16,
+        "height": 36,
+        "bottom": 636.40625,
+        "y": 600.40625,
+        "width": 118,
+        "left": 16,
+        "top": 600.40625,
+        "right": 134
+      }
+    },
+    {
+      "checked": "false",
+      "text": "잉크",
+      "rect": {
+        "x": 142,
+        "height": 36,
+        "bottom": 636.40625,
+        "y": 600.40625,
+        "width": 118,
+        "left": 142,
+        "top": 600.40625,
+        "right": 260
+      }
+    },
+    {
+      "checked": "false",
+      "text": "은영",
+      "rect": {
+        "x": 268,
+        "height": 36,
+        "bottom": 636.40625,
+        "y": 600.40625,
+        "width": 118,
+        "left": 268,
+        "top": 600.40625,
+        "right": 386
+      }
+    },
+    {
+      "checked": "false",
+      "text": "붓",
+      "rect": {
+        "x": 16,
+        "height": 36,
+        "bottom": 680.40625,
+        "y": 644.40625,
+        "width": 118,
+        "left": 16,
+        "top": 644.40625,
+        "right": 134
+      }
+    },
+    {
+      "checked": "false",
+      "text": "쿨가이",
+      "rect": {
+        "x": 142,
+        "height": 36,
+        "bottom": 680.40625,
+        "y": 644.40625,
+        "width": 118,
+        "left": 142,
+        "top": 644.40625,
+        "right": 260
+      }
+    },
+    {
+      "checked": "false",
+      "text": "꽃길",
+      "rect": {
+        "x": 268,
+        "height": 36,
+        "bottom": 680.40625,
+        "y": 644.40625,
+        "width": 118,
+        "left": 268,
+        "top": 644.40625,
+        "right": 386
+      }
+    }
+  ],
+  "fontSelection": {
+    "preview": "sangSangFlowerRoad, \"sangSangFlowerRoad Fallback\", pretendard, \"pretendard Fallback\", \"Pretendard Variable\", \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif",
+    "scroll": 44,
+    "selected": "꽃길"
+  }
+}

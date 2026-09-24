@@ -251,7 +251,7 @@ eyebrow 필드 8종)를 놓쳤다 — fresh-context 리뷰가 낮은 확신으�
 | `초기화했어요` · `지금까지 작업한 내용이 사라져요…` | `v2/MobileEditorShell.tsx` | `wordmarkClearOnTap` · `mobileEditorShellMenu` |
 | `도구를 탭하면 바로 편집을 시작해요.` · `윤곽을 따라 드래그하면…` (#692) | `v2/designRailItems.tsx` | `embossPanelContentDiet` · `embossPanelTapToEnter` |
 
-목록은 grep 결과이지 자동 검증이 아니다. 문구를 바꾼 뒤 `bun test`를 돌려 실제로 깨지는 자리를
+목록은 grep 결과이지 자동 검증이 아니다. 문구를 바꾼 뒤 `bun run test`를 돌려 실제로 깨지는 자리를
 다시 확인할 것.
 
 **OCR 진입점 두 라벨은 이제 한쪽이 다른 쪽의 접미사다** — 드로어 `스크린샷으로 자동입력`이

@@ -1,0 +1,190 @@
+skill: build-spec
+schema_version: 1
+version: "5.2.0"
+generated: "2026-09-19"
+input:
+  target: FILME 모바일 UI 리디자인
+  options: []
+output:
+  type: spec
+  structure: templates/SEED_SPEC.yaml
+spec_version: 1
+created: "2026-09-19"
+target: filme-syllabus-ui
+domain: tech
+brownfield: true
+refine_generation: 0
+
+goal:
+  statement: 티켓 디자인을 보존하면서 FILME의 모바일 제작 화면을 모던하고 직관적인 크림색 UI로 정돈해 첫 진입부터 편집과 저장까지의 사용성을 개선한다.
+  clarity_score: 0.9
+
+scope:
+  included:
+    - 랜딩, 편집 도구, 입력 패널과 모달, 결과 화면의 시각적 일관성과 정보 위계
+    - 모바일 단일 셸 안에서의 배치, 읽기, 선택과 편집 동작 개선
+    - 반복 티켓 배경 제거 및 이미 요청된 랜딩 조정 유지
+    - 2026-09-20 추가 요청: 형압·하이라이트 도구와 상태, 브러시·올가미, JPEG 합성 경로 삭제
+  excluded:
+    - 티켓 Mood의 조판, 서체, 색, 재질, 자연 픽셀 크기 및 JPEG 디자인 변경
+    - 데스크톱 전용 레이아웃과 별도 최적화·검증 매트릭스
+    - 이번 개편 중 다크 테마 구현이나 팔레트 후보 제작
+    - 200% 글자 확대 전용 레이아웃과 이를 위한 별도 필수 합격 검사
+    - OCR·KOBIS·저장·공유 데이터 계약 변경과 신규 기능 추가
+  parallel_work:
+    - 기존 실기기 테스트 및 입력·터치·폰트 선택·자동저장 이슈 수정은 별도 증거로 병행한다.
+    - 디자인 명세의 완료를 실기기 검증 완료나 실제 디자인 구현 완료로 보고하지 않는다.
+
+constraints:
+  - id: c1
+    type: technical
+    hard: true
+    description: 6종 티켓의 미리보기와 JPEG 디자인을 보존한다. 단, 사용자가 삭제 요청한 형압·하이라이트 효과는 제외한다. UI 스타일 변경이 공유 폰트 변수나 렌더러 상속을 통해 티켓에 영향을 주지 않아야 한다.
+    rationale: 사용자가 티켓 디자인을 보존 대상으로 명시했다.
+  - id: c2
+    type: other
+    hard: true
+    description: 서비스 UI의 기본 서체는 Pretendard로 한다. 기존 티켓별 서체와 브랜드 로고의 고유 조형은 보존한다.
+    rationale: UI 서체 통일과 티켓·브랜드 자산 보존은 서로 다른 범위다.
+  - id: c3
+    type: other
+    hard: true
+    description: 이번 버전의 앱 UI는 크림 라이트 단일 테마로 통일한다. 기존 다크 설정이나 OS 설정 때문에 일부 앱 패널만 다크로 남지 않게 한다. 추후 다크 도입 시 앱이 제어하는 화면과 상태를 일관되게 전환한다.
+    rationale: 사용자는 현재 크림 라이트를 선택했고 다크라면 전체가 다크여야 한다고 보완했다.
+  - id: c4
+    type: technical
+    hard: true
+    description: 모바일 단일 셸을 유지한다. PC 접근을 차단하거나 안내 전용 페이지로 대체하지 않고 같은 모바일 화면을 제공한다.
+    rationale: 데스크톱 전용 지원 종료는 접속 차단이 아니라 모바일 제품에 집중한다는 결정이다.
+  - id: c5
+    type: other
+    hard: true
+    description: 레퍼런스의 분위기와 기본 조형만 참고한다. 모던함·직관성·가독성을 우선하며 과장된 그림자, 장식, 잡지식 초대형 타이포와 불필요한 여백을 피한다.
+    rationale: 사용자가 레퍼런스의 일대일 복제보다 자연스러운 제품 UI를 요청했다.
+  - id: c6
+    type: other
+    hard: false
+    description: 크림 바탕, 짙은 잉크색, 절제된 버터 옐로·틸 강조, 얇은 테두리와 단순한 면을 기본 시각 언어로 삼는다. 버튼 형태·그림자·간격·타입 크기는 모바일 조작성에 맞춘다.
+    rationale: CTA 형태와 그림자에 관한 원문 규칙은 서로 충돌하므로 사용자의 최종 디자인 원칙으로 판단한다.
+  - id: c7
+    type: technical
+    hard: true
+    description: 긴 값은 도구 목록·요약 라벨에서 필요하면 말줄임하고, 활성 편집에서는 커서와 현재 입력 부분을 확인할 수 있게 한다. 전체 원문은 상세 입력·확인 경로에서 접근 가능해야 하며 저장 값을 잘라서는 안 된다.
+    rationale: 모든 문구를 한 번에 펼쳐 도구를 밀어내는 대신 사용자가 어색함 없이 읽고 편집할 수 있어야 한다.
+  - id: c8
+    type: technical
+    hard: true
+    description: 미리보기에는 원본 값을 기존 티켓 조판 규칙으로 전달한다. 편집 UI의 말줄임은 출력에 전파하지 않는다. 기존 티켓의 줄바꿈·축소·의도된 생략 규칙은 보존하며 임의 길이의 원문을 티켓 안에 전부 넣기 위한 조판 재설계는 하지 않는다.
+    rationale: 전체 값 확인 요구와 고정 크기 티켓 디자인 보존을 구분한다. 현재도 배우 목록 등은 티켓 표시와 전체 원문 편집이 분리돼 있다.
+  - id: c9
+    type: technical
+    hard: true
+    description: 초안 복원, 자동저장, 되돌리기, OCR 진입, 포스터 업로드·크롭, 직접 입력, 무드 선택, 내보내기와 공유 기능을 보존한다. 진행 중인 기존 수정도 되돌리지 않는다.
+    rationale: 사용자가 기존 기능 유지와 이전 작업 병행을 요청했다.
+  - id: c10
+    type: other
+    hard: true
+    description: 반복 티켓 배경은 제거한다. 작은 disclaimer, 약간 줄인 CTA, 박스 없는 보조 링크, 커지고 느려진 캐러셀, 최초 랜딩 상단 로고·워드마크 제거를 유지한다.
+    rationale: 새 디자인 이전부터 이어진 명시적 사용자 요구다. 실제 고지 내용과 조작 영역은 유지한다.
+  - id: c11
+    type: technical
+    hard: true
+    description: 기존 포커스·접근성 이름·모션 감소 대응과 기본 브라우저 확대 기능을 퇴행시키지 않는다. 200% 글자 확대 대응을 이번 개편의 새 완료 조건으로 추가하지는 않는다.
+    rationale: 확대 접근성의 의미와 이번 작업의 범위를 구분한다. 별도 확대 UI나 티켓 출력 크기 변경은 요청되지 않았다.
+
+design_reference:
+  source: 사용자가 제공한 Syllabus Style Reference
+  interpretation: 색감과 기본 조형을 참고하는 모바일 제품 UI이며 원문 전체를 강제 규칙으로 채택하지 않는다.
+  colors:
+    cream: "#fffcf7"
+    ink: "#0d0129"
+    butter: "#fae59b"
+    teal: "#19615c"
+    inset: "#ffffff"
+  conflict_resolution:
+    - 노란 사각 CTA와 투명 알약 CTA 중 어느 예시도 사용자 확정안으로 기록하지 않는다. 액션 위계와 식별성을 기준으로 구현 시 선택한다.
+    - hard shadow라는 문구와 3px 블러 수치의 충돌은 그대로 옮기지 않는다. 그림자는 필요할 때만 절제해 사용한다.
+    - 1200px 2열, 120px 섹션 간격, 최소 16px 타입 스케일과 0px 모서리를 전역 의무로 적용하지 않는다.
+    - 사진 금지 규칙을 티켓 샘플·사용자 포스터에 적용하지 않는다. 반복 배경용 장식 이미지는 추가하지 않는다.
+
+success_criteria:
+  - id: ac1
+    description: 랜딩·편집 도구·입력 패널·앱 모달·결과 화면이 크림 라이트와 Pretendard 중심의 일관된 UI를 사용한다.
+    verifiable: true
+    measurable_via: 화면별 전후 캡처와 계산 스타일 확인. OS 라이트·다크 및 기존 저장 테마 값이 앱 내부에 혼합 테마를 남기지 않는지 확인한다. OS 소유 키보드·파일 선택창·브라우저 UI는 앱의 테마 강제 범위에서 제외한다.
+  - id: ac2
+    description: 모바일 320·375·393·414px에서 주요 버튼·입력·편집 도구를 읽고 조작할 수 있으며 페이지 가로 넘침이나 접근 불가능한 조작이 없다.
+    verifiable: true
+    measurable_via: 320x568, 375x667, 393x659, 414x736에서 화면·DOM 위치·탭 대상·패널 스크롤 검사. 긴 영화명·극장명·서체명에도 말줄임과 전체 원문 접근, 커서 위치, 선택 상태가 자연스러운지 확인한다. 세로 스크롤 자체는 실패로 보지 않는다.
+  - id: ac3
+    description: 시작에서 편집과 저장까지의 기존 경로와 기능이 유지되며 시각적 개편 때문에 불필요한 단계가 추가되지 않는다.
+    verifiable: true
+    measurable_via: 직접 입력, 업로드·크롭, 무드 진입, 초안 복원, 되돌리기, 저장 흐름의 회귀 확인과 관련 테스트. API·실기기 의존 조건은 실행한 증거와 미검증 항목을 구분한다.
+  - id: ac4
+    description: 동일 입력과 설정에서 6종 티켓의 조판·서체·색·재질 및 저장 JPEG의 디자인과 자연 픽셀 크기가 기존과 동일하다.
+    verifiable: true
+    measurable_via: 동일 브라우저·폰트 로딩·고정 입력 조건으로 변경 전후 미리보기와 JPEG를 비교한다. UI 폰트·색 토큰의 티켓 상속과 편집용 생략의 출력 전파가 없는지 확인한다. 실제 iPhone 출력 검증 여부는 별도 표시한다.
+  - id: ac5
+    description: 전후 화면에서 주 액션·보조 액션·선택 상태·편집 위치의 위계가 명확하고 캐러셀과 경쟁하는 반복 배경이나 과도한 장식이 없다.
+    verifiable: true
+    measurable_via: 같은 화면 상태와 폭으로 전후 캡처를 비교하고 식별 가능한 주 액션, 입력 위치, 선택 표시와 도구 발견 경로를 기록한다. 정량 측정하지 않은 전환율·작업 시간 개선은 주장하지 않는다.
+  - id: ac6
+    description: PC에서도 기존 경로로 모바일 화면을 이용할 수 있다.
+    verifiable: true
+    measurable_via: 접속 차단이나 데스크톱 전용 분기 추가 여부와 동일 모바일 셸 제공을 확인한다. 데스크톱 전용 레이아웃·해상도별 검증은 요구하지 않는다.
+
+context:
+  existing_stack: [Next.js 16 Pages Router, React 19, TypeScript, Tailwind CSS 3, Bun]
+  dependencies: [기존 Pretendard와 티켓 폰트 자산, natural-pixel DOM 티켓 렌더러, html-to-image, react-image-crop]
+  integration_points:
+    - src/components/v2/Landing.tsx
+    - src/components/v2/MobileEditorShell.tsx
+    - src/components/v2/PhoneFrame.tsx
+    - src/components/v2/DesignRail.tsx
+    - src/components/v2/FieldDrawer.tsx
+    - src/components/v2/InPlaceFieldEditor.tsx
+    - src/components/v2/ResultStage.tsx
+    - src/styles/globals.css
+    - tailwind.config.js
+    - src/pages/_app.tsx의 공유 폰트 경계
+  backlog_scan: >-
+    Phase 0에서 열린 이슈 12건과 닫힌 이슈 400건을 조회하고 상위 후보를 확인했다.
+    #775 입력 응답, #779 슬라이더, #780 폰트 선택, #782 자동저장은 별도 작업으로 수정을 보존한다.
+    #768 실제 iOS JPEG 검증은 미완료 조건으로 별도 기록한다.
+    닫힌 후보 #223 #756 #683 #679 #675 #669 #578 #476은 제목만 확인했고 결정 본문을 모두 읽지 않았다.
+    요약 본문은 320자로 단축됐고 용어 일치 후보 밖은 미확인이므로 모든 충돌이 없다고 판정하지 않는다.
+    현재 코드의 400px 단일 셸·다크 대응·작은 UI 글자와의 차이는 사용자 답변으로 범위를 확정했다.
+  prior_adjustments:
+    status: 새 디자인 구현 전 기존 UI에 반영·검증한 별도 변경
+    values: [고지 9px, CTA 256x44px, 캐러셀 170px, 자동 전환 10초, 이동 2200ms, 길게 누름 20초]
+    evidence: docs/verification/landing-refinements-2026-09-19/README.md
+    device_evidence: docs/verification/mobile-editor-775-782-2026-09-17/iphone-connection-2026-09-19.md
+
+blindspots: []
+blindspot_disposition:
+  long_content: 답변을 c7·c8·ac2에 반영했다. 무조건 전체 펼침 대신 자연스러운 요약과 원문 접근을 요구한다.
+  theme_consistency: 답변을 c3·ac1에 반영했다. 현재 앱은 전체 라이트이며 추후 다크도 전체 단위로 적용한다.
+  text_resize_200: 사용자가 필요성에 의문을 제기해 이번 필수 조건에서는 제외했다. 기본 확대 기능은 보존한다.
+  reference: https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html
+
+deferred:
+  - 본 리디자인 구현·검증 완료 후 다크 테마 팔레트 후보를 몇 가지 비교한다. 이번 Seed에서 후보 수나 팔레트를 선결정하지 않는다.
+  - 200% 확대 전용 검증은 이번 완료 조건이 아니다. 이를 검증하지 않고 WCAG AA 전체 준수를 주장하지 않는다.
+
+ambiguity:
+  overall: 0.10
+  gate_passed: true
+clarity_breakdown:
+  goal: 0.9
+  constraint: 0.9
+  success: 0.9
+  context: 0.9
+metadata:
+  interview_rounds: 5
+  questions_asked: 6
+  generated_by: thinking-tools/build-spec
+  scoring_isolated: true
+  consecutive_gate: 2
+  blindspot_pass: done
+  gate_evidence: Round 4와 Round 5를 서로 다른 독립 검토자가 채점했고 각각 네 영역 0.9로 판정했다. 마지막 맹점 답변은 추가 인터뷰 없이 제약·완료 기준에 반영했다.
+  implementation_status: 명세 확정. 새 크림 UI는 아직 구현하지 않았고 앞선 랜딩 조정만 반영된 상태다.

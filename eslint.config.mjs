@@ -57,7 +57,7 @@ const noRawTouchTargetSize = {
 
 export default tseslint.config(
   {
-    ignores: ['node_modules/**', '.next/**', 'public/**'],
+    ignores: ['node_modules/**', '.next/**', '.omc/**', 'public/**'],
   },
   {
     // .ts도 포함 — variants.ts 자체가 이 규칙이 지키려는 "44px 표현의 단일 소스"라, .tsx만

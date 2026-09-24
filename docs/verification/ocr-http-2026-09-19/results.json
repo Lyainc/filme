@@ -1,0 +1,102 @@
+{
+  "fixture": "synthetic TEST MOVIE / TEST CINEMA / 2099-01-01 / 12:00 / A1; no QR or booking number",
+  "postRequests": 3,
+  "results": [
+    {
+      "environment": "local",
+      "url": "http://127.0.0.1:3712/api/ocr",
+      "startedAt": "2026-09-19T13:34:09.185Z",
+      "elapsedMs": 4744,
+      "status": 500,
+      "contentType": "text/html; charset=utf-8",
+      "retryAfter": null,
+      "body": "HTML server error page (omitted)"
+    },
+    {
+      "environment": "production",
+      "url": "https://filme-web.vercel.app/api/ocr",
+      "startedAt": "2026-09-19T13:34:09.186Z",
+      "elapsedMs": 6636,
+      "status": 500,
+      "contentType": "text/plain; charset=utf-8",
+      "retryAfter": null,
+      "body": "Internal Server Error"
+    },
+    {
+      "environment": "local-production-build",
+      "url": "http://127.0.0.1:3714/api/ocr",
+      "startedAt": "2026-09-19T13:36:29.818Z",
+      "elapsedMs": 4339,
+      "status": 500,
+      "contentType": null,
+      "retryAfter": null,
+      "body": "Internal Server Error"
+    }
+  ],
+  "getChecks": {
+    "local": 405,
+    "production": 405
+  },
+  "localBuildDiagnostics": {
+    "errorCode": "FailedToOpenSocket",
+    "upstream": "Upstash Redis",
+    "modelErrorMarkerPresent": false,
+    "dns": {
+      "provider": "Upstash Redis",
+      "hostnameRedacted": true,
+      "dns": "failed",
+      "code": "ENOTFOUND"
+    },
+    "publicDnsChecks": [
+      {
+        "resolver": "1.1.1.1",
+        "status": "failed",
+        "code": "ENOTFOUND"
+      },
+      {
+        "resolver": "8.8.8.8",
+        "status": "failed",
+        "code": "ENOTFOUND"
+      }
+    ]
+  },
+  "limitations": [
+    "Production function logs were not inspected.",
+    "Real ticket upload was blocked by automatic approval review and was not executed.",
+    "Application POST counts do not equal Gemini call counts."
+  ],
+  "afterFix": {
+    "fixture": "synthetic test text, no real ticket data",
+    "imageBytes": 20226,
+    "applicationRequests": 1,
+    "results": [
+      {
+        "environment": "local-production-build",
+        "url": "http://127.0.0.1:3714/api/ocr",
+        "startedAt": "2026-09-19T13:49:37.348Z",
+        "elapsedMs": 4325,
+        "status": 503,
+        "contentType": "application/json; charset=utf-8",
+        "retryAfter": null,
+        "body": {
+          "error": "Rate limit is unavailable"
+        }
+      }
+    ],
+    "buildId": "05FFuq8eUMf2ISd25FhYI",
+    "verification": {
+      "focusedTests": 32,
+      "allTests": 1313,
+      "testFiles": 142,
+      "failures": 0,
+      "typecheck": "passed",
+      "lint": "passed",
+      "build": "passed",
+      "diffCheck": "passed"
+    }
+  },
+  "productionLogs": {
+    "inspected": false,
+    "reason": "Vercel CLI authentication token invalid"
+  }
+}

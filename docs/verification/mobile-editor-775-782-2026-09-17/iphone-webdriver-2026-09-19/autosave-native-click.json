@@ -1,0 +1,46 @@
+{
+  "checked": "true",
+  "events": [
+    {
+      "y": 27,
+      "label": "자동 임시저장 켜짐",
+      "trusted": true,
+      "type": "pointerup",
+      "x": 234,
+      "time": 36401
+    },
+    {
+      "y": null,
+      "label": "자동 임시저장 켜짐",
+      "trusted": true,
+      "type": "touchstart",
+      "x": null,
+      "time": 36402
+    },
+    {
+      "y": null,
+      "label": "자동 임시저장 켜짐",
+      "trusted": true,
+      "type": "touchend",
+      "x": null,
+      "time": 36438
+    },
+    {
+      "y": 27,
+      "label": "자동 임시저장 켜짐",
+      "trusted": true,
+      "type": "pointerdown",
+      "x": 234,
+      "time": 36438
+    },
+    {
+      "y": null,
+      "label": "자동 임시저장 켜짐",
+      "trusted": true,
+      "type": "touchstart",
+      "x": null,
+      "time": 36438
+    }
+  ],
+  "before": "true"
+}

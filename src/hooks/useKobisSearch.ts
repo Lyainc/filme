@@ -30,11 +30,9 @@ const DEFAULT_MESSAGES: KobisSearchMessages = {
 };
 
 export interface UseKobisSearchOptions {
-  /** 결과 선택 시 폼에 부분 반영 — 먼저 제목/원제/개봉일, detail 도착 후 배우/러닝타임. */
-  apply: (patch: Partial<MovieInfo>) => void;
+  /** 기본 필드를 반영하고, 문서/영화 선택이 여전히 유효할 때만 보강하는 콜백을 반환한다. */
+  apply: (patch: Partial<MovieInfo>) => (detail: Partial<MovieInfo>) => void;
   messages?: Partial<KobisSearchMessages>;
-  /** detail 보강 in-flight 여부를 부모에 알림(데스크톱 위저드 '다음' 게이팅용, #198). */
-  onDetailPending?: (pending: boolean) => void;
 }
 
 export interface UseKobisSearch {
@@ -51,25 +49,18 @@ export interface UseKobisSearch {
   selectMovie: (movie: KobisMovie) => void;
 }
 
-export function useKobisSearch({ apply, messages: overrides, onDetailPending }: UseKobisSearchOptions): UseKobisSearch {
+export function useKobisSearch({ apply, messages: overrides }: UseKobisSearchOptions): UseKobisSearch {
   const messages = { ...DEFAULT_MESSAGES, ...overrides };
   const [results, setResults] = useState<KobisMovie[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [open, setOpen] = useState(false);
-  const [pending, setPending] = useState(false);
 
   const cacheRef = useRef<Map<string, KobisMovie[]>>(new Map());
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   // 단조 증가 id — selectMovie의 async detail 응답이 더 최근 선택을 덮어쓰지 못하게 가드.
   const detailRunRef = useRef(0);
-
-  // detail in-flight를 부모에 브리지. 언마운트 시 false로 정리(위저드가 pending에 갇히지 않게).
-  useEffect(() => {
-    onDetailPending?.(pending);
-    return () => onDetailPending?.(false);
-  }, [pending, onDetailPending]);
 
   useEffect(() => {
     return () => {
@@ -149,7 +140,7 @@ export function useKobisSearch({ apply, messages: overrides, onDetailPending }: 
 
   async function selectMovie(movie: KobisMovie) {
     const iso = openDtToIso(movie.openDt);
-    apply({
+    const applyDetail = apply({
       title: movie.movieNm,
       titleOg: movie.movieNmEn || '',
       releaseDate: iso,
@@ -161,7 +152,6 @@ export function useKobisSearch({ apply, messages: overrides, onDetailPending }: 
     const runId = ++detailRunRef.current;
     try {
       setLoading(true);
-      setPending(true);
       const res = await fetch(`/api/kobis/detail?movieCd=${movie.movieCd}`);
       if (detailRunRef.current !== runId) return; // stale — 더 최근 선택이 인수
       if (!res.ok) return;
@@ -170,14 +160,13 @@ export function useKobisSearch({ apply, messages: overrides, onDetailPending }: 
       const detail = data.movieInfoResult?.movieInfo;
       if (!detail) return;
       const { actors, runtime } = extractKobisActorsRuntime(detail);
-      apply({ actors, ...(runtime ? { runtime } : {}) });
+      applyDetail({ actors, ...(runtime ? { runtime } : {}) });
     } catch (e) {
       console.error('영화 상세 정보 검색 오류:', e);
     } finally {
-      // 최신 선택만 loading/pending 플래그를 내린다.
+      // 최신 선택만 loading 플래그를 내린다.
       if (detailRunRef.current === runId) {
         setLoading(false);
-        setPending(false);
       }
     }
   }

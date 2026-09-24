@@ -42,11 +42,15 @@ function Harness() {
       <button type="button" onClick={() => photo.updateComponents({ signatureImage: 'blob:seeded-signature' })}>
         seed-signature-image
       </button>
+      <button type="button" onClick={() => {
+        photo.updateMovieInfo({ watchDate: '2026-09-24', releaseDate: '2025-11-19', rating: 4.5, actors: '배우A, 배우B' });
+        photo.updateComponents({ chain: 'blob:chain', format: 'blob:format', signatureImage: 'blob:signature' });
+      }}>
+        seed-highlight-fields
+      </button>
       <MobileEditorShell
         photo={photo}
         canExport
-        theme="light"
-        onThemeChange={() => {}}
         onDone={() => {}}
         disabledReason=""
         previewMovieInfo={photo.state.movieInfo}
@@ -64,6 +68,24 @@ afterEach(() => {
 });
 
 describe('인플레이스 필드 에디터 (#354)', () => {
+  test.each(['관람일', '개봉일', '평점', '출연', '극장 로고', '포맷 로고', '서명'])(
+    '%s 편집 하이라이트는 티켓 내용을 가리지 않고 클릭을 통과시킨다', async (label) => {
+      render(<Harness />);
+      fireEvent.click(screen.getByText('seed'));
+      fireEvent.click(screen.getByText('seed-highlight-fields'));
+      fireEvent.click(await screen.findByRole('button', { name: `${label} 편집` }));
+      const bar = await screen.findByRole('toolbar', { name: '필드 편집 도구' });
+      const highlight = bar.previousElementSibling as HTMLElement;
+      expect(highlight.tagName).toBe('DIV');
+      expect(highlight.getAttribute('aria-hidden')).toBe('true');
+      expect(highlight.style.background).toBe('transparent');
+      expect(highlight.style.outline).toContain('var(--focus-ring)');
+      expect(highlight.style.pointerEvents).toBe('none');
+      fireEvent.click(screen.getByRole('button', { name: '편집 완료' }));
+      expect(highlight.isConnected).toBe(false);
+    }
+  );
+
   test('필드 탭 → 인플레이스 input → 타이핑이 폼 상태에 반영', async () => {
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
@@ -222,10 +244,10 @@ describe('탭 타깃 위계: 떠 있는 보조 툴바 32 / 직접 편집 컨트�
       expect(Math.min(w, h)).toBeGreaterThanOrEqual(MIN_AA);
     }
 
-    // 필드 탭 → 인플레이스 편집. 이때 플로팅 툴바는 z-45로 여전히 화면에 있다(동시 노출이 설계).
+    // 편집 중에는 전용 필드바만 보여 입력칸을 가리지 않는다.
     fireEvent.click(await screen.findByRole('button', { name: '극장 편집' }));
     const bar = await screen.findByRole('toolbar', { name: '필드 편집 도구' });
-    expect(screen.queryByRole('toolbar', { name: '편집 도구' })).not.toBeNull();
+    expect(screen.queryByRole('toolbar', { name: '편집 도구' })).toBeNull();
 
     const barBtns = Array.from(bar.querySelectorAll('button'));
     expect(barBtns.length).toBeGreaterThan(1);
@@ -234,5 +256,7 @@ describe('탭 타깃 위계: 떠 있는 보조 툴바 32 / 직접 편집 컨트�
       expect([w, h]).toEqual([44, 44]);
       expect(Math.min(w, h)).toBeGreaterThanOrEqual(MIN_AA);
     }
+    fireEvent.click(screen.getByRole('button', { name: '편집 완료' }));
+    expect(screen.getByRole('toolbar', { name: '편집 도구' })).toBeTruthy();
   });
 });

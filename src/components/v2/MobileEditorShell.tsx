@@ -30,11 +30,11 @@ import { getFrameRect, APP_BACKGROUND_ID } from './PhoneFrame';
 import { Wordmark } from './Wordmark';
 import type { ViewMode } from './viewMode';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
-import EmbossBrushLayer from '@/components/v2/EmbossBrushLayer';
 import { getLayout } from '@/utils/layouts';
 import { cn } from '@/utils/cn';
 import { pressableVariants } from '@/components/ui/variants';
 import type { Area } from '@/utils/imageCrop';
+import { missingExportFields } from '@/hooks/useExportReady';
 import { useEditHistory } from '@/hooks/useEditHistory';
 import { useOcrUndo } from '@/hooks/useOcrUndo';
 import type { usePhototicket } from '@/hooks/usePhototicket';
@@ -63,7 +63,6 @@ const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ss
 // 서브메뉴 행 리딩 아이콘(#374) — 시안 Siyan-C-v8 L296-322와 동일한 18px/stroke 1.7 계열.
 // 멀티 서브패스도 단일 d 문자열로 합쳐 MenuRow가 <path> 하나로 렌더한다.
 const MENU_ICONS = {
-  moon: 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
   eye: 'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',
   upload: 'M12 16V4M8 8l4-4 4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2',
   crop: 'M6 2v14a2 2 0 0 0 2 2h14M18 22V8a2 2 0 0 0-2-2H2',
@@ -199,13 +198,12 @@ function MenuRow({
 interface MobileEditorShellProps {
   photo: ReturnType<typeof usePhototicket>;
   canExport: boolean;
-  theme: 'light' | 'dark';
-  onThemeChange: (theme: 'light' | 'dark') => void;
   /** 완료(결과 열기) — useResultView.openView */
   onDone: () => void;
   /** 완료 비활성 시 안내 문구(=railMessage). 탭하면 토스트로 노출. */
   disabledReason: string;
   /** 인라인 프리뷰는 디바운스된 값으로 렌더(폼 입력이 프리뷰를 매타건 리렌더하지 않게). */
+  onFieldEditingChange?: (editing: boolean) => void;
   previewMovieInfo: MovieInfo;
   previewComponents: TicketComponents;
   fieldVisibility: Record<TicketField, boolean>;
@@ -226,11 +224,10 @@ export interface MobileEditorShellHandle {
 export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEditorShellProps>(function MobileEditorShell({
   photo,
   canExport,
-  theme,
-  onThemeChange,
   onDone,
   disabledReason,
   previewMovieInfo,
+  onFieldEditingChange,
   previewComponents,
   fieldVisibility,
 }, ref) {
@@ -438,9 +435,6 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   // pill 클릭 시 서브메뉴가 열린 채로 남지 않게 항상 같이 닫는다(claude-review PR #332 P2 —
   // 메뉴 오버레이가 마우스 클릭은 막아도 키보드 포커스는 막지 않아 Tab으로 pill까지 도달 가능).
   function handleViewModeChange(mode: ViewMode) {
-    // max를 벗어나면 형압 편집 모드를 정리한다(#729) — 진입(default→max) 방향은 그대로 둔다,
-    // "칠하다가 확대해서 계속 칠한다"가 그쪽의 의도된 동작이라(#729 명세 c6).
-    if (viewMode === 'max' && mode === 'default') photo.setEmbossEditMode(false);
     setViewMode(mode);
     setMenuOpen(false);
     setActiveField(null); // 인플레이스 편집(#354)은 default 줌 전용 — 줌 전환 시 닫는다.
@@ -453,6 +447,12 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   // TicketRenderer의 ResizeObserver 스케일과 싸우지 않게).
   const [editLift, setEditLift] = useState(0);
   const editing = activeField != null && viewMode === 'default' && canvasReady;
+  useEffect(() => {
+    onFieldEditingChange?.(editing);
+    return () => onFieldEditingChange?.(false);
+  }, [editing, onFieldEditingChange]);
+  const missing = missingExportFields(photo.state.movieInfo);
+  const missingLabel = missing.map((field) => field === 'title' ? '제목' : '연도').join('·');
   const closeEditor = useCallback(() => {
     setActiveField(null);
     setEditLift(0);
@@ -480,6 +480,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   function handleDone() {
     if (!canExport) {
       flashToast(disabledReason);
+      setDrawerOpen(true);
       return;
     }
     onDone();
@@ -620,7 +621,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   }
 
   const doneEnabledStyle = canExport
-    ? { background: 'linear-gradient(135deg, var(--accent-hover), var(--accent))', color: 'var(--accent-ink)' }
+    ? { background: 'var(--cta-fill)', color: 'var(--fg)', border: '1px solid var(--fg)', boxShadow: '1px 2px 0 var(--fg)' }
     : undefined;
 
   const layout = getLayout(previewComponents.layout);
@@ -651,14 +652,10 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   const rotatedInnerWidth = `min(${PREVIEW_MAX_HEIGHT}, calc(90cqw * ${layout.width} / ${layout.height}))`;
   const rotatedStageWidth = `calc(${rotatedInnerWidth} * ${layout.height} / ${layout.width})`;
 
-  // 앰비언트 다크 크롬(#353→#363→#415) — theme==='dark'일 때만 .chrome-dark 스코프(데스크톱
-  // 레포의 data-theme 바인딩 패턴과 통일). #363에서 "테마와 무관하게 상시
-  // 다크"로 고정했던 게 다크모드 토글을 죽은 컨트롤로 만들어(#415) 원래 의도(라이트/다크 둘 다
-  // 지원)로 되돌린다.
   return (
     <div
-      data-theme={theme}
-      className={`app-canvas${theme === 'dark' ? ' chrome-dark' : ''}`}
+      data-theme="light"
+      className="app-canvas"
       style={{
         position: 'relative',
         // height 캡(#357) — minHeight면 콘텐츠가 길 때 문서 전체가 자라 하단 dock이 접근성만
@@ -675,17 +672,6 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
           inert 타깃 하나 잡으려는 용도). 토스트류는 이 래퍼 밖(아래)에 남겨 다이얼로그가 열려도
           계속 살아있게 한다 — PhoneFrame.tsx의 APP_BACKGROUND_ID 주석 참고. */}
       <div id={APP_BACKGROUND_ID} className="contents">
-      {/* 앰비언트 배경(#353→#415) — .chrome-ambient는 테마 무관 리터럴 다크 그라디언트라
-          (globals.css) chrome-dark 토글만으론 안 가려진다. theme==='dark'일 때만 렌더하고,
-          라이트 테마는 데스크톱과 톤을 맞춰(#415 권장) app-canvas의 --bg 그대로 노출한다.
-          형제 콘텐츠(header는 relative, 본문 래퍼도 relative)가 위에 그려진다. */}
-      {theme === 'dark' && (
-        <div
-          aria-hidden="true"
-          data-testid="chrome-ambient"
-          className="chrome-ambient pointer-events-none absolute inset-0"
-        />
-      )}
       {/* 상단 네브(v8 §1, #363): 좌측 브랜드 워드마크 + 우측 [편집 메뉴 → 완료(최외곽)].
           #315가 제거했던 워드마크는 #363에서 복귀 확정(Wordmark 컴포넌트 재사용,
           셸은 상호배타 마운트라 h1 중복 없음). 상시 chrome-dark 스코프(#363)가 잉크를 이미 라이트로
@@ -728,16 +714,21 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
         <button
           type="button"
           onClick={handleDone}
+          aria-label="완료"
           aria-disabled={!canExport}
-          className={cn(pressableVariants(), `inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-body font-semibold transition-colors ${
+          aria-describedby={!canExport ? 'export-requirements' : undefined}
+          className={cn(pressableVariants(), `inline-flex h-9 items-center gap-1.5 rounded-full px-2.5 text-body font-semibold transition-colors ${
             canExport ? '' : 'border border-line bg-surface-elevated text-fg-muted'
           }`)}
           style={doneEnabledStyle}
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          {canExport && <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M20 6 9 17l-5-5" />
-          </svg>
-          완료
+          </svg>}
+          <span className="flex flex-col items-center">
+            <span>완료</span>
+            {!canExport && <span id="export-requirements" className="whitespace-nowrap text-[10px] font-normal">{missingLabel} 필요</span>}
+          </span>
         </button>
         )}
         </div>
@@ -770,12 +761,6 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
               }}
             >
               <div className={MENU_GROUP_CLS}>
-                <MenuRow
-                  iconPath={MENU_ICONS.moon}
-                  label="다크모드"
-                  checked={theme === 'dark'}
-                  onClick={() => onThemeChange(theme === 'dark' ? 'light' : 'dark')}
-                />
                 {/* 빈 항목은 프리뷰(포스터)가 있어야 의미가 있으므로 기존과 동일하게 게이팅. 잉크는
                     DesignRail 시절과 동일하게 포스터 유무와 무관하게 항상 노출. '전체 표시'는 필드
                     목록이 있는 FieldDrawer로 이전(#424) — 필드 목록과 한 자리에 두는 게 더 직관적이다. */}
@@ -951,8 +936,6 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
                   : {
                       role: 'button' as const,
                       tabIndex: 0,
-                      // handleViewModeChange 경유(#729) — 직접 setViewMode를 부르면 max→default
-                      // 탈출이 embossEditMode 정리를 못 탄다(위 handleViewModeChange 주석).
                       onClick: () => handleViewModeChange('default'),
                       onKeyDown: (e: KeyboardEvent) => {
                         if (e.key === 'Enter' || e.key === ' ') {
@@ -983,10 +966,6 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
                           : 'translateY(0) scale(1)',
                         transformOrigin: 'top center',
                         zIndex: editing ? 41 : undefined,
-                        // 작업면 위에 놓인 인쇄물로 읽히게 하는 양감(#571). 캡처 대상(TicketRenderer
-                        // 내부 ref) 밖 래퍼라 export JPEG엔 안 섞인다. 토큰 재사용 — 결과 표면의
-                        // 승격 그림자(더 강한 값 + accent 링)와 세기가 갈려 위계가 유지된다(#98).
-                        // #509의 유저 형압 후가공과 별개(MoodCriterion.tsx의 대칭 주석 참고).
                         boxShadow: 'var(--shadow-pop)',
                       }
                     : rotateLandscape
@@ -1019,32 +998,10 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
                     onPosterTap={
                       viewMode === 'default' && !croppedImageUrl ? handlePosterTap : undefined
                     }
-                    embossStamps={photo.state.embossStamps}
-                    embossPaths={photo.state.embossPaths}
-                    embossIntensity={photo.state.embossIntensity}
-                    reliefStamps={photo.state.reliefStamps}
-                    reliefPaths={photo.state.reliefPaths}
-                    reliefIntensity={photo.state.reliefIntensity}
                   />
                 </div>
               </div>
             </div>
-          )}
-
-          {/* 형압 브러시(#509 c9) — 명시적 편집 모드일 때만 전체화면 포인터 캡처 레이어를 띄운다.
-              position:fixed라 DOM 삽입 위치는 무관하고, getPosterEl이 매 이벤트마다 ticketBoxEl
-              안의 [data-poster-root]를 다시 찾아 좌표를 낸다(무드마다 포스터 위치·크기가 달라도
-              별도 동기화 없이 항상 맞는다). */}
-          {photo.embossEditMode && (
-            <EmbossBrushLayer
-              getPosterEl={() => ticketBoxEl?.querySelector('[data-poster-root]') ?? null}
-              tool={photo.embossTool}
-              brushRadius={photo.embossBrushRadius}
-              onStamp={photo.addEmbossStamp}
-              onPath={photo.addEmbossPath}
-              isMax={isMax}
-              rotated={rotateLandscape}
-            />
           )}
 
           {/* 줌 pill(#328)은 #356에서 제거 — 최대화 진입은 플로팅 툴바가 흡수, max 탈출은
@@ -1100,20 +1057,6 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
             <OcrUploadCard
               setInfo={photo.updateMovieInfo}
               currentInfo={photo.state.movieInfo}
-              // 스크린샷이 인식되면 랜딩을 걷는다 — 사용자가 이미 편집에 들어온 것이고, 채워진
-              // 필드가 오버레이 뒤에 가려져 있으면 안 된다. 랜딩을 떠나는 "새로 시작" 경로이므로
-              // 복원된 문서를 먼저 새 문서로 되돌린다(#727 c7). 이게 성립하려면 OcrUploadCard가
-              // **필드를 쓰기 전에** 이 콜백을 불러야 한다 — 그래서 그쪽 applyOcr의 호출 순서가
-              // #727에서 바뀌었다(같은 배치의 마지막 setState가 이기므로). update*는 전부 함수형
-              // 갱신이라 리셋 위에 OCR 결과가 정확히 얹힌다.
-              //
-              // 새 문서 위의 적용이면 되돌리기 스냅샷도 "빈 새 문서" 기준이어야 한다(#737) — 카드가
-              // 만든 prevValues/prevComponents는 리셋 **전** currentInfo에서 뜬 값이라 옛 draft를
-              // 담고 있다. 문서 전체를 다시 리셋하는 대신(그러면 OCR 적용~되돌리기 사이에 사용자가
-              // 한 다른 편집까지 undo가 통째로 삼킨다 — fresh-context 리뷰 지적), 카드가 이미 골라둔
-              // 같은 키 집합을 유지한 채 값만 INITIAL_STATE 기준으로 다시 채운다 — 그러면 cancel()은
-              // 여느 때와 똑같이 부분 병합(updateMovieInfo/updateComponents)만 하고, OCR이 안 건드린
-              // 필드(포스터·형압·밝기 등)는 그대로 남는다.
               onOcrApply={(params) => {
                 const fresh = !landingDismissed;
                 if (fresh) startFreshDoc();
@@ -1161,7 +1104,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
       >
         {/* 크기 섹션의 재크롭 진입(#492) — 헤더 메뉴 '재크롭'과 같은 crop.openRecrop을 공유한다.
             원본이 없으면 안 넘겨 버튼 자체가 안 뜬다(메뉴 쪽은 disabled + 재업로드 안내를 유지). */}
-        <DesignRail photo={photo} onRecropPoster={crop.originalSrc ? crop.openRecrop : undefined} />
+        <DesignRail photo={photo} onRecropPoster={crop.originalSrc ? crop.openRecrop : undefined} onEditField={handleField} />
       </div>
 
       {/* 필드 드로어 엣지 핸들(#364) — 우측 엣지에 드로어 존재를 암시하는 상시 인디케이터.
@@ -1223,13 +1166,14 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
         >
           <span
             aria-hidden="true"
-            className="flex h-full w-6 items-center justify-center rounded-l-[10px] border border-r-0 border-[var(--overlay-border)] text-fg"
+            className="flex h-full w-6 flex-col gap-2 items-center justify-center rounded-l-[10px] border border-r-0 border-[var(--overlay-border)] text-fg"
             style={{
               background: 'var(--overlay-fill)',
               backdropFilter: 'blur(13px)',
               WebkitBackdropFilter: 'blur(13px)',
             }}
           >
+            <span className="text-micro [writing-mode:vertical-rl]">항목 편집</span>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="m15 18-6-6 6-6" />
             </svg>
@@ -1239,9 +1183,9 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
 
       {/* 플로팅 툴바(#356) — undo/redo·항목목록·최대화·숨김(배치설정은 #387에서 헤더 메뉴로 이전).
           프리뷰가 있어야 의미가 있고, max는 티켓만 남기는 풀스크린이라 숨긴다(탈출은 티켓 탭).
-          필드 편집·드로어 중에도 셸이 계속 렌더한다 — 겹침 규칙은 z-index로(툴바 45: 편집 백드롭 40 위,
-          드로어 50 아래). */}
+          필드 편집 중에는 전용 필드바를 쓰고 이 툴바는 숨겨 입력칸을 가리지 않는다. 마운트는 유지한다. */}
       {canvasReady && !isMax && (
+        <div hidden={!!activeField}>
         <FloatingToolbar
           ref={toolbarRef}
           prefs={tbPrefs}
@@ -1261,6 +1205,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
           headerEl={headerEl}
           contentTopEl={ticketBoxEl}
         />
+        </div>
       )}
 
       {/* 온티켓 인플레이스 에디터(#354) — 필드 탭이 시트 대신 이걸 연다. 투명 input + 필드바 +

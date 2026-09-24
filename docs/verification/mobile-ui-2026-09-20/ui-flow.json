@@ -1,0 +1,202 @@
+[
+  {
+    "width": 320,
+    "height": 568,
+    "reducedLanding": {
+      "bg": "#fffcf7",
+      "scheme": "light",
+      "overflow": false,
+      "darkPanels": 0,
+      "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+    },
+    "landing": {
+      "bg": "#fffcf7",
+      "scheme": "light",
+      "overflow": false,
+      "darkPanels": 0,
+      "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+    },
+    "editor": {
+      "bg": "#fffcf7",
+      "scheme": "light",
+      "overflow": false,
+      "darkPanels": 0,
+      "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+    },
+    "fields": {
+      "bg": "#fffcf7",
+      "scheme": "light",
+      "overflow": false,
+      "darkPanels": 0,
+      "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+    },
+    "input": {
+      "fontSize": "16px",
+      "color": "rgb(13, 1, 41)",
+      "background": "rgb(255, 255, 255)",
+      "height": 47.421600341796875
+    },
+    "result": {
+      "bg": "#fffcf7",
+      "scheme": "light",
+      "overflow": false,
+      "darkPanels": 0,
+      "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+    },
+    "save": {
+      "enabled": true,
+      "visible": true,
+      "fill": "rgb(250, 229, 155)"
+    }
+  },
+  {
+    "width": 375,
+    "height": 667,
+    "reducedLanding": {
+      "bg": "#fffcf7",
+      "scheme": "light",
+      "overflow": false,
+      "darkPanels": 0,
+      "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+    },
+    "landing": {
+      "bg": "#fffcf7",
+      "scheme": "light",
+      "overflow": false,
+      "darkPanels": 0,
+      "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+    },
+    "editor": {
+      "bg": "#fffcf7",
+      "scheme": "light",
+      "overflow": false,
+      "darkPanels": 0,
+      "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+    },
+    "fields": {
+      "bg": "#fffcf7",
+      "scheme": "light",
+      "overflow": false,
+      "darkPanels": 0,
+      "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+    },
+    "input": {
+      "fontSize": "16px",
+      "color": "rgb(13, 1, 41)",
+      "background": "rgb(255, 255, 255)",
+      "height": 54.79765319824219
+    },
+    "result": {
+      "bg": "#fffcf7",
+      "scheme": "light",
+      "overflow": false,
+      "darkPanels": 0,
+      "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+    },
+    "save": {
+      "enabled": true,
+      "visible": true,
+      "fill": "rgb(250, 229, 155)"
+    }
+  },
+  {
+    "width": 393,
+    "height": 659,
+    "reducedLanding": {
+      "bg": "#fffcf7",
+      "scheme": "light",
+      "overflow": false,
+      "darkPanels": 0,
+      "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+    },
+    "landing": {
+      "bg": "#fffcf7",
+      "scheme": "light",
+      "overflow": false,
+      "darkPanels": 0,
+      "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+    },
+    "editor": {
+      "bg": "#fffcf7",
+      "scheme": "light",
+      "overflow": false,
+      "darkPanels": 0,
+      "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+    },
+    "fields": {
+      "bg": "#fffcf7",
+      "scheme": "light",
+      "overflow": false,
+      "darkPanels": 0,
+      "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+    },
+    "input": {
+      "fontSize": "16px",
+      "color": "rgb(13, 1, 41)",
+      "background": "rgb(255, 255, 255)",
+      "height": 54.09033203125
+    },
+    "result": {
+      "bg": "#fffcf7",
+      "scheme": "light",
+      "overflow": false,
+      "darkPanels": 0,
+      "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+    },
+    "save": {
+      "enabled": true,
+      "visible": true,
+      "fill": "rgb(250, 229, 155)"
+    }
+  },
+  {
+    "width": 414,
+    "height": 736,
+    "reducedLanding": {
+      "bg": "#fffcf7",
+      "scheme": "light",
+      "overflow": false,
+      "darkPanels": 0,
+      "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+    },
+    "landing": {
+      "bg": "#fffcf7",
+      "scheme": "light",
+      "overflow": false,
+      "darkPanels": 0,
+      "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+    },
+    "editor": {
+      "bg": "#fffcf7",
+      "scheme": "light",
+      "overflow": false,
+      "darkPanels": 0,
+      "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+    },
+    "fields": {
+      "bg": "#fffcf7",
+      "scheme": "light",
+      "overflow": false,
+      "darkPanels": 0,
+      "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+    },
+    "input": {
+      "fontSize": "16px",
+      "color": "rgb(13, 1, 41)",
+      "background": "rgb(255, 255, 255)",
+      "height": 59.883331298828125
+    },
+    "result": {
+      "bg": "#fffcf7",
+      "scheme": "light",
+      "overflow": false,
+      "darkPanels": 0,
+      "font": "pretendard, \"pretendard Fallback\", \"Pretendard Variable\", Pretendard, system-ui, \"Apple SD Gothic Neo\", \"Noto Sans KR\", sans-serif"
+    },
+    "save": {
+      "enabled": true,
+      "visible": true,
+      "fill": "rgb(250, 229, 155)"
+    }
+  }
+]

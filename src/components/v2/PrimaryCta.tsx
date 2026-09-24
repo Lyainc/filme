@@ -45,10 +45,10 @@ export function PrimaryCta({
         pressableVariants({ transition: 'cta' }),
         'w-full min-h-touch rounded-field-sm flex items-center justify-center gap-2 font-semibold text-body',
         state === 'disabled'
-          ? 'opacity-50 cursor-not-allowed bg-accent text-accent-ink'
+          ? 'opacity-50 cursor-not-allowed primary-action'
           : state === 'success'
           ? 'bg-success text-white cursor-default'
-          : 'bg-accent text-accent-ink hover:bg-accent-hover cursor-pointer',
+          : 'primary-action cursor-pointer',
         className,
       )}
     >

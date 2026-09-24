@@ -1,0 +1,97 @@
+[
+  {
+    "mood": "Criterion",
+    "fieldLabel": "극장",
+    "listGeometry": {
+      "hit": true,
+      "rect": {
+        "x": 105.453125,
+        "height": 44,
+        "bottom": 400,
+        "y": 356,
+        "width": 232.546875,
+        "left": 105.453125,
+        "top": 356,
+        "right": 338
+      }
+    },
+    "matchingInputOpened": true,
+    "interaction": "synthetic click; geometry from real Safari"
+  },
+  {
+    "mood": "Criterion",
+    "fieldLabel": "상영관",
+    "listGeometry": {
+      "hit": true,
+      "rect": {
+        "x": 105.453125,
+        "height": 44,
+        "bottom": 400,
+        "y": 356,
+        "width": 232.546875,
+        "left": 105.453125,
+        "top": 356,
+        "right": 338
+      }
+    },
+    "matchingInputOpened": true,
+    "interaction": "synthetic click; geometry from real Safari"
+  },
+  {
+    "mood": "Criterion",
+    "fieldLabel": "좌석",
+    "listGeometry": {
+      "hit": true,
+      "rect": {
+        "x": 105.453125,
+        "height": 44,
+        "bottom": 400,
+        "y": 356,
+        "width": 232.546875,
+        "left": 105.453125,
+        "top": 356,
+        "right": 338
+      }
+    },
+    "matchingInputOpened": true,
+    "interaction": "synthetic click; geometry from real Safari"
+  },
+  {
+    "mood": "35mm",
+    "fieldLabel": "원제",
+    "listGeometry": {
+      "hit": true,
+      "rect": {
+        "x": 105.453125,
+        "height": 44,
+        "bottom": 400,
+        "y": 356,
+        "width": 232.546875,
+        "left": 105.453125,
+        "top": 356,
+        "right": 338
+      }
+    },
+    "matchingInputOpened": true,
+    "interaction": "synthetic click; geometry from real Safari"
+  },
+  {
+    "mood": "35mm",
+    "fieldLabel": "서명",
+    "listGeometry": {
+      "hit": true,
+      "rect": {
+        "x": 105.453125,
+        "height": 44,
+        "bottom": 496,
+        "y": 452,
+        "width": 232.546875,
+        "left": 105.453125,
+        "top": 452,
+        "right": 338
+      }
+    },
+    "matchingInputOpened": true,
+    "interaction": "synthetic click; geometry from real Safari"
+  }
+]

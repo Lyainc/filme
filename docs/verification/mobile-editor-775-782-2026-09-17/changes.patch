@@ -1,0 +1,881 @@
+--- a/src/hooks/useDebounce.ts
++++ b/src/hooks/useDebounce.ts
+@@ -1,12 +1,16 @@
+ import { useEffect, useState } from 'react';
+ 
+-export function useDebounce<T>(value: T, delay: number): T {
++export function useDebounce<T>(value: T, delay: number, immediate = false): T {
+   const [debounced, setDebounced] = useState<T>(value);
+ 
++  // 직접 편집은 같은 렌더에서 반영하고, 닫힌 뒤에도 마지막 입력을 유지한다(#775).
++  if (immediate && debounced !== value) setDebounced(value);
++
+   useEffect(() => {
++    if (immediate) return;
+     const timer = setTimeout(() => setDebounced(value), delay);
+     return () => clearTimeout(timer);
+-  }, [value, delay]);
++  }, [value, delay, immediate]);
+ 
+-  return debounced;
++  return immediate ? value : debounced;
+ }
+--- a/src/hooks/useExportReady.ts
++++ b/src/hooks/useExportReady.ts
+@@ -3,20 +3,19 @@
+ interface CanExportParams {
+   title: string;
+   titleOg: string;
+-  releaseDate: string | undefined;
++  releaseDate?: string;
+ }
+ 
+-// 포스터는 완료 조건이 아니다(#631 D3) — 포스터 없이도 단색 바탕 티켓이 성립하므로 제목·개봉연도만 본다.
+-export function canExport({
+-  title,
+-  titleOg,
+-  releaseDate,
+-}: CanExportParams): boolean {
+-  const release = (releaseDate ?? '').trim();
+-  return (
+-    title.trim().length > 0 &&
+-    release.length >= 4
+-  );
++/** 표시 여부와 별개인 저장 필수 입력(#631, #776). */
++export function missingExportFields({ title, releaseDate }: CanExportParams): ('title' | 'releaseDate')[] {
++  const missing: ('title' | 'releaseDate')[] = [];
++  if (!title.trim()) missing.push('title');
++  if ((releaseDate ?? '').trim().length < 4) missing.push('releaseDate');
++  return missing;
++}
++
++export function canExport(info: CanExportParams): boolean {
++  return missingExportFields(info).length === 0;
+ }
+ 
+ interface UseExportReadyOptions {
+@@ -24,7 +23,7 @@
+ }
+ 
+ /**
+- * 필수 입력(포스터·제목·원제·개봉연도)이 채워져 결과를 내보낼 수 있는지.
++ * 필수 입력(제목·개봉연도)이 채워져 결과를 내보낼 수 있는지.
+  * 결과는 별도 화면이 아니라 같은 페이지 위에 뜨는 rail/바텀시트로 표시되므로
+  * 화면 전환·sessionStorage 복원 로직은 없다(파생 boolean 하나로 충분).
+  */
+--- a/src/pages/index.tsx
++++ b/src/pages/index.tsx
+@@ -12,6 +12,7 @@
+   // SSR safe: 초기값 'light', mount 후 localStorage/prefers-color-scheme 읽기
+   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+   const photo = usePhototicket();
++  const [fieldEditing, setFieldEditing] = useState(false);
+   const canExport = useExportReady({ state: photo.state });
+   const { open: resultOpen, openView, closeView } = useResultView();
+   // ResultStage(#669) 워드마크가 이 셸의 초기화 판정·confirm 로직을 그대로 재사용하는 통로 —
+@@ -43,7 +44,7 @@
+     () => ({ movieInfo: photo.state.movieInfo, components: photo.state.components }),
+     [photo.state.movieInfo, photo.state.components],
+   );
+-  const debounced = useDebounce(draft, 280);
++  const debounced = useDebounce(draft, 280, fieldEditing);
+   const { movieInfo: debouncedMovieInfo, components: debouncedComponents } = debounced;
+   const { fieldVisibility } = photo.state;
+ 
+@@ -112,6 +113,7 @@
+       <div className={resultOpen ? 'hidden' : undefined}>
+         <MobileEditorShell
+           ref={shellRef}
++          onFieldEditingChange={setFieldEditing}
+           photo={photo}
+           canExport={canExport}
+           theme={theme}
+@@ -129,8 +131,8 @@
+           onBack={closeView}
+           onWordmarkTap={handleResultWordmarkTap}
+           croppedImageUrl={croppedImageUrl}
+-          movieInfo={debouncedMovieInfo}
+-          components={debouncedComponents}
++          movieInfo={photo.state.movieInfo}
++          components={photo.state.components}
+           fieldVisibility={fieldVisibility}
+           embossStamps={photo.state.embossStamps}
+           embossPaths={photo.state.embossPaths}
+--- a/src/components/v2/MobileEditorShell.tsx
++++ b/src/components/v2/MobileEditorShell.tsx
+@@ -35,6 +35,7 @@
+ import { cn } from '@/utils/cn';
+ import { pressableVariants } from '@/components/ui/variants';
+ import type { Area } from '@/utils/imageCrop';
++import { missingExportFields } from '@/hooks/useExportReady';
+ import { useEditHistory } from '@/hooks/useEditHistory';
+ import { useOcrUndo } from '@/hooks/useOcrUndo';
+ import type { usePhototicket } from '@/hooks/usePhototicket';
+@@ -206,6 +207,7 @@
+   /** 완료 비활성 시 안내 문구(=railMessage). 탭하면 토스트로 노출. */
+   disabledReason: string;
+   /** 인라인 프리뷰는 디바운스된 값으로 렌더(폼 입력이 프리뷰를 매타건 리렌더하지 않게). */
++  onFieldEditingChange?: (editing: boolean) => void;
+   previewMovieInfo: MovieInfo;
+   previewComponents: TicketComponents;
+   fieldVisibility: Record<TicketField, boolean>;
+@@ -231,6 +233,7 @@
+   onDone,
+   disabledReason,
+   previewMovieInfo,
++  onFieldEditingChange,
+   previewComponents,
+   fieldVisibility,
+ }, ref) {
+@@ -453,6 +456,12 @@
+   // TicketRenderer의 ResizeObserver 스케일과 싸우지 않게).
+   const [editLift, setEditLift] = useState(0);
+   const editing = activeField != null && viewMode === 'default' && canvasReady;
++  useEffect(() => {
++    onFieldEditingChange?.(editing);
++    return () => onFieldEditingChange?.(false);
++  }, [editing, onFieldEditingChange]);
++  const missing = missingExportFields(photo.state.movieInfo);
++  const missingLabel = missing.map((field) => field === 'title' ? '제목' : '연도').join('·');
+   const closeEditor = useCallback(() => {
+     setActiveField(null);
+     setEditLift(0);
+@@ -480,6 +489,7 @@
+   function handleDone() {
+     if (!canExport) {
+       flashToast(disabledReason);
++      setDrawerOpen(true);
+       return;
+     }
+     onDone();
+@@ -728,16 +738,21 @@
+         <button
+           type="button"
+           onClick={handleDone}
++          aria-label="완료"
+           aria-disabled={!canExport}
+-          className={cn(pressableVariants(), `inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-body font-semibold transition-colors ${
++          aria-describedby={!canExport ? 'export-requirements' : undefined}
++          className={cn(pressableVariants(), `inline-flex h-9 items-center gap-1.5 rounded-full px-2.5 text-body font-semibold transition-colors ${
+             canExport ? '' : 'border border-line bg-surface-elevated text-fg-muted'
+           }`)}
+           style={doneEnabledStyle}
+         >
+-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
++          {canExport && <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+             <path d="M20 6 9 17l-5-5" />
+-          </svg>
+-          완료
++          </svg>}
++          <span className="flex flex-col items-center">
++            <span>완료</span>
++            {!canExport && <span id="export-requirements" className="whitespace-nowrap text-[10px] font-normal">{missingLabel} 필요</span>}
++          </span>
+         </button>
+         )}
+         </div>
+@@ -1161,7 +1176,7 @@
+       >
+         {/* 크기 섹션의 재크롭 진입(#492) — 헤더 메뉴 '재크롭'과 같은 crop.openRecrop을 공유한다.
+             원본이 없으면 안 넘겨 버튼 자체가 안 뜬다(메뉴 쪽은 disabled + 재업로드 안내를 유지). */}
+-        <DesignRail photo={photo} onRecropPoster={crop.originalSrc ? crop.openRecrop : undefined} />
++        <DesignRail photo={photo} onRecropPoster={crop.originalSrc ? crop.openRecrop : undefined} onEditField={handleField} />
+       </div>
+ 
+       {/* 필드 드로어 엣지 핸들(#364) — 우측 엣지에 드로어 존재를 암시하는 상시 인디케이터.
+@@ -1223,13 +1238,14 @@
+         >
+           <span
+             aria-hidden="true"
+-            className="flex h-full w-6 items-center justify-center rounded-l-[10px] border border-r-0 border-[var(--overlay-border)] text-fg"
++            className="flex h-full w-6 flex-col gap-2 items-center justify-center rounded-l-[10px] border border-r-0 border-[var(--overlay-border)] text-fg"
+             style={{
+               background: 'var(--overlay-fill)',
+               backdropFilter: 'blur(13px)',
+               WebkitBackdropFilter: 'blur(13px)',
+             }}
+           >
++            <span className="text-micro [writing-mode:vertical-rl]">항목 편집</span>
+             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+               <path d="m15 18-6-6 6-6" />
+             </svg>
+--- a/src/components/v2/FieldDrawer.tsx
++++ b/src/components/v2/FieldDrawer.tsx
+@@ -4,6 +4,7 @@
+ import { useEffect, useRef, useState, type ReactNode, type TouchEvent } from 'react';
+ import type { usePhototicket } from '@/hooks/usePhototicket';
+ import type { TicketComponents, TicketField } from '@/types';
++import { missingExportFields } from '@/hooks/useExportReady';
+ import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+ import { useLogoCrop } from '@/hooks/useLogoCrop';
+ import { EyeIcon } from '@/components/ui/VisibilityCheckbox';
+@@ -57,6 +58,7 @@
+   // rootRef는 배경 inert(#685) 대상 판정용 — 드로어 전체(백드롭+패널)의 루트. 위에 로고 크롭
+   // 모달이 뜨면(#355 중첩) 크롭 모달이 최상위가 되면서 이 루트도 자동으로 inert되고, 크롭 모달이
+   // 닫히면 다시 풀린다 — useBodyScrollLock의 스택이 판정(포커스 트랩은 panelRef가 그대로 담당).
++  const missing = missingExportFields(movieInfo);
+   const rootRef = useRef<HTMLDivElement>(null);
+   useBodyScrollLock(true, rootRef);
+   // 표시 항목 일괄 단일 스위치(#261, #260 연계, #424에서 편집 메뉴→필드 목록 자리로 이전) — 전체
+@@ -150,6 +152,20 @@
+             <EyeIcon open={allVisOn} size={18} />
+           </button>
+ 
++          <div className="rounded-card bg-surface-elevated p-3 text-caption text-fg-muted">
++            <p>저장에는 제목과 개봉연도가 필요해요.</p>
++            <p>개봉일을 숨겨도 연도는 입력하세요.</p>
++            {missing.length > 0 && (
++              <div className="mt-2 flex flex-wrap gap-2">
++                {missing.map((field) => (
++                  <button key={field} type="button" onClick={() => onField(field)}
++                    className={cn(pressableVariants(), 'min-h-touch rounded-chip border border-line px-2 text-fg')}>
++                    {field === 'title' ? '제목 입력' : '개봉연도 입력'}
++                  </button>
++                ))}
++              </div>
++            )}
++          </div>
+           {launcherGroupsFor(components.layout).map((group) => (
+             <section key={group.title} className="space-y-1.5">
+               <Eyebrow className="px-1">{group.title}</Eyebrow>
+--- a/src/components/v2/InPlaceFieldEditor.tsx
++++ b/src/components/v2/InPlaceFieldEditor.tsx
+@@ -34,7 +34,7 @@
+  * 탭 앵커 자체가 없어 구조적으로 빠진다. reissue는 FieldTap 타깃이 releaseDate라 여기 없음.
+  */
+ const EDIT_ORDER: SheetTarget[] = [
+-  'title', 'titleOg', 'releaseDate', 'actors', 'rating',
++  'title', 'titleOg', 'releaseDate', 'actors', 'rating', 'quote',
+   'watchDate', 'watchTime', 'theater', 'screen', 'seat', 'runtime',
+   'bookingNo', 'signature', 'chain', 'format',
+ ];
+--- a/src/components/v2/AutoSaveIndicator.tsx
++++ b/src/components/v2/AutoSaveIndicator.tsx
+@@ -10,36 +10,34 @@
+ /** 자동 임시저장 on/off 스위치 겸 인디케이터 — 저장 시 ping으로 반짝이고, 클릭하면 토글한다(#436).
+  * ping 애니메이션은 Tailwind 내장 keyframe(새 CSS 불필요), motion-safe:로 reduced-motion 자동 대응.
+  * "자동저장" 캡션은 title 툴팁(터치 기기에서 안 뜸)에 기대지 않고도 점의 기능을 보이게 한다(#570).
+- * 캡션은 버튼 바깥의 비상호작용 텍스트라 44px 히트 타깃(h-touch w-touch)엔 안 얹힌다 — 점만 h-2 w-2로 축소. */
++ * 점과 캡션은 하나의 버튼으로 정확히 한 번 토글한다(#782). */
+ export function AutoSaveIndicator({ enabled, lastSavedAt, onToggle }: AutoSaveIndicatorProps) {
+   return (
+-    <span className="inline-flex items-center">
+-      <button
+-        type="button"
+-        role="switch"
+-        aria-checked={enabled}
+-        aria-label={enabled ? '자동 임시저장 켜짐' : '자동 임시저장 꺼짐'}
+-        title={enabled ? '자동 임시저장 켜짐 — 클릭하면 꺼요' : '자동 임시저장 꺼짐 — 클릭하면 켜요'}
+-        onClick={onToggle}
+-        className={cn(pressableVariants(), 'inline-flex h-touch w-touch items-center justify-end pr-1 transition-colors')}
+-      >
+-        <span className="relative inline-flex h-2 w-2">
+-          {enabled && lastSavedAt !== null && (
+-            <span
+-              key={lastSavedAt}
+-              aria-hidden="true"
+-              className="absolute inline-flex h-full w-full rounded-full bg-accent opacity-75 motion-safe:animate-[ping_600ms_ease-out_1]"
+-            />
+-          )}
++    <button
++      type="button"
++      role="switch"
++      aria-checked={enabled}
++      aria-label={enabled ? '자동 임시저장 켜짐' : '자동 임시저장 꺼짐'}
++      title={enabled ? '자동 임시저장 켜짐 — 클릭하면 꺼요' : '자동 임시저장 꺼짐 — 클릭하면 켜요'}
++      onClick={onToggle}
++      className={cn(pressableVariants(), 'inline-flex h-touch min-w-touch items-center justify-center gap-1 px-1 transition-colors')}
++    >
++      <span className="relative inline-flex h-2 w-2">
++        {enabled && lastSavedAt !== null && (
+           <span
++            key={lastSavedAt}
+             aria-hidden="true"
+-            className={`relative inline-flex h-2 w-2 rounded-full ${enabled ? 'bg-accent' : 'bg-fg-faint'}`}
++            className="absolute inline-flex h-full w-full rounded-full bg-accent opacity-75 motion-safe:animate-[ping_600ms_ease-out_1]"
+           />
+-        </span>
+-      </button>
+-      <span aria-hidden="true" className="pointer-events-none whitespace-nowrap text-micro text-fg-muted">
++        )}
++        <span
++          aria-hidden="true"
++          className={`relative inline-flex h-2 w-2 rounded-full ${enabled ? 'bg-accent' : 'bg-fg-faint'}`}
++        />
++      </span>
++      <span aria-hidden="true" className="whitespace-nowrap text-micro text-fg-muted">
+         자동저장
+       </span>
+-    </span>
++    </button>
+   );
+ }
+--- a/src/components/v2/DesignRail.tsx
++++ b/src/components/v2/DesignRail.tsx
+@@ -1,5 +1,5 @@
+ import { useEffect, useRef, useState, type ReactNode } from 'react';
+-import { RAIL_ITEMS, filterItemsForMood, type RailItem, type RailItemId } from './designRailItems';
++import { RAIL_ITEMS, filterItemsForMood, type RailItem, type RailItemId, type RailActions } from './designRailItems';
+ import type { usePhototicket } from '@/hooks/usePhototicket';
+ import { cn } from '@/utils/cn';
+ import { pressableVariants } from '@/components/ui/variants';
+@@ -171,11 +171,13 @@
+   photo,
+   items = RAIL_ITEMS,
+   onRecropPoster,
++  onEditField,
+ }: {
+   photo: ReturnType<typeof usePhototicket>;
+   items?: readonly RailItem[];
+   /** 포스터 재크롭 진입(#492) — 셸이 크롭 파이프라인을 소유하므로 항목엔 콜백만 흘려준다. */
+   onRecropPoster?: () => void;
++  onEditField?: RailActions['onEditField'];
+ }) {
+   const [pop, setPop] = useState<RailItemId | null>(null);
+   const { themeColor, layout } = photo.state.components;
+@@ -317,7 +319,7 @@
+       </div>
+ 
+       <RailExpandPanel open={pop !== null} activeId={active} regionLabel={regionLabel}>
+-        {activeItem ? activeItem.render(photo, { onRecropPoster }) : null}
++        {activeItem ? activeItem.render(photo, { onRecropPoster, onEditField }) : null}
+       </RailExpandPanel>
+     </div>
+   );
+--- a/src/components/v2/designRailItems.tsx
++++ b/src/components/v2/designRailItems.tsx
+@@ -9,9 +9,10 @@
+ import BrightnessSlider from '@/components/wizard/BrightnessSlider';
+ import { TEXTURE_RECIPES } from '@/utils/textureRecipes';
+ import { MATERIAL_OPTIONS, COATING_OPTIONS, TARGET_HEIGHT } from '@/utils/constants';
++import { userTextFont } from '@/components/moods/_shared';
+ import { MINIMAL_STAMP_MAX_SCALE } from '@/components/moods/MoodMinimal';
+ import { Eyebrow } from './Eyebrow';
+-import { POSTER_FILL_MOODS, TONE_FIXED_MOODS } from '@/constants/fields';
++import { POSTER_FILL_MOODS, TONE_FIXED_MOODS, STAMP_KEYS, STAMP_LABELS, STAMP_TARGETS, type SheetTarget } from '@/constants/fields';
+ import type { LayoutId } from '@/types';
+ import type { usePhototicket } from '@/hooks/usePhototicket';
+ 
+@@ -37,6 +38,7 @@
+ export interface RailActions {
+   /** 포스터 재크롭 진입 — 셸의 크롭 모달을 기존 원본으로 다시 연다. */
+   onRecropPoster?: () => void;
++  onEditField?: (field: SheetTarget) => void;
+ }
+ 
+ export interface RailItem {
+@@ -138,6 +140,7 @@
+   value,
+   onChange,
+   note,
++  preview,
+ }: {
+   label: string;
+   options: readonly { value: V; label: string; disabled?: boolean }[];
+@@ -147,16 +150,17 @@
+   onChange: (next: V) => void;
+   /** 칩 하나 이상이 잠겼을 때의 사유. 잠긴 칩이 없으면 호출부가 undefined를 넘긴다. */
+   note?: string;
++  preview?: ReactNode;
+ }) {
+   return (
+     <div className="space-y-field">
+       <Eyebrow as="div">{label}</Eyebrow>
+       {note && <p className="text-caption text-fg-muted">{note}</p>}
++      {preview}
+       {/* 이름은 컨테이너 aria-label로 — TexturePicker·FieldEditorBody의 radiogroup과 같은 문법. */}
+-      {/* 폰트 피커가 9택이 되면서(#437) 한 줄에 다 못 선다 — basis 6rem은 400px 프레임에서
+-          한 줄에 3칩이 서는 값이고, 나머지 소비자(도구·포스터 채우기)는 전부 2택이라 grow가
+-          예전 flex-1과 똑같이 반씩 채운다. basis 0(=flex-1)이면 wrap이 영영 안 일어난다. */}
+-      <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-2">
++      {/* 폰트 전용 grid는 마지막 옵션도 같은 너비를 유지한다(#780).
++          2택 도구·포스터 채우기의 기존 flex 배치는 유지한다. */}
++      <div role="radiogroup" aria-label={label} className={preview !== undefined ? "grid grid-cols-[repeat(auto-fit,minmax(6rem,1fr))] gap-2" : "flex flex-wrap gap-2"}>
+         {options.map((opt) => (
+           <button
+             key={opt.value}
+@@ -247,6 +251,8 @@
+   // 서명 이미지가 있으면 텍스트 서명 자체가 안 그려지니(#484 우선순위) 피커를 통째로 잠근다.
+   // 9택이 되면서 잠금 사유는 이것 하나만 남았다 — 8종 전부 한글 글리프를 갖고 있어 #558의
+   // "세리프는 한글에서 잠금"이 사라졌다(그 칩 자체가 없어졌다, QUOTE_FONT_OPTIONS 주석).
++  const quoteSample = photo.state.movieInfo.quote?.trim() || '영화의 순간 Film';
++  const signatureSample = photo.state.movieInfo.signature?.trim() || '영화의 순간 Film';
+   const signatureLocked = !!components.signatureImage;
+   const lockAll = QUOTE_FONT_OPTIONS.map((o) => ({ ...o, disabled: true }));
+   return (
+@@ -254,6 +260,7 @@
+       {showQuote && (
+         <ChipRadio
+           label="한줄평 폰트"
++          preview={<p data-font-preview="quote" className="sticky top-0 z-10 truncate bg-bg leading-8 text-fg" style={userTextFont(quoteSample, components.quoteFont, 22)}>{quoteSample}</p>}
+           options={QUOTE_FONT_OPTIONS}
+           value={components.quoteFont ?? 'auto'}
+           onChange={(quoteFont) => photo.updateComponents({ quoteFont })}
+@@ -262,6 +269,7 @@
+       {showSignature && (
+         <ChipRadio
+           label="서명 폰트"
++          preview={signatureLocked ? null : <p data-font-preview="signature" className="sticky top-0 z-10 truncate bg-bg leading-8 text-fg" style={userTextFont(signatureSample, components.signatureFont, 22)}>{signatureSample}</p>}
+           options={signatureLocked ? lockAll : QUOTE_FONT_OPTIONS}
+           value={components.signatureFont ?? 'auto'}
+           onChange={(signatureFont) => photo.updateComponents({ signatureFont })}
+@@ -590,22 +598,33 @@
+   // 표시만 클램프 — 저장된 raw 값은 안 건드려 다른 무드로 돌아가면 원래 크기로 복원된다.
+   const logoAxis = (
+     <div className="space-y-group">
+-      <BrightnessSlider
+-        label="체인 로고 크기"
+-        id={`${prefix}-chain-scale`}
+-        value={Math.min(components.chainScale ?? 1, stampScaleMax)}
+-        onChange={(chainScale) => setComp({ chainScale })}
+-        min={0.6}
+-        max={stampScaleMax}
+-      />
+-      <BrightnessSlider
+-        label="포맷 로고 크기"
+-        id={`${prefix}-format-scale`}
+-        value={Math.min(components.formatScale ?? 1, stampScaleMax)}
+-        onChange={(formatScale) => setComp({ formatScale })}
+-        min={0.6}
+-        max={stampScaleMax}
+-      />
++      {STAMP_TARGETS.map((target) => {
++        const keys = STAMP_KEYS[target];
++        const empty = !components[keys.image] && !String(components[keys.label] ?? '').trim();
++        const hidden = !components[keys.visible];
++        const scaleKey = target === 'chain' ? 'chainScale' : 'formatScale';
++        return (
++          <div key={target} className="space-y-field">
++            {(empty || hidden) && (
++              <p className="text-caption text-fg-muted">
++                {empty ? `${STAMP_LABELS[target]}가 비어 있어요. 이미지나 텍스트를 입력하세요.` : `${STAMP_LABELS[target]}가 숨겨져 있어요.`}
++              </p>
++            )}
++            <BrightnessSlider
++              label={target === 'chain' ? '체인 로고 크기' : '포맷 로고 크기'}
++              id={`${prefix}-${target}-scale`}
++              value={Math.min(components[scaleKey] ?? 1, stampScaleMax)}
++              onChange={(value) => setComp({ [scaleKey]: value })}
++              min={0.6}
++              max={stampScaleMax}
++              action={actions.onEditField ? {
++                label: empty ? '입력' : hidden ? '표시·편집' : '편집',
++                onClick: () => actions.onEditField?.(target),
++              } : undefined}
++            />
++          </div>
++        );
++      })}
+     </div>
+   );
+ 
+--- a/src/components/wizard/BrightnessSlider.tsx
++++ b/src/components/wizard/BrightnessSlider.tsx
+@@ -128,6 +128,7 @@
+             <button
+               type="button"
+               onClick={action.onClick}
++              aria-label={`${label} — ${action.label}`}
+               className="-my-1 flex h-7 items-center px-1 text-micro text-fg-muted underline decoration-dotted underline-offset-2 transition-colors hover:text-fg"
+             >
+               {action.label}
+@@ -190,7 +191,7 @@
+           e.preventDefault();
+           setLocalValue(stepFrom(localValue, dir, min, max));
+         }}
+-        className="w-full"
++        className="block h-8 w-full"
+       />
+     </div>
+   );
+--- a/src/constants/fields.ts
++++ b/src/constants/fields.ts
+@@ -85,13 +85,9 @@
+ export const MOOD_EXCLUDED_FIELDS: Partial<Record<LayoutId, readonly TicketField[]>> = {
+   minimal: ['bookingNo', 'quote'], // #286: 마스터 Minimal은 푸터 바코드 없음 → bookingNo 미렌더.
+   // Criterion(v5 Revue 재설계 #524): 흰 종이 + 도판 한 장 구조에 바코드 자리가 없어 bookingNo 미렌더
+-  // (Minimal·35mm·35mm Wide와 동일). watchTime은 v5 콜로폰 1행이 "관람일 관람시간"으로 렌더하므로
+-  // 제외 해제. quote(한줄평, #391)는 Criterion 전용이었지만 #558에서 **여기도 제외**로 바뀌었다 —
+-  // 한줄평은 온티켓 탭(FieldTap → InPlaceFieldEditor)이 편집 경로를 이미 갖고 있어 런처 행이
+-  // 중복이었고, 레일 '커스텀' 항목은 폰트만 다룬다(스펙 c5). 이 표는 런처 그룹만 거르므로
+-  // 온티켓 경로는 그대로다. **알려진 대가**: 데스크톱엔 온티켓 탭이 없어 quote 텍스트 편집
+-  // 경로가 0개가 된다(#558 c6 — 데스크톱 작업 때 복구).
+-  criterion: ['bookingNo', 'quote'],
++  // (Minimal·35mm·35mm Wide와 동일). watchTime은 콜로폰 1행에서 렌더한다.
++  // 한줄평도 작은 티켓의 대체 편집 경로인 항목 목록에서 연다(#777).
++  criterion: ['bookingNo'],
+   '35mm': ['bookingNo', 'quote'], // #524 v5: 컷 2개 구조에 바코드 자리가 없다 → bookingNo 미렌더(서명은 크레딧 컷 Collected by로 유지).
+   editorial: ['quote'], // #391: 한줄평은 Criterion 전용 — 다른 무드는 렌더하지 않으므로 런처에서 제외.
+   stub: ['quote'], // #391: 위와 동일.
+--- a/eslint.config.mjs
++++ b/eslint.config.mjs
+@@ -57,7 +57,7 @@
+ 
+ export default tseslint.config(
+   {
+-    ignores: ['node_modules/**', '.next/**', 'public/**'],
++    ignores: ['node_modules/**', '.next/**', '.omc/**', 'public/**'],
+   },
+   {
+     // .ts도 포함 — variants.ts 자체가 이 규칙이 지키려는 "44px 표현의 단일 소스"라, .tsx만
+--- a/__tests__/autoSaveIndicator.test.tsx
++++ b/__tests__/autoSaveIndicator.test.tsx
+@@ -26,6 +26,17 @@
+ 
+   // #677 — aria-label에서 조건절("클릭하면 꺼요")을 걷어내면서 그 안내를 title로 옮겼다.
+   // 라벨만 검사하면 정보가 사라져도 통과하므로 title 쪽을 같이 잠근다(claude-review PR #700 P2).
++  test('#782 — 점과 캡션은 각각 한 번만 토글한다', async () => {
++    const onToggle = mock(() => {});
++    const user = userEvent.setup();
++    render(<AutoSaveIndicator enabled lastSavedAt={1} onToggle={onToggle} />);
++    await user.click(screen.getByText('자동저장'));
++    expect(onToggle).toHaveBeenCalledTimes(1);
++    await user.click(screen.getByRole('switch').querySelector('.relative.inline-flex')!);
++    expect(onToggle).toHaveBeenCalledTimes(2);
++    expect(screen.getAllByRole('switch').length).toBe(1);
++  });
++
+   test('끄고 켜는 방법은 title이 지고 있다', () => {
+     const { rerender } = render(<AutoSaveIndicator enabled lastSavedAt={null} onToggle={() => {}} />);
+     expect(screen.getByRole('switch').getAttribute('title')).toBe('자동 임시저장 켜짐 — 클릭하면 꺼요');
+@@ -44,8 +55,8 @@
+     render(<AutoSaveIndicator enabled lastSavedAt={null} onToggle={() => {}} />);
+ 
+     expect(screen.getByText('자동저장')).toBeTruthy();
+-    // 캡션은 버튼 밖 비상호작용 텍스트라 44px 히트 타깃엔 안 얹힌다.
+-    expect(screen.getByRole('switch').textContent).not.toContain('자동저장');
++    // #782: 점과 캡션을 하나의 버튼이 소유한다.
++    expect(screen.getByRole('switch').textContent).toContain('자동저장');
+   });
+ 
+   test('#570 — 캡션은 whitespace-nowrap이라 좁은 헤더에서 "자동저\\n장"처럼 줄바꿈되지 않는다', () => {
+@@ -54,12 +65,12 @@
+     expect(screen.getByText('자동저장').className).toContain('whitespace-nowrap');
+   });
+ 
+-  test('#570 — 점 크기는 h-2(8px)로 줄고 44px 히트 타깃(h-touch w-touch)은 유지된다', () => {
++  test('#570 — 점 크기는 h-2(8px)로 줄고 44px 이상 히트 타깃(h-touch min-w-touch)은 유지된다', () => {
+     render(<AutoSaveIndicator enabled lastSavedAt={null} onToggle={() => {}} />);
+ 
+     const button = screen.getByRole('switch');
+     expect(button.className).toContain('h-touch');
+-    expect(button.className).toContain('w-touch');
++    expect(button.className).toContain('min-w-touch');
+     const dot = button.querySelector('span > span:last-child') as HTMLElement;
+     expect(dot.className).toContain('h-2 w-2');
+     expect(dot.className).not.toContain('h-2.5');
+--- a/__tests__/designRailQuoteFont.test.tsx
++++ b/__tests__/designRailQuoteFont.test.tsx
+@@ -61,7 +61,7 @@
+ 
+ /** 티켓에 실제로 그려진 한줄평 엘리먼트의 inline style. */
+ function quoteStyle(text: string) {
+-  return (screen.getByText(text) as HTMLElement).style;
++  return (screen.getByText(text, { selector: ":not([data-font-preview])" }) as HTMLElement).style;
+ }
+ 
+ async function openCustomPanel(user: ReturnType<typeof userEvent.setup>) {
+--- a/__tests__/designRailSignatureFont.test.tsx
++++ b/__tests__/designRailSignatureFont.test.tsx
+@@ -66,7 +66,7 @@
+ }
+ 
+ function signatureStyle(text: string) {
+-  return (screen.getByText(text) as HTMLElement).style;
++  return (screen.getByText(text, { selector: ":not([data-font-preview])" }) as HTMLElement).style;
+ }
+ 
+ async function openCustomPanel(user: ReturnType<typeof userEvent.setup>) {
+@@ -174,3 +174,17 @@
+     expect(!!screen.queryByText(/서명 이미지가 있으면 폰트가 적용되지 않아요/)).toBe(true);
+   });
+ });
++
++test('#780 — 빈 서명도 선택 서체 견본을 제공하고 이미지 잠금 때 견본을 감춘다', async () => {
++  const user = userEvent.setup();
++  render(<Harness />);
++  await openCustomPanel(user);
++  const preview = document.querySelector('[data-font-preview="signature"]') as HTMLElement;
++  expect(preview.textContent).toBe('영화의 순간 Film');
++  await user.click(signatureRadio('바탕'));
++  expect(preview.style.fontFamily).toContain('--font-batang');
++  expect(signatureRadio('바탕').getAttribute('aria-checked')).toBe('true');
++  await user.click(screen.getByRole('button', { name: '서명 이미지 첨부' }));
++  expect(!!document.querySelector('[data-font-preview="signature"]')).toBe(false);
++  expect(screen.getByText('서명 이미지가 있으면 폰트가 적용되지 않아요.').textContent).toBeTruthy();
++});
+--- a/__tests__/launcherFieldGating.test.tsx
++++ b/__tests__/launcherFieldGating.test.tsx
+@@ -40,10 +40,9 @@
+     expect(launcherFields('35mm-landscape')).not.toContain('bookingNo'); // #281 마스터 재동기화 — 바코드 없음
+   });
+ 
+-  // #558 — Criterion까지 포함해 quote는 이제 전 무드 런처 제외다. 편집 경로는 온티켓 탭
+-  // (FieldTap → InPlaceFieldEditor)이 갖고, 레일 '커스텀' 항목은 폰트만 다룬다.
+-  test('quote(한줄평)는 전 무드 런처에서 제외한다(#391 → #558)', () => {
+-    for (const layout of ['minimal', '35mm', 'editorial', 'stub', '35mm-landscape', 'criterion'] as LayoutId[]) {
++  test('#777 — 한줄평은 실제 렌더하는 Criterion의 목록에서만 편집한다', () => {
++    expect(launcherFields('criterion')).toContain('quote');
++    for (const layout of ['minimal', '35mm', 'editorial', 'stub', '35mm-landscape'] as LayoutId[]) {
+       expect(launcherFields(layout)).not.toContain('quote');
+     }
+   });
+@@ -57,14 +56,10 @@
+   });
+ });
+ 
+-// #558 — 렌더는 되지만 런처엔 없는 필드(온티켓 탭 전용). 반대 방향(런처엔 있는데 렌더가 없음)이
+-// '죽은 컨트롤'이고 그건 여전히 0건이어야 하므로, 이 목록만 빼고 등식을 유지한다.
+-const ON_TICKET_ONLY: TicketField[] = ['quote'];
+-
+ describe('6무드 죽은 컨트롤 0건 — 런처 필드 = 무드 렌더 필드 (#287)', () => {
+   for (const layout of Object.keys(MOOD_COMPONENTS) as LayoutId[]) {
+     test(`${layout}: 런처가 노출하는 필드 = 무드가 실제 렌더하는 필드`, () => {
+-      const rendered = renderedFields(layout).filter((f) => !ON_TICKET_ONLY.includes(f));
++      const rendered = renderedFields(layout);
+       expect(rendered.sort()).toEqual(launcherFields(layout).sort());
+     });
+   }
+--- a/__tests__/mobileEditorInputRegression.test.tsx
++++ b/__tests__/mobileEditorInputRegression.test.tsx
+@@ -0,0 +1,106 @@
++import { afterEach, beforeEach, expect, test } from 'bun:test';
++import { act, cleanup, fireEvent, render, renderHook, screen, within } from '@testing-library/react';
++import Home from '@/pages/index';
++import { useDebounce } from '@/hooks/useDebounce';
++
++beforeEach(() => window.localStorage.clear());
++afterEach(() => { cleanup(); window.localStorage.clear(); });
++
++const draft = (extra = {}) => window.localStorage.setItem('filme:phototicket:v1', JSON.stringify({
++  movieInfo: { title: '영화', releaseDate: '2026', signature: 'AB' }, ...extra,
++}));
++
++// 실제 Home 배선을 거친다. 셸에 live props를 직접 주면 #775를 재현할 수 없다.
++test('#775 — 연속 입력·조합·삭제가 지연 없이 표시되고 닫자마자 완료해도 최신 값이다', async () => {
++  draft();
++  render(<Home />);
++  fireEvent.click(await screen.findByTestId('landing-restore'));
++  const signature = await screen.findByRole('button', { name: '서명 편집' });
++  fireEvent.click(signature);
++  const input = await screen.findByRole('textbox', { name: '서명' }) as HTMLInputElement;
++  for (const value of ['ABC', 'ABCD', 'ABC', 'A한BC']) {
++    fireEvent.change(input, { target: { value } });
++    expect(document.querySelector('[data-field-tap="signature"]')!.textContent).toContain(value);
++  }
++  fireEvent.compositionStart(input);
++  for (const value of ['AㅎBC', 'A하BC', 'A한BC']) {
++    fireEvent.change(input, { target: { value } });
++    expect(document.querySelector('[data-field-tap="signature"]')!.textContent).toContain(value);
++    expect(screen.getByRole('textbox', { name: '서명' }) === input).toBe(true);
++  }
++  fireEvent.compositionEnd(input, { data: '한' });
++  fireEvent.click(screen.getByRole('button', { name: '편집 완료' }));
++  expect(document.querySelector('[data-field-tap="signature"]')!.textContent).toContain('A한BC');
++  fireEvent.click(screen.getByRole('button', { name: '완료' }));
++  const result = await screen.findByTestId('result-ambient');
++  expect(result.parentElement!.textContent).toContain('A한BC');
++});
++
++test('#775 — 직접 편집을 끝낸 값은 유지하고 일반 미리보기 변경은 계속 지연한다', async () => {
++  const { result, rerender } = renderHook(({ value, immediate }) => useDebounce(value, 50, immediate), {
++    initialProps: { value: 'old', immediate: false },
++  });
++  rerender({ value: 'typed', immediate: true });
++  expect(result.current).toBe('typed');
++  rerender({ value: 'typed', immediate: false });
++  expect(result.current).toBe('typed');
++  rerender({ value: 'slider', immediate: false });
++  expect(result.current).toBe('typed');
++  await act(async () => { await new Promise((r) => setTimeout(r, 70)); });
++  expect(result.current).toBe('slider');
++});
++
++test('#776/#777 — 완료 전 필수 안내와 명시적인 목록 경로, 숨긴 개봉일에도 필수 안내', async () => {
++  draft({ movieInfo: { title: '', releaseDate: '' }, fieldVisibility: { releaseDate: false } });
++  render(<Home />);
++  fireEvent.click(await screen.findByTestId('landing-restore'));
++  expect(screen.getByRole('button', { name: '완료' }).textContent).toContain('제목·연도 필요');
++  fireEvent.click(screen.getByRole('button', { name: '티켓 항목 목록 열기' }));
++  const drawer = await screen.findByRole('dialog', { name: '티켓 항목' });
++  expect(within(drawer).getByRole('switch', { name: '개봉일 티켓에 표시' }).getAttribute('aria-checked')).toBe('false');
++  expect(drawer.textContent).toContain('개봉일을 숨겨도 연도는 입력하세요.');
++  expect(!!within(drawer).getByRole('button', { name: '개봉연도 입력' })).toBe(true);
++  fireEvent.click(within(drawer).getByRole('button', { name: '제목 입력' }));
++  fireEvent.change(await screen.findByRole('textbox', { name: '제목' }), { target: { value: '새 영화' } });
++  expect(screen.getByRole('button', { name: '완료' }).textContent).toContain('연도 필요');
++  expect(screen.getByRole('button', { name: '완료' }).textContent).not.toContain('제목');
++});
++
++test('#781 — 빈 로고 입력 경로, 텍스트 로고 크기와 숨김 안내를 유지한다', async () => {
++  draft({ components: { chainScale: 0.7, chainVisible: true, formatVisible: true } });
++  render(<Home />);
++  fireEvent.click(await screen.findByTestId('landing-restore'));
++  fireEvent.click(screen.getByRole('button', { name: '크기' }));
++  fireEvent.click(screen.getByRole('radio', { name: '로고' }));
++  expect(!!screen.getByText('극장 로고가 비어 있어요. 이미지나 텍스트를 입력하세요.')).toBe(true);
++  const slider = screen.getByRole('slider', { name: '체인 로고 크기' }) as HTMLInputElement;
++  expect(slider.disabled).toBe(false);
++  expect(slider.value).toBe('0.7');
++  fireEvent.click(screen.getByRole('button', { name: '체인 로고 크기 — 입력' }));
++  const input = await screen.findByRole('textbox', { name: '극장 로고' });
++  fireEvent.change(input, { target: { value: 'CINEMA' } });
++  fireEvent.click(screen.getByRole('button', { name: '편집 완료' }));
++  expect(!!screen.queryByText('극장 로고가 비어 있어요. 이미지나 텍스트를 입력하세요.')).toBe(false);
++  expect(slider.value).toBe('0.7');
++  fireEvent.change(slider, { target: { value: '0.9' } });
++  expect(slider.value).toBe('0.9');
++  fireEvent.click(screen.getByRole('button', { name: '티켓 항목 목록 열기' }));
++  const drawer = await screen.findByRole('dialog', { name: '티켓 항목' });
++  fireEvent.click(within(drawer).getByRole('switch', { name: '극장 로고 티켓에 표시' }));
++  fireEvent.keyDown(document, { key: 'Escape' });
++  expect(!!screen.getByText('극장 로고가 숨겨져 있어요.')).toBe(true);
++  expect(slider.disabled).toBe(false);
++  expect(slider.value).toBe('0.9');
++});
++
++test('#777 — Criterion의 작은 한줄평도 목록에서 편집할 수 있다', async () => {
++  draft({ components: { layout: 'criterion' } });
++  render(<Home />);
++  fireEvent.click(await screen.findByTestId('landing-restore'));
++  fireEvent.click(screen.getByRole('button', { name: '티켓 항목 목록 열기' }));
++  const drawer = await screen.findByRole('dialog', { name: '티켓 항목' });
++  fireEvent.click(within(drawer).getByRole('button', { name: '한줄평 편집' }));
++  const input = await screen.findByRole('textbox', { name: '한줄평' });
++  fireEvent.change(input, { target: { value: '나의 한줄평' } });
++  expect(document.querySelector('[data-field-tap="quote"]')!.textContent).toContain('나의 한줄평');
++});
+--- a/scripts/measure-mobile-editor.mjs
++++ b/scripts/measure-mobile-editor.mjs
+@@ -0,0 +1,131 @@
++import puppeteer from 'puppeteer-core';
++import fs from 'node:fs';
++// Companion to measure-chrome.mjs: mobile input/hit tests, not iPhone Safari proof.
++// bun scripts/measure-mobile-editor.mjs after /tmp/filme-mobile http://localhost:3712
++const phase = process.argv[2] ?? 'after';
++const root = process.argv[3] ?? '/tmp/filme-mobile-editor';
++const url = process.argv[4] ?? 'http://localhost:3712';
++fs.mkdirSync(root, { recursive: true });
++const verify = phase === 'after';
++const failures = [];
++const check = (ok, name) => { if (verify && !ok)
++    failures.push(name); };
++const b = await puppeteer.launch({ executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true });
++const sleep = ms => new Promise(r => setTimeout(r, ms));
++const all = [];
++try {
++    for (const [width, height] of [[320, 568], [375, 667], [393, 659], [414, 736]]) {
++        const p = await b.newPage();
++        await p.setViewport({ width, height, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
++        await p.goto(url, { waitUntil: 'networkidle2' });
++        await p.evaluate(() => [...document.querySelectorAll('button')].find(e => e.textContent.includes('포스터 없이 직접 입력')).click());
++        await sleep(700);
++        const shot = async (name) => p.screenshot({ path: `${root}/${phase}-${width}-${name}.png` });
++        const rects = async () => p.evaluate(() => { const rect = e => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; }; return { overflow: document.documentElement.scrollWidth > innerWidth, preview: rect(document.querySelector('.crop-marks')), fields: [...document.querySelectorAll('[data-field-tap]')].filter(e => e.getBoundingClientRect().width).map(e => ({ field: e.dataset.fieldTap, ...rect(e), hits: [0.1, 0.5, 0.9].map(f => { const r = e.getBoundingClientRect(); return document.elementFromPoint(r.x + r.width * f, r.y + r.height / 2)?.closest('[data-field-tap]')?.getAttribute('data-field-tap') ?? null; }) })), panel: (() => { const e = document.querySelector('#design-rail-panel'); return { ...rect(e), scroll: e.scrollHeight, client: e.clientHeight }; })() }; });
++        const row = { width, height, initial: await rects() };
++        row.header = await p.evaluate(() => [...document.querySelectorAll('header button, header h1')].map(e => {
++            const r = e.getBoundingClientRect();
++            return { label: e.getAttribute('aria-label') ?? e.textContent, left: r.left, right: r.right, width: r.width, height: r.height };
++        }));
++        check(row.header.every((r, i, a) => r.left >= 0 && r.right <= width && (!i || r.left >= a[i - 1].right)), `${width}: header fit/overlap`);
++        await shot('empty');
++        row.autosave = await p.evaluate(() => { const btn = document.querySelector('button[role=switch][aria-label^="자동"]'); const caption = [...document.querySelectorAll('span')].find(e => e.textContent.trim() === '자동저장' && e.children.length === 0); const r = caption.getBoundingClientRect(); const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return { before: btn.getAttribute('aria-checked'), hit: hit?.closest('button') === btn, rect: { w: btn.offsetWidth, h: btn.offsetHeight } }; });
++        row.autosave.toggles = [];
++        for (const target of ['caption', 'dot']) {
++            const pt = await p.evaluate(target => {
++                const button = document.querySelector('button[role=switch][aria-label^="자동"]');
++                const e = target === 'caption' ? button.querySelector('span.whitespace-nowrap') : button.querySelector('span.relative');
++                const r = (e ?? button).getBoundingClientRect();
++                return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
++            }, target);
++            await p.touchscreen.tap(pt.x, pt.y);
++            row.autosave.toggles.push(await p.$eval('button[role=switch][aria-label^="자동"]', e => e.getAttribute('aria-checked')));
++        }
++        check(row.autosave.toggles.join(',') === 'false,true', `${width}: autosave caption/dot`);
++        await p.evaluate(() => document.querySelector('[data-field-tap="signature"]').click());
++        await p.waitForSelector('input[aria-label="서명"]');
++        await sleep(350);
++        row.typing = [];
++        await p.focus('input[aria-label="서명"]');
++        for (const c of 'UXTEST') {
++            await p.keyboard.type(c);
++            row.typing.push(await p.evaluate(() => ({ input: document.querySelector('input[aria-label="서명"]').value, shown: document.querySelector('[data-field-tap="signature"]').textContent })));
++            await sleep(70);
++        }
++        await shot('typing');
++        check(row.typing.every(r => r.shown.endsWith(r.input)), `${width}: immediate typing`);
++        await p.evaluate(() => document.querySelector('button[aria-label="편집 완료"]').click());
++        await sleep(350);
++        const rail = async (id) => { await p.evaluate(id => document.querySelector(`[data-rail-id="${id}"]`).click(), id); await sleep(750); };
++        await rail('opacity');
++        row.opacity = await rects();
++        row.ranges = await p.evaluate(() => [...document.querySelectorAll('#design-rail-panel input[type=range]')].map(e => { const r = e.getBoundingClientRect(); return { id: e.id, w: r.width, h: r.height, y: r.y, hits: [-20, -15, -10, -3, 0, 3, 10, 15, 20].map(d => ({ d, hit: document.elementFromPoint(r.x + r.width * .25, r.y + r.height / 2 + d) === e })) }; }));
++        await shot('opacity');
++        row.sliderGestures = [];
++        for (const id of ['rail-poster-opacity', 'rail-component-opacity']) {
++            await p.$eval(`#${id}`, e => e.scrollIntoView({ block: 'center' }));
++            await sleep(100);
++            const r = await p.$eval(`#${id}`, e => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height, min: +e.min, max: +e.max, value: e.value }; });
++            await p.touchscreen.tap(r.x + r.w * .25, r.y + r.h / 2 + 10);
++            await sleep(100);
++            const tapped = await p.$eval(`#${id}`, e => +e.value);
++            const cdp = await p.createCDPSession();
++            const at = fraction => ({ x: r.x + r.w * fraction, y: r.y + r.h / 2 + 10 });
++            await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [at(.25)] });
++            for (const f of [.35, .45, .55, .65, .75])
++                await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [at(f)] });
++            await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
++            await sleep(100);
++            const dragged = await p.$eval(`#${id}`, e => +e.value);
++            await cdp.detach();
++            await p.$eval(`#${id}`, (e, value) => {
++                Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(e, value);
++                e.dispatchEvent(new Event('input', { bubbles: true }));
++            }, r.value);
++            await sleep(350);
++            row.sliderGestures.push({ id, tapped, dragged });
++            check(tapped < dragged, `${width}: range tap/drag ${id}`);
++        }
++        check(row.ranges.every(r => r.h >= 32 && r.hits.filter(h => Math.abs(h.d) <= 15).every(h => h.hit)), `${width}: range hit area`);
++        await rail('size');
++        await p.evaluate(() => [...document.querySelectorAll('[role=radio]')].find(e => e.textContent === '로고')?.click());
++        await sleep(350);
++        row.logo = await rects();
++        await shot('logo');
++        await rail('custom');
++        row.custom = await rects();
++        row.fonts = await p.evaluate(() => [...document.querySelectorAll('[role=radiogroup][aria-label="서명 폰트"] button')].map(e => ({ name: e.textContent, w: e.getBoundingClientRect().width, font: getComputedStyle(e).fontFamily })));
++        await shot('fonts');
++        check(new Set(row.fonts.map(f => f.w)).size === 1, `${width}: font equal widths`);
++        row.fontSelection = await p.evaluate(async () => {
++            const group = document.querySelector('[role=radiogroup][aria-label="서명 폰트"]');
++            const button = [...group.querySelectorAll('button')].find(e => e.textContent === '꽃길');
++            button.scrollIntoView({ block: 'center' });
++            await new Promise(r => setTimeout(r, 100));
++            const r = button.getBoundingClientRect();
++            return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
++        });
++        await p.touchscreen.tap(row.fontSelection.x, row.fontSelection.y);
++        await p.evaluate(() => document.fonts.ready);
++        await sleep(100);
++        row.fontSelection.result = await p.evaluate(() => ({
++            checked: [...document.querySelectorAll('[role=radiogroup][aria-label="서명 폰트"] button')].find(e => e.textContent === '꽃길').getAttribute('aria-checked'),
++            preview: getComputedStyle(document.querySelector('[data-font-preview="signature"]') ?? document.body).fontFamily,
++            scrollTop: document.querySelector('#design-rail-panel').scrollTop,
++        }));
++        check(row.fontSelection.result.checked === 'true', `${width}: scrolled font touch`);
++        if (verify)
++            await shot('fonts-scrolled');
++        all.push(row);
++        await p.close();
++    }
++    fs.writeFileSync(`${root}/${phase}.json`, JSON.stringify(all, null, 2));
++    if (failures.length) {
++        console.error(failures);
++        process.exitCode = 1;
++    }
++    console.log(all.map(r => ({ width: r.width, preview: r.initial.preview, ranges: r.ranges, fonts: r.fonts.map(f => f.w), typing: r.typing, autosave: r.autosave })));
++}
++finally {
++    await b.close();
++}

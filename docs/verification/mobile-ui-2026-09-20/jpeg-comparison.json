@@ -1,0 +1,48 @@
+{
+  "tolerance": 3,
+  "pass": true,
+  "moods": [
+    {
+      "id": "minimal",
+      "width": 1960,
+      "height": 3108,
+      "maxChannelDifference": 2,
+      "changedChannels": 118
+    },
+    {
+      "id": "criterion",
+      "width": 1960,
+      "height": 3108,
+      "maxChannelDifference": 0,
+      "changedChannels": 0
+    },
+    {
+      "id": "35mm",
+      "width": 1960,
+      "height": 3108,
+      "maxChannelDifference": 0,
+      "changedChannels": 0
+    },
+    {
+      "id": "editorial",
+      "width": 3108,
+      "height": 1960,
+      "maxChannelDifference": 0,
+      "changedChannels": 0
+    },
+    {
+      "id": "stub",
+      "width": 1960,
+      "height": 3108,
+      "maxChannelDifference": 2,
+      "changedChannels": 195
+    },
+    {
+      "id": "35mm-landscape",
+      "width": 3108,
+      "height": 1960,
+      "maxChannelDifference": 0,
+      "changedChannels": 0
+    }
+  ]
+}

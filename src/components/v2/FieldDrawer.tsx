@@ -4,6 +4,7 @@ import { pressableVariants } from '@/components/ui/variants';
 import { useEffect, useRef, useState, type ReactNode, type TouchEvent } from 'react';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { TicketComponents, TicketField } from '@/types';
+import { missingExportFields } from '@/hooks/useExportReady';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { useLogoCrop } from '@/hooks/useLogoCrop';
 import { EyeIcon } from '@/components/ui/VisibilityCheckbox';
@@ -57,6 +58,7 @@ export function FieldDrawer({ photo, onField, onClose, children }: FieldDrawerPr
   // rootRef는 배경 inert(#685) 대상 판정용 — 드로어 전체(백드롭+패널)의 루트. 위에 로고 크롭
   // 모달이 뜨면(#355 중첩) 크롭 모달이 최상위가 되면서 이 루트도 자동으로 inert되고, 크롭 모달이
   // 닫히면 다시 풀린다 — useBodyScrollLock의 스택이 판정(포커스 트랩은 panelRef가 그대로 담당).
+  const missing = missingExportFields(movieInfo);
   const rootRef = useRef<HTMLDivElement>(null);
   useBodyScrollLock(true, rootRef);
   // 표시 항목 일괄 단일 스위치(#261, #260 연계, #424에서 편집 메뉴→필드 목록 자리로 이전) — 전체
@@ -150,6 +152,20 @@ export function FieldDrawer({ photo, onField, onClose, children }: FieldDrawerPr
             <EyeIcon open={allVisOn} size={18} />
           </button>
 
+          <div className="rounded-card bg-surface-elevated p-3 text-caption text-fg-muted">
+            <p>저장에는 제목과 개봉연도가 필요해요.</p>
+            <p>개봉일을 숨겨도 연도는 입력하세요.</p>
+            {missing.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {missing.map((field) => (
+                  <button key={field} type="button" onClick={() => onField(field)}
+                    className={cn(pressableVariants(), 'min-h-touch rounded-chip border border-line px-2 text-fg')}>
+                    {field === 'title' ? '제목 입력' : '개봉연도 입력'}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           {launcherGroupsFor(components.layout).map((group) => (
             <section key={group.title} className="space-y-1.5">
               <Eyebrow className="px-1">{group.title}</Eyebrow>

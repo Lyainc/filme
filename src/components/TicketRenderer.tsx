@@ -5,7 +5,6 @@ import dynamic from 'next/dynamic';
 import { getLayout } from '@/utils/layouts';
 import type { LayoutId, MovieInfo, TicketComponents, TicketField } from '@/types';
 import type { SheetTarget } from '@/constants/fields';
-import type { EmbossPath, EmbossStamp } from '@/utils/textureRecipes';
 
 // 무드 4종은 한 번에 하나만 렌더되므로 각각 별도 청크로 분리해 초기 번들에서 제외.
 // ssr: false — 캡처(captureToImage)는 프리뷰가 이미 보이는(=청크 로드 완료) 시점의
@@ -34,15 +33,6 @@ interface TicketRendererProps {
    */
   onField?: (field: SheetTarget) => void;
   onPosterTap?: () => void;
-  /** 형압 마스크(#509) — croppedImageUrl과 동일하게 components 밖의 세션 한정 프롭. */
-  embossStamps?: EmbossStamp[];
-  /** 자석 올가미(#509 2단계, c10) — embossStamps와 나란한 세션 한정 프롭. */
-  embossPaths?: EmbossPath[];
-  embossIntensity?: number;
-  /** 볼록 압인 마스크(#732 d2 · #735) — embossStamps와 나란한 두 번째 벌. */
-  reliefStamps?: EmbossStamp[];
-  reliefPaths?: EmbossPath[];
-  reliefIntensity?: number;
 }
 
 const SCALE_EPSILON = 0.001;
@@ -59,7 +49,7 @@ const SCALE_EPSILON = 0.001;
 export const PREVIEW_MAX_HEIGHT = 'min(72vh, 720px)';
 
 const TicketRenderer = memo(forwardRef<HTMLDivElement, TicketRendererProps>(function TicketRenderer(
-  { croppedImageUrl, movieInfo, components, fieldVisibility, ghost, onField, onPosterTap, embossStamps, embossPaths, embossIntensity, reliefStamps, reliefPaths, reliefIntensity },
+  { croppedImageUrl, movieInfo, components, fieldVisibility, ghost, onField, onPosterTap },
   ref
 ) {
   const layout = getLayout(components.layout);
@@ -120,12 +110,6 @@ const TicketRenderer = memo(forwardRef<HTMLDivElement, TicketRendererProps>(func
           ghost={ghost}
           onField={onField}
           onPosterTap={onPosterTap}
-          embossStamps={embossStamps}
-          embossPaths={embossPaths}
-          embossIntensity={embossIntensity}
-          reliefStamps={reliefStamps}
-          reliefPaths={reliefPaths}
-          reliefIntensity={reliefIntensity}
         />
       </div>
     </div>
@@ -141,12 +125,6 @@ const Mood = memo(function Mood({
   ghost,
   onField,
   onPosterTap,
-  embossStamps,
-  embossPaths,
-  embossIntensity,
-  reliefStamps,
-  reliefPaths,
-  reliefIntensity,
 }: {
   layoutId: LayoutId;
   croppedImageUrl: string | null;
@@ -156,14 +134,8 @@ const Mood = memo(function Mood({
   ghost?: boolean;
   onField?: (field: SheetTarget) => void;
   onPosterTap?: () => void;
-  embossStamps?: EmbossStamp[];
-  embossPaths?: EmbossPath[];
-  embossIntensity?: number;
-  reliefStamps?: EmbossStamp[];
-  reliefPaths?: EmbossPath[];
-  reliefIntensity?: number;
 }) {
-  const props = { croppedImageUrl, movieInfo, components, fieldVisibility, ghost, onField, onPosterTap, embossStamps, embossPaths, embossIntensity, reliefStamps, reliefPaths, reliefIntensity };
+  const props = { croppedImageUrl, movieInfo, components, fieldVisibility, ghost, onField, onPosterTap };
   switch (layoutId) {
     case 'minimal':
       return <MoodMinimal {...props} />;

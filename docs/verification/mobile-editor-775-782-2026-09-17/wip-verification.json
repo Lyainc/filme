@@ -1,0 +1,9 @@
+{
+  "baseHead": "785f1818a371b13444d971d060f880697ce334e9",
+  "originalWipDiffSha256": "d422713af194b5950af8fdd975b3eafc264483ccbae965caaf70519ac10b3515",
+  "unchangedOriginalTrackedWipExceptSharedFile": true,
+  "sharedFile": "src/components/v2/designRailItems.tsx",
+  "preservedSharedComment": true,
+  "snapshotLocation": "/private/tmp/filme-mobile-775-782/baseline",
+  "untrackedArchive": "이 세션의 수정 대상에서 제외; 시작 시 콘텐츠 해시는 수집하지 않음"
+}

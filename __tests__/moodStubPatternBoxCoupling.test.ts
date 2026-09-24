@@ -53,7 +53,8 @@ describe('MoodStub 배경 스탬프 박스(PATTERN_BOX) 결합 (#746)', () => {
     const end = src.indexOf('{/* 푸터');
     expect(start).toBeGreaterThan(0);
     expect(end).toBeGreaterThan(start);
+    // 2026-09-20: unused effect props removed; full-fields export rechecked (film header y=1191.8).
     const block = src.slice(start, end).trim();
-    expect(sha1(block)).toBe('386e6ba8e85a');
+    expect(sha1(block)).toBe('398c3fe46ea7');
   });
 });

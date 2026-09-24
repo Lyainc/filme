@@ -106,6 +106,10 @@ export async function validateOcrRequest(
   // free tier 한도가 API 키 단위라서 필요하다(#299). Production env 누락은 503으로 닫는다.
   const rl = await checkOcrRateLimit(clientIp(req));
   if (!rl.ok) {
+    if (rl.reason === 'unavailable') {
+      res.status(503).json({ error: 'Rate limit is unavailable' });
+      return null;
+    }
     if (rl.reason === 'misconfigured') {
       res.status(503).json({ error: 'Rate limit is not configured' });
       return null;

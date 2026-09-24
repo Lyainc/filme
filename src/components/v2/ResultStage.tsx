@@ -6,10 +6,8 @@ import { PreviewFilmCell } from './PreviewFilmCell';
 import { ResultPanel } from './ResultPanel';
 import { Wordmark } from './Wordmark';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
-import type { EmbossPath, EmbossStamp } from '@/utils/textureRecipes';
 
 interface ResultStageProps {
-  theme: 'light' | 'dark';
   onBack: () => void;
   /** 워드마크 탭 = 초기화의 세 번째 진입점(#669, #578과 동형). MobileEditorShell이 언마운트
    * 없이 숨어 있을 뿐이라(index.tsx) 그 셸의 requestWordmarkReset을 그대로 호출하는
@@ -19,12 +17,6 @@ interface ResultStageProps {
   movieInfo: MovieInfo;
   components: TicketComponents;
   fieldVisibility: Record<TicketField, boolean>;
-  embossStamps?: EmbossStamp[];
-  embossPaths?: EmbossPath[];
-  embossIntensity?: number;
-  reliefStamps?: EmbossStamp[];
-  reliefPaths?: EmbossPath[];
-  reliefIntensity?: number;
 }
 
 /**
@@ -34,19 +26,12 @@ interface ResultStageProps {
  * hidePreview로 캡처 대상만 off-screen 유지). 구 ResultSheet(vaul 바텀시트, #197)를 대체.
  */
 export function ResultStage({
-  theme,
   onBack,
   onWordmarkTap,
   croppedImageUrl,
   movieInfo,
   components,
   fieldVisibility,
-  embossStamps,
-  embossPaths,
-  embossIntensity,
-  reliefStamps,
-  reliefPaths,
-  reliefIntensity,
 }: ResultStageProps) {
   const layout = getLayout(components.layout);
   // PREVIEW_MAX_HEIGHT(72vh)는 정적 대형 뷰포트 기준이라 Safari 동적 툴바가 떠 있는 실기기에서는
@@ -63,12 +48,10 @@ export function ResultStage({
   const heroWidth = `min(84cqw, calc(${PREVIEW_MAX_HEIGHT} * ${layout.width} / ${layout.height}), calc(var(--hero-dvh-budget, 99999px) * ${layout.width} / ${layout.height}))`;
 
   return (
-    // 결과화면 톤(#357) — 편집 셸과 같은 .chrome-dark 스코프 + 앰비언트. 결과화면은 항상
-    // 포스터가 있으므로 상시 on(편집 셸의 chromeDark 조건 분기 불필요). 이 스코프는 모바일
-    // ResultStage에만 걸린다 — 공유되는 ResultPanel의 데스크톱 인스펙터 렌더는 무영향.
     <div
-      data-theme={theme}
-      className="app-canvas chrome-dark"
+      data-theme="light"
+      data-testid="result-stage"
+      className="app-canvas"
       // minHeight가 아니라 height다(#604 리뷰). 프레임은 contain:paint라 넘치는 자식을 자르고 스스로
       // 스크롤하지 않는데, minHeight면 콘텐츠가 길 때(공유 패널 확장 등) 스테이지가 프레임 밖으로
       // 자라고 문서도 안 늘어나 하단 액션이 도달 불가가 된다. 400×560 실측: 스테이지 785px, 안쪽
@@ -77,13 +60,6 @@ export function ResultStage({
       // MobileEditorShell이 같은 이유로 이미 쓰는 패턴이다.
       style={{ position: 'relative', height: '100cqh', display: 'flex', flexDirection: 'column', paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
-      {/* testid는 편집 셸의 chrome-ambient와 분리 — 모바일에서 resultOpen이면 편집 셸이
-          hidden으로 동시 마운트라(index.tsx) 같은 testid가 DOM에 2개 생긴다(PR #362 리뷰 P2). */}
-      <div
-        aria-hidden="true"
-        data-testid="result-ambient"
-        className="chrome-ambient pointer-events-none absolute inset-0"
-      />
       {/* 상단 네브 — MobileEditorShell 헤더와 동형 구조(뒤로가기·워드마크·우측 슬롯)를 유지해
           편집↔완료 전환에서 네브 위치가 튀지 않게 한다. 완료 화면엔 테마/완료 버튼이 없어
           우측은 좌측 뒤로가기 버튼과 같은 폭의 빈 스페이서로 균형만 맞춘다. 배경은 앰비언트가
@@ -93,7 +69,7 @@ export function ResultStage({
           type="button"
           onClick={onBack}
           aria-label="편집으로 돌아가기"
-          className={cn(pressableVariants(), 'flex h-9 w-9 items-center justify-center rounded-full border border-line text-fg-muted transition-colors hover:text-fg')}
+          className={cn(pressableVariants(), 'flex h-touch w-touch items-center justify-center rounded-full border border-line text-fg-muted transition-colors hover:text-fg')}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="m15 18-6-6 6-6" />
@@ -102,7 +78,7 @@ export function ResultStage({
         <div className="flex items-center gap-2">
           <Wordmark as="h1" onClick={onWordmarkTap} />
         </div>
-        <div aria-hidden="true" className="h-9 w-9" />
+        <div aria-hidden="true" className="h-touch w-touch" />
       </header>
 
       <div className="relative min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-6">
@@ -114,27 +90,8 @@ export function ResultStage({
               movieInfo={movieInfo}
               components={components}
               fieldVisibility={fieldVisibility}
-              embossStamps={embossStamps}
-              embossPaths={embossPaths}
-              embossIntensity={embossIntensity}
-              reliefStamps={reliefStamps}
-              reliefPaths={reliefPaths}
-              reliefIntensity={reliefIntensity}
             />
           </PreviewFilmCell>
-          {/* 바닥 그림자 — hero가 화면에 떠 보이도록 아래에 흐린 타원 그림자를 깐다.
-              캡처 대상(ResultPanel의 off-screen 인스턴스) 밖이라 내보내기에 섞이지 않는다. */}
-          <div
-            aria-hidden="true"
-            className="mx-auto mt-3"
-            style={{
-              width: '78%',
-              height: 18,
-              borderRadius: '50%',
-              background: 'radial-gradient(closest-side, rgba(0,0,0,0.35), transparent 75%)',
-              filter: 'blur(2px)',
-            }}
-          />
         </div>
 
         <div className="mx-auto max-w-md">
@@ -143,12 +100,6 @@ export function ResultStage({
             movieInfo={movieInfo}
             components={components}
             fieldVisibility={fieldVisibility}
-            embossStamps={embossStamps}
-            embossPaths={embossPaths}
-            embossIntensity={embossIntensity}
-            reliefStamps={reliefStamps}
-            reliefPaths={reliefPaths}
-            reliefIntensity={reliefIntensity}
             hidePreview
           />
         </div>

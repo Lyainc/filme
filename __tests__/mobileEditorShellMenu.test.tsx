@@ -83,8 +83,6 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
           <MobileEditorShell
             photo={photo}
             canExport
-            theme="light"
-            onThemeChange={() => {}}
             onDone={() => { calls++; }}
             disabledReason=""
             previewMovieInfo={photo.state.movieInfo}

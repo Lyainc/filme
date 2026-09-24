@@ -20,8 +20,6 @@ export function mobileShellProps(
   return {
     photo,
     canExport: true,
-    theme: 'light',
-    onThemeChange: () => {},
     onDone: () => {},
     disabledReason: '',
     previewMovieInfo: photo.state.movieInfo,

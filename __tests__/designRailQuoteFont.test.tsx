@@ -61,7 +61,7 @@ function Harness() {
 
 /** 티켓에 실제로 그려진 한줄평 엘리먼트의 inline style. */
 function quoteStyle(text: string) {
-  return (screen.getByText(text) as HTMLElement).style;
+  return (screen.getByText(text, { selector: ":not([data-font-preview])" }) as HTMLElement).style;
 }
 
 async function openCustomPanel(user: ReturnType<typeof userEvent.setup>) {

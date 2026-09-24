@@ -44,12 +44,13 @@ afterEach(() => {
 });
 
 describe('랜딩 히어로 갤러리 reduced-motion 폴백 (#615)', () => {
-  test('reduce 활성화 시 캐러셀이 아니라 줄바꿈 그리드로 갤러리 무드가 한 번씩만 보인다', () => {
+  test('reduce 활성화 시 캐러셀이 아니라 가로 스크롤 목록로 갤러리 무드가 한 번씩만 보인다', () => {
     const restore = stubReducedMotion(true);
     try {
       render(<Harness />);
       const gallery = within(landing()).getByTestId('mood-gallery');
-      expect(gallery.className).toContain('flex-wrap');
+      expect(gallery.className).toContain('overflow-x-auto');
+      expect(gallery.className).not.toContain('flex-wrap');
       expect(gallery.className).not.toContain('overflow-hidden');
       // seamless loop 복제가 없어야 한다 — 그리드 폴백은 무드당 카드 하나.
       expect(gallery.querySelectorAll('button').length).toBe(GALLERY_LAYOUTS.length);

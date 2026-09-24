@@ -1,0 +1,57 @@
+{
+  "initial": {
+    "build": "GONxmsyPpYdYeRO8apRTC",
+    "center": "Minimal 무드로 바로 시작 — 미니멀 시네마틱",
+    "cardWidth": 170,
+    "transition": "2200ms",
+    "intervals": [
+      {
+        "ms": 10000,
+        "at": 82.5
+      }
+    ],
+    "at": 769,
+    "noticeFont": "9px",
+    "ctaWidth": 256,
+    "exitBackdrop": false
+  },
+  "advanced": {
+    "build": "GONxmsyPpYdYeRO8apRTC",
+    "center": "Criterion 무드로 바로 시작 — 크라이테리언 임프린트",
+    "cardWidth": 132.5999755859375,
+    "transition": "2200ms",
+    "intervals": [
+      {
+        "ms": 10000,
+        "at": 82.5
+      }
+    ],
+    "at": 10096.5,
+    "noticeFont": "9px",
+    "ctaWidth": 256,
+    "exitBackdrop": false
+  },
+  "reduced": [
+    {
+      "width": 92,
+      "transition": ""
+    },
+    {
+      "width": 92,
+      "transition": ""
+    },
+    {
+      "width": 92,
+      "transition": ""
+    },
+    {
+      "width": 92,
+      "transition": ""
+    },
+    {
+      "width": 92,
+      "transition": ""
+    }
+  ],
+  "editorBrand": true
+}

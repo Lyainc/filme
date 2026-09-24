@@ -14,12 +14,8 @@ import { STORAGE_KEY } from '@/hooks/usePhototicket';
  */
 export const themeScript = `
 (function(){try{
-  const t=localStorage.getItem('phototicket:theme');
-  const dark=t==='dark'||(t!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);
-  if(dark)document.documentElement.classList.add('theme-dark');
-  var m=document.querySelector('meta[name="theme-color"]');
-  if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');document.head.appendChild(m);}
-  m.setAttribute('content',dark?'#0E1012':'#F4F5F7');
+  document.documentElement.classList.remove('theme-dark','chrome-dark');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content','#fffcf7');
   if(localStorage.getItem(${JSON.stringify(STORAGE_KEY)}))document.documentElement.classList.add('has-draft');
 }catch(e){}}());
 `.trim();
@@ -29,7 +25,7 @@ export default function Document() {
     <Html lang="ko">
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <meta name="theme-color" content="#F4F5F7" />
+        <meta name="theme-color" content="#fffcf7" />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </Head>
       <body>
