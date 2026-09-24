@@ -13,13 +13,17 @@ export default function Home() {
   // SSR safe: 초기값 'light', mount 후 localStorage/prefers-color-scheme 읽기
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const photo = usePhototicket();
+  // 티켓 위 직접 편집 중에는 프리뷰 debounce를 건너뛴다(#775) — 인플레이스 input은 글자가 투명하고
+  // 보이는 글자를 티켓 렌더에 맡기므로(#365), 280ms 지연이 끼면 타이핑을 멈출 때까지 새 글자가 안 보인다.
+  const [fieldEditing, setFieldEditing] = useState(false);
   const canExport = useExportReady({ state: photo.state });
   const { open: resultOpen, openView, closeView } = useResultView();
   // ResultStage(#669) 워드마크가 이 셸의 초기화 판정·confirm 로직을 그대로 재사용하는 통로 —
   // 셸은 결과화면이 열려도 언마운트되지 않는다(위 return 주석, #297). confirm과 실제 clear를
   // 나눈 이유: clear(photo.state)는 동기, 결과화면을 닫는 closeView(history.back())의 popstate는
-  // 비동기라, 둘을 한 번에 하면 croppedImageUrl(라이브 prop)은 이미 비었는데 movieInfo 등
-  // (280ms useDebounce)은 안 비어 있는 화면이 그 사이 잠깐 보인다(#669 code-review 발견).
+  // 비동기라, 둘을 한 번에 하면 결과화면이 닫히기 전에 초기화된 티켓이 그 사이 잠깐 보인다. #669
+  // 당시엔 movieInfo 등이 280ms useDebounce를 거쳐 croppedImageUrl만 먼저 빈 섞인 화면이었고(#669
+  // code-review 발견), #775부터 결과화면이 라이브 값을 읽어 섞이진 않지만 빈 티켓 flash는 남는다.
   // 그래서 confirm 통과 → closeView() 먼저 → resultOpen이 실제로 false가 된 뒤(아래 effect)에야
   // clear를 실행해, 그 flash가 뜰 상대(ResultStage)가 이미 사라진 뒤로 미룬다.
   const shellRef = useRef<MobileEditorShellHandle>(null);
@@ -44,7 +48,7 @@ export default function Home() {
     () => ({ movieInfo: photo.state.movieInfo, components: photo.state.components }),
     [photo.state.movieInfo, photo.state.components],
   );
-  const debounced = useDebounce(draft, 280);
+  const debounced = useDebounce(draft, 280, fieldEditing);
   const { movieInfo: debouncedMovieInfo, components: debouncedComponents } = debounced;
   const { fieldVisibility } = photo.state;
 
@@ -129,6 +133,7 @@ export default function Home() {
       <div className={resultOpen ? 'hidden' : undefined}>
         <MobileEditorShell
           ref={shellRef}
+          onFieldEditingChange={setFieldEditing}
           photo={photo}
           canExport={canExport}
           theme={theme}
@@ -146,8 +151,10 @@ export default function Home() {
           onBack={closeView}
           onWordmarkTap={handleResultWordmarkTap}
           croppedImageUrl={croppedImageUrl}
-          movieInfo={debouncedMovieInfo}
-          components={debouncedComponents}
+          // 결과 화면은 debounce를 안 거친 최신 값으로 그린다(#775) — 슬라이더를 움직이고 280ms 안에
+          // 완료를 눌러도 마지막 값이 실린다.
+          movieInfo={photo.state.movieInfo}
+          components={photo.state.components}
           fieldVisibility={fieldVisibility}
           embossStamps={photo.state.embossStamps}
           embossPaths={photo.state.embossPaths}
