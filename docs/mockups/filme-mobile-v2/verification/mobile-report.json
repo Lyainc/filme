@@ -1,0 +1,75 @@
+{
+  "date": "2026-09-24",
+  "mode": "Chrome with simulated VisualViewport; not iPhone keyboard evidence",
+  "checks": [
+    "Fresh landing creates a blank document; header import search stays centered and does not autofocus on touch",
+    "Invalid numeric text and associated errors persist until corrected",
+    "Valid decimal and exponent integer input renders as minutes through completion and draft reload without rewriting the input",
+    "Explicit resizes-visual contract keeps keyboard detection and focused input in view, then restores the editor",
+    "Chrome IME composition updates the ticket, composing Enter retains focus, committed Enter advances, and draft stores committed Korean text (not OS keyboard evidence)",
+    "Inline inspector and selected input remain reachable with reduced and panned visual viewport",
+    "Ticket field tap focuses inline input, fits the keyboard viewport, and closes with Escape",
+    "Preview zoom uses explicit control and dialog follows the panned viewport"
+  ],
+  "geometry": [
+    {
+      "case": "resizes-visual keyboard contract",
+      "panel": {
+        "top": 146,
+        "bottom": 336,
+        "visibleTop": 0,
+        "visibleBottom": 340
+      },
+      "input": {
+        "top": 282,
+        "bottom": 326,
+        "visibleTop": 0,
+        "visibleBottom": 340
+      }
+    },
+    {
+      "case": "393 keyboard",
+      "panel": {
+        "top": 206,
+        "bottom": 396,
+        "visibleTop": 80,
+        "visibleBottom": 400
+      }
+    },
+    {
+      "case": "393 panned keyboard",
+      "panel": {
+        "top": 226,
+        "bottom": 416,
+        "visibleTop": 100,
+        "visibleBottom": 420
+      }
+    },
+    {
+      "case": "320 ticket tap keyboard",
+      "panel": {
+        "top": 126,
+        "bottom": 316,
+        "visibleTop": 60,
+        "visibleBottom": 320
+      },
+      "input": {
+        "top": 204,
+        "bottom": 248,
+        "visibleTop": 60,
+        "visibleBottom": 320
+      }
+    },
+    {
+      "case": "320 preview keyboard",
+      "panel": {
+        "top": 40,
+        "bottom": 340,
+        "visibleTop": 40,
+        "visibleBottom": 340
+      }
+    }
+  ],
+  "failures": [],
+  "pageErrors": []
+}

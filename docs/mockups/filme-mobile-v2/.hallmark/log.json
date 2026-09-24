@@ -1,0 +1,90 @@
+[
+  {
+    "date": "2026-09-23",
+    "theme": "custom FILME",
+    "structure": "single editor canvas; no wizard",
+    "scores": {
+      "philosophy": 4,
+      "hierarchy": 4,
+      "execution": 4,
+      "specificity": 4,
+      "restraint": 5,
+      "variety": 4
+    },
+    "tradeoff": "static ticket artwork; fields and tools demonstrate UI state only"
+  },
+  {
+    "date": "2026-09-24",
+    "theme": "custom FILME",
+    "structure": "live ticket canvas with nonmodal styling panel; data and photo sheets",
+    "scores": {
+      "philosophy": 4,
+      "hierarchy": 4,
+      "execution": 4,
+      "specificity": 5,
+      "restraint": 5,
+      "variety": 4
+    },
+    "tradeoff": "external search, OCR and export remain samples; existing ticket rendering reused"
+  },
+  {
+    "date": "2026-09-24",
+    "theme": "FILME unified mobile canvas",
+    "structure": "six tools; in-ticket editing; unified import and logo modules",
+    "scores": {
+      "philosophy": 4,
+      "hierarchy": 4,
+      "execution": 4,
+      "specificity": 5,
+      "restraint": 4,
+      "variety": 4
+    },
+    "preserved": "native ticket components, format logos, image controls, independent nine-font selection",
+    "verification": "redesign:14 checks,25 geometry cases,20 screenshots; mobile:5 checks; independent review P1/P2 fixed",
+    "limitations": "external OCR/search/export remain samples; no real iPhone evidence"
+  },
+  {
+    "date": "2026-09-24",
+    "theme": "FILME ticket-first mobile editor",
+    "structure": "restored five-card landing carousel; persistent single-field inspector; same-screen completion and sharing",
+    "changes": "compact landing CTA; restrained raised actions; equal-height rounded tool panels; visible desktop app boundary; live ticket focus crop above keyboard",
+    "preserved": "six native ticket layouts, logo uploads and format logos, independent texture intensity, field provenance, undo and drafts",
+    "verification": "experience:7 checks,17 screenshots,20 geometry cases; redesign:14 checks; mobile:5 checks; independent review findings fixed; all browser reports have zero failures/page errors",
+    "limitations": "HTML mockup only; OCR/search/export/share remain samples; keyboard evidence uses Chrome VisualViewport simulation, not iPhone Safari"
+  },
+  {
+    "date": "2026-09-24",
+    "theme": "FILME connected mobile editing",
+    "structure": "centered passive landing gallery; unified six-tool deck; contextual imports; floating dialogs",
+    "scores": {
+      "philosophy": 4,
+      "hierarchy": 4,
+      "execution": 4,
+      "specificity": 5,
+      "restraint": 4,
+      "variety": 4
+    },
+    "changes": "no carousel actions/catchphrase; centered brand; inline photo; previous-next metadata navigation; header imports; hidden duplicate headings; shared deck; 12px top inset; centered viewport-aware dialogs",
+    "references": "Canva, Instagram, Pinterest, Lightroom, VSCO, Etsy, Adobe Express, Medium, Spotify, Notion; official behavior documents, not exact UI replication",
+    "verification": "experience 8, redesign 14, mobile 5; all zero failures/page errors; independent review no P1/P2; 216px regular tool panels",
+    "limitations": "HTML mockup; Chrome viewport and keyboard simulation; OCR/search/export/share are samples, no real iPhone evidence"
+  },
+  {
+    "date": "2026-09-24",
+    "theme": "FILME contextual mobile editing v6",
+    "structure": "grouped metadata form and preview target overlay; state-aware photo/logo controls; same-document design comparisons",
+    "changes": "252px shared deck and 16px top inset; native grouped fields with source labels; texture swatches and independent intensity; custom-color selection state; informational import label",
+    "spec": "/private/tmp/filme-v6/seed.yaml",
+    "verification": "Chrome experience 8, redesign 15, mobile 5; independent code review no P1/P2; local screenshots checked for spacing and thumbnail CSS isolation",
+    "limitations": "HTML mockup only; external OCR/search/export/share are samples; no real iPhone Safari verification"
+  },
+  {
+    "date": "2026-09-24",
+    "theme": "FILME role-based alignment v7",
+    "structure": "left-aligned settings rows, centered short confirmations, compact contextual color controls",
+    "changes": "autosave switch preserves previous draft when off; light close affordance; compact about disclosure; actual color-target labels and native palette picker; central photo CTA only when no tool is open",
+    "spec": "/private/tmp/filme-v6/seed.yaml spec_version 2",
+    "verification": "experience 8, redesign 15, mobile 5, refinement 9; independent review no P1/P2; 320/393 manual screenshots reviewed",
+    "limitations": "Chrome viewport/keyboard simulation; no real iPhone Safari; external OCR/search/export/share remain mock actions"
+  }
+]

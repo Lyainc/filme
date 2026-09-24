@@ -1,0 +1,851 @@
+{
+  "mode": "Headless Chrome viewport emulation; not real iPhone Safari",
+  "checks": [
+    "320×568: six tools and contextual inline panels, unified header, no horizontal overflow",
+    "375×667: six tools and contextual inline panels, unified header, no horizontal overflow",
+    "393×659: six tools and contextual inline panels, unified header, no horizontal overflow",
+    "414×736: six tools and contextual inline panels, unified header, no horizontal overflow",
+    "768×900: six tools and contextual inline panels, unified header, no horizontal overflow",
+    "Custom color exposes its selected state to visual and screen reader users",
+    "Six production moods render at natural pixel dimensions",
+    "Ticket title tap opens grouped native inputs with provenance and Enter navigation",
+    "Loaded poster tap opens inline photo tools; crop returns to photo tools",
+    "Sample OCR import, provenance after manual correction, grouped undo restoration",
+    "Reissue date renders, bulk visibility toggles preserve the active inline field",
+    "Material and coating intensities remain independent in the production poster",
+    "Format logo is IMAX; fake stamp tool and WATCHED label are absent",
+    "Native logo file choice, crop, PNG render, undo/redo, and local reload persistence",
+    "Brush, Eunyoung, CoolGuy and Flower font families load without errors"
+  ],
+  "geometry": [
+    {
+      "width": 320,
+      "height": 568,
+      "baseline": {
+        "tools": [
+          "정보",
+          "사진",
+          "디자인",
+          "색상",
+          "질감",
+          "로고"
+        ],
+        "scrollWidth": 320,
+        "viewportWidth": 320,
+        "headerButtons": [
+          "랜딩으로 돌아가기",
+          "정보 가져오기",
+          "서비스 메뉴",
+          null
+        ],
+        "canvasButtons": [
+          "되돌리기",
+          "전체 화면 미리보기",
+          "다시 실행"
+        ],
+        "duplicateBar": false
+      }
+    },
+    {
+      "width": 320,
+      "label": "정보",
+      "ticket": {
+        "top": 64,
+        "bottom": 195,
+        "height": 131
+      },
+      "stage": {
+        "top": 56,
+        "bottom": 243,
+        "height": 187
+      },
+      "panel": {
+        "top": 251,
+        "bottom": 503,
+        "height": 252
+      },
+      "minTargetHeight": 36,
+      "scrollWidth": 320,
+      "viewportWidth": 320
+    },
+    {
+      "width": 320,
+      "label": "사진",
+      "ticket": {
+        "top": 64,
+        "bottom": 195,
+        "height": 131
+      },
+      "stage": {
+        "top": 56,
+        "bottom": 243,
+        "height": 187
+      },
+      "panel": {
+        "top": 248.54959106445312,
+        "bottom": 500.5495910644531,
+        "height": 252
+      },
+      "minTargetHeight": 36,
+      "scrollWidth": 320,
+      "viewportWidth": 320
+    },
+    {
+      "width": 320,
+      "label": "디자인",
+      "ticket": {
+        "top": 64,
+        "bottom": 195,
+        "height": 131
+      },
+      "stage": {
+        "top": 56,
+        "bottom": 243,
+        "height": 187
+      },
+      "panel": {
+        "top": 251,
+        "bottom": 503,
+        "height": 252
+      },
+      "minTargetHeight": 44,
+      "scrollWidth": 320,
+      "viewportWidth": 320
+    },
+    {
+      "width": 320,
+      "label": "색상",
+      "ticket": {
+        "top": 64,
+        "bottom": 235,
+        "height": 171
+      },
+      "stage": {
+        "top": 56,
+        "bottom": 283,
+        "height": 227
+      },
+      "panel": {
+        "top": 291,
+        "bottom": 503,
+        "height": 212
+      },
+      "minTargetHeight": 44,
+      "scrollWidth": 320,
+      "viewportWidth": 320
+    },
+    {
+      "width": 320,
+      "label": "질감",
+      "ticket": {
+        "top": 64,
+        "bottom": 195,
+        "height": 131
+      },
+      "stage": {
+        "top": 56,
+        "bottom": 243,
+        "height": 187
+      },
+      "panel": {
+        "top": 251,
+        "bottom": 503,
+        "height": 252
+      },
+      "minTargetHeight": 36,
+      "scrollWidth": 320,
+      "viewportWidth": 320
+    },
+    {
+      "width": 320,
+      "label": "로고",
+      "ticket": {
+        "top": 64,
+        "bottom": 195,
+        "height": 131
+      },
+      "stage": {
+        "top": 56,
+        "bottom": 243,
+        "height": 187
+      },
+      "panel": {
+        "top": 251,
+        "bottom": 503,
+        "height": 252
+      },
+      "minTargetHeight": 36,
+      "scrollWidth": 320,
+      "viewportWidth": 320
+    },
+    {
+      "width": 375,
+      "height": 667,
+      "baseline": {
+        "tools": [
+          "정보",
+          "사진",
+          "디자인",
+          "색상",
+          "질감",
+          "로고"
+        ],
+        "scrollWidth": 375,
+        "viewportWidth": 375,
+        "headerButtons": [
+          "랜딩으로 돌아가기",
+          "정보 가져오기",
+          "서비스 메뉴",
+          null
+        ],
+        "canvasButtons": [
+          "되돌리기",
+          "전체 화면 미리보기",
+          "다시 실행"
+        ],
+        "duplicateBar": false
+      }
+    },
+    {
+      "width": 375,
+      "label": "정보",
+      "ticket": {
+        "top": 68,
+        "bottom": 292,
+        "height": 224
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 340,
+        "height": 280
+      },
+      "panel": {
+        "top": 345.5639343261719,
+        "bottom": 597.56396484375,
+        "height": 252.00003051757812
+      },
+      "minTargetHeight": 36,
+      "scrollWidth": 375,
+      "viewportWidth": 375
+    },
+    {
+      "width": 375,
+      "label": "사진",
+      "ticket": {
+        "top": 68,
+        "bottom": 292,
+        "height": 224
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 340,
+        "height": 280
+      },
+      "panel": {
+        "top": 345.5588073730469,
+        "bottom": 597.558837890625,
+        "height": 252.00003051757812
+      },
+      "minTargetHeight": 36,
+      "scrollWidth": 375,
+      "viewportWidth": 375
+    },
+    {
+      "width": 375,
+      "label": "디자인",
+      "ticket": {
+        "top": 68,
+        "bottom": 292,
+        "height": 224
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 340,
+        "height": 280
+      },
+      "panel": {
+        "top": 348,
+        "bottom": 600,
+        "height": 252
+      },
+      "minTargetHeight": 44,
+      "scrollWidth": 375,
+      "viewportWidth": 375
+    },
+    {
+      "width": 375,
+      "label": "색상",
+      "ticket": {
+        "top": 68,
+        "bottom": 332,
+        "height": 264
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 380,
+        "height": 320
+      },
+      "panel": {
+        "top": 388,
+        "bottom": 600,
+        "height": 212
+      },
+      "minTargetHeight": 44,
+      "scrollWidth": 375,
+      "viewportWidth": 375
+    },
+    {
+      "width": 375,
+      "label": "질감",
+      "ticket": {
+        "top": 68,
+        "bottom": 292,
+        "height": 224
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 340,
+        "height": 280
+      },
+      "panel": {
+        "top": 348,
+        "bottom": 600,
+        "height": 252
+      },
+      "minTargetHeight": 36,
+      "scrollWidth": 375,
+      "viewportWidth": 375
+    },
+    {
+      "width": 375,
+      "label": "로고",
+      "ticket": {
+        "top": 68,
+        "bottom": 292,
+        "height": 224
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 340,
+        "height": 280
+      },
+      "panel": {
+        "top": 348,
+        "bottom": 600,
+        "height": 252
+      },
+      "minTargetHeight": 36,
+      "scrollWidth": 375,
+      "viewportWidth": 375
+    },
+    {
+      "width": 393,
+      "height": 659,
+      "baseline": {
+        "tools": [
+          "정보",
+          "사진",
+          "디자인",
+          "색상",
+          "질감",
+          "로고"
+        ],
+        "scrollWidth": 393,
+        "viewportWidth": 393,
+        "headerButtons": [
+          "랜딩으로 돌아가기",
+          "정보 가져오기",
+          "서비스 메뉴",
+          null
+        ],
+        "canvasButtons": [
+          "되돌리기",
+          "전체 화면 미리보기",
+          "다시 실행"
+        ],
+        "duplicateBar": false
+      }
+    },
+    {
+      "width": 393,
+      "label": "정보",
+      "ticket": {
+        "top": 68,
+        "bottom": 284,
+        "height": 216
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 332,
+        "height": 272
+      },
+      "panel": {
+        "top": 337.5647888183594,
+        "bottom": 589.5648193359375,
+        "height": 252.00003051757812
+      },
+      "minTargetHeight": 36,
+      "scrollWidth": 393,
+      "viewportWidth": 393
+    },
+    {
+      "width": 393,
+      "label": "사진",
+      "ticket": {
+        "top": 68,
+        "bottom": 284,
+        "height": 216
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 332,
+        "height": 272
+      },
+      "panel": {
+        "top": 337.5639343261719,
+        "bottom": 589.56396484375,
+        "height": 252.00003051757812
+      },
+      "minTargetHeight": 36,
+      "scrollWidth": 393,
+      "viewportWidth": 393
+    },
+    {
+      "width": 393,
+      "label": "디자인",
+      "ticket": {
+        "top": 68,
+        "bottom": 284,
+        "height": 216
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 332,
+        "height": 272
+      },
+      "panel": {
+        "top": 340,
+        "bottom": 592,
+        "height": 252
+      },
+      "minTargetHeight": 44,
+      "scrollWidth": 393,
+      "viewportWidth": 393
+    },
+    {
+      "width": 393,
+      "label": "색상",
+      "ticket": {
+        "top": 68,
+        "bottom": 324,
+        "height": 256
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 372,
+        "height": 312
+      },
+      "panel": {
+        "top": 380,
+        "bottom": 592,
+        "height": 212
+      },
+      "minTargetHeight": 44,
+      "scrollWidth": 393,
+      "viewportWidth": 393
+    },
+    {
+      "width": 393,
+      "label": "질감",
+      "ticket": {
+        "top": 68,
+        "bottom": 284,
+        "height": 216
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 332,
+        "height": 272
+      },
+      "panel": {
+        "top": 340,
+        "bottom": 592,
+        "height": 252
+      },
+      "minTargetHeight": 36,
+      "scrollWidth": 393,
+      "viewportWidth": 393
+    },
+    {
+      "width": 393,
+      "label": "로고",
+      "ticket": {
+        "top": 68,
+        "bottom": 284,
+        "height": 216
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 332,
+        "height": 272
+      },
+      "panel": {
+        "top": 340,
+        "bottom": 592,
+        "height": 252
+      },
+      "minTargetHeight": 36,
+      "scrollWidth": 393,
+      "viewportWidth": 393
+    },
+    {
+      "width": 414,
+      "height": 736,
+      "baseline": {
+        "tools": [
+          "정보",
+          "사진",
+          "디자인",
+          "색상",
+          "질감",
+          "로고"
+        ],
+        "scrollWidth": 414,
+        "viewportWidth": 414,
+        "headerButtons": [
+          "랜딩으로 돌아가기",
+          "정보 가져오기",
+          "서비스 메뉴",
+          null
+        ],
+        "canvasButtons": [
+          "되돌리기",
+          "전체 화면 미리보기",
+          "다시 실행"
+        ],
+        "duplicateBar": false
+      }
+    },
+    {
+      "width": 414,
+      "label": "정보",
+      "ticket": {
+        "top": 68,
+        "bottom": 361,
+        "height": 293
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 409,
+        "height": 349
+      },
+      "panel": {
+        "top": 414.5650634765625,
+        "bottom": 666.5650634765625,
+        "height": 252
+      },
+      "minTargetHeight": 36,
+      "scrollWidth": 414,
+      "viewportWidth": 414
+    },
+    {
+      "width": 414,
+      "label": "사진",
+      "ticket": {
+        "top": 68,
+        "bottom": 361,
+        "height": 293
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 409,
+        "height": 349
+      },
+      "panel": {
+        "top": 417,
+        "bottom": 669,
+        "height": 252
+      },
+      "minTargetHeight": 36,
+      "scrollWidth": 414,
+      "viewportWidth": 414
+    },
+    {
+      "width": 414,
+      "label": "디자인",
+      "ticket": {
+        "top": 68,
+        "bottom": 361,
+        "height": 293
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 409,
+        "height": 349
+      },
+      "panel": {
+        "top": 417,
+        "bottom": 669,
+        "height": 252
+      },
+      "minTargetHeight": 44,
+      "scrollWidth": 414,
+      "viewportWidth": 414
+    },
+    {
+      "width": 414,
+      "label": "색상",
+      "ticket": {
+        "top": 68,
+        "bottom": 401,
+        "height": 333
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 449,
+        "height": 389
+      },
+      "panel": {
+        "top": 457,
+        "bottom": 669,
+        "height": 212
+      },
+      "minTargetHeight": 44,
+      "scrollWidth": 414,
+      "viewportWidth": 414
+    },
+    {
+      "width": 414,
+      "label": "질감",
+      "ticket": {
+        "top": 68,
+        "bottom": 361,
+        "height": 293
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 409,
+        "height": 349
+      },
+      "panel": {
+        "top": 417,
+        "bottom": 669,
+        "height": 252
+      },
+      "minTargetHeight": 36,
+      "scrollWidth": 414,
+      "viewportWidth": 414
+    },
+    {
+      "width": 414,
+      "label": "로고",
+      "ticket": {
+        "top": 68,
+        "bottom": 361,
+        "height": 293
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 409,
+        "height": 349
+      },
+      "panel": {
+        "top": 417,
+        "bottom": 669,
+        "height": 252
+      },
+      "minTargetHeight": 36,
+      "scrollWidth": 414,
+      "viewportWidth": 414
+    },
+    {
+      "width": 768,
+      "height": 900,
+      "baseline": {
+        "tools": [
+          "정보",
+          "사진",
+          "디자인",
+          "색상",
+          "질감",
+          "로고"
+        ],
+        "scrollWidth": 768,
+        "viewportWidth": 768,
+        "headerButtons": [
+          "랜딩으로 돌아가기",
+          "정보 가져오기",
+          "서비스 메뉴",
+          null
+        ],
+        "canvasButtons": [
+          "되돌리기",
+          "전체 화면 미리보기",
+          "다시 실행"
+        ],
+        "duplicateBar": false
+      }
+    },
+    {
+      "width": 768,
+      "label": "정보",
+      "ticket": {
+        "top": 68,
+        "bottom": 525,
+        "height": 457
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 573,
+        "height": 513
+      },
+      "panel": {
+        "top": 578.5578002929688,
+        "bottom": 830.5578002929688,
+        "height": 252
+      },
+      "minTargetHeight": 36,
+      "scrollWidth": 768,
+      "viewportWidth": 768
+    },
+    {
+      "width": 768,
+      "label": "사진",
+      "ticket": {
+        "top": 68,
+        "bottom": 525,
+        "height": 457
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 573,
+        "height": 513
+      },
+      "panel": {
+        "top": 578.56689453125,
+        "bottom": 830.56689453125,
+        "height": 252
+      },
+      "minTargetHeight": 36,
+      "scrollWidth": 768,
+      "viewportWidth": 768
+    },
+    {
+      "width": 768,
+      "label": "디자인",
+      "ticket": {
+        "top": 68,
+        "bottom": 525,
+        "height": 457
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 573,
+        "height": 513
+      },
+      "panel": {
+        "top": 581,
+        "bottom": 833,
+        "height": 252
+      },
+      "minTargetHeight": 44,
+      "scrollWidth": 768,
+      "viewportWidth": 768
+    },
+    {
+      "width": 768,
+      "label": "색상",
+      "ticket": {
+        "top": 68,
+        "bottom": 565,
+        "height": 497
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 613,
+        "height": 553
+      },
+      "panel": {
+        "top": 621,
+        "bottom": 833,
+        "height": 212
+      },
+      "minTargetHeight": 44,
+      "scrollWidth": 768,
+      "viewportWidth": 768
+    },
+    {
+      "width": 768,
+      "label": "질감",
+      "ticket": {
+        "top": 68,
+        "bottom": 525,
+        "height": 457
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 573,
+        "height": 513
+      },
+      "panel": {
+        "top": 581,
+        "bottom": 833,
+        "height": 252
+      },
+      "minTargetHeight": 36,
+      "scrollWidth": 768,
+      "viewportWidth": 768
+    },
+    {
+      "width": 768,
+      "label": "로고",
+      "ticket": {
+        "top": 68,
+        "bottom": 525,
+        "height": 457
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 573,
+        "height": 513
+      },
+      "panel": {
+        "top": 581,
+        "bottom": 833,
+        "height": 252
+      },
+      "minTargetHeight": 36,
+      "scrollWidth": 768,
+      "viewportWidth": 768
+    }
+  ],
+  "screenshots": [
+    "v7-regression-320-baseline.png",
+    "v7-regression-375-baseline.png",
+    "v7-regression-393-baseline.png",
+    "v7-regression-393-정보.png",
+    "v7-regression-393-사진.png",
+    "v7-regression-393-디자인.png",
+    "v7-regression-393-색상.png",
+    "v7-regression-393-질감.png",
+    "v7-regression-393-로고.png",
+    "v7-regression-414-baseline.png",
+    "v7-regression-768-baseline.png",
+    "v7-regression-393-mood-minimal.png",
+    "v7-regression-393-mood-criterion.png",
+    "v7-regression-393-mood-35mm.png",
+    "v7-regression-393-mood-editorial.png",
+    "v7-regression-393-mood-stub.png",
+    "v7-regression-393-mood-35mm-landscape.png",
+    "v7-regression-393-direct-title.png",
+    "v7-regression-393-photo-inline.png",
+    "v7-regression-393-photo-crop.png",
+    "v7-regression-393-ocr-undo.png",
+    "v7-regression-393-independent-texture.png",
+    "v7-regression-393-logo-upload.png",
+    "v7-regression-393-logo-reloaded.png"
+  ],
+  "failures": [],
+  "pageErrors": [],
+  "fontErrors": []
+}

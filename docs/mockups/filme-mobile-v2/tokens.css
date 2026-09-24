@@ -1,0 +1,25 @@
+/* FILME · tactile mobile workspace · shared landing/editor tokens */
+@import url('../filme-mobile-v1/tokens.css');
+:root {
+  --color-outside: #ccc8c3;
+  --color-frame-edge: #aaa39c;
+  --color-canvas: #f1efed;
+  --color-paper: #fcfbfa;
+  --color-surface: #ffffff;
+  --color-control-border: #ded9d4;
+  --color-control-track: #e6e1dc;
+  --color-accent-line: #d2a3a0;
+  --shadow-control: 0 1px 2px rgb(54 39 31 / 8%), 0 2px 5px rgb(54 39 31 / 3%);
+  --shadow-panel: 0 5px 20px rgb(54 39 31 / 7%), 0 1px 3px rgb(54 39 31 / 4%);
+  --shadow-active: 0 3px 9px rgb(176 66 63 / 16%);
+  --shadow-thumb: 0 2px 5px rgb(54 39 31 / 20%);
+  --shadow-ticket: 0 10px 22px rgb(38 30 25 / 16%);
+  --radius-control: 12px;
+  --radius-module: 22px;
+  --radius-sheet: 26px;
+  --duration-press: 120ms;
+  --duration-reveal: 220ms;
+  --ease-spring: cubic-bezier(.2,.8,.2,1);
+  --module-height: 224px;
+}
+@media(max-height:620px){:root{--module-height:208px}}

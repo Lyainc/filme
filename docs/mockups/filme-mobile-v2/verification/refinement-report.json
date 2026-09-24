@@ -1,0 +1,634 @@
+{
+  "mode": "Headless Chrome viewport emulation, not iPhone Safari",
+  "checks": [
+    "Autosave off preserves exact prior draft through edit, pagehide, debounce interval, and reload",
+    "Turning autosave back on writes the current document",
+    "Turning autosave off cancels an edit pending in its debounce interval",
+    "Starting without a draft while autosave is off creates no draft",
+    "320×568: menu alignment, switch, close target, compact color modes, no horizontal overflow",
+    "375×667: menu alignment, switch, close target, compact color modes, no horizontal overflow",
+    "393×659: menu alignment, switch, close target, compact color modes, no horizontal overflow",
+    "414×736: menu alignment, switch, close target, compact color modes, no horizontal overflow",
+    "Photo CTA yields to tools; photo tool remains; new-ticket confirmation names photo, input, and decoration"
+  ],
+  "geometry": [
+    {
+      "width": 320,
+      "height": 568,
+      "menu": {
+        "rows": [
+          {
+            "row": {
+              "x": 29,
+              "y": 200,
+              "width": 262,
+              "height": 56,
+              "right": 291
+            },
+            "icon": {
+              "x": 29,
+              "y": 217.5,
+              "width": 20,
+              "height": 20,
+              "right": 49
+            },
+            "name": {
+              "x": 61,
+              "y": 217,
+              "width": 200,
+              "height": 21,
+              "right": 261
+            },
+            "trailing": {
+              "x": 273,
+              "y": 217.5,
+              "width": 18,
+              "height": 20,
+              "right": 291
+            }
+          },
+          {
+            "row": {
+              "x": 29,
+              "y": 256,
+              "width": 262,
+              "height": 56,
+              "right": 291
+            },
+            "icon": {
+              "x": 29,
+              "y": 272.5,
+              "width": 22,
+              "height": 22,
+              "right": 51
+            },
+            "name": {
+              "x": 63,
+              "y": 273,
+              "width": 172,
+              "height": 21,
+              "right": 235
+            },
+            "trailing": {
+              "x": 247,
+              "y": 270.5,
+              "width": 44,
+              "height": 26,
+              "right": 291
+            }
+          },
+          {
+            "row": {
+              "x": 29,
+              "y": 312,
+              "width": 262,
+              "height": 56,
+              "right": 291
+            },
+            "icon": {
+              "x": 29,
+              "y": 329.5,
+              "width": 20,
+              "height": 20,
+              "right": 49
+            },
+            "name": {
+              "x": 61,
+              "y": 329,
+              "width": 200,
+              "height": 21,
+              "right": 261
+            },
+            "trailing": {
+              "x": 273,
+              "y": 329.5,
+              "width": 18,
+              "height": 20,
+              "right": 291
+            }
+          }
+        ],
+        "close": {
+          "x": 253,
+          "y": 142,
+          "width": 44,
+          "height": 44,
+          "right": 297
+        },
+        "closeBackground": "rgba(0, 0, 0, 0)",
+        "details": true,
+        "summary": "목업 안내",
+        "collapsed": true,
+        "notice": "fılme목업 안내티켓 편집·이미지 업로드·자르기·되돌리기는 실제로 동작해요. 검색·OCR·저장·공유는 샘플이에요. 이미지는 외부로 전송하지 않아요.이전 목업 보기",
+        "previous": "../filme-mobile-v1/index.html",
+        "brand": {
+          "x": 29,
+          "y": 390,
+          "width": 65.73750305175781,
+          "height": 24,
+          "right": 94.73750305175781
+        },
+        "scrollWidth": 320,
+        "viewportWidth": 320
+      }
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "color": {
+        "panel": {
+          "top": 291,
+          "bottom": 503,
+          "height": 212
+        },
+        "ticket": {
+          "top": -46.5,
+          "bottom": 345.5,
+          "height": 392
+        },
+        "label": "색상 잉크·배경 톤기본크림차콜브릭직접 선택선택 안 됨텍스트·로고 불투명도100%",
+        "picker": true,
+        "indicator": true,
+        "heading": false,
+        "scrollWidth": 320,
+        "viewportWidth": 320
+      }
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "fixedColor": {
+        "height": 136,
+        "bottom": 503,
+        "opacityVisible": true
+      }
+    },
+    {
+      "width": 375,
+      "height": 667,
+      "menu": {
+        "rows": [
+          {
+            "row": {
+              "x": 33,
+              "y": 247.5,
+              "width": 309,
+              "height": 56,
+              "right": 342
+            },
+            "icon": {
+              "x": 33,
+              "y": 265,
+              "width": 20,
+              "height": 20,
+              "right": 53
+            },
+            "name": {
+              "x": 65,
+              "y": 264.5,
+              "width": 247,
+              "height": 21,
+              "right": 312
+            },
+            "trailing": {
+              "x": 324,
+              "y": 265,
+              "width": 18,
+              "height": 20,
+              "right": 342
+            }
+          },
+          {
+            "row": {
+              "x": 33,
+              "y": 303.5,
+              "width": 309,
+              "height": 56,
+              "right": 342
+            },
+            "icon": {
+              "x": 33,
+              "y": 320,
+              "width": 22,
+              "height": 22,
+              "right": 55
+            },
+            "name": {
+              "x": 67,
+              "y": 320.5,
+              "width": 219,
+              "height": 21,
+              "right": 286
+            },
+            "trailing": {
+              "x": 298,
+              "y": 318,
+              "width": 44,
+              "height": 26,
+              "right": 342
+            }
+          },
+          {
+            "row": {
+              "x": 33,
+              "y": 359.5,
+              "width": 309,
+              "height": 56,
+              "right": 342
+            },
+            "icon": {
+              "x": 33,
+              "y": 377,
+              "width": 20,
+              "height": 20,
+              "right": 53
+            },
+            "name": {
+              "x": 65,
+              "y": 376.5,
+              "width": 247,
+              "height": 21,
+              "right": 312
+            },
+            "trailing": {
+              "x": 324,
+              "y": 377,
+              "width": 18,
+              "height": 20,
+              "right": 342
+            }
+          }
+        ],
+        "close": {
+          "x": 308,
+          "y": 189.5,
+          "width": 44,
+          "height": 44,
+          "right": 352
+        },
+        "closeBackground": "rgba(0, 0, 0, 0)",
+        "details": true,
+        "summary": "목업 안내",
+        "collapsed": true,
+        "notice": "fılme목업 안내티켓 편집·이미지 업로드·자르기·되돌리기는 실제로 동작해요. 검색·OCR·저장·공유는 샘플이에요. 이미지는 외부로 전송하지 않아요.이전 목업 보기",
+        "previous": "../filme-mobile-v1/index.html",
+        "brand": {
+          "x": 33,
+          "y": 437.5,
+          "width": 65.73750305175781,
+          "height": 24,
+          "right": 98.73750305175781
+        },
+        "scrollWidth": 375,
+        "viewportWidth": 375
+      }
+    },
+    {
+      "width": 375,
+      "height": 667,
+      "color": {
+        "panel": {
+          "top": 388,
+          "bottom": 600,
+          "height": 212
+        },
+        "ticket": {
+          "top": -42.5,
+          "bottom": 442.5,
+          "height": 485
+        },
+        "label": "색상 잉크·배경 톤기본크림차콜브릭직접 선택선택 안 됨텍스트·로고 불투명도100%",
+        "picker": true,
+        "indicator": true,
+        "heading": false,
+        "scrollWidth": 375,
+        "viewportWidth": 375
+      }
+    },
+    {
+      "width": 375,
+      "height": 667,
+      "fixedColor": {
+        "height": 136,
+        "bottom": 600,
+        "opacityVisible": true
+      }
+    },
+    {
+      "width": 393,
+      "height": 659,
+      "menu": {
+        "rows": [
+          {
+            "row": {
+              "x": 33,
+              "y": 243.5,
+              "width": 327,
+              "height": 56,
+              "right": 360
+            },
+            "icon": {
+              "x": 33,
+              "y": 261,
+              "width": 20,
+              "height": 20,
+              "right": 53
+            },
+            "name": {
+              "x": 65,
+              "y": 260.5,
+              "width": 265,
+              "height": 21,
+              "right": 330
+            },
+            "trailing": {
+              "x": 342,
+              "y": 261,
+              "width": 18,
+              "height": 20,
+              "right": 360
+            }
+          },
+          {
+            "row": {
+              "x": 33,
+              "y": 299.5,
+              "width": 327,
+              "height": 56,
+              "right": 360
+            },
+            "icon": {
+              "x": 33,
+              "y": 316,
+              "width": 22,
+              "height": 22,
+              "right": 55
+            },
+            "name": {
+              "x": 67,
+              "y": 316.5,
+              "width": 237,
+              "height": 21,
+              "right": 304
+            },
+            "trailing": {
+              "x": 316,
+              "y": 314,
+              "width": 44,
+              "height": 26,
+              "right": 360
+            }
+          },
+          {
+            "row": {
+              "x": 33,
+              "y": 355.5,
+              "width": 327,
+              "height": 56,
+              "right": 360
+            },
+            "icon": {
+              "x": 33,
+              "y": 373,
+              "width": 20,
+              "height": 20,
+              "right": 53
+            },
+            "name": {
+              "x": 65,
+              "y": 372.5,
+              "width": 265,
+              "height": 21,
+              "right": 330
+            },
+            "trailing": {
+              "x": 342,
+              "y": 373,
+              "width": 18,
+              "height": 20,
+              "right": 360
+            }
+          }
+        ],
+        "close": {
+          "x": 326,
+          "y": 185.5,
+          "width": 44,
+          "height": 44,
+          "right": 370
+        },
+        "closeBackground": "rgba(0, 0, 0, 0)",
+        "details": true,
+        "summary": "목업 안내",
+        "collapsed": true,
+        "notice": "fılme목업 안내티켓 편집·이미지 업로드·자르기·되돌리기는 실제로 동작해요. 검색·OCR·저장·공유는 샘플이에요. 이미지는 외부로 전송하지 않아요.이전 목업 보기",
+        "previous": "../filme-mobile-v1/index.html",
+        "brand": {
+          "x": 33,
+          "y": 433.5,
+          "width": 65.73750305175781,
+          "height": 24,
+          "right": 98.73750305175781
+        },
+        "scrollWidth": 393,
+        "viewportWidth": 393
+      }
+    },
+    {
+      "width": 393,
+      "height": 659,
+      "color": {
+        "panel": {
+          "top": 380,
+          "bottom": 592,
+          "height": 212
+        },
+        "ticket": {
+          "top": -42.5,
+          "bottom": 434.5,
+          "height": 477
+        },
+        "label": "색상 잉크·배경 톤기본크림차콜브릭직접 선택선택 안 됨텍스트·로고 불투명도100%",
+        "picker": true,
+        "indicator": true,
+        "heading": false,
+        "scrollWidth": 393,
+        "viewportWidth": 393
+      }
+    },
+    {
+      "width": 393,
+      "height": 659,
+      "fixedColor": {
+        "height": 136,
+        "bottom": 592,
+        "opacityVisible": true
+      }
+    },
+    {
+      "width": 414,
+      "height": 736,
+      "menu": {
+        "rows": [
+          {
+            "row": {
+              "x": 33,
+              "y": 282,
+              "width": 348,
+              "height": 56,
+              "right": 381
+            },
+            "icon": {
+              "x": 33,
+              "y": 299.5,
+              "width": 20,
+              "height": 20,
+              "right": 53
+            },
+            "name": {
+              "x": 65,
+              "y": 299,
+              "width": 286,
+              "height": 21,
+              "right": 351
+            },
+            "trailing": {
+              "x": 363,
+              "y": 299.5,
+              "width": 18,
+              "height": 20,
+              "right": 381
+            }
+          },
+          {
+            "row": {
+              "x": 33,
+              "y": 338,
+              "width": 348,
+              "height": 56,
+              "right": 381
+            },
+            "icon": {
+              "x": 33,
+              "y": 354.5,
+              "width": 22,
+              "height": 22,
+              "right": 55
+            },
+            "name": {
+              "x": 67,
+              "y": 355,
+              "width": 258,
+              "height": 21,
+              "right": 325
+            },
+            "trailing": {
+              "x": 337,
+              "y": 352.5,
+              "width": 44,
+              "height": 26,
+              "right": 381
+            }
+          },
+          {
+            "row": {
+              "x": 33,
+              "y": 394,
+              "width": 348,
+              "height": 56,
+              "right": 381
+            },
+            "icon": {
+              "x": 33,
+              "y": 411.5,
+              "width": 20,
+              "height": 20,
+              "right": 53
+            },
+            "name": {
+              "x": 65,
+              "y": 411,
+              "width": 286,
+              "height": 21,
+              "right": 351
+            },
+            "trailing": {
+              "x": 363,
+              "y": 411.5,
+              "width": 18,
+              "height": 20,
+              "right": 381
+            }
+          }
+        ],
+        "close": {
+          "x": 347,
+          "y": 224,
+          "width": 44,
+          "height": 44,
+          "right": 391
+        },
+        "closeBackground": "rgba(0, 0, 0, 0)",
+        "details": true,
+        "summary": "목업 안내",
+        "collapsed": true,
+        "notice": "fılme목업 안내티켓 편집·이미지 업로드·자르기·되돌리기는 실제로 동작해요. 검색·OCR·저장·공유는 샘플이에요. 이미지는 외부로 전송하지 않아요.이전 목업 보기",
+        "previous": "../filme-mobile-v1/index.html",
+        "brand": {
+          "x": 33,
+          "y": 472,
+          "width": 65.73750305175781,
+          "height": 24,
+          "right": 98.73750305175781
+        },
+        "scrollWidth": 414,
+        "viewportWidth": 414
+      }
+    },
+    {
+      "width": 414,
+      "height": 736,
+      "color": {
+        "panel": {
+          "top": 457,
+          "bottom": 669,
+          "height": 212
+        },
+        "ticket": {
+          "top": -42.5,
+          "bottom": 511.5,
+          "height": 554
+        },
+        "label": "색상 잉크·배경 톤기본크림차콜브릭직접 선택선택 안 됨텍스트·로고 불투명도100%",
+        "picker": true,
+        "indicator": true,
+        "heading": false,
+        "scrollWidth": 414,
+        "viewportWidth": 414
+      }
+    },
+    {
+      "width": 414,
+      "height": 736,
+      "fixedColor": {
+        "height": 136,
+        "bottom": 669,
+        "opacityVisible": true
+      }
+    }
+  ],
+  "screenshots": [
+    "v7-320-menu.png",
+    "v7-320-color.png",
+    "v7-375-menu.png",
+    "v7-375-color.png",
+    "v7-393-menu.png",
+    "v7-393-color.png",
+    "v7-393-fixed-color.png",
+    "v7-414-menu.png",
+    "v7-414-color.png",
+    "v7-393-new-ticket.png"
+  ],
+  "failures": [],
+  "pageErrors": []
+}

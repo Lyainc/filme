@@ -1,0 +1,375 @@
+{
+  "mode": "Chrome viewport emulation; not real iPhone Safari",
+  "widths": [
+    {
+      "width": 320,
+      "height": 568,
+      "scrollWidth": 320,
+      "scrollHeight": 568,
+      "tools": [
+        {
+          "label": "공유",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "label": "영화 검색",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "label": "예매 내역 읽기",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "label": "정보",
+          "height": 55,
+          "hit": true
+        },
+        {
+          "label": "포스터",
+          "height": 55,
+          "hit": true
+        },
+        {
+          "label": "디자인",
+          "height": 55,
+          "hit": true
+        },
+        {
+          "label": "색상",
+          "height": 55,
+          "hit": true
+        },
+        {
+          "label": "서체",
+          "height": 55,
+          "hit": true
+        },
+        {
+          "label": "질감",
+          "height": 55,
+          "hit": true
+        },
+        {
+          "label": "스탬프",
+          "height": 55,
+          "hit": true
+        },
+        {
+          "label": "로고",
+          "height": 55,
+          "hit": true
+        }
+      ],
+      "images": true
+    },
+    {
+      "width": 375,
+      "height": 667,
+      "scrollWidth": 375,
+      "scrollHeight": 667,
+      "tools": [
+        {
+          "label": "공유",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "label": "영화 검색",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "label": "예매 내역 읽기",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "label": "정보",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "포스터",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "디자인",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "색상",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "서체",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "질감",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "스탬프",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "로고",
+          "height": 64,
+          "hit": true
+        }
+      ],
+      "images": true
+    },
+    {
+      "width": 393,
+      "height": 659,
+      "scrollWidth": 393,
+      "scrollHeight": 659,
+      "tools": [
+        {
+          "label": "공유",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "label": "영화 검색",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "label": "예매 내역 읽기",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "label": "정보",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "포스터",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "디자인",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "색상",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "서체",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "질감",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "스탬프",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "로고",
+          "height": 64,
+          "hit": true
+        }
+      ],
+      "images": true
+    },
+    {
+      "width": 414,
+      "height": 736,
+      "scrollWidth": 414,
+      "scrollHeight": 736,
+      "tools": [
+        {
+          "label": "공유",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "label": "영화 검색",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "label": "예매 내역 읽기",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "label": "정보",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "포스터",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "디자인",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "색상",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "서체",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "질감",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "스탬프",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "로고",
+          "height": 64,
+          "hit": true
+        }
+      ],
+      "images": true
+    },
+    {
+      "width": 768,
+      "height": 900,
+      "scrollWidth": 768,
+      "scrollHeight": 900,
+      "tools": [
+        {
+          "label": "공유",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "label": "영화 검색",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "label": "예매 내역 읽기",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "label": "정보",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "포스터",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "디자인",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "색상",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "서체",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "질감",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "스탬프",
+          "height": 64,
+          "hit": true
+        },
+        {
+          "label": "로고",
+          "height": 64,
+          "hit": true
+        }
+      ],
+      "images": true
+    }
+  ],
+  "checks": [
+    "all main tools visible and hit-testable",
+    "no editor page scroll",
+    "typed date and time fields",
+    "full viewport preview",
+    "share without navigation",
+    "modal history back and focus restoration",
+    "six production mood renderers with unchanged source",
+    "undo/redo and draft restore",
+    "search empty state",
+    "OCR sample fills viewing fields",
+    "reset reversible",
+    "short viewport fields reachable",
+    "no browser exceptions"
+  ],
+  "screenshots": [
+    "320-editor.png",
+    "320-data.png",
+    "320-viewing.png",
+    "320-fullscreen.png",
+    "320-share.png",
+    "320-design.png",
+    "375-editor.png",
+    "375-data.png",
+    "375-viewing.png",
+    "375-fullscreen.png",
+    "375-share.png",
+    "375-design.png",
+    "393-editor.png",
+    "393-data.png",
+    "393-viewing.png",
+    "393-fullscreen.png",
+    "393-share.png",
+    "393-design.png",
+    "414-editor.png",
+    "414-data.png",
+    "414-viewing.png",
+    "414-fullscreen.png",
+    "414-share.png",
+    "414-design.png",
+    "768-editor.png",
+    "768-data.png",
+    "768-viewing.png",
+    "768-fullscreen.png",
+    "768-share.png",
+    "768-design.png",
+    "393-menu.png",
+    "393-poster.png",
+    "320-short-height.png"
+  ]
+}

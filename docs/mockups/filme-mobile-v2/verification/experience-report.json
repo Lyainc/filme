@@ -1,0 +1,1742 @@
+{
+  "mode": "Headless Chrome mobile emulation; not iPhone Safari",
+  "checks": [
+    "320×568: passive landing, blank Minimal editor, six contextual modules, title gate, preview, result share, edit return",
+    "375×667: passive landing, blank Minimal editor, six contextual modules, title gate, preview, result share, edit return",
+    "393×659: passive landing, blank Minimal editor, six contextual modules, title gate, preview, result share, edit return",
+    "414×736: passive landing, blank Minimal editor, six contextual modules, title gate, preview, result share, edit return",
+    "768×900: passive landing, blank Minimal editor, six contextual modules, title gate, preview, result share, edit return",
+    "Landing cards advance automatically after 10 seconds",
+    "New ticket from result menu returns to blank editor; browser Back cannot restore stale result",
+    "Reduced motion removes module animation and transitions"
+  ],
+  "geometry": [
+    {
+      "width": 320,
+      "height": 568,
+      "tool": "정보",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "scrollWidth": 320,
+        "scrollHeight": 568
+      },
+      "ticket": {
+        "top": 64,
+        "bottom": 195,
+        "left": 119.015625,
+        "right": 200.984375,
+        "width": 81.96875,
+        "height": 131
+      },
+      "stage": {
+        "top": 56,
+        "bottom": 243,
+        "left": 0,
+        "right": 320,
+        "width": 320,
+        "height": 187
+      },
+      "panel": {
+        "top": 243,
+        "bottom": 495,
+        "left": 12,
+        "right": 308,
+        "width": 296,
+        "height": 252
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "tool": "사진",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "scrollWidth": 320,
+        "scrollHeight": 568
+      },
+      "ticket": {
+        "top": 64,
+        "bottom": 195,
+        "left": 119.015625,
+        "right": 200.984375,
+        "width": 81.96875,
+        "height": 131
+      },
+      "stage": {
+        "top": 56,
+        "bottom": 243,
+        "left": 0,
+        "right": 320,
+        "width": 320,
+        "height": 187
+      },
+      "panel": {
+        "top": 243,
+        "bottom": 495,
+        "left": 12,
+        "right": 308,
+        "width": 296,
+        "height": 252
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "tool": "디자인",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "scrollWidth": 320,
+        "scrollHeight": 568
+      },
+      "ticket": {
+        "top": 64,
+        "bottom": 195,
+        "left": 119.015625,
+        "right": 200.984375,
+        "width": 81.96875,
+        "height": 131
+      },
+      "stage": {
+        "top": 56,
+        "bottom": 243,
+        "left": 0,
+        "right": 320,
+        "width": 320,
+        "height": 187
+      },
+      "panel": {
+        "top": 243,
+        "bottom": 495,
+        "left": 12,
+        "right": 308,
+        "width": 296,
+        "height": 252
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "tool": "색상",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "scrollWidth": 320,
+        "scrollHeight": 568
+      },
+      "ticket": {
+        "top": 64,
+        "bottom": 311,
+        "left": 82.71875,
+        "right": 237.28125,
+        "width": 154.5625,
+        "height": 247
+      },
+      "stage": {
+        "top": 56,
+        "bottom": 359,
+        "left": 0,
+        "right": 320,
+        "width": 320,
+        "height": 303
+      },
+      "panel": {
+        "top": 359,
+        "bottom": 495,
+        "left": 12,
+        "right": 308,
+        "width": 296,
+        "height": 136
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "tool": "질감",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "scrollWidth": 320,
+        "scrollHeight": 568
+      },
+      "ticket": {
+        "top": 64,
+        "bottom": 195,
+        "left": 119.015625,
+        "right": 200.984375,
+        "width": 81.96875,
+        "height": 131
+      },
+      "stage": {
+        "top": 56,
+        "bottom": 243,
+        "left": 0,
+        "right": 320,
+        "width": 320,
+        "height": 187
+      },
+      "panel": {
+        "top": 243,
+        "bottom": 495,
+        "left": 12,
+        "right": 308,
+        "width": 296,
+        "height": 252
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "tool": "로고",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "scrollWidth": 320,
+        "scrollHeight": 568
+      },
+      "ticket": {
+        "top": 64,
+        "bottom": 195,
+        "left": 119.015625,
+        "right": 200.984375,
+        "width": 81.96875,
+        "height": 131
+      },
+      "stage": {
+        "top": 56,
+        "bottom": 243,
+        "left": 0,
+        "right": 320,
+        "width": 320,
+        "height": 187
+      },
+      "panel": {
+        "top": 243,
+        "bottom": 495,
+        "left": 12,
+        "right": 308,
+        "width": 296,
+        "height": 252
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 375,
+      "height": 667,
+      "tool": "정보",
+      "viewport": {
+        "width": 375,
+        "height": 667,
+        "scrollWidth": 375,
+        "scrollHeight": 667
+      },
+      "ticket": {
+        "top": 68,
+        "bottom": 292,
+        "left": 117.40625,
+        "right": 257.578125,
+        "width": 140.171875,
+        "height": 224
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 340,
+        "left": 0,
+        "right": 375,
+        "width": 375,
+        "height": 280
+      },
+      "panel": {
+        "top": 340,
+        "bottom": 592,
+        "left": 12,
+        "right": 363,
+        "width": 351,
+        "height": 252
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 375,
+      "height": 667,
+      "tool": "사진",
+      "viewport": {
+        "width": 375,
+        "height": 667,
+        "scrollWidth": 375,
+        "scrollHeight": 667
+      },
+      "ticket": {
+        "top": 68,
+        "bottom": 292,
+        "left": 117.40625,
+        "right": 257.578125,
+        "width": 140.171875,
+        "height": 224
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 340,
+        "left": 0,
+        "right": 375,
+        "width": 375,
+        "height": 280
+      },
+      "panel": {
+        "top": 340,
+        "bottom": 592,
+        "left": 12,
+        "right": 363,
+        "width": 351,
+        "height": 252
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 375,
+      "height": 667,
+      "tool": "디자인",
+      "viewport": {
+        "width": 375,
+        "height": 667,
+        "scrollWidth": 375,
+        "scrollHeight": 667
+      },
+      "ticket": {
+        "top": 68,
+        "bottom": 292,
+        "left": 117.40625,
+        "right": 257.578125,
+        "width": 140.171875,
+        "height": 224
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 340,
+        "left": 0,
+        "right": 375,
+        "width": 375,
+        "height": 280
+      },
+      "panel": {
+        "top": 340,
+        "bottom": 592,
+        "left": 12,
+        "right": 363,
+        "width": 351,
+        "height": 252
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 375,
+      "height": 667,
+      "tool": "색상",
+      "viewport": {
+        "width": 375,
+        "height": 667,
+        "scrollWidth": 375,
+        "scrollHeight": 667
+      },
+      "ticket": {
+        "top": 68,
+        "bottom": 408,
+        "left": 81.109375,
+        "right": 293.875,
+        "width": 212.765625,
+        "height": 340
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 456,
+        "left": 0,
+        "right": 375,
+        "width": 375,
+        "height": 396
+      },
+      "panel": {
+        "top": 456,
+        "bottom": 592,
+        "left": 12,
+        "right": 363,
+        "width": 351,
+        "height": 136
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 375,
+      "height": 667,
+      "tool": "질감",
+      "viewport": {
+        "width": 375,
+        "height": 667,
+        "scrollWidth": 375,
+        "scrollHeight": 667
+      },
+      "ticket": {
+        "top": 68,
+        "bottom": 292,
+        "left": 117.40625,
+        "right": 257.578125,
+        "width": 140.171875,
+        "height": 224
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 340,
+        "left": 0,
+        "right": 375,
+        "width": 375,
+        "height": 280
+      },
+      "panel": {
+        "top": 340,
+        "bottom": 592,
+        "left": 12,
+        "right": 363,
+        "width": 351,
+        "height": 252
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 375,
+      "height": 667,
+      "tool": "로고",
+      "viewport": {
+        "width": 375,
+        "height": 667,
+        "scrollWidth": 375,
+        "scrollHeight": 667
+      },
+      "ticket": {
+        "top": 68,
+        "bottom": 292,
+        "left": 117.40625,
+        "right": 257.578125,
+        "width": 140.171875,
+        "height": 224
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 340,
+        "left": 0,
+        "right": 375,
+        "width": 375,
+        "height": 280
+      },
+      "panel": {
+        "top": 340,
+        "bottom": 592,
+        "left": 12,
+        "right": 363,
+        "width": 351,
+        "height": 252
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 393,
+      "height": 659,
+      "tool": "정보",
+      "viewport": {
+        "width": 393,
+        "height": 659,
+        "scrollWidth": 393,
+        "scrollHeight": 659
+      },
+      "ticket": {
+        "top": 68,
+        "bottom": 284,
+        "left": 128.90625,
+        "right": 264.078125,
+        "width": 135.171875,
+        "height": 216
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 332,
+        "left": 0,
+        "right": 393,
+        "width": 393,
+        "height": 272
+      },
+      "panel": {
+        "top": 332,
+        "bottom": 584,
+        "left": 12,
+        "right": 381,
+        "width": 369,
+        "height": 252
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 393,
+      "height": 659,
+      "tool": "사진",
+      "viewport": {
+        "width": 393,
+        "height": 659,
+        "scrollWidth": 393,
+        "scrollHeight": 659
+      },
+      "ticket": {
+        "top": 68,
+        "bottom": 284,
+        "left": 128.90625,
+        "right": 264.078125,
+        "width": 135.171875,
+        "height": 216
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 332,
+        "left": 0,
+        "right": 393,
+        "width": 393,
+        "height": 272
+      },
+      "panel": {
+        "top": 332,
+        "bottom": 584,
+        "left": 12,
+        "right": 381,
+        "width": 369,
+        "height": 252
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 393,
+      "height": 659,
+      "tool": "디자인",
+      "viewport": {
+        "width": 393,
+        "height": 659,
+        "scrollWidth": 393,
+        "scrollHeight": 659
+      },
+      "ticket": {
+        "top": 68,
+        "bottom": 284,
+        "left": 128.90625,
+        "right": 264.078125,
+        "width": 135.171875,
+        "height": 216
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 332,
+        "left": 0,
+        "right": 393,
+        "width": 393,
+        "height": 272
+      },
+      "panel": {
+        "top": 332,
+        "bottom": 584,
+        "left": 12,
+        "right": 381,
+        "width": 369,
+        "height": 252
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 393,
+      "height": 659,
+      "tool": "색상",
+      "viewport": {
+        "width": 393,
+        "height": 659,
+        "scrollWidth": 393,
+        "scrollHeight": 659
+      },
+      "ticket": {
+        "top": 68,
+        "bottom": 400,
+        "left": 92.609375,
+        "right": 300.375,
+        "width": 207.765625,
+        "height": 332
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 448,
+        "left": 0,
+        "right": 393,
+        "width": 393,
+        "height": 388
+      },
+      "panel": {
+        "top": 448,
+        "bottom": 584,
+        "left": 12,
+        "right": 381,
+        "width": 369,
+        "height": 136
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 393,
+      "height": 659,
+      "tool": "질감",
+      "viewport": {
+        "width": 393,
+        "height": 659,
+        "scrollWidth": 393,
+        "scrollHeight": 659
+      },
+      "ticket": {
+        "top": 68,
+        "bottom": 284,
+        "left": 128.90625,
+        "right": 264.078125,
+        "width": 135.171875,
+        "height": 216
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 332,
+        "left": 0,
+        "right": 393,
+        "width": 393,
+        "height": 272
+      },
+      "panel": {
+        "top": 332,
+        "bottom": 584,
+        "left": 12,
+        "right": 381,
+        "width": 369,
+        "height": 252
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 393,
+      "height": 659,
+      "tool": "로고",
+      "viewport": {
+        "width": 393,
+        "height": 659,
+        "scrollWidth": 393,
+        "scrollHeight": 659
+      },
+      "ticket": {
+        "top": 68,
+        "bottom": 284,
+        "left": 128.90625,
+        "right": 264.078125,
+        "width": 135.171875,
+        "height": 216
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 332,
+        "left": 0,
+        "right": 393,
+        "width": 393,
+        "height": 272
+      },
+      "panel": {
+        "top": 332,
+        "bottom": 584,
+        "left": 12,
+        "right": 381,
+        "width": 369,
+        "height": 252
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 414,
+      "height": 736,
+      "tool": "정보",
+      "viewport": {
+        "width": 414,
+        "height": 736,
+        "scrollWidth": 414,
+        "scrollHeight": 736
+      },
+      "ticket": {
+        "top": 68,
+        "bottom": 361,
+        "left": 115.3125,
+        "right": 298.671875,
+        "width": 183.359375,
+        "height": 293
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 409,
+        "left": 0,
+        "right": 414,
+        "width": 414,
+        "height": 349
+      },
+      "panel": {
+        "top": 409,
+        "bottom": 661,
+        "left": 12,
+        "right": 402,
+        "width": 390,
+        "height": 252
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 414,
+      "height": 736,
+      "tool": "사진",
+      "viewport": {
+        "width": 414,
+        "height": 736,
+        "scrollWidth": 414,
+        "scrollHeight": 736
+      },
+      "ticket": {
+        "top": 68,
+        "bottom": 361,
+        "left": 115.3125,
+        "right": 298.671875,
+        "width": 183.359375,
+        "height": 293
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 409,
+        "left": 0,
+        "right": 414,
+        "width": 414,
+        "height": 349
+      },
+      "panel": {
+        "top": 409,
+        "bottom": 661,
+        "left": 12,
+        "right": 402,
+        "width": 390,
+        "height": 252
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 414,
+      "height": 736,
+      "tool": "디자인",
+      "viewport": {
+        "width": 414,
+        "height": 736,
+        "scrollWidth": 414,
+        "scrollHeight": 736
+      },
+      "ticket": {
+        "top": 68,
+        "bottom": 361,
+        "left": 115.3125,
+        "right": 298.671875,
+        "width": 183.359375,
+        "height": 293
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 409,
+        "left": 0,
+        "right": 414,
+        "width": 414,
+        "height": 349
+      },
+      "panel": {
+        "top": 409,
+        "bottom": 661,
+        "left": 12,
+        "right": 402,
+        "width": 390,
+        "height": 252
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 414,
+      "height": 736,
+      "tool": "색상",
+      "viewport": {
+        "width": 414,
+        "height": 736,
+        "scrollWidth": 414,
+        "scrollHeight": 736
+      },
+      "ticket": {
+        "top": 68,
+        "bottom": 477,
+        "left": 79.015625,
+        "right": 334.96875,
+        "width": 255.953125,
+        "height": 409
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 525,
+        "left": 0,
+        "right": 414,
+        "width": 414,
+        "height": 465
+      },
+      "panel": {
+        "top": 525,
+        "bottom": 661,
+        "left": 12,
+        "right": 402,
+        "width": 390,
+        "height": 136
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 414,
+      "height": 736,
+      "tool": "질감",
+      "viewport": {
+        "width": 414,
+        "height": 736,
+        "scrollWidth": 414,
+        "scrollHeight": 736
+      },
+      "ticket": {
+        "top": 68,
+        "bottom": 361,
+        "left": 115.3125,
+        "right": 298.671875,
+        "width": 183.359375,
+        "height": 293
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 409,
+        "left": 0,
+        "right": 414,
+        "width": 414,
+        "height": 349
+      },
+      "panel": {
+        "top": 409,
+        "bottom": 661,
+        "left": 12,
+        "right": 402,
+        "width": 390,
+        "height": 252
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 414,
+      "height": 736,
+      "tool": "로고",
+      "viewport": {
+        "width": 414,
+        "height": 736,
+        "scrollWidth": 414,
+        "scrollHeight": 736
+      },
+      "ticket": {
+        "top": 68,
+        "bottom": 361,
+        "left": 115.3125,
+        "right": 298.671875,
+        "width": 183.359375,
+        "height": 293
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 409,
+        "left": 0,
+        "right": 414,
+        "width": 414,
+        "height": 349
+      },
+      "panel": {
+        "top": 409,
+        "bottom": 661,
+        "left": 12,
+        "right": 402,
+        "width": 390,
+        "height": 252
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 768,
+      "height": 900,
+      "tool": "정보",
+      "viewport": {
+        "width": 768,
+        "height": 900,
+        "scrollWidth": 768,
+        "scrollHeight": 900
+      },
+      "ticket": {
+        "top": 68,
+        "bottom": 525,
+        "left": 241,
+        "right": 526.984375,
+        "width": 285.984375,
+        "height": 457
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 573,
+        "left": 169,
+        "right": 599,
+        "width": 430,
+        "height": 513
+      },
+      "panel": {
+        "top": 573,
+        "bottom": 825,
+        "left": 181,
+        "right": 587,
+        "width": 406,
+        "height": 252
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 768,
+      "height": 900,
+      "tool": "사진",
+      "viewport": {
+        "width": 768,
+        "height": 900,
+        "scrollWidth": 768,
+        "scrollHeight": 900
+      },
+      "ticket": {
+        "top": 68,
+        "bottom": 525,
+        "left": 241,
+        "right": 526.984375,
+        "width": 285.984375,
+        "height": 457
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 573,
+        "left": 169,
+        "right": 599,
+        "width": 430,
+        "height": 513
+      },
+      "panel": {
+        "top": 573,
+        "bottom": 825,
+        "left": 181,
+        "right": 587,
+        "width": 406,
+        "height": 252
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 768,
+      "height": 900,
+      "tool": "디자인",
+      "viewport": {
+        "width": 768,
+        "height": 900,
+        "scrollWidth": 768,
+        "scrollHeight": 900
+      },
+      "ticket": {
+        "top": 68,
+        "bottom": 525,
+        "left": 241,
+        "right": 526.984375,
+        "width": 285.984375,
+        "height": 457
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 573,
+        "left": 169,
+        "right": 599,
+        "width": 430,
+        "height": 513
+      },
+      "panel": {
+        "top": 573,
+        "bottom": 825,
+        "left": 181,
+        "right": 587,
+        "width": 406,
+        "height": 252
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 768,
+      "height": 900,
+      "tool": "색상",
+      "viewport": {
+        "width": 768,
+        "height": 900,
+        "scrollWidth": 768,
+        "scrollHeight": 900
+      },
+      "ticket": {
+        "top": 68,
+        "bottom": 641,
+        "left": 204.703125,
+        "right": 563.28125,
+        "width": 358.578125,
+        "height": 573
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 689,
+        "left": 169,
+        "right": 599,
+        "width": 430,
+        "height": 629
+      },
+      "panel": {
+        "top": 689,
+        "bottom": 825,
+        "left": 181,
+        "right": 587,
+        "width": 406,
+        "height": 136
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 768,
+      "height": 900,
+      "tool": "질감",
+      "viewport": {
+        "width": 768,
+        "height": 900,
+        "scrollWidth": 768,
+        "scrollHeight": 900
+      },
+      "ticket": {
+        "top": 68,
+        "bottom": 525,
+        "left": 241,
+        "right": 526.984375,
+        "width": 285.984375,
+        "height": 457
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 573,
+        "left": 169,
+        "right": 599,
+        "width": 430,
+        "height": 513
+      },
+      "panel": {
+        "top": 573,
+        "bottom": 825,
+        "left": 181,
+        "right": 587,
+        "width": 406,
+        "height": 252
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    },
+    {
+      "width": 768,
+      "height": 900,
+      "tool": "로고",
+      "viewport": {
+        "width": 768,
+        "height": 900,
+        "scrollWidth": 768,
+        "scrollHeight": 900
+      },
+      "ticket": {
+        "top": 68,
+        "bottom": 525,
+        "left": 241,
+        "right": 526.984375,
+        "width": 285.984375,
+        "height": 457
+      },
+      "stage": {
+        "top": 60,
+        "bottom": 573,
+        "left": 169,
+        "right": 599,
+        "width": 430,
+        "height": 513
+      },
+      "panel": {
+        "top": 573,
+        "bottom": 825,
+        "left": 181,
+        "right": 587,
+        "width": 406,
+        "height": 252
+      },
+      "cta": null,
+      "ui": {
+        "panelRadius": "22px",
+        "toolRadius": "0px",
+        "panelShadow": "none",
+        "toolShadow": "rgba(25, 22, 19, 0.12) 0px 7px 12px 0px",
+        "animation": "0.22s",
+        "selectedToolRadius": "10px",
+        "headerButtons": [
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": null,
+            "top": 21,
+            "height": 36
+          },
+          {
+            "label": "도구 닫기",
+            "top": 17,
+            "height": 44
+          }
+        ]
+      }
+    }
+  ],
+  "screenshots": [
+    "v7-320-landing.png",
+    "v7-320-editor.png",
+    "v7-320-info.png",
+    "v7-320-디자인.png",
+    "v7-320-질감.png",
+    "v7-320-로고.png",
+    "v7-320-result.png",
+    "v7-393-landing.png",
+    "v7-393-editor.png",
+    "v7-393-photo-crop.png",
+    "v7-393-info.png",
+    "v7-393-keyboard.png",
+    "v7-393-디자인.png",
+    "v7-393-질감.png",
+    "v7-393-로고.png",
+    "v7-393-result.png",
+    "v7-768-landing.png",
+    "v7-768-editor.png"
+  ],
+  "failures": [],
+  "pageErrors": []
+}

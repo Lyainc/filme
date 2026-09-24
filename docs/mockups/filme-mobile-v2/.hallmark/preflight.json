@@ -1,0 +1,31 @@
+{
+  "date": "2026-09-24",
+  "mode": "redesign",
+  "genre": "modern-minimal",
+  "theme": "custom FILME #B0423F",
+  "font": "Pretendard",
+  "scope": "standalone HTML mockup v2",
+  "preserved": [
+    "production code",
+    "six natural-pixel mood components",
+    "v1 comparison",
+    "format logos",
+    "signature images and nine fonts"
+  ],
+  "reuse": [
+    "v1 shadcn primitives",
+    "v1 tokens",
+    "FILME Wordmark"
+  ],
+  "structure": "passive centered landing gallery; connected six-tool deck; floating modal; same-screen result",
+  "references": [
+    "Apple Photos",
+    "Canva",
+    "Google Photos",
+    "Snapseed",
+    "Lightroom",
+    "Instagram (flow only; exact current layout unverified)"
+  ],
+  "interaction": "216px contextual panels with 12px top inset; centered controls; header imports; keyboard field navigation",
+  "mobile": "430px max app with distinct outside canvas on wide viewports; visualViewport-aware input and focused ticket crop"
+}
