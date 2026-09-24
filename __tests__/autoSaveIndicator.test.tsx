@@ -19,33 +19,44 @@ describe('AutoSaveIndicator (#436)', () => {
     const user = userEvent.setup();
     render(<AutoSaveIndicator enabled lastSavedAt={null} onToggle={onToggle} />);
 
-    await user.click(screen.getByRole('switch', { name: '자동 임시저장 켜짐' }));
+    await user.click(screen.getByRole('switch', { name: '자동저장 켜짐' }));
 
     expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+
+  test('#782 — 점과 캡션 어느 쪽을 눌러도 하나의 switch가 정확히 한 번 토글한다', async () => {
+    const onToggle = mock(() => {});
+    const user = userEvent.setup();
+    render(<AutoSaveIndicator enabled lastSavedAt={1} onToggle={onToggle} />);
+    await user.click(screen.getByText('자동저장'));
+    expect(onToggle).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole('switch').querySelector('.relative.inline-flex')!);
+    expect(onToggle).toHaveBeenCalledTimes(2);
+    expect(screen.getAllByRole('switch').length).toBe(1);
   });
 
   // #677 — aria-label에서 조건절("클릭하면 꺼요")을 걷어내면서 그 안내를 title로 옮겼다.
   // 라벨만 검사하면 정보가 사라져도 통과하므로 title 쪽을 같이 잠근다(claude-review PR #700 P2).
   test('끄고 켜는 방법은 title이 지고 있다', () => {
     const { rerender } = render(<AutoSaveIndicator enabled lastSavedAt={null} onToggle={() => {}} />);
-    expect(screen.getByRole('switch').getAttribute('title')).toBe('자동 임시저장 켜짐 — 클릭하면 꺼요');
+    expect(screen.getByRole('switch').getAttribute('title')).toBe('자동저장 켜짐 — 클릭하면 꺼요');
 
     rerender(<AutoSaveIndicator enabled={false} lastSavedAt={null} onToggle={() => {}} />);
-    expect(screen.getByRole('switch').getAttribute('title')).toBe('자동 임시저장 꺼짐 — 클릭하면 켜요');
+    expect(screen.getByRole('switch').getAttribute('title')).toBe('자동저장 꺼짐 — 클릭하면 켜요');
   });
 
   test('enabled=false면 꺼짐 상태 라벨을 노출', () => {
     render(<AutoSaveIndicator enabled={false} lastSavedAt={null} onToggle={() => {}} />);
 
-    expect(screen.getByRole('switch', { name: '자동 임시저장 꺼짐' })).toBeTruthy();
+    expect(screen.getByRole('switch', { name: '자동저장 꺼짐' })).toBeTruthy();
   });
 
   test('#570 — title 툴팁 없이도 "자동저장" 캡션이 항상 보인다', () => {
     render(<AutoSaveIndicator enabled lastSavedAt={null} onToggle={() => {}} />);
 
     expect(screen.getByText('자동저장')).toBeTruthy();
-    // 캡션은 버튼 밖 비상호작용 텍스트라 44px 히트 타깃엔 안 얹힌다.
-    expect(screen.getByRole('switch').textContent).not.toContain('자동저장');
+    // #782: 점과 캡션을 하나의 버튼이 소유한다.
+    expect(screen.getByRole('switch').textContent).toContain('자동저장');
   });
 
   test('#570 — 캡션은 whitespace-nowrap이라 좁은 헤더에서 "자동저\\n장"처럼 줄바꿈되지 않는다', () => {
@@ -54,12 +65,12 @@ describe('AutoSaveIndicator (#436)', () => {
     expect(screen.getByText('자동저장').className).toContain('whitespace-nowrap');
   });
 
-  test('#570 — 점 크기는 h-2(8px)로 줄고 44px 히트 타깃(h-touch w-touch)은 유지된다', () => {
+  test('#570 — 점 크기는 h-2(8px)로 줄고 44px 이상 히트 타깃(h-touch min-w-touch)은 유지된다', () => {
     render(<AutoSaveIndicator enabled lastSavedAt={null} onToggle={() => {}} />);
 
     const button = screen.getByRole('switch');
     expect(button.className).toContain('h-touch');
-    expect(button.className).toContain('w-touch');
+    expect(button.className).toContain('min-w-touch');
     const dot = button.querySelector('span > span:last-child') as HTMLElement;
     expect(dot.className).toContain('h-2 w-2');
     expect(dot.className).not.toContain('h-2.5');
