@@ -244,3 +244,18 @@ describe('#562 BrightnessSlider — 10% 스텝 + % 입력', () => {
     expect(onChange).toHaveBeenCalledWith(0.8);
   });
 });
+
+// #779 — 보이는 트랙(2px)과 손가락이 닿는 range 박스를 가른다. happy-dom은 레이아웃을 안 하니
+// 박스 높이 선언과 트랙 선언을 각각 잠그고, 실제 px·hit-test는 크롬 하네스(railSlot)로 본다.
+describe('#779 BrightnessSlider — 터치 영역', () => {
+  test('range 박스는 h-8(32px)이고 공유 트랙은 2px 가는 선 그대로다', () => {
+    render(<BrightnessSlider value={0.5} onChange={() => {}} label="Test" id="touch-779" />);
+    const range = screen.getByRole('slider', { name: 'Test' });
+    expect(range.className).toContain('h-8');
+    // 32px 박스가 흐름 밖(absolute)이어야 슬라이더마다 30px씩 안 늘어 로고 크기 패널이 슬롯을 안 넘친다.
+    expect(range.className).toContain('absolute');
+    const css = require('fs').readFileSync(require('path').join(__dirname, '../src/styles/globals.css'), 'utf8') as string;
+    const track = css.match(/input\[type="range"\]::-webkit-slider-runnable-track\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(track).toContain('height: 2px;');
+  });
+});

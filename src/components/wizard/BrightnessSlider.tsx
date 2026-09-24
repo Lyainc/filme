@@ -114,7 +114,9 @@ export default function BrightnessSlider({
 
   return (
     <div className="space-y-field">
-      <div className="flex items-baseline justify-between">
+      {/* relative z-10 — 아래 range의 32px 박스(#779)는 위끝이 이 줄 밑선에 닿는데, 액션 버튼은 -my-1 h-7이라
+          밑선보다 4px 더 내려온다. 이 줄을 range 위에 쌓아 그 4px 탭을 버튼이 받게 한다. */}
+      <div className="relative z-10 flex items-baseline justify-between">
         <span className="flex items-baseline gap-2">
           <Eyebrow as="label" htmlFor={id}>
             {label}
@@ -169,29 +171,38 @@ export default function BrightnessSlider({
           </Eyebrow>
         </span>
       </div>
-      <input
-        id={id}
-        type="range"
-        min={min}
-        max={max}
-        // "any" + 수동 스냅(#562) — step 속성은 값 자체를 격자에 가둬서 % 입력의 37%를 40%로
-        // 잘라낸다(위 snapToStep 주석). 드래그는 onChange에서 10%p 격자로 스냅하고, 화살표는
-        // 아래 onKeyDown이 다음 눈금으로 옮긴다. 1%(0.01)는 100단계를 손가락으로 훑어야 해서
-        // 모바일 터치로 원하는 값에 못 세웠다 — 그게 이 이슈의 출발점.
-        step="any"
-        value={localValue}
-        onChange={(e) => setLocalValue(snapToStep(parseFloat(e.target.value), min, max))}
-        // PageUp/Down도 같이 잡는다 — step="any"에서 네이티브 페이지 이동은 (max-min)/10이라
-        // 로고 크기축(0.6..1.3)에선 0.07씩 움직여 격자 밖(0.67)에 선다. Home/End는 네이티브가
-        // min/max로 보내고 둘 다 격자 위라 그대로 둔다.
-        onKeyDown={(e) => {
-          const dir = STEP_UP_KEYS.has(e.key) ? 1 : STEP_DOWN_KEYS.has(e.key) ? -1 : 0;
-          if (!dir) return;
-          e.preventDefault();
-          setLocalValue(stepFrom(localValue, dir, min, max));
-        }}
-        className="w-full"
-      />
+      {/* 손가락이 닿는 박스와 보이는 선을 가른다(#779). 트랙은 globals.css의 2px 선 그대로고, range 박스만
+          32px(h-8)로 키워 트랙 위아래 15px 안의 탭·드래그도 받는다. 박스를 흐름에 두면(h-8만 주면)
+          슬라이더마다 30px씩 늘어 로고 크기 패널이 320~393px 기기에서 슬롯(26svh)을 넘치고 두 번째
+          슬라이더가 접힌다(실측). 그래서 래퍼가 예전 inline range의 줄 상자(14px, 트랙 중심은 위에서
+          6px)를 그대로 차지하고 range는 그 위에 absolute로 뜬다 — 배치·간격은 예전과 px 단위로 같고,
+          32px 박스는 위로 라벨 줄 밑선까지(더 내려온 액션 버튼은 위 z-10이 지킨다), 아래로 다음 라벨 줄
+          8px 앞까지라 이웃 탭을 안 가린다. */}
+      <div className="relative h-3.5">
+        <input
+          id={id}
+          type="range"
+          min={min}
+          max={max}
+          // "any" + 수동 스냅(#562) — step 속성은 값 자체를 격자에 가둬서 % 입력의 37%를 40%로
+          // 잘라낸다(위 snapToStep 주석). 드래그는 onChange에서 10%p 격자로 스냅하고, 화살표는
+          // 아래 onKeyDown이 다음 눈금으로 옮긴다. 1%(0.01)는 100단계를 손가락으로 훑어야 해서
+          // 모바일 터치로 원하는 값에 못 세웠다 — 그게 이 이슈의 출발점.
+          step="any"
+          value={localValue}
+          onChange={(e) => setLocalValue(snapToStep(parseFloat(e.target.value), min, max))}
+          // PageUp/Down도 같이 잡는다 — step="any"에서 네이티브 페이지 이동은 (max-min)/10이라
+          // 로고 크기축(0.6..1.3)에선 0.07씩 움직여 격자 밖(0.67)에 선다. Home/End는 네이티브가
+          // min/max로 보내고 둘 다 격자 위라 그대로 둔다.
+          onKeyDown={(e) => {
+            const dir = STEP_UP_KEYS.has(e.key) ? 1 : STEP_DOWN_KEYS.has(e.key) ? -1 : 0;
+            if (!dir) return;
+            e.preventDefault();
+            setLocalValue(stepFrom(localValue, dir, min, max));
+          }}
+          className="absolute inset-x-0 top-1.5 h-8 w-full -translate-y-1/2"
+        />
+      </div>
     </div>
   );
 }
