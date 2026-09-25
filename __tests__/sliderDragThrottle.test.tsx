@@ -254,6 +254,12 @@ describe('#779 BrightnessSlider — 터치 영역', () => {
     expect(range.className).toContain('h-8');
     // 32px 박스가 흐름 밖(absolute)이어야 슬라이더마다 30px씩 안 늘어 로고 크기 패널이 슬롯을 안 넘친다.
     expect(range.className).toContain('absolute');
+    // 박스 위끝이 라벨 줄 밑선에서 멈추는 건 이 오프셋 조합(래퍼 h-3.5의 트랙 중심 6px에 박스 중심을
+    // 맞춤)에서만 나온다 — 하나라도 바뀌면 박스가 라벨을 덮거나 이웃 슬라이더 탭을 뺏는다(PR #792 P1).
+    const rangeClasses = range.className.split(/\s+/);
+    expect(rangeClasses).toContain('top-1.5');
+    expect(rangeClasses).toContain('-translate-y-1/2');
+    expect(range.parentElement?.classList.contains('h-3.5')).toBe(true);
     const css = require('fs').readFileSync(require('path').join(__dirname, '../src/styles/globals.css'), 'utf8') as string;
     const track = css.match(/input\[type="range"\]::-webkit-slider-runnable-track\s*\{([^}]*)\}/)?.[1] ?? '';
     expect(track).toContain('height: 2px;');
