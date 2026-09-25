@@ -390,6 +390,93 @@ describe('OCR undo가 새 문서 리셋 위에서 일어나면 옛 draft가 아�
   });
 });
 
+describe('문서를 리셋하면 옛 문서의 OCR 되돌리기가 같이 사라진다 (#804)', () => {
+  // 메뉴 초기화는 2탭 arm이고, 더블탭 가드(350ms) 밖에서 재탭해야 실행된다(#374·PR #375 P1).
+  async function clearFromMenu(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    await user.click(screen.getByRole('button', { name: '초기화' }));
+    await new Promise((r) => setTimeout(r, 400));
+    await user.click(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' }));
+  }
+
+  test('OCR 배너가 뜬 채로 메뉴에서 초기화하면 배너가 사라지고, 새 문서에 옛 OCR 전 값이 되돌려지지 않는다', async () => {
+    const user = userEvent.setup();
+    render(<MobileHarness />);
+
+    // 편집 중인 문서 — OCR 전 값이 빈 값이 아니어야 "옛 값이 되돌려졌는지"가 새 문서의 빈 값과 구분된다.
+    await user.click(screen.getByTestId('landing-skip-poster'));
+    await user.click(screen.getByText('seed-draft-theater'));
+    ocrImpl = async () => ({ theater: 'CGV 강남', seat: 'H12' });
+    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+    await screen.findByRole('button', { name: '되돌리기' });
+    expect(captured.movieInfo.theater).toBe('CGV 강남');
+
+    await clearFromMenu(user);
+    expect(captured.movieInfo.theater).toBe('');
+
+    // 초기화 직후(랜딩 위)에 이미 없어야 한다 — 배너는 fixed라 랜딩 위에도 떠서, 남아 있으면 누르는
+    // 순간 '인터스텔라 극장'이 새 문서에 쓰인다. 새로 시작(startFreshDoc)을 거친 뒤에만 재면
+    // performClear 쪽 누락을 못 잡는다. `!!` 강제 변환 — 사유는 #693(CLAUDE.md 테스트 절).
+    expect(!!screen.queryByTestId('ocr-undo-banner')).toBe(false);
+    expect(!!screen.queryByRole('button', { name: '되돌리기' })).toBe(false);
+
+    await user.click(screen.getByTestId('landing-skip-poster'));
+    expect(!!screen.queryByRole('button', { name: '되돌리기' })).toBe(false);
+    expect(captured.movieInfo.theater).toBe('');
+  });
+
+  // 랜딩이 다시 뜨는 길은 performClear 하나라, 랜딩 위에 배너가 있으려면 초기화 전에 시작한 OCR이
+  // 초기화 뒤에 도착해야 한다(runOcr 응답은 문서 리셋을 안 본다 — 별도 결함). 그 배너가 "새로 시작"
+  // 뒤까지 남지 않는지를 startFreshDoc 쪽에서 잰다. 늦은 OCR을 버리게 고치면 아래 선행 조건(배너가
+  // 뜬다)이 먼저 깨지니, 그때 이 테스트를 같이 다시 볼 것.
+  test('초기화 뒤에 도착한 OCR이 랜딩 위에 띄운 배너도 "새로 시작"하면 사라진다', async () => {
+    const user = userEvent.setup();
+    render(<MobileHarness />);
+
+    await user.click(screen.getByTestId('landing-skip-poster'));
+    let resolveOcr!: (r: Record<string, unknown>) => void;
+    ocrImpl = () => new Promise((res) => { resolveOcr = res; });
+    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+
+    await clearFromMenu(user);
+    resolveOcr({ theater: 'CGV 강남' });
+    await screen.findByRole('button', { name: '되돌리기' });
+
+    await user.click(screen.getByTestId('landing-skip-poster'));
+    expect(!!screen.queryByTestId('ocr-undo-banner')).toBe(false);
+  });
+
+  // startFreshDoc이 스냅샷을 버려도, 랜딩 OCR은 그 직후 같은 배치에서 새 스냅샷을 뜬다(#737·#727 c7).
+  test('초기화 뒤 랜딩에서 OCR로 새로 시작하면 배너가 다시 뜨고, 되돌리기는 옛 스냅샷이 아니라 빈 새 문서로 돌아간다', async () => {
+    const user = userEvent.setup();
+    render(<MobileHarness />);
+
+    await user.click(screen.getByTestId('landing-skip-poster'));
+    await user.click(screen.getByText('seed-draft-theater'));
+    ocrImpl = async () => ({ theater: 'CGV 강남' });
+    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+    await screen.findByRole('button', { name: '되돌리기' });
+
+    await clearFromMenu(user);
+
+    // 랜딩이 다시 뜬 상태(landingDismissed=false) — 여기서의 OCR은 "새로 시작" 경로다.
+    ocrImpl = async () => ({ theater: 'CGV 용산', seat: 'J7' });
+    await user.upload(ocrFileInput(), new File(['x'], 'ticket2.png', { type: 'image/png' }));
+    const undoButton = await screen.findByRole('button', { name: '되돌리기' });
+    expect(captured.movieInfo.theater).toBe('CGV 용산');
+    expect(captured.movieInfo.seat).toBe('J7');
+
+    await user.click(undoButton);
+
+    // INITIAL_STATE 기준 — 옛 스냅샷의 '인터스텔라 극장'도, OCR 값도 아니다.
+    expect(captured.movieInfo.theater).toBe('');
+    expect(captured.movieInfo.seat).toBe('');
+    await waitFor(() => {
+      expect(!!screen.queryByRole('button', { name: '되돌리기' })).toBe(false);
+    });
+  });
+});
+
 describe('OCR 되돌리기 배너와 전역 스낵바가 좌표 충돌하지 않는다 (#731)', () => {
   test('OCR 배너가 뜬 채로 전역 토스트가 뜨면, 토스트가 배너 위로 올라가고 배너를 가리지 않는다', async () => {
     const user = userEvent.setup();
