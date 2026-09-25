@@ -13,6 +13,10 @@
  * URL 라우팅으로 스텁한다(kobisLookup 자체를 mock.module하면 프로세스 전역이라 kobisLookup.test.ts가
  * 오염된다 — bun-mock-module-global-leak 메모). 지연 응답은 kobisDetailUnmount.test.tsx의
  * deferred fetch 패턴을 재사용한다.
+ *
+ * #801 — 같은 흐름에서 버려진 OCR 보강이 되돌리기 스냅샷에 KOBIS 키를 남기면 배너의 "되돌리기"가
+ * OCR이 쓰지도 않은 사용자 선택을 OCR 전 값으로 되돌렸다. 버려질 때 useOcrUndo.dropKobisFields로
+ * 그 키만 빼고, 되돌릴 게 안 남으면 배너를 닫는다.
  */
 import { describe, expect, test, afterAll, afterEach, mock } from 'bun:test';
 import { render, screen, cleanup, waitFor, within } from '@testing-library/react';
@@ -94,74 +98,165 @@ afterAll(() => {
   mock.module('@/utils/ocr', () => realOcr);
 });
 
+/**
+ * KOBIS fetch 스텁 — OCR이 트리거하는 '기생충' 검색과 사용자가 고른 '괴물'의 상세 조회는 응답을
+ * 미뤄 순서를 테스트가 직접 정한다(1: 사용자 선택 먼저 → 2: OCR 검색 응답 → 3: 고른 영화의 상세).
+ */
+function stubKobis() {
+  const ocrSearch = deferred<unknown>();
+  const hostDetail = deferred<unknown>();
+  // OCR 조회가 끝까지(검색 → PARASITE 상세) 갔는지 — 버려짐 이후 단언이 그 뒤에 서게 하는 기준점.
+  const state = { parasiteDetailRequested: false };
+
+  globalThis.fetch = (async (url: string) => {
+    if (url.includes('/api/kobis/search')) {
+      const movieNm = movieNmFromUrl(url);
+      if (movieNm === '기생충') return ocrSearch.promise;
+      if (movieNm === '괴물') {
+        return fakeResponse({
+          movieListResult: {
+            movieList: [
+              { movieCd: 'HOST', movieNm: '괴물', movieNmEn: 'The Host', openDt: '20060727' },
+            ],
+          },
+        });
+      }
+      throw new Error(`unexpected search url: ${url}`);
+    }
+    if (url.includes('/api/kobis/detail')) {
+      if (url.includes('movieCd=PARASITE')) {
+        state.parasiteDetailRequested = true;
+        return fakeResponse({
+          movieInfoResult: { movieInfo: { actors: [{ peopleNm: '송강호' }], showTm: '132' } },
+        });
+      }
+      if (url.includes('movieCd=HOST')) return hostDetail.promise;
+      throw new Error(`unexpected detail url: ${url}`);
+    }
+    throw new Error(`unexpected url: ${url}`);
+  }) as unknown as typeof fetch;
+
+  return { ocrSearch, hostDetail, state };
+}
+
+/** 필드 드로어 → 제목 편집기에서 '괴물'을 검색해 KOBIS 결과로 고른다(실제 사용자 동선). */
+async function pickHostInTitleEditor(user: ReturnType<typeof userEvent.setup>) {
+  const handle = await screen.findByRole('button', { name: '티켓 항목 목록 열기' });
+  await user.click(handle);
+  const dialog = await screen.findByRole('dialog', { name: '티켓 항목' });
+  // 온-티켓 필드 탭도 같은 aria-label("제목 편집")을 쓰므로(FieldTap) 드로어 안으로 좁힌다.
+  await user.click(within(dialog).getByRole('button', { name: '제목 편집' }));
+  const titleInput = await screen.findByRole('textbox', { name: '제목' });
+
+  // 300ms 디바운스 뒤 KOBIS 검색 결과 행이 뜬다(useKobisSearch.scheduleSearch).
+  await user.type(titleInput, '괴물');
+  const listbox = await screen.findByRole('listbox', { name: '검색 결과' }, { timeout: 2000 });
+  const resultButton = within(listbox).getByRole('button');
+  expect(resultButton.textContent).toContain('괴물');
+
+  // beginMovieSelection이 새 영화 수명을 잡고(movieSelectionRef 증가) HOST 상세 조회를 건다.
+  await user.click(resultButton);
+  expect(captured.movieInfo.title).toBe('괴물');
+  expect(captured.movieInfo.movieCd).toBe('HOST');
+}
+
+/** OCR의 검색이 이제야 응답한다 — 1건 매치라 PARASITE 상세까지 이어진 뒤 applyKobis가 버린다. */
+async function resolveOcrSearchAndSettle(kobis: ReturnType<typeof stubKobis>) {
+  kobis.ocrSearch.resolve(
+    fakeResponse({
+      movieListResult: {
+        movieList: [
+          { movieCd: 'PARASITE', movieNm: '기생충', movieNmEn: 'Parasite', openDt: '20190530' },
+        ],
+      },
+    })
+  );
+  // 결과 단언을 waitFor에 걸면 첫 검사에서 이미 참이라 OCR 체인이 끝나기 전에 통과한다 — OCR의
+  // 상세 요청이 실제로 나가고 그 응답까지 흘러간 뒤에 잰다.
+  await waitFor(() => {
+    expect(kobis.state.parasiteDetailRequested).toBe(true);
+  });
+  await new Promise((r) => setTimeout(r, 0));
+}
+
+/** 사용자가 고른 영화(괴물)의 상세도 늦게 도착한다 — 여전히 유효한 선택이라 반영돼야 한다. */
+async function resolveHostDetail(kobis: ReturnType<typeof stubKobis>) {
+  kobis.hostDetail.resolve(
+    fakeResponse({
+      movieInfoResult: { movieInfo: { actors: [{ peopleNm: '변희봉' }], showTm: '119' } },
+    })
+  );
+  await waitFor(() => {
+    expect(captured.movieInfo.actors).toBe('변희봉');
+  });
+}
+
+const ticketFile = () => new File(['x'], 'ticket.png', { type: 'image/png' });
+const bannerShown = () => !!screen.queryByTestId('ocr-undo-banner');
+
 describe('OCR의 KOBIS 보강 도중 사용자가 다른 영화를 고르면, 그 선택이 늦은 OCR 결과를 이긴다 (#793)', () => {
   test('제목 편집기에서 고른 영화(괴물)가 조회 중이던 OCR 결과(기생충)를 덮지 않는다', async () => {
     const user = userEvent.setup();
-
-    // OCR이 트리거하는 검색과, 사용자가 고른 영화의 상세 조회는 둘 다 응답을 미룬다 — 순서를
-    // 테스트가 직접 정한다(1: 사용자 선택 먼저 → 2: OCR 검색 응답 → 3: 사용자가 고른 영화의 상세).
-    const ocrSearch = deferred<unknown>();
-    const hostDetail = deferred<unknown>();
-    // OCR 조회가 끝까지(검색 → PARASITE 상세) 갔는지 — 5단계 단언이 그 뒤에 서게 하는 기준점.
-    let parasiteDetailRequested = false;
-
-    globalThis.fetch = (async (url: string) => {
-      if (url.includes('/api/kobis/search')) {
-        const movieNm = movieNmFromUrl(url);
-        if (movieNm === '기생충') return ocrSearch.promise;
-        if (movieNm === '괴물') {
-          return fakeResponse({
-            movieListResult: {
-              movieList: [
-                { movieCd: 'HOST', movieNm: '괴물', movieNmEn: 'The Host', openDt: '20060727' },
-              ],
-            },
-          });
-        }
-        throw new Error(`unexpected search url: ${url}`);
-      }
-      if (url.includes('/api/kobis/detail')) {
-        if (url.includes('movieCd=PARASITE')) {
-          parasiteDetailRequested = true;
-          return fakeResponse({
-            movieInfoResult: { movieInfo: { actors: [{ peopleNm: '송강호' }], showTm: '132' } },
-          });
-        }
-        if (url.includes('movieCd=HOST')) return hostDetail.promise;
-        throw new Error(`unexpected detail url: ${url}`);
-      }
-      throw new Error(`unexpected url: ${url}`);
-    }) as unknown as typeof fetch;
-
+    const kobis = stubKobis();
     render(<MobileHarness />);
 
-    // 1. OCR 스크린샷 업로드 — title만 인식(기생충). triggerKobisLookup의 검색 fetch는 아직 안 뜬다.
-    //    onOcrApply가 랜딩을 걷어(#727 "새로 시작") 편집 캔버스를 연다.
+    // title만 인식(기생충). onOcrApply가 랜딩을 걷어(#727 "새로 시작") 편집 캔버스를 연다.
     ocrImpl = async () => ({ title: '기생충' });
-    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+    await user.upload(ocrFileInput(), ticketFile());
+    await pickHostInTitleEditor(user);
 
-    // 2. 필드 드로어 → 제목 편집기(InPlaceFieldEditor)를 실제 사용자처럼 탭으로 연다.
-    const handle = await screen.findByRole('button', { name: '티켓 항목 목록 열기' });
-    await user.click(handle);
-    const dialog = await screen.findByRole('dialog', { name: '티켓 항목' });
-    // 온-티켓 필드 탭도 같은 aria-label("제목 편집")을 쓰므로(FieldTap) 드로어 안으로 좁힌다.
-    await user.click(within(dialog).getByRole('button', { name: '제목 편집' }));
-    const titleInput = await screen.findByRole('textbox', { name: '제목' });
-
-    // 3. '괴물'을 입력 — 300ms 디바운스 뒤 KOBIS 검색 결과 행이 뜬다(useKobisSearch.scheduleSearch).
-    await user.type(titleInput, '괴물');
-    const listbox = await screen.findByRole('listbox', { name: '검색 결과' }, { timeout: 2000 });
-    const resultButton = within(listbox).getByRole('button');
-    expect(resultButton.textContent).toContain('괴물');
-
-    // 4. 결과를 선택 — beginMovieSelection이 새 영화 수명을 잡고(movieSelectionRef 증가) HOST
-    //    상세 조회를 건다. 이 fetch도 아직 응답하지 않는다.
-    await user.click(resultButton);
+    // 회귀 지점: 고치기 전엔 setInfo가 무조건 적용돼 여기서 title이 '기생충'/movieCd가 'PARASITE'로
+    // 되돌아갔다. captureMovieSelection이 낡은 선택을 들고 있어 applyKobis가 false를 돌려준다.
+    await resolveOcrSearchAndSettle(kobis);
     expect(captured.movieInfo.title).toBe('괴물');
     expect(captured.movieInfo.movieCd).toBe('HOST');
 
-    // 5. OCR의 검색이 이제야 응답한다 — 1건 매치라 PARASITE 상세까지 곧바로 이어진다.
-    ocrSearch.resolve(
+    await resolveHostDetail(kobis);
+    expect(captured.movieInfo.title).toBe('괴물');
+    expect(captured.movieInfo.movieCd).toBe('HOST');
+    expect(captured.movieInfo.runtime).toBe('119 MIN');
+  });
+});
+
+describe('버려진 OCR 보강은 되돌리기 대상에서 빠진다 (#801)', () => {
+  test('되돌리기가 OCR이 채운 직접 필드만 복원하고, 사용자가 고른 영화와 그 상세 보강은 남긴다', async () => {
+    const user = userEvent.setup();
+    const kobis = stubKobis();
+    render(<MobileHarness />);
+
+    ocrImpl = async () => ({ title: '기생충', theater: 'CGV 용산', seat: 'H12' });
+    await user.upload(ocrFileInput(), ticketFile());
+    expect(captured.movieInfo.theater).toBe('CGV 용산');
+    expect(captured.movieInfo.seat).toBe('H12');
+
+    await pickHostInTitleEditor(user);
+    await resolveOcrSearchAndSettle(kobis);
+    await resolveHostDetail(kobis);
+
+    // 직접 필드가 남아 있으니 배너는 그대로다.
+    await user.click(await screen.findByRole('button', { name: '되돌리기' }));
+
+    // 랜딩 "새로 시작" 경로라 스냅샷은 INITIAL_STATE 기준(#737) — 직접 필드는 빈 값으로 돌아간다.
+    expect(captured.movieInfo.theater).toBe('');
+    expect(captured.movieInfo.seat).toBe('');
+    // 회귀 지점: 고치기 전엔 스냅샷에 남은 KOBIS 키 때문에 여기가 전부 빈 값으로 돌아갔다.
+    expect(captured.movieInfo.title).toBe('괴물');
+    expect(captured.movieInfo.movieCd).toBe('HOST');
+    expect(captured.movieInfo.actors).toBe('변희봉');
+    expect(captured.movieInfo.runtime).toBe('119 MIN');
+  });
+
+  test('제목만 인식된 OCR이 버려지면 되돌릴 게 없어 배너가 닫힌다', async () => {
+    const user = userEvent.setup();
+    const kobis = stubKobis();
+    render(<MobileHarness />);
+
+    ocrImpl = async () => ({ title: '기생충' });
+    await user.upload(ocrFileInput(), ticketFile());
+    await pickHostInTitleEditor(user);
+    expect(bannerShown()).toBe(true);
+
+    kobis.ocrSearch.resolve(
       fakeResponse({
         movieListResult: {
           movieList: [
@@ -170,31 +265,14 @@ describe('OCR의 KOBIS 보강 도중 사용자가 다른 영화를 고르면, �
         },
       })
     );
-    // 회귀 지점: 고치기 전엔 setInfo가 무조건 적용돼 여기서 title이 '기생충'/movieCd가 'PARASITE'로
-    // 되돌아갔다. captureMovieSelection이 낡은 선택을 들고 있어 applyKobis가 false를 돌려주므로
-    // 사용자가 고른 '괴물'이 그대로 남아야 한다.
-    // title 단언을 waitFor에 걸면 첫 검사에서 이미 참이라 OCR 체인이 끝나기 전에 통과한다 — OCR의
-    // 상세 요청이 실제로 나가고 그 응답까지 흘러간 뒤에 잰다.
+    // 회귀 지점: 고치기 전엔 KOBIS 키만 담긴 스냅샷이 남아 배너가 계속 되돌리기를 내밀었다.
+    // #693 — waitFor 안의 received는 DOM 노드가 아니라 boolean.
     await waitFor(() => {
-      expect(parasiteDetailRequested).toBe(true);
+      expect(bannerShown()).toBe(false);
     });
-    await new Promise((r) => setTimeout(r, 0));
+    expect(kobis.state.parasiteDetailRequested).toBe(true);
     expect(captured.movieInfo.title).toBe('괴물');
     expect(captured.movieInfo.movieCd).toBe('HOST');
-
-    // 6. 사용자가 고른 영화(괴물)의 상세도 늦게 도착한다 — 이건 여전히 유효한 선택이라 반영돼야 한다.
-    hostDetail.resolve(
-      fakeResponse({
-        movieInfoResult: { movieInfo: { actors: [{ peopleNm: '변희봉' }], showTm: '119' } },
-      })
-    );
-    await waitFor(() => {
-      expect(captured.movieInfo.actors).toBe('변희봉');
-    });
-
-    expect(captured.movieInfo.title).toBe('괴물');
-    expect(captured.movieInfo.movieCd).toBe('HOST');
-    expect(captured.movieInfo.runtime).toBe('119 MIN');
   });
 });
 

@@ -1143,6 +1143,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
               currentComponents={photo.state.components}
               ocrEpochRef={ocr.epochRef}
               captureMovieSelection={photo.captureMovieSelection}
+              onKobisDiscarded={ocr.dropKobisFields}
             />
           </Landing>
         </div>
@@ -1334,6 +1335,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
             currentComponents={photo.state.components}
             ocrEpochRef={ocr.epochRef}
             captureMovieSelection={photo.captureMovieSelection}
+            onKobisDiscarded={ocr.dropKobisFields}
             context="drawer"
             onNeedManualTitle={() => {
               setDrawerOpen(false);
