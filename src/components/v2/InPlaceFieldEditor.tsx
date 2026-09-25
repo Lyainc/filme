@@ -34,7 +34,7 @@ type Photo = ReturnType<typeof usePhototicket>;
  * 탭 앵커 자체가 없어 구조적으로 빠진다. reissue는 FieldTap 타깃이 releaseDate라 여기 없음.
  */
 const EDIT_ORDER: SheetTarget[] = [
-  'title', 'titleOg', 'releaseDate', 'actors', 'rating',
+  'title', 'titleOg', 'releaseDate', 'actors', 'rating', 'quote',
   'watchDate', 'watchTime', 'theater', 'screen', 'seat', 'runtime',
   'bookingNo', 'signature', 'chain', 'format',
 ];
