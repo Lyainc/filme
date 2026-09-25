@@ -4,7 +4,7 @@
  * 뒤로가기·워드마크를 제거하고 햄버거 서브메뉴로 다크모드·전체표시·빈 항목 토글과 포스터
  * 교체·재크롭 액션을 통합했다(#323/#324 흡수). 잉크 토글은 #387에서 컬러 패널과 중복이라 삭제.
  */
-import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
+import { describe, expect, test, afterEach, beforeEach, jest } from 'bun:test';
 import { render, screen, cleanup, fireEvent, act, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { usePhototicket, STORAGE_KEY } from '@/hooks/usePhototicket';
@@ -31,6 +31,7 @@ beforeEach(() => window.localStorage.clear());
 afterEach(() => {
   cleanup();
   window.localStorage.clear();
+  jest.useRealTimers();
 });
 
 describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
@@ -129,14 +130,15 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
 
   test('초기화(#310): 포스터 없이 복원된 stale 값만 있어도 초기화로 지워진다(핵심 시나리오 — 새로고침 직후)', async () => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ movieInfo: { title: '기생충' } }));
-    const user = userEvent.setup();
+    jest.useFakeTimers();
+    const user = userEvent.setup({ delay: null });
     render(<Harness />);
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
 
     // 2탭 arm(#374) — 1탭은 arm만, 확인 문구로 바뀐 행을 한 번 더 탭해야 실행.
-    // 더블탭 가드(350ms) 밖에서 재탭해야 실행된다(PR #375 P1).
+    // 더블탭 가드(350ms) 밖에서 재탭해야 실행된다(PR #375 P1) — 가짜 타이머로 즉시 전진.
     await user.click(screen.getByRole('button', { name: '초기화' }));
-    await new Promise((r) => setTimeout(r, 400));
+    act(() => jest.advanceTimersByTime(400));
     await user.click(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' }));
 
     expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
@@ -182,14 +184,18 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
 
   test('초기화 arm(#374): 2탭 시 storage 삭제 + 상태 초기화 + 토스트', async () => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ movieInfo: { title: '기생충' } }));
-    const user = userEvent.setup();
+    jest.useFakeTimers();
+    const user = userEvent.setup({ delay: null });
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
 
-    await user.click(screen.getByRole('button', { name: '초기화' }));
-    await new Promise((r) => setTimeout(r, 400));
-    await user.click(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' }));
+    // 더블탭 가드 경계(350ms) — 정확히 350ms 지나면 실행된다(가드 조건은 `< 350`). userEvent의
+    // 클릭 디스패치 자체가 가짜 타이머를 1ms씩 미세 전진시키는 걸 실측했으므로(bun 1.3.14), 경계를
+    // 정밀하게 재는 arm·재탭 두 탭은 fireEvent로 — 동기라 타이머를 안 건드린다.
+    fireEvent.click(screen.getByRole('button', { name: '초기화' }));
+    act(() => jest.advanceTimersByTime(350));
+    fireEvent.click(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' }));
 
     expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
     expect(screen.getAllByText('초기화했어요').length).toBeGreaterThan(0);
@@ -202,35 +208,41 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
   });
 
   test('초기화 arm(#374): arm 직후 350ms 내 재탭(더블탭)은 실행되지 않는다 (claude-review PR #375 P1)', async () => {
-    const user = userEvent.setup();
+    jest.useFakeTimers();
+    const user = userEvent.setup({ delay: null });
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
 
-    // userEvent 연속 클릭은 수 ms 간격 — 습관적 더블탭 시뮬레이션.
-    await user.click(screen.getByRole('button', { name: '초기화' }));
-    await user.click(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' }));
+    // 더블탭 가드 경계(350ms) 바로 앞 — 349ms 시점 재탭은 여전히 무시된다(가드 조건은 `< 350`).
+    // 위 테스트와 같은 이유로 arm·재탭 두 탭은 fireEvent로 정밀하게 잰다.
+    fireEvent.click(screen.getByRole('button', { name: '초기화' }));
+    act(() => jest.advanceTimersByTime(349));
+    fireEvent.click(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' }));
 
     // 실행되지 않고 armed 상태로 남는다.
     expect(screen.queryByText('초기화했어요')).toBeNull();
     expect(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' })).toBeTruthy();
   });
 
-  test('초기화 arm(#374): 3.2초 내 재탭이 없으면 자동 해제된다 (claude-review PR #375 P1)', async () => {
-    const user = userEvent.setup();
+  test('초기화 arm(#374): 3.2초 내 재탭이 없으면 자동 해제된다 (claude-review PR #375 P1)', () => {
+    jest.useFakeTimers();
     render(<Harness />);
-    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
-    await user.click(screen.getByRole('button', { name: '초기화' }));
+    // 자동 해제 타이머는 arm 탭이 스케줄하므로, 그 시점부터 정확히 재려면 fireEvent로 연다
+    // (userEvent 클릭은 가짜 타이머를 1ms씩 미세 전진시켜 경계 직전 값이 밀린다, 위 테스트와 동일 근거).
+    fireEvent.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    fireEvent.click(screen.getByRole('button', { name: '초기화' }));
     expect(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' })).toBeTruthy();
 
-    // 3.2초 auto-disarm 타이머 만료를 real timer로 대기 — act로 감싸 타이머 콜백의
-    // setState가 반영되게 한다(happy-dom에서 waitFor 폴링이 안 돌아 직접 대기).
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 3400));
-    });
+    // 경계 바로 앞(3199ms) — 아직 자동 해제 타이머(3200ms)가 안 끝나 armed 유지.
+    act(() => jest.advanceTimersByTime(3199));
+    expect(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' })).toBeTruthy();
+
+    // 경계(누적 3200ms) — 자동 해제 타이머 만료.
+    act(() => jest.advanceTimersByTime(1));
     expect(screen.getByRole('button', { name: '초기화' })).toBeTruthy();
     expect(screen.queryByText('초기화했어요')).toBeNull();
-  }, 10000);
+  });
 
   // 잉크 토글은 #387에서 삭제 — 컬러 패널(DesignRail ColorPicker)의 White/Black 프리셋과
   // 완전히 중복이라 기능 손실 없이 제거(전문가 패널 검토, docs/discussions/20260716...).

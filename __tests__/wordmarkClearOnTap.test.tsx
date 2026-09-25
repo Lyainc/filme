@@ -8,7 +8,7 @@
  * 날아간다. isDirty는 canUndo가 못 보는 좁은 창(방금 만든 편집이 아직 350ms 히스토리 디바운스에
  * 안 밀려 들어간 상태)을 커버한다(#578 code-review 발견).
  */
-import { describe, expect, test, afterEach, mock, spyOn } from 'bun:test';
+import { describe, expect, test, afterEach, mock, spyOn, jest } from 'bun:test';
 import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { usePhototicket } from '@/hooks/usePhototicket';
@@ -17,8 +17,9 @@ import { mobileShellProps } from './shellHarness';
 
 const landingShown = () => screen.getByTestId('landing').classList.contains('fixed');
 const wordmarkButton = () => screen.getByRole('button', { name: 'FILME — 처음 화면으로 돌아가기' });
-// 히스토리 디바운스(useEditHistory DEBOUNCE_MS=350ms)를 확실히 건너뛰기 위한 대기.
-const settleHistory = () => act(async () => { await new Promise((r) => setTimeout(r, 400)); });
+// 히스토리 디바운스(useEditHistory DEBOUNCE_MS=350ms)를 확실히 건너뛰기 위한 전진 — 호출 전에
+// jest.useFakeTimers()가 켜져 있어야 한다(canUndo/isDirty 두 테스트에서만 로컬로 켠다).
+const settleHistory = () => act(() => { jest.advanceTimersByTime(400); });
 
 function Harness() {
   const photo = usePhototicket();
@@ -43,6 +44,7 @@ afterEach(() => {
   cleanup();
   window.localStorage.clear();
   mock.restore();
+  jest.useRealTimers();
 });
 
 describe('워드마크 탭 초기화 (#578)', () => {
@@ -91,7 +93,8 @@ describe('워드마크 탭 초기화 (#578)', () => {
   });
 
   test('canUndo 단독으로도 확인을 띄운다 (포스터·movieInfo 둘 다 비어 있어도)', async () => {
-    const user = userEvent.setup();
+    jest.useFakeTimers();
+    const user = userEvent.setup({ delay: null });
     render(<Harness />);
     await settleHistory(); // 마운트 베이스라인 스냅샷(at:0) 확정.
     fireEvent.click(screen.getByText('toggle-field'));
@@ -115,7 +118,8 @@ describe('워드마크 탭 초기화 (#578)', () => {
   });
 
   test('방금 만든 편집이 아직 350ms 히스토리 디바운스 창 안이어도 확인을 띄운다(isDirty, #578 code-review)', async () => {
-    const user = userEvent.setup();
+    jest.useFakeTimers();
+    const user = userEvent.setup({ delay: null });
     render(<Harness />);
     await settleHistory(); // 베이스라인(at:0)까지만 확정 — 그 다음 편집은 커밋 전 상태로 남긴다.
     fireEvent.click(screen.getByText('toggle-field'));
