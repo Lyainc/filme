@@ -28,7 +28,7 @@ export interface OcrApplyParams {
 }
 
 export interface UseOcrUndo {
-  /** OCR로 마지막 채워진 필드 집합 — 배너 카운트용. */
+  /** OCR로 마지막 채워진 필드 중 사용자가 아직 안 고친 것 — 배너 카운트용(#810). */
   filledFields: Set<OcrDirectField>;
   /** 되돌리기 스냅샷 — non-null이면 배너를 노출한다. */
   snapshot: Partial<MovieInfo> | null;
@@ -65,14 +65,14 @@ export interface UseOcrUndo {
   recordKobisApplied: (info: Partial<MovieInfo>) => void;
 }
 
-// 스냅샷에서 OCR이 쓴 값과 지금 값이 달라진 키(= 사용자가 그 뒤 고친 것)를 뺀다(#807).
+// OCR이 쓴 값과 지금 값이 달라진 키(= 사용자가 그 뒤 고친 것)인가(#807). 되돌리기와 배너 카운트(#810)가 같이 쓴다.
+function isEdited<T extends object>(k: keyof T, applied: Partial<T>, current: T): boolean {
+  return k in applied && current[k] !== applied[k];
+}
+
+// 스냅샷에서 사용자가 고친 키를 뺀다(#807).
 function withoutEdited<T extends object>(prev: Partial<T>, applied: Partial<T>, current: T): Partial<T> {
-  return Object.fromEntries(
-    Object.entries(prev).filter(([key]) => {
-      const k = key as keyof T;
-      return !(k in applied) || current[k] === applied[k];
-    }),
-  ) as Partial<T>;
+  return Object.fromEntries(Object.entries(prev).filter(([key]) => !isEdited(key as keyof T, applied, current))) as Partial<T>;
 }
 
 export function useOcrUndo(photo: ReturnType<typeof usePhototicket>): UseOcrUndo {
@@ -144,7 +144,10 @@ export function useOcrUndo(photo: ReturnType<typeof usePhototicket>): UseOcrUndo
   }
 
   return {
-    filledFields,
+    // 배너 카운트는 되돌리기가 실제로 되돌릴 필드만 센다(#810) — cancel과 같은 isEdited 판정이다.
+    filledFields: undo
+      ? new Set(Array.from(filledFields).filter((k) => !isEdited(k, undo.applied, photo.state.movieInfo)))
+      : filledFields,
     snapshot: undo?.info ?? null,
     epochRef,
     apply,

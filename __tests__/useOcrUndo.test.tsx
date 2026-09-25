@@ -12,7 +12,8 @@ import type { usePhototicket } from '../src/hooks/usePhototicket';
 function makePhoto() {
   const updateMovieInfo = mock((_: unknown) => {});
   const updateComponents = mock((_: unknown) => {});
-  const photo = { updateMovieInfo, updateComponents } as unknown as ReturnType<typeof usePhototicket>;
+  // state는 배너 카운트(#810)가 렌더마다 읽는다 — 비교 기준(nextValues)을 안 준 테스트에선 값이 무관하다.
+  const photo = { updateMovieInfo, updateComponents, state: { movieInfo: {}, components: {} } } as unknown as ReturnType<typeof usePhototicket>;
   return { photo, updateMovieInfo, updateComponents };
 }
 

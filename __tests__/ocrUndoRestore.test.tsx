@@ -711,3 +711,23 @@ describe('랜딩에서 OCR 인식 중에 포스터 크롭을 확정해도 레이
     expect(!!captured.croppedImageUrl).toBe(true);
   });
 });
+
+// #810 — 배너 카운트(filledFields.size)는 되돌리기가 실제로 되돌릴 필드만 세야 한다. 사용자가 OCR
+// 채움 뒤 고친 필드는 되돌리기 대상에서도, 카운트에서도 빠져야 숫자와 동작이 일치한다.
+describe('OCR 되돌리기 배너 카운트가 사용자가 고친 필드를 제외한다 (#810)', () => {
+  test('두 필드 채움 → 하나 수정 → 배너 1', async () => {
+    const user = userEvent.setup();
+    render(<MobileHarness />);
+    await user.click(screen.getByTestId('landing-skip-poster'));
+
+    ocrImpl = async () => ({ theater: 'CGV 강남', seat: 'H12' });
+    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+
+    await screen.findByRole('button', { name: '되돌리기' });
+    expect(screen.getByTestId('ocr-undo-banner').textContent).toContain('2개 항목이 자동 입력되었어요.');
+
+    await user.click(screen.getByText('seed-user-edit-theater'));
+
+    expect(screen.getByTestId('ocr-undo-banner').textContent).toContain('1개 항목이 자동 입력되었어요.');
+  });
+});
