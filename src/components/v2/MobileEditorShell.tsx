@@ -1141,6 +1141,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
               setComponents={photo.updateComponents}
               currentComponents={photo.state.components}
               ocrEpochRef={ocr.epochRef}
+              captureMovieSelection={photo.captureMovieSelection}
             />
           </Landing>
         </div>
@@ -1331,6 +1332,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
             setComponents={photo.updateComponents}
             currentComponents={photo.state.components}
             ocrEpochRef={ocr.epochRef}
+            captureMovieSelection={photo.captureMovieSelection}
             context="drawer"
             onNeedManualTitle={() => {
               setDrawerOpen(false);
