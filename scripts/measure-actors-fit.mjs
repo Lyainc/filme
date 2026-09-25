@@ -38,6 +38,14 @@ const URL = arg('url', 'http://localhost:3000/');
 const CHROME =
   process.env.CHROME_PATH ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 
+/**
+ * bun에서 `await browser.close()`가 resolve하지 않는다(Chrome은 죽는데 프로세스가 매달린다,
+ * capture-export.mjs와 동일 실측). 닫기는 걸고 3초만 기다린 뒤 넘어가고, 끝에서 process.exit로
+ * 직접 종료한다.
+ */
+const closeBrowser = (browser) =>
+  Promise.race([browser.close().catch(() => {}), new Promise((r) => setTimeout(r, 3000))]);
+
 /** 두 이름만으로도 슬롯을 넘기는 제보 케이스(#566 본문 스크린샷)와, 4명·초장문 조합. */
 const TWO_LONG_LATIN = 'Timothee Chalamet, Gwyneth Paltrow';
 const FOUR_KR = '송강호, 임수정, 오정세, 전여빈';
@@ -194,8 +202,9 @@ try {
     results.push({ ...c, ...m, castText, overflow, intact, ok: overflow <= 0 && intact });
   }
 } finally {
-  await browser.close();
+  await closeBrowser(browser);
 }
 
 console.log(JSON.stringify(results, null, 2));
 if (results.some((r) => !r.ok)) process.exitCode = 1;
+process.exit(process.exitCode ?? 0);

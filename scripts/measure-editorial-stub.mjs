@@ -43,6 +43,14 @@ const BUDGET = 960; // 캔버스 높이 = 스텁 길이축 예산
 const CHROME =
   process.env.CHROME_PATH ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 
+/**
+ * bun에서 `await browser.close()`가 resolve하지 않는다(Chrome은 죽는데 프로세스가 매달린다,
+ * capture-export.mjs와 동일 실측). 닫기는 걸고 3초만 기다린 뒤 넘어가고, 끝에서 process.exit로
+ * 직접 종료한다.
+ */
+const closeBrowser = (browser) =>
+  Promise.race([browser.close().catch(() => {}), new Promise((r) => setTimeout(r, 3000))]);
+
 // 최악 케이스 시드. chainLabel/formatLabel은 로고 없이 stampWillRender를 통과시키는 경로다.
 const SEED = {
   movieInfo: {
@@ -320,5 +328,6 @@ try {
   );
   if (over > 0 || overThick > 0) process.exitCode = 1;
 } finally {
-  await browser.close();
+  await closeBrowser(browser);
 }
+process.exit(process.exitCode ?? 0);
