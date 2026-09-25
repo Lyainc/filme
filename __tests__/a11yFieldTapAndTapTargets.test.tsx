@@ -190,6 +190,7 @@ describe('sr-only file input aria-hidden 제거 (#646 항목2)', () => {
         captureMovieSelection={() => () => true}
         captureDraft={() => () => true}
         onKobisDiscarded={() => {}}
+        onKobisApplied={() => {}}
       />
     );
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;

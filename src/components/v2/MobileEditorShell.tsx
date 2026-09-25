@@ -1166,6 +1166,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
               captureMovieSelection={photo.captureMovieSelection}
               captureDraft={photo.captureDraft}
               onKobisDiscarded={ocr.dropKobisFields}
+              onKobisApplied={ocr.recordKobisApplied}
             />
           </Landing>
         </div>
@@ -1363,6 +1364,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
             captureMovieSelection={photo.captureMovieSelection}
             captureDraft={photo.captureDraft}
             onKobisDiscarded={ocr.dropKobisFields}
+            onKobisApplied={ocr.recordKobisApplied}
             context="drawer"
             onNeedManualTitle={() => {
               setDrawerOpen(false);
