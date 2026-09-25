@@ -631,6 +631,10 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
     // 뜨므로 마지막 setState인 그쪽이 이긴다. epochRef는 안 올린다: 리셋 뒤 늦은 KOBIS 보강은
     // docEpochRef(#793)가 이미 버리고, 그때 부르는 dropKobisFields가 새 스냅샷의 KOBIS 키를
     // 건드리려면 새 OCR에 제목이 있어야 하는데 그 실행이 epoch를 올려 옛 응답을 먼저 걸러낸다.
+    // #806 이후로는 이 줄이 막을 스냅샷이 오는 경로가 없다 — 랜딩을 다시 띄우는 performClear가 이미
+    // 버리고, 초기화를 건너 도착한 OCR 응답은 OcrUploadCard가 버린다(captureDraft). 그래서 어떤 테스트도
+    // 이 줄 단독 삭제를 못 잡는다. 그래도 둔다: history.clear()와 짝인 "새 문서엔 옛 OCR 되돌리기가 없다"를 이
+    // 경계에서 지키면, 그 두 비국소 전제 중 하나가 바뀌어도 되살아나지 않는다.
     ocr.confirm();
   }
 
@@ -1160,6 +1164,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
               currentComponents={photo.state.components}
               ocrEpochRef={ocr.epochRef}
               captureMovieSelection={photo.captureMovieSelection}
+              captureDraft={photo.captureDraft}
               onKobisDiscarded={ocr.dropKobisFields}
             />
           </Landing>
@@ -1356,6 +1361,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
             currentComponents={photo.state.components}
             ocrEpochRef={ocr.epochRef}
             captureMovieSelection={photo.captureMovieSelection}
+            captureDraft={photo.captureDraft}
             onKobisDiscarded={ocr.dropKobisFields}
             context="drawer"
             onNeedManualTitle={() => {
