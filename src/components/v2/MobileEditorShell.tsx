@@ -493,6 +493,8 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
     // 초기화는 새 문서 — undo로 못 돌아간다(로고·포스터 blob이 revoke돼
     // 복원해도 죽은 참조라 히스토리째 파기가 맞다).
     history.clear();
+    // OCR 되돌리기도 옛 문서의 것이다(#804) — startFreshDoc 주석 참고.
+    ocr.confirm();
     flashToast('초기화했어요');
   }
 
@@ -592,6 +594,12 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
     photo.resetDocument(opts);
     // 새 문서 — 복원된 문서로 undo해 돌아가면 안 된다(#356 clear는 다음 상태를 새 베이스라인으로 잡는다).
     history.clear();
+    // OCR 되돌리기 스냅샷도 옛 문서의 것이라 버린다(#804) — 안 버리면 배너가 남아 새 문서에 옛
+    // OCR 전 값을 되돌린다. 랜딩 OCR(onOcrApply)은 이 직후 같은 배치에서 ocr.apply로 새 스냅샷을
+    // 뜨므로 마지막 setState인 그쪽이 이긴다. epochRef는 안 올린다: 리셋 뒤 늦은 KOBIS 보강은
+    // docEpochRef(#793)가 이미 버리고, 그때 부르는 dropKobisFields가 새 스냅샷의 KOBIS 키를
+    // 건드리려면 새 OCR에 제목이 있어야 하는데 그 실행이 epoch를 올려 옛 응답을 먼저 걸러낸다.
+    ocr.confirm();
   }
 
   async function handlePosterCropComplete(area: Area, preserveRatio: boolean) {
