@@ -11,7 +11,7 @@ import { TEXTURE_RECIPES } from '@/utils/textureRecipes';
 import { MATERIAL_OPTIONS, COATING_OPTIONS, TARGET_HEIGHT } from '@/utils/constants';
 import { MINIMAL_STAMP_MAX_SCALE } from '@/components/moods/MoodMinimal';
 import { Eyebrow } from './Eyebrow';
-import { POSTER_FILL_MOODS, TONE_FIXED_MOODS } from '@/constants/fields';
+import { POSTER_FILL_MOODS, TONE_FIXED_MOODS, STAMP_KEYS, STAMP_LABELS, STAMP_TARGETS, type SheetTarget } from '@/constants/fields';
 import type { LayoutId } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 
@@ -37,6 +37,8 @@ type Photo = ReturnType<typeof usePhototicket>;
 export interface RailActions {
   /** 포스터 재크롭 진입 — 셸의 크롭 모달을 기존 원본으로 다시 연다. */
   onRecropPoster?: () => void;
+  /** 필드 인플레이스 편집 진입(#781) — 로고 크기 패널의 입력 액션이 셸의 handleField로 로고 입력을 연다. */
+  onEditField?: (field: SheetTarget) => void;
 }
 
 export interface RailItem {
@@ -588,24 +590,47 @@ function SizePanel({ photo, actions }: { photo: Photo; actions: RailActions }) {
 
   // 체인/포맷 로고 렌더 크기(#441, PR #485 P2 후속). value는 Math.min(raw, stampScaleMax)로
   // 표시만 클램프 — 저장된 raw 값은 안 건드려 다른 무드로 돌아가면 원래 크기로 복원된다.
+  //
+  // 빈 상태·숨김 안내(#781) — 이미지도 텍스트도 없으면 조절할 대상이 없고, 숨겼으면 티켓에 안 보여서
+  // 슬라이더를 움직여도 아무 변화가 없다. 그렇다고 슬라이더를 끄진 않는다: 텍스트 라벨만 있어도
+  // ChainStamp·FormatStamp가 scale로 조절하고, 입력 전에 크기를 미리 정해 둘 수도 있어서다.
+  // 입력 액션은 셸의 handleField로 가서 숨긴 로고면 표시를 켜고 인플레이스 편집을 연다.
   const logoAxis = (
     <div className="space-y-group">
-      <BrightnessSlider
-        label="체인 로고 크기"
-        id={`${prefix}-chain-scale`}
-        value={Math.min(components.chainScale ?? 1, stampScaleMax)}
-        onChange={(chainScale) => setComp({ chainScale })}
-        min={0.6}
-        max={stampScaleMax}
-      />
-      <BrightnessSlider
-        label="포맷 로고 크기"
-        id={`${prefix}-format-scale`}
-        value={Math.min(components.formatScale ?? 1, stampScaleMax)}
-        onChange={(formatScale) => setComp({ formatScale })}
-        min={0.6}
-        max={stampScaleMax}
-      />
+      {STAMP_TARGETS.map((target) => {
+        const keys = STAMP_KEYS[target];
+        const empty = !components[keys.image] && !String(components[keys.label] ?? '').trim();
+        const hidden = !components[keys.visible];
+        const scaleKey = target === 'chain' ? 'chainScale' : 'formatScale';
+        return (
+          <div key={target} className="space-y-field">
+            {(empty || hidden) && (
+              <p className="text-caption text-fg-muted">
+                {empty
+                  ? `${STAMP_LABELS[target]}가 비어 있어요. 이미지나 텍스트를 입력하세요.`
+                  : `${STAMP_LABELS[target]}가 숨겨져 있어요.`}
+              </p>
+            )}
+            <BrightnessSlider
+              // 이름은 안내문·드로어·입력칸과 같은 STAMP_LABELS에서 뜬다(#781) — 옛 '체인 로고 크기'는 바로 위
+              // 안내문의 '극장 로고'와 한 컨트롤을 두 이름으로 불렀다.
+              label={`${STAMP_LABELS[target]} 크기`}
+              id={`${prefix}-${target}-scale`}
+              value={Math.min(components[scaleKey] ?? 1, stampScaleMax)}
+              onChange={(value) => setComp({ [scaleKey]: value })}
+              min={0.6}
+              max={stampScaleMax}
+              // 액션은 빈·숨김 상태에만 단다 — 액션 버튼(h-7)이 라벨 줄을 3.5px씩 키워, 정상 상태에도 달면
+              // 로고 축이 슬롯(26svh)을 넘친다(DesignRail 슬롯 주석). 정상 상태의 편집은 티켓 탭·항목 목록이 맡는다.
+              action={
+                actions.onEditField && (empty || hidden)
+                  ? { label: empty ? '입력' : '표시·편집', onClick: () => actions.onEditField?.(target) }
+                  : undefined
+              }
+            />
+          </div>
+        );
+      })}
     </div>
   );
 

@@ -102,11 +102,11 @@ describe('크기 dock 탭 타깃 (#554, WCAG 2.2 SC 2.5.8 AA)', () => {
 
     // 세로 예산 회수의 근거 — 두 묶음이 동시에 서면 dock이 다시 361px로 자란다.
     expect(screen.queryByRole('button', { name: '포스터 다시 크롭' })).not.toBeNull();
-    expect(screen.queryByLabelText('체인 로고 크기')).toBeNull();
+    expect(screen.queryByLabelText('극장 로고 크기')).toBeNull();
 
     await user.click(screen.getByRole('radio', { name: '로고' }));
     expect(screen.queryByRole('button', { name: '포스터 다시 크롭' })).toBeNull();
-    expect(screen.queryByLabelText('체인 로고 크기')).not.toBeNull();
+    expect(screen.queryByLabelText('극장 로고 크기')).not.toBeNull();
   });
 
   test('포스터 축 컨트롤(재크롭 버튼·채우기 라디오)이 40px 선언을 유지한다', async () => {
@@ -138,6 +138,6 @@ describe('크기 dock 탭 타깃 (#554, WCAG 2.2 SC 2.5.8 AA)', () => {
     await user.click(screen.getByRole('button', { name: '크기' }));
 
     expect(screen.queryByRole('radiogroup', { name: '크기 축' })).toBeNull();
-    expect(screen.queryByLabelText('체인 로고 크기')).not.toBeNull();
+    expect(screen.queryByLabelText('극장 로고 크기')).not.toBeNull();
   });
 });

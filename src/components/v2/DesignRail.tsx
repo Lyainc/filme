@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { RAIL_ITEMS, filterItemsForMood, type RailItem, type RailItemId } from './designRailItems';
+import { RAIL_ITEMS, filterItemsForMood, type RailItem, type RailItemId, type RailActions } from './designRailItems';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import { cn } from '@/utils/cn';
 import { pressableVariants } from '@/components/ui/variants';
@@ -126,7 +126,14 @@ function RailExpandPanel({
             --rail highlight --url :3010`): 정상 상태 176/176(넘침 0, 393×659 171/171)로
             복귀, 편집 중 브러시(마스크 有)는 223/176(+47px)로 위 두 잔여 상태와 같은 카테고리에
             남는다. railSlot은 게이트가 아니라 관측값(CLAUDE.md "📏 크롬 측정 하네스" 절)이라
-            exit code는 원래부터 이 값에 안 실린다. */}
+            exit code는 원래부터 이 값에 안 실린다.
+            #781(크기→로고 빈 상태·숨김 안내)이 잔여 상태를 둘 더 만든다 — 로고 축 콘텐츠가 정상
+            167px(main과 같다)에서 둘 다 비었을 때 230px(393×659 슬롯 171 대비 +59px), 하나를 숨겼을
+            때 199px(+28px)로 는다(2026-09-25 prod 실측, 320·375·393·414 × 다크·라이트 동일 콘텐츠
+            높이). 둘 다 "조절할 게 없으니 먼저 입력하라"는 상태라 안내와 첫 슬라이더가 위에 보이고,
+            나머지는 위 스크롤 그림자로 이어진다. 정상 상태를 안 늘리려고 입력 액션도 빈·숨김
+            상태에만 단다(designRailItems.tsx의 logoAxis 주석). Criterion 커스텀 패널은 정상
+            상태에서도 넘치는데, 이 전제를 어떻게 고칠지는 #797에서 따로 정한다. */}
         <div
           ref={slotRef}
           id={PANEL_ID}
@@ -171,11 +178,14 @@ export function DesignRail({
   photo,
   items = RAIL_ITEMS,
   onRecropPoster,
+  onEditField,
 }: {
   photo: ReturnType<typeof usePhototicket>;
   items?: readonly RailItem[];
   /** 포스터 재크롭 진입(#492) — 셸이 크롭 파이프라인을 소유하므로 항목엔 콜백만 흘려준다. */
   onRecropPoster?: () => void;
+  /** 로고 입력 진입(#781) — 셸이 인플레이스 편집을 소유하므로 onRecropPoster처럼 콜백만 흘려준다. */
+  onEditField?: RailActions['onEditField'];
 }) {
   const [pop, setPop] = useState<RailItemId | null>(null);
   const { themeColor, layout } = photo.state.components;
@@ -317,7 +327,7 @@ export function DesignRail({
       </div>
 
       <RailExpandPanel open={pop !== null} activeId={active} regionLabel={regionLabel}>
-        {activeItem ? activeItem.render(photo, { onRecropPoster }) : null}
+        {activeItem ? activeItem.render(photo, { onRecropPoster, onEditField }) : null}
       </RailExpandPanel>
     </div>
   );

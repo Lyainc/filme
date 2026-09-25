@@ -124,7 +124,7 @@ describe('#441 DesignRail 슬라이더 배선', () => {
     // 크기 탭 안에 있음(PR #485 P2 후속 — 투명도에서 분리) — 먼저 연다.
     await openLogoAxis(user);
 
-    const chainInput = screen.getByLabelText('체인 로고 크기');
+    const chainInput = screen.getByLabelText('극장 로고 크기');
     const formatInput = screen.getByLabelText('포맷 로고 크기');
     expect(chainInput.getAttribute('max')).toBe(String(MINIMAL_STAMP_MAX_SCALE));
     expect(formatInput.getAttribute('max')).toBe(String(MINIMAL_STAMP_MAX_SCALE));
@@ -144,7 +144,7 @@ describe('#441 DesignRail 슬라이더 배선', () => {
     await user.click(screen.getByRole('button', { name: '무드' })); // 무드 닫고
     await openLogoAxis(user);
 
-    expect(screen.getByLabelText('체인 로고 크기').getAttribute('max')).toBe('1.3');
+    expect(screen.getByLabelText('극장 로고 크기').getAttribute('max')).toBe('1.3');
     expect(screen.getByLabelText('포맷 로고 크기').getAttribute('max')).toBe('1.3');
   });
 
@@ -160,7 +160,7 @@ describe('#441 DesignRail 슬라이더 배선', () => {
     await user.click(screen.getByRole('radio', { name: /크라이테리언/ }));
     await user.click(screen.getByRole('button', { name: '무드' }));
     await openLogoAxis(user);
-    fireEvent.change(screen.getByLabelText('체인 로고 크기'), { target: { value: '1.3' } });
+    fireEvent.change(screen.getByLabelText('극장 로고 크기'), { target: { value: '1.3' } });
     expect(screen.getByTestId('chainScale').textContent).toBe('1.3');
 
     // 미니멀로 돌아온다.
@@ -169,7 +169,7 @@ describe('#441 DesignRail 슬라이더 배선', () => {
     await user.click(screen.getByRole('button', { name: '무드' }));
     await openLogoAxis(user);
 
-    const chainInput = screen.getByLabelText('체인 로고 크기') as HTMLInputElement;
+    const chainInput = screen.getByLabelText('극장 로고 크기') as HTMLInputElement;
     expect(chainInput.value).toBe(String(MINIMAL_STAMP_MAX_SCALE)); // thumb·라벨 = 클램프값
     expect(screen.getByTestId('chainScale').textContent).toBe('1.3'); // 저장된 raw는 보존
   });
