@@ -17,7 +17,7 @@
  * shell's own prop wiring (ocr.apply / setComponents / currentComponents / banner onCancel).
  */
 import { describe, expect, test, afterAll, afterEach, mock, spyOn } from 'bun:test';
-import { render, screen, cleanup, waitFor } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { PhototicketState } from '@/types';
 import { STAMP_LABEL_MAX } from '@/constants/fields';
@@ -34,6 +34,14 @@ const realOcr = { ...require('@/utils/ocr') };
 mock.module('@/utils/ocr', () => ({
   ...realOcr,
   runOcr: (file: File) => ocrImpl(file),
+}));
+
+// #809 테스트 전용 — 포스터 크롭 파이프라인(posterCropPipeline.test.tsx와 같은 스프레드 스냅샷
+// 관례)도 이 파일에서 가로챈다. canvas 의존 getCroppedImg만 스텁하고 실물 ImageCropModal을 태운다.
+const realImageCrop = { ...require('@/utils/imageCrop') };
+mock.module('@/utils/imageCrop', () => ({
+  ...realImageCrop,
+  getCroppedImg: () => Promise.resolve('blob:cropped-809'),
 }));
 
 // title 인식 시 OcrUploadCard가 트리거하는 비동기 KOBIS 보강(triggerKobisLookup)은 실제 모듈을
@@ -139,7 +147,23 @@ afterEach(() => {
 
 afterAll(() => {
   mock.module('@/utils/ocr', () => realOcr);
+  mock.module('@/utils/imageCrop', () => realImageCrop);
 });
+
+/** 포스터 전용 파일 input(accept에 jpeg 포함) — OcrUploadCard의 image/* input과 구분(posterCropPipeline 동일 관례). */
+function posterFileInput(): HTMLInputElement {
+  return document.querySelector('input[type="file"][accept*="jpeg"]') as HTMLInputElement;
+}
+
+/** 실물 크롭 모달의 onImageLoad를 태운다 — 안 하면 '적용'이 비활성(posterCropPipeline과 동일). */
+function loadCropImage(naturalWidth = 2000, naturalHeight = 3000) {
+  const img = document.querySelector('[role="dialog"] img') as HTMLImageElement;
+  Object.defineProperty(img, 'naturalWidth', { value: naturalWidth, configurable: true });
+  Object.defineProperty(img, 'naturalHeight', { value: naturalHeight, configurable: true });
+  Object.defineProperty(img, 'width', { value: naturalWidth, configurable: true });
+  Object.defineProperty(img, 'height', { value: naturalHeight, configurable: true });
+  fireEvent.load(img);
+}
 
 describe('OCR undo restoration (#163 / #141 P1)', () => {
   // #261 P1: 셸이 직접 소유한 배선(ocr.apply / setComponents / currentComponents / 배너 onCancel)을
@@ -633,5 +657,57 @@ describe('OCR 되돌리기 배너와 전역 스낵바가 좌표 충돌하지 않
     const toast = await screen.findByTestId('global-toast');
     expect(toast.className).toContain('bottom-6');
     expect(toast.className).not.toContain('bottom-28');
+  });
+});
+
+// #809 — OCR 응답이 도착하기 전 랜딩에서 포스터 크롭을 확정하면, OcrUploadCard는 업로드 시점에
+// 캡처한 옛 currentInfo/onOcrApply가 아니라 지금(latestRef) props로 적용해야 한다. 안 그러면
+// 옛 onOcrApply(랜딩 fresh 분기)가 한 번 더 startFreshDoc()을 부르며 keepPoster 없이 포스터를
+// 지우고, 되돌리기 스냅샷도 리셋 전 옛 문서 기준으로 뜬다.
+describe('랜딩에서 OCR 인식 중에 포스터 크롭을 확정해도 레이스가 없다 (#809)', () => {
+  test('랜딩 OCR 중 크롭 확정 → 응답 → 포스터 유지·값 반영·되돌리기는 OCR 필드만', async () => {
+    const user = userEvent.setup();
+    render(<MobileHarness />);
+
+    // 옛 draft 값 시드 — OCR이 채울 필드(theater)와 안 채울 필드(title) 둘 다 있어야 "새로 시작"과
+    // "복원"이 구분된다. 랜딩은 아직 안 걷힌 채(landingDismissed=false)다.
+    await user.click(screen.getByText('seed-draft-theater'));
+    expect(captured.movieInfo.theater).toBe('인터스텔라 극장');
+    expect(captured.movieInfo.title).toBe('인터스텔라');
+
+    let resolveOcr!: (r: Record<string, unknown>) => void;
+    ocrImpl = () => new Promise((res) => { resolveOcr = res; });
+    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+
+    // OCR 응답 전에 포스터를 올리고 크롭을 확정한다 — #809가 겨냥하는 레이스.
+    await user.click(screen.getByRole('button', { name: '포스터 업로드' }));
+    fireEvent.change(posterFileInput(), { target: { files: [new File(['p'], 'poster.png', { type: 'image/png' })] } });
+    await screen.findByRole('dialog', { name: '포스터 크롭' });
+    loadCropImage();
+    await user.click(screen.getByRole('button', { name: '적용' }));
+
+    // 크롭 확정이 "새로 시작"을 거쳤다 — 포스터는 남고, OCR이 안 건드릴 필드(title)는 리셋됐다.
+    expect(!!captured.croppedImageUrl).toBe(true);
+    expect(captured.movieInfo.title).toBe('');
+
+    resolveOcr({ chain: 'cgv', theater: 'CGV 강남', seat: 'H12' });
+
+    const undoButton = await screen.findByRole('button', { name: '되돌리기' });
+    // 포스터가 지워지지 않았고(고쳤던 #809 버그는 keepPoster 없이 재리셋했다), OCR 값이 반영됐다.
+    expect(!!captured.croppedImageUrl).toBe(true);
+    expect(captured.movieInfo.theater).toBe('CGV 강남');
+    expect(captured.movieInfo.seat).toBe('H12');
+    expect(captured.components.chainLabel).toBe('CGV');
+    expect(captured.components.chainVisible).toBe(true);
+    expect(captured.movieInfo.title).toBe('');
+
+    await user.click(undoButton);
+
+    // 되돌리기 기준은 새 문서(빈 값)다 — 리셋 전 옛 draft의 '인터스텔라 극장'이 아니다.
+    expect(captured.movieInfo.theater).toBe('');
+    expect(captured.movieInfo.seat).toBe('');
+    expect(captured.components.chainLabel).toBe('');
+    expect(captured.components.chainVisible).toBe(true);
+    expect(!!captured.croppedImageUrl).toBe(true);
   });
 });

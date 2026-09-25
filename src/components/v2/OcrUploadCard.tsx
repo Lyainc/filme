@@ -88,6 +88,12 @@ export function OcrUploadCard({
   // 판단(setInfo 적용 여부)엔 안 쓴다 — 아래 ocrEpochRef 참고.
   const mountedRef = useRef(true);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // OCR 응답은 업로드한 시점 렌더의 props를 들고 도착한다(#809). 그 사이 랜딩에서 포스터를 확정하면
+  // 셸은 문서를 새로 시작하고 랜딩을 걷는데, 옛 onOcrApply는 그걸 모른 채 한 번 더 새로 시작해 포스터를
+  // 지우고, 옛 currentInfo는 되돌리기 스냅샷을 옛 문서 기준으로 뜬다. 그래서 적용할 때는 지금 props를 읽는다.
+  // 랜딩의 hidden은 unmount가 아니라 display:none이라(Landing.tsx) 걷힌 뒤에도 이 값이 계속 갱신된다.
+  const latestRef = useRef({ currentInfo, currentComponents, onOcrApply });
+  latestRef.current = { currentInfo, currentComponents, onOcrApply };
 
   useEffect(() => {
     mountedRef.current = true; // Strict Mode 재마운트 시 true 복구
@@ -124,6 +130,7 @@ export function OcrUploadCard({
     prevComponents?: Partial<TicketComponents>,
     nextComponents?: Partial<TicketComponents>,
   ) {
+    const { currentInfo, onOcrApply } = latestRef.current; // #809
     const filled = new Set<OcrDirectField>();
     const toApply: Partial<MovieInfo> = {};
     const prevValues: Partial<MovieInfo> = {};
@@ -228,6 +235,7 @@ export function OcrUploadCard({
       // 텍스트 라벨을 바로 채워 로고 없이도 체인/포맷이 표시되게 한다(#141 (7)·#348). 이미지를
       // 올리면 ChainStamp/FormatStamp가 이미지를 우선하므로 라벨은 자동으로 가려진다.
       // 변경 전 값을 스냅샷해 undo가 라벨/노출을 정확히 되돌리게 한다(#141 리뷰 P1).
+      const { currentComponents } = latestRef.current; // #809
       const prev: Partial<TicketComponents> = {};
       const next: Partial<TicketComponents> = {};
       const labels: string[] = [];
