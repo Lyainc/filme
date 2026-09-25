@@ -89,6 +89,17 @@ function MobileHarness() {
       >
         seed-draft-stamps
       </button>
+      {/* #807 전용 — 사용자가 OCR이 채운 극장을 직접 고친 것. 편집기는 전부 updateMovieInfo로 모이고
+          되돌리기는 그 시점 상태만 보므로, 어느 편집 경로인지는 판정에 영향이 없다. */}
+      <button type="button" onClick={() => photo.updateMovieInfo({ theater: '사용자가 고친 극장' })}>
+        seed-user-edit-theater
+      </button>
+      <button type="button" onClick={() => photo.updateComponents({ chainLabel: '사용자 라벨' })}>
+        seed-user-edit-chain
+      </button>
+      <button type="button" onClick={() => photo.updateMovieInfo({ titleOg: '사용자가 고친 원제' })}>
+        seed-user-edit-titleog
+      </button>
       <MobileEditorShell
         photo={photo}
         canExport
@@ -495,6 +506,98 @@ describe('문서를 리셋하면 옛 문서의 OCR 되돌리기가 같이 사라
     await waitFor(() => {
       expect(!!screen.queryByRole('button', { name: '되돌리기' })).toBe(false);
     });
+  });
+});
+
+describe('OCR이 채운 필드를 사용자가 고쳤으면 되돌리기가 그 필드는 두고 나머지만 되돌린다 (#807)', () => {
+  test('극장을 고친 뒤 되돌리면 고친 극장은 남고, 안 고친 좌석과 체인 라벨은 OCR 전으로 돌아간다', async () => {
+    const user = userEvent.setup();
+    render(<MobileHarness />);
+    await user.click(screen.getByTestId('landing-skip-poster'));
+
+    ocrImpl = async () => ({ chain: 'cgv', theater: 'CGV 강남', seat: 'H12' });
+    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+    const undoButton = await screen.findByRole('button', { name: '되돌리기' });
+    expect(captured.movieInfo.theater).toBe('CGV 강남');
+
+    await user.click(screen.getByText('seed-user-edit-theater'));
+    await user.click(undoButton);
+
+    expect(captured.movieInfo.theater).toBe('사용자가 고친 극장');
+    expect(captured.movieInfo.seat).toBe('');
+    // 안 고친 쪽은 여전히 한 번에 되돌아간다(#141 P1).
+    expect(captured.components.chainLabel).toBe('');
+  });
+
+  test('OCR이 채운 체인 라벨을 고친 뒤 되돌리면 고친 라벨은 남고 극장은 OCR 전으로 돌아간다', async () => {
+    const user = userEvent.setup();
+    render(<MobileHarness />);
+    await user.click(screen.getByTestId('landing-skip-poster'));
+
+    ocrImpl = async () => ({ chain: 'cgv', theater: 'CGV 강남' });
+    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+    const undoButton = await screen.findByRole('button', { name: '되돌리기' });
+    expect(captured.components.chainLabel).toBe('CGV');
+
+    await user.click(screen.getByText('seed-user-edit-chain'));
+    await user.click(undoButton);
+
+    expect(captured.components.chainLabel).toBe('사용자 라벨');
+    expect(captured.movieInfo.theater).toBe('');
+  });
+
+  test('KOBIS 보강이 채운 원제를 고친 뒤 되돌리면 고친 원제는 남고 나머지 보강은 OCR 전으로 돌아간다', async () => {
+    const user = userEvent.setup();
+    spyOn(global, 'fetch').mockImplementation((async (url: string) => {
+      if (url.includes('/api/kobis/search')) {
+        return {
+          ok: true,
+          json: async () => ({
+            movieListResult: {
+              movieList: [
+                { movieCd: '20147727', movieNm: '그랜드 부다페스트 호텔', movieNmEn: 'The Grand Budapest Hotel', openDt: '20140320' },
+              ],
+            },
+          }),
+        };
+      }
+      if (url.includes('/api/kobis/detail')) {
+        return { ok: true, json: async () => ({ movieInfoResult: { movieInfo: {} } }) };
+      }
+      throw new Error(`unexpected url: ${url}`);
+    }) as unknown as typeof fetch);
+    render(<MobileHarness />);
+    await user.click(screen.getByTestId('landing-skip-poster'));
+
+    ocrImpl = async () => ({ title: '그랜드 부다페스트 호텔' });
+    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+    const undoButton = await screen.findByRole('button', { name: '되돌리기' });
+    await waitFor(() => {
+      expect(captured.movieInfo.movieCd).toBe('20147727');
+    });
+
+    await user.click(screen.getByText('seed-user-edit-titleog'));
+    await user.click(undoButton);
+
+    expect(captured.movieInfo.titleOg).toBe('사용자가 고친 원제');
+    expect(captured.movieInfo.title).toBe('');
+    expect(captured.movieInfo.movieCd).toBeUndefined();
+  });
+
+  // updateMovieInfo는 좌석을 SEAT_TOKEN_MAX개로 다듬어 저장한다 — 비교 기준을 같이 안 다듬으면 사용자가
+  // 손대지 않은 좌석을 고친 걸로 오판해 되돌리지 못한다.
+  test('다듬어져 저장된 긴 좌석도 사용자가 안 고쳤으면 되돌아간다', async () => {
+    const user = userEvent.setup();
+    render(<MobileHarness />);
+    await user.click(screen.getByTestId('landing-skip-poster'));
+
+    ocrImpl = async () => ({ seat: 'H1, H2, H3, H4, H5, H6' });
+    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+    const undoButton = await screen.findByRole('button', { name: '되돌리기' });
+    expect(captured.movieInfo.seat).toBe('H1, H2, H3, H4');
+
+    await user.click(undoButton);
+    expect(captured.movieInfo.seat).toBe('');
   });
 });
 

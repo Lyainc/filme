@@ -72,21 +72,6 @@ describe('useOcrUndo', () => {
     expect(updateMovieInfo).not.toHaveBeenCalled();
   });
 
-  test('removeField가 해당 필드만 OCR 집합에서 제거한다(사용자 편집 시 칩 숨김)', () => {
-    const { photo } = makePhoto();
-    const { result } = renderHook(() => useOcrUndo(photo));
-
-    act(() => {
-      result.current.apply({ keys: new Set<OcrDirectField>(['theater', 'seat']), prevValues: {} });
-    });
-    act(() => {
-      result.current.removeField('theater');
-    });
-
-    expect(result.current.filledFields.has('theater')).toBe(false);
-    expect(result.current.filledFields.has('seat')).toBe(true);
-  });
-
   test('dropKobisFields는 KOBIS 키만 빼고, 되돌릴 게 안 남으면 배너를 닫는다(#801)', () => {
     const { photo, updateMovieInfo, updateComponents } = makePhoto();
     const { result } = renderHook(() => useOcrUndo(photo));

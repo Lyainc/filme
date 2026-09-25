@@ -30,6 +30,10 @@ export interface OcrUploadCardProps {
     // OCR이 chain/format을 인식하면 {chain,format}Visible/Label을 변경하는데, 이 라벨은
     // export에 포함되므로 undo가 반드시 되돌려야 한다(#141 리뷰 P1). 변경 직전 값.
     prevComponents?: Partial<TicketComponents>;
+    /** OCR이 직접 필드에 쓴 값 — 되돌리기가 그 뒤 사용자가 고친 필드를 건너뛰는 기준(#807). */
+    nextValues: Partial<MovieInfo>;
+    /** OCR이 컴포넌트에 쓴 값 — nextValues의 스탬프 라벨·노출 판(#807). */
+    nextComponents?: Partial<TicketComponents>;
   }) => void;
   setComponents?: (components: Partial<TicketComponents>) => void;
   /** chain/format 변경 undo 스냅샷용 — 변경 전 컴포넌트 값을 읽는다. */
@@ -41,6 +45,8 @@ export interface OcrUploadCardProps {
   captureDraft: () => () => boolean;
   /** KOBIS 보강이 영화 수명 판정에서 버려졌을 때(#801) — 셸의 useOcrUndo.dropKobisFields. */
   onKobisDiscarded: () => void;
+  /** KOBIS 보강이 실제로 쓰였을 때(#807) — 셸의 useOcrUndo.recordKobisApplied. 되돌리기가 그 뒤 사용자가 고친 보강 필드를 건너뛰는 기준. */
+  onKobisApplied: (info: Partial<MovieInfo>) => void;
   className?: string;
   /** 진입 아이콘/문구 분기(#424) — 'landing'(기본)은 위 드롭존을 가리키는 화살표가 자연스럽지만,
    * 'drawer'(FieldDrawer 상단 슬롯)엔 가리킬 드롭존이 없어 화살표를 빼고 문구도 짧게 줄인다. */
@@ -69,6 +75,7 @@ export function OcrUploadCard({
   captureMovieSelection,
   captureDraft,
   onKobisDiscarded,
+  onKobisApplied,
   className = '',
   context = 'landing',
   onNeedManualTitle,
@@ -111,7 +118,12 @@ export function OcrUploadCard({
     return null;
   }
 
-  function applyOcr(direct: Partial<MovieInfo>, title?: string, prevComponents?: Partial<TicketComponents>) {
+  function applyOcr(
+    direct: Partial<MovieInfo>,
+    title?: string,
+    prevComponents?: Partial<TicketComponents>,
+    nextComponents?: Partial<TicketComponents>,
+  ) {
     const filled = new Set<OcrDirectField>();
     const toApply: Partial<MovieInfo> = {};
     const prevValues: Partial<MovieInfo> = {};
@@ -146,7 +158,7 @@ export function OcrUploadCard({
     // 마지막 setState가 돼 방금 채운 필드를 통째로 지운다. 아래 setInfo/호출부 setComponents는
     // 전부 함수형 갱신이라 리셋 위에 정확히 얹힌다.
     if (filled.size > 0 || title || prevComponents) {
-      onOcrApply({ keys: filled, prevValues, prevComponents });
+      onOcrApply({ keys: filled, prevValues, prevComponents, nextValues: toApply, nextComponents });
     }
 
     if (filled.size > 0) {
@@ -175,6 +187,7 @@ export function OcrUploadCard({
           onKobisDiscarded();
           return;
         }
+        onKobisApplied(kobisInfo);
         if (!kobisInfo.titleOg && !kobisInfo.actors) {
           if (onNeedManualTitle) onNeedManualTitle();
           else showToast('영화 정보를 찾지 못했어요. 제목을 확인하고 다시 검색해 주세요.');
@@ -251,7 +264,7 @@ export function OcrUploadCard({
         }
       }
 
-      applyOcr(direct, result.title, prevComponents);
+      applyOcr(direct, result.title, prevComponents, prevComponents ? next : undefined);
       // applyOcr 뒤다(#727) — 그 안의 onOcrApply가 셸의 문서 리셋을 부르므로, 컴포넌트 패치도
       // 리셋 **뒤에** 큐에 들어가야 살아남는다(위 applyOcr 주석과 같은 이유).
       if (prevComponents && setComponents) setComponents(next);
