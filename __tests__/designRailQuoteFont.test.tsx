@@ -100,6 +100,18 @@ describe('레일 커스텀 — 한줄평 폰트 9택 (#558 → #437)', () => {
     expect(chips.map((c) => c.textContent)).toEqual(ALL_FONT_LABELS);
   });
 
+  // happy-dom은 레이아웃을 안 재니 "마지막 칩이 두 배로 늘지 않는다"는 직접 못 잰다 — 그 원인인
+  // flex-wrap+grow 대신 grid가 걸렸다는 선언을 잠근다(claude-review PR #795 P1).
+  test('폰트 피커는 flex-wrap이 아니라 grid로 칩을 세운다 (#780)', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await openCustomPanel(user);
+
+    const group = screen.getByRole('radiogroup', { name: '한줄평 폰트' });
+    expect(group.className).toContain('grid');
+    expect(group.className).not.toContain('flex-wrap');
+  });
+
   test('칩 라벨이 각자의 서체로 그려져 선택 전에도 비교된다 (#780)', async () => {
     const user = userEvent.setup();
     render(<Harness />);
