@@ -9,7 +9,7 @@
  * (scripts/measure-chrome.mjs convention) referenced in the #682 PR. This test only pins the
  * two source-level facts a silent revert would touch: the svh coefficient itself, and the
  * CSS-only scroll-shadow affordance (#682 방향 3) that cues the remaining overflow on panels
- * (크기·형압) this round didn't shrink.
+ * (크기) this round didn't shrink.
  */
 import { describe, expect, test, afterEach } from 'bun:test';
 import { render, cleanup } from '@testing-library/react';

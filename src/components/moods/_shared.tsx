@@ -2,8 +2,8 @@ import { CSSProperties, Fragment, HTMLAttributes, ImgHTMLAttributes, KeyboardEve
 import type { MovieInfo, QuoteFont, TicketComponents, TicketField } from '@/types';
 import { FIELD_LABELS, STAMP_LABELS, isStampTarget, type SheetTarget } from '@/constants/fields';
 import { formatDate } from '@/utils/dateFormat';
-import { posterContainRect, posterContentFrac, posterFeatherMask, type EmbossContentFrac } from '@/utils/posterFeather';
-import { TEXTURE_RECIPES, gradientBitmapSvg, isNoiseRecipe, noiseTileSvg, EMBOSS_RECIPE, embossBitmapSvg, RELIEF_RECIPE, reliefBitmapSvg, projectEmbossStamps, projectEmbossPaths, type TextureRecipe, type TextureBlend, type EmbossStamp, type EmbossPath } from '@/utils/textureRecipes';
+import { posterContainRect, posterFeatherMask } from '@/utils/posterFeather';
+import { TEXTURE_RECIPES, gradientBitmapSvg, isNoiseRecipe, noiseTileSvg, type TextureRecipe, type TextureBlend } from '@/utils/textureRecipes';
 import { EyeIcon } from '@/components/ui/VisibilityCheckbox';
 
 export interface MoodProps {
@@ -26,21 +26,6 @@ export interface MoodProps {
   onField?: (field: SheetTarget) => void;
   /** 포스터 영역 탭(#259) → 파일 선택 → 크롭. undefined면 포스터는 비인터랙티브(캡처/데스크톱). */
   onPosterTap?: () => void;
-  /**
-   * 형압 마스크(#509) — croppedImageUrl과 동일하게 `components`(TicketComponents) 밖의 세션 한정
-   * 필드다(PhototicketState 주석 참고). 각 무드가 자기 Poster() 호출에 그대로 전달한다.
-   */
-  embossStamps?: EmbossStamp[];
-  /** 자석 올가미(#509 2단계, c10) 닫힌 다각형 — embossStamps와 나란히 각 무드가 그대로 전달한다. */
-  embossPaths?: EmbossPath[];
-  /** 형압 강도 0..1(#509). 미지정 시 Poster 기본값(1). */
-  embossIntensity?: number;
-  /** 볼록 압인 마스크(#732 d2 · #735) — embossStamps와 나란한 두 번째 벌, 좌표계·전달 규율 동일. */
-  reliefStamps?: EmbossStamp[];
-  /** 볼록 압인 올가미(#735) — embossPaths와 나란한 두 번째 벌. */
-  reliefPaths?: EmbossPath[];
-  /** 볼록 압인 강도 0..1(#735). 미지정 시 Poster 기본값(1). */
-  reliefIntensity?: number;
 }
 
 /**
@@ -1040,23 +1025,6 @@ interface PosterProps {
   /** 코팅 광택 오버레이 강도 0..1(#475) — TextureOverlay(코팅)로 관통. 미지정 시 1(강도 100%). */
   coatingIntensity?: number;
   posterOpacity?: number;
-  /**
-   * 형압 마스크(#509) — 사용자가 브러시로 칠한 원형 스탬프 목록(포스터 자연 0..1 분율 좌표,
-   * c7). 비었거나 미지정이면 오버레이 자체를 렌더하지 않는다(빈 SVG를 안 굽는다).
-   */
-  embossStamps?: EmbossStamp[];
-  /**
-   * 자석 올가미(#509 2단계, c10) 닫힌 다각형 목록(포스터 자연 0..1 분율 좌표, embossStamps와
-   * 같은 좌표계). 브러시와 동시에 있어도 같은 비트맵 한 장으로 함께 굽는다.
-   */
-  embossPaths?: EmbossPath[];
-  /** 형압 강도 0..1(#509) — material/coatingIntensity와 동일 계약. 미지정 시 1. */
-  embossIntensity?: number;
-  /** 볼록 압인 마스크(#732 d2 · #735) — embossStamps와 나란한 두 번째 벌, 같은 좌표계·게이트 규율. */
-  reliefStamps?: EmbossStamp[];
-  reliefPaths?: EmbossPath[];
-  /** 볼록 압인 강도 0..1(#735). 미지정 시 1. */
-  reliefIntensity?: number;
   /** contain일 때 정렬(#420 원본 비율 보존 프리셋) — 'top'은 포스터 상단을 캔버스 상단에 붙인다. 기본 중앙. */
   align?: 'center' | 'top';
   /**
@@ -1145,12 +1113,6 @@ export const Poster = memo(function Poster({
   coating = 'none',
   coatingIntensity = 1,
   posterOpacity,
-  embossStamps,
-  embossPaths,
-  embossIntensity = 1,
-  reliefStamps,
-  reliefPaths,
-  reliefIntensity = 1,
   align = 'center',
   frameInsetY = 0,
   onTopBandHeight,
@@ -1178,9 +1140,6 @@ export const Poster = memo(function Poster({
   // <img>를 안 그리는 분기(노출 off의 dim placeholder)는 보정 없이 고정 높이로 서는 게 맞다는
   // 판정이라, 두 곳이 같은 메커니즘 하나(useNaturalAspect)로 통일됐다.
   const { aspect: natAspect, ref: posterRef, imgProps: posterImgProps } = useNaturalAspect(src);
-  // fit 게이트 없이 항상 측정한다(#509 재매핑) — cover도 embossContentFrac(아래)에 img 박스 크기가
-  // 필요하다. fit==='contain'에서만 쓰던 featherMask/topBandHeight는 여전히 자기 조건에서 fit을
-  // 명시적으로 검사하므로(아래) cover에서 boxSize가 non-null이어도 동작이 안 바뀐다.
   useEffect(() => {
     const el = posterRef.current;
     if (!el) {
@@ -1212,17 +1171,6 @@ export const Poster = memo(function Poster({
       ? posterFeatherMask(boxSize.w, boxSize.h, natAspect, align === 'top' ? 0 : 0.5)
       : undefined;
 
-  // 형압 콘텐츠 사각형(#509 재매핑) — boxSize(img 박스, contain이면 frameInsetY만큼 이미 줄어든
-  // 크기)와 frameInsetY로 root(포스터 박스) 높이를 되돌린 뒤, posterContentFrac이 fit/align까지
-  // 반영해 "자연 이미지가 root 박스의 어디에 해당하는지"를 분율로 낸다. EmbossOverlay가 이 값으로
-  // 자연 분율 스탬프를 지금 박스 분율로 투영한다(projectEmbossStamps). boxSize/natAspect가 아직
-  // 없으면(첫 페인트 전) null — EmbossOverlay는 그동안 마스크를 안 그린다(SSR 불변식 유지).
-  const effFrameInsetY = fit === 'contain' ? frameInsetY : 0;
-  const embossContentFrac =
-    boxSize && boxSize.w > 0 && boxSize.h > 0 && natAspect
-      ? posterContentFrac(boxSize.w, boxSize.h + effFrameInsetY * 2, effFrameInsetY, boxSize.h, natAspect, fit, 0.5, align === 'top' ? 0 : 0.5)
-      : null;
-
   return (
     <div
       aria-hidden="true"
@@ -1243,16 +1191,6 @@ export const Poster = memo(function Poster({
       data-material-intensity={materialIntensity}
       data-coating={coating && coating !== 'none' && TEXTURE_RECIPES[coating] ? coating : undefined}
       data-coating-intensity={coatingIntensity}
-      // 형압(#509) — 같은 DOM-속성 규율로 저장 경로(compositeEmbossOverlay)에 마스크를 실어보낸다.
-      // 스탬프가 없으면 안 실어 저장 경로가 그 축을 건너뛴다(material/coating과 동일 게이트 패턴).
-      data-emboss-stamps={embossStamps && embossStamps.length ? JSON.stringify(embossStamps) : undefined}
-      // 올가미(2단계) 다각형도 같은 규율 — 별도 data-* 로 실어 stamps와 독립적으로 게이트한다.
-      data-emboss-paths={embossPaths && embossPaths.length ? JSON.stringify(embossPaths) : undefined}
-      data-emboss-intensity={embossIntensity}
-      // 볼록 압인(#732 d2 · #735) — 하이라이트와 나란한 두 번째 마스크 벌, 같은 data-속성 규율.
-      data-relief-stamps={reliefStamps && reliefStamps.length ? JSON.stringify(reliefStamps) : undefined}
-      data-relief-paths={reliefPaths && reliefPaths.length ? JSON.stringify(reliefPaths) : undefined}
-      data-relief-intensity={reliefIntensity}
       style={{
         position: 'absolute',
         inset: 0,
@@ -1311,33 +1249,7 @@ export const Poster = memo(function Poster({
           <img> 위에 얹히므로 "재질 최종색 위에 코팅 blend"(c3)가 DOM 순서 그대로 성립한다. */}
       {material && material !== 'original' && <TextureOverlay texture={material} intensity={materialIntensity} />}
       {coating && coating !== 'none' && <TextureOverlay texture={coating} intensity={coatingIntensity} />}
-      {/* 형압(#509)·볼록 압인(#732 d2)은 재질·코팅 위(z-order 최상단)에 얹는다 — 실물 형압 다이는
-          코팅(라미네이팅) 아래 종이 자체를 누르지만, 이 오버레이는 "융기부가 코팅 위로도 비쳐
-          보이는" 단순화한 룩이라 가장 위가 자연스럽다(코팅 유무와 무관하게 항상 눈에 띔, c5 동시
-          적용 요구와 부합). 볼록 압인을 먼저 그리는 이유(#735) — 종이가 물리적으로 눌린 모양(형압)이
-          먼저 서고 그 위에 광원 반사(하이라이트)가 얹히는 순서가 실물과 같다. 같은 embossContentFrac
-          을 재사용하는 이유는 두 효과가 같은 포스터 콘텐츠 사각형 위에 그려지기 때문 — 효과별로
-          갈릴 이유가 없다. */}
-      {((reliefStamps && reliefStamps.length > 0) || (reliefPaths && reliefPaths.length > 0)) && (
-        <EmbossOverlay
-          stamps={reliefStamps ?? []}
-          paths={reliefPaths ?? []}
-          intensity={reliefIntensity}
-          contentFrac={embossContentFrac}
-          bitmapSvg={reliefBitmapSvg}
-          blend={RELIEF_RECIPE.blend}
-        />
-      )}
-      {((embossStamps && embossStamps.length > 0) || (embossPaths && embossPaths.length > 0)) && (
-        <EmbossOverlay
-          stamps={embossStamps ?? []}
-          paths={embossPaths ?? []}
-          intensity={embossIntensity}
-          contentFrac={embossContentFrac}
-          bitmapSvg={embossBitmapSvg}
-          blend={EMBOSS_RECIPE.blend}
-        />
-      )}
+
     </div>
   );
 });
@@ -1464,72 +1376,6 @@ function GradientOverlay({
             }
           : null),
         mixBlendMode: recipe.blend,
-        opacity: intensity,
-      }}
-    />
-  );
-}
-
-/**
- * 형압/볼록 압인 베벨 오버레이(#509 · #732 d2) — GradientOverlay와 동일 패턴(박스 aspect를
- * bitmapSvg에 넘겨 저장 경로와 같은 비트맵을 그린다). ResizeObserver를 안 쓰는 이유도 GradientOverlay
- * 주석과 동일 — 무드 트리는 자연 픽셀 고정이라 리플로우하지 않는다.
- *
- * stamps는 자연 이미지 분율(#509 재매핑)이라 굽기 전 contentFrac(Poster가 계산해 넘긴다)으로
- * 지금 박스 분율로 투영한다(projectEmbossStamps) — compositeMaskOverlay(captureToImage.ts)가
- * export에서 쓰는 것과 같은 변환이라 미리보기=저장물이 유지된다. contentFrac이 아직 없으면(첫
- * 페인트 전) 마스크를 안 그린다.
- *
- * bitmapSvg/blend를 프롭으로 받아 하이라이트(embossBitmapSvg/EMBOSS_RECIPE)와 형압
- * (reliefBitmapSvg/RELIEF_RECIPE) 두 효과가 컴포넌트 하나를 공유한다(#735) — 레시피가 다를 뿐
- * 측정·투영·굽기 파이프라인은 동일하다.
- */
-function EmbossOverlay({
-  stamps,
-  paths,
-  intensity,
-  contentFrac,
-  bitmapSvg,
-  blend,
-}: {
-  stamps: EmbossStamp[];
-  paths: EmbossPath[];
-  intensity: number;
-  contentFrac: EmbossContentFrac | null;
-  bitmapSvg: (stamps: EmbossStamp[], paths: EmbossPath[], rawAspect: number) => string;
-  blend: TextureBlend;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [aspect, setAspect] = useState<number | null>(null);
-
-  useIsomorphicLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    if (r.width <= 0 || r.height <= 0) return;
-    const next = r.height / r.width;
-    setAspect((prev) => (prev === next ? prev : next));
-  });
-
-  const boxStamps = contentFrac ? projectEmbossStamps(stamps, contentFrac) : null;
-  const boxPaths = contentFrac ? projectEmbossPaths(paths, contentFrac) : null;
-
-  return (
-    <div
-      ref={ref}
-      aria-hidden="true"
-      style={{
-        position: 'absolute',
-        inset: 0,
-        pointerEvents: 'none',
-        ...(aspect && boxStamps && boxPaths
-          ? {
-              backgroundImage: `url("${bitmapSvg(boxStamps, boxPaths, aspect)}")`,
-              backgroundSize: '100% 100%',
-              backgroundRepeat: 'no-repeat',
-            }
-          : null),
-        mixBlendMode: blend,
         opacity: intensity,
       }}
     />

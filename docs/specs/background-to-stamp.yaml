@@ -285,7 +285,7 @@ blindspots:
       `FieldEditorBody.tsx`/`InPlaceFieldEditor.tsx`(`isStamp`는 로고 전용인데 파일이 `EmbossStamp`
       import 트리 안이라 grep 오탐이 난다).
       그래서 **접두어 없는 `stamp`/`stamps`는 세 번째 뜻에 절대 쓰면 안 된다** — 무접두 `stamps`
-      49회·`stamp` 39회가 대부분 형압인데 `textureRecipes.ts`·`EmbossBrushLayer.tsx` 밖에서는
+      49회·`stamp` 39회가 대부분 형압인데 `textureRecipes.ts`·형압 브러시 레이어(#785에서 기능째 삭제) 밖에서는
       로고로 읽힌다. 코드 쪽 이름은 c7대로 `backgroundPattern*`을 유지하는 게 이 충돌을 안 키우는
       가장 싼 길이고, 사용자 이름만 '스탬프'로 가는 건 #672가 이미 한 번 한 분리다.
       남은 진짜 부채 하나: `docs/specs/logo-stamp-scale-control.yaml`이라는 파일명이 specs 디렉터리에서
