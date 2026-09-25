@@ -12,8 +12,8 @@
  *
  * 실패할 수 있는 단언의 received에 DOM 엘리먼트를 넣지 않는다(#693) — `!!`로 강제 변환한다.
  */
-import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
-import { render, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/react';
+import { describe, expect, test, afterEach, beforeEach, jest } from 'bun:test';
+import { render, screen, cleanup, fireEvent, act, within } from '@testing-library/react';
 import { mobileShellProps } from './shellHarness';
 
 const { usePhototicket, STORAGE_KEY } =
@@ -44,6 +44,7 @@ beforeEach(() => window.localStorage.clear());
 afterEach(() => {
   cleanup();
   window.localStorage.clear();
+  jest.useRealTimers();
 });
 
 describe('랜딩 "새로 시작"은 저장분을 그 자리에서 지우지 않는다 (#727 c7)', () => {
@@ -63,28 +64,29 @@ describe('랜딩 "새로 시작"은 저장분을 그 자리에서 지우지 않�
     expect(document.body.textContent).not.toContain('CGV 용산아이파크몰');
   });
 
-  test('새 문서를 한 번 편집하면 그때 저장분이 새 내용으로 덮인다', async () => {
+  test('새 문서를 한 번 편집하면 그때 저장분이 새 내용으로 덮인다', () => {
+    jest.useFakeTimers();
     seedDraft();
     render(<Harness />);
 
     fireEvent.click(screen.getByTestId('landing-skip-poster'));
     fireEvent.click(screen.getByText('edit'));
 
-    // 자동저장 디바운스 1s — `--timeout 30000`(CI와 같은 값) 안이다.
-    await waitFor(
-      () => expect(window.localStorage.getItem(STORAGE_KEY)).toContain('괴물'),
-      { timeout: 5000 }
-    );
+    // 자동저장 디바운스 1s(AUTOSAVE_DEBOUNCE_MS, usePhototicket.ts) — 가짜 타이머로 즉시 전진.
+    act(() => jest.advanceTimersByTime(1000));
+
+    expect(window.localStorage.getItem(STORAGE_KEY)).toContain('괴물');
     expect(window.localStorage.getItem(STORAGE_KEY)).not.toContain('인터스텔라');
   });
 
-  test('랜딩에 머무는 동안엔 아무것도 안 써진다 — 저장분이 손도 안 탄 채 그대로다', async () => {
+  test('랜딩에 머무는 동안엔 아무것도 안 써진다 — 저장분이 손도 안 탄 채 그대로다', () => {
+    jest.useFakeTimers();
     seedDraft();
     const before = window.localStorage.getItem(STORAGE_KEY);
     render(<Harness />);
 
     // 복원(draftRestored)·마운트만으로는 dirtyTick이 안 오르므로 자동저장이 예약조차 안 된다.
-    await new Promise((r) => setTimeout(r, 1500));
+    act(() => jest.advanceTimersByTime(1500));
 
     expect(window.localStorage.getItem(STORAGE_KEY)).toBe(before);
   });
