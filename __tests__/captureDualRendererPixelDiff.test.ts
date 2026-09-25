@@ -191,7 +191,35 @@ class FakeCtx {
     }
     const c = parseColor(this.fillStyle);
     if (!c) return; // gradient/pattern fillStyle — 이 스위트 어떤 통과 케이스도 실제 색이 필요 없다.
+    if (this.fillOpaqueFast(x, y, w, h, c)) return;
     this.blend({ x, y, w, h }, () => c);
+  }
+
+  // 불투명 단색 + source-over + globalAlpha===1이면 대상(destination) 값과 무관하게 결과가 항상
+  // source 색 그대로다(sa=1 → outA=1, color=sr) — blend() 공식으로 유도되는 수학적 사실이라 destination
+  // 내용에 기대지 않고 항상 안전하다(#811). 한 행만 픽셀별로 채운 뒤 나머지 행은 buf.set(subarray)로
+  // 복제해 픽셀당 배열 할당·나눗셈을 없앤다. 조건이 하나라도 안 맞으면 false를 돌려줘 기존 blend()
+  // 경로로 폴백한다(텍스처 오버레이의 soft-light 등 비-opaque 케이스는 그대로 느린 경로를 탄다).
+  private fillOpaqueFast(x: number, y: number, w: number, h: number, c: RGBA): boolean {
+    if (c[3] !== 255 || this.globalAlpha !== 1 || this.globalCompositeOperation !== 'source-over') return false;
+    const canvasBounds = { x: 0, y: 0, w: this.canvas.width, h: this.canvas.height };
+    const r = intersect(this.clipRect, intersect(canvasBounds, { x, y, w, h })!);
+    if (!r || r.w <= 0 || r.h <= 0) return true; // 채울 픽셀이 없다 — 처리 완료로 취급.
+    const x0 = Math.max(0, Math.floor(r.x));
+    const y0 = Math.max(0, Math.floor(r.y));
+    const x1 = Math.min(this.canvas.width, Math.ceil(r.x + r.w));
+    const y1 = Math.min(this.canvas.height, Math.ceil(r.y + r.h));
+    const rowW = x1 - x0;
+    if (rowW <= 0 || y1 <= y0) return true;
+    const cw = this.canvas.width;
+    const rowBuf = new Uint8ClampedArray(rowW * 4);
+    for (let i = 0; i < rowW; i++) {
+      rowBuf[i * 4] = c[0]; rowBuf[i * 4 + 1] = c[1]; rowBuf[i * 4 + 2] = c[2]; rowBuf[i * 4 + 3] = 255;
+    }
+    for (let py = y0; py < y1; py++) {
+      this.buf.set(rowBuf, (py * cw + x0) * 4);
+    }
+    return true;
   }
 
   drawImage(src: unknown, dx: number, dy: number, dw?: number, dh?: number) {
@@ -202,6 +230,11 @@ class FakeCtx {
       dw = nat.w;
       dh = nat.h;
     }
+    // HONORED가 이 파일 전체에서 항상 false라 useFilter는 항상 false — 필터를 고려할 필요가 없다
+    // (아래 두 빠른 경로 모두 이 전제 위에 있다).
+    if (this.drawConstantColorFast(src, dx, dy, dw, dh)) return;
+    if (this.drawCanvasCopyFast(src, dx, dy, dw, dh)) return;
+
     const sampler = resolveSampler(src);
     const filterStr = this.filter;
     const useFilter = HONORED && !!filterStr && filterStr !== 'none';
@@ -213,30 +246,130 @@ class FakeCtx {
     });
   }
 
+  // src가 u/v와 무관하게 항상 같은 색을 내는 소스(__testColor 고정 색, 또는 hole이 없는 __solidColor
+  // 태그 이미지)면 drawImage는 사실상 그 색으로 dest 사각형을 채우는 fillRect와 같다(#811). 완전
+  // 불투명이면 fillOpaqueFast와 같은 행-복제 경로를 쓴다. 완전 투명은 "안 그린다"가 아니다 — blend는
+  // 대상 알파가 0인 픽셀의 RGB를 0으로 지우므로 clearTransparentRgb가 그것만 한다. 부분 투명은 느린 경로로.
+  private drawConstantColorFast(src: unknown, dx: number, dy: number, dw: number, dh: number): boolean {
+    if (this.globalAlpha !== 1 || this.globalCompositeOperation !== 'source-over') return false;
+    const testColor = (src as { __testColor?: RGBA }).__testColor;
+    let color: RGBA;
+    if (testColor) {
+      color = testColor;
+    } else if (Object.prototype.hasOwnProperty.call(src as object, '__solidColor')) {
+      if (forcedBaseHoleUMax !== null) return false; // u에 따라 갈리는 구멍 — 상수 색이 아니다.
+      color = (src as { __solidColor: RGBA | null }).__solidColor ?? [0, 0, 0, 0];
+    } else {
+      return false; // canvas 소스 등 — 다른 빠른 경로나 기존 느린 경로가 처리.
+    }
+    if (color[3] === 0) return this.clearTransparentRgb(dx, dy, dw, dh);
+    if (color[3] !== 255) return false;
+    this.fillOpaqueFast(dx, dy, dw, dh, color);
+    return true;
+  }
+
+  // 완전 투명 소스의 blend 결과 — 대상 알파가 0인 픽셀만 RGB가 0으로 지워지고 나머지는 그대로다.
+  private clearTransparentRgb(x: number, y: number, w: number, h: number): boolean {
+    const canvasBounds = { x: 0, y: 0, w: this.canvas.width, h: this.canvas.height };
+    const r = intersect(this.clipRect, intersect(canvasBounds, { x, y, w, h })!);
+    if (!r || r.w <= 0 || r.h <= 0) return true;
+    const x0 = Math.max(0, Math.floor(r.x));
+    const y0 = Math.max(0, Math.floor(r.y));
+    const x1 = Math.min(this.canvas.width, Math.ceil(r.x + r.w));
+    const y1 = Math.min(this.canvas.height, Math.ceil(r.y + r.h));
+    for (let py = y0; py < y1; py++) {
+      for (let i = (py * this.canvas.width + x0) * 4, end = (py * this.canvas.width + x1) * 4; i < end; i += 4) {
+        if (this.buf[i + 3] === 0) { this.buf[i] = 0; this.buf[i + 1] = 0; this.buf[i + 2] = 0; }
+      }
+    }
+    return true;
+  }
+
+  // HTMLCanvasElement 소스를 스케일 없이(dw/dh === 소스 크기) source-over로 그리는 경우 — u/v
+  // 나눗셈·샘플러 클로저·픽셀당 배열 할당 없이 소스 버퍼를 직접 읽어 합성한다(#811). 1:1이므로
+  // 정수 좌표면 sx=px-dx·sy=py-dy가 기존 u/v 샘플링(floor(px+0.5-dx))과 같은 픽셀을 가리킨다 — 소수
+  // 좌표나 source-over가 아닌 합성은 느린 경로로 넘긴다. 알파 0/255는 blend 공식에서 각각 "변화 없음(대상
+  // 알파가 0이면 RGB만 0으로)"·"소스로 덮어쓰기"로 정확히 축약되고, 그 사이는 원래 공식을 그대로 쓴다.
+  private drawCanvasCopyFast(src: unknown, dx: number, dy: number, dw: number, dh: number): boolean {
+    if (!(src instanceof HTMLCanvasElement) || src.width !== dw || src.height !== dh) return false;
+    if (!Number.isInteger(dx) || !Number.isInteger(dy) || this.globalCompositeOperation !== 'source-over') return false;
+    const srcCtx = ctxCache.get(src);
+    if (!srcCtx) return false;
+    const canvasBounds = { x: 0, y: 0, w: this.canvas.width, h: this.canvas.height };
+    const r = intersect(this.clipRect, intersect(canvasBounds, { x: dx, y: dy, w: dw, h: dh })!);
+    if (!r || r.w <= 0 || r.h <= 0) return true;
+    const x0 = Math.max(0, Math.floor(r.x));
+    const y0 = Math.max(0, Math.floor(r.y));
+    const x1 = Math.min(this.canvas.width, Math.ceil(r.x + r.w));
+    const y1 = Math.min(this.canvas.height, Math.ceil(r.y + r.h));
+    const ga = this.globalAlpha;
+    const sBuf = srcCtx.buf;
+    const sW = src.width;
+    const dBuf = this.buf;
+    const dW = this.canvas.width;
+    for (let py = y0; py < y1; py++) {
+      const sy = py - dy;
+      let si = (sy * sW + (x0 - dx)) * 4;
+      let di = (py * dW + x0) * 4;
+      for (let px = x0; px < x1; px++, si += 4, di += 4) {
+        const sa255 = sBuf[si + 3];
+        if (sa255 === 0) {
+          if (dBuf[di + 3] === 0) { dBuf[di] = 0; dBuf[di + 1] = 0; dBuf[di + 2] = 0; }
+          continue;
+        }
+        if (sa255 === 255 && ga === 1) {
+          dBuf[di] = sBuf[si]; dBuf[di + 1] = sBuf[si + 1]; dBuf[di + 2] = sBuf[si + 2]; dBuf[di + 3] = 255;
+          continue;
+        }
+        const sa = (sa255 / 255) * ga;
+        const da = dBuf[di + 3] / 255;
+        const outA = sa + da * (1 - sa);
+        if (outA <= 0) { dBuf[di] = 0; dBuf[di + 1] = 0; dBuf[di + 2] = 0; dBuf[di + 3] = 0; continue; }
+        dBuf[di] = Math.round((sBuf[si] * sa + dBuf[di] * da * (1 - sa)) / outA);
+        dBuf[di + 1] = Math.round((sBuf[si + 1] * sa + dBuf[di + 1] * da * (1 - sa)) / outA);
+        dBuf[di + 2] = Math.round((sBuf[si + 2] * sa + dBuf[di + 2] * da * (1 - sa)) / outA);
+        dBuf[di + 3] = Math.round(outA * 255);
+      }
+    }
+    return true;
+  }
+
+  // 행 단위 typed-array 복사(#811) — 픽셀별 4-way 대입 대신 겹치는 가로 구간을 buf.set(subarray)
+  // 한 번으로 옮긴다. getImageData/putImageData는 알파 합성이 없는 순수 메모리 복사라 항상 안전하고,
+  // 경계 밖은 기존과 동일하게 건너뛴다(결과 버퍼는 Uint8ClampedArray라 기본값 0 — 이전 픽셀별 continue와
+  // 같은 결과).
   getImageData(x: number, y: number, w: number, h: number) {
     const data = new Uint8ClampedArray(w * h * 4);
-    for (let j = 0; j < h; j++) {
-      for (let i = 0; i < w; i++) {
-        const sx = x + i;
+    const cw = this.canvas.width;
+    const ch = this.canvas.height;
+    const sx0 = Math.max(0, x);
+    const sx1 = Math.min(cw, x + w);
+    if (sx1 > sx0) {
+      const rowLen = (sx1 - sx0) * 4;
+      const diBase = (sx0 - x) * 4;
+      for (let j = 0; j < h; j++) {
         const sy = y + j;
-        if (sx < 0 || sy < 0 || sx >= this.canvas.width || sy >= this.canvas.height) continue;
-        const si = (sy * this.canvas.width + sx) * 4;
-        const di = (j * w + i) * 4;
-        data[di] = this.buf[si]; data[di + 1] = this.buf[si + 1]; data[di + 2] = this.buf[si + 2]; data[di + 3] = this.buf[si + 3];
+        if (sy < 0 || sy >= ch) continue;
+        const si = (sy * cw + sx0) * 4;
+        data.set(this.buf.subarray(si, si + rowLen), j * w * 4 + diBase);
       }
     }
     return { data, width: w, height: h };
   }
   putImageData(imgData: { data: Uint8ClampedArray; width: number; height: number }, x: number, y: number) {
     const { data, width: w, height: h } = imgData;
-    for (let j = 0; j < h; j++) {
-      for (let i = 0; i < w; i++) {
-        const dx2 = x + i;
+    const cw = this.canvas.width;
+    const ch = this.canvas.height;
+    const dx0 = Math.max(0, x);
+    const dx1 = Math.min(cw, x + w);
+    if (dx1 > dx0) {
+      const rowLen = (dx1 - dx0) * 4;
+      const siBase = (dx0 - x) * 4;
+      for (let j = 0; j < h; j++) {
         const dy2 = y + j;
-        if (dx2 < 0 || dy2 < 0 || dx2 >= this.canvas.width || dy2 >= this.canvas.height) continue;
-        const di = (dy2 * this.canvas.width + dx2) * 4;
-        const si = (j * w + i) * 4;
-        this.buf[di] = data[si]; this.buf[di + 1] = data[si + 1]; this.buf[di + 2] = data[si + 2]; this.buf[di + 3] = data[si + 3];
+        if (dy2 < 0 || dy2 >= ch) continue;
+        const di = (dy2 * cw + dx0) * 4;
+        this.buf.set(data.subarray(j * w * 4 + siBase, j * w * 4 + siBase + rowLen), di);
       }
     }
   }
