@@ -258,4 +258,13 @@ describe('#779 BrightnessSlider — 터치 영역', () => {
     const track = css.match(/input\[type="range"\]::-webkit-slider-runnable-track\s*\{([^}]*)\}/)?.[1] ?? '';
     expect(track).toContain('height: 2px;');
   });
+
+  test('라벨 줄은 range 박스 위에 쌓인다(relative z-10) — 액션 버튼이 박스와 겹치는 4px 탭을 받게', () => {
+    render(<BrightnessSlider value={0.5} onChange={() => {}} label="Test" id="stack-779" />);
+    // 라벨 줄 = range 래퍼의 바로 앞 형제. 32px 박스 위끝이 이 줄 밑선에 닿고 -my-1 h-7 액션 버튼은
+    // 그보다 4px 더 내려와, 이 줄이 위에 안 쌓이면 그 4px 탭을 range가 가져간다.
+    const labelRow = screen.getByRole('slider', { name: 'Test' }).parentElement?.previousElementSibling;
+    expect(labelRow?.classList.contains('relative')).toBe(true);
+    expect(labelRow?.classList.contains('z-10')).toBe(true);
+  });
 });
