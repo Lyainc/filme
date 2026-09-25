@@ -536,18 +536,26 @@ export function usePhototicket() {
     setDirtyTick((t) => t + 1);
   }, [bumpMovieSelectionIfChanged]);
 
+  // OCR의 KOBIS 보강도 captureMovieSelection으로 같은 수명을 본다(#793) — 조회 중에 사용자가 다른 영화를
+  // 고르거나 제목을 고치면 늦은 OCR 결과가 그 선택을 덮고, 제목이 바뀌며 선택의 상세 보강까지 취소하던
+  // 교차 문제가 있었다. 적용기는 적용 여부를 돌려줘 OCR이 무매칭 안내를 띄울지 가른다.
+  const captureMovieSelection = useCallback(() => {
+    const selection = movieSelectionRef.current;
+    const docEpoch = docEpochRef.current;
+    return (patch: Partial<MovieInfo>) => {
+      if (movieSelectionRef.current !== selection || docEpochRef.current !== docEpoch) return false;
+      updateMovieInfo(patch);
+      return true;
+    };
+  }, [updateMovieInfo]);
+
   // KOBIS 선택 전용(#784) — 기본 필드를 반영하고 선택 시점의 문서/영화를 캡처한다. 반환한 적용기는
   // 둘 다 그대로일 때만 상세(출연·러닝타임)를 얹는다. 입력 패널을 닫아도 같은 문서에는 상세가 도착해야
   // 하므로, 인스턴스 로컬인 useKobisSearch의 detailRunRef가 아니라 셸이 수명을 판정한다(ocrEpochRef와 같은 처방).
   const beginMovieSelection = useCallback((info: Partial<MovieInfo>) => {
     updateMovieInfo(info);
-    const selection = movieSelectionRef.current;
-    const docEpoch = docEpochRef.current;
-    return (detail: Partial<MovieInfo>) => {
-      if (movieSelectionRef.current !== selection || docEpochRef.current !== docEpoch) return;
-      updateMovieInfo(detail);
-    };
-  }, [updateMovieInfo]);
+    return captureMovieSelection();
+  }, [updateMovieInfo, captureMovieSelection]);
 
   // 비동기 자동 보강 전용 — updateMovieInfo와 달리 이미 값이 있는 필드는 덮지 않는다. 사용자가
   // 먼저 손으로 채운 필드를 뒤늦게 도착한 보강이 지워버리면 안 되기 때문이다.
@@ -983,6 +991,7 @@ export function usePhototicket() {
     handleImageUpload,
     updateMovieInfo,
     beginMovieSelection,
+    captureMovieSelection,
     fillEmptyMovieInfo,
     updateComponents,
     setRecommendedColors,

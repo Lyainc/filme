@@ -187,6 +187,7 @@ describe('sr-only file input aria-hidden 제거 (#646 항목2)', () => {
         currentInfo={{} as Partial<MovieInfo>}
         onOcrApply={() => {}}
         ocrEpochRef={{ current: 0 }}
+        captureMovieSelection={() => () => true}
       />
     );
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;

@@ -33,6 +33,8 @@ export interface OcrUploadCardProps {
   /** chain/format 변경 undo 스냅샷용 — 변경 전 컴포넌트 값을 읽는다. */
   currentComponents?: Partial<TicketComponents>;
   ocrEpochRef: { current: number };
+  /** 영화 수명 캡처(#793, usePhototicket.captureMovieSelection) — KOBIS 보강은 이 적용기로만 쓴다. */
+  captureMovieSelection: () => (info: Partial<MovieInfo>) => boolean;
   className?: string;
   /** 진입 아이콘/문구 분기(#424) — 'landing'(기본)은 위 드롭존을 가리키는 화살표가 자연스럽지만,
    * 'drawer'(FieldDrawer 상단 슬롯)엔 가리킬 드롭존이 없어 화살표를 빼고 문구도 짧게 줄인다. */
@@ -58,6 +60,7 @@ export function OcrUploadCard({
   setComponents,
   currentComponents,
   ocrEpochRef,
+  captureMovieSelection,
   className = '',
   context = 'landing',
   onNeedManualTitle,
@@ -151,10 +154,15 @@ export function OcrUploadCard({
       // 기준으로 가드하면 "드로어에서 OCR 시작 → 응답 전에 드로어 닫기"에서 titleOg·releaseDate가
       // 유실된다(#363/#372와 같은 클래스, claude-review PR #413 P0) — setInfo는 이 인스턴스가 아니라
       // 셸이 쥔 photo 상태를 갱신하므로 unmount 이후에도 안전하게 적용할 수 있다.
+      //
+      // epoch는 OCR 실행끼리·undo와의 순서만 안다. 조회 중에 사용자가 다른 영화를 고르거나 제목을 고치면
+      // 늦은 결과가 그 선택을 덮고 선택의 상세 보강까지 취소하므로(#793), 영화 수명도 같이 본다 — 캡처는
+      // onOcrApply(랜딩의 문서 리셋) 뒤라야 새 문서 기준이 된다.
       const epoch = ++ocrEpochRef.current;
+      const applyKobis = captureMovieSelection();
       triggerKobisLookup(title).then((kobisInfo) => {
         if (epoch !== ocrEpochRef.current) return;
-        setInfo(kobisInfo);
+        if (!applyKobis(kobisInfo)) return;
         if (!kobisInfo.titleOg && !kobisInfo.actors) {
           if (onNeedManualTitle) onNeedManualTitle();
           else showToast('영화 정보를 찾지 못했어요. 제목을 확인하고 다시 검색해 주세요.');
