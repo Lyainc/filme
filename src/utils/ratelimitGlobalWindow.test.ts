@@ -14,6 +14,9 @@ const calls: Array<{ prefix: string; id: string }> = [];
 /** 여기 담긴 prefix의 윈도우는 한도 초과(success:false)로 응답한다. */
 const exhausted = new Set<string>();
 let failure: 'constructor' | 'network' | 'timeout' | undefined;
+/** SDK 예외 메시지에 섞여 들어올 수 있는 값 — 로그에 그대로 남으면 안 된다(#783). */
+const SECRET_URL = 'https://fake.upstash.io';
+const SECRET_TOKEN = 'fake-token';
 const originalEnv = { ...process.env };
 afterEach(() => {
   mock.restore();
@@ -37,7 +40,7 @@ afterAll(() => {
 
 mock.module('@upstash/redis', () => ({ Redis: class {
   constructor() {
-    if (failure === 'constructor') throw new Error('Invalid Redis URL');
+    if (failure === 'constructor') throw new Error(`Invalid Redis URL ${SECRET_URL}?token=${SECRET_TOKEN}`);
   }
 } }));
 mock.module('@upstash/ratelimit', () => ({
@@ -51,7 +54,7 @@ mock.module('@upstash/ratelimit', () => ({
     }
     async limit(id: string) {
       calls.push({ prefix: this.prefix, id });
-      if (failure === 'network') throw new TypeError('fetch failed');
+      if (failure === 'network') throw new TypeError(`fetch failed: ${SECRET_URL} (${SECRET_TOKEN})`);
       if (failure === 'timeout') return { success: true, reason: 'timeout', reset: 0 };
       return { success: !exhausted.has(this.prefix), reset: Date.now() + 60_000 };
     }
@@ -64,8 +67,8 @@ const ticketHandler = require('@/pages/api/ticket').default;
 
 describe('OCR shared(키 전체) rate limit 윈도우', () => {
   beforeEach(() => {
-    process.env.UPSTASH_REDIS_REST_URL = 'https://fake.upstash.io';
-    process.env.UPSTASH_REDIS_REST_TOKEN = 'fake-token';
+    process.env.UPSTASH_REDIS_REST_URL = SECRET_URL;
+    process.env.UPSTASH_REDIS_REST_TOKEN = SECRET_TOKEN;
     failure = undefined;
     resetRateLimitCacheForTests();
     calls.length = 0;
@@ -120,6 +123,17 @@ describe('OCR shared(키 전체) rate limit 윈도우', () => {
       expect(await checkOcrRateLimit('203.0.113.10')).toEqual({ ok: false, reason: 'unavailable' });
       expect(await checkTicketRateLimit('203.0.113.10')).toEqual({ ok: false, reason: 'unavailable' });
       expect(await checkKobisRateLimit('203.0.113.10')).toEqual({ ok: true });
+    });
+
+    it(`${mode}: 로그에는 오류 종류만 남고 원본 예외 메시지(URL·토큰)는 남지 않는다`, async () => {
+      failure = mode;
+      const error = spyOn(console, 'error').mockImplementation(() => {});
+      await checkOcrRateLimit('203.0.113.10');
+      expect(error).toHaveBeenCalled();
+      const logged = error.mock.calls.flat().map(String).join('\n');
+      expect(logged.includes(SECRET_URL)).toBe(false);
+      expect(logged.includes(SECRET_TOKEN)).toBe(false);
+      expect(logged).toContain(mode === 'network' ? '(TypeError)' : '(Error)');
     });
 
     it(`${mode}: 실제 OCR/공유 핸들러는 외부 호출 없이 JSON 503을 반환한다`, async () => {
