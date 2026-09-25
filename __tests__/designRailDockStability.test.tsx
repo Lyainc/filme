@@ -43,7 +43,7 @@ describe('DesignRail dock 안정성 (#563/#564/#565)', () => {
     // 출렁임이 돌아오므로 h-* 선언 자체를 못박는다.
     // #682 — svh 계수는 17.5→26으로 올랐다(레일 슬롯 예산 부족, 393×659에서 115px→171px).
     expect(panel.className).toMatch(/(^|\s)h-\[min\(214px,26svh\)\]/);
-    // 넘치는 항목(#682 기준 크기·형압)은 dock을 밀지 않고 안에서 스크롤한다.
+    // 넘치는 항목(#682 기준 크기)은 dock을 밀지 않고 안에서 스크롤한다.
     expect(panel.className).toContain('overflow-y-auto');
     // #385 — range thumb가 트랙 아래로 8px 튀어나와 스크롤 박스 바닥에서 잘리는 것 방어.
     expect(panel.className).toContain('py-3');

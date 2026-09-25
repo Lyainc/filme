@@ -156,12 +156,6 @@ export default function Home() {
           movieInfo={photo.state.movieInfo}
           components={photo.state.components}
           fieldVisibility={fieldVisibility}
-          embossStamps={photo.state.embossStamps}
-          embossPaths={photo.state.embossPaths}
-          embossIntensity={photo.state.embossIntensity}
-          reliefStamps={photo.state.reliefStamps}
-          reliefPaths={photo.state.reliefPaths}
-          reliefIntensity={photo.state.reliefIntensity}
         />
       )}
     </PhoneFrame>

@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { PhototicketState, MovieInfo, TicketComponents, TicketField } from '@/types';
 import { defaultBrightnessForTexture } from '@/components/moods/_shared';
-import { defaultIntensityForTexture, migrateLegacyComponents, type EmbossPath, type EmbossStamp } from '@/utils/textureRecipes';
+import { defaultIntensityForTexture, migrateLegacyComponents } from '@/utils/textureRecipes';
 import { ALL_FIELDS_ON } from '@/constants/fieldVisibility';
 import { saveImages, loadImages, clearImages } from '@/utils/imageDb';
 import { usePosterCrop } from '@/hooks/usePosterCrop';
@@ -177,30 +177,10 @@ export const INITIAL_STATE: PhototicketState = {
   recommendedColors: [],
   croppedImageUrl: null,
   fieldVisibility: ALL_FIELDS_ON,
-  embossStamps: [],
-  embossPaths: [],
-  embossIntensity: 1,
-  reliefStamps: [],
-  reliefPaths: [],
-  reliefIntensity: 1,
 };
 
 export function usePhototicket() {
   const [state, setState] = useState<PhototicketState>(INITIAL_STATE);
-  // 형압 편집 모드(#509 c9) — 명시적 온/오프. autoSaveEnabled와 같은 UI 토글 패턴(state 자체는
-  // 세션 한정이라 PhototicketState/영속화 대상이 아니다). 켜져 있는 동안 셸이 브러시 레이어를
-  // 띄운다. 브러시 반경도 같은 이유로 여기 둔다 — rail 슬라이더와 셸의 브러시 레이어가 값을
-  // 공유해야 하는데, 마스크 자체(embossStamps)와 달리 저장할 필요 없는 "현재 펜 크기"다.
-  const [embossEditMode, setEmbossEditMode] = useState(false);
-  const [embossBrushRadius, setEmbossBrushRadius] = useState(0.07);
-  // 형압 도구(#509 2단계) — 브러시/올가미 중 어느 쪽이 편집 레이어의 포인터를 소비할지. 같은
-  // 세션 한정 UI 토글 패턴(embossEditMode와 동일 근거) — 도구 선택 자체는 마스크가 아니다.
-  const [embossTool, setEmbossTool] = useState<'brush' | 'lasso'>('brush');
-  // 효과 축(#732 d3 · #735) — 브러시/올가미가 지금 어느 마스크(하이라이트/형압)에 커밋되는지.
-  // embossTool과 동일한 세션 한정 UI 토글 패턴이고, addEmbossStamp/addEmbossPath/clearEmbossMask/
-  // setEmbossIntensity가 이 값으로 두 마스크 벌 중 하나를 고른다 — 마스크 자체는 c7/c8 계약대로
-  // 분리돼 있고, 이건 "지금 어느 쪽을 칠하는 중인가"를 가리키는 선택자일 뿐이다.
-  const [embossEffect, setEmbossEffect] = useState<'highlight' | 'relief'>('highlight');
   // 자동저장 on/off(기본 ON) + 마지막 저장 시각(인디케이터 반짝임 트리거, #436).
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
@@ -320,15 +300,6 @@ export function usePhototicket() {
         ...prev,
         croppedImageUrl: croppedUrl,
         ...(isFirstUpload ? { fieldVisibility: DEFAULT_VISIBILITY_ON_UPLOAD } : {}),
-        // 형압 마스크 폐기(#509 c8) — 이 콜백이 포스터 교체·재크롭 양쪽의 단일 진입점이라(usePosterCrop
-        // → onCropComplete가 재크롭도 여기로 보낸다), 마스크가 옛 포스터 픽셀을 가리키는 채로
-        // 새 포스터에 얹히는 orphan을 여기 한 곳에서 막는다. embossPaths(2단계 올가미)도 같은
-        // 좌표계·같은 orphan 위험이라 나란히 폐기한다. reliefStamps/Paths(#735)도 같은 자연 분율
-        // 좌표계·같은 orphan 위험이라 두 마스크 벌 다 비운다.
-        embossStamps: [],
-        embossPaths: [],
-        reliefStamps: [],
-        reliefPaths: [],
       };
     });
   }, []);
@@ -643,12 +614,6 @@ export function usePhototicket() {
         nextComponents.coatingIntensity = defaultIntensityForTexture(components.coating!);
       }
 
-      // 형압 마스크는 layout(무드)·posterFit(#527 "꽉 채우기") 전환에도 안 비운다(#509 재매핑).
-      // 마스크가 이제 포스터 "박스" 분율이 아니라 자연 이미지 분율로 저장되고(EmbossStamp, c7 원래
-      // 의도), 렌더 시점에 그 순간의 fit/align으로 박스 분율로 다시 투영하므로(projectEmbossStamps,
-      // compositeRaster와 동일한 매핑) 박스-이미지 대응 관계가 바뀌어도 좌표가 안 흔들린다. 포스터
-      // 교체·재크롭(handleImageUpload)은 원본 자체가 달라지므로 그쪽 폐기는 그대로 유지한다.
-
       return { ...prev, components: nextComponents };
     });
     setDirtyTick((t) => t + 1);
@@ -657,43 +622,6 @@ export function usePhototicket() {
   const setRecommendedColors = useCallback((colors: string[]) => {
     setState((prev) => ({ ...prev, recommendedColors: colors }));
   }, []);
-
-  // 형압(#509) — 마스크는 dirtyTick(자동저장 트리거)을 안 올린다. embossStamps/embossIntensity는
-  // PersistedState/HistorySnapshot의 Pick 목록 밖이라(c8) 애초에 저장되지 않으므로, tick을 올려도
-  // 효과가 없는 헛 리렌더만 하나 더 생긴다.
-  // 아래 네 함수는 embossEffect(#735 효과 축)로 하이라이트/형압 마스크 벌 중 하나를 고른다 — 도구
-  // (브러시/올가미) 자체는 그대로고, 커밋 대상 배열만 갈린다.
-  const addEmbossStamp = useCallback((stamp: EmbossStamp) => {
-    setState((prev) =>
-      embossEffect === 'relief'
-        ? { ...prev, reliefStamps: [...prev.reliefStamps, stamp] }
-        : { ...prev, embossStamps: [...prev.embossStamps, stamp] }
-    );
-  }, [embossEffect]);
-
-  // 올가미(2단계)는 브러시처럼 포인트마다 커밋하지 않는다 — 트레이스가 닫힌 다각형 하나로
-  // 완성된 뒤(포인터업) 한 번에 들어온다(EmbossBrushLayer의 onPath).
-  const addEmbossPath = useCallback((path: EmbossPath) => {
-    setState((prev) =>
-      embossEffect === 'relief'
-        ? { ...prev, reliefPaths: [...prev.reliefPaths, path] }
-        : { ...prev, embossPaths: [...prev.embossPaths, path] }
-    );
-  }, [embossEffect]);
-
-  // 한쪽 마스크만 지운다(#735 완료조건) — 다른 효과의 마스크는 그대로 남는다.
-  const clearEmbossMask = useCallback(() => {
-    setState((prev) => {
-      if (embossEffect === 'relief') {
-        return prev.reliefStamps.length || prev.reliefPaths.length ? { ...prev, reliefStamps: [], reliefPaths: [] } : prev;
-      }
-      return prev.embossStamps.length || prev.embossPaths.length ? { ...prev, embossStamps: [], embossPaths: [] } : prev;
-    });
-  }, [embossEffect]);
-
-  const setEmbossIntensity = useCallback((intensity: number) => {
-    setState((prev) => (embossEffect === 'relief' ? { ...prev, reliefIntensity: intensity } : { ...prev, embossIntensity: intensity }));
-  }, [embossEffect]);
 
   // undo/redo(#356) 복원 전용 경로 — updateComponents를 거치지 않는다. 거치면 posterOpacity가
   // 항상 실려와 brightnessTouchedRef가 오염되고 texture 기본 밝기 로직이 스냅샷을 덮는다.
@@ -914,8 +842,6 @@ export function usePhototicket() {
     // 새 문서는 "복원된 세션"이 아니다 — 안 되돌리면 이 문서를 저장한 적도 없는데 재방문으로
     // 취급된다.
     setDraftRestored(false);
-    // 형압 편집 모드도 전체 슬레이트 리셋 대상 — 안 하면 리셋 후에도 브러시 레이어가 뜬 채 남는다.
-    setEmbossEditMode(false);
     // 크롭 원본·모달 상태도 전체 슬레이트 리셋 — 원본 blob은 posterCrop의 revoke effect가 푼다.
     if (!opts?.keepPoster) posterCrop.reset();
     // 이미지 지문도 리셋 — 안 하면 리셋 직후 저장(이미지 없음)이 "직전과 동일"로 오판돼
@@ -995,18 +921,6 @@ export function usePhototicket() {
     fillEmptyMovieInfo,
     updateComponents,
     setRecommendedColors,
-    addEmbossStamp,
-    addEmbossPath,
-    clearEmbossMask,
-    setEmbossIntensity,
-    embossEditMode,
-    setEmbossEditMode,
-    embossBrushRadius,
-    setEmbossBrushRadius,
-    embossTool,
-    setEmbossTool,
-    embossEffect,
-    setEmbossEffect,
     updateFieldVisibility,
     restoreSnapshot,
     setHistorySnapshots,

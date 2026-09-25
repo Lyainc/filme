@@ -27,7 +27,7 @@ const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ss
 // 상시 스택 배치, desktop- id prefix)는 아무도 안 타는 죽은 코드라 같이 걷어냈다 — 남겨두면
 // 타입도 테스트도 안 건드리는 채로 두 셸 전제가 조용히 되살아난다.
 // 슬라이더 id의 rail- prefix는 그대로 유지한다(기존 id 보존).
-export type RailItemId = 'mood' | 'color' | 'texture' | 'highlight' | 'opacity' | 'size' | 'pattern' | 'custom';
+export type RailItemId = 'mood' | 'color' | 'texture' | 'opacity' | 'size' | 'pattern' | 'custom';
 type Photo = ReturnType<typeof usePhototicket>;
 
 /**
@@ -147,9 +147,7 @@ function ChipRadio<V extends string>({
 }: {
   label: string;
   options: readonly { value: V; label: string; disabled?: boolean }[];
-  /** null = 어떤 칩도 "선택됨"으로 표시하지 않는다(형압처럼 값 선택이 곧 실행 상태를 뜻해,
-      실행 중이 아닐 땐 마지막으로 쓴 도구를 선택된 것처럼 보이면 안 되는 경우). */
-  value: V | null;
+  value: V;
   onChange: (next: V) => void;
   /** 칩 하나 이상이 잠겼을 때의 사유. 잠긴 칩이 없으면 호출부가 undefined를 넘긴다. */
   note?: string;
@@ -416,157 +414,6 @@ function TexturePanel({ photo }: { photo: Photo }) {
           갈린 채 포커스가 남아 스크린리더가 바뀐 의미를 다시 안 읽는다. */}
       <div id={panelId}>
         <TextureAxisControls key={axis} photo={photo} prefix={prefix} axis={axis} />
-      </div>
-    </div>
-  );
-}
-
-const EMBOSS_TOOL_OPTIONS = [
-  { value: 'brush', label: '브러시' },
-  { value: 'lasso', label: '올가미' },
-] as const;
-
-// 효과 축(#732 d3 · #735) — 하이라이트(기존 광택)와 형압(볼록 압인, #734)은 마스크가 분리돼 있어
-// 브러시/올가미가 지금 어느 쪽에 커밋되는지 먼저 골라야 한다. 도구 칩과 달리 값이 항상 선택돼
-// 있다 — "지금 칠하는 중"만 뜻하는 도구 칩(null=idle)과 달리, 편집을 끝낸 뒤에도 강도 슬라이더가
-// 어느 효과를 가리키는지 계속 표시해야 하기 때문이다.
-const EMBOSS_EFFECT_OPTIONS = [
-  { value: 'highlight', label: '하이라이트' },
-  { value: 'relief', label: '형압' },
-] as const;
-
-/**
- * 형압 패널(#509 → #679 → #735 마스크 분리) — 재질·코팅 옆 독립 후가공 축(c5). 모드는 c9(명시적 진입/종료)를
- * 유지하지만, 진입 어포던스를 별도 전폭 CTA에서 뗐다(#679: 값 칩 → 전폭 CTA → 안내문 → 슬라이더
- * 4단 구성이 다른 패널의 AxisSegment/ChipRadio 문법과 어긋나고, 그 CTA가 393×659에서 화면 밖으로
- * 잘렸다 — bottom 666.2 > 659). 셸이 브러시 레이어를 띄우는 절반(MobileEditorShell이 photo.
- * embossEditMode를 직접 읽는 부분)은 그대로다 — 이 패널은 상태를 켜고 끌 뿐 브러시 자체를 그리지
- * 않는다(브러시는 티켓 프리뷰 위에 겹쳐야 해서 rail 패널 트리 밖에 산다).
- *
- * 도구 칩(브러시/올가미) 탭 자체가 그 도구로 편집 모드에 진입한다(#679 방향 1) — "도구를 고른다
- * → 시작 버튼을 누른다"의 2단계를 1단계로 접는다: 도구를 고르는 행위 자체가 이미 의도 표명이라는
- * 판단. 이미 편집 중인 도구 칩을 다시 탭하면 종료된다 — 칩 자체가 진입·종료 어포던스를 겸해
- * 별도 버튼 없이 상태 전체를 표현한다(ChipRadio는 포스터 fit·한줄평 폰트가 이미 쓰는 값 피커
- * 문법, ColorPicker와 동일).
- *
- * **컨트롤 4종이 동시에 다 뜨지 않는다(#682 다이어트)** — 실측(393×659)해보니 다 뜬 상태가
- * 최대 308px로 슬롯(171px) 대비 137px 넘쳤다. 편집 중/편집 후가 서로 다른 관심사라는 게
- * 근거다: 칠하는 동안은 브러시 크기(칠하는 도구 자체를 조절)만 필요하고, 칠한 걸 검토·조정하는
- * 건 편집을 끝낸 뒤(형압 강도·지우기)다 — 그래서 브러시 크기는 `embossEditMode` 동안만,
- * 강도·지우기는 `!embossEditMode` 동안만 뜬다. "지우기"도 전폭 버튼(52px)이 아니라 형압 강도
- * 슬라이더 라벨 줄에 접힌다(BrightnessSlider의 action prop). 최악(편집 중, 마스크 有)이 177px로
- * 줄어든다 — 슬롯보다 6px 남는데, 이건 칠하는 손이 캔버스(EmbossBrushLayer, zIndex 45)에 있어
- * 이 패널을 보고 있지 않을 확률이 높은 유일한 잔여 상태라 CSS 스크롤 어포던스(DesignRail.tsx)로
- * 감수한다 — "편집 중이 아닌" 모든 상태는 슬롯 안에 다 들어간다(실측 171px, 넘침 0).
- *
- * **#735가 한때 이 마지막 문장을 깼다가, 같은 이슈에서 되돌려놨다.** 하이라이트·형압이 마스크를
- * 분리하며(각자 embossStamps/Paths·reliefStamps/Paths, `usePhototicket.embossEffect`가 지금
- * 어느 쪽에 커밋되는지 고른다) "효과" 선택 한 줄이 상시로 붙었다 — 도구 칩과 달리 편집 중이
- * 아닐 때도 항상 떠 있어야 강도 슬라이더가 어느 효과를 가리키는지 계속 보인다(도구 칩의
- * null=idle 관례를 그대로 못 씀). ChipRadio(자체 Eyebrow 라벨)로 처음 얹었을 땐 정상 상태가
- * 199px로 슬롯(176px)을 +23px 넘쳤다(2026-08-18 실측) — "효과"가 실질적으로는 SizePanel
- * (포스터/로고)·TexturePanel(재질/코팅)과 같은 **축 전환**(선택이 아래 마스크·강도 전체를
- * 갈아끼움)이라, 같은 역할에 이미 쓰던 AxisSegment(라벨 없는 세그먼트 한 줄)로 바꾸고 바깥
- * 감쌈도 SizePanel과 같은 이유로 space-y-field로 좁혀 26.5px+6px를 되찾았다. 실측(puppeteer,
- * 400×675 다크): 정상 상태 176/176(넘침 0, 393×659에서도 171/171)로 복귀했고, 최악(편집 중
- * 브러시, 마스크 有)은 223/176(+47px)로 줄었다 — 여전히 슬롯을 넘치지만 위 문단이 감수하기로
- * 한 바로 그 "칠하는 손이 캔버스에 있어 패널을 안 보는" 잔여 상태라 카테고리는 그대로다.
- */
-function EmbossPanel({ photo }: { photo: Photo }) {
-  const {
-    embossEditMode,
-    setEmbossEditMode,
-    embossBrushRadius,
-    setEmbossBrushRadius,
-    embossTool,
-    setEmbossTool,
-    embossEffect,
-    setEmbossEffect,
-    clearEmbossMask,
-    setEmbossIntensity,
-  } = photo;
-  const { embossStamps, embossPaths, embossIntensity, reliefStamps, reliefPaths, reliefIntensity } = photo.state;
-  // 지금 선택된 효과의 마스크·강도만 본다 — 두 마스크는 분리돼 있으니(#735) "지우기"·강도 슬라이더가
-  // 다른 효과 쪽을 건드리면 안 된다.
-  const hasMask = embossEffect === 'relief' ? reliefStamps.length > 0 || reliefPaths.length > 0 : embossStamps.length > 0 || embossPaths.length > 0;
-  const intensity = embossEffect === 'relief' ? reliefIntensity : embossIntensity;
-  const prefix = ID_PREFIX;
-  const panelId = `${prefix}-emboss-effect-panel`;
-  return (
-    // space-y-field(SizePanel과 같은 이유 — 세그먼트와 그 아래 콘텐츠는 같은 축의 헤더·본문이라
-    // group(16px)보다 field(10px)가 맞고, #735로 예산이 빠듯해진 지금은 그 6px도 필요하다).
-    <div className="space-y-field">
-      {/* 효과 축은 AxisSegment로(#735 다이어트) — 하이라이트/형압 선택이 아래 마스크·강도 전체를
-          갈아끼우는 축 전환이라 SizePanel(포스터/로고)·TexturePanel(재질/코팅)과 같은 역할이다.
-          ChipRadio(자체 Eyebrow 라벨 한 줄)보다 26.5px 짧다 — 레일 슬롯 정상 상태가 199px로
-          넘치던 것(위 문서 주석)의 원인이 이 한 줄이었다. */}
-      <AxisSegment
-        ariaLabel="효과"
-        panelId={panelId}
-        options={EMBOSS_EFFECT_OPTIONS.map((o) => ({ key: o.value, label: o.label }))}
-        value={embossEffect}
-        // setState를 그대로 넘기지 않고 람다로 감싼다(AxisSegment 독스트링 경고 — SetStateAction이
-        // K 추론에 끼어들면 'highlight'|'relief' 유니온이 string으로 풀린다, TexturePanel과 동형).
-        onChange={(next) => setEmbossEffect(next)}
-      />
-      <div id={panelId} className="space-y-group">
-        <ChipRadio
-          label="도구"
-          options={EMBOSS_TOOL_OPTIONS}
-          // 편집 중이 아니면 null — 값 선택이 곧 실행 상태라, 마지막으로 쓴 도구가 계속
-          // 선택된 것처럼 보이면 지금 칠하는 중인지 칩만 보고 구분이 안 된다(fresh-context 리뷰).
-          value={embossEditMode ? embossTool : null}
-          onChange={(next) => {
-            // 편집 중인 도구를 다시 탭 = 종료. 그 외(다른 도구 탭, 또는 편집 중이 아닐 때 탭)는
-            // 그 도구로 진입 — 칩 하나가 도구 선택 + 진입/종료 토글을 모두 담당한다.
-            if (next === embossTool && embossEditMode) {
-              setEmbossEditMode(false);
-            } else {
-              setEmbossTool(next);
-              setEmbossEditMode(true);
-            }
-          }}
-        />
-        {/* hasMask && !embossEditMode(=강도·지우기가 뜨는 상태)일 땐 안내문을 아예 안 그린다 —
-            <p>를 비운 채 두면 빈 줄도 space-y-group 간격을 그대로 먹어(#682 다이어트가 지운
-            28px 중 하나) 안내가 필요 없어진 상태에서까지 자리를 차지한다. */}
-        {(embossEditMode || !hasMask) && (
-          <p className="text-caption text-fg-muted">
-            {embossEditMode
-              ? embossTool === 'lasso'
-                // #682 다이어트로 줄였을 때 "손을 떼면 선택이 닫혀요"가 통째로 빠졌었다(claude-review
-                // PR #692 P1) — EmbossBrushLayer.tsx의 onPointerUp이 실제로 그 순간 다각형을
-                // 커밋하고 미리보기 선을 지우는데(스냅해서 닫힌다는 시각 피드백이 따로 없다), 그걸
-                // 안내하는 유일한 수단이 이 문구라 정보 손실이었다. 다시 채워 넣되 원문(68자)만큼
-                // 늘리지 않고 한 문장에 접어 44자로 복원한다.
-                ? '윤곽을 따라 드래그하면 자동으로 붙고, 손을 떼면 닫혀요. 다시 탭하면 끝나요.'
-                : '드래그해서 칠하세요. 도구를 다시 탭하면 끝나요.'
-              : '도구를 탭하면 바로 편집을 시작해요.'}
-          </p>
-        )}
-        {embossEditMode && embossTool === 'brush' && (
-          <BrightnessSlider
-            label="브러시 크기"
-            id={`${prefix}-emboss-brush`}
-            value={embossBrushRadius}
-            onChange={setEmbossBrushRadius}
-            min={0.02}
-            max={0.2}
-          />
-        )}
-        {hasMask && !embossEditMode && (
-          // "지우기"를 별도 전폭 버튼(#682 이전엔 52px) 대신 슬라이더 라벨 줄에 접는다 —
-          // BrightnessSlider의 action prop(같은 목적으로 새로 연 옵션). id에 effect를 실어야
-          // 효과를 오가며 열어도 React가 다른 슬라이더로 보고 localValue를 다시 seed한다.
-          <BrightnessSlider
-            key={embossEffect}
-            label={embossEffect === 'relief' ? '형압 강도' : '하이라이트 강도'}
-            id={`${prefix}-emboss-intensity-${embossEffect}`}
-            value={intensity}
-            onChange={setEmbossIntensity}
-            action={{ label: '지우기', onClick: clearEmbossMask }}
-          />
-        )}
       </div>
     </div>
   );
@@ -855,7 +702,7 @@ function BackgroundPatternPanel({ photo }: { photo: Photo }) {
 const COLOR_ITEM: RailItem = {
   id: 'color',
   label: '컬러',
-  // 컬러: 스포이드 — 닫힌 path 하나(도구 실루엣) + 픽업 지점 선. 형압·투명도와 원 계열을
+  // 컬러: 스포이드 — 닫힌 path 하나(도구 실루엣) + 픽업 지점 선. 투명도와 원 계열을
   // 공유하지 않도록 #676에서 교체(잉크 색을 "찍는" 동작을 직접 지시).
   icon: (
     <svg {...RAIL_ICON}>
@@ -911,23 +758,10 @@ export const RAIL_ITEMS: readonly RailItem[] = [
     render: (photo) => <TexturePanel photo={photo} />,
   },
   {
-    id: 'highlight',
-    label: '하이라이트',
-    // 하이라이트: 볼록 단면 — 기준선에서 솟아오르는 돔 곡선(측면에서 본 융기 프로필). 컬러·투명도와
-    // 원 계열을 공유하지 않도록 #676에서 교체.
-    icon: (
-      <svg {...RAIL_ICON}>
-        <path d="M4 18h16" />
-        <path d="M4 18c0-7 4-12 8-12s8 5 8 12" />
-      </svg>
-    ),
-    render: (photo) => <EmbossPanel photo={photo} />,
-  },
-  {
     id: 'opacity',
     label: '투명도',
     // 투명도: 체커보드 — 테두리 사각형 + 대각 두 칸 채움 path 하나(포토샵류 투명 배경 표기).
-    // 컬러·형압과 원 계열을 공유하지 않도록 #676에서 교체.
+    // 컬러와 원 계열을 공유하지 않도록 #676에서 교체.
     icon: (
       <svg {...RAIL_ICON}>
         <rect x="3.5" y="3.5" width="17" height="17" rx="1.5" />

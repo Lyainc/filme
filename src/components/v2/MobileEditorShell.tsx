@@ -30,7 +30,6 @@ import { getFrameRect, APP_BACKGROUND_ID } from './PhoneFrame';
 import { Wordmark } from './Wordmark';
 import type { ViewMode } from './viewMode';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
-import EmbossBrushLayer from '@/components/v2/EmbossBrushLayer';
 import { getLayout } from '@/utils/layouts';
 import { cn } from '@/utils/cn';
 import { pressableVariants } from '@/components/ui/variants';
@@ -441,9 +440,6 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   // pill 클릭 시 서브메뉴가 열린 채로 남지 않게 항상 같이 닫는다(claude-review PR #332 P2 —
   // 메뉴 오버레이가 마우스 클릭은 막아도 키보드 포커스는 막지 않아 Tab으로 pill까지 도달 가능).
   function handleViewModeChange(mode: ViewMode) {
-    // max를 벗어나면 형압 편집 모드를 정리한다(#729) — 진입(default→max) 방향은 그대로 둔다,
-    // "칠하다가 확대해서 계속 칠한다"가 그쪽의 의도된 동작이라(#729 명세 c6).
-    if (viewMode === 'max' && mode === 'default') photo.setEmbossEditMode(false);
     setViewMode(mode);
     setMenuOpen(false);
     setActiveField(null); // 인플레이스 편집(#354)은 default 줌 전용 — 줌 전환 시 닫는다.
@@ -995,8 +991,8 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
                   : {
                       role: 'button' as const,
                       tabIndex: 0,
-                      // handleViewModeChange 경유(#729) — 직접 setViewMode를 부르면 max→default
-                      // 탈출이 embossEditMode 정리를 못 탄다(위 handleViewModeChange 주석).
+                      // handleViewModeChange 경유 — 직접 setViewMode를 부르면 max→default 탈출이
+                      // 메뉴·인플레이스 편집 정리를 못 탄다(위 handleViewModeChange).
                       onClick: () => handleViewModeChange('default'),
                       onKeyDown: (e: KeyboardEvent) => {
                         if (e.key === 'Enter' || e.key === ' ') {
@@ -1030,7 +1026,6 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
                         // 작업면 위에 놓인 인쇄물로 읽히게 하는 양감(#571). 캡처 대상(TicketRenderer
                         // 내부 ref) 밖 래퍼라 export JPEG엔 안 섞인다. 토큰 재사용 — 결과 표면의
                         // 승격 그림자(더 강한 값 + accent 링)와 세기가 갈려 위계가 유지된다(#98).
-                        // #509의 유저 형압 후가공과 별개(MoodCriterion.tsx의 대칭 주석 참고).
                         boxShadow: 'var(--shadow-pop)',
                       }
                     : rotateLandscape
@@ -1063,32 +1058,10 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
                     onPosterTap={
                       viewMode === 'default' && !croppedImageUrl ? handlePosterTap : undefined
                     }
-                    embossStamps={photo.state.embossStamps}
-                    embossPaths={photo.state.embossPaths}
-                    embossIntensity={photo.state.embossIntensity}
-                    reliefStamps={photo.state.reliefStamps}
-                    reliefPaths={photo.state.reliefPaths}
-                    reliefIntensity={photo.state.reliefIntensity}
                   />
                 </div>
               </div>
             </div>
-          )}
-
-          {/* 형압 브러시(#509 c9) — 명시적 편집 모드일 때만 전체화면 포인터 캡처 레이어를 띄운다.
-              position:fixed라 DOM 삽입 위치는 무관하고, getPosterEl이 매 이벤트마다 ticketBoxEl
-              안의 [data-poster-root]를 다시 찾아 좌표를 낸다(무드마다 포스터 위치·크기가 달라도
-              별도 동기화 없이 항상 맞는다). */}
-          {photo.embossEditMode && (
-            <EmbossBrushLayer
-              getPosterEl={() => ticketBoxEl?.querySelector('[data-poster-root]') ?? null}
-              tool={photo.embossTool}
-              brushRadius={photo.embossBrushRadius}
-              onStamp={photo.addEmbossStamp}
-              onPath={photo.addEmbossPath}
-              isMax={isMax}
-              rotated={rotateLandscape}
-            />
           )}
 
           {/* 줌 pill(#328)은 #356에서 제거 — 최대화 진입은 플로팅 툴바가 흡수, max 탈출은
@@ -1158,7 +1131,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
               // 한 다른 편집까지 undo가 통째로 삼킨다 — fresh-context 리뷰 지적), 카드가 이미 골라둔
               // 같은 키 집합을 유지한 채 값만 INITIAL_STATE 기준으로 다시 채운다 — 그러면 cancel()은
               // 여느 때와 똑같이 부분 병합(updateMovieInfo/updateComponents)만 하고, OCR이 안 건드린
-              // 필드(포스터·형압·밝기 등)는 그대로 남는다.
+              // 필드(포스터·밝기 등)는 그대로 남는다.
               onOcrApply={(params) => {
                 const fresh = !landingDismissed;
                 if (fresh) startFreshDoc();

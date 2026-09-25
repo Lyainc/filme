@@ -116,6 +116,9 @@ function ocrFileInput(): HTMLInputElement {
 
 afterEach(() => {
   cleanup();
+  // #731 테스트가 '임시저장'으로 초안을 localStorage에 쓴다 — 안 비우면 다음 파일이 그 초안을 안고
+  // 시작한다. 예전엔 바로 뒤에 돌던 형압 테스트 파일이 우연히 치워줘서 가려져 있었다(#785).
+  window.localStorage.clear();
   ocrImpl = async () => ({});
   clearKobisLookupCache();
   // fetch spy는 중간 단언이 실패해도 항상 복원되도록 afterEach에서 처리한다(claude-review
