@@ -5,7 +5,6 @@ import { useMatchMedia } from '@/hooks/useMatchMedia';
 import { cn } from '@/utils/cn';
 import { pressableVariants } from '@/components/ui/variants';
 import { LAYOUTS } from '@/utils/layouts';
-import { MOOD_BACKDROP_BG } from '../LayoutPicker';
 import { AppFooter } from './AppFooter';
 import { Wordmark } from './Wordmark';
 
@@ -65,11 +64,11 @@ export const GALLERY_LAYOUTS = LAYOUTS.filter(
 /**
  * 갤러리 전경 이미지(#613 → 콘택트 시트 검토 완료, 2026-09-05) — `public/assets/landing/`의
  * 실제 무드 렌더 결과물. 라이브 `TicketRenderer` 대신 이 고정 자산을 쓰므로, 무드 조판이
- * 바뀌면 여기도 다시 구워야 한다(README 참고) — `LandingBackdropTiles`의 배경 타일과 달리
- * 이 전경은 원본 포스터가 그대로 보이는 실사 자산이라 라이브 렌더로 되돌릴 이유가 없다.
+ * 바뀌면 여기도 다시 구워야 한다(README 참고). 원본 포스터가 그대로 보이는 실사 자산이라
+ * 라이브 렌더로 되돌릴 이유가 없다.
  *
  * `Record<GalleryLayoutId, string>`(Partial 아님, claude-review PR #759 P1) — 이웃 룩업
- * `MOOD_CHIP_BG`/`MOOD_BACKDROP_BG`(`LayoutPicker.tsx`)와 같은 관례로, 갤러리에 새 무드가
+ * `MOOD_CHIP_BG`(`LayoutPicker.tsx`)와 같은 관례로, 갤러리에 새 무드가
  * 추가되거나 키가 오타 나면 컴파일러가 엔트리 누락을 그 자리에서 잡는다 — Partial이면 그런
  * 사고가 `src={undefined}`로 조용히 화면에만 나타난다.
  */
@@ -84,63 +83,6 @@ const HERO_IMAGES: Record<GalleryLayoutId, string> = {
  *  끝이 아래로 간다: editorial의 붉은 stub 밴드가 오른쪽이라 돌리면 아래에 선다(사용자 요청).
  *  반시계로 돌리면 같은 밴드가 위로 올라가니 부호를 바꿀 때 실물 확인 없이 뒤집지 말 것. */
 const GALLERY_ROTATED: ReadonlySet<LayoutId> = new Set<LayoutId>(['editorial']);
-
-/**
- * 배경 타일 그리드(#615) — 자산이 아니라 라이브 렌더다. 무드를 "안 읽히는 색면"으로 추상화해
- * 둔 `MOOD_BACKDROP_BG`(무드 칩과 같은 뿌리, #367)를 반복 타일링해 D5(원본 포스터 식별 불가)를
- * 자산 없이 만족한다. #676부터는 칩 쪽 `MOOD_CHIP_BG`가 퍼포레이션·노치 같은 식별 표식을 얹어
- * "안 읽히는 색면"과 반대 방향으로 움직이므로, 이 배경은 그 이전 값을 얼려 둔 `MOOD_BACKDROP_BG`를
- * 따로 쓴다 — 칩을 더 손봐도 이 배경 타일은 안 바뀐다.
- *
- * **정적 webp로 굽지 않는다** — 한때 같은 그리드를 `public/assets/landing/backdrop-tiles.webp`로
- * 구워 번들했지만 뺐다. 이유는 원리적 제약이 아니라 값어치다: 소비처가 0인 채로 번들에만 남아
- * 있었고(`Landing.tsx`는 계속 이 라이브 div를 그렸다), 수동 번들이라 `LAYOUTS`/`MOOD_BACKDROP_BG`가
- * 바뀌면 조용히 stale해지는데, 정작 대체 대상인 24 div는 전부 CSS 그라디언트라 아낄 비용이
- * 없었다.
- *
- * 되살릴 거면 알아야 할 것: `MOOD_BACKDROP_BG`는 하드코딩 색이라 테마와 무관하고, 이 레이어의 유일한
- * 테마 의존은 `opacity-20`이 그 아래 `bg-bg`와 합성되는 것뿐이다. 삭제된 굽기 스크립트는 그 합성을
- * 이미 마친 불투명 스크린샷을 떠서 한 테마에 굳었던 거라, `omitBackground`로 알파를 살려 구우면
- * 브라우저가 같은 20% 합성을 테마별로 해준다 — 즉 **한 장으로도 된다**. 24 div의 렌더 비용이
- * 실측으로 문제가 될 때 그 방식으로 다시 열 것.
- *
- * 프레임 안/밖(#612 열린 결정) — **안**으로 결정. 모바일(레일 미만 폭)에서는 PhoneFrame
- * 자체가 뷰포트와 같은 사각형이라(#607) 안/밖 차이가 없고, 밖으로 빼려면 PhoneFrame의
- * `contain:paint`를 escape하는 portal이 필요해(크롭 모달과 반대 방향) 리스크 대비 이득이
- * 낮다 — 이번 슬라이스는 실제 검증 대상인 모바일 뷰포트 기준으로 "안"을 택한다. 데스크톱
- * 풀블리드가 필요해지면 그때 portal로 다시 연다.
- */
-function LandingBackdropTiles() {
-  const tiles = Array.from({ length: 15 }, (_, i) => LAYOUTS[i % LAYOUTS.length]);
-  return (
-    <div
-      aria-hidden="true"
-      data-testid="landing-backdrop"
-      className="pointer-events-none absolute inset-0 -z-10 overflow-hidden opacity-[0.09]"
-      // 히어로 갤러리가 서는 가운데를 비워주는 스포트라이트 마스크 — 배경이 화면 전체에 같은
-      // 세기로 깔리면 앞의 샘플과 명도가 붙어 시선이 안 모인다(사용자 피드백). 가장자리에서만
-      // 텍스처가 살고 중앙 타원 안은 거의 지워진다. mask-image는 네이티브라 JS·라이브러리 0.
-      style={{
-        maskImage:
-          'radial-gradient(ellipse 68% 52% at 50% 46%, transparent 12%, rgba(0,0,0,0.45) 58%, #000 100%)',
-        WebkitMaskImage:
-          'radial-gradient(ellipse 68% 52% at 50% 46%, transparent 12%, rgba(0,0,0,0.45) 58%, #000 100%)',
-      }}
-    >
-      {/* 3열 · gap-5 — 4열 gap-2는 400px 프레임에서 타일이 92px까지 잘게 쪼개져 "빼곡한 무늬"로
-          읽혔다. 열을 줄여 타일을 키우고 간격을 벌리면 같은 면적이 훨씬 성기게 보인다. */}
-      <div className="-m-10 grid grid-cols-3 gap-5 rotate-[-8deg] scale-125">
-        {tiles.map((layout, i) => (
-          <div
-            key={i}
-            className="aspect-[2/3] rounded-sm"
-            style={{ background: MOOD_BACKDROP_BG[layout.id] }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
 
 /**
  * 히어로 무드 갤러리 캐러셀(#615, 2026-08-08 개정) — 무드를 실제 렌더 엔진(TicketRenderer,
@@ -414,9 +356,8 @@ function MoodCarousel({ onEnterMood }: { onEnterMood: (id: LayoutId) => void }) 
  * 화면으로 들어간다 — "포스터 업로드"·"포스터 없이 직접 입력"·OCR 성공과 나란한 **네 번째**
  * 진입점이다(#631 경로, 같은 canvasReady 커밋). 크롭 프리셋
  * (`ImageCropModal`이 읽는 `posterOrientation`)이 랜딩에서 고른 무드와 어긋나지 않는 이유(#529)도
- * 동일 — 무드가 커밋된 채로 편집에 들어가므로 재크롭 없이 방향이 맞다. 배경 타일 그리드는
- * `LandingBackdropTiles`(위) 참고 — 자산 대기 중인 placeholder가 아니라 라이브 렌더가 완성형이다
- * (#613이 아직 막고 있는 건 전경 `hero-*.webp` 6장뿐이다).
+ * 동일 — 무드가 커밋된 채로 편집에 들어가므로 재크롭 없이 방향이 맞다. 반복 배경 타일
+ * 그리드(#615 D3)는 캐러셀과 겹쳐 산만하다는 사용자 결정(2026-09-19)으로 제거했다(#786).
  */
 export function Landing({
   mode,
@@ -474,11 +415,6 @@ export function Landing({
           : undefined
       }
     >
-      {/* 배경 타일 그리드(#615, D3 — 처음부터 무늬) — outer가 fixed(positioned)라 -z-10 자식은
-          이후 정적 흐름 형제(카피·히어로 등) 뒤로 자동 배치된다(음수 z-index는 non-positioned
-          in-flow 콘텐츠보다 아래 stacking tier). */}
-      {overlay && <LandingBackdropTiles />}
-
       {/* 마케팅 층은 오버레이에서만 — inline은 이미 편집 화면이라 브랜드·카피가 아니라 진입
           컨트롤만 필요하고, hidden에선 그리지도 않는다(숨은 채 매 렌더 reconcile되는 걸 피한다). */}
       {overlay && (
@@ -496,19 +432,12 @@ export function Landing({
           <>
             {/* 카피는 1줄+1줄로 압축(Seed spec c5) — 선택 가능한 히어로가 "그래서 뭘 얻나"를
                 문장보다 세게 답하므로 카피 의존도가 낮다. 세로 예산은 아래 히어로+무드칩이 새로
-                차지한다(400×675, measure-chrome.mjs로 실측).
-
-                relative + 뒤 scrim(-z-[5])은 배경 타일(-z-10)이 카피 밑에서 그대로 비치는 걸
-                막는다 — 실측(픽셀 샘플링, measure-chrome.mjs의 대비 축은 랜딩 카피를 안 잰다)으로
-                text-fg-muted 서브카피가 타일 위에서 라이트 테마 기준 최저 2.89:1까지 떨어지는 걸
-                확인했다(WCAG AA 4.5 미달). globals.css 19-22행이 이미 세운 규칙과 같다 — muted 잉크는
-                불투명 표면 위에만. bg-bg는 이 오버레이 자신의 배경색과 같아 시각적 이음매가 없다.
-                text-landing-muted를 쓰는 이유는 아래 참고. */}
+                차지한다(400×675, measure-chrome.mjs로 실측). text-landing-muted를 쓰는 이유는
+                아래 참고. */}
             {/* flex flex-col gap-4 — h1·p가 바깥 flex 컬럼의 직계 자식에서 이 div 자식으로
                 한 단 내려오면서 원래 gap-4(16px)가 적용되던 h1↔p 사이 간격이 사라진다(부모 gap은
                 직계 자식 사이에만 걸린다) — 같은 리듬을 이 안에서 다시 선언해 되돌린다. */}
-            <div data-testid="landing-copy" className="relative flex flex-col gap-4">
-              <div aria-hidden="true" className="absolute inset-0 -z-[5] bg-bg" />
+            <div data-testid="landing-copy" className="flex flex-col gap-4">
               <h1 className="text-display font-bold text-fg break-keep">
                 티켓 한 장이, 내 굿즈가 돼요
               </h1>
@@ -578,11 +507,6 @@ export function Landing({
               시키는 말투였고(docs/COPY_TONE_GUIDE.md 축 2), 있고 없고의 대비는 조건절이 아니라
               짝의 "없이"가 이미 지고 있어 쌍의 의미가 안 줄었다.
 
-              relative + 첫 자식 scrim(-z-[5] bg-bg) — 위 카피와 같은 이유(#615 검증 코멘트).
-              text-fg-muted가 배경 타일(-z-10, overlay 모드에서만 존재) 위에 직접 떠 있어 실측
-              다크 4.05 / 라이트 2.83까지 떨어진다(WCAG AA 4.5 미달). scrim이 absolute라 flex-wrap
-              레이아웃엔 안 끼어든다. inline 모드는 타일 자체가 없어 무해한 중복일 뿐이다.
-
               text-landing-muted(위 서브카피와 동일 근거)로 라이트 5.24:1 확보 —
               --fg-faint 구분자(·)는 aria-hidden 장식이라 텍스트 대비 대상이 아니라 그대로 둔다.
 
@@ -590,9 +514,8 @@ export function Landing({
               min-h-touch(44px)로 채운다(#646). */}
           <div
             data-testid="landing-exit-paths"
-            className="relative mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-caption text-landing-muted"
+            className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-caption text-landing-muted"
           >
-            <div aria-hidden="true" className="absolute inset-0 -z-[5] bg-bg" />
             <button type="button" onClick={onCta} className={cn(pressableVariants(), 'min-h-touch inline-flex items-center underline')}>
               포스터 업로드
             </button>

@@ -113,11 +113,6 @@ const CAROUSEL_SLOTS = [
   { opacity: 0.27, scale: 0.6 },
 ];
 
-// 배경 타일 그리드(#615 LandingBackdropTiles)의 타일 개수 — Landing.tsx의 `{ length: 15 }`를
-// 미러링한다(CAROUSEL_* 상수와 같은 관례). 레이어가 통째로 지워지거나 타일이 0장으로 줄어드는
-// 회귀를 잡는 용도라, 개수를 바꾸면 여기도 같이 바꿀 것.
-const BACKDROP_TILE_COUNT = 15;
-
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const browser = await puppeteer.launch({
@@ -215,40 +210,13 @@ try {
   await sleep(300);
   await measureFit('랜딩 오버레이', '[data-testid="landing"]', landingPage);
 
-  // ── 배경 타일 그리드(#615 LandingBackdropTiles) — 프레임 봉쇄 ────────────────
-  // 레이어 자신은 absolute inset-0라 프레임과 같은 사각형이어야 한다(위 measureFit 축 재사용).
-  // **그것만으로는 이 레이어의 봉쇄를 못 잰다.** 안쪽 그리드는 `-m-10 rotate-[-8deg] scale-125`라
-  // 설계상 레이어보다 크고, 그게 프레임 밖으로 안 나가는 건 오직 레이어의 `overflow-hidden`
-  // 덕분이다. getBoundingClientRect는 조상 클리핑을 반영하지 않으므로 안쪽 그리드를 measureFit에
-  // 넣으면 멀쩡한 트리에서도 항상 실패한다 — 그래서 봉쇄를 두 명제로 쪼개 잰다:
-  //   (a) 레이어가 hidden으로 자른다(클립이 살아 있다),
-  //   (b) 그리드가 레이어를 덮는다(자를 게 실제로 있다 = 모서리에 빈칸이 안 생긴다).
-  // (b)를 실제로 세우는 건 회전이 아니라 `-m-10`이다(2026-08-16 DOM 변형 실측) — rotate/scale만
-  // 지우면 그리드가 799.4×1544.1 → 480×1180으로 줄지만 레이어 400×675는 여전히 덮어 (b)가
-  // 통과하고, 회전이 없으면 모서리 빈칸 자체가 안 생기므로 그게 옳은 판정이다. 이 축이 잡는 건
-  // 봉쇄가 실제로 깨지는 셋이다: overflow-hidden 소실(a 실패), 타일 0장(그리드가 594.2×83.5로
-  // 주저앉아 b 실패), `-m-10`과 transform 동시 소실(400×980으로 폭이 딱 맞아떨어져 b 실패).
-  // 회전 각도만 사라지는 건 봉쇄가 아니라 시각 디자인 회귀라 이 축의 대상이 아니다.
-  await measureFit('배경 타일', '[data-testid="landing-backdrop"]', landingPage);
-  const backdrop = await landingPage.evaluate(() => {
-    const layer = document.querySelector('[data-testid="landing-backdrop"]');
-    const grid = layer?.firstElementChild;
-    if (!layer || !grid) return null;
-    const L = layer.getBoundingClientRect();
-    const G = grid.getBoundingClientRect();
-    const cs = getComputedStyle(layer);
-    return {
-      tiles: grid.childElementCount,
-      overflow: { x: cs.overflowX, y: cs.overflowY },
-      layer: { w: +L.width.toFixed(1), h: +L.height.toFixed(1) },
-      grid: { w: +G.width.toFixed(1), h: +G.height.toFixed(1) },
-      gridExceedsLayer: G.width > L.width + 0.5 && G.height > L.height + 0.5,
-    };
-  });
-  if (!backdrop) throw new Error('배경 타일 레이어 또는 그 안쪽 그리드를 못 찾음');
-  backdrop.clipped = backdrop.overflow.x === 'hidden' && backdrop.overflow.y === 'hidden';
-  backdrop.pass =
-    backdrop.clipped && backdrop.gridExceedsLayer && backdrop.tiles === BACKDROP_TILE_COUNT;
+  // ── 배경 타일 부재(#786) ──────────────────────────────────────────────────
+  // 반복 티켓 배경(#615 D3)은 캐러셀과 겹쳐 산만하다는 사용자 결정(2026-09-19)으로 제거했다.
+  // 예전 봉쇄 두 명제(overflow:hidden 클립 + 그리드가 레이어를 덮음)는 레이어가 없으니 대상이
+  // 사라졌고, 남은 명제는 "레이어가 되살아나지 않았다" 하나다.
+  const backdrop = await landingPage.evaluate(() => ({
+    pass: document.querySelector('[data-testid="landing-backdrop"]') === null,
+  }));
 
   // ── 랜딩 무드 캐러셀(#615/#653) ────────────────────────────────────────────
   // 갤러리 컨테이너 자신이 프레임 밖으로 새는지는 기존 measureFit 축을 그대로 재사용한다
