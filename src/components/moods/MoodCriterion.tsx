@@ -41,7 +41,7 @@ const RATING_QUOTES: Record<string, string> = {
   '4.5': 'nearly perfect, and knows it',
   '5': 'the film every other film will be measured against',
 };
-const DEFAULT_QUOTE = 'the paying customer is the last honest critic';
+export const DEFAULT_QUOTE = 'the paying customer is the last honest critic';
 
 // 시안 색 하드코딩(#524 c8) — themeColor 파생을 버린다. 흰 종이 위 검정 잉크가 5c의 정체성이라
 // 사용자 색이 끼면 무드가 성립하지 않는다. 죽은 ColorPicker는 TONE_FIXED_MOODS가 비활성화한다.
