@@ -37,6 +37,8 @@ export interface OcrUploadCardProps {
   ocrEpochRef: { current: number };
   /** 영화 수명 캡처(#793, usePhototicket.captureMovieSelection) — KOBIS 보강은 이 적용기로만 쓴다. */
   captureMovieSelection: () => (info: Partial<MovieInfo>) => boolean;
+  /** 초기화 세대 캡처(#806, usePhototicket.captureDraft) — OCR 응답이 초기화 뒤에 오면 버린다. */
+  captureDraft: () => () => boolean;
   /** KOBIS 보강이 영화 수명 판정에서 버려졌을 때(#801) — 셸의 useOcrUndo.dropKobisFields. */
   onKobisDiscarded: () => void;
   className?: string;
@@ -65,6 +67,7 @@ export function OcrUploadCard({
   currentComponents,
   ocrEpochRef,
   captureMovieSelection,
+  captureDraft,
   onKobisDiscarded,
   className = '',
   context = 'landing',
@@ -190,7 +193,12 @@ export function OcrUploadCard({
     setIsProcessing(true);
 
     try {
+      // 인식 중에 초기화하면 응답은 옛 문서의 것이라 통째로 버린다(#806) — 안 버리면 옛 티켓 값이 새 문서에
+      // 쓰이고 되돌리기 배너까지 뜬다. 실패 안내도 옛 문서의 것이라 같이 버린다. 랜딩의 새로 시작은 안 본다
+      // (usePhototicket.captureDraft 주석).
+      const sameDraft = captureDraft();
       const result = await runOcr(file);
+      if (!sameDraft()) return;
 
       // shared 윈도우 소진(#635 c2) — "인식된 정보가 없어요"와 원인이 다르므로 갈라 안내하고,
       // 아래 필드 적용 로직(전부 빈 결과이므로 어차피 no-op)은 타지 않는다. 이탈 경로는 이 토스트가

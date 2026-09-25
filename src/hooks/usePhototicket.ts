@@ -520,6 +520,16 @@ export function usePhototicket() {
     };
   }, [updateMovieInfo]);
 
+  // 초기화(clearDraft) 세대(#806) — OCR 응답은 초기화를 건너 도착하면 옛 문서의 것이라 버린다. docEpochRef가
+  // 아니라 따로 세는 건, 랜딩의 "새로 시작"(resetDocument만 부른다: 포스터 확정·직접 입력·무드 탭)은
+  // 인식 중인 OCR이 들어갈 바로 그 새 문서를 여는 거라 버리면 안 되기 때문이다(code-review 지적).
+  // 영화 선택도 안 본다 — 사용자가 영화를 골랐다고 극장·좌석 인식까지 버릴 이유는 없다.
+  const clearEpochRef = useRef(0);
+  const captureDraft = useCallback(() => {
+    const clearEpoch = clearEpochRef.current;
+    return () => clearEpochRef.current === clearEpoch;
+  }, []);
+
   // KOBIS 선택 전용(#784) — 기본 필드를 반영하고 선택 시점의 문서/영화를 캡처한다. 반환한 적용기는
   // 둘 다 그대로일 때만 상세(출연·러닝타임)를 얹는다. 입력 패널을 닫아도 같은 문서에는 상세가 도착해야
   // 하므로, 인스턴스 로컬인 useKobisSearch의 detailRunRef가 아니라 셸이 수명을 판정한다(ocrEpochRef와 같은 처방).
@@ -886,6 +896,7 @@ export function usePhototicket() {
   // #310: 저장분 삭제 + 문서 리셋(파괴적 — 호출부에서 확인 UX를 거친다). 문서 리셋 조각은
   // resetDocument와 공유하고, 여기만 저장분과 첫 페인트 게이트까지 지운다(#727 c7이 가른 축).
   const clearDraft = useCallback(() => {
+    clearEpochRef.current += 1;
     if (typeof window !== 'undefined') {
       try {
         window.localStorage.removeItem(STORAGE_KEY);
@@ -918,6 +929,7 @@ export function usePhototicket() {
     updateMovieInfo,
     beginMovieSelection,
     captureMovieSelection,
+    captureDraft,
     fillEmptyMovieInfo,
     updateComponents,
     setRecommendedColors,

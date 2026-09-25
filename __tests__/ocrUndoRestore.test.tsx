@@ -428,11 +428,9 @@ describe('문서를 리셋하면 옛 문서의 OCR 되돌리기가 같이 사라
     expect(captured.movieInfo.theater).toBe('');
   });
 
-  // 랜딩이 다시 뜨는 길은 performClear 하나라, 랜딩 위에 배너가 있으려면 초기화 전에 시작한 OCR이
-  // 초기화 뒤에 도착해야 한다(runOcr 응답은 문서 리셋을 안 본다 — 별도 결함). 그 배너가 "새로 시작"
-  // 뒤까지 남지 않는지를 startFreshDoc 쪽에서 잰다. 늦은 OCR을 버리게 고치면 아래 선행 조건(배너가
-  // 뜬다)이 먼저 깨지니, 그때 이 테스트를 같이 다시 볼 것.
-  test('초기화 뒤에 도착한 OCR이 랜딩 위에 띄운 배너도 "새로 시작"하면 사라진다', async () => {
+  // 초기화 전에 보낸 OCR 요청의 응답은 옛 문서의 것이다(#806) — 초기화 뒤에 도착하면 새 문서에 아무것도
+  // 쓰지 않고 배너도 띄우지 않는다. 고치기 전엔 옛 티켓 값이 새 문서에 쓰이고 랜딩 위에 배너가 떴다.
+  test('초기화 전에 보낸 OCR이 초기화 뒤에 도착하면, 새 문서에 아무것도 쓰지 않고 배너도 띄우지 않는다', async () => {
     const user = userEvent.setup();
     render(<MobileHarness />);
 
@@ -442,11 +440,31 @@ describe('문서를 리셋하면 옛 문서의 OCR 되돌리기가 같이 사라
     await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
 
     await clearFromMenu(user);
-    resolveOcr({ theater: 'CGV 강남' });
-    await screen.findByRole('button', { name: '되돌리기' });
+    resolveOcr({ chain: 'cgv', theater: 'CGV 강남', seat: 'H12' });
+    // 버려지는 응답은 기다릴 신호가 없다 — 응답 체인이 흘러갈 틈만 준다.
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(!!screen.queryByTestId('ocr-undo-banner')).toBe(false);
+    expect(captured.movieInfo.theater).toBe('');
+    expect(captured.movieInfo.seat).toBe('');
+    expect(captured.components.chainLabel).toBe('');
+  });
+
+  // 초기화가 아닌 랜딩의 "새로 시작"(여기선 직접 입력)은 인식 중인 OCR이 들어갈 새 문서를 여는 것이다 —
+  // 그걸 문서 리셋으로 보고 응답을 버리면 사용자가 올린 티켓 인식이 조용히 사라진다(#806 code-review 지적).
+  test('랜딩에서 OCR을 올리고 인식 중에 직접 입력으로 넘어가도, 인식 결과가 들어오고 배너가 뜬다', async () => {
+    const user = userEvent.setup();
+    render(<MobileHarness />);
+
+    let resolveOcr!: (r: Record<string, unknown>) => void;
+    ocrImpl = () => new Promise((res) => { resolveOcr = res; });
+    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
 
     await user.click(screen.getByTestId('landing-skip-poster'));
-    expect(!!screen.queryByTestId('ocr-undo-banner')).toBe(false);
+    resolveOcr({ theater: 'CGV 강남' });
+
+    await screen.findByRole('button', { name: '되돌리기' });
+    expect(captured.movieInfo.theater).toBe('CGV 강남');
   });
 
   // startFreshDoc이 스냅샷을 버려도, 랜딩 OCR은 그 직후 같은 배치에서 새 스냅샷을 뜬다(#737·#727 c7).
