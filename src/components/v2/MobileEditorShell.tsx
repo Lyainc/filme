@@ -480,6 +480,8 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   function handleDone() {
     if (!canExport) {
       flashToast(disabledReason);
+      // 사유 토스트만으론 어디서 채우는지 모른다(#776) — 누락 바로가기가 있는 필드 드로어를 연다.
+      setDrawerOpen(true);
       return;
     }
     onDone();
@@ -488,6 +490,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   // 메뉴 초기화 행·워드마크 탭(#578) 두 진입점이 공유하는 실제 초기화 절차.
   function performClear() {
     photo.clearDraft();
+    rehideOnLeaveRef.current.clear(); // 누락 바로가기의 재숨김(#776)이 새 문서로 넘어가지 않게.
     // 초기화는 새 문서니까 랜딩도 처음 상태로 — 안 되돌리면 포스터도 draft도 없는 빈 셸에 남는다(#614).
     setLandingDismissed(false);
     // 초기화는 새 문서 — undo로 못 돌아간다(로고·포스터 blob이 revoke돼
@@ -547,6 +550,27 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
     setActiveField(target);
   }, [photo.updateComponents, photo.updateFieldVisibility]);
 
+  // 드로어의 누락 바로가기(#776) — 저장 필수 입력은 채우되 표시 선택은 지킨다. 인플레이스 편집기는
+  // 티켓 위 앵커가 있어야 떠서 handleField가 숨긴 필드를 켜는데, 바로가기로 들어온 필드가 원래
+  // 숨겨져 있었다면 편집이 끝나는 순간(닫힘·다른 필드로 이동) 다시 숨긴다. 행 탭은 "보이게 켜고
+  // 편집"이 의도라 이 복원을 안 탄다.
+  // ponytail: 편집 중 필드바의 '티켓 노출'로 일부러 켰어도 끝날 때 다시 숨긴다 — 그 조작을 가려야
+  // 할 일이 생기면 복원 대상을 그 토글에서 지운다.
+  // 대기 중인 필드는 집합으로 든다 — 같은 바로가기를 다시 눌러도(이미 켜져 있어 판정이 '보임'이 된다)
+  // 잊지 않고, 다른 누락 필드로 옮기면 떠나는 쪽을 숨긴다. 새 문서(초기화·새로 시작)에선 비운다.
+  const rehideOnLeaveRef = useRef(new Set<TicketField>());
+  const openMissingField = useCallback((target: TicketField) => {
+    if (!photo.state.fieldVisibility[target]) rehideOnLeaveRef.current.add(target);
+    handleField(target);
+  }, [handleField, photo.state.fieldVisibility]);
+  useEffect(() => {
+    const pending = rehideOnLeaveRef.current;
+    const leaving = Array.from(pending).filter((field) => field !== activeField);
+    if (leaving.length === 0) return;
+    leaving.forEach((field) => pending.delete(field));
+    photo.updateFieldVisibility(Object.fromEntries(leaving.map((field) => [field, false])));
+  }, [activeField, photo.updateFieldVisibility]);
+
   // 첫 업로드·교체(새 파일 선택) — 포스터 드롭존 탭, 서브메뉴 "교체", 그리고 포스터가 없을 때의
   // 온-티켓 탭(#723)이 전부 이 경로.
   // 온-티켓 탭은 #259가 넣었다가 미스터치로 파일선택창이 떠서 제거됐는데(#365), 그때 문제가 된 건
@@ -590,6 +614,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   // 자동 회전 캐러셀 오탭 같은 사고가 새로고침 한 번으로 복구된다. "이어서 만들기"는 이걸 안 부른다.
   function startFreshDoc(opts?: { layout?: LayoutId; keepPoster?: boolean }) {
     photo.resetDocument(opts);
+    rehideOnLeaveRef.current.clear(); // performClear와 같은 이유(#776).
     // 새 문서 — 복원된 문서로 undo해 돌아가면 안 된다(#356 clear는 다음 상태를 새 베이스라인으로 잡는다).
     history.clear();
   }
@@ -1322,6 +1347,10 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
           onField={(target) => {
             setDrawerOpen(false);
             handleField(target);
+          }}
+          onMissingField={(target) => {
+            setDrawerOpen(false);
+            openMissingField(target);
           }}
         >
           <OcrUploadCard
