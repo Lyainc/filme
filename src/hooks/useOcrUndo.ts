@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import type { OcrDirectField } from '@/components/v2/OcrUploadCard';
+import { OCR_KOBIS_FIELDS, type OcrDirectField } from '@/components/v2/OcrUploadCard';
 import type { MovieInfo, TicketComponents } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 
@@ -43,35 +43,54 @@ export interface UseOcrUndo {
   cancel: () => void;
   /** 확인 — 스냅샷을 버려 배너를 닫는다(주입 유지). */
   confirm: () => void;
+  /**
+   * OCR의 KOBIS 보강이 버려졌을 때(#801) — 스냅샷에서 KOBIS 키만 뺀다. OCR이 그 키들을 한 번도 안
+   * 썼으니 되돌리기가 그 사이 사용자가 고른 영화를 OCR 전 값으로 되돌리면 안 된다. 되돌릴 게 하나도
+   * 안 남으면(직접 필드·컴포넌트 둘 다 없음) 배너를 닫는다. 호출부가 epoch 비교를 통과한 뒤에만 부른다.
+   */
+  dropKobisFields: () => void;
   /** 사용자가 필드를 직접 편집하면 그 필드를 OCR 집합에서 제거(칩 숨김). */
   removeField: (key: OcrDirectField) => void;
 }
 
 export function useOcrUndo(photo: ReturnType<typeof usePhototicket>): UseOcrUndo {
   const [filledFields, setFilledFields] = useState<Set<OcrDirectField>>(new Set());
-  const [snapshot, setSnapshot] = useState<Partial<MovieInfo> | null>(null);
-  const [componentSnapshot, setComponentSnapshot] = useState<Partial<TicketComponents> | null>(null);
+  // movieInfo·components 스냅샷을 한 state로 묶는다 — dropKobisFields는 늦은 비동기 콜백에서 불려
+  // 클로저의 값이 낡았으므로 함수형 갱신 하나 안에서 둘을 같이 봐야 "남는 게 없다"를 판정할 수 있다.
+  const [undo, setUndo] = useState<{
+    info: Partial<MovieInfo>;
+    components: Partial<TicketComponents> | null;
+  } | null>(null);
   const epochRef = useRef(0);
 
   function apply({ keys, prevValues, prevComponents }: OcrApplyParams) {
     setFilledFields(keys);
-    setSnapshot(prevValues);
-    setComponentSnapshot(prevComponents ?? null);
+    setUndo({ info: prevValues, components: prevComponents ?? null });
   }
 
   function cancel() {
     epochRef.current++;
-    if (snapshot) photo.updateMovieInfo(snapshot);
-    // chain 라벨/노출도 OCR 적용 전으로 되돌린다(#141 리뷰 P1).
-    if (componentSnapshot) photo.updateComponents(componentSnapshot);
+    if (undo) {
+      photo.updateMovieInfo(undo.info);
+      // chain 라벨/노출도 OCR 적용 전으로 되돌린다(#141 리뷰 P1).
+      if (undo.components) photo.updateComponents(undo.components);
+    }
     setFilledFields(new Set());
-    setSnapshot(null);
-    setComponentSnapshot(null);
+    setUndo(null);
   }
 
   function confirm() {
-    setSnapshot(null);
-    setComponentSnapshot(null);
+    setUndo(null);
+  }
+
+  function dropKobisFields() {
+    setUndo((prev) => {
+      if (!prev) return prev;
+      const info = { ...prev.info };
+      for (const key of OCR_KOBIS_FIELDS) delete info[key];
+      if (Object.keys(info).length === 0 && !prev.components) return null;
+      return { ...prev, info };
+    });
   }
 
   function removeField(key: OcrDirectField) {
@@ -83,5 +102,14 @@ export function useOcrUndo(photo: ReturnType<typeof usePhototicket>): UseOcrUndo
     });
   }
 
-  return { filledFields, snapshot, epochRef, apply, cancel, confirm, removeField };
+  return {
+    filledFields,
+    snapshot: undo?.info ?? null,
+    epochRef,
+    apply,
+    cancel,
+    confirm,
+    dropKobisFields,
+    removeField,
+  };
 }

@@ -86,4 +86,29 @@ describe('useOcrUndo', () => {
     expect(result.current.filledFields.has('theater')).toBe(false);
     expect(result.current.filledFields.has('seat')).toBe(true);
   });
+
+  test('dropKobisFields는 KOBIS 키만 빼고, 되돌릴 게 안 남으면 배너를 닫는다(#801)', () => {
+    const { photo, updateMovieInfo, updateComponents } = makePhoto();
+    const { result } = renderHook(() => useOcrUndo(photo));
+    const kobisPrev = { title: '', titleOg: '', releaseDate: '', actors: '', runtime: '', movieCd: '' };
+
+    // 제목만 인식 → KOBIS 키만 담긴 스냅샷 → 버려지면 배너가 닫힌다.
+    act(() => result.current.apply({ keys: new Set(), prevValues: kobisPrev }));
+    act(() => result.current.dropKobisFields());
+    expect(result.current.snapshot).toBeNull();
+
+    // chain도 인식 → 컴포넌트 스냅샷이 남아 배너가 유지되고, 되돌리기는 컴포넌트만 복원한다.
+    act(() =>
+      result.current.apply({
+        keys: new Set(),
+        prevValues: kobisPrev,
+        prevComponents: { chainVisible: false, chainLabel: '' },
+      })
+    );
+    act(() => result.current.dropKobisFields());
+    expect(result.current.snapshot).toEqual({});
+    act(() => result.current.cancel());
+    expect(updateMovieInfo).toHaveBeenCalledWith({});
+    expect(updateComponents).toHaveBeenCalledWith({ chainVisible: false, chainLabel: '' });
+  });
 });

@@ -18,6 +18,8 @@ export const OCR_DIRECT_FIELDS: OcrDirectField[] = [
   'seat',
   'bookingNumber',
 ];
+/** KOBIS 보강이 쓰는 키 전부(kobisLookup.ts) — 되돌리기 스냅샷에 미리 담고, 보강이 버려지면 뺀다(#801). */
+export const OCR_KOBIS_FIELDS = ['title', 'titleOg', 'releaseDate', 'actors', 'runtime', 'movieCd'] as const;
 
 export interface OcrUploadCardProps {
   setInfo: (info: Partial<MovieInfo>) => void;
@@ -35,6 +37,8 @@ export interface OcrUploadCardProps {
   ocrEpochRef: { current: number };
   /** 영화 수명 캡처(#793, usePhototicket.captureMovieSelection) — KOBIS 보강은 이 적용기로만 쓴다. */
   captureMovieSelection: () => (info: Partial<MovieInfo>) => boolean;
+  /** KOBIS 보강이 영화 수명 판정에서 버려졌을 때(#801) — 셸의 useOcrUndo.dropKobisFields. */
+  onKobisDiscarded: () => void;
   className?: string;
   /** 진입 아이콘/문구 분기(#424) — 'landing'(기본)은 위 드롭존을 가리키는 화살표가 자연스럽지만,
    * 'drawer'(FieldDrawer 상단 슬롯)엔 가리킬 드롭존이 없어 화살표를 빼고 문구도 짧게 줄인다. */
@@ -61,6 +65,7 @@ export function OcrUploadCard({
   currentComponents,
   ocrEpochRef,
   captureMovieSelection,
+  onKobisDiscarded,
   className = '',
   context = 'landing',
   onNeedManualTitle,
@@ -121,8 +126,7 @@ export function OcrUploadCard({
     // store currentInfo[key] verbatim — preserving undefined — so undo
     // restores the exact pre-injection state instead of clobbering with ''.
     if (title) {
-      const kobisKeys = ['title', 'titleOg', 'releaseDate', 'actors', 'runtime', 'movieCd'] as const;
-      for (const key of kobisKeys) {
+      for (const key of OCR_KOBIS_FIELDS) {
         (prevValues as Record<string, unknown>)[key] = currentInfo[key];
       }
     }
@@ -162,7 +166,12 @@ export function OcrUploadCard({
       const applyKobis = captureMovieSelection();
       triggerKobisLookup(title).then((kobisInfo) => {
         if (epoch !== ocrEpochRef.current) return;
-        if (!applyKobis(kobisInfo)) return;
+        // 버려진 보강은 스냅샷의 KOBIS 키도 거둔다(#801) — 안 그러면 되돌리기가 OCR이 쓰지도 않은
+        // 사용자 선택을 OCR 전 값으로 되돌린다. epoch 비교 뒤라 새 실행·undo의 스냅샷은 안 건드린다.
+        if (!applyKobis(kobisInfo)) {
+          onKobisDiscarded();
+          return;
+        }
         if (!kobisInfo.titleOg && !kobisInfo.actors) {
           if (onNeedManualTitle) onNeedManualTitle();
           else showToast('영화 정보를 찾지 못했어요. 제목을 확인하고 다시 검색해 주세요.');
