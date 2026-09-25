@@ -91,7 +91,10 @@ export const MOOD_EXCLUDED_FIELDS: Partial<Record<LayoutId, readonly TicketField
   // 중복이었고, 레일 '커스텀' 항목은 폰트만 다룬다(스펙 c5). 이 표는 런처 그룹만 거르므로
   // 온티켓 경로는 그대로다. **알려진 대가**: 데스크톱엔 온티켓 탭이 없어 quote 텍스트 편집
   // 경로가 0개가 된다(#558 c6 — 데스크톱 작업 때 복구).
-  criterion: ['bookingNo', 'quote'],
+  // #777에서 다시 **제외 해제**했다 — 작은 화면에선 티켓이 줄어 한줄평 탭 타깃도 같이 작아지는데,
+  // 항목 목록(FieldDrawer)이 그 대체 경로라 거기 한줄평이 없으면 탭이 어려울 때 갈 길이 없다.
+  // 행 탭은 같은 InPlaceFieldEditor를 여니 편집 경로가 둘로 갈라지진 않는다.
+  criterion: ['bookingNo'],
   '35mm': ['bookingNo', 'quote'], // #524 v5: 컷 2개 구조에 바코드 자리가 없다 → bookingNo 미렌더(서명은 크레딧 컷 Collected by로 유지).
   editorial: ['quote'], // #391: 한줄평은 Criterion 전용 — 다른 무드는 렌더하지 않으므로 런처에서 제외.
   stub: ['quote'], // #391: 위와 동일.
