@@ -197,3 +197,52 @@ describe('OCR의 KOBIS 보강 도중 사용자가 다른 영화를 고르면, �
     expect(captured.movieInfo.runtime).toBe('119 MIN');
   });
 });
+
+// claude-review PR #802 P1 — 버려지는 OCR 결과가 무매칭이면 applyKobis가 false를 돌려주는 동시에
+// 무매칭 조건(!titleOg && !actors)도 참이다. 이 조합에서 "못 찾았다" 안내를 띄우면 사용자가 이미 고른
+// 영화 위에 틀린 안내가 뜬다 — 버려짐 분기가 안내보다 먼저 return하는 걸 잠근다.
+describe('버려지는 OCR 결과가 무매칭이어도 "못 찾았다" 안내를 띄우지 않는다 (#793)', () => {
+  test('사용자가 괴물을 고른 뒤 OCR 검색이 0건으로 끝나면, 안내 없이 괴물이 남는다', async () => {
+    const user = userEvent.setup();
+    const ocrSearch = deferred<unknown>();
+    globalThis.fetch = (async (url: string) => {
+      if (url.includes('/api/kobis/search')) {
+        const movieNm = movieNmFromUrl(url);
+        if (movieNm === '기생충') return ocrSearch.promise;
+        if (movieNm === '괴물') {
+          return fakeResponse({
+            movieListResult: {
+              movieList: [
+                { movieCd: 'HOST', movieNm: '괴물', movieNmEn: 'The Host', openDt: '20060727' },
+              ],
+            },
+          });
+        }
+      }
+      if (url.includes('/api/kobis/detail') && url.includes('movieCd=HOST')) {
+        return fakeResponse({ movieInfoResult: { movieInfo: { actors: [{ peopleNm: '변희봉' }] } } });
+      }
+      throw new Error(`unexpected url: ${url}`);
+    }) as unknown as typeof fetch;
+
+    render(<MobileHarness />);
+    ocrImpl = async () => ({ title: '기생충' });
+    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+
+    await user.click(await screen.findByRole('button', { name: '티켓 항목 목록 열기' }));
+    const dialog = await screen.findByRole('dialog', { name: '티켓 항목' });
+    await user.click(within(dialog).getByRole('button', { name: '제목 편집' }));
+    await user.type(await screen.findByRole('textbox', { name: '제목' }), '괴물');
+    const listbox = await screen.findByRole('listbox', { name: '검색 결과' }, { timeout: 2000 });
+    await user.click(within(listbox).getByRole('button'));
+    expect(captured.movieInfo.title).toBe('괴물');
+
+    ocrSearch.resolve(fakeResponse({ movieListResult: { movieList: [] } }));
+    // 무매칭은 상세 요청이 없어 기다릴 신호가 없다 — 응답 체인이 흘러갈 틈만 준다.
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(!!screen.queryByText('영화 정보를 찾지 못했어요. 제목을 확인하고 다시 검색해 주세요.')).toBe(false);
+    expect(captured.movieInfo.title).toBe('괴물');
+    expect(captured.movieInfo.movieCd).toBe('HOST');
+  });
+});
