@@ -4,6 +4,7 @@ import { pressableVariants } from '@/components/ui/variants';
 import { useEffect, useRef, useState, type ReactNode, type TouchEvent } from 'react';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { TicketComponents, TicketField } from '@/types';
+import { missingExportFields } from '@/hooks/useExportReady';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { useLogoCrop } from '@/hooks/useLogoCrop';
 import { EyeIcon } from '@/components/ui/VisibilityCheckbox';
@@ -33,6 +34,8 @@ interface FieldDrawerProps {
   photo: Photo;
   /** 행 본문 탭 → 셸이 드로어를 닫고 인플레이스 편집(#354)을 연다. */
   onField: (target: SheetTarget) => void;
+  /** 누락 바로가기(#776) — 행 탭과 같이 인플레이스 편집을 열되, 셸이 원래 숨긴 필드면 편집 뒤 다시 숨긴다. */
+  onMissingField?: (target: TicketField) => void;
   onClose: () => void;
   /** 드로어 상단 슬롯 — 셸이 OcrUploadCard(티켓 자동입력)를 꽂는다. 업로드 후 유일한 OCR
       진입점(#388 — 본문 카드는 업로드 후 CSS hidden으로 드로어에 일원화). */
@@ -52,7 +55,7 @@ interface FieldDrawerProps {
  *
  * 닫기 경로: 스와이프 →(드래그) + 백드롭 탭·Escape(비드래그 대체 경로, WCAG 2.2 SC 2.5.7).
  */
-export function FieldDrawer({ photo, onField, onClose, children }: FieldDrawerProps) {
+export function FieldDrawer({ photo, onField, onMissingField, onClose, children }: FieldDrawerProps) {
   const { movieInfo, fieldVisibility, components } = photo.state;
   // rootRef는 배경 inert(#685) 대상 판정용 — 드로어 전체(백드롭+패널)의 루트. 위에 로고 크롭
   // 모달이 뜨면(#355 중첩) 크롭 모달이 최상위가 되면서 이 루트도 자동으로 inert되고, 크롭 모달이
@@ -62,6 +65,9 @@ export function FieldDrawer({ photo, onField, onClose, children }: FieldDrawerPr
   // 표시 항목 일괄 단일 스위치(#261, #260 연계, #424에서 편집 메뉴→필드 목록 자리로 이전) — 전체
   // 켜짐 여부. 끄기는 필수 필드(title)를 켠 채 유지한다.
   const allVisOn = ALL_FIELDS.every((f) => fieldVisibility[f]);
+  // 저장 필수 입력 중 빈 것(#776) — 미완료에서 완료를 누르면 셸이 이 드로어를 연다. 다 채워지면
+  // 안내 카드가 통째로 사라진다(목록을 늘 가리는 고정 안내가 되지 않게).
+  const missing = missingExportFields(movieInfo);
 
   // 로고 크롭 모달(body 포털)이 떠 있는 동안엔 포커스 유지·Escape를 모달에 양보한다 —
   // 안 그러면 keepFocus가 모달 포커스를 계속 뺏고 Escape 한 번에 드로어까지 닫힌다(#355 리뷰 P1).
@@ -148,6 +154,27 @@ export function FieldDrawer({ photo, onField, onClose, children }: FieldDrawerPr
         )}
 
         <div className="min-h-0 flex-1 space-y-group overflow-y-auto overscroll-contain px-4 pb-[calc(env(safe-area-inset-bottom,0px)+24px)]">
+          {/* 저장 필수 안내(#776) — 표시 여부와 저장 필수를 가른다(개봉일을 숨겨도 연도는 필요). 바로가기는
+              셸이 드로어를 닫고 그 필드의 인플레이스 편집을 여는데, 숨겨 둔 필드면 편집 뒤 다시 숨겨 안내와
+              맞춘다(onMissingField). 행들과 같은 근거로 불투명 카드에 얹는다(위 주석). */}
+          {missing.length > 0 && (
+            <div className="space-y-2 rounded-card bg-surface-elevated p-3 text-caption text-fg-muted">
+              <p>저장에는 제목과 개봉연도가 필요해요. 개봉일은 티켓에서 숨겨도 돼요.</p>
+              <div className="flex flex-wrap gap-2">
+                {missing.map((field) => (
+                  <button
+                    key={field}
+                    type="button"
+                    onClick={() => (onMissingField ?? onField)(field)}
+                    className={cn(pressableVariants(), 'min-h-touch rounded-chip border border-line px-3 text-fg')}
+                  >
+                    {field === 'title' ? '제목 입력' : '개봉연도 입력'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* 전체 표시(#424) — 필드 목록과 한 자리에. 패널 위 직접 텍스트는 대비가 깨지므로(위 주석)
               다른 행과 동일하게 불투명 카드(bg-surface-elevated)에 얹는다. */}
           <button
