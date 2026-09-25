@@ -59,9 +59,9 @@ function Harness() {
   );
 }
 
-/** 티켓에 실제로 그려진 한줄평 엘리먼트의 inline style. */
+/** 티켓에 실제로 그려진 한줄평 엘리먼트의 inline style — 레일의 실견본(#780, data-font-preview)은 제외. */
 function quoteStyle(text: string) {
-  return (screen.getByText(text) as HTMLElement).style;
+  return (screen.getByText(text, { selector: ':not([data-font-preview])' }) as HTMLElement).style;
 }
 
 async function openCustomPanel(user: ReturnType<typeof userEvent.setup>) {
@@ -98,6 +98,20 @@ describe('레일 커스텀 — 한줄평 폰트 9택 (#558 → #437)', () => {
 
     const chips = within(screen.getByRole('radiogroup', { name: '한줄평 폰트' })).getAllByRole('radio');
     expect(chips.map((c) => c.textContent)).toEqual(ALL_FONT_LABELS);
+  });
+
+  test('칩 라벨이 각자의 서체로 그려져 선택 전에도 비교된다 (#780)', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await openCustomPanel(user);
+
+    const chips = within(screen.getByRole('radiogroup', { name: '한줄평 폰트' })).getAllByRole('radio');
+    const families = chips.map((c) => (c as HTMLElement).style.fontFamily);
+    expect(families.every((f) => f.length > 0)).toBe(true);
+    // 기본 한줄평이 라틴이라 '자동'은 latin으로 풀린다 — 라벨(한글)로 풀면 '자람'과 겹쳐 8이 된다.
+    expect(new Set(families).size).toBe(9);
+    // '자동' 칩은 라벨이 아니라 실제 문장 기준이라 티켓 한줄평과 같은 서체다.
+    expect(families[0]).toBe(quoteStyle(DEFAULT_QUOTE).fontFamily);
   });
 
   test('9택 각각이 티켓 한줄평의 fontFamily + 보정된 fontSize로 반영된다 (라틴)', async () => {

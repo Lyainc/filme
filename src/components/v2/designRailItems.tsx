@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { cn } from '@/utils/cn';
 import { pressableVariants } from '@/components/ui/variants';
 import dynamic from 'next/dynamic';
@@ -9,7 +9,9 @@ import ColorPicker from '@/components/wizard/ColorPicker';
 import BrightnessSlider from '@/components/wizard/BrightnessSlider';
 import { TEXTURE_RECIPES } from '@/utils/textureRecipes';
 import { MATERIAL_OPTIONS, COATING_OPTIONS, TARGET_HEIGHT } from '@/utils/constants';
+import { userTextFont } from '@/components/moods/_shared';
 import { MINIMAL_STAMP_MAX_SCALE } from '@/components/moods/MoodMinimal';
+import { DEFAULT_QUOTE } from '@/components/moods/MoodCriterion';
 import { Eyebrow } from './Eyebrow';
 import { POSTER_FILL_MOODS, TONE_FIXED_MOODS } from '@/constants/fields';
 import type { LayoutId } from '@/types';
@@ -138,6 +140,8 @@ function ChipRadio<V extends string>({
   value,
   onChange,
   note,
+  preview,
+  optionStyle,
 }: {
   label: string;
   options: readonly { value: V; label: string; disabled?: boolean }[];
@@ -147,16 +151,25 @@ function ChipRadio<V extends string>({
   onChange: (next: V) => void;
   /** 칩 하나 이상이 잠겼을 때의 사유. 잠긴 칩이 없으면 호출부가 undefined를 넘긴다. */
   note?: string;
+  /** 옵션 위에 얹는 실견본(#780) — 지금은 폰트 피커 전용. 존재 여부로 grid/flex 배치를 가른다. */
+  preview?: ReactNode;
+  /** 옵션 라벨 자체를 그 선택지의 서체로 그린다(#780) — 선택 전에도 9택을 나란히 비교하게. */
+  optionStyle?: (value: V, label: string) => CSSProperties;
 }) {
   return (
     <div className="space-y-field">
       <Eyebrow as="div">{label}</Eyebrow>
       {note && <p className="text-caption text-fg-muted">{note}</p>}
+      {preview}
       {/* 이름은 컨테이너 aria-label로 — TexturePicker·FieldEditorBody의 radiogroup과 같은 문법. */}
       {/* 폰트 피커가 9택이 되면서(#437) 한 줄에 다 못 선다 — basis 6rem은 400px 프레임에서
           한 줄에 3칩이 서는 값이고, 나머지 소비자(도구·포스터 채우기)는 전부 2택이라 grow가
-          예전 flex-1과 똑같이 반씩 채운다. basis 0(=flex-1)이면 wrap이 영영 안 일어난다. */}
-      <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-2">
+          예전 flex-1과 똑같이 반씩 채운다. basis 0(=flex-1)이면 wrap이 영영 안 일어난다.
+          폰트 피커(preview가 있는 소비자)만 grid로 간다(#780) — flex-wrap에선 마지막 줄에 한 칩만
+          남으면 grow가 그 칩을 줄 전체로 늘렸다(320px에서 140 vs 288). auto-fit + minmax(6rem)는
+          같은 6rem 하한으로 열 수를 정하면서 마지막 칩도 같은 너비에 세운다. grid 안에선 칩의
+          grow·basis가 효과가 없고 무해하다. */}
+      <div role="radiogroup" aria-label={label} className={preview !== undefined ? 'grid grid-cols-[repeat(auto-fit,minmax(6rem,1fr))] gap-2' : 'flex flex-wrap gap-2'}>
         {options.map((opt) => (
           <button
             key={opt.value}
@@ -173,6 +186,7 @@ function ChipRadio<V extends string>({
                 ? 'border-transparent bg-accent-soft text-accent'
                 : 'border-line bg-surface-elevated text-fg-muted'
             } ${opt.disabled ? 'opacity-40' : ''}`)}
+            style={optionStyle?.(opt.value, opt.label)}
           >
             {opt.label}
           </button>
@@ -225,6 +239,11 @@ const QUOTE_FONT_MOODS: readonly LayoutId[] = ['criterion'];
  * "Collected by" 행이 다른 4무드와 같은 userTextFont 경로를 타서 포함된다
  * (docs/specs/quote-signature-font-selection.md §6).
  */
+/** 폰트 칩 라벨의 기준 크기(#780) — caption(12px) 그대로면 체감 크기가 가장 작은 손글씨 계열이
+ *  칩 안에서 거의 안 읽힌다. `userTextFont`의 #437 배율이 hand=1.0 기준이라 16을 주면 손글씨는
+ *  16px, 고딕·바탕은 13px 안팎으로 서서 9칩의 글자면이 비슷한 크기로 선다. */
+const CHIP_SAMPLE_BASE_PX = 16;
+
 const SIGNATURE_FONT_MOODS: readonly LayoutId[] = ['criterion', 'minimal', 'stub', 'editorial', '35mm', '35mm-landscape'];
 
 /** '커스텀' 항목의 appliesTo — 안에 든 컨트롤(quote 폰트·signature 폰트)의 노출 무드 합집합. */
@@ -249,12 +268,32 @@ function CustomPanel({ photo }: { photo: Photo }) {
   // "세리프는 한글에서 잠금"이 사라졌다(그 칩 자체가 없어졌다, QUOTE_FONT_OPTIONS 주석).
   const signatureLocked = !!components.signatureImage;
   const lockAll = QUOTE_FONT_OPTIONS.map((o) => ({ ...o, disabled: true }));
+  // 견본 문구(#780) — 빈 값에서도 폰트 차이가 보여야 해서 폴백한다. 한줄평은 빈 값이면 티켓이
+  // 영문 기본 문구(별점 문구 포함 전부 라틴)를 그리므로 그 문장을 써야 '자동'이 티켓과 같은
+  // 서체(latin)로 풀린다. 서명은 빈 값이면 티켓에 자리표시만 서서 대응 문장이 없으니 한글+영문
+  // 견본으로 두 축을 다 보여준다.
+  const quoteSample = photo.state.movieInfo.quote?.trim() || DEFAULT_QUOTE;
+  const signatureSample = photo.state.movieInfo.signature?.trim() || '영화의 순간 Film';
   return (
     <>
       {showQuote && (
         <ChipRadio
           label="한줄평 폰트"
+          preview={
+            <p
+              data-font-preview="quote"
+              className="truncate leading-8 text-fg"
+              style={userTextFont(quoteSample, components.quoteFont, 22)}
+            >
+              {quoteSample}
+            </p>
+          }
           options={QUOTE_FONT_OPTIONS}
+          // '자동'은 라벨(한글)이 아니라 실제 문장으로 풀어야 티켓과 같은 서체가 된다 — 라틴 문장이면
+          // hand가 아니라 latin(Instrument Serif)으로 간다.
+          optionStyle={(font, label) =>
+            userTextFont(font === 'auto' ? quoteSample : label, font, CHIP_SAMPLE_BASE_PX)
+          }
           value={components.quoteFont ?? 'auto'}
           onChange={(quoteFont) => photo.updateComponents({ quoteFont })}
         />
@@ -262,7 +301,21 @@ function CustomPanel({ photo }: { photo: Photo }) {
       {showSignature && (
         <ChipRadio
           label="서명 폰트"
+          preview={
+            signatureLocked ? null : (
+              <p
+                data-font-preview="signature"
+                className="truncate leading-8 text-fg"
+                style={userTextFont(signatureSample, components.signatureFont, 22)}
+              >
+                {signatureSample}
+              </p>
+            )
+          }
           options={signatureLocked ? lockAll : QUOTE_FONT_OPTIONS}
+          optionStyle={(font, label) =>
+            userTextFont(font === 'auto' ? signatureSample : label, font, CHIP_SAMPLE_BASE_PX)
+          }
           value={components.signatureFont ?? 'auto'}
           onChange={(signatureFont) => photo.updateComponents({ signatureFont })}
           note={signatureLocked ? '서명 이미지가 있으면 폰트가 적용되지 않아요.' : undefined}
