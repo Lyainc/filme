@@ -96,7 +96,7 @@ describe('ResultStage 뒤로가기 배선 (#258)', () => {
     // hero(표시용) + ResultPanel의 off-screen 캡처 대상, 포스터 없이도 둘 다 선다(#631 D3).
     await screen.findAllByTestId('ticket');
     expect(screen.getAllByTestId('ticket').length).toBe(2);
-    expect(screen.queryByText('포스터가 없어요. 편집 화면에서 포스터를 추가해 주세요.')).toBeNull();
+    expect(screen.queryByText('포스터가 없어요. 편집 화면에서 포스터를 추가해 주세요.') === null).toBe(true);
   });
 
   // #380 원인1 — 상단 네브가 BI v2 이전 구형 mono 10px "FILME" 텍스트(WordmarkCompact)를 그대로
@@ -106,7 +106,7 @@ describe('ResultStage 뒤로가기 배선 (#258)', () => {
   test('상단 네브는 신형 Wordmark를 쓴다 — 구형 mono 텍스트 아님 (#380)', async () => {
     renderStage(() => {});
     expect(await screen.findByLabelText('FILME')).toBeTruthy();
-    expect(screen.queryByText('FILME')).toBeNull();
+    expect(screen.queryByText('FILME') === null).toBe(true);
   });
 });
 

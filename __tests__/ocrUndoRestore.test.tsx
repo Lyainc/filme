@@ -224,7 +224,7 @@ describe('OCR undo restoration (#163 / #141 P1)', () => {
     await user.click(screen.getByText('seed-format-off'));
     expect(captured.components.formatVisible).toBe(false);
     expect(captured.components.formatLabel).toBe('');
-    expect(screen.queryByText('IMAX')).toBeNull();
+    expect(screen.queryByText('IMAX') === null).toBe(true);
 
     ocrImpl = async () => ({
       chain: 'cgv',
@@ -246,7 +246,7 @@ describe('OCR undo restoration (#163 / #141 P1)', () => {
 
     expect(captured.components.formatVisible).toBe(false);
     expect(captured.components.formatLabel).toBe('');
-    expect(screen.queryByText('IMAX')).toBeNull();
+    expect(screen.queryByText('IMAX') === null).toBe(true);
     // chain 스냅샷이 format과 한 객체에 실려도 서로 덮지 않는지 — 같은 prevComponents를 공유한다.
     expect(captured.components.chainLabel).toBe('');
   });
@@ -334,7 +334,7 @@ describe('OCR undo restoration (#163 / #141 P1)', () => {
     expect(await screen.findByRole('button', { name: '되돌리기' })).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '최대화' }));
-    expect(screen.queryByRole('button', { name: '되돌리기' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '되돌리기' }) === null).toBe(true);
 
     await user.click(screen.getByRole('button', { name: '기본 크기로 돌아가기' }));
     expect(screen.getByRole('button', { name: '되돌리기' })).toBeTruthy();

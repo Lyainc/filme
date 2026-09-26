@@ -79,7 +79,7 @@ describe('#730 ColorPicker 선택 상태 접근성', () => {
     expect(radios.filter((r) => r.getAttribute('aria-checked') === 'false')).toHaveLength(2);
 
     const group = screen.getByRole('radiogroup', { name: '잉크 색' });
-    expect(group.querySelector('input[type="color"]')).toBeNull();
+    expect(group.querySelector('input[type="color"]') === null).toBe(true);
     // 커스텀 트리거는 사라진 게 아니라 radiogroup 밖으로 옮겨졌을 뿐이다.
     expect(container.querySelector('input[type="color"]')).not.toBeNull();
   });

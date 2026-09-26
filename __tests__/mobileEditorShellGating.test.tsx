@@ -32,7 +32,7 @@ afterEach(cleanup);
 describe('MobileEditorShell 완료 게이팅 (#213/#363)', () => {
   test('업로드 전(랜딩): 완료 버튼 자체가 없다(#363 — 업로드 액션에만 집중)', () => {
     render(<Harness canExport={false} onDone={() => {}} />);
-    expect(screen.queryByRole('button', { name: '완료' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '완료' }) === null).toBe(true);
   });
 
   test('비활성(canExport=false): 완료 탭 → onDone 미호출 + 사유 토스트 노출', async () => {

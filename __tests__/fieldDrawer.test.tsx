@@ -85,7 +85,7 @@ describe('FieldDrawer (#355)', () => {
 
   test('(b) 필수 필드(제목)는 눈 없이 자물쇠 — 토글 불가(#260)', () => {
     render(<Harness />);
-    expect(screen.queryByRole('switch', { name: '제목 티켓에 표시' })).toBeNull();
+    expect(screen.queryByRole('switch', { name: '제목 티켓에 표시' }) === null).toBe(true);
     expect(screen.getByRole('img', { name: '제목 필수 항목' })).toBeDefined();
   });
 

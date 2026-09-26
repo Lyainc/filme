@@ -71,7 +71,7 @@ describe('재크롭 비활성 사유 (#706)', () => {
     render(<Harness />);
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
 
-    expect(screen.queryByRole('button', { name: '재크롭' })).toBeNull();
-    expect(screen.queryByText(RECROP_BLOCKED)).toBeNull();
+    expect(screen.queryByRole('button', { name: '재크롭' }) === null).toBe(true);
+    expect(screen.queryByText(RECROP_BLOCKED) === null).toBe(true);
   });
 });

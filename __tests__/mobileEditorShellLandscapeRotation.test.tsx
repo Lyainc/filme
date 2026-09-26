@@ -43,6 +43,6 @@ describe('MobileEditorShell landscape 회전 배치 (#275-8)', () => {
 
     // 기본 복귀 — 회전 래퍼가 사라진다.
     await user.click(screen.getByRole('button', { name: '기본 크기로 돌아가기' }));
-    expect(screen.queryByRole('button', { name: '기본 크기로 돌아가기' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '기본 크기로 돌아가기' }) === null).toBe(true);
   });
 });

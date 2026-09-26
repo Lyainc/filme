@@ -103,7 +103,7 @@ describe('KOBIS 무매칭 → 제목 검색 UI 연결 (#445)', () => {
     await waitFor(() => {
       expect(!!screen.queryByRole('dialog', { name: '티켓 항목' })).toBe(false);
     });
-    expect(screen.queryByText('영화 정보를 찾지 못했어요. 제목을 확인하고 다시 검색해 주세요.')).toBeNull();
+    expect(screen.queryByText('영화 정보를 찾지 못했어요. 제목을 확인하고 다시 검색해 주세요.') === null).toBe(true);
 
     // 드로어가 닫히는 것만으로는 "검색 UI를 연다"가 안 지켜질 수 있어 편집기가 실제로 떴는지도 본다.
     await waitFor(() => {
@@ -126,6 +126,6 @@ describe('KOBIS 무매칭 → 제목 검색 UI 연결 (#445)', () => {
     await waitFor(() => {
       expect(captured.components.chainLabel).toBe('CGV');
     });
-    expect(screen.queryByText(/스탬프를 채웠어요/)).toBeNull();
+    expect(screen.queryByText(/스탬프를 채웠어요/) === null).toBe(true);
   });
 });

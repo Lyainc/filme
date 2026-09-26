@@ -68,7 +68,7 @@ describe('필드 드로어 엣지 핸들 (#567·#579)', () => {
     fireEvent.pointerDown(handle, { pointerId: 1, clientX: 400, clientY: 300 });
     fireEvent.pointerMove(handle, { pointerId: 1, clientX: 430, clientY: 300 }); // dx=+30, 무의미한 방향
     fireEvent.pointerUp(handle, { pointerId: 1, clientX: 430, clientY: 300 });
-    expect(screen.queryByRole('dialog', { name: '티켓 항목' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: '티켓 항목' }) === null).toBe(true);
 
     // 실브라우저는 pointerup 뒤 같은 타깃에 click을 이어 보낸다 — 흔들림으로 axis가 안
     // 잠겼으면 이 click이 정상적인 탭으로 열려야 한다.
@@ -89,7 +89,7 @@ describe('필드 드로어 엣지 핸들 (#567·#579)', () => {
     // 이 click이 드로어를 열면 안 된다(탭=열기/드래그=이동 구분이 핵심 요구사항).
     fireEvent.click(handle);
 
-    expect(screen.queryByRole('dialog', { name: '티켓 항목' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: '티켓 항목' }) === null).toBe(true);
     expect(handle.style.top).not.toBe(before);
     expect(handle.style.top).not.toBe('50%');
   });

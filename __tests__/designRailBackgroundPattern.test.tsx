@@ -124,7 +124,7 @@ describe('레일 스탬프 — 항목 노출 (#672→#728)', () => {
     expect(screen.queryByRole('button', { name: '스탬프' })).not.toBeNull();
 
     await user.click(screen.getByRole('button', { name: 'minimal로 전환' }));
-    expect(screen.queryByRole('button', { name: '스탬프' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '스탬프' }) === null).toBe(true);
   });
 
   test('패널에 프리셋 칩이 없고 업로드 컨트롤만 뜬다', async () => {
@@ -134,11 +134,11 @@ describe('레일 스탬프 — 항목 노출 (#672→#728)', () => {
 
     // #672 — 프리셋 3종(도트·사선·그리드)과 '없음'/'내 이미지' 2택이 통째로 사라졌다.
     for (const label of ['없음', '도트', '사선', '그리드', '내 이미지']) {
-      expect(screen.queryByRole('radio', { name: label })).toBeNull();
+      expect(screen.queryByRole('radio', { name: label }) === null).toBe(true);
     }
     expect(screen.getByRole('button', { name: '이미지 업로드' })).not.toBeNull();
     // 아직 이미지가 없으니 레이어도 없다 — 빈 div를 안 남긴다.
-    expect(backgroundLayer(container)).toBeNull();
+    expect(backgroundLayer(container) === null).toBe(true);
   });
 });
 
@@ -182,7 +182,7 @@ for (const { mood, box } of MOOD_CASES) {
       // "종이에 이미 인쇄된 바탕"이라 그 밖이어야 한다(#530 계약). 레이어 자신도 이제 투명도
       // 슬라이더 값을 자기 style.opacity로 갖고 있어(#728) closest는 레이어 자기 자신이 아니라
       // 부모부터 올라가야 componentOpacity 래퍼의 존재 여부만 정확히 잰다.
-      expect(backgroundLayer(container)!.parentElement?.closest('[style*="opacity"]') ?? null).toBeNull();
+      expect((backgroundLayer(container)!.parentElement?.closest('[style*="opacity"]') ?? null) === null).toBe(true);
     });
 
     test('무드가 정한 박스에만 그려진다 (#728, #768)', async () => {
@@ -229,8 +229,8 @@ for (const { mood, box } of MOOD_CASES) {
       await openBackgroundPanel(user, mood);
 
       // 조절할 대상이 없으면 죽은 컨트롤이라 아예 안 그린다.
-      expect(screen.queryByLabelText('스탬프 크기')).toBeNull();
-      expect(screen.queryByLabelText('스탬프 투명도')).toBeNull();
+      expect(screen.queryByLabelText('스탬프 크기') === null).toBe(true);
+      expect(screen.queryByLabelText('스탬프 투명도') === null).toBe(true);
 
       await user.click(screen.getByRole('button', { name: '배경 이미지 적용' }));
       expect(screen.getByLabelText('스탬프 크기')).not.toBeNull();
@@ -249,7 +249,7 @@ for (const { mood, box } of MOOD_CASES) {
       await user.click(screen.getByRole('button', { name: '배경 투명도 적용' }));
 
       await user.click(screen.getByRole('button', { name: 'minimal로 전환' }));
-      expect(screen.queryByRole('button', { name: '스탬프' })).toBeNull();
+      expect(screen.queryByRole('button', { name: '스탬프' }) === null).toBe(true);
       expect(screen.getByTestId('background-pattern-image').textContent).toBe('blob:bgimg');
       expect(screen.getByTestId('background-pattern-scale').textContent).toBe('1.5');
       expect(screen.getByTestId('background-pattern-opacity').textContent).toBe('0.6');
@@ -310,7 +310,7 @@ for (const { mood, box } of MOOD_CASES) {
       expect(backgroundLayer(container)).not.toBeNull();
 
       await user.click(screen.getByRole('button', { name: '이미지 제거' }));
-      expect(backgroundLayer(container)).toBeNull();
+      expect(backgroundLayer(container) === null).toBe(true);
       expect(screen.getByRole('button', { name: '이미지 업로드' })).not.toBeNull();
     });
   });

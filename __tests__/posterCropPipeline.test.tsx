@@ -238,7 +238,7 @@ describe('포스터 크롭 상태머신 (#182 PR #191 · #315, 실제 파일-선
     // 같이 fixed 여부로 판정한다(PR #622 claude-review P1).
     expect(screen.getByTestId('landing').classList.contains('fixed')).toBe(true);
     await openMenu(user);
-    expect(screen.queryByRole('button', { name: '재크롭' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '재크롭' }) === null).toBe(true);
   });
 
   // 자동저장 복원(#489)과 같은 상태 — 세션 내 업로드 없이 원본만 훅에 들어와 있는 경우.
@@ -320,7 +320,7 @@ describe('포스터 크롭 상태머신 (#182 PR #191 · #315, 실제 파일-선
 
     expect(fetched).toContain(original);
     expect(revoke.mock.calls.flat()).not.toContain(original);
-    expect(cropDialog()).toBeNull();
+    expect(cropDialog() === null).toBe(true);
   });
 });
 
@@ -351,7 +351,7 @@ describe('드롭으로 포스터 업로드 (#607)', () => {
 
     drop(uploadCta(), [new File(['x'], 'doc.pdf', { type: 'application/pdf' })]);
 
-    expect(cropDialog()).toBeNull();
+    expect(cropDialog() === null).toBe(true);
   });
 
   // 크롭 진행 중 드롭 무시 — getCroppedImg가 읽고 있는 원본 blob을 openFile의 교체가 revoke하면
@@ -408,7 +408,7 @@ describe('키보드 전용 포스터 업로드 경로 (#608)', () => {
     await user.keyboard('{Enter}');
 
     expect(photo.state.croppedImageUrl).toBe('blob:cropped-1');
-    expect(cropDialog()).toBeNull();
+    expect(cropDialog() === null).toBe(true);
   });
 
   test('포스터가 있는 상태의 교체·재크롭도 헤더 메뉴에서 키보드로 열린다', async () => {

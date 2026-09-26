@@ -39,12 +39,12 @@ describe('MobileEditorShell 줌 모드 (#214/#328/#356)', () => {
     render(<Harness />);
 
     // seed 전엔 툴바가 없다(프리뷰가 있어야 의미).
-    expect(screen.queryByRole('toolbar', { name: '편집 도구' })).toBeNull();
+    expect(screen.queryByRole('toolbar', { name: '편집 도구' }) === null).toBe(true);
 
     await user.click(screen.getByText('seed-poster'));
 
     // 줌 pill(ZoomSegment)은 제거됐고(#356) 툴바가 최대화 진입점을 흡수했다.
-    expect(screen.queryByRole('group', { name: '미리보기 크기' })).toBeNull();
+    expect(screen.queryByRole('group', { name: '미리보기 크기' }) === null).toBe(true);
     expect(screen.getByRole('toolbar', { name: '편집 도구' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '최대화' })).toBeTruthy();
   });
@@ -61,8 +61,8 @@ describe('MobileEditorShell 줌 모드 (#214/#328/#356)', () => {
     await user.click(screen.getByRole('button', { name: '최대화' }));
 
     // 진입 후: 헤더·툴바가 사라지고, 티켓 탭(기본 복귀) 핸들만 남는다.
-    expect(screen.queryByRole('button', { name: '편집 메뉴' })).toBeNull();
-    expect(screen.queryByRole('toolbar', { name: '편집 도구' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '편집 메뉴' }) === null).toBe(true);
+    expect(screen.queryByRole('toolbar', { name: '편집 도구' }) === null).toBe(true);
     const escapeHatch = screen.getByRole('button', { name: '기본 크기로 돌아가기' });
     // 진입 버튼이 있던 툴바가 언마운트돼 포커스가 body로 떨어지면 키보드 사용자가 복귀
     // 수단을 잃는다 — 포커스는 유일한 탈출구(티켓 래퍼)로 옮겨져야 한다(#190).

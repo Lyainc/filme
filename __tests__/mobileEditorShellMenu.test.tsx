@@ -38,7 +38,7 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
   test('FILME 워드마크는 헤더에 복귀(#363, v8 §1 — #315 제거 결정 번복), 뒤로가기는 여전히 없다', () => {
     render(<Harness />);
     expect(screen.getByRole('heading', { level: 1, name: 'FILME' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: '맨 위로' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '맨 위로' }) === null).toBe(true);
   });
 
   test('햄버거 탭 → 메뉴 열림/닫힘(aria-expanded), 바깥 탭으로 닫힘', async () => {
@@ -47,7 +47,7 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     const hamburger = screen.getByRole('button', { name: '편집 메뉴' });
 
     expect(hamburger.getAttribute('aria-expanded')).toBe('false');
-    expect(screen.queryByRole('menu', { name: '편집 메뉴' })).toBeNull();
+    expect(screen.queryByRole('menu', { name: '편집 메뉴' }) === null).toBe(true);
 
     await user.click(hamburger);
     expect(hamburger.getAttribute('aria-expanded')).toBe('true');
@@ -67,7 +67,7 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
 
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(hamburger.getAttribute('aria-expanded')).toBe('false');
-    expect(screen.queryByRole('menu', { name: '편집 메뉴' })).toBeNull();
+    expect(screen.queryByRole('menu', { name: '편집 메뉴' }) === null).toBe(true);
   });
 
   test('메뉴가 열려 있어도 완료 버튼은 오버레이에 가려지지 않고 바로 눌린다 (claude-review PR #331 P2)', async () => {
@@ -110,8 +110,8 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     render(<Harness />);
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
 
-    expect(screen.queryByRole('button', { name: '포스터 교체' })).toBeNull();
-    expect(screen.queryByRole('button', { name: '재크롭' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '포스터 교체' }) === null).toBe(true);
+    expect(screen.queryByRole('button', { name: '재크롭' }) === null).toBe(true);
   });
 
   test('업로드 전에도 임시저장/초기화는 노출된다(#310) — 포스터 전용 액션과 달리 게이팅하지 않는다', async () => {
@@ -124,8 +124,8 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     expect(screen.getByRole('button', { name: '임시저장' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '초기화' })).toBeTruthy();
     // 반면 포스터 전용 액션은 여전히 게이팅된다.
-    expect(screen.queryByRole('button', { name: '포스터 교체' })).toBeNull();
-    expect(screen.queryByRole('button', { name: '재크롭' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '포스터 교체' }) === null).toBe(true);
+    expect(screen.queryByRole('button', { name: '재크롭' }) === null).toBe(true);
   });
 
   test('초기화(#310): 포스터 없이 복원된 stale 값만 있어도 초기화로 지워진다(핵심 시나리오 — 새로고침 직후)', async () => {
@@ -153,7 +153,7 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
 
     await user.click(screen.getByRole('button', { name: '임시저장' }));
 
-    expect(screen.queryByRole('menu', { name: '편집 메뉴' })).toBeNull();
+    expect(screen.queryByRole('menu', { name: '편집 메뉴' }) === null).toBe(true);
     expect(screen.getAllByText('임시저장했어요').length).toBeGreaterThan(0);
     expect(window.localStorage.getItem(STORAGE_KEY)).not.toBeNull();
   });
@@ -172,13 +172,13 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     // 라벨 대비가 3.79:1로 떨어진다. 링이면 배경이 --surface 그대로라 4.66:1을 유지한다.
     expect(armedRow.style.boxShadow).toContain('var(--danger)');
     expect(armedRow.style.background).toBe('');
-    expect(screen.queryByText('초기화했어요')).toBeNull();
+    expect(screen.queryByText('초기화했어요') === null).toBe(true);
 
     // 메뉴를 닫았다 다시 열면 arm이 풀려 원래 라벨로 돌아오고, 포스터도 그대로다(미실행 증거).
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
     expect(screen.getByRole('button', { name: '초기화' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: '한 번 더 눌러 전체 삭제' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '한 번 더 눌러 전체 삭제' }) === null).toBe(true);
     expect(screen.queryByRole('button', { name: '재크롭' })).not.toBeNull();
   });
 
@@ -204,7 +204,7 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     // 한쪽만 남으면 포스터도 랜딩도 없는 빈 셸이 된다.
     expect(landingShown()).toBe(true);
     // 실행 후 메뉴는 닫힌다.
-    expect(screen.queryByRole('menu', { name: '편집 메뉴' })).toBeNull();
+    expect(screen.queryByRole('menu', { name: '편집 메뉴' }) === null).toBe(true);
   });
 
   test('초기화 arm(#374): arm 직후 350ms 내 재탭(더블탭)은 실행되지 않는다 (claude-review PR #375 P1)', async () => {
@@ -221,7 +221,7 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     fireEvent.click(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' }));
 
     // 실행되지 않고 armed 상태로 남는다.
-    expect(screen.queryByText('초기화했어요')).toBeNull();
+    expect(screen.queryByText('초기화했어요') === null).toBe(true);
     expect(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' })).toBeTruthy();
   });
 
@@ -241,7 +241,7 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     // 경계(누적 3200ms) — 자동 해제 타이머 만료.
     act(() => jest.advanceTimersByTime(1));
     expect(screen.getByRole('button', { name: '초기화' })).toBeTruthy();
-    expect(screen.queryByText('초기화했어요')).toBeNull();
+    expect(screen.queryByText('초기화했어요') === null).toBe(true);
   });
 
   // 잉크 토글은 #387에서 삭제 — 컬러 패널(DesignRail ColorPicker)의 White/Black 프리셋과
@@ -296,8 +296,8 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
 
     // 메뉴 안엔 더 이상 접이식 '툴바 설정' 섹션이 없다(#447 → #574로 이사).
-    expect(screen.queryByRole('button', { name: '툴바 설정' })).toBeNull();
-    expect(screen.queryByRole('radiogroup', { name: '툴바 배치' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '툴바 설정' }) === null).toBe(true);
+    expect(screen.queryByRole('radiogroup', { name: '툴바 배치' }) === null).toBe(true);
     // 남는 카드는 셋뿐이다(토글·포스터 액션·문서 액션) — 툴바 설정 카드가 빠진 자리가
     // 네 번째 카드로 되살아나지 않게 개수를 못박는다(#574).
     const panel = screen.getByRole('menu', { name: '편집 메뉴' });
@@ -305,14 +305,14 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
 
     await user.click(screen.getByRole('button', { name: '고급 설정' }));
     // 메뉴는 닫히고 모달만 남는다 — 중첩이 없어야 Escape 한 번이 둘을 같이 닫지 않는다.
-    expect(screen.queryByRole('menu', { name: '편집 메뉴' })).toBeNull();
+    expect(screen.queryByRole('menu', { name: '편집 메뉴' }) === null).toBe(true);
     const dialog = screen.getByRole('dialog', { name: '고급 설정' });
     expect(dialog.getAttribute('aria-modal')).toBe('true');
 
     const group = within(screen.getByRole('radiogroup', { name: '툴바 배치' }));
     expect(group.getAllByRole('radio')).toHaveLength(4);
     // 고정식 기본값에선 스냅 버튼이 없고, 이동식으로 바꾸면 좌/우 대체 경로가 뜬다(SC 2.5.7).
-    expect(screen.queryByRole('button', { name: '왼쪽 가장자리로 이동' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '왼쪽 가장자리로 이동' }) === null).toBe(true);
     await user.click(group.getByRole('radio', { name: '세로형 · 이동식' }));
     expect(screen.getByRole('button', { name: '왼쪽 가장자리로 이동' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '오른쪽 가장자리로 이동' })).toBeTruthy();
@@ -331,16 +331,16 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
 
     let dialog = await openModal();
     await user.click(within(dialog).getByRole('button', { name: '닫기' }));
-    expect(screen.queryByRole('dialog', { name: '고급 설정' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: '고급 설정' }) === null).toBe(true);
 
     dialog = await openModal();
     fireEvent.keyDown(document, { key: 'Escape' });
-    expect(screen.queryByRole('dialog', { name: '고급 설정' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: '고급 설정' }) === null).toBe(true);
 
     // 백드롭 탭 — 풀페이지라도 포인터 대체 경로를 하나 더 남긴다.
     dialog = await openModal();
     fireEvent.click(dialog.parentElement!.querySelector('[aria-hidden="true"]')!);
-    expect(screen.queryByRole('dialog', { name: '고급 설정' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: '고급 설정' }) === null).toBe(true);
   });
 
   test('고급 설정 모달(#574): 패널은 오버레이 계층 토큰, 안의 텍스트 행은 불투명 표면 위 (#569 규칙 승계)', async () => {

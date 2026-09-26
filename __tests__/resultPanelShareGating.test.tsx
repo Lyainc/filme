@@ -93,8 +93,8 @@ describe('ResultPanel 공유 의도 게이팅 (#194)', () => {
     renderPanel();
     await waitFor(() => expect(screen.getByText('링크 만들기')).toBeTruthy());
     // 발급이 일어났다면 loading 또는 error 라벨이 떠야 한다 — 둘 다 없어야 자동 발급 부재.
-    expect(screen.queryByText('링크 만드는 중…')).toBeNull();
-    expect(screen.queryByText('실패, 다시 시도')).toBeNull();
+    expect(screen.queryByText('링크 만드는 중…') === null).toBe(true);
+    expect(screen.queryByText('실패, 다시 시도') === null).toBe(true);
   });
 
   test("'링크 만들기' 클릭 시에는 발급이 일어난다 (공유 의도 = 양의 경로)", async () => {
@@ -150,7 +150,7 @@ describe('ResultPanel hidePreview (#233 데스크톱 done 이중 프리뷰 제�
     renderPanel();
     const ticket = await screen.findByTestId('ticket');
     // 캡처 타깃이 off-screen aria-hidden 래퍼 밖 = 시각적으로 노출된 프리뷰 카드.
-    expect(ticket.closest('[aria-hidden="true"]')).toBeNull();
+    expect(ticket.closest('[aria-hidden="true"]') === null).toBe(true);
   });
 
   test('hidePreview=true = 캡처 타깃은 DOM에 남되 off-screen, 액션 버튼은 전부 렌더', async () => {

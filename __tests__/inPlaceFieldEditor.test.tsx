@@ -105,7 +105,7 @@ describe('인플레이스 필드 에디터 (#354)', () => {
     await screen.findByRole('textbox', { name: '제목' });
     fireEvent.click(screen.getByRole('button', { name: '이전 항목' }));
     // 제목이 아닌 다른 필드로 이동했다(순환) — 정확한 타깃은 무드 구성에 따르므로 이탈만 확인.
-    expect(screen.queryByRole('textbox', { name: '제목' })).toBeNull();
+    expect(screen.queryByRole('textbox', { name: '제목' }) === null).toBe(true);
   });
 
   test('완료(체크) → 에디터 닫힘', async () => {
@@ -115,8 +115,8 @@ describe('인플레이스 필드 에디터 (#354)', () => {
     fireEvent.click(await screen.findByRole('button', { name: '극장 편집' }));
     await screen.findByRole('textbox', { name: '극장' });
     fireEvent.click(screen.getByRole('button', { name: '편집 완료' }));
-    expect(screen.queryByRole('textbox', { name: '극장' })).toBeNull();
-    expect(screen.queryByRole('toolbar', { name: '필드 편집 도구' })).toBeNull();
+    expect(screen.queryByRole('textbox', { name: '극장' }) === null).toBe(true);
+    expect(screen.queryByRole('toolbar', { name: '필드 편집 도구' }) === null).toBe(true);
   });
 
   test('prev/next 순회 경유는 숨긴 필드 가시성을 켜지 않는다 (PR #359 리뷰 P1)', async () => {
@@ -163,7 +163,7 @@ describe('인플레이스 필드 에디터 (#354)', () => {
     fireEvent.click(screen.getByRole('button', { name: '편집 메뉴' }));
 
     // 편집 진입 전: 빈 필드(출연)는 placeholder가 없어 탭 타깃 없음.
-    expect(screen.queryByRole('button', { name: '출연 편집' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '출연 편집' }) === null).toBe(true);
 
     // 극장 편집 진입 → ghostEff 강제 on → 출연 탭 타깃 등장.
     fireEvent.click(await screen.findByRole('button', { name: '극장 편집' }));
@@ -189,7 +189,7 @@ describe('인플레이스 필드 에디터 (#354)', () => {
       fireEvent.click(screen.getByText('seed-signature-image'));
 
       fireEvent.click(await screen.findByRole('button', { name: '서명 편집' }));
-      expect(screen.queryByRole('textbox', { name: '서명' })).toBeNull();
+      expect(screen.queryByRole('textbox', { name: '서명' }) === null).toBe(true);
       const removeBtn = await screen.findByText('이미지 제거');
       expect(screen.getByAltText('서명 이미지')).toBeTruthy();
 

@@ -114,7 +114,7 @@ describe('ResultStage 워드마크 초기화 배선 (#669)', () => {
 
     // ResultStage는 resultOpen=false로 언마운트되고, 편집 셸이 다시 보이며 랜딩이 뜬다
     // (초기화가 croppedImageUrl·landingDismissed·history를 전부 되돌린 증거, #614).
-    expect(screen.queryByRole('button', { name: '편집으로 돌아가기' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '편집으로 돌아가기' }) === null).toBe(true);
     expect(screen.getByTestId('landing').classList.contains('fixed')).toBe(true);
   });
 });
