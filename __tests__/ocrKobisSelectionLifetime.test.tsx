@@ -274,6 +274,27 @@ describe('버려진 OCR 보강은 되돌리기 대상에서 빠진다 (#801)', (
     expect(captured.movieInfo.title).toBe('괴물');
     expect(captured.movieInfo.movieCd).toBe('HOST');
   });
+
+  // #814(claude-review PR #815 P1) — 제목과 체인만 인식된 OCR의 보강이 버려지면 스탬프만 남는다. 불러온 영화
+  // 정보가 없으니 배너가 "영화 정보를 불러왔어요"라고 하면 안 되고, 남은 스탬프를 센다.
+  test('제목·체인만 인식된 OCR이 버려지면 배너가 영화 정보가 아니라 남은 스탬프 1개를 말한다', async () => {
+    const user = userEvent.setup();
+    const kobis = stubKobis();
+    render(<MobileHarness />);
+
+    ocrImpl = async () => ({ title: '기생충', chain: 'cgv' });
+    await user.upload(ocrFileInput(), ticketFile());
+    await pickHostInTitleEditor(user);
+    expect(screen.getByTestId('ocr-undo-banner').textContent).toContain('영화 정보를 자동으로 불러왔어요.');
+
+    await resolveOcrSearchAndSettle(kobis);
+
+    expect(bannerShown()).toBe(true);
+    const text = screen.getByTestId('ocr-undo-banner').textContent ?? '';
+    expect(text).not.toContain('영화 정보를 자동으로 불러왔어요.');
+    expect(text).toContain('1개 항목이 자동 입력되었어요.');
+    expect(captured.movieInfo.title).toBe('괴물');
+  });
 });
 
 // claude-review PR #802 P1 — 버려지는 OCR 결과가 무매칭이면 applyKobis가 false를 돌려주는 동시에
