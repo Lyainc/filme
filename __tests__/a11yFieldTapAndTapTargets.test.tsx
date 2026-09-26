@@ -217,6 +217,7 @@ describe('탭 타깃 44px 미달 채움 (#646 항목3)', () => {
       <OcrUndoBanner
         snapshot={{}}
         filledFields={new Set()}
+        stampCount={0}
         onCancel={() => {}}
         onConfirm={() => {}}
       />

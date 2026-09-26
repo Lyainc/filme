@@ -1,4 +1,4 @@
-import type { OcrDirectField } from './OcrUploadCard';
+import { OCR_KOBIS_FIELDS, type OcrDirectField } from './OcrUploadCard';
 import type { MovieInfo } from '@/types';
 import { cn } from '@/utils/cn';
 import { pressableVariants } from '@/components/ui/variants';
@@ -7,6 +7,8 @@ interface OcrUndoBannerProps {
   /** non-null이면 배너를 노출한다 — useOcrUndo.snapshot을 그대로 넘긴다. */
   snapshot: Partial<MovieInfo> | null;
   filledFields: Set<OcrDirectField>;
+  /** useOcrUndo.stampCount — 되돌릴 체인·포맷 스탬프 수. */
+  stampCount: number;
   onCancel: () => void;
   onConfirm: () => void;
 }
@@ -17,11 +19,16 @@ interface OcrUndoBannerProps {
  * 화면 하단 중앙 고정(fixed bottom-6). 라이브리전은 콘텐츠 변경 *전부터* DOM에 있어야 SR이 mutation을
  * 잡으므로(배너와 동시 삽입되면 무시됨, #199 리뷰 P1) 항상 마운트하고 텍스트만 바꾼다.
  */
-export function OcrUndoBanner({ snapshot, filledFields, onCancel, onConfirm }: OcrUndoBannerProps) {
+export function OcrUndoBanner({ snapshot, filledFields, stampCount, onCancel, onConfirm }: OcrUndoBannerProps) {
+  // 영화 정보 문구는 되돌릴 KOBIS 키가 남았을 때만이다(#814) — 제목을 인식 못 한 채 스탬프만 남았으면
+  // 불러온 영화 정보가 없으니 남은 스탬프 수를 센다.
+  const hasKobis = !!snapshot && OCR_KOBIS_FIELDS.some((key) => key in snapshot);
   const message =
     filledFields.size > 0
       ? `${filledFields.size}개 항목이 자동 입력되었어요.`
-      : '영화 정보를 자동으로 불러왔어요.';
+      : hasKobis || stampCount === 0
+        ? '영화 정보를 자동으로 불러왔어요.'
+        : `${stampCount}개 항목이 자동 입력되었어요.`;
 
   return (
     <>

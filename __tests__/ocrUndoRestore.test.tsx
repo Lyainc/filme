@@ -102,6 +102,12 @@ function MobileHarness() {
       <button type="button" onClick={() => photo.updateMovieInfo({ theater: '사용자가 고친 극장' })}>
         seed-user-edit-theater
       </button>
+      <button type="button" onClick={() => photo.updateMovieInfo({ theater: 'CGV 강남', seat: 'H12' })}>
+        seed-user-restore-ocr-values
+      </button>
+      <button type="button" onClick={() => photo.updateMovieInfo({ seat: '사용자가 고친 좌석' })}>
+        seed-user-edit-seat
+      </button>
       <button type="button" onClick={() => photo.updateComponents({ chainLabel: '사용자 라벨' })}>
         seed-user-edit-chain
       </button>
@@ -729,5 +735,86 @@ describe('OCR 되돌리기 배너 카운트가 사용자가 고친 필드를 제
     await user.click(screen.getByText('seed-user-edit-theater'));
 
     expect(screen.getByTestId('ocr-undo-banner').textContent).toContain('1개 항목이 자동 입력되었어요.');
+  });
+});
+
+// #814 — #810 이후 사용자가 OCR 직접 필드를 전부 고치면 카운트가 0이 되는데, 0은 원래 "제목만 인식"(#100)을
+// 뜻했다. 제목을 인식 못 했으면 영화 정보 문구가 거짓이고, 되돌릴 게 없으면 배너 자체가 거짓이다.
+describe('OCR 직접 필드를 전부 고치면 배너가 남은 되돌릴 것만 말한다 (#814)', () => {
+  test('제목·스탬프 없이 극장·좌석만 인식 → 둘 다 고침 → 되돌릴 게 없으니 배너가 닫힌다', async () => {
+    const user = userEvent.setup();
+    render(<MobileHarness />);
+    await user.click(screen.getByTestId('landing-skip-poster'));
+
+    ocrImpl = async () => ({ theater: 'CGV 강남', seat: 'H12' });
+    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+    await screen.findByRole('button', { name: '되돌리기' });
+    expect(screen.getByTestId('ocr-undo-banner').textContent).toContain('2개 항목이 자동 입력되었어요.');
+
+    await user.click(screen.getByText('seed-user-edit-theater'));
+    await user.click(screen.getByText('seed-user-edit-seat'));
+
+    expect(screen.queryByTestId('ocr-undo-banner') === null).toBe(true);
+    expect(screen.queryByRole('button', { name: '되돌리기' }) === null).toBe(true);
+
+    // 닫힌 배너는 끝난 것이다 — 사용자가 OCR 값과 같은 값을 다시 쳐도 옛 되돌리기가 되살아나지 않는다.
+    await user.click(screen.getByText('seed-user-restore-ocr-values'));
+    expect(captured.movieInfo.theater).toBe('CGV 강남');
+    expect(screen.queryByTestId('ocr-undo-banner') === null).toBe(true);
+  });
+
+  test('제목 없이 체인·극장·좌석 인식 → 극장·좌석 고침 → 영화 정보가 아니라 남은 스탬프 1개를 말하고, 되돌리기는 스탬프만 되돌린다', async () => {
+    const user = userEvent.setup();
+    render(<MobileHarness />);
+    await user.click(screen.getByTestId('landing-skip-poster'));
+
+    ocrImpl = async () => ({ chain: 'cgv', theater: 'CGV 강남', seat: 'H12' });
+    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+    const undoButton = await screen.findByRole('button', { name: '되돌리기' });
+
+    await user.click(screen.getByText('seed-user-edit-theater'));
+    await user.click(screen.getByText('seed-user-edit-seat'));
+
+    const text = screen.getByTestId('ocr-undo-banner').textContent ?? '';
+    expect(text).not.toContain('영화 정보를 자동으로 불러왔어요.');
+    expect(text).toContain('1개 항목이 자동 입력되었어요.');
+
+    await user.click(undoButton);
+    expect(captured.components.chainLabel).toBe('');
+    expect(captured.movieInfo.theater).toBe('사용자가 고친 극장');
+    expect(captured.movieInfo.seat).toBe('사용자가 고친 좌석');
+  });
+
+  test('제목만 인식된 경로(#100)는 체인 스탬프가 같이 있어도 그대로 영화 정보 문구다', async () => {
+    const user = userEvent.setup();
+    spyOn(global, 'fetch').mockImplementation((async (url: string) => {
+      if (url.includes('/api/kobis/search')) {
+        return {
+          ok: true,
+          json: async () => ({
+            movieListResult: {
+              movieList: [
+                { movieCd: '20147727', movieNm: '그랜드 부다페스트 호텔', movieNmEn: 'The Grand Budapest Hotel', openDt: '20140320' },
+              ],
+            },
+          }),
+        };
+      }
+      if (url.includes('/api/kobis/detail')) {
+        return { ok: true, json: async () => ({ movieInfoResult: { movieInfo: {} } }) };
+      }
+      throw new Error(`unexpected url: ${url}`);
+    }) as unknown as typeof fetch);
+    render(<MobileHarness />);
+
+    ocrImpl = async () => ({ title: '그랜드 부다페스트 호텔', chain: 'cgv' });
+    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+    await screen.findByRole('button', { name: '되돌리기' });
+    expect(screen.getByTestId('ocr-undo-banner').textContent).toContain('영화 정보를 자동으로 불러왔어요.');
+
+    await waitFor(() => {
+      expect(captured.movieInfo.movieCd).toBe('20147727');
+    });
+    expect(screen.getByTestId('ocr-undo-banner').textContent).toContain('영화 정보를 자동으로 불러왔어요.');
   });
 });
