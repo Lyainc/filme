@@ -147,7 +147,7 @@ describe('로고 본문(StampSheet) 파일 선택 → 자연비 크롭 모달 �
 describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
   test('layout 미전달 → 토글 없음(로고 컨텍스트)', () => {
     render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} />);
-    expect(screen.queryByRole('checkbox')).toBeNull();
+    expect(screen.queryByRole('checkbox') === null).toBe(true);
   });
 
   test('layout 전달 시 전 무드에서 토글 노출(#440) — editorial도 노출', () => {
@@ -368,7 +368,7 @@ describe('크롭 모달 포털 타깃 (#606)', () => {
 
   test('프레임이 없으면 body로 폴백한다 (데스크톱 셸 경로)', () => {
     render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} />);
-    expect(document.getElementById('phone-frame')).toBeNull();
+    expect(document.getElementById('phone-frame') === null).toBe(true);
     expect(screen.getByRole('dialog').parentElement?.tagName).toBe('BODY');
   });
 });

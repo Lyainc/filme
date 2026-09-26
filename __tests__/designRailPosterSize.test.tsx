@@ -77,7 +77,7 @@ describe('크기 섹션 포스터 크롭 (#492)', () => {
     render(<Harness />);
     await openSize(user);
 
-    expect(screen.queryByRole('button', { name: RECROP_LABEL })).toBeNull();
+    expect(screen.queryByRole('button', { name: RECROP_LABEL }) === null).toBe(true);
   });
 });
 

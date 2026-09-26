@@ -58,8 +58,8 @@ describe('DesignRail 패널 본문 조회 (#523)', () => {
     expect(screen.getByRole('button', { name: '크기' })).toBeTruthy();
 
     // 닫힌 패널: 어느 항목 본문도 DOM에 없다. 폴백이 있으면 마지막 항목('크기')이 그려진다.
-    expect(screen.queryByTestId('body-color')).toBeNull();
-    expect(screen.queryByTestId('body-size')).toBeNull();
+    expect(screen.queryByTestId('body-color') === null).toBe(true);
+    expect(screen.queryByTestId('body-size') === null).toBe(true);
     // 패널 aria-label도 폴백 없이 빈 문자열.
     expect(panelLabel()).toBe('');
   });
@@ -71,7 +71,7 @@ describe('DesignRail 패널 본문 조회 (#523)', () => {
 
     await user.click(color);
     const opened = screen.getByTestId('body-color');
-    expect(opened.closest('[inert]')).toBeNull();
+    expect(opened.closest('[inert]') === null).toBe(true);
     expect(panelLabel()).toBe('컬러');
 
     // 재클릭으로 닫기 → 본문은 마운트된 채 inert, 패널 aria-label도 직전 항목 것을 유지한다.

@@ -76,7 +76,7 @@ describe('DesignRail 무드 전환 시 항목 숨김 (#523 AC4)', () => {
 
     // 아이콘 자체가 사라짐(필터 통과 실패) + 패널이 닫힘(inert). pop 조정이 렌더 중 일어나므로
     // 무드 전환 클릭의 act() 안에서 동기로 반영된다 — waitFor 불필요.
-    expect(screen.queryByRole('button', { name: '전용 항목' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '전용 항목' }) === null).toBe(true);
     const slider = screen.getByLabelText('전용 슬라이더') as HTMLInputElement;
     expect(slider.closest('[inert]')).not.toBeNull();
     // 숨겨진 동안에도 값 자체는 안 건드림.

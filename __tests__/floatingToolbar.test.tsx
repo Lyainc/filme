@@ -114,7 +114,7 @@ describe('플로팅 툴바 (#356)', () => {
     await seedPoster(user);
 
     await user.click(screen.getByRole('button', { name: '툴바 숨김' }));
-    expect(screen.queryByRole('toolbar', { name: '편집 도구' })).toBeNull();
+    expect(screen.queryByRole('toolbar', { name: '편집 도구' }) === null).toBe(true);
 
     await user.click(screen.getByRole('button', { name: '툴바 표시' }));
     expect(screen.getByRole('toolbar', { name: '편집 도구' })).toBeTruthy();
@@ -169,8 +169,8 @@ describe('플로팅 툴바 (#356)', () => {
     render(<Harness />);
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
     // 모달 진입점을 막는 게 게이팅의 전부다 — 열려도 스냅이 조용히 no-op일 자리를 애초에 안 만든다.
-    expect(screen.queryByRole('button', { name: '고급 설정' })).toBeNull();
-    expect(screen.queryByRole('radiogroup', { name: '툴바 배치' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '고급 설정' }) === null).toBe(true);
+    expect(screen.queryByRole('radiogroup', { name: '툴바 배치' }) === null).toBe(true);
   });
 
   test('숨김 상태에서도 배치 스냅이 동작한다(claude-review PR #405 P1 — hidden 분기 ref 누락 회귀 방지)', async () => {
@@ -184,7 +184,7 @@ describe('플로팅 툴바 (#356)', () => {
     // 툴바 숨김은 모달 뒤에 깔린 툴바가 아니라 모달을 닫고 눌러야 한다(#574 — 모달이 풀페이지).
     await user.click(screen.getByRole('button', { name: '닫기' }));
     await user.click(screen.getByRole('button', { name: '툴바 숨김' }));
-    expect(screen.queryByRole('toolbar', { name: '편집 도구' })).toBeNull();
+    expect(screen.queryByRole('toolbar', { name: '편집 도구' }) === null).toBe(true);
 
     // 숨김 상태에서 다시 모달을 열어 스냅한다 — 툴바가 hidden 분기로 렌더돼도 ref가 살아있어야 한다.
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
@@ -214,7 +214,7 @@ describe('플로팅 툴바 (#356)', () => {
     fireEvent.click(hiddenBtn);
 
     // 억제됐다면 여전히 숨김(원형 버튼)이고, 억제가 안 됐다면 펼쳐진 툴바가 나타난다.
-    expect(screen.queryByRole('toolbar', { name: '편집 도구' })).toBeNull();
+    expect(screen.queryByRole('toolbar', { name: '편집 도구' }) === null).toBe(true);
     expect(screen.getByRole('button', { name: '툴바 표시' })).toBeTruthy();
 
     await advance(310);
@@ -248,7 +248,7 @@ describe('숨김은 세션 한정 + 복귀 어포던스 (#681)', () => {
     await seedPoster(user);
 
     await user.click(screen.getByRole('button', { name: '툴바 숨김' }));
-    expect(screen.queryByRole('toolbar', { name: '편집 도구' })).toBeNull();
+    expect(screen.queryByRole('toolbar', { name: '편집 도구' }) === null).toBe(true);
 
     await advance(310); // 300ms 영속 디바운스
     const raw = JSON.parse(window.localStorage.getItem(TB_KEY)!);
@@ -258,7 +258,7 @@ describe('숨김은 세션 한정 + 복귀 어포던스 (#681)', () => {
     const user2 = userSetup();
     render(<Harness />);
     await seedPoster(user2); // seedPoster 자체가 role="toolbar"를 찾으므로 펼쳐진 상태가 전제
-    expect(screen.queryByRole('button', { name: '툴바 표시' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '툴바 표시' }) === null).toBe(true);
   });
 
   test('이 변경 전에 숨긴 적 있는 사용자도 이번 방문은 펼쳐진 채로 시작한다(fresh-context 리뷰 발견 — 옛 hidden:true 저장분 마이그레이션)', async () => {
@@ -266,7 +266,7 @@ describe('숨김은 세션 한정 + 복귀 어포던스 (#681)', () => {
     const user = userSetup();
     render(<Harness />);
     await seedPoster(user); // 펼쳐진 상태(role="toolbar")를 전제로 하므로, 숨김으로 시작했다면 여기서 타임아웃한다.
-    expect(screen.queryByRole('button', { name: '툴바 표시' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '툴바 표시' }) === null).toBe(true);
   });
 
   test('최초 숨김 클릭에 복귀 방법을 토스트로 알린다', async () => {
@@ -274,17 +274,17 @@ describe('숨김은 세션 한정 + 복귀 어포던스 (#681)', () => {
     render(<Harness />);
     await seedPoster(user);
 
-    expect(screen.queryByText(/다시 누르면/)).toBeNull();
+    expect(screen.queryByText(/다시 누르면/) === null).toBe(true);
     await user.click(screen.getByRole('button', { name: '툴바 숨김' }));
     expect(screen.getAllByText(/다시 누르면/).length).toBeGreaterThan(0);
 
     // 재표시 → 재숨김에도 같은 세션에선 다시 안 뜬다(스팸 방지) — 토스트가 먼저 사라진(2.6s) 뒤
     // 재숨김에도 다시 나타나지 않아야 "한 번만"이 의미를 가진다.
     await advance(2700);
-    expect(screen.queryByText(/다시 누르면/)).toBeNull();
+    expect(screen.queryByText(/다시 누르면/) === null).toBe(true);
     await user.click(screen.getByRole('button', { name: '툴바 표시' }));
     await user.click(screen.getByRole('button', { name: '툴바 숨김' }));
-    expect(screen.queryByText(/다시 누르면/)).toBeNull();
+    expect(screen.queryByText(/다시 누르면/) === null).toBe(true);
   });
 
   test('복귀 원형 버튼은 44px 타깃이다(SC 2.5.5 AAA) — 펼친 툴바의 32px 위계와 별개', async () => {

@@ -91,7 +91,7 @@ describe('MobileEditorShell chrome 정보위계 (#261/#315/#363/#388)', () => {
     // 드로어(#355) 쪽 OcrUploadCard여야 한다.
     const ocr = screen.getByRole('button', { name: '티켓 스크린샷으로 자동입력' });
     expect(ocr.closest('.hidden')).not.toBeNull();
-    expect(rail.closest('.hidden')).toBeNull();
+    expect(rail.closest('.hidden') === null).toBe(true);
   });
 
   test('OcrUploadCard는 랜딩→업로드·최대화 전환에도 remount되지 않는다 (PR #372 리뷰 P1, #388로 hidden 전환 후에도 유지)', async () => {

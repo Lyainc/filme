@@ -51,7 +51,7 @@ describe('DESIGN dock 탭 타깃 (#500, WCAG 2.2 SC 2.5.8 AA)', () => {
 
     // 세로 예산 회수의 근거 — 두 축이 동시에 서면 dock이 다시 자란다(#500).
     expect(screen.queryByRole('radiogroup', { name: '재질' })).not.toBeNull();
-    expect(screen.queryByRole('radiogroup', { name: '코팅' })).toBeNull();
+    expect(screen.queryByRole('radiogroup', { name: '코팅' }) === null).toBe(true);
 
     const chips = Array.from(screen.getByRole('radiogroup', { name: '재질' }).querySelectorAll('[role=radio]'));
     expect(chips.length).toBeGreaterThan(1);
@@ -67,7 +67,7 @@ describe('DESIGN dock 탭 타깃 (#500, WCAG 2.2 SC 2.5.8 AA)', () => {
 
     // 코팅으로 전환하면 그 축의 칩으로 갈린다(축 전환이 죽은 컨트롤이 아님).
     await user.click(screen.getByRole('radio', { name: /^코팅 ·/ }));
-    expect(screen.queryByRole('radiogroup', { name: '재질' })).toBeNull();
+    expect(screen.queryByRole('radiogroup', { name: '재질' }) === null).toBe(true);
     expect(screen.queryByRole('radiogroup', { name: '코팅' })).not.toBeNull();
   });
 });
@@ -102,10 +102,10 @@ describe('크기 dock 탭 타깃 (#554, WCAG 2.2 SC 2.5.8 AA)', () => {
 
     // 세로 예산 회수의 근거 — 두 묶음이 동시에 서면 dock이 다시 361px로 자란다.
     expect(screen.queryByRole('button', { name: '포스터 다시 크롭' })).not.toBeNull();
-    expect(screen.queryByLabelText('극장 로고 크기')).toBeNull();
+    expect(screen.queryByLabelText('극장 로고 크기') === null).toBe(true);
 
     await user.click(screen.getByRole('radio', { name: '로고' }));
-    expect(screen.queryByRole('button', { name: '포스터 다시 크롭' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '포스터 다시 크롭' }) === null).toBe(true);
     expect(screen.queryByLabelText('극장 로고 크기')).not.toBeNull();
   });
 
@@ -137,7 +137,7 @@ describe('크기 dock 탭 타깃 (#554, WCAG 2.2 SC 2.5.8 AA)', () => {
     await user.click(screen.getByRole('button', { name: '무드' }));
     await user.click(screen.getByRole('button', { name: '크기' }));
 
-    expect(screen.queryByRole('radiogroup', { name: '크기 축' })).toBeNull();
+    expect(screen.queryByRole('radiogroup', { name: '크기 축' }) === null).toBe(true);
     expect(screen.queryByLabelText('극장 로고 크기')).not.toBeNull();
   });
 });

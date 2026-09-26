@@ -39,8 +39,8 @@ describe('포스터 없이 시작 (#631)', () => {
     render(<Harness />);
 
     // 시작 상태 — 캔버스가 안 섰으므로 완료·드로어 핸들이 없다.
-    expect(screen.queryByRole('button', { name: '완료' })).toBeNull();
-    expect(screen.queryByRole('button', { name: '티켓 항목 목록 열기' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '완료' }) === null).toBe(true);
+    expect(screen.queryByRole('button', { name: '티켓 항목 목록 열기' }) === null).toBe(true);
 
     await user.click(screen.getByTestId('landing-skip-poster'));
 
@@ -74,7 +74,7 @@ describe('포스터 없이 시작 (#631)', () => {
 
     expect(screen.getByRole('button', { name: '포스터 추가' })).toBeTruthy();
     // 재크롭은 포스터가 있어야 의미가 있으므로 이 상태엔 없다(죽은 컨트롤 금지).
-    expect(screen.queryByRole('button', { name: '재크롭' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '재크롭' }) === null).toBe(true);
   });
 
   test("'고급 설정'이 죽은 컨트롤이 아니다 — 툴바와 같은 조건(canvasReady)이라 모달이 실제로 열린다", async () => {

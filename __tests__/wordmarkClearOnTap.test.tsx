@@ -71,7 +71,7 @@ describe('워드마크 탭 초기화 (#578)', () => {
     await user.click(wordmarkButton());
 
     expect(confirmSpy).toHaveBeenCalledWith('지금까지 작업한 내용이 사라져요. 처음 화면으로 돌아갈까요?');
-    expect(screen.queryByText('초기화했어요')).toBeNull();
+    expect(screen.queryByText('초기화했어요') === null).toBe(true);
     expect(landingShown()).toBe(false); // 취소했으니 이탈 상태 그대로 — 랜딩은 계속 숨겨진 채.
 
     confirmSpy.mockImplementation(() => true);
@@ -141,6 +141,6 @@ describe('워드마크 탭 초기화 (#578)', () => {
     spyOn(window, 'confirm').mockImplementation(() => true);
     await user.click(wordmarkButton());
 
-    expect(screen.queryByRole('menu', { name: '편집 메뉴' })).toBeNull();
+    expect(screen.queryByRole('menu', { name: '편집 메뉴' }) === null).toBe(true);
   });
 });

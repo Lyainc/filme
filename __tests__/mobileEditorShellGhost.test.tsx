@@ -34,7 +34,7 @@ describe('MobileEditorShell ghost 토글 (#216)', () => {
 
     // seed 전엔 토글이 없다(헤더 서브메뉴 안, #315).
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
-    expect(screen.queryByRole('switch', { name: '빈 항목 미리보기' })).toBeNull();
+    expect(screen.queryByRole('switch', { name: '빈 항목 미리보기' }) === null).toBe(true);
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
 
     await user.click(screen.getByText('seed-poster'));

@@ -112,7 +112,7 @@ describe('별 롱터치 → 소수 입력 펼침(모바일 경로, #496)', () =>
   test('움직임 없이 500ms 누르면 소수 입력이 펼쳐진다', () => {
     render(<Harness />);
     const row = screen.getByRole('radiogroup', { name: '별점' });
-    expect(screen.queryByRole('spinbutton', { name: '평점 직접 입력 (0.1 단위)' })).toBeNull();
+    expect(screen.queryByRole('spinbutton', { name: '평점 직접 입력 (0.1 단위)' }) === null).toBe(true);
 
     act(() => down(row, 110));
     act(() => jest.advanceTimersByTime(500));
@@ -130,7 +130,7 @@ describe('별 롱터치 → 소수 입력 펼침(모바일 경로, #496)', () =>
     });
     act(() => jest.advanceTimersByTime(500));
 
-    expect(screen.queryByRole('spinbutton', { name: '평점 직접 입력 (0.1 단위)' })).toBeNull();
+    expect(screen.queryByRole('spinbutton', { name: '평점 직접 입력 (0.1 단위)' }) === null).toBe(true);
   });
 
   test('타이머가 뜨기 전에 손을 떼면(짧은 탭) 소수 입력이 안 열린다', () => {
@@ -143,7 +143,7 @@ describe('별 롱터치 → 소수 입력 펼침(모바일 경로, #496)', () =>
     });
     act(() => jest.advanceTimersByTime(500));
 
-    expect(screen.queryByRole('spinbutton', { name: '평점 직접 입력 (0.1 단위)' })).toBeNull();
+    expect(screen.queryByRole('spinbutton', { name: '평점 직접 입력 (0.1 단위)' }) === null).toBe(true);
   });
 });
 
@@ -181,10 +181,10 @@ describe('캡션 토글 — 데스크톱/키보드/스크린리더 대체 경로
     render(<Harness />);
     const toggle = screen.getByRole('button', { name: '평점 소수 입력 토글' });
 
-    expect(screen.queryByRole('spinbutton')).toBeNull();
+    expect(screen.queryByRole('spinbutton') === null).toBe(true);
     fireEvent.click(toggle);
     expect(screen.getByRole('spinbutton', { name: '평점 직접 입력 (0.1 단위)' })).toBeTruthy();
     fireEvent.click(toggle);
-    expect(screen.queryByRole('spinbutton')).toBeNull();
+    expect(screen.queryByRole('spinbutton') === null).toBe(true);
   });
 });

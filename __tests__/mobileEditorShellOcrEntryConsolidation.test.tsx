@@ -304,7 +304,7 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
     // Escape로 드로어를 닫는다 — FieldDrawer는 "마운트 = 열림, 닫힘은 즉시 unmount"라(FieldDrawer.tsx)
     // 이 드로어 인스턴스의 OcrUploadCard는 이 시점에 정말로 사라진다(hidden이 아니라 unmount).
     fireEvent.keyDown(document, { key: 'Escape' });
-    expect(screen.queryByRole('dialog', { name: '티켓 항목' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: '티켓 항목' }) === null).toBe(true);
 
     // 드로어(및 그 안의 OcrUploadCard 인스턴스)가 사라진 뒤에 KOBIS 응답이 도착한다 — ocrEpochRef가
     // 셸 레벨에서 "이 실행이 여전히 최신"임을 판단하므로, 인스턴스 소멸과 무관하게 반영돼야 한다.

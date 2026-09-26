@@ -58,7 +58,7 @@ describe('ChainStamp/FormatStamp 높이 보정 통합 (#392)', () => {
   // 로드하는 <img>가 곧 렌더되는 <img>라(#539), "로드 생략"은 곧 "<img>를 안 그린다"와 같은 말이다.
   test('완전 비노출(visible=false, ghost=false)이면 로고 <img>를 아예 안 그린다', () => {
     const { container } = render(<ChainStamp chain="blob:tall" visible={false} ghost={false} height={48} />);
-    expect(container.querySelector('img')).toBeNull();
+    expect(container.querySelector('img') === null).toBe(true);
   });
 
   test('src 교체 시 이전 aspect를 물고 가지 않는다(미로드 src → 즉시 기본 높이)', () => {

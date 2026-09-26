@@ -106,7 +106,7 @@ describe('MobileEditorShell 필드 커버리지 (#266 PR-E)', () => {
     // 행 본문 탭('상영관'은 티켓 FieldTap과 접근명이 겹치므로 드로어 스코프로 특정) →
     // 드로어 닫힘 + handleField가 자동 표시 on + 인플레이스 필드바 오픈.
     fireEvent.click(within(drawer).getByRole('button', { name: '상영관 편집' }));
-    expect(screen.queryByRole('dialog', { name: '티켓 항목' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: '티켓 항목' }) === null).toBe(true);
     expect(screen.getByTestId('vis-screen').textContent).toBe('true');
     expect(await screen.findByRole('switch', { name: '티켓 노출' })).toBeDefined();
   });

@@ -44,7 +44,7 @@ afterEach(() => {
 describe('앰비언트 다크 크롬 스코프 — theme 바인딩 (#415)', () => {
   test('라이트 테마: chrome-dark 미적용 + 앰비언트 미렌더(데스크톱과 동일 톤)', () => {
     render(<Harness theme="light" />);
-    expect(screen.queryByTestId('chrome-ambient')).toBeNull();
+    expect(screen.queryByTestId('chrome-ambient') === null).toBe(true);
     const canvas = document.querySelector('.app-canvas') as HTMLElement;
     expect(canvas.classList.contains('chrome-dark')).toBe(false);
   });
