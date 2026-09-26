@@ -26,7 +26,6 @@ afterEach(() => {
 // `register()`보다 먼저 실행되고, 그러면 testing-library가 DOM 없는 전역을 붙잡아
 // 스위트가 통째로 깨진다(실측 2026-07-30: 941 pass → 687 pass / 258 fail). CLAUDE.md의
 // `mock.module` 후 `require` 규약과 같은 이유다 — 등록 **뒤에** 로드해야 한다.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 (require('@testing-library/react') as typeof import('@testing-library/react')).configure({ asyncUtilTimeout: 5000 });
 
 // Lets React's `act()` run outside a test renderer (react-dom/client mounts).
