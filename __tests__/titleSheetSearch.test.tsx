@@ -65,7 +65,6 @@ function PrefilledHarness({ initialTitle }: { initialTitle: string }) {
   useEffect(() => {
     photo.updateMovieInfo({ title: initialTitle });
     setMounted(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return mounted ? <FieldEditorBody target="title" photo={photo} /> : null;
 }

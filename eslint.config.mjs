@@ -74,4 +74,26 @@ export default tseslint.config(
       'local/no-raw-touch-target-size': 'error',
     },
   },
+  {
+    // #693: DOM 쿼리 결과를 그대로 received에 넣은 toBeNull은 실패 한 번에 bun이 happy-dom 노드
+    // 그래프를 통째로 직렬화한다(697MB·4.6초, waitFor 안에선 타임아웃으로 오진된다). received를
+    // 불리언으로 바꿔 `expect(el === null).toBe(true)`로 쓴다(#811). `.not.toBeNull()`은 실패할 때
+    // received가 null이라 싸서 안 막는다. 호출 이름만 보고 판정하니 변수나 헬퍼로 감싼 꼴은 못 잡는다.
+    files: ['__tests__/**/*.{ts,tsx}'],
+    languageOptions: {
+      parser: tseslint.parser,
+      parserOptions: { ecmaFeatures: { jsx: true } },
+    },
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "CallExpression[callee.property.name='toBeNull'] > MemberExpression.callee > CallExpression.object[callee.name='expect'] CallExpression:matches([callee.name=/^queryBy/], [callee.property.name=/^(queryBy|querySelector$|closest$|getElementById$)/])",
+          message:
+            'DOM 쿼리 결과를 toBeNull의 received에 넣지 말고 `expect(el === null).toBe(true)`로 쓰세요 — 실패 시 노드 그래프 직렬화로 수백 MB·수 초가 든다(#693, #811).',
+        },
+      ],
+    },
+  },
 );
