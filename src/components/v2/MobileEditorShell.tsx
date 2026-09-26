@@ -1393,6 +1393,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
       <OcrUndoBanner
         snapshot={isMax ? null : ocr.snapshot}
         filledFields={ocr.filledFields}
+        stampCount={ocr.stampCount}
         onCancel={ocr.cancel}
         onConfirm={ocr.confirm}
       />

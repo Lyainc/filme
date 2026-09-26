@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { OCR_KOBIS_FIELDS, type OcrDirectField } from '@/components/v2/OcrUploadCard';
 import type { MovieInfo, TicketComponents } from '@/types';
 import { capSeatTokens, type usePhototicket } from '@/hooks/usePhototicket';
@@ -30,8 +30,13 @@ export interface OcrApplyParams {
 export interface UseOcrUndo {
   /** OCR로 마지막 채워진 필드 중 사용자가 아직 안 고친 것 — 배너 카운트용(#810). */
   filledFields: Set<OcrDirectField>;
-  /** 되돌리기 스냅샷 — non-null이면 배너를 노출한다. */
+  /**
+   * 되돌리기가 아직 되돌릴 movieInfo 스냅샷(사용자가 고친 키는 뺀 것) — non-null이면 배너를 노출한다.
+   * 되돌릴 게 하나도 안 남으면(movieInfo·스탬프 둘 다) null이라 배너가 닫힌다(#814).
+   */
   snapshot: Partial<MovieInfo> | null;
+  /** 되돌리기가 아직 되돌릴 스탬프(체인·포맷) 수 — 직접 필드 없이 스탬프만 남은 배너 카운트용(#814). */
+  stampCount: number;
   /**
    * cancel(undo) 시 증가시켜 in-flight KOBIS fetch를 무효화 — revert 후 폼을 다시 채우지 못하게.
    * confirm에선 안 올린다: confirm은 주입을 수락하고, KOBIS 보강(title 자체를 나르는)은 계속 착지해야 한다.
@@ -143,12 +148,31 @@ export function useOcrUndo(photo: ReturnType<typeof usePhototicket>): UseOcrUndo
     });
   }
 
+  // 배너는 되돌리기가 실제로 되돌릴 것만 보여준다(#810·#814) — cancel과 같은 isEdited 판정이다. 사용자가 전부
+  // 고쳐 남은 게 없으면 배너를 닫는다. 안 그러면 누를 수 있는 "되돌리기"가 아무것도 안 한다.
+  const info = undo ? withoutEdited(undo.info, undo.applied, photo.state.movieInfo) : null;
+  const components = undo?.components
+    ? withoutEdited(undo.components, undo.appliedComponents, photo.state.components)
+    : {};
+  const stampCount = Number('chainLabel' in components || 'chainVisible' in components)
+    + Number('formatLabel' in components || 'formatVisible' in components);
+  const hasRevertible = !!info && (Object.keys(info).length > 0 || Object.keys(components).length > 0);
+  // 남은 게 없어지면 확인처럼 스냅샷을 실제로 버린다 — 계산으로만 숨기면 사용자가 OCR 값과 같은 값을 다시
+  // 치는 순간 배너와 옛 되돌리기가 되살아난다(PR 리뷰). epoch는 안 올린다: 진행 중인 KOBIS 보강은 스냅샷에
+  // KOBIS 키를 남겨 이 분기에 오지 않는다.
+  const exhausted = !!undo && !hasRevertible;
+  useEffect(() => {
+    if (!exhausted) return;
+    setUndo(null);
+    setFilledFields(new Set());
+  }, [exhausted]);
+
   return {
-    // 배너 카운트는 되돌리기가 실제로 되돌릴 필드만 센다(#810) — cancel과 같은 isEdited 판정이다.
     filledFields: undo
       ? new Set(Array.from(filledFields).filter((k) => !isEdited(k, undo.applied, photo.state.movieInfo)))
       : filledFields,
-    snapshot: undo?.info ?? null,
+    snapshot: hasRevertible ? info : null,
+    stampCount,
     epochRef,
     apply,
     cancel,
