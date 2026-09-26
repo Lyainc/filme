@@ -257,8 +257,23 @@ const CUSTOM_PANEL_MOODS: readonly LayoutId[] = Array.from(new Set([...QUOTE_FON
  * 텍스트 편집은 여기 안 둔다(스펙 c5): 레일은 하단 고정 dock이라 텍스트 인풋을 넣으면 소프트
  * 키보드가 dock을 통째로 덮는다 — 한줄평·서명 문구는 온티켓 탭(FieldTap → InPlaceFieldEditor)이
  * 계속 소유한다.
+ *
+ * 두 피커가 다 뜨는 무드(지금은 Criterion)는 한 번에 한 축만 그린다(#797) — 후보정·크기와 같은
+ * AxisSegment 처방이다. 둘을 세로로 쌓으면 409px(375~414 폭, 320에선 585px)라 슬롯(148~214px)의
+ * 두 배를 넘었다. 축으로 나눠도 피커 하나(견본 줄 + 9칩 그리드, 서명만 뜨는 무드에서 217px)가
+ * 이미 슬롯보다 커서 넘침이 0이 되진 않는다 — 줄이는 건 스크롤 양이고, 나머지는 슬롯 스크롤
+ * 그림자가 잇는다(DesignRail 슬롯 주석). 피커가 하나뿐인 무드는 세그먼트를 안 그린다: 한 칸짜리
+ * 축 전환은 죽은 컨트롤이다(SizePanel의 posterAxis 부재 분기와 같은 이유).
  */
+const CUSTOM_AXES = [
+  { key: 'quote', label: '한줄평' },
+  { key: 'signature', label: '서명' },
+] as const;
+type CustomAxis = (typeof CUSTOM_AXES)[number]['key'];
+
 function CustomPanel({ photo }: { photo: Photo }) {
+  // 무드를 오가도 고른 축을 기억하게 early return보다 위에 둔다(훅 순서 규칙이기도 하다).
+  const [axis, setAxis] = useState<CustomAxis>('quote');
   const { components } = photo.state;
   const showQuote = QUOTE_FONT_MOODS.includes(components.layout);
   const showSignature = SIGNATURE_FONT_MOODS.includes(components.layout);
@@ -274,54 +289,67 @@ function CustomPanel({ photo }: { photo: Photo }) {
   // 견본으로 두 축을 다 보여준다.
   const quoteSample = photo.state.movieInfo.quote?.trim() || DEFAULT_QUOTE;
   const signatureSample = photo.state.movieInfo.signature?.trim() || '영화의 순간 Film';
+  const quotePicker = (
+    <ChipRadio
+      label="한줄평 폰트"
+      preview={
+        <p
+          data-font-preview="quote"
+          className="truncate leading-8 text-fg"
+          style={userTextFont(quoteSample, components.quoteFont, 22)}
+        >
+          {quoteSample}
+        </p>
+      }
+      options={QUOTE_FONT_OPTIONS}
+      // '자동'은 라벨(한글)이 아니라 실제 문장으로 풀어야 티켓과 같은 서체가 된다 — 라틴 문장이면
+      // hand가 아니라 latin(Instrument Serif)으로 간다.
+      optionStyle={(font, label) =>
+        userTextFont(font === 'auto' ? quoteSample : label, font, CHIP_SAMPLE_BASE_PX)
+      }
+      value={components.quoteFont ?? 'auto'}
+      onChange={(quoteFont) => photo.updateComponents({ quoteFont })}
+    />
+  );
+  const signaturePicker = (
+    <ChipRadio
+      label="서명 폰트"
+      preview={
+        signatureLocked ? null : (
+          <p
+            data-font-preview="signature"
+            className="truncate leading-8 text-fg"
+            style={userTextFont(signatureSample, components.signatureFont, 22)}
+          >
+            {signatureSample}
+          </p>
+        )
+      }
+      options={signatureLocked ? lockAll : QUOTE_FONT_OPTIONS}
+      optionStyle={(font, label) =>
+        userTextFont(font === 'auto' ? signatureSample : label, font, CHIP_SAMPLE_BASE_PX)
+      }
+      value={components.signatureFont ?? 'auto'}
+      onChange={(signatureFont) => photo.updateComponents({ signatureFont })}
+      note={signatureLocked ? '서명 이미지가 있으면 폰트가 적용되지 않아요.' : undefined}
+    />
+  );
+  if (!showQuote || !showSignature) return showQuote ? quotePicker : signaturePicker;
+  // aria-controls와 대상 id는 같은 상수에서 — TexturePanel·SizePanel과 같은 이유.
+  const panelId = `${ID_PREFIX}-custom-axis-panel`;
   return (
-    <>
-      {showQuote && (
-        <ChipRadio
-          label="한줄평 폰트"
-          preview={
-            <p
-              data-font-preview="quote"
-              className="truncate leading-8 text-fg"
-              style={userTextFont(quoteSample, components.quoteFont, 22)}
-            >
-              {quoteSample}
-            </p>
-          }
-          options={QUOTE_FONT_OPTIONS}
-          // '자동'은 라벨(한글)이 아니라 실제 문장으로 풀어야 티켓과 같은 서체가 된다 — 라틴 문장이면
-          // hand가 아니라 latin(Instrument Serif)으로 간다.
-          optionStyle={(font, label) =>
-            userTextFont(font === 'auto' ? quoteSample : label, font, CHIP_SAMPLE_BASE_PX)
-          }
-          value={components.quoteFont ?? 'auto'}
-          onChange={(quoteFont) => photo.updateComponents({ quoteFont })}
-        />
-      )}
-      {showSignature && (
-        <ChipRadio
-          label="서명 폰트"
-          preview={
-            signatureLocked ? null : (
-              <p
-                data-font-preview="signature"
-                className="truncate leading-8 text-fg"
-                style={userTextFont(signatureSample, components.signatureFont, 22)}
-              >
-                {signatureSample}
-              </p>
-            )
-          }
-          options={signatureLocked ? lockAll : QUOTE_FONT_OPTIONS}
-          optionStyle={(font, label) =>
-            userTextFont(font === 'auto' ? signatureSample : label, font, CHIP_SAMPLE_BASE_PX)
-          }
-          value={components.signatureFont ?? 'auto'}
-          onChange={(signatureFont) => photo.updateComponents({ signatureFont })}
-          note={signatureLocked ? '서명 이미지가 있으면 폰트가 적용되지 않아요.' : undefined}
-        />
-      )}
-    </>
+    <div className="space-y-field">
+      <AxisSegment
+        ariaLabel="폰트 축"
+        panelId={panelId}
+        options={CUSTOM_AXES}
+        value={axis}
+        onChange={(next) => setAxis(next)}
+      />
+      <div id={panelId} key={axis}>
+        {axis === 'quote' ? quotePicker : signaturePicker}
+      </div>
+    </div>
   );
 }
 

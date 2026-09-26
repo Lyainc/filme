@@ -49,6 +49,7 @@ function Harness() {
         한글 한줄평 입력
       </button>
       <div data-testid="quote-font">{photo.state.components.quoteFont ?? '(미설정)'}</div>
+      <div data-testid="signature-font">{photo.state.components.signatureFont ?? '(미설정)'}</div>
       <DesignRail photo={photo} />
       <MoodCriterion
         movieInfo={photo.state.movieInfo}
@@ -200,5 +201,55 @@ describe('레일 커스텀 — 한줄평 폰트 9택 (#558 → #437)', () => {
     await user.click(screen.getByRole('button', { name: 'criterion으로 전환' }));
     expect(quoteRadio('바탕').getAttribute('aria-checked')).toBe('true');
     expect(quoteStyle(DEFAULT_QUOTE).fontFamily).toContain('--font-batang');
+  });
+});
+
+describe('레일 커스텀 — 한줄평·서명 축 전환 (#797)', () => {
+  const axisRadio = (name: string) =>
+    within(screen.getByRole('radiogroup', { name: '폰트 축' })).getByRole('radio', { name });
+  const signatureRadio = (name: string) =>
+    within(screen.getByRole('radiogroup', { name: '서명 폰트' })).getByRole('radio', { name });
+  const hasGroup = (name: string) => !!screen.queryByRole('radiogroup', { name });
+
+  test('Criterion은 한 번에 한 피커만 그리고, 축을 오가도 두 선택이 다 남는다', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await openCustomPanel(user);
+
+    // 기본 축은 한줄평 — 서명 피커는 DOM에 없다(숨김이 아니라 미렌더라야 슬롯 높이가 준다).
+    expect(axisRadio('한줄평').getAttribute('aria-checked')).toBe('true');
+    expect(hasGroup('한줄평 폰트')).toBe(true);
+    expect(hasGroup('서명 폰트')).toBe(false);
+    await user.click(quoteRadio('잉크'));
+
+    await user.click(axisRadio('서명'));
+    expect(hasGroup('한줄평 폰트')).toBe(false);
+    expect(hasGroup('서명 폰트')).toBe(true);
+    await user.click(signatureRadio('붓'));
+
+    await user.click(axisRadio('한줄평'));
+    expect(quoteRadio('잉크').getAttribute('aria-checked')).toBe('true');
+    await user.click(axisRadio('서명'));
+    expect(signatureRadio('붓').getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByTestId('quote-font').textContent).toBe('ink');
+    expect(screen.getByTestId('signature-font').textContent).toBe('brush');
+  });
+
+  test('세그먼트는 aria-controls로 축 패널을 가리킨다', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await openCustomPanel(user);
+
+    const target = axisRadio('서명').getAttribute('aria-controls');
+    expect(!!target && document.getElementById(target) !== null).toBe(true);
+  });
+
+  test('피커가 서명 하나뿐인 무드엔 축 전환이 안 뜬다', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    // 초기 무드 minimal — 한 칸짜리 축 전환은 죽은 컨트롤이라 세그먼트 없이 서명 피커만 선다.
+    await user.click(screen.getByRole('button', { name: '커스텀' }));
+    expect(hasGroup('폰트 축')).toBe(false);
+    expect(hasGroup('서명 폰트')).toBe(true);
   });
 });
