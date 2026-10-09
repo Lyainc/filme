@@ -1,6 +1,8 @@
 # Seed 최종 대조 · 2026-09-24
 
-기준: `docs/mockups/filme-mobile-v2/seed.yaml`, spec_version 2, r1–r16 / ac1–ac7.
+> 이 문서는 당시 목업 코드·Seed 대조와 로컬 실행 결과 기록이에요. 이번 명세 호환 정리에서 검증 시나리오를 재실행하지 않았어요. “구현” 판정은 Seed의 `completed` 결정이나 사용자 최종 승인이 아니에요.
+
+기준: `docs/mockups/filme-mobile-v2/seed.yaml`, spec_version 2, r1–r16 / acceptance-1–acceptance-7. 이 파일의 항목 소속은 `seed`이며 ID 이름만 공식 도구로 옮겼어요.
 범위: `docs/mockups/filme-mobile-v2`의 로컬 목업. 프로덕션 코드·API·티켓 자연 픽셀 조판·JPEG 출력은 변경하지 않았어요.
 
 ## 수정한 결함
@@ -34,9 +36,9 @@
 ## 실행 증거와 남은 검증 경계
 
 - 목업 빌드 성공. Chrome 검증 **40개 통과**: experience 8, redesign 15, mobile 8, refinement 9. 각 JSON 보고서에 실패와 브라우저 오류가 없어요.
-- ac1·ac2·ac4·ac6·ac7: 구현 대조 및 해당 Chrome 검증을 완료했어요. 너비 320·375·393·414px와 768px 화면의 모바일 프레임을 포함해요.
-- ac3: 숫자 원문/표시/복원, 날짜, 긴 텍스트, Enter, 축소·이동 뷰포트를 확인했어요. Chrome CDP 입력 조합으로 `ㅎ→한→한글`의 즉시 반영, 조합 중 Enter의 포커스 유지, 확정 후 Enter 이동과 초안 저장도 확인했어요. 실제 OS 한글 키보드의 증거로 간주하지 않아요.
-- ac5: 비교 캡처와 화면 검토 자료는 유지해요. 사용자 최종 사용성 평가는 완료로 간주하지 않아요.
+- acceptance-1·acceptance-2·acceptance-4·acceptance-6·acceptance-7: 구현 대조 및 해당 Chrome 검증을 완료했어요. 너비 320·375·393·414px와 768px 화면의 모바일 프레임을 포함해요.
+- acceptance-3: 숫자 원문/표시/복원, 날짜, 긴 텍스트, Enter, 축소·이동 뷰포트를 확인했어요. Chrome CDP 입력 조합으로 `ㅎ→한→한글`의 즉시 반영, 조합 중 Enter의 포커스 유지, 확정 후 Enter 이동과 초안 저장도 확인했어요. 실제 OS 한글 키보드의 증거로 간주하지 않아요.
+- acceptance-5: 비교 캡처와 화면 검토 자료는 유지해요. 사용자 최종 사용성 평가는 완료로 간주하지 않아요.
 - 직전 검토에서 Mac Safari의 랜딩과 여섯 편집 메뉴 기본 동작을 확인했어요. 실제 iPhone은 감지됐으나 WebDriver 세션 생성에 실패했어요. 이번 변경 후 실기기 검증을 완료했다고 주장하지 않아요.
 - OCR·영화 검색·JPEG 저장·OS 공유는 명세대로 샘플 동작이에요. 실제 API/내보내기 구현 누락으로 분류하거나, 실서비스 검증 완료로 표시하지 않아요.
 

@@ -1,5 +1,7 @@
 # FILME 모바일 디자인 목업
 
+> **2026-09-22 v1 독립 목업의 실행 안내와 검증 기록이에요.** v1은 비교 자료로 보존하고 후속 목업은 [v2](../filme-mobile-v2/README.md)에 있어요. 당시 로컬 결과를 현재 프로덕션 요구사항·실기기 검증·사용자 최종 평가로 읽지 않아요.
+
 [목업 열기](index.html) · [전후 비교](comparison.html) · [확정 명세](../../specs/filme-mobile-redesign-mockup.yaml) · [설계와 기능 배치](design.md)
 
 `index.html`을 브라우저에서 열면 동작해요. 폴더와 기존 `public` 자산의 상대 위치는 유지해야 해요. HTML + CSS + IIFE JS 번들을 포함해 실행 시 설치나 CDN 연결이 필요 없어요.

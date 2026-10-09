@@ -1,5 +1,7 @@
 # Handoff: Editor Chrome Redesign (v8) — floating toolbar module, styling dock, result-screen link panel
 
+> **Historical design handoff.** “Current”, “latest”, and “no existing counterpart” below describe the authoring context, not a fresh inventory or approval for new implementation. The app now has a floating toolbar in `MobileEditorShell.tsx`. Reconcile reused decisions with the live components and [spec index](../specs/README.md).
+
 ## Overview
 Design exploration for the **모바일 편집 화면 (mobile editor screen)** chrome of the `filme` phototicket
 app: the top header, the on-ticket field editor toolbar, a new **floating toolbar module**

@@ -1,5 +1,7 @@
 # FILME mobile v1
 
+> **2026-09-22 v1 목업의 설계 기록이에요.** 아래 “현재 구조”·“새 구조”·“확정 명세”는 당시 비교와 결정을 가리켜요. 후속 설계는 [v2](../filme-mobile-v2/design.md)에 있으며 이 본문을 현재 프로덕션 변경 지시로 적용하지 않아요.
+
 확정 명세: [filme-mobile-redesign-mockup.yaml](../../specs/filme-mobile-redesign-mockup.yaml).
 
 ## 설계 기준
