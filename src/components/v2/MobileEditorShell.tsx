@@ -695,6 +695,38 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   const rotatedInnerWidth = `min(${PREVIEW_MAX_HEIGHT}, calc(90cqw * ${layout.width} / ${layout.height}))`;
   const rotatedStageWidth = `calc(${rotatedInnerWidth} * ${layout.height} / ${layout.width})`;
 
+  // 드로어 핸들의 투명 히트(44px 중 보이는 24px 밖, #447)가 티켓 필드 위에 얹히는지(#777). 얹히면
+  // 그 필드 탭을 가로채므로 그때만 히트를 보이는 탭으로 좁힌다. 티켓 상자가 아니라 필드 탭 대상과
+  // 겹침을 본다 — 티켓 상자는 세로 무드에서도 핸들과 늘 0.9~28px 겹쳐(실측) 기준으로 쓰면 44px가 사라진다.
+  // 실측상 걸리는 곳: editorial·35mm-landscape 오른쪽 스텁, 393px Stub 오른쪽 가장자리.
+  // 필드 rect는 래퍼 크기(fit 폭)와 무드 DOM(동적 청크 로드·값 편집)에 따라 바뀌므로 둘 다에서 다시 잰다 —
+  // 무드는 마운트 뒤에 늦게 그려져 첫 측정만으로는 필드가 없다(실측: 18조합 중 1개만 잡혔다).
+  const [handleOverField, setHandleOverField] = useState(false);
+  useEffect(() => {
+    const handle = drawerHandleRef.current;
+    if (!handle || !previewWrapEl) return;
+    const update = () => {
+      const h = handle.getBoundingClientRect();
+      setHandleOverField(
+        Array.from(previewWrapEl.querySelectorAll('[data-field-tap]')).some((el) => {
+          const t = el.getBoundingClientRect();
+          return t.width > 0 && h.left < t.right && h.right > t.left && h.top < t.bottom && h.bottom > t.top;
+        })
+      );
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(previewWrapEl);
+    const mo = new MutationObserver(update);
+    mo.observe(previewWrapEl, { childList: true, subtree: true, characterData: true });
+    window.addEventListener('resize', update);
+    return () => {
+      ro.disconnect();
+      mo.disconnect();
+      window.removeEventListener('resize', update);
+    };
+  }, [previewWrapEl, drawerHandleY, canvasReady, isMax]);
+
   // 앰비언트 다크 크롬(#353→#363→#415) — theme==='dark'일 때만 .chrome-dark 스코프(데스크톱
   // 레포의 data-theme 바인딩 패턴과 통일). #363에서 "테마와 무관하게 상시
   // 다크"로 고정했던 게 다크모드 토글을 죽은 컨트롤로 만들어(#415) 원래 의도(라이트/다크 둘 다
@@ -1196,8 +1228,8 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
           오버레이 계층 토큰으로 올리고, 셰브런 잉크도 --fg-muted → --fg로(라이트 테마 최악
           케이스에서 muted는 2.77:1로 비텍스트 3:1도 못 넘긴다. --fg는 8.66/10.31:1).
           히트영역은 44px(왼쪽으로 투명 확장), 보이는 탭은 24px 글래스(#447 — 이전 20px는 눈에
-          덜 띈다는 지적). 단 가로 무드는 티켓이 프레임 폭을 채워 그 투명 20px가 오른쪽 스텁 필드
-          (좌석·바코드·로고)를 덮어, 필드를 눌러도 드로어가 열렸다(#777 실측 editorial 320/375/393 전부) —
+          덜 띈다는 지적). 단 그 투명 20px가 티켓 필드 위에 얹히면(handleOverField) 그 필드 탭을
+          가로채 드로어가 열렸다(#777 실측: editorial 스텁 전 뷰포트, 393px Stub 오른쪽 가장자리) —
           그때만 히트를 보이는 탭으로 좁힌다. 포인터 이벤트는 span에서 버튼으로 버블돼 드래그는 그대로다.
           z-30 — 편집 백드롭(z-40) 아래라 인플레이스 편집 중엔 가려지고,
           드로어(z-50)가 열리면 그 뒤에 깔린다.
@@ -1236,7 +1268,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
           // drawerHandleY가 이미 값이 있는 이후 드래그엔 맞지만 null→값 전환 그 자체는 못 피한다.
           className={cn(pressableVariants(), `fixed right-0 z-30 flex h-24 w-11 items-center justify-end ${
             drawerHandleY == null ? 'top-1/2 -translate-y-1/2' : ''
-          } ${layout.orientation === 'landscape' ? 'pointer-events-none' : ''}`)}
+          } ${handleOverField ? 'pointer-events-none' : ''}`)}
           style={{
             touchAction: 'none',
             ...(drawerHandleY != null ? { top: drawerHandleY } : undefined),
