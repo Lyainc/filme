@@ -244,6 +244,23 @@ describe('레일 커스텀 — 한줄평·서명 축 전환 (#797)', () => {
     expect(!!target && document.getElementById(target) !== null).toBe(true);
   });
 
+  test('축 전환은 키보드(Tab + Enter/Space)로 조작된다', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await openCustomPanel(user);
+
+    axisRadio('한줄평').focus();
+    await user.tab();
+    expect(document.activeElement === axisRadio('서명')).toBe(true);
+    await user.keyboard('{Enter}');
+    expect(hasGroup('서명 폰트')).toBe(true);
+    expect(hasGroup('한줄평 폰트')).toBe(false);
+
+    await user.tab({ shift: true });
+    await user.keyboard(' ');
+    expect(hasGroup('한줄평 폰트')).toBe(true);
+  });
+
   test('피커가 서명 하나뿐인 무드엔 축 전환이 안 뜬다', async () => {
     const user = userEvent.setup();
     render(<Harness />);
