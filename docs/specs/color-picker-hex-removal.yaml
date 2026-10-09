@@ -1,3 +1,24 @@
+# Compatible with thinking-tools 6.0.0; version/generated retain authoring provenance.
+# Lifecycle state follows the authorized diagnosis; see docs/specs/STATE_AUDIT.md.
+# 현재 적용 경계: hex 입력 제거와 radio 접근성은 현행 코드에 있어요. 본문의 패널 높이·실기기 조건은 재측정 결과가 아니에요.
+# 전체 명세 안내: docs/specs/README.md
+# AMENDMENT CONTRACT — keep these lines in the emitted file.
+# Read metadata first. Apply only active, non-withdrawn requirements within the user's current
+# request. Unknown/paused/closed Seeds are reference material, never automatic work candidates.
+# A named path or graph edge is not permission to resume. Resume paused only with user approval;
+# closed work continues in a NEW Seed with selected requirements and pinned provenance.
+# This is a functional spec, not a work log: REPLACE incorrect field values; never append
+# progress, execution logs or review notes. Minimal lifecycle decisions and evidence below are
+# allowed; missing lifecycle means unknown, never implicitly active or completed.
+# Preserve withdrawn items' ids AND original contents; record withdrawal separately. No response
+# is no approval. Explicit withdrawal does not approve child reparenting. Validate changes with
+# seed-lifecycle.py check <seed> --before <prior-file> and seed-relations.py check <seed>.
+# Claude's hook checks edits; Codex uses these same commands explicitly, without hook enforcement.
+# Ids: a constraint-N/acceptance-N id is never reused or deleted; new items take the next unused
+# number. Other Seeds' `refines`
+# point at them. Legacy c<N>/ac<N> ids are renamed only via scripts/seed-id-migrate.py; the
+# convention is defined in reference/identifiers.md.
+
 # Seed Spec — 컬러 픽커 헥스 입력 제거 + 선택 상태 접근성
 ---
 skill: build-spec
@@ -18,6 +39,84 @@ domain: tech
 brownfield: true
 refine_generation: 0
 
+lifecycle:
+  state: paused
+  outcome: null
+  reason: "hex 제거·공유 라디오 접근성·관련 회귀는 구현돼 있으나 361px 한 줄 배치와 무드별 실제 패널 높이 측정이 남아 완료 판정을 보류한다."
+  approved_by: "2026-10-10 사용자 지시: 상태값 unknown인것들 현행화하고 진단 결과에 따라 수정 필요한 사항 있으면 수정 시작"
+  evidence:
+    commit: 24eb36e91eb48d9dca0ec5227508bd48ad28df1c
+    items:
+      - id: constraint-1
+        refs:
+          - "docs/specs/STATE_AUDIT.md#color-picker-hex-removal"
+          - "src/components/wizard/ColorPicker.tsx:43-157"
+      - id: constraint-2
+        refs:
+          - "docs/specs/STATE_AUDIT.md#color-picker-hex-removal"
+          - "src/components/wizard/ColorPicker.tsx:48-65"
+      - id: constraint-3
+        refs:
+          - "docs/specs/STATE_AUDIT.md#color-picker-hex-removal"
+          - "src/utils/radioGroupKeyboard.ts"
+          - "src/components/LayoutPicker.tsx:63-85"
+      - id: constraint-4
+        refs:
+          - "docs/specs/STATE_AUDIT.md#color-picker-hex-removal"
+          - "src/components/wizard/ColorPicker.tsx:119-135"
+      - id: constraint-5
+        refs:
+          - "docs/specs/STATE_AUDIT.md#color-picker-hex-removal"
+          - "src/components/ui/variants.ts:52-60"
+      - id: constraint-6
+        refs:
+          - "docs/specs/STATE_AUDIT.md#color-picker-hex-removal"
+          - "src/components/wizard/ColorPicker.tsx:78-93"
+          - "__tests__/colorPickerLockedNoteAdjacency.test.tsx:105-113"
+      - id: constraint-7
+        refs:
+          - "docs/specs/STATE_AUDIT.md#color-picker-hex-removal"
+          - "src/components/wizard/ColorPicker.tsx:96-106"
+      - id: constraint-8
+        refs:
+          - "docs/specs/STATE_AUDIT.md#color-picker-hex-removal"
+          - "src/components/wizard/ColorPicker.tsx:102-105"
+      - id: constraint-9
+        refs:
+          - "docs/specs/STATE_AUDIT.md#color-picker-hex-removal"
+          - "src/components/wizard/ColorPicker.tsx:45"
+      - id: constraint-10
+        refs:
+          - "docs/specs/STATE_AUDIT.md#color-picker-hex-removal"
+          - "src/components/wizard/ColorPicker.tsx:151-155"
+          - "__tests__/colorPickerLockedNoteAdjacency.test.tsx:4-6;46-64"
+      - id: acceptance-3
+        refs:
+          - "docs/specs/STATE_AUDIT.md#color-picker-hex-removal"
+          - "__tests__/colorPickerLockedNoteAdjacency.test.tsx:68-85"
+          - "docs/specs/STATE_AUDIT.md#자동-검증"
+      - id: acceptance-4
+        refs:
+          - "docs/specs/STATE_AUDIT.md#color-picker-hex-removal"
+          - "__tests__/radioGroupTabStopFallback.test.tsx:125-207; __tests__/colorPickerLockedNoteAdjacency.test.tsx:87-103"
+          - "docs/specs/STATE_AUDIT.md#자동-검증"
+      - id: acceptance-5
+        refs:
+          - "docs/specs/STATE_AUDIT.md#color-picker-hex-removal"
+          - "__tests__/colorPickerLockedNoteAdjacency.test.tsx:36-43"
+          - "docs/specs/STATE_AUDIT.md#자동-검증"
+      - id: acceptance-6
+        refs:
+          - "docs/specs/STATE_AUDIT.md#color-picker-hex-removal"
+          - "__tests__/colorPickerLockedNoteAdjacency.test.tsx:46-64"
+          - "docs/specs/STATE_AUDIT.md#자동-검증"
+      - id: acceptance-7
+        refs:
+          - "docs/specs/STATE_AUDIT.md#color-picker-hex-removal"
+          - "__tests__/colorPickerLockedNoteAdjacency.test.tsx:105-113"
+          - "docs/specs/STATE_AUDIT.md#자동-검증"
+  withdrawn: []
+
 goal:
   statement: >-
     컬러 픽커의 hex 텍스트 입력을 없애 세로 예산을 회수하고, 지금 시각 신호로만 존재하는
@@ -26,7 +125,7 @@ goal:
   clarity_score: 0.9
 
 constraints:
-  - id: c1
+  - id: constraint-1
     type: technical
     description: >-
       hex 텍스트 입력(ColorPicker.tsx:120-148)을 통째로 지운다. `#` 접두 span·w-[92px] 입력·
@@ -41,7 +140,7 @@ constraints:
       혼자 2행 접힘을 일으킨다. 폰트는 16px(text-title) 고정이라 못 줄인다 — iOS가 16px 미만
       입력에 포커스 시 화면을 자동 확대하는 걸 막는 하한(:116-119 주석)이라 줄일 수 있는 건
       폭뿐이었고, #678이 이미 전폭 행에서 w-[92px]까지 줄인 뒤였다. 더 줄일 폭이 없다.
-  - id: c2
+  - id: constraint-2
     type: technical
     description: >-
       스와치 행에 role="radiogroup"(aria-label 포함)을, 각 프리셋·추천색 버튼에 role="radio" +
@@ -56,7 +155,7 @@ constraints:
       여기다(headless 프리미티브 없이 직접 구현하니 라이브러리가 대신 지켜주던 걸 우리가 지킨다).
       대안으로 검토한 aria-pressed 토글 버튼 묶음은 방향키 계약을 안 물려받아 싸지만, 형제 둘과
       문법이 갈려 "관용구 미준수"라는 결함 자체를 반대 방향으로 되풀이한다.
-  - id: c3
+  - id: constraint-3
     type: technical
     description: >-
       radiogroup을 선언하면 APG Radio Group의 키보드 계약(방향키 이동 + roving tabindex, 그룹은
@@ -69,7 +168,7 @@ constraints:
       한 벌이면 되고 세 픽커가 같은 DOM 모양이라, 한 자리에 두고 셋이 부르는 게 각자 고치는
       것보다 작은 diff다. 이 계약을 안 넣을 거면 c2를 aria-pressed로 되돌리는 게 맞다 — 둘 중
       하나만 고르는 것이지 "role만 얹고 키보드는 다음에"는 선택지가 아니다.
-  - id: c4
+  - id: constraint-4
     type: technical
     description: >-
       커스텀 색 label(:91-114, sr-only <input type="color">)은 radiogroup 밖에 세운다. radio가
@@ -79,7 +178,7 @@ constraints:
       radiogroup 안의 non-radio 자식은 APG 위반이고, 스크린리더가 "N개 중 M번째"를 셀 때
       집합이 어긋난다. 실제로도 성격이 다르다 — 프리셋·추천색은 확정된 값 중 하나를 고르는
       것이고 커스텀은 OS 피커를 여는 트리거다.
-  - id: c5
+  - id: constraint-5
     type: technical
     description: >-
       세 픽커가 세 벌로 들고 있는 선택 상태 문자열
@@ -92,7 +191,7 @@ constraints:
       아니다. 셋이 문자까지 동일한 리터럴을 세 벌 들고 있으니 정확히 그 조건에 든다. #647
       Critical Practitioner 조건 1("variant 정의는 지금 클래스값을 그대로 이식 — 새 값을
       만들지 말 것, px 불변식 보호")과 같은 규율이다.
-  - id: c6
+  - id: constraint-6
     type: technical
     description: >-
       scale-* **클래스**를 쓰지 않는다. 확대는 인라인 transform으로만 건다.
@@ -108,7 +207,7 @@ constraints:
       `transition-property` 선언이라 둘을 얹으면 나중 것이 통째로 이기고 앞이 사라진다(합쳐지지
       않는다). ColorPicker의 스와치 버튼은 지금 transition-transform(:57)을, 하위 라벨은
       transition-colors를 쓴다.
-  - id: c7
+  - id: constraint-7
     type: technical
     description: >-
       스와치의 색 면적을 46px 칩 전체로 넓힌다. 지금은 46px 칩 안에 h-7 w-7(28px) span이라
@@ -119,7 +218,7 @@ constraints:
       컨트롤인데 색이 제일 안 보이는 게 세 자매 중 컬러뿐이라는 게 앞뒤가 안 맞고, 헥스가
       사라져 남는 시각 예산이 정확히 이 자리로 간다. hard가 아닌 이유는 이중 링(4px)이 칩
       테두리와 겹치는 자리라 링 가독성을 실제로 보고 정해야 하기 때문이다.
-  - id: c8
+  - id: constraint-8
     type: technical
     description: >-
       스와치 헤어라인의 고정 리터럴 'inset 0 0 0 1px rgba(44,38,34,0.08)'(:74)을 테마 변수
@@ -130,7 +229,7 @@ constraints:
       배경 경계가 사라진다는 뜻이다. DesignRail.tsx:130-133이 스크롤 그림자에서 똑같은 함정을
       겪고 var(--fg-faint)로 고쳤고, 그 자리 주석이 "고정 rgba(0,0,0,…)를 다크 앰비언트에
       얹으면 대비가 거의 0"이라고 근거를 남겨뒀다. 같은 함정의 두 번째 사례다.
-  - id: c9
+  - id: constraint-9
     type: technical
     description: >-
       컨테이너는 flex flex-wrap items-center gap-2.5(:40) 그대로 둔다. 형제 픽커의
@@ -142,7 +241,7 @@ constraints:
       c1 뒤 326px ≤ 361px이라 wrap이 아예 안 일어나므로 스크롤은 있어도 안 쓰이는 장치가 되고,
       overflow-x:auto는 세로도 클리핑 박스로 만들어(CSS 스펙) 선택 링을 자르는 대가만 남는다 —
       #565가 형제 둘에서 py-1.5로 메꾼 그 문제를 이유 없이 들여오게 된다.
-  - id: c10
+  - id: constraint-10
     type: technical
     description: >-
       #678이 잠근 두 명제 중 "잠금 안내가 컨트롤 행 바로 다음 형제"는 유지한다. "헥스가 슬롯
@@ -156,14 +255,14 @@ constraints:
       본문에서부터 되짚어야 한다.
 
 success_criteria:
-  - id: ac1
+  - id: acceptance-1
     description: >-
       컬러 패널의 컨트롤 행이 슬롯 폭 361px에서 1행에 들어간다(2행 접힘 소멸).
     verifiable: true
     measurable_via: >-
       브라우저 실측 — 400×675 프레임에서 컬러 패널을 열고 스와치 6개(추천색 2개가 잡히는
       포스터 사용)의 rect top이 전부 같은지 대조. 산술 예측은 46×6 + 10×5 = 326px ≤ 361px.
-  - id: ac2
+  - id: acceptance-2
     description: >-
       컬러 패널 콘텐츠 높이가 minimal·35mm 두 상태 모두 슬롯 실효 높이 147px 이하로 들어온다.
     verifiable: true
@@ -171,7 +270,7 @@ success_criteria:
       #682가 쓴 것과 같은 방법(레일 슬롯 scrollHeight 실측). 기준값은 그 실측의 minimal 126px /
       35mm 154px이고, 행 하나(46px + gap 10px = 56px)가 사라지므로 각각 70px·98px 예측.
       슬롯은 h-[min(214px,26svh)](DesignRail.tsx:124)에 py-3이라 실효 147px.
-  - id: ac3
+  - id: acceptance-3
     description: >-
       선택된 스와치가 aria-checked="true"로 노출되고, 나머지는 "false"다. 커스텀 label은
       radiogroup 밖에 있다.
@@ -180,28 +279,28 @@ success_criteria:
       __tests__/colorPickerLockedNoteAdjacency.test.tsx 확장 —
       getAllByRole('radio')의 길이와 aria-checked 분포, getByRole('radiogroup') 안에
       type="color" 입력이 없는지 대조.
-  - id: ac4
+  - id: acceptance-4
     description: >-
       세 픽커 모두에서 방향키로 항목 간 포커스가 이동하고, Tab은 그룹당 한 번만 멈춘다.
     verifiable: true
     measurable_via: >-
       testing-library + user-event — 그룹에 Tab 진입 후 {ArrowRight} 두 번에 document
       activeElement가 세 번째 radio인지, 다시 Tab이 그룹을 벗어나는지. 세 픽커 각각 1케이스.
-  - id: ac5
+  - id: acceptance-5
     description: >-
       헥스 입력이 사라진 뒤에도 프리셋·추천색에 없는 임의 색을 지정할 수 있다.
     verifiable: true
     measurable_via: >-
       기존 커스텀 입력 경로 그대로 — getByLabelText('직접 지정')에 fireEvent.change로
       임의 hex를 넣어 onChange가 그 값으로 불리는지. 실기기 도달성은 blindspots 참고.
-  - id: ac6
+  - id: acceptance-6
     description: >-
       disabled 무드(TONE_FIXED_MOODS)에서 잠금 안내가 여전히 컨트롤 행 바로 다음 형제다(#678).
     verifiable: true
     measurable_via: >-
       같은 파일의 disabled 케이스(:59-79) 유지 — root.children.length === 2 · children[1]이
       안내 · children[0]이 컨트롤 행. 헥스가 빠져도 이 명제는 그대로 성립한다.
-  - id: ac7
+  - id: acceptance-7
     description: >-
       스와치 탭 타깃이 46px를 유지하고 축소 우회가 안 생긴다.
     verifiable: true
@@ -209,33 +308,27 @@ success_criteria:
       __tests__/tapTargets.ts의 expectMeetsAA/assertNoShrink를 스와치와 그 서브트리에 적용.
       c6의 scale-* 클래스 금지가 여기서 잠긴다.
 
+issues:
+  source: null # 생성 출처만 기록하며 구현 추적과 구분해요.
+  tracking: ["#730"]
+
+# integration_points는 현행 코드예요. 나머지 context는 생성 당시 조사 기록이에요.
 context:
   existing_stack:
     - Next.js (pages router) + React + TypeScript
     - Tailwind + cva/cn (src/utils/cn.ts, src/components/ui/variants.ts — cva 2종 41줄)
     - bun test + happy-dom + @testing-library/react + user-event
-    - >-
-      eslint local rule no-raw-touch-target-size (eslint.config.mjs:71,74 — #647)
+    - "eslint local rule no-raw-touch-target-size (eslint.config.mjs:71,74 — #647)"
   dependencies:
-    - >-
-      새 의존성 0. cva·clsx·tailwind-merge는 #647에서 이미 들어와 있고, headless 프리미티브
-      (Radix·Base UI)는 #645 부록 2 판정으로 도입하지 않는다 — 이 스펙이 그 판정을 뒤집지 않는다
-    - APG Radio Group 패턴(https://www.w3.org/WAI/ARIA/apg/patterns/radio/) — 규범 소스.
-      CLAUDE.md 실측 — w3.org는 WebFetch만 되고 curl은 403
-    - TONE_FIXED_MOODS(src/constants/fields.ts:108-116) — 35mm·35mm-landscape·criterion·stub.
-      컬러 픽커가 실제로 작동하는 무드는 minimal·editorial 둘뿐이라, 이 스펙의 세로 예산 회수는
-      나머지 4무드에선 잠금 안내 한 줄이 든 패널에 적용된다
+    - "새 의존성 0. cva·clsx·tailwind-merge는 #647에서 이미 들어와 있고, headless 프리미티브 (Radix·Base UI)는 #645 부록 2 판정으로 도입하지 않는다 — 이 스펙이 그 판정을 뒤집지 않는다"
+    - "APG Radio Group 패턴(https://www.w3.org/WAI/ARIA/apg/patterns/radio/) — 규범 소스. CLAUDE.md 실측 — w3.org는 WebFetch만 되고 curl은 403"
+    - "TONE_FIXED_MOODS(src/constants/fields.ts:108-116) — 35mm·35mm-landscape·criterion·stub. 컬러 픽커가 실제로 작동하는 무드는 minimal·editorial 둘뿐이라, 이 스펙의 세로 예산 회수는 나머지 4무드에선 잠금 안내 한 줄이 든 패널에 적용된다"
   integration_points:
-    - src/components/wizard/ColorPicker.tsx — 유일한 편집 대상 컴포넌트(159줄 → hex 제거로 축소)
-    - src/components/ui/variants.ts — 선택 링·확대·탭 타깃 공통화(c5)
-    - src/components/wizard/TexturePicker.tsx:95-97,110-111 / src/components/LayoutPicker.tsx:70-72,
-      82-83 — c3 키보드 계약과 c5 공통화의 나머지 두 소비자
-    - __tests__/colorPickerLockedNoteAdjacency.test.tsx — 4케이스 중 2개(:36-44 hex 새니타이즈,
-      :46-57 hex 폭)가 대상 소멸로 사라지고, 2개(:26-34 스와치 클릭, :59-79 disabled 인접)는 유지
-    - __tests__/designRail.test.tsx:102 — getByLabelText('색상 코드')를 "컬러 패널이 열렸다"의
-      셀렉터로 쓴다. 다른 앵커로 교체 필요(:123의 getByRole('button',{name:'흰색'})은 role이
-      radio로 바뀌므로 함께 교체)
-    - __tests__/tapTargets.ts — 파서 규칙(c6)의 소유자. 파일 자체는 안 고친다
+    - "src/components/wizard/ColorPicker.tsx — radiogroup, roving tabIndex, native color input"
+    - src/utils/radioGroupKeyboard.ts
+    - src/components/ui/variants.ts — RAIL_CHIP_*
+    - __tests__/colorPickerLockedNoteAdjacency.test.tsx
+    - __tests__/radioGroupTabStopFallback.test.tsx
   backlog_scan: >-
     prefilter 실행됨(open 9 · closed 369, 2026-08-18 gh issue list 실측). 충돌 없음.
     직계 선행은 #678(컬러 패널 재설계 — 헥스를 전폭 행에서 인라인 w-[92px]로 줄인 그 작업,

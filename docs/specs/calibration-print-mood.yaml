@@ -1,3 +1,24 @@
+# Compatible with thinking-tools 6.0.0; version/generated retain authoring provenance.
+# Lifecycle state follows the authorized diagnosis; see docs/specs/STATE_AUDIT.md.
+# 현재 적용 경계: 당시 /calibration 페이지 요구는 보존해요. 현행 도구는 Python이 HTML을 만들고 headless Chrome으로 찍는 스크립트예요.
+# 전체 명세 안내: docs/specs/README.md
+# AMENDMENT CONTRACT — keep these lines in the emitted file.
+# Read metadata first. Apply only active, non-withdrawn requirements within the user's current
+# request. Unknown/paused/closed Seeds are reference material, never automatic work candidates.
+# A named path or graph edge is not permission to resume. Resume paused only with user approval;
+# closed work continues in a NEW Seed with selected requirements and pinned provenance.
+# This is a functional spec, not a work log: REPLACE incorrect field values; never append
+# progress, execution logs or review notes. Minimal lifecycle decisions and evidence below are
+# allowed; missing lifecycle means unknown, never implicitly active or completed.
+# Preserve withdrawn items' ids AND original contents; record withdrawal separately. No response
+# is no approval. Explicit withdrawal does not approve child reparenting. Validate changes with
+# seed-lifecycle.py check <seed> --before <prior-file> and seed-relations.py check <seed>.
+# Claude's hook checks edits; Codex uses these same commands explicitly, without hook enforcement.
+# Ids: a constraint-N/acceptance-N id is never reused or deleted; new items take the next unused
+# number. Other Seeds' `refines`
+# point at them. Legacy c<N>/ac<N> ids are renamed only via scripts/seed-id-migrate.py; the
+# convention is defined in reference/identifiers.md.
+
 # Output conforms to thinking-tools/reference/common-schema.md
 skill: build-spec
 schema_version: 1
@@ -19,6 +40,46 @@ brownfield: true
 refine_generation: 1   # v1은 무드 통합안 → 오버엔지니어링 지적으로 단일 페이지로 축소
 issue: 510
 
+lifecycle:
+  state: closed
+  outcome: discontinued
+  reason: "단일 /calibration 페이지 원안은 #591의 Python/Chrome 캘리브레이션 스크립트로 대체됐으므로 종료한다. 기존 인쇄 기록은 해당 페이지 요구 전체의 완료 증거로 재사용하지 않는다."
+  approved_by: "2026-10-10 사용자 지시: 상태값 unknown인것들 현행화하고 진단 결과에 따라 수정 필요한 사항 있으면 수정 시작"
+  evidence:
+    commit: 24eb36e91eb48d9dca0ec5227508bd48ad28df1c
+    items:
+      - id: constraint-1
+        refs:
+          - "docs/specs/STATE_AUDIT.md#calibration-print-mood"
+          - "scripts/make-calibration-sheet.py:18-21"
+          - "0a28c7de989d3ed66d567dbef11ac4454072fc48"
+      - id: constraint-2
+        refs:
+          - "docs/specs/STATE_AUDIT.md#calibration-print-mood"
+          - "0a28c7de989d3ed66d567dbef11ac4454072fc48"
+          - "docs/PRINT_CALIBRATION.md:35-45"
+      - id: constraint-3
+        refs:
+          - "docs/specs/STATE_AUDIT.md#calibration-print-mood"
+          - "scripts/make-calibration-sheet.py:83-86"
+          - "docs/PRINT_CALIBRATION.md:76-100"
+      - id: constraint-4
+        refs:
+          - "docs/specs/STATE_AUDIT.md#calibration-print-mood"
+          - "scripts/make-calibration-sheet.py"
+          - "docs/PRINT_CALIBRATION.md:63-64"
+      - id: constraint-5
+        refs:
+          - "docs/specs/STATE_AUDIT.md#calibration-print-mood"
+          - "scripts/make-calibration-sheet.py:23-46"
+          - "https://github.com/Lyainc/filme/issues/591"
+      - id: s1
+        refs:
+          - "docs/specs/STATE_AUDIT.md#calibration-print-mood"
+          - "0a28c7de989d3ed66d567dbef11ac4454072fc48"
+          - "scripts/make-calibration-sheet.py:18-21"
+  withdrawn: []
+
 goal:
   statement: >
     실제로 인쇄해서 눈으로(그리고 사진으로 Claude에게) 치수·여백·이미지 노출범위·폰트
@@ -32,7 +93,7 @@ goal:
   clarity_score: 0.9
 
 constraints:
-  - id: c1
+  - id: constraint-1
     type: technical
     description: >
       [export 동일] 다운로드는 프로덕트와 같은 downloadTicketAsJpeg(node, {width:960,
@@ -40,7 +101,7 @@ constraints:
       1960×3108 JPEG. 즉 이 도안 인쇄 결과가 실제 프리미엄 세로 티켓 인쇄와 같은 크기·양식.
     hard: true
     rationale: 사이즈·양식이 프로덕트와 다르면 이 이미지로 인쇄한 게 실제 티켓과 다른 물건이라 캘리브레이션이 무의미(사용자 명시).
-  - id: c2
+  - id: constraint-2
     type: technical
     description: >
       [무드 미통합·단일 파일] 구현은 src/pages/calibration.tsx 한 파일. Pages Router라
@@ -48,7 +109,7 @@ constraints:
       전부 무변경. 프로덕트 무드 6종 셋 불변.
     hard: true
     rationale: export 동일성은 유틸(captureToImage) 재사용만으로 충족 — 무드 시스템은 티켓 변종 선택/디스패치용이라 이 독립 도안엔 불필요.
-  - id: c3
+  - id: constraint-3
     type: technical
     description: >
       [스케일 자명·mm 하드코딩 금지] 극장별 실제 인쇄 크기가 미상이므로 특정 mm를 박지
@@ -56,7 +117,7 @@ constraints:
       자로 재서 mm/px 배율을 역산. 폰트·요소 크기는 px 라벨이라 실측 배율만 알면 물리 크기가 따라 나온다.
     hard: true
     rationale: 크기 미상이 테스트의 출발점. mm 하드코딩은 거짓 눈금이 된다. 카드 종횡비는 참고 사각형으로만(물리 크기 아님).
-  - id: c4
+  - id: constraint-4
     type: technical
     description: >
       [폰트 매트릭스·최우선] 앱 실제 폰트 토큰(FONT_MONO/FONT_SANS/FONT_KR을 _shared에서
@@ -64,7 +125,7 @@ constraints:
       글리프로 깔고 각 샘플에 family/px/weight 라벨. 인쇄 시 한글 가독성 하한·굵기 구분 판정.
     hard: true
     rationale: 사용자가 "폰트 관련은 가급적 다" 최우선 지정. 리터럴 폰트 스택이 프로덕트 무드에서 렌더되므로 같은 _app 트리인 이 페이지도 동일.
-  - id: c5
+  - id: constraint-5
     type: functional
     description: >
       [측정 요소] 자기설명 라벨(전 요소 스펙값 in-image), 그레이스케일 램프+암/명부 클리핑
@@ -85,15 +146,20 @@ success_criteria:
     statement: 인쇄물을 촬영해 Claude에 넣으면 비전이 배율·폰트 의도값(라벨)·색 캐스트(중립 패치 기준)를 스스로 서술한다.
     measurable_via: 인쇄→촬영→재입력 1회 시도, 판독 결과 육안 검증
 
+issues:
+  source: "#510" # 생성 출처만 기록하며 구현 추적과 구분해요.
+  tracking: ["#510", "#521"]
+
+# integration_points는 호환 정리 당시 체크아웃의 위치예요. 종료 판정의 프로덕션 근거는 STATE_AUDIT.md의 고정 SHA를 따라요.
 context:
   existing_stack: >
     Next.js 16 Pages Router. 재사용: src/utils/captureToImage.ts의 downloadTicketAsJpeg
     (EXPORT_MARGIN_PX=10 내부 적용, layout 무관), src/components/moods/_shared.tsx의
     FONT_MONO/FONT_SANS/FONT_KR. 폰트는 _app.tsx next/font가 전역 로드해 이 페이지도 상속.
   integration_points:
-    - "src/pages/calibration.tsx — 신규 단일 파일(전부 여기)"
-    - "src/utils/captureToImage.ts — downloadTicketAsJpeg 재사용(무변경)"
-    - "src/components/moods/_shared.tsx — 폰트 토큰 import(무변경)"
+    - scripts/make-calibration-sheet.py — resolve_fonts와 도안 생성
+    - docs/PRINT_CALIBRATION.md — 현행 실행 방법과 실물 측정 기록
+    - src/utils/captureToImage.ts — export 규격
   dependencies: 신규 의존성 없음.
   backlog_scan: >
     open 이슈 100건 스캔 — calibration/ruler/도안 키워드 충돌 없음. 무드 작업(#492·#497·

@@ -1,3 +1,24 @@
+# Compatible with thinking-tools 6.0.0; version/generated retain authoring provenance.
+# Lifecycle state follows the authorized diagnosis; see docs/specs/STATE_AUDIT.md.
+# 현재 적용 경계: v1 고정 이미지 목업의 역사적 명세예요. 기존 superseded 표기는 생애주기 종료나 v2의 부모 관계를 뜻하지 않아요.
+# 전체 명세 안내: docs/specs/README.md
+# AMENDMENT CONTRACT — keep these lines in the emitted file.
+# Read metadata first. Apply only active, non-withdrawn requirements within the user's current
+# request. Unknown/paused/closed Seeds are reference material, never automatic work candidates.
+# A named path or graph edge is not permission to resume. Resume paused only with user approval;
+# closed work continues in a NEW Seed with selected requirements and pinned provenance.
+# This is a functional spec, not a work log: REPLACE incorrect field values; never append
+# progress, execution logs or review notes. Minimal lifecycle decisions and evidence below are
+# allowed; missing lifecycle means unknown, never implicitly active or completed.
+# Preserve withdrawn items' ids AND original contents; record withdrawal separately. No response
+# is no approval. Explicit withdrawal does not approve child reparenting. Validate changes with
+# seed-lifecycle.py check <seed> --before <prior-file> and seed-relations.py check <seed>.
+# Claude's hook checks edits; Codex uses these same commands explicitly, without hook enforcement.
+# Ids: a constraint-N/acceptance-N id is never reused or deleted; new items take the next unused
+# number. Other Seeds' `refines`
+# point at them. Legacy c<N>/ac<N> ids are renamed only via scripts/seed-id-migrate.py; the
+# convention is defined in reference/identifiers.md.
+
 skill: build-spec
 schema_version: 1
 version: "5.2.0"
@@ -17,12 +38,71 @@ domain: tech
 brownfield: true
 refine_generation: 0
 
+lifecycle:
+  state: closed
+  outcome: discontinued
+  reason: "원안의 superseded_by와 v2 설계가 후속 대체를 명시하므로 v1 요구 묶음을 종료한다. 비교 자료는 보존하며 v2 작업을 이 Seed에서 재개하지 않는다."
+  approved_by: "2026-10-10 사용자 지시: 상태값 unknown인것들 현행화하고 진단 결과에 따라 수정 필요한 사항 있으면 수정 시작"
+  evidence:
+    commit: 46798aa4949270c08d6a3a5a617418539d7e4389
+    items:
+      - id: constraint-1
+        refs:
+          - "docs/specs/STATE_AUDIT.md#filme-mobile-redesign-mockup"
+          - "docs/mockups/filme-mobile-v1/src/app.jsx"
+          - "git:46798aa4949270c08d6a3a5a617418539d7e4389"
+      - id: constraint-2
+        refs:
+          - "docs/specs/STATE_AUDIT.md#filme-mobile-redesign-mockup"
+          - "docs/mockups/filme-mobile-v1/src/app.jsx"
+          - "docs/mockups/filme-mobile-v1/src/styles.css"
+      - id: constraint-3
+        refs:
+          - "docs/specs/STATE_AUDIT.md#filme-mobile-redesign-mockup"
+          - "docs/mockups/filme-mobile-v1/src/app.jsx"
+          - "docs/mockups/filme-mobile-v1/src/styles.css"
+      - id: constraint-4
+        refs:
+          - "docs/specs/STATE_AUDIT.md#filme-mobile-redesign-mockup"
+          - "docs/mockups/filme-mobile-v1/src/app.jsx"
+          - "docs/mockups/filme-mobile-v1/src/styles.css"
+      - id: constraint-7
+        refs:
+          - "docs/specs/STATE_AUDIT.md#filme-mobile-redesign-mockup"
+          - "docs/mockups/filme-mobile-v1/src/app.jsx"
+          - "docs/mockups/filme-mobile-v1/src/styles.css"
+      - id: constraint-8
+        refs:
+          - "docs/specs/STATE_AUDIT.md#filme-mobile-redesign-mockup"
+          - "docs/mockups/filme-mobile-v1/src/app.jsx"
+          - "docs/mockups/filme-mobile-v1/src/styles.css"
+      - id: constraint-9
+        refs:
+          - "docs/specs/STATE_AUDIT.md#filme-mobile-redesign-mockup"
+          - "docs/mockups/filme-mobile-v1/src/app.jsx"
+          - "docs/mockups/filme-mobile-v1/src/styles.css"
+      - id: constraint-10
+        refs:
+          - "docs/specs/STATE_AUDIT.md#filme-mobile-redesign-mockup"
+          - "docs/mockups/filme-mobile-v1/src/app.jsx"
+          - "docs/mockups/filme-mobile-v1/src/styles.css"
+      - id: acceptance-6
+        refs:
+          - "docs/specs/STATE_AUDIT.md#filme-mobile-redesign-mockup"
+          - "docs/mockups/filme-mobile-v1/src/app.jsx:20"
+          - "docs/mockups/filme-mobile-v1/README.md:23"
+  withdrawn: []
+
 goal:
   statement: FILME의 첫 사용자가 자연스럽게 티켓을 완성할 수 있는 모바일 UXUI를 높은 시각적 완성도의 독립 인터랙티브 목업으로 검토한다.
   clarity_score: 0.9
 priorities:
   acceptance: [시각적 완성도, 쉬운 시작, 직관적인 편집]
-  experience: {쉬운 첫 완성: 80, 자유로운 꾸미기: 20}
+  experience:
+    - label: 쉬운 첫 완성
+      weight: 80
+    - label: 자유로운 꾸미기
+      weight: 20
   rationale: 완성도의 판단 순위와 사용 경험의 비중은 별개다. 장식 때문에 사용성을 희생하지 않는다.
 
 scope:
@@ -40,95 +120,100 @@ scope:
     - iOS 앱 구현 또는 네이티브 프레임워크 확정
 
 constraints:
-  - id: c1
+  - id: constraint-1
     type: technical
     hard: true
     description: 기존 프로덕션 WIP를 보존하고 docs/mockups/filme-mobile-v1 아래에 독립 산출물을 만든다.
     rationale: 사용자가 먼저 별도 HTML 목업을 요청했다.
-  - id: c2
+  - id: constraint-2
     type: technical
     hard: true
     description: 실제 shadcn/ui 컴포넌트 코드를 사용하고 출처와 수정 범위를 기록한다. 단순 CSS 모사를 shadcn 사용이라고 부르지 않는다.
     rationale: 사용자가 shadcn 사용을 명시했다.
-  - id: c3
+  - id: constraint-3
     type: other
     hard: true
     description: 주요 강조색은 기존 코드의 '#B0423F'로 복원한다. UI 서체는 Pretendard로 한다.
     rationale: 사용자는 마지막 색상 질문에서 주황색 재정의 대신 기존 값 복원을 선택했다.
-  - id: c4
+  - id: constraint-4
     type: other
     hard: true
     description: 기존 6종 티켓 조형·서체·색·자연 픽셀 규격은 보존한다. 목업에서는 기존 샘플 이미지를 재사용한다.
     rationale: 이번 작업의 대상은 서비스 UXUI이며 티켓 자체가 아니다.
-  - id: c5
+  - id: constraint-5
     type: other
     hard: true
     description: 예측 가능한 모바일 웹의 탐색·폼·버튼·시트를 사용한다. 향후 iOS에서도 같은 작업 흐름과 정보 위계를 적용할 수 있게 한다.
     rationale: 네이티브와 유사한 경험을 추구하되 웹 컴포넌트의 네이티브 코드 재사용을 보장하지 않는다.
-  - id: c6
+  - id: constraint-6
     type: technical
     hard: true
     description: 320·375·393·414px 모바일 화면에서 동작한다. PC에도 동일한 좁은 모바일 레이아웃을 제공한다.
     rationale: 데스크톱 전용 지원은 종료하되 접근을 차단하지 않는다.
-  - id: c7
+  - id: constraint-7
     type: other
     hard: true
     description: 현재는 전체 앱 UI가 일관된 라이트 테마다. 다크 팔레트는 별도 후속 과제로 남긴다.
     rationale: 이전 사용자 결정을 유지하며 부분 다크 혼합을 만들지 않는다.
-  - id: c8
+  - id: constraint-8
     type: other
     hard: true
     description: 형압·하이라이트 도구, 반복 티켓 배경, 최초 랜딩 좌상단 로고·워드마크는 다시 추가하지 않는다.
     rationale: 명시적으로 제거 요청한 요소다.
-  - id: c9
+  - id: constraint-9
     type: technical
     hard: true
     description: 긴 값은 요약에서 말줄임하되 입력·상세 경로에서 전체 원문에 접근할 수 있다. 값 자체를 잘라 저장하지 않는다.
     rationale: 작은 화면에서 조작과 값 확인을 함께 보장한다.
-  - id: c10
+  - id: constraint-10
     type: technical
     hard: true
     description: 샘플 동작을 실제 인식·저장·공유 성공으로 오인시키지 않는다. 시뮬레이션 경계와 고정 티켓 이미지를 목업 안내에서 밝힌다.
     rationale: 사용자는 로직 연결보다 UI 완성도 검토를 선택했다.
-  - id: c11
+  - id: constraint-11
     type: other
     hard: false
     description: 단정한 면, 절제된 강조색, 일관된 둥근 모서리, 읽기 쉬운 위계를 사용한다. 과한 예술적 연출과 장식을 피한다.
     rationale: 모던함과 모바일 앱의 익숙함을 우선한다.
 
 success_criteria:
-  - id: ac1
+  - id: acceptance-1
     description: 화면과 시트의 글자·간격·아이콘·색상·버튼 위계가 일관되고 빈 화면·로딩·오류·완료 상태까지 설계되어 있다.
     verifiable: true
     measurable_via: 주요 화면과 상태별 캡처, 계산 스타일, 제작자 시각 검토와 사용자의 최종 목업 평가. 자동 검사를 미적 만족의 증명으로 취급하지 않는다.
-  - id: ac2
+  - id: acceptance-2
     description: 처음 사용자가 별도 설명 없이 샘플 티켓의 시작부터 완료까지 이동하고 각 화면의 다음 행동을 찾을 수 있다.
     verifiable: true
     measurable_via: 브라우저 전체 경로 시연과 사용자의 직접 체험. 실사용자 연구 없이 작업 시간·전환율 개선을 주장하지 않는다.
-  - id: ac3
+  - id: acceptance-3
     description: 정보 입력과 꾸미기를 쉽게 찾고 뒤로 돌아와도 입력과 선택이 유지된다.
     verifiable: true
     measurable_via: 입력 검증, 선택 변경, 되돌리기, 패널 닫기, 브라우저 뒤로 가기, 초안 이어하기 시나리오.
-  - id: ac4
+  - id: acceptance-4
     description: 지정 모바일 폭에서 주요 입력과 액션이 가려지거나 페이지 밖으로 넘치지 않고 터치할 수 있다.
     verifiable: true
     measurable_via: 320x568·375x667·393x659·414x736에서 캡처와 DOM·히트 테스트. 축소된 높이, 긴 텍스트, 시트 스크롤도 확인한다. 실제 iPhone 검증은 별도 증거로 구분한다.
-  - id: ac5
+  - id: acceptance-5
     description: 같은 폭과 티켓을 사용한 기존 화면과 새 목업 비교 자료가 있으며 각 변경의 이유를 설명한다.
     verifiable: true
     measurable_via: 기존 검증 캡처와 동일 샘플 티켓을 사용하는 비교 화면. 이미지·샘플 데이터가 다른 비교는 그 차이를 명시한다.
-  - id: ac6
+  - id: acceptance-6
     description: 목업의 시연 상태와 실제 프로덕션 기능·데이터가 섞이지 않는다.
     verifiable: true
     measurable_via: 외부 API 요청 없음, 독립된 저장 키, 기존 파일 보존, 실제 저장하지 않는다는 안내, 기존 티켓 자산 무변경 확인.
 
+issues:
+  source: null # 생성 출처만 기록하며 구현 추적과 구분해요.
+  tracking: []
+
+# integration_points는 호환 정리 당시 체크아웃의 위치예요. 종료 판정의 프로덕션 근거는 STATE_AUDIT.md의 고정 SHA를 따라요.
 context:
   existing_stack: [Next.js 16 Pages Router, React 19, Tailwind CSS 3, Bun]
   dependencies: [shadcn/ui, Radix primitives, 기존 Pretendard, 기존 티켓 이미지]
   integration_points:
-    - docs/mockups/filme-mobile-v1 신규 산출물
-    - public/assets/landing 기존 6종 샘플 자산 읽기
-    - public/fonts/PretendardVariable.woff2 읽기
+    - docs/mockups/filme-mobile-v1/src/app.jsx — 독립 목업과 고정 티켓 이미지
+    - docs/mockups/filme-mobile-v1/design.md
+    - docs/mockups/filme-mobile-v2/README.md — 후속 목업 안내
   inspected_features:
     - 필수 제목·개봉연도, 원제·출연·러닝타임, 관람일시·극장·좌석·예매번호
     - 영화 검색, 티켓 OCR, 포스터 업로드·크롭, 6종 무드
@@ -152,7 +237,11 @@ blindspots:
 ambiguity:
   overall: 0.1
   gate_passed: true
-clarity_breakdown: {goal: 0.9, constraint: 0.9, success: 0.9, context: 0.9}
+clarity_breakdown:
+  goal: 0.9
+  constraint: 0.9
+  success: 0.9
+  context: 0.9
 metadata:
   interview_rounds: 3
   questions_asked: 4

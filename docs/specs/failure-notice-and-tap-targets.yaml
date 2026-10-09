@@ -1,3 +1,24 @@
+# Compatible with thinking-tools 6.0.0; version/generated retain authoring provenance.
+# Lifecycle state follows the authorized diagnosis; see docs/specs/STATE_AUDIT.md.
+# 현재 적용 경계: OCR undo와 toast의 위치 분리·CTA spring은 현행에 있어요. iOS 조사 문서는 현재 로드맵이나 이식 착수 승인으로 적용하지 않아요.
+# 전체 명세 안내: docs/specs/README.md
+# AMENDMENT CONTRACT — keep these lines in the emitted file.
+# Read metadata first. Apply only active, non-withdrawn requirements within the user's current
+# request. Unknown/paused/closed Seeds are reference material, never automatic work candidates.
+# A named path or graph edge is not permission to resume. Resume paused only with user approval;
+# closed work continues in a NEW Seed with selected requirements and pinned provenance.
+# This is a functional spec, not a work log: REPLACE incorrect field values; never append
+# progress, execution logs or review notes. Minimal lifecycle decisions and evidence below are
+# allowed; missing lifecycle means unknown, never implicitly active or completed.
+# Preserve withdrawn items' ids AND original contents; record withdrawal separately. No response
+# is no approval. Explicit withdrawal does not approve child reparenting. Validate changes with
+# seed-lifecycle.py check <seed> --before <prior-file> and seed-relations.py check <seed>.
+# Claude's hook checks edits; Codex uses these same commands explicitly, without hook enforcement.
+# Ids: a constraint-N/acceptance-N id is never reused or deleted; new items take the next unused
+# number. Other Seeds' `refines`
+# point at them. Legacy c<N>/ac<N> ids are renamed only via scripts/seed-id-migrate.py; the
+# convention is defined in reference/identifiers.md.
+
 # Seed Spec — 알림 표면 정리 + 눌림 피드백 잔여 (진단 권장 1·3번의 잔여분)
 ---
 skill: build-spec
@@ -18,6 +39,80 @@ domain: tech
 brownfield: true
 refine_generation: 0
 
+lifecycle:
+  state: paused
+  outcome: null
+  reason: "#731의 알림 분리·CTA 피드백과 관련 회귀는 구현돼 있으나 실제 화면의 비겹침·프레임 적합성과 추천색 성공·실패 동선 확인이 남아 완료 판정을 보류한다."
+  approved_by: "2026-10-10 사용자 지시: 상태값 unknown인것들 현행화하고 진단 결과에 따라 수정 필요한 사항 있으면 수정 시작"
+  evidence:
+    commit: 24eb36e91eb48d9dca0ec5227508bd48ad28df1c
+    items:
+      - id: constraint-1
+        refs:
+          - "docs/specs/STATE_AUDIT.md#failure-notice-and-tap-targets"
+          - "https://github.com/Lyainc/filme/issues/731"
+          - "src/components/ui/variants.ts:26"
+      - id: constraint-2
+        refs:
+          - "docs/specs/STATE_AUDIT.md#failure-notice-and-tap-targets"
+          - "src/components/v2/MobileEditorShell.tsx:1404"
+          - "src/components/v2/OcrUndoBanner.tsx:38"
+      - id: constraint-3
+        refs:
+          - "docs/specs/STATE_AUDIT.md#failure-notice-and-tap-targets"
+          - "src/components/v2/MobileEditorShell.tsx:1413"
+          - "__tests__/ocrUndoRestore.test.tsx:650"
+      - id: constraint-4
+        refs:
+          - "docs/specs/STATE_AUDIT.md#failure-notice-and-tap-targets"
+          - "src/components/ui/variants.ts:26"
+          - "__tests__/pressableVariantsLiteralLock.test.ts"
+      - id: constraint-5
+        refs:
+          - "docs/specs/STATE_AUDIT.md#failure-notice-and-tap-targets"
+          - "src/components/ui/variants.ts:29"
+          - "__tests__/pressableVariantsSpringMotion.test.ts:11"
+      - id: constraint-6
+        refs:
+          - "docs/specs/STATE_AUDIT.md#failure-notice-and-tap-targets"
+          - "src/pages/index.tsx:76"
+          - "src/pages/index.tsx:86"
+      - id: constraint-7
+        refs:
+          - "docs/specs/STATE_AUDIT.md#failure-notice-and-tap-targets"
+          - "https://github.com/Lyainc/filme/issues/731"
+          - "src/components/ui/variants.ts:26"
+      - id: constraint-8
+        refs:
+          - "docs/specs/STATE_AUDIT.md#failure-notice-and-tap-targets"
+          - "https://github.com/Lyainc/filme/issues/731"
+          - "src/components/ui/variants.ts:26"
+      - id: constraint-9
+        refs:
+          - "docs/specs/STATE_AUDIT.md#failure-notice-and-tap-targets"
+          - "src/pages/index.tsx:86"
+          - "docs/COPY_TONE_GUIDE.md"
+      - id: constraint-10
+        refs:
+          - "docs/specs/STATE_AUDIT.md#failure-notice-and-tap-targets"
+          - "src/components/v2/MobileEditorShell.tsx:1424"
+          - "src/components/v2/PhoneFrame.tsx"
+      - id: acceptance-2
+        refs:
+          - "docs/specs/STATE_AUDIT.md#failure-notice-and-tap-targets"
+          - "__tests__/a11yFieldTapAndTapTargets.test.tsx"
+          - "__tests__/pressableVariantsLiteralLock.test.ts"
+      - id: acceptance-3
+        refs:
+          - "docs/specs/STATE_AUDIT.md#failure-notice-and-tap-targets"
+          - "__tests__/pressableVariantsSpringMotion.test.ts:11"
+      - id: acceptance-5
+        refs:
+          - "docs/specs/STATE_AUDIT.md#failure-notice-and-tap-targets"
+          - "src/pages/index.tsx:86"
+          - "docs/specs/STATE_AUDIT.md#자동-검증"
+  withdrawn: []
+
 goal:
   statement: >-
     볼트 진단문서(~/vault/notes/filme-app-ui-diagnosis.md, 2026-08-04)의 권장 순서 1번(실패 알림
@@ -28,7 +123,7 @@ goal:
   clarity_score: 0.9
 
 constraints:
-  - id: c1
+  - id: constraint-1
     type: scope
     description: >-
       진단문서가 지목한 9개 항목 중 8개는 이미 해소됐으므로 이 스펙의 범위가 아니다.
@@ -48,7 +143,7 @@ constraints:
       M5 OcrUndoBanner.tsx:36·43 두 버튼 모두 min-h-touch,
       m3 `focus:` 리터럴 전수 0건(focus-visible: 14곳).
       showError는 src/utils/errorToast.tsx(107줄)에 이미 있고 5개 파일이 소비한다 — 새로 만들 것이 없다.
-  - id: c2
+  - id: constraint-2
     type: technical
     description: >-
       알림 표면은 4벌 그대로 두고 **좌표만** 나눈다. 하나로 합치지 않는다.
@@ -61,7 +156,7 @@ constraints:
       성공·안내 통보고, OcrUndoBanner(fixed bottom-6, z-50)는 되돌릴 수 있는 창을 여는 별개
       계약이다. 진단문서 부록 1도 Sonner 통합을 기각하며 "파일 하나 정리로 해결(OCR 토스트
       위치도 유지)"로 판정했다. 합치면 그 넷이 각자 지키던 명제를 잃는다.
-  - id: c3
+  - id: constraint-3
     type: technical
     description: >-
       OcrUndoBanner(z-50)와 셸 스낵바(z-[60])가 같은 `fixed bottom-6 left-1/2 -translate-x-1/2`
@@ -76,7 +171,7 @@ constraints:
       누른 순간 스낵바가 **OCR 되돌리기 배너를 정확히 덮는다.** 둘 다 "되돌리기"를 말하는데
       한쪽이 다른 쪽을 지우는 셈이라, 진단문서가 "되돌리기가 세 갈래로 분리"라고 적은 축의
       실제 충돌 지점이다.
-  - id: c4
+  - id: constraint-4
     type: technical
     description: >-
       눌림 피드백은 pressableVariants로 강제한다. 새 값을 만들지 않고 지금 리터럴
@@ -90,7 +185,7 @@ constraints:
       안 막는다. hard가 아닌 이유는 60곳 치환이 diff 크기로 리뷰 품질을 떨어뜨릴 수 있어서다 —
       진단문서 부록 2에서 Maintainability가 든 근거("diff 크기가 리뷰 품질의 천장")가 그대로
       적용된다. 한 커밋에 몰지 말고 나눌 것.
-  - id: c5
+  - id: constraint-5
     type: technical
     description: >-
       모션은 눌림 피드백의 **이징 하나만** 손댄다. 스프링 정착
@@ -108,7 +203,7 @@ constraints:
       (https://kinetics.colorion.co/ Push Button: transform 0.06s ease + :active translateY(5px)),
       그중 translateY는 채택하지 않는다 — 축을 하나 더 여는 만큼 실기기에서 잰 적 없는 비용이
       늘고, 오너가 최소로 하라고 한 자리다.
-  - id: c6
+  - id: constraint-6
     type: technical
     description: >-
       아직 무음인 실패 하나 — 포스터 추천색 추출 실패(src/pages/index.tsx:77 `.catch(() => {})`)
@@ -120,7 +215,7 @@ constraints:
       _document.tsx:23 인라인 테마 스크립트 셋뿐이고, 앞뒤 둘은 사용자가 잃는 게 없어 대상이
       아니다). 실패하면 ColorPicker의 추천색 2칸이 조용히 안 뜨는데, 사용자는 "이 포스터엔
       추천색이 원래 없나 보다"로 읽는다. 한 줄이라 c4와 달리 diff 비용 논쟁이 없다.
-  - id: c7
+  - id: constraint-7
     type: scope
     description: >-
       C3(좌석 5번째부터 무음 절삭, usePhototicket.ts:53-57·:350 capSeatTokens)은 범위 밖이다.
@@ -129,7 +224,7 @@ constraints:
       진단문서가 "오너 정책: 4개 이상 verbose 처리 검토 중(미확정)"으로 남겨뒀고, 권장 순서
       2번도 "정책 확정 후"가 조건이다. 안내 문구는 상한을 유지하느냐 verbose로 가느냐에 따라
       정반대로 쓰이므로, 정책을 정하지 않고 문구부터 만들면 두 번 쓰게 된다. blindspots에 남긴다.
-  - id: c8
+  - id: constraint-8
     type: technical
     description: >-
       정당화 논리 — 실패 알림·상태 경로는 iOS로 이식되지만 웹 UI 스타일 리팩터링은 이식되지
@@ -143,7 +238,7 @@ constraints:
       같은 잣대를 대면 v2/* 스타일 통일도 앱으로 안 넘어간다. 반대로 "언제 무엇이 실패했고
       사용자에게 무엇을 말하나"는 훅·상태 축이라 SwiftUI에서도 같은 판단을 다시 쓴다.
       이 논리가 c4를 soft로, c5를 "이징 하나"로 묶는 근거다.
-  - id: c9
+  - id: constraint-9
     type: technical
     description: >-
       새 사용자 노출 문구는 docs/COPY_TONE_GUIDE.md를 따른다 — 실패·차단은 [무슨 일] +
@@ -154,7 +249,7 @@ constraints:
       가이드 축 3·축 2. 상한은 현행 최댓값 추인이라(가이드:137-139) 넘기면 좁은 400px 프레임에서
       줄 수가 늘고, 넘기려면 상한을 먼저 다시 재야 한다. 기존 문구가 이미 상한선에 있다 —
       `저장에 실패했어요. 브라우저 저장 공간이 가득 찼거나 비공개 모드일 수 있어요.`가 44자 동률.
-  - id: c10
+  - id: constraint-10
     type: technical
     description: >-
       fixed 좌표는 PhoneFrame 기준으로 유지한다. ErrorToastHost는 MobileEditorShell 트리 안에
@@ -167,7 +262,7 @@ constraints:
       오버레이 3종이 좌 520px 넘치는 게 실측돼 있다(CLAUDE.md).
 
 success_criteria:
-  - id: ac1
+  - id: acceptance-1
     description: >-
       OCR 되돌리기 배너가 떠 있는 동안 셸 스낵바가 떠도 배너의 '되돌리기'·'확인' 두 버튼이
       가려지지 않는다.
@@ -177,7 +272,7 @@ success_criteria:
       두 요소의 getBoundingClientRect가 겹치지 않는지 대조. happy-dom엔 실 레이아웃이 없어
       rect를 못 재므로 유닛 테스트로는 못 잠근다 — 유닛 쪽은 두 좌표 클래스가 문자로 같지
       않은지만 대조하는 얕은 가드까지가 한계다.
-  - id: ac2
+  - id: acceptance-2
     description: >-
       진단문서 8개 항목(C1·C2·C4·C5·M1·M6·M4·M5·m3)이 해소 상태로 유지된다 — 이번 작업이
       되돌리지 않는다.
@@ -185,7 +280,7 @@ success_criteria:
     measurable_via: >-
       기존 테스트 유지 + 전수 grep 2종 — src에 `alert(`가 없고, 빈 catch가 index.tsx:64 ·
       _document.tsx:23 둘로만 남고(c6 뒤 :77도 소멸), 리터럴 `focus:` 0건.
-  - id: ac3
+  - id: acceptance-3
     description: >-
       스프링 이징이 pressableVariants base가 아니라 `transition: 'cta'` variant에만 붙는다.
       base에 transition-property가 생기지 않는다.
@@ -194,20 +289,20 @@ success_criteria:
       variants.ts를 읽는 단위 테스트 — pressableVariants()의 기본 반환 문자열에
       `transition-`이 없고, pressableVariants({transition:'cta'})에만 있는지 대조.
       variants.ts:6-11이 경고하는 회귀를 문자로 잠근다.
-  - id: ac4
+  - id: acceptance-4
     description: >-
       추천색 추출이 실패하면 사용자에게 한 번 알린다. 성공 경로에는 아무 알림도 안 뜬다.
     verifiable: true
     measurable_via: >-
       index.tsx의 동적 import 경로를 mock해 reject시키고 ErrorToastHost에 문구가 뜨는지.
       mock.module 복원은 반드시 `const real = { ...require(p) }` 스프레드 스냅샷으로(#611).
-  - id: ac5
+  - id: acceptance-5
     description: >-
       새 문구가 톤 가이드 상한(한 문장 33자 · 전체 44자)과 축 3 두 문장 구조를 지킨다.
     verifiable: true
     measurable_via: >-
       문구 상수에 대한 길이 단언. 기존 showError 호출 6곳의 문구가 이미 그 형태라 같은 틀을 쓴다.
-  - id: ac6
+  - id: acceptance-6
     description: >-
       프레임 봉쇄가 유지된다 — 좌표를 옮긴 알림 표면이 400px 프레임 밖으로 안 샌다.
     verifiable: true
@@ -215,33 +310,29 @@ success_criteria:
       scripts/measure-chrome.mjs의 frameFit 축. dock 290 / 프리뷰 190.9×305 불변식은 이 작업이
       안 건드리는 값이지만 같이 통과해야 한다.
 
+issues:
+  source: null # 생성 출처만 기록하며 구현 추적과 구분해요.
+  tracking: ["#731"]
+
+# integration_points는 현행 코드예요. 나머지 context는 생성 당시 조사 기록이에요.
 context:
   existing_stack:
     - Next.js (pages router) + React + TypeScript
-    - >-
-      src/utils/errorToast.tsx — useSyncExternalStore 모듈 싱글턴 + ErrorToastHost(107줄, #645)
+    - "src/utils/errorToast.tsx — useSyncExternalStore 모듈 싱글턴 + ErrorToastHost(107줄, #645)"
     - cva + clsx + tailwind-merge (#647). Radix·shadcn·Sonner 0개
     - eslint local rule no-raw-touch-target-size (#647)
-    - bun test + happy-dom. __tests__/setup/happydom.ts의 전역 afterEach가
-      resetErrorToastForTest()를 부른다 — 모듈 싱글턴이 프로세스 내내 남기 때문(#611 클래스)
+    - "bun test + happy-dom. __tests__/setup/happydom.ts의 전역 afterEach가 resetErrorToastForTest()를 부른다 — 모듈 싱글턴이 프로세스 내내 남기 때문(#611 클래스)"
   dependencies:
-    - 새 의존성 0. 진단문서 최종 판정("shadcn/ui 전면 도입은 지금 하지 않는다")과 부록 2
-      expert-panel 7표 중 6표 (B) cva만을 그대로 승계한다. 재검토 조건도 그대로 —
-      "#612에서 새 오버레이·다이얼로그 계열이 3개 이상 필요할 때"(부록 2 ④ 교정)
+    - "새 의존성 0. 진단문서 최종 판정(\"shadcn/ui 전면 도입은 지금 하지 않는다\")과 부록 2 expert-panel 7표 중 6표 (B) cva만을 그대로 승계한다. 재검토 조건도 그대로 — \"#612에서 새 오버레이·다이얼로그 계열이 3개 이상 필요할 때\"(부록 2 ④ 교정)"
     - docs/NATIVE_IOS_RFC.md §1·§6 — c8 정당화 논리의 유일한 출처
     - docs/COPY_TONE_GUIDE.md — c9. "테스트가 잠근 문구" 표(:239-)를 문구 변경 전에 먼저 볼 것
   integration_points:
-    - src/components/v2/OcrUndoBanner.tsx:27 — 좌표(c3). 두 버튼의 min-h-touch(:36,:43)는
-      #646이 넣은 것이라 안 건드린다
-    - src/components/v2/MobileEditorShell.tsx:1310 — 스낵바 좌표. flashToast 호출 8곳
-      (:275, :291, :437, :485, :500, :845, :1191, :1195)이 이 표면의 전체 소비자다
-    - src/utils/errorToast.tsx:91 — ErrorToastHost 좌표(fixed top-4 z-[70]). 지금은 위아래로
-      갈려 있어 c3의 충돌 대상이 아니다
-    - src/components/ui/variants.ts:16-22 — c4·c5. 소비자 2곳(OcrUploadCard.tsx:282,
-      PrimaryCta.tsx:45)
-    - src/pages/index.tsx:77 — c6
-    - scripts/measure-chrome.mjs — ac1·ac6. 새 축을 넣으면 출력만 하지 말고 종료 조건
-      (process.exitCode)에도 실을 것(#714가 모달 축에서 겪은 조용한 성공)
+    - src/components/v2/MobileEditorShell.tsx — undo snapshot에 따른 toast bottom-28/bottom-6
+    - src/components/v2/OcrUndoBanner.tsx — bottom-6
+    - src/components/ui/variants.ts — CTA spring easing
+    - src/pages/index.tsx — 추천색 실패 showError
+    - __tests__/ocrUndoRestore.test.tsx
+    - scripts/measure-chrome.mjs — 알림 충돌 측정
   backlog_scan: >-
     prefilter 실행됨(open 9 · closed 369, 2026-08-18 gh issue list 실측).
     이 스펙의 전제였던 작업들이 전부 닫혀 있는 게 최대 발견이다 — #645(무음 실패 6종 제거 +

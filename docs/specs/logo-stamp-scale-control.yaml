@@ -1,3 +1,24 @@
+# Compatible with thinking-tools 6.0.0; version/generated retain authoring provenance.
+# Lifecycle state follows the authorized diagnosis; see docs/specs/STATE_AUDIT.md.
+# 현재 적용 경계: 현재 stampScale 상한은 Minimal 1.1, 나머지 1.3이에요. raw 값 보존·IndexedDB 이미지 복원을 당시 전 무드 상한과 구분해요.
+# 전체 명세 안내: docs/specs/README.md
+# AMENDMENT CONTRACT — keep these lines in the emitted file.
+# Read metadata first. Apply only active, non-withdrawn requirements within the user's current
+# request. Unknown/paused/closed Seeds are reference material, never automatic work candidates.
+# A named path or graph edge is not permission to resume. Resume paused only with user approval;
+# closed work continues in a NEW Seed with selected requirements and pinned provenance.
+# This is a functional spec, not a work log: REPLACE incorrect field values; never append
+# progress, execution logs or review notes. Minimal lifecycle decisions and evidence below are
+# allowed; missing lifecycle means unknown, never implicitly active or completed.
+# Preserve withdrawn items' ids AND original contents; record withdrawal separately. No response
+# is no approval. Explicit withdrawal does not approve child reparenting. Validate changes with
+# seed-lifecycle.py check <seed> --before <prior-file> and seed-relations.py check <seed>.
+# Claude's hook checks edits; Codex uses these same commands explicitly, without hook enforcement.
+# Ids: a constraint-N/acceptance-N id is never reused or deleted; new items take the next unused
+# number. Other Seeds' `refines`
+# point at them. Legacy c<N>/ac<N> ids are renamed only via scripts/seed-id-migrate.py; the
+# convention is defined in reference/identifiers.md.
+
 ---
 # Output conforms to thinking-tools/reference/common-schema.md
 skill: build-spec
@@ -20,6 +41,60 @@ brownfield: true
 refine_generation: 0
 issue: 441
 
+lifecycle:
+  state: paused
+  outcome: null
+  reason: "상태·배율·슬라이더·undo·저장 회귀는 통과했으나 기본값 픽셀 동일성·6무드 극단값 배치·프리뷰와 JPEG 대조가 남아 완료 판정을 보류한다."
+  approved_by: "2026-10-10 사용자 지시: 상태값 unknown인것들 현행화하고 진단 결과에 따라 수정 필요한 사항 있으면 수정 시작"
+  evidence:
+    commit: 24eb36e91eb48d9dca0ec5227508bd48ad28df1c
+    items:
+      - id: constraint-1
+        refs:
+          - "docs/specs/STATE_AUDIT.md#logo-stamp-scale-control"
+          - "src/types/index.ts:100-102"
+          - "src/hooks/usePhototicket.ts:167-168"
+      - id: constraint-2
+        refs:
+          - "docs/specs/STATE_AUDIT.md#logo-stamp-scale-control"
+          - "src/components/moods/_shared.tsx:731-798"
+      - id: constraint-3
+        refs:
+          - "docs/specs/STATE_AUDIT.md#logo-stamp-scale-control"
+          - "src/components/moods/MoodMinimal.tsx:210-215"
+          - "src/components/moods/MoodCriterion.tsx:431-436"
+      - id: constraint-4
+        refs:
+          - "docs/specs/STATE_AUDIT.md#logo-stamp-scale-control"
+          - "src/components/moods/_shared.tsx:783"
+          - "__tests__/logoStampScale.test.tsx:54-69"
+      - id: constraint-5
+        refs:
+          - "docs/specs/STATE_AUDIT.md#logo-stamp-scale-control"
+          - "src/components/v2/designRailItems.tsx:79-84"
+          - "__tests__/logoStampScale.test.tsx:120-173"
+      - id: constraint-6
+        refs:
+          - "docs/specs/STATE_AUDIT.md#logo-stamp-scale-control"
+          - "src/hooks/usePhototicket.ts:639-687"
+          - "__tests__/logoStampScale.test.tsx:178-223"
+      - id: constraint-7
+        refs:
+          - "docs/specs/STATE_AUDIT.md#logo-stamp-scale-control"
+          - "353031bbd38625e0a68979ee0cfc1f13fe4b0873"
+          - "907c65d2cfc123879b831ad1e38ff32b3b3ee714"
+      - id: s1
+        refs:
+          - "docs/specs/STATE_AUDIT.md#logo-stamp-scale-control"
+          - "__tests__/logoStampScale.test.tsx:120-173"
+          - "docs/specs/STATE_AUDIT.md#자동-검증"
+      - id: s4
+        refs:
+          - "docs/specs/STATE_AUDIT.md#logo-stamp-scale-control"
+          - "__tests__/logoStampScale.test.tsx:178-223"
+          - "docs/specs/STATE_AUDIT.md#자동-검증"
+  withdrawn: []
+
 goal:
   statement: >
     ChainStamp/FormatStamp(극장·포맷 로고)가 무드별 고정 height 상수에 맞춰 항상 같은
@@ -31,14 +106,14 @@ goal:
   clarity_score: 0.85
 
 constraints:
-  - id: c1
+  - id: constraint-1
     type: technical
     description: >
       [상태 필드] `TicketComponents`(`src/types/index.ts`)에 `chainScale?: number`·
       `formatScale?: number` 추가(기본값 1). `usePhototicket.ts` 초기 state에 1로 등록.
     hard: true
     rationale: 기존 `componentOpacity` 옵셔널 필드와 동일 패턴(기본값 없으면 `?? 1`).
-  - id: c2
+  - id: constraint-2
     type: technical
     description: >
       [배율 결합] `ChainStampProps`/`FormatStampProps`는 이미 `size`(기본 1) prop으로
@@ -51,7 +126,7 @@ constraints:
     rationale: >
       무드별 고정 상수(size)와 사용자 조작값(scale)을 분리해야 회귀 위험이 없다 —
       한 필드에 곱해 넣으면 이후 무드별 디자인 상수 조정 시 사용자 저장값과 뒤섞인다.
-  - id: c3
+  - id: constraint-3
     type: technical
     description: >
       [호출부 배선] 6개 무드 파일의 `<ChainStamp>`/`<FormatStamp>` 호출부(현재
@@ -62,7 +137,7 @@ constraints:
       1줄짜리 기계적 추가라 무드별 설계 판단이 필요 없다(서명 이미지 이슈와 다른 점).
     hard: true
     rationale: size prop이 이미 모든 호출부에 있으므로 새 prop 추가는 각주 수준 변경.
-  - id: c4
+  - id: constraint-4
     type: technical
     description: >
       [오버플로우 클램프 유지] `maxWidth: h * STAMP_MAX_ASPECT`(`_shared.tsx:134`,
@@ -71,7 +146,7 @@ constraints:
       인접 요소와의 높이 겹침)은 이 클램프의 보호 범위 밖이라 s3에서 실측 확인 필요.
     hard: true
     rationale: 클램프가 기존에도 존재하므로 재구현이 아니라 "그대로 통과시키기"가 목표.
-  - id: c5
+  - id: constraint-5
     type: technical
     description: >
       [범위] `chainScale`/`formatScale` 허용 범위는 0.6~1.3(오너 확정, 편도 축소만이
@@ -81,7 +156,7 @@ constraints:
     rationale: >
       "로고가 크게 렌더된다"는 축소만으로 해결되지만 "크기 조절" 요청 문구에 맞춰
       양방향 허용. 확대 시 인접 텍스트/로고와 겹칠 리스크가 있어 상한을 1.3으로 보수적으로.
-  - id: c6
+  - id: constraint-6
     type: technical
     description: >
       [undo/임시저장] `chainScale`/`formatScale`은 undo/redo(#356) 스냅샷과
@@ -92,7 +167,7 @@ constraints:
     hard: true
     rationale: >
       #141/#356 선례(스탬프 관련 새 필드는 항상 undo 스냅샷에 같이 넣는다)를 그대로 따른다.
-  - id: c7
+  - id: constraint-7
     type: scope
     description: >
       [서명 이미지 제외] 서명 텍스트→이미지 업로드, `signatureImage`/`signatureScale`
@@ -141,19 +216,27 @@ verification:
     실제 브라우저 실측(dev 서버)에서만 유효 확인 가능 — 레이아웃 겹침과 캡처 결과는
     happy-dom에 레이아웃 엔진이 없어 단위 테스트로 대체 불가.
 
+issues:
+  source: "#441" # 생성 출처만 기록하며 구현 추적과 구분해요.
+  tracking: ["#441"]
+
+# integration_points는 현행 코드예요. 나머지 context는 생성 당시 조사 기록이에요.
 context:
+  integration_points:
+    - "src/components/moods/_shared.tsx — ChainStamp/FormatStamp, maxWidth"
+    - src/components/v2/designRailItems.tsx — SizePanel/stampScaleMaxFor
+    - src/components/v2/FieldEditorBody.tsx — StampSheet
+    - src/hooks/usePhototicket.ts — draft 이미지 영속
+    - __tests__/logoStampScale.test.tsx
   entry_point: src/components/moods/_shared.tsx (ChainStamp:472, FormatStamp:537)
   related_state: src/hooks/usePhototicket.ts (updateComponents, restoreSnapshot, saveDraft)
   ui_candidates:
-    - DesignRail.tsx/DesktopDesignPanel.tsx의 기존 "투명도" 탭(componentOpacity 옆에
-      크기 슬라이더 추가 — 이미 "컴포넌트" 레벨 축이 있는 자리)
+    - "DesignRail.tsx/DesktopDesignPanel.tsx의 기존 \"투명도\" 탭(componentOpacity 옆에 크기 슬라이더 추가 — 이미 \"컴포넌트\" 레벨 축이 있는 자리)"
     - FieldEditorBody.tsx의 StampSheet(로고 업로드·크롭과 같은 자리, 필드별 편집 컨텍스트)
   existing_infra:
     - ChainStamp/FormatStamp의 size prop(무드별 고정 상수, 12개 호출부)
     - STAMP_MAX_ASPECT(_shared.tsx:134) — maxWidth 클램프
-    - BrightnessSlider(src/components/wizard/BrightnessSlider.tsx) — 0..1 값을 %로
-      보여주는 기존 슬라이더, materialIntensity/coatingIntensity/posterOpacity/
-      componentOpacity가 이미 재사용 중
+    - "BrightnessSlider(src/components/wizard/BrightnessSlider.tsx) — 0..1 값을 %로 보여주는 기존 슬라이더, materialIntensity/coatingIntensity/posterOpacity/ componentOpacity가 이미 재사용 중"
 
 approach:
   decision: >
@@ -161,7 +244,6 @@ approach:
     나머지(상태 필드·배선·클램프)는 c1~c7이 강제한다.
 
 out_of_scope:
-  - 서명 이미지 업로드 + signatureImage/signatureScale (별도 이슈로 분리, 이 세션에서
-    새 이슈 생성 예정)
+  - "서명 이미지 업로드 + signatureImage/signatureScale (별도 이슈로 분리, 이 세션에서 새 이슈 생성 예정)"
   - 크롭 모달 zoom-out 복원(#441 원안이 명시적으로 기각, #474 코멘트에서 재확인됨)
   - 무드별 size 고정 상수(0.55~1.02) 자체의 재튜닝

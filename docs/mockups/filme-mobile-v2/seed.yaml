@@ -1,3 +1,24 @@
+# Compatible with thinking-tools 6.0.0; version/generated retain authoring provenance.
+# Lifecycle state follows the authorized diagnosis; see docs/specs/STATE_AUDIT.md.
+# 현재 적용 경계: v2 로컬 목업 전용 명세예요. 기존 status·r1~r16은 호환 확장 필드이며 생애주기 종료나 프로덕션 적용 승인을 뜻하지 않아요.
+# 전체 명세 안내: docs/specs/README.md
+# AMENDMENT CONTRACT — keep these lines in the emitted file.
+# Read metadata first. Apply only active, non-withdrawn requirements within the user's current
+# request. Unknown/paused/closed Seeds are reference material, never automatic work candidates.
+# A named path or graph edge is not permission to resume. Resume paused only with user approval;
+# closed work continues in a NEW Seed with selected requirements and pinned provenance.
+# This is a functional spec, not a work log: REPLACE incorrect field values; never append
+# progress, execution logs or review notes. Minimal lifecycle decisions and evidence below are
+# allowed; missing lifecycle means unknown, never implicitly active or completed.
+# Preserve withdrawn items' ids AND original contents; record withdrawal separately. No response
+# is no approval. Explicit withdrawal does not approve child reparenting. Validate changes with
+# seed-lifecycle.py check <seed> --before <prior-file> and seed-relations.py check <seed>.
+# Claude's hook checks edits; Codex uses these same commands explicitly, without hook enforcement.
+# Ids: a constraint-N/acceptance-N id is never reused or deleted; new items take the next unused
+# number. Other Seeds' `refines`
+# point at them. Legacy c<N>/ac<N> ids are renamed only via scripts/seed-id-migrate.py; the
+# convention is defined in reference/identifiers.md.
+
 skill: build-spec
 schema_version: 1
 version: '5.2.0'
@@ -15,16 +36,72 @@ input:
 output:
   type: spec
   structure: templates/SEED_SPEC.yaml
+lifecycle:
+  state: paused
+  outcome: null
+  reason: "목업 구현과 기존 Chrome 검증 기록은 존재하지만 acceptance-5의 사용자 최종 사용성 검토가 미완료여서 완료 판정을 보류한다. 로컬 목업 전용이며 프로덕션 재설계 승인으로 확대하지 않는다."
+  approved_by: "2026-10-10 사용자 지시: 상태값 unknown인것들 현행화하고 진단 결과에 따라 수정 필요한 사항 있으면 수정 시작"
+  evidence:
+    commit: 46798aa4949270c08d6a3a5a617418539d7e4389
+    items:
+      - id: constraint-1
+        refs:
+          - "docs/specs/STATE_AUDIT.md#seed"
+          - "docs/mockups/filme-mobile-v2/src/app.jsx"
+          - "docs/mockups/filme-mobile-v2/src/LiveTicket.jsx"
+      - id: constraint-2
+        refs:
+          - "docs/specs/STATE_AUDIT.md#seed"
+          - "docs/mockups/filme-mobile-v2/tokens.css"
+          - "docs/mockups/filme-mobile-v2/src/app.jsx"
+      - id: constraint-3
+        refs:
+          - "docs/specs/STATE_AUDIT.md#seed"
+          - "docs/mockups/filme-mobile-v2/design.md"
+          - "docs/mockups/filme-mobile-v2/src/app.jsx"
+      - id: constraint-4
+        refs:
+          - "docs/specs/STATE_AUDIT.md#seed"
+          - "docs/mockups/filme-mobile-v2/src/Landing.jsx"
+          - "docs/mockups/filme-mobile-v2/src/landing.css"
+      - id: constraint-7
+        refs:
+          - "docs/specs/STATE_AUDIT.md#seed"
+          - "docs/mockups/filme-mobile-v2/src/app.jsx"
+          - "docs/mockups/filme-mobile-v2/README.md"
+  withdrawn: []
+
 goal:
   statement: 모바일 사용자가 현재 편집 대상과 결과를 이해하고 정보 입력과 사진·디자인·색상·질감·로고 편집을 간결하게 수행하도록 기존 HTML 목업을 개선한다.
 constraints:
-  - {id: c1, hard: true, type: technical, description: 'docs/mockups/filme-mobile-v2만 수정한다. 프로덕션 WIP·API·자연 픽셀 티켓 조판·JPEG 코드는 보존한다.'}
-  - {id: c2, hard: true, type: other, description: '기존 브랜드색 #B0423F, Pretendard, 라이트 UI, shadcn 프리미티브와 모바일 단일 편집 화면을 유지한다.'}
-  - {id: c3, hard: true, type: other, description: '여섯 무드, 로고 업로드·자르기·크기·표시, 포맷 프리셋, 전체 메타데이터, 독립 서체·질감 강도, 사진 배치·불투명도, 되돌리기·초안·완료·미리보기 기능을 보존한다.'}
-  - {id: c4, hard: true, type: other, description: '요청 없이 기능을 삭제하지 않는다. 스탬프·형압·반복 랜딩 배경은 복원하지 않는다. 랜딩 캐러셀은 비상호작용 자동 재생을 유지한다.'}
-  - {id: c5, hard: true, type: technical, description: '320·375·393·414px 및 넓은 화면의 430px 앱 프레임을 지원한다. 키보드 높이·긴 입력·한글 조합을 고려한다.'}
-  - {id: c6, hard: true, type: other, description: '메뉴별 여백·닫기·선택부·조절부 기준은 통일하되 내용 없는 헤더나 동일 높이를 강제하지 않는다. 메뉴·설정·입력·긴 설명은 좌측 정렬, 상태·수치는 우측, 짧은 확인창·분류 탭·견본은 중앙 정렬한다.'}
-  - {id: c7, hard: true, type: technical, description: '외부 API 요청·프로덕션 배포 없이 로컬 목업으로 검증한다. OCR·검색·저장·공유 시뮬레이션 표시는 유지한다.'}
+  - id: constraint-1
+    hard: true
+    type: technical
+    description: docs/mockups/filme-mobile-v2만 수정한다. 프로덕션 WIP·API·자연 픽셀 티켓 조판·JPEG 코드는 보존한다.
+  - id: constraint-2
+    hard: true
+    type: other
+    description: "기존 브랜드색 #B0423F, Pretendard, 라이트 UI, shadcn 프리미티브와 모바일 단일 편집 화면을 유지한다."
+  - id: constraint-3
+    hard: true
+    type: other
+    description: "여섯 무드, 로고 업로드·자르기·크기·표시, 포맷 프리셋, 전체 메타데이터, 독립 서체·질감 강도, 사진 배치·불투명도, 되돌리기·초안·완료·미리보기 기능을 보존한다."
+  - id: constraint-4
+    hard: true
+    type: other
+    description: 요청 없이 기능을 삭제하지 않는다. 스탬프·형압·반복 랜딩 배경은 복원하지 않는다. 랜딩 캐러셀은 비상호작용 자동 재생을 유지한다.
+  - id: constraint-5
+    hard: true
+    type: technical
+    description: 320·375·393·414px 및 넓은 화면의 430px 앱 프레임을 지원한다. 키보드 높이·긴 입력·한글 조합을 고려한다.
+  - id: constraint-6
+    hard: true
+    type: other
+    description: "메뉴별 여백·닫기·선택부·조절부 기준은 통일하되 내용 없는 헤더나 동일 높이를 강제하지 않는다. 메뉴·설정·입력·긴 설명은 좌측 정렬, 상태·수치는 우측, 짧은 확인창·분류 탭·견본은 중앙 정렬한다."
+  - id: constraint-7
+    hard: true
+    type: technical
+    description: 외부 API 요청·프로덕션 배포 없이 로컬 목업으로 검증한다. OCR·검색·저장·공유 시뮬레이션 표시는 유지한다.
 requirements:
   - id: r1
     description: '공통 패널의 상단 여백, 닫기 위치, 분류·프리셋·실행 표현과 슬라이더 라벨/값/트랙을 통일한다. 불필요한 메뉴명 반복과 큰 공백은 피한다.'
@@ -59,16 +136,47 @@ requirements:
   - id: r16
     description: '색상 적용 라벨은 실제 무드 동작에 맞춘다. Minimal은 잉크·배경 톤, Editorial은 강조색, 나머지는 고정 색상 디자인으로 표시한다. 텍스트·로고 불투명도 조절은 별도로 유지한다.'
 success_criteria:
-  - {id: ac1, description: '모든 요구사항 r1-r16에 대응하는 화면 또는 동작 증거가 있다.', verifiable: true, measurable_via: '요구사항 대조표, 전후 캡처, 독립 코드 검토'}
-  - {id: ac2, description: '320x568, 375x667, 393x659, 414x736, 768x900에서 페이지 가로 넘침과 조작부 가림이 없다.', verifiable: true, measurable_via: 'Chrome DOM geometry, hit testing, screenshots'}
-  - {id: ac3, description: '제목·날짜·숫자·긴 극장명과 한글 입력, 키보드 상태에서 티켓 피드백과 필드 이동을 확인한다.', verifiable: true, measurable_via: '실제 입력 이벤트, 축소 VisualViewport 모사, 표시/저장 원문 비교'}
-  - {id: ac4, description: '사진/로고 업로드·크롭·취소·뒤로가기, 여섯 무드, 질감 강도, 서체, 출처, undo/redo, 초안 복원, 완료와 공유 샘플이 유지된다.', verifiable: true, measurable_via: '기존 회귀 시나리오와 필요한 새 시나리오'}
-  - {id: ac5, description: '과업 중심 수동 화면 검토를 수행하고 기능 검사 통과를 주관적 사용성 개선 증명으로 주장하지 않는다.', verifiable: true, measurable_via: '동일 문서의 전후 캡처와 사용자 검토; 실제 iPhone 미검증 별도 표기'}
-  - {id: ac6, description: '자동 저장 끄기·수정·pagehide·새로고침에서 기존 초안이 보존되고 다시 켜면 현재 문서가 저장된다. 자동 저장을 끈 상태에서는 저장된 초안이 없어도 임의 저장하지 않는다.', verifiable: true, measurable_via: '분리된 Chrome 컨텍스트에서 localStorage 원문과 재진입 문서 비교'}
-  - {id: ac7, description: '메뉴 이름/아이콘 간격과 좌측 정렬, 스위치 상태, 닫기 터치 영역, 색상 패널 축소와 사진 CTA 조건을 모바일 4종 너비에서 확인한다.', verifiable: true, measurable_via: 'DOM geometry, hit testing, 전후 캡처'}
+  - id: acceptance-1
+    description: 모든 요구사항 r1-r16에 대응하는 화면 또는 동작 증거가 있다.
+    verifiable: true
+    measurable_via: "요구사항 대조표, 전후 캡처, 독립 코드 검토"
+  - id: acceptance-2
+    description: "320x568, 375x667, 393x659, 414x736, 768x900에서 페이지 가로 넘침과 조작부 가림이 없다."
+    verifiable: true
+    measurable_via: "Chrome DOM geometry, hit testing, screenshots"
+  - id: acceptance-3
+    description: "제목·날짜·숫자·긴 극장명과 한글 입력, 키보드 상태에서 티켓 피드백과 필드 이동을 확인한다."
+    verifiable: true
+    measurable_via: "실제 입력 이벤트, 축소 VisualViewport 모사, 표시/저장 원문 비교"
+  - id: acceptance-4
+    description: "사진/로고 업로드·크롭·취소·뒤로가기, 여섯 무드, 질감 강도, 서체, 출처, undo/redo, 초안 복원, 완료와 공유 샘플이 유지된다."
+    verifiable: true
+    measurable_via: 기존 회귀 시나리오와 필요한 새 시나리오
+  - id: acceptance-5
+    description: 과업 중심 수동 화면 검토를 수행하고 기능 검사 통과를 주관적 사용성 개선 증명으로 주장하지 않는다.
+    verifiable: true
+    measurable_via: 동일 문서의 전후 캡처와 사용자 검토; 실제 iPhone 미검증 별도 표기
+  - id: acceptance-6
+    description: 자동 저장 끄기·수정·pagehide·새로고침에서 기존 초안이 보존되고 다시 켜면 현재 문서가 저장된다. 자동 저장을 끈 상태에서는 저장된 초안이 없어도 임의 저장하지 않는다.
+    verifiable: true
+    measurable_via: 분리된 Chrome 컨텍스트에서 localStorage 원문과 재진입 문서 비교
+  - id: acceptance-7
+    description: "메뉴 이름/아이콘 간격과 좌측 정렬, 스위치 상태, 닫기 터치 영역, 색상 패널 축소와 사진 CTA 조건을 모바일 4종 너비에서 확인한다."
+    verifiable: true
+    measurable_via: "DOM geometry, hit testing, 전후 캡처"
+issues:
+  source: null # 생성 출처만 기록하며 구현 추적과 구분해요.
+  tracking: []
+
+# integration_points는 현행 코드예요. 나머지 context는 생성 당시 조사 기록이에요.
 context:
   existing_stack: [React 19, Bun, shadcn-ui, native-inputs, react-image-crop]
-  integration_points: [src/app.jsx, src/styles.css, src/LiveTicket.jsx, standalone-build, browser-verifiers]
+  integration_points:
+    - docs/mockups/filme-mobile-v2/src/app.jsx — 그룹 입력과 샘플 API/공유
+    - docs/mockups/filme-mobile-v2/src/LiveTicket.jsx — 여섯 Mood 재사용
+    - docs/mockups/filme-mobile-v2/src/styles.css
+    - docs/mockups/filme-mobile-v2/design.md — r1~r16 대응
+    - docs/mockups/filme-mobile-v2/verification/seed-audit.md — 당시 실행 결과와 미검증 경계
   backlog_scan: '[backlog-scan SKIPPED] gh 부재 · GitHub 리모트 없음 · 또는 조회 실패 — 백로그를 못 읽었어요. X3(conflicts)는 코드만 보고 채점했고, 결정된-미빌드 제약은 확인되지 않았어요.'
   decisions: '사용자가 직전 두 차례의 화면 분석·통합 작업 목록을 명세로 저장하고 구현하라고 명시했다. 기존 인터뷰 답변과 최신 지시를 재사용한다.'
   references:
@@ -77,16 +185,24 @@ context:
     - 'https://help.etsy.com/hc/en-us/articles/360016260113-How-to-Edit-Your-Listing-Photos'
   reference_boundary: '확인한 기능/작업 흐름을 FILME에 응용하며 특정 앱의 시각 배치를 그대로 검증하거나 복제했다고 주장하지 않는다.'
 blindspots:
-  - {topic: thumbnail-rendering, resolution: '디자인 도구가 열릴 때만 여섯 현재 문서 썸네일을 렌더링한다.'}
-  - {topic: accessible-selection, resolution: '선택 이름과 상태를 접근성 속성으로 제공한다.'}
-ambiguity: {overall: 0.10, gate_passed: true}
+  - topic: thumbnail-rendering
+    resolution: 디자인 도구가 열릴 때만 여섯 현재 문서 썸네일을 렌더링한다.
+  - topic: accessible-selection
+    resolution: 선택 이름과 상태를 접근성 속성으로 제공한다.
+ambiguity:
+  overall: 0.1
+  gate_passed: true
 metadata:
   generated_by: thinking-tools/build-spec
   authorization: '임시 명세 저장 후 해당 명세를 참고해 목업 작업 진행'
   isolated_review: previous-revision-passed
   revision_review: passed-one-round
   blindspot_pass: complete
-  gate_dimensions: {goal: 0.90, constraint: 0.90, success: 0.90, context: 0.90}
+  gate_dimensions:
+    goal: 0.9
+    constraint: 0.9
+    success: 0.9
+    context: 0.9
 
 implementation:
   path: docs/mockups/filme-mobile-v2

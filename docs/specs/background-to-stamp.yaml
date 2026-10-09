@@ -1,3 +1,24 @@
+# Compatible with thinking-tools 6.0.0; version/generated retain authoring provenance.
+# Lifecycle state follows the authorized diagnosis; see docs/specs/STATE_AUDIT.md.
+# 현재 적용 경계: 현재 스탬프는 opacity 0.2~1.0, 첫 업로드 0.5예요. Stub은 실제 spacer를 측정하며 박스와 이미지 두 겹을 사용해요.
+# 전체 명세 안내: docs/specs/README.md
+# AMENDMENT CONTRACT — keep these lines in the emitted file.
+# Read metadata first. Apply only active, non-withdrawn requirements within the user's current
+# request. Unknown/paused/closed Seeds are reference material, never automatic work candidates.
+# A named path or graph edge is not permission to resume. Resume paused only with user approval;
+# closed work continues in a NEW Seed with selected requirements and pinned provenance.
+# This is a functional spec, not a work log: REPLACE incorrect field values; never append
+# progress, execution logs or review notes. Minimal lifecycle decisions and evidence below are
+# allowed; missing lifecycle means unknown, never implicitly active or completed.
+# Preserve withdrawn items' ids AND original contents; record withdrawal separately. No response
+# is no approval. Explicit withdrawal does not approve child reparenting. Validate changes with
+# seed-lifecycle.py check <seed> --before <prior-file> and seed-relations.py check <seed>.
+# Claude's hook checks edits; Codex uses these same commands explicitly, without hook enforcement.
+# Ids: a constraint-N/acceptance-N id is never reused or deleted; new items take the next unused
+# number. Other Seeds' `refines`
+# point at them. Legacy c<N>/ac<N> ids are renamed only via scripts/seed-id-migrate.py; the
+# convention is defined in reference/identifiers.md.
+
 # Seed Spec — 배경 이미지를 '스탬프'로 재설계
 ---
 skill: build-spec
@@ -18,6 +39,79 @@ domain: tech
 brownfield: true
 refine_generation: 0
 
+lifecycle:
+  state: paused
+  outcome: null
+  reason: "고정 스탬프·배율·투명도와 관련 회귀는 구현돼 있으나 저장 JPEG 겹침·재방문·실기기 검증이 남아 완료 판정을 보류한다. Stub의 후속 측정 앵커 구현을 유지한다."
+  approved_by: "2026-10-10 사용자 지시: 상태값 unknown인것들 현행화하고 진단 결과에 따라 수정 필요한 사항 있으면 수정 시작"
+  evidence:
+    commit: 24eb36e91eb48d9dca0ec5227508bd48ad28df1c
+    items:
+      - id: constraint-1
+        refs:
+          - "docs/specs/STATE_AUDIT.md#background-to-stamp"
+          - "src/components/v2/designRailItems.tsx:635"
+          - "src/components/v2/designRailItems.tsx:654-685"
+      - id: constraint-2
+        refs:
+          - "docs/specs/STATE_AUDIT.md#background-to-stamp"
+          - "src/components/v2/designRailItems.tsx:572"
+          - "__tests__/designRailBackgroundPattern.test.tsx:119"
+      - id: constraint-3
+        refs:
+          - "docs/specs/STATE_AUDIT.md#background-to-stamp"
+          - "src/utils/backgroundPatterns.tsx:46"
+          - "src/components/v2/designRailItems.tsx:651-668"
+      - id: constraint-4
+        refs:
+          - "docs/specs/STATE_AUDIT.md#background-to-stamp"
+          - "src/components/v2/designRailItems.tsx:598"
+          - "src/components/v2/designRailItems.tsx:614-619"
+      - id: constraint-5
+        refs:
+          - "docs/specs/STATE_AUDIT.md#background-to-stamp"
+          - "src/components/v2/designRailItems.tsx:653-668"
+      - id: constraint-6
+        refs:
+          - "docs/specs/STATE_AUDIT.md#background-to-stamp"
+          - "__tests__/designRailBackgroundPattern.test.tsx:175"
+          - "src/components/moods/MoodStub.tsx:248-265"
+      - id: constraint-7
+        refs:
+          - "docs/specs/STATE_AUDIT.md#background-to-stamp"
+          - "src/types/index.ts:126"
+          - "src/utils/backgroundPatterns.tsx:11-14"
+      - id: constraint-8
+        refs:
+          - "docs/specs/STATE_AUDIT.md#background-to-stamp"
+          - "src/utils/backgroundPatterns.tsx:32-36"
+          - "src/components/moods/MoodStub.tsx:276-289"
+      - id: constraint-10
+        refs:
+          - "docs/specs/STATE_AUDIT.md#background-to-stamp"
+          - "src/utils/backgroundPatterns.tsx:54-80"
+      - id: acceptance-1
+        refs:
+          - "docs/specs/STATE_AUDIT.md#background-to-stamp"
+          - "__tests__/designRailBackgroundPattern.test.tsx:188"
+          - "src/components/moods/MoodStub.tsx:260"
+      - id: acceptance-2
+        refs:
+          - "docs/specs/STATE_AUDIT.md#background-to-stamp"
+          - "__tests__/designRailBackgroundPattern.test.tsx:326"
+          - "src/components/moods/MoodStub.tsx:264"
+      - id: acceptance-3
+        refs:
+          - "docs/specs/STATE_AUDIT.md#background-to-stamp"
+          - "__tests__/designRailBackgroundPattern.test.tsx:337"
+          - "src/components/v2/designRailItems.tsx:614-619"
+      - id: acceptance-7
+        refs:
+          - "docs/specs/STATE_AUDIT.md#background-to-stamp"
+          - "src/components/v2/designRailItems.tsx:635-685"
+          - "__tests__/designRailBackgroundPattern.test.tsx:119"
+  withdrawn: []
+
 goal:
   statement: >-
     사용자가 올린 이미지를 캔버스 전면 cover로 깔던 '배경'을, Criterion·Editorial·Stub 세 무드에서
@@ -27,7 +121,7 @@ goal:
   clarity_score: 0.9
 
 constraints:
-  - id: c1
+  - id: constraint-1
     type: business
     description: >-
       사용자에게 보이는 이름은 '스탬프'로 간다. 레일 항목 라벨 '배경'(designRailItems.tsx:779)과
@@ -40,7 +134,7 @@ constraints:
       — 요약하면 **사용자 노출 문자열 층에서는 충돌이 0이고**(전수 확인: '스탬프'라는 단어를
       사용자에게 보여주는 자리가 src에 하나도 없다. 로고 축은 '로고', 형압 축은 '형압'으로 노출된다)
       **내부 식별자 층에서만 문다.**
-  - id: c2
+  - id: constraint-2
     type: technical
     description: >-
       대상 무드는 Criterion · Editorial · Stub 셋이다. 이건 **이미 그 상태라 코드 변경이 0인 절이다**
@@ -50,7 +144,7 @@ constraints:
     rationale: >-
       no-op을 명시적으로 안 적으면 착수자가 "세 무드에 추가"를 할 일로 읽고 없는 작업을 찾는다.
       판정 기준("배경을 깔 종이 바탕이 그 무드에 실재하는가", :545-549 주석)도 그대로 유효하다.
-  - id: c3
+  - id: constraint-3
     type: technical
     description: >-
       위치는 무드가 정한다. 사용자에게 오프셋·정렬 컨트롤을 열지 않는다.
@@ -59,7 +153,7 @@ constraints:
       오너 확정. #680이 같은 판단을 이미 한 번 했고(그 스펙 c6 — 크기 패널이 scrollHeight 199 vs
       슬롯 115px로 넘치는데 컨트롤 2개는 세로 예산을 두 배로 먹는다) 슬롯 사정은 그대로다.
       고정 배치라 `transform-origin`·`backgroundPosition` center 고정도 그대로 성립한다.
-  - id: c4
+  - id: constraint-4
     type: technical
     description: >-
       투명도는 새 옵셔널 필드(`TicketComponents`)로 싣고 렌더는 `?? 1`로 읽는다. 기존 저장본은
@@ -74,7 +168,7 @@ constraints:
       "새 업로드에만"을 렌더 쪽에서 분기하려면 "이 이미지가 언제 올라왔는가"를 새로 저장해야 하는데,
       쓰기 시점에 값을 확정하면 그 축이 통째로 사라진다. 커밋을 한 번에 묶는 건 undo 히스토리
       때문이다 — 이미지와 투명도를 따로 쓰면 undo 한 번이 반쯤 되돌린 상태를 만든다.
-  - id: c5
+  - id: constraint-5
     type: technical
     description: >-
       크기·투명도 컨트롤은 `BrightnessSlider`를 그대로 쓴다. 새 컴포넌트·새 모듈 0.
@@ -83,7 +177,7 @@ constraints:
       오너 확정이고 이미 크기 슬라이더가 그걸 쓴다(designRailItems.tsx:607-618).
       `shouldCommitSliderValue`가 드래그 중 undo 폭주를 이미 막아뒀고(#507), 라벨 줄에 액션을
       접는 `action` prop도 있어(형압 패널의 '지우기'가 쓰는 자리) 패널 세로 예산에도 유리하다.
-  - id: c6
+  - id: constraint-6
     type: technical
     description: >-
       스탬프 레이어는 `componentOpacity` 래퍼 **밖**에 선다. 세 무드 공통 계약이고 이번 재설계가
@@ -96,7 +190,7 @@ constraints:
       물건이라 이 계약이 여전히 맞는지는 재확인 대상이다** — 자리를 옮기는 것과 투명도 축이 새로
       생기는 것이 겹치므로, 계약을 바꾸기로 하면 그 테스트도 같이 뒤집는 것이지 조용히 넘어갈
       일이 아니다.
-  - id: c7
+  - id: constraint-7
     type: technical
     description: >-
       상태 필드 `backgroundPatternImage`(types/index.ts:105-117)는 개명하지 않는다. 새 필드
@@ -107,7 +201,7 @@ constraints:
       `backgroundPatterns.tsx:11-12`가 #672에서 정확히 같은 이유로 "사용자에게 보이는 이름만
       바꿨다"고 적어뒀다. 이번 개명도 그 선례를 그대로 탄다. IDB 키 `'background'`
       (`src/utils/imageDb.ts:11`)도 같은 이유로 그대로다.
-  - id: c8
+  - id: constraint-8
     type: technical
     description: >-
       고정 배치가 포스터와 안 겹치는 게 확정되면 `PATTERN_CLIP` 둘(MoodCriterion.tsx:92-94,
@@ -122,7 +216,7 @@ constraints:
       그 자리에 깔린 레이어가 포스터 **위**로 인쇄된다) 스탬프 박스가 포스터 슬롯과 안 겹치면
       그 경로 자체가 안 열린다. `__tests__/designRailBackgroundPattern.test.tsx:153-166`(clip-path
       값)·`:229-247`(stub 둘)이 이 셋을 잠그고 있어 셋 다 테스트를 같이 고쳐야 한다.
-  - id: c9
+  - id: constraint-9
     type: technical
     description: >-
       Stub의 스탬프 자리는 **저장물 실측으로 확정한다.** `scripts/capture-export.mjs`로 Stub 저장물을
@@ -134,7 +228,7 @@ constraints:
       개수에 따라 재분배하며, `Row`가 `label + 점선 필러(flex:1) + 값`이라 가로도 항상 꽉 찬다 —
       필드를 몇 개 켰느냐로 빈자리가 움직인다. 안정적 앵커 후보 셋과 각각의 함정은 context에
       적어뒀다.
-  - id: c10
+  - id: constraint-10
     type: technical
     description: >-
       `BackgroundPatternLayer`의 두 겹 구조(backgroundPatterns.tsx:49-63)는 clip이 남는 한 유지한다.
@@ -147,7 +241,7 @@ constraints:
       적어뒀으니, 합치더라도 상태별로 겹 수가 갈리면 안 된다.
 
 success_criteria:
-  - id: ac1
+  - id: acceptance-1
     description: >-
       세 무드에서 스탬프가 무드별 고정 박스 안에만 그려지고, 캔버스 전면을 덮지 않는다.
     verifiable: true
@@ -155,14 +249,14 @@ success_criteria:
       `__tests__/designRailBackgroundPattern.test.tsx` 확장 — 지금 `backgroundSize: 'cover'` +
       `inset: 0`을 기대하는 자리(:136-137)를 무드별 고정 좌표 기대로 바꾼다. 12케이스 중
       `:125`(이미지 반영)·`:153`(clip-path)·`:170`(배율이 안쪽 겹에만)이 직접 대상이다.
-  - id: ac2
+  - id: acceptance-2
     description: >-
       기존 저장본(투명도 필드 없음)의 렌더가 안 변한다 — 투명도 1.0으로 읽힌다.
     verifiable: true
     measurable_via: >-
       같은 테스트 파일 — 투명도를 안 건드린 채 이미지만 올린 상태의 레이어 `opacity`가 기본값인지.
       `backgroundPatternScale`의 `?? 1`이 같은 명제를 이미 지키는 방식과 대칭이다.
-  - id: ac3
+  - id: acceptance-3
     description: >-
       새로 업로드한 스탬프는 반투명으로 시작하고, 사용자가 값을 고친 뒤 이미지를 교체하면 그 값이
       유지된다.
@@ -170,14 +264,14 @@ success_criteria:
     measurable_via: >-
       상호작용 테스트 — 업로드 → 투명도 슬라이더 값이 기본값(1.0 아님) → 슬라이더 조작 → 이미지
       교체 → 조작한 값 유지. c4의 "쓰기 시점 확정"이 실제로 그렇게 도는지 잠그는 유일한 케이스다.
-  - id: ac4
+  - id: acceptance-4
     description: >-
       크기·투명도 값이 무드 왕복과 새로고침을 넘어 살아남는다.
     verifiable: true
     measurable_via: >-
       같은 테스트 파일의 기존 "무드를 왕복해도 배경 이미지가 보존된다"(:205-227)에 투명도를 추가.
       그 케이스가 이미 `background-pattern-scale` testid를 왕복 확인하고 있다.
-  - id: ac5
+  - id: acceptance-5
     description: >-
       Stub의 스탬프 자리가 실제 저장물에서 조판과 안 겹친다. **자리는 실측으로 정하고, 정한 뒤
       실측으로 확인한다.**
@@ -188,14 +282,14 @@ success_criteria:
       절대차가 허용치 3(하네스 잡음 바닥 maxΔ 2) 안인지 본다. 필드를 다 켠 상태와 최소로 켠 상태
       둘 다 떠야 한다 — `space-evenly`가 빈자리를 필드 개수로 재분배하므로 한 판만 보면 c9의
       함정에 그대로 빠진다.
-  - id: ac6
+  - id: acceptance-6
     description: >-
       Criterion·Editorial에서도 스탬프가 조판을 안 가린다.
     verifiable: true
     measurable_via: >-
       같은 `capture-export.mjs --bg --compare`. 두 무드는 자리를 도면에서 읽을 수 있으므로(context의
       좌표) 확인만 하면 된다.
-  - id: ac7
+  - id: acceptance-7
     description: >-
       레일 라벨·슬라이더 라벨·`alt`·`aria-label`이 '스탬프' 어휘로 일관되게 바뀌고, 라벨 규칙을
       어기지 않는다.
@@ -206,6 +300,11 @@ success_criteria:
       44자)을 지킬 것. 테스트 쪽 대상은 `designRailBackgroundPattern.test.tsx:77`·`:92`·`:95`가
       `name: '배경'`으로 버튼을 찾는 자리다(문자열이 바뀌면 같이 깨진다).
 
+issues:
+  source: null # 생성 출처만 기록하며 구현 추적과 구분해요.
+  tracking: ["#728", "#768"]
+
+# integration_points는 현행 코드예요. 나머지 context는 생성 당시 조사 기록이에요.
 context:
   existing_stack:
     - Next.js (pages router) + React + TypeScript
@@ -213,29 +312,15 @@ context:
     - bun test + happy-dom + @testing-library/react
     - puppeteer-core + 시스템 Chrome (scripts/capture-export.mjs)
   dependencies:
-    - useLogoCrop(cb, TARGET_HEIGHT) — 로고 스탬프와 **같은** 자유비 크롭 흐름, maxSide 1534.
-      스탬프가 작아지면 이 값을 내려도 되는지가 열린 질문이다(#673이 배경을 "제일 큰 payload"로
-      지목했으므로 줄이는 쪽으로 갈 여지가 생긴다)
+    - "useLogoCrop(cb, TARGET_HEIGHT) — 로고 스탬프와 **같은** 자유비 크롭 흐름, maxSide 1534. 스탬프가 작아지면 이 값을 내려도 되는지가 열린 질문이다(#673이 배경을 \"제일 큰 payload\"로 지목했으므로 줄이는 쪽으로 갈 여지가 생긴다)"
     - BrightnessSlider — c5. `shouldCommitSliderValue`(#507)가 드래그 중 undo 폭주를 이미 막는다
     - src/utils/imageDb.ts:11 — IDB 키 `'background'`. c7로 무변경
     - TicketComponents 안에 사는 필드라 undo·자동저장에 자동으로 실린다(types/index.ts:105-127)
   integration_points:
-    - src/utils/backgroundPatterns.tsx — 유일한 스타일 소스. 두 겹 구조(:49-63)와 알파를 안 깎는
-      결정(:22-26)이 여기 있다
-    - src/components/moods/MoodCriterion.tsx:253-261(호출부) · :92-94(PATTERN_CLIP).
-      도판 PLATE_LEFT 230 / PLATE_TOP 262 / PLATE_W 500 / PLATE_H 750, PAD 84(:59-64)
-    - src/components/moods/MoodStub.tsx:202-206(호출부) · :84-86(PATTERN_CLIP) ·
-      :210(포스터 밴드 POSTER_H 640) · :221(절취선 16px) · :229·:295(페이퍼 스텁 + space-evenly)
-    - src/components/moods/MoodEditorial.tsx:322-326(호출부, clip 없음) ·
-      :447(이미 있는 absolute 장식 `right:22, top:22, opacity .32`) · :54(MAIN_PAD_X 52) ·
-      :57(MAIN_AVAIL_W 535)
-    - src/components/v2/designRailItems.tsx:550(BACKGROUND_PATTERN_MOODS) · :568(BackgroundPatternPanel) ·
-      :607-618(배율 슬라이더) · :775-793(레일 항목 등록, id `'pattern'`·label '배경')
-    - src/types/index.ts — 투명도 필드 추가
-    - __tests__/designRailBackgroundPattern.test.tsx(278줄·12케이스) ·
-      __tests__/blobRevokeUndoAware.test.tsx · __tests__/draftImageRestore.test.tsx
-    - scripts/capture-export.mjs:10-11(사용례) · :221·:229(BG_PATTERN_DRAW) · :445-447(bgScale 시드) ·
-      :464-483(주입) · :613-614(플래그)
+    - src/utils/backgroundPatterns.tsx — BackgroundPatternLayer
+    - src/components/v2/designRailItems.tsx — BackgroundPatternPanel
+    - src/components/moods/MoodStub.tsx — anchorStampBox/measureStamp
+    - __tests__/moodStubPatternBoxAnchoring.test.tsx
   backlog_scan: >-
     prefilter 실행됨(open 9 · closed 369). 관련 이슈 다섯. **#530**이 배경 축을 처음 세웠고(그때는
     기하 프리셋 3종), **#671**이 사용자 업로드 이미지로 바꿨고, **#672**가 프리셋과 `backgroundPattern`

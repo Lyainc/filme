@@ -1,3 +1,24 @@
+# Compatible with thinking-tools 6.0.0; version/generated retain authoring provenance.
+# Lifecycle state follows the authorized diagnosis; see docs/specs/STATE_AUDIT.md.
+# 현재 적용 경계: 현재 랜딩은 overlay/hidden이며 draft 복원·새 문서·무드 선택 경로가 있어요. 이슈 상태와 첫 페인트 실측은 이번 대조에서 추정하지 않아요.
+# 전체 명세 안내: docs/specs/README.md
+# AMENDMENT CONTRACT — keep these lines in the emitted file.
+# Read metadata first. Apply only active, non-withdrawn requirements within the user's current
+# request. Unknown/paused/closed Seeds are reference material, never automatic work candidates.
+# A named path or graph edge is not permission to resume. Resume paused only with user approval;
+# closed work continues in a NEW Seed with selected requirements and pinned provenance.
+# This is a functional spec, not a work log: REPLACE incorrect field values; never append
+# progress, execution logs or review notes. Minimal lifecycle decisions and evidence below are
+# allowed; missing lifecycle means unknown, never implicitly active or completed.
+# Preserve withdrawn items' ids AND original contents; record withdrawal separately. No response
+# is no approval. Explicit withdrawal does not approve child reparenting. Validate changes with
+# seed-lifecycle.py check <seed> --before <prior-file> and seed-relations.py check <seed>.
+# Claude's hook checks edits; Codex uses these same commands explicitly, without hook enforcement.
+# Ids: a constraint-N/acceptance-N id is never reused or deleted; new items take the next unused
+# number. Other Seeds' `refines`
+# point at them. Legacy c<N>/ac<N> ids are renamed only via scripts/seed-id-migrate.py; the
+# convention is defined in reference/identifiers.md.
+
 # Seed Spec — 랜딩 상시 노출 + draft 복원을 1급 진입점으로 (#612 계열)
 ---
 skill: build-spec
@@ -18,6 +39,102 @@ domain: tech
 brownfield: true
 refine_generation: 0
 
+lifecycle:
+  state: paused
+  outcome: null
+  reason: "#727의 상시 랜딩·초안 복원·문서 교체와 대상 회귀는 검증됐으나 constraint-11 및 acceptance-8·acceptance-9의 새 프로덕션 빌드 실측이 남아 완료 판정을 보류한다."
+  approved_by: "2026-10-10 사용자 지시: 상태값 unknown인것들 현행화하고 진단 결과에 따라 수정 필요한 사항 있으면 수정 시작"
+  evidence:
+    commit: 24eb36e91eb48d9dca0ec5227508bd48ad28df1c
+    items:
+      - id: constraint-1
+        refs:
+          - "docs/specs/STATE_AUDIT.md#landing-always-visible-entry"
+          - "src/components/v2/MobileEditorShell.tsx:1096"
+          - "src/components/v2/Landing.tsx:376"
+      - id: constraint-2
+        refs:
+          - "docs/specs/STATE_AUDIT.md#landing-always-visible-entry"
+          - "src/components/v2/MobileEditorShell.tsx:1096"
+          - "src/components/v2/Landing.tsx:376"
+      - id: constraint-3
+        refs:
+          - "docs/specs/STATE_AUDIT.md#landing-always-visible-entry"
+          - "src/components/v2/MobileEditorShell.tsx:1096"
+          - "src/components/v2/Landing.tsx:376"
+      - id: constraint-4
+        refs:
+          - "docs/specs/STATE_AUDIT.md#landing-always-visible-entry"
+          - "src/components/v2/MobileEditorShell.tsx:1096"
+          - "src/components/v2/Landing.tsx:376"
+      - id: constraint-5
+        refs:
+          - "docs/specs/STATE_AUDIT.md#landing-always-visible-entry"
+          - "src/components/v2/Landing.tsx:483"
+          - "__tests__/landingOverlay.test.tsx:97"
+      - id: constraint-6
+        refs:
+          - "docs/specs/STATE_AUDIT.md#landing-always-visible-entry"
+          - "src/components/v2/Landing.tsx:491"
+          - "__tests__/landingOverlay.test.tsx:97"
+      - id: constraint-7
+        refs:
+          - "docs/specs/STATE_AUDIT.md#landing-always-visible-entry"
+          - "src/hooks/usePhototicket.ts:838"
+          - "src/components/v2/MobileEditorShell.tsx:622"
+      - id: constraint-8
+        refs:
+          - "docs/specs/STATE_AUDIT.md#landing-always-visible-entry"
+          - "src/hooks/usePhototicket.ts:392"
+          - "src/hooks/usePhototicket.ts:838"
+      - id: constraint-9
+        refs:
+          - "docs/specs/STATE_AUDIT.md#landing-always-visible-entry"
+          - "src/pages/_document.tsx:23"
+          - "src/styles/globals.css:373"
+      - id: constraint-10
+        refs:
+          - "docs/specs/STATE_AUDIT.md#landing-always-visible-entry"
+          - "https://github.com/Lyainc/filme/issues/717#issuecomment-5318662995"
+          - "https://github.com/Lyainc/filme/issues/717#issuecomment-5346600196"
+      - id: constraint-12
+        refs:
+          - "docs/specs/STATE_AUDIT.md#landing-always-visible-entry"
+          - "src/components/v2/Landing.tsx:488"
+          - "__tests__/a11yFieldTapAndTapTargets.test.tsx"
+      - id: acceptance-1
+        refs:
+          - "docs/specs/STATE_AUDIT.md#landing-always-visible-entry"
+          - "__tests__/landingOverlay.test.tsx:83"
+          - "__tests__/awaitingPosterRestore.test.tsx:67"
+      - id: acceptance-2
+        refs:
+          - "docs/specs/STATE_AUDIT.md#landing-always-visible-entry"
+          - "__tests__/landingOverlay.test.tsx:97"
+      - id: acceptance-3
+        refs:
+          - "docs/specs/STATE_AUDIT.md#landing-always-visible-entry"
+          - "__tests__/landingOverlay.test.tsx:114"
+          - "__tests__/landingFreshStart.test.tsx:112"
+      - id: acceptance-4
+        refs:
+          - "docs/specs/STATE_AUDIT.md#landing-always-visible-entry"
+          - "__tests__/landingFreshStart.test.tsx:51"
+      - id: acceptance-5
+        refs:
+          - "docs/specs/STATE_AUDIT.md#landing-always-visible-entry"
+          - "__tests__/awaitingPosterRestore.test.tsx:132"
+      - id: acceptance-6
+        refs:
+          - "docs/specs/STATE_AUDIT.md#landing-always-visible-entry"
+          - "src/components/v2/Landing.tsx:376"
+          - "src/components/v2/MobileEditorShell.tsx:1096"
+      - id: acceptance-7
+        refs:
+          - "docs/specs/STATE_AUDIT.md#landing-always-visible-entry"
+          - "__tests__/landingPaintGate.test.tsx:44"
+  withdrawn: []
+
 goal:
   statement: >-
     재방문자에게도 랜딩을 항상 보여주고, 이전 draft를 이어받는 길을 랜딩의 1급 진입점(주 CTA 위
@@ -27,7 +144,7 @@ goal:
   clarity_score: 0.9
 
 constraints:
-  - id: c1
+  - id: constraint-1
     type: product
     description: >-
       랜딩은 draft 유무와 무관하게 항상 뜬다. 지금의 생략 조건 두 개를 걷어낸다 —
@@ -40,7 +157,7 @@ constraints:
       포스터가 도착하는 순간 `croppedImageUrl`이 서고 랜딩이 다시 숨는다. 즉 제일 흔한 재방문자
       (포스터 있는 draft)에겐 정책이 뒤집히지 않은 채로 남는다. 랜딩 표시는 파생값이 아니라
       **사용자가 랜딩을 떠났는가** 하나로 판정해야 한다.
-  - id: c2
+  - id: constraint-2
     type: technical
     description: >-
       랜딩 표시 판정을 단일 이탈 state로 바꾼다. `landingDismissed`(`:299`)가 그 state이고,
@@ -53,7 +170,7 @@ constraints:
       가져왔다"를 구분하지 못한다. 두 경로는 실제로 갈려 있다 — 크롭 확정은
       `handleImageUpload`를 타고, IDB 복원은 `usePhototicket.ts:411` 근처에서 `setState`로 직접
       주입한다. 이탈을 state로 명시하면 그 구분이 공짜로 생긴다.
-  - id: c3
+  - id: constraint-3
     type: technical
     description: >-
       inline 모드를 삭제한다. `Landing`의 `mode`는 `'overlay' | 'hidden'` 두 값이 되고,
@@ -69,7 +186,7 @@ constraints:
       헤더 아래 큰 빈 공간 + 가운데 CTA 하나만 남아 "랜딩이 안 뜬 것"처럼 보였다. inline이
       지키던 두 명제(텍스트만 있던 draft 복원의 진입 표면, IDB 포스터 복원 실패 시 #489 결정 5의
       재업로드 유도)는 이제 오버레이 랜딩 자신이 더 낫게 받는다.
-  - id: c4
+  - id: constraint-4
     type: technical
     description: >-
       `showLanding`의 `!crop.cropOpen` 항도 걷는다. 크롭 모달이 열려 있는 동안 랜딩은 오버레이인
@@ -80,7 +197,7 @@ constraints:
       보다 뒤(`:1280`)에 서므로, z가 같아도 DOM 순서로 모달이 위에 그려진다. 즉 랜딩을 걷지 않아도
       가려진다. 이 항이 하던 일(취소 시 빈 셸 방지)은 이탈 state가 안 서 있으므로 저절로 성립한다.
       이 항을 남기면 inline이 그 상태 하나로 살아남아 c3가 무효가 된다.
-  - id: c5
+  - id: constraint-5
     type: product
     description: >-
       복원 제안은 모달이 아니라 랜딩 본문의 진입점이다. 주 CTA(`Landing.tsx:548`의 children =
@@ -92,7 +209,7 @@ constraints:
       종결어미라 `docs/COPY_TONE_GUIDE.md` 축 2 위반이다(축 1의 질문형 예외는 비가역 동작 확인
       한 자리 — `confirmWordmarkReset` — 뿐이고, 그 희소성이 경고를 경고로 만든다).
       오너 원안(편집 진입 시 모달)은 expert-panel 만장일치로 기각됐다.
-  - id: c6
+  - id: constraint-6
     type: product
     description: >-
       라벨은 조건절 없는 명령형이다. 기본형 "이어서 만들기", 제목이 있으면
@@ -104,7 +221,7 @@ constraints:
       통일하고 양쪽이 명사구여야 한다는 표기 규칙도 만족한다(동명사 + 고유명사). 제목을 싣는 건
       무엇을 이어받는지 보이게 하기 위해서다 — draft에 TTL이 없어 석 달 전 작업도 그대로 남으므로,
       라벨의 제목이 "지금 이게 뭔지"를 말하는 유일한 장치다.
-  - id: c7
+  - id: constraint-7
     type: technical
     description: >-
       "새로 시작"에 해당하는 네 진입 경로는 이전 draft를 **즉시 파기하지 않는다.** 진입 커밋
@@ -125,7 +242,7 @@ constraints:
       스킵되지 않는다.
       **파생 요구**: `clearDraft`를 "문서 리셋"과 "저장분 삭제" 두 조각으로 갈라 앞쪽만 쓰는 게
       제일 작은 diff다. 워드마크 탭 초기화(`performClear`, `:492`)는 지금처럼 둘 다 쓴다.
-  - id: c8
+  - id: constraint-8
     type: technical
     description: >-
       진행 중인 IndexedDB 복원이 새 문서에 끼어들면 안 된다. `usePhototicket.ts:384`의 IDB
@@ -139,7 +256,7 @@ constraints:
       `mountedRef`에서 셸 소유 `ocrEpochRef` epoch 비교로 옮긴 #388 / PR #413 P0(커밋 007f381).
       c7이 저장분을 살려두기 때문에 이 창이 실제로 열린다(저장분을 즉시 지우는 설계였다면
       `clearImages()`가 경합으로 덮었을 자리다).
-  - id: c9
+  - id: constraint-9
     type: technical
     description: >-
       `_document.tsx:22`의 `has-draft` 스탬프는 남기되 의미를 뒤집는다 — "랜딩 오버레이를
@@ -158,7 +275,7 @@ constraints:
       (`clearDraftPaintGate`, `usePhototicket.ts:48`)도 그대로 유효하다(행이 다시 숨는다).
       반대로 오버레이 숨김 규칙은 이 스펙이 뒤집는 명제 자체라 남기면 죽은 코드가 아니라
       **정면 충돌**이다.
-  - id: c10
+  - id: constraint-10
     type: process
     description: >-
       #717을 먼저 닫지 않는다. 이 작업이 대상 테스트 2개를 흡수한다 —
@@ -176,7 +293,7 @@ constraints:
       테스트도 같은 전역 누수에 같은 방식으로 걸릴 수 있다. 반대로 #717을 먼저 닫으려면 지금
       곧 사라질 단언을 붙들고 순서 의존을 파야 한다. 그래서 흡수는 "테스트 2개의 소유권"까지고,
       원인 축은 #717이 계속 소유한다.
-  - id: c11
+  - id: constraint-11
     type: product
     description: >-
       복원 행이 랜딩의 세로 예산을 넘기면 안 된다. 400×675 프레임에서 복원 행 · 주 CTA · 이탈
@@ -188,7 +305,7 @@ constraints:
       오버레이는 `overflow-y-auto`라 넘쳐도 조용히 스크롤로 흡수돼 "주 CTA가 접힌 아래로 내려간"
       상태가 티가 안 난다. 서브카피를 먼저 접는 건 축 5(브랜드 카피)에서 헤드 2줄 중 아래
       한 줄이 값어치가 낮고, 재방문자는 이미 서비스를 아는 사람이라서다.
-  - id: c12
+  - id: constraint-12
     type: technical
     description: >-
       복원 행은 `min-h-touch`(44px) 탭 타깃을 갖는다.
@@ -198,7 +315,7 @@ constraints:
       (`Landing.tsx:576·581`, #646). 새 컨트롤만 예외를 두면 그 결정이 조용히 깨진다.
 
 success_criteria:
-  - id: ac1
+  - id: acceptance-1
     description: >-
       draft가 있어도 랜딩이 오버레이로 뜬다. 텍스트만 있던 draft와 포스터가 있던 draft 둘 다.
     verifiable: true
@@ -208,7 +325,7 @@ success_criteria:
       포스터 축은 `__tests__/awaitingPosterRestore.test.tsx`의 imageDb 스텁(`loadGate`)을 그대로
       써서 IDB 복원이 **끝난 뒤에도** `.fixed`가 유지되는지 확인한다 — c1이 지목한 `canvasReady`
       항이 살아 있으면 정확히 여기서 깨진다.
-  - id: ac2
+  - id: acceptance-2
     description: >-
       복원 진입점이 주 CTA 위에 있고, 라벨이 조건절·종결어미·마침표 없는 명령형이며 제목을 싣는다.
     verifiable: true
@@ -218,7 +335,7 @@ success_criteria:
       `compareDocumentPosition`으로 OCR CTA 버튼(`name: '티켓 스크린샷으로 자동입력'`)보다 앞인지.
       라벨 문자열에 `.`·`있으면`·`없으면`·`세요`가 없는지도 같은 자리에서 정규식으로 잰다
       (COPY_TONE_GUIDE 축 2의 기계적 판별을 그대로 옮긴 것).
-  - id: ac3
+  - id: acceptance-3
     description: >-
       복원 진입점을 누르면 랜딩이 걷히고 복원된 필드가 그대로 편집 화면에 있다.
     verifiable: true
@@ -227,7 +344,7 @@ success_criteria:
       `landing().classList.contains('hidden') === true` + 제목 입력 자리에 `인터스텔라`가 남아
       있는지. `__tests__/posterlessCanvas.test.tsx`의 '완료'·'티켓 항목 목록 열기' 존재 확인과
       같은 형태로 편집 크롬이 열렸는지도 함께.
-  - id: ac4
+  - id: acceptance-4
     description: >-
       "새로 시작" 경로로 진입해도 이전 저장분이 그 순간에 사라지지 않고, 새 문서가 이전 필드를
       물려받지 않는다. 저장분은 새 문서의 첫 자동저장에서 덮인다.
@@ -238,7 +355,7 @@ success_criteria:
       여전히 `인터스텔라`를 담고 있고 ② 화면의 제목 필드는 비어 있는지. 그리고 편집을 한 번
       일으킨 뒤 `waitFor`로 저장분이 새 내용으로 바뀌는지(자동저장 디바운스 1s, `--timeout 30000`
       안). **단언의 `received`에 DOM 엘리먼트를 넣지 말 것**(#693) — `!!el` 형태로 강제 변환한다.
-  - id: ac5
+  - id: acceptance-5
     description: >-
       IndexedDB 복원이 늦게 도착해도 새 문서에 옛 포스터가 끼어들지 않는다(c8).
     verifiable: true
@@ -247,7 +364,7 @@ success_criteria:
       심고 게이트를 건 채 render → "포스터 없이 직접 입력"으로 새 문서 진입 → `releaseLoad()` →
       헤더 메뉴가 '포스터 교체'가 아니라 '포스터 추가'인지로 `croppedImageUrl`이 안 섰음을 잰다
       (이 파일이 이미 쓰는 대리 지표다). `mock.module` 복원은 스프레드 스냅샷으로(#611).
-  - id: ac6
+  - id: acceptance-6
     description: >-
       inline 모드가 코드에서 사라지고, 랜딩은 항상 오버레이 아니면 hidden이다.
     verifiable: true
@@ -256,7 +373,7 @@ success_criteria:
       깨진다. 동작 축은 `__tests__/posterlessCanvas.test.tsx`의 '캔버스가 서면 랜딩은 숨는다
       (#674)'가 그대로 유효해야 하고, `awaitingPosterRestore.test.tsx`의 `classList.contains(
       'flex-1')` 단언(= inline 판정)은 삭제 또는 `.fixed` 대조로 교체된다.
-  - id: ac7
+  - id: acceptance-7
     description: >-
       첫 페인트 게이트가 방향만 바뀐 채 세 파일에서 맞는다 — 스크립트가 찍는 클래스, CSS 규칙,
       거두는 쪽.
@@ -267,7 +384,7 @@ success_criteria:
       `html.has-draft [data-testid='landing'].fixed`가 **없는지**(c9의 삭제를 잠근다) ③ 새 규칙
       문자열이 있는지 ④ 저장분이 없거나 손상됐을 때 마운트가 게이트를 거두는 기존 두 케이스는
       그대로 통과.
-  - id: ac8
+  - id: acceptance-8
     description: >-
       크롬 하네스의 랜딩 축이 뒤집힌 명제를 잰다.
     verifiable: true
@@ -280,7 +397,7 @@ success_criteria:
       그리드가 레이어를 덮는다)은 그대로 유효하다 — 배경 타일은 overlay 모드에서만 그려지는데
       (`Landing.tsx:480`) 이 스펙은 overlay를 늘리기만 하므로 축이 약해지지 않는다.
       하네스는 `bun run build && next start`로 **새로** 띄운 서버에서 돌린다(#601 stale 서버 함정).
-  - id: ac9
+  - id: acceptance-9
     description: >-
       복원 행을 얹어도 400×675 프레임에서 복원 행·주 CTA·이탈 경로가 스크롤 없이 다 보인다(c11).
     verifiable: true
@@ -289,6 +406,11 @@ success_criteria:
       방향별 넘침이 0인지, 그리고 랜딩 오버레이의 `scrollHeight <= clientHeight`인지 함께 잰다.
       draft를 심은 컨텍스트에서 재야 한다 — 안 심으면 복원 행 자체가 없어 조용히 통과한다.
 
+issues:
+  source: null # 생성 출처만 기록하며 구현 추적과 구분해요.
+  tracking: ["#727"]
+
+# integration_points는 현행 코드예요. 나머지 context는 생성 당시 조사 기록이에요.
 context:
   existing_stack:
     - Next.js (pages router) + React + TypeScript
@@ -296,46 +418,17 @@ context:
     - bun test + happy-dom + @testing-library/react + user-event
     - localStorage(텍스트·설정) + IndexedDB(이미지 Blob, src/utils/imageDb.ts) 2층 영속
   dependencies:
-    - >-
-      `usePhototicket`의 자동저장 디바운스 — `dirtyTick === 0`이면 예약 자체를 안 한다
-      (`src/hooks/usePhototicket.ts:769`). c7의 "랜딩에 머무는 동안 draft가 살아 있다"가 이
-      게이트에 통째로 기댄다. 단순 방문·복원·리셋은 `dirtyTick`을 안 올린다.
-    - >-
-      `useEditHistory` — 베이스라인을 렌더 시점이 아니라 첫 디바운스 발화가 잡는다
-      (`src/hooks/useEditHistory.ts:38-40`). 문서 교체(c7)는 `clearDraft`가 그러듯 히스토리도
-      새 베이스라인으로 재설정해야 한다 — 안 하면 진입 직후 undo가 활성돼 누르면 옛 문서로
-      돌아간다.
-    - >-
-      `usePosterCrop`(`src/hooks/usePosterCrop.ts:97`) — 크롭 확정이 `handleImageUpload`를
-      부르는 유일한 사용자 경로. c2의 다섯 이탈 중 포스터 축이 여기 붙는다.
-    - >-
-      `OcrUploadCard`는 셸이 소유한 단일 인스턴스가 `Landing`의 children으로 들어간다
-      (`MobileEditorShell.tsx:1064`). 랜딩 모드가 갈려도 트리 위치가 고정이라 remount되지
-      않는다는 계약(#614/#624)을 c3의 모드 축소가 깨면 안 된다 — `mode==='hidden'`도 unmount가
-      아니라 CSS다(#297 P1).
+    - "`usePhototicket`의 자동저장 디바운스 — `dirtyTick === 0`이면 예약 자체를 안 한다 (`src/hooks/usePhototicket.ts:769`). c7의 \"랜딩에 머무는 동안 draft가 살아 있다\"가 이 게이트에 통째로 기댄다. 단순 방문·복원·리셋은 `dirtyTick`을 안 올린다."
+    - "`useEditHistory` — 베이스라인을 렌더 시점이 아니라 첫 디바운스 발화가 잡는다 (`src/hooks/useEditHistory.ts:38-40`). 문서 교체(c7)는 `clearDraft`가 그러듯 히스토리도 새 베이스라인으로 재설정해야 한다 — 안 하면 진입 직후 undo가 활성돼 누르면 옛 문서로 돌아간다."
+    - "`usePosterCrop`(`src/hooks/usePosterCrop.ts:97`) — 크롭 확정이 `handleImageUpload`를 부르는 유일한 사용자 경로. c2의 다섯 이탈 중 포스터 축이 여기 붙는다."
+    - "`OcrUploadCard`는 셸이 소유한 단일 인스턴스가 `Landing`의 children으로 들어간다 (`MobileEditorShell.tsx:1064`). 랜딩 모드가 갈려도 트리 위치가 고정이라 remount되지 않는다는 계약(#614/#624)을 c3의 모드 축소가 깨면 안 된다 — `mode==='hidden'`도 unmount가 아니라 CSS다(#297 P1)."
   integration_points:
-    - src/components/v2/MobileEditorShell.tsx:473-474 — `showLanding` 판정식(c1·c2·c4)
-    - src/components/v2/MobileEditorShell.tsx:1041 — `Landing` mode 판정(c1·c3)
-    - src/components/v2/MobileEditorShell.tsx:299 — `landingDismissed` state 선언(c2)
-    - src/components/v2/MobileEditorShell.tsx:318 — `canvasReady`(랜딩 판정에서 분리, 셸 크롬 게이트로만 남는다)
-    - src/components/v2/MobileEditorShell.tsx:492 — `performClear`(워드마크 탭·메뉴 초기화는 지금처럼 저장분까지 지운다)
-    - src/components/v2/MobileEditorShell.tsx:1043·1047·1074 — 이탈 3종(onSkip·onEnterMood·onOcrApply), c7의 문서 리셋을 거는 자리
-    - src/components/v2/MobileEditorShell.tsx:1280 — 크롭 모달 렌더(c4의 z·DOM 순서 근거)
-    - src/components/v2/Landing.tsx:415-453 — props(`mode` 유니온 축소, 복원 콜백 추가)
-    - src/components/v2/Landing.tsx:455 — `overlay = mode === 'overlay'`(c3로 분기 자체가 사라진다)
-    - src/components/v2/Landing.tsx:545 — 복원 행이 들어갈 자리 바로 아래(주 CTA 블록). `ocrApplied ? ' hidden'` 분기는 inline 소멸 후 소비처가 0이 되므로 같이 판정할 것
-    - src/components/v2/Landing.tsx:571-584 — 이탈 경로 2종(짝 규칙·`min-h-touch` 선례, c12)
-    - src/hooks/usePhototicket.ts:312-330 — localStorage 복원 effect(`draftRestored`·`restoredDraftHadPosterRef`)
-    - src/hooks/usePhototicket.ts:384-472 — IDB 이미지 복원 effect. c8의 epoch 가드가 붙는 자리(`:470`이 `awaitingPosterRestore`를 푼다)
-    - src/hooks/usePhototicket.ts:809-845 — `clearDraft`. c7이 "문서 리셋"과 "저장분 삭제"로 가르는 대상
-    - src/hooks/usePhototicket.ts:48 — `clearDraftPaintGate`(c9에서 의미가 "복원 행을 거둔다"로 바뀐다)
-    - src/pages/_document.tsx:22 — `has-draft` 스탬프(c9, 테마 축 `:15-21`은 불가침)
-    - src/styles/globals.css:385-398 — 게이트 주석 + 규칙. 삭제·교체 대상(c9). **오너 메모의 `:369`는 stale이고 실제 규칙은 `:396`이다**
-    - scripts/measure-chrome.mjs:407·799·815 — `landingSkippedOnDraft` 축과 종료 조건(ac8)
-    - __tests__/landingOverlay.test.tsx:76-99 — 뒤집을 D7 케이스(#717 대상 1)
-    - __tests__/awaitingPosterRestore.test.tsx — inline 기대를 쓰는 케이스(#717 대상 2)
-    - __tests__/landingPaintGate.test.tsx:48-50 — 옛 CSS 문자열을 잠근 단언(ac7)
-    - __tests__/mobileEditorShellMenu.test.tsx:197 — 초기화가 `draftRestored`와 `landingDismissed`를 함께 되돌린다는 명제. 판정식이 바뀌면 같이 볼 것
+    - "src/components/v2/Landing.tsx — overlay/hidden, 복원 행"
+    - "src/components/v2/MobileEditorShell.tsx — landingDismissed, startFreshDoc, docEpochRef"
+    - src/hooks/usePhototicket.ts — resetDocument
+    - __tests__/landingOverlay.test.tsx
+    - __tests__/landingFreshStart.test.tsx
+    - __tests__/landingPaintGate.test.tsx
   backlog_scan: >-
     prefilter 실행됨(open 9 · closed 369). 충돌 1건 — #717이 이 스펙이 뒤집는 명제를 잠근 테스트를
     다루고 있어 선후 관계를 정해야 한다. #613(랜딩 히어로 이미지)은 이 스펙이 랜딩 노출을 늘리므로

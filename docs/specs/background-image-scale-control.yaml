@@ -1,3 +1,24 @@
+# Compatible with thinking-tools 6.0.0; version/generated retain authoring provenance.
+# Lifecycle state follows the authorized diagnosis; see docs/specs/STATE_AUDIT.md.
+# 현재 적용 경계: 전면 cover·PATTERN_CLIP 전제는 과거 구조예요. 현재 고정 스탬프 박스 안 이미지의 배율은 1.0~1.5예요.
+# 전체 명세 안내: docs/specs/README.md
+# AMENDMENT CONTRACT — keep these lines in the emitted file.
+# Read metadata first. Apply only active, non-withdrawn requirements within the user's current
+# request. Unknown/paused/closed Seeds are reference material, never automatic work candidates.
+# A named path or graph edge is not permission to resume. Resume paused only with user approval;
+# closed work continues in a NEW Seed with selected requirements and pinned provenance.
+# This is a functional spec, not a work log: REPLACE incorrect field values; never append
+# progress, execution logs or review notes. Minimal lifecycle decisions and evidence below are
+# allowed; missing lifecycle means unknown, never implicitly active or completed.
+# Preserve withdrawn items' ids AND original contents; record withdrawal separately. No response
+# is no approval. Explicit withdrawal does not approve child reparenting. Validate changes with
+# seed-lifecycle.py check <seed> --before <prior-file> and seed-relations.py check <seed>.
+# Claude's hook checks edits; Codex uses these same commands explicitly, without hook enforcement.
+# Ids: a constraint-N/acceptance-N id is never reused or deleted; new items take the next unused
+# number. Other Seeds' `refines`
+# point at them. Legacy c<N>/ac<N> ids are renamed only via scripts/seed-id-migrate.py; the
+# convention is defined in reference/identifiers.md.
+
 # Seed Spec — 티켓 배경 이미지 배율 컨트롤 (#680)
 # 이력: #530(기하 프리셋) → #671(사용자 업로드) → #672(프리셋 제거) → #680(이 스펙, 배율) →
 # #728(docs/specs/background-to-stamp.yaml, 전면 cover를 무드별 고정 박스 '스탬프'로 재설계).
@@ -24,6 +45,69 @@ domain: tech
 brownfield: true
 refine_generation: 0
 
+lifecycle:
+  state: closed
+  outcome: discontinued
+  reason: "전면 cover·PATTERN_CLIP 원안은 #728의 무드별 고정 스탬프로 대체됐으므로 원 요구 묶음을 종료한다. 남아 있는 이미지 배율 컨트롤을 미구현으로 재착수하지 않는다."
+  approved_by: "2026-10-10 사용자 지시: 상태값 unknown인것들 현행화하고 진단 결과에 따라 수정 필요한 사항 있으면 수정 시작"
+  evidence:
+    commit: 24eb36e91eb48d9dca0ec5227508bd48ad28df1c
+    items:
+      - id: constraint-1
+        refs:
+          - "docs/specs/STATE_AUDIT.md#background-image-scale-control"
+          - "src/utils/backgroundPatterns.tsx:32-36"
+          - "8869d219f39797718e0c98d0681b9feb6e740556"
+      - id: constraint-2
+        refs:
+          - "docs/specs/STATE_AUDIT.md#background-image-scale-control"
+          - "__tests__/designRailBackgroundPattern.test.tsx:175"
+          - "src/components/moods/MoodStub.tsx:248-265"
+      - id: constraint-3
+        refs:
+          - "docs/specs/STATE_AUDIT.md#background-image-scale-control"
+          - "src/components/v2/designRailItems.tsx:588"
+          - "src/components/v2/designRailItems.tsx:659"
+      - id: constraint-4
+        refs:
+          - "docs/specs/STATE_AUDIT.md#background-image-scale-control"
+          - "src/types/index.ts:145"
+          - "src/components/v2/designRailItems.tsx:656"
+      - id: constraint-5
+        refs:
+          - "docs/specs/STATE_AUDIT.md#background-image-scale-control"
+          - "src/components/v2/designRailItems.tsx:658"
+          - "src/utils/backgroundPatterns.tsx:76-78"
+      - id: constraint-6
+        refs:
+          - "docs/specs/STATE_AUDIT.md#background-image-scale-control"
+          - "src/utils/backgroundPatterns.tsx:72-78"
+          - "src/components/v2/designRailItems.tsx:651-668"
+      - id: constraint-7
+        refs:
+          - "docs/specs/STATE_AUDIT.md#background-image-scale-control"
+          - "src/components/v2/designRailItems.tsx:600-668"
+          - "https://github.com/Lyainc/filme/issues/728"
+      - id: constraint-8
+        refs:
+          - "docs/specs/STATE_AUDIT.md#background-image-scale-control"
+          - "src/components/v2/designRailItems.tsx:588"
+      - id: acceptance-1
+        refs:
+          - "docs/specs/STATE_AUDIT.md#background-image-scale-control"
+          - "src/utils/backgroundPatterns.tsx:32-36"
+          - "__tests__/designRailBackgroundPattern.test.tsx:202"
+      - id: acceptance-4
+        refs:
+          - "docs/specs/STATE_AUDIT.md#background-image-scale-control"
+          - "__tests__/designRailBackgroundPattern.test.tsx:226"
+          - "src/components/v2/designRailItems.tsx:651"
+      - id: acceptance-5
+        refs:
+          - "docs/specs/STATE_AUDIT.md#background-image-scale-control"
+          - "__tests__/designRailBackgroundPattern.test.tsx:175"
+  withdrawn: []
+
 goal:
   statement: >-
     배경 이미지를 올린 사용자가 Editorial·Criterion·Stub 세 무드에서 그 이미지의 표시 배율을
@@ -32,7 +116,7 @@ goal:
   clarity_score: 0.9
 
 constraints:
-  - id: c1
+  - id: constraint-1
     type: technical
     description: >-
       PATTERN_CLIP은 배율과 무관하게 원래 좌표를 유지한다. clip-path는 요소의 로컬 좌표계에서
@@ -42,13 +126,13 @@ constraints:
     rationale: >-
       clip이 어긋나면 저장물에서 배경이 포스터 위에 인쇄된다(#490/#495 collectOpaquePosterBackdrops
       z-order). 기존 테스트가 이 값을 못 박고 있는 이유가 그것이다.
-  - id: c2
+  - id: constraint-2
     type: technical
     description: >-
       배경 레이어는 componentOpacity 래퍼 밖에 선다. 배율 도입이 이 배치를 바꾸면 안 된다.
     hard: true
     rationale: 배경은 "종이에 이미 인쇄된 바탕"이라 조판 오버레이 페이드에 딸려가면 안 된다(#530 계약).
-  - id: c3
+  - id: constraint-3
     type: technical
     description: >-
       상한은 1.5. 2.0은 채택하지 않는다.
@@ -58,7 +142,7 @@ constraints:
       약 2배 업스케일 상태다. 2.0이면 4배가 돼 눈에 띄게 뭉갠다. 1.5로 잡으면 굽는 해상도를
       안 올려도 되므로 blob 용량과 크롭 시간이 그대로고, #673이 지적한 "배경이 제일 큰 payload"를
       더 키우지 않는다.
-  - id: c4
+  - id: constraint-4
     type: technical
     description: >-
       값은 TicketComponents.backgroundPatternScale?: number로 싣는다. 소비부는 `?? 1`로 읽어
@@ -67,7 +151,7 @@ constraints:
     rationale: >-
       quoteFont·signatureScale·posterFit이 전부 같은 옵셔널 처방이고(types/index.ts), 그래야
       영속·undo 스냅샷에 자동으로 실리면서 옛 draft가 조용히 깨지지 않는다.
-  - id: c5
+  - id: constraint-5
     type: technical
     description: >-
       확대 전용(하한 1.0)이며 타일 반복·축소는 범위 밖이다.
@@ -77,7 +161,7 @@ constraints:
       타일 반복은 backgroundPatterns.ts:27이 이미 기각해뒀다("임의의 사진이라 타일링하면 이음매가
       그대로 보인다"). 하한을 1.0으로 잠그면 이 결정 자체가 사라진다. 이슈 본문이 후보로 든
       "축소해서 무늬로 반복"은 그 주석보다 먼저 쓰여 이 기각을 모르고 남은 항목이다.
-  - id: c6
+  - id: constraint-6
     type: technical
     description: >-
       위치(오프셋) 컨트롤은 열지 않는다. transform-origin과 backgroundPosition 모두 center 고정.
@@ -86,7 +170,7 @@ constraints:
       크기 패널은 이미 scrollHeight 199 vs 슬롯 115px로 넘치고(#682) 컨트롤 2개는 세로 예산을
       두 배로 먹는다. 확대만 먼저 내보고 "보고 싶은 부분이 아니다"가 실제로 오면 그때 별도 이슈로
       여는 게 싸다.
-  - id: c7
+  - id: constraint-7
     type: technical
     description: >-
       컨트롤은 배경 패널 안에, 이미지가 있을 때만 렌더한다. 크기 패널에는 넣지 않는다.
@@ -96,7 +180,7 @@ constraints:
       BACKGROUND_PATTERN_MOODS로 3무드 게이팅을 하고 있어 노출 조건을 새로 짤 게 없다. 크기 패널에
       두면 배경이 없는 3무드에서 죽은 컨트롤이 되지 않게 게이팅을 새로 짜야 하고, 넘치는 패널을
       더 넘치게 한다.
-  - id: c8
+  - id: constraint-8
     type: technical
     description: >-
       무드별 스케일 상한(stampScaleMaxFor 같은 단일 소스)은 만들지 않는다.
@@ -107,21 +191,21 @@ constraints:
       값이 갈릴 이유가 없다. 안 갈리는 값에 단일 소스를 만드는 건 죽은 추상이다.
 
 success_criteria:
-  - id: ac1
+  - id: acceptance-1
     description: >-
       배율을 올리면 clip 영역은 그대로인 채 배경 이미지만 확대된다. 세 무드 모두에서 성립한다.
     verifiable: true
     measurable_via: >-
       __tests__/designRailBackgroundPattern.test.tsx 확장 — 바깥 래퍼의 clipPath가 PATTERN_CLIP
       값을 유지하고, 안쪽 [data-bg-pattern] 요소만 transform: scale을 갖는지 대조.
-  - id: ac2
+  - id: acceptance-2
     description: >-
       배율 값이 무드 왕복과 새로고침을 넘어 살아남는다.
     verifiable: true
     measurable_via: >-
       같은 테스트 파일의 기존 "무드를 왕복해도 배경 이미지가 보존된다" 케이스와 같은 형태로
       backgroundPatternScale을 함께 확인.
-  - id: ac3
+  - id: acceptance-3
     description: >-
       확대가 프리뷰뿐 아니라 저장물(JPEG)에도 반영되고, 확대된 배경이 포스터 영역을 침범하지 않는다.
     verifiable: true
@@ -129,12 +213,12 @@ success_criteria:
       scripts/capture-export.mjs로 배율 1.0과 1.5의 저장물을 각각 떨어뜨려 --compare로 대조.
       배경 영역은 달라지고 포스터 영역은 안 달라지는 것이 판정 기준. 하네스 잡음 바닥이 maxΔ 2라
       허용치 3.
-  - id: ac4
+  - id: acceptance-4
     description: >-
       배경 이미지가 없으면 배율 슬라이더가 뜨지 않는다.
     verifiable: true
     measurable_via: 같은 테스트 파일 — 이미지 제거 후 슬라이더 부재 확인.
-  - id: ac5
+  - id: acceptance-5
     description: >-
       componentOpacity를 낮춰도 배경 배율 레이어는 페이드되지 않는다(c2 회귀).
     verifiable: true
@@ -142,6 +226,11 @@ success_criteria:
       기존 케이스가 [data-bg-pattern]의 closest('[style*="opacity"]')를 null로 검사한다. 래퍼가
       하나 늘어도 이 명제가 유지되는지 그대로 확인.
 
+issues:
+  source: null # 생성 출처만 기록하며 구현 추적과 구분해요.
+  tracking: ["#680"]
+
+# integration_points는 호환 정리 당시 체크아웃의 위치예요. 종료 판정의 프로덕션 근거는 STATE_AUDIT.md의 고정 SHA를 따라요.
 context:
   existing_stack:
     - Next.js (pages router) + React + TypeScript
@@ -150,17 +239,12 @@ context:
     - html-to-image (captureToImage.ts)
   dependencies:
     - useLogoCrop (자유비 크롭, maxSide = TARGET_HEIGHT) — 배율은 숫자 하나라 이 경로를 안 건드린다
-    - BrightnessSlider (components/wizard/BrightnessSlider.tsx) — shouldCommitSliderValue가 드래그 중
-      undo 폭주를 이미 막아둔다(#507). 새로 만들 것 없음
-    - html-to-image의 options.style은 캡처 루트에만 적용되므로 자손 transform은 저장물에 살아남는다
-      (captureToImage.ts:48-56, 이미 blur 배경의 scale(1.2)가 같은 경로를 탄다 — :495)
+    - "BrightnessSlider (components/wizard/BrightnessSlider.tsx) — shouldCommitSliderValue가 드래그 중 undo 폭주를 이미 막아둔다(#507). 새로 만들 것 없음"
+    - "html-to-image의 options.style은 캡처 루트에만 적용되므로 자손 transform은 저장물에 살아남는다 (captureToImage.ts:48-56, 이미 blur 배경의 scale(1.2)가 같은 경로를 탄다 — :495)"
   integration_points:
-    - src/types/index.ts — TicketComponents.backgroundPatternScale 추가
-    - src/utils/backgroundPatterns.ts — 유일한 스타일 소스. 중첩을 여기 한 번만 두려면 .tsx로 바꿔
-      레이어 컴포넌트를 내보낸다
-    - src/components/moods/MoodEditorial.tsx:327 / MoodStub.tsx:206 / MoodCriterion.tsx:261 — 호출부 3곳
-    - src/components/v2/designRailItems.tsx BackgroundPatternPanel (:553) — 슬라이더 추가 자리
-    - __tests__/designRailBackgroundPattern.test.tsx — clip·stub 쿼리가 한 칸 위로 이동
+    - "src/utils/backgroundPatterns.tsx — BackgroundPatternLayer: 바깥 박스와 안쪽 이미지의 배율 분리"
+    - src/components/v2/designRailItems.tsx — BackgroundPatternPanel
+    - __tests__/designRailBackgroundPattern.test.tsx
   backlog_scan: >-
     충돌 없음. 열린 후보 #673(같은 blob 축이지만 objectURL revoke 수명 문제라 직교 — 배율은 숫자
     하나라 blob 경로를 안 건드린다)·#128(무관). 닫힌 후보 중 유일하게 의심스럽던 #311

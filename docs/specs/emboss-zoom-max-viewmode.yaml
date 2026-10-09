@@ -1,3 +1,24 @@
+# Compatible with thinking-tools 6.0.0; version/generated retain authoring provenance.
+# Lifecycle state follows the authorized diagnosis; see docs/specs/STATE_AUDIT.md.
+# 현재 적용 경계: 프로덕션 기준 main에서는 #785로 형압·하이라이트가 제거됐어요. 과거 요구는 자동 재착수하지 않아요.
+# 전체 명세 안내: docs/specs/README.md
+# AMENDMENT CONTRACT — keep these lines in the emitted file.
+# Read metadata first. Apply only active, non-withdrawn requirements within the user's current
+# request. Unknown/paused/closed Seeds are reference material, never automatic work candidates.
+# A named path or graph edge is not permission to resume. Resume paused only with user approval;
+# closed work continues in a NEW Seed with selected requirements and pinned provenance.
+# This is a functional spec, not a work log: REPLACE incorrect field values; never append
+# progress, execution logs or review notes. Minimal lifecycle decisions and evidence below are
+# allowed; missing lifecycle means unknown, never implicitly active or completed.
+# Preserve withdrawn items' ids AND original contents; record withdrawal separately. No response
+# is no approval. Explicit withdrawal does not approve child reparenting. Validate changes with
+# seed-lifecycle.py check <seed> --before <prior-file> and seed-relations.py check <seed>.
+# Claude's hook checks edits; Codex uses these same commands explicitly, without hook enforcement.
+# Ids: a constraint-N/acceptance-N id is never reused or deleted; new items take the next unused
+# number. Other Seeds' `refines`
+# point at them. Legacy c<N>/ac<N> ids are renamed only via scripts/seed-id-migrate.py; the
+# convention is defined in reference/identifiers.md.
+
 # Seed Spec — 형압 편집용 포스터 확대(기존 max 뷰모드 재사용)
 ---
 skill: build-spec
@@ -18,6 +39,81 @@ domain: tech
 brownfield: true
 refine_generation: 0
 
+lifecycle:
+  state: closed
+  outcome: discontinued
+  reason: "형압 확대 작업면은 과거 구현됐으나 #785로 브러시·올가미·마스크가 의도적으로 제거됐으므로 종료한다. 남아 있는 최대 미리보기와 제거된 칠하기 요구를 구분한다."
+  approved_by: "2026-10-10 사용자 지시: 상태값 unknown인것들 현행화하고 진단 결과에 따라 수정 필요한 사항 있으면 수정 시작"
+  evidence:
+    commit: 24eb36e91eb48d9dca0ec5227508bd48ad28df1c
+    items:
+      - id: constraint-1
+        refs:
+          - "docs/specs/STATE_AUDIT.md#emboss-zoom-max-viewmode"
+          - "src/components/v2/MobileEditorShell.tsx:247"
+          - "src/components/v2/viewMode.tsx"
+      - id: constraint-2
+        refs:
+          - "docs/specs/STATE_AUDIT.md#emboss-zoom-max-viewmode"
+          - "10c9922c3404ef7d6771d05c73d46025b8dd4133"
+          - "https://github.com/Lyainc/filme/issues/785"
+      - id: constraint-3
+        refs:
+          - "docs/specs/STATE_AUDIT.md#emboss-zoom-max-viewmode"
+          - "10c9922c3404ef7d6771d05c73d46025b8dd4133"
+          - "https://github.com/Lyainc/filme/issues/785"
+      - id: constraint-4
+        refs:
+          - "docs/specs/STATE_AUDIT.md#emboss-zoom-max-viewmode"
+          - "10c9922c3404ef7d6771d05c73d46025b8dd4133"
+          - "https://github.com/Lyainc/filme/issues/785"
+      - id: constraint-5
+        refs:
+          - "docs/specs/STATE_AUDIT.md#emboss-zoom-max-viewmode"
+          - "10c9922c3404ef7d6771d05c73d46025b8dd4133"
+          - "https://github.com/Lyainc/filme/issues/785"
+      - id: constraint-6
+        refs:
+          - "docs/specs/STATE_AUDIT.md#emboss-zoom-max-viewmode"
+          - "10c9922c3404ef7d6771d05c73d46025b8dd4133"
+          - "https://github.com/Lyainc/filme/issues/785"
+      - id: constraint-7
+        refs:
+          - "docs/specs/STATE_AUDIT.md#emboss-zoom-max-viewmode"
+          - "src/components/v2/MobileEditorShell.tsx:674"
+          - "src/components/v2/viewMode.tsx"
+      - id: constraint-8
+        refs:
+          - "docs/specs/STATE_AUDIT.md#emboss-zoom-max-viewmode"
+          - "10c9922c3404ef7d6771d05c73d46025b8dd4133"
+          - "https://github.com/Lyainc/filme/issues/785"
+      - id: acceptance-1
+        refs:
+          - "docs/specs/STATE_AUDIT.md#emboss-zoom-max-viewmode"
+          - "10c9922c3404ef7d6771d05c73d46025b8dd4133"
+          - "https://github.com/Lyainc/filme/issues/785"
+      - id: acceptance-2
+        refs:
+          - "docs/specs/STATE_AUDIT.md#emboss-zoom-max-viewmode"
+          - "10c9922c3404ef7d6771d05c73d46025b8dd4133"
+          - "https://github.com/Lyainc/filme/issues/785"
+      - id: acceptance-3
+        refs:
+          - "docs/specs/STATE_AUDIT.md#emboss-zoom-max-viewmode"
+          - "10c9922c3404ef7d6771d05c73d46025b8dd4133"
+          - "https://github.com/Lyainc/filme/issues/785"
+      - id: acceptance-4
+        refs:
+          - "docs/specs/STATE_AUDIT.md#emboss-zoom-max-viewmode"
+          - "10c9922c3404ef7d6771d05c73d46025b8dd4133"
+          - "https://github.com/Lyainc/filme/issues/785"
+      - id: acceptance-5
+        refs:
+          - "docs/specs/STATE_AUDIT.md#emboss-zoom-max-viewmode"
+          - "10c9922c3404ef7d6771d05c73d46025b8dd4133"
+          - "https://github.com/Lyainc/filme/issues/785"
+  withdrawn: []
+
 goal:
   statement: >-
     형압을 칠하는 사용자가 이미 있는 max 뷰모드(#328)를 그대로 작업면으로 써서, 기본 프리뷰에서
@@ -26,7 +122,7 @@ goal:
   clarity_score: 0.9
 
 constraints:
-  - id: c1
+  - id: constraint-1
     type: technical
     description: >-
       확대 수단은 기존 `viewMode: 'default' | 'max'`(MobileEditorShell.tsx:242) 재사용이다.
@@ -37,7 +133,7 @@ constraints:
       툴바 '최대화')·탈출(티켓 탭)·포커스 이관(:612-614)·회전 배치(:629-631)가 전부 서 있다.
       실측 확대 배율이 세로형 4무드에서 1.59×(아래 c4 표)라 새 화면을 만들어 얻을 것이 배율 말고
       없다.
-  - id: c2
+  - id: constraint-2
     type: technical
     description: >-
       max 스테이지(`fixed inset-0 z-50`, MobileEditorShell.tsx:886)가 EmbossBrushLayer(zIndex 45,
@@ -54,7 +150,7 @@ constraints:
       기본 모드의 45를 유지해야 하는 이유는 필드 드로어(z-50)다 — 브러시를 상시 51로 올리면 드로어가
       열린 상태에서 포스터 rect만큼 구멍이 뚫린다. max에선 드로어·툴바·dock이 전부 안 뜨므로 그 자리에서만
       올리는 게 안전하다.
-  - id: c3
+  - id: constraint-3
     type: technical
     description: >-
       max에서 형압을 칠하는 동안에도 나가는 길이 항상 하나 이상 살아 있어야 한다. 새 종료 버튼을
@@ -70,7 +166,7 @@ constraints:
       실측 여백(400×675 프레임, 포스터 rect 기준)이 minimal·stub·editorial 47.9px, 35mm 111.3px,
       criterion 120.8px, 35mm Wide 102.4px로 전부 터치 타깃(44px)을 넘어, 새 UI 없이 이 조건이
       이미 성립한다.
-  - id: c4
+  - id: constraint-4
     type: technical
     description: >-
       좌표 변환은 새로 짜지 않는다. `EmbossBrushLayer`가 rAF로 매 프레임 `[data-poster-root]`의
@@ -87,7 +183,7 @@ constraints:
       35mm 111.4×167.1 → 177.3×266 (1.592×) ·
       editorial 153.5×230.3 → 회전 후 bbox 304.1×202.8 (회전 전 기준 1.321×) ·
       35mm Wide 222.1×148 → 회전 후 bbox 195.5×293.4 (회전 전 기준 1.321×).
-  - id: c5
+  - id: constraint-5
     type: technical
     description: >-
       가로형 무드 2종(editorial · 35mm Wide)은 이번 범위에서 뺀다. max에서 형압 편집 모드면
@@ -105,7 +201,7 @@ constraints:
       오늘 기본 모드에는 회전이 없으므로(`rotateLandscape`는 `isMax`를 요구한다) 이건 새로 만드는
       결함이지 기존 결함이 아니다 — max를 작업면으로 여는 이 스펙이 만들어내는 것이라 이 스펙이
       막아야 한다.
-  - id: c6
+  - id: constraint-6
     type: technical
     description: >-
       `handleViewModeChange`(MobileEditorShell.tsx:443-447)가 `embossEditMode`를 안 끄는 현재
@@ -117,7 +213,7 @@ constraints:
       c2·c3을 넣고 나면 정확히 이 동작이 "칠하다가 확대해서 계속 칠한다"를 성립시킨다.
       #722가 DesignRail.tsx:244-246에 넣은 "다른 레일 항목으로 옮기면 끈다"는 그대로 둔다 —
       max 전환은 `pop`을 안 거치므로 그 effect와 경로가 갈린다.
-  - id: c7
+  - id: constraint-7
     type: technical
     description: >-
       패닝·핀치줌·배율 슬라이더는 열지 않는다. max가 주는 고정 배율 하나로 끝낸다.
@@ -127,7 +223,7 @@ constraints:
       :230)가 포인터를 독점하는 것과 정면으로 부딪혀 제스처 분기(칠하기 vs 밀기)를 새로 설계해야
       하는데, max 배율이 1.59×라 프레임 안에 포스터가 통째로 들어온다(실측 여백 47.9~120.8px) —
       밀 곳이 없다. 1.59×로 부족하다는 목소리가 실제로 오면 그때 별도 이슈로 여는 게 싸다.
-  - id: c8
+  - id: constraint-8
     type: technical
     description: >-
       저장 경로(`captureToImage.compositeEmbossOverlay`)와 프리뷰 오버레이는 안 건드린다.
@@ -137,7 +233,7 @@ constraints:
       스케일 안 걸린 자연 픽셀 트리를 뜬다 — 화면 배율은 이 축에 원리적으로 안 실린다.
 
 success_criteria:
-  - id: ac1
+  - id: acceptance-1
     description: >-
       max + 형압 편집 모드에서 포스터 중앙의 `document.elementFromPoint`가 브러시 레이어를 돌려준다
       (세로형 4무드: minimal · criterion · stub · 35mm).
@@ -147,14 +243,14 @@ success_criteria:
       "형압 도구" radiogroup의 '브러시' 라디오 클릭 → '최대화' 클릭 → 포스터 중앙
       `elementFromPoint`가 `closest('[data-emboss-brush-layer]')`를 갖는지. 지금은
       `aria-label="기본 크기로 돌아가기"`가 나온다.
-  - id: ac2
+  - id: acceptance-2
     description: >-
       max 상태로 포스터 위를 드래그하면 스탬프가 실제로 찍히고, max에서 안 빠져나온다.
     verifiable: true
     measurable_via: >-
       같은 프로브의 드래그 단계 — 현재 값은 `embossMaskInTicket: false` + `stillMax: false`이고,
       고침 뒤 기대값은 마스크가 생기고 `stillMax: true`다.
-  - id: ac3
+  - id: acceptance-3
     description: >-
       max에서 포스터 rect **밖**을 탭하면 형압 편집 중이어도 기본 크기로 돌아간다. 키보드
       Enter/Space도 같다.
@@ -163,7 +259,7 @@ success_criteria:
       같은 프로브에서 포스터 rect 좌측 여백(실측 최솟값 47.9px의 중앙)을 클릭한 뒤
       `[aria-label="기본 크기로 돌아가기"]`가 사라지는지. c3의 탈출구가 실제로 열려 있다는 유일한
       증거다.
-  - id: ac4
+  - id: acceptance-4
     description: >-
       가로형 무드 2종에서 c5가 고른 처리가 실제로 걸린다 — 회전을 끄는 쪽이면 max에서
       `rotateLandscape` 배치가 안 나오고, max를 안 여는 쪽이면 그 무드에서 형압 편집 중 '최대화'가
@@ -173,7 +269,7 @@ success_criteria:
       `scripts/measure-chrome.mjs`의 max 축이 이미 두 rect를 잰다(`max 모드 오버레이` ·
       `max 모드 티켓`, :528-529) — 회전을 끄면 안쪽 티켓 rect가 회전 bbox에서 자연 방향으로 바뀐다.
       비활성 쪽이면 상호작용 테스트로 버튼 disabled를 확인한다.
-  - id: ac5
+  - id: acceptance-5
     description: >-
       max 스테이지와 브러시 레이어의 z 관계가 소스에서 어긋나면 `bun test`가 깨진다.
     verifiable: true
@@ -183,7 +279,7 @@ success_criteria:
       위인지 대조한다. happy-dom은 레이아웃·스태킹을 안 계산해 hit-test로는 원리적으로 못 잡는 축이고,
       하네스는 `ci.yml`에 결선돼 있지 않다 — required 안에서 잡을 수 있는 건 선언의 결합뿐이다.
       이 테스트가 브라우저 실측을 대신하지 않는다(#714의 같은 단서).
-  - id: ac6
+  - id: acceptance-6
     description: >-
       `scripts/measure-chrome.mjs`의 frameFit·dock·프리뷰 불변식이 그대로 통과한다.
     verifiable: true
@@ -192,6 +288,11 @@ success_criteria:
       190.9×305 무변경 + `frameFit.pass`. 이 스펙은 max에서만 z를 바꾸므로 기본 모드 rect는
       안 움직여야 한다.
 
+issues:
+  source: null # 생성 출처만 기록하며 구현 추적과 구분해요.
+  tracking: ["#729"]
+
+# integration_points는 호환 정리 당시 체크아웃의 위치예요. 종료 판정의 프로덕션 근거는 STATE_AUDIT.md의 고정 SHA를 따라요.
 context:
   existing_stack:
     - Next.js (pages router) + React + TypeScript
@@ -199,20 +300,14 @@ context:
     - bun test + happy-dom + @testing-library/react
     - puppeteer-core + 시스템 Chrome (scripts/measure-chrome.mjs · capture-export.mjs)
   dependencies:
-    - EmbossBrushLayer.tsx — rAF 재측정(:112-134)·`clientToNaturalFrac`(:137-152)·
-      `setPointerCapture`(:230)·`touchAction:'none'`(:227). 좌표 축은 c4로 무변경
-    - PhoneFrame `getFrameRect()` — 브러시가 fixed 좌표를 프레임 원점 기준으로 보정하는 데 이미 쓴다
-      (EmbossBrushLayer.tsx:119-120). max도 같은 프레임 안이라 이 항이 그대로 성립한다
+    - "EmbossBrushLayer.tsx — rAF 재측정(:112-134)·`clientToNaturalFrac`(:137-152)· `setPointerCapture`(:230)·`touchAction:'none'`(:227). 좌표 축은 c4로 무변경"
+    - "PhoneFrame `getFrameRect()` — 브러시가 fixed 좌표를 프레임 원점 기준으로 보정하는 데 이미 쓴다 (EmbossBrushLayer.tsx:119-120). max도 같은 프레임 안이라 이 항이 그대로 성립한다"
     - viewMode.tsx — `ViewMode` 타입. 값을 안 늘리는 게 c1이다
   integration_points:
-    - src/components/v2/MobileEditorShell.tsx:886 — max 스테이지 `fixed inset-0 z-50`(c2의 한쪽)
-    - src/components/v2/MobileEditorShell.tsx:920-934 — 래퍼의 탭/키보드 "기본 크기로 돌아가기"(c3)
-    - src/components/v2/MobileEditorShell.tsx:1005-1013 — EmbossBrushLayer 마운트 지점. max 여부를
-      넘겨야 한다면 여기가 유일한 호출부다
-    - src/components/v2/MobileEditorShell.tsx:443-447 — handleViewModeChange(c6, 무변경)
-    - src/components/v2/MobileEditorShell.tsx:629-631 — rotateLandscape(c5)
-    - src/components/v2/EmbossBrushLayer.tsx:225 — zIndex 45(c2의 반대쪽)
-    - scripts/measure-chrome.mjs:522-531 — max 축. 지금은 rect만 재고 hit-test는 안 한다
+    - src/components/v2/MobileEditorShell.tsx — isMax/rotated 전달
+    - "src/components/v2/EmbossBrushLayer.tsx — toLocalRect, screenFracToBoxFrac, boxFracToScreenFrac"
+    - __tests__/embossBrushLayerRotationCoords.test.ts
+    - __tests__/embossMaxZOrderCoupling.test.ts
   backlog_scan: >-
     prefilter 실행됨(open 9 · closed 369). 관련 이슈 셋. **#509**가 형압 축 자체(브러시·올가미·
     좌표 재매핑)를 세웠고 이 스펙은 그 작업면을 확대하는 후속이다. **#679**는 같은 형압 UX 축의

@@ -1,3 +1,24 @@
+# Compatible with thinking-tools 6.0.0; version/generated retain authoring provenance.
+# Lifecycle state follows the authorized diagnosis; see docs/specs/STATE_AUDIT.md.
+# 현재 적용 경계: 단일 textureIntensity는 초기 명세예요. 현재 재질·코팅 독립 상태와 같은 bitmap SVG를 쓰는 프리뷰/export로 바뀌었어요.
+# 전체 명세 안내: docs/specs/README.md
+# AMENDMENT CONTRACT — keep these lines in the emitted file.
+# Read metadata first. Apply only active, non-withdrawn requirements within the user's current
+# request. Unknown/paused/closed Seeds are reference material, never automatic work candidates.
+# A named path or graph edge is not permission to resume. Resume paused only with user approval;
+# closed work continues in a NEW Seed with selected requirements and pinned provenance.
+# This is a functional spec, not a work log: REPLACE incorrect field values; never append
+# progress, execution logs or review notes. Minimal lifecycle decisions and evidence below are
+# allowed; missing lifecycle means unknown, never implicitly active or completed.
+# Preserve withdrawn items' ids AND original contents; record withdrawal separately. No response
+# is no approval. Explicit withdrawal does not approve child reparenting. Validate changes with
+# seed-lifecycle.py check <seed> --before <prior-file> and seed-relations.py check <seed>.
+# Claude's hook checks edits; Codex uses these same commands explicitly, without hook enforcement.
+# Ids: a constraint-N/acceptance-N id is never reused or deleted; new items take the next unused
+# number. Other Seeds' `refines`
+# point at them. Legacy c<N>/ac<N> ids are renamed only via scripts/seed-id-migrate.py; the
+# convention is defined in reference/identifiers.md.
+
 ---
 # Output conforms to thinking-tools/reference/common-schema.md
 skill: build-spec
@@ -19,6 +40,46 @@ domain: tech
 brownfield: true
 refine_generation: 0
 
+lifecycle:
+  state: closed
+  outcome: discontinued
+  reason: "단일 texture·textureIntensity 원안은 #475의 재질·코팅 2축과 독립 강도, #471·#506의 레시피·공유 합성으로 대체됐으므로 원 요구 묶음을 종료한다."
+  approved_by: "2026-10-10 사용자 지시: 상태값 unknown인것들 현행화하고 진단 결과에 따라 수정 필요한 사항 있으면 수정 시작"
+  evidence:
+    commit: 24eb36e91eb48d9dca0ec5227508bd48ad28df1c
+    items:
+      - id: constraint-1
+        refs:
+          - "docs/specs/STATE_AUDIT.md#texture-intensity-refinement"
+          - "src/utils/captureToImage.ts:860-880"
+          - "__tests__/captureComposite.test.ts:284-370"
+      - id: constraint-2
+        refs:
+          - "docs/specs/STATE_AUDIT.md#texture-intensity-refinement"
+          - "src/utils/textureRecipes.ts:77-176"
+          - "src/components/moods/_shared.tsx:1297-1382"
+      - id: constraint-3
+        refs:
+          - "docs/specs/STATE_AUDIT.md#texture-intensity-refinement"
+          - "src/types/index.ts:85-92"
+          - "src/components/v2/designRailItems.tsx:342-365"
+      - id: constraint-6
+        refs:
+          - "docs/specs/STATE_AUDIT.md#texture-intensity-refinement"
+          - "src/types/index.ts:85-92"
+          - "src/utils/textureRecipes.ts:217-240"
+      - id: constraint-7
+        refs:
+          - "docs/specs/STATE_AUDIT.md#texture-intensity-refinement"
+          - "src/utils/textureRecipes.ts:77-176"
+          - "src/components/moods/_shared.tsx:1297-1382"
+      - id: acceptance-5
+        refs:
+          - "docs/specs/STATE_AUDIT.md#texture-intensity-refinement"
+          - "src/hooks/usePhototicket.ts:620-653"
+          - "__tests__/usePhototicketPersistence.test.tsx:218"
+  withdrawn: []
+
 goal:
   statement: >
     포스터 후가공(Texture)에 texture당 강도 슬라이더(0~100%)를 신설하고 8종 오버레이를
@@ -27,7 +88,7 @@ goal:
   clarity_score: 0.85
 
 constraints:
-  - id: c1
+  - id: constraint-1
     type: technical
     description: >
       [최우선 선결제약] 오버레이가 저장물에 담기도록 캡처 경로를 재설계한다. 현재
@@ -39,21 +100,21 @@ constraints:
       포함 레이어로 옮겨야 강도축·세련화가 의미를 갖는다.
     hard: true
     rationale: 성공기준 ac1(미리보기=저장물 일치)의 전제 — 이걸 못 풀면 나머지 작업이 전부 미리보기 전용 장식이 된다.
-  - id: c2
+  - id: constraint-2
     type: technical
     description: >
       export는 html-to-image 단일 프레임 캡처라 tilt/포인터 반응 동적 홀로그램(gibo·poke-holo류)은
       채택하지 않는다. 화려한 홀로/포일 룩도 정적 프레임으로만 표현한다.
     hard: true
     rationale: 애니메이션은 저장물에 안 담겨 미리보기만 화려하고 결과물이 달라지는 혼란을 낳는다(#434 확정).
-  - id: c3
+  - id: constraint-3
     type: technical
     description: >
       강도 슬라이더는 texture당 단일 슬라이더 1개이며, 그 하나가 무지개·글로스·그레인 등
       다층 요소의 alpha/세기를 함께 비례 스케일한다. 강도=0은 무가공(original)과 픽셀 동일해야 한다.
     hard: true
     rationale: 오빠 확정 UX 모델(사진앱 필터의 단일 '강도'와 동일). 0=무가공 연속성은 ac2의 하한.
-  - id: c4
+  - id: constraint-4
     type: technical
     description: >
       mix-blend-mode와 SVG feTurbulence(fractalNoise)가 canvas 캡처(특히 iOS Safari)에서
@@ -61,7 +122,7 @@ constraints:
       canvas에서 재현 가능한 형태로 제한한다(blend-mode/외부 필터는 프리뷰↔캡처 divergence 상습 구간).
     hard: true
     rationale: c1과 짝 — 캡처 경로에 태우더라도 canvas 렌더 정합이 안 맞으면 ac1이 다시 무너진다.
-  - id: c5
+  - id: constraint-5
     type: technical
     description: >
       6개 무드가 공통 Poster를 공유하므로 한 곳 수정이 전 무드에 반영된다. soft-light 저강도
@@ -70,7 +131,7 @@ constraints:
       걸리도록 마스킹(현재 포스터 밖까지 번질 여지 있음, #434 mask 계획 유지).
     hard: false
     rationale: 세련화가 특정 포스터·무드에서만 예쁘고 다른 데서 깨지면 ac4 실패.
-  - id: c6
+  - id: constraint-6
     type: resource
     description: >
       새 상태축 `textureIntensity`를 신설한다 — 기존 posterOpacity(밝기)·componentOpacity와
@@ -79,7 +140,7 @@ constraints:
       기본 강도로 리셋할지)을 defaultBrightnessForTexture와 같은 패턴으로 정의한다.
     hard: true
     rationale: 상태축 누락 시 undo·임시저장에서 강도가 유실되고 밝기축과 오염된다(#146·#356 선례).
-  - id: c7
+  - id: constraint-7
     type: technical
     description: >
       신규 텍스처/축 추가 지점은 세 곳으로 닫혀 있다 — TEXTURE_OPTIONS(constants.ts) +
@@ -89,23 +150,23 @@ constraints:
     rationale: 기존 확장 계약을 깨면 이후 texture 추가마다 산발적 코드 수정이 필요해진다.
 
 success_criteria:
-  - id: ac1
+  - id: acceptance-1
     description: 각 texture×강도가 html-to-image 저장물(특히 iOS Safari)에서 미리보기와 동일하게 렌더된다.
     verifiable: true
-    measurable_via: 8종 × 강도 대표값(0/50/100)을 실제 저장→미리보기와 픽셀/육안 대조 (iOS Safari 포함, #439·#439 연계)
-  - id: ac2
+    measurable_via: "8종 × 강도 대표값(0/50/100)을 실제 저장→미리보기와 픽셀/육안 대조 (iOS Safari 포함, #439·#439 연계)"
+  - id: acceptance-2
     description: 강도 슬라이더 0→100이 뚝뚝 끊기지 않고 '없음→은은→강함'으로 매끄럽게 연속 변한다. 0은 완전 무가공과 동일.
     verifiable: true
     measurable_via: 슬라이더 드래그 시 실시간 프리뷰 육안 확인 + 강도=0일 때 original과 렌더 동일성 확인
-  - id: ac3
+  - id: acceptance-3
     description: 슬라이더를 안 만져도 각 texture 기본 강도가 어색하지 않고 바로 쓸 만하다(현재 '어색함'의 해소).
     verifiable: true
     measurable_via: 8종 기본값 상태 육안 리뷰 — 대표 포스터에서 첫인상이 예쁜지
-  - id: ac4
+  - id: acceptance-4
     description: 밝은/어두운 포스터 × 6무드 배경 전 조합에서 효과가 깨지거나 안 보이는 경우가 없다.
     verifiable: true
     measurable_via: (밝은/어두운 포스터 2종) × (6무드) × (대표 texture) 매트릭스 육안 대조
-  - id: ac5
+  - id: acceptance-5
     description: textureIntensity가 undo/redo·임시저장 복원에서 밝기축과 독립적으로 원자 복원된다.
     verifiable: true
     measurable_via: 강도 조작→texture 전환→undo 시퀀스의 상호작용 테스트(#356·#146 회귀 패턴 확장)
@@ -123,6 +184,11 @@ refinement_directions:
     - vintage     # 빛바랜 종이 결
     - newspaper   # 거친 망점/흑백 결
 
+issues:
+  source: null # 생성 출처만 기록하며 구현 추적과 구분해요.
+  tracking: ["#434", "#471"]
+
+# integration_points는 호환 정리 당시 체크아웃의 위치예요. 종료 판정의 프로덕션 근거는 STATE_AUDIT.md의 고정 SHA를 따라요.
 context:
   existing_stack:
     - Next.js 16 (Pages Router), React 19, TypeScript
@@ -132,13 +198,12 @@ context:
     - "html-to-image: 단일 프레임 캡처 — 동적 효과 불가(c2), poster-root 서브트리 제외(c1)"
     - "SVG filter feTurbulence: 벡터라 캡처·용량 유리하나 canvas 캡처 정합 실측 필요(c4)"
   integration_points:
-    - "src/components/moods/_shared.tsx — Poster / TextureOverlay(overlays 맵) / TEXTURE_FILTERS / FULL_BRIGHTNESS_TEXTURES / defaultBrightnessForTexture"
-    - "src/utils/constants.ts — TEXTURE_OPTIONS(8종)"
-    - "src/utils/captureToImage.ts — compositeRaster / data-poster-root 제외 로직(line ~320) ← c1 재설계 핵심"
-    - "src/hooks/usePhototicket.ts — components 상태·posterOpacity·undo/redo 스냅샷 ← c6 textureIntensity 신설"
-    - "src/components/v2/DesktopDesignPanel.tsx · DesignRail.tsx — '후보정' 섹션/rail·기존 BrightnessSlider ← 강도 슬라이더 UI 진입점"
-    - "src/types/index.ts — components 타입(TicketComponents)에 textureIntensity 추가"
-
+    - src/types/index.ts — material/coating와 축별 intensity
+    - src/utils/textureRecipes.ts — TEXTURE_RECIPES
+    - src/components/moods/_shared.tsx — Poster 두 오버레이
+    - "src/utils/captureToImage.ts — compositeOverlay, 재질→코팅 순서"
+    - docs/specs/texture-material-coating-2axis.yaml
+    - __tests__/textureRecipes.test.ts
 ambiguity:
   overall: 0.175
   gate_passed: true
