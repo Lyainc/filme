@@ -1196,7 +1196,10 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
           오버레이 계층 토큰으로 올리고, 셰브런 잉크도 --fg-muted → --fg로(라이트 테마 최악
           케이스에서 muted는 2.77:1로 비텍스트 3:1도 못 넘긴다. --fg는 8.66/10.31:1).
           히트영역은 44px(왼쪽으로 투명 확장), 보이는 탭은 24px 글래스(#447 — 이전 20px는 눈에
-          덜 띈다는 지적). z-30 — 편집 백드롭(z-40) 아래라 인플레이스 편집 중엔 가려지고,
+          덜 띈다는 지적). 단 가로 무드는 티켓이 프레임 폭을 채워 그 투명 20px가 오른쪽 스텁 필드
+          (좌석·바코드·로고)를 덮어, 필드를 눌러도 드로어가 열렸다(#777 실측 editorial 320/375/393 전부) —
+          그때만 히트를 보이는 탭으로 좁힌다. 포인터 이벤트는 span에서 버튼으로 버블돼 드래그는 그대로다.
+          z-30 — 편집 백드롭(z-40) 아래라 인플레이스 편집 중엔 가려지고,
           드로어(z-50)가 열리면 그 뒤에 깔린다.
           #567·#579 — 순수 탭은 여전히 onClick으로 열린다(비드래그 대체 경로, WCAG 2.2 SC
           2.5.7). 수평 드래그(왼쪽으로 당기기)는 열기, 수직 드래그는 핸들 이동 — 위 onHandle*
@@ -1233,7 +1236,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
           // drawerHandleY가 이미 값이 있는 이후 드래그엔 맞지만 null→값 전환 그 자체는 못 피한다.
           className={cn(pressableVariants(), `fixed right-0 z-30 flex h-24 w-11 items-center justify-end ${
             drawerHandleY == null ? 'top-1/2 -translate-y-1/2' : ''
-          }`)}
+          } ${layout.orientation === 'landscape' ? 'pointer-events-none' : ''}`)}
           style={{
             touchAction: 'none',
             ...(drawerHandleY != null ? { top: drawerHandleY } : undefined),
@@ -1249,7 +1252,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
         >
           <span
             aria-hidden="true"
-            className="flex h-full w-6 items-center justify-center rounded-l-[10px] border border-r-0 border-[var(--overlay-border)] text-fg"
+            className="pointer-events-auto flex h-full w-6 items-center justify-center rounded-l-[10px] border border-r-0 border-[var(--overlay-border)] text-fg"
             style={{
               background: 'var(--overlay-fill)',
               backdropFilter: 'blur(13px)',
