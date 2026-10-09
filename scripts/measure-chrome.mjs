@@ -65,6 +65,8 @@ const THEME = arg('theme', 'dark');
 const URL = arg('url', 'http://localhost:3000/');
 const SHOT = arg('shot', null); // 스크린샷 경로(선택)
 const [VW, VH] = arg('viewport', '400x675').split('x').map(Number);
+// 시드 draft의 무드(#797) — 무드별 패널(예: Criterion 커스텀의 두 폰트 피커)을 `--rail`과 같이 잴 때.
+const MOOD = arg('mood', null);
 const CHROME =
   process.env.CHROME_PATH ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 
@@ -132,15 +134,16 @@ try {
   await page.setViewport({ width: VW, height: VH, deviceScaleFactor: 1 });
 
   // 완료 게이트(포스터+title+titleOg+releaseDate)를 KOBIS 없이 통과시키는 시드 + 테마.
-  await page.evaluateOnNewDocument((theme) => {
+  await page.evaluateOnNewDocument((theme, mood) => {
     localStorage.setItem(
       'filme:phototicket:v1',
       JSON.stringify({
         movieInfo: { title: '인터스텔라', titleOg: 'Interstellar', releaseDate: '2014' },
+        ...(mood ? { components: { layout: mood } } : {}),
       }),
     );
     localStorage.setItem('phototicket:theme', theme);
-  }, THEME);
+  }, THEME, MOOD);
   await page.goto(URL, { waitUntil: 'networkidle2' });
 
   // ── #phone-frame rect — 이 스크립트의 모든 판정 원점(#609) ──────────────────
