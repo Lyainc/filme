@@ -119,6 +119,28 @@ const TB_CONTENT_MARGIN = 10; // 티켓 콘텐츠 위 여백
 // 탭 타깃 크기 — 버튼·그립·숨김 원형이 전부 이 값을 쓴다(헤더 참조: SC 2.5.8 AA 24px + 8px 여유).
 const TB_TARGET = 'h-8 w-8';
 
+/**
+ * 세로·고정 툴바가 티켓 필드 탭 대상을 덮으면 그 필드 아래로 내린다(#777) — 폭에 맞춰지는 긴 화면(393×852)에서
+ * 기본 자리가 Criterion title·titleOg, minimal chain의 왼쪽 가장자리를 덮어 탭을 가로챘다. 어느 한 자리로 고정해도
+ * 다른 무드의 필드를 덮어서(실측: 오른쪽 위·왼쪽 260·420 전부) 겹칠 때만 옮긴다. 티켓 크기는 안 건드린다 —
+ * fit 폭을 비우는 처방은 전 폭에서 티켓을 줄여 다른 오탭을 같은 수만큼 만들었다. 티켓 아래까지 빈자리가 없으면
+ * 기본 자리를 그대로 쓴다. 툴바는 레이아웃에 안 끼므로 이 측정이 되먹임되지 않는다.
+ */
+export function clearOfFields(baseTop: number, toolbar: HTMLElement, ticket: HTMLElement) {
+  const { left, right, height } = toolbar.getBoundingClientRect();
+  const fields = Array.from(ticket.querySelectorAll('[data-field-tap]'))
+    .map((el) => el.getBoundingClientRect())
+    .filter((t) => t.width > 0 && left < t.right && right > t.left);
+  const limit = ticket.getBoundingClientRect().bottom;
+  let top = baseTop;
+  for (;;) {
+    const hit = fields.find((t) => top < t.bottom && top + height > t.top);
+    if (!hit) return top;
+    top = hit.bottom + TB_CONTENT_MARGIN;
+    if (top + height > limit) return baseTop;
+  }
+}
+
 export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(function FloatingToolbar(
   { prefs, onPrefsChange, canUndo, canRedo, onUndo, onRedo, onFieldList, onMaximize, headerEl, contentTopEl },
   forwardedRef,
@@ -191,7 +213,12 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
       const contentTop = contentTopEl?.getBoundingClientRect().top ?? null;
       const toolbarH = rootRef.current?.offsetHeight ?? 52;
       setFixedTop({
-        v: headerBottom != null ? headerBottom + TB_HEADER_MARGIN : null,
+        v:
+          headerBottom != null
+            ? orient === 'v' && contentTopEl && rootRef.current
+              ? clearOfFields(headerBottom + TB_HEADER_MARGIN, rootRef.current, contentTopEl)
+              : headerBottom + TB_HEADER_MARGIN
+            : null,
         h:
           headerBottom != null && contentTop != null
             ? Math.max(headerBottom + TB_HEADER_MARGIN, contentTop - toolbarH - TB_CONTENT_MARGIN)
@@ -203,9 +230,13 @@ export const FloatingToolbar = forwardRef<HTMLDivElement, FloatingToolbarProps>(
     if (headerEl) ro.observe(headerEl);
     if (contentTopEl) ro.observe(contentTopEl);
     if (rootRef.current) ro.observe(rootRef.current);
+    // 무드 DOM은 마운트 뒤에 늦게 그려지고 값 편집으로 필드 rect가 바뀐다 — 핸들 겹침(#777)과 같은 이유.
+    const mo = new MutationObserver(measure);
+    if (contentTopEl) mo.observe(contentTopEl, { childList: true, subtree: true, characterData: true });
     window.addEventListener('resize', measure);
     return () => {
       ro.disconnect();
+      mo.disconnect();
       window.removeEventListener('resize', measure);
     };
   }, [place, orient, headerEl, contentTopEl, hidden]);
