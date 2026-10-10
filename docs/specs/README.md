@@ -15,7 +15,11 @@
 
 계약의 원본은 사용 중인 thinking-tools 6.0.0의 `reference/common-schema.md`, `reference/identifiers.md`, `reference/seed-lifecycle.md`, `skills/build-spec/templates/SEED_SPEC.yaml`이에요. 프로젝트에서 별도 생애주기 규칙을 만들지 않아요.
 
-## Seed 목록과 현재 적용 경계
+## 활성 잔여 검증
+
+[모바일 실기기 검증](mobile-device-verification.yaml)은 2026-10-11 승인한 독립 active Seed예요. #777·#779·#768·#585의 잔여 검증을 acceptance-1~4로 연결하고, 공통 증거와 경로 연결은 acceptance-5~6에 정의해요. 실제 기기와 조작자가 필요하며 active를 실기기 PASS나 즉시 실행 가능으로 읽지 않아요. 기존 20개는 재개하지 않았어요.
+
+## 기존 20개 Seed 목록과 현재 적용 경계
 
 | Seed | 상태 | 현재 구현과 구분할 내용 |
 | --- | --- | --- |
