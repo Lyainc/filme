@@ -52,7 +52,7 @@ goal:
 constraints:
   - id: constraint-1
     type: other
-    description: '범위는 #777 필드 터치, #779 슬라이더 터치, #768 Stub 저장, #585 키보드 가림의 실기기 잔여 검증이다. 기존 20개 paused/closed Seed를 재개하거나 이미 구현된 기능을 다시 구현하지 않는다.'
+    description: '범위는 #777 필드 터치, #779 슬라이더 터치, #768 Stub 저장, #585 키보드 가림의 실기기 잔여 검증이다. 기존 Seed를 재개하거나 이미 구현된 기능을 다시 구현하지 않는다.'
     hard: true
     rationale: 사용자가 네 이슈의 독립 Seed를 선택했다.
   - id: constraint-2
