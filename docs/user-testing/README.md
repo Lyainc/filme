@@ -1,13 +1,13 @@
 # FILME 사용자 테스트 묶음
 
-앱의 주요 사용자 흐름과 [#768](https://github.com/Lyainc/filme/issues/768) Stub 스탬프를 한 캠페인에서 확인하는 실행서예요. 자동 테스트를 대체하지 않으며, **아래 수동 케이스는 아직 실행하지 않았어요.** 2026-09-17 결정에 따라 실기기 검증은 구현 PR의 진행 조건에서 분리하고 이 묶음으로 이관해요. 실기기 호환 통과를 뜻하지 않아요.
+앱의 주요 사용자 흐름과 [#768](https://github.com/Lyainc/filme/issues/768) Stub 스탬프를 한 캠페인에서 확인하는 실행서예요. 자동 테스트를 대체하지 않으며, **아래 수동 케이스는 아직 실행하지 않았어요.** 2026-09-17 결정에 따라 실기기 검증은 구현 PR의 진행 조건에서 분리하고 이 묶음으로 이관했고, 2026-10-21부터는 모바일 실행을 실기기 대신 iOS Simulator와 Android Emulator로 해요. 모바일 호환 통과를 뜻하지 않아요.
 
 ## 준비와 판정
 
 1. 테스트할 URL과 커밋 SHA를 고정하고 [결과표](./RUN.md)를 캠페인별로 복사해요. 로컬은 `bun install --frozen-lockfile`, `bun run build`, `bun run start --port 3038` 순서예요. 이미 같은 SHA의 서버가 있으면 재사용해요.
 2. 기존 작업을 잃지 않도록 **테스트 전용 브라우저 프로필**에서 시작해요. 실제 예매번호·개인정보 대신 아래 가상 데이터를 써요. 앱 초기화는 이 프로필의 테스트 문서에서만 해요.
 3. 저장해 사용할 이미지: [포스터 A](../../public/assets/posters/sample-bus.jpg), [교체 이미지 B](../../public/assets/posters/sample-crossing.jpg). 실행 URL의 `/assets/posters/sample-bus.jpg`와 `/assets/posters/sample-crossing.jpg`에서도 받을 수 있어요. B는 스탬프 입력으로도 재사용해요. 별도 로고나 유료 에셋이 필요하지 않아요.
-4. 같은 SHA를 데스크톱 Chrome, 실제 iPhone Safari, 실제 Android Chrome에서 각각 실행해요. 기기가 없으면 해당 실행은 `UNRUN`으로 남겨요. 반응형 에뮬레이션은 실기기 결과로 세지 않아요. 모바일은 기본 세로 화면과 가로 회전을 모두 확인해요.
+4. 같은 SHA를 데스크톱 Chrome, iOS Simulator(Xcode 27에서는 DeviceHub) Mobile Safari, Android Emulator Chrome에서 각각 실행해요. 환경이 없으면 해당 실행은 `UNRUN`, 설치·실행이 막히면 `BLOCKED`로 남겨요. 탭·드래그·길게 누르기 판정은 사람이 시뮬레이터 창을 직접 조작한 경우만 인정해요. WebDriver(safaridriver) 합성 터치는 이동·JS 측정·스크린샷에만 쓰고 판정 증거로 세지 않아요(실측: 이벤트 순서가 어긋나고 click이 발생하지 않았어요). 키보드 항목은 하드웨어 키보드 연결을 끄고 소프트웨어 키보드가 실제로 표시된 상태에서만 판정해요. 손가락 접촉 면적은 포인터로 재현되지 않는 한계가 있어요. 데스크톱 Chrome CDP·DevTools 반응형 모드·DPR 에뮬레이션은 모바일 결과로 세지 않아요. 모바일은 기본 세로 화면과 가로 회전을 모두 확인해요.
 5. 순서: U01–U13 → S01–S16 → N01–N04 → U14(초기화). 서비스 설정이 없는 환경은 N 항목을 `BLOCKED`로 기록하고 나머지는 계속해요. API 키를 결과표에 기록하지 않아요.
 6. 각 항목은 `PASS / FAIL / BLOCKED / UNRUN / N/A` 중 하나와 증거를 남겨요. `PASS`에는 실제 관찰/파일이 필요하고 `N/A`에는 사유가 필요해요. 진행 불가·데이터 손실을 발견하면 해당 흐름을 멈추고 재현 순서와 마지막 정상 상태를 기록해요. 다른 독립 케이스는 계속할 수 있어요.
 
@@ -73,7 +73,7 @@ Stub에서 모든 공통 입력을 채우고 B를 스탬프로 올려요. 메뉴
 
 ### 개발자용 자동 사전 점검: 기존 Chrome 도구 16회
 
-실기기 수동 S01–S16과 축은 같지만 입력 이미지/문자열은 도구의 합성 fixture예요. `navigator.canShare`를 false로 두므로 네이티브 공유 시트·사진 앱·터치 조작은 검증하지 않아요. 서버가 **검증할 SHA의 빌드**인지 먼저 확인해요. macOS Chrome 기본 경로 외에는 `CHROME_PATH`를 지정해요. 아래 블록을 저장소 루트에서 실행하면 실패한 셀도 기록하고 나머지 셀을 계속 실행해요.
+시뮬레이터 수동 S01–S16과 축은 같지만 입력 이미지/문자열은 도구의 합성 fixture예요. `navigator.canShare`를 false로 두므로 네이티브 공유 시트·사진 앱·터치 조작은 검증하지 않아요. 서버가 **검증할 SHA의 빌드**인지 먼저 확인해요. macOS Chrome 기본 경로 외에는 `CHROME_PATH`를 지정해요. 아래 블록을 저장소 루트에서 실행하면 실패한 셀도 기록하고 나머지 셀을 계속 실행해요.
 
 ```sh
 bash <<'BASH'
@@ -131,6 +131,6 @@ BASH
 - 구현/자동화 기준: `99a6ae22b9ef9e10efb5686395038fad4ccc562c`, 비교 base `5d9a80a776f1791d69379ced5bd6702b603b530d`.
 - 이 SHA에서 전체 테스트 **1301 pass / 0 fail / 139 files**, typecheck·lint·build 통과, 프로덕션 Chrome 16조합 통과. 스탬프 경계 최대 오차 **1.006 device px**였어요. [CI](https://github.com/Lyainc/filme/actions/runs/35178441305), [Chrome harness](https://github.com/Lyainc/filme/actions/runs/35178413368).
 - 로컬 상세 증거: `/private/tmp/stub-768-evidence/` JSON/JPEG 16쌍과 `/private/tmp/stub-768-tests-final.log`. 임시 경로는 영구 보관소가 아니므로 다음 캠페인은 결과표에 자기 증거 위치를 적어요.
-- 위 증거를 이번 수동 케이스의 PASS로 복사하지 않아요. 특히 실기기 Safari 저장·공유, OCR/검색/공유 서비스, 실제 사용자 조작은 별도 실행 결과가 필요해요.
+- 위 증거를 이번 수동 케이스의 PASS로 복사하지 않아요. 특히 iOS Simulator Safari 저장·공유, OCR/검색/공유 서비스, 실제 사용자 조작은 별도 실행 결과가 필요해요.
 - 캠페인 정리 완료는 모든 행에 상태·실행 환경·증거 또는 미실행 사유가 있는 상태예요. **호환성 통과**는 해당 환경의 필수 흐름과 S01–S16이 실제 PASS이고 미해결 진행 차단/데이터 손실/저장 누락이 없을 때만 선언해요. FAIL/BLOCKED는 숨기지 않고 #768 또는 관련 이슈에 연결해요.
 - 결과는 [PR #772](https://github.com/Lyainc/filme/pull/772)와 #768에 연결해요. 이 실행서는 머지·배포·외부 서비스 설정 변경을 승인하지 않아요.
