@@ -376,3 +376,22 @@
 html.has-draft [data-testid='landing-restore'] {
   display: flex;
 }
+
+/* % 직접 입력의 iOS 포커스 줌 방어(#585) — iOS Safari는 16px 미만 입력에 포커스하면 그 글자가
+   16px로 보이도록 화면을 확대하고(실측 11px → scale 1.455 = 16/11), 포커스가 풀려도 안 돌린다.
+   글꼴만 16px로 올리고 transform으로 11px 크기로 되돌린다 — 줌 판정은 computed font-size를
+   보고 transform은 안 보며, transform은 레이아웃을 안 바꾸니 음수 margin으로 상자를 11px 때와
+   같은 크기(4.5ch × 1.5em)로 돌려놓아 투명도 탭의 0px 여유 슬롯과 dock 높이가 그대로다.
+   `-webkit-touch-callout`은 iOS WebKit만 지원해 데스크톱·Chrome은 이 규칙을 아예 안 탄다.
+   viewport에 maximum-scale/user-scalable을 거는 길은 핀치 확대까지 막을 수 있어 쓰지 않는다.
+   @layer 밖인 이유는 위 블록들과 같다(purge 회피 + utilities를 순서로 이긴다). */
+@supports (-webkit-touch-callout: none) {
+  .pct-input {
+    font-size: 16px;
+    line-height: 1.5;
+    transform: scale(0.6875);
+    transform-origin: right center;
+    margin-left: calc(4.5ch * -0.3125);
+    margin-block: -3.75px;
+  }
+}
