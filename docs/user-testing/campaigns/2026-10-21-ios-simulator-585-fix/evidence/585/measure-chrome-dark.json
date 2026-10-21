@@ -1,0 +1,894 @@
+{
+  "label": "run",
+  "viewport": {
+    "w": 400,
+    "h": 675
+  },
+  "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 400,
+    "h": 675
+  },
+  "theme": "dark",
+  "url": "http://localhost:3038/",
+  "railOpen": true,
+  "rects": {
+    "dock": {
+      "w": 400,
+      "h": 290
+    },
+    "preview": {
+      "w": 190.9,
+      "h": 305
+    },
+    "header": {
+      "w": 400,
+      "h": 56
+    }
+  },
+  "railSlot": {
+    "scrollTop": 0,
+    "scrollHeight": 176,
+    "clientHeight": 176,
+    "overflows": false
+  },
+  "afterMenu": {
+    "rects": {
+      "dock": {
+        "w": 400,
+        "h": 290
+      },
+      "preview": {
+        "w": 190.9,
+        "h": 305
+      },
+      "header": {
+        "w": 400,
+        "h": 56
+      }
+    },
+    "railSlot": {
+      "scrollTop": 0,
+      "scrollHeight": 176,
+      "clientHeight": 176,
+      "overflows": false
+    }
+  },
+  "contrast": {
+    "surface": "div[role=dialog][aria-label=\"고급 설정\"]",
+    "items": [
+      {
+        "label": "고급 설정",
+        "kind": "text",
+        "need": 4.5,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(22,26,28)",
+        "ratio": 14.54,
+        "pass": true
+      },
+      {
+        "label": "닫기",
+        "kind": "icon",
+        "need": 3,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(22,26,28)",
+        "ratio": 14.54,
+        "pass": true
+      },
+      {
+        "label": "툴바 설정",
+        "kind": "text",
+        "need": 4.5,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(22,26,28)",
+        "ratio": 14.54,
+        "pass": true
+      },
+      {
+        "label": "세로형 · 고정식",
+        "kind": "text",
+        "need": 4.5,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(22,26,28)",
+        "ratio": 14.54,
+        "pass": true
+      },
+      {
+        "label": "세로형 · 이동식",
+        "kind": "text",
+        "need": 4.5,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(22,26,28)",
+        "ratio": 14.54,
+        "pass": true
+      },
+      {
+        "label": "가로형 · 고정식",
+        "kind": "text",
+        "need": 4.5,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(22,26,28)",
+        "ratio": 14.54,
+        "pass": true
+      },
+      {
+        "label": "가로형 · 이동식",
+        "kind": "text",
+        "need": 4.5,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(22,26,28)",
+        "ratio": 14.54,
+        "pass": true
+      },
+      {
+        "label": "왼쪽 가장자리로 이동",
+        "kind": "icon",
+        "need": 3,
+        "fg": "rgb(154,161,172)",
+        "bg": "rgb(22,26,28)",
+        "ratio": 6.73,
+        "pass": true
+      },
+      {
+        "label": "오른쪽 가장자리로 이동",
+        "kind": "icon",
+        "need": 3,
+        "fg": "rgb(154,161,172)",
+        "bg": "rgb(22,26,28)",
+        "ratio": 6.73,
+        "pass": true
+      },
+      {
+        "label": "드로어 핸들 위치",
+        "kind": "text",
+        "need": 4.5,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(22,26,28)",
+        "ratio": 14.54,
+        "pass": true
+      },
+      {
+        "label": "위쪽 가장자리로 이동",
+        "kind": "icon",
+        "need": 3,
+        "fg": "rgb(154,161,172)",
+        "bg": "rgb(22,26,28)",
+        "ratio": 6.73,
+        "pass": true
+      },
+      {
+        "label": "아래쪽 가장자리로 이동",
+        "kind": "icon",
+        "need": 3,
+        "fg": "rgb(154,161,172)",
+        "bg": "rgb(22,26,28)",
+        "ratio": 6.73,
+        "pass": true
+      }
+    ],
+    "maxText": 14.54,
+    "minText": 14.54,
+    "minIcon": 6.73,
+    "fails": []
+  },
+  "drawerContrast": {
+    "surface": "div[role=dialog][aria-label=\"티켓 항목\"]",
+    "items": [
+      {
+        "label": "스크린샷으로 자동입력",
+        "kind": "text",
+        "need": 4.5,
+        "fg": "rgb(154,161,172)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 6.1,
+        "pass": true
+      },
+      {
+        "label": "전체 표시",
+        "kind": "text",
+        "need": 4.5,
+        "fg": "rgb(154,161,172)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 6.1,
+        "pass": true
+      },
+      {
+        "label": "제목 편집",
+        "kind": "text",
+        "need": 4.5,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 13.16,
+        "pass": true
+      },
+      {
+        "label": "원제 편집",
+        "kind": "text",
+        "need": 4.5,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 13.16,
+        "pass": true
+      },
+      {
+        "label": "원제 티켓에 표시",
+        "kind": "icon",
+        "need": 3,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 13.16,
+        "pass": true
+      },
+      {
+        "label": "개봉일 편집",
+        "kind": "text",
+        "need": 4.5,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 13.16,
+        "pass": true
+      },
+      {
+        "label": "개봉일 티켓에 표시",
+        "kind": "icon",
+        "need": 3,
+        "fg": "rgb(154,161,172)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 6.1,
+        "pass": true
+      },
+      {
+        "label": "출연 편집",
+        "kind": "text",
+        "need": 4.5,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 13.16,
+        "pass": true
+      },
+      {
+        "label": "출연 티켓에 표시",
+        "kind": "icon",
+        "need": 3,
+        "fg": "rgb(154,161,172)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 6.1,
+        "pass": true
+      },
+      {
+        "label": "평점 편집",
+        "kind": "text",
+        "need": 4.5,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 13.16,
+        "pass": true
+      },
+      {
+        "label": "평점 티켓에 표시",
+        "kind": "icon",
+        "need": 3,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 13.16,
+        "pass": true
+      },
+      {
+        "label": "관람일 편집",
+        "kind": "text",
+        "need": 4.5,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 13.16,
+        "pass": true
+      },
+      {
+        "label": "관람일 티켓에 표시",
+        "kind": "icon",
+        "need": 3,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 13.16,
+        "pass": true
+      },
+      {
+        "label": "관람 시간 편집",
+        "kind": "text",
+        "need": 4.5,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 13.16,
+        "pass": true
+      },
+      {
+        "label": "관람 시간 티켓에 표시",
+        "kind": "icon",
+        "need": 3,
+        "fg": "rgb(154,161,172)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 6.1,
+        "pass": true
+      },
+      {
+        "label": "극장 편집",
+        "kind": "text",
+        "need": 4.5,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 13.16,
+        "pass": true
+      },
+      {
+        "label": "극장 티켓에 표시",
+        "kind": "icon",
+        "need": 3,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 13.16,
+        "pass": true
+      },
+      {
+        "label": "상영관 편집",
+        "kind": "text",
+        "need": 4.5,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 13.16,
+        "pass": true
+      },
+      {
+        "label": "상영관 티켓에 표시",
+        "kind": "icon",
+        "need": 3,
+        "fg": "rgb(154,161,172)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 6.1,
+        "pass": true
+      },
+      {
+        "label": "좌석 편집",
+        "kind": "text",
+        "need": 4.5,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 13.16,
+        "pass": true
+      },
+      {
+        "label": "좌석 티켓에 표시",
+        "kind": "icon",
+        "need": 3,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 13.16,
+        "pass": true
+      },
+      {
+        "label": "러닝타임 편집",
+        "kind": "text",
+        "need": 4.5,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 13.16,
+        "pass": true
+      },
+      {
+        "label": "러닝타임 티켓에 표시",
+        "kind": "icon",
+        "need": 3,
+        "fg": "rgb(154,161,172)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 6.1,
+        "pass": true
+      },
+      {
+        "label": "서명 편집",
+        "kind": "text",
+        "need": 4.5,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 13.16,
+        "pass": true
+      },
+      {
+        "label": "서명 티켓에 표시",
+        "kind": "icon",
+        "need": 3,
+        "fg": "rgb(154,161,172)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 6.1,
+        "pass": true
+      },
+      {
+        "label": "극장 로고 편집",
+        "kind": "text",
+        "need": 4.5,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 13.16,
+        "pass": true
+      },
+      {
+        "label": "극장 로고 이미지 업로드",
+        "kind": "icon",
+        "need": 3,
+        "fg": "rgb(154,161,172)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 6.1,
+        "pass": true
+      },
+      {
+        "label": "극장 로고 티켓에 표시",
+        "kind": "icon",
+        "need": 3,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 13.16,
+        "pass": true
+      },
+      {
+        "label": "포맷 로고 편집",
+        "kind": "text",
+        "need": 4.5,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 13.16,
+        "pass": true
+      },
+      {
+        "label": "포맷 로고 이미지 업로드",
+        "kind": "icon",
+        "need": 3,
+        "fg": "rgb(154,161,172)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 6.1,
+        "pass": true
+      },
+      {
+        "label": "포맷 로고 티켓에 표시",
+        "kind": "icon",
+        "need": 3,
+        "fg": "rgb(232,234,237)",
+        "bg": "rgb(30,35,38)",
+        "ratio": 13.16,
+        "pass": true
+      }
+    ],
+    "maxText": 13.16,
+    "minText": 6.1,
+    "minIcon": 6.1,
+    "fails": []
+  },
+  "modal": {
+    "present": true,
+    "focus": {
+      "initialInside": true,
+      "returnsAfterPush": true
+    },
+    "clickThrough": {
+      "dialogClosed": true,
+      "leaked": false
+    },
+    "close": {
+      "escape": true,
+      "closeButton": true,
+      "backdrop": true
+    },
+    "focusRestoredToTrigger": true,
+    "pass": true
+  },
+  "frameFit": {
+    "items": [
+      {
+        "label": "랜딩 오버레이",
+        "selector": "[data-testid=\"landing\"]",
+        "rect": {
+          "w": 400,
+          "h": 675
+        },
+        "overflow": {
+          "left": 0,
+          "right": 0,
+          "top": 0,
+          "bottom": 0
+        },
+        "worstOverflow": 0,
+        "pass": true
+      },
+      {
+        "label": "무드 갤러리",
+        "selector": "[data-testid=\"mood-gallery\"]",
+        "rect": {
+          "w": 352,
+          "h": 223.7
+        },
+        "overflow": {
+          "left": -24,
+          "right": -24,
+          "top": -188,
+          "bottom": -263.3
+        },
+        "worstOverflow": -24,
+        "pass": true
+      },
+      {
+        "label": "이탈 경로",
+        "selector": "[data-testid=\"landing-exit-paths\"]",
+        "rect": {
+          "w": 280,
+          "h": 44
+        },
+        "overflow": {
+          "left": -60,
+          "right": -60,
+          "top": -491.7,
+          "bottom": -139.3
+        },
+        "worstOverflow": -60,
+        "pass": true
+      },
+      {
+        "label": "복원 행",
+        "selector": "[data-testid=\"landing-restore\"]",
+        "rect": {
+          "w": 280,
+          "h": 44
+        },
+        "overflow": {
+          "left": -60,
+          "right": -60,
+          "top": -409.7,
+          "bottom": -221.3
+        },
+        "worstOverflow": -60,
+        "pass": true
+      },
+      {
+        "label": "랜딩 주 CTA",
+        "selector": "[data-testid=\"landing\"] button[aria-label=\"티켓 스크린샷으로 자동입력\"]",
+        "rect": {
+          "w": 280,
+          "h": 44
+        },
+        "overflow": {
+          "left": -60,
+          "right": -60,
+          "top": -461.7,
+          "bottom": -169.3
+        },
+        "worstOverflow": -60,
+        "pass": true
+      },
+      {
+        "label": "크롭 모달",
+        "selector": "div[role=dialog][aria-label=\"포스터 크롭\"]",
+        "rect": {
+          "w": 400,
+          "h": 675
+        },
+        "overflow": {
+          "left": 0,
+          "right": 0,
+          "top": 0,
+          "bottom": 0
+        },
+        "worstOverflow": 0,
+        "pass": true
+      },
+      {
+        "label": "필드 드로어",
+        "selector": "div[role=dialog][aria-label=\"티켓 항목\"]",
+        "rect": {
+          "w": 312,
+          "h": 675
+        },
+        "overflow": {
+          "left": -88,
+          "right": 0,
+          "top": 0,
+          "bottom": 0
+        },
+        "worstOverflow": 0,
+        "pass": true
+      },
+      {
+        "label": "max 모드 오버레이",
+        "selector": "div:has(> [aria-label=\"기본 크기로 돌아가기\"])",
+        "rect": {
+          "w": 400,
+          "h": 675
+        },
+        "overflow": {
+          "left": 0,
+          "right": 0,
+          "top": 0,
+          "bottom": 0
+        },
+        "worstOverflow": 0,
+        "pass": true
+      },
+      {
+        "label": "max 모드 티켓",
+        "selector": "[aria-label=\"기본 크기로 돌아가기\"]",
+        "rect": {
+          "w": 304.1,
+          "h": 486
+        },
+        "overflow": {
+          "left": -47.9,
+          "right": -47.9,
+          "top": -94.5,
+          "bottom": -94.5
+        },
+        "worstOverflow": -47.9,
+        "pass": true
+      },
+      {
+        "label": "편집 메뉴",
+        "selector": "#editor-menu-panel",
+        "rect": {
+          "w": 256,
+          "h": 366
+        },
+        "overflow": {
+          "left": -132,
+          "right": -12,
+          "top": -63,
+          "bottom": -246
+        },
+        "worstOverflow": -12,
+        "pass": true
+      },
+      {
+        "label": "결과 스테이지",
+        "selector": "div:has(> [data-testid=\"result-ambient\"])",
+        "rect": {
+          "w": 400,
+          "h": 675
+        },
+        "overflow": {
+          "left": 0,
+          "right": 0,
+          "top": 0,
+          "bottom": 0
+        },
+        "worstOverflow": 0,
+        "pass": true
+      },
+      {
+        "label": "결과 hero",
+        "selector": ".result-hero",
+        "rect": {
+          "w": 178.3,
+          "h": 315
+        },
+        "overflow": {
+          "left": -110.8,
+          "right": -110.8,
+          "top": -80,
+          "bottom": -280
+        },
+        "worstOverflow": -80,
+        "pass": true
+      }
+    ],
+    "fails": [],
+    "pass": true
+  },
+  "landingShownOnDraft": {
+    "present": true,
+    "position": "fixed",
+    "display": "flex",
+    "restoreShown": true,
+    "scrollHeight": 675,
+    "clientHeight": 675,
+    "pass": true,
+    "dismissed": true
+  },
+  "posterless": {
+    "landingDisplay": "none",
+    "frame": {
+      "w": 400,
+      "h": 675
+    },
+    "stage": {
+      "w": 400,
+      "h": 504.5
+    },
+    "body": {
+      "w": 400,
+      "h": 504.5
+    },
+    "preview": {
+      "w": 300.7,
+      "h": 480.5
+    },
+    "stageBg": "rgba(255, 255, 255, 0.05)",
+    "landingHidden": true,
+    "stageFillsBody": true,
+    "stagePainted": true,
+    "checked": true,
+    "expected": {
+      "preview": {
+        "w": 300.7,
+        "h": 480.5
+      }
+    },
+    "pass": true
+  },
+  "backdrop": {
+    "pass": true
+  },
+  "carousel": {
+    "count": 5,
+    "cards": [
+      {
+        "label": "Minimal",
+        "w": 140,
+        "h": 223.7,
+        "opacity": 1,
+        "overflow": {
+          "left": -130,
+          "right": -130,
+          "top": -188,
+          "bottom": -263.3
+        },
+        "worstOverflow": -130,
+        "ratio": 1.598,
+        "expected": {
+          "w": 140,
+          "opacity": 1
+        },
+        "passRatio": true,
+        "passWidth": true,
+        "passOpacity": true,
+        "passFrame": true
+      },
+      {
+        "label": "Criterion",
+        "w": 109.2,
+        "h": 174.5,
+        "opacity": 0.5,
+        "overflow": {
+          "left": -235,
+          "right": -55.8,
+          "top": -212.6,
+          "bottom": -287.9
+        },
+        "worstOverflow": -55.8,
+        "ratio": 1.598,
+        "expected": {
+          "w": 109.2,
+          "opacity": 0.5
+        },
+        "passRatio": true,
+        "passWidth": true,
+        "passOpacity": true,
+        "passFrame": true
+      },
+      {
+        "label": "35mm",
+        "w": 84,
+        "h": 134.2,
+        "opacity": 0.27,
+        "overflow": {
+          "left": -312,
+          "right": -4,
+          "top": -232.8,
+          "bottom": -308
+        },
+        "worstOverflow": -4,
+        "ratio": 1.598,
+        "expected": {
+          "w": 84,
+          "opacity": 0.27
+        },
+        "passRatio": true,
+        "passWidth": true,
+        "passOpacity": true,
+        "passFrame": true
+      },
+      {
+        "label": "Editorial",
+        "w": 84,
+        "h": 134.2,
+        "opacity": 0.27,
+        "overflow": {
+          "left": -4,
+          "right": -312,
+          "top": -232.8,
+          "bottom": -308
+        },
+        "worstOverflow": -4,
+        "ratio": 1.598,
+        "expected": {
+          "w": 84,
+          "opacity": 0.27
+        },
+        "passRatio": true,
+        "passWidth": true,
+        "passOpacity": true,
+        "passFrame": true
+      },
+      {
+        "label": "Stub",
+        "w": 109.2,
+        "h": 174.5,
+        "opacity": 0.5,
+        "overflow": {
+          "left": -55.8,
+          "right": -235,
+          "top": -212.6,
+          "bottom": -287.9
+        },
+        "worstOverflow": -55.8,
+        "ratio": 1.598,
+        "expected": {
+          "w": 109.2,
+          "opacity": 0.5
+        },
+        "passRatio": true,
+        "passWidth": true,
+        "passOpacity": true,
+        "passFrame": true
+      }
+    ],
+    "pass": true
+  },
+  "exitPaths": {
+    "buttons": [
+      {
+        "label": "포스터 업로드",
+        "top": 492,
+        "height": 44
+      },
+      {
+        "label": "포스터 없이 직접 입력",
+        "top": 492,
+        "height": 44
+      }
+    ],
+    "lineCount": 1,
+    "tapTargetsPass": true,
+    "pass": true
+  },
+  "landingBudget": {
+    "blocks": {
+      "copy": 63,
+      "hero": 223.7,
+      "exitPaths": 44
+    },
+    "scrollHeight": 675,
+    "clientHeight": 675,
+    "pass": true
+  },
+  "invariant": {
+    "checked": true,
+    "expected": {
+      "dock": 290,
+      "preview": {
+        "w": 190.9,
+        "h": 305
+      }
+    },
+    "slotHeightClass": "h-[min(214px,26svh)]",
+    "pass": true
+  },
+  "bannerToastCollision": {
+    "banner": {
+      "top": 597,
+      "bottom": 667,
+      "left": 20,
+      "right": 380
+    },
+    "toast": {
+      "top": 524,
+      "bottom": 563,
+      "left": 140.6,
+      "right": 259.4
+    },
+    "gap": 34,
+    "pass": true
+  }
+}
