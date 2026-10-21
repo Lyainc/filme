@@ -1,0 +1,133 @@
+{
+ "enlarge": {
+  "maxTapScreen": {
+   "opened": null,
+   "focus": "BODY",
+   "backToDefault": true,
+   "rect": {
+    "x": 157.9166717529297,
+    "y": 514.4583129882812,
+    "w": 86.41665649414062,
+    "h": 11.6875
+   },
+   "fieldTapTargetsInMax": 0
+  },
+  "pinchTapScreen": {
+   "scale": 3.9953269958496094,
+   "efp": "seat",
+   "opened": null,
+   "focus": "BODY"
+  }
+ },
+ "darkRecovery": {
+  "minimal": {
+   "handleOpensDrawer": true,
+   "prevNext": {
+    "opened": "title",
+    "afterNext": "titleOg",
+    "afterPrev": "title"
+   },
+   "focusedValue": "인터스텔라",
+   "editUndo": {
+    "typed": "인터스텔라 ",
+    "savedDraftTitle": "인터스텔라 ",
+    "afterUndoText": "인터스텔라"
+   },
+   "prevNextByFocus": {
+    "open": "제목",
+    "afterNext": "원제",
+    "afterPrev": "제목"
+   }
+  },
+  "criterion": {
+   "handleOpensDrawer": true,
+   "prevNext": {
+    "opened": "title",
+    "afterNext": "titleOg",
+    "afterPrev": null
+   },
+   "focusedValue": null,
+   "prevNextByFocus": {
+    "open": "제목",
+    "afterNext": "원제",
+    "afterPrev": "기본 크기로 돌아가기"
+   }
+  },
+  "35mm": {
+   "handleOpensDrawer": true,
+   "prevNext": {
+    "opened": "title",
+    "afterNext": "titleOg",
+    "afterPrev": "title"
+   },
+   "focusedValue": "인터스텔라",
+   "editUndo": {
+    "typed": "인터스텔라 ",
+    "savedDraftTitle": "인터스텔라 ",
+    "afterUndoText": "인터스텔라"
+   },
+   "prevNextByFocus": {
+    "open": "제목",
+    "afterNext": "원제",
+    "afterPrev": "제목"
+   }
+  },
+  "editorial": {
+   "handleOpensDrawer": true,
+   "prevNext": {
+    "opened": "title",
+    "afterNext": "titleOg",
+    "afterPrev": "title"
+   },
+   "focusedValue": "인터스텔라",
+   "editUndo": {
+    "typed": "인터스텔라 ",
+    "savedDraftTitle": "인터스텔라 ",
+    "afterUndoText": "인터스텔라"
+   },
+   "prevNextByFocus": {
+    "open": "제목",
+    "afterNext": "원제",
+    "afterPrev": "제목"
+   }
+  },
+  "stub": {
+   "handleOpensDrawer": true,
+   "prevNext": {
+    "opened": "title",
+    "afterNext": "titleOg",
+    "afterPrev": "title"
+   },
+   "focusedValue": "인터스텔라",
+   "editUndo": {
+    "typed": "인터스텔라 ",
+    "savedDraftTitle": "인터스텔라 ",
+    "afterUndoText": "인터스텔라"
+   },
+   "prevNextByFocus": {
+    "open": "제목",
+    "afterNext": "원제",
+    "afterPrev": "제목"
+   }
+  },
+  "35mm-landscape": {
+   "handleOpensDrawer": true,
+   "prevNext": {
+    "opened": "title",
+    "afterNext": "titleOg",
+    "afterPrev": "title"
+   },
+   "focusedValue": "인터스텔라",
+   "editUndo": {
+    "typed": "인터스텔라 ",
+    "savedDraftTitle": "인터스텔라 ",
+    "afterUndoText": "인터스텔라"
+   },
+   "prevNextByFocus": {
+    "open": "제목",
+    "afterNext": "원제",
+    "afterPrev": "제목"
+   }
+  }
+ }
+}

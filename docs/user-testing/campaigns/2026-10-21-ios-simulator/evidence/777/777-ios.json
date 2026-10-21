@@ -1,0 +1,4393 @@
+[
+ {
+  "mood": "minimal",
+  "theme": "light",
+  "fields": [
+   {
+    "field": "chain",
+    "rect": {
+     "x": 58.6,
+     "y": 85.6,
+     "w": 40.6,
+     "h": 25.1
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "chain",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "chain",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "chain",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "format",
+    "rect": {
+     "x": 122.6,
+     "y": 87.1,
+     "w": 48.3,
+     "h": 22.1
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "format",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "format",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "format",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "title",
+    "rect": {
+     "x": 62.0,
+     "y": 419.7,
+     "w": 277.6,
+     "h": 22.0
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "title",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "title",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "title",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "titleOg",
+    "rect": {
+     "x": 62.0,
+     "y": 445.1,
+     "w": 277.6,
+     "h": 11.2
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "watchDate",
+    "rect": {
+     "x": 62.0,
+     "y": 477.3,
+     "w": 51.2,
+     "h": 12.5
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "watchTime",
+    "rect": {
+     "x": 115.5,
+     "y": 477.3,
+     "w": 25.7,
+     "h": 12.5
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "theater",
+    "rect": {
+     "x": 159.5,
+     "y": 477.3,
+     "w": 83.8,
+     "h": 12.5
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "theater",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "theater",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "theater",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "screen",
+    "rect": {
+     "x": 250.5,
+     "y": 477.3,
+     "w": 33.4,
+     "h": 12.5
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "seat",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "seat",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "seat",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "seat",
+    "rect": {
+     "x": 257.0,
+     "y": 469.5,
+     "w": 82.6,
+     "h": 19.6
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "seat",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "seat",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "seat",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "runtime",
+    "rect": {
+     "x": 62.0,
+     "y": 499.0,
+     "w": 25.0,
+     "h": 19.6
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "runtime",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "runtime",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "runtime",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "rating",
+    "rect": {
+     "x": 101.8,
+     "y": 499.0,
+     "w": 26.8,
+     "h": 19.6
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "rating",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "rating",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "rating",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "releaseDate",
+    "rect": {
+     "x": 143.6,
+     "y": 499.0,
+     "w": 50.8,
+     "h": 19.6
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "actors",
+    "rect": {
+     "x": 62.0,
+     "y": 524.7,
+     "w": 277.6,
+     "h": 20.0
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "actors",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "actors",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "actors",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "signature",
+    "rect": {
+     "x": 275.6,
+     "y": 551.4,
+     "w": 64.0,
+     "h": 16.2
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "signature",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "signature",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "signature",
+      "barOverlap": 0
+     }
+    }
+   }
+  ],
+  "extras": {
+   "handleOpensDrawer": true,
+   "prevNext": {
+    "opened": "title",
+    "afterNext": "title",
+    "afterPrev": "title"
+   },
+   "focusedValue": "인터스텔라",
+   "editUndo": {
+    "typed": "인터스텔라 ",
+    "savedDraftTitle": "인터스텔라 ",
+    "afterUndoText": "인터스텔라"
+   }
+  }
+ },
+ {
+  "mood": "criterion",
+  "theme": "light",
+  "fields": [
+   {
+    "field": "watchDate",
+    "rect": {
+     "x": 300.8,
+     "y": 87.0,
+     "w": 34.0,
+     "h": 6.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "title",
+    "rect": {
+     "x": 66.7,
+     "y": 107.9,
+     "w": 65.6,
+     "h": 16.9
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "title",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "title",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "title",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "titleOg",
+    "rect": {
+     "x": 66.7,
+     "y": 127.6,
+     "w": 65.6,
+     "h": 9.5
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "rating",
+    "rect": {
+     "x": 299.3,
+     "y": 120.1,
+     "w": 35.5,
+     "h": 16.9
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "rating",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "rating",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "rating",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "quote",
+    "rect": {
+     "x": 99.2,
+     "y": 428.2,
+     "w": 203.1,
+     "h": 64.3
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "quote",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "quote",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "quote",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "signature",
+    "rect": {
+     "x": 288.1,
+     "y": 498.6,
+     "w": 46.8,
+     "h": 19.0
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "signature",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "signature",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "signature",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "theater",
+    "rect": {
+     "x": 66.7,
+     "y": 533.2,
+     "w": 53.1,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "theater",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "theater",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "theater",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "screen",
+    "rect": {
+     "x": 125.2,
+     "y": 533.2,
+     "w": 21.4,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "screen",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "screen",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "screen",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "seat",
+    "rect": {
+     "x": 151.9,
+     "y": 533.2,
+     "w": 11.4,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "seat",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "seat",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "seat",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "watchDate",
+    "rect": {
+     "x": 168.7,
+     "y": 533.2,
+     "w": 34.1,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "watchTime",
+    "rect": {
+     "x": 204.5,
+     "y": 533.2,
+     "w": 16.9,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "runtime",
+    "rect": {
+     "x": 66.7,
+     "y": 543.3,
+     "w": 10.7,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "runtime",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "runtime",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "runtime",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "releaseDate",
+    "rect": {
+     "x": 82.8,
+     "y": 543.3,
+     "w": 67.1,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "actors",
+    "rect": {
+     "x": 155.2,
+     "y": 543.3,
+     "w": 109.9,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "actors",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "actors",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "actors",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "chain",
+    "rect": {
+     "x": 66.7,
+     "y": 554.1,
+     "w": 40.6,
+     "h": 16.9
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "chain",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "chain",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "chain",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "format",
+    "rect": {
+     "x": 119.9,
+     "y": 554.1,
+     "w": 37.0,
+     "h": 16.9
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "format",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "format",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "format",
+      "barOverlap": 0
+     }
+    }
+   }
+  ],
+  "extras": {
+   "handleOpensDrawer": true,
+   "prevNext": {
+    "opened": "title",
+    "afterNext": "titleOg",
+    "afterPrev": null
+   },
+   "focusedValue": null
+  }
+ },
+ {
+  "mood": "35mm",
+  "theme": "light",
+  "fields": [
+   {
+    "field": "title",
+    "rect": {
+     "x": 118.2,
+     "y": 417.0,
+     "w": 165.2,
+     "h": 11.5
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "title",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "title",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "title",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "titleOg",
+    "rect": {
+     "x": 118.2,
+     "y": 431.3,
+     "w": 165.2,
+     "h": 5.1
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "theater",
+    "rect": {
+     "x": 172.9,
+     "y": 449.7,
+     "w": 47.8,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "theater",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "theater",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "theater",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "screen",
+    "rect": {
+     "x": 224.9,
+     "y": 449.7,
+     "w": 18.7,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "screen",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "screen",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "screen",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "seat",
+    "rect": {
+     "x": 247.8,
+     "y": 449.7,
+     "w": 10.0,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "seat",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "seat",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "seat",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "watchDate",
+    "rect": {
+     "x": 172.9,
+     "y": 464.3,
+     "w": 28.8,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "watchTime",
+    "rect": {
+     "x": 205.9,
+     "y": 464.3,
+     "w": 14.4,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "runtime",
+    "rect": {
+     "x": 172.9,
+     "y": 478.8,
+     "w": 9.2,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "runtime",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "runtime",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "runtime",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "rating",
+    "rect": {
+     "x": 186.4,
+     "y": 478.8,
+     "w": 15.2,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "rating",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "rating",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "rating",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "releaseDate",
+    "rect": {
+     "x": 205.8,
+     "y": 478.8,
+     "w": 28.4,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "actors",
+    "rect": {
+     "x": 172.9,
+     "y": 493.4,
+     "w": 98.7,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "actors",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "actors",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "actors",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "signature",
+    "rect": {
+     "x": 172.9,
+     "y": 506.6,
+     "w": 21.5,
+     "h": 11.8
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "signature",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "signature",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "signature",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "chain",
+    "rect": {
+     "x": 118.2,
+     "y": 532.5,
+     "w": 40.6,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "chain",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "chain",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "chain",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "format",
+    "rect": {
+     "x": 167.3,
+     "y": 530.8,
+     "w": 23.7,
+     "h": 10.8
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "format",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "format",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "format",
+      "barOverlap": 0
+     }
+    }
+   }
+  ],
+  "extras": {
+   "handleOpensDrawer": true,
+   "prevNext": {
+    "opened": "title",
+    "afterNext": "title",
+    "afterPrev": "title"
+   },
+   "focusedValue": "인터스텔라",
+   "editUndo": {
+    "typed": "인터스텔라 ",
+    "savedDraftTitle": "인터스텔라 ",
+    "afterUndoText": "인터스텔라"
+   }
+  }
+ },
+ {
+  "mood": "editorial",
+  "theme": "light",
+  "fields": [
+   {
+    "field": "title",
+    "rect": {
+     "x": 193.0,
+     "y": 237.5,
+     "w": 129.0,
+     "h": 16.9
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "title",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "title",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "title",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "titleOg",
+    "rect": {
+     "x": 193.0,
+     "y": 257.3,
+     "w": 129.0,
+     "h": 10.9
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "actors",
+    "rect": {
+     "x": 193.0,
+     "y": 273.0,
+     "w": 129.0,
+     "h": 11.8
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "actors",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "actors",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "actors",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "watchDate",
+    "rect": {
+     "x": 212.7,
+     "y": 297.6,
+     "w": 48.6,
+     "h": 9.2
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "watchTime",
+    "rect": {
+     "x": 250.1,
+     "y": 312.3,
+     "w": 33.8,
+     "h": 10.9
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "theater",
+    "rect": {
+     "x": 193.0,
+     "y": 345.4,
+     "w": 74.3,
+     "h": 8.9
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "theater",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "theater",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "theater",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "screen",
+    "rect": {
+     "x": 193.0,
+     "y": 355.5,
+     "w": 74.3,
+     "h": 8.7
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "screen",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "screen",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "screen",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "runtime",
+    "rect": {
+     "x": 277.9,
+     "y": 345.4,
+     "w": 47.0,
+     "h": 8.9
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "runtime",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "runtime",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "runtime",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "rating",
+    "rect": {
+     "x": 193.0,
+     "y": 380.1,
+     "w": 74.3,
+     "h": 8.9
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "rating",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "rating",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "rating",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "releaseDate",
+    "rect": {
+     "x": 277.9,
+     "y": 380.1,
+     "w": 47.0,
+     "h": 8.9
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "signature",
+    "rect": {
+     "x": 304.7,
+     "y": 411.7,
+     "w": 17.4,
+     "h": 10.9
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "signature",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "signature",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "signature",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "bookingNo",
+    "rect": {
+     "x": 351.9,
+     "y": 359.0,
+     "w": 16.9,
+     "h": 69.0
+    },
+    "coveredBy": [
+     {
+      "by": "handle",
+      "frac": 0.42
+     }
+    ],
+    "probes": {
+     "center": {
+      "opened": "drawer"
+     },
+     "inTop": {
+      "opened": "drawer"
+     },
+     "inBottom": {
+      "opened": "bookingNo",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "chain",
+    "rect": {
+     "x": 344.4,
+     "y": 335.6,
+     "w": 11.6,
+     "h": 15.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "chain",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "chain",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "chain",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "format",
+    "rect": {
+     "x": 367.8,
+     "y": 335.6,
+     "w": 8.5,
+     "h": 15.4
+    },
+    "coveredBy": [
+     {
+      "by": "handle",
+      "frac": 1.0
+     }
+    ],
+    "probes": {
+     "center": {
+      "opened": "drawer"
+     },
+     "inTop": {
+      "opened": "drawer"
+     },
+     "inBottom": {
+      "opened": "drawer"
+     }
+    }
+   },
+   {
+    "field": "seat",
+    "rect": {
+     "x": 355.4,
+     "y": 301.4,
+     "w": 11.3,
+     "h": 23.5
+    },
+    "coveredBy": [
+     {
+      "by": "handle",
+      "frac": 0.52
+     }
+    ],
+    "probes": {
+     "center": {
+      "opened": "drawer"
+     },
+     "inTop": {
+      "opened": "seat",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "drawer"
+     }
+    }
+   }
+  ],
+  "extras": {
+   "handleOpensDrawer": true,
+   "prevNext": {
+    "opened": "title",
+    "afterNext": "titleOg",
+    "afterPrev": "title"
+   },
+   "focusedValue": "인터스텔라",
+   "editUndo": {
+    "typed": "인터스텔라 ",
+    "savedDraftTitle": "인터스텔라 ",
+    "afterUndoText": "인터스텔라"
+   }
+  }
+ },
+ {
+  "mood": "stub",
+  "theme": "light",
+  "fields": [
+   {
+    "field": "chain",
+    "rect": {
+     "x": 57.2,
+     "y": 313.8,
+     "w": 40.6,
+     "h": 13.2
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "chain",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "chain",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "chain",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "format",
+    "rect": {
+     "x": 107.0,
+     "y": 313.9,
+     "w": 28.4,
+     "h": 13.0
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "format",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "format",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "format",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "title",
+    "rect": {
+     "x": 57.2,
+     "y": 334.4,
+     "w": 287.1,
+     "h": 14.9
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "title",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "title",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "title",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "titleOg",
+    "rect": {
+     "x": 57.2,
+     "y": 352.0,
+     "w": 287.1,
+     "h": 9.1
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "seat",
+    "rect": {
+     "x": 57.2,
+     "y": 388.6,
+     "w": 46.5,
+     "h": 42.7
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "seat",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "seat",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "seat",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "watchDate",
+    "rect": {
+     "x": 302.3,
+     "y": 388.6,
+     "w": 42.1,
+     "h": 12.2
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "watchTime",
+    "rect": {
+     "x": 323.2,
+     "y": 404.8,
+     "w": 21.1,
+     "h": 12.2
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "theater",
+    "rect": {
+     "x": 261.0,
+     "y": 421.8,
+     "w": 56.0,
+     "h": 8.5
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "theater",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "theater",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "theater",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "screen",
+    "rect": {
+     "x": 321.7,
+     "y": 421.8,
+     "w": 22.6,
+     "h": 8.5
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "screen",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "screen",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "screen",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "runtime",
+    "rect": {
+     "x": 180.6,
+     "y": 482.2,
+     "w": 13.4,
+     "h": 12.2
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "runtime",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "runtime",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "runtime",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "rating",
+    "rect": {
+     "x": 322.6,
+     "y": 482.2,
+     "w": 21.8,
+     "h": 12.2
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "rating",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "rating",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "rating",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "releaseDate",
+    "rect": {
+     "x": 152.2,
+     "y": 498.5,
+     "w": 41.8,
+     "h": 12.2
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "actors",
+    "rect": {
+     "x": 230.3,
+     "y": 514.7,
+     "w": 114.1,
+     "h": 10.2
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "actors",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "actors",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "actors",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "signature",
+    "rect": {
+     "x": 129.4,
+     "y": 566.3,
+     "w": 53.3,
+     "h": 12.2
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "signature",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "signature",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "signature",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "bookingNo",
+    "rect": {
+     "x": 242.8,
+     "y": 565.0,
+     "w": 101.6,
+     "h": 13.5
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "bookingNo",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "bookingNo",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "bookingNo",
+      "barOverlap": 0
+     }
+    }
+   }
+  ],
+  "extras": {
+   "handleOpensDrawer": true,
+   "prevNext": {
+    "opened": "title",
+    "afterNext": "title",
+    "afterPrev": "title"
+   },
+   "focusedValue": "인터스텔라",
+   "editUndo": {
+    "typed": "인터스텔라 ",
+    "savedDraftTitle": "인터스텔라 ",
+    "afterUndoText": "인터스텔라"
+   }
+  }
+ },
+ {
+  "mood": "35mm-landscape",
+  "theme": "light",
+  "fields": [
+   {
+    "field": "title",
+    "rect": {
+     "x": 275.8,
+     "y": 261.2,
+     "w": 84.7,
+     "h": 7.7
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "title",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "title",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "title",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "titleOg",
+    "rect": {
+     "x": 275.8,
+     "y": 270.8,
+     "w": 84.7,
+     "h": 3.6
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "theater",
+    "rect": {
+     "x": 305.9,
+     "y": 283.5,
+     "w": 34.0,
+     "h": 5.3
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "theater",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "theater",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "theater",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "screen",
+    "rect": {
+     "x": 342.9,
+     "y": 283.5,
+     "w": 13.3,
+     "h": 5.3
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "screen",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "screen",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "screen",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "seat",
+    "rect": {
+     "x": 305.9,
+     "y": 288.6,
+     "w": 7.1,
+     "h": 5.3
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "seat",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "seat",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "seat",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "watchDate",
+    "rect": {
+     "x": 305.9,
+     "y": 308.3,
+     "w": 20.5,
+     "h": 5.3
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "watchTime",
+    "rect": {
+     "x": 329.4,
+     "y": 308.3,
+     "w": 10.3,
+     "h": 5.3
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "runtime",
+    "rect": {
+     "x": 305.9,
+     "y": 328.0,
+     "w": 6.6,
+     "h": 5.3
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "runtime",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "runtime",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "runtime",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "rating",
+    "rect": {
+     "x": 315.4,
+     "y": 328.0,
+     "w": 10.9,
+     "h": 5.3
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "rating",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "rating",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "rating",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "releaseDate",
+    "rect": {
+     "x": 329.3,
+     "y": 328.0,
+     "w": 20.3,
+     "h": 5.3
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "actors",
+    "rect": {
+     "x": 305.9,
+     "y": 347.7,
+     "w": 51.7,
+     "h": 10.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "actors",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "actors",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "actors",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "signature",
+    "rect": {
+     "x": 305.9,
+     "y": 371.5,
+     "w": 15.3,
+     "h": 8.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "signature",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "signature",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "signature",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "chain",
+    "rect": {
+     "x": 275.8,
+     "y": 389.5,
+     "w": 28.9,
+     "h": 5.3
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "chain",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "chain",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "chain",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "format",
+    "rect": {
+     "x": 310.7,
+     "y": 388.3,
+     "w": 16.9,
+     "h": 7.7
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "format",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "format",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "format",
+      "barOverlap": 0
+     }
+    }
+   }
+  ],
+  "extras": {
+   "handleOpensDrawer": true,
+   "prevNext": {
+    "opened": "title",
+    "afterNext": "titleOg",
+    "afterPrev": "title"
+   },
+   "focusedValue": "인터스텔라",
+   "editUndo": {
+    "typed": "인터스텔라 ",
+    "savedDraftTitle": "인터스텔라 ",
+    "afterUndoText": "인터스텔라"
+   }
+  }
+ },
+ {
+  "mood": "minimal",
+  "theme": "dark",
+  "fields": [
+   {
+    "field": "chain",
+    "rect": {
+     "x": 58.6,
+     "y": 85.6,
+     "w": 40.6,
+     "h": 25.1
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "chain",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "chain",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "chain",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "format",
+    "rect": {
+     "x": 122.6,
+     "y": 87.1,
+     "w": 48.3,
+     "h": 22.1
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "format",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "format",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "format",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "title",
+    "rect": {
+     "x": 62.0,
+     "y": 419.7,
+     "w": 277.6,
+     "h": 22.0
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "title",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "title",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "title",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "titleOg",
+    "rect": {
+     "x": 62.0,
+     "y": 445.1,
+     "w": 277.6,
+     "h": 11.2
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "watchDate",
+    "rect": {
+     "x": 62.0,
+     "y": 477.3,
+     "w": 51.2,
+     "h": 12.5
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "watchTime",
+    "rect": {
+     "x": 115.5,
+     "y": 477.3,
+     "w": 25.7,
+     "h": 12.5
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "theater",
+    "rect": {
+     "x": 159.5,
+     "y": 477.3,
+     "w": 83.8,
+     "h": 12.5
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "theater",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "theater",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "theater",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "screen",
+    "rect": {
+     "x": 250.5,
+     "y": 477.3,
+     "w": 33.4,
+     "h": 12.5
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "seat",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "seat",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "seat",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "seat",
+    "rect": {
+     "x": 257.0,
+     "y": 469.5,
+     "w": 82.6,
+     "h": 19.6
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "seat",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "seat",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "seat",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "runtime",
+    "rect": {
+     "x": 62.0,
+     "y": 499.0,
+     "w": 25.0,
+     "h": 19.6
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "runtime",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "runtime",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "runtime",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "rating",
+    "rect": {
+     "x": 101.8,
+     "y": 499.0,
+     "w": 26.8,
+     "h": 19.6
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "rating",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "rating",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "rating",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "releaseDate",
+    "rect": {
+     "x": 143.6,
+     "y": 499.0,
+     "w": 50.8,
+     "h": 19.6
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "actors",
+    "rect": {
+     "x": 62.0,
+     "y": 524.7,
+     "w": 277.6,
+     "h": 20.0
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "actors",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "actors",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "actors",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "signature",
+    "rect": {
+     "x": 275.6,
+     "y": 551.4,
+     "w": 64.0,
+     "h": 16.2
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "signature",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "signature",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "signature",
+      "barOverlap": 0
+     }
+    }
+   }
+  ]
+ },
+ {
+  "mood": "criterion",
+  "theme": "dark",
+  "fields": [
+   {
+    "field": "watchDate",
+    "rect": {
+     "x": 300.8,
+     "y": 87.0,
+     "w": 34.0,
+     "h": 6.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "title",
+    "rect": {
+     "x": 66.7,
+     "y": 107.9,
+     "w": 65.6,
+     "h": 16.9
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "title",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "title",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "title",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "titleOg",
+    "rect": {
+     "x": 66.7,
+     "y": 127.6,
+     "w": 65.6,
+     "h": 9.5
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "rating",
+    "rect": {
+     "x": 299.3,
+     "y": 120.1,
+     "w": 35.5,
+     "h": 16.9
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "rating",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "rating",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "rating",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "quote",
+    "rect": {
+     "x": 99.2,
+     "y": 428.2,
+     "w": 203.1,
+     "h": 64.3
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "quote",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "quote",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "quote",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "signature",
+    "rect": {
+     "x": 288.1,
+     "y": 498.6,
+     "w": 46.8,
+     "h": 19.0
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "signature",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "signature",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "signature",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "theater",
+    "rect": {
+     "x": 66.7,
+     "y": 533.2,
+     "w": 53.1,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "theater",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "theater",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "theater",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "screen",
+    "rect": {
+     "x": 125.2,
+     "y": 533.2,
+     "w": 21.4,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "screen",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "screen",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "screen",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "seat",
+    "rect": {
+     "x": 151.9,
+     "y": 533.2,
+     "w": 11.4,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "seat",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "seat",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "seat",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "watchDate",
+    "rect": {
+     "x": 168.7,
+     "y": 533.2,
+     "w": 34.1,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "watchTime",
+    "rect": {
+     "x": 204.5,
+     "y": 533.2,
+     "w": 16.9,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "runtime",
+    "rect": {
+     "x": 66.7,
+     "y": 543.3,
+     "w": 10.7,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "runtime",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "runtime",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "runtime",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "releaseDate",
+    "rect": {
+     "x": 82.8,
+     "y": 543.3,
+     "w": 67.1,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "actors",
+    "rect": {
+     "x": 155.2,
+     "y": 543.3,
+     "w": 109.9,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "actors",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "actors",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "actors",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "chain",
+    "rect": {
+     "x": 66.7,
+     "y": 554.1,
+     "w": 40.6,
+     "h": 16.9
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "chain",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "chain",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "chain",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "format",
+    "rect": {
+     "x": 119.9,
+     "y": 554.1,
+     "w": 37.0,
+     "h": 16.9
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "format",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "format",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "format",
+      "barOverlap": 0
+     }
+    }
+   }
+  ]
+ },
+ {
+  "mood": "35mm",
+  "theme": "dark",
+  "fields": [
+   {
+    "field": "title",
+    "rect": {
+     "x": 118.2,
+     "y": 417.0,
+     "w": 165.2,
+     "h": 11.5
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "title",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "title",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "title",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "titleOg",
+    "rect": {
+     "x": 118.2,
+     "y": 431.3,
+     "w": 165.2,
+     "h": 5.1
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "theater",
+    "rect": {
+     "x": 172.9,
+     "y": 449.7,
+     "w": 47.8,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "theater",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "theater",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "theater",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "screen",
+    "rect": {
+     "x": 224.9,
+     "y": 449.7,
+     "w": 18.7,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "screen",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "screen",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "screen",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "seat",
+    "rect": {
+     "x": 247.8,
+     "y": 449.7,
+     "w": 10.0,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "seat",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "seat",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "seat",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "watchDate",
+    "rect": {
+     "x": 172.9,
+     "y": 464.3,
+     "w": 28.8,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "watchTime",
+    "rect": {
+     "x": 205.9,
+     "y": 464.3,
+     "w": 14.4,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "runtime",
+    "rect": {
+     "x": 172.9,
+     "y": 478.8,
+     "w": 9.2,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "runtime",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "runtime",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "runtime",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "rating",
+    "rect": {
+     "x": 186.4,
+     "y": 478.8,
+     "w": 15.2,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "rating",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "rating",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "rating",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "releaseDate",
+    "rect": {
+     "x": 205.8,
+     "y": 478.8,
+     "w": 28.4,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "actors",
+    "rect": {
+     "x": 172.9,
+     "y": 493.4,
+     "w": 98.7,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "actors",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "actors",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "actors",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "signature",
+    "rect": {
+     "x": 172.9,
+     "y": 506.6,
+     "w": 21.5,
+     "h": 11.8
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "signature",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "signature",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "signature",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "chain",
+    "rect": {
+     "x": 118.2,
+     "y": 532.5,
+     "w": 40.6,
+     "h": 7.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "chain",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "chain",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "chain",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "format",
+    "rect": {
+     "x": 167.3,
+     "y": 530.8,
+     "w": 23.7,
+     "h": 10.8
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "format",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "format",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "format",
+      "barOverlap": 0
+     }
+    }
+   }
+  ]
+ },
+ {
+  "mood": "editorial",
+  "theme": "dark",
+  "fields": [
+   {
+    "field": "title",
+    "rect": {
+     "x": 193.0,
+     "y": 237.5,
+     "w": 129.0,
+     "h": 16.9
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "title",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "title",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "title",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "titleOg",
+    "rect": {
+     "x": 193.0,
+     "y": 257.3,
+     "w": 129.0,
+     "h": 10.9
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "actors",
+    "rect": {
+     "x": 193.0,
+     "y": 273.0,
+     "w": 129.0,
+     "h": 11.8
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "actors",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "actors",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "actors",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "watchDate",
+    "rect": {
+     "x": 212.7,
+     "y": 297.6,
+     "w": 48.6,
+     "h": 9.2
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "watchTime",
+    "rect": {
+     "x": 250.1,
+     "y": 312.3,
+     "w": 33.8,
+     "h": 10.9
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "theater",
+    "rect": {
+     "x": 193.0,
+     "y": 345.4,
+     "w": 74.3,
+     "h": 8.9
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "theater",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "theater",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "theater",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "screen",
+    "rect": {
+     "x": 193.0,
+     "y": 355.5,
+     "w": 74.3,
+     "h": 8.7
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "screen",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "screen",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "screen",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "runtime",
+    "rect": {
+     "x": 277.9,
+     "y": 345.4,
+     "w": 47.0,
+     "h": 8.9
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "runtime",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "runtime",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "runtime",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "rating",
+    "rect": {
+     "x": 193.0,
+     "y": 380.1,
+     "w": 74.3,
+     "h": 8.9
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "rating",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "rating",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "rating",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "releaseDate",
+    "rect": {
+     "x": 277.9,
+     "y": 380.1,
+     "w": 47.0,
+     "h": 8.9
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "signature",
+    "rect": {
+     "x": 304.7,
+     "y": 411.7,
+     "w": 17.4,
+     "h": 10.9
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "signature",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "signature",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "signature",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "bookingNo",
+    "rect": {
+     "x": 351.9,
+     "y": 359.0,
+     "w": 16.9,
+     "h": 69.0
+    },
+    "coveredBy": [
+     {
+      "by": "handle",
+      "frac": 0.42
+     }
+    ],
+    "probes": {
+     "center": {
+      "opened": "drawer"
+     },
+     "inTop": {
+      "opened": "drawer"
+     },
+     "inBottom": {
+      "opened": "bookingNo",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "chain",
+    "rect": {
+     "x": 344.4,
+     "y": 335.6,
+     "w": 11.6,
+     "h": 15.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "chain",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "chain",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "chain",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "format",
+    "rect": {
+     "x": 367.8,
+     "y": 335.6,
+     "w": 8.5,
+     "h": 15.4
+    },
+    "coveredBy": [
+     {
+      "by": "handle",
+      "frac": 1.0
+     }
+    ],
+    "probes": {
+     "center": {
+      "opened": "drawer"
+     },
+     "inTop": {
+      "opened": "drawer"
+     },
+     "inBottom": {
+      "opened": "drawer"
+     }
+    }
+   },
+   {
+    "field": "seat",
+    "rect": {
+     "x": 355.4,
+     "y": 301.4,
+     "w": 11.3,
+     "h": 23.5
+    },
+    "coveredBy": [
+     {
+      "by": "handle",
+      "frac": 0.52
+     }
+    ],
+    "probes": {
+     "center": {
+      "opened": "drawer"
+     },
+     "inTop": {
+      "opened": "seat",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "drawer"
+     }
+    }
+   }
+  ]
+ },
+ {
+  "mood": "stub",
+  "theme": "dark",
+  "fields": [
+   {
+    "field": "chain",
+    "rect": {
+     "x": 57.2,
+     "y": 313.8,
+     "w": 40.6,
+     "h": 13.2
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "chain",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "chain",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "chain",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "format",
+    "rect": {
+     "x": 107.0,
+     "y": 313.9,
+     "w": 28.4,
+     "h": 13.0
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "format",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "format",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "format",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "title",
+    "rect": {
+     "x": 57.2,
+     "y": 334.4,
+     "w": 287.1,
+     "h": 14.9
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "title",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "title",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "title",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "titleOg",
+    "rect": {
+     "x": 57.2,
+     "y": 352.0,
+     "w": 287.1,
+     "h": 9.1
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "seat",
+    "rect": {
+     "x": 57.2,
+     "y": 388.6,
+     "w": 46.5,
+     "h": 42.7
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "seat",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "seat",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "seat",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "watchDate",
+    "rect": {
+     "x": 302.3,
+     "y": 388.6,
+     "w": 42.1,
+     "h": 12.2
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "watchTime",
+    "rect": {
+     "x": 323.2,
+     "y": 404.8,
+     "w": 21.1,
+     "h": 12.2
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "theater",
+    "rect": {
+     "x": 261.0,
+     "y": 421.8,
+     "w": 56.0,
+     "h": 8.5
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "theater",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "theater",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "theater",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "screen",
+    "rect": {
+     "x": 321.7,
+     "y": 421.8,
+     "w": 22.6,
+     "h": 8.5
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "screen",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "screen",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "screen",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "runtime",
+    "rect": {
+     "x": 180.6,
+     "y": 482.2,
+     "w": 13.4,
+     "h": 12.2
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "runtime",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "runtime",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "runtime",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "rating",
+    "rect": {
+     "x": 322.6,
+     "y": 482.2,
+     "w": 21.8,
+     "h": 12.2
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "rating",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "rating",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "rating",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "releaseDate",
+    "rect": {
+     "x": 152.2,
+     "y": 498.5,
+     "w": 41.8,
+     "h": 12.2
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "actors",
+    "rect": {
+     "x": 230.3,
+     "y": 514.7,
+     "w": 114.1,
+     "h": 10.2
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "actors",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "actors",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "actors",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "signature",
+    "rect": {
+     "x": 129.4,
+     "y": 566.3,
+     "w": 53.3,
+     "h": 12.2
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "signature",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "signature",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "signature",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "bookingNo",
+    "rect": {
+     "x": 242.8,
+     "y": 565.0,
+     "w": 101.6,
+     "h": 13.5
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "bookingNo",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "bookingNo",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "bookingNo",
+      "barOverlap": 0
+     }
+    }
+   }
+  ]
+ },
+ {
+  "mood": "35mm-landscape",
+  "theme": "dark",
+  "fields": [
+   {
+    "field": "title",
+    "rect": {
+     "x": 275.8,
+     "y": 261.2,
+     "w": 84.7,
+     "h": 7.7
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "title",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "title",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "title",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "titleOg",
+    "rect": {
+     "x": 275.8,
+     "y": 270.8,
+     "w": 84.7,
+     "h": 3.6
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "titleOg",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "theater",
+    "rect": {
+     "x": 305.9,
+     "y": 283.5,
+     "w": 34.0,
+     "h": 5.3
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "theater",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "theater",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "theater",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "screen",
+    "rect": {
+     "x": 342.9,
+     "y": 283.5,
+     "w": 13.3,
+     "h": 5.3
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "screen",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "screen",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "screen",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "seat",
+    "rect": {
+     "x": 305.9,
+     "y": 288.6,
+     "w": 7.1,
+     "h": 5.3
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "seat",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "seat",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "seat",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "watchDate",
+    "rect": {
+     "x": 305.9,
+     "y": 308.3,
+     "w": 20.5,
+     "h": 5.3
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "watchDate",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "watchTime",
+    "rect": {
+     "x": 329.4,
+     "y": 308.3,
+     "w": 10.3,
+     "h": 5.3
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "watchTime",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "runtime",
+    "rect": {
+     "x": 305.9,
+     "y": 328.0,
+     "w": 6.6,
+     "h": 5.3
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "runtime",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "runtime",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "runtime",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "rating",
+    "rect": {
+     "x": 315.4,
+     "y": 328.0,
+     "w": 10.9,
+     "h": 5.3
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "rating",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "rating",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "rating",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "releaseDate",
+    "rect": {
+     "x": 329.3,
+     "y": 328.0,
+     "w": 20.3,
+     "h": 5.3
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "releaseDate",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "actors",
+    "rect": {
+     "x": 305.9,
+     "y": 347.7,
+     "w": 51.7,
+     "h": 10.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "actors",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "actors",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "actors",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "signature",
+    "rect": {
+     "x": 305.9,
+     "y": 371.5,
+     "w": 15.3,
+     "h": 8.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "signature",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "signature",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "signature",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "chain",
+    "rect": {
+     "x": 275.8,
+     "y": 389.5,
+     "w": 28.9,
+     "h": 5.3
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "chain",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "chain",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "chain",
+      "barOverlap": 0
+     }
+    }
+   },
+   {
+    "field": "format",
+    "rect": {
+     "x": 310.7,
+     "y": 388.3,
+     "w": 16.9,
+     "h": 7.7
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "format",
+      "barOverlap": 0
+     },
+     "inTop": {
+      "opened": "format",
+      "barOverlap": 0
+     },
+     "inBottom": {
+      "opened": "format",
+      "barOverlap": 0
+     }
+    }
+   }
+  ]
+ }
+]
