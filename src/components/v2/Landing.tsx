@@ -20,7 +20,7 @@ const CARD_HEIGHT = (TRACK_CARD_WIDTH * 1534) / 960;
 const CAROUSEL_INTERVAL_MS = 3500;
 /** 자리 이동에 걸리는 시간 — 시안(620ms)의 2배. 간격과 같은 이유로 느긋하게 간다. */
 const CAROUSEL_TRANSITION_MS = 1240;
-/** 길게 누르고 있는 동안의 간격 — 멈추는 게 아니라 느려진다(정지는 안 한다, 아래 컴포넌트 주석). */
+/** 길게 누르고 있는 동안의 간격 — 명시적인 전시 정지 상태와는 별개다. */
 const CAROUSEL_SLOW_INTERVAL_MS = 7000;
 /** 이 시간을 넘겨 누르고 있으면 "길게 누름"이다. 그 뒤 손을 떼도 무드로 진입하지 않는다. */
 const LONG_PRESS_MS = 350;
@@ -99,9 +99,9 @@ const GALLERY_ROTATED: ReadonlySet<LayoutId> = new Set<LayoutId>(['editorial']);
  *
  * **대신 "지금 어느 무드가 중앙인가"라는 상태가 새로 생겼다.** 그게 이 개편이 지불한 값이다.
  *
- * **멈추지 않는다 — 이건 정보가 아니라 시각 효과다**(사용자 결정 2026-08-08). 그래서 정지
- * 버튼도, 인디케이터도, hover/focus 일시정지도 없다. 대신 손짓 셋이 흐름을 조절한다. 셋을
- * 가르는 건 시간과 거리 하나씩이다:
+ * **자동 전시 + 정지·재개 버튼**(#778, 사용자 결정 2026-10-21). 카드 비교를 위한 정지는
+ * 재개 버튼을 누를 때까지 유지한다. 카드의 키보드 포커스와 마우스 진입도 전시를 멈춘다.
+ * 기존 손짓 셋은 시간과 거리로 구분한다:
  *
  *  - **탭** — 그 무드로 바로 시작(`onEnterMood`). 아래 둘 중 어느 것도 아니었을 때만이다.
  *  - **길게 누름**(`LONG_PRESS_MS` 초과) — 누르고 있는 동안 간격이 `CAROUSEL_SLOW_INTERVAL_MS`로
@@ -130,9 +130,9 @@ const GALLERY_ROTATED: ReadonlySet<LayoutId> = new Set<LayoutId>(['editorial']);
  */
 function MoodCarousel({ onEnterMood }: { onEnterMood: (id: LayoutId) => void }) {
   const prefersReducedMotion = useMatchMedia('(prefers-reduced-motion: reduce)');
-  // 지금 가운데 선 무드. 캐러셀이 되면서 "어느 무드가 중앙인가"라는 상태가 새로 생겼다 —
-  // marquee엔 없던 것이라 이게 이 개편의 유일한 새 state다.
+  // 지금 가운데 선 무드.
   const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
   // 길게 누르고 있는 동안만 true — 멈추는 게 아니라 간격만 늘어난다.
   const [slowed, setSlowed] = useState(false);
   // 이번 제스처가 무엇이었는지. state가 아니라 ref인 이유는 click 핸들러가 pointerup **뒤에**
@@ -141,13 +141,13 @@ function MoodCarousel({ onEnterMood }: { onEnterMood: (id: LayoutId) => void }) 
   const pressTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
-    if (prefersReducedMotion) return;
+    if (prefersReducedMotion || paused) return;
     const id = setInterval(
       () => setActive((i) => (i + 1) % GALLERY_LAYOUTS.length),
       slowed ? CAROUSEL_SLOW_INTERVAL_MS : CAROUSEL_INTERVAL_MS,
     );
     return () => clearInterval(id);
-  }, [prefersReducedMotion, slowed]);
+  }, [prefersReducedMotion, slowed, paused]);
 
   // 타이머가 남은 채로 언마운트되면 사라진 컴포넌트의 state를 건드린다.
   useEffect(() => () => clearTimeout(pressTimer.current), []);
@@ -295,15 +295,33 @@ function MoodCarousel({ onEnterMood }: { onEnterMood: (id: LayoutId) => void }) 
   }
 
   return (
-    <div
-      data-testid="mood-gallery"
-      className="relative w-full overflow-hidden"
-      // touch-action: pan-y — 가로 제스처는 이 캐러셀이 받고 세로 페이지 스크롤은 브라우저에
-      // 남긴다. 안 주면 브라우저가 가로 끌기도 스크롤로 먹어 pointermove가 안 온다.
-      style={{ height: CARD_HEIGHT, touchAction: 'pan-y' }}
-      {...gestureProps}
-    >
-      {GALLERY_LAYOUTS.map((layout, i) => sample(layout, i, layout.id, TRACK_CARD_WIDTH, true))}
+    <div className="relative w-full">
+      <button
+        type="button"
+        aria-label={paused ? '자동 전시 재개' : '자동 전시 정지'}
+        onClick={() => setPaused((value) => !value)}
+        className={cn(
+          pressableVariants(),
+          'absolute right-0 top-0 z-10 h-6 rounded-field-sm border border-line bg-paper px-2 text-caption text-fg transition-colors hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+        )}
+      >
+        {paused ? '재개' : '정지'}
+      </button>
+      <div
+        data-testid="mood-gallery"
+        className="relative w-full overflow-hidden"
+        // 손짓은 카드에만 연결해 정지·재개 버튼의 클릭과 섞이지 않게 한다.
+        style={{ height: CARD_HEIGHT, touchAction: 'pan-y' }}
+        {...gestureProps}
+        onFocus={(event) => {
+          if (event.target.matches(':focus-visible')) setPaused(true);
+        }}
+        onPointerEnter={(event) => {
+          if (event.pointerType === 'mouse') setPaused(true);
+        }}
+      >
+        {GALLERY_LAYOUTS.map((layout, i) => sample(layout, i, layout.id, TRACK_CARD_WIDTH, true))}
+      </div>
     </div>
   );
 }

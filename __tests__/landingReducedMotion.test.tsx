@@ -53,6 +53,7 @@ describe('랜딩 히어로 갤러리 reduced-motion 폴백 (#615)', () => {
       expect(gallery.className).not.toContain('overflow-hidden');
       // seamless loop 복제가 없어야 한다 — 그리드 폴백은 무드당 카드 하나.
       expect(gallery.querySelectorAll('button').length).toBe(GALLERY_LAYOUTS.length);
+      expect(screen.queryByRole('button', { name: /자동 전시/ }) === null).toBe(true);
     } finally {
       restore();
     }

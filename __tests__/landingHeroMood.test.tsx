@@ -9,8 +9,9 @@
  *    커밋" 미러 단계는 이 개정으로 폐기됐다(heroLayout/commitHeroLayout 삭제).
  */
 import { useState } from 'react';
-import { describe, expect, test, afterAll, afterEach, mock, jest } from 'bun:test';
+import { describe, expect, test, beforeEach, afterAll, afterEach, mock, jest } from 'bun:test';
 import { render, screen, cleanup, fireEvent, waitFor, within, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { PhototicketState } from '@/types';
 import { mobileShellProps } from './shellHarness';
 
@@ -224,8 +225,8 @@ describe('드롭존 진입이 debounce된 previewComponents가 아니라 실시�
 });
 
 /**
- * 캐러셀 손짓 3종(#615, 2026-08-08) — 탭/길게 누름/스와이프를 시간과 거리로 가른다. 자동 전환은
- * 정지 대상이 아니라(시각 효과) 길게 누름이 늦출 뿐이고, 여기서 잠그는 건 **손짓이 서로를
+ * 캐러셀 손짓 3종(#615, #778) — 탭/길게 누름/스와이프를 시간과 거리로 가른다. 정지·재개는
+ * 별도 버튼이 맡고, 여기서 잠그는 건 **손짓이 서로를
  * 오염시키지 않는다**는 것: 넘기려던 손짓과 천천히 보려던 손짓이 편집 화면 진입으로 떨어지면
  * 사용자는 되돌리기 위해 초기화까지 가야 한다.
  */
@@ -344,5 +345,92 @@ describe('캐러셀 손짓 — 탭만 진입시킨다 (#615)', () => {
   test('세로 페이지 스크롤은 캐러셀이 가로채지 않는다 (touch-action: pan-y)', () => {
     render(<Harness />);
     expect((gallery() as HTMLElement).style.touchAction).toBe('pan-y');
+  });
+});
+
+describe('자동 전시 정지·재개 (#778)', () => {
+  const gallery = () => within(landing()).getByTestId('mood-gallery');
+  const centered = () => Array.from(gallery().querySelectorAll('button[data-touch]'))
+    .find((button) => (button as HTMLElement).style.opacity === '1')!
+    .getAttribute('aria-label')!.split(' 무드로')[0];
+  const advance = (ms: number) => act(() => jest.advanceTimersByTime(ms));
+
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  test('기본 자동 전시는 유지하고, 정지는 지속되며 재개 후 한 간격마다 한 칸만 넘어간다', () => {
+    render(<Harness />);
+    expect(centered()).toBe('Minimal');
+    advance(3500);
+    expect(centered()).toBe('Criterion');
+
+    fireEvent.click(screen.getByRole('button', { name: '자동 전시 정지' }));
+    advance(14000);
+    expect(centered()).toBe('Criterion');
+    expect(landing().classList.contains('fixed')).toBe(true);
+    expect(captured.components.layout).toBe('minimal');
+
+    fireEvent.click(screen.getByRole('button', { name: '자동 전시 재개' }));
+    advance(3499);
+    expect(centered()).toBe('Criterion');
+    advance(1);
+    expect(centered()).toBe('35mm');
+    advance(3500);
+    expect(centered()).toBe('Editorial');
+  });
+
+  test('정지 중 스와이프·길게 누름 후에도 멈춰 있고 카드는 선택할 수 있다', () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole('button', { name: '자동 전시 정지' }));
+    fireEvent.pointerDown(gallery(), { clientX: 200 });
+    fireEvent.pointerMove(gallery(), { clientX: 140 });
+    fireEvent.pointerUp(gallery(), { clientX: 140 });
+    expect(centered()).toBe('Criterion');
+    fireEvent.pointerDown(gallery(), { clientX: 100 });
+    advance(500);
+    fireEvent.pointerUp(gallery(), { clientX: 100 });
+    advance(14000);
+    expect(centered()).toBe('Criterion');
+
+    fireEvent.click(within(gallery()).getByRole('button', { name: /^Criterion 무드로/ }), { detail: 0 });
+    expect(captured.components.layout).toBe('criterion');
+    expect(landing().classList.contains('fixed')).toBe(false);
+  });
+
+  test('키보드 Enter·Space로 정지·재개하며 포커스를 유지한다', async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    render(<Harness />);
+    const control = screen.getByRole('button', { name: '자동 전시 정지' });
+    act(() => control.focus());
+    await user.keyboard('{Enter}');
+    expect(control.getAttribute('aria-label')).toBe('자동 전시 재개');
+    expect(document.activeElement === control).toBe(true);
+    advance(7000);
+    expect(centered()).toBe('Minimal');
+    await user.keyboard(' ');
+    advance(3500);
+    expect(centered()).toBe('Criterion');
+    expect(document.activeElement === control).toBe(true);
+  });
+
+  test('카드에 키보드 포커스가 들어가면 정지하고 포커스가 나가도 자동 재개하지 않는다', () => {
+    render(<Harness />);
+    const card = within(gallery()).getByRole('button', { name: /^Minimal 무드로/ });
+    act(() => card.focus());
+    expect(screen.getByRole('button', { name: '자동 전시 재개' })).toBeDefined();
+    act(() => card.blur());
+    advance(7000);
+    expect(centered()).toBe('Minimal');
+  });
+
+  test('마우스가 카드 위에 있으면 정지하고 터치 진입은 기존 손짓 동작을 유지한다', () => {
+    render(<Harness />);
+    fireEvent.pointerEnter(gallery(), { pointerType: 'touch' });
+    advance(3500);
+    expect(centered()).toBe('Criterion');
+    fireEvent.pointerEnter(gallery(), { pointerType: 'mouse' });
+    advance(7000);
+    expect(centered()).toBe('Criterion');
+    expect(screen.getByRole('button', { name: '자동 전시 재개' })).toBeDefined();
   });
 });
