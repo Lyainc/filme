@@ -62,9 +62,9 @@ constraints:
     rationale: 서로 다른 빌드나 환경의 결과를 합치면 재현성을 잃는다.
   - id: constraint-3
     type: resource
-    description: iOS는 Xcode iOS Simulator(Xcode 27에서는 DeviceHub)의 Mobile Safari, Android는 Android Emulator의 Chrome에서 검증하며 실기기는 필수가 아니다. 탭·드래그·길게 누르기 같은 제스처 판정은 사람이 시뮬레이터 창에서 직접 조작한 결과만 근거로 삼고, safaridriver 같은 WebDriver의 합성 터치는 이동·JS 측정·스크린샷 용도로만 쓴다. 키보드 항목은 하드웨어 키보드 연결을 끄고 소프트웨어 키보드가 실제로 뜬 상태에서만 판정한다. 데스크톱 Chrome의 CDP·DevTools 반응형 모드·DPR 모사·정적 코드 확인은 PASS 근거가 아니다. 환경이 없으면 UNRUN, 설치·실행이 막히면 BLOCKED로 기록한다.
+    description: iOS는 Xcode iOS Simulator(Xcode 27에서는 DeviceHub)의 Mobile Safari, Android는 Android Emulator의 Chrome에서 검증하며 실기기는 필수가 아니다. 탭·드래그·길게 누르기 같은 제스처 판정은 사람이 시뮬레이터 창에서 직접 조작한 결과 또는 XCTest 합성 터치(Appium XCUITest driver의 NATIVE_APP 컨텍스트 W3C touch pointer action)만 근거로 삼고, safaridriver 같은 WebDriver의 웹 합성 터치·호스트 마우스 이벤트·실제 반응을 스크린샷으로 확인하지 않은 HID 주입 도구 결과는 판정 근거가 아니며 이동·JS 측정·스크린샷 용도로만 쓴다. 키보드 항목은 하드웨어 키보드 연결을 끄고 소프트웨어 키보드가 실제로 뜬 상태에서만 판정한다. 데스크톱 Chrome의 CDP·DevTools 반응형 모드·DPR 모사·정적 코드 확인은 PASS 근거가 아니다. 환경이 없으면 UNRUN, 설치·실행이 막히면 BLOCKED로 기록한다.
     hard: true
-    rationale: '2026-10-21 사용자 결정으로 실기기 대신 시뮬레이터/에뮬레이터를 검증 환경으로 삼는다. 같은 날 실측에서 iOS Simulator(iPhone 17 Pro, iOS 26.5)의 Safari는 실제 WebKit으로 프로덕션을 렌더링했지만, safaridriver 합성 터치는 이벤트 순서가 깨지고 click이 발생하지 않았다. 손가락 접촉 면적은 포인터로 재현되지 않는 알려진 한계다. active는 승인된 요구의 상태이며 환경 확보나 검증 완료를 뜻하지 않는다.'
+    rationale: '2026-10-21 사용자 결정으로 실기기 대신 시뮬레이터/에뮬레이터를 검증 환경으로 삼는다. 같은 날 실측에서 iOS Simulator(iPhone 17 Pro, iOS 26.5)의 Safari는 실제 WebKit으로 프로덕션을 렌더링했지만, safaridriver 합성 터치는 이벤트 순서가 깨지고 click이 발생하지 않았다. 이후 같은 날 사용자 결정으로 XCTest 합성 터치도 판정 근거로 인정한다: Appium XCUITest의 NATIVE_APP 터치로 랜딩 링크 탭이 실제 click과 화면 전환을 냈고, 같은 환경에서 AXe 1.8.0 HID 주입은 성공 응답만 하고 무반응이었으며 호스트 CGEvent 마우스는 포커스·커서 점유로 불안정했다. 손가락 접촉 면적은 포인터로 재현되지 않는 알려진 한계다. active는 승인된 요구의 상태이며 환경 확보나 검증 완료를 뜻하지 않는다.'
   - id: constraint-4
     type: technical
     description: 기존 여섯 무드·라이트/다크 테마·자연 픽셀 JPEG 출력·입력 포커스·undo 동작을 유지한다. 이 Seed 작성은 제품 코드 변경을 요구하지 않으며 시뮬레이터/에뮬레이터에서 재현된 결함은 별도 수정 범위를 결정한다.
