@@ -13,7 +13,7 @@ const prev=document.querySelector("div.relative.mx-auto.block.rounded-card");
 const vv=window.visualViewport;
 let hit=false; if(inp){const b=inp.getBoundingClientRect(); const el=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2); hit=el===inp;}
 return {label:r(lab),input:r(inp),inputValue:inp&&inp.value,range:rng&&rng.value,dock:r(dock),preview:r(prev),
- vv:{h:+vv.height.toFixed(1),top:+vv.offsetTop.toFixed(1),scale:+vv.scale.toFixed(3),left:+vv.offsetLeft.toFixed(1)},inputFont:inp&&getComputedStyle(inp).fontSize,scrollY,hit,focused:document.activeElement===inp,innerH:innerHeight};
+ vv:{h:+vv.height.toFixed(1),top:+vv.offsetTop.toFixed(1),scale:+vv.scale.toFixed(3),left:+vv.offsetLeft.toFixed(1),pageTop:+vv.pageTop.toFixed(1)},inputFont:inp&&getComputedStyle(inp).fontSize,scrollY,hit,focused:document.activeElement===inp,innerH:innerHeight};
 '''
 
 SLIDERS = [
@@ -30,11 +30,13 @@ def m(label):
     return js(MEASURE, label)
 
 
-def visible_frac(rect, vv):
+def visible_frac(rect, vv, scroll_y):
     if not rect:
         return None
-    top, bot = max(rect['y'], vv['top']), min(rect['y'] + rect['h'], vv['top'] + vv['h'])
-    # rect/vv both in layout CSS px
+    # rect is client (layout-viewport) px; the visual viewport's top in those coords is pageTop - scrollY.
+    # vv.offsetTop alone is not it: iOS reports the keyboard scroll there even at scale 1.
+    vtop = vv['pageTop'] - scroll_y
+    top, bot = max(rect['y'], vtop), min(rect['y'] + rect['h'], vtop + vv['h'])
     return round(max(0, bot - top) / rect['h'], 3)
 
 
@@ -110,8 +112,8 @@ def run_exit(label, value, exit_path, tag, prep):
     return {'label': label, 'exit': exit_path, 'value': value, 'exitTapFound': ok,
             'keyboardDuring': kb, 'keyboardAfter': kb_after,
             'before': before, 'during': during, 'typed': typed, 'after': after,
-            'visibleDuring': {'input': visible_frac(during['input'], during['vv']), 'label': visible_frac(during['label'], during['vv']),
-                              'preview': visible_frac(during['preview'], during['vv'])},
+            'visibleDuring': {'input': visible_frac(during['input'], during['vv'], during['scrollY']), 'label': visible_frac(during['label'], during['vv'], during['scrollY']),
+                              'preview': visible_frac(during['preview'], during['vv'], during['scrollY'])},
             'restored': {'dockSame': before['dock'] == after['dock'], 'previewSame': before['preview'] == after['preview']}}
 
 
