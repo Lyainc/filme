@@ -1,0 +1,181 @@
+{
+  "mode": "capture",
+  "layout": "stub",
+  "material": "original",
+  "coating": "none",
+  "intensity": 1,
+  "fullFields": true,
+  "fieldOff": [],
+  "posterless": false,
+  "longText": true,
+  "captureScale": 0.25,
+  "stubInteractions": {
+    "measurements": [
+      {
+        "box": {
+          "left": 604.0000454215117,
+          "top": 1145.2656509551496,
+          "width": 300,
+          "height": 42.00003893272425
+        },
+        "spacer": {
+          "left": 56.00000324439369,
+          "top": 1118.5313278654485,
+          "width": 848.0000908430233,
+          "height": 95.48435553363788
+        },
+        "scale": 0.31354166666666666,
+        "admission": true,
+        "film": true,
+        "overlaps": []
+      },
+      {
+        "box": {
+          "left": 604,
+          "top": 1145.265625,
+          "width": 300,
+          "height": 42
+        },
+        "spacer": {
+          "left": 56,
+          "top": 1118.53125,
+          "width": 848,
+          "height": 95.484375
+        },
+        "scale": 0.25,
+        "admission": true,
+        "film": true,
+        "overlaps": []
+      },
+      {
+        "box": {
+          "left": 604.0000406901042,
+          "top": 1145.2657063802085,
+          "width": 300,
+          "height": 41.99991861979167
+        },
+        "spacer": {
+          "left": 56.000010172526046,
+          "top": 1118.5312906901042,
+          "width": 848.0000305175781,
+          "height": 95.48441569010417
+        },
+        "scale": 0.6,
+        "admission": true,
+        "film": true,
+        "overlaps": []
+      },
+      {
+        "box": {
+          "left": 604,
+          "top": 1145.265625,
+          "width": 300,
+          "height": 42
+        },
+        "spacer": {
+          "left": 56,
+          "top": 1118.53125,
+          "width": 848,
+          "height": 95.484375
+        },
+        "scale": 1,
+        "admission": true,
+        "film": true,
+        "overlaps": []
+      },
+      {
+        "box": {
+          "left": 603.984375,
+          "top": 1144.5157068062829,
+          "width": 300,
+          "height": 41.99990796793194
+        },
+        "spacer": {
+          "left": 55.99997954842932,
+          "top": 1117.5312909031413,
+          "width": 848.0000409031414,
+          "height": 95.98438522578535
+        },
+        "scale": 0.19895833333333332,
+        "admission": true,
+        "film": true,
+        "overlaps": []
+      },
+      {
+        "box": {
+          "left": 604.0000204515708,
+          "top": 1145.2656147742148,
+          "width": 300,
+          "height": 42.000061354712045
+        },
+        "spacer": {
+          "left": 55.99997954842932,
+          "top": 1118.5313727094242,
+          "width": 848.0000409031414,
+          "height": 95.48419093586388
+        },
+        "scale": 0.19895833333333332,
+        "admission": true,
+        "film": true,
+        "overlaps": []
+      }
+    ],
+    "rail": {
+      "slider": true,
+      "warning": false
+    }
+  },
+  "stubResult": {
+    "box": {
+      "left": 604,
+      "top": 1145.28125,
+      "width": 300,
+      "height": 42
+    },
+    "spacer": {
+      "left": 56,
+      "top": 1118.53125,
+      "width": 848,
+      "height": 95.484375
+    },
+    "scale": 0.25,
+    "admission": true,
+    "film": true,
+    "overlaps": []
+  },
+  "stubExport": {
+    "expected": {
+      "left": 1228,
+      "top": 2310.5625,
+      "right": 1827,
+      "bottom": 2393.5625
+    },
+    "actual": {
+      "left": 1228,
+      "top": 2310,
+      "right": 1827,
+      "bottom": 2393
+    },
+    "count": 21531,
+    "pass": true
+  },
+  "switchTo": null,
+  "toggleFill": false,
+  "out": "/private/tmp/claude-502/-Users-Lyainc-dev-prj-PhototicketMaker/504f0984-4cac-47a5-abe6-462a6394d6f2/scratchpad/chrome16/both-poster-long.jpg",
+  "bytes": 516847,
+  "overlays": [],
+  "rasters": [
+    "[capture:composite] role=poster fit=cover pos=(none) nat=1440x960 box=-172,-108,2304x1536 draw=-172,-108,2304x1536 filter=saturate(0.92) contrast(1.05) brightness(0.5) blur(28px)",
+    "[capture:composite] role=poster fit=contain pos=50% 50% nat=1440x960 box=20,20,1920x1280 draw=20,20,1920x1280 filter=saturate(0.92) contrast(1.05) brightness(0.5)"
+  ],
+  "marks": {
+    "loaded": "1.3",
+    "cropped": "4.6",
+    "resultOpen": "7.1",
+    "captured": "7.7"
+  },
+  "stubMeasure": {
+    "filmHeadTop": 1214,
+    "filmHeadBottom": 1233.5
+  }
+}

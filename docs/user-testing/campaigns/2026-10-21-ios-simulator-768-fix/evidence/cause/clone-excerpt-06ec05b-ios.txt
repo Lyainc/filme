@@ -1,0 +1,14 @@
+# html-to-image 1.11.13 toSvg 결과 발췌 — iOS Simulator Safari 26.5, 빌드 06ec05b(수정 전), Stub S01 결과 화면의 저장 대상 노드
+# 캡처와 같은 filter(data-hide-on-export·data-poster-root·blob img 제외). data: URL은 길이만 남기고 잘랐다.
+
+## 라이브 DOM(저장 대상 [data-ticket-scale-wrapper])의 스탬프 레이어
+{"hero": false, "wrap": [960, 1534, 340], "stamp": {"inline": "position: absolute; left: 604.002489px; top: 1111.255411px; width: 300px; height: 42px; opacity: 1; overflow: hidden;", "pos": "absolute", "top": "1111.255371px", "left": "604.002502px", "w": "300px", "h": "42px", "bg": "url(\"data:image/jpeg;base64,/9j/4AAQSkZJ"}, "titleTop": null}
+
+## clone의 [data-bg-pattern] (바깥) — 주요 속성
+position: absolute; opacity: 1; block-size: 42px; inset: 1111.255371px 56px 380.75px 604.002502px; display: block; inset-block: 1111.255371px 380.75px; inset-inline: 604.002502px 56px; overflow-block: hidden; overflow-inline: hidden; overflow-wrap: normal; overflow: hidden; position-anchor: auto; position-area: none; position-try: none; position-visibility: anchors-visible
+
+## clone의 [data-bg-pattern-image] (안쪽) — 주요 속성
+position: absolute; inset: 0px; transform: matrix(1, 0, 0, 1, 0, 0); background: url(&quot;data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD…[763223]&quot;) 50% 50% / cover no-repeat rgba(0, 0, 0, 0); height: 42px; inset-block: 0px; inset-inline: 0px; position-anchor: auto; position-area: none; position-try: none; position-visibility: anchors-visible; width: 300px
+
+## clone 구조(스타일 제거) — 티커 다음 워드마크 행: placeholder는 filter로 빠지고 구분선 span만 남는다
+<div><div><span data-stamp-divider="true"></span></div><div>테스트 영화</div><div>TEST MOVIE</div></div><div></div><div><div><div><span></span><span>Admission</span><span></span></div><div><div><span>SEAT</span><span>H12</span></div><div><div><span>DATE</span><span></span><span>2026.09.17.</span></div><div><span>TIME</span><span></span><span>19:30</span></div><div><span>HALL</span><span></span><span>테스트 극장 · 12관</span></div></div></div></div><div data-pattern-spacer="true"></div><div><div><span></span><span>The Film</span><span></span></div><div><div><span>RUNTIME</span><s

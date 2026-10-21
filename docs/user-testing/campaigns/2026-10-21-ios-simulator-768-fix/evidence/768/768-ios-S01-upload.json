@@ -1,0 +1,124 @@
+[
+ {
+  "id": "S01-upload",
+  "sections": "both",
+  "poster": true,
+  "long": false,
+  "ghostAfterToggle": "false",
+  "posterImgInPreview": true,
+  "stampSrc": "none",
+  "stampUpload": true,
+  "interactions": {
+   "initial": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.695,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "titleOgToggle": "원제 티켓에 표시",
+   "afterOgOff": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.681,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "afterOgOn": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.695,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title0": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.695,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title1": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.716,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title2": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.695,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "scale150": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.695,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "maximized": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.695,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "restored": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.695,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "finalScalePct": "100"
+  },
+  "editorFinal": {
+   "stamp": true,
+   "rel": {
+    "x": 0.629,
+    "y": 0.695,
+    "w": 0.313,
+    "h": 0.027
+   },
+   "textOverlap": []
+  },
+  "save": {
+   "shareAction": "tap(156,772)",
+   "newFiles": [
+    "IMG_0075.JPG"
+   ],
+   "saved": "/private/tmp/claude-502/-Users-Lyainc-dev-prj-PhototicketMaker/504f0984-4cac-47a5-abe6-462a6394d6f2/scratchpad/sim/ev/768/S01-upload-saved.jpg",
+   "ctaLabel": "사진에 저장"
+  }
+ }
+]
