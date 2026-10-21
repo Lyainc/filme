@@ -655,6 +655,59 @@ async function compositeOverlay(
   }
 }
 
+// 티켓 스탬프(BackgroundPatternLayer, `[data-bg-pattern]`)를 캔버스에 직접 합성한다(#768). 이 레이어는
+// CSS background-image라 html-to-image가 이미지를 data: URL로 인라인해 foreignObject에 넣는데, iOS
+// Safari는 그 raster를 조용히 떨어뜨린다 — 포스터·로고가 #439에서 겪은 것과 같은 함정이다(2026-10-21
+// iOS Simulator 실측: base PNG에 스탬프 자리가 종이색으로 비고, 같은 트리를 Chrome은 그린다).
+// 그래서 toPng에서 빼고 여기서 그린다. 바깥 박스가 overflow:hidden 클립, 안쪽(data-bg-pattern-image)이
+// cover/center 이미지이고 transform:scale은 getBoundingClientRect에 이미 반영돼 있어 따로 파싱하지 않는다.
+async function compositeBgPattern(
+  ctx: CanvasRenderingContext2D,
+  layer: HTMLElement,
+  nodeRect: DOMRect,
+  width: number,
+  height: number,
+  pixelRatio: number,
+  ticketRect: DeviceRect,
+  debug: boolean,
+): Promise<void> {
+  const inner = layer.querySelector('[data-bg-pattern-image]') as HTMLElement | null;
+  const src = inner?.style.backgroundImage.match(/^url\(["']?(.+?)["']?\)$/)?.[1];
+  if (!inner || !src) return;
+  const img = await loadImage(src);
+  const sw = img.naturalWidth;
+  const sh = img.naturalHeight;
+  if (!sw || !sh) return;
+
+  const toDevice = (r: DOMRect): DeviceRect => ({
+    x: (EXPORT_MARGIN_PX + ((r.left - nodeRect.left) / nodeRect.width) * width) * pixelRatio,
+    y: (EXPORT_MARGIN_PX + ((r.top - nodeRect.top) / nodeRect.height) * height) * pixelRatio,
+    w: (r.width / nodeRect.width) * width * pixelRatio,
+    h: (r.height / nodeRect.height) * height * pixelRatio,
+  });
+  const clip = intersectRect(toDevice(layer.getBoundingClientRect()), ticketRect);
+  if (!clip) return;
+  const box = toDevice(inner.getBoundingClientRect());
+  const s = Math.max(box.w / sw, box.h / sh);
+  const dw = sw * s;
+  const dh = sh * s;
+  const dx = box.x + (box.w - dw) / 2;
+  const dy = box.y + (box.h - dh) / 2;
+  const opacity = layer.style.opacity ? parseFloat(layer.style.opacity) : 1;
+
+  if (debug) {
+    console.log(`[capture:stamp] nat=${sw}x${sh} clip=${Math.round(clip.x)},${Math.round(clip.y)},${Math.round(clip.w)}x${Math.round(clip.h)} draw=${Math.round(dx)},${Math.round(dy)},${Math.round(dw)}x${Math.round(dh)} opacity=${opacity}`);
+  }
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(clip.x, clip.y, clip.w, clip.h);
+  ctx.clip();
+  ctx.globalAlpha = Number.isFinite(opacity) ? opacity : 1;
+  ctx.drawImage(img, dx, dy, dw, dh);
+  ctx.restore();
+}
+
 interface BgCarrier { el: HTMLElement; color: string }
 
 /** `rgb()`/`rgba()` 문자열이 실질적으로 불투명한지. 파싱 실패·미지정은 투명 취급(안전). */
@@ -668,14 +721,17 @@ function isOpaqueColor(color: string): boolean {
 }
 
 /**
- * 포스터(data-poster-root)를 덮는 불투명 배경을 가진 조상들을 캡처 노드까지 거슬러 모은다.
- * 이 배경들이 base PNG에 남으면 raw canvas로 먼저 깐 포스터를 통째로 가린다(#490/#495).
- * 반투명 배경은 건드리지 않는다 — 포스터를 완전히 가리지 않고, 옮기면 합성 결과가 달라진다.
+ * `selector`로 고른 raster(포스터 `[data-poster-root]`, 티켓 스탬프 `[data-bg-pattern]`)를 덮는
+ * 불투명 배경을 가진 조상들을 캡처 노드까지 거슬러 모은다. 이 배경들이 base PNG에 남으면 raw
+ * canvas로 먼저 깐 raster를 통째로 가린다(#490/#495). 스탬프도 같다 — Editorial은 스탬프가 포스터
+ * 조상이 아닌 메인 컬럼(PAPER) 안에 서서, 이걸 안 옮기면 #768 합성 스탬프가 그 종이에 덮인다.
+ * `skip`에 든 요소는 건너뛴다(포스터 쪽에서 이미 옮긴 조상을 스탬프 쪽이 다시 칠하지 않게).
+ * 반투명 배경은 건드리지 않는다 — raster를 완전히 가리지 않고, 옮기면 합성 결과가 달라진다.
  */
-function collectOpaquePosterBackdrops(node: HTMLElement): BgCarrier[] {
+function collectOpaqueBackdrops(node: HTMLElement, selector: string, skip: Set<HTMLElement> = new Set()): BgCarrier[] {
   const out: BgCarrier[] = [];
-  const seen = new Set<HTMLElement>();
-  const roots = Array.from(node.querySelectorAll('[data-poster-root]')) as HTMLElement[];
+  const seen = new Set<HTMLElement>(skip);
+  const roots = Array.from(node.querySelectorAll(selector)) as HTMLElement[];
   for (const root of roots) {
     let el: HTMLElement | null = root.parentElement;
     while (el) {
@@ -781,7 +837,12 @@ export async function captureNodeToJpeg(
   // 안 뜬다"던 증상. data-poster-root 제외는 포스터 '서브트리'만 빼므로 조상의 배경은 그대로 남는다.
   // 그래서 그 배경만 잠시 투명으로 돌려 base에서 빼고, 아래에서 포스터보다 먼저 캔버스에 직접 칠한다
   // (배경 → 포스터 → base 텍스트·스크림 순서가 되어 미리보기와 z-order가 같아진다).
-  const bgCarriers = collectOpaquePosterBackdrops(node);
+  const posterCarriers = collectOpaqueBackdrops(node, '[data-poster-root]');
+  // 스탬프에만 걸린 조상 배경(editorial 메인 컬럼)은 포스터 **다음**에 칠한다(#768). 그 컬럼은 포스터
+  // 컬럼의 뒤 형제라 blur 배경의 scale(1.2) 번짐을 덮어야 하는데, 포스터 앞에 칠하면 번짐이 그 위로 샌다.
+  const stampCarriers = collectOpaqueBackdrops(node, '[data-bg-pattern]', new Set(posterCarriers.map((c) => c.el)));
+  const bgCarriers = [...posterCarriers, ...stampCarriers];
+  const bgPatterns = Array.from(node.querySelectorAll('[data-bg-pattern]')) as HTMLElement[];
   const prevInlineBg = bgCarriers.map((c) => c.el.style.backgroundColor);
   bgCarriers.forEach((c) => { c.el.style.backgroundColor = 'transparent'; });
   if (debug && bgCarriers.length) {
@@ -806,6 +867,7 @@ export async function captureNodeToJpeg(
       filter: (n: unknown) => {
         if (n instanceof Element && n.hasAttribute('data-hide-on-export')) return false; // 대시 placeholder
         if (n instanceof Element && n.hasAttribute('data-poster-root')) return false; // 포스터 서브트리(배경색 포함)
+        if (n instanceof Element && n.hasAttribute('data-bg-pattern')) return false; // 티켓 스탬프 — 직접 합성(#768)
         if (n instanceof HTMLImageElement && n.src.startsWith('blob:')) return false; // 로고 스탬프 — 직접 합성
         return true;
       },
@@ -828,24 +890,28 @@ export async function captureNodeToJpeg(
   // 티켓 내용 영역(여백 안쪽) — 모든 raster·base를 여기 맞춰 그린다.
   const ticketRect: DeviceRect = { x: marginDev, y: marginDev, w: width * pixelRatio, h: height * pixelRatio };
   const nodeRect = node.getBoundingClientRect();
-  // base에서 빼낸 불투명 배경을 포스터보다 먼저 칠한다(#490/#495) — 티켓 영역으로 클립해
-  // 여백(흰 프레임)을 침범하지 않게 한다. 이게 없으면 포스터가 흰 여백 위에 뜬다.
-  for (const carrier of bgCarriers) {
-    const r = carrier.el.getBoundingClientRect();
-    const bx = (EXPORT_MARGIN_PX + ((r.left - nodeRect.left) / nodeRect.width) * width) * pixelRatio;
-    const by = (EXPORT_MARGIN_PX + ((r.top - nodeRect.top) / nodeRect.height) * height) * pixelRatio;
-    const bw = (r.width / nodeRect.width) * width * pixelRatio;
-    const bh = (r.height / nodeRect.height) * height * pixelRatio;
-    const x = Math.max(bx, ticketRect.x);
-    const y = Math.max(by, ticketRect.y);
-    const w2 = Math.min(bx + bw, ticketRect.x + ticketRect.w) - x;
-    const h2 = Math.min(by + bh, ticketRect.y + ticketRect.h) - y;
-    if (w2 > 0 && h2 > 0) {
-      ctx.fillStyle = carrier.color;
-      ctx.fillRect(x, y, w2, h2);
+  // base에서 빼낸 불투명 배경을 캔버스에 칠한다 — 티켓 영역으로 클립해 여백(흰 프레임)을 침범하지
+  // 않게 한다. 포스터 조상 것은 포스터보다 먼저 칠해야 포스터가 흰 여백 위에 뜨지 않는다(#490/#495).
+  const paintCarriers = (carriers: BgCarrier[]) => {
+    for (const carrier of carriers) {
+      const r = carrier.el.getBoundingClientRect();
+      const bx = (EXPORT_MARGIN_PX + ((r.left - nodeRect.left) / nodeRect.width) * width) * pixelRatio;
+      const by = (EXPORT_MARGIN_PX + ((r.top - nodeRect.top) / nodeRect.height) * height) * pixelRatio;
+      const bw = (r.width / nodeRect.width) * width * pixelRatio;
+      const bh = (r.height / nodeRect.height) * height * pixelRatio;
+      const x = Math.max(bx, ticketRect.x);
+      const y = Math.max(by, ticketRect.y);
+      const w2 = Math.min(bx + bw, ticketRect.x + ticketRect.w) - x;
+      const h2 = Math.min(by + bh, ticketRect.y + ticketRect.h) - y;
+      if (w2 > 0 && h2 > 0) {
+        ctx.fillStyle = carrier.color;
+        ctx.fillRect(x, y, w2, h2);
+      }
     }
-  }
-  // z-order: 배경 → 포스터(뒤) → CSS 레이어(base) → 로고 스탬프(앞).
+  };
+  paintCarriers(posterCarriers);
+  // z-order: 포스터 조상 배경 → 포스터(뒤) → 후가공 → 스탬프 조상 배경 → 티켓 스탬프 → CSS 레이어(base)
+  // → 로고 스탬프(앞).
   for (const img of posters) compositeRaster(ctx, img, nodeRect, width, height, pixelRatio, ticketRect, debug);
   if (debug) {
     // base를 덮기 전, 레터박스 밴드(티켓 상단 안쪽) 픽셀을 찍어 blur 배경이 실제로 그려졌는지 확인한다
@@ -880,6 +946,13 @@ export async function captureNodeToJpeg(
     }
   }
   if (debug) console.log(`[capture:stage] overlays done (roots=${posterRoots.length})`);
+  // 티켓 스탬프(#768) — 종이(carriers) 위·base 텍스트 아래. 프리뷰에서 무드 조판 아래에 깔리는
+  // 순서와 같다. 장식이라 실패해도 저장 전체를 죽이지 않는다(safeCompositeStep).
+  paintCarriers(stampCarriers);
+  for (const layer of bgPatterns) {
+    await safeCompositeStep(ctx, 'bg-pattern', () =>
+      compositeBgPattern(ctx, layer, nodeRect, width, height, pixelRatio, ticketRect, debug));
+  }
   const baseImg = await loadImage(basePngUrl);
   if (debug) console.log('[capture:stage] base loaded');
   ctx.drawImage(baseImg, ticketRect.x, ticketRect.y, ticketRect.w, ticketRect.h);

@@ -13,12 +13,13 @@
  * 키라서다 — 필드를 개명하면 기존 저장물이 조용히 유실된다. 사용자에게 보이는 이름은 '스탬프'다.
  * 코드 쪽 식별자 `stamp`는 로고에도 쓰여 `backgroundPattern*`을 유지한다.
  *
- * [risk] iOS Safari 저장물에서 이 레이어만 빠질 수 있다(#439·#671에서 인계). captureToImage가
- * 기록한 실측이 "raster를 foreignObject에 넣으면 iOS가 조용히 떨어뜨린다 — blob/data/canvas 세
- * 라운드 다 같은 함정"이고, 그래서 포스터·로고는 html-to-image에서 빼고 compositeRaster로 직접
- * 합성한다. 이 레이어는 CSS `background-image`라 그 탈출구가 없다. macOS Chrome 하네스로는 원리적으로
- * 못 보는 축이라 **머지 전 실기기 저장 1회 확인이 필요**하고, 깨지면 `data-bg-pattern`도
- * `filter`에서 빼고 compositeRaster 계열로 내려야 한다.
+ * iOS Safari 저장물에서 이 레이어가 빠지던 위험(#439·#671에서 인계)은 #768에서 실제로 확인됐다 —
+ * html-to-image가 CSS `background-image`를 data: URL로 인라인해 foreignObject에 넣으면 iOS가 그
+ * raster를 조용히 떨어뜨린다(포스터·로고가 겪은 것과 같은 함정). 그래서 captureToImage가
+ * `data-bg-pattern`을 toPng `filter`에서 빼고 `compositeBgPattern`으로 캔버스에 직접 그린다. 그 함수는
+ * 바깥 div의 박스·`opacity`와 안쪽 `data-bg-pattern-image`의 `backgroundImage`·렌더 박스(scale 반영)를
+ * 읽으므로, 이 두 겹의 구조나 cover/center를 바꾸면 그쪽도 같이 고쳐야 한다. macOS Chrome 하네스로는
+ * 원리적으로 못 보는 축이라 iOS 저장 확인은 `scripts/ios-sim/run768.py`로 한다.
  */
 /**
  * 스탬프 레이어. 이미지가 없으면 아무것도 안 그린다 — 그래야 업로드 전에 빈 div가 안 남는다.
