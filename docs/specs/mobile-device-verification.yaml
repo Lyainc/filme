@@ -36,10 +36,10 @@ brownfield: true
 refine_generation: 0
 
 lifecycle:
-  state: active
-  outcome: null
-  reason: 기존 네 이슈의 현재 유효한 실기기 잔여 검증을 독립 Seed로 정리하도록 사용자가 승인했다.
-  approved_by: '2026-10-11 사용자 지시: 현재 유효한 잔여 요구를 승인된 active Seed로 정리하고 해당 이슈에 Seed 경로를 명시. 범위 확인 답변: 네 이슈를 독립 Seed로 정리 (추천). 두 맹점 기준 모두 포함 승인.'
+  state: closed
+  outcome: discontinued
+  reason: '서비스 디자인 리뉴얼(#826)이 앱 화면과 티켓 무드 렌더를 다시 만들어, 남은 acceptance-1~4가 검증하던 현재 UI가 대체된다. 미충족 요구는 #826의 이관 요구로 옮겼고 새 화면의 실기기 검증은 새 Seed에서 다룬다.'
+  approved_by: '2026-10-22 사용자 확인: 리뉴얼 범위 "무드 렌더까지", Seed 처리 "closed / discontinued (추천)" 선택.'
   evidence:
     commit: null
     items: []
