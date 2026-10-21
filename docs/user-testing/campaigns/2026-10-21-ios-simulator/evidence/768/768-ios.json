@@ -1,0 +1,1922 @@
+[
+ {
+  "id": "S01",
+  "sections": "both",
+  "poster": true,
+  "long": false,
+  "ghostAfterToggle": "false",
+  "posterImgInPreview": true,
+  "interactions": {
+   "initial": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.695,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "titleOgToggle": "원제 티켓에 표시",
+   "afterOgOff": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.681,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "afterOgOn": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.695,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title0": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.695,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title1": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.716,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title2": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.695,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "scale150": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.695,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "maximized": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.695,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "restored": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.695,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "finalScalePct": "100"
+  },
+  "editorFinal": {
+   "stamp": true,
+   "rel": {
+    "x": 0.629,
+    "y": 0.695,
+    "w": 0.313,
+    "h": 0.027
+   },
+   "textOverlap": []
+  },
+  "save": {
+   "shareAction": "tap(156,772)",
+   "newFiles": [
+    "IMG_0024.JPG"
+   ],
+   "saved": "/private/tmp/claude-502/-Users-Lyainc-dev-prj-PhototicketMaker/3371c2b6-f825-44d9-b08c-40a951a3a699/scratchpad/ev/768/S01-saved.jpg",
+   "ctaLabel": "사진에 저장"
+  }
+ },
+ {
+  "id": "S02",
+  "sections": "both",
+  "poster": true,
+  "long": true,
+  "ghostAfterToggle": "false",
+  "posterImgInPreview": true,
+  "interactions": {
+   "initial": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.716,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "titleOgToggle": "원제 티켓에 표시",
+   "afterOgOff": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.703,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "afterOgOn": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.716,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title0": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.695,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title1": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.716,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title2": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.716,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "scale150": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.716,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "maximized": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.716,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "restored": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.716,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "finalScalePct": "150"
+  },
+  "editorFinal": {
+   "stamp": true,
+   "rel": {
+    "x": 0.629,
+    "y": 0.716,
+    "w": 0.313,
+    "h": 0.027
+   },
+   "textOverlap": []
+  },
+  "save": {
+   "shareAction": "tap(156,772)",
+   "newFiles": [
+    "IMG_0025.JPG"
+   ],
+   "saved": "/private/tmp/claude-502/-Users-Lyainc-dev-prj-PhototicketMaker/3371c2b6-f825-44d9-b08c-40a951a3a699/scratchpad/ev/768/S02-saved.jpg",
+   "ctaLabel": "사진에 저장"
+  }
+ },
+ {
+  "id": "S03",
+  "sections": "both",
+  "poster": false,
+  "long": false,
+  "ghostAfterToggle": "false",
+  "posterImgInPreview": false,
+  "interactions": {
+   "initial": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.695,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "titleOgToggle": "원제 티켓에 표시",
+   "afterOgOff": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.681,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "afterOgOn": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.695,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title0": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.695,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title1": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.716,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title2": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.695,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "scale150": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.695,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "maximized": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.695,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "restored": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.695,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "finalScalePct": "100"
+  },
+  "editorFinal": {
+   "stamp": true,
+   "rel": {
+    "x": 0.629,
+    "y": 0.695,
+    "w": 0.313,
+    "h": 0.027
+   },
+   "textOverlap": []
+  },
+  "save": {
+   "shareAction": "tap(156,772)",
+   "newFiles": [
+    "IMG_0026.JPG"
+   ],
+   "saved": "/private/tmp/claude-502/-Users-Lyainc-dev-prj-PhototicketMaker/3371c2b6-f825-44d9-b08c-40a951a3a699/scratchpad/ev/768/S03-saved.jpg",
+   "ctaLabel": "사진에 저장"
+  }
+ },
+ {
+  "id": "S04",
+  "sections": "both",
+  "poster": false,
+  "long": true,
+  "ghostAfterToggle": "false",
+  "posterImgInPreview": false,
+  "interactions": {
+   "initial": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.716,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "titleOgToggle": "원제 티켓에 표시",
+   "afterOgOff": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.703,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "afterOgOn": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.716,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title0": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.695,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title1": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.716,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title2": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.716,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "scale150": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.716,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "maximized": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.716,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "restored": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.716,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "finalScalePct": "150"
+  },
+  "editorFinal": {
+   "stamp": true,
+   "rel": {
+    "x": 0.629,
+    "y": 0.716,
+    "w": 0.313,
+    "h": 0.027
+   },
+   "textOverlap": []
+  },
+  "save": {
+   "shareAction": "tap(156,772)",
+   "newFiles": [
+    "IMG_0027.JPG"
+   ],
+   "saved": "/private/tmp/claude-502/-Users-Lyainc-dev-prj-PhototicketMaker/3371c2b6-f825-44d9-b08c-40a951a3a699/scratchpad/ev/768/S04-saved.jpg",
+   "ctaLabel": "사진에 저장"
+  }
+ },
+ {
+  "id": "S05",
+  "sections": "adm",
+  "poster": true,
+  "long": false,
+  "ghostAfterToggle": "false",
+  "posterImgInPreview": true,
+  "interactions": {
+   "initial": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "titleOgToggle": "원제 티켓에 표시",
+   "afterOgOff": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.865,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "afterOgOn": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title0": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title1": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title2": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "scale150": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "maximized": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "restored": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "finalScalePct": "100"
+  },
+  "editorFinal": {
+   "stamp": true,
+   "rel": {
+    "x": 0.629,
+    "y": 0.869,
+    "w": 0.313,
+    "h": 0.027
+   },
+   "textOverlap": []
+  },
+  "save": {
+   "shareAction": "tap(156,772)",
+   "newFiles": [
+    "IMG_0028.JPG"
+   ],
+   "saved": "/private/tmp/claude-502/-Users-Lyainc-dev-prj-PhototicketMaker/3371c2b6-f825-44d9-b08c-40a951a3a699/scratchpad/ev/768/S05-saved.jpg",
+   "ctaLabel": "사진에 저장"
+  }
+ },
+ {
+  "id": "S06",
+  "sections": "adm",
+  "poster": true,
+  "long": true,
+  "ghostAfterToggle": "false",
+  "posterImgInPreview": true,
+  "interactions": {
+   "initial": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "titleOgToggle": "원제 티켓에 표시",
+   "afterOgOff": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.872,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "afterOgOn": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title0": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title1": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title2": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "scale150": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "maximized": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "restored": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "finalScalePct": "150"
+  },
+  "editorFinal": {
+   "stamp": true,
+   "rel": {
+    "x": 0.629,
+    "y": 0.876,
+    "w": 0.313,
+    "h": 0.027
+   },
+   "textOverlap": []
+  },
+  "save": {
+   "shareAction": "tap(156,772)",
+   "newFiles": [
+    "IMG_0029.JPG"
+   ],
+   "saved": "/private/tmp/claude-502/-Users-Lyainc-dev-prj-PhototicketMaker/3371c2b6-f825-44d9-b08c-40a951a3a699/scratchpad/ev/768/S06-saved.jpg",
+   "ctaLabel": "사진에 저장"
+  }
+ },
+ {
+  "id": "S07",
+  "sections": "adm",
+  "poster": false,
+  "long": false,
+  "ghostAfterToggle": "false",
+  "posterImgInPreview": false,
+  "interactions": {
+   "initial": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "titleOgToggle": "원제 티켓에 표시",
+   "afterOgOff": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.865,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "afterOgOn": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title0": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title1": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title2": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "scale150": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "maximized": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "restored": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "finalScalePct": "100"
+  },
+  "editorFinal": {
+   "stamp": true,
+   "rel": {
+    "x": 0.629,
+    "y": 0.869,
+    "w": 0.313,
+    "h": 0.027
+   },
+   "textOverlap": []
+  },
+  "save": {
+   "shareAction": "tap(156,772)",
+   "newFiles": [
+    "IMG_0030.JPG"
+   ],
+   "saved": "/private/tmp/claude-502/-Users-Lyainc-dev-prj-PhototicketMaker/3371c2b6-f825-44d9-b08c-40a951a3a699/scratchpad/ev/768/S07-saved.jpg",
+   "ctaLabel": "사진에 저장"
+  }
+ },
+ {
+  "id": "S08",
+  "sections": "adm",
+  "poster": false,
+  "long": true,
+  "ghostAfterToggle": "false",
+  "posterImgInPreview": false,
+  "interactions": {
+   "initial": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "titleOgToggle": "원제 티켓에 표시",
+   "afterOgOff": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.872,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "afterOgOn": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title0": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title1": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title2": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "scale150": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "maximized": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "restored": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "finalScalePct": "150"
+  },
+  "editorFinal": {
+   "stamp": true,
+   "rel": {
+    "x": 0.629,
+    "y": 0.876,
+    "w": 0.313,
+    "h": 0.027
+   },
+   "textOverlap": []
+  },
+  "save": {
+   "shareAction": "tap(156,772)",
+   "newFiles": [
+    "IMG_0031.JPG"
+   ],
+   "saved": "/private/tmp/claude-502/-Users-Lyainc-dev-prj-PhototicketMaker/3371c2b6-f825-44d9-b08c-40a951a3a699/scratchpad/ev/768/S08-saved.jpg",
+   "ctaLabel": "사진에 저장"
+  }
+ },
+ {
+  "id": "S09",
+  "sections": "film",
+  "poster": true,
+  "long": false,
+  "ghostAfterToggle": "false",
+  "posterImgInPreview": true,
+  "interactions": {
+   "initial": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "titleOgToggle": "원제 티켓에 표시",
+   "afterOgOff": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.865,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "afterOgOn": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title0": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title1": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title2": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "scale150": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "maximized": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "restored": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "finalScalePct": "100"
+  },
+  "editorFinal": {
+   "stamp": true,
+   "rel": {
+    "x": 0.629,
+    "y": 0.869,
+    "w": 0.313,
+    "h": 0.027
+   },
+   "textOverlap": []
+  },
+  "save": {
+   "shareAction": "tap(156,772)",
+   "newFiles": [
+    "IMG_0032.JPG"
+   ],
+   "saved": "/private/tmp/claude-502/-Users-Lyainc-dev-prj-PhototicketMaker/3371c2b6-f825-44d9-b08c-40a951a3a699/scratchpad/ev/768/S09-saved.jpg",
+   "ctaLabel": "사진에 저장"
+  }
+ },
+ {
+  "id": "S10",
+  "sections": "film",
+  "poster": true,
+  "long": true,
+  "ghostAfterToggle": "false",
+  "posterImgInPreview": true,
+  "interactions": {
+   "initial": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "titleOgToggle": "원제 티켓에 표시",
+   "afterOgOff": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.872,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "afterOgOn": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title0": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title1": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title2": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "scale150": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "maximized": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "restored": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "finalScalePct": "150"
+  },
+  "editorFinal": {
+   "stamp": true,
+   "rel": {
+    "x": 0.629,
+    "y": 0.876,
+    "w": 0.313,
+    "h": 0.027
+   },
+   "textOverlap": []
+  },
+  "save": {
+   "shareAction": "tap(156,772)",
+   "newFiles": [
+    "IMG_0033.JPG"
+   ],
+   "saved": "/private/tmp/claude-502/-Users-Lyainc-dev-prj-PhototicketMaker/3371c2b6-f825-44d9-b08c-40a951a3a699/scratchpad/ev/768/S10-saved.jpg",
+   "ctaLabel": "사진에 저장"
+  }
+ },
+ {
+  "id": "S11",
+  "sections": "film",
+  "poster": false,
+  "long": false,
+  "ghostAfterToggle": "false",
+  "posterImgInPreview": false,
+  "interactions": {
+   "initial": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "titleOgToggle": "원제 티켓에 표시",
+   "afterOgOff": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.865,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "afterOgOn": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title0": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title1": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title2": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "scale150": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "maximized": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "restored": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "finalScalePct": "100"
+  },
+  "editorFinal": {
+   "stamp": true,
+   "rel": {
+    "x": 0.629,
+    "y": 0.869,
+    "w": 0.313,
+    "h": 0.027
+   },
+   "textOverlap": []
+  },
+  "save": {
+   "shareAction": "tap(156,772)",
+   "newFiles": [
+    "IMG_0034.JPG"
+   ],
+   "saved": "/private/tmp/claude-502/-Users-Lyainc-dev-prj-PhototicketMaker/3371c2b6-f825-44d9-b08c-40a951a3a699/scratchpad/ev/768/S11-saved.jpg",
+   "ctaLabel": "사진에 저장"
+  }
+ },
+ {
+  "id": "S12",
+  "sections": "film",
+  "poster": false,
+  "long": true,
+  "ghostAfterToggle": "false",
+  "posterImgInPreview": false,
+  "interactions": {
+   "initial": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "titleOgToggle": "원제 티켓에 표시",
+   "afterOgOff": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.872,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "afterOgOn": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title0": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.869,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title1": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title2": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "scale150": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "maximized": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "restored": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.876,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "finalScalePct": "150"
+  },
+  "editorFinal": {
+   "stamp": true,
+   "rel": {
+    "x": 0.629,
+    "y": 0.876,
+    "w": 0.313,
+    "h": 0.027
+   },
+   "textOverlap": []
+  },
+  "save": {
+   "shareAction": "tap(156,772)",
+   "newFiles": [
+    "IMG_0035.JPG"
+   ],
+   "saved": "/private/tmp/claude-502/-Users-Lyainc-dev-prj-PhototicketMaker/3371c2b6-f825-44d9-b08c-40a951a3a699/scratchpad/ev/768/S12-saved.jpg",
+   "ctaLabel": "사진에 저장"
+  }
+ },
+ {
+  "id": "S13",
+  "sections": "none",
+  "poster": true,
+  "long": false,
+  "ghostAfterToggle": "false",
+  "posterImgInPreview": true,
+  "interactions": {
+   "initial": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.743,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "titleOgToggle": "원제 티켓에 표시",
+   "afterOgOff": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.734,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "afterOgOn": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.743,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title0": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.743,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title1": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.757,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title2": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.743,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "scale150": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.743,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "maximized": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.743,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "restored": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.743,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "finalScalePct": "100"
+  },
+  "editorFinal": {
+   "stamp": true,
+   "rel": {
+    "x": 0.629,
+    "y": 0.743,
+    "w": 0.313,
+    "h": 0.027
+   },
+   "textOverlap": []
+  },
+  "save": {
+   "shareAction": "tap(156,772)",
+   "newFiles": [
+    "IMG_0036.JPG"
+   ],
+   "saved": "/private/tmp/claude-502/-Users-Lyainc-dev-prj-PhototicketMaker/3371c2b6-f825-44d9-b08c-40a951a3a699/scratchpad/ev/768/S13-saved.jpg",
+   "ctaLabel": "사진에 저장"
+  }
+ },
+ {
+  "id": "S14",
+  "sections": "none",
+  "poster": true,
+  "long": true,
+  "ghostAfterToggle": "false",
+  "posterImgInPreview": true,
+  "interactions": {
+   "initial": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.757,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "titleOgToggle": "원제 티켓에 표시",
+   "afterOgOff": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.749,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "afterOgOn": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.757,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title0": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.743,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title1": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.757,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title2": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.757,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "scale150": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.757,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "maximized": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.757,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "restored": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.757,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "finalScalePct": "150"
+  },
+  "editorFinal": {
+   "stamp": true,
+   "rel": {
+    "x": 0.629,
+    "y": 0.757,
+    "w": 0.313,
+    "h": 0.027
+   },
+   "textOverlap": []
+  },
+  "save": {
+   "shareAction": "tap(156,772)",
+   "newFiles": [
+    "IMG_0037.JPG"
+   ],
+   "saved": "/private/tmp/claude-502/-Users-Lyainc-dev-prj-PhototicketMaker/3371c2b6-f825-44d9-b08c-40a951a3a699/scratchpad/ev/768/S14-saved.jpg",
+   "ctaLabel": "사진에 저장"
+  }
+ },
+ {
+  "id": "S15",
+  "sections": "none",
+  "poster": false,
+  "long": false,
+  "ghostAfterToggle": "false",
+  "posterImgInPreview": false,
+  "interactions": {
+   "initial": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.743,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "titleOgToggle": "원제 티켓에 표시",
+   "afterOgOff": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.734,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "afterOgOn": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.743,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title0": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.743,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title1": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.757,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title2": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.743,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "scale150": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.743,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "maximized": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.743,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "restored": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.743,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "finalScalePct": "100"
+  },
+  "editorFinal": {
+   "stamp": true,
+   "rel": {
+    "x": 0.629,
+    "y": 0.743,
+    "w": 0.313,
+    "h": 0.027
+   },
+   "textOverlap": []
+  },
+  "save": {
+   "shareAction": "tap(156,772)",
+   "newFiles": [
+    "IMG_0038.JPG"
+   ],
+   "saved": "/private/tmp/claude-502/-Users-Lyainc-dev-prj-PhototicketMaker/3371c2b6-f825-44d9-b08c-40a951a3a699/scratchpad/ev/768/S15-saved.jpg",
+   "ctaLabel": "사진에 저장"
+  }
+ },
+ {
+  "id": "S16",
+  "sections": "none",
+  "poster": false,
+  "long": true,
+  "ghostAfterToggle": "false",
+  "posterImgInPreview": false,
+  "interactions": {
+   "initial": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.757,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "titleOgToggle": "원제 티켓에 표시",
+   "afterOgOff": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.749,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "afterOgOn": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.757,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title0": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.743,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title1": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.757,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "title2": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.757,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "scale150": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.757,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "maximized": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.757,
+     "w": 0.312,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "restored": {
+    "stamp": true,
+    "rel": {
+     "x": 0.629,
+     "y": 0.757,
+     "w": 0.313,
+     "h": 0.027
+    },
+    "textOverlap": []
+   },
+   "finalScalePct": "150"
+  },
+  "editorFinal": {
+   "stamp": true,
+   "rel": {
+    "x": 0.629,
+    "y": 0.757,
+    "w": 0.313,
+    "h": 0.027
+   },
+   "textOverlap": []
+  },
+  "save": {
+   "shareAction": "tap(156,772)",
+   "newFiles": [
+    "IMG_0039.JPG"
+   ],
+   "saved": "/private/tmp/claude-502/-Users-Lyainc-dev-prj-PhototicketMaker/3371c2b6-f825-44d9-b08c-40a951a3a699/scratchpad/ev/768/S16-saved.jpg",
+   "ctaLabel": "사진에 저장"
+  }
+ }
+]
