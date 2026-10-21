@@ -26,6 +26,8 @@ type Op =
   | { kind: 'draw'; src: string; alpha: number; x: number; y: number; w: number; h: number }
   | { kind: 'clip'; x: number; y: number; w: number; h: number };
 let ops: Op[];
+// foreignObject 능력 검사(probe)가 읽는 픽셀 알파. 0이면 iOS처럼 "안 그림" → 직접 합성 경로.
+let probeAlpha: number | null = null;
 let originalGetContext: typeof HTMLCanvasElement.prototype.getContext;
 let originalToDataURL: typeof HTMLCanvasElement.prototype.toDataURL;
 let originalImage: typeof Image;
@@ -46,6 +48,7 @@ beforeEach(() => {
   ops = [];
   filterSeen = null;
   columnBgDuringToPng = null;
+  probeAlpha = null;
   resetCtxFilterProbeForTest();
   const makeCtx = () => {
     let pendingRect: { x: number; y: number; w: number; h: number } | null = null;
@@ -62,6 +65,8 @@ beforeEach(() => {
       fillRect(this: { fillStyle: unknown }) { ops.push({ kind: 'fill', style: String(this.fillStyle) }); },
       createLinearGradient() { return { addColorStop() {} }; },
       createPattern() { return {}; },
+      // probeAlpha가 null이면 getImageData가 없는 ctx — 능력 검사 판정 불가 → 직접 합성으로 폴백.
+      ...(probeAlpha === null ? {} : { getImageData: () => ({ data: [0, 0, 0, probeAlpha] }) }),
       drawImage(this: { globalAlpha: number }, img: { src?: string }, x: number, y: number, w: number, h: number) {
         ops.push({ kind: 'draw', src: String(img.src ?? ''), alpha: this.globalAlpha, x, y, w, h });
       },
@@ -126,8 +131,22 @@ function buildTicket(opacity = '0.6', innerScale = 1) {
 
 const OPTS = { filename: 't.jpg', width: 960, height: 1534, pixelRatio: 1 };
 
-describe('#768 — 티켓 스탬프는 base에서 빠지고 캔버스에 직접 합성된다', () => {
+describe('#768 — foreignObject 배경을 그리는 엔진(Chrome)은 기존 경로 그대로', () => {
+  test('probe가 그려지면 스탬프는 base에 남고 캔버스 합성·조상 배경 이관이 없다', async () => {
+    probeAlpha = 255;
+    const { node, layer } = buildTicket('0.6');
+    await captureNodeToJpeg(node, OPTS);
+    expect(filterSeen!(layer)).toBe(true);
+    expect(columnBgDuringToPng).toBe('rgb(244, 237, 224)');
+    expect(ops.some((o) => o.kind === 'draw' && o.src === STAMP_SRC && o.w === 300)).toBe(false);
+    expect(ops.some((o) => o.kind === 'fill' && o.style === 'rgb(244, 237, 224)')).toBe(false);
+    node.remove();
+  });
+});
+
+describe('#768 — 안 그리는 엔진(iOS)에선 스탬프가 base에서 빠지고 캔버스에 직접 합성된다', () => {
   test('toPng filter가 [data-bg-pattern]을 뺀다(iOS foreignObject raster 함정 회피)', async () => {
+    probeAlpha = 0;
     const { node, layer } = buildTicket();
     await captureNodeToJpeg(node, OPTS);
     expect(filterSeen).not.toBeNull();
