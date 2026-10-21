@@ -1,0 +1,188 @@
+{
+  "mode": "capture",
+  "layout": "stub",
+  "material": "original",
+  "coating": "none",
+  "intensity": 1,
+  "fullFields": true,
+  "fieldOff": [
+    "seat",
+    "watchDate",
+    "watchTime",
+    "screen",
+    "runtime",
+    "rating",
+    "releaseDate",
+    "reissue",
+    "actors"
+  ],
+  "posterless": true,
+  "longText": true,
+  "captureScale": 0.25,
+  "stubInteractions": {
+    "measurements": [
+      {
+        "box": {
+          "left": 604.0000454215117,
+          "top": 1139.2656314887874,
+          "width": 300,
+          "height": 42.00003893272425
+        },
+        "spacer": {
+          "left": 56.00000324439369,
+          "top": 1106.5312889327242,
+          "width": 848.0000908430233,
+          "height": 107.48439446636213
+        },
+        "scale": 0.31354166666666666,
+        "admission": true,
+        "film": true,
+        "overlaps": []
+      },
+      {
+        "box": {
+          "left": 604,
+          "top": 1139.265625,
+          "width": 300,
+          "height": 42
+        },
+        "spacer": {
+          "left": 56,
+          "top": 1106.53125,
+          "width": 848,
+          "height": 107.484375
+        },
+        "scale": 0.25,
+        "admission": true,
+        "film": true,
+        "overlaps": []
+      },
+      {
+        "box": {
+          "left": 604.0000406901042,
+          "top": 1139.2656453450522,
+          "width": 300,
+          "height": 42.000020345052086
+        },
+        "spacer": {
+          "left": 56.000010172526046,
+          "top": 1106.5312703450522,
+          "width": 848.0000305175781,
+          "height": 107.48443603515625
+        },
+        "scale": 0.6,
+        "admission": true,
+        "film": true,
+        "overlaps": []
+      },
+      {
+        "box": {
+          "left": 604,
+          "top": 1139.265625,
+          "width": 300,
+          "height": 42
+        },
+        "spacer": {
+          "left": 56,
+          "top": 1106.53125,
+          "width": 848,
+          "height": 107.484375
+        },
+        "scale": 1,
+        "admission": true,
+        "film": true,
+        "overlaps": []
+      },
+      {
+        "box": {
+          "left": 604.0000204515708,
+          "top": 1138.5156761289268,
+          "width": 300,
+          "height": 41.99990796793194
+        },
+        "spacer": {
+          "left": 55.99997954842932,
+          "top": 1105.5312295484293,
+          "width": 848.0000409031414,
+          "height": 107.98444658049739
+        },
+        "scale": 0.19895833333333332,
+        "admission": true,
+        "film": true,
+        "overlaps": []
+      },
+      {
+        "box": {
+          "left": 604.0000204515708,
+          "top": 1139.2655840968587,
+          "width": 300,
+          "height": 42.000061354712045
+        },
+        "spacer": {
+          "left": 55.99997954842932,
+          "top": 1106.5313113547122,
+          "width": 848.0000409031414,
+          "height": 107.48425229057592
+        },
+        "scale": 0.19895833333333332,
+        "admission": true,
+        "film": true,
+        "overlaps": []
+      }
+    ],
+    "rail": {
+      "slider": true,
+      "warning": false
+    }
+  },
+  "stubResult": {
+    "box": {
+      "left": 604,
+      "top": 1193.03125,
+      "width": 300,
+      "height": 42
+    },
+    "spacer": {
+      "left": 56,
+      "top": 960.03125,
+      "width": 848,
+      "height": 507.96875
+    },
+    "scale": 0.25,
+    "admission": false,
+    "film": false,
+    "overlaps": []
+  },
+  "stubExport": {
+    "expected": {
+      "left": 1228,
+      "top": 2406.0625,
+      "right": 1827,
+      "bottom": 2489.0625
+    },
+    "actual": {
+      "left": 1228,
+      "top": 2406,
+      "right": 1827,
+      "bottom": 2489
+    },
+    "count": 21531,
+    "pass": true
+  },
+  "switchTo": null,
+  "toggleFill": false,
+  "out": "/private/tmp/claude-502/-Users-Lyainc-dev-prj-PhototicketMaker/504f0984-4cac-47a5-abe6-462a6394d6f2/scratchpad/chrome16/none-posterless-long.jpg",
+  "bytes": 299126,
+  "overlays": [],
+  "rasters": [],
+  "marks": {
+    "loaded": "1.3",
+    "cropped": "1.6",
+    "resultOpen": "4.1",
+    "captured": "4.5"
+  },
+  "stubMeasure": {
+    "filmHeadTop": 1214,
+    "filmHeadBottom": 1233.5
+  }
+}
