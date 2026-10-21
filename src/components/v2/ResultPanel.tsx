@@ -309,6 +309,10 @@ export function ResultPanel({
             movieInfo={movieInfo}
             components={components}
             fieldVisibility={fieldVisibility}
+            // ghost 미지정은 "켠 체인/포맷이 비어 있으면 점선 placeholder"다. placeholder는 저장물에서
+            // data-hide-on-export로 빠지지만 그 행(구분선·여백)은 남아 저장본에만 빈 슬롯이 생겼다(#768).
+            // 저장물은 빈 항목을 그리지 않는 편집 프리뷰와 같아야 하므로 명시적으로 끈다.
+            ghost={false}
           />
         </PreviewFilmCell>
       </div>

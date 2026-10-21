@@ -101,6 +101,8 @@ export function ResultStage({
               movieInfo={movieInfo}
               components={components}
               fieldVisibility={fieldVisibility}
+              // 저장 대상(ResultPanel)과 같은 렌더여야 hero가 저장본을 그대로 보여준다(#768).
+              ghost={false}
             />
           </PreviewFilmCell>
           {/* 바닥 그림자 — hero가 화면에 떠 보이도록 아래에 흐린 타원 그림자를 깐다.
