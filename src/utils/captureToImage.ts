@@ -655,11 +655,56 @@ async function compositeOverlay(
   }
 }
 
+/** 스탬프 레이어 안쪽 `[data-bg-pattern-image]`의 이미지 URL. 없으면 null. */
+function bgPatternSrc(layer: HTMLElement): string | null {
+  const inner = layer.querySelector('[data-bg-pattern-image]') as HTMLElement | null;
+  return inner?.style.backgroundImage.match(/^url\(["']?(.+?)["']?\)$/)?.[1] ?? null;
+}
+
+/**
+ * 이 엔진이 foreignObject SVG 안의 CSS 배경 raster를 실제로 그리는지 **그 스탬프 이미지로** 재본다(#768).
+ * html-to-image가 하는 것과 같은 형태(data: URL을 인라인한 배경 → SVG 이미지 → canvas)로 작은 박스를
+ * 한 번 그려 가운데 픽셀 알파를 본다. Chrome은 그려서 기존 경로(스탬프를 base에 포함)를 그대로 타
+ * 저장물이 비트 단위로 안 바뀌고, iOS Safari는 떨어뜨려서 캔버스 직접 합성으로 내려간다. UA 스니핑이
+ * 아니라 능력 검사인 건 isCtxFilterHonored와 같은 자세다. 판정 불가(로드 실패·getImageData 없음)면
+ * false — 직접 합성은 어느 엔진에서도 스탬프를 그리므로 그쪽이 안전한 폴백이다.
+ */
+async function foreignObjectDrawsBackground(src: string): Promise<boolean> {
+  try {
+    let dataUrl = src;
+    if (!src.startsWith('data:')) {
+      // html-to-image도 blob:을 data:로 바꿔 넣는다 — SVG 이미지 안에선 외부(blob:) 참조가 안 풀린다.
+      const img = await loadImage(src);
+      const c = document.createElement('canvas');
+      c.width = img.naturalWidth;
+      c.height = img.naturalHeight;
+      const cctx = c.getContext('2d');
+      if (!cctx) return false;
+      cctx.drawImage(img, 0, 0);
+      dataUrl = c.toDataURL('image/png');
+    }
+    const size = 32;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><foreignObject width="100%" height="100%">` +
+      `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${size}px;height:${size}px;background-image:url(&quot;${dataUrl}&quot;);background-size:cover;background-position:center"></div>` +
+      '</foreignObject></svg>';
+    const probe = await loadImage(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`);
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx || typeof ctx.getImageData !== 'function') return false;
+    ctx.drawImage(probe, 0, 0, size, size);
+    return ctx.getImageData(size / 2, size / 2, 1, 1).data[3] > 0;
+  } catch {
+    return false;
+  }
+}
+
 // 티켓 스탬프(BackgroundPatternLayer, `[data-bg-pattern]`)를 캔버스에 직접 합성한다(#768). 이 레이어는
 // CSS background-image라 html-to-image가 이미지를 data: URL로 인라인해 foreignObject에 넣는데, iOS
 // Safari는 그 raster를 조용히 떨어뜨린다 — 포스터·로고가 #439에서 겪은 것과 같은 함정이다(2026-10-21
 // iOS Simulator 실측: base PNG에 스탬프 자리가 종이색으로 비고, 같은 트리를 Chrome은 그린다).
-// 그래서 toPng에서 빼고 여기서 그린다. 바깥 박스가 overflow:hidden 클립, 안쪽(data-bg-pattern-image)이
+// 그런 엔진(foreignObjectDrawsBackground가 false)에서만 toPng에서 빼고 여기서 그린다. 바깥 박스가 overflow:hidden 클립, 안쪽(data-bg-pattern-image)이
 // cover/center 이미지이고 transform:scale은 getBoundingClientRect에 이미 반영돼 있어 따로 파싱하지 않는다.
 async function compositeBgPattern(
   ctx: CanvasRenderingContext2D,
@@ -672,7 +717,7 @@ async function compositeBgPattern(
   debug: boolean,
 ): Promise<void> {
   const inner = layer.querySelector('[data-bg-pattern-image]') as HTMLElement | null;
-  const src = inner?.style.backgroundImage.match(/^url\(["']?(.+?)["']?\)$/)?.[1];
+  const src = bgPatternSrc(layer);
   if (!inner || !src) return;
   const img = await loadImage(src);
   const sw = img.naturalWidth;
@@ -838,11 +883,21 @@ export async function captureNodeToJpeg(
   // 그래서 그 배경만 잠시 투명으로 돌려 base에서 빼고, 아래에서 포스터보다 먼저 캔버스에 직접 칠한다
   // (배경 → 포스터 → base 텍스트·스크림 순서가 되어 미리보기와 z-order가 같아진다).
   const posterCarriers = collectOpaqueBackdrops(node, '[data-poster-root]');
+  // 스탬프는 foreignObject 안 raster를 떨어뜨리는 엔진(iOS Safari)에서만 base에서 빼 직접 합성한다(#768).
+  // 그리는 엔진(Chrome)은 기존 경로 그대로라 저장물이 바뀌지 않는다.
+  const bgPatterns: HTMLElement[] = [];
+  for (const layer of Array.from(node.querySelectorAll('[data-bg-pattern]')) as HTMLElement[]) {
+    const src = bgPatternSrc(layer);
+    if (src && !(await foreignObjectDrawsBackground(src))) bgPatterns.push(layer);
+  }
+  if (debug && node.querySelector('[data-bg-pattern]')) console.log(`[capture:stamp] direct=${bgPatterns.length}`);
   // 스탬프에만 걸린 조상 배경(editorial 메인 컬럼)은 포스터 **다음**에 칠한다(#768). 그 컬럼은 포스터
   // 컬럼의 뒤 형제라 blur 배경의 scale(1.2) 번짐을 덮어야 하는데, 포스터 앞에 칠하면 번짐이 그 위로 샌다.
-  const stampCarriers = collectOpaqueBackdrops(node, '[data-bg-pattern]', new Set(posterCarriers.map((c) => c.el)));
+  const stampCarriers = bgPatterns.length
+    ? collectOpaqueBackdrops(node, '[data-bg-pattern]', new Set(posterCarriers.map((c) => c.el)))
+    : [];
   const bgCarriers = [...posterCarriers, ...stampCarriers];
-  const bgPatterns = Array.from(node.querySelectorAll('[data-bg-pattern]')) as HTMLElement[];
+  const directStamps = new Set<Element>(bgPatterns);
   const prevInlineBg = bgCarriers.map((c) => c.el.style.backgroundColor);
   bgCarriers.forEach((c) => { c.el.style.backgroundColor = 'transparent'; });
   if (debug && bgCarriers.length) {
@@ -867,7 +922,7 @@ export async function captureNodeToJpeg(
       filter: (n: unknown) => {
         if (n instanceof Element && n.hasAttribute('data-hide-on-export')) return false; // 대시 placeholder
         if (n instanceof Element && n.hasAttribute('data-poster-root')) return false; // 포스터 서브트리(배경색 포함)
-        if (n instanceof Element && n.hasAttribute('data-bg-pattern')) return false; // 티켓 스탬프 — 직접 합성(#768)
+        if (n instanceof Element && directStamps.has(n)) return false; // 티켓 스탬프 — 직접 합성(#768, iOS)
         if (n instanceof HTMLImageElement && n.src.startsWith('blob:')) return false; // 로고 스탬프 — 직접 합성
         return true;
       },
