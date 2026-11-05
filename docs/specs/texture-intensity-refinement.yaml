@@ -21,6 +21,16 @@ domain: tech
 brownfield: true
 refine_generation: 0
 
+lifecycle:
+  state: closed
+  outcome: discontinued
+  reason: '#475의 재질×코팅 2축 설계(docs/specs/texture-material-coating-2axis.yaml)가 단일 texture/textureIntensity 설계를 대체했다. 대체로 종료하며 항목별 충족은 판정하지 않았다.'
+  approved_by: '2026-11-06 사용자 확인: 후속 범위 선택에서 "Seed 3개 lifecycle 기록"(texture-intensity-refinement·calibration-print-mood·landing-mood-first-ocr-entry를 closed/discontinued로) 선택.'
+  evidence:
+    commit: null
+    items: []
+  withdrawn: []
+
 goal:
   statement: >
     포스터 후가공(Texture)에 texture당 강도 슬라이더(0~100%)를 신설하고 8종 오버레이를
