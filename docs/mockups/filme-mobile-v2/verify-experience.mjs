@@ -41,6 +41,7 @@ async function button(label, root = 'body') {
   await element.click();
   await handle.dispose();
 }
+const TOOL_SLUG = { 정보: 'info', 사진: 'photo', 디자인: 'design', 색상: 'color', 질감: 'texture', 로고: 'logo' };
 async function shot(name) {
   await page.evaluate(async () => { await document.fonts.ready; await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))); });
   await page.screenshot({ path: `${output}v7-${name}.png` });
@@ -207,7 +208,7 @@ try {
       }
       if (tool === '질감') assert((await page.$$('.inline-panel input[aria-label="소재 강도"]')).length === 1);
       if (tool === '로고') assert((await page.$$('.inline-panel input[aria-label="극장 로고 텍스트"]')).length === 1);
-      if ([320,393].includes(width) && ['디자인','질감','로고'].includes(tool)) await shot(`${width}-${tool}`);
+      if ([320,393].includes(width) && ['디자인','질감','로고'].includes(tool)) await shot(`${width}-${TOOL_SLUG[tool]}`);
       report.geometry.push({ width, height, tool, ...g, ui });
       await button('도구 닫기', '.inline-panel');
       await page.waitForSelector('.inline-panel', { hidden: true });

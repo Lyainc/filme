@@ -55,6 +55,8 @@ async function clickText(label, root = 'body') {
   await handle.dispose();
 }
 
+const TOOL_SLUG = { 정보: 'info', 사진: 'photo', 디자인: 'design', 색상: 'color', 질감: 'texture', 로고: 'logo' };
+
 async function shot(name) {
   await page.evaluate(async () => {
     await document.fonts.ready;
@@ -155,7 +157,7 @@ async function run() {
       assert(geometry.panel.bottom <= height + 1 && geometry.scrollWidth <= geometry.viewportWidth + 1, JSON.stringify({ width, label, geometry }));
       assert(geometry.minTargetHeight >= 36, JSON.stringify({ width, label, geometry }));
       report.geometry.push({ width, label, ...geometry });
-      if (width === 393) await shot(`393-${label}`);
+      if (width === 393) await shot(`393-${TOOL_SLUG[label]}`);
       await clickText('도구 닫기', '.inline-panel');
       await page.waitForSelector('.inline-panel', { hidden:true });
     }
