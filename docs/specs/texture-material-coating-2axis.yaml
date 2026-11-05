@@ -1,3 +1,5 @@
+# 이후 변경 (2026-11-06 기준): 재질/코팅 4필드는 src/types/index.ts·src/utils/textureRecipes.ts에 있다.
+# 공유는 src/pages/api/ticket.ts가 JPEG+메타만 저장해 편집 상태를 복원하지 않으므로, 본문의 공유 blob 마이그레이션 설명은 당시 기록이다.
 ---
 # Output conforms to thinking-tools/reference/common-schema.md
 skill: build-spec

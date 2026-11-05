@@ -1,3 +1,5 @@
+# 이후 변경 (2026-11-06 기준): chainScale/formatScale은 src/types/index.ts·designRailItems.tsx에 있다. 본문의 일괄 0.6~1.3과 달리
+# Minimal은 렌더·UI 상한이 1.1이고 저장된 raw 값은 보존한다(MoodMinimal.tsx, __tests__/logoStampScale.test.tsx). 본문은 당시 기록이다.
 ---
 # Output conforms to thinking-tools/reference/common-schema.md
 skill: build-spec

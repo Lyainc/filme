@@ -1,3 +1,5 @@
+# 이후 변경 (2026-11-06 기준): 결과 행은 FieldEditorBody.tsx의 KobisResultList를 InPlaceFieldEditor.tsx가 공유하고,
+# typeNm/prdtStatNm/directors는 src/types/index.ts에 있으며 높이는 InPlaceFieldEditor.tsx의 가시 영역을 따른다. 본문은 구현 전 기록이다.
 # Seed Spec — KOBIS 제목 검색 결과 UI 리디자인 (모바일 인플레이스 편집기)
 ---
 skill: build-spec

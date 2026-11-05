@@ -1,3 +1,6 @@
+# 이후 변경 (2026-11-06 기준): #728의 고정 스탬프·배율·투명도 UI는 src/utils/backgroundPatterns.tsx·designRailItems.tsx에 있다.
+# #768 이후 박스(클립·투명도)와 이미지(배율)가 두 겹이고 iOS처럼 foreignObject 프로브가 실패하는 엔진에선 캔버스에 직접 합성하므로 '두 겹 이유는 clip 하나뿐' 설명은 과거다(현재 계약은 BackgroundPatternLayer 주석).
+# 본문은 당시 설계 기록이다.
 # Seed Spec — 배경 이미지를 '스탬프'로 재설계
 ---
 skill: build-spec
