@@ -27,6 +27,16 @@ domain: tech
 brownfield: true
 refine_generation: 0
 
+lifecycle:
+  state: closed
+  outcome: discontinued
+  reason: '1차 범위(#612/#615/#635)는 반영됐지만 배경 타일은 #786에서 제거됐고, 랜딩 모드는 #727 상시 랜딩(docs/specs/landing-always-visible-entry.yaml)으로 바뀌었으며, 2차 OCR→TMDB 포스터 체인은 #665로 폐기됐다. 일부 충족·일부 대체로 종료한다.'
+  approved_by: '2026-11-06 사용자 확인: 후속 범위 선택에서 "Seed 3개 lifecycle 기록"(texture-intensity-refinement·calibration-print-mood·landing-mood-first-ocr-entry를 closed/discontinued로) 선택.'
+  evidence:
+    commit: null
+    items: []
+  withdrawn: []
+
 goal:
   statement: >-
     랜딩을 "무드를 고르고 티켓 스크린샷 한 장으로 채우는" 진입 단계로 바꿔, 극장 관람 기록을

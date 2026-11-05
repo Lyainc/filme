@@ -21,6 +21,16 @@ brownfield: true
 refine_generation: 1   # v1은 무드 통합안 → 오버엔지니어링 지적으로 단일 페이지로 축소
 issue: 510
 
+lifecycle:
+  state: closed
+  outcome: discontinued
+  reason: '#591에서 /calibration 페이지가 scripts/make-calibration-sheet.py로 대체되고 페이지는 삭제됐다. 현재 근거는 docs/PRINT_CALIBRATION.md다. 대체로 종료하며 항목별 충족은 판정하지 않았다.'
+  approved_by: '2026-11-06 사용자 확인: 후속 범위 선택에서 "Seed 3개 lifecycle 기록"(texture-intensity-refinement·calibration-print-mood·landing-mood-first-ocr-entry를 closed/discontinued로) 선택.'
+  evidence:
+    commit: null
+    items: []
+  withdrawn: []
+
 goal:
   statement: >
     실제로 인쇄해서 눈으로(그리고 사진으로 Claude에게) 치수·여백·이미지 노출범위·폰트
