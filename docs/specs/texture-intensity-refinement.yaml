@@ -1,3 +1,5 @@
+# 이후 변경 (2026-11-06 기준): 단일 texture/textureIntensity 설계는 #475의 재질×코팅 2축(texture-material-coating-2axis.yaml)으로 대체됐다.
+# 현재 필드는 src/types/index.ts, 렌더·합성은 textureRecipes.ts·captureToImage.ts다. 본문은 당시 설계 기록이다.
 ---
 # Output conforms to thinking-tools/reference/common-schema.md
 skill: build-spec

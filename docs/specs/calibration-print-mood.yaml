@@ -1,3 +1,5 @@
+# 이후 변경 (2026-11-06 기준): /calibration 페이지 설계는 #591에서 scripts/make-calibration-sheet.py로 대체됐고 페이지는 삭제됐다.
+# 현재 실행 방식은 docs/PRINT_CALIBRATION.md를 따른다. 본문은 당시 설계 기록이다.
 # Output conforms to thinking-tools/reference/common-schema.md
 skill: build-spec
 schema_version: 1

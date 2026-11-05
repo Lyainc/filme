@@ -1,3 +1,5 @@
+# 이후 변경 (2026-11-06 기준): 세로 이미지 크기 제한은 src/components/ImageCropModal.tsx의 size container·100cqw/100cqh에 있다.
+# 본문의 ImageUploader 호출부는 #603/#607 단일 셸 전환으로 삭제됐다. 본문은 당시 설계 기록이다.
 ---
 # Output conforms to thinking-tools/reference/common-schema.md
 skill: build-spec

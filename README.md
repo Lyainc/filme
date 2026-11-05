@@ -2,7 +2,7 @@
 
 **Make realistic CGV Photoplay premium phototickets right in your browser — free, no signup.**
 
-Loved the phototicket you got at the cinema, or want to design your own? Just upload a poster and FILME fills in the movie, theater, and seat details, then exports a high-resolution image. No install, no account.
+Loved the phototicket you got at the cinema, or want to design your own? Upload a poster and search the movie, or drop in a real ticket screenshot and let OCR fill the movie, theater, and seat details, then export a high-resolution image. No install, no account.
 
 👉 **[Try it live](https://filme-web.vercel.app/)**  ·  🇰🇷 [한국어 README](./README.ko.md)
 
@@ -10,7 +10,7 @@ Loved the phototicket you got at the cinema, or want to design your own? Just up
 
 ## ✨ Features
 
-- **4 design moods** — pick a vibe from `Minimal`, `Criterion`, `35mm`, or `Editorial`. The first three are portrait; Editorial is landscape.
+- **6 design moods** — `Minimal`, `Criterion`, `35mm`, and `Stub` are portrait; `Editorial` and `35mm Wide` are landscape.
 - **Poster upload & manual crop** — drop in any image and crop it to the ticket ratio.
 - **Ticket-screenshot OCR** — upload a screenshot of a real phototicket and AI reads the title, date, and seat to auto-fill the form.
 - **Movie search (KOBIS)** — look up titles via the Korean Film Council Open API.
@@ -19,7 +19,7 @@ Loved the phototicket you got at the cinema, or want to design your own? Just up
 
 ## 🪄 How it works
 
-1. **Pick a mood** — choose a ticket design at the top.
+1. **Pick a mood** — choose a ticket design from the landing gallery; you can switch later from the design rail at the bottom of the editor.
 2. **Add a poster** — upload an image and set the crop. Have a real ticket screenshot? Drop it in and let OCR fill the form in one shot.
 3. **Fill in details** — search the movie title and add the date, screen, seat, and logos. The preview updates live.
 4. **Download** — save the finished ticket as a high-res JPEG.
@@ -42,17 +42,17 @@ bun run dev                  # http://localhost:3000
 | `GOOGLE_GENERATIVE_AI_API_KEY` | ✅ (for OCR) | [Google AI Studio](https://aistudio.google.com/apikey) key (Gemini vision) |
 | `UPSTASH_REDIS_REST_URL` / `_TOKEN` | ⬜ | Rate limiting (recommended in production; skipped locally if unset) |
 
-`bun run build` / `bun run start` for production. `bun test` runs the unit and interaction tests.
+`bun run build` / `bun run start` for production. `bun run test` runs the unit and interaction tests with the CI timeout.
 
 ## 🏗 Tech stack
 
 - **Framework**: Next.js 16 (Pages Router), React 19, TypeScript
 - **Styling**: Tailwind CSS v3
-- **Ticket rendering**: DOM (JSX/CSS) captured with `html-to-image`; `react-easy-crop` for poster cropping
+- **Ticket rendering**: DOM (JSX/CSS) captured with `html-to-image`; `react-image-crop` for poster cropping
 - **OCR / AI**: Gemini 3.1 Flash Lite vision via `ai` SDK v6 + `@ai-sdk/google` (direct Google AI Studio), Zod schemas, Upstash rate limiting
 - **Movie data**: KOBIS Open API
 - **Package manager**: Bun
-- **Testing**: `bun test` with happy-dom + `@testing-library/react` for interaction tests
+- **Testing**: `bun run test` with happy-dom + `@testing-library/react` for interaction tests
 
 ## 📄 License
 
