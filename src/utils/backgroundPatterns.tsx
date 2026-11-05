@@ -15,8 +15,10 @@
  *
  * iOS Safari 저장물에서 이 레이어가 빠지던 위험(#439·#671에서 인계)은 #768에서 실제로 확인됐다 —
  * html-to-image가 CSS `background-image`를 data: URL로 인라인해 foreignObject에 넣으면 iOS가 그
- * raster를 조용히 떨어뜨린다(포스터·로고가 겪은 것과 같은 함정). 그래서 captureToImage가
- * `data-bg-pattern`을 toPng `filter`에서 빼고 `compositeBgPattern`으로 캔버스에 직접 그린다. 그 함수는
+ * raster를 조용히 떨어뜨린다(포스터·로고가 겪은 것과 같은 함정). 그래서 captureToImage는
+ * `foreignObjectDrawsBackground` 프로브가 실패하는 엔진(iOS Safari)에서만 `data-bg-pattern`을 toPng
+ * `filter`에서 빼고 `compositeBgPattern`으로 캔버스에 직접 그린다. 프로브를 통과하는 엔진(Chrome)은
+ * 스탬프를 base 캡처에 그대로 둔다. 그 함수는
  * 바깥 div의 박스·`opacity`와 안쪽 `data-bg-pattern-image`의 `backgroundImage`·렌더 박스(scale 반영)를
  * 읽으므로, 이 두 겹의 구조나 cover/center를 바꾸면 그쪽도 같이 고쳐야 한다. macOS Chrome 하네스로는
  * 원리적으로 못 보는 축이라 iOS 저장 확인은 `scripts/ios-sim/run768.py`로 한다.
@@ -30,11 +32,13 @@
  * 게 왜 안 보이지"의 발생 조건이 사라졌다). 기본 투명도는 `BackgroundPatternPanel`의 write-time
  * 커밋이 정하고, 여기 `opacity`는 그 값을 그대로 그릴 뿐이다(`?? 1` — 기존 저장본 무변경).
  *
- * **한 겹으로 합쳤다**(#728, c10). 전면 cover 시절엔 PATTERN_CLIP이 캔버스 전체에서 포스터 자리만
- * 구멍으로 파야 했고, `clip-path`가 로컬 좌표계에서 정의된 뒤 요소 전체가 transform되는 성질 때문에
- * 배율을 이미지와 같은 요소에 걸면 클립까지 같이 확대됐다(#490/#495 z-order 파손). 고정 박스가
- * 포스터 슬롯과 애초에 안 겹치면(#728이 고른 세 무드의 세 박스가 전부 그렇다) 그 경로 자체가 안
- * 열려 clip이 필요 없다 — 겹을 나눌 이유가 사라졌으니 박스 위치·배율·투명도를 한 요소에 같이 건다.
+ * **clip 때문에 나누던 겹은 #728에서 사라졌고, 지금의 두 겹은 #768의 캡처 계약이다.** 전면 cover
+ * 시절엔 PATTERN_CLIP이 캔버스 전체에서 포스터 자리만 구멍으로 파야 했고, `clip-path`가 로컬
+ * 좌표계에서 정의된 뒤 요소 전체가 transform되는 성질 때문에 배율을 이미지와 같은 요소에 걸면
+ * 클립까지 같이 확대됐다(#490/#495 z-order 파손). 고정 박스가 포스터 슬롯과 안 겹치면 clip이
+ * 필요 없어 #728(c10)이 한 겹으로 합쳤다. #768은 다시 바깥 박스(위치·투명도·overflow)와 안쪽
+ * 이미지(배율)로 나눴는데, 이유가 clip이 아니라 직접 합성 경로(iOS)의 `compositeBgPattern`이 바깥
+ * 박스(클립·투명도)와 안쪽 이미지(배율)를 함께 읽어 스탬프 하나를 그리기 때문이다(위 파일 주석).
  */
 export function BackgroundPatternLayer({
   image,
