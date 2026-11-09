@@ -171,6 +171,20 @@ export function resetCtxFilterProbeForTest(): void {
   ctxFilterHonored = null;
 }
 
+const defaultLoadHtmlToImage = () => import('html-to-image');
+let loadHtmlToImage = defaultLoadHtmlToImage;
+
+/**
+ * 테스트 전용 — `html-to-image` 로더를 바꾼다(null이면 원래 로더로 되돌린다).
+ *
+ * 필요한 이유(#829): 로드 실패(배포 직후 옛 청크 404 등)에서도 미리보기 배경이 복원되는지 잠가야
+ * 하는데, bun에선 이미 로드된 모듈의 동적 import를 실패시킬 길이 없다 — `mock.module` 팩토리가
+ * 던지면 등록 자체가 던지고, getter로 만든 export는 import 때 한 번만 평가되며 그 오류도 삼킨다.
+ */
+export function setHtmlToImageLoaderForTest(loader: typeof defaultLoadHtmlToImage | null): void {
+  loadHtmlToImage = loader ?? defaultLoadHtmlToImage;
+}
+
 // op 종류는 **정수**로 들고 다닌다. 정규식 match가 만드는 문자열은 V8이 인터닝하지 않아서,
 // `op.k === 'brightness'`가 포인터 비교가 아니라 문자 단위 비교로 떨어진다 — 픽셀마다 op 개수만큼
 // 그 비교를 도니 이 한 줄이 베이킹 시간의 46%였다(#538 실측, CPU 6× 스로틀·1920×2752: 605→326ms).
@@ -898,13 +912,15 @@ export async function captureNodeToJpeg(
     : [];
   const bgCarriers = [...posterCarriers, ...stampCarriers];
   const directStamps = new Set<Element>(bgPatterns);
+  // 배경을 투명으로 돌리기 **전에** 로드한다(#829). 아래 finally는 toPng 실패만 덮으므로, 투명화 뒤에
+  // 로드하다 실패하면(배포 직후 옛 청크 404 등) 복원을 못 거쳐 미리보기 티켓이 투명한 채 남는다.
+  const { toPng } = await loadHtmlToImage();
   const prevInlineBg = bgCarriers.map((c) => c.el.style.backgroundColor);
   bgCarriers.forEach((c) => { c.el.style.backgroundColor = 'transparent'; });
   if (debug && bgCarriers.length) {
     console.log(`[capture:bg] carried=${bgCarriers.length} colors=${bgCarriers.map((c) => c.color).join('|')}`);
   }
 
-  const { toPng } = await import('html-to-image');
   let basePngUrl: string;
   try {
     basePngUrl = await toPng(node, {

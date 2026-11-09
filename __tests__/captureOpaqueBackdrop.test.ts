@@ -21,7 +21,7 @@ mock.module('html-to-image', () => ({
   },
 }));
 
-const { captureNodeToJpeg, resetCtxFilterProbeForTest } = require('../src/utils/captureToImage');
+const { captureNodeToJpeg, resetCtxFilterProbeForTest, setHtmlToImageLoaderForTest } = require('../src/utils/captureToImage');
 
 type Op = { kind: 'fill'; style: string; x: number; y: number; w: number; h: number } | { kind: 'draw'; isPoster: boolean };
 let ops: Op[];
@@ -73,6 +73,7 @@ afterEach(() => {
   HTMLCanvasElement.prototype.toDataURL = originalToDataURL;
   (globalThis as { Image: unknown }).Image = originalImage;
   backdropEl = null;
+  setHtmlToImageLoaderForTest(null);
 });
 
 afterAll(() => {
@@ -146,6 +147,19 @@ describe('#490/#495 — 불투명 무드 배경이 합성된 포스터를 덮지
     expect(root.style.backgroundColor).toBe('');
     // PAPER 색 fill이 없어야 한다(흰 여백 fill만 존재).
     expect(ops.some((o) => o.kind === 'fill' && o.style === 'rgb(244, 237, 224)')).toBe(false);
+
+    node.remove();
+  });
+
+  test('html-to-image 로드가 실패해도 미리보기 배경은 원래 값으로 남는다(#829)', async () => {
+    const { node, root } = buildTicket(true);
+    // 배포 직후 옛 청크 404 같은 로드 실패 근사.
+    setHtmlToImageLoaderForTest(() => Promise.reject(new Error('chunk load failed')));
+
+    await expect(captureNodeToJpeg(node, OPTS)).rejects.toThrow('chunk load failed');
+
+    // 투명화가 로드보다 먼저면 복원 finally 밖에서 던져 티켓이 투명한 채 남는다.
+    expect(root.style.backgroundColor).toBe('rgb(244, 237, 224)');
 
     node.remove();
   });
