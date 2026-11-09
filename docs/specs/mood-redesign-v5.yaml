@@ -87,7 +87,7 @@ constraints:
       Criterion 도판 양감(4단 그림자 + inset 엣지 + 사선 글로스 + 두께 엣지)은 무드 기본으로
       직접 그린다. #509(유저 커스텀 형압 후가공)와는 별개 이슈이며 로직 공유는 허용.
     hard: false
-    rationale: 도판 양감은 무드 정체성의 일부(항상 적용)이고, #509는 사용자가 켜고 끄는 후가공이다.
+    rationale: '도판 양감은 무드 정체성의 일부(항상 적용)이고, #509는 사용자가 켜고 끄는 후가공이다.'
 
   - id: c8
     type: technical
@@ -213,5 +213,5 @@ metadata:
   interview_rounds: 5
   questions_asked: 11
   generated_by: thinking-tools/build-spec
-  source_session: PhototicketMaker — #524 에픽 기획 고도화 (2026-07-25)
+  source_session: 'PhototicketMaker — #524 에픽 기획 고도화 (2026-07-25)'
 ---

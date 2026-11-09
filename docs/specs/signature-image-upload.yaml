@@ -146,8 +146,7 @@ context:
   existing_infra:
     - StampSheet + useLogoCrop(#220) 자유크롭 업로드 흐름
     - gate() 함수(_shared.tsx:191) — signature 텍스트 fallback 렌더 규칙, 변경 없음
-    - undo(#356)/saveDraft/restoreSnapshot — components 객체 통째 스냅샷 구조(신규 배선
-      불필요, #441 PR 코멘트로 확인됨)
+    - 'undo(#356)/saveDraft/restoreSnapshot — components 객체 통째 스냅샷 구조(신규 배선 불필요, #441 PR 코멘트로 확인됨)'
   prior_art: >
     #441/PR#485(체인/포맷 로고 크기 조절, 머지 완료) — scaledSize = size * scale 곱연산 결합,
     STAMP_MAX_ASPECT maxWidth 클램프 패턴을 signatureScale에도 동일 적용 검토.

@@ -39,9 +39,9 @@ scope:
     - {id: p10, item: '#779 슬라이더 input 터치 높이를 h-8(32px)로 — 보이는 트랙은 가는 선 유지', source: 'src/components/wizard/BrightnessSlider.tsx', issue: '#779'}
     - {id: p11, item: '#781 크기→로고 패널의 빈 상태·숨김 안내와 로고 입력 진입 액션(onEditField)', source: 'src/components/v2/designRailItems.tsx, src/components/v2/DesignRail.tsx, src/components/wizard/BrightnessSlider.tsx(action aria-label), MobileEditorShell(onEditField 연결)', issue: '#781'}
   excluded:
-    - 랜딩 캐러셀 간격·전환 시간·카드 크기와 동작 줄이기 가로 스크롤 전환 — 열린 #778이 재검토 중이고 "동작 줄이기의 정지 그리드 보존"을 제약으로 건다. #778 결정에 맡긴다
-    - WIP의 mobileChromeDarkHtmlBg.test.tsx 축소 — 다크를 유지하므로 가져오지 않는다. 같이 지워졌던 #607 1200px 단일 셸 검증이 main에 그대로 남는다(ac5)
-    - syllabus 팔레트·토큰·반경·CTA 스타일(틸 #19615c, 노랑 CTA, 크림 배경) — 2026-09-22 브릭 #B0423F 복원 결정으로 폐기
+    - '랜딩 캐러셀 간격·전환 시간·카드 크기와 동작 줄이기 가로 스크롤 전환 — 열린 #778이 재검토 중이고 "동작 줄이기의 정지 그리드 보존"을 제약으로 건다. #778 결정에 맡긴다'
+    - 'WIP의 mobileChromeDarkHtmlBg.test.tsx 축소 — 다크를 유지하므로 가져오지 않는다. 같이 지워졌던 #607 1200px 단일 셸 검증이 main에 그대로 남는다(ac5)'
+    - 'syllabus 팔레트·토큰·반경·CTA 스타일(틸 #19615c, 노랑 CTA, 크림 배경) — 2026-09-22 브릭 #B0423F 복원 결정으로 폐기'
     - 다크모드 제거 전부(테마 스크립트 강제 라이트, 다크 토글 삭제, chrome-dark·앰비언트 삭제, 하네스 theme 처리)
     - WIP의 불투명 16px 인플레이스 입력칸과 캐럿 폰트 매칭 제거(#365/#494 되돌림)
     - 랜딩 워드마크 제거
@@ -59,12 +59,12 @@ constraints:
   - id: c2
     type: other
     hard: true
-    description: 강조색은 브릭 #B0423F를 유지하고 WIP의 syllabus 팔레트는 들이지 않는다.
+    description: '강조색은 브릭 #B0423F를 유지하고 WIP의 syllabus 팔레트는 들이지 않는다.'
     rationale: 2026-09-22 목업 명세가 크림·노랑·틸 체계를 대체하고 브릭 복원을 확정했다.
   - id: c3
     type: technical
     hard: true
-    description: 인플레이스 편집은 main의 투명 캐럿(티켓 서체로 보며 입력)을 유지하고, #775는 debounce 우회만으로 해결한다.
+    description: '인플레이스 편집은 main의 투명 캐럿(티켓 서체로 보며 입력)을 유지하고, #775는 debounce 우회만으로 해결한다.'
     rationale: '#775 본문의 원인이 280ms debounce와 투명 입력칸의 조합이라 debounce만 풀면 해결되고, 불투명 입력칸은 #365/#494의 경험을 잃는다.'
   - id: c4
     type: technical
@@ -75,7 +75,7 @@ constraints:
     type: other
     hard: true
     description: main의 근거 주석(이슈 번호와 이유를 적은 주석)은 보존한다. 옮기는 로직과 직접 연결된 주석만 고치고, 삭제된 기능(형압·배경 타일)의 주석만 같이 지운다.
-    rationale: 코드는 멀쩡해도 근거가 사라지면 다음 수정자가 같은 실수를 반복한다(예 OcrUploadCard의 #727·#737 순서 불변식).
+    rationale: '코드는 멀쩡해도 근거가 사라지면 다음 수정자가 같은 실수를 반복한다(예 OcrUploadCard의 #727·#737 순서 불변식).'
   - id: c6
     type: technical
     hard: true
@@ -107,7 +107,7 @@ success_criteria:
     verifiable: true
     measurable_via: 하네스 출력(dock·프리뷰 불변식, WCAG 대비, frameFit, landingShownOnDraft, posterless)
   - id: ac3
-    description: 제외 목록이 main에 들어가지 않는다 — tokens에 #19615c·--cta-fill 없음, theme-dark·다크 토글 유지, 인플레이스 input color transparent 유지, docs/verification·docs/archive 신규 파일 없음.
+    description: '제외 목록이 main에 들어가지 않는다 — tokens에 #19615c·--cta-fill 없음, theme-dark·다크 토글 유지, 인플레이스 input color transparent 유지, docs/verification·docs/archive 신규 파일 없음.'
     verifiable: true
     measurable_via: 'git diff main..<PR> grep 점검(#19615c, cta-fill, theme-dark, color: transparent, docs/verification, docs/archive)'
   - id: ac4
