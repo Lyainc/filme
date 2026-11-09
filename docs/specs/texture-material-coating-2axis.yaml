@@ -113,7 +113,7 @@ constraints:
       textureRecipes의 GradientRecipe|NoiseRecipe 유니온과 noiseTileSvg/compositeOverlay(async
       SVG-raster createPattern) 구조를 재활용한다.
     hard: true
-    rationale: 2겹으로 늘어난 합성이 #471의 iOS 저위험 가정을 유지하는지 재확인이 필요하다.
+    rationale: '2겹으로 늘어난 합성이 #471의 iOS 저위험 가정을 유지하는지 재확인이 필요하다.'
   - id: c10
     type: technical
     description: >

@@ -91,7 +91,7 @@ constraints:
 
   - id: c6
     type: temporal
-    description: 이 이슈가 #502(레일 → 중앙정렬 캐러셀)보다 먼저 머지된다. #502에 의존 코멘트를 단다.
+    description: '이 이슈가 #502(레일 → 중앙정렬 캐러셀)보다 먼저 머지된다. #502에 의존 코멘트를 단다.'
     hard: true
     rationale: >-
       둘 다 RAIL_ITEMS와 RailExpandPanel을 건드린다. 목록을 먼저 한 곳으로 모으면 #502는
@@ -155,7 +155,7 @@ context:
     - src/components/v2/DesignRail.tsx:181-184 — lastPopRef / eyebrow 폴백
     - src/components/v2/DesignRail.tsx:213-305 — 패널 본문 삼항 체인(final else 포함)
     - src/components/v2/DesktopDesignPanel.tsx:41-141 — 별도 Section 스택(RAIL_ITEMS 미참조)
-    - src/components/v2/MobileEditorShell.tsx:873-878 — 레일 호스팅(CSS hidden 유지, unmount 금지 #297)
+    - 'src/components/v2/MobileEditorShell.tsx:873-878 — 레일 호스팅(CSS hidden 유지, unmount 금지 #297)'
     - __tests__/designRail.test.tsx · __tests__/desktopDesignPanel.test.tsx — 무회귀 기준선
   backlog_scan: >-
     #502 (레일 → 중앙정렬 캐러셀) — 같은 RAIL_ITEMS·RailExpandPanel을 개편. 이 이슈가 선행,
