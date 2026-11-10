@@ -27,17 +27,50 @@ goal:
 
 scope:
   included:
-    - {id: p1, item: '레이트리밋 백엔드 장애·타임아웃을 unavailable로 판정 — failMode closed는 503, open은 통과', source: 'src/utils/ratelimit.ts, src/utils/ocrRoute.ts, src/pages/api/ticket.ts, src/utils/ratelimitGlobalWindow.test.ts', issue: '#783'}
-    - {id: p2, item: 'KOBIS 상세 보강 수명 — beginMovieSelection(movieSelectionRef + docEpochRef)으로 제목 수정·재선택·undo·새 문서 뒤 늦은 보강을 버리고 패널 언마운트와 무관하게 적용', source: 'src/hooks/useKobisSearch.ts, src/hooks/usePhototicket.ts, src/components/v2/InPlaceFieldEditor.tsx, __tests__/kobisDetailUnmount.test.tsx', issue: '#784'}
-    - {id: p3, item: '#775 인플레이스 편집 중 프리뷰 debounce 우회(useDebounce immediate, onFieldEditingChange), 결과 화면은 debounce 안 된 상태 사용', source: 'src/hooks/useDebounce.ts, src/pages/index.tsx, src/components/v2/MobileEditorShell.tsx, __tests__/mobileEditorInputRegression.test.tsx', issue: '#775'}
-    - {id: p4, item: '#782 자동저장 점과 캡션을 한 버튼으로', source: 'src/components/v2/AutoSaveIndicator.tsx, __tests__/autoSaveIndicator.test.tsx', issue: '#782'}
-    - {id: p5, item: '#780 폰트 선택지 같은 너비 그리드 + 실제 서체 견본', source: 'src/components/v2/designRailItems.tsx, __tests__/designRail{Quote,Signature}Font.test.tsx', issue: '#780'}
-    - {id: p6, item: '#777 일부 — Criterion 한줄평을 항목 목록 경로로 노출(MOOD_EXCLUDED_FIELDS, EDIT_ORDER)', source: 'src/constants/fields.ts, src/components/v2/InPlaceFieldEditor.tsx, __tests__/launcherFieldGating.test.tsx', issue: '#777'}
-    - {id: p7, item: '#776 다듬은 이식 — 미완료 상태에서 완료를 누르면 필드 드로어 열기, 누락 필드 바로가기 버튼, 드로어 안내문은 누락이 있을 때만 표시, 완료 버튼 안 10px 라벨은 넣지 않음', source: 'src/hooks/useExportReady.ts(missingExportFields), src/components/v2/FieldDrawer.tsx, src/components/v2/MobileEditorShell.tsx', issue: '#776'}
-    - {id: p8, item: '형압·하이라이트 기능 제거(브러시·올가미·마스크·JPEG 합성) — 닫힌 에픽 #732/#735를 사용자 결정으로 되돌림', source: 'EmbossBrushLayer.tsx, embossLasso.ts, textureRecipes.ts(형압 부분), _shared.tsx, captureToImage.ts, posterFeather.ts, types, DesignRail·designRailItems, ResultPanel·ResultStage, TicketRenderer, 무드 6종, scripts/capture-export.mjs, 관련 테스트 9개', issue: '#785'}
-    - {id: p9, item: '랜딩 반복 배경 타일(LandingBackdropTiles) 제거 — #612 D3를 사용자 결정으로 되돌림, 하네스 backdrop 축과 CLAUDE.md 하네스 절 동기화', source: 'src/components/v2/Landing.tsx, __tests__/landingOverlay.test.tsx, scripts/measure-chrome.mjs, CLAUDE.md', issue: '#786'}
-    - {id: p10, item: '#779 슬라이더 input 터치 높이를 h-8(32px)로 — 보이는 트랙은 가는 선 유지', source: 'src/components/wizard/BrightnessSlider.tsx', issue: '#779'}
-    - {id: p11, item: '#781 크기→로고 패널의 빈 상태·숨김 안내와 로고 입력 진입 액션(onEditField)', source: 'src/components/v2/designRailItems.tsx, src/components/v2/DesignRail.tsx, src/components/wizard/BrightnessSlider.tsx(action aria-label), MobileEditorShell(onEditField 연결)', issue: '#781'}
+    - id: p1
+      item: '레이트리밋 백엔드 장애·타임아웃을 unavailable로 판정 — failMode closed는 503, open은 통과'
+      source: 'src/utils/ratelimit.ts, src/utils/ocrRoute.ts, src/pages/api/ticket.ts, src/utils/ratelimitGlobalWindow.test.ts'
+      issue: '#783'
+    - id: p2
+      item: 'KOBIS 상세 보강 수명 — beginMovieSelection(movieSelectionRef + docEpochRef)으로 제목 수정·재선택·undo·새 문서 뒤 늦은 보강을 버리고 패널 언마운트와 무관하게 적용'
+      source: 'src/hooks/useKobisSearch.ts, src/hooks/usePhototicket.ts, src/components/v2/InPlaceFieldEditor.tsx, __tests__/kobisDetailUnmount.test.tsx'
+      issue: '#784'
+    - id: p3
+      item: '#775 인플레이스 편집 중 프리뷰 debounce 우회(useDebounce immediate, onFieldEditingChange), 결과 화면은 debounce 안 된 상태 사용'
+      source: 'src/hooks/useDebounce.ts, src/pages/index.tsx, src/components/v2/MobileEditorShell.tsx, __tests__/mobileEditorInputRegression.test.tsx'
+      issue: '#775'
+    - id: p4
+      item: '#782 자동저장 점과 캡션을 한 버튼으로'
+      source: 'src/components/v2/AutoSaveIndicator.tsx, __tests__/autoSaveIndicator.test.tsx'
+      issue: '#782'
+    - id: p5
+      item: '#780 폰트 선택지 같은 너비 그리드 + 실제 서체 견본'
+      source: 'src/components/v2/designRailItems.tsx, __tests__/designRail{Quote,Signature}Font.test.tsx'
+      issue: '#780'
+    - id: p6
+      item: '#777 일부 — Criterion 한줄평을 항목 목록 경로로 노출(MOOD_EXCLUDED_FIELDS, EDIT_ORDER)'
+      source: 'src/constants/fields.ts, src/components/v2/InPlaceFieldEditor.tsx, __tests__/launcherFieldGating.test.tsx'
+      issue: '#777'
+    - id: p7
+      item: '#776 다듬은 이식 — 미완료 상태에서 완료를 누르면 필드 드로어 열기, 누락 필드 바로가기 버튼, 드로어 안내문은 누락이 있을 때만 표시, 완료 버튼 안 10px 라벨은 넣지 않음'
+      source: 'src/hooks/useExportReady.ts(missingExportFields), src/components/v2/FieldDrawer.tsx, src/components/v2/MobileEditorShell.tsx'
+      issue: '#776'
+    - id: p8
+      item: '형압·하이라이트 기능 제거(브러시·올가미·마스크·JPEG 합성) — 닫힌 에픽 #732/#735를 사용자 결정으로 되돌림'
+      source: 'EmbossBrushLayer.tsx, embossLasso.ts, textureRecipes.ts(형압 부분), _shared.tsx, captureToImage.ts, posterFeather.ts, types, DesignRail·designRailItems, ResultPanel·ResultStage, TicketRenderer, 무드 6종, scripts/capture-export.mjs, 관련 테스트 9개'
+      issue: '#785'
+    - id: p9
+      item: '랜딩 반복 배경 타일(LandingBackdropTiles) 제거 — #612 D3를 사용자 결정으로 되돌림, 하네스 backdrop 축과 CLAUDE.md 하네스 절 동기화'
+      source: 'src/components/v2/Landing.tsx, __tests__/landingOverlay.test.tsx, scripts/measure-chrome.mjs, CLAUDE.md'
+      issue: '#786'
+    - id: p10
+      item: '#779 슬라이더 input 터치 높이를 h-8(32px)로 — 보이는 트랙은 가는 선 유지'
+      source: 'src/components/wizard/BrightnessSlider.tsx'
+      issue: '#779'
+    - id: p11
+      item: '#781 크기→로고 패널의 빈 상태·숨김 안내와 로고 입력 진입 액션(onEditField)'
+      source: 'src/components/v2/designRailItems.tsx, src/components/v2/DesignRail.tsx, src/components/wizard/BrightnessSlider.tsx(action aria-label), MobileEditorShell(onEditField 연결)'
+      issue: '#781'
   excluded:
     - '랜딩 캐러셀 간격·전환 시간·카드 크기와 동작 줄이기 가로 스크롤 전환 — 열린 #778이 재검토 중이고 "동작 줄이기의 정지 그리드 보존"을 제약으로 건다. #778 결정에 맡긴다'
     - 'WIP의 mobileChromeDarkHtmlBg.test.tsx 축소 — 다크를 유지하므로 가져오지 않는다. 같이 지워졌던 #607 1200px 단일 셸 검증이 main에 그대로 남는다(ac5)'
@@ -143,8 +176,12 @@ context:
     - WIP의 textureRecipes.ts는 형압 부분만 줄었고 defaultIntensityForTexture는 남는다.
 
 blindspots:
-  - {area: assumptions, question: 'WIP 테스트를 가져올 때 shellHarness.ts의 theme 프롭 제거가 따라와 다크 커버리지가 빠지지 않는가?', resolution: c4로 흡수}
-  - {area: blind-spots, question: '형압 제거가 레일 슬롯 근거·하네스 문서·COPY_TONE_GUIDE 잠금 문구를 어긋나게 하지 않는가?', resolution: c7·ac2·ac6으로 흡수}
+  - area: assumptions
+    question: 'WIP 테스트를 가져올 때 shellHarness.ts의 theme 프롭 제거가 따라와 다크 커버리지가 빠지지 않는가?'
+    resolution: c4로 흡수
+  - area: blind-spots
+    question: '형압 제거가 레일 슬롯 근거·하네스 문서·COPY_TONE_GUIDE 잠금 문구를 어긋나게 하지 않는가?'
+    resolution: c7·ac2·ac6으로 흡수
 
 ambiguity:
   overall: 0.16

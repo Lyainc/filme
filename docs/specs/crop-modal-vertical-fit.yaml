@@ -147,8 +147,13 @@ context:
   measured:
     image: 900x1350
     crop_frame: 640x488.5
-    react_crop_computed: { width: 640, height: 960, max_height: none }
-    img_computed: { width: 640, height: 960 }
+    react_crop_computed:
+      width: 640
+      height: 960
+      max_height: none
+    img_computed:
+      width: 640
+      height: 960
     clipped: 상하 각 ~235px
 
 approach:

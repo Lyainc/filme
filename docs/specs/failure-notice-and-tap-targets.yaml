@@ -218,30 +218,22 @@ success_criteria:
 context:
   existing_stack:
     - Next.js (pages router) + React + TypeScript
-    - >-
-      src/utils/errorToast.tsx — useSyncExternalStore 모듈 싱글턴 + ErrorToastHost(107줄, #645)
+    - 'src/utils/errorToast.tsx — useSyncExternalStore 모듈 싱글턴 + ErrorToastHost(107줄, #645)'
     - cva + clsx + tailwind-merge (#647). Radix·shadcn·Sonner 0개
     - eslint local rule no-raw-touch-target-size (#647)
-    - bun test + happy-dom. __tests__/setup/happydom.ts의 전역 afterEach가
-      resetErrorToastForTest()를 부른다 — 모듈 싱글턴이 프로세스 내내 남기 때문(#611 클래스)
+    - bun test + happy-dom. __tests__/setup/happydom.ts의 전역 afterEach가 resetErrorToastForTest()를 부른다 — 모듈 싱글턴이 프로세스 내내 남기 때문(#611 클래스)
   dependencies:
-    - 새 의존성 0. 진단문서 최종 판정("shadcn/ui 전면 도입은 지금 하지 않는다")과 부록 2
-      expert-panel 7표 중 6표 (B) cva만을 그대로 승계한다. 재검토 조건도 그대로 —
-      "#612에서 새 오버레이·다이얼로그 계열이 3개 이상 필요할 때"(부록 2 ④ 교정)
+    - 새 의존성 0. 진단문서 최종 판정("shadcn/ui 전면 도입은 지금 하지 않는다")과 부록 2 expert-panel 7표 중 6표 (B) cva만을 그대로 승계한다. 재검토 조건도 그대로 — "#612에서 새 오버레이·다이얼로그 계열이 3개 이상 필요할 때"(부록 2 ④ 교정)
     - docs/NATIVE_IOS_RFC.md §1·§6 — c8 정당화 논리의 유일한 출처
     - docs/COPY_TONE_GUIDE.md — c9. "테스트가 잠근 문구" 표(:239-)를 문구 변경 전에 먼저 볼 것
   integration_points:
     - src/components/v2/OcrUndoBanner.tsx:27 — 좌표(c3). 두 버튼의 min-h-touch(:36,:43)는
       #646이 넣은 것이라 안 건드린다
-    - src/components/v2/MobileEditorShell.tsx:1310 — 스낵바 좌표. flashToast 호출 8곳
-      (:275, :291, :437, :485, :500, :845, :1191, :1195)이 이 표면의 전체 소비자다
-    - src/utils/errorToast.tsx:91 — ErrorToastHost 좌표(fixed top-4 z-[70]). 지금은 위아래로
-      갈려 있어 c3의 충돌 대상이 아니다
-    - src/components/ui/variants.ts:16-22 — c4·c5. 소비자 2곳(OcrUploadCard.tsx:282,
-      PrimaryCta.tsx:45)
+    - src/components/v2/MobileEditorShell.tsx:1310 — 스낵바 좌표. flashToast 호출 8곳 (:275, :291, :437, :485, :500, :845, :1191, :1195)이 이 표면의 전체 소비자다
+    - src/utils/errorToast.tsx:91 — ErrorToastHost 좌표(fixed top-4 z-[70]). 지금은 위아래로 갈려 있어 c3의 충돌 대상이 아니다
+    - src/components/ui/variants.ts:16-22 — c4·c5. 소비자 2곳(OcrUploadCard.tsx:282, PrimaryCta.tsx:45)
     - src/pages/index.tsx:77 — c6
-    - scripts/measure-chrome.mjs — ac1·ac6. 새 축을 넣으면 출력만 하지 말고 종료 조건
-      (process.exitCode)에도 실을 것(#714가 모달 축에서 겪은 조용한 성공)
+    - scripts/measure-chrome.mjs — ac1·ac6. 새 축을 넣으면 출력만 하지 말고 종료 조건 (process.exitCode)에도 실을 것(#714가 모달 축에서 겪은 조용한 성공)
   backlog_scan: >-
     prefilter 실행됨(open 9 · closed 369, 2026-08-18 gh issue list 실측).
     이 스펙의 전제였던 작업들이 전부 닫혀 있는 게 최대 발견이다 — #645(무음 실패 6종 제거 +

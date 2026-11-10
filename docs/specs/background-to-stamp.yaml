@@ -216,29 +216,19 @@ context:
     - bun test + happy-dom + @testing-library/react
     - puppeteer-core + 시스템 Chrome (scripts/capture-export.mjs)
   dependencies:
-    - useLogoCrop(cb, TARGET_HEIGHT) — 로고 스탬프와 **같은** 자유비 크롭 흐름, maxSide 1534.
-      스탬프가 작아지면 이 값을 내려도 되는지가 열린 질문이다(#673이 배경을 "제일 큰 payload"로
-      지목했으므로 줄이는 쪽으로 갈 여지가 생긴다)
+    - useLogoCrop(cb, TARGET_HEIGHT) — 로고 스탬프와 **같은** 자유비 크롭 흐름, maxSide 1534. 스탬프가 작아지면 이 값을 내려도 되는지가 열린 질문이다(#673이 배경을 "제일 큰 payload"로 지목했으므로 줄이는 쪽으로 갈 여지가 생긴다)
     - BrightnessSlider — c5. `shouldCommitSliderValue`(#507)가 드래그 중 undo 폭주를 이미 막는다
     - src/utils/imageDb.ts:11 — IDB 키 `'background'`. c7로 무변경
     - TicketComponents 안에 사는 필드라 undo·자동저장에 자동으로 실린다(types/index.ts:105-127)
   integration_points:
-    - src/utils/backgroundPatterns.tsx — 유일한 스타일 소스. 두 겹 구조(:49-63)와 알파를 안 깎는
-      결정(:22-26)이 여기 있다
-    - src/components/moods/MoodCriterion.tsx:253-261(호출부) · :92-94(PATTERN_CLIP).
-      도판 PLATE_LEFT 230 / PLATE_TOP 262 / PLATE_W 500 / PLATE_H 750, PAD 84(:59-64)
-    - src/components/moods/MoodStub.tsx:202-206(호출부) · :84-86(PATTERN_CLIP) ·
-      :210(포스터 밴드 POSTER_H 640) · :221(절취선 16px) · :229·:295(페이퍼 스텁 + space-evenly)
-    - src/components/moods/MoodEditorial.tsx:322-326(호출부, clip 없음) ·
-      :447(이미 있는 absolute 장식 `right:22, top:22, opacity .32`) · :54(MAIN_PAD_X 52) ·
-      :57(MAIN_AVAIL_W 535)
-    - src/components/v2/designRailItems.tsx:550(BACKGROUND_PATTERN_MOODS) · :568(BackgroundPatternPanel) ·
-      :607-618(배율 슬라이더) · :775-793(레일 항목 등록, id `'pattern'`·label '배경')
+    - src/utils/backgroundPatterns.tsx — 유일한 스타일 소스. 두 겹 구조(:49-63)와 알파를 안 깎는 결정(:22-26)이 여기 있다
+    - src/components/moods/MoodCriterion.tsx:253-261(호출부) · :92-94(PATTERN_CLIP). 도판 PLATE_LEFT 230 / PLATE_TOP 262 / PLATE_W 500 / PLATE_H 750, PAD 84(:59-64)
+    - src/components/moods/MoodStub.tsx:202-206(호출부) · :84-86(PATTERN_CLIP) · :210(포스터 밴드 POSTER_H 640) · :221(절취선 16px) · :229·:295(페이퍼 스텁 + space-evenly)
+    - src/components/moods/MoodEditorial.tsx:322-326(호출부, clip 없음) · :447(이미 있는 absolute 장식 `right:22, top:22, opacity .32`) · :54(MAIN_PAD_X 52) · :57(MAIN_AVAIL_W 535)
+    - src/components/v2/designRailItems.tsx:550(BACKGROUND_PATTERN_MOODS) · :568(BackgroundPatternPanel) · :607-618(배율 슬라이더) · :775-793(레일 항목 등록, id `'pattern'`·label '배경')
     - src/types/index.ts — 투명도 필드 추가
-    - __tests__/designRailBackgroundPattern.test.tsx(278줄·12케이스) ·
-      __tests__/blobRevokeUndoAware.test.tsx · __tests__/draftImageRestore.test.tsx
-    - scripts/capture-export.mjs:10-11(사용례) · :221·:229(BG_PATTERN_DRAW) · :445-447(bgScale 시드) ·
-      :464-483(주입) · :613-614(플래그)
+    - __tests__/designRailBackgroundPattern.test.tsx(278줄·12케이스) · __tests__/blobRevokeUndoAware.test.tsx · __tests__/draftImageRestore.test.tsx
+    - scripts/capture-export.mjs:10-11(사용례) · :221·:229(BG_PATTERN_DRAW) · :445-447(bgScale 시드) · :464-483(주입) · :613-614(플래그)
   backlog_scan: >-
     prefilter 실행됨(open 9 · closed 369). 관련 이슈 다섯. **#530**이 배경 축을 처음 세웠고(그때는
     기하 프리셋 3종), **#671**이 사용자 업로드 이미지로 바꿨고, **#672**가 프리셋과 `backgroundPattern`

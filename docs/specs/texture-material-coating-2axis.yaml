@@ -195,17 +195,40 @@ material_coating_axes:  # 이 스펙의 핵심 구조 — 단일 8종을 두 축
     - id: metal         # 메탈릭 — 금속 포일(유지)
     - id: scodix        # 스코딕스 — 부분 UV 광택 스팟. [강화 대상]
   migration_map:        # 레거시 단일 texture → {material, coating} (c4 하위호환)
-    original:   { material: original,  coating: none }
-    none:       { material: original,  coating: gloss }
-    hologram:   { material: original,  coating: hologram }
-    metal:      { material: original,  coating: metal }
-    scodix:     { material: original,  coating: scodix }
-    artpaper:   { material: artpaper,  coating: none }
-    vintage:    { material: vintage,   coating: none }
-    newspaper:  { material: newspaper, coating: none }
+    original:
+      material: original
+      coating: none
+    none:
+      material: original
+      coating: gloss
+    hologram:
+      material: original
+      coating: hologram
+    metal:
+      material: original
+      coating: metal
+    scodix:
+      material: original
+      coating: scodix
+    artpaper:
+      material: artpaper
+      coating: none
+    vintage:
+      material: vintage
+      coating: none
+    newspaper:
+      material: newspaper
+      coating: none
   default_intensity:    # 축별 기본 강도(기존 값 재활용, 슬라이더 미조작 시)
-    material: { artpaper: 0.6, vintage: 0.5, newspaper: 0.6 }   # original 무의미
-    coating:  { gloss: 1.0, hologram: 0.7, metal: 0.7, scodix: 0.85 }  # none 무의미
+    material:  # original 무의미
+      artpaper: 0.6
+      vintage: 0.5
+      newspaper: 0.6
+    coating:  # none 무의미
+      gloss: 1.0
+      hologram: 0.7
+      metal: 0.7
+      scodix: 0.85
   z_order: 포스터(재질 CSS filter 최종색) → 재질 결 오버레이 → 코팅 광택 오버레이 → 텍스트
 
 ambiguity:
