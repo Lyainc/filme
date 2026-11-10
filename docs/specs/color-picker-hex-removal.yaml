@@ -214,27 +214,17 @@ context:
     - Next.js (pages router) + React + TypeScript
     - Tailwind + cva/cn (src/utils/cn.ts, src/components/ui/variants.ts — cva 2종 41줄)
     - bun test + happy-dom + @testing-library/react + user-event
-    - >-
-      eslint local rule no-raw-touch-target-size (eslint.config.mjs:71,74 — #647)
+    - 'eslint local rule no-raw-touch-target-size (eslint.config.mjs:71,74 — #647)'
   dependencies:
-    - >-
-      새 의존성 0. cva·clsx·tailwind-merge는 #647에서 이미 들어와 있고, headless 프리미티브
-      (Radix·Base UI)는 #645 부록 2 판정으로 도입하지 않는다 — 이 스펙이 그 판정을 뒤집지 않는다
-    - APG Radio Group 패턴(https://www.w3.org/WAI/ARIA/apg/patterns/radio/) — 규범 소스.
-      CLAUDE.md 실측 — w3.org는 WebFetch만 되고 curl은 403
-    - TONE_FIXED_MOODS(src/constants/fields.ts:108-116) — 35mm·35mm-landscape·criterion·stub.
-      컬러 픽커가 실제로 작동하는 무드는 minimal·editorial 둘뿐이라, 이 스펙의 세로 예산 회수는
-      나머지 4무드에선 잠금 안내 한 줄이 든 패널에 적용된다
+    - '새 의존성 0. cva·clsx·tailwind-merge는 #647에서 이미 들어와 있고, headless 프리미티브 (Radix·Base UI)는 #645 부록 2 판정으로 도입하지 않는다 — 이 스펙이 그 판정을 뒤집지 않는다'
+    - APG Radio Group 패턴(https://www.w3.org/WAI/ARIA/apg/patterns/radio/) — 규범 소스. CLAUDE.md 실측 — w3.org는 WebFetch만 되고 curl은 403
+    - TONE_FIXED_MOODS(src/constants/fields.ts:108-116) — 35mm·35mm-landscape·criterion·stub. 컬러 픽커가 실제로 작동하는 무드는 minimal·editorial 둘뿐이라, 이 스펙의 세로 예산 회수는 나머지 4무드에선 잠금 안내 한 줄이 든 패널에 적용된다
   integration_points:
     - src/components/wizard/ColorPicker.tsx — 유일한 편집 대상 컴포넌트(159줄 → hex 제거로 축소)
     - src/components/ui/variants.ts — 선택 링·확대·탭 타깃 공통화(c5)
-    - src/components/wizard/TexturePicker.tsx:95-97,110-111 / src/components/LayoutPicker.tsx:70-72,
-      82-83 — c3 키보드 계약과 c5 공통화의 나머지 두 소비자
-    - __tests__/colorPickerLockedNoteAdjacency.test.tsx — 4케이스 중 2개(:36-44 hex 새니타이즈,
-      :46-57 hex 폭)가 대상 소멸로 사라지고, 2개(:26-34 스와치 클릭, :59-79 disabled 인접)는 유지
-    - __tests__/designRail.test.tsx:102 — getByLabelText('색상 코드')를 "컬러 패널이 열렸다"의
-      셀렉터로 쓴다. 다른 앵커로 교체 필요(:123의 getByRole('button',{name:'흰색'})은 role이
-      radio로 바뀌므로 함께 교체)
+    - src/components/wizard/TexturePicker.tsx:95-97,110-111 / src/components/LayoutPicker.tsx:70-72, 82-83 — c3 키보드 계약과 c5 공통화의 나머지 두 소비자
+    - __tests__/colorPickerLockedNoteAdjacency.test.tsx — 4케이스 중 2개(:36-44 hex 새니타이즈, :46-57 hex 폭)가 대상 소멸로 사라지고, 2개(:26-34 스와치 클릭, :59-79 disabled 인접)는 유지
+    - __tests__/designRail.test.tsx:102 — getByLabelText('색상 코드')를 "컬러 패널이 열렸다"의 셀렉터로 쓴다. 다른 앵커로 교체 필요(:123의 getByRole('button',{name:'흰색'})은 role이 radio로 바뀌므로 함께 교체)
     - __tests__/tapTargets.ts — 파서 규칙(c6)의 소유자. 파일 자체는 안 고친다
   backlog_scan: >-
     prefilter 실행됨(open 9 · closed 369, 2026-08-18 gh issue list 실측). 충돌 없음.

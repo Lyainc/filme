@@ -296,23 +296,10 @@ context:
     - bun test + happy-dom + @testing-library/react + user-event
     - localStorage(텍스트·설정) + IndexedDB(이미지 Blob, src/utils/imageDb.ts) 2층 영속
   dependencies:
-    - >-
-      `usePhototicket`의 자동저장 디바운스 — `dirtyTick === 0`이면 예약 자체를 안 한다
-      (`src/hooks/usePhototicket.ts:769`). c7의 "랜딩에 머무는 동안 draft가 살아 있다"가 이
-      게이트에 통째로 기댄다. 단순 방문·복원·리셋은 `dirtyTick`을 안 올린다.
-    - >-
-      `useEditHistory` — 베이스라인을 렌더 시점이 아니라 첫 디바운스 발화가 잡는다
-      (`src/hooks/useEditHistory.ts:38-40`). 문서 교체(c7)는 `clearDraft`가 그러듯 히스토리도
-      새 베이스라인으로 재설정해야 한다 — 안 하면 진입 직후 undo가 활성돼 누르면 옛 문서로
-      돌아간다.
-    - >-
-      `usePosterCrop`(`src/hooks/usePosterCrop.ts:97`) — 크롭 확정이 `handleImageUpload`를
-      부르는 유일한 사용자 경로. c2의 다섯 이탈 중 포스터 축이 여기 붙는다.
-    - >-
-      `OcrUploadCard`는 셸이 소유한 단일 인스턴스가 `Landing`의 children으로 들어간다
-      (`MobileEditorShell.tsx:1064`). 랜딩 모드가 갈려도 트리 위치가 고정이라 remount되지
-      않는다는 계약(#614/#624)을 c3의 모드 축소가 깨면 안 된다 — `mode==='hidden'`도 unmount가
-      아니라 CSS다(#297 P1).
+    - '`usePhototicket`의 자동저장 디바운스 — `dirtyTick === 0`이면 예약 자체를 안 한다 (`src/hooks/usePhototicket.ts:769`). c7의 "랜딩에 머무는 동안 draft가 살아 있다"가 이 게이트에 통째로 기댄다. 단순 방문·복원·리셋은 `dirtyTick`을 안 올린다.'
+    - '`useEditHistory` — 베이스라인을 렌더 시점이 아니라 첫 디바운스 발화가 잡는다 (`src/hooks/useEditHistory.ts:38-40`). 문서 교체(c7)는 `clearDraft`가 그러듯 히스토리도 새 베이스라인으로 재설정해야 한다 — 안 하면 진입 직후 undo가 활성돼 누르면 옛 문서로 돌아간다.'
+    - '`usePosterCrop`(`src/hooks/usePosterCrop.ts:97`) — 크롭 확정이 `handleImageUpload`를 부르는 유일한 사용자 경로. c2의 다섯 이탈 중 포스터 축이 여기 붙는다.'
+    - '`OcrUploadCard`는 셸이 소유한 단일 인스턴스가 `Landing`의 children으로 들어간다 (`MobileEditorShell.tsx:1064`). 랜딩 모드가 갈려도 트리 위치가 고정이라 remount되지 않는다는 계약(#614/#624)을 c3의 모드 축소가 깨면 안 된다 — `mode===''hidden''`도 unmount가 아니라 CSS다(#297 P1).'
   integration_points:
     - src/components/v2/MobileEditorShell.tsx:473-474 — `showLanding` 판정식(c1·c2·c4)
     - src/components/v2/MobileEditorShell.tsx:1041 — `Landing` mode 판정(c1·c3)

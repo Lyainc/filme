@@ -160,9 +160,7 @@ approach:
 out_of_scope:
   - STAMP_LABEL_MAX(24) 통일 (c7, 후속 — 실측으로 문제 확인되면)
   - 실기기 iOS 캡처 확인 (#439 root-cause 해결로 일반 보호 예상, 코드 스펙이 아닌 머지 전 QA 단계)
-  - 데이터 모델 완전 통합(StampTarget 3종화, signature를 TicketComponents로 완전 이전) —
-    expert-panel에서 기각. 필드 가시성 시스템 통합 자체가 목표가 될 별도 동기가 생기면
-    독립 이슈로 재검토.
+  - 데이터 모델 완전 통합(StampTarget 3종화, signature를 TicketComponents로 완전 이전) — expert-panel에서 기각. 필드 가시성 시스템 통합 자체가 목표가 될 별도 동기가 생기면 독립 이슈로 재검토.
 
 ambiguity:
   overall: 0.11

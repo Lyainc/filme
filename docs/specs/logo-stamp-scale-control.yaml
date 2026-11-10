@@ -147,15 +147,12 @@ context:
   entry_point: src/components/moods/_shared.tsx (ChainStamp:472, FormatStamp:537)
   related_state: src/hooks/usePhototicket.ts (updateComponents, restoreSnapshot, saveDraft)
   ui_candidates:
-    - DesignRail.tsx/DesktopDesignPanel.tsx의 기존 "투명도" 탭(componentOpacity 옆에
-      크기 슬라이더 추가 — 이미 "컴포넌트" 레벨 축이 있는 자리)
+    - DesignRail.tsx/DesktopDesignPanel.tsx의 기존 "투명도" 탭(componentOpacity 옆에 크기 슬라이더 추가 — 이미 "컴포넌트" 레벨 축이 있는 자리)
     - FieldEditorBody.tsx의 StampSheet(로고 업로드·크롭과 같은 자리, 필드별 편집 컨텍스트)
   existing_infra:
     - ChainStamp/FormatStamp의 size prop(무드별 고정 상수, 12개 호출부)
     - STAMP_MAX_ASPECT(_shared.tsx:134) — maxWidth 클램프
-    - BrightnessSlider(src/components/wizard/BrightnessSlider.tsx) — 0..1 값을 %로
-      보여주는 기존 슬라이더, materialIntensity/coatingIntensity/posterOpacity/
-      componentOpacity가 이미 재사용 중
+    - BrightnessSlider(src/components/wizard/BrightnessSlider.tsx) — 0..1 값을 %로 보여주는 기존 슬라이더, materialIntensity/coatingIntensity/posterOpacity/ componentOpacity가 이미 재사용 중
 
 approach:
   decision: >
@@ -163,7 +160,6 @@ approach:
     나머지(상태 필드·배선·클램프)는 c1~c7이 강제한다.
 
 out_of_scope:
-  - 서명 이미지 업로드 + signatureImage/signatureScale (별도 이슈로 분리, 이 세션에서
-    새 이슈 생성 예정)
+  - 서명 이미지 업로드 + signatureImage/signatureScale (별도 이슈로 분리, 이 세션에서 새 이슈 생성 예정)
   - '크롭 모달 zoom-out 복원(#441 원안이 명시적으로 기각, #474 코멘트에서 재확인됨)'
   - 무드별 size 고정 상수(0.55~1.02) 자체의 재튜닝

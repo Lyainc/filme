@@ -150,14 +150,11 @@ context:
     - html-to-image (captureToImage.ts)
   dependencies:
     - useLogoCrop (자유비 크롭, maxSide = TARGET_HEIGHT) — 배율은 숫자 하나라 이 경로를 안 건드린다
-    - BrightnessSlider (components/wizard/BrightnessSlider.tsx) — shouldCommitSliderValue가 드래그 중
-      undo 폭주를 이미 막아둔다(#507). 새로 만들 것 없음
-    - html-to-image의 options.style은 캡처 루트에만 적용되므로 자손 transform은 저장물에 살아남는다
-      (captureToImage.ts:48-56, 이미 blur 배경의 scale(1.2)가 같은 경로를 탄다 — :495)
+    - BrightnessSlider (components/wizard/BrightnessSlider.tsx) — shouldCommitSliderValue가 드래그 중 undo 폭주를 이미 막아둔다(#507). 새로 만들 것 없음
+    - html-to-image의 options.style은 캡처 루트에만 적용되므로 자손 transform은 저장물에 살아남는다 (captureToImage.ts:48-56, 이미 blur 배경의 scale(1.2)가 같은 경로를 탄다 — :495)
   integration_points:
     - src/types/index.ts — TicketComponents.backgroundPatternScale 추가
-    - src/utils/backgroundPatterns.ts — 유일한 스타일 소스. 중첩을 여기 한 번만 두려면 .tsx로 바꿔
-      레이어 컴포넌트를 내보낸다
+    - src/utils/backgroundPatterns.ts — 유일한 스타일 소스. 중첩을 여기 한 번만 두려면 .tsx로 바꿔 레이어 컴포넌트를 내보낸다
     - src/components/moods/MoodEditorial.tsx:327 / MoodStub.tsx:206 / MoodCriterion.tsx:261 — 호출부 3곳
     - src/components/v2/designRailItems.tsx BackgroundPatternPanel (:553) — 슬라이더 추가 자리
     - __tests__/designRailBackgroundPattern.test.tsx — clip·stub 쿼리가 한 칸 위로 이동
