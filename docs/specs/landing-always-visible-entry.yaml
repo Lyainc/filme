@@ -18,6 +18,92 @@ domain: tech
 brownfield: true
 refine_generation: 0
 
+lifecycle:
+  state: closed
+  outcome: completed
+  reason: '#727이 랜딩 상시 노출과 이어서 만들기 진입점을 구현했고 지정 커밋에서 항목별로 확인된다. 랜딩 모드는 overlay와 hidden 두 값이며 판정은 landingDismissed 하나다. 복원 행은 주 CTA 위에서 min-h-touch를 갖고, has-draft 게이트 의미는 복원 행 노출로 뒤집혔으며, 문서 리셋(resetDocument)과 저장분 삭제(clearDraft)는 분리됐고, 하네스 축은 landingShownOnDraft로 교체됐다. ac8의 backdrop 축 서술은 #786에서 랜딩 반복 배경 타일이 제거돼 철회하고, 핵심 명제인 landingShownOnDraft는 scripts/measure-chrome.mjs:439-503의 pass 게이트로 남아 있다. 이번 기록 작업에서 테스트나 하네스를 실행하지는 않았고 정적 확인만 했다.'
+  approved_by: '2026-11-11 사용자 확인: landing-always-visible-entry "ac8 해당 서술 철회 + completed"를 선택.'
+  evidence:
+    commit: 0a6991f8b2a9dee88bdaf872aa0b34477925c17b
+    items:
+      - id: c1
+        refs:
+          - 'MobileEditorShell.tsx:1128 mode={isMax || landingDismissed ? hidden : overlay}'
+          - 'MobileEditorShell.tsx:307,317 canvasReady는 크롬 게이트로만 쓰인다'
+      - id: c2
+        refs:
+          - 'MobileEditorShell.tsx:307 landingDismissed, :1128'
+          - 'MobileEditorShell.tsx:1135,1148,1172-1173 이탈 경로의 startFreshDoc 호출'
+      - id: c3
+        refs:
+          - 'src/components/v2/Landing.tsx:373 mode overlay 또는 hidden, :396'
+          - '__tests__/landingOverlay.test.tsx:35 inline 삭제 주석'
+      - id: c4
+        refs:
+          - 'MobileEditorShell.tsx:1128 판정식에 crop.cropOpen 항이 없다'
+      - id: c5
+        refs:
+          - 'Landing.tsx:475-492 복원 행이 주 CTA 블록 위 별도 층이고 확인 모달이 없다'
+          - 'data-testid landing-restore'
+      - id: c6
+        refs:
+          - 'Landing.tsx:492 이어서 만들기에 restoreTitle을 덧붙인다'
+          - '__tests__/landingOverlay.test.tsx:98-104'
+      - id: c7
+        refs:
+          - 'src/hooks/usePhototicket.ts:838-840 resetDocument는 저장분을 지우지 않는다'
+          - 'usePhototicket.ts:897-914 clearDraft만 저장분과 게이트를 지운다'
+          - 'usePhototicket.ts:783 dirtyTick === 0 게이트'
+          - '__tests__/landingFreshStart.test.tsx'
+      - id: c8
+        refs:
+          - 'usePhototicket.ts:259 docEpochRef, :394-397 주입 직전 epoch 대조'
+          - '__tests__/awaitingPosterRestore.test.tsx:137-152'
+      - id: c9
+        refs:
+          - 'src/pages/_document.tsx:23 has-draft 유지'
+          - 'src/styles/globals.css:358-376 복원 행 기본 숨김 후 html.has-draft에서 노출'
+          - '__tests__/landingPaintGate.test.tsx:53 옛 규칙의 부재를 잠근다'
+      - id: c10
+        refs:
+          - '__tests__/landingOverlay.test.tsx와 awaitingPosterRestore.test.tsx 재작성'
+          - 'gh issue #717 코멘트에 #727 선후 관계 기재 (이슈 자체는 NOT_PLANNED로 닫힘)'
+      - id: c11
+        refs:
+          - 'scripts/measure-chrome.mjs:464 measureFit 복원 행, :304-314 overlay scrollHeight 측정. hard가 false인 항목'
+      - id: c12
+        refs:
+          - 'Landing.tsx:488 min-h-touch'
+      - id: ac1
+        refs:
+          - '__tests__/landingOverlay.test.tsx:84-98 draft를 심고 .fixed 유지'
+          - '__tests__/awaitingPosterRestore.test.tsx'
+      - id: ac2
+        refs:
+          - '__tests__/landingOverlay.test.tsx:98-104 라벨에 제목 포함, landing-restore'
+      - id: ac3
+        refs:
+          - '__tests__/landingOverlay.test.tsx:115-126 복원 클릭 후 hidden, 제목 유지'
+      - id: ac4
+        refs:
+          - '__tests__/landingFreshStart.test.tsx'
+      - id: ac5
+        refs:
+          - '__tests__/awaitingPosterRestore.test.tsx:137-152 포스터 추가 대리 지표'
+      - id: ac6
+        refs:
+          - 'Landing.tsx:373 유니온 2값'
+          - '__tests__/posterlessCanvas.test.tsx'
+      - id: ac7
+        refs:
+          - '__tests__/landingPaintGate.test.tsx:44-60'
+      - id: ac9
+        refs:
+          - 'scripts/measure-chrome.mjs:464 measureFit 복원 행과 주 CTA, overlay scrollHeight 비교 :304-314'
+  withdrawn:
+    - id: ac8
+      reason: 'ac8의 "backdrop 축 그대로 유효" 서술은 #786에서 랜딩 반복 배경 타일이 제거돼 대상이 사라졌다. 핵심 명제(landingShownOnDraft)는 유지된다.'
+
 goal:
   statement: >-
     재방문자에게도 랜딩을 항상 보여주고, 이전 draft를 이어받는 길을 랜딩의 1급 진입점(주 CTA 위

@@ -18,6 +18,16 @@ domain: tech
 brownfield: true
 refine_generation: 0
 
+lifecycle:
+  state: closed
+  outcome: discontinued
+  reason: '구현은 #730 커밋 115e870으로 main에 들어가 있다. hex 입력 제거, radiogroup/radio/aria-checked, 세 픽커 공통 키보드 핸들러, variants.ts 상수 통합이 코드와 테스트에서 보인다. 다만 ac1(슬롯 폭 361px에서 1행)과 ac2(패널 높이 147px 이하)는 브라우저 실측을 요구하는데 실측 기록을 찾지 못했고 정적으로는 산술 예측만 가능했다. 항목별 충족을 단정하지 않고 중단으로 닫는다.'
+  approved_by: '2026-11-11 사용자 확인: lifecycle 없는 Seed 정리에서 "12개 discontinued로 기록"과 failure-notice-and-tap-targets "discontinued"를 선택.'
+  evidence:
+    commit: null
+    items: []
+  withdrawn: []
+
 goal:
   statement: >-
     컬러 픽커의 hex 텍스트 입력을 없애 세로 예산을 회수하고, 지금 시각 신호로만 존재하는

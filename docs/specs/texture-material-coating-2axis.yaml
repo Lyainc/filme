@@ -21,6 +21,16 @@ domain: tech
 brownfield: true
 refine_generation: 0
 
+lifecycle:
+  state: closed
+  outcome: discontinued
+  reason: 'material/coating/materialIntensity/coatingIntensity 4필드와 레거시 texture 마이그레이션(textureRecipes.ts migrateLegacyComponents)은 구현돼 있다. 하지만 ac1, ac3, ac6은 데스크톱·iOS 실기기 대조와 오너 육안 승인이 필요한데 기록이 없고, c7이 말하는 DesktopDesignPanel은 #607에서 삭제됐으며 c1의 공유링크 직렬화는 /api/ticket이 JPEG+메타만 저장하는 구조로 바뀌어 전제가 사라졌다. 모든 항목의 충족 근거를 댈 수 없어 중단으로 닫는다.'
+  approved_by: '2026-11-11 사용자 확인: lifecycle 없는 Seed 정리에서 "12개 discontinued로 기록"과 failure-notice-and-tap-targets "discontinued"를 선택.'
+  evidence:
+    commit: null
+    items: []
+  withdrawn: []
+
 goal:
   statement: >
     포스터 후가공(Texture)을 단일축 8종 단일선택에서 "재질 축 × 코팅 축" 2축 조합으로

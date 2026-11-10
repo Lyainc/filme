@@ -22,6 +22,16 @@ brownfield: true
 refine_generation: 0
 issue: 441
 
+lifecycle:
+  state: closed
+  outcome: discontinued
+  reason: 'chainScale/formatScale 상태·배선·undo 포함·슬라이더는 구현됐고 기본값 1에서 무회귀도 보존된다. 하지만 c5의 0.6~1.3 허용 범위는 Minimal 무드가 렌더·UI 상한을 1.1로 낮추면서 그대로 유지되지 않는다. s3(6무드 x 극값 브라우저 실측)과 s5(저장 JPEG 반영)는 happy-dom에서 못 재는 실측 항목인데 Seed에 수행 기록이 없고, ui_candidates가 가리킨 DesktopDesignPanel도 삭제됐다. 모든 항목의 충족 근거를 댈 수 없어 중단으로 닫는다.'
+  approved_by: '2026-11-11 사용자 확인: lifecycle 없는 Seed 정리에서 "12개 discontinued로 기록"과 failure-notice-and-tap-targets "discontinued"를 선택.'
+  evidence:
+    commit: null
+    items: []
+  withdrawn: []
+
 goal:
   statement: >
     ChainStamp/FormatStamp(극장·포맷 로고)가 무드별 고정 height 상수에 맞춰 항상 같은

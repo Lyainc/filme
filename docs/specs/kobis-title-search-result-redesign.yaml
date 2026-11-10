@@ -20,6 +20,16 @@ domain: tech
 brownfield: true
 refine_generation: 0
 
+lifecycle:
+  state: closed
+  outcome: discontinued
+  reason: '구현은 들어갔다. 결과 행이 typeNm·감독·prdtStatNm·개봉일을 보여주고 InPlaceFieldEditor는 visualViewport 기반 높이를 쓴다. 그러나 ac1이 실기기(iOS Safari) 육안 확인만 측정 수단이라 정적으로 증명할 수 없고 Seed 어디에도 실기기 확인 기록이 없다. c2는 모바일만 건드린다고 했지만 KobisResultList를 데스크톱 TitleSheet와 공유하게 되면서 c6의 두 벌 수렴이 다른 방식으로 해소됐고, 이후 앱 화면 개편(#826)이 이 영역을 다시 다룬다. 일부는 충족, 일부는 미검증이라 중단으로 닫는다.'
+  approved_by: '2026-11-11 사용자 확인: lifecycle 없는 Seed 정리에서 "12개 discontinued로 기록"과 failure-notice-and-tap-targets "discontinued"를 선택.'
+  evidence:
+    commit: null
+    items: []
+  withdrawn: []
+
 goal:
   statement: >-
     모바일 인플레이스 편집기에서 제목을 입력하는 사용자가, 키보드에 가리지 않는 충분한 결과 목록과

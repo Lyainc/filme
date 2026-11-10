@@ -22,6 +22,16 @@ brownfield: true
 refine_generation: 0
 issue: 474
 
+lifecycle:
+  state: closed
+  outcome: discontinued
+  reason: '수정은 main에 들어가 있다. crop-frame의 containerType size와 img의 maxWidth 100cqw, maxHeight 100cqh가 있어 c1~c5, c7의 구조는 코드로 보인다. 그러나 Seed 스스로 s1~s3은 happy-dom으로 검증이 불가능하고 실제 브라우저 실측만 유효하다고 적었고, s4와 s5도 실측이 필요하다. 레포에 이 실측을 잠그는 테스트가 없고 Seed에 실측 결과도 남아 있지 않다. 또 c4가 나열한 호출부 중 ImageUploader는 #603/#607 단일 셸 전환으로 삭제돼 본문이 현재 구조와 달라졌다. 항목별 충족을 단정하지 않고 중단으로 닫는다.'
+  approved_by: '2026-11-11 사용자 확인: lifecycle 없는 Seed 정리에서 "12개 discontinued로 기록"과 failure-notice-and-tap-targets "discontinued"를 선택.'
+  evidence:
+    commit: null
+    items: []
+  withdrawn: []
+
 goal:
   statement: >
     ImageCropModal의 크롭 프레임에서 세로로 긴 이미지가 폭 기준으로만 축소돼 상하가

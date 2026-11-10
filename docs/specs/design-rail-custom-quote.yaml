@@ -21,6 +21,16 @@ domain: tech
 brownfield: true
 refine_generation: 0
 
+lifecycle:
+  state: closed
+  outcome: discontinued
+  reason: '이 Seed가 정한 4택(자동·손글씨·고딕·세리프)과 Criterion 전용 노출은 #437에서 한글 9택과 독립 signatureFont로 확장되며 바뀌었다. 현재 커스텀 항목은 quote·signature 폰트를 합친 6무드 노출이라 c1(appliesTo criterion), c2(새 폰트 0건·4택), c4(세리프 칩 잠금)는 현행과 맞지 않는다. c6(데스크톱 범위 밖)은 데스크톱 셸 자체가 #603/#607에서 삭제됐고, c8은 Seed 본문에 #754로 뒤집힘이 이미 적혀 있다. 일부만 살아남은 채 다른 이슈로 넘어갔으므로 대체로 종료하며 항목별 충족은 판정하지 않았다.'
+  approved_by: '2026-11-11 사용자 확인: lifecycle 없는 Seed 정리에서 "12개 discontinued로 기록"과 failure-notice-and-tap-targets "discontinued"를 선택.'
+  evidence:
+    commit: null
+    items: []
+  withdrawn: []
+
 goal:
   statement: >
     디자인 레일에 무드 전용 커스터마이즈를 담는 '커스텀' 항목을 신설하고, 그 첫 내용물로
