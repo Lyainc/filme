@@ -21,6 +21,16 @@ domain: tech
 brownfield: true
 refine_generation: 0
 
+lifecycle:
+  state: closed
+  outcome: discontinued
+  reason: '핵심 설계는 main에 들어와 있다. 스탬프 어휘, 무드별 고정 박스, opacity ?? 1, PATTERN_CLIP 철거, 필드명 유지가 코드에서 확인된다. 그러나 ac5(Stub 저장물 실측)와 ac6(Criterion·Editorial 저장물 대조)은 capture-export 실측이라 정적으로 확인할 수 없고 Seed에도 실측 결과가 남아 있지 않다. c10(두 겹은 clip이 남는 한 유지)도 #728에서 한 겹이 됐다가 #768에서 직접 합성 계약 때문에 다시 두 겹이 되어 원문 전제와 달라졌다. 완료로 단정하지 않고 중단으로 닫으며, 이후 계약은 backgroundPatterns.tsx 주석과 #768 기록에 맡긴다.'
+  approved_by: '2026-11-11 사용자 확인: lifecycle 없는 Seed 정리에서 "12개 discontinued로 기록"과 failure-notice-and-tap-targets "discontinued"를 선택.'
+  evidence:
+    commit: null
+    items: []
+  withdrawn: []
+
 goal:
   statement: >-
     사용자가 올린 이미지를 캔버스 전면 cover로 깔던 '배경'을, Criterion·Editorial·Stub 세 무드에서

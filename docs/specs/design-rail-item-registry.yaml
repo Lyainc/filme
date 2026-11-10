@@ -21,6 +21,16 @@ domain: tech
 brownfield: true
 refine_generation: 0
 
+lifecycle:
+  state: closed
+  outcome: discontinued
+  reason: '항목 단일화 자체는 designRailItems.tsx의 RAIL_ITEMS와 appliesTo 필터로 구현됐다. 하지만 Seed가 전제한 구조가 이후에 바뀌었다. #603/#607에서 데스크톱 패널이 삭제돼 c1·c2의 데스크톱/모바일 양쪽 배치와 ac1의 기존 테스트 11개 무수정 기준은 더 이상 성립하지 않는다. c7의 appliesTo 사용 항목 0개도 지금은 pattern·커스텀 항목이 appliesTo를 써서 맞지 않고, c6의 #502 선행 순서는 이미 지나간 기록이다. 일부가 대체됐으므로 대체로 종료하며 항목별 충족은 판정하지 않았다.'
+  approved_by: '2026-11-11 사용자 확인: lifecycle 없는 Seed 정리에서 "12개 discontinued로 기록"과 failure-notice-and-tap-targets "discontinued"를 선택.'
+  evidence:
+    commit: null
+    items: []
+  withdrawn: []
+
 goal:
   statement: >-
     지금 네 곳(Pop union · RAIL_ITEMS · 삼항 체인 · 데스크톱 Section 스택)에 흩어져 있는

@@ -20,6 +20,16 @@ brownfield: true
 refine_generation: 0
 issue: 484
 
+lifecycle:
+  state: closed
+  outcome: discontinued
+  reason: 'signatureImage/signatureScale 타입과 SignatureSheet 어댑터, 이미지 우선 렌더는 코드에 들어갔고 #484도 완료로 닫혔다. 다만 s3(6무드 프리뷰 수동 확인)와 s4(모바일 탭 시 시트 열림 수동 확인)는 수동 검증 기록이 없고, c2의 진입점인 StampSheet/FieldEditorBody는 이후 FieldDrawer 구조로 대체돼 항목이 현재 구조와 어긋난다. 모든 항목의 충족 근거를 현재 커밋에서 댈 수 없어 중단으로 닫는다.'
+  approved_by: '2026-11-11 사용자 확인: lifecycle 없는 Seed 정리에서 "12개 discontinued로 기록"과 failure-notice-and-tap-targets "discontinued"를 선택.'
+  evidence:
+    commit: null
+    items: []
+  withdrawn: []
+
 goal:
   statement: >
     서명(signature)이 현재 텍스트 전용(MovieInfo.signature, maxLength 20)인데, 극장체인/

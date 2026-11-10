@@ -18,6 +18,16 @@ domain: tech
 brownfield: true
 refine_generation: 0
 
+lifecycle:
+  state: closed
+  outcome: discontinued
+  reason: '구현은 코드와 테스트에서 확인된다. OCR 되돌리기 배너가 떠 있으면 스낵바가 bottom-28로 올라가고, 눌림 피드백 리터럴은 pressableVariants 한 곳으로 모였으며, 스프링 이징은 cta variant에만 있고, 추천색 추출 실패는 showError로 알린다. 다만 ac4(추출 실패 reject mock 테스트)와 ac5(문구 길이 단언)는 전용 테스트가 없고 ac1은 기록된 하네스 실측에 기댄다. 그래서 항목별 완료 판정 없이 중단으로 닫는다.'
+  approved_by: '2026-11-11 사용자 확인: lifecycle 없는 Seed 정리에서 "12개 discontinued로 기록"과 failure-notice-and-tap-targets "discontinued"를 선택.'
+  evidence:
+    commit: null
+    items: []
+  withdrawn: []
+
 goal:
   statement: >-
     볼트 진단문서(~/vault/notes/filme-app-ui-diagnosis.md, 2026-08-04)의 권장 순서 1번(실패 알림

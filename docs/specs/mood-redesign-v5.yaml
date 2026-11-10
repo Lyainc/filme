@@ -21,6 +21,16 @@ domain: tech
 brownfield: true
 refine_generation: 0
 
+lifecycle:
+  state: closed
+  outcome: discontinued
+  reason: 'v5 3무드 구조는 Mood35mm.tsx, Mood35mmLandscape.tsx, MoodCriterion.tsx에 반영됐고 c13(본문 폰트)도 Pretendard로 결정됐다. 하지만 ac2(export JPEG 육안 일치), ac3(브라우저 렌더 시안 대조), ac6(피커 썸네일 육안 확인)은 기록된 실행 결과가 없어 정적으로 확인할 수 없다. c9가 가리키는 THUMBNAIL_RENDERERS는 #620에서 삭제돼 항목 자체가 사라졌고, c8(themeColor 하드코딩)과 c10(inkColorFidelity 제외)도 이후 구조 변화로 현행 보장이 아니다. 열린 리뉴얼 에픽 #826이 무드 렌더를 다시 다루므로 완료로 닫지 않고 중단으로 닫는다.'
+  approved_by: '2026-11-11 사용자 확인: lifecycle 없는 Seed 정리에서 "12개 discontinued로 기록"과 failure-notice-and-tap-targets "discontinued"를 선택.'
+  evidence:
+    commit: null
+    items: []
+  withdrawn: []
+
 goal:
   statement: >-
     Mood Redesign v5 시안대로 35mm · 35mm Wide · Criterion 3무드의 레이아웃 골격을 재설계해
