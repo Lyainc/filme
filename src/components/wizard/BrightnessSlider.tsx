@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useState } from 'react';
+import { useDeferredValue, useEffect, useRef, useState } from 'react';
 import { Eyebrow } from '@/components/v2/Eyebrow';
 
 interface BrightnessSliderProps {
@@ -80,6 +80,15 @@ export function parsePercentInput(raw: string, min: number, max: number): number
   return Math.min(Math.max(n, Math.round(min * 100)), Math.round(max * 100)) / 100;
 }
 
+/** globals.css의 range thumb 폭(px). native는 thumb 중심을 [left+THUMB_PX/2, right-THUMB_PX/2]에 매핑한다. */
+const THUMB_PX = 18;
+
+/** 포인터 x를 range 값으로 — native의 thumb 중심 매핑과 같은 유효 구간을 쓴다. */
+export function valueFromClientX(clientX: number, left: number, width: number, min: number, max: number): number {
+  const ratio = Math.min(Math.max((clientX - left - THUMB_PX / 2) / (width - THUMB_PX), 0), 1);
+  return snapToStep(min + ratio * (max - min), min, max);
+}
+
 export default function BrightnessSlider({
   value,
   onChange,
@@ -102,6 +111,15 @@ export default function BrightnessSlider({
     setLocalValue(value);
   }
   const deferredValue = useDeferredValue(localValue);
+  // iOS Safari native range는 트랙에서 시작한 드래그를 안 받는다(#779) — thumb 밖에서 시작하면 직접 추적.
+  const trackPointerId = useRef<number | null>(null);
+  const valueAt = (e: React.PointerEvent<HTMLInputElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    return valueFromClientX(e.clientX, r.left, r.width, min, max);
+  };
+  const endTrack = () => {
+    trackPointerId.current = null;
+  };
 
   useEffect(() => {
     if (shouldCommitSliderValue(deferredValue, localValue, value)) onChange(deferredValue);
@@ -203,7 +221,21 @@ export default function BrightnessSlider({
             e.preventDefault();
             setLocalValue(stepFrom(localValue, dir, min, max));
           }}
-          className="absolute inset-x-0 top-1.5 h-8 w-full -translate-y-1/2"
+          onPointerDown={(e) => {
+            if (e.button !== 0) return; // 우클릭·가운데 클릭은 값을 안 옮긴다
+            const r = e.currentTarget.getBoundingClientRect();
+            const thumbX = r.left + THUMB_PX / 2 + ((localValue - min) / (max - min)) * (r.width - THUMB_PX);
+            if (Math.abs(e.clientX - thumbX) <= THUMB_PX / 2) return; // thumb 드래그는 native에 맡긴다
+            trackPointerId.current = e.pointerId;
+            e.currentTarget.setPointerCapture?.(e.pointerId);
+            setLocalValue(valueAt(e));
+          }}
+          onPointerMove={(e) => {
+            if (trackPointerId.current === e.pointerId) setLocalValue(valueAt(e));
+          }}
+          onPointerUp={endTrack}
+          onPointerCancel={endTrack}
+          className="absolute inset-x-0 top-1.5 h-8 w-full -translate-y-1/2 touch-pan-y"
         />
       </div>
     </div>

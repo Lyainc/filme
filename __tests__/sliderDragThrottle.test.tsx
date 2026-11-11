@@ -273,4 +273,34 @@ describe('#779 BrightnessSlider — 터치 영역', () => {
     expect(labelRow?.classList.contains('relative')).toBe(true);
     expect(labelRow?.classList.contains('z-10')).toBe(true);
   });
+
+  // happy-dom은 레이아웃이 없으니 rect를 스텁한다: left 0, width 218 → 유효 구간 [9, 209] (200px).
+  const stubRect = (el: HTMLElement) =>
+    (el.getBoundingClientRect = () => ({ left: 0, width: 218, right: 218, top: 0, bottom: 32, height: 32, x: 0, y: 0, toJSON: () => ({}) }));
+
+  test('트랙에서 시작한 드래그가 값을 바꾸고 마지막 커밋은 최종값이다', () => {
+    const onChange = mock(() => {});
+    render(<BrightnessSlider value={0} onChange={onChange} label="Test" id="track-779" />);
+    const range = screen.getByRole('slider', { name: 'Test' }) as HTMLInputElement;
+    stubRect(range);
+    // value 0의 thumb 중심은 x=9. x=109(ratio .5)는 멀다.
+    fireEvent.pointerDown(range, { pointerId: 1, clientX: 109 });
+    expect(range.value).toBe('0.5');
+    fireEvent.pointerMove(range, { pointerId: 1, clientX: 189 }); // ratio .9
+    fireEvent.pointerUp(range, { pointerId: 1, clientX: 189 });
+    fireEvent.pointerMove(range, { pointerId: 1, clientX: 9 }); // up 이후는 무시
+    expect(range.value).toBe('0.9');
+    expect(onChange).toHaveBeenLastCalledWith(0.9);
+  });
+
+  test('thumb 위에서 시작한 포인터는 값을 안 바꾼다(native에 맡김)', () => {
+    const onChange = mock(() => {});
+    render(<BrightnessSlider value={0} onChange={onChange} label="Test" id="thumb-779" />);
+    const range = screen.getByRole('slider', { name: 'Test' }) as HTMLInputElement;
+    stubRect(range);
+    fireEvent.pointerDown(range, { pointerId: 1, clientX: 15 }); // thumb 중심 9에서 6px
+    fireEvent.pointerMove(range, { pointerId: 1, clientX: 150 });
+    expect(range.value).toBe('0');
+    expect(onChange).not.toHaveBeenCalled();
+  });
 });
