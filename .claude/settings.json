@@ -4,8 +4,6 @@
     "context7@claude-plugins-official": true,
     "claude-md-management@claude-plugins-official": true,
     "thinking-tools@Lyainc-claude-kit": true,
-    "oh-my-claudecode@omc": true,
-    "code-review@claude-plugins-official": true,
     "code-simplifier@claude-plugins-official": true,
     "pyright-lsp@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
