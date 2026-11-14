@@ -1,5 +1,7 @@
 # FILME #585 수정 재검증 — iOS Simulator 캠페인 (2026-10-21)
 
+> **증거 이미지**: 저장소 용량 정리로 트리에서 뺐어요. 원본은 커밋 `f02f167`에 그대로 있어요 — https://github.com/Lyainc/filme/tree/f02f167/docs/user-testing/campaigns/2026-10-21-ios-simulator-585-fix/evidence (JSON 증거는 이 폴더에 남아 있어요).
+
 [결과표 형식](../../RUN.md)을 따른 캠페인 기록이에요. 범위는 Seed `docs/specs/mobile-device-verification.yaml`의 **acceptance-4 iOS 행**(#585) 재검증 하나예요. 첫 캠페인(빌드 `f56dabf`, 브랜치 `test/mobile-sim-verify-820`의 `docs/user-testing/campaigns/2026-10-21-ios-simulator/RUN.md` '실패 기록 1')에서 12/12 FAIL이던 포커스 줌을 고친 빌드로 같은 스크립트를 다시 돌렸어요. U01–U14·S01–S16·N01–N04와 acceptance-1~3(#777·#779·#768)은 이 캠페인 범위 밖이라 N/A예요. 이 기록은 Seed 완료나 이슈 닫힘을 뜻하지 않아요 — Android 행이 BLOCKED이고 다른 acceptance에 FAIL이 남아 있어요.
 
 ## 실행 환경

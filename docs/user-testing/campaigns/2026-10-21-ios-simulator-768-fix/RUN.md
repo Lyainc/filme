@@ -1,5 +1,7 @@
 # FILME #768 수정 재검증 — iOS Simulator 캠페인 (2026-10-21)
 
+> **증거 이미지**: 저장소 용량 정리로 트리에서 뺐어요. 원본은 커밋 `f02f167`에 그대로 있어요 — https://github.com/Lyainc/filme/tree/f02f167/docs/user-testing/campaigns/2026-10-21-ios-simulator-768-fix/evidence (JSON 증거는 이 폴더에 남아 있어요).
+
 [결과표 형식](../../RUN.md)을 따른 캠페인 기록이에요. 범위는 Seed `docs/specs/mobile-device-verification.yaml`의 **acceptance-3 iOS 행(#768 S01–S16)**만이에요. 같은 Seed의 acceptance-1·2·4(#777·#779·#585)와 Android 행, 결과표의 U01–U14·N01–N04는 이 기록의 범위 밖이에요. 수정 전 캠페인(빌드 `f56dabf`, 16/16 FAIL)은 브랜치 `test/mobile-sim-verify-820`의 `docs/user-testing/campaigns/2026-10-21-ios-simulator/RUN.md`에 있어요. **이 기록은 Seed 완료나 이슈 닫힘을 뜻하지 않아요.** Seed의 다른 필수 행(#777·#779·#585, Android)이 아직 남아 있어요.
 
 ## 실행 환경
