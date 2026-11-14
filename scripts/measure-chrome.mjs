@@ -48,7 +48,7 @@
  * 서버**여야 한다. 오래 떠 있던 next start는 옛 빌드의 HTML을 줘 chunk가 전부 404가 되고, 앱이
  * 하이드레이션을 못 해 파일 input에 핸들러가 안 붙어 크롭 모달이 아예 안 열린다 — 포트가 이미
  * 물려 있으면 새 `next start`는 EADDRINUSE로 죽고 앞 서버가 그대로 응답하므로 "새로 띄웠다"가
- * 착각이 된다. 안 뜨면 앱을 의심하기 전에 콘솔의 chunk 404부터 볼 것. 자세한 건 CLAUDE.md 📏.
+ * 착각이 된다. 안 뜨면 앱을 의심하기 전에 콘솔의 chunk 404부터 볼 것. 자세한 건 docs/HARNESS.md §8.
  *
  * 함정 목록은 네이티브 메모리 e2e-browser-verification-setup 참고.
  */
@@ -73,7 +73,7 @@ const CHROME =
 // 실측 불변식 — 400×675 · 레일 열림 기준. 다른 뷰포트에선 대조하지 않는다.
 // **이 값은 레일 상세 슬롯 높이에 종속이다**(`DesignRail.tsx`의 슬롯 className). 슬롯이 커진
 // 만큼 dock이 그대로 커지고, dock이 먹은 만큼 fit 스테이지(#366)가 줄어 프리뷰도 따라 내려간다
-// — 그러니 슬롯 높이 선언을 건드리면 여기 세 숫자를 같이 다시 재야 한다(CLAUDE.md 📏도 함께).
+// — 그러니 슬롯 높이 선언을 건드리면 여기 세 숫자를 같이 다시 재야 한다(docs/HARNESS.md §5도 함께).
 //   #563  h-[118px]           → 118.0 → dock 232.6 / 프리뷰 226.8×362.3
 //   #682  h-[min(214px,26svh)] → 175.5 → dock 290.0 / 프리뷰 190.9×305   ← 현행 (2026-08-16 실측)
 // 232.6 − 118.0 + 175.5 = 290.1로 차이가 정확히 슬롯 증분이다(#707).
@@ -478,11 +478,11 @@ try {
   // 처럼 셀렉터가 DOM에 없으면 여기서 바로 던지도록 맞춘다.
   //
   // 단 `visible: true`는 안 쓴다 — capture-export.mjs와 달리 이 스크립트는 #727 파괴 실험
-  // (CLAUDE.md 실측: 삭제된 `html.has-draft [data-testid='landing'].fixed { display:none }`을
+  // (docs/HARNESS.md §11 실측: 삭제된 `html.has-draft [data-testid='landing'].fixed { display:none }`을
   // 되살리는 것)을 이 자리에서 통과시켜야 한다. 그 실험에서 랜딩 오버레이 전체가 display:none이
   // 되면 `landing-restore` 버튼은 DOM엔 있지만(그래서 클릭은 여전히 먹는다) 조상이 안 그려지니
   // puppeteer 기준 "visible"은 아니다 — `visible:true`를 걸면 여기서 10초 뒤 무조건 던져
-  // CLAUDE.md가 실측 보증한 "나머지 축 8종은 true로 남는다"를 깨버린다. DOM 존재 여부만 보고,
+  // docs/HARNESS.md §11이 실측 보증한 "나머지 축 8종은 true로 남는다"를 깨버린다. DOM 존재 여부만 보고,
   // 클릭도 `page.click`(실제 히트테스트) 대신 이 파일의 다른 클릭들과 같은 방식인
   // `el.click()`(조상 표시 여부 무관하게 항상 먹는다)으로 통일한다.
   await page.waitForSelector('[data-testid="landing-restore"]', { timeout: 10000 });
@@ -491,7 +491,7 @@ try {
   // 던지지 않는다 — code-review high + requirement-gap-reviewer 공통 지적(2026-09-09): 이 파일은
   // `try {...} finally { browser.close() }`뿐이라 여기서 throw하면 catch가 없어 나머지 8+개 축
   // (dock·프리뷰·frameFit·대비·모달·carousel·결과 스테이지)의 측정·JSON 출력이 통째로 스킵된다.
-  // CLAUDE.md가 실측 보증한 "나머지 축 8종은 true로 남는다"가 정확히 이 자리의 관대함
+  // docs/HARNESS.md §11이 실측 보증한 "나머지 축 8종은 true로 남는다"가 정확히 이 자리의 관대함
   // (dismissed:false만 기록하고 계속 진행) 덕분이라, 아래 AND-게이트로 되돌린다.
   landingShownOnDraft.dismissed = await page
     .waitForFunction(

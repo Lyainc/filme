@@ -18,7 +18,7 @@ import { mobileShellProps } from './shellHarness';
 // runOcr must be mocked BEFORE MobileEditorShell (transitively imports it via OcrUploadCard) is
 // loaded — bun's mock.module is not hoisted (같은 패턴, ocrUndoRestore.test.tsx 참고).
 let ocrImpl: (file: File) => Promise<Record<string, unknown>> = async () => ({});
-// 스프레드 스냅샷 + afterAll 복원(#611·#618) — CLAUDE.md 테스트 규칙.
+// 스프레드 스냅샷 + afterAll 복원(#611·#618) — docs/TESTING.md §5.
 const realOcr = { ...require('@/utils/ocr') };
 mock.module('@/utils/ocr', () => ({
   ...realOcr,

@@ -3,7 +3,7 @@
  *
  * 왜 이 축이 필요한가 — 이 레포에서 실제로 갈렸다. CI(`.github/workflows/ci.yml`)는
  * `bun test --timeout 30000`으로 도는데 `package.json`의 `test`는 그냥 `bun test`라 bun 기본
- * 5000ms였다. 그래서 CLAUDE.md와 goal 완료조건이 전부 "bun test가 exit 0"으로 적혀 있는데도
+ * 5000ms였다. 그래서 docs/TESTING.md §1과 goal 완료조건이 전부 "bun test가 exit 0"으로 적혀 있는데도
  * 그 명령이 재는 건 CI 게이트보다 6배 엄한 문턱이었고, 부하가 걸리면 CI가 절대 못 내는 실패가
  * 로컬에서만 났다(2026-08-16 실측: dev 서버 3대 + 헤드리스 Chrome과 함께 돌린 전 스위트에서
  * 최댓값 4.976초 — 기본 5000ms까지 여유 24ms).

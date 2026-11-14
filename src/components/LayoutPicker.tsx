@@ -51,7 +51,7 @@ export const MOOD_CHIP_BG: Record<LayoutId, string> = {
 
 // 모바일 무드 스트립(#262 갭2, #212 섹션 D) — 가로 scroll-snap. 데스크톱 캐러셀(LayoutPicker)은
 // #607에서 마지막 소비자(DesktopDesignPanel)가 사라지며 #620에서 THUMBNAIL_RENDERERS와 함께
-// 삭제됐다 — 셸이 하나로 통합돼(#603→#607, CLAUDE.md "셸은 한 벌이다") 데스크톱도 이 스트립을 쓴다.
+// 삭제됐다 — 셸이 하나로 통합돼(#603→#607, docs/CONTRIBUTING.md §4 "데스크톱/모바일 셸 이원화 삭제") 데스크톱도 이 스트립을 쓴다.
 // #367에서 rail 상세패널 공통 문법(46px 칩 + 이중 링 + 하단 라벨, ColorPicker·TexturePicker와
 // 동일)으로 축소 — 캡션·카드 프레임 제거로 패널이 낮아져 fit 스테이지(#370)의 티켓이 커진다.
 export const LayoutStrip = memo(function LayoutStrip({ value, onChange }: LayoutPickerProps) {

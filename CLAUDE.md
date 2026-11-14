@@ -89,6 +89,7 @@ Before making architectural changes or implementing new features, consult:
 - **State Management**: Stick to `useState` unless the state logic becomes overwhelmingly complex.
 - **Types**: Define types locally in `src/types/index.ts` if shared. Use implicit inference where appropriate.
 - **Inline style — no `font` shorthand**: Always split into `fontWeight` / `fontStyle` / `fontSize` / `fontFamily`. CSS `font` shorthand resets `line-height` to `normal`, which collides with a sibling `lineHeight` prop and triggers React's "Removing font lineHeight" warning at every rerender.
+- **주석의 근거 인용은 이슈 번호나 `docs/*.md` 절로** — CLAUDE.md는 규칙 문서라 언제든 줄어든다. 실측·사유는 `docs/HARNESS.md`·`TESTING.md`·`CONTRIBUTING.md`에 두고 주석은 그 절을 가리킨다. `src`·`__tests__`·`scripts`의 CLAUDE.md 인용은 `__tests__/noClaudeMdCitations.test.ts`가 막는다.
 
 ### 🖼️ Core Mechanisms (6-Mood Ticket Rendering)
 - **사이즈 정책(#525)** — 포스터 비율과 캔버스 비율은 **다른 축**이다. `src/utils/constants.ts`가 둘을 별도 상수로 들고 있다(`POSTER_*` vs `TARGET_*`).
