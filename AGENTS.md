@@ -22,6 +22,9 @@ Read only the references relevant to the task:
 - `docs/KOBIS_API.md` for the current server-proxied KOBIS integration
 - `docs/PRINT_CALIBRATION.md` before changing print-sensitive ticket visuals
 - `docs/COPY_TONE_GUIDE.md` before changing user-visible copy
+- `docs/HARNESS.md` before touching the headless Chrome measurement harness, rail slot height, or frame-containment axes
+- `docs/TESTING.md` for the rationale behind the test rules (CI timeout parity, `mock.module` restore, DOM `received` serialization)
+- `docs/CONTRIBUTING.md` for review-gate/Git/release rationale, removed-feature history (TMDB etc.), and OCR freshness rationale
 - `.agents/skills/ocr-pipeline/SKILL.md` before reading or changing the OCR pipeline
 
 ## Commands
