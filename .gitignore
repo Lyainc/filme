@@ -51,16 +51,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# 개인 학습 노트 및 프로토타입
-PHASE0_LESSONS.md
-PHASE1_LESSONS.md
-PHASE2_LESSONS.md
-PHASE3_LESSONS.md
-prototype.html
-
-# 디자인 시안 및 와이어프레임 HTML 파일
-/public/opendesign/
-
 # 테스트용 샘플 이미지
 /public/sample/
 
@@ -68,27 +58,9 @@ prototype.html
 .vscode/
 .idea/
 
-# OMC 세션/메타 (자동 생성)
-.omc/
-.omx/
-
-# 다른 AI 어시스턴트 가이드 (CLAUDE.md만 메인 가이드로 유지)
-AGENTS.md
-CODEX.md
-
 # vault-bridge 로컬 바인딩 (개인 경로)
 .vault-link
 .vault-link.local
-
-# 자동 생성 자산 매니페스트 (predev/prebuild가 재생성 — 커밋 안 함)
-/src/utils/assets.generated.ts
-
-# autonomous-dev-loop v4 audit harness (세션 산출물, 커밋 안 함)
-PROGRESS.md
-AUDIT_REPORT.md
-audit-test-runner.sh
-autonomous-dev-loop.v4.md
-.audit-baseline/
 
 .claude-kit/
 
