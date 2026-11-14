@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, mock, spyOn } from 'bun:test';
-import { triggerKobisLookup, clearKobisLookupCache } from './kobisLookup';
+import { triggerKobisLookup, clearKobisLookupCache } from '@/utils/kobisLookup';
 
 const BASE_MOVIE = {
   movieCd: 'M001',
