@@ -10,7 +10,7 @@ import { useState } from 'react';
 import { describe, expect, test, afterEach } from 'bun:test';
 import { render, screen, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import TexturePicker from '@/components/wizard/TexturePicker';
+import TexturePicker from '@/components/v2/pickers/TexturePicker';
 import { MATERIAL_OPTIONS } from '@/utils/constants';
 
 afterEach(cleanup);

@@ -15,7 +15,7 @@
 import { describe, expect, test, afterEach } from 'bun:test';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import ColorPicker from '../src/components/wizard/ColorPicker';
+import ColorPicker from '@/components/v2/pickers/ColorPicker';
 import { assertNoShrink, expectMeetsAA } from './tapTargets';
 
 afterEach(cleanup);

@@ -18,8 +18,8 @@ import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { LayoutId } from '@/types';
 import { LayoutStrip } from '@/components/LayoutPicker';
-import TexturePicker from '@/components/wizard/TexturePicker';
-import ColorPicker from '@/components/wizard/ColorPicker';
+import TexturePicker from '@/components/v2/pickers/TexturePicker';
+import ColorPicker from '@/components/v2/pickers/ColorPicker';
 import { MATERIAL_OPTIONS } from '@/utils/constants';
 
 afterEach(cleanup);
