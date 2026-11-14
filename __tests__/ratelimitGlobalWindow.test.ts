@@ -61,7 +61,7 @@ mock.module('@upstash/ratelimit', () => ({
   },
 }));
 
-const { checkOcrRateLimit, checkTicketRateLimit, checkKobisRateLimit, resetRateLimitCacheForTests } = require('./ratelimit');
+const { checkOcrRateLimit, checkTicketRateLimit, checkKobisRateLimit, resetRateLimitCacheForTests } = require('@/utils/ratelimit');
 const ocrHandler = require('@/pages/api/ocr').default;
 const ticketHandler = require('@/pages/api/ticket').default;
 

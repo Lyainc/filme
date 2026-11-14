@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { decodeAllowedImage } from './ocrRoute';
+import { decodeAllowedImage } from '@/utils/ocrRoute';
 
 const ONE_BY_ONE_PNG =
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';

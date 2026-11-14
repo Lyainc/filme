@@ -4,7 +4,7 @@ import {
   checkOcrRateLimit,
   checkTicketRateLimit,
   resetRateLimitCacheForTests,
-} from './ratelimit';
+} from '@/utils/ratelimit';
 
 const originalNodeEnv = process.env.NODE_ENV;
 const originalUrl = process.env.UPSTASH_REDIS_REST_URL;

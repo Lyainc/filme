@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
-// WCAG AA 대비 검증(#650, scripts/check-fg-contrast.mjs 이관 — #811) — --fg-muted/--fg-faint가
+// WCAG AA 대비 검증(#650, 구 scripts/check-fg-contrast.mjs 이관 — #811) — --fg-muted/--fg-faint가
 // --bg 계열(불투명) 배경 위에서 하한을 지키는지 순수 계산으로 증명한다. 세 표면(--bg·--surface·
 // --surface-elevated)은 전부 solid color라 픽셀 샘플링과 등가고, 라이트는 세 표면 중 가장 어두운
 // --bg가, 다크는 가장 밝은 --surface-elevated가 각 방향으로 최악 케이스라 그 한 쌍만 재면 나머지

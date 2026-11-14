@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, spyOn } from 'bun:test';
-import { clusterPixels } from './colorCluster';
+import { clusterPixels } from '@/utils/colorCluster';
 
 /**
  * clusterPixels는 worker 경로(colorExtraction.worker.ts)와 메인스레드 동기 fallback
