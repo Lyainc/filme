@@ -18,7 +18,7 @@
 
 ## 원인 (수정 전 빌드 `06ec05b`, 같은 시뮬레이터에서 재현)
 
-결과 화면의 저장 대상 노드에 html-to-image 1.11.13을 캡처와 같은 옵션·filter로 직접 돌려서 clone(toSvg)과 base PNG(toPng)를 떴어요. 증거는 [clone 발췌](./evidence/cause/clone-excerpt-06ec05b-ios.txt)와 [base PNG](./evidence/cause/base-png-06ec05b-ios.png)예요. 원인은 두 가지이고 성격이 달라요.
+결과 화면의 저장 대상 노드에 html-to-image 1.11.13을 캡처와 같은 옵션·filter로 직접 돌려서 clone(toSvg)과 base PNG(toPng)를 떴어요. 증거는 [clone 발췌](./evidence/cause/clone-excerpt-06ec05b-ios.txt)와 [base PNG](https://github.com/Lyainc/filme/blob/f02f167/docs/user-testing/campaigns/2026-10-21-ios-simulator-768-fix/evidence/cause/base-png-06ec05b-ios.png)예요. 원인은 두 가지이고 성격이 달라요.
 
 1. **스탬프 누락은 iOS에서만 나요.** 라이브 DOM과 clone 모두에서 `[data-bg-pattern]`은 제자리(absolute, 604,1111, 300×42)에 있어요. 안쪽 `[data-bg-pattern-image]`의 배경은 763KB짜리 `data:image/jpeg` URL로 인라인돼 있어요. 그런데 iOS가 그린 base PNG에서는 그 자리가 종이색으로 비어 있어요.
    - 그래서 레이아웃, `data-hide-on-export`, 이미지 디코드 대기는 원인이 아니에요. **foreignObject 안의 raster를 iOS Safari가 떨어뜨리는 #439와 같은 함정**이에요. 같은 트리를 Chrome은 그려요.
@@ -27,7 +27,7 @@
 2. **제목 위 빈 슬롯(세로 선)은 플랫폼 공통이에요.** clone의 워드마크 행에는 `span[data-stamp-divider]` 하나만 남아 있어요.
    - 저장 대상 `TicketRenderer`가 `ghost`를 받지 않아서(`undefined`), `stampWillRender`가 "켠 체인/포맷이 비어 있으면 점선 placeholder"로 판정해 스탬프 행을 세웠어요.
    - 저장물은 placeholder만 `data-hide-on-export`로 빼서 구분선과 여백이 남았어요. 편집 프리뷰는 `ghost=false`라 이 행이 없어요.
-   - Chrome에서도 같은 seed(로고 없음)로 재현돼요: [Chrome 수정 전](./evidence/cause/chrome-stub-nologo-06ec05b.jpg) / [수정 후](./evidence/cause/chrome-stub-nologo-7341c4e.jpg).
+   - Chrome에서도 같은 seed(로고 없음)로 재현돼요: [Chrome 수정 전](https://github.com/Lyainc/filme/blob/f02f167/docs/user-testing/campaigns/2026-10-21-ios-simulator-768-fix/evidence/cause/chrome-stub-nologo-06ec05b.jpg) / [수정 후](https://github.com/Lyainc/filme/blob/f02f167/docs/user-testing/campaigns/2026-10-21-ios-simulator-768-fix/evidence/cause/chrome-stub-nologo-7341c4e.jpg).
    - README의 Chrome 16조합은 `--full-fields`로 체인·포맷 텍스트 라벨(CGV/IMAX)을 넣어서 이 조건을 원리적으로 밟을 수 없었어요.
 
 ## 수정 (`7341c4e` + `98595bb`)
@@ -45,16 +45,16 @@
 
 | 행 | 결과 | 근거 |
 |---|---|---|
-| **S01**–**S16** 라이트(#768) | PASS ×16 | 16셀 모두 저장 원본을 확보했어요([모음](./evidence/768/saved-grid.jpg)). **저장 JPEG 16장 모두 스탬프 B가 프리뷰와 같은 빈 공간에 있어요.** `stamp768.py`(프리뷰에서 잰 상대 좌표로 저장본의 스탬프 자리를 측정)의 슬롯 표준편차는 78.9–80.4, 옆 종이는 8.7이에요([stamp-presence.json](./evidence/768/stamp-presence.json)). 수정 전에는 S01이 10.9 vs 8.7이었어요. 제목 위 빈 슬롯·세로 선이 없고, 잘림·겹침도 없어요(프리뷰 `textOverlap` 16셀 모두 `[]`, 저장본은 육안으로 확인). 예: [S01 저장](./evidence/768/S01-saved.jpg) · [S01 비교](./evidence/768/S01-compare.jpg) · [S16 저장](./evidence/768/S16-saved.jpg) |
-| S01 대조군(스탬프 실제 업로드 경로, 라이트) | PASS | 슬롯 표준편차 39.2 vs 종이 8.7이에요([값](./evidence/768/stamp-presence-upload.json)). 크롭 결과라 seed 이미지와 내용이 달라서 값이 낮고, 존재는 육안으로 확인했어요: [editor](./evidence/768/S01-upload-editor.jpg) · [saved](./evidence/768/S01-upload-saved.jpg) |
-| S01–S16 다크 | PASS ×16 | 라이트와 같은 기준이에요. 슬롯 표준편차 78.9–80.4 vs 종이 8.7([값](./evidence/768-dark/stamp-presence.json)), `textOverlap` 16셀 모두 `[]`, [모음](./evidence/768-dark/saved-grid.jpg)을 육안으로 확인했어요. |
+| **S01**–**S16** 라이트(#768) | PASS ×16 | 16셀 모두 저장 원본을 확보했어요([모음](https://github.com/Lyainc/filme/blob/f02f167/docs/user-testing/campaigns/2026-10-21-ios-simulator-768-fix/evidence/768/saved-grid.jpg)). **저장 JPEG 16장 모두 스탬프 B가 프리뷰와 같은 빈 공간에 있어요.** `stamp768.py`(프리뷰에서 잰 상대 좌표로 저장본의 스탬프 자리를 측정)의 슬롯 표준편차는 78.9–80.4, 옆 종이는 8.7이에요([stamp-presence.json](./evidence/768/stamp-presence.json)). 수정 전에는 S01이 10.9 vs 8.7이었어요. 제목 위 빈 슬롯·세로 선이 없고, 잘림·겹침도 없어요(프리뷰 `textOverlap` 16셀 모두 `[]`, 저장본은 육안으로 확인). 예: [S01 저장](https://github.com/Lyainc/filme/blob/f02f167/docs/user-testing/campaigns/2026-10-21-ios-simulator-768-fix/evidence/768/S01-saved.jpg) · [S01 비교](https://github.com/Lyainc/filme/blob/f02f167/docs/user-testing/campaigns/2026-10-21-ios-simulator-768-fix/evidence/768/S01-compare.jpg) · [S16 저장](https://github.com/Lyainc/filme/blob/f02f167/docs/user-testing/campaigns/2026-10-21-ios-simulator-768-fix/evidence/768/S16-saved.jpg) |
+| S01 대조군(스탬프 실제 업로드 경로, 라이트) | PASS | 슬롯 표준편차 39.2 vs 종이 8.7이에요([값](./evidence/768/stamp-presence-upload.json)). 크롭 결과라 seed 이미지와 내용이 달라서 값이 낮고, 존재는 육안으로 확인했어요: [editor](https://github.com/Lyainc/filme/blob/f02f167/docs/user-testing/campaigns/2026-10-21-ios-simulator-768-fix/evidence/768/S01-upload-editor.jpg) · [saved](https://github.com/Lyainc/filme/blob/f02f167/docs/user-testing/campaigns/2026-10-21-ios-simulator-768-fix/evidence/768/S01-upload-saved.jpg) |
+| S01–S16 다크 | PASS ×16 | 라이트와 같은 기준이에요. 슬롯 표준편차 78.9–80.4 vs 종이 8.7([값](./evidence/768-dark/stamp-presence.json)), `textOverlap` 16셀 모두 `[]`, [모음](https://github.com/Lyainc/filme/blob/f02f167/docs/user-testing/campaigns/2026-10-21-ios-simulator-768-fix/evidence/768-dark/saved-grid.jpg)을 육안으로 확인했어요. |
 
 - `compare768.py`의 정렬 잔차(meanAbs)는 라이트 4.5–8.1, 다크 0.8–5.5예요.
-- 라이트의 S11·S15는 정렬 자체가 어긋났어요(fit 폭 904/912, 나머지 셀은 972/975). 포스터 없는 셀은 상단 검은 띠가 균일해서 오프셋 탐색이 엇나가는 비교 도구 한계예요. [S11 비교](./evidence/768/S11-compare.jpg)의 두 패널은 같은 배치예요. 이 두 셀의 위치 판정은 `stamp768.py`, 육안, 다크의 정상 정렬 결과에 기대요.
+- 라이트의 S11·S15는 정렬 자체가 어긋났어요(fit 폭 904/912, 나머지 셀은 972/975). 포스터 없는 셀은 상단 검은 띠가 균일해서 오프셋 탐색이 엇나가는 비교 도구 한계예요. [S11 비교](https://github.com/Lyainc/filme/blob/f02f167/docs/user-testing/campaigns/2026-10-21-ios-simulator-768-fix/evidence/768/S11-compare.jpg)의 두 패널은 같은 배치예요. 이 두 셀의 위치 판정은 `stamp768.py`, 육안, 다크의 정상 정렬 결과에 기대요.
 
 ## Chrome 사전 점검·보호 조건 (같은 빌드 `98595bb`, 같은 서버)
 
-- README의 Chrome 16조합을 일괄 실행해서 **16/16 PASS**예요([로그](./evidence/chrome/chrome16-and-6mood-compare.log)).
+- README의 Chrome 16조합을 일괄 실행해서 **16/16 PASS**예요([로그](https://github.com/Lyainc/filme/blob/f02f167/docs/user-testing/campaigns/2026-10-21-ios-simulator-768-fix/evidence/chrome/chrome16-and-6mood-compare.log)).
 - 수정 전(`06ec05b`)과 후(`98595bb`)의 6무드 `capture-export.mjs --bg --full-fields --compare` 결과, **6무드 모두 Chrome 저장물이 바뀌지 않았어요.**
   - minimal·35mm·Editorial·Stub·35mm Wide는 maxAbsDiff 0으로 비트까지 같아요.
   - Criterion은 maxAbsDiff 1, 3 초과 픽셀 0이에요. 하네스 잡음 바닥(maxΔ 2) 안이에요.
