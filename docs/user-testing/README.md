@@ -2,6 +2,16 @@
 
 앱의 주요 사용자 흐름과 [#768](https://github.com/Lyainc/filme/issues/768) Stub 스탬프를 한 캠페인에서 확인하는 실행서예요. 자동 테스트를 대체하지 않으며, **아래 수동 케이스는 아직 실행하지 않았어요.** 2026-09-17 결정에 따라 실기기 검증은 구현 PR의 진행 조건에서 분리하고 이 묶음으로 이관했고, 2026-10-21부터는 모바일 실행을 실기기 대신 iOS Simulator와 Android Emulator로 해요. 모바일 호환 통과를 뜻하지 않아요.
 
+## 검증 도구 (사람 눈·기기)
+
+이 묶음의 브라우저·시각 검증은 아래 둘로 해요. 헤드리스 하네스(`docs/HARNESS.md`)와 축이 달라 서로 대체하지 않아요.
+
+- **Aside**(`aside` CLI, 사용자의 AI 브라우저): 위임 작업은 `aside exec`, Playwright 방식의 DOM·스크린샷 검사는 `aside repl`(모바일 폭은 `page.setViewportSize`)이에요. 쓰기 전에 `aside guide`를, REPL을 쓰기 전에 `aside guide repl`을 읽어요. 데스크톱 Chrome 쪽 사람 눈 확인과 레이아웃·스크린샷 점검에 써요. 뷰포트 조절은 모바일 호환 결과로 세지 않아요(아래 4번 판정 규칙 그대로).
+- **iOS Simulator**: 기존 `scripts/ios-sim/` 스크립트(Appium XCUITest 합성 터치)를 써요. 런타임은 iOS 26.5/27.0/27.1이 설치돼 있어요. 터치 판정 규칙은 아래 "준비와 판정" 4번이 그대로 적용돼요.
+- **헤드리스 Chrome 하네스**(`scripts/measure-*.mjs`, `scripts/capture-export.mjs`)는 CI·픽셀 측정 축으로 그대로 남아요. Aside가 대체하지 않아요.
+- **Android Emulator는 이 머신에 설치돼 있지 않아요.** Android 검증은 기술 검토(#585) 대기로 보류예요. 아래 표의 Android 실행은 `UNRUN`이고 Android 커버리지를 주장하지 않아요.
+- **iOS Simulator PASS는 실기기 iPhone PASS가 아니에요.** 시뮬레이터 결과를 실기기 호환 통과로 쓰지 않아요.
+
 ## 준비와 판정
 
 1. 테스트할 URL과 커밋 SHA를 고정하고 [결과표](./RUN.md)를 캠페인별로 복사해요. 로컬은 `bun install --frozen-lockfile`, `bun run build`, `bun run start --port 3038` 순서예요. 이미 같은 SHA의 서버가 있으면 재사용해요.
