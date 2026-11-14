@@ -63,7 +63,7 @@ export function decodeAllowedImage(base64: string, mimeType: string): Uint8Array
  * provider 비용 보호 경계이므로 fail-closed.
  *
  * 통과 시 정제된 `{ base64, mimeType }`를 반환하고, 실패 시 res에 status + { error }를
- * 쓰고 null을 반환한다. **절대 throw하지 않는다** (CLAUDE.md 규칙). 호출부는
+ * 쓰고 null을 반환한다. **절대 throw하지 않는다** (.agents/skills/ocr-pipeline/SKILL.md). 호출부는
  * `const v = await validateOcrRequest(req, res); if (!v) return;` 패턴.
  */
 export async function validateOcrRequest(

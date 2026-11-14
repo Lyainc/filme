@@ -3,7 +3,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, mock, test } from 'b
 // #439: raster(포스터·로고)를 html-to-image의 foreignObject 경로에서 빼고 canvas 2D로 직접 합성한다.
 // 여기선 (1) toPng에 넘기는 filter가 올바른 노드를 제외하는지, (2) 합성 순서·좌표·좌우 안 잘림,
 // (3) 블러 배경이 ctx.filter 대신 다운스케일→업스케일로 처리되는지를 검증한다. mock.module은
-// hoisting 안 됨 — 등록 후 require로 SUT를 가져와야 가로채진다(CLAUDE.md).
+// hoisting 안 됨 — 등록 후 require로 SUT를 가져와야 가로채진다(docs/TESTING.md §4).
 let pngFilter: ((n: unknown) => boolean) | undefined;
 let pngBackground: unknown;
 // 스프레드 스냅샷 — 살아있는 네임스페이스를 붙들면 mock.module이 그 객체를 제자리에서 갈아끼워

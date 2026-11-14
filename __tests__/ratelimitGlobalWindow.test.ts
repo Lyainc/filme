@@ -8,7 +8,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
  * 체크되는지만 관찰한다. 이 둘이 이 설계의 전부다 — shared 윈도우가 IP로 세면 키 총량 상한이
  * 사라지고(벤더 429→502), per-IP보다 먼저 세면 IP에서 막힐 요청까지 총량을 갉아먹는다.
  *
- * mock.module은 hoisting되지 않으므로 등록 후 require로 대상을 가져온다(CLAUDE.md).
+ * mock.module은 hoisting되지 않으므로 등록 후 require로 대상을 가져온다(docs/TESTING.md §4).
  */
 const calls: Array<{ prefix: string; id: string }> = [];
 /** 여기 담긴 prefix의 윈도우는 한도 초과(success:false)로 응답한다. */

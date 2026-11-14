@@ -1338,7 +1338,7 @@ const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : us
  * **ResizeObserver를 쓰지 않는다.** TicketRenderer가 무드 트리를 자연 픽셀로 그리고 바깥에서
  * transform scale만 걸므로 이 박스는 리플로우하지 않고, 무드·레이아웃이 바뀌면 어차피 리렌더가
  * 온다. 실제로 옵저버를 달았더니 happy-dom 전역에 관측자가 쌓여 후가공과 무관한 크롭 테스트가
- * 깨졌고, bun test의 파일 순서가 실행마다 달라 재현이 갈렸다(#506 코멘트 · CLAUDE.md 🧪 #611).
+ * 깨졌고, bun test의 파일 순서가 실행마다 달라 재현이 갈렸다(#506 코멘트 · docs/TESTING.md §5·§6, #611).
  * 그래서 deps 없이 매 렌더 측정하되, 값이 같으면 setState를 건너뛰어 루프를 막는다.
  */
 function GradientOverlay({

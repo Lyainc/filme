@@ -210,7 +210,7 @@ describe('#561 artpaper baseFrequency 회귀 — 0.4로 되돌리면 결이 격�
     // 리터럴 기대값 — recipe.baseFrequency를 그대로 읽어 비교하면(textureRecipes.test.ts의 기존
     // noiseTileSvg 테스트) 값 자체가 바뀌어도 항상 통과하는 동어반복이 된다. 0.4/0.55는 Perlin 격자
     // 셀이 2.5px가 돼 결이 아니라 줄무늬로 읽혔다(FFT 축상 에너지 1.38%, newspaper 0.78 대비 이상치) —
-    // 0.7이 그 회귀를 되돌린 값이라 리터럴로 잠근다(CLAUDE.md 📏 #561 실측 참고).
+    // 0.7이 그 회귀를 되돌린 값이라 리터럴로 잠근다(#561 실측 참고).
     const recipe = TEXTURE_RECIPES.artpaper as NoiseRecipe;
     expect(recipe.kind).toBe('noise');
     expect(recipe.baseFrequency).toBe(0.7);

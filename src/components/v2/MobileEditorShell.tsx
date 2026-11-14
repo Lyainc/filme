@@ -1115,7 +1115,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
               titleOg·releaseDate가 살아남는 게 그 근거다. 영화 수명(captureMovieSelection의
               movieSelectionRef·docEpochRef, #793)도 셸이 쥐어 같은 이유로 remount와 무관하다.
               인스턴스 로컬 mountedRef 가드를 되살리면 #413 P0을 재도입한다(옛 "단일 인스턴스가
-              아니면 레이스가 되살아난다" 서술은 #624로 철회 — CLAUDE.md 🔍 참조). OCR 로직은 셸의 useOcrUndo가 소유. */}
+              아니면 레이스가 되살아난다" 서술은 #624로 철회 — docs/CONTRIBUTING.md §5 참조). OCR 로직은 셸의 useOcrUndo가 소유. */}
           <Landing
             // 랜딩은 두 모드뿐이다(#727 c3) — 떠났으면 hidden, 아니면 overlay. inline은 삭제됐다:
             // 새 판정에선 도달 불가능하고(landingDismissed ⇒ hidden), 실제 화면도 헤드카피·히어로·

@@ -207,7 +207,7 @@ describe('OCR undo restoration (#163 / #141 P1)', () => {
     expect(captured.movieInfo.theater).toBe('');
     expect(captured.movieInfo.seat).toBe('');
 
-    // `!!` 강제 변환 — 사유는 #693(CLAUDE.md 테스트 절).
+    // `!!` 강제 변환 — 사유는 #693(docs/TESTING.md §8).
     await waitFor(() => {
       expect(!!screen.queryByRole('button', { name: '되돌리기' })).toBe(false);
     });
@@ -460,7 +460,7 @@ describe('문서를 리셋하면 옛 문서의 OCR 되돌리기가 같이 사라
 
     // 초기화 직후(랜딩 위)에 이미 없어야 한다 — 배너는 fixed라 랜딩 위에도 떠서, 남아 있으면 누르는
     // 순간 '인터스텔라 극장'이 새 문서에 쓰인다. 새로 시작(startFreshDoc)을 거친 뒤에만 재면
-    // performClear 쪽 누락을 못 잡는다. `!!` 강제 변환 — 사유는 #693(CLAUDE.md 테스트 절).
+    // performClear 쪽 누락을 못 잡는다. `!!` 강제 변환 — 사유는 #693(docs/TESTING.md §8).
     expect(!!screen.queryByTestId('ocr-undo-banner')).toBe(false);
     expect(!!screen.queryByRole('button', { name: '되돌리기' })).toBe(false);
 

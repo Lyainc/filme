@@ -95,7 +95,7 @@ export function run(cases, threshold, { path = 'junit.xml', rawThreshold } = {})
     return fail(`[test-time] testcase가 ${cases.length}개뿐이라 p90이 최댓값에 앉는다 — 전수 실행의 XML을 줄 것.`);
   }
   // 기준선 0이면 모든 배수가 0으로 떨어져 무엇도 못 잡는다 — 못 재는 건 통과가 아니라 실패다
-  // (하네스의 `checked:false`를 실패로 치는 것과 같은 자세, CLAUDE.md 📏 절).
+  // (하네스의 `checked:false`를 실패로 치는 것과 같은 자세, docs/HARNESS.md §7).
   if (baseline <= 0) {
     return fail(`[test-time] p90 기준선이 0이다 — 리포터가 time을 안 실었는지 확인할 것.`);
   }

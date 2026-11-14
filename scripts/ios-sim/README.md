@@ -6,7 +6,7 @@ Seed `docs/specs/mobile-device-verification.yaml`의 acceptance-1~4 iOS 행(#777
 
 ## 준비
 
-1. 검증할 SHA를 빌드해 띄워요: `bun run build && bun run start --port 3038`. 같은 포트에 옛 서버가 있으면 stale 빌드를 재요(CLAUDE.md #601).
+1. 검증할 SHA를 빌드해 띄워요: `bun run build && bun run start --port 3038`. 같은 포트에 옛 서버가 있으면 stale 빌드를 재요(docs/HARNESS.md §8, #601).
 2. 시뮬레이터를 부팅하고 DeviceHub의 I/O › Keyboard › Connect Hardware Keyboard를 꺼요(키보드 항목은 소프트웨어 키보드가 떠야 판정해요).
 3. Appium: `bun add -g appium` → `appium driver install xcuitest` → `appium --port 4725`. 첫 세션에서 WebDriverAgent를 빌드해요.
 4. Python은 표준 라이브러리만 써요. 비교 스크립트만 `uv run --with pillow --with numpy`가 필요해요.
