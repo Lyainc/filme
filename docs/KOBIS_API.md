@@ -14,7 +14,7 @@
 
 ### ⚠️ 중요 제한사항
 **KOBIS API는 포스터 이미지를 제공하지 않습니다.**
-- 포스터가 필요한 경우 별도 API 사용 필요 (TMDB, KMDb 등)
+- 포스터는 사용자가 직접 업로드한다. TMDB 연동은 #665에서 TMDB API 약관 문제로 철거됐다 (`docs/NATIVE_IOS_RFC.md` §7.1)
 
 ---
 
@@ -141,7 +141,7 @@ const data = await response.json();
 
 ## 💻 Next.js API Routes 구현
 
-### `/pages/api/kobis/search.ts`
+### `/src/pages/api/kobis/search.ts`
 
 ```typescript
 import type { NextApiRequest, NextApiResponse } from 'next';
@@ -218,7 +218,7 @@ const query = "인터스텔라"; // 한글이 깨짐
 ### 2. API 키 보안
 ```javascript
 // ✅ 올바른 방법: 서버 사이드에서 호출
-// pages/api/kobis/search.ts
+// src/pages/api/kobis/search.ts
 const apiKey = process.env.KOBIS_API_KEY;
 
 // ❌ 잘못된 방법: 클라이언트에 노출
@@ -268,7 +268,7 @@ const phototicketData = {
 ### 대안: 포스터는 수동 업로드
 - KOBIS는 메타데이터만 제공
 - 포스터 이미지는 사용자가 직접 업로드 (기존 방식 유지)
-- 또는 Phase 3에서 TMDB/KMDb API 추가 연동 고려
+- TMDB 연동은 #665에서 TMDB API 약관 문제로 철거됐다 (되살리지 말 것)
 
 ---
 
