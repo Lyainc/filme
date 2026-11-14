@@ -37,7 +37,7 @@
 | 훅(상태 로직 + 웹 영속) | 1,448 | `src/hooks/*` | 상태 로직은 이식, 영속(localStorage/IDB)은 교체 |
 | 무드 렌더 | 4,258 | `src/components/moods/*` | **재작성 대상** |
 | 캡처·저장 파이프라인 | 1,031 | `src/utils/captureToImage.ts` | **대부분 소멸**(§3.3) |
-| 에디터 셸·UI | 7,174 | `src/components/v2/*`, `ui/*`, `wizard/*` | **재작성 대상** — 가장 큰 덩어리 |
+| 에디터 셸·UI | 7,174 | `src/components/v2/*`, `ui/*`, `v2/pickers/*` | **재작성 대상** — 가장 큰 덩어리 |
 | 루트 컴포넌트 5종 | 1,067 | `TicketRenderer`·`ImageCropModal`·`TmdbPosterModal`(#665에서 삭제됨)·`LayoutPicker`·`DebugConsole` | 재작성 대상 |
 | 페이지·문서 | 445 | `src/pages/*.tsx` | 재작성 대상 |
 | 기타(errorToast) | 107 | | |

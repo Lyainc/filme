@@ -17,7 +17,7 @@ import BrightnessSlider, {
   shouldCommitSliderValue,
   snapToStep,
   stepFrom,
-} from '../src/components/wizard/BrightnessSlider';
+} from '@/components/v2/pickers/BrightnessSlider';
 import { DesignRail } from '../src/components/v2/DesignRail';
 import { usePhototicket } from '../src/hooks/usePhototicket';
 

@@ -8,7 +8,7 @@ import { cn } from '@/utils/cn';
 import { pressableVariants } from '@/components/ui/variants';
 import { useKobisSearch } from '@/hooks/useKobisSearch';
 import { useLogoCrop } from '@/hooks/useLogoCrop';
-import RatingPicker from '@/components/wizard/RatingPicker';
+import RatingPicker from '@/components/v2/pickers/RatingPicker';
 import { EyeIcon } from '@/components/ui/VisibilityCheckbox';
 import { DateSheet, INPUT_CLS, KobisResultList } from './FieldEditorBody';
 import {

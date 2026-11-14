@@ -9,7 +9,7 @@ import { describe, expect, test, afterEach } from 'bun:test';
 import { useState } from 'react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import RatingPicker from '@/components/wizard/RatingPicker';
+import RatingPicker from '@/components/v2/pickers/RatingPicker';
 
 function Harness() {
   const [rating, setRating] = useState(0);

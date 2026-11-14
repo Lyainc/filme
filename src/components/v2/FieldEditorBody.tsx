@@ -7,8 +7,8 @@ import { useKobisSearch } from '@/hooks/useKobisSearch';
 import { useLogoCrop } from '@/hooks/useLogoCrop';
 import { Eyebrow } from './Eyebrow';
 import { DateInput } from '@/components/ui/DateInput';
-import RatingPicker from '@/components/wizard/RatingPicker';
-import BrightnessSlider from '@/components/wizard/BrightnessSlider';
+import RatingPicker from '@/components/v2/pickers/RatingPicker';
+import BrightnessSlider from '@/components/v2/pickers/BrightnessSlider';
 import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
 import { stampScaleMaxFor } from './designRailItems';
 import {

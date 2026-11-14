@@ -8,7 +8,7 @@
 import { readFileSync } from 'fs';
 import { afterEach, describe, expect, test } from 'bun:test';
 import { cleanup, render, screen } from '@testing-library/react';
-import BrightnessSlider from '../src/components/wizard/BrightnessSlider';
+import BrightnessSlider from '@/components/v2/pickers/BrightnessSlider';
 
 afterEach(cleanup);
 

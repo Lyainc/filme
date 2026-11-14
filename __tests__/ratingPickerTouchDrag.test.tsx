@@ -9,7 +9,7 @@
 import { describe, expect, test, mock, afterEach, beforeEach, jest } from 'bun:test';
 import { useState } from 'react';
 import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
-import RatingPicker, { ratingFromRowOffset } from '@/components/wizard/RatingPicker';
+import RatingPicker, { ratingFromRowOffset } from '@/components/v2/pickers/RatingPicker';
 
 const ROW_WIDTH = 250; // 5개 별 × 반개 2개 = 10구간 × 25px
 
