@@ -42,7 +42,7 @@ bun run dev                  # http://localhost:3000
 | `GOOGLE_GENERATIVE_AI_API_KEY` | ✅ (OCR) | [Google AI Studio](https://aistudio.google.com/apikey) 키 (Gemini vision) |
 | `UPSTASH_REDIS_REST_URL` / `_TOKEN` | ⬜ | rate limit (production 권장, 로컬에선 미설정 시 자동 skip) |
 
-프로덕션은 `bun run build` / `bun run start`를 사용합니다.
+프로덕션은 `bun run build` / `bun run start`를 사용합니다. `bun run test`는 CI와 같은 timeout으로 유닛·상호작용 테스트를 실행합니다.
 
 ## 🏗 기술 스택
 
@@ -52,6 +52,7 @@ bun run dev                  # http://localhost:3000
 - **OCR / AI**: Gemini 3.1 Flash Lite vision — `ai` SDK v6 + `@ai-sdk/google`(Google AI Studio 직결), Zod 스키마, Upstash rate limit
 - **영화 데이터**: KOBIS Open API
 - **Package Manager**: Bun
+- **테스트**: `bun run test` — happy-dom + `@testing-library/react`로 상호작용 테스트
 
 ## 📄 라이선스
 

@@ -38,7 +38,7 @@
 | 무드 렌더 | 4,258 | `src/components/moods/*` | **재작성 대상** |
 | 캡처·저장 파이프라인 | 1,031 | `src/utils/captureToImage.ts` | **대부분 소멸**(§3.3) |
 | 에디터 셸·UI | 7,174 | `src/components/v2/*`, `ui/*`, `wizard/*` | **재작성 대상** — 가장 큰 덩어리 |
-| 루트 컴포넌트 5종 | 1,067 | `TicketRenderer`·`ImageCropModal`·`TmdbPosterModal`·`LayoutPicker`·`DebugConsole` | 재작성 대상 |
+| 루트 컴포넌트 5종 | 1,067 | `TicketRenderer`·`ImageCropModal`·`TmdbPosterModal`(#665에서 삭제됨)·`LayoutPicker`·`DebugConsole` | 재작성 대상 |
 | 페이지·문서 | 445 | `src/pages/*.tsx` | 재작성 대상 |
 | 기타(errorToast) | 107 | | |
 
@@ -387,10 +387,9 @@ Vision이 주는 건 "무슨 글자가 어디 있나"까지다. 우리 OCR의 �
 오너 결정(2026-08-10): **TMDB 기능은 폐기하고, 앱을 기다리지 않고 웹에서 지금 걷어낸다.**
 약관 위험이 웹/앱 공통이라 미룰 이유가 없다(§7.1).
 
-이 절은 **작업 범위 목록이지 실행 결과가 아니다** — 이 RFC 브랜치는 문서만 다루고, 실제 철거는
-별도 이슈·PR로 간다.
+이 절은 작업 범위 목록이다. **철거는 #665에서 완료됐다** (아래 파일 삭제 확인) — 이 RFC 브랜치는 문서만 다뤘고, 실제 철거는 별도 이슈·PR로 갔다.
 
-### 삭제 (1,000줄)
+### 삭제 (1,000줄) — #665에서 완료
 
 | 대상 | 줄 |
 |---|---|
