@@ -1,9 +1,11 @@
 # Handoff: Editor Chrome Redesign (v8) — floating toolbar module, styling dock, result-screen link panel
 
+> **Status:** v8 is implemented in the app. The #826 renewal will supersede this handoff; read it as the design reference, not as a pending to-do list.
+
 ## Overview
 Design exploration for the **모바일 편집 화면 (mobile editor screen)** chrome of the `filme` phototicket
 app: the top header, the on-ticket field editor toolbar, a new **floating toolbar module**
-(undo/redo · field list · maximize · placement · hide — draggable, dockable), the **styling controls**
+(undo/redo · field list · maximize · hide — draggable, dockable; placement lives in the header menu, #387), the **styling controls**
 (무드 · 컬러·톤 · 텍스처 · 투명도), and a lighter-weight **result-screen share flow**. Target repo:
 `filme` (local folder `PhototicketMaker`, Next.js 16 / React 19 / TypeScript / Tailwind, `bun`).
 
@@ -55,16 +57,12 @@ the prototype. Concretely:
   reconcile by keeping the existing submenu's functionality and applying v8's icon-button styling
   (ghost, no filled white chip) and the ambient-aware ink color.
   - v8's "빈 항목 미리보기" fix (must not silently force-enable while any drawer is open, only while
-    actually editing a field) should be ported to the `ghostMode` state in `MobileEditorShell.tsx`
-    — currently `ghostMode` is a plain unconditional toggle with no editing-time override, so check
-    whether that override is even still wanted there, or if it was a prototype-only artifact of the
-    prototype's different drawer structure. **Flag this as an open product question**, not a
-    mechanical port.
-- **The floating toolbar module (undo/redo/list/maximize/placement/hide) has no existing
-  counterpart.** This is genuinely new. It most likely replaces/absorbs pieces of the current
-  header (undo/redo aren't in the header today — check `usePhototicket`/history state exists at
-  all before wiring this) and the field-editor's on-ticket mini-bar. Needs a product decision on
-  scope before implementation — see Open Questions.
+    actually editing a field) is ported: `MobileEditorShell.tsx` passes `ghost={ghostMode || editing}`
+    (#354) — see Resolved Questions.
+- **The floating toolbar module (undo/redo/list/maximize/hide) is shipped** as
+  `src/components/v2/FloatingToolbar.tsx` (#356), with undo/redo wired to the edit history
+  (`useEditHistory`). Orientation/placement live in the header hamburger menu, not on the toolbar
+  itself (#387) — see Resolved Questions.
 
 ## Screens / Views
 
@@ -126,15 +124,16 @@ correct version is unboxed.**
   (incorrectly) grouped under 컬러·톤 and was moved per reviewer feedback.
 
 ### 4. Editor screen — floating toolbar module (new)
-A small pill-shaped cluster: **undo, redo, divider, field-list, maximize, divider, gear
-(placement), hide**. Two independent axes:
+A small pill-shaped cluster: **undo, redo, divider, field-list, maximize, divider, hide**
+(the prototype also had a gear for placement; shipped code moved that to the header hamburger menu,
+#387). Two independent axes:
 - **Orientation**: horizontal or vertical row of the same buttons.
 - **Placement**: `fixed` (default: vertical, docked to the left edge, roughly upper-third of the
   screen — raised well above center per reviewer feedback across two rounds) or `movable` (user can
-  drag it anywhere via a grip; position persists while the session is open).
-- Only the **placement submenu** can change orientation/placement, opened from the toolbar's own
-  gear icon, and it must render **attached to the toolbar itself** (flyout beside/below it,
-  whichever side has room), not as a bottom sheet.
+  drag it anywhere via a grip; position persists while the session is open). Shipped grip and buttons
+  are 32px (#508); the prototype's 12px grip is rejected (WCAG 2.2 SC 2.5.8).
+- Orientation/placement are changed from the **header hamburger menu** (#387), not from a gear on the
+  toolbar (the prototype's attached placement flyout was dropped).
 - **Hide** collapses the whole module to a small circular icon at the same position the module
   itself occupied (anchor to the module's own top-left origin, not the center of its bounding box —
   first pass centered it, which visually jumped to wherever the user last tapped inside the bar).
@@ -146,8 +145,7 @@ A small pill-shaped cluster: **undo, redo, divider, field-list, maximize, divide
   styling dock's detail panel is open — it should never auto-hide just because another panel opened
   (this was a real bug in an earlier pass: `!tool` and `!editing` conditions were incorrectly
   ANDed into its visibility).
-- No hamburger/menu icon on the toolbar itself controls layout anymore — layout changes only
-  through the gear → placement submenu.
+- The toolbar itself carries no layout menu — layout changes only through the header hamburger menu.
 
 ### 5. On-ticket field editor toolbar
 Small floating bar anchored to the active field on the ticket: **prev, divider, (image chip when
@@ -173,7 +171,8 @@ ticket's color clearly bleeds through; keep the theme-conditional tint (light gl
 dark glass in dark theme) since row text color depends on it.
 - The "아직 저장 안 됨 / N분 전 저장됨" relative-time subtitle under "임시저장" should be **removed**
   — keep just the "임시저장" label; this duplicates the header's own icon-state-only save feedback
-  pattern already used in `AppHeader.tsx`'s `SaveDraftButton`, which doesn't need a persistent
+  pattern already used by the 임시저장 item in the header hamburger menu of `MobileEditorShell.tsx`
+  (`AppHeader.tsx` and its `SaveDraftButton` were deleted in #607), which doesn't need a persistent
   subtitle either.
 
 ### 7. Result screen
@@ -235,8 +234,8 @@ match — **do not hardcode new hex values for anything that already has a token
   prefer these over the prototype's bespoke shadow strings.
 - Fonts: already correct — `Pretendard Variable` (`font-sans`) for UI, `JetBrains Mono`
   (`font-mono`/`.text-mono`) for the ticket-code-style numerics (URL, dates). No Newsreader serif
-  exists in the app today; the prototype uses it decoratively ("made with", "now showing") — **flag
-  to the team whether to add this Google Font or drop the flourish**, don't add a new font silently.
+  exists in the app; the prototype used it decoratively ("made with", "now showing") — **dropped**
+  (not used anywhere in `src`).
 
 **New tokens this design needs that don't exist yet** — add as CSS custom properties (both themes),
 don't inline them:
@@ -249,20 +248,21 @@ don't inline them:
   deriving its amber stop from `var(--neutral-2)` via `color-mix()` instead of a fresh literal, to
   stay consistent with how `--accent-soft`/`--focus-ring` are already derived in this codebase.
 
-## Open Questions / Not Fully Resolved
-Carry these into implementation planning rather than treating v8 as final on them:
-1. ~~다음 button placement~~ — the concrete bug (disappearing while a styling tab was open) is fixed;
-   no further placement objection raised since. Treat as settled.
-2. **"빈 항목 미리보기" (ghost) toggle scope** — should editing a field force ghosts on regardless of
-   the toggle? Should opening the fields drawer? The prototype's fix (only editing forces it) is a
-   guess, not a confirmed decision.
-3. **Floating toolbar module scope** — confirm this is meant to fully replace today's header
-   undo/redo (if that exists elsewhere) and the on-ticket mini-bar's maximize/list shortcuts, versus
-   living alongside them.
-4. Newsreader serif flourish (see Design Tokens) — keep or drop.
+## Resolved Questions
+1. **다음 button placement** — the disappearing-while-a-styling-tab-was-open bug is fixed; placement
+   is settled.
+2. **"빈 항목 미리보기" (ghost) toggle scope** — editing a field forces ghosts on; otherwise the
+   toggle governs: `ghost={ghostMode || editing}` in `src/components/v2/MobileEditorShell.tsx` (#354).
+   Opening a drawer does not force it.
+3. **Floating toolbar module scope** — shipped as `src/components/v2/FloatingToolbar.tsx` (#356),
+   holding undo/redo, field list, maximize, hide. Orientation/placement moved from the toolbar's own
+   gear to the header hamburger menu (#387). Buttons and grip are 32px (#508); v8's 31px buttons /
+   12px grip were rejected (WCAG 2.2 SC 2.5.8). The on-ticket mini-bar (`InPlaceFieldEditor.tsx`)
+   carries only prev/next, logo image, visibility and done — no maximize/list.
+4. **Newsreader serif flourish** — dropped.
 
 ## Assets
-- Fonts: Pretendard Variable (already in-app), JetBrains Mono (already in-app), Newsreader (prototype-only, see Open Questions).
+- Fonts: Pretendard Variable (already in-app), JetBrains Mono (already in-app), Newsreader (prototype-only, dropped).
 - No bitmap/icon assets — all icons in the prototype are inline SVG paths; recreate with the
   project's existing icon approach (inline SVG, matching the style already used throughout
   `v2/*.tsx`).
