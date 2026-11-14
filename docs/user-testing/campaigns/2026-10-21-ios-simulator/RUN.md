@@ -1,5 +1,7 @@
 # FILME 모바일 잔여 검증 — iOS Simulator 캠페인 (2026-10-21)
 
+> **증거 이미지**: 저장소 용량 정리로 트리에서 뺐어요. 원본은 커밋 `f02f167`에 그대로 있어요 — https://github.com/Lyainc/filme/tree/f02f167/docs/user-testing/campaigns/2026-10-21-ios-simulator/evidence (JSON 증거는 이 폴더에 남아 있어요).
+
 [결과표 형식](../../RUN.md)을 따른 캠페인 기록이에요. 범위는 Seed `docs/specs/mobile-device-verification.yaml`의 acceptance-1~4 iOS 행(#777, #779, #768, #585)이고, 같은 결과표의 U01–U14·N01–N04는 이 Seed 범위 밖이라 N/A예요. **iOS 필수 행은 모두 실행했고, FAIL이 있어요.** 이 기록은 Seed 완료나 이슈 닫힘을 뜻하지 않아요.
 
 ## 실행 환경
