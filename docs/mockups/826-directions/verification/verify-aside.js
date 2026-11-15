@@ -75,6 +75,30 @@ for (const file of PAGES) {
             }
           }
         });
+        // 글자가 다른 요소에 덮였는지: 글자 사각형 중심에서 가장 위에 그려진 요소가 그 글자 자신(또는 자손)인지 본다.
+        // 조작부 겹침 검사가 못 보는 축(티켓 자리표시·형제 블록이 라벨을 덮는 경우)을 잡는다.
+        res.textOverlap = [];
+        sc.scrollIntoView({ block: 'start' });
+        const leaves = [...sc.querySelectorAll('*')].filter(el => vis(el) && !el.closest('.ticket') && !el.closest('.kbd') && !el.closest('.rq') && !el.closest('[data-slide][data-active="false"]') && getComputedStyle(el).pointerEvents !== 'none' && [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim()));
+        for (const L of leaves) {
+          const rg = document.createRange(); rg.selectNodeContents(L);
+          for (const tr of rg.getClientRects()) {
+            if (tr.width < 2 || tr.height < 2) continue;
+            const x = tr.left + tr.width / 2, y = tr.top + tr.height / 2;
+            if (y < 0 || y > innerHeight || x < 0 || x > innerWidth) continue;
+            const scR = sc.getBoundingClientRect();
+            if (y < scR.top || y > scR.bottom || x < scR.left || x > scR.right) continue;
+            let sp = L.parentElement, hidden = false;
+            while (sp && sp !== sc) { const st = getComputedStyle(sp); if (st.overflowY !== 'visible' || st.overflowX !== 'visible') { const r = sp.getBoundingClientRect(); if (y < r.top || y > r.bottom || x < r.left || x > r.right) { hidden = true; break; } } sp = sp.parentElement; }
+            if (hidden) continue;
+            const top = document.elementFromPoint(x, y);
+            if (top && top !== L && !L.contains(top) && !top.contains(L) && !top.classList.contains('rq') && !top.classList.contains('scrim')) {
+              res.textOverlap.push('"' + L.textContent.trim().slice(0, 12) + '" ← ' + (top.className && typeof top.className === 'string' ? '.' + top.className.split(' ')[0] : top.tagName));
+              break;
+            }
+          }
+        }
+        res.textOverlap = [...new Set(res.textOverlap)];
         out.screens.push(res);
       });
       out.pinsAll = [...new Set([...document.querySelectorAll('.screen .rq')].map(p => p.textContent.trim()))].sort();
@@ -97,10 +121,11 @@ console.log('REPORT ' + JSON.stringify(report));
 for (const r of report) {
   console.log(`== ${r.file} @${r.w} docOverflowX=${r.docOverflowX} pins=${r.pinsAll.join('')} tables=${JSON.stringify(r.tables)}`);
   for (const s of r.screens) {
-    const bad = s.overflowX > 0 || s.clipped.filter(c => c.startsWith('[걸침]')).length || s.textClip.length || s.overlaps.length || s.pinText.length;
+    const bad = s.overflowX > 0 || s.clipped.filter(c => c.startsWith('[걸침]')).length || s.textClip.length || s.overlaps.length || s.pinText.length || s.textOverlap.length;
     console.log(`  ${bad ? '!!' : 'ok'} ${s.idx + 1} ${s.cap} w=${s.width} ovX=${s.overflowX} ovY=${s.overflowY}`);
     if (s.clipped.length) console.log('     clipped:', s.clipped.slice(0, 8).join(' | '));
     if (s.textClip.length) console.log('     textClip:', s.textClip.slice(0, 6).join(' | '));
+    if (s.textOverlap.length) console.log('     textOverlap:', s.textOverlap.slice(0, 8).join(' | '));
     if (s.pinText.length) console.log('     pinText:', s.pinText.join(' | '));
     if (s.overlaps.length) console.log('     overlaps:', s.overlaps.slice(0, 8).join(' | '));
   }
