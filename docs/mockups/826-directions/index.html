@@ -23,6 +23,10 @@
   .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
   td.c-a, td.c-b, td.c-c, td.c-d { min-width: 200px; }
   .hide-col { display: none; }
+  .legacy-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 24px; padding: 12px 16px; background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius); }
+  .legacy-bar p { margin: 0; font-size: 13px; color: var(--fg-muted); flex: 1 1 220px; }
+  [data-legacy-block][hidden] { display: none; }
+  .sub { font-size: 14px; margin: 20px 0 8px; color: var(--fg-muted); }
 </style>
 </head>
 <body>
@@ -36,16 +40,24 @@
       <button data-set-theme="dark" aria-pressed="false">다크</button>
     </div>
   </div>
-  <p>방향 네 개를 나란히 보고 고르는 페이지예요. A는 기준안(<code>feat/mobile-editor-mockups</code>의 v2 v7)을 옮긴 것이고 B·C·D는 구조가 다른 대안이에요. 고르는 건 소유자 몫이라 이 페이지는 추천하지 않아요. 티켓 그림은 비율만 맞춘 자리표시이고 무드 렌더는 별도 갈래예요. 검색·OCR·저장·공유는 동작하지 않는 화면 시안이에요.</p>
+  <p>방향을 나란히 보고 고르는 페이지예요. 1차 검토에서 C를 뼈대로 A의 요소를 섞어 서로의 단점을 메우기로 해서, 결합안 E·F를 앞에 두었어요. 처음 만든 A(기준안, <code>feat/mobile-editor-mockups</code>의 v2 v7)·B·C·D는 아래 토글로 접어 두었고 펼치면 카드·화면·비교표 열이 함께 나와요. 고르는 건 소유자 몫이라 이 페이지는 추천하지 않아요. 티켓 그림은 비율만 맞춘 자리표시이고 무드 렌더는 별도 갈래예요. 검색·OCR·저장·공유는 동작하지 않는 화면 시안이에요.</p>
   <p class="note">문제 정의(소유자, 2026-11-15): ① 기능 대비 UX가 정돈되지 않았다 ② 버튼과 인터랙션 배치가 공간을 비효율적으로 쓴다 ③ 기능마다 잘라 붙인 느낌이 난다.</p>
+
+  <div class="legacy-bar">
+    <button class="btn" id="legacy-toggle" aria-expanded="false" aria-controls="pick-legacy frames-legacy">기존 시안 A~D 펼치기</button>
+    <p>A 작업대 · B 단계 흐름 · C 캔버스 직접 조작 · D 한 장 문서. 펼치면 아래 모든 절에 함께 나와요.</p>
+  </div>
 
   <h2>1. 방향 고르기</h2>
   <p class="note">카드를 누르면 아래 표들이 그 방향을 강조하고, 체크를 끄면 그 방향 열을 숨겨요.</p>
+  <h3 class="sub">결합안 (C 뼈대 + A 요소)</h3>
   <div class="pick" id="pick"></div>
+  <div data-legacy-block hidden id="pick-legacy-wrap"><h3 class="sub">기존 시안</h3><div class="pick" id="pick-legacy"></div></div>
 
   <h2>2. 편집 화면 나란히 보기</h2>
   <p class="note">각 방향 페이지를 그대로 넣었어요. 안에서 스크롤해 랜딩·편집·필드 편집·결과를 볼 수 있어요.</p>
   <div class="frames" id="frames"></div>
+  <div data-legacy-block hidden><h3 class="sub">기존 시안</h3><div class="frames" id="frames-legacy"></div></div>
 
   <h2>3. 세 문제를 푸는 방식</h2>
   <div class="table-wrap"><table class="grid" id="problems"></table></div>
@@ -71,9 +83,10 @@
 (function () {
   var D = window.DIRECTIONS, esc = window.escHtml;
   var shown = {}; D.forEach(function (d) { shown[d.id] = true; });
-  var current = null;
+  var current = null, legacyOpen = false;
+  function visible(d) { return shown[d.id] && (d.hybrid || legacyOpen); }
 
-  function col(d) { return 'c-' + d.id + (shown[d.id] ? '' : ' hide-col'); }
+  function col(d) { return 'c-' + d.id + (visible(d) ? '' : ' hide-col'); }
   function head(first) {
     return '<thead><tr><th>' + first + '</th>' + D.map(function (d) {
       return '<th class="' + col(d) + '">' + d.letter + ' ' + esc(d.name) + '</th>';
@@ -85,7 +98,7 @@
   }
 
   function draw() {
-    document.getElementById('pick').innerHTML = D.map(function (d) {
+    function card(d) {
       return '<section class="card" aria-current="' + (current === d.id) + '">' +
         '<h3><span class="letter">' + d.letter + '</span>' + esc(d.name) + '</h3>' +
         '<span class="tl">' + esc(d.tagline) + '</span>' +
@@ -95,7 +108,9 @@
         '<a class="btn primary" href="' + d.file + '">열기</a>' +
         '<label class="chip"><input type="checkbox" data-show="' + d.id + '"' + (shown[d.id] ? ' checked' : '') + '> 표에 표시</label>' +
         '</div></section>';
-    }).join('');
+    }
+    document.getElementById('pick').innerHTML = D.filter(function (d) { return d.hybrid; }).map(card).join('');
+    document.getElementById('pick-legacy').innerHTML = D.filter(function (d) { return !d.hybrid; }).map(card).join('');
 
     document.getElementById('problems').innerHTML = head('문제') + '<tbody>' +
       [['정돈', 'order'], ['공간', 'space'], ['이음새', 'seams']].map(function (p) {
@@ -123,12 +138,24 @@
     }).join('');
     document.getElementById('feats').innerHTML = head('현재 기능') + '<tbody>' + rows + '</tbody>';
     document.getElementById('feat-count').textContent = '현재 앱 기능 ' + window.FEATURES.length + '개. 사라지는 기능 수: ' +
-      D.map(function (d) { return d.letter + ' ' + gone[d.id]; }).join(' · ') + '. 사라지는 항목은 "제거:"로 시작하고 근거를 붙였어요.';
+      D.filter(visible).map(function (d) { return d.letter + ' ' + gone[d.id]; }).join(' · ') + '. 사라지는 항목은 "제거:"로 시작하고 근거를 붙였어요. 조작 형태만 바뀌는 건 "형태 변경:"으로 적었어요.';
   }
 
-  document.getElementById('frames').innerHTML = D.map(function (d) {
+  function frame(d) {
     return '<figure><figcaption>' + d.letter + ' ' + esc(d.name) + '</figcaption><iframe loading="lazy" title="' + esc(d.title) + '" src="' + d.file + '#screens"></iframe></figure>';
-  }).join('');
+  }
+  document.getElementById('frames').innerHTML = D.filter(function (d) { return d.hybrid; }).map(frame).join('');
+  document.getElementById('frames-legacy').innerHTML = D.filter(function (d) { return !d.hybrid; }).map(frame).join('');
+
+  var lt = document.getElementById('legacy-toggle');
+  lt.addEventListener('click', function () {
+    legacyOpen = !legacyOpen;
+    lt.setAttribute('aria-expanded', String(legacyOpen));
+    lt.textContent = legacyOpen ? '기존 시안 A~D 접기' : '기존 시안 A~D 펼치기';
+    document.querySelectorAll('[data-legacy-block]').forEach(function (b) { b.hidden = !legacyOpen; });
+    if (!legacyOpen && current && !D.filter(function (d) { return d.id === current; })[0].hybrid) current = null;
+    draw();
+  });
 
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-focus]');
