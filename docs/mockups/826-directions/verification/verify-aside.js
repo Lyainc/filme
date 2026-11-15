@@ -53,7 +53,8 @@ for (const file of PAGES) {
           const A = ctrls[i], B = ctrls[j];
           if (A.contains(B) || B.contains(A)) continue;
           if (A.closest('label') && A.closest('label') === B.closest('label')) continue;
-          const ra = A.getBoundingClientRect(), rb = B.getBoundingClientRect();
+          const visRect = (el) => { let r = el.getBoundingClientRect(); let L = r.left, T = r.top, R = r.right, Bm = r.bottom; let p = el.parentElement; while (p && p !== sc.parentElement) { const st = getComputedStyle(p); if (st.overflowX !== 'visible' || st.overflowY !== 'visible') { const q = p.getBoundingClientRect(); L = Math.max(L, q.left); T = Math.max(T, q.top); R = Math.min(R, q.right); Bm = Math.min(Bm, q.bottom); } p = p.parentElement; } return { left: L, top: T, right: R, bottom: Bm }; };
+          const ra = visRect(A), rb = visRect(B);
           const ix = Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left);
           const iy = Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top);
           if (ix > 2 && iy > 2) {
