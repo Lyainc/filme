@@ -1,0 +1,331 @@
+{
+ "date": "2026-11-16",
+ "tool": "Aside CLI 1.26.1113.1717 repl (Chromium), check.js MASTER_CHECK",
+ "console_errors": [],
+ "runs": [
+  {
+   "w": 393,
+   "theme": "light",
+   "page": "landing",
+   "frames": 10,
+   "frame_px": "393x852",
+   "doc_scroll_width": 393,
+   "issues": 0
+  },
+  {
+   "w": 393,
+   "theme": "light",
+   "page": "editor",
+   "frames": 14,
+   "frame_px": "393x852",
+   "doc_scroll_width": 393,
+   "issues": 0
+  },
+  {
+   "w": 393,
+   "theme": "light",
+   "page": "panels",
+   "frames": 26,
+   "frame_px": "393x852",
+   "doc_scroll_width": 393,
+   "issues": 0
+  },
+  {
+   "w": 393,
+   "theme": "light",
+   "page": "input",
+   "frames": 9,
+   "frame_px": "393x852",
+   "doc_scroll_width": 393,
+   "issues": 0
+  },
+  {
+   "w": 393,
+   "theme": "light",
+   "page": "crop",
+   "frames": 7,
+   "frame_px": "393x852",
+   "doc_scroll_width": 393,
+   "issues": 0
+  },
+  {
+   "w": 393,
+   "theme": "light",
+   "page": "menu",
+   "frames": 6,
+   "frame_px": "393x852",
+   "doc_scroll_width": 393,
+   "issues": 0
+  },
+  {
+   "w": 393,
+   "theme": "light",
+   "page": "result",
+   "frames": 11,
+   "frame_px": "393x852",
+   "doc_scroll_width": 393,
+   "issues": 0
+  },
+  {
+   "w": 393,
+   "theme": "light",
+   "page": "errors",
+   "frames": 2,
+   "frame_px": "393x852",
+   "doc_scroll_width": 393,
+   "issues": 0
+  },
+  {
+   "w": 393,
+   "theme": "light",
+   "page": "share",
+   "frames": 2,
+   "frame_px": "393x852",
+   "doc_scroll_width": 393,
+   "issues": 0
+  },
+  {
+   "w": 393,
+   "theme": "dark",
+   "page": "landing",
+   "frames": 10,
+   "frame_px": "393x852",
+   "doc_scroll_width": 393,
+   "issues": 0
+  },
+  {
+   "w": 393,
+   "theme": "dark",
+   "page": "editor",
+   "frames": 14,
+   "frame_px": "393x852",
+   "doc_scroll_width": 393,
+   "issues": 0
+  },
+  {
+   "w": 393,
+   "theme": "dark",
+   "page": "panels",
+   "frames": 26,
+   "frame_px": "393x852",
+   "doc_scroll_width": 393,
+   "issues": 0
+  },
+  {
+   "w": 393,
+   "theme": "dark",
+   "page": "input",
+   "frames": 9,
+   "frame_px": "393x852",
+   "doc_scroll_width": 393,
+   "issues": 0
+  },
+  {
+   "w": 393,
+   "theme": "dark",
+   "page": "crop",
+   "frames": 7,
+   "frame_px": "393x852",
+   "doc_scroll_width": 393,
+   "issues": 0
+  },
+  {
+   "w": 393,
+   "theme": "dark",
+   "page": "menu",
+   "frames": 6,
+   "frame_px": "393x852",
+   "doc_scroll_width": 393,
+   "issues": 0
+  },
+  {
+   "w": 393,
+   "theme": "dark",
+   "page": "result",
+   "frames": 11,
+   "frame_px": "393x852",
+   "doc_scroll_width": 393,
+   "issues": 0
+  },
+  {
+   "w": 393,
+   "theme": "dark",
+   "page": "errors",
+   "frames": 2,
+   "frame_px": "393x852",
+   "doc_scroll_width": 393,
+   "issues": 0
+  },
+  {
+   "w": 393,
+   "theme": "dark",
+   "page": "share",
+   "frames": 2,
+   "frame_px": "393x852",
+   "doc_scroll_width": 393,
+   "issues": 0
+  },
+  {
+   "w": 375,
+   "theme": "light",
+   "page": "landing",
+   "frames": 10,
+   "frame_px": "375x812",
+   "doc_scroll_width": 375,
+   "issues": 0
+  },
+  {
+   "w": 375,
+   "theme": "light",
+   "page": "editor",
+   "frames": 14,
+   "frame_px": "375x812",
+   "doc_scroll_width": 375,
+   "issues": 0
+  },
+  {
+   "w": 375,
+   "theme": "light",
+   "page": "panels",
+   "frames": 26,
+   "frame_px": "375x812",
+   "doc_scroll_width": 375,
+   "issues": 0
+  },
+  {
+   "w": 375,
+   "theme": "light",
+   "page": "input",
+   "frames": 9,
+   "frame_px": "375x812",
+   "doc_scroll_width": 375,
+   "issues": 0
+  },
+  {
+   "w": 375,
+   "theme": "light",
+   "page": "crop",
+   "frames": 7,
+   "frame_px": "375x812",
+   "doc_scroll_width": 375,
+   "issues": 0
+  },
+  {
+   "w": 375,
+   "theme": "light",
+   "page": "menu",
+   "frames": 6,
+   "frame_px": "375x812",
+   "doc_scroll_width": 375,
+   "issues": 0
+  },
+  {
+   "w": 375,
+   "theme": "light",
+   "page": "result",
+   "frames": 11,
+   "frame_px": "375x812",
+   "doc_scroll_width": 375,
+   "issues": 0
+  },
+  {
+   "w": 375,
+   "theme": "light",
+   "page": "errors",
+   "frames": 2,
+   "frame_px": "375x812",
+   "doc_scroll_width": 375,
+   "issues": 0
+  },
+  {
+   "w": 375,
+   "theme": "light",
+   "page": "share",
+   "frames": 2,
+   "frame_px": "375x812",
+   "doc_scroll_width": 375,
+   "issues": 0
+  },
+  {
+   "w": 375,
+   "theme": "dark",
+   "page": "landing",
+   "frames": 10,
+   "frame_px": "375x812",
+   "doc_scroll_width": 375,
+   "issues": 0
+  },
+  {
+   "w": 375,
+   "theme": "dark",
+   "page": "editor",
+   "frames": 14,
+   "frame_px": "375x812",
+   "doc_scroll_width": 375,
+   "issues": 0
+  },
+  {
+   "w": 375,
+   "theme": "dark",
+   "page": "panels",
+   "frames": 26,
+   "frame_px": "375x812",
+   "doc_scroll_width": 375,
+   "issues": 0
+  },
+  {
+   "w": 375,
+   "theme": "dark",
+   "page": "input",
+   "frames": 9,
+   "frame_px": "375x812",
+   "doc_scroll_width": 375,
+   "issues": 0
+  },
+  {
+   "w": 375,
+   "theme": "dark",
+   "page": "crop",
+   "frames": 7,
+   "frame_px": "375x812",
+   "doc_scroll_width": 375,
+   "issues": 0
+  },
+  {
+   "w": 375,
+   "theme": "dark",
+   "page": "menu",
+   "frames": 6,
+   "frame_px": "375x812",
+   "doc_scroll_width": 375,
+   "issues": 0
+  },
+  {
+   "w": 375,
+   "theme": "dark",
+   "page": "result",
+   "frames": 11,
+   "frame_px": "375x812",
+   "doc_scroll_width": 375,
+   "issues": 0
+  },
+  {
+   "w": 375,
+   "theme": "dark",
+   "page": "errors",
+   "frames": 2,
+   "frame_px": "375x812",
+   "doc_scroll_width": 375,
+   "issues": 0
+  },
+  {
+   "w": 375,
+   "theme": "dark",
+   "page": "share",
+   "frames": 2,
+   "frame_px": "375x812",
+   "doc_scroll_width": 375,
+   "issues": 0
+  }
+ ]
+}
