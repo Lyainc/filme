@@ -81,4 +81,4 @@ Always revoke blob URLs for cropped posters, uploaded stamps, signatures, and do
 
 ## Project Status
 
-The current app includes six moods, optional posters, KOBIS search, Gemini OCR, manual cropping, material/coating effects, draft persistence, sharing, and high-resolution export. There is no confirmed next-feature roadmap; do not infer one from old specs.
+The current app includes six moods, optional posters, KOBIS search, Gemini OCR, manual cropping, material/coating effects, draft persistence, sharing, and high-resolution export. The app-screen and mood renewal is tracked in epic #826; do not infer other roadmap items from old specs. Do not add in-app poster search (TMDB or similar): see `docs/CONTRIBUTING.md` section 4.
