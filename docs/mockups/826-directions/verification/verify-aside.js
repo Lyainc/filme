@@ -80,7 +80,7 @@ for (const file of PAGES) {
         // 조작부 겹침 검사가 못 보는 축(티켓 자리표시·형제 블록이 라벨을 덮는 경우)을 잡는다.
         res.textOverlap = [];
         sc.scrollIntoView({ block: 'start' });
-        const leaves = [...sc.querySelectorAll('*')].filter(el => vis(el) && !el.closest('.ticket') && !el.closest('.kbd') && !el.closest('.rq') && !el.closest('[data-slide][data-active="false"]') && getComputedStyle(el).pointerEvents !== 'none' && [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim()));
+        const leaves = [...sc.querySelectorAll('*')].filter(el => vis(el) && !el.closest('.ticket') && !el.closest('.kbd') && !el.closest('.rq') && !el.closest('.sr-only') && !el.closest('[data-slide][data-active="false"]') && getComputedStyle(el).pointerEvents !== 'none' && [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim()));
         for (const L of leaves) {
           const rg = document.createRange(); rg.selectNodeContents(L);
           for (const tr of rg.getClientRects()) {
