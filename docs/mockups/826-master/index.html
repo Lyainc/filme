@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FILME 영사실 페이지 마스터</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@900&amp;display=swap">
+<link rel="stylesheet" href="master.css">
+</head>
+<body>
+<div class="m-app">
+  <nav class="m-nav" id="nav" aria-label="페이지"></nav>
+  <main class="m-main">
+    <div class="m-bar">
+      <button class="m-seg m-navtoggle" id="navtoggle" aria-expanded="false" style="min-height:32px;padding:0 10px;background:transparent;font-size:13px">페이지</button>
+      <span class="ttl" id="crumb"></span>
+      <span class="gap"></span>
+      <span class="m-seg-l">폭</span><div class="m-seg" role="group" aria-label="프레임 폭"><button data-fw="393" aria-pressed="true">393</button><button data-fw="375" aria-pressed="false">375</button></div>
+      <span class="m-seg-l">테마</span><div class="m-seg" role="group" aria-label="테마"><button data-theme-set="auto" aria-pressed="true">시스템</button><button data-theme-set="light" aria-pressed="false">라이트</button><button data-theme-set="dark" aria-pressed="false">다크</button></div>
+      <div class="m-seg" role="group" aria-label="주석"><button id="rltoggle" aria-pressed="true">레드라인</button></div>
+    </div>
+    <div id="pages"></div>
+  </main>
+</div>
+<script src="lib.js"></script>
+<script src="frames.js"></script>
+<script src="data/components.js"></script>
+<script src="data/trace.js"></script>
+<script src="data/refs.js"></script>
+<script src="data/verify.js"></script>
+<script src="render.js"></script>
+<script src="check.js"></script>
+</body>
+</html>
