@@ -4,9 +4,17 @@ const M = path.join(__dirname, '..') + '/';
 const OUT = path.join(process.argv[2] || path.join(__dirname, '.out/canvas'), 'project') + '/';
 const FONT = '/_blob/506ff5f72238a48abf04232196ae3d3c';
 const DS = 'https://claude.ai/artifact/MBMFZaMMAytrVv5HTgnxc8';
-global.window = {}; global.document = {};
-['lib.js', 'frames.js', 'data/components.js'].forEach(f => require(M + f));
+global.window = global; global.document = {};
+['lib.js', 'frames.js', 'data/components.js', 'data/trace.js', 'data/refs.js'].forEach(f => require(M + f));
+/* 근거 단위: evidence/의 파일 하나 = 보드 하나. index.html이 같은 파일을 같은 순서로 싣는지 확인해요. */
+const UNIT_FILES = fs.readdirSync(M + 'evidence').filter(f => f.endsWith('.js')).sort();
+const idx = fs.readFileSync(M + 'index.html', 'utf8').match(/evidence\/[^"]+\.js/g) || [];
+if (idx.join() !== UNIT_FILES.map(f => 'evidence/' + f).join()) { console.error('index.html의 evidence 스크립트 목록이 폴더와 달라요'); process.exit(1); }
+UNIT_FILES.forEach(f => require(M + 'evidence/' + f));
 const W = global.window, S = W.PR, esc = S.esc;
+const TC = W.TRACE_CHECK();
+if (TC.bad.length || TC.miss.length) { console.error('추적표 점검 실패', TC); process.exit(1); }
+const ONLY = process.argv[3] || null; /* 단위 id 하나만 다시 쓰려면 두 번째 인자로 */
 fs.mkdirSync(OUT + 'master', { recursive: true }); fs.mkdirSync(OUT + 'decisions', { recursive: true }); fs.mkdirSync(OUT + 'wip', { recursive: true });
 
 /* ---------- 지원 스타일: master.css + 아트보드 단위 테마 스위치 ---------- */
@@ -88,7 +96,7 @@ const GROUPS = [['landing', '랜딩'], ['editor', '편집 기본'], ['dock', '�
 const boards = {}, order = [], notes = {};
 const H = 1010;
 function frameBoard(f) {
-  const n = f.variants.length, w = 64 + n * 393 + (n - 1) * 40 + 40 + 380;
+  const n = f.variants.length, w = 64 + n * 393 + (n - 1) * 40 + 40 + 380, an = W.EV_FRAME_NOTES(f.id);
   let html = HEAD(f.id + ' ' + f.name, '../pr.css');
   html += `<div class="ab" data-pr-theme="{{theme}}" style="width: ${w}px; height: ${H}px">
 <div class="ab-h"><span class="id">${f.id}</span><h1>${esc(f.name)}</h1></div>
@@ -100,6 +108,8 @@ function frameBoard(f) {
 <h2>컴포넌트</h2><p style="margin:0">${f.comps.join(' · ')}</p>
 ${f.flow.length ? '<h2>흐름</h2><ul>' + f.flow.map(x => '<li><b>' + esc(x[0]) + '</b> → ' + esc(x[1]) + (x[2] ? ' (' + esc(x[2]) + ')' : '') + '</li>').join('') + '</ul>' : ''}
 ${f.notes.length ? '<h2>메모</h2><ul>' + f.notes.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' : ''}
+${an.copy.length ? '<h2>문구 변경</h2><ul>' + an.copy.map(x => '<li>' + x + '</li>').join('') + '</ul>' : ''}
+${an.trace.length ? '<h2>기능 · 요구</h2><p style="margin:0">' + an.trace.join(' · ') + '</p>' : ''}
 </div>
 </div>
 </div>`;
@@ -132,7 +142,7 @@ ${S.wordmark()}
 </div>
 <div style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; line-height: 21px; color: var(--pr-ink-2)">
 <p style="margin: 0"><b style="color: var(--pr-ink)">원본</b> 레포 브랜치 docs/826-page-master의 docs/mockups/826-master/ (프레임 빌더 · 추적표 · 레퍼런스 · Aside 검증 기록). 캔버스 아트보드는 그 원본에서 생성했어요.</p>
-<p style="margin: 0"><b style="color: var(--pr-ink)">결정</b> 테마 시스템 따름 · Pretendard 하나 · 재단 표시 · 세리프 없음 · 오류는 앰버 · 전시 강제 재생 · 모바일 전용 · 문구 간결 · 도크 모드 셋(사진 · 정보 · 디자인).</p><p style="margin: 0"><b style="color: var(--pr-ink)">근거</b> "근거" 페이지에 결정·미결·Seed, 기능·요구 추적표, 문구 변경, 레퍼런스, 토큰, 흐름이 있어요.</p>
+<p style="margin: 0"><b style="color: var(--pr-ink)">결정</b> 테마 시스템 따름 · Pretendard 하나 · 재단 표시 · 세리프 없음 · 오류는 앰버 · 전시 강제 재생 · 모바일 전용 · 문구 간결 · 도크 모드 셋(사진 · 정보 · 디자인).</p><p style="margin: 0"><b style="color: var(--pr-ink)">근거</b> "근거" 페이지는 짧은 보드 여러 장이에요(결정 · 미결 · 바꾼 것 · 의문 · Seed / 토큰 / 흐름 / 오류 색인 / 요구 · 기능 묶음별 / 문구 / 레퍼런스). 보드 하나가 레포 evidence/의 파일 하나라 한 단위만 고쳐 다시 올려요. 프레임에 걸린 문구 변경과 기능 추적은 각 프레임 보드 오른쪽에도 붙어요.</p>
 <p style="margin: 0"><b style="color: var(--pr-ink)">범위 밖</b> 티켓 무드 렌더(자리표시 그림) · 프로덕션 코드 · Seed(4단계).</p>
 </div>
 </div>` + TAIL(MAIN_W, MAIN_H, 'dark'));
@@ -186,22 +196,30 @@ notes['decisions-rule'] = { x: 1400, y: 0, w: 420, text: '결정 · 비교판 �
 notes['wip-rule'] = { x: 0, y: 0, w: 480, text: '작업 중 목업 규칙\n\n· 결정이 필요 없는 탐색 시안은 wip/W번호-주제.dc.html.\n· 393 기준 폰 프레임은 pr.css의 .ph 구조(상태 막대 · 홈 인디케이터)를 그대로 써요.\n· 마스터로 확정되면 master/의 해당 프레임을 고치고, 레포 원본(frames.js)도 같은 커밋에서 고쳐요.\n· 아직 아트보드 없음.', fill: 'gray', page: 'wip' };
 notes['master-rule'] = { x: MAIN_W + 80, y: 0, w: 420, text: '페이지 마스터 아트보드는 레포 원본에서 생성해요. 손으로 고치면 다음 생성 때 덮일 수 있어요. 고칠 땐 레포 frames.js를 고치고 다시 생성하거나, 여기서 고친 걸 레포에 옮겨 적어요.', fill: 'orange', page: 'master' };
 
-/* ---------- 근거 페이지: 렌더된 마스터 페이지를 그대로 떠 온 스냅숏(tools/.out/evidence.json) ---------- */
-const EV = path.join(__dirname, '.out/evidence.json');
-const evPages = [];
-if (fs.existsSync(EV)) {
-  const ev = JSON.parse(fs.readFileSync(EV, 'utf8'));
-  fs.mkdirSync(OUT + 'evidence', { recursive: true });
-  const T = { cover: '표지 · 결정 · 미결 · Seed', trace: '기능 · 요구 추적', copy: '문구 변경', refs: '레퍼런스', tokens: '토큰', flow: '흐름' };
-  let ex = 0;
-  ['cover', 'trace', 'copy', 'refs', 'tokens', 'flow'].forEach(k => {
-    if (!ev[k]) return;
-    const key = 'evidence/' + k + '.dc.html';
-    fs.writeFileSync(OUT + key, HEAD(T[k], '../pr.css').replace('<style>', '<style>\n.ev a { color: inherit; }') + '<div class="ab m-page on ev" data-pr-theme="{{theme}}" style="width: 100%; min-height: 100%; padding: 32px 40px 64px; display: block">' + ev[k].replace(/\{\{/g, '{ {') + '</div>' + TAIL(1280, 2400, 'dark'));
-    boards[key] = { x: ex, y: 0, w: 1280, h: 2400, title: T[k], page: 'evidence', expand: 'fill' };
-    order.push(key); evPages.push(key); ex += 1280 + 80;
-  });
+/* ---------- 근거 페이지: evidence/ 단위마다 보드 하나. 단위 html()을 직접 불러 그려요(스냅숏 없음) ---------- */
+fs.mkdirSync(OUT + 'evidence', { recursive: true });
+/* 보드 높이 추정: 표 행·목록·문단의 글자 수로 어림하고 넉넉히 잡아요(잘림보다 남는 게 나아요). */
+function estH(html) {
+  const txt = h => h.replace(/<[^>]+>/g, '').replace(/&[a-z]+;/g, 'x');
+  let h = 140;
+  (html.match(/<tr[\s\S]*?<\/tr>/g) || []).forEach(r => { const cells = r.match(/<t[dh][\s\S]*?<\/t[dh]>/g) || []; const lines = Math.max(1, ...cells.map(c => Math.ceil(txt(c).length / Math.max(14, 150 / cells.length)))); h += 18 + lines * 20; });
+  (html.match(/<li[\s\S]*?<\/li>/g) || []).forEach(l => { h += 8 + Math.ceil(txt(l).length / 110) * 22; });
+  (html.match(/<p[\s\S]*?<\/p>/g) || []).forEach(p => { h += 20 + Math.ceil(txt(p).length / 100) * 22; });
+  h += (html.match(/<h3/g) || []).length * 64 + (/<svg/.test(html) ? 340 : 0);
+  return Math.ceil(h / 40) * 40;
 }
+const evPages = [];
+let ex = 0, ey = 0, rowH = 0;
+const EV_W = 1280;
+W.EVIDENCE.filter(u => u.canvas !== false).forEach((u, n) => {
+  const key = 'evidence/' + u.id + '.dc.html', body = u.html(), h = estH(body);
+  if (!ONLY || ONLY === u.id) fs.writeFileSync(OUT + key, HEAD(u.title, '../pr.css').replace('<style>', '<style>\n.ev a { color: inherit; }') + '<div class="ab m-page on ev" data-pr-theme="{{theme}}" style="width: 100%; min-height: 100%; padding: 32px 40px 48px; display: block"><h2>' + esc(u.title) + '</h2>' + body.replace(/\{\{/g, '{ {') + '</div>' + TAIL(EV_W, h, 'dark'));
+  /* 같은 page 묶음은 한 줄에 오른쪽으로, 묶음이 바뀌면 다음 줄 */
+  const prev = n && W.EVIDENCE.filter(x => x.canvas !== false)[n - 1];
+  if (prev && prev.page !== u.page) { ex = 0; ey += rowH + 120; rowH = 0; }
+  boards[key] = { x: ex, y: ey, w: EV_W, h, title: u.title, page: 'evidence', expand: 'fill' };
+  order.push(key); evPages.push(key); ex += EV_W + 80; rowH = Math.max(rowH, h);
+});
 const now = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
 const canvas = {
   v: 3, createdOnFiles: { v: 1, at: now }, title: 'FILME 리뉴얼',
