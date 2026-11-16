@@ -117,7 +117,7 @@ ${S.wordmark()}
 <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px">
 <div style="background: var(--pr-s1); border: 1px solid var(--pr-hair-strong); border-radius: 6px; padding: 20px; display: flex; flex-direction: column; gap: 8px">
 <h2 style="margin: 0; font-size: 17px; font-weight: 600">페이지 마스터</h2>
-<p style="margin: 0; font-size: 14px; line-height: 21px; color: var(--pr-ink-2)">프레임 ' + W.FRAMES.length + '개 · 상태 변형 ' + W.FRAMES.reduce(function (a, f) { return a + f.variants.length; }, 0) + '개. 화면 묶음마다 한 줄, 아트보드 하나가 프레임 하나예요. 각 아트보드 오른쪽에 상태 · 컴포넌트 · 흐름 · 메모가 붙어요. 테마는 아트보드 Tweaks의 theme.</p>
+<p style="margin: 0; font-size: 14px; line-height: 21px; color: var(--pr-ink-2)">프레임 ${W.FRAMES.length}개 · 상태 변형 ${W.FRAMES.reduce((a, f) => a + f.variants.length, 0)}개. 화면 묶음마다 한 줄, 아트보드 하나가 프레임 하나예요. 각 아트보드 오른쪽에 상태 · 컴포넌트 · 흐름 · 메모가 붙어요. 테마는 아트보드 Tweaks의 theme.</p>
 </div>
 <div style="background: var(--pr-s1); border: 1px solid var(--pr-hair-strong); border-radius: 6px; padding: 20px; display: flex; flex-direction: column; gap: 8px">
 <h2 style="margin: 0; font-size: 17px; font-weight: 600">결정 · 비교판</h2>
@@ -210,7 +210,7 @@ W.EVIDENCE.filter(u => u.canvas !== false).forEach((u, n) => {
 });
 const now = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
 const canvas = {
-  v: 3, createdOnFiles: { v: 1, at: now }, title: 'FILME 리뉴얼',
+  v: 3, createdOnFiles: { v: 1, at: '2026-11-16T14:45:28Z' } /* 처음 만든 시각 고정(인덱스 마커) */, title: 'FILME 리뉴얼',
   launch: { view: 'canvas', page: 'master' },
   pages: [{ id: 'master', name: '페이지 마스터' }, { id: 'evidence', name: '근거' }, { id: 'decisions', name: '결정 · 비교판' }, { id: 'wip', name: '작업 중 목업' }],
   boards, order, notes,
