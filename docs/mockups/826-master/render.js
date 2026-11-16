@@ -172,11 +172,11 @@
     ['결과 · 저장 실패', '저장에 실패했어요. + 다시 시도', '저장에 실패했어요. 다시 시도해 주세요.', 'R-01', '예', 'resultPanelShareGating.test.tsx:119(getByText)'],
     ['결과 · 공유 대체', '(통보 없음)', '링크를 복사했어요', 'R-03', '—', '신규(축 4 과거형)'],
     ['랜딩 · 이어서 만들기(제목 없음)', '이어서 만들기', '제목 없는 티켓', 'L-02', '아니요', '없음'],
-    ['메뉴 · 테마', '다크모드(토글)', '테마: 시스템 · 라이트 · 다크', 'M-01', '확인 필요', '"다크모드" 이름으로 찾는 테스트를 구현 PR에서 grep(이번엔 미확인)'],
+    ['메뉴 · 테마', '다크모드(토글)', '테마: 시스템 · 라이트 · 다크', 'M-01', '아니요', '없음(__tests__의 "다크모드"는 주석뿐: chromeDarkScope:5 · mobileEditorShellMenu:4)'],
     ['메뉴 · 자동저장 상태', '자동저장 켜짐 · 꺼짐(aria) · 클릭하면 꺼요(title)', '자동저장(스위치) + "11:42에 저장했어요"', 'M-01', '예', 'autoSaveIndicator.test.tsx:22·42·45·51. 축 2 위반이던 title을 없앰'],
     ['편집 · 워드마크 탭 초기화', '지금까지 작업한 내용이 사라져요. 처음 화면으로 돌아갈까요?', '(사라짐: ‹는 문서를 지우지 않음)', 'E-01', '예', 'wordmarkClearOnTap · mobileEditorShellMenu · resultStageWordmarkReset'],
     ['크롭 · 비율', '원본 비율 보존(체크박스)', '원본 비율 보존(스위치) + 현재 비율 한 줄', 'C-01', '예(role)', 'logoCropFreeAspect.test.tsx:150-165(getByRole(\'checkbox\')) → switch로'],
-    ['무드 이름', 'Minimal · Criterion …', '미니멀 · 크라이테리언 …', 'P-01', '확인 필요', 'LayoutStrip 라벨을 찾는 테스트를 구현 PR에서 grep(이번엔 미확인)'],
+    ['무드 이름', 'Minimal · Criterion …(LAYOUTS.label, 랜딩 카드 aria-label에도 쓰임)', '미니멀 · 크라이테리언 …', 'P-01 · L-01', '예', 'landingHeroMood.test.tsx:164·178·259·267·275·281·363·365 · landingMoodGalleryTapTargets.test.tsx:110-111(영문 라벨 기대). 이유: 영문 대문자 라벨이 한국어 사용자에게 낯설다는 f-refined 제안 2의 대안안을 택함(소유자 결정 2는 mono 폐지까지)'],
     ['포스터 · 빈 대상', '(없음)', '포스터 없이도 저장할 수 있어요.', 'P-04', '—', '신규'],
     ['범위 밖 % 입력', '(조용히 고정)', '0부터 100까지만 돼요. 100으로 맞출게요.', 'K-03', '—', '신규'],
     ['공유 페이지 만료', 'Next 기본 404', '이 링크는 만료됐어요 · 공유 링크는 3일 동안만 열려요.', 'S-01', '—', '신규(제안)'],
@@ -201,7 +201,7 @@
     ['로고 빈 · 숨김', '{label}가 비어 있어요. 이미지나 텍스트를 입력하세요. · {label}가 숨겨져 있어요.', '그대로', 'P-05', '아니요', '현행 문구(-하세요는 축 1의 조작 안내 꼴)']
   ];
   function copyPage() {
-    var h = '<h2>문구 변경</h2><p class="m-lede">docs/COPY_TONE_GUIDE.md 기준이에요(라벨: 조건절·종결어미·마침표 없음 / 실패: [무슨 일] + [다음 행동] 두 문장, 한 문장 33자·전체 44자). 아래 두 표에 없는 문구는 현행 그대로 옮겼어요. 표의 "신규" 행은 src에 없는 새 문구이고 축별 판정을 같이 적었어요. "확인 필요"는 이번에 테스트를 grep하지 않은 행이에요.</p>';
+    var h = '<h2>문구 변경</h2><p class="m-lede">docs/COPY_TONE_GUIDE.md 기준이에요(라벨: 조건절·종결어미·마침표 없음 / 실패: [무슨 일] + [다음 행동] 두 문장, 한 문장 33자·전체 44자). 아래 두 표에 없는 문구는 현행 그대로 옮겼어요. 표의 "신규" 행은 src에 없는 새 문구이고 축별 판정을 같이 적었어요. 영향 테스트 열은 __tests__를 grep한 결과예요.</p>';
     h += '<h3>테스트가 잠근 문구</h3><div class="m-tblw"><table class="m-tbl"><thead><tr><th>문구</th><th>마스터</th><th>프레임</th></tr></thead><tbody>' +
       [['포스터 업로드 · 포스터 없이 직접 입력', '그대로', 'L-01~L-03'], ['티켓 스크린샷으로 자동입력 · 스크린샷으로 자동입력', '그대로', 'L-01 · E-02 · M-01'], ['지금 요청이 많아요… · 인식된 정보가 없어요…', '그대로', 'L-03'], ['한 번 더 눌러 전체 삭제 · 임시저장했어요', '그대로', 'M-01 · M-02'], ['초기화했어요', '그대로', 'M-01'], ['최대화(버튼 이름)', '<span class="gone">바뀜</span>: "전체 보기". 영향 chromeDarkScope:104 · mobileChromeOrder:111 · mobileEditorShellLandscapeRotation:41 · mobileEditorShellZoom:49·61 · floatingToolbar:478', 'E-01 · E-04'], ['빈 항목 미리보기(스위치 이름)', '<span class="gone">바뀜</span>: 패널 머리 토글 버튼 "빈 항목". 영향 inPlaceFieldEditor:161 · mobileChromeOrder:124 · mobileEditorShellGhost:37·45', 'E-01'], ['지금까지 작업한 내용이 사라져요…', '<span class="gone">사라짐</span>: 워드마크 탭 초기화를 ‹(문서 보존)로 대체. 영향 테스트 wordmarkClearOnTap · mobileEditorShellMenu · resultStageWordmarkReset를 같은 커밋에서 고쳐야 해요', 'E-01']]
         .map(function (r) { return '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td class="n">' + r[2] + '</td></tr>'; }).join('') + '</tbody></table></div>';
