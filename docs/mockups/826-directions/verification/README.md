@@ -1,6 +1,6 @@
 # 방향 목업 렌더 확인 (2026-11-15)
 
-Aside(사용자 브라우저, CLI 1.26.1113.1717)의 `aside repl`로 방향 페이지 여섯 개(A~D + 결합안 E·F)와 비교 페이지를 393×852, 375×812 뷰포트에서 열고 화면(`.screen`)마다 재고 찍었어요. 실기기·iOS Simulator·헤드리스 하네스 결과가 아니에요. Android는 #585 보류라 다루지 않아요.
+Aside(사용자 브라우저, CLI 1.26.1113.1717)의 `aside repl`로 방향 페이지 여섯 개(A~D + 결합안 E·F), F 디벨롭(`f-refined.html`), 비교 페이지를 393×852, 375×812 뷰포트에서 열고 화면(`.screen`)마다 재고 찍었어요. 실기기·iOS Simulator·헤드리스 하네스 결과가 아니에요. Android는 #585 보류라 다루지 않아요.
 
 ## 재는 것 (`verify-aside.js`)
 
@@ -16,7 +16,7 @@ Aside(사용자 브라우저, CLI 1.26.1113.1717)의 `aside repl`로 방향 페�
 
 | 페이지 | 393 | 375 | 라이트 375 | 핀 | 비고 |
 | --- | --- | --- | --- | --- | --- |
-| `index.html` | 넘침 0 | 넘침 0 | 넘침 0 | 해당 없음 | 요구표 6행, 기능 보존표 52행. 기존 시안 토글 접힘(E·F 열·카드·화면 2개)과 펼침(A~F 6개) 두 상태 모두 넘침 0 (`verify-index-toggle.js`) |
+| `index.html` | 넘침 0 | 넘침 0 | 넘침 0 | 해당 없음 | 요구표 6행, 기능 보존표 52행. 기존 시안 토글 접힘(E·F 열·카드·화면 2개)과 펼침(A~F 6개) 두 상태 모두 넘침 0 (`verify-index-toggle.js`, 결과 `report-index-toggle.json`, 펼침 화면 `shots/index-legacy-open-*.png`) |
 | `a-workbench.html` (7화면) | 전부 통과 | 전부 통과 | 전부 통과 | 1~6 | |
 | `b-flow.html` (7화면) | 전부 통과 | 전부 통과 | 전부 통과 | 1~6 | |
 | `c-canvas.html` (8화면) | 6화면 통과, 2화면 의도된 잘림 | 같음 | 같음 | 1~6 | 아래 참고 |
@@ -32,6 +32,8 @@ C·E·F에서 잡힌 건은 아래 두 종류의 설계상 잘림이라 눈으�
 
 ## 진행 중 고친 것
 
+- requirement-gap 리뷰 2라운드: f-refined의 ink-3 대비가 견본에 적은 4.3과 달리 라이트 3.6~3.9였어요. 11px 글자에 쓰여서 다크 `#8E8A83`·라이트 `#6A665F`로 올려 세 표면 모두 4.5:1 이상으로 맞추고 다시 쟀어요. 토글 측정은 결과를 JSON으로 남기게 고쳤어요
+
 첫 측정과 requirement-gap 리뷰 1라운드에서 나온 결함은 고친 뒤 다시 쟀어요.
 
 - A 디자인 패널(리뷰 지적): 썸네일 칸을 80px로 줄인 뒤 티켓 썸네일이 폭 기준이라 높이가 넘쳐 무드 이름 위쪽을 덮었는데, 당시 검사는 조작부끼리만 봐서 "전부 통과"로 기록했어요. 썸네일 티켓을 칸 높이에 맞추고, 위의 글자 덮임 검사를 더해 다시 쟀어요
@@ -46,7 +48,7 @@ C·E·F에서 잡힌 건은 아래 두 종류의 설계상 잘림이라 눈으�
 - `shots/dark-{방향}-{폭}-{화면번호}.png`: 다크(Aside 시스템 테마) 393·375
 - `shots/light-{방향}-375-{화면번호}.png`: 라이트 강제 375
 - `report-dark-393-375.json`, `report-light-375.json`: 화면별 측정값
-- `verify-aside.js`, `decode.py`: 다시 재는 법. 이 디렉터리를 `uv run --no-project python -m http.server 4826 --bind 127.0.0.1`로 띄운 뒤 `aside repl --file verify-aside.js > run.log` 하고 `python3 -I decode.py run.log out/`으로 PNG를 풀어요. Aside REPL은 프로젝트 밖에 파일을 못 써서 스크린샷을 base64로 stdout에 흘려요.
+- `verify-aside.js`, `decode.py`: 다시 재는 법. 이 디렉터리를 `uv run --no-project python -m http.server 4826 --bind 127.0.0.1`로 띄운 뒤 `aside repl --file verify-aside.js > run.log`(특정 페이지만 재려면 스크립트 앞에 `globalThis.ONLY=['f-refined.html'];` 한 줄을 붙여요) 하고 `python3 -I decode.py run.log out/`으로 PNG를 풀어요. Aside REPL은 프로젝트 밖에 파일을 못 써서 스크린샷을 base64로 stdout에 흘려요.
 
 ## 확인하지 않은 것
 

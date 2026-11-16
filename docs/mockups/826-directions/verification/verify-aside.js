@@ -1,6 +1,6 @@
 // Aside REPL 스크립트: 방향 페이지를 393·375 폭에서 열고 잘림·겹침을 재고 .screen 별 스크린샷을 남긴다.
 const BASE = 'http://127.0.0.1:4826/';
-const PAGES = (globalThis.ONLY || ['index.html', 'a-workbench.html', 'b-flow.html', 'c-canvas.html', 'd-document.html']);
+const PAGES = (globalThis.ONLY || ['index.html', 'a-workbench.html', 'b-flow.html', 'c-canvas.html', 'd-document.html', 'e-canvas-index.html', 'f-canvas-panel.html', 'f-refined.html']);
 const WIDTHS = [[393, 852], [375, 812]];
 const OUT = pwd + '/artifacts';
 

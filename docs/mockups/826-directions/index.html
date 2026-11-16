@@ -21,7 +21,7 @@
   .frames figcaption { font-size: 13px; margin-bottom: 6px; font-weight: 600; }
   .frames iframe { width: 100%; height: 640px; border: 1px solid var(--line); border-radius: 18px; background: var(--bg); }
   .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
-  td.c-a, td.c-b, td.c-c, td.c-d { min-width: 200px; }
+  td.c-a, td.c-b, td.c-c, td.c-d, td.c-e, td.c-f { min-width: 200px; }
   .hide-col { display: none; }
   .legacy-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 24px; padding: 12px 16px; background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius); }
   .legacy-bar p { margin: 0; font-size: 13px; color: var(--fg-muted); flex: 1 1 220px; }
@@ -51,7 +51,7 @@
   </section>
 
   <div class="legacy-bar">
-    <button class="btn" id="legacy-toggle" aria-expanded="false" aria-controls="pick-legacy frames-legacy">기존 시안 A~D 펼치기</button>
+    <button class="btn" id="legacy-toggle" aria-expanded="false" aria-controls="pick-legacy-wrap frames-legacy-wrap">기존 시안 A~D 펼치기</button>
     <p>A 작업대 · B 단계 흐름 · C 캔버스 직접 조작 · D 한 장 문서. 펼치면 아래 모든 절에 함께 나와요.</p>
   </div>
 
@@ -64,7 +64,7 @@
   <h2>2. 편집 화면 나란히 보기</h2>
   <p class="note">각 방향 페이지를 그대로 넣었어요. 안에서 스크롤해 랜딩·편집·필드 편집·결과를 볼 수 있어요.</p>
   <div class="frames" id="frames"></div>
-  <div data-legacy-block hidden><h3 class="sub">기존 시안</h3><div class="frames" id="frames-legacy"></div></div>
+  <div data-legacy-block hidden id="frames-legacy-wrap"><h3 class="sub">기존 시안</h3><div class="frames" id="frames-legacy"></div></div>
 
   <h2>3. 세 문제를 푸는 방식</h2>
   <div class="table-wrap"><table class="grid" id="problems"></table></div>
@@ -78,7 +78,7 @@
 
   <h2>6. 검증 경계</h2>
   <ul>
-    <li>Aside(사용자 브라우저)로 393px·375px 폭에서 네 방향 페이지와 이 페이지를 찍어 잘림·겹침이 없는지 봤어요. 기록은 <a href="verification/README.md">verification/README.md</a>에 있어요.</li>
+    <li>Aside(사용자 브라우저)로 393px·375px 폭에서 방향 페이지 여섯 개(A~F), F 디벨롭, 이 페이지를 찍어 잘림·겹침이 없는지 봤어요. 기록은 <a href="verification/README.md">verification/README.md</a>에 있어요.</li>
     <li>이건 목업 렌더 확인이에요. 헤드리스 하네스나 iOS Simulator 결과가 아니고, 실기기 iPhone PASS도 아니에요. Android는 #585 기술 검토 전까지 보류라 주장하지 않아요.</li>
     <li>키보드는 회색 자리표시로 그렸어요. 실제 VisualViewport 동작은 시드 단계에서 기기로 검증할 대상이에요.</li>
   </ul>
