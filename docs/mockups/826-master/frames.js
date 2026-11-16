@@ -204,7 +204,8 @@
   function ihead(name, id) {
     return '<div class="c-ph" style="margin-top:0"><label class="t" for="' + id + '" style="font-size:13px;line-height:20px;font-weight:500;color:var(--pr-ink-2)">' + name + '</label><span class="gap"></span><button class="c-ib" aria-label="이전 항목">' + i('back') + '</button><button class="c-ib" aria-label="다음 항목">' + i('next') + '</button><button class="c-btn txt">닫기</button></div>';
   }
-  function chips(items, sel, label) { return '<div class="c-acc" role="radiogroup" aria-label="' + label + '">' + items.map(function (x) { return '<button class="c-opt" role="radio" aria-checked="' + (x === sel) + '">' + x + '</button>'; }).join('') + '</div>'; }
+  /* 칩 줄 = toolbar. 동작(이미지로)·독립 토글(재개봉)은 라디오 그룹 밖, 배타 선택만 radio(APG toolbar · radio) */
+  function chips(items, sel, label, act, tog) { return '<div class="c-acc" role="toolbar" aria-label="' + label + ' 옵션">' + (act ? '<button class="c-opt act">' + act + '</button>' : '') + '<div role="radiogroup" aria-label="' + label + '" style="display:contents">' + items.map(function (x) { return '<button class="c-opt" role="radio" aria-checked="' + (x === sel) + '">' + x + '</button>'; }).join('') + '</div>' + (tog ? '<button class="c-opt" aria-pressed="false">' + tog + '</button>' : '') + '</div>'; }
   function title(state) {
     var b = ihead('제목 · 필수', 'k1') + '<div class="c-field focus"><input id="k1" value="먼 바" autocomplete="off" role="combobox" aria-expanded="true" aria-controls="k1l"' + S.rl('h') + '></div>';
     if (state === 'results') b += '<ul class="c-list" id="k1l" role="listbox" style="margin-top:8px"><li role="option"><span class="th"></span><span class="kt"><b>먼 바다</b><small>2024 · 드라마 · 홍길동</small></span></li><li role="option"><span class="th"></span><span class="kt"><b>먼 바다의 소리</b><small>2019 · 다큐멘터리 · 감독 없음</small></span></li></ul>';
@@ -229,7 +230,7 @@
   F({ id: 'K-04', page: 'input', name: '날짜 입력', comps: ['C-INP', 'C-FLD', 'C-ACC'],
     variants: [
       { st: '관람일', html: kb('date', ihead('관람일', 'k4') + '<div class="c-field focus"><input id="k4" value="2026-11-15"></div>' + chips(['11.15 토', '2026.11.15', 'NOV 15'], '11.15 토', '표기'), 'text') },
-      { st: '개봉일', html: kb('date', ihead('개봉일 · 필수', 'k4b') + '<div class="c-field focus"><input id="k4b" value="2024-05-01"></div>' + chips(['연', '연·월', '연·월·일', '재개봉'], '연·월·일', '정밀도'), 'text') }
+      { st: '개봉일', html: kb('date', ihead('개봉일 · 필수', 'k4b') + '<div class="c-field focus"><input id="k4b" value="2024-05-01"></div>' + chips(['연', '연·월', '연·월·일'], '연·월·일', '정밀도', null, '재개봉'), 'text') }
     ],
     states: ['날짜는 OS 날짜 입력(16px). 표기·정밀도·재개봉은 칩 한 줄.', '"재개봉"을 켜면 다음 항목으로 재개봉일이 생겨요.'], flow: [['닫기', 'K-08', '']], notes: ['현행 DateSheet를 입력 패널 칩으로 옮겼어요.'] });
   F({ id: 'K-05', page: 'input', name: '평점', comps: ['C-INP', 'C-STAR'],
@@ -241,13 +242,13 @@
   var FONTS = ['자동', '고딕', '바탕', '자람', '잉크', '은영', '붓', '쿨가이', '꽃길'];
   F({ id: 'K-06', page: 'input', name: '서명 · 한줄평', comps: ['C-INP', 'C-ACC', 'C-FLD'],
     variants: [
-      { st: '서명 · 텍스트', html: kb('foot', ihead('서명', 'k6') + '<div class="c-field focus"><input id="k6" value="영화의 순간"></div>' + chips(['이미지로'].concat(FONTS), '자동', '서체'), 'text', { lift: 2 }) },
+      { st: '서명 · 텍스트', html: kb('foot', ihead('서명', 'k6') + '<div class="c-field focus"><input id="k6" value="영화의 순간"></div>' + chips(FONTS, '자동', '서체', '이미지로'), 'text', { lift: 2 }) },
       { st: '서명 · 이미지', html: kb('foot', ihead('서명', 'k6b') + '<div class="c-acts"><span class="t-body-s" style="flex:1;color:var(--pr-ink-2)">이미지 서명</span><button class="c-btn txt">제거</button><button class="c-btn sec" id="k6b">교체</button></div>', 'none', { lift: 2 }) },
       { st: '한줄평(크라이테리언)', html: kb('foot', ihead('한줄평', 'k6c') + '<div class="c-field focus"><input id="k6c" value="파도 소리가 오래 남았다"></div>' + chips(FONTS, '바탕', '서체'), 'text', { lift: 2 }) }
     ],
     states: ['서체 9종은 칩 한 줄(가로 스크롤). 구현에선 각 칩을 그 서체로 렌더해요(티켓 폰트라 UI 단일 서체 결정 밖).', '이미지 서명이면 서체 칩이 사라져요. 한줄평 서체는 크라이테리언만.'], flow: [['이미지로 · 교체', 'C-02', '자유 비율 크롭']], notes: [] });
   F({ id: 'K-07', page: 'input', name: '로고 텍스트', comps: ['C-INP', 'C-FLD'],
-    variants: [{ st: '기본', html: kb(null, ihead('극장 로고', 'k7') + '<div class="c-field focus"><input id="k7" value="CGV"></div>' + chips(['이미지로', '티켓에 표시', '숨김'], '티켓에 표시', '로고'), 'text') }],
+    variants: [{ st: '기본', html: kb(null, ihead('극장 로고', 'k7') + '<div class="c-field focus"><input id="k7" value="CGV"></div>' + chips(['티켓에 표시', '숨김'], '티켓에 표시', '표시', '이미지로'), 'text') }],
     states: ['이미지가 있으면 텍스트보다 우선(현행).'], flow: [['이미지로', 'C-02', '']], notes: [] });
   F({ id: 'K-08', page: 'input', name: '키보드 닫힌 뒤 복원', comps: ['C-DOCK', 'C-IROW'],
     variants: [{ st: '복원', html: ed({ ticket: { ghost: true }, dock: info({}) }) }],

@@ -509,6 +509,8 @@ button { cursor: pointer; }
 .c-arow .c-btn { padding: 0 10px; }
 .c-acc { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin: 8px -16px 0; padding: 0 16px; }
 .c-acc::-webkit-scrollbar { display: none; }
+.c-acc { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent); } /* 넘침 단서(uxpatterns tabs) */
+.c-acc .c-opt.act { color: var(--pr-ink); text-decoration: underline; text-underline-offset: 4px; }
 .c-sel.nolab .lab { display: none; }
 /* 크롭은 테마와 무관하게 어두운 토큰으로 */
 .c-dlg { --pr-ink: var(--pr-d-ink); --pr-ink-2: var(--pr-d-ink2); --pr-ink-3: #8E8A83; --pr-s1: var(--pr-d-s1); --pr-s2: var(--pr-d-s2); --pr-hair: rgba(255,255,255,.08); --pr-hair-strong: var(--pr-d-hair-strong); --pr-accent: var(--pr-d-accent); --pr-warn: var(--pr-d-warn); }
