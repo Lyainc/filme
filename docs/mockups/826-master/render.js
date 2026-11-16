@@ -230,6 +230,17 @@
         .map(function (r) { return '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td><span class="m-pill open">' + r[2] + '</span></td></tr>'; }).join('') + '</tbody></table></div>';
     h += '<h3>F′ 대비 바꾼 것</h3><ul><li>대상 줄 번호(01…)와 mono 태그를 지우고 위치만 "03 / 19"로 남겼어요(결정 2).</li><li>대상 목록을 현행 필드 15개 + 포스터 + 로고 2 + 티켓 = 19개 전부로 늘리고 티켓 읽는 순서로 정렬했어요.</li><li>티켓 대상에 네 번째 탭 "항목"을 더해 드로어를 대체했어요(P-10).</li><li>오류·필수 누락은 REQ 태그 대신 "필수" 태그 + 앰버 점(결정 5-A).</li><li>워드마크를 Instrument Serif "filme"에서 BI 락업으로 되돌렸어요(목표 조건: 로고 유지).</li></ul>';
     h += '<h3>Claude Design</h3><ul><li>디자인 시스템 <a href="https://claude.ai/artifact/MBMFZaMMAytrVv5HTgnxc8" target="_blank" rel="noopener">FILME 영사실</a>: 토큰 · 컴포넌트 28 · 로고 마크 · Pretendard. <code>tools/gen-ds.js</code>로 이 마스터에서 생성해요.</li><li>캔버스 <a href="https://claude.ai/artifact/4cvubgJpHC9ANQudDDoJ5F" target="_blank" rel="noopener">FILME 리뉴얼</a>: 페이지 마스터(프레임 34) · 결정 · 비교판(D01) · 작업 중 목업. <code>tools/gen-canvas.js</code>로 생성해요.</li><li>앞으로 작업 중에 나오는 목업은 그 캔버스 한 곳에 더해요: 결정을 받을 비교판은 <code>decisions/D번호-주제</code>, 탐색 시안은 <code>wip/W번호-주제</code>. 마스터 프레임을 바꾸면 이 레포의 <code>frames.js</code>를 고치고 다시 생성해요.</li><li>두 아티팩트는 비공개예요. 다른 사람이 보려면 각 페이지의 Share에서 공유해야 해요.</li></ul>';
+    h += '<h3>다음 · Seed로 만들 것(4단계, 아직 만들지 않음)</h3><p class="m-lede">각 Seed는 아래 프레임·추적표 행을 입력으로 받고, 완료 조건에 해당 프레임과의 일치와 테스트·하네스 갱신을 넣어요. 순서: S1 → S2 → S3~S7(병렬 가능) → S8.</p><div class="m-tblw"><table class="m-tbl"><thead><tr><th>Seed</th><th>범위</th><th>입력 프레임</th><th>꼭 들어갈 완료 조건</th></tr></thead><tbody>' +
+      [['S1 토큰 · 글꼴 기반', '<code>globals.css</code>·<code>tailwind.config.js</code>에 --pr 토큰(라이트·다크 + 시스템/라이트/다크 3상태), Pretendard 단일, <code>--pr-warn</code> 도입과 <code>--danger</code> 대체, 브릭 사용 범위', '토큰 페이지 · 컴포넌트 전체', '세 표면 대비 4.5:1 · 그라데이션/글로우/pill 없음 · 티켓 렌더 폰트는 건드리지 않음'],
+       ['S2 편집 셸 구조', '상단 줄 + 무대 + 문맥 패널로 교체. FloatingToolbar · FieldDrawer 핸들 · AdvancedSettingsModal 제거, 워드마크 탭 초기화를 ‹(문서 보존)로', 'E-01~E-06', '잠긴 문구 테스트 3개(wordmarkClearOnTap · mobileEditorShellMenu · resultStageWordmarkReset) 수정 · measure-chrome BASELINE과 dock/프리뷰 불변식 재측정 · 프레임 봉쇄 축 유지'],
+       ['S3 대상별 패널', '티켓 4탭(디자인·색상·질감·항목), 포스터·로고·텍스트·평점·날짜·서명/한줄평 대상, 선택 표시 3-A 오버레이', 'P-01~P-10', '요구 5(필드 hit area 44 · 이전/다음 복구) · 요구 6(선택 표시가 저장물에 없음) · 기능 52 추적표 행 전부'],
+       ['S4 입력 · 키보드', '키보드 위 입력 패널, visualViewport, 티켓 확대·이동, 종료 경로 4종 복원', 'K-01~K-04', '요구 3(16px) · 요구 4 세 조건 × 종료 경로 · iOS Simulator와 실기기 구분 기록'],
+       ['S5 랜딩', '무대 기둥 전시, 정지/재생 · 포커스·포인터 일시정지 · 동작 줄이기 격자, 이어서 만들기(제목 없음), 드롭 안내', 'L-01~L-04', '요구 1 · 잠긴 랜딩 문구 유지(테스트 9개)'],
+       ['S6 크롭 · 메뉴', '크롭 비율 스위치와 자리 안 오류, 메뉴 시트(테마 3갈래 · 자동저장 행 · 초기화 arm 유지)', 'C-01~C-03 · M-01~M-02', '#529 프리셋 방향 유지 · arm 문구 3개 유지'],
+       ['S7 결과 · 공유', '결과 화면, 저장 실패 문구, 공유 대체 통보, /t/[id] 만료 상태(새 문구 확정)', 'R-01~R-03 · S-01 · X-01', '요구 6 저장물 = 프리뷰 · 문구 변경 표 반영'],
+       ['S8 실기기 검증', '새 화면에서 #826 이관 요구 6개를 iPhone 실기기로(Android는 #585 별도)', '요구 추적표', '헤드리스·Simulator 결과를 실기기 PASS로 쓰지 않음'],
+       ['(별도 갈래) 무드 렌더', '6무드 티켓 렌더 리뉴얼. 이 마스터 범위 밖이라 시안부터 필요', '—', 'docs/PRINT_CALIBRATION.md 하한']]
+        .map(function (r) { return '<tr><td><b>' + r[0] + '</b></td><td>' + r[1] + '</td><td class="n">' + r[2] + '</td><td>' + r[3] + '</td></tr>'; }).join('') + '</tbody></table></div>';
     return h;
   }
 
