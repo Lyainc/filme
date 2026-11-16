@@ -229,7 +229,7 @@
        ['재질·코팅 옵션 이름', '자리표시예요. 실제 값은 현행 후보정 상수', '구현']]
         .map(function (r) { return '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td><span class="m-pill open">' + r[2] + '</span></td></tr>'; }).join('') + '</tbody></table></div>';
     h += '<h3>F′ 대비 바꾼 것</h3><ul><li>대상 줄 번호(01…)와 mono 태그를 지우고 위치만 "03 / 19"로 남겼어요(결정 2).</li><li>대상 목록을 현행 필드 15개 + 포스터 + 로고 2 + 티켓 = 19개 전부로 늘리고 티켓 읽는 순서로 정렬했어요.</li><li>티켓 대상에 네 번째 탭 "항목"을 더해 드로어를 대체했어요(P-10).</li><li>오류·필수 누락은 REQ 태그 대신 "필수" 태그 + 앰버 점(결정 5-A).</li><li>워드마크를 Instrument Serif "filme"에서 BI 락업으로 되돌렸어요(목표 조건: 로고 유지).</li></ul>';
-    h += '<h3>함께 만든 Claude Design 산출물</h3><p id="cd-links">같은 토큰·컴포넌트를 Design System 아티팩트로, 프레임을 Design 캔버스 아트보드로 옮겼어요(검증 기록 페이지에 링크).</p>';
+    h += '<h3>Claude Design</h3><ul><li>디자인 시스템 <a href="https://claude.ai/artifact/MBMFZaMMAytrVv5HTgnxc8" target="_blank" rel="noopener">FILME 영사실</a>: 토큰 · 컴포넌트 28 · 로고 마크 · Pretendard. <code>tools/gen-ds.js</code>로 이 마스터에서 생성해요.</li><li>캔버스 <a href="https://claude.ai/artifact/4cvubgJpHC9ANQudDDoJ5F" target="_blank" rel="noopener">FILME 리뉴얼</a>: 페이지 마스터(프레임 34) · 결정 · 비교판(D01) · 작업 중 목업. <code>tools/gen-canvas.js</code>로 생성해요.</li><li>앞으로 작업 중에 나오는 목업은 그 캔버스 한 곳에 더해요: 결정을 받을 비교판은 <code>decisions/D번호-주제</code>, 탐색 시안은 <code>wip/W번호-주제</code>. 마스터 프레임을 바꾸면 이 레포의 <code>frames.js</code>를 고치고 다시 생성해요.</li><li>두 아티팩트는 비공개예요. 다른 사람이 보려면 각 페이지의 Share에서 공유해야 해요.</li></ul>';
     return h;
   }
 
