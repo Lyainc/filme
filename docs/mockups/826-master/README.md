@@ -14,10 +14,11 @@
 | --- | --- |
 | `master.css` | `--pr-` 토큰(라이트·다크)과 모든 컴포넌트·프레임 스타일 |
 | `lib.js` | 프레임 조각 빌더(상단 줄·티켓·패널·슬라이더…)와 레드라인 실측 |
-| `frames.js` | 프레임 34개 · 상태 변형 83개 정의(상태 설명·컴포넌트·흐름·메모). 모바일 전용 |
+| `frames.js` | 프레임 34개 · 상태 변형 84개 정의(상태 설명·컴포넌트·흐름·메모). 모바일 전용 |
 | `data/components.js` | 컴포넌트 사양(구성·크기·토큰·변형·상태·대응 파일) |
 | `data/trace.js` | 현재 기능 52개 · 이관 요구 6개 추적 |
-| `data/refs.js` | 레퍼런스 근거표 |
+| `data/refs.js` | 레퍼런스 근거표(판정 채택 · 불채택 · 참고 · 실측 채택) |
+| `evidence/*.js` | 근거 단위. 파일 하나 = 마스터의 절 하나 = 캔버스 "근거" 보드 하나. `00-unit.js`가 등록·표·프레임 옆 주석 헬퍼 |
 | `data/verify.js` · `verification/` | Aside 렌더 검사 기록 |
 | `render.js` | 페이지 목록·라우팅·표 렌더 |
 | `check.js` | 렌더 검사 `MASTER_CHECK()` |
@@ -26,8 +27,8 @@
 
 ## Claude Design
 
-- 디자인 시스템 [FILME 영사실](https://claude.ai/artifact/MBMFZaMMAytrVv5HTgnxc8): 토큰·컴포넌트 28개·로고 마크·Pretendard. `node tools/gen-ds.js <출력폴더>`로 생성해요.
-- 캔버스 [FILME 리뉴얼](https://claude.ai/artifact/4cvubgJpHC9ANQudDDoJ5F): 페이지 "페이지 마스터" · "근거"(결정 · 추적표 · 문구 · 레퍼런스 · 토큰 · 흐름) · "결정 · 비교판" · "작업 중 목업". `node tools/gen-canvas.js <출력폴더>`로 생성해요. 근거 페이지는 렌더된 마스터에서 `#pg-cover/trace/copy/refs/tokens/flow`의 innerHTML을 `tools/.out/evidence.json`으로 떠 둔 스냅숏을 써요(없으면 근거 페이지 없이 생성).
+- 디자인 시스템 [FILME 영사실](https://claude.ai/artifact/MBMFZaMMAytrVv5HTgnxc8): 토큰·컴포넌트·로고 마크·Pretendard. `node tools/gen-ds.js <출력폴더>`로 생성해요.
+- 캔버스 [FILME 리뉴얼](https://claude.ai/artifact/4cvubgJpHC9ANQudDDoJ5F): 페이지 "페이지 마스터" · "근거" · "결정 · 비교판" · "작업 중 목업". `node tools/gen-canvas.js <출력폴더> [단위id]`로 생성해요. 근거는 `evidence/` 단위를 생성기가 직접 불러 보드 하나씩 그려요(스냅숏 없음). 단위 하나를 고쳤으면 두 번째 인자로 그 단위만 다시 쓰고 그 보드 파일만 올리면 돼요(보드 배치가 바뀌면 `canvas.json`도). 프레임에 걸린 문구 변경과 기능 · 요구는 프레임 보드 오른쪽 사양에 붙어요. `index.html`의 evidence 스크립트 목록이 폴더와 다르거나 추적표 점검(누락 · 참조 오류)이 0이 아니면 생성이 멈춰요.
 - 작업 중 목업은 그 캔버스 한 곳에 계속 더해요. 결정을 받을 비교판은 `decisions/D번호-주제.dc.html`(원본은 이 폴더 `decisions/`), 탐색 시안은 `wip/W번호-주제.dc.html`. 결정이 나면 아트보드 제목과 표지 결정 표를 같은 날 고쳐요.
 - 마스터 프레임은 레포 원본(`frames.js`)에서 생성해요. 캔버스에서 손으로 고친 건 다음 생성 때 덮이니 레포에 옮겨 적어요.
 - 두 아티팩트는 비공개예요. 다른 사람이 보려면 각 페이지의 Share에서 공유해야 해요.
