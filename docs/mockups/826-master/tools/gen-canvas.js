@@ -47,18 +47,6 @@ css += `
 `;
 fs.writeFileSync(OUT + 'pr.css', css);
 
-/* ---------- 정적 대상 줄 위치(캔버스엔 스크립트가 없어서 근사로 밀어 둬요) ---------- */
-function fixTrails(html) {
-  return html.replace(/<div class="c-trail"([^>]*)>([\s\S]*?)<\/div>/g, (m, attrs, inner) => {
-    const btns = inner.match(/<button class="c-ti[^"]*" aria-pressed="(true|false)">([^<]*)/g) || [];
-    let off = 0, found = false;
-    for (const b of btns) { const sel = /"true"/.test(b); const label = b.replace(/.*>/, ''); if (sel) { found = true; break; } off += label.length * 15 + 20; }
-    if (!found || off < 160) return m;
-    const shift = off - 40;
-    return '<div class="c-trail"' + attrs + '>' + inner.replace('<button class="c-ti', '<button style="margin-left:-' + shift + 'px" class="c-ti') + '</div>';
-  });
-}
-
 /* ---------- 아트보드 공통 ---------- */
 const HEAD = (title, css) => `<!doctype html>
 <html lang="ko">
@@ -102,7 +90,7 @@ function frameBoard(f) {
 <div class="ab-h"><span class="id">${f.id}</span><h1>${esc(f.name)}</h1></div>
 <div class="ab-row">
 `;
-  f.variants.forEach((v, i) => { html += `<figure class="ab-fig"><figcaption><span>${f.id}${n > 1 ? '.' + (i + 1) : ''}</span>${esc(v.st)}</figcaption>${fixTrails(v.html)}</figure>\n`; });
+  f.variants.forEach((v, i) => { html += `<figure class="ab-fig"><figcaption><span>${f.id}${n > 1 ? '.' + (i + 1) : ''}</span>${esc(v.st)}</figcaption>${v.html}</figure>\n`; });
   html += `<div class="ab-spec">
 <h2>상태</h2><ul>${f.states.map(s => '<li>' + esc(s) + '</li>').join('')}</ul>
 <h2>컴포넌트</h2><p style="margin:0">${f.comps.join(' · ')}</p>
