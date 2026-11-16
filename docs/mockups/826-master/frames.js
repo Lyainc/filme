@@ -65,16 +65,18 @@
       (o.resume ? '<button class="c-resume"' + S.rl('h') + '><span class="rt"><small>이어서 만들기</small><b>' + (o.resume === 'untitled' ? '제목 없는 티켓' : o.resume) + '</b></span><span class="t-meta">11.15</span>' + i('next') + '</button>' : '') +
       cta +
       '<div class="c-pair"><button class="c-btn txt u"' + (o.loading ? ' disabled' : '') + '>포스터 업로드</button><span aria-hidden="true">·</span><button class="c-btn txt u"' + (o.loading ? ' disabled' : '') + '>포스터 없이 직접 입력</button></div>' +
+      /* 고지는 접힘 한 줄(44 hit). 문구는 DOM에 그대로 있어 appFooterNotice 테스트(queryByText)가 유지돼요. */
+      '<details class="c-legal-d"' + (o.legalOpen ? ' open' : '') + S.rl('h') + '><summary>이용 고지' + i('next') + '</summary><div class="bd">' +
       '<p class="c-legal">비공식 팬메이드 티켓이라 양도·재판매할 수 없고, 정보 정확성은 보장하지 않으며 분실·훼손에 책임지지 않아요.</p>' +
-      '<p class="c-legal">© FILME · 글꼴 KCC은영체 한국저작권위원회 (CC BY) · <a href="#">GitHub</a></p>' + SAFE + '</div>';
+      '<p class="c-legal">© FILME · 글꼴 KCC은영체 한국저작권위원회 (CC BY) · <a href="#">GitHub</a></p></div></details>' + SAFE + '</div>';
     var head = '<div class="c-head">' + S.wordmark() + '<h1 class="c-copy">티켓 한 장이, 내 굿즈가 돼요</h1><p class="c-subc">스크린샷으로 자동입력. 사진으로 찍은 실물 티켓도 돼요.</p></div>';
     return S.phone('<div class="c-land">' + head + gal + lp + '</div>');
   }
   F({ id: 'L-01', page: 'landing', name: '랜딩 · 첫 방문', comps: ['C-WM', 'C-CAR', 'C-BTN', 'C-LNK'],
-    variants: [{ st: '기본 · 전시 재생', html: landing({}) }, { st: '동작 줄이기', html: landing({ grid: true }) }],
-    states: ['전시는 버튼 없이 4초마다 넘어가요(소유자 결정 2026-11-17). 전시를 누르고 있거나 포커스가 들어오면 멈추고, 떼면 다시 돌아요.', '동작 줄이기(OS 설정)면 자동 전환 없이 3열 격자로 전부 보여요.', '35mm 와이드는 가로라 전시에서 빠져요(현행 유지).'],
+    variants: [{ st: '기본 · 전시 재생', html: landing({}) }, { st: '동작 줄이기', html: landing({ grid: true }) }, { st: '이용 고지 펼침', html: landing({ legalOpen: true }) }],
+    states: ['전시는 버튼 없이 4초마다 넘어가요(소유자 결정 2026-11-17). 전시를 누르고 있거나 포커스가 들어오면 멈추고, 떼면 다시 돌아요.', '동작 줄이기(OS 설정)면 자동 전환 없이 3열 격자로 전부 보여요.', '35mm 와이드는 가로라 전시에서 빠져요(현행 유지).', '법적 고지는 맨 아래 "이용 고지" 한 줄로 접혀 있고, 누르면 그 자리에서 펼쳐져요(문구는 현행 그대로). 펼치면 전시가 그만큼 줄어요.'],
     flow: [['전시 카드 탭', 'E-01', '그 무드로 새 문서 240ms'], ['티켓 스크린샷으로 자동입력', 'L-03', 'OS 파일 선택 → 인식 중'], ['포스터 업로드', 'C-01', 'OS 파일 선택 → 크롭'], ['포스터 없이 직접 입력', 'E-02', '빈 티켓 편집'], ['가로 스와이프', 'L-01', '전시 한 칸']],
-    notes: ['요구 1은 "버튼 대신 누르고 있는 동안 정지 + 포커스 정지 + OS 동작 줄이기"로 바뀌었어요. WCAG 2.2.2의 정지 수단을 제스처가 맡는 셈이라 발견성이 낮다는 위험을 미결에 적었어요.', '헤드라인·서브·법적 고지는 문구 규칙 예외라 그대로예요.'] });
+    notes: ['요구 1은 "버튼 대신 누르고 있는 동안 정지 + 포커스 정지 + OS 동작 줄이기"로 바뀌었어요. WCAG 2.2.2의 정지 수단을 제스처가 맡는 셈이라 발견성이 낮다는 위험을 미결에 적었어요.', '헤드라인·서브·법적 고지 문구는 문구 규칙 예외라 그대로예요. 고지는 접기만 했어요(소유자 지적 2026-11-17: 메인 영역을 너무 차지함).'] });
   F({ id: 'L-02', page: 'landing', name: '랜딩 · 이어서 만들기', comps: ['C-RES', 'C-BTN'],
     variants: [{ st: '저장본 있음', html: landing({ resume: '먼 바다' }) }, { st: '제목 없는 저장본', html: landing({ resume: 'untitled' }) }],
     states: ['저장본이 있을 때만 행이 생겨요. 제목이 없으면 "제목 없는 티켓".'],

@@ -326,6 +326,12 @@ button { cursor: pointer; }
 .c-resume .rt small { font-size: 12px; line-height: 16px; color: var(--pr-ink-2); }
 .c-resume .rt b { font-size: 15px; line-height: 22px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .c-resume .t-meta { white-space: nowrap; }
+.c-legal-d { margin: 0; }
+.c-legal-d summary { list-style: none; min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 2px; font-size: 12px; line-height: 16px; color: var(--pr-ink-3); cursor: pointer; }
+.c-legal-d summary::-webkit-details-marker { display: none; }
+.c-legal-d summary .i { width: 14px; height: 14px; transform: rotate(90deg); }
+.c-legal-d[open] summary .i { transform: rotate(-90deg); }
+.c-legal-d .bd { display: flex; flex-direction: column; gap: 4px; padding-bottom: var(--pr-s-2); }
 .c-pair { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; color: var(--pr-ink-3); }
 .c-legal { margin: 0; text-align: center; font-size: 12px; line-height: 16px; color: var(--pr-ink-2); }
 .c-legal a { color: inherit; }
