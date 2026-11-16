@@ -10,8 +10,6 @@
     eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
     eyeoff: '<path d="M3 3l18 18M10.6 5.1A10 10 0 0112 5c6 0 10 7 10 7a17 17 0 01-3.2 3.9M6.6 6.6C3.8 8.3 2 12 2 12s4 7 10 7a9.6 9.6 0 004.4-1.1"/><path d="M9.9 9.9a3 3 0 004.2 4.2"/>',
     close: '<path d="M6 6l12 12M18 6L6 18"/>',
-    pause: '<path d="M9 6v12M15 6v12"/>',
-    play: '<path d="M8 5l11 7-11 7z"/>',
     expand: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
     star: '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
     search: '<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>',
@@ -89,43 +87,6 @@
     return '<div class="c-canvas"><div class="tkw' + (o.wide ? ' wide' : '') + '"' + (o.rl ? P.rl('tw') : '') + '>' + P.ticket(o.ticket || {}) + (o.sel ? P.sel(o.sel) : '') + (o.extra || '') + '</div>' + (o.after || '') + '</div>';
   };
 
-  /* 대상 목록(티켓 읽는 순서). req: 필수 */
-  P.TARGETS = [
-    { k: 'ticket', n: '티켓' }, { k: 'poster', n: '포스터' }, { k: 'title', n: '제목', req: 1 }, { k: 'titleOg', n: '원제' },
-    { k: 'release', n: '개봉일', req: 1 }, { k: 'rerelease', n: '재개봉' }, { k: 'actors', n: '출연' }, { k: 'watchDate', n: '관람일' },
-    { k: 'watchTime', n: '관람 시간' }, { k: 'theater', n: '극장' }, { k: 'screen', n: '상영관' }, { k: 'seat', n: '좌석' },
-    { k: 'runtime', n: '러닝타임' }, { k: 'bookingNo', n: '예매 번호' }, { k: 'rating', n: '평점' }, { k: 'quote', n: '한줄평' },
-    { k: 'signature', n: '서명' }, { k: 'chain', n: '극장 로고' }, { k: 'format', n: '포맷 로고' }
-  ];
-  P.idx = function (k) { for (var i = 0; i < P.TARGETS.length; i++) if (P.TARGETS[i].k === k) return i; return 0; };
-  P.pos = function (k) { var n = P.idx(k) + 1, t = P.TARGETS.length; return '<span class="pos" aria-label="대상 ' + n + '번째, 전체 ' + t + '개">' + (n < 10 ? '0' + n : n) + ' / ' + t + '</span>'; };
-  P.trail = function (sel, o) {
-    o = o || {};
-    var h = '<div class="c-trail" role="group" aria-label="편집 대상"' + P.rl('h') + '>';
-    P.TARGETS.forEach(function (t) {
-      var miss = o.miss && t.req;
-      var off = o.off && o.off.indexOf(t.k) >= 0;
-      h += '<button class="c-ti' + (off ? ' off' : '') + '" aria-pressed="' + (t.k === sel) + '">' + t.n + (miss ? '<span class="dot" aria-hidden="true"></span><span class="sr-only"> 필수 미입력</span>' : '') + '</button>';
-    });
-    return h + '</div>';
-  };
-
-  /* 패널 머리. o: {t, k, src, nav:true, right:html, req:'ok'|'miss'} */
-  P.phd = function (o) {
-    var h = '<div class="c-ph"' + (o.rl ? P.rl('hx') : '') + '>';
-    h += (o.label ? '<label class="t" for="' + o.label + '">' + o.t + '</label>' : '<span class="t">' + o.t + '</span>');
-    if (o.req) h += '<span class="c-tag req' + (o.req === 'miss' ? ' miss' : '') + '">필수</span>';
-    if (o.src) h += '<span class="c-tag src">' + o.src + '</span>';
-    if (o.k) h += P.pos(o.k);
-    h += '<span class="gap"></span>';
-    if (o.right) h += o.right;
-    if (o.nav) h += '<button class="c-ib" aria-label="이전 대상">' + P.i('back') + '</button><button class="c-ib" aria-label="다음 대상">' + P.i('next') + '</button>';
-    return h + '</div>';
-  };
-  P.tabs = function (sel) {
-    var n = ['디자인', '색상', '질감'];
-    return '<div class="c-tabs" role="tablist" aria-label="티켓 꾸미기"' + P.rl('h') + '>' + n.map(function (x) { return '<button role="tab" aria-selected="' + (x === sel) + '">' + x + '</button>'; }).join('') + '</div>';
-  };
   P.MOODS = [
     { k: 'minimal', n: '미니멀', paper: '#FBF8F3' }, { k: 'criterion', n: '크라이테리언', paper: '#E8E2D6' },
     { k: '35mm', n: '35mm', paper: '#1C1D20', dark: 1 }, { k: 'editorial', n: '에디토리얼', paper: '#F3EAE0', wide: 1 },
@@ -228,12 +189,6 @@
       fig.querySelectorAll(':scope > .rl').forEach(function (n) { n.remove(); });
       var used = { h: {}, w: 0 };
       ph.querySelectorAll('[data-rl]').forEach(function (el) { addRl(fig, ph, el, el.getAttribute('data-rl'), used); });
-    });
-  };
-  P.scrollTrails = function (root) {
-    (root || document).querySelectorAll('.c-trail').forEach(function (t) {
-      var s = t.querySelector('[aria-pressed=true]');
-      if (s) t.scrollLeft = s.offsetLeft - 8;
     });
   };
   window.PR = P;

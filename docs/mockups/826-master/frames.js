@@ -5,7 +5,7 @@
   var FR = [];
   function F(o) { FR.push(o); }
   var SAFE = '<div class="safe-b"></div>';
-  var DT = ['무드', '색상', '질감', '투명도', '크기'];
+  var DT = ['무드', '색상', '재질', '코팅', '투명도', '크기'];
 
   /* ---------- 공용 조각 ---------- */
   function tb(o) {
@@ -57,7 +57,7 @@
       gal = '<div class="c-gal" aria-roledescription="carousel" aria-label="무드 전시"><div class="beam" aria-hidden="true"></div>' +
         '<div class="peek l" aria-hidden="true">' + S.ticket({ dark: true }) + '</div><div class="peek r" aria-hidden="true">' + S.ticket({}) + '</div>' +
         '<button class="main" style="border:0;padding:0;background:transparent" aria-label="미니멀 무드로 바로 시작"' + S.rl('w') + '>' + S.ticket({}) + '</button>' +
-        '<span class="idx" style="left:16px" aria-hidden="true">1 / 5</span>' + (o.toast || '') + '</div>';
+        (o.toast ? o.toast : '<span class="idx" aria-hidden="true">1 / 5</span>') /* 토스트가 뜬 동안 위치 표시 자리를 토스트가 씀 */ + '</div>';
     }
     var cta = o.loading ? '<button class="c-btn pri cta block" aria-busy="true" aria-disabled="true"><span class="spin" aria-hidden="true"></span>티켓 인식 중…</button>'
       : '<button class="c-btn pri cta block"' + S.rl('h') + '>티켓 스크린샷으로 자동입력</button>';
@@ -158,16 +158,15 @@
     ],
     states: ['견본 44. 추천색 둘은 포스터에서 뽑아요(실패하면 두 칸을 숨기고 X-01 토스트).', '색 고정 무드(35mm·35mm 와이드·크라이테리언·스텁)는 견본 비활성 + 한 줄.'], flow: [['직접 지정', 'D-02', 'OS 색 선택기']], notes: [] });
   function tex(sub, opts, sel, v, dis) {
-    return '<div class="c-opts" role="radiogroup" aria-label="질감 종류"><button class="c-opt" role="radio" aria-checked="' + (sub === '재질') + '">재질</button><button class="c-opt" role="radio" aria-checked="' + (sub === '코팅') + '">코팅</button></div>' +
-      '<div class="c-opts" role="radiogroup" aria-label="' + sub + '" style="box-shadow:inset 0 1px 0 var(--pr-hair)">' + opts.map(function (x) { return '<button class="c-opt" role="radio" aria-checked="' + (x === sel) + '">' + x + '</button>'; }).join('') + '</div>' + S.slider('강도', v, { dis: dis, rlTrack: true });
+    return '<div class="c-opts" role="radiogroup" aria-label="' + sub + '">' + opts.map(function (x) { return '<button class="c-opt" role="radio" aria-checked="' + (x === sel) + '">' + x + '</button>'; }).join('') + '</div>' + S.slider('강도', v, { dis: dis, rlTrack: true });
   }
-  F({ id: 'D-03', page: 'dock', name: '디자인 · 질감', comps: ['C-TOOLS', 'C-OPT', 'C-SL'],
+  F({ id: 'D-03', page: 'dock', name: '디자인 · 재질 · 코팅', comps: ['C-TOOLS', 'C-OPT', 'C-SL'],
     variants: [
-      { st: '재질', html: ed({ dock: design('질감', tex('재질', ['원본', '미술용지', '빈티지', '흑백 신문'], '미술용지', 60)) }) },
-      { st: '코팅', html: ed({ dock: design('질감', tex('코팅', ['없음', '유광', '홀로그램', '메탈릭', '스코딕스'], '유광', 40)) }) },
-      { st: '비활성 · 효과 없음', html: ed({ dock: design('질감', tex('재질', ['원본', '미술용지', '빈티지', '흑백 신문'], '원본', 0, true)) }) }
+      { st: '재질', html: ed({ dock: design('재질', tex('재질', ['원본', '미술용지', '빈티지', '흑백 신문'], '미술용지', 60)) }) },
+      { st: '코팅', html: ed({ dock: design('코팅', tex('코팅', ['없음', '유광', '홀로그램', '메탈릭', '스코딕스'], '유광', 40)) }) },
+      { st: '비활성 · 효과 없음', html: ed({ dock: design('재질', tex('재질', ['원본', '미술용지', '빈티지', '흑백 신문'], '원본', 0, true)) }) }
     ],
-    states: ['재질과 코팅을 한 번에 하나만 보여 줘서 도크 높이가 그대로예요(질감 때문에 패널이 커지던 문제 해소).', '"원본"·"없음"이면 강도 비활성. 트랙 hit 32, 값을 누르면 K-03.'], flow: [['값 %', 'K-03', '숫자 키패드']], notes: ['옵션 줄 가로 스크롤은 의도된 잘림이에요.'] });
+    states: ['재질과 코팅은 디자인 도구 줄의 두 도구예요. 예전엔 질감 도구 안에 재질/코팅 칸을 한 번 더 뒀는데, 도구 줄 · 칸 · 옵션이 같은 모양의 선택으로 세 겹 쌓여 위계가 흐려서 한 겹을 걷었어요(2026-11-17 시각 감사).', '"원본"·"없음"이면 강도 비활성. 트랙 hit 32, 값을 누르면 K-03.'], flow: [['값 %', 'K-03', '숫자 키패드']], notes: ['옵션 줄 가로 스크롤은 의도된 잘림이에요.'] });
   F({ id: 'D-04', page: 'dock', name: '디자인 · 투명도', comps: ['C-TOOLS', 'C-SL'],
     variants: [{ st: '기본', html: ed({ dock: design('투명도', S.slider('포스터', 100) + S.slider('글자·로고', 100)) }) }],
     states: ['티켓 전체의 두 층을 한 번에 조정해요.'], flow: [['값 %', 'K-03', '']], notes: [] });

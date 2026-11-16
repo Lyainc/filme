@@ -94,7 +94,7 @@ W.COMPONENTS.forEach(c => {
   if (FRAME_DEMO[c.id]) { const f = fr(FRAME_DEMO[c.id][0]); demo = '<div style="width:393px;transform:scale(.68);transform-origin:0 0;height:580px">' + f.variants[FRAME_DEMO[c.id][1]].html + '</div>'; }
   const prev = `<!-- @dsCard group="${GROUP[c.id]}" height=${H[c.id] || 120} subtitle="${c.variants.replace(/"/g, "'").slice(0, 120)}" -->
 <div class="pr" style="background:var(--pr-stage);color:var(--pr-ink);font-family:var(--pr-font);padding:16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-height:100%;box-sizing:border-box;container-type:inline-size">${demo}</div>
-<script>document.querySelectorAll('.c-trail').forEach(function(t){var s=t.querySelector('[aria-pressed=true]');if(s)t.scrollLeft=s.offsetLeft-8;});</script>
+
 `;
   fs.writeFileSync(dir + 'preview.html', prev);
   const md = `# ${n}

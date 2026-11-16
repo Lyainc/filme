@@ -3,7 +3,7 @@
    의도된 경우(가로 스크롤 줄, 전시의 곁 티켓, 떠 있는 층 vs 바탕, 레드라인, 티켓 자리표시 안쪽)는 제외해요.
    사용: window.MASTER_CHECK() → { frames, issues: [...] } */
 (function () {
-  var SCROLLERS = '.c-trail, .c-opts, .c-thumbs, .c-gal, .c-list .kt, .c-acc, .c-tools, .c-dock-body[data-scroll="intended"]';
+  var SCROLLERS = '.c-opts, .c-thumbs, .c-gal, .c-list .kt, .c-acc, .c-tools, .c-dock-body[data-scroll="intended"]';
   var LAYERS = '.c-toast, .c-sheet, .c-scrim, .c-osheet, .c-dlg, .c-banner, .c-sel, .home';
   function leafText(ph) {
     var out = [];
