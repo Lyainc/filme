@@ -26,4 +26,8 @@
 
 ## Claude Design
 
-같은 토큰·컴포넌트는 Design System 아티팩트 "FILME 영사실"에, 프레임과 작업 중 비교판은 Design 캔버스 "FILME 리뉴얼"에 있어요. 작업 중 나오는 목업은 그 캔버스의 페이지에 계속 더해요(링크는 표지 페이지).
+- 디자인 시스템 [FILME 영사실](https://claude.ai/artifact/MBMFZaMMAytrVv5HTgnxc8): 토큰·컴포넌트 28개·로고 마크·Pretendard. `node tools/gen-ds.js <출력폴더>`로 생성해요.
+- 캔버스 [FILME 리뉴얼](https://claude.ai/artifact/4cvubgJpHC9ANQudDDoJ5F): 페이지 "페이지 마스터"(프레임 34) · "결정 · 비교판" · "작업 중 목업". `node tools/gen-canvas.js <출력폴더>`로 생성해요.
+- 작업 중 목업은 그 캔버스 한 곳에 계속 더해요. 결정을 받을 비교판은 `decisions/D번호-주제.dc.html`(원본은 이 폴더 `decisions/`), 탐색 시안은 `wip/W번호-주제.dc.html`. 결정이 나면 아트보드 제목과 표지 결정 표를 같은 날 고쳐요.
+- 마스터 프레임은 레포 원본(`frames.js`)에서 생성해요. 캔버스에서 손으로 고친 건 다음 생성 때 덮이니 레포에 옮겨 적어요.
+- 두 아티팩트는 비공개예요. 다른 사람이 보려면 각 페이지의 Share에서 공유해야 해요.

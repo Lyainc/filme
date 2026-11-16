@@ -1,0 +1,177 @@
+<title>영사실 결정 3·4·5</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Serif+KR:wght@500;600&family=Nunito:wght@900&display=swap">
+<style>
+/* 레이아웃: 결정 하나당 한 절, 절 안에 후보를 같은 무대 위에 나란히. 무대는 다크·라이트를 명시로 둘 다 그려요. */
+:root {
+  --page: #E9E6E0; --panel: #F7F5F1; --ink: #141414; --ink-2: #5B5852; --hair: rgba(17,17,17,.10); --hair-strong: rgba(17,17,17,.18);
+  --brick: #B0423F; --pick: #141414;
+  --f-ui: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  --f-serif: "Noto Serif KR", "AppleMyungjo", serif;
+  --f-brand: "Nunito", "Pretendard Variable", sans-serif;
+  /* 무대 원값(테마와 무관하게 고정: 두 무대를 나란히 보여 주려고) */
+  --d-stage: #0B0B0C; --d-s1: #141416; --d-s2: #1C1C1F; --d-ink: #ECE9E3; --d-ink2: #A8A49C; --d-hair: rgba(255,255,255,.08); --d-hair-s: rgba(255,255,255,.16); --d-accent: #C24B43; --d-warn: #E0A35A;
+  --l-stage: #EFECE6; --l-s1: #F7F5F1; --l-s2: #FFFFFF; --l-ink: #141414; --l-ink2: #5B5852; --l-hair: rgba(17,17,17,.08); --l-hair-s: rgba(17,17,17,.16); --l-accent: #B0423F; --l-warn: #8F5410;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --page: #0E0E10; --panel: #17171A; --ink: #ECE9E3; --ink-2: #A8A49C; --hair: rgba(255,255,255,.09); --hair-strong: rgba(255,255,255,.18); --brick: #C24B43; --pick: #ECE9E3; color-scheme: dark; } }
+:root[data-theme="dark"] { --page: #0E0E10; --panel: #17171A; --ink: #ECE9E3; --ink-2: #A8A49C; --hair: rgba(255,255,255,.09); --hair-strong: rgba(255,255,255,.18); --brick: #C24B43; --pick: #ECE9E3; color-scheme: dark; }
+
+body { background: var(--page); color: var(--ink); font-family: var(--f-ui); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 32px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1 { font-size: 24px; line-height: 30px; letter-spacing: -.02em; font-weight: 600; margin: 0; text-wrap: balance; }
+h2 { font-size: 19px; line-height: 26px; font-weight: 600; margin: 56px 0 6px; letter-spacing: -.01em; text-wrap: balance; }
+.lede { color: var(--ink-2); max-width: 66ch; margin: 10px 0 0; }
+.q { font-variant-numeric: tabular-nums; color: var(--ink-2); font-size: 13px; font-weight: 500; margin: 0; }
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr)); gap: 16px; margin-top: 20px; }
+.opt { background: var(--panel); border: 1px solid var(--hair); border-radius: 14px; padding: 16px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.opt.rec { border-color: var(--hair-strong); }
+.opt h3 { margin: 0; font-size: 15px; line-height: 22px; font-weight: 600; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.opt h3 .k { font-variant-numeric: tabular-nums; color: var(--ink-2); font-weight: 500; }
+.opt h3 .rec-t { font-size: 12px; font-weight: 600; color: var(--brick); border: 1px solid currentColor; border-radius: 4px; padding: 0 5px; line-height: 18px; }
+.opt p { margin: 0; font-size: 13px; line-height: 20px; color: var(--ink-2); }
+.opt ul { margin: 0; padding-left: 18px; font-size: 13px; line-height: 20px; color: var(--ink-2); }
+.stages { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stage { border-radius: 8px; padding: 30px 12px 14px; display: flex; justify-content: center; min-width: 0; }
+.stage.d { background: var(--d-stage); --s-ink: var(--d-ink); --s-ink2: var(--d-ink2); --s-acc: var(--d-accent); --s-hair: var(--d-hair-s); --s-s1: var(--d-s1); --s-s2: var(--d-s2); --s-warn: var(--d-warn); color: var(--d-ink); }
+.stage.l { background: var(--l-stage); --s-ink: var(--l-ink); --s-ink2: var(--l-ink2); --s-acc: var(--l-accent); --s-hair: var(--l-hair-s); --s-s1: var(--l-s1); --s-s2: var(--l-s2); --s-warn: var(--l-warn); color: var(--l-ink); border: 1px solid var(--l-hair); }
+
+/* 자리표시 티켓: 960×1534 비율 */
+.tk { position: relative; width: 132px; aspect-ratio: 960 / 1534; background: #FBF8F3; color: #1E1B18; border-radius: 2px; box-shadow: 0 10px 24px -16px rgba(0,0,0,.8); font-family: var(--f-ui); }
+.tk .po { position: absolute; left: 0; right: 0; top: 0; height: 60%; background: repeating-linear-gradient(135deg, #3B3A44 0 6px, #34333C 6px 12px); }
+.tk .ti { position: absolute; left: 7%; top: 64%; font-size: 12px; font-weight: 700; line-height: 1.1; }
+.tk .c { position: absolute; font-size: 7px; line-height: 1.15; display: flex; flex-direction: column; white-space: nowrap; }
+.tk .c small { font-size: 5.5px; opacity: .55; }
+.tk .ft { position: absolute; left: 7%; top: 92%; font-size: 6px; opacity: .65; }
+
+/* 선택 오버레이 공통: 티켓 DOM 밖 형제 노드 */
+.selw { position: relative; }
+.sel { position: absolute; pointer-events: none; }
+/* A·B: 재단 표시 */
+.cm::after { content: ""; position: absolute; inset: -4px; pointer-events: none; --c: var(--s-acc); --l: 7px; --w: 2px;
+  background: linear-gradient(var(--c),var(--c)) left top/var(--l) var(--w), linear-gradient(var(--c),var(--c)) left top/var(--w) var(--l), linear-gradient(var(--c),var(--c)) right top/var(--l) var(--w), linear-gradient(var(--c),var(--c)) right top/var(--w) var(--l), linear-gradient(var(--c),var(--c)) left bottom/var(--l) var(--w), linear-gradient(var(--c),var(--c)) left bottom/var(--w) var(--l), linear-gradient(var(--c),var(--c)) right bottom/var(--l) var(--w), linear-gradient(var(--c),var(--c)) right bottom/var(--w) var(--l);
+  background-repeat: no-repeat; }
+.cm { outline: 1px solid color-mix(in srgb, var(--s-acc) 45%, transparent); }
+.tag { position: absolute; left: -4px; bottom: calc(100% + 6px); height: 14px; padding: 0 4px; background: var(--s-acc); color: #fff; font-size: 9px; line-height: 14px; font-weight: 600; white-space: nowrap; border-radius: 2px; }
+.tag.in { bottom: auto; top: calc(100% + 6px); }
+/* C: 2px 브릭 테두리 */
+.bx { outline: 2px solid var(--s-acc); outline-offset: 2px; border-radius: 2px; }
+
+.cap { display: block; text-align: center; font-size: 11px; line-height: 16px; color: var(--s-ink2); margin-top: 8px; }
+.pair { display: flex; gap: 14px; align-items: flex-start; }
+
+/* 결정 4: 랜딩 머리 */
+.lhead { padding: 0 4px; width: 100%; text-align: left; }
+.wm { display: flex; align-items: center; gap: 7px; height: 36px; }
+.wm .mk { width: 24px; height: 24px; border-radius: 7px; background: var(--s-acc); display: grid; place-items: center; overflow: hidden; }
+.wm .mk svg { width: 18px; height: 18px; transform: rotate(-16deg); }
+.wm .lt { font-family: var(--f-brand); font-weight: 900; font-size: 19px; line-height: 1; letter-spacing: -.012em; color: var(--s-ink); }
+.wm .lt i { font-style: normal; position: relative; display: inline-block; }
+.wm .lt i b { position: absolute; left: 50%; bottom: .72em; width: .2em; height: .2em; border-radius: 50%; background: var(--s-acc); transform: translateX(-50%); }
+.wm .lt em { font-style: normal; color: var(--s-acc); }
+.hl { margin: 10px 0 4px; font-size: 20px; line-height: 27px; letter-spacing: -.02em; font-weight: 600; color: var(--s-ink); text-wrap: balance; }
+.hl.serif { font-family: var(--f-serif); font-weight: 600; letter-spacing: -.01em; }
+.sub { margin: 0; font-size: 13px; line-height: 20px; color: var(--s-ink2); }
+.cta { margin-top: 14px; height: 40px; border-radius: 6px; background: var(--s-acc); color: #fff; font-size: 14px; font-weight: 600; display: grid; place-items: center; }
+
+/* 결정 5: 완료 실패 상태 */
+.err { width: 100%; background: var(--s-s1); border: 1px solid var(--s-hair); border-radius: 10px; padding: 10px 12px 12px; font-size: 12px; line-height: 17px; }
+.err .row { display: flex; align-items: center; gap: 6px; height: 26px; }
+.err .row b { font-size: 14px; font-weight: 600; color: var(--s-ink); }
+.err .req { font-size: 10px; line-height: 14px; font-weight: 600; padding: 0 4px; border-radius: 3px; border: 1px solid currentColor; }
+.err .in { margin-top: 6px; height: 36px; border-radius: 6px; background: var(--s-s2); border: 1px solid var(--s-hair); display: flex; align-items: center; padding: 0 10px; font-size: 14px; color: var(--s-ink2); }
+.err .msg { margin: 6px 0 0; display: flex; gap: 6px; align-items: flex-start; }
+.err .dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 6px; flex: none; }
+.err .done { margin-top: 10px; height: 34px; border-radius: 6px; background: var(--s-acc); color: #fff; display: grid; place-items: center; font-weight: 600; font-size: 13px; }
+.v-warn .req, .v-warn .msg { color: var(--s-warn); }
+.v-warn .in { border-color: var(--s-warn); }
+.v-warn .dot { background: var(--s-warn); }
+.v-brick .req { color: var(--s-ink); }
+.v-brick .in { border-color: var(--s-acc); border-width: 2px; }
+.v-brick .msg { color: var(--s-ink); }
+.v-brick .dot { background: var(--s-acc); }
+
+.fine { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--hair); font-size: 13px; color: var(--ink-2); max-width: 72ch; }
+@media (max-width: 420px) { .stages { grid-template-columns: 1fr; } }
+</style>
+
+<div class="wrap">
+  <p class="q">#826 3단계 · 영사실 톤 결정</p>
+  <h1>선택 표시 · 세리프 · 브릭 범위</h1>
+  <p class="lede">세 결정을 같은 자리표시 티켓 위에 그렸어요. 각 후보는 다크·라이트 무대를 나란히 놓았고, 추천안은 테두리를 한 단계 진하게 했어요. 확정된 것: 테마는 시스템 설정을 따르고, 글꼴은 mono 없이 Pretendard Variable 하나로 가요(숫자는 고정폭 숫자 설정만).</p>
+
+  <h2>3. 선택 표시</h2>
+  <p class="lede">티켓에서 필드를 고르면 그리는 오버레이예요. 오버레이는 티켓 DOM 밖 형제 노드라 저장물에 섞이지 않아요(요구 6). 각 후보마다 큰 필드(제목)와 작은 필드(좌석) 두 경우를 보여 줘요. 라벨 위치 규칙이 필요한지는 위 여백에 달려 있어서, 포스터처럼 티켓 맨 위를 고른 경우도 같이 그렸어요.</p>
+  <div class="opts">
+    <div class="opt rec">
+      <h3><span class="k">3-A</span>재단 표시 + 라벨, 라벨 위치 규칙<span class="rec-t">추천</span></h3>
+      <div class="stages">
+        <div class="stage d"><div class="pair"><div><div class="selw"><div class="tk"><div class="po"></div><div class="ti">먼 바다</div><div class="c" style="left:7%;top:74%"><small>날짜</small><span>11.15 토</span></div><div class="c" style="left:70%;top:82%"><small>좌석</small><span>H12</span></div><div class="ft">No. 0481</div></div><div class="sel cm" style="left:5%;top:63%;width:52%;height:7%"><span class="tag">제목</span></div></div><span class="cap">큰 필드</span></div></div></div>
+        <div class="stage l"><div class="pair"><div><div class="selw"><div class="tk"><div class="po"></div><div class="ti">먼 바다</div><div class="c" style="left:7%;top:74%"><small>날짜</small><span>11.15 토</span></div><div class="c" style="left:70%;top:82%"><small>좌석</small><span>H12</span></div><div class="ft">No. 0481</div></div><div class="sel cm" style="left:68%;top:81.3%;width:22%;height:6.6%"><span class="tag">좌석</span></div></div><span class="cap">작은 필드</span></div></div></div>
+        <div class="stage d" style="grid-column:1/-1"><div class="pair"><div><div class="selw"><div class="tk"><div class="po"></div><div class="ti">먼 바다</div><div class="c" style="left:7%;top:74%"><small>날짜</small><span>11.15 토</span></div><div class="c" style="left:70%;top:82%"><small>좌석</small><span>H12</span></div><div class="ft">No. 0481</div></div><div class="sel cm" style="left:0;top:0;width:100%;height:60%"><span class="tag in">포스터</span></div></div><span class="cap">위 여백이 없으면 라벨을 상자 아래 안쪽으로</span></div></div></div>
+      </div>
+      <ul><li>라벨은 한글 대상 이름(제목·좌석·포스터), Pretendard 11/14 600, 브릭 채움 위 흰 글자예요.</li><li>규칙: 상자 위 여백이 22px 미만이면 라벨을 상자 아래로 옮겨요. 아래도 모자라면(티켓 맨 아래 필드) 라벨을 생략하고 패널 머리 이름만 써요.</li><li>작은 필드에서도 어디를 골랐는지 한눈에 보이고, 패널을 보지 않아도 대상 이름이 확인돼요.</li></ul>
+    </div>
+    <div class="opt">
+      <h3><span class="k">3-B</span>재단 표시만, 라벨 없음</h3>
+      <div class="stages">
+        <div class="stage d"><div class="pair"><div><div class="selw"><div class="tk"><div class="po"></div><div class="ti">먼 바다</div><div class="c" style="left:7%;top:74%"><small>날짜</small><span>11.15 토</span></div><div class="c" style="left:70%;top:82%"><small>좌석</small><span>H12</span></div><div class="ft">No. 0481</div></div><div class="sel cm" style="left:5%;top:63%;width:52%;height:7%"></div></div><span class="cap">큰 필드</span></div></div></div>
+        <div class="stage l"><div class="pair"><div><div class="selw"><div class="tk"><div class="po"></div><div class="ti">먼 바다</div><div class="c" style="left:7%;top:74%"><small>날짜</small><span>11.15 토</span></div><div class="c" style="left:70%;top:82%"><small>좌석</small><span>H12</span></div><div class="ft">No. 0481</div></div><div class="sel cm" style="left:68%;top:81.3%;width:22%;height:6.6%"></div></div><span class="cap">작은 필드</span></div></div></div>
+      </div>
+      <ul><li>가장 조용해요. 위치 규칙이 필요 없어요.</li><li>대상 이름은 패널 머리에만 있어서, 작은 필드끼리 붙어 있을 때(날짜·시간·상영관) 무엇을 골랐는지 패널까지 눈을 옮겨야 해요.</li></ul>
+    </div>
+    <div class="opt">
+      <h3><span class="k">3-C</span>2px 브릭 테두리 상자</h3>
+      <div class="stages">
+        <div class="stage d"><div class="pair"><div><div class="selw"><div class="tk"><div class="po"></div><div class="ti">먼 바다</div><div class="c" style="left:7%;top:74%"><small>날짜</small><span>11.15 토</span></div><div class="c" style="left:70%;top:82%"><small>좌석</small><span>H12</span></div><div class="ft">No. 0481</div></div><div class="sel bx" style="left:5%;top:63%;width:52%;height:7%"></div></div><span class="cap">큰 필드</span></div></div></div>
+        <div class="stage l"><div class="pair"><div><div class="selw"><div class="tk"><div class="po"></div><div class="ti">먼 바다</div><div class="c" style="left:7%;top:74%"><small>날짜</small><span>11.15 토</span></div><div class="c" style="left:70%;top:82%"><small>좌석</small><span>H12</span></div><div class="ft">No. 0481</div></div><div class="sel bx" style="left:68%;top:81.3%;width:22%;height:6.6%"></div></div><span class="cap">작은 필드</span></div></div></div>
+      </div>
+      <ul><li>가장 익숙한 선택 표시예요(Figma·Canva 계열).</li><li>상자 테두리가 필드 글자에 가까이 붙어서 작은 필드에서는 글자를 덮어 보여요. 영사실 톤의 "인쇄 공정" 느낌은 사라져요.</li></ul>
+    </div>
+  </div>
+
+  <h2>4. 세리프를 어디에 쓸지</h2>
+  <p class="lede">워드마크는 BI 마스터 v2 락업(클래퍼 티켓 마크 + Nunito 900 "fılme")을 그대로 둬요. f-refined가 세리프를 썼던 자리는 워드마크 대체였는데, 그 대체를 걷으면 세리프가 남는 자리는 랜딩 헤드라인 하나예요. 한글 세리프는 웹폰트를 하나 더 들여야 해요(여기선 Noto Serif KR 600으로 그렸어요).</p>
+  <div class="opts">
+    <div class="opt rec">
+      <h3><span class="k">4-A</span>세리프 없음 · 카피도 Pretendard<span class="rec-t">추천</span></h3>
+      <div class="stages">
+        <div class="stage d"><div class="lhead"><div class="wm"><span class="mk"><svg viewBox="0 0 100 100" aria-hidden="true"><path fill="#FBF4EC" d="M21 27H79A8 8 0 0 1 87 35V65A8 8 0 0 1 79 73H21A8 8 0 0 1 13 65V35A8 8 0 0 1 21 27Z"/><rect x="21" y="34.5" width="30" height="9" rx="2.5" fill="#241C22"/><rect x="22" y="49" width="28" height="3.4" rx="1.7" fill="#241C22"/><rect x="22" y="56.5" width="18" height="3.4" rx="1.7" fill="#241C22"/><rect x="66" y="43.5" width="14" height="14" rx="3.5" fill="#241C22"/></svg></span><span class="lt" aria-label="FILME">f<i>ı<b></b></i>l<em>me</em></span></div><p class="hl">티켓 한 장이, 내 굿즈가 돼요</p><p class="sub">스크린샷이나 포스터만 있으면 돼요</p><div class="cta">티켓 스크린샷으로 자동입력</div></div></div>
+        <div class="stage l"><div class="lhead"><div class="wm"><span class="mk"><svg viewBox="0 0 100 100" aria-hidden="true"><path fill="#FBF4EC" d="M21 27H79A8 8 0 0 1 87 35V65A8 8 0 0 1 79 73H21A8 8 0 0 1 13 65V35A8 8 0 0 1 21 27Z"/><rect x="21" y="34.5" width="30" height="9" rx="2.5" fill="#241C22"/><rect x="22" y="49" width="28" height="3.4" rx="1.7" fill="#241C22"/><rect x="22" y="56.5" width="18" height="3.4" rx="1.7" fill="#241C22"/><rect x="66" y="43.5" width="14" height="14" rx="3.5" fill="#241C22"/></svg></span><span class="lt" aria-label="FILME">f<i>ı<b></b></i>l<em>me</em></span></div><p class="hl">티켓 한 장이, 내 굿즈가 돼요</p><p class="sub">스크린샷이나 포스터만 있으면 돼요</p><div class="cta">티켓 스크린샷으로 자동입력</div></div></div>
+      </div>
+      <ul><li>글꼴 두 벌(Pretendard + BI 전용 Nunito)로 끝나요. 추가 용량이 없어요.</li><li>영사실 인상은 무대 색·헤어라인·티켓 한 장의 빛으로 내요. 글자는 조용히 둬요.</li></ul>
+    </div>
+    <div class="opt">
+      <h3><span class="k">4-B</span>랜딩 헤드라인만 한글 세리프</h3>
+      <div class="stages">
+        <div class="stage d"><div class="lhead"><div class="wm"><span class="mk"><svg viewBox="0 0 100 100" aria-hidden="true"><path fill="#FBF4EC" d="M21 27H79A8 8 0 0 1 87 35V65A8 8 0 0 1 79 73H21A8 8 0 0 1 13 65V35A8 8 0 0 1 21 27Z"/><rect x="21" y="34.5" width="30" height="9" rx="2.5" fill="#241C22"/><rect x="22" y="49" width="28" height="3.4" rx="1.7" fill="#241C22"/><rect x="22" y="56.5" width="18" height="3.4" rx="1.7" fill="#241C22"/><rect x="66" y="43.5" width="14" height="14" rx="3.5" fill="#241C22"/></svg></span><span class="lt" aria-label="FILME">f<i>ı<b></b></i>l<em>me</em></span></div><p class="hl serif">티켓 한 장이, 내 굿즈가 돼요</p><p class="sub">스크린샷이나 포스터만 있으면 돼요</p><div class="cta">티켓 스크린샷으로 자동입력</div></div></div>
+        <div class="stage l"><div class="lhead"><div class="wm"><span class="mk"><svg viewBox="0 0 100 100" aria-hidden="true"><path fill="#FBF4EC" d="M21 27H79A8 8 0 0 1 87 35V65A8 8 0 0 1 79 73H21A8 8 0 0 1 13 65V35A8 8 0 0 1 21 27Z"/><rect x="21" y="34.5" width="30" height="9" rx="2.5" fill="#241C22"/><rect x="22" y="49" width="28" height="3.4" rx="1.7" fill="#241C22"/><rect x="22" y="56.5" width="18" height="3.4" rx="1.7" fill="#241C22"/><rect x="66" y="43.5" width="14" height="14" rx="3.5" fill="#241C22"/></svg></span><span class="lt" aria-label="FILME">f<i>ı<b></b></i>l<em>me</em></span></div><p class="hl serif">티켓 한 장이, 내 굿즈가 돼요</p><p class="sub">스크린샷이나 포스터만 있으면 돼요</p><div class="cta">티켓 스크린샷으로 자동입력</div></div></div>
+      </div>
+      <ul><li>랜딩 첫인상이 영화 포스터 문구처럼 바뀌어요.</li><li>한 줄을 위해 웹폰트를 하나 더 받아요(한글 서브셋이라도 수백 KB). 둥근 Nunito 워드마크와 각진 명조가 한 화면에서 부딪혀 보일 수 있어요.</li></ul>
+    </div>
+  </div>
+
+  <h2>5. 브릭을 어디까지 쓸지</h2>
+  <p class="lede">브릭은 다크 표면 위 글자로 3.8:1이라 작은 글자색으로는 못 써요. 그래서 갈리는 지점은 오류·필수 누락 표시예요. 아래는 "완료"를 눌렀는데 제목이 비어 있는 상태예요.</p>
+  <div class="opts">
+    <div class="opt rec">
+      <h3><span class="k">5-A</span>브릭은 주 행동·선택만, 오류는 앰버 경고 토큰<span class="rec-t">추천</span></h3>
+      <div class="stages">
+        <div class="stage d"><div class="err v-warn"><div class="row"><b>제목</b><span class="req">필수</span></div><div class="in">제목 입력</div><p class="msg"><span class="dot"></span><span>제목이 비어 있어요. 제목을 입력해 주세요.</span></p><div class="done">완료</div></div></div>
+        <div class="stage l"><div class="err v-warn"><div class="row"><b>제목</b><span class="req">필수</span></div><div class="in">제목 입력</div><p class="msg"><span class="dot"></span><span>제목이 비어 있어요. 제목을 입력해 주세요.</span></p><div class="done">완료</div></div></div>
+      </div>
+      <ul><li>새 토큰 <code>--pr-warn</code>: 다크 #E0A35A(표면 위 7.7:1 이상), 라이트 #8F5410(5.2:1 이상). 글자로 써도 AA예요.</li><li>"눌러야 할 것"(브릭)과 "고쳐야 할 것"(앰버)이 색으로 갈려요. 지금 앱의 <code>--danger</code> 빨강은 브릭과 너무 가까워서 이 자리에 안 써요.</li></ul>
+    </div>
+    <div class="opt">
+      <h3><span class="k">5-B</span>오류도 브릭으로 통일</h3>
+      <div class="stages">
+        <div class="stage d"><div class="err v-brick"><div class="row"><b>제목</b><span class="req">필수</span></div><div class="in">제목 입력</div><p class="msg"><span class="dot"></span><span>제목이 비어 있어요. 제목을 입력해 주세요.</span></p><div class="done">완료</div></div></div>
+        <div class="stage l"><div class="err v-brick"><div class="row"><b>제목</b><span class="req">필수</span></div><div class="in">제목 입력</div><p class="msg"><span class="dot"></span><span>제목이 비어 있어요. 제목을 입력해 주세요.</span></p><div class="done">완료</div></div></div>
+      </div>
+      <ul><li>색이 하나 줄어 팔레트가 더 단단해요.</li><li>브릭은 글자로 못 쓰니 오류 문구는 잉크색이고, 경고는 입력 테두리 2px와 점으로만 보여요. 완료 버튼과 오류 테두리가 같은 색이라 "주 행동"과 "문제 위치"가 한 화면에서 섞여요.</li></ul>
+    </div>
+  </div>
+
+  <p class="fine">자리표시 그림이에요. 실제 티켓 렌더·무드는 #826의 별도 갈래예요. Pretendard는 이 페이지에서 불러올 수 없어서 기기 기본 고딕(Apple SD Gothic Neo 또는 Noto Sans KR)으로 보여요. 오류 문구는 COPY_TONE_GUIDE의 [무슨 일] + [다음 행동] 두 문장 형식이에요.</p>
+</div>
