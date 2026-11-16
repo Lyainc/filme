@@ -9,6 +9,8 @@
     var out = [];
     ph.querySelectorAll('*').forEach(function (el) {
       if (el.closest('.rl, .tk, .c-kbd, svg')) return;
+      /* 닫힌 details의 내용은 크롬이 상자를 남겨도 보이지 않아요(랜딩 이용 고지) */
+      if (el.closest('details:not([open])') && !el.closest('summary')) return;
       var has = false;
       el.childNodes.forEach(function (n) { if (n.nodeType === 3 && n.textContent.trim()) has = true; });
       if (!has) return;
