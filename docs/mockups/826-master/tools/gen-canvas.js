@@ -84,7 +84,7 @@ class Component extends DCLogic {
 `;
 
 /* ---------- 프레임 아트보드 ---------- */
-const GROUPS = [['landing', '랜딩'], ['editor', '편집 기본'], ['panels', '대상별 패널'], ['input', '필드 편집 · 키보드'], ['crop', '크롭'], ['menu', '메뉴 · 설정'], ['result', '결과 · 저장 · 공유'], ['errors', '오류 · 빈 상태'], ['share', '공유 페이지']];
+const GROUPS = [['landing', '랜딩'], ['editor', '편집 기본'], ['dock', '도크 · 사진 · 정보 · 디자인'], ['input', '필드 편집 · 키보드'], ['crop', '크롭'], ['menu', '메뉴 · 설정'], ['result', '결과 · 저장 · 공유'], ['errors', '오류 · 빈 상태'], ['share', '공유 페이지']];
 const boards = {}, order = [], notes = {};
 const H = 1010;
 function frameBoard(f) {
@@ -119,7 +119,7 @@ ${S.wordmark()}
 <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px">
 <div style="background: var(--pr-s1); border: 1px solid var(--pr-hair-strong); border-radius: 6px; padding: 20px; display: flex; flex-direction: column; gap: 8px">
 <h2 style="margin: 0; font-size: 17px; font-weight: 600">페이지 마스터</h2>
-<p style="margin: 0; font-size: 14px; line-height: 21px; color: var(--pr-ink-2)">프레임 34개 · 상태 변형 87개. 화면 묶음마다 한 줄, 아트보드 하나가 프레임 하나예요. 각 아트보드 오른쪽에 상태 · 컴포넌트 · 흐름 · 메모가 붙어요. 테마는 아트보드 Tweaks의 theme.</p>
+<p style="margin: 0; font-size: 14px; line-height: 21px; color: var(--pr-ink-2)">프레임 ' + W.FRAMES.length + '개 · 상태 변형 ' + W.FRAMES.reduce(function (a, f) { return a + f.variants.length; }, 0) + '개. 화면 묶음마다 한 줄, 아트보드 하나가 프레임 하나예요. 각 아트보드 오른쪽에 상태 · 컴포넌트 · 흐름 · 메모가 붙어요. 테마는 아트보드 Tweaks의 theme.</p>
 </div>
 <div style="background: var(--pr-s1); border: 1px solid var(--pr-hair-strong); border-radius: 6px; padding: 20px; display: flex; flex-direction: column; gap: 8px">
 <h2 style="margin: 0; font-size: 17px; font-weight: 600">결정 · 비교판</h2>
@@ -132,7 +132,7 @@ ${S.wordmark()}
 </div>
 <div style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; line-height: 21px; color: var(--pr-ink-2)">
 <p style="margin: 0"><b style="color: var(--pr-ink)">원본</b> 레포 브랜치 docs/826-page-master의 docs/mockups/826-master/ (프레임 빌더 · 추적표 · 레퍼런스 · Aside 검증 기록). 캔버스 아트보드는 그 원본에서 생성했어요.</p>
-<p style="margin: 0"><b style="color: var(--pr-ink)">결정</b> 테마 시스템 따름 · Pretendard 하나 · 재단 표시 선택 · 세리프 없음 · 오류는 앰버.</p>
+<p style="margin: 0"><b style="color: var(--pr-ink)">결정</b> 테마 시스템 따름 · Pretendard 하나 · 재단 표시 · 세리프 없음 · 오류는 앰버 · 전시 강제 재생 · 모바일 전용 · 문구 간결 · 도크 모드 셋(사진 · 정보 · 디자인).</p><p style="margin: 0"><b style="color: var(--pr-ink)">근거</b> "근거" 페이지에 결정·미결·Seed, 기능·요구 추적표, 문구 변경, 레퍼런스, 토큰, 흐름이 있어요.</p>
 <p style="margin: 0"><b style="color: var(--pr-ink)">범위 밖</b> 티켓 무드 렌더(자리표시 그림) · 프로덕션 코드 · Seed(4단계).</p>
 </div>
 </div>` + TAIL(MAIN_W, MAIN_H, 'dark'));
@@ -186,11 +186,27 @@ notes['decisions-rule'] = { x: 1400, y: 0, w: 420, text: '결정 · 비교판 �
 notes['wip-rule'] = { x: 0, y: 0, w: 480, text: '작업 중 목업 규칙\n\n· 결정이 필요 없는 탐색 시안은 wip/W번호-주제.dc.html.\n· 393 기준 폰 프레임은 pr.css의 .ph 구조(상태 막대 · 홈 인디케이터)를 그대로 써요.\n· 마스터로 확정되면 master/의 해당 프레임을 고치고, 레포 원본(frames.js)도 같은 커밋에서 고쳐요.\n· 아직 아트보드 없음.', fill: 'gray', page: 'wip' };
 notes['master-rule'] = { x: MAIN_W + 80, y: 0, w: 420, text: '페이지 마스터 아트보드는 레포 원본에서 생성해요. 손으로 고치면 다음 생성 때 덮일 수 있어요. 고칠 땐 레포 frames.js를 고치고 다시 생성하거나, 여기서 고친 걸 레포에 옮겨 적어요.', fill: 'orange', page: 'master' };
 
+/* ---------- 근거 페이지: 렌더된 마스터 페이지를 그대로 떠 온 스냅숏(tools/.out/evidence.json) ---------- */
+const EV = path.join(__dirname, '.out/evidence.json');
+const evPages = [];
+if (fs.existsSync(EV)) {
+  const ev = JSON.parse(fs.readFileSync(EV, 'utf8'));
+  fs.mkdirSync(OUT + 'evidence', { recursive: true });
+  const T = { cover: '표지 · 결정 · 미결 · Seed', trace: '기능 · 요구 추적', copy: '문구 변경', refs: '레퍼런스', tokens: '토큰', flow: '흐름' };
+  let ex = 0;
+  ['cover', 'trace', 'copy', 'refs', 'tokens', 'flow'].forEach(k => {
+    if (!ev[k]) return;
+    const key = 'evidence/' + k + '.dc.html';
+    fs.writeFileSync(OUT + key, HEAD(T[k], '../pr.css').replace('<style>', '<style>\n.ev a { color: inherit; }') + '<div class="ab m-page on ev" data-pr-theme="{{theme}}" style="width: 100%; min-height: 100%; padding: 32px 40px 64px; display: block">' + ev[k].replace(/\{\{/g, '{ {') + '</div>' + TAIL(1280, 2400, 'dark'));
+    boards[key] = { x: ex, y: 0, w: 1280, h: 2400, title: T[k], page: 'evidence', expand: 'fill' };
+    order.push(key); evPages.push(key); ex += 1280 + 80;
+  });
+}
 const now = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
 const canvas = {
   v: 3, createdOnFiles: { v: 1, at: now }, title: 'FILME 리뉴얼',
   launch: { view: 'canvas', page: 'master' },
-  pages: [{ id: 'master', name: '페이지 마스터' }, { id: 'decisions', name: '결정 · 비교판' }, { id: 'wip', name: '작업 중 목업' }],
+  pages: [{ id: 'master', name: '페이지 마스터' }, { id: 'evidence', name: '근거' }, { id: 'decisions', name: '결정 · 비교판' }, { id: 'wip', name: '작업 중 목업' }],
   boards, order, notes,
   designSystems: [{ title: 'FILME 영사실', namespace: 'filmeprojection', artifact: DS, version: '1794840197-6d42', copiedAt: now }]
 };
