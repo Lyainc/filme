@@ -120,7 +120,7 @@
       { st: '로딩 · 저장본 포스터 복원 중', html: edit({ ticket: { poster: 'load' }, panel: pTicketCollapsed({}), after: '<p class="c-spec" style="position:absolute;left:0;right:0;top:40%;text-align:center">포스터를 불러오는 중…</p>' }) },
       { st: '오류 · 포스터 복원 실패', html: edit({ ticket: { poster: 'none' }, panel: pTicketCollapsed({}), toast: S.toast('저장된 포스터를 불러오지 못했어요. 포스터를 다시 올려 주세요.', { err: true, close: true, top: 8 }) }) }
     ],
-    states: ['빈 상태: 포스터 자리에 "포스터 추가" 점선, 필드는 빈 항목 점선. 패널 머리 아래 스크린샷 자동입력(보조)과 "제목부터 입력"을 둬요. 필수가 비어 있어 완료는 차단 모양(테두리)이라, 이 화면엔 채운 버튼이 없어요.', '인식 중: 보조 버튼이 "티켓 인식 중…"(aria-busy)이 되고 "제목부터 입력"은 비활성. 편집은 계속할 수 있어요.', '인식 실패: 현행처럼 트리거 가까이 3초 로컬 토스트. 위치는 트리거 바로 위(현행은 아래 — 패널 아래가 화면 끝이라 옮김, 형태 변경). 같은 자리 문구는 L-03의 오류 목록과 같아요.', '복원 중: 포스터 자리만 면으로 비워 두고 나머지 편집은 바로 할 수 있어요(현행은 셸 전체를 막음 — 형태 변경).', '복원 실패: 지속 오류 토스트(닫기 버튼), 위쪽에 떠서 패널을 가리지 않아요.'],
+    states: ['빈 상태: 포스터 자리에 "포스터 추가" 점선, 필드는 빈 항목 점선. 패널 머리 아래 스크린샷 자동입력(보조)과 "제목부터 입력"을 둬요. 필수가 비어 있어 완료는 차단 모양(테두리)이라, 이 화면엔 채운 버튼이 없어요.', '인식 중: 보조 버튼이 "티켓 인식 중…"(aria-busy)이 되고 "제목부터 입력"은 비활성. 편집은 계속할 수 있어요.', '인식 실패: 현행처럼 트리거 가까이 3초 로컬 토스트. 위치는 패널 바로 위 무대 바닥(트리거가 든 패널 머리 위쪽, 현행은 트리거 아래 — 패널 아래가 화면 끝이라 옮김, 형태 변경). 같은 자리 문구는 L-03의 오류 목록과 같아요.', '복원 중: 포스터 자리만 면으로 비워 두고 나머지 편집은 바로 할 수 있어요(현행은 셸 전체를 막음 — 형태 변경).', '복원 실패: 지속 오류 토스트(닫기 버튼), 위쪽에 떠서 패널을 가리지 않아요.'],
     flow: [['포스터 추가 탭', 'C-01', 'OS 파일 선택 → 크롭'], ['스크린샷으로 자동입력', 'E-02 · E-05', 'OS 파일 선택 → 인식 중(E-02.2) → 성공 E-05 · 실패 E-02.3'], ['제목부터 입력', 'K-01', '입력 패널 240ms'], ['오류 토스트 닫힘', 'X-01', '규칙']],
     notes: ['드로어 상단 OcrUploadCard(context=drawer)의 자리예요. 라벨 "스크린샷으로 자동입력"은 테스트가 잠근 문구라 그대로예요.'] });
 
@@ -168,7 +168,7 @@
       { st: '스탬프 무드 · 이미지 없음', html: edit({ panel: pX(S.thumbs('editorial') + '<p class="c-sh">배경 스탬프</p><div class="c-acts"><button class="c-btn sec">이미지 업로드</button></div>', '디자인'), wide: true, ticket: { wide: true } }) },
       { st: '스탬프 무드 · 이미지 있음', html: edit({ panel: pX(S.thumbs('stub') + '<p class="c-sh">배경 스탬프</p><div class="c-acts"><button class="c-btn sec">이미지 교체</button><button class="c-btn txt">제거</button></div>', '디자인'), ticket: {} }) }
     ],
-    states: ['펼친 패널 높이 500. 무대는 남은 높이에 맞춰 티켓을 줄여요(티켓이 완전히 가려지지 않음).', '배경 스탬프는 에디토리얼·크라이테리언·스텁에서만 행이 생겨요. 다른 무드에서는 이유 한 줄.', '무드 이름은 한글(미니멀·크라이테리언…)로 바꿨어요(결정 2). 현행 LayoutStrip은 영문 라벨이에요.'],
+    states: ['펼친 패널 높이 500. 무대는 남은 높이에 맞춰 티켓을 줄여요(티켓이 완전히 가려지지 않음).', '배경 스탬프는 에디토리얼·크라이테리언·스텁에서만 행이 생겨요. 다른 무드에서는 이유 한 줄.', '무드 이름은 한글(미니멀·크라이테리언…)로 바꿨어요. f-refined 제안 2의 대안안(영문 대문자 라벨이 낯섦)이고, 소유자 결정 2(mono 폐지)와는 별개예요. 영향 테스트는 문구 변경 페이지에 있어요.'],
     flow: [['무드 썸네일', 'P-01', '티켓 즉시 교체'], ['아래로 끌기', 'E-01', '접힘']], notes: [] });
 
   var SW = '<div class="c-opts" role="radiogroup" aria-label="잉크 색" style="gap:8px;padding:6px 0">' + ['#FFFFFF', '#141414', '#B8913A', '#5B6C8F', '#9A4A3C'].map(function (c, n) { return '<button role="radio" aria-checked="' + (n === 1) + '" aria-label="' + ['흰색', '검정', '골드', '추천색 1', '추천색 2'][n] + '" style="width:44px;height:44px;border-radius:6px;border:1px solid var(--pr-hair-strong);background:' + c + ';flex:none;' + (n === 1 ? 'outline:2px solid var(--pr-ink);outline-offset:2px' : '') + '"></button>'; }).join('') + '</div>';
