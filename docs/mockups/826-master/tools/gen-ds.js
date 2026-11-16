@@ -196,20 +196,20 @@ FILME(CGV 포토플레이 스타일 포토티켓 편집기)의 앱 화면 디자
 \`assets/Logos/clapper-ticket-mark.svg\`는 \`src/components/v2/Wordmark.tsx\`의 클래퍼 티켓 마크를 그대로 옮긴 거예요(배지색은 라이트 브릭 #B0423F, 앱에선 테마 accent). 로고타입 "fılme"는 글자(Nunito 900 19px, ı 위 브릭 점, me 브릭)라 파일이 없어요: \`t-logotype\` 스타일과 Wordmark.tsx를 쓰세요.
 
 ## 컴포넌트
-28개. 각 카드의 README에 구성·크기·토큰·변형·상태·대응 구현 파일(main 203ee7c)과 쓰이는 프레임 ID가 있어요. 스타일은 \`components/bundle.css\`의 \`c-\` 클래스이고, React 번들은 아직 없어요.
+${W.COMPONENTS.length}개. 각 카드의 README에 구성·크기·토큰·변형·상태·대응 구현 파일(main 203ee7c)과 쓰이는 프레임 ID가 있어요. 스타일은 \`components/bundle.css\`의 \`c-\` 클래스이고, React 번들은 아직 없어요.
 
 ## 화면
-화면 정의(프레임 34개 · 상태 87개)는 Design 캔버스 "FILME 리뉴얼"의 "페이지 마스터" 페이지와 레포 페이지 마스터에 있어요. 작업 중 비교판은 같은 캔버스의 "결정 · 비교판" 페이지에 쌓아요.
+화면 정의(프레임 ${W.FRAMES.length}개 · 상태 ${W.FRAMES.reduce((a, f) => a + f.variants.length, 0)}개)는 Design 캔버스 "FILME 리뉴얼"의 "페이지 마스터" 페이지와 레포 페이지 마스터에 있어요. 작업 중 비교판은 같은 캔버스의 "결정 · 비교판" 페이지에 쌓아요.
 `);
 
 /* ---------- index ---------- */
 const now = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
 fs.writeFileSync(OUT + 'design-system.json', JSON.stringify({
-  v: 3, layout: 'files', createdOnFiles: { v: 1, at: now }, title: 'FILME 영사실', namespace: 'FilmeProjection', libraries: [],
+  v: 3, layout: 'files', createdOnFiles: { v: 1, at: '2026-11-16T14:42:36Z' } /* 처음 만든 시각 고정(인덱스 마커) */, title: 'FILME 영사실', namespace: 'FilmeProjection', libraries: [],
   sections: {}, groups: ['Logos'],
   assetGroups: { Logos: { name: 'Logos', tile: 'm', order: ['clapper-ticket-mark.svg'], files: { 'clapper-ticket-mark.svg': { name: 'clapper-ticket-mark.svg', blob: '93bdcf2caf7cd54152bfbbf55b7c933c', size: 1097, type: 'image/svg+xml' } } } },
   blobs: {}, docs: { readme: 'project/README.md', sections: [] },
-  lastChange: { by: 'Lyainc', at: now, via: 'Claude Code', note: '#826 3단계 페이지 마스터에서 토큰·컴포넌트 28개 생성' }
+  lastChange: { by: 'Lyainc', at: now, via: 'Claude Code', note: process.argv[3] || ('페이지 마스터에서 토큰 · 컴포넌트 ' + W.COMPONENTS.length + '개 생성') } /* 두 번째 인자: 이번 변경 메모 */
 }, null, 1));
 fs.writeFileSync(OUT + 'assets/Logos/README.md', '# Logos\n\n클래퍼 티켓 마크(BI 마스터 v2 §02). 배지 안 -16° 대각. 마크 안 잉크/페이퍼(#FBF4EC/#241C22)는 BI 고정색이고 배지만 테마 accent를 따라요. 최소 크기 24px.\n');
 console.log('components', W.COMPONENTS.length);
