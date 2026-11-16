@@ -1,0 +1,4 @@
+/* Claude Design 아티팩트 안내. 캔버스에선 Main.dc.html이 같은 역할이라 올리지 않아요. */
+EV({ id: 'design-links', page: 'cover', title: 'Claude Design', canvas: false, html: function () {
+  return '<h3>Claude Design</h3><ul><li>디자인 시스템 <a href="https://claude.ai/artifact/MBMFZaMMAytrVv5HTgnxc8" target="_blank" rel="noopener">FILME 영사실</a>: 토큰 · 컴포넌트 · 로고 마크 · Pretendard. <code>tools/gen-ds.js</code>로 이 마스터에서 생성해요.</li><li>캔버스 <a href="https://claude.ai/artifact/4cvubgJpHC9ANQudDDoJ5F" target="_blank" rel="noopener">FILME 리뉴얼</a>: 페이지 마스터 · 근거(<code>evidence/</code> 단위마다 보드 하나) · 결정 · 비교판 · 작업 중 목업. <code>tools/gen-canvas.js</code>로 생성해요.</li><li>작업 중에 나오는 목업은 그 캔버스 한 곳에 더해요: 결정을 받을 비교판은 <code>decisions/D번호-주제</code>, 탐색 시안은 <code>wip/W번호-주제</code>. 마스터 프레임을 바꾸면 이 레포의 <code>frames.js</code>를 고치고 다시 생성해요.</li><li>두 아티팩트는 비공개예요. 다른 사람이 보려면 각 페이지의 Share에서 공유해야 해요.</li></ul>';
+} });
