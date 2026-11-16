@@ -17,7 +17,8 @@
   }
   function edit(o) {
     o = o || {};
-    return S.phone(tbEdit(o) + S.canvas({ ticket: o.ticket, sel: o.sel, wide: o.wide, after: o.after }) + (o.banner || '') + o.panel + (o.toast || ''));
+    /* 토스트는 무대 안에 둬서 패널 바로 위(bottom 12)·상단 줄 바로 아래(top 8)에 붙어요 */
+    return S.phone(tbEdit(o) + S.canvas({ ticket: o.ticket, sel: o.sel, wide: o.wide, after: (o.after || '') + (o.toast || ''), rl: o.rlStage }) + (o.banner || '') + o.panel);
   }
   function pTicketCollapsed(o) {
     o = o || {};
@@ -67,7 +68,7 @@
       { st: '동작 줄이기', html: landing({ grid: true }) }
     ],
     states: ['기본: 5무드 전시가 4초마다 넘어가요(35mm 와이드는 가로라 전시 제외, 현행 유지).', '정지됨: 정지 버튼이 재생 아이콘으로 바뀌고 "정지됨" 표시. 포커스·포인터가 전시에 들어와도 멈추고, 나가도 사용자가 멈춘 상태는 유지해요.', '동작 줄이기: prefers-reduced-motion이면 전시 대신 3열 격자로 전부 보여요. 정지 버튼은 숨겨요(움직이는 게 없음).'],
-    flow: [['전시 카드 탭', 'E-01', '그 무드로 새 문서. 240ms 페이드'], ['티켓 스크린샷으로 자동입력', 'L-03', 'OS 파일 선택 → 인식 중'], ['포스터 업로드', 'C-01', 'OS 파일 선택 → 크롭'], ['포스터 없이 직접 입력', 'E-02', '빈 티켓 편집'], ['가로 스와이프', 'L-01', '전시 한 칸(여러 칸 연속 가능)']],
+    flow: [['전시 카드 탭', 'E-01', '그 무드로 새 문서. 240ms 페이드'], ['이미지 파일을 끌어 옴(데스크톱)', 'L-04', '드롭 영역 표시 160ms'], ['티켓 스크린샷으로 자동입력', 'L-03', 'OS 파일 선택 → 인식 중'], ['포스터 업로드', 'C-01', 'OS 파일 선택 → 크롭'], ['포스터 없이 직접 입력', 'E-02', '빈 티켓 편집'], ['가로 스와이프', 'L-01', '전시 한 칸(여러 칸 연속 가능)']],
     notes: ['요구 1(자동 재생 정지): 버튼·포커스·포인터·동작 줄이기 4갈래.', '헤드라인·서브는 COPY_TONE_GUIDE 축 5의 브랜드 예외라 문구를 그대로 둬요.', '법적 고지는 문구 규칙 대상이 아니라서 현행 문장을 그대로 옮겨요.'] });
 
   F({ id: 'L-02', page: 'landing', name: '랜딩 · 이어서 만들기', comps: ['C-RES', 'C-BTN', 'C-CAR'],
@@ -86,7 +87,7 @@
       { st: '오류 · 요청 많음', html: landing({ toast: S.toast('지금 요청이 많아요. 잠시 후 다시 시도하거나 직접 입력해 주세요.', { err: true, bottom: 236 }) }) },
       { st: '오류 · 파일 형식', html: landing({ toast: S.toast('PNG, JPG, WebP 파일만 인식할 수 있어요. 다른 파일을 골라 주세요.', { err: true, bottom: 236 }) }) }
     ],
-    states: ['로딩: CTA가 "티켓 인식 중…"(aria-busy)으로 바뀌고 링크 쌍은 비활성. 전시는 계속 돌아요.', '오류는 트리거(CTA) 바로 위에 3초 로컬 토스트로 떠요(OcrUploadCard 의도 유지, COPY_TONE_GUIDE 축 3).', '같은 자리 문구: HEIC "HEIC 파일은 지원하지 않아요. PNG/JPG로 저장해 주세요." · 10MB "파일 크기가 10MB를 초과해요. 더 작은 이미지를 골라 주세요." · 정보 없음 "인식된 정보가 없어요. 직접 입력해 주세요."'],
+    states: ['로딩: CTA가 "티켓 인식 중…"(aria-busy)으로 바뀌고 링크 쌍은 비활성. 전시는 계속 돌아요.', '오류는 트리거(CTA) 바로 위에 3초 로컬 토스트로 떠요. 현행 의도는 트리거 바로 아래인데 CTA 아래가 링크 쌍·고지라 위로 옮겼어요(형태 변경, 트리거 가까이라는 의도는 유지).', '같은 자리 문구: HEIC "HEIC 파일은 지원하지 않아요. PNG/JPG로 저장해 주세요." · 10MB "파일 크기가 10MB를 초과해요. 더 작은 이미지를 골라 주세요." · 정보 없음 "인식된 정보가 없어요. 직접 입력해 주세요."'],
     flow: [['인식 성공', 'E-05', '편집으로 전환 + 자동입력 배너'], ['인식된 정보 없음', 'E-02', '빈 편집(토스트 유지)'], ['제목만 인식', 'E-05', 'KOBIS 조회 배너']],
     notes: ['"지금 요청이 많아요…"·"인식된 정보가 없어요…"는 테스트가 잠근 문구라 그대로예요(landingHeroMood).'] });
 
@@ -100,7 +101,7 @@
      ========================================================= */
   F({ id: 'E-01', page: 'editor', name: '편집 · 기본(티켓 대상, 패널 접힘)', comps: ['C-TB', 'C-STAGE', 'C-PANEL', 'C-TRAIL', 'C-PH', 'C-TABS', 'C-MOOD'],
     variants: [
-      { st: '기본', html: edit({ panel: pTicketCollapsed({ rl: true }) }) },
+      { st: '기본', html: edit({ panel: pTicketCollapsed({ rl: true }), rlStage: true }) },
       { st: '첫 진입 · 되돌릴 것 없음', html: edit({ undo: { u: false, r: false }, panel: pTicketCollapsed({}) }) },
       { st: '빈 항목 보기 켬', html: edit({ ticket: { ghost: true }, panel: pTicketCollapsed({ ghost: true }) }) }
     ],
@@ -108,16 +109,19 @@
     flow: [['티켓의 필드 탭', 'P-06', '대상 전환. 패널 내용만 160ms 교체'], ['대상 줄 항목 탭', 'P-04 · P-05 · P-06', '같음'], ['패널 위로 끌기', 'P-01', '펼침 240ms'], ['완료', 'R-01', '필수 통과 시 결과. 실패 시 E-03'], ['‹', 'L-02', '랜딩(문서 보존)'], ['⋯', 'M-01', '메뉴 시트'], ['전체 보기', 'E-04', '최대화']],
     notes: ['떠 있는 툴바·드로어 핸들·고급 설정은 없어요. 실행 취소·다시 실행은 상단 줄로 옮겼어요.', '자동저장 표시는 상단 줄에서 메뉴로 옮겼어요(M-01). 상단 줄에 채운 버튼은 완료 하나예요.'] });
 
+  function emptyPanel(btn, busy) {
+    return S.panel('', S.trail('ticket', { miss: true }) + ticketHead({ ghost: true }) + '<p class="c-hint">스크린샷이 있으면 정보를 한 번에 채울 수 있어요.</p><div class="c-acts">' + btn + '<button class="c-btn txt u"' + (busy ? ' disabled' : '') + '>제목부터 입력</button></div>' + tabs4('디자인') + SAFE);
+  }
   F({ id: 'E-02', page: 'editor', name: '편집 · 빈 티켓과 복원', comps: ['C-STAGE', 'C-PANEL', 'C-BTN', 'C-TST'],
     variants: [
-      { st: '빈 상태 · 포스터 없이 시작', html: edit({ ticket: { poster: 'none', empty: true, ghost: true }, undo: { u: false, r: false },
-        panel: S.panel('', S.trail('ticket', { miss: true }) + ticketHead({ ghost: true }) +
-          '<p class="c-hint">스크린샷이 있으면 정보를 한 번에 채울 수 있어요.</p><div class="c-acts"><button class="c-btn sec">스크린샷으로 자동입력</button><button class="c-btn txt u">제목부터 입력</button></div>' + tabs4('디자인') + SAFE) }) },
+      { st: '빈 상태 · 포스터 없이 시작', html: edit({ ticket: { poster: 'none', empty: true, ghost: true }, undo: { u: false, r: false }, done: 'blocked', panel: emptyPanel('<button class="c-btn sec">스크린샷으로 자동입력</button>') }) },
+      { st: '로딩 · 스크린샷 인식 중', html: edit({ ticket: { poster: 'none', empty: true, ghost: true }, undo: { u: false, r: false }, done: 'blocked', panel: emptyPanel('<button class="c-btn sec" aria-busy="true" aria-disabled="true"><span class="spin" aria-hidden="true"></span>티켓 인식 중…</button>', true) }) },
+      { st: '오류 · 인식 실패', html: edit({ ticket: { poster: 'none', empty: true, ghost: true }, undo: { u: false, r: false }, done: 'blocked', panel: emptyPanel('<button class="c-btn sec">스크린샷으로 자동입력</button>'), toast: S.toast('인식에 실패했어요. 다시 시도해 주세요.', { err: true, bottom: 12 }) }) },
       { st: '로딩 · 저장본 포스터 복원 중', html: edit({ ticket: { poster: 'load' }, panel: pTicketCollapsed({}), after: '<p class="c-spec" style="position:absolute;left:0;right:0;top:40%;text-align:center">포스터를 불러오는 중…</p>' }) },
-      { st: '오류 · 포스터 복원 실패', html: edit({ ticket: { poster: 'none' }, panel: pTicketCollapsed({}), toast: S.toast('저장된 포스터를 불러오지 못했어요. 포스터를 다시 올려 주세요.', { err: true, close: true, top: 112 }) }) }
+      { st: '오류 · 포스터 복원 실패', html: edit({ ticket: { poster: 'none' }, panel: pTicketCollapsed({}), toast: S.toast('저장된 포스터를 불러오지 못했어요. 포스터를 다시 올려 주세요.', { err: true, close: true, top: 8 }) }) }
     ],
-    states: ['빈 상태: 포스터 자리에 "포스터 추가" 점선, 필드는 빈 항목 점선. 패널 머리 아래 스크린샷 자동입력(보조)과 "제목부터 입력"을 둬요. 화면의 채운 버튼은 여전히 완료 하나예요.', '복원 중: 포스터 자리만 면으로 비워 두고 나머지 편집은 바로 할 수 있어요(현행은 셸 전체를 막음 — 형태 변경).', '복원 실패: 지속 오류 토스트(닫기 버튼), 위쪽에 떠서 패널을 가리지 않아요.'],
-    flow: [['포스터 추가 탭', 'C-01', 'OS 파일 선택 → 크롭'], ['스크린샷으로 자동입력', 'L-03 상태와 같은 인식 → E-05', ''], ['제목부터 입력', 'K-01', '입력 패널']],
+    states: ['빈 상태: 포스터 자리에 "포스터 추가" 점선, 필드는 빈 항목 점선. 패널 머리 아래 스크린샷 자동입력(보조)과 "제목부터 입력"을 둬요. 필수가 비어 있어 완료는 차단 모양(테두리)이라, 이 화면엔 채운 버튼이 없어요.', '인식 중: 보조 버튼이 "티켓 인식 중…"(aria-busy)이 되고 "제목부터 입력"은 비활성. 편집은 계속할 수 있어요.', '인식 실패: 현행처럼 트리거 가까이 3초 로컬 토스트. 위치는 트리거 바로 위(현행은 아래 — 패널 아래가 화면 끝이라 옮김, 형태 변경). 같은 자리 문구는 L-03의 오류 목록과 같아요.', '복원 중: 포스터 자리만 면으로 비워 두고 나머지 편집은 바로 할 수 있어요(현행은 셸 전체를 막음 — 형태 변경).', '복원 실패: 지속 오류 토스트(닫기 버튼), 위쪽에 떠서 패널을 가리지 않아요.'],
+    flow: [['포스터 추가 탭', 'C-01', 'OS 파일 선택 → 크롭'], ['스크린샷으로 자동입력', 'E-02 · E-05', 'OS 파일 선택 → 인식 중(E-02.2) → 성공 E-05 · 실패 E-02.3'], ['제목부터 입력', 'K-01', '입력 패널 240ms'], ['오류 토스트 닫힘', 'X-01', '규칙']],
     notes: ['드로어 상단 OcrUploadCard(context=drawer)의 자리예요. 라벨 "스크린샷으로 자동입력"은 테스트가 잠근 문구라 그대로예요.'] });
 
   F({ id: 'E-03', page: 'editor', name: '편집 · 완료 실패(필수 누락)', comps: ['C-TRAIL', 'C-PH', 'C-FLD', 'C-TST', 'C-TAG'],
@@ -133,7 +137,7 @@
 
   F({ id: 'E-04', page: 'editor', name: '편집 · 전체 보기', comps: ['C-STAGE'],
     variants: [
-      { st: '세로 무드', html: S.phone('<div class="c-canvas" style="margin-bottom:34px"><div class="tkw" style="top:8px;bottom:8px">' + S.ticket({}) + '</div></div><p class="c-spec" style="position:absolute;left:0;right:0;bottom:44px;text-align:center">티켓을 누르면 돌아가요</p>') },
+      { st: '세로 무드', html: S.phone('<div class="c-canvas" style="margin-bottom:34px"><div class="tkw" style="top:8px;bottom:8px" data-rl="tw">' + S.ticket({}) + '</div></div><p class="c-spec" style="position:absolute;left:0;right:0;bottom:44px;text-align:center">티켓을 누르면 돌아가요</p>') },
       { st: '가로 무드(회전)', html: S.phone('<div class="c-canvas" style="margin-bottom:34px"><div style="position:absolute;left:50%;top:50%;width:calc(var(--fh) * .78);aspect-ratio:1534/960;transform:translate(-50%,-50%) rotate(90deg)">' + S.ticket({ wide: true }) + '</div></div>') }
     ],
     states: ['상단 줄·패널·토스트가 모두 숨고 티켓만 남아요. 가로 무드(에디토리얼·35mm 와이드)는 90° 돌려 꽉 채워요(현행 유지).', '안내 한 줄은 처음 한 번만 보이고 1.5초 뒤 사라져요.'],
@@ -151,7 +155,7 @@
     notes: ['문구는 OcrUndoBanner·OcrUploadCard 현행 그대로예요.'] });
 
   F({ id: 'E-06', page: 'editor', name: '편집 · 실행 취소 통보', comps: ['C-TST', 'C-TB'],
-    variants: [{ st: '기본', html: edit({ undo: { u: true, r: true }, panel: pTicketCollapsed({}), toast: S.toast('되돌렸어요', { bottom: 270 }) }) }],
+    variants: [{ st: '기본', html: edit({ undo: { u: true, r: true }, panel: pTicketCollapsed({}), toast: S.toast('되돌렸어요', { bottom: 12 }) }) }],
     states: ['완료 통보 토스트는 2.6초, 패널 바로 위에 떠요. 전체 보기 중에는 띄우지 않아요(현행).'],
     flow: [['다시 실행', 'E-06', '토스트 "다시 실행했어요"']], notes: [] });
 
@@ -172,7 +176,7 @@
     variants: [
       { st: '기본', html: edit({ panel: pX('<div class="c-row"><span class="lb">잉크</span>' + SW + '</div><div class="c-acts"><button class="c-btn sec">직접 지정</button><span class="t-meta">#141414</span></div><p class="c-hint">추천색 둘은 포스터에서 뽑았어요.</p>', '색상') }) },
       { st: '비활성 · 톤 고정 무드', html: edit({ ticket: { dark: true }, panel: pX('<div class="c-row" style="opacity:.4"><span class="lb">잉크</span>' + SW.replace(/<button role="radio"/g, '<button role="radio" disabled') + '</div><p class="c-hint">이 무드는 톤이 고정이라 잉크 색을 바꿀 수 없어요.</p>', '색상') }) },
-      { st: '오류 · 추천색 없음', html: edit({ panel: pX('<div class="c-row"><span class="lb">잉크</span>' + SW.replace(/,#5B6C8F|#5B6C8F/, '').split('<button').slice(0, 4).join('<button') + '</div></div><div class="c-acts"><button class="c-btn sec">직접 지정</button></div>', '색상'), toast: S.toast('추천 색상을 만들지 못했어요. 색상은 직접 골라 주세요.', { err: true, top: 112 }) }) }
+      { st: '오류 · 추천색 없음', html: edit({ panel: pX('<div class="c-row"><span class="lb">잉크</span>' + SW.replace(/,#5B6C8F|#5B6C8F/, '').split('<button').slice(0, 4).join('<button') + '</div></div><div class="c-acts"><button class="c-btn sec">직접 지정</button></div>', '색상'), toast: S.toast('추천 색상을 만들지 못했어요. 색상은 직접 골라 주세요.', { err: true, top: 8 }) }) }
     ],
     states: ['견본 44×44, 선택은 잉크 2px 바깥선(브릭 아님: 브릭은 주 행동·선택 표시·탭 인디케이터만).', '톤 고정 무드(35mm·35mm 와이드·크라이테리언·스텁)는 견본을 보이되 비활성 + 이유 한 줄(현행 문구).', '추천색 생성 실패는 일시 오류 토스트(4초) 후 추천 두 칸을 숨겨요.'],
     flow: [['직접 지정', 'P-02', 'OS 색 선택기(native input type=color)']], notes: [] });
@@ -191,7 +195,7 @@
       { st: '비활성 · 원본 없음', html: edit({ sel: 'poster', panel: pTarget('poster', '포스터', '<div class="c-acts"><button class="c-btn sec">교체</button><button class="c-btn txt" disabled>자르기</button></div><p class="c-hint">포스터 원본이 없어요. 포스터를 다시 업로드해 주세요.</p>' + S.slider('투명도', 100)) }) },
       { st: '빈 상태 · 포스터 없음', html: edit({ sel: 'poster', ticket: { poster: 'none' }, panel: pTarget('poster', '포스터', '<p class="c-hint">포스터 없이도 저장할 수 있어요.</p><div class="c-acts"><button class="c-btn sec">포스터 추가</button></div><div class="c-pad"></div>') }) }
     ],
-    states: ['선택 표시는 포스터 상단에 여백이 없어서 라벨이 상자 안쪽 위로 들어가요(3-A 위치 규칙).', '"원본 비율 / 꽉 채우기"는 미니멀에서만 보여요(POSTER_FILL_MOODS). 다른 무드에선 행 자체가 없어요.', '원본이 없으면 자르기 비활성 + 이유 문장(현행 메뉴 문구 재사용).'],
+    states: ['선택 표시는 포스터 상단에 여백이 없어서 라벨이 상자 안쪽 위로 들어가요(3-A 위치 규칙).', '포스터·로고·텍스트·평점 대상 패널은 내용 높이 하나라 펼침이 없어요(위로 끌어도 그대로). 펼침은 티켓·날짜·서명/한줄평 대상만.', '"원본 비율 / 꽉 채우기"는 미니멀에서만 보여요(POSTER_FILL_MOODS). 다른 무드에선 행 자체가 없어요.', '원본이 없으면 자르기 비활성 + 이유 문장(현행 메뉴 문구 재사용).'],
     flow: [['교체 · 포스터 추가', 'C-01', 'OS 파일 선택 → 크롭'], ['자르기', 'C-01', '원본으로 크롭']], notes: ['현행 "포스터·컴포넌트 투명도" 중 포스터 쪽은 여기, 글자·로고는 P-03에도 있어요(두 진입점, 같은 값).'] });
 
   F({ id: 'P-05', page: 'panels', name: '로고 대상(극장·포맷)', comps: ['C-PH', 'C-OPT', 'C-FLD', 'C-SL', 'C-SEL'],
@@ -235,13 +239,13 @@
       { st: '서명 · 이미지(서체 비활성)', html: edit({ panel: S.panel('x', S.trail('signature') + S.phd({ t: '서명', k: 'signature', nav: true }) + '<div class="c-body"><div class="c-acts"><div class="c-opts" role="radiogroup" aria-label="서명 종류"><button class="c-opt" role="radio" aria-checked="false">텍스트</button><button class="c-opt" role="radio" aria-checked="true">이미지</button></div></div><div class="c-acts"><button class="c-btn sec">교체</button><button class="c-btn txt push">제거</button></div><p class="c-sh">서체</p><p class="c-hint">서명 이미지가 있으면 폰트가 적용되지 않아요.</p><div class="c-opts" style="flex-wrap:wrap">' + FONTS.slice(0, 6).map(function (f) { return '<button class="c-opt" disabled>' + f + '</button>'; }).join('') + '</div></div>' + SAFE) }) },
       { st: '한줄평(크라이테리언)', html: edit({ panel: S.panel('x', S.trail('quote') + S.phd({ t: '한줄평', k: 'quote', nav: true }) + '<div class="c-body"><div class="c-field"><input aria-label="한줄평" value="파도 소리가 오래 남았다"></div><p class="c-sh">서체</p><div class="c-opts" role="radiogroup" aria-label="한줄평 서체" style="flex-wrap:wrap">' + FONTS.map(function (f, n) { return '<button class="c-opt" role="radio" aria-checked="' + (n === 2) + '">' + f + '</button>'; }).join('') + '</div></div>' + SAFE) }) }
     ],
-    states: ['서체 9종은 줄바꿈 옵션 상자(가로 스크롤 아님: 9개를 한눈에 비교).', '서명 이미지가 있으면 서체 옵션 비활성 + 현행 안내 문장.', '한줄평 서체는 크라이테리언에서만 보여요(QUOTE_FONT_MOODS). 다른 무드에선 서체 구획이 없어요.'],
+    states: ['서체 9종은 줄바꿈 옵션 상자(가로 스크롤 아님: 9개를 한눈에 비교). 구현에선 각 옵션 라벨을 그 서체로 렌더해요(현행 optionStyle·data-font-preview). 티켓 폰트라 UI Pretendard 단일 결정의 범위 밖이에요. 이 목업은 폰트를 싣지 않아 라벨이 Pretendard로 보여요.', '서명 이미지가 있으면 서체 옵션 비활성 + 현행 안내 문장.', '한줄평 서체는 크라이테리언에서만 보여요(QUOTE_FONT_MOODS). 다른 무드에선 서체 구획이 없어요.'],
     flow: [['이미지 · 교체', 'C-02', '자유 비율 크롭'], ['입력 탭', 'K-02', '']], notes: ['현행 DesignRail "커스텀" 칩을 해당 필드 대상으로 옮겼어요: 서체는 그 필드의 속성이라 필드를 고른 자리에서 바꾸는 게 맞아요.'] });
 
   F({ id: 'P-10', page: 'panels', name: '티켓 · 항목(전체 목록)', comps: ['C-TABS', 'C-LIST', 'C-SWT'],
     variants: [
       { st: '기본', html: edit({ panel: pX('<div class="c-acts"><span class="t-body-s" style="flex:1;color:var(--pr-ink-2)">모두 표시</span><span class="c-sw on" role="switch" aria-checked="true" aria-label="모든 항목 티켓에 표시"></span></div>' + listRows(false), '항목', { scroll: true }) }) },
-      { st: '필수 누락', html: edit({ panel: pX('<div class="c-alert" role="status"><span class="ic" aria-hidden="true"></span><span class="tx">저장에는 제목과 개봉연도가 필요해요. 개봉일은 티켓에서 숨겨도 돼요.</span></div>' + listRows(true), '항목', { trail: { miss: true }, scroll: true }) }) }
+      { st: '필수 누락', html: edit({ done: 'blocked', panel: pX('<div class="c-alert" role="status"><span class="ic" aria-hidden="true"></span><span class="tx">저장에는 제목과 개봉연도가 필요해요. 개봉일은 티켓에서 숨겨도 돼요.</span></div>' + listRows(true), '항목', { trail: { miss: true }, scroll: true }) }) }
     ],
     states: ['의도된 잘림: 목록은 무드에 따라 최대 19행이라 패널 안에서 세로로 스크롤해요. 마지막 보이는 행이 반쯤 잘린 건 아래에 더 있다는 신호예요.', '티켓 대상의 네 번째 탭. 영화·관람·기록 그룹으로 모든 항목을 보여 주고, 행 탭이면 그 대상으로, 눈으로 표시 토글.', '무드가 렌더하지 않는 항목은 목록에서 빠져요(MOOD_EXCLUDED_FIELDS).', '필수 누락이면 현행 드로어 안내 문장을 그대로 위에 둬요.'],
     flow: [['행 탭', 'P-06 · P-07 · P-08 · P-09', '대상 전환'], ['눈', 'P-10', '표시 토글(실행 취소 가능)']], notes: ['현행 FieldDrawer(가장자리 핸들·스와이프)를 대체해요. 핸들 위치 설정이 필요 없어져 고급 설정이 사라져요.'] });
@@ -297,7 +301,7 @@
 
   F({ id: 'K-04', page: 'input', name: '키보드 닫힌 뒤 복원', comps: ['C-PANEL'],
     variants: [{ st: '복원', html: edit({ sel: 'seat', panel: pTarget('seat', '좌석', '<p class="c-hint" style="color:var(--pr-ink);font-size:15px">H12</p><div class="c-acts"><button class="c-btn sec">값 편집</button><button class="c-ib push" aria-label="좌석 티켓에 표시" aria-pressed="true">' + i('eye') + '</button></div>') }) }],
-    states: ['닫기 · 키보드 내림 · 바깥 탭 · 뒤로 네 가지 종료 경로 모두 같은 결과: 패널은 접힌 대상 패널, 티켓은 맞춤 배율, 고른 대상과 입력값 유지(요구 4 ③).'],
+    states: ['닫기 · 키보드 내림 · 바깥 탭 · 뒤로 네 가지 종료 경로 모두 같은 결과: 패널은 입력에 들어오기 전 높이(접힘이면 접힘, 펼침이면 펼침 — K-03은 P-03 펼침으로), 티켓은 맞춤 배율, 고른 대상과 입력값 유지(요구 4 ③). 이 그림은 접힘에서 들어온 경우예요.'],
     flow: [['값 편집', 'K-02', '다시 입력']], notes: ['종료 경로별 검증은 #585 방식(경로 × 기기)을 새 Seed에서 이어 가요. 이 마스터는 화면 정의까지예요.'] });
 
   /* =========================================================
@@ -321,7 +325,7 @@
       { st: '가로 슬롯 무드 · 3:2', html: crop({ land: true, box: 'left:4%;top:31%;width:92%;height:46%' }) }
     ],
     states: ['프리셋 방향은 캔버스가 아니라 포스터 슬롯을 따라요(35mm 와이드 컷·스텁 밴드는 3:2). 출력 960×1440 / 1440×960, 원본 보존이면 이미지 자연비.', '크롭 화면은 테마와 무관하게 다크 고정(사진 판독용). 다이얼로그라 뒤 화면은 비활성(APG dialog).', '"원본 비율 보존"은 체크박스에서 스위치로 바꾸고 현재 비율을 설명 한 줄로 붙였어요.'],
-    flow: [['적용', 'E-01 · P-04', '크롭 반영 240ms'], ['닫기(✕)', '이전 화면', '변경 없음'], ['다른 사진 선택', 'C-01', 'OS 파일 선택']], notes: [] });
+    flow: [['적용', 'C-03 · E-01 · P-04', '적용 중(C-03.1) → 크롭 반영 240ms'], ['닫기(✕)', '이전 화면', '변경 없음'], ['다른 사진 선택', 'C-01', 'OS 파일 선택']], notes: [] });
   F({ id: 'C-02', page: 'crop', name: '로고·서명·스탬프 크롭', comps: ['C-DLG'],
     variants: [{ st: '자유 비율', html: crop({ logo: true, box: 'left:14%;top:22%;width:72%;height:56%' }) }],
     states: ['비율 토글 없이 자유 비율(useLogoCrop 현행).'], flow: [['적용', 'P-05 · P-09 · P-01', '']], notes: [] });
@@ -356,16 +360,16 @@
       { st: '포스터 없음 · 자동저장 꺼짐', html: menu({ noPoster: true, autoOff: true }) }
     ],
     states: ['바텀 시트(모달), 행 높이 52. 순서: 가져오기 → 사진 → 표시 → 저장 → 초기화(파괴적인 건 맨 아래).', '초기화는 현행 2탭 arm 유지: 3.2초 안에 한 번 더, 첫 탭 뒤 350ms 안의 탭은 무시, 메뉴를 닫으면 해제. 잠긴 문구 "초기화"·"한 번 더 눌러 전체 삭제"·"초기화했어요" 그대로.', '테마는 다크모드 토글 → 시스템/라이트/다크 세 갈래(결정 1: 시스템 따름이 기본).'],
-    flow: [['스크린샷으로 자동입력', 'L-03 → E-05', '인식'], ['포스터 교체 · 추가', 'C-01', ''], ['임시저장', 'M-02', '토스트 "임시저장했어요"'], ['초기화 두 번', 'L-01', '문서 지움 + 토스트 "초기화했어요"']],
+    flow: [['스크린샷으로 자동입력', 'E-02 · E-05', '시트 닫힘 160ms → 인식 중 E-02.2 → E-05'], ['포스터 교체 · 추가', 'C-01', ''], ['임시저장', 'M-02', '토스트 "임시저장했어요"'], ['초기화 두 번', 'L-01', '문서 지움 + 토스트 "초기화했어요"']],
     notes: ['메뉴에서 빠진 것: 빈 항목(티켓 패널 머리로), 고급 설정(제거), 재크롭(포스터 대상 "자르기"로). 자동저장은 헤더 표시에서 이 행으로 옮겼어요.'] });
   F({ id: 'M-02', page: 'menu', name: '저장 통보·실패', comps: ['C-TST'],
     variants: [
-      { st: '기본 · 임시저장함', html: edit({ panel: pTicketCollapsed({}), toast: S.toast('임시저장했어요', { bottom: 270 }) }) },
-      { st: '오류 · 저장 공간', html: edit({ panel: pTicketCollapsed({}), toast: S.toast('저장에 실패했어요. 브라우저 저장 공간이 가득 찼거나 비공개 모드일 수 있어요.', { err: true, close: true, top: 112 }) }) },
-      { st: '오류 · 포스터 저장', html: edit({ panel: pTicketCollapsed({}), toast: S.toast('포스터 저장에 실패했어요. 저장 공간이 찼거나 비공개 모드일 수 있어요.', { err: true, top: 112 }) }) }
+      { st: '기본 · 임시저장함', html: edit({ panel: pTicketCollapsed({}), toast: S.toast('임시저장했어요', { bottom: 12 }) }) },
+      { st: '오류 · 저장 공간', html: edit({ panel: pTicketCollapsed({}), toast: S.toast('저장에 실패했어요. 브라우저 저장 공간이 가득 찼거나 비공개 모드일 수 있어요.', { err: true, close: true, top: 8 }) }) },
+      { st: '오류 · 포스터 저장', html: edit({ panel: pTicketCollapsed({}), toast: S.toast('포스터 저장에 실패했어요. 저장 공간이 찼거나 비공개 모드일 수 있어요.', { err: true, top: 8 }) }) }
     ],
     states: ['통보는 패널 위 아래쪽, 오류는 상단 줄 아래 위쪽(두 자리가 겹치지 않음).', '저장 공간 실패는 지속(닫기 버튼), 포스터 저장 실패는 일시 4초(현행 구분 유지).'],
-    flow: [], notes: [] });
+    flow: [['토스트 시간 지남 · 닫기', 'E-01', '160ms 페이드']], notes: [] });
 
   /* =========================================================
      결과 · 저장 · 공유
@@ -376,7 +380,7 @@
       : o.cta === 'done' ? '<button class="c-btn pri cta block">' + i('check') + '사진에 저장됨</button>'
       : '<button class="c-btn pri cta block"' + S.rl('h') + '>사진에 저장</button>';
     var link = o.link === 'made' || o.link === 'copied'
-      ? '<div class="c-link"><input aria-label="공유 링크" value="filme.app/t/k3x9q2" readonly><button class="c-btn sec">' + (o.link === 'copied' ? '복사됨!' : '복사') + '</button></div><div class="c-lrow"><small>이 링크는 3일 후 만료돼요.</small><button class="c-btn txt u">공유</button></div>'
+      ? '<div class="c-link"><input aria-label="공유 링크" value="filme.app/t/k3x9q2" readonly><button class="c-btn sec">' + (o.link === 'copied' ? '복사됨!' : '복사') + '</button></div><div class="c-lrow"><small>이 링크는 3일 후 만료돼요.</small><button class="c-btn txt u">공유</button></div><p class="c-legal" style="text-align:left;margin-top:-4px">비공식 팬메이드 티켓이라 양도·재판매할 수 없고, 정보 정확성은 보장하지 않으며 분실·훼손에 책임지지 않아요.</p>'
       : '<div class="c-lrow"><button class="c-btn txt u"' + (o.link === 'loading' ? ' disabled' : '') + '>' + (o.link === 'loading' ? '링크 만드는 중…' : o.link === 'fail' ? '실패, 다시 시도' : '링크 만들기') + '</button><small>링크는 3일 뒤 사라져요</small><button class="c-btn txt u">공유</button></div>';
     return S.phone(S.topbar({ back: '편집으로 돌아가기', title: '완성' }) +
       '<div class="c-rbody"><div class="beam" aria-hidden="true"></div><div class="c-rtk' + (o.wide ? ' wide' : '') + '">' + S.ticket({ wide: o.wide }) + (o.cta === 'loading' ? '<div class="veil" aria-hidden="true"></div>' : '') + '</div><p class="c-spec">' + (o.wide ? '3108 × 1960' : '1960 × 3108') + ' · JPEG</p></div>' +
@@ -391,7 +395,7 @@
       { st: '가로 무드', html: result({ wide: true }) }
     ],
     states: ['선택 표시·빈 항목을 끈 저장물 그대로의 렌더예요(요구 6). 아래 사양 1960 × 3108은 export 실측값(여백 10px × pixelRatio 2).', '저장은 모바일이면 OS 공유 시트(파일), 아니면 다운로드. 공유 시트를 취소하면 조용히 기본으로(현행).', '저장 실패 문구: 현행 "저장에 실패했어요." + "다시 시도" 버튼 → 두 문장 규칙으로 고치고 다시 시도는 주 버튼 자체로(같은 버튼을 다시 누르면 재시도).'],
-    flow: [['사진에 저장', 'R-03', 'OS 공유 시트(모바일)'], ['‹ · 브라우저 뒤로', 'E-01', '편집(문서 그대로)']], notes: ['문구 변경 "저장에 실패했어요." → "저장에 실패했어요. 다시 시도해 주세요." 잠긴 문구 아님.'] });
+    flow: [['사진에 저장', 'R-01 · R-03', '저장 중(R-01.2) → OS 공유 시트(모바일)'], ['링크 만들기', 'R-02', '만드는 중 → 생성됨'], ['‹ · 브라우저 뒤로', 'E-01', '편집(문서 그대로)']], notes: ['문구 변경 "저장에 실패했어요." → "저장에 실패했어요. 다시 시도해 주세요." 잠긴 문구 아님.'] });
   F({ id: 'R-02', page: 'result', name: '결과 · 공유 링크', comps: ['C-FLD', 'C-BTN', 'C-ALR'],
     variants: [
       { st: '로딩 · 링크 만드는 중', html: result({ link: 'loading' }) },
@@ -399,14 +403,14 @@
       { st: '완료 · 복사됨', html: result({ link: 'copied' }) },
       { st: '오류 · 링크 실패', html: result({ link: 'fail', err: '링크 생성에 실패했어요. 다시 시도해 주세요.' }) }
     ],
-    states: ['링크를 만들면 클립보드에 바로 복사하고 읽기 전용 입력(16px)으로 보여 줘요. 복사됨!은 2초 뒤 복사로.', '클립보드가 거부되면 입력 글자를 전체 선택해 손으로 복사하게 해요(현행).', '티켓을 고치고 돌아오면 링크는 처음 상태로 돌아가요(현행).'],
-    flow: [['공유', 'R-03', '']], notes: [] });
+    states: ['링크를 만들면 클립보드에 바로 복사하고 읽기 전용 입력(16px)으로 보여 줘요. 복사됨!은 2초 뒤 복사로.', '링크 아래 만료 문장 + 비공식 고지(UNOFFICIAL_TICKET_NOTICE)는 현행 그대로예요(법적 고지는 문구 규칙 대상 아님).', '클립보드가 거부되면 입력 글자를 전체 선택해 손으로 복사하게 해요(현행).', '티켓을 고치고 돌아오면 링크는 처음 상태로 돌아가요(현행).'],
+    flow: [['공유', 'R-03', 'OS 공유 시트'], ['받은 사람이 링크 열기', 'S-01', '새 탭 페이지 로드']], notes: [] });
   F({ id: 'R-03', page: 'result', name: '저장·공유 진행(OS 시트)', comps: ['C-TST'],
     variants: [
       { st: '공유 시트(그림)', html: result({ extra: '<div class="c-scrim" aria-hidden="true"></div><div class="c-osheet" aria-hidden="true"><div class="hd"><i></i><span>먼 바다 · 포토티켓<br><span class="t-meta">JPEG</span></span></div><div class="apps"><span></span><span></span><span></span><span></span></div><p class="note">iOS 공유 시트 근사(앱이 그리지 않음)</p></div>' }) },
-      { st: '공유 불가 · 링크 복사로 대체', html: result({ link: 'made', extra: S.toast('링크를 복사했어요', { bottom: 210 }) }) }
+      { st: '공유 불가 · 링크 복사로 대체', html: result({ link: 'made', extra: S.toast('링크를 복사했어요', { top: 112 }) }) }
     ],
-    states: ['공유는 링크가 없으면 먼저 만들고 navigator.share를 불러요. 사용자가 닫으면(AbortError) 아무 일도 안 해요.', '공유 API가 없거나 실패하면 링크를 클립보드로 복사하고 통보해요(현행은 통보 문구 없음 → "링크를 복사했어요" 추가, 축 4 과거형).'],
+    states: ['공유는 링크가 없으면 먼저 만들고 navigator.share를 불러요. 사용자가 닫으면(AbortError) 아무 일도 안 해요.', '공유 API가 없거나 실패하면 링크를 클립보드로 복사하고 통보해요(현행은 통보 문구 없음 → "링크를 복사했어요" 추가, 축 4 과거형). 결과 화면은 아래쪽이 전부 조작이라 통보를 상단 줄 아래에 띄워요.'],
     flow: [['공유 완료 · 닫기', 'R-01', '']], notes: ['OS 시트는 앱 밖이라 그림만 둬요.'] });
 
   /* =========================================================
@@ -414,14 +418,14 @@
      ========================================================= */
   F({ id: 'X-01', page: 'errors', name: '오류 토스트 규칙', comps: ['C-TST'],
     variants: [
-      { st: '일시 · 4초', html: edit({ panel: pTicketCollapsed({}), toast: S.toast('추천 색상을 만들지 못했어요. 색상은 직접 골라 주세요.', { err: true, top: 112 }) }) },
-      { st: '지속 · 닫기 필요', html: edit({ panel: pTicketCollapsed({}), toast: S.toast('저장된 포스터를 불러오지 못했어요. 포스터를 다시 올려 주세요.', { err: true, close: true, top: 112 }) }) }
+      { st: '일시 · 4초', html: edit({ panel: pTicketCollapsed({}), toast: S.toast('추천 색상을 만들지 못했어요. 색상은 직접 골라 주세요.', { err: true, top: 8 }) }) },
+      { st: '지속 · 닫기 필요', html: edit({ panel: pTicketCollapsed({}), toast: S.toast('저장된 포스터를 불러오지 못했어요. 포스터를 다시 올려 주세요.', { err: true, close: true, top: 8 }) }) }
     ],
     states: ['오류 토스트는 상단 줄 바로 아래(위쪽), 통보 토스트는 패널 위(아래쪽). 전체 보기 중엔 오류만.', '지속 토스트가 떠 있으면 일시 토스트를 막고, 같은 문구는 다시 띄우지 않아요(errorToast 현행).', '빨강(현행 --danger) 대신 표면 + 앰버 점·테두리(결정 5-A). 문구 색은 잉크라 대비 걱정이 없어요.'],
-    flow: [], notes: ['모든 오류·빈 문구와 그 프레임은 아래 색인 표에 있어요.'] });
+    flow: [['4초 지남 · 닫기', 'E-01', '160ms 페이드']], notes: ['들어오는 곳: E-02(포스터 복원 실패) · P-02(추천색 실패) · M-02(저장 실패).', '모든 오류·빈 문구와 그 프레임은 아래 색인 표에 있어요.'] });
   F({ id: 'S-01', page: 'share', name: '공유 페이지 /t/[id]', comps: ['C-WM', 'C-BTN'],
     variants: [
-      { st: '기본', html: S.phone('<div class="c-head" style="display:flex;justify-content:center">' + S.wordmark() + '</div><div class="c-share"><div class="img">' + S.ticket({}) + '</div><p class="t-body">영화 포스터로 시네마틱한 포토티켓을, 너도 만들어봐.</p><button class="c-btn pri cta block">나도 티켓 만들기</button><p class="c-legal">이 링크는 3일 후 만료돼요. 비공식 팬메이드 티켓이라 양도·재판매할 수 없고, 정보 정확성은 보장하지 않으며 분실·훼손에 책임지지 않아요.</p></div>' + SAFE) },
+      { st: '기본', html: S.phone('<div class="c-head" style="display:flex;justify-content:center">' + S.wordmark() + '</div><div class="c-share"><div class="img" data-rl="h">' + S.ticket({}) + '</div><p class="t-body">영화 포스터로 시네마틱한 포토티켓을, 너도 만들어봐.</p><button class="c-btn pri cta block" data-rl="hx">나도 티켓 만들기</button><p class="c-legal">이 링크는 3일 후 만료돼요. 비공식 팬메이드 티켓이라 양도·재판매할 수 없고, 정보 정확성은 보장하지 않으며 분실·훼손에 책임지지 않아요.</p></div>' + SAFE) },
       { st: '빈 상태 · 만료된 링크(제안)', html: S.phone('<div class="c-head" style="display:flex;justify-content:center">' + S.wordmark() + '</div><div class="c-share" style="justify-content:center"><div class="img" style="height:34%;border:1px dashed var(--pr-hair-strong);display:grid;place-items:center;color:var(--pr-ink-3);font-size:13px">티켓 없음</div><p class="t-title">이 링크는 만료됐어요</p><p class="t-body-s" style="color:var(--pr-ink-2)">공유 링크는 3일 동안만 열려요.</p><button class="c-btn pri cta block">나도 티켓 만들기</button></div>' + SAFE) }
     ],
     states: ['기본은 현행 그대로(문구·만료 안내·CTA). CTA 끝의 "→" 화살표만 아이콘 없는 라벨로 정리.', '만료·없는 링크: 현행은 Next 기본 404. 같은 레이아웃의 빈 상태를 제안해요(새 문구 2개, 4단계 Seed에서 확정).'],

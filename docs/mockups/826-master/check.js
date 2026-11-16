@@ -37,6 +37,15 @@
         var cs = getComputedStyle(a.el);
         if (!inScroll && a.el.scrollWidth > a.el.clientWidth + 1 && cs.textOverflow !== 'ellipsis' && cs.overflow !== 'visible') issues.push({ frame: fid, kind: '잘림', el: label(a.el) });
       });
+      /* 떠 있는 토스트가 바탕의 조작 글자(버튼·링크·입력)를 가리는지 */
+      ph.querySelectorAll('.c-toast').forEach(function (t) {
+        var tr = t.getBoundingClientRect();
+        items.forEach(function (a) {
+          if (layerOf(a.el) || !a.el.closest('button, a, input, label')) return;
+          var w = Math.min(a.r.right, tr.right) - Math.max(a.r.left, tr.left), h = Math.min(a.r.bottom, tr.bottom) - Math.max(a.r.top, tr.top);
+          if (w > 1 && h > 1) issues.push({ frame: fid, kind: '토스트가 조작 가림', el: label(a.el) });
+        });
+      });
       for (var i = 0; i < items.length; i++) for (var j = i + 1; j < items.length; j++) {
         var a = items[i], b = items[j];
         if (a.el.contains(b.el) || b.el.contains(a.el)) continue;

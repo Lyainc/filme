@@ -85,7 +85,7 @@
   /* 무대. o: {ticket:{}, sel:'title', wide} */
   P.canvas = function (o) {
     o = o || {};
-    return '<div class="c-canvas"><div class="tkw' + (o.wide ? ' wide' : '') + '"' + (o.rl ? P.rl('w') : '') + '>' + P.ticket(o.ticket || {}) + (o.sel ? P.sel(o.sel) : '') + (o.extra || '') + '</div>' + (o.after || '') + '</div>';
+    return '<div class="c-canvas"><div class="tkw' + (o.wide ? ' wide' : '') + '"' + (o.rl ? P.rl('tw') : '') + '>' + P.ticket(o.ticket || {}) + (o.sel ? P.sel(o.sel) : '') + (o.extra || '') + '</div>' + (o.after || '') + '</div>';
   };
 
   /* 대상 목록(티켓 읽는 순서). req: 필수 */
@@ -111,7 +111,7 @@
 
   /* 패널 머리. o: {t, k, src, nav:true, right:html, req:'ok'|'miss'} */
   P.phd = function (o) {
-    var h = '<div class="c-ph"' + (o.rl ? P.rl('h') : '') + '>';
+    var h = '<div class="c-ph"' + (o.rl ? P.rl('hx') : '') + '>';
     h += (o.label ? '<label class="t" for="' + o.label + '">' + o.t + '</label>' : '<span class="t">' + o.t + '</span>');
     if (o.req) h += '<span class="c-tag req' + (o.req === 'miss' ? ' miss' : '') + '">필수</span>';
     if (o.src) h += '<span class="c-tag src">' + o.src + '</span>';
@@ -179,6 +179,23 @@
       g.style.cssText = 'left:' + gx + 'px;top:' + y + 'px;height:' + r.height + 'px;width:28px';
       g.innerHTML = '<span class="ln" style="left:0;top:0;bottom:0;width:1px"></span><span class="ln" style="left:0;top:0;width:5px;height:1px"></span><span class="ln" style="left:0;bottom:0;width:5px;height:1px"></span><span class="lb" style="left:4px;top:' + (cy - y) + 'px;transform:translateY(-50%)">' + h + '</span>';
       fig.appendChild(g);
+    }
+    if (kind.indexOf('x') >= 0) { /* 프레임 왼쪽 가장자리에서 요소까지 */
+      var inner = pr.left + ph.clientLeft, lx = inner - fr.left, gap = Math.round(r.left - inner), ly = Math.round(y + Math.min(r.height / 2, 12));
+      var g3 = document.createElement('div'); g3.className = 'rl';
+      g3.style.cssText = 'left:' + lx + 'px;top:' + ly + 'px;width:' + (r.left - inner) + 'px;height:1px';
+      g3.innerHTML = '<span class="ln" style="left:0;right:0;top:0;height:1px"></span><span class="lb" style="left:0;top:2px">' + gap + '</span>';
+      fig.appendChild(g3);
+    }
+    if (kind.indexOf('t') >= 0 && el.parentElement) { /* 부모 안 위 · 아래 간격 */
+      var par = el.parentElement.getBoundingClientRect(), cx = x + 10;
+      [[par.top, r.top], [r.bottom, par.bottom]].forEach(function (pair) {
+        var d2 = Math.round(pair[1] - pair[0]); if (d2 < 2) return;
+        var g4 = document.createElement('div'); g4.className = 'rl';
+        g4.style.cssText = 'left:' + cx + 'px;top:' + (pair[0] - fr.top) + 'px;height:' + (pair[1] - pair[0]) + 'px;width:1px';
+        g4.innerHTML = '<span class="ln" style="left:0;top:0;bottom:0;width:1px"></span><span class="lb" style="left:4px;top:50%;transform:translateY(-50%)">' + d2 + '</span>';
+        fig.appendChild(g4);
+      });
     }
     if (kind.indexOf('w') >= 0) {
       var gy = pr.bottom - fr.top + 4 + used.w * 14; used.w++;
