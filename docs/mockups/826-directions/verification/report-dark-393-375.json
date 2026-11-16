@@ -1596,5 +1596,261 @@
    "feat": 58,
    "principle": 738
   }
+ },
+ {
+  "file": "f-refined.html",
+  "w": 393,
+  "docOverflowX": 0,
+  "jsError": null,
+  "screens": [
+   {
+    "idx": 0,
+    "cap": "후 · 영사실 · 전시가 배경이고 카피는 위에 겹쳐요",
+    "width": 393,
+    "overflowX": 0,
+    "overflowY": 0,
+    "clipped": [
+     "[걸침].peek 먼 바다날짜11.15 토시간19:40상영관7",
+     "[걸침].peek 먼 바다날짜11.15 토시간19:40상영관7"
+    ],
+    "textClip": [],
+    "overlaps": [],
+    "pins": [
+     "1"
+    ],
+    "pinText": [],
+    "textOverlap": []
+   },
+   {
+    "idx": 1,
+    "cap": "후 · 영사실 · 대상은 티켓, 패널은 접힌 채 디자인 탭과 무드 썸네일",
+    "width": 393,
+    "overflowX": 0,
+    "overflowY": 0,
+    "clipped": [],
+    "textClip": [],
+    "overlaps": [],
+    "pins": [],
+    "pinText": [],
+    "textOverlap": []
+   },
+   {
+    "idx": 2,
+    "cap": "후 · 영사실 · 제목을 고르면 재단 표시가 생기고 패널만 제목 대상으로",
+    "width": 393,
+    "overflowX": 0,
+    "overflowY": 0,
+    "clipped": [],
+    "textClip": [],
+    "overlaps": [],
+    "pins": [
+     "5"
+    ],
+    "pinText": [],
+    "textOverlap": []
+   },
+   {
+    "idx": 3,
+    "cap": "후 · 영사실 · 질감 탭의 재질·코팅·투명도",
+    "width": 393,
+    "overflowX": 0,
+    "overflowY": 0,
+    "clipped": [],
+    "textClip": [],
+    "overlaps": [],
+    "pins": [
+     "2"
+    ],
+    "pinText": [],
+    "textOverlap": []
+   },
+   {
+    "idx": 4,
+    "cap": "후 · 영사실 · 교체 · 자르기 · 맞춤/채우기와 밝기",
+    "width": 393,
+    "overflowX": 0,
+    "overflowY": 0,
+    "clipped": [],
+    "textClip": [],
+    "overlaps": [],
+    "pins": [],
+    "pinText": [],
+    "textOverlap": []
+   },
+   {
+    "idx": 5,
+    "cap": "후 · 영사실 · 패널이 입력 패널이 되고 티켓은 확대돼요",
+    "width": 393,
+    "overflowX": 0,
+    "overflowY": 0,
+    "clipped": [
+     "[걸침].zt CGV먼 바다날짜11.15 토시간19:40상"
+    ],
+    "textClip": [],
+    "overlaps": [],
+    "pins": [
+     "4",
+     "3"
+    ],
+    "pinText": [],
+    "textOverlap": []
+   },
+   {
+    "idx": 6,
+    "cap": "후 · 영사실 · 선택 표시 없는 저장물 그대로의 티켓",
+    "width": 393,
+    "overflowX": 0,
+    "overflowY": 0,
+    "clipped": [],
+    "textClip": [],
+    "overlaps": [],
+    "pins": [
+     "6"
+    ],
+    "pinText": [],
+    "textOverlap": []
+   }
+  ],
+  "pinsAll": [
+   "1",
+   "2",
+   "3",
+   "4",
+   "5",
+   "6"
+  ],
+  "tables": {
+   "req": 0,
+   "feat": 0,
+   "principle": 0
+  }
+ },
+ {
+  "file": "f-refined.html",
+  "w": 375,
+  "docOverflowX": 0,
+  "jsError": null,
+  "screens": [
+   {
+    "idx": 0,
+    "cap": "후 · 영사실 · 전시가 배경이고 카피는 위에 겹쳐요",
+    "width": 375,
+    "overflowX": 0,
+    "overflowY": 0,
+    "clipped": [
+     "[걸침].peek 먼 바다날짜11.15 토시간19:40상영관7",
+     "[걸침].peek 먼 바다날짜11.15 토시간19:40상영관7"
+    ],
+    "textClip": [],
+    "overlaps": [],
+    "pins": [
+     "1"
+    ],
+    "pinText": [],
+    "textOverlap": []
+   },
+   {
+    "idx": 1,
+    "cap": "후 · 영사실 · 대상은 티켓, 패널은 접힌 채 디자인 탭과 무드 썸네일",
+    "width": 375,
+    "overflowX": 0,
+    "overflowY": 0,
+    "clipped": [],
+    "textClip": [],
+    "overlaps": [],
+    "pins": [],
+    "pinText": [],
+    "textOverlap": []
+   },
+   {
+    "idx": 2,
+    "cap": "후 · 영사실 · 제목을 고르면 재단 표시가 생기고 패널만 제목 대상으로",
+    "width": 375,
+    "overflowX": 0,
+    "overflowY": 0,
+    "clipped": [],
+    "textClip": [],
+    "overlaps": [],
+    "pins": [
+     "5"
+    ],
+    "pinText": [],
+    "textOverlap": []
+   },
+   {
+    "idx": 3,
+    "cap": "후 · 영사실 · 질감 탭의 재질·코팅·투명도",
+    "width": 375,
+    "overflowX": 0,
+    "overflowY": 0,
+    "clipped": [],
+    "textClip": [],
+    "overlaps": [],
+    "pins": [
+     "2"
+    ],
+    "pinText": [],
+    "textOverlap": []
+   },
+   {
+    "idx": 4,
+    "cap": "후 · 영사실 · 교체 · 자르기 · 맞춤/채우기와 밝기",
+    "width": 375,
+    "overflowX": 0,
+    "overflowY": 0,
+    "clipped": [],
+    "textClip": [],
+    "overlaps": [],
+    "pins": [],
+    "pinText": [],
+    "textOverlap": []
+   },
+   {
+    "idx": 5,
+    "cap": "후 · 영사실 · 패널이 입력 패널이 되고 티켓은 확대돼요",
+    "width": 375,
+    "overflowX": 0,
+    "overflowY": 0,
+    "clipped": [
+     "[걸침].zt CGV먼 바다날짜11.15 토시간19:40상"
+    ],
+    "textClip": [],
+    "overlaps": [],
+    "pins": [
+     "4",
+     "3"
+    ],
+    "pinText": [],
+    "textOverlap": []
+   },
+   {
+    "idx": 6,
+    "cap": "후 · 영사실 · 선택 표시 없는 저장물 그대로의 티켓",
+    "width": 375,
+    "overflowX": 0,
+    "overflowY": 0,
+    "clipped": [],
+    "textClip": [],
+    "overlaps": [],
+    "pins": [
+     "6"
+    ],
+    "pinText": [],
+    "textOverlap": []
+   }
+  ],
+  "pinsAll": [
+   "1",
+   "2",
+   "3",
+   "4",
+   "5",
+   "6"
+  ],
+  "tables": {
+   "req": 0,
+   "feat": 0,
+   "principle": 0
+  }
  }
 ]
