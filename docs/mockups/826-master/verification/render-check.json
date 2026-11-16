@@ -1,13 +1,13 @@
 {
  "date": "2026-11-17",
- "tool": "Aside CLI 1.26.1113.1717 repl (Chromium), check.js MASTER_CHECK",
+ "tool": "Aside CLI repl (Chromium), check.js MASTER_CHECK",
  "console_errors": [],
  "runs": [
   {
    "w": 393,
    "theme": "light",
    "page": "landing",
-   "frames": 10,
+   "frames": 8,
    "frame_px": "393x852",
    "doc_scroll_width": 393,
    "issues": 0
@@ -24,8 +24,8 @@
   {
    "w": 393,
    "theme": "light",
-   "page": "panels",
-   "frames": 26,
+   "page": "dock",
+   "frames": 16,
    "frame_px": "393x852",
    "doc_scroll_width": 393,
    "issues": 0
@@ -34,7 +34,7 @@
    "w": 393,
    "theme": "light",
    "page": "input",
-   "frames": 9,
+   "frames": 16,
    "frame_px": "393x852",
    "doc_scroll_width": 393,
    "issues": 0
@@ -52,7 +52,7 @@
    "w": 393,
    "theme": "light",
    "page": "menu",
-   "frames": 6,
+   "frames": 5,
    "frame_px": "393x852",
    "doc_scroll_width": 393,
    "issues": 0
@@ -88,7 +88,7 @@
    "w": 393,
    "theme": "dark",
    "page": "landing",
-   "frames": 10,
+   "frames": 8,
    "frame_px": "393x852",
    "doc_scroll_width": 393,
    "issues": 0
@@ -105,8 +105,8 @@
   {
    "w": 393,
    "theme": "dark",
-   "page": "panels",
-   "frames": 26,
+   "page": "dock",
+   "frames": 16,
    "frame_px": "393x852",
    "doc_scroll_width": 393,
    "issues": 0
@@ -115,7 +115,7 @@
    "w": 393,
    "theme": "dark",
    "page": "input",
-   "frames": 9,
+   "frames": 16,
    "frame_px": "393x852",
    "doc_scroll_width": 393,
    "issues": 0
@@ -133,7 +133,7 @@
    "w": 393,
    "theme": "dark",
    "page": "menu",
-   "frames": 6,
+   "frames": 5,
    "frame_px": "393x852",
    "doc_scroll_width": 393,
    "issues": 0
@@ -169,7 +169,7 @@
    "w": 375,
    "theme": "light",
    "page": "landing",
-   "frames": 10,
+   "frames": 8,
    "frame_px": "375x812",
    "doc_scroll_width": 375,
    "issues": 0
@@ -186,8 +186,8 @@
   {
    "w": 375,
    "theme": "light",
-   "page": "panels",
-   "frames": 26,
+   "page": "dock",
+   "frames": 16,
    "frame_px": "375x812",
    "doc_scroll_width": 375,
    "issues": 0
@@ -196,7 +196,7 @@
    "w": 375,
    "theme": "light",
    "page": "input",
-   "frames": 9,
+   "frames": 16,
    "frame_px": "375x812",
    "doc_scroll_width": 375,
    "issues": 0
@@ -214,7 +214,7 @@
    "w": 375,
    "theme": "light",
    "page": "menu",
-   "frames": 6,
+   "frames": 5,
    "frame_px": "375x812",
    "doc_scroll_width": 375,
    "issues": 0
@@ -250,7 +250,7 @@
    "w": 375,
    "theme": "dark",
    "page": "landing",
-   "frames": 10,
+   "frames": 8,
    "frame_px": "375x812",
    "doc_scroll_width": 375,
    "issues": 0
@@ -267,8 +267,8 @@
   {
    "w": 375,
    "theme": "dark",
-   "page": "panels",
-   "frames": 26,
+   "page": "dock",
+   "frames": 16,
    "frame_px": "375x812",
    "doc_scroll_width": 375,
    "issues": 0
@@ -277,7 +277,7 @@
    "w": 375,
    "theme": "dark",
    "page": "input",
-   "frames": 9,
+   "frames": 16,
    "frame_px": "375x812",
    "doc_scroll_width": 375,
    "issues": 0
@@ -295,7 +295,7 @@
    "w": 375,
    "theme": "dark",
    "page": "menu",
-   "frames": 6,
+   "frames": 5,
    "frame_px": "375x812",
    "doc_scroll_width": 375,
    "issues": 0

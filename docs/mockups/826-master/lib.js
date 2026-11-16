@@ -75,11 +75,12 @@
     date: { x: 4.5, y: 73.2, w: 26, h: 6.4, lab: '관람일' },
     poster: { x: 0, y: 0, w: 100, h: 61, lab: '포스터', pos: 'inside' },
     logo: { x: 5, y: 2.6, w: 26, h: 5.6, lab: '극장 로고', pos: 'below' },
-    foot: { x: 4.5, y: 91.6, w: 40, h: 4.6, lab: '예매 번호' }
+    foot: { x: 4.5, y: 91.6, w: 40, h: 4.6, lab: '예매 번호' },
+    screen: { x: 68, y: 73.2, w: 20, h: 6.4, lab: '상영관' }
   };
-  P.sel = function (k) {
-    var s = P.SEL[k]; if (!s) return '';
-    return '<div class="c-sel" style="left:' + s.x + '%;top:' + s.y + '%;width:' + s.w + '%;height:' + s.h + '%" aria-hidden="true"><span class="lab' + (s.pos ? ' ' + s.pos : '') + '">' + s.lab + '</span></div>';
+  P.sel = function (k, o) {
+    var s = P.SEL[k]; if (!s) return ''; o = o || {};
+    return '<div class="c-sel' + (o.nolab ? ' nolab' : '') + '" style="left:' + s.x + '%;top:' + s.y + '%;width:' + s.w + '%;height:' + s.h + '%" aria-hidden="true"><span class="lab' + (s.pos ? ' ' + s.pos : '') + '">' + s.lab + '</span></div>';
   };
 
   /* 무대. o: {ticket:{}, sel:'title', wide} */
@@ -159,6 +160,21 @@
   };
   P.wordmark = function () {
     return '<div class="c-wm"><span class="mk" aria-hidden="true"><svg viewBox="0 0 100 100"><path fill="#FBF4EC" d="M21 27H79A8 8 0 0 1 87 35V65A8 8 0 0 1 79 73H21A8 8 0 0 1 13 65V35A8 8 0 0 1 21 27Z"/><rect x="21" y="34.5" width="30" height="9" rx="2.5" fill="#241C22"/><g fill="#FBF4EC"><path d="M24.5 34.5H28.5L25.5 43.5H21.5Z"/><path d="M32 34.5H36L33 43.5H29Z"/><path d="M39.5 34.5H43.5L40.5 43.5H36.5Z"/><path d="M47 34.5H51L48 43.5H44Z"/></g><rect x="22" y="49" width="28" height="3.4" rx="1.7" fill="#241C22"/><rect x="22" y="56.5" width="18" height="3.4" rx="1.7" fill="#241C22"/><line x1="58" y1="33" x2="58" y2="67" stroke="#241C22" stroke-width="2" stroke-dasharray="2 3.6" stroke-linecap="round"/><rect x="66" y="43.5" width="14" height="14" rx="3.5" fill="#241C22"/><circle cx="73" cy="50.5" r="3.4" fill="#FBF4EC"/><circle cx="73" cy="50.5" r="1.15" fill="#241C22"/></svg></span><span class="lt" role="img" aria-label="FILME">f<i>ı<b></b></i>l<em>me</em></span></div>';
+  };
+  /* 하단 도크: body + 모드 바. mode: 'photo'|'info'|'design' */
+  P.dock = function (mode, body, o) {
+    o = o || {};
+    var M = [['photo', '사진'], ['info', '정보'], ['design', '디자인']];
+    return '<div class="c-dock" role="region" aria-label="편집"' + P.rl('h') + '><div class="c-dock-body' + (o.scroll ? ' scroll' : '') + '"' + (o.scrollIntended ? ' data-scroll="intended"' : '') + '>' + body + '</div>' +
+      '<div class="c-modes" role="tablist" aria-label="편집 모드"' + P.rl('h') + '>' + M.map(function (m) { return '<button role="tab" aria-selected="' + (m[0] === mode) + '">' + m[1] + (o.miss && m[0] === 'info' ? '<span class="dot" aria-hidden="true"></span><span class="sr-only"> 필수 미입력</span>' : '') + '</button>'; }).join('') + '</div><div class="safe-b"></div></div>';
+  };
+  P.tools = function (items, sel) {
+    return '<div class="c-tools" role="tablist" aria-label="디자인 도구"' + P.rl('h') + '>' + items.map(function (t) { return '<button role="tab" aria-selected="' + (t === sel) + '">' + t + '</button>'; }).join('') + '</div>';
+  };
+  P.irow = function (k, v, o) {
+    o = o || {};
+    return '<div class="c-irow' + (o.off ? ' off' : '') + '"><span class="k">' + (o.miss ? '<span class="dot" aria-hidden="true"></span>' : '') + k + '</span><button class="v' + (v ? '' : (o.miss ? ' miss' : ' empty')) + '" style="border:0;background:transparent;padding:0;text-align:left;min-height:44px;color:inherit" aria-label="' + k + ' 입력">' + (v || (o.miss ? '필수' : '비어 있음')) + '</button>' +
+      (o.noEye ? '' : '<button class="c-ib" aria-label="' + k + ' 티켓에 표시" aria-pressed="' + !o.off + '"' + (o.req ? ' disabled' : '') + '>' + P.i(o.off ? 'eyeoff' : 'eye') + '</button>') + '</div>';
   };
   P.phone = function (inner, o) { return '<div class="ph' + (o && o.cls ? ' ' + o.cls : '') + '">' + P.sbar() + inner + P.home() + '</div>'; };
 

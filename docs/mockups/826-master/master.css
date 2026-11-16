@@ -465,3 +465,44 @@ button { cursor: pointer; }
   .cs { margin-left: 16px; margin-right: 16px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* =========================================================
+   편집 하단 도크(재설계): 높이 하나로 고정, 맨 아래 모드 셋(사진 · 정보 · 디자인)
+   ========================================================= */
+:root { --pr-dock-body: 196px; --pr-modebar: 52px; }
+.c-dock { position: relative; z-index: 5; flex: none; height: calc(var(--pr-dock-body) + var(--pr-modebar) + 34px); background: var(--pr-s1); border-top: 1px solid var(--pr-hair-strong); border-radius: var(--pr-r-sheet) var(--pr-r-sheet) 0 0; display: flex; flex-direction: column; min-width: 0; }
+.c-dock-body { flex: none; height: var(--pr-dock-body); display: flex; flex-direction: column; min-height: 0; padding: 4px 16px 0; overflow: hidden; }
+.c-dock-body.scroll { overflow-y: auto; }
+.c-modes { flex: none; height: var(--pr-modebar); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); box-shadow: inset 0 1px 0 var(--pr-hair); }
+.c-modes button { position: relative; border: 0; background: transparent; color: var(--pr-ink-2); font-size: 15px; line-height: 22px; font-weight: 500; }
+.c-modes button[aria-selected="true"] { color: var(--pr-ink); font-weight: 600; }
+.c-modes button[aria-selected="true"]::before { content: ""; position: absolute; left: 24%; right: 24%; top: 0; height: var(--pr-ind); background: var(--pr-accent); }
+.c-modes button .dot { position: absolute; top: 14px; margin-left: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--pr-warn); }
+.c-tools { flex: none; display: flex; height: 44px; overflow-x: auto; margin: 0 -16px; padding: 0 8px; scrollbar-width: none; box-shadow: inset 0 -1px 0 var(--pr-hair); }
+.c-tools::-webkit-scrollbar { display: none; }
+.c-tools button { position: relative; flex: none; height: 44px; padding: 0 12px; border: 0; background: transparent; color: var(--pr-ink-2); font-size: 15px; white-space: nowrap; }
+.c-tools button[aria-selected="true"] { color: var(--pr-ink); font-weight: 600; }
+.c-tools button[aria-selected="true"]::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 0; height: var(--pr-ind); background: var(--pr-ink); }
+.c-ctl { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+.c-irow { display: flex; align-items: center; gap: 8px; min-height: 44px; border-bottom: 1px solid var(--pr-hair); min-width: 0; background: transparent; border-left: 0; border-right: 0; border-top: 0; padding: 0; width: 100%; text-align: left; color: var(--pr-ink); }
+.c-irow .k { width: 64px; flex: none; font-size: 13px; line-height: 20px; color: var(--pr-ink-2); display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+.c-irow .k .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--pr-warn); flex: none; }
+.c-irow .v { flex: 1; min-width: 0; font-size: 15px; line-height: 22px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.c-irow .v.empty { color: var(--pr-ink-3); }
+.c-irow .v.miss { color: var(--pr-warn); }
+.c-irow.off .v { color: var(--pr-ink-3); text-decoration: line-through; text-decoration-color: var(--pr-hair-strong); }
+.c-irow .c-ib { margin-right: -8px; }
+.c-igrp { font-size: 12px; line-height: 16px; color: var(--pr-ink-3); font-weight: 600; padding: 12px 0 4px; }
+.c-arow { display: flex; align-items: center; gap: 12px; min-height: 48px; border-bottom: 1px solid var(--pr-hair); min-width: 0; }
+.c-arow .th { width: 26px; height: 40px; flex: none; border: 1px solid var(--pr-hair-strong); border-radius: 2px; background: repeating-linear-gradient(135deg, #3B3A44 0 6px, #35343D 6px 12px); }
+.c-arow .th.logo { width: 40px; height: 26px; background: #F2EEE7; color: #1E1B18; font-size: 10px; font-weight: 800; display: grid; place-items: center; }
+.c-arow .th.none { background: transparent; border-style: dashed; }
+.c-arow .tx { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.c-arow .tx b { font-size: 15px; line-height: 22px; font-weight: 500; }
+.c-arow .tx small { font-size: 12px; line-height: 16px; color: var(--pr-ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.c-arow .c-btn { padding: 0 10px; }
+.c-acc { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin: 8px -16px 0; padding: 0 16px; }
+.c-acc::-webkit-scrollbar { display: none; }
+.c-sel.nolab .lab { display: none; }
+/* 크롭은 테마와 무관하게 어두운 토큰으로 */
+.c-dlg { --pr-ink: var(--pr-d-ink); --pr-ink-2: var(--pr-d-ink2); --pr-ink-3: #8E8A83; --pr-s1: var(--pr-d-s1); --pr-s2: var(--pr-d-s2); --pr-hair: rgba(255,255,255,.08); --pr-hair-strong: var(--pr-d-hair-strong); --pr-accent: var(--pr-d-accent); --pr-warn: var(--pr-d-warn); }

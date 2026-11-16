@@ -16,14 +16,14 @@ const tokens = {
     tokens: [
       C('pr-page', '#e4e0d9', '#050506', '앱 밖 문서 바탕(데스크톱 PhoneFrame 바깥).'),
       C('pr-stage', '#efece6', '#0b0b0c', '편집기 무대 · 랜딩 · 결과 화면 바탕.'),
-      C('pr-s1', '#f7f5f1', '#141416', '문맥 패널 · 시트 · 이어서 만들기 행 면.'),
+      C('pr-s1', '#f7f5f1', '#141416', '편집 도크 · 입력 패널 · 시트 · 이어서 만들기 행 면.'),
       C('pr-s2', '#ffffff', '#1c1c1f', '입력 · 선택된 옵션 · 토스트 면.'),
       C('pr-hair', 'rgba(17,17,17,0.08)', 'rgba(255,255,255,0.08)', '구분선(헤어라인 1px).'),
       C('pr-hair-strong', 'rgba(17,17,17,0.16)', 'rgba(255,255,255,0.16)', '테두리 · 슬라이더 트랙 · 패널 손잡이.'),
       C('pr-ink', '#141414', '#ece9e3', '본문 · 선택 글자 · 슬라이더 채움. stage/s1/s2 위 15:1 이상.'),
       C('pr-ink-2', '#5b5852', '#a8a49c', '보조 글자 · 아이콘. 세 표면 위 6.5:1(라이트) · 7.4:1(다크) 이상.'),
       C('pr-ink-3', '#6a665f', '#8e8a83', '메타 · 위치 · 빈 값. 12px에도 쓰여서 세 표면 위 4.8:1 이상.'),
-      C('pr-accent', '#b0423f', '#c24b43', '브릭. 화면당 주 행동 하나의 채움, 선택 표시(재단 표시), 대상 인디케이터에만. 글자색으로 쓰지 않아요(다크 표면 위 3.8:1).'),
+      C('pr-accent', '#b0423f', '#c24b43', '브릭. 화면당 주 행동 하나의 채움, 선택 표시(재단 표시), 모드 인디케이터에만. 글자색으로 쓰지 않아요(다크 표면 위 3.8:1).'),
       C('pr-accent-ink', '#ffffff', '#ffffff', '브릭 채움 위 글자(5.7:1 라이트 · 4.8:1 다크).'),
       C('pr-accent-hair', 'rgba(176,66,63,0.45)', 'rgba(194,75,67,0.45)', '선택 표시의 45% 상자 선.'),
       C('pr-warn', '#8f5410', '#e0a35a', '앰버. 오류 · 필수 누락 · 초기화 확인 대기. 글자로 써도 AA(5.2:1 · 7.7:1 이상).'),
@@ -81,12 +81,12 @@ fs.mkdirSync(OUT + 'components', { recursive: true });
 fs.writeFileSync(OUT + 'components/bundle.css', head + body);
 
 /* ---------- 컴포넌트 ---------- */
-const NAME = { 'C-TB': 'TopBar', 'C-BTN': 'Button', 'C-LNK': 'LinkPair', 'C-WM': 'Wordmark', 'C-CAR': 'MoodShowcase', 'C-RES': 'ResumeRow', 'C-STAGE': 'Stage', 'C-SEL': 'SelectionMark', 'C-PANEL': 'ContextPanel', 'C-TRAIL': 'TargetTrail', 'C-PH': 'PanelHeader', 'C-TABS': 'UnderlineTabs', 'C-MOOD': 'MoodThumbs', 'C-OPT': 'OptionGroup', 'C-SL': 'Slider', 'C-FLD': 'TextField', 'C-LIST': 'ResultList', 'C-KBD': 'KeyboardArea', 'C-SWT': 'Switch', 'C-SEG': 'Segmented', 'C-MENU': 'MenuSheet', 'C-DLG': 'CropDialog', 'C-TST': 'Toast', 'C-ALR': 'InlineAlert', 'C-BNR': 'AutofillBanner', 'C-TAG': 'Tag', 'C-STAR': 'StarRating', 'C-SW': 'ColorSwatches' };
-const GROUP = { 'C-BTN': 'Actions', 'C-LNK': 'Actions', 'C-SWT': 'Actions', 'C-SEG': 'Actions', 'C-TB': 'Navigation', 'C-TRAIL': 'Navigation', 'C-TABS': 'Navigation', 'C-PH': 'Navigation', 'C-PANEL': 'Surfaces', 'C-MENU': 'Surfaces', 'C-DLG': 'Surfaces', 'C-STAGE': 'Surfaces', 'C-SEL': 'Surfaces', 'C-FLD': 'Inputs', 'C-SL': 'Inputs', 'C-OPT': 'Inputs', 'C-SW': 'Inputs', 'C-STAR': 'Inputs', 'C-LIST': 'Inputs', 'C-KBD': 'Inputs', 'C-TST': 'Feedback', 'C-ALR': 'Feedback', 'C-BNR': 'Feedback', 'C-TAG': 'Feedback', 'C-WM': 'Brand', 'C-CAR': 'Brand', 'C-RES': 'Brand', 'C-MOOD': 'Brand' };
+const NAME = { 'C-TB': 'TopBar', 'C-BTN': 'Button', 'C-LNK': 'LinkPair', 'C-WM': 'Wordmark', 'C-CAR': 'MoodShowcase', 'C-RES': 'ResumeRow', 'C-STAGE': 'Stage', 'C-SEL': 'SelectionMark', 'C-DOCK': 'EditDock', 'C-TOOLS': 'DesignTools', 'C-IROW': 'InfoRow', 'C-AROW': 'AssetRow', 'C-INP': 'InputPanel', 'C-ACC': 'OptionChips', 'C-MOOD': 'MoodThumbs', 'C-OPT': 'OptionGroup', 'C-SL': 'Slider', 'C-FLD': 'TextField', 'C-LIST': 'ResultList', 'C-KBD': 'KeyboardArea', 'C-SWT': 'Switch', 'C-SEG': 'Segmented', 'C-MENU': 'MenuSheet', 'C-DLG': 'CropDialog', 'C-TST': 'Toast', 'C-ALR': 'InlineAlert', 'C-BNR': 'AutofillBanner', 'C-TAG': 'Tag', 'C-STAR': 'StarRating', 'C-SW': 'ColorSwatches' };
+const GROUP = { 'C-BTN': 'Actions', 'C-LNK': 'Actions', 'C-SWT': 'Actions', 'C-SEG': 'Actions', 'C-TB': 'Navigation', 'C-TOOLS': 'Navigation', 'C-DOCK': 'Surfaces', 'C-INP': 'Surfaces', 'C-IROW': 'Inputs', 'C-AROW': 'Inputs', 'C-ACC': 'Inputs', 'C-MENU': 'Surfaces', 'C-DLG': 'Surfaces', 'C-STAGE': 'Surfaces', 'C-SEL': 'Surfaces', 'C-FLD': 'Inputs', 'C-SL': 'Inputs', 'C-OPT': 'Inputs', 'C-SW': 'Inputs', 'C-STAR': 'Inputs', 'C-LIST': 'Inputs', 'C-KBD': 'Inputs', 'C-TST': 'Feedback', 'C-ALR': 'Feedback', 'C-BNR': 'Feedback', 'C-TAG': 'Feedback', 'C-WM': 'Brand', 'C-CAR': 'Brand', 'C-RES': 'Brand', 'C-MOOD': 'Brand' };
 // 메뉴·크롭은 견본 대신 실제 프레임 한 장을 축소해 보여 줘요.
 const FRAME_DEMO = { 'C-MENU': ['M-01', 0], 'C-DLG': ['C-01', 0], 'C-KBD': ['K-01', 0] };
 const fr = id => W.FRAMES.find(f => f.id === id);
-const H = { 'C-CAR': 280, 'C-STAGE': 260, 'C-PANEL': 200, 'C-TST': 160, 'C-FLD': 200, 'C-MENU': 620, 'C-DLG': 620, 'C-KBD': 620, 'C-SL': 140, 'C-MOOD': 140 };
+const H = { 'C-CAR': 280, 'C-STAGE': 260, 'C-DOCK': 340, 'C-IROW': 180, 'C-TST': 160, 'C-FLD': 200, 'C-MENU': 620, 'C-DLG': 620, 'C-KBD': 620, 'C-SL': 140, 'C-MOOD': 140 };
 W.COMPONENTS.forEach(c => {
   const n = NAME[c.id], dir = OUT + 'components/' + n + '/';
   fs.mkdirSync(dir, { recursive: true });
@@ -169,7 +169,7 @@ FILME(CGV 포토플레이 스타일 포토티켓 편집기)의 앱 화면 디자
 2. 글꼴은 Pretendard Variable 하나예요. mono를 쓰지 않고 숫자 정렬은 \`font-variant-numeric: tabular-nums\`로만.
 3. 선택 표시는 재단 표시예요: \`pr-accent-hair\` 상자 + 네 모서리 L자(\`pr-accent\`) + 한글 대상 라벨. 위 여백이 22px 미만이면 라벨을 아래로, 아래도 없으면 안쪽, 그것도 안 되면 생략.
 4. 세리프를 쓰지 않아요. 워드마크는 BI 마스터 v2 락업(클래퍼 티켓 마크 + Nunito 900 "fılme") 그대로.
-5. 브릭(\`pr-accent\`)은 화면당 주 행동 하나의 채움, 선택 표시, 대상 인디케이터에만 써요. 오류·필수 누락·초기화 확인은 앰버(\`pr-warn\`).
+5. 브릭(\`pr-accent\`)은 화면당 주 행동 하나의 채움, 선택 표시, 모드 인디케이터에만 써요. 오류·필수 누락·초기화 확인은 앰버(\`pr-warn\`).\n6. 모바일 전용. 랜딩 전시는 버튼 없이 강제 재생(누르고 있는 동안·포커스 동안 정지, OS 동작 줄이기면 정지).\n7. 문구는 핵심만: 설명성 안내 없음, 진행은 "…중…", 오류는 무슨 일 한 줄(다음 행동은 버튼).\n8. 편집은 고정 높이 도크 + 모드 셋(사진 · 정보 · 디자인). 디자인은 티켓 전체에 한 번에, 필드는 바로 입력.
 
 ## 색 쓰는 법
 - 글자: \`pr-ink\`(본문) · \`pr-ink-2\`(보조, 아이콘) · \`pr-ink-3\`(메타, 12px까지). 세 표면 모두 4.5:1 이상.
