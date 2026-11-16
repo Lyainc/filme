@@ -5,15 +5,15 @@ window.TRACE = [
     "group": "랜딩",
     "name": "무드 캐러셀(5종) + 정지/재개",
     "now": "Landing MoodCarousel, 정지 버튼, 포커스·포인터 일시정지, 동작 줄이기면 그리드",
-    "fate": "형태 변경",
+    "fate": "유지",
     "frames": [
       "L-01"
     ],
     "comps": [
       "C-CAR"
     ],
-    "where": "랜딩 L-01 중앙 전시에 정지/재생 버튼이 붙어요.",
-    "why": "자동 전환을 멈출 수단이 없던 점을 고쳤어요."
+    "where": "랜딩 L-01 전시. 정지/재생 버튼 · 포커스·포인터 일시정지 · 동작 줄이기 격자를 그대로 옮겼어요.",
+    "why": ""
   },
   {
     "id": "l_gesture",
@@ -313,7 +313,7 @@ window.TRACE = [
       "C-MENU",
       "C-TST"
     ],
-    "where": "메뉴 M-01의 \"지금 저장\"이고 결과는 M-02 토스트로 알려요.",
+    "where": "메뉴 M-01의 \"임시저장\"이고 결과는 M-02 토스트(\"임시저장했어요\")로 알려요.",
     "why": ""
   },
   {
@@ -371,8 +371,16 @@ window.TRACE = [
     "name": "플로팅 툴바(배치 4종·드래그·숨김)",
     "now": "FloatingToolbar, localStorage filme:toolbar:v1",
     "fate": "제거",
-    "frames": [],
-    "comps": [],
+    "frames": [
+      "E-01",
+      "E-04",
+      "P-10"
+    ],
+    "comps": [
+      "C-TB",
+      "C-PH",
+      "C-TABS"
+    ],
     "where": "undo/redo는 상단 줄, 전체 보기는 패널 머리, 항목 목록은 P-10으로 갔어요.",
     "why": "화면을 덮고 위치 설정이 필요하던 떠 있는 층을 걷어 냈어요."
   },
@@ -491,14 +499,13 @@ window.TRACE = [
     "now": "DesignRail 커스텀",
     "fate": "형태 변경",
     "frames": [
-      "P-06",
       "P-09"
     ],
     "comps": [
       "C-OPT",
       "C-PH"
     ],
-    "where": "서체는 필드 대상 패널 P-06, P-09로 옮겨졌어요.",
+    "where": "서체는 서명·한줄평 대상 패널 P-09로 옮겨졌어요. 옵션 라벨은 각 서체로 그려요.",
     "why": "드로어와 툴바가 없어져 필드 대상 패널이 맡아요."
   },
   {
@@ -834,7 +841,6 @@ window.TRACE = [
     "why": "범위 밖이던 화면에 만료 상태를 새로 제안했어요."
   }
 ];
-
 window.REQ_TRACE = [
   {
     "id": "autoplay",
@@ -892,13 +898,16 @@ window.REQ_TRACE = [
     "id": "smallfield",
     "frames": [
       "E-01",
+      "P-06",
       "P-10"
     ],
     "comps": [
       "C-SEL",
+      "C-TRAIL",
+      "C-PH",
       "C-LIST"
     ],
-    "how": "필드를 직접 탭해 고르고 오탭하면 항목 목록 P-10에서 바로 복구해요.",
+    "how": "필드를 직접 탭해 고르고(hit area 최소 44), 오탭이면 패널 머리의 이전/다음(P-06)이나 대상 줄, 항목 목록(P-10)으로 바로 복구해요.",
     "name": "작은 필드 직접 터치"
   },
   {
