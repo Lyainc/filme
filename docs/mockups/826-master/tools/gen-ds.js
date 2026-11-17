@@ -14,18 +14,18 @@ const tokens = {
   color: {
     themes: [{ id: 'light', name: '라이트 · 종이와 잉크' }, { id: 'dark', name: '다크 · 무대' }],
     tokens: [
-      C('pr-page', '#e4e0d9', '#050506', '앱 밖 문서 바탕(데스크톱 PhoneFrame 바깥).'),
-      C('pr-stage', '#efece6', '#0b0b0c', '편집기 무대 · 랜딩 · 결과 화면 바탕.'),
-      C('pr-s1', '#f7f5f1', '#141416', '편집 도크 · 입력 패널 · 시트 · 이어서 만들기 행 면.'),
+      C('pr-page', '#e1e2e4', '#050506', '앱 밖 문서 바탕(데스크톱 PhoneFrame 바깥).'),
+      C('pr-stage', '#edeeef', '#0b0b0c', '편집기 무대 · 랜딩 · 결과 화면 바탕.'),
+      C('pr-s1', '#f6f7f8', '#141416', '편집 도크 · 입력 패널 · 시트 · 이어서 만들기 행 면.'),
       C('pr-s2', '#ffffff', '#1c1c1f', '입력 · 선택된 옵션 · 토스트 면.'),
       C('pr-hair', 'rgba(17,17,17,0.08)', 'rgba(255,255,255,0.08)', '구분선(헤어라인 1px).'),
       C('pr-hair-strong', 'rgba(17,17,17,0.16)', 'rgba(255,255,255,0.16)', '테두리 · 슬라이더 트랙 · 패널 손잡이.'),
-      C('pr-ink', '#141414', '#ece9e3', '본문 · 선택 글자 · 슬라이더 채움. stage/s1/s2 위 15:1 이상.'),
-      C('pr-ink-2', '#5b5852', '#a8a49c', '보조 글자 · 아이콘. 세 표면 위 6.5:1(라이트) · 7.4:1(다크) 이상.'),
-      C('pr-ink-3', '#6a665f', '#8e8a83', '메타 · 위치 · 빈 값. 12px에도 쓰여서 세 표면 위 4.8:1 이상.'),
-      C('pr-accent', '#b0423f', '#c24b43', '브릭. 화면당 주 행동 하나의 채움, 선택 표시(재단 표시), 모드 인디케이터에만. 글자색으로 쓰지 않아요(다크 표면 위 3.8:1).'),
-      C('pr-accent-ink', '#ffffff', '#ffffff', '브릭 채움 위 글자(5.7:1 라이트 · 4.8:1 다크).'),
-      C('pr-accent-hair', 'rgba(176,66,63,0.45)', 'rgba(194,75,67,0.45)', '선택 표시의 45% 상자 선.'),
+      C('pr-ink', '#121314', '#ececee', '본문 · 선택 글자 · 슬라이더 채움. stage/s1/s2 위 14:1 이상.'),
+      C('pr-ink-2', '#55585d', '#a7a9ae', '보조 글자 · 아이콘. 세 표면 위 6.1:1(라이트) · 7.2:1(다크) 이상.'),
+      C('pr-ink-3', '#62666c', '#8e9196', '메타 · 위치 · 빈 값. 12px에도 쓰여서 세 표면 위 4.9:1 이상.'),
+      C('pr-accent', '#a3182f', '#c8283f', '브릭(D02-B 크림슨). 화면당 주 행동 하나의 채움, 선택 표시(재단 표시), 모드 인디케이터에만. 글자색으로 쓰지 않아요(다크 표면 위 3.4:1).'),
+      C('pr-accent-ink', '#ffffff', '#ffffff', '브릭 채움 위 글자(7.7:1 라이트 · 5.5:1 다크).'),
+      C('pr-accent-hair', 'rgba(163,24,47,0.45)', 'rgba(200,40,63,0.45)', '선택 표시의 45% 상자 선.'),
       C('pr-warn', '#8f5410', '#e0a35a', '앰버. 오류 · 필수 누락 · 초기화 확인 대기. 글자로 써도 AA(5.2:1 · 7.7:1 이상).'),
       C('pr-scrim', 'rgba(20,18,14,0.48)', 'rgba(0,0,0,0.64)', '모달(메뉴 시트 · 크롭) 뒤 어둡게.'),
       C('pr-kbd', '#d1d3d9', '#2b2b2e', '키보드 그림 바탕(문서 전용 근사).'),
@@ -71,7 +71,7 @@ const head = `/* FILME 영사실 컴포넌트 스타일. 토큰은 tokens.css(to
 :root {
   --pr-font: var(--font-ui); --pr-font-brand: var(--font-brand);
   --pr-d-page: #050506; --pr-d-stage: #0B0B0C; --pr-d-s1: #141416; --pr-d-s2: #1C1C1F;
-  --pr-d-hair-strong: rgba(255,255,255,.16); --pr-d-ink: #ECE9E3; --pr-d-ink2: #A8A49C; --pr-d-accent: #C24B43; --pr-d-warn: #E0A35A;
+  --pr-d-hair-strong: rgba(255,255,255,.16); --pr-d-ink: #ECECEE; --pr-d-ink2: #A7A9AE; --pr-d-accent: #C8283F; --pr-d-warn: #E0A35A;
   --pr-rl: #D6336C; --pr-rl-ink: #FFFFFF;
 }
 `;
@@ -173,7 +173,7 @@ FILME(CGV 포토플레이 스타일 포토티켓 편집기)의 앱 화면 디자
 
 ## 색 쓰는 법
 - 글자: \`pr-ink\`(본문) · \`pr-ink-2\`(보조, 아이콘) · \`pr-ink-3\`(메타, 12px까지). 세 표면 모두 4.5:1 이상.
-- 브릭은 글자색 금지(다크 표면 위 3.8:1). 브릭 채움 위 글자는 \`pr-accent-ink\`.
+- 브릭은 글자색 금지(다크 표면 위 3.4:1). 브릭 채움 위 글자는 \`pr-accent-ink\`.
 - 경고 글자·테두리·점은 \`pr-warn\`. 현행 앱의 \`--danger\` 빨강은 브릭과 너무 가까워 쓰지 않아요.
 - 모달 뒤는 \`pr-scrim\`. 크롭 다이얼로그는 사진 판독용으로 테마와 무관하게 다크 고정(\`bundle.css\`의 \`--pr-d-*\` 상수).
 
@@ -193,7 +193,7 @@ FILME(CGV 포토플레이 스타일 포토티켓 편집기)의 앱 화면 디자
 20px, 선 굵기 1.75, 둥근 끝, \`currentColor\`(보통 \`pr-ink-2\`). 쓰는 것: 뒤로 · 다음 · 실행 취소 · 다시 실행 · 더보기 · 눈/눈 끔 · 닫기 · 정지/재생 · 별 · 검색 · 확인.
 
 ## 로고
-\`assets/Logos/clapper-ticket-mark.svg\`는 \`src/components/v2/Wordmark.tsx\`의 클래퍼 티켓 마크를 그대로 옮긴 거예요(배지색은 라이트 브릭 #B0423F, 앱에선 테마 accent). 로고타입 "fılme"는 글자(Nunito 900 19px, ı 위 브릭 점, me 브릭)라 파일이 없어요: \`t-logotype\` 스타일과 Wordmark.tsx를 쓰세요.
+\`assets/Logos/clapper-ticket-mark.svg\`는 \`src/components/v2/Wordmark.tsx\`의 클래퍼 티켓 마크를 그대로 옮긴 거예요(배지색은 라이트 강조 #A3182F, 앱에선 테마 accent). 로고타입 "fılme"는 글자(Nunito 900 19px, ı 위 브릭 점, me 브릭)라 파일이 없어요: \`t-logotype\` 스타일과 Wordmark.tsx를 쓰세요.
 
 ## 컴포넌트
 ${W.COMPONENTS.length}개. 각 카드의 README에 구성·크기·토큰·변형·상태·대응 구현 파일(main 203ee7c)과 쓰이는 프레임 ID가 있어요. 스타일은 \`components/bundle.css\`의 \`c-\` 클래스이고, React 번들은 아직 없어요.
@@ -207,7 +207,7 @@ const now = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
 fs.writeFileSync(OUT + 'design-system.json', JSON.stringify({
   v: 3, layout: 'files', createdOnFiles: { v: 1, at: '2026-11-16T14:42:36Z' } /* 처음 만든 시각 고정(인덱스 마커) */, title: 'FILME 영사실', namespace: 'FilmeProjection', libraries: [],
   sections: {}, groups: ['Logos'],
-  assetGroups: { Logos: { name: 'Logos', tile: 'm', order: ['clapper-ticket-mark.svg'], files: { 'clapper-ticket-mark.svg': { name: 'clapper-ticket-mark.svg', blob: '93bdcf2caf7cd54152bfbbf55b7c933c', size: 1097, type: 'image/svg+xml' } } } },
+  assetGroups: { Logos: { name: 'Logos', tile: 'm', order: ['clapper-ticket-mark.svg'], files: { 'clapper-ticket-mark.svg': { name: 'clapper-ticket-mark.svg', blob: '1e87d468a7e8852880040b0bd89ee1e4', size: 1097, type: 'image/svg+xml' } } } },
   blobs: {}, docs: { readme: 'project/README.md', sections: [] },
   lastChange: { by: 'Lyainc', at: now, via: 'Claude Code', note: process.argv[3] || ('페이지 마스터에서 토큰 · 컴포넌트 ' + W.COMPONENTS.length + '개 생성') } /* 두 번째 인자: 이번 변경 메모 */
 }, null, 1));
