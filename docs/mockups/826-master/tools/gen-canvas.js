@@ -15,6 +15,7 @@ const W = global.window, S = W.PR, esc = S.esc;
 const TC = W.TRACE_CHECK();
 if (TC.bad.length || TC.miss.length) { console.error('추적표 점검 실패', TC); process.exit(1); }
 const ONLY = process.argv[3] || null; /* 단위 id 하나만 다시 쓰려면 두 번째 인자로 */
+if (ONLY && !W.EVIDENCE.some(u => u.id === ONLY && u.canvas !== false)) { console.error('없는 단위 id: ' + ONLY); process.exit(1); }
 fs.mkdirSync(OUT + 'master', { recursive: true }); fs.mkdirSync(OUT + 'decisions', { recursive: true }); fs.mkdirSync(OUT + 'wip', { recursive: true });
 
 /* ---------- 지원 스타일: master.css + 아트보드 단위 테마 스위치 ---------- */
@@ -214,7 +215,7 @@ const canvas = {
   launch: { view: 'canvas', page: 'master' },
   pages: [{ id: 'master', name: '페이지 마스터' }, { id: 'evidence', name: '근거' }, { id: 'decisions', name: '결정 · 비교판' }, { id: 'wip', name: '작업 중 목업' }],
   boards, order, notes,
-  designSystems: [{ title: 'FILME 영사실', namespace: 'filmeprojection', artifact: DS, version: '1794840197-6d42', copiedAt: now }]
+  designSystems: [{ title: 'FILME 영사실', namespace: 'filmeprojection', artifact: DS, version: '1794840197-6d42', copiedAt: '2026-11-16T23:54:03Z' }]
 };
 fs.writeFileSync(OUT + 'canvas.json', JSON.stringify(canvas, null, 1));
 console.log('boards', Object.keys(boards).length);
