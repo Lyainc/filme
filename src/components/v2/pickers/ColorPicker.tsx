@@ -79,7 +79,7 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
                   'relative inline-flex items-center justify-center rounded-chip border-2 transition-transform',
                   active
                     ? 'border-accent'
-                    : ['border-line hover:border-accent/40', pressableVariants()],
+                    : ['border-hair hover:border-accent/40', pressableVariants()],
                 )}
                 style={{
                   // 46px — rail 상세패널 공통 칩 크기(#367, 무드·후보정 칩과 동일).
@@ -101,8 +101,8 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
                     backgroundColor: s.value,
                     // 다크 테마 대응(#730 c8) — 고정 rgba(0,0,0,0.08)은 다크 앰비언트에서
                     // 대비가 거의 0이라 흰 스와치와 배경 경계가 안 보인다. DesignRail.tsx의
-                    // 스크롤 그림자가 같은 함정을 var(--fg-faint)로 고친 선례를 따른다.
-                    boxShadow: 'inset 0 0 0 1px var(--fg-faint)',
+                    // 스크롤 그림자가 같은 함정을 var(--pr-ink-3)로 고친 선례를 따른다.
+                    boxShadow: 'inset 0 0 0 1px var(--pr-ink-3)',
                   }}
                 />
                 {active && (
@@ -135,7 +135,7 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
           />
           <span
             className={`flex h-[46px] w-[46px] items-center justify-center rounded-chip border-2 transition-transform ${
-              isCustom ? 'border-accent' : 'border-line hover:border-accent/40'
+              isCustom ? 'border-accent' : 'border-hair hover:border-accent/40'
             }`}
             style={{
               background:
@@ -152,7 +152,7 @@ export default function ColorPicker({ value, onChange, recommended, disabled = f
           유지 — #730 c10) — 예전엔 패널 맨 위에 있어 슬롯이 넘칠 때 아래로 스크롤해 컨트롤을
           보면 문구가 화면 밖으로 나갔다. 컨트롤 바로 다음 형제로 두면 스크롤해도 같이 딸려온다. */}
       {disabled && disabledNote && (
-        <p className="text-caption text-fg-muted">{disabledNote}</p>
+        <p className="text-caption text-ink-2">{disabledNote}</p>
       )}
     </div>
   );

@@ -312,7 +312,7 @@ function MoodCarousel({ onEnterMood }: { onEnterMood: (id: LayoutId) => void }) 
         onClick={() => setPaused((value) => !value)}
         className={cn(
           pressableVariants(),
-          'absolute right-0 top-0 z-10 h-6 rounded-field-sm border border-line bg-paper px-2 text-caption text-fg transition-colors hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+          'absolute right-0 top-0 z-10 h-6 rounded-field-sm border border-hair bg-s2 px-2 text-caption text-ink transition-colors hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
         )}
       >
         {paused ? '재개' : '정지'}
@@ -425,7 +425,7 @@ export function Landing({
         mode === 'hidden'
           ? 'hidden'
           : `flex flex-col ${
-              overlay ? 'fixed inset-0 z-50 overflow-y-auto bg-bg' : 'flex-1'
+              overlay ? 'fixed inset-0 z-50 overflow-y-auto bg-stage' : 'flex-1'
             } ${dragOver ? 'outline outline-2 -outline-offset-2 outline-accent' : ''}`
       }
       style={
@@ -454,23 +454,20 @@ export function Landing({
           <>
             {/* 카피는 1줄+1줄로 압축(Seed spec c5) — 선택 가능한 히어로가 "그래서 뭘 얻나"를
                 문장보다 세게 답하므로 카피 의존도가 낮다. 세로 예산은 아래 히어로+무드칩이 새로
-                차지한다(400×675, measure-chrome.mjs로 실측). text-landing-muted를 쓰는 이유는
-                아래 참고. */}
+                차지한다(400×675, measure-chrome.mjs로 실측). */}
             {/* flex flex-col gap-4 — h1·p가 바깥 flex 컬럼의 직계 자식에서 이 div 자식으로
                 한 단 내려오면서 원래 gap-4(16px)가 적용되던 h1↔p 사이 간격이 사라진다(부모 gap은
                 직계 자식 사이에만 걸린다) — 같은 리듬을 이 안에서 다시 선언해 되돌린다. */}
             <div data-testid="landing-copy" className="flex flex-col gap-4">
-              <h1 className="text-display font-bold text-fg break-keep">
+              <h1 className="text-display font-bold text-ink break-keep">
                 티켓 한 장이, 내 굿즈가 돼요
               </h1>
               {/* text-caption(#615 사용자 피드백) — 원래 text-body(14px)는 헤드카피 대비 존재감이
                   과했다. 카피 3종(헤드·서브·CTA) 크기를 낮춰 갤러리에 세로 예산을 넘긴다.
 
-                  text-landing-muted(globals.css --landing-muted, tailwind.config.js 매핑)로
-                  --bg 위 5.24:1을 확보한다. 이 오버라이드를 처음 넣을 땐 --fg-muted가 4.43:1로
-                  WCAG AA(4.5) 미달이라 유일한 통과 경로였고, #650이 그 값을 4.62:1로 다크닝한
-                  지금은 그 위에 얹은 여유분이다. */}
-              <p className="max-w-[300px] text-caption leading-relaxed text-landing-muted break-keep">
+                  보조 글자 text-ink-2(--pr-ink-2)는 세 표면 위 6:1을 넘는다(fgContrast.test.ts).
+                  예전 랜딩 전용 회색(#615)은 옛 --fg-muted가 AA 경계였을 때의 여유분이라 #826 S1에서 합쳤다. */}
+              <p className="max-w-[300px] text-caption leading-relaxed text-ink-2 break-keep">
                 스크린샷으로 자동입력. 사진으로 찍은 실물 티켓도 돼요.
               </p>
             </div>
@@ -507,7 +504,7 @@ export function Landing({
             onClick={onRestore}
             className={cn(
               pressableVariants({ transition: 'cta' }),
-              'mb-2 w-full min-h-touch items-center justify-center gap-2 rounded-field-sm border border-line bg-paper px-3 text-body font-semibold text-fg hover:border-accent',
+              'mb-2 w-full min-h-touch items-center justify-center gap-2 rounded-field-sm border border-hair bg-s2 px-3 text-body font-semibold text-ink hover:border-accent',
             )}
           >
             <span className="truncate">
@@ -529,19 +526,19 @@ export function Landing({
               시키는 말투였고(docs/COPY_TONE_GUIDE.md 축 2), 있고 없고의 대비는 조건절이 아니라
               짝의 "없이"가 이미 지고 있어 쌍의 의미가 안 줄었다.
 
-              text-landing-muted(위 서브카피와 동일 근거)로 라이트 5.24:1 확보 —
+              text-ink-2(위 서브카피와 동일 근거)로 라이트 5.24:1 확보 —
               --fg-faint 구분자(·)는 aria-hidden 장식이라 텍스트 대비 대상이 아니라 그대로 둔다.
 
               WCAG 2.5.8(AA) 최소 24×24 미달 — 같은 파일 OCR CTA와 동일하게
               min-h-touch(44px)로 채운다(#646). */}
           <div
             data-testid="landing-exit-paths"
-            className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-caption text-landing-muted"
+            className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-caption text-ink-2"
           >
             <button type="button" onClick={onCta} className={cn(pressableVariants(), 'min-h-touch inline-flex items-center underline')}>
               포스터 업로드
             </button>
-            <span aria-hidden="true" className="text-fg-faint">·</span>
+            <span aria-hidden="true" className="text-ink-3">·</span>
             {/* 포스터 없이 시작(#631) — 단색 바탕 + 조판만으로도 티켓이 성립하는 경로의 진입점. */}
             <button type="button" onClick={onSkip} data-testid="landing-skip-poster" className={cn(pressableVariants(), 'min-h-touch inline-flex items-center underline')}>
               포스터 없이 직접 입력

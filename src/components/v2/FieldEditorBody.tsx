@@ -41,9 +41,9 @@ function todayIso(): string {
 export const INPUT_CLS = cn(
   // 16px 미만이면 iOS Safari가 포커스 시 자동 줌인해 레이아웃이 틀어진다(#274) — 편집 폼 컨트롤은 16px 이상.
   // 글래스 톤(#367) — 입력 함몰 계층(#580 3계층) 토큰. 항상 InPlaceFieldEditor의 불투명
-  // aid 박스(bg-surface-elevated) 안에서만 렌더돼 대비 하한 근거는 globals.css --glass-fill 주석 참고.
+  // aid 박스(bg-s2) 안에서만 렌더돼 대비 하한 근거는 globals.css --glass-fill 주석 참고.
   inputVariants({ surface: 'glass' }),
-  'w-full rounded-field px-3.5 py-3 text-title text-fg',
+  'w-full rounded-field px-3.5 py-3 text-title text-ink',
 );
 
 /**
@@ -196,13 +196,13 @@ function TitleSheet({ photo }: { photo: Photo }) {
       </Eyebrow>
 
       {open && (
-        <div className="overflow-hidden rounded-card border border-line bg-surface-elevated">
+        <div className="overflow-hidden rounded-card border border-hair bg-s2">
           {loading ? (
-            <div role="status" aria-live="polite" className="text-mono px-4 py-5 text-center text-micro uppercase tracking-widest text-fg-muted">
+            <div role="status" aria-live="polite" className="tabular-nums px-4 py-5 text-center text-micro uppercase tracking-widest text-ink-2">
               Loading…
             </div>
           ) : error ? (
-            <div role="alert" className="text-mono px-4 py-5 text-center text-micro uppercase tracking-widest text-danger">
+            <div role="alert" className="tabular-nums px-4 py-5 text-center text-micro uppercase tracking-widest text-warn">
               {error}
             </div>
           ) : results.length > 0 ? (
@@ -249,11 +249,11 @@ export function KobisResultList({
             type="button"
             onClick={() => onSelect(movie)}
             data-touch="44"
-            className={cn(pressableVariants(), `block w-full border-b border-line px-4 py-3 text-left transition-colors last:border-0 hover:bg-accent-soft ${
+            className={cn(pressableVariants(), `block w-full border-b border-hair px-4 py-3 text-left transition-colors last:border-0 hover:bg-accent-soft ${
               i === highlightIndex ? 'bg-accent-soft' : ''
             }`)}
           >
-            <div className="text-body font-medium text-fg">{movie.movieNm}</div>
+            <div className="text-body font-medium text-ink">{movie.movieNm}</div>
             {/* 동명·유사 제목 판별용 — 장편/단편/옴니버스, 감독, 개봉 여부(#476 ac2). */}
             {/* 조각을 배열로 모아 filter→join한다 — 조각마다 ' · '를 앞에 붙이면 typeNm이
                 빠진 malformed 응답에서 선행 구분자만 남는다. directors는 KOBIS 응답 실측상 항상
@@ -313,10 +313,10 @@ function FormatChips({
               aria-checked={active}
               onClick={() => onChange(opt.value)}
               data-touch="44"
-              className={cn(pressableVariants(), `text-mono inline-flex min-h-touch shrink-0 snap-start items-center rounded-chip border px-3 text-micro uppercase tracking-widest transition-colors ${
+              className={cn(pressableVariants(), `tabular-nums inline-flex min-h-touch shrink-0 snap-start items-center rounded-chip border px-3 text-micro uppercase tracking-widest transition-colors ${
                 active
                   ? 'border-accent bg-accent text-accent-ink'
-                  : 'border-[var(--glass-border)] bg-[var(--glass-fill)] text-fg hover:bg-accent-soft'
+                  : 'border-[var(--glass-border)] bg-[var(--glass-fill)] text-ink hover:bg-accent-soft'
               }`)}
             >
               {opt.sample}
@@ -370,7 +370,7 @@ export function DateSheet({ field, photo }: { field: TicketField; photo: Photo }
           value={gran}
           onChange={(e) => set({ releaseDateGranularity: e.target.value as DateGranularity })}
           aria-label="개봉일 정밀도"
-          className="text-mono rounded-field border border-[var(--glass-border)] bg-[var(--glass-fill)] px-3 py-3 text-title uppercase tracking-widest text-fg outline-none focus-visible:border-accent"
+          className="tabular-nums rounded-field border border-[var(--glass-border)] bg-[var(--glass-fill)] px-3 py-3 text-title uppercase tracking-widest text-ink outline-none focus-visible:border-accent"
         >
           {GRANULARITY_OPTIONS.map((g) => (
             <option key={g.value} value={g.value}>
@@ -392,7 +392,7 @@ export function DateSheet({ field, photo }: { field: TicketField; photo: Photo }
         preview={formatDate(info.releaseDate, token, gran)}
       />
 
-      <Eyebrow as="label" className="inline-flex cursor-pointer items-center gap-1.5 hover:text-fg">
+      <Eyebrow as="label" className="inline-flex cursor-pointer items-center gap-1.5 hover:text-ink">
         <input
           type="checkbox"
           checked={!!info.isReissue}
@@ -403,7 +403,7 @@ export function DateSheet({ field, photo }: { field: TicketField; photo: Photo }
       </Eyebrow>
 
       {info.isReissue && (
-        <div className="space-y-field border-l-2 border-line pl-3">
+        <div className="space-y-field border-l-2 border-hair pl-3">
           <div className="flex flex-wrap items-stretch gap-2">
             <DateInput
               value={info.reissueDate || ''}
@@ -504,12 +504,12 @@ function StampEditor({
   if (image.value) {
     return (
       <div className="space-y-3">
-        <div className="flex items-center gap-3 rounded-field border border-line bg-surface-elevated px-3.5 py-3">
+        <div className="flex items-center gap-3 rounded-field border border-hair bg-s2 px-3.5 py-3">
           <img src={image.value} alt={`${ariaLabel} 이미지`} className="h-8 w-auto object-contain" />
           <button
             type="button"
             onClick={removeImage}
-            className={cn(pressableVariants(), 'ml-auto rounded-chip border border-line px-3 py-1.5 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent')}
+            className={cn(pressableVariants(), 'ml-auto rounded-chip border border-hair px-3 py-1.5 text-caption font-medium text-ink-2 transition-colors hover:border-accent hover:text-accent')}
           >
             이미지 제거
           </button>
@@ -541,7 +541,7 @@ function StampEditor({
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
-        className={cn(pressableVariants(), 'inline-flex min-h-touch items-center justify-center gap-2 rounded-chip border border-dashed border-line bg-surface-elevated px-4 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent')}
+        className={cn(pressableVariants(), 'inline-flex min-h-touch items-center justify-center gap-2 rounded-chip border border-dashed border-hair bg-s2 px-4 text-caption font-medium text-ink-2 transition-colors hover:border-accent hover:text-accent')}
       >
         로고 업로드
       </button>

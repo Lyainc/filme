@@ -75,12 +75,12 @@ export function ResultStage({
           편집↔완료 전환에서 네브 위치가 튀지 않게 한다. 완료 화면엔 테마/완료 버튼이 없어
           우측은 좌측 뒤로가기 버튼과 같은 폭의 빈 스페이서로 균형만 맞춘다. 배경은 앰비언트가
           항상 깔리므로 투명(편집 셸의 chromeDark 헤더와 동일 처리, #357). */}
-      <header className="relative flex h-14 shrink-0 items-center justify-between border-b border-line px-3">
+      <header className="relative flex h-14 shrink-0 items-center justify-between border-b border-hair px-3">
         <button
           type="button"
           onClick={onBack}
           aria-label="편집으로 돌아가기"
-          className={cn(pressableVariants(), 'flex h-9 w-9 items-center justify-center rounded-full border border-line text-fg-muted transition-colors hover:text-fg')}
+          className={cn(pressableVariants(), 'flex h-9 w-9 items-center justify-center rounded-full border border-hair text-ink-2 transition-colors hover:text-ink')}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="m15 18-6-6 6-6" />

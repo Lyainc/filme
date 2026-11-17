@@ -1,7 +1,7 @@
 import sharp from 'sharp';
 import { OG_IMAGE_WIDTH, OG_IMAGE_HEIGHT } from './ogImage';
 
-/** .theme-dark --bg와 동일 — OG 카드는 카톡/트위터 등 앱 테마 밖에서 보이므로 고정 다크 배경. */
+/** 옛 .theme-dark 바탕(#0E1012) — 앱 테마와 묶지 않은 고정색이라 #826 S1에서 그대로 뒀다. OG 카드는 카톡/트위터 등 앱 테마 밖에서 보이므로 고정 다크 배경. */
 const OG_BACKGROUND = { r: 0x0e, g: 0x10, b: 0x12, alpha: 1 };
 
 /** 완성 티켓 JPEG(세로 대부분)를 크롭 없이 1200×630 가로 캔버스에 letterbox로 담는다 —

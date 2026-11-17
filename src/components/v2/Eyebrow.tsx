@@ -34,7 +34,7 @@ export function Eyebrow({
   return (
     <As
       htmlFor={htmlFor}
-      className={`text-mono text-micro uppercase tracking-widest ${TONE_CLS[tone]}${className ? ` ${className}` : ''}`}
+      className={`tabular-nums text-micro uppercase tracking-widest ${TONE_CLS[tone]}${className ? ` ${className}` : ''}`}
       {...rest}
     >
       {children}

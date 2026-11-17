@@ -40,9 +40,9 @@ export const MOOD_CHIP_BG: Record<LayoutId, string> = {
   // 더는 안 겹친다(아래 stub 주석).
   editorial: 'linear-gradient(90deg, #6e675e 0 40%, #A8312A 40% 44%, #f4ede0 44%)',
   // #676: editorial과 "두 갈래 + 얇은 색 룰"이라는 같은 문법을 공유해 색만으로 갈리던 쌍이라,
-  // 티켓 스텁 특유의 절취선 펀치를 상단 가장자리에 실제로 파낸 노치로 얹는다. var(--bg)로 채워
+  // 티켓 스텁 특유의 절취선 펀치를 상단 가장자리에 실제로 파낸 노치로 얹는다. var(--pr-stage)로 채워
   // 뒤 배경과 합성되므로 테마가 바뀌어도 "구멍"처럼 보인다.
-  stub: `radial-gradient(circle 3px at 50% 0%, var(--bg) 99%, transparent 100%), linear-gradient(180deg, #8a8175 0 41.7%, #c9baf7 41.7% 46%, #f2ede2 46%)`,
+  stub: `radial-gradient(circle 3px at 50% 0%, var(--pr-stage) 99%, transparent 100%), linear-gradient(180deg, #8a8175 0 41.7%, #c9baf7 41.7% 46%, #f2ede2 46%)`,
   // 35mm과 같은 퍼포레이션 문법이지만 가로 필름이라 위아래 가장자리를 따라 가로로 돈다 —
   // 점열 방향이 35mm(세로)와 정반대라 그 자체로 "같은 필름 계열, 다른 판형"을 지시한다.
   '35mm-landscape':
@@ -97,7 +97,7 @@ export const LayoutStrip = memo(function LayoutStrip({ value, onChange }: Layout
               }}
             />
             <span
-              className={`text-micro font-medium transition-colors ${active ? 'text-accent' : 'text-fg-muted'}`}
+              className={`text-micro font-medium transition-colors ${active ? 'text-accent' : 'text-ink-2'}`}
             >
               {layout.label}
             </span>

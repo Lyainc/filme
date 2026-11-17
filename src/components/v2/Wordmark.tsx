@@ -67,7 +67,7 @@ export function Wordmark({ as: Tag = 'span', onClick }: { as?: 'h1' | 'span'; on
     return (
       <>
         <ClapTixMark />
-        <Tag aria-label="FILME" className="inline-flex items-baseline whitespace-nowrap text-fg" style={glyphStyle}>
+        <Tag aria-label="FILME" className="inline-flex items-baseline whitespace-nowrap text-ink" style={glyphStyle}>
           {glyphs}
         </Tag>
       </>
@@ -93,7 +93,7 @@ export function Wordmark({ as: Tag = 'span', onClick }: { as?: 'h1' | 'span'; on
         }}
       >
         <ClapTixMark />
-        <span className="inline-flex items-baseline whitespace-nowrap text-fg" style={glyphStyle}>{glyphs}</span>
+        <span className="inline-flex items-baseline whitespace-nowrap text-ink" style={glyphStyle}>{glyphs}</span>
       </span>
     </Tag>
   );

@@ -83,6 +83,6 @@ describe('AutoSaveIndicator (#436)', () => {
 
     rerender(<AutoSaveIndicator enabled={false} lastSavedAt={null} onToggle={() => {}} />);
     const dotOff = screen.getByRole('switch').querySelector('span > span:last-child') as HTMLElement;
-    expect(dotOff.className).toContain('bg-fg-faint');
+    expect(dotOff.className).toContain('bg-ink-3');
   });
 });

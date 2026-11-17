@@ -134,11 +134,11 @@ export default function TicketLanding({ imageUrl, title, pageUrl, width, height,
       </Head>
 
       {/* 메인 앱과 같은 브랜드 정체성 — app-canvas 노이즈 배경 + Sprocket·FILME 워드마크.
-          단색 bg-surface 한 장이던 랜딩을 헤더·배경·티켓 위계로 끌어올려 "같은 서비스"
+          단색 bg-s1 한 장이던 랜딩을 헤더·배경·티켓 위계로 끌어올려 "같은 서비스"
           인상을 만든다(#138 브랜딩). 라이트·다크는 _document themeScript가 html에 건
           .theme-dark를 그대로 상속하므로 토큰만 쓰면 양쪽에서 동작한다. */}
       <div className="app-canvas flex min-h-[100dvh] flex-col">
-        <header className="flex h-14 shrink-0 items-center border-b border-line bg-surface px-4">
+        <header className="flex h-14 shrink-0 items-center border-b border-hair bg-s1 px-4">
           <Link href="/" className="flex items-center gap-2" aria-label="FILME 홈">
             <Wordmark />
           </Link>
@@ -171,7 +171,7 @@ export default function TicketLanding({ imageUrl, title, pageUrl, width, height,
               width={width}
               height={height}
               fetchPriority="high"
-              className="h-auto w-full rounded-card border border-line shadow-pop"
+              className="h-auto w-full rounded-card border border-hair shadow-pop"
             />
           </div>
 
@@ -179,7 +179,7 @@ export default function TicketLanding({ imageUrl, title, pageUrl, width, height,
             <Eyebrow as="p" tone="faint">
               FILME · Photoplay Premium Ticket
             </Eyebrow>
-            <p className="text-body text-fg-muted">
+            <p className="text-body text-ink-2">
               영화 포스터로 시네마틱한 포토티켓을, 너도 만들어봐.
             </p>
             {/* CTA 슬림화(#491) — 44px는 탭 타깃 하한이라 더 낮추지 않는다. */}
@@ -196,7 +196,7 @@ export default function TicketLanding({ imageUrl, title, pageUrl, width, height,
             CTA 바로 아래의 눈에 띄는 위치는 긴급함을 만들어 브랜드 톤과 안 맞으므로 페이지
             최하단 저대비 캡션으로 내린다(#389). */}
         <footer className="shrink-0 px-5 pb-4 text-center">
-          <p className="break-keep text-micro leading-snug text-fg-muted">
+          <p className="break-keep text-micro leading-snug text-ink-2">
             이 링크는 {DEFAULT_TICKET_TTL_DAYS}일 후 만료돼요. {UNOFFICIAL_TICKET_NOTICE}
           </p>
         </footer>

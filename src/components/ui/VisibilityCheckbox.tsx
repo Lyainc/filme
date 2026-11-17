@@ -49,7 +49,7 @@ export default function VisibilityCheckbox({ checked, onChange, label }: Visibil
       aria-label={`${label} 티켓에 표시`}
       title={checked ? '티켓에 표시 중 — 끄면 숨겨져요' : '티켓에서 숨김 — 켜면 표시돼요'}
       className={cn(pressableVariants(), `-m-[13px] inline-flex shrink-0 cursor-pointer p-[13px] transition-colors ${
-        checked ? 'text-fg' : 'text-fg-faint'
+        checked ? 'text-ink' : 'text-ink-3'
       }`)}
     >
       <EyeIcon open={checked} size={18} />

@@ -142,7 +142,7 @@ function TexturePicker({ axis, options, value, onChange, croppedImageUrl, ariaLa
                 <TexturePreview src={previewSrc} axis={axis} texture={tex.value} />
               </span>
               <span
-                className={`text-micro font-medium transition-colors ${active ? 'text-accent' : 'text-fg-muted'}`}
+                className={`text-micro font-medium transition-colors ${active ? 'text-accent' : 'text-ink-2'}`}
               >
                 {short}
               </span>

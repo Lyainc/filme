@@ -152,7 +152,7 @@ export default function RatingPicker({ value, onValueChange, visible, onVisibleC
               className={cn(pressableVariants(), 'relative inline-flex min-h-touch min-w-touch items-center justify-center')}
             >
               <span className="relative inline-block h-7 w-7">
-                <StarSVG className="absolute inset-0 text-fg-faint/40" />
+                <StarSVG className="absolute inset-0 text-ink-3/40" />
                 <span
                   className="absolute inset-0 overflow-hidden"
                   style={{
@@ -182,7 +182,7 @@ export default function RatingPicker({ value, onValueChange, visible, onVisibleC
           aria-expanded={numberInputOpen}
           aria-controls="rating-decimal-input"
           aria-label="평점 소수 입력 토글"
-          className={cn(pressableVariants(), 'text-mono inline-flex min-h-touch items-center text-left')}
+          className={cn(pressableVariants(), 'tabular-nums inline-flex min-h-touch items-center text-left')}
         >
           <Eyebrow tone="faint">
             ★ {current.toFixed(1)}
@@ -211,7 +211,7 @@ export default function RatingPicker({ value, onValueChange, visible, onVisibleC
             // inputVariants(ui/variants.ts) 공유라 순환 import 없이 한 곳에서만 바뀐다 — 나머지
             // 레이아웃 클래스(px/py/text)는 여전히 FieldEditorBody의 INPUT_CLS와 리터럴 중복이니
             // 톤을 바꿀 땐 두 곳을 같이 고칠 것.
-            className={cn(inputVariants({ surface: 'glass' }), 'text-mono w-full rounded-field px-3.5 py-3 text-title text-fg')}
+            className={cn(inputVariants({ surface: 'glass' }), 'tabular-nums w-full rounded-field px-3.5 py-3 text-title text-ink')}
           />
         )}
       </div>

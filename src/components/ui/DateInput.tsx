@@ -24,7 +24,7 @@ export function DateInput({
 }) {
   const base = cn(
     inputVariants({ surface: 'paper' }),
-    'flex-1 min-w-[160px] rounded-field px-3.5 py-3 text-title text-fg',
+    'flex-1 min-w-[160px] rounded-field px-3.5 py-3 text-title text-ink',
   );
   const parts = value ? value.split('-') : [];
   if (granularity === 'year') {

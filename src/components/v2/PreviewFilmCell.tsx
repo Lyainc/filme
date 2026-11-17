@@ -41,7 +41,7 @@ export function PreviewFilmCell({ saving = false, promoted = false, label, child
         ...(promoted
           ? {
               boxShadow:
-                '0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent), 0 16px 50px -16px rgba(0,0,0,0.6)',
+                '0 0 0 1px color-mix(in srgb, var(--pr-accent) 45%, transparent), 0 16px 50px -16px rgba(0,0,0,0.6)',
             }
           : {}),
       }}
@@ -60,8 +60,8 @@ export function PreviewFilmCell({ saving = false, promoted = false, label, child
       {promoted && label && (
         <div
           data-hide-on-export
-          className="flex items-center justify-center gap-1.5 bg-surface-elevated px-3 py-2 text-micro font-medium tracking-tight text-accent"
-          style={{ borderTop: '1px solid color-mix(in srgb, var(--accent) 30%, transparent)' }}
+          className="flex items-center justify-center gap-1.5 bg-s2 px-3 py-2 text-micro font-medium tracking-tight text-accent"
+          style={{ borderTop: '1px solid color-mix(in srgb, var(--pr-accent) 30%, transparent)' }}
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
             <path d="M20 6 9 17l-5-5" />

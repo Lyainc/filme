@@ -35,10 +35,10 @@ export function AutoSaveIndicator({ enabled, lastSavedAt, onToggle }: AutoSaveIn
         )}
         <span
           aria-hidden="true"
-          className={`relative inline-flex h-2 w-2 rounded-full ${enabled ? 'bg-accent' : 'bg-fg-faint'}`}
+          className={`relative inline-flex h-2 w-2 rounded-full ${enabled ? 'bg-accent' : 'bg-ink-3'}`}
         />
       </span>
-      <span aria-hidden="true" className="whitespace-nowrap text-micro text-fg-muted">
+      <span aria-hidden="true" className="whitespace-nowrap text-micro text-ink-2">
         자동저장
       </span>
     </button>

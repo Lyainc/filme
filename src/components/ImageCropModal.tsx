@@ -217,16 +217,16 @@ export default function ImageCropModal({
           **뷰포트** 미디어쿼리라 400px 프레임 안에서 데스크톱 분기가 떴고, 그게 안 깨진 건
           `w-full`·`85cqh`가 각각 눌러준 우연이었지 의도가 아니었다. 셸이 한 벌이 된 지금 프레임
           밖에서 뜨는 경로 자체가 없어 분기가 필요 없다. */}
-      <div className="relative flex h-[85cqh] max-h-[820px] w-full max-w-sm flex-col overflow-hidden rounded-card bg-paper shadow-card">
+      <div className="relative flex h-[85cqh] max-h-[820px] w-full max-w-sm flex-col overflow-hidden rounded-card bg-s2 shadow-card">
         {/* Header — 정사각 닫기 버튼. 제목은 aria-label(다이얼로그 접근성 이름)로만 유지, 시각 헤딩은 제거(#320) */}
-        <div className="flex items-center justify-end border-b border-line px-4 py-3">
+        <div className="flex items-center justify-end border-b border-hair px-4 py-3">
           <button
             type="button"
             onClick={onClose}
             disabled={isProcessing}
             aria-label="닫기"
             data-touch="44"
-            className={cn(pressableVariants(), 'inline-flex min-h-touch min-w-touch items-center justify-center rounded-field-sm border border-line text-fg-muted transition-colors hover:bg-accent-soft hover:text-fg disabled:opacity-30')}
+            className={cn(pressableVariants(), 'inline-flex min-h-touch min-w-touch items-center justify-center rounded-field-sm border border-hair text-ink-2 transition-colors hover:bg-accent-soft hover:text-ink disabled:opacity-30')}
           >
             ✕
           </button>
@@ -237,7 +237,7 @@ export default function ImageCropModal({
             정밀도가 부족해지면 그때 이미지 스케일 컨트롤을 다시 추가. */}
         <div className="min-h-0 flex-1 p-4">
           <div
-            className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-field bg-fg/95"
+            className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-field bg-ink/95"
             data-testid="crop-frame"
             data-aspect={aspect === undefined ? 'undefined' : aspect}
             // 아래 <img>의 cq 단위가 이 프레임을 기준으로 풀리게 하는 size container 선언(#474).
@@ -273,11 +273,11 @@ export default function ImageCropModal({
 
         {/* Footer — (포스터 전용) 원본 비율 보존 토글 + 액션 버튼 */}
         <div
-          className="flex flex-col gap-3 border-t border-line px-4 pt-3"
+          className="flex flex-col gap-3 border-t border-hair px-4 pt-3"
           style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.875rem)' }}
         >
           {showPreserveToggle && (
-            <label className="flex items-center gap-2 text-body text-fg">
+            <label className="flex items-center gap-2 text-body text-ink">
               <input
                 type="checkbox"
                 checked={preserveRatio}
@@ -294,7 +294,7 @@ export default function ImageCropModal({
               onClick={onClose}
               disabled={isProcessing}
               data-touch="44"
-              className={cn(pressableVariants(), 'inline-flex min-h-btn items-center justify-center rounded-field border border-line bg-surface text-body font-medium text-fg transition-colors hover:bg-accent-soft disabled:opacity-30')}
+              className={cn(pressableVariants(), 'inline-flex min-h-btn items-center justify-center rounded-field border border-hair bg-s1 text-body font-medium text-ink transition-colors hover:bg-accent-soft disabled:opacity-30')}
             >
               다른 사진 선택
             </button>

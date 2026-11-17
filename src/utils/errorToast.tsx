@@ -92,7 +92,7 @@ export function ErrorToastHost() {
   return (
     <div
       role="alert"
-      className="fixed top-4 left-1/2 z-[70] flex max-w-[calc(100%-32px)] -translate-x-1/2 items-center gap-3 rounded-field-sm border border-danger bg-surface-elevated px-4 py-2.5 text-body text-danger animate-fade-in"
+      className="fixed top-4 left-1/2 z-[70] flex max-w-[calc(100%-32px)] -translate-x-1/2 items-center gap-3 rounded-field-sm border border-warn bg-s2 px-4 py-2.5 text-body text-warn animate-fade-in"
       style={{ boxShadow: 'var(--shadow-pop)' }}
     >
       <span>{err.message}</span>
@@ -101,7 +101,7 @@ export function ErrorToastHost() {
           type="button"
           onClick={dismissError}
           aria-label="닫기"
-          className="shrink-0 text-danger/70 transition-colors hover:text-danger"
+          className="shrink-0 text-warn/70 transition-colors hover:text-warn"
         >
           ✕
         </button>

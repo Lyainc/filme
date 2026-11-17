@@ -120,7 +120,7 @@ function AxisSegment<K extends string>({
           className={cn(pressableVariants(), `h-9 flex-1 truncate rounded-chip border px-3 text-caption font-medium transition-colors ${
             value === o.key
               ? 'border-transparent bg-accent-soft text-accent'
-              : 'border-line bg-surface-elevated text-fg-muted'
+              : 'border-hair bg-s2 text-ink-2'
           }`)}
         >
           {o.label}
@@ -159,7 +159,7 @@ function ChipRadio<V extends string>({
   return (
     <div className="space-y-field">
       <Eyebrow as="div">{label}</Eyebrow>
-      {note && <p className="text-caption text-fg-muted">{note}</p>}
+      {note && <p className="text-caption text-ink-2">{note}</p>}
       {preview}
       {/* 이름은 컨테이너 aria-label로 — TexturePicker·FieldEditorBody의 radiogroup과 같은 문법. */}
       {/* 폰트 피커가 9택이 되면서(#437) 한 줄에 다 못 선다 — basis 6rem은 400px 프레임에서
@@ -184,7 +184,7 @@ function ChipRadio<V extends string>({
             className={cn(pressableVariants(), `h-9 grow basis-[6rem] truncate rounded-chip border px-3 text-caption font-medium transition-colors ${
               value === opt.value
                 ? 'border-transparent bg-accent-soft text-accent'
-                : 'border-line bg-surface-elevated text-fg-muted'
+                : 'border-hair bg-s2 text-ink-2'
             } ${opt.disabled ? 'opacity-40' : ''}`)}
             style={optionStyle?.(opt.value, opt.label)}
           >
@@ -295,7 +295,7 @@ function CustomPanel({ photo }: { photo: Photo }) {
       preview={
         <p
           data-font-preview="quote"
-          className="truncate leading-8 text-fg"
+          className="truncate leading-8 text-ink"
           style={userTextFont(quoteSample, components.quoteFont, 22)}
         >
           {quoteSample}
@@ -318,7 +318,7 @@ function CustomPanel({ photo }: { photo: Photo }) {
         signatureLocked ? null : (
           <p
             data-font-preview="signature"
-            className="truncate leading-8 text-fg"
+            className="truncate leading-8 text-ink"
             style={userTextFont(signatureSample, components.signatureFont, 22)}
           >
             {signatureSample}
@@ -500,7 +500,7 @@ function SizePanel({ photo, actions }: { photo: Photo; actions: RailActions }) {
             type="button"
             onClick={actions.onRecropPoster}
             data-touch="36"
-            className={cn(pressableVariants(), 'h-9 w-full rounded-chip border border-line bg-surface-elevated px-3 text-caption font-medium text-fg transition-colors hover:bg-accent-soft hover:text-accent')}
+            className={cn(pressableVariants(), 'h-9 w-full rounded-chip border border-hair bg-s2 px-3 text-caption font-medium text-ink transition-colors hover:bg-accent-soft hover:text-accent')}
           >
             포스터 다시 크롭
           </button>
@@ -533,7 +533,7 @@ function SizePanel({ photo, actions }: { photo: Photo; actions: RailActions }) {
         return (
           <div key={target} className="space-y-field">
             {(empty || hidden) && (
-              <p className="text-caption text-fg-muted">
+              <p className="text-caption text-ink-2">
                 {empty
                   ? `${STAMP_LABELS[target]}가 비어 있어요. 이미지나 텍스트를 입력하세요.`
                   : `${STAMP_LABELS[target]}가 숨겨져 있어요.`}
@@ -659,14 +659,14 @@ function BackgroundPatternPanel({ photo }: { photo: Photo }) {
   return (
     <div className="space-y-3">
       {image && (
-        <div className="flex items-center gap-3 rounded-field border border-line bg-surface-elevated px-3.5 py-3">
+        <div className="flex items-center gap-3 rounded-field border border-hair bg-s2 px-3.5 py-3">
           <img src={image} alt="스탬프 이미지" className="h-10 w-auto object-contain" />
           <button
             type="button"
             // blob revoke는 여기서 하지 않는다 — undo 히스토리(#356)가 이 URL을 참조한다
             // (useLogoCrop 주석과 같은 이유). 최신 URL은 usePhototicket이 언마운트·clearDraft에서 푼다.
             onClick={() => photo.updateComponents({ backgroundPatternImage: '' })}
-            className={cn(pressableVariants(), 'ml-auto rounded-chip border border-line px-3 py-1.5 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent')}
+            className={cn(pressableVariants(), 'ml-auto rounded-chip border border-hair px-3 py-1.5 text-caption font-medium text-ink-2 transition-colors hover:border-accent hover:text-accent')}
           >
             이미지 제거
           </button>
@@ -701,7 +701,7 @@ function BackgroundPatternPanel({ photo }: { photo: Photo }) {
         type="button"
         onClick={() => fileInputRef.current?.click()}
         data-touch="40"
-        className={cn(pressableVariants(), 'inline-flex min-h-touch w-full items-center justify-center gap-2 rounded-chip border border-dashed border-line bg-surface-elevated px-4 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent')}
+        className={cn(pressableVariants(), 'inline-flex min-h-touch w-full items-center justify-center gap-2 rounded-chip border border-dashed border-hair bg-s2 px-4 text-caption font-medium text-ink-2 transition-colors hover:border-accent hover:text-accent')}
       >
         {image ? '이미지 교체' : '이미지 업로드'}
       </button>

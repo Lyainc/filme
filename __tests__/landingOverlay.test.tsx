@@ -179,7 +179,7 @@ describe('랜딩 오버레이(#614)', () => {
 
 /**
  * 랜딩 카피 구조(#615 → #786). 반복 배경 타일과 그 대비용 스크림은 #786에서 제거됐다 — 배경이
- * 사라지면 카피는 오버레이 자신의 불투명 bg-bg 위에 직접 서므로 스크림이 할 일이 없다. 남는 건
+ * 사라지면 카피는 오버레이 자신의 불투명 bg-stage 위에 직접 서므로 스크림이 할 일이 없다. 남는 건
  * 헤드↔서브 간격과 landing-muted 토큰이다(이 레포엔 jest-dom도 Tailwind CSS도 테스트에 안 실려
  * getComputedStyle이 클래스를 반영하지 않으므로 클래스 문자열로 고정한다 — 위 파일 주석의 같은
  * 컨벤션). 대비 수치 자체는 브라우저에서만 잴 수 있다.
@@ -197,15 +197,15 @@ describe('랜딩 카피 (#615 → #786)', () => {
     expect(copyBlock.className).toContain('gap-4');
   });
 
-  test('서브카피와 이탈 경로 줄이 text-fg-muted가 아니라 text-landing-muted를 쓴다', () => {
+  // #826 S1: 랜딩 전용 회색(landing-muted)은 옛 --fg-muted가 AA 경계였을 때의 여유분이었다.
+  // --pr-ink-2가 세 표면 위 6:1을 넘어(fgContrast.test.ts) 보조 글자 토큰 하나로 합쳤다.
+  test('서브카피와 이탈 경로 줄이 보조 글자 토큰 text-ink-2를 쓴다', () => {
     render(<Harness />);
 
     const sub = within(landing()).getByText(/^스크린샷으로 자동입력/);
-    expect(sub.className).toContain('text-landing-muted');
-    expect(sub.className).not.toContain('text-fg-muted');
+    expect(sub.className).toContain('text-ink-2');
 
     const exitRow = screen.getByTestId('landing-skip-poster').parentElement!;
-    expect(exitRow.className).toContain('text-landing-muted');
-    expect(exitRow.className).not.toContain('text-fg-muted');
+    expect(exitRow.className).toContain('text-ink-2');
   });
 });
