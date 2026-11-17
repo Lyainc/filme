@@ -8,9 +8,10 @@ window.DECISIONS = [
   ['6', '랜딩 전시 정지 수단', '버튼 없이 강제 재생. 누르고 있는 동안·포커스 동안 정지, OS 동작 줄이기면 정지(요구 1 변경)', '결정 2026-11-17'],
   ['7', '대상 환경', '모바일 전용. 데스크톱 축(드롭·PhoneFrame)은 범위 밖', '결정 2026-11-17'],
   ['8', '문구 분량', '설명성 안내는 빼고 핵심만. 진행은 "…중…", 오류는 무슨 일 한 줄(다음 행동은 버튼이 맡음)', '결정 2026-11-17'],
-  ['9', '편집 구조', '티켓 꾸미기와 필드 편집을 같은 격으로 두지 않음. 고정 높이 도크 + 모드 셋(사진 · 정보 · 디자인), 필드는 바로 입력', '소유자 지적 2026-11-17 → 재설계']
+  ['9', '편집 구조', '티켓 꾸미기와 필드 편집을 같은 격으로 두지 않음. 고정 높이 도크 + 모드 셋(사진 · 정보 · 디자인), 필드는 바로 입력', '소유자 지적 2026-11-17 → 재설계'],
+  ['10', '팔레트(D02 · 라이트 바탕 · 강조색)', 'B 중성 회색 + 크림슨. 라이트 #EDEEEF + #A3182F, 다크 #0B0B0C + #C8283F, 회색 글자도 무채색 계열. 5-A의 브릭 범위는 그대로이고 "브릭"은 이제 이 크림슨 --pr-accent를 가리켜요. 워드마크 배지 · me는 강조색을 따라가요(현행 구조)', '결정 2026-11-18']
 ];
 EV({ id: 'decisions', page: 'cover', title: '결정', html: function () {
   return '<h3>결정</h3>' + EV_TBL(['#', '질문', '결정', '상태'], window.DECISIONS.map(function (r) { return [r[0], r[1], r[2], '<span class="m-pill ok">' + r[3] + '</span>']; }), ['n']) +
-    '<p class="m-note">비교판: 캔버스 <a href="https://claude.ai/artifact/4cvubgJpHC9ANQudDDoJ5F" target="_blank" rel="noopener">FILME 리뉴얼</a>의 "결정 · 비교판" 페이지 D01(원본 <code>decisions/D01-selection-serif-brick.html</code>).</p>';
+    '<p class="m-note">비교판: 캔버스 <a href="https://claude.ai/artifact/4cvubgJpHC9ANQudDDoJ5F" target="_blank" rel="noopener">FILME 리뉴얼</a>의 "결정 · 비교판" 페이지 D01(원본 <code>decisions/D01-selection-serif-brick.html</code>) · D02(원본 <code>decisions/D02-palette.html</code>).</p>';
 } });
