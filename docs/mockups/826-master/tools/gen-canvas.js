@@ -122,7 +122,7 @@ ${S.wordmark()}
 </div>
 <div style="background: var(--pr-s1); border: 1px solid var(--pr-hair-strong); border-radius: 6px; padding: 20px; display: flex; flex-direction: column; gap: 8px">
 <h2 style="margin: 0; font-size: 17px; font-weight: 600">결정 · 비교판</h2>
-<p style="margin: 0; font-size: 14px; line-height: 21px; color: var(--pr-ink-2)">소유자 결정을 받으려고 그린 후보 비교. 파일 이름 decisions/D번호-주제(D01 선택 표시 · 세리프 · 브릭). 결정이 나면 아트보드 제목에 결과를 적고 지우지 않아요.</p>
+<p style="margin: 0; font-size: 14px; line-height: 21px; color: var(--pr-ink-2)">소유자 결정을 받으려고 그린 후보 비교. 파일 이름 decisions/D번호-주제(D01 선택 표시 · 세리프 · 브릭, D02 팔레트). 결정이 나면 아트보드 제목에 결과를 적고 지우지 않아요.</p>
 </div>
 <div style="background: var(--pr-s1); border: 1px solid var(--pr-hair-strong); border-radius: 6px; padding: 20px; display: flex; flex-direction: column; gap: 8px">
 <h2 style="margin: 0; font-size: 17px; font-weight: 600">작업 중 목업</h2>
@@ -181,7 +181,14 @@ class Component extends DCLogic {
 `);
 boards['decisions/D01-selection-serif-brick.dc.html'] = { x: 0, y: 0, w: 1280, h: 2700, title: 'D01 선택 표시 · 세리프 · 브릭 — 결정 3-A · 4-A · 5-A', page: 'decisions', expand: 'fill' };
 order.push('decisions/D01-selection-serif-brick.dc.html');
-notes['decisions-rule'] = { x: 1400, y: 0, w: 420, text: '결정 · 비교판 규칙\n\n· 새 비교판은 decisions/D번호-주제.dc.html로 오른쪽에 이어 붙여요(80px 간격).\n· 아트보드 제목: "D번호 주제 — 결정 대기" → 결정이 나면 "— 결정 X-A".\n· 결정 내용은 레포 마스터 표지의 결정 표에도 같은 날 적어요.\n· 지우지 않아요. 결정의 근거로 남겨요.', fill: 'gray', page: 'decisions' };
+/* ---------- 결정 · 비교판 D02: decisions/D02-palette.js 하나를 레포 HTML과 같이 써요 ---------- */
+require(M + 'decisions/D02-palette.js');
+const D02_W = 2640, D02_H = 4640;
+fs.writeFileSync(OUT + 'decisions/D02-palette.dc.html', HEAD('D02 팔레트 비교', '../pr.css').replace('body { margin: 0; }', 'body { margin: 0; }\n' + W.D02_CSS) +
+  '<div data-pr-theme="{{theme}}" style="width: 100%; min-height: 100%; background: var(--pr-page)">' + W.D02_HTML().replace(/\{\{/g, '{ {') + '</div>' + TAIL(D02_W, D02_H, 'light'));
+boards['decisions/D02-palette.dc.html'] = { x: 1900, y: 0, w: D02_W, h: D02_H, title: 'D02 팔레트 · 바탕과 강조색 — 결정 대기', page: 'decisions', expand: 'fill' };
+order.push('decisions/D02-palette.dc.html');
+notes['decisions-rule'] ={ x: 1400, y: 0, w: 420, text: '결정 · 비교판 규칙\n\n· 새 비교판은 decisions/D번호-주제.dc.html로 오른쪽에 이어 붙여요(80px 간격).\n· 아트보드 제목: "D번호 주제 — 결정 대기" → 결정이 나면 "— 결정 X-A".\n· 결정 내용은 레포 마스터 표지의 결정 표에도 같은 날 적어요.\n· 지우지 않아요. 결정의 근거로 남겨요.', fill: 'gray', page: 'decisions' };
 notes['wip-rule'] = { x: 0, y: 0, w: 480, text: '작업 중 목업 규칙\n\n· 결정이 필요 없는 탐색 시안은 wip/W번호-주제.dc.html.\n· 393 기준 폰 프레임은 pr.css의 .ph 구조(상태 막대 · 홈 인디케이터)를 그대로 써요.\n· 마스터로 확정되면 master/의 해당 프레임을 고치고, 레포 원본(frames.js)도 같은 커밋에서 고쳐요.\n· 아직 아트보드 없음.', fill: 'gray', page: 'wip' };
 notes['master-rule'] = { x: MAIN_W + 80, y: 0, w: 420, text: '페이지 마스터 아트보드는 레포 원본에서 생성해요. 손으로 고치면 다음 생성 때 덮일 수 있어요. 고칠 땐 레포 frames.js를 고치고 다시 생성하거나, 여기서 고친 걸 레포에 옮겨 적어요.', fill: 'orange', page: 'master' };
 
