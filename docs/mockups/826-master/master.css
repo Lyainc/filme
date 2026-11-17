@@ -231,8 +231,8 @@ button { cursor: pointer; }
 .c-thumb .tb .tk { box-shadow: none; outline: 1px solid var(--pr-hair-strong); border-radius: 2px; }
 .c-thumb .tb .tk .po { height: 58%; }
 .c-thumb .nm { font-size: 12px; line-height: 16px; white-space: nowrap; }
-.c-thumb[aria-pressed="true"] { color: var(--pr-ink); font-weight: 600; }
-.c-thumb[aria-pressed="true"] .tb::after { content: ""; position: absolute; inset: -5px; --c: var(--pr-accent); --l: 6px; --w: 2px;
+.c-thumb[aria-checked="true"] { color: var(--pr-ink); font-weight: 600; }
+.c-thumb[aria-checked="true"] .tb::after { content: ""; position: absolute; inset: -5px; --c: var(--pr-accent); --l: 6px; --w: 2px;
   background: linear-gradient(var(--c),var(--c)) left top/var(--l) var(--w), linear-gradient(var(--c),var(--c)) left top/var(--w) var(--l), linear-gradient(var(--c),var(--c)) right top/var(--l) var(--w), linear-gradient(var(--c),var(--c)) right top/var(--w) var(--l), linear-gradient(var(--c),var(--c)) left bottom/var(--l) var(--w), linear-gradient(var(--c),var(--c)) left bottom/var(--w) var(--l), linear-gradient(var(--c),var(--c)) right bottom/var(--l) var(--w), linear-gradient(var(--c),var(--c)) right bottom/var(--w) var(--l); background-repeat: no-repeat; }
 .c-body { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; padding-bottom: var(--pr-s-3); }
 .c-row { flex: none; display: grid; grid-template-columns: 52px minmax(0, 1fr); align-items: center; gap: var(--pr-s-2); min-width: 0; min-height: 44px; }
