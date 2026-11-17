@@ -209,13 +209,12 @@ W.EVIDENCE.filter(u => u.canvas !== false).forEach((u, n) => {
   boards[key] = { x: ex, y: ey, w: EV_W, h, title: u.title, page: 'evidence', expand: 'fill' };
   order.push(key); evPages.push(key); ex += EV_W + 80; rowH = Math.max(rowH, h);
 });
-const now = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
 const canvas = {
   v: 3, createdOnFiles: { v: 1, at: '2026-11-16T14:45:28Z' } /* 처음 만든 시각 고정(인덱스 마커) */, title: 'FILME 리뉴얼',
   launch: { view: 'canvas', page: 'master' },
   pages: [{ id: 'master', name: '페이지 마스터' }, { id: 'evidence', name: '근거' }, { id: 'decisions', name: '결정 · 비교판' }, { id: 'wip', name: '작업 중 목업' }],
   boards, order, notes,
-  designSystems: [{ title: 'FILME 영사실', namespace: 'filmeprojection', artifact: DS, version: '1794840197-6d42', copiedAt: '2026-11-16T23:54:03Z' }]
+  designSystems: [{ title: 'FILME 영사실', namespace: 'filmeprojection', artifact: DS, version: '1794840197-6d42', copiedAt: '2026-11-16T20:14:16Z' }]
 };
 fs.writeFileSync(OUT + 'canvas.json', JSON.stringify(canvas, null, 1));
 console.log('boards', Object.keys(boards).length);
