@@ -33,7 +33,7 @@ window.COPY_CHANGES = [
   ['공유 페이지 CTA', '나도 티켓 만들기 →', '나도 티켓 만들기', 'S-01', '아니요', '없음'],
   ['도크 모드', '(없음)', '사진 · 정보 · 디자인', 'E-01', '—', '신규 라벨'],
   ['디자인 도구 · 색', '컬러(레일 버튼)', '색상(도구 줄 탭)', 'D-02', '예', 'designRail.test.tsx:114·142 · designRailCarousel.test.tsx:76·82 · designRailPanelLookup.test.tsx:26·57·70·75·82 · designRailDockStability.test.tsx:75 — 이름과 role(button → tab)이 같이 바뀌어요(2026-11-17 리뷰에서 빠진 행 보충)'],
-  ['디자인 도구 · 후보정', '후보정(레일 버튼) + "후보정 축" 재질 · 코팅 세그먼트', '재질 · 코팅(도구 줄 탭 둘, 축 세그먼트 없음)', 'D-03', '예', 'designRail.test.tsx:42·115 · designRailTapTargets.test.tsx:31·34·36·40(radiogroup "후보정 축"과 "재질 · 원본" 라벨) — 2026-11-17 시각 감사로 질감 한 도구를 둘로 나눴어요'],
+  ['디자인 도구 · 후보정', '후보정(레일 버튼) + "후보정 축" 재질 · 코팅 세그먼트', '재질 · 코팅(도구 줄 탭 둘, 축 세그먼트 없음)', 'D-03', '예', 'designRail.test.tsx:42·115 · designRailTapTargets.test.tsx:31·34·36·40·50·69(radiogroup "후보정 축" · "재질 · 원본" 라벨 · /^코팅 ·/ 세그먼트) · designRailCarousel.test.tsx:94·103·121 · designRailDockStability.test.tsx:77 · sliderDragThrottle.test.tsx:126 — 2026-11-17 시각 감사로 질감 한 도구를 둘로 나눴어요(2라운드 리뷰로 줄 보충)'],
   ['정보 행 빈 값', '비어 있음(드로어)', '비어 있음 · 필수', 'I-01', '아니요', '없음'],
   ['사진 행', '(없음)', '포스터 · 극장 로고 · 포맷 로고 · 배경 스탬프 / 교체 · 자르기 · 추가 · 이미지로', 'G-01', '—', '신규 라벨'],
   ['포스터 복원 중', '(셸 전체 대기)', '포스터 불러오는 중…', 'E-02', '—', '신규(축 4 진행)'],
