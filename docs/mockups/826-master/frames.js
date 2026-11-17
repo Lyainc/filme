@@ -110,7 +110,7 @@
       { st: '빈 상태', html: ed({ ticket: { poster: 'none', empty: true, ghost: true }, undo: { u: false, r: false }, blocked: true, dock: info({ miss: true }) }) },
       { st: '로딩 · 스크린샷 인식 중', html: ed({ ticket: { poster: 'none', empty: true, ghost: true }, undo: { u: false, r: false }, blocked: true, dock: info({ miss: true, busy: true }) }) },
       { st: '오류 · 인식 실패', html: ed({ ticket: { poster: 'none', empty: true, ghost: true }, undo: { u: false, r: false }, blocked: true, dock: info({ miss: true }), toast: S.toast('인식에 실패했어요', { err: true, bottom: 12 }) }) },
-      { st: '로딩 · 포스터 복원 중', html: ed({ ticket: { poster: 'load' }, dock: design('무드', S.thumbs('minimal')), toast: '<p class="c-spec" style="position:absolute;left:0;right:0;top:40%;text-align:center">포스터 불러오는 중…</p>' }) },
+      { st: '로딩 · 포스터 복원 중', html: ed({ ticket: { poster: 'load' }, dock: design('무드', S.thumbs('minimal')), toast: '<p class="c-spec" style="position:absolute;left:0;right:0;top:40%;text-align:center;color:rgba(30,27,24,.72)">포스터 불러오는 중…</p>' }) },
       { st: '오류 · 포스터 복원 실패', html: ed({ ticket: { poster: 'none' }, dock: photo([ROW.posterNone, ROW.chain, ROW.format]), toast: S.toast('저장된 포스터를 불러오지 못했어요', { err: true, close: true, top: 8 }) }) }
     ],
     states: ['빈 상태는 정보 모드로 열려요. 필수(제목·개봉일) 행과 정보 탭에 앰버 점, 완료는 차단 모양.', '인식 중: "스크린샷으로 자동입력"이 "티켓 인식 중…"(aria-busy). 다른 편집은 계속돼요.', '포스터 복원 실패는 사진 모드로 열고 포스터 행을 "없음"으로.'],
