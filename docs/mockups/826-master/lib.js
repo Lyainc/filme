@@ -95,7 +95,7 @@
   P.thumbs = function (sel) {
     var h = '<div class="c-thumbs" role="radiogroup" aria-label="무드">';
     P.MOODS.forEach(function (m) {
-      h += '<button class="c-thumb" role="radio" aria-checked="' + (m.k === sel) + '" aria-pressed="' + (m.k === sel) + '"><span class="tb' + (m.wide ? ' wide' : '') + '"><span class="tk' + (m.dark ? ' dark' : '') + '" style="background:' + m.paper + ';display:block"><span class="po" style="display:block"></span></span></span><span class="nm">' + m.n + '</span></button>';
+      h += '<button class="c-thumb" role="radio" aria-checked="' + (m.k === sel) + '"><span class="tb' + (m.wide ? ' wide' : '') + '"><span class="tk' + (m.dark ? ' dark' : '') + '" style="background:' + m.paper + ';display:block"><span class="po" style="display:block"></span></span></span><span class="nm">' + m.n + '</span></button>';
     });
     return h + '</div>';
   };
