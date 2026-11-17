@@ -329,12 +329,12 @@ export function ResultPanel({
         />
 
         {downloadError && (
-          <p role="alert" className="flex items-center justify-between gap-2 text-caption text-danger">
+          <p role="alert" className="flex items-center justify-between gap-2 text-caption text-warn">
             <span>저장에 실패했어요.</span>
             <button
               type="button"
               onClick={handleDownload}
-              className={cn(pressableVariants(), 'shrink-0 rounded-chip border border-danger px-2.5 py-1 text-caption font-medium text-danger transition-colors hover:bg-danger hover:text-white')}
+              className={cn(pressableVariants(), 'shrink-0 rounded-chip border border-warn px-2.5 py-1 text-caption font-medium text-warn transition-colors hover:bg-warn hover:text-white')}
             >
               다시 시도
             </button>
@@ -370,7 +370,7 @@ export function ResultPanel({
           onClick={handleShareLink}
           disabled={isBusy}
           title="카톡·메신저 등으로 공유해요"
-          className={cn(pressableVariants(), 'flex min-h-[48px] w-full items-center justify-center gap-2 rounded-field-sm border border-line bg-surface-elevated px-4 text-body font-medium text-fg transition-colors hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:text-fg-faint disabled:hover:bg-transparent disabled:hover:text-fg-faint [.chrome-dark_&]:min-h-[50px]')}
+          className={cn(pressableVariants(), 'flex min-h-[48px] w-full items-center justify-center gap-2 rounded-field-sm border border-hair bg-s2 px-4 text-body font-medium text-ink transition-colors hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:text-ink-3 disabled:hover:bg-transparent disabled:hover:text-ink-3 [.chrome-dark_&]:min-h-[50px]')}
         >
           <ShareIcon />
           <span>공유</span>
@@ -378,7 +378,7 @@ export function ResultPanel({
 
         {/* 공유 링크 패널 — '링크' 셀을 탭해 퍼마링크가 발급되면(permalink set) 펼쳐진다. */}
         {permalink && (
-          <div ref={linkPanelRef} className="space-y-1.5 rounded-field-sm border border-line bg-surface p-3 animate-rise-in">
+          <div ref={linkPanelRef} className="space-y-1.5 rounded-field-sm border border-hair bg-s1 p-3 animate-rise-in">
             {/* 모바일에선 rail(숨김)+시트로 ResultPanel이 둘 동시 렌더되므로 전역 id는
                 중복된다 — 라벨은 span + 인풋 aria-label로 연결해 id 충돌을 피한다. */}
             <Eyebrow className="block">공유 링크</Eyebrow>
@@ -390,12 +390,12 @@ export function ResultPanel({
                 value={permalink}
                 onFocus={(e) => e.currentTarget.select()}
                 aria-label="공유 링크"
-                className="text-mono min-w-0 flex-1 rounded-field-sm border border-line bg-surface-elevated px-3 py-2 text-caption text-fg outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent-soft"
+                className="tabular-nums min-w-0 flex-1 rounded-field-sm border border-hair bg-s2 px-3 py-2 text-caption text-ink outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent-soft"
               />
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className={cn(pressableVariants(), 'inline-flex min-h-touch shrink-0 items-center justify-center rounded-field-sm border border-line bg-surface-elevated px-3.5 text-caption font-medium text-fg transition-colors hover:border-accent hover:text-accent')}
+                className={cn(pressableVariants(), 'inline-flex min-h-touch shrink-0 items-center justify-center rounded-field-sm border border-hair bg-s2 px-3.5 text-caption font-medium text-ink transition-colors hover:border-accent hover:text-accent')}
               >
                 <span key={copyLabel} className="inline-block animate-fade-in">
                   {copyLabel}
@@ -404,7 +404,7 @@ export function ResultPanel({
             </div>
             {/* 공유 링크 disclaimer(#179) — 만료·비공식·양도불가 고지. 만료일은 cleanup과 같은
                 단일 출처(DEFAULT_TICKET_TTL_DAYS)에서 가져와 표기와 실제 정책이 어긋나지 않게 한다. */}
-            <p className="break-keep text-micro leading-snug text-fg-muted">
+            <p className="break-keep text-micro leading-snug text-ink-2">
               이 링크는 {DEFAULT_TICKET_TTL_DAYS}일 후 만료돼요. {UNOFFICIAL_TICKET_NOTICE}
             </p>
           </div>

@@ -15,42 +15,28 @@ module.exports = {
         rail: '1024px',
       },
       colors: {
-        // === v2.2 cool-neutral theme (CSS var — responds to .theme-dark) ===
-        bg: 'var(--bg)',
-        surface: 'var(--surface)',
-        'surface-elevated': 'var(--surface-elevated)',
-        paper: 'var(--surface-elevated)',   // backward compat alias
-        fg: {
-          DEFAULT: 'var(--fg)',
-          muted: 'var(--fg-muted)',
-          faint: 'var(--fg-faint)',
+        // --pr 색 토큰(#826 결정 10). 값과 대비 근거는 globals.css :root 주석.
+        stage: 'var(--pr-stage)',
+        s1: 'var(--pr-s1)',
+        s2: 'var(--pr-s2)',
+        ink: {
+          DEFAULT: 'var(--pr-ink)',
+          2: 'var(--pr-ink-2)',
+          3: 'var(--pr-ink-3)',
         },
-        // 랜딩 서브카피·이탈경로 전용(#615) — --fg-muted vs --bg 자체가 라이트에서 AA 미달이라
-        // (globals.css --landing-muted 정의 참고) 그 자리에만 쓰는 로컬 오버라이드.
-        'landing-muted': 'var(--landing-muted)',
-        // 강조색 사용 규칙(D8, #615 → #616에서 실제 코드에 맞춰 정정) — accent가 나갈 자리는 둘뿐이다:
-        // ① 화면당 하나뿐인 주 액션의 채움(`bg-accent` + `text-accent-ink`) — 랜딩 OCR CTA와 결과
-        //    화면 "사진에 저장"이 그것이고, #635가 OCR을 주 CTA로 올릴 때 이 채움을 의도적으로 남겼다.
-        // ② 상태 표시 — 선택(무드칩 링·레일 활성 라벨), 포커스링, 드래그 오버 아웃라인.
-        // 정적 카피·장식·구조 요소엔 안 쓴다(위계는 fg/fg-muted/fg-faint 대비로 잡고, eyebrow·디바이더
-        // 같은 구조 요소는 neutral-2가 따로 맡는다). 2차 액션은 채움이 아니라 `accent-soft` 그라운드다.
-        // #615 원안 주석은 "CTA 배경엔 안 쓴다"였는데 셸·랜딩·결과 어디서도 그렇게 구현된 적이 없다.
+        hair: {
+          DEFAULT: 'var(--pr-hair)',
+          strong: 'var(--pr-hair-strong)',
+        },
         accent: {
-          DEFAULT: 'var(--accent)',
-          soft: 'var(--accent-soft)',
-          hover: 'var(--accent-hover)',
-          ink: 'var(--accent-ink)',
+          DEFAULT: 'var(--pr-accent)',
+          soft: 'var(--pr-accent-soft)',
+          hover: 'var(--pr-accent-hover)',
+          ink: 'var(--pr-accent-ink)',
         },
-        'border-strong': 'var(--border-strong)',
-        'focus-ring': 'var(--focus-ring)',
+        'focus-ring': 'var(--pr-focus-ring)',
+        warn: 'var(--pr-warn)',
         success: 'var(--success)',
-        warn: 'var(--warn)',
-        danger: 'var(--danger)',
-
-        // design-system border token — use border-line, bg-line for dividers/separators
-        line: 'var(--border)',
-
-        // 2nd 시네마틱 neutral(#203) — 구조 요소(eyebrow·디바이더) 전용, 액션 red와 별개
         'neutral-2': 'var(--neutral-2)',
       },
       // 서비스 UI(앱 chrome) 타이포 스케일(#616) — 랜딩(#615)이 실제로 쓰던 26/14/12를 앵커로
@@ -72,7 +58,6 @@ module.exports = {
       },
       fontFamily: {
         sans: ['var(--font-sans)', '"Pretendard Variable"', 'Pretendard', 'system-ui', '"Apple SD Gothic Neo"', '"Noto Sans KR"', 'sans-serif'],
-        mono: ['var(--font-mono)', '"JetBrains Mono"', 'ui-monospace', 'Menlo', 'monospace'],
       },
       borderRadius: {
         field: '12px',       // backward compat (Stage 2에서 컴포넌트 클래스 교체)

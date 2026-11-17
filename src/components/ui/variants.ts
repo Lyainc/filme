@@ -42,7 +42,7 @@ export const inputVariants = cva(
   {
     variants: {
       surface: {
-        paper: 'border border-line bg-paper',
+        paper: 'border border-hair bg-s2',
         glass: 'border border-[var(--glass-border)] bg-[var(--glass-fill)]',
       },
     },
@@ -54,7 +54,7 @@ export const inputVariants = cva(
  * 문자까지 동일한 리터럴로 세 벌 들고 있던 값을 한 자리로 모은다(#730 c5). 새 값 아님 — 지금
  * 값을 그대로 옮긴 것뿐이라 여기서 바꾸면 세 픽커가 한번에 바뀐다.
  */
-export const RAIL_CHIP_SELECTED_RING = '0 0 0 2px var(--bg), 0 0 0 4px var(--accent)';
+export const RAIL_CHIP_SELECTED_RING = '0 0 0 2px var(--pr-stage), 0 0 0 4px var(--pr-accent)';
 export const RAIL_CHIP_SELECTED_SCALE = 'scale(1.05)';
 /** WCAG 2.5.8 AA 탭 타깃 하한 44px(#647) — 레일 상세 칩 공통 data-touch 값. */
 export const RAIL_CHIP_TOUCH = '44';

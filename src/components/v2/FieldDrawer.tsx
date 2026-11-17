@@ -46,7 +46,7 @@ interface FieldDrawerProps {
  * 모바일 필드 목록 우측 드로어(#355, v8 시안 §6). 마운트 = 열림 — 닫힘은 언마운트로 즉시
  * (ponytail 판단: 여는 애니메이션만 CSS로 부드럽게).
  *
- * 유리(blur+알파 틴트)는 패널에만 쓰고 행은 불투명 카드(bg-surface-elevated)에 얹는다 —
+ * 유리(blur+알파 틴트)는 패널에만 쓰고 행은 불투명 카드(bg-s2)에 얹는다 —
  * 시안값(패널 알파 .36~.40 위 직접 텍스트)은 포스터에 따라 대비가 4.5:1 밑으로 깨진다(이슈 표).
  * 행 사이 여백과 패널 가장자리로 티켓이 비쳐 "뒤가 보인다"는 목적은 유지된다.
  * 패널 배경은 #580에서 하드코딩 rgba(18,22,24,.40)을 오버레이 계층 토큰(--overlay-fill)으로
@@ -145,11 +145,11 @@ export function FieldDrawer({ photo, onField, onMissingField, onClose, children 
           paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)',
         }}
       >
-        {/* 불투명 카드(bg-surface-elevated)에 얹는다 — 아래 행들과 동일 근거(위 주석): 패널 알파
+        {/* 불투명 카드(bg-s2)에 얹는다 — 아래 행들과 동일 근거(위 주석): 패널 알파
             글래스 위 직접 텍스트는 라이트 테마에서 대비가 깨진다(#447, OcrUploadCard 슬롯 한정 발견). */}
         {children && (
           <div className="shrink-0 px-4 pb-3">
-            <div className="rounded-card bg-surface-elevated p-3">{children}</div>
+            <div className="rounded-card bg-s2 p-3">{children}</div>
           </div>
         )}
 
@@ -158,7 +158,7 @@ export function FieldDrawer({ photo, onField, onMissingField, onClose, children 
               셸이 드로어를 닫고 그 필드의 인플레이스 편집을 여는데, 숨겨 둔 필드면 편집 뒤 다시 숨겨 안내와
               맞춘다(onMissingField). 행들과 같은 근거로 불투명 카드에 얹는다(위 주석). */}
           {missing.length > 0 && (
-            <div className="space-y-2 rounded-card bg-surface-elevated p-3 text-caption text-fg-muted">
+            <div className="space-y-2 rounded-card bg-s2 p-3 text-caption text-ink-2">
               <p>저장에는 제목과 개봉연도가 필요해요. 개봉일은 티켓에서 숨겨도 돼요.</p>
               <div className="flex flex-wrap gap-2">
                 {missing.map((field) => (
@@ -166,7 +166,7 @@ export function FieldDrawer({ photo, onField, onMissingField, onClose, children 
                     key={field}
                     type="button"
                     onClick={() => (onMissingField ?? onField)(field)}
-                    className={cn(pressableVariants(), 'min-h-touch rounded-chip border border-line px-3 text-fg')}
+                    className={cn(pressableVariants(), 'min-h-touch rounded-chip border border-hair px-3 text-ink')}
                   >
                     {field === 'title' ? '제목 입력' : '개봉연도 입력'}
                   </button>
@@ -176,7 +176,7 @@ export function FieldDrawer({ photo, onField, onMissingField, onClose, children 
           )}
 
           {/* 전체 표시(#424) — 필드 목록과 한 자리에. 패널 위 직접 텍스트는 대비가 깨지므로(위 주석)
-              다른 행과 동일하게 불투명 카드(bg-surface-elevated)에 얹는다. */}
+              다른 행과 동일하게 불투명 카드(bg-s2)에 얹는다. */}
           <button
             type="button"
             role="switch"
@@ -184,7 +184,7 @@ export function FieldDrawer({ photo, onField, onMissingField, onClose, children 
             onClick={() =>
               photo.updateFieldVisibility(allVisOn ? ALL_FIELDS_OFF_KEEP_REQUIRED : ALL_FIELDS_ON)
             }
-            className={cn(pressableVariants(), 'flex h-touch w-full items-center justify-between rounded-card bg-surface-elevated px-3 text-micro font-medium text-fg-muted transition-colors hover:text-fg')}
+            className={cn(pressableVariants(), 'flex h-touch w-full items-center justify-between rounded-card bg-s2 px-3 text-micro font-medium text-ink-2 transition-colors hover:text-ink')}
           >
             <span>전체 표시</span>
             <EyeIcon open={allVisOn} size={18} />
@@ -247,23 +247,23 @@ function DrawerRow({
   extra?: ReactNode;
 }) {
   return (
-    <div className="flex items-center rounded-card bg-surface-elevated pr-1">
+    <div className="flex items-center rounded-card bg-s2 pr-1">
       <button
         type="button"
         onClick={onOpen}
         aria-label={`${label} 편집`}
         className={cn(pressableVariants(), 'flex min-h-touch min-w-0 flex-1 items-center gap-2 py-2 pl-3 pr-1 text-left')}
       >
-        <span className="shrink-0 text-micro font-medium text-fg-muted">{label}</span>
+        <span className="shrink-0 text-micro font-medium text-ink-2">{label}</span>
         {/* 빈 값도 fg-muted — fg-faint(#6B7280)는 카드(#1E2326) 위 3.28:1로 4.5:1 미달(#355 완료 조건). */}
-        <span className={`ml-auto min-w-0 truncate text-right text-body ${preview ? 'text-fg' : 'text-fg-muted'}`}>
+        <span className={`ml-auto min-w-0 truncate text-right text-body ${preview ? 'text-ink' : 'text-ink-2'}`}>
           {preview || '비어 있음'}
         </span>
       </button>
       {extra}
       {locked ? (
         <span
-          className="inline-flex h-touch w-touch shrink-0 items-center justify-center text-fg-muted"
+          className="inline-flex h-touch w-touch shrink-0 items-center justify-center text-ink-2"
           title="필수 항목 — 항상 표시돼요"
           aria-label={`${label} 필수 항목`}
           role="img"
@@ -281,7 +281,7 @@ function DrawerRow({
           aria-label={`${label} 티켓에 표시`}
           onClick={() => onToggle(!checked)}
           className={cn(pressableVariants(), `inline-flex h-touch w-touch shrink-0 items-center justify-center transition-colors ${
-            checked ? 'text-fg' : 'text-fg-muted'
+            checked ? 'text-ink' : 'text-ink-2'
           }`)}
         >
           <EyeIcon open={checked} size={18} />
@@ -330,7 +330,7 @@ function LogoRow({
             type="button"
             aria-label={`${STAMP_LABELS[target]} 이미지 업로드`}
             onClick={() => fileInputRef.current?.click()}
-            className={cn(pressableVariants(), 'inline-flex h-touch w-touch shrink-0 items-center justify-center text-fg-muted transition-colors hover:text-fg')}
+            className={cn(pressableVariants(), 'inline-flex h-touch w-touch shrink-0 items-center justify-center text-ink-2 transition-colors hover:text-ink')}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <rect x="3" y="3" width="18" height="18" rx="3" />

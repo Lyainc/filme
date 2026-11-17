@@ -53,7 +53,7 @@ function RailIconButton({
       <span
         aria-hidden="true"
         className={`flex h-touch w-touch items-center justify-center rounded-full border transition-colors ${
-          selected ? 'bg-accent-soft text-accent' : 'border-line bg-surface-elevated text-fg-muted'
+          selected ? 'bg-accent-soft text-accent' : 'border-hair bg-s2 text-ink-2'
         }`}
         // 선택 시 유저의 티켓 잉크색(themeColor) 링. 미설정이면 accent로 폴백.
         style={selected ? { borderColor: 'transparent', boxShadow: `0 0 0 2px ${ringColor}` } : undefined}
@@ -61,7 +61,7 @@ function RailIconButton({
         {icon}
       </span>
       <span
-        className={`text-micro font-medium transition-colors ${selected ? 'text-accent' : 'text-fg-muted'}`}
+        className={`text-micro font-medium transition-colors ${selected ? 'text-accent' : 'text-ink-2'}`}
       >
         {label}
       </span>
@@ -99,7 +99,7 @@ function RailExpandPanel({
       <div className="overflow-hidden" inert={!open || undefined}>
         {/* v8 언박스(#357) — 패널의 배경·보더·라운드·그림자 전부 제거. 상세는 앰비언트 배경 위
             느슨한 컨트롤로 얹히고, 가독성은 앰비언트의 어두움 + 각 피커 자체 대비로 확보한다.
-            과거 박스형 룩(rounded-card border bg-surface-elevated) 복원 금지 — 언박스가 최종. */}
+            과거 박스형 룩(rounded-card border bg-s2) 복원 금지 — 언박스가 최종. */}
         {/* py: range thumb(globals.css, height 18px margin-top:-8px)이 트랙 아래로 8px
             튀어나와 overflow-hidden 바닥에서 잘림(#385) — 하단 패딩으로 여유 확보. */}
         {/* 고정 슬롯(#563) — 항목마다 콘텐츠 높이가 89~205px로 갈려서(400×675 실측) 탭을 옮길
@@ -148,10 +148,10 @@ function RailExpandPanel({
           // 알아채는 회귀가 났다(fresh-context 리뷰 발견).
           style={{
             background: `
-              linear-gradient(var(--bg) 30%, rgba(0,0,0,0)),
-              linear-gradient(rgba(0,0,0,0), var(--bg) 70%) 0 100%,
-              radial-gradient(farthest-side at 50% 0, color-mix(in srgb, var(--fg-faint) 55%, transparent), rgba(0,0,0,0)),
-              radial-gradient(farthest-side at 50% 100%, color-mix(in srgb, var(--fg-faint) 55%, transparent), rgba(0,0,0,0)) 0 100%
+              linear-gradient(var(--pr-stage) 30%, rgba(0,0,0,0)),
+              linear-gradient(rgba(0,0,0,0), var(--pr-stage) 70%) 0 100%,
+              radial-gradient(farthest-side at 50% 0, color-mix(in srgb, var(--pr-ink-3) 55%, transparent), rgba(0,0,0,0)),
+              radial-gradient(farthest-side at 50% 100%, color-mix(in srgb, var(--pr-ink-3) 55%, transparent), rgba(0,0,0,0)) 0 100%
             `,
             backgroundRepeat: 'no-repeat',
             backgroundSize: '100% 32px, 100% 32px, 100% 12px, 100% 12px',
@@ -207,7 +207,7 @@ export function DesignRail({
   const activeItem = items.find((it) => it.id === active);
   const regionLabel = activeItem?.label ?? '';
 
-  const ringColor = themeColor || 'var(--accent)';
+  const ringColor = themeColor || 'var(--pr-accent)';
   // 클릭으로 연 항목은 아래 effect가 smooth 스크롤로 중앙에 당기는데, 그 애니메이션이 만드는
   // 중간 scroll 이벤트를 onRailScroll이 사용자 스와이프로 착각해 지나가던 아이콘을 활성화하면
   // 목적지가 가로채인다(claude-review P1). 클릭 직후 이 구간 동안은 scroll 추적을 쉰다 —

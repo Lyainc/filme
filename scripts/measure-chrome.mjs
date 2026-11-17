@@ -703,7 +703,7 @@ try {
   // 안 잰다 — InPlaceFieldEditor가 dynamic(ssr:false) 청크라 dev 서버에서 첫 컴파일 시
   // Fast Refresh가 풀 리로드를 일으켜(실측: 클릭 직후 매번 동일 URL로 framenavigated 이벤트
   // 발생, React 상태가 날아가 aid 박스가 다시는 안 뜬다) 이 스크립트와 무관한 원인으로 계속
-  // 깨진다. 3계층은 항상 이 드로어 밖 InPlaceFieldEditor의 불투명 aid 박스(bg-surface-elevated)
+  // 깨진다. 3계층은 항상 이 드로어 밖 InPlaceFieldEditor의 불투명 aid 박스(bg-s2)
   // 안에서만 렌더돼(#580 grep 확인, globals.css --glass-fill 주석) 포스터 노출이 없으므로
   // 대비 하한은 그 결정론적 배경 위 합성색 계산으로 충분하다(같은 주석에 실측값 문서화).
   // #764(#756·#763와 같은 클래스) — 핸들이 no-op하면 바로 다음 줄 드로어 대기가 엉뚱한

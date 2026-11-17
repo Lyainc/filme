@@ -81,7 +81,7 @@ const MENU_ICONS = {
 // 드롭만 되는(혹은 안 되는) 포맷이 조용히 갈린다.
 const POSTER_ACCEPT = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
 
-const MENU_GROUP_CLS = 'rounded-[12px] bg-surface p-1'; // 행 반경(rounded-lg 8) + p-1(4)과 동심
+const MENU_GROUP_CLS = 'rounded-[12px] bg-s1 p-1'; // 행 반경(rounded-lg 8) + p-1(4)과 동심
 
 // 필드 드로어 엣지 핸들 세로 위치 영속(#579) — 툴바(filme:toolbar:v1)와 별도 키. 핸들은
 // y 좌표 하나뿐이라(가로 이동은 엣지 탭 구조상 의미가 없다) 툴바처럼 orient/place를 얹은
@@ -152,10 +152,10 @@ function MenuRow({
       // arm 표시가 채움 틴트(rgba(229,103,95,.16))였을 땐 danger 잉크 대비가 3.79:1로 떨어졌다
       // (#569 실측 — 붉은 틴트가 배경을 밝혀 같은 붉은 글자와 붙는다). 채움 대신 1px 링으로 바꾸면
       // 배경이 그대로라 라벨은 4.66:1을 유지하고, 링 자체는 비텍스트 3:1 기준을 넘는다.
-      style={armed ? { boxShadow: 'inset 0 0 0 1px var(--danger)' } : undefined}
+      style={armed ? { boxShadow: 'inset 0 0 0 1px var(--pr-warn)' } : undefined}
     >
       <span
-        className={`flex min-w-0 items-center gap-2.5 text-body ${danger ? 'text-danger' : 'text-fg'}`}
+        className={`flex min-w-0 items-center gap-2.5 text-body ${danger ? 'text-warn' : 'text-ink'}`}
         style={{ fontWeight: armed ? 700 : 500 }}
       >
         <svg
@@ -168,7 +168,7 @@ function MenuRow({
           strokeLinecap="round"
           strokeLinejoin="round"
           aria-hidden="true"
-          className={danger ? 'shrink-0' : 'shrink-0 text-fg-muted'}
+          className={danger ? 'shrink-0' : 'shrink-0 text-ink-2'}
         >
           <path d={iconPath} />
         </svg>
@@ -178,7 +178,7 @@ function MenuRow({
         <span
           aria-hidden="true"
           className="relative inline-block h-5 w-9 shrink-0 rounded-full transition-colors"
-          style={{ background: checked ? 'var(--accent)' : 'var(--border)' }}
+          style={{ background: checked ? 'var(--pr-accent)' : 'var(--pr-hair)' }}
         >
           <span
             className="absolute top-0.5 h-4 w-4 rounded-full transition-transform"
@@ -664,7 +664,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   }
 
   const doneEnabledStyle = canExport
-    ? { background: 'linear-gradient(135deg, var(--accent-hover), var(--accent))', color: 'var(--accent-ink)' }
+    ? { background: 'linear-gradient(135deg, var(--pr-accent-hover), var(--pr-accent))', color: 'var(--pr-accent-ink)' }
     : undefined;
 
   const layout = getLayout(previewComponents.layout);
@@ -769,7 +769,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
           토글과 포스터 교체·재크롭 액션은 서브메뉴로 통합. max(#328)는 이 헤더(서브메뉴 포함)까지
           숨기는 풀스크린 모드라 통째로 언마운트한다. 배경은 앰비언트 위라 투명(v8 §1). */}
       {!isMax && (
-      <header ref={setHeaderEl} className="relative flex h-14 shrink-0 items-center justify-between border-b border-line px-3">
+      <header ref={setHeaderEl} className="relative flex h-14 shrink-0 items-center justify-between border-b border-hair px-3">
         <div className="flex items-center gap-2 pl-1.5">
           <Wordmark as="h1" onClick={handleWordmarkTap} />
         </div>
@@ -790,7 +790,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
           aria-expanded={menuOpen}
           aria-controls="editor-menu-panel"
           aria-label="편집 메뉴"
-          className={cn(pressableVariants(), 'flex h-touch w-touch items-center justify-center rounded-full text-fg-muted transition-colors hover:text-fg')}
+          className={cn(pressableVariants(), 'flex h-touch w-touch items-center justify-center rounded-full text-ink-2 transition-colors hover:text-ink')}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <line x1="4" y1="7" x2="20" y2="7" />
@@ -806,7 +806,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
           onClick={handleDone}
           aria-disabled={!canExport}
           className={cn(pressableVariants(), `inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-body font-semibold transition-colors ${
-            canExport ? '' : 'border border-line bg-surface-elevated text-fg-muted'
+            canExport ? '' : 'border border-hair bg-s2 text-ink-2'
           }`)}
           style={doneEnabledStyle}
         >
@@ -920,7 +920,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
                       disabled 버튼은 포커스를 못 받아 aria-describedby가 닿지 않으므로, 형제 문단으로
                       두는 것이 스크린리더 읽기 순서상으로도 맞다. */}
                   {croppedImageUrl && !crop.originalSrc && (
-                    <p className="px-2.5 pb-1 pt-0.5 text-caption text-fg-muted">
+                    <p className="px-2.5 pb-1 pt-0.5 text-caption text-ink-2">
                       포스터 원본이 없어요. 포스터를 다시 업로드해 주세요.
                     </p>
                   )}
@@ -987,7 +987,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
               onClick={isMax ? () => handleViewModeChange('default') : undefined}
               className={
                 isMax
-                  ? `fixed inset-0 z-50 flex items-center justify-center bg-surface px-6${
+                  ? `fixed inset-0 z-50 flex items-center justify-center bg-s1 px-6${
                       posterDragOver ? ' outline outline-2 -outline-offset-2 outline-accent' : ''
                     }`
                   : `flex min-h-0 flex-1 items-center justify-center px-4 py-3${
@@ -1284,7 +1284,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
         >
           <span
             aria-hidden="true"
-            className="pointer-events-auto flex h-full w-6 items-center justify-center rounded-l-[10px] border border-r-0 border-[var(--overlay-border)] text-fg"
+            className="pointer-events-auto flex h-full w-6 items-center justify-center rounded-l-[10px] border border-r-0 border-[var(--overlay-border)] text-ink"
             style={{
               background: 'var(--overlay-fill)',
               backdropFilter: 'blur(13px)',
@@ -1444,7 +1444,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
         <div
           aria-hidden="true"
           data-testid="global-toast"
-          className={`fixed left-1/2 z-[60] -translate-x-1/2 rounded-full border border-line bg-surface-elevated px-4 py-2 text-body text-fg ${
+          className={`fixed left-1/2 z-[60] -translate-x-1/2 rounded-full border border-hair bg-s2 px-4 py-2 text-body text-ink ${
             ocr.snapshot ? 'bottom-28' : 'bottom-6'
           }`}
           style={{ maxWidth: 'calc(100% - 32px)', boxShadow: 'var(--shadow-pop)' }}

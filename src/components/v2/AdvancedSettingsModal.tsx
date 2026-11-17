@@ -12,7 +12,7 @@ import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 /** 불투명 카드(#569) — 오버레이 표면 위 텍스트 행은 --fg만 AA를 넘으므로 muted 잉크가 섞이는
  *  행 그룹은 --surface에 얹는다. MobileEditorShell의 MENU_GROUP_CLS와 같은 값·같은 근거. */
-const CARD = 'rounded-[12px] bg-surface p-1';
+const CARD = 'rounded-[12px] bg-s1 p-1';
 
 interface AdvancedSettingsModalProps {
   /** 닫힘 후 포커스를 되돌릴 트리거(햄버거). 모달을 연 '고급 설정' 행은 메뉴와 함께 언마운트되므로
@@ -104,13 +104,13 @@ export function AdvancedSettingsModal({
         <div className="shrink-0 px-4 pt-3">
           <div className={CARD}>
             <div className="flex h-touch items-center justify-between gap-2 px-2.5">
-              <h2 className="truncate text-body font-semibold text-fg">고급 설정</h2>
+              <h2 className="truncate text-body font-semibold text-ink">고급 설정</h2>
               <button
                 type="button"
                 onClick={onClose}
                 aria-label="닫기"
                 data-touch="44"
-                className={cn(pressableVariants(), '-mr-1.5 flex h-touch w-touch shrink-0 items-center justify-center rounded-lg text-fg transition-colors hover:bg-white/5')}
+                className={cn(pressableVariants(), '-mr-1.5 flex h-touch w-touch shrink-0 items-center justify-center rounded-lg text-ink transition-colors hover:bg-white/5')}
               >
                 <svg {...TB_ICON}>
                   <path d="M18 6 6 18M6 6l12 12" />
@@ -129,7 +129,7 @@ export function AdvancedSettingsModal({
               게이팅(canvasReady && !isMax, #631)은 부모가 쥔다 — 툴바가 안 떠 있으면 스냅이 조용히
               no-op이 되므로(claude-review PR #405 P1) 모달 진입 자체를 막는 쪽이 맞다. */}
           <section className={CARD}>
-            <h3 className="px-2.5 pb-1 pt-1.5 text-caption font-semibold text-fg">툴바 설정</h3>
+            <h3 className="px-2.5 pb-1 pt-1.5 text-caption font-semibold text-ink">툴바 설정</h3>
             <div role="radiogroup" aria-label="툴바 배치">
               {TOOLBAR_MODES.map((m) => {
                 const on = prefs.orient === m.orient && prefs.place === m.place;
@@ -142,13 +142,13 @@ export function AdvancedSettingsModal({
                     onClick={() => onModeChange(m.orient, m.place)}
                     // 라벨은 --fg 고정(#569) — --accent는 불투명 표면 위에서도 3.97:1이라 AA에
                     // 못 닿는다. 선택 신호는 accent-soft 채움 + accent 점(둘 다 비텍스트 3:1 기준).
-                    className={cn(pressableVariants(), `flex h-touch w-full items-center gap-2.5 rounded-[9px] px-2.5 text-caption font-semibold text-fg ${
+                    className={cn(pressableVariants(), `flex h-touch w-full items-center gap-2.5 rounded-[9px] px-2.5 text-caption font-semibold text-ink ${
                       on ? 'bg-accent-soft' : 'hover:bg-white/5'
                     }`)}
                   >
                     <span
                       aria-hidden="true"
-                      className={`h-[7px] w-[7px] shrink-0 rounded-full ${on ? 'bg-accent' : 'bg-border-strong'}`}
+                      className={`h-[7px] w-[7px] shrink-0 rounded-full ${on ? 'bg-accent' : 'bg-hair-strong'}`}
                     />
                     {m.label}
                   </button>
@@ -156,13 +156,13 @@ export function AdvancedSettingsModal({
               })}
             </div>
             {prefs.place === 'movable' && (
-              <div className="mt-1 flex gap-1 border-t border-line pt-1.5">
+              <div className="mt-1 flex gap-1 border-t border-hair pt-1.5">
                 <button
                   type="button"
                   onClick={() => onSnap('left')}
                   aria-label="왼쪽 가장자리로 이동"
                   title="왼쪽 가장자리로 이동"
-                  className={cn(pressableVariants(), 'flex h-touch flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:bg-white/5 hover:text-fg')}
+                  className={cn(pressableVariants(), 'flex h-touch flex-1 items-center justify-center rounded-[9px] text-ink-2 transition-colors hover:bg-white/5 hover:text-ink')}
                 >
                   <svg {...TB_ICON}>
                     <path d="M3 19V5" />
@@ -175,7 +175,7 @@ export function AdvancedSettingsModal({
                   onClick={() => onSnap('right')}
                   aria-label="오른쪽 가장자리로 이동"
                   title="오른쪽 가장자리로 이동"
-                  className={cn(pressableVariants(), 'flex h-touch flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:bg-white/5 hover:text-fg')}
+                  className={cn(pressableVariants(), 'flex h-touch flex-1 items-center justify-center rounded-[9px] text-ink-2 transition-colors hover:bg-white/5 hover:text-ink')}
                 >
                   <svg {...TB_ICON}>
                     <path d="M21 5v14" />
@@ -191,14 +191,14 @@ export function AdvancedSettingsModal({
               onHandlePointerMove가 처리)의 비드래그 대체 경로. 툴바 좌/우 스냅과 같은 문법 —
               가로 이동은 엣지 탭 구조상 의미가 없어 위/아래 두 버튼만 둔다. */}
           <section className={CARD}>
-            <h3 className="px-2.5 pb-1 pt-1.5 text-caption font-semibold text-fg">드로어 핸들 위치</h3>
+            <h3 className="px-2.5 pb-1 pt-1.5 text-caption font-semibold text-ink">드로어 핸들 위치</h3>
             <div className="flex gap-1">
               <button
                 type="button"
                 onClick={() => onSnapDrawerHandle('top')}
                 aria-label="위쪽 가장자리로 이동"
                 title="위쪽 가장자리로 이동"
-                className={cn(pressableVariants(), 'flex h-touch flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:bg-white/5 hover:text-fg')}
+                className={cn(pressableVariants(), 'flex h-touch flex-1 items-center justify-center rounded-[9px] text-ink-2 transition-colors hover:bg-white/5 hover:text-ink')}
               >
                 <svg {...TB_ICON}>
                   <path d="M12 19V5" />
@@ -210,7 +210,7 @@ export function AdvancedSettingsModal({
                 onClick={() => onSnapDrawerHandle('bottom')}
                 aria-label="아래쪽 가장자리로 이동"
                 title="아래쪽 가장자리로 이동"
-                className={cn(pressableVariants(), 'flex h-touch flex-1 items-center justify-center rounded-[9px] text-fg-muted transition-colors hover:bg-white/5 hover:text-fg')}
+                className={cn(pressableVariants(), 'flex h-touch flex-1 items-center justify-center rounded-[9px] text-ink-2 transition-colors hover:bg-white/5 hover:text-ink')}
               >
                 <svg {...TB_ICON}>
                   <path d="M12 5v14" />

@@ -356,20 +356,20 @@ export function OcrUploadCard({
           aria-busy={isProcessing}
           aria-label={idleLabel}
           data-touch="44"
-          className={cn(pressableVariants(), 'group inline-flex min-h-touch items-center gap-1.5 rounded-chip text-body text-fg-muted transition-colors hover:text-accent aria-disabled:cursor-default aria-disabled:opacity-70')}
+          className={cn(pressableVariants(), 'group inline-flex min-h-touch items-center gap-1.5 rounded-chip text-body text-ink-2 transition-colors hover:text-accent aria-disabled:cursor-default aria-disabled:opacity-70')}
         >
-          <span className={isProcessing ? 'text-accent animate-pulse' : 'text-fg-faint group-hover:text-accent'}>
+          <span className={isProcessing ? 'text-accent animate-pulse' : 'text-ink-3 group-hover:text-accent'}>
             <ScanIcon size={16} />
           </span>
           <span>{isProcessing ? '티켓 인식 중…' : idleLabel}</span>
           {!isProcessing && (
-            <span aria-hidden="true" className="text-fg-faint transition-transform group-hover:translate-x-0.5">›</span>
+            <span aria-hidden="true" className="text-ink-3 transition-transform group-hover:translate-x-0.5">›</span>
           )}
         </button>
       )}
 
       {toast && (
-        <div className="absolute top-full left-0 mt-2 max-w-[260px] bg-fg text-surface-elevated text-caption font-medium px-3 py-1.5 rounded-chip shadow-lg animate-fade-in z-10">
+        <div className="absolute top-full left-0 mt-2 max-w-[260px] bg-ink text-s2 text-caption font-medium px-3 py-1.5 rounded-chip shadow-lg animate-fade-in z-10">
           {toast}
         </div>
       )}

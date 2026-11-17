@@ -1,5 +1,6 @@
 import { Html, Head, Main, NextScript } from 'next/document';
 import { STORAGE_KEY } from '@/hooks/usePhototicket';
+import { THEME_COLOR } from '@/constants/theme';
 
 /**
  * 첫 페인트 전에 서야 하는 판정 둘 — 테마(FOUC)와 draft 유무(#675).
@@ -19,7 +20,7 @@ export const themeScript = `
   if(dark)document.documentElement.classList.add('theme-dark');
   var m=document.querySelector('meta[name="theme-color"]');
   if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');document.head.appendChild(m);}
-  m.setAttribute('content',dark?'#0E1012':'#F4F5F7');
+  m.setAttribute('content',dark?${JSON.stringify(THEME_COLOR.dark)}:${JSON.stringify(THEME_COLOR.light)});
   if(localStorage.getItem(${JSON.stringify(STORAGE_KEY)}))document.documentElement.classList.add('has-draft');
 }catch(e){}}());
 `.trim();
@@ -29,7 +30,7 @@ export default function Document() {
     <Html lang="ko">
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <meta name="theme-color" content="#F4F5F7" />
+        <meta name="theme-color" content={THEME_COLOR.light} />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </Head>
       <body>

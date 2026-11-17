@@ -35,9 +35,9 @@ export function OcrUndoBanner({ snapshot, filledFields, stampCount, onCancel, on
       {snapshot && (
         <div
           data-testid="ocr-undo-banner"
-          className="fixed bottom-6 left-1/2 z-50 flex w-[90%] max-w-sm -translate-x-1/2 animate-slide-up items-center gap-4 rounded-card border border-accent bg-surface-elevated p-3 shadow-lg"
+          className="fixed bottom-6 left-1/2 z-50 flex w-[90%] max-w-sm -translate-x-1/2 animate-slide-up items-center gap-4 rounded-card border border-accent bg-s2 p-3 shadow-lg"
         >
-          <p className="flex-1 text-body text-fg">{message}</p>
+          <p className="flex-1 text-body text-ink">{message}</p>
           {/* WCAG 2.5.8(AA) 최소 24×24 미달 → min-h-touch(44px)로 채운다(#646). cancel()은 확인 없이
               바로 스냅샷으로 되돌려 방금 채운 값을 지우는 쪽이라(useOcrUndo.ts) 되돌리기가 더 작으면
               안 된다 — 두 버튼을 동일 높이로 맞춘다. */}
@@ -45,7 +45,7 @@ export function OcrUndoBanner({ snapshot, filledFields, stampCount, onCancel, on
             <button
               type="button"
               onClick={onCancel}
-              className={cn(pressableVariants(), 'min-h-touch inline-flex items-center px-2 text-caption font-medium text-fg-muted transition-colors hover:text-fg')}
+              className={cn(pressableVariants(), 'min-h-touch inline-flex items-center px-2 text-caption font-medium text-ink-2 transition-colors hover:text-ink')}
             >
               되돌리기
             </button>

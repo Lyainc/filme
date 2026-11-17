@@ -325,7 +325,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
 
   const barBtnCls = cn(
     pressableVariants(),
-    'inline-flex h-touch w-touch shrink-0 items-center justify-center rounded-full text-fg-muted transition-colors hover:text-fg'
+    'inline-flex h-touch w-touch shrink-0 items-center justify-center rounded-full text-ink-2 transition-colors hover:text-ink'
   );
 
   // 캐럿 스케일(#365) — caret 위치는 input 자신의 텍스트 폭 계산을 따르므로, 티켓 렌더 텍스트와
@@ -380,9 +380,9 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
             zIndex: 60,
             border: 'none',
             borderRadius: 6 * inv,
-            background: 'var(--accent-soft)',
+            background: 'var(--pr-accent-soft)',
             color: 'transparent',
-            caretColor: 'var(--accent)',
+            caretColor: 'var(--pr-accent)',
             // 16px 미만이면 iOS Safari가 포커스 시 자동 줌인해 레이아웃이 틀어진다(#274) —
             // 실제 시각 크기는 위 transform scale이 담당한다.
             fontSize: Math.max(16, rect.fontPx),
@@ -393,7 +393,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
             textAlign: rect.textAlign as CSSProperties['textAlign'],
             transform: caretScale < 1 ? `scale(${caretScale})` : undefined,
             transformOrigin: 'top left',
-            outlineColor: 'var(--focus-ring)',
+            outlineColor: 'var(--pr-focus-ring)',
           }}
         />
       ) : (
@@ -407,8 +407,8 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
             height: rect.h + 12,
             zIndex: 60,
             borderRadius: 6,
-            background: 'var(--accent-soft)',
-            outline: '2px solid var(--focus-ring)',
+            background: 'var(--pr-accent-soft)',
+            outline: '2px solid var(--pr-focus-ring)',
             pointerEvents: 'none',
           }}
         />
@@ -428,7 +428,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
         ref={barRef}
         role="toolbar"
         aria-label="필드 편집 도구"
-        className="absolute flex items-center gap-0.5 rounded-full border border-line bg-surface-elevated px-1"
+        className="absolute flex items-center gap-0.5 rounded-full border border-hair bg-s2 px-1"
         style={{
           left: barPos?.left ?? 0,
           top: barPos?.top ?? 0,
@@ -448,7 +448,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
             <path d="m15 18-6-6 6-6" />
           </svg>
         </button>
-        <span aria-hidden="true" className="h-5 w-px shrink-0 bg-line" />
+        <span aria-hidden="true" className="h-5 w-px shrink-0 bg-hair" />
         {isImageField && (
           <button
             type="button"
@@ -496,7 +496,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
           onPointerDown={(e) => e.preventDefault()}
           onClick={onClose}
           className={cn(pressableVariants(), 'inline-flex h-touch w-touch shrink-0 items-center justify-center rounded-full')}
-          style={{ background: 'linear-gradient(135deg, var(--accent-hover), var(--accent))', color: 'var(--accent-ink)' }}
+          style={{ background: 'linear-gradient(135deg, var(--pr-accent-hover), var(--pr-accent))', color: 'var(--pr-accent-ink)' }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M20 6 9 17l-5-5" />
@@ -510,9 +510,9 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
   let aid: ReactNode = null;
   if (field === 'title' && kobis.open) {
     aid = kobis.loading ? (
-      <div className="text-mono px-4 py-4 text-center text-micro uppercase tracking-widest text-fg-muted">Loading…</div>
+      <div className="tabular-nums px-4 py-4 text-center text-micro uppercase tracking-widest text-ink-2">Loading…</div>
     ) : kobis.error ? (
-      <div role="alert" className="text-mono px-4 py-4 text-center text-micro uppercase tracking-widest text-danger">
+      <div role="alert" className="tabular-nums px-4 py-4 text-center text-micro uppercase tracking-widest text-warn">
         {kobis.error}
       </div>
     ) : kobis.results.length > 0 ? (
@@ -556,7 +556,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
         <button
           type="button"
           onClick={removeStampImage}
-          className={cn(pressableVariants(), 'ml-auto rounded-chip border border-line px-3 py-1.5 text-caption font-medium text-fg-muted transition-colors hover:border-accent hover:text-accent')}
+          className={cn(pressableVariants(), 'ml-auto rounded-chip border border-hair px-3 py-1.5 text-caption font-medium text-ink-2 transition-colors hover:border-accent hover:text-accent')}
         >
           이미지 제거
         </button>
@@ -571,7 +571,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
       {wrapperEl && createPortal(overlay, wrapperEl)}
       {aid && (
         <div
-          className="fixed inset-x-3 z-50 overflow-hidden rounded-card border border-line bg-surface-elevated"
+          className="fixed inset-x-3 z-50 overflow-hidden rounded-card border border-hair bg-s2"
           style={{
             bottom: (vvBox?.bottom ?? 0) + 12,
             boxShadow: 'var(--shadow-pop, 0 8px 24px -8px rgba(0,0,0,.4))',

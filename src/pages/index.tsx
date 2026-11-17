@@ -5,6 +5,7 @@ import { useExportReady } from '@/hooks/useExportReady';
 import { useResultView } from '@/hooks/useResultView';
 import { useDebounce } from '@/hooks/useDebounce';
 import { showError } from '@/utils/errorToast';
+import { THEME_COLOR } from '@/constants/theme';
 import { MobileEditorShell, type MobileEditorShellHandle } from '@/components/v2/MobileEditorShell';
 import { PhoneFrame } from '@/components/v2/PhoneFrame';
 import { ResultStage } from '@/components/v2/ResultStage';
@@ -58,13 +59,12 @@ export default function Home() {
   }, []);
 
   // 사용자 토글 시 class + theme-color + localStorage 동기화
-  // 색상 값은 _document.tsx의 themeScript와 동일하게 유지할 것
   useEffect(() => {
     const isDark = theme === 'dark';
     document.documentElement.classList.toggle('theme-dark', isDark);
     document
       .querySelector('meta[name="theme-color"]')
-      ?.setAttribute('content', isDark ? '#0E1012' : '#F4F5F7');
+      ?.setAttribute('content', isDark ? THEME_COLOR.dark : THEME_COLOR.light);
     try {
       localStorage.setItem('phototicket:theme', theme);
     } catch {}

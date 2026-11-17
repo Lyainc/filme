@@ -170,7 +170,7 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     expect(armedRow).toBeTruthy();
     // arm 표시는 채움 틴트가 아니라 링이다(#569) — 붉은 틴트가 배경을 밝히면 같은 붉은 danger
     // 라벨 대비가 3.79:1로 떨어진다. 링이면 배경이 --surface 그대로라 4.66:1을 유지한다.
-    expect(armedRow.style.boxShadow).toContain('var(--danger)');
+    expect(armedRow.style.boxShadow).toContain('var(--pr-warn)');
     expect(armedRow.style.background).toBe('');
     expect(screen.queryByText('초기화했어요') === null).toBe(true);
 
@@ -268,7 +268,7 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     const rows = Array.from(panel.querySelectorAll('button'));
     expect(rows.length).toBeGreaterThan(3); // 루프가 빈 채로 통과하지 않게
     for (const row of rows) {
-      const group = row.closest('div.bg-surface');
+      const group = row.closest('div.bg-s1');
       expect(group === null ? `그룹 밖 행: ${row.textContent}` : true).toBe(true);
     }
 
@@ -276,8 +276,8 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     // 위에서 핸들이 다시 사라진다.
     const handle = screen.getByRole('button', { name: '티켓 항목 목록 열기' }).querySelector('span')!;
     expect((handle as HTMLElement).style.background).toBe('var(--overlay-fill)');
-    // toContain('text-fg')이면 text-fg-muted로 되돌려도 통과한다 — 단어 경계로 못박는다.
-    expect(handle.className).toMatch(/(^|\s)text-fg(\s|$)/);
+    // toContain('text-ink')이면 text-ink-2로 되돌려도 통과한다 — 단어 경계로 못박는다.
+    expect(handle.className).toMatch(/(^|\s)text-ink(\s|$)/);
 
     // 선택된 배치 라디오도 --fg로 — 다크에서 --accent는 불투명 표면 위에서도 3.97:1이다.
     // 배치 라디오는 #574에서 고급 설정 모달로 이사했으므로 거기서 확인한다.
@@ -285,7 +285,7 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     const on = within(screen.getByRole('radiogroup', { name: '툴바 배치' }))
       .getByRole('radio', { name: '세로형 · 고정식' });
     expect(on.getAttribute('aria-checked')).toBe('true');
-    expect(on.className).toMatch(/(^|\s)text-fg(\s|$)/);
+    expect(on.className).toMatch(/(^|\s)text-ink(\s|$)/);
     expect(on.className).not.toContain('text-accent');
   });
 
@@ -301,7 +301,7 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     // 남는 카드는 셋뿐이다(토글·포스터 액션·문서 액션) — 툴바 설정 카드가 빠진 자리가
     // 네 번째 카드로 되살아나지 않게 개수를 못박는다(#574).
     const panel = screen.getByRole('menu', { name: '편집 메뉴' });
-    expect(panel.querySelectorAll(':scope > div.bg-surface')).toHaveLength(3);
+    expect(panel.querySelectorAll(':scope > div.bg-s1')).toHaveLength(3);
 
     await user.click(screen.getByRole('button', { name: '고급 설정' }));
     // 메뉴는 닫히고 모달만 남는다 — 중첩이 없어야 Escape 한 번이 둘을 같이 닫지 않는다.
@@ -363,7 +363,7 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     const rows = Array.from(dialog.querySelectorAll('button'));
     expect(rows.length).toBeGreaterThan(4);
     for (const row of rows) {
-      expect(row.closest('div.bg-surface, section.bg-surface') === null
+      expect(row.closest('div.bg-s1, section.bg-s1') === null
         ? `그룹 밖 행: ${row.textContent}`
         : true).toBe(true);
     }
