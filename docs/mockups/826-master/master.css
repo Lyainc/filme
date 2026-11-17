@@ -4,17 +4,17 @@
    선택 표시는 재단 표시 + 라벨 위치 규칙(3-A) · 세리프 없음(4-A) · 오류는 앰버 경고 토큰(5-A). */
 :root {
   /* 원값 · 라이트(종이와 잉크) */
-  --pr-l-page: #E4E0D9; --pr-l-stage: #EFECE6; --pr-l-s1: #F7F5F1; --pr-l-s2: #FFFFFF;
+  --pr-l-page: #E1E2E4; --pr-l-stage: #EDEEEF; --pr-l-s1: #F6F7F8; --pr-l-s2: #FFFFFF;
   --pr-l-hair: rgba(17,17,17,.08); --pr-l-hair-strong: rgba(17,17,17,.16);
-  --pr-l-ink: #141414; --pr-l-ink2: #5B5852; --pr-l-ink3: #6A665F;
-  --pr-l-accent: #B0423F; --pr-l-accent-ink: #FFFFFF; --pr-l-warn: #8F5410;
+  --pr-l-ink: #121314; --pr-l-ink2: #55585D; --pr-l-ink3: #62666C;
+  --pr-l-accent: #A3182F; --pr-l-accent-ink: #FFFFFF; --pr-l-warn: #8F5410;
   --pr-l-kbd: #D1D3D9; --pr-l-key: #FFFFFF; --pr-l-scrim: rgba(20,18,14,.48);
   --pr-l-ticket-shadow: 0 14px 32px -20px rgba(20,18,14,.45);
   /* 원값 · 다크(무대) */
   --pr-d-page: #050506; --pr-d-stage: #0B0B0C; --pr-d-s1: #141416; --pr-d-s2: #1C1C1F;
   --pr-d-hair: rgba(255,255,255,.08); --pr-d-hair-strong: rgba(255,255,255,.16);
-  --pr-d-ink: #ECE9E3; --pr-d-ink2: #A8A49C; --pr-d-ink3: #8E8A83;
-  --pr-d-accent: #C24B43; --pr-d-accent-ink: #FFFFFF; --pr-d-warn: #E0A35A;
+  --pr-d-ink: #ECECEE; --pr-d-ink2: #A7A9AE; --pr-d-ink3: #8E9196;
+  --pr-d-accent: #C8283F; --pr-d-accent-ink: #FFFFFF; --pr-d-warn: #E0A35A;
   --pr-d-kbd: #2B2B2E; --pr-d-key: #4A4A4E; --pr-d-scrim: rgba(0,0,0,.64);
   --pr-d-ticket-shadow: 0 16px 40px -20px rgba(0,0,0,.9);
 
@@ -360,7 +360,7 @@ button { cursor: pointer; }
 .c-cropimg { position: relative; overflow: hidden; width: 100%; max-height: 100%; aspect-ratio: 3 / 4; background: repeating-linear-gradient(135deg, #3B3A44 0 8px, #35343D 8px 16px); }
 .c-cropimg.wide { aspect-ratio: 4 / 3; width: 92%; }
 .c-cropimg.logo { aspect-ratio: 16 / 9; width: 88%; background: #F2EEE7; display: grid; place-items: center; color: #1E1B18; font-weight: 800; font-size: 32px; letter-spacing: .06em; }
-.c-cropimg.fail { background: transparent; border: 1px dashed rgba(255,255,255,.25); display: grid; place-items: center; color: #A8A49C; font-size: 14px; }
+.c-cropimg.fail { background: transparent; border: 1px dashed rgba(255,255,255,.25); display: grid; place-items: center; color: #A7A9AE; font-size: 14px; }
 .c-cropbox { position: absolute; outline: 9999px solid rgba(0,0,0,.55); border: 1px solid #fff; }
 .c-cropbox::before, .c-cropbox::after { content: ""; position: absolute; inset: 33.33% 0; border-top: 1px solid rgba(255,255,255,.35); border-bottom: 1px solid rgba(255,255,255,.35); }
 .c-cropbox::after { inset: 0 33.33%; border: 0; border-left: 1px solid rgba(255,255,255,.35); border-right: 1px solid rgba(255,255,255,.35); }
@@ -498,4 +498,4 @@ button { cursor: pointer; }
 .c-acc .c-opt.act { color: var(--pr-ink); text-decoration: underline; text-underline-offset: 4px; }
 .c-sel.nolab .lab { display: none; }
 /* 크롭은 테마와 무관하게 어두운 토큰으로 */
-.c-dlg { --pr-ink: var(--pr-d-ink); --pr-ink-2: var(--pr-d-ink2); --pr-ink-3: #8E8A83; --pr-s1: var(--pr-d-s1); --pr-s2: var(--pr-d-s2); --pr-hair: rgba(255,255,255,.08); --pr-hair-strong: var(--pr-d-hair-strong); --pr-accent: var(--pr-d-accent); --pr-warn: var(--pr-d-warn); }
+.c-dlg { --pr-ink: var(--pr-d-ink); --pr-ink-2: var(--pr-d-ink2); --pr-ink-3: #8E9196; --pr-s1: var(--pr-d-s1); --pr-s2: var(--pr-d-s2); --pr-hair: rgba(255,255,255,.08); --pr-hair-strong: var(--pr-d-hair-strong); --pr-accent: var(--pr-d-accent); --pr-warn: var(--pr-d-warn); }

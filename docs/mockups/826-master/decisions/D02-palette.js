@@ -38,19 +38,19 @@
   W.D02_HTML = function () {
     var S = W.PR, F = W.FRAMES;
     var h = '<div class="d2">';
-    h += '<p class="d2-q">#826 4단계 S1 착수 전 · 결정 D02 · 결정 대기</p><h1>팔레트: 라이트 바탕과 강조색</h1>' +
+    h += '<p class="d2-q">#826 4단계 S1 착수 전 · 결정 D02 · 2026-11-18 결정: B (워드마크 배지는 강조색을 따라감)</p><h1>팔레트: 라이트 바탕과 강조색</h1>' +
       '<p class="d2-lede">결정 5-A(강조색은 주 행동 채움 · 선택 표시 · 모드 인디케이터에만, 오류는 앰버)는 그대로예요. 바뀌는 건 <code>--pr-accent</code> 값과 바탕 · 회색 글자 계열뿐이에요. 아래 프레임은 마스터 원본(frames.js)에 후보 토큰만 덮어 그렸어요. 대비는 이 페이지가 WCAG 상대 휘도로 직접 계산해요.</p>';
     /* 요약 표 */
     h += '<table class="d2-t"><thead><tr><th>후보</th><th>라이트 바탕 · 강조</th><th>다크 바탕 · 강조</th><th>글자 최소 대비(라이트 · 다크)</th><th>강조 채움 위 흰 글자</th><th>강조 vs 무대(비글자 3:1)</th></tr></thead><tbody>';
     C.forEach(function (c) {
       var l = contrast(c, 'l'), d = contrast(c, 'd'), f = function (x) { return x.toFixed(2); };
       var tl = Math.min(l.ink, l.ink2, l.ink3, l.warn), td = Math.min(d.ink, d.ink2, d.ink3, d.warn);
-      h += '<tr><td><b>' + c.k + '</b> ' + S.esc(c.name) + (c.rec ? ' <span class="d2-rec">권고</span>' : '') + '</td><td>' + sw(c.l.stage) + ' ' + sw(c.l.accent) + '</td><td>' + sw(c.d.stage) + ' ' + sw(c.d.accent) + '</td><td>' + f(tl) + ' · ' + f(td) + '</td><td>' + f(l.onAcc) + ' · ' + f(d.onAcc) + '</td><td>' + f(l.accStage) + ' · ' + f(d.accStage) + '</td></tr>';
+      h += '<tr><td><b>' + c.k + '</b> ' + S.esc(c.name) + (c.rec ? ' <span class="d2-rec">결정</span>' : '') + '</td><td>' + sw(c.l.stage) + ' ' + sw(c.l.accent) + '</td><td>' + sw(c.d.stage) + ' ' + sw(c.d.accent) + '</td><td>' + f(tl) + ' · ' + f(td) + '</td><td>' + f(l.onAcc) + ' · ' + f(d.onAcc) + '</td><td>' + f(l.accStage) + ' · ' + f(d.accStage) + '</td></tr>';
     });
     h += '</tbody></table><p class="d2-note">글자 토큰 = ink · ink-2 · ink-3 · warn, 표면 = stage · s1 · s2 중 최소. 네 후보 모두 4.5:1(글자) · 3:1(강조 비글자)을 넘어요.</p>' +
       '<p class="d2-note"><b>같이 정할 것</b> 워드마크 배지와 "me"는 지금 강조색을 따라가요(<code>Wordmark.tsx</code>의 <code>bg-accent</code> · <code>text-accent</code>, 랜딩 프레임 참고). B~D를 고르면 BI 배지 색이 같이 바뀌니, 배지를 강조색과 함께 바꿀지 BI 고정 색으로 떼어 둘지 정해 주세요.</p>';
     C.forEach(function (c) {
-      h += '<section class="d2-c"><h2><span class="k">' + c.k + '</span>' + S.esc(c.name) + (c.rec ? ' <span class="d2-rec">권고</span>' : '') + '</h2>' +
+      h += '<section class="d2-c"><h2><span class="k">' + c.k + '</span>' + S.esc(c.name) + (c.rec ? ' <span class="d2-rec">결정</span>' : '') + '</h2>' +
         '<div class="d2-why"><p><b>왜</b> ' + S.esc(c.why) + '</p><p><b>위험</b> ' + S.esc(c.risk) + '</p></div><div class="d2-row">';
       ['l', 'd'].forEach(function (m) {
         SHOW.forEach(function (s) {
