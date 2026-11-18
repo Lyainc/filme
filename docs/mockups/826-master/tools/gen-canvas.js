@@ -196,9 +196,9 @@ let dx = 1900 + D02_W + 80;
   ['D06', 'menu-space', 'D06 메뉴 공간 정리', 'D06 메뉴 공간 — 결정 A(폴리싱 D09)', 2640, 2700],
   ['D07', 'quote-font-pt', 'D07 한줄평 서체와 pt 크기', 'D07 서체 · pt — B 채택(폴리싱 · 신규안 D10)', 2640, 1900],
   ['D08', 'result-focus', 'D08 결과 화면 티켓 집중', 'D08 결과 화면 — 결정 A(폴리싱 D11)', 2640, 2700],
-  ['D09', 'menu-final', 'D09 메뉴 시트 확정안', 'D09 메뉴 시트 확정안 — 결정 대기', 1800, 2340],
+  ['D09', 'menu-final', 'D09 메뉴 시트 확정안', 'D09 메뉴 시트 — 확정', 1800, 2340],
   ['D10', 'quote-editing', 'D10 한줄평 서체 pt 편집 위치', 'D10 한줄평 서체 · pt — 결정 대기', 1600, 3740],
-  ['D11', 'result-final', 'D11 결과 화면 확정안', 'D11 결과 화면 확정안 — 결정 대기', 1800, 2080]].forEach(([id, slug, headTitle, boardTitle, bw, bh]) => {
+  ['D11', 'result-final', 'D11 결과 화면 확정안', 'D11 결과 화면 확정안 — 결정 대기', 1800, 3980]].forEach(([id, slug, headTitle, boardTitle, bw, bh]) => {
   require(M + 'decisions/' + id + '-' + slug + '.js');
   fs.writeFileSync(OUT + 'decisions/' + id + '-' + slug + '.dc.html', HEAD(headTitle + ' 비교', '../pr.css').replace('body { margin: 0; }', 'body { margin: 0; }\n' + W[id + '_CSS']) +
     '<div data-pr-theme="{{theme}}" style="width: 100%; min-height: 100%; background: var(--pr-page)">' + W[id + '_HTML']().replace(/\{\{/g, '{ {') + '</div>' + TAIL(bw, bh, 'light'));
