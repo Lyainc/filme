@@ -397,8 +397,8 @@ export function MobileEditorShell({
           inert 타깃 하나 잡으려는 용도). 토스트류는 이 래퍼 밖(아래)에 남겨 다이얼로그가 열려도
           계속 살아있게 한다 — PhoneFrame.tsx의 APP_BACKGROUND_ID 주석 참고. */}
       <div id={APP_BACKGROUND_ID} className="contents">
-      {/* 앰비언트 배경(#353→#415) — .chrome-ambient는 테마 무관 리터럴 다크 그라디언트라
-          (globals.css) chrome-dark 토글만으론 안 가려진다. theme==='dark'일 때만 렌더하고,
+      {/* 앰비언트 배경(#353→#415) — .chrome-ambient는 --pr-stage 평면(globals.css)이다.
+          theme==='dark'일 때만 렌더하고,
           라이트 테마는 데스크톱과 톤을 맞춰(#415 권장) app-canvas의 --bg 그대로 노출한다.
           형제 콘텐츠(header는 relative, 본문 래퍼도 relative)가 위에 그려진다. */}
       {theme === 'dark' && (
