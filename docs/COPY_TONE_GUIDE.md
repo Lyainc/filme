@@ -100,7 +100,7 @@
 
 **근거 — 왜 `-하기`를 금지하지 않는가.** 이슈가 물은 건 명사형이냐 동사형이냐인데, 실측은
 어느 한쪽이 다수가 아니다: 서술명사(`실행 취소`·`다시 실행`·`고급 설정`(#826 S2에서 삭제)·`전체 보기`(구 `최대화`))와
-`-하기`(`꽉 채우기`·`포스터 채우기`·`편집으로 돌아가기`·`처음 화면으로 돌아가기`)가 나란히
+`-하기`(`꽉 채우기`·`포스터 채우기`·`편집으로 돌아가기`·`랜딩으로 돌아가기`)가 나란히
 쓰인다. 한쪽을 금지하면 전수 적용이 위반 정비가 아니라 **대량 개명**이
 되는데, 얻는 건 형태 통일뿐이고 이슈가 지적한 문제(사용자에게 조건 판정을 시키는 말투)는 그
 형태와 무관하다. 형태가 실제로 문제가 되는 건 짝이 어긋날 때뿐이라, 그건 위의 "짝 문구" 규칙이
@@ -114,8 +114,8 @@
   같은 꼴로 쓴다.
 
 **부호 표기(예외가 아니라 표기 규칙).** 라벨과 부연을 잇는 결합 부호는 ` — `로 통일한다(실측
-다수). 라벨에서 쓸 땐 **양쪽 다 명사구**여야 한다(`FILME — 처음 화면으로 돌아가기` ✅ /
-`자동 임시저장 켜짐 — 클릭하면 꺼요` ❌). 같은 층위를 나열하는 ` · `만 이 규칙 밖이다
+다수). 라벨에서 쓸 땐 **양쪽 다 명사구**여야 한다(`세로형 — 신용카드 비율` 꼴 ✅ /
+`자동 임시저장 켜짐 — 클릭하면 꺼요` ❌ — 지금 코드엔 ` — `를 쓴 라벨이 없어 둘 다 설명용 예다). 같은 층위를 나열하는 ` · `만 이 규칙 밖이다
 (`세로형 · 고정식`·`제목 · 개봉연도`). 나열이 아니라 라벨에 부연을 잇는 자리면 부호가 ` · `여도 이 규칙에 걸린다 — `Landing.tsx:301`의
 `` `${layout.label} 무드로 바로 시작 · ${layout.caption}` ``가 그 자리다.
 
@@ -194,8 +194,8 @@
 `aria-label`은 라벨 규칙을 그대로 따르되, **시각 라벨이 함께 있으면 접근성 이름이 그 시각
 라벨을 포함해야 한다**(WCAG 2.5.3 Label in Name — 음성 제어 사용자가 보이는 글자로 부른다).
 
-- 통과: `Wordmark`의 `FILME — 처음 화면으로 돌아가기`(보이는 글자 FILME 포함) ·
-  `VisibilityCheckbox`의 `${label} 티켓에 표시`.
+- 통과: `VisibilityCheckbox`의 `${label} 티켓에 표시`(보이는 글자 `${label}` 포함). 옛 `Wordmark`의 `FILME — 처음 화면으로 돌아가기`는
+  워드마크 탭 초기화와 함께 삭제됐다(#826 S2) — 지금 ‹ 버튼은 아이콘 전용이라 `랜딩으로 돌아가기`가 자유 명사구다.
 - 아이콘 전용 버튼은 시각 라벨이 없으므로 자유롭게 명사구(`실행 취소`·`다시 실행`·`전체 보기`).
 
 시각 라벨을 고치면 그 자리의 `aria-label`도 같이 본다. 전수 적용 때 **한 자리에서 둘을 함께
@@ -254,10 +254,11 @@ eyebrow 필드 8종)를 놓쳤다 — fresh-context 리뷰가 낮은 확신으�
 | 문구 | 소유 | 기대하는 테스트 |
 |---|---|---|
 | `포스터 업로드`(구 `포스터 있으면 올리기`) · `포스터 없이 직접 입력` (#665) | `v2/Landing.tsx` | `landingOverlay` · `landingHeroMood` · `a11yFieldTapAndTapTargets` · `mobileChromeOrder` · `posterCropPipeline` · `resultStageWordmarkReset` · `mobileEditorShellOcrEntryConsolidation` · `logoCropFreeAspect` · `mobileChromeDarkHtmlBg` |
-| `티켓 스크린샷으로 자동입력`(랜딩) · `스크린샷으로 자동입력`(드로어) | `v2/OcrUploadCard.tsx` | `landingOverlay` · `mobileChromeOrder` · `mobileEditorShellOcrEntryConsolidation` · `mobileEditorShellFieldCoverage` |
+| `티켓 스크린샷으로 자동입력`(랜딩) | `v2/OcrUploadCard.tsx` | `landingOverlay` · `mobileChromeOrder` · `mobileEditorShellOcrEntryConsolidation` · `ocrFailureFlow` |
+| `스크린샷으로 자동입력`(정보 모드 버튼 · 편집 메뉴 행) · `티켓 인식 중…` | `v2/dock/InfoPane.tsx` · `v2/EditorMenu.tsx` | `editorDockInfo` · `editorDockInitialMode` · `mobileEditorShellFieldCoverage` · `mobileEditorShellMenu` · `mobileEditorShellOcrEntryConsolidation` · `ocrFailureFlow` · `ocrNeedManualTitleSearch` · `ocrUndoRestore` |
 | `지금 요청이 많아요…` · `인식된 정보가 없어요…` | `v2/OcrUploadCard.tsx` | `landingHeroMood` |
 | `한 번 더 눌러 전체 삭제` (#374) · `임시저장했어요` | `v2/EditorMenu.tsx`(토스트는 `v2/MobileEditorShell.tsx`) | `mobileEditorShellMenu` · `mobileEditorShellOcrEntryConsolidation` |
-| `초기화했어요` | `v2/MobileEditorShell.tsx` | `mobileEditorShellMenu` · `ocrUndoRestore` · `mobileEditorShellOcrEntryConsolidation` |
+| `초기화했어요` | `v2/MobileEditorShell.tsx` | `mobileEditorShellMenu` · `backToLandingPreservesDoc`(‹는 토스트를 안 띄운다는 부재 단언) |
 | `전체 보기` (#826 S2, 구 `최대화`) | `v2/MobileEditorShell.tsx` 상단 줄 | `mobileEditorShellZoom` · `mobileChromeOrder` · `chromeDarkScope` · `previewWorkbenchSurface` · `mobileEditorShellLandscapeRotation` · `ocrUndoRestore` |
 | `빈 항목 표시` (#826 S2, 구 `빈 항목 미리보기`) | `v2/EditorMenu.tsx` | `mobileEditorShellGhost` · `mobileEditorShellMenu` · `inPlaceFieldEditor` · `mobileChromeOrder` |
 | `자동저장 켜짐` · `자동저장 꺼짐`(`aria-label`) · `랜딩으로 돌아가기` · `티켓 인식 중…` | `v2/EditorMenu.tsx` · `v2/MobileEditorShell.tsx` | `mobileEditorShellMenu` · `backToLandingPreservesDoc` · `mobileEditorShellOcrEntryConsolidation` |
@@ -269,7 +270,7 @@ eyebrow 필드 8종)를 놓쳤다 — fresh-context 리뷰가 낮은 확신으�
 목록은 grep 결과이지 자동 검증이 아니다. 문구를 바꾼 뒤 `bun test`를 돌려 실제로 깨지는 자리를
 다시 확인할 것.
 
-**OCR 진입점 두 라벨은 이제 한쪽이 다른 쪽의 접미사다** — 드로어 `스크린샷으로 자동입력`이
+**OCR 진입점 두 라벨은 이제 한쪽이 다른 쪽의 접미사다** — 정보 모드 버튼 · 메뉴 행 `스크린샷으로 자동입력`이
 랜딩 `티켓 스크린샷으로 자동입력` 안에 통째로 들어 있고, 랜딩은 CSS `hidden`으로 항상 마운트라
 둘이 DOM에 동시에 산다. 새 테스트에서 `/자동입력/` 같은 부분일치 셀렉터를 쓰면 조용히 둘을
 잡으니 정확일치나 `within(...)` 스코프를 쓸 것(현행 정규식 셀렉터는 `^` 앵커 + 스코프라 안전).

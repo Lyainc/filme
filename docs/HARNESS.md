@@ -86,9 +86,11 @@ dock·프리뷰 rect, 세 모드(사진·정보·디자인)와 디자인 도구 
 
 새 축을 넣으면 종료 조건에도 넣었는지 확인한다. 모달 축은 #609부터 재고 출력만 하고 `process.exitCode`엔 안 실려 있었다: 옛 `AdvancedSettingsModal`의 Escape 닫기를 실제로 없애면 `close.escape:false` + `focusRestoredToTrigger:false`가 뜨는데도 스크립트가 **exit 0**을 냈다(2026-08-16 실측). 모달 축이 `modal.pass`로 게이트에 실려 같은 파괴에 exit 1이 나게 됐고, 그 자리를 #826 S2부터 `menu.pass`(편집 메뉴 시트)가 잇는다. `present:false`(= ⋯ 진입 버튼 소실)도 실패로 친다 — 진입점이 사라진 걸 관용하면 그게 `checked:false`를 통과로 넘기던 #609의 조용한 성공과 같은 구멍이다. `dockHeight.pass`도 같은 이유로 종료 조건에 실려 있다.
 
-### `bannerToastCollision` (#731·#737)
+### `bannerToastCollision` (#731·#737·#826 S2)
 
-OCR 되돌리기 배너와 전역 토스트가 동시에 뜰 때 겹치는지 잰다. 토스트 `bottom-28`(112px)은 손계산이었는데 실측으로 확인됨(2026-08-20, dark) — banner top 595.5 / toast bottom 563, gap 32.5px. `bottom-6` 고정으로 되돌리면 toast bottom 651 > banner top 595.5(gap −55.5)로 겹쳐 `pass:false`·exit 1.
+OCR 되돌리기 배너와 전역 토스트가 동시에 뜰 때 겹치는지, 그리고 배너가 도크를 가리는지 잰다. #826 S2부터 둘 다 도크에 얹힌다: 배너는 도크 윗면 8px 위(E-05), 통보 토스트는 배너 위 8px(배너 높이 `OCR_BANNER_HEIGHT_PX` 70 + 간격 8 + 8 = 도크 위 86px)이고, 배너가 없으면 도크 위 12px(E-06)이다. 좌표는 `EditorDock.tsx`의 `dockAnchoredBottom`(도크 높이 249 + 안전 영역 + 여유)에서 나온다. 2026-11-19 prod 실측(다크·라이트 동일): banner top 348 / bottom 418, toast bottom 340(`gap` 8), dock top 426(`dockGap` 8). 게이트는 `toast.bottom <= banner.top` **그리고** `dockGap >= 0`이다.
+
+**배너 slide-up(0.3s, translateY 1rem)이 끝난 뒤에 잰다.** 도중에 재면 배너가 16px 아래(top 364 · bottom 434)로 찍혀 `gap`이 24로 부풀고 `dockGap`이 −8로 나와 배너가 도크를 8px 가린 것처럼 보인다 — 첫 실측이 그랬고, 500ms 대기를 넣은 뒤 8/8이 나왔다. 예전 기준선(`bottom-28`, gap 32.5)은 도크가 없던 시절의 값이라 폐기했다. 도크가 없는 화면(랜딩 · 전체 보기)은 옛 `bottom-6`/`bottom-28` 자리로 물러나며 이 축은 그걸 재지 않는다.
 
 ### 옛 `railSlot` 관측과 커스텀 패널 넘침(폐기, #826 S2)
 

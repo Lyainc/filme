@@ -21,6 +21,7 @@ import { render, screen, cleanup, fireEvent, waitFor, act } from '@testing-libra
 import userEvent from '@testing-library/user-event';
 import type { PhototicketState } from '@/types';
 import { STAMP_LABEL_MAX } from '@/constants/fields';
+import { OCR_BANNER_HEIGHT_PX } from '@/components/v2/OcrUndoBanner';
 
 // runOcr must be mocked BEFORE MobileEditorShell (which transitively imports it via
 // OcrUploadCard) is loaded — bun's mock.module is not hoisted, so the shell is
@@ -647,14 +648,20 @@ describe('OCR 되돌리기 배너와 전역 스낵바가 좌표 충돌하지 않
 
     const toast = await screen.findByTestId('global-toast');
     expect(toast.textContent).toBe('임시저장했어요');
-    // 회귀 지점: 고치기 전엔 배너와 똑같이 bottom-6이라 좌표가 겹쳤다(#731).
-    expect(toast.className).toContain('bottom-28');
-    expect(toast.className).not.toContain('bottom-6');
+    // 회귀 지점: 고치기 전엔 배너와 똑같이 bottom-6이라 좌표가 겹쳤다(#731). #826 S2부터 둘 다 도크에 얹혀 서고
+    // (E-05 · E-06), 토스트는 도크 위 8 + 배너 70 + 8 = 86px에 서서 배너 위로 쌓인다.
+    const banner = screen.getByTestId('ocr-undo-banner');
+    // (happy-dom은 env()가 든 style을 버려서 앵커는 data 속성으로 읽는다 — 값의 원천은 style과 같다.)
+    expect(banner.getAttribute('data-dock-offset')).toBe('8');
+    expect(toast.getAttribute('data-anchor')).toBe('dock');
+    expect(toast.getAttribute('data-offset-px')).toBe(String(8 + OCR_BANNER_HEIGHT_PX + 8));
+    expect(toast.className).not.toContain('bottom-');
+    expect(banner.className).not.toContain('bottom-');
     // 배너 자신은 토스트에 안 가리고 그대로 남아 있다.
     expect(screen.getByRole('button', { name: '되돌리기' })).toBeTruthy();
   });
 
-  test('배너가 없을 때는 전역 토스트가 원래 자리(bottom-6)를 쓴다', async () => {
+  test('배너가 없을 때는 통보 토스트가 도크 바로 위 12px에 선다', async () => {
     const user = userEvent.setup();
     render(<MobileHarness />);
     await user.click(screen.getByTestId('landing-skip-poster')); // 메뉴(⋯)는 랜딩을 떠난 뒤에 선다(#826 S2)
@@ -663,8 +670,9 @@ describe('OCR 되돌리기 배너와 전역 스낵바가 좌표 충돌하지 않
     await user.click(screen.getByRole('button', { name: '임시저장' }));
 
     const toast = await screen.findByTestId('global-toast');
-    expect(toast.className).toContain('bottom-6');
-    expect(toast.className).not.toContain('bottom-28');
+    expect(toast.getAttribute('data-anchor')).toBe('dock');
+    expect(toast.getAttribute('data-offset-px')).toBe('12');
+    expect(toast.className).not.toContain('bottom-');
   });
 });
 

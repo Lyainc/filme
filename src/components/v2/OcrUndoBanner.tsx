@@ -1,6 +1,7 @@
 import { OCR_KOBIS_FIELDS, type OcrDirectField } from './OcrUploadCard';
 import type { MovieInfo } from '@/types';
 import { cn } from '@/utils/cn';
+import { dockAnchoredBottom } from './dock/EditorDock';
 import { pressableVariants } from '@/components/ui/variants';
 
 interface OcrUndoBannerProps {
@@ -11,15 +12,20 @@ interface OcrUndoBannerProps {
   stampCount: number;
   onCancel: () => void;
   onConfirm: () => void;
+  /** 도크 윗면에서 몇 px 위에 얹을지(E-05: 티켓과 도크 사이). 없으면 도크가 없는 화면의 기본 자리(bottom-6)다. */
+  dockOffsetPx?: number;
 }
+
+/** 배너 한 장의 높이 — p-3 위아래 24 + min-h-touch 44 + 테두리 2. 그 위로 쌓는 토스트의 좌표가 이 값에서 나온다. */
+export const OCR_BANNER_HEIGHT_PX = 70;
 
 /**
  * OCR 낙관적 주입 되돌리기 배너 + sr-only 라이브리전 — MobileEditorShell(모바일)과
  * 셸이 쓰는 표현 계층(#141-class drift 방지). 로직은 useOcrUndo.
- * 화면 하단 중앙 고정(fixed bottom-6). 라이브리전은 콘텐츠 변경 *전부터* DOM에 있어야 SR이 mutation을
+ * 화면 하단 중앙 고정(fixed) — 도크가 있으면 도크 바로 위(dockOffsetPx prop), 없으면 bottom-6. 라이브리전은 콘텐츠 변경 *전부터* DOM에 있어야 SR이 mutation을
  * 잡으므로(배너와 동시 삽입되면 무시됨, #199 리뷰 P1) 항상 마운트하고 텍스트만 바꾼다.
  */
-export function OcrUndoBanner({ snapshot, filledFields, stampCount, onCancel, onConfirm }: OcrUndoBannerProps) {
+export function OcrUndoBanner({ snapshot, filledFields, stampCount, onCancel, onConfirm, dockOffsetPx }: OcrUndoBannerProps) {
   // 영화 정보 문구는 되돌릴 KOBIS 키가 남았을 때만이다(#814) — 제목을 인식 못 한 채 스탬프만 남았으면
   // 불러온 영화 정보가 없으니 남은 스탬프 수를 센다.
   const hasKobis = !!snapshot && OCR_KOBIS_FIELDS.some((key) => key in snapshot);
@@ -35,7 +41,13 @@ export function OcrUndoBanner({ snapshot, filledFields, stampCount, onCancel, on
       {snapshot && (
         <div
           data-testid="ocr-undo-banner"
-          className="fixed bottom-6 left-1/2 z-50 flex w-[90%] max-w-sm -translate-x-1/2 animate-slide-up items-center gap-4 rounded-card border border-accent bg-s2 p-3 shadow-lg"
+          className={cn(
+            'fixed left-1/2 z-50 flex w-[90%] max-w-sm -translate-x-1/2 animate-slide-up items-center gap-4 rounded-[6px] border border-accent bg-s2 p-3 shadow-lg',
+            dockOffsetPx === undefined && 'bottom-6',
+          )}
+          // happy-dom은 env()가 든 값을 버리므로 테스트는 이 data 속성으로 앵커를 읽는다.
+          data-dock-offset={dockOffsetPx}
+          style={dockOffsetPx === undefined ? undefined : { bottom: dockAnchoredBottom(dockOffsetPx) }}
         >
           <p className="flex-1 text-body text-ink">{message}</p>
           {/* WCAG 2.5.8(AA) 최소 24×24 미달 → min-h-touch(44px)로 채운다(#646). cancel()은 확인 없이
@@ -52,7 +64,7 @@ export function OcrUndoBanner({ snapshot, filledFields, stampCount, onCancel, on
             <button
               type="button"
               onClick={onConfirm}
-              className={cn(pressableVariants(), 'min-h-touch inline-flex items-center rounded-chip bg-accent px-3 text-caption font-medium text-accent-ink transition-colors hover:bg-accent-hover')}
+              className={cn(pressableVariants(), 'min-h-touch inline-flex items-center rounded-[6px] bg-accent px-3 text-caption font-medium text-accent-ink transition-colors hover:bg-accent-hover')}
             >
               확인
             </button>
