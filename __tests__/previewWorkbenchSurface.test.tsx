@@ -48,6 +48,7 @@ describe('편집 프리뷰 작업대 표면 (#571)', () => {
   test('max 모드: 재단 마크가 따라 들어가지 않는다', async () => {
     const user = userEvent.setup();
     render(<Harness />);
+    await user.click(screen.getByTestId('landing-skip-poster')); // 상단 줄은 랜딩을 떠난 뒤에 선다(#826 S2)
     await user.click(screen.getByText('seed-poster'));
     await user.click(screen.getByRole('button', { name: '전체 보기' }));
 

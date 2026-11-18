@@ -112,7 +112,7 @@ function ActionRow({
  * 동작은 없어 손잡이도 없다. 닫기는 바깥(스크림) 탭 · ⋯ 재탭 · Escape.
  *
  * 열려 있는 동안만 마운트된다 — 그래서 초기화 arm 상태가 닫힘과 함께 저절로 풀리고, 열릴 때 첫 행으로 포커스가 가고,
- * 닫힐 때(언마운트) ⋯로 돌아간다. role=dialog + aria-modal(APG dialog)이지만 앱 배경을 inert로 잠그지 않는다:
+ * 그냥 닫힐 때(Escape · 스크림 · ⋯ 재탭)는 언마운트에서 ⋯로 돌아간다(행 동작으로 닫힐 땐 안 돌아간다). role=dialog + aria-modal(APG dialog)이지만 앱 배경을 inert로 잠그지 않는다:
  * 스크림이 상단 줄 아래부터라 ⋯ 재탭 닫기가 살아 있어야 해서다. fixed 좌표는 PhoneFrame의 contain:paint가 프레임 안에
  * 가둔다(#609).
  */
@@ -153,13 +153,20 @@ export function EditorMenu({
   const [clearArmed, setClearArmed] = useState(false);
   const armTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const armedAt = useRef(0);
+  // 포커스는 **그냥 닫힐 때만** ⋯로 돌아간다(Escape · 스크림 · ⋯ 재탭). 행이 일을 하고 닫을 땐 그 일이 포커스를 쥔다 —
+  // 자동입력은 파일 선택을 열고, 초기화 · 임시저장은 메뉴를 떠난 흐름이라 ⋯로 끌어오면 오히려 어긋난다.
+  const restoreFocusRef = useRef(true);
+  const closeAfterAction = () => {
+    restoreFocusRef.current = false;
+    onClose();
+  };
 
   useEffect(() => {
     firstRowRef.current?.focus();
     const trigger = returnFocusRef.current;
     return () => {
       clearTimeout(armTimer.current);
-      trigger?.focus();
+      if (restoreFocusRef.current) trigger?.focus();
     };
   }, [returnFocusRef]);
 
@@ -199,7 +206,7 @@ export function EditorMenu({
     }
     if (Date.now() - armedAt.current < CLEAR_DOUBLE_TAP_GUARD_MS) return;
     clearTimeout(armTimer.current);
-    onClose();
+    closeAfterAction();
     onClear();
   }
 
@@ -267,14 +274,14 @@ export function EditorMenu({
             onClick={() => {
               // 파일 선택은 사용자 제스처 안에서 열려야 해서 닫기보다 먼저 호출한다.
               onOcrOpen();
-              onClose();
+              closeAfterAction();
             }}
           >
             {ocrBusy ? '티켓 인식 중…' : '스크린샷으로 자동입력'}
           </ActionRow>
           <ActionRow
             onClick={() => {
-              onClose();
+              closeAfterAction();
               onSaveDraft();
             }}
           >

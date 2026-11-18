@@ -1,5 +1,5 @@
 import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { MovieInfo, QuoteFont, TicketComponents } from '@/types';
@@ -153,6 +153,7 @@ function FontListbox({
   sampleFor,
   bottom,
   maxHeight,
+  triggerRef,
   onSelect,
   onClose,
 }: {
@@ -161,6 +162,8 @@ function FontListbox({
   sampleFor: (font: QuoteFont, label: string) => CSSProperties;
   bottom: number;
   maxHeight: number;
+  /** 글꼴 버튼 — 이 버튼으로 옮겨 가는 blur는 닫지 않는다(버튼 탭이 토글을 맡는다). */
+  triggerRef: RefObject<HTMLButtonElement | null>;
   onSelect: (font: QuoteFont) => void;
   onClose: () => void;
 }) {
@@ -197,7 +200,11 @@ function FontListbox({
       tabIndex={0}
       aria-activedescendant={`${id}-${active}`}
       onKeyDown={onKeyDown}
-      onBlur={onClose}
+      // 버튼으로 가는 blur까지 닫으면 곧이어 오는 버튼 click(토글)이 방금 닫힌 목록을 다시 열어 버튼이 안 닫힌다.
+      onBlur={(e) => {
+        if (e.relatedTarget && e.relatedTarget === triggerRef.current) return;
+        onClose();
+      }}
       className="fixed inset-x-3 z-50 m-0 list-none overflow-y-auto rounded-field-sm border border-hair-strong bg-s2 p-0 outline-none"
       style={{ bottom, maxHeight, boxShadow: 'var(--shadow-pop, 0 8px 24px -8px rgba(0,0,0,.4))' }}
     >
@@ -733,6 +740,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
           sampleFor={sampleFor}
           bottom={(vvBox?.bottom ?? 0) + 12}
           maxHeight={aidMaxHeight}
+          triggerRef={fontBtnRef}
           onSelect={selectFont}
           onClose={() => setFontOpen(false)}
         />

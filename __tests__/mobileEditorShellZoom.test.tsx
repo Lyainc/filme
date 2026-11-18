@@ -37,9 +37,9 @@ describe('MobileEditorShell 줌 모드 (#214/#328/#356/#826 S2)', () => {
     const user = userEvent.setup();
     render(<Harness />);
 
-    // seed 전엔 전체 보기가 비활성이다(프리뷰가 있어야 의미).
-    expect((screen.getByRole('button', { name: '전체 보기' }) as HTMLButtonElement).disabled).toBe(true);
-
+    // 랜딩이 떠 있는 동안엔 상단 줄이 없다(프리뷰도 없다) — 직접 입력으로 편집에 들어와 포스터를 올린다.
+    expect(screen.queryByRole('button', { name: '전체 보기' }) === null).toBe(true);
+    await user.click(screen.getByTestId('landing-skip-poster'));
     await user.click(screen.getByText('seed-poster'));
 
     // 줌 pill(ZoomSegment)과 플로팅 툴바는 제거됐다.
@@ -51,6 +51,7 @@ describe('MobileEditorShell 줌 모드 (#214/#328/#356/#826 S2)', () => {
   test('전체 보기(#328): 상단 줄·OCR을 숨기고 티켓만 남기며, 티켓 탭으로만 기본 복귀한다', async () => {
     const user = userEvent.setup();
     render(<Harness />);
+    await user.click(screen.getByTestId('landing-skip-poster')); // 상단 줄은 랜딩을 떠난 뒤에 선다(#826 S2)
     await user.click(screen.getByText('seed-poster'));
 
     expect(screen.getByRole('button', { name: '편집 메뉴' })).toBeTruthy();

@@ -99,6 +99,7 @@ describe('ResultStage 결과화면 톤 (#357)', () => {
   // 리셋된다(#297 P1과 동일 패턴). hidden 토글 + 항상 마운트를 고정한다(#826 S2: 옛 DesignRail → 도크).
   test('편집 셸: max 전환에도 dock(EditorDock)은 마운트 유지', () => {
     render(<Harness />);
+    fireEvent.click(screen.getByTestId('landing-skip-poster')); // 상단 줄은 랜딩을 떠난 뒤에 선다(#826 S2)
     fireEvent.click(screen.getByText('seed'));
     // 전체 보기(상단 줄) 진입 후에도 도크 모드 탭이 DOM에 남아 있어야 한다(hidden일 뿐).
     fireEvent.click(screen.getByRole('button', { name: '전체 보기' }));

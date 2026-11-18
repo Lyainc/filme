@@ -64,6 +64,9 @@ afterAll(() => {
 const posterRowButtonLabels = () =>
   Array.from(document.querySelectorAll('[data-asset-row="포스터"] button')).map((b) => b.textContent ?? '');
 
+/** 편집 캔버스(티켓 스테이지)가 섰는가 — 랜딩이 떠 있는 동안 상단 줄(완료)은 안 서므로(#826 S2) 스테이지의 재단 마크로 잰다. */
+const stageMounted = () => document.querySelector('.crop-marks') !== null;
+
 describe('포스터 있던 draft 재방문의 비동기 복원 창 (#683 → #727)', () => {
   // ac1 포스터 축 — c1이 지목한 자리다. 랜딩 판정에 croppedImageUrl이 살아 있으면 정확히
   // releaseLoad() 직후에 깨진다(복원 대기 중엔 통과하고 도착 순간에만 뒤집히므로, 게이트를 쥐고
@@ -81,9 +84,9 @@ describe('포스터 있던 draft 재방문의 비동기 복원 창 (#683 → #72
     // 서 있다 — IDB는 게이트에 묶여 아직 안 끝났다.
     const landing = screen.getByTestId('landing');
     expect(landing.classList.contains('fixed')).toBe(true);
-    // 랜딩 뒤의 편집 크롬은 awaitingPosterRestore로 이미 서 있다(canvasReady) — 랜딩을 떠나면
+    // 랜딩 뒤의 편집 캔버스는 awaitingPosterRestore로 이미 서 있다(canvasReady) — 랜딩을 떠나면
     // 빈 셸이 아니라 곧 포스터가 채워질 캔버스가 기다린다.
-    expect(!!screen.queryByRole('button', { name: '완료' })).toBe(true);
+    expect(stageMounted()).toBe(true);
 
     // 포스터가 도착해도 랜딩은 그대로다 — 사진 모드 포스터 행이 '추가'에서 '교체'로 바뀌는 걸로 실제 도착을 잰다.
     await act(async () => {
@@ -111,13 +114,13 @@ describe('포스터 있던 draft 재방문의 비동기 복원 창 (#683 → #72
     render(<Harness />);
 
     // 실패는 즉시 반영되지 않고 loadImages().catch()가 한 틱 뒤 정리되므로 기다린다 —
-    // awaitingPosterRestore가 풀리면 canvasReady가 꺼져 편집 크롬(완료)이 사라진다.
+    // awaitingPosterRestore가 풀리면 canvasReady가 꺼져 편집 캔버스(스테이지)가 사라진다.
     // `!!`로 강제 변환하는 게 핵심이다(#693) — waitFor의 첫 즉시 검사는 아직 버튼이 살아 있어
     // 정상적으로 실패하는데, 그때 received가 happy-dom 엘리먼트면 bun이 노드 그래프 전체를
     // 직렬화한다(실측 697MB · 한 번에 4.6초). 재시도까지 두 번이면 5초 per-test 타임아웃을 넘겨
     // 테스트가 죽는다. 불리언으로 받으면 같은 실패 메시지가 64자다.
     await waitFor(() => {
-      expect(!!screen.queryByRole('button', { name: '완료' })).toBe(false);
+      expect(stageMounted()).toBe(false);
     });
 
     const landing = screen.getByTestId('landing');
