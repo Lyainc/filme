@@ -97,7 +97,7 @@ export const LayoutStrip = memo(function LayoutStrip({ value, onChange }: Layout
               }}
             />
             <span
-              className={`text-micro font-medium transition-colors ${active ? 'text-accent' : 'text-ink-2'}`}
+              className={`text-micro transition-colors ${active ? 'font-semibold text-ink' : 'font-medium text-ink-2'}`}
             >
               {layout.label}
             </span>
