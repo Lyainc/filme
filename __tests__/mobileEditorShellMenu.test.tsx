@@ -272,12 +272,7 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
       expect(group === null ? `그룹 밖 행: ${row.textContent}` : true).toBe(true);
     }
 
-    // 드로어 엣지 핸들도 같은 계층이다(#569 "같이 고칠 것") — 8% 유리로 되돌리면 밝은 포스터
-    // 위에서 핸들이 다시 사라진다.
-    const handle = screen.getByRole('button', { name: '티켓 항목 목록 열기' }).querySelector('span')!;
-    expect((handle as HTMLElement).style.background).toBe('var(--overlay-fill)');
-    // toContain('text-ink')이면 text-ink-2로 되돌려도 통과한다 — 단어 경계로 못박는다.
-    expect(handle.className).toMatch(/(^|\s)text-ink(\s|$)/);
+    // (드로어 엣지 핸들의 오버레이 계층 단언은 #826 S2에서 핸들과 함께 사라졌다.)
 
     // 선택된 배치 라디오도 --fg로 — 다크에서 --accent는 불투명 표면 위에서도 3.97:1이다.
     // 배치 라디오는 #574에서 고급 설정 모달로 이사했으므로 거기서 확인한다.

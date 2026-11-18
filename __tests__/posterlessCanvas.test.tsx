@@ -2,7 +2,7 @@
  * #631 회귀 테스트 — 포스터 없이도 편집 캔버스가 선다(canvasReady).
  *
  * "포스터가 있다"(croppedImageUrl)와 "편집할 캔버스가 섰다"는 다른 명제다. 랜딩의
- * '포스터 없이 시작'이 후자만 세우고, 셸 크롬(완료·드로어 핸들·고급 설정·툴바)은 전자가
+ * '포스터 없이 시작'이 후자만 세우고, 셸 크롬(완료·편집 도크·고급 설정·툴바)은 전자가
  * 아니라 후자를 따라야 한다. 아래 세 항목이 그 계약을 고정한다.
  */
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
@@ -38,14 +38,19 @@ describe('포스터 없이 시작 (#631)', () => {
     const user = userEvent.setup();
     render(<Harness />);
 
-    // 시작 상태 — 캔버스가 안 섰으므로 완료·드로어 핸들이 없다.
+    // 시작 상태 — 캔버스가 안 섰으므로 완료가 없고 도크는 CSS hidden이다(#826 S2, 옛 드로어 핸들 자리).
     expect(screen.queryByRole('button', { name: '완료' }) === null).toBe(true);
-    expect(screen.queryByRole('button', { name: '티켓 항목 목록 열기' }) === null).toBe(true);
+    expect(screen.getByTestId('editor-dock').classList.contains('hidden')).toBe(true);
 
     await user.click(screen.getByTestId('landing-skip-poster'));
 
     expect(screen.getByRole('button', { name: '완료' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: '티켓 항목 목록 열기' })).toBeTruthy();
+    expect(screen.getByTestId('editor-dock').classList.contains('hidden')).toBe(false);
+    // 포스터 행은 '없음'과 '추가'로 서 있다 — 포스터 없이 시작해도 사진 모드가 재진입 동선이다.
+    await user.click(screen.getByRole('tab', { name: '사진' }));
+    const posterRow = document.querySelector('[data-asset-row="포스터"]') as HTMLElement;
+    expect(posterRow.textContent).toContain('없음');
+    expect(posterRow.querySelector('button')?.textContent).toBe('추가');
   });
 
   // #674로 D2(a)의 **자리**가 바뀌었다. 랜딩 inline은 컨테이너가 flex-1이라 같은 flex-1인 티켓

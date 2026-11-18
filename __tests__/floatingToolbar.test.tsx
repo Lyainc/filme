@@ -93,7 +93,7 @@ describe('플로팅 툴바 (#356)', () => {
     expect(captured.movieInfo.theater).toBe('CGV 용산');
   });
 
-  test('항목목록 버튼이 헤더 대신 툴바에서 드로어를 연다(#360 임시 진입점 대체)', async () => {
+  test('항목목록 버튼이 헤더 대신 툴바에서 도크를 정보 모드로 바꾼다(#360 임시 진입점 대체 → #826 S2)', async () => {
     const user = userSetup();
     render(<Harness />);
     const toolbar = await seedPoster(user);
@@ -103,9 +103,11 @@ describe('플로팅 툴바 (#356)', () => {
     expect(listButtons.length).toBe(1);
     expect(toolbar.contains(listButtons[0])).toBe(true);
 
+    await user.click(screen.getByRole('tab', { name: '디자인' }));
     await user.click(listButtons[0]);
-    // FieldDrawer(#355) 배선 재사용 — 우측 드로어(dialog)가 열린다. dynamic 로드라 findBy.
-    expect(await screen.findByRole('dialog', { name: '티켓 항목' })).toBeTruthy();
+    // 드로어(#355)가 사라진 뒤로 이 버튼은 도크를 정보 모드로 바꾼다 — 모달이 아니라 도크 본문이 목록이다.
+    expect(screen.getByRole('tab', { name: /^정보/ }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.queryByRole('dialog') === null).toBe(true);
   });
 
   test('숨김 → 원형 표시 버튼으로 접히고, 다시 펼 수 있다', async () => {

@@ -1,5 +1,8 @@
 /**
- * #558 4택 → #437 9택 — 디자인 레일 '커스텀' 항목의 한줄평 폰트 상호작용 테스트.
+ * (#826 S2) 폰트 피커는 디자인 도구가 아니게 돼 도크에 없다 — 인플레이스 입력 바의 글꼴 드롭다운으로 갈
+ * 때까지(S2 후속 단위) CustomPanel을 직접 마운트해 서체 배선·견본·잠금 계약을 그대로 잠근다.
+ *
+ * #558 4택 → #437 9택 — 폰트 패널(CustomPanel)의 한줄평 폰트 상호작용 테스트.
  *
  * 레일 피커와 Criterion 렌더를 **같은 photo 상태**에 물려, 칩을 실제로 눌렀을 때 티켓의 한줄평
  * fontFamily가 그 폰트로 바뀌는지를 끝까지 본다(피커 state만 보면 배선이 끊겨도 통과한다).
@@ -13,7 +16,7 @@ import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
 import { render, screen, within, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { usePhototicket } from '@/hooks/usePhototicket';
-import { DesignRail } from '@/components/v2/DesignRail';
+import { CustomPanel } from '@/components/v2/designRailItems';
 import { MoodCriterion } from '@/components/moods/MoodCriterion';
 import {
   ALL_FONT_LABELS,
@@ -50,7 +53,7 @@ function Harness() {
       </button>
       <div data-testid="quote-font">{photo.state.components.quoteFont ?? '(미설정)'}</div>
       <div data-testid="signature-font">{photo.state.components.signatureFont ?? '(미설정)'}</div>
-      <DesignRail photo={photo} />
+      <CustomPanel photo={photo} />
       <MoodCriterion
         movieInfo={photo.state.movieInfo}
         components={photo.state.components}
@@ -67,7 +70,6 @@ function quoteStyle(text: string) {
 
 async function openCustomPanel(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'criterion으로 전환' }));
-  await user.click(screen.getByRole('button', { name: '커스텀' }));
 }
 
 beforeEach(() => window.localStorage.clear());
@@ -76,18 +78,17 @@ afterEach(() => {
   window.localStorage.clear();
 });
 
-describe('레일 커스텀 — 한줄평 폰트 9택 (#558 → #437)', () => {
-  test('커스텀 항목은 6무드 전부에서 뜨고, 한줄평 폰트만 Criterion 전용이다', async () => {
+describe('폰트 패널 — 한줄평 폰트 9택 (#558 → #437)', () => {
+  test('폰트 패널은 6무드 전부에서 뜨고, 한줄평 폰트만 Criterion 전용이다', async () => {
     const user = userEvent.setup();
     render(<Harness />);
 
     // 초기 무드 minimal — 서명 폰트 축(#437)이 있어 커스텀 항목 자체는 뜨지만 한줄평 폰트는 없다.
     // queryByRole 결과를 그대로 toBeNull()에 넣으면 실패 시 bun이 노드 그래프 전체를 찍어
     // 수십 초가 걸린다(#693) — !!로 강제 변환해 값만 비교한다.
-    await user.click(screen.getByRole('button', { name: '커스텀' }));
     expect(!!screen.queryByRole('radiogroup', { name: '한줄평 폰트' })).toBe(false);
 
-    // 무드를 바꿔도 'custom' 항목은 appliesTo가 6무드 전부라 패널이 안 닫힌다(#523 pop 유지).
+    // 무드를 바꿔도 패널은 그대로 서고 한줄평 피커만 Criterion에서 생긴다.
     await user.click(screen.getByRole('button', { name: 'criterion으로 전환' }));
     expect(!!screen.queryByRole('radiogroup', { name: '한줄평 폰트' })).toBe(true);
   });
@@ -192,19 +193,18 @@ describe('레일 커스텀 — 한줄평 폰트 9택 (#558 → #437)', () => {
 
     await user.click(quoteRadio('바탕'));
     // 다른 무드로 나가면 한줄평 피커는 사라지지만(quote는 Criterion 전용), 패널 자체는 서명
-    // 폰트 축(#437) 덕분에 열린 채 남는다(#523 pop 유지) — quoteFont 값은 그대로 보존.
+    // 폰트 축(#437) 덕분에 남는다 — quoteFont 값은 그대로 보존.
     await user.click(screen.getByRole('button', { name: 'minimal로 전환' }));
     expect(!!screen.queryByRole('radiogroup', { name: '한줄평 폰트' })).toBe(false);
     expect(screen.getByTestId('quote-font').textContent).toBe('batang');
 
-    // 패널이 이미 열려 있으므로 '커스텀'을 다시 누르지 않는다 — 누르면 토글로 닫혀버린다.
     await user.click(screen.getByRole('button', { name: 'criterion으로 전환' }));
     expect(quoteRadio('바탕').getAttribute('aria-checked')).toBe('true');
     expect(quoteStyle(DEFAULT_QUOTE).fontFamily).toContain('--font-batang');
   });
 });
 
-describe('레일 커스텀 — 한줄평·서명 축 전환 (#797)', () => {
+describe('폰트 패널 — 한줄평·서명 축 전환 (#797)', () => {
   const axisRadio = (name: string) =>
     within(screen.getByRole('radiogroup', { name: '폰트 축' })).getByRole('radio', { name });
   const signatureRadio = (name: string) =>
@@ -265,8 +265,7 @@ describe('레일 커스텀 — 한줄평·서명 축 전환 (#797)', () => {
     const user = userEvent.setup();
     render(<Harness />);
     // 초기 무드 minimal — 한 칸짜리 축 전환은 죽은 컨트롤이라 세그먼트 없이 서명 피커만 선다.
-    await user.click(screen.getByRole('button', { name: '커스텀' }));
-    expect(hasGroup('폰트 축')).toBe(false);
+      expect(hasGroup('폰트 축')).toBe(false);
     expect(hasGroup('서명 폰트')).toBe(true);
   });
 });

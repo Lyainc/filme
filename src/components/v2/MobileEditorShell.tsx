@@ -9,10 +9,9 @@ import {
   type ChangeEvent,
   type DragEvent,
   type KeyboardEvent,
-  type PointerEvent,
 } from 'react';
 import { AutoSaveIndicator } from './AutoSaveIndicator';
-import { DesignRail } from './DesignRail';
+import { EditorDock, type DockMode } from './dock/EditorDock';
 import { Landing } from './Landing';
 import { OcrUploadCard } from './OcrUploadCard';
 import { OcrUndoBanner } from './OcrUndoBanner';
@@ -42,13 +41,6 @@ import type { LayoutId, MovieInfo, TicketComponents, TicketField } from '@/types
 import { isStampTarget, STAMP_KEYS, type SheetTarget } from '@/constants/fields';
 import { ErrorToastHost } from '@/utils/errorToast';
 
-// 필드 목록 우측 드로어(#355, 구 FieldEditSheet 대체) — 크롭 모달·로고 훅을 끌어오고 열기 전엔
-// 안 쓰므로 dynamic(ssr:false)로 분리, 첫 열기에 로드된다.
-const FieldDrawer = dynamic(
-  () => import('./FieldDrawer').then((m) => m.FieldDrawer),
-  { ssr: false },
-);
-
 // 온티켓 인플레이스 에디터(#354) — RatingPicker·DateSheet(FieldEditorBody)를 끌어오므로
 // 시트와 같은 이유로 dynamic(ssr:false), 첫 필드 탭에 로드된다.
 const InPlaceFieldEditor = dynamic(
@@ -74,34 +66,13 @@ const MENU_ICONS = {
 
 // 헤더 서브메뉴의 행 그룹(#569/#580) — 오버레이 패널(--overlay-fill)은 티켓 위에 뜨는 유리라
 // 그 위 직접 텍스트는 --fg만 AA를 넘는다(globals.css --overlay-* 주석의 실측표). muted 아이콘·
-// accent 라디오·danger 초기화 라벨까지 읽히게 텍스트 행은 불투명 표면에 얹는다 — FieldDrawer의
-// 처방과 같다. --surface-elevated가 아니라 --surface인 건 danger 잉크 때문:
+// accent 라디오·danger 초기화 라벨까지 읽히게 텍스트 행은 불투명 표면에 얹는다. --surface-elevated가 아니라 --surface인 건 danger 잉크 때문:
 // #EF4444가 #1E2326에선 4.22:1(미달), #161A1C에선 4.66:1이다.
 // 포스터 파일 입력의 accept이자 드롭 필터(#607) — input과 드롭이 서로 다른 목록을 쓰면
 // 드롭만 되는(혹은 안 되는) 포맷이 조용히 갈린다.
 const POSTER_ACCEPT = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
 
 const MENU_GROUP_CLS = 'rounded-[12px] bg-s1 p-1'; // 행 반경(rounded-lg 8) + p-1(4)과 동심
-
-// 필드 드로어 엣지 핸들 세로 위치 영속(#579) — 툴바(filme:toolbar:v1)와 별도 키. 핸들은
-// y 좌표 하나뿐이라(가로 이동은 엣지 탭 구조상 의미가 없다) 툴바처럼 orient/place를 얹은
-// 객체가 아니라 단일 값이면 충분하다.
-const DRAWER_HANDLE_KEY = 'filme:drawer:v1';
-// 핸들의 탭(열기)/드래그(수평=열기, 수직=이동) 구분 임계 거리(px) — FloatingToolbar의
-// TB_TAP_SLOP(#568)과 같은 값, 같은 근거로 6px.
-const HANDLE_DRAG_SLOP = 6;
-
-function loadDrawerHandleY(): number | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = window.localStorage.getItem(DRAWER_HANDLE_KEY);
-    if (!raw) return null;
-    const p = JSON.parse(raw);
-    return p && typeof p === 'object' && typeof p.y === 'number' ? p.y : null;
-  } catch {
-    return null;
-  }
-}
 
 // releaseDateGranularity/releaseDateFormat/watchDateFormat은 포맷 설정이라 미입력 상태에서도
 // 항상 truthy 기본값을 갖는다(usePhototicket INITIAL_STATE) — 포함하면 "채워짐" 판정이 항상
@@ -306,10 +277,10 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   // 초기화(handleClearTap)가 false로 되돌려 랜딩이 복귀한다.
   const [landingDismissed, setLandingDismissed] = useState(false);
   // ocrApplied(#652)는 #727에서 삭제됐다 — 그 신호가 하던 일(OCR 적용 후 랜딩 본문의 주 CTA·이탈
-  // 경로를 CSS로 숨겨 드로어를 유일한 재진입점으로 만들기, #388 > #631 D2 a)은 이제 Landing
+  // 경로를 CSS로 숨겨 OCR 재진입을 한 곳으로 모으기, #388 > #631 D2 a)은 이제 Landing
   // 컨테이너 자체가 한다: OCR 적용은 landingDismissed를 세우고 그게 곧 mode='hidden'이라
   // 안쪽 블록을 따로 숨길 상태가 코드상 존재하지 않는다(inline 소멸, c3).
-  // 편집 크롬(완료·드로어·툴바·레일)을 열지 판정하는 **셸 게이트**다 — #727부터 랜딩 표시와는
+  // 편집 크롬(완료·도크·툴바)을 열지 판정하는 **셸 게이트**다 — #727부터 랜딩 표시와는
   // 완전히 갈렸다(랜딩은 landingDismissed 하나로만 판정한다, c2). 포스터가 없어도 편집 캔버스는
   // 설 수 있다(#631) — "포스터가 있다"(croppedImageUrl)와 "편집할 캔버스가 섰다"는 다른 명제다.
   // photo.awaitingPosterRestore(#683)는 포스터 있던 draft 재방문에서 croppedImageUrl이 IndexedDB
@@ -340,101 +311,15 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [menuOpen]);
-  // 필드 목록 우측 드로어(#355). 진입은 헤더 목록 버튼 — #356 플로팅 툴바가 오면 그쪽
-  // field-list 버튼이 이 진입점을 이어받는다.
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  // 엣지 핸들 세로 위치(#579) — null이면 기존 화면 정중앙(top-1/2 -translate-y-1/2) 유지.
-  const drawerHandleRef = useRef<HTMLButtonElement>(null);
-  const [drawerHandleY, setDrawerHandleY] = useState<number | null>(loadDrawerHandleY);
-  useEffect(() => {
-    const t = setTimeout(() => {
-      try {
-        window.localStorage.setItem(DRAWER_HANDLE_KEY, JSON.stringify({ y: drawerHandleY }));
-      } catch {
-        // 영속 실패(쿼터·프라이빗 모드)는 무시 — best-effort, FloatingToolbar와 동일.
-      }
-    }, 300);
-    return () => clearTimeout(t);
-  }, [drawerHandleY]);
-  const clampHandleY = (y: number) => {
-    const h = drawerHandleRef.current?.offsetHeight ?? 96; // h-24 폴백
-    const frame = getFrameRect();
-    return Math.max(TB_EDGE, Math.min(frame.height - h - TB_EDGE, y));
-  };
-  // 저장된 y가 리사이즈·회전으로 프레임 밖에 나가면 재클램프 — FloatingToolbar clampPos
-  // 재클램프 이펙트(#190/#607)와 같은 패턴.
-  useEffect(() => {
-    if (drawerHandleY == null) return;
-    const reclamp = () => {
-      const c = clampHandleY(drawerHandleY);
-      if (c !== drawerHandleY) setDrawerHandleY(c);
-    };
-    reclamp();
-    window.addEventListener('resize', reclamp);
-    return () => window.removeEventListener('resize', reclamp);
-  }, [drawerHandleY]);
-
-  // 엣지 핸들 축 분리 드래그(#567·#579, 동반 설계 — 같은 핸들이 두 제스처를 축으로 갈라
-  // 쓴다). 첫 이동이 HANDLE_DRAG_SLOP을 넘는 순간 우세 축으로 잠그고(axis) 이후 이동은
-  // 그 축만 처리한다 — 대각선 드래그가 두 동작을 동시에 트리거하지 않게. 수평은 "임계
-  // 넘으면 그때 열기"(추적 없음, #567 설계 메모 권장안 — FieldDrawer가 마운트=열림이라
-  // 실시간 peek은 구조 변경이 필요하다), 수직은 FloatingToolbar 그립(onGripDown/Move/Up)처럼
-  // 손가락을 실시간으로 따라간다. 수평 우세인데 오른쪽(무의미한 방향)이면 axis를 잠그지
-  // 않는다 — 잠갔다면 이후 click까지 드래그로 오판돼 순수 탭이 흔들림 하나로 조용히
-  // 무시된다(실브라우저 CDP 트러스티드 클릭으로 재현·확인).
-  const handleDragRef = useRef<{ px: number; py: number; oy: number; axis: 'h' | 'v' | null } | null>(null);
-  // 드래그 끝의 click 억제(FloatingToolbar draggedRef, #568과 같은 패턴) — 수직 이동으로
-  // 끝난 제스처가 click에서 다시 드로어를 열면 탭=열기/드래그=이동 구분이 무너진다.
-  const handleDraggedRef = useRef(false);
-  // 눌림 스케일(#662) — drawerHandleY가 세팅되면 위치 고정용 인라인 transform:'none'이 class
-  // 기반 active:scale을 항상 이긴다. pointer down/up을 state로 직접 추적해 같은 인라인
-  // transform 값에 scale(0.97)을 합성한다(CSS :active엔 JS 동등물이 없다).
-  const [handlePressed, setHandlePressed] = useState(false);
-  const onHandlePointerDown = (e: PointerEvent<HTMLButtonElement>) => {
-    const rect = drawerHandleRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const frame = getFrameRect();
-    handleDragRef.current = { px: e.clientX, py: e.clientY, oy: rect.top - frame.top, axis: null };
-    handleDraggedRef.current = false;
-    e.currentTarget.setPointerCapture(e.pointerId);
-  };
-  const onHandlePointerMove = (e: PointerEvent<HTMLButtonElement>) => {
-    const d = handleDragRef.current;
-    if (!d) return;
-    const dx = e.clientX - d.px;
-    const dy = e.clientY - d.py;
-    if (!d.axis) {
-      if (Math.abs(dx) < HANDLE_DRAG_SLOP && Math.abs(dy) < HANDLE_DRAG_SLOP) return;
-      const axis = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
-      if (axis === 'h' && dx >= 0) return; // 오른쪽(무의미한 방향) — 잠그지 않고 탭 취급으로 남겨 click 폴백이 살아있게 한다.
-      d.axis = axis;
-      handleDraggedRef.current = true;
-      if (d.axis === 'h') {
-        setDrawerOpen(true); // 왼쪽(화면 안쪽)으로 당기면 열기.
-        return; // 열기는 1회성 — 이 제스처 동안 더 볼 필요 없다.
-      }
-    }
-    if (d.axis === 'v') setDrawerHandleY(clampHandleY(d.oy + dy));
-  };
-  const onHandlePointerUp = () => {
-    handleDragRef.current = null;
-  };
-  const onHandleClick = () => {
-    if (handleDraggedRef.current) {
-      handleDraggedRef.current = false;
-      return;
-    }
-    setDrawerOpen(true);
-  };
-  // 비드래그 대체 경로(WCAG 2.2 SC 2.5.7) — 고급 설정 모달(#574)의 상/하 스냅 버튼이 호출.
-  const snapDrawerHandleTo = (edge: 'top' | 'bottom') => {
-    const rect = drawerHandleRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const frame = getFrameRect();
-    const y = edge === 'top' ? TB_EDGE : frame.height - rect.height - TB_EDGE;
-    setDrawerHandleY(y);
-    flashToast(edge === 'top' ? '위쪽 가장자리로 옮겼어요' : '아래쪽 가장자리로 옮겼어요');
-  };
+  // 편집 도크 모드(#826 S2 E-01) — 사진 · 정보 · 디자인. 처음 진입은 스크린샷으로 채웠으면 디자인(OCR 적용이
+  // 랜딩에서 온 새 문서일 때 onOcrApply가 올린다), 아니면 정보다. 새로 시작하는 경로(포스터 업로드 · 직접 입력 ·
+  // 무드 탭 · 초기화)는 startFreshDoc/performClear가 정보로 되돌린다. 완료 실패(handleDone)와 온-티켓 항목 목록
+  // 버튼도 정보로 보낸다.
+  const [dockMode, setDockMode] = useState<DockMode>('info');
+  // 랜딩에 한 벌뿐인 OcrUploadCard의 업로드 열기(#826 S2 constraint-17) — 카드가 매 렌더 채운다. 정보 모드
+  // 버튼이 같은 파일 선택을 열고, 인식 중 표시는 카드가 onBusyChange로 알려 준다.
+  const ocrOpenRef = useRef<(() => void) | null>(null);
+  const [ocrBusy, setOcrBusy] = useState(false);
   // 헤더 ref(#419) — 플로팅 툴바 세로·고정 기본 위치가 이 아래로 오도록 FloatingToolbar가 실측한다.
   const [headerEl, setHeaderEl] = useState<HTMLElement | null>(null);
   // pill 클릭 시 서브메뉴가 열린 채로 남지 않게 항상 같이 닫는다(claude-review PR #332 P2 —
@@ -452,13 +337,10 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   // TicketRenderer의 ResizeObserver 스케일과 싸우지 않게).
   const [editLift, setEditLift] = useState(0);
   const editing = activeField != null && viewMode === 'default' && canvasReady;
-  // 드로어가 열려 있으면 입력은 드로어 쪽이라 debounce를 그대로 둔다 — 인플레이스 편집기는 드로어를
-  // 열어도 activeField를 안 지워 editing이 참으로 남는다(아래 InPlaceFieldEditor 주석, #685).
-  const inPlaceTyping = editing && !drawerOpen;
   useEffect(() => {
-    onFieldEditingChange?.(inPlaceTyping);
+    onFieldEditingChange?.(editing);
     return () => onFieldEditingChange?.(false);
-  }, [inPlaceTyping, onFieldEditingChange]);
+  }, [editing, onFieldEditingChange]);
   const closeEditor = useCallback(() => {
     setActiveField(null);
     setEditLift(0);
@@ -486,8 +368,10 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   function handleDone() {
     if (!canExport) {
       flashToast(disabledReason);
-      // 사유 토스트만으론 어디서 채우는지 모른다(#776) — 누락 바로가기가 있는 필드 드로어를 연다.
-      setDrawerOpen(true);
+      // 사유 토스트만으론 어디서 채우는지 모른다(#776) — 정보 모드로 바꿔 빈 필수 행의 앰버 점과 '필수'가 보이게
+      // 한다(E-03). 키보드는 자동으로 올리지 않는다 — 행을 탭해야 입력이 열리고, 숨겨 둔 필드면 그 탭(openMissingField)이
+      // 편집 뒤 다시 숨긴다.
+      setDockMode('info');
       return;
     }
     onDone();
@@ -499,6 +383,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
     rehideOnLeaveRef.current.clear(); // 누락 바로가기의 재숨김(#776)이 새 문서로 넘어가지 않게.
     // 초기화는 새 문서니까 랜딩도 처음 상태로 — 안 되돌리면 포스터도 draft도 없는 빈 셸에 남는다(#614).
     setLandingDismissed(false);
+    setDockMode('info');
     // 초기화는 새 문서 — undo로 못 돌아간다(로고·포스터 blob이 revoke돼
     // 복원해도 죽은 참조라 히스토리째 파기가 맞다).
     history.clear();
@@ -559,7 +444,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
     setActiveField(target);
   }, [photo.updateComponents, photo.updateFieldVisibility]);
 
-  // 드로어의 누락 바로가기(#776) — 저장 필수 입력은 채우되 표시 선택은 지킨다. 인플레이스 편집기는
+  // 정보 모드 필수 누락 행의 바로가기(#776) — 저장 필수 입력은 채우되 표시 선택은 지킨다. 인플레이스 편집기는
   // 티켓 위 앵커가 있어야 떠서 handleField가 숨긴 필드를 켜는데, 바로가기로 들어온 필드가 원래
   // 숨겨져 있었다면 편집이 끝나는 순간(닫힘·다른 필드로 이동) 다시 숨긴다. 행 탭은 "보이게 켜고
   // 편집"이 의도라 이 복원을 안 탄다.
@@ -623,6 +508,9 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   // 자동 회전 캐러셀 오탭 같은 사고가 새로고침 한 번으로 복구된다. "이어서 만들기"는 이걸 안 부른다.
   function startFreshDoc(opts?: { layout?: LayoutId; keepPoster?: boolean }) {
     photo.resetDocument(opts);
+    // 새 문서의 첫 모드는 정보다 — 스크린샷으로 채운 경우만 onOcrApply가 이 뒤에 디자인으로 올린다(같은 배치의
+    // 마지막 setState가 이긴다).
+    setDockMode('info');
     rehideOnLeaveRef.current.clear(); // performClear와 같은 이유(#776).
     // 새 문서 — 복원된 문서로 undo해 돌아가면 안 된다(#356 clear는 다음 상태를 새 베이스라인으로 잡는다).
     history.clear();
@@ -695,38 +583,6 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   const rotatedInnerWidth = `min(${PREVIEW_MAX_HEIGHT}, calc(90cqw * ${layout.width} / ${layout.height}))`;
   const rotatedStageWidth = `calc(${rotatedInnerWidth} * ${layout.height} / ${layout.width})`;
 
-  // 드로어 핸들의 투명 히트(44px 중 보이는 24px 밖, #447)가 티켓 필드 위에 얹히는지(#777). 얹히면
-  // 그 필드 탭을 가로채므로 그때만 히트를 보이는 탭으로 좁힌다. 티켓 상자가 아니라 필드 탭 대상과
-  // 겹침을 본다 — 티켓 상자는 세로 무드에서도 핸들과 늘 0.9~28px 겹쳐(실측) 기준으로 쓰면 44px가 사라진다.
-  // 실측상 걸리는 곳: editorial·35mm-landscape 오른쪽 스텁, 393px Stub 오른쪽 가장자리.
-  // 필드 rect는 래퍼 크기(fit 폭)와 무드 DOM(동적 청크 로드·값 편집)에 따라 바뀌므로 둘 다에서 다시 잰다 —
-  // 무드는 마운트 뒤에 늦게 그려져 첫 측정만으로는 필드가 없다(실측: 18조합 중 1개만 잡혔다).
-  const [handleOverField, setHandleOverField] = useState(false);
-  useEffect(() => {
-    const handle = drawerHandleRef.current;
-    if (!handle || !previewWrapEl) return;
-    const update = () => {
-      const h = handle.getBoundingClientRect();
-      setHandleOverField(
-        Array.from(previewWrapEl.querySelectorAll('[data-field-tap]')).some((el) => {
-          const t = el.getBoundingClientRect();
-          return t.width > 0 && h.left < t.right && h.right > t.left && h.top < t.bottom && h.bottom > t.top;
-        })
-      );
-    };
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(previewWrapEl);
-    const mo = new MutationObserver(update);
-    mo.observe(previewWrapEl, { childList: true, subtree: true, characterData: true });
-    window.addEventListener('resize', update);
-    return () => {
-      ro.disconnect();
-      mo.disconnect();
-      window.removeEventListener('resize', update);
-    };
-  }, [previewWrapEl, drawerHandleY, canvasReady, isMax]);
-
   // 앰비언트 다크 크롬(#353→#363→#415) — theme==='dark'일 때만 .chrome-dark 스코프(데스크톱
   // 레포의 data-theme 바인딩 패턴과 통일). #363에서 "테마와 무관하게 상시
   // 다크"로 고정했던 게 다크모드 토글을 죽은 컨트롤로 만들어(#415) 원래 의도(라이트/다크 둘 다
@@ -775,7 +631,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
         </div>
 
         {/* '티켓 항목 목록' 헤더 버튼(#355/#360 임시 진입점)은 플로팅 툴바의 항목목록 버튼(#356)이
-            대체 — 드로어 배선(handleField·OCR 슬롯)은 그대로 재사용한다. */}
+            대체했고, #826 S2에서 항목 목록은 도크 정보 모드로 갔다(handleField 배선은 그대로). */}
         <div className="flex items-center gap-0.5">
         <AutoSaveIndicator
           enabled={photo.autoSaveEnabled}
@@ -829,7 +685,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
                 #569 — 배경이 --glass-fill(8%)일 땐 밝은 포스터 위에서 항목이 아예 안 읽혔다
                 (흰 포스터 최악 케이스 1.02:1). 유리를 --overlay-fill(80%)로 올리고, 그래도 AA가
                 안 서는 잉크(muted·accent·danger)를 위해 행 그룹을 불투명 표면에 얹는다 —
-                FieldDrawer가 세운 규칙 그대로다(패널은 유리, 텍스트는 불투명 위에). */}
+                옛 필드 드로어가 세운 규칙 그대로다(패널은 유리, 텍스트는 불투명 위에). */}
             {/* 내부 행 문법(#374) — 전 항목을 MenuRow(리딩 아이콘 + 14px 라벨 + 트레일링 스위치)로
                 통일하고 토글/포스터 액션/문서 액션 세 그룹을 구분(시안 L296-322 이식). 구분은
                 헤어라인이었으나 #569에서 그룹이 불투명 카드가 되며 카드 사이 여백이 대신한다. */}
@@ -853,8 +709,8 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
                   onClick={() => onThemeChange(theme === 'dark' ? 'light' : 'dark')}
                 />
                 {/* 빈 항목은 프리뷰(포스터)가 있어야 의미가 있으므로 기존과 동일하게 게이팅. 잉크는
-                    DesignRail 시절과 동일하게 포스터 유무와 무관하게 항상 노출. '전체 표시'는 필드
-                    목록이 있는 FieldDrawer로 이전(#424) — 필드 목록과 한 자리에 두는 게 더 직관적이다. */}
+                    포스터 유무와 무관하게 항상 노출. '전체 표시'는 필드 목록이 있는 도크 정보 모드
+                    끝으로 이전(#424 → #826 S2) — 필드 목록과 한 자리에 두는 게 더 직관적이다. */}
                 {canvasReady && (
                   <MenuRow
                     iconPath={MENU_ICONS.eye}
@@ -956,9 +812,9 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
       </header>
       )}
 
-      {/* 본문: 업로드 후엔 인라인 프리뷰만(OCR 진입점은 드로어로 일원화 — #388, footer는 편집 화면에서
-          제거 — rail dock 위에 고지가 끼는 어색한 위계를 없앴다. 고지는 랜딩 + 공유 플로우
-          (ResultPanel·/t/[id])가 커버), 업로드 전엔 랜딩 히어로 + footer. 디자인 rail은 #357에서 본문 밖 하단 고정 dock으로 이동.
+      {/* 본문: 업로드 후엔 인라인 프리뷰만(OCR 진입점은 정보 모드 버튼 — #388 → #826 S2, footer는 편집 화면에서
+          제거 — 도크 위에 고지가 끼는 어색한 위계를 없앴다. 고지는 랜딩 + 공유 플로우
+          (ResultPanel·/t/[id])가 커버), 업로드 전엔 랜딩 히어로 + footer. 꾸미기는 #357에서 본문 밖 하단 고정 dock으로 이동.
           업로드 후엔 프리뷰가 fit 스테이지(flex-1, #366)라 콘텐츠가 정확히 본문 높이에 맞아
           스크롤이 생기지 않고, 업로드 전(랜딩)도 _app.tsx min-h-dvh 통일(#416)로 화면 안에
           보통 들어오지만, 가로모드·저해상도 등 짧은 뷰포트에선 여전히 넘칠 수 있어(claude-review
@@ -1108,11 +964,11 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
               항상 마운트 + CSS hidden이고 OCR 카드를 children으로 받아 자리만 빌려주므로, 아래
               OcrUploadCard가 랜딩·업로드 후에 걸쳐 같은 트리 위치에 남아 로컬 상태(isProcessing·
               토스트)를 전환 때마다 리셋하지 않는다 — 업로드 후·max(#328)엔 통째로 hidden이고 OCR
-              진입점은 드로어(#355)로 일원화된다(#388).
+              진입점은 도크 정보 모드 버튼(#826 S2, 옛 드로어 #355)이 이 카드의 업로드를 연다(#388).
               **in-flight KOBIS 보강은 remount에 안전하다**: 최신성 판정을 셸이 소유한 ocrEpochRef가
               epoch 비교로 하므로(#388 / claude-review PR #413 P0, 커밋 007f381) 카드가 unmount돼도
-              setInfo는 셸의 photo 상태에 그대로 적용된다 — 드로어 카드는 닫힐 때마다 unmount되는데
-              titleOg·releaseDate가 살아남는 게 그 근거다. 영화 수명(captureMovieSelection의
+              setInfo는 셸의 photo 상태에 그대로 적용된다 — 옛 드로어 카드는 닫힐 때마다 unmount됐는데
+              titleOg·releaseDate가 살아남은 게 그 근거다(카드는 지금 한 벌뿐이다). 영화 수명(captureMovieSelection의
               movieSelectionRef·docEpochRef, #793)도 셸이 쥐어 같은 이유로 remount와 무관하다.
               인스턴스 로컬 mountedRef 가드를 되살리면 #413 P0을 재도입한다(옛 "단일 인스턴스가
               아니면 레이스가 되살아난다" 서술은 #624로 철회 — docs/CONTRIBUTING.md §5 참조). OCR 로직은 셸의 useOcrUndo가 소유. */}
@@ -1172,6 +1028,9 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
                 const fresh = !landingDismissed;
                 if (fresh) startFreshDoc();
                 setLandingDismissed(true);
+                // 랜딩의 스크린샷 인식으로 채운 새 문서는 디자인 모드로 연다(Seed constraint-2 E-01) — 채워진 정보를
+                // 검토하기보다 꾸미기로 넘어가는 흐름이다. startFreshDoc이 정보로 세운 값을 이 줄이 덮는다.
+                if (fresh) setDockMode('design');
                 if (!fresh) {
                   ocr.apply(params);
                   return;
@@ -1199,109 +1058,44 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
               captureDraft={photo.captureDraft}
               onKobisDiscarded={ocr.dropKobisFields}
               onKobisApplied={ocr.recordKobisApplied}
+              // 정보 모드 버튼이 이 카드의 업로드를 연다(constraint-17) — 카드를 도크에 새로 마운트하지 않는다.
+              openRef={ocrOpenRef}
+              onBusyChange={setOcrBusy}
+              // 랜딩이 걷히면 카드가 display:none 안이라 자체 토스트가 안 보인다 — 셸 토스트가 대신한다.
+              notify={landingDismissed ? flashToast : undefined}
+              // 인식 결과에 제목이 없으면 정보 모드로 바꿔 제목 입력을 연다(옛 드로어 카드의 같은 콜백 승계).
+              onNeedManualTitle={() => {
+                setDockMode('info');
+                handleField('title');
+              }}
             />
           </Landing>
         </div>
       </div>
 
-      {/* 스타일링 dock(#357) — rail을 스크롤 본문 밖 하단 고정 슬롯으로. 시안의 railTop 절대
-          산수(390×844 하드코딩) 대신 flex라 iPhone SE(667px)를 포함한 어떤 뷰포트에서도 dock이
-          화면 안에 있다. 언박스 패널이 열리면 dock 영역이 위로 자라고 본문(flex-1)이 줄어드는데,
-          티켓은 fit 스테이지(#366)가 같이 축소해 dock에 가려지지 않는다(이전엔 고정 280px 폭이라
-          소형 화면에서 하단이 dock 뒤로 잘렸다). DOM 순서는 본문 뒤라 기존 "OCR → rail 최하단"
-          위계(#261)가 유지된다. max는 티켓 전용 풀스크린이라 숨기고, 랜딩(업로드 전)도 스타일링
-          대상이 없어 숨긴다(#363) — 둘 다 CSS hidden으로만. 조건부 unmount면 DesignRail의
-          pop(열린 패널) state가 왕복마다 리셋된다(#297 P1과 동일 패턴, PR #362 리뷰 P2).
-          relative는 absolute 앰비언트(#353) 위에 그려지기 위함. */}
-      <div
-        className={`relative shrink-0 px-4 pt-3${isMax || !canvasReady ? ' hidden' : ''}`}
-        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
-      >
-        {/* 크기 섹션의 재크롭 진입(#492) — 헤더 메뉴 '재크롭'과 같은 crop.openRecrop을 공유한다.
-            원본이 없으면 안 넘겨 버튼 자체가 안 뜬다(메뉴 쪽은 disabled + 재업로드 안내를 유지). */}
-        <DesignRail photo={photo} onRecropPoster={crop.originalSrc ? crop.openRecrop : undefined} onEditField={handleField} />
-      </div>
-
-      {/* 필드 드로어 엣지 핸들(#364) — 우측 엣지에 드로어 존재를 암시하는 상시 인디케이터.
-          툴바의 항목목록 버튼과 진입점 병존(툴바를 모르면 드로어를 못 찾는 문제의 직접 해소).
-          #569 — 탭 배경이 --glass-fill(8%)이라 밝은 포스터 위에서 핸들 자체가 안 보였다.
-          오버레이 계층 토큰으로 올리고, 셰브런 잉크도 --fg-muted → --fg로(라이트 테마 최악
-          케이스에서 muted는 2.77:1로 비텍스트 3:1도 못 넘긴다. --fg는 8.66/10.31:1).
-          히트영역은 44px(왼쪽으로 투명 확장), 보이는 탭은 24px 글래스(#447 — 이전 20px는 눈에
-          덜 띈다는 지적). 단 그 투명 20px가 티켓 필드 위에 얹히면(handleOverField) 그 필드 탭을
-          가로채 드로어가 열렸다(#777 실측: editorial 스텁 전 뷰포트, 393px Stub 오른쪽 가장자리) —
-          그때만 히트를 보이는 탭으로 좁힌다. 포인터 이벤트는 span에서 버튼으로 버블돼 드래그는 그대로다.
-          z-30 — 편집 백드롭(z-40) 아래라 인플레이스 편집 중엔 가려지고,
-          드로어(z-50)가 열리면 그 뒤에 깔린다.
-          #567·#579 — 순수 탭은 여전히 onClick으로 열린다(비드래그 대체 경로, WCAG 2.2 SC
-          2.5.7). 수평 드래그(왼쪽으로 당기기)는 열기, 수직 드래그는 핸들 이동 — 위 onHandle*
-          핸들러가 축을 가른다. drawerHandleY가 null이면 기존 화면 정중앙 그대로. */}
-      {canvasReady && !isMax && (
-        <button
-          ref={drawerHandleRef}
-          type="button"
-          onClick={onHandleClick}
-          onPointerDown={(e) => {
-            setHandlePressed(true);
-            onHandlePointerDown(e);
-          }}
-          onPointerMove={onHandlePointerMove}
-          onPointerUp={() => {
-            setHandlePressed(false);
-            onHandlePointerUp();
-          }}
-          onPointerCancel={() => {
-            setHandlePressed(false);
-            onHandlePointerUp();
-          }}
-          aria-label="티켓 항목 목록 열기"
-          // active:scale-[0.97](#647)은 남겨둔다 — drawerHandleY==null(초기 중앙 위치)에서
-          // 키보드 Space-hold 같은 순수 :active 경로(handlePressed JS state가 안 잡는 입력)의
-          // 폴백으로 유효하다. drawerHandleY!=null에서는 인라인 transform:'none'/'scale(0.97)'이
-          // 항상 이 클래스를 덮어써 사실상 무력화되는데, 그게 바로 #662 자체가 고친 문제라 예상된
-          // 동작이다(handlePressed JS가 그 상태의 유일한 경로).
-          // transform엔 transition을 걸지 않는다(PR #663 fresh-eyes 리뷰 P1) — drawerHandleY가
-          // null→값으로 처음 바뀌는 axis-lock 순간, top은 즉시 절대값으로 점프하지만(transition
-          // 없음) transform은 'translateY(-50%) scale(0.97)' → 'scale(0.97)'로 값이 바뀌면서
-          // transition을 타, top과 transform이 같은 프레임에 안 맞아 핸들이 48px(h-24 절반) 위로
-          // 튀었다 슬라이드하는 글리치가 최초 드래그 1회 생긴다. "top으로만 움직여서 안전하다"는
-          // drawerHandleY가 이미 값이 있는 이후 드래그엔 맞지만 null→값 전환 그 자체는 못 피한다.
-          className={cn(pressableVariants(), `fixed right-0 z-30 flex h-24 w-11 items-center justify-end ${
-            drawerHandleY == null ? 'top-1/2 -translate-y-1/2' : ''
-          } ${handleOverField ? 'pointer-events-none' : ''}`)}
-          style={{
-            touchAction: 'none',
-            ...(drawerHandleY != null ? { top: drawerHandleY } : undefined),
-            transform:
-              drawerHandleY != null
-                ? handlePressed
-                  ? 'scale(0.97)'
-                  : 'none'
-                : handlePressed
-                  ? 'translateY(-50%) scale(0.97)'
-                  : undefined,
-          }}
-        >
-          <span
-            aria-hidden="true"
-            className="pointer-events-auto flex h-full w-6 items-center justify-center rounded-l-[10px] border border-r-0 border-[var(--overlay-border)] text-ink"
-            style={{
-              background: 'var(--overlay-fill)',
-              backdropFilter: 'blur(13px)',
-              WebkitBackdropFilter: 'blur(13px)',
-            }}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m15 18-6-6 6-6" />
-            </svg>
-          </span>
-        </button>
-      )}
+      {/* 편집 도크(#826 S2) — 옛 스타일링 dock(#357, DesignRail)과 필드 드로어·엣지 핸들(#355)을 하나로 합친
+          하단 고정 영역이다. 높이는 모드·도구와 무관하게 하나(마스터 C-DOCK)라 티켓이 도크 때문에 흔들리지 않고,
+          DOM 순서는 본문 뒤라 기존 "OCR → 도크 최하단" 위계(#261)가 유지된다. max는 티켓 전용 풀스크린이라 숨기고,
+          랜딩(업로드 전)도 꾸밀 대상이 없어 숨긴다(#363) — 둘 다 CSS hidden으로만. 조건부 unmount면 도구 선택
+          같은 로컬 state가 왕복마다 리셋된다(#297 P1과 동일 패턴, PR #362 리뷰 P2). */}
+      <EditorDock
+        photo={photo}
+        mode={dockMode}
+        onModeChange={setDockMode}
+        hidden={isMax || !canvasReady}
+        onField={handleField}
+        onMissingField={openMissingField}
+        onOcrOpen={() => ocrOpenRef.current?.()}
+        ocrBusy={ocrBusy}
+        onPosterPick={handlePosterTap}
+        // 원본이 없으면 안 넘겨 사진 모드의 자르기가 비활성이 된다(옛 메뉴 '재크롭'의 disabled와 같은 규칙).
+        onPosterRecrop={crop.originalSrc ? crop.openRecrop : undefined}
+      />
 
       {/* 플로팅 툴바(#356) — undo/redo·항목목록·최대화·숨김(배치설정은 #387에서 헤더 메뉴로 이전).
           프리뷰가 있어야 의미가 있고, max는 티켓만 남기는 풀스크린이라 숨긴다(탈출은 티켓 탭).
-          필드 편집·드로어 중에도 셸이 계속 렌더한다 — 겹침 규칙은 z-index로(툴바 45: 편집 백드롭 40 위,
-          드로어 50 아래). */}
+          필드 편집 중에도 셸이 계속 렌더한다 — 겹침 규칙은 z-index로(툴바 45: 편집 백드롭 40 위,
+          다이얼로그 50 아래). */}
       {canvasReady && !isMax && (
         <FloatingToolbar
           ref={toolbarRef}
@@ -1317,7 +1111,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
             history.redo();
             flashToast('다시 실행했어요');
           }}
-          onFieldList={() => setDrawerOpen(true)}
+          onFieldList={() => setDockMode('info')}
           onMaximize={() => handleViewModeChange('max')}
           headerEl={headerEl}
           contentTopEl={ticketBoxEl}
@@ -1329,8 +1123,8 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
           onField는 handleField가 아니라 setActiveField — prev/next 순회는 순수 탐색이라 경유 필드의
           가시성을 켜면 안 된다(PR #359 리뷰 P1). 자동 표시 on은 FieldTap 직접 탭(handleField)에만.
           앱 배경 래퍼 안에 둔다(#685 fresh-eyes 리뷰) — 플로팅 툴바(z-45)는 편집 중에도 클릭 가능해
-          이 편집기가 열린 채로 드로어를 열 수 있는데(onFieldList가 activeField를 안 지운다), 래퍼
-          밖에 남으면 드로어가 열려도 이 투명 input이 계속 탭 가능한 채로 남는다. */}
+          이 편집기가 열린 채로 다이얼로그(고급 설정)를 열 수 있는데, 래퍼 밖에 남으면 다이얼로그가
+          열려도 이 투명 input이 계속 탭 가능한 채로 남는다. */}
       {editing && activeField && (
         <InPlaceFieldEditor
           photo={photo}
@@ -1347,7 +1141,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
           파일 input. 탭 → input.click() → 파일 선택 → ImageCropModal(기본 0.667, 아래 다이얼로그
           구역에서 렌더) → getCroppedImg → handleImageUpload. originalSrc는 크롭 완료 후에도 유지돼
           재크롭에 재사용된다. */}
-      {/* sr-only여도 tabbable이라 aria-hidden 금지(axe aria-hidden-focus) — FieldDrawer.tsx:297와
+      {/* sr-only여도 tabbable이라 aria-hidden 금지(axe aria-hidden-focus) — 도크 로고 입력과
           동일 판단. 앱 배경 래퍼 안에 둔다(#685 fresh-eyes 리뷰) — 래퍼 밖이면 다이얼로그가 열려도
           이 input이 계속 탭 순서에 남는다. */}
       <input
@@ -1369,45 +1163,10 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
           prefs={tbPrefs}
           onModeChange={applyToolbarMode}
           onSnap={snapToolbarTo}
-          onSnapDrawerHandle={snapDrawerHandleTo}
           onClose={() => setAdvOpen(false)}
         />
       )}
 
-      {/* 필드 목록 우측 드로어(#355) — 행 탭은 handleField(자동 표시 on + 인플레이스 열기)로,
-          상단 슬롯엔 OCR 카드를 꽂는다 — 업로드 후 유일한 OCR 진입점이다(#388, 본문 카드는 hidden). */}
-      {drawerOpen && canvasReady && (
-        <FieldDrawer
-          photo={photo}
-          onClose={() => setDrawerOpen(false)}
-          onField={(target) => {
-            setDrawerOpen(false);
-            handleField(target);
-          }}
-          onMissingField={(target) => {
-            setDrawerOpen(false);
-            openMissingField(target);
-          }}
-        >
-          <OcrUploadCard
-            setInfo={photo.updateMovieInfo}
-            currentInfo={photo.state.movieInfo}
-            onOcrApply={ocr.apply}
-            setComponents={photo.updateComponents}
-            currentComponents={photo.state.components}
-            ocrEpochRef={ocr.epochRef}
-            captureMovieSelection={photo.captureMovieSelection}
-            captureDraft={photo.captureDraft}
-            onKobisDiscarded={ocr.dropKobisFields}
-            onKobisApplied={ocr.recordKobisApplied}
-            context="drawer"
-            onNeedManualTitle={() => {
-              setDrawerOpen(false);
-              handleField('title');
-            }}
-          />
-        </FieldDrawer>
-      )}
       {crop.cropOpen && crop.originalSrc && (
         <ImageCropModal
           imageSrc={crop.originalSrc}

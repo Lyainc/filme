@@ -48,9 +48,15 @@ export interface OcrUploadCardProps {
   /** KOBIS 보강이 실제로 쓰였을 때(#807) — 셸의 useOcrUndo.recordKobisApplied. 되돌리기가 그 뒤 사용자가 고친 보강 필드를 건너뛰는 기준. */
   onKobisApplied: (info: Partial<MovieInfo>) => void;
   className?: string;
-  /** 진입 아이콘/문구 분기(#424) — 'landing'(기본)은 위 드롭존을 가리키는 화살표가 자연스럽지만,
-   * 'drawer'(FieldDrawer 상단 슬롯)엔 가리킬 드롭존이 없어 화살표를 빼고 문구도 짧게 줄인다. */
-  context?: 'landing' | 'drawer';
+  /** 이 카드의 업로드 열기를 밖에 내보내는 통로(#826 S2 constraint-17) — 카드는 랜딩 안에 한 벌뿐이라
+   * (#614/#624) 정보 모드 '스크린샷으로 자동입력' 버튼과 메뉴 행이 새 카드를 마운트하지 않고 이 함수로 같은
+   * 파일 선택을 연다. 인식 중이면 handleClick과 같이 아무 일도 안 한다. */
+  openRef?: { current: (() => void) | null };
+  /** 인식 진행 여부 통지 — 밖에서 열린 업로드도 '티켓 인식 중…'을 같이 보이게 한다. */
+  onBusyChange?: (busy: boolean) => void;
+  /** 결과 안내 문구를 밖에서 대신 보여줄 때 넘긴다 — 랜딩이 걷히면 이 카드는 display:none 안이라 자체 토스트가
+   * 안 보인다. 넘기면 카드는 자체 토스트를 띄우지 않는다. */
+  notify?: (message: string) => void;
   /** KOBIS 무매칭/다중매칭(#445) — 제목 검색 UI를 직접 열 수 있는 셸에서 넘긴다. 안 넘기면
    * 기존 안내 토스트로 fallback(예: 모바일 랜딩— 포스터 업로드 전이라 열 티켓/필드 UI가 없다). */
   onNeedManualTitle?: () => void;
@@ -77,7 +83,9 @@ export function OcrUploadCard({
   onKobisDiscarded,
   onKobisApplied,
   className = '',
-  context = 'landing',
+  openRef,
+  onBusyChange,
+  notify,
   onNeedManualTitle,
 }: OcrUploadCardProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -92,8 +100,8 @@ export function OcrUploadCard({
   // 셸은 문서를 새로 시작하고 랜딩을 걷는데, 옛 onOcrApply는 그걸 모른 채 한 번 더 새로 시작해 포스터를
   // 지우고, 옛 currentInfo는 되돌리기 스냅샷을 옛 문서 기준으로 뜬다. 그래서 적용할 때는 지금 props를 읽는다.
   // 랜딩의 hidden은 unmount가 아니라 display:none이라(Landing.tsx) 걷힌 뒤에도 이 값이 계속 갱신된다.
-  const latestRef = useRef({ currentInfo, currentComponents, onOcrApply });
-  latestRef.current = { currentInfo, currentComponents, onOcrApply };
+  const latestRef = useRef({ currentInfo, currentComponents, onOcrApply, notify });
+  latestRef.current = { currentInfo, currentComponents, onOcrApply, notify };
 
   useEffect(() => {
     mountedRef.current = true; // Strict Mode 재마운트 시 true 복구
@@ -104,6 +112,13 @@ export function OcrUploadCard({
   }, []);
 
   function showToast(msg: string, durationMs = 3000) {
+    // 밖에서 보여주는 중이면(랜딩이 걷힌 뒤) 자체 토스트는 display:none 안이라 안 보인다 — 비동기 응답 뒤에도
+    // 최신 notify를 읽는다(#809와 같은 이유).
+    const outside = latestRef.current.notify;
+    if (outside) {
+      outside(msg);
+      return;
+    }
     if (!mountedRef.current) return;
     setToast(msg);
     clearTimeout(toastTimerRef.current);
@@ -173,13 +188,12 @@ export function OcrUploadCard({
     }
 
     if (title) {
-      // ocrEpochRef는 셸이 소유해 랜딩·드로어 두 OcrUploadCard 인스턴스가 공유한다(#388). 여기서
-      // 증가시켜 "이 실행이 최신"임을 표시 — 같은/다른 인스턴스의 더 새 OCR 실행이나 undo(cancel(),
-      // useOcrUndo.ts)가 뒤이어 오면 그 증가가 아래 비교를 무효화한다. 인스턴스 로컬 mountedRef로
-      // 가드하지 않는 이유: 드로어 카드는 닫히면 그 자리에서 unmount되므로(FieldDrawer.tsx) 그
-      // 기준으로 가드하면 "드로어에서 OCR 시작 → 응답 전에 드로어 닫기"에서 titleOg·releaseDate가
-      // 유실된다(#363/#372와 같은 클래스, claude-review PR #413 P0) — setInfo는 이 인스턴스가 아니라
-      // 셸이 쥔 photo 상태를 갱신하므로 unmount 이후에도 안전하게 적용할 수 있다.
+      // ocrEpochRef는 셸이 소유한다(#388). 여기서 증가시켜 "이 실행이 최신"임을 표시 — 더 새 OCR 실행이나
+      // undo(cancel(), useOcrUndo.ts)가 뒤이어 오면 그 증가가 아래 비교를 무효화한다. 인스턴스 로컬
+      // mountedRef로 가드하지 않는 이유: 그 기준으로 가드하면 카드가 unmount되는 순간 titleOg·releaseDate가
+      // 유실된다(#363/#372와 같은 클래스, claude-review PR #413 P0) — setInfo는 이 인스턴스가 아니라 셸이 쥔
+      // photo 상태를 갱신하므로 unmount 이후에도 안전하게 적용할 수 있다. 카드는 #826 S2부터 랜딩 안
+      // 한 벌뿐이고(옛 필드 드로어의 두 번째 카드는 사라졌다) 정보 모드 버튼·메뉴 행은 openRef로 이 카드를 연다.
       //
       // epoch는 OCR 실행끼리·undo와의 순서만 안다. 조회 중에 사용자가 다른 영화를 고르거나 제목을 고치면
       // 늦은 결과가 그 선택을 덮고 선택의 상세 보강까지 취소하므로(#793), 영화 수명도 같이 본다 — 캡처는
@@ -305,14 +319,19 @@ export function OcrUploadCard({
     }
   }
 
-  // 랜딩/드로어 문구 분기(#424) — aria-label도 같이 바꿔 보이는 텍스트와 접근명을 맞춘다
-  // (WCAG 2.5.3 Label in Name — 스크린리더가 화면과 다른 문구를 읽으면 안 된다).
-  const idleLabel = context === 'landing' ? '티켓 스크린샷으로 자동입력' : '스크린샷으로 자동입력';
+  // 밖의 진입점(정보 모드 버튼 · 메뉴 행)이 같은 파일 선택을 연다 — 매 렌더 최신 isProcessing을 닫는다.
+  if (openRef) openRef.current = handleClick;
+  useEffect(() => {
+    onBusyChange?.(isProcessing);
+  }, [isProcessing, onBusyChange]);
+
+  // aria-label과 보이는 텍스트를 맞춘다(WCAG 2.5.3 Label in Name).
+  const idleLabel = '티켓 스크린샷으로 자동입력';
   const prefersReducedMotion = useMatchMedia('(prefers-reduced-motion: reduce)');
 
   return (
     <div className={`relative ${className}`}>
-      {/* sr-only여도 tabbable이라 aria-hidden 금지(axe aria-hidden-focus) — FieldDrawer.tsx:297와 동일 판단. */}
+      {/* sr-only여도 tabbable이라 aria-hidden 금지(axe aria-hidden-focus) — 도크 로고 입력과 동일 판단. */}
       <input
         ref={inputRef}
         type="file"
@@ -322,51 +341,30 @@ export function OcrUploadCard({
         onChange={handleChange}
       />
 
-      {context === 'landing' ? (
-        // OCR이 주 CTA다(#635, #142 위계 반전 — 포스터 CTA가 이제 보조). PrimaryCta와 같은
-        // 시각 언어(accent 채움 + 스프로킷 로딩)를 여기서 직접 낸다 — isProcessing/파일 input을
-        // OcrUploadCard가 쥐고 있어 별도 컴포넌트로 쪼개면 상태를 다시 끌어올려야 한다.
-        <button
-          type="button"
-          onClick={handleClick}
-          disabled={isProcessing}
-          aria-busy={isProcessing}
-          aria-label={idleLabel}
-          data-touch="44"
-          className={cn(
-            pressableVariants({ transition: 'cta' }),
-            'w-full min-h-touch rounded-field-sm flex items-center justify-center gap-2 font-semibold text-body bg-accent text-accent-ink hover:bg-accent-hover cursor-pointer disabled:opacity-70 disabled:cursor-default',
-          )}
-        >
-          {isProcessing ? (
-            <span className={prefersReducedMotion ? '' : 'animate-sprocket-spin'}>
-              <Sprocket size={16} />
-            </span>
-          ) : (
-            <ScanIcon size={16} />
-          )}
-          <span>{isProcessing ? '티켓 인식 중…' : idleLabel}</span>
-        </button>
-      ) : (
-        // 드로어 — 업로드 후 유일한 OCR 진입점이라 여전히 보조 문법(한 줄짜리 텍스트 버튼).
-        <button
-          type="button"
-          onClick={handleClick}
-          aria-disabled={isProcessing}
-          aria-busy={isProcessing}
-          aria-label={idleLabel}
-          data-touch="44"
-          className={cn(pressableVariants(), 'group inline-flex min-h-touch items-center gap-1.5 rounded-chip text-body text-ink-2 transition-colors hover:text-accent aria-disabled:cursor-default aria-disabled:opacity-70')}
-        >
-          <span className={isProcessing ? 'text-accent animate-pulse' : 'text-ink-3 group-hover:text-accent'}>
-            <ScanIcon size={16} />
+      {/* OCR이 주 CTA다(#635, #142 위계 반전 — 포스터 CTA가 이제 보조). PrimaryCta와 같은
+          시각 언어(accent 채움 + 스프로킷 로딩)를 여기서 직접 낸다 — isProcessing/파일 input을
+          OcrUploadCard가 쥐고 있어 별도 컴포넌트로 쪼개면 상태를 다시 끌어올려야 한다. */}
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={isProcessing}
+        aria-busy={isProcessing}
+        aria-label={idleLabel}
+        data-touch="44"
+        className={cn(
+          pressableVariants({ transition: 'cta' }),
+          'w-full min-h-touch rounded-field-sm flex items-center justify-center gap-2 font-semibold text-body bg-accent text-accent-ink hover:bg-accent-hover cursor-pointer disabled:opacity-70 disabled:cursor-default',
+        )}
+      >
+        {isProcessing ? (
+          <span className={prefersReducedMotion ? '' : 'animate-sprocket-spin'}>
+            <Sprocket size={16} />
           </span>
-          <span>{isProcessing ? '티켓 인식 중…' : idleLabel}</span>
-          {!isProcessing && (
-            <span aria-hidden="true" className="text-ink-3 transition-transform group-hover:translate-x-0.5">›</span>
-          )}
-        </button>
-      )}
+        ) : (
+          <ScanIcon size={16} />
+        )}
+        <span>{isProcessing ? '티켓 인식 중…' : idleLabel}</span>
+      </button>
 
       {toast && (
         <div className="absolute top-full left-0 mt-2 max-w-[260px] bg-ink text-s2 text-caption font-medium px-3 py-1.5 rounded-chip shadow-lg animate-fade-in z-10">

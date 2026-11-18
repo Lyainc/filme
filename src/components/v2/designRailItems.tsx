@@ -1,14 +1,12 @@
-import { useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useState, type CSSProperties, type ReactNode } from 'react';
 import { cn } from '@/utils/cn';
 import { pressableVariants } from '@/components/ui/variants';
-import dynamic from 'next/dynamic';
 import { LayoutStrip } from '@/components/LayoutPicker';
-import { useLogoCrop } from '@/hooks/useLogoCrop';
 import TexturePicker from '@/components/v2/pickers/TexturePicker';
 import ColorPicker from '@/components/v2/pickers/ColorPicker';
 import BrightnessSlider from '@/components/v2/pickers/BrightnessSlider';
 import { TEXTURE_RECIPES } from '@/utils/textureRecipes';
-import { MATERIAL_OPTIONS, COATING_OPTIONS, TARGET_HEIGHT } from '@/utils/constants';
+import { MATERIAL_OPTIONS, COATING_OPTIONS } from '@/utils/constants';
 import { userTextFont } from '@/components/moods/_shared';
 import { MINIMAL_STAMP_MAX_SCALE } from '@/components/moods/MoodMinimal';
 import { DEFAULT_QUOTE } from '@/components/moods/MoodCriterion';
@@ -17,64 +15,47 @@ import { POSTER_FILL_MOODS, TONE_FIXED_MOODS, STAMP_KEYS, STAMP_LABELS, STAMP_TA
 import type { LayoutId } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 
-// 크롭 모달은 레일 첫 페인트에 필요 없으니 지연 로드 — FieldEditorBody가 로고 업로드에서 쓰는
-// 것과 같은 모듈·같은 방식이라 청크도 공유된다.
-const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ssr: false });
-
-// #523 — 디자인 레일 항목 정의 목록. 원래는 모바일 rail과 데스크톱 패널이 이 목록만 공유하고
-// 배치는 각자 유지하려고 render(photo, surface, actions)에 surface 축을 뒀는데, #607에서
-// DesktopDesignPanel이 삭제되며 소비자가 DesignRail 하나가 됐다. 축과 그 분기(desktop 전용
-// 상시 스택 배치, desktop- id prefix)는 아무도 안 타는 죽은 코드라 같이 걷어냈다 — 남겨두면
-// 타입도 테스트도 안 건드리는 채로 두 셸 전제가 조용히 되살아난다.
+// #523 → #826 S2 — 디자인 도크의 도구 정의 목록. 예전엔 가로 원형 아이콘 레일(DesignRail)의 항목이었고
+// 지금은 도크 디자인 모드의 도구 줄(무드 · 색상 · 재질 · 코팅 · 투명도 · 크기, 마스터 D-01~D-05)이
+// 소비한다. 패널 본문은 그대로 재사용하고, 질감 도구는 재질/코팅 두 도구로 갈라 각자 강도 슬라이더를
+// 든다(D-03 — 도구 줄 · 칸 · 옵션의 세 겹을 한 겹 걷었다). '커스텀'(한줄평·서명 폰트)과 '스탬프'
+// 항목은 디자인 도구가 아니다: 스탬프 업로드는 사진 모드로, 폰트는 인플레이스 입력 바로 간다.
 // 슬라이더 id의 rail- prefix는 그대로 유지한다(기존 id 보존).
-export type RailItemId = 'mood' | 'color' | 'texture' | 'opacity' | 'size' | 'pattern' | 'custom';
+export type DesignToolId = 'mood' | 'color' | 'material' | 'coating' | 'opacity' | 'size';
 type Photo = ReturnType<typeof usePhototicket>;
 
 /**
- * 항목이 셸에서만 할 수 있는 동작을 부를 때 쓰는 통로(#492). photo(상태)로는 표현이 안 되는
- * 것만 여기 온다 — 포스터 크롭 파이프라인은 원본 objectURL의 수명을 셸이 소유하기 때문이다.
- * 못 하는 상황(원본 없음)이면 셸이 아예 안 넘기고, 항목은 그때 컨트롤을 안 그린다 — 죽은
- * 컨트롤을 남기지 않는다는 점에서 POSTER_FILL_MOODS 게이트와 같은 규칙.
+ * 도구가 셸에서만 할 수 있는 동작을 부를 때 쓰는 통로. photo(상태)로는 표현이 안 되는 것만
+ * 여기 온다 — 인플레이스 편집은 셸이 소유한다. 포스터 재크롭(#492)은 사진 모드의 자르기 행으로
+ * 옮겨 갔다(#826 S2 G-01).
  */
-export interface RailActions {
-  /** 포스터 재크롭 진입 — 셸의 크롭 모달을 기존 원본으로 다시 연다. */
-  onRecropPoster?: () => void;
+export interface DesignToolActions {
   /** 필드 인플레이스 편집 진입(#781) — 로고 크기 패널의 입력 액션이 셸의 handleField로 로고 입력을 연다. */
   onEditField?: (field: SheetTarget) => void;
 }
 
-export interface RailItem {
-  id: RailItemId;
+export interface DesignTool {
+  id: DesignToolId;
   label: string;
-  icon: ReactNode;
-  // 이 무드 목록에서만 항목 자체가 존재한다("숨김" — 개념이 아예 없는 무드). 없으면 전 무드
+  // 이 무드 목록에서만 도구 자체가 존재한다("숨김" — 개념이 아예 없는 무드). 없으면 전 무드
   // 노출. filterItemsForMood가 이 필드로 실제 렌더 목록을 걸러낸다. "잠금"(개념은 있으나 그
-  // 무드가 값을 고정)은 이 필드가 아니라 항목 자신의 render 안에서 disabled로 표현 — 컬러가
-  // 그 예: TONE_FIXED_MOODS를 이 필드에 안 싣고 render 클로저 안에서만 직접 참조해, 아이콘은
-  // 그대로 두고 컨트롤만 잠근다(35mm 컬러의 disabledNote와 같은 이유).
+  // 무드가 값을 고정)은 이 필드가 아니라 도구 자신의 render 안에서 disabled로 표현 — 색상이
+  // 그 예: TONE_FIXED_MOODS를 이 필드에 안 싣고 render 클로저 안에서만 직접 참조해, 탭은
+  // 그대로 두고 컨트롤만 잠근다(D-02 '이 무드는 색이 고정돼요').
   appliesTo?: readonly LayoutId[];
-  render: (photo: Photo, actions: RailActions) => ReactNode;
+  render: (photo: Photo, actions: DesignToolActions) => ReactNode;
 }
 
-// #523 AC3 — appliesTo 기반 무드별 노출 필터. 순수 함수라 합성(가짜) RailItem만으로 검증 가능.
-export function filterItemsForMood(items: readonly RailItem[], layout: LayoutId): RailItem[] {
+// #523 AC3 — appliesTo 기반 무드별 노출 필터. 순수 함수라 합성(가짜) 항목만으로 검증 가능.
+export function filterItemsForMood<T extends { appliesTo?: readonly LayoutId[] }>(
+  items: readonly T[],
+  layout: LayoutId,
+): T[] {
   return items.filter((item) => !item.appliesTo || item.appliesTo.includes(layout));
 }
 
 // 슬라이더·패널 id prefix — rail-chain-scale 등 기존 id를 보존한다.
 const ID_PREFIX = 'rail';
-
-const RAIL_ICON = {
-  width: 20,
-  height: 20,
-  viewBox: '0 0 24 24',
-  fill: 'none',
-  stroke: 'currentColor',
-  strokeWidth: 1.8,
-  strokeLinecap: 'round',
-  strokeLinejoin: 'round',
-  'aria-hidden': true,
-} as const;
 
 // claude-review PR #486 P1 — Minimal은 MoodMinimal이 실효 scale을 MINIMAL_STAMP_MAX_SCALE로
 // 클램프하므로, 슬라이더 상한도 같이 낮추지 않으면 110~130% 구간이 숫자만 오르고 렌더는 그대로인
@@ -85,8 +66,8 @@ export function stampScaleMaxFor(layout: LayoutId) {
 }
 
 /**
- * 축 전환 세그먼트(#500 → #554) — 모바일 dock에서 한 번에 한 축만 그리는 배치의 공용 스위치.
- * 후보정(재질↔코팅)과 크기(포스터↔로고)가 같은 처방을 쓰므로 마크업은 여기 하나만 둔다.
+ * 축 전환 세그먼트(#500 → #554) — 한 번에 한 축만 그리는 배치의 공용 스위치. #826 S2에서 후보정(재질↔
+ * 코팅)과 크기(포스터↔로고)는 도구가 갈려 이 스위치를 안 쓰고, 지금 소비자는 폰트 패널(CustomPanel)뿐이다.
  *
  * 높이는 h-9(36px)로 명시해 SC 2.5.8 하한을 클래스 파싱만으로 검증할 수 있게 한다
  * (__tests__/tapTargets.ts — 실렌더 px를 못 보는 파서라 선언이 곧 계약이다).
@@ -271,7 +252,7 @@ const CUSTOM_AXES = [
 ] as const;
 type CustomAxis = (typeof CUSTOM_AXES)[number]['key'];
 
-function CustomPanel({ photo }: { photo: Photo }) {
+export function CustomPanel({ photo }: { photo: Photo }) {
   // 무드를 오가도 고른 축을 기억하게 early return보다 위에 둔다(훅 순서 규칙이기도 하다).
   const [axis, setAxis] = useState<CustomAxis>('quote');
   const { components } = photo.state;
@@ -359,13 +340,6 @@ const TEXTURE_AXES: { key: TextureAxis; label: string; options: readonly { value
   { key: 'coating', label: '코팅', options: COATING_OPTIONS },
 ];
 
-/** 그 축이 지금 고르고 있는 옵션의 짧은 라벨 — 칩과 같은 표기(괄호 앞부분)를 쓴다. */
-function currentOptionLabel(photo: Photo, axis: TextureAxis) {
-  const value = axis === 'material' ? photo.state.components.material : photo.state.components.coating;
-  const meta = TEXTURE_AXES.find((a) => a.key === axis)!;
-  return (meta.options.find((o) => o.value === value)?.label ?? value).split('(')[0].trim();
-}
-
 /** 한 축(재질 또는 코팅)의 피커 + 그 축 강도 슬라이더. 축별 배치는 부모가 정한다. */
 function TextureAxisControls({ photo, prefix, axis }: { photo: Photo; prefix: string; axis: TextureAxis }) {
   const { components, croppedImageUrl } = photo.state;
@@ -397,124 +371,23 @@ function TextureAxisControls({ photo, prefix, axis }: { photo: Photo; prefix: st
 }
 
 /**
- * 후보정 패널(#434, #471, #475 → #500) — 재질×코팅 2축.
+ * 크기 패널(#441, #492, #527 → #554 → #826 S2 D-05) — 포스터 채우기 · 극장/포맷 로고 크기 · 배경 스탬프 크기를
+ * 한 스크롤 본문에 쌓는다. 후보정(#500)·크기(#554)가 dock 높이 예산 때문에 쓰던 축 전환 세그먼트는 도크가
+ * 고정 높이(마스터 C-DOCK)가 되며 필요가 없어졌다 — 넘치면 본문 안에서 세로 스크롤한다.
+ * 포스터 재크롭 진입(#492)은 사진 모드 포스터 행의 '자르기'(G-01)로 옮겨 갔다.
  *
- * 모바일은 두 축을 세로로 쌓으면 dock이 400×675 뷰포트에서 **413px**(양축 강도 슬라이더까지
- * 뜬 최악)까지 자라 프리뷰 티켓이 114×182px로 쪼그라든다. 그래서 한 번에 한 축만 그리고 축
- * 전환은 세그먼트가 맡는다 — 실측 결과 dock 413→**312px**, 티켓 114×182→**177×283px**
- * (면적 2.4배). 강도 슬라이더를 투명도 탭으로 몰아내는 옵션 b는 강도를 그 축의 피커에서
- * 떼어놓는 데다(고른 직후 조절이 탭 이동이 된다) 투명도 탭이 대신 4슬라이더로 자라 dock
- * 최댓값이 별로 안 준다 — 실측 표와 판정 근거는 #500 코멘트.
- *
- * 데스크톱은 사이드 패널이라 이 세로 예산 문제가 없어(#500 "데스크톱 미해당") 두 축 상시
- * 노출을 유지한다 — 축 컨트롤 자체는 TextureAxisControls 하나를 공유해 배치만 갈린다
- * (모드 항목의 LayoutStrip/LayoutPicker 분기와 같은 이유·같은 모양).
- *
- * #563 이후 위 "dock이 413px까지 자란다"는 더는 성립하지 않는다 — 모바일 패널이 고정 높이
- * 슬롯이라 dock은 콘텐츠와 무관하게 안 움직인다. 그래도 축 분리는 유지한다: 콘텐츠가 슬롯을
- * 넘으면 대신 안에서 스크롤하게 되므로, 이 배치가 줄이는 건 이제 dock 높이가 아니라 스크롤
- * 양이다(양축 세로 쌓기면 후보정 콘텐츠가 슬롯의 3배를 넘는다).
+ * 포스터 채우기(#527)는 값이 갈리는 무드(POSTER_FILL_MOODS)에서만 — 나머지 무드는 슬롯이 이미 포스터 표준
+ * 비율이라 토글해도 그림이 같다. 숨겨도 저장값은 남아 무드 복귀 시 그대로 살아난다(체인/포맷
+ * 스케일 클램프와 같은 원칙). 스탬프 크기도 같은 규칙으로 스탬프 이미지가 있는 3무드에서만 뜬다.
  */
-function TexturePanel({ photo }: { photo: Photo }) {
-  const [axis, setAxis] = useState<TextureAxis>('material');
-  const prefix = ID_PREFIX;
-  // aria-controls와 대상 id는 반드시 같은 상수에서 나와야 한다 — 따로 조립하면 한쪽만 고쳐도
-  // 아무 테스트가 안 깨진 채 세그먼트↔패널 관계만 조용히 끊긴다(SizePanel도 같은 이유로 hoist).
-  const panelId = `${prefix}-texture-axis-panel`;
-  return (
-    <div className="space-y-group">
-      {/* 라벨에 그 축의 현재 값을 같이 실는 이유: 한 축만 그리는 배치의 유일한 대가가 "안 열린
-          축이 기본값이 아닌 걸 알 방법이 없다"는 것이라(홀로그램 코팅이 걸린 채 재질 축이 열려
-          있으면 티켓의 광택만 보이고 출처가 안 보인다), 값을 라벨에 올려 두 축 상태를 항상
-          노출한다 — 표시자를 따로 만드는 것보다 싸고, 열린 축 쪽은 아래 칩 선택과 중복이라
-          해가 없다. 크기 축(#554)은 두 묶음 다 값이 티켓에 그대로 보여서 이 보정이 필요 없다. */}
-      <AxisSegment
-        ariaLabel="후보정 축"
-        panelId={panelId}
-        options={TEXTURE_AXES.map((a) => ({
-          key: a.key,
-          label: `${a.label} · ${currentOptionLabel(photo, a.key)}`,
-        }))}
-        value={axis}
-        onChange={(next) => setAxis(next)}
-      />
-      {/* key={axis} — 축이 바뀌면 컨트롤을 새로 세운다. 같은 range 노드를 재사용하면 id·label만
-          갈린 채 포커스가 남아 스크린리더가 바뀐 의미를 다시 안 읽는다. */}
-      <div id={panelId}>
-        <TextureAxisControls key={axis} photo={photo} prefix={prefix} axis={axis} />
-      </div>
-    </div>
-  );
-}
-
-const SIZE_AXES = [
-  { key: 'poster', label: '포스터' },
-  { key: 'logo', label: '로고' },
-] as const;
-type SizeAxis = (typeof SIZE_AXES)[number]['key'];
-
-/**
- * 크기 패널(#441, #492, #527 → #554) — 포스터축(재크롭·채우기) × 로고축(체인·포맷 스케일).
- *
- * 모바일은 네 컨트롤을 세로로 쌓으면 dock이 400×675 뷰포트에서 **361px**(minimal + 원본 보유,
- * 즉 둘 다 뜨는 최악)까지 자라 프리뷰 티켓이 146×234px로 쪼그라든다 — #500이 후보정에서 걷어낸
- * dock 최댓값이 그대로 이 탭으로 옮겨 앉은 것. 그래서 후보정과 **같은 처방**을 쓴다: 한 번에 한
- * 축만 그리고 전환은 AxisSegment가 맡는다. 판정 근거(세 후보의 실측 절감이 −50~58px로 사실상
- * 같아 px가 아니라 대가로 갈렸다)는 #554 코멘트.
- *
- * 포스터축이 통째로 빌 수 있다(원본 없음 + POSTER_FILL_MOODS 밖 무드) — 그땐 세그먼트를 아예
- * 안 그리고 로고 슬라이더만 남긴다. 한 칸이 빈 축 전환은 죽은 컨트롤이라, 조건부 노출 규칙
- * (onRecropPoster·POSTER_FILL_MOODS)을 세그먼트 층까지 그대로 밀어올린 것.
- *
- * 데스크톱은 사이드 패널이라 이 세로 예산 문제가 없어(#500 "데스크톱 미해당") 두 축 상시 노출을
- * 유지한다 — 축 컨트롤 자체는 같은 JSX를 공유하고 배치만 갈린다(TexturePanel과 같은 모양).
- *
- * #563 이후 dock 높이 논거는 TexturePanel과 같이 읽을 것 — 축 분리가 줄이는 건 이제 dock이
- * 아니라 고정 슬롯 안에서 스크롤할 양이다.
- */
-function SizePanel({ photo, actions }: { photo: Photo; actions: RailActions }) {
-  const [axis, setAxis] = useState<SizeAxis>('poster');
+function SizePanel({ photo, actions }: { photo: Photo; actions: DesignToolActions }) {
   const prefix = ID_PREFIX;
   const { components } = photo.state;
   const setComp = photo.updateComponents;
   const stampScaleMax = stampScaleMaxFor(components.layout);
-
-  // 크롭 재진입(#492) — "포스터 크기·비율을 한 자리에서" 다루게 하는 게 이 섹션의 취지라,
-  // "얼마나 크게"(스케일·채우기) 옆에 "어디를 쓸지"(크롭)를 같이 둔다. #554가 이 결정을 다시
-  // 열었고 **번복하지 않았다** — 후보 (b)(재크롭을 dock 밖으로)는 여기 축 분리와 절감이 같은데
-  // (−56 vs −58px) 진입점을 하나 잃는 대가가 붙어서, 진입점을 그대로 둔 채 축으로 접는 (a)를
-  // 골랐다. 원본이 없으면 셸이 onRecropPoster를 안 넘겨 버튼 자체가 안 뜬다 — 재업로드 안내는
-  // 원래 진입점(모바일 헤더 메뉴 '재크롭', 데스크톱 POSTER 탭)이 disabled+title로 계속 들고 있다.
-  // 포스터 채우기(#527/#492)는 값이 갈리는 무드에서만 — 나머지 무드는 슬롯이 이미 포스터 표준
-  // 비율이라 토글해도 그림이 같다. 숨겨도 저장값은 남아 무드 복귀 시 그대로 살아난다(체인/포맷
-  // 스케일 클램프와 같은 원칙).
   const showFit = POSTER_FILL_MOODS.has(components.layout);
-  // space-y-field(#682 다이어트) — 재크롭 버튼과 포스터 채우기 칩은 같은 "포스터" 축 안의
-  // 형제 컨트롤이라 space-y-group(16px)보다 좁은 field 간격(10px)이 맞다. h-10→h-9도 같이
-  // 줄인다 — 위 AxisSegment(형제 버튼들도 h-9)와 높이를 맞추면서 4px을 아낀다.
-  const posterAxis =
-    actions.onRecropPoster || showFit ? (
-      <div className="space-y-field">
-        {actions.onRecropPoster && (
-          <button
-            type="button"
-            onClick={actions.onRecropPoster}
-            data-touch="36"
-            className={cn(pressableVariants(), 'h-9 w-full rounded-chip border border-hair bg-s2 px-3 text-caption font-medium text-ink transition-colors hover:bg-accent-soft hover:text-accent')}
-          >
-            포스터 다시 크롭
-          </button>
-        )}
-        {showFit && (
-          <ChipRadio
-            label="포스터 채우기"
-            options={POSTER_FIT_OPTIONS}
-            value={components.posterFit ?? 'contain'}
-            onChange={(posterFit) => setComp({ posterFit })}
-          />
-        )}
-      </div>
-    ) : null;
+  const showBackgroundScale =
+    BACKGROUND_PATTERN_MOODS.includes(components.layout) && !!components.backgroundPatternImage;
 
   // 체인/포맷 로고 렌더 크기(#441, PR #485 P2 후속). value는 Math.min(raw, stampScaleMax)로
   // 표시만 클램프 — 저장된 raw 값은 안 건드려 다른 무드로 돌아가면 원래 크기로 복원된다.
@@ -523,8 +396,16 @@ function SizePanel({ photo, actions }: { photo: Photo; actions: RailActions }) {
   // 슬라이더를 움직여도 아무 변화가 없다. 그렇다고 슬라이더를 끄진 않는다: 텍스트 라벨만 있어도
   // ChainStamp·FormatStamp가 scale로 조절하고, 입력 전에 크기를 미리 정해 둘 수도 있어서다.
   // 입력 액션은 셸의 handleField로 가서 숨긴 로고면 표시를 켜고 인플레이스 편집을 연다.
-  const logoAxis = (
+  return (
     <div className="space-y-group">
+      {showFit && (
+        <ChipRadio
+          label="포스터 채우기"
+          options={POSTER_FIT_OPTIONS}
+          value={components.posterFit ?? 'contain'}
+          onChange={(posterFit) => setComp({ posterFit })}
+        />
+      )}
       {STAMP_TARGETS.map((target) => {
         const keys = STAMP_KEYS[target];
         const empty = !components[keys.image] && !String(components[keys.label] ?? '').trim();
@@ -540,7 +421,7 @@ function SizePanel({ photo, actions }: { photo: Photo; actions: RailActions }) {
               </p>
             )}
             <BrightnessSlider
-              // 이름은 안내문·드로어·입력칸과 같은 STAMP_LABELS에서 뜬다(#781) — 옛 '체인 로고 크기'는 바로 위
+              // 이름은 안내문·정보 행·입력칸과 같은 STAMP_LABELS에서 뜬다(#781) — 옛 '체인 로고 크기'는 바로 위
               // 안내문의 '극장 로고'와 한 컨트롤을 두 이름으로 불렀다.
               label={`${STAMP_LABELS[target]} 크기`}
               id={`${prefix}-${target}-scale`}
@@ -548,8 +429,6 @@ function SizePanel({ photo, actions }: { photo: Photo; actions: RailActions }) {
               onChange={(value) => setComp({ [scaleKey]: value })}
               min={0.6}
               max={stampScaleMax}
-              // 액션은 빈·숨김 상태에만 단다 — 액션 버튼(h-7)이 라벨 줄을 3.5px씩 키워, 정상 상태에도 달면
-              // 로고 축이 슬롯(26svh)을 넘친다(DesignRail 슬롯 주석). 정상 상태의 편집은 티켓 탭·항목 목록이 맡는다.
               action={
                 actions.onEditField && (empty || hidden)
                   ? { label: empty ? '입력' : '표시·편집', onClick: () => actions.onEditField?.(target) }
@@ -559,35 +438,16 @@ function SizePanel({ photo, actions }: { photo: Photo; actions: RailActions }) {
           </div>
         );
       })}
-    </div>
-  );
-
-  if (!posterAxis) {
-    return (
-      <div className="space-y-group">
-        {posterAxis}
-        {logoAxis}
-      </div>
-    );
-  }
-  const panelId = `${prefix}-size-axis-panel`;
-  return (
-    // space-y-field(#682 다이어트, TexturePanel의 같은 축-스위처+콘텐츠 구조는 그대로 group을
-    // 쓰지만 여긴 예산이 더 빠듯해 6px을 더 줄인다) — 세그먼트와 그 아래 콘텐츠는 서로 다른
-    // 관심사 묶음이 아니라 같은 축의 헤더·본문이라 field 간격이 더 맞다.
-    <div className="space-y-field">
-      <AxisSegment
-        ariaLabel="크기 축"
-        panelId={panelId}
-        options={SIZE_AXES}
-        value={axis}
-        onChange={(next) => setAxis(next)}
-      />
-      {/* key={axis} — TexturePanel과 같은 이유(축이 갈리면 컨트롤을 새로 세워 포커스가 옛 의미를
-          물고 넘어가지 않게). */}
-      <div id={panelId} key={axis}>
-        {axis === 'poster' ? posterAxis : logoAxis}
-      </div>
+      {showBackgroundScale && (
+        <BrightnessSlider
+          label="스탬프 크기"
+          id={`${ID_PREFIX}-background-scale`}
+          value={components.backgroundPatternScale ?? 1}
+          onChange={(backgroundPatternScale) => setComp({ backgroundPatternScale })}
+          min={1}
+          max={BACKGROUND_SCALE_MAX}
+        />
+      )}
     </div>
   );
 }
@@ -597,7 +457,7 @@ function SizePanel({ photo, actions }: { photo: Photo; actions: RailActions }) {
  * 실재하는가" 하나(이슈 본문). Editorial·Criterion v5·Stub는 셋 다 종이 면이 이미 서 있고,
  * 셋 다 렌더링까지 붙어 있다.
  */
-const BACKGROUND_PATTERN_MOODS: readonly LayoutId[] = ['editorial', 'criterion', 'stub'];
+export const BACKGROUND_PATTERN_MOODS: readonly LayoutId[] = ['editorial', 'criterion', 'stub'];
 
 /**
  * 배경 배율 상한(#680) — 로고 스탬프의 1.3과 다른 건 취향이 아니라 해상도다. 배경은 캔버스 전면을
@@ -613,7 +473,7 @@ const BACKGROUND_PATTERN_MOODS: readonly LayoutId[] = ['editorial', 'criterion',
  * MoodMinimal이 실효 scale을 따로 클램프하기 때문인데(PR #486 P1), 배경은 minimal에 안 실리고
  * 세 무드가 같은 0.626 캔버스를 쓴다.
  */
-const BACKGROUND_SCALE_MAX = 1.5;
+export const BACKGROUND_SCALE_MAX = 1.5;
 
 /**
  * 스탬프 투명도 범위(#728 c4·ac3). 하한 0.2는 완전히 안 보일 정도로 내려가면 "왜 스탬프가
@@ -622,148 +482,22 @@ const BACKGROUND_SCALE_MAX = 1.5;
  * 업로드 즉시 보여준다. 상한 1.0(불투명)은 기존 저장본이 `?? 1`로 읽는 값과 같아, 사용자가
  * 슬라이더를 끝까지 올리면 옛 배경 렌더와 픽셀이 같아진다.
  */
-const BACKGROUND_OPACITY_MIN = 0.2;
-const BACKGROUND_OPACITY_DEFAULT = 0.5;
+export const BACKGROUND_OPACITY_MIN = 0.2;
+export const BACKGROUND_OPACITY_DEFAULT = 0.5;
 
-function BackgroundPatternPanel({ photo }: { photo: Photo }) {
-  const image = photo.state.components.backgroundPatternImage;
-  // 업로드는 로고 스탬프와 **같은** 자유비 크롭 흐름(useLogoCrop, #220)을 그대로 탄다 — 새 의존성도
-  // 새 크롭 경로도 없다. 크롭 결과가 곧 스탬프 이미지다(#672로 프리셋 id 축이 사라져 같이 넘길 값도
-  // 없어졌다 — 이미지 유무가 곧 스탬프 유무다).
-  // maxSide는 로고 기본값(640)을 쓰면 안 된다 — 무드별 고정 박스라도 cover로 채워 그리므로 저장물은
-  // pixelRatio 2라, criterion 기준 1920×3068 device px를 640짜리로 늘리면 3~5배 확대돼 뭉갠다.
-  // 포스터가 같은 급 슬롯에 960×1440을 쓰는 것과 같은 이유로 캔버스 긴 변(TARGET_HEIGHT)에 맞춘다.
-  //
-  // 투명도 write-time 커밋(#728 c4) — 이미지와 투명도를 같은 updateComponents 호출에 묶는다.
-  // 사용자가 이미 값을 고른 적이 있으면(`?? 기본값`) 그 값을 유지하고, 없으면(첫 업로드) 반투명
-  // 기본값을 새로 써 넣는다. 렌더 쪽에서 "언제 올라온 이미지인가"로 분기하지 않는 이유는 그 축을
-  // 저장할 필요가 아예 없어지기 때문이고, 이미지·투명도를 한 번에 커밋하는 이유는 undo 히스토리
-  // 때문이다 — 따로 쓰면 undo 한 번이 반쯤 되돌린 상태를 만든다.
-  const { rawSrc, isCropping, openFile, handleComplete, handleCancel } = useLogoCrop(
-    (backgroundPatternImage) =>
-      photo.updateComponents({
-        backgroundPatternImage,
-        backgroundPatternOpacity: photo.state.components.backgroundPatternOpacity ?? BACKGROUND_OPACITY_DEFAULT,
-      }),
-    TARGET_HEIGHT,
-  );
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.type.startsWith('image/')) openFile(file);
-    // 같은 파일을 다시 골라도 change가 뜨게 비운다(StampSheet와 같은 처리).
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  return (
-    <div className="space-y-3">
-      {image && (
-        <div className="flex items-center gap-3 rounded-field border border-hair bg-s2 px-3.5 py-3">
-          <img src={image} alt="스탬프 이미지" className="h-10 w-auto object-contain" />
-          <button
-            type="button"
-            // blob revoke는 여기서 하지 않는다 — undo 히스토리(#356)가 이 URL을 참조한다
-            // (useLogoCrop 주석과 같은 이유). 최신 URL은 usePhototicket이 언마운트·clearDraft에서 푼다.
-            onClick={() => photo.updateComponents({ backgroundPatternImage: '' })}
-            className={cn(pressableVariants(), 'ml-auto rounded-chip border border-hair px-3 py-1.5 text-caption font-medium text-ink-2 transition-colors hover:border-accent hover:text-accent')}
-          >
-            이미지 제거
-          </button>
-        </div>
-      )}
-
-      {/* 크기·투명도(#680·#728) — 이미지가 있을 때만. 없으면 조절할 대상이 없어 죽은 컨트롤이 된다.
-          크기 패널이 아니라 여기 두는 건 그 패널이 이미 넘치기도 하지만(#682), RailItem.appliesTo가
-          이미 BACKGROUND_PATTERN_MOODS로 3무드 게이팅을 해줘 노출 조건을 새로 짤 게 없어서다. */}
-      {image && (
-        <div className="space-y-group">
-          <BrightnessSlider
-            label="스탬프 크기"
-            id={`${ID_PREFIX}-background-scale`}
-            value={photo.state.components.backgroundPatternScale ?? 1}
-            onChange={(backgroundPatternScale) => photo.updateComponents({ backgroundPatternScale })}
-            min={1}
-            max={BACKGROUND_SCALE_MAX}
-          />
-          <BrightnessSlider
-            label="스탬프 투명도"
-            id={`${ID_PREFIX}-background-opacity`}
-            value={photo.state.components.backgroundPatternOpacity ?? 1}
-            onChange={(backgroundPatternOpacity) => photo.updateComponents({ backgroundPatternOpacity })}
-            min={BACKGROUND_OPACITY_MIN}
-            max={1}
-          />
-        </div>
-      )}
-
-      <button
-        type="button"
-        onClick={() => fileInputRef.current?.click()}
-        data-touch="40"
-        className={cn(pressableVariants(), 'inline-flex min-h-touch w-full items-center justify-center gap-2 rounded-chip border border-dashed border-hair bg-s2 px-4 text-caption font-medium text-ink-2 transition-colors hover:border-accent hover:text-accent')}
-      >
-        {image ? '이미지 교체' : '이미지 업로드'}
-      </button>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/png,image/jpeg,image/webp,image/svg+xml"
-        onChange={handleFileChange}
-        aria-label="스탬프 이미지 업로드"
-        className="sr-only"
-      />
-
-      {rawSrc && (
-        <ImageCropModal
-          imageSrc={rawSrc}
-          title="스탬프 이미지 크롭"
-          onClose={handleCancel}
-          onComplete={handleComplete}
-          isProcessing={isCropping}
-        />
-      )}
-    </div>
-  );
+/** 재질/코팅 도구 본문(#826 S2 D-03) — 피커 + 그 축 강도 슬라이더. 축 전환 세그먼트는 도구 줄이 대신한다. */
+function TextureToolBody({ photo, axis }: { photo: Photo; axis: TextureAxis }) {
+  return <TextureAxisControls photo={photo} prefix={ID_PREFIX} axis={axis} />;
 }
 
-const COLOR_ITEM: RailItem = {
-  id: 'color',
-  label: '컬러',
-  // 컬러: 스포이드 — 닫힌 path 하나(도구 실루엣) + 픽업 지점 선. 투명도와 원 계열을
-  // 공유하지 않도록 #676에서 교체(잉크 색을 "찍는" 동작을 직접 지시).
-  icon: (
-    <svg {...RAIL_ICON}>
-      <path d="m21.7 2.3-1.4 1.4M17.4 6.6a2 2 0 1 0-2.8-2.8l-9.9 9.9a2 2 0 0 0-.5.9L3 18.5a1 1 0 0 0 1 1l3.9-1.2a2 2 0 0 0 1-.5l9.9-9.9a2 2 0 0 0 0-2.8Z" />
-      <path d="m9 11 4 4" />
-    </svg>
-  ),
-  render: (photo) => (
-    // 데스크톱·모바일 동일 배선 — 잉크색 단일 축(themeColor). disabled는 RailItem.appliesTo가
-    // 아니라 이 클로저가 직접 쥔 TONE_FIXED_MOODS(#524)로 판정한다 — appliesTo에 실으면
-    // filterItemsForMood가 아이콘 자체를 숨겨버려 "잠금"이 "숨김"이 된다(/simplify reuse 지적 —
-    // 여집합을 배열로 만들었다 다시 부정하는 왕복 대신 원래 Set 판정을 직접 쓴다).
-    <ColorPicker
-      value={photo.state.components.themeColor}
-      onChange={(themeColor) => photo.updateComponents({ themeColor })}
-      recommended={photo.state.recommendedColors}
-      disabled={TONE_FIXED_MOODS.has(photo.state.components.layout)}
-      disabledNote="이 무드는 톤이 고정이라 잉크 색을 바꿀 수 없어요."
-    />
-  ),
-};
-
-export const RAIL_ITEMS: readonly RailItem[] = [
+/**
+ * 디자인 도구 목록(마스터 D-01~D-05 순서: 무드 · 색상 · 재질 · 코팅 · 투명도 · 크기). 여섯 도구가 전 무드에
+ * 존재해 지금은 appliesTo를 든 항목이 없다 — 도구 자체가 숨는 무드가 생기면 그 필드로 걸러진다(#523).
+ */
+export const DESIGN_TOOLS: readonly DesignTool[] = [
   {
     id: 'mood',
     label: '무드',
-    // 사면체 힌트: 외곽 삼각 + 꼭짓점→밑변 중앙 능선
-    icon: (
-      <svg {...RAIL_ICON}>
-        <path d="M12 3 21 20H3Z" />
-        <path d="M12 3v17" />
-      </svg>
-    ),
     render: (photo) => (
       <LayoutStrip
         value={photo.state.components.layout}
@@ -771,36 +505,34 @@ export const RAIL_ITEMS: readonly RailItem[] = [
       />
     ),
   },
-  COLOR_ITEM,
   {
-    id: 'texture',
-    label: '후보정',
-    // 질감: 대각선 3줄
-    icon: (
-      <svg {...RAIL_ICON}>
-        <path d="M4 20 20 4" />
-        <path d="M4 14 14 4" />
-        <path d="M10 20 20 10" />
-      </svg>
+    id: 'color',
+    label: '색상',
+    // 잉크색 단일 축(themeColor). disabled는 appliesTo가 아니라 이 클로저가 직접 쥔 TONE_FIXED_MOODS(#524)로
+    // 판정한다 — appliesTo에 실으면 filterItemsForMood가 도구 자체를 숨겨 "잠금"이 "숨김"이 된다.
+    render: (photo) => (
+      <ColorPicker
+        value={photo.state.components.themeColor}
+        onChange={(themeColor) => photo.updateComponents({ themeColor })}
+        recommended={photo.state.recommendedColors}
+        disabled={TONE_FIXED_MOODS.has(photo.state.components.layout)}
+        disabledNote="이 무드는 색이 고정돼요"
+      />
     ),
-    render: (photo) => <TexturePanel photo={photo} />,
   },
+  { id: 'material', label: '재질', render: (photo) => <TextureToolBody photo={photo} axis="material" /> },
+  { id: 'coating', label: '코팅', render: (photo) => <TextureToolBody photo={photo} axis="coating" /> },
   {
     id: 'opacity',
     label: '투명도',
-    // 투명도: 체커보드 — 테두리 사각형 + 대각 두 칸 채움 path 하나(포토샵류 투명 배경 표기).
-    // 컬러와 원 계열을 공유하지 않도록 #676에서 교체.
-    icon: (
-      <svg {...RAIL_ICON}>
-        <rect x="3.5" y="3.5" width="17" height="17" rx="1.5" />
-        <path d="M3.5 3.5h8.5v8.5h-8.5ZM12 12h8.5v8.5H12Z" fill="currentColor" stroke="none" />
-      </svg>
-    ),
     render: (photo) => {
       const prefix = ID_PREFIX;
       const { components } = photo.state;
       const setComp = photo.updateComponents;
       // 듀얼 슬라이더 — 포스터=밝기(posterOpacity), 컴포넌트=오버레이 불투명도(componentOpacity).
+      // 배경 스탬프 투명도(#728)는 스탬프 이미지가 있는 3무드에서만 세 번째로 붙는다.
+      const showStampOpacity =
+        BACKGROUND_PATTERN_MOODS.includes(components.layout) && !!components.backgroundPatternImage;
       return (
         <div className="space-y-group">
           <BrightnessSlider
@@ -815,52 +547,19 @@ export const RAIL_ITEMS: readonly RailItem[] = [
             value={components.componentOpacity ?? 1}
             onChange={(componentOpacity) => setComp({ componentOpacity })}
           />
+          {showStampOpacity && (
+            <BrightnessSlider
+              label="스탬프 투명도"
+              id={`${prefix}-background-opacity`}
+              value={components.backgroundPatternOpacity ?? 1}
+              onChange={(backgroundPatternOpacity) => setComp({ backgroundPatternOpacity })}
+              min={BACKGROUND_OPACITY_MIN}
+              max={1}
+            />
+          )}
         </div>
       );
     },
   },
-  {
-    id: 'size',
-    label: '크기',
-    // 크기: 네 모서리가 바깥으로 벌어지는 화살표 — 확대/축소 힌트.
-    icon: (
-      <svg {...RAIL_ICON}>
-        <path d="M4 20 10 20 10 14" />
-        <path d="M4 20 12 12" />
-        <path d="M20 4 14 4 14 10" />
-        <path d="M20 4 12 12" />
-      </svg>
-    ),
-    render: (photo, actions) => <SizePanel photo={photo} actions={actions} />,
-  },
-  {
-    // id는 'pattern' 그대로 둔다(#672) — 저장·URL 어디에도 안 실리는 내부 키인데, 같이 남은
-    // `backgroundPatternImage`(draft 키라 개명 불가)와 이름이 갈리면 오히려 두 벌이 된다.
-    id: 'pattern',
-    label: '스탬프',
-    // 스탬프: 액자 안에 얹힌 사진(산 능선 + 해) — 무드가 정한 고정 박스에 앉는 사용자 이미지다.
-    icon: (
-      <svg {...RAIL_ICON}>
-        <rect x="3.5" y="5" width="17" height="14" rx="2" />
-        <circle cx="8.5" cy="10" r="1.5" />
-        <path d="M4 16.5l4.5-4 3.5 3 3-2.5 5 4.5" />
-      </svg>
-    ),
-    appliesTo: BACKGROUND_PATTERN_MOODS,
-    render: (photo) => <BackgroundPatternPanel photo={photo} />,
-  },
-  {
-    id: 'custom',
-    label: '커스텀',
-    // 커스텀: 슬라이더 두 줄(무드 전용 조절 힌트) — 크기(사방 화살표)·후보정(사선)과 안 겹친다.
-    icon: (
-      <svg {...RAIL_ICON}>
-        <path d="M4 8h11M19 8h1M4 16h5M13 16h7" />
-        <circle cx="17" cy="8" r="2" />
-        <circle cx="11" cy="16" r="2" />
-      </svg>
-    ),
-    appliesTo: CUSTOM_PANEL_MOODS,
-    render: (photo) => <CustomPanel photo={photo} />,
-  },
+  { id: 'size', label: '크기', render: (photo, actions) => <SizePanel photo={photo} actions={actions} /> },
 ];

@@ -4,7 +4,7 @@
  * claude-review PR #485 P1 지적 반영:
  * (1) scale이 실제 렌더 height/max-width에 반영되는지 정적 마크업으로,
  * (2) 6개 무드 호출부가 실제로 scale prop을 배선했는지(마크업 변화 유무로),
- * (3) DesignRail 슬라이더가 setComp를 올바른 키로 호출하는지(#607 전엔 DesktopDesignPanel도
+ * (3) 도크 크기 도구(D-05)의 슬라이더가 setComp를 올바른 키로 호출하는지(#607 전엔 DesktopDesignPanel도
  *     같은 명제를 한 번 더 돌렸는데, 그 패널이 삭제되며 중복 describe도 같이 지웠다),
  * (4) undo(#356) 스냅샷·saveDraft/restoreSnapshot이 chainScale/formatScale을 다른
  *     컴포넌트 필드와 원자 복원하는지(스펙 s4) 훅 레벨로 검증한다.
@@ -16,7 +16,7 @@ import { render, screen, cleanup, fireEvent, renderHook, act, waitFor } from '@t
 import userEvent from '@testing-library/user-event';
 import { MINIMAL_STAMP_MAX_SCALE, MoodMinimal } from '../src/components/moods/MoodMinimal';
 import { STAMP_MAX_ASPECT } from '../src/components/moods/_shared';
-import { DesignRail } from '../src/components/v2/DesignRail';
+import { EditorDock } from '../src/components/v2/dock/EditorDock';
 import { usePhototicket, type HistorySnapshot } from '../src/hooks/usePhototicket';
 import type { MovieInfo, TicketComponents } from '../src/types';
 import { ALL_MOODS } from './setup/moods';
@@ -94,18 +94,29 @@ function RailHarness() {
     <>
       <div data-testid="chainScale">{photo.state.components.chainScale}</div>
       <div data-testid="formatScale">{photo.state.components.formatScale}</div>
-      <DesignRail photo={photo} />
+      <EditorDock
+        photo={photo}
+        mode="design"
+        onModeChange={() => {}}
+        hidden={false}
+        onField={() => {}}
+        onMissingField={() => {}}
+        onOcrOpen={() => {}}
+        ocrBusy={false}
+        onPosterPick={() => {}}
+      />
     </>
   );
 }
 
-// #554 — 모바일 크기 탭은 포스터↔로고 축 전환이라 로고 슬라이더가 '로고' 축 안에 있다.
-// 포스터 축이 통째로 비는 무드(원본 없음 + POSTER_FILL_MOODS 밖)에선 세그먼트가 아예 없어
-// 슬라이더가 바로 보이므로, 세그먼트가 있을 때만 누른다.
+// #826 S2 — 로고 크기 슬라이더는 크기 도구 본문에 포스터 채우기와 같이 쌓인다(축 전환 세그먼트는 없다).
 async function openLogoAxis(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: '크기' }));
-  const logoAxis = screen.queryByRole('radio', { name: '로고' });
-  if (logoAxis) await user.click(logoAxis);
+  await user.click(screen.getByRole('tab', { name: '크기' }));
+}
+
+async function pickMood(user: ReturnType<typeof userEvent.setup>, name: RegExp) {
+  await user.click(screen.getByRole('tab', { name: '무드' }));
+  await user.click(screen.getByRole('radio', { name }));
 }
 
 beforeEach(() => window.localStorage.clear());
@@ -117,11 +128,11 @@ afterEach(() => {
 // PR #486 P1 후속(claude-review) — 기본 무드가 minimal이라 슬라이더 상한이
 // MINIMAL_STAMP_MAX_SCALE(1.1)로 낮아져 있어야 한다. 그렇지 않으면 렌더는 1.1에서 클램프되는데
 // 슬라이더 숫자만 1.3까지 계속 올라가는 죽은 구간이 생긴다(값-효과 불일치).
-describe('#441 DesignRail 슬라이더 배선', () => {
+describe('#441 도크 크기 도구 슬라이더 배선', () => {
   test('체인/포맷 로고 크기 슬라이더 변경 → components에 반영, Minimal은 상한이 MINIMAL_STAMP_MAX_SCALE로 하향', async () => {
     const user = userEvent.setup();
     render(<RailHarness />);
-    // 크기 탭 안에 있음(PR #485 P2 후속 — 투명도에서 분리) — 먼저 연다.
+    // 크기 도구 안에 있음(PR #485 P2 후속 — 투명도에서 분리) — 먼저 연다.
     await openLogoAxis(user);
 
     const chainInput = screen.getByLabelText('극장 로고 크기');
@@ -139,9 +150,7 @@ describe('#441 DesignRail 슬라이더 배선', () => {
   test('Minimal이 아닌 무드에서는 슬라이더 상한이 그대로 1.3', async () => {
     const user = userEvent.setup();
     render(<RailHarness />);
-    await user.click(screen.getByRole('button', { name: '무드' }));
-    await user.click(screen.getByRole('radio', { name: /크라이테리언/ }));
-    await user.click(screen.getByRole('button', { name: '무드' })); // 무드 닫고
+    await pickMood(user, /크라이테리언/);
     await openLogoAxis(user);
 
     expect(screen.getByLabelText('극장 로고 크기').getAttribute('max')).toBe('1.3');
@@ -156,17 +165,13 @@ describe('#441 DesignRail 슬라이더 배선', () => {
     render(<RailHarness />);
 
     // 크라이테리언에서 1.3까지 올린다.
-    await user.click(screen.getByRole('button', { name: '무드' }));
-    await user.click(screen.getByRole('radio', { name: /크라이테리언/ }));
-    await user.click(screen.getByRole('button', { name: '무드' }));
+    await pickMood(user, /크라이테리언/);
     await openLogoAxis(user);
     fireEvent.change(screen.getByLabelText('극장 로고 크기'), { target: { value: '1.3' } });
     expect(screen.getByTestId('chainScale').textContent).toBe('1.3');
 
     // 미니멀로 돌아온다.
-    await user.click(screen.getByRole('button', { name: '무드' }));
-    await user.click(screen.getByRole('radio', { name: /미니멀 시네마틱/ }));
-    await user.click(screen.getByRole('button', { name: '무드' }));
+    await pickMood(user, /미니멀 시네마틱/);
     await openLogoAxis(user);
 
     const chainInput = screen.getByLabelText('극장 로고 크기') as HTMLInputElement;

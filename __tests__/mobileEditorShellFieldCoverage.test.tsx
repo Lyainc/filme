@@ -5,7 +5,7 @@
  *  1. 끄기: 티켓 위 필드 탭 → 인플레이스 필드바(#354, FieldEditSheet 대체) "티켓 노출" 눈 토글 → 필드 숨김.
  *  2. 다시 켜기 (a): ghost 켜짐(기본 on) → 숨긴 필드가 티켓에 "+ 라벨" 점선(FieldTap)으로 남아
  *     재탭 → 재노출.
- *  3. 다시 켜기 (b): 셸 "전체 표시" 스위치 → 전 필드 재노출.
+ *  3. 다시 켜기 (b): 도크 정보 모드의 "전체 표시" 스위치(옛 필드 드로어 맨 위, #826 S2에서 목록 끝으로) → 전 필드 재노출.
  *  4. 끄기(전체): "전체 표시" off는 필수 필드(제목)를 남기고 나머지만 끈다(#260, 제목 없는 티켓 방지).
  *
  * 무드/시트는 dynamic(ssr:false)라 로드 대기에 findBy*를 쓴다. 상태는 Harness의 data-testid
@@ -75,18 +75,16 @@ describe('MobileEditorShell 필드 커버리지 (#266 PR-E)', () => {
     fireEvent.click(await screen.findByRole('switch', { name: '티켓 노출' }));
     expect(screen.getByTestId('vis-screen').textContent).toBe('false');
 
-    // "전체 표시" 단일 스위치(#261)는 #315에서 헤더 서브메뉴로, #424에서 필드 드로어로 이전 —
-    // 먼저 편집을 닫고 드로어를 연다.
+    // "전체 표시" 단일 스위치(#261)는 #315에서 헤더 서브메뉴로, #424에서 필드 드로어로, #826 S2에서 도크 정보
+    // 목록 끝으로 옮겨 왔다 — 편집을 닫으면 정보 모드 본문에 바로 있다.
     fireEvent.click(await screen.findByRole('button', { name: '편집 완료' }));
-    fireEvent.click(screen.getByRole('button', { name: '티켓 항목 목록' }));
-    const drawer = await screen.findByRole('dialog', { name: '티켓 항목' });
-    fireEvent.click(within(drawer).getByRole('switch', { name: '전체 표시' }));
+    fireEvent.click(within(screen.getByTestId('dock-body')).getByRole('switch', { name: '전체 표시' }));
     expect(screen.getByTestId('vis-screen').textContent).toBe('true');
   });
 
-  // #355 — 헤더 목록 버튼 → 필드 드로어 → 행 탭이 드로어를 닫고 인플레이스 편집을 여는 셸 배선.
-  // 드로어 onField는 handleField를 타므로 숨겨둔 필드도 자동 표시 on이 걸려야 한다.
-  test('헤더 목록 버튼 → 드로어 행 탭 → 드로어 닫힘 + 인플레이스 편집 + 자동 표시 on (#355)', async () => {
+  // #355 → #826 S2 — 정보 목록 행 탭이 인플레이스 편집을 여는 셸 배선. 행 onField는 handleField를 타므로
+  // 숨겨둔 필드도 자동 표시 on이 걸려야 한다.
+  test('정보 목록 행 탭 → 인플레이스 편집 + 자동 표시 on (#355 → #826 S2)', async () => {
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
 
@@ -96,19 +94,28 @@ describe('MobileEditorShell 필드 커버리지 (#266 PR-E)', () => {
     fireEvent.click(await screen.findByRole('button', { name: '편집 완료' }));
     expect(screen.getByTestId('vis-screen').textContent).toBe('false');
 
-    // 헤더 목록 버튼(포스터 있을 때만 노출) → 드로어(dynamic) 로드·오픈.
-    fireEvent.click(screen.getByRole('button', { name: '티켓 항목 목록' }));
-    const drawer = await screen.findByRole('dialog', { name: '티켓 항목' });
-    // 상단 슬롯의 OCR 진입점(#388: 업로드 후 유일한 OCR 진입점)이 드로어 안에 있다. 문구는 드로어
-    // 컨텍스트(#424)로 분기 — 랜딩 인스턴스와 다르다.
-    expect(within(drawer).getByRole('button', { name: '스크린샷으로 자동입력' })).toBeDefined();
+    // 도크는 정보 모드로 열린다. 상단의 OCR 진입점(#388의 후신)이 목록 위에 있다.
+    const list = screen.getByTestId('dock-body');
+    expect(within(list).getByRole('button', { name: '스크린샷으로 자동입력' })).toBeDefined();
+    // 숨긴 행은 눈이 꺼진 상태로 보인다.
+    expect(within(list).getByRole('button', { name: '상영관 티켓에 표시' }).getAttribute('aria-pressed')).toBe('false');
 
-    // 행 본문 탭('상영관'은 티켓 FieldTap과 접근명이 겹치므로 드로어 스코프로 특정) →
-    // 드로어 닫힘 + handleField가 자동 표시 on + 인플레이스 필드바 오픈.
-    fireEvent.click(within(drawer).getByRole('button', { name: '상영관 편집' }));
-    expect(screen.queryByRole('dialog', { name: '티켓 항목' }) === null).toBe(true);
+    // 행 본문 탭 → handleField가 자동 표시 on + 인플레이스 필드바 오픈('상영관'은 티켓 FieldTap과
+    // 접근명이 겹치지 않는다 — 행 이름은 이름 + 값이다).
+    fireEvent.click(within(list).getByRole('button', { name: /^상영관 (?!티켓에 표시)/ }));
     expect(screen.getByTestId('vis-screen').textContent).toBe('true');
     expect(await screen.findByRole('switch', { name: '티켓 노출' })).toBeDefined();
+  });
+
+  test('툴바의 항목 목록 버튼은 도크를 정보 모드로 바꾼다 (#826 S2, 옛 드로어 열기 대체)', async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByText('seed'));
+    fireEvent.click(screen.getByRole('tab', { name: '디자인' }));
+    expect(screen.getByRole('tab', { name: '디자인' }).getAttribute('aria-selected')).toBe('true');
+
+    fireEvent.click(screen.getByRole('button', { name: '티켓 항목 목록' }));
+    expect(screen.getByRole('tab', { name: /^정보/ }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.queryByRole('dialog') === null).toBe(true); // 모달이 아니다
   });
 
   // #260 경로 1(이관) — "전체 표시" off는 필수 필드(제목)를 남기고 나머지만 끈다(제목 없는 티켓 방지).
@@ -117,11 +124,9 @@ describe('MobileEditorShell 필드 커버리지 (#266 PR-E)', () => {
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
 
-    // #424: "전체 표시"는 필드 드로어 안 — 먼저 드로어를 연다.
-    fireEvent.click(screen.getByRole('button', { name: '티켓 항목 목록' }));
-    const drawer = await screen.findByRole('dialog', { name: '티켓 항목' });
+    // "전체 표시"는 도크 정보 모드 목록 끝(#826 S2, 옛 #424 필드 드로어) — 정보 모드로 열린다.
     // 첫 업로드는 표시항목을 부분 기본값으로 리셋하므로, 먼저 "전체 표시"로 전 필드를 켠다.
-    const allVis = within(drawer).getByRole('switch', { name: '전체 표시' });
+    const allVis = within(screen.getByTestId('dock-body')).getByRole('switch', { name: '전체 표시' });
     fireEvent.click(allVis);
     expect(screen.getByTestId('vis-title').textContent).toBe('true');
     expect(screen.getByTestId('vis-theater').textContent).toBe('true');
