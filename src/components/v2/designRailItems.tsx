@@ -115,8 +115,8 @@ function ChipRadio<V extends string>({
             data-touch="36"
             className={cn(pressableVariants(), `h-9 grow basis-[6rem] truncate rounded-chip border px-3 text-caption font-medium transition-colors ${
               value === opt.value
-                ? 'border-transparent bg-accent-soft text-accent'
-                : 'border-hair bg-s2 text-ink-2'
+                ? 'border-hair-strong bg-s2 font-semibold text-ink'
+                : 'border-transparent text-ink-2'
             } ${opt.disabled ? 'opacity-40' : ''}`)}
             style={optionStyle?.(opt.value, opt.label)}
           >
