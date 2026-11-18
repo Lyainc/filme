@@ -1,19 +1,27 @@
 /**
- * #315 회귀 테스트 — MobileEditorShell 헤더 서브메뉴.
+ * #315 → #826 S2 D09 회귀 테스트 — MobileEditorShell 편집 메뉴 시트.
  *
- * 뒤로가기·워드마크를 제거하고 햄버거 서브메뉴로 다크모드·전체표시·빈 항목 토글과 포스터
- * 교체·재크롭 액션을 통합했다(#323/#324 흡수). 잉크 토글은 #387에서 컬러 패널과 중복이라 삭제.
+ * 카드 두 장(설정: 빈 항목 표시 · 테마 · 자동저장 / 문서: 스크린샷으로 자동입력 · 임시저장 · 초기화), 행 44, 머리줄 없음.
+ * 닫기는 바깥(스크림) 탭 · ⋯ 재탭 · Escape이고 role=dialog + aria-modal, 열면 첫 행으로 포커스, 닫으면 ⋯로 돌아온다.
+ * 포스터 교체 · 재크롭 · 고급 설정 · 다크모드 토글 행은 없다(포스터는 도크 사진 모드, 테마는 3갈래 라디오).
+ * 'OCR 행'은 mobileEditorShellOcrEntryConsolidation이 runOcr 모킹과 함께 잠근다.
  */
 import { describe, expect, test, afterEach, beforeEach, jest } from 'bun:test';
+import { useState } from 'react';
 import { render, screen, cleanup, fireEvent, act, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { usePhototicket, STORAGE_KEY } from '@/hooks/usePhototicket';
 import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
+import type { ThemePreference } from '@/constants/theme';
 import { mobileShellProps } from './shellHarness';
 
-// 랜딩 오버레이 노출 여부(#614) — 랜딩은 overlay/inline/hidden 세 모드라 "덮고 있나"는 fixed로
+// 랜딩 오버레이 노출 여부(#614) — 랜딩은 overlay/hidden 두 모드라 "덮고 있나"는 fixed로
 // 잰다. 테스트엔 Tailwind CSS가 안 실려 getComputedStyle이 클래스를 안 반영하므로 className으로.
 const landingShown = () => screen.getByTestId('landing').classList.contains('fixed');
+
+const menuButton = () => screen.getByRole('button', { name: '편집 메뉴' });
+const menu = () => screen.getByRole('dialog', { name: '편집 메뉴' });
+const menuClosed = () => screen.queryByRole('dialog', { name: '편집 메뉴' }) === null;
 
 function Harness() {
   const photo = usePhototicket();
@@ -21,6 +29,9 @@ function Harness() {
     <>
       <button type="button" onClick={() => photo.handleImageUpload('blob:test-poster')}>
         seed
+      </button>
+      <button type="button" onClick={() => photo.updateMovieInfo({ title: '괴물' })}>
+        edit
       </button>
       <MobileEditorShell {...mobileShellProps(photo)} />
     </>
@@ -34,63 +45,137 @@ afterEach(() => {
   jest.useRealTimers();
 });
 
-describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
-  test('FILME 워드마크는 헤더에 복귀(#363, v8 §1 — #315 제거 결정 번복), 뒤로가기는 여전히 없다', () => {
-    render(<Harness />);
-    expect(screen.getByRole('heading', { level: 1, name: 'FILME' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: '맨 위로' }) === null).toBe(true);
-  });
-
-  test('햄버거 탭 → 메뉴 열림/닫힘(aria-expanded), 바깥 탭으로 닫힘', async () => {
+describe('편집 메뉴 시트 (#826 S2 D09)', () => {
+  test('⋯ 탭 → 시트 열림/닫힘(aria-expanded), role=dialog + aria-modal, 머리줄 · 손잡이 없음', async () => {
     const user = userEvent.setup();
     render(<Harness />);
-    const hamburger = screen.getByRole('button', { name: '편집 메뉴' });
 
-    expect(hamburger.getAttribute('aria-expanded')).toBe('false');
-    expect(screen.queryByRole('menu', { name: '편집 메뉴' }) === null).toBe(true);
+    expect(menuButton().getAttribute('aria-expanded')).toBe('false');
+    expect(menuClosed()).toBe(true);
 
-    await user.click(hamburger);
-    expect(hamburger.getAttribute('aria-expanded')).toBe('true');
-    expect(screen.getByRole('menu', { name: '편집 메뉴' })).toBeTruthy();
-
-    await user.click(hamburger);
-    expect(hamburger.getAttribute('aria-expanded')).toBe('false');
+    await user.click(menuButton());
+    expect(menuButton().getAttribute('aria-expanded')).toBe('true');
+    expect(menu().getAttribute('aria-modal')).toBe('true');
+    // 머리줄(제목·닫기 버튼) 없음 — 시트의 직계 자식은 카드 두 장뿐이다.
+    expect(Array.from(menu().children).map((c) => c.getAttribute('role'))).toEqual(['group', 'group']);
+    expect(screen.getByRole('group', { name: '설정' })).toBeTruthy();
+    expect(screen.getByRole('group', { name: '문서' })).toBeTruthy();
   });
 
-  test('Escape로도 메뉴가 닫힌다(#387, 삭제된 플로팅 툴바 배치 서브메뉴의 Escape 경로를 이 메뉴가 승계 — claude-review PR #405 P1)', async () => {
+  test('닫기 세 경로: 바깥(스크림) 탭 · ⋯ 재탭 · Escape', async () => {
     const user = userEvent.setup();
     render(<Harness />);
-    const hamburger = screen.getByRole('button', { name: '편집 메뉴' });
 
-    await user.click(hamburger);
-    expect(hamburger.getAttribute('aria-expanded')).toBe('true');
+    await user.click(menuButton());
+    await user.click(screen.getByTestId('editor-menu-scrim'));
+    expect(menuClosed()).toBe(true);
+    expect(menuButton().getAttribute('aria-expanded')).toBe('false');
+
+    await user.click(menuButton());
+    await user.click(menuButton());
+    expect(menuClosed()).toBe(true);
+
+    await user.click(menuButton());
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(menuClosed()).toBe(true);
+  });
+
+  test('열면 첫 행(빈 항목 표시)으로 포커스가 가고, 닫으면 ⋯로 돌아온다', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+
+    await user.click(menuButton());
+    // DOM 노드를 toBe로 비교하면 실패 시 직렬화가 폭발한다 — 불리언으로(#693).
+    expect(document.activeElement === screen.getByRole('switch', { name: '빈 항목 표시' })).toBe(true);
 
     fireEvent.keyDown(document, { key: 'Escape' });
-    expect(hamburger.getAttribute('aria-expanded')).toBe('false');
-    expect(screen.queryByRole('menu', { name: '편집 메뉴' }) === null).toBe(true);
+    expect(document.activeElement === menuButton()).toBe(true);
   });
 
-  test('메뉴가 열려 있어도 완료 버튼은 오버레이에 가려지지 않고 바로 눌린다 (claude-review PR #331 P2)', async () => {
+  test('Tab은 시트 밖으로 새지 않고 끝에서 처음으로 돈다', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(menuButton());
+
+    const focusables = Array.from(menu().querySelectorAll<HTMLElement>('button:not([tabindex="-1"])'));
+    const last = focusables[focusables.length - 1];
+    act(() => last.focus());
+    await user.tab();
+    expect(document.activeElement === focusables[0]).toBe(true);
+    await user.tab({ shift: true });
+    expect(document.activeElement === last).toBe(true);
+  });
+
+  test('행은 설정 3(빈 항목 표시 · 테마 · 자동저장) + 문서 3(스크린샷으로 자동입력 · 임시저장 · 초기화)이고, 포스터 · 고급 설정 · 다크모드 행은 없다', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    fireEvent.click(screen.getByText('seed'));
+    await user.click(menuButton());
+
+    const set = within(screen.getByRole('group', { name: '설정' }));
+    expect(set.getByRole('switch', { name: '빈 항목 표시' })).toBeTruthy();
+    expect(set.getByRole('radiogroup', { name: '테마' })).toBeTruthy();
+    expect(set.getByRole('switch', { name: /^자동저장/ })).toBeTruthy();
+
+    const doc = within(screen.getByRole('group', { name: '문서' }));
+    expect(doc.getByRole('button', { name: '스크린샷으로 자동입력' })).toBeTruthy();
+    expect(doc.getByRole('button', { name: '임시저장' })).toBeTruthy();
+    expect(doc.getByRole('button', { name: '초기화' })).toBeTruthy();
+
+    for (const gone of ['포스터 교체', '포스터 추가', '재크롭', '고급 설정', '다크모드']) {
+      expect(within(menu()).queryByText(gone) === null).toBe(true);
+    }
+  });
+
+  test('행 높이는 44(min-h-touch)이고 버튼 이름에 아이콘이 끼지 않는다', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(menuButton());
+
+    const rows = Array.from(menu().querySelectorAll('button')).filter((b) => b.getAttribute('role') !== 'radio');
+    expect(rows.length).toBe(5);
+    for (const row of rows) expect(row.classList.contains('min-h-touch')).toBe(true);
+    expect(menu().querySelectorAll('svg').length).toBe(0); // 리딩 아이콘 없음
+  });
+
+  test('시트는 불투명 면(bg-s1)이고 blur · 그라데이션이 없다 (constraint-11)', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(menuButton());
+
+    expect(menu().classList.contains('bg-s1')).toBe(true);
+    expect(menu().style.backdropFilter).toBe('');
+    expect(menu().getAttribute('style') ?? '').not.toMatch(/gradient|blur/);
+  });
+
+  test('시트와 스크림은 프레임 안 fixed 좌표이고 스크림은 상단 줄(52px) 아래부터다 — ⋯ 재탭이 스크림에 안 먹힌다', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(menuButton());
+
+    expect(menu().classList.contains('fixed')).toBe(true);
+    const scrim = screen.getByTestId('editor-menu-scrim');
+    expect(scrim.classList.contains('fixed')).toBe(true);
+    expect(scrim.classList.contains('top-[52px]')).toBe(true);
+  });
+
+  test('메뉴가 열려 있어도 완료 버튼은 바로 눌린다 (claude-review PR #331 P2)', async () => {
     const user = userEvent.setup();
     let calls = 0;
     function DoneHarness() {
       const photo = usePhototicket();
       return (
         <>
-          {/* 완료는 포스터가 있어야 렌더(#363) — seed 후에 검증한다. */}
+          {/* 완료는 캔버스가 서야 렌더(#363) — seed 후에 검증한다. */}
           <button type="button" onClick={() => photo.handleImageUpload('blob:test-poster')}>
             seed
           </button>
           <MobileEditorShell
-            photo={photo}
-            canExport
-            theme="light"
-            onThemeChange={() => {}}
-            onDone={() => { calls++; }}
-            disabledReason=""
-            previewMovieInfo={photo.state.movieInfo}
-            previewComponents={photo.state.components}
-            fieldVisibility={photo.state.fieldVisibility}
+            {...mobileShellProps(photo, {
+              onDone: () => {
+                calls++;
+              },
+            })}
           />
         </>
       );
@@ -98,34 +183,108 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     render(<DoneHarness />);
     fireEvent.click(screen.getByText('seed'));
 
-    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
-    expect(screen.getByRole('menu', { name: '편집 메뉴' })).toBeTruthy();
+    await user.click(menuButton());
+    expect(menu()).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '완료' }));
     expect(calls).toBe(1);
   });
+});
 
-  test('업로드 전엔 포스터 교체/재크롭 액션이 없다', async () => {
+describe('테마 3갈래 (#826 S2 D09, acceptance-17 — 저장 규칙은 useThemePreference 테스트가 잠근다)', () => {
+  function ThemeHarness({ onPick }: { onPick: (p: ThemePreference) => void }) {
+    const photo = usePhototicket();
+    const [pref, setPref] = useState<ThemePreference>('system');
+    return (
+      <MobileEditorShell
+        {...mobileShellProps(photo, {
+          themePreference: pref,
+          onThemeChange: (p) => {
+            onPick(p);
+            setPref(p);
+          },
+        })}
+      />
+    );
+  }
+
+  test('시스템 · 라이트 · 다크 라디오 3개, 선택은 선호값을 따르고 클릭이 선호값을 올린다', async () => {
     const user = userEvent.setup();
-    render(<Harness />);
-    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    const picks: ThemePreference[] = [];
+    render(<ThemeHarness onPick={(p) => picks.push(p)} />);
+    await user.click(menuButton());
 
-    expect(screen.queryByRole('button', { name: '포스터 교체' }) === null).toBe(true);
-    expect(screen.queryByRole('button', { name: '재크롭' }) === null).toBe(true);
+    const group = within(screen.getByRole('radiogroup', { name: '테마' }));
+    expect(group.getAllByRole('radio').map((r) => r.textContent)).toEqual(['시스템', '라이트', '다크']);
+    expect(group.getByRole('radio', { name: '시스템' }).getAttribute('aria-checked')).toBe('true');
+
+    await user.click(group.getByRole('radio', { name: '다크' }));
+    expect(picks).toEqual(['dark']);
+    expect(group.getByRole('radio', { name: '다크' }).getAttribute('aria-checked')).toBe('true');
+    expect(group.getByRole('radio', { name: '시스템' }).getAttribute('aria-checked')).toBe('false');
+
+    await user.click(group.getByRole('radio', { name: '시스템' }));
+    expect(picks).toEqual(['dark', 'system']);
   });
 
+  test('화살표 키로 이웃 라디오를 고르고 선택된 것만 Tab 정지점이다', async () => {
+    const user = userEvent.setup();
+    const picks: ThemePreference[] = [];
+    render(<ThemeHarness onPick={(p) => picks.push(p)} />);
+    await user.click(menuButton());
+
+    const system = screen.getByRole('radio', { name: '시스템' });
+    expect(system.getAttribute('tabindex')).toBe('0');
+    expect(screen.getByRole('radio', { name: '라이트' }).getAttribute('tabindex')).toBe('-1');
+
+    act(() => system.focus());
+    await user.keyboard('{ArrowRight}');
+    expect(picks).toEqual(['light']);
+    expect(document.activeElement === screen.getByRole('radio', { name: '라이트' })).toBe(true);
+  });
+});
+
+describe('자동저장 행 (#826 S2 D09)', () => {
+  test('스위치가 자동저장을 켜고 끄며, 켜져 있고 저장된 적이 있을 때만 "HH:MM 저장" 시각 메타가 뜬다', async () => {
+    jest.useFakeTimers();
+    const user = userEvent.setup({ delay: null });
+    render(<Harness />);
+
+    // 기본 켜짐 · 아직 저장 전 — 메타 없음.
+    await user.click(menuButton());
+    let row = screen.getByRole('switch', { name: '자동저장 켜짐' });
+    expect(row.getAttribute('aria-checked')).toBe('true');
+    expect(within(menu()).queryByText(/\d{2}:\d{2} 저장/) === null).toBe(true);
+    await user.click(menuButton());
+
+    // 실사용자 편집 → 자동저장 디바운스(1s) 뒤 저장 시각이 생긴다.
+    fireEvent.click(screen.getByText('edit'));
+    act(() => jest.advanceTimersByTime(1000));
+    await user.click(menuButton());
+    expect(within(menu()).getByText(/^\d{2}:\d{2} 저장$/)).toBeTruthy();
+
+    // 끄면 라벨이 꺼짐으로 바뀌고 시각 메타가 사라진다.
+    row = screen.getByRole('switch', { name: '자동저장 켜짐' });
+    await user.click(row);
+    row = screen.getByRole('switch', { name: '자동저장 꺼짐' });
+    expect(row.getAttribute('aria-checked')).toBe('false');
+    expect(within(menu()).queryByText(/\d{2}:\d{2} 저장/) === null).toBe(true);
+    // 끄고 켜는 방법은 title이 지고(축 2 예외), 라벨은 조건절 없는 상태 명사구다.
+    expect(row.getAttribute('aria-label')).toBe('자동저장 꺼짐');
+    expect(row.getAttribute('title')).toBe('자동저장 꺼짐 — 클릭하면 켜요');
+  });
+});
+
+describe('문서 카드: 임시저장 · 초기화', () => {
   test('업로드 전에도 임시저장/초기화는 노출된다(#310) — 포스터 전용 액션과 달리 게이팅하지 않는다', async () => {
     // 포스터(croppedImageUrl)는 새로고침에 안 남지만 movieInfo 등 나머지는 복원되므로(#310이 고치려는
     // 시나리오 자체), 포스터 재업로드 전에도 초기화에 닿을 수 있어야 한다.
     const user = userEvent.setup();
     render(<Harness />);
-    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    await user.click(menuButton());
 
     expect(screen.getByRole('button', { name: '임시저장' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '초기화' })).toBeTruthy();
-    // 반면 포스터 전용 액션은 여전히 게이팅된다.
-    expect(screen.queryByRole('button', { name: '포스터 교체' }) === null).toBe(true);
-    expect(screen.queryByRole('button', { name: '재크롭' }) === null).toBe(true);
   });
 
   test('초기화(#310): 포스터 없이 복원된 stale 값만 있어도 초기화로 지워진다(핵심 시나리오 — 새로고침 직후)', async () => {
@@ -133,7 +292,7 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     jest.useFakeTimers();
     const user = userEvent.setup({ delay: null });
     render(<Harness />);
-    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    await user.click(menuButton());
 
     // 2탭 arm(#374) — 1탭은 arm만, 확인 문구로 바뀐 행을 한 번 더 탭해야 실행.
     // 더블탭 가드(350ms) 밖에서 재탭해야 실행된다(PR #375 P1) — 가짜 타이머로 즉시 전진.
@@ -145,50 +304,48 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     expect(screen.getAllByText('초기화했어요').length).toBeGreaterThan(0);
   });
 
-  test('임시저장(#310): 즉시 localStorage에 저장 + 토스트 + 메뉴 닫힘', async () => {
+  test('임시저장(#310): 즉시 localStorage에 저장 + 토스트 + 시트 닫힘', async () => {
     const user = userEvent.setup();
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
-    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    await user.click(menuButton());
 
     await user.click(screen.getByRole('button', { name: '임시저장' }));
 
-    expect(screen.queryByRole('menu', { name: '편집 메뉴' }) === null).toBe(true);
+    expect(menuClosed()).toBe(true);
     expect(screen.getAllByText('임시저장했어요').length).toBeGreaterThan(0);
     expect(window.localStorage.getItem(STORAGE_KEY)).not.toBeNull();
   });
 
-  test('초기화 arm(#374): 1탭은 실행하지 않는다 — 라벨만 확인 문구로 바뀌고, 메뉴를 닫으면 해제된다', async () => {
+  test('초기화 arm(#374): 1탭은 실행하지 않는다 — 라벨이 앰버 확인 문구로 바뀌고, 시트를 닫으면 해제된다', async () => {
     const user = userEvent.setup();
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
-    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    await user.click(menuButton());
 
     await user.click(screen.getByRole('button', { name: '초기화' }));
-    // arm됨 — 메뉴는 열린 채, 실행은 아직.
+    // arm됨 — 시트는 열린 채, 실행은 아직.
     const armedRow = screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' });
-    expect(armedRow).toBeTruthy();
-    // arm 표시는 채움 틴트가 아니라 링이다(#569) — 붉은 틴트가 배경을 밝히면 같은 붉은 danger
-    // 라벨 대비가 3.79:1로 떨어진다. 링이면 배경이 --surface 그대로라 4.66:1을 유지한다.
-    expect(armedRow.style.boxShadow).toContain('var(--pr-warn)');
-    expect(armedRow.style.background).toBe('');
+    // 앰버(--pr-warn) 글자 + 굵게다(D09 .armed) — 채움 틴트나 링이 아니다.
+    expect(armedRow.classList.contains('text-warn')).toBe(true);
+    expect(armedRow.classList.contains('font-semibold')).toBe(true);
     expect(screen.queryByText('초기화했어요') === null).toBe(true);
 
-    // 메뉴를 닫았다 다시 열면 arm이 풀려 원래 라벨로 돌아오고, 포스터도 그대로다(미실행 증거).
-    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
-    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    // 시트를 닫았다 다시 열면 arm이 풀려 원래 라벨로 돌아오고, 초기화 토스트도 없다(미실행 증거).
+    await user.click(menuButton());
+    await user.click(menuButton());
     expect(screen.getByRole('button', { name: '초기화' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: '한 번 더 눌러 전체 삭제' }) === null).toBe(true);
-    expect(screen.queryByRole('button', { name: '재크롭' })).not.toBeNull();
+    expect(screen.queryByText('초기화했어요') === null).toBe(true);
   });
 
-  test('초기화 arm(#374): 2탭 시 storage 삭제 + 상태 초기화 + 토스트', async () => {
+  test('초기화 arm(#374): 2탭 시 storage 삭제 + 상태 초기화 + 토스트 + 랜딩 복귀', async () => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ movieInfo: { title: '기생충' } }));
     jest.useFakeTimers();
     const user = userEvent.setup({ delay: null });
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
-    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    await user.click(menuButton());
 
     // 더블탭 가드 경계(350ms) — 정확히 350ms 지나면 실행된다(가드 조건은 `< 350`). userEvent의
     // 클릭 디스패치 자체가 가짜 타이머를 1ms씩 미세 전진시키는 걸 실측했으므로(bun 1.3.14), 경계를
@@ -201,10 +358,9 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     expect(screen.getAllByText('초기화했어요').length).toBeGreaterThan(0);
     // 포스터도 draft도 사라져 랜딩이 다시 뜬다(INITIAL_STATE 복귀 증거). #614에서 이 복귀는
     // 두 곳이 같이 되돌아야 성립한다 — usePhototicket.draftRestored와 셸의 landingDismissed.
-    // 한쪽만 남으면 포스터도 랜딩도 없는 빈 셸이 된다.
     expect(landingShown()).toBe(true);
-    // 실행 후 메뉴는 닫힌다.
-    expect(screen.queryByRole('menu', { name: '편집 메뉴' }) === null).toBe(true);
+    // 실행 후 시트는 닫힌다.
+    expect(menuClosed()).toBe(true);
   });
 
   test('초기화 arm(#374): arm 직후 350ms 내 재탭(더블탭)은 실행되지 않는다 (claude-review PR #375 P1)', async () => {
@@ -212,10 +368,9 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     const user = userEvent.setup({ delay: null });
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
-    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    await user.click(menuButton());
 
     // 더블탭 가드 경계(350ms) 바로 앞 — 349ms 시점 재탭은 여전히 무시된다(가드 조건은 `< 350`).
-    // 위 테스트와 같은 이유로 arm·재탭 두 탭은 fireEvent로 정밀하게 잰다.
     fireEvent.click(screen.getByRole('button', { name: '초기화' }));
     act(() => jest.advanceTimersByTime(349));
     fireEvent.click(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' }));
@@ -228,9 +383,8 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
   test('초기화 arm(#374): 3.2초 내 재탭이 없으면 자동 해제된다 (claude-review PR #375 P1)', () => {
     jest.useFakeTimers();
     render(<Harness />);
-    // 자동 해제 타이머는 arm 탭이 스케줄하므로, 그 시점부터 정확히 재려면 fireEvent로 연다
-    // (userEvent 클릭은 가짜 타이머를 1ms씩 미세 전진시켜 경계 직전 값이 밀린다, 위 테스트와 동일 근거).
-    fireEvent.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    // 자동 해제 타이머는 arm 탭이 스케줄하므로, 그 시점부터 정확히 재려면 fireEvent로 연다.
+    fireEvent.click(menuButton());
     fireEvent.click(screen.getByRole('button', { name: '초기화' }));
     expect(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' })).toBeTruthy();
 
@@ -243,145 +397,4 @@ describe('MobileEditorShell 헤더 서브메뉴 (#315)', () => {
     expect(screen.getByRole('button', { name: '초기화' })).toBeTruthy();
     expect(screen.queryByText('초기화했어요') === null).toBe(true);
   });
-
-  // 잉크 토글은 #387에서 삭제 — 컬러 패널(DesignRail ColorPicker)의 White/Black 프리셋과
-  // 완전히 중복이라 기능 손실 없이 제거(전문가 패널 검토, docs/discussions/20260716...).
-  // 이 서브메뉴가 검증하던 라이트↔다크 전환·35mm disabled 동작 회귀 테스트는 ColorPicker
-  // 쪽에 상응하는 게 없다 — desktopDesignPanel.test.tsx (c)는 White/Black 프리셋의 존재만
-  // 확인하고 클릭 동작은 검증하지 않는다(#387 스코프 밖의 기존 커버리지 공백, 별도 이슈감).
-
-  test('#569 — 메뉴 패널은 오버레이 계층 토큰을 쓰고, 텍스트 행은 불투명 표면 위에 얹힌다', async () => {
-    // 패널이 --glass-fill(입력 함몰용 8%)이라 밝은 포스터 위에서 항목이 안 보였다(#569).
-    // 계층을 되돌리면(=패널을 다시 --glass-fill로) 같은 증상이 그대로 재발하므로 토큰 이름을
-    // 못박는다. 알파를 올려도 muted·accent·danger 잉크는 유리 위에서 AA를 못 넘어서(globals.css
-    // --overlay-* 주석의 실측표) 행 그룹이 불투명해야 한다 — 이게 FieldDrawer가 세운 규칙이다.
-    const user = userEvent.setup();
-    render(<Harness />);
-    fireEvent.click(screen.getByText('seed'));
-    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
-
-    const panel = screen.getByRole('menu', { name: '편집 메뉴' });
-    expect(panel.style.background).toBe('var(--overlay-fill)');
-    expect(panel.style.borderColor).toBe('var(--overlay-border)');
-
-    // 모든 행이 불투명 그룹 안에 있다 — 패널 직계 자식으로 새는 행이 없어야 한다.
-    const rows = Array.from(panel.querySelectorAll('button'));
-    expect(rows.length).toBeGreaterThan(3); // 루프가 빈 채로 통과하지 않게
-    for (const row of rows) {
-      const group = row.closest('div.bg-s1');
-      expect(group === null ? `그룹 밖 행: ${row.textContent}` : true).toBe(true);
-    }
-
-    // (드로어 엣지 핸들의 오버레이 계층 단언은 #826 S2에서 핸들과 함께 사라졌다.)
-
-    // 선택된 배치 라디오도 --fg로 — 다크에서 --accent는 불투명 표면 위에서도 3.97:1이다.
-    // 배치 라디오는 #574에서 고급 설정 모달로 이사했으므로 거기서 확인한다.
-    await user.click(screen.getByRole('button', { name: '고급 설정' }));
-    const on = within(screen.getByRole('radiogroup', { name: '툴바 배치' }))
-      .getByRole('radio', { name: '세로형 · 고정식' });
-    expect(on.getAttribute('aria-checked')).toBe('true');
-    expect(on.className).toMatch(/(^|\s)text-ink(\s|$)/);
-    expect(on.className).not.toContain('text-accent');
-  });
-
-  test('고급 설정 모달(#574): 햄버거의 진입 행이 메뉴를 닫으며 모달을 열고, 배치 라디오 4종·스냅 경로가 그 안에 산다', async () => {
-    const user = userEvent.setup();
-    render(<Harness />);
-    fireEvent.click(screen.getByText('seed'));
-    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
-
-    // 메뉴 안엔 더 이상 접이식 '툴바 설정' 섹션이 없다(#447 → #574로 이사).
-    expect(screen.queryByRole('button', { name: '툴바 설정' }) === null).toBe(true);
-    expect(screen.queryByRole('radiogroup', { name: '툴바 배치' }) === null).toBe(true);
-    // 남는 카드는 셋뿐이다(토글·포스터 액션·문서 액션) — 툴바 설정 카드가 빠진 자리가
-    // 네 번째 카드로 되살아나지 않게 개수를 못박는다(#574).
-    const panel = screen.getByRole('menu', { name: '편집 메뉴' });
-    expect(panel.querySelectorAll(':scope > div.bg-s1')).toHaveLength(3);
-
-    await user.click(screen.getByRole('button', { name: '고급 설정' }));
-    // 메뉴는 닫히고 모달만 남는다 — 중첩이 없어야 Escape 한 번이 둘을 같이 닫지 않는다.
-    expect(screen.queryByRole('menu', { name: '편집 메뉴' }) === null).toBe(true);
-    const dialog = screen.getByRole('dialog', { name: '고급 설정' });
-    expect(dialog.getAttribute('aria-modal')).toBe('true');
-
-    const group = within(screen.getByRole('radiogroup', { name: '툴바 배치' }));
-    expect(group.getAllByRole('radio')).toHaveLength(4);
-    // 고정식 기본값에선 스냅 버튼이 없고, 이동식으로 바꾸면 좌/우 대체 경로가 뜬다(SC 2.5.7).
-    expect(screen.queryByRole('button', { name: '왼쪽 가장자리로 이동' }) === null).toBe(true);
-    await user.click(group.getByRole('radio', { name: '세로형 · 이동식' }));
-    expect(screen.getByRole('button', { name: '왼쪽 가장자리로 이동' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: '오른쪽 가장자리로 이동' })).toBeTruthy();
-  });
-
-  test('고급 설정 모달(#574): 닫기 버튼·백드롭 탭·Escape 세 경로로 닫힌다', async () => {
-    const user = userEvent.setup();
-    render(<Harness />);
-    fireEvent.click(screen.getByText('seed'));
-
-    const openModal = async () => {
-      await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
-      await user.click(screen.getByRole('button', { name: '고급 설정' }));
-      return screen.getByRole('dialog', { name: '고급 설정' });
-    };
-
-    let dialog = await openModal();
-    await user.click(within(dialog).getByRole('button', { name: '닫기' }));
-    expect(screen.queryByRole('dialog', { name: '고급 설정' }) === null).toBe(true);
-
-    dialog = await openModal();
-    fireEvent.keyDown(document, { key: 'Escape' });
-    expect(screen.queryByRole('dialog', { name: '고급 설정' }) === null).toBe(true);
-
-    // 백드롭 탭 — 풀페이지라도 포인터 대체 경로를 하나 더 남긴다.
-    dialog = await openModal();
-    fireEvent.click(dialog.parentElement!.querySelector('[aria-hidden="true"]')!);
-    expect(screen.queryByRole('dialog', { name: '고급 설정' }) === null).toBe(true);
-  });
-
-  test('고급 설정 모달(#574): 패널은 오버레이 계층 토큰, 안의 텍스트 행은 불투명 표면 위 (#569 규칙 승계)', async () => {
-    const user = userEvent.setup();
-    render(<Harness />);
-    fireEvent.click(screen.getByText('seed'));
-    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
-    await user.click(screen.getByRole('button', { name: '고급 설정' }));
-
-    const dialog = screen.getByRole('dialog', { name: '고급 설정' });
-    expect(dialog.style.background).toBe('var(--overlay-fill)');
-    expect(dialog.style.borderColor).toBe('var(--overlay-border)');
-
-    // 새 리터럴 색을 만들지 않았다 — 인라인 style에 rgb/hex가 없어야 한다(토큰 var()만).
-    for (const el of Array.from(dialog.querySelectorAll<HTMLElement>('[style]'))) {
-      expect(el.getAttribute('style')).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
-    }
-
-    // 모든 버튼이 불투명 카드 안에 있다 — 유리 위 직접 텍스트로 새는 행이 없어야 한다.
-    const rows = Array.from(dialog.querySelectorAll('button'));
-    expect(rows.length).toBeGreaterThan(4);
-    for (const row of rows) {
-      expect(row.closest('div.bg-s1, section.bg-s1') === null
-        ? `그룹 밖 행: ${row.textContent}`
-        : true).toBe(true);
-    }
-  });
-
-  test('고급 설정 모달(#574): 포커스가 모달 안에 갇히고, 닫으면 트리거로 돌아온다', async () => {
-    const user = userEvent.setup();
-    render(<Harness />);
-    fireEvent.click(screen.getByText('seed'));
-    const hamburger = screen.getByRole('button', { name: '편집 메뉴' });
-    await user.click(hamburger);
-    await user.click(screen.getByRole('button', { name: '고급 설정' }));
-
-    const dialog = screen.getByRole('dialog', { name: '고급 설정' });
-    expect(dialog.contains(document.activeElement)).toBe(true);
-
-    // 모달 밖 요소로 포커스를 밀어도 패널로 되돌아온다(focusin 가두기).
-    act(() => hamburger.focus());
-    expect(dialog.contains(document.activeElement)).toBe(true);
-
-    fireEvent.keyDown(document, { key: 'Escape' });
-    // DOM 노드를 toBe로 비교하면 실패 시 bun이 서브트리를 통째로 직렬화해 러너가 멈춘다 — 불리언으로.
-    expect(document.activeElement === hamburger).toBe(true);
-  });
-
 });

@@ -56,7 +56,6 @@ function renderStage(onBack: () => void) {
     React.createElement(ResultStage, {
       theme: 'light',
       onBack,
-      onWordmarkTap: () => {},
       croppedImageUrl: 'blob:fake',
       movieInfo: MOVIE,
       components: COMPONENTS,
@@ -86,7 +85,6 @@ describe('ResultStage 뒤로가기 배선 (#258)', () => {
       React.createElement(ResultStage, {
         theme: 'light',
         onBack: () => {},
-        onWordmarkTap: () => {},
         croppedImageUrl: null,
         movieInfo: MOVIE,
         components: COMPONENTS,

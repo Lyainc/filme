@@ -33,12 +33,12 @@ function Harness() {
 afterEach(cleanup);
 
 describe('MobileEditorShell landscape 회전 배치 (#275-8)', () => {
-  test('editorial(landscape) 시드 후 최대화 전환이 크래시 없이 렌더된다', async () => {
+  test('editorial(landscape) 시드 후 전체 보기 전환이 크래시 없이 렌더된다', async () => {
     const user = userEvent.setup();
     render(<Harness />);
     await user.click(screen.getByText('seed-editorial-poster'));
 
-    await user.click(screen.getByRole('button', { name: '최대화' }));
+    await user.click(screen.getByRole('button', { name: '전체 보기' }));
     expect(screen.getByRole('button', { name: '기본 크기로 돌아가기' })).toBeTruthy();
 
     // 기본 복귀 — 회전 래퍼가 사라진다.

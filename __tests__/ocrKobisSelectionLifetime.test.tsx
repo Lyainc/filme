@@ -50,6 +50,7 @@ function MobileHarness() {
       photo={photo}
       canExport
       theme="light"
+      themePreference="light"
       onThemeChange={() => {}}
       onDone={() => {}}
       disabledReason=""

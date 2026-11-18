@@ -1,5 +1,5 @@
 /**
- * #216 회귀 테스트 — 빈 항목 미리보기(ghost) 모드.
+ * #216 회귀 테스트 — 빈 항목 표시(ghost) 모드.
  *
  * 검증 3축(데스크톱 보존이 핵심):
  * 1. ghost={true} + 빈 필드 + visible → 각 무드에 dashed 자리표시자(data-hide-on-export) 등장.

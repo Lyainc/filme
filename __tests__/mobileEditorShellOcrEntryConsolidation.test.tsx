@@ -13,7 +13,7 @@
  * 반영돼야 한다.
  */
 import { describe, expect, test, afterAll, afterEach, mock, spyOn } from 'bun:test';
-import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { PhototicketState } from '@/types';
 
@@ -55,6 +55,7 @@ function MobileHarness() {
         photo={photo}
         canExport
         theme="light"
+        themePreference="light"
         onThemeChange={() => {}}
         onDone={() => {}}
         disabledReason=""
@@ -345,6 +346,37 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
     release();
     await waitFor(() => {
       expect(screen.getByRole('button', { name: '스크린샷으로 자동입력' }).getAttribute('aria-busy')).toBe('false');
+    });
+  });
+
+  // 편집 메뉴 '스크린샷으로 자동입력' 행(#826 S2 D09, constraint-17)도 같은 단일 카드를 연다 — 메뉴에 카드를 새로 얹지 않는다.
+  test('메뉴 행은 랜딩의 단일 카드 파일 선택을 열고, 인식 중에는 \'티켓 인식 중…\'(aria-busy, 비활성)로 바뀐다', async () => {
+    const user = userEvent.setup();
+    let release!: () => void;
+    ocrImpl = () => new Promise((resolve) => { release = () => resolve({}); });
+    render(<MobileHarness />);
+    await user.click(screen.getByRole('button', { name: '포스터 없이 직접 입력' }));
+
+    const input = ocrFileInput();
+    let clicks = 0;
+    input.addEventListener('click', () => { clicks += 1; });
+
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    const menu = within(screen.getByRole('dialog', { name: '편집 메뉴' }));
+    await user.click(menu.getByRole('button', { name: '스크린샷으로 자동입력' }));
+    expect(clicks).toBe(1);
+    expect(screen.queryByRole('dialog', { name: '편집 메뉴' }) === null).toBe(true); // 행을 누르면 시트가 닫힌다
+    expect(document.querySelectorAll('input[type="file"][accept="image/*"]').length).toBe(1);
+
+    await user.upload(input, new File(['x'], 'ticket.png', { type: 'image/png' }));
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    const busy = within(screen.getByRole('dialog', { name: '편집 메뉴' })).getByRole('button', { name: '티켓 인식 중…' }) as HTMLButtonElement;
+    expect(busy.getAttribute('aria-busy')).toBe('true');
+    expect(busy.disabled).toBe(true);
+
+    release();
+    await waitFor(() => {
+      expect(within(screen.getByRole('dialog', { name: '편집 메뉴' })).getByRole('button', { name: '스크린샷으로 자동입력' }).getAttribute('aria-busy')).toBe('false');
     });
   });
 });

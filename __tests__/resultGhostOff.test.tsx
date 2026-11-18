@@ -68,7 +68,7 @@ describe('결과 화면 TicketRenderer는 ghost를 끈다 (#768)', () => {
   });
 
   test('ResultStage hero', () => {
-    render(React.createElement(ResultStage, { ...COMMON, theme: 'light', onBack: () => {}, onWordmarkTap: () => {} }));
+    render(React.createElement(ResultStage, { ...COMMON, theme: 'light', onBack: () => {} }));
     expect(ghosts.length).toBeGreaterThan(0);
     expect(ghosts.every((g) => g === false)).toBe(true);
   });

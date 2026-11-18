@@ -60,6 +60,10 @@ afterAll(() => {
   mock.module('@/utils/imageDb', () => realImageDb);
 });
 
+/** 사진 모드(#826 S2) 포스터 행의 버튼 이름들 — 문자열 배열이라 실패 직렬화에 DOM이 안 실린다(#693). */
+const posterRowButtonLabels = () =>
+  Array.from(document.querySelectorAll('[data-asset-row="포스터"] button')).map((b) => b.textContent ?? '');
+
 describe('포스터 있던 draft 재방문의 비동기 복원 창 (#683 → #727)', () => {
   // ac1 포스터 축 — c1이 지목한 자리다. 랜딩 판정에 croppedImageUrl이 살아 있으면 정확히
   // releaseLoad() 직후에 깨진다(복원 대기 중엔 통과하고 도착 순간에만 뒤집히므로, 게이트를 쥐고
@@ -81,15 +85,15 @@ describe('포스터 있던 draft 재방문의 비동기 복원 창 (#683 → #72
     // 빈 셸이 아니라 곧 포스터가 채워질 캔버스가 기다린다.
     expect(!!screen.queryByRole('button', { name: '완료' })).toBe(true);
 
-    // 포스터가 도착해도 랜딩은 그대로다 — 헤더 메뉴가 '포스터 교체'로 바뀌는 걸로 실제 도착을 잰다.
+    // 포스터가 도착해도 랜딩은 그대로다 — 사진 모드 포스터 행이 '추가'에서 '교체'로 바뀌는 걸로 실제 도착을 잰다.
     await act(async () => {
       releaseLoad?.();
       await loadGate;
     });
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    await user.click(screen.getByRole('tab', { name: '사진' }));
     await waitFor(() => {
-      expect(!!screen.queryByRole('button', { name: '포스터 교체' })).toBe(true);
+      expect(posterRowButtonLabels()).toContain('교체');
     });
     expect(landing.classList.contains('fixed')).toBe(true);
     expect(landing.classList.contains('hidden')).toBe(false);
@@ -128,7 +132,7 @@ describe('포스터 있던 draft 재방문의 비동기 복원 창 (#683 → #72
 
   // ac5 / c8 — 복원이 도착하기 전에 "새로 시작"으로 진입하면 옛 포스터가 새 문서에 끼어들면 안 된다.
   // 문서 세대 ref가 없으면 loadImages().then이 setState로 croppedImageUrl을 주입해 정확히 여기서
-  // 깨진다. 대리 지표는 이 파일이 이미 쓰는 헤더 메뉴 문구다('포스터 추가' vs '포스터 교체').
+  // 깨진다. 대리 지표는 이 파일이 이미 쓰는 사진 모드 포스터 행 버튼('추가' vs '교체')이다.
   test('복원이 늦게 도착해도 새로 시작한 문서에 옛 포스터가 안 들어온다 (#727 c8)', async () => {
     window.localStorage.setItem(
       STORAGE_KEY,
@@ -147,11 +151,11 @@ describe('포스터 있던 draft 재방문의 비동기 복원 창 (#683 → #72
       await loadGate;
     });
 
-    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    await user.click(screen.getByRole('tab', { name: '사진' }));
     await waitFor(() => {
-      expect(!!screen.queryByRole('button', { name: '포스터 추가' })).toBe(true);
+      expect(posterRowButtonLabels()).toContain('추가');
     });
-    expect(!!screen.queryByRole('button', { name: '포스터 교체' })).toBe(false);
+    expect(posterRowButtonLabels()).not.toContain('교체');
     // 저장분은 그대로다(c7) — 파기한 건 메모리 문서뿐이라 새로고침 한 번으로 되돌아온다.
     expect(window.localStorage.getItem(STORAGE_KEY)).toContain('인터스텔라');
   });

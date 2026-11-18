@@ -49,7 +49,7 @@ describe('편집 프리뷰 작업대 표면 (#571)', () => {
     const user = userEvent.setup();
     render(<Harness />);
     await user.click(screen.getByText('seed-poster'));
-    await user.click(screen.getByRole('button', { name: '최대화' }));
+    await user.click(screen.getByRole('button', { name: '전체 보기' }));
 
     const wrap = screen.getByRole('button', { name: '기본 크기로 돌아가기' });
     expect(wrap.classList.contains('crop-marks')).toBe(false);

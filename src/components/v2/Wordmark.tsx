@@ -39,14 +39,10 @@ function ClapTixMark({ size = 30 }: { size?: number }) {
   );
 }
 
-/** 마크 + 로고타입 락업(BI 마스터 §01). 감싸는 랜드마크(h1/Link)는 호출부가 결정한다.
- * onClick(#578, 워드마크=초기화 두 번째 진입점)을 주면 아이콘+로고타입 전체가 탭 타깃이 되는데,
- * h1을 리터럴 `<button>`으로 바꾸는 대신(h1 시맨틱이 사라진다) h1은 그대로 두고 안쪽 span이
- * role="button"을 진다 — display:contents는 안 쓴다(WebKit이 한동안 접근성 트리에서 통째로
- * 지웠던 이력이 있는 속성이라, 레이아웃은 h1 자신의 flex로 잡는 쪽이 안전하다). */
-export function Wordmark({ as: Tag = 'span', onClick }: { as?: 'h1' | 'span'; onClick?: () => void }) {
-  // 시각 글자는 dotless-i라 접근성 이름은 aria-label로 고정 — SR·테스트 모두 "FILME"(클릭형은
-  // "FILME — 처음 화면으로 돌아가기"로 대체).
+/** 마크 + 로고타입 락업(BI 마스터 §01). 감싸는 랜드마크(h1/Link)는 호출부가 결정한다. 브랜드 표시 전용이다 —
+ * 워드마크 탭 초기화(#578 · #669)는 #826 S2에서 없앴고, 편집 화면에선 이 락업을 쓰지 않는다. */
+export function Wordmark({ as: Tag = 'span' }: { as?: 'h1' | 'span' }) {
+  // 시각 글자는 dotless-i라 접근성 이름은 aria-label로 고정 — SR·테스트 모두 "FILME".
   const glyphs = (
     <>
       f
@@ -63,38 +59,12 @@ export function Wordmark({ as: Tag = 'span', onClick }: { as?: 'h1' | 'span'; on
   );
   const glyphStyle = { fontFamily: 'var(--font-brand)', fontWeight: 900, fontSize: 19, lineHeight: 1, letterSpacing: '-0.012em' };
 
-  if (!onClick) {
-    return (
-      <>
-        <ClapTixMark />
-        <Tag aria-label="FILME" className="inline-flex items-baseline whitespace-nowrap text-ink" style={glyphStyle}>
-          {glyphs}
-        </Tag>
-      </>
-    );
-  }
-
   return (
-    // h1 자체는 aria-label="FILME"로 고정 — 안 두면 accname이 name-from-content로 안쪽
-    // button의 aria-label("FILME — 처음 화면으로 돌아가기")을 그대로 물려받아 헤딩 이름이
-    // 깨진다(mobileEditorShellMenu.test.tsx의 heading name:'FILME' 회귀).
-    <Tag aria-label="FILME" className="inline-flex items-center">
-      <span
-        role="button"
-        tabIndex={0}
-        aria-label="FILME — 처음 화면으로 돌아가기"
-        className="inline-flex cursor-pointer items-center gap-2"
-        onClick={onClick}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onClick();
-          }
-        }}
-      >
-        <ClapTixMark />
-        <span className="inline-flex items-baseline whitespace-nowrap text-ink" style={glyphStyle}>{glyphs}</span>
-      </span>
-    </Tag>
+    <>
+      <ClapTixMark />
+      <Tag aria-label="FILME" className="inline-flex items-baseline whitespace-nowrap text-ink" style={glyphStyle}>
+        {glyphs}
+      </Tag>
+    </>
   );
 }

@@ -1,14 +1,9 @@
 /**
- * #669 회귀 테스트 — 결과 화면(ResultStage)의 워드마크도 #578과 같은 초기화 진입점이다.
+ * #669 → #826 S2 회귀 테스트 — 결과 화면(ResultStage) 워드마크는 브랜드 표시일 뿐이다.
  *
- * ResultStage는 usePhototicket의 photo(따라서 clearDraft)를 직접 안 받는 구조라, 초기화
- * 판정·confirm·실제 clear는 MobileEditorShell 인스턴스가 그대로 쥐고 있다(그 셸은 결과화면이
- * 열려도 언마운트되지 않고 CSS로만 숨는다, #297) — pages/index.tsx가 ref
- * (MobileEditorShellHandle.requestWordmarkReset)로 그 로직을 호출만 중계한다. 그래서 이
- * 테스트는 로직 자체(이력 판정 네 축)가 아니라 배선 — ResultStage 워드마크 탭이 실제로 그
- * 셸의 초기화를 트리거하고, 취소하면 결과화면이 그대로 유지되고, 확인하면 편집 화면(랜딩)으로
- * 돌아가는지 — 를 검증한다. 판정 로직 자체의 다섯 축은 wordmarkClearOnTap.test.tsx가 이미
- * MobileEditorShell 레벨에서 커버한다.
+ * #669가 결과 화면 워드마크를 초기화 진입점으로 만들었으나(워드마크 탭 → window.confirm → 초기화), #826 S2가 워드마크 탭
+ * 초기화를 통째로 걷었다(Seed constraint-7, 소유자 D05/D08). 지금 지우는 길은 편집 메뉴 초기화 2탭뿐이다. 이 테스트는
+ * 그 제거를 잠근다: 워드마크는 버튼이 아니고(역할 · 키보드 진입 없음), 눌러도 confirm이 안 뜨고 아무 일도 없다.
  */
 import { describe, expect, test, afterAll, afterEach, beforeEach, mock, spyOn } from 'bun:test';
 import { render, cleanup, screen, fireEvent, within } from '@testing-library/react';
@@ -52,12 +47,8 @@ const posterFileInput = () =>
   document.querySelector('input[type="file"][accept*="jpeg"]') as HTMLInputElement;
 const pngFile = (name: string) => new File([name], name, { type: 'image/png' });
 // MobileEditorShell은 결과화면 진입 후에도 hidden으로 계속 마운트돼 있어(#297) 같은 이름의
-// 워드마크 버튼이 DOM에 2개(숨은 편집 셸용 + 보이는 결과화면용) 있다 — result-ambient(ResultStage
-// 전용 testid)의 부모로 스코프를 좁혀 결과화면 쪽만 집는다.
-const resultWordmark = () =>
-  within(screen.getByTestId('result-ambient').parentElement!).getByRole('button', {
-    name: 'FILME — 처음 화면으로 돌아가기',
-  });
+// 요소가 DOM에 여럿 있을 수 있다 — result-ambient(ResultStage 전용 testid)의 부모로 스코프를 좁혀 결과화면 쪽만 집는다.
+const resultStage = () => within(screen.getByTestId('result-ambient').parentElement!);
 
 function seedExportableDraft() {
   window.localStorage.setItem(
@@ -92,29 +83,20 @@ afterEach(() => {
   mock.restore();
 });
 
-describe('ResultStage 워드마크 초기화 배선 (#669)', () => {
-  test('작업 이력이 있는 채로 결과화면에 진입했을 때, 워드마크 탭 → confirm → 취소하면 결과화면이 유지된다', async () => {
+describe('ResultStage 워드마크는 브랜드 표시일 뿐이다 (#826 S2)', () => {
+  test('워드마크는 버튼이 아니라 FILME 제목 표시이고, 눌러도 confirm이 없고 결과화면이 그대로다', async () => {
     const user = userEvent.setup();
     await enterResultStage(user);
+    const confirmSpy = spyOn(window, 'confirm');
 
-    const confirmSpy = spyOn(window, 'confirm').mockImplementation(() => false);
-    await user.click(resultWordmark());
+    expect(resultStage().queryByRole('button', { name: 'FILME — 처음 화면으로 돌아가기' }) === null).toBe(true);
+    const mark = resultStage().getByRole('heading', { level: 1, name: 'FILME' });
+    await user.click(mark);
+    await user.keyboard('{Enter}');
 
-    expect(confirmSpy).toHaveBeenCalledTimes(1);
-    // 취소했으니 결과화면 그대로 — 뒤로가기 버튼(ResultStage 전용 진입점)이 여전히 있다.
+    expect(confirmSpy).not.toHaveBeenCalled();
+    // 결과화면 그대로 — 뒤로가기 버튼(ResultStage 전용 진입점)이 여전히 있고 랜딩은 안 뜬다.
     expect(screen.getByRole('button', { name: '편집으로 돌아가기' })).toBeTruthy();
-  });
-
-  test('워드마크 탭 → confirm → 확인하면 초기화되고 편집 화면(랜딩)으로 돌아간다', async () => {
-    const user = userEvent.setup();
-    await enterResultStage(user);
-
-    spyOn(window, 'confirm').mockImplementation(() => true);
-    await user.click(resultWordmark());
-
-    // ResultStage는 resultOpen=false로 언마운트되고, 편집 셸이 다시 보이며 랜딩이 뜬다
-    // (초기화가 croppedImageUrl·landingDismissed·history를 전부 되돌린 증거, #614).
-    expect(screen.queryByRole('button', { name: '편집으로 돌아가기' }) === null).toBe(true);
-    expect(screen.getByTestId('landing').classList.contains('fixed')).toBe(true);
+    expect(screen.getByTestId('landing').classList.contains('fixed')).toBe(false);
   });
 });

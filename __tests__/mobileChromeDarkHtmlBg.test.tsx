@@ -102,8 +102,9 @@ describe('모바일 셸 html 배경 동기화 (#402→#415)', () => {
 
   test('모바일 + 다크 테마: documentElement에 theme-dark 적용(기존 테마 동기화, chrome-dark forcing 불필요)', () => {
     setViewportWidth(500);
-    // _document.tsx의 FOUC 스크립트가 이미 얹어놨을 상태를 시뮬레이트 — Home의 mount effect가
-    // 이 클래스를 읽어 theme state를 'dark'로 확정한다.
+    // _document.tsx의 FOUC 스크립트가 이미 얹어놨을 상태를 시뮬레이트 — 저장된 선호('dark')와 그 클래스. Home의
+    // useThemePreference가 저장값을 읽어 theme를 'dark'로 확정한다(#826 S2: 클래스가 아니라 선호 · OS 설정이 원천).
+    window.localStorage.setItem('phototicket:theme', 'dark');
     document.documentElement.classList.add('theme-dark');
     render(<Home />);
     expect(document.documentElement.classList.contains('theme-dark')).toBe(true);

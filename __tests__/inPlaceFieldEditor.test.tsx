@@ -6,8 +6,8 @@
  *  2. prev/next 순회는 현재 무드 DOM에 실제 존재하는 필드(data-field-tap 앵커)만 돈다 —
  *     minimal은 bookingNo 미렌더(MOOD_EXCLUDED_FIELDS)라 순회에 안 나온다.
  *  3. 완료(체크) → 에디터 닫힘. 필드바 눈 토글 흐름은 mobileEditorShellFieldCoverage가 커버.
- *  4. 편집 중 ghost 강제 on(ghostEff = ghostOn || editing) — 셸 "빈 항목" 스위치가 꺼져 있어도
- *     편집에 들어가면 빈 필드 placeholder가 탭 타깃으로 남는다.
+ *  4. 빈 항목(ghost, #826 S2 constraint-8): 정보 모드 자동 on · 사진/디자인 모드는 메뉴 '빈 항목 표시' 스위치 ·
+ *     편집 중 강제 on — 스위치가 꺼져 있어도 편집에 들어가면 빈 필드 placeholder가 탭 타깃으로 남는다.
  *
  * happy-dom은 레이아웃이 없어 rect가 전부 0이지만, 측정 게이트는 "앵커 존재"라 오버레이가 뜬다
  * (위치 어서션은 하지 않는다 — 지오메트리는 브라우저 E2E 몫).
@@ -46,6 +46,7 @@ function Harness() {
         photo={photo}
         canExport
         theme="light"
+        themePreference="light"
         onThemeChange={() => {}}
         onDone={() => {}}
         disabledReason=""
@@ -152,15 +153,11 @@ describe('인플레이스 필드 에디터 (#354)', () => {
     expect(screen.getByTestId('movie-actors').textContent).toBe('배우A, 배우B');
   });
 
-  test('편집 중 ghost 강제 on — "빈 항목" off여도 빈 필드 탭 타깃이 남는다', async () => {
+  test('편집 중 ghost 강제 on — "빈 항목 표시" off(디자인 모드)여도 빈 필드 탭 타깃이 남는다', async () => {
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
-
-    // 셸 "빈 항목" 스위치 off (기본 on → 토글).
-    fireEvent.click(await screen.findByRole('button', { name: '편집 메뉴' }));
-    fireEvent.click(await screen.findByRole('switch', { name: '빈 항목 미리보기' }));
-    // 메뉴 닫기(오버레이 탭).
-    fireEvent.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    // 정보 모드는 빈 항목이 자동으로 켜진다 — 스위치가 정하는 디자인 모드로 옮긴다(스위치 기본 꺼짐, D03 A).
+    fireEvent.click(screen.getByRole('tab', { name: '디자인' }));
 
     // 편집 진입 전: 빈 필드(출연)는 placeholder가 없어 탭 타깃 없음.
     expect(screen.queryByRole('button', { name: '출연 편집' }) === null).toBe(true);
@@ -169,6 +166,25 @@ describe('인플레이스 필드 에디터 (#354)', () => {
     fireEvent.click(await screen.findByRole('button', { name: '극장 편집' }));
     await screen.findByRole('textbox', { name: '극장' });
     expect(await screen.findByRole('button', { name: '출연 편집' })).toBeTruthy();
+  });
+
+  test('정보 모드는 빈 항목이 자동으로 켜지고, 사진·디자인 모드는 메뉴 "빈 항목 표시" 스위치를 따른다 (#826 S2)', async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByText('seed'));
+
+    // 정보 모드(기본): 스위치와 무관하게 빈 필드 탭 타깃이 있다.
+    expect(screen.getByRole('tab', { name: /^정보/ }).getAttribute('aria-selected')).toBe('true');
+    expect(!!screen.queryByRole('button', { name: '출연 편집' })).toBe(true);
+
+    // 디자인 모드 + 스위치 꺼짐: 없다.
+    fireEvent.click(screen.getByRole('tab', { name: '디자인' }));
+    expect(!!screen.queryByRole('button', { name: '출연 편집' })).toBe(false);
+
+    // 스위치를 켜면 디자인 모드에서도 있다.
+    fireEvent.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    fireEvent.click(screen.getByRole('switch', { name: '빈 항목 표시' }));
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(!!screen.queryByRole('button', { name: '출연 편집' })).toBe(true);
   });
 
   // #484 c6 — signature는 StampTarget이 아니지만(c3) isImageField 플래그로 chain/format과
@@ -200,32 +216,32 @@ describe('인플레이스 필드 에디터 (#354)', () => {
   });
 });
 
-// #553 — 같은 화면에 동시에 뜨는 두 툴바의 탭 타깃 위계. #508이 플로팅 툴바를 32px로 내리면서
-// 생긴 12px 차이를 "통일"이 아니라 **의도된 위계**로 확정했다(근거는 FloatingToolbar.tsx 헤더와
-// 아래 필드바 주석). 위계라면 두 값이 다 고정돼야 의미가 있으므로 하한(24)만이 아니라 32/44
-// 자체를 못박는다 — 한쪽이 조용히 움직이면 위계가 우연이 된다. 판정기는 #508과 같은 것을 쓴다
+// #553 → #826 S2 — 탭 타깃. 떠 있는 보조 툴바(32px)가 상단 줄로 흡수되며(전 버튼 44) 위계 차이가 사라졌다 — 상단 줄 버튼과
+// 인플레이스 필드바 둘 다 44px로 못박는다(SC 2.5.5 AAA). 판정기는 #508과 같은 것을 쓴다
 // (__tests__/tapTargets.ts — 클래스 파싱 + variant·scale 우회 금지).
 // 이 파일에 두는 이유: 필드바는 실제 티켓의 data-field-tap 앵커를 탭해야 뜨는데,
 // resultStageBack.test.tsx가 TicketRenderer를 전역 mock으로 스텁 치므로(bun mock.module은
 // 파일 간 격리가 안 된다) 그 뒤에 도는 파일에서는 앵커가 사라진다.
-describe('탭 타깃 위계: 떠 있는 보조 툴바 32 / 직접 편집 컨트롤 44 (#553)', () => {
-  test('플로팅 툴바 32px · 인플레이스 필드바 44px, 둘 다 SC 2.5.8을 넘는다', async () => {
+describe('탭 타깃: 상단 줄 · 인플레이스 필드바 44 (#553 → #826 S2)', () => {
+  test('상단 줄 아이콘 버튼과 인플레이스 필드바가 모두 44px다', async () => {
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
 
-    const floating = await screen.findByRole('toolbar', { name: '편집 도구' });
-    const floatingBtns = Array.from(floating.querySelectorAll('button'));
-    expect(floatingBtns.length).toBe(5);
-    for (const b of floatingBtns) {
-      const { w, h } = targetPx(b, b.getAttribute('aria-label') ?? 'floating');
-      expect([w, h]).toEqual([32, 32]);
-      expect(Math.min(w, h)).toBeGreaterThanOrEqual(MIN_AA);
+    const topBtns = Array.from(document.querySelectorAll('header button'));
+    expect(topBtns.length).toBeGreaterThanOrEqual(6); // ‹ · 실행 취소 · 다시 실행 · 전체 보기 · ⋯ · 완료
+    for (const b of topBtns) {
+      // 완료는 라벨 버튼이라 폭이 글자에 따른다 — 높이만 선언돼 있다.
+      if (b.getAttribute('aria-label') === null) {
+        expect(b.classList.contains('h-touch')).toBe(true);
+        continue;
+      }
+      const { w, h } = targetPx(b, b.getAttribute('aria-label') ?? 'top-bar');
+      expect([w, h]).toEqual([44, 44]);
     }
 
-    // 필드 탭 → 인플레이스 편집. 이때 플로팅 툴바는 z-45로 여전히 화면에 있다(동시 노출이 설계).
+    // 필드 탭 → 인플레이스 편집. 상단 줄은 그대로 화면에 있다.
     fireEvent.click(await screen.findByRole('button', { name: '극장 편집' }));
     const bar = await screen.findByRole('toolbar', { name: '필드 편집 도구' });
-    expect(screen.queryByRole('toolbar', { name: '편집 도구' })).not.toBeNull();
 
     const barBtns = Array.from(bar.querySelectorAll('button'));
     expect(barBtns.length).toBeGreaterThan(1);

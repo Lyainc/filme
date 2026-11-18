@@ -12,7 +12,7 @@
  * OcrUploadCard·EditorDock은 정적 import라 렌더 즉시 존재한다.
  */
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
 
@@ -27,6 +27,7 @@ function Harness() {
         photo={photo}
         canExport
         theme="light"
+        themePreference="light"
         onThemeChange={() => {}}
         onDone={() => {}}
         disabledReason=""
@@ -94,7 +95,7 @@ describe('MobileEditorShell chrome 정보위계 (#261/#315/#363/#388)', () => {
     expect(dock.closest('.hidden') === null).toBe(true);
   });
 
-  test('OcrUploadCard는 랜딩→업로드·최대화 전환에도 remount되지 않는다 (PR #372 리뷰 P1, #388로 hidden 전환 후에도 유지)', async () => {
+  test('OcrUploadCard는 랜딩→업로드·전체 보기 전환에도 remount되지 않는다 (PR #372 리뷰 P1, #388로 hidden 전환 후에도 유지)', async () => {
     // 분기별 별도 JSX로 심으면 전환 순간 remount되고, in-flight KOBIS 보강의 mountedRef 가드가
     // setInfo를 조용히 버려 titleOg·releaseDate(완료 게이트 필수)가 유실된다. 같은 DOM 노드면
     // 인스턴스 유지 — remount면 노드가 새로 생성돼 레퍼런스가 갈린다. #388로 업로드 후엔 이 카드가
@@ -107,22 +108,28 @@ describe('MobileEditorShell chrome 정보위계 (#261/#315/#363/#388)', () => {
     expect(afterSeed === before).toBe(true);
     expect(afterSeed.closest('.hidden')).not.toBeNull();
 
-    // max도 unmount가 아니라 CSS hidden — 최대화 왕복 중 동일 레이스 차단.
-    fireEvent.click(screen.getByRole('button', { name: '최대화' }));
+    // max도 unmount가 아니라 CSS hidden — 전체 보기 왕복 중 동일 레이스 차단.
+    fireEvent.click(screen.getByRole('button', { name: '전체 보기' }));
     const afterMax = screen.getByRole('button', { name: '티켓 스크린샷으로 자동입력' });
     expect(afterMax === before).toBe(true);
     expect(afterMax.closest('.hidden')).not.toBeNull();
   });
 
-  test('업로드 후: 헤더 서브메뉴에서 빈 항목·포스터 교체/재크롭 접근 가능(#315, 잉크는 #387에서 삭제 — 컬러 패널 White/Black 프리셋과 중복. 전체 표시는 #424에서 필드 드로어로 이전해 대상 밖)', async () => {
+  test('업로드 후: 편집 메뉴에는 빈 항목 표시 스위치가 있고, 포스터 교체·재크롭은 메뉴가 아니라 도크 사진 모드에 있다(#826 S2)', async () => {
     render(<Harness />);
     seedUploaded();
     await screen.findByRole('button', { name: '티켓 스크린샷으로 자동입력' });
 
     fireEvent.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    const menu = screen.getByRole('dialog', { name: '편집 메뉴' });
 
-    expect(screen.getByRole('switch', { name: '빈 항목 미리보기' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: '포스터 교체' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: '재크롭' })).toBeTruthy();
+    expect(within(menu).getByRole('switch', { name: '빈 항목 표시' })).toBeTruthy();
+    expect(within(menu).queryByRole('button', { name: '포스터 교체' }) === null).toBe(true);
+    expect(within(menu).queryByRole('button', { name: '재크롭' }) === null).toBe(true);
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    fireEvent.click(screen.getByRole('tab', { name: '사진' }));
+    const body = within(screen.getByTestId('dock-body'));
+    expect(body.getAllByRole('button', { name: '교체' }).length).toBeGreaterThan(0);
   });
 });

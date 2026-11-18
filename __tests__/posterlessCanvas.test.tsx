@@ -2,8 +2,8 @@
  * #631 회귀 테스트 — 포스터 없이도 편집 캔버스가 선다(canvasReady).
  *
  * "포스터가 있다"(croppedImageUrl)와 "편집할 캔버스가 섰다"는 다른 명제다. 랜딩의
- * '포스터 없이 시작'이 후자만 세우고, 셸 크롬(완료·편집 도크·고급 설정·툴바)은 전자가
- * 아니라 후자를 따라야 한다. 아래 세 항목이 그 계약을 고정한다.
+ * '포스터 없이 시작'이 후자만 세우고, 셸 크롬(완료·편집 도크·상단 줄)은 전자가
+ * 아니라 후자를 따라야 한다. 아래 항목이 그 계약을 고정한다.
  */
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
 import { render, screen, cleanup, waitFor } from '@testing-library/react';
@@ -55,7 +55,7 @@ describe('포스터 없이 시작 (#631)', () => {
 
   // #674로 D2(a)의 **자리**가 바뀌었다. 랜딩 inline은 컨테이너가 flex-1이라 같은 flex-1인 티켓
   // 스테이지와 본문 높이를 반씩 나눠 가졌으므로(실측 393×659: 티켓 218.5×349.2 → 109.3×174.6),
-  // 캔버스가 서면 랜딩은 숨고 포스터 재진입 동선은 헤더 메뉴 '포스터 추가'가 이어받는다.
+  // 캔버스가 서면 랜딩은 숨고 포스터 재진입 동선은 도크 사진 모드의 '추가'가 이어받는다.
   // 아래 두 테스트가 "숨었다"와 "그래서 어디로 가느냐"를 쌍으로 잠근다 — 하나만 두면 진입점이
   // 사라진 채로도 통과한다.
   test('캔버스가 서면 랜딩은 숨는다 — 스테이지와 본문을 나눠 갖지 않는다(#674)', async () => {
@@ -70,27 +70,21 @@ describe('포스터 없이 시작 (#631)', () => {
     expect(landing.classList.contains('flex-1')).toBe(false);
   });
 
-  test('포스터 재진입 동선은 헤더 메뉴로 옮겨 유지된다(D2 a → #674)', async () => {
+  test('포스터 재진입 동선은 도크 사진 모드로 옮겨 유지된다(D2 a → #674 → #826 S2)', async () => {
     const user = userEvent.setup();
     render(<Harness />);
 
     await user.click(screen.getByTestId('landing-skip-poster'));
+    // 메뉴에는 포스터 행이 없다 — 교체 · 재크롭은 사진 모드로 갔다(Seed constraint-3).
+    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+    expect(screen.queryByRole('button', { name: '포스터 추가' }) === null).toBe(true);
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
 
-    expect(screen.getByRole('button', { name: '포스터 추가' })).toBeTruthy();
-    // 재크롭은 포스터가 있어야 의미가 있으므로 이 상태엔 없다(죽은 컨트롤 금지).
-    expect(screen.queryByRole('button', { name: '재크롭' }) === null).toBe(true);
-  });
-
-  test("'고급 설정'이 죽은 컨트롤이 아니다 — 툴바와 같은 조건(canvasReady)이라 모달이 실제로 열린다", async () => {
-    const user = userEvent.setup();
-    render(<Harness />);
-
-    await user.click(screen.getByTestId('landing-skip-poster'));
-    await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
-    await user.click(screen.getByRole('button', { name: '고급 설정' }));
-
-    expect(screen.getByRole('dialog', { name: '고급 설정' })).toBeTruthy();
+    await user.click(screen.getByRole('tab', { name: '사진' }));
+    const posterRow = document.querySelector('[data-asset-row="포스터"]') as HTMLElement;
+    expect(posterRow.querySelector('button')?.textContent).toBe('추가');
+    // 자르기는 포스터가 있어야 의미가 있으므로 이 상태엔 없다(죽은 컨트롤 금지).
+    expect(posterRow.textContent).not.toContain('자르기');
   });
 });
 

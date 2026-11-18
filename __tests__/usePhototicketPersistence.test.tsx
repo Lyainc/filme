@@ -189,7 +189,7 @@ describe('#310 usePhototicket saveDraft/clearDraft', () => {
     expect(result.current.autoSaveEnabled).toBe(true);
   });
 
-  test('#436 — autoSaveEnabled 취향값은 마운트 시 별도 키에서 복원된다(TB_STORAGE_KEY 선례)', async () => {
+  test('#436 — autoSaveEnabled 취향값은 마운트 시 별도 키에서 복원된다(옛 툴바 위치 키 선례)', async () => {
     window.localStorage.setItem(AUTOSAVE_KEY, '0');
     const { result } = renderHook(() => usePhototicket());
     await waitFor(() => {
