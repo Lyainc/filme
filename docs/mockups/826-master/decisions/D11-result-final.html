@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>D11 결과 화면 확정안</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@900&amp;display=swap">
+<link rel="stylesheet" href="../master.css">
+</head>
+<body>
+<div id="d11"></div>
+<script src="../lib.js"></script>
+<script src="../frames.js"></script>
+<script src="D11-result-final.js"></script>
+<script>
+var st = document.createElement('style'); st.textContent = D11_CSS; document.head.appendChild(st);
+document.getElementById('d11').innerHTML = D11_HTML();
+</script>
+</body>
+</html>
