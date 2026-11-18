@@ -1,8 +1,10 @@
 import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { usePhototicket } from '@/hooks/usePhototicket';
-import type { MovieInfo, TicketComponents } from '@/types';
+import type { MovieInfo, QuoteFont, TicketComponents } from '@/types';
+import { userTextFont } from '@/components/moods/_shared';
+import { DEFAULT_QUOTE } from '@/components/moods/MoodCriterion';
 import { getLayout } from '@/utils/layouts';
 import { cn } from '@/utils/cn';
 import { pressableVariants } from '@/components/ui/variants';
@@ -119,6 +121,115 @@ const rectEq = (a: FieldRect | null, b: FieldRect | null) =>
     Math.abs(a.vpCenter - b.vpCenter) < 0.5 &&
     Math.abs(a.fontPx - b.fontPx) < 0.5 &&
     a.fontStyle === b.fontStyle && a.fontFamily === b.fontFamily && a.fontWeight === b.fontWeight);
+
+/**
+ * 한줄평·서명 폰트 9택(#558 4택 → #437). 값의 뜻과 실제 폰트는 `_shared.tsx`의 `userTextFont`가
+ * 단일 소스이고 여기는 라벨만 쥔다. 라벨이 스타일명이 아니라 폰트 이름인 건 8종 중 5종이 손글씨
+ * 계열이라 스타일어로는 서로 구분이 안 되기 때문이다('hand'는 값 그대로, 라벨만 '자람').
+ */
+const FONT_OPTIONS: readonly { value: QuoteFont; label: string }[] = [
+  { value: 'auto', label: '자동' },
+  { value: 'gothic', label: '고딕' },
+  { value: 'batang', label: '바탕' },
+  { value: 'hand', label: '자람' },
+  { value: 'ink', label: '잉크' },
+  { value: 'eunyoung', label: '은영' },
+  { value: 'brush', label: '붓' },
+  { value: 'coolguy', label: '쿨가이' },
+  { value: 'flower', label: '꽃길' },
+];
+
+/** 버튼·목록 라벨 기준 크기 — userTextFont의 #437 배율이 자람=1.0 기준이라 16이면 9택 글자면이 비슷하게 선다. */
+const FONT_SAMPLE_PX = 16;
+
+/**
+ * 글꼴 드롭다운 목록(APG listbox, 시안 D10 B′). 목록은 래퍼(스케일·리프트 transform) 밖의 fixed —
+ * PhoneFrame의 contain:paint가 fixed 컨테이닝 블록이라 좌표가 프레임 기준이고, aid 패널과 같은
+ * 자리(키보드 위)를 쓴다. 포커스는 listbox가 갖고 활성 옵션은 aria-activedescendant로 가리킨다.
+ */
+function FontListbox({
+  label,
+  value,
+  sampleFor,
+  bottom,
+  maxHeight,
+  onSelect,
+  onClose,
+}: {
+  label: string;
+  value: QuoteFont;
+  sampleFor: (font: QuoteFont, label: string) => CSSProperties;
+  bottom: number;
+  maxHeight: number;
+  onSelect: (font: QuoteFont) => void;
+  onClose: () => void;
+}) {
+  const id = useId();
+  const ref = useRef<HTMLUListElement>(null);
+  const [active, setActive] = useState(() => Math.max(0, FONT_OPTIONS.findIndex((o) => o.value === value)));
+  useEffect(() => {
+    ref.current?.focus();
+  }, []);
+  const last = FONT_OPTIONS.length - 1;
+  const onKeyDown = (e: KeyboardEvent<HTMLUListElement>) => {
+    const move = (n: number) => {
+      e.preventDefault();
+      setActive(n);
+    };
+    if (e.key === 'ArrowDown') move(Math.min(last, active + 1));
+    else if (e.key === 'ArrowUp') move(Math.max(0, active - 1));
+    else if (e.key === 'Home') move(0);
+    else if (e.key === 'End') move(last);
+    else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onSelect(FONT_OPTIONS[active].value);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      onClose();
+    } else if (e.key === 'Tab') onClose();
+  };
+  return (
+    <ul
+      ref={ref}
+      role="listbox"
+      aria-label={label}
+      tabIndex={0}
+      aria-activedescendant={`${id}-${active}`}
+      onKeyDown={onKeyDown}
+      onBlur={onClose}
+      className="fixed inset-x-3 z-50 m-0 list-none overflow-y-auto rounded-field-sm border border-hair-strong bg-s2 p-0 outline-none"
+      style={{ bottom, maxHeight, boxShadow: 'var(--shadow-pop, 0 8px 24px -8px rgba(0,0,0,.4))' }}
+    >
+      {FONT_OPTIONS.map((o, i) => {
+        const selected = o.value === value;
+        return (
+          <li
+            key={o.value}
+            id={`${id}-${i}`}
+            role="option"
+            aria-selected={selected}
+            // 포커스가 목록을 떠나면 blur로 닫히니, 선택 클릭 전에 blur가 먼저 도는 걸 막는다.
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onSelect(o.value)}
+            className={cn(
+              'flex h-touch items-center justify-between gap-2 border-t border-hair px-3 text-ink first:border-t-0',
+              selected && 'bg-s1',
+              i === active && 'ring-2 ring-inset ring-[var(--pr-focus-ring)]'
+            )}
+          >
+            <span style={sampleFor(o.value, o.label)}>{o.label}</span>
+            {selected && (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
 interface InPlaceFieldEditorProps {
   photo: Photo;
@@ -271,6 +382,26 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
     setStampImage('');
   };
 
+  // ── 글꼴 드롭다운(한줄평·서명, #437) — 서명 이미지가 있으면 텍스트 서명이 안 그려져 숨긴다. ──
+  const fontKey = field === 'quote' ? 'quoteFont' : field === 'signature' ? 'signatureFont' : null;
+  const showFont = fontKey !== null && !(isSignature && !!stampImage);
+  const currentFont: QuoteFont = (fontKey && components[fontKey]) || 'auto';
+  const [fontOpen, setFontOpen] = useState(false);
+  const fontBtnRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => setFontOpen(false), [field]);
+  const fontText = (field === 'quote' ? photo.state.movieInfo.quote : photo.state.movieInfo.signature)?.trim() ?? '';
+  // '자동'은 라벨(한글)이 아니라 실제 문장으로 풀어야 티켓과 같은 서체가 된다 — 빈 값이면 티켓이
+  // 그리는 문장(한줄평 기본 영문 · 서명은 한글+영문 견본)으로 폴백한다.
+  const fontSample = fontText || (field === 'quote' ? DEFAULT_QUOTE : '영화의 순간 Film');
+  const sampleFor = (font: QuoteFont, optLabel: string) =>
+    userTextFont(font === 'auto' ? fontSample : optLabel, font, FONT_SAMPLE_PX);
+  const currentLabel = FONT_OPTIONS.find((o) => o.value === currentFont)?.label ?? '자동';
+  const selectFont = (font: QuoteFont) => {
+    if (fontKey) photo.updateComponents({ [fontKey]: font } as Partial<TicketComponents>);
+    setFontOpen(false);
+    fontBtnRef.current?.focus();
+  };
+
   // ── 노출 토글 ──────────────────────────────────────────────────────────────
   const visible = isStamp ? !!components[STAMP_KEYS[field].visible] : photo.state.fieldVisibility[field];
   const toggleVisible = () => {
@@ -321,7 +452,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
     let top = rect.top - bh - 10;
     if (top < 8) top = rect.top + rect.h + 10;
     setBarPos({ left, top });
-  }, [rect, field, wrapperEl, isStamp, showEye]);
+  }, [rect, field, wrapperEl, isStamp, showEye, showFont, currentLabel]);
 
   const barBtnCls = cn(
     pressableVariants(),
@@ -463,6 +594,29 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
             </svg>
           </button>
         )}
+        {showFont && (
+          <button
+            ref={fontBtnRef}
+            type="button"
+            aria-haspopup="listbox"
+            aria-expanded={fontOpen}
+            aria-label={`${label} 글꼴, 지금 ${currentLabel}`}
+            onPointerDown={(e) => e.preventDefault()}
+            onClick={() => setFontOpen((o) => !o)}
+            className={cn(pressableVariants(), 'inline-flex h-touch shrink-0 items-center px-0.5 text-ink')}
+          >
+            {/* 보이는 컨트롤은 36px, 44px는 바깥 버튼의 타깃 — 현재 글꼴 이름을 그 글꼴로 그린다. */}
+            <span
+              className="inline-flex h-9 items-center gap-1 rounded-field-sm border border-hair-strong bg-s2 px-2.5"
+              style={{ minWidth: 64, justifyContent: 'space-between' }}
+            >
+              <span style={sampleFor(currentFont, currentLabel)}>{currentLabel}</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </span>
+          </button>
+        )}
         {showEye && (
           <button
             type="button"
@@ -555,7 +709,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
         <button
           type="button"
           onClick={removeStampImage}
-          className={cn(pressableVariants(), 'ml-auto rounded-chip border border-hair px-3 py-1.5 text-caption font-medium text-ink-2 transition-colors hover:border-accent hover:text-accent')}
+          className={cn(pressableVariants(), 'ml-auto rounded-chip border border-hair px-3 py-1.5 text-caption font-medium text-ink-2 transition-colors hover:border-hair-strong hover:text-ink')}
         >
           이미지 제거
         </button>
@@ -580,6 +734,17 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
         >
           {aid}
         </div>
+      )}
+      {showFont && fontOpen && (
+        <FontListbox
+          label={`${label} 글꼴`}
+          value={currentFont}
+          sampleFor={sampleFor}
+          bottom={(vvBox?.bottom ?? 0) + 12}
+          maxHeight={aidMaxHeight}
+          onSelect={selectFont}
+          onClose={() => setFontOpen(false)}
+        />
       )}
       {/* 로고 업로드 파이프라인(스탬프+서명 전용) — 숨김 input + 자유비 크롭(useLogoCrop, StampSheet와 동형). */}
       {isImageField && (
