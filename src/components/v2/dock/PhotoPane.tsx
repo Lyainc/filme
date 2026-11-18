@@ -2,11 +2,11 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { cn } from '@/utils/cn';
 import { pressableVariants } from '@/components/ui/variants';
-import { EyeIcon } from '@/components/ui/VisibilityCheckbox';
+import { EyeToggle } from './EyeToggle';
 import { useLogoCrop } from '@/hooks/useLogoCrop';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { TicketComponents } from '@/types';
-import { STAMP_KEYS, STAMP_LABELS, STAMP_TARGETS, type SheetTarget, type StampTarget } from '@/constants/fields';
+import { IMAGE_ACCEPT, STAMP_KEYS, STAMP_LABELS, STAMP_TARGETS, type SheetTarget, type StampTarget } from '@/constants/fields';
 import { TARGET_HEIGHT } from '@/utils/constants';
 import { BACKGROUND_OPACITY_DEFAULT, BACKGROUND_PATTERN_MOODS } from '../designRailItems';
 
@@ -14,8 +14,6 @@ import { BACKGROUND_OPACITY_DEFAULT, BACKGROUND_PATTERN_MOODS } from '../designR
 const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ssr: false });
 
 type Photo = ReturnType<typeof usePhototicket>;
-
-const IMAGE_ACCEPT = 'image/png,image/jpeg,image/webp,image/svg+xml';
 
 // 마스터 C-AROW 버튼 문법 — 행 안 동작은 보조(테두리) 버튼과 텍스트 버튼 둘뿐이다. 둘 다 44px 타깃.
 const SEC_BTN = 'inline-flex h-touch shrink-0 items-center rounded-md border border-hair-strong px-2.5 text-body text-ink transition-colors disabled:opacity-40';
@@ -106,18 +104,41 @@ function LogoThumb({ src, text }: { src: string; text: string }) {
   return <span aria-hidden="true" className={cn(THUMB_BASE, 'h-[26px] w-10 border-dashed border-hair-strong')} />;
 }
 
-function EyeToggle({ label, on, onToggle }: { label: string; on: boolean; onToggle: () => void }) {
-  return (
-    <button
-      type="button"
-      aria-label={`${label} 티켓에 표시`}
-      aria-pressed={on}
-      onClick={onToggle}
-      className={cn(pressableVariants(), `-mr-2 inline-flex h-touch w-touch shrink-0 items-center justify-center transition-colors ${on ? 'text-ink' : 'text-ink-3'}`)}
-    >
-      <EyeIcon open={on} size={18} />
-    </button>
+/**
+ * 로고·스탬프 행이 공유하는 업로드 흐름 — 숨은 file input(이미지 형식 확인 · 값 비움)과 자유비 크롭 모달(useLogoCrop, #220).
+ * pick()으로 파일 선택을 열고, `node`를 행 안에 그린다.
+ */
+function useImageUpload(onChange: (url: string) => void, opts: { inputLabel: string; cropTitle: string; maxSide?: number }) {
+  const { rawSrc, isCropping, openFile, handleComplete, handleCancel } = useLogoCrop(onChange, opts.maxSide);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const node = (
+    <>
+      {/* sr-only여도 tabbable이라 aria-hidden 금지(axe aria-hidden-focus). */}
+      <input
+        ref={fileRef}
+        type="file"
+        accept={IMAGE_ACCEPT}
+        aria-label={opts.inputLabel}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file && file.type.startsWith('image/')) openFile(file);
+          // 같은 파일을 다시 골라도 change가 뜨게 비운다.
+          e.target.value = '';
+        }}
+        className="sr-only"
+      />
+      {rawSrc && (
+        <ImageCropModal
+          imageSrc={rawSrc}
+          title={opts.cropTitle}
+          onClose={handleCancel}
+          onComplete={handleComplete}
+          isProcessing={isCropping}
+        />
+      )}
+    </>
   );
+  return { pick: () => fileRef.current?.click(), node };
 }
 
 function PosterRow({
@@ -166,8 +187,7 @@ function LogoRow({ target, photo, onEdit }: { target: StampTarget; photo: Photo;
   const visible = !!components[keys.visible];
   const label = STAMP_LABELS[target];
   const setImage = (url: string) => photo.updateComponents({ [keys.image]: url } as Partial<TicketComponents>);
-  const { rawSrc, isCropping, openFile, handleComplete, handleCancel } = useLogoCrop(setImage);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const upload = useImageUpload(setImage, { inputLabel: `${label} 이미지 파일`, cropTitle: '로고 크롭' });
   const status = image ? '이미지' : text ? `텍스트 · ${text}` : '비어 있음';
   return (
     <AssetRow thumb={<LogoThumb src={image} text={text} />} name={label} status={status} onOpen={() => onEdit(target)}>
@@ -176,12 +196,12 @@ function LogoRow({ target, photo, onEdit }: { target: StampTarget; photo: Photo;
           <button type="button" onClick={() => setImage('')} className={cn(pressableVariants(), TXT_BTN)}>
             제거
           </button>
-          <button type="button" onClick={() => fileRef.current?.click()} className={cn(pressableVariants(), SEC_BTN)}>
+          <button type="button" onClick={upload.pick} className={cn(pressableVariants(), SEC_BTN)}>
             교체
           </button>
         </>
       ) : text ? (
-        <button type="button" onClick={() => fileRef.current?.click()} className={cn(pressableVariants(), SEC_BTN)}>
+        <button type="button" onClick={upload.pick} className={cn(pressableVariants(), SEC_BTN)}>
           이미지로
         </button>
       ) : (
@@ -196,28 +216,7 @@ function LogoRow({ target, photo, onEdit }: { target: StampTarget; photo: Photo;
         on={visible}
         onToggle={() => photo.updateComponents({ [keys.visible]: !visible } as Partial<TicketComponents>)}
       />
-      {/* sr-only여도 tabbable이라 aria-hidden 금지(axe aria-hidden-focus). */}
-      <input
-        ref={fileRef}
-        type="file"
-        accept={IMAGE_ACCEPT}
-        aria-label={`${label} 이미지 파일`}
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file && file.type.startsWith('image/')) openFile(file);
-          e.target.value = '';
-        }}
-        className="sr-only"
-      />
-      {rawSrc && (
-        <ImageCropModal
-          imageSrc={rawSrc}
-          title="로고 크롭"
-          onClose={handleCancel}
-          onComplete={handleComplete}
-          isProcessing={isCropping}
-        />
-      )}
+      {upload.node}
     </AssetRow>
   );
 }
@@ -232,15 +231,14 @@ function StampRow({ photo }: { photo: Photo }) {
   // 쓰면 안 된다 — cover로 캔버스 전면을 채워 저장물(pixelRatio 2)에서 3~5배 확대돼 뭉갠다(#671).
   // 투명도 write-time 커밋(#728 c4) — 이미지와 투명도를 같은 updateComponents 호출에 묶어 undo 한 번이 반쯤
   // 되돌린 상태를 만들지 않게 한다.
-  const { rawSrc, isCropping, openFile, handleComplete, handleCancel } = useLogoCrop(
+  const upload = useImageUpload(
     (backgroundPatternImage) =>
       photo.updateComponents({
         backgroundPatternImage,
         backgroundPatternOpacity: photo.state.components.backgroundPatternOpacity ?? BACKGROUND_OPACITY_DEFAULT,
       }),
-    TARGET_HEIGHT,
+    { inputLabel: '스탬프 이미지 업로드', cropTitle: '스탬프 이미지 크롭', maxSide: TARGET_HEIGHT },
   );
-  const fileRef = useRef<HTMLInputElement>(null);
   return (
     <AssetRow thumb={<LogoThumb src={image ?? ''} text="" />} name="배경 스탬프" status={image ? '이미지' : '비어 있음'}>
       {image && (
@@ -253,31 +251,10 @@ function StampRow({ photo }: { photo: Photo }) {
           제거
         </button>
       )}
-      <button type="button" onClick={() => fileRef.current?.click()} className={cn(pressableVariants(), SEC_BTN)}>
+      <button type="button" onClick={upload.pick} className={cn(pressableVariants(), SEC_BTN)}>
         {image ? '교체' : '추가'}
       </button>
-      <input
-        ref={fileRef}
-        type="file"
-        accept={IMAGE_ACCEPT}
-        aria-label="스탬프 이미지 업로드"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file && file.type.startsWith('image/')) openFile(file);
-          // 같은 파일을 다시 골라도 change가 뜨게 비운다.
-          e.target.value = '';
-        }}
-        className="sr-only"
-      />
-      {rawSrc && (
-        <ImageCropModal
-          imageSrc={rawSrc}
-          title="스탬프 이미지 크롭"
-          onClose={handleCancel}
-          onComplete={handleComplete}
-          isProcessing={isCropping}
-        />
-      )}
+      {upload.node}
     </AssetRow>
   );
 }

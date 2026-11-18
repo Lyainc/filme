@@ -62,6 +62,9 @@ export interface OcrUploadCardProps {
   onNeedManualTitle?: () => void;
 }
 
+// aria-label과 보이는 텍스트를 맞춘다(WCAG 2.5.3 Label in Name).
+const idleLabel = '티켓 스크린샷으로 자동입력';
+
 function ScanIcon({ size = 24 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
@@ -192,8 +195,7 @@ export function OcrUploadCard({
       // undo(cancel(), useOcrUndo.ts)가 뒤이어 오면 그 증가가 아래 비교를 무효화한다. 인스턴스 로컬
       // mountedRef로 가드하지 않는 이유: 그 기준으로 가드하면 카드가 unmount되는 순간 titleOg·releaseDate가
       // 유실된다(#363/#372와 같은 클래스, claude-review PR #413 P0) — setInfo는 이 인스턴스가 아니라 셸이 쥔
-      // photo 상태를 갱신하므로 unmount 이후에도 안전하게 적용할 수 있다. 카드는 #826 S2부터 랜딩 안
-      // 한 벌뿐이고(옛 필드 드로어의 두 번째 카드는 사라졌다) 정보 모드 버튼·메뉴 행은 openRef로 이 카드를 연다.
+      // photo 상태를 갱신하므로 unmount 이후에도 안전하게 적용할 수 있다. 근거: docs/CONTRIBUTING.md §5.
       //
       // epoch는 OCR 실행끼리·undo와의 순서만 안다. 조회 중에 사용자가 다른 영화를 고르거나 제목을 고치면
       // 늦은 결과가 그 선택을 덮고 선택의 상세 보강까지 취소하므로(#793), 영화 수명도 같이 본다 — 캡처는
@@ -325,8 +327,6 @@ export function OcrUploadCard({
     onBusyChange?.(isProcessing);
   }, [isProcessing, onBusyChange]);
 
-  // aria-label과 보이는 텍스트를 맞춘다(WCAG 2.5.3 Label in Name).
-  const idleLabel = '티켓 스크린샷으로 자동입력';
   const prefersReducedMotion = useMatchMedia('(prefers-reduced-motion: reduce)');
 
   return (

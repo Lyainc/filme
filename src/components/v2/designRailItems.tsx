@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { cn } from '@/utils/cn';
 import { pressableVariants } from '@/components/ui/variants';
 import { LayoutStrip } from '@/components/LayoutPicker';
@@ -13,12 +13,8 @@ import { POSTER_FILL_MOODS, TONE_FIXED_MOODS, STAMP_KEYS, STAMP_LABELS, STAMP_TA
 import type { LayoutId } from '@/types';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 
-// #523 → #826 S2 — 디자인 도크의 도구 정의 목록. 예전엔 가로 원형 아이콘 레일(DesignRail)의 항목이었고
-// 지금은 도크 디자인 모드의 도구 줄(무드 · 색상 · 재질 · 코팅 · 투명도 · 크기, 마스터 D-01~D-05)이
-// 소비한다. 패널 본문은 그대로 재사용하고, 질감 도구는 재질/코팅 두 도구로 갈라 각자 강도 슬라이더를
-// 든다(D-03 — 도구 줄 · 칸 · 옵션의 세 겹을 한 겹 걷었다). '커스텀'(한줄평·서명 폰트)과 '스탬프'
-// 항목은 디자인 도구가 아니다: 스탬프 업로드는 사진 모드로, 폰트는 InPlaceFieldEditor의 글꼴 드롭다운으로 간다.
-// 슬라이더 id의 rail- prefix는 그대로 유지한다(기존 id 보존).
+// 디자인 도크 디자인 모드의 도구 정의 목록(#523 → #826 S2) — 무드 · 색상 · 재질 · 코팅 · 투명도 · 크기.
+// 슬라이더 id의 rail- prefix는 기존 id 보존용이다.
 export type DesignToolId = 'mood' | 'color' | 'material' | 'coating' | 'opacity' | 'size';
 type Photo = ReturnType<typeof usePhototicket>;
 
@@ -35,21 +31,7 @@ export interface DesignToolActions {
 export interface DesignTool {
   id: DesignToolId;
   label: string;
-  // 이 무드 목록에서만 도구 자체가 존재한다("숨김" — 개념이 아예 없는 무드). 없으면 전 무드
-  // 노출. filterItemsForMood가 이 필드로 실제 렌더 목록을 걸러낸다. "잠금"(개념은 있으나 그
-  // 무드가 값을 고정)은 이 필드가 아니라 도구 자신의 render 안에서 disabled로 표현 — 색상이
-  // 그 예: TONE_FIXED_MOODS를 이 필드에 안 싣고 render 클로저 안에서만 직접 참조해, 탭은
-  // 그대로 두고 컨트롤만 잠근다(D-02 '이 무드는 색이 고정돼요').
-  appliesTo?: readonly LayoutId[];
   render: (photo: Photo, actions: DesignToolActions) => ReactNode;
-}
-
-// #523 AC3 — appliesTo 기반 무드별 노출 필터. 순수 함수라 합성(가짜) 항목만으로 검증 가능.
-export function filterItemsForMood<T extends { appliesTo?: readonly LayoutId[] }>(
-  items: readonly T[],
-  layout: LayoutId,
-): T[] {
-  return items.filter((item) => !item.appliesTo || item.appliesTo.includes(layout));
 }
 
 // 슬라이더·패널 id prefix — rail-chain-scale 등 기존 id를 보존한다.
@@ -64,51 +46,30 @@ export function stampScaleMaxFor(layout: LayoutId) {
 }
 
 /**
- * 값 칩 한 줄(라디오그룹) — 포스터 채우기(#527)와 한줄평 폰트(#558)가 같은 모양이라 하나만 둔다.
- * 값 자체를 고르는 피커라, 개별 칩을 잠글 수 있다(disabled + 사유 문구 — ColorPicker가
- * TONE_FIXED_MOODS를 다루는 문법과 같다. 잠금은 "숨김"이 아니므로 칩은 자리에 남는다).
+ * 값 칩 한 줄(라디오그룹) — 포스터 채우기(#527).
  */
 function ChipRadio<V extends string>({
   label,
   options,
   value,
   onChange,
-  note,
-  preview,
-  optionStyle,
 }: {
   label: string;
-  options: readonly { value: V; label: string; disabled?: boolean }[];
+  options: readonly { value: V; label: string }[];
   value: V;
   onChange: (next: V) => void;
-  /** 칩 하나 이상이 잠겼을 때의 사유. 잠긴 칩이 없으면 호출부가 undefined를 넘긴다. */
-  note?: string;
-  /** 옵션 위에 얹는 실견본(#780) — 지금은 폰트 피커 전용. 존재 여부로 grid/flex 배치를 가른다. */
-  preview?: ReactNode;
-  /** 옵션 라벨 자체를 그 선택지의 서체로 그린다(#780) — 선택 전에도 9택을 나란히 비교하게. */
-  optionStyle?: (value: V, label: string) => CSSProperties;
 }) {
   return (
     <div className="space-y-field">
       <Eyebrow as="div">{label}</Eyebrow>
-      {note && <p className="text-caption text-ink-2">{note}</p>}
-      {preview}
       {/* 이름은 컨테이너 aria-label로 — TexturePicker·FieldEditorBody의 radiogroup과 같은 문법. */}
-      {/* 폰트 피커가 9택이 되면서(#437) 한 줄에 다 못 선다 — basis 6rem은 400px 프레임에서
-          한 줄에 3칩이 서는 값이고, 나머지 소비자(도구·포스터 채우기)는 전부 2택이라 grow가
-          예전 flex-1과 똑같이 반씩 채운다. basis 0(=flex-1)이면 wrap이 영영 안 일어난다.
-          폰트 피커(preview가 있는 소비자)만 grid로 간다(#780) — flex-wrap에선 마지막 줄에 한 칩만
-          남으면 grow가 그 칩을 줄 전체로 늘렸다(320px에서 140 vs 288). auto-fit + minmax(6rem)는
-          같은 6rem 하한으로 열 수를 정하면서 마지막 칩도 같은 너비에 세운다. grid 안에선 칩의
-          grow·basis가 효과가 없고 무해하다. */}
-      <div role="radiogroup" aria-label={label} className={preview !== undefined ? 'grid grid-cols-[repeat(auto-fit,minmax(6rem,1fr))] gap-2' : 'flex flex-wrap gap-2'}>
+      <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-2">
         {options.map((opt) => (
           <button
             key={opt.value}
             type="button"
             role="radio"
             aria-checked={value === opt.value}
-            disabled={opt.disabled}
             onClick={() => onChange(opt.value)}
             // h-9(#682 다이어트 — 이전 h-10에서 4px 축소, AxisSegment 형제 버튼과 같은 높이로
             // 맞춘다). AA 하한(24)의 1.5배라 여전히 여유 있다.
@@ -117,8 +78,7 @@ function ChipRadio<V extends string>({
               value === opt.value
                 ? 'border-hair-strong bg-s2 font-semibold text-ink'
                 : 'border-transparent text-ink-2'
-            } ${opt.disabled ? 'opacity-40' : ''}`)}
-            style={optionStyle?.(opt.value, opt.label)}
+            } `)}
           >
             {opt.label}
           </button>
@@ -140,7 +100,7 @@ const TEXTURE_AXES: { key: TextureAxis; label: string; options: readonly { value
 ];
 
 /** 한 축(재질 또는 코팅)의 피커 + 그 축 강도 슬라이더. 축별 배치는 부모가 정한다. */
-function TextureAxisControls({ photo, prefix, axis }: { photo: Photo; prefix: string; axis: TextureAxis }) {
+function TextureAxisControls({ photo, axis }: { photo: Photo; axis: TextureAxis }) {
   const { components, croppedImageUrl } = photo.state;
   const setComp = photo.updateComponents;
   const meta = TEXTURE_AXES.find((a) => a.key === axis)!;
@@ -160,7 +120,7 @@ function TextureAxisControls({ photo, prefix, axis }: { photo: Photo; prefix: st
       {TEXTURE_RECIPES[value] && (
         <BrightnessSlider
           label={`${meta.label} 강도`}
-          id={`${prefix}-${axis}-intensity`}
+          id={`${ID_PREFIX}-${axis}-intensity`}
           value={isMaterial ? components.materialIntensity : components.coatingIntensity}
           onChange={(v) => setComp(isMaterial ? { materialIntensity: v } : { coatingIntensity: v })}
         />
@@ -180,7 +140,6 @@ function TextureAxisControls({ photo, prefix, axis }: { photo: Photo; prefix: st
  * 스케일 클램프와 같은 원칙). 스탬프 크기도 같은 규칙으로 스탬프 이미지가 있는 3무드에서만 뜬다.
  */
 function SizePanel({ photo, actions }: { photo: Photo; actions: DesignToolActions }) {
-  const prefix = ID_PREFIX;
   const { components } = photo.state;
   const setComp = photo.updateComponents;
   const stampScaleMax = stampScaleMaxFor(components.layout);
@@ -223,7 +182,7 @@ function SizePanel({ photo, actions }: { photo: Photo; actions: DesignToolAction
               // 이름은 안내문·정보 행·입력칸과 같은 STAMP_LABELS에서 뜬다(#781) — 옛 '체인 로고 크기'는 바로 위
               // 안내문의 '극장 로고'와 한 컨트롤을 두 이름으로 불렀다.
               label={`${STAMP_LABELS[target]} 크기`}
-              id={`${prefix}-${target}-scale`}
+              id={`${ID_PREFIX}-${target}-scale`}
               value={Math.min(components[scaleKey] ?? 1, stampScaleMax)}
               onChange={(value) => setComp({ [scaleKey]: value })}
               min={0.6}
@@ -284,14 +243,8 @@ export const BACKGROUND_SCALE_MAX = 1.5;
 export const BACKGROUND_OPACITY_MIN = 0.2;
 export const BACKGROUND_OPACITY_DEFAULT = 0.5;
 
-/** 재질/코팅 도구 본문(#826 S2 D-03) — 피커 + 그 축 강도 슬라이더. 축 전환 세그먼트는 도구 줄이 대신한다. */
-function TextureToolBody({ photo, axis }: { photo: Photo; axis: TextureAxis }) {
-  return <TextureAxisControls photo={photo} prefix={ID_PREFIX} axis={axis} />;
-}
-
 /**
- * 디자인 도구 목록(마스터 D-01~D-05 순서: 무드 · 색상 · 재질 · 코팅 · 투명도 · 크기). 여섯 도구가 전 무드에
- * 존재해 지금은 appliesTo를 든 항목이 없다 — 도구 자체가 숨는 무드가 생기면 그 필드로 걸러진다(#523).
+ * 디자인 도구 목록(마스터 D-01~D-05 순서) — 여섯 도구가 전 무드에 존재한다.
  */
 export const DESIGN_TOOLS: readonly DesignTool[] = [
   {
@@ -307,8 +260,7 @@ export const DESIGN_TOOLS: readonly DesignTool[] = [
   {
     id: 'color',
     label: '색상',
-    // 잉크색 단일 축(themeColor). disabled는 appliesTo가 아니라 이 클로저가 직접 쥔 TONE_FIXED_MOODS(#524)로
-    // 판정한다 — appliesTo에 실으면 filterItemsForMood가 도구 자체를 숨겨 "잠금"이 "숨김"이 된다.
+    // 잉크색 단일 축(themeColor). 색이 고정된 무드(TONE_FIXED_MOODS, #524)는 도구를 숨기지 않고 컨트롤만 잠근다.
     render: (photo) => (
       <ColorPicker
         value={photo.state.components.themeColor}
@@ -319,13 +271,12 @@ export const DESIGN_TOOLS: readonly DesignTool[] = [
       />
     ),
   },
-  { id: 'material', label: '재질', render: (photo) => <TextureToolBody photo={photo} axis="material" /> },
-  { id: 'coating', label: '코팅', render: (photo) => <TextureToolBody photo={photo} axis="coating" /> },
+  { id: 'material', label: '재질', render: (photo) => <TextureAxisControls photo={photo} axis="material" /> },
+  { id: 'coating', label: '코팅', render: (photo) => <TextureAxisControls photo={photo} axis="coating" /> },
   {
     id: 'opacity',
     label: '투명도',
     render: (photo) => {
-      const prefix = ID_PREFIX;
       const { components } = photo.state;
       const setComp = photo.updateComponents;
       // 듀얼 슬라이더 — 포스터=밝기(posterOpacity), 컴포넌트=오버레이 불투명도(componentOpacity).
@@ -336,20 +287,20 @@ export const DESIGN_TOOLS: readonly DesignTool[] = [
         <div className="space-y-group">
           <BrightnessSlider
             label="포스터"
-            id={`${prefix}-poster-opacity`}
+            id={`${ID_PREFIX}-poster-opacity`}
             value={components.posterOpacity}
             onChange={(posterOpacity) => setComp({ posterOpacity })}
           />
           <BrightnessSlider
             label="컴포넌트"
-            id={`${prefix}-component-opacity`}
+            id={`${ID_PREFIX}-component-opacity`}
             value={components.componentOpacity ?? 1}
             onChange={(componentOpacity) => setComp({ componentOpacity })}
           />
           {showStampOpacity && (
             <BrightnessSlider
               label="스탬프 투명도"
-              id={`${prefix}-background-opacity`}
+              id={`${ID_PREFIX}-background-opacity`}
               value={components.backgroundPatternOpacity ?? 1}
               onChange={(backgroundPatternOpacity) => setComp({ backgroundPatternOpacity })}
               min={BACKGROUND_OPACITY_MIN}

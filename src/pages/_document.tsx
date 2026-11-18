@@ -1,6 +1,6 @@
 import { Html, Head, Main, NextScript } from 'next/document';
 import { STORAGE_KEY } from '@/hooks/usePhototicket';
-import { THEME_COLOR } from '@/constants/theme';
+import { THEME_COLOR, THEME_STORAGE_KEY } from '@/constants/theme';
 
 /**
  * 첫 페인트 전에 서야 하는 판정 둘 — 테마(FOUC)와 draft 유무(#675).
@@ -15,7 +15,7 @@ import { THEME_COLOR } from '@/constants/theme';
  */
 export const themeScript = `
 (function(){try{
-  const t=localStorage.getItem('phototicket:theme');
+  const t=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});
   const dark=t==='dark'||(t!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);
   if(dark)document.documentElement.classList.add('theme-dark');
   var m=document.querySelector('meta[name="theme-color"]');

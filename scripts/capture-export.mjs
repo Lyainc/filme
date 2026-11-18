@@ -237,7 +237,7 @@ const BG_PATTERN_DRAW = `
 /**
  * 도크(#826 S2)의 디자인 모드에서 도구 탭을 연다 — 옛 `[data-rail-id]` 레일 아이콘의 자리다.
  * 모드 탭은 `#dock-mode-tab-design`, 도구 탭은 `#design-tool-tab-<id>`(mood·color·material·coating·
- * opacity·size)고, 무드에 안 맞는 도구(`appliesTo`)는 DOM에 없다. 못 찾으면 던진다 — 조용히 넘어가면
+ * opacity·size)다. 못 찾으면 던진다 — 조용히 넘어가면
  * 뒤 단계가 엉뚱한 셀렉터 이름으로 타임아웃 난다(#756).
  */
 async function openDesignTool(page, id) {
