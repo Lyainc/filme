@@ -122,7 +122,7 @@ ${S.wordmark()}
 </div>
 <div style="background: var(--pr-s1); border: 1px solid var(--pr-hair-strong); border-radius: 6px; padding: 20px; display: flex; flex-direction: column; gap: 8px">
 <h2 style="margin: 0; font-size: 17px; font-weight: 600">결정 · 비교판</h2>
-<p style="margin: 0; font-size: 14px; line-height: 21px; color: var(--pr-ink-2)">소유자 결정을 받으려고 그린 후보 비교. 파일 이름 decisions/D번호-주제(D01 선택 표시 · 세리프 · 브릭, D02 팔레트, D03 빈 항목, D04 한줄평 서체, D05 결과 워드마크, D06 메뉴 공간, D07 한줄평 서체 pt 재시안, D08 결과 화면 티켓 집중, D09 메뉴 시트 확정안, D10 한줄평 서체 pt 편집 위치, D11 결과 화면 확정안). 결정이 나면 아트보드 제목에 결과를 적고 지우지 않아요.</p>
+<p style="margin: 0; font-size: 14px; line-height: 21px; color: var(--pr-ink-2)">소유자 결정을 받으려고 그린 후보 비교. 파일 이름 decisions/D번호-주제(D01 선택 표시 · 세리프 · 브릭, D02 팔레트, D03 빈 항목, D04 한줄평 서체, D05 결과 워드마크, D06 메뉴 공간, D07 한줄평 서체 pt 재시안, D08 결과 화면 티켓 집중, D09 메뉴 시트 확정안, D10 한줄평 서체 pt 편집 위치, D11 결과 화면 확정안, D12 필드 입력 최종안). 결정이 나면 아트보드 제목에 결과를 적고 지우지 않아요.</p>
 </div>
 <div style="background: var(--pr-s1); border: 1px solid var(--pr-hair-strong); border-radius: 6px; padding: 20px; display: flex; flex-direction: column; gap: 8px">
 <h2 style="margin: 0; font-size: 17px; font-weight: 600">작업 중 목업</h2>
@@ -188,7 +188,7 @@ fs.writeFileSync(OUT + 'decisions/D02-palette.dc.html', HEAD('D02 팔레트 비�
   '<div data-pr-theme="{{theme}}" style="width: 100%; min-height: 100%; background: var(--pr-page)">' + W.D02_HTML().replace(/\{\{/g, '{ {') + '</div>' + TAIL(D02_W, D02_H, 'light'));
 boards['decisions/D02-palette.dc.html'] = { x: 1900, y: 0, w: D02_W, h: D02_H, title: 'D02 팔레트 · 바탕과 강조색 — 결정 B', page: 'decisions', expand: 'fill' };
 order.push('decisions/D02-palette.dc.html');
-/* ---------- 결정 · 비교판 D03~D11: D02와 같은 방식. 폭 2640 · 80px 간격으로 오른쪽에 이어 붙여요 ---------- */
+/* ---------- 결정 · 비교판 D03~D12: D02와 같은 방식. 폭 2640 · 80px 간격으로 오른쪽에 이어 붙여요 ---------- */
 let dx = 1900 + D02_W + 80;
 [['D03', 'ghost', 'D03 빈 항목 표시', 'D03 빈 항목 · 언제 보여 줄까 — 결정 A(메뉴 정리는 D06)', 2640, 2800],
   ['D04', 'quote-font', 'D04 한줄평 · 서명 서체', 'D04 한줄평 · 서명 서체와 크기 — 재시안 D07', 2160, 3000],
@@ -197,8 +197,9 @@ let dx = 1900 + D02_W + 80;
   ['D07', 'quote-font-pt', 'D07 한줄평 서체와 pt 크기', 'D07 서체 · pt — B 채택(폴리싱 · 신규안 D10)', 2640, 1900],
   ['D08', 'result-focus', 'D08 결과 화면 티켓 집중', 'D08 결과 화면 — 결정 A(폴리싱 D11)', 2640, 2700],
   ['D09', 'menu-final', 'D09 메뉴 시트 확정안', 'D09 메뉴 시트 — 확정', 1800, 2340],
-  ['D10', 'quote-editing', 'D10 한줄평 서체 pt 편집 위치', 'D10 한줄평 서체 · pt — 결정 대기', 1600, 3740],
-  ['D11', 'result-final', 'D11 결과 화면 확정안', 'D11 결과 화면 확정안 — 결정 대기', 1800, 3980]].forEach(([id, slug, headTitle, boardTitle, bw, bh]) => {
+  ['D10', 'quote-editing', 'D10 한줄평 서체 pt 편집 위치', 'D10 한줄평 서체 · pt — 최종안 D12', 1600, 3740],
+  ['D11', 'result-final', 'D11 결과 화면 확정안', 'D11 결과 화면 확정안 — 결정 대기', 1800, 3980],
+  ['D12', 'input-final', 'D12 필드 입력 최종안', 'D12 필드 입력 — 최종안', 1800, 3000]].forEach(([id, slug, headTitle, boardTitle, bw, bh]) => {
   require(M + 'decisions/' + id + '-' + slug + '.js');
   fs.writeFileSync(OUT + 'decisions/' + id + '-' + slug + '.dc.html', HEAD(headTitle + ' 비교', '../pr.css').replace('body { margin: 0; }', 'body { margin: 0; }\n' + W[id + '_CSS']) +
     '<div data-pr-theme="{{theme}}" style="width: 100%; min-height: 100%; background: var(--pr-page)">' + W[id + '_HTML']().replace(/\{\{/g, '{ {') + '</div>' + TAIL(bw, bh, 'light'));
