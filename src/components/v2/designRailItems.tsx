@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { cn } from '@/utils/cn';
 import { pressableVariants } from '@/components/ui/variants';
 import { LayoutStrip } from '@/components/LayoutPicker';
@@ -7,9 +7,7 @@ import ColorPicker from '@/components/v2/pickers/ColorPicker';
 import BrightnessSlider from '@/components/v2/pickers/BrightnessSlider';
 import { TEXTURE_RECIPES } from '@/utils/textureRecipes';
 import { MATERIAL_OPTIONS, COATING_OPTIONS } from '@/utils/constants';
-import { userTextFont } from '@/components/moods/_shared';
 import { MINIMAL_STAMP_MAX_SCALE } from '@/components/moods/MoodMinimal';
-import { DEFAULT_QUOTE } from '@/components/moods/MoodCriterion';
 import { Eyebrow } from './Eyebrow';
 import { POSTER_FILL_MOODS, TONE_FIXED_MOODS, STAMP_KEYS, STAMP_LABELS, STAMP_TARGETS, type SheetTarget } from '@/constants/fields';
 import type { LayoutId } from '@/types';
@@ -19,7 +17,7 @@ import type { usePhototicket } from '@/hooks/usePhototicket';
 // 지금은 도크 디자인 모드의 도구 줄(무드 · 색상 · 재질 · 코팅 · 투명도 · 크기, 마스터 D-01~D-05)이
 // 소비한다. 패널 본문은 그대로 재사용하고, 질감 도구는 재질/코팅 두 도구로 갈라 각자 강도 슬라이더를
 // 든다(D-03 — 도구 줄 · 칸 · 옵션의 세 겹을 한 겹 걷었다). '커스텀'(한줄평·서명 폰트)과 '스탬프'
-// 항목은 디자인 도구가 아니다: 스탬프 업로드는 사진 모드로, 폰트는 인플레이스 입력 바로 간다.
+// 항목은 디자인 도구가 아니다: 스탬프 업로드는 사진 모드로, 폰트는 InPlaceFieldEditor의 글꼴 드롭다운으로 간다.
 // 슬라이더 id의 rail- prefix는 그대로 유지한다(기존 id 보존).
 export type DesignToolId = 'mood' | 'color' | 'material' | 'coating' | 'opacity' | 'size';
 type Photo = ReturnType<typeof usePhototicket>;
@@ -66,55 +64,8 @@ export function stampScaleMaxFor(layout: LayoutId) {
 }
 
 /**
- * 축 전환 세그먼트(#500 → #554) — 한 번에 한 축만 그리는 배치의 공용 스위치. #826 S2에서 후보정(재질↔
- * 코팅)과 크기(포스터↔로고)는 도구가 갈려 이 스위치를 안 쓰고, 지금 소비자는 폰트 패널(CustomPanel)뿐이다.
- *
- * 높이는 h-9(36px)로 명시해 SC 2.5.8 하한을 클래스 파싱만으로 검증할 수 있게 한다
- * (__tests__/tapTargets.ts — 실렌더 px를 못 보는 파서라 선언이 곧 계약이다).
- */
-function AxisSegment<K extends string>({
-  ariaLabel,
-  panelId,
-  options,
-  value,
-  onChange,
-}: {
-  ariaLabel: string;
-  panelId: string;
-  options: readonly { key: K; label: string }[];
-  value: K;
-  /** 호출부는 setState를 그대로 넘기지 말고 람다로 감쌀 것 — SetStateAction이 K 추론 후보로
-      끼어들면 K가 string으로 넓어져 축 유니온이 풀린다. */
-  onChange: (next: K) => void;
-}) {
-  return (
-    <div role="radiogroup" aria-label={ariaLabel} className="flex gap-2">
-      {options.map((o) => (
-        <button
-          key={o.key}
-          type="button"
-          role="radio"
-          aria-checked={value === o.key}
-          aria-controls={panelId}
-          onClick={() => onChange(o.key)}
-          data-touch="36"
-          className={cn(pressableVariants(), `h-9 flex-1 truncate rounded-chip border px-3 text-caption font-medium transition-colors ${
-            value === o.key
-              ? 'border-transparent bg-accent-soft text-accent'
-              : 'border-hair bg-s2 text-ink-2'
-          }`)}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-/**
  * 값 칩 한 줄(라디오그룹) — 포스터 채우기(#527)와 한줄평 폰트(#558)가 같은 모양이라 하나만 둔다.
- * AxisSegment(축 전환)와는 역할이 다르다: 저건 아래 패널을 갈아끼우는 스위치(aria-controls)고
- * 이건 값 자체를 고르는 피커라, 개별 칩을 잠글 수 있다(disabled + 사유 문구 — ColorPicker가
+ * 값 자체를 고르는 피커라, 개별 칩을 잠글 수 있다(disabled + 사유 문구 — ColorPicker가
  * TONE_FIXED_MOODS를 다루는 문법과 같다. 잠금은 "숨김"이 아니므로 칩은 자리에 남는다).
  */
 function ChipRadio<V extends string>({
@@ -181,158 +132,6 @@ const POSTER_FIT_OPTIONS = [
   { value: 'contain', label: '원본 비율' },
   { value: 'cover', label: '꽉 채우기' },
 ] as const;
-
-/**
- * 한줄평·서명 폰트 9택(#558 4택 → #437). 값의 뜻과 실제 폰트는 `_shared.tsx`의 `userTextFont`가
- * 단일 소스이고, 여기는 라벨만 쥔다.
- *
- * 라벨이 스타일 이름이 아니라 폰트 이름인 건 8종 중 5종이 손글씨 계열이기 때문이다 —
- * '손글씨'·'캘리그라피' 같은 스타일어로는 서로 구분이 안 돼서, 사용자가 눈누에서 보고 고른
- * 이름 그대로 쓴다. 그래서 #558의 'hand'는 값은 그대로 두고 라벨만 '손글씨'→'자람'이 됐다.
- *
- * 'serif'(Instrument Serif)는 빠졌다 — 한글 글리프가 없어 한글에선 항상 잠겨 있던 칩인데,
- * 한글 되는 세리프('바탕' = 경기천년바탕)가 들어오면서 자리를 넘겼다. 라틴 세리프는 'auto'가
- * 계속 준다(QuoteFont 주석 — 저장돼 있던 'serif'는 렌더가 안 변한다).
- */
-const QUOTE_FONT_OPTIONS = [
-  { value: 'auto', label: '자동' },
-  { value: 'gothic', label: '고딕' },
-  { value: 'batang', label: '바탕' },
-  { value: 'hand', label: '자람' },
-  { value: 'ink', label: '잉크' },
-  { value: 'eunyoung', label: '은영' },
-  { value: 'brush', label: '붓' },
-  { value: 'coolguy', label: '쿨가이' },
-  { value: 'flower', label: '꽃길' },
-] as const;
-
-/**
- * 한줄평 폰트가 존재하는 무드(#558) — quote를 렌더하는 무드와 같다. '커스텀' 항목의 appliesTo는
- * **그 항목에 든 컨트롤들의 합집합**이고, 컨트롤은 render 안에서 제 표를 다시 본다(#523 c1과
- * 같은 처방 — SizePanel의 showFit/POSTER_FILL_MOODS가 선례). 지금은 컨트롤이 하나뿐이라 둘이
- * 같지만, #530 배경 패턴이 이 항목에 합류하면 합집합만 넓어지고 폰트 피커는 여기서 계속 걸린다.
- */
-const QUOTE_FONT_MOODS: readonly LayoutId[] = ['criterion'];
-
-/**
- * 서명 폰트가 존재하는 무드(#437) — signature를 텍스트 스팬으로 렌더하는 무드 전부. 35mm·
- * 35mm-landscape는 필름 엣지 스텐실(FONT_LCD 고정, 대상 아님)과 별개로 FilmCreditCut의
- * "Collected by" 행이 다른 4무드와 같은 userTextFont 경로를 타서 포함된다
- * (docs/specs/quote-signature-font-selection.md §6).
- */
-/** 폰트 칩 라벨의 기준 크기(#780) — caption(12px) 그대로면 체감 크기가 가장 작은 손글씨 계열이
- *  칩 안에서 거의 안 읽힌다. `userTextFont`의 #437 배율이 hand=1.0 기준이라 16을 주면 손글씨는
- *  16px, 고딕·바탕은 13px 안팎으로 서서 9칩의 글자면이 비슷한 크기로 선다. */
-const CHIP_SAMPLE_BASE_PX = 16;
-
-const SIGNATURE_FONT_MOODS: readonly LayoutId[] = ['criterion', 'minimal', 'stub', 'editorial', '35mm', '35mm-landscape'];
-
-/** '커스텀' 항목의 appliesTo — 안에 든 컨트롤(quote 폰트·signature 폰트)의 노출 무드 합집합. */
-const CUSTOM_PANEL_MOODS: readonly LayoutId[] = Array.from(new Set([...QUOTE_FONT_MOODS, ...SIGNATURE_FONT_MOODS]));
-
-/**
- * 커스텀 패널(#558·#437) — 무드 전용 커스터마이즈가 모이는 자리. Criterion 한줄평 폰트 +
- * 서명 폰트 둘. 컨트롤별 노출은 각자 무드 표(QUOTE_FONT_MOODS·SIGNATURE_FONT_MOODS)를
- * render 안에서 다시 본다(#523 c1 패턴 — appliesTo는 합집합, 게이팅은 컨트롤 자신).
- *
- * 텍스트 편집은 여기 안 둔다(스펙 c5): 레일은 하단 고정 dock이라 텍스트 인풋을 넣으면 소프트
- * 키보드가 dock을 통째로 덮는다 — 한줄평·서명 문구는 온티켓 탭(FieldTap → InPlaceFieldEditor)이
- * 계속 소유한다.
- *
- * 두 피커가 다 뜨는 무드(지금은 Criterion)는 한 번에 한 축만 그린다(#797) — 후보정·크기와 같은
- * AxisSegment 처방이다. 둘을 세로로 쌓으면 409px(375~414 폭, 320에선 585px)라 슬롯(148~214px)의
- * 두 배를 넘었다. 축으로 나눠도 피커 하나(견본 줄 + 9칩 그리드, 서명만 뜨는 무드에서 217px)가
- * 이미 슬롯보다 커서 넘침이 0이 되진 않는다 — 줄이는 건 스크롤 양이고, 나머지는 슬롯 스크롤
- * 그림자가 잇는다(DesignRail 슬롯 주석). 피커가 하나뿐인 무드는 세그먼트를 안 그린다: 한 칸짜리
- * 축 전환은 죽은 컨트롤이다(SizePanel의 posterAxis 부재 분기와 같은 이유).
- */
-const CUSTOM_AXES = [
-  { key: 'quote', label: '한줄평' },
-  { key: 'signature', label: '서명' },
-] as const;
-type CustomAxis = (typeof CUSTOM_AXES)[number]['key'];
-
-export function CustomPanel({ photo }: { photo: Photo }) {
-  // 무드를 오가도 고른 축을 기억하게 early return보다 위에 둔다(훅 순서 규칙이기도 하다).
-  const [axis, setAxis] = useState<CustomAxis>('quote');
-  const { components } = photo.state;
-  const showQuote = QUOTE_FONT_MOODS.includes(components.layout);
-  const showSignature = SIGNATURE_FONT_MOODS.includes(components.layout);
-  if (!showQuote && !showSignature) return null;
-  // 서명 이미지가 있으면 텍스트 서명 자체가 안 그려지니(#484 우선순위) 피커를 통째로 잠근다.
-  // 9택이 되면서 잠금 사유는 이것 하나만 남았다 — 8종 전부 한글 글리프를 갖고 있어 #558의
-  // "세리프는 한글에서 잠금"이 사라졌다(그 칩 자체가 없어졌다, QUOTE_FONT_OPTIONS 주석).
-  const signatureLocked = !!components.signatureImage;
-  const lockAll = QUOTE_FONT_OPTIONS.map((o) => ({ ...o, disabled: true }));
-  // 견본 문구(#780) — 빈 값에서도 폰트 차이가 보여야 해서 폴백한다. 한줄평은 빈 값이면 티켓이
-  // 영문 기본 문구(별점 문구 포함 전부 라틴)를 그리므로 그 문장을 써야 '자동'이 티켓과 같은
-  // 서체(latin)로 풀린다. 서명은 빈 값이면 티켓에 자리표시만 서서 대응 문장이 없으니 한글+영문
-  // 견본으로 두 축을 다 보여준다.
-  const quoteSample = photo.state.movieInfo.quote?.trim() || DEFAULT_QUOTE;
-  const signatureSample = photo.state.movieInfo.signature?.trim() || '영화의 순간 Film';
-  const quotePicker = (
-    <ChipRadio
-      label="한줄평 폰트"
-      preview={
-        <p
-          data-font-preview="quote"
-          className="truncate leading-8 text-ink"
-          style={userTextFont(quoteSample, components.quoteFont, 22)}
-        >
-          {quoteSample}
-        </p>
-      }
-      options={QUOTE_FONT_OPTIONS}
-      // '자동'은 라벨(한글)이 아니라 실제 문장으로 풀어야 티켓과 같은 서체가 된다 — 라틴 문장이면
-      // hand가 아니라 latin(Instrument Serif)으로 간다.
-      optionStyle={(font, label) =>
-        userTextFont(font === 'auto' ? quoteSample : label, font, CHIP_SAMPLE_BASE_PX)
-      }
-      value={components.quoteFont ?? 'auto'}
-      onChange={(quoteFont) => photo.updateComponents({ quoteFont })}
-    />
-  );
-  const signaturePicker = (
-    <ChipRadio
-      label="서명 폰트"
-      preview={
-        signatureLocked ? null : (
-          <p
-            data-font-preview="signature"
-            className="truncate leading-8 text-ink"
-            style={userTextFont(signatureSample, components.signatureFont, 22)}
-          >
-            {signatureSample}
-          </p>
-        )
-      }
-      options={signatureLocked ? lockAll : QUOTE_FONT_OPTIONS}
-      optionStyle={(font, label) =>
-        userTextFont(font === 'auto' ? signatureSample : label, font, CHIP_SAMPLE_BASE_PX)
-      }
-      value={components.signatureFont ?? 'auto'}
-      onChange={(signatureFont) => photo.updateComponents({ signatureFont })}
-      note={signatureLocked ? '서명 이미지가 있으면 폰트가 적용되지 않아요.' : undefined}
-    />
-  );
-  if (!showQuote || !showSignature) return showQuote ? quotePicker : signaturePicker;
-  // aria-controls와 대상 id는 같은 상수에서 — TexturePanel·SizePanel과 같은 이유.
-  const panelId = `${ID_PREFIX}-custom-axis-panel`;
-  return (
-    <div className="space-y-field">
-      <AxisSegment
-        ariaLabel="폰트 축"
-        panelId={panelId}
-        options={CUSTOM_AXES}
-        value={axis}
-        onChange={(next) => setAxis(next)}
-      />
-      <div id={panelId} key={axis}>
-        {axis === 'quote' ? quotePicker : signaturePicker}
-      </div>
-    </div>
-  );
-}
 
 type TextureAxis = 'material' | 'coating';
 const TEXTURE_AXES: { key: TextureAxis; label: string; options: readonly { value: string; label: string }[] }[] = [
