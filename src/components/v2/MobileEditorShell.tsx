@@ -8,11 +8,11 @@ import {
   type DragEvent,
   type KeyboardEvent,
 } from 'react';
-import { EditorDock, type DockMode } from './dock/EditorDock';
+import { EditorDock, dockAnchoredBottom, type DockMode } from './dock/EditorDock';
 import { EditorMenu } from './EditorMenu';
 import { Landing } from './Landing';
 import { OcrUploadCard } from './OcrUploadCard';
-import { OcrUndoBanner } from './OcrUndoBanner';
+import { OcrUndoBanner, OCR_BANNER_HEIGHT_PX } from './OcrUndoBanner';
 import { APP_BACKGROUND_ID } from './PhoneFrame';
 import type { ViewMode } from './viewMode';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
@@ -54,6 +54,15 @@ const TB_ICONS = {
 
 const TB_BUTTON_CLS =
   'flex h-touch w-touch shrink-0 items-center justify-center rounded-md text-ink-2 transition-colors hover:text-ink disabled:opacity-40';
+
+// 상단 줄 높이(E-01) — 오류 토스트가 이 줄 바로 아래(8px)에 선다.
+const TOPBAR_PX = 52;
+// 토스트(C-TST, E-03 · E-06): 통보는 도크 바로 위 12px, 오류는 상단 줄 아래 8px. 배너(E-05)는 도크 위 8px이고 토스트는 그 위로 쌓인다.
+type ToastTone = 'notice' | 'error';
+const TOAST_MS: Record<ToastTone, number> = { notice: 2600, error: 4000 };
+const TOAST_ABOVE_DOCK_PX = 12;
+const TOAST_BELOW_TOPBAR_PX = 8;
+const BANNER_ABOVE_DOCK_PX = 8;
 
 function TbIcon({ name }: { name: keyof typeof TB_ICONS }) {
   return (
@@ -108,7 +117,8 @@ export function MobileEditorShell({
   // 빈 항목 표시(ghost, #216) — 셸 로컬, 미영속. 메뉴 스위치가 사진 · 디자인 모드의 값을 정한다(D03 A, 기본 꺼짐).
   // 정보 모드는 자동으로 켜지고 필드 입력 중은 강제로 켠다(아래 ghost 합성).
   const [ghostMode, setGhostMode] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  // 토스트 두 종류(E-03 · E-06): 통보(notice)는 도크 바로 위에 2.6초, 오류(error)는 상단 줄 바로 아래에 4초.
+  const [toast, setToast] = useState<{ msg: string; tone: ToastTone } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // 편집 메뉴 시트(#826 S2 D09) — 열려 있는 동안만 EditorMenu가 마운트된다(초기화 arm도 그 안에 산다).
   const [menuOpen, setMenuOpen] = useState(false);
@@ -183,16 +193,17 @@ export function MobileEditorShell({
   //    그려진다. 이 항이 하던 일(취소 시 빈 셸 방지)은 이탈 state가 안 서 있으므로 저절로 성립한다(c4).
   //  · draftRestored를 뺀 이유: 그게 #675 D7이고, 이 작업이 뒤집는 명제 자체다(c1).
 
-  function flashToast(msg: string) {
-    setToast(msg);
+  function flashToast(msg: string, opts?: { tone?: ToastTone }) {
+    const tone = opts?.tone ?? 'notice';
+    setToast({ msg, tone });
     clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 2600);
+    toastTimer.current = setTimeout(() => setToast(null), TOAST_MS[tone]);
   }
   useEffect(() => () => clearTimeout(toastTimer.current), []);
 
   function handleDone() {
     if (!canExport) {
-      flashToast(disabledReason);
+      flashToast(disabledReason, { tone: 'error' });
       // 사유 토스트만으론 어디서 채우는지 모른다(#776) — 정보 모드로 바꿔 빈 필수 행의 앰버 점과 '필수'가 보이게
       // 한다(E-03). 키보드는 자동으로 올리지 않는다 — 행을 탭해야 입력이 열리고, 숨겨 둔 필드면 그 탭(openMissingField)이
       // 편집 뒤 다시 숨긴다.
@@ -358,6 +369,16 @@ export function MobileEditorShell({
   const isMax = viewMode === 'max';
   // 랜딩 오버레이가 편집 셸 위에 떠 있는 상태 — 상단 줄과 도크가 그 뒤에서 탭 순서에 남으면 안 된다.
   const landingVisible = !landingDismissed && !isMax;
+  // 도크가 실제로 보이는가 — EditorDock hidden의 보수다. 토스트·배너 좌표가 도크 위에 얹힐지 옛 하단 자리로 물러날지를 가른다.
+  const dockShown = !isMax && canvasReady && !landingVisible;
+  // 토스트 앵커(E-03 · E-06): 오류는 상단 줄 아래, 통보는 도크 위(배너가 있으면 그 위로 한 칸 더), 도크가 없으면 옛 하단 클래스.
+  const toastAnchor: 'top' | 'dock' | 'fallback' = toast?.tone === 'error' ? 'top' : dockShown ? 'dock' : 'fallback';
+  const toastOffsetPx =
+    toastAnchor === 'top'
+      ? TOPBAR_PX + TOAST_BELOW_TOPBAR_PX
+      : ocr.snapshot
+        ? BANNER_ABOVE_DOCK_PX + OCR_BANNER_HEIGHT_PX + BANNER_ABOVE_DOCK_PX
+        : TOAST_ABOVE_DOCK_PX;
   // max 진입 시 포커스를 티켓 래퍼(유일한 탈출구)로 옮긴다 — 진입 버튼이 있던 플로팅 툴바가
   // max에서 통째로 언마운트돼 포커스가 body로 떨어지면 키보드 사용자가 복귀 수단을 잃는다(#190).
   useEffect(() => {
@@ -422,7 +443,7 @@ export function MobileEditorShell({
           ‹ · ⋯가 랜딩 뒤에서 탭 순서에 남는다(상태 없는 줄이라 언마운트가 안전하다; 도크는 로컬 state가 있어 CSS hidden). 완료는 편집 캔버스가 서야 렌더(canvasReady,
           #631 — 포스터 유무가 아니다), 차단 상태는 테두리만 있는 aria-disabled이고 탭하면 사유 토스트 + 정보 모드(handleDone). */}
       {!isMax && !landingVisible && (
-        <header className="relative flex h-[52px] shrink-0 items-center px-1">
+        <header className="relative flex shrink-0 items-center px-1" style={{ height: TOPBAR_PX }}>
           <button type="button" onClick={handleBack} aria-label="랜딩으로 돌아가기" className={cn(pressableVariants(), TB_BUTTON_CLS)}>
             <TbIcon name="back" />
           </button>
@@ -778,7 +799,7 @@ export function MobileEditorShell({
         photo={photo}
         mode={dockMode}
         onModeChange={setDockMode}
-        hidden={isMax || !canvasReady || landingVisible}
+        hidden={!dockShown}
         onField={handleField}
         onMissingField={openMissingField}
         onOcrOpen={handleOcrOpen}
@@ -836,8 +857,8 @@ export function MobileEditorShell({
         />
       )}
 
-      {/* OCR 되돌리기 배너(#261 승격) — 화면 하단 고정(fixed), useOcrUndo/OcrUndoBanner 공유(#141-class
-          drift 방지). 배너는 셸이 단독 소유하므로 중복되지 않는다. max(#328)는 티켓만 노출하는
+      {/* OCR 되돌리기 배너(#261 승격) — fixed, useOcrUndo/OcrUndoBanner 공유(#141-class drift 방지). 도크가 서 있으면 도크
+          바로 위(E-05: 티켓과 도크 사이)이고, 도크가 없는 화면은 옛 하단 자리(bottom-6)다. max(#328)는 티켓만 노출하는
           풀스크린이라 시각 배너를 숨긴다 — snapshot을 null로 넘겨도 컴포넌트 자신은 계속 마운트돼
           sr-only 라이브리전의 mutation 감지 계약(#199)은 유지된다. */}
       <OcrUndoBanner
@@ -846,25 +867,39 @@ export function MobileEditorShell({
         stampCount={ocr.stampCount}
         onCancel={ocr.cancel}
         onConfirm={ocr.confirm}
+        dockOffsetPx={dockShown ? BANNER_ABOVE_DOCK_PX : undefined}
       />
 
-      {/* 완료 비활성 사유 — SR 라이브리전은 콘텐츠와 함께 삽입되면 mutation을 놓치므로(#199)
-          항상 마운트하고 텍스트만 토글한다. 시각 토스트는 별도로 aria-hidden, max(#328)에선 숨김. */}
-      <div role="status" aria-live="polite" className="sr-only">{toast ?? ''}</div>
-      {/* OCR 배너(bottom-6, p-3 + min-h-touch 44px ≈ 70px 높이)와 좌표가 문자까지 같았다(#731) —
-          배너가 떠 있으면 그 위로 띄워 서로 안 가리게 한다. 배너엔 자동 소멸이 없어서(useOcrUndo에
-          타이머 없음) 그 창에서 뜨는 어떤 flashToast(전역 undo '되돌렸어요' 포함, 8곳)도 이 조건
-          하나로 같이 걷힌다 — 호출부마다 따로 고칠 필요가 없다. */}
+      {/* 완료 비활성 사유 — SR 라이브리전은 콘텐츠와 함께 삽입되면 mutation을 놓치므로(#199) 항상 마운트하고 텍스트만
+          토글한다. 시각 토스트는 별도로 aria-hidden, max(#328)에선 숨김. */}
+      <div role="status" aria-live="polite" className="sr-only">{toast?.msg ?? ''}</div>
+      {/* 시각 토스트(C-TST). 오류는 상단 줄 아래 8px에 한 줄로, 통보는 도크 바로 위 12px에 선다. 배너가 떠 있으면(자동 소멸
+          없음, useOcrUndo에 타이머 없음) 통보 토스트가 그 위로 쌓여 서로 안 가린다(#731) — 이 조건 하나로 모든 flashToast가
+          같이 비킨다. 도크가 없는 화면(랜딩 · max)은 옛 bottom-6 / bottom-28 자리로 물러난다. */}
       {!isMax && toast && (
         <div
           aria-hidden="true"
           data-testid="global-toast"
-          className={`fixed left-1/2 z-[60] -translate-x-1/2 rounded-full border border-hair bg-s2 px-4 py-2 text-body text-ink ${
-            ocr.snapshot ? 'bottom-28' : 'bottom-6'
-          }`}
-          style={{ maxWidth: 'calc(100% - 32px)', boxShadow: 'var(--shadow-pop)' }}
+          data-tone={toast.tone}
+          // 앵커 — happy-dom은 env()가 든 좌표를 버려 테스트가 style을 못 읽는다. 값은 아래 style과 같은 원천이다.
+          data-anchor={toastAnchor}
+          data-offset-px={toastOffsetPx}
+          className={cn(
+            'fixed left-1/2 z-[60] -translate-x-1/2 rounded-[6px] border bg-s2 px-4 py-2 text-body',
+            toast.tone === 'error' ? 'truncate border-warn text-warn' : 'border-hair text-ink',
+            toastAnchor === 'fallback' && (ocr.snapshot ? 'bottom-28' : 'bottom-6'),
+          )}
+          style={{
+            maxWidth: 'calc(100% - 32px)',
+            boxShadow: 'var(--shadow-pop)',
+            ...(toastAnchor === 'top'
+              ? { top: `calc(env(safe-area-inset-top, 0px) + ${toastOffsetPx}px)` }
+              : toastAnchor === 'dock'
+                ? { bottom: dockAnchoredBottom(toastOffsetPx) }
+                : {}),
+          }}
         >
-          {toast}
+          {toast.msg}
         </div>
       )}
 

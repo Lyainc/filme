@@ -406,6 +406,9 @@ try {
     [...document.querySelectorAll('button')].find((b) => b.textContent?.trim() === '임시저장').click(),
   );
   await bannerPage.waitForSelector('[data-testid="global-toast"]', { timeout: 5000 });
+  // 배너의 slide-up(0.3s, translateY 1rem → 0)이 끝난 뒤에 잰다 — 도중에 재면 배너가 16px 아래로 찍혀 gap이 16 부풀고
+  // 도크와의 간격이 실제보다 모자라 보인다. 토스트 수명(2.6s) 안이다.
+  await new Promise((r) => setTimeout(r, 500));
   const bannerToastCollision = await bannerPage.evaluate(() => {
     const r = (el) => {
       const b = el.getBoundingClientRect();
@@ -414,10 +417,14 @@ try {
     return {
       banner: r(document.querySelector('[data-testid="ocr-undo-banner"]')),
       toast: r(document.querySelector('[data-testid="global-toast"]')),
+      dock: r(document.querySelector('[data-testid="editor-dock"]')),
     };
   });
   bannerToastCollision.gap = +(bannerToastCollision.banner.top - bannerToastCollision.toast.bottom).toFixed(1);
-  bannerToastCollision.pass = bannerToastCollision.toast.bottom <= bannerToastCollision.banner.top;
+  // 배너는 도크 바로 위(E-05)다 — 도크 윗면과 안 겹치고, 토스트는 그 위로 쌓인다(#826 S2).
+  bannerToastCollision.dockGap = +(bannerToastCollision.dock.top - bannerToastCollision.banner.bottom).toFixed(1);
+  bannerToastCollision.pass =
+    bannerToastCollision.toast.bottom <= bannerToastCollision.banner.top && bannerToastCollision.dockGap >= 0;
   await bannerCtx.close();
 
   await landingCtx.close();

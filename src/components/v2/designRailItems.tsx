@@ -23,12 +23,12 @@ type Photo = ReturnType<typeof usePhototicket>;
  * 여기 온다 — 인플레이스 편집은 셸이 소유한다. 포스터 재크롭(#492)은 사진 모드의 자르기 행으로
  * 옮겨 갔다(#826 S2 G-01).
  */
-export interface DesignToolActions {
+interface DesignToolActions {
   /** 필드 인플레이스 편집 진입(#781) — 로고 크기 패널의 입력 액션이 셸의 handleField로 로고 입력을 연다. */
   onEditField?: (field: SheetTarget) => void;
 }
 
-export interface DesignTool {
+interface DesignTool {
   id: DesignToolId;
   label: string;
   render: (photo: Photo, actions: DesignToolActions) => ReactNode;
@@ -231,7 +231,7 @@ export const BACKGROUND_PATTERN_MOODS: readonly LayoutId[] = ['editorial', 'crit
  * MoodMinimal이 실효 scale을 따로 클램프하기 때문인데(PR #486 P1), 배경은 minimal에 안 실리고
  * 세 무드가 같은 0.626 캔버스를 쓴다.
  */
-export const BACKGROUND_SCALE_MAX = 1.5;
+const BACKGROUND_SCALE_MAX = 1.5;
 
 /**
  * 스탬프 투명도 범위(#728 c4·ac3). 하한 0.2는 완전히 안 보일 정도로 내려가면 "왜 스탬프가
@@ -240,7 +240,7 @@ export const BACKGROUND_SCALE_MAX = 1.5;
  * 업로드 즉시 보여준다. 상한 1.0(불투명)은 기존 저장본이 `?? 1`로 읽는 값과 같아, 사용자가
  * 슬라이더를 끝까지 올리면 옛 배경 렌더와 픽셀이 같아진다.
  */
-export const BACKGROUND_OPACITY_MIN = 0.2;
+const BACKGROUND_OPACITY_MIN = 0.2;
 export const BACKGROUND_OPACITY_DEFAULT = 0.5;
 
 /**

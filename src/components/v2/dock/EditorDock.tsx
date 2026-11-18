@@ -21,6 +21,14 @@ export type DockMode = 'photo' | 'info' | 'design';
  */
 export const DOCK_BODY_PX = 196;
 export const DOCK_MODEBAR_PX = 52;
+const DOCK_BORDER_PX = 1; // border-t
+
+/**
+ * 도크 윗면에서 extraPx 위 — fixed 요소(토스트 · OCR 배너)가 도크에 얹힐 때 쓰는 bottom 값이다. 도크 높이(본문 + 모드 바 +
+ * 위 테두리 + 아래 안전 영역)가 바뀌면 이 값만 따라가면 되도록 위 두 상수에서 낸다. 좌표 기준은 PhoneFrame이다(contain:paint).
+ */
+export const dockAnchoredBottom = (extraPx: number) =>
+  `calc(${DOCK_BODY_PX + DOCK_MODEBAR_PX + DOCK_BORDER_PX + extraPx}px + env(safe-area-inset-bottom, 0px))`;
 
 const MODES: { key: DockMode; label: string }[] = [
   { key: 'photo', label: '사진' },

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, test } from 'bun:test';
+import { afterEach, beforeEach, expect, jest, test } from 'bun:test';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import Home from '@/pages/index';
 import { missingExportFields } from '@/hooks/useExportReady';
@@ -12,7 +12,7 @@ import { missingExportFields } from '@/hooks/useExportReady';
  */
 
 beforeEach(() => window.localStorage.clear());
-afterEach(() => { cleanup(); window.localStorage.clear(); });
+afterEach(() => { cleanup(); window.localStorage.clear(); jest.useRealTimers(); });
 
 const draft = (value: object) =>
   window.localStorage.setItem('filme:phototicket:v1', JSON.stringify(value));
@@ -50,6 +50,29 @@ test('#826 S2 — 디자인 모드에서 미완료 완료 탭은 정보 모드�
   expect(!!screen.queryByRole('toolbar', { name: '필드 편집 도구' })).toBe(false);
   // 사유 토스트 한 줄.
   expect(screen.getByTestId('global-toast').textContent).toBeTruthy();
+});
+
+test('#826 S2 E-03 — 완료 실패 토스트는 오류 톤으로 상단 줄 아래에 서고 4000ms 동안 남았다가 걷힌다', async () => {
+  draft({ movieInfo: { title: '', releaseDate: '' } });
+  render(<Home />);
+  fireEvent.click(await screen.findByTestId('landing-restore'));
+  // 토스트 타이머가 가짜 시계에 걸리도록 완료를 누르기 직전에 바꾼다(복원 대기는 실시간으로 끝났다).
+  jest.useFakeTimers();
+
+  fireEvent.click(screen.getByRole('button', { name: '완료' }));
+  const toast = screen.getByTestId('global-toast');
+  expect(toast.getAttribute('data-tone')).toBe('error');
+  // 상단 줄(52) 바로 아래 8px — 하단(도크 위)이 아니다.
+  expect(toast.getAttribute('data-anchor')).toBe('top');
+  expect(toast.getAttribute('data-offset-px')).toBe('60');
+  expect(toast.className).not.toContain('bottom-');
+
+  act(() => { jest.advanceTimersByTime(2600); });
+  expect(!!screen.queryByTestId('global-toast')).toBe(true); // 통보 토스트의 수명(2.6s)을 지나도 남는다
+  act(() => { jest.advanceTimersByTime(1399); });
+  expect(!!screen.queryByTestId('global-toast')).toBe(true); // 3999ms
+  act(() => { jest.advanceTimersByTime(1); });
+  expect(!!screen.queryByTestId('global-toast')).toBe(false); // 4000ms
 });
 
 test('#826 S2 — 사진 모드에서 미완료 완료 탭도 정보 모드로 간다', async () => {
