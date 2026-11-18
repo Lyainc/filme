@@ -119,9 +119,9 @@ describe('랜딩 오버레이(#614)', () => {
 
     expect(landing().classList.contains('hidden')).toBe(true);
     expect(landingOverlayShown()).toBe(false);
-    // 편집 크롬이 실제로 열렸는지 — posterlessCanvas.test.tsx와 같은 두 진입점으로 잰다.
+    // 편집 크롬이 실제로 열렸는지 — posterlessCanvas.test.tsx와 같은 두 진입점(완료 · 편집 도크)으로 잰다.
     expect(!!screen.queryByRole('button', { name: '완료' })).toBe(true);
-    expect(!!screen.queryByRole('button', { name: '티켓 항목 목록 열기' })).toBe(true);
+    expect(screen.getByTestId('editor-dock').classList.contains('hidden')).toBe(false);
     // 복원된 제목이 문서에 살아 있다 — 티켓 프리뷰가 그 값을 그린다.
     expect(document.body.textContent).toContain('인터스텔라');
   });

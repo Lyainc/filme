@@ -1,5 +1,5 @@
 /**
- * #437 — 디자인 레일 '커스텀' 항목의 서명 폰트 9택 상호작용 테스트.
+ * #437 — 폰트 패널(CustomPanel)의 서명 폰트 9택 상호작용 테스트.
  *
  * quoteFont(designRailQuoteFont.test.tsx)와 같은 모양이되, signatureFont는 독립 축이라
  * ①quoteFont와 값이 안 섞이는지 ②6무드 전부(텍스트 스팬 4종 + FilmCreditCut 크레딧 컷 경유
@@ -13,7 +13,7 @@ import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
 import { render, screen, within, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { usePhototicket } from '@/hooks/usePhototicket';
-import { DesignRail } from '@/components/v2/DesignRail';
+import { CustomPanel } from '@/components/v2/designRailItems';
 import { MoodMinimal } from '@/components/moods/MoodMinimal';
 import { Mood35mm } from '@/components/moods/Mood35mm';
 import {
@@ -55,7 +55,7 @@ function Harness() {
       </button>
       <div data-testid="signature-font">{photo.state.components.signatureFont ?? '(미설정)'}</div>
       <div data-testid="quote-font">{photo.state.components.quoteFont ?? '(미설정)'}</div>
-      <DesignRail photo={photo} />
+      <CustomPanel photo={photo} />
       {photo.state.components.layout === '35mm' ? (
         <Mood35mm movieInfo={photo.state.movieInfo} components={photo.state.components} croppedImageUrl="blob:x" />
       ) : (
@@ -71,7 +71,6 @@ function signatureStyle(text: string) {
 }
 
 async function openCustomPanel(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: '커스텀' }));
 }
 
 beforeEach(() => window.localStorage.clear());
@@ -80,7 +79,7 @@ afterEach(() => {
   window.localStorage.clear();
 });
 
-describe('레일 커스텀 — 서명 폰트 9택 (#437)', () => {
+describe('폰트 패널 — 서명 폰트 9택 (#437)', () => {
   test('서명 폰트 피커는 6무드 전부에서 뜨고 quoteFont와 독립이다', async () => {
     const user = userEvent.setup();
     render(<Harness />);

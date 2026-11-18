@@ -1,5 +1,5 @@
 import { afterAll, afterEach, expect, mock, spyOn, test } from 'bun:test';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { PhototicketState } from '@/types';
 import { mobileShellProps } from './shellHarness';
 
@@ -40,7 +40,9 @@ const cases = [
   { name: '네트워크 실패', response: () => { throw new TypeError('offline'); }, result: { failed: true }, message: '인식에 실패했어요. 다시 시도해 주세요.' },
 ];
 
-for (const context of ['landing', 'drawer'] as const) {
+// #826 S2 — 두 번째 카드(필드 드로어)가 사라져 'drawer' 문맥은 정보 모드 버튼('info')으로 갔다. 카드는 랜딩 안
+// 한 벌뿐이고, 랜딩이 걷힌 뒤에는 그 카드의 안내가 display:none 안이라 셸 토스트가 대신 보여준다.
+for (const context of ['landing', 'info'] as const) {
   for (const scenario of cases) {
     test(`${context}: ${scenario.name} 안내·문서 보존·처리 해제·같은 파일 재시도 (#773)`, async () => {
       spyOn(console, 'error').mockImplementation(() => {});
@@ -50,18 +52,24 @@ for (const context of ['landing', 'drawer'] as const) {
       fetchMock.mockClear();
       render(<Harness />);
       fireEvent.click(screen.getByText('seed'));
-      if (context === 'drawer') {
-        fireEvent.click(screen.getByTestId('landing-restore'));
-        fireEvent.click(screen.getByRole('button', { name: '티켓 항목 목록 열기' }));
-      }
+      if (context === 'info') fireEvent.click(screen.getByTestId('landing-restore'));
       expect(captured.movieInfo.title).toBe('기존 영화');
       expect(captured.components.chainLabel).toBe('메가박스');
-      const scope = context === 'landing' ? screen.getByTestId('landing') : await screen.findByRole('dialog', { name: '티켓 항목' });
-      const input = scope.querySelector('input[type="file"][accept="image/*"]') as HTMLInputElement;
-      const button = within(scope).getByRole<HTMLButtonElement>('button', { name: context === 'landing' ? '티켓 스크린샷으로 자동입력' : '스크린샷으로 자동입력' });
+      const inputs = document.querySelectorAll('input[type="file"][accept="image/*"]');
+      expect(inputs.length).toBe(1); // 카드는 한 벌뿐이다(constraint-17)
+      const input = inputs[0] as HTMLInputElement;
+      const button = screen.getByRole<HTMLButtonElement>('button', { name: context === 'landing' ? '티켓 스크린샷으로 자동입력' : '스크린샷으로 자동입력' });
       const before = JSON.stringify(captured);
 
       for (let attempt = 1; attempt <= 2; attempt++) {
+        if (context === 'info') {
+          let opened = 0;
+          const onClick = () => { opened += 1; };
+          input.addEventListener('click', onClick);
+          fireEvent.click(button);
+          input.removeEventListener('click', onClick);
+          expect(opened).toBe(1); // 정보 모드 버튼이 랜딩 카드의 파일 선택을 연다
+        }
         fireEvent.change(input, { target: { files: [file] } });
         expect(button.getAttribute('aria-busy')).toBe('true');
         await waitFor(() => expect(button.getAttribute('aria-busy')).toBe('false'));
@@ -71,9 +79,14 @@ for (const context of ['landing', 'drawer'] as const) {
         expect(JSON.stringify(captured)).toBe(before);
         expect(input.value).toBe('');
         expect(!!screen.queryByRole('button', { name: '되돌리기' })).toBe(false);
-        // 시각 안내가 OCR 트리거와 같은 카드의 바로 아래에 남는다.
-        const notice = button.parentElement?.querySelector('.absolute.top-full');
-        expect(notice?.textContent).toBe(scenario.message);
+        if (context === 'landing') {
+          // 시각 안내가 OCR 트리거와 같은 카드의 바로 아래에 남는다.
+          const notice = button.parentElement?.querySelector('.absolute.top-full');
+          expect(notice?.textContent).toBe(scenario.message);
+        } else {
+          // 랜딩이 걷힌 뒤엔 셸 토스트가 같은 문구를 보여준다.
+          expect(screen.getByTestId('global-toast').textContent).toBe(scenario.message);
+        }
       }
     });
   }

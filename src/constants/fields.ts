@@ -2,7 +2,7 @@ import type { TicketField, MovieInfo, TicketComponents, LayoutId } from '@/types
 import { formatDate } from '@/utils/dateFormat';
 
 /**
- * 필드 메타데이터 단일 소스(#215). 라벨은 필드 드로어(FieldDrawer)·데스크톱 아코디언
+ * 필드 메타데이터 단일 소스(#215). 라벨은 도크 정보 모드(옛 필드 드로어)·데스크톱 아코디언
  * 인플레이스 에디터·필드 드로어가 공유하므로 여기 한 곳에 둔다.
  *
  * 필드 말고 **무드 능력 표**도 여기 산다(TONE_FIXED_MOODS · POSTER_FILL_MOODS · MOOD_EXCLUDED_FIELDS)
@@ -65,15 +65,13 @@ export const FIELD_INFO_KEY: Partial<Record<TicketField, keyof MovieInfo>> = {
 };
 
 /**
- * 런처 행 그룹(#215) — 현재 폼 구조(Film / Optional)를 반영. reissue는 releaseDate 시트 안에서,
- * chain/format 로고는 PART B에서 다룬다(여기 없음).
+ * 정보 모드 행 그룹(#215 → #826 S2 I-01) — 마스터 I-01의 영화 / 관람 / 기록. reissue는 releaseDate 시트
+ * 안에서, chain/format 로고는 사진 모드에서 다룬다(여기 없음). 마스터 목록에 없던 러닝타임은 영화에 둔다.
  */
 export const LAUNCHER_GROUPS: { title: string; fields: TicketField[] }[] = [
-  { title: 'Film', fields: ['title', 'titleOg', 'releaseDate', 'actors', 'rating', 'quote'] },
-  {
-    title: 'Optional',
-    fields: ['watchDate', 'watchTime', 'theater', 'screen', 'seat', 'runtime', 'bookingNo', 'signature'],
-  },
+  { title: '영화', fields: ['title', 'releaseDate', 'titleOg', 'actors', 'runtime'] },
+  { title: '관람', fields: ['watchDate', 'watchTime', 'theater', 'screen', 'seat', 'bookingNo'] },
+  { title: '기록', fields: ['rating', 'quote', 'signature'] },
 ];
 
 /**
@@ -92,7 +90,7 @@ export const MOOD_EXCLUDED_FIELDS: Partial<Record<LayoutId, readonly TicketField
   // 온티켓 경로는 그대로다. **알려진 대가**: 데스크톱엔 온티켓 탭이 없어 quote 텍스트 편집
   // 경로가 0개가 된다(#558 c6 — 데스크톱 작업 때 복구).
   // #777에서 다시 **제외 해제**했다 — 작은 화면에선 티켓이 줄어 한줄평 탭 타깃도 같이 작아지는데,
-  // 항목 목록(FieldDrawer)이 그 대체 경로라 거기 한줄평이 없으면 탭이 어려울 때 갈 길이 없다.
+  // 항목 목록(도크 정보 모드, 옛 FieldDrawer)이 그 대체 경로라 거기 한줄평이 없으면 탭이 어려울 때 갈 길이 없다.
   // 행 탭은 같은 InPlaceFieldEditor를 여니 편집 경로가 둘로 갈라지진 않는다.
   criterion: ['bookingNo'],
   '35mm': ['bookingNo', 'quote'], // #524 v5: 컷 2개 구조에 바코드 자리가 없다 → bookingNo 미렌더(서명은 크레딧 컷 Collected by로 유지).
@@ -103,7 +101,7 @@ export const MOOD_EXCLUDED_FIELDS: Partial<Record<LayoutId, readonly TicketField
 
 /**
  * themeColor(잉크/액센트 색)를 무시하는 무드(#524) — 시안 색이 무드 정체성의 일부라 하드코딩된
- * 무드들. 여기 들어가면 DesignRail의 ColorPicker가 비활성화된다.
+ * 무드들. 여기 들어가면 도크 색상 도구의 ColorPicker가 비활성화된다.
  * MOOD_EXCLUDED_FIELDS와 같은 성격의 무드 능력 표 — 셸마다 layout id 리터럴을 반복하면
  * 다음 무드가 합류할 때 한쪽만 고쳐지고 죽은 컨트롤이 남는다(#524 열린 질문).
  * 6무드 액센트 통일 개편이 오면 이 표가 그 진입점이다.

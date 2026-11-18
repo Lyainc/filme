@@ -5,16 +5,15 @@
  *
  * 두 시나리오를 모두 다룬다:
  *  1. 랜딩→업로드 전환(본문 카드 hidden화, unmount 아님) 중 in-flight KOBIS 응답 도착.
- *  2. 드로어에서 OCR 시작 → 응답 전에 드로어를 닫음(FieldDrawer는 "닫힘 = 즉시 unmount") — 업로드
- *     후 유일한 접근 가능 OCR 진입점이 드로어이므로, 이 경로가 안전하지 않으면 #388 자체가 같은
- *     클래스의 리그레션을 새로 만든 것이다(claude-review PR #413 P0 지적).
+ *  2. (옛) 드로어에서 OCR 시작 → 응답 전에 드로어를 닫음 — #826 S2에서 드로어가 사라져 정보 모드 버튼에서
+ *     시작해 모드를 옮기는 것으로 대체했다. 카드는 처음부터 하나라 unmount 자체가 없다.
  *
  * 두 경우 모두 setInfo(kobisInfo)는 OcrUploadCard 인스턴스가 아니라 셸이 쥔 photo 상태를
  * 갱신하므로, 그 인스턴스가 사라져도 응답이 여전히 최신이면(ocrEpochRef, #388 useOcrUndo.ts)
  * 반영돼야 한다.
  */
 import { describe, expect, test, afterAll, afterEach, mock, spyOn } from 'bun:test';
-import { render, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { PhototicketState } from '@/types';
 
@@ -74,14 +73,6 @@ function ocrFileInput(): HTMLInputElement {
   ) as HTMLInputElement[];
   const input = inputs.find((i) => i.getAttribute('accept') === 'image/*');
   if (!input) throw new Error('OcrUploadCard file input not found');
-  return input;
-}
-
-/** 드로어가 열려 있으면 본문(hidden) 인스턴스와 드로어 인스턴스 둘 다 image/* input을 갖는다 —
- *  드로어 안으로 스코프해 특정한다. */
-function ocrFileInputWithin(container: HTMLElement): HTMLInputElement {
-  const input = container.querySelector('input[type="file"][accept="image/*"]') as HTMLInputElement | null;
-  if (!input) throw new Error('OcrUploadCard file input not found within container');
   return input;
 }
 
@@ -282,38 +273,78 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
     expect(!!screen.getByRole('button', { name: '포스터 업로드' }).closest('.hidden')).toBe(false);
   });
 
-  test('드로어에서 OCR 시작 → KOBIS 응답 전에 드로어를 닫아도(unmount) 응답 도착 시 titleOg/releaseDate가 폼에 반영된다 (claude-review PR #413 P0)', async () => {
+  // #826 S2 — 필드 드로어(와 그 안의 두 번째 OcrUploadCard)가 사라졌다. 편집 화면의 OCR 진입점은 정보 모드의
+  // '스크린샷으로 자동입력' 버튼이고, 그 버튼은 새 카드를 마운트하지 않고 랜딩 카드의 같은 파일 선택을 연다
+  // (Seed constraint-17). 카드 인스턴스는 처음부터 끝까지 하나다.
+  test('정보 모드 버튼은 랜딩의 단일 카드를 연다 — OCR 카드·파일 input은 셸 트리에 하나뿐이다 (#826 S2 constraint-17)', async () => {
+    const user = userEvent.setup();
+    render(<MobileHarness />);
+
+    const countCards = () => document.querySelectorAll('input[type="file"][accept="image/*"]').length;
+    expect(countCards()).toBe(1);
+
+    await user.click(screen.getByRole('button', { name: '포스터 없이 직접 입력' })); // 랜딩 이탈 → 편집 화면(정보 모드)
+    const trigger = screen.getByRole('button', { name: '스크린샷으로 자동입력' });
+    expect(countCards()).toBe(1);
+    // 같은 카드의 이전 인스턴스가 사라지지 않았다는 증거 — 카드가 쥔 input 노드가 그대로다.
+    const input = ocrFileInput();
+    let clicks = 0;
+    input.addEventListener('click', () => { clicks += 1; });
+    await user.click(trigger);
+    expect(clicks).toBe(1);
+    expect(countCards()).toBe(1);
+
+    // 모드를 오가도 카드는 하나다 — 정보 모드 버튼이 도크에 새 카드를 얹지 않는다.
+    await user.click(screen.getByRole('tab', { name: '디자인' }));
+    await user.click(screen.getByRole('tab', { name: /^정보/ }));
+    expect(countCards()).toBe(1);
+    expect(ocrFileInput()).toBe(input);
+  });
+
+  test('정보 모드 버튼에서 OCR 시작 → KOBIS 응답 전에 다른 모드로 옮겨도 응답 도착 시 titleOg/releaseDate가 폼에 반영된다 (claude-review PR #413 P0 → #826 S2)', async () => {
     const { resolveWithGrandBudapest } = mockPendingKobisFetch();
+    const user = userEvent.setup();
 
     render(<MobileHarness />);
-    fireEvent.click(screen.getByText('seed-poster')); // 드로어는 croppedImageUrl이 있어야 열린다.
+    await user.click(screen.getByRole('button', { name: '포스터 없이 직접 입력' }));
     expect(captured.movieInfo.titleOg).toBe('');
 
     ocrImpl = async () => ({ title: '그랜드 부다페스트 호텔' });
-
-    fireEvent.click(screen.getByRole('button', { name: '티켓 항목 목록' }));
-    const drawer = await screen.findByRole('dialog', { name: '티켓 항목' });
-
-    fireEvent.change(ocrFileInputWithin(drawer), {
-      target: { files: [new File(['x'], 'ticket.png', { type: 'image/png' })] },
-    });
+    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+    // 랜딩이 걷힌 뒤라 카드 자체 토스트는 display:none 안이다 — 안내는 셸 토스트로 온다.
     await waitFor(() => {
-      expect(within(drawer).getAllByText('제목으로 영화 정보를 검색할게요.').length).toBeGreaterThan(0);
+      expect(screen.getByTestId('global-toast').textContent).toBe('제목으로 영화 정보를 검색할게요.');
     });
 
-    // Escape로 드로어를 닫는다 — FieldDrawer는 "마운트 = 열림, 닫힘은 즉시 unmount"라(FieldDrawer.tsx)
-    // 이 드로어 인스턴스의 OcrUploadCard는 이 시점에 정말로 사라진다(hidden이 아니라 unmount).
-    fireEvent.keyDown(document, { key: 'Escape' });
-    expect(screen.queryByRole('dialog', { name: '티켓 항목' }) === null).toBe(true);
-
-    // 드로어(및 그 안의 OcrUploadCard 인스턴스)가 사라진 뒤에 KOBIS 응답이 도착한다 — ocrEpochRef가
-    // 셸 레벨에서 "이 실행이 여전히 최신"임을 판단하므로, 인스턴스 소멸과 무관하게 반영돼야 한다.
+    // 응답 전에 모드를 옮긴다 — 정보 모드 버튼(인식 중 표시)이 있던 본문이 통째로 바뀐다.
+    await user.click(screen.getByRole('tab', { name: '디자인' }));
     resolveWithGrandBudapest();
 
     await waitFor(() => {
       expect(captured.movieInfo.title).toBe('그랜드 부다페스트 호텔');
       expect(captured.movieInfo.titleOg).toBe('The Grand Budapest Hotel');
       expect(captured.movieInfo.releaseDate).toBe('2014-03-20');
+    });
+  });
+
+  test('인식 중에는 정보 모드 버튼이 \'티켓 인식 중…\'(aria-busy)로 바뀐다 — 모드를 옮겼다 돌아와도 이어진다 (#826 S2)', async () => {
+    const user = userEvent.setup();
+    let release!: () => void;
+    ocrImpl = () => new Promise((resolve) => { release = () => resolve({}); });
+    render(<MobileHarness />);
+    await user.click(screen.getByRole('button', { name: '포스터 없이 직접 입력' }));
+
+    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+    const busy = await screen.findByRole('button', { name: '티켓 인식 중…' });
+    expect(busy.getAttribute('aria-busy')).toBe('true');
+
+    await user.click(screen.getByRole('tab', { name: '디자인' }));
+    await user.click(screen.getByRole('tab', { name: /^정보/ }));
+    expect(screen.getByRole('button', { name: '티켓 인식 중…' }).getAttribute('aria-busy')).toBe('true');
+
+    release();
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: '스크린샷으로 자동입력' }).getAttribute('aria-busy')).toBe('false');
     });
   });
 });

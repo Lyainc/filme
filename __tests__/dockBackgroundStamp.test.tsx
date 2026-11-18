@@ -1,7 +1,8 @@
 /**
- * 티켓 스탬프(구 배경) 상호작용 테스트(#671 → #672 → #728).
+ * 티켓 스탬프(구 배경) 상호작용 테스트(#671 → #672 → #728 → #826 S2).
  *
- * 레일 피커와 무드 렌더를 **같은 photo 상태**에 물려, 이미지를 올렸을 때 티켓의 스탬프 레이어에
+ * 스탬프 업로드·제거는 사진 모드 '배경 스탬프' 행(G-01)으로, 크기·투명도 슬라이더는 디자인 모드의 크기·투명도
+ * 도구(D-04·D-05)로 갈렸다 — 옛 레일 '스탬프' 항목은 없다. 도크와 무드 렌더를 **같은 photo 상태**에 물려, 이미지를 올렸을 때 티켓의 스탬프 레이어에
  * 실제로 반영되는지를 끝까지 본다(designRailQuoteFont.test.tsx와 같은 모양).
  *
  * #728이 전면 cover 배경을 무드별 **고정 박스**로 재설계하면서 계약이 갈렸다: 레일 노출 →
@@ -12,10 +13,11 @@
  * Stub 둘을 어기면 스탬프가 통째로 안 보인다.
  */
 import { describe, expect, test, afterEach, beforeEach, spyOn } from 'bun:test';
-import { render, screen, cleanup } from '@testing-library/react';
+import { useState } from 'react';
+import { render, screen, cleanup, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { usePhototicket } from '@/hooks/usePhototicket';
-import { DesignRail } from '@/components/v2/DesignRail';
+import { EditorDock, type DockMode } from '@/components/v2/dock/EditorDock';
 import { MoodEditorial } from '@/components/moods/MoodEditorial';
 import { MoodCriterion } from '@/components/moods/MoodCriterion';
 import { MoodStub } from '@/components/moods/MoodStub';
@@ -25,6 +27,7 @@ type BackgroundMood = keyof typeof MOOD_COMPONENTS;
 
 function Harness({ mood = 'editorial' }: { mood?: BackgroundMood }) {
   const photo = usePhototicket();
+  const [dockMode, setDockMode] = useState<DockMode>('photo');
   const Mood = MOOD_COMPONENTS[mood];
   return (
     <>
@@ -34,7 +37,7 @@ function Harness({ mood = 'editorial' }: { mood?: BackgroundMood }) {
       <button type="button" onClick={() => photo.updateComponents({ layout: 'minimal' })}>
         minimal로 전환
       </button>
-      {/* BackgroundPatternPanel이 크롭 완료(useLogoCrop onChange)에서 하는 것과 **똑같은**
+      {/* 사진 모드 StampRow가 크롭 완료(useLogoCrop onChange)에서 하는 것과 **똑같은**
           updateComponents 호출. 여기서 실제 크롭(canvas)까지 태우려면 `@/utils/imageCrop`을
           mock.module해야 하는데, 그건 프로세스 전역이라 다른 파일로 샌다(#611) — 그 실물 경로는
           이미 logoCropFreeAspect.test.tsx가 자기 harness 안에서 검증하므로, 여기서는 크롭이 뱉은
@@ -42,7 +45,7 @@ function Harness({ mood = 'editorial' }: { mood?: BackgroundMood }) {
       <button type="button" onClick={() => photo.updateComponents({ backgroundPatternImage: 'blob:bgimg' })}>
         배경 이미지 적용
       </button>
-      {/* write-time 커밋(#728 c4) — BackgroundPatternPanel의 useLogoCrop onChange 래퍼와 같은
+      {/* write-time 커밋(#728 c4) — StampRow의 useLogoCrop onChange 래퍼와 같은
           모양(`backgroundPatternOpacity: 기존값 ?? 기본값 0.5`). 0.5는 designRailItems.tsx의
           BACKGROUND_OPACITY_DEFAULT와 값이 같아야 하는 테스트 전용 상수라 그쪽이 바뀌면 여기도
           같이 봐야 한다. */}
@@ -70,7 +73,17 @@ function Harness({ mood = 'editorial' }: { mood?: BackgroundMood }) {
       <div data-testid="background-pattern-image">{photo.state.components.backgroundPatternImage ?? '(미설정)'}</div>
       <div data-testid="background-pattern-scale">{photo.state.components.backgroundPatternScale ?? 1}</div>
       <div data-testid="background-pattern-opacity">{photo.state.components.backgroundPatternOpacity ?? 1}</div>
-      <DesignRail photo={photo} />
+      <EditorDock
+        photo={photo}
+        mode={dockMode}
+        onModeChange={setDockMode}
+        hidden={false}
+        onField={() => {}}
+        onMissingField={() => {}}
+        onOcrOpen={() => {}}
+        ocrBusy={false}
+        onPosterPick={() => {}}
+      />
       <Mood movieInfo={photo.state.movieInfo} components={photo.state.components} croppedImageUrl="blob:x" />
     </>
   );
@@ -93,9 +106,19 @@ function backgroundImageLayer(container: HTMLElement): HTMLElement | null {
   return container.querySelector('[data-bg-pattern-image="true"]');
 }
 
+/** 그 무드로 바꾸고 사진 모드의 스탬프 행을 연다(도크가 사진 모드로 시작한다). */
 async function openBackgroundPanel(user: ReturnType<typeof userEvent.setup>, mood: BackgroundMood = 'editorial') {
   await user.click(screen.getByRole('button', { name: `${mood}로 전환` }));
-  await user.click(screen.getByRole('button', { name: '스탬프' }));
+  await user.click(screen.getByRole('tab', { name: '사진' }));
+}
+
+/** 사진 모드의 스탬프 행 — 포스터·로고 행에도 같은 이름의 버튼('추가')이 있어 행으로 좁힌다. */
+const stampRow = () => within(document.querySelector('[data-asset-row="배경 스탬프"]') as HTMLElement);
+
+/** 디자인 모드의 도구 하나로 간다. */
+async function openDesignTool(user: ReturnType<typeof userEvent.setup>, tool: '크기' | '투명도') {
+  await user.click(screen.getByRole('tab', { name: '디자인' }));
+  await user.click(screen.getByRole('tab', { name: tool }));
 }
 
 let restoreRect: () => void;
@@ -115,16 +138,16 @@ afterEach(() => {
   window.localStorage.clear();
 });
 
-describe('레일 스탬프 — 항목 노출 (#672→#728)', () => {
-  test('스탬프를 실을 수 있는 세 무드에만 레일 항목이 뜬다', async () => {
+describe('배경 스탬프 행 — 노출 (#672→#728, G-01)', () => {
+  test('스탬프를 실을 수 있는 세 무드에만 사진 모드 행이 뜬다', async () => {
     const user = userEvent.setup();
     render(<Harness mood="editorial" />);
 
     await user.click(screen.getByRole('button', { name: 'editorial로 전환' }));
-    expect(screen.queryByRole('button', { name: '스탬프' })).not.toBeNull();
+    expect(screen.queryByText('배경 스탬프')).not.toBeNull();
 
     await user.click(screen.getByRole('button', { name: 'minimal로 전환' }));
-    expect(screen.queryByRole('button', { name: '스탬프' }) === null).toBe(true);
+    expect(screen.queryByText('배경 스탬프') === null).toBe(true);
   });
 
   test('패널에 프리셋 칩이 없고 업로드 컨트롤만 뜬다', async () => {
@@ -136,7 +159,8 @@ describe('레일 스탬프 — 항목 노출 (#672→#728)', () => {
     for (const label of ['없음', '도트', '사선', '그리드', '내 이미지']) {
       expect(screen.queryByRole('radio', { name: label }) === null).toBe(true);
     }
-    expect(screen.getByRole('button', { name: '이미지 업로드' })).not.toBeNull();
+    expect(stampRow().getByRole('button', { name: '추가' })).not.toBeNull();
+    expect(screen.getByLabelText('스탬프 이미지 업로드')).not.toBeNull();
     // 아직 이미지가 없으니 레이어도 없다 — 빈 div를 안 남긴다.
     expect(backgroundLayer(container) === null).toBe(true);
   });
@@ -154,7 +178,7 @@ const MOOD_CASES = [
 ];
 
 for (const { mood, box } of MOOD_CASES) {
-  describe(`레일 스탬프 — ${mood} (#671 → #672 → #728)`, () => {
+  describe(`배경 스탬프 — ${mood} (#671 → #672 → #728)`, () => {
     test('업로드한 이미지가 스탬프 레이어에 그대로 실린다', async () => {
       const user = userEvent.setup();
       const { container } = render(<Harness mood={mood} />);
@@ -229,12 +253,15 @@ for (const { mood, box } of MOOD_CASES) {
       await openBackgroundPanel(user, mood);
 
       // 조절할 대상이 없으면 죽은 컨트롤이라 아예 안 그린다.
+      await openDesignTool(user, '크기');
       expect(screen.queryByLabelText('스탬프 크기') === null).toBe(true);
+      await openDesignTool(user, '투명도');
       expect(screen.queryByLabelText('스탬프 투명도') === null).toBe(true);
 
       await user.click(screen.getByRole('button', { name: '배경 이미지 적용' }));
-      expect(screen.getByLabelText('스탬프 크기')).not.toBeNull();
       expect(screen.getByLabelText('스탬프 투명도')).not.toBeNull();
+      await openDesignTool(user, '크기');
+      expect(screen.getByLabelText('스탬프 크기')).not.toBeNull();
     });
 
     test('무드를 왕복해도 스탬프 이미지·크기·투명도가 보존된다', async () => {
@@ -249,20 +276,22 @@ for (const { mood, box } of MOOD_CASES) {
       await user.click(screen.getByRole('button', { name: '배경 투명도 적용' }));
 
       await user.click(screen.getByRole('button', { name: 'minimal로 전환' }));
-      expect(screen.queryByRole('button', { name: '스탬프' }) === null).toBe(true);
+      await user.click(screen.getByRole('tab', { name: '사진' }));
+      expect(screen.queryByText('배경 스탬프') === null).toBe(true);
       expect(screen.getByTestId('background-pattern-image').textContent).toBe('blob:bgimg');
       expect(screen.getByTestId('background-pattern-scale').textContent).toBe('1.5');
       expect(screen.getByTestId('background-pattern-opacity').textContent).toBe('0.6');
 
       await user.click(screen.getByRole('button', { name: `${mood}로 전환` }));
-      await user.click(screen.getByRole('button', { name: '스탬프' }));
-      expect(screen.getByRole('button', { name: '이미지 교체' })).not.toBeNull();
+      expect(stampRow().getByRole('button', { name: '교체' })).not.toBeNull();
       expect(backgroundImageLayer(container)!.style.backgroundImage).toContain('blob:bgimg');
       expect(backgroundImageLayer(container)!.style.transform).toContain('scale(1.5)');
       expect(backgroundLayer(container)!.style.opacity).toBe('0.6');
       // 슬라이더도 복원된 값을 들고 다시 뜬다 — 상태만 살고 컨트롤이 기본값을 보이면 다음 조작이
       // 그 기본값을 커밋해 값이 조용히 되돌아간다.
+      await openDesignTool(user, '크기');
       expect((screen.getByLabelText('스탬프 크기') as HTMLInputElement).value).toBe('1.5');
+      await openDesignTool(user, '투명도');
       expect((screen.getByLabelText('스탬프 투명도') as HTMLInputElement).value).toBe('0.6');
     });
 
@@ -309,9 +338,9 @@ for (const { mood, box } of MOOD_CASES) {
       await user.click(screen.getByRole('button', { name: '배경 이미지 적용' }));
       expect(backgroundLayer(container)).not.toBeNull();
 
-      await user.click(screen.getByRole('button', { name: '이미지 제거' }));
+      await user.click(stampRow().getByRole('button', { name: '제거' }));
       expect(backgroundLayer(container) === null).toBe(true);
-      expect(screen.getByRole('button', { name: '이미지 업로드' })).not.toBeNull();
+      expect(stampRow().getByRole('button', { name: '추가' })).not.toBeNull();
     });
   });
 }
@@ -319,10 +348,10 @@ for (const { mood, box } of MOOD_CASES) {
 // bgPatternSafe 인지(#761→#762) describe는 #768로 걷어냈다 — Admission·Film 중 하나만 켜진
 // 조합에서 스탬프를 안 그리던 임시 마스킹이, 실측 앵커링(anchorStampBox)이 그 위험 자체를
 // 없애면서 필요 없어졌다(MoodStub.tsx 상단 주석·resolveStubSections 주석 참고). 그 조합에서도
-// 스탬프가 항상 그려지는지는 designRailBackgroundPattern.test.tsx의 다른 describe(위·아래)와
+// 스탬프가 항상 그려지는지는 dockBackgroundStamp.test.tsx의 다른 describe(위·아래)와
 // moodStubPatternBoxAnchoring.test.tsx의 배선 테스트가 이미 덮는다 — 별도 안내 문구는 없다.
 
-describe('레일 스탬프 — write-time 투명도 커밋 (#728 c4·ac2·ac3)', () => {
+describe('배경 스탬프 — write-time 투명도 커밋 (#728 c4·ac2·ac3)', () => {
   test('기존 저장본(투명도 없이 이미지만)은 1.0 그대로 읽힌다', async () => {
     const user = userEvent.setup();
     const { container } = render(<Harness mood="editorial" />);
@@ -339,7 +368,7 @@ describe('레일 스탬프 — write-time 투명도 커밋 (#728 c4·ac2·ac3)',
     const { container } = render(<Harness mood="editorial" />);
     await openBackgroundPanel(user, 'editorial');
 
-    // 첫 업로드 — BackgroundPatternPanel의 useLogoCrop onChange와 같은 모양(이미지 + `?? 기본값`).
+    // 첫 업로드 — StampRow의 useLogoCrop onChange와 같은 모양(이미지 + `?? 기본값`).
     await user.click(screen.getByRole('button', { name: '스탬프 첫 업로드 커밋' }));
     expect(screen.getByTestId('background-pattern-opacity').textContent).toBe('0.5');
     expect(backgroundLayer(container)!.style.opacity).toBe('0.5');

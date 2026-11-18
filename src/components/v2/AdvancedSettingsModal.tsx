@@ -21,8 +21,6 @@ interface AdvancedSettingsModalProps {
   prefs: TbPrefs;
   onModeChange: (orient: TbOrient, place: TbPlace) => void;
   onSnap: (side: 'left' | 'right') => void;
-  /** 필드 드로어 엣지 핸들 상/하 스냅(#579) — 드래그의 비드래그 대체 경로(WCAG 2.2 SC 2.5.7). */
-  onSnapDrawerHandle: (edge: 'top' | 'bottom') => void;
   onClose: () => void;
 }
 
@@ -48,15 +46,13 @@ export function AdvancedSettingsModal({
   prefs,
   onModeChange,
   onSnap,
-  onSnapDrawerHandle,
   onClose,
 }: AdvancedSettingsModalProps) {
   // rootRef는 배경 inert(#685) 대상 판정용 — 다이얼로그 전체(백드롭+패널)의 루트. 포커스
   // 트랩은 panelRef(패널만)가 그대로 담당, 둘은 다른 엘리먼트라 분리한다.
   const rootRef = useRef<HTMLDivElement>(null);
   useBodyScrollLock(true, rootRef);
-  // 초기 포커스 + 포커스 가두기 — 패널 밖으로 새면 패널로 되돌린다(FieldDrawer와 동일 패턴,
-  // #355). Tab 순환 트랩(ImageCropModal)보다 짧고 이 셸에서 이미 검증된 쪽이다.
+  // 초기 포커스 + 포커스 가두기 — 패널 밖으로 새면 패널로 되돌린다(#355 드로어에서 온 패턴). Tab 순환 트랩(ImageCropModal)보다 짧고 이 셸에서 이미 검증된 쪽이다.
   const panelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     panelRef.current?.focus();
@@ -185,39 +181,6 @@ export function AdvancedSettingsModal({
                 </button>
               </div>
             )}
-          </section>
-
-          {/* 필드 드로어 엣지 핸들(#579) — 수직 드래그로 위아래 이동(#567·#579 동반 설계, 셸의
-              onHandlePointerMove가 처리)의 비드래그 대체 경로. 툴바 좌/우 스냅과 같은 문법 —
-              가로 이동은 엣지 탭 구조상 의미가 없어 위/아래 두 버튼만 둔다. */}
-          <section className={CARD}>
-            <h3 className="px-2.5 pb-1 pt-1.5 text-caption font-semibold text-ink">드로어 핸들 위치</h3>
-            <div className="flex gap-1">
-              <button
-                type="button"
-                onClick={() => onSnapDrawerHandle('top')}
-                aria-label="위쪽 가장자리로 이동"
-                title="위쪽 가장자리로 이동"
-                className={cn(pressableVariants(), 'flex h-touch flex-1 items-center justify-center rounded-[9px] text-ink-2 transition-colors hover:bg-white/5 hover:text-ink')}
-              >
-                <svg {...TB_ICON}>
-                  <path d="M12 19V5" />
-                  <path d="m5 12 7-7 7 7" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                onClick={() => onSnapDrawerHandle('bottom')}
-                aria-label="아래쪽 가장자리로 이동"
-                title="아래쪽 가장자리로 이동"
-                className={cn(pressableVariants(), 'flex h-touch flex-1 items-center justify-center rounded-[9px] text-ink-2 transition-colors hover:bg-white/5 hover:text-ink')}
-              >
-                <svg {...TB_ICON}>
-                  <path d="M12 5v14" />
-                  <path d="m19 12-7 7-7-7" />
-                </svg>
-              </button>
-            </div>
           </section>
         </div>
       </div>

@@ -2,14 +2,14 @@
  * #261 회귀 테스트 — 모바일 chrome 정보위계.
  * #315로 allVis(전체 표시)·ghost(빈 항목) 토글은 헤더 서브메뉴로 이전하고, Poster 드롭존은
  * 업로드 후 사라지도록 바뀌었다(#324). #635로 업로드 전 위계가 다시 뒤집혔다 —
- * OCR이 주연(#142 위계), 포스터 CTA는 그 아래 이탈 경로로 보조, 디자인 rail은 CSS hidden.
- * allVis(전체 표시)는 #424에서 헤더 서브메뉴 → 필드 드로어로 다시 이전(필드 목록과 한 자리) —
- * 이 파일의 헤더 서브메뉴 검증에선 대상에서 빠지고, mobileEditorShellFieldCoverage.test.tsx가
- * 드로어 쪽에서 커버한다.
+ * OCR이 주연(#142 위계), 포스터 CTA는 그 아래 이탈 경로로 보조, 편집 도크(#826 S2, 옛 디자인 rail)는 CSS hidden.
+ * allVis(전체 표시)는 #424에서 헤더 서브메뉴 → 필드 드로어로, #826 S2에서 도크 정보 모드 목록 끝으로 다시
+ * 이전(필드 목록과 한 자리) — 이 파일의 헤더 서브메뉴 검증에선 대상에서 빠지고,
+ * mobileEditorShellFieldCoverage.test.tsx가 정보 모드 쪽에서 커버한다.
  *
- * #388로 업로드 후 본문 OCR 카드는 CSS hidden — OCR 진입점은 드로어(#355)로 일원화됐다.
- * DOM 순서를 compareDocumentPosition으로 단언한다(시각 좌표 아닌 트리 순서). OcrUploadCard·
- * DesignRail은 정적 import라 렌더 즉시 존재한다.
+ * #388로 업로드 후 본문 OCR 카드는 CSS hidden — OCR 진입점은 정보 모드 버튼(#826 S2, 옛 드로어 #355)이 이어받아
+ * 같은 카드의 업로드를 연다. DOM 순서를 compareDocumentPosition으로 단언한다(시각 좌표 아닌 트리 순서).
+ * OcrUploadCard·EditorDock은 정적 import라 렌더 즉시 존재한다.
  */
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
@@ -61,37 +61,37 @@ function precedes(a: Element, b: Element): boolean {
 }
 
 describe('MobileEditorShell chrome 정보위계 (#261/#315/#363/#388)', () => {
-  test('업로드 전(랜딩, #363→#614→#635): OCR 주연 → 포스터 CTA 보조 순서, 디자인 rail은 CSS hidden', async () => {
+  test('업로드 전(랜딩, #363→#614→#635): OCR 주연 → 포스터 CTA 보조 순서, 편집 도크는 CSS hidden', async () => {
     render(<Harness />);
 
     // #635로 위계가 뒤집혔다 — OCR이 주연(#142), 포스터 CTA는 그 아래 이탈 경로로 보조다.
     const poster = screen.getByRole('button', { name: '포스터 업로드' });
     const ocr = await screen.findByRole('button', { name: '티켓 스크린샷으로 자동입력' });
-    const rail = screen.getByRole('button', { name: '무드' }); // 첫 rail 아이템
+    const dock = screen.getByTestId('editor-dock');
 
     expect(precedes(ocr, poster)).toBe(true);
-    // rail dock은 마운트 유지(pop state 보존, #297 P1 패턴) + hidden 클래스로만 숨김.
-    expect(rail.closest('.hidden')).not.toBeNull();
+    // 도크는 마운트 유지(도구 선택 state 보존, #297 P1 패턴) + hidden 클래스로만 숨김.
+    expect(dock.closest('.hidden')).not.toBeNull();
   });
 
-  test('업로드 후: Poster 드롭존은 사라지고(#324) 본문 OCR 카드는 CSS hidden(#388, 드로어로 일원화), rail hidden 해제', async () => {
+  test('업로드 후: Poster 드롭존은 사라지고(#324) 본문 OCR 카드는 CSS hidden(#388), 도크 hidden 해제', async () => {
     render(<Harness />);
     seedUploaded();
 
-    const rail = await screen.findByRole('button', { name: '무드' });
+    const dock = await screen.findByTestId('editor-dock');
 
     // 랜딩은 unmount가 아니라 CSS hidden이다(#614) — 그 안의 OcrUploadCard가 같은 트리
     // 위치의 단일 인스턴스로 남아야 하기 때문(아래 remount 테스트). 그래서 "사라졌다"는 DOM 부재가
-    // 아니라 hidden 조상으로 잰다(rail·OCR 카드와 같은 패턴).
+    // 아니라 hidden 조상으로 잰다(도크·OCR 카드와 같은 패턴).
     expect(screen.getByTestId('landing').classList.contains('hidden')).toBe(true);
     // 테스트 환경엔 Tailwind CSS가 로드되지 않아 getComputedStyle로 display:none이 안 잡히므로
     // (testing-library의 hidden:true는 "숨김 요소도 검색에 포함"일 뿐 숨김 단언이 아니다), 이
-    // 레포 컨벤션대로 .hidden 클래스를 가진 조상 존재 여부로 직접 단언한다(rail과 동일 패턴).
-    // 본문 OCR 카드는 여전히 DOM에 있다(unmount 아님) — 업로드 후 유일한 접근 가능 진입점은
-    // 드로어(#355) 쪽 OcrUploadCard여야 한다.
+    // 레포 컨벤션대로 .hidden 클래스를 가진 조상 존재 여부로 직접 단언한다(도크와 동일 패턴).
+    // 본문 OCR 카드는 여전히 DOM에 있다(unmount 아님) — 업로드 후 접근 가능한 진입점은
+    // 정보 모드 버튼이고, 그 버튼이 이 단일 카드의 파일 선택을 연다(#826 S2).
     const ocr = screen.getByRole('button', { name: '티켓 스크린샷으로 자동입력' });
     expect(ocr.closest('.hidden')).not.toBeNull();
-    expect(rail.closest('.hidden') === null).toBe(true);
+    expect(dock.closest('.hidden') === null).toBe(true);
   });
 
   test('OcrUploadCard는 랜딩→업로드·최대화 전환에도 remount되지 않는다 (PR #372 리뷰 P1, #388로 hidden 전환 후에도 유지)', async () => {

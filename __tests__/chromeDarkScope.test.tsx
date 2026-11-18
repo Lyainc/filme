@@ -95,13 +95,14 @@ describe('ResultStage 결과화면 톤 (#357)', () => {
     expect((ambient.parentElement as HTMLElement).classList.contains('chrome-dark')).toBe(true);
   });
 
-  // PR #362 리뷰 P2 — dock을 조건부 unmount로 숨기면 DesignRail의 pop(열린 패널) state가
-  // 최대화 왕복마다 리셋된다(#297 P1과 동일 패턴). hidden 토글 + 항상 마운트를 고정한다.
-  test('편집 셸: max 전환에도 dock(DesignRail)은 마운트 유지', () => {
+  // PR #362 리뷰 P2 — dock을 조건부 unmount로 숨기면 도구 선택 같은 로컬 state가 최대화 왕복마다
+  // 리셋된다(#297 P1과 동일 패턴). hidden 토글 + 항상 마운트를 고정한다(#826 S2: 옛 DesignRail → 도크).
+  test('편집 셸: max 전환에도 dock(EditorDock)은 마운트 유지', () => {
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
-    // 최대화(플로팅 툴바) 진입 후에도 dock 탭이 DOM에 남아 있어야 한다(hidden일 뿐).
+    // 최대화(플로팅 툴바) 진입 후에도 도크 모드 탭이 DOM에 남아 있어야 한다(hidden일 뿐).
     fireEvent.click(screen.getByRole('button', { name: '최대화' }));
-    expect(screen.getByRole('button', { name: '무드', hidden: true })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: '디자인', hidden: true })).toBeTruthy();
+    expect(screen.getByTestId('editor-dock').classList.contains('hidden')).toBe(true);
   });
 });

@@ -139,13 +139,12 @@ function stubKobis() {
   return { ocrSearch, hostDetail, state };
 }
 
-/** 필드 드로어 → 제목 편집기에서 '괴물'을 검색해 KOBIS 결과로 고른다(실제 사용자 동선). */
+/** 도크 정보 모드 → 제목 편집기에서 '괴물'을 검색해 KOBIS 결과로 고른다(실제 사용자 동선). */
 async function pickHostInTitleEditor(user: ReturnType<typeof userEvent.setup>) {
-  const handle = await screen.findByRole('button', { name: '티켓 항목 목록 열기' });
-  await user.click(handle);
-  const dialog = await screen.findByRole('dialog', { name: '티켓 항목' });
-  // 온-티켓 필드 탭도 같은 aria-label("제목 편집")을 쓰므로(FieldTap) 드로어 안으로 좁힌다.
-  await user.click(within(dialog).getByRole('button', { name: '제목 편집' }));
+  await user.click(await screen.findByRole('tab', { name: /^정보/ }));
+  const list = screen.getByTestId('dock-body');
+  // 온-티켓 필드 탭도 같은 aria-label("제목 편집")을 쓰므로(FieldTap) 도크 목록 안으로 좁힌다.
+  await user.click(within(list).getByRole('button', { name: /^제목 (?!티켓에 표시)/ }));
   const titleInput = await screen.findByRole('textbox', { name: '제목' });
 
   // 300ms 디바운스 뒤 KOBIS 검색 결과 행이 뜬다(useKobisSearch.scheduleSearch).
@@ -328,9 +327,8 @@ describe('버려지는 OCR 결과가 무매칭이어도 "못 찾았다" 안내�
     ocrImpl = async () => ({ title: '기생충' });
     await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
 
-    await user.click(await screen.findByRole('button', { name: '티켓 항목 목록 열기' }));
-    const dialog = await screen.findByRole('dialog', { name: '티켓 항목' });
-    await user.click(within(dialog).getByRole('button', { name: '제목 편집' }));
+    await user.click(await screen.findByRole('tab', { name: /^정보/ }));
+    await user.click(within(screen.getByTestId('dock-body')).getByRole('button', { name: /^제목 (?!티켓에 표시)/ }));
     await user.type(await screen.findByRole('textbox', { name: '제목' }), '괴물');
     const listbox = await screen.findByRole('listbox', { name: '검색 결과' }, { timeout: 2000 });
     await user.click(within(listbox).getByRole('button'));

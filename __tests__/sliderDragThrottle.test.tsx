@@ -2,7 +2,7 @@
  * #507 — BrightnessSlider 드래그 커밋 저빈도화 회귀.
  *
  * 재질/코팅 강도·포스터/컴포넌트 투명도·체인/포맷 로고 크기 슬라이더는 전부 BrightnessSlider를
- * 재사용한다(DesignRail.tsx, DesktopDesignPanel.tsx, FieldEditorBody.tsx). 기존 구현은 네이티브
+ * 재사용한다(도크 디자인 도구, FieldEditorBody.tsx). 기존 구현은 네이티브
  * <input type="range">의 onChange 틱마다 부모의 onChange(=usePhototicket.updateComponents)를
  * 직접 호출해, 드래그 한 번에 수십 번씩 TicketRenderer(960×1534 자연픽셀 DOM)를 통째로 리렌더·
  * 리스케일시켰다. 이 테스트는 (1) 한 프레임(=한 act 배치) 안에 여러 틱이 몰리면 다운스트림 커밋이
@@ -18,7 +18,7 @@ import BrightnessSlider, {
   snapToStep,
   stepFrom,
 } from '@/components/v2/pickers/BrightnessSlider';
-import { DesignRail } from '../src/components/v2/DesignRail';
+import { EditorDock } from '../src/components/v2/dock/EditorDock';
 import { usePhototicket } from '../src/hooks/usePhototicket';
 
 afterEach(() => {
@@ -111,19 +111,29 @@ function RailRenderCountHarness() {
   return (
     <>
       <div data-testid="materialIntensity">{photo.state.components.materialIntensity}</div>
-      <DesignRail photo={photo} />
+      <EditorDock
+        photo={photo}
+        mode="design"
+        onModeChange={() => {}}
+        hidden={false}
+        onField={() => {}}
+        onMissingField={() => {}}
+        onOcrOpen={() => {}}
+        ocrBusy={false}
+        onPosterPick={() => {}}
+      />
     </>
   );
 }
 
 let renderCount = 0;
 
-describe('#507 DesignRail 통합 — 재질 강도 슬라이더 드래그가 다운스트림 리렌더를 몰아 낸다', () => {
+describe('#507 도크 통합 — 재질 강도 슬라이더 드래그가 다운스트림 리렌더를 몰아 낸다', () => {
   test('탭 열고 연속 드래그해도 커밋 렌더 수는 틱 수보다 훨씬 적다', async () => {
     renderCount = 0;
     const user = userEvent.setup();
     render(<RailRenderCountHarness />);
-    await user.click(screen.getByRole('button', { name: '후보정' }));
+    await user.click(screen.getByRole('tab', { name: '재질' }));
     // 기본 재질(원본)은 레시피가 없어 강도 슬라이더가 안 뜬다 — 레시피 있는 재질로 전환.
     await user.click(screen.getByRole('radio', { name: /미술용지/ }));
 

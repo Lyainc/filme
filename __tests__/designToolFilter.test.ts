@@ -3,13 +3,12 @@
  * appliesTo 없으면 전 무드에서 노출, 있으면 해당 무드에서만 노출·그 밖은 숨김.
  */
 import { describe, expect, test } from 'bun:test';
-import { filterItemsForMood, type RailItem } from '@/components/v2/designRailItems';
+import { filterItemsForMood, type DesignTool } from '@/components/v2/designRailItems';
 
-function fakeItem(overrides: Partial<RailItem> = {}): RailItem {
+function fakeItem(overrides: Partial<DesignTool> = {}): DesignTool {
   return {
     id: 'size',
     label: 'fake',
-    icon: null,
     render: () => null,
     ...overrides,
   };
