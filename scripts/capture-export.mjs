@@ -235,19 +235,37 @@ const BG_PATTERN_DRAW = `
 `;
 
 /**
- * 무드 rail을 열어 다른 무드로 전환한다(원래 #509 재매핑 검증용) — LayoutStrip 버튼은
- * `role="radio" aria-label="${label} · ${caption}"`라 label 접두 매칭으로 찾는다.
- * 페이지 리로드 없이(React state 유지) 전환해야 "폐기 없이 정합 유지"를 실제로 재현한다.
+ * 도크(#826 S2)의 디자인 모드에서 도구 탭을 연다 — 옛 `[data-rail-id]` 레일 아이콘의 자리다.
+ * 모드 탭은 `#dock-mode-tab-design`, 도구 탭은 `#design-tool-tab-<id>`(mood·color·material·coating·
+ * opacity·size)고, 무드에 안 맞는 도구(`appliesTo`)는 DOM에 없다. 못 찾으면 던진다 — 조용히 넘어가면
+ * 뒤 단계가 엉뚱한 셀렉터 이름으로 타임아웃 난다(#756).
  */
-async function switchLayout(page, label) {
-  const clickRail = await page.evaluate(() => {
-    const b = document.querySelector('[data-rail-id="mood"]');
+async function openDesignTool(page, id) {
+  const mode = await page.evaluate(() => {
+    const b = document.getElementById('dock-mode-tab-design');
     if (!b) return false;
     b.click();
     return true;
   });
-  if (!clickRail) throw new Error('무드 rail 아이콘을 못 찾음(data-rail-id="mood")');
-  await sleep(400);
+  if (!mode) throw new Error('도크 디자인 모드 탭을 못 찾음(#dock-mode-tab-design)');
+  await sleep(300);
+  const tool = await page.evaluate((i) => {
+    const b = document.getElementById(`design-tool-tab-${i}`);
+    if (!b) return false;
+    b.click();
+    return true;
+  }, id);
+  if (!tool) throw new Error(`디자인 도구 탭을 못 찾음(#design-tool-tab-${id}) — 이 무드에서 숨겨진 도구일 수 있다`);
+  await sleep(300);
+}
+
+/**
+ * 무드 도구를 열어 다른 무드로 전환한다(원래 #509 재매핑 검증용) — LayoutStrip 버튼은
+ * `role="radio" aria-label="${label} · ${caption}"`라 label 접두 매칭으로 찾는다.
+ * 페이지 리로드 없이(React state 유지) 전환해야 "폐기 없이 정합 유지"를 실제로 재현한다.
+ */
+async function switchLayout(page, label) {
+  await openDesignTool(page, 'mood');
   const clicked = await page.evaluate((label) => {
     const b = [...document.querySelectorAll('button[role="radio"]')].find((x) =>
       (x.getAttribute('aria-label') || '').startsWith(label),
@@ -354,21 +372,22 @@ async function checkStubInteractions(page) {
     measurements.push(await checkStubStamp(page));
   }
   await page.$eval('[data-ticket-scale-wrapper]', (el, value) => { el.style.transform = value; }, transform);
-  await page.click('[data-rail-id="pattern"]');
+  // 배경 스탬프 크기 슬라이더는 옛 'pattern' 레일에서 디자인 모드의 '크기' 도구로 옮겨졌다(#826 S2).
+  await openDesignTool(page, 'size');
   await page.waitForSelector('#rail-background-scale', { visible: true });
   const rail = await page.evaluate(() => ({
     slider: !!document.querySelector('#rail-background-scale'),
     warning: document.body.textContent.includes('스탬프가 지금 안 보여요'),
   }));
   if (!rail.slider || rail.warning) throw new Error(`DESIGN 레일 스탬프 상태 불일치: ${JSON.stringify(rail)}`);
-  await page.$eval('[aria-label="티켓 항목 목록 열기"]', el => el.click());
+  // 필드 표시 토글은 옛 필드 드로어가 아니라 도크의 정보 모드 행에 있다(#826 S2).
+  await page.$eval('#dock-mode-tab-info', el => el.click());
   await page.waitForSelector('[aria-label="원제 티켓에 표시"]', { visible: true });
   for (let i = 0; i < 2; i++) {
     await page.$eval('[aria-label="원제 티켓에 표시"]', el => el.click());
     await sleep(400); // 실제 앱의 280ms 디바운스 뒤, 같은 섹션 on/off에서 필드 높이가 변한다.
     measurements.push(await checkStubStamp(page));
   }
-  await page.keyboard.press('Escape');
   return { measurements, rail };
 }
 
@@ -547,16 +566,9 @@ async function capture({ layout, material, coating, intensity, bg, bgScale, full
       mark('switched');
     }
     if (toggleFill) {
-      // "포스터 채우기" 축은 'size' rail에만 있고 minimal 등 POSTER_FILL_MOODS 무드에서만 뜬다
-      // (#527).
-      const opened = await page.evaluate(() => {
-        const b = document.querySelector('[data-rail-id="size"]');
-        if (!b) return false;
-        b.click();
-        return true;
-      });
-      if (!opened) throw new Error('크기 rail 아이콘을 못 찾음(data-rail-id="size")');
-      await sleep(400);
+      // "포스터 채우기" 축은 디자인 모드의 '크기' 도구에만 있고 minimal 등 POSTER_FILL_MOODS 무드에서만
+      // 뜬다(#527, 위치는 #826 S2에서 레일 → 도크).
+      await openDesignTool(page, 'size');
       await clickByText('꽉 채우기');
       await sleep(300);
       mark('fillToggled');

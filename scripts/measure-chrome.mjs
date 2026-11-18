@@ -9,20 +9,19 @@
  * checkout → 측정 → 복귀로 만든다(워크트리를 새로 파면 Turbopack이 심링크 node_modules를
  * 거부해 실제 bun install이 필요하다).
  *
- * ── 측정 전제 (이걸 빼면 숫자가 통째로 달라진다) ───────────────────────────────
- * 불변식(dock 290 / 프리뷰 190.9×305)은 **레일 슬롯이 열린 상태** 기준이다.
- * 첫 [data-rail-id] 항목을 눌러 슬롯을 편 뒤 재야 재현된다 — 안 열고 재면 dock 114.5 /
- * 프리뷰 300.7×480.5가 나오고, 스크립트는 조용히 성공한다(#574 세션이 여기서 한 번 헛돌았다).
- * 아래 openRail()이 aria-expanded=true를 확인하고, 안 열리면 던진다.
+ * ── 측정 전제 ─────────────────────────────────────────────────────────────────
+ * 불변식(dock 249 / 프리뷰 219×350)은 **도크가 고정 높이**(EditorDock의 본문 196 + 모드 바 52 + 위 테두리 1)라
+ * 모드·도구와 무관하게 하나다 — 옛 레일 슬롯처럼 "열어야 재현되는" 상태 전제가 없다(#826 S2). 대신 그
+ * "모드와 무관"이 곧 재는 명제라 아래 1번이 세 모드·모든 디자인 도구에서 높이를 따로 잰다.
  *
  * ── 재는 축 ──────────────────────────────────────────────────────────────────
  *  1. dock · 프리뷰 티켓 · 헤더 rect                       (#500 · #554 · #558 · #563)
- *  2. 레일 슬롯 scrollTop / scrollHeight / clientHeight     (#563 고정 슬롯 넘침 판정)
- *  3. 오버레이·드로어 표면 항목별 WCAG 대비비(불투명 조상 배경 기준)     (#569 · #580)
+ *  2. 도크 높이 — 사진·정보·디자인 세 모드와 디자인 도구 전부에서 같은지(+ 프리뷰 rect 불변)  (#826 S2 ac-3)
+ *  3. 도크 표면 항목별 WCAG 대비비 — 관측값(게이트 아님, 아래 dockContrast 주석) + 편집 메뉴 시트는 게이트  (#569 · #580)
  *  4. 테마 파라미터화 — 다크·라이트를 같은 실행 경로로         (#574)
- *  5. 모달 포커스 트랩 · 닫기 3경로 · 가려진 버튼 클릭 통과    (#574, 모달 없는 판본이면 skip)
- *  6. 오버레이 7종이 #phone-frame 사각형 안인지               (#609 · 랜딩 #614)
- *  7. 드래프 복원 시 랜딩 생략(D7)                            (#614)
+ *  5. 편집 메뉴 시트(⋯) — 포커스 진입 · 닫기 3경로(Escape·⋯ 재탭·바깥 탭) · 포커스 복귀  (#826 S2 D09, 옛 모달 축 자리)
+ *  6. 오버레이 · 도크 · 메뉴 시트가 #phone-frame 사각형 안인지   (#609 · 랜딩 #614 · #826 S2 constraint-13)
+ *  7. 드래프 복원 시 랜딩 노출(#727)                          (#614 → #727)
  *  8. 랜딩 무드 캐러셀 카드 5장의 비율·폭·불투명도·프레임 봉쇄  (#615 · #653)
  *  9. 랜딩 이탈 경로 2종의 프레임 봉쇄·줄바꿈 줄 수·44px 탭 타깃              (#665)
  * 10. 랜딩 세로 예산 — 카피+히어로+이탈경로가 675 프레임을 스크롤 없이 담는지  (#665)
@@ -34,7 +33,7 @@
  * 아무리 망가져도 checked:false + exit 0으로 조용히 통과했다. 지금은 **측정한 #phone-frame
  * rect**로 판정하므로 데스크톱 뷰포트에서도 같은 게이트가 켜진다 — PhoneFrame이
  * height:100dvh + rail:w-[400px]라 1440×675 뷰포트의 프레임이 정확히 400×675가 되고,
- * 불변식(dock 290 / 프리뷰 190.9×305)을 값 변경 없이 그대로 쓴다.
+ * 불변식(dock 249 / 프리뷰 219×350)을 값 변경 없이 그대로 쓴다.
  * (1440×900은 프레임이 400×900이라 이 불변식의 대상이 아니다.)
  *
  * 그리고 dock/프리뷰 숫자가 원리적으로 못 보는 축을 6번이 맡는다: fixed 오버레이는
@@ -74,10 +73,9 @@ const CHROME =
 // **이 값은 편집 도크의 높이에 종속이다**(`src/components/v2/dock/EditorDock.tsx`의 DOCK_BODY_PX ·
 // DOCK_MODEBAR_PX). 도크가 커진 만큼 fit 스테이지(#366)가 줄어 프리뷰도 따라 내려간다 — 그 두 상수를
 // 건드리면 아래 BASELINE 숫자를 같이 다시 재야 한다(docs/HARNESS.md §5도 함께).
-// **미완 — #826 S2 1단계:** 아래 `dock: 290 / 프리뷰 190.9×305`는 옛 DesignRail 슬롯(#682, h-[min(214px,26svh)])
-// 시절 실측이라 새 도크(본문 196 + 모드 바 52 + 안전 영역)와 맞지 않는다. 두 테마 prod 재측정과
-// 레일 슬롯 축 정리는 하네스 단위(S2 acceptance-8)가 한다 — 그때까지 이 스크립트는 dock 축에서 실패한다.
-const BASELINE = { dock: 290, preview: { w: 190.9, h: 305 } };
+// 2026-11-19 prod 재실측(#826 S2, 다크·라이트 동일): dock 249 = 본문 196 + 모드 바 52 + 위 테두리 1(안전 영역 0),
+// 프리뷰 219×350(무드 minimal). 옛 DesignRail 슬롯 시절의 290 / 190.9×305는 폐기.
+const BASELINE = { dock: 249, preview: { w: 219, h: 350 } };
 
 // 위 종속을 **문서가 아니라 코드로** 잠근다(#707 → #714). 도크 높이 상수가 바뀌면 여기 두 숫자가
 // EditorDock.tsx와 어긋나고 `__tests__/measureChromeBaselineCoupling.test.ts`가 깨져, BASELINE을
@@ -92,12 +90,11 @@ const BASELINE = { dock: 290, preview: { w: 190.9, h: 305 } };
 const BASELINE_DOCK_BODY_PX = 196;
 const BASELINE_DOCK_MODEBAR_PX = 52;
 
-// #674 실측 불변식 — 포스터 없이 진입한 직후(랜딩 '직접 입력'), 400×675 · **레일 닫힘** 기준.
-// BASELINE(레일 열림)과 같은 화면의 다른 상태라 값이 다르다. 이 축이 잡는 회귀는 "랜딩 inline이
-// 티켓 스테이지와 본문 flex를 반씩 나눠 갖는 것"이라, 반토막(가로세로 각 1/2)이 나면 여기서 걸린다.
-// 값이 레일 닫힘 상태의 포스터 있는 화면(300.7×480.5, 위 헤더 주석)과 같은 게 이 축의 요점이다 —
-// 포스터 유무가 스테이지 크기를 안 바꾼다.
-const POSTERLESS_BASELINE = { preview: { w: 300.7, h: 480.5 } };
+// #674 실측 불변식 — 포스터 없이 진입한 직후(랜딩 '직접 입력'), 400×675 기준. 이 축이 잡는 회귀는 "랜딩
+// inline이 티켓 스테이지와 본문 flex를 반씩 나눠 갖는 것"이라, 반토막(가로세로 각 1/2)이 나면 여기서 걸린다.
+// 도크가 고정 높이가 된 뒤(#826 S2)로는 BASELINE과 **같은 값**이다(2026-11-19 실측 219×350) — 옛 레일은
+// 열림(190.9×305)·닫힘(300.7×480.5)으로 갈렸지만 지금은 포스터 유무도 스테이지 크기를 안 바꾼다.
+const POSTERLESS_BASELINE = { preview: { w: 219, h: 350 } };
 
 const near = (a, b) => a != null && Math.abs(a - b) <= 0.5;
 
@@ -536,38 +533,14 @@ try {
   await page.waitForSelector('div.relative.mx-auto.block.rounded-card', { timeout: 20000 });
   await sleep(900);
 
-  // ── 전제: 레일 슬롯 열기 ────────────────────────────────────────────────────
-  // 기본은 첫 항목(무드)이다 — #563 불변식(dock 232.6 / 프리뷰 226.8×362.3)이 그 상태 기준이라
-  // 기본값을 바꾸면 표가 통째로 갈린다. `--rail <id>`(mood·color·texture·opacity·size…)로
-  // 다른 항목을 열면 **그 패널의** 슬롯 넘침을 잴 수 있다(#706에서 추가 — 후보정 패널에 선택
-  // 옵션 설명 줄이 붙어 예산을 다시 재야 했다. #682가 항목별 높이를 실측할 때 세션 스크립트를
-  // 다시 쓴 자리이기도 하다).
-  // dock은 #563 이후 고정 높이 슬롯이라 어느 항목을 열어도 232.6이고, 항목마다 갈리는 건
-  // railSlot.scrollHeight 하나다 — 그래서 이 옵션은 아래 불변식 대조를 안 건드린다.
-  const railId = arg('rail', '');
-  const railSel = railId ? `[data-rail-id="${railId}"]` : '[data-rail-id]';
-  const railFound = await page.evaluate((sel) => {
-    const el = document.querySelector(sel);
-    if (!el) return false;
-    el.click();
-    return true;
-  }, railSel);
-  if (!railFound) {
-    throw new Error(`레일 항목을 못 찾았다: ${railSel} — appliesTo로 이 무드에서 숨겨진 항목일 수 있다`);
-  }
-  await sleep(700);
-  const railOpen = await page.evaluate(
-    (sel) => document.querySelector(sel)?.getAttribute('aria-expanded') === 'true',
-    railSel,
-  );
-  if (!railOpen) {
-    throw new Error(
-      '레일 슬롯이 안 열렸다 — 닫힌 채로 재면 불변식(dock 290)이 아니라 dock 114.5가 나온다',
-    );
-  }
-
-  const readRects = () =>
-    page.evaluate(() => {
+  // ── 도크 높이 축 (#826 S2 acceptance-3) ──────────────────────────────────────
+  // 도크는 모드(사진·정보·디자인)·디자인 도구·정보 행 수와 무관하게 높이가 하나다(Seed constraint-4):
+  // 본문 DOCK_BODY_PX + 모드 바 DOCK_MODEBAR_PX 고정이고 넘치면 본문 안에서 스크롤한다. 모드를 바꿀 때
+  // 도크가 움직이면 fit 스테이지(#366)의 cqh가 바뀌어 프리뷰 티켓이 흔들리므로 프리뷰 rect도 같이 대조한다.
+  // 옛 레일 슬롯 축(railSlot 넘침 관측)은 슬롯이 없어져 걷었다 — 대신 본문 스크롤 여부를 관측값으로 남긴다.
+  const DOCK = '[data-testid="editor-dock"]';
+  const readDock = () =>
+    page.evaluate((sel) => {
       const r = (el) =>
         el
           ? {
@@ -575,54 +548,109 @@ try {
               h: +el.getBoundingClientRect().height.toFixed(1),
             }
           : null;
-      const dock = document.querySelector('[data-rail-id]')?.closest('div.relative.shrink-0');
-      const slot = document.getElementById('design-rail-panel');
+      const dock = document.querySelector(sel);
+      const body = dock?.querySelector('[data-testid="dock-body"]');
+      // 디자인 모드엔 도구 줄 tablist가 안에 하나 더 있어 aria-label로 모드 바를 집는다.
+      const bar = dock?.querySelector('[role="tablist"][aria-label="편집 모드"]');
       return {
-        rects: {
-          dock: r(dock),
-          preview: r(document.querySelector('div.relative.mx-auto.block.rounded-card')),
-          header: r(document.querySelector('header')),
-        },
-        railSlot: slot
-          ? {
-              scrollTop: slot.scrollTop,
-              scrollHeight: slot.scrollHeight,
-              clientHeight: slot.clientHeight,
-              overflows: slot.scrollHeight > slot.clientHeight,
-            }
+        dock: r(dock),
+        body: r(body),
+        modebar: r(bar),
+        bodyScroll: body
+          ? { scrollHeight: body.scrollHeight, clientHeight: body.clientHeight }
           : null,
+        preview: r(document.querySelector('div.relative.mx-auto.block.rounded-card')),
+        header: r(document.querySelector('header')),
       };
-    });
+    }, DOCK);
+  const readRects = async () => {
+    const d = await readDock();
+    return { rects: { dock: d.dock, preview: d.preview, header: d.header } };
+  };
 
-  const base = await readRects();
+  // 모드 탭은 role=tab · id=dock-mode-tab-<key>다. 탭이 없으면 던지지 않고 found:false로 남겨 pass:false로
+  // 떨어뜨린다 — 던지면 이후 모든 축의 진단이 같이 날아간다(#756 류와 같은 이유).
+  const selectDockMode = async (key) => {
+    const found = await page.evaluate((k) => {
+      const el = document.getElementById(`dock-mode-tab-${k}`);
+      if (!el) return false;
+      el.click();
+      return true;
+    }, key);
+    if (!found) return false;
+    await page
+      .waitForFunction(
+        (k) => document.getElementById(`dock-mode-tab-${k}`)?.getAttribute('aria-selected') === 'true',
+        { timeout: 5000 },
+        key,
+      )
+      .catch(() => {});
+    await sleep(300);
+    return page.evaluate(
+      (k) => document.getElementById(`dock-mode-tab-${k}`)?.getAttribute('aria-selected') === 'true',
+      key,
+    );
+  };
+
+  const base = await readRects(); // 진입 직후의 기본 모드(정보) — 불변식의 기준 상태다.
   const frame = await readFrame();
   if (!frame) throw new Error('#phone-frame이 없다 — 셸이 프레임 밖에서 렌더됐거나 래퍼가 빠졌다(#607)');
+  // 도크가 프레임 안인지(constraint-13) — 기본 모드에서 한 번 잰다.
+  await measureFit('도크', DOCK);
 
-  // ── 필드 드로어 — 오른쪽 가장자리 핸들로 연다(플로팅 툴바 항목과 같은 setDrawerOpen). ──
-  const drawerHandle = 'button[aria-label="티켓 항목 목록 열기"]';
-  // #763(#756과 같은 클래스) — 핸들이 no-op하면 바로 다음 줄 드로어 대기가 엉뚱한 셀렉터
-  // 이름으로 타임아웃 나서 핸들 실종이 진짜 원인인 걸 가린다. 이 버튼은
-  // {canvasReady && !isMax && (...)} 조건부 렌더(MobileEditorShell.tsx:1178)라 안 뜨면 DOM에
-  // 아예 없다 — 랜딩(#727)처럼 노드는 남고 조상만 display:none인 케이스가 없어, puppeteer
-  // 내장 visible 판정(fixed 포지션도 정확히 다룬다)을 그대로 걸어도 다른 파괴 실험을 안 깬다.
-  await page.waitForSelector(drawerHandle, { timeout: 10000, visible: true });
-  await page.evaluate((s) => document.querySelector(s).click(), drawerHandle);
-  // dynamic(ssr:false) 청크라 즉시 query하면 없다 — 뜰 때까지 기다린다.
-  await page.waitForSelector('div[role=dialog][aria-label="티켓 항목"]', { timeout: 10000 });
-  await sleep(300);
-  await measureFit('필드 드로어', 'div[role=dialog][aria-label="티켓 항목"]');
-  await page.keyboard.press('Escape');
-  await sleep(300);
+  const dockModes = [];
+  for (const [key, label] of [
+    ['info', '정보'],
+    ['design', '디자인'],
+    ['photo', '사진'],
+  ]) {
+    const selected = await selectDockMode(key);
+    dockModes.push({ mode: key, label, selected, ...(await readDock()) });
+  }
+  // 디자인 모드의 도구 전환 — 도구마다 본문이 달라도 도크는 그대로여야 한다.
+  await selectDockMode('design');
+  const toolIds = await page.evaluate(() =>
+    [...document.querySelectorAll('[id^="design-tool-tab-"]')].map((el) => el.id.replace('design-tool-tab-', '')),
+  );
+  const dockTools = [];
+  for (const id of toolIds) {
+    await page.evaluate((i) => document.getElementById(`design-tool-tab-${i}`)?.click(), id);
+    await sleep(200);
+    const d = await readDock();
+    dockTools.push({ tool: id, dock: d.dock, body: d.body, preview: d.preview });
+  }
+  await selectDockMode('info'); // 이후 축은 기본 모드에서 이어간다.
+
+  const dockSizes = [...dockModes.map((m) => m.dock), ...dockTools.map((t) => t.dock)];
+  const previewSizes = [...dockModes.map((m) => m.preview), ...dockTools.map((t) => t.preview)];
+  const allSame = (xs, key) =>
+    xs.every((x) => x != null) && Math.max(...xs.map((x) => x[key])) - Math.min(...xs.map((x) => x[key])) <= 0.5;
+  const dockHeight = {
+    modes: dockModes,
+    tools: dockTools,
+    // 못 잰 건 통과가 아니다 — 세 모드가 다 선택됐고, 디자인 도구가 하나라도 있어야 한다.
+    modesSelected: dockModes.length === 3 && dockModes.every((m) => m.selected),
+    toolCount: dockTools.length,
+    heightEqual: allSame(dockSizes, 'h'),
+    previewEqual: allSame(previewSizes, 'w') && allSame(previewSizes, 'h'),
+  };
+  dockHeight.pass =
+    dockHeight.modesSelected &&
+    dockHeight.toolCount > 0 &&
+    dockHeight.heightEqual &&
+    dockHeight.previewEqual &&
+    dockModes.every(
+      (m) =>
+        near(m.body?.h, BASELINE_DOCK_BODY_PX) && near(m.modebar?.h, BASELINE_DOCK_MODEBAR_PX),
+    );
 
   // ── max 모드 — 티켓만 남는 fixed inset-0 오버레이. 라벨 붙은 건 안쪽 티켓 래퍼라
   // 부모(=오버레이 루트)를 잰다. 가로 무드는 안쪽이 rotate(90deg)라 안쪽을 재면 회전 박스가
   // 나온다(#609 판정 대상은 오버레이 자신).
   // #763(#756과 같은 클래스) — 전체 보기 버튼이 no-op하면 바로 다음 줄 '기본 크기로 돌아가기'
-  // 대기가 엉뚱한 셀렉터 이름으로 타임아웃 난다. 이 버튼은 FloatingToolbar가
-  // {canvasReady && !isMax && (...)} 조건부 렌더(MobileEditorShell.tsx:1244)이고, 툴바 자체가
-  // hidden prefs일 땐 다른 버튼으로 통째로 치환된다(FloatingToolbar.tsx:269) — 둘 다
-  // 언마운트/치환이라 랜딩(#727)처럼 노드는 남고 조상만 display:none인 케이스가 아니다.
-  // visible:true를 걸어도 다른 파괴 실험을 안 깬다.
+  // 대기가 엉뚱한 셀렉터 이름으로 타임아웃 난다. 이 버튼은 상단 줄(#826 S2, 옛 '최대화')에 있고
+  // {!isMax} 조건부 렌더 + canvasReady 전엔 disabled다 — 랜딩(#727)처럼 노드는 남고 조상만
+  // display:none인 케이스가 아니라 visible:true를 걸어도 다른 파괴 실험을 안 깬다.
   await page.waitForSelector('button[aria-label="전체 보기"]', { timeout: 10000, visible: true });
   await page.evaluate(() => document.querySelector('button[aria-label="전체 보기"]').click());
   await page.waitForSelector('[aria-label="기본 크기로 돌아가기"]', { timeout: 10000 });
@@ -630,9 +658,8 @@ try {
   await measureFit('max 모드 오버레이', 'div:has(> [aria-label="기본 크기로 돌아가기"])');
   await measureFit('max 모드 티켓', '[aria-label="기본 크기로 돌아가기"]');
   // #766(#756/#763과 같은 클래스) — 나가기가 no-op하면 셸이 max 모드 오버레이에 계속 남은 채
-  // 이후 대비 측정·드로어 재오픈 셀렉터들이 그 위에서 돌아, 몇 단계 뒤 엉뚱한 셀렉터 이름으로
-  // 타임아웃 나는 지연된 버전의 같은 문제가 된다. 632-639행 드로어 핸들과 같은
-  // waitForSelector(visible:true) + 무가드 click 패턴으로 통일.
+  // 이후 메뉴·결과 축이 그 위에서 돌아, 몇 단계 뒤 엉뚱한 셀렉터 이름으로 타임아웃 나는 지연된
+  // 버전의 같은 문제가 된다. 위 전체 보기와 같은 waitForSelector(visible:true) + 무가드 click 패턴.
   await page.waitForSelector('[aria-label="기본 크기로 돌아가기"]', { timeout: 10000, visible: true });
   await page.evaluate(() => document.querySelector('[aria-label="기본 크기로 돌아가기"]').click());
   await sleep(400);
@@ -695,162 +722,100 @@ try {
       };
     }, selector);
 
-  // ── 필드 드로어(#580 1계층 유리 + 2계층 행·카드) 대비 실측. 드로어는 위 §필드 드로어에서
-  // 이미 한 번 열었다 닫았다 — measureContrast가 그 시점엔 아직 정의되지 않아 여기서 다시
-  // 연다(패널 내용은 상태 비의존이라 재현에 부작용 없음). 3계층(--glass-fill 인풋)은 여기서
-  // 안 잰다 — InPlaceFieldEditor가 dynamic(ssr:false) 청크라 dev 서버에서 첫 컴파일 시
-  // Fast Refresh가 풀 리로드를 일으켜(실측: 클릭 직후 매번 동일 URL로 framenavigated 이벤트
-  // 발생, React 상태가 날아가 aid 박스가 다시는 안 뜬다) 이 스크립트와 무관한 원인으로 계속
-  // 깨진다. 3계층은 항상 이 드로어 밖 InPlaceFieldEditor의 불투명 aid 박스(bg-s2)
-  // 안에서만 렌더돼(#580 grep 확인, globals.css --glass-fill 주석) 포스터 노출이 없으므로
-  // 대비 하한은 그 결정론적 배경 위 합성색 계산으로 충분하다(같은 주석에 실측값 문서화).
-  // #764(#756·#763와 같은 클래스) — 핸들이 no-op하면 바로 다음 줄 드로어 대기가 엉뚱한
-  // 셀렉터 이름으로 타임아웃 나서 핸들 실종이 진짜 원인인 걸 가린다.
-  await page.waitForSelector(drawerHandle, { timeout: 10000, visible: true });
-  await page.evaluate((s) => document.querySelector(s).click(), drawerHandle);
-  await page.waitForSelector('div[role=dialog][aria-label="티켓 항목"]', { timeout: 10000 });
-  await sleep(300);
-  const drawerContrast = await measureContrast('div[role=dialog][aria-label="티켓 항목"]');
-  await page.keyboard.press('Escape');
-  await sleep(300);
-
-  // 햄버거 메뉴 열기 — 모달 진입점이자, 모달 없는 판본에서의 대비 측정 표면.
-  await page.evaluate(() => document.querySelector('button[aria-label="편집 메뉴"]').click());
-  await sleep(250);
-  // 편집 메뉴는 header 기준 absolute라 contain:paint가 아니라 컨테이닝 블록으로 프레임 안이다 —
-  // 그래서 오히려 header가 프레임 밖으로 나가면 이게 먼저 샌다.
-  await measureFit('편집 메뉴', '#editor-menu-panel');
-
-  const hasModalRow = await page.evaluate(
-    () => !![...document.querySelectorAll('button')].some((b) => b.textContent?.trim() === '고급 설정'),
-  );
-
-  let contrast;
-  let modal = { present: false, reason: '고급 설정 진입 행 없음(모달 없는 판본)' };
-
-  if (!hasModalRow) {
-    contrast = await measureContrast('#editor-menu-panel');
-    await page.keyboard.press('Escape');
-  } else {
-    await page.evaluate(() =>
-      [...document.querySelectorAll('button')].find((b) => b.textContent?.trim() === '고급 설정').click(),
-    );
-    const DIALOG = 'div[role=dialog][aria-label="고급 설정"]';
-    await page.waitForSelector(DIALOG, { timeout: 5000 });
+  // ── 도크 표면 항목별 대비(#580 3계층의 도크판) — 모드마다 본문이 달라 세 모드를 각각 잰다. ──
+  // **관측값이고 게이트가 아니다**: measureContrast는 불투명 조상 배경만 보고 반투명 칩(선택 칩의
+  // bg-accent-soft)을 합성하지 않아, 선택 칩의 text-accent가 다크에서 3.36으로 나온다(2026-11-19). 그게 실제
+  // 대비 결함인지 측정 한계인지는 사람이 본다 — 게이트에 걸면 상시 거짓 실패(#707 류)가 될 수 있다.
+  // 디자인 모드는 활성 도구의 본문만 그려지므로 도구마다 돌린다.
+  const dockContrast = {};
+  for (const key of ['info', 'photo']) {
+    await selectDockMode(key);
+    dockContrast[key] = await measureContrast(DOCK);
+  }
+  await selectDockMode('design');
+  dockContrast.design = {};
+  for (const id of toolIds) {
+    await page.evaluate((i) => document.getElementById(`design-tool-tab-${i}`)?.click(), id);
     await sleep(200);
-    // 초기 포커스는 아무 것도 클릭하기 전에 읽는다 — 아래 라디오를 누른 뒤 재면 방금 누른
-    // 버튼이 모달 안이라 무조건 통과하는 헛검사가 된다.
+    dockContrast.design[id] = await measureContrast(DOCK);
+  }
+  await selectDockMode('info');
+
+  // ── 편집 메뉴 시트 — 상단 줄의 ⋯로 연다(#826 S2 D09). 프레임 봉쇄 + 닫기 경로 3종 + 포커스 복귀. ──
+  // 시트는 fixed지만 PhoneFrame의 contain:paint가 프레임 안에 가둔다(#609). 그 결합이 끊기면 뷰포트
+  // 기준으로 돌아가 1440 뷰포트에서 프레임 밖(좌 520px)에 그려진다 — 도크/프리뷰 숫자는 그래도 멀쩡하다.
+  const MENU_BTN = 'button[aria-label="편집 메뉴"]';
+  const MENU = '#editor-menu-panel';
+  const menuOpen = () => page.evaluate((sel) => !!document.querySelector(sel), MENU);
+  const openMenu = async () => {
+    if (await menuOpen()) return true;
+    await page.evaluate((s) => document.querySelector(s)?.click(), MENU_BTN);
+    const ok = await page
+      .waitForSelector(MENU, { timeout: 5000 })
+      .then(() => true)
+      .catch(() => false);
+    await sleep(250);
+    return ok;
+  };
+
+  const present = await openMenu();
+  let menu = { present };
+  let contrast = null;
+  if (present) {
+    await measureFit('편집 메뉴 시트', MENU);
+    // 초기 포커스는 아무 것도 누르기 전에 읽는다 — 첫 행으로 가야 한다(열릴 때 firstRowRef.focus()).
     const initialInside = await page.evaluate(
       (sel) => document.querySelector(sel).contains(document.activeElement),
-      DIALOG,
+      MENU,
     );
-
-    const closed = () => page.evaluate((sel) => !document.querySelector(sel), DIALOG);
-    const reopen = async () => {
-      if (!(await closed())) return;
-      await page.evaluate(() => document.querySelector('button[aria-label="편집 메뉴"]').click());
-      await sleep(200);
-      await page.evaluate(() =>
-        [...document.querySelectorAll('button')].find((b) => b.textContent?.trim() === '고급 설정').click(),
-      );
-      await page.waitForSelector(DIALOG, { timeout: 5000 });
-      await sleep(200);
-    };
-
-    // 이동식으로 바꿔 스냅 버튼까지 화면에 올린 뒤 잰다(최저 대비 항목이 거기 있다).
-    // #766 — 라디오가 no-op하면 다음 줄 measureContrast(DIALOG)가 크래시 대신 "모달이 이동식
-    // 상태로 안 바뀐 채 기본 상태의 대비값을 정상값처럼 조용히 리포트"하는, 크래시보다 나쁜
-    // 실패 모드가 된다. 텍스트 매치라 waitForSelector(CSS 셀렉터)를 못 써서 완료 버튼(#763,
-    // 81d8c0b)과 같은 waitForFunction + TimeoutError 한정 catch로 존재를 먼저 확인한다.
-    await page
-      .waitForFunction(
-        () =>
-          [...document.querySelectorAll('[role=radio]')].some((b) =>
-            b.textContent?.includes('세로형 · 이동식'),
-          ),
-        { timeout: 10000 },
-      )
-      .catch((error) => {
-        if (error.name !== 'TimeoutError') throw error;
-        throw new Error('세로형 · 이동식 라디오(텍스트 매치)를 못 찾음(#766)');
-      });
-    await page.evaluate(() => {
-      [...document.querySelectorAll('[role=radio]')]
-        .find((b) => b.textContent?.includes('세로형 · 이동식'))
-        .click();
-    });
-    await sleep(300);
+    contrast = await measureContrast(MENU);
     if (SHOT) await page.screenshot({ path: SHOT });
-    contrast = await measureContrast(DIALOG);
 
-    // 포커스 트랩 — 밖으로 밀면 되돌아오나.
-    const returnsAfterPush = await page.evaluate((sel) => {
-      document.querySelector('button[aria-label="편집 메뉴"]').focus();
-      return document.querySelector(sel).contains(document.activeElement);
-    }, DIALOG);
-
-    // 가려진 버튼 클릭 통과 — 모달 위에서 헤더 '완료' 좌표를 실제로 누른다.
-    // **모달이 닫혔는지로 판정하면 안 된다** — 헤더 자리는 백드롭 띠라 클릭을 먹고 닫는 게
-    // 정상 동작이고, 그건 통과가 아니다. 진짜 누출은 밑의 handleDone이 실행돼 결과 화면으로
-    // 넘어가는 것이므로 편집 화면에 남아 있는지로 판정한다.
-    const done = await page.evaluate(() => {
-      const el = [...document.querySelectorAll('button')].find((b) => b.textContent?.includes('완료'));
-      if (!el) return null;
-      const r = el.getBoundingClientRect();
-      return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
-    });
-    let clickThrough = null;
-    if (done) {
-      await page.mouse.click(done.x, done.y);
-      await sleep(500);
-      clickThrough = await page.evaluate(
-        (sel) => ({
-          dialogClosed: !document.querySelector(sel),
-          leaked: !document.querySelector('button[aria-label="편집 메뉴"]'),
-        }),
-        DIALOG,
+    // 닫기 경로마다 먼저 다시 연다(닫힌 시트에 Escape를 쏘면 "닫혔다"가 무조건 참인 헛검사가 된다).
+    const focusOnTrigger = () =>
+      page.evaluate(
+        (s) => document.activeElement === document.querySelector(s),
+        MENU_BTN,
       );
-    }
-
-    // 닫기 3경로 — Escape · 닫기 버튼 · 백드롭 좌표 실클릭. 각 경로 전에 반드시 다시 연다
-    // (닫힌 모달에 Escape를 쏘면 "닫혔다"가 무조건 참이 되는 헛검사).
-    await reopen();
     await page.keyboard.press('Escape');
     await sleep(250);
-    const escape = await closed();
-    const focusRestored = await page.evaluate(
-      () => document.activeElement === document.querySelector('button[aria-label="편집 메뉴"]'),
-    );
+    const escape = !(await menuOpen());
+    const focusRestoredToTrigger = await focusOnTrigger();
 
-    await reopen();
-    const closeBtnHit = await page.evaluate((sel) => {
-      const b = [...document.querySelectorAll(`${sel} button`)].find(
-        (x) => (x.getAttribute('aria-label') ?? x.textContent ?? '').includes('닫기'),
-      );
-      b?.click();
-      return !!b;
-    }, DIALOG);
+    await openMenu();
+    // ⋯ 재탭 — 스크림이 상단 줄 아래부터라 버튼이 가려지지 않는다. 실제 히트테스트로 누른다.
+    await page.click(MENU_BTN);
     await sleep(250);
-    const closeButton = closeBtnHit ? await closed() : null;
+    const retap = !(await menuOpen());
 
-    await reopen();
-    // 상단 백드롭 띠 — 백드롭은 fixed지만 contain:paint로 **프레임** 안에 갇혀 있으므로
-    // 뷰포트 중앙(VW/2)이 아니라 프레임 중앙을 눌러야 한다(1440 뷰포트에선 720이 프레임 밖).
-    await page.mouse.click(Math.round(frame.x + frame.w / 2), Math.round(frame.y + 10));
+    await openMenu();
+    // 스크림(바깥 탭) — 프레임 안 위쪽(상단 줄 아래, 시트 위). 뷰포트가 아니라 프레임 좌표다.
+    await page.mouse.click(Math.round(frame.x + frame.w / 2), Math.round(frame.y + 80));
     await sleep(250);
-    const backdrop = await closed();
+    const scrim = !(await menuOpen());
 
-    modal = {
+    menu = {
       present: true,
-      focus: { initialInside, returnsAfterPush },
-      clickThrough,
-      close: { escape, closeButton, backdrop },
-      focusRestoredToTrigger: focusRestored,
+      initialInside,
+      close: { escape, retap, scrim },
+      focusRestoredToTrigger,
     };
   }
+  // 상태를 남기지 않는다 — 열려 있으면 닫는다.
+  if (await menuOpen()) {
+    await page.keyboard.press('Escape');
+    await sleep(250);
+  }
+  menu.pass =
+    menu.present &&
+    menu.initialInside &&
+    menu.close.escape &&
+    menu.close.retap &&
+    menu.close.scrim &&
+    menu.focusRestoredToTrigger;
   await sleep(300);
 
-  // 모달을 열고 닫은 뒤에도 dock/프리뷰가 그대로인지(#563 불변식 유지).
+  // 메뉴를 열고 닫은 뒤에도 도크/프리뷰가 그대로인지(고정 높이 불변식 유지).
   const after = await readRects();
 
   // ── 결과 스테이지 · hero — 편집 화면을 떠나므로 맨 마지막에 잰다. ────────────
@@ -909,27 +874,10 @@ try {
 
   const fitFails = fits.filter((f) => !f.pass).map((f) => f.label);
 
-  // 모달 축은 #609부터 재기만 하고 **exitCode엔 안 실려 있었다**(#714 실측). `AdvancedSettingsModal`
-  // 에서 Escape 닫기를 실제로 없애 보면 `close.escape:false` + `focusRestoredToTrigger:false`가
-  // 뜨는데 스크립트는 그대로 exit 0을 냈다 — 진짜 회귀를 통과시키는 죽은 축이라 게이트에 싣는다.
-  //
-  // `present:false`(= '고급 설정' 진입 버튼이 없다)도 실패로 친다. 원래 "모달 없는 판본" 대비
-  // 관용이었는데 지금 판본엔 그 행이 있으므로, present가 false로 뒤집히는 건 곧 **진입점이
-  // 사라졌다**는 뜻이다. 그건 이 하네스가 잡아야 할 회귀지 건너뛸 사유가 아니고, `!invariant.checked`
-  // 를 실패로 치는 자세(#609)와 같은 판정이다.
-  modal.pass =
-    modal.present &&
-    modal.focus.initialInside &&
-    modal.focus.returnsAfterPush &&
-    // 헤더 '완료'를 못 찾으면 clickThrough가 null이다 — 옵셔널 체이닝 없이 읽으면 TypeError로
-    // 스크립트가 통째로 죽어 나머지 축(dock·프리뷰·frameFit·대비) 진단까지 같이 날아간다.
-    // 못 잰 건 통과가 아니므로(`checked:false`와 같은 자세) null은 pass:false로 떨어뜨린다.
-    modal.clickThrough?.dialogClosed &&
-    !(modal.clickThrough?.leaked ?? true) &&
-    modal.close.escape &&
-    modal.close.closeButton &&
-    modal.close.backdrop &&
-    modal.focusRestoredToTrigger;
+  // 메뉴 시트 축(옛 모달 축의 자리)도 **exitCode에 싣는다** — 모달 축은 #609부터 재기만 하고 게이트엔
+  // 안 실려 있어 Escape 닫기를 없애도 exit 0이었다(#714 실측). `present:false`(= ⋯ 진입점 소실)도
+  // 실패다: 진입점이 사라진 걸 관용하면 `checked:false`를 통과로 넘기던 #609의 조용한 성공과 같은 구멍이다.
+  // dockHeight도 마찬가지다 — 새 축은 종료 조건에 실렸는지까지가 한 세트다(#714).
 
   const out = {
     label: LABEL,
@@ -937,12 +885,19 @@ try {
     frame,
     theme: THEME,
     url: URL,
-    railOpen,
     ...base,
+    dockHeight,
     afterMenu: after,
     contrast,
-    drawerContrast,
-    modal,
+    dockContrast,
+    dockContrastFails: Object.fromEntries(
+      Object.entries(dockContrast).flatMap(([mode, c]) =>
+        mode === 'design'
+          ? Object.entries(c).map(([tool, cc]) => [`design/${tool}`, cc?.fails ?? []])
+          : [[mode, c?.fails ?? []]],
+      ),
+    ),
+    menu,
     frameFit: { items: fits, fails: fitFails, pass: fitFails.length === 0 },
     landingShownOnDraft,
     posterless,
@@ -954,10 +909,11 @@ try {
     bannerToastCollision,
   };
   console.log(JSON.stringify(out, null, 2));
-  const contrastFails = [contrast, drawerContrast].flatMap((c) => c?.fails ?? []);
+  const contrastFails = [contrast].flatMap((c) => c?.fails ?? []);
   // checked:false도 실패다 — 못 잰 걸 0으로 넘기는 게 #609가 없앤 그 조용한 성공이다.
   if (
-    !modal.pass ||
+    !menu.pass ||
+    !dockHeight.pass ||
     !invariant.checked ||
     !invariant.pass ||
     fitFails.length > 0 ||

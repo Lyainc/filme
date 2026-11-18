@@ -13,8 +13,8 @@
  * 이 테스트는 하네스를 대신하지 않는다 — "다시 재라"고 말할 뿐이다.
  *
  * #826 S2에서 DesignRail의 `h-[min(214px,26svh)]` 가변 슬롯이 도크 고정 높이(본문 196 + 모드 바 52)로
- * 바뀌어 대조 대상이 클래스 문자열에서 숫자 상수 둘로 갔다. BASELINE 세 숫자(dock/프리뷰) 자체의 재측정은
- * 하네스 단위의 몫이다 — 이 테스트는 선언이 어긋났는지만 본다.
+ * 바뀌어 대조 대상이 클래스 문자열에서 숫자 상수 둘로 갔다. BASELINE 세 숫자(dock 249 / 프리뷰 219×350)는
+ * 2026-11-19 prod 재측정으로 채웠다(docs/HARNESS.md §4·§5) — 이 테스트는 선언이 어긋났는지만 본다.
  */
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';

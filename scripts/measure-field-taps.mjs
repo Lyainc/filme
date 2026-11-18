@@ -31,7 +31,7 @@ const MOODS = arg('moods', 'criterion,minimal,35mm,editorial,stub,35mm-landscape
 const VIEWPORTS = arg('viewports', '320x568,375x667,393x852').split(',').map((v) => v.split('x').map(Number));
 const OUTSIDE = Number(arg('outside', '6'));
 const NO_TAPS = argv.includes('--no-taps'); // 기하(rect·간격·가림)만 — 실제 터치 생략
-// 대조군용 CSS 주입 — 같은 빌드에서 수정 전 동작을 재현한다(예: 핸들 pointer-events 되돌리기).
+// 대조군용 CSS 주입 — 같은 빌드에서 수정 전 동작을 재현한다(예: 상단 줄·도크 pointer-events 되돌리기).
 const INJECT_CSS = arg('inject-css', null);
 // 특정 필드만 프로브 — 연속 프로브가 남긴 상태(닫히는 중인 보조 패널 등)를 피해 대상만 깨끗하게 잰다.
 const ONLY = arg('fields', null)?.split(',');
@@ -139,11 +139,13 @@ try {
         await sleep(60);
       };
 
-      // 셸 크롬이 티켓 위에 얹힌 히트 박스(항목 목록 핸들 · 플로팅 툴바)와 각 탭 rect의 겹친 면적 비율.
+      // 셸 크롬 히트 박스(상단 줄 · 도크)와 각 탭 rect의 겹친 면적 비율. 옛 항목 목록 핸들·플로팅 툴바는
+      // #826 S2에서 삭제돼 티켓 위에 얹히는 크롬이 없다 — 남은 건 스테이지 위아래의 두 줄이라, 겹치면
+      // 티켓이 크롬 밑으로 들어갔다는 신호다.
       const chrome = await page.evaluate(() =>
         [
-          ['handle', document.querySelector('[aria-label="티켓 항목 목록 열기"]')],
-          ['toolbar', document.querySelector('[role="toolbar"]:not([aria-label="필드 편집 도구"])')],
+          ['topbar', document.querySelector('header')],
+          ['dock', document.querySelector('[data-testid="editor-dock"]')],
         ]
           .filter(([, el]) => el)
           .map(([name, el]) => {
@@ -191,6 +193,18 @@ try {
             px, py,
           );
           geom[k] = efp;
+          // 프로브 지점이 상단 줄·도크 위면 탭하지 않는다 — 상단 줄의 ‹는 랜딩으로, 도크 행은 필드 편집으로
+          // 가므로 측정이 상태를 바꾼다. 어느 크롬이 덮는지만 남긴다(옛 핸들 → 드로어 폴백의 자리, #826 S2).
+          const chromeHit = efp.startsWith('none:')
+            ? await page.evaluate((x, y) => {
+                const el = document.elementFromPoint(x, y);
+                return el?.closest('[data-testid="editor-dock"]') ? 'dock' : el?.closest('header') ? 'topbar' : null;
+              }, px, py)
+            : null;
+          if (chromeHit) {
+            probes[k] = chromeHit;
+            continue;
+          }
           const before = await page.evaluate(() => window.__fileClicks);
           await page.touchscreen.tap(px, py);
           // 고정 대기는 가로 무드에서 편집 바가 뜨기 전에 판정해 'none'을 냈다 — 뜰 때까지(최대 800ms) 본다.
@@ -200,14 +214,6 @@ try {
           const o = await opened();
           probes[k] = o.field ?? (o.fileClicks > before ? 'poster' : 'none');
           if (o.field) await close();
-          // 바깥 프로브가 핸들의 보이는 탭을 누르면 드로어가 정상적으로 열린다 — 결과로 남기고 닫는다.
-          // 안 닫으면 뒤 프로브가 전부 드로어에 막혀 'none'이 된다.
-          if (!o.field && (await page.$('[role="dialog"][aria-label="티켓 항목"]'))) {
-            probes[k] = 'drawer';
-            await page.keyboard.press('Escape');
-            await page.waitForFunction(() => !document.querySelector('[role="dialog"][aria-label="티켓 항목"]'), { timeout: 2000 }).catch(() => {});
-            await sleep(150);
-          }
         }
         const others = vis.filter((o) => o.field !== t.field);
         const near = others

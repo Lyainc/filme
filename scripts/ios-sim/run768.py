@@ -79,7 +79,8 @@ def seed_cell(sec, poster, long, theme='light'):
         js('[...document.querySelectorAll("button")].find(b=>b.textContent.trim()==="적용").click()')
         time.sleep(2.0)
     if UPLOAD_STAMP:
-        js('const b=[...document.querySelectorAll("button")].find(e=>e.textContent.trim()==="스탬프"); const p=b.closest(".overflow-x-auto"); p.scrollLeft += (b.getBoundingClientRect().x - 160); b.click()'); time.sleep(1.0)
+        # 스탬프 업로드 입력은 도크 '사진' 모드에 있다(#826 S2 — 옛 DESIGN 스탬프 레일 자리).
+        js('document.getElementById("dock-mode-tab-photo")?.click()'); time.sleep(1.0)
         ajs('''async () => {
           const el=document.querySelector('input[type=file][aria-label="스탬프 이미지 업로드"]'); if(!el) throw new Error("stamp input missing");
           const b=await fetch("/assets/posters/sample-crossing.jpg").then(r=>r.blob());
@@ -91,7 +92,7 @@ def seed_cell(sec, poster, long, theme='light'):
                 break
         time.sleep(1.2)
         js('[...document.querySelectorAll("button")].find(b=>b.textContent.trim()==="적용").click()'); time.sleep(2.0)
-        js('const b=[...document.querySelectorAll("button")].find(e=>e.textContent.trim()==="스탬프"); b&&b.click()'); time.sleep(0.8)
+        js('document.getElementById("dock-mode-tab-info")?.click()'); time.sleep(0.8)  # 기본 모드(정보)로 복귀
     # ghost off via the edit menu (shell-local, default on)
     js('document.querySelector(\'[aria-label="편집 메뉴"]\').click()'); time.sleep(0.6)
     st = js('const b=document.querySelector(\'[aria-label="빈 항목 표시"]\'); return b && (b.getAttribute("aria-checked")||b.getAttribute("aria-pressed"))')
@@ -124,14 +125,13 @@ def interactions(long):
     """README cell step 2-3: titleOg off->on, title short->long->orig, stamp scale, maximize/restore."""
     rec = {}
     rec['initial'] = js(STAMP_PROBE)
-    # 원제 표시 off -> on through the field drawer's visibility toggle
-    js('document.querySelector(\'[aria-label="티켓 항목 목록 열기"]\')?.click()'); time.sleep(0.8)
-    tog = '[...document.querySelectorAll("[role=dialog] button")].find(b=>/원제/.test(b.getAttribute("aria-label")||"") && /(노출|표시|숨)/.test(b.getAttribute("aria-label")||""))'
+    # 원제 표시 off -> on through the dock info row's visibility toggle (옛 필드 드로어 자리, #826 S2)
+    js('document.getElementById("dock-mode-tab-info")?.click()'); time.sleep(0.8)
+    tog = '[...document.querySelectorAll("[data-testid=editor-dock] button")].find(b=>/원제/.test(b.getAttribute("aria-label")||"") && /(노출|표시|숨)/.test(b.getAttribute("aria-label")||""))'
     rec['titleOgToggle'] = js('const b=(' + tog + '); return b && b.getAttribute("aria-label")')
     if rec['titleOgToggle']:
         js('(' + tog + ').click()'); time.sleep(0.6); rec['afterOgOff'] = js(STAMP_PROBE)
         js('(' + tog + ').click()'); time.sleep(0.6); rec['afterOgOn'] = js(STAMP_PROBE)
-    js('document.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true}))'); time.sleep(0.6)
     # title short -> long -> original via the in-place editor
     orig = js('return JSON.parse(localStorage.getItem("filme:phototicket:v1")).movieInfo.title')
     js('document.querySelector("[data-field-tap=title]").click()'); time.sleep(0.8)
@@ -142,8 +142,9 @@ def interactions(long):
         rec[f'title{i}'] = js(STAMP_PROBE)
         if i < 2:
             js('document.querySelector("[data-field-tap=title]").click()'); time.sleep(0.8)
-    # stamp scale 1 -> 1.5 (DESIGN 스탬프 rail, '스탬프 크기' % input), then maximize/restore
-    js('const b=[...document.querySelectorAll("button")].find(e=>e.textContent.trim()==="스탬프"); b&&b.click()'); time.sleep(0.8)
+    # stamp scale 1 -> 1.5 (도크 디자인 모드 '크기' 도구, '스탬프 크기' % input), then maximize/restore
+    js('document.getElementById("dock-mode-tab-design")?.click()'); time.sleep(0.6)
+    js('document.getElementById("design-tool-tab-size")?.click()'); time.sleep(0.8)
     pct = '([...document.querySelectorAll("label")].find(l=>l.textContent.trim()==="스탬프 크기")||{closest:()=>null}).closest(".space-y-field")?.querySelector("input[inputmode=numeric]")'
     if js('return !!(' + pct + ')'):
         js('const e=(' + pct + '); e.focus();')
@@ -157,7 +158,7 @@ def interactions(long):
         if not long:
             js('const e=(' + pct + '); e.focus();'); set_input(pct, '100'); js('(' + pct + ').blur()'); time.sleep(0.8)
         rec['finalScalePct'] = js('return (' + pct + ')?.value')
-        js('const b=[...document.querySelectorAll("button")].find(e=>e.textContent.trim()==="스탬프"); b&&b.click()'); time.sleep(0.6)
+        js('document.getElementById("dock-mode-tab-info")?.click()'); time.sleep(0.6)
     else:
         rec['scale'] = 'stamp size input not found'
     return rec
