@@ -96,6 +96,41 @@ describe('‹ → 랜딩 → 이어서 만들기 (acceptance-6)', () => {
   });
 });
 
+describe('랜딩 오버레이 뒤의 편집 크롬은 닿지 않는다 (#826 S2)', () => {
+  // 상단 줄이 랜딩 뒤에서 탭 순서에 남으면 ‹ · ⋯가 화면에 없는 채로 포커스를 받는다. 상단 줄은 상태가 없어 언마운트하고,
+  // 도크는 도구 선택 같은 로컬 state가 있어 CSS hidden(display:none이라 접근성 트리 · 탭 순서에서 빠진다)이다.
+  const topBarButtons = () => [
+    screen.queryByRole('button', { name: '랜딩으로 돌아가기' }),
+    screen.queryByRole('button', { name: '편집 메뉴' }),
+  ];
+
+  test('처음 랜딩: ‹ · ⋯ 버튼이 접근성 트리에 없다', () => {
+    render(<Harness />);
+    expect(landingShown()).toBe(true);
+    expect(topBarButtons().map((b) => b === null)).toEqual([true, true]);
+  });
+
+  test('포스터가 있는 문서에서 ‹로 랜딩이 다시 떠도 상단 줄은 없고 도크는 hidden이며, 이어서 만들기로 둘 다 돌아온다', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(screen.getByTestId('landing-skip-poster'));
+    fireEvent.click(screen.getByText('seed-poster'));
+    expect(topBarButtons().map((b) => b === null)).toEqual([false, false]);
+    expect(screen.getByTestId('editor-dock').classList.contains('hidden')).toBe(false);
+
+    await user.click(back());
+
+    expect(landingShown()).toBe(true);
+    expect(probe!.state.croppedImageUrl).toBe('blob:test-poster'); // canvasReady는 켜진 채다 — 그래도 닿지 않아야 한다
+    expect(topBarButtons().map((b) => b === null)).toEqual([true, true]);
+    expect(screen.getByTestId('editor-dock').classList.contains('hidden')).toBe(true);
+
+    await user.click(screen.getByTestId('landing-restore'));
+    expect(topBarButtons().map((b) => b === null)).toEqual([false, false]);
+    expect(screen.getByTestId('editor-dock').classList.contains('hidden')).toBe(false);
+  });
+});
+
 describe('acceptance-14 — 자동저장 꺼짐 · 포스터 없음', () => {
   test('자동저장을 끈 문서도 ‹가 저장하고, 이어서 만들기가 같은 문서를 연다', async () => {
     const user = userEvent.setup();

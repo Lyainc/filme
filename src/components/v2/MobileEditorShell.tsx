@@ -122,6 +122,12 @@ export function MobileEditorShell({
   // 세우는 다섯 경로: OCR 적용 · 포스터 크롭 확정 · 직접 입력 · 무드 갤러리 탭 · 이어서 만들기.
   // 초기화(performClear)와 편집 상단 ‹(handleBack, #826 S2)가 false로 되돌려 랜딩이 복귀한다.
   const [landingDismissed, setLandingDismissed] = useState(false);
+  // 비동기 콜백(OCR 응답 · KOBIS 보강)이 렌더 시점 값 대신 지금 값을 읽는 통로 — 매 렌더 갱신한다.
+  const landingDismissedRef = useRef(landingDismissed);
+  landingDismissedRef.current = landingDismissed;
+  // 지금 진행 중인 OCR이 **랜딩이 떠 있는 채로 시작했는가** — 적용 시점이 아니라 시작 시점에 정한다. 편집에서 시작한
+  // OCR이 응답 전에 ‹로 랜딩이 다시 뜬 뒤 도착하면, 적용 시점 판정은 "랜딩에서 온 새로 시작"으로 오인해 문서를 지운다.
+  const ocrStartedOnLandingRef = useRef(false);
   // ocrApplied(#652)는 #727에서 삭제됐다 — 그 신호가 하던 일(OCR 적용 후 랜딩 본문의 주 CTA·이탈
   // 경로를 CSS로 숨겨 OCR 재진입을 한 곳으로 모으기, #388 > #631 D2 a)은 이제 Landing
   // 컨테이너 자체가 한다: OCR 적용은 landingDismissed를 세우고 그게 곧 mode='hidden'이라
@@ -199,6 +205,7 @@ export function MobileEditorShell({
   // 메뉴 초기화 행(2탭 arm, #374)이 부르는 실제 초기화 절차. 워드마크 탭 초기화(#578 · #669)는 #826 S2에서 없앴다.
   function performClear() {
     photo.clearDraft();
+    closeEditor(); // 열려 있던 인플레이스 편집이 새 문서에서 되살아나지 않게.
     rehideOnLeaveRef.current.clear(); // 누락 바로가기의 재숨김(#776)이 새 문서로 넘어가지 않게.
     // 초기화는 새 문서니까 랜딩도 처음 상태로 — 안 되돌리면 포스터도 draft도 없는 빈 셸에 남는다(#614).
     setLandingDismissed(false);
@@ -301,6 +308,7 @@ export function MobileEditorShell({
   // 자동 회전 캐러셀 오탭 같은 사고가 새로고침 한 번으로 복구된다. "이어서 만들기"는 이걸 안 부른다.
   function startFreshDoc(opts?: { layout?: LayoutId; keepPoster?: boolean; entry?: 'ocr' }) {
     photo.resetDocument({ layout: opts?.layout, keepPoster: opts?.keepPoster });
+    closeEditor(); // performClear와 같은 이유 — 옛 문서의 activeField가 새 문서에서 열리면 안 된다.
     // 새 문서의 첫 도크 모드 — 스크린샷으로 채운 문서(entry 'ocr')만 디자인, 나머지는 정보다.
     setDockMode(opts?.entry === 'ocr' ? 'design' : 'info');
     rehideOnLeaveRef.current.clear(); // performClear와 같은 이유(#776).
@@ -348,6 +356,8 @@ export function MobileEditorShell({
   // 나가는 길은 티켓 자신을 탭(기존 default 복귀 핸들러 재사용). ViewMode가 'default' | 'max' 2값뿐이라
   // viewMode !== 'default'는 항상 isMax와 동치 — 아래 rotateLandscape도 이걸 재사용한다.
   const isMax = viewMode === 'max';
+  // 랜딩 오버레이가 편집 셸 위에 떠 있는 상태 — 상단 줄과 도크가 그 뒤에서 탭 순서에 남으면 안 된다.
+  const landingVisible = !landingDismissed && !isMax;
   // max 진입 시 포커스를 티켓 래퍼(유일한 탈출구)로 옮긴다 — 진입 버튼이 있던 플로팅 툴바가
   // max에서 통째로 언마운트돼 포커스가 body로 떨어지면 키보드 사용자가 복귀 수단을 잃는다(#190).
   useEffect(() => {
@@ -408,9 +418,10 @@ export function MobileEditorShell({
       )}
       {/* 상단 줄(#826 S2 C-TB, E-01) — ‹ · 빈 공간 · 실행 취소 · 다시 실행 · 전체 보기 · ⋯ · 완료. 높이 52, 버튼 44.
           워드마크는 이 줄에 없다(편집 화면에선 브랜드 표시를 안 쓴다 — 워드마크 탭 초기화 제거, Seed constraint-7).
-          전체 보기(max, #328)는 이 줄까지 숨기는 풀스크린 모드라 통째로 언마운트한다. 완료는 편집 캔버스가 서야 렌더(canvasReady,
+          전체 보기(max, #328)는 이 줄까지 숨기는 풀스크린 모드라 통째로 언마운트하고, 랜딩 오버레이가 떠 있는 동안도 같다 — 안 그러면
+          ‹ · ⋯가 랜딩 뒤에서 탭 순서에 남는다(상태 없는 줄이라 언마운트가 안전하다; 도크는 로컬 state가 있어 CSS hidden). 완료는 편집 캔버스가 서야 렌더(canvasReady,
           #631 — 포스터 유무가 아니다), 차단 상태는 테두리만 있는 aria-disabled이고 탭하면 사유 토스트 + 정보 모드(handleDone). */}
-      {!isMax && (
+      {!isMax && !landingVisible && (
         <header className="relative flex h-[52px] shrink-0 items-center px-1">
           <button type="button" onClick={handleBack} aria-label="랜딩으로 돌아가기" className={cn(pressableVariants(), TB_BUTTON_CLS)}>
             <TbIcon name="back" />
@@ -703,14 +714,18 @@ export function MobileEditorShell({
               // 여느 때와 똑같이 부분 병합(updateMovieInfo/updateComponents)만 하고, OCR이 안 건드린
               // 필드(포스터·밝기 등)는 그대로 남는다.
               onOcrApply={(params) => {
-                const fresh = !landingDismissed;
-                // 스크린샷으로 채운 새 문서는 디자인 모드로 연다(E-01) — 검토보다 꾸미기로 넘어가는 흐름이다.
-                if (fresh) startFreshDoc({ entry: 'ocr' });
-                setLandingDismissed(true);
+                // 새로 시작이려면 **시작도 랜딩에서 했고 지금도 랜딩이 떠 있어야** 한다. 시작이 편집이었다면(정보 모드
+                // 버튼 · 메뉴) 그 사이 ‹로 랜딩이 다시 떠도 현재 문서에 그대로 적용하고 랜딩 상태는 건드리지 않는다 —
+                // 문서는 ‹가 보존한 그 문서이고 지우는 길은 메뉴 초기화뿐이다(constraint-15). 시작은 랜딩이었어도 그 사이
+                // 포스터 크롭으로 랜딩이 걷혔으면(#809) 지금 값이 이긴다 — 둘 다 렌더 시점 값이 아니라 ref를 읽는다.
+                const fresh = ocrStartedOnLandingRef.current && !landingDismissedRef.current;
                 if (!fresh) {
                   ocr.apply(params);
                   return;
                 }
+                // 스크린샷으로 채운 새 문서는 디자인 모드로 연다(E-01) — 검토보다 꾸미기로 넘어가는 흐름이다.
+                startFreshDoc({ entry: 'ocr' });
+                setLandingDismissed(true);
                 const prevValues = Object.fromEntries(
                   Object.keys(params.prevValues).map((k) => [
                     k,
@@ -737,10 +752,15 @@ export function MobileEditorShell({
               // 정보 모드 버튼이 이 카드의 업로드를 연다(constraint-17) — 카드를 도크에 새로 마운트하지 않는다.
               openRef={ocrOpenRef}
               onBusyChange={setOcrBusy}
+              onStart={() => {
+                ocrStartedOnLandingRef.current = !landingDismissedRef.current;
+              }}
               // 랜딩이 걷히면 카드가 display:none 안이라 자체 토스트가 안 보인다 — 셸 토스트가 대신한다.
               notify={landingDismissed ? flashToast : undefined}
               // 인식 결과에 제목이 없으면 정보 모드로 바꿔 제목 입력을 연다(옛 드로어 카드의 같은 콜백 승계).
               onNeedManualTitle={() => {
+                // 응답 전에 ‹로 랜딩이 다시 떴으면 그 뒤에서 입력기를 열지 않는다 — 열어 둔 activeField가 이어서 만들기 때 튀어나온다.
+                if (!landingDismissedRef.current) return;
                 setDockMode('info');
                 handleField('title');
               }}
@@ -758,7 +778,7 @@ export function MobileEditorShell({
         photo={photo}
         mode={dockMode}
         onModeChange={setDockMode}
-        hidden={isMax || !canvasReady}
+        hidden={isMax || !canvasReady || landingVisible}
         onField={handleField}
         onMissingField={openMissingField}
         onOcrOpen={handleOcrOpen}

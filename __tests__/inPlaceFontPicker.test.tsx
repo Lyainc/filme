@@ -66,6 +66,7 @@ const hasButton = (re: RegExp) => !!screen.queryByRole('button', { name: re });
 
 async function openField(label: string, criterion = false) {
   render(<Harness />);
+  fireEvent.click(screen.getByTestId('landing-skip-poster')); // 상단 줄(실행 취소)은 랜딩을 떠난 뒤에 선다(#826 S2)
   fireEvent.click(screen.getByText('seed'));
   if (criterion) fireEvent.click(screen.getByText('criterion'));
   fireEvent.click(await screen.findByRole('button', { name: `${label} 편집` }));
@@ -210,5 +211,21 @@ describe('인플레이스 글꼴 드롭다운 — 키보드 (APG listbox)', () =
     await user.click(fontButton('서명'));
     fireEvent.blur(listbox('서명'));
     expect(!!screen.queryByRole('listbox')).toBe(false);
+  });
+
+  // blur가 글꼴 버튼으로 옮겨 가는 거라면 목록을 닫지 않는다 — 곧이어 오는 버튼 click이 토글을 맡는다. 같이 닫아 버리면
+  // 그 click이 방금 닫힌 목록을 도로 열어, 목록이 떠 있을 때 버튼을 눌러도 안 닫힌다.
+  test('포커스가 글꼴 버튼으로 옮겨 가는 blur는 목록을 닫지 않고, 이어지는 버튼 탭이 목록을 닫는다', async () => {
+    const user = userEvent.setup();
+    await openField('서명');
+    await user.click(fontButton('서명'));
+    expect(fontButton('서명').getAttribute('aria-expanded')).toBe('true');
+
+    fireEvent.blur(listbox('서명'), { relatedTarget: fontButton('서명') });
+    expect(!!screen.queryByRole('listbox')).toBe(true); // 버튼 쪽 blur는 무시
+
+    await user.click(fontButton('서명'));
+    expect(!!screen.queryByRole('listbox')).toBe(false);
+    expect(fontButton('서명').getAttribute('aria-expanded')).toBe('false');
   });
 });

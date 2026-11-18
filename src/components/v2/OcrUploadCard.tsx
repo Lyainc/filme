@@ -52,6 +52,9 @@ export interface OcrUploadCardProps {
    * (#614/#624) 정보 모드 '스크린샷으로 자동입력' 버튼과 메뉴 행이 새 카드를 마운트하지 않고 이 함수로 같은
    * 파일 선택을 연다. 인식 중이면 handleClick과 같이 아무 일도 안 한다. */
   openRef?: { current: (() => void) | null };
+  /** 파일이 검증을 통과해 인식이 시작되는 순간의 통지 — 응답이 오기 전에 정해져야 하는 것(셸의 "새로 시작" 판정, #826 S2)을
+   * 적용 시점이 아니라 시작 시점에 기록하는 자리다. */
+  onStart?: () => void;
   /** 인식 진행 여부 통지 — 밖에서 열린 업로드도 '티켓 인식 중…'을 같이 보이게 한다. */
   onBusyChange?: (busy: boolean) => void;
   /** 결과 안내 문구를 밖에서 대신 보여줄 때 넘긴다 — 랜딩이 걷히면 이 카드는 display:none 안이라 자체 토스트가
@@ -88,6 +91,7 @@ export function OcrUploadCard({
   className = '',
   openRef,
   onBusyChange,
+  onStart,
   notify,
   onNeedManualTitle,
 }: OcrUploadCardProps) {
@@ -226,6 +230,7 @@ export function OcrUploadCard({
   }
 
   async function processFile(file: File) {
+    onStart?.();
     setIsProcessing(true);
 
     try {

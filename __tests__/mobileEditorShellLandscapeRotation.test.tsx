@@ -36,6 +36,7 @@ describe('MobileEditorShell landscape 회전 배치 (#275-8)', () => {
   test('editorial(landscape) 시드 후 전체 보기 전환이 크래시 없이 렌더된다', async () => {
     const user = userEvent.setup();
     render(<Harness />);
+    await user.click(screen.getByTestId('landing-skip-poster')); // 상단 줄은 랜딩을 떠난 뒤에 선다(#826 S2)
     await user.click(screen.getByText('seed-editorial-poster'));
 
     await user.click(screen.getByRole('button', { name: '전체 보기' }));

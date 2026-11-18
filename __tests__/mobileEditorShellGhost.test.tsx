@@ -40,6 +40,7 @@ describe('MobileEditorShell 빈 항목 표시 (#216 → #826 S2)', () => {
   test('메뉴 스위치 "빈 항목 표시"는 기본 꺼짐이고 클릭으로 켜고 끈다', async () => {
     const user = userEvent.setup();
     render(<Harness />);
+    await user.click(screen.getByTestId('landing-skip-poster')); // 상단 줄은 랜딩을 떠난 뒤에 선다(#826 S2)
     await user.click(screen.getByText('seed-poster'));
 
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
@@ -56,6 +57,7 @@ describe('MobileEditorShell 빈 항목 표시 (#216 → #826 S2)', () => {
   test('정보 모드는 스위치와 무관하게 자동 on, 디자인 · 사진 모드는 스위치를 따른다', async () => {
     const user = userEvent.setup();
     render(<Harness />);
+    await user.click(screen.getByTestId('landing-skip-poster')); // 상단 줄은 랜딩을 떠난 뒤에 선다(#826 S2)
     await user.click(screen.getByText('seed-poster'));
 
     // 정보 모드(첫 진입 기본) — 스위치는 꺼져 있어도 빈 필드 탭 타깃이 선다.

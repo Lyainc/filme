@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useMatchMedia } from '@/hooks/useMatchMedia';
 import { THEME_COLOR, THEME_STORAGE_KEY, type ThemePreference } from '@/constants/theme';
 
 // 'light' · 'dark'만 저장하고, 저장값 없음 = 시스템. 키는 _document.tsx의 FOUC 스크립트와 공유한다.
@@ -26,18 +27,13 @@ function readStoredPreference(): ThemePreference {
  */
 export function useThemePreference() {
   const [preference, setPreferenceState] = useState<ThemePreference>('system');
-  const [systemDark, setSystemDark] = useState(false);
+  // 시스템 다크 질의는 useMatchMedia가 쥔다 — 첫 렌더 false, 마운트 뒤 OS 값, 이후 OS 변경을 따라간다.
+  const systemDark = useMatchMedia(DARK_QUERY);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     setPreferenceState(readStoredPreference());
-    const mq = typeof window.matchMedia === 'function' ? window.matchMedia(DARK_QUERY) : null;
-    setSystemDark(mq?.matches ?? false);
     setReady(true);
-    if (!mq) return;
-    const onChange = (e: MediaQueryListEvent) => setSystemDark(e.matches);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
   }, []);
 
   const theme: 'light' | 'dark' = preference === 'system' ? (systemDark ? 'dark' : 'light') : preference;

@@ -39,6 +39,7 @@ describe('MobileEditorShell 완료 게이팅 (#213/#363)', () => {
     const user = userEvent.setup();
     let calls = 0;
     render(<Harness canExport={false} onDone={() => { calls++; }} />);
+    fireEvent.click(screen.getByTestId('landing-skip-poster')); // 상단 줄은 랜딩을 떠난 뒤에 선다(#826 S2)
     fireEvent.click(screen.getByText('seed'));
 
     await user.click(screen.getByRole('button', { name: '완료' }));
@@ -53,6 +54,7 @@ describe('MobileEditorShell 완료 게이팅 (#213/#363)', () => {
     const user = userEvent.setup();
     let calls = 0;
     render(<Harness canExport={true} onDone={() => { calls++; }} />);
+    fireEvent.click(screen.getByTestId('landing-skip-poster')); // 상단 줄은 랜딩을 떠난 뒤에 선다(#826 S2)
     fireEvent.click(screen.getByText('seed'));
 
     await user.click(screen.getByRole('button', { name: '완료' }));

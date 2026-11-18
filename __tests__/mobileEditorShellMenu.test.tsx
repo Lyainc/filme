@@ -19,6 +19,14 @@ import { mobileShellProps } from './shellHarness';
 // 잰다. 테스트엔 Tailwind CSS가 안 실려 getComputedStyle이 클래스를 안 반영하므로 className으로.
 const landingShown = () => screen.getByTestId('landing').classList.contains('fixed');
 
+// 상단 줄은 랜딩이 떠 있는 동안 서지 않는다(#826 S2) — 편집으로 들어가는 가장 짧은 길인 '직접 입력'을 먼저 누른다.
+const leaveLanding = () => fireEvent.click(screen.getByTestId('landing-skip-poster'));
+// 저장분이 있는 재방문은 '이어서 만들기'로 들어간다(문서를 안 되돌리는 유일한 이탈, #727 c5).
+const resumeFromLanding = () => fireEvent.click(screen.getByTestId('landing-restore'));
+
+// 초기화 더블탭 가드(CLEAR_DOUBLE_TAP_GUARD_MS = 350)를 실시간으로 넘기는 대기.
+const CLEAR_GUARD_WAIT_MS = 380;
+
 const menuButton = () => screen.getByRole('button', { name: '편집 메뉴' });
 const menu = () => screen.getByRole('dialog', { name: '편집 메뉴' });
 const menuClosed = () => screen.queryByRole('dialog', { name: '편집 메뉴' }) === null;
@@ -49,6 +57,7 @@ describe('편집 메뉴 시트 (#826 S2 D09)', () => {
   test('⋯ 탭 → 시트 열림/닫힘(aria-expanded), role=dialog + aria-modal, 머리줄 · 손잡이 없음', async () => {
     const user = userEvent.setup();
     render(<Harness />);
+    leaveLanding();
 
     expect(menuButton().getAttribute('aria-expanded')).toBe('false');
     expect(menuClosed()).toBe(true);
@@ -65,6 +74,7 @@ describe('편집 메뉴 시트 (#826 S2 D09)', () => {
   test('닫기 세 경로: 바깥(스크림) 탭 · ⋯ 재탭 · Escape', async () => {
     const user = userEvent.setup();
     render(<Harness />);
+    leaveLanding();
 
     await user.click(menuButton());
     await user.click(screen.getByTestId('editor-menu-scrim'));
@@ -83,6 +93,7 @@ describe('편집 메뉴 시트 (#826 S2 D09)', () => {
   test('열면 첫 행(빈 항목 표시)으로 포커스가 가고, 닫으면 ⋯로 돌아온다', async () => {
     const user = userEvent.setup();
     render(<Harness />);
+    leaveLanding();
 
     await user.click(menuButton());
     // DOM 노드를 toBe로 비교하면 실패 시 직렬화가 폭발한다 — 불리언으로(#693).
@@ -92,9 +103,41 @@ describe('편집 메뉴 시트 (#826 S2 D09)', () => {
     expect(document.activeElement === menuButton()).toBe(true);
   });
 
+  // 포커스는 그냥 닫힐 때만 ⋯로 돌아간다 — 행이 일을 하고 닫을 땐 그 일(파일 선택 · 초기화 · 임시저장 안내)이 포커스를 쥔다.
+  test('포커스 복귀: 스크림 탭 · ⋯ 재탭 · Escape는 ⋯로, 행 동작(자동입력 · 임시저장)으로 닫을 땐 ⋯로 안 돌아간다', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    leaveLanding();
+    const onTrigger = () => document.activeElement === menuButton();
+
+    await user.click(menuButton());
+    await user.click(screen.getByTestId('editor-menu-scrim'));
+    expect(onTrigger()).toBe(true);
+
+    await user.click(menuButton());
+    await user.click(menuButton());
+    expect(onTrigger()).toBe(true);
+
+    await user.click(menuButton());
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onTrigger()).toBe(true);
+
+    await user.click(menuButton());
+    await user.click(within(menu()).getByRole('button', { name: '스크린샷으로 자동입력' }));
+    expect(menuClosed()).toBe(true);
+    expect(onTrigger()).toBe(false);
+
+    act(() => menuButton().blur());
+    await user.click(menuButton());
+    await user.click(within(menu()).getByRole('button', { name: '임시저장' }));
+    expect(menuClosed()).toBe(true);
+    expect(onTrigger()).toBe(false);
+  });
+
   test('Tab은 시트 밖으로 새지 않고 끝에서 처음으로 돈다', async () => {
     const user = userEvent.setup();
     render(<Harness />);
+    leaveLanding();
     await user.click(menuButton());
 
     const focusables = Array.from(menu().querySelectorAll<HTMLElement>('button:not([tabindex="-1"])'));
@@ -109,6 +152,7 @@ describe('편집 메뉴 시트 (#826 S2 D09)', () => {
   test('행은 설정 3(빈 항목 표시 · 테마 · 자동저장) + 문서 3(스크린샷으로 자동입력 · 임시저장 · 초기화)이고, 포스터 · 고급 설정 · 다크모드 행은 없다', async () => {
     const user = userEvent.setup();
     render(<Harness />);
+    leaveLanding();
     fireEvent.click(screen.getByText('seed'));
     await user.click(menuButton());
 
@@ -130,6 +174,7 @@ describe('편집 메뉴 시트 (#826 S2 D09)', () => {
   test('행 높이는 44(min-h-touch)이고 버튼 이름에 아이콘이 끼지 않는다', async () => {
     const user = userEvent.setup();
     render(<Harness />);
+    leaveLanding();
     await user.click(menuButton());
 
     const rows = Array.from(menu().querySelectorAll('button')).filter((b) => b.getAttribute('role') !== 'radio');
@@ -141,6 +186,7 @@ describe('편집 메뉴 시트 (#826 S2 D09)', () => {
   test('시트는 불투명 면(bg-s1)이고 blur · 그라데이션이 없다 (constraint-11)', async () => {
     const user = userEvent.setup();
     render(<Harness />);
+    leaveLanding();
     await user.click(menuButton());
 
     expect(menu().classList.contains('bg-s1')).toBe(true);
@@ -151,6 +197,7 @@ describe('편집 메뉴 시트 (#826 S2 D09)', () => {
   test('시트와 스크림은 프레임 안 fixed 좌표이고 스크림은 상단 줄(52px) 아래부터다 — ⋯ 재탭이 스크림에 안 먹힌다', async () => {
     const user = userEvent.setup();
     render(<Harness />);
+    leaveLanding();
     await user.click(menuButton());
 
     expect(menu().classList.contains('fixed')).toBe(true);
@@ -181,6 +228,7 @@ describe('편집 메뉴 시트 (#826 S2 D09)', () => {
       );
     }
     render(<DoneHarness />);
+    leaveLanding();
     fireEvent.click(screen.getByText('seed'));
 
     await user.click(menuButton());
@@ -212,6 +260,7 @@ describe('테마 3갈래 (#826 S2 D09, acceptance-17 — 저장 규칙은 useThe
     const user = userEvent.setup();
     const picks: ThemePreference[] = [];
     render(<ThemeHarness onPick={(p) => picks.push(p)} />);
+    leaveLanding();
     await user.click(menuButton());
 
     const group = within(screen.getByRole('radiogroup', { name: '테마' }));
@@ -231,6 +280,7 @@ describe('테마 3갈래 (#826 S2 D09, acceptance-17 — 저장 규칙은 useThe
     const user = userEvent.setup();
     const picks: ThemePreference[] = [];
     render(<ThemeHarness onPick={(p) => picks.push(p)} />);
+    leaveLanding();
     await user.click(menuButton());
 
     const system = screen.getByRole('radio', { name: '시스템' });
@@ -249,6 +299,7 @@ describe('자동저장 행 (#826 S2 D09)', () => {
     jest.useFakeTimers();
     const user = userEvent.setup({ delay: null });
     render(<Harness />);
+    leaveLanding();
 
     // 기본 켜짐 · 아직 저장 전 — 메타 없음.
     await user.click(menuButton());
@@ -281,6 +332,7 @@ describe('문서 카드: 임시저장 · 초기화', () => {
     // 시나리오 자체), 포스터 재업로드 전에도 초기화에 닿을 수 있어야 한다.
     const user = userEvent.setup();
     render(<Harness />);
+    leaveLanding();
     await user.click(menuButton());
 
     expect(screen.getByRole('button', { name: '임시저장' })).toBeTruthy();
@@ -292,6 +344,7 @@ describe('문서 카드: 임시저장 · 초기화', () => {
     jest.useFakeTimers();
     const user = userEvent.setup({ delay: null });
     render(<Harness />);
+    resumeFromLanding();
     await user.click(menuButton());
 
     // 2탭 arm(#374) — 1탭은 arm만, 확인 문구로 바뀐 행을 한 번 더 탭해야 실행.
@@ -307,6 +360,7 @@ describe('문서 카드: 임시저장 · 초기화', () => {
   test('임시저장(#310): 즉시 localStorage에 저장 + 토스트 + 시트 닫힘', async () => {
     const user = userEvent.setup();
     render(<Harness />);
+    leaveLanding();
     fireEvent.click(screen.getByText('seed'));
     await user.click(menuButton());
 
@@ -320,6 +374,7 @@ describe('문서 카드: 임시저장 · 초기화', () => {
   test('초기화 arm(#374): 1탭은 실행하지 않는다 — 라벨이 앰버 확인 문구로 바뀌고, 시트를 닫으면 해제된다', async () => {
     const user = userEvent.setup();
     render(<Harness />);
+    leaveLanding();
     fireEvent.click(screen.getByText('seed'));
     await user.click(menuButton());
 
@@ -344,6 +399,7 @@ describe('문서 카드: 임시저장 · 초기화', () => {
     jest.useFakeTimers();
     const user = userEvent.setup({ delay: null });
     render(<Harness />);
+    leaveLanding();
     fireEvent.click(screen.getByText('seed'));
     await user.click(menuButton());
 
@@ -363,10 +419,34 @@ describe('문서 카드: 임시저장 · 초기화', () => {
     expect(menuClosed()).toBe(true);
   });
 
+  // 초기화는 새 문서다 — 열려 있던 인플레이스 편집의 activeField가 남으면, 랜딩을 거쳐 새 문서로 들어올 때 그 필드 입력기가
+  // 되살아난다. '이어서 만들기'는 startFreshDoc을 안 거치므로 performClear의 closeEditor만이 이걸 막는다.
+  test('초기화(#826 S2): 열려 있던 필드 입력기가 새 문서로 넘어가지 않는다', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    leaveLanding();
+    fireEvent.click(screen.getByText('seed'));
+    fireEvent.click(await screen.findByRole('button', { name: '극장 편집' }));
+    await screen.findByRole('toolbar', { name: '필드 편집 도구' });
+
+    await user.click(menuButton());
+    await user.click(screen.getByRole('button', { name: '초기화' }));
+    await new Promise((r) => setTimeout(r, CLEAR_GUARD_WAIT_MS)); // 더블탭 가드(350ms) 밖
+    await user.click(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' }));
+    expect(landingShown()).toBe(true);
+
+    // 새 문서로 다시 들어온다 — 포스터 없이 편집 캔버스가 선다.
+    await user.click(screen.getByTestId('landing-restore'));
+    expect(landingShown()).toBe(false);
+    expect(screen.queryByRole('toolbar', { name: '필드 편집 도구' }) === null).toBe(true);
+    expect(screen.queryByRole('textbox', { name: '극장' }) === null).toBe(true);
+  });
+
   test('초기화 arm(#374): arm 직후 350ms 내 재탭(더블탭)은 실행되지 않는다 (claude-review PR #375 P1)', async () => {
     jest.useFakeTimers();
     const user = userEvent.setup({ delay: null });
     render(<Harness />);
+    leaveLanding();
     fireEvent.click(screen.getByText('seed'));
     await user.click(menuButton());
 
@@ -383,6 +463,7 @@ describe('문서 카드: 임시저장 · 초기화', () => {
   test('초기화 arm(#374): 3.2초 내 재탭이 없으면 자동 해제된다 (claude-review PR #375 P1)', () => {
     jest.useFakeTimers();
     render(<Harness />);
+    leaveLanding();
     // 자동 해제 타이머는 arm 탭이 스케줄하므로, 그 시점부터 정확히 재려면 fireEvent로 연다.
     fireEvent.click(menuButton());
     fireEvent.click(screen.getByRole('button', { name: '초기화' }));

@@ -170,6 +170,7 @@ describe('인플레이스 필드 에디터 (#354)', () => {
 
   test('정보 모드는 빈 항목이 자동으로 켜지고, 사진·디자인 모드는 메뉴 "빈 항목 표시" 스위치를 따른다 (#826 S2)', async () => {
     render(<Harness />);
+    fireEvent.click(screen.getByTestId('landing-skip-poster')); // 메뉴(⋯)는 랜딩을 떠난 뒤에 선다(#826 S2)
     fireEvent.click(screen.getByText('seed'));
 
     // 정보 모드(기본): 스위치와 무관하게 빈 필드 탭 타깃이 있다.
@@ -225,6 +226,7 @@ describe('인플레이스 필드 에디터 (#354)', () => {
 describe('탭 타깃: 상단 줄 · 인플레이스 필드바 44 (#553 → #826 S2)', () => {
   test('상단 줄 아이콘 버튼과 인플레이스 필드바가 모두 44px다', async () => {
     render(<Harness />);
+    fireEvent.click(screen.getByTestId('landing-skip-poster')); // 상단 줄은 랜딩을 떠난 뒤에 선다(#826 S2)
     fireEvent.click(screen.getByText('seed'));
 
     const topBtns = Array.from(document.querySelectorAll('header button'));
