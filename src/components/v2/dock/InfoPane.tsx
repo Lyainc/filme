@@ -1,6 +1,7 @@
 import { cn } from '@/utils/cn';
 import { pressableVariants } from '@/components/ui/variants';
 import { EyeIcon } from '@/components/ui/VisibilityCheckbox';
+import { EyeToggle } from './EyeToggle';
 import { missingExportFields } from '@/hooks/useExportReady';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { TicketField } from '@/types';
@@ -52,8 +53,7 @@ function InfoRow({
         <span
           className={cn(
             'min-w-0 flex-1 truncate text-body',
-            missing && !preview ? 'text-warn' : preview ? 'text-ink' : 'text-ink-3',
-            missing && preview && 'text-warn',
+            missing ? 'text-warn' : preview ? 'text-ink' : 'text-ink-3',
             !shown && 'text-ink-3 line-through decoration-hair-strong',
           )}
         >
@@ -65,17 +65,13 @@ function InfoRow({
           필수 미입력
         </span>
       )}
-      <button
-        type="button"
-        aria-label={`${label} 티켓에 표시`}
-        aria-pressed={shown}
+      <EyeToggle
+        label={label}
+        on={shown}
         disabled={locked}
         title={locked ? '필수 항목 — 항상 표시돼요' : undefined}
-        onClick={() => photo.updateFieldVisibility({ [field]: !shown })}
-        className={cn(pressableVariants(), `-mr-2 inline-flex h-touch w-touch shrink-0 items-center justify-center transition-colors disabled:opacity-40 ${shown ? 'text-ink' : 'text-ink-3'}`)}
-      >
-        <EyeIcon open={shown} size={18} />
-      </button>
+        onToggle={() => photo.updateFieldVisibility({ [field]: !shown })}
+      />
     </div>
   );
 }

@@ -4,7 +4,6 @@ import { createPortal } from 'react-dom';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { MovieInfo, QuoteFont, TicketComponents } from '@/types';
 import { userTextFont } from '@/components/moods/_shared';
-import { DEFAULT_QUOTE } from '@/components/moods/MoodCriterion';
 import { getLayout } from '@/utils/layouts';
 import { cn } from '@/utils/cn';
 import { pressableVariants } from '@/components/ui/variants';
@@ -22,6 +21,7 @@ import {
   QUOTE_MAX_LENGTH,
   isStampTarget,
   type SheetTarget,
+  IMAGE_ACCEPT,
 } from '@/constants/fields';
 import { isRequiredField } from '@/constants/fieldVisibility';
 
@@ -390,9 +390,8 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
   const fontBtnRef = useRef<HTMLButtonElement>(null);
   useEffect(() => setFontOpen(false), [field]);
   const fontText = (field === 'quote' ? photo.state.movieInfo.quote : photo.state.movieInfo.signature)?.trim() ?? '';
-  // '자동'은 라벨(한글)이 아니라 실제 문장으로 풀어야 티켓과 같은 서체가 된다 — 빈 값이면 티켓이
-  // 그리는 문장(한줄평 기본 영문 · 서명은 한글+영문 견본)으로 폴백한다.
-  const fontSample = fontText || (field === 'quote' ? DEFAULT_QUOTE : '영화의 순간 Film');
+  // '자동'은 라벨(한글)이 아니라 실제 문장으로 풀어야 티켓과 같은 서체가 된다 — 빈 값이면 한글+영문 견본으로 폴백한다.
+  const fontSample = fontText || '영화의 순간 Film';
   const sampleFor = (font: QuoteFont, optLabel: string) =>
     userTextFont(font === 'auto' ? fontSample : optLabel, font, FONT_SAMPLE_PX);
   const currentLabel = FONT_OPTIONS.find((o) => o.value === currentFont)?.label ?? '자동';
@@ -545,15 +544,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
         />
       )}
 
-      {/* 필드바 — 버튼 44px(h-touch w-touch). 시안 30px를 막았던 #354의 근거는 "앱 현행 44~48px 대비
-          회귀"(일관성)였는데, 그 일관성 논거 자체는 #508이 플로팅 툴바를 32px로 내리며 번복했다.
-          그래도 여기 44px은 **유지**한다 — 근거가 일관성에서 다음 둘로 갈아탔다(#553):
-          (1) 이 바는 편집 중에만 뜨는 absolute 오버레이라, 줄여도 세로 예산을 한 픽셀도 안 돌려준다.
-              32px을 산 대가(세로 공간)를 여기선 못 받으므로 AAA(SC 2.5.5 44px)를 포기할 이유가 없다.
-          (2) 편집 중 주 조작면이 이 바다 — 필드 순회·노출 토글·완료를 연속으로 누르는 자리라
-              정확도 요구가 상시 보조 툴바보다 높다.
-          (옛 플로팅 툴바 32px 위계는 #826 S2에서 툴바가 상단 줄(44)로 흡수되며 사라졌다 — 지금은 상단 줄 · 필드바가
-          둘 다 44다.) 이를 고정하는 회귀는 이 파일의 테스트 맨 끝 describe('탭 타깃: 상단 줄 · 인플레이스 필드바 44…')에 있다. */}
+      {/* 필드바 — 버튼 44px(h-touch w-touch, #553): 편집 중에만 뜨는 absolute 오버레이라 줄여도 세로 예산을 못 돌려받고, 순회·노출 토글·완료를 연달아 누르는 주 조작면이다. 회귀는 탭 타깃 테스트(상단 줄 · 인플레이스 필드바 44)가 잠근다. */}
       <div
         ref={barRef}
         role="toolbar"
@@ -749,11 +740,11 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
       {/* 로고 업로드 파이프라인(스탬프+서명 전용) — 숨김 input + 자유비 크롭(useLogoCrop, StampSheet와 동형). */}
       {isImageField && (
         <>
-          {/* sr-only여도 tabbable이라 aria-hidden 금지(axe aria-hidden-focus) — FieldDrawer.tsx:297와 동일 판단. */}
+          {/* sr-only여도 tabbable이라 aria-hidden 금지(axe aria-hidden-focus). */}
           <input
             ref={logoInputRef}
             type="file"
-            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+            accept={IMAGE_ACCEPT}
             aria-label={`${label} 이미지 파일`}
             onChange={(e) => {
               const file = e.target.files?.[0];

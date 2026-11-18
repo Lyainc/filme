@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { THEME_COLOR, type ThemePreference } from '@/constants/theme';
+import { THEME_COLOR, THEME_STORAGE_KEY, type ThemePreference } from '@/constants/theme';
 
-/** 테마 선호 저장 키 — _document.tsx의 FOUC 스크립트가 같은 키를 읽는다('light' · 'dark'만 저장, 저장값 없음 = 시스템). */
-export const THEME_STORAGE_KEY = 'phototicket:theme';
+// 'light' · 'dark'만 저장하고, 저장값 없음 = 시스템. 키는 _document.tsx의 FOUC 스크립트와 공유한다.
+export { THEME_STORAGE_KEY };
 
 const DARK_QUERY = '(prefers-color-scheme: dark)';
 

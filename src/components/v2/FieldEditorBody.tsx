@@ -22,6 +22,7 @@ import {
   QUOTE_MAX_LENGTH,
   type SheetTarget,
   type StampTarget,
+  IMAGE_ACCEPT,
 } from '@/constants/fields';
 import { DATE_FORMAT_TOKENS, GRANULARITY_OPTIONS } from '@/constants/dateTokens';
 import { cn } from '@/utils/cn';
@@ -548,7 +549,7 @@ function StampEditor({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/png,image/jpeg,image/webp,image/svg+xml"
+        accept={IMAGE_ACCEPT}
         onChange={handleFileChange}
         className="sr-only"
       />

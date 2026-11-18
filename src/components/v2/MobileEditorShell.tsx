@@ -132,8 +132,8 @@ export function MobileEditorShell({
   // photo.awaitingPosterRestore(#683)는 포스터 있던 draft 재방문에서 croppedImageUrl이 IndexedDB
   // 왕복을 기다리는 창을 메운다 — 그 창에도 크롬이 서 있어야 랜딩 뒤가 빈 셸이 아니다.
   const canvasReady = !!croppedImageUrl || landingDismissed || photo.awaitingPosterRestore;
-  // 편집 도크 모드(#826 S2 E-01) — 사진 · 정보 · 디자인. 처음 진입은 스크린샷으로 채웠으면 디자인(OCR 적용이
-  // 랜딩에서 온 새 문서일 때 onOcrApply가 올린다), 아니면 정보다. 새로 시작하는 경로(포스터 업로드 · 직접 입력 ·
+  // 편집 도크 모드(#826 S2 E-01) — 사진 · 정보 · 디자인. 처음 진입은 스크린샷으로 채웠으면 디자인(startFreshDoc
+  // entry 'ocr'), 아니면 정보다. 새로 시작하는 경로(포스터 업로드 · 직접 입력 ·
   // 무드 탭 · 초기화)는 startFreshDoc/performClear가 정보로 되돌린다. 완료 실패(handleDone)와 온-티켓 항목 목록
   // 버튼도 정보로 보낸다.
   const [dockMode, setDockMode] = useState<DockMode>('info');
@@ -141,6 +141,7 @@ export function MobileEditorShell({
   // 버튼이 같은 파일 선택을 열고, 인식 중 표시는 카드가 onBusyChange로 알려 준다.
   const ocrOpenRef = useRef<(() => void) | null>(null);
   const [ocrBusy, setOcrBusy] = useState(false);
+  const handleOcrOpen = useCallback(() => ocrOpenRef.current?.(), []);
   // 보기 전환(전체 보기 진입 · 복귀)이 메뉴를 열린 채로 남기지 않게 항상 같이 닫는다(claude-review PR #332 P2).
   function handleViewModeChange(mode: ViewMode) {
     setViewMode(mode);
@@ -218,11 +219,9 @@ export function MobileEditorShell({
   // 편집 상단 ‹(#826 S2 constraint-15) — 문서를 지우지 않고 랜딩으로 간다. 임시저장을 한 번 하고(자동저장이 꺼져 있어도 새로고침에
   // 남는다) 랜딩을 다시 띄운다. 저장이 실패하면 편집 화면에 남는다 — 실패 알림은 saveDraft가 이미 띄웠고, 랜딩으로 가면 그 사이
   // 문서가 유실될 수 있는 길이 열린다. 랜딩의 '이어서 만들기'(onRestore)는 저장분이 아니라 메모리 문서를 그대로 연다.
-  // has-draft는 그 행의 첫 페인트 게이트라(globals.css) 이 세션에 저장분이 처음 생긴 경우에도 행이 보이게 같이 세운다.
   function handleBack() {
     closeMenu();
     if (!photo.saveDraft()) return;
-    document.documentElement.classList.add('has-draft');
     closeEditor();
     setLandingDismissed(false);
   }
@@ -300,11 +299,10 @@ export function MobileEditorShell({
   // 랜딩의 "새로 시작" 네 경로가 공유하는 진입 커밋(#727 c7) — 메모리 문서만 새 문서로 되돌리고
   // localStorage/IndexedDB 저장분은 그대로 둔다. 저장분이 덮이는 건 새 문서의 첫 자동저장이라,
   // 자동 회전 캐러셀 오탭 같은 사고가 새로고침 한 번으로 복구된다. "이어서 만들기"는 이걸 안 부른다.
-  function startFreshDoc(opts?: { layout?: LayoutId; keepPoster?: boolean }) {
-    photo.resetDocument(opts);
-    // 새 문서의 첫 모드는 정보다 — 스크린샷으로 채운 경우만 onOcrApply가 이 뒤에 디자인으로 올린다(같은 배치의
-    // 마지막 setState가 이긴다).
-    setDockMode('info');
+  function startFreshDoc(opts?: { layout?: LayoutId; keepPoster?: boolean; entry?: 'ocr' }) {
+    photo.resetDocument({ layout: opts?.layout, keepPoster: opts?.keepPoster });
+    // 새 문서의 첫 도크 모드 — 스크린샷으로 채운 문서(entry 'ocr')만 디자인, 나머지는 정보다.
+    setDockMode(opts?.entry === 'ocr' ? 'design' : 'info');
     rehideOnLeaveRef.current.clear(); // performClear와 같은 이유(#776).
     // 새 문서 — 복원된 문서로 undo해 돌아가면 안 된다(#356 clear는 다음 상태를 새 베이스라인으로 잡는다).
     history.clear();
@@ -491,7 +489,7 @@ export function MobileEditorShell({
           lastSavedAt={photo.lastSavedAt}
           onAutoSaveToggle={photo.toggleAutoSave}
           // 랜딩에 한 벌뿐인 OcrUploadCard의 업로드를 연다(constraint-17) — 카드를 메뉴에 새로 마운트하지 않는다.
-          onOcrOpen={() => ocrOpenRef.current?.()}
+          onOcrOpen={handleOcrOpen}
           ocrBusy={ocrBusy}
           onSaveDraft={handleSaveDraft}
           onClear={performClear}
@@ -647,19 +645,11 @@ export function MobileEditorShell({
           {/* 줌 pill(#328)은 #356에서 제거 — 전체 보기 진입은 상단 줄 버튼(#826 S2), 탈출은
               기존 티켓 탭 복귀 그대로. */}
 
-          {/* 랜딩 오버레이(#614) — 점선 드롭존 히어로 + 랜딩 footer가 여기로 흡수됐다. 편집 셸을
-              덮는 fixed 레이어지만 **셸 안 이 자리에서** 렌더한다: Landing이 조건부 unmount가 아니라
-              항상 마운트 + CSS hidden이고 OCR 카드를 children으로 받아 자리만 빌려주므로, 아래
-              OcrUploadCard가 랜딩·업로드 후에 걸쳐 같은 트리 위치에 남아 로컬 상태(isProcessing·
-              토스트)를 전환 때마다 리셋하지 않는다 — 업로드 후·max(#328)엔 통째로 hidden이고 OCR
-              진입점은 도크 정보 모드 버튼(#826 S2, 옛 드로어 #355)이 이 카드의 업로드를 연다(#388).
-              **in-flight KOBIS 보강은 remount에 안전하다**: 최신성 판정을 셸이 소유한 ocrEpochRef가
-              epoch 비교로 하므로(#388 / claude-review PR #413 P0, 커밋 007f381) 카드가 unmount돼도
-              setInfo는 셸의 photo 상태에 그대로 적용된다 — 옛 드로어 카드는 닫힐 때마다 unmount됐는데
-              titleOg·releaseDate가 살아남은 게 그 근거다(카드는 지금 한 벌뿐이다). 영화 수명(captureMovieSelection의
-              movieSelectionRef·docEpochRef, #793)도 셸이 쥐어 같은 이유로 remount와 무관하다.
-              인스턴스 로컬 mountedRef 가드를 되살리면 #413 P0을 재도입한다(옛 "단일 인스턴스가
-              아니면 레이스가 되살아난다" 서술은 #624로 철회 — docs/CONTRIBUTING.md §5 참조). OCR 로직은 셸의 useOcrUndo가 소유. */}
+          {/* 랜딩 오버레이(#614) — 편집 셸을 덮는 fixed 레이어지만 셸 안 이 자리에서 렌더한다. OcrUploadCard는 한 벌뿐이고
+              Landing은 unmount가 아니라 mode='hidden' CSS로 숨겨 카드의 로컬 상태(isProcessing·토스트)가 전환마다 리셋되지
+              않는다(#388). in-flight KOBIS 보강의 최신성은 카드가 아니라 셸이 쥔 ocrEpochRef·movieSelectionRef·docEpochRef
+              (#793)가 판정하므로 카드가 unmount돼도 안전하다 — 인스턴스 로컬 mountedRef 가드를 되살리면 #413 P0을 재도입한다
+              (docs/CONTRIBUTING.md §5). OCR 로직은 셸의 useOcrUndo가 소유. */}
           <Landing
             // 랜딩은 두 모드뿐이다(#727 c3) — 떠났으면 hidden, 아니면 overlay. inline은 삭제됐다:
             // 새 판정에선 도달 불가능하고(landingDismissed ⇒ hidden), 실제 화면도 헤드카피·히어로·
@@ -714,11 +704,9 @@ export function MobileEditorShell({
               // 필드(포스터·밝기 등)는 그대로 남는다.
               onOcrApply={(params) => {
                 const fresh = !landingDismissed;
-                if (fresh) startFreshDoc();
+                // 스크린샷으로 채운 새 문서는 디자인 모드로 연다(E-01) — 검토보다 꾸미기로 넘어가는 흐름이다.
+                if (fresh) startFreshDoc({ entry: 'ocr' });
                 setLandingDismissed(true);
-                // 랜딩의 스크린샷 인식으로 채운 새 문서는 디자인 모드로 연다(Seed constraint-2 E-01) — 채워진 정보를
-                // 검토하기보다 꾸미기로 넘어가는 흐름이다. startFreshDoc이 정보로 세운 값을 이 줄이 덮는다.
-                if (fresh) setDockMode('design');
                 if (!fresh) {
                   ocr.apply(params);
                   return;
@@ -773,7 +761,7 @@ export function MobileEditorShell({
         hidden={isMax || !canvasReady}
         onField={handleField}
         onMissingField={openMissingField}
-        onOcrOpen={() => ocrOpenRef.current?.()}
+        onOcrOpen={handleOcrOpen}
         ocrBusy={ocrBusy}
         onPosterPick={handlePosterTap}
         // 원본이 없으면 안 넘겨 사진 모드의 자르기가 비활성이 된다(옛 메뉴 '재크롭'의 disabled와 같은 규칙).

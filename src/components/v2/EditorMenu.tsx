@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
 import { cn } from '@/utils/cn';
 import { pressableVariants } from '@/components/ui/variants';
+import { handleRadioGroupKeyDown } from '@/utils/radioGroupKeyboard';
 import type { ThemePreference } from '@/constants/theme';
 
 const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
@@ -202,18 +203,6 @@ export function EditorMenu({
     onClear();
   }
 
-  function onThemeKeyDown(e: KeyboardEvent<HTMLDivElement>) {
-    const idx = THEME_OPTIONS.findIndex((o) => o.value === themePreference);
-    let next = -1;
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (idx + 1) % THEME_OPTIONS.length;
-    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (idx - 1 + THEME_OPTIONS.length) % THEME_OPTIONS.length;
-    if (next < 0) return;
-    e.preventDefault();
-    onThemeChange(THEME_OPTIONS[next].value);
-    const radios = e.currentTarget.querySelectorAll<HTMLElement>('[role="radio"]');
-    radios[next]?.focus();
-  }
-
   return (
     <>
       {/* 스크림은 상단 줄(52px) 아래부터다 — 덮으면 ⋯ 재탭이 스크림에 먹혀 "닫기"가 아니라 우연한 닫힘이 된다. */}
@@ -237,7 +226,7 @@ export function EditorMenu({
             checked={ghost}
             onToggle={() => onGhostChange(!ghost)}
           />
-          <div role="radiogroup" aria-label="테마" onKeyDown={onThemeKeyDown} className={cn(ROW_CLS, 'justify-between')}>
+          <div role="radiogroup" aria-label="테마" onKeyDown={handleRadioGroupKeyDown} className={cn(ROW_CLS, 'justify-between')}>
             <span className="flex-1">테마</span>
             <span className="-mr-3 inline-flex shrink-0">
               {THEME_OPTIONS.map((o) => {

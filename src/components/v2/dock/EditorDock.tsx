@@ -31,7 +31,7 @@ const MODES: { key: DockMode; label: string }[] = [
 const DOCK_PANEL_ID = 'dock-panel';
 
 /**
- * 편집 도크(#826 S2 E-01) — 옛 DesignRail · FieldDrawer · 스탬프/로고 입력을 하나로 합친 하단 고정 영역.
+ * 편집 도크(#826 S2 E-01) — 사진 · 정보 · 디자인 세 모드를 한 곳에 둔 하단 고정 영역.
  * 모드 바(사진 · 정보 · 디자인)는 APG tabs이고 선택은 위쪽 2px 강조색 막대다. 정보 탭에는 필수(제목 · 개봉일)가
  * 비었을 때 앰버 점이 선다(접근명엔 sr-only '필수 미입력').
  *

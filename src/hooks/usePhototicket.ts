@@ -49,6 +49,12 @@ function clearDraftPaintGate() {
   if (typeof document !== 'undefined') document.documentElement.classList.remove('has-draft');
 }
 
+/** `has-draft`(#675) 세우기 — 이 세션에 저장분이 처음 생겨도 랜딩 복원 행(globals.css 첫 페인트 게이트)이 보이게,
+ *  저장이 성공한 순간에만 부른다. _document.tsx의 blocking 스크립트는 로드 시점의 저장분만 본다. */
+function markDraftPaintGate() {
+  if (typeof document !== 'undefined') document.documentElement.classList.add('has-draft');
+}
+
 // 자동저장 on/off는 문서(STORAGE_KEY)가 아니라 UI 취향값이라 별도 키로 영속(옛 툴바 위치 키 선례, #436).
 const AUTOSAVE_PREF_KEY = 'filme:autosave:v1';
 // 프리뷰 디바운스(280ms, index.tsx)보다 느슨하게 — 저장은 프리뷰만큼 즉각적일 필요가 없다(#436).
@@ -689,6 +695,7 @@ export function usePhototicket() {
         hadPoster: state.croppedImageUrl !== null,
       };
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      markDraftPaintGate();
     } catch {
       // 저장 실패(쿼터 초과·프라이빗 모드, #645 C1) — 예전엔 무시하고 아래 setLastSavedAt이
       // 무조건 실행돼 인디케이터가 성공처럼 반짝였다. 이제 실패를 알리고 false를 돌려준다.

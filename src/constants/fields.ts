@@ -232,3 +232,6 @@ export function stampPreview(target: StampTarget, components: TicketComponents):
   if (components[keys.image]) return '이미지';
   return String(components[keys.label] ?? '');
 }
+
+/** 로고·스탬프 이미지 업로드 input의 accept — 도크 사진 모드와 필드 에디터 둘이 같은 값을 쓴다. */
+export const IMAGE_ACCEPT = 'image/png,image/jpeg,image/webp,image/svg+xml';
