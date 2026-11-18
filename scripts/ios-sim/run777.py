@@ -15,7 +15,8 @@ const hl=[...document.querySelectorAll('input, div[aria-hidden="true"]')].find(e
 const h=hl.getBoundingClientRect(), cx=h.x+h.width/2, cy=h.y+h.height/2; let best=null;
 for(const el of document.querySelectorAll('[data-field-tap]')){const r=el.getBoundingClientRect(); const d=Math.hypot(r.x+r.width/2-cx,r.y+r.height/2-cy); if(!best||d<best.d) best={d,f:el.getAttribute('data-field-tap')};}
 return best?best.f:'?open';'''
-CHROME = '''return [['handle',document.querySelector('[aria-label="티켓 항목 목록 열기"]')],['toolbar',document.querySelector('[role="toolbar"]:not([aria-label="필드 편집 도구"])')]]
+# 셸 크롬 히트 박스 — 옛 항목 목록 핸들·플로팅 툴바는 #826 S2에서 삭제돼 상단 줄(header)·도크만 남았다.
+CHROME = '''return [['topbar',document.querySelector('header')],['dock',document.querySelector('[data-testid="editor-dock"]')]]
 .filter(([,e])=>e).map(([n,e])=>{const r=e.getBoundingClientRect();return {name:n,x:r.x,y:r.y,w:r.width,h:r.height}})'''
 
 
@@ -55,8 +56,6 @@ def close_edit():
         if js('''const w=document.querySelector(".crop-marks"); const t=w&&getComputedStyle(w).transform;
 return !document.querySelector('[aria-label="필드 편집 도구"]') && (!t||t==="none"||t==="matrix(1, 0, 0, 1, 0, 0)")'''):
             break
-    if js('return !!document.querySelector(\'[role="dialog"][aria-label="티켓 항목"]\')'):
-        js('document.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true}))'); time.sleep(0.5)
     if js('return visualViewport.scale') > 1.01:
         for _ in range(4):
             pinch_in_pt(d0=170, d1=10); time.sleep(0.8)
@@ -85,7 +84,7 @@ def probe_fields(mood, theme):
             time.sleep(0.4)
             tap_css(px, py)
             o = wait_open()
-            if not o and not js('return !!document.querySelector(\'[role="dialog"][aria-label="티켓 항목"]\')'):
+            if not o:
                 time.sleep(0.8); tap_css(px, py); o = wait_open(1500)  # 'none' must reproduce twice
             if o:
                 # field toolbar vs opened field overlap (auto-move check)
@@ -97,10 +96,7 @@ return +(ox*oy/(b.width*b.height||1)).toFixed(2)''')
                 probes[k] = {'opened': o, 'barOverlap': ov}
                 close_edit()
             else:
-                dr = js('return !!document.querySelector(\'[role="dialog"][aria-label="티켓 항목"]\')')
-                probes[k] = {'opened': 'drawer' if dr else 'none'}
-                if dr:
-                    close_edit()
+                probes[k] = {'opened': 'none'}  # 드로어 폴백은 핸들과 함께 삭제됐다(#826 S2)
         res.append({'field': t['field'], 'rect': {k: round(t[k], 1) for k in ('x', 'y', 'w', 'h')}, 'coveredBy': cover, 'probes': probes})
         bad = [k for k, v in probes.items() if v['opened'] != t['field']]
         print(f"  {mood}/{theme} {t['field']:<14} {'OK' if not bad else 'MISS ' + str({k: probes[k]['opened'] for k in bad})} cover={cover}", flush=True)
@@ -108,15 +104,14 @@ return +(ox*oy/(b.width*b.height||1)).toFixed(2)''')
 
 
 def extras(mood, theme):
-    """handle -> drawer, drawer item -> edit, prev/next, edit text + undo."""
+    """info-mode tab -> dock list, prev/next, edit text + undo. (옛 핸들 → 드로어 단계는 #826 S2에서 정보 모드 탭으로.)"""
     out = {}
-    h = native_find('티켓 항목 목록 열기')
-    r = rect_of('document.querySelector(\'[aria-label="티켓 항목 목록 열기"]\')')
+    r = rect_of('document.getElementById("dock-mode-tab-info")')
     if r:
         tap_css(r['x'] + r['w'] / 2, r['y'] + r['h'] / 2); time.sleep(1.0)
-        out['handleOpensDrawer'] = js('return !!document.querySelector(\'[role="dialog"][aria-label="티켓 항목"]\')')
-        shot(f'777-{mood}-{theme}-drawer')
-        close_edit()
+        out['infoTabSelected'] = js('return document.getElementById("dock-mode-tab-info")?.getAttribute("aria-selected")==="true"')
+        out['dockInfoRows'] = js('return document.querySelectorAll(\'[data-testid="dock-body"] button\').length')
+        shot(f'777-{mood}-{theme}-info-dock')
     # open title, then try next / prev buttons
     tt = [v for v in js(READ) if v['field'] == 'title']
     if tt:

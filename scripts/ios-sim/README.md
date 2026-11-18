@@ -21,7 +21,7 @@ Seed `docs/specs/mobile-device-verification.yaml`의 acceptance-1~4 iOS 행(#777
 |---|---|---|
 | `python3 run585.py [0-5 ...]` | #585 여섯 % 입력 × 키보드 ✓/바깥 탭 | `585-<i><a\|b>-{during,typed,after}.png`, `585-ios.json` |
 | `python3 run779.py [light] [dark]` | #779 트랙 탭·±10/14px·트랙/thumb 드래그·% 입력·undo | `779-<theme>-*.png`, `779-ios.json` |
-| `python3 run777.py [light\|dark] [무드 ...]` | #777 필드 직접 탭(중심·안쪽 위/아래 2px), 핸들·이전/다음·편집 undo(라이트) | `777-*.png`, `777-ios-<themes>.json` |
+| `python3 run777.py [light\|dark] [무드 ...]` | #777 필드 직접 탭(중심·안쪽 위/아래 2px), 정보 모드 탭·이전/다음·편집 undo(라이트) | `777-*.png`, `777-ios-<themes>.json` |
 | `python3 run777rest.py` | #777 작은 필드 확대 경로(전체 보기·핀치), 다크 복구 경로 | `777-enlarge-*.png`, `777-rest.json` |
 | `python3 run768.py [S01 ...]` | #768 Stub S01–S16: README 공통 입력 seed → 스텝 2·3 → 완료 → '사진에 저장' → 공유 시트 '이미지 저장' → 사진 앱 DCIM에서 원본 회수. `STAMP_UPLOAD=1`이면 스탬프를 실제 UI 업로드로 넣어요 | `768/Sxx-{editor,preview,sheet}.png`, `768/Sxx-saved.jpg`, `768/768-ios*.json` |
 | `uv run --with pillow --with numpy python compare768.py <dir> S01 ...` | 저장 JPEG를 편집 프리뷰 스크린샷에 티켓 경계로 정렬해 프리뷰/저장본/차이 나란히 | `Sxx-compare.png` |
@@ -39,3 +39,12 @@ Seed `docs/specs/mobile-device-verification.yaml`의 acceptance-1~4 iOS 행(#777
 - 이전 셀의 포스터가 IndexedDB(`filme-images`)에서 복원돼요. 셀마다 비워요.
 - 공유 시트는 원격 뷰라 요소 rect가 맞지 않아요. 화면 좌표로 '이미지 저장'을 누르고 DCIM에 새 파일이 생겼는지로 성공을 판정해요. 좌표 `(156, 772)`는 iPhone 17 Pro 402×874 기준이라 다른 기기에선 스크린샷으로 다시 읽어요.
 - 필드 열림 판정은 하이라이트 위치 휴리스틱(`OPENED`)보다 포커스된 입력의 `aria-label`이 정확해요.
+
+## 도크 개편 이후(#826 S2) — 미검증 표기
+
+편집 셸이 상단 줄 + 도크(사진·정보·디자인 모드 탭)로 바뀌면서 옛 레일·필드 드로어·핸들 셀렉터를 바꿨어요. **아래는 시뮬레이터에서 다시 돌리지 않았어요(미검증). 셀렉터만 새 DOM에 맞춰 고쳤어요.**
+
+- `run768.py`: 스탬프 업로드 입력은 `#dock-mode-tab-photo`, 원제 표시 토글은 `#dock-mode-tab-info`의 `[data-testid=editor-dock]` 안 버튼, 스탬프 크기는 `#dock-mode-tab-design` → `#design-tool-tab-size`에서 잡아요.
+- `run777.py`: 셸 크롬 겹침은 `header`(상단 줄)·`[data-testid="editor-dock"]` 두 개만 봐요. 핸들 → 드로어 단계는 정보 모드 탭 단계로 바꿨어요(`out['infoTabSelected']`, `out['dockInfoRows']`).
+- `run777rest.py`: 전체 보기 라벨(`전체 보기`)은 이미 새 이름이라 바꿀 게 없었어요.
+- `run585.py`: **고치지 않았어요.** 옛 레일 아이콘 줄(`[data-rail-id]`)과 후보정·크기 하위 탭을 전제해서, 도크의 디자인 도구 탭(`#design-tool-tab-<id>`)에 맞춘 재작성이 필요해요.

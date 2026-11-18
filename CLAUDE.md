@@ -49,15 +49,15 @@ Before making architectural changes or implementing new features, consult:
 헤드리스 Chrome 하네스는 **CI·픽셀 측정 축**이다. 사용법·기준선·파괴 실험·함정은 전부 `docs/HARNESS.md`. 여기엔 언제 돌리고 무엇이 게이트인지만 둔다.
 - **저장물(export JPEG)을 픽셀로 재려면 `scripts/capture-export.mjs`**(`--material/--coating/--intensity/--out`, `--compare a.jpg b.jpg`). 잡음 바닥 maxΔ 2, 허용치 3. **Stub 무드의 픽셀 diff는 prod(`bun run build && next start`)로 잴 것** — dev는 같은 코드 재캡처로 통제군부터 잡고 회귀로 단정하지 말 것. Web Share를 타는 흐름을 헤드리스로 재는 새 스크립트는 `canShare` 스텁이 필요하고, 종료는 `browser.close()` 3초 race + `process.exit(0)`. 근거: `docs/HARNESS.md` 2절(#506·#751).
 - **폰트를 더하거나 갈아치우면 `scripts/measure-font-metrics.mjs`를 다시 돌려** `_shared.tsx`의 `HANGUL_SIZE_SCALE`·`LATIN_SIZE_SCALE`과 `__tests__/userTextFontOptions.ts`를 **둘 다** 갱신할 것(OS/2 sxHeight·sCapHeight는 쓰지 말 것). 근거: `docs/HARNESS.md` 3절(#437).
-- **`bun scripts/measure-chrome.mjs --theme dark|light`**: dock·프리뷰 rect, 모달 포커스/닫기, 프레임 봉쇄, 랜딩·posterless 축을 한 번에 잰다. 레일 슬롯을 열고 재는 게 전제고 불변식은 **dock 290 / 프리뷰 190.9×305**다. 세션 tmp에 다시 쓰지 말 것(#586). 근거: `docs/HARNESS.md` 4절.
+- **`bun scripts/measure-chrome.mjs --theme dark|light`**: dock·프리뷰 rect, 세 모드(사진·정보·디자인) 도크 높이, 편집 메뉴 시트 포커스/닫기, 프레임 봉쇄, 랜딩·posterless 축을 한 번에 잰다. 불변식은 **dock 249 / 프리뷰 219×350**(도크는 고정 높이라 모드와 무관)이다. 세션 tmp에 다시 쓰지 말 것(#586). 근거: `docs/HARNESS.md` 4절.
   - **새 축을 넣으면 종료 조건(`process.exitCode`)에도 실었는지 확인**할 것 — 재고 출력만 하는 축은 파괴해도 exit 0이다(#714). **`checked:false`는 통과가 아니라 실패**다(#609).
-  - **`railSlot`은 게이트가 아니라 관측값**이다(`overflows:false`를 불변식으로 걸지 말 것 — 의도된 넘침 상태가 있다). 근거: `docs/HARNESS.md` 4절.
-  - **`DesignRail.tsx`의 슬롯 높이를 건드리면 스크립트 `BASELINE`과 이 파일의 dock/프리뷰 숫자를 같이 다시 잴 것**(#707). 선언 불일치는 `__tests__/measureChromeBaselineCoupling.test.ts`가 머지 전에 잡는다(#714). 근거: `docs/HARNESS.md` 5절.
+  - **`dockHeight`(세 모드·모든 디자인 도구에서 도크·프리뷰 높이 동일)와 `menu`(편집 메뉴 시트)는 게이트**고, **`dockContrast`는 관측값**이다(반투명 칩을 합성 못 해 상시 거짓 실패가 될 수 있다). 옛 `railSlot`·`drawer`·`modal` 축은 #826 S2에서 걷었다. 근거: `docs/HARNESS.md` 4절.
+  - **`EditorDock.tsx`의 `DOCK_BODY_PX`·`DOCK_MODEBAR_PX`를 건드리면 스크립트 `BASELINE`과 이 파일의 dock/프리뷰 숫자를 같이 다시 잴 것**(#707). 선언 불일치는 `__tests__/measureChromeBaselineCoupling.test.ts`가 머지 전에 잡는다(#714). 근거: `docs/HARNESS.md` 5절.
   - **`.github/workflows/chrome-harness.yml`이 push마다 같은 하네스를 돌리지만 required가 아니다.** ubuntu 러너와 macOS 로컬은 같은 px를 내니, 러너에서만 나는 실패를 "플랫폼 차이"로 접지 말 것 — 진짜 회귀이거나 stale 서버다. 러너는 `CHROME_PATH=/usr/bin/google-chrome` 필요. 근거: `docs/HARNESS.md` 6절.
 - **대조 기준은 뷰포트가 아니라 `#phone-frame` rect다**(#609). 프레임이 400×675면 뷰포트와 무관하게 같은 불변식을 대조한다. 근거: `docs/HARNESS.md` 7절.
 - **하네스 함정은 stale 서버다**(#601). 포트가 이미 물려 있으면 새 `next start`는 `EADDRINUSE`로 죽고 앞 서버가 그대로 200을 준다. 재는 대상이 진짜 지금 빌드인지 확인하고, 크롭 모달이 안 열리면 앱을 뒤지기 전에 **콘솔의 chunk 404**부터 볼 것. 근거: `docs/HARNESS.md` 8절.
 - **워크트리에서 dev는 그냥 `bun run dev`**(#708)지만 **포트는 나눠 쓸 것** — `bun run dev --port 3010` + 하네스에 `--url http://localhost:3010/`. 근거: `docs/HARNESS.md` 9절.
-- **프레임 봉쇄 축**(크롭 모달·필드 드로어·편집 메뉴·max 오버레이·결과 스테이지·hero가 프레임 안인지)은 dock/프리뷰 불변식이 원리적으로 못 보는 축이다(#609). `backdrop` 축은 부재 확인이고(#786) 배경을 되살리면 봉쇄 축도 같이 되살릴 것. 근거: `docs/HARNESS.md` 10절.
+- **프레임 봉쇄 축**(크롭 모달·도크·편집 메뉴 시트·max 오버레이·결과 스테이지·hero가 프레임 안인지)은 dock/프리뷰 불변식이 원리적으로 못 보는 축이다(#609). `backdrop` 축은 부재 확인이고(#786) 배경을 되살리면 봉쇄 축도 같이 되살릴 것. 근거: `docs/HARNESS.md` 10절.
 - **`landingShownOnDraft`·`posterless` 축은 draft를 심은 메인 페이지에서 잰다**(별도 저장분 없는 컨텍스트에선 조용히 통과한다). `MobileEditorShell` 랜딩 판정에 `croppedImageUrl`을 되살리지 말 것(#727). fit 스테이지의 `background: 'var(--workbench)'`·`flex-1`·`mode === 'hidden'` 분기는 각각 자기 축으로 운다(#674). 파괴 실험 기록: `docs/HARNESS.md` 11절.
 
 ### 🔬 검증 도구 (사람 눈·기기)
