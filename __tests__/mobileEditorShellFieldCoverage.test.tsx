@@ -107,17 +107,6 @@ describe('MobileEditorShell 필드 커버리지 (#266 PR-E)', () => {
     expect(await screen.findByRole('switch', { name: '티켓 노출' })).toBeDefined();
   });
 
-  test('툴바의 항목 목록 버튼은 도크를 정보 모드로 바꾼다 (#826 S2, 옛 드로어 열기 대체)', async () => {
-    render(<Harness />);
-    fireEvent.click(screen.getByText('seed'));
-    fireEvent.click(screen.getByRole('tab', { name: '디자인' }));
-    expect(screen.getByRole('tab', { name: '디자인' }).getAttribute('aria-selected')).toBe('true');
-
-    fireEvent.click(screen.getByRole('button', { name: '티켓 항목 목록' }));
-    expect(screen.getByRole('tab', { name: /^정보/ }).getAttribute('aria-selected')).toBe('true');
-    expect(screen.queryByRole('dialog') === null).toBe(true); // 모달이 아니다
-  });
-
   // #260 경로 1(이관) — "전체 표시" off는 필수 필드(제목)를 남기고 나머지만 끈다(제목 없는 티켓 방지).
   // 셸 스위치가 ALL_FIELDS_OFF_KEEP_REQUIRED를 넘기는지 실제 상호작용으로 검증(구 인라인 폼 '전체 해제' 테스트 이관, #283).
   test('"전체 표시" off → title은 유지, 나머지는 off (#260)', async () => {

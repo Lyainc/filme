@@ -21,6 +21,7 @@ export function mobileShellProps(
     photo,
     canExport: true,
     theme: 'light',
+    themePreference: overrides.theme ?? 'light',
     onThemeChange: () => {},
     onDone: () => {},
     disabledReason: '',

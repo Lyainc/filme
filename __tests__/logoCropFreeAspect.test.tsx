@@ -252,7 +252,7 @@ describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
   });
 
   // 크롭 파이프라인은 usePhototicket이 소유하고(#548) 셸은 소비만 한다. #607 전엔 데스크톱
-  // ImageUploader의 인라인 재크롭 버튼으로 밟던 경로인데, 셸이 한 벌이 되며 헤더 편집 메뉴로 옮겼다.
+  // ImageUploader의 인라인 재크롭 버튼으로 밟던 경로인데, 셸이 한 벌이 되며 헤더 메뉴로, #826 S2에서 도크 사진 모드의 '자르기'로 옮겼다.
   function ShellHarness() {
     const photo = usePhototicket();
     return <MobileEditorShell {...mobileShellProps(photo)} />;
@@ -263,8 +263,8 @@ describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
     render(<ShellHarness />);
 
     await user.click(screen.getByRole('button', { name: /포스터 업로드/ }));
-    // 셸엔 OCR 카드의 image/* input도 있어 첫 input을 잡으면 그쪽으로 간다 — 포스터 전용(jpeg 포함)만.
-    const posterInput = document.querySelector('input[type="file"][accept*="jpeg"]') as HTMLInputElement;
+    // 셸엔 OCR 카드의 image/* input도 있어 첫 input을 잡으면 그쪽으로 간다 — 포스터 전용 input만.
+    const posterInput = document.querySelector('input[type="file"][aria-label="포스터 이미지 파일"]') as HTMLInputElement;
     await user.upload(posterInput, pngFile('poster.jpg'));
     await screen.findByTestId('crop-frame');
     await user.click(screen.getByRole('checkbox')); // 원본 비율 보존 ON으로 1차 크롭
@@ -274,8 +274,8 @@ describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
     // 옛 구조에선 이 토글이 posterFit(렌더 설정)에 저장돼, 재크롭이 그걸 조용히 'cover'로
     // 되돌리는 회귀가 있었다(claude-review PR #429 P1). #525로 posterFit 자체가 사라져
     // 토글은 크롭 프레임만 정하므로, 되돌아갈 렌더 상태가 없다 — 표준 프리셋으로 여는 게 맞다.
-    await user.click(await screen.findByRole('button', { name: '편집 메뉴' }));
-    await user.click(await screen.findByRole('button', { name: '재크롭' }));
+    await user.click(screen.getByRole('tab', { name: '사진' }));
+    await user.click(await screen.findByRole('button', { name: '자르기' }));
     const checkbox = (await screen.findByRole('checkbox')) as HTMLInputElement;
     expect(checkbox.checked).toBe(false);
   });

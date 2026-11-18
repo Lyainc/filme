@@ -94,12 +94,12 @@ def seed_cell(sec, poster, long, theme='light'):
         js('const b=[...document.querySelectorAll("button")].find(e=>e.textContent.trim()==="스탬프"); b&&b.click()'); time.sleep(0.8)
     # ghost off via the edit menu (shell-local, default on)
     js('document.querySelector(\'[aria-label="편집 메뉴"]\').click()'); time.sleep(0.6)
-    st = js('const b=document.querySelector(\'[aria-label="빈 항목 미리보기"]\'); return b && (b.getAttribute("aria-checked")||b.getAttribute("aria-pressed"))')
+    st = js('const b=document.querySelector(\'[aria-label="빈 항목 표시"]\'); return b && (b.getAttribute("aria-checked")||b.getAttribute("aria-pressed"))')
     if st == 'true':
-        js('document.querySelector(\'[aria-label="빈 항목 미리보기"]\').click()'); time.sleep(0.4)
-    ghost = js('const b=document.querySelector(\'[aria-label="빈 항목 미리보기"]\'); return b && (b.getAttribute("aria-checked")||b.getAttribute("aria-pressed"))')
+        js('document.querySelector(\'[aria-label="빈 항목 표시"]\').click()'); time.sleep(0.4)
+    ghost = js('const b=document.querySelector(\'[aria-label="빈 항목 표시"]\'); return b && (b.getAttribute("aria-checked")||b.getAttribute("aria-pressed"))')
     js('document.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true}))'); time.sleep(0.4)
-    if js('return !!document.querySelector(\'[aria-label="빈 항목 미리보기"]\')'):
+    if js('return !!document.querySelector(\'[aria-label="빈 항목 표시"]\')'):
         js('document.querySelector(\'[aria-label="편집 메뉴"]\').click()'); time.sleep(0.4)
     ajs('() => document.fonts.ready.then(()=>true)'); time.sleep(0.8)
     has_poster = js('const w=' + WRAP + '; return !!w && [...w.querySelectorAll("img")].some(i=>/^(blob|data):/.test(i.getAttribute("src")||"") && !i.closest("[data-bg-pattern]"))')
@@ -149,7 +149,7 @@ def interactions(long):
         js('const e=(' + pct + '); e.focus();')
         set_input(pct, '150'); js('(' + pct + ').blur()'); time.sleep(0.8)
         rec['scale150'] = js(STAMP_PROBE)
-        js('document.querySelector(\'[aria-label="최대화"]\')?.click()'); time.sleep(1.0)
+        js('document.querySelector(\'[aria-label="전체 보기"]\')?.click()'); time.sleep(1.0)
         rec['maximized'] = js(STAMP_PROBE)
         js('document.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true}))'); time.sleep(0.8)
         js('document.querySelector(\'[aria-label="기본 크기로 돌아가기"]\')?.click()'); time.sleep(1.0)

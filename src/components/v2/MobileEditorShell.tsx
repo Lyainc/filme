@@ -1,32 +1,19 @@
 import dynamic from 'next/dynamic';
 import {
-  forwardRef,
   useCallback,
   useEffect,
-  useImperativeHandle,
   useRef,
   useState,
   type ChangeEvent,
   type DragEvent,
   type KeyboardEvent,
 } from 'react';
-import { AutoSaveIndicator } from './AutoSaveIndicator';
 import { EditorDock, type DockMode } from './dock/EditorDock';
+import { EditorMenu } from './EditorMenu';
 import { Landing } from './Landing';
 import { OcrUploadCard } from './OcrUploadCard';
 import { OcrUndoBanner } from './OcrUndoBanner';
-import { AdvancedSettingsModal } from './AdvancedSettingsModal';
-import {
-  FloatingToolbar,
-  TB_STORAGE_KEY,
-  TB_EDGE,
-  loadPrefs as loadTbPrefs,
-  type TbPrefs,
-  type TbOrient,
-  type TbPlace,
-} from './FloatingToolbar';
-import { getFrameRect, APP_BACKGROUND_ID } from './PhoneFrame';
-import { Wordmark } from './Wordmark';
+import { APP_BACKGROUND_ID } from './PhoneFrame';
 import type { ViewMode } from './viewMode';
 import TicketRenderer, { PREVIEW_MAX_HEIGHT } from '@/components/TicketRenderer';
 import { getLayout } from '@/utils/layouts';
@@ -40,6 +27,7 @@ import { INITIAL_STATE } from '@/hooks/usePhototicket';
 import type { LayoutId, MovieInfo, TicketComponents, TicketField } from '@/types';
 import { isStampTarget, STAMP_KEYS, type SheetTarget } from '@/constants/fields';
 import { ErrorToastHost } from '@/utils/errorToast';
+import type { ThemePreference } from '@/constants/theme';
 
 // 온티켓 인플레이스 에디터(#354) — RatingPicker·DateSheet(FieldEditorBody)를 끌어오므로
 // 시트와 같은 이유로 dynamic(ssr:false), 첫 필드 탭에 로드된다.
@@ -51,126 +39,38 @@ const InPlaceFieldEditor = dynamic(
 // 포스터 탭(#259) 크롭 모달 — 로고 크롭과 같은 컴포넌트다. 탭 전엔 안 쓰므로 dynamic.
 const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ssr: false });
 
-// 서브메뉴 행 리딩 아이콘(#374) — 시안 Siyan-C-v8 L296-322와 동일한 18px/stroke 1.7 계열.
-// 멀티 서브패스도 단일 d 문자열로 합쳐 MenuRow가 <path> 하나로 렌더한다.
-const MENU_ICONS = {
-  moon: 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  eye: 'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',
-  upload: 'M12 16V4M8 8l4-4 4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2',
-  crop: 'M6 2v14a2 2 0 0 0 2 2h14M18 22V8a2 2 0 0 0-2-2H2',
-  save: 'M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z M17 21v-8H7v8 M7 3v5h8',
-  trash:
-    'M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6',
-  gear: 'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
-};
-
-// 헤더 서브메뉴의 행 그룹(#569/#580) — 오버레이 패널(--overlay-fill)은 티켓 위에 뜨는 유리라
-// 그 위 직접 텍스트는 --fg만 AA를 넘는다(globals.css --overlay-* 주석의 실측표). muted 아이콘·
-// accent 라디오·danger 초기화 라벨까지 읽히게 텍스트 행은 불투명 표면에 얹는다. --surface-elevated가 아니라 --surface인 건 danger 잉크 때문:
-// #EF4444가 #1E2326에선 4.22:1(미달), #161A1C에선 4.66:1이다.
 // 포스터 파일 입력의 accept이자 드롭 필터(#607) — input과 드롭이 서로 다른 목록을 쓰면
 // 드롭만 되는(혹은 안 되는) 포맷이 조용히 갈린다.
 const POSTER_ACCEPT = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
 
-const MENU_GROUP_CLS = 'rounded-[12px] bg-s1 p-1'; // 행 반경(rounded-lg 8) + p-1(4)과 동심
+// 상단 줄 아이콘(#826 S2 C-TB, 마스터 lib.js ICONS) — 20px / stroke 1.75, 버튼 44px 안에 앉는다.
+const TB_ICONS = {
+  back: <path d="M15 5l-7 7 7 7" />,
+  undo: <path d="M9 14L4 9l5-5M4 9h10a6 6 0 010 12h-3" />,
+  redo: <path d="M15 14l5-5-5-5M20 9H10a6 6 0 000 12h3" />,
+  expand: <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />,
+  more: <path d="M5 12h.01M12 12h.01M19 12h.01" strokeWidth="3" />,
+};
 
-// releaseDateGranularity/releaseDateFormat/watchDateFormat은 포맷 설정이라 미입력 상태에서도
-// 항상 truthy 기본값을 갖는다(usePhototicket INITIAL_STATE) — 포함하면 "채워짐" 판정이 항상
-// true가 돼 쓸모없어진다. 나머지 필드는 빈 문자열/0/false가 기본값이라 Boolean()으로 충분하다.
-const MOVIE_INFO_FORMAT_KEYS = new Set(['releaseDateGranularity', 'releaseDateFormat', 'watchDateFormat']);
+const TB_BUTTON_CLS =
+  'flex h-touch w-touch shrink-0 items-center justify-center rounded-md text-ink-2 transition-colors hover:text-ink disabled:opacity-40';
 
-/** 워드마크 탭(#578) 손실 확인 판정의 세 축 중 하나 — movieInfo 필드가 하나라도 채워졌는가. */
-function hasMovieInfoContent(info: MovieInfo): boolean {
-  return Object.entries(info).some(([key, value]) => !MOVIE_INFO_FORMAT_KEYS.has(key) && Boolean(value));
-}
-
-// 헤더 서브메뉴 공용 행(#374, 시안 Siyan-C-v8 설정 시트의 행 문법 이식) — 리딩 아이콘 +
-// 14px 라벨 + (토글 행이면) 트레일링 스위치. checked를 주면 role="switch" 토글 행,
-// 없으면 액션 행. 스위치 비주얼은 구 TogglePill 것을 그대로 승계.
-function MenuRow({
-  iconPath,
-  label,
-  onClick,
-  checked,
-  disabled = false,
-  ariaLabel,
-  title,
-  danger = false,
-  armed = false,
-}: {
-  iconPath: string;
-  label: string;
-  onClick: () => void;
-  checked?: boolean;
-  disabled?: boolean;
-  ariaLabel?: string;
-  title?: string;
-  danger?: boolean;
-  armed?: boolean;
-}) {
+function TbIcon({ name }: { name: keyof typeof TB_ICONS }) {
   return (
-    <button
-      type="button"
-      role={checked !== undefined ? 'switch' : undefined}
-      aria-checked={checked}
-      aria-label={ariaLabel}
-      title={title ?? ariaLabel ?? label}
-      disabled={disabled}
-      onClick={onClick}
-      className={cn(pressableVariants(), `flex h-touch w-full items-center justify-between gap-2 rounded-lg px-2.5 text-left transition-colors ${
-        disabled ? 'opacity-40' : 'hover:bg-white/5'
-      }`)}
-      // arm 표시가 채움 틴트(rgba(229,103,95,.16))였을 땐 danger 잉크 대비가 3.79:1로 떨어졌다
-      // (#569 실측 — 붉은 틴트가 배경을 밝혀 같은 붉은 글자와 붙는다). 채움 대신 1px 링으로 바꾸면
-      // 배경이 그대로라 라벨은 4.66:1을 유지하고, 링 자체는 비텍스트 3:1 기준을 넘는다.
-      style={armed ? { boxShadow: 'inset 0 0 0 1px var(--pr-warn)' } : undefined}
-    >
-      <span
-        className={`flex min-w-0 items-center gap-2.5 text-body ${danger ? 'text-warn' : 'text-ink'}`}
-        style={{ fontWeight: armed ? 700 : 500 }}
-      >
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.7"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-          className={danger ? 'shrink-0' : 'shrink-0 text-ink-2'}
-        >
-          <path d={iconPath} />
-        </svg>
-        <span className="truncate">{label}</span>
-      </span>
-      {checked !== undefined && (
-        <span
-          aria-hidden="true"
-          className="relative inline-block h-5 w-9 shrink-0 rounded-full transition-colors"
-          style={{ background: checked ? 'var(--pr-accent)' : 'var(--pr-hair)' }}
-        >
-          <span
-            className="absolute top-0.5 h-4 w-4 rounded-full transition-transform"
-            style={{
-              left: 2,
-              background: '#fff',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
-              transform: checked ? 'translateX(16px)' : 'translateX(0)',
-            }}
-          />
-        </span>
-      )}
-    </button>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {TB_ICONS[name]}
+    </svg>
   );
 }
 
 interface MobileEditorShellProps {
   photo: ReturnType<typeof usePhototicket>;
   canExport: boolean;
+  /** 실제로 칠하는 테마 — 선호가 시스템이면 OS 값으로 풀린 결과다. */
   theme: 'light' | 'dark';
-  onThemeChange: (theme: 'light' | 'dark') => void;
+  /** 메뉴 테마 행이 보여 주는 선호값(#826 S2 D09). */
+  themePreference: ThemePreference;
+  onThemeChange: (preference: ThemePreference) => void;
   /** 완료(결과 열기) — useResultView.openView */
   onDone: () => void;
   /** 완료 비활성 시 안내 문구(=railMessage). 탭하면 토스트로 노출. */
@@ -183,22 +83,11 @@ interface MobileEditorShellProps {
   fieldVisibility: Record<TicketField, boolean>;
 }
 
-/** ResultStage(#669) 같은 형제 화면이 이 셸의 워드마크 초기화를 그대로 재사용하는 진입점.
- * MobileEditorShell은 결과 화면이 열려도 언마운트되지 않고 CSS로만 숨는다(pages/index.tsx,
- * #297 로컬 state 보존) — 그래서 이력 판정(croppedImageUrl/canUndo/isDirty/movieInfo)과
- * performClear를 여기 그대로 둔 채로 ref 하나로 밖에 노출하면, ResultStage 쪽에 같은 로직을
- * 복제할 필요가 없다(로직이 두 곳으로 갈라져 드리프트하는 걸 막는다). */
-export interface MobileEditorShellHandle {
-  /** 이력 판정 + confirm만 한다(clear는 안 함) — 이력 있는데 취소하면 false, 그 외엔 true. */
-  confirmWordmarkReset: () => boolean;
-  /** confirmWordmarkReset이 true를 반환한 뒤에만 부를 것 — 실제 초기화(clearDraft 등) 실행. */
-  commitWordmarkReset: () => void;
-}
-
-export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEditorShellProps>(function MobileEditorShell({
+export function MobileEditorShell({
   photo,
   canExport,
   theme,
+  themePreference,
   onThemeChange,
   onDone,
   disabledReason,
@@ -206,75 +95,32 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   onFieldEditingChange,
   previewComponents,
   fieldVisibility,
-}, ref) {
+}: MobileEditorShellProps) {
   const { croppedImageUrl } = photo.state;
   // OCR 낙관적 주입 + 되돌리기 로직은 useOcrUndo가 소유(#141-class drift 방지).
   // OCR 카드는 셸 프리뷰 직하에 두고(#261) 이 훅도 셸이 쥔다.
   const ocr = useOcrUndo(photo);
   // 전역 undo/redo(#356) — usePhototicket 위 히스토리 레이어. useOcrUndo와는 독립(이슈 결정,
-  // #141 회귀 테스트 보호). 진입점은 플로팅 툴바.
+  // #141 회귀 테스트 보호). 진입점은 상단 줄의 실행 취소 · 다시 실행(#826 S2).
   const history = useEditHistory(photo);
   const [activeField, setActiveField] = useState<SheetTarget | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('default');
-  // 빈 항목 미리보기(ghost, #216) — 셸 로컬, 미영속(기본 on).
-  const [ghostMode, setGhostMode] = useState(true);
+  // 빈 항목 표시(ghost, #216) — 셸 로컬, 미영속. 메뉴 스위치가 사진 · 디자인 모드의 값을 정한다(D03 A, 기본 꺼짐).
+  // 정보 모드는 자동으로 켜지고 필드 입력 중은 강제로 켠다(아래 ghost 합성).
+  const [ghostMode, setGhostMode] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  // 헤더 서브메뉴(#315) — 다크모드·전체표시·빈 항목 토글 + 포스터 교체/재크롭 액션을 호스팅.
-  // 배치설정(#387에서 플로팅 툴바 gear로부터 이전)도 이 메뉴가 호스팅한다.
+  // 편집 메뉴 시트(#826 S2 D09) — 열려 있는 동안만 EditorMenu가 마운트된다(초기화 arm도 그 안에 산다).
   const [menuOpen, setMenuOpen] = useState(false);
-  // 플로팅 툴바 배치 상태(#387) — 이전엔 FloatingToolbar 로컬 state였으나, 배치설정 UI를
-  // 이 헤더 메뉴로 옮기며 부모가 소유하는 controlled 값으로 승격(localStorage 영속도 여기로).
-  const [tbPrefs, setTbPrefs] = useState<TbPrefs>(loadTbPrefs);
-  const toolbarRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const t = setTimeout(() => {
-      try {
-        // hidden은 세션 한정(#681) — 영속 대상에서 뺀다. 매 방문 숨김으로 시작하는 게
-        // 되돌리는 수단이 좁은 것보다 더 큰 문제였다. loadPrefs가 DEFAULT_PREFS와 병합해
-        // 항상 false로 시작한다.
-        const { hidden: _hidden, ...persisted } = tbPrefs;
-        window.localStorage.setItem(TB_STORAGE_KEY, JSON.stringify(persisted));
-      } catch {
-        // 영속 실패(쿼터·프라이빗 모드)는 무시 — best-effort.
-      }
-    }, 300);
-    return () => clearTimeout(t);
-  }, [tbPrefs]);
-  // 최초 숨김 안내 토스트(#681) — 복귀 수단(44px 원형 버튼)을 세션당 한 번은 알려준다. hidden을
-  // 세게 프로그램적으로 true로 만드는 경로가 FloatingToolbar의 '툴바 숨기기' 버튼 하나뿐이라
-  // (grep 확인), state 전환을 그대로 신호로 써도 다른 경로와 안 겹친다.
-  const hideToastShownRef = useRef(false);
-  useEffect(() => {
-    if (tbPrefs.hidden && !hideToastShownRef.current) {
-      hideToastShownRef.current = true;
-      flashToast('그 자리를 다시 누르면 툴바가 돌아와요');
-    }
-  }, [tbPrefs.hidden]);
-  const applyToolbarMode = (o: TbOrient, p: TbPlace) => {
-    // 모드 전환은 프리셋 기본 위치로 리셋(x/y null) — 방향이 바뀌면 이전 좌표는 클램프 밖일 수 있다.
-    setTbPrefs((prev) => ({ ...prev, orient: o, place: p, x: null, y: null }));
-  };
-  const snapToolbarTo = (side: 'left' | 'right') => {
-    const rect = toolbarRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    // 스냅 좌표계도 프레임이다(#607) — 뷰포트로 계산하면 데스크톱에서 x=1388이 나와 400px 프레임
-    // 밖으로 나간다. 드래그 없는 대체 경로(WCAG 2.2 SC 2.5.7)라 그게 필요한 사용자부터 깨진다.
-    const frame = getFrameRect();
-    const x = side === 'left' ? TB_EDGE : frame.width - rect.width - TB_EDGE;
-    setTbPrefs((prev) => ({ ...prev, x, y: rect.top - frame.top }));
-    // 모달(#574)이 풀페이지라 스냅하는 순간 툴바가 안 보인다 — 이동했다는 사실만 토스트로 알린다.
-    flashToast(side === 'left' ? '왼쪽 가장자리로 옮겼어요' : '오른쪽 가장자리로 옮겼어요');
-  };
-  // 초기화 2탭 arm(#374, 시안 clearArm) — window.confirm 대체. 1탭에 arm(라벨이 확인 문구로
-  // 바뀌고 3.2초 뒤 자동 해제), arm 상태에서 한 번 더 탭해야 실행. 메뉴가 닫히면 함께 해제.
-  const [clearArmed, setClearArmed] = useState(false);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
+  // ⋯ 버튼 — 메뉴가 닫힐 때 포커스가 돌아간다.
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   // 랜딩을 사용자가 **떠났는가** — 랜딩 표시 판정의 단일 소스다(#727 c2, #675 D7 뒤집기).
   // 예전엔 draftRestored·croppedImageUrl·crop.cropOpen 같은 파생값을 섞었는데, 그러면 "사용자가
   // 방금 크롭했다"와 "IndexedDB 복원이 포스터를 늦게 가져왔다"가 구분되지 않아 포스터 있던 draft
   // 재방문에서 랜딩이 도로 숨었다. 이탈을 state로 명시하면 그 구분이 공짜로 생긴다.
   // 세우는 다섯 경로: OCR 적용 · 포스터 크롭 확정 · 직접 입력 · 무드 갤러리 탭 · 이어서 만들기.
-  // 초기화(handleClearTap)가 false로 되돌려 랜딩이 복귀한다.
+  // 초기화(performClear)와 편집 상단 ‹(handleBack, #826 S2)가 false로 되돌려 랜딩이 복귀한다.
   const [landingDismissed, setLandingDismissed] = useState(false);
   // ocrApplied(#652)는 #727에서 삭제됐다 — 그 신호가 하던 일(OCR 적용 후 랜딩 본문의 주 CTA·이탈
   // 경로를 CSS로 숨겨 OCR 재진입을 한 곳으로 모으기, #388 > #631 D2 a)은 이제 Landing
@@ -286,31 +132,6 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   // photo.awaitingPosterRestore(#683)는 포스터 있던 draft 재방문에서 croppedImageUrl이 IndexedDB
   // 왕복을 기다리는 창을 메운다 — 그 창에도 크롬이 서 있어야 랜딩 뒤가 빈 셸이 아니다.
   const canvasReady = !!croppedImageUrl || landingDismissed || photo.awaitingPosterRestore;
-  const clearArmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  // 습관적 더블탭이 arm과 실행을 한 번에 뚫지 않게 arm 직후 재탭은 무시(claude-review PR #375 P1).
-  const clearArmedAt = useRef(0);
-  // 고급 설정 모달(#574) — 툴바 설정이 메뉴 안 접이식 섹션(#447)에서 이 모달로 이사했다.
-  // 메뉴를 닫으면서 열리므로 둘이 중첩되지 않는다(Escape 한 번이 둘 다 닫는 문제가 안 생긴다).
-  const [advOpen, setAdvOpen] = useState(false);
-  // 모달을 연 '고급 설정' 행은 메뉴와 함께 사라지므로 닫힘 포커스는 살아있는 햄버거로 되돌린다.
-  const hamburgerRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    if (!menuOpen) {
-      clearTimeout(clearArmTimer.current);
-      setClearArmed(false);
-    }
-  }, [menuOpen]);
-  useEffect(() => () => clearTimeout(clearArmTimer.current), []);
-  // 헤더 메뉴는 Escape로도 닫힌다 — 삭제된 플로팅 툴바 배치 서브메뉴가 갖고 있던 키보드 닫기
-  // 경로(PR #361 리뷰 P2)를 이 메뉴가 배치설정을 흡수하며 함께 승계한다(claude-review PR #405 P1).
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onKey = (e: globalThis.KeyboardEvent) => {
-      if (e.key === 'Escape') setMenuOpen(false);
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [menuOpen]);
   // 편집 도크 모드(#826 S2 E-01) — 사진 · 정보 · 디자인. 처음 진입은 스크린샷으로 채웠으면 디자인(OCR 적용이
   // 랜딩에서 온 새 문서일 때 onOcrApply가 올린다), 아니면 정보다. 새로 시작하는 경로(포스터 업로드 · 직접 입력 ·
   // 무드 탭 · 초기화)는 startFreshDoc/performClear가 정보로 되돌린다. 완료 실패(handleDone)와 온-티켓 항목 목록
@@ -320,10 +141,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   // 버튼이 같은 파일 선택을 열고, 인식 중 표시는 카드가 onBusyChange로 알려 준다.
   const ocrOpenRef = useRef<(() => void) | null>(null);
   const [ocrBusy, setOcrBusy] = useState(false);
-  // 헤더 ref(#419) — 플로팅 툴바 세로·고정 기본 위치가 이 아래로 오도록 FloatingToolbar가 실측한다.
-  const [headerEl, setHeaderEl] = useState<HTMLElement | null>(null);
-  // pill 클릭 시 서브메뉴가 열린 채로 남지 않게 항상 같이 닫는다(claude-review PR #332 P2 —
-  // 메뉴 오버레이가 마우스 클릭은 막아도 키보드 포커스는 막지 않아 Tab으로 pill까지 도달 가능).
+  // 보기 전환(전체 보기 진입 · 복귀)이 메뉴를 열린 채로 남기지 않게 항상 같이 닫는다(claude-review PR #332 P2).
   function handleViewModeChange(mode: ViewMode) {
     setViewMode(mode);
     setMenuOpen(false);
@@ -377,7 +195,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
     onDone();
   }
 
-  // 메뉴 초기화 행·워드마크 탭(#578) 두 진입점이 공유하는 실제 초기화 절차.
+  // 메뉴 초기화 행(2탭 arm, #374)이 부르는 실제 초기화 절차. 워드마크 탭 초기화(#578 · #669)는 #826 S2에서 없앴다.
   function performClear() {
     photo.clearDraft();
     rehideOnLeaveRef.current.clear(); // 누락 바로가기의 재숨김(#776)이 새 문서로 넘어가지 않게.
@@ -392,46 +210,22 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
     flashToast('초기화했어요');
   }
 
-  function handleClearTap() {
-    if (!clearArmed) {
-      setClearArmed(true);
-      clearArmedAt.current = Date.now();
-      clearTimeout(clearArmTimer.current);
-      clearArmTimer.current = setTimeout(() => setClearArmed(false), 3200);
-      return;
-    }
-    if (Date.now() - clearArmedAt.current < 350) return;
-    clearTimeout(clearArmTimer.current);
-    setMenuOpen(false); // 닫힘 effect가 clearArmed도 함께 해제
-    performClear();
+  // 임시저장(#310) — 실패 시(#645 C1) 성공 토스트를 안 띄운다. saveDraft 내부가 이미 showError로 알린다.
+  function handleSaveDraft() {
+    if (photo.saveDraft()) flashToast('임시저장했어요');
   }
 
-  // 워드마크 탭(#578) = 초기화의 두 번째 진입점, 같은 동작·다른 문구. 라벨을 확인 문구로
-  // 바꾸는 2탭 arm(handleClearTap)은 브랜드 라벨엔 못 쓰므로 native confirm으로 대체한다.
-  // 작업 이력 판정은 네 축의 합집합 — canUndo만 보면 포스터만 올린 직후(history.clear()로
-  // 리셋된 상태)나 방금 만든 편집이 아직 350ms 디바운스 창 안(history.isDirty)일 때 경고 없이
-  // 날아간다.
-  function confirmWordmarkReset(): boolean {
-    const hasWork = !!croppedImageUrl || history.canUndo || history.isDirty || hasMovieInfoContent(photo.state.movieInfo);
-    return !hasWork || window.confirm('지금까지 작업한 내용이 사라져요. 처음 화면으로 돌아갈까요?');
+  // 편집 상단 ‹(#826 S2 constraint-15) — 문서를 지우지 않고 랜딩으로 간다. 임시저장을 한 번 하고(자동저장이 꺼져 있어도 새로고침에
+  // 남는다) 랜딩을 다시 띄운다. 저장이 실패하면 편집 화면에 남는다 — 실패 알림은 saveDraft가 이미 띄웠고, 랜딩으로 가면 그 사이
+  // 문서가 유실될 수 있는 길이 열린다. 랜딩의 '이어서 만들기'(onRestore)는 저장분이 아니라 메모리 문서를 그대로 연다.
+  // has-draft는 그 행의 첫 페인트 게이트라(globals.css) 이 세션에 저장분이 처음 생긴 경우에도 행이 보이게 같이 세운다.
+  function handleBack() {
+    closeMenu();
+    if (!photo.saveDraft()) return;
+    document.documentElement.classList.add('has-draft');
+    closeEditor();
+    setLandingDismissed(false);
   }
-  function commitWordmarkReset() {
-    setMenuOpen(false); // handleClearTap과 동일하게 닫는다 — 안 닫으면 초기화된 화면 위에 메뉴가 뜬 채 남는다.
-    performClear();
-  }
-  function handleWordmarkTap() {
-    if (!confirmWordmarkReset()) return;
-    commitWordmarkReset();
-  }
-
-  // ResultStage(#669)는 confirm/commit을 나눠 쓴다 — 결과화면을 닫는 useResultView.closeView는
-  // history.back()의 popstate(비동기)를 기다린다. confirm 직후 바로 clear(commitWordmarkReset)해버리면
-  // 그 사이 창에서 초기화된 티켓이 결과화면에 잠깐 보인다. #669 당시엔 movieInfo/components가
-  // index.tsx의 280ms useDebounce를 거쳐 "포스터는 사라졌는데 옛 영화 정보는 남은" 화면이었고
-  // (#669 code-review 발견), #775부터 결과화면이 라이브 값을 읽어 섞이진 않지만 빈 티켓 flash는
-  // 그대로라 분리를 유지한다 — index.tsx가 closeView() 이후 resultOpen이 실제로 false가 된 다음에야
-  // commitWordmarkReset을 부르게 한다.
-  useImperativeHandle(ref, () => ({ confirmWordmarkReset, commitWordmarkReset }));
 
   // 온-티켓 필드 탭(#259). 숨김 필드 탭 시 자동 표시 on(시안 setActive) 후 시트를 연다 — 스탬프는
   // chainVisible/formatVisible, 나머지는 fieldVisibility. 이미 켜진 필드면 no-op이라 안전하다.
@@ -470,7 +264,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   // 온-티켓 탭은 #259가 넣었다가 미스터치로 파일선택창이 떠서 제거됐는데(#365), 그때 문제가 된 건
   // "포스터가 **있는** 상태에서 빈 곳 오탭"이다. #723이 `!croppedImageUrl` 게이트를 달아 되살렸다 —
   // 포스터 없이 진입한 세션(#631 '직접 입력' · OCR)에선 그 자리가 단색 바탕이라 오탭할 '빈 곳'이
-  // 아니라 그 자체가 비어 있는 포스터 슬롯이고, 재진입 동선이 헤더 메뉴 한 곳뿐이었다(#674).
+  // 아니라 그 자체가 비어 있는 포스터 슬롯이고, 재진입 동선이 한 곳뿐이었다(#674 — 지금은 도크 사진 모드, #826 S2).
   const handlePosterTap = useCallback(() => {
     posterInputRef.current?.click();
   }, []);
@@ -484,7 +278,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
   // 프레임 안이라도 데스크톱에선 Finder에서 끌어다 놓는 게 여전히 자연스러운 진입이라 되살린다.
   // 되살린 건 **첫 업로드 CTA 하나**다. ImageUploader는 업로드 후 썸네일에도 드롭을 받았지만,
   // 그 자리를 잇는 건 온-티켓 프리뷰이고 거기에 파일 드롭을 얹는 건 #365가 미스터치 때문에
-  // 걷어낸 온-티켓 포스터 제스처를 되돌리는 셈이다. 교체는 헤더 메뉴 '포스터 교체'가 담당한다.
+  // 걷어낸 온-티켓 포스터 제스처를 되돌리는 셈이다. 교체는 도크 사진 모드(#826 S2)가 담당한다.
   // 크롭 진행 중 드롭은 막는다 — getCroppedImg가 읽고 있는 원본 blob을 openFile의 교체가
   // revoke해버린다(버튼은 모달에 가려지지만 드롭은 따로 막아야 한다).
   const [posterDragOver, setPosterDragOver] = useState(false);
@@ -551,10 +345,6 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
     if (isFirstUpload) history.clear();
   }
 
-  const doneEnabledStyle = canExport
-    ? { background: 'linear-gradient(135deg, var(--pr-accent-hover), var(--pr-accent))', color: 'var(--pr-accent-ink)' }
-    : undefined;
-
   const layout = getLayout(previewComponents.layout);
   // max 재정의(#328): 헤더·서브메뉴·pill·OCR까지 다 숨기고 티켓만 화면에 fixed 오버레이로 띄운다 —
   // 나가는 길은 티켓 자신을 탭(기존 default 복귀 핸들러 재사용). ViewMode가 'default' | 'max' 2값뿐이라
@@ -618,198 +408,96 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
           className="chrome-ambient pointer-events-none absolute inset-0"
         />
       )}
-      {/* 상단 네브(v8 §1, #363): 좌측 브랜드 워드마크 + 우측 [편집 메뉴 → 완료(최외곽)].
-          #315가 제거했던 워드마크는 #363에서 복귀 확정(Wordmark 컴포넌트 재사용,
-          셸은 상호배타 마운트라 h1 중복 없음). 상시 chrome-dark 스코프(#363)가 잉크를 이미 라이트로
-          고정해 v8이 말한 --chrome-ink 신규 토큰은 추가하지 않는다. 다크모드·전체표시·빈 항목·잉크
-          토글과 포스터 교체·재크롭 액션은 서브메뉴로 통합. max(#328)는 이 헤더(서브메뉴 포함)까지
-          숨기는 풀스크린 모드라 통째로 언마운트한다. 배경은 앰비언트 위라 투명(v8 §1). */}
+      {/* 상단 줄(#826 S2 C-TB, E-01) — ‹ · 빈 공간 · 실행 취소 · 다시 실행 · 전체 보기 · ⋯ · 완료. 높이 52, 버튼 44.
+          워드마크는 이 줄에 없다(편집 화면에선 브랜드 표시를 안 쓴다 — 워드마크 탭 초기화 제거, Seed constraint-7).
+          전체 보기(max, #328)는 이 줄까지 숨기는 풀스크린 모드라 통째로 언마운트한다. 완료는 편집 캔버스가 서야 렌더(canvasReady,
+          #631 — 포스터 유무가 아니다), 차단 상태는 테두리만 있는 aria-disabled이고 탭하면 사유 토스트 + 정보 모드(handleDone). */}
       {!isMax && (
-      <header ref={setHeaderEl} className="relative flex h-14 shrink-0 items-center justify-between border-b border-hair px-3">
-        <div className="flex items-center gap-2 pl-1.5">
-          <Wordmark as="h1" onClick={handleWordmarkTap} />
-        </div>
-
-        {/* '티켓 항목 목록' 헤더 버튼(#355/#360 임시 진입점)은 플로팅 툴바의 항목목록 버튼(#356)이
-            대체했고, #826 S2에서 항목 목록은 도크 정보 모드로 갔다(handleField 배선은 그대로). */}
-        <div className="flex items-center gap-0.5">
-        <AutoSaveIndicator
-          enabled={photo.autoSaveEnabled}
-          lastSavedAt={photo.lastSavedAt}
-          onToggle={photo.toggleAutoSave}
-        />
-        <button
-          ref={hamburgerRef}
-          type="button"
-          onClick={() => setMenuOpen((v) => !v)}
-          aria-haspopup="menu"
-          aria-expanded={menuOpen}
-          aria-controls="editor-menu-panel"
-          aria-label="편집 메뉴"
-          className={cn(pressableVariants(), 'flex h-touch w-touch items-center justify-center rounded-full text-ink-2 transition-colors hover:text-ink')}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <line x1="4" y1="7" x2="20" y2="7" />
-            <line x1="4" y1="12" x2="20" y2="12" />
-            <line x1="4" y1="17" x2="20" y2="17" />
-          </svg>
-        </button>
-        {/* 완료(다음)는 편집 캔버스가 서야 렌더(canvasReady, #631 — 포스터 유무가 아니다) — 랜딩은
-            진입 액션에만 집중(#363). 진입 후 canExport 전까지는 기존대로 aria-disabled + 사유 토스트. */}
-        {canvasReady && (
-        <button
-          type="button"
-          onClick={handleDone}
-          aria-disabled={!canExport}
-          className={cn(pressableVariants(), `inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-body font-semibold transition-colors ${
-            canExport ? '' : 'border border-hair bg-s2 text-ink-2'
-          }`)}
-          style={doneEnabledStyle}
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M20 6 9 17l-5-5" />
-          </svg>
-          완료
-        </button>
-        )}
-        </div>
-
-        {menuOpen && (
-          <>
-            {/* 메뉴 밖 탭으로 닫기 — top-14로 헤더 자신(h-14)은 덮지 않는다. inset-0으로 전체를
-                덮으면 z-index 없는 헤더 버튼(햄버거·완료)이 이 오버레이 밑에 깔려 탭이 메뉴만
-                닫고 버튼 클릭은 씹힌다(claude-review PR #331 P2 지적). */}
-            <div className="fixed inset-x-0 bottom-0 top-14 z-40" onClick={() => setMenuOpen(false)} aria-hidden="true" />
-            {/* v8 dark-glass(#364) — 일반 카드 대신 오버레이 계층 토큰(#580) + blur. 햄버거가
-                우측으로 가며(#363) 앵커도 우측 정렬.
-                #569 — 배경이 --glass-fill(8%)일 땐 밝은 포스터 위에서 항목이 아예 안 읽혔다
-                (흰 포스터 최악 케이스 1.02:1). 유리를 --overlay-fill(80%)로 올리고, 그래도 AA가
-                안 서는 잉크(muted·accent·danger)를 위해 행 그룹을 불투명 표면에 얹는다 —
-                옛 필드 드로어가 세운 규칙 그대로다(패널은 유리, 텍스트는 불투명 위에). */}
-            {/* 내부 행 문법(#374) — 전 항목을 MenuRow(리딩 아이콘 + 14px 라벨 + 트레일링 스위치)로
-                통일하고 토글/포스터 액션/문서 액션 세 그룹을 구분(시안 L296-322 이식). 구분은
-                헤어라인이었으나 #569에서 그룹이 불투명 카드가 되며 카드 사이 여백이 대신한다. */}
-            <div
-              id="editor-menu-panel"
-              role="menu"
-              aria-label="편집 메뉴"
-              className="absolute right-3 top-[calc(100%+8px)] z-50 w-64 rounded-card border p-2 shadow-card"
-              style={{
-                background: 'var(--overlay-fill)',
-                borderColor: 'var(--overlay-border)',
-                backdropFilter: 'blur(13px)',
-                WebkitBackdropFilter: 'blur(13px)',
-              }}
-            >
-              <div className={MENU_GROUP_CLS}>
-                <MenuRow
-                  iconPath={MENU_ICONS.moon}
-                  label="다크모드"
-                  checked={theme === 'dark'}
-                  onClick={() => onThemeChange(theme === 'dark' ? 'light' : 'dark')}
-                />
-                {/* 빈 항목은 프리뷰(포스터)가 있어야 의미가 있으므로 기존과 동일하게 게이팅. 잉크는
-                    포스터 유무와 무관하게 항상 노출. '전체 표시'는 필드 목록이 있는 도크 정보 모드
-                    끝으로 이전(#424 → #826 S2) — 필드 목록과 한 자리에 두는 게 더 직관적이다. */}
-                {canvasReady && (
-                  <MenuRow
-                    iconPath={MENU_ICONS.eye}
-                    label="빈 항목"
-                    ariaLabel="빈 항목 미리보기"
-                    checked={ghostMode}
-                    onClick={() => setGhostMode((v) => !v)}
-                  />
-                )}
-                {/* 고급 설정(#574) — 접이식 '툴바 설정' 섹션을 대체하는 풀페이지 모달 진입점.
-                    아래 FloatingToolbar와 **같은 조건**(canvasReady && !isMax)이어야 한다: 툴바가
-                    안 떠 있으면 모달 안 스냅이 조용히 no-op이 된다(claude-review PR #405 P1).
-                    #631이 툴바를 canvasReady로 옮겼으므로 이 진입점도 같이 옮긴다. 설정 성격이라
-                    다크모드·빈 항목과 같은 카드에 둔다 — 메뉴는 세 카드로 유지. */}
-                {canvasReady && !isMax && (
-                  <MenuRow
-                    iconPath={MENU_ICONS.gear}
-                    label="고급 설정"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setAdvOpen(true);
-                    }}
-                  />
-                )}
-              </div>
-              {/* 포스터 진입/교체(#674) — 게이트가 croppedImageUrl에서 canvasReady로 넓어졌다.
-                  포스터 없이 진입한 세션(#631 onSkip · OCR)에서 랜딩 inline이 숨으면서(위 Landing
-                  mode) 그 자리가 갖고 있던 D2(a) 재진입 동선이 이 행으로 옮겨온다 — 없으면 포스터를
-                  나중에 추가할 길이 초기화밖에 안 남는다. 재크롭은 포스터가 있어야 의미가 있으므로
-                  croppedImageUrl에 그대로 묶어 둔다. */}
-              {canvasReady && (
-                <div className={`mt-2 ${MENU_GROUP_CLS}`}>
-                  <MenuRow
-                    iconPath={MENU_ICONS.upload}
-                    // awaitingPosterRestore(#683 fresh-context 리뷰) — 이 창 동안 croppedImageUrl은
-                    // 아직 null이지만 복원 중인 포스터가 있다. '포스터 추가'로 두면 없는 걸 새로
-                    // 올리는 것처럼 읽혀 도착 순간 라벨이 설명 없이 바뀐다 — 교체로 미리 맞춘다.
-                    label={croppedImageUrl || photo.awaitingPosterRestore ? '포스터 교체' : '포스터 추가'}
-                    onClick={() => {
-                      setMenuOpen(false);
-                      handlePosterTap();
-                    }}
-                  />
-                  {croppedImageUrl && (
-                    <MenuRow
-                      iconPath={MENU_ICONS.crop}
-                      label="재크롭"
-                      disabled={!crop.originalSrc}
-                      onClick={() => {
-                        setMenuOpen(false);
-                        crop.openRecrop();
-                      }}
-                    />
-                  )}
-                  {/* 비활성 사유를 화면에 둔다(#706) — 이 문구는 원래 위 행의 title에만 있었다.
-                      #607부터 데스크톱도 PhoneFrame 400px 규격으로 띄우고 주 입력이 터치라, hover가
-                      안 오는 사용자에겐 "왜 안 눌리는지"가 아예 존재하지 않았다. #677 톤 정비가 이
-                      문구를 축 3(무슨 일 + 다음 행동)으로 고쳤지만 그건 문구 축이고 노출 채널은
-                      그대로였다 — AutoSaveIndicator가 #570에서 한 자리에서만 세운 규칙("title 툴팁에
-                      기대지 않는다")을 여기에도 적용한다.
-                      title은 같이 지운다: 같은 문구가 두 자리에 복제되면 한쪽만 고쳐져 갈린다
-                      (COPY_TONE_GUIDE 축 3 "같은 문구가 두 호출부에 복제돼 있으면 그 복제부터 없앨 것").
-                      disabled 버튼은 포커스를 못 받아 aria-describedby가 닿지 않으므로, 형제 문단으로
-                      두는 것이 스크린리더 읽기 순서상으로도 맞다. */}
-                  {croppedImageUrl && !crop.originalSrc && (
-                    <p className="px-2.5 pb-1 pt-0.5 text-caption text-ink-2">
-                      포스터 원본이 없어요. 포스터를 다시 업로드해 주세요.
-                    </p>
-                  )}
-                </div>
+        <header className="relative flex h-[52px] shrink-0 items-center px-1">
+          <button type="button" onClick={handleBack} aria-label="랜딩으로 돌아가기" className={cn(pressableVariants(), TB_BUTTON_CLS)}>
+            <TbIcon name="back" />
+          </button>
+          <span className="min-w-0 flex-1" />
+          <button
+            type="button"
+            onClick={() => {
+              history.undo();
+              flashToast('되돌렸어요');
+            }}
+            disabled={!history.canUndo}
+            aria-label="실행 취소"
+            className={cn(pressableVariants(), TB_BUTTON_CLS)}
+          >
+            <TbIcon name="undo" />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              history.redo();
+              flashToast('다시 실행했어요');
+            }}
+            disabled={!history.canRedo}
+            aria-label="다시 실행"
+            className={cn(pressableVariants(), TB_BUTTON_CLS)}
+          >
+            <TbIcon name="redo" />
+          </button>
+          <button
+            type="button"
+            onClick={() => handleViewModeChange('max')}
+            disabled={!canvasReady}
+            aria-label="전체 보기"
+            className={cn(pressableVariants(), TB_BUTTON_CLS)}
+          >
+            <TbIcon name="expand" />
+          </button>
+          <button
+            ref={menuButtonRef}
+            type="button"
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-haspopup="dialog"
+            aria-expanded={menuOpen}
+            aria-controls="editor-menu-panel"
+            aria-label="편집 메뉴"
+            className={cn(pressableVariants(), TB_BUTTON_CLS)}
+          >
+            <TbIcon name="more" />
+          </button>
+          {canvasReady && (
+            <button
+              type="button"
+              onClick={handleDone}
+              aria-disabled={!canExport}
+              className={cn(
+                pressableVariants(),
+                'ml-2 mr-3 inline-flex h-touch shrink-0 items-center justify-center rounded-md border border-accent bg-accent px-4 text-body font-semibold text-accent-ink transition-colors',
+                'aria-disabled:border-hair-strong aria-disabled:bg-transparent aria-disabled:font-medium aria-disabled:text-ink-2',
               )}
+            >
+              완료
+            </button>
+          )}
+        </header>
+      )}
 
-              {/* 임시저장/초기화(#310) — 자동저장 폐지에 따른 명시적 트리거. croppedImageUrl 유무와
-                  무관하게 항상 노출한다 — 포스터(croppedImageUrl)는 새로고침에 안 남지만 movieInfo 등
-                  나머지 필드는 복원되므로(#310이 고치려는 시나리오 자체), 포스터 재업로드 전에도
-                  초기화에 닿을 수 있어야 한다. 초기화 확인은 2탭 arm(#374, handleClearTap). 저장
-                  피드백은 기존 flashToast 재사용. */}
-              <div className={`mt-2 ${MENU_GROUP_CLS}`}>
-                <MenuRow
-                  iconPath={MENU_ICONS.save}
-                  label="임시저장"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    // 실패 시(#645 C1) 성공 토스트를 안 띄운다 — saveDraft 내부가 이미 showError로 알린다.
-                    if (photo.saveDraft()) flashToast('임시저장했어요');
-                  }}
-                />
-                <MenuRow
-                  iconPath={MENU_ICONS.trash}
-                  label={clearArmed ? '한 번 더 눌러 전체 삭제' : '초기화'}
-                  danger
-                  armed={clearArmed}
-                  onClick={handleClearTap}
-                />
-              </div>
-            </div>
-          </>
-        )}
-      </header>
+      {/* 편집 메뉴 시트(#826 S2 D09) — 앱 배경 래퍼 안에 둔다. 배경을 inert로 잠그지 않는 건 ⋯ 재탭 닫기가 살아야 해서다. */}
+      {!isMax && menuOpen && (
+        <EditorMenu
+          ghost={ghostMode}
+          onGhostChange={setGhostMode}
+          themePreference={themePreference}
+          onThemeChange={onThemeChange}
+          autoSaveEnabled={photo.autoSaveEnabled}
+          lastSavedAt={photo.lastSavedAt}
+          onAutoSaveToggle={photo.toggleAutoSave}
+          // 랜딩에 한 벌뿐인 OcrUploadCard의 업로드를 연다(constraint-17) — 카드를 메뉴에 새로 마운트하지 않는다.
+          onOcrOpen={() => ocrOpenRef.current?.()}
+          ocrBusy={ocrBusy}
+          onSaveDraft={handleSaveDraft}
+          onClear={performClear}
+          onClose={closeMenu}
+          returnFocusRef={menuButtonRef}
+        />
       )}
 
       {/* 본문: 업로드 후엔 인라인 프리뷰만(OCR 진입점은 정보 모드 버튼 — #388 → #826 S2, footer는 편집 화면에서
@@ -939,9 +627,9 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
                     movieInfo={previewMovieInfo}
                     components={previewComponents}
                     fieldVisibility={fieldVisibility}
-                    // 편집 중 ghost 강제 on(#354 시안 결정: ghostEff = ghostOn || editing) —
-                    // 빈/숨김 필드도 탭·순회 타깃으로 티켓에 남는다.
-                    ghost={ghostMode || editing}
+                    // 빈 항목(#826 S2 constraint-8): 필드 입력 중 강제 on(#354) · 정보 모드 자동 on · 그 밖엔 메뉴 스위치.
+                    // 전체 보기에선 항상 끈다. 빈/숨김 필드도 탭·순회 타깃으로 티켓에 남는다.
+                    ghost={!isMax && (ghostMode || editing || dockMode === 'info')}
                     onField={viewMode === 'default' ? handleField : undefined}
                     // 포스터가 없을 때만 온-티켓 탭으로 업로드를 연다(#723) — 게이트가 #365의
                     // 미스터치(포스터가 있는데 빈 곳을 눌러 파일선택창이 뜨던 것)를 되도입하지
@@ -956,7 +644,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
             </div>
           )}
 
-          {/* 줌 pill(#328)은 #356에서 제거 — 최대화 진입은 플로팅 툴바가 흡수, max 탈출은
+          {/* 줌 pill(#328)은 #356에서 제거 — 전체 보기 진입은 상단 줄 버튼(#826 S2), 탈출은
               기존 티켓 탭 복귀 그대로. */}
 
           {/* 랜딩 오버레이(#614) — 점선 드롭존 히어로 + 랜딩 footer가 여기로 흡수됐다. 편집 셸을
@@ -980,7 +668,7 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
             // 이제 상시 노출되는 오버레이 랜딩 자신이 더 낫게 받는다.
             // mode='hidden'은 unmount가 아니라 CSS다(#297 P1) — children(OcrUploadCard) 단일
             // 인스턴스 계약(#614/#624)이 여기 걸려 있다.
-            // **포스터 재진입 동선은 헤더 메뉴에 있다** — '포스터 추가' 행이 canvasReady를 따라 뜬다.
+            // **포스터 재진입 동선은 도크 사진 모드에 있다**(#826 S2) — canvasReady를 따라 도크가 뜬다.
             mode={isMax || landingDismissed ? 'hidden' : 'overlay'}
             onCta={handlePosterTap}
             // "이어서 만들기"(#727 c5) — 유일하게 문서를 안 되돌리는 이탈이다. 복원된 draft를
@@ -1092,39 +780,12 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
         onPosterRecrop={crop.originalSrc ? crop.openRecrop : undefined}
       />
 
-      {/* 플로팅 툴바(#356) — undo/redo·항목목록·최대화·숨김(배치설정은 #387에서 헤더 메뉴로 이전).
-          프리뷰가 있어야 의미가 있고, max는 티켓만 남기는 풀스크린이라 숨긴다(탈출은 티켓 탭).
-          필드 편집 중에도 셸이 계속 렌더한다 — 겹침 규칙은 z-index로(툴바 45: 편집 백드롭 40 위,
-          다이얼로그 50 아래). */}
-      {canvasReady && !isMax && (
-        <FloatingToolbar
-          ref={toolbarRef}
-          prefs={tbPrefs}
-          onPrefsChange={setTbPrefs}
-          canUndo={history.canUndo}
-          canRedo={history.canRedo}
-          onUndo={() => {
-            history.undo();
-            flashToast('되돌렸어요');
-          }}
-          onRedo={() => {
-            history.redo();
-            flashToast('다시 실행했어요');
-          }}
-          onFieldList={() => setDockMode('info')}
-          onMaximize={() => handleViewModeChange('max')}
-          headerEl={headerEl}
-          contentTopEl={ticketBoxEl}
-        />
-      )}
-
       {/* 온티켓 인플레이스 에디터(#354) — 필드 탭이 시트 대신 이걸 연다. 투명 input + 필드바 +
           aid 패널(KOBIS/별점/날짜). 위치는 래퍼/티켓 ref 기반 측정, lift는 setEditLift로 위 transform에.
           onField는 handleField가 아니라 setActiveField — prev/next 순회는 순수 탐색이라 경유 필드의
           가시성을 켜면 안 된다(PR #359 리뷰 P1). 자동 표시 on은 FieldTap 직접 탭(handleField)에만.
-          앱 배경 래퍼 안에 둔다(#685 fresh-eyes 리뷰) — 플로팅 툴바(z-45)는 편집 중에도 클릭 가능해
-          이 편집기가 열린 채로 다이얼로그(고급 설정)를 열 수 있는데, 래퍼 밖에 남으면 다이얼로그가
-          열려도 이 투명 input이 계속 탭 가능한 채로 남는다. */}
+          앱 배경 래퍼 안에 둔다(#685 fresh-eyes 리뷰) — 래퍼 밖에 남으면 다이얼로그(크롭 모달)가 열려도
+          이 투명 input이 계속 탭 가능한 채로 남는다. */}
       {editing && activeField && (
         <InPlaceFieldEditor
           photo={photo}
@@ -1153,19 +814,6 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
         className="sr-only"
       />
       </div>
-
-      {/* 고급 설정 모달(#574) — 햄버거의 '고급 설정' 행이 연다. 게이팅은 진입점과 동일하게
-          canvasReady && !isMax(#631): 툴바가 안 떠 있으면 toolbarRef가 비어 스냅이 조용히
-          no-op된다(claude-review PR #405 P1). tbPrefs 소유권은 셸에 남기고 값만 내려준다. */}
-      {advOpen && canvasReady && !isMax && (
-        <AdvancedSettingsModal
-          triggerRef={hamburgerRef}
-          prefs={tbPrefs}
-          onModeChange={applyToolbarMode}
-          onSnap={snapToolbarTo}
-          onClose={() => setAdvOpen(false)}
-        />
-      )}
 
       {crop.cropOpen && crop.originalSrc && (
         <ImageCropModal
@@ -1218,4 +866,4 @@ export const MobileEditorShell = forwardRef<MobileEditorShellHandle, MobileEdito
       <ErrorToastHost />
     </div>
   );
-});
+}

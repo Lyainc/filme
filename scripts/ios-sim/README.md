@@ -22,7 +22,7 @@ Seed `docs/specs/mobile-device-verification.yaml`의 acceptance-1~4 iOS 행(#777
 | `python3 run585.py [0-5 ...]` | #585 여섯 % 입력 × 키보드 ✓/바깥 탭 | `585-<i><a\|b>-{during,typed,after}.png`, `585-ios.json` |
 | `python3 run779.py [light] [dark]` | #779 트랙 탭·±10/14px·트랙/thumb 드래그·% 입력·undo | `779-<theme>-*.png`, `779-ios.json` |
 | `python3 run777.py [light\|dark] [무드 ...]` | #777 필드 직접 탭(중심·안쪽 위/아래 2px), 핸들·이전/다음·편집 undo(라이트) | `777-*.png`, `777-ios-<themes>.json` |
-| `python3 run777rest.py` | #777 작은 필드 확대 경로(최대화·핀치), 다크 복구 경로 | `777-enlarge-*.png`, `777-rest.json` |
+| `python3 run777rest.py` | #777 작은 필드 확대 경로(전체 보기·핀치), 다크 복구 경로 | `777-enlarge-*.png`, `777-rest.json` |
 | `python3 run768.py [S01 ...]` | #768 Stub S01–S16: README 공통 입력 seed → 스텝 2·3 → 완료 → '사진에 저장' → 공유 시트 '이미지 저장' → 사진 앱 DCIM에서 원본 회수. `STAMP_UPLOAD=1`이면 스탬프를 실제 UI 업로드로 넣어요 | `768/Sxx-{editor,preview,sheet}.png`, `768/Sxx-saved.jpg`, `768/768-ios*.json` |
 | `uv run --with pillow --with numpy python compare768.py <dir> S01 ...` | 저장 JPEG를 편집 프리뷰 스크린샷에 티켓 경계로 정렬해 프리뷰/저장본/차이 나란히 | `Sxx-compare.png` |
 | `uv run ... python stamp768.py <dir>` | 저장 JPEG의 스탬프 자리 픽셀 표준편차(종이와 같으면 부재) | `stamp-presence.json` |

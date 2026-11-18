@@ -41,7 +41,7 @@
 같은 컴포넌트 안에서도 자리마다 갈린다. `VisibilityCheckbox`가 그 예다 —
 `aria-label`(`체인 로고 티켓에 표시`)은 라벨, `title`(`티켓에 표시 중 — 끄면 숨겨져요`)은 문장.
 **`aria-label`은 언제나 라벨 쪽이다.** 눈에 안 보인다고 문장을 넣으면 축 2 위반이 조용히 쌓인다
-(`AutoSaveIndicator`가 실제로 그렇다 — 예시표 참고).
+(옛 `AutoSaveIndicator`가 실제로 그랬다 — #826 S2에서 편집 메뉴 자동저장 행으로 옮겼다. 예시표 참고).
 
 ## 짝 문구는 형태를 맞춘다 (축을 가로지르는 규칙)
 
@@ -80,9 +80,10 @@
   `-하세요`는 지금 하는 조작을 설명하는 자리다(유일한 사례였던 형압 안내가 #785에서 기능째
   삭제돼 지금 `src/`엔 0건이지만, 조작 안내가 다시 생기면 이 꼴을 쓴다). 붙여 쓴 3건(`올려주세요`×2 ·
   `채워주세요`)은 #677에서 정비됐고, 지금 `src/`에 붙여 쓴 형태는 0건이다.
-- **질문형 `-까요?`는 되돌릴 수 없는 동작의 확인에만** 쓴다. 현재 유일한 자리가
-  `confirmWordmarkReset`(`MobileEditorShell.tsx:510`)이고, 그 희소성이 질문 자체를 경고로
-  만든다. 되돌릴 수 있는 동작에 질문형을 쓰면 이 신호가 죽는다.
+- **질문형 `-까요?`는 되돌릴 수 없는 동작의 확인에만** 쓴다. 유일한 자리였던 워드마크 탭 초기화 확인
+  (`confirmWordmarkReset`)은 #826 S2(Seed constraint-7)에서 삭제돼 지금 `src/`엔 질문형이 0건이다 — 비가역 동작의
+  확인은 메뉴 초기화의 2탭 arm(`한 번 더 눌러 전체 삭제`, 축 2 arm 예외)이 맡는다. 질문형이 다시 필요해지면
+  그 희소성이 질문 자체를 경고로 만든다는 이유로 비가역 확인에만 쓴다.
 
 ## 축 2 — 액션 라벨: 명사구, 조건절 금지
 
@@ -98,7 +99,7 @@
 있으면 올리기"만 걸린다. 규칙이 실제로 둘을 가른다는 게 이 축의 존재 근거다.
 
 **근거 — 왜 `-하기`를 금지하지 않는가.** 이슈가 물은 건 명사형이냐 동사형이냐인데, 실측은
-어느 한쪽이 다수가 아니다: 서술명사(`실행 취소`·`다시 실행`·`고급 설정`·`최대화`)와
+어느 한쪽이 다수가 아니다: 서술명사(`실행 취소`·`다시 실행`·`고급 설정`(#826 S2에서 삭제)·`전체 보기`(구 `최대화`))와
 `-하기`(`꽉 채우기`·`포스터 채우기`·`편집으로 돌아가기`·`처음 화면으로 돌아가기`)가 나란히
 쓰인다. 한쪽을 금지하면 전수 적용이 위반 정비가 아니라 **대량 개명**이
 되는데, 얻는 건 형태 통일뿐이고 이슈가 지적한 문제(사용자에게 조건 판정을 시키는 말투)는 그
@@ -195,7 +196,7 @@
 
 - 통과: `Wordmark`의 `FILME — 처음 화면으로 돌아가기`(보이는 글자 FILME 포함) ·
   `VisibilityCheckbox`의 `${label} 티켓에 표시`.
-- 아이콘 전용 버튼은 시각 라벨이 없으므로 자유롭게 명사구(`실행 취소`·`다시 실행`·`최대화`).
+- 아이콘 전용 버튼은 시각 라벨이 없으므로 자유롭게 명사구(`실행 취소`·`다시 실행`·`전체 보기`).
 
 시각 라벨을 고치면 그 자리의 `aria-label`도 같이 본다. 전수 적용 때 **한 자리에서 둘을 함께
 고치지 않으면 label-in-name이 조용히 깨진다.**
@@ -232,7 +233,7 @@ eyebrow 필드 8종)를 놓쳤다 — fresh-context 리뷰가 낮은 확신으�
 | 랜딩 이탈 경로 | `포스터 없이 직접 입력` | 라벨 | ✅ | `없이`는 상태 수식이라 조건절이 아니다. 종결어미·마침표 없음. 짝이 어긋난 건 맞지만 위반은 다른 쪽이 소유하므로 이 문구는 안 건드린다 |
 | 완료 게이트 | `제목 · 개봉연도를 채워주세요` / `티켓이 준비됐어요` | 문장 | ❌ | ① 축 1: 요청은 `채워 주세요`로 띄어 쓴다 ② 짝 문구 규칙: 한쪽은 요청, 다른 쪽은 통보라 형태가 갈린다. → **`제목과 개봉연도가 필요해요`** + `티켓이 준비됐어요`(둘 다 상태 통보로 통일) |
 | 초기화 확인 | `한 번 더 눌러 전체 삭제` | 라벨 | ✅ | 금지 3종 없음. 연결어미 `눌러`는 축 2 arm 예외(#374) |
-| 초기화 확인 | `지금까지 작업한 내용이 사라져요. 처음 화면으로 돌아갈까요?` | 문장 | ✅ | 축 3 구조([무슨 일이 벌어지나] + [행동])의 확인 대화 변형. 축 1의 질문형 예외에 드는 유일한 자리 |
+| 초기화 확인(워드마크 탭, #826 S2에서 삭제) | `지금까지 작업한 내용이 사라져요. 처음 화면으로 돌아갈까요?` | 문장 | ✅ | 축 3 구조([무슨 일이 벌어지나] + [행동])의 확인 대화 변형이었고 축 1의 질문형 예외에 드는 유일한 자리였다. 워드마크 탭 초기화와 함께 삭제됐다(Seed constraint-7) |
 | 형압 안내(#785로 삭제) | `드래그해서 칠하세요. 도구를 다시 탭하면 끝나요.` | 문장 | ✅ | `-하세요`는 조작 안내라 축 1 통과(요청이 아니다). 27자 |
 | 형압 안내(올가미, #785로 삭제) | `윤곽을 따라 드래그하면 자동으로 붙고, 손을 떼면 닫혀요. 다시 탭하면 끝나요.` (#692) | 문장 | ✅ | 전체 44자 / 최장 문장 32자로 상한 동률. 더 늘리려면 상한을 먼저 다시 재야 한다 |
 | 에러(rate limit) | `지금 요청이 많아요. 잠시 후 다시 시도하거나 직접 입력해 주세요.` | 문장 | ✅ | 축 3 구조 그대로. 37자 / 최장 문장 25자 |
@@ -255,8 +256,15 @@ eyebrow 필드 8종)를 놓쳤다 — fresh-context 리뷰가 낮은 확신으�
 | `포스터 업로드`(구 `포스터 있으면 올리기`) · `포스터 없이 직접 입력` (#665) | `v2/Landing.tsx` | `landingOverlay` · `landingHeroMood` · `a11yFieldTapAndTapTargets` · `mobileChromeOrder` · `posterCropPipeline` · `resultStageWordmarkReset` · `mobileEditorShellOcrEntryConsolidation` · `logoCropFreeAspect` · `mobileChromeDarkHtmlBg` |
 | `티켓 스크린샷으로 자동입력`(랜딩) · `스크린샷으로 자동입력`(드로어) | `v2/OcrUploadCard.tsx` | `landingOverlay` · `mobileChromeOrder` · `mobileEditorShellOcrEntryConsolidation` · `mobileEditorShellFieldCoverage` |
 | `지금 요청이 많아요…` · `인식된 정보가 없어요…` | `v2/OcrUploadCard.tsx` | `landingHeroMood` |
-| `한 번 더 눌러 전체 삭제` (#374) · `임시저장했어요` | `v2/MobileEditorShell.tsx` | `mobileEditorShellMenu` · `mobileEditorShellOcrEntryConsolidation` |
-| `초기화했어요` · `지금까지 작업한 내용이 사라져요…` | `v2/MobileEditorShell.tsx` | `wordmarkClearOnTap` · `mobileEditorShellMenu` |
+| `한 번 더 눌러 전체 삭제` (#374) · `임시저장했어요` | `v2/EditorMenu.tsx`(토스트는 `v2/MobileEditorShell.tsx`) | `mobileEditorShellMenu` · `mobileEditorShellOcrEntryConsolidation` |
+| `초기화했어요` | `v2/MobileEditorShell.tsx` | `mobileEditorShellMenu` · `ocrUndoRestore` · `mobileEditorShellOcrEntryConsolidation` |
+| `전체 보기` (#826 S2, 구 `최대화`) | `v2/MobileEditorShell.tsx` 상단 줄 | `mobileEditorShellZoom` · `mobileChromeOrder` · `chromeDarkScope` · `previewWorkbenchSurface` · `mobileEditorShellLandscapeRotation` · `ocrUndoRestore` |
+| `빈 항목 표시` (#826 S2, 구 `빈 항목 미리보기`) | `v2/EditorMenu.tsx` | `mobileEditorShellGhost` · `mobileEditorShellMenu` · `inPlaceFieldEditor` · `mobileChromeOrder` |
+| `자동저장 켜짐` · `자동저장 꺼짐`(`aria-label`) · `랜딩으로 돌아가기` · `티켓 인식 중…` | `v2/EditorMenu.tsx` · `v2/MobileEditorShell.tsx` | `mobileEditorShellMenu` · `backToLandingPreservesDoc` · `mobileEditorShellOcrEntryConsolidation` |
+
+**삭제된 잠금(#826 S2)**: `지금까지 작업한 내용이 사라져요. 처음 화면으로 돌아갈까요?`(워드마크 탭 초기화 확인 — 기대하던
+`wordmarkClearOnTap`은 ‹ 동작을 잠그는 `backToLandingPreservesDoc`으로, `resultStageWordmarkReset`은 "워드마크 탭은 아무 일도
+없다"로 바뀌었다). 같이 사라진 라벨: `고급 설정` · `툴바 표시`/`툴바 숨김`(떠 있는 툴바 삭제).
 
 목록은 grep 결과이지 자동 검증이 아니다. 문구를 바꾼 뒤 `bun test`를 돌려 실제로 깨지는 자리를
 다시 확인할 것.

@@ -1,44 +1,24 @@
 import Head from 'next/head';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { useExportReady } from '@/hooks/useExportReady';
 import { useResultView } from '@/hooks/useResultView';
 import { useDebounce } from '@/hooks/useDebounce';
 import { showError } from '@/utils/errorToast';
-import { THEME_COLOR } from '@/constants/theme';
-import { MobileEditorShell, type MobileEditorShellHandle } from '@/components/v2/MobileEditorShell';
+import { useThemePreference } from '@/hooks/useThemePreference';
+import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
 import { PhoneFrame } from '@/components/v2/PhoneFrame';
 import { ResultStage } from '@/components/v2/ResultStage';
 
 export default function Home() {
-  // SSR safe: 초기값 'light', mount 후 localStorage/prefers-color-scheme 읽기
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  // 테마 3갈래(#826 S2 D09) — 선호(시스템 · 라이트 · 다크)와 실제로 칠하는 값을 한 훅이 쥔다.
+  const { preference: themePreference, theme, setPreference: setThemePreference } = useThemePreference();
   const photo = usePhototicket();
   // 티켓 위 직접 편집 중에는 프리뷰 debounce를 건너뛴다(#775) — 인플레이스 input은 글자가 투명하고
   // 보이는 글자를 티켓 렌더에 맡기므로(#365), 280ms 지연이 끼면 타이핑을 멈출 때까지 새 글자가 안 보인다.
   const [fieldEditing, setFieldEditing] = useState(false);
   const canExport = useExportReady({ state: photo.state });
   const { open: resultOpen, openView, closeView } = useResultView();
-  // ResultStage(#669) 워드마크가 이 셸의 초기화 판정·confirm 로직을 그대로 재사용하는 통로 —
-  // 셸은 결과화면이 열려도 언마운트되지 않는다(위 return 주석, #297). confirm과 실제 clear를
-  // 나눈 이유: clear(photo.state)는 동기, 결과화면을 닫는 closeView(history.back())의 popstate는
-  // 비동기라, 둘을 한 번에 하면 결과화면이 닫히기 전에 초기화된 티켓이 그 사이 잠깐 보인다. #669
-  // 당시엔 movieInfo 등이 280ms useDebounce를 거쳐 croppedImageUrl만 먼저 빈 섞인 화면이었고(#669
-  // code-review 발견), #775부터 결과화면이 라이브 값을 읽어 섞이진 않지만 빈 티켓 flash는 남는다.
-  // 그래서 confirm 통과 → closeView() 먼저 → resultOpen이 실제로 false가 된 뒤(아래 effect)에야
-  // clear를 실행해, 그 flash가 뜰 상대(ResultStage)가 이미 사라진 뒤로 미룬다.
-  const shellRef = useRef<MobileEditorShellHandle>(null);
-  const pendingWordmarkResetRef = useRef(false);
-  function handleResultWordmarkTap() {
-    if (!shellRef.current?.confirmWordmarkReset()) return;
-    pendingWordmarkResetRef.current = true;
-    closeView();
-  }
-  useEffect(() => {
-    if (resultOpen || !pendingWordmarkResetRef.current) return;
-    pendingWordmarkResetRef.current = false;
-    shellRef.current?.commitWordmarkReset();
-  }, [resultOpen]);
 
   const { croppedImageUrl } = photo.state;
   const { setRecommendedColors } = photo;
@@ -52,23 +32,6 @@ export default function Home() {
   const debounced = useDebounce(draft, 280, fieldEditing);
   const { movieInfo: debouncedMovieInfo, components: debouncedComponents } = debounced;
   const { fieldVisibility } = photo.state;
-
-  // FOUC 스크립트(_document.tsx)가 이미 적용한 클래스를 신뢰.
-  useEffect(() => {
-    setTheme(document.documentElement.classList.contains('theme-dark') ? 'dark' : 'light');
-  }, []);
-
-  // 사용자 토글 시 class + theme-color + localStorage 동기화
-  useEffect(() => {
-    const isDark = theme === 'dark';
-    document.documentElement.classList.toggle('theme-dark', isDark);
-    document
-      .querySelector('meta[name="theme-color"]')
-      ?.setAttribute('content', isDark ? THEME_COLOR.dark : THEME_COLOR.light);
-    try {
-      localStorage.setItem('phototicket:theme', theme);
-    } catch {}
-  }, [theme]);
 
   // croppedImageUrl 변경 시 색상 추출
   // colorExtraction(~167줄 K-means)은 업로드 시점에만 동적 로드 → 초기 페이지 청크에서 제외
@@ -132,12 +95,12 @@ export default function Home() {
           Done↔뒤로가기 왕복마다 리셋된다(claude-review #297 P1). */}
       <div className={resultOpen ? 'hidden' : undefined}>
         <MobileEditorShell
-          ref={shellRef}
           onFieldEditingChange={setFieldEditing}
           photo={photo}
           canExport={canExport}
           theme={theme}
-          onThemeChange={setTheme}
+          themePreference={themePreference}
+          onThemeChange={setThemePreference}
           onDone={openView}
           disabledReason={railMessage}
           previewMovieInfo={debouncedMovieInfo}
@@ -149,7 +112,6 @@ export default function Home() {
         <ResultStage
           theme={theme}
           onBack={closeView}
-          onWordmarkTap={handleResultWordmarkTap}
           croppedImageUrl={croppedImageUrl}
           // 결과 화면은 debounce를 안 거친 최신 값으로 그린다(#775) — 슬라이더를 움직이고 280ms 안에
           // 완료를 눌러도 마지막 값이 실린다.

@@ -49,7 +49,7 @@ function clearDraftPaintGate() {
   if (typeof document !== 'undefined') document.documentElement.classList.remove('has-draft');
 }
 
-// 자동저장 on/off는 문서(STORAGE_KEY)가 아니라 UI 취향값이라 별도 키로 영속(TB_STORAGE_KEY 선례, #436).
+// 자동저장 on/off는 문서(STORAGE_KEY)가 아니라 UI 취향값이라 별도 키로 영속(옛 툴바 위치 키 선례, #436).
 const AUTOSAVE_PREF_KEY = 'filme:autosave:v1';
 // 프리뷰 디바운스(280ms, index.tsx)보다 느슨하게 — 저장은 프리뷰만큼 즉각적일 필요가 없다(#436).
 const AUTOSAVE_DEBOUNCE_MS = 1000;
@@ -745,7 +745,7 @@ export function usePhototicket() {
   const saveDraftRef = useRef(saveDraft);
   saveDraftRef.current = saveDraft;
 
-  // 자동저장 토글(#436) — 취향값이라 TB_STORAGE_KEY와 동일하게 즉시 동기 저장(디바운스 불필요, 클릭당 1회).
+  // 자동저장 토글(#436) — 취향값이라 옛 툴바 위치 키와 동일하게 즉시 동기 저장(디바운스 불필요, 클릭당 1회).
   const toggleAutoSave = useCallback(() => {
     setAutoSaveEnabled((prev) => {
       const next = !prev;

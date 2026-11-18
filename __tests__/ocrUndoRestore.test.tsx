@@ -118,6 +118,7 @@ function MobileHarness() {
         photo={photo}
         canExport
         theme="light"
+        themePreference="light"
         onThemeChange={() => {}}
         onDone={() => {}}
         disabledReason=""
@@ -327,9 +328,9 @@ describe('OCR undo restoration (#163 / #141 P1)', () => {
   });
 
   // #328 claude-review 재검토 P1: max는 헤더·서브메뉴·pill·OCR과 함께 OCR 되돌리기 배너·토스트도
-  // 숨겨야 "티켓만 노출"이라는 스펙이 성립한다 — 배너가 뜬 채로 최대화하면 풀스크린 위에 겹쳐 보이고
+  // 숨겨야 "티켓만 노출"이라는 스펙이 성립한다 — 배너가 뜬 채로 전체 보기하면 풀스크린 위에 겹쳐 보이고
   // 탭도 되던 버그(PR #332)의 회귀 테스트.
-  test('OCR 배너가 뜬 채로 최대화하면 배너가 숨고, 기본 복귀 시 다시 보인다', async () => {
+  test('OCR 배너가 뜬 채로 전체 보기하면 배너가 숨고, 기본 복귀 시 다시 보인다', async () => {
     const user = userEvent.setup();
     render(<MobileHarness />);
 
@@ -339,7 +340,7 @@ describe('OCR undo restoration (#163 / #141 P1)', () => {
     await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
     expect(await screen.findByRole('button', { name: '되돌리기' })).toBeTruthy();
 
-    await user.click(screen.getByRole('button', { name: '최대화' }));
+    await user.click(screen.getByRole('button', { name: '전체 보기' }));
     expect(screen.queryByRole('button', { name: '되돌리기' }) === null).toBe(true);
 
     await user.click(screen.getByRole('button', { name: '기본 크기로 돌아가기' }));

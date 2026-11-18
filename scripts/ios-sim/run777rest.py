@@ -18,7 +18,7 @@ def pinch_out_pt(cx=201, cy=420, d0=20, d1=150, ms=500):
 
 # (a) max view: tap the small 'screen' field in Minimal
 seed('minimal', 'light')
-tap_el('document.querySelector(\'[aria-label="최대화"]\')'); time.sleep(1.2)
+tap_el('document.querySelector(\'[aria-label="전체 보기"]\')'); time.sleep(1.2)
 ntap = js('return document.querySelectorAll("[data-field-tap]").length')
 r = js('const w=[...document.querySelectorAll("[data-ticket-scale-wrapper]")].at(-1); const e=[...w.querySelectorAll("*")].find(e=>e.childElementCount===0&&e.textContent.trim().includes("IMAX관")); if(!e) return null; const b=e.getBoundingClientRect(); return {x:b.x,y:b.y,w:b.width,h:b.height}')
 t = r or {'x': 180, 'y': 300, 'w': 40, 'h': 10}

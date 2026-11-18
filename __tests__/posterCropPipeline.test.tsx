@@ -26,7 +26,7 @@
  * load 이벤트 관용구를 그 파일들에서 그대로 가져왔다.
  */
 import { describe, expect, test, afterAll, afterEach, mock, spyOn } from 'bun:test';
-import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, act, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mobileShellProps } from './shellHarness';
 
@@ -59,13 +59,15 @@ mock.module('@/utils/imageCrop', () => ({
 const { usePhototicket } = require('@/hooks/usePhototicket') as typeof import('@/hooks/usePhototicket');
 const { MobileEditorShell } = require('@/components/v2/MobileEditorShell') as typeof import('@/components/v2/MobileEditorShell');
 
-// 포스터 전용 파일 input(accept에 jpeg 포함) — OcrUploadCard의 image/* input과 구분.
-const posterFileInput = () => document.querySelector('input[type="file"][accept*="jpeg"]') as HTMLInputElement;
+// 포스터 전용 파일 input — OcrUploadCard의 image/* input, 사진 모드 로고 행 input(accept에 jpeg 포함)과 구분한다.
+const posterFileInput = () => document.querySelector('input[type="file"][aria-label="포스터 이미지 파일"]') as HTMLInputElement;
 const pngFile = (name: string) => new File([name], name, { type: 'image/png' });
 const cropDialog = () => screen.queryByRole('dialog', { name: '포스터 크롭' });
 /** 모달이 지금 어느 원본을 가리키는지. 티켓 프리뷰의 <img>와 안 섞이게 다이얼로그 안에서만 찾는다. */
 const cropSrc = () => document.querySelector('[role="dialog"] img')?.getAttribute('src') ?? null;
-const recropButton = () => screen.getByRole('button', { name: '재크롭' }) as HTMLButtonElement;
+// 교체 · 재크롭은 메뉴가 아니라 도크 사진 모드의 포스터 행에 있다(#826 S2, constraint-3) — 버튼 이름은 '교체' · '자르기'.
+const posterRow = () => within(document.querySelector('[data-asset-row="포스터"]') as HTMLElement);
+const recropButton = () => posterRow().getByRole('button', { name: '자르기' }) as HTMLButtonElement;
 
 /** 실물 크롭 모달의 onImageLoad(mediaAspect 계산 → 크롭 초기화)를 태운다 — 안 하면 '적용'이 비활성. */
 function loadImage(naturalWidth = 2000, naturalHeight = 3000) {
@@ -98,9 +100,9 @@ function MobileHarness({ onPhoto }: { onPhoto?: (p: ReturnType<typeof usePhototi
   return <MobileEditorShell {...mobileShellProps(photo)} />;
 }
 
-/** 재크롭은 헤더 편집 메뉴 안에 있다 — 데스크톱 ImageUploader의 인라인 버튼 자리를 이게 잇는다. */
+/** 포스터 행은 도크 사진 모드에 있다 — 그 모드 탭을 눌러 연다. */
 const openMenu = (user: ReturnType<typeof userEvent.setup>) =>
-  user.click(screen.getByRole('button', { name: '편집 메뉴' }));
+  user.click(screen.getByRole('tab', { name: '사진' }));
 const uploadCta = () => screen.getByRole('button', { name: /포스터 업로드/ });
 
 afterEach(() => {
@@ -179,7 +181,7 @@ describe('랜딩 이탈은 크롭 확정에만 걸린다 (#727 c2)', () => {
 });
 
 describe('포스터 크롭 상태머신 (#182 PR #191 · #315, 실제 파일-선택 경로)', () => {
-  test('첫 업로드 후 서브메뉴 재크롭이 활성화된다', async () => {
+  test('첫 업로드 후 사진 모드 자르기가 활성화된다', async () => {
     const user = userEvent.setup();
     render(<MobileHarness />);
 
@@ -201,7 +203,7 @@ describe('포스터 크롭 상태머신 (#182 PR #191 · #315, 실제 파일-선
     // 옛 "커밋된 포스터가 있으면 활성" 가드는 이 경우를 못 봐서, 버려진 교체 파일을 가리킨 채
     // 버튼이 살아있었다(#182 P1).
     await openMenu(user);
-    await user.click(screen.getByRole('button', { name: '포스터 교체' }));
+    await user.click(posterRow().getByRole('button', { name: '교체' }));
     await pickAndCancel(user, 'b.png');
 
     await openMenu(user);
@@ -232,13 +234,13 @@ describe('포스터 크롭 상태머신 (#182 PR #191 · #315, 실제 파일-선
     await pickAndCancel(user, 'a.png');
 
     // 포스터가 없으면 셸은 업로드 CTA로 되돌아간다 — #614 이후 그 CTA는 랜딩의 것이고, 크롭을
-    // 취소하면 오버레이가 다시 덮인다(파생 showLanding). 편집 메뉴의 포스터 액션도 그대로 게이팅.
+    // 취소하면 오버레이가 다시 덮인다(파생 showLanding). 사진 모드의 자르기도 그대로 게이팅.
     expect(uploadCta()).toBeTruthy();
     // CTA는 overlay·inline 양쪽에 다 있으므로 존재만으로는 "덮였다"를 못 잰다 — landingOverlay와
     // 같이 fixed 여부로 판정한다(PR #622 claude-review P1).
     expect(screen.getByTestId('landing').classList.contains('fixed')).toBe(true);
     await openMenu(user);
-    expect(screen.queryByRole('button', { name: '재크롭' }) === null).toBe(true);
+    expect(posterRow().queryByRole('button', { name: '자르기' }) === null).toBe(true);
   });
 
   // 자동저장 복원(#489)과 같은 상태 — 세션 내 업로드 없이 원본만 훅에 들어와 있는 경우.
@@ -284,7 +286,7 @@ describe('포스터 크롭 상태머신 (#182 PR #191 · #315, 실제 파일-선
     expect(revoke.mock.calls.flat()).not.toContain(first);
 
     await openMenu(user);
-    await user.click(screen.getByRole('button', { name: '포스터 교체' }));
+    await user.click(posterRow().getByRole('button', { name: '교체' }));
     fireEvent.change(posterFileInput(), { target: { files: [pngFile('b.png')] } });
     await screen.findByRole('dialog', { name: '포스터 크롭' });
     expect(revoke.mock.calls.flat().filter((u) => u === first)).toHaveLength(1);
@@ -411,20 +413,16 @@ describe('키보드 전용 포스터 업로드 경로 (#608)', () => {
     expect(cropDialog() === null).toBe(true);
   });
 
-  test('포스터가 있는 상태의 교체·재크롭도 헤더 메뉴에서 키보드로 열린다', async () => {
+  test('포스터가 있는 상태의 교체도 도크 사진 모드에서 키보드로 열린다(#826 S2, 옛 헤더 메뉴 행)', async () => {
     const user = userEvent.setup();
     render(<MobileHarness />);
     await pickAndApply(user, 'p.png');
 
-    const menu = screen.getByRole('button', { name: '편집 메뉴' });
-    await tabTo(user, menu, '편집 메뉴');
-    await user.keyboard('{Enter}');
-
-    // '툴바 설정' 접이식 패널(#447)은 #574에서 '고급 설정' 모달 진입점으로 대체됐다 — inert 우회가
-    // 더 이상 필요 없다(고급 설정 행 자체가 일반 버튼이라 Tab이 그냥 통과한다).
-    const replace = await screen.findByRole('button', { name: '포스터 교체' });
+    // 모드 바는 APG tabs라 탭 하나만 Tab 정지점이다 — 사진 모드는 클릭으로 열고 그 안 버튼을 키보드로 연다.
+    await user.click(screen.getByRole('tab', { name: '사진' }));
+    const replace = posterRow().getByRole('button', { name: '교체' });
     const openFileDialog = spyOn(posterFileInput(), 'click');
-    await tabTo(user, replace, '포스터 교체');
+    await tabTo(user, replace, '교체');
     await user.keyboard('{Enter}');
     expect(openFileDialog).toHaveBeenCalledTimes(1);
   });
