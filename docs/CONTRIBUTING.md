@@ -82,7 +82,7 @@ PR #739·#740 실측, 2026-08-21. 같은 파일에 같은 import를 다른 줄�
 
 ### 번들 로고·에셋 매니페스트 철거 (#196·#231·#355)
 
-`public/assets/{chains,formats}_transparent/` 파일명이 한때 단일 소스였지만 저작권 문제를 피하려고 **번들 로고를 제거**했다. 지금은 사용자가 필드 드로어(`src/components/v2/FieldDrawer.tsx`)의 극장/포맷 행이나 온티켓 인플레이스 에디터(`src/components/v2/InPlaceFieldEditor.tsx`)에서 로고를 직접 올리고, 각각 자유 비율 크롭(`useLogoCrop` + `ImageCropModal`)을 거친다.
+`public/assets/{chains,formats}_transparent/` 파일명이 한때 단일 소스였지만 저작권 문제를 피하려고 **번들 로고를 제거**했다. 지금은 사용자가 도크 사진 모드(`src/components/v2/dock/PhotoPane.tsx`)의 극장/포맷 행이나 온티켓 인플레이스 에디터(`src/components/v2/InPlaceFieldEditor.tsx`)에서 로고를 직접 올리고, 각각 자유 비율 크롭(`useLogoCrop` + `ImageCropModal`)을 거친다.
 
 - `FieldEditSheet`는 #355에서 드로어로 대체됐다. `FieldEditorBody`/`StampSheet`는 살아 있는 앱 호출부가 없다 — 앱이 `src/components/v2/FieldEditorBody.tsx`에서 import하는 건 `DateSheet`·`INPUT_CLS`·`KobisResultList`뿐이고(유일한 importer는 `InPlaceFieldEditor.tsx`), `fieldSheets`·`titleSheetSearch` 테스트가 아직 `FieldEditorBody`를 렌더한다.
 - 옛 `TheaterChainPicker`/`FormatPicker`는 #231에서 제거됐다.
