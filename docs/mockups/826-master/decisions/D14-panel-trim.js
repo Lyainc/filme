@@ -67,6 +67,11 @@
     var h = '<div class="d12 d13 d14">';
     h += '<p class="d12-q0">#826 S3 착수 전 · 결정 D14 · 2026-11-20 소유자 요청</p><h1>입력 패널 다듬기 · 눈 아이콘과 글꼴 미리보기</h1>' +
       '<p class="d12-lede">D12와 D13(①② 정함 · D13-1 A · D13-2 A)은 그대로 두고, 두 군데를 줄여요. 표시/숨김 칩 줄을 입력란 안의 눈 아이콘 하나로, 글꼴 버튼을 이름이 아닌 그 서체로 쓴 글자로 바꿔요.</p>';
+    h += '<section class="d12-memo d14-dec"><h2>결정 · 2026-11-20</h2><ul>' +
+      '<li><b>D14-2 A</b> ‹ 미리보기 › + 누르면 목록으로 정했어요.</li>' +
+      '<li><b>D14-1 → 패널에서 표시 토글 빼기</b> 입력란 안 눈을 검토해 보니 그 자리(입력란 안 오른쪽 아이콘)는 지우기 · 비밀번호 보기처럼 <b>입력한 글자에 대한 동작</b>에 쓰는 게 관례예요(uxpatterns.dev 텍스트 필드 · 비밀번호 패턴). 눈은 "글자 보기/가리기"로 읽힐 수 있고, 커서를 글 끝에 놓으려고 오른쪽 끝을 누르다 필드를 숨기는 오탭도 생겨요.</li>' +
+      '<li>그래서 패널에는 표시 토글을 두지 않고 정보 목록 행의 눈으로만 바꿔요. 표시 옵션만 있는 필드는 패널이 [‹][입력][›][완료] 한 줄이고 입력란은 약 205px예요. 예외는 정보 목록에 행이 없는 재개봉일 하나로, 개봉일 패널 안에 표시 토글을 남겨요.</li>' +
+      '<li>아래 D14-1 그림(입력란 안 눈)은 검토 전 안이라 근거로 남겨 둬요.</li></ul></section>';
     h += '<section class="d12-rules"><h2>바뀌는 것</h2>' +
       lst('표시 · 숨김', ['칩 두 개(티켓에 표시 · 숨김) 대신 입력란 안 오른쪽 끝에 눈 아이콘 하나(role=switch, 누르는 영역 44).', '숨기면 눈에 사선이 생기고 입력 글자가 흐려져요. 값은 그대로예요.', '제목은 필수라 눈이 없어요(지금 규칙).']) +
       lst('줄 수', ['표시 옵션만 있는 필드(좌석 · 상영관 · 예매 번호 등)는 <b>한 줄</b>로 끝나요. 패널 높이 105 → 61.', '둘째 줄은 글꼴(한줄평 · 서명), 표기 · 정밀도 · 재개봉(날짜), 이미지로(로고 · 서명)가 있을 때만 생겨요.']) +
@@ -104,7 +109,7 @@
     return h + '</div>';
   };
   W.D14_CSS = (W.D13_CSS || '') +
-    '.d14-stack { flex-direction: column; } .d14-stack .d12-o { width: 100%; box-sizing: border-box; flex: none; }' +
+    '.d14-dec { margin: 0 0 32px; } .d14-stack { flex-direction: column; } .d14-stack .d12-o { width: 100%; box-sizing: border-box; flex: none; }' +
     '.d14-in { flex: 1; min-width: 0; height: 44px; position: relative; display: flex; align-items: center; }' +
     '.d14-in .v { width: 100%; box-sizing: border-box; height: 36px; padding: 0 12px; font: inherit; font-size: 16px; line-height: 24px; color: var(--pr-ink); background: var(--pr-s2); border: 1px solid var(--pr-hair-strong); border-radius: var(--pr-r-ctl); }' +
     '.d14-in .v.has-eye { padding-right: 40px; } .d14-in .v.f { outline: 2px solid var(--pr-accent); outline-offset: -1px; border-color: transparent; } .d14-in .v.off { color: var(--pr-ink-3); }' +

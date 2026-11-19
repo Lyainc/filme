@@ -201,7 +201,7 @@ let dx = 1900 + D02_W + 80;
   ['D11', 'result-final', 'D11 결과 화면 확정안', 'D11 결과 화면 확정안 — 결정 대기', 1800, 3980],
   ['D12', 'input-final', 'D12 필드 입력 최종안', 'D12 필드 입력 — 최종안', 1800, 3000],
   ['D13', 's3-input', 'D13 S3 정보 · 필드 입력 남은 결정', 'D13 S3 입력 패널 — 결정 ①② · D13-1 A · D13-2 A(다듬기 D14)', 1800, 5840],
-  ['D14', 'panel-trim', 'D14 입력 패널 다듬기', 'D14 눈 아이콘 · 글꼴 미리보기 — 결정 대기', 2400, 4440]].forEach(([id, slug, headTitle, boardTitle, bw, bh]) => {
+  ['D14', 'panel-trim', 'D14 입력 패널 다듬기', 'D14 눈 아이콘 · 글꼴 미리보기 — 결정: 표시 토글은 정보 목록만 · D14-2 A', 2400, 4720]].forEach(([id, slug, headTitle, boardTitle, bw, bh]) => {
   require(M + 'decisions/' + id + '-' + slug + '.js');
   fs.writeFileSync(OUT + 'decisions/' + id + '-' + slug + '.dc.html', HEAD(headTitle + ' 비교', '../pr.css').replace('body { margin: 0; }', 'body { margin: 0; }\n' + W[id + '_CSS']) +
     '<div data-pr-theme="{{theme}}" style="width: 100%; min-height: 100%; background: var(--pr-page)">' + W[id + '_HTML']().replace(/\{\{/g, '{ {') + '</div>' + TAIL(bw, bh, 'light'));
