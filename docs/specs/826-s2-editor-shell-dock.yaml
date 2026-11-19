@@ -39,11 +39,45 @@ refine_generation: 0
 lifecycle:
   state: active
   outcome: null
-  reason: "소유자가 맹점 3건 반영과 함께 Seed를 승인하고 구현 착수를 지시했다."
-  approved_by: "소유자 응답(2026-11-19): 맹점 1 · 2 · 3 반영, S2 Seed '승인, 구현 시작'"
+  reason: "구현 완료(브랜치 feat/826-s2-shell). PR · 머지는 소유자 승인 대기."
+  approved_by: "소유자 지시(2026-11-19): '코드 작업 다 되면 /simplify, /code-review medium 돌린 다음 시드 상태 최신화' · 착수 승인 '승인, 구현 시작'"
   evidence:
-    commit: null
-    items: []
+    commit: a54bd37d35046f2dc6f491d97bad041566e4840f
+    items:
+      - id: acceptance-1
+        refs: ["bun run typecheck · lint 종료 0, bun run test 1360 pass / 0 fail (a54bd37)"]
+      - id: acceptance-2
+        refs: ["__tests__/editorTopBar.test.tsx", "__tests__/editorDockModes.test.tsx", "__tests__/editorDockInitialMode.test.tsx"]
+      - id: acceptance-3
+        refs: ["scripts/measure-chrome.mjs dockHeight 축(exitCode 게이트), prod dark · light exit 0"]
+      - id: acceptance-4
+        refs: ["editorDockDesign · editorDockInfo · editorDockPhoto · dockBackgroundStamp · logoStampScale · inPlaceFontPicker · doneFailureInfoMode · mobileEditorShellMenu · ocrUndoRestore 테스트"]
+      - id: acceptance-5
+        refs: ["docs/COPY_TONE_GUIDE.md 잠긴 문구 표", "__tests__ grep: 최대화 · 빈 항목 미리보기 · 지금까지 작업한 내용이 사라져요 0건"]
+      - id: acceptance-6
+        refs: ["__tests__/backToLandingPreservesDoc.test.tsx", "__tests__/resultStageWordmarkReset.test.tsx", "src window.confirm 0건"]
+      - id: acceptance-7
+        refs: ["__tests__/resultGhostOff.test.tsx", "__tests__/ghostMode.test.tsx(placeholder data-hide-on-export)", "캡처 대상 ResultPanel ticketRef"]
+      - id: acceptance-8
+        refs: ["docs/HARNESS.md §4 · §5 · §10, CLAUDE.md 하네스 절: dock 290→249, 프리뷰 190.9×305→219×350", "__tests__/measureChromeBaselineCoupling.test.ts"]
+      - id: acceptance-9
+        refs: ["git diff c9bc6d8 + 줄: gradient · glow · blur 0건, rounded-full은 6px 상태 점 2개(pill 아님)"]
+      - id: acceptance-10
+        refs: ["src/styles/globals.css .chrome-ambient = var(--pr-stage)", "남은 text-accent: Wordmark me(결정 10) · RatingPicker 별 · PreviewFilmCell · ResultPanel(S3+/S7)"]
+      - id: acceptance-11
+        refs: ["__tests__/mobileEditorShellMenu.test.tsx"]
+      - id: acceptance-12
+        refs: ["헤드리스 캡처 s2-{design,info,photo}-{light,dark} · s2-menu-light(31e2c1d 이전) 육안 확인, 실기기 미검증"]
+      - id: acceptance-13
+        refs: ["requirement-gap 1라운드(blocking 1 · should-fix 5 → a54bd37에서 반영), 2라운드는 사용량 한도로 중단(인프라 실패 1회로 침)"]
+      - id: acceptance-14
+        refs: ["__tests__/backToLandingPreservesDoc.test.tsx 자동저장 off · 포스터 없음"]
+      - id: acceptance-15
+        refs: ["__tests__/doneFailureInfoMode.test.tsx"]
+      - id: acceptance-16
+        refs: ["__tests__/mobileEditorShellOcrEntryConsolidation.test.tsx", "__tests__/ocrNeedManualTitleSearch.test.tsx"]
+      - id: acceptance-17
+        refs: ["__tests__/themePreference.test.tsx"]
   withdrawn: []
 
 goal:
