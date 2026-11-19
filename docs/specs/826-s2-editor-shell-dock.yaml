@@ -37,15 +37,49 @@ brownfield: true
 refine_generation: 0
 
 lifecycle:
-  state: active
-  outcome: null
-  reason: "구현 완료(브랜치 feat/826-s2-shell). PR · 머지는 소유자 승인 대기."
-  approved_by: "소유자 지시(2026-11-19): '코드 작업 다 되면 /simplify, /code-review medium 돌린 다음 시드 상태 최신화' · 착수 승인 '승인, 구현 시작'"
+  state: closed
+  outcome: completed
+  reason: "PR #840이 main에 rebase 머지됐고 acceptance 1~17 근거가 테스트한 트리(53b74d5)에 있다."
+  approved_by: "소유자 응답(2026-11-19 세션 종료): S2 Seed 'closed · completed'"
   evidence:
-    commit: a54bd37d35046f2dc6f491d97bad041566e4840f
+    commit: 53b74d5e0129d179578709ef88b8e3509b678f72
     items:
+      - id: constraint-1
+        refs: ["git diff c9bc6d8..53b74d5 -- src/components/moods src/components/TicketRenderer.tsx src/utils/captureToImage.ts 0줄"]
+      - id: constraint-2
+        refs: ["InPlaceFieldEditor 입력 유지 · Landing 주석 1줄 · ResultStage 워드마크 onClick 제거만(requirement-gap 1라운드 c2 충족)"]
+      - id: constraint-3
+        refs: ["src/components/v2/EditorMenu.tsx, __tests__/mobileEditorShellMenu.test.tsx"]
+      - id: constraint-4
+        refs: ["src/components/v2/dock/EditorDock.tsx DOCK_BODY_PX 196 · DOCK_MODEBAR_PX 52, __tests__/editorDockModes.test.tsx, measure-chrome dockHeight"]
+      - id: constraint-5
+        refs: ["FloatingToolbar · FieldDrawer · DesignRail · AdvancedSettingsModal 파일 삭제, filme:toolbar · filme:drawer · RAIL_ITEMS grep 0건"]
+      - id: constraint-6
+        refs: ["editorDockDesign · editorDockInfo · editorDockPhoto · dockBackgroundStamp · inPlaceFontPicker · mobileEditorShellOcrEntryConsolidation 테스트"]
+      - id: constraint-7
+        refs: ["__tests__/backToLandingPreservesDoc.test.tsx, __tests__/resultStageWordmarkReset.test.tsx"]
+      - id: constraint-8
+        refs: ["MobileEditorShell ghost = !isMax && (ghostMode || editing || dockMode === info), __tests__/mobileEditorShellGhost.test.tsx"]
+      - id: constraint-9
+        refs: ["__tests__/resultGhostOff.test.tsx, __tests__/ghostMode.test.tsx(data-hide-on-export)"]
+      - id: constraint-10
+        refs: ["src/styles/globals.css .chrome-ambient = var(--pr-stage), LayoutPicker · TexturePicker · BrightnessSlider · designRailItems 선택 글자 잉크"]
+      - id: constraint-11
+        refs: ["git diff c9bc6d8 + 줄 gradient · glow · blur 0건, 완료 버튼 bg-accent 단색"]
+      - id: constraint-12
+        refs: ["docs/COPY_TONE_GUIDE.md 잠긴 문구 표, __tests__ grep 0건(최대화 · 빈 항목 미리보기 · 워드마크 확인 문구)"]
+      - id: constraint-13
+        refs: ["measure-chrome frameFit(도크 · 메뉴 시트) prod dark · light exit 0, CI Chrome harness 통과"]
+      - id: constraint-14
+        refs: ["커밋 12개 Conventional Commits, PR #840 rebase 머지(소유자 지시), 작업 워크트리 정리"]
+      - id: constraint-15
+        refs: ["__tests__/backToLandingPreservesDoc.test.tsx(자동저장 off · 포스터 없음 · 저장 실패 시 잔류)"]
+      - id: constraint-16
+        refs: ["__tests__/doneFailureInfoMode.test.tsx(정보 모드 · 앰버 · 4000ms · #776 재숨김)"]
+      - id: constraint-17
+        refs: ["__tests__/mobileEditorShellOcrEntryConsolidation.test.tsx(카드 한 벌), __tests__/ocrUndoRestore.test.tsx(편집 중 시작 OCR은 ‹ 뒤에도 현재 문서)"]
       - id: acceptance-1
-        refs: ["bun run typecheck · lint 종료 0, bun run test 1360 pass / 0 fail (a54bd37)"]
+        refs: ["bun run typecheck · lint 종료 0, bun run test 1360 pass / 0 fail (53b74d5, 브랜치 커밋 a54bd37의 rebase 결과)"]
       - id: acceptance-2
         refs: ["__tests__/editorTopBar.test.tsx", "__tests__/editorDockModes.test.tsx", "__tests__/editorDockInitialMode.test.tsx"]
       - id: acceptance-3
@@ -69,7 +103,7 @@ lifecycle:
       - id: acceptance-12
         refs: ["헤드리스 캡처 s2-{design,info,photo}-{light,dark} · s2-menu-light(31e2c1d 이전) 육안 확인, 실기기 미검증"]
       - id: acceptance-13
-        refs: ["requirement-gap 1라운드(blocking 1 · should-fix 5 → a54bd37에서 반영), 2라운드는 사용량 한도로 중단(인프라 실패 1회로 침)"]
+        refs: ["requirement-gap 1라운드(blocking 1 · should-fix 5 → 53b74d5에서 반영), 2라운드는 사용량 한도로 중단(인프라 실패 1회로 침)"]
       - id: acceptance-14
         refs: ["__tests__/backToLandingPreservesDoc.test.tsx 자동저장 off · 포스터 없음"]
       - id: acceptance-15
