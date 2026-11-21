@@ -25,13 +25,12 @@ export interface KobisSearchMessages {
 
 /**
  * 기본 문구 — 덮어쓰지 않으면 이게 쓰인다. #826 결정 8: 실패는 [무슨 일] 한 문장이고 다음 행동은 그 자리 버튼이다
- * (입력 패널의 '다시 검색'). 무매칭은 할 일이 제목 고치기라 입력란이 바로 위에 있다. 입력 패널이 둘을 이 값으로 가른다.
+ * (입력 패널의 '다시 검색'). 무매칭은 할 일이 제목 고치기라 입력란이 바로 위에 있다. 둘은 문구가 아니라 noResults로 가른다.
  */
-export const KOBIS_MESSAGES: KobisSearchMessages = {
+const DEFAULT_MESSAGES: KobisSearchMessages = {
   noResults: '검색 결과가 없어요',
   requestFailed: '검색에 실패했어요',
 };
-const DEFAULT_MESSAGES = KOBIS_MESSAGES;
 
 export interface UseKobisSearchOptions {
   /** 기본 필드를 반영하고, 문서/영화 선택이 여전히 유효할 때만 보강하는 콜백을 반환한다. */
@@ -43,6 +42,8 @@ export interface UseKobisSearch {
   results: KobisMovie[];
   loading: boolean;
   error: string;
+  /** error가 무매칭(요청은 성공, 결과 0건)이면 true — 실패와 달리 다시 검색할 이유가 없다. */
+  noResults: boolean;
   open: boolean;
   setOpen: (open: boolean) => void;
   /** 300ms 디바운스 후 검색. 빈 검색어면 드롭다운만 닫는다(무검색). */
@@ -58,6 +59,7 @@ export function useKobisSearch({ apply, messages: overrides }: UseKobisSearchOpt
   const [results, setResults] = useState<KobisMovie[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [noResults, setNoResults] = useState(false);
   const [open, setOpen] = useState(false);
 
   const cacheRef = useRef<Map<string, KobisMovie[]>>(new Map());
@@ -82,6 +84,7 @@ export function useKobisSearch({ apply, messages: overrides }: UseKobisSearchOpt
       // 명시 검색만 이 경로로 온다(디바운스는 scheduleSearch에서 빈 값을 걸러냄).
       if (messages.empty) {
         setError(messages.empty);
+        setNoResults(false);
         setOpen(true);
       }
       return;
@@ -93,6 +96,7 @@ export function useKobisSearch({ apply, messages: overrides }: UseKobisSearchOpt
       const cached = cacheRef.current.get(term)!;
       setResults(cached);
       setError(cached.length === 0 ? messages.noResults : '');
+      setNoResults(cached.length === 0);
       // 캐시 히트 = 결과 확보. selectMovie의 detail이 아직 loading을 물고 있어도 내려서
       // 드롭다운이 결과 대신 Loading에 갇히지 않게(모바일 시트는 결과 표시를 loading에 게이팅).
       setLoading(false);
@@ -106,6 +110,7 @@ export function useKobisSearch({ apply, messages: overrides }: UseKobisSearchOpt
 
     setLoading(true);
     setError('');
+    setNoResults(false);
     setOpen(true);
 
     try {
@@ -118,10 +123,12 @@ export function useKobisSearch({ apply, messages: overrides }: UseKobisSearchOpt
       cacheRef.current.set(term, list);
       setResults(list);
       if (list.length === 0) setError(messages.noResults);
+      setNoResults(list.length === 0);
     } catch (e) {
       if (e instanceof Error && e.name === 'AbortError') return;
       console.error('영화 검색 오류:', e);
       setError(messages.requestFailed);
+      setNoResults(false);
       setResults([]);
     } finally {
       if (abortRef.current === controller) setLoading(false);
@@ -175,5 +182,5 @@ export function useKobisSearch({ apply, messages: overrides }: UseKobisSearchOpt
     }
   }
 
-  return { results, loading, error, open, setOpen, scheduleSearch, runSearch, selectMovie };
+  return { results, loading, error, noResults, open, setOpen, scheduleSearch, runSearch, selectMovie };
 }

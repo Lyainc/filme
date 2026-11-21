@@ -8,7 +8,7 @@ import { cn } from '@/utils/cn';
 import { formatDate } from '@/utils/dateFormat';
 import { handleRadioGroupKeyDown } from '@/utils/radioGroupKeyboard';
 import { inputVariants, pressableVariants } from '@/components/ui/variants';
-import { KOBIS_MESSAGES, useKobisSearch } from '@/hooks/useKobisSearch';
+import { useKobisSearch } from '@/hooks/useKobisSearch';
 import { useLogoCrop } from '@/hooks/useLogoCrop';
 import { useRatingPicker } from '@/components/v2/pickers/RatingPicker';
 import { DateInput } from '@/components/ui/DateInput';
@@ -420,9 +420,11 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
   const showFont = fontKey !== null && !(isSignature && !!stampImage);
   const currentFont: QuoteFont = (fontKey && components[fontKey]) || 'auto';
   const fontIndex = Math.max(0, FONT_OPTIONS.findIndex((o) => o.value === currentFont));
-  const [fontOpen, setFontOpen] = useState(false);
+  // 목록은 연 필드에만 열려 있다 — 필드가 바뀌면 따로 닫지 않아도 닫힌다.
+  const [fontOpenFor, setFontOpenFor] = useState<SheetTarget | null>(null);
+  const fontOpen = fontOpenFor === field;
+  const setFontOpen = (open: boolean) => setFontOpenFor(open ? field : null);
   const fontBtnRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => setFontOpen(false), [field]);
   const fontSample = (field === 'quote' ? info.quote : info.signature)?.trim() || FONT_SAMPLE_FALLBACK;
   const setFont = (font: QuoteFont) => {
     if (fontKey) photo.updateComponents({ [fontKey]: font } as Partial<TicketComponents>);
@@ -439,7 +441,10 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
   const rating = useRatingPicker({ value: info.rating, onValueChange: setRating });
 
   // ── ‹ › · Return: 현재 무드 DOM에 실제 존재하는 필드만 순회 ─────────────────────
-  const order = ticketEl ? EDIT_ORDER.filter((f) => ticketEl.querySelector(`[data-field-tap="${f}"]`)) : [];
+  // 앵커 스캔은 한 번 — 필드마다 querySelector를 돌리면 타이핑 렌더마다 16번 훑는다. 무드가 늦게 로드돼
+  // 앵커가 나중에 생기므로 메모하지 않고 렌더마다 읽는다.
+  const drawn = new Set(Array.from(ticketEl?.querySelectorAll<HTMLElement>('[data-field-tap]') ?? [], (el) => el.dataset.fieldTap));
+  const order = EDIT_ORDER.filter((f) => drawn.has(f));
   const isLast = order.length > 0 && order[order.length - 1] === field;
   const step = (dir: 1 | -1) => {
     if (!order.length) return;
@@ -531,7 +536,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
   if (field === 'title' && kobis.open) {
     if (kobis.loading) {
       rows.push(<p key="k" role="status" className="py-2 text-body text-ink-2">검색 중…</p>);
-    } else if (kobis.error === KOBIS_MESSAGES.noResults) {
+    } else if (kobis.noResults) {
       rows.push(<p key="k" role="status" className="py-2 text-body text-ink-2">{kobis.error}</p>);
     } else if (kobis.error) {
       // 실패는 [무슨 일] 한 문장 + 다음 행동은 그 자리 버튼(#826 결정 8).
@@ -625,7 +630,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
               aria-expanded={fontOpen}
               aria-label={`${label} 글꼴, 지금 ${FONT_OPTIONS[fontIndex].label}`}
               onPointerDown={keepFocus}
-              onClick={() => setFontOpen((o) => !o)}
+              onClick={() => setFontOpen(!fontOpen)}
               className={cn(pressableVariants(), 'inline-flex h-touch min-w-0 flex-1 items-center justify-center px-1 text-ink')}
             >
               {/* 이름이 아니라 입력한 글을 그 서체로 쓴다(D14-2 A) — 이름은 접근 이름에만 둔다. */}

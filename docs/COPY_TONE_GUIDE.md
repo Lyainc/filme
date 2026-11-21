@@ -262,7 +262,7 @@ eyebrow 필드 8종)를 놓쳤다 — fresh-context 리뷰가 낮은 확신으�
 | `전체 보기` (#826 S2, 구 `최대화`) | `v2/MobileEditorShell.tsx` 상단 줄 | `mobileEditorShellZoom` · `mobileChromeOrder` · `chromeDarkScope` · `previewWorkbenchSurface` · `mobileEditorShellLandscapeRotation` · `ocrUndoRestore` |
 | `빈 항목 표시` (#826 S2, 구 `빈 항목 미리보기`) | `v2/EditorMenu.tsx` | `mobileEditorShellGhost` · `mobileEditorShellMenu` · `inPlaceFieldEditor` · `mobileChromeOrder` |
 | `자동저장 켜짐` · `자동저장 꺼짐`(`aria-label`) · `랜딩으로 돌아가기` · `티켓 인식 중…` | `v2/EditorMenu.tsx` · `v2/MobileEditorShell.tsx` | `mobileEditorShellMenu` · `backToLandingPreservesDoc` · `mobileEditorShellOcrEntryConsolidation` |
-| `검색 중…` · `검색 결과가 없어요` (#826 S3, 구 `Loading…` · 두 문장 무매칭 안내) · `검색에 실패했어요` + `다시 검색` 버튼 | `hooks/useKobisSearch.ts`(`KOBIS_MESSAGES`) · `v2/InPlaceFieldEditor.tsx` · `v2/FieldEditorBody.tsx` | `titleSheetSearch` · `inPlacePanelS3` |
+| `검색 중…` · `검색 결과가 없어요` (#826 S3, 구 `Loading…` · 두 문장 무매칭 안내) · `검색에 실패했어요` + `다시 검색` 버튼 | `hooks/useKobisSearch.ts`(`DEFAULT_MESSAGES`) · `v2/InPlaceFieldEditor.tsx` · `v2/FieldEditorBody.tsx` | `titleSheetSearch` · `inPlacePanelS3` |
 
 **삭제된 잠금(#826 S2)**: `지금까지 작업한 내용이 사라져요. 처음 화면으로 돌아갈까요?`(워드마크 탭 초기화 확인 — 기대하던
 `wordmarkClearOnTap`은 ‹ 동작을 잠그는 `backToLandingPreservesDoc`으로, `resultStageWordmarkReset`은 "워드마크 탭은 아무 일도
