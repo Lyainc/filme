@@ -7,6 +7,7 @@ import {
   type ChangeEvent,
   type DragEvent,
   type KeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
 } from 'react';
 import { EditorDock, dockAnchoredBottom, type DockMode } from './dock/EditorDock';
 import { EditorMenu } from './EditorMenu';
@@ -26,6 +27,7 @@ import type { usePhototicket } from '@/hooks/usePhototicket';
 import { INITIAL_STATE } from '@/hooks/usePhototicket';
 import type { LayoutId, MovieInfo, TicketComponents, TicketField } from '@/types';
 import { isStampTarget, STAMP_KEYS, type SheetTarget } from '@/constants/fields';
+import { fieldBoxesIn, pickFieldAt } from '@/utils/fieldHitArea';
 import { ErrorToastHost } from '@/utils/errorToast';
 import type { ThemePreference } from '@/constants/theme';
 
@@ -275,6 +277,18 @@ export function MobileEditorShell({
     leaving.forEach((field) => pending.delete(field));
     photo.updateFieldVisibility(Object.fromEntries(leaving.map((field) => [field, false])));
   }, [activeField, photo.updateFieldVisibility]);
+
+  // 필드 hit 44(#826 S3 constraint-8 · D13-2 A) — 프리뷰 219×350에선 작은 필드의 글자 상자가 8px 안팎이라, 글자 상자 밖이지만
+  // 필드 중심 44 안을 누르면 가장 가까운 필드를 연다. capture 단계라 무드의 '포스터 추가' 탭보다 먼저 받고, 글자 상자 직접 탭은
+  // FieldTap이 그대로 받는다(무드 렌더는 안 고친다). 어느 44에도 안 들면 손대지 않아 원래 받던 쪽으로 간다. 오탭은 ‹ ›와 정보 목록이 받는다.
+  const handleTicketClickCapture = useCallback((e: ReactMouseEvent<HTMLDivElement>) => {
+    if ((e.target as Element).closest('[data-field-tap]')) return;
+    const field = pickFieldAt(e.clientX, e.clientY, fieldBoxesIn(e.currentTarget));
+    if (!field) return;
+    e.stopPropagation();
+    e.preventDefault();
+    handleField(field);
+  }, [handleField]);
 
   // 첫 업로드·교체(새 파일 선택) — 포스터 드롭존 탭, 서브메뉴 "교체", 그리고 포스터가 없을 때의
   // 온-티켓 탭(#723)이 전부 이 경로.
@@ -645,6 +659,7 @@ export function MobileEditorShell({
               >
                 <div
                   ref={setTicketBoxEl}
+                  onClickCapture={viewMode === 'default' ? handleTicketClickCapture : undefined}
                   className={rotateLandscape ? 'absolute left-1/2 top-1/2' : undefined}
                   style={
                     rotateLandscape
