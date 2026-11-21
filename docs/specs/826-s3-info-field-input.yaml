@@ -37,10 +37,10 @@ brownfield: true
 refine_generation: 0
 
 lifecycle:
-  state: paused
+  state: active
   outcome: null
-  reason: "Seed 초안. 소유자 활성화 승인 전이라 구현을 시작하지 않는다."
-  approved_by: "소유자 /goal 착수 지시(2026-11-20, 'build-spec으로 S3 Seed를 만들어 승인을 받는다')와 '작업 속행' — 초안 작성까지만"
+  reason: "소유자가 S3 Seed를 승인하고 active로 바꾸라고 지시했다."
+  approved_by: "소유자 응답(2026-11-21): '시드 승인했고 active로 바꿔줘'"
   evidence:
     commit: null
     items: []
