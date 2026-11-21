@@ -1,3 +1,4 @@
+import type { KeyboardEvent } from 'react';
 import type { DateGranularity } from '@/types';
 import { cn } from '@/utils/cn';
 import { inputVariants } from './variants';
@@ -16,6 +17,9 @@ export function DateInput({
   onChange,
   ariaLabel,
   className,
+  autoFocus,
+  onKeyDown,
+  enterKeyHint,
 }: {
   value: string;
   granularity: DateGranularity;
@@ -24,6 +28,9 @@ export function DateInput({
   ariaLabel?: string;
   /** 크기 · 표면 클래스를 통째로 바꾼다 — 입력 패널은 한 줄 높이(36)에 맞춘 자기 클래스를 넘긴다(#826 S3). */
   className?: string;
+  autoFocus?: boolean;
+  onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
+  enterKeyHint?: 'next' | 'done';
 }) {
   const base = className ?? cn(
     inputVariants({ surface: 'paper' }),
@@ -45,6 +52,9 @@ export function DateInput({
         }}
         aria-label={ariaLabel}
         className={base}
+        autoFocus={autoFocus}
+        onKeyDown={onKeyDown}
+        enterKeyHint={enterKeyHint}
       />
     );
   }
@@ -58,6 +68,9 @@ export function DateInput({
         onChange={(e) => onChange(mergeDatePrefix(value, e.target.value))}
         aria-label={ariaLabel}
         className={base}
+        autoFocus={autoFocus}
+        onKeyDown={onKeyDown}
+        enterKeyHint={enterKeyHint}
       />
     );
   }
@@ -68,6 +81,9 @@ export function DateInput({
       onChange={(e) => onChange(e.target.value)}
       aria-label={ariaLabel}
       className={base}
+      autoFocus={autoFocus}
+      onKeyDown={onKeyDown}
+      enterKeyHint={enterKeyHint}
     />
   );
 }

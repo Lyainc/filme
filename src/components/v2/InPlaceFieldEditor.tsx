@@ -394,6 +394,10 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
 
   // KOBIS 검색(제목) — 공용 훅(#242 drift 방지).
   const kobis = useKobisSearch({ apply: photo.beginMovieSelection });
+  // 편집기는 필드가 바뀌어도 살아 있다 — 제목을 떠나면 목록을 닫아 돌아왔을 때 지난 검색이 다시 뜨지 않게 한다.
+  useEffect(() => {
+    if (field !== 'title') kobis.setOpen(false);
+  }, [field]);
 
   const setValue = (v: string) => {
     if (isStamp) {
@@ -438,7 +442,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
 
   // ── 평점(K-05): 키보드 없이 별 44 + 숫자(누르면 소수 입력). 표시 토글은 정보 목록 눈 몫이다. ──
   const setRating = useCallback((r: number) => photo.updateMovieInfo({ rating: r }), [photo.updateMovieInfo]);
-  const rating = useRatingPicker({ value: info.rating, onValueChange: setRating });
+  const rating = useRatingPicker({ value: info.rating, onValueChange: setRating, resetKey: field });
 
   // ── ‹ › · Return: 현재 무드 DOM에 실제 존재하는 필드만 순회 ─────────────────────
   // 앵커 스캔은 한 번 — 필드마다 querySelector를 돌리면 타이핑 렌더마다 16번 훑는다. 무드가 늦게 로드돼
@@ -449,7 +453,9 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
   const step = (dir: 1 | -1) => {
     if (!order.length) return;
     const i = order.indexOf(field);
-    onField(order[(i + dir + order.length) % order.length]);
+    // 지금 필드가 순회 목록에 없으면(무드가 안 그린 필드) 목록 밖에서 출발한다 — ›는 처음, ‹는 끝.
+    if (i < 0) onField(dir === 1 ? order[0] : order[order.length - 1]);
+    else onField(order[(i + dir + order.length) % order.length]);
   };
   // 키보드 Return(D13 ①) — 다음 항목, 마지막 필드에선 완료. 한글 조합 확정 Enter는 건너뛴다(조합 중 Return은 글자 확정).
   const onEnter = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -486,6 +492,9 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
         onChange={(releaseDate) => photo.updateMovieInfo({ releaseDate })}
         ariaLabel="개봉일"
         className={PANEL_INPUT_CLS}
+        autoFocus
+        onKeyDown={onEnter}
+        enterKeyHint={enterKeyHint}
       />
     );
   } else if (field === 'watchDate') {
@@ -543,9 +552,11 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
       rows.push(
         <div key="k" className="flex min-h-touch items-center gap-2">
           <p role="alert" className="flex-1 text-body text-warn">{kobis.error}</p>
-          <button type="button" onPointerDown={keepFocus} onClick={() => kobis.runSearch(info.title.trim())} className={cn(OPT_CLS, 'border-hair-strong text-ink')}>
+          {info.title.trim() && (
+            <button type="button" onPointerDown={keepFocus} onClick={() => kobis.runSearch(info.title.trim())} className={cn(OPT_CLS, 'border-hair-strong text-ink')}>
             다시 검색
           </button>
+          )}
         </div>
       );
     } else if (kobis.results.length > 0) {

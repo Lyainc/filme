@@ -420,3 +420,96 @@ describe('f_kobis — 제목 KOBIS 목록 (acceptance-20 · constraint-12 문구
     }
   });
 });
+
+// ── /code-review medium 지적 잠금 — 편집기는 필드가 바뀌어도 살아 있으니, 필드별 일시 상태가 다음 필드로 새지 않아야 한다 ──
+function StepHarness({ start }: { start: SheetTarget }) {
+  const photo = usePhototicket();
+  const [field, setField] = useState<SheetTarget>(start);
+  const [wrapperEl, setWrapperEl] = useState<HTMLDivElement | null>(null);
+  const [ticketEl, setTicketEl] = useState<HTMLDivElement | null>(null);
+  return (
+    <div>
+      <div data-testid="field">{field}</div>
+      <div ref={setWrapperEl}>
+        {/* 순회 목록 = 제목 · 원제 · 개봉일 · 평점(EDIT_ORDER 순). 좌석은 그리지 않는다(무드가 안 그린 필드). */}
+        <div ref={setTicketEl}>
+          {(['title', 'titleOg', 'releaseDate', 'rating'] as const).map((f) => <span key={f} data-field-tap={f}>{f}</span>)}
+        </div>
+      </div>
+      {wrapperEl && ticketEl && (
+        <InPlaceFieldEditor photo={photo} field={field} wrapperEl={wrapperEl} ticketEl={ticketEl} onField={setField} onClose={() => {}} onLift={() => {}} />
+      )}
+    </div>
+  );
+}
+const cur = () => screen.getByTestId('field').textContent;
+const navBtn = (name: '이전 항목' | '다음 항목') => fireEvent.click(screen.getByRole('button', { name }));
+
+describe('필드가 바뀔 때 일시 상태 · 순회 경계', () => {
+  test('순회 목록에 없는 필드에서 ›는 처음, ‹는 끝으로 간다', () => {
+    render(<StepHarness start="seat" />);
+    navBtn('다음 항목');
+    expect(cur()).toBe('title');
+    cleanup();
+    render(<StepHarness start="seat" />);
+    navBtn('이전 항목');
+    expect(cur()).toBe('rating');
+  });
+
+  test('개봉일 입력의 Return도 다음 항목으로 간다', () => {
+    render(<StepHarness start="releaseDate" />);
+    const input = screen.getByLabelText('개봉일');
+    expect(input.getAttribute('enterkeyhint')).toBe('next');
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(cur()).toBe('rating');
+  });
+
+  test('평점 소수 입력은 다른 필드에 다녀오면 접혀 있다', () => {
+    render(<StepHarness start="rating" />);
+    fireEvent.click(screen.getByRole('button', { name: '평점 소수 입력 토글' }));
+    expect(screen.queryAllByRole('spinbutton').length).toBe(1);
+    navBtn('이전 항목');
+    navBtn('다음 항목');
+    expect(cur()).toBe('rating');
+    expect(screen.queryAllByRole('spinbutton').length).toBe(0);
+  });
+
+  describe('KOBIS', () => {
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => {
+      globalThis.fetch = originalFetch;
+      jest.useRealTimers();
+    });
+
+    test('제목을 떠났다 돌아오면 지난 검색 목록이 다시 뜨지 않는다', async () => {
+      globalThis.fetch = ((_req: RequestInfo | URL) => Promise.resolve(json({ movieListResult: { movieList: MOVIES } }))) as typeof fetch;
+      render(<StepHarness start="title" />);
+      fireEvent.change(screen.getByRole('textbox', { name: '제목' }), { target: { value: '먼 바다' } });
+      await act(async () => { jest.advanceTimersByTime(310); });
+      await act(async () => { await Promise.resolve(); });
+      expect(screen.queryAllByRole('listbox').length).toBe(1);
+      navBtn('다음 항목');
+      navBtn('이전 항목');
+      expect(cur()).toBe('title');
+      expect(screen.queryAllByRole('listbox').length).toBe(0);
+    });
+
+    test('실패 뒤 제목을 비우면 [다시 검색]이 사라진다(눌러도 아무 일 없는 버튼을 남기지 않는다)', async () => {
+      globalThis.fetch = ((_req: RequestInfo | URL) => Promise.resolve(new Response('x', { status: 500 }))) as typeof fetch;
+      const errSpy = console.error;
+      console.error = () => {};
+      try {
+        render(<StepHarness start="title" />);
+        const input = screen.getByRole('textbox', { name: '제목' });
+        fireEvent.change(input, { target: { value: '먼 바다' } });
+        await act(async () => { jest.advanceTimersByTime(310); });
+        await act(async () => { await Promise.resolve(); });
+        expect(screen.getAllByRole('button', { name: '다시 검색' }).length).toBe(1);
+        fireEvent.change(input, { target: { value: '' } });
+        expect(screen.queryAllByRole('button', { name: '다시 검색' }).length).toBe(0);
+      } finally {
+        console.error = errSpy;
+      }
+    });
+  });
+});
