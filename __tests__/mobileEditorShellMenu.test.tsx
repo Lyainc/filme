@@ -427,7 +427,7 @@ describe('문서 카드: 임시저장 · 초기화', () => {
     leaveLanding();
     fireEvent.click(screen.getByText('seed'));
     fireEvent.click(await screen.findByRole('button', { name: '극장 편집' }));
-    await screen.findByRole('toolbar', { name: '필드 편집 도구' });
+    await screen.findByRole('group', { name: '극장 입력' });
 
     await user.click(menuButton());
     await user.click(screen.getByRole('button', { name: '초기화' }));
@@ -438,7 +438,7 @@ describe('문서 카드: 임시저장 · 초기화', () => {
     // 새 문서로 다시 들어온다 — 포스터 없이 편집 캔버스가 선다.
     await user.click(screen.getByTestId('landing-restore'));
     expect(landingShown()).toBe(false);
-    expect(screen.queryByRole('toolbar', { name: '필드 편집 도구' }) === null).toBe(true);
+    expect(screen.queryByRole('group', { name: '극장 입력' }) === null).toBe(true);
     expect(screen.queryByRole('textbox', { name: '극장' }) === null).toBe(true);
   });
 

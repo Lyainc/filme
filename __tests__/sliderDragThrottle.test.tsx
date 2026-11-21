@@ -117,6 +117,7 @@ function RailRenderCountHarness() {
         onModeChange={() => {}}
         hidden={false}
         onField={() => {}}
+        onOpenField={() => {}}
         onMissingField={() => {}}
         onOcrOpen={() => {}}
         ocrBusy={false}

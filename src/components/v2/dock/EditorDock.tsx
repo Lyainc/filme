@@ -52,6 +52,7 @@ export function EditorDock({
   onModeChange,
   hidden,
   onField,
+  onOpenField,
   onMissingField,
   onOcrOpen,
   ocrBusy,
@@ -64,6 +65,8 @@ export function EditorDock({
   hidden: boolean;
   /** 필드·로고 인플레이스 편집 진입 — 셸의 handleField. */
   onField: (target: SheetTarget) => void;
+  /** 정보 행 진입 — 표시를 바꾸지 않고 입력 패널만 연다(#826 S3 constraint-7: 표시는 행의 눈으로만). */
+  onOpenField: (target: TicketField) => void;
   /** 필수 누락 행 진입(#776) — 셸의 openMissingField. */
   onMissingField: (target: TicketField) => void;
   onOcrOpen: () => void;
@@ -92,7 +95,7 @@ export function EditorDock({
           <PhotoPane photo={photo} onPosterPick={onPosterPick} onPosterRecrop={onPosterRecrop} onEditField={onField} />
         )}
         {mode === 'info' && (
-          <InfoPane photo={photo} onField={onField} onMissingField={onMissingField} onOcrOpen={onOcrOpen} ocrBusy={ocrBusy} />
+          <InfoPane photo={photo} onField={onOpenField} onMissingField={onMissingField} onOcrOpen={onOcrOpen} ocrBusy={ocrBusy} />
         )}
         {mode === 'design' && (
           <DesignPane photo={photo} tool={tool} onToolChange={setTool} onEditField={onField} />

@@ -200,7 +200,7 @@ function TitleSheet({ photo }: { photo: Photo }) {
         <div className="overflow-hidden rounded-card border border-hair bg-s2">
           {loading ? (
             <div role="status" aria-live="polite" className="tabular-nums px-4 py-5 text-center text-micro uppercase tracking-widest text-ink-2">
-              Loading…
+              검색 중…
             </div>
           ) : error ? (
             <div role="alert" className="tabular-nums px-4 py-5 text-center text-micro uppercase tracking-widest text-warn">

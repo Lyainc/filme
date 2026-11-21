@@ -79,6 +79,7 @@ function Harness({ mood = 'editorial' }: { mood?: BackgroundMood }) {
         onModeChange={setDockMode}
         hidden={false}
         onField={() => {}}
+        onOpenField={() => {}}
         onMissingField={() => {}}
         onOcrOpen={() => {}}
         ocrBusy={false}

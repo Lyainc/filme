@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test } from 'bun:test';
-import { act, cleanup, fireEvent, render, renderHook, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, renderHook, screen, within } from '@testing-library/react';
 import Home from '@/pages/index';
 import { useDebounce } from '@/hooks/useDebounce';
 
@@ -12,16 +12,15 @@ const draft = () => window.localStorage.setItem('filme:phototicket:v1', JSON.str
 const shownSignature = () => document.querySelector('[data-field-tap="signature"]')?.textContent ?? '';
 
 // 실제 Home 배선을 거친다. 셸에 live props를 직접 주면 #775를 재현할 수 없다.
-// 인플레이스 input은 글자가 투명하고(#365) 보이는 글자는 티켓 렌더가 그리므로, "즉시 보인다"는
-// input 값이 아니라 티켓의 [data-field-tap] 글자로 잰다.
+// 입력은 패널(#826 S3)에 있고, "즉시 보인다"는 input 값이 아니라 티켓의 [data-field-tap] 글자로 잰다.
 test('#775 — 연속 입력·조합·삭제가 지연 없이 티켓에 보이고 닫자마자 완료해도 최신 값이다', async () => {
   draft();
   render(<Home />);
   fireEvent.click(await screen.findByTestId('landing-restore'));
   fireEvent.click(await screen.findByRole('button', { name: '서명 편집' }));
   const input = await screen.findByRole('textbox', { name: '서명' }) as HTMLInputElement;
-  // 투명 캐럿 유지(#365·#494) — 불투명 입력칸으로 바꿔서 푸는 게 아니다.
-  expect(input.style.color).toBe('transparent');
+  // 티켓 위 투명 입력은 걷혔다(#826 S3 constraint-4) — 입력은 패널 안에 있다.
+  expect(!!input.closest('[data-field-panel]')).toBe(true);
   for (const value of ['ABC', 'ABCD', 'ABC', 'A한BC']) {
     fireEvent.change(input, { target: { value } });
     expect(shownSignature()).toContain(value);
@@ -34,7 +33,7 @@ test('#775 — 연속 입력·조합·삭제가 지연 없이 티켓에 보이�
     expect(screen.getByRole('textbox', { name: '서명' }) === input).toBe(true);
   }
   fireEvent.compositionEnd(input, { data: '한' });
-  fireEvent.click(screen.getByRole('button', { name: '편집 완료' }));
+  fireEvent.click(within(screen.getByRole('group', { name: '서명 입력' })).getByRole('button', { name: '완료' }));
   expect(shownSignature()).toContain('A한BC');
   fireEvent.click(screen.getByRole('button', { name: '완료' }));
   // 편집 셸은 결과 화면 뒤에 숨은 채 마운트돼 있으니(#297) 결과 스테이지 루트로 범위를 좁힌다.

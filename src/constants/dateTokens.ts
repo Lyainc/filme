@@ -14,7 +14,7 @@ export const DATE_FORMAT_TOKENS: { value: DateFormatToken; sample: string }[] = 
 ];
 
 export const GRANULARITY_OPTIONS: { value: DateGranularity; label: string }[] = [
-  { value: 'year', label: '연만' },
+  { value: 'year', label: '연' },
   { value: 'year-month', label: '연·월' },
   { value: 'date', label: '연·월·일' },
 ];

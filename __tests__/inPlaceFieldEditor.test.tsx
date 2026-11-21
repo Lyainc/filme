@@ -1,11 +1,11 @@
 /**
- * #354 회귀 테스트 — 온티켓 인플레이스 편집 + 필드바.
+ * #354 → #826 S3 회귀 테스트 — 필드 입력 패널.
  *
  * 검증 축:
- *  1. 탭 → 투명 인플레이스 input이 뜨고, 타이핑이 movieInfo에 반영된다(티켓이 텍스트를 렌더).
- *  2. prev/next 순회는 현재 무드 DOM에 실제 존재하는 필드(data-field-tap 앵커)만 돈다 —
+ *  1. 탭 → 패널 입력(16px)이 뜨고, 타이핑이 movieInfo에 반영된다(티켓이 텍스트를 렌더).
+ *  2. ‹ › 순회는 현재 무드 DOM에 실제 존재하는 필드(data-field-tap 앵커)만 돈다 —
  *     minimal은 bookingNo 미렌더(MOOD_EXCLUDED_FIELDS)라 순회에 안 나온다.
- *  3. 완료(체크) → 에디터 닫힘. 필드바 눈 토글 흐름은 mobileEditorShellFieldCoverage가 커버.
+ *  3. 완료 → 패널 닫힘. 표시는 패널이 아니라 정보 목록 눈으로만 바꾼다(inPlacePanelS3가 커버).
  *  4. 빈 항목(ghost, #826 S2 constraint-8): 정보 모드 자동 on · 사진/디자인 모드는 메뉴 '빈 항목 표시' 스위치 ·
  *     편집 중 강제 on — 스위치가 꺼져 있어도 편집에 들어가면 빈 필드 placeholder가 탭 타깃으로 남는다.
  *
@@ -13,7 +13,7 @@
  * (위치 어서션은 하지 않는다 — 지오메트리는 브라우저 E2E 몫).
  */
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
 import { MIN_AA, targetPx } from './tapTargets';
@@ -86,9 +86,8 @@ describe('인플레이스 필드 에디터 (#354)', () => {
     const seen: string[] = [];
     for (let i = 0; i < 20; i++) {
       fireEvent.click(screen.getByRole('button', { name: '다음 항목' }));
-      // input 없는 필드(평점·날짜)도 필드바는 항상 있으므로 바의 존재로 순회를 관찰한다.
-      const bar = screen.getByRole('toolbar', { name: '필드 편집 도구' });
-      expect(bar).toBeTruthy();
+      // 글자 입력 없는 필드(평점)도 패널은 항상 있으므로 패널의 존재로 순회를 관찰한다.
+      expect(screen.getAllByRole('group', { name: / 입력$/ }).length).toBe(1);
       const input = screen.queryByRole('textbox');
       if (input) seen.push(input.getAttribute('aria-label') ?? '');
       if (screen.queryByRole('textbox', { name: '제목' })) break; // 한 바퀴 완료
@@ -109,15 +108,16 @@ describe('인플레이스 필드 에디터 (#354)', () => {
     expect(screen.queryByRole('textbox', { name: '제목' }) === null).toBe(true);
   });
 
-  test('완료(체크) → 에디터 닫힘', async () => {
+  test('완료 → 패널 닫힘', async () => {
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
 
     fireEvent.click(await screen.findByRole('button', { name: '극장 편집' }));
     await screen.findByRole('textbox', { name: '극장' });
-    fireEvent.click(screen.getByRole('button', { name: '편집 완료' }));
+    // 상단 줄에도 '완료'(문서 완성)가 있어 패널 안에서 찾는다.
+    fireEvent.click(within(screen.getByRole('group', { name: '극장 입력' })).getByRole('button', { name: '완료' }));
     expect(screen.queryByRole('textbox', { name: '극장' }) === null).toBe(true);
-    expect(screen.queryByRole('toolbar', { name: '필드 편집 도구' }) === null).toBe(true);
+    expect(screen.queryByRole('group', { name: '극장 입력' }) === null).toBe(true);
   });
 
   test('prev/next 순회 경유는 숨긴 필드 가시성을 켜지 않는다 (PR #359 리뷰 P1)', async () => {
@@ -136,7 +136,7 @@ describe('인플레이스 필드 에디터 (#354)', () => {
     expect(screen.getByTestId('vis-actors').textContent).toBe('false');
   });
 
-  test('actors는 투명 오버레이 input 없이 aid 패널 opaque input만 뜨고, 타이핑이 movieInfo.actors에 반영된다 (#447)', async () => {
+  test('출연은 패널 입력 하나만 뜨고, 타이핑이 movieInfo.actors에 반영된다 (#447)', async () => {
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
 
@@ -145,7 +145,7 @@ describe('인플레이스 필드 에디터 (#354)', () => {
     await screen.findByRole('textbox', { name: '극장' });
     fireEvent.click(await screen.findByRole('button', { name: '출연 편집' }));
 
-    // 투명 오버레이 input(hasInput 경로)은 actors에서 안 뜬다 — aid 패널의 opaque input 하나만 존재.
+    // 티켓 위 투명 입력은 없다 — 패널 입력 하나만 존재.
     const boxes = await screen.findAllByRole('textbox', { name: '출연' });
     expect(boxes).toHaveLength(1);
 
@@ -191,23 +191,24 @@ describe('인플레이스 필드 에디터 (#354)', () => {
   // #484 c6 — signature는 StampTarget이 아니지만(c3) isImageField 플래그로 chain/format과
   // 동일한 이미지 업로드 UI 분기를 공유해야 한다.
   describe('서명 필드 isImageField 라우팅 (#484 c6)', () => {
-    test('이미지 없을 때: 텍스트 캐럿 + 필드바에 "로고 이미지" 버튼(chain/format과 동일)', async () => {
+    test('이미지 없을 때: 글자 입력 + 둘째 줄 "이미지로"(chain/format과 동일)', async () => {
       render(<Harness />);
       fireEvent.click(screen.getByText('seed'));
 
       fireEvent.click(await screen.findByRole('button', { name: '서명 편집' }));
       expect(await screen.findByRole('textbox', { name: '서명' })).toBeTruthy();
-      expect(screen.getByRole('button', { name: '로고 이미지' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: '이미지로' })).toBeTruthy();
     });
 
-    test('이미지 있을 때: 텍스트 캐럿 대신 aid 패널에 이미지+제거 버튼, 제거하면 텍스트 캐럿으로 복귀', async () => {
+    test('이미지 있을 때: 글자 입력 대신 이미지 행(제거 · 교체), 제거하면 글자 입력으로 복귀', async () => {
       render(<Harness />);
       fireEvent.click(screen.getByText('seed'));
       fireEvent.click(screen.getByText('seed-signature-image'));
 
       fireEvent.click(await screen.findByRole('button', { name: '서명 편집' }));
       expect(screen.queryByRole('textbox', { name: '서명' }) === null).toBe(true);
-      const removeBtn = await screen.findByText('이미지 제거');
+      const removeBtn = await screen.findByRole('button', { name: '제거' });
+      expect(screen.getByRole('button', { name: '교체' })).toBeTruthy();
       expect(screen.getByAltText('서명 이미지')).toBeTruthy();
 
       fireEvent.click(removeBtn);
@@ -217,14 +218,13 @@ describe('인플레이스 필드 에디터 (#354)', () => {
   });
 });
 
-// #553 → #826 S2 — 탭 타깃. 떠 있는 보조 툴바(32px)가 상단 줄로 흡수되며(전 버튼 44) 위계 차이가 사라졌다 — 상단 줄 버튼과
-// 인플레이스 필드바 둘 다 44px로 못박는다(SC 2.5.5 AAA). 판정기는 #508과 같은 것을 쓴다
+// #553 → #826 S2 → S3 — 탭 타깃. 상단 줄 버튼과 입력 패널 첫 줄(‹ › · 완료) 둘 다 44px로 못박는다(SC 2.5.5 AAA). 판정기는 #508과 같은 것을 쓴다
 // (__tests__/tapTargets.ts — 클래스 파싱 + variant·scale 우회 금지).
-// 이 파일에 두는 이유: 필드바는 실제 티켓의 data-field-tap 앵커를 탭해야 뜨는데,
+// 이 파일에 두는 이유: 패널은 실제 티켓의 data-field-tap 앵커를 탭해야 뜨는데,
 // resultStageBack.test.tsx가 TicketRenderer를 전역 mock으로 스텁 치므로(bun mock.module은
 // 파일 간 격리가 안 된다) 그 뒤에 도는 파일에서는 앵커가 사라진다.
-describe('탭 타깃: 상단 줄 · 인플레이스 필드바 44 (#553 → #826 S2)', () => {
-  test('상단 줄 아이콘 버튼과 인플레이스 필드바가 모두 44px다', async () => {
+describe('탭 타깃: 상단 줄 · 입력 패널 44 (#553 → #826 S3)', () => {
+  test('상단 줄 아이콘 버튼과 입력 패널 첫 줄 버튼이 모두 44px다', async () => {
     render(<Harness />);
     fireEvent.click(screen.getByTestId('landing-skip-poster')); // 상단 줄은 랜딩을 떠난 뒤에 선다(#826 S2)
     fireEvent.click(screen.getByText('seed'));
@@ -241,16 +241,17 @@ describe('탭 타깃: 상단 줄 · 인플레이스 필드바 44 (#553 → #826 
       expect([w, h]).toEqual([44, 44]);
     }
 
-    // 필드 탭 → 인플레이스 편집. 상단 줄은 그대로 화면에 있다.
+    // 필드 탭 → 입력 패널. 상단 줄은 그대로 화면에 있다.
     fireEvent.click(await screen.findByRole('button', { name: '극장 편집' }));
-    const bar = await screen.findByRole('toolbar', { name: '필드 편집 도구' });
+    const panel = await screen.findByRole('group', { name: '극장 입력' });
 
-    const barBtns = Array.from(bar.querySelectorAll('button'));
-    expect(barBtns.length).toBeGreaterThan(1);
-    for (const b of barBtns) {
-      const { w, h } = targetPx(b, b.getAttribute('aria-label') ?? 'field-bar');
+    for (const name of ['이전 항목', '다음 항목']) {
+      const b = within(panel).getByRole('button', { name });
+      const { w, h } = targetPx(b, name);
       expect([w, h]).toEqual([44, 44]);
       expect(Math.min(w, h)).toBeGreaterThanOrEqual(MIN_AA);
     }
+    // 완료는 라벨 버튼이라 폭이 글자에 따른다 — 누르는 높이 44가 선언돼 있다.
+    expect(within(panel).getByRole('button', { name: '완료' }).classList.contains('h-touch')).toBe(true);
   });
 });

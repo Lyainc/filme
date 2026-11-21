@@ -100,6 +100,7 @@ function RailHarness() {
         onModeChange={() => {}}
         hidden={false}
         onField={() => {}}
+        onOpenField={() => {}}
         onMissingField={() => {}}
         onOcrOpen={() => {}}
         ocrBusy={false}

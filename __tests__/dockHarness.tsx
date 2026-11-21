@@ -48,6 +48,7 @@ export function DockHarness({
       onModeChange={setM}
       hidden={false}
       onField={(t) => dockProbe.field.push(t)}
+      onOpenField={(t) => dockProbe.field.push(t)}
       onMissingField={(t) => dockProbe.missing.push(t)}
       onOcrOpen={() => {
         dockProbe.ocr++;

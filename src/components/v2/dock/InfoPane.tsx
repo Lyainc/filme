@@ -5,7 +5,7 @@ import { EyeToggle } from './EyeToggle';
 import { missingExportFields } from '@/hooks/useExportReady';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { TicketField } from '@/types';
-import { FIELD_LABELS, fieldPreview, launcherGroupsFor, type SheetTarget } from '@/constants/fields';
+import { FIELD_LABELS, fieldPreview, launcherGroupsFor } from '@/constants/fields';
 import { ALL_FIELDS_ON, ALL_FIELDS_OFF_KEEP_REQUIRED, isRequiredField } from '@/constants/fieldVisibility';
 
 type Photo = ReturnType<typeof usePhototicket>;
@@ -78,8 +78,9 @@ function InfoRow({
 
 /**
  * 정보 모드(I-01) — 위에 '스크린샷으로 자동입력' 보조 버튼, 아래에 영화 / 관람 / 기록 행. 무드가 안 그리는 항목은
- * 목록에서 빠진다(MOOD_EXCLUDED_FIELDS, #287). 행 탭은 티켓 위 인플레이스 입력을 연다 — 필수 누락 행은
- * openMissingField(#776)를 타서 숨겨 둔 필드면 편집이 끝날 때 다시 숨긴다. 옛 드로어 맨 위의 '전체 표시'
+ * 목록에서 빠진다(MOOD_EXCLUDED_FIELDS, #287). 행 탭은 티켓 필드 탭과 같은 입력 패널을 열되 표시는 바꾸지 않는다 —
+ * 표시는 행의 눈으로만 바꾼다(#826 S3 D14-1). 필수 누락 행은 openMissingField(#776)를 타서 숨겨 둔 필드면 편집이 끝날 때
+ * 다시 숨긴다. 옛 드로어 맨 위의 '전체 표시'
  * 스위치는 목록 끝으로 왔다.
  */
 export function InfoPane({
@@ -90,7 +91,7 @@ export function InfoPane({
   ocrBusy,
 }: {
   photo: Photo;
-  onField: (target: SheetTarget) => void;
+  onField: (target: TicketField) => void;
   onMissingField: (target: TicketField) => void;
   /** 랜딩에 한 벌뿐인 OcrUploadCard의 업로드를 연다(Seed constraint-17). */
   onOcrOpen: () => void;

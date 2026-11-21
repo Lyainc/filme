@@ -1,7 +1,7 @@
 /**
- * #437 → #826 S2 — 인플레이스 필드 에디터의 글꼴 드롭다운(한줄평·서명 9택).
+ * #437 → #826 S2 → S3 — 입력 패널의 글꼴 줄(한줄평·서명 9택, D13-1 A + D14-2 A: [‹ 이전 글꼴][미리보기][› 다음 글꼴]).
  *
- * 옛 폰트 패널(CustomPanel)의 상호작용 계약을 그대로 옮겼다: 드롭다운은 한줄평·서명에서만 뜨고,
+ * 옛 폰트 패널(CustomPanel)의 상호작용 계약을 그대로 옮겼다: 글꼴 줄은 한줄평·서명에서만 뜨고,
  * 고른 값이 components.quoteFont/signatureFont에 저장돼 **티켓이 그 fontFamily + 보정 fontSize로**
  * 그려지는지를 끝까지 본다(피커 state만 보면 배선이 끊겨도 통과한다). 기대표는 프로덕션 코드에서
  * 끌어오지 않고 userTextFontOptions.ts에 손으로 적어 둔다.
@@ -61,6 +61,8 @@ function Harness() {
 const ticketStyle = (text: string) =>
   (screen.getAllByText(text) as HTMLElement[]).find((el) => el.style.fontFamily !== '')!.style;
 const fontButton = (field: string) => screen.getByRole('button', { name: new RegExp(`^${field} 글꼴`) });
+/** 목록 항목의 접근 이름(= 글꼴 이름, D14-2 A). 보이는 글은 같은 견본이라 이름으로 가린다. */
+const optName = (o: Element | null | undefined) => o?.getAttribute('aria-label');
 const listbox = (field: string) => screen.getByRole('listbox', { name: `${field} 글꼴` });
 const hasButton = (re: RegExp) => !!screen.queryByRole('button', { name: re });
 
@@ -70,7 +72,7 @@ async function openField(label: string, criterion = false) {
   fireEvent.click(screen.getByText('seed'));
   if (criterion) fireEvent.click(screen.getByText('criterion'));
   fireEvent.click(await screen.findByRole('button', { name: `${label} 편집` }));
-  await screen.findByRole('toolbar', { name: '필드 편집 도구' });
+  await screen.findByRole('group', { name: `${label} 입력` });
 }
 
 beforeEach(() => window.localStorage.clear());
@@ -79,42 +81,65 @@ afterEach(() => {
   window.localStorage.clear();
 });
 
-describe('인플레이스 글꼴 드롭다운 — 노출', () => {
+describe('입력 패널 글꼴 줄 — 노출', () => {
   test('한줄평·서명에서만 뜨고 다른 필드엔 없다', async () => {
     await openField('극장');
     expect(hasButton(/글꼴/)).toBe(false);
-    fireEvent.click(screen.getByRole('button', { name: '편집 완료' }));
+    // 상단 줄에도 '완료'(문서 완성)가 있어 패널 안에서 찾는다.
+    fireEvent.click(within(screen.getByRole('group', { name: '극장 입력' })).getByRole('button', { name: '완료' }));
 
     fireEvent.click(await screen.findByRole('button', { name: '서명 편집' }));
     expect(hasButton(/^서명 글꼴/)).toBe(true);
   });
 
-  test('버튼은 현재 글꼴 이름을 그 글꼴로 그리고, 목록은 닫혀 있다', async () => {
+  test('미리보기는 글꼴 이름이 아니라 입력한 글을 그 서체로 쓰고, 이름은 접근 이름에만 있다 · 목록은 닫혀 있다', async () => {
     await openField('서명');
     const btn = fontButton('서명');
-    expect(btn.textContent).toBe('자동');
+    expect(btn.textContent).toBe(SIG);
+    expect(btn.getAttribute('aria-label')).toBe('서명 글꼴, 지금 자동');
     expect(btn.getAttribute('aria-expanded')).toBe('false');
     expect(!!screen.queryByRole('listbox')).toBe(false);
   });
 
-  test('서명 이미지가 있으면 서명 글꼴 드롭다운이 숨는다', async () => {
+  test('입력이 비면 미리보기가 견본 "영화의 순간 Film"이다', async () => {
+    await openField('서명');
+    fireEvent.change(screen.getByRole('textbox', { name: '서명' }), { target: { value: '' } });
+    expect(fontButton('서명').textContent).toBe('영화의 순간 Film');
+  });
+
+  test('‹ ›가 9종을 순서대로 바꾸고 끝에서 처음으로 돈다', async () => {
+    await openField('서명');
+    const seen: string[] = [];
+    for (let i = 0; i < ALL_FONT_LABELS.length; i++) {
+      fireEvent.click(screen.getByRole('button', { name: '다음 글꼴' }));
+      seen.push((fontButton('서명').getAttribute('aria-label') ?? '').replace('서명 글꼴, 지금 ', ''));
+    }
+    expect(seen).toEqual([...ALL_FONT_LABELS.slice(1), ALL_FONT_LABELS[0]]);
+    fireEvent.click(screen.getByRole('button', { name: '이전 글꼴' }));
+    expect(fontButton('서명').getAttribute('aria-label')).toBe(`서명 글꼴, 지금 ${ALL_FONT_LABELS[ALL_FONT_LABELS.length - 1]}`);
+    expect(screen.getByTestId('signature-font').textContent).toBe(FONT_CHIPS[FONT_CHIPS.length - 1].value);
+  });
+
+  test('서명 이미지가 있으면 서명 글꼴 줄이 없다', async () => {
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
     fireEvent.click(screen.getByText('sig-image'));
     fireEvent.click(await screen.findByRole('button', { name: '서명 편집' }));
-    await screen.findByRole('toolbar', { name: '필드 편집 도구' });
+    await screen.findByRole('group', { name: '서명 입력' });
     expect(hasButton(/글꼴/)).toBe(false);
   });
 });
 
-describe('인플레이스 글꼴 드롭다운 — 9택 (#437)', () => {
+describe('입력 패널 글꼴 목록 — 9택 (#437)', () => {
   test('목록은 자동 + 8종 = 9개, 순서 고정, 현재값만 aria-selected', async () => {
     const user = userEvent.setup();
     await openField('서명');
     await user.click(fontButton('서명'));
 
     const opts = within(listbox('서명')).getAllByRole('option');
-    expect(opts.map((o) => o.textContent)).toEqual(ALL_FONT_LABELS);
+    expect(opts.map(optName)).toEqual(ALL_FONT_LABELS);
+    // 항목마다 같은 글(입력한 서명)을 그 서체로 + 오른쪽에 작은 이름(D14-2 A).
+    opts.forEach((o, i) => expect(o.textContent?.startsWith(SIG + ALL_FONT_LABELS[i])).toBe(true));
     expect(opts.map((o) => o.getAttribute('aria-selected'))).toEqual(
       ALL_FONT_LABELS.map((l) => String(l === '자동'))
     );
@@ -132,9 +157,9 @@ describe('인플레이스 글꼴 드롭다운 — 9택 (#437)', () => {
       expect(screen.getByTestId('quote-font').textContent).toBe('auto'); // 독립 축
       expect(ticketStyle(SIG).fontFamily).toContain(chip.family);
       expect(ticketStyle(SIG).fontSize).toBe(expectedFontSize(SIGNATURE_BASE, chip.hangul));
-      // 선택하면 목록이 닫히고 버튼이 새 이름을 보여 준다.
+      // 선택하면 목록이 닫히고 버튼의 접근 이름이 새 글꼴을 읽는다.
       expect(!!screen.queryByRole('listbox')).toBe(false);
-      expect(fontButton('서명').textContent).toBe(chip.label);
+      expect(fontButton('서명').getAttribute('aria-label')).toBe(`서명 글꼴, 지금 ${chip.label}`);
     }
   });
 
@@ -167,7 +192,7 @@ describe('인플레이스 글꼴 드롭다운 — 9택 (#437)', () => {
   });
 });
 
-describe('인플레이스 글꼴 드롭다운 — 키보드 (APG listbox)', () => {
+describe('입력 패널 글꼴 목록 — 키보드 (APG listbox)', () => {
   test('열면 현재 옵션이 활성이고 ↓↑ Home End로 움직이며 Enter가 선택한다', async () => {
     const user = userEvent.setup();
     await openField('서명');
@@ -175,8 +200,7 @@ describe('인플레이스 글꼴 드롭다운 — 키보드 (APG listbox)', () =
 
     const lb = listbox('서명');
     expect(document.activeElement === lb).toBe(true);
-    const activeLabel = () =>
-      document.getElementById(lb.getAttribute('aria-activedescendant') ?? '')?.textContent;
+    const activeLabel = () => optName(document.getElementById(lb.getAttribute('aria-activedescendant') ?? ''));
     expect(activeLabel()).toBe('자동');
 
     await user.keyboard('{ArrowDown}{ArrowDown}');
@@ -201,7 +225,7 @@ describe('인플레이스 글꼴 드롭다운 — 키보드 (APG listbox)', () =
     await user.click(fontButton('서명'));
     await user.keyboard('{Escape}');
     expect(!!screen.queryByRole('listbox')).toBe(false);
-    expect(!!screen.queryByRole('toolbar', { name: '필드 편집 도구' })).toBe(true);
+    expect(!!screen.queryByRole('group', { name: '서명 입력' })).toBe(true);
     expect(screen.getByTestId('signature-font').textContent).toBe('auto');
   });
 

@@ -289,7 +289,7 @@ describe('TitleSheet 키보드 접근성 (#198 재구현)', () => {
 
     const status = screen.getByRole('status');
     expect(status.getAttribute('aria-live')).toBe('polite');
-    expect(status.textContent).toBe('Loading…');
+    expect(status.textContent).toBe('검색 중…');
 
     await act(async () => { resolveSearch(jsonResponse(SEARCH_RESPONSE)); });
   });
@@ -330,7 +330,8 @@ describe('TitleSheet 키보드 접근성 (#198 재구현)', () => {
     await act(async () => { resolveSearch(jsonResponse(SEARCH_RESPONSE)); });
   });
 
-  // #677 — 에러 문구가 호출부 옵션에서 useKobisSearch의 DEFAULT_MESSAGES로 올라갔다.
+  // #677 — 에러 문구가 호출부 옵션에서 useKobisSearch의 기본값(KOBIS_MESSAGES)으로 올라갔다. #826 S3에서
+  // 뒤의 안내 문장을 걷어 '검색 결과가 없어요' 한 문장이 됐다(51-copy-changed K-01 — 고칠 입력란이 바로 위에 있다).
   // 호출부(FieldEditorBody·InPlaceFieldEditor)가 override를 안 주므로 이 기본값이 유일한
   // 소스이고, 그게 실제로 화면까지 오는지 잠근다(claude-review PR #700 P1).
   test('검색 결과가 없으면 훅 기본 문구가 그대로 뜬다 (override 없음)', async () => {
@@ -346,6 +347,6 @@ describe('TitleSheet 키보드 접근성 (#198 재구현)', () => {
     fireEvent.change(titleInput(), { target: { value: '없는영화' } });
     await flushDebounce();
 
-    expect(screen.getByText('검색 결과가 없어요. 제목을 다시 확인해 주세요.')).toBeTruthy();
+    expect(screen.getByText('검색 결과가 없어요')).toBeTruthy();
   });
 });
