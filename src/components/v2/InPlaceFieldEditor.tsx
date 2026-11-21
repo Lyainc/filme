@@ -122,7 +122,7 @@ const optState = (on: boolean) => (on ? 'border-hair-strong bg-s2 font-semibold 
 /** 칩 한 줄(C-ACC) — 넘치면 가로 스크롤. */
 const TOOLBAR_CLS = 'no-scrollbar flex min-w-0 items-center gap-1 overflow-x-auto';
 
-/** 키보드를 내리지 않게 포인터 누름에서 포커스 이동을 막는다(‹ › · 완료 · 칩). */
+/** 키보드를 내리지 않게 포인터 누름에서 포커스 이동을 막는다(‹ › · 닫기 · 칩). */
 const keepFocus = (e: { preventDefault: () => void }) => e.preventDefault();
 
 function Chevron({ dir }: { dir: 'left' | 'right' }) {
@@ -302,7 +302,7 @@ interface InPlaceFieldEditorProps {
  * 필드 입력 패널(#826 S3, D12 · D13 · D14). 정보 목록 행과 티켓 필드 탭이 같은 패널을 연다.
  *
  * - 자리: 옛 aid 자리 그대로(visualViewport로 잰 키보드 위 12px, 프레임 기준 fixed). 키보드에 붙이기 · 확대는 S4.
- * - 첫 줄: [‹ 이전 항목][입력(16px, 안내 글자 = 필드 이름)][› 다음 항목][완료]. Return = 다음 항목, 마지막 필드에선 완료.
+ * - 첫 줄: [‹ 이전 항목][입력(16px, 안내 글자 = 필드 이름)][› 다음 항목][닫기](D15 2B). Return = 다음 항목, 마지막 필드에선 닫기.
  * - 둘째 줄: 옵션이 있는 필드만 — 표기 · 정밀도 · 재개봉(날짜), 별(평점), 글꼴 ‹ 미리보기 ›(한줄평 · 서명), 이미지로(로고 · 서명),
  *   KOBIS 결과(제목). 표시 토글은 정보 목록 눈으로만 바꾸고(D14-1) 재개봉일 하나만 예외로 여기 남는다.
  * - 티켓에는 선택 표시(재단 L자)만 그린다. 위치 계산은 rAF 루프 금지(#354) — MutationObserver(티켓 서브트리) +
@@ -456,7 +456,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
     if (i < 0) onField(dir === 1 ? order[0] : order[order.length - 1]);
     else onField(order[(i + dir + order.length) % order.length]);
   };
-  // 키보드 Return(D13 ①) — 다음 항목, 마지막 필드에선 완료. 한글 조합 확정 Enter는 건너뛴다(조합 중 Return은 글자 확정).
+  // 키보드 Return(D13 ①) — 다음 항목, 마지막 필드에선 닫기. 한글 조합 확정 Enter는 건너뛴다(조합 중 Return은 글자 확정).
   const onEnter = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
     e.preventDefault();
@@ -683,13 +683,15 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
           <button type="button" aria-label="다음 항목" onPointerDown={keepFocus} onClick={() => step(1)} className={ICON_BTN_CLS}>
             <Chevron dir="right" />
           </button>
+          {/* '닫기'(D15 2B) — 상단 줄 '완료'(티켓 완성)와 뜻이 겹치지 않게 마스터 입력 머리의 말을 쓴다. 입력값은 치는 즉시
+              저장돼 닫아도 잃는 게 없어 주 동작 색(accent)이 아니라 테두리 버튼이다. */}
           <button
             type="button"
             onPointerDown={keepFocus}
             onClick={onClose}
             className={cn(pressableVariants(), 'inline-flex h-touch shrink-0 items-center')}
           >
-            <span className="inline-flex h-9 items-center rounded-ctl bg-accent px-3 text-body font-semibold text-accent-ink">완료</span>
+            <span className="inline-flex h-9 items-center rounded-ctl border border-hair-strong px-3 text-body font-medium text-ink">닫기</span>
           </button>
         </div>
         {rows.length > 0 && <div className="mt-1 space-y-1">{rows}</div>}

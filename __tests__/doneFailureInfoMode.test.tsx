@@ -22,10 +22,10 @@ const row = (field: string) => infoList().querySelector(`[data-field-row="${fiel
 const isMissing = (field: string) => row(field).getAttribute('data-missing') === 'true';
 const modeSelected = (name: RegExp) => screen.getByRole('tab', { name }).getAttribute('aria-selected');
 
-/** 상단 줄 '완료'(문서 완성) — 입력 패널에도 '완료'가 있어 상단 줄 안에서 찾는다(#826 S3). */
+/** 상단 줄 '완료'(문서 완성). */
 const topDone = () => within(document.querySelector('header') as HTMLElement).getByRole('button', { name: '완료' });
-/** 입력 패널의 '완료'(#826 S3) — 편집을 닫는다. */
-const panelDone = () => within(screen.getByRole('group', { name: / 입력$/ })).getByRole('button', { name: '완료' });
+/** 입력 패널의 '닫기'(#826 S3 D15 2B) — 편집을 닫는다. */
+const panelDone = () => within(screen.getByRole('group', { name: / 입력$/ })).getByRole('button', { name: '닫기' });
 
 test('missingExportFields — 표시 여부와 무관하게 빈 제목·4자 미만 개봉일을 순서대로 낸다', () => {
   expect(missingExportFields({ title: ' ', titleOg: '', releaseDate: undefined })).toEqual(['title', 'releaseDate']);

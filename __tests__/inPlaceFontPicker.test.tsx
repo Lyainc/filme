@@ -85,8 +85,7 @@ describe('입력 패널 글꼴 줄 — 노출', () => {
   test('한줄평·서명에서만 뜨고 다른 필드엔 없다', async () => {
     await openField('극장');
     expect(hasButton(/글꼴/)).toBe(false);
-    // 상단 줄에도 '완료'(문서 완성)가 있어 패널 안에서 찾는다.
-    fireEvent.click(within(screen.getByRole('group', { name: '극장 입력' })).getByRole('button', { name: '완료' }));
+    fireEvent.click(within(screen.getByRole('group', { name: '극장 입력' })).getByRole('button', { name: '닫기' }));
 
     fireEvent.click(await screen.findByRole('button', { name: '서명 편집' }));
     expect(hasButton(/^서명 글꼴/)).toBe(true);

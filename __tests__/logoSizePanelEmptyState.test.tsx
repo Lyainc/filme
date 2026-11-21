@@ -42,7 +42,7 @@ test('#781 — 빈 로고는 안내와 입력 액션을 주고, 입력하면 안
   fireEvent.click(screen.getByRole('button', { name: '극장 로고 크기 — 입력' }));
   const input = await screen.findByRole('textbox', { name: '극장 로고' });
   fireEvent.change(input, { target: { value: 'CINEMA' } });
-  fireEvent.click(within(screen.getByRole('group', { name: '극장 로고 입력' })).getByRole('button', { name: '완료' }));
+  fireEvent.click(within(screen.getByRole('group', { name: '극장 로고 입력' })).getByRole('button', { name: '닫기' }));
 
   // 패널로 돌아오면 안내와 액션이 함께 사라진다(정상 상태는 main과 같은 높이 — 슬롯 예산). 입력 전에 정해 둔
   // 크기는 유지된다.
