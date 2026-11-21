@@ -118,7 +118,7 @@ constraints:
     rationale: "CLAUDE.md 셸 한 벌 · 하네스 불변식, 착수 조건 완료 증거 (4)."
   - id: constraint-14
     type: other
-    description: "근거 원본은 마스터 docs/826-page-master 9bcf5585(07-seeds S3 · frames I-01 · K-01 · K-02 · K-04~K-07 · data/trace.js · 50/51 문구)와 결정 docs/826-s2-decisions b77f976f(D12 · D13 · D14)다. 구현은 워크트리 .claude/worktrees/826-s3 · 브랜치 feat/826-s3-input에서 하고 검증된 단위마다 Conventional Commits로 커밋 · push한다. PR · 머지는 소유자 승인 없이 하지 않는다."
+    description: "근거 원본은 마스터 docs/826-page-master 9bcf5585(07-seeds S3 · frames I-01 · K-01 · K-02 · K-04~K-07 · data/trace.js · 50/51 문구)와 결정 docs/826-s2-decisions 15e39c60(D12 · D13 · D14 — D14 결정은 이 커밋에서 처음 적혔다)다. 구현은 워크트리 .claude/worktrees/826-s3 · 브랜치 feat/826-s3-input에서 하고 검증된 단위마다 Conventional Commits로 커밋 · push한다. PR · 머지는 소유자 승인 없이 하지 않는다."
     hard: true
     rationale: "착수 조건, P1 · P21. 결정 브랜치 기준은 D13 · D14 추가로 5d02b79에서 옮겨졌다(소유자 '작업 속행')."
 
