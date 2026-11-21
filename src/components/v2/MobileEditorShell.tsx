@@ -257,12 +257,11 @@ export function MobileEditorShell({
     setActiveField(target);
   }, [photo.updateComponents, photo.updateFieldVisibility]);
 
-  // 정보 모드 필수 누락 행의 바로가기(#776) — 저장 필수 입력은 채우되 표시 선택은 지킨다. 인플레이스 편집기는
-  // 티켓 위 앵커가 있어야 떠서 handleField가 숨긴 필드를 켜는데, 바로가기로 들어온 필드가 원래
-  // 숨겨져 있었다면 편집이 끝나는 순간(닫힘·다른 필드로 이동) 다시 숨긴다. 행 탭은 "보이게 켜고
-  // 편집"이 의도라 이 복원을 안 탄다.
-  // ponytail: 편집 중 필드바의 '티켓 노출'로 일부러 켰어도 끝날 때 다시 숨긴다 — 그 조작을 가려야
-  // 할 일이 생기면 복원 대상을 그 토글에서 지운다.
+  // 정보 모드 필수 누락 행의 바로가기(#776) — 저장 필수 입력은 채우되 표시 선택은 지킨다. 바로가기는 handleField로
+  // 편집 동안 필드를 켜 두고, 원래 숨겨져 있었다면 편집이 끝나는 순간(닫힘·다른 필드로 이동) 다시 숨긴다. 일반 행 탭은
+  // 표시를 아예 안 바꾸고(setActiveField, #826 S3 D14-1) 패널에도 표시 토글이 없어, 편집 중 표시를 바꾸는 길은 목록 눈뿐이다.
+  // ponytail: 편집 중 목록 눈으로 일부러 켰어도 끝날 때 다시 숨긴다 — 그 조작을 가려야 할 일이 생기면 복원 대상을
+  // 그 토글에서 지운다.
   // 대기 중인 필드는 집합으로 든다 — 같은 바로가기를 다시 눌러도(이미 켜져 있어 판정이 '보임'이 된다)
   // 잊지 않고, 다른 누락 필드로 옮기면 떠나는 쪽을 숨긴다. 새 문서(초기화·새로 시작)에선 비운다.
   const rehideOnLeaveRef = useRef(new Set<TicketField>());
@@ -825,12 +824,12 @@ export function MobileEditorShell({
         onPosterRecrop={crop.originalSrc ? crop.openRecrop : undefined}
       />
 
-      {/* 온티켓 인플레이스 에디터(#354) — 필드 탭이 시트 대신 이걸 연다. 투명 input + 필드바 +
-          aid 패널(KOBIS/별점/날짜). 위치는 래퍼/티켓 ref 기반 측정, lift는 setEditLift로 위 transform에.
+      {/* 필드 입력 패널(#354 → #826 S3) — 티켓 필드 탭과 정보 목록 행이 같은 패널을 연다. 키보드 위 패널 + 티켓의 선택
+          표시(재단 L자). 선택 표시 위치는 래퍼/티켓 ref 기반 측정, lift는 setEditLift로 위 transform에.
           onField는 handleField가 아니라 setActiveField — prev/next 순회는 순수 탐색이라 경유 필드의
           가시성을 켜면 안 된다(PR #359 리뷰 P1). 자동 표시 on은 FieldTap 직접 탭(handleField)에만.
           앱 배경 래퍼 안에 둔다(#685 fresh-eyes 리뷰) — 래퍼 밖에 남으면 다이얼로그(크롭 모달)가 열려도
-          이 투명 input이 계속 탭 가능한 채로 남는다. */}
+          패널 입력이 계속 탭 가능한 채로 남는다. */}
       {editing && activeField && (
         <InPlaceFieldEditor
           photo={photo}

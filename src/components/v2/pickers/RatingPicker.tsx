@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react';
+import { useDeferredValue, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import { Eyebrow } from '@/components/v2/Eyebrow';
 import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
 import { shouldCommitSliderValue } from './BrightnessSlider';
@@ -50,12 +50,17 @@ export function useRatingPicker({
   onValueChange,
   dim = false,
   resetKey,
+  onEnter,
+  enterKeyHint,
 }: {
   value: number;
   onValueChange: (rating: number) => void;
   dim?: boolean;
   /** 이 값이 바뀌면 소수 입력을 접는다 — 입력 패널은 필드가 바뀌어도 살아 있어 평점으로 돌아오면 처음 상태여야 한다. */
   resetKey?: unknown;
+  /** 소수 입력의 Return — 입력 패널은 다음 항목(마지막이면 완료)으로 잇는다(#826 S3 constraint-3). */
+  onEnter?: (e: KeyboardEvent<HTMLInputElement>) => void;
+  enterKeyHint?: 'next' | 'done';
 }): { stars: ReactNode; number: ReactNode } {
   const [hoverPreview, setHoverPreview] = useState(0);
   const [numberInputOpen, setNumberInputOpen] = useState(false);
@@ -226,6 +231,8 @@ export function useRatingPicker({
             const next = Number(raw);
             if (!Number.isNaN(next)) setLocalValue(Math.min(5, Math.max(0, next)));
           }}
+          onKeyDown={onEnter}
+          enterKeyHint={enterKeyHint}
           aria-label="평점 직접 입력 (0.1 단위)"
           // 16px 미만이면 iOS Safari가 포커스 시 자동 줌인해 레이아웃이 틀어진다(#274).
           className={DECIMAL_INPUT_CLS}
