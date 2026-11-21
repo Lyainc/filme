@@ -330,7 +330,7 @@ describe('TitleSheet 키보드 접근성 (#198 재구현)', () => {
     await act(async () => { resolveSearch(jsonResponse(SEARCH_RESPONSE)); });
   });
 
-  // #677 — 에러 문구가 호출부 옵션에서 useKobisSearch의 기본값(KOBIS_MESSAGES)으로 올라갔다. #826 S3에서
+  // #677 — 에러 문구가 호출부 옵션에서 useKobisSearch의 기본값(DEFAULT_MESSAGES)으로 올라갔다. #826 S3에서
   // 뒤의 안내 문장을 걷어 '검색 결과가 없어요' 한 문장이 됐다(51-copy-changed K-01 — 고칠 입력란이 바로 위에 있다).
   // 호출부(FieldEditorBody·InPlaceFieldEditor)가 override를 안 주므로 이 기본값이 유일한
   // 소스이고, 그게 실제로 화면까지 오는지 잠근다(claude-review PR #700 P1).
