@@ -179,8 +179,10 @@ describe('hit 44 — 셸 탭 처리 (acceptance-4)', () => {
     // 중심 (106, 204)에서 오른쪽 18 · 아래 15 — 글자 상자 밖, 44 안.
     fireEvent.click(posterTap, { clientX: 124, clientY: 219 });
     expect(posterPicks).toBe(0);
-    expect(panel(labelOf(field)).getAttribute('data-field-panel')).toBe(field);
-    fireEvent.click(within(panel()).getByRole('button', { name: '완료' }));
+    // 패널은 dynamic(ssr:false)라 첫 열림은 모듈 로드를 기다린다 — 단독 실행에서도 서게 findBy로 잡는다.
+    const opened = await screen.findByRole('group', { name: `${labelOf(field)} 입력` });
+    expect(opened.getAttribute('data-field-panel')).toBe(field);
+    fireEvent.click(within(opened).getByRole('button', { name: '완료' }));
 
     // 44 밖 — 필드가 열리지 않고 원래 받던 '포스터 추가'로 간다.
     fireEvent.click(posterTap, { clientX: 300, clientY: 400 });
