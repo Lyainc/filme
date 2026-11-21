@@ -6,11 +6,12 @@ import type { DateFormatToken, DateGranularity } from '@/types';
 // 별개 — 값·순서만 같다.
 
 // 기본값 kr-compact를 첫 번째로(#141 (12)). kr-compact 샘플은 끝점 포함 YYYY.MM.DD.(#141 (13)).
-export const DATE_FORMAT_TOKENS: { value: DateFormatToken; sample: string }[] = [
-  { value: 'kr-compact', sample: '2014.11.06.' },
-  { value: 'iso', sample: '2014-11-06' },
-  { value: 'cinema-mono', sample: '06·NOV·2014' },
-  { value: 'en-long', sample: 'November 6, 2014' },
+// name은 입력 패널 표기 목록(#826 S3 D16 3-A)의 작은 이름 · 접근 이름 — 미리보기가 실제 날짜라 짧은 구분어로 둔다.
+export const DATE_FORMAT_TOKENS: { value: DateFormatToken; sample: string; name: string }[] = [
+  { value: 'kr-compact', sample: '2014.11.06.', name: '점' },
+  { value: 'iso', sample: '2014-11-06', name: '하이픈' },
+  { value: 'cinema-mono', sample: '06·NOV·2014', name: '영문 약어' },
+  { value: 'en-long', sample: 'November 6, 2014', name: '영문' },
 ];
 
 export const GRANULARITY_OPTIONS: { value: DateGranularity; label: string }[] = [

@@ -276,7 +276,6 @@ export function useRatingPicker({
         <button
           type="button"
           onClick={() => setNumberInputOpen(true)}
-          aria-expanded={false}
           aria-controls="rating-decimal-input"
           aria-label="평점 소수 입력 토글"
           className={cn(pressableVariants(), 'tabular-nums inline-flex h-touch min-w-0 flex-1 items-center justify-center text-title font-semibold text-ink')}

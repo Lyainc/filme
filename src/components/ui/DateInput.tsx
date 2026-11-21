@@ -36,6 +36,8 @@ export function DateInput({
     inputVariants({ surface: 'paper' }),
     'flex-1 min-w-[160px] rounded-field px-3.5 py-3 text-title text-ink',
   );
+  // 세 입력(연 · 연월 · 날짜)이 같이 받는 속성 — 하나 더할 때 한 곳만 고친다.
+  const common = { 'aria-label': ariaLabel, className: base, autoFocus, onKeyDown, enterKeyHint };
   const parts = value ? value.split('-') : [];
   if (granularity === 'year') {
     // Display only the year part; preserve stored month/day on edit.
@@ -50,11 +52,7 @@ export function DateInput({
           const v = e.target.value.replace(/[^\d]/g, '').slice(0, 4);
           onChange(mergeDatePrefix(value, v));
         }}
-        aria-label={ariaLabel}
-        className={base}
-        autoFocus={autoFocus}
-        onKeyDown={onKeyDown}
-        enterKeyHint={enterKeyHint}
+        {...common}
       />
     );
   }
@@ -66,11 +64,7 @@ export function DateInput({
         type="month"
         value={monthView}
         onChange={(e) => onChange(mergeDatePrefix(value, e.target.value))}
-        aria-label={ariaLabel}
-        className={base}
-        autoFocus={autoFocus}
-        onKeyDown={onKeyDown}
-        enterKeyHint={enterKeyHint}
+        {...common}
       />
     );
   }
@@ -79,11 +73,7 @@ export function DateInput({
       type="date"
       value={value || ''}
       onChange={(e) => onChange(e.target.value)}
-      aria-label={ariaLabel}
-      className={base}
-      autoFocus={autoFocus}
-      onKeyDown={onKeyDown}
-      enterKeyHint={enterKeyHint}
+      {...common}
     />
   );
 }
