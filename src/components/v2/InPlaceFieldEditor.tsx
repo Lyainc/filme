@@ -125,10 +125,11 @@ const TOOLBAR_CLS = 'no-scrollbar flex min-w-0 items-center gap-1 overflow-x-aut
 /** 키보드를 내리지 않게 포인터 누름에서 포커스 이동을 막는다(‹ › · 닫기 · 칩). */
 const keepFocus = (e: { preventDefault: () => void }) => e.preventDefault();
 
-function Chevron({ dir }: { dir: 'left' | 'right' }) {
+const CHEVRON_PATH = { left: 'm15 18-6-6 6-6', right: 'm9 18 6-6-6-6', up: 'm6 15 6-6 6 6', down: 'm6 9 6 6 6-6' } as const;
+function Chevron({ dir, size = 18, className }: { dir: keyof typeof CHEVRON_PATH; size?: number; className?: string }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d={dir === 'left' ? 'm15 18-6-6 6-6' : 'm9 18 6-6-6-6'} />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+      <path d={CHEVRON_PATH[dir]} />
     </svg>
   );
 }
@@ -262,14 +263,6 @@ function PanelListbox<V extends string>({
     </ul>
   );
 }
-
-/** 표기 이름(목록 오른쪽 작은 글자 · 접근 이름) — 미리보기가 실제 날짜라 이름은 짧은 구분어로 둔다. */
-const FORMAT_NAMES: Record<DateFormatToken, string> = {
-  'kr-compact': '점',
-  iso: '하이픈',
-  'cinema-mono': '영문 약어',
-  'en-long': '영문',
-};
 
 /**
  * 정밀도 세그먼트(D16 3-A) — 한 덩어리 상자 안 세 칸, radiogroup. 보이는 상자는 36, 누르는 높이는 44다.
@@ -469,11 +462,11 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
   const currentFont: QuoteFont = (fontKey && components[fontKey]) || 'auto';
   const fontIndex = Math.max(0, FONT_OPTIONS.findIndex((o) => o.value === currentFont));
   // 패널 목록(글꼴 · 개봉일 표기)은 연 필드에만 열려 있다 — 필드가 바뀌면 따로 닫지 않아도 닫힌다. 한 번에 하나만 열린다.
-  const [listOpen, setListOpen] = useState<{ field: SheetTarget; kind: 'font' | 'format' } | null>(null);
-  const isListOpen = (kind: 'font' | 'format') => listOpen?.field === field && listOpen.kind === kind;
-  const toggleList = (kind: 'font' | 'format') => setListOpen(isListOpen(kind) ? null : { field, kind });
-  const closeList = () => setListOpen(null);
-  const fontOpen = isListOpen('font');
+  // 글꼴 목록은 한줄평 · 서명에만, 표기 목록은 개봉일에만 있어 필드 하나로 어느 목록인지 정해진다.
+  const [listOpenFor, setListOpenFor] = useState<SheetTarget | null>(null);
+  const listOpen = listOpenFor === field;
+  const toggleList = () => setListOpenFor(listOpen ? null : field);
+  const closeList = () => setListOpenFor(null);
   const fontBtnRef = useRef<HTMLButtonElement>(null);
   const formatBtnRef = useRef<HTMLButtonElement>(null);
   const fontSample = (field === 'quote' ? info.quote : info.signature)?.trim() || FONT_SAMPLE_FALLBACK;
@@ -490,11 +483,8 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
   // ── 개봉일 표기(D16 3-A) — 이름이 아니라 지금 표기로 쓴 날짜를 버튼과 목록에 보인다. 날짜가 비면 표기의 견본. ──
   const releaseGran = info.releaseDateGranularity || 'date';
   const releaseToken = info.releaseDateFormat || 'kr-compact';
-  const formatOptions = DATE_FORMAT_TOKENS.map((t) => ({
-    value: t.value,
-    name: FORMAT_NAMES[t.value],
-    preview: <span className="tabular-nums">{formatDate(info.releaseDate, t.value, releaseGran) || t.sample}</span>,
-  }));
+  const releasePreview = (t: (typeof DATE_FORMAT_TOKENS)[number]) => formatDate(info.releaseDate, t.value, releaseGran) || t.sample;
+  const currentFormat = DATE_FORMAT_TOKENS.find((t) => t.value === releaseToken) ?? DATE_FORMAT_TOKENS[0];
   const selectFormat = (releaseDateFormat: DateFormatToken) => {
     photo.updateMovieInfo({ releaseDateFormat });
     closeList();
@@ -642,27 +632,23 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
       </div>
     );
   } else if (field === 'releaseDate') {
-    const gran = releaseGran;
-    const token = releaseToken;
     // 옵션 한 줄(D16 3-A): 정밀도 세그먼트 · 표기 미리보기(누르면 목록) · 재개봉 토글. 재개봉을 켜면 재개봉일 줄이 하나 더 생긴다.
     rows.push(
       <div key="opt" role="toolbar" aria-label="개봉일 옵션" className={cn(TOOLBAR_CLS, 'gap-2')}>
-        <GranularitySegment value={gran} onChange={(releaseDateGranularity) => photo.updateMovieInfo({ releaseDateGranularity })} />
+        <GranularitySegment value={releaseGran} onChange={(releaseDateGranularity) => photo.updateMovieInfo({ releaseDateGranularity })} />
         <button
           ref={formatBtnRef}
           type="button"
           aria-haspopup="listbox"
-          aria-expanded={isListOpen('format')}
-          aria-label={`개봉일 표기, 지금 ${FORMAT_NAMES[token]}`}
+          aria-expanded={listOpen}
+          aria-label={`개봉일 표기, 지금 ${currentFormat.name}`}
           onPointerDown={keepFocus}
-          onClick={() => toggleList('format')}
+          onClick={toggleList}
           className={cn(pressableVariants(), 'inline-flex h-touch min-w-0 shrink items-center')}
         >
           <span className="inline-flex h-9 min-w-0 items-center gap-1.5 rounded-ctl border border-hair-strong bg-s2 px-2.5 text-body text-ink">
-            <span className="tabular-nums truncate">{formatDate(info.releaseDate, token, gran) || DATE_FORMAT_TOKENS.find((t) => t.value === token)?.sample}</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 text-ink-3">
-              <path d={isListOpen('format') ? 'm6 15 6-6 6 6' : 'm6 9 6 6 6-6'} />
-            </svg>
+            <span className="tabular-nums truncate">{releasePreview(currentFormat)}</span>
+            <Chevron dir={listOpen ? 'up' : 'down'} size={12} className="shrink-0 text-ink-3" />
           </span>
         </button>
         {/* 재개봉은 배타 선택이 아니라 독립 토글이라 라디오 밖 버튼이다(C-ACC). */}
@@ -684,13 +670,13 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
           <div className="min-w-0 flex-1">
             <DateInput
               value={info.reissueDate || ''}
-              granularity={gran}
+              granularity={releaseGran}
               onChange={(reissueDate) => photo.updateMovieInfo({ reissueDate })}
               ariaLabel="재개봉일"
               className={PANEL_INPUT_CLS}
             />
           </div>
-          <span className="tabular-nums shrink-0 text-caption text-ink-3">{formatDate(info.reissueDate, token, gran) || '—'}</span>
+          <span className="tabular-nums shrink-0 text-caption text-ink-3">{formatDate(info.reissueDate, releaseToken, releaseGran) || '—'}</span>
           <span className="inline-flex w-touch shrink-0 justify-center">
             <VisibilityCheckbox
               checked={photo.state.fieldVisibility.reissue}
@@ -713,10 +699,10 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
               ref={fontBtnRef}
               type="button"
               aria-haspopup="listbox"
-              aria-expanded={fontOpen}
+              aria-expanded={listOpen}
               aria-label={`${label} 글꼴, 지금 ${FONT_OPTIONS[fontIndex].label}`}
               onPointerDown={keepFocus}
-              onClick={() => toggleList('font')}
+              onClick={toggleList}
               className={cn(pressableVariants(), 'inline-flex h-touch min-w-0 flex-1 items-center justify-center px-1 text-ink')}
             >
               {/* 이름이 아니라 입력한 글을 그 서체로 쓴다(D14-2 A) — 이름은 접근 이름에만 둔다. */}
@@ -770,7 +756,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
           </button>
         </div>
         {rows.length > 0 && <div className="mt-1 space-y-1">{rows}</div>}
-        {showFont && fontOpen && (
+        {showFont && listOpen && (
           <PanelListbox<QuoteFont>
             label={`${label} 글꼴`}
             options={FONT_OPTIONS.map((o) => ({
@@ -786,10 +772,11 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
             onClose={closeList}
           />
         )}
-        {field === 'releaseDate' && isListOpen('format') && (
+        {field === 'releaseDate' && listOpen && (
           <PanelListbox<DateFormatToken>
             label="개봉일 표기"
-            options={formatOptions}
+            // 목록이 열렸을 때만 만든다 — 다른 필드의 타이핑 렌더마다 formatDate 4번을 돌리지 않게.
+            options={DATE_FORMAT_TOKENS.map((t) => ({ value: t.value, name: t.name, preview: <span className="tabular-nums">{releasePreview(t)}</span> }))}
             value={releaseToken}
             maxHeight={listMaxHeight}
             triggerRef={formatBtnRef}
