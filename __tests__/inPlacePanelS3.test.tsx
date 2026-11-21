@@ -17,6 +17,7 @@ import { InPlaceFieldEditor } from '@/components/v2/InPlaceFieldEditor';
 import BrightnessSlider from '@/components/v2/pickers/BrightnessSlider';
 import { FIELD_LABELS, STAMP_LABELS, isStampTarget, type SheetTarget } from '@/constants/fields';
 import { mobileShellProps } from './shellHarness';
+import { targetPx } from './tapTargets';
 
 function Harness({ layout }: { layout?: 'stub' | 'criterion' } = {}) {
   const photo = usePhototicket();
@@ -24,7 +25,7 @@ function Harness({ layout }: { layout?: 'stub' | 'criterion' } = {}) {
   return (
     <>
       <div data-testid="probe" data-runtime={m.runtime} data-rating={String(m.rating)} data-watch-format={m.watchDateFormat ?? ''}
-        data-gran={m.releaseDateGranularity ?? ''} data-reissue={String(!!m.isReissue)} data-vis-seat={String(v.seat)}
+        data-gran={m.releaseDateGranularity ?? ''} data-release-format={m.releaseDateFormat ?? ''} data-reissue={String(!!m.isReissue)} data-vis-seat={String(v.seat)}
         data-vis-reissue={String(v.reissue)} data-chain-image={String(c.chain ?? '')} data-actors={m.actors} />
       <button
         type="button"
@@ -210,16 +211,21 @@ describe('f_dates · f_rating — 칩 · 별 (acceptance-7 · 19)', () => {
     expect(within(p).getByLabelText('관람일').getAttribute('type')).toBe('date');
   });
 
-  test('개봉일: 정밀도 radiogroup(연 · 연·월 · 연·월·일) · select 없음 · 재개봉 토글이 재개봉일 입력과 그 표시 토글을 연다', async () => {
+  test('개봉일(D16 3-A): 옵션 한 줄 = 정밀도 세그먼트 radiogroup · 표기 미리보기 · 재개봉 토글, select 없음, 재개봉을 켜면 재개봉일 줄이 생긴다', async () => {
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
     const p = await openRow('개봉일');
     expect(p.querySelectorAll('select').length).toBe(0);
-    const gran = within(within(p).getByRole('toolbar', { name: '개봉일 옵션' })).getByRole('radiogroup', { name: '개봉일 정밀도' });
+    // 옵션 줄은 하나다(개봉일 옵션 toolbar 한 개). 정밀도 · 표기 · 재개봉이 다 그 안에 있다.
+    const bars = within(p).getAllByRole('toolbar');
+    expect(bars.map((b) => b.getAttribute('aria-label'))).toEqual(['개봉일 옵션']);
+    const gran = within(bars[0]).getByRole('radiogroup', { name: '개봉일 정밀도' });
     expect(within(gran).getAllByRole('radio').map((r) => r.textContent)).toEqual(['연', '연·월', '연·월·일']);
+    for (const r of within(gran).getAllByRole('radio')) expect(r.className).toContain('h-touch');
     fireEvent.click(within(gran).getByRole('radio', { name: '연' }));
     expect(probe('gran')).toBe('year');
-    expect(within(within(p).getByRole('toolbar', { name: '개봉일 표기 옵션' })).getByRole('radiogroup', { name: '개봉일 표기' })).toBeTruthy();
+    expect(within(bars[0]).getByRole('button', { name: /^개봉일 표기, 지금 / }).getAttribute('aria-haspopup')).toBe('listbox');
+    expect(within(p).queryAllByRole('radiogroup', { name: '개봉일 표기' }).length).toBe(0);
 
     // 재개봉은 라디오 밖 독립 토글(aria-pressed). 켜기 전엔 패널에 표시 토글이 하나도 없다.
     const reissue = within(p).getByRole('button', { name: '재개봉' });
@@ -234,6 +240,32 @@ describe('f_dates · f_rating — 칩 · 별 (acceptance-7 · 19)', () => {
     const before = probe('vis-reissue');
     fireEvent.click(vis[0]);
     expect(probe('vis-reissue')).toBe(String(before !== 'true'));
+  });
+
+  test('개봉일 표기(D16 3-A): 미리보기 버튼이 지금 표기로 쓴 날짜이고, 누르면 표기 4종 listbox — 고른 값이 저장되고 Escape는 목록만 닫는다', async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByText('seed')); // 개봉일 2024-05-01
+    const p = await openRow('개봉일');
+    const btn = within(p).getByRole('button', { name: /^개봉일 표기, 지금 / });
+    expect(btn.textContent).toBe('2024.05.01.');
+    expect(btn.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(btn);
+    const lb = within(p).getByRole('listbox', { name: '개봉일 표기' });
+    const opts = within(lb).getAllByRole('option');
+    expect(opts.length).toBe(4);
+    // 항목 미리보기도 이름이 아니라 실제 날짜다.
+    expect(opts.map((o) => o.textContent?.startsWith(['2024.05.01.', '2024-05-01', '01·MAY·2024', 'May 1, 2024'][opts.indexOf(o)]))).toEqual([true, true, true, true]);
+    expect(opts.map((o) => o.getAttribute('aria-selected'))).toEqual(['true', 'false', 'false', 'false']);
+    fireEvent.click(opts[1]);
+    expect(probe('release-format')).toBe('iso');
+    expect(within(p).queryAllByRole('listbox').length).toBe(0);
+    expect(within(p).getByRole('button', { name: /^개봉일 표기, 지금 / }).textContent).toBe('2024-05-01');
+
+    fireEvent.click(within(p).getByRole('button', { name: /^개봉일 표기, 지금 / }));
+    fireEvent.keyDown(within(p).getByRole('listbox', { name: '개봉일 표기' }), { key: 'Escape' });
+    expect(within(p).queryAllByRole('listbox').length).toBe(0);
+    expect(!!screen.queryByRole('group', { name: '개봉일 입력' })).toBe(true);
+    expect(probe('release-format')).toBe('iso');
   });
 
   test('평점: 키보드 없는 별 radiogroup(44) + 숫자를 누르면 소수 입력(decimal) — 4.3이 저장된다', async () => {
@@ -254,6 +286,45 @@ describe('f_dates · f_rating — 칩 · 별 (acceptance-7 · 19)', () => {
     expect(probe('rating')).toBe('4.3');
     // 패널엔 평점 표시 토글이 없다(정보 목록 눈 몫).
     expect(within(p).queryAllByRole('switch').length).toBe(0);
+  });
+
+  test('평점(D16 4-A): 첫 줄 [− 숫자 +] 스테퍼가 0.1씩 0~5 안에서 바꾸고, 별 다섯이 패널 폭을 나눠 가진다', async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByText('seed'));
+    const p = await openRow('평점');
+    const row1 = within(p).getByRole('button', { name: '이전 항목' }).parentElement!;
+    const minus = within(row1).getByRole('button', { name: '평점 0.1 내리기' });
+    const plus = within(row1).getByRole('button', { name: '평점 0.1 올리기' });
+    const num = within(row1).getByRole('button', { name: '평점 소수 입력 토글' });
+    // 첫 줄 순서: 이전 항목 · − · 숫자 · + · 다음 항목 · 닫기
+    expect(Array.from(row1.querySelectorAll('button')).map((b) => b.getAttribute('aria-label') ?? b.textContent)).toEqual(
+      ['이전 항목', '평점 0.1 내리기', '평점 소수 입력 토글', '평점 0.1 올리기', '다음 항목', '닫기']
+    );
+    for (const b of [minus, plus]) expect(targetPx(b, b.getAttribute('aria-label') ?? '')).toEqual({ w: 44, h: 44 });
+
+    // 키보드 클릭(detail 0) 한 번 = 0.1. 0에서 − 는 0에 멈춘다.
+    fireEvent.click(minus, { detail: 0 });
+    fireEvent.click(plus, { detail: 0 });
+    fireEvent.click(plus, { detail: 0 });
+    fireEvent.click(plus, { detail: 0 });
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    expect(probe('rating')).toBe('0.3');
+    expect(num.textContent).toBe('0.3');
+
+    // 누르고 있으면 반복한다(400ms 뒤부터 80ms마다) — 떼면 멈춘다.
+    fireEvent.pointerDown(plus);
+    await act(async () => { await new Promise((r) => setTimeout(r, 600)); });
+    fireEvent.pointerUp(plus);
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    const held = Number(probe('rating'));
+    expect(held).toBeGreaterThanOrEqual(0.6);
+    await act(async () => { await new Promise((r) => setTimeout(r, 250)); });
+    expect(Number(probe('rating'))).toBe(held);
+
+    // 별 줄은 패널 폭을 나눠 가진다(별 하나 flex-1).
+    const stars = within(p).getByRole('radiogroup', { name: '별점' });
+    expect(stars.className).toContain('w-full');
+    for (const s of within(stars).getAllByRole('radio')) expect(s.className).toContain('flex-1');
   });
 });
 
