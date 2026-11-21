@@ -45,9 +45,25 @@ interface DragState {
  * 별 줄과 숫자(소수 입력) 두 조각을 따로 돌려준다(#826 S3 K-05) — 입력 패널은 숫자를 첫 줄 입력 자리에, 별을 둘째 줄에
  * 놓는다. 값 · 드래그 · 롱터치 상태는 하나라 두 조각이 같은 값을 본다.
  */
-export function useRatingPicker({ value, onValueChange, dim = false }: { value: number; onValueChange: (rating: number) => void; dim?: boolean }): { stars: ReactNode; number: ReactNode } {
+export function useRatingPicker({
+  value,
+  onValueChange,
+  dim = false,
+  resetKey,
+}: {
+  value: number;
+  onValueChange: (rating: number) => void;
+  dim?: boolean;
+  /** 이 값이 바뀌면 소수 입력을 접는다 — 입력 패널은 필드가 바뀌어도 살아 있어 평점으로 돌아오면 처음 상태여야 한다. */
+  resetKey?: unknown;
+}): { stars: ReactNode; number: ReactNode } {
   const [hoverPreview, setHoverPreview] = useState(0);
   const [numberInputOpen, setNumberInputOpen] = useState(false);
+  const [prevResetKey, setPrevResetKey] = useState(resetKey);
+  if (resetKey !== prevResetKey) {
+    setPrevResetKey(resetKey);
+    setNumberInputOpen(false);
+  }
 
   // #507과 동일한 지연 커밋 패턴(BrightnessSlider) — 드래그 중 매 pointermove마다 onValueChange를
   // 바로 부르면 부모 state가 틱마다 바뀌어 티켓이 리렌더로 튄다. 별점은 0.5 단위(최대 11값)라 슬라이더
