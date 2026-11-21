@@ -5,7 +5,7 @@
  *  1. 탭 → 패널 입력(16px)이 뜨고, 타이핑이 movieInfo에 반영된다(티켓이 텍스트를 렌더).
  *  2. ‹ › 순회는 현재 무드 DOM에 실제 존재하는 필드(data-field-tap 앵커)만 돈다 —
  *     minimal은 bookingNo 미렌더(MOOD_EXCLUDED_FIELDS)라 순회에 안 나온다.
- *  3. 완료 → 패널 닫힘. 표시는 패널이 아니라 정보 목록 눈으로만 바꾼다(inPlacePanelS3가 커버).
+ *  3. 닫기 → 패널 닫힘. 표시는 패널이 아니라 정보 목록 눈으로만 바꾼다(inPlacePanelS3가 커버).
  *  4. 빈 항목(ghost, #826 S2 constraint-8): 정보 모드 자동 on · 사진/디자인 모드는 메뉴 '빈 항목 표시' 스위치 ·
  *     편집 중 강제 on — 스위치가 꺼져 있어도 편집에 들어가면 빈 필드 placeholder가 탭 타깃으로 남는다.
  *
@@ -108,14 +108,13 @@ describe('인플레이스 필드 에디터 (#354)', () => {
     expect(screen.queryByRole('textbox', { name: '제목' }) === null).toBe(true);
   });
 
-  test('완료 → 패널 닫힘', async () => {
+  test('닫기 → 패널 닫힘', async () => {
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
 
     fireEvent.click(await screen.findByRole('button', { name: '극장 편집' }));
     await screen.findByRole('textbox', { name: '극장' });
-    // 상단 줄에도 '완료'(문서 완성)가 있어 패널 안에서 찾는다.
-    fireEvent.click(within(screen.getByRole('group', { name: '극장 입력' })).getByRole('button', { name: '완료' }));
+    fireEvent.click(within(screen.getByRole('group', { name: '극장 입력' })).getByRole('button', { name: '닫기' }));
     expect(screen.queryByRole('textbox', { name: '극장' }) === null).toBe(true);
     expect(screen.queryByRole('group', { name: '극장 입력' }) === null).toBe(true);
   });
@@ -218,7 +217,7 @@ describe('인플레이스 필드 에디터 (#354)', () => {
   });
 });
 
-// #553 → #826 S2 → S3 — 탭 타깃. 상단 줄 버튼과 입력 패널 첫 줄(‹ › · 완료) 둘 다 44px로 못박는다(SC 2.5.5 AAA). 판정기는 #508과 같은 것을 쓴다
+// #553 → #826 S2 → S3 — 탭 타깃. 상단 줄 버튼과 입력 패널 첫 줄(‹ › · 닫기) 둘 다 44px로 못박는다(SC 2.5.5 AAA). 판정기는 #508과 같은 것을 쓴다
 // (__tests__/tapTargets.ts — 클래스 파싱 + variant·scale 우회 금지).
 // 이 파일에 두는 이유: 패널은 실제 티켓의 data-field-tap 앵커를 탭해야 뜨는데,
 // resultStageBack.test.tsx가 TicketRenderer를 전역 mock으로 스텁 치므로(bun mock.module은
@@ -252,6 +251,6 @@ describe('탭 타깃: 상단 줄 · 입력 패널 44 (#553 → #826 S3)', () => 
       expect(Math.min(w, h)).toBeGreaterThanOrEqual(MIN_AA);
     }
     // 완료는 라벨 버튼이라 폭이 글자에 따른다 — 누르는 높이 44가 선언돼 있다.
-    expect(within(panel).getByRole('button', { name: '완료' }).classList.contains('h-touch')).toBe(true);
+    expect(within(panel).getByRole('button', { name: '닫기' }).classList.contains('h-touch')).toBe(true);
   });
 });

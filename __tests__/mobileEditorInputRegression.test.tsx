@@ -33,7 +33,7 @@ test('#775 — 연속 입력·조합·삭제가 지연 없이 티켓에 보이�
     expect(screen.getByRole('textbox', { name: '서명' }) === input).toBe(true);
   }
   fireEvent.compositionEnd(input, { data: '한' });
-  fireEvent.click(within(screen.getByRole('group', { name: '서명 입력' })).getByRole('button', { name: '완료' }));
+  fireEvent.click(within(screen.getByRole('group', { name: '서명 입력' })).getByRole('button', { name: '닫기' }));
   expect(shownSignature()).toContain('A한BC');
   fireEvent.click(screen.getByRole('button', { name: '완료' }));
   // 편집 셸은 결과 화면 뒤에 숨은 채 마운트돼 있으니(#297) 결과 스테이지 루트로 범위를 좁힌다.

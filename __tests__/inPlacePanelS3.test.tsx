@@ -63,7 +63,7 @@ afterEach(() => {
 });
 
 describe('f_tap · f_inplace — 두 진입 경로가 같은 패널을 연다 (acceptance-2)', () => {
-  test('티켓 필드 탭과 정보 목록 행 탭이 같은 패널을 열고, 첫 줄은 이전 항목 · 입력 · 다음 항목 · 완료 순이다', async () => {
+  test('티켓 필드 탭과 정보 목록 행 탭이 같은 패널을 열고, 첫 줄은 이전 항목 · 입력 · 다음 항목 · 닫기 순이다', async () => {
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
 
@@ -72,8 +72,8 @@ describe('f_tap · f_inplace — 두 진입 경로가 같은 패널을 연다 (a
     const fromTicket = await screen.findByRole('group', { name: '극장 입력' });
     const order = Array.from(fromTicket.querySelectorAll('button, input')).slice(0, 4)
       .map((el) => el.getAttribute('aria-label') ?? el.textContent);
-    expect(order).toEqual(['이전 항목', '극장', '다음 항목', '완료']);
-    fireEvent.click(within(fromTicket).getByRole('button', { name: '완료' }));
+    expect(order).toEqual(['이전 항목', '극장', '다음 항목', '닫기']);
+    fireEvent.click(within(fromTicket).getByRole('button', { name: '닫기' }));
 
     // 정보 목록 행 탭 — 같은 패널(같은 이름 · 같은 입력)
     const fromList = await openRow('극장');
@@ -182,7 +182,7 @@ describe('hit 44 — 셸 탭 처리 (acceptance-4)', () => {
     // 패널은 dynamic(ssr:false)라 첫 열림은 모듈 로드를 기다린다 — 단독 실행에서도 서게 findBy로 잡는다.
     const opened = await screen.findByRole('group', { name: `${labelOf(field)} 입력` });
     expect(opened.getAttribute('data-field-panel')).toBe(field);
-    fireEvent.click(within(opened).getByRole('button', { name: '완료' }));
+    fireEvent.click(within(opened).getByRole('button', { name: '닫기' }));
 
     // 44 밖 — 필드가 열리지 않고 원래 받던 '포스터 추가'로 간다.
     fireEvent.click(posterTap, { clientX: 300, clientY: 400 });
@@ -272,7 +272,7 @@ describe('필드별 패널 내용 · 16px · 표시 토글 없음 (acceptance-8 
       for (const input of Array.from(p.querySelectorAll('input:not([type="file"])'))) {
         expect(`${label}: ${input.className}`).toContain('text-title');
       }
-      fireEvent.click(within(p).getByRole('button', { name: '완료' }));
+      fireEvent.click(within(p).getByRole('button', { name: '닫기' }));
     }
   });
 

@@ -104,7 +104,7 @@ describe('MobileEditorShell 필드 커버리지 (#266 PR-E)', () => {
     expect(screen.getByTestId('vis-screen').textContent).toBe('false');
     expect(within(panel).queryAllByRole('switch').length).toBe(0);
 
-    fireEvent.click(within(panel).getByRole('button', { name: '완료' }));
+    fireEvent.click(within(panel).getByRole('button', { name: '닫기' }));
     expect(screen.queryByRole('group', { name: '상영관 입력' }) === null).toBe(true);
     expect(screen.getByTestId('vis-screen').textContent).toBe('false');
     expect(listEye('상영관').getAttribute('aria-pressed')).toBe('false');
