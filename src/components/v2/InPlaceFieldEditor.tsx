@@ -168,34 +168,34 @@ function OptionRadios<V extends string>({
 const FORMAT_OPTIONS = DATE_FORMAT_TOKENS.map((t) => ({ value: t.value, label: t.sample }));
 
 /**
- * 글꼴 목록(APG listbox, D14-2 A). 패널 안 키보드 자리에 열리고 포커스를 가져가 키보드가 내려간다. 항목마다 같은 글을
- * 그 서체로 쓰고 오른쪽에 작은 이름 + 현재 항목 ✓을 둔다. 접근 이름은 글꼴 이름이다.
+ * 패널 안 목록(APG listbox) — 글꼴(D14-2 A)과 개봉일 표기(D16 3-A)가 같이 쓴다. 키보드 자리에 열리고 포커스를 가져가
+ * 키보드가 내려간다. 항목은 [미리보기][작은 이름][현재 항목 ✓]이고 접근 이름은 이름이다.
  */
-function FontListbox({
+function PanelListbox<V extends string>({
   label,
+  options,
   value,
-  sample,
   maxHeight,
   triggerRef,
   onSelect,
   onClose,
 }: {
   label: string;
-  value: QuoteFont;
-  sample: string;
+  options: readonly { value: V; name: string; preview: ReactNode }[];
+  value: V;
   maxHeight: number;
   /** 미리보기 버튼 — 이 버튼으로 옮겨 가는 blur는 닫지 않는다(버튼 탭이 토글을 맡는다). */
   triggerRef: RefObject<HTMLButtonElement | null>;
-  onSelect: (font: QuoteFont) => void;
+  onSelect: (v: V) => void;
   onClose: () => void;
 }) {
   const id = useId();
   const ref = useRef<HTMLUListElement>(null);
-  const [active, setActive] = useState(() => Math.max(0, FONT_OPTIONS.findIndex((o) => o.value === value)));
+  const [active, setActive] = useState(() => Math.max(0, options.findIndex((o) => o.value === value)));
   useEffect(() => {
     ref.current?.focus();
   }, []);
-  const last = FONT_OPTIONS.length - 1;
+  const last = options.length - 1;
   const onKeyDown = (e: KeyboardEvent<HTMLUListElement>) => {
     const move = (n: number) => {
       e.preventDefault();
@@ -207,7 +207,7 @@ function FontListbox({
     else if (e.key === 'End') move(last);
     else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      onSelect(FONT_OPTIONS[active].value);
+      onSelect(options[active].value);
     } else if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
@@ -230,7 +230,7 @@ function FontListbox({
       className="m-0 mt-2 list-none overflow-y-auto border-t border-hair p-0 outline-none"
       style={{ maxHeight }}
     >
-      {FONT_OPTIONS.map((o, i) => {
+      {options.map((o, i) => {
         const selected = o.value === value;
         return (
           <li
@@ -238,7 +238,7 @@ function FontListbox({
             id={`${id}-${i}`}
             role="option"
             aria-selected={selected}
-            aria-label={o.label}
+            aria-label={o.name}
             // 포커스가 목록을 떠나면 blur로 닫히니, 선택 클릭 전에 blur가 먼저 도는 걸 막는다.
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => onSelect(o.value)}
@@ -247,8 +247,8 @@ function FontListbox({
               i === active && 'ring-2 ring-inset ring-[var(--pr-focus-ring)]'
             )}
           >
-            <span className="min-w-0 flex-1 truncate" style={userTextFont(sample, o.value, FONT_SAMPLE_PX)}>{sample}</span>
-            <span className="shrink-0 text-caption text-ink-3">{o.label}</span>
+            <span className="min-w-0 flex-1 truncate">{o.preview}</span>
+            <span className="shrink-0 text-caption text-ink-3">{o.name}</span>
             <span className="inline-flex w-5 shrink-0 justify-center">
               {selected && (
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -260,6 +260,50 @@ function FontListbox({
         );
       })}
     </ul>
+  );
+}
+
+/** 표기 이름(목록 오른쪽 작은 글자 · 접근 이름) — 미리보기가 실제 날짜라 이름은 짧은 구분어로 둔다. */
+const FORMAT_NAMES: Record<DateFormatToken, string> = {
+  'kr-compact': '점',
+  iso: '하이픈',
+  'cinema-mono': '영문 약어',
+  'en-long': '영문',
+};
+
+/**
+ * 정밀도 세그먼트(D16 3-A) — 한 덩어리 상자 안 세 칸, radiogroup. 보이는 상자는 36, 누르는 높이는 44다.
+ */
+function GranularitySegment({ value, onChange }: { value: DateGranularity; onChange: (v: DateGranularity) => void }) {
+  return (
+    <div role="radiogroup" aria-label="개봉일 정밀도" onKeyDown={handleRadioGroupKeyDown} className="flex shrink-0">
+      {GRANULARITY_OPTIONS.map((o, i) => {
+        const on = o.value === value;
+        return (
+          <button
+            key={o.value}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            tabIndex={on ? 0 : -1}
+            onPointerDown={keepFocus}
+            onClick={() => onChange(o.value)}
+            className={cn(pressableVariants(), 'inline-flex h-touch shrink-0 items-center')}
+          >
+            <span
+              className={cn(
+                'inline-flex h-9 items-center whitespace-nowrap border-y border-hair-strong px-2.5 text-body',
+                i === 0 ? 'rounded-l-ctl border-l' : 'border-l',
+                i === GRANULARITY_OPTIONS.length - 1 && 'rounded-r-ctl border-r',
+                on ? 'bg-s2 font-semibold text-ink' : 'text-ink-2'
+              )}
+            >
+              {o.label}
+            </span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -424,11 +468,14 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
   const showFont = fontKey !== null && !(isSignature && !!stampImage);
   const currentFont: QuoteFont = (fontKey && components[fontKey]) || 'auto';
   const fontIndex = Math.max(0, FONT_OPTIONS.findIndex((o) => o.value === currentFont));
-  // 목록은 연 필드에만 열려 있다 — 필드가 바뀌면 따로 닫지 않아도 닫힌다.
-  const [fontOpenFor, setFontOpenFor] = useState<SheetTarget | null>(null);
-  const fontOpen = fontOpenFor === field;
-  const setFontOpen = (open: boolean) => setFontOpenFor(open ? field : null);
+  // 패널 목록(글꼴 · 개봉일 표기)은 연 필드에만 열려 있다 — 필드가 바뀌면 따로 닫지 않아도 닫힌다. 한 번에 하나만 열린다.
+  const [listOpen, setListOpen] = useState<{ field: SheetTarget; kind: 'font' | 'format' } | null>(null);
+  const isListOpen = (kind: 'font' | 'format') => listOpen?.field === field && listOpen.kind === kind;
+  const toggleList = (kind: 'font' | 'format') => setListOpen(isListOpen(kind) ? null : { field, kind });
+  const closeList = () => setListOpen(null);
+  const fontOpen = isListOpen('font');
   const fontBtnRef = useRef<HTMLButtonElement>(null);
+  const formatBtnRef = useRef<HTMLButtonElement>(null);
   const fontSample = (field === 'quote' ? info.quote : info.signature)?.trim() || FONT_SAMPLE_FALLBACK;
   const setFont = (font: QuoteFont) => {
     if (fontKey) photo.updateComponents({ [fontKey]: font } as Partial<TicketComponents>);
@@ -436,11 +483,25 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
   const stepFont = (dir: 1 | -1) => setFont(FONT_OPTIONS[(fontIndex + dir + FONT_OPTIONS.length) % FONT_OPTIONS.length].value);
   const selectFont = (font: QuoteFont) => {
     setFont(font);
-    setFontOpen(false);
+    closeList();
     fontBtnRef.current?.focus();
   };
 
-  // ── 평점(K-05): 키보드 없이 별 44 + 숫자(누르면 소수 입력). 표시 토글은 정보 목록 눈 몫이다. ──
+  // ── 개봉일 표기(D16 3-A) — 이름이 아니라 지금 표기로 쓴 날짜를 버튼과 목록에 보인다. 날짜가 비면 표기의 견본. ──
+  const releaseGran = info.releaseDateGranularity || 'date';
+  const releaseToken = info.releaseDateFormat || 'kr-compact';
+  const formatOptions = DATE_FORMAT_TOKENS.map((t) => ({
+    value: t.value,
+    name: FORMAT_NAMES[t.value],
+    preview: <span className="tabular-nums">{formatDate(info.releaseDate, t.value, releaseGran) || t.sample}</span>,
+  }));
+  const selectFormat = (releaseDateFormat: DateFormatToken) => {
+    photo.updateMovieInfo({ releaseDateFormat });
+    closeList();
+    formatBtnRef.current?.focus();
+  };
+
+  // ── 평점(D16 4-A): 키보드 없이 첫 줄 [− 숫자 +] 스테퍼 + 둘째 줄 패널 폭 별, 숫자를 누르면 소수 입력. 표시 토글은 정보 목록 눈 몫. ──
   const setRating = useCallback((r: number) => photo.updateMovieInfo({ rating: r }), [photo.updateMovieInfo]);
 
   // ── ‹ › · Return: 현재 무드 DOM에 실제 존재하는 필드만 순회 ─────────────────────
@@ -464,7 +525,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
     else step(1);
   };
   const enterKeyHint = isLast ? 'done' : 'next';
-  const rating = useRatingPicker({ value: info.rating, onValueChange: setRating, resetKey: field, onEnter, enterKeyHint });
+  const rating = useRatingPicker({ value: info.rating, onValueChange: setRating, resetKey: field, onEnter, enterKeyHint, panel: true });
 
   // ── 첫 줄 입력 자리 ──────────────────────────────────────────────────────────
   let slot: ReactNode;
@@ -572,7 +633,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
       );
     }
   } else if (field === 'rating') {
-    rows.push(<div key="stars" className="pl-2">{rating.stars}</div>);
+    rows.push(<div key="stars">{rating.stars}</div>);
   } else if (field === 'watchDate') {
     const token = info.watchDateFormat || 'kr-compact';
     rows.push(
@@ -581,25 +642,39 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
       </div>
     );
   } else if (field === 'releaseDate') {
-    const gran = info.releaseDateGranularity || 'date';
-    const token = info.releaseDateFormat || 'kr-compact';
+    const gran = releaseGran;
+    const token = releaseToken;
+    // 옵션 한 줄(D16 3-A): 정밀도 세그먼트 · 표기 미리보기(누르면 목록) · 재개봉 토글. 재개봉을 켜면 재개봉일 줄이 하나 더 생긴다.
     rows.push(
-      <div key="gran" role="toolbar" aria-label="개봉일 옵션" className={TOOLBAR_CLS}>
-        <OptionRadios<DateGranularity> label="개봉일 정밀도" options={GRANULARITY_OPTIONS} value={gran} onChange={(releaseDateGranularity) => photo.updateMovieInfo({ releaseDateGranularity })} />
-        <span aria-hidden="true" className="mx-1 h-5 w-px shrink-0 bg-hair" />
+      <div key="opt" role="toolbar" aria-label="개봉일 옵션" className={cn(TOOLBAR_CLS, 'gap-2')}>
+        <GranularitySegment value={gran} onChange={(releaseDateGranularity) => photo.updateMovieInfo({ releaseDateGranularity })} />
+        <button
+          ref={formatBtnRef}
+          type="button"
+          aria-haspopup="listbox"
+          aria-expanded={isListOpen('format')}
+          aria-label={`개봉일 표기, 지금 ${FORMAT_NAMES[token]}`}
+          onPointerDown={keepFocus}
+          onClick={() => toggleList('format')}
+          className={cn(pressableVariants(), 'inline-flex h-touch min-w-0 shrink items-center')}
+        >
+          <span className="inline-flex h-9 min-w-0 items-center gap-1.5 rounded-ctl border border-hair-strong bg-s2 px-2.5 text-body text-ink">
+            <span className="tabular-nums truncate">{formatDate(info.releaseDate, token, gran) || DATE_FORMAT_TOKENS.find((t) => t.value === token)?.sample}</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 text-ink-3">
+              <path d={isListOpen('format') ? 'm6 15 6-6 6 6' : 'm6 9 6 6 6-6'} />
+            </svg>
+          </span>
+        </button>
         {/* 재개봉은 배타 선택이 아니라 독립 토글이라 라디오 밖 버튼이다(C-ACC). */}
         <button
           type="button"
           aria-pressed={!!info.isReissue}
           onPointerDown={keepFocus}
           onClick={() => photo.updateMovieInfo({ isReissue: !info.isReissue })}
-          className={cn(OPT_CLS, optState(!!info.isReissue))}
+          className={cn(OPT_CLS, optState(!!info.isReissue), 'ml-auto')}
         >
           재개봉
         </button>
-      </div>,
-      <div key="fmt" role="toolbar" aria-label="개봉일 표기 옵션" className={TOOLBAR_CLS}>
-        <OptionRadios<DateFormatToken> label="개봉일 표기" options={FORMAT_OPTIONS} value={token} onChange={(releaseDateFormat) => photo.updateMovieInfo({ releaseDateFormat })} />
       </div>
     );
     if (info.isReissue) {
@@ -641,7 +716,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
               aria-expanded={fontOpen}
               aria-label={`${label} 글꼴, 지금 ${FONT_OPTIONS[fontIndex].label}`}
               onPointerDown={keepFocus}
-              onClick={() => setFontOpen(!fontOpen)}
+              onClick={() => toggleList('font')}
               className={cn(pressableVariants(), 'inline-flex h-touch min-w-0 flex-1 items-center justify-center px-1 text-ink')}
             >
               {/* 이름이 아니라 입력한 글을 그 서체로 쓴다(D14-2 A) — 이름은 접근 이름에만 둔다. */}
@@ -696,14 +771,30 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
         </div>
         {rows.length > 0 && <div className="mt-1 space-y-1">{rows}</div>}
         {showFont && fontOpen && (
-          <FontListbox
+          <PanelListbox<QuoteFont>
             label={`${label} 글꼴`}
+            options={FONT_OPTIONS.map((o) => ({
+              value: o.value,
+              name: o.label,
+              // 항목마다 같은 글을 그 서체로(D14-2 A) — 서체끼리 비슷한 손글씨 계열을 이름 대신 글자면으로 가린다.
+              preview: <span style={userTextFont(fontSample, o.value, FONT_SAMPLE_PX)}>{fontSample}</span>,
+            }))}
             value={currentFont}
-            sample={fontSample}
             maxHeight={listMaxHeight}
             triggerRef={fontBtnRef}
             onSelect={selectFont}
-            onClose={() => setFontOpen(false)}
+            onClose={closeList}
+          />
+        )}
+        {field === 'releaseDate' && isListOpen('format') && (
+          <PanelListbox<DateFormatToken>
+            label="개봉일 표기"
+            options={formatOptions}
+            value={releaseToken}
+            maxHeight={listMaxHeight}
+            triggerRef={formatBtnRef}
+            onSelect={selectFormat}
+            onClose={closeList}
           />
         )}
       </div>

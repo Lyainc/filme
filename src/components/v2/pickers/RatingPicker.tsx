@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
+import { useDeferredValue, useEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent, type ReactNode } from 'react';
 import { Eyebrow } from '@/components/v2/Eyebrow';
 import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
 import { shouldCommitSliderValue } from './BrightnessSlider';
@@ -52,6 +52,7 @@ export function useRatingPicker({
   resetKey,
   onEnter,
   enterKeyHint,
+  panel = false,
 }: {
   value: number;
   onValueChange: (rating: number) => void;
@@ -61,6 +62,11 @@ export function useRatingPicker({
   /** 소수 입력의 Return — 입력 패널은 다음 항목(마지막이면 완료)으로 잇는다(#826 S3 constraint-3). */
   onEnter?: (e: KeyboardEvent<HTMLInputElement>) => void;
   enterKeyHint?: 'next' | 'done';
+  /**
+   * 입력 패널 배치(D16 4-A): 숫자 조각이 [− 숫자 +] 스테퍼(0.1, 누르고 있으면 반복)가 되고, 별 줄이 패널 폭을 다 쓴다.
+   * 숫자를 누르면 그 자리가 소수 입력으로 바뀐다. 옛 시트(RatingPicker 기본 export)는 이 배치를 안 쓴다.
+   */
+  panel?: boolean;
 }): { stars: ReactNode; number: ReactNode } {
   const [hoverPreview, setHoverPreview] = useState(0);
   const [numberInputOpen, setNumberInputOpen] = useState(false);
@@ -144,10 +150,44 @@ export function useRatingPicker({
     }
   }
 
+  // 스테퍼(D16 4-A) — 0.1씩, 0~5로 묶는다. 부동소수 오차는 한 자리로 반올림해 끊는다.
+  const repeatRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stopRepeat = () => {
+    if (repeatRef.current != null) {
+      clearTimeout(repeatRef.current);
+      repeatRef.current = null;
+    }
+  };
+  useEffect(() => stopRepeat, []);
+  const bump = (dir: 1 | -1) =>
+    setLocalValue((v) => Math.min(5, Math.max(0, Math.round(((v || 0) + dir * 0.1) * 10) / 10)));
+  // 누르면 한 번, 누르고 있으면 400ms 뒤부터 80ms마다 반복. 키보드(Enter · Space, detail 0)는 click 한 번이 한 칸이다.
+  const stepperProps = (dir: 1 | -1) => ({
+    onPointerDown: (e: PointerEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      bump(dir);
+      stopRepeat();
+      const tick = (delay: number) => {
+        repeatRef.current = setTimeout(() => {
+          bump(dir);
+          tick(80);
+        }, delay);
+      };
+      tick(400);
+    },
+    onPointerUp: stopRepeat,
+    onPointerLeave: stopRepeat,
+    onPointerCancel: stopRepeat,
+    onClick: (e: MouseEvent<HTMLButtonElement>) => {
+      if (e.detail === 0) bump(dir);
+    },
+  });
+
   const stars = (
     <div
       // -ml-2(#422): 별 버튼은 44px 탭타깃 안에 28px 별을 중앙정렬해 좌측에 8px 여백이 생긴다 — 줄 시작선을 맞추려 당긴다.
-      className={`-ml-2 flex gap-1.5 ${dim ? 'opacity-40' : ''}`}
+      // 패널(D16 4-A)은 별 다섯이 패널 폭을 나눠 가져 한 칸이 약 70px — 반 칸 드래그가 쉬워진다(ratingFromRowOffset은 줄 폭 기준).
+      className={cn(panel ? 'flex w-full' : '-ml-2 flex gap-1.5', dim && 'opacity-40')}
       style={{ touchAction: 'none' }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
@@ -172,10 +212,10 @@ export function useRatingPicker({
           }}
           aria-label={`${star}점`}
           data-touch="44"
-          className={cn(pressableVariants(), 'relative inline-flex min-h-touch min-w-touch items-center justify-center')}
+          className={cn(pressableVariants(), 'relative inline-flex min-h-touch min-w-touch items-center justify-center', panel && 'flex-1')}
         >
-          <span className="relative inline-block h-7 w-7">
-            <StarSVG className="absolute inset-0 text-ink-3/40" />
+          <span className={cn('relative inline-block', panel ? 'h-8 w-8' : 'h-7 w-7')}>
+            <StarSVG className={cn('absolute inset-0 text-ink-3/40', panel && 'h-8 w-8')} />
             <span
               className="absolute inset-0 overflow-hidden"
               style={{
@@ -187,7 +227,7 @@ export function useRatingPicker({
                     : '0%',
               }}
             >
-              <StarSVG className="text-accent" />
+              <StarSVG className={cn('text-accent', panel && 'h-8 w-8')} />
             </span>
           </span>
         </button>
@@ -198,22 +238,7 @@ export function useRatingPicker({
   // 소수 입력 토글(#496) — 항상 뜨는 숫자 상자가 과하다는 지적으로 접어 두고, 별 롱터치(위 핸들러) 또는 이 숫자 탭으로
   // 편다. aria-label을 고정해 두는 이유는 표시값(예: "★ 3.3")이 바뀔 때마다 접근명이 같이 흔들리면 스크린리더 사용자가
   // 매번 다른 라벨을 듣기 때문 — 값은 시각 전용, 의미는 라벨 하나로 고정. 표기는 티켓 얼굴·fieldPreview와 같은 `★ N.N`(#445).
-  const number = (
-    <div className={`flex min-w-0 flex-1 items-center gap-2 ${dim ? 'opacity-40' : ''}`}>
-      <button
-        type="button"
-        onClick={() => setNumberInputOpen((open) => !open)}
-        aria-expanded={numberInputOpen}
-        aria-controls="rating-decimal-input"
-        aria-label="평점 소수 입력 토글"
-        className={cn(pressableVariants(), 'tabular-nums inline-flex min-h-touch shrink-0 items-center text-left')}
-      >
-        <Eyebrow tone="faint">
-          ★ {current.toFixed(1)}
-        </Eyebrow>
-      </button>
-
-      {numberInputOpen && (
+  const decimalInput = (
         <input
           id="rating-decimal-input"
           type="number"
@@ -237,7 +262,48 @@ export function useRatingPicker({
           // 16px 미만이면 iOS Safari가 포커스 시 자동 줌인해 레이아웃이 틀어진다(#274).
           className={DECIMAL_INPUT_CLS}
         />
+  );
+  const stepBtn = 'inline-flex h-touch w-touch shrink-0 items-center justify-center';
+  const stepBox = 'inline-flex h-9 w-touch items-center justify-center rounded-ctl border border-hair-strong text-title text-ink';
+  const number = panel ? (
+    <div className={cn('flex min-w-0 flex-1 items-center gap-1', dim && 'opacity-40')}>
+      <button type="button" aria-label="평점 0.1 내리기" {...stepperProps(-1)} className={cn(pressableVariants(), stepBtn)}>
+        <span className={stepBox} aria-hidden="true">−</span>
+      </button>
+      {numberInputOpen ? (
+        <div className="min-w-0 flex-1">{decimalInput}</div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setNumberInputOpen(true)}
+          aria-expanded={false}
+          aria-controls="rating-decimal-input"
+          aria-label="평점 소수 입력 토글"
+          className={cn(pressableVariants(), 'tabular-nums inline-flex h-touch min-w-0 flex-1 items-center justify-center text-title font-semibold text-ink')}
+        >
+          {current.toFixed(1)}
+        </button>
       )}
+      <button type="button" aria-label="평점 0.1 올리기" {...stepperProps(1)} className={cn(pressableVariants(), stepBtn)}>
+        <span className={stepBox} aria-hidden="true">+</span>
+      </button>
+    </div>
+  ) : (
+    <div className={`flex min-w-0 flex-1 items-center gap-2 ${dim ? 'opacity-40' : ''}`}>
+      <button
+        type="button"
+        onClick={() => setNumberInputOpen((open) => !open)}
+        aria-expanded={numberInputOpen}
+        aria-controls="rating-decimal-input"
+        aria-label="평점 소수 입력 토글"
+        className={cn(pressableVariants(), 'tabular-nums inline-flex min-h-touch shrink-0 items-center text-left')}
+      >
+        <Eyebrow tone="faint">
+          ★ {current.toFixed(1)}
+        </Eyebrow>
+      </button>
+
+      {numberInputOpen && decimalInput}
     </div>
   );
 
@@ -259,7 +325,7 @@ export default function RatingPicker({ value, onValueChange, visible = true, onV
 
 function StarSVG({ className = '' }: { className?: string }) {
   return (
-    <svg className={`h-7 w-7 ${className}`} fill="currentColor" viewBox="0 0 20 20">
+    <svg className={cn('h-7 w-7', className)} fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
     </svg>
   );
