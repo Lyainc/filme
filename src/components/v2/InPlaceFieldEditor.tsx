@@ -1,17 +1,19 @@
 import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import type { usePhototicket } from '@/hooks/usePhototicket';
-import type { MovieInfo, QuoteFont, TicketComponents } from '@/types';
+import type { DateFormatToken, DateGranularity, MovieInfo, QuoteFont, TicketComponents } from '@/types';
 import { userTextFont } from '@/components/moods/_shared';
-import { getLayout } from '@/utils/layouts';
 import { cn } from '@/utils/cn';
-import { pressableVariants } from '@/components/ui/variants';
-import { useKobisSearch } from '@/hooks/useKobisSearch';
+import { formatDate } from '@/utils/dateFormat';
+import { handleRadioGroupKeyDown } from '@/utils/radioGroupKeyboard';
+import { inputVariants, pressableVariants } from '@/components/ui/variants';
+import { KOBIS_MESSAGES, useKobisSearch } from '@/hooks/useKobisSearch';
 import { useLogoCrop } from '@/hooks/useLogoCrop';
-import RatingPicker from '@/components/v2/pickers/RatingPicker';
-import { EyeIcon } from '@/components/ui/VisibilityCheckbox';
-import { DateSheet, INPUT_CLS, KobisResultList } from './FieldEditorBody';
+import { useRatingPicker } from '@/components/v2/pickers/RatingPicker';
+import { DateInput } from '@/components/ui/DateInput';
+import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
+import { KobisResultList } from './FieldEditorBody';
 import {
   FIELD_INFO_KEY,
   FIELD_LABELS,
@@ -23,15 +25,15 @@ import {
   type SheetTarget,
   IMAGE_ACCEPT,
 } from '@/constants/fields';
-import { isRequiredField } from '@/constants/fieldVisibility';
+import { DATE_FORMAT_TOKENS, GRANULARITY_OPTIONS } from '@/constants/dateTokens';
 
-// 로고 크롭 모달 — StampSheet와 동일하게 dynamic(ssr:false)로 react-image-crop을 분리.
+// 로고 크롭 모달 — dynamic(ssr:false)로 react-image-crop을 분리.
 const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), { ssr: false });
 
 type Photo = ReturnType<typeof usePhototicket>;
 
 /**
- * prev/next 순회의 정본 순서(#354, 시안 editOrder). 실제 순회 목록은 현재 무드 DOM에 존재하는
+ * ‹ › · Return 순회의 정본 순서(#354, 시안 editOrder). 실제 순회 목록은 현재 무드 DOM에 존재하는
  * data-field-tap만 걸러 만든다 — 무드가 렌더하지 않는 필드(MOOD_EXCLUDED_FIELDS + 조건부 미렌더)는
  * 탭 앵커 자체가 없어 구조적으로 빠진다. reissue는 FieldTap 타깃이 releaseDate라 여기 없음.
  */
@@ -41,7 +43,7 @@ const EDIT_ORDER: SheetTarget[] = [
   'bookingNo', 'signature', 'chain', 'format',
 ];
 
-/** 활성 필드의 지오메트리 — local(래퍼 좌표, 오버레이 배치용) + vpCenter(리프트 계산용, 리프트 성분 제거). */
+/** 활성 필드의 지오메트리 — local(래퍼 좌표, 선택 표시 배치용) + vpCenter(리프트 계산용, 리프트 성분 제거). */
 interface FieldRect {
   top: number;
   left: number;
@@ -49,29 +51,15 @@ interface FieldRect {
   h: number;
   /** 필드 세로 중심의 viewport Y — 래퍼 transform의 translateY 성분을 제거한 값(리프트 자기참조 방지). */
   vpCenter: number;
-  /** 티켓 렌더 텍스트의 시각 폰트 크기(래퍼 로컬 px, #365) — 캐럿 input의 텍스트 폭 계산을 티켓과 맞춘다. */
-  fontPx: number;
-  textAlign: string;
-  fontFamily: string;
-  fontWeight: string;
-  fontStyle: string;
-  /** 시각 자간(래퍼 로컬 px, #365). computed 'normal'은 0. */
-  letterSpacingPx: number;
 }
 
 /**
  * data-field-tap(#354)은 #646부터 FieldTap이 children 자신(실제 레이아웃 박스가 있는 노드)에
- * 직접 붙인다 — 앵커를 찾으면 그게 곧 측정 대상이라 firstElementChild 인다이렉션이 필요 없다.
- * 래퍼(wrapper)의 현재 transform(리프트 중간값 포함)은 computed matrix로 읽어 스케일은 나누고
- * translateY는 빼서, 트랜지션 중간에 측정돼도 좌표가 흔들리지 않는다.
+ * 직접 붙인다 — 앵커를 찾으면 그게 곧 측정 대상이다. 래퍼(wrapper)의 현재 transform(리프트 중간값 포함)은
+ * computed matrix로 읽어 스케일은 나누고 translateY는 빼서, 트랜지션 중간에 측정돼도 좌표가 흔들리지 않는다.
  */
-function measureField(
-  wrapper: HTMLElement,
-  ticket: HTMLElement,
-  field: SheetTarget,
-  naturalWidth: number
-): FieldRect | null {
-  // null은 "앵커가 DOM에 없음"(그 무드가 필드를 안 렌더)일 때만 — 오버레이 렌더 게이트.
+function measureField(wrapper: HTMLElement, ticket: HTMLElement, field: SheetTarget): FieldRect | null {
+  // null은 "앵커가 DOM에 없음"(그 무드가 필드를 안 렌더)일 때만 — 선택 표시 렌더 게이트.
   // 0-크기 rect는 그대로 반환한다(레이아웃 미완·happy-dom 등, 다음 변경 관측에서 재측정).
   const tap = ticket.querySelector(`[data-field-tap="${field}"]`);
   if (!tap) return null;
@@ -85,12 +73,6 @@ function measureField(
     if (m.a > 0) scale = m.a;
     translateY = m.f;
   }
-  // 캐럿 폰트 힌트(#365) — 티켓 텍스트의 computed 스타일은 자연 픽셀(무드 960/1534 기준)이라
-  // 티켓 스케일(래퍼 로컬 폭 ÷ 자연 폭)로 환산한다.
-  const tw = ticket.getBoundingClientRect().width / scale;
-  const ticketScale = tw > 0 && naturalWidth > 0 ? tw / naturalWidth : 1;
-  const st = typeof getComputedStyle === 'function' ? getComputedStyle(tap as HTMLElement) : null;
-  const lsRaw = st ? parseFloat(st.letterSpacing) : NaN;
   return {
     top: (eb.top - wb.top) / scale,
     left: (eb.left - wb.left) / scale,
@@ -99,33 +81,20 @@ function measureField(
     // ponytail: scale(1.08)이 origin(top center) 기준으로 세로 위치를 최대 ~2% 미는 건 무시 —
     // 리프트는 "키보드 위로 띄우기"라 ±20px 오차가 체감 안 된다.
     vpCenter: eb.top + eb.height / 2 - translateY,
-    fontPx: (st ? parseFloat(st.fontSize) || 16 : 16) * ticketScale,
-    textAlign: st?.textAlign || 'left',
-    fontFamily: st?.fontFamily || '',
-    fontWeight: st?.fontWeight || '400',
-    // 이탤릭까지 복사해야 캐럿이 글자 끝에 선다(#494) — 서명·한줄평이 6무드에서 Instrument Serif
-    // 이탤릭으로 조판되는데 캐럿 입력이 로만이면 advance width가 갈려 캐럿이 어긋난다.
-    fontStyle: st?.fontStyle || 'normal',
-    letterSpacingPx: (Number.isFinite(lsRaw) ? lsRaw : 0) * ticketScale,
   };
 }
 
-// 지오메트리뿐 아니라 캐럿에 복사되는 폰트 3속성도 본다(#494) — 이탤릭↔로만 전환은 거의 항상
-// glyph advance width를 같이 바꿔 w·fontPx로도 잡히지만, 서명이 빈 문자열이면 양쪽 폭이 0이라
-// 그 경로가 안 걸려 캐럿이 이전 조판을 유지하는 좁은 창이 남는다.
 const rectEq = (a: FieldRect | null, b: FieldRect | null) =>
   a === b ||
   (!!a && !!b &&
     Math.abs(a.top - b.top) < 0.5 && Math.abs(a.left - b.left) < 0.5 &&
     Math.abs(a.w - b.w) < 0.5 && Math.abs(a.h - b.h) < 0.5 &&
-    Math.abs(a.vpCenter - b.vpCenter) < 0.5 &&
-    Math.abs(a.fontPx - b.fontPx) < 0.5 &&
-    a.fontStyle === b.fontStyle && a.fontFamily === b.fontFamily && a.fontWeight === b.fontWeight);
+    Math.abs(a.vpCenter - b.vpCenter) < 0.5);
 
 /**
  * 한줄평·서명 폰트 9택(#558 4택 → #437). 값의 뜻과 실제 폰트는 `_shared.tsx`의 `userTextFont`가
- * 단일 소스이고 여기는 라벨만 쥔다. 라벨이 스타일명이 아니라 폰트 이름인 건 8종 중 5종이 손글씨
- * 계열이라 스타일어로는 서로 구분이 안 되기 때문이다('hand'는 값 그대로, 라벨만 '자람').
+ * 단일 소스이고 여기는 이름만 쥔다. 이름이 스타일명이 아니라 폰트 이름인 건 8종 중 5종이 손글씨
+ * 계열이라 스타일어로는 서로 구분이 안 되기 때문이다('hand'는 값 그대로, 이름만 '자람').
  */
 const FONT_OPTIONS: readonly { value: QuoteFont; label: string }[] = [
   { value: 'auto', label: '자동' },
@@ -139,19 +108,73 @@ const FONT_OPTIONS: readonly { value: QuoteFont; label: string }[] = [
   { value: 'flower', label: '꽃길' },
 ];
 
-/** 버튼·목록 라벨 기준 크기 — userTextFont의 #437 배율이 자람=1.0 기준이라 16이면 9택 글자면이 비슷하게 선다. */
+/** 미리보기 기준 크기 — userTextFont의 #437 배율이 자람=1.0 기준이라 16이면 9택 글자면이 비슷하게 선다. */
 const FONT_SAMPLE_PX = 16;
+/** 입력이 비었을 때의 글꼴 견본(D14-2 A) — 한글 · 영문 글자면을 둘 다 보여 준다. */
+const FONT_SAMPLE_FALLBACK = '영화의 순간 Film';
+
+/** 패널 컨트롤 — 줄 44, 보이는 상자 36(D12). 글자 16px라 iOS가 포커스 때 확대하지 않는다(#274 · 요구 3). */
+const PANEL_INPUT_CLS = cn(inputVariants({ surface: 'glass' }), 'h-9 w-full min-w-0 rounded-ctl px-3 text-title text-ink');
+const ICON_BTN_CLS = cn(pressableVariants(), 'inline-flex h-touch w-touch shrink-0 items-center justify-center rounded-ctl text-ink-2 transition-colors hover:text-ink');
+/** 옵션 칩(C-OPT) — 모서리 6 상자, 누르는 높이 44. 고른 칩만 면과 선이 선다. */
+const OPT_CLS = cn(pressableVariants(), 'inline-flex h-touch shrink-0 items-center whitespace-nowrap rounded-ctl border px-3 text-body transition-colors');
+const optState = (on: boolean) => (on ? 'border-hair-strong bg-s2 font-semibold text-ink' : 'border-transparent text-ink-2 hover:text-ink');
+/** 칩 한 줄(C-ACC) — 넘치면 가로 스크롤. */
+const TOOLBAR_CLS = 'no-scrollbar flex min-w-0 items-center gap-1 overflow-x-auto';
+
+/** 키보드를 내리지 않게 포인터 누름에서 포커스 이동을 막는다(‹ › · 완료 · 칩). */
+const keepFocus = (e: { preventDefault: () => void }) => e.preventDefault();
+
+function Chevron({ dir }: { dir: 'left' | 'right' }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={dir === 'left' ? 'm15 18-6-6 6-6' : 'm9 18 6-6-6-6'} />
+    </svg>
+  );
+}
+
+/** 배타 선택 칩 묶음 — toolbar 안의 radiogroup(APG). */
+function OptionRadios<V extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: readonly { value: V; label: string }[];
+  value: V;
+  onChange: (v: V) => void;
+}) {
+  return (
+    <div role="radiogroup" aria-label={label} onKeyDown={handleRadioGroupKeyDown} className="flex shrink-0 gap-1">
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          role="radio"
+          aria-checked={o.value === value}
+          tabIndex={o.value === value ? 0 : -1}
+          onPointerDown={keepFocus}
+          onClick={() => onChange(o.value)}
+          className={cn(OPT_CLS, optState(o.value === value), 'tabular-nums')}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+const FORMAT_OPTIONS = DATE_FORMAT_TOKENS.map((t) => ({ value: t.value, label: t.sample }));
 
 /**
- * 글꼴 드롭다운 목록(APG listbox, 시안 D10 B′). 목록은 래퍼(스케일·리프트 transform) 밖의 fixed —
- * PhoneFrame의 contain:paint가 fixed 컨테이닝 블록이라 좌표가 프레임 기준이고, aid 패널과 같은
- * 자리(키보드 위)를 쓴다. 포커스는 listbox가 갖고 활성 옵션은 aria-activedescendant로 가리킨다.
+ * 글꼴 목록(APG listbox, D14-2 A). 패널 안 키보드 자리에 열리고 포커스를 가져가 키보드가 내려간다. 항목마다 같은 글을
+ * 그 서체로 쓰고 오른쪽에 작은 이름 + 현재 항목 ✓을 둔다. 접근 이름은 글꼴 이름이다.
  */
 function FontListbox({
   label,
   value,
-  sampleFor,
-  bottom,
+  sample,
   maxHeight,
   triggerRef,
   onSelect,
@@ -159,10 +182,9 @@ function FontListbox({
 }: {
   label: string;
   value: QuoteFont;
-  sampleFor: (font: QuoteFont, label: string) => CSSProperties;
-  bottom: number;
+  sample: string;
   maxHeight: number;
-  /** 글꼴 버튼 — 이 버튼으로 옮겨 가는 blur는 닫지 않는다(버튼 탭이 토글을 맡는다). */
+  /** 미리보기 버튼 — 이 버튼으로 옮겨 가는 blur는 닫지 않는다(버튼 탭이 토글을 맡는다). */
   triggerRef: RefObject<HTMLButtonElement | null>;
   onSelect: (font: QuoteFont) => void;
   onClose: () => void;
@@ -205,8 +227,8 @@ function FontListbox({
         if (e.relatedTarget && e.relatedTarget === triggerRef.current) return;
         onClose();
       }}
-      className="fixed inset-x-3 z-50 m-0 list-none overflow-y-auto rounded-field-sm border border-hair-strong bg-s2 p-0 outline-none"
-      style={{ bottom, maxHeight, boxShadow: 'var(--shadow-pop, 0 8px 24px -8px rgba(0,0,0,.4))' }}
+      className="m-0 mt-2 list-none overflow-y-auto border-t border-hair p-0 outline-none"
+      style={{ maxHeight }}
     >
       {FONT_OPTIONS.map((o, i) => {
         const selected = o.value === value;
@@ -216,21 +238,24 @@ function FontListbox({
             id={`${id}-${i}`}
             role="option"
             aria-selected={selected}
+            aria-label={o.label}
             // 포커스가 목록을 떠나면 blur로 닫히니, 선택 클릭 전에 blur가 먼저 도는 걸 막는다.
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => onSelect(o.value)}
             className={cn(
-              'flex h-touch items-center justify-between gap-2 border-t border-hair px-3 text-ink first:border-t-0',
-              selected && 'bg-s1',
+              'flex h-touch items-center gap-2 border-b border-hair px-1 text-ink',
               i === active && 'ring-2 ring-inset ring-[var(--pr-focus-ring)]'
             )}
           >
-            <span style={sampleFor(o.value, o.label)}>{o.label}</span>
-            {selected && (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M20 6 9 17l-5-5" />
-              </svg>
-            )}
+            <span className="min-w-0 flex-1 truncate" style={userTextFont(sample, o.value, FONT_SAMPLE_PX)}>{sample}</span>
+            <span className="shrink-0 text-caption text-ink-3">{o.label}</span>
+            <span className="inline-flex w-5 shrink-0 justify-center">
+              {selected && (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+              )}
+            </span>
           </li>
         );
       })}
@@ -238,18 +263,34 @@ function FontListbox({
   );
 }
 
+/** 입력 중 티켓 위 선택 표시(C-SEL) — 재단 L자 넷, 이름표 없음(D12 · 결정 3-A). 래퍼 안이라 캡처 대상 밖이다. */
+function SelectionMarks({ rect }: { rect: FieldRect }) {
+  const corner = 'absolute h-[9px] w-[9px] border-accent';
+  return (
+    <div
+      aria-hidden="true"
+      data-field-selection=""
+      style={{ position: 'absolute', left: rect.left - 5, top: rect.top - 5, width: rect.w + 10, height: rect.h + 10, zIndex: 60, pointerEvents: 'none' }}
+    >
+      <span className={cn(corner, 'left-0 top-0 border-l-2 border-t-2')} />
+      <span className={cn(corner, 'right-0 top-0 border-r-2 border-t-2')} />
+      <span className={cn(corner, 'bottom-0 left-0 border-b-2 border-l-2')} />
+      <span className={cn(corner, 'bottom-0 right-0 border-b-2 border-r-2')} />
+    </div>
+  );
+}
+
 interface InPlaceFieldEditorProps {
   photo: Photo;
   /** 편집 중인 타깃. null 게이팅은 셸이 한다(이 컴포넌트는 편집 중에만 마운트). */
   field: SheetTarget;
-  /** 리프트/스케일 transform이 걸리는 프리뷰 래퍼 — 오버레이(input·필드바) portal 대상. */
+  /** 리프트/스케일 transform이 걸리는 프리뷰 래퍼 — 선택 표시 portal 대상. */
   wrapperEl: HTMLElement | null;
-  /** TicketRenderer를 감싼 안쪽 div — 측정·MutationObserver 대상(오버레이 자신을 관찰하지 않게 분리). */
+  /** TicketRenderer를 감싼 안쪽 div — 측정·MutationObserver 대상(선택 표시 자신을 관찰하지 않게 분리). */
   ticketEl: HTMLElement | null;
   /**
-   * prev/next 순회 — 순수 탐색이라 가시성을 건드리지 않는다(PR #359 리뷰 P1: 셸 handleField를
-   * 재사용하면 경유한 숨김 필드가 전부 노출로 바뀐다). 숨김 필드 재켜기는 FieldTap 직접 재탭
-   * (handleField)과 필드바 눈 토글만의 몫.
+   * ‹ › · Return 순회 — 순수 탐색이라 가시성을 건드리지 않는다(PR #359 리뷰 P1: 셸 handleField를
+   * 재사용하면 경유한 숨김 필드가 전부 노출로 바뀐다).
    */
   onField: (field: SheetTarget) => void;
   onClose: () => void;
@@ -258,22 +299,21 @@ interface InPlaceFieldEditorProps {
 }
 
 /**
- * 온티켓 인플레이스 필드 에디터(#354, 시안 §5).
+ * 필드 입력 패널(#826 S3, D12 · D13 · D14). 정보 목록 행과 티켓 필드 탭이 같은 패널을 연다.
  *
- * - 투명 input을 활성 필드 위에 얹어 caret만 보이고 텍스트는 티켓이 렌더한다.
- * - 필드바(prev · 로고 칩 · 노출 토글 · next · 완료)는 활성 필드 옆에 앵커링, 위 공간이 없으면 아래로.
- * - aid 패널(fixed, 키보드 위): 제목→KOBIS 결과, 평점→별점(RatingPicker), 날짜→DateSheet,
- *   이미지 스탬프→미리보기+제거. 페이드만(슬라이드 없음).
- * - 위치 계산은 rAF 루프 금지(#354) — MutationObserver(티켓 서브트리) + ResizeObserver(래퍼) +
- *   visualViewport 변경 시에만 1회 측정.
+ * - 자리: 옛 aid 자리 그대로(visualViewport로 잰 키보드 위 12px, 프레임 기준 fixed). 키보드에 붙이기 · 확대는 S4.
+ * - 첫 줄: [‹ 이전 항목][입력(16px, 안내 글자 = 필드 이름)][› 다음 항목][완료]. Return = 다음 항목, 마지막 필드에선 완료.
+ * - 둘째 줄: 옵션이 있는 필드만 — 표기 · 정밀도 · 재개봉(날짜), 별(평점), 글꼴 ‹ 미리보기 ›(한줄평 · 서명), 이미지로(로고 · 서명),
+ *   KOBIS 결과(제목). 표시 토글은 정보 목록 눈으로만 바꾸고(D14-1) 재개봉일 하나만 예외로 여기 남는다.
+ * - 티켓에는 선택 표시(재단 L자)만 그린다. 위치 계산은 rAF 루프 금지(#354) — MutationObserver(티켓 서브트리) +
+ *   ResizeObserver(래퍼) + visualViewport 변경 시에만 1회 측정.
  */
 export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField, onClose, onLift }: InPlaceFieldEditorProps) {
   const isStamp = isStampTarget(field);
-  // 서명(#484 c6)은 StampTarget이 아니지만(c3 — 데이터가 MovieInfo에 산다) 이미지 업로드 UI는
-  // chain/format과 동일하게 열려야 한다 — isStamp와 별개로 UI 분기만 공유하는 플래그.
+  // 서명(#484 c6)은 StampTarget이 아니지만(c3 — 데이터가 MovieInfo에 산다) 이미지 업로드 UI는 chain/format과 같다.
   const isSignature = field === 'signature';
   const isImageField = isStamp || isSignature;
-  const components = photo.state.components;
+  const { components, movieInfo: info } = photo.state;
   const stampImage = isStamp
     ? String(components[STAMP_KEYS[field].image] ?? '')
     : isSignature
@@ -284,27 +324,23 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
   // ── 지오메트리: 필드 rect(래퍼 로컬 좌표) ──────────────────────────────────
   const [rect, setRect] = useState<FieldRect | null>(null);
   const rectRef = useRef<FieldRect | null>(null);
-  // 캐럿 폰트 환산용 티켓 자연 폭(#365) — computed 폰트 크기(자연 px)를 화면 px로 바꾸는 분모.
-  const naturalWidth = getLayout(components.layout).width;
 
   const remeasure = useCallback(() => {
     if (!wrapperEl || !ticketEl) return;
-    const next = measureField(wrapperEl, ticketEl, field, naturalWidth);
+    const next = measureField(wrapperEl, ticketEl, field);
     if (rectEq(rectRef.current, next)) return;
     rectRef.current = next;
     setRect(next);
-  }, [wrapperEl, ticketEl, field, naturalWidth]);
+  }, [wrapperEl, ticketEl, field]);
 
   useLayoutEffect(() => {
-    // 필드 전환 시 무조건 상태 동기화 — remeasure의 epsilon 게이트를 우회해 stale rect(이전 필드
-    // 위치에 오버레이가 남는 것)를 방지한다.
-    const next = wrapperEl && ticketEl ? measureField(wrapperEl, ticketEl, field, naturalWidth) : null;
+    // 필드 전환 시 무조건 상태 동기화 — remeasure의 epsilon 게이트를 우회해 이전 필드 위치에 표시가 남는 걸 막는다.
+    const next = wrapperEl && ticketEl ? measureField(wrapperEl, ticketEl, field) : null;
     rectRef.current = next;
     setRect(next);
     if (!wrapperEl || !ticketEl) return;
     // 변경 시 1회 측정: 타이핑(characterData)·ghost 노드 스왑(childList)·fitFontSizeToWidth의
     // style 변경(attributes)은 MutationObserver가, 프리뷰 리사이즈는 ResizeObserver가 잡는다.
-    // 오버레이는 래퍼에 portal되지만 관찰 대상은 티켓 div라 자기 갱신 루프가 없다.
     const mo = new MutationObserver(remeasure);
     mo.observe(ticketEl, { subtree: true, childList: true, characterData: true, attributes: true });
     const ro = new ResizeObserver(remeasure);
@@ -313,9 +349,9 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
       mo.disconnect();
       ro.disconnect();
     };
-  }, [remeasure, wrapperEl, ticketEl, field, naturalWidth]);
+  }, [remeasure, wrapperEl, ticketEl, field]);
 
-  // ── visualViewport: 키보드 높이(aid 패널 bottom) + 가시 높이(리프트 목표) ──
+  // ── visualViewport: 키보드 높이(패널 bottom) + 가시 높이(리프트 목표) ──
   const [vvBox, setVvBox] = useState<{ h: number; bottom: number } | null>(null);
   useEffect(() => {
     const vv = window.visualViewport;
@@ -332,13 +368,9 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
     };
   }, []);
 
-  // aid 패널(KOBIS 결과 목록) 가용 높이 — 키보드 위 가시영역(vvBox.h)에 비례해 늘린다(#476).
-  // 새 측정 루프가 아니라 위 visualViewport effect가 이미 갱신하는 vvBox만 읽는다(#354 rAF 금지).
-  // 0.7 배율은 실측(390×844, 키보드 높이 vv.h≈508 기준) 결과 행(제목+메타 2줄, 행당 ~82.5px)이
-  // 3개 이상 완전히 들어가도록 역산한 값 — 0.6은 2.8행에 그쳐 3번째 행이 잘렸다(ac1). 세 번째
-  // 항(vvBox.h - 16)은 가시영역 자체가 250px보다 좁은 화면(랜드스케이프 등)에서 하한이 vvBox.h를
-  // 넘어 패널이 화면 위로 넘치는 걸 막는다(PR #478 리뷰 P1).
-  const aidMaxHeight = vvBox ? Math.min(360, Math.max(176, vvBox.h * 0.7), vvBox.h - 16) : 250;
+  // 패널 안 목록(KOBIS · 글꼴) 가용 높이 — 키보드 위 가시영역에 비례(#476). 위 visualViewport effect가 갱신하는
+  // vvBox만 읽는다(#354 rAF 금지). 가시영역이 아주 좁으면(랜드스케이프) 화면 위로 넘치지 않게 vvBox.h - 16으로 막는다.
+  const listMaxHeight = vvBox ? Math.min(360, Math.max(176, vvBox.h * 0.7), vvBox.h - 16) : 250;
 
   // ── 리프트: 활성 필드 중심을 가시 영역 상단 35% 지점으로(키보드 위). 필드/키보드 변경 시에만
   // 재계산하고 타이핑(rect 갱신)마다 흔들지 않는다 — vpCenter가 리프트 성분을 제거한 값이라
@@ -357,13 +389,11 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
   const value = isStamp
     ? String(components[STAMP_KEYS[field].label] ?? '')
     : infoKey
-      ? String(photo.state.movieInfo[infoKey] ?? '')
+      ? String(info[infoKey] ?? '')
       : '';
 
-  // KOBIS 검색(제목 aid) — TitleSheet와 동일한 공용 훅(#242 drift 방지).
-  const kobis = useKobisSearch({
-    apply: photo.beginMovieSelection,
-  });
+  // KOBIS 검색(제목) — 공용 훅(#242 drift 방지).
+  const kobis = useKobisSearch({ apply: photo.beginMovieSelection });
 
   const setValue = (v: string) => {
     if (isStamp) {
@@ -374,378 +404,292 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
     }
   };
 
-  // 로고 업로드(필드바 이미지 칩) — StampSheet와 동일한 useLogoCrop 흐름. 서명(#484 c6)은
-  // TicketComponents.signatureImage로 직접 쓴다(STAMP_KEYS에는 없음 — c3).
+  // 로고 · 서명 이미지(이미지로 · 교체) — useLogoCrop 자유 비율 크롭. 서명(#484 c6)은 TicketComponents.signatureImage.
   const setStampImage = (url: string) => {
     if (isStamp) photo.updateComponents({ [STAMP_KEYS[field].image]: url } as Partial<TicketComponents>);
     else if (isSignature) photo.updateComponents({ signatureImage: url });
   };
   const logo = useLogoCrop(setStampImage);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const pickImage = () => logoInputRef.current?.click();
+  // revoke는 여기서 안 한다 — usePhototicket.updateComponents가 히스토리(#356) 참조 여부를 보고 판정한다(#673).
+  const removeImage = () => setStampImage('');
 
-  const removeStampImage = () => {
-    // revoke는 여기서 안 한다 — usePhototicket.updateComponents가 히스토리(#356) 참조 여부를 보고
-    // 판정한다(#673).
-    setStampImage('');
-  };
-
-  // ── 글꼴 드롭다운(한줄평·서명, #437) — 서명 이미지가 있으면 텍스트 서명이 안 그려져 숨긴다. ──
+  // ── 글꼴(한줄평 · 서명, D14-2 A) — 이미지 서명이면 글자 서명이 안 그려져 글꼴 줄이 없다. ──
   const fontKey = field === 'quote' ? 'quoteFont' : field === 'signature' ? 'signatureFont' : null;
   const showFont = fontKey !== null && !(isSignature && !!stampImage);
   const currentFont: QuoteFont = (fontKey && components[fontKey]) || 'auto';
+  const fontIndex = Math.max(0, FONT_OPTIONS.findIndex((o) => o.value === currentFont));
   const [fontOpen, setFontOpen] = useState(false);
   const fontBtnRef = useRef<HTMLButtonElement>(null);
   useEffect(() => setFontOpen(false), [field]);
-  const fontText = (field === 'quote' ? photo.state.movieInfo.quote : photo.state.movieInfo.signature)?.trim() ?? '';
-  // '자동'은 라벨(한글)이 아니라 실제 문장으로 풀어야 티켓과 같은 서체가 된다 — 빈 값이면 한글+영문 견본으로 폴백한다.
-  const fontSample = fontText || '영화의 순간 Film';
-  const sampleFor = (font: QuoteFont, optLabel: string) =>
-    userTextFont(font === 'auto' ? fontSample : optLabel, font, FONT_SAMPLE_PX);
-  const currentLabel = FONT_OPTIONS.find((o) => o.value === currentFont)?.label ?? '자동';
-  const selectFont = (font: QuoteFont) => {
+  const fontSample = (field === 'quote' ? info.quote : info.signature)?.trim() || FONT_SAMPLE_FALLBACK;
+  const setFont = (font: QuoteFont) => {
     if (fontKey) photo.updateComponents({ [fontKey]: font } as Partial<TicketComponents>);
+  };
+  const stepFont = (dir: 1 | -1) => setFont(FONT_OPTIONS[(fontIndex + dir + FONT_OPTIONS.length) % FONT_OPTIONS.length].value);
+  const selectFont = (font: QuoteFont) => {
+    setFont(font);
     setFontOpen(false);
     fontBtnRef.current?.focus();
   };
 
-  // ── 노출 토글 ──────────────────────────────────────────────────────────────
-  const visible = isStamp ? !!components[STAMP_KEYS[field].visible] : photo.state.fieldVisibility[field];
-  const toggleVisible = () => {
-    if (isStamp) {
-      photo.updateComponents({ [STAMP_KEYS[field].visible]: !visible } as Partial<TicketComponents>);
-    } else {
-      photo.updateFieldVisibility({ [field]: !visible });
-    }
-  };
-  // rating은 aid(RatingPicker)가 자체 토글을, 필수 필드(title)는 숨기면 제목 없는 티켓이 되므로
-  // 눈을 감춘다 — 필드 드로어 자물쇠·데스크톱 아코디언과 동일 규칙(#260).
-  const showEye = field !== 'rating' && !(!isStamp && isRequiredField(field));
+  // ── 평점(K-05): 키보드 없이 별 44 + 숫자(누르면 소수 입력). 표시 토글은 정보 목록 눈 몫이다. ──
+  const setRating = useCallback((r: number) => photo.updateMovieInfo({ rating: r }), [photo.updateMovieInfo]);
+  const rating = useRatingPicker({ value: info.rating, onValueChange: setRating });
 
-  // ── prev/next: 현재 무드 DOM에 실제 존재하는 필드만 순회 ─────────────────────
+  // ── ‹ › · Return: 현재 무드 DOM에 실제 존재하는 필드만 순회 ─────────────────────
+  const order = ticketEl ? EDIT_ORDER.filter((f) => ticketEl.querySelector(`[data-field-tap="${f}"]`)) : [];
+  const isLast = order.length > 0 && order[order.length - 1] === field;
   const step = (dir: 1 | -1) => {
-    if (!ticketEl) return;
-    const order = EDIT_ORDER.filter((f) => ticketEl.querySelector(`[data-field-tap="${f}"]`));
     if (!order.length) return;
     const i = order.indexOf(field);
     onField(order[(i + dir + order.length) % order.length]);
   };
+  // 키보드 Return(D13 ①) — 다음 항목, 마지막 필드에선 완료. 한글 조합 확정 Enter는 건너뛴다(조합 중 Return은 글자 확정).
+  const onEnter = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
+    e.preventDefault();
+    if (isLast) onClose();
+    else step(1);
+  };
+  const enterKeyHint = isLast ? 'done' : 'next';
 
-  // ── 인플레이스 input: 텍스트류만. 날짜/평점은 aid가 편집기라 input 없이 하이라이트만.
-  // actors도 마찬가지(#447) — 티켓은 truncateActors로 "A, B, C 외 N명"을 표시 전용으로 자르는데,
-  // 투명 오버레이 input의 value는 항상 원본 풀 텍스트라 박스는 잘린 표시 폭인데 caret은 풀 텍스트
-  // 기준으로 움직여 어긋난다. 티켓 truncate는 그대로 두고(의도된 표시) 편집만 아래 aid 패널의
-  // 일반 opaque input으로 분리 — rating/date와 동일한 기존 패턴 재사용. ──
-  const hasInput =
-    field !== 'rating' &&
-    field !== 'watchDate' &&
-    field !== 'releaseDate' &&
-    field !== 'actors' &&
-    !(isImageField && !!stampImage);
-
-  // ── 필드바 배치: 필드 위 10px, 티켓 상단에 붙으면 아래로. 좌우는 래퍼 안으로 클램프. ──
-  const barRef = useRef<HTMLDivElement>(null);
-  const [barPos, setBarPos] = useState<{ left: number; top: number } | null>(null);
-  useLayoutEffect(() => {
-    const bar = barRef.current;
-    if (!bar || !rect || !wrapperEl) {
-      setBarPos(null);
-      return;
-    }
-    const bw = bar.offsetWidth;
-    const bh = bar.offsetHeight;
-    const ww = wrapperEl.offsetWidth;
-    const left = Math.max(-8, Math.min(ww - bw + 8, rect.left + rect.w / 2 - bw / 2));
-    let top = rect.top - bh - 10;
-    if (top < 8) top = rect.top + rect.h + 10;
-    setBarPos({ left, top });
-  }, [rect, field, wrapperEl, isStamp, showEye, showFont, currentLabel]);
-
-  const barBtnCls = cn(
-    pressableVariants(),
-    'inline-flex h-touch w-touch shrink-0 items-center justify-center rounded-full text-ink-2 transition-colors hover:text-ink'
-  );
-
-  // 캐럿 스케일(#365) — caret 위치는 input 자신의 텍스트 폭 계산을 따르므로, 티켓 렌더 텍스트와
-  // 같은 폰트·자간·정렬로 흘려야 caret이 실제 텍스트 끝에 온다. 단 16px 미만 input은 iOS Safari가
-  // 포커스 시 자동 줌인하므로(#274) 폰트는 16px 이상으로 두고 transform: scale로 시각 크기만
-  // 낮춘다 — 레이아웃 값(width/height/padding/자간)은 역배율로 부풀려 화면 박스는 그대로다.
-  // ponytail: 여러 줄로 꺾인 필드는 단일라인 input의 한계로 첫 줄 기준 근사만 된다.
-  const caretScale = rect && rect.fontPx < 16 ? rect.fontPx / 16 : 1;
-  const inv = 1 / caretScale;
-
-  const overlay = rect && (
-    <>
-      {/* 활성 필드 하이라이트 + (텍스트류) 투명 input — 텍스트는 티켓이 렌더, caret만 보인다. */}
-      {hasInput ? (
-        <input
-          key={`inplace-${field}`}
-          autoFocus
-          type={field === 'watchTime' ? 'time' : 'text'}
-          // runtime(러닝타임)만 정수 전용(#684) — bookingNo는 OCR 스키마가 구분자 보존을 요구해 제외.
-          // 값이 순수 숫자(또는 빈 값)일 때만 numeric — KOBIS 자동 채움은 "169 MIN"처럼 문자가 섞여
-          // 있어(kobisLookup.ts extractKobisActorsRuntime) 그 값을 고치는 중엔 문자 키패드가 필요하다
-          // (#685 fresh-eyes 리뷰). FieldEditorBody TextSheet와 같은 판정.
-          inputMode={field === 'runtime' && /^\d*$/.test(value) ? 'numeric' : undefined}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          // 한글 IME 조합 커밋 시 trailing change 없이 값만 반영되는 IME가 있어(#82) 커밋 값으로 재검색.
-          onCompositionEnd={(e) => {
-            if (field === 'title') {
-              const v = e.currentTarget.value.trim();
-              if (v) kobis.scheduleSearch(v);
-            }
-          }}
-          aria-label={label}
-          maxLength={
-            isStamp
-              ? STAMP_LABEL_MAX
-              : field === 'signature'
-                ? 20
-                : field === 'quote'
-                  ? QUOTE_MAX_LENGTH
-                  : undefined
-          }
-          style={{
-            position: 'absolute',
-            left: rect.left - 8,
-            top: rect.top - 6,
-            width: (rect.w + 16) * inv,
-            height: (rect.h + 12) * inv,
-            // 하이라이트 박스는 필드보다 8px 넓다 — 텍스트 시작을 rect 가장자리(티켓 텍스트
-            // 시작점)에 맞추는 패딩. 스케일 좌표계라 역배율로 넣어 시각 8px을 유지한다.
-            padding: `0 ${8 * inv}px`,
-            zIndex: 60,
-            border: 'none',
-            borderRadius: 6 * inv,
-            background: 'var(--pr-accent-soft)',
-            color: 'transparent',
-            caretColor: 'var(--pr-accent)',
-            // 16px 미만이면 iOS Safari가 포커스 시 자동 줌인해 레이아웃이 틀어진다(#274) —
-            // 실제 시각 크기는 위 transform scale이 담당한다.
-            fontSize: Math.max(16, rect.fontPx),
-            fontFamily: rect.fontFamily || undefined,
-            fontWeight: rect.fontWeight as CSSProperties['fontWeight'],
-            fontStyle: rect.fontStyle,
-            letterSpacing: rect.letterSpacingPx ? `${rect.letterSpacingPx * inv}px` : undefined,
-            textAlign: rect.textAlign as CSSProperties['textAlign'],
-            transform: caretScale < 1 ? `scale(${caretScale})` : undefined,
-            transformOrigin: 'top left',
-            outlineColor: 'var(--pr-focus-ring)',
-          }}
-        />
-      ) : (
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            left: rect.left - 8,
-            top: rect.top - 6,
-            width: rect.w + 16,
-            height: rect.h + 12,
-            zIndex: 60,
-            borderRadius: 6,
-            background: 'var(--pr-accent-soft)',
-            outline: '2px solid var(--pr-focus-ring)',
-            pointerEvents: 'none',
-          }}
-        />
-      )}
-
-      {/* 필드바 — 버튼 44px(h-touch w-touch, #553): 편집 중에만 뜨는 absolute 오버레이라 줄여도 세로 예산을 못 돌려받고, 순회·노출 토글·완료를 연달아 누르는 주 조작면이다. 회귀는 탭 타깃 테스트(상단 줄 · 인플레이스 필드바 44)가 잠근다. */}
-      <div
-        ref={barRef}
-        role="toolbar"
-        aria-label="필드 편집 도구"
-        className="absolute flex items-center gap-0.5 rounded-full border border-hair bg-s2 px-1"
-        style={{
-          left: barPos?.left ?? 0,
-          top: barPos?.top ?? 0,
-          zIndex: 70,
-          boxShadow: 'var(--shadow-pop, 0 8px 20px -8px rgba(0,0,0,.4))',
-          visibility: barPos ? 'visible' : 'hidden',
-        }}
-      >
-        <button
-          type="button"
-          aria-label="이전 항목"
-          onPointerDown={(e) => e.preventDefault()}
-          onClick={() => step(-1)}
-          className={barBtnCls}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="m15 18-6-6 6-6" />
-          </svg>
-        </button>
-        <span aria-hidden="true" className="h-5 w-px shrink-0 bg-hair" />
-        {isImageField && (
-          <button
-            type="button"
-            aria-label="로고 이미지"
-            onPointerDown={(e) => e.preventDefault()}
-            onClick={() => logoInputRef.current?.click()}
-            className={barBtnCls}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <rect x="3" y="3" width="18" height="18" rx="3" />
-              <circle cx="8.5" cy="8.5" r="1.6" />
-              <path d="m21 15-5-5L5 21" />
-            </svg>
-          </button>
-        )}
-        {showFont && (
-          <button
-            ref={fontBtnRef}
-            type="button"
-            aria-haspopup="listbox"
-            aria-expanded={fontOpen}
-            aria-label={`${label} 글꼴, 지금 ${currentLabel}`}
-            onPointerDown={(e) => e.preventDefault()}
-            onClick={() => setFontOpen((o) => !o)}
-            className={cn(pressableVariants(), 'inline-flex h-touch shrink-0 items-center px-0.5 text-ink')}
-          >
-            {/* 보이는 컨트롤은 36px, 44px는 바깥 버튼의 타깃 — 현재 글꼴 이름을 그 글꼴로 그린다. */}
-            <span
-              className="inline-flex h-9 items-center gap-1 rounded-field-sm border border-hair-strong bg-s2 px-2.5"
-              style={{ minWidth: 64, justifyContent: 'space-between' }}
-            >
-              <span style={sampleFor(currentFont, currentLabel)}>{currentLabel}</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="m6 9 6 6 6-6" />
-              </svg>
-            </span>
-          </button>
-        )}
-        {showEye && (
-          <button
-            type="button"
-            role="switch"
-            aria-checked={visible}
-            aria-label="티켓 노출"
-            onPointerDown={(e) => e.preventDefault()}
-            onClick={toggleVisible}
-            className={barBtnCls}
-          >
-            {/* 눈 아이콘은 채운 동공 필수 — 윤곽만으론 이 크기에서 눈으로 안 읽힌다(#354 시안 §5).
-                아이콘 자체는 VisibilityCheckbox의 EyeIcon과 공유(#355). */}
-            <EyeIcon open={visible} />
-          </button>
-        )}
-        <button
-          type="button"
-          aria-label="다음 항목"
-          onPointerDown={(e) => e.preventDefault()}
-          onClick={() => step(1)}
-          className={barBtnCls}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="m9 18 6-6-6-6" />
-          </svg>
-        </button>
-        <button
-          type="button"
-          aria-label="편집 완료"
-          onPointerDown={(e) => e.preventDefault()}
-          onClick={onClose}
-          className={cn(pressableVariants(), 'inline-flex h-touch w-touch shrink-0 items-center justify-center rounded-full')}
-          style={{ background: 'linear-gradient(135deg, var(--pr-accent-hover), var(--pr-accent))', color: 'var(--pr-accent-ink)' }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M20 6 9 17l-5-5" />
-          </svg>
-        </button>
-      </div>
-    </>
-  );
-
-  // ── aid 패널 콘텐츠(키보드 위, 페이드만) ──────────────────────────────────
-  let aid: ReactNode = null;
-  if (field === 'title' && kobis.open) {
-    aid = kobis.loading ? (
-      <div className="tabular-nums px-4 py-4 text-center text-micro uppercase tracking-widest text-ink-2">Loading…</div>
-    ) : kobis.error ? (
-      <div role="alert" className="tabular-nums px-4 py-4 text-center text-micro uppercase tracking-widest text-warn">
-        {kobis.error}
-      </div>
-    ) : kobis.results.length > 0 ? (
-      <KobisResultList results={kobis.results} onSelect={kobis.selectMovie} style={{ maxHeight: aidMaxHeight }} />
-    ) : null;
-  } else if (field === 'actors') {
-    // 티켓 truncate(외 N명)는 표시 전용으로 그대로 두고, 편집은 풀 텍스트 opaque input으로(#447).
-    aid = (
-      <div className="p-4">
-        <input
-          autoFocus
-          type="text"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          aria-label={label}
-          className={INPUT_CLS}
-        />
-      </div>
-    );
-  } else if (field === 'rating') {
-    aid = (
-      <div className="p-4">
-        <RatingPicker
-          value={photo.state.movieInfo.rating}
-          onValueChange={(rating) => photo.updateMovieInfo({ rating })}
-          visible={photo.state.fieldVisibility.rating}
-          onVisibleChange={(v) => photo.updateFieldVisibility({ rating: v })}
-        />
-      </div>
-    );
-  } else if (field === 'watchDate' || field === 'releaseDate') {
-    aid = (
-      <div className="p-4">
-        <DateSheet field={field} photo={photo} />
-      </div>
-    );
+  // ── 첫 줄 입력 자리 ──────────────────────────────────────────────────────────
+  let slot: ReactNode;
+  if (field === 'rating') {
+    slot = rating.number;
   } else if (isImageField && stampImage) {
-    aid = (
-      <div className="flex items-center gap-3 p-4">
-        <img src={stampImage} alt={`${label} 이미지`} className="h-8 w-auto object-contain" />
+    // 이미지가 있으면 글자보다 이미지가 그려진다(_shared.tsx 규칙) — 글자 입력 대신 이미지 행(제거 · 교체).
+    slot = (
+      <div className="flex min-w-0 flex-1 items-center gap-1">
+        <img src={stampImage} alt={`${label} 이미지`} className="h-8 w-auto min-w-0 max-w-[72px] object-contain" />
+        <span className="flex-1" />
+        <button type="button" onPointerDown={keepFocus} onClick={removeImage} className={cn(OPT_CLS, optState(false))}>
+          제거
+        </button>
+        <button type="button" onPointerDown={keepFocus} onClick={pickImage} className={cn(OPT_CLS, 'border-hair-strong text-ink')}>
+          교체
+        </button>
+      </div>
+    );
+  } else if (field === 'releaseDate') {
+    slot = (
+      <DateInput
+        value={info.releaseDate || ''}
+        granularity={info.releaseDateGranularity || 'date'}
+        onChange={(releaseDate) => photo.updateMovieInfo({ releaseDate })}
+        ariaLabel="개봉일"
+        className={PANEL_INPUT_CLS}
+      />
+    );
+  } else if (field === 'watchDate') {
+    slot = (
+      <input
+        autoFocus
+        type="date"
+        value={info.watchDate || ''}
+        onChange={(e) => photo.updateMovieInfo({ watchDate: e.target.value })}
+        onKeyDown={onEnter}
+        enterKeyHint={enterKeyHint}
+        aria-label="관람일"
+        className={PANEL_INPUT_CLS}
+      />
+    );
+  } else {
+    slot = (
+      <input
+        key={field}
+        autoFocus
+        type={field === 'watchTime' ? 'time' : 'text'}
+        // runtime(러닝타임)만 정수 전용(#684) — bookingNo는 OCR 스키마가 구분자 보존을 요구해 제외.
+        // 값이 순수 숫자(또는 빈 값)일 때만 numeric — KOBIS 자동 채움은 "169 MIN"처럼 문자가 섞여
+        // 있어(kobisLookup.ts extractKobisActorsRuntime) 그 값을 고치는 중엔 문자 키패드가 필요하다(#685).
+        inputMode={field === 'runtime' && /^\d*$/.test(value) ? 'numeric' : undefined}
+        enterKeyHint={enterKeyHint}
+        // 출연은 티켓이 truncateActors로 "외 N명"까지 자르지만 입력값은 잘리지 않은 원문이다(#447).
+        value={value}
+        placeholder={label}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={onEnter}
+        // 한글 IME 조합 커밋 시 trailing change 없이 값만 반영되는 IME가 있어(#82) 커밋 값으로 재검색.
+        onCompositionEnd={(e) => {
+          if (field === 'title') {
+            const v = e.currentTarget.value.trim();
+            if (v) kobis.scheduleSearch(v);
+          }
+        }}
+        aria-label={label}
+        maxLength={isStamp ? STAMP_LABEL_MAX : field === 'signature' ? 20 : field === 'quote' ? QUOTE_MAX_LENGTH : undefined}
+        className={PANEL_INPUT_CLS}
+      />
+    );
+  }
+
+  // ── 둘째 줄부터(옵션이 있는 필드만) ───────────────────────────────────────────
+  const rows: ReactNode[] = [];
+  if (field === 'title' && kobis.open) {
+    if (kobis.loading) {
+      rows.push(<p key="k" role="status" className="py-2 text-body text-ink-2">검색 중…</p>);
+    } else if (kobis.error === KOBIS_MESSAGES.noResults) {
+      rows.push(<p key="k" role="status" className="py-2 text-body text-ink-2">{kobis.error}</p>);
+    } else if (kobis.error) {
+      // 실패는 [무슨 일] 한 문장 + 다음 행동은 그 자리 버튼(#826 결정 8).
+      rows.push(
+        <div key="k" className="flex min-h-touch items-center gap-2">
+          <p role="alert" className="flex-1 text-body text-warn">{kobis.error}</p>
+          <button type="button" onPointerDown={keepFocus} onClick={() => kobis.runSearch(info.title.trim())} className={cn(OPT_CLS, 'border-hair-strong text-ink')}>
+            다시 검색
+          </button>
+        </div>
+      );
+    } else if (kobis.results.length > 0) {
+      // 보이는 높이는 3행까지(행당 ~82.5px 실측, #476) — 넘치면 목록 안에서 스크롤한다. 고르면 open이 닫혀 한 줄로 돌아온다.
+      rows.push(
+        <KobisResultList
+          key="k"
+          results={kobis.results}
+          onSelect={kobis.selectMovie}
+          className="max-h-[248px] border-t border-hair"
+          style={{ maxHeight: Math.min(248, listMaxHeight) }}
+        />
+      );
+    }
+  } else if (field === 'rating') {
+    rows.push(<div key="stars" className="pl-2">{rating.stars}</div>);
+  } else if (field === 'watchDate') {
+    const token = info.watchDateFormat || 'kr-compact';
+    rows.push(
+      <div key="fmt" role="toolbar" aria-label="관람일 옵션" className={TOOLBAR_CLS}>
+        <OptionRadios<DateFormatToken> label="관람일 표기" options={FORMAT_OPTIONS} value={token} onChange={(watchDateFormat) => photo.updateMovieInfo({ watchDateFormat })} />
+      </div>
+    );
+  } else if (field === 'releaseDate') {
+    const gran = info.releaseDateGranularity || 'date';
+    const token = info.releaseDateFormat || 'kr-compact';
+    rows.push(
+      <div key="gran" role="toolbar" aria-label="개봉일 옵션" className={TOOLBAR_CLS}>
+        <OptionRadios<DateGranularity> label="개봉일 정밀도" options={GRANULARITY_OPTIONS} value={gran} onChange={(releaseDateGranularity) => photo.updateMovieInfo({ releaseDateGranularity })} />
+        <span aria-hidden="true" className="mx-1 h-5 w-px shrink-0 bg-hair" />
+        {/* 재개봉은 배타 선택이 아니라 독립 토글이라 라디오 밖 버튼이다(C-ACC). */}
         <button
           type="button"
-          onClick={removeStampImage}
-          className={cn(pressableVariants(), 'ml-auto rounded-chip border border-hair px-3 py-1.5 text-caption font-medium text-ink-2 transition-colors hover:border-hair-strong hover:text-ink')}
+          aria-pressed={!!info.isReissue}
+          onPointerDown={keepFocus}
+          onClick={() => photo.updateMovieInfo({ isReissue: !info.isReissue })}
+          className={cn(OPT_CLS, optState(!!info.isReissue))}
         >
-          이미지 제거
+          재개봉
         </button>
+      </div>,
+      <div key="fmt" role="toolbar" aria-label="개봉일 표기 옵션" className={TOOLBAR_CLS}>
+        <OptionRadios<DateFormatToken> label="개봉일 표기" options={FORMAT_OPTIONS} value={token} onChange={(releaseDateFormat) => photo.updateMovieInfo({ releaseDateFormat })} />
+      </div>
+    );
+    if (info.isReissue) {
+      // 재개봉일은 정보 목록에 행이 없어 표시 토글이 여기 남는 유일한 예외다(D14-1 · constraint-7).
+      rows.push(
+        <div key="reissue" className="flex min-h-touch items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <DateInput
+              value={info.reissueDate || ''}
+              granularity={gran}
+              onChange={(reissueDate) => photo.updateMovieInfo({ reissueDate })}
+              ariaLabel="재개봉일"
+              className={PANEL_INPUT_CLS}
+            />
+          </div>
+          <span className="tabular-nums shrink-0 text-caption text-ink-3">{formatDate(info.reissueDate, token, gran) || '—'}</span>
+          <span className="inline-flex w-touch shrink-0 justify-center">
+            <VisibilityCheckbox
+              checked={photo.state.fieldVisibility.reissue}
+              onChange={(v) => photo.updateFieldVisibility({ reissue: v })}
+              label="재개봉일"
+            />
+          </span>
+        </div>
+      );
+    }
+  } else if (showFont || (isImageField && !stampImage)) {
+    rows.push(
+      <div key="opt" role="toolbar" aria-label={`${label} 옵션`} className="flex min-w-0 items-center gap-1">
+        {showFont && (
+          <>
+            <button type="button" aria-label="이전 글꼴" onPointerDown={keepFocus} onClick={() => stepFont(-1)} className={cn(ICON_BTN_CLS, 'text-ink-3')}>
+              <Chevron dir="left" />
+            </button>
+            <button
+              ref={fontBtnRef}
+              type="button"
+              aria-haspopup="listbox"
+              aria-expanded={fontOpen}
+              aria-label={`${label} 글꼴, 지금 ${FONT_OPTIONS[fontIndex].label}`}
+              onPointerDown={keepFocus}
+              onClick={() => setFontOpen((o) => !o)}
+              className={cn(pressableVariants(), 'inline-flex h-touch min-w-0 flex-1 items-center justify-center px-1 text-ink')}
+            >
+              {/* 이름이 아니라 입력한 글을 그 서체로 쓴다(D14-2 A) — 이름은 접근 이름에만 둔다. */}
+              <span className="truncate" style={userTextFont(fontSample, currentFont, FONT_SAMPLE_PX)}>{fontSample}</span>
+            </button>
+            <button type="button" aria-label="다음 글꼴" onPointerDown={keepFocus} onClick={() => stepFont(1)} className={cn(ICON_BTN_CLS, 'text-ink-3')}>
+              <Chevron dir="right" />
+            </button>
+          </>
+        )}
+        {isImageField && (
+          <button type="button" onPointerDown={keepFocus} onClick={pickImage} className={cn(OPT_CLS, optState(false), !showFont && 'ml-auto')}>
+            이미지로
+          </button>
+        )}
       </div>
     );
   }
 
   return (
     <>
-      {/* 밖 탭으로 닫기 — 티켓(래퍼 z-[41])과 필드바·aid는 이 위라 필드 전환/도구 조작은 그대로 된다. */}
+      {/* 밖 탭으로 닫기 — 티켓(래퍼 z-[41])과 패널은 이 위라 필드 전환/도구 조작은 그대로 된다. */}
       <div className="fixed inset-0 z-40" onClick={onClose} aria-hidden="true" />
-      {wrapperEl && createPortal(overlay, wrapperEl)}
-      {aid && (
-        <div
-          className="fixed inset-x-3 z-50 overflow-hidden rounded-card border border-hair bg-s2"
-          style={{
-            bottom: (vvBox?.bottom ?? 0) + 12,
-            boxShadow: 'var(--shadow-pop, 0 8px 24px -8px rgba(0,0,0,.4))',
-            // 슬라이드 없이 페이드만(#354 시안 §5) — reduced-motion은 전역 가드가 duration을 죽인다.
-            animation: 'screen-in .18s ease-out',
-          }}
-        >
-          {aid}
+      {wrapperEl && rect && createPortal(<SelectionMarks rect={rect} />, wrapperEl)}
+      {/* 입력 패널(C-INP) — 한 면 + 윗선 한 줄, 카드 · 그림자 없음. PhoneFrame의 contain:paint가 fixed 기준이라 좌표가 프레임 기준이다. */}
+      <div
+        role="group"
+        aria-label={`${label} 입력`}
+        data-field-panel={field}
+        className="fixed inset-x-0 z-50 border-t border-hair-strong bg-s1 px-3 py-2"
+        // 슬라이드 없이 페이드만(#354 시안 §5) — reduced-motion은 전역 가드가 duration을 죽인다.
+        style={{ bottom: (vvBox?.bottom ?? 0) + 12, animation: 'screen-in .18s ease-out' }}
+      >
+        <div className="flex h-touch items-center gap-2">
+          <button type="button" aria-label="이전 항목" onPointerDown={keepFocus} onClick={() => step(-1)} className={cn(ICON_BTN_CLS, '-ml-1')}>
+            <Chevron dir="left" />
+          </button>
+          <div className="flex min-w-0 flex-1 items-center">{slot}</div>
+          <button type="button" aria-label="다음 항목" onPointerDown={keepFocus} onClick={() => step(1)} className={ICON_BTN_CLS}>
+            <Chevron dir="right" />
+          </button>
+          <button
+            type="button"
+            onPointerDown={keepFocus}
+            onClick={onClose}
+            className={cn(pressableVariants(), 'inline-flex h-touch shrink-0 items-center')}
+          >
+            <span className="inline-flex h-9 items-center rounded-ctl bg-accent px-3 text-body font-semibold text-accent-ink">완료</span>
+          </button>
         </div>
-      )}
-      {showFont && fontOpen && (
-        <FontListbox
-          label={`${label} 글꼴`}
-          value={currentFont}
-          sampleFor={sampleFor}
-          bottom={(vvBox?.bottom ?? 0) + 12}
-          maxHeight={aidMaxHeight}
-          triggerRef={fontBtnRef}
-          onSelect={selectFont}
-          onClose={() => setFontOpen(false)}
-        />
-      )}
-      {/* 로고 업로드 파이프라인(스탬프+서명 전용) — 숨김 input + 자유비 크롭(useLogoCrop, StampSheet와 동형). */}
+        {rows.length > 0 && <div className="mt-1 space-y-1">{rows}</div>}
+        {showFont && fontOpen && (
+          <FontListbox
+            label={`${label} 글꼴`}
+            value={currentFont}
+            sample={fontSample}
+            maxHeight={listMaxHeight}
+            triggerRef={fontBtnRef}
+            onSelect={selectFont}
+            onClose={() => setFontOpen(false)}
+          />
+        )}
+      </div>
+      {/* 이미지 업로드 파이프라인(로고 · 서명) — 숨김 input + 자유비 크롭(useLogoCrop). */}
       {isImageField && (
         <>
           {/* sr-only여도 tabbable이라 aria-hidden 금지(axe aria-hidden-focus). */}

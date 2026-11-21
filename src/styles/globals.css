@@ -56,8 +56,8 @@
     /* v8 글래스 표면 쌍(#364, 핸드오프 §Design Tokens) — **입력 함몰 계층(#580 3계층) 전용**:
        카드 위에 얕게 파이는 인풋·셀렉트·칩의 fill/border. 8%는 카드 위 함몰로는 맞지만 포스터
        위에 뜨는 패널 배경으로는 텍스트가 안 읽힌다(#569) — 그 자리엔 --overlay-*를 쓸 것.
-       실사용처(RatingPicker, FieldEditorBody의 INPUT_CLS·FormatChips·select, #580 grep 확인)는
-       전부 InPlaceFieldEditor의 불투명 aid 박스(bg-s2) **안에서만** 렌더된다 —
+       실사용처(RatingPicker, InPlaceFieldEditor 입력 패널의 입력들, #826 S3)는
+       전부 InPlaceFieldEditor의 불투명 입력 패널(bg-s1, 옛 aid 박스 bg-s2) **안에서만** 렌더된다 —
        포스터에 직접 노출되는 경로가 없다(구 "데스크톱 아코디언"은 #603/#607로 셸이 통합되며
        소멸, 이 토큰이 포스터에 직접 뜨던 경로는 이제 없다). 그래서 대비 하한은 포스터 밝기가
        아니라 저 불투명 배경 위 합성색이 기준이고, text-ink 사용 기준(라이트: 흰 유리 위 흰 카드라

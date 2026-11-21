@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useRef, useState, type PointerEvent } from 'react';
+import { useDeferredValue, useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react';
 import { Eyebrow } from '@/components/v2/Eyebrow';
 import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
 import { shouldCommitSliderValue } from './BrightnessSlider';
@@ -8,9 +8,13 @@ import { inputVariants, pressableVariants } from '@/components/ui/variants';
 interface RatingPickerProps {
   value: number;
   onValueChange: (rating: number) => void;
-  visible: boolean;
-  onVisibleChange: (next: boolean) => void;
+  /** 표시 토글은 옛 시트(FieldEditorBody RatingSheet)만 넘긴다 — 입력 패널은 정보 목록 눈으로만 바꾼다(#826 S3 constraint-7). */
+  visible?: boolean;
+  onVisibleChange?: (next: boolean) => void;
 }
+
+/** 입력 패널 한 줄 높이에 맞춘 16px 입력(#826 S3 constraint-3 · 10) — 보이는 높이 36. */
+const DECIMAL_INPUT_CLS = cn(inputVariants({ surface: 'glass' }), 'tabular-nums h-9 w-full min-w-0 rounded-ctl px-3 text-title text-ink');
 
 const STARS = [1, 2, 3, 4, 5];
 const LONG_PRESS_MS = 500;
@@ -37,7 +41,11 @@ interface DragState {
   moved: boolean;
 }
 
-export default function RatingPicker({ value, onValueChange, visible, onVisibleChange }: RatingPickerProps) {
+/**
+ * 별 줄과 숫자(소수 입력) 두 조각을 따로 돌려준다(#826 S3 K-05) — 입력 패널은 숫자를 첫 줄 입력 자리에, 별을 둘째 줄에
+ * 놓는다. 값 · 드래그 · 롱터치 상태는 하나라 두 조각이 같은 값을 본다.
+ */
+export function useRatingPicker({ value, onValueChange, dim = false }: { value: number; onValueChange: (rating: number) => void; dim?: boolean }): { stars: ReactNode; number: ReactNode } {
   const [hoverPreview, setHoverPreview] = useState(0);
   const [numberInputOpen, setNumberInputOpen] = useState(false);
 
@@ -115,105 +123,112 @@ export default function RatingPicker({ value, onValueChange, visible, onVisibleC
     }
   }
 
+  const stars = (
+    <div
+      // -ml-2(#422): 별 버튼은 44px 탭타깃 안에 28px 별을 중앙정렬해 좌측에 8px 여백이 생긴다 — 줄 시작선을 맞추려 당긴다.
+      className={`-ml-2 flex gap-1.5 ${dim ? 'opacity-40' : ''}`}
+      style={{ touchAction: 'none' }}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
+      onPointerLeave={() => {
+        if (!dragRef.current) setHoverPreview(0);
+      }}
+      role="radiogroup"
+      aria-label="별점"
+    >
+      {STARS.map((star) => (
+        <button
+          key={star}
+          type="button"
+          role="radio"
+          aria-checked={localValue >= star}
+          // 키보드 접근성 전용 — 포인터/터치 클릭은 위 row 핸들러가 처리한다. 실제 포인터 클릭도
+          // click 이벤트를 내지만 detail>=1이라 여기선 걸러지고, 키보드 Enter/Space는 detail===0.
+          onClick={(e) => {
+            if (e.detail === 0) setLocalValue(star);
+          }}
+          aria-label={`${star}점`}
+          data-touch="44"
+          className={cn(pressableVariants(), 'relative inline-flex min-h-touch min-w-touch items-center justify-center')}
+        >
+          <span className="relative inline-block h-7 w-7">
+            <StarSVG className="absolute inset-0 text-ink-3/40" />
+            <span
+              className="absolute inset-0 overflow-hidden"
+              style={{
+                width:
+                  starRating >= star
+                    ? '100%'
+                    : starRating >= star - 0.5
+                    ? '50%'
+                    : '0%',
+              }}
+            >
+              <StarSVG className="text-accent" />
+            </span>
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+
+  // 소수 입력 토글(#496) — 항상 뜨는 숫자 상자가 과하다는 지적으로 접어 두고, 별 롱터치(위 핸들러) 또는 이 숫자 탭으로
+  // 편다. aria-label을 고정해 두는 이유는 표시값(예: "★ 3.3")이 바뀔 때마다 접근명이 같이 흔들리면 스크린리더 사용자가
+  // 매번 다른 라벨을 듣기 때문 — 값은 시각 전용, 의미는 라벨 하나로 고정. 표기는 티켓 얼굴·fieldPreview와 같은 `★ N.N`(#445).
+  const number = (
+    <div className={`flex min-w-0 flex-1 items-center gap-2 ${dim ? 'opacity-40' : ''}`}>
+      <button
+        type="button"
+        onClick={() => setNumberInputOpen((open) => !open)}
+        aria-expanded={numberInputOpen}
+        aria-controls="rating-decimal-input"
+        aria-label="평점 소수 입력 토글"
+        className={cn(pressableVariants(), 'tabular-nums inline-flex min-h-touch shrink-0 items-center text-left')}
+      >
+        <Eyebrow tone="faint">
+          ★ {current.toFixed(1)}
+        </Eyebrow>
+      </button>
+
+      {numberInputOpen && (
+        <input
+          id="rating-decimal-input"
+          type="number"
+          // 숫자 키패드에 소수점이 있어야 0.1 단위를 넣는다(#826 S3 K-05) — type=number만으론 iOS가 소수점 없는 키패드를 줄 수 있다.
+          inputMode="decimal"
+          min={0}
+          max={5}
+          step={0.1}
+          value={localValue || 0}
+          onChange={(e) => {
+            const raw = e.target.value;
+            // 지우는 중(raw==='')엔 커밋하지 않는다 — Number('')===0이라 그대로 두면
+            // 재입력 전 순간적으로 평점이 0으로 찍힌다(#190 nit, PR #409 claude-review).
+            if (raw === '') return;
+            const next = Number(raw);
+            if (!Number.isNaN(next)) setLocalValue(Math.min(5, Math.max(0, next)));
+          }}
+          aria-label="평점 직접 입력 (0.1 단위)"
+          // 16px 미만이면 iOS Safari가 포커스 시 자동 줌인해 레이아웃이 틀어진다(#274).
+          className={DECIMAL_INPUT_CLS}
+        />
+      )}
+    </div>
+  );
+
+  return { stars, number };
+}
+
+export default function RatingPicker({ value, onValueChange, visible = true, onVisibleChange }: RatingPickerProps) {
+  const { stars, number } = useRatingPicker({ value, onValueChange, dim: !visible });
   return (
     <div className="space-y-field">
-      <VisibilityCheckbox checked={visible} onChange={onVisibleChange} label="평점" />
-
-      <div className={`space-y-3 ${visible ? '' : 'opacity-40'}`}>
-        <div
-          // -ml-2(#422): 별 버튼은 44px 탭타깃 안에 28px 별을 중앙정렬해 좌측에 8px 여백이 생기고,
-          // 노출 토글(VisibilityCheckbox)은 음수 마진으로 탭타깃만 넓혀 아이콘이 좌측에 그대로
-          // 붙는다 — 두 행의 좌측 시작선을 맞추려 그 8px만큼 별 그룹 전체를 당긴다.
-          className="-ml-2 flex gap-1.5"
-          style={{ touchAction: 'none' }}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={endDrag}
-          onPointerCancel={endDrag}
-          onPointerLeave={() => {
-            if (!dragRef.current) setHoverPreview(0);
-          }}
-          role="radiogroup"
-          aria-label="별점"
-        >
-          {STARS.map((star) => (
-            <button
-              key={star}
-              type="button"
-              role="radio"
-              aria-checked={localValue >= star}
-              // 키보드 접근성 전용 — 포인터/터치 클릭은 위 row 핸들러가 처리한다. 실제 포인터 클릭도
-              // click 이벤트를 내지만 detail>=1이라 여기선 걸러지고, 키보드 Enter/Space는 detail===0.
-              onClick={(e) => {
-                if (e.detail === 0) setLocalValue(star);
-              }}
-              aria-label={`${star}점`}
-              data-touch="44"
-              className={cn(pressableVariants(), 'relative inline-flex min-h-touch min-w-touch items-center justify-center')}
-            >
-              <span className="relative inline-block h-7 w-7">
-                <StarSVG className="absolute inset-0 text-ink-3/40" />
-                <span
-                  className="absolute inset-0 overflow-hidden"
-                  style={{
-                    width:
-                      starRating >= star
-                        ? '100%'
-                        : starRating >= star - 0.5
-                        ? '50%'
-                        : '0%',
-                  }}
-                >
-                  <StarSVG className="text-accent" />
-                </span>
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {/* 소수 입력 토글(#496) — 항상 뜨는 풀폭 number 박스가 과하다는 지적으로 접어 두고, 별
-            롱터치(위 핸들러) 또는 이 캡션 탭으로 편다. aria-label을 고정해 두는 이유는 표시값(예:
-            "★ 3.3")이 바뀔 때마다 접근명이 같이 흔들리면 스크린리더 사용자가 매번 다른 라벨을
-            듣기 때문 — 값은 시각 전용, 의미는 라벨 하나로 고정.
-            표기는 티켓 얼굴·fieldPreview와 같은 `★ N.N`(#445) — 분모는 위 별 5개가 이미 보여준다. */}
-        <button
-          type="button"
-          onClick={() => setNumberInputOpen((open) => !open)}
-          aria-expanded={numberInputOpen}
-          aria-controls="rating-decimal-input"
-          aria-label="평점 소수 입력 토글"
-          className={cn(pressableVariants(), 'tabular-nums inline-flex min-h-touch items-center text-left')}
-        >
-          <Eyebrow tone="faint">
-            ★ {current.toFixed(1)}
-          </Eyebrow>
-        </button>
-
-        {numberInputOpen && (
-          <input
-            id="rating-decimal-input"
-            type="number"
-            min={0}
-            max={5}
-            step={0.1}
-            value={localValue || 0}
-            onChange={(e) => {
-              const raw = e.target.value;
-              // 지우는 중(raw==='')엔 커밋하지 않는다 — Number('')===0이라 그대로 두면
-              // 재입력 전 순간적으로 평점이 0으로 찍힌다(#190 nit, PR #409 claude-review).
-              if (raw === '') return;
-              const next = Number(raw);
-              if (!Number.isNaN(next)) setLocalValue(Math.min(5, Math.max(0, next)));
-            }}
-            aria-label="평점 직접 입력 (0.1 단위)"
-            // 16px 미만이면 iOS Safari가 포커스 시 자동 줌인해 레이아웃이 틀어진다(#274) — FieldEditorBody의
-            // INPUT_CLS와 동일 톤(글래스 서피스·풀폭·16px)으로 통일(#435). 서피스+포커스 링은 이제
-            // inputVariants(ui/variants.ts) 공유라 순환 import 없이 한 곳에서만 바뀐다 — 나머지
-            // 레이아웃 클래스(px/py/text)는 여전히 FieldEditorBody의 INPUT_CLS와 리터럴 중복이니
-            // 톤을 바꿀 땐 두 곳을 같이 고칠 것.
-            className={cn(inputVariants({ surface: 'glass' }), 'tabular-nums w-full rounded-field px-3.5 py-3 text-title text-ink')}
-          />
-        )}
+      {onVisibleChange && <VisibilityCheckbox checked={visible} onChange={onVisibleChange} label="평점" />}
+      <div className="space-y-3">
+        {stars}
+        {number}
       </div>
     </div>
   );

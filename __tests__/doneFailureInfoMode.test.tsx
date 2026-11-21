@@ -22,6 +22,11 @@ const row = (field: string) => infoList().querySelector(`[data-field-row="${fiel
 const isMissing = (field: string) => row(field).getAttribute('data-missing') === 'true';
 const modeSelected = (name: RegExp) => screen.getByRole('tab', { name }).getAttribute('aria-selected');
 
+/** 상단 줄 '완료'(문서 완성) — 입력 패널에도 '완료'가 있어 상단 줄 안에서 찾는다(#826 S3). */
+const topDone = () => within(document.querySelector('header') as HTMLElement).getByRole('button', { name: '완료' });
+/** 입력 패널의 '완료'(#826 S3) — 편집을 닫는다. */
+const panelDone = () => within(screen.getByRole('group', { name: / 입력$/ })).getByRole('button', { name: '완료' });
+
 test('missingExportFields — 표시 여부와 무관하게 빈 제목·4자 미만 개봉일을 순서대로 낸다', () => {
   expect(missingExportFields({ title: ' ', titleOg: '', releaseDate: undefined })).toEqual(['title', 'releaseDate']);
   expect(missingExportFields({ title: '영화', titleOg: '', releaseDate: '202' })).toEqual(['releaseDate']);
@@ -36,7 +41,7 @@ test('#826 S2 — 디자인 모드에서 미완료 완료 탭은 정보 모드�
   fireEvent.click(screen.getByRole('tab', { name: '디자인' }));
   expect(modeSelected(/^디자인/)).toBe('true');
 
-  fireEvent.click(screen.getByRole('button', { name: '완료' }));
+  fireEvent.click(topDone());
   expect(!!screen.queryByLabelText('편집으로 돌아가기')).toBe(false); // 결과로 안 간다
   expect(modeSelected(/^정보/)).toBe('true');
   // 필수 두 행 모두 앰버(점 + '필수'), 정보 탭에도 sr-only '필수 미입력'이 붙은 점이 있다.
@@ -47,7 +52,7 @@ test('#826 S2 — 디자인 모드에서 미완료 완료 탭은 정보 모드�
   expect(screen.getByRole('tab', { name: /^정보 필수 미입력$/ })).not.toBeNull();
   // 키보드는 자동으로 올리지 않는다 — 입력(인플레이스 편집기)이 열려 있지 않다.
   expect(!!screen.queryByRole('textbox', { name: '제목' })).toBe(false);
-  expect(!!screen.queryByRole('toolbar', { name: '필드 편집 도구' })).toBe(false);
+  expect(screen.queryAllByRole('group', { name: / 입력$/ }).length).toBe(0);
   // 사유 토스트 한 줄.
   expect(screen.getByTestId('global-toast').textContent).toBeTruthy();
 });
@@ -59,7 +64,7 @@ test('#826 S2 E-03 — 완료 실패 토스트는 오류 톤으로 상단 줄 �
   // 토스트 타이머가 가짜 시계에 걸리도록 완료를 누르기 직전에 바꾼다(복원 대기는 실시간으로 끝났다).
   jest.useFakeTimers();
 
-  fireEvent.click(screen.getByRole('button', { name: '완료' }));
+  fireEvent.click(topDone());
   const toast = screen.getByTestId('global-toast');
   expect(toast.getAttribute('data-tone')).toBe('error');
   // 상단 줄(52) 바로 아래 8px — 하단(도크 위)이 아니다.
@@ -81,7 +86,7 @@ test('#826 S2 — 사진 모드에서 미완료 완료 탭도 정보 모드로 �
   fireEvent.click(await screen.findByTestId('landing-restore'));
   fireEvent.click(screen.getByRole('tab', { name: '사진' }));
 
-  fireEvent.click(screen.getByRole('button', { name: '완료' }));
+  fireEvent.click(topDone());
   expect(modeSelected(/^정보/)).toBe('true');
   // 개봉일만 비었다 — 제목 행은 강조되지 않는다.
   expect(isMissing('title')).toBe(false);
@@ -94,10 +99,10 @@ test('#776 — 누락 행을 탭해 채우면 그 행의 앰버가 걷히고, �
   fireEvent.click(await screen.findByTestId('landing-restore'));
   await act(async () => { await new Promise((r) => setTimeout(r, 350)); });
 
-  fireEvent.click(screen.getByRole('button', { name: '완료' }));
+  fireEvent.click(topDone());
   fireEvent.click(within(infoList()).getByRole('button', { name: /^제목 (?!티켓에 표시)/ }));
   fireEvent.change(await screen.findByRole('textbox', { name: '제목' }), { target: { value: '새 영화' } });
-  fireEvent.click(screen.getByRole('button', { name: '편집 완료' }));
+  fireEvent.click(panelDone());
 
   expect(isMissing('title')).toBe(false);
   expect(row('title').textContent).toContain('새 영화');
@@ -112,11 +117,11 @@ test('#776 — 숨긴 개봉일은 누락 행으로 연도를 넣는 동안만 �
   fireEvent.click(await screen.findByTestId('landing-restore'));
   await act(async () => { await new Promise((r) => setTimeout(r, 350)); });
 
-  fireEvent.click(screen.getByRole('button', { name: '완료' }));
+  fireEvent.click(topDone());
   fireEvent.click(within(infoList()).getByRole('button', { name: /^개봉일 (?!티켓에 표시)/ }));
-  // 인플레이스 편집기는 티켓 위 앵커가 있어야 뜨므로 편집 중엔 잠깐 보인다.
-  expect(!!(await screen.findByRole('toolbar', { name: '필드 편집 도구' }))).toBe(true);
-  fireEvent.click(screen.getByRole('button', { name: '편집 완료' }));
+  // 누락 행 바로가기(openMissingField)는 편집 중엔 켜 두고 끝나면 되돌린다.
+  expect(!!(await screen.findByRole('group', { name: '개봉일 입력' }))).toBe(true);
+  fireEvent.click(panelDone());
 
   expect(within(infoList()).getByRole('button', { name: '개봉일 티켓에 표시' }).getAttribute('aria-pressed')).toBe('false');
 });
@@ -132,15 +137,15 @@ test('#776 — 같은 누락 행을 두 번 눌러도, 다른 누락 필드로 �
 
   // 같은 행 두 번 — 두 번째 탭 땐 이미 켜져 있어도 복원 대상을 잊으면 안 된다.
   for (let i = 0; i < 2; i++) {
-    fireEvent.click(screen.getByRole('button', { name: '완료' }));
+    fireEvent.click(topDone());
     fireEvent.click(within(infoList()).getByRole('button', { name: /^개봉일 (?!티켓에 표시)/ }));
-    expect(!!(await screen.findByRole('toolbar', { name: '필드 편집 도구' }))).toBe(true);
+    expect(!!(await screen.findByRole('group', { name: '개봉일 입력' }))).toBe(true);
   }
   // 그 상태에서 다른 누락 필드(제목)로 옮기면 떠나는 개봉일은 숨는다.
-  fireEvent.click(screen.getByRole('button', { name: '완료' }));
+  fireEvent.click(topDone());
   fireEvent.click(within(infoList()).getByRole('button', { name: /^제목 (?!티켓에 표시)/ }));
   expect(!!(await screen.findByRole('textbox', { name: '제목' }))).toBe(true);
-  fireEvent.click(screen.getByRole('button', { name: '편집 완료' }));
+  fireEvent.click(panelDone());
   expect(releaseShown()).toBe('false');
 });
 
@@ -149,9 +154,9 @@ test('#776 — 누락 행 편집 중 초기화하면 재숨김이 새 문서로 
   render(<Home />);
   fireEvent.click(await screen.findByTestId('landing-restore'));
   await act(async () => { await new Promise((r) => setTimeout(r, 350)); });
-  fireEvent.click(screen.getByRole('button', { name: '완료' }));
+  fireEvent.click(topDone());
   fireEvent.click(within(infoList()).getByRole('button', { name: /^개봉일 (?!티켓에 표시)/ }));
-  expect(!!(await screen.findByRole('toolbar', { name: '필드 편집 도구' }))).toBe(true);
+  expect(!!(await screen.findByRole('group', { name: '개봉일 입력' }))).toBe(true);
 
   fireEvent.click(screen.getByRole('button', { name: '편집 메뉴' }));
   fireEvent.click(screen.getByRole('button', { name: '초기화' }));
@@ -163,7 +168,7 @@ test('#776 — 누락 행 편집 중 초기화하면 재숨김이 새 문서로 
   await act(async () => { await new Promise((r) => setTimeout(r, 350)); });
   fireEvent.click(within(infoList()).getByRole('button', { name: /^제목 (?!티켓에 표시)/ }));
   expect(!!(await screen.findByRole('textbox', { name: '제목' }))).toBe(true);
-  fireEvent.click(screen.getByRole('button', { name: '편집 완료' }));
+  fireEvent.click(panelDone());
   expect(releaseShown()).toBe('true');
 });
 
@@ -176,6 +181,6 @@ test('#776 — 필수 입력이 다 차 있으면 앰버 표시가 없고 완료
   expect(isMissing('releaseDate')).toBe(false);
   expect(!!screen.queryByTestId('info-missing-dot')).toBe(false);
 
-  fireEvent.click(screen.getByRole('button', { name: '완료' }));
+  fireEvent.click(topDone());
   expect(!!(await screen.findByLabelText('편집으로 돌아가기'))).toBe(true);
 });

@@ -2,7 +2,7 @@
  * #266 PR-E 회귀 테스트 — FieldLauncher 제거 후 필드 편집 커버리지가 온-티켓 탭만으로 유지되는지.
  *
  * 별도 필드 목록(FieldLauncher)을 지운 뒤 남는 두 경로를 MobileEditorShell 통합으로 검증한다:
- *  1. 끄기: 티켓 위 필드 탭 → 인플레이스 필드바(#354, FieldEditSheet 대체) "티켓 노출" 눈 토글 → 필드 숨김.
+ *  1. 끄기: 도크 정보 목록 행의 눈(#826 S3 D14-1 — 입력 패널엔 표시 토글이 없다) → 필드 숨김.
  *  2. 다시 켜기 (a): ghost 켜짐(기본 on) → 숨긴 필드가 티켓에 "+ 라벨" 점선(FieldTap)으로 남아
  *     재탭 → 재노출.
  *  3. 다시 켜기 (b): 도크 정보 모드의 "전체 표시" 스위치(옛 필드 드로어 맨 위, #826 S2에서 목록 끝으로) → 전 필드 재노출.
@@ -50,61 +50,64 @@ afterEach(() => {
 });
 
 describe('MobileEditorShell 필드 커버리지 (#266 PR-E)', () => {
-  test('끄기(필드바 눈) → ghost 재탭으로 다시 켜기 (path a)', async () => {
+  /** 정보 목록 행의 눈(#826 S3 D14-1 — 표시는 여기서만 바꾼다). */
+  const listEye = (label: string) => within(screen.getByTestId('dock-body')).getByRole('button', { name: `${label} 티켓에 표시` });
+  /** 첫 업로드가 표시 항목을 부분 기본값으로 리셋하니(상영관은 꺼져 시작한다) 켜져 있을 때만 눈을 눌러 숨긴다. */
+  const hideFromList = (label: string) => {
+    if (listEye(label).getAttribute('aria-pressed') === 'true') fireEvent.click(listEye(label));
+  };
+
+  test('끄기(정보 목록 눈) → ghost 재탭으로 다시 켜기 (path a)', async () => {
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
 
-    // 무드 로드 대기 후 극장 탭 → 인플레이스 에디터(#354, 시트 대체) 열림.
-    fireEvent.click(await screen.findByRole('button', { name: '극장 편집' }));
-
-    // 필드바 "티켓 노출" 눈 토글 → 극장 숨김.
-    fireEvent.click(await screen.findByRole('switch', { name: '티켓 노출' }));
+    // 도크는 정보 모드로 열린다 — 행의 눈으로 극장을 숨긴다.
+    hideFromList('극장');
     expect(screen.getByTestId('vis-theater').textContent).toBe('false');
 
-    // 숨긴 필드도 편집 중 ghost 강제 on으로 "극장 편집" FieldTap이 티켓에 남는다(재켜기 진입점)
-    // → 재탭 → 재노출(handleField의 자동 표시 on).
+    // 숨긴 필드도 정보 모드 ghost로 "극장 편집" FieldTap이 티켓에 남는다(재켜기 진입점)
+    // → 직접 탭 → 재노출(handleField의 자동 표시 on, constraint-9).
     fireEvent.click(await screen.findByRole('button', { name: '극장 편집' }));
     expect(screen.getByTestId('vis-theater').textContent).toBe('true');
+    expect(!!(await screen.findByRole('group', { name: '극장 입력' }))).toBe(true);
   });
 
-  test('끄기(필드바 눈) → "전체 표시"로 다시 켜기 (path b)', async () => {
+  test('끄기(정보 목록 눈) → "전체 표시"로 다시 켜기 (path b)', async () => {
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
 
-    fireEvent.click(await screen.findByRole('button', { name: '상영관 편집' }));
-    fireEvent.click(await screen.findByRole('switch', { name: '티켓 노출' }));
+    hideFromList('상영관');
     expect(screen.getByTestId('vis-screen').textContent).toBe('false');
 
-    // "전체 표시" 단일 스위치(#261)는 #315에서 헤더 서브메뉴로, #424에서 필드 드로어로, #826 S2에서 도크 정보
-    // 목록 끝으로 옮겨 왔다 — 편집을 닫으면 정보 모드 본문에 바로 있다.
-    fireEvent.click(await screen.findByRole('button', { name: '편집 완료' }));
+    // "전체 표시" 단일 스위치(#261)는 #826 S2에서 도크 정보 목록 끝으로 옮겨 왔다.
     fireEvent.click(within(screen.getByTestId('dock-body')).getByRole('switch', { name: '전체 표시' }));
     expect(screen.getByTestId('vis-screen').textContent).toBe('true');
   });
 
-  // #355 → #826 S2 — 정보 목록 행 탭이 인플레이스 편집을 여는 셸 배선. 행 onField는 handleField를 타므로
-  // 숨겨둔 필드도 자동 표시 on이 걸려야 한다.
-  test('정보 목록 행 탭 → 인플레이스 편집 + 자동 표시 on (#355 → #826 S2)', async () => {
+  // #355 → #826 S3 — 정보 목록 행 탭이 티켓 필드 탭과 같은 입력 패널을 연다. 표시는 행의 눈으로만 바꾸므로(D14-1,
+  // acceptance-17) 행 탭은 숨긴 필드를 켜지 않고, 패널을 열고 닫아도 눈으로 정한 표시가 그대로다. 패널엔 표시 토글이 없다.
+  test('정보 목록 행 탭 → 같은 입력 패널, 표시는 그대로 (#355 → #826 S3)', async () => {
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
 
-    // 먼저 상영관을 숨겨 자동 표시 on까지 검증(기존 경로: 온-티켓 탭 → 필드바 눈 → 편집 완료).
-    fireEvent.click(await screen.findByRole('button', { name: '상영관 편집' }));
-    fireEvent.click(await screen.findByRole('switch', { name: '티켓 노출' }));
-    fireEvent.click(await screen.findByRole('button', { name: '편집 완료' }));
+    hideFromList('상영관');
     expect(screen.getByTestId('vis-screen').textContent).toBe('false');
 
     // 도크는 정보 모드로 열린다. 상단의 OCR 진입점(#388의 후신)이 목록 위에 있다.
     const list = screen.getByTestId('dock-body');
     expect(within(list).getByRole('button', { name: '스크린샷으로 자동입력' })).toBeDefined();
-    // 숨긴 행은 눈이 꺼진 상태로 보인다.
-    expect(within(list).getByRole('button', { name: '상영관 티켓에 표시' }).getAttribute('aria-pressed')).toBe('false');
+    expect(listEye('상영관').getAttribute('aria-pressed')).toBe('false');
 
-    // 행 본문 탭 → handleField가 자동 표시 on + 인플레이스 필드바 오픈('상영관'은 티켓 FieldTap과
-    // 접근명이 겹치지 않는다 — 행 이름은 이름 + 값이다).
+    // 행 본문 탭('상영관'은 티켓 FieldTap과 접근명이 겹치지 않는다 — 행 이름은 이름 + 값이다).
     fireEvent.click(within(list).getByRole('button', { name: /^상영관 (?!티켓에 표시)/ }));
-    expect(screen.getByTestId('vis-screen').textContent).toBe('true');
-    expect(await screen.findByRole('switch', { name: '티켓 노출' })).toBeDefined();
+    const panel = await screen.findByRole('group', { name: '상영관 입력' });
+    expect(screen.getByTestId('vis-screen').textContent).toBe('false');
+    expect(within(panel).queryAllByRole('switch').length).toBe(0);
+
+    fireEvent.click(within(panel).getByRole('button', { name: '완료' }));
+    expect(screen.queryByRole('group', { name: '상영관 입력' }) === null).toBe(true);
+    expect(screen.getByTestId('vis-screen').textContent).toBe('false');
+    expect(listEye('상영관').getAttribute('aria-pressed')).toBe('false');
   });
 
   // #260 경로 1(이관) — "전체 표시" off는 필수 필드(제목)를 남기고 나머지만 끈다(제목 없는 티켓 방지).

@@ -15,14 +15,17 @@ export function DateInput({
   granularity,
   onChange,
   ariaLabel,
+  className,
 }: {
   value: string;
   granularity: DateGranularity;
   onChange: (next: string) => void;
   /** placeholder만 있던 스핀버튼에 접근명을 부여 — SR이 무라벨로 읽지 않게(#198). */
   ariaLabel?: string;
+  /** 크기 · 표면 클래스를 통째로 바꾼다 — 입력 패널은 한 줄 높이(36)에 맞춘 자기 클래스를 넘긴다(#826 S3). */
+  className?: string;
 }) {
-  const base = cn(
+  const base = className ?? cn(
     inputVariants({ surface: 'paper' }),
     'flex-1 min-w-[160px] rounded-field px-3.5 py-3 text-title text-ink',
   );

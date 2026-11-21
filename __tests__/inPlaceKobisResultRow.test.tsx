@@ -1,5 +1,5 @@
 /**
- * #476 회귀 — InPlaceFieldEditor(모바일 인플레이스 title 편집기) aid 패널의 KOBIS 결과 행.
+ * #476 회귀 — InPlaceFieldEditor 입력 패널(#826 S3)의 제목 KOBIS 결과 행.
  *
  * PR #478 리뷰 P1 대응:
  * 1. typeNm·directors·prdtStatNm이 행에 렌더되고, directors가 빈 배열이면 "감독 없음"으로 폴백한다.
@@ -42,11 +42,9 @@ function mockSearchFetch(movieList: unknown[]) {
     Promise.resolve(jsonResponse({ movieListResult: { movieList } }))) as typeof fetch;
 }
 
-// 인플레이스 오버레이 input은 rect(measureField의 결과)가 truthy일 때만 렌더된다
-// (InPlaceFieldEditor.tsx의 `overlay = rect && (...)`) — wrapperEl/ticketEl에 실제 DOM을
-// 줘야 measureField가 [data-field-tap="title"]을 찾아 null이 아닌 rect를 만든다.
-// happy-dom은 getBoundingClientRect가 항상 0이지만, 이 테스트는 지오메트리가 아니라
-// aid 패널의 KOBIS 결과 행 텍스트만 검증하므로 0-크기 rect로 충분하다.
+// wrapperEl/ticketEl에 실제 DOM을 줘야 ‹ › 순회 목록([data-field-tap])과 선택 표시가 선다. happy-dom은
+// getBoundingClientRect가 항상 0이지만, 이 테스트는 지오메트리가 아니라 입력 패널의 KOBIS 결과 행 텍스트만
+// 검증하므로 0-크기 rect로 충분하다.
 function Harness() {
   const photo = usePhototicket();
   const [wrapperEl, setWrapperEl] = useState<HTMLDivElement | null>(null);

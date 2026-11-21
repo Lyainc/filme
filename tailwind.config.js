@@ -66,6 +66,7 @@ module.exports = {
         modal: '22px',
         shell: '20px',       // v2.2 --r-shell
         chip: '9999px',
+        ctl: '6px',          // 마스터 --pr-r-ctl(#826 S3 C-OPT · C-IB) — 입력 패널 컨트롤 모서리
       },
       spacing: {
         btn: '52px',

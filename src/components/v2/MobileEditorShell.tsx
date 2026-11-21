@@ -816,6 +816,7 @@ export function MobileEditorShell({
         onModeChange={setDockMode}
         hidden={!dockShown}
         onField={handleField}
+        onOpenField={setActiveField}
         onMissingField={openMissingField}
         onOcrOpen={handleOcrOpen}
         ocrBusy={ocrBusy}

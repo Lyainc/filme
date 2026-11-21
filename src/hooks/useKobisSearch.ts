@@ -23,11 +23,15 @@ export interface KobisSearchMessages {
   requestFailed: string;
 }
 
-/** 축 3([무슨 일] + [다음 행동]) 기본 문구 — 덮어쓰지 않으면 이게 쓰인다. */
-const DEFAULT_MESSAGES: KobisSearchMessages = {
-  noResults: '검색 결과가 없어요. 제목을 다시 확인해 주세요.',
-  requestFailed: '검색 중 문제가 생겼어요. 잠시 후 다시 시도해 주세요.',
+/**
+ * 기본 문구 — 덮어쓰지 않으면 이게 쓰인다. #826 결정 8: 실패는 [무슨 일] 한 문장이고 다음 행동은 그 자리 버튼이다
+ * (입력 패널의 '다시 검색'). 무매칭은 할 일이 제목 고치기라 입력란이 바로 위에 있다. 입력 패널이 둘을 이 값으로 가른다.
+ */
+export const KOBIS_MESSAGES: KobisSearchMessages = {
+  noResults: '검색 결과가 없어요',
+  requestFailed: '검색에 실패했어요',
 };
+const DEFAULT_MESSAGES = KOBIS_MESSAGES;
 
 export interface UseKobisSearchOptions {
   /** 기본 필드를 반영하고, 문서/영화 선택이 여전히 유효할 때만 보강하는 콜백을 반환한다. */
