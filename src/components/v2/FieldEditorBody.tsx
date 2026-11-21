@@ -42,7 +42,7 @@ function todayIso(): string {
 export const INPUT_CLS = cn(
   // 16px 미만이면 iOS Safari가 포커스 시 자동 줌인해 레이아웃이 틀어진다(#274) — 편집 폼 컨트롤은 16px 이상.
   // 글래스 톤(#367) — 입력 함몰 계층(#580 3계층) 토큰. 항상 InPlaceFieldEditor의 불투명
-  // aid 박스(bg-s2) 안에서만 렌더돼 대비 하한 근거는 globals.css --glass-fill 주석 참고.
+  // 불투명 바탕 안에서만 렌더돼 대비 하한 근거는 globals.css --glass-fill 주석 참고. 앱 입력 패널(#826 S3)은 이 상수를 안 쓴다.
   inputVariants({ surface: 'glass' }),
   'w-full rounded-field px-3.5 py-3 text-title text-ink',
 );
@@ -226,7 +226,7 @@ const kobisOptionId = (movieCd: string) => `kobis-option-${movieCd}`;
  * 에디터가 공유한다. 리스트 높이만 호출부 사정(고정 max-h-56 vs 동적 aidMaxHeight)에 맞춰
  * className/style로 주입. highlightIndex는 TitleSheet의 키보드 내비 전용(#198) — InPlaceFieldEditor는
  * 안 넘겨 기존 동작(하이라이트 없음) 그대로 유지한다. 옵션 버튼은 tabIndex를 안 건드린다 —
- * InPlaceFieldEditor aid 패널은 자체 화살표키 호스트가 없어(이 재구현 범위 밖) tabIndex=-1을
+ * InPlaceFieldEditor 입력 패널은 자체 화살표키 호스트가 없어(이 재구현 범위 밖) tabIndex=-1을
  * 걸면 그쪽 결과가 키보드로 아예 닿지 않게 된다.
  */
 export function KobisResultList({
@@ -331,8 +331,8 @@ function FormatChips({
 
 /**
  * 날짜 필드 — watchDate(입력+표기 칩) / releaseDate(정밀도+표기 칩+재개봉 토글).
- * export(#354): 인플레이스 에디터의 aid 패널이 재사용 — 날짜는 투명 input 대신 이 편집기가
- * 키보드 자리에 뜬다(표기 칩·정밀도·재개봉 토글까지 보존하는 유일한 기존 UI).
+ * export(#354): 옛 인플레이스 에디터가 재사용했다. #826 S3부터 앱은 입력 패널의 날짜 칩을 쓰고 이 시트는
+ * 테스트만 쓴다.
  */
 export function DateSheet({ field, photo }: { field: TicketField; photo: Photo }) {
   const info = photo.state.movieInfo;

@@ -3,7 +3,7 @@ import { pressableVariants } from '@/components/ui/variants';
 
 /**
  * 눈 아이콘(#355, v8 시안 §5·§6) — 윤곽만으론 작은 크기에서 눈으로 안 읽혀 뜬 상태는 동공을
- * 채운다. 인플레이스 필드바(InPlaceFieldEditor)·눈 토글(VisibilityCheckbox)·필드 드로어가 공유.
+ * 채운다. 정보 목록 행 눈(InfoPane)·눈 토글(VisibilityCheckbox, 입력 패널의 재개봉일 예외)이 공유.
  */
 export function EyeIcon({ open, size = 17 }: { open: boolean; size?: number }) {
   return (

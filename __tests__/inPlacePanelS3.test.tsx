@@ -425,11 +425,12 @@ describe('f_kobis — 제목 KOBIS 목록 (acceptance-20 · constraint-12 문구
 function StepHarness({ start }: { start: SheetTarget }) {
   const photo = usePhototicket();
   const [field, setField] = useState<SheetTarget>(start);
+  const [closed, setClosed] = useState(false);
   const [wrapperEl, setWrapperEl] = useState<HTMLDivElement | null>(null);
   const [ticketEl, setTicketEl] = useState<HTMLDivElement | null>(null);
   return (
     <div>
-      <div data-testid="field">{field}</div>
+      <div data-testid="field">{closed ? 'closed' : field}</div>
       <div ref={setWrapperEl}>
         {/* 순회 목록 = 제목 · 원제 · 개봉일 · 평점(EDIT_ORDER 순). 좌석은 그리지 않는다(무드가 안 그린 필드). */}
         <div ref={setTicketEl}>
@@ -437,7 +438,7 @@ function StepHarness({ start }: { start: SheetTarget }) {
         </div>
       </div>
       {wrapperEl && ticketEl && (
-        <InPlaceFieldEditor photo={photo} field={field} wrapperEl={wrapperEl} ticketEl={ticketEl} onField={setField} onClose={() => {}} onLift={() => {}} />
+        <InPlaceFieldEditor photo={photo} field={field} wrapperEl={wrapperEl} ticketEl={ticketEl} onField={setField} onClose={() => setClosed(true)} onLift={() => {}} />
       )}
     </div>
   );
@@ -462,6 +463,15 @@ describe('필드가 바뀔 때 일시 상태 · 순회 경계', () => {
     expect(input.getAttribute('enterkeyhint')).toBe('next');
     fireEvent.keyDown(input, { key: 'Enter' });
     expect(cur()).toBe('rating');
+  });
+
+  test('평점 소수 입력의 Return도 이어진다 — 평점이 마지막 필드라 완료다', () => {
+    render(<StepHarness start="rating" />);
+    fireEvent.click(screen.getByRole('button', { name: '평점 소수 입력 토글' }));
+    const dec = screen.getByRole('spinbutton', { name: '평점 직접 입력 (0.1 단위)' });
+    expect(dec.getAttribute('enterkeyhint')).toBe('done');
+    fireEvent.keyDown(dec, { key: 'Enter' });
+    expect(cur()).toBe('closed');
   });
 
   test('평점 소수 입력은 다른 필드에 다녀오면 접혀 있다', () => {

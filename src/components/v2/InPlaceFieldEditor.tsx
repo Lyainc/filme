@@ -442,7 +442,6 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
 
   // ── 평점(K-05): 키보드 없이 별 44 + 숫자(누르면 소수 입력). 표시 토글은 정보 목록 눈 몫이다. ──
   const setRating = useCallback((r: number) => photo.updateMovieInfo({ rating: r }), [photo.updateMovieInfo]);
-  const rating = useRatingPicker({ value: info.rating, onValueChange: setRating, resetKey: field });
 
   // ── ‹ › · Return: 현재 무드 DOM에 실제 존재하는 필드만 순회 ─────────────────────
   // 앵커 스캔은 한 번 — 필드마다 querySelector를 돌리면 타이핑 렌더마다 16번 훑는다. 무드가 늦게 로드돼
@@ -465,6 +464,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
     else step(1);
   };
   const enterKeyHint = isLast ? 'done' : 'next';
+  const rating = useRatingPicker({ value: info.rating, onValueChange: setRating, resetKey: field, onEnter, enterKeyHint });
 
   // ── 첫 줄 입력 자리 ──────────────────────────────────────────────────────────
   let slot: ReactNode;

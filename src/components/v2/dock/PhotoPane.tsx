@@ -205,7 +205,7 @@ function LogoRow({ target, photo, onEdit }: { target: StampTarget; photo: Photo;
           이미지로
         </button>
       ) : (
-        // 텍스트와 이미지 둘 다 들어가는 인플레이스 입력(필드바 이미지 칩)을 연다 — 빈 로고는 어느 쪽으로
+        // 텍스트와 이미지 둘 다 들어가는 입력 패널(글자 입력 + '이미지로', #826 S3)을 연다 — 빈 로고는 어느 쪽으로
         // 채울지 아직 정해지지 않았으므로 업로드로 바로 가지 않는다.
         <button type="button" onClick={() => onEdit(target)} className={cn(pressableVariants(), SEC_BTN)}>
           추가
