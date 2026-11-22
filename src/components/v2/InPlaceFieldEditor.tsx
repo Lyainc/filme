@@ -13,6 +13,7 @@ import { useLogoCrop } from '@/hooks/useLogoCrop';
 import { useRatingPicker } from '@/components/v2/pickers/RatingPicker';
 import { keyboardPanelStyle, useKeyboardBox, useKeyboardDismiss } from '@/hooks/useInputKeyboard';
 import { editLift } from '@/utils/inputKeyboard';
+import { KeyboardUnderlay } from './KeyboardUnderlay';
 import { DateInput } from '@/components/ui/DateInput';
 import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
 import { KobisResultList } from './FieldEditorBody';
@@ -748,6 +749,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
       {/* 밖 탭으로 닫기 — 티켓(래퍼 z-[41])과 패널은 이 위라 필드 전환/도구 조작은 그대로 된다. */}
       <div className="fixed inset-0 z-40" onClick={onClose} aria-hidden="true" />
       {wrapperEl && rect && createPortal(<SelectionMarks rect={rect} />, wrapperEl)}
+      <KeyboardUnderlay inset={inset} />
       {/* 입력 패널(C-INP) — 한 면 + 윗선 한 줄, 카드 · 그림자 없음. PhoneFrame의 contain:paint가 fixed 기준이라 좌표가 프레임 기준이다. */}
       <div
         ref={panelRef}
