@@ -37,10 +37,10 @@ brownfield: true
 refine_generation: 0
 
 lifecycle:
-  state: paused
+  state: active
   outcome: null
-  reason: "Seed 초안 작성 완료, 캔버스 D18-1(이어서 만들기 행의 저장 날짜) 결정과 소유자 승인 대기. 응답이 없으면 승인이 아니다."
-  approved_by: "소유자 /goal 지시(2026-11-22): 'Seed는 paused로 시작하고, 결정이 반영되고 소유자가 승인하면 active로 바꾼다.'"
+  reason: "D18-1 A · D18-2(모바일 미지원 기능 제거) 결정이 constraint-9 · 18에 반영됐고, requirement-gap 3라운드 모두 blocking 0, 3라운드 should-fix 6건은 96ba5edb에 반영(리뷰어 재확인 없음)한 상태로 소유자가 승인했다."
+  approved_by: "소유자 응답(2026-11-22): 'S5 랜딩 Seed(docs/826-s5-seed @ 96ba5edb)를 지금 상태 그대로 active로 승인할까요?' → '지금 승인 (Recommended)'"
   evidence:
     commit: null
     items: []
