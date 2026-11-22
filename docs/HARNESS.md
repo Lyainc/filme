@@ -27,6 +27,7 @@
 | `scripts/capture-export.mjs` | export JPEG(저장물)의 픽셀. 후가공(재질·코팅·강도) 전/후 비교 |
 | `scripts/measure-font-metrics.mjs` | 한줄평·서명 폰트 9택의 체감 크기(캔버스 잉크 박스) |
 | `scripts/measure-chrome.mjs` | dock·프리뷰 rect, 세 모드 도크 높이, 편집 메뉴 시트 포커스/닫기, 항목별 WCAG 대비(관측), 프레임 봉쇄, 랜딩·posterless 축 |
+| `scripts/measure-keyboard-panel.mjs` | 입력 패널 + 스텁 키보드 표본(#826 S4) — 393×852 라이트·다크 × 제목·좌석 캡처 4장과 네 수치 |
 
 `scripts/measure-chrome.mjs`는 `bun scripts/measure-chrome.mjs --theme dark|light`로 돌린다. **세션 tmp에 다시 쓰지 말 것**(#586, 여섯 번 반복됨).
 
@@ -156,3 +157,11 @@ dock 249 / 프리뷰 219×350, 이 세 숫자는 **`EditorDock.tsx`의 `DOCK_BOD
 - 위 회귀들은 **그 축만** 뒤집는다. dock/프리뷰 불변식은 이 부류를 원리적으로 못 본다.
 - `MobileEditorShell`의 fit 스테이지에서 **`background: 'var(--workbench)'`를 지우면** `posterless.stagePainted:false`(#674의 두 번째 증상, "아래쪽만 회색 블록"). 이것도 그 축만 뒤집는다.
 - 같은 스테이지에서 **`flex-1`을 빼면** `stageFillsBody:false`(stage 24 vs body 504.5), **`mode === 'hidden'` 분기를 무력화하면** `landingHidden:false` + `stageFillsBody:false`(stage 264.3 vs body 504.5 — #674의 두 증상이 같이 재현). 이 둘은 fit 스테이지가 무너지므로 `invariant`도 함께 실패한다 — 축이 겹치는 건 정상이고, 중요한 건 posterless가 자기 명제로 먼저 운다는 것이다.
+
+## 12. `measure-keyboard-panel.mjs` — 입력 패널 · 키보드 표본 (#826 S4)
+
+`bun scripts/measure-keyboard-panel.mjs --url http://localhost:<port>/ --out <dir> [--keyboard 330]`. prod 빌드를 대상으로 한다(8절 stale 서버 함정 그대로).
+
+- 앱 스크립트보다 먼저(`evaluateOnNewDocument`) `window.visualViewport`를 EventTarget 가짜로 바꿔 보이는 높이를 `852 − 키보드`로 둔다. 패널을 연 뒤 `resize`를 한 번 쏴 키보드가 올라오는 순간을 흉내 낸다. 그래서 스크린샷의 키보드 자리엔 도크가 그대로 비친다 — 실제 키보드가 덮는 영역이라 판정 대상이 아니다.
+- 같은 페이지에서 넷을 잰다: ① 패널 아래 끝 − 키보드 윗변 ≤ 1px ② 선택 표시와 패널의 교차 면적 0 + 표시 아래 끝이 패널 윗변 위 ③ 패널 안 button · input이 `#phone-frame` 안 ④ 세로 무드 확대 래퍼 가로가 `#phone-frame` 안. 못 잰 값과 캡처 4장 미만도 exit 1이다.
+- **합성 스텁 결과는 실기기 PASS가 아니다.** 키보드 높이 · offsetTop 변화의 실측은 iOS Simulator(`scripts/ios-sim/`)와 S8 실기기 몫이다.
