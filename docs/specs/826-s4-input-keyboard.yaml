@@ -144,7 +144,7 @@ success_criteria:
     verifiable: true
     measurable_via: "상호작용 테스트 행렬(4 × 3 + #776 재숨김 4)"
   - id: acceptance-6
-    description: "constraint-6 history: 패널을 열면 history 항목이 하나 늘고, 뒤로(popstate)로 닫으면 패널이 닫히며 페이지는 편집 화면에 남는다. 닫기 · 키보드 내림 · 바깥 탭으로 닫으면 history가 열기 전 길이로 돌아간다. 패널 열기 → 닫기를 3회 반복해도 history 길이가 늘지 않고, 결과 화면 열기 · 뒤로(useResultView)는 기존 테스트대로 동작한다."
+    description: "constraint-6 history: 패널을 열면 history 항목이 하나 늘고, 뒤로(popstate)로 닫으면 패널이 닫히며 페이지는 편집 화면에 남는다. 닫기 · 키보드 내림 · 바깥 탭으로 닫으면 history 위치가 열기 전 항목으로 돌아간다(history.state가 열기 전과 같다 — back()은 앞으로 항목을 남겨 history.length 자체는 줄지 않는다). 패널 열기 → 닫기를 3회 반복해도 history 길이가 늘지 않고, 결과 화면 열기 · 뒤로(useResultView)는 기존 테스트대로 동작한다."
     verifiable: true
     measurable_via: "상호작용 테스트(history.length · state 단언, 기존 useResultView 테스트 통과)"
   - id: acceptance-7
