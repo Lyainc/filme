@@ -576,6 +576,12 @@ describe('필드가 바뀔 때 일시 상태 · 순회 경계', () => {
     fireEvent.contextMenu(plus);
     await act(async () => { await new Promise((r) => setTimeout(r, 600)); });
     expect(num()).toBe('0.1');
+    // 누른 채 버튼 밖으로 끌고 나가 떼면 click이 안 온다 — 다음 키보드 click은 그대로 한 칸이어야 한다(PR #842 리뷰).
+    fireEvent.pointerDown(plus, { button: 0 });
+    fireEvent.pointerLeave(plus);
+    expect(num()).toBe('0.2');
+    fireEvent.click(plus);
+    expect(num()).toBe('0.3');
   });
 
   test('목록을 연 채로 다른 필드에 갔다 돌아오면 목록은 닫혀 있다', () => {

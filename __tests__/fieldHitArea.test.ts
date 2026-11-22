@@ -44,7 +44,8 @@ describe('pickFieldAt (#826 S3 hit 44)', () => {
     expect(pickFieldAt(12, 53, [title])).toBeNull();
   });
 
-  test('크기 0 상자(레이아웃 전)는 누를 수 없다', () => {
+  test('한 축이라도 0인 상자(레이아웃 전 · 글자 없는 노드)는 누를 수 없다', () => {
     expect(pickFieldAt(0, 0, [{ field: 'seat', left: 0, top: 0, width: 0, height: 0 }])).toBeNull();
+    expect(pickFieldAt(10, 10, [{ field: 'seat', left: 10, top: 0, width: 0, height: 20 }])).toBeNull();
   });
 });
