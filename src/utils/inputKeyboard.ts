@@ -36,7 +36,7 @@ export function editScale(stageWidth: number, stageHeight: number, aspect: numbe
 }
 
 /** 고른 필드 아래 끝과 패널 윗변 사이 간격(D12 '고른 필드가 패널 30px 위'). */
-export const FIELD_GAP_ABOVE_PANEL = 30;
+const FIELD_GAP_ABOVE_PANEL = 30;
 
 /**
  * 입력 중 티켓 세로 이동(px, ≤0). 래퍼는 transform-origin이 top center라 배율이 윗변을 움직이지 않는다 — 그래서 확대 뒤

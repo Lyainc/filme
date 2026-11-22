@@ -2,10 +2,10 @@ import { useDeferredValue, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Eyebrow } from '@/components/v2/Eyebrow';
 import { PHONE_FRAME_ID } from '@/components/v2/PhoneFrame';
-import { KeyboardUnderlay } from '@/components/v2/KeyboardUnderlay';
+import { KeyboardPanel, keepFocus } from '@/components/v2/KeyboardPanel';
 import { inputVariants, pressableVariants } from '@/components/ui/variants';
 import { cn } from '@/utils/cn';
-import { keyboardPanelStyle, useKeyboardBox, useKeyboardDismiss, usePanelHistory } from '@/hooks/useInputKeyboard';
+import { useKeyboardBox, usePanelHistory } from '@/hooks/useInputKeyboard';
 
 interface BrightnessSliderProps {
   value: number;
@@ -95,9 +95,6 @@ export function valueFromClientX(clientX: number, left: number, width: number, m
   return snapToStep(min + ratio * (max - min), min, max);
 }
 
-/** 키보드를 내리지 않게 포인터 누름에서 포커스 이동을 막는다(닫기). */
-const keepFocus = (e: { preventDefault: () => void }) => e.preventDefault();
-
 /**
  * % 직접 입력 패널(#826 S4 K-03, D17-2 A) — [이름][숫자 입력 16px · numeric][닫기] 한 줄이 필드 입력 패널과 같은 규칙으로
  * 키보드에 붙는다(‹ › 없음, 티켓 확대 없음). 열려 있을 때만 마운트해 포인터 · visualViewport 구독이 슬라이더 수만큼 늘지 않게
@@ -117,23 +114,10 @@ function PercentPanel({
   onClose: () => void;
 }) {
   const kb = useKeyboardBox();
-  const panelRef = useRef<HTMLDivElement>(null);
-  const onPanelBlur = useKeyboardDismiss({ onDismiss: onClose, isInside: (el) => !!panelRef.current?.contains(el) });
   const host = document.getElementById(PHONE_FRAME_ID) ?? document.body;
+  // 바깥 탭 막이 도크를 덮어 탭이 다른 도구로 새지 않고, 닫히면 같은 디자인 도구가 그대로 있다.
   return createPortal(
-    <>
-      {/* 밖 탭으로 닫기 — 도크는 이 아래라 탭이 다른 도구로 새지 않고, 닫히면 같은 디자인 도구가 그대로 있다. */}
-      <div className="fixed inset-0 z-40" onClick={onClose} aria-hidden="true" />
-      <KeyboardUnderlay inset={kb?.inset ?? 0} />
-      <div
-        ref={panelRef}
-        role="group"
-        aria-label={`${label} 입력`}
-        data-percent-panel=""
-        className="fixed inset-x-0 z-50 border-t border-hair-strong bg-s1 px-3 pt-2"
-        onBlur={onPanelBlur}
-        style={{ ...keyboardPanelStyle(kb?.inset ?? 0), animation: 'screen-in .18s ease-out' }}
-      >
+    <KeyboardPanel label={label} inset={kb?.inset ?? 0} onClose={onClose} data={{ 'data-percent-panel': '' }}>
         <div className="flex h-touch items-center gap-2">
           <label htmlFor={inputId} className="shrink-0 text-body font-medium text-ink-2">
             {label}
@@ -162,8 +146,7 @@ function PercentPanel({
             <span className="inline-flex h-9 items-center rounded-ctl border border-hair-strong px-3 text-body font-medium text-ink">닫기</span>
           </button>
         </div>
-      </div>
-    </>,
+    </KeyboardPanel>,
     host
   );
 }
@@ -249,7 +232,7 @@ export default function BrightnessSlider({
           )}
         </span>
         {/* % 값(#562) — 10% 스텝이 앗아간 세밀 조정의 대체 경로라 둘은 같이 간다. 누르면 키보드에 붙는 입력 패널(#826 S4 K-03)이
-            열린다 — 예전엔 이 자리가 바로 입력이라 소프트 키보드가 도크를 덮었다(#558).
+            열린다.
             라벨 줄에 인라인으로 얹는 배치가 필수다: 레일 상세 슬롯(#563)이 400×675에서 118px
             고정인데 투명도 탭 콘텐츠가 정확히 118px이라 여유가 0이다 — 새 줄로 내리면 슬라이더당
             +20~25px이라 그 탭부터 스크롤이 생긴다. Eyebrow와 같은 타이포를 그대로 입혀 줄 높이가
