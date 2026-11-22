@@ -73,7 +73,7 @@ constraints:
     rationale: "02-decisions 6(2026-11-17 '버튼 없이 강제 재생, 누르고 있는 동안·포커스 동안 정지'), L-01 states '4초마다', trace l_carousel · l_gesture('가로 스와이프는 그대로', '늦추기는 누르는 동안 멈추기로'), REQ autoplay."
   - id: constraint-5
     type: technical
-    description: "키보드 도달: 갤러리 무드 5개가 모두 tab 순서에 있는 버튼이고, 버튼에 포커스가 가면 그 무드가 가운데로 오며(포커스 동안 정지라 자동으로는 안 넘어간다) Enter · Space로 그 무드에 들어간다. 가운데가 아닌 카드 버튼도 접근성 트리에서 빠지지 않는다(시각적으로 숨은 먼 카드 포함)."
+    description: "키보드 도달: 갤러리 무드 5개가 모두 tab 순서에 있는 버튼이고, 버튼에 포커스가 가면 그 무드가 가운데로 오며(포커스 동안 정지라 자동으로는 안 넘어간다) Enter · Space로 그 무드에 들어간다. 가운데가 아닌 카드 버튼도 접근성 트리에서 빠지지 않는다(시각적으로 숨은 먼 카드 포함). 포인터 탭은 보이는 카드(가운데 · 좌우)면 어느 것이든 그 무드로 바로 들어가고(L-01 '전시 카드 탭 → 그 무드로 새 문서', 지금 동작 유지), 불투명도 0인 먼 카드는 pointer-events none이라 탭을 가로채지 않는다."
     hard: true
     rationale: "마스터 프레임은 가운데 카드만 버튼으로 그렸지만, 버튼 없는 정지 + 포커스 정지와 합치면 키보드 사용자가 다른 무드에 닿을 길이 없다. 03-open '화면 읽기 사용자는 포커스 정지에 기대요'. 마스터와 모순되지 않는 해석으로 정했다."
   - id: constraint-6
@@ -103,7 +103,7 @@ constraints:
     rationale: "L-01 states '법적 고지는 맨 아래 \"이용 고지\" 한 줄로 접혀 있고, 누르면 그 자리에서 펼쳐져요(문구는 현행 그대로). 펼치면 전시가 그만큼 줄어요', 51-copy-changed '랜딩 고지 접기', trace l_footer(유지), #363 · #614."
   - id: constraint-11
     type: technical
-    description: "스크린샷 인식(L-03, 랜딩에서 열었을 때): 인식 중에는 주 CTA가 '티켓 인식 중…'(aria-busy, 지금처럼 disabled라 aria-disabled 역할도 겸함, 회전 표시는 aria-hidden)이고 링크 쌍 두 버튼이 disabled다. 랜딩 카드의 자체 안내(3000ms 토스트 경로를 타는 모든 문구: 실패 · 요청 많음 · 형식 · HEIC · 용량 · 인식된 정보 없음 · 영화 정보 못 찾음)는 전부 같은 자리, 전시 아래쪽 위치 표시 자리(주 CTA 바로 위)에 오류 변형(--pr-warn 계열, 결정 5)으로 3000ms 뜨고 그동안 위치 표시는 숨는다. 동작 줄이기 격자에는 위치 표시가 없으므로 안내는 격자 스크롤 영역 밖, 전시 컨테이너 아래 끝(아래 판 바로 위)에 고정돼 격자를 스크롤해도 따라 움직이지 않는다(마스터에 없음, 같은 '주 CTA 바로 위' 원칙으로 정한 가정). 상시 마운트 role=status 라이브 리전은 유지한다. 바뀌는 문구: '인식에 실패했어요. 다시 시도해 주세요.' → '인식에 실패했어요', 'PNG, JPG, WebP 파일만 인식할 수 있어요. 다른 파일을 골라 주세요.' → 'PNG, JPG, WebP만 인식할 수 있어요', 'HEIC 파일은 지원하지 않아요. PNG/JPG로 저장해 주세요.' → 'HEIC는 지원하지 않아요', '파일 크기가 10MB를 초과해요. 더 작은 이미지를 골라 주세요.' → '10MB 이하 이미지만 돼요'(다시 시도는 CTA 자체). '지금 요청이 많아요. 잠시 후 다시 시도하거나 직접 입력해 주세요.' · '인식된 정보가 없어요. 직접 입력해 주세요.'는 그대로다. 인식 성공은 편집 + 자동입력 배너(E-05), 인식된 정보 없음은 빈 편집(E-02)으로 지금처럼 간다."
+    description: "스크린샷 인식(L-03, 랜딩에서 열었을 때): 인식 중에는 주 CTA가 '티켓 인식 중…'(aria-busy, 지금처럼 disabled라 aria-disabled 역할도 겸함, 회전 표시는 aria-hidden)이고 링크 쌍 두 버튼이 disabled다. 랜딩 카드의 자체 안내(3000ms 토스트 경로를 타는 모든 문구: 실패 · 요청 많음 · 형식 · HEIC · 용량 · 인식된 정보 없음 · 영화 정보 못 찾음 · 제목으로 검색)는 전부 같은 자리, 전시 아래쪽 위치 표시 자리(주 CTA 바로 위)에 오류 변형(--pr-warn 계열, 결정 5)으로 3000ms 뜨고 그동안 위치 표시는 숨는다. 동작 줄이기 격자에는 위치 표시가 없으므로 안내는 격자 스크롤 영역 밖, 전시 컨테이너 아래 끝(아래 판 바로 위)에 고정돼 격자를 스크롤해도 따라 움직이지 않는다(마스터에 없음, 같은 '주 CTA 바로 위' 원칙으로 정한 가정). 상시 마운트 role=status 라이브 리전은 유지한다. 바뀌는 문구: '인식에 실패했어요. 다시 시도해 주세요.' → '인식에 실패했어요', 'PNG, JPG, WebP 파일만 인식할 수 있어요. 다른 파일을 골라 주세요.' → 'PNG, JPG, WebP만 인식할 수 있어요', 'HEIC 파일은 지원하지 않아요. PNG/JPG로 저장해 주세요.' → 'HEIC는 지원하지 않아요', '파일 크기가 10MB를 초과해요. 더 작은 이미지를 골라 주세요.' → '10MB 이하 이미지만 돼요'(다시 시도는 CTA 자체). '지금 요청이 많아요. 잠시 후 다시 시도하거나 직접 입력해 주세요.' · '인식된 정보가 없어요. 직접 입력해 주세요.'는 그대로다. E-05 몫인 '제목으로 영화 정보를 검색할게요.'(→ '영화 정보 검색 중…') · '영화 정보를 찾지 못했어요. …'([제목 확인] 버튼) 변경은 S5 밖이라 문구 그대로 두고 자리만 위 규칙을 따른다(51-copy-changed 10 · 11행, 후속은 #826에 기록). 인식 성공은 편집 + 자동입력 배너(E-05), 인식된 정보 없음은 빈 편집(E-02)으로 지금처럼 간다."
     hard: true
     rationale: "L-03 variants · states · notes, 51-copy-changed 7 · 8 · 9행, 50-copy-locked 5행, COPY_TONE_GUIDE 축 3 #826 결정 8('페이지 마스터 프레임과 같이 바꾼다')."
   - id: constraint-12
@@ -149,7 +149,7 @@ success_criteria:
     verifiable: true
     measurable_via: "세 명령 종료 코드 0과 출력 요약"
   - id: acceptance-2
-    description: "constraint-1 · 2: 착수 base 대비 렌더 파일(moods · TicketRenderer · captureToImage · public/assets/landing/hero-*.webp)과 범위 밖 파일(ImageCropModal · EditorMenu · ResultPanel · ResultStage · src/pages/t/** · EditorDock · InPlaceFieldEditor · KeyboardPanel)이 diff 0줄이고, src/utils/layouts.ts diff는 label 줄만(6줄 이하)이다."
+    description: "constraint-1 · 2: 착수 base 대비 렌더 파일(moods · TicketRenderer · captureToImage · public/assets/landing/hero-*.webp)과 범위 밖 파일(ImageCropModal · EditorMenu · ResultPanel · ResultStage · src/pages/t/** · EditorDock · InPlaceFieldEditor · KeyboardPanel · PhoneFrame · tailwind.config.js)이 diff 0줄이고, src/utils/layouts.ts는 6개 항목의 label 값만 바뀌며, MobileEditorShell diff의 바뀐 줄은 전부 posterDropProps · posterDragOver · 그 핸들러 · Landing에 넘기는 props(dropProps · dragOver)에 속한다."
     verifiable: true
     measurable_via: "git diff --stat <착수 base> -- 해당 경로 0줄 + git diff <착수 base> -- src/utils/layouts.ts 변경 줄 목록"
   - id: acceptance-3
@@ -157,11 +157,11 @@ success_criteria:
     verifiable: true
     measurable_via: "상호작용 테스트 + 헤드리스 측정 스크립트 출력(rect 비 · computed opacity) + git diff 추가 줄 grep 0건"
   - id: acceptance-4
-    description: "constraint-4: fake timer 테스트에서 3999ms 뒤 가운데가 그대로, 4000ms 뒤 한 칸 넘어간다. '자동 전시 정지' · '자동 전시 재개' 버튼이 없다. pointerdown 뒤 8000ms 동안 안 넘어가고 pointerup 뒤 4000ms에 넘어간다(pointercancel도 같다). 전시 안 버튼에 포커스가 있는 동안 8000ms 안 넘어가고 포커스가 전시 밖으로 나간 뒤 4000ms에 넘어간다. 마우스 pointerenter만으로는 멈추지 않는다(pointerenter 뒤 4000ms에 넘어간다). 길게 누른(350ms 초과) 뒤 떼면 무드로 들어가지 않고, 28px 스와이프마다 한 칸 넘어간다."
+    description: "constraint-4: fake timer 테스트에서 3999ms 뒤 가운데가 그대로, 4000ms 뒤 한 칸 넘어간다. '자동 전시 정지' · '자동 전시 재개' 버튼이 없다. pointerdown 뒤 8000ms 동안 안 넘어가고 pointerup 뒤 4000ms에 넘어간다(pointercancel도 같다). 키보드로 들어온 포커스(Tab keydown 뒤 focus)가 전시 안 버튼에 있는 동안 8000ms 안 넘어가고 포커스가 전시 밖으로 나간 뒤 4000ms에 넘어간다. 포인터로 누른 뒤 남은 포커스(pointerdown · pointerup · click 뒤 focus, 키보드 입력 없음)로는 멈추지 않아 pointerup 뒤 4000ms에 넘어간다(판정은 :focus-visible 대신 직전 입력 모달리티로 해도 된다). 마우스 pointerenter만으로는 멈추지 않는다(pointerenter 뒤 4000ms에 넘어간다). 길게 누른(350ms 초과) 뒤 떼면 무드로 들어가지 않고, 28px 스와이프마다 한 칸 넘어간다."
     verifiable: true
     measurable_via: "landingHeroMood 계열 상호작용 테스트(fake timer · pointer · focus 이벤트)"
   - id: acceptance-5
-    description: "constraint-5: 전시 카드 버튼 5개가 모두 접근성 트리에 있고 tabIndex가 음수가 아니다. 가운데가 아닌 카드에 포커스를 주면 그 카드가 가운데(위치 표시 n이 그 카드)가 되고, 키보드 활성화(detail 0 click)로 그 무드로 들어간다."
+    description: "constraint-5: 전시 카드 버튼 5개가 모두 접근성 트리에 있고 tabIndex가 음수가 아니다. 가운데가 아닌 카드에 포커스를 주면 그 카드가 가운데(위치 표시 n이 그 카드)가 되고, 키보드 활성화(detail 0 click)로 그 무드로 들어간다. 좌우 카드를 포인터로 탭하면 그 카드의 무드로 들어가고, 먼 카드는 computed pointer-events가 none이다."
     verifiable: true
     measurable_via: "상호작용 테스트(getAllByRole button 5개, focus 후 가운데 판정, Enter 진입)"
   - id: acceptance-6
@@ -173,7 +173,7 @@ success_criteria:
     verifiable: true
     measurable_via: "상호작용 테스트(landingHeroMood · landingOverlay · landingFreshStart · landingMoodGalleryTapTargets 갱신분, LayoutStrip 렌더 단언)"
   - id: acceptance-8
-    description: "constraint-9: 저장분 제목 '인터스텔라'면 복원 행 안에 '이어서 만들기'와 '인터스텔라'가 따로 있고 행이 주 CTA보다 DOM 앞이며 min-h가 56px 이상(min-h 클래스)이고, 위 줄이 12px · 아래 제목 줄이 15px · 600 글자 클래스이고 제목 줄에 한 줄 말줄임(truncate) 클래스가, › 아이콘에 aria-hidden이 있다. 제목이 비면 '제목 없는 티켓'이 보인다. 저장분이 없으면 행이 보이지 않는다(has-draft 게이트, landingPaintGate 통과). 누르면 문서가 그대로 편집 화면에 열린다(backToLandingPreservesDoc · landingFreshStart 통과). D18-1 A: 저장 시각이 2026-11-15인 저장분은 '11월 15일', 2025-11-15인 저장분은 '2025년 11월 15일'이 보이고(fake 현재 시각 2026년), 시각이 없는 옛 저장분은 날짜 요소 없이 행과 복원이 정상이며, 행 textContent에 마침표가 없다(landingOverlay 기존 단언 통과)."
+    description: "constraint-9: 저장분 제목 '인터스텔라'면 복원 행 안에 '이어서 만들기'와 '인터스텔라'가 따로 있고 행이 주 CTA보다 DOM 앞이며 min-h가 56px 이상(min-h 클래스)이고, 위 줄이 12px · 아래 제목 줄이 15px · 600 글자 클래스이고 제목 줄에 한 줄 말줄임(truncate) 클래스가, › 아이콘에 aria-hidden이 있다. 제목이 비면 '제목 없는 티켓'이 보인다. 저장분이 없으면 행이 보이지 않는다(has-draft 게이트, landingPaintGate 통과). 누르면 문서가 그대로 편집 화면에 열린다(backToLandingPreservesDoc · landingFreshStart 통과). D18-1 A: 저장 시각이 2026-11-15인 저장분은 '11월 15일', 2025-11-15인 저장분은 '2025년 11월 15일'이 보이고(fake 현재 시각 2026년), 시각이 없는 옛 저장분은 날짜 요소 없이 행과 복원이 정상이며(날짜는 로컬 시간대, 저장 시각은 매 저장마다 갱신), 포스터 복원 중인 저장분을 열면 E-02.4 상태(awaitingPosterRestore 기존 테스트 통과)이고, 행 textContent에 마침표가 없다(landingOverlay 기존 단언 통과)."
     verifiable: true
     measurable_via: "landingOverlay · landingPaintGate · backToLandingPreservesDoc · landingFreshStart 상호작용 테스트"
   - id: acceptance-9
@@ -181,7 +181,7 @@ success_criteria:
     verifiable: true
     measurable_via: "상호작용 테스트 + 헤드리스 측정(두 상태의 오버레이 scrollHeight · clientHeight, 전시 rect 높이)"
   - id: acceptance-10
-    description: "constraint-11: 인식 중 주 CTA가 '티켓 인식 중…' · aria-busy='true'이고 '포스터 업로드' · '포스터 없이 직접 입력' 버튼이 disabled다. 랜딩에서 연 인식의 안내 일곱 문구(실패 · 요청 많음 · 형식 · HEIC · 용량 · 인식된 정보 없음 · 영화 정보 못 찾음) 각각이 같은 자리 요소(위치 표시 자리)에 3000ms 보이다 사라지고 그동안 위치 표시가 없다. 그 자리 요소는 전시 컨테이너 안에 있고 DOM 순서상 주 CTA보다 앞이며, 헤드리스 rect로 아래 끝이 주 CTA 윗변보다 위다. 동작 줄이기 격자에서는 같은 안내가 격자 스크롤 영역 밖 요소에 뜬다. 인식 성공이면 랜딩이 걷히고 자동입력 배너가 보이는 편집 화면(E-05), 인식된 정보 없음이면 빈 편집 화면(E-02)이 된다. 형식 · HEIC · 용량 문구가 constraint-11의 새 문구이고, '지금 요청이 많아요…' · '인식된 정보가 없어요…'는 그대로다. 편집 화면에서 연 인식은 문구만 새 것으로 바뀐 채 notify 경로로 뜬다."
+    description: "constraint-11: 인식 중 주 CTA가 '티켓 인식 중…' · aria-busy='true'이고 '포스터 업로드' · '포스터 없이 직접 입력' 버튼이 disabled다. 랜딩에서 연 인식의 안내 여덟 문구(실패 · 요청 많음 · 형식 · HEIC · 용량 · 인식된 정보 없음 · 영화 정보 못 찾음 · 제목으로 검색, 뒤의 둘은 문구 그대로) 각각이 같은 자리 요소(위치 표시 자리)에 3000ms 보이다 사라지고 그동안 위치 표시가 없다. 그 자리 요소는 전시 컨테이너 안에 있고 DOM 순서상 주 CTA보다 앞이며, 헤드리스 rect로 아래 끝이 주 CTA 윗변보다 위다. 동작 줄이기 격자에서는 같은 안내가 격자 스크롤 영역 밖 요소에 뜬다. 오류 안내 요소는 --pr-warn 계열 토큰 클래스를 쓰고(소스 · 클래스 단언), 상시 마운트 role=status 리전에 같은 글자가 실리며, 실패 뒤 주 CTA가 다시 '티켓 스크린샷으로 자동입력' · disabled 아님으로 돌아온다. 인식 성공이면 랜딩이 걷히고 자동입력 배너가 보이는 편집 화면(E-05), 인식된 정보 없음이면 빈 편집 화면(E-02)이 된다. 형식 · HEIC · 용량 문구가 constraint-11의 새 문구이고, '지금 요청이 많아요…' · '인식된 정보가 없어요…'는 그대로다. 편집 화면에서 연 인식은 문구만 새 것으로 바뀐 채 notify 경로로 뜬다."
     verifiable: true
     measurable_via: "ocrFailureFlow · landingHeroMood · mobileEditorShellOcrEntryConsolidation 상호작용 테스트"
   - id: acceptance-11
@@ -189,7 +189,7 @@ success_criteria:
     verifiable: true
     measurable_via: "git grep 착수 base · HEAD 비교 + git diff <착수 base> -- __tests__ 에서 해당 문자열이 든 '-' 줄 0건(새 + 줄은 허용) + 착수 base의 잠금 표 첫 행 9개 테스트 결과"
   - id: acceptance-12
-    description: "constraint-13: COPY_TONE_GUIDE 잠금 표의 각 행 테스트 목록이 git grep -l 결과와 같고, #826에 바뀐 요구 1 코멘트가 있으며, src에 '자동 전시 정지' · '자동 전시 재개' · CAROUSEL_SLOW_INTERVAL_MS · LONG_PRESS 늦추기(slowed) 상태 · 3500 간격이 남아 있지 않다."
+    description: "constraint-13: COPY_TONE_GUIDE 잠금 표의 각 행 테스트 목록이 git grep -l 결과와 같고, #826에 바뀐 요구 1 코멘트가 있으며, src에 '자동 전시 정지' · '자동 전시 재개' · CAROUSEL_SLOW_INTERVAL_MS · 늦추기 상태(slowed · setSlowed)가 없고 CAROUSEL_INTERVAL_MS가 4000이다. LONG_PRESS_MS(350, 길게 누른 뒤 진입 막기)는 constraint-4대로 남는다."
     verifiable: true
     measurable_via: "잠금 표 행별 git grep -l 대조 + gh issue view 826 코멘트 + git grep 0건"
   - id: acceptance-13
@@ -222,7 +222,7 @@ context:
     - "src/components/v2/AppFooter.tsx(ambient 고지 · FontCredit · GithubLink)"
     - "src/components/v2/OcrUploadCard.tsx(showToast 3000ms · validateFile 문구 · notify 경로 · isProcessing)"
     - "src/utils/layouts.ts(label), src/components/LayoutPicker.tsx(LayoutStrip aria-label · 표시 label)"
-    - "src/components/v2/MobileEditorShell.tsx(restoreTitle · onEnterMood · Landing mode) — 소비만, 셸 구조 변경 없음"
+    - "src/components/v2/MobileEditorShell.tsx(restoreTitle · onEnterMood · Landing mode 소비, posterDropProps · posterDragOver 제거만 — constraint-18)"
     - "src/pages/_document.tsx · src/styles/globals.css(has-draft 페인트 게이트)"
     - "테스트: landingHeroMood · landingOverlay · landingFreshStart · landingMoodGalleryTapTargets · landingPaintGate · appFooterNotice · ocrFailureFlow · backToLandingPreservesDoc"
     - "scripts/measure-chrome.mjs(landing · posterless · frameFit 축), docs/COPY_TONE_GUIDE.md"
@@ -271,7 +271,7 @@ metadata:
   interview_rounds: 1
   questions_asked: 0
   scoring_isolated: false
-  blindspot_pass: "main-context: 근거 원본 · 현재 코드 대조로 D18 두 갈림과 가정 셋(constraint-5 키보드 도달 · constraint-8 caption 제거 · constraint-11 격자 모드 안내 자리) 도출, requirement-gap 1 · 2라운드 지적 반영"
+  blindspot_pass: "main-context: 근거 원본 · 현재 코드 대조로 D18 두 갈림과 가정 셋(constraint-5 키보드 도달 · constraint-8 caption 제거 · constraint-11 격자 모드 안내 자리) 도출, requirement-gap 1~3라운드 지적 반영"
   generated_by: thinking-tools/build-spec
   source_session: "2026-11-22 #826 S5 Seed 작성 세션(/goal)"
 ---
