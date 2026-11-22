@@ -5,7 +5,7 @@
  *  1. 탭 → 패널 입력(16px)이 뜨고, 타이핑이 movieInfo에 반영된다(티켓이 텍스트를 렌더).
  *  2. ‹ › 순회는 현재 무드 DOM에 실제 존재하는 필드(data-field-tap 앵커)만 돈다 —
  *     minimal은 bookingNo 미렌더(MOOD_EXCLUDED_FIELDS)라 순회에 안 나온다.
- *  3. 닫기 → 패널 닫힘. 표시는 패널이 아니라 정보 목록 눈으로만 바꾼다(inPlacePanelS3가 커버).
+ *  3. 닫기 · 역방향 ‹ · 출연 원문 입력은 inPlacePanelS3가 Seed acceptance 단위로 잡는다(#826 S3에서 옮김).
  *  4. 빈 항목(ghost, #826 S2 constraint-8): 정보 모드 자동 on · 사진/디자인 모드는 메뉴 '빈 항목 표시' 스위치 ·
  *     편집 중 강제 on — 스위치가 꺼져 있어도 편집에 들어가면 빈 필드 placeholder가 탭 타깃으로 남는다.
  *
@@ -97,28 +97,6 @@ describe('인플레이스 필드 에디터 (#354)', () => {
     expect(screen.getByRole('textbox', { name: '제목' })).toBeTruthy(); // 순환 복귀
   });
 
-  test('prev가 역방향으로 돈다 (제목 → 이전 = 마지막 렌더 필드)', async () => {
-    render(<Harness />);
-    fireEvent.click(screen.getByText('seed'));
-
-    fireEvent.click(await screen.findByRole('button', { name: '제목 편집' }));
-    await screen.findByRole('textbox', { name: '제목' });
-    fireEvent.click(screen.getByRole('button', { name: '이전 항목' }));
-    // 제목이 아닌 다른 필드로 이동했다(순환) — 정확한 타깃은 무드 구성에 따르므로 이탈만 확인.
-    expect(screen.queryByRole('textbox', { name: '제목' }) === null).toBe(true);
-  });
-
-  test('닫기 → 패널 닫힘', async () => {
-    render(<Harness />);
-    fireEvent.click(screen.getByText('seed'));
-
-    fireEvent.click(await screen.findByRole('button', { name: '극장 편집' }));
-    await screen.findByRole('textbox', { name: '극장' });
-    fireEvent.click(within(screen.getByRole('group', { name: '극장 입력' })).getByRole('button', { name: '닫기' }));
-    expect(screen.queryByRole('textbox', { name: '극장' }) === null).toBe(true);
-    expect(screen.queryByRole('group', { name: '극장 입력' }) === null).toBe(true);
-  });
-
   test('prev/next 순회 경유는 숨긴 필드 가시성을 켜지 않는다 (PR #359 리뷰 P1)', async () => {
     render(<Harness />);
     fireEvent.click(screen.getByText('seed'));
@@ -133,23 +111,6 @@ describe('인플레이스 필드 에디터 (#354)', () => {
       fireEvent.click(screen.getByRole('button', { name: '다음 항목' }));
     }
     expect(screen.getByTestId('vis-actors').textContent).toBe('false');
-  });
-
-  test('출연은 패널 입력 하나만 뜨고, 타이핑이 movieInfo.actors에 반영된다 (#447)', async () => {
-    render(<Harness />);
-    fireEvent.click(screen.getByText('seed'));
-
-    // actors는 비어 있어 ghost off에선 탭 타깃이 없다 — 극장 편집으로 먼저 진입해 ghostEff를 켠다.
-    fireEvent.click(await screen.findByRole('button', { name: '극장 편집' }));
-    await screen.findByRole('textbox', { name: '극장' });
-    fireEvent.click(await screen.findByRole('button', { name: '출연 편집' }));
-
-    // 티켓 위 투명 입력은 없다 — 패널 입력 하나만 존재.
-    const boxes = await screen.findAllByRole('textbox', { name: '출연' });
-    expect(boxes).toHaveLength(1);
-
-    fireEvent.change(boxes[0], { target: { value: '배우A, 배우B' } });
-    expect(screen.getByTestId('movie-actors').textContent).toBe('배우A, 배우B');
   });
 
   test('편집 중 ghost 강제 on — "빈 항목 표시" off(디자인 모드)여도 빈 필드 탭 타깃이 남는다', async () => {
