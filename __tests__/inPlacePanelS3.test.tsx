@@ -360,6 +360,10 @@ describe('필드별 패널 내용 · 16px · 표시 토글 없음 (acceptance-8 
 
     p = await openRow('출연');
     expect((within(p).getByRole('textbox', { name: '출연' }) as HTMLInputElement).value).toBe('배우하나, 배우둘, 배우셋, 배우넷, 배우다섯');
+    // 티켓 위 투명 입력 없이 패널 입력 하나이고(#447), 타이핑이 그대로 저장된다.
+    expect(screen.getAllByRole('textbox', { name: '출연' }).length).toBe(1);
+    fireEvent.change(within(p).getByRole('textbox', { name: '출연' }), { target: { value: '배우A, 배우B' } });
+    expect(probe('actors')).toBe('배우A, 배우B');
   });
 
   test('f_logos · f_image_remove — 로고는 글자 입력 + "이미지로", 이미지가 있으면 이미지 행(제거 · 교체), 제거하면 글자 입력이 돌아온다', async () => {
@@ -545,6 +549,52 @@ describe('필드가 바뀔 때 일시 상태 · 순회 경계', () => {
     expect(dec.getAttribute('enterkeyhint')).toBe('done');
     fireEvent.keyDown(dec, { key: 'Enter' });
     expect(cur()).toBe('closed');
+  });
+
+  test('평점 숫자를 누르면 그 자리에 소수 입력이 포커스를 받고, Escape · 포커스 잃음이면 숫자로 접힌다', () => {
+    render(<StepHarness start="rating" />);
+    fireEvent.click(screen.getByRole('button', { name: '평점 소수 입력 토글' }));
+    const dec = screen.getByRole('spinbutton', { name: '평점 직접 입력 (0.1 단위)' });
+    expect(document.activeElement === dec).toBe(true);
+    fireEvent.keyDown(dec, { key: 'Escape' });
+    expect(screen.queryAllByRole('spinbutton').length).toBe(0);
+    expect(cur()).toBe('rating'); // Escape는 입력만 접고 필드는 그대로
+    fireEvent.click(screen.getByRole('button', { name: '평점 소수 입력 토글' }));
+    fireEvent.blur(screen.getByRole('spinbutton', { name: '평점 직접 입력 (0.1 단위)' }));
+    expect(screen.queryAllByRole('spinbutton').length).toBe(0);
+  });
+
+  test('스테퍼: 주 버튼 누름 + 뒤따르는 click은 한 칸이고, 오른쪽 클릭은 올리지도 반복하지도 않는다', async () => {
+    render(<StepHarness start="rating" />);
+    const plus = screen.getByRole('button', { name: '평점 0.1 올리기' });
+    const num = () => screen.getByRole('button', { name: '평점 소수 입력 토글' }).textContent;
+    fireEvent.pointerDown(plus, { button: 0 });
+    fireEvent.pointerUp(plus, { button: 0 });
+    fireEvent.click(plus);
+    expect(num()).toBe('0.1');
+    fireEvent.pointerDown(plus, { button: 2 });
+    fireEvent.contextMenu(plus);
+    await act(async () => { await new Promise((r) => setTimeout(r, 600)); });
+    expect(num()).toBe('0.1');
+  });
+
+  test('목록을 연 채로 다른 필드에 갔다 돌아오면 목록은 닫혀 있다', () => {
+    render(<StepHarness start="releaseDate" />);
+    fireEvent.click(screen.getByRole('button', { name: /^개봉일 표기, 지금 / }));
+    expect(screen.queryAllByRole('listbox').length).toBe(1);
+    navBtn('다음 항목');
+    navBtn('이전 항목');
+    expect(cur()).toBe('releaseDate');
+    expect(screen.queryAllByRole('listbox').length).toBe(0);
+  });
+
+  test('정밀도가 연이면 네 표기가 같은 연도라 표기 버튼이 꺼진다', () => {
+    render(<StepHarness start="releaseDate" />);
+    fireEvent.click(screen.getByRole('radio', { name: '연' }));
+    const btn = screen.getByRole('button', { name: /^개봉일 표기, 지금 / }) as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+    fireEvent.click(screen.getByRole('radio', { name: '연·월' }));
+    expect((screen.getByRole('button', { name: /^개봉일 표기, 지금 / }) as HTMLButtonElement).disabled).toBe(false);
   });
 
   test('평점 소수 입력은 다른 필드에 다녀오면 접혀 있다', () => {
