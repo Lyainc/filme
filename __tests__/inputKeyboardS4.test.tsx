@@ -265,6 +265,29 @@ describe('constraint-6 history — 뒤로 = 닫기, 다른 경로는 항목을 �
   });
 });
 
+describe('history 정리 · 패널 여백 탭', () => {
+  test('열린 채로 셸이 떠나면(언마운트) 넣은 항목을 소비해 뒤로가 빈 항목에 걸리지 않는다', async () => {
+    const { unmount } = render(<Harness />);
+    fireEvent.click(screen.getByText('seed'));
+    const { state } = baseEntry();
+    await openRow('극장');
+    expect(onPanelEntry()).toBe(true);
+    unmount();
+    await tick();
+    expect(historyState()).toEqual(state);
+  });
+
+  test('패널 빈 여백을 눌러도 입력이 포커스를 잃지 않는다(포인터 기본 동작 막기), 입력 누름은 그대로', async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByText('seed'));
+    const panel = await openRow('극장');
+    const blank = fireEvent.pointerDown(panel);
+    expect(blank).toBe(false); // preventDefault됨
+    const onInput = fireEvent.pointerDown(within(panel).getByRole('textbox', { name: '극장' }));
+    expect(onInput).toBe(true);
+  });
+});
+
 describe('constraint-7 — 종료가 아닌 것 (acceptance-7)', () => {
   async function openKept(layout?: 'criterion') {
     render(<Harness layout={layout} />);

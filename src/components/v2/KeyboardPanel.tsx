@@ -1,6 +1,8 @@
 import { useRef, type ReactNode, type RefObject } from 'react';
 import { keyboardPanelStyle, useKeyboardDismiss } from '@/hooks/useInputKeyboard';
 
+const INTERACTIVE = 'input, textarea, select, button, a, [role="listbox"], [role="option"], [tabindex]';
+
 /** 키보드를 내리지 않게 포인터 누름에서 포커스 이동을 막는다(‹ › · 닫기 · 칩). */
 export const keepFocus = (e: { preventDefault: () => void }) => e.preventDefault();
 
@@ -53,6 +55,11 @@ export function KeyboardPanel({
         {...data}
         className="fixed inset-x-0 z-50 border-t border-hair-strong bg-s1 px-3"
         onBlur={onBlur}
+        // 패널 빈 여백 · 이름표를 눌러도 입력이 포커스를 잃지 않게 한다 — 잃으면 키보드만 내려가고 패널은 남는다. 입력 · 버튼 ·
+        // 목록은 각자 포커스를 다룬다(버튼은 keepFocus, 목록 항목은 mousedown 막기).
+        onPointerDown={(e) => {
+          if (!(e.target as Element).closest(INTERACTIVE)) e.preventDefault();
+        }}
         // 슬라이드 없이 페이드만(#354 시안 §5) — reduced-motion은 전역 가드가 duration을 죽인다.
         style={{ ...keyboardPanelStyle(inset), animation: 'screen-in .18s ease-out' }}
       >
