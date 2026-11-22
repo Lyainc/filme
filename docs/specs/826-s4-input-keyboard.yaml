@@ -37,10 +37,10 @@ brownfield: true
 refine_generation: 0
 
 lifecycle:
-  state: paused
+  state: active
   outcome: null
-  reason: "Seed 초안 작성 완료, D17-1 · D17-2 결정과 소유자 승인 대기. 응답이 없으면 승인이 아니다."
-  approved_by: "소유자 /goal 지시(2026-11-22): '소유자가 승인하면 lifecycle을 active로 바꾼다. 응답이 없으면 승인이 아니고, 그 전에는 paused로 둔다.'"
+  reason: "소유자가 D17-1 A · D17-2 A를 고르고 Seed를 승인해 active로 바꿨다."
+  approved_by: "소유자 응답(2026-11-22): D17-1 'A · 배율 상한 (Recommended)', D17-2 'A · S4에 넣기 (Recommended)', Seed 승인 '승인 · active로'"
   evidence:
     commit: null
     items: []
