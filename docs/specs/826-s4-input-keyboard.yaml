@@ -73,7 +73,7 @@ constraints:
     rationale: "D12 재사용 · 위험 항목(키보드 높이는 기기 · 입력 방식마다 다름, 고정값 금지), K-01 note '실제는 visualViewport로', CLAUDE.md 셸 한 벌 · fixed 좌표는 프레임 기준."
   - id: constraint-5
     type: technical
-    description: "티켓 확대(③): 입력 중 래퍼 transform 배율은 min(1.18, 무대 폭 ÷ 맞춤 폭)이다(지금 1.08, D17-1 A). 그래서 세로 무드는 1.18, 맞춤 폭이 무대 폭과 같은 가로 무드(editorial · 35mm-landscape)는 1.0이고 확대된 티켓 가로가 #phone-frame 밖으로 나가지 않는다. 세로 위치는 고른 필드의 아래 끝이 패널 윗변 30px 위에 오도록 위로만 옮긴다(translateY ≤ 0, 티켓을 맞춤 위치보다 아래로 내리지 않는다). 필드 전환 · 키보드 높이 변화에만 다시 계산하고 타이핑마다 흔들지 않는다. 선택 표시(C-SEL)는 1.18배에서도 필드와 맞는다. 전환은 240ms(K-01 흐름), 동작 줄이기면 전환 없음."
+    description: "티켓 확대(③): 입력 중 래퍼 transform 배율은 min(1.18, 무대 폭 ÷ 맞춤 폭)이다(지금 1.08, D17-1 A). 그래서 무대 높이가 먼저 차 맞춤 폭에 18% 넘게 여유가 있는 세로 무드는 1.18(400×675 프레임), 여유가 그보다 적으면 그 비율까지(393×852 세로 무드 실측 1.095), 맞춤 폭이 무대 폭과 같은 가로 무드(editorial · 35mm-landscape)는 1.0이고 확대된 티켓 가로가 #phone-frame 밖으로 나가지 않는다. 세로 위치는 고른 필드의 아래 끝이 패널 윗변 30px 위에 오도록 위로만 옮긴다(translateY ≤ 0, 티켓을 맞춤 위치보다 아래로 내리지 않는다). 필드 전환 · 키보드 높이 변화에만 다시 계산하고 타이핑마다 흔들지 않는다. 선택 표시(C-SEL)는 1.18배에서도 필드와 맞는다. 전환은 240ms(K-01 흐름), 동작 줄이기면 전환 없음."
     hard: true
     rationale: "K-01 ②(1.18배 · 고른 필드가 패널 위), D12 '고른 필드가 패널 30px 위', frames.js kb() scale(1.18). 가로 무드 처리는 소유자 결정 D17-1 A(2026-11-22)."
   - id: constraint-6
@@ -136,7 +136,7 @@ success_criteria:
     verifiable: true
     measurable_via: "유닛 테스트 5건 + git diff <착수 base> -- src + 줄 grep(requestAnimationFrame · vw · vh · rail: · useMatchMedia, 300/330 상수) 0건"
   - id: acceptance-4
-    description: "constraint-5: 입력 중 래퍼 transform에 세로 무드는 scale(1.18), 가로 무드는 scale(1)(D17-1 A, 무대 폭 ÷ 맞춤 폭 = 1)이 들어가고 translateY ≤ 0이다. 닫힌 뒤에는 translateY(0) scale(1)이다. 타이핑으로 값만 바뀔 때 translateY가 변하지 않는다."
+    description: "constraint-5: 입력 중 래퍼 transform에 무대 여유가 18% 넘는 세로 무드는 scale(1.18), 가로 무드는 scale(1)(D17-1 A, 무대 폭 ÷ 맞춤 폭 = 1)이 들어가고 translateY ≤ 0이다. 닫힌 뒤에는 translateY(0) scale(1)이다. 타이핑으로 값만 바뀔 때 translateY가 변하지 않는다."
     verifiable: true
     measurable_via: "상호작용 테스트(세로 · 가로 무드 각 1, 타이핑 전후 transform 비교, 닫힘 후 항등)"
   - id: acceptance-5
