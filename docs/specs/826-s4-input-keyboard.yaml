@@ -73,9 +73,9 @@ constraints:
     rationale: "D12 재사용 · 위험 항목(키보드 높이는 기기 · 입력 방식마다 다름, 고정값 금지), K-01 note '실제는 visualViewport로', CLAUDE.md 셸 한 벌 · fixed 좌표는 프레임 기준."
   - id: constraint-5
     type: technical
-    description: "티켓 확대(③): 입력 중 래퍼 transform 배율은 1.18(지금 1.08)이다. 단 D17-1 결정을 따른다 — 추천안 A면 배율 = min(1.18, 무대 폭 ÷ 맞춤 폭)이라 세로 무드는 1.18, 맞춤 폭이 무대 폭과 같은 가로 무드(editorial · 35mm-landscape)는 1.0이고 확대된 티켓 가로가 #phone-frame 밖으로 나가지 않는다. 세로 위치는 고른 필드의 아래 끝이 패널 윗변 30px 위에 오도록 위로만 옮긴다(translateY ≤ 0, 티켓을 맞춤 위치보다 아래로 내리지 않는다). 필드 전환 · 키보드 높이 변화에만 다시 계산하고 타이핑마다 흔들지 않는다. 선택 표시(C-SEL)는 1.18배에서도 필드와 맞는다. 전환은 240ms(K-01 흐름), 동작 줄이기면 전환 없음."
+    description: "티켓 확대(③): 입력 중 래퍼 transform 배율은 min(1.18, 무대 폭 ÷ 맞춤 폭)이다(지금 1.08, D17-1 A). 그래서 세로 무드는 1.18, 맞춤 폭이 무대 폭과 같은 가로 무드(editorial · 35mm-landscape)는 1.0이고 확대된 티켓 가로가 #phone-frame 밖으로 나가지 않는다. 세로 위치는 고른 필드의 아래 끝이 패널 윗변 30px 위에 오도록 위로만 옮긴다(translateY ≤ 0, 티켓을 맞춤 위치보다 아래로 내리지 않는다). 필드 전환 · 키보드 높이 변화에만 다시 계산하고 타이핑마다 흔들지 않는다. 선택 표시(C-SEL)는 1.18배에서도 필드와 맞는다. 전환은 240ms(K-01 흐름), 동작 줄이기면 전환 없음."
     hard: true
-    rationale: "K-01 ②(1.18배 · 고른 필드가 패널 위), D12 '고른 필드가 패널 30px 위', frames.js kb() scale(1.18). 가로 무드 처리는 D17-1(결정 대기, 추천 A)."
+    rationale: "K-01 ②(1.18배 · 고른 필드가 패널 위), D12 '고른 필드가 패널 30px 위', frames.js kb() scale(1.18). 가로 무드 처리는 소유자 결정 D17-1 A(2026-11-22)."
   - id: constraint-6
     type: technical
     description: "종료 경로 넷(④, K-08): (a) 패널 '닫기' 버튼 (b) 키보드 내림 — 패널 입력의 focusout에서 포커스가 패널 · 티켓 필드 · 패널이 연 목록 어디로도 가지 않을 때(relatedTarget 없음 = iOS 키보드 '완료' · 키보드 내리기) (c) 바깥 탭 — 패널 · 티켓 필드가 아닌 곳 (d) 뒤로 — 패널을 열 때 history 항목을 하나 넣고 popstate로 닫는다. 네 경로 모두 결과가 같다: 들어오기 전 도크 모드와 디자인 도구 그대로, 티켓은 맞춤 배율(transform 항등), 입력값 유지(되돌리지 않음), 필수 누락 바로가기로 연 필드는 다시 숨김(#776). 뒤로가 아닌 경로로 닫으면 넣었던 history 항목을 소비해 뒤로를 한 번 더 눌러야 하는 빈 항목이 남지 않는다. 결과 화면 history(useResultView)와 겹치지 않는다."
@@ -88,9 +88,9 @@ constraints:
     rationale: "D12 '글꼴 목록이 키보드 자리에 열리는 건 키보드를 바꿔 끼우는 감각 · 입력란을 다시 누르면 키보드가 돌아와요', S3 constraint-3 순회."
   - id: constraint-8
     type: technical
-    description: "% 직접 입력(K-03)은 D17-2 결정을 따른다. 추천안 A면 디자인 도구의 % 값(BrightnessSlider 텍스트 입력, 여섯 곳 공통)을 누르면 [이름][숫자 입력 16px · inputmode=numeric][닫기] 한 줄 패널이 constraint-3 · 4 규칙으로 키보드에 붙고(‹ › 없음, 티켓 확대 없음), 범위 밖 값은 지금처럼 0~100으로 조용히 맞추며, constraint-6 네 경로 모두 그 디자인 도구로 돌아간다. B면 K-03은 범위 밖이고 도크 안 % 입력은 지금 그대로다."
+    description: "% 직접 입력(K-03, D17-2 A): 디자인 도구의 % 값(BrightnessSlider 텍스트 입력, 여섯 곳 공통)을 누르면 [이름][숫자 입력 16px · inputmode=numeric][닫기] 한 줄 패널이 constraint-3 · 4 규칙으로 키보드에 붙고(‹ › 없음, 티켓 확대 없음), 범위 밖 값은 지금처럼 0~100으로 조용히 맞추며, constraint-6 네 경로 모두 그 디자인 도구로 돌아간다."
     hard: true
-    rationale: "07-seeds S4 입력 프레임 K-01~K-08, K-03 '닫으면 들어오기 전 도크 도구로(③)'. S3 constraint-2 목록 밖이라 소유자 결정 D17-2(결정 대기, 추천 A)."
+    rationale: "07-seeds S4 입력 프레임 K-01~K-08, K-03 '닫으면 들어오기 전 도크 도구로(③)'. S3 constraint-2 목록 밖이라 소유자 결정 D17-2 A(2026-11-22)로 넣었다."
   - id: constraint-9
     type: technical
     description: "요구 3 · 2 유지: 패널 안 모든 입력은 글자 16px 이상이고 슬라이더 트랙 hit 32는 줄지 않는다(S3 constraint-10)."
@@ -113,7 +113,7 @@ constraints:
     rationale: "#826 금지 목록, COPY_TONE_GUIDE."
   - id: constraint-13
     type: other
-    description: "착수 조건: 이 Seed가 소유자 승인으로 active이고 D17-1 · D17-2 결정이 constraint-5 · 8에 반영돼 있다. 구현은 main 최신에서 워크트리 .claude/worktrees/826-s4 · 브랜치 feat/826-s4-keyboard로 하고, 검증된 단위마다 Conventional Commits로 커밋 · push한다. PR · 머지는 소유자 승인 없이 하지 않는다. 진행 기록은 Seed가 아니라 #826 코멘트에 남긴다."
+    description: "착수 조건: 이 Seed가 소유자 승인으로 active이고 D17-1 A · D17-2 A가 constraint-5 · 8에 반영돼 있다(2026-11-22 충족). 구현은 main 최신에서 워크트리 .claude/worktrees/826-s4 · 브랜치 feat/826-s4-keyboard로 하고, 검증된 단위마다 Conventional Commits로 커밋 · push한다. PR · 머지는 소유자 승인 없이 하지 않는다. 진행 기록은 Seed가 아니라 #826 코멘트에 남긴다."
     hard: true
     rationale: "P1 · P21, CLAUDE.md Git 규약, 세션 goal(2026-11-22)."
   - id: constraint-14
@@ -136,7 +136,7 @@ success_criteria:
     verifiable: true
     measurable_via: "유닛 테스트 5건 + git diff <착수 base> -- src + 줄 grep(requestAnimationFrame · vw · vh · rail: · useMatchMedia, 300/330 상수) 0건"
   - id: acceptance-4
-    description: "constraint-5: 입력 중 래퍼 transform에 세로 무드는 scale(1.18), D17-1 결정대로 가로 무드는 정해진 배율이 들어가고 translateY ≤ 0이다. 닫힌 뒤에는 translateY(0) scale(1)이다. 타이핑으로 값만 바뀔 때 translateY가 변하지 않는다."
+    description: "constraint-5: 입력 중 래퍼 transform에 세로 무드는 scale(1.18), 가로 무드는 scale(1)(D17-1 A, 무대 폭 ÷ 맞춤 폭 = 1)이 들어가고 translateY ≤ 0이다. 닫힌 뒤에는 translateY(0) scale(1)이다. 타이핑으로 값만 바뀔 때 translateY가 변하지 않는다."
     verifiable: true
     measurable_via: "상호작용 테스트(세로 · 가로 무드 각 1, 타이핑 전후 transform 비교, 닫힘 후 항등)"
   - id: acceptance-5
@@ -152,9 +152,9 @@ success_criteria:
     verifiable: true
     measurable_via: "상호작용 테스트(경우별 패널 존재 · history.length)"
   - id: acceptance-8
-    description: "constraint-8: D17-2가 A면 % 값을 누를 때 한 줄 패널(이름 · 숫자 입력 16px · 닫기)이 키보드에 붙고 네 종료 경로 뒤 같은 디자인 도구로 돌아오며 120 입력이 100으로 맞춰진다. B면 BrightnessSlider와 그 테스트가 착수 base와 같다."
+    description: "constraint-8: % 값을 누르면 한 줄 패널(이름 · 숫자 입력 16px · 닫기)이 키보드에 붙고 네 종료 경로 뒤 같은 디자인 도구로 돌아오며 120 입력이 100으로 맞춰진다."
     verifiable: true
-    measurable_via: "A: 상호작용 테스트(패널 구조 · 종료 4 · 클램프), B: git diff --stat <착수 base> -- src/components/v2/pickers/BrightnessSlider.tsx 0줄"
+    measurable_via: "상호작용 테스트(패널 구조 · 종료 4 · 클램프)"
   - id: acceptance-9
     description: "constraint-10: bun scripts/measure-chrome.mjs --theme dark와 --theme light가 prod 빌드 대상에서 exit 0이고 dock 249 / 프리뷰 219×350이 그대로다(바뀌었다면 BASELINE과 CLAUDE.md가 같은 커밋에서 고쳐져 있다)."
     verifiable: true
@@ -182,7 +182,7 @@ success_criteria:
   - id: acceptance-15
     description: "constraint-9: 패널 안 모든 입력이 16px 이상 글자 클래스를 쓰고 슬라이더 트랙 hit 32 테스트가 통과한다."
     verifiable: true
-    measurable_via: "기존 inPlacePanelS3 '모든 입력이 16px' · 슬라이더 테스트 통과(D17-2 A면 % 패널 입력 포함)"
+    measurable_via: "기존 inPlacePanelS3 '모든 입력이 16px' · 슬라이더 테스트 통과(% 패널 입력 포함)"
 
 context:
   existing_stack: ["Next.js 16 Pages Router", "React 19", "Tailwind CSS v3 + cva · cn", "bun test + happy-dom + testing-library", "puppeteer-core 하네스(scripts/measure-chrome.mjs)", "iOS Simulator + Appium(scripts/ios-sim)"]
@@ -234,8 +234,8 @@ clarity_breakdown:
   context: 0.9
 
 metadata:
-  interview_rounds: 0
-  questions_asked: 0
+  interview_rounds: 1
+  questions_asked: 3
   scoring_isolated: false
   blindspot_pass: "main-context: 근거 원본 대조로 D17 두 갈림 도출"
   generated_by: thinking-tools/build-spec
