@@ -37,13 +37,81 @@ brownfield: true
 refine_generation: 0
 
 lifecycle:
-  state: active
-  outcome: null
-  reason: "소유자가 S3 Seed를 승인하고 active로 바꾸라고 지시했다."
-  approved_by: "소유자 응답(2026-11-21): '시드 승인했고 active로 바꿔줘'"
+  state: closed
+  outcome: completed
+  reason: "PR #842가 main에 rebase 머지됐고(644b877a, 검증한 4eb4abbe와 같은 트리) constraint-1~14 · acceptance-1~20 근거가 그 트리에 있다."
+  approved_by: "소유자 응답(2026-11-22 세션 종료): S3 Seed '머지 뒤 completed로 닫기'"
   evidence:
-    commit: null
-    items: []
+    commit: 644b877a90a1fd06464dd0a978ae806f45196cc1
+    items:
+      - id: constraint-1
+        refs: ["git diff a92d5ef3..644b877a -- src/components/moods src/components/TicketRenderer.tsx src/utils/captureToImage.ts 0줄"]
+      - id: constraint-2
+        refs: ["git diff a92d5ef3..644b877a -- Landing · ImageCropModal · EditorMenu · ResultPanel · ResultStage 0줄, InPlaceFieldEditor visualViewport · 리프트 · 바깥 탭 닫기 코드 유지(requirement-gap 1라운드 대조)"]
+      - id: constraint-3
+        refs: ["src/components/v2/InPlaceFieldEditor.tsx 첫 줄 [‹][입력][›][닫기] · onEnter, __tests__/inPlacePanelS3.test.tsx(acceptance-2 · 3)"]
+      - id: constraint-4
+        refs: ["src/components/v2/InPlaceFieldEditor.tsx SelectionMarks(래퍼 직속, 캡처 트리 밖), __tests__/inPlacePanelS3.test.tsx('투명 입력과 떠 있는 필드 편집 도구가 없고')"]
+      - id: constraint-5
+        refs: ["__tests__/inPlacePanelS3.test.tsx(f_kobis · 개봉일 D16 3-A · 평점 D16 4-A · 러닝타임 · 관람 시간 · 출연 · f_logos), __tests__/inPlaceFontPicker.test.tsx"]
+      - id: constraint-6
+        refs: ["__tests__/inPlaceFontPicker.test.tsx(‹ › 9종 · 미리보기 · 견본 · APG listbox · 이미지 서명이면 글꼴 줄 없음), src/components/moods/_shared.tsx userTextFont 읽기만"]
+      - id: constraint-7
+        refs: ["__tests__/inPlacePanelS3.test.tsx(표시 토글 없음 · 재개봉일 예외), __tests__/mobileEditorShellFieldCoverage.test.tsx(행 탭 표시 불변)"]
+      - id: constraint-8
+        refs: ["src/utils/fieldHitArea.ts, src/components/v2/MobileEditorShell.tsx handleTicketClickCapture, __tests__/fieldHitArea.test.ts, __tests__/inPlacePanelS3.test.tsx(hit 44 셸)"]
+      - id: constraint-9
+        refs: ["__tests__/doneFailureInfoMode.test.tsx(#776 재숨김), __tests__/mobileEditorShellFieldCoverage.test.tsx(직접 탭 재표시)"]
+      - id: constraint-10
+        refs: ["__tests__/inPlacePanelS3.test.tsx(모든 입력 text-title · 슬라이더 h-8), 헤드리스 표본 입력 16px"]
+      - id: constraint-11
+        refs: ["__tests__/inPlacePanelS3.test.tsx(toolbar · radiogroup · aria-checked · rounded-chip/full 없음 · select 0), git diff a92d5ef3..644b877a + 줄 gradient · glow · pill 0건(테스트 부정 단언 제외)"]
+      - id: constraint-12
+        refs: ["docs/COPY_TONE_GUIDE.md 잠금 표 KOBIS 행, src/hooks/useKobisSearch.ts DEFAULT_MESSAGES, __tests__/titleSheetSearch.test.tsx, __tests__ grep 'Loading…' · '제목을 다시 확인해 주세요' 0건"]
+      - id: constraint-13
+        refs: ["git diff + 줄 vw · vh · rail: · useMatchMedia 0건, PR #842 Chrome harness(dark · light) 통과, prod measure-chrome e3159810 dock 249 / 프리뷰 219×350"]
+      - id: constraint-14
+        refs: ["커밋 Conventional Commits, PR #842 rebase 머지(소유자 지시 2026-11-22), 결정 근거 15e39c60"]
+      - id: acceptance-1
+        refs: ["PR #842 CI(typecheck · lint · bun test --timeout 30000) 통과, 로컬 4eb4abbe bun run test 1394 pass"]
+      - id: acceptance-2
+        refs: ["__tests__/inPlacePanelS3.test.tsx('티켓 필드 탭과 정보 목록 행 탭이 같은 패널' · '투명 입력과 떠 있는 필드 편집 도구가 없고')"]
+      - id: acceptance-3
+        refs: ["__tests__/inPlacePanelS3.test.tsx(acceptance-3 묶음 · 순회 목록 경계), __tests__/inPlaceFieldEditor.test.tsx(minimal 순회 · 가시성 불변)"]
+      - id: acceptance-4
+        refs: ["__tests__/fieldHitArea.test.ts, __tests__/inPlacePanelS3.test.tsx('hit 44 — 셸 탭 처리')"]
+      - id: acceptance-5
+        refs: ["행별 단독 실행 통과: f_tap · f_inplace · f_kobis · f_rating · f_dates · f_logos · f_image_remove(inPlacePanelS3), f_signature(inPlaceFieldEditor), d_fonts(inPlaceFontPicker), f_visibility(mobileEditorShellFieldCoverage), f_drawer · c_ghost · c_toolbar(inPlacePanelS3)"]
+      - id: acceptance-6
+        refs: ["__tests__/inPlaceFontPicker.test.tsx 13건"]
+      - id: acceptance-7
+        refs: ["__tests__/inPlacePanelS3.test.tsx(관람일 표기 · 개봉일 D16 3-A · 개봉일 표기 listbox · 평점 D16 4-A 스테퍼 · 소수 4.3)"]
+      - id: acceptance-8
+        refs: ["__tests__/inPlacePanelS3.test.tsx('모든 입력이 16px' · '슬라이더 트랙 hit 32')"]
+      - id: acceptance-9
+        refs: ["docs/COPY_TONE_GUIDE.md 잠금 표 갱신, __tests__ grep 0건, 고친 테스트 titleSheetSearch"]
+      - id: acceptance-10
+        refs: ["prod measure-chrome --theme dark · light exit 0 dock 249 / 프리뷰 219×350(e3159810 빌드), PR #842 Chrome harness 통과(4eb4abbe)"]
+      - id: acceptance-11
+        refs: ["git diff a92d5ef3..644b877a -- src tailwind.config.js + 줄 금지 패턴 0건, 렌더 경로 --stat 0줄"]
+      - id: acceptance-12
+        refs: ["헤드리스 393×852 한줄평 라이트 · 다크 표본(e3159810): 넘침 0px · 교차 면적 0 · 입력 16px, 실기기 확인 아님"]
+      - id: acceptance-13
+        refs: ["requirement-gap 1라운드 blocking 0 · should-fix 2(c9346e24에서 수정) → 2라운드 blocking 0 · should-fix 0"]
+      - id: acceptance-14
+        refs: ["git diff --stat a92d5ef3..644b877a -- Landing · ImageCropModal · EditorMenu · ResultPanel · ResultStage 0줄"]
+      - id: acceptance-15
+        refs: ["git diff + 줄 vw · vh · rail: · useMatchMedia 0건, measure-chrome frameFit · menu dark · light 통과"]
+      - id: acceptance-16
+        refs: ["git log a92d5ef3..4eb4abbe 전부 Conventional Commits, origin 동기, 소유자 승인(2026-11-22) 뒤 PR #842 열고 머지"]
+      - id: acceptance-17
+        refs: ["__tests__/inPlacePanelS3.test.tsx(필드별 switch 0 · 재개봉 예외 1), __tests__/mobileEditorShellFieldCoverage.test.tsx(목록 눈 유지)"]
+      - id: acceptance-18
+        refs: ["__tests__/doneFailureInfoMode.test.tsx(누락 행 재숨김), __tests__/mobileEditorShellFieldCoverage.test.tsx(직접 탭 재표시)"]
+      - id: acceptance-19
+        refs: ["__tests__/inPlacePanelS3.test.tsx(개봉일 D16 3-A · 관람일 표기 칩 · select 0)"]
+      - id: acceptance-20
+        refs: ["__tests__/inPlacePanelS3.test.tsx(KOBIS 3행 max-h · 선택 후 채움 · 닫힘, 러닝타임 numeric, 관람 시간 time, 출연 원문, 평점 4.3, 로고 이미지 행)"]
   withdrawn: []
 
 goal:
