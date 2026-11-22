@@ -98,17 +98,11 @@ const POSTERLESS_BASELINE = { preview: { w: 219, h: 350 } };
 
 const near = (a, b) => a != null && Math.abs(a - b) <= 0.5;
 
-// 랜딩 무드 캐러셀(#615) — Landing.tsx의 TRACK_CARD_WIDTH/CAROUSEL_SLOTS를 그대로 미러링한다.
-// 값이 바뀌면 이 상수도 같이 바꿀 것(BASELINE과 같은 관례). happy-dom은 clientWidth가 항상 0이라
-// TicketRenderer의 scale 보정을 못 재므로(__tests__/landingMoodGalleryTapTargets.test.tsx 참고),
-// 카드의 실 폭·비율·불투명도는 여기서만 실측으로 대조한다.
-const CAROUSEL_TRACK_WIDTH = 140;
+// 랜딩 무대 기둥 전시(#826 S5 constraint-3) — Landing.tsx의 slotStyle · 기둥 폭을 전시 폭 대비 비로 미러링한다.
+// 값이 바뀌면 이 상수도 같이 바꿀 것(BASELINE과 같은 관례). happy-dom엔 레이아웃이 없어
+// (__tests__/landingMoodGalleryTapTargets.test.tsx 참고) 실 폭 비 · 잘림 · computed 그림자는 여기서만 잰다.
+const STAGE = { beam: 0.62, main: 0.52, peek: 0.34, peekOpacity: 0.32, peekOut: 0.22, tol: 0.01 };
 const CAROUSEL_CARD_RATIO = 1534 / 960; // getLayout('minimal').height / width
-const CAROUSEL_SLOTS = [
-  { opacity: 1, scale: 1 },
-  { opacity: 0.5, scale: 0.78 },
-  { opacity: 0.27, scale: 0.6 },
-];
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -220,59 +214,70 @@ try {
   // 갤러리 컨테이너 자신이 프레임 밖으로 새는지는 기존 measureFit 축을 그대로 재사용한다
   // (overflow-hidden이 있어도 컨테이너 자체가 잘못 배치되면 여기서 걸린다).
   await measureFit('무드 갤러리', '[data-testid="mood-gallery"]', landingPage);
-  // 카드 개별 폭·비율·불투명도는 CAROUSEL_SLOTS 대조가 필요해 별도로 잰다 — active=0인
-  // 마운트 직후 상태를 잰다(자동 전환 간격 CAROUSEL_INTERVAL_MS=3500ms보다 훨씬 이르다).
-  // 카드 각각을 프레임 사각형과도 대조한다(measureFit과 같은 overflow 계산) — 갤러리
-  // 컨테이너 자신은 안 새도(위) 개별 카드가 안 새는 건 별개다: 갤러리의 overflow-hidden이
-  // 없어지면 컨테이너 rect는 그대로인 채 카드만 밖으로 삐져나갈 수 있다.
-  const carouselCards = await landingPage.evaluate(() => {
+  // 무대 기둥 전시(#826 S5 acceptance-3) — 마운트 직후(active=0, 자동 전환 4000ms보다 이르다) 기둥 · 가운데 · 좌우 ·
+  // 먼 카드를 전시 rect 대비 비로 잰다. 좌우 카드는 일부러 전시 밖으로 22% 나가 잘리므로 프레임 봉쇄는 카드 rect가
+  // 아니라 전시 rect로 잘린 보이는 부분으로 판정한다 — 전시의 overflow-hidden이 없어지면 여기서 걸린다.
+  const carousel = await landingPage.evaluate(() => {
     const gallery = document.querySelector('[data-testid="mood-gallery"]');
+    const beam = document.querySelector('[data-testid="mood-gallery-beam"]');
+    const index = document.querySelector('[data-testid="mood-gallery-index"]');
     const frame = document.getElementById('phone-frame');
-    if (!gallery || !frame) return null;
+    if (!gallery || !beam || !index || !frame) return null;
+    const G = gallery.getBoundingClientRect();
     const F = frame.getBoundingClientRect();
-    return [...gallery.querySelectorAll('button[data-touch]')].map((b) => {
+    const galleryClips = getComputedStyle(gallery).overflow === 'hidden';
+    const cards = [...gallery.querySelectorAll('button[data-slot]')].map((b) => {
       const r = b.getBoundingClientRect();
-      const overflow = {
-        left: +(F.left - r.left).toFixed(1),
-        right: +(r.right - F.right).toFixed(1),
-        top: +(F.top - r.top).toFixed(1),
-        bottom: +(r.bottom - F.bottom).toFixed(1),
-      };
+      const cs = getComputedStyle(b);
+      // 보이는 부분 = 카드 rect ∩ 전시 rect(전시가 잘라낼 때만).
+      const vis = galleryClips
+        ? { left: Math.max(r.left, G.left), right: Math.min(r.right, G.right), top: Math.max(r.top, G.top), bottom: Math.min(r.bottom, G.bottom) }
+        : { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
       return {
         label: (b.getAttribute('aria-label') ?? '').split(' 무드로')[0],
-        w: +r.width.toFixed(1),
-        h: +r.height.toFixed(1),
-        opacity: +Number(getComputedStyle(b).opacity).toFixed(2),
-        overflow,
-        worstOverflow: Math.max(...Object.values(overflow)),
+        slot: Number(b.dataset.slot),
+        widthRatio: +(r.width / G.width).toFixed(3),
+        ratio: +(r.height / r.width).toFixed(3),
+        opacity: +Number(cs.opacity).toFixed(2),
+        boxShadow: cs.boxShadow,
+        visibility: cs.visibility,
+        display: cs.display,
+        pointerEvents: cs.pointerEvents,
+        outLeft: +((G.left - r.left) / G.width).toFixed(3),
+        outRight: +((r.right - G.right) / G.width).toFixed(3),
+        worstOverflow: +Math.max(F.left - vis.left, vis.right - F.right, F.top - vis.top, vis.bottom - F.bottom).toFixed(1),
       };
     });
+    const bcs = getComputedStyle(beam);
+    const ics = getComputedStyle(index);
+    return {
+      galleryClips,
+      beamRatio: +(beam.getBoundingClientRect().width / G.width).toFixed(3),
+      beamBorders: [bcs.borderLeftWidth, bcs.borderRightWidth],
+      index: { text: index.textContent, fontSize: ics.fontSize, numeric: ics.fontVariantNumeric },
+      cards,
+    };
   });
-  if (!carouselCards) throw new Error('mood-gallery 캐러셀 버튼 또는 #phone-frame을 못 찾았다');
-  const nearestSlot = (opacity) =>
-    CAROUSEL_SLOTS.reduce((best, s) =>
-      Math.abs(s.opacity - opacity) < Math.abs(best.opacity - opacity) ? s : best,
-    );
-  const carousel = {
-    count: carouselCards.length,
-    cards: carouselCards.map((c) => {
-      const slot = nearestSlot(c.opacity);
-      const expected = { w: +(CAROUSEL_TRACK_WIDTH * slot.scale).toFixed(1), opacity: slot.opacity };
-      const ratio = +(c.h / c.w).toFixed(3);
-      return {
-        ...c,
-        ratio,
-        expected,
-        passRatio: Math.abs(ratio - CAROUSEL_CARD_RATIO) < 0.01,
-        passWidth: Math.abs(c.w - expected.w) <= 1.5,
-        passOpacity: Math.abs(c.opacity - expected.opacity) <= 0.02,
-        passFrame: c.worstOverflow <= 0.5,
-      };
-    }),
+  if (!carousel) throw new Error('mood-gallery · 기둥 · 위치 표시 또는 #phone-frame을 못 찾았다');
+  const within = (v, want) => Math.abs(v - want) <= STAGE.tol;
+  const bySlot = (d) => carousel.cards.find((c) => c.slot === d);
+  const [main, left, right, far1, far2] = [0, -1, 1, -2, 2].map(bySlot);
+  carousel.count = carousel.cards.length;
+  carousel.checks = {
+    count: carousel.count === 5,
+    clips: carousel.galleryClips,
+    beam: within(carousel.beamRatio, STAGE.beam) && carousel.beamBorders.every((w) => w === '1px'),
+    index: carousel.index.text === '1 / 5' && carousel.index.fontSize === '12px' && carousel.index.numeric.includes('tabular-nums'),
+    main: !!main && within(main.widthRatio, STAGE.main) && main.boxShadow !== 'none' && main.opacity === 1,
+    peeks:
+      !!left && !!right &&
+      [left, right].every((c) => within(c.widthRatio, STAGE.peek) && c.opacity === STAGE.peekOpacity && c.boxShadow === 'none') &&
+      within(left.outLeft, STAGE.peekOut) && within(right.outRight, STAGE.peekOut),
+    far: !!far1 && !!far2 && [far1, far2].every((c) => c.opacity === 0 && c.visibility === 'visible' && c.display !== 'none' && c.pointerEvents === 'none'),
+    ratio: carousel.cards.every((c) => Math.abs(c.ratio - CAROUSEL_CARD_RATIO) < 0.01),
+    frame: carousel.cards.every((c) => c.worstOverflow <= 0.5),
   };
-  carousel.pass =
-    carousel.count === 5 &&
-    carousel.cards.every((c) => c.passRatio && c.passWidth && c.passOpacity && c.passFrame);
+  carousel.pass = Object.values(carousel.checks).every(Boolean);
 
   // ── 랜딩 이탈 경로 2종(#665 문구 재정리 회귀) ────────────────────────────────
   // 프레임 봉쇄는 기존 measureFit 재사용. exitPaths 자신은 그 줄만의 두 축: (a) flex-wrap
@@ -297,21 +302,48 @@ try {
   // 둔다 — 여기 묶여 있으면 헤더·푸터 변경으로 떨어졌을 때 "이탈 경로 회귀"로 오인하기 쉽다.
   // 세 블록 높이를 낱개로 더하는 것보다 오버레이 자신의 overflow-y-auto(위 클래스)가 실제로
   // 스크롤을 만드는지(scrollHeight vs clientHeight)가 "예산 초과"의 더 정확한 판정이다.
-  const landingBudget = await landingPage.evaluate(() => {
-    const overlay = document.querySelector('[data-testid="landing"]');
-    const copy = document.querySelector('[data-testid="landing-copy"]');
-    const hero = document.querySelector('[data-testid="mood-gallery"]');
-    const exitRow = document.querySelector('[data-testid="landing-exit-paths"]');
-    if (!overlay || !copy || !hero || !exitRow) return null;
-    const h = (el) => +el.getBoundingClientRect().height.toFixed(1);
-    return {
-      blocks: { copy: h(copy), hero: h(hero), exitPaths: h(exitRow) },
-      scrollHeight: overlay.scrollHeight,
-      clientHeight: overlay.clientHeight,
-    };
+  // #826 S5 acceptance-9: '이용 고지'를 접은 상태와 펼친 상태 둘 다 재고, 펼치면 전시가 그만큼 줄어야 한다(아래 판은 고정).
+  const measureBudget = () =>
+    landingPage.evaluate(() => {
+      const overlay = document.querySelector('[data-testid="landing"]');
+      const copy = document.querySelector('[data-testid="landing-copy"]');
+      const hero = document.querySelector('[data-testid="mood-gallery"]');
+      const exitRow = document.querySelector('[data-testid="landing-exit-paths"]');
+      const summary = document.querySelector('[data-testid="legal-notice"] summary');
+      if (!overlay || !copy || !hero || !exitRow || !summary) return null;
+      const h = (el) => +el.getBoundingClientRect().height.toFixed(1);
+      const icon = summary.querySelector('svg');
+      return {
+        blocks: { copy: h(copy), hero: h(hero), exitPaths: h(exitRow) },
+        scrollHeight: overlay.scrollHeight,
+        clientHeight: overlay.clientHeight,
+        summaryHeight: h(summary),
+        iconTransform: icon ? getComputedStyle(icon).transform : null,
+      };
+    });
+  const collapsed = await measureBudget();
+  await landingPage.evaluate(() => {
+    document.querySelector('[data-testid="legal-notice"]').open = true;
   });
-  if (!landingBudget) throw new Error('카피/히어로/이탈경로/랜딩 오버레이 중 하나를 못 찾음');
-  landingBudget.pass = landingBudget.scrollHeight <= landingBudget.clientHeight + 0.5;
+  await sleep(100);
+  const expanded = await measureBudget();
+  await landingPage.evaluate(() => {
+    document.querySelector('[data-testid="legal-notice"]').open = false;
+  });
+  if (!collapsed || !expanded) throw new Error('카피/히어로/이탈경로/랜딩 오버레이/이용 고지 중 하나를 못 찾음');
+  const noScroll = (b) => b.scrollHeight <= b.clientHeight + 0.5;
+  const landingBudget = {
+    collapsed,
+    expanded,
+    checks: {
+      collapsedNoScroll: noScroll(collapsed),
+      expandedNoScroll: noScroll(expanded),
+      heroShrinks: expanded.blocks.hero < collapsed.blocks.hero,
+      summaryHit: collapsed.summaryHeight >= 44,
+      iconTurns: collapsed.iconTransform !== expanded.iconTransform,
+    },
+  };
+  landingBudget.pass = Object.values(landingBudget.checks).every(Boolean);
 
   // ── 포스터 없이 진입(#674) — '직접 입력' 뒤 스테이지가 본문을 통째로 받는지 ──────────
   // 같은 컨텍스트에서 이어 잰다: 여긴 draft 시드가 없어 랜딩이 오버레이로 떠 있고, '포스터 없이
