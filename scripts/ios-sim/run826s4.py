@@ -114,6 +114,78 @@ except Exception:
 out['runtime'] = subprocess.run(['xcrun', 'simctl', 'list', 'devices', 'booted'], capture_output=True, text=True).stdout
 out['wdaDevice'] = req('GET', 'wda/device/info') if False else None
 
+def open_row(label, want_kbd):
+    r = js('''const d=document.querySelector('[data-testid="editor-dock"]');
+const b=[...d.querySelectorAll("button")].find(e=>e.textContent.trim().startsWith(arguments[0]));if(!b)return null;b.scrollIntoView({block:"center"});return 1''', label)
+    if not r:
+        raise RuntimeError(f'dock row {label} not found')
+    time.sleep(0.8)
+    r = rect_of('[...document.querySelector("[data-testid=editor-dock]").querySelectorAll("button")].find(e=>e.textContent.trim().startsWith(%s))' % json.dumps(label))
+    tap_css(r['x'] + r['w'] / 2, r['y'] + r['h'] / 2)
+    for _ in range(30):
+        time.sleep(0.3)
+        if js('return !!document.querySelector("[data-field-panel]")') and (bool(keyboard_rect()) == want_kbd):
+            break
+    time.sleep(1.0)
+
+
+def back_checks(before, after):
+    return {'panelClosed': not after['panelOpen'], 'sameUrl': after['url'] == before['url'], 'sameTab': after['tab'] == before['tab'],
+            'identity': after['transform'] in ('none', 'matrix(1, 0, 0, 1, 0, 0)'),
+            'noPanelToken': not (after['histState'] or {}).get('phototicketInputPanel'), 'ls': after['ls']}
+
+
+def clean_close():
+    if js('return !!document.querySelector("[data-field-panel]")'):
+        js('[...document.querySelector("[data-field-panel]").querySelectorAll("button")].find(e=>e.textContent.trim()==="닫기").click()'); time.sleep(1.0)
+
+
+def back_mode():
+    res = {'note': 'iOS Simulator 결과, 실기기 아님'}
+    reset_editor()
+    js('document.querySelector("#dock-mode-tab-info").click()'); time.sleep(0.6)
+    tap_el('document.querySelector("#dock-mode-tab-info")'); time.sleep(0.8)
+    # A) text field + keyboard up, native edge swipe
+    A = {}
+    try:
+        A['before'] = st(); shot('826s4-back-A-0-before')
+        open_theater(); A['kb'] = keyboard_rect(); type_text('ㅂㅈㄷ'); A['typed'] = st(); shot('826s4-back-A-1-open-typed')
+        for name, fn in (('mobile:dragFromToForDuration', lambda: (sim.ctx('NATIVE'), req('POST', 'execute/sync', {'script': 'mobile: dragFromToForDuration', 'args': [{'duration': 0.5, 'fromX': 1, 'fromY': 400, 'toX': 260, 'toY': 400}]}))),
+                         ('W3C pointer x=1 slow', lambda: sim._act([{'type': 'pointerMove', 'duration': 0, 'x': 1, 'y': 400}, {'type': 'pointerDown', 'button': 0}, {'type': 'pause', 'duration': 200}, {'type': 'pointerMove', 'duration': 900, 'x': 260, 'y': 400}, {'type': 'pointerUp', 'button': 0}]))):
+            try:
+                fn()
+            except Exception as e:
+                A[name + ' error'] = repr(e)
+            time.sleep(1.5)
+            A['after ' + name] = st(); shot('826s4-back-A-2-after-' + name.split(':')[0].split(' ')[0])
+            if not A['after ' + name]['panelOpen']:
+                A['closedBy'] = name; break
+        A['checks'] = back_checks(A['before'], A['after ' + [k for k in A if k.startswith('after ')][-1][6:]]) if True else None
+        A['verdict'] = '통과' if A.get('closedBy') and all(v for k, v in A['checks'].items() if k != 'ls') else '실패'
+    except Exception as e:
+        A['verdict'] = '오류'; A['error'] = repr(e)
+    clean_close(); res['A'] = A
+    # B) rating panel (no keyboard), Safari toolbar Back
+    if A.get('verdict') != '통과':
+        B = {}
+        try:
+            B['before'] = st(); shot('826s4-back-B-0-before')
+            open_row('평점', False); B['kb'] = keyboard_rect(); B['opened'] = st(); shot('826s4-back-B-1-open')
+            B['backFound'] = bool(native_find('뒤로'))
+            B['tapped'] = native_tap('뒤로'); time.sleep(1.5)
+            B['after'] = st(); shot('826s4-back-B-2-after')
+            B['checks'] = back_checks(B['before'], B['after'])
+            B['verdict'] = '통과' if B['tapped'] and not B['kb'] and all(v for k, v in B['checks'].items() if k != 'ls') else '실패'
+        except Exception as e:
+            B['verdict'] = '오류'; B['error'] = repr(e)
+        clean_close(); res['B'] = B
+    json.dump(res, open(f'{sim.S}/ev/826s4-back.json', 'w'), ensure_ascii=False, indent=1)
+    print(json.dumps({k: (v.get('verdict'), v.get('closedBy'), v.get('checks')) for k, v in res.items() if isinstance(v, dict)}, ensure_ascii=False))
+
+
+if sys.argv[1:2] == ['back']:
+    back_mode(); sys.exit(0)
+
 reset_editor()
 js('document.querySelector("#dock-mode-tab-info").click()'); time.sleep(0.6)
 tap_el('document.querySelector("#dock-mode-tab-info")'); time.sleep(0.8)
