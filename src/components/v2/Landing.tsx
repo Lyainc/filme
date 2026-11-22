@@ -454,6 +454,20 @@ export function Landing({
     return () => clearTimeout(id);
   }, [overlay, prefersReducedMotion]);
   const showMarketing = overlay || leaving;
+  // 포스터 드롭을 걷은 자리(D18-2) — 아무도 막지 않으면 파일을 떨어뜨린 브라우저가 그 파일로 이동해 메모리의 편집을
+  // 날린다. 랜딩은 hidden에서도 마운트돼 있어 편집 화면까지 덮는다. 파일 드래그만 막아 입력칸의 글자 끌어놓기는 그대로다.
+  useEffect(() => {
+    const blockFileDrop = (e: DragEvent) => {
+      const dt = e.dataTransfer;
+      if (dt && (Array.from(dt.types ?? []).includes('Files') || (dt.files?.length ?? 0) > 0)) e.preventDefault();
+    };
+    window.addEventListener('dragover', blockFileDrop);
+    window.addEventListener('drop', blockFileDrop);
+    return () => {
+      window.removeEventListener('dragover', blockFileDrop);
+      window.removeEventListener('drop', blockFileDrop);
+    };
+  }, []);
 
   return (
     <div

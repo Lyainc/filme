@@ -339,8 +339,11 @@ async function tabTo(user: ReturnType<typeof userEvent.setup>, target: HTMLEleme
 // trace l_drop) — 포스터는 사진 모드와 랜딩 업로드 버튼으로만 넣는다. 이 묶음은 그 기능의 이름을 그대로 두고
 // 드롭이 아무 일도 안 한다는 부재를 잰다(#826 S5 constraint-18).
 describe('드롭으로 포스터 업로드 (#607)', () => {
-  const drop = (el: Element) =>
-    fireEvent.drop(el, { dataTransfer: { files: [pngFile('dropped.png')] } });
+  // 반환값은 기본 동작이 살아 있는지다 — 막지 않으면 브라우저가 떨어뜨린 파일로 이동해 편집이 날아간다(code-review).
+  const drop = (el: Element) => {
+    const notPrevented = fireEvent.drop(el, { dataTransfer: { files: [pngFile('dropped.png')] } });
+    expect(notPrevented).toBe(false);
+  };
 
   test('랜딩(업로드 버튼 · 랜딩 루트)에 이미지를 드롭해도 크롭 모달이 안 열린다', () => {
     render(<MobileHarness />);
