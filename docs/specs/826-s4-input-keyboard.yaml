@@ -37,13 +37,71 @@ brownfield: true
 refine_generation: 0
 
 lifecycle:
-  state: active
-  outcome: null
-  reason: "소유자가 D17-1 A · D17-2 A를 고르고 Seed를 승인해 active로 바꿨다."
-  approved_by: "소유자 응답(2026-11-22): D17-1 'A · 배율 상한 (Recommended)', D17-2 'A · S4에 넣기 (Recommended)', Seed 승인 '승인 · active로'"
+  state: closed
+  outcome: completed
+  reason: "PR #843이 main에 rebase 머지됐고(b0e5bcae, 검증한 5e4915dc와 같은 트리) constraint-1~14 · acceptance-1~15 근거가 그 트리에 있다."
+  approved_by: "소유자 응답(2026-11-22 세션 종료): S4 Seed '닫고 main에 커밋·push (Recommended)'"
   evidence:
-    commit: null
-    items: []
+    commit: b0e5bcae75640e781b7ce8adddcbd3ee3c28b292
+    items:
+      - id: constraint-1
+        refs: ["git diff 1405e84e..b0e5bcae -- src/components/moods src/components/TicketRenderer.tsx src/utils/captureToImage.ts 0줄, 확대 · 리프트는 MobileEditorShell previewWrapEl transform만"]
+      - id: constraint-2
+        refs: ["git diff 1405e84e..b0e5bcae -- Landing · ImageCropModal · EditorMenu · ResultPanel · ResultStage 0줄, __tests__/inPlacePanelS3 · inPlaceFontPicker · inPlaceFieldEditor 0줄"]
+      - id: constraint-3
+        refs: ["src/hooks/useInputKeyboard.ts keyboardPanelStyle, src/components/v2/KeyboardPanel.tsx(키보드 밑판), __tests__/inputKeyboardS4.test.tsx(constraint-3 묶음), iOS Simulator 26.5 밑판으로 도크 비침 없음(round 2~3)"]
+      - id: constraint-4
+        refs: ["src/utils/inputKeyboard.ts keyboardInset, __tests__/inputKeyboard.test.ts (a)~(e), src 추가 줄 rAF · vw · vh · rail: · useMatchMedia · 300/330 0건"]
+      - id: constraint-5
+        refs: ["src/utils/inputKeyboard.ts editScale · editLift, MobileEditorShell duration-[240ms] motion-reduce, __tests__/inputKeyboardS4.test.tsx(constraint-5 묶음), 393×852 prod 실측 1.095"]
+      - id: constraint-6
+        refs: ["src/hooks/useInputKeyboard.ts usePanelHistory · useKeyboardDismiss, MobileEditorShell closeEditor, __tests__/inputKeyboardS4.test.tsx(4 × 3 행렬 · #776 · history)"]
+      - id: constraint-7
+        refs: ["__tests__/inputKeyboardS4.test.tsx(constraint-7 묶음: ‹ › · Return · 다른 필드 탭 · 글꼴 목록 · 칩), KeyboardPanel suspended(크롭 모달)"]
+      - id: constraint-8
+        refs: ["src/components/v2/pickers/BrightnessSlider.tsx PercentPanel, __tests__/inputKeyboardS4.test.tsx(constraint-8 · 9 묶음)"]
+      - id: constraint-9
+        refs: ["PercentPanel 입력 text-title, __tests__/inPlacePanelS3.test.tsx 16px · 슬라이더 h-8 테스트 통과"]
+      - id: constraint-10
+        refs: ["prod 5e4915dc(트리 = b0e5bcae) measure-chrome --theme dark · light exit 0, dock 249 / 프리뷰 219×350, PR #843 Chrome harness 통과"]
+      - id: constraint-11
+        refs: ["scripts/measure-keyboard-panel.mjs · scripts/ios-sim/run826s4.py · docs/HARNESS.md 12절 모두 실기기 아님 표기, Android 주장 없음"]
+      - id: constraint-12
+        refs: ["새 노출 문구는 aria-label 퍼센트 입력과 기존 닫기, git diff 1405e84e..b0e5bcae src 추가 줄 gradient( · drop-shadow · blur( · rounded-full · 9999px 0건, 밑판은 bg-s1 단색"]
+      - id: constraint-13
+        refs: ["feat/826-s4-keyboard Conventional Commits · push, PR #843 소유자 지시(2026-11-22)로 열고 CI · claude-review LGTM 뒤 rebase 머지, #826 코멘트 기록"]
+      - id: constraint-14
+        refs: ["근거 원본 9bcf5585 frames.js K-01 · K-03 · K-08 대조, 15e39c60 결정, 선행 Seed 32e229ab"]
+      - id: acceptance-1
+        refs: ["PR #843 CI(typecheck · lint · test) 통과, 로컬 a850aec9 bun run test 1423 pass"]
+      - id: acceptance-2
+        refs: ["__tests__/inputKeyboardS4.test.tsx(텍스트 · 평점 · 글꼴 목록 × 키보드 330 · 0, 밑판 단언)"]
+      - id: acceptance-3
+        refs: ["__tests__/inputKeyboard.test.ts keyboardInset (a)~(e) + src 추가 줄 grep 0건"]
+      - id: acceptance-4
+        refs: ["__tests__/inputKeyboardS4.test.tsx(세로 scale(1.18) · editorial scale(1) · 타이핑 전후 translateY 불변 · 닫힘 후 항등)"]
+      - id: acceptance-5
+        refs: ["__tests__/inputKeyboardS4.test.tsx(종료 경로 4 × 진입 상태 3 · #776 재숨김 4)"]
+      - id: acceptance-6
+        refs: ["__tests__/inputKeyboardS4.test.tsx(history 묶음 · 언마운트 소비), 기존 useResultView 테스트 통과"]
+      - id: acceptance-7
+        refs: ["__tests__/inputKeyboardS4.test.tsx(constraint-7 묶음)"]
+      - id: acceptance-8
+        refs: ["__tests__/inputKeyboardS4.test.tsx(% 패널 구조 · 종료 4 · 120→100)"]
+      - id: acceptance-9
+        refs: ["prod 5e4915dc measure-chrome dark · light exit 0, invariant checked · pass(dock 249 / 프리뷰 219×350)"]
+      - id: acceptance-10
+        refs: ["prod 5e4915dc scripts/measure-keyboard-panel.mjs exit 0, 4장 PASS(① 0.00px ② 교차 0 · 표시 24.4~25.0px 위 ③ −8.00px ④ −16px), 캡처 육안 확인"]
+      - id: acceptance-11
+        refs: ["scripts/ios-sim/run826s4.py, iOS Simulator 26.5 · iPhone 17 Pro XCTest: 닫기 · 키보드 완료 · 바깥 탭 통과(5e4915dc 트리), 뒤로 통과(키보드 없는 평점 패널 툴바 뒤로), 텍스트 필드+키보드 상태 뒤로 · 키보드 내림 제스처는 미검증 → S8, iOS Simulator 결과 실기기 아님"]
+      - id: acceptance-12
+        refs: ["git diff 1405e84e..b0e5bcae 렌더 · 범위 밖 화면 0줄, src 추가 줄 금지어 0건, S3 패널 테스트 3종 0줄"]
+      - id: acceptance-13
+        refs: ["requirement-gap 리뷰 2라운드: 1라운드 blocking 1(미push) · should-fix 1(최종 SHA 재측정), 2라운드 0건"]
+      - id: acceptance-14
+        refs: ["커밋 전부 Conventional Commits · origin push, PR #843은 소유자 지시 후 생성 · 머지"]
+      - id: acceptance-15
+        refs: ["PercentPanel 입력 text-title(__tests__/inputKeyboardS4.test.tsx), __tests__/inPlacePanelS3.test.tsx 슬라이더 h-8 통과"]
   withdrawn: []
 
 goal:
