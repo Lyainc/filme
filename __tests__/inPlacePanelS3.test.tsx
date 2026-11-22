@@ -582,6 +582,12 @@ describe('필드가 바뀔 때 일시 상태 · 순회 경계', () => {
     expect(num()).toBe('0.2');
     fireEvent.click(plus);
     expect(num()).toBe('0.3');
+    // 터치 · 펜 탭은 pointerup → pointerleave → click 순이다 — 뗀 뒤의 leave가 끼어도 한 번에 한 칸이다.
+    fireEvent.pointerDown(plus, { button: 0, pointerType: 'touch' });
+    fireEvent.pointerUp(plus, { button: 0, pointerType: 'touch' });
+    fireEvent.pointerLeave(plus, { pointerType: 'touch' });
+    fireEvent.click(plus);
+    expect(num()).toBe('0.4');
   });
 
   test('목록을 연 채로 다른 필드에 갔다 돌아오면 목록은 닫혀 있다', () => {
