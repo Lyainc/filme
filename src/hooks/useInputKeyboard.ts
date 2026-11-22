@@ -80,6 +80,14 @@ export function usePanelHistory(open: boolean, onPop: () => void) {
   const skipPopRef = useRef(false);
   const onPopRef = useRef(onPop);
   onPopRef.current = onPop;
+  // 넣은 항목을 소비한다 — 지금 위치가 그 항목일 때만 back()한다. 그 사이 다른 항목이 올라왔으면 그걸 꺼내면 안 된다.
+  const consume = () => {
+    pushedRef.current = false;
+    const state = window.history.state as Record<string, unknown> | null;
+    if (state?.[HISTORY_KEY] !== tokenRef.current) return;
+    skipPopRef.current = true;
+    window.history.back();
+  };
 
   useEffect(() => {
     if (open && !pushedRef.current) {
@@ -87,11 +95,14 @@ export function usePanelHistory(open: boolean, onPop: () => void) {
       tokenRef.current = `${Date.now()}-${++historySeq}`;
       window.history.pushState({ [HISTORY_KEY]: tokenRef.current }, '');
     } else if (!open && pushedRef.current) {
-      pushedRef.current = false;
-      skipPopRef.current = true;
-      window.history.back();
+      consume();
     }
   }, [open]);
+
+  // 열린 채로 떠나면(언마운트) 넣은 항목을 남기지 않는다. StrictMode의 마운트 이중 실행 땐 아직 항목이 없어 아무 일도 안 한다.
+  useEffect(() => () => {
+    if (pushedRef.current) consume();
+  }, []);
 
   useEffect(() => {
     const onPopState = () => {
