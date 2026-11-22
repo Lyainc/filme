@@ -343,8 +343,9 @@ describe('오버레이 걷힘 전환 (#826 S5 constraint-7)', () => {
       expect(!!screen.getByTestId('mood-gallery')).toBe(true);
       expect(landing().style.pointerEvents).toBe('none');
       // 카드 슬롯만은 되살린다 — 숨은 OCR 파일 input은 편집 화면의 버튼이 여는 한 벌이다.
-      const ocrInput = document.querySelector('input[type="file"][accept="image/*"]')!;
-      expect((ocrInput.parentElement!.parentElement as HTMLElement).style.pointerEvents).toBe('auto');
+      const slot = screen.getByTestId('landing-card-slot');
+      expect(slot.style.pointerEvents).toBe('auto');
+      expect(slot.contains(document.querySelector('input[type="file"][accept="image/*"]'))).toBe(true);
       act(() => jest.advanceTimersByTime(240));
       expect(screen.queryByTestId('mood-gallery') === null).toBe(true);
     } finally {
