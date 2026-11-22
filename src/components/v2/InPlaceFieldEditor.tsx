@@ -461,12 +461,16 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
   const showFont = fontKey !== null && !(isSignature && !!stampImage);
   const currentFont: QuoteFont = (fontKey && components[fontKey]) || 'auto';
   const fontIndex = Math.max(0, FONT_OPTIONS.findIndex((o) => o.value === currentFont));
-  // 패널 목록(글꼴 · 개봉일 표기)은 연 필드에만 열려 있다 — 필드가 바뀌면 따로 닫지 않아도 닫힌다. 한 번에 하나만 열린다.
-  // 글꼴 목록은 한줄평 · 서명에만, 표기 목록은 개봉일에만 있어 필드 하나로 어느 목록인지 정해진다.
-  const [listOpenFor, setListOpenFor] = useState<SheetTarget | null>(null);
-  const listOpen = listOpenFor === field;
-  const toggleList = () => setListOpenFor(listOpen ? null : field);
-  const closeList = () => setListOpenFor(null);
+  // 패널 목록(글꼴 · 개봉일 표기) — 글꼴은 한줄평 · 서명에만, 표기는 개봉일에만 있어 열림 하나로 충분하다. 필드가 바뀌면 렌더 중에
+  // 닫는다(effect가 아니라 이전 필드와 비교) — 열린 채로 다른 필드에 갔다 돌아왔을 때 목록이 혼자 다시 열리지 않게.
+  const [listOpen, setListOpen] = useState(false);
+  const [listField, setListField] = useState(field);
+  if (listField !== field) {
+    setListField(field);
+    setListOpen(false);
+  }
+  const toggleList = () => setListOpen((o) => !o);
+  const closeList = () => setListOpen(false);
   const fontBtnRef = useRef<HTMLButtonElement>(null);
   const formatBtnRef = useRef<HTMLButtonElement>(null);
   const fontSample = (field === 'quote' ? info.quote : info.signature)?.trim() || FONT_SAMPLE_FALLBACK;
@@ -485,6 +489,8 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
   const releaseToken = info.releaseDateFormat || 'kr-compact';
   const releasePreview = (t: (typeof DATE_FORMAT_TOKENS)[number]) => formatDate(info.releaseDate, t.value, releaseGran) || t.sample;
   const currentFormat = DATE_FORMAT_TOKENS.find((t) => t.value === releaseToken) ?? DATE_FORMAT_TOKENS[0];
+  // 정밀도가 '연'이면 네 표기가 모두 연도 하나('2014')로 같아 표기를 골라도 티켓이 안 바뀐다 — 버튼을 끈다.
+  const formatInert = releaseGran === 'year';
   const selectFormat = (releaseDateFormat: DateFormatToken) => {
     photo.updateMovieInfo({ releaseDateFormat });
     closeList();
@@ -642,9 +648,11 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
           aria-haspopup="listbox"
           aria-expanded={listOpen}
           aria-label={`개봉일 표기, 지금 ${currentFormat.name}`}
+          disabled={formatInert}
+          title={formatInert ? '연만 쓰면 표기가 같아요' : undefined}
           onPointerDown={keepFocus}
           onClick={toggleList}
-          className={cn(pressableVariants(), 'inline-flex h-touch min-w-0 shrink items-center')}
+          className={cn(pressableVariants(), 'inline-flex h-touch min-w-0 shrink items-center disabled:opacity-40')}
         >
           <span className="inline-flex h-9 min-w-0 items-center gap-1.5 rounded-ctl border border-hair-strong bg-s2 px-2.5 text-body text-ink">
             <span className="tabular-nums truncate">{releasePreview(currentFormat)}</span>
@@ -772,7 +780,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
             onClose={closeList}
           />
         )}
-        {field === 'releaseDate' && listOpen && (
+        {field === 'releaseDate' && listOpen && !formatInert && (
           <PanelListbox<DateFormatToken>
             label="개봉일 표기"
             // 목록이 열렸을 때만 만든다 — 다른 필드의 타이핑 렌더마다 formatDate 4번을 돌리지 않게.

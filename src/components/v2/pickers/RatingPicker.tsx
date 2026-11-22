@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent, type ReactNode } from 'react';
+import { useDeferredValue, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import { Eyebrow } from '@/components/v2/Eyebrow';
 import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
 import { shouldCommitSliderValue } from './BrightnessSlider';
@@ -159,12 +159,21 @@ export function useRatingPicker({
     }
   };
   useEffect(() => stopRepeat, []);
-  const bump = (dir: 1 | -1) =>
+  // 마우스 호버 미리보기가 떠 있어도 스테퍼는 저장된 값에서 출발한다 — 미리보기를 걷어 보이는 값과 맞춘다.
+  const bump = (dir: 1 | -1) => {
+    setHoverPreview(0);
     setLocalValue((v) => Math.min(5, Math.max(0, Math.round(((v || 0) + dir * 0.1) * 10) / 10)));
-  // 누르면 한 번, 누르고 있으면 400ms 뒤부터 80ms마다 반복. 키보드(Enter · Space, detail 0)는 click 한 번이 한 칸이다.
+  };
+  // 포인터 누름이 이미 한 칸을 올렸으면 뒤따르는 click은 건너뛴다. detail(0=키보드)로 가르면 스크린리더 가상 클릭이
+  // 포인터 이벤트와 함께 와 한 번에 두 칸이 될 수 있어, 누름을 직접 기억한다.
+  const pointerBumpedRef = useRef(false);
+  // 누르면 한 번, 누르고 있으면 400ms 뒤부터 80ms마다 반복. 주 버튼(왼쪽 클릭 · 터치 · 펜)만 — 오른쪽 클릭은 메뉴가
+  // 뜨며 pointerup을 삼켜 반복이 멈추지 않는다. 메뉴 · 포커스 잃음에도 멈춘다.
   const stepperProps = (dir: 1 | -1) => ({
     onPointerDown: (e: PointerEvent<HTMLButtonElement>) => {
+      if (e.button !== 0) return;
       e.preventDefault();
+      pointerBumpedRef.current = true;
       bump(dir);
       stopRepeat();
       const tick = (delay: number) => {
@@ -178,8 +187,11 @@ export function useRatingPicker({
     onPointerUp: stopRepeat,
     onPointerLeave: stopRepeat,
     onPointerCancel: stopRepeat,
-    onClick: (e: MouseEvent<HTMLButtonElement>) => {
-      if (e.detail === 0) bump(dir);
+    onContextMenu: stopRepeat,
+    onBlur: stopRepeat,
+    onClick: () => {
+      if (pointerBumpedRef.current) pointerBumpedRef.current = false;
+      else bump(dir);
     },
   });
 
@@ -256,8 +268,20 @@ export function useRatingPicker({
             const next = Number(raw);
             if (!Number.isNaN(next)) setLocalValue(Math.min(5, Math.max(0, next)));
           }}
-          onKeyDown={onEnter}
+          onKeyDown={(e) => {
+            // 패널(D16 4-A)은 숫자 버튼 자리가 입력으로 바뀌어 접는 버튼이 없다 — Escape로 숫자로 되돌린다.
+            if (panel && e.key === 'Escape') {
+              e.preventDefault();
+              setNumberInputOpen(false);
+              return;
+            }
+            onEnter?.(e);
+          }}
           enterKeyHint={enterKeyHint}
+          // 패널에선 숫자를 누른 그 자리에 입력이 열려 바로 친다(키보드가 올라온다). 옛 시트는 토글 옆에 열려 그대로 둔다.
+          autoFocus={panel}
+          // 포커스가 떠나면(다른 컨트롤 · 바깥 탭) 숫자로 접는다 — 값은 치는 대로 이미 반영돼 있다.
+          onBlur={panel ? () => setNumberInputOpen(false) : undefined}
           aria-label="평점 직접 입력 (0.1 단위)"
           // 16px 미만이면 iOS Safari가 포커스 시 자동 줌인해 레이아웃이 틀어진다(#274).
           className={DECIMAL_INPUT_CLS}
