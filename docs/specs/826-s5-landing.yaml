@@ -37,15 +37,84 @@ brownfield: true
 refine_generation: 0
 
 lifecycle:
-  state: active
-  outcome: null
-  reason: "D18-1 A · D18-2(모바일 미지원 기능 제거) 결정이 constraint-9 · 18에 반영됐고, requirement-gap 3라운드 모두 blocking 0, 3라운드 should-fix 6건은 96ba5edb에 반영(리뷰어 재확인 없음)한 상태로 소유자가 승인했다."
-  approved_by: "소유자 응답(2026-11-22): 'S5 랜딩 Seed(docs/826-s5-seed @ 96ba5edb)를 지금 상태 그대로 active로 승인할까요?' → '지금 승인 (Recommended)'"
+  state: closed
+  outcome: completed
+  reason: "constraint-1~18 · acceptance-1~17이 검증한 커밋 44246dd9(PR #844 head)에서 항목별 근거로 충족됐다(철회 항목 없음)."
+  approved_by: "소유자 응답(2026-11-23 세션 종료): 'S5 Seed를 closed · completed로 닫을까요?' → '닫기 (Recommended)'"
   evidence:
-    commit: null
-    items: []
+    commit: 44246dd97a1161f498368bc3709b4c69dbbd1b4c
+    items:
+      - id: constraint-1
+        refs: ["git diff dca4abf5..44246dd9 -- src/components/moods src/components/TicketRenderer.tsx src/utils/captureToImage.ts public/assets/landing 0줄, src/utils/layouts.ts는 label 6줄만"]
+      - id: constraint-2
+        refs: ["git diff dca4abf5..44246dd9 --stat: 바뀐 src는 Landing · AppFooter · OcrUploadCard · MobileEditorShell(드롭 제거만) · usePhototicket(savedAt) · globals.css · layouts.ts, 범위 밖 파일 0줄(requirement-gap 1~2라운드 확인)"]
+      - id: constraint-3
+        refs: ["src/components/v2/Landing.tsx slotStyle · 기둥 · 위치 표시 · landing-panel, __tests__/landingHeroMood.test.tsx(무대 기둥 전시 묶음), measure-chrome carousel 축(prod Widjjgw38VTIPSaCtLbQ9 dark · light pass)"]
+      - id: constraint-4
+        refs: ["Landing.tsx MoodCarousel(CAROUSEL_INTERVAL_MS 4000 · pressed · focusPaused · 모달리티), __tests__/landingHeroMood.test.tsx(자동 전시 — 버튼 없이 누름 · 포커스 동안 정지 묶음)"]
+      - id: constraint-5
+        refs: ["Landing.tsx card onFocus 가운데 당김 · 먼 카드 pointer-events none, __tests__/landingHeroMood.test.tsx(키보드 도달 묶음)"]
+      - id: constraint-6
+        refs: ["Landing.tsx 동작 줄이기 grid-cols-3 섹션, __tests__/landingReducedMotion.test.tsx"]
+      - id: constraint-7
+        refs: ["Landing.tsx GALLERY_LAYOUTS · GALLERY_ROTATED · OVERLAY_EXIT 240ms, __tests__/landingOverlay.test.tsx(오버레이 걷힘 전환) · landingReducedMotion.test.tsx(즉시) · landingFreshStart.test.tsx"]
+      - id: constraint-8
+        refs: ["src/utils/layouts.ts 한글 label, Landing.tsx aria-label '{label} 무드로 바로 시작'(title 없음), __tests__/landingOverlay.test.tsx(LayoutStrip 한글 칩 · 접근명)"]
+      - id: constraint-9
+        refs: ["Landing.tsx 복원 행 · formatSavedDate, src/hooks/usePhototicket.ts savedAt · readDraftSavedAt, __tests__/landingOverlay.test.tsx(복원 행 저장 날짜 묶음) · landingPaintGate · backToLandingPreservesDoc 통과"]
+      - id: constraint-10
+        refs: ["src/components/v2/AppFooter.tsx details '이용 고지', __tests__/landingOverlay.test.tsx(이용 고지 접기) · appFooterNotice 통과, measure-chrome landingBudget 축(접힘 · 펼침 무스크롤, 펼치면 전시 386→304px)"]
+      - id: constraint-11
+        refs: ["OcrUploadCard.tsx 새 문구 · LandingSlotContext · 인식 중 보조 모양, __tests__/landingOcrNotice.test.tsx(8문구 같은 자리 3000ms) · landingHeroMood.test.tsx(랜딩 스크린샷 인식 묶음) · ocrFailureFlow.test.tsx · landingReducedMotion.test.tsx(격자 안내)"]
+      - id: constraint-12
+        refs: ["git diff dca4abf5..44246dd9 -- __tests__ 의 '-' 줄에 잠긴 다섯 문자열 0건, src 출현 수 착수 base와 같음, 잠금 표 첫 행 9개 테스트 통과"]
+      - id: constraint-13
+        refs: ["docs/COPY_TONE_GUIDE.md 잠금 표(행별 git grep -l 합집합), #826 코멘트 issuecomment-7079878054(바뀐 요구 1), src에 CAROUSEL_SLOW_INTERVAL_MS · slowed · 정지 버튼 문구 0건"]
+      - id: constraint-14
+        refs: ["prod 빌드 Widjjgw38VTIPSaCtLbQ9(44246dd9)에 measure-chrome --theme dark · light exit 0, dock 249 / 프리뷰 219×350, landingShownOnDraft · posterless(checked:true) · frameFit 12항목 pass, PR #844 Chrome harness 통과"]
+      - id: constraint-15
+        refs: ["#826 코멘트 · PR #844 본문 모두 '헤드리스 · 실기기 아님, Android 커버리지 없음' 표기"]
+      - id: constraint-16
+        refs: ["브랜치 feat/826-s5-landing(.claude/worktrees/826-s5), 커밋 전부 Conventional Commits, origin push, PR #844는 소유자 승인(D19-1 A) 뒤 개설"]
+      - id: constraint-17
+        refs: ["근거 원본 출처 항목 — 구현은 마스터 9bcf5585 frames.js · master.css와 대조(결정 캔버스 D19 대조 시트)"]
+      - id: constraint-18
+        refs: ["MobileEditorShell posterDropProps · posterDragOver 제거, Landing dropProps · pointerenter 정지 없음, Landing 파일 드롭 기본 동작 차단, __tests__/posterCropPipeline.test.tsx(드롭으로 포스터 업로드 — 부재 단언)"]
+      - id: acceptance-1
+        refs: ["bun run typecheck · lint · test exit 0(1453 pass) at 44246dd9, PR #844 CI 통과"]
+      - id: acceptance-2
+        refs: ["git diff dca4abf5..44246dd9 --stat 범위 밖 0줄, layouts.ts label 6줄만, MobileEditorShell 바뀐 줄은 드롭 배선 · Landing props만"]
+      - id: acceptance-3
+        refs: ["__tests__/landingHeroMood.test.tsx(무대 기둥 전시) + measure-chrome carousel 축(beam 0.62 · main 0.52 · peek 0.34 · 0.32 · 바깥 0.22 · 먼 카드 opacity 0 visible), 추가 줄 gradient( · drop-shadow · blur( · rounded-full · 9999px 0건"]
+      - id: acceptance-4
+        refs: ["__tests__/landingHeroMood.test.tsx(3999/4000ms · 누름 8000ms · pointercancel · 키보드 포커스 · 포인터 포커스 · pointerenter · 350ms · 28px)"]
+      - id: acceptance-5
+        refs: ["__tests__/landingHeroMood.test.tsx(키보드 도달: 버튼 5개 · Tab 가운데 · 먼 카드 detail 0 · 좌우 탭)"]
+      - id: acceptance-6
+        refs: ["__tests__/landingReducedMotion.test.tsx(aria-label · grid-cols-3 · 8000ms 무변화 · 기둥 · 위치 표시 없음 · overflow-y-auto)"]
+      - id: acceptance-7
+        refs: ["__tests__/landingOverlay.test.tsx · landingHeroMood.test.tsx · landingFreshStart.test.tsx · landingMoodGalleryTapTargets.test.tsx · landingReducedMotion.test.tsx(5개 · 이름 · title 없음 · 스텁 진입 · LayoutStrip · rotate(90deg) · 240ms · 즉시)"]
+      - id: acceptance-8
+        refs: ["__tests__/landingOverlay.test.tsx(두 줄 행 · 제목 없는 티켓 · 11월 15일 · 2025년 11월 15일 · 옛 저장분 · savedAt 갱신) · landingPaintGate · backToLandingPreservesDoc · landingFreshStart · awaitingPosterRestore 통과"]
+      - id: acceptance-9
+        refs: ["__tests__/landingOverlay.test.tsx(이용 고지 접기) · appFooterNotice 통과, measure-chrome landingBudget(summary 44px 이상 · 아이콘 transform 변화 · 두 상태 무스크롤 · 펼치면 전시 감소)"]
+      - id: acceptance-10
+        refs: ["__tests__/landingOcrNotice.test.tsx(8문구 · 전시 안 · CTA 앞 · warn · role=status · 3000ms) · landingHeroMood.test.tsx(인식 중 · 성공 E-05 · 빈 결과 랜딩 유지) · ocrFailureFlow.test.tsx(info 문맥 notify) · landingReducedMotion.test.tsx(격자 밖), 헤드리스 393 · 375 표본에서 안내 아래 끝 < 주 CTA 윗변"]
+      - id: acceptance-11
+        refs: ["git diff dca4abf5..44246dd9 -- __tests__ '-' 줄 잠긴 문자열 0건, src 출현 수 착수 base와 같음, 착수 base 잠금 표 첫 행 9개 테스트 통과"]
+      - id: acceptance-12
+        refs: ["docs/COPY_TONE_GUIDE.md 행별 목록 = git grep -l 합집합(requirement-gap 1라운드 재계산 일치), #826 issuecomment-7079878054, src git grep 0건, CAROUSEL_INTERVAL_MS 4000 · LONG_PRESS_MS 350"]
+      - id: acceptance-13
+        refs: ["prod Widjjgw38VTIPSaCtLbQ9(44246dd9) measure-chrome dark · light exit 0, dock 249 / 프리뷰 219×350, 랜딩 · posterless · 프레임 봉쇄 checked:true"]
+      - id: acceptance-14
+        refs: ["393×852 · 375×667 라이트 · 다크 9상태 36장 헤드리스 캡처(프레임 밖 · 넘침 0), 마스터 L-01~L-03 대조 시트(결정 캔버스 D19), 실기기 PASS 아님"]
+      - id: acceptance-15
+        refs: ["requirement-gap 1라운드 should-fix 1(소유자 정정 승인) · 2라운드 blocking 0 · should-fix 0, 상한 뒤 829d3339..44246dd9 범위 확인(소유자 D19-5 A) blocking 0 · should-fix 0"]
+      - id: acceptance-16
+        refs: ["git log --format=%s dca4abf5..44246dd9 전부 Conventional Commits, origin/feat/826-s5-landing = 44246dd9, PR #844는 소유자 승인(D19-1 A) 뒤 개설"]
+      - id: acceptance-17
+        refs: ["__tests__/posterCropPipeline.test.tsx(랜딩 · 캔버스 drop 무반응 + 기본 동작 차단), src git grep posterDropProps · posterDragOver · dropProps · dragOver · onPointerEnter 0건"]
   withdrawn: []
-
 goal:
   statement: "랜딩을 마스터 L-01~L-03대로 바꾼다: 무드 전시를 무대 기둥 위 가운데 카드 + 좌우 한 장씩으로 다시 세우고 정지 · 재개 버튼 없이 4초마다 넘기되 누르는 동안 · 포커스 동안 멈추며 동작 줄이기면 3열 격자로 보이고, 이어서 만들기를 두 줄 행(제목 없으면 '제목 없는 티켓')으로, 법적 고지를 '이용 고지' 한 줄 접기로, 스크린샷 인식의 진행 · 오류를 전시 아래 자리로 옮긴다. 무드 이름은 한글로 바꾸고, 잠긴 랜딩 문구와 티켓 렌더는 그대로다."
   clarity_score: 0.9
