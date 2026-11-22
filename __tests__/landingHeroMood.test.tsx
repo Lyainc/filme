@@ -39,6 +39,9 @@ function Harness() {
 }
 
 const landing = () => screen.getByTestId('landing');
+/** 지금 가운데 선 카드의 무드 이름 — 가운데 슬롯(data-slot 0)만 하나다. */
+const centeredIn = (gallery: HTMLElement) =>
+  gallery.querySelector('button[data-slot="0"]')!.getAttribute('aria-label')!.split(' 무드로')[0];
 const ocrFileInput = () =>
   document.querySelector('input[type="file"][accept="image/*"]') as HTMLInputElement;
 
@@ -77,7 +80,7 @@ describe('OCR rate limit 이탈 경로 (#635 c2)', () => {
 
 describe('히어로 갤러리 샘플 클릭이 무드를 즉시 커밋한다 (#615, 2026-08-04 개정)', () => {
   const stubSample = () =>
-    within(landing()).getByRole('button', { name: /^Stub 무드로 바로 시작/ });
+    within(landing()).getByRole('button', { name: '스텁 무드로 바로 시작' });
 
   test('클릭 즉시 photo.state.components.layout이 그 무드로 바뀐다', () => {
     render(<Harness />);
@@ -161,7 +164,7 @@ describe('갤러리 무드 탭은 draft를 만들지 않는다 (#615 → #727)',
     render(<Harness />);
     expect(captured.components.layout).toBe('minimal');
 
-    fireEvent.click(sampleFor('Minimal'));
+    fireEvent.click(sampleFor('미니멀'));
 
     // 디바운스(1s) + 여유. 무드가 dirtyTick을 올리면 여기서 draft가 쓰인다.
     act(() => jest.advanceTimersByTime(2000));
@@ -175,7 +178,7 @@ describe('갤러리 무드 탭은 draft를 만들지 않는다 (#615 → #727)',
     jest.useFakeTimers();
     render(<Harness />);
 
-    fireEvent.click(sampleFor('Stub'));
+    fireEvent.click(sampleFor('스텁'));
     act(() => jest.advanceTimersByTime(2000));
 
     // 고른 무드는 화면에 즉시 선다 — 미룬 건 저장이지 선택이 아니다.
@@ -184,56 +187,18 @@ describe('갤러리 무드 탭은 draft를 만들지 않는다 (#615 → #727)',
   });
 });
 
-// 드롭존 onDrop이 commitHeroLayout()과 crop.openFile(file)을 같은 동기 핸들러에서 연달아 부른다
-// (claude-review PR #636 2차 P0). ImageCropModal이 previewComponents.layout(pages/index.tsx의
-// 280ms debounce)을 읽으면 방금 커밋한 무드가 아니라 그 debounce가 아직 안 따라잡은 직전 무드의
-// 크롭 프리셋으로 열린다 — #529 invariant 위반. 실제 앱에선 debounce가 있지만 이 하네스의
-// mobileShellProps는 previewComponents를 photo.state.components로 그대로 넘겨 항상 동기라
-// 그 지연을 재현하지 못한다(2차 리뷰가 지적한 지점) — 그래서 여기서는 previewComponents를
-// 마운트 시점 값에 고정해 "debounce가 영원히 안 따라잡은" 극단 케이스로 그 레이스를 강제한다.
-describe('드롭존 진입이 debounce된 previewComponents가 아니라 실시간 무드로 크롭 프리셋을 연다 (claude-review PR #636 2차 P0)', () => {
-  function DropRaceHarness({ onPhoto }: { onPhoto?: (p: ReturnType<typeof usePhototicket>) => void }) {
-    const photo = usePhototicket();
-    onPhoto?.(photo);
-    // 마운트 시점('minimal', 세로 슬롯)에 고정 — 이후 photo.state.components.layout이 바뀌어도
-    // 이 값은 안 따라간다. previewComponents가 debounce 중 멈춰 있는 순간을 그대로 흉내낸다.
-    const [staleComponents] = useState(photo.state.components);
-    return <MobileEditorShell {...mobileShellProps(photo, { previewComponents: staleComponents })} />;
-  }
-
-  test('가로 슬롯 무드 샘플을 고른 직후 드롭해도 크롭 모달이 가로 프리셋(1.5)으로 연다', async () => {
-    let photo!: ReturnType<typeof usePhototicket>;
-    render(<DropRaceHarness onPhoto={(p) => { photo = p; }} />);
-    expect(photo.state.components.layout).toBe('minimal'); // 기본값 — 세로 슬롯
-
-    fireEvent.click(within(landing()).getByRole('button', { name: /^Stub 무드로 바로 시작/ }));
-
-    fireEvent.drop(landing(), {
-      dataTransfer: { files: [new File(['x'], 'poster.png', { type: 'image/png' })] },
-    });
-
-    // 갤러리 클릭이 먼저 실제 state를 'stub'으로 바꿨는지 확인 — previewComponents(고정된
-    // 'minimal')와 갈라진 게 이 테스트의 전제다.
-    expect(photo.state.components.layout).toBe('stub');
-
-    const dialog = await screen.findByRole('dialog', { name: '포스터 크롭' });
-    // ImageCropModal이 photo.state.components.layout('stub', 가로)을 읽으면 1.5, previewComponents
-    // ('minimal', 고정)를 읽으면 0.6666...(2/3) — 고침 전엔 후자가 나와 이 assertion이 깨진다.
-    const aspect = Number(within(dialog).getByTestId('crop-frame').getAttribute('data-aspect'));
-    expect(aspect).toBeCloseTo(1.5, 2);
-  });
-});
+// 드롭존 진입의 크롭 프리셋 레이스(PR #636 2차 P0)는 드롭 업로드째 걷혀 사라졌다(#826 S5 D18-2) — 드롭이
+// 아무 일도 안 한다는 부재 단언은 posterCropPipeline.test.tsx가 진다.
 
 /**
- * 캐러셀 손짓 3종(#615, #778) — 탭/길게 누름/스와이프를 시간과 거리로 가른다. 정지·재개는
- * 별도 버튼이 맡고, 여기서 잠그는 건 **손짓이 서로를
- * 오염시키지 않는다**는 것: 넘기려던 손짓과 천천히 보려던 손짓이 편집 화면 진입으로 떨어지면
- * 사용자는 되돌리기 위해 초기화까지 가야 한다.
+ * 캐러셀 손짓 3종(#615 → #826 S5) — 탭/길게 누름/스와이프를 시간과 거리로 가른다. 여기서 잠그는 건 **손짓이
+ * 서로를 오염시키지 않는다**는 것: 넘기려던 손짓과 멈춰 보려던 손짓이 편집 화면 진입으로 떨어지면 사용자는
+ * 되돌리기 위해 초기화까지 가야 한다.
  */
 describe('캐러셀 손짓 — 탭만 진입시킨다 (#615)', () => {
   const gallery = () => within(landing()).getByTestId('mood-gallery');
   const minimalCard = () =>
-    within(gallery()).getByRole('button', { name: /^Minimal 무드로 바로 시작/ });
+    within(gallery()).getByRole('button', { name: '미니멀 무드로 바로 시작' });
 
   test('그냥 탭하면 그 무드로 진입한다', () => {
     render(<Harness />);
@@ -246,25 +211,20 @@ describe('캐러셀 손짓 — 탭만 진입시킨다 (#615)', () => {
     expect(landing().classList.contains('fixed')).toBe(false);
   });
 
-  /** 지금 가운데 선 카드 — 중앙 슬롯만 불투명도 1이다(CAROUSEL_SLOTS). */
-  const centered = () =>
-    (Array.from(gallery().querySelectorAll('button[data-touch]')) as HTMLElement[])
-      .find((b) => b.style.opacity === '1')!
-      .getAttribute('aria-label')!
-      .split(' 무드로')[0];
+  const centered = () => centeredIn(gallery());
 
   test('왼쪽으로 끌면 다음 무드가 중앙으로 오고, 손을 떼도 진입하지 않는다', () => {
     render(<Harness />);
     const card = minimalCard();
-    expect(centered()).toBe('Minimal');
+    expect(centered()).toBe('미니멀');
 
     fireEvent.pointerDown(gallery(), { clientX: 200 });
     fireEvent.pointerMove(gallery(), { clientX: 140 }); // 임계값(28px) 초과
     fireEvent.pointerUp(gallery(), { clientX: 140 });
     fireEvent.click(card, { detail: 1 }); // 실제 포인터 클릭(브라우저는 detail>=1) — 키보드는 0.
 
-    // 끈 방향(왼쪽)으로 한 칸 — GALLERY_LAYOUTS 순서상 Minimal 다음은 Criterion이다.
-    expect(centered()).toBe('Criterion');
+    // 끈 방향(왼쪽)으로 한 칸 — GALLERY_LAYOUTS 순서상 미니멀 다음은 크라이테리언이다.
+    expect(centered()).toBe('크라이테리언');
     // 그리고 랜딩은 그대로 떠 있어야 한다 — 넘기려던 손짓이 진입으로 새면 안 된다.
     expect(landing().classList.contains('fixed')).toBe(true);
     expect(captured.components.layout).toBe('minimal');
@@ -272,13 +232,13 @@ describe('캐러셀 손짓 — 탭만 진입시킨다 (#615)', () => {
 
   test('오른쪽으로 끌면 반대 방향으로 넘어간다', () => {
     render(<Harness />);
-    expect(centered()).toBe('Minimal');
+    expect(centered()).toBe('미니멀');
 
     fireEvent.pointerDown(gallery(), { clientX: 140 });
     fireEvent.pointerMove(gallery(), { clientX: 200 });
 
     // 목록의 처음에서 뒤로 가면 마지막으로 감긴다(원형).
-    expect(centered()).toBe('Stub');
+    expect(centered()).toBe('스텁');
   });
 
   test('길게 누르고 떼면 진입하지 않는다 — 천천히 보려던 손짓이다', () => {
@@ -348,106 +308,262 @@ describe('캐러셀 손짓 — 탭만 진입시킨다 (#615)', () => {
   });
 });
 
-describe('자동 전시 정지·재개 (#778)', () => {
+/**
+ * 무대 기둥 전시 구조(#826 S5 constraint-3 · acceptance-3) — 실제 px 비(0.62 · 0.52 · 0.34 · 0.22)는 measure-chrome.mjs
+ * `landing` 축이 400×675에서 잰다. 여기선 접근성 구조와 선언값을 잠근다.
+ */
+describe('무대 기둥 전시 (#826 S5 L-01)', () => {
   const gallery = () => within(landing()).getByTestId('mood-gallery');
-  const centered = () => Array.from(gallery().querySelectorAll('button[data-touch]'))
-    .find((button) => (button as HTMLElement).style.opacity === '1')!
-    .getAttribute('aria-label')!.split(' 무드로')[0];
+  const advance = (ms: number) => act(() => jest.advanceTimersByTime(ms));
+
+  test('전시가 carousel · "무드 전시"이고 기둥 · 위치 표시는 aria-hidden, 위치 표시가 1 / 5에서 한 칸 넘기면 2 / 5', () => {
+    jest.useFakeTimers();
+    try {
+      render(<Harness />);
+      expect(gallery().getAttribute('aria-roledescription')).toBe('carousel');
+      expect(gallery().getAttribute('aria-label')).toBe('무드 전시');
+      const beam = screen.getByTestId('mood-gallery-beam');
+      expect(beam.getAttribute('aria-hidden')).toBe('true');
+      expect(beam.className).toContain('w-[62%]');
+      expect(beam.className).toContain('border-x');
+      expect(beam.className).toContain('bg-s1');
+      const index = screen.getByTestId('mood-gallery-index');
+      expect(index.getAttribute('aria-hidden')).toBe('true');
+      expect(index.className).toContain('tabular-nums');
+      expect(index.className).toContain('text-caption');
+      expect(index.textContent).toBe('1 / 5');
+      advance(4000);
+      expect(screen.getByTestId('mood-gallery-index').textContent).toBe('2 / 5');
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test('가운데 카드 52% · 그림자, 좌우 34% · 불투명도 0.32 · 그림자 없음 · 22% 밖, 먼 카드는 불투명도 0이되 보이는 요소로 남는다', () => {
+    render(<Harness />);
+    const bySlot = (d: number) => gallery().querySelector(`button[data-slot="${d}"]`) as HTMLElement;
+    expect(bySlot(0).style.width).toBe('52%');
+    expect(bySlot(0).style.boxShadow).toBe('var(--pr-ticket-shadow)');
+    for (const d of [-1, 1]) {
+      expect(bySlot(d).style.width).toBe('34%');
+      expect(bySlot(d).style.opacity).toBe('0.32');
+      expect(bySlot(d).style.boxShadow).toBe('none');
+    }
+    expect(bySlot(-1).style.left).toBe('-22%');
+    expect(bySlot(1).style.left).toBe('88%'); // 100 − 34 + 22 — 오른쪽 가장자리가 22% 밖
+    for (const d of [-2, 2]) {
+      const far = bySlot(d);
+      expect(far.style.opacity).toBe('0');
+      expect(far.style.pointerEvents).toBe('none');
+      expect(far.style.visibility === '' || far.style.visibility === 'visible').toBe(true);
+      expect(far.style.display === '' || far.style.display !== 'none').toBe(true);
+      expect(far.tabIndex >= 0).toBe(true);
+    }
+  });
+});
+
+/**
+ * 자동 전시와 정지(#826 S5 constraint-4, 바뀐 요구 1 — 소유자 결정 2026-11-17). 정지 · 재개 버튼은 없다. 4초마다
+ * 한 칸 넘기고, 누르고 있는 동안 · 키보드 포커스가 전시 안에 있는 동안 멈춘다. 마우스를 올리는 것만으로는 안
+ * 멈춘다(D18-2).
+ */
+describe('자동 전시 — 버튼 없이 누름 · 포커스 동안 정지 (#826 S5)', () => {
+  const gallery = () => within(landing()).getByTestId('mood-gallery');
+  const centered = () => centeredIn(gallery());
+  const card = (name: string) => within(gallery()).getByRole('button', { name: `${name} 무드로 바로 시작` });
   const advance = (ms: number) => act(() => jest.advanceTimersByTime(ms));
 
   beforeEach(() => jest.useFakeTimers());
   afterEach(() => jest.useRealTimers());
 
-  test('기본 자동 전시는 유지하고, 정지는 지속되며 재개 후 한 간격마다 한 칸만 넘어간다', () => {
+  test('3999ms엔 그대로, 4000ms에 한 칸 넘어가고 정지 · 재개 버튼이 없다', () => {
     render(<Harness />);
-    expect(centered()).toBe('Minimal');
-    advance(3500);
-    expect(centered()).toBe('Criterion');
-
-    fireEvent.click(screen.getByRole('button', { name: '자동 전시 정지' }));
-    advance(14000);
-    expect(centered()).toBe('Criterion');
-    expect(landing().classList.contains('fixed')).toBe(true);
-    expect(captured.components.layout).toBe('minimal');
-
-    fireEvent.click(screen.getByRole('button', { name: '자동 전시 재개' }));
-    advance(3499);
-    expect(centered()).toBe('Criterion');
+    expect(screen.queryByRole('button', { name: '자동 전시 정지' }) === null).toBe(true);
+    expect(screen.queryByRole('button', { name: '자동 전시 재개' }) === null).toBe(true);
+    advance(3999);
+    expect(centered()).toBe('미니멀');
     advance(1);
-    expect(centered()).toBe('35mm');
-    advance(3500);
-    expect(centered()).toBe('Editorial');
+    expect(centered()).toBe('크라이테리언');
   });
 
-  test('정지 중 스와이프·길게 누름 후에도 멈춰 있고 카드는 선택할 수 있다', () => {
+  test('누르고 있는 동안 8000ms 멈추고, 떼면 4000ms 뒤 넘어간다', () => {
     render(<Harness />);
-    fireEvent.click(screen.getByRole('button', { name: '자동 전시 정지' }));
-    fireEvent.pointerDown(gallery(), { clientX: 200 });
-    fireEvent.pointerMove(gallery(), { clientX: 140 });
-    fireEvent.pointerUp(gallery(), { clientX: 140 });
-    expect(centered()).toBe('Criterion');
-    fireEvent.pointerDown(gallery(), { clientX: 100 });
-    advance(500);
-    fireEvent.pointerUp(gallery(), { clientX: 100 });
-    advance(14000);
-    expect(centered()).toBe('Criterion');
+    fireEvent.pointerDown(gallery(), { clientX: 100, pointerId: 1 });
+    advance(8000);
+    expect(centered()).toBe('미니멀');
+    fireEvent.pointerUp(gallery(), { clientX: 100, pointerId: 1 });
+    advance(3999);
+    expect(centered()).toBe('미니멀');
+    advance(1);
+    expect(centered()).toBe('크라이테리언');
+  });
 
-    fireEvent.click(within(gallery()).getByRole('button', { name: /^Criterion 무드로/ }), { detail: 0 });
-    expect(captured.components.layout).toBe('criterion');
+  test('pointercancel도 누름 정지를 푼다', () => {
+    render(<Harness />);
+    fireEvent.pointerDown(gallery(), { clientX: 100, pointerId: 1 });
+    advance(8000);
+    fireEvent.pointerCancel(gallery(), { pointerId: 1 });
+    advance(4000);
+    expect(centered()).toBe('크라이테리언');
+  });
+
+  test('키보드로 들어온 포커스가 전시 안에 있는 동안 8000ms 멈추고, 밖으로 나가면 4000ms 뒤 넘어간다', () => {
+    render(<Harness />);
+    fireEvent.keyDown(document.body, { key: 'Tab' });
+    act(() => card('미니멀').focus());
+    advance(8000);
+    expect(centered()).toBe('미니멀');
+    fireEvent.keyDown(document.body, { key: 'Tab' });
+    act(() => screen.getByTestId('landing-skip-poster').focus());
+    advance(3999);
+    expect(centered()).toBe('미니멀');
+    advance(1);
+    expect(centered()).toBe('크라이테리언');
+  });
+
+  test('포인터로 누른 뒤 남은 포커스로는 멈추지 않는다', () => {
+    render(<Harness />);
+    const c = card('미니멀');
+    fireEvent.pointerDown(c, { clientX: 100, pointerId: 1 });
+    act(() => c.focus());
+    fireEvent.pointerUp(c, { clientX: 100, pointerId: 1 });
+    advance(4000);
+    expect(centered()).toBe('크라이테리언');
+  });
+
+  test('마우스 pointerenter만으로는 멈추지 않는다', () => {
+    render(<Harness />);
+    fireEvent.pointerEnter(gallery(), { pointerType: 'mouse' });
+    fireEvent.pointerOver(card('미니멀'), { pointerType: 'mouse' });
+    advance(4000);
+    expect(centered()).toBe('크라이테리언');
+  });
+
+  test('길게(350ms 초과) 누른 뒤 떼면 무드로 들어가지 않고, 28px 스와이프마다 한 칸씩 넘어간다', () => {
+    render(<Harness />);
+    fireEvent.pointerDown(gallery(), { clientX: 100, pointerId: 1 });
+    advance(400);
+    fireEvent.pointerUp(gallery(), { clientX: 100, pointerId: 1 });
+    fireEvent.click(card('미니멀'), { detail: 1 });
+    expect(landing().classList.contains('fixed')).toBe(true);
+
+    fireEvent.pointerDown(gallery(), { clientX: 200, pointerId: 2 });
+    fireEvent.pointerMove(gallery(), { clientX: 173, pointerId: 2 }); // 27px — 아직
+    expect(centered()).toBe('미니멀');
+    fireEvent.pointerMove(gallery(), { clientX: 172, pointerId: 2 }); // 28px
+    expect(centered()).toBe('크라이테리언');
+    fireEvent.pointerMove(gallery(), { clientX: 144, pointerId: 2 }); // 다시 28px
+    expect(centered()).toBe('35mm');
+    fireEvent.pointerUp(gallery(), { clientX: 144, pointerId: 2 });
+  });
+});
+
+/** 키보드 도달(#826 S5 constraint-5) — 5개 전부 tab 순서의 버튼이고, 포커스가 간 카드가 가운데로 온다. */
+describe('키보드 도달 (#826 S5)', () => {
+  const gallery = () => within(landing()).getByTestId('mood-gallery');
+  const card = (name: string) => within(gallery()).getByRole('button', { name: `${name} 무드로 바로 시작` });
+
+  test('카드 버튼 5개가 접근성 트리에 있고 tabIndex가 음수가 아니다', () => {
+    render(<Harness />);
+    const buttons = within(gallery()).getAllByRole('button');
+    expect(buttons).toHaveLength(5);
+    for (const b of buttons) expect(b.tabIndex >= 0).toBe(true);
+  });
+
+  test('Tab으로 차례로 닿고, 가운데가 아닌 카드에 포커스가 가면 그 카드가 가운데가 되며 Enter로 들어간다', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    const names = ['미니멀', '크라이테리언', '35mm', '에디토리얼', '스텁'];
+    act(() => card('미니멀').focus());
+    for (const name of names.slice(1)) {
+      await user.tab();
+      expect(document.activeElement === card(name)).toBe(true);
+      expect(centeredIn(gallery())).toBe(name);
+      expect(screen.getByTestId('mood-gallery-index').textContent).toBe(`${names.indexOf(name) + 1} / 5`);
+    }
+    await user.keyboard('{Enter}');
+    expect(captured.components.layout).toBe('stub');
     expect(landing().classList.contains('fixed')).toBe(false);
   });
 
-  test('정지 버튼에 키보드 포커스만 두어도 한 주기를 넘겨 멈춰 있고, 포커스를 둔 채 재개하면 다시 돈다', async () => {
-    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+  test('먼 카드(두 칸)에 프로그램 포커스를 줘도 가운데로 오고, 키보드 활성화(detail 0)로 들어간다', () => {
     render(<Harness />);
-    const control = screen.getByRole('button', { name: '자동 전시 정지' });
-    act(() => control.focus());
-    expect(control.getAttribute('aria-label')).toBe('자동 전시 재개');
-    advance(7000);
-    expect(centered()).toBe('Minimal');
-
-    await user.keyboard('{Enter}');
-    expect(control.getAttribute('aria-label')).toBe('자동 전시 정지');
-    expect(document.activeElement === control).toBe(true);
-    advance(3500);
-    expect(centered()).toBe('Criterion');
-
-    await user.keyboard(' ');
-    advance(7000);
-    expect(centered()).toBe('Criterion');
-    expect(document.activeElement === control).toBe(true);
+    const far = card('35mm');
+    expect(far.style.pointerEvents).toBe('none');
+    act(() => far.focus());
+    expect(centeredIn(gallery())).toBe('35mm');
+    fireEvent.click(far, { detail: 0 });
+    expect(captured.components.layout).toBe('35mm');
   });
 
-  test('마우스 포인터가 정지 버튼에만 들어가도 멈추고, 그 자리에서 재개하면 다시 돈다', () => {
+  test('좌우 카드를 포인터로 탭하면 그 카드의 무드로 들어간다', () => {
     render(<Harness />);
-    const control = screen.getByRole('button', { name: '자동 전시 정지' });
-    fireEvent.pointerEnter(control, { pointerType: 'mouse' });
-    advance(7000);
-    expect(centered()).toBe('Minimal');
-    fireEvent.click(control);
-    expect(control.getAttribute('aria-label')).toBe('자동 전시 정지');
-    advance(3500);
-    expect(centered()).toBe('Criterion');
+    const right = gallery().querySelector('button[data-slot="1"]') as HTMLElement;
+    const left = gallery().querySelector('button[data-slot="-1"]') as HTMLElement;
+    expect(right.getAttribute('aria-label')).toBe('크라이테리언 무드로 바로 시작');
+    expect(left.getAttribute('aria-label')).toBe('스텁 무드로 바로 시작');
+    fireEvent.pointerDown(right, { clientX: 380, pointerId: 1 });
+    fireEvent.pointerUp(right, { clientX: 380, pointerId: 1 });
+    fireEvent.click(right, { detail: 1 });
+    expect(captured.components.layout).toBe('criterion');
   });
 
-  test('카드에 키보드 포커스가 들어가면 정지하고 포커스가 나가도 자동 재개하지 않는다', () => {
+  test('왼쪽 카드도 탭하면 그 무드로 들어간다', () => {
     render(<Harness />);
-    const card = within(gallery()).getByRole('button', { name: /^Minimal 무드로/ });
-    act(() => card.focus());
-    expect(screen.getByRole('button', { name: '자동 전시 재개' })).toBeDefined();
-    act(() => card.blur());
-    advance(7000);
-    expect(centered()).toBe('Minimal');
+    const left = gallery().querySelector('button[data-slot="-1"]') as HTMLElement;
+    fireEvent.pointerDown(left, { clientX: 20, pointerId: 1 });
+    fireEvent.pointerUp(left, { clientX: 20, pointerId: 1 });
+    fireEvent.click(left, { detail: 1 });
+    expect(captured.components.layout).toBe('stub');
+  });
+});
+
+/** 스크린샷 인식(#826 S5 constraint-11 L-03) — 셸 경로의 인식 중 · 성공 · 실패. 여덟 문구의 자리는 landingOcrNotice가 잰다. */
+describe('랜딩 스크린샷 인식 (#826 S5 L-03)', () => {
+  const ocrButton = () => screen.getByRole<HTMLButtonElement>('button', { name: '티켓 스크린샷으로 자동입력' });
+  const png = () => new File(['x'], 'ticket.png', { type: 'image/png' });
+
+  test('인식 중엔 주 CTA가 "티켓 인식 중…"(aria-busy) · disabled이고 링크 쌍이 막히며, 실패 뒤 돌아온다', async () => {
+    let finish!: (v: Record<string, unknown>) => void;
+    ocrImpl = () => new Promise((resolve) => { finish = resolve; });
+    render(<Harness />);
+    fireEvent.change(ocrFileInput(), { target: { files: [png()] } });
+
+    await waitFor(() => expect(ocrButton().getAttribute('aria-busy')).toBe('true'));
+    expect(ocrButton().textContent).toContain('티켓 인식 중…');
+    expect(ocrButton().disabled).toBe(true);
+    expect(ocrButton().querySelector('span[aria-hidden="true"] svg') !== null).toBe(true);
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: '포스터 업로드' }).disabled).toBe(true);
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: '포스터 없이 직접 입력' }).disabled).toBe(true);
+
+    await act(async () => finish({ failed: true }));
+    await waitFor(() => expect(ocrButton().getAttribute('aria-busy')).toBe('false'));
+    expect(ocrButton().textContent).toContain('티켓 스크린샷으로 자동입력');
+    expect(ocrButton().disabled).toBe(false);
+    expect(screen.getByTestId('landing-notice').textContent).toBe('인식에 실패했어요');
+    expect(screen.queryByTestId('mood-gallery-index') === null).toBe(true);
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: '포스터 업로드' }).disabled).toBe(false);
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: '포스터 없이 직접 입력' }).disabled).toBe(false);
+    expect(landing().classList.contains('fixed')).toBe(true);
   });
 
-  test('마우스가 카드 위에 있으면 정지하고 터치 진입은 기존 손짓 동작을 유지한다', () => {
+  test('인식 성공이면 랜딩이 걷히고 자동입력 배너가 보이는 편집 화면이다(E-05)', async () => {
+    ocrImpl = async () => ({ theater: 'CGV 용산아이파크몰', seat: 'H12' });
     render(<Harness />);
-    fireEvent.pointerEnter(gallery(), { pointerType: 'touch' });
-    advance(3500);
-    expect(centered()).toBe('Criterion');
-    fireEvent.pointerEnter(gallery(), { pointerType: 'mouse' });
-    advance(7000);
-    expect(centered()).toBe('Criterion');
-    expect(screen.getByRole('button', { name: '자동 전시 재개' })).toBeDefined();
+    fireEvent.change(ocrFileInput(), { target: { files: [png()] } });
+    await waitFor(() => expect(landing().classList.contains('fixed')).toBe(false));
+    expect(captured.movieInfo.theater).toBe('CGV 용산아이파크몰');
+    expect(!!screen.queryByRole('button', { name: '되돌리기' })).toBe(true);
+  });
+
+  test('인식된 정보가 없으면 랜딩에 남아 그 자리에 안내가 뜨고, 빈 편집(E-02)은 "포스터 없이 직접 입력"으로 간다', async () => {
+    ocrImpl = async () => ({});
+    render(<Harness />);
+    fireEvent.change(ocrFileInput(), { target: { files: [png()] } });
+    await waitFor(() => expect(screen.getByTestId('landing-notice').textContent).toBe('인식된 정보가 없어요. 직접 입력해 주세요.'));
+    expect(landing().classList.contains('fixed')).toBe(true);
+    fireEvent.click(screen.getByTestId('landing-skip-poster'));
+    expect(landing().classList.contains('fixed')).toBe(false);
+    expect(captured.movieInfo.title).toBe('');
   });
 });

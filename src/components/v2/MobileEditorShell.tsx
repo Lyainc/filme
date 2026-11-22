@@ -6,7 +6,6 @@ import {
   useRef,
   useState,
   type ChangeEvent,
-  type DragEvent,
   type KeyboardEvent,
   type MouseEvent as ReactMouseEvent,
 } from 'react';
@@ -310,29 +309,6 @@ export function MobileEditorShell({
     e.target.value = '';
   }
 
-  // 파일 드롭 업로드(#607) — 데스크톱 ImageUploader의 드롭존이 지워지며 같이 사라졌던 경로다.
-  // 프레임 안이라도 데스크톱에선 Finder에서 끌어다 놓는 게 여전히 자연스러운 진입이라 되살린다.
-  // 되살린 건 **첫 업로드 CTA 하나**다. ImageUploader는 업로드 후 썸네일에도 드롭을 받았지만,
-  // 그 자리를 잇는 건 온-티켓 프리뷰이고 거기에 파일 드롭을 얹는 건 #365가 미스터치 때문에
-  // 걷어낸 온-티켓 포스터 제스처를 되돌리는 셈이다. 교체는 도크 사진 모드(#826 S2)가 담당한다.
-  // 크롭 진행 중 드롭은 막는다 — getCroppedImg가 읽고 있는 원본 blob을 openFile의 교체가
-  // revoke해버린다(버튼은 모달에 가려지지만 드롭은 따로 막아야 한다).
-  const [posterDragOver, setPosterDragOver] = useState(false);
-  const posterDropProps = {
-    onDragOver: (e: DragEvent) => {
-      e.preventDefault();
-      setPosterDragOver(true);
-    },
-    onDragLeave: () => setPosterDragOver(false),
-    onDrop: (e: DragEvent) => {
-      e.preventDefault();
-      setPosterDragOver(false);
-      if (crop.isCropping) return;
-      const file = e.dataTransfer.files?.[0];
-      if (!file || !POSTER_ACCEPT.includes(file.type)) return;
-      crop.openFile(file);
-    },
-  };
   // 랜딩의 "새로 시작" 네 경로가 공유하는 진입 커밋(#727 c7) — 메모리 문서만 새 문서로 되돌리고
   // localStorage/IndexedDB 저장분은 그대로 둔다. 저장분이 덮이는 건 새 문서의 첫 자동저장이라,
   // 자동 회전 캐러셀 오탭 같은 사고가 새로고침 한 번으로 복구된다. "이어서 만들기"는 이걸 안 부른다.
@@ -591,11 +567,6 @@ export function MobileEditorShell({
         <div className="flex h-full flex-col">
           {canvasReady && (
             <div
-              // 포스터 드롭(#607)은 원래 랜딩 루트에만 걸려 있었는데, #674로 캔버스가 서면 랜딩이
-              // 숨으므로 그대로 두면 display:none 위의 죽은 핸들러가 된다 — '직접 입력'·OCR·무드
-              // 샘플로 들어온 세 경로가 첫 업로드 전에 드롭을 잃는다. 랜딩이 보이는 상태와 이
-              // 스테이지가 뜨는 상태는 canvasReady로 배타라 중복 발화가 없다.
-              {...posterDropProps}
               // max 스테이지 자체도 "포스터 rect 밖 탭" 탈출구여야 한다(#729 ac3) — 안쪽 wrapper
               // (setPreviewWrapEl)는 풀블리드 무드(minimal·stub·editorial)에서 포스터와 거의 같은
               // 크기라, 포스터와 스테이지 사이 여백(실측 47.9~120.8px)을 탭하면 이 바깥 div가
@@ -605,12 +576,8 @@ export function MobileEditorShell({
               onClick={isMax ? () => handleViewModeChange('default') : undefined}
               className={
                 isMax
-                  ? `fixed inset-0 z-50 flex items-center justify-center bg-s1 px-6${
-                      posterDragOver ? ' outline outline-2 -outline-offset-2 outline-accent' : ''
-                    }`
-                  : `flex min-h-0 flex-1 items-center justify-center px-4 py-3${
-                      posterDragOver ? ' outline outline-2 -outline-offset-2 outline-accent' : ''
-                    }`
+                  ? 'fixed inset-0 z-50 flex items-center justify-center bg-s1 px-6'
+                  : 'flex min-h-0 flex-1 items-center justify-center px-4 py-3'
               }
               style={
                 isMax
@@ -759,8 +726,6 @@ export function MobileEditorShell({
               startFreshDoc({ layout: id });
               setLandingDismissed(true);
             }}
-            dropProps={posterDropProps}
-            dragOver={posterDragOver}
           >
             <OcrUploadCard
               setInfo={photo.updateMovieInfo}

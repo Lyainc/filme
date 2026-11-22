@@ -1,76 +1,47 @@
-import type { DragEvent, MouseEvent, PointerEvent, ReactNode } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import type { CSSProperties, FocusEvent, MouseEvent, PointerEvent, ReactNode } from 'react';
+import { createContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { LayoutId } from '@/types';
 import { useMatchMedia } from '@/hooks/useMatchMedia';
+import { readDraftSavedAt } from '@/hooks/usePhototicket';
 import { cn } from '@/utils/cn';
 import { pressableVariants } from '@/components/ui/variants';
 import { LAYOUTS } from '@/utils/layouts';
 import { AppFooter } from './AppFooter';
 import { Wordmark } from './Wordmark';
 
-/** 트랙 카드 폭 — 라벨을 없앤 대신 샘플 자체를 키운다(사용자 피드백). 세로는 TicketRenderer가
- *  각 무드의 실제 비율로 스스로 계산하므로 여기선 폭만 선언한다. */
-const TRACK_CARD_WIDTH = 140;
-/** 정지 그리드 카드 폭 — 트랙과 다른 값이다. 400×675 안에서 6장을 스크롤 없이 한 화면에 다 넣어야
- *  하는 정지 폴백은 트랙만큼 키우면 넘친다(실측 회귀) — 3열 그리드가 들어가는 최대치로 별도로 잡는다. */
-const GRID_CARD_WIDTH = 92;
-/** 트랙 카드 높이 — 갤러리 카드는 무드와 무관하게 전부 세로 무드 비율로 선다(아래 GALLERY_ROTATED). */
-const CARD_HEIGHT = (TRACK_CARD_WIDTH * 1534) / 960;
-/** 자동 전환 간격 — 티켓 한 장을 알아볼 시간을 넉넉히 준다(사용자 확인 2026-08-08). */
-const CAROUSEL_INTERVAL_MS = 3500;
-/** 자리 이동에 걸리는 시간 — 시안(620ms)의 2배. 간격과 같은 이유로 느긋하게 간다. */
+/** 자동 전환 간격 — 마스터 L-01 '4초마다'(#826 S5 constraint-4). */
+export const CAROUSEL_INTERVAL_MS = 4000;
+/** 자리 이동에 걸리는 시간. 간격(4초) 안에서 끝나야 다음 칸이 겹치지 않는다. */
 const CAROUSEL_TRANSITION_MS = 1240;
-/** 길게 누르고 있는 동안의 간격 — 명시적인 전시 정지 상태와는 별개다. */
-const CAROUSEL_SLOW_INTERVAL_MS = 7000;
 /** 이 시간을 넘겨 누르고 있으면 "길게 누름"이다. 그 뒤 손을 떼도 무드로 진입하지 않는다. */
 const LONG_PRESS_MS = 350;
 /** 이만큼 가로로 끌면 스와이프다 — 넘길 때마다 원점을 다시 잡아 한 제스처로 여러 칸이 넘어간다. */
 const SWIPE_STEP_PX = 28;
-/**
- * 중앙에서 n칸 떨어진 카드의 자리. `x`는 px이 아니라 **카드 폭의 배수**라 `TRACK_CARD_WIDTH`를
- * 바꿔도 배치 비율이 그대로 따라온다.
- *
- * 시안 3종(코브플로 / 평면 원근 / 겹친 묶음) 중 **평면 원근**을 고르고, 폭은 평면 원근과 겹친
- * 묶음의 중간에 둔다(사용자 조정 2026-08-08 — 처음엔 겹친 묶음 쪽에 더 붙였는데 너무 좁았다).
- * 시안 기준 배수로 평면 원근이 0.70/1.20, 겹친 묶음이 0.41/0.70이고 아래가 그 사이다.
- *
- * 기울이지 않는 게 핵심 — 이 캐러셀의 목적이 무드가 어떻게 생겼는지 보여주는 거라, rotateY로
- * 티켓 조판을 사다리꼴로 찌그러뜨리면 그 목적을 스스로 깎는다. 거리는 크기·불투명도·흐림
- * 셋으로만 만든다.
- */
-const CAROUSEL_SLOTS = [
-  { x: 0, scale: 1, opacity: 1, blur: 0, z: 3 },
-  { x: 0.64, scale: 0.78, opacity: 0.5, blur: 1.1, z: 2 },
-  { x: 1.1, scale: 0.6, opacity: 0.27, blur: 2.2, z: 1 },
-] as const;
+/** 랜딩 안내가 위치 표시 자리에 머무는 시간 — 카드의 자체 토스트 수명과 같다(OcrUploadCard). */
+export const LANDING_NOTICE_MS = 3000;
+/** 오버레이가 걷힐 때 전환(마스터 12-tokens-space dur-2 · ease, constraint-7). */
+const OVERLAY_EXIT_MS = 240;
+const OVERLAY_EXIT = `${OVERLAY_EXIT_MS}ms cubic-bezier(.2,.7,.2,1)`;
+/** 세로 티켓 비율 — 갤러리 카드는 무드와 무관하게 전부 이 비율로 선다(아래 GALLERY_ROTATED). */
+const CARD_ASPECT = '960 / 1534';
 
 /**
- * 히어로 갤러리에 세우는 무드 — `LAYOUTS` 전체가 아니다(사용자 피드백 2026-08-08).
+ * 히어로 갤러리에 세우는 무드 — `LAYOUTS` 전체가 아니다(사용자 피드백 2026-08-08, 마스터 L-01 '현행 유지').
  *
- * 캔버스가 가로인 두 무드(`editorial` 1534×960, `35mm-landscape` 960 폭 기준 가로)가 세로 카드
- * 사이에 섞이면, 같은 카드 폭에서 높이만 62%로 주저앉아 줄의 리듬이 깨지고 정작 그 무드도 너무
- * 작아 안 읽힌다. 둘을 다르게 처리하는 이유는 대체 가능성이다: `35mm Wide`는 같은 필름 계열인
- * `35mm`(세로)가 이미 줄에 있어 빼도 표현이 안 사라지지만, `editorial`은 유일한 편집 디자인이라
- * 빼면 그 톤 자체가 갤러리에서 없어진다 — 그래서 빼는 대신 세로로 돌려 세운다.
- *
- * 돌리는 건 갤러리 전시용일 뿐 무드 자체(`LAYOUTS`의 `orientation`·크롭 프리셋 #529)는 그대로다.
+ * 캔버스가 가로인 두 무드(`editorial` 1534×960, `35mm-landscape`)가 세로 카드 사이에 섞이면 같은 카드 폭에서
+ * 높이만 62%로 주저앉아 리듬이 깨진다. 둘을 다르게 처리하는 이유는 대체 가능성이다: 35mm 와이드는 같은 필름
+ * 계열인 35mm(세로)가 이미 있어 빼도 표현이 안 사라지지만, 에디토리얼은 유일한 편집 디자인이라 빼는 대신
+ * 세로로 돌려 세운다. 돌리는 건 전시용일 뿐 무드 자체(`LAYOUTS`의 `orientation`·크롭 프리셋 #529)는 그대로다.
  */
-// 갤러리에 실제로 오르는 무드의 id만 — HERO_IMAGES가 이 타입으로 완전성을 강제한다(아래).
 type GalleryLayoutId = Exclude<LayoutId, '35mm-landscape'>;
 type GalleryLayout = (typeof LAYOUTS)[number] & { id: GalleryLayoutId };
 export const GALLERY_LAYOUTS = LAYOUTS.filter(
   (l): l is GalleryLayout => l.id !== '35mm-landscape'
 );
 /**
- * 갤러리 전경 이미지(#613 → 콘택트 시트 검토 완료, 2026-09-05) — `public/assets/landing/`의
- * 실제 무드 렌더 결과물. 라이브 `TicketRenderer` 대신 이 고정 자산을 쓰므로, 무드 조판이
- * 바뀌면 여기도 다시 구워야 한다(README 참고). 원본 포스터가 그대로 보이는 실사 자산이라
- * 라이브 렌더로 되돌릴 이유가 없다.
- *
- * `Record<GalleryLayoutId, string>`(Partial 아님, claude-review PR #759 P1) — 이웃 룩업
- * `MOOD_CHIP_BG`(`LayoutPicker.tsx`)와 같은 관례로, 갤러리에 새 무드가
- * 추가되거나 키가 오타 나면 컴파일러가 엔트리 누락을 그 자리에서 잡는다 — Partial이면 그런
- * 사고가 `src={undefined}`로 조용히 화면에만 나타난다.
+ * 갤러리 전경 이미지(#613) — `public/assets/landing/`의 실제 무드 렌더 결과물. 무드 조판이 바뀌면 여기도
+ * 다시 구워야 한다(README 참고). `Record<GalleryLayoutId, string>`(Partial 아님, PR #759 P1)이라 새 무드나
+ * 키 오타를 컴파일러가 잡는다.
  */
 const HERO_IMAGES: Record<GalleryLayoutId, string> = {
   minimal: '/assets/landing/hero-minimal.webp',
@@ -79,75 +50,151 @@ const HERO_IMAGES: Record<GalleryLayoutId, string> = {
   editorial: '/assets/landing/hero-editorial.webp',
   stub: '/assets/landing/hero-stub.webp',
 };
-/** 갤러리에서만 90° 돌려 세로로 세우는 무드 — 위 주석 참고. 시계 방향(90deg)이라 원본의 오른쪽
- *  끝이 아래로 간다: editorial의 붉은 stub 밴드가 오른쪽이라 돌리면 아래에 선다(사용자 요청).
- *  반시계로 돌리면 같은 밴드가 위로 올라가니 부호를 바꿀 때 실물 확인 없이 뒤집지 말 것. */
+/** 갤러리에서만 90° 돌려 세로로 세우는 무드. 시계 방향(90deg)이라 editorial의 오른쪽 붉은 stub 밴드가
+ *  아래에 선다(사용자 요청). 반시계로 돌리면 밴드가 위로 올라가니 실물 확인 없이 부호를 뒤집지 말 것. */
 const GALLERY_ROTATED: ReadonlySet<LayoutId> = new Set<LayoutId>(['editorial']);
 
 /**
- * 히어로 무드 갤러리 캐러셀(#615, 2026-08-08 개정) — 무드를 실제 렌더 엔진(TicketRenderer,
- * ghost + croppedImageUrl=null)으로 노출한다. 가운데가 제일 크고 좌우가 멀어 보이며, 오른쪽
- * 카드가 중앙으로 오면서 커진다. 샘플 클릭은 `onEnterMood`로 그 무드를 즉시 커밋하는 독립된
- * 네 번째 진입점이다(훑어보기용 중간 상태가 없다 — 폐기된 `LayoutStrip`+`heroLayout` 미러와
- * 다른 점). 무드 이름 라벨은 없다(사용자 피드백) — `aria-label`엔 실려 있어 정보 손실은 없다.
+ * 가운데에서 d칸 떨어진 카드의 자리(마스터 master.css `.c-gal .main/.peek`, #826 S5 constraint-3).
+ * 전부 전시 폭 대비 %라 프레임 폭이 바뀌어도 비율이 그대로다. 좌우 카드는 바깥 가장자리가 전시 폭의
+ * 22%만큼 밖으로 나가 잘려 엿보인다(왼쪽 left −22%, 오른쪽 left 100 − 34 + 22 = 88%).
  *
- * **끝없이 흐르는 marquee를 대체했다.** 예전엔 리스트를 두 벌 이어붙이고 `-50%`까지 트랜슬레이트해
- * 이음매 없이 순환시켰는데, 그래서 같은 이름의 `<button>`이 두 벌 존재하고 뒤 절반을
- * `aria-hidden`+`tabIndex={-1}`로 접근성 트리에서 빼는 처리가 필요했다. 캐러셀은 카드 한 벌만
- * 두고 `transform`만 바꾸므로 그 복제와 예외 처리가 통째로 사라졌다 — 세트 경계에서 6px씩 튀던
- * 루프 스냅(트랙 폭 50%가 실제 세트 경계와 안 맞던 문제)도 같이 없어졌다.
- *
- * **대신 "지금 어느 무드가 중앙인가"라는 상태가 새로 생겼다.** 그게 이 개편이 지불한 값이다.
- *
- * **자동 전시 + 정지·재개 버튼**(#778, 사용자 결정 2026-10-21). 카드 비교를 위한 정지는
- * 재개 버튼을 누를 때까지 유지한다. 카드나 정지 버튼의 키보드 포커스와 마우스 진입도 전시를 멈춘다.
- * 기존 손짓 셋은 시간과 거리로 구분한다:
- *
- *  - **탭** — 그 무드로 바로 시작(`onEnterMood`). 아래 둘 중 어느 것도 아니었을 때만이다.
- *  - **길게 누름**(`LONG_PRESS_MS` 초과) — 누르고 있는 동안 간격이 `CAROUSEL_SLOW_INTERVAL_MS`로
- *    늘어난다. 멈추는 게 아니라 느려지는 것이고, 떼면 원래 속도로 돌아온다. 손을 떼도 진입하지
- *    않는다 — 천천히 보려던 손짓이 편집 화면으로 떨어지면 안 된다.
- *  - **스와이프**(`SWIPE_STEP_PX` 초과) — 끄는 방향으로 넘어간다. 임계값마다 원점을 다시 잡아
- *    한 번 쭉 끌면 여러 칸이 연달아 넘어가므로, 자동 전환을 기다리는 것보다 빠르게 훑을 수 있다.
- *
- * 판정이 `gesture` **ref**에 사는 이유는 `click`이 `pointerup` 뒤에 오기 때문이다 — state로
- * 두면 리렌더를 기다리는 사이에 click이 먼저 지나가 스와이프 끝자락에서 엉뚱한 무드로 진입한다.
- * 컨테이너의 `touch-action: pan-y`도 같은 묶음이다: 안 주면 브라우저가 가로 끌기를 스크롤로
- * 가로채 `pointermove`가 아예 안 온다.
- *
- * **탭 타깃과 눌림 피드백이 서로 다른 엘리먼트에 산다** — `<button>`은 `active:scale-[0.97]`을
- * 들고 있어(PrimaryCta·OcrUploadCard와 동일 패턴) `__tests__/tapTargets.ts`의 변형 금지 정규식
- * (`\S+:(?:h|w|size|scale|max-[hw])-`)에 그대로 걸린다 — 그래서 폭 선언은 그 클래스가 없는 안쪽
- * 카드 div가 인라인 style로 대신 지고(파서가 읽는 두 형태 중 인라인 px, TexturePicker 칩과 같은
- * 경우), 테스트는 그 안쪽 div만 잰다(LayoutStrip/TexturePicker가 스와치를 재고 바깥 버튼은 안
- * 재는 것과 같은 분리).
- *
- * **`prefers-reduced-motion`은 애니메이션만 죽이는 게 아니라 레이아웃을 바꾼다** — 정지 시엔
- * 캐러셀 대신 줄바꿈 그리드로 전부를 한 화면에 그린다. 캐러셀을 그대로 두고 자동 전환만 끄면
- * 좌우 카드가 작고 흐린 채 고정돼 "이게 전부인가"로 읽히고, 중앙 아닌 무드를 보려면 버튼을
- * 눌러야 해서 정지 사용자에게 오히려 단계가 는다. 그리드 카드는 캐러셀보다 작은 별도 크기다
- * (400×675 무스크롤 예산, 위 상수 참고).
+ * 두 칸 떨어진 카드는 불투명도 0으로 숨기지만 display·visibility는 그대로라 접근성 트리와 tab 순서에
+ * 남는다(constraint-5) — 키보드 사용자가 포커스로 그 카드를 가운데로 부를 수 있어야 해서다. 대신
+ * pointer-events none으로 보이는 카드의 탭을 가로채지 않는다.
  */
-function MoodCarousel({ onEnterMood }: { onEnterMood: (id: LayoutId) => void }) {
+function slotStyle(d: number): CSSProperties {
+  const top = 'calc(50% - 10px)';
+  if (d === 0) {
+    return {
+      left: '50%',
+      top,
+      width: '52%',
+      transform: 'translate(-50%, -50%)',
+      opacity: 1,
+      zIndex: 3,
+      boxShadow: 'var(--pr-ticket-shadow)',
+    };
+  }
+  const far = Math.abs(d) > 1;
+  const left = d < 0 ? (far ? '-60%' : '-22%') : far ? '126%' : '88%';
+  return {
+    left,
+    top,
+    width: '34%',
+    transform: 'translateY(-50%)',
+    opacity: far ? 0 : 0.32,
+    zIndex: far ? 0 : 1,
+    boxShadow: 'none',
+    pointerEvents: far ? 'none' : undefined,
+  };
+}
+
+/**
+ * 랜딩이 OCR 카드에 빌려주는 자리(#826 S5 constraint-11) — 카드는 셸이 쥔 한 벌이 children으로 들어오는
+ * 구조라(#614/#624) 셸을 거치지 않고 랜딩이 context로 "안내 자리"와 "인식 중" 통로를 직접 내준다.
+ * 카드는 이 자리가 있으면 자기 아래 토스트 대신 여기로 안내를 보내고, 랜딩은 그 글자를 전시 아래 위치 표시
+ * 자리(주 CTA 바로 위)에 띄운다. 랜딩이 걷힌 뒤(편집 화면에서 연 인식)는 셸의 notify가 먼저라 이 자리를
+ * 안 쓴다 — 그때 랜딩은 display:none이다.
+ */
+export const LandingSlotContext = createContext<{
+  setNotice: (message: string | null) => void;
+  setBusy: (busy: boolean) => void;
+} | null>(null);
+
+/** 랜딩 안내 — 위치 표시 자리에 3000ms 뜨는 오류 변형(--pr-warn, 결정 5). 같은 글자는 카드의 상시 마운트
+ *  role=status 리전이 읽어 주므로 이 시각 요소는 aria-hidden이다(두 번 읽히지 않게). */
+function LandingNotice({ message, className }: { message: string; className?: string }) {
+  return (
+    <div
+      data-testid="landing-notice"
+      aria-hidden="true"
+      className={cn(
+        'absolute inset-x-4 bottom-1.5 z-10 flex items-start gap-2 rounded-ctl border border-[color-mix(in_srgb,var(--pr-warn)_60%,transparent)] bg-s2 px-3 py-2.5 text-left text-body leading-5 text-ink shadow-[0_6px_16px_-10px_rgba(0,0,0,.5)] animate-fade-in',
+        className,
+      )}
+    >
+      <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-[3px] bg-warn" />
+      <span className="min-w-0 flex-1 break-keep">{message}</span>
+    </div>
+  );
+}
+
+/**
+ * 무드 전시(마스터 L-01 '무대 기둥 전시', #826 S5) — 기둥 위 가운데 카드 한 장 + 좌우 한 장씩.
+ *
+ * **정지 버튼이 없다**(바뀐 요구 1, 소유자 결정 2026-11-17 — #778의 정지·재개 버튼을 대체). 4초마다 한 칸
+ * 넘어가고, 정지 수단은 셋이다: 전시를 **누르고 있는 동안**, **키보드 포커스가 전시 안에 있는 동안**,
+ * 그리고 OS 동작 줄이기(아예 3열 격자로 바뀐다). 마우스를 올리는 것만으로는 멈추지 않는다 — 데스크톱
+ * 전용 동작이라 D18-2(모바일에서 지원 안 되는 기능 제거)로 걷었다. 포커스 정지는 iOS 외부 키보드 ·
+ * VoiceOver 경로라 남긴다.
+ *
+ * 포커스 정지는 "키보드로 들어온 포커스"만 친다 — 마우스 클릭 · 스와이프 뒤 버튼에 남은 포커스로 멈추면 한 번
+ * 탭한 사용자에게는 전시가 영영 멈춘다. 판정은 `:focus-visible`과 같은 기준인 직전 입력 모달리티(keydown vs
+ * pointerdown)다 — 선택자 자체는 프로그램 포커스에서 브라우저 · 테스트 환경마다 갈려 쓰지 않는다. 처음 값은
+ * "키보드"다: 키 입력도 포인터도 없이 포커스가 옮겨 오는 화면 읽기(VoiceOver 탐색)는 멈춰야 하는 쪽이다.
+ *
+ * 손짓은 시간과 거리로 가른다:
+ *  - **탭** — 그 무드로 바로 시작(`onEnterMood`). 보이는 카드(가운데 · 좌우)면 어느 것이든.
+ *  - **길게 누름**(`LONG_PRESS_MS` 초과) — 누르는 동안 멈춰 있고, 떼도 진입하지 않는다.
+ *  - **스와이프**(`SWIPE_STEP_PX` 초과) — 끄는 방향으로 넘어가고, 임계값마다 원점을 다시 잡아 여러 칸.
+ *
+ * 판정이 `gesture` **ref**에 사는 이유는 `click`이 `pointerup` 뒤에 오기 때문이다 — state면 리렌더를
+ * 기다리는 사이 click이 먼저 지나가 스와이프 끝자락에서 엉뚱한 무드로 진입한다. 컨테이너의
+ * `touch-action: pan-y`도 같은 묶음이다: 안 주면 브라우저가 가로 끌기를 스크롤로 가로채 `pointermove`가 안 온다.
+ *
+ * 카드는 한 벌뿐이고 5개 전부 tab 순서에 있는 버튼이다(constraint-5) — 포커스가 간 카드가 가운데로 온다.
+ * 전시는 overflow hidden이라 바깥으로 나간 카드에 포커스가 가면 브라우저가 그 컨테이너를 몰래 스크롤해
+ * 배치가 밀린다 — onScroll이 스크롤 위치를 0으로 되돌린다.
+ *
+ * **`prefers-reduced-motion`이면 레이아웃이 바뀐다** — 자동 전환 · 기둥 · 위치 표시 없이 3열 격자로 전부를
+ * 보이고(L-01.2) 넘치면 전시 안에서만 세로 스크롤한다.
+ */
+function MoodCarousel({
+  onEnterMood,
+  notice,
+}: {
+  onEnterMood: (id: LayoutId) => void;
+  notice: string | null;
+}) {
   const prefersReducedMotion = useMatchMedia('(prefers-reduced-motion: reduce)');
   // 지금 가운데 선 무드.
   const [active, setActive] = useState(0);
-  const [paused, setPaused] = useState(false);
-  // 길게 누르고 있는 동안만 true — 멈추는 게 아니라 간격만 늘어난다.
-  const [slowed, setSlowed] = useState(false);
-  // 이번 제스처가 무엇이었는지. state가 아니라 ref인 이유는 click 핸들러가 pointerup **뒤에**
-  // 실행되기 때문이다 — 리렌더를 기다리면 늦어서 진입을 못 막는다. 다음 pointerdown에서 리셋한다.
+  // 전시를 누르고 있는 동안 true — 떼거나 취소되면 다시 돈다.
+  const [pressed, setPressed] = useState(false);
+  // 키보드 포커스가 전시 안에 있는 동안 true.
+  const [focusPaused, setFocusPaused] = useState(false);
+  // 이번 제스처가 무엇이었는지. 다음 pointerdown에서 리셋한다(위 주석 — ref여야 click보다 먼저 정해진다).
   const gesture = useRef({ x: 0, swiped: false, longPressed: false });
   const pressTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // 누르는 중인지 — 포커스가 포인터 누름에서 왔으면 그 카드를 가운데로 당기지 않는다(스와이프 시작 자리가 튐).
+  const pointerDownRef = useRef(false);
+  // 직전 입력이 포인터가 아니었는지(포커스 정지 판정, 위 주석).
+  const keyboardModality = useRef(true);
 
   useEffect(() => {
-    if (prefersReducedMotion || paused) return;
+    const onKey = () => {
+      keyboardModality.current = true;
+    };
+    const onPointer = () => {
+      keyboardModality.current = false;
+    };
+    window.addEventListener('keydown', onKey, true);
+    window.addEventListener('pointerdown', onPointer, true);
+    return () => {
+      window.removeEventListener('keydown', onKey, true);
+      window.removeEventListener('pointerdown', onPointer, true);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (prefersReducedMotion || pressed || focusPaused) return;
     const id = setInterval(
       () => setActive((i) => (i + 1) % GALLERY_LAYOUTS.length),
-      slowed ? CAROUSEL_SLOW_INTERVAL_MS : CAROUSEL_INTERVAL_MS,
+      CAROUSEL_INTERVAL_MS,
     );
     return () => clearInterval(id);
-  }, [prefersReducedMotion, slowed, paused]);
+  }, [prefersReducedMotion, pressed, focusPaused]);
 
   // 타이머가 남은 채로 언마운트되면 사라진 컴포넌트의 state를 건드린다.
   useEffect(() => () => clearTimeout(pressTimer.current), []);
@@ -155,44 +202,53 @@ function MoodCarousel({ onEnterMood }: { onEnterMood: (id: LayoutId) => void }) 
   const step = (delta: number) =>
     setActive((i) => (i + delta + GALLERY_LAYOUTS.length) % GALLERY_LAYOUTS.length);
 
+  const release = (e: PointerEvent) => {
+    // 캡처를 여기서 안 풀면 pointerup 뒤 브라우저가 만드는 click의 타깃이 캡처한 이 컨테이너로 재지정돼
+    // (Pointer Events 스펙) 안쪽 카드 <button>의 onClick이 평범한 클릭에서도 영영 안 불린다.
+    e.currentTarget.releasePointerCapture(e.pointerId);
+    clearTimeout(pressTimer.current);
+    pointerDownRef.current = false;
+    setPressed(false);
+  };
+
   const gestureProps = {
     onPointerDown: (e: PointerEvent) => {
-      // 컨테이너 밖으로 끌고 나가 놓아도 이 엘리먼트가 계속 pointer를 받게 캡처한다 — 안 잡으면
-      // 마우스로 길게 누른 채(slowed=true) 밖에서 떼는 순간 onPointerUp/onPointerCancel이 아예
-      // 안 와 slowed가 다음 완전한 press-release 전까지 눌러앉는다(터치는 touch-action:pan-y가
-      // 사실상 암묵 캡처라 안 겪는다).
+      // 밖으로 끌고 나가 놓아도 pointerup/cancel을 받으려고 캡처한다 — 안 잡으면 누름 정지가 다음 누름까지 눌러앉는다.
       e.currentTarget.setPointerCapture(e.pointerId);
       gesture.current = { x: e.clientX, swiped: false, longPressed: false };
+      pointerDownRef.current = true;
+      setPressed(true);
       clearTimeout(pressTimer.current);
       pressTimer.current = setTimeout(() => {
         gesture.current.longPressed = true;
-        setSlowed(true);
       }, LONG_PRESS_MS);
     },
     onPointerMove: (e: PointerEvent) => {
+      if (!pointerDownRef.current) return;
       const dx = e.clientX - gesture.current.x;
       if (Math.abs(dx) < SWIPE_STEP_PX) return;
       // 끄는 중엔 길게 누름으로 안 친다 — 손가락이 움직였으면 그건 넘기려는 것이다.
       clearTimeout(pressTimer.current);
       gesture.current.swiped = true;
-      // 원점을 지금 자리로 다시 잡아, 한 번 쭉 끄는 동안 SWIPE_STEP_PX마다 한 칸씩 넘어간다.
       gesture.current.x = e.clientX;
       step(dx < 0 ? 1 : -1);
     },
-    onPointerUp: (e: PointerEvent) => {
-      // 캡처를 여기서 안 풀면, pointerup 뒤 브라우저가 만드는 click의 타깃이 캡처한 이 컨테이너로
-      // 재지정된다(Pointer Events 스펙 — 캡처 상태에서 pointerup이 끝나면 합성 click은 캡처
-      // 엘리먼트를 타깃으로 잡는다) — 그러면 안쪽 카드 <button>의 onClick이 평범한 클릭에서도
-      // 영영 안 불린다. pointerup 처리 중에 동기로 풀어야 뒤이은 click은 원래대로 button을 탄다.
-      e.currentTarget.releasePointerCapture(e.pointerId);
-      clearTimeout(pressTimer.current);
-      setSlowed(false);
-    },
+    onPointerUp: release,
     onPointerCancel: (e: PointerEvent) => {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-      clearTimeout(pressTimer.current);
       gesture.current.swiped = true; // 취소된 제스처로는 진입시키지 않는다
-      setSlowed(false);
+      release(e);
+    },
+  };
+
+  const focusProps = {
+    onFocus: (e: FocusEvent<HTMLElement>) => {
+      const index = Number((e.target as HTMLElement).dataset.index);
+      if (!Number.isNaN(index) && !pointerDownRef.current) setActive(index);
+      if (keyboardModality.current) setFocusPaused(true);
+    },
+    onBlur: (e: FocusEvent<HTMLElement>) => {
+      const next = e.relatedTarget as Node | null;
+      if (!next || !e.currentTarget.contains(next)) setFocusPaused(false);
     },
   };
 
@@ -205,181 +261,169 @@ function MoodCarousel({ onEnterMood }: { onEnterMood: (id: LayoutId) => void }) 
     return d;
   };
 
-  const sample = (layout: GalleryLayout, index: number, key: string, width: number, carousel: boolean) => {
+  const card = (layout: GalleryLayout, index: number, carousel: boolean) => {
     const rotated = GALLERY_ROTATED.has(layout.id);
-    // 돌린 무드는 카드 박스도 같이 뒤집힌다 — 가로 캔버스(1534×960)를 세로로 세우면 표시 높이가
-    // 폭 × (width/height)라, 세로 무드들과 같은 1534/960 비율이 나와 줄의 리듬이 맞는다.
-    const height = rotated ? (width * layout.width) / layout.height : (width * layout.height) / layout.width;
-    // 캐러셀에서만 자리를 계산한다 — reduced-motion 그리드는 흐름 배치 그대로다.
     const d = distance(index);
-    const s = CAROUSEL_SLOTS[Math.min(Math.abs(d), CAROUSEL_SLOTS.length - 1)];
-    const slot = carousel
-      ? {
-          position: 'absolute' as const,
-          top: 0,
-          left: '50%',
-          marginLeft: -width / 2,
-          zIndex: s.z,
-          opacity: s.opacity,
-          filter: s.blur ? `blur(${s.blur}px)` : undefined,
-          transform: `translateX(${Math.sign(d) * s.x * width}px) scale(${s.scale})`,
-          transitionProperty: 'transform, opacity, filter',
-          transitionDuration: `${CAROUSEL_TRANSITION_MS}ms`,
-          transitionTimingFunction: 'cubic-bezier(.22,.61,.36,1)',
-        }
-      : undefined;
     return (
-    <button
-      key={key}
-      type="button"
-      onClick={(e: MouseEvent<HTMLButtonElement>) => {
-        // 넘기려던 손짓이나 길게 누름은 진입이 아니다 — click은 pointerup 뒤에 오므로 여기서
-        // 걸러야 스와이프 끝에 손을 뗀 자리의 무드로 갑자기 들어가는 일이 없다. 단 이 가드는
-        // pointerdown을 거친 클릭에만 건다 — 키보드 활성화(Enter/Space)는 detail이 0이라 pointer
-        // 클릭과 구분되는데, gesture는 오직 다음 pointerdown에서만 리셋되므로 안 걸러주면 스와이프
-        // 한 번 뒤엔 pointerdown 없이 온 키보드 Enter가 stale swiped=true를 읽어 조용히 막힌다.
-        // detail===0은 실제 브라우저 키보드 활성화 신호로 널리 쓰이는 관용구(Radix 등)지만 100%
-        // 보장은 아니다(프로그래매틱 .click()도 0을 낸다) — 이 앱엔 그런 자동화 호출 경로가 없어
-        // 실사용 리스크는 없다고 판단했다.
-        if (e.detail !== 0 && (gesture.current.swiped || gesture.current.longPressed)) return;
-        onEnterMood(layout.id);
-      }}
-      aria-label={`${layout.label} 무드로 바로 시작 — ${layout.caption}`}
-      title={layout.caption}
-      data-touch={String(width)}
-      className={cn(pressableVariants(), 'shrink-0 transition-transform')}
-      style={slot}
-    >
-      {/* 라벨 없음은 의도적 결정이다(사용자 피드백, 이슈 #615 코멘트에 기록) — 이미지 밑에 이름
-          한 줄을 두면 세로 공간을 먹어 카드가 작아지므로, 이름은 aria-label로만 싣고 카드는
-          이미지 하나로 키운다. 높이는 무드별 실제 캔버스 비율로 계산한다(가로 슬롯 2종은 세로
-          슬롯 4종보다 낮다) — 실측용 상수를 아무 무드에나 똑같이 씌우면 가로 슬롯에서 여백이
-          남거나 잘린다. */}
-      <div style={{ width, height, position: 'relative', overflow: 'hidden' }}>
-        {/* 돌린 무드는 회전 전 크기를 뒤집어(높이×폭) 절대배치로 가운데에 놓고 -90° 돌린다 —
-            자산 자체가 무드 원본 방향(가로)이라 회전 전 박스도 그 원본 비율(layout.width×height)
-            그대로다. transform은 레이아웃 크기를 안 바꾸므로 이 박스가 바깥 세로 카드를 정확히
-            채운다. */}
-        <div
-          style={
-            rotated
-              ? {
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  width: height,
-                  height: width,
-                  transform: 'translate(-50%, -50%) rotate(90deg)',
-                }
-              : { width: '100%', height: '100%' }
-          }
-        >
-          <img
-            src={HERO_IMAGES[layout.id]}
-            alt=""
-            draggable={false}
-            className="block h-full w-full object-cover"
-          />
+      <button
+        key={layout.id}
+        type="button"
+        data-index={index}
+        data-slot={carousel ? d : undefined}
+        onClick={(e: MouseEvent<HTMLButtonElement>) => {
+          // 넘기려던 손짓이나 길게 누름은 진입이 아니다. 단 이 가드는 pointerdown을 거친 클릭에만 건다 —
+          // 키보드 활성화(Enter/Space)는 detail이 0이라 구분되고, gesture는 다음 pointerdown에서만 리셋되므로
+          // 안 걸러주면 스와이프 한 번 뒤 키보드 Enter가 stale swiped=true를 읽어 조용히 막힌다(PR #653 7차 P1).
+          if (e.detail !== 0 && (gesture.current.swiped || gesture.current.longPressed)) return;
+          onEnterMood(layout.id);
+        }}
+        aria-label={`${layout.label} 무드로 바로 시작`}
+        className={cn(
+          'block border-0 bg-transparent p-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+          carousel
+            ? 'absolute rounded-[3px]'
+            : 'w-full rounded-[3px] outline outline-1 outline-hair-strong',
+        )}
+        style={
+          carousel
+            ? {
+                ...slotStyle(d),
+                aspectRatio: CARD_ASPECT,
+                transitionProperty: 'left, transform, opacity',
+                transitionDuration: `${CAROUSEL_TRANSITION_MS}ms`,
+                transitionTimingFunction: 'cubic-bezier(.22,.61,.36,1)',
+              }
+            : { aspectRatio: CARD_ASPECT }
+        }
+      >
+        {/* 이미지 하나가 카드다 — 이름은 aria-label로만 싣는다(사용자 피드백, #615 코멘트). */}
+        <div className="relative h-full w-full overflow-hidden rounded-[3px]">
+          {/* 돌린 무드는 회전 전 박스를 원본 방향(가로) 비율로 잡아 가운데에 놓고 90° 돌린다 — 카드 폭 대비
+              가로는 1534/960, 세로는 960/1534라 돌리면 바깥 세로 카드를 정확히 채운다. */}
+          <div
+            style={
+              rotated
+                ? {
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    width: `${(1534 / 960) * 100}%`,
+                    height: `${(960 / 1534) * 100}%`,
+                    transform: 'translate(-50%, -50%) rotate(90deg)',
+                  }
+                : { width: '100%', height: '100%' }
+            }
+          >
+            <img
+              src={HERO_IMAGES[layout.id]}
+              alt=""
+              draggable={false}
+              className="block h-full w-full object-cover"
+            />
+          </div>
         </div>
-      </div>
-    </button>
+      </button>
     );
   };
 
   if (prefersReducedMotion) {
+    // 안내는 격자 스크롤 영역 밖, 전시 아래 끝(아래 판 바로 위)에 고정한다 — 격자를 스크롤해도 따라가지 않는다
+    // (constraint-11 가정: 위치 표시가 없는 격자에서도 같은 '주 CTA 바로 위' 원칙).
     return (
-      <div data-testid="mood-gallery" className="flex flex-wrap items-start justify-center gap-3">
-        {GALLERY_LAYOUTS.map((layout, i) => sample(layout, i, layout.id, GRID_CARD_WIDTH, false))}
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <section
+          data-testid="mood-gallery"
+          aria-label="무드 전시(동작 줄이기)"
+          className="grid min-h-0 flex-1 grid-cols-3 content-start gap-3 overflow-y-auto px-4 py-3"
+        >
+          {GALLERY_LAYOUTS.map((layout, i) => card(layout, i, false))}
+        </section>
+        {notice && <LandingNotice message={notice} />}
       </div>
     );
   }
 
   return (
-    // 진입 감지는 버튼과 카드를 감싼 래퍼가 맡는다 — 정지 버튼에만 포커스·포인터가 들어가도 멈춰야 한다.
-    // 포커스가 버튼에 남은 채 재개를 눌러도 focus가 다시 안 일어나 재개가 유지된다.
-    <div
-      className="relative w-full"
-      onFocus={(event) => {
-        if (event.target.matches(':focus-visible')) setPaused(true);
+    <section
+      data-testid="mood-gallery"
+      aria-roledescription="carousel"
+      aria-label="무드 전시"
+      className="relative min-h-0 flex-1 overflow-hidden"
+      style={{ touchAction: 'pan-y' }}
+      onScroll={(e) => {
+        e.currentTarget.scrollLeft = 0;
+        e.currentTarget.scrollTop = 0;
       }}
-      onPointerEnter={(event) => {
-        if (event.pointerType === 'mouse') setPaused(true);
-      }}
+      {...gestureProps}
+      {...focusProps}
     >
-      <button
-        type="button"
-        aria-label={paused ? '자동 전시 재개' : '자동 전시 정지'}
-        onClick={() => setPaused((value) => !value)}
-        className={cn(
-          pressableVariants(),
-          'absolute right-0 top-0 z-10 h-6 rounded-field-sm border border-hair bg-s2 px-2 text-caption text-ink transition-colors hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
-        )}
-      >
-        {paused ? '재개' : '정지'}
-      </button>
       <div
-        data-testid="mood-gallery"
-        className="relative w-full overflow-hidden"
-        // 손짓은 카드에만 연결해 정지·재개 버튼의 클릭과 섞이지 않게 한다.
-        style={{ height: CARD_HEIGHT, touchAction: 'pan-y' }}
-        {...gestureProps}
-      >
-        {GALLERY_LAYOUTS.map((layout, i) => sample(layout, i, layout.id, TRACK_CARD_WIDTH, true))}
-      </div>
-    </div>
+        data-testid="mood-gallery-beam"
+        aria-hidden="true"
+        className="absolute inset-y-0 left-1/2 w-[62%] -translate-x-1/2 border-x border-hair bg-s1"
+      />
+      {GALLERY_LAYOUTS.map((layout, i) => card(layout, i, true))}
+      {/* 안내가 뜬 동안 위치 표시 자리를 안내가 쓴다(마스터 L-03). */}
+      {notice ? (
+        <LandingNotice message={notice} />
+      ) : (
+        <span
+          data-testid="mood-gallery-index"
+          aria-hidden="true"
+          className="absolute bottom-1.5 left-1/2 z-10 -translate-x-1/2 text-caption leading-4 text-ink-2 tabular-nums"
+        >
+          {active + 1} / {GALLERY_LAYOUTS.length}
+        </span>
+      )}
+    </section>
   );
 }
 
+/** › — 마스터 i('next'). 접힘 고지는 90°, 펼침은 −90°로 돌린다. */
+function Chevron({ className }: { className?: string }) {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={cn('shrink-0', className)}
+    >
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  );
+}
+
+/** 복원 행 날짜(D18-1 A) — 로컬 시간대 'M월 D일', 올해가 아니면 'YYYY년 M월 D일'. 마침표가 없어야
+ *  라벨 규칙(COPY_TONE_GUIDE 축 2) 단언을 그대로 통과한다. */
+export function formatSavedDate(savedAt: number, now: number = Date.now()): string {
+  const d = new Date(savedAt);
+  const md = `${d.getMonth() + 1}월 ${d.getDate()}일`;
+  return d.getFullYear() === new Date(now).getFullYear() ? md : `${d.getFullYear()}년 ${md}`;
+}
+
 /**
- * 랜딩(#614 → #635 OCR 승격 → #615 무드 히어로 → #727 상시 노출) — 서비스의 진입 화면.
- * 두 모드를 한 컴포넌트가 든다.
+ * 랜딩(#614 → #635 → #615 → #727 → #826 S5 L-01~L-03) — 서비스의 진입 화면. 두 모드를 한 컴포넌트가 든다.
  *
- *  - `overlay`: 편집 셸 위를 덮는 `fixed` 레이어. 복원 행 + 마케팅 카피 + 히어로 + OCR(주 CTA) + 고지.
- *               **draft 유무와 무관하게 뜬다**(#727 c1) — "draft가 있으면 랜딩을 생략한다"는 #675 D7이
- *               뒤집혔다. 재방문자는 여기서 "이어서 만들기"와 네 진입 경로를 같은 화면에서 고른다.
- *  - `hidden`:  사용자가 랜딩을 떠났거나(landingDismissed) max(#328). display:none이지 unmount가
- *               아니다(아래) — children(OcrUploadCard) 단일 인스턴스 계약(#614/#624).
+ *  - `overlay`: 편집 셸 위를 덮는 `fixed` 레이어. **draft 유무와 무관하게 뜬다**(#727 c1).
+ *  - `hidden`:  사용자가 랜딩을 떠났거나 max(#328). display:none이지 unmount가 아니다 — children(OcrUploadCard)
+ *               단일 인스턴스 계약(#614/#624). 걷힐 때는 240ms 사라지고(동작 줄이기면 즉시), 그동안 탭을 받지 않는다.
  *
- * `inline`(오버레이를 걷었는데 캔버스도 아직 안 선 상태)은 #727 c3에서 **삭제**됐다. 새 판정에선
- * 도달 불가능하고(랜딩 표시가 landingDismissed 하나로 갈리므로 걷혔다 = hidden), 그 모드가 지키던 두
- * 명제 — 텍스트만 있던 draft의 진입 표면, IndexedDB 포스터 복원 실패 시 #489 결정 5의 재업로드 유도 —
- * 는 이제 상시 노출되는 오버레이 자신이 더 낫게 받는다. inline은 헤드카피·히어로·배경 타일·고지를
- * 전부 안 그려 실측(390×844)에서 "랜딩이 안 뜬 것"처럼 보이던 화면이었다.
+ * 배치(마스터 `.c-land`): 워드마크 · 헤드라인 · 서브카피가 위, 무드 전시가 남은 세로를 채우고(flex 1),
+ * 이어서 만들기 · 주 CTA · 링크 쌍 · 이용 고지가 아래 판에 선다. 아래 판은 고정이라 고지를 펼치면 전시가 준다.
  *
- * 새 라우트가 아니라 오버레이인 이유는 CTA가 파일 다이얼로그를 여는 데 있다: 라우트를 갈면
- * 사용자 제스처 컨텍스트가 끊겨 `input.click()`이 무시되는 브라우저가 있고, 오버레이면 셸이 이미
- * 마운트돼 있어 걷는 순간 지연 0으로 드러난다.
+ * 새 라우트가 아니라 오버레이인 이유는 CTA가 파일 다이얼로그를 여는 데 있다: 라우트를 갈면 사용자 제스처
+ * 컨텍스트가 끊겨 `input.click()`이 무시되는 브라우저가 있다. **셸 안에서 렌더된다** — OCR 카드는 셸의
+ * `useOcrUndo`·`ocrEpochRef`에 배선된 한 벌이라 children으로 받아 자리만 빌려준다(remount되면 진행 중 OCR의
+ * 로컬 상태가 리셋된다. KOBIS 보강의 최신성은 셸 소유 epoch가 판정해 unmount에도 안전하다, #388/PR #413).
  *
- * **셸 안에서 렌더된다** — 이슈 #614의 구조도는 `index.tsx`의 형제로 그렸지만, 그러면 랜딩의 OCR
- * 진입점이 셸의 `OcrUploadCard`와 다른 인스턴스가 된다. 그 카드는 셸의 `useOcrUndo`·`ocrEpochRef`에
- * 배선돼 있고 진입점이 늘어나는 만큼 같은 상태를 쓰는 인스턴스가 늘어나므로, 셸이 쥔 하나를
- * children으로 받아 자리만 빌려준다. 모드가 갈려도 이 컴포넌트가 트리에 그대로 있어야 그 카드가
- * remount되지 않는다 — remount의 대가는 진행 중인 OCR의 로컬 상태(`isProcessing`·토스트)가
- * 리셋되는 것이다. (예전엔 in-flight KOBIS 보강 자체가 유실됐지만 #388/PR #413 P0이 그 판정을
- * 인스턴스 로컬 `mountedRef`에서 셸 소유 `ocrEpochRef`로 옮겨 unmount에도 안전해졌다 — 커밋
- * 007f381. #363/PR #372의 원래 레이스는 그쪽이 막는다.)
- *
- * `fixed`의 컨테이닝 블록은 뷰포트가 아니라 `PhoneFrame`이다(contain:paint, #607) — 데스크톱
- * 1440 뷰포트에서도 오버레이가 400px 프레임 안에 선다. `measure-chrome.mjs`의 frameFit 축이
- * 이걸 판정한다.
- *
- * **히어로는 이제 고정 이미지 자산이다(#613, 2026-09-05 전환)** — #615 도입 당시엔 저작권 없는
- * 무드 이미지가 없어 `TicketRenderer`를 `croppedImageUrl=null` + `ghost`로 띄우는 라이브 렌더로
- * 대신했지만, 실사 예시 6장(콘택트 시트 검토 완료)이 생기면서 `public/assets/landing/hero-*.webp`
- * 정적 자산으로 교체했다(`MoodCarousel` 아래, `HERO_IMAGES`). 무드 조판·색·스탬프가 바뀌어도 이
- * 자산은 저절로 안 따라오니 — 무드를 개편하는 PR은 `public/assets/landing/README.md`의 갱신
- * 절차대로 이 6장도 같이 다시 구울 것. 실제 히어로 마크업은 `MoodCarousel`(아래) — 6종을
- * auto-scroll 트랙으로 동시에 보여준다(2026-08-04 설계 변경, D1 재검토: "동시에 더 많이 보인다"
- * 요건은 트랙이 그대로 만족해 크로스페이드 캐러셀로 되돌아가는 게 아니다).
- *
- * **샘플 클릭은 훑어보기가 아니라 즉시 커밋이다** — 예전 무드칩(`LayoutStrip`)은 셸의 `heroLayout`
- * 로컬 미러만 바꾸고 실제 `components.layout` 커밋은 다른 CTA가 맡았지만, auto-scroll 갤러리의
- * 샘플은 그 자체가 완결된 액션이다: 클릭하면 `onEnterMood(id)`가 그 무드를 바로 커밋하고 편집
- * 화면으로 들어간다 — "포스터 업로드"·"포스터 없이 직접 입력"·OCR 성공과 나란한 **네 번째**
- * 진입점이다(#631 경로, 같은 canvasReady 커밋). 크롭 프리셋
- * (`ImageCropModal`이 읽는 `posterOrientation`)이 랜딩에서 고른 무드와 어긋나지 않는 이유(#529)도
- * 동일 — 무드가 커밋된 채로 편집에 들어가므로 재크롭 없이 방향이 맞다. 반복 배경 타일
- * 그리드(#615 D3)는 캐러셀과 겹쳐 산만하다는 사용자 결정(2026-09-19)으로 제거했다(#786).
+ * `fixed`의 컨테이닝 블록은 뷰포트가 아니라 `PhoneFrame`이다(contain:paint, #607) — `measure-chrome.mjs`의
+ * frameFit 축이 판정한다. 히어로는 고정 이미지 자산이다(#613, `HERO_IMAGES`).
  */
 export function Landing({
   mode,
@@ -387,170 +431,169 @@ export function Landing({
   onSkip,
   onRestore,
   restoreTitle,
-  dropProps,
-  dragOver,
   onEnterMood,
   children,
 }: {
   mode: 'overlay' | 'hidden';
   /** 이탈 경로 "포스터 업로드" — 셸의 숨은 포스터 input을 그 자리에서 click()한다(같은 제스처, 라우트 전환 0). */
   onCta: () => void;
-  /** 이탈 경로 "포스터 없이 직접 입력" — 포스터 없이 편집으로 진입(#631). 셸의 canvasReady를 세운다. */
+  /** 이탈 경로 "포스터 없이 직접 입력" — 포스터 없이 편집으로 진입(#631). */
   onSkip: () => void;
-  /** 복원 진입점 "이어서 만들기"(#727 c5) — 저장된 draft를 그대로 들고 편집으로. 다섯 이탈 중
-   *  유일하게 문서를 새 문서로 되돌리지 않는 경로다. */
+  /** 복원 진입점 "이어서 만들기"(#727 c5) — 저장된 draft를 그대로 들고 편집으로. 유일하게 문서를 새 문서로
+   *  되돌리지 않는 경로다. */
   onRestore: () => void;
-  /** 복원 라벨에 실을 제목(#727 c6) — draft에 TTL이 없어 석 달 전 작업도 그대로 올라오므로,
-   *  "지금 이게 뭔지"를 말하는 유일한 장치다. 빈 값이면 기본형 "이어서 만들기"만 쓴다. */
+  /** 복원 행의 제목(#727 c6) — 비면 '제목 없는 티켓'(마스터 L-02). */
   restoreTitle: string;
-  /** 셸의 포스터 드롭 핸들러(#607) — 점선 드롭존이 여기로 흡수되며 같이 넘어왔다. */
-  dropProps: {
-    onDragOver: (e: DragEvent) => void;
-    onDragLeave: () => void;
-    onDrop: (e: DragEvent) => void;
-  };
-  dragOver: boolean;
-  /** 갤러리 샘플 클릭 → 그 무드를 즉시 커밋 + 편집 화면 진입(네 번째 진입점, 위 컴포넌트 주석). */
+  /** 갤러리 카드 탭 → 그 무드로 새 문서 + 편집 화면 진입 — "포스터 업로드"·"포스터 없이 직접 입력"·OCR 성공과 나란한
+   *  네 번째 진입점이다(#631 경로, 같은 canvasReady 커밋). 무드가 커밋된 채 들어가 크롭 프리셋 방향도 맞는다(#529). */
   onEnterMood: (id: LayoutId) => void;
-  /** OCR 진입점 슬롯 — 셸이 소유한 단일 OcrUploadCard 인스턴스가 들어온다(이제 주 CTA, #635). */
+  /** OCR 진입점 슬롯 — 셸이 소유한 단일 OcrUploadCard 인스턴스가 들어온다(주 CTA, #635). */
   children: ReactNode;
 }) {
   const overlay = mode === 'overlay';
+  const prefersReducedMotion = useMatchMedia('(prefers-reduced-motion: reduce)');
+  const [notice, setNotice] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const slot = useMemo(() => ({ setNotice, setBusy }), []);
+  // 저장 시각(D18-1 A)은 저장분에서 직접 읽는다 — 랜딩이 다시 뜰 때마다(매 저장이 갱신한 값). 텍스트 복원과
+  // 같은 이유로 SSR에서는 읽지 않고 effect로 미룬다.
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+  useEffect(() => {
+    if (overlay) setSavedAt(readDraftSavedAt());
+  }, [overlay]);
+  // 걷히는 240ms 동안만 머리 · 전시를 남긴다 — 바로 언마운트하면 사라지는 동안 아래 판만 위로 튀어 보인다.
+  // hidden에선 원래 그리지 않는다(숨은 채 매 렌더 reconcile되고 전시 타이머가 도는 걸 피한다).
+  const [leaving, setLeaving] = useState(false);
+  const wasOverlay = useRef(overlay);
+  useEffect(() => {
+    const left = wasOverlay.current && !overlay;
+    wasOverlay.current = overlay;
+    if (!left || prefersReducedMotion) {
+      setLeaving(false);
+      return;
+    }
+    setLeaving(true);
+    const id = setTimeout(() => setLeaving(false), OVERLAY_EXIT_MS);
+    return () => clearTimeout(id);
+  }, [overlay, prefersReducedMotion]);
+  const showMarketing = overlay || leaving;
+  // 사라지는 동안 탭을 받지 않는 층 — 카드 슬롯(children)은 빼고 건다. 그 카드의 숨은 파일 input은 랜딩이
+  // 걷힌 뒤에도 정보 모드 버튼 · 메뉴 행이 여는 한 벌이다(#826 S2 constraint-17).
+  const inertWhileLeaving: CSSProperties | undefined = overlay ? undefined : { pointerEvents: 'none' };
+
   return (
     <div
       data-testid="landing"
-      {...dropProps}
       // 'hidden'과 'flex'를 동시에 얹으면 Tailwind 유틸 순서에 판정이 걸리므로 배타로 쓴다.
-      className={
-        mode === 'hidden'
-          ? 'hidden'
-          : `flex flex-col ${
-              overlay ? 'fixed inset-0 z-50 overflow-y-auto bg-stage' : 'flex-1'
-            } ${dragOver ? 'outline outline-2 -outline-offset-2 outline-accent' : ''}`
-      }
-      style={
-        overlay
-          ? {
-              paddingTop: 'env(safe-area-inset-top, 0px)',
-              paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-            }
-          : undefined
-      }
+      className={overlay ? 'fixed inset-0 z-50 flex flex-col overflow-y-auto bg-stage' : 'hidden'}
+      style={{
+        paddingTop: overlay ? 'env(safe-area-inset-top, 0px)' : undefined,
+        // 걷힐 때 전환(constraint-7) — display를 allow-discrete로 같이 전환해 클래스는 즉시 hidden이 되고 화면만
+        // 240ms 동안 사라진다. 그동안 자리를 지키도록 fixed를 인라인으로 붙들고, 탭은 받지 않는다.
+        ...(overlay ? { opacity: 1 } : { position: 'fixed', inset: 0, zIndex: 50, opacity: 0 }),
+        transition: prefersReducedMotion ? 'none' : `opacity ${OVERLAY_EXIT}, display ${OVERLAY_EXIT}`,
+        transitionBehavior: prefersReducedMotion ? undefined : 'allow-discrete',
+      }}
     >
-      {/* 마케팅 층은 오버레이에서만 — inline은 이미 편집 화면이라 브랜드·카피가 아니라 진입
-          컨트롤만 필요하고, hidden에선 그리지도 않는다(숨은 채 매 렌더 reconcile되는 걸 피한다). */}
-      {overlay && (
-        // 셸 헤더가 오버레이에 가리므로 브랜드를 여기서도 세운다. 페이지 제목 역할은 아래
-        // 헤드카피(h1)가 하므로 워드마크는 기본 span으로 둔다.
-        <div className="flex shrink-0 items-center gap-2 px-4 pt-4">
-          <Wordmark />
+      {/* 마케팅 층은 오버레이에서만 — hidden에선 그리지도 않는다(숨은 채 매 렌더 reconcile되는 걸 피한다). */}
+      {showMarketing && (
+        <div className="shrink-0 px-4 pb-3" style={inertWhileLeaving}>
+          {/* 셸 헤더가 오버레이에 가리므로 브랜드를 여기서도 세운다. 페이지 제목은 아래 h1이 맡는다. */}
+          <div className="flex h-touch items-center">
+            <Wordmark />
+          </div>
+          <div data-testid="landing-copy" className="mt-3 flex flex-col gap-1">
+            <h1 className="text-[24px] font-semibold leading-[30px] tracking-[-0.02em] text-ink break-keep">
+              티켓 한 장이, 내 굿즈가 돼요
+            </h1>
+            {/* text-ink-2(--pr-ink-2)는 세 표면 위 6:1을 넘는다(fgContrast.test.ts). */}
+            <p className="text-[15px] leading-[22px] text-ink-2 break-keep">
+              스크린샷으로 자동입력. 사진으로 찍은 실물 티켓도 돼요.
+            </p>
+          </div>
         </div>
       )}
 
-      {/* 카피 → 히어로 → 이탈경로 사이 기본 리듬(D8, #615). gap-4는 #201 세로 리듬의 group(16px)과
-          같은 값이라 편집 셸과 이미 이어져 있고, 이탈경로 앞 mt-2/뒤 mt-3은 그 안의 미세 조정이다. */}
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-6 text-center">
-        {overlay && (
-          <>
-            {/* 카피는 1줄+1줄로 압축(Seed spec c5) — 선택 가능한 히어로가 "그래서 뭘 얻나"를
-                문장보다 세게 답하므로 카피 의존도가 낮다. 세로 예산은 아래 히어로+무드칩이 새로
-                차지한다(400×675, measure-chrome.mjs로 실측). */}
-            {/* flex flex-col gap-4 — h1·p가 바깥 flex 컬럼의 직계 자식에서 이 div 자식으로
-                한 단 내려오면서 원래 gap-4(16px)가 적용되던 h1↔p 사이 간격이 사라진다(부모 gap은
-                직계 자식 사이에만 걸린다) — 같은 리듬을 이 안에서 다시 선언해 되돌린다. */}
-            <div data-testid="landing-copy" className="flex flex-col gap-4">
-              <h1 className="text-display font-bold text-ink break-keep">
-                티켓 한 장이, 내 굿즈가 돼요
-              </h1>
-              {/* text-caption(#615 사용자 피드백) — 원래 text-body(14px)는 헤드카피 대비 존재감이
-                  과했다. 카피 3종(헤드·서브·CTA) 크기를 낮춰 갤러리에 세로 예산을 넘긴다.
+      {showMarketing && (
+        <div className="flex min-h-0 flex-1 flex-col" style={inertWhileLeaving}>
+          <MoodCarousel onEnterMood={onEnterMood} notice={notice} />
+        </div>
+      )}
 
-                  보조 글자 text-ink-2(--pr-ink-2)는 세 표면 위 6:1을 넘는다(fgContrast.test.ts).
-                  예전 랜딩 전용 회색(#615)은 옛 --fg-muted가 AA 경계였을 때의 여유분이라 #826 S1에서 합쳤다. */}
-              <p className="max-w-[300px] text-caption leading-relaxed text-ink-2 break-keep">
-                스크린샷으로 자동입력. 사진으로 찍은 실물 티켓도 돼요.
-              </p>
-            </div>
+      {/* 아래 판(마스터 `.c-lp`) — 위 모서리만 둥근 s1 판. 고정 높이라 전시가 남은 세로를 쓴다. */}
+      <div
+        data-testid="landing-panel"
+        className="relative z-[5] flex shrink-0 flex-col gap-2 rounded-t-[var(--pr-r-sheet)] border-t border-hair-strong bg-s1 px-4 pt-4"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      >
+        {/* 복원 진입점(#727 c5 → 마스터 L-02) — 주 CTA **위** 한 버튼, 안에 두 줄(이어서 만들기 / 제목)과 날짜 · ›.
+            편집 진입 시점의 확인 모달을 안 만드는 이유는 조건절 + 의문 종결어미가 COPY_TONE_GUIDE 축 2 위반이라서다.
 
-            {/* 히어로(#615, 2026-08-04 개정) — auto-scroll 갤러리 하나가 이전의 "전경 1장 + 무드칩
-                스트립" 두 축을 대체한다(위 컴포넌트 주석). */}
-            <MoodCarousel onEnterMood={onEnterMood} />
-          </>
-        )}
+            **표시 판정이 React가 아니라 CSS다**(#727 c9, globals.css) — draft 복원이 effect로 미뤄져 있어(299ms 실측)
+            React로 그리면 행이 뒤늦게 끼어들며 주 CTA가 밀려 오탭이 난다. 서버 HTML에 행을 담아두고 _document.tsx의
+            blocking 스크립트가 찍는 `has-draft`로 드러내 자리 이동이 0이다. 그 규칙이 display:flex를 주므로 안쪽 배치도 flex다. */}
+        <button
+          type="button"
+          data-testid="landing-restore"
+          data-touch="56"
+          onClick={onRestore}
+          style={inertWhileLeaving}
+          className={cn(
+            pressableVariants({ transition: 'cta' }),
+            'min-h-[56px] w-full items-center gap-2 rounded-ctl border border-hair-strong bg-transparent pl-3 pr-1 text-left text-ink',
+          )}
+        >
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="text-caption leading-4 text-ink-2">이어서 만들기</span>
+            <span className="truncate text-[15px] font-semibold leading-[22px]">
+              {restoreTitle || '제목 없는 티켓'}
+            </span>
+          </span>
+          {savedAt !== null && (
+            <span data-testid="landing-restore-date" className="whitespace-nowrap text-caption text-ink-2 tabular-nums">
+              {formatSavedDate(savedAt)}
+            </span>
+          )}
+          <span className="inline-grid h-touch w-touch place-items-center text-ink-2">
+            <Chevron />
+          </span>
+        </button>
 
-        {/* #652가 쓰던 `ocrApplied ? 'hidden'` 분기는 #727에서 삭제됐다 — OCR 적용은 이제
-            landingDismissed를 세우고 그게 곧 랜딩 컨테이너 자체의 hidden이라, 안쪽만 숨겨야 하는
-            상태가 코드상 존재하지 않는다(inline 소멸, c3). */}
-        <div className="mt-2 w-full max-w-[280px]">
-          {/* 복원 진입점(#727 c5) — 주 CTA **위** 별도 층이다. 편집 진입 시점의 확인 모달을 안
-              만드는 이유: 랜딩 진입 경로가 4종이라 어느 걸 눌러도 무관한 질문이 끼어들고,
-              "이전에 작업한 게 있으니 불러올까요?"는 조건절 + 의문 종결어미라 COPY_TONE_GUIDE 축 2
-              위반이다(축 1의 질문형 예외 자리였던 워드마크 초기화 확인은 #826 S2에서 삭제됐다).
+        {/* OCR 주 진입점(#635) — 모드가 갈려도 이 슬롯의 트리 위치는 고정이라 카드가 remount되지 않는다. */}
+        <LandingSlotContext.Provider value={slot}>{children}</LandingSlotContext.Provider>
 
-              **표시 판정이 React가 아니라 CSS다**(c9, globals.css) — 이 행의 근거인 draft 복원은
-              SSR 하이드레이션 불일치를 피하려 effect로 미뤄져 있고 #675가 그 지연을 299ms로
-              실측했다. React로 그리면 그 사이 행이 없다가 뒤늦게 끼어들어 주 CTA가 아래로 밀리는데,
-              299ms는 이미 탭할 수 있는 시간이라 오탭이 난다. 서버 HTML에 행을 담아두고
-              _document.tsx의 blocking 스크립트가 찍는 `has-draft`로 드러내면 자리 이동이 0이다.
-              손상된 저장분에서 게이트를 거두는 경로(clearDraftPaintGate)도 그대로 유효하다.
-
-              라벨은 조건절·종결어미·마침표 없는 명령형이다(c6, 축 2) — `-하기`는 금지가 아니다
-              (`꽉 채우기`·`처음 화면으로 돌아가기` 선례). 부연을 잇는 부호는 ` — `이고 양쪽이
-              명사구다(동명사 + 고유명사). min-h-touch는 같은 랜딩 이탈 경로 2종의 선례(#646, c12). */}
+        {/* 이탈 경로 2종(#635 c6 · #665 · #677) — "포스터 업로드 · 포스터 없이 직접 입력"은 있고 없고를 그 자리에서
+            갈라준다. #677 톤 정비로 "포스터 있으면 올리기" → "포스터 업로드"(조건절이 판정을 사용자에게 시키는 말투였다). 인식 중에는 두 버튼이 막힌다(마스터 L-03). min-h-touch(44px)로 WCAG 2.5.8을 채운다(#646). */}
+        <div
+          data-testid="landing-exit-paths"
+          className="flex flex-wrap items-center justify-center gap-x-2 text-caption text-ink-2"
+          style={inertWhileLeaving}
+        >
           <button
             type="button"
-            data-testid="landing-restore"
-            data-touch="44"
-            onClick={onRestore}
-            className={cn(
-              pressableVariants({ transition: 'cta' }),
-              'mb-2 w-full min-h-touch items-center justify-center gap-2 rounded-field-sm border border-hair bg-s2 px-3 text-body font-semibold text-ink hover:border-accent',
-            )}
+            onClick={onCta}
+            disabled={busy}
+            className={cn(pressableVariants(), 'min-h-touch inline-flex items-center underline disabled:opacity-40')}
           >
-            <span className="truncate">
-              이어서 만들기{restoreTitle ? ` — ${restoreTitle}` : ''}
-            </span>
+            포스터 업로드
           </button>
-          {/* OCR 주 진입점(#635) — 포스터 CTA가 보조로 내려가고 이게 주연이다(#142 위계 반전).
-              모드가 갈려도 이 슬롯의 트리 위치는 고정이라 카드가 remount되지 않는다. */}
-          {children}
-
-          {/* 이탈 경로 2종(#635 c6) — "스크린샷 없음"은 이 두 링크로, "OCR 실패"·
-              "rate limit 초과"는 OcrUploadCard의 토스트 뒤에도 이 줄이 그대로 남아 이어진다.
-              새 세로 공간 0 — 예전 포스터 CTA 자리(caption + "포스터 없이 시작")를 한 줄로 합쳤다.
-              세 번째 링크였던 TMDB 검색(#537)은 약관 위험으로 철거됐다(#665). 그게 맡던
-              "포스터 파일을 직접 못 구한 사용자"를 남은 두 링크가 나눠 받으므로 문구도 그 쌍으로
-              읽히게 잡았다 — "포스터 업로드 · 포스터 없이 직접 입력"은 있고 없고를 그 자리에서
-              갈라주고, 없는 쪽도 막다른 길이 아니라는 걸 링크 이름만으로 말한다(#631 경로).
-              #677 톤 정비로 "포스터 있으면 올리기" → "포스터 업로드": 조건절이 사용자에게 판정을
-              시키는 말투였고(docs/COPY_TONE_GUIDE.md 축 2), 있고 없고의 대비는 조건절이 아니라
-              짝의 "없이"가 이미 지고 있어 쌍의 의미가 안 줄었다.
-
-              text-ink-2(위 서브카피와 동일 근거)로 라이트 5.24:1 확보 —
-              --fg-faint 구분자(·)는 aria-hidden 장식이라 텍스트 대비 대상이 아니라 그대로 둔다.
-
-              WCAG 2.5.8(AA) 최소 24×24 미달 — 같은 파일 OCR CTA와 동일하게
-              min-h-touch(44px)로 채운다(#646). */}
-          <div
-            data-testid="landing-exit-paths"
-            className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-caption text-ink-2"
+          <span aria-hidden="true" className="text-ink-3">·</span>
+          {/* 포스터 없이 시작(#631) — 단색 바탕 + 조판만으로도 티켓이 성립하는 경로의 진입점. */}
+          <button
+            type="button"
+            onClick={onSkip}
+            disabled={busy}
+            data-testid="landing-skip-poster"
+            className={cn(pressableVariants(), 'min-h-touch inline-flex items-center underline disabled:opacity-40')}
           >
-            <button type="button" onClick={onCta} className={cn(pressableVariants(), 'min-h-touch inline-flex items-center underline')}>
-              포스터 업로드
-            </button>
-            <span aria-hidden="true" className="text-ink-3">·</span>
-            {/* 포스터 없이 시작(#631) — 단색 바탕 + 조판만으로도 티켓이 성립하는 경로의 진입점. */}
-            <button type="button" onClick={onSkip} data-testid="landing-skip-poster" className={cn(pressableVariants(), 'min-h-touch inline-flex items-center underline')}>
-              포스터 없이 직접 입력
-            </button>
-          </div>
+            포스터 없이 직접 입력
+          </button>
         </div>
-      </div>
 
-      {/* 미인증 티켓 고지는 법적 성격이라 랜딩에서 사라지면 안 된다(#614) — AppFooter가 소유.
-          편집 화면(inline·hidden)엔 없다: rail dock 위에 고지가 끼는 위계를 없앤 #363 결정이고,
-          그 명제를 DOM 부재로 재는 회귀 테스트(appFooterNotice)가 있다. */}
-      {overlay && <AppFooter ambient />}
+        {/* 미인증 티켓 고지는 법적 성격이라 랜딩에서 사라지면 안 된다(#614) — '이용 고지' 한 줄로 접는다(마스터 L-01,
+            소유자 지적 2026-11-17). 편집 화면엔 없다(#363, appFooterNotice가 DOM 부재로 잰다). */}
+        {overlay && <AppFooter />}
+      </div>
     </div>
   );
 }

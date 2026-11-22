@@ -8,7 +8,7 @@
  *   - 교체(새 파일) 후 취소 → 재크롭 비활성 (직전 포스터의 원본은 이미 revoke돼 stale이다)
  *   - 재크롭 취소(새 파일 안 고름) → 원본 유지, 재크롭 계속 활성
  *   - 첫 업로드 취소 → 원본 폐기, 프리뷰 없음
- *   - 크롭 진행 중 드롭 무시 (getCroppedImg가 읽는 중인 blob을 revoke하지 않게)
+ *   - 드롭은 아무 일도 안 한다(#826 S5 D18-2로 드롭 업로드 제거)
  *   - 마우스 없이 Tab + Enter만으로 업로드 → 크롭 → 적용 완주(#608, 파일 맨 아래 describe)
  *
  * 그리고 #548이 실제로 고치는 것: 원본 objectURL의 소유자가 컴포넌트가 아니라 usePhototicket
@@ -335,54 +335,30 @@ async function tabTo(user: ReturnType<typeof userEvent.setup>, target: HTMLEleme
   throw new Error(`Tab 60회 안에 "${label}"에 도달하지 못했다 — 키보드 경로가 끊겼다`);
 }
 
-// 드롭 업로드(#607) — 데스크톱 ImageUploader가 지워지며 같이 사라졌던 진입점이라, 되살린 뒤
-// 다시 없어지지 않게 못 박는다. 파일 대화상자와 달리 드롭은 스크립트로 끝까지 재현된다.
+// 드롭 업로드(#607)는 #826 S5에서 걷었다(D18-2, 소유자 결정 2026-11-22: 모바일에서 지원 안 되는 기능 제거,
+// trace l_drop) — 포스터는 사진 모드와 랜딩 업로드 버튼으로만 넣는다. 이 묶음은 그 기능의 이름을 그대로 두고
+// 드롭이 아무 일도 안 한다는 부재를 잰다(#826 S5 constraint-18).
 describe('드롭으로 포스터 업로드 (#607)', () => {
-  const drop = (el: Element, files: File[]) => fireEvent.drop(el, { dataTransfer: { files } });
+  const drop = (el: Element) =>
+    fireEvent.drop(el, { dataTransfer: { files: [pngFile('dropped.png')] } });
 
-  test('업로드 CTA에 이미지 파일을 드롭하면 크롭 모달이 열린다', async () => {
+  test('랜딩(업로드 버튼 · 랜딩 루트)에 이미지를 드롭해도 크롭 모달이 안 열린다', () => {
     render(<MobileHarness />);
 
-    drop(uploadCta(), [pngFile('dropped.png')]);
-
-    await screen.findByRole('dialog', { name: '포스터 크롭' });
-  });
-
-  test('accept 밖 타입(PDF)은 무시한다 — input의 accept와 같은 목록을 쓴다', () => {
-    render(<MobileHarness />);
-
-    drop(uploadCta(), [new File(['x'], 'doc.pdf', { type: 'application/pdf' })]);
+    drop(uploadCta());
+    drop(screen.getByTestId('landing'));
 
     expect(cropDialog() === null).toBe(true);
   });
 
-  // 크롭 진행 중 드롭 무시 — getCroppedImg가 읽고 있는 원본 blob을 openFile의 교체가 revoke하면
-  // 진행 중인 크롭이 죽은 URL을 읽는다. 구 ImageUploader의 같은 이름 테스트를 이 CTA로 이관한 것:
-  // 모달이 CTA를 시각적으로 가려 실사용 드래그로는 못 닿지만, CTA는 DOM에 그대로 남아 있어
-  // (croppedImageUrl이 아직 null) 이벤트를 직접 쏘면 가드를 그대로 밟는다 — 구 테스트도
-  // fireEvent.drop을 드롭존에 직접 쏘는 방식이었다(claude-review PR #619 P1).
-  test('크롭 진행 중 드롭은 무시된다 (in-flight 원본 보존)', async () => {
-    const user = userEvent.setup();
+  test('편집 캔버스 어디에 드롭해도 크롭 모달이 안 열린다', () => {
     render(<MobileHarness />);
+    fireEvent.click(screen.getByTestId('landing-skip-poster'));
 
-    await user.click(uploadCta());
-    fireEvent.change(posterFileInput(), { target: { files: [pngFile('a.png')] } });
-    await screen.findByRole('dialog', { name: '포스터 크롭' });
-    loadImage();
-    const srcBefore = cropSrc();
+    // 옛 드롭 핸들러는 캔버스 스테이지 div에 걸려 있었다 — 셸 안 모든 div에 쏴서 어느 자리에도 안 남았는지 본다.
+    for (const el of Array.from(document.querySelectorAll('div'))) drop(el);
 
-    // 적용을 붙잡아 isCropping(busy) 창을 열어둔다.
-    holdCrop = true;
-    await user.click(screen.getByRole('button', { name: '적용' }));
-    drop(uploadCta(), [pngFile('b.png')]);
-
-    // 가드가 막아야 crop.openFile이 안 불리고, 모달은 in-flight 원본을 계속 가리킨다.
-    expect(cropSrc()).toBe(srcBefore);
-
-    await act(async () => {
-      releaseCrop?.();
-    });
-    expect(cropN).toBe(1);
+    expect(cropDialog() === null).toBe(true);
   });
 });
 

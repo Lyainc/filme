@@ -36,8 +36,8 @@ afterAll(() => mock.module('@/utils/ocrPreprocess', () => realPreprocess));
 const cases = [
   { name: '정상 빈 결과', response: () => Response.json({}), result: {}, message: '인식된 정보가 없어요. 직접 입력해 주세요.' },
   { name: 'HTTP 429', response: () => new Response('', { status: 429 }), result: { rateLimited: true }, message: '지금 요청이 많아요. 잠시 후 다시 시도하거나 직접 입력해 주세요.' },
-  ...[500, 502].map(status => ({ name: `HTTP ${status}`, response: () => new Response('', { status }), result: { failed: true }, message: '인식에 실패했어요. 다시 시도해 주세요.' })),
-  { name: '네트워크 실패', response: () => { throw new TypeError('offline'); }, result: { failed: true }, message: '인식에 실패했어요. 다시 시도해 주세요.' },
+  ...[500, 502].map(status => ({ name: `HTTP ${status}`, response: () => new Response('', { status }), result: { failed: true }, message: '인식에 실패했어요' })),
+  { name: '네트워크 실패', response: () => { throw new TypeError('offline'); }, result: { failed: true }, message: '인식에 실패했어요' },
 ];
 
 // #826 S2 — 두 번째 카드(필드 드로어)가 사라져 'drawer' 문맥은 정보 모드 버튼('info')으로 갔다. 카드는 랜딩 안
@@ -80,9 +80,9 @@ for (const context of ['landing', 'info'] as const) {
         expect(input.value).toBe('');
         expect(!!screen.queryByRole('button', { name: '되돌리기' })).toBe(false);
         if (context === 'landing') {
-          // 시각 안내가 OCR 트리거와 같은 카드의 바로 아래에 남는다.
-          const notice = button.parentElement?.querySelector('.absolute.top-full');
-          expect(notice?.textContent).toBe(scenario.message);
+          // 시각 안내는 전시 아래 위치 표시 자리(주 CTA 바로 위)에 뜬다(#826 S5 constraint-11).
+          expect(screen.getByTestId('landing-notice').textContent).toBe(scenario.message);
+          expect(!!screen.getByTestId('mood-gallery').contains(screen.getByTestId('landing-notice'))).toBe(true);
         } else {
           // 랜딩이 걷힌 뒤엔 셸 토스트가 같은 문구를 보여준다.
           expect(screen.getByTestId('global-toast').textContent).toBe(scenario.message);
