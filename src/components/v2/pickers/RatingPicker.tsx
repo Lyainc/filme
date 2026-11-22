@@ -167,6 +167,10 @@ export function useRatingPicker({
   // 포인터 누름이 이미 한 칸을 올렸으면 뒤따르는 click은 건너뛴다. detail(0=키보드)로 가르면 스크린리더 가상 클릭이
   // 포인터 이벤트와 함께 와 한 번에 두 칸이 될 수 있어, 누름을 직접 기억한다.
   const pointerBumpedRef = useRef(false);
+  const abandonPress = () => {
+    stopRepeat();
+    pointerBumpedRef.current = false;
+  };
   // 누르면 한 번, 누르고 있으면 400ms 뒤부터 80ms마다 반복. 주 버튼(왼쪽 클릭 · 터치 · 펜)만 — 오른쪽 클릭은 메뉴가
   // 뜨며 pointerup을 삼켜 반복이 멈추지 않는다. 메뉴 · 포커스 잃음에도 멈춘다.
   const stepperProps = (dir: 1 | -1) => ({
@@ -184,11 +188,13 @@ export function useRatingPicker({
       };
       tick(400);
     },
+    // 떼기(pointerup)는 뒤따르는 click이 플래그를 내린다. 밖으로 끌고 나가 떼거나 취소되면 click이 안 와 플래그가 남아
+    // 다음 키보드 click 한 번을 삼키므로, 그 길들에선 반복과 함께 플래그도 내린다(PR #842 리뷰).
     onPointerUp: stopRepeat,
-    onPointerLeave: stopRepeat,
-    onPointerCancel: stopRepeat,
-    onContextMenu: stopRepeat,
-    onBlur: stopRepeat,
+    onPointerLeave: abandonPress,
+    onPointerCancel: abandonPress,
+    onContextMenu: abandonPress,
+    onBlur: abandonPress,
     onClick: () => {
       if (pointerBumpedRef.current) pointerBumpedRef.current = false;
       else bump(dir);
