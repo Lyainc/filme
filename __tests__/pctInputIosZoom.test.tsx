@@ -7,7 +7,7 @@
  */
 import { readFileSync } from 'fs';
 import { afterEach, describe, expect, test } from 'bun:test';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import BrightnessSlider from '@/components/v2/pickers/BrightnessSlider';
 
 afterEach(cleanup);
@@ -15,6 +15,8 @@ afterEach(cleanup);
 describe('#585 % 입력 iOS 포커스 줌', () => {
   test('% 입력이 pct-input 클래스를 가진다', () => {
     render(<BrightnessSlider value={0.5} onChange={() => {}} label="포스터" id="zoom-test" />);
+    // #826 S4 K-03 — 입력은 값 버튼이 여는 패널 안에 있다.
+    fireEvent.click(screen.getByRole('button', { name: '포스터 퍼센트 입력' }));
     expect(screen.getByLabelText('포스터 퍼센트').classList.contains('pct-input')).toBe(true);
   });
 

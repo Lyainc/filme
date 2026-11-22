@@ -84,8 +84,8 @@ describe('#507 BrightnessSlider — 드래그 커밋 저빈도화', () => {
 
     // #562 — 드래그는 10%p 격자에 스냅하므로 0.77은 0.8로 선다.
     expect(input.value).toBe('0.8');
-    // %는 이제 읽기 전용 텍스트가 아니라 입력 필드다(#562).
-    expect((screen.getByLabelText('Test 퍼센트') as HTMLInputElement).value).toBe('80');
+    // % 값은 누르면 입력 패널이 열리는 버튼이다(#562 → #826 S4 K-03).
+    expect(screen.getByRole('button', { name: 'Test 퍼센트 입력' }).textContent).toBe('80');
   });
 
   // claude-review PR #516 P1 — 마운트된 채로 부모가 value를 외부에서 바꾸는 경로(재질/코팅
@@ -99,7 +99,7 @@ describe('#507 BrightnessSlider — 드래그 커밋 저빈도화', () => {
 
     const input = screen.getByLabelText('Test') as HTMLInputElement;
     expect(input.value).toBe('0.8');
-    expect((screen.getByLabelText('Test 퍼센트') as HTMLInputElement).value).toBe('80');
+    expect(screen.getByRole('button', { name: 'Test 퍼센트 입력' }).textContent).toBe('80');
     // 외부에서 온 value는 이미 커밋된 값이므로 되돌려 부를 필요 없음.
     expect(onChange).not.toHaveBeenCalled();
   });
@@ -231,9 +231,10 @@ describe('#562 BrightnessSlider — 10% 스텝 + % 입력', () => {
     const user = userEvent.setup();
     const onChange = mock(() => {});
     render(<BrightnessSlider value={0.5} onChange={onChange} label="Test" id="pct-test" />);
+    // 값 버튼이 키보드에 붙는 입력 패널을 연다(#826 S4 K-03) — 입력은 패널 안에서 포커스를 받는다.
+    await user.click(screen.getByRole('button', { name: 'Test 퍼센트 입력' }));
     const pct = screen.getByLabelText('Test 퍼센트') as HTMLInputElement;
-
-    await user.click(pct);
+    expect(document.activeElement === pct).toBe(true);
     await user.keyboard('{Control>}a{/Control}35{Enter}');
 
     expect(onChange).toHaveBeenCalledWith(0.35);
@@ -244,9 +245,10 @@ describe('#562 BrightnessSlider — 10% 스텝 + % 입력', () => {
     const user = userEvent.setup();
     const onChange = mock(() => {});
     render(<BrightnessSlider value={0.5} onChange={onChange} label="Test" id="pct-batch" />);
+    // 값 버튼이 키보드에 붙는 입력 패널을 연다(#826 S4 K-03) — 입력은 패널 안에서 포커스를 받는다.
+    await user.click(screen.getByRole('button', { name: 'Test 퍼센트 입력' }));
     const pct = screen.getByLabelText('Test 퍼센트') as HTMLInputElement;
-
-    await user.click(pct);
+    expect(document.activeElement === pct).toBe(true);
     await user.keyboard('{Control>}a{/Control}80');
     expect(onChange).not.toHaveBeenCalled();
 

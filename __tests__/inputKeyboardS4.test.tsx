@@ -1,7 +1,7 @@
 /**
  * #826 S4 — 입력 · 키보드(마스터 K-01 · K-03 · K-08) 상호작용 잠금.
  *
- * Seed docs/specs/826-s4-input-keyboard.yaml의 acceptance-2 · 4 · 5 · 6 · 7을 여기서 잡는다. 순수 함수(acceptance-3)는
+ * Seed docs/specs/826-s4-input-keyboard.yaml의 acceptance-2 · 4 · 5 · 6 · 7 · 8 · 15를 여기서 잡는다. 순수 함수(acceptance-3)는
  * inputKeyboard.test.ts. happy-dom은 레이아웃이 없어 rect가 0이다 — 키보드는 visualViewport 스텁으로 넣고 패널 자리는
  * style(bottom · paddingBottom)로, 배율은 래퍼 transform 문자열로 본다. 실제 rect(키보드 윗변 차 · 교차 면적 · 넘침)는
  * 헤드리스 표본 scripts/measure-keyboard-panel.mjs가 잰다(acceptance-10).
@@ -312,5 +312,46 @@ describe('constraint-7 — 종료가 아닌 것 (acceptance-7)', () => {
     fireEvent.click(within(quote).getByRole('button', { name: '다음 글꼴' }));
     await tick();
     stillOpen(len);
+  });
+});
+
+describe('constraint-8 · 9 — % 직접 입력 패널(K-03, D17-2 A) (acceptance-8 · 15)', () => {
+  test('% 값을 누르면 [이름][숫자 16px][닫기] 한 줄 패널이 키보드에 붙고, 네 경로 모두 같은 도구로 돌아오며 범위 밖은 맞춘다', async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByText('seed'));
+    fireEvent.click(screen.getByRole('tab', { name: /^디자인/ }));
+    fireEvent.click(screen.getByRole('tab', { name: '투명도' }));
+    const valueBtn = () => screen.getByRole('button', { name: '포스터 퍼센트 입력' });
+    const CASES: [Exit, string, string][] = [
+      ['close', '120', '100'],
+      ['keyboard', '37', '37'],
+      ['outside', '120', '100'],
+      ['back', '5', '5'],
+    ];
+    for (const [path, typed, shown] of CASES) {
+      const len = baseEntry().length;
+      fireEvent.click(valueBtn());
+      const panel = await screen.findByRole('group', { name: '포스터 입력' });
+      // 구조: 이름 · 숫자 입력 · 닫기, ‹ › 없음.
+      expect(panel.textContent?.startsWith('포스터')).toBe(true);
+      const input = within(panel).getByRole('textbox', { name: '포스터 퍼센트' }) as HTMLInputElement;
+      expect(input.getAttribute('inputmode')).toBe('numeric');
+      expect(input.className).toContain('text-title'); // 16px(요구 3)
+      expect(within(panel).getAllByRole('button').map((b) => b.textContent)).toEqual(['닫기']);
+      expect(panel.style.bottom).toBe(`${KB}px`);
+      expect(window.history.length).toBe(len + 1);
+      expect(onPanelEntry()).toBe(true);
+      // 티켓은 확대하지 않는다.
+      expect(transformOf()).toBe('translateY(0) scale(1)');
+
+      fireEvent.change(input, { target: { value: typed } });
+      await exitBy(path, panel);
+
+      expect(!!screen.queryByRole('group', { name: '포스터 입력' })).toBe(false);
+      expect(valueBtn().textContent).toBe(shown);
+      expect(selected('디자인')).toBe('true');
+      expect(screen.getByRole('tab', { name: '투명도' }).getAttribute('aria-selected')).toBe('true');
+      expect(onPanelEntry()).toBe(false);
+    }
   });
 });

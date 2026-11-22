@@ -1,5 +1,10 @@
 import { useDeferredValue, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Eyebrow } from '@/components/v2/Eyebrow';
+import { PHONE_FRAME_ID } from '@/components/v2/PhoneFrame';
+import { inputVariants, pressableVariants } from '@/components/ui/variants';
+import { cn } from '@/utils/cn';
+import { keyboardPanelStyle, useKeyboardBox, useKeyboardDismiss, usePanelHistory } from '@/hooks/useInputKeyboard';
 
 interface BrightnessSliderProps {
   value: number;
@@ -89,6 +94,78 @@ export function valueFromClientX(clientX: number, left: number, width: number, m
   return snapToStep(min + ratio * (max - min), min, max);
 }
 
+/** 키보드를 내리지 않게 포인터 누름에서 포커스 이동을 막는다(닫기). */
+const keepFocus = (e: { preventDefault: () => void }) => e.preventDefault();
+
+/**
+ * % 직접 입력 패널(#826 S4 K-03, D17-2 A) — [이름][숫자 입력 16px · numeric][닫기] 한 줄이 필드 입력 패널과 같은 규칙으로
+ * 키보드에 붙는다(‹ › 없음, 티켓 확대 없음). 열려 있을 때만 마운트해 포인터 · visualViewport 구독이 슬라이더 수만큼 늘지 않게
+ * 한다. 앱 배경(도크) 위에 뜨도록 프레임에 포털한다 — 프레임이 없는 단독 렌더(테스트)는 body로.
+ */
+function PercentPanel({
+  label,
+  inputId,
+  draft,
+  onDraft,
+  onClose,
+}: {
+  label: string;
+  inputId: string;
+  draft: string;
+  onDraft: (raw: string) => void;
+  onClose: () => void;
+}) {
+  const kb = useKeyboardBox();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const onPanelBlur = useKeyboardDismiss({ onDismiss: onClose, isInside: (el) => !!panelRef.current?.contains(el) });
+  const host = document.getElementById(PHONE_FRAME_ID) ?? document.body;
+  return createPortal(
+    <>
+      {/* 밖 탭으로 닫기 — 도크는 이 아래라 탭이 다른 도구로 새지 않고, 닫히면 같은 디자인 도구가 그대로 있다. */}
+      <div className="fixed inset-0 z-40" onClick={onClose} aria-hidden="true" />
+      <div
+        ref={panelRef}
+        role="group"
+        aria-label={`${label} 입력`}
+        data-percent-panel=""
+        className="fixed inset-x-0 z-50 border-t border-hair-strong bg-s1 px-3 pt-2"
+        onBlur={onPanelBlur}
+        style={{ ...keyboardPanelStyle(kb?.inset ?? 0), animation: 'screen-in .18s ease-out' }}
+      >
+        <div className="flex h-touch items-center gap-2">
+          <label htmlFor={inputId} className="shrink-0 text-body font-medium text-ink-2">
+            {label}
+          </label>
+          <input
+            id={inputId}
+            autoFocus
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            enterKeyHint="done"
+            aria-label={`${label} 퍼센트`}
+            value={draft}
+            onChange={(e) => onDraft(e.target.value.replace(/\D/g, '').slice(0, 3))}
+            onFocus={(e) => e.currentTarget.select()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                onClose();
+              }
+            }}
+            // 16px(text-title) — iOS가 포커스 때 확대하지 않는다(#274 · #585 · 요구 3). pct-input은 #585의 iOS 규칙 결합을 잇는다.
+            className={cn(inputVariants({ surface: 'glass' }), 'pct-input tabular-nums h-9 min-w-0 flex-1 rounded-ctl px-3 text-title text-ink')}
+          />
+          <button type="button" onPointerDown={keepFocus} onClick={onClose} className={cn(pressableVariants(), 'inline-flex h-touch shrink-0 items-center')}>
+            <span className="inline-flex h-9 items-center rounded-ctl border border-hair-strong px-3 text-body font-medium text-ink">닫기</span>
+          </button>
+        </div>
+      </div>
+    </>,
+    host
+  );
+}
+
 export default function BrightnessSlider({
   value,
   onChange,
@@ -132,6 +209,18 @@ export default function BrightnessSlider({
     if (next !== null) setLocalValue(next);
   };
 
+  // % 직접 입력 패널(K-03) — 네 종료 경로(닫기 · 키보드 내림 · 바깥 탭 · 뒤로) 모두 친 값을 범위로 맞춰 커밋하고 닫는다.
+  const [panelOpen, setPanelOpen] = useState(false);
+  const openPanel = () => {
+    setDraft(String(Math.round(localValue * 100)));
+    setPanelOpen(true);
+  };
+  const closePanel = () => {
+    commitDraft();
+    setPanelOpen(false);
+  };
+  usePanelHistory(panelOpen, closePanel);
+
   return (
     <div className="space-y-field">
       {/* relative z-10 — 아래 range의 32px 박스(#779)는 위끝이 이 줄 밑선에 닿는데, 액션 버튼은 -my-1 h-7이라
@@ -157,36 +246,27 @@ export default function BrightnessSlider({
             </button>
           )}
         </span>
-        {/* % 직접 입력(#562) — 10% 스텝이 앗아간 세밀 조정의 대체 경로라 둘은 같이 간다.
+        {/* % 값(#562) — 10% 스텝이 앗아간 세밀 조정의 대체 경로라 둘은 같이 간다. 누르면 키보드에 붙는 입력 패널(#826 S4 K-03)이
+            열린다 — 예전엔 이 자리가 바로 입력이라 소프트 키보드가 도크를 덮었다(#558).
             라벨 줄에 인라인으로 얹는 배치가 필수다: 레일 상세 슬롯(#563)이 400×675에서 118px
             고정인데 투명도 탭 콘텐츠가 정확히 118px이라 여유가 0이다 — 새 줄로 내리면 슬라이더당
             +20~25px이라 그 탭부터 스크롤이 생긴다. Eyebrow와 같은 타이포를 그대로 입혀 줄 높이가
-            안 변하고(밑줄은 text-decoration이라 레이아웃 박스 밖), dock·프리뷰 실측도 그대로다.
-            소프트 키보드가 dock을 덮는 문제(#558)는 한 칸짜리 숫자 입력이라 감수한다 — 값이
-            라벨 줄에 그대로 보여서 키보드가 떠도 무엇을 고치는지가 안 가린다. */}
+            안 변하고(밑줄은 text-decoration이라 레이아웃 박스 밖), dock·프리뷰 실측도 그대로다. */}
         <span className="flex items-baseline">
-          <input
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            aria-label={`${label} 퍼센트`}
-            value={draft ?? String(Math.round(localValue * 100))}
-            onChange={(e) => setDraft(e.target.value.replace(/\D/g, '').slice(0, 3))}
-            onFocus={(e) => e.currentTarget.select()}
-            onBlur={commitDraft}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                e.currentTarget.blur();
-              }
-            }}
+          <button
+            type="button"
+            aria-label={`${label} 퍼센트 입력`}
+            aria-expanded={panelOpen}
+            onClick={openPanel}
             // 폭 4.5ch — 로고 크기축 상한 "130"이 3자에 tracking-widest(0.1em)까지 얹혀 25px이라
             // 3.5ch(21px)에선 잘렸다(브라우저 실측). 폭만 늘어나고 줄 높이는 안 변한다.
             // 점선 밑줄이 "누르면 고칠 수 있다"는 유일한 정지 상태 신호다(text-decoration이라
             // 레이아웃 박스를 안 건드려 줄 높이가 그대로다). 포커스 표시는 globals.css의 전역
             // :focus-visible 링에 맡긴다 — outline-none으로 지우면 키보드 사용자가 위치를 잃는다.
-            className="pct-input tabular-nums w-[4.5ch] bg-transparent text-right text-micro uppercase tracking-widest font-semibold text-ink underline decoration-dotted underline-offset-2"
-          />
+            className="tabular-nums w-[4.5ch] bg-transparent text-right text-micro uppercase tracking-widest font-semibold text-ink underline decoration-dotted underline-offset-2"
+          >
+            {Math.round(localValue * 100)}
+          </button>
           <Eyebrow tone="muted" aria-hidden="true">
             %
           </Eyebrow>
@@ -238,6 +318,9 @@ export default function BrightnessSlider({
           className="absolute inset-x-0 top-1.5 h-8 w-full -translate-y-1/2 touch-pan-y"
         />
       </div>
+      {panelOpen && (
+        <PercentPanel label={label} inputId={`${id}-percent`} draft={draft ?? ''} onDraft={setDraft} onClose={closePanel} />
+      )}
     </div>
   );
 }
