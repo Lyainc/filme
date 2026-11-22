@@ -368,7 +368,12 @@ export function OcrUploadCard({
         data-touch="44"
         className={cn(
           pressableVariants({ transition: 'cta' }),
-          'w-full min-h-touch rounded-field-sm flex items-center justify-center gap-2 font-semibold text-body bg-accent text-accent-ink hover:bg-accent-hover cursor-pointer disabled:opacity-70 disabled:cursor-default',
+          'w-full min-h-touch rounded-field-sm flex items-center justify-center gap-2 border text-body',
+          // 인식 중엔 채움을 걷고 보조 모양이 된다(마스터 .c-btn.pri[aria-disabled], L-03 로딩) — 흐린 붉은 채움은
+          // 아직 누를 수 있는 주 행동처럼 읽힌다.
+          isProcessing
+            ? 'cursor-default border-hair-strong bg-transparent font-medium text-ink-2'
+            : 'cursor-pointer border-transparent bg-accent font-semibold text-accent-ink hover:bg-accent-hover',
         )}
       >
         {isProcessing ? (

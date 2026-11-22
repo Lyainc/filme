@@ -533,6 +533,9 @@ describe('랜딩 스크린샷 인식 (#826 S5 L-03)', () => {
     expect(ocrButton().textContent).toContain('티켓 인식 중…');
     expect(ocrButton().disabled).toBe(true);
     expect(ocrButton().querySelector('span[aria-hidden="true"] svg') !== null).toBe(true);
+    // 인식 중엔 채움을 걷은 보조 모양(마스터 L-03 로딩).
+    expect(ocrButton().className).toContain('bg-transparent');
+    expect(ocrButton().className).not.toContain('bg-accent');
     expect(screen.getByRole<HTMLButtonElement>('button', { name: '포스터 업로드' }).disabled).toBe(true);
     expect(screen.getByRole<HTMLButtonElement>('button', { name: '포스터 없이 직접 입력' }).disabled).toBe(true);
 
@@ -540,6 +543,7 @@ describe('랜딩 스크린샷 인식 (#826 S5 L-03)', () => {
     await waitFor(() => expect(ocrButton().getAttribute('aria-busy')).toBe('false'));
     expect(ocrButton().textContent).toContain('티켓 스크린샷으로 자동입력');
     expect(ocrButton().disabled).toBe(false);
+    expect(ocrButton().className).toContain('bg-accent');
     expect(screen.getByTestId('landing-notice').textContent).toBe('인식에 실패했어요');
     expect(screen.queryByTestId('mood-gallery-index') === null).toBe(true);
     expect(screen.getByRole<HTMLButtonElement>('button', { name: '포스터 업로드' }).disabled).toBe(false);
