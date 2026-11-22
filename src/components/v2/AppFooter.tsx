@@ -45,6 +45,26 @@ function FontCredit() {
   );
 }
 
+/** › — 마스터 i('next'). 랜딩 복원 행 끝과 '이용 고지' summary가 같이 쓴다(고지는 접힘 90° · 펼침 −90°). */
+export function Chevron({ className }: { className?: string }) {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className ? `shrink-0 ${className}` : 'shrink-0'}
+    >
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  );
+}
+
 /** 랜딩 고지(#327 → #363 → #826 S5 L-01) — 비공식 고지 + copyright + 폰트 크레딧 + GitHub를 랜딩 아래 판
  *  맨 끝의 '이용 고지' 한 줄로 접는다(소유자 지적 2026-11-17: 메인 영역을 너무 차지함). 문구는 그대로고
  *  접혀 있어도 DOM에 있어 법적 고지의 존재를 잰 테스트(appFooterNotice)가 그대로 통과한다. 누르면 그 자리에서
@@ -55,20 +75,7 @@ export function AppFooter() {
       <details data-testid="legal-notice" className="group">
         <summary className="flex min-h-touch cursor-pointer list-none items-center justify-center gap-0.5 text-caption leading-4 text-ink-3 [&::-webkit-details-marker]:hidden">
           이용 고지
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-            className="rotate-90 group-open:-rotate-90"
-          >
-            <path d="M9 6l6 6-6 6" />
-          </svg>
+          <Chevron className="rotate-90 group-open:-rotate-90" />
         </summary>
         <div className="flex flex-col items-center gap-1 pb-2 text-center text-caption leading-4 text-ink-2">
           <p className="break-keep">{UNOFFICIAL_TICKET_NOTICE} © FILME</p>
