@@ -355,8 +355,11 @@ describe('드롭으로 포스터 업로드 (#607)', () => {
     render(<MobileHarness />);
     fireEvent.click(screen.getByTestId('landing-skip-poster'));
 
-    // 옛 드롭 핸들러는 캔버스 스테이지 div에 걸려 있었다 — 셸 안 모든 div에 쏴서 어느 자리에도 안 남았는지 본다.
-    for (const el of Array.from(document.querySelectorAll('div'))) drop(el);
+    // 옛 드롭 핸들러는 캔버스 스테이지 div에 걸려 있었다 — React는 루트에서 위임하므로 그 스테이지 안 프리뷰 래퍼에
+    // 쏘면 스테이지 · 셸 · 루트까지 버블링 경로 전체를 밟는다.
+    const preview = document.querySelector('div.relative.mx-auto.block.rounded-card');
+    expect(preview === null).toBe(false);
+    drop(preview!);
 
     expect(cropDialog() === null).toBe(true);
   });

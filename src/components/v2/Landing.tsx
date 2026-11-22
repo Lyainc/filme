@@ -6,11 +6,11 @@ import { readDraftSavedAt } from '@/hooks/usePhototicket';
 import { cn } from '@/utils/cn';
 import { pressableVariants } from '@/components/ui/variants';
 import { LAYOUTS } from '@/utils/layouts';
-import { AppFooter } from './AppFooter';
+import { AppFooter, Chevron } from './AppFooter';
 import { Wordmark } from './Wordmark';
 
 /** 자동 전환 간격 — 마스터 L-01 '4초마다'(#826 S5 constraint-4). */
-export const CAROUSEL_INTERVAL_MS = 4000;
+const CAROUSEL_INTERVAL_MS = 4000;
 /** 자리 이동에 걸리는 시간. 간격(4초) 안에서 끝나야 다음 칸이 겹치지 않는다. */
 const CAROUSEL_TRANSITION_MS = 1240;
 /** 이 시간을 넘겨 누르고 있으면 "길게 누름"이다. 그 뒤 손을 떼도 무드로 진입하지 않는다. */
@@ -173,17 +173,14 @@ function MoodCarousel({
   const keyboardModality = useRef(true);
 
   useEffect(() => {
-    const onKey = () => {
-      keyboardModality.current = true;
+    const onInput = (e: Event) => {
+      keyboardModality.current = e.type === 'keydown';
     };
-    const onPointer = () => {
-      keyboardModality.current = false;
-    };
-    window.addEventListener('keydown', onKey, true);
-    window.addEventListener('pointerdown', onPointer, true);
+    window.addEventListener('keydown', onInput, true);
+    window.addEventListener('pointerdown', onInput, true);
     return () => {
-      window.removeEventListener('keydown', onKey, true);
-      window.removeEventListener('pointerdown', onPointer, true);
+      window.removeEventListener('keydown', onInput, true);
+      window.removeEventListener('pointerdown', onInput, true);
     };
   }, []);
 
@@ -379,26 +376,6 @@ function MoodCarousel({
   );
 }
 
-/** › — 마스터 i('next'). 접힘 고지는 90°, 펼침은 −90°로 돌린다. */
-function Chevron({ className }: { className?: string }) {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className={cn('shrink-0', className)}
-    >
-      <path d="M9 6l6 6-6 6" />
-    </svg>
-  );
-}
-
 /** 복원 행 날짜(D18-1 A) — 로컬 시간대 'M월 D일', 올해가 아니면 'YYYY년 M월 D일'. 마침표가 없어야
  *  라벨 규칙(COPY_TONE_GUIDE 축 2) 단언을 그대로 통과한다. */
 export function formatSavedDate(savedAt: number, now: number = Date.now()): string {
@@ -477,9 +454,6 @@ export function Landing({
     return () => clearTimeout(id);
   }, [overlay, prefersReducedMotion]);
   const showMarketing = overlay || leaving;
-  // 사라지는 동안 탭을 받지 않는 층 — 카드 슬롯(children)은 빼고 건다. 그 카드의 숨은 파일 input은 랜딩이
-  // 걷힌 뒤에도 정보 모드 버튼 · 메뉴 행이 여는 한 벌이다(#826 S2 constraint-17).
-  const inertWhileLeaving: CSSProperties | undefined = overlay ? undefined : { pointerEvents: 'none' };
 
   return (
     <div
@@ -490,14 +464,17 @@ export function Landing({
         paddingTop: overlay ? 'env(safe-area-inset-top, 0px)' : undefined,
         // 걷힐 때 전환(constraint-7) — display를 allow-discrete로 같이 전환해 클래스는 즉시 hidden이 되고 화면만
         // 240ms 동안 사라진다. 그동안 자리를 지키도록 fixed를 인라인으로 붙들고, 탭은 받지 않는다.
-        ...(overlay ? { opacity: 1 } : { position: 'fixed', inset: 0, zIndex: 50, opacity: 0 }),
+        // 사라지는 동안 탭은 루트에서 한 번에 막고, 카드 슬롯만 아래에서 되살린다.
+        ...(overlay
+          ? { opacity: 1 }
+          : { position: 'fixed', inset: 0, zIndex: 50, opacity: 0, pointerEvents: 'none' }),
         transition: prefersReducedMotion ? 'none' : `opacity ${OVERLAY_EXIT}, display ${OVERLAY_EXIT}`,
         transitionBehavior: prefersReducedMotion ? undefined : 'allow-discrete',
       }}
     >
       {/* 마케팅 층은 오버레이에서만 — hidden에선 그리지도 않는다(숨은 채 매 렌더 reconcile되는 걸 피한다). */}
       {showMarketing && (
-        <div className="shrink-0 px-4 pb-3" style={inertWhileLeaving}>
+        <div className="shrink-0 px-4 pb-3">
           {/* 셸 헤더가 오버레이에 가리므로 브랜드를 여기서도 세운다. 페이지 제목은 아래 h1이 맡는다. */}
           <div className="flex h-touch items-center">
             <Wordmark />
@@ -515,7 +492,7 @@ export function Landing({
       )}
 
       {showMarketing && (
-        <div className="flex min-h-0 flex-1 flex-col" style={inertWhileLeaving}>
+        <div className="flex min-h-0 flex-1 flex-col">
           <MoodCarousel onEnterMood={onEnterMood} notice={notice} />
         </div>
       )}
@@ -537,7 +514,7 @@ export function Landing({
           data-testid="landing-restore"
           data-touch="56"
           onClick={onRestore}
-          style={inertWhileLeaving}
+         
           className={cn(
             pressableVariants({ transition: 'cta' }),
             'min-h-[56px] w-full items-center gap-2 rounded-ctl border border-hair-strong bg-transparent pl-3 pr-1 text-left text-ink',
@@ -560,14 +537,18 @@ export function Landing({
         </button>
 
         {/* OCR 주 진입점(#635) — 모드가 갈려도 이 슬롯의 트리 위치는 고정이라 카드가 remount되지 않는다. */}
-        <LandingSlotContext.Provider value={slot}>{children}</LandingSlotContext.Provider>
+        {/* 카드 슬롯만은 루트의 pointer-events:none을 되살린다 — 그 카드의 숨은 파일 input은 랜딩이 걷힌 뒤에도
+            정보 모드 버튼 · 메뉴 행이 여는 한 벌이다(#826 S2 constraint-17). contents라 배치에는 끼지 않는다. */}
+        <div className="contents" style={{ pointerEvents: 'auto' }}>
+          <LandingSlotContext.Provider value={slot}>{children}</LandingSlotContext.Provider>
+        </div>
 
         {/* 이탈 경로 2종(#635 c6 · #665 · #677) — "포스터 업로드 · 포스터 없이 직접 입력"은 있고 없고를 그 자리에서
             갈라준다. #677 톤 정비로 "포스터 있으면 올리기" → "포스터 업로드"(조건절이 판정을 사용자에게 시키는 말투였다). 인식 중에는 두 버튼이 막힌다(마스터 L-03). min-h-touch(44px)로 WCAG 2.5.8을 채운다(#646). */}
         <div
           data-testid="landing-exit-paths"
           className="flex flex-wrap items-center justify-center gap-x-2 text-caption text-ink-2"
-          style={inertWhileLeaving}
+         
         >
           <button
             type="button"
