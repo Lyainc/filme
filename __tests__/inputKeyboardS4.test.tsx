@@ -121,8 +121,12 @@ describe('constraint-3 — 패널은 키보드 윗변(없으면 프레임 바닥
     fireEvent.click(screen.getByText('seed'));
     const panel = await openRow('극장');
     expect(panel.style.bottom).toBe(`${KB}px`);
+    // 키보드 밑판 — 패널 아래 끝부터 프레임 바닥까지 같은 면이라 반투명 액세서리 바 너머로 도크가 비치지 않는다.
+    const underlay = () => document.querySelector('[data-keyboard-underlay]') as HTMLElement | null;
+    expect(underlay()?.style.height).toBe(`${KB}px`);
     setKeyboard(0);
     expect(panel.style.bottom).toBe('0px');
+    expect(underlay() === null).toBe(true);
   });
 
   test('평점 패널(키보드 없는 스테퍼)도 같은 규칙이다', async () => {

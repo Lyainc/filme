@@ -2,6 +2,7 @@ import { useDeferredValue, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Eyebrow } from '@/components/v2/Eyebrow';
 import { PHONE_FRAME_ID } from '@/components/v2/PhoneFrame';
+import { KeyboardUnderlay } from '@/components/v2/KeyboardUnderlay';
 import { inputVariants, pressableVariants } from '@/components/ui/variants';
 import { cn } from '@/utils/cn';
 import { keyboardPanelStyle, useKeyboardBox, useKeyboardDismiss, usePanelHistory } from '@/hooks/useInputKeyboard';
@@ -123,6 +124,7 @@ function PercentPanel({
     <>
       {/* 밖 탭으로 닫기 — 도크는 이 아래라 탭이 다른 도구로 새지 않고, 닫히면 같은 디자인 도구가 그대로 있다. */}
       <div className="fixed inset-0 z-40" onClick={onClose} aria-hidden="true" />
+      <KeyboardUnderlay inset={kb?.inset ?? 0} />
       <div
         ref={panelRef}
         role="group"
