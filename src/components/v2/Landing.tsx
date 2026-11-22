@@ -528,7 +528,6 @@ export function Landing({
           data-testid="landing-restore"
           data-touch="56"
           onClick={onRestore}
-         
           className={cn(
             pressableVariants({ transition: 'cta' }),
             'min-h-[56px] w-full items-center gap-2 rounded-ctl border border-hair-strong bg-transparent pl-3 pr-1 text-left text-ink',
@@ -553,7 +552,7 @@ export function Landing({
         {/* OCR 주 진입점(#635) — 모드가 갈려도 이 슬롯의 트리 위치는 고정이라 카드가 remount되지 않는다. */}
         {/* 카드 슬롯만은 루트의 pointer-events:none을 되살린다 — 그 카드의 숨은 파일 input은 랜딩이 걷힌 뒤에도
             정보 모드 버튼 · 메뉴 행이 여는 한 벌이다(#826 S2 constraint-17). contents라 배치에는 끼지 않는다. */}
-        <div className="contents" style={{ pointerEvents: 'auto' }}>
+        <div data-testid="landing-card-slot" className="contents" style={{ pointerEvents: 'auto' }}>
           <LandingSlotContext.Provider value={slot}>{children}</LandingSlotContext.Provider>
         </div>
 
@@ -562,7 +561,6 @@ export function Landing({
         <div
           data-testid="landing-exit-paths"
           className="flex flex-wrap items-center justify-center gap-x-2 text-caption text-ink-2"
-         
         >
           <button
             type="button"
