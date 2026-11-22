@@ -80,8 +80,11 @@ export function capSeatTokens(raw: string): string {
 // hadPoster는 croppedImageUrl 자체가 아니라 "저장 시점에 포스터가 있었는지"만 남기는 플래그 —
 // restoredDraftHadPosterRef가 이걸로 "텍스트만 있던 draft"와 "포스터가 있었지만 IndexedDB
 // 복원이 실패한 draft"를 구분한다(#489, claude-review PR #515 P1).
+// savedAt은 저장 시각(epoch ms, #826 S5 D18-1 A) — 랜딩 복원 행이 날짜로 보인다. 매 저장마다 갱신되고, 이 필드가
+// 없는 옛 저장분은 날짜 없이 그대로 읽힌다(복원은 이 값을 안 본다).
 type PersistedState = Pick<PhototicketState, 'movieInfo' | 'components' | 'fieldVisibility'> & {
   hadPoster?: boolean;
+  savedAt?: number;
 };
 
 // undo/redo(#356) 스냅샷 = 편집 가능한 문서 상태 전부. 포스터(croppedImageUrl)는 blob 수명
@@ -126,6 +129,12 @@ function loadPersisted(): Partial<PersistedState> | null {
     // 손상·구버전·접근 차단(프라이빗 모드)은 조용히 폴백 — INITIAL_STATE로 시작한다.
     return null;
   }
+}
+
+/** 저장분의 저장 시각(#826 S5 D18-1 A) — 없거나(옛 저장분) 손상이면 null. */
+export function readDraftSavedAt(): number | null {
+  const savedAt = loadPersisted()?.savedAt;
+  return typeof savedAt === 'number' && Number.isFinite(savedAt) ? savedAt : null;
 }
 
 // export — OCR "새로 시작" 되돌리기(#737)가 리셋 후의 정확한 빈 값을 스냅샷에 담으려면 필요하다.
@@ -693,6 +702,7 @@ export function usePhototicket() {
         },
         fieldVisibility: state.fieldVisibility,
         hadPoster: state.croppedImageUrl !== null,
+        savedAt: Date.now(),
       };
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
       markDraftPaintGate();

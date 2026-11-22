@@ -24,7 +24,7 @@ export interface LayoutSpec {
 export const LAYOUTS: readonly LayoutSpec[] = [
   {
     id: 'minimal',
-    label: 'Minimal',
+    label: '미니멀',
     caption: '미니멀 시네마틱',
     width: 960,
     height: 1534,
@@ -33,7 +33,7 @@ export const LAYOUTS: readonly LayoutSpec[] = [
   },
   {
     id: 'criterion',
-    label: 'Criterion',
+    label: '크라이테리언',
     caption: '크라이테리언 임프린트',
     width: 960,
     height: 1534,
@@ -51,7 +51,7 @@ export const LAYOUTS: readonly LayoutSpec[] = [
   },
   {
     id: 'editorial',
-    label: 'Editorial',
+    label: '에디토리얼',
     caption: '에디토리얼 스텁',
     width: 1534,
     height: 960,
@@ -60,7 +60,7 @@ export const LAYOUTS: readonly LayoutSpec[] = [
   },
   {
     id: 'stub',
-    label: 'Stub',
+    label: '스텁',
     caption: '티켓 스텁 절취',
     width: 960,
     height: 1534,
@@ -71,7 +71,7 @@ export const LAYOUTS: readonly LayoutSpec[] = [
   },
   {
     id: '35mm-landscape',
-    label: '35mm Wide',
+    label: '35mm 와이드',
     caption: '35mm 가로 필름',
     width: 1534,
     height: 960,

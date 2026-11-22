@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import type { MovieInfo, TicketComponents } from '@/types';
 import { runOcr } from '@/utils/ocr';
 import { triggerKobisLookup } from '@/utils/kobisLookup';
@@ -6,6 +6,7 @@ import { ALLOWED_MIME, MAX_BYTES, chainLabelFor } from '@/utils/ocrConstants';
 import { STAMP_LABEL_MAX } from '@/constants/fields';
 import { useMatchMedia } from '@/hooks/useMatchMedia';
 import { Sprocket } from './Sprocket';
+import { LANDING_NOTICE_MS, LandingSlotContext } from './Landing';
 import { cn } from '@/utils/cn';
 import { pressableVariants } from '@/components/ui/variants';
 
@@ -96,6 +97,9 @@ export function OcrUploadCard({
   onNeedManualTitle,
 }: OcrUploadCardProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  // 랜딩이 빌려준 자리(#826 S5 constraint-11) — 있으면 안내를 이 카드 아래가 아니라 전시 아래 위치 표시 자리에
+  // 띄우고, 인식 중 여부를 랜딩의 링크 쌍에 알린다. 랜딩 밖(테스트 단독 렌더)에선 null이라 자체 토스트로 남는다.
+  const landingSlot = useContext(LandingSlotContext);
   const [isProcessing, setIsProcessing] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -118,7 +122,7 @@ export function OcrUploadCard({
     };
   }, []);
 
-  function showToast(msg: string, durationMs = 3000) {
+  function showToast(msg: string, durationMs = LANDING_NOTICE_MS) {
     // 밖에서 보여주는 중이면(랜딩이 걷힌 뒤) 자체 토스트는 display:none 안이라 안 보인다 — 비동기 응답 뒤에도
     // 최신 notify를 읽는다(#809와 같은 이유).
     const outside = latestRef.current.notify;
@@ -135,13 +139,14 @@ export function OcrUploadCard({
   function validateFile(file: File): string | null {
     const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
     if (ext === 'heic' || file.type === 'image/heic' || file.type === 'image/heif') {
-      return 'HEIC 파일은 지원하지 않아요. PNG/JPG로 저장해 주세요.';
+      return 'HEIC는 지원하지 않아요';
     }
     if (!ALLOWED_MIME.has(file.type)) {
-      return 'PNG, JPG, WebP 파일만 인식할 수 있어요. 다른 파일을 골라 주세요.';
+      return 'PNG, JPG, WebP만 인식할 수 있어요';
     }
     if (file.size > MAX_BYTES) {
-      return '파일 크기가 10MB를 초과해요. 더 작은 이미지를 골라 주세요.';
+      // 다시 시도는 주 CTA 자체라 문구에 다음 행동을 안 싣는다(마스터 L-03, COPY_TONE_GUIDE #826 결정 8).
+      return '10MB 이하 이미지만 돼요';
     }
     return null;
   }
@@ -249,7 +254,7 @@ export function OcrUploadCard({
         return;
       }
       if (result.failed) {
-        showToast('인식에 실패했어요. 다시 시도해 주세요.');
+        showToast('인식에 실패했어요');
         return;
       }
 
@@ -300,7 +305,7 @@ export function OcrUploadCard({
     } catch (err) {
       // 예기치 않은 적용 오류도 기존 로컬 안내 위치를 유지한다(#645 C2).
       console.error('[ocr]', err);
-      showToast('인식에 실패했어요. 다시 시도해 주세요.');
+      showToast('인식에 실패했어요');
     } finally {
       if (mountedRef.current) setIsProcessing(false);
     }
@@ -330,7 +335,12 @@ export function OcrUploadCard({
   if (openRef) openRef.current = handleClick;
   useEffect(() => {
     onBusyChange?.(isProcessing);
-  }, [isProcessing, onBusyChange]);
+    landingSlot?.setBusy(isProcessing);
+  }, [isProcessing, onBusyChange, landingSlot]);
+  // 안내 글자를 랜딩 자리에 싣는다 — 수명(3000ms)은 이 카드의 toast 타이머가 쥐고 랜딩은 보여주기만 한다.
+  useEffect(() => {
+    landingSlot?.setNotice(toast);
+  }, [toast, landingSlot]);
 
   const prefersReducedMotion = useMatchMedia('(prefers-reduced-motion: reduce)');
 
@@ -362,7 +372,7 @@ export function OcrUploadCard({
         )}
       >
         {isProcessing ? (
-          <span className={prefersReducedMotion ? '' : 'animate-sprocket-spin'}>
+          <span aria-hidden="true" className={prefersReducedMotion ? '' : 'animate-sprocket-spin'}>
             <Sprocket size={16} />
           </span>
         ) : (
@@ -371,7 +381,7 @@ export function OcrUploadCard({
         <span>{isProcessing ? '티켓 인식 중…' : idleLabel}</span>
       </button>
 
-      {toast && (
+      {toast && !landingSlot && (
         <div className="absolute top-full left-0 mt-2 max-w-[260px] bg-ink text-s2 text-caption font-medium px-3 py-1.5 rounded-chip shadow-lg animate-fade-in z-10">
           {toast}
         </div>

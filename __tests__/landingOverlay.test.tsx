@@ -16,10 +16,12 @@
  * 표시 여부는 className으로 본다 — 이 레포엔 jest-dom이 없고 Tailwind CSS도 테스트에 안 실려
  * getComputedStyle이 클래스를 반영하지 않는다(레포 컨벤션, mobileChromeOrder와 동일).
  */
-import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
-import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
+import { describe, expect, test, afterEach, beforeEach, jest, setSystemTime } from 'bun:test';
+import { render, renderHook, screen, cleanup, fireEvent, within, act, waitFor } from '@testing-library/react';
 import { UNOFFICIAL_TICKET_NOTICE } from '@/utils/ticketCleanup';
-import { GALLERY_LAYOUTS } from '@/components/v2/Landing';
+import { GALLERY_LAYOUTS, formatSavedDate } from '@/components/v2/Landing';
+import { LayoutStrip } from '@/components/LayoutPicker';
+import { LAYOUTS } from '@/utils/layouts';
 import { mobileShellProps } from './shellHarness';
 
 const { usePhototicket, STORAGE_KEY } = require('@/hooks/usePhototicket') as typeof import('@/hooks/usePhototicket');
@@ -69,13 +71,16 @@ describe('랜딩 오버레이(#614)', () => {
     // loop를 위해 DOM엔 이름당 두 벌이 있지만 뒤 절반은 aria-hidden(fresh-context 리뷰 지적)이라
     // role 쿼리엔 하나씩만 잡혀야 정상이다.
     for (const layout of GALLERY_LAYOUTS) {
-      const buttons = within(landing()).getAllByRole('button', { name: new RegExp(`^${layout.label} 무드로 바로 시작`) });
+      // 접근명은 정확히 '{label} 무드로 바로 시작'이다 — caption 접미와 title 툴팁은 뺐다(#826 S5 constraint-8).
+      const buttons = within(landing()).getAllByRole('button', { name: `${layout.label} 무드로 바로 시작` });
       expect(buttons).toHaveLength(1);
+      expect(buttons[0].hasAttribute('title')).toBe(false);
       // 히어로 이미지 매핑(HERO_IMAGES, #613) 회귀 방어 — 무드 추가·오타로 엔트리가 빠지면
       // <img src>가 비거나 잘못된 경로로 조용히 깨진다(claude-review PR #759 P1).
       expect(buttons[0].querySelector('img')?.getAttribute('src')).toBe(`/assets/landing/hero-${layout.id}.webp`);
     }
-    expect(within(landing()).queryAllByRole('button', { name: /^35mm Wide 무드로 바로 시작/ })).toHaveLength(0);
+    expect(within(landing()).queryAllByRole('button', { name: /^35mm 와이드 무드로 바로 시작/ })).toHaveLength(0);
+    expect(GALLERY_LAYOUTS.map((l) => l.label)).toEqual(['미니멀', '크라이테리언', '35mm', '에디토리얼', '스텁']);
   });
 
   // ac1 — #675 D7의 정확한 반대. 텍스트만 있던 draft가 여기, 포스터가 있던 draft는
@@ -105,8 +110,26 @@ describe('랜딩 오버레이(#614)', () => {
     expect(/[.]|있으면|없으면|세요|까요/.test(label)).toBe(false);
     // DOCUMENT_POSITION_FOLLOWING(4) — 복원 행이 주 CTA보다 DOM 앞이다(= 위).
     expect((restoreRow().compareDocumentPosition(ocrButton()) & 4) !== 0).toBe(true);
-    // 탭 타깃 44px(#646 선례, c12) — 테스트에 Tailwind가 안 실려 클래스로 잰다(레포 컨벤션).
-    expect(restoreRow().className).toContain('min-h-touch');
+    // 두 줄 행(마스터 L-02 · .c-resume) — 높이 56px 이상, 위 12px 보조 글자 '이어서 만들기', 아래 15px 600 제목 한 줄
+    // 말줄임, 오른쪽 끝 › 아이콘. 테스트에 Tailwind가 안 실려 클래스로 잰다(레포 컨벤션).
+    expect(restoreRow().className).toContain('min-h-[56px]');
+    const [top, title] = Array.from(restoreRow().firstElementChild!.children) as HTMLElement[];
+    expect(top.textContent).toBe('이어서 만들기');
+    expect(top.className).toContain('text-caption');
+    expect(top.className).toContain('text-ink-2');
+    expect(title.textContent).toBe('인터스텔라');
+    expect(title.className).toContain('text-[15px]');
+    expect(title.className).toContain('font-semibold');
+    expect(title.className).toContain('truncate');
+    expect(restoreRow().querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  test('제목이 빈 저장분은 "제목 없는 티켓"으로 보인다', () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ movieInfo: { title: '' } }));
+
+    render(<Harness />);
+
+    expect(restoreRow().textContent).toContain('제목 없는 티켓');
   });
 
   // ac3 — 눌렀을 때 랜딩이 걷히고 복원된 문서가 그대로 편집 화면에 있다. 다섯 이탈 중 유일하게
@@ -184,17 +207,16 @@ describe('랜딩 오버레이(#614)', () => {
  * getComputedStyle이 클래스를 반영하지 않으므로 클래스 문자열로 고정한다 — 위 파일 주석의 같은
  * 컨벤션). 대비 수치 자체는 브라우저에서만 잴 수 있다.
  */
-describe('랜딩 카피 (#615 → #786)', () => {
-  test('반복 배경 없이 헤드·서브카피가 gap-4로 간격을 유지한다', () => {
+describe('랜딩 카피 (#615 → #786 → #826 S5)', () => {
+  test('반복 배경 없이 헤드·서브카피가 마스터 간격(gap-1)으로 붙어 선다', () => {
     render(<Harness />);
 
     // DOM 노드를 received에 그대로 넣지 않는다(#693) — 실패 직렬화가 그래프 전체를 찍는다.
     expect(screen.queryByTestId('landing-backdrop') === null).toBe(true);
 
     const copyBlock = within(landing()).getByRole('heading', { level: 1 }).parentElement!;
-    // h1·p가 이 블록 자식이라 바깥 flex 컬럼의 gap-4가 안 걸린다 — 같은 리듬을 이 안에서 다시
-    // 선언한 것이라, 지우면 헤드와 서브카피가 붙는다.
-    expect(copyBlock.className).toContain('gap-4');
+    // 마스터 .c-copy 아래 여백(--pr-s-1 = 4px) — 전시에 세로를 넘기려 헤드 묶음을 조인다.
+    expect(copyBlock.className).toContain('gap-1');
   });
 
   // #826 S1: 랜딩 전용 회색(landing-muted)은 옛 --fg-muted가 AA 경계였을 때의 여유분이었다.
@@ -207,5 +229,132 @@ describe('랜딩 카피 (#615 → #786)', () => {
 
     const exitRow = screen.getByTestId('landing-skip-poster').parentElement!;
     expect(exitRow.className).toContain('text-ink-2');
+  });
+});
+
+/**
+ * 저장 날짜(#826 S5 D18-1 A, 소유자 결정 2026-11-22) — 저장분의 저장 시각을 복원 행 제목 오른쪽에 'M월 D일'(올해가 아니면
+ * 'YYYY년 M월 D일')로 보인다. 로컬 시간대 기준이고 마침표가 없어 라벨 규칙(축 2) 단언을 그대로 통과한다.
+ */
+describe('복원 행 저장 날짜 (#826 S5 D18-1 A)', () => {
+  afterEach(() => {
+    setSystemTime();
+  });
+
+  const local = (y: number, m: number, d: number) => new Date(y, m - 1, d, 12).getTime();
+
+  test('올해 저장분은 "11월 15일", 지난해 저장분은 "2025년 11월 15일"', () => {
+    setSystemTime(new Date(2026, 10, 22, 12));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ movieInfo: { title: '인터스텔라' }, savedAt: local(2026, 11, 15) }));
+    render(<Harness />);
+    expect(screen.getByTestId('landing-restore-date').textContent).toBe('11월 15일');
+    expect(/[.]/.test(restoreRow().textContent ?? '')).toBe(false);
+    cleanup();
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ movieInfo: { title: '인터스텔라' }, savedAt: local(2025, 11, 15) }));
+    render(<Harness />);
+    expect(screen.getByTestId('landing-restore-date').textContent).toBe('2025년 11월 15일');
+    expect(/[.]/.test(restoreRow().textContent ?? '')).toBe(false);
+    const date = screen.getByTestId('landing-restore-date');
+    expect(date.className).toContain('text-caption');
+    expect(date.className).toContain('text-ink-2');
+    expect(date.className).toContain('tabular-nums');
+  });
+
+  test('formatSavedDate는 로컬 시간대 날짜로 판정한다', () => {
+    const now = new Date(2026, 0, 1, 0, 5).getTime();
+    expect(formatSavedDate(new Date(2025, 11, 31, 23, 55).getTime(), now)).toBe('2025년 12월 31일');
+    expect(formatSavedDate(new Date(2026, 0, 1, 0, 1).getTime(), now)).toBe('1월 1일');
+  });
+
+  test('저장 시각이 없는 옛 저장분은 날짜 없이 행과 복원이 정상이다', () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ movieInfo: { title: '인터스텔라' } }));
+    render(<Harness />);
+    expect(screen.queryByTestId('landing-restore-date') === null).toBe(true);
+    expect(restoreRow().textContent).toContain('인터스텔라');
+    fireEvent.click(restoreRow());
+    expect(landingOverlayShown()).toBe(false);
+    expect(document.body.textContent).toContain('인터스텔라');
+  });
+
+  test('저장 시각은 매 저장마다 갱신된다', async () => {
+    const { result } = renderHook(() => usePhototicket());
+    setSystemTime(new Date(2026, 10, 15, 9));
+    act(() => {
+      result.current.updateMovieInfo({ title: '괴물' });
+    });
+    act(() => {
+      result.current.saveDraft();
+    });
+    const first = JSON.parse(localStorage.getItem(STORAGE_KEY)!).savedAt;
+    expect(first).toBe(new Date(2026, 10, 15, 9).getTime());
+    setSystemTime(new Date(2026, 10, 22, 9));
+    act(() => {
+      result.current.saveDraft();
+    });
+    await waitFor(() => expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).savedAt).toBe(new Date(2026, 10, 22, 9).getTime()));
+  });
+});
+
+/** 이용 고지 접기(#826 S5 constraint-10) — 고지 · 크레딧 · GitHub를 아래 판 맨 끝 '이용 고지' 한 줄로 접는다. */
+describe('이용 고지 접기 (#826 S5 L-01)', () => {
+  test('summary "이용 고지" details 하나가 기본으로 닫혀 있고, 고지 · 크레딧 · GitHub가 그 안에 있다', () => {
+    render(<Harness />);
+    const details = within(landing()).getAllByTestId('legal-notice');
+    expect(details).toHaveLength(1);
+    const d = details[0] as HTMLDetailsElement;
+    expect(d.tagName).toBe('DETAILS');
+    expect(d.open).toBe(false);
+    const summary = d.querySelector('summary')!;
+    expect(summary.textContent).toBe('이용 고지');
+    expect(summary.className).toContain('min-h-touch');
+    expect(summary.className).toContain('text-caption');
+    expect(summary.className).toContain('text-ink-3');
+    expect(summary.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
+    expect(d.textContent).toContain(UNOFFICIAL_TICKET_NOTICE);
+    expect(d.textContent).toContain('KCC은영체');
+    expect(!!d.querySelector('a[aria-label="GitHub 저장소"]')).toBe(true);
+    // 고지는 아래 판의 맨 끝이다.
+    expect(screen.getByTestId('landing-panel').lastElementChild!.contains(d)).toBe(true);
+  });
+
+  test('누르면 그 자리에서 펼쳐진다', () => {
+    render(<Harness />);
+    const d = within(landing()).getByTestId('legal-notice') as HTMLDetailsElement;
+    fireEvent.click(d.querySelector('summary')!);
+    expect(d.open).toBe(true);
+  });
+});
+
+describe('오버레이 걷힘 전환 (#826 S5 constraint-7)', () => {
+  test('걷힐 때 240ms · cubic-bezier(.2,.7,.2,1)로 사라지고, 클래스는 즉시 hidden이다', () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByTestId('landing-skip-poster'));
+    expect(landing().classList.contains('hidden')).toBe(true);
+    expect(landing().style.transition).toContain('240ms cubic-bezier(.2,.7,.2,1)');
+    expect(landing().style.opacity).toBe('0');
+  });
+
+  test('사라지는 동안 마케팅 층은 탭을 받지 않고, 240ms 뒤 언마운트된다', () => {
+    jest.useFakeTimers();
+    try {
+      render(<Harness />);
+      fireEvent.click(screen.getByTestId('landing-skip-poster'));
+      const gallery = screen.getByTestId('mood-gallery');
+      expect((gallery.parentElement as HTMLElement).style.pointerEvents).toBe('none');
+      act(() => jest.advanceTimersByTime(240));
+      expect(screen.queryByTestId('mood-gallery') === null).toBe(true);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+});
+
+describe('도크 무드 칩이 한글 이름을 보인다 (#826 S5 constraint-8)', () => {
+  test('LayoutStrip 칩 글자가 LAYOUTS의 한글 label이다', () => {
+    render(<LayoutStrip value="minimal" onChange={() => {}} />);
+    const chips = screen.getAllByRole('radio');
+    expect(chips.map((c) => c.textContent)).toEqual(['미니멀', '크라이테리언', '35mm', '에디토리얼', '스텁', '35mm 와이드']);
+    expect(LAYOUTS.map((l) => l.label)).toEqual(['미니멀', '크라이테리언', '35mm', '에디토리얼', '스텁', '35mm 와이드']);
   });
 });

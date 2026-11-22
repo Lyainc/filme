@@ -31,6 +31,9 @@
     /* 앰버(결정 5-A) — 오류·필수 누락·초기화 arm. 옛 --danger(빨강)·--warn을 대체한다. */
     --pr-warn: #8F5410;
     --pr-scrim: rgba(20, 18, 14, 0.48);
+    /* 랜딩 아래 판 모서리 · 전시 가운데 티켓 그림자(#826 S5) — 값은 마스터 master.css --pr-r-sheet · --pr-l-ticket-shadow. */
+    --pr-r-sheet: 14px;
+    --pr-ticket-shadow: 0 14px 32px -20px rgba(20, 18, 14, 0.45);
     /* 무드 전용 별칭 — src/components/moods/_shared.tsx(티켓 렌더, #826 범위 밖)만 읽는다. 크롬은 --pr-accent. */
     --accent: var(--pr-accent);
     /* 오버레이 계층(#580) — 티켓(포스터) 위에 떠서 콘텐츠를 담는 표면: 플로팅 툴바 · 햄버거
@@ -101,6 +104,7 @@
     --pr-focus-ring: color-mix(in srgb, var(--pr-accent) 35%, transparent);
     --pr-warn: #E0A35A;
     --pr-scrim: rgba(0, 0, 0, 0.64);
+    --pr-ticket-shadow: 0 16px 40px -20px rgba(0, 0, 0, 0.9);
     --accent: var(--pr-accent);
     --overlay-fill: rgba(14, 16, 18, 0.8);
     --overlay-border: rgba(255, 255, 255, 0.15);

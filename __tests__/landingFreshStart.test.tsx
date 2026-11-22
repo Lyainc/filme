@@ -102,7 +102,7 @@ describe('랜딩 "새로 시작"은 저장분을 그 자리에서 지우지 않�
     expect(screen.getByTestId('landing-restore').textContent).toContain('인터스텔라');
 
     const landing = screen.getByTestId('landing');
-    fireEvent.click(within(landing).getByRole('button', { name: /^Stub 무드로 바로 시작/ }));
+    fireEvent.click(within(landing).getByRole('button', { name: /^스텁 무드로 바로 시작/ }));
 
     expect(window.localStorage.getItem(STORAGE_KEY)).toContain('인터스텔라');
     expect(document.body.textContent).not.toContain('인터스텔라');
