@@ -11,6 +11,8 @@ import { inputVariants, pressableVariants } from '@/components/ui/variants';
 import { useKobisSearch } from '@/hooks/useKobisSearch';
 import { useLogoCrop } from '@/hooks/useLogoCrop';
 import { useRatingPicker } from '@/components/v2/pickers/RatingPicker';
+import { keyboardPanelStyle, useKeyboardBox, useKeyboardDismiss } from '@/hooks/useInputKeyboard';
+import { editLift } from '@/utils/inputKeyboard';
 import { DateInput } from '@/components/ui/DateInput';
 import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
 import { KobisResultList } from './FieldEditorBody';
@@ -43,14 +45,14 @@ const EDIT_ORDER: SheetTarget[] = [
   'bookingNo', 'signature', 'chain', 'format',
 ];
 
-/** 활성 필드의 지오메트리 — local(래퍼 좌표, 선택 표시 배치용) + vpCenter(리프트 계산용, 리프트 성분 제거). */
+/** 활성 필드의 지오메트리 — local(래퍼 좌표, 배율 나눈 값: 선택 표시 배치 · 리프트 계산) + wrapperTop(리프트 계산용). */
 interface FieldRect {
   top: number;
   left: number;
   w: number;
   h: number;
-  /** 필드 세로 중심의 viewport Y — 래퍼 transform의 translateY 성분을 제거한 값(리프트 자기참조 방지). */
-  vpCenter: number;
+  /** 래퍼 윗변의 viewport Y — translateY 성분을 뺀 값(리프트 자기참조 방지). origin이 top이라 배율은 윗변을 안 옮긴다. */
+  wrapperTop: number;
 }
 
 /**
@@ -78,9 +80,7 @@ function measureField(wrapper: HTMLElement, ticket: HTMLElement, field: SheetTar
     left: (eb.left - wb.left) / scale,
     w: eb.width / scale,
     h: eb.height / scale,
-    // ponytail: scale(1.08)이 origin(top center) 기준으로 세로 위치를 최대 ~2% 미는 건 무시 —
-    // 리프트는 "키보드 위로 띄우기"라 ±20px 오차가 체감 안 된다.
-    vpCenter: eb.top + eb.height / 2 - translateY,
+    wrapperTop: wb.top - translateY,
   };
 }
 
@@ -89,7 +89,7 @@ const rectEq = (a: FieldRect | null, b: FieldRect | null) =>
   (!!a && !!b &&
     Math.abs(a.top - b.top) < 0.5 && Math.abs(a.left - b.left) < 0.5 &&
     Math.abs(a.w - b.w) < 0.5 && Math.abs(a.h - b.h) < 0.5 &&
-    Math.abs(a.vpCenter - b.vpCenter) < 0.5);
+    Math.abs(a.wrapperTop - b.wrapperTop) < 0.5);
 
 /**
  * 한줄평·서명 폰트 9택(#558 4택 → #437). 값의 뜻과 실제 폰트는 `_shared.tsx`의 `userTextFont`가
@@ -331,6 +331,8 @@ interface InPlaceFieldEditorProps {
    */
   onField: (field: SheetTarget) => void;
   onClose: () => void;
+  /** 입력 중 티켓 배율(#826 S4, 셸이 무대에서 잰 min(1.18, 무대 폭 ÷ 맞춤 폭)) — 리프트 계산이 확대 뒤 필드 위치를 쓴다. */
+  scale?: number;
   /** 편집 중 티켓 lift(px, ≤0) — 셸이 transform으로 적용. */
   onLift: (px: number) => void;
 }
@@ -338,14 +340,16 @@ interface InPlaceFieldEditorProps {
 /**
  * 필드 입력 패널(#826 S3, D12 · D13 · D14). 정보 목록 행과 티켓 필드 탭이 같은 패널을 연다.
  *
- * - 자리: 옛 aid 자리 그대로(visualViewport로 잰 키보드 위 12px, 프레임 기준 fixed). 키보드에 붙이기 · 확대는 S4.
+ * - 자리(#826 S4): visualViewport로 잰 키보드 윗변에 틈 없이 붙는다(키보드가 없으면 프레임 바닥 + 안전 영역, 프레임 기준 fixed).
+ *   티켓은 셸이 1.18배(상한)로 키우고, 여기서 고른 필드 아래 끝이 패널 윗변 30px 위에 오도록 위로만 옮긴다.
+ * - 종료(K-08): 닫기 · 키보드 내림(포커스 이탈) · 바깥 탭(backdrop) · 뒤로(셸의 usePanelHistory). 결과는 셸 closeEditor 하나다.
  * - 첫 줄: [‹ 이전 항목][입력(16px, 안내 글자 = 필드 이름)][› 다음 항목][닫기](D15 2B). Return = 다음 항목, 마지막 필드에선 닫기.
  * - 둘째 줄: 옵션이 있는 필드만 — 표기 · 정밀도 · 재개봉(날짜), 별(평점), 글꼴 ‹ 미리보기 ›(한줄평 · 서명), 이미지로(로고 · 서명),
  *   KOBIS 결과(제목). 표시 토글은 정보 목록 눈으로만 바꾸고(D14-1) 재개봉일 하나만 예외로 여기 남는다.
  * - 티켓에는 선택 표시(재단 L자)만 그린다. 위치 계산은 rAF 루프 금지(#354) — MutationObserver(티켓 서브트리) +
  *   ResizeObserver(래퍼) + visualViewport 변경 시에만 1회 측정.
  */
-export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField, onClose, onLift }: InPlaceFieldEditorProps) {
+export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField, onClose, scale = 1, onLift }: InPlaceFieldEditorProps) {
   const isStamp = isStampTarget(field);
   // 서명(#484 c6)은 StampTarget이 아니지만(c3 — 데이터가 MovieInfo에 산다) 이미지 업로드 UI는 chain/format과 같다.
   const isSignature = field === 'signature';
@@ -388,38 +392,25 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
     };
   }, [remeasure, wrapperEl, ticketEl, field]);
 
-  // ── visualViewport: 키보드 높이(패널 bottom) + 가시 높이(리프트 목표) ──
-  const [vvBox, setVvBox] = useState<{ h: number; bottom: number } | null>(null);
-  useEffect(() => {
-    const vv = window.visualViewport;
-    const update = () => {
-      if (vv) setVvBox({ h: vv.height, bottom: Math.max(0, window.innerHeight - vv.height - vv.offsetTop) });
-      else setVvBox({ h: window.innerHeight, bottom: 0 });
-    };
-    update();
-    vv?.addEventListener('resize', update);
-    vv?.addEventListener('scroll', update);
-    return () => {
-      vv?.removeEventListener('resize', update);
-      vv?.removeEventListener('scroll', update);
-    };
-  }, []);
+  // ── 키보드: visualViewport로 잰 키보드 높이(패널 bottom) + 가시 높이(목록 가용 높이) — resize · scroll 때만(#354) ──
+  const kb = useKeyboardBox();
+  const inset = kb?.inset ?? 0;
 
-  // 패널 안 목록(KOBIS · 글꼴) 가용 높이 — 키보드 위 가시영역에 비례(#476). 위 visualViewport effect가 갱신하는
-  // vvBox만 읽는다(#354 rAF 금지). 가시영역이 아주 좁으면(랜드스케이프) 화면 위로 넘치지 않게 vvBox.h - 16으로 막는다.
-  const listMaxHeight = vvBox ? Math.min(360, Math.max(176, vvBox.h * 0.7), vvBox.h - 16) : 250;
+  // 패널 안 목록(KOBIS · 글꼴) 가용 높이 — 키보드 위 가시영역에 비례(#476). 가시영역이 아주 좁으면(랜드스케이프) 화면 위로
+  // 넘치지 않게 visibleHeight - 16으로 막는다.
+  const listMaxHeight = kb ? Math.min(360, Math.max(176, kb.visibleHeight * 0.7), kb.visibleHeight - 16) : 250;
 
-  // ── 리프트: 활성 필드 중심을 가시 영역 상단 35% 지점으로(키보드 위). 필드/키보드 변경 시에만
-  // 재계산하고 타이핑(rect 갱신)마다 흔들지 않는다 — vpCenter가 리프트 성분을 제거한 값이라
-  // 자기참조 발산이 없다. 위로만 민다(min 0).
+  // ── 리프트(#826 S4 constraint-5): 고른 필드 아래 끝이 확대 뒤 패널 윗변 30px 위에 오도록 위로만 민다. 필드 전환 · 키보드
+  // 높이 · 배율이 바뀔 때만 다시 재고 타이핑(rect 갱신)마다 흔들지 않는다 — wrapperTop이 리프트 성분을 뺀 값이라 자기참조
+  // 발산이 없다. 패널 윗변은 그 순간의 패널 rect다(필드마다 줄 수가 달라 높이가 다르다).
+  const panelRef = useRef<HTMLDivElement>(null);
   const hasRect = rect != null;
   useEffect(() => {
     const r = rectRef.current;
-    if (!r) return;
-    const visH = vvBox?.h ?? window.innerHeight;
-    const target = Math.max(96, visH * 0.35);
-    onLift(Math.min(0, Math.round(target - r.vpCenter)));
-  }, [field, hasRect, vvBox?.h]);
+    const panel = panelRef.current;
+    if (!r || !panel) return;
+    onLift(editLift(r.wrapperTop, r.top + r.h, scale, panel.getBoundingClientRect().top));
+  }, [field, hasRect, inset, scale]);
 
   // ── 값 바인딩 ──────────────────────────────────────────────────────────────
   const infoKey = isStamp ? undefined : FIELD_INFO_KEY[field];
@@ -452,7 +443,21 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
   };
   const logo = useLogoCrop(setStampImage);
   const logoInputRef = useRef<HTMLInputElement>(null);
-  const pickImage = () => logoInputRef.current?.click();
+  // 파일 고르기 창이 떠 있는 동안 — 그 창이 가져간 포커스는 키보드 내림이 아니다(constraint-7). 고르거나 취소하면 내린다.
+  const pickingRef = useRef(false);
+  const pickImage = () => {
+    pickingRef.current = true;
+    logoInputRef.current?.click();
+  };
+  useEffect(() => {
+    const input = logoInputRef.current;
+    if (!input) return;
+    const done = () => {
+      pickingRef.current = false;
+    };
+    input.addEventListener('cancel', done);
+    return () => input.removeEventListener('cancel', done);
+  }, [isImageField]);
   // revoke는 여기서 안 한다 — usePhototicket.updateComponents가 히스토리(#356) 참조 여부를 보고 판정한다(#673).
   const removeImage = () => setStampImage('');
 
@@ -730,6 +735,14 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
     );
   }
 
+  // 키보드 내림 = 닫기(K-08 (b)) — 패널 · 티켓 · 패널 목록 밖으로 포커스가 나가면 닫는다. 크롭 모달 · 파일 고르기는 패널이 연
+  // 화면이라 종료가 아니다(constraint-7).
+  const onPanelBlur = useKeyboardDismiss({
+    onDismiss: onClose,
+    isInside: (el) => !!panelRef.current?.contains(el) || !!wrapperEl?.contains(el),
+    suspended: () => pickingRef.current || !!logo.rawSrc,
+  });
+
   return (
     <>
       {/* 밖 탭으로 닫기 — 티켓(래퍼 z-[41])과 패널은 이 위라 필드 전환/도구 조작은 그대로 된다. */}
@@ -737,12 +750,15 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
       {wrapperEl && rect && createPortal(<SelectionMarks rect={rect} />, wrapperEl)}
       {/* 입력 패널(C-INP) — 한 면 + 윗선 한 줄, 카드 · 그림자 없음. PhoneFrame의 contain:paint가 fixed 기준이라 좌표가 프레임 기준이다. */}
       <div
+        ref={panelRef}
         role="group"
         aria-label={`${label} 입력`}
         data-field-panel={field}
-        className="fixed inset-x-0 z-50 border-t border-hair-strong bg-s1 px-3 py-2"
-        // 슬라이드 없이 페이드만(#354 시안 §5) — reduced-motion은 전역 가드가 duration을 죽인다.
-        style={{ bottom: (vvBox?.bottom ?? 0) + 12, animation: 'screen-in .18s ease-out' }}
+        className="fixed inset-x-0 z-50 border-t border-hair-strong bg-s1 px-3 pt-2"
+        onBlur={onPanelBlur}
+        // 키보드 윗변(없으면 프레임 바닥 + 안전 영역)에 붙는다(constraint-3). 슬라이드 없이 페이드만(#354 시안 §5) —
+        // reduced-motion은 전역 가드가 duration을 죽인다.
+        style={{ ...keyboardPanelStyle(inset), animation: 'screen-in .18s ease-out' }}
       >
         <div className="flex h-touch items-center gap-2">
           <button type="button" aria-label="이전 항목" onPointerDown={keepFocus} onClick={() => step(-1)} className={cn(ICON_BTN_CLS, '-ml-1')}>
@@ -803,6 +819,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
             accept={IMAGE_ACCEPT}
             aria-label={`${label} 이미지 파일`}
             onChange={(e) => {
+              pickingRef.current = false;
               const file = e.target.files?.[0];
               if (file && file.type.startsWith('image/')) logo.openFile(file);
               e.target.value = '';

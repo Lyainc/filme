@@ -2,6 +2,7 @@ import dynamic from 'next/dynamic';
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ChangeEvent,
@@ -22,6 +23,8 @@ import { cn } from '@/utils/cn';
 import { pressableVariants } from '@/components/ui/variants';
 import type { Area } from '@/utils/imageCrop';
 import { useEditHistory } from '@/hooks/useEditHistory';
+import { usePanelHistory } from '@/hooks/useInputKeyboard';
+import { editScale as editScaleFor } from '@/utils/inputKeyboard';
 import { useOcrUndo } from '@/hooks/useOcrUndo';
 import type { usePhototicket } from '@/hooks/usePhototicket';
 import { INITIAL_STATE } from '@/hooks/usePhototicket';
@@ -182,6 +185,9 @@ export function MobileEditorShell({
     setActiveField(null);
     setEditLift(0);
   }, []);
+  // 뒤로 = 닫기(#826 S4 K-08 (d)) — 패널이 열리면 history 항목 하나, 다른 경로로 닫히면 그 항목을 소비한다. 닫는 길이
+  // 어디든(닫기 · 키보드 내림 · 바깥 탭 · 초기화 · ‹) editing이 false로 내려가는 한 곳에서 처리된다.
+  usePanelHistory(editing, closeEditor);
   // 포스터 크롭 파이프라인(#259 on-ticket tap + #315 서브메뉴 교체/재크롭 통합 단일 소스).
   // 상태머신(원본 objectURL·cropOpen·pendingNewFile·복원 시드·revoke)은 #548에서 usePhototicket의
   // usePosterCrop으로 올라갔다 — 이 셸은 브레이크포인트 전환에서 통째로 언마운트되므로, 여기가
@@ -407,6 +413,31 @@ export function MobileEditorShell({
   // 큰 화면에선 캡 없이 커져 빈 공간도 채운다. cq 단위는 뷰포트가 아니라 스테이지 기준이라
   // Safari 동적 툴바(dvh 변동)에도 산수가 그대로 성립한다.
   const fitWidth = `min(100cqw, calc(100cqh * ${layout.width} / ${layout.height}))`;
+  // 입력 중 확대(#826 S4 constraint-5, D17-1 A) — min(1.18, 무대 폭 ÷ 맞춤 폭). 맞춤 폭은 위 fitWidth와 같은 식을 무대
+  // 내용 상자(cq 기준 = padding 안쪽)로 다시 풀어 얻는다. 래퍼 폭을 읽지 않는 건 그 폭이 transform 중간값에 물리기 때문이다.
+  // 열릴 때 · 무드가 바뀔 때 · 무대 크기가 바뀔 때만 잰다(ResizeObserver, rAF 없음).
+  const [editScale, setEditScale] = useState(1);
+  const layoutAspect = layout.width / layout.height;
+  const stageEl = previewWrapEl?.parentElement ?? null;
+  useLayoutEffect(() => {
+    if (!editing || !stageEl) return;
+    const measure = () => {
+      const r = stageEl.getBoundingClientRect();
+      const cs = getComputedStyle(stageEl);
+      const px = (v: string) => parseFloat(v) || 0;
+      setEditScale(
+        editScaleFor(
+          r.width - px(cs.paddingLeft) - px(cs.paddingRight),
+          r.height - px(cs.paddingTop) - px(cs.paddingBottom),
+          layoutAspect
+        )
+      );
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(stageEl);
+    return () => ro.disconnect();
+  }, [editing, stageEl, layoutAspect]);
   // 가로형(editorial·35mm-landscape) 무드는 세로 화면 폭 기준 스케일이면 작은 가로 띠로 렌더되므로
   // (#275-8) max에서 90° 회전 + 화면 꽉 채우기로 배치. rotatedInnerWidth는 회전 전(자연 방향)
   // TicketRenderer 폭 — 회전 후 세로가 화면 상한을 채우도록 역산. rotatedStageWidth(회전 후 화면에
@@ -628,7 +659,7 @@ export function MobileEditorShell({
                 ref={setPreviewWrapEl}
                 className={`relative mx-auto block rounded-card ${
                   viewMode === 'default'
-                    ? 'crop-marks transition-transform duration-300 ease-out motion-reduce:transition-none'
+                    ? 'crop-marks transition-transform duration-[240ms] ease-out motion-reduce:transition-none'
                     : 'transition-transform active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-soft'
                 } ${rotateLandscape ? 'overflow-hidden' : ''}`}
                 style={
@@ -637,12 +668,12 @@ export function MobileEditorShell({
                         // fit 폭(#366) — 스테이지 크기 변경(dock 패널 개폐)에 cq 단위가 즉시
                         // 따라가고, TicketRenderer의 ResizeObserver가 재스케일한다.
                         width: fitWidth,
-                        // 편집 중 lift + scale(#354, 시안 §5 ~1.08) — transform만 바꾼다. 폭을
+                        // 편집 중 lift + scale(#354 → #826 S4: 1.18 상한, K-01 240ms) — transform만 바꾼다. 폭을
                         // 애니메이트하면 TicketRenderer의 ResizeObserver 스케일과 싸운다.
                         // 비편집에도 항등 transform을 유지해야 해제 시 transform→none 이산 점프 없이
                         // 트랜지션이 걸린다. z-41은 편집 backdrop(z-40) 위로 티켓 탭을 살린다.
                         transform: editing
-                          ? `translateY(${editLift}px) scale(1.08)`
+                          ? `translateY(${editLift}px) scale(${editScale})`
                           : 'translateY(0) scale(1)',
                         transformOrigin: 'top center',
                         zIndex: editing ? 41 : undefined,
@@ -838,6 +869,7 @@ export function MobileEditorShell({
           ticketEl={ticketBoxEl}
           onField={setActiveField}
           onClose={closeEditor}
+          scale={editScale}
           onLift={setEditLift}
         />
       )}
