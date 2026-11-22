@@ -112,8 +112,8 @@ afterEach(() => {
 describe('constraint-3 — 패널은 키보드 윗변(없으면 프레임 바닥 + 안전 영역)에 틈 없이 붙는다 (acceptance-2)', () => {
   // happy-dom은 env()가 든 calc를 style에 못 싣는다 — 여백 규칙은 패널이 쓰는 그 함수로 잠근다.
   test('여백: 키보드가 있으면 8px, 없으면 8px + 아래 안전 영역', () => {
-    expect(keyboardPanelStyle(KB)).toEqual({ bottom: KB, paddingBottom: 8 });
-    expect(keyboardPanelStyle(0)).toEqual({ bottom: 0, paddingBottom: 'calc(8px + env(safe-area-inset-bottom, 0px))' });
+    expect(keyboardPanelStyle(KB)).toEqual({ bottom: KB, paddingTop: 8, paddingBottom: 8 });
+    expect(keyboardPanelStyle(0)).toEqual({ bottom: 0, paddingTop: 8, paddingBottom: 'calc(8px + env(safe-area-inset-bottom, 0px))' });
   });
 
   test('텍스트 패널: 키보드 330이면 bottom 330(+12 없음), 키보드 0이면 bottom 0 + 안전 영역 여백', async () => {

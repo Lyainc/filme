@@ -46,19 +46,23 @@ export function useKeyboardBox(): KeyboardBox | null {
   return box;
 }
 
+/** 패널 위아래 기본 여백(px). */
+const PANEL_PAD = 8;
+
 /**
  * 패널 자리(D15 6A, K-01 ①): 키보드가 떠 있으면 패널 아래 끝 = 키보드 윗변(틈 0). 없으면 프레임 바닥에 붙고 아래 안전
- * 영역만큼 안쪽 여백을 더 둔다 — 키보드가 홈 인디케이터를 덮을 땐 안전 영역이 필요 없다. 어느 쪽이든 패널과 바닥 사이로
- * 도크가 보이지 않는다. 기본 여백은 py-2(8px)와 같다.
+ * 영역만큼 여백을 더 둔다 — 키보드가 홈 인디케이터를 덮을 땐 안전 영역이 필요 없다.
  */
 export function keyboardPanelStyle(inset: number): CSSProperties {
   return {
     bottom: inset,
-    paddingBottom: inset > 0 ? 8 : 'calc(8px + env(safe-area-inset-bottom, 0px))',
+    paddingTop: PANEL_PAD,
+    paddingBottom: inset > 0 ? PANEL_PAD : `calc(${PANEL_PAD}px + env(safe-area-inset-bottom, 0px))`,
   };
 }
 
 const HISTORY_KEY = 'phototicketInputPanel';
+let historySeq = 0;
 
 /**
  * 뒤로 = 닫기(K-08 (d)). 패널이 열릴 때 history 항목을 하나 넣고 popstate로 닫는다. 다른 경로(닫기 · 키보드 내림 ·
@@ -80,7 +84,7 @@ export function usePanelHistory(open: boolean, onPop: () => void) {
   useEffect(() => {
     if (open && !pushedRef.current) {
       pushedRef.current = true;
-      tokenRef.current = `${Date.now()}-${Math.random()}`;
+      tokenRef.current = `${Date.now()}-${++historySeq}`;
       window.history.pushState({ [HISTORY_KEY]: tokenRef.current }, '');
     } else if (!open && pushedRef.current) {
       pushedRef.current = false;
@@ -152,7 +156,7 @@ export function useKeyboardDismiss({
       const { onDismiss: dismiss, isInside: inside, suspended: paused } = latest.current;
       if (paused?.()) return;
       const active = document.activeElement;
-      if (active && active !== document.body && inside(active)) return;
+      if (active && inside(active)) return;
       dismiss();
     }, 0);
   }, []);

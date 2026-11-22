@@ -11,9 +11,9 @@ import { inputVariants, pressableVariants } from '@/components/ui/variants';
 import { useKobisSearch } from '@/hooks/useKobisSearch';
 import { useLogoCrop } from '@/hooks/useLogoCrop';
 import { useRatingPicker } from '@/components/v2/pickers/RatingPicker';
-import { keyboardPanelStyle, useKeyboardBox, useKeyboardDismiss } from '@/hooks/useInputKeyboard';
+import { useKeyboardBox } from '@/hooks/useInputKeyboard';
 import { editLift } from '@/utils/inputKeyboard';
-import { KeyboardUnderlay } from './KeyboardUnderlay';
+import { KeyboardPanel, keepFocus } from './KeyboardPanel';
 import { DateInput } from '@/components/ui/DateInput';
 import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
 import { KobisResultList } from './FieldEditorBody';
@@ -123,8 +123,6 @@ const optState = (on: boolean) => (on ? 'border-hair-strong bg-s2 font-semibold 
 /** 칩 한 줄(C-ACC) — 넘치면 가로 스크롤. */
 const TOOLBAR_CLS = 'no-scrollbar flex min-w-0 items-center gap-1 overflow-x-auto';
 
-/** 키보드를 내리지 않게 포인터 누름에서 포커스 이동을 막는다(‹ › · 닫기 · 칩). */
-const keepFocus = (e: { preventDefault: () => void }) => e.preventDefault();
 
 const CHEVRON_PATH = { left: 'm15 18-6-6 6-6', right: 'm9 18 6-6-6-6', up: 'm6 15 6-6 6 6', down: 'm6 9 6 6 6-6' } as const;
 function Chevron({ dir, size = 18, className }: { dir: keyof typeof CHEVRON_PATH; size?: number; className?: string }) {
@@ -444,21 +442,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
   };
   const logo = useLogoCrop(setStampImage);
   const logoInputRef = useRef<HTMLInputElement>(null);
-  // 파일 고르기 창이 떠 있는 동안 — 그 창이 가져간 포커스는 키보드 내림이 아니다(constraint-7). 고르거나 취소하면 내린다.
-  const pickingRef = useRef(false);
-  const pickImage = () => {
-    pickingRef.current = true;
-    logoInputRef.current?.click();
-  };
-  useEffect(() => {
-    const input = logoInputRef.current;
-    if (!input) return;
-    const done = () => {
-      pickingRef.current = false;
-    };
-    input.addEventListener('cancel', done);
-    return () => input.removeEventListener('cancel', done);
-  }, [isImageField]);
+  const pickImage = () => logoInputRef.current?.click();
   // revoke는 여기서 안 한다 — usePhototicket.updateComponents가 히스토리(#356) 참조 여부를 보고 판정한다(#673).
   const removeImage = () => setStampImage('');
 
@@ -736,31 +720,18 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
     );
   }
 
-  // 키보드 내림 = 닫기(K-08 (b)) — 패널 · 티켓 · 패널 목록 밖으로 포커스가 나가면 닫는다. 크롭 모달 · 파일 고르기는 패널이 연
-  // 화면이라 종료가 아니다(constraint-7).
-  const onPanelBlur = useKeyboardDismiss({
-    onDismiss: onClose,
-    isInside: (el) => !!panelRef.current?.contains(el) || !!wrapperEl?.contains(el),
-    suspended: () => pickingRef.current || !!logo.rawSrc,
-  });
-
   return (
     <>
-      {/* 밖 탭으로 닫기 — 티켓(래퍼 z-[41])과 패널은 이 위라 필드 전환/도구 조작은 그대로 된다. */}
-      <div className="fixed inset-0 z-40" onClick={onClose} aria-hidden="true" />
       {wrapperEl && rect && createPortal(<SelectionMarks rect={rect} />, wrapperEl)}
-      <KeyboardUnderlay inset={inset} />
-      {/* 입력 패널(C-INP) — 한 면 + 윗선 한 줄, 카드 · 그림자 없음. PhoneFrame의 contain:paint가 fixed 기준이라 좌표가 프레임 기준이다. */}
-      <div
-        ref={panelRef}
-        role="group"
-        aria-label={`${label} 입력`}
-        data-field-panel={field}
-        className="fixed inset-x-0 z-50 border-t border-hair-strong bg-s1 px-3 pt-2"
-        onBlur={onPanelBlur}
-        // 키보드 윗변(없으면 프레임 바닥 + 안전 영역)에 붙는다(constraint-3). 슬라이드 없이 페이드만(#354 시안 §5) —
-        // reduced-motion은 전역 가드가 duration을 죽인다.
-        style={{ ...keyboardPanelStyle(inset), animation: 'screen-in .18s ease-out' }}
+      {/* 티켓 래퍼로 가는 포커스(필드 전환)와 크롭 모달(이미지로 · 교체)이 가져간 포커스는 키보드 내림이 아니다(K-08 (b)). */}
+      <KeyboardPanel
+        label={label}
+        inset={inset}
+        onClose={onClose}
+        panelRef={panelRef}
+        isInside={(el) => !!wrapperEl?.contains(el)}
+        suspended={() => !!logo.rawSrc}
+        data={{ 'data-field-panel': field }}
       >
         <div className="flex h-touch items-center gap-2">
           <button type="button" aria-label="이전 항목" onPointerDown={keepFocus} onClick={() => step(-1)} className={cn(ICON_BTN_CLS, '-ml-1')}>
@@ -810,7 +781,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
             onClose={closeList}
           />
         )}
-      </div>
+      </KeyboardPanel>
       {/* 이미지 업로드 파이프라인(로고 · 서명) — 숨김 input + 자유비 크롭(useLogoCrop). */}
       {isImageField && (
         <>
@@ -821,7 +792,6 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
             accept={IMAGE_ACCEPT}
             aria-label={`${label} 이미지 파일`}
             onChange={(e) => {
-              pickingRef.current = false;
               const file = e.target.files?.[0];
               if (file && file.type.startsWith('image/')) logo.openFile(file);
               e.target.value = '';
