@@ -385,19 +385,25 @@ button { cursor: pointer; }
 .c-cropft .c-alert .ic { background: var(--pr-d-warn); }
 
 /* 결과 */
-.c-rbody { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--pr-s-3); }
-.c-rbody .beam { position: absolute; top: 0; bottom: 0; left: 50%; width: 88cqi; transform: translateX(-50%); background: var(--pr-s1); border-left: 1px solid var(--pr-hair); border-right: 1px solid var(--pr-hair); }
-.c-rtk { position: relative; width: 70cqi; aspect-ratio: 960/1534; }
-.c-rtk.wide { width: 80cqi; aspect-ratio: 1534/960; }
-.c-rtk .veil { position: absolute; inset: 0; background: color-mix(in srgb, var(--pr-stage) 55%, transparent); display: grid; place-items: center; }
+/* D21(D11 A): 위 줄 ‹ 하나 · 티켓이 가로(좌우 16)와 세로(남는 높이) 상한 중 작은 쪽까지 · [저장] [링크] [공유] 한 줄 · 고지 블록.
+   경고와 대체 링크 칸은 버튼 줄 위에 겹쳐 떠서 티켓 크기를 바꾸지 않아요. 앱 테마(라이트 · 다크)를 그대로 따라요. */
+.c-rbody { position: relative; flex: 1; min-height: 0; padding: var(--pr-s-2) var(--pr-s-4) var(--pr-s-3); display: flex; align-items: center; justify-content: center; container-type: size; }
+.c-rtk { position: relative; width: min(100cqw, calc(100cqh * 960 / 1534)); aspect-ratio: 960/1534; }
+.c-rtk.wide { width: min(100cqw, calc(100cqh * 1534 / 960)); aspect-ratio: 1534/960; }
 .c-spec { position: relative; margin: 0; font-size: 12px; line-height: 16px; color: var(--pr-ink-2); font-variant-numeric: tabular-nums; }
-.c-racts { flex: none; padding: var(--pr-s-3) var(--pr-s-4) 0; display: flex; flex-direction: column; gap: var(--pr-s-2); background: var(--pr-stage); border-top: 1px solid var(--pr-hair); }
-.c-lrow { display: flex; align-items: center; gap: var(--pr-s-2); min-width: 0; min-height: 44px; }
-.c-lrow small { flex: 1; min-width: 0; font-size: 12px; line-height: 16px; color: var(--pr-ink-2); }
-.c-lrow > .c-btn.txt:first-child { margin-left: calc(var(--pr-s-2) * -1); }
-.c-lrow > .c-btn.txt:last-child { margin-right: calc(var(--pr-s-2) * -1); }
+.c-racts { position: relative; flex: none; padding: 0 var(--pr-s-4) var(--pr-s-3); }
+.c-rrow { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: var(--pr-s-2); }
+.c-rrow .c-btn { min-width: 0; padding: 0 var(--pr-s-2); gap: 6px; }
+.c-rrow .c-btn.sec { background: var(--pr-s2); border-color: var(--pr-hair); }
+.c-rrow .c-btn .i { width: 16px; height: 16px; }
+.c-rrow .c-btn .lb { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.c-rfloat { position: absolute; left: var(--pr-s-4); right: var(--pr-s-4); bottom: 100%; margin-bottom: var(--pr-s-2); z-index: 10; display: flex; flex-direction: column; gap: var(--pr-s-2); }
+.c-rfloat > * { background: var(--pr-s2); box-shadow: 0 6px 16px -10px rgba(0,0,0,.5); }
+.c-rfloat .c-link { padding: var(--pr-s-2); border: 1px solid var(--pr-hair); border-radius: var(--pr-r-ctl); }
+.c-rnote { height: 48px; margin-top: var(--pr-s-2); display: flex; flex-direction: column; justify-content: flex-end; }
+.c-rtoast { left: 50%; right: auto; transform: translateX(-50%); white-space: nowrap; top: calc(var(--sb) + var(--pr-topbar) + var(--pr-s-2)); }
 .c-link { display: flex; gap: var(--pr-s-2); align-items: center; min-width: 0; }
-.c-link input { flex: 1; min-width: 0; height: 44px; padding: 0 12px; font-size: 16px; background: var(--pr-s2); border: 1px solid var(--pr-hair-strong); border-radius: var(--pr-r-ctl); color: var(--pr-ink); }
+.c-link input { flex: 1; min-width: 0; height: 44px; padding: 0 12px; font-size: 16px; background: var(--pr-s1); border: 1px solid var(--pr-hair-strong); border-radius: var(--pr-r-ctl); color: var(--pr-ink); }
 .c-osheet { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 31; background: var(--pr-s2); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--pr-hair-strong); }
 .c-osheet .hd { display: flex; gap: 10px; align-items: center; font-size: 13px; }
 .c-osheet .hd i { width: 40px; height: 40px; background: var(--pr-s1); border: 1px solid var(--pr-hair); flex: none; }
