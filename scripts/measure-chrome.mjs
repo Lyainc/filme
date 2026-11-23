@@ -565,7 +565,7 @@ try {
   await sleep(1400);
   // 크롭 모달은 createPortal로 프레임에 직접 붙는다(#606) — 포털 타깃이 body로 폴백하면
   // 여기서만 드러난다. 닫기 전에 잰다.
-  await measureFit('크롭 모달', 'div[role=dialog][aria-label="포스터 크롭"]');
+  await measureFit('크롭 모달', 'div[role=dialog][aria-label="포스터 자르기"]');
   await page.evaluate(() =>
     [...document.querySelectorAll('button')].find((b) => b.textContent?.trim() === '적용').click(),
   );

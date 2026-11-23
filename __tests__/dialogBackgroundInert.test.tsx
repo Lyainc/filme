@@ -83,7 +83,7 @@ describe('배경 inert — 단일 다이얼로그(#685)', () => {
       return (
         <Chrome>
           <button type="button" onClick={() => setOpen(true)}>open-crop</button>
-          {open && <ImageCropModal imageSrc="data:image/png;base64,x" onClose={() => {}} onComplete={() => {}} />}
+          {open && <ImageCropModal imageSrc="data:image/png;base64,x" onClose={() => {}} onComplete={() => {}} target="poster" accept="image/*" onPickFile={() => {}} />}
         </Chrome>
       );
     }
@@ -91,7 +91,7 @@ describe('배경 inert — 단일 다이얼로그(#685)', () => {
     fireEvent.click(screen.getByText('open-crop'));
     expect(!!screen.getByTestId('bg').closest('[inert]')).toBe(true);
     expect(!!screen.getByTestId('toast-layer').closest('[inert]')).toBe(false);
-    expect(screen.getByRole('dialog', { name: '포스터 크롭' }).inert).toBe(false);
+    expect(screen.getByRole('dialog', { name: '포스터 자르기' }).inert).toBe(false);
   });
 });
 
@@ -106,7 +106,7 @@ function NestedHarness() {
         crop-toggle
       </button>
       {cropOpen && (
-        <ImageCropModal imageSrc="data:image/png;base64,x" onClose={() => setCropOpen(false)} onComplete={() => {}} />
+        <ImageCropModal imageSrc="data:image/png;base64,x" onClose={() => setCropOpen(false)} onComplete={() => {}} target="poster" accept="image/*" onPickFile={() => {}} />
       )}
     </Chrome>
   );
@@ -127,7 +127,7 @@ describe('배경 inert — 중첩(다이얼로그 위 크롭 모달, #355 리뷰
     expect(!!screen.getByTestId('bg').closest('[inert]')).toBe(true); // 앱 배경은 계속 inert
     expect(!!screen.getByTestId('toast-layer').closest('[inert]')).toBe(false); // 토스트 레이어는 여전히 예외
     expect(dialogRoot().inert).toBe(true); // 아래 다이얼로그 자신도 이제 inert(#355 요구사항)
-    expect(screen.getByRole('dialog', { name: '포스터 크롭' }).inert).toBe(false); // 크롭 모달만 예외
+    expect(screen.getByRole('dialog', { name: '포스터 자르기' }).inert).toBe(false); // 크롭 모달만 예외
 
     // 크롭 모달을 닫는다 — 아래 다이얼로그가 다시 최상위.
     fireEvent.click(screen.getByText('crop-toggle'));

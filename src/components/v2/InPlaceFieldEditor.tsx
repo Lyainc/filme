@@ -801,10 +801,14 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
           {logo.rawSrc && (
             <ImageCropModal
               imageSrc={logo.rawSrc}
-              title="로고 크롭"
+              // 같은 useLogoCrop을 극장 · 포맷 로고와 서명이 함께 쓰므로 지금 편집 중인 필드로 제목을 고른다.
+              target={isSignature ? 'signature' : 'logo'}
               onClose={logo.handleCancel}
               onComplete={logo.handleComplete}
               isProcessing={logo.isCropping}
+              cropFailed={logo.cropFailed}
+              accept={IMAGE_ACCEPT}
+              onPickFile={logo.openFile}
             />
           )}
         </>

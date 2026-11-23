@@ -3,12 +3,11 @@
  *
  * 검증하는 정합성:
  *  1) 포스터(layout 전달) → 토글이 크롭 비율을 정한다(꺼짐=POSTER_RATIO, 켜짐=자연비).
- *  2) 로고(layout 미전달) → 크롭 프레임 = 업로드 이미지의 자연 종횡비(#347).
- *     완전 자유형(어떤 비율이든)이 아니라 "그 비율의 박스를 리사이즈"(#421)로 유지된다 —
- *     react-image-crop의 aspect=undefined는 defaultProps로 덮이지 않으므로(react-easy-crop과
- *     달리) 자연비를 직접 계산해 잠근다(ImageCropModal의 mediaAspect).
+ *  2) 로고(layout 미전달) → 완전 자유 비율(#826 S6 D20-3 B, acceptance-8) — aspect가 없고(data-aspect="undefined")
+ *     초기 크롭은 전체(100%)다. #347/#421의 "자연비 잠금"은 되돌렸다. react-image-crop의
+ *     aspect=undefined가 곧 자유 비율이라 ImageCropModal은 mediaAspect를 로고에는 안 쓴다.
  *  3) 로고 편집 본문(StampSheet — chain/format)이 파일 선택 시 그 모달을 연다(#231).
- *  4) 원본 비율 보존 토글(#420 → #440 → #525) — 포스터 크롭(layout 전달)이면 stub 포함
+ *  4) 원본 비율 보존 스위치(#420 → #440 → #525) — 포스터 크롭(layout 전달)이면 stub 포함
  *     전 무드 노출. 토글은 크롭 프레임 비율만 정하고(ON=자연비, OFF=포스터 표준 0.667),
  *     렌더 설정으로는 안 새어나간다 — 그래서 재크롭은 표준 프리셋으로 연다.
  *  5) 크롭 출력 해상도가 POSTER_RATIO와 정합(#525) — 갈리면 drawImage가 크롭을 늘여 그린다.
@@ -25,7 +24,7 @@
  * 전용 import라 이 mock으로 대체돼도 ImageCropModal 자체 로딩에는 영향이 없다.
  */
 import { describe, expect, test, afterAll, afterEach, beforeEach, mock } from 'bun:test';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { centerCrop, convertToPixelCrop, makeAspectCrop } from 'react-image-crop';
 import { POSTER_HEIGHT, POSTER_LANDSCAPE_RATIO, POSTER_RATIO, posterOutputSize } from '@/utils/constants';
@@ -99,81 +98,86 @@ describe('ImageCropModal 크롭 프레임 종횡비 (#220/#347)', () => {
     expect(POSTER_HEIGHT).toBe(1440);
   });
 
-  test('layout 미전달(로고) → 크롭 프레임이 업로드 이미지 자연 종횡비로 잠긴다', () => {
-    render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} />);
+  test('layout 미전달(로고) → 크롭 프레임에 종횡비가 없다(완전 자유, acceptance-8)', () => {
+    render(<ImageCropModal target="logo" accept="image/*" onPickFile={noop} imageSrc="blob:x" onClose={noop} onComplete={noop} />);
     loadImage(800, 200);
-    expect(aspectOf(screen.getByTestId('crop-frame'))).toBeCloseTo(800 / 200, 5);
+    expect(screen.getByTestId('crop-frame').getAttribute('data-aspect')).toBe('undefined');
   });
 
-  // 정방형 / 좌우로 긴 워드마크 / 세로형 — #347이 요구한 세 경우.
+  // 정방형 / 좌우로 긴 워드마크 / 세로형 — 어떤 비율의 이미지든 잠기지 않는다.
   const cases: [string, number, number][] = [
     ['정방형 512×512', 512, 512],
     ['워드마크 1200×300', 1200, 300],
     ['세로형 300×900', 300, 900],
   ];
   for (const [name, w, h] of cases) {
-    test(`layout 미전달 → 프레임이 원본 자연 종횡비: ${name}`, () => {
-      render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} />);
+    test(`layout 미전달 → 프레임에 종횡비 잠금이 없고 초기 크롭이 전체: ${name} (acceptance-8)`, () => {
+      const received: Area[] = [];
+      render(
+        <ImageCropModal target="logo" accept="image/*" onPickFile={noop} imageSrc="blob:x" onClose={noop} onComplete={(a: Area) => { received.push(a); }} />,
+      );
       loadImage(w, h);
-      // 자유형(완전 무관)으로 풀리면 여기서 깨진다 — #347/#421 회귀 가드.
-      expect(aspectOf(screen.getByTestId('crop-frame'))).toBeCloseTo(w / h, 5);
+      // 자연비로 다시 잠기면(옛 #347/#421) 여기서 숫자가 나온다.
+      expect(screen.getByTestId('crop-frame').getAttribute('data-aspect')).toBe('undefined');
+      fireEvent.click(screen.getByRole('button', { name: '적용' }));
+      // 초기 크롭 100% — 가장자리를 안 깎는다.
+      expect(received).toEqual([{ x: 0, y: 0, width: w, height: h }]);
     });
   }
 });
 
-describe('로고 본문(StampSheet) 파일 선택 → 자연비 크롭 모달 오픈 (#220/#231)', () => {
-  test('극장 로고: 업로드 시 자연비 프레임 모달', async () => {
+describe('로고 본문(StampSheet) 파일 선택 → 자유 비율 크롭 모달 오픈 (#220/#231)', () => {
+  test('극장 로고: 업로드 시 자유 비율 프레임 모달', async () => {
     const user = userEvent.setup();
     render(<StampHarness target="chain" />);
     await user.upload(fileInput(), pngFile('cgv.png'));
     // dynamic(ssr:false) 로딩 대기 후 모달 등장.
     await screen.findByTestId('crop-frame');
     loadImage(1200, 300);
-    expect(aspectOf(screen.getByTestId('crop-frame'))).toBeCloseTo(4, 5);
-    expect(screen.getByRole('dialog').getAttribute('aria-label')).toBe('로고 크롭');
+    expect(screen.getByTestId('crop-frame').getAttribute('data-aspect')).toBe('undefined');
+    expect(screen.getByRole('dialog').getAttribute('aria-label')).toBe('로고 자르기');
   });
 
-  test('포맷 로고: 업로드 시 자연비 프레임 모달', async () => {
+  test('포맷 로고: 업로드 시 자유 비율 프레임 모달', async () => {
     const user = userEvent.setup();
     render(<StampHarness target="format" />);
     await user.upload(fileInput(), pngFile('imax.png'));
     await screen.findByTestId('crop-frame');
     loadImage(512, 512);
-    expect(aspectOf(screen.getByTestId('crop-frame'))).toBeCloseTo(1, 5);
-    expect(screen.getByRole('dialog').getAttribute('aria-label')).toBe('로고 크롭');
+    expect(screen.getByTestId('crop-frame').getAttribute('data-aspect')).toBe('undefined');
+    expect(screen.getByRole('dialog').getAttribute('aria-label')).toBe('로고 자르기');
   });
 });
 
-describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
-  test('layout 미전달 → 토글 없음(로고 컨텍스트)', () => {
-    render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} />);
-    expect(screen.queryByRole('checkbox') === null).toBe(true);
+describe('원본 비율 보존 스위치 (#420, claude-review PR #429 P1)', () => {
+  test('layout 미전달 → 스위치 없음(로고 컨텍스트)', () => {
+    render(<ImageCropModal target="logo" accept="image/*" onPickFile={noop} imageSrc="blob:x" onClose={noop} onComplete={noop} />);
+    expect(screen.queryByRole('switch') === null).toBe(true);
   });
 
   test('layout 전달 시 전 무드에서 토글 노출(#440) — editorial도 노출', () => {
-    render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} layout="editorial" />);
-    expect(screen.queryByRole('checkbox')).not.toBeNull();
+    render(<ImageCropModal target="poster" accept="image/*" onPickFile={noop} imageSrc="blob:x" onClose={noop} onComplete={noop} layout="editorial" />);
+    expect(screen.queryByRole('switch')).not.toBeNull();
   });
 
   test('layout이 stub → 토글 노출(#525 (a)로 stub 예외 폐지, 6무드 동일 정책)', () => {
-    render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} layout="stub" />);
-    expect(screen.queryByRole('checkbox')).not.toBeNull();
+    render(<ImageCropModal target="poster" accept="image/*" onPickFile={noop} imageSrc="blob:x" onClose={noop} onComplete={noop} layout="stub" />);
+    expect(screen.queryByRole('switch')).not.toBeNull();
   });
 
   test('layout 전달(minimal) → 토글 노출, 기본 unchecked, aspect는 포스터 표준 POSTER_RATIO', () => {
-    render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} layout="minimal" />);
-    const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
-    expect(checkbox.checked).toBe(false);
+    render(<ImageCropModal target="poster" accept="image/*" onPickFile={noop} imageSrc="blob:x" onClose={noop} onComplete={noop} layout="minimal" />);
+    expect(screen.getByRole('switch').getAttribute('aria-checked')).toBe('false');
     expect(aspectOf(screen.getByTestId('crop-frame'))).toBe(POSTER_RATIO);
   });
 
   test('토글 클릭 시 aspect가 POSTER_RATIO ↔ 자연비로 전환된다', () => {
-    render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} layout="minimal" />);
+    render(<ImageCropModal target="poster" accept="image/*" onPickFile={noop} imageSrc="blob:x" onClose={noop} onComplete={noop} layout="minimal" />);
     loadImage(2000, 3000);
     expect(aspectOf(screen.getByTestId('crop-frame'))).toBe(POSTER_RATIO);
-    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('switch'));
     expect(aspectOf(screen.getByTestId('crop-frame'))).toBeCloseTo(2000 / 3000, 5);
-    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('switch'));
     expect(aspectOf(screen.getByTestId('crop-frame'))).toBe(POSTER_RATIO);
   });
 
@@ -182,10 +186,10 @@ describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
     // 잘라내던 회귀 — 세로 포스터의 제목 첫·끝 글자가 잘려 나가는 실사용 버그. 전체(100%)로 열어야 한다.
     const received: Area[] = [];
     render(
-      <ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={(a: Area) => { received.push(a); }} layout="minimal" />
+      <ImageCropModal target="poster" accept="image/*" onPickFile={noop} imageSrc="blob:x" onClose={noop} onComplete={(a: Area) => { received.push(a); }} layout="minimal" />
     );
     loadImage(2000, 2865); // 자연=렌더, 세로 포스터
-    fireEvent.click(screen.getByRole('checkbox')); // 원본 비율 보존 ON → aspect=자연비
+    fireEvent.click(screen.getByRole('switch')); // 원본 비율 보존 ON → aspect=자연비
     fireEvent.click(screen.getByRole('button', { name: '적용' }));
     // 90% 축소면 x/y가 양수·width<2000이 된다. 전체 이미지여야 (0,0)에서 원본 크기 그대로.
     expect(received).toHaveLength(1);
@@ -198,10 +202,10 @@ describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
       received.push([area, preserveRatio]);
     };
     render(
-      <ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={onCompleteSpy} layout="minimal" />
+      <ImageCropModal target="poster" accept="image/*" onPickFile={noop} imageSrc="blob:x" onClose={noop} onComplete={onCompleteSpy} layout="minimal" />
     );
     loadImage(2000, 3000);
-    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('switch'));
     fireEvent.click(screen.getByRole('button', { name: '적용' }));
     expect(received).toHaveLength(1);
     expect(received[0][1]).toBe(true);
@@ -220,7 +224,7 @@ describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
     };
     // layout을 명시해 포스터 표준 프리셋(POSTER_RATIO)을 실제로 태운다 — 안 주면 자연비로
     // 열리는데 이 fixture의 2000×3000이 우연히 0.667이라 아래 기대값이 우연히 맞아버린다.
-    render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={onCompleteSpy} layout="minimal" />);
+    render(<ImageCropModal target="poster" accept="image/*" onPickFile={noop} imageSrc="blob:x" onClose={noop} onComplete={onCompleteSpy} layout="minimal" />);
 
     const img = document.querySelector('img') as HTMLImageElement;
     const [naturalW, naturalH, renderW, renderH] = [2000, 3000, 1000, 1000]; // scaleX=2, scaleY=3
@@ -267,7 +271,7 @@ describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
     const posterInput = document.querySelector('input[type="file"][aria-label="포스터 이미지 파일"]') as HTMLInputElement;
     await user.upload(posterInput, pngFile('poster.jpg'));
     await screen.findByTestId('crop-frame');
-    await user.click(screen.getByRole('checkbox')); // 원본 비율 보존 ON으로 1차 크롭
+    await user.click(within(screen.getByRole('dialog')).getByRole('switch')); // 원본 비율 보존 ON으로 1차 크롭
     loadImage(2000, 3000);
     await user.click(screen.getByRole('button', { name: '적용' }));
 
@@ -276,14 +280,14 @@ describe('원본 비율 보존 토글 (#420, claude-review PR #429 P1)', () => {
     // 토글은 크롭 프레임만 정하므로, 되돌아갈 렌더 상태가 없다 — 표준 프리셋으로 여는 게 맞다.
     await user.click(screen.getByRole('tab', { name: '사진' }));
     await user.click(await screen.findByRole('button', { name: '자르기' }));
-    const checkbox = (await screen.findByRole('checkbox')) as HTMLInputElement;
-    expect(checkbox.checked).toBe(false);
+    const sw = within(await screen.findByRole('dialog')).getByRole('switch');
+    expect(sw.getAttribute('aria-checked')).toBe('false');
   });
 });
 
 describe('가로 포스터 슬롯 크롭 프리셋 (#529)', () => {
   test('35mm Wide → 크롭 프레임이 3:2(POSTER_LANDSCAPE_RATIO)', () => {
-    render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} layout="35mm-landscape" />);
+    render(<ImageCropModal target="poster" accept="image/*" onPickFile={noop} imageSrc="blob:x" onClose={noop} onComplete={noop} layout="35mm-landscape" />);
     loadImage(1200, 800);
     expect(aspectOf(screen.getByTestId('crop-frame'))).toBeCloseTo(POSTER_LANDSCAPE_RATIO, 5);
   });
@@ -292,14 +296,14 @@ describe('가로 포스터 슬롯 크롭 프리셋 (#529)', () => {
   // 판정하면 여기서 3:2가 나오고, 640×960(0.667) 포스터 컬럼의 레터박스 0이 깨진다.
   test('editorial은 캔버스가 가로여도 포스터 컬럼이 0.667이라 세로 프리셋', () => {
     expect(LAYOUTS.find((l) => l.id === 'editorial')!.orientation).toBe('landscape');
-    render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} layout="editorial" />);
+    render(<ImageCropModal target="poster" accept="image/*" onPickFile={noop} imageSrc="blob:x" onClose={noop} onComplete={noop} layout="editorial" />);
     loadImage(1200, 800);
     expect(aspectOf(screen.getByTestId('crop-frame'))).toBeCloseTo(POSTER_RATIO, 5);
   });
 
   test('세로 포스터 슬롯 3종은 기존 POSTER_RATIO 경로 그대로(회귀 없음)', () => {
     for (const id of ['minimal', 'criterion', '35mm'] as const) {
-      render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} layout={id} />);
+      render(<ImageCropModal target="poster" accept="image/*" onPickFile={noop} imageSrc="blob:x" onClose={noop} onComplete={noop} layout={id} />);
       loadImage(1200, 800);
       expect(aspectOf(screen.getByTestId('crop-frame'))).toBeCloseTo(POSTER_RATIO, 5);
       cleanup();
@@ -316,17 +320,17 @@ describe('가로 포스터 슬롯 크롭 프리셋 (#529)', () => {
 
   test('stub은 캔버스가 세로여도 포스터 밴드가 3:2라 가로 프리셋(#527)', () => {
     expect(LAYOUTS.find((l) => l.id === 'stub')!.orientation).toBe('portrait');
-    render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} layout="stub" />);
+    render(<ImageCropModal target="poster" accept="image/*" onPickFile={noop} imageSrc="blob:x" onClose={noop} onComplete={noop} layout="stub" />);
     loadImage(1200, 800);
     expect(aspectOf(screen.getByTestId('crop-frame'))).toBeCloseTo(POSTER_LANDSCAPE_RATIO, 5);
   });
 
   test('가로 무드에서도 "원본 비율 보존" 토글이 자연비 ↔ 3:2를 전환한다', () => {
-    render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} layout="35mm-landscape" />);
+    render(<ImageCropModal target="poster" accept="image/*" onPickFile={noop} imageSrc="blob:x" onClose={noop} onComplete={noop} layout="35mm-landscape" />);
     loadImage(1200, 800);
-    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('switch'));
     expect(aspectOf(screen.getByTestId('crop-frame'))).toBeCloseTo(1200 / 800, 5);
-    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('switch'));
     expect(aspectOf(screen.getByTestId('crop-frame'))).toBeCloseTo(POSTER_LANDSCAPE_RATIO, 5);
   });
 });
@@ -359,7 +363,7 @@ describe('크롭 모달 포털 타깃 (#606)', () => {
     const { rerender } = render(<PhoneFrame>{null}</PhoneFrame>);
     rerender(
       <PhoneFrame>
-        <ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} />
+        <ImageCropModal target="logo" accept="image/*" onPickFile={noop} imageSrc="blob:x" onClose={noop} onComplete={noop} />
       </PhoneFrame>,
     );
     expect(document.getElementById('phone-frame')).not.toBeNull();
@@ -367,7 +371,7 @@ describe('크롭 모달 포털 타깃 (#606)', () => {
   });
 
   test('프레임이 없으면 body로 폴백한다 (데스크톱 셸 경로)', () => {
-    render(<ImageCropModal imageSrc="blob:x" onClose={noop} onComplete={noop} />);
+    render(<ImageCropModal target="logo" accept="image/*" onPickFile={noop} imageSrc="blob:x" onClose={noop} onComplete={noop} />);
     expect(document.getElementById('phone-frame') === null).toBe(true);
     expect(screen.getByRole('dialog').parentElement?.tagName).toBe('BODY');
   });

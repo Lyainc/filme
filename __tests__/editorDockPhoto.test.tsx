@@ -141,7 +141,7 @@ describe.each([
 });
 
 describe('로고 이미지 업로드는 크롭 모달을 거친다', () => {
-  test('파일을 고르면 로고 크롭 모달이 서고, 취소하면 이미지는 그대로다', async () => {
+  test('파일을 고르면 로고 자르기 화면이 서고, 취소하면 이미지는 그대로다', async () => {
     render(<DockHarness mode="photo" />);
     await set((p) => p.updateComponents({ chain: '', chainLabel: 'CGV' }));
     const input = screen.getByLabelText('극장 로고 이미지 파일') as HTMLInputElement;
@@ -149,8 +149,8 @@ describe('로고 이미지 업로드는 크롭 모달을 거친다', () => {
     await act(async () => {
       fireEvent.change(input, { target: { files: [file] } });
     });
-    // 크롭 모달은 dynamic(ssr:false)라 비동기로 선다 — 열리는 대로 '로고 크롭'이 이름이다.
-    const dialog = await screen.findByRole('dialog', { name: '로고 크롭' });
+    // 크롭 모달은 dynamic(ssr:false)라 비동기로 선다 — 열리는 대로 '로고 자르기'가 이름이다.
+    const dialog = await screen.findByRole('dialog', { name: '로고 자르기' });
     expect(dialog).not.toBeNull();
     expect(String(dockProbe.photo!.state.components.chain ?? '')).toBe('');
   });

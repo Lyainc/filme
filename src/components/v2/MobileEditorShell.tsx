@@ -856,12 +856,18 @@ export function MobileEditorShell({
       />
       </div>
 
-      {crop.cropOpen && crop.originalSrc && (
+      {crop.cropOpen && crop.src && (
         <ImageCropModal
-          imageSrc={crop.originalSrc}
+          imageSrc={crop.src}
+          target="poster"
           onClose={crop.cancel}
           onComplete={handlePosterCropComplete}
           isProcessing={crop.isCropping}
+          cropFailed={crop.cropFailed}
+          // '다른 사진'은 크롭 화면 안의 입력이 고른 파일을 여기로 넘긴다(#826 S6 constraint-19) — 바깥
+          // 포스터 입력과 같은 accept · 같은 열기 경로. 랜딩은 '적용'에서만 벗어난다(#727, handlePosterCropComplete).
+          accept={POSTER_ACCEPT.join(',')}
+          onPickFile={crop.openFile}
           // previewComponents(pages/index.tsx의 280ms debounce)가 아니라 실시간 state를 읽는다 —
           // debounced 값을 쓰면 모달이 방금 커밋된 무드가 아니라 직전 무드의 크롭 프리셋으로
           // 열렸다가 ~280ms 뒤 갑자기 재계산됐다(#529 invariant 위반, claude-review PR #636 P0).
