@@ -355,9 +355,11 @@
   F({ id: 'S-01', page: 'share', name: '공유 페이지 /t/[id]', comps: ['C-WM', 'C-BTN'],
     variants: [
       { st: '기본', html: S.phone('<div class="c-head" style="display:flex;justify-content:center">' + S.wordmark() + '</div><div class="c-share"><div class="img" data-rl="h">' + S.ticket({}) + '</div><p class="t-body">영화 포스터로 시네마틱한 포토티켓을, 너도 만들어봐.</p><button class="c-btn pri cta block" data-rl="hx">나도 티켓 만들기</button><p class="c-legal">이 링크는 3일 후 만료돼요. 비공식 팬메이드 티켓이라 양도·재판매할 수 없고, 정보 정확성은 보장하지 않으며 분실·훼손에 책임지지 않아요.</p></div>' + SAFE) },
-      { st: '빈 상태 · 만료된 링크', html: S.phone('<div class="c-head" style="display:flex;justify-content:center">' + S.wordmark() + '</div><div class="c-share" style="justify-content:center"><div class="img" style="height:34%;border:1px dashed var(--pr-hair-strong)"></div><p class="t-title">만료된 링크예요</p><button class="c-btn pri cta block">나도 티켓 만들기</button></div>' + SAFE) }
+      { st: '빈 상태 · 만료된 링크', html: S.phone('<div class="c-head" style="display:flex;justify-content:center">' + S.wordmark() + '</div><div class="c-share" style="justify-content:center"><p class="t-title" role="heading" aria-level="1">만료된 링크예요</p><button class="c-btn pri cta block">나도 티켓 만들기</button></div>' + SAFE) }
     ],
-    states: ['기본은 현행 문구 그대로. 만료·없는 링크는 Next 기본 404 대신 빈 상태(제안).'], flow: [['나도 티켓 만들기', 'L-01', '']], notes: [] });
+    states: ['기본은 현행 문구 그대로이고 [나도 티켓 만들기]에 화살표가 없어요. 만료 문장과 비공식 고지는 맨 아래 한 줄이에요.',
+      '만료 · 없는 링크(조회 실패 포함)는 404 상태코드와 함께 빈 상태 "만료된 링크예요" + [나도 티켓 만들기]예요(S7 출시). 탭 제목은 "만료된 링크예요 · FILME"이고 캐시하지 않아요.',
+      '공유 페이지는 앱 테마(라이트 · 다크)를 따라요.'], flow: [['나도 티켓 만들기', 'L-01', '']], notes: [] });
 
   window.FRAMES = FR;
 })();
