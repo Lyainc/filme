@@ -37,13 +37,53 @@ brownfield: true
 refine_generation: 0
 
 lifecycle:
-  state: active
-  outcome: null
-  reason: "소유자가 Seed를 승인하고 구현 착수를 지시했다."
-  approved_by: "소유자 응답(2026-11-18): S1 Seed '승인, 구현 시작'"
+  state: closed
+  outcome: completed
+  reason: "PR #839(feat/826-s1-tokens)가 main에 rebase 머지됐고 constraint-1~10 · acceptance-1~10 근거가 main 7baded59 트리에 있다. 남은 위험으로 본 acc-6 옛 hex 3곳은 주석 설명뿐이고 acc-8 Seed 기준선 수치는 S2 이후 값이라, 둘 다 근거 항목에 적었다."
+  approved_by: "소유자 응답(2026-11-23 세션): '상태 바꿀수있는건 바꿔줘.'"
   evidence:
-    commit: null
-    items: []
+    commit: 7baded59bfed979b96338fbf02c2b649faf2a69c
+    items:
+      - id: constraint-1
+        refs: ["git diff 076ab89f..152396c0 -- src/components/moods src/components/TicketRenderer.tsx src/utils/captureToImage.ts 0줄"]
+      - id: constraint-2
+        refs: ["git diff 1bf6c63a~1 1bf6c63a -- tailwind.config.js에 fontSize · spacing · borderRadius · screens 변경 줄 0건, 도크 · 시트 구조 변경 없음(dock 249 유지)"]
+      - id: constraint-3
+        refs: ["git diff 1bf6c63a~1 1bf6c63a -- src(moods 제외)의 한글 비대응 줄은 전부 주석 연속행이고 문자열 리터럴 변경 0건"]
+      - id: constraint-4
+        refs: ["__tests__/themeTokens.test.ts '값이 마스터 결정 10과 같다' 라이트 · 다크 통과"]
+      - id: constraint-5
+        refs: ["__tests__/tokenNamesScan.test.ts 옛 Tailwind 색 클래스 · var(--옛이름) 0건 통과"]
+      - id: constraint-6
+        refs: ["__tests__/tokenNamesScan.test.ts var(--danger) · 옛 --warn 0건, --success · --neutral-2 · --glass-* · --overlay-* · --workbench · --shadow-pop 이름 유지"]
+      - id: constraint-7
+        refs: ["__tests__/themeTokens.test.ts FOUC 테마 스크립트 네 경우, src/pages/_document.tsx"]
+      - id: constraint-8
+        refs: ["__tests__/themeTokens.test.ts 무드 전용 별칭 --accent는 var(--pr-accent), __tests__/tokenNamesScan.test.ts var(--accent)는 _shared.tsx에서만"]
+      - id: constraint-9
+        refs: ["git diff 1bf6c63a~1 1bf6c63a -- src(moods 제외) gradient( · drop-shadow · blur( · rounded-full · rounded-chip 추가 37줄 / 삭제 37줄 짝 대응, c9bc6d87 0줄"]
+      - id: constraint-10
+        refs: ["브랜치 feat/826-s1-tokens, Conventional Commits 1bf6c63a · c9bc6d87, PR #839 소유자 승인 뒤 머지"]
+      - id: acceptance-1
+        refs: ["main 7baded59 워크트리에서 bun run typecheck · bun run lint 오류 출력 없음, bun run test 1423 pass / 0 fail"]
+      - id: acceptance-2
+        refs: ["__tests__/fgContrast.test.ts 라이트 · 다크 × 세 표면 4.5:1, accent-ink on accent 4.5:1, accent vs stage 3:1 통과"]
+      - id: acceptance-3
+        refs: ["__tests__/themeTokens.test.ts globals.css --pr 블록 파싱 + FOUC 스크립트 네 경우 통과"]
+      - id: acceptance-4
+        refs: ["__tests__/tokenNamesScan.test.ts 통과, __tests__/ghostMode.test.tsx는 S1 커밋 1bf6c63a · c9bc6d87에서 수정 없음(이후 S2 5e79ce00이 별도로 한 줄 수정)"]
+      - id: acceptance-5
+        refs: ["__tests__/tokenNamesScan.test.ts 서비스 UI 글꼴 Pretendard 하나 통과, src/pages/_app.tsx 티켓 글꼴 로드 S1 diff 없음"]
+      - id: acceptance-6
+        refs: ["src/constants/theme.ts THEME_COLOR = { light: #EDEEEF, dark: #0B0B0C }, __tests__/themeTokens.test.ts theme-color 상수 = --pr-stage 통과. 옛 hex(#F4F5F7 · #0E1012)는 코드 값이 아니라 src/utils/ogImageBuild.ts:4 · src/styles/globals.css:50 주석과 __tests__/ogImage.test.ts:36 주석 설명으로만 3곳 남음"]
+      - id: acceptance-7
+        refs: ["git diff 1bf6c63a~1 1bf6c63a -- src(moods 제외) 금지어 추가 37줄 / 삭제 37줄 짝 대응(이름만 바뀐 기존 줄, font-mono → tabular-nums 1줄 제외), c9bc6d87 0줄"]
+      - id: acceptance-8
+        refs: ["prod 빌드(7baded59, 포트 3047) bun scripts/measure-chrome.mjs --theme dark · light 모두 exit 0, 게이트 축 fails 전부 빈 배열, dock 249 / 프리뷰 219×350. 본문 기준선 290 · 190.9×305는 S2 이후 값과 달라졌고 이 항목의 '바뀌었다면 재측정해 기록' 갈래로 기록"]
+      - id: acceptance-9
+        refs: ["docs/COPY_TONE_GUIDE.md 축 3 '한 줄, 다음 행동은 버튼이 맡는다' 결정 8 개정, 앱 문자열 변경 0건(constraint-3 근거)"]
+      - id: acceptance-10
+        refs: ["헤드리스 캡처 라이트 · 다크 2장 육안 확인(색 새 팔레트, 잘림 · 글자 덮임 없음). 캡처 상태는 편집 메뉴 시트가 열린 편집 화면"]
   withdrawn: []
 
 goal:
