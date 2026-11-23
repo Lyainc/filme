@@ -120,6 +120,19 @@ export const getServerSideProps: GetServerSideProps<LandingProps> = async ({
   return { props: { imageUrl, title, pageUrl, width, height, ogImageUrl, ogDescription } };
 };
 
+// 기본 · 만료 두 상태가 같이 쓰는 홈 링크 헤더와 CTA 모양(#138 브랜딩 · #491 CTA 슬림화).
+const CTA_CLASS = cn(pressableVariants(), 'inline-flex min-h-touch items-center justify-center rounded-field-sm bg-accent px-6 text-body font-semibold text-accent-ink transition-colors hover:bg-accent-hover');
+
+function BrandHeader() {
+  return (
+    <header className="flex h-14 shrink-0 items-center border-b border-hair bg-s1 px-4">
+      <Link href="/" className="flex items-center gap-2" aria-label="FILME 홈">
+        <Wordmark />
+      </Link>
+    </header>
+  );
+}
+
 export default function TicketLanding(props: LandingProps) {
   if ('expired' in props) return <ExpiredLanding />;
   return <TicketView {...props} />;
@@ -132,16 +145,12 @@ function ExpiredLanding() {
         <title>만료된 링크예요 · FILME</title>
       </Head>
       <div className="app-canvas flex min-h-[100dvh] flex-col">
-        <header className="flex h-14 shrink-0 items-center border-b border-hair bg-s1 px-4">
-          <Link href="/" className="flex items-center gap-2" aria-label="FILME 홈">
-            <Wordmark />
-          </Link>
-        </header>
+        <BrandHeader />
         <main className="flex flex-1 flex-col items-center justify-center gap-6 px-5 py-6 text-center">
           <h1 className="text-display font-semibold text-ink">만료된 링크예요</h1>
           <Link
             href="/"
-            className={cn(pressableVariants(), 'inline-flex min-h-touch items-center justify-center rounded-field-sm bg-accent px-6 text-body font-semibold text-accent-ink transition-colors hover:bg-accent-hover')}
+            className={CTA_CLASS}
           >
             나도 티켓 만들기
           </Link>
@@ -182,11 +191,7 @@ function TicketView({ imageUrl, title, pageUrl, width, height, ogImageUrl, ogDes
           인상을 만든다(#138 브랜딩). 라이트·다크는 _document themeScript가 html에 건
           .theme-dark를 그대로 상속하므로 토큰만 쓰면 양쪽에서 동작한다. */}
       <div className="app-canvas flex min-h-[100dvh] flex-col">
-        <header className="flex h-14 shrink-0 items-center border-b border-hair bg-s1 px-4">
-          <Link href="/" className="flex items-center gap-2" aria-label="FILME 홈">
-            <Wordmark />
-          </Link>
-        </header>
+        <BrandHeader />
 
         {/* 세로 예산(#491): 진입 즉시 CTA가 폴드 위에 서야 한다. py-12/gap-10 + 높이 캡 없는
             티켓(세로 무드 ~613px)이면 일반 폰에서 CTA가 스크롤 아래로 밀렸다 — 패딩·간격을
@@ -229,7 +234,7 @@ function TicketView({ imageUrl, title, pageUrl, width, height, ogImageUrl, ogDes
             {/* CTA 슬림화(#491) — 44px는 탭 타깃 하한이라 더 낮추지 않는다. */}
             <Link
               href="/"
-              className={cn(pressableVariants(), 'mt-1 inline-flex min-h-touch items-center justify-center rounded-field-sm bg-accent px-6 text-body font-semibold text-accent-ink transition-colors hover:bg-accent-hover')}
+              className={cn(CTA_CLASS, 'mt-1')}
             >
               나도 티켓 만들기
             </Link>
