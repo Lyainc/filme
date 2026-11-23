@@ -37,10 +37,10 @@ brownfield: true
 refine_generation: 0
 
 lifecycle:
-  state: paused
+  state: active
   outcome: null
-  reason: "D20 결정(1-A · 2-A · 3-B · 4-A · 5-A)과 맹점 셋을 반영한 초안이다. 소유자가 이 Seed를 승인하기 전까지 구현에 적용하지 않는다."
-  approved_by: "소유자 목표(2026-11-23 /goal): '소유자 승인 전에는 lifecycle을 paused로 두고, 승인 문장을 approved_by에 옮긴 뒤에만 active로 바꾼다.'"
+  reason: "D20 결정(1-A · 2-A · 3-B · 4-A · 5-A)과 맹점 셋을 반영했고, 소유자가 이 Seed를 구현 기준으로 승인했다."
+  approved_by: "소유자 응답(2026-11-23): 'S6 Seed를 승인해 active로 바꿀까요?' → '승인, active로 (Recommended)'"
   evidence:
     commit: null
     items: []
