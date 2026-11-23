@@ -17,6 +17,8 @@
 9. 워크트리에서 dev 띄우기 (#708)
 10. 프레임 봉쇄 축(도크·메뉴 시트 포함)과 `backdrop` (#609·#786·#826 S2)
 11. `landingShownOnDraft`·`posterless` 축과 파괴 실험 (#727·#674)
+12. `measure-keyboard-panel.mjs` — 입력 패널 · 키보드 표본 (#826 S4)
+13. 결과 화면 축 `resultLayout`·`resultToast`·`resultOverlay` (#826 S7)
 
 ---
 
@@ -26,7 +28,7 @@
 |---|---|
 | `scripts/capture-export.mjs` | export JPEG(저장물)의 픽셀. 후가공(재질·코팅·강도) 전/후 비교 |
 | `scripts/measure-font-metrics.mjs` | 한줄평·서명 폰트 9택의 체감 크기(캔버스 잉크 박스) |
-| `scripts/measure-chrome.mjs` | dock·프리뷰 rect, 세 모드 도크 높이, 편집 메뉴 시트 포커스/닫기, 항목별 WCAG 대비(관측), 프레임 봉쇄, 랜딩·posterless 축 |
+| `scripts/measure-chrome.mjs` | dock·프리뷰 rect, 세 모드 도크 높이, 편집 메뉴 시트 포커스/닫기, 항목별 WCAG 대비(관측), 프레임 봉쇄(결과 스테이지는 `[data-testid="result-stage"]`), 랜딩·posterless 축, 결과 화면 축 3종(13절) |
 | `scripts/measure-keyboard-panel.mjs` | 입력 패널 + 스텁 키보드 표본(#826 S4) — 393×852 라이트·다크 × 제목·좌석 캡처 4장과 네 수치 |
 
 `scripts/measure-chrome.mjs`는 `bun scripts/measure-chrome.mjs --theme dark|light`로 돌린다. **세션 tmp에 다시 쓰지 말 것**(#586, 여섯 번 반복됨).
@@ -43,7 +45,9 @@
 
 운용 규칙: Stub의 회귀 여부를 픽셀 diff로 볼 땐 **prod로 재는 게 안전**하고, dev로 잴 땐 raw fail이 나와도 곧바로 회귀로 보지 말고 같은 코드 재캡처로 통제군부터 잡는다.
 
-### 헤드리스에서 '사진에 저장'이 안 끝나는 건 앱 버그가 아니다
+### 헤드리스에서 결과 화면의 '저장'이 안 끝나는 건 앱 버그가 아니다
+
+**저장 버튼 선택자(#826 S7)**: 결과 화면의 저장 버튼은 `[data-testid="result-save"]`(텍스트 '저장')다. `capture-export.mjs`와 `scripts/ios-sim/run768.py`는 이 testid를 먼저 집고, 없으면 텍스트가 **정확히** '저장'인 버튼(`textContent.trim() === '저장'`)으로 폴백한다. `includes('저장')`은 쓰지 않는다 — '저장'이 '임시저장' 같은 다른 문구의 부분 문자열이라 엉뚱한 버튼이 잡힌다. 옛 '사진에 저장' 텍스트 선택자는 두 스크립트에 남아 있지 않다.
 
 macOS 헤드리스 Chrome이 `navigator.canShare({files})`에 **true**를 줘서 `ResultPanel`이 `shareTicketAsJpeg` 경로를 타는데, OS 공유 시트가 못 뜨니 `navigator.share`의 Promise가 영영 settle하지 않아 CTA가 "저장 중..."에 묶인다. 캡처는 그 전에 이미 끝나 있다(`?debug=1` 로그 `[capture:main] out=…`이 t<3s).
 
@@ -165,3 +169,32 @@ dock 249 / 프리뷰 219×350, 이 세 숫자는 **`EditorDock.tsx`의 `DOCK_BOD
 - 앱 스크립트보다 먼저(`evaluateOnNewDocument`) `window.visualViewport`를 EventTarget 가짜로 바꿔 보이는 높이를 `852 − 키보드`로 둔다. 패널을 연 뒤 `resize`를 한 번 쏴 키보드가 올라오는 순간을 흉내 낸다. 그래서 스크린샷의 키보드 자리엔 도크가 그대로 비친다 — 실제 키보드가 덮는 영역이라 판정 대상이 아니다.
 - 같은 페이지에서 넷을 잰다: ① 패널 아래 끝 − 키보드 윗변 ≤ 1px ② 선택 표시와 패널의 교차 면적 0 + 표시 아래 끝이 패널 윗변 위 ③ 패널 안 button · input이 `#phone-frame` 안 ④ 세로 무드 확대 래퍼 가로가 `#phone-frame` 안. 못 잰 값과 캡처 4장 미만도 exit 1이다.
 - **합성 스텁 결과는 실기기 PASS가 아니다.** 키보드 높이 · offsetTop 변화의 실측은 iOS Simulator(`scripts/ios-sim/`)와 S8 실기기 몫이다.
+
+## 13. 결과 화면 축 `resultLayout`·`resultToast`·`resultOverlay` (#826 S7)
+
+`measure-chrome.mjs`의 결과 화면 구간(`result-stage` 프레임 봉쇄·`result-hero` 봉쇄 항목 뒤)에서 잰다. **세 축 모두 `process.exitCode`에 실려 있다**(4절 #714): 못 찾은 셀렉터, `checked:false`(프레임이 400×675/400×667이 아님), 던진 예외(`guard`가 `{error, pass:false}`로 바꿔 이후 축 진단을 살린다)는 전부 실패다. 다크·라이트 두 실행 모두 같은 경로로 돈다. 대상 DOM은 Seed `docs/specs/826-s7-result-share.yaml`의 계약(`result-stage`·`result-topbar`·`result-scroll`·`.result-hero`·`result-hero-slot`·`result-toast`·`result-alert`·`result-link-fallback`·`result-actions`·`result-save/link/share`·`result-notice`·`result-expiry`)이다.
+
+**구간 순서와 무드 전환**: 결과 화면을 연 채로 이어서 잰다. A) 시드 무드(`--mood` 없으면 minimal, 세로) 675 — 배치·오버레이 3상태·토스트 → B) `35mm 와이드`(35mm-landscape)로 전환해 675 배치 → C) `미니멀`로 복귀 + 뷰포트 높이 667 오버레이 3상태. 무드 전환은 리로드·draft 재주입이 아니라 **UI 경로 그대로**(‹ '편집으로 돌아가기' → 디자인 모드 → `#design-tool-tab-mood` → `button[role=radio]`의 aria-label 접두 일치 → '완료')다 — 포스터가 메모리·IDB에 남아 크롭 모달을 다시 거치지 않고, 무드 전환이 "내용 변경"이라 경고·대체 링크 칸 같은 결과 화면 일시 상태가 비워지는지도 같이 본다(C 시작 때 `cleanBefore`로 게이트). `--mood`로 가로 무드를 시드하면 A의 portrait 판정이 어긋나 실패한다.
+
+### `resultLayout` (acceptance-17)
+
+세로 무드(프레임 400×675): 위 줄 높이 44±1 · `hero.top − topbar.bottom` 8±1 · `hero.w ≤ 프레임 폭 − 32` · 좌우 여백 차 ≤1(`#phone-frame` 기준) · `actions.top − hero.bottom` 12±1 · 저장/링크/공유 높이 ≥44 · `|hero.h − .result-hero [data-ticket-scale-wrapper] .h| ≤ 1`(`getBoundingClientRect`라 transform 스케일이 포함된다) · 스크롤 컨테이너 `scrollTop === 0`이고 넘침 없음 · 테마 스코프(루트 `result-stage`의 직계 자식 `result-ambient`, 루트의 `.chrome-dark`는 다크일 때만, **html에는 `chrome-dark`가 없다**). 가로 무드(35mm-landscape)는 위 공통 항목에 더해 **위 줄과 버튼 줄 사이 세로 가운데**를 잰다: `|(hero.top − topbar.bottom) − (actions.top − hero.bottom)| ≤ 1`(acceptance-17 원문 그대로의 원시 간격). 구현은 `result-hero-slot`이 위 줄 바로 아래부터 버튼 줄 바로 위까지(위 8 · 아래 12 간격 포함)를 통째로 차지해 원시 간격이 같아지고, 슬롯 경계도 `slotBounds`로 같이 본다.
+
+### `resultToast` (acceptance-14)
+
+`[data-testid="result-toast"]`가 `role=status`이고, 빈 상태와 실제 통보('링크를 복사했어요', 링크 발급 스텁이 성공하도록 만들어 띄운다) 두 상태에서 rect가 `#phone-frame` 안이며(빈 상태는 높이 0이어도 top/left/right를 본다), 통보가 위 줄 아래에 있다.
+
+### `resultOverlay` (acceptance-16)
+
+프레임 400×675와 400×667에서(뷰포트 높이를 바꾸면 프레임이 100dvh라 따라온다) 상태 셋을 **스텁으로** 만들고, 각 상태에서 저장/링크/공유 버튼·`result-notice`가 프레임 안, `result-scroll.scrollTop === 0`, `.result-hero` 폭·높이가 기본 상태와 ±1px인지 본다. 떠 있는 `result-alert`·`result-link-fallback` 자신도 프레임 안이어야 한다(관측값 `reachesActions`는 두 칸이 버튼 줄 윗변을 넘는지만 출력하고 게이트가 아니다).
+
+| 상태 | 만드는 법 | 기대 |
+|---|---|---|
+| default | 아무것도 안 함(hero 크기 기준) | 경고·대체 칸·`result-expiry` 없음 |
+| saveFailOnly | `HTMLCanvasElement.prototype.toDataURL`·`toBlob`을 던지게 스텁 → `result-save` 클릭 → `result-alert` 대기 → 즉시 복원 | alert만 |
+| fallbackOnly | `window.fetch`의 `/api/ticket`만 `{id:'harness',url:''}` 200으로 스텁(그 외 URL은 통과) + `navigator.clipboard.writeText`를 reject → `result-link` 클릭(링크 클릭이 기존 경고를 지운다) → `result-link-fallback` 대기. canvas는 복원된 상태라 캡처는 성공 | fallback + `result-expiry`, alert 없음 |
+| worst | 위 상태에서 canvas를 다시 스텁 → `result-save` 클릭 → `result-alert` 대기(대체 칸은 저장 클릭으론 안 사라진다) | alert + fallback + expiry |
+
+세 축 공통으로 `navigator.canShare`는 `undefined`로 스텁해 저장을 다운로드 경로로 떨어뜨린다(2절의 같은 사유). 스텁의 원본은 `window.__harnessOrig`에 저장했다가 상태 사이에 복원한다(canvas는 실패 확인 직후, fetch·clipboard는 worst 뒤와 토스트 뒤).
+
+**라이브 서버로만 확인되는 것**: 이 절의 임계값과 DOM 계약은 코드를 읽고 쓴 것이라 **prod(`bun run build && next start`, 새 포트·stale 서버 확인 8절)에서 다크·라이트 각 한 번 돌려 실측으로 굳혀야 한다.** 특히 ① html2canvas가 아니라 `html-to-image`가 `toDataURL`/`toBlob` 스텁에 실제로 던지는지(`result-alert`가 안 뜨면 `triggered:false`로 실패한다), ② 무드 전환이 대체 링크 칸·경고를 정말 비우는지(`cleanBefore`), ③ 가로 무드 슬롯 중앙 판정의 기준(슬롯 기준 여유 비교)이 구현과 맞는지.

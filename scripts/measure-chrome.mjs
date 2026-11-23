@@ -27,6 +27,9 @@
  * 10. 랜딩 세로 예산 — 카피+히어로+이탈경로가 675 프레임을 스크롤 없이 담는지  (#665)
  * 11. 포스터 없이 진입 — 랜딩이 숨고 스테이지가 본문 전체(+--workbench)를 받는지  (#674)
  * 12. OCR 되돌리기 배너 · 전역 토스트 동시 노출 시 겹침 여부                    (#731 · #737)
+ * 13. resultLayout — 결과 화면 배치(위 줄 44 · hero 8px 아래·폭·가운데 · 버튼 줄 12px 아래 · 버튼 ≥44 · 가로 무드 세로 가운데 · 테마 스코프)  (#826 S7 acceptance-17)
+ * 14. resultToast — 통보 영역(role=status)이 빈·찬 상태 모두 프레임 안                                   (#826 S7 acceptance-14)
+ * 15. resultOverlay — 저장 실패 · 대체 링크 칸 · 둘 다 뜬 최악 상태에서 버튼·고지 프레임 안, 스크롤 0, hero 불변 (675·667)  (#826 S7 acceptance-16)
  *
  * ── 대조 기준은 뷰포트가 아니라 프레임이다 (#609) ────────────────────────────
  * 예전엔 `VW===400 && VH===675`로 게이팅해서, `--viewport 1440x675`로 돌리면 프레임이
@@ -870,8 +873,10 @@ try {
   const after = await readRects();
 
   // ── 결과 스테이지 · hero — 편집 화면을 떠나므로 맨 마지막에 잰다. ────────────
-  // 루트엔 id가 없고 .app-canvas.chrome-dark는 다크 테마 편집 셸도 달고 있다(그리고 그 셸은
-  // 결과 뒤에 hidden으로 남아 있다) — 결과 전용인 result-ambient의 부모를 루트로 쓴다.
+  // 결과 루트는 `[data-testid="result-stage"]`(직계 자식 result-ambient, #826 S7 DOM 계약)다. 예전엔 id가 없어
+  // `div:has(> result-ambient)`로 집었다 — .app-canvas.chrome-dark는 다크 테마 편집 셸도 달고 있어(그 셸은
+  // 결과 뒤에 hidden으로 남는다) 클래스로는 못 집기 때문이다. 이제 testid로 집고 ambient 직계 여부는 아래
+  // resultLayout.themeScope에서 따로 잰다.
   // #763(#756과 같은 클래스, 그리고 #756 재현 실험에서 실제로 걸린 자리 — landing-restore를
   // 존재하지 않는 값으로 바꾸면 크래시가 여기서 났다) — 완료가 no-op하면 다음 줄 result-ambient
   // 15초 대기가 엉뚱한 셀렉터 이름으로 타임아웃 나서 완료 실종이 진짜 원인인 걸 가린다. 텍스트
@@ -898,10 +903,374 @@ try {
   );
   await page.waitForSelector('[data-testid="result-ambient"]', { timeout: 15000 });
   await sleep(600);
-  await measureFit('결과 스테이지', 'div:has(> [data-testid="result-ambient"])');
+  await measureFit('결과 스테이지', '[data-testid="result-stage"]');
   // hero는 --hero-dvh-budget을 든 유일한 요소고, 그 컨테이너 쿼리는 뷰포트가 아니라 프레임의
   // orientation을 읽는다 — 1440×900 뷰포트(landscape)의 400×900 프레임은 portrait이다(#607).
   await measureFit('결과 hero', '.result-hero');
+
+  // ── 결과 화면 축 3종 (#826 S7 constraint-13 · acceptance-11/14/16/17) ─────────────────────
+  // 세 축 모두 종료 조건에 실린다(#714). 못 찾은 셀렉터·못 잰 프레임(checked:false)·던진 예외는 전부 pass:false다 —
+  // 던지면 이후 축의 진단이 같이 날아가니 guard가 예외를 {error, pass:false}로 바꿔 남긴다(#756 류와 같은 이유).
+  //
+  // 이 구간은 결과 화면이 열려 있는 채로 **무드를 바꿔 가며** 이어진다(편집으로 돌아가기 → 무드 도구 → 완료).
+  // 리로드·draft 재주입보다 이쪽이 견고하다: 포스터가 IDB·메모리에 그대로 있고(재주입하면 크롭 모달을 또 거친다),
+  // 무드 전환은 "내용이 바뀐다"라서 대체 링크 칸·경고 같은 결과 화면 일시 상태의 초기화도 같이 검증된다.
+  // 순서: A) 세로 무드(시드의 기본 minimal) 675 — 배치·오버레이 3상태·토스트  B) 35mm-landscape 675 — 세로 가운데
+  //       C) minimal 로 복귀 + 뷰포트 높이 667 — 오버레이 3상태. (A의 토스트는 링크를 성공 발급해 끝내므로 B·C 전에 무드를 바꿔 비운다.)
+  const guard = async (fn) => {
+    try {
+      return await fn();
+    } catch (error) {
+      return { pass: false, error: String(error?.message ?? error) };
+    }
+  };
+  const TID = (id) => `[data-testid="${id}"]`;
+  // 한 번에 읽는 결과 화면 스냅샷 — 좌표는 전부 뷰포트 좌표(프레임 rect와 같은 원점). 없는 요소는 null.
+  const readResult = () =>
+    page.evaluate(() => {
+      const rect = (el) => {
+        if (!el) return null;
+        const b = el.getBoundingClientRect();
+        return { top: b.top, bottom: b.bottom, left: b.left, right: b.right, w: b.width, h: b.height };
+      };
+      const $ = (sel) => document.querySelector(sel);
+      const t = (id) => $(`[data-testid="${id}"]`);
+      const stage = t('result-stage');
+      const scroll = t('result-scroll');
+      return {
+        frame: rect(document.getElementById('phone-frame')),
+        stage: rect(stage),
+        stageHasAmbient: !!stage && [...stage.children].some((c) => c.getAttribute('data-testid') === 'result-ambient'),
+        stageChromeDark: !!stage && stage.classList.contains('chrome-dark'),
+        htmlChromeDark: document.documentElement.classList.contains('chrome-dark'),
+        topbar: rect(t('result-topbar')),
+        hero: rect($('.result-hero')),
+        wrapper: rect($('.result-hero [data-ticket-scale-wrapper]')),
+        slot: rect(t('result-hero-slot')),
+        actions: rect(t('result-actions')),
+        save: rect(t('result-save')),
+        link: rect(t('result-link')),
+        share: rect(t('result-share')),
+        notice: rect(t('result-notice')),
+        expiry: rect(t('result-expiry')),
+        alert: rect(t('result-alert')),
+        fallback: rect(t('result-link-fallback')),
+        toast: rect(t('result-toast')),
+        toastRole: t('result-toast')?.getAttribute('role') ?? null,
+        toastText: t('result-toast')?.textContent?.trim() ?? null,
+        scrollTop: scroll ? scroll.scrollTop : null,
+        scrollable: scroll ? scroll.scrollHeight > scroll.clientHeight + 0.5 : null,
+      };
+    });
+  const inFrame = (r, f, tol = 0.5) =>
+    !!r && !!f && r.left >= f.left - tol && r.right <= f.right + tol && r.top >= f.top - tol && r.bottom <= f.bottom + tol;
+  const within1 = (a, b) => a != null && b != null && Math.abs(a - b) <= 1;
+  const round1 = (r) => (r ? Object.fromEntries(Object.entries(r).map(([k, v]) => [k, +v.toFixed(1)])) : null);
+
+  // ── 페이지 스텁 — 원본은 window.__harnessOrig에 저장하고 복원 호출이 되돌린다. ──
+  // canShare: 헤드리스 macOS Chrome이 true를 줘 저장이 Web Share 경로로 가면 settle하지 않는다(capture-export.mjs와
+  // 같은 사유, docs/HARNESS.md §2). undefined로 스텁해 다운로드 경로로 떨어뜨린다 — 이 구간 내내 유지한다.
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'canShare', { value: undefined, configurable: true });
+  });
+  const stubCanvas = (fail) =>
+    page.evaluate((on) => {
+      const H = (window.__harnessOrig ??= {});
+      const P = HTMLCanvasElement.prototype;
+      if (on && !H.toDataURL) {
+        H.toDataURL = P.toDataURL;
+        H.toBlob = P.toBlob;
+        P.toDataURL = function () {
+          throw new Error('harness: toDataURL stubbed');
+        };
+        P.toBlob = function () {
+          throw new Error('harness: toBlob stubbed');
+        };
+      } else if (!on && H.toDataURL) {
+        P.toDataURL = H.toDataURL;
+        P.toBlob = H.toBlob;
+        delete H.toDataURL;
+        delete H.toBlob;
+      }
+    }, fail);
+  // 링크 발급 스텁: /api/ticket 만 가짜 응답(그 외 URL은 통과), clipboard.writeText는 'reject' | 'ok' | null(전부 복원).
+  const stubLink = (clipboard) =>
+    page.evaluate((mode) => {
+      const H = (window.__harnessOrig ??= {});
+      if (mode) {
+        if (!H.fetch) {
+          H.fetch = window.fetch;
+          window.fetch = (input, init) => {
+            const url = typeof input === 'string' ? input : input?.url ?? String(input);
+            if (url.includes('/api/ticket')) {
+              return Promise.resolve(
+                new Response(JSON.stringify({ id: 'harness', url: '' }), {
+                  status: 200,
+                  headers: { 'content-type': 'application/json' },
+                }),
+              );
+            }
+            return H.fetch.call(window, input, init);
+          };
+        }
+        if (!('writeText' in H)) H.writeText = navigator.clipboard ? navigator.clipboard.writeText : null;
+        const writeText = () =>
+          mode === 'reject' ? Promise.reject(new Error('harness: clipboard denied')) : Promise.resolve();
+        if (navigator.clipboard) navigator.clipboard.writeText = writeText;
+        else Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+      } else {
+        if (H.fetch) {
+          window.fetch = H.fetch;
+          delete H.fetch;
+        }
+        if ('writeText' in H) {
+          if (H.writeText && navigator.clipboard) navigator.clipboard.writeText = H.writeText;
+          else if (navigator.clipboard) delete navigator.clipboard.writeText;
+          delete H.writeText;
+        }
+      }
+    }, clipboard);
+  const clickTid = (id) =>
+    page.evaluate((sel) => {
+      const el = document.querySelector(sel);
+      if (!el) return false;
+      el.click();
+      return true;
+    }, TID(id));
+  const waitTid = (id, timeout = 20000) =>
+    page.waitForSelector(TID(id), { timeout }).then(() => true).catch(() => false);
+
+  // 무드 전환 — 결과 → ‹ 편집으로 돌아가기 → 디자인 > 무드 도구의 라디오(aria-label이 "<label> · <caption>") → 완료 → 결과.
+  const switchMoodInResult = async (label) => {
+    const back = await page.evaluate(() => {
+      const b = document.querySelector('button[aria-label="편집으로 돌아가기"]');
+      if (!b) return false;
+      b.click();
+      return true;
+    });
+    if (!back) throw new Error('‹ 편집으로 돌아가기 버튼을 못 찾음');
+    await page.waitForFunction(
+      () => (document.getElementById('dock-mode-tab-design')?.getBoundingClientRect().width ?? 0) > 0,
+      { timeout: 10000 },
+    );
+    if (!(await selectDockMode('design'))) throw new Error('디자인 모드 탭을 못 선택');
+    const tool = await page.evaluate(() => {
+      const b = document.getElementById('design-tool-tab-mood');
+      if (!b) return false;
+      b.click();
+      return true;
+    });
+    if (!tool) throw new Error('디자인 도구 탭 #design-tool-tab-mood를 못 찾음');
+    await sleep(300);
+    const picked = await page.evaluate((l) => {
+      const b = [...document.querySelectorAll('button[role="radio"]')].find((x) =>
+        (x.getAttribute('aria-label') || '').startsWith(l),
+      );
+      if (!b) return false;
+      b.click();
+      return true;
+    }, label);
+    if (!picked) throw new Error(`무드 라디오를 못 찾음: ${label}`);
+    await sleep(400);
+    await selectDockMode('info');
+    await page.evaluate(() => [...document.querySelectorAll('button')].find((b) => b.textContent?.trim() === '완료')?.click());
+    await page.waitForFunction(
+      () => (document.querySelector('.result-hero')?.getBoundingClientRect().width ?? 0) > 0,
+      { timeout: 15000 },
+    );
+    await sleep(800); // TicketRenderer ResizeObserver 스케일 정착
+  };
+
+  // ── resultLayout (acceptance-17) ─────────────────────────────────────────────
+  const layoutChecks = (r, kind) => {
+    const f = r.frame;
+    const c = {};
+    c.frameIs400x675 = !!f && near(f.w, 400) && near(f.h, 675);
+    c.found = !!(f && r.stage && r.topbar && r.hero && r.wrapper && r.actions && r.save && r.link && r.share);
+    if (!c.found) return c;
+    c.topbarHeight = within1(r.topbar.h, 44);
+    c.noScroll = r.scrollTop === 0 && r.scrollable === false;
+    c.heroWidth = r.hero.w <= f.w - 32 + 0.5;
+    c.heroCentered = within1(r.hero.left - f.left, f.right - r.hero.right);
+    c.buttonsMin44 = [r.save, r.link, r.share].every((b) => b.h >= 43.5);
+    c.heroMatchesScaleWrapper = within1(r.hero.h, r.wrapper.h);
+    if (kind === 'portrait') {
+      c.heroGapTop8 = within1(r.hero.top - r.topbar.bottom, 8);
+      c.actionsGap12 = within1(r.actions.top - r.hero.bottom, 12);
+    } else {
+      // 가로 무드는 위 줄과 버튼 줄 사이 남는 높이의 세로 가운데다(acceptance-17: 위아래 여백 차 ≤ 1). 구현은 hero-slot이
+      // 위 줄 바로 아래부터 버튼 줄 바로 위까지를 통째로 차지하게 해 원시 간격 그대로 같아진다.
+      const topGap = r.hero.top - r.topbar.bottom;
+      const bottomGap = r.actions.top - r.hero.bottom;
+      c.heroCenteredBetweenBars = within1(topGap, bottomGap);
+      c.heroGapsPositive = topGap >= 7 && bottomGap >= 11;
+      c.slotBounds = !r.slot || (within1(r.slot.top, r.topbar.bottom) && within1(r.slot.bottom, r.actions.top));
+    }
+    // 테마 스코프(계약): 루트는 직계 ambient, .chrome-dark는 다크일 때만 루트에, html엔 걸지 않는다.
+    c.themeScope = r.stageHasAmbient && r.stageChromeDark === (THEME === 'dark') && r.htmlChromeDark === false;
+    return c;
+  };
+  const resultLayoutOf = (r, kind) => {
+    const checks = layoutChecks(r, kind);
+    const f = r.frame;
+    return {
+      kind,
+      frame: round1(f),
+      measured:
+        r.hero && r.topbar && r.actions && f
+          ? {
+              topbarH: +r.topbar.h.toFixed(1),
+              heroW: +r.hero.w.toFixed(1),
+              heroH: +r.hero.h.toFixed(1),
+              leftGap: +(r.hero.left - f.left).toFixed(1),
+              rightGap: +(f.right - r.hero.right).toFixed(1),
+              wrapperH: r.wrapper ? +r.wrapper.h.toFixed(1) : null,
+              btnH: [r.save, r.link, r.share].map((b) => (b ? +b.h.toFixed(1) : null)),
+              topGapRaw: +(r.hero.top - r.topbar.bottom).toFixed(1),
+              bottomGapRaw: +(r.actions.top - r.hero.bottom).toFixed(1),
+            }
+          : null,
+      checks,
+      pass: Object.values(checks).every(Boolean),
+    };
+  };
+
+  // ── resultOverlay (acceptance-16) — 경고·대체 링크 칸이 떠도 티켓·버튼·고지가 안 흔들린다. ──
+  const judgeOverlay = (r, want, ref, heightWant) => {
+    const f = r.frame;
+    const c = {};
+    c.found = !!(f && r.hero && r.save && r.link && r.share && r.notice);
+    if (!c.found) return { checks: c, pass: false };
+    c.frameChecked = near(f.w, 400) && near(f.h, heightWant);
+    c.buttonsInFrame = [r.save, r.link, r.share].every((b) => inFrame(b, f));
+    c.noticeInFrame = inFrame(r.notice, f);
+    c.scrollTopZero = r.scrollTop === 0;
+    c.alertPresence = !!r.alert === want.alert;
+    c.fallbackPresence = !!r.fallback === want.fallback;
+    c.expiryPresence = !!r.expiry === want.expiry;
+    // 떠 있는 두 칸도 프레임 안이어야 한다(프레임 밖으로 새면 사용자가 못 본다).
+    if (r.alert) c.alertInFrame = inFrame(r.alert, f);
+    if (r.fallback) c.fallbackInFrame = inFrame(r.fallback, f);
+    if (ref) c.heroSameAsDefault = within1(r.hero.w, ref.hero.w) && within1(r.hero.h, ref.hero.h);
+    return { checks: c, pass: Object.values(c).every(Boolean) };
+  };
+  const overlayRun = async (heightWant) => {
+    const out = { frameHeight: heightWant, states: {} };
+    const record = (name, r, want, ref, triggered) => {
+      const j = judgeOverlay(r, want, ref, heightWant);
+      out.states[name] = {
+        ...j,
+        ...(triggered === undefined ? {} : { triggered }),
+        pass: j.pass && triggered !== false,
+        hero: r.hero ? { w: +r.hero.w.toFixed(1), h: +r.hero.h.toFixed(1) } : null,
+        alertRect: round1(r.alert),
+        fallbackRect: round1(r.fallback),
+        // 관측(게이트 아님): 두 칸이 버튼 줄 윗변을 넘어 내려오는지. 계약은 "버튼 줄 위에 겹쳐 뜸"이라 의미는 사람이 본다.
+        reachesActions: r.actions ? [r.alert, r.fallback].filter(Boolean).some((x) => x.bottom > r.actions.top + 1) : null,
+      };
+      return r;
+    };
+    // 0) 기본 — 경고·대체 칸 없음. hero 크기의 기준이다.
+    const def = await readResult();
+    record('default', def, { alert: false, fallback: false, expiry: false }, null);
+    // 1) save-fail만 — 캡처가 던지게 한다(canvas.toDataURL/toBlob 스텁). 알림이 뜨면 바로 복원한다.
+    await stubCanvas(true);
+    const clicked1 = await clickTid('result-save');
+    const shown1 = clicked1 && (await waitTid('result-alert'));
+    await sleep(500);
+    const saveFail = await readResult();
+    await stubCanvas(false);
+    record('saveFailOnly', saveFail, { alert: true, fallback: false, expiry: false }, def, shown1);
+    // 2) fallback만 — 링크 클릭이 기존 경고를 지운다(spec). 캡처는 성공해야 하니 canvas는 복원된 상태다.
+    await stubLink('reject');
+    const clicked2 = await clickTid('result-link');
+    const shown2 = clicked2 && (await waitTid('result-link-fallback'));
+    await sleep(500);
+    const fb = await readResult();
+    record('fallbackOnly', fb, { alert: false, fallback: true, expiry: true }, def, shown2);
+    // 3) worst — 링크 발급(expiry) + 대체 칸이 떠 있는 채로 저장을 실패시킨다. 대체 칸은 저장 클릭으론 안 사라진다.
+    await stubCanvas(true);
+    const clicked3 = await clickTid('result-save');
+    const shown3 = clicked3 && (await waitTid('result-alert'));
+    await sleep(500);
+    const worst = await readResult();
+    await stubCanvas(false);
+    await stubLink(null);
+    record('worst', worst, { alert: true, fallback: true, expiry: true }, def, shown3);
+    out.pass = Object.values(out.states).every((s) => s.pass);
+    return out;
+  };
+
+  // A) 세로 무드 675 ─────────────────────────────────────────────────────────────
+  // (시드의 무드: --mood 없으면 기본 minimal = 세로. --mood로 가로를 주면 아래 portrait 판정이 어긋나 실패한다.)
+  const resultLayoutPortrait = await guard(async () => resultLayoutOf(await readResult(), 'portrait'));
+  const overlay675 = await guard(() => overlayRun(675));
+
+  // resultToast (acceptance-14) — 빈 상태(기본 읽기)와 실제 통보('링크를 복사했어요') 두 상태 모두 프레임 안이다.
+  const resultToast = await guard(async () => {
+    const emptyRead = await readResult();
+    await stubLink('ok');
+    await clickTid('result-link');
+    const shown = await page
+      .waitForFunction(
+        (sel) => /복사/.test(document.querySelector(sel)?.textContent ?? ''),
+        { timeout: 20000 },
+        TID('result-toast'),
+      )
+      .then(() => true)
+      .catch(() => false);
+    const filled = await readResult();
+    await stubLink(null);
+    const checks = {
+      present: !!emptyRead.toast && !!filled.toast,
+      roleStatus: emptyRead.toastRole === 'status' && filled.toastRole === 'status',
+      emptyInFrame: inFrame(emptyRead.toast, emptyRead.frame),
+      shown,
+      shownInFrame: inFrame(filled.toast, filled.frame),
+      belowTopbar: !!filled.toast && !!filled.topbar && filled.toast.top >= filled.topbar.bottom - 1,
+    };
+    return {
+      empty: round1(emptyRead.toast),
+      filled: round1(filled.toast),
+      filledText: filled.toastText,
+      checks,
+      pass: Object.values(checks).every(Boolean),
+    };
+  });
+
+  // B) 가로 무드 675 — 세로 가운데 ───────────────────────────────────────────────
+  const resultLayoutLandscape = await guard(async () => {
+    await switchMoodInResult('35mm 와이드');
+    return resultLayoutOf(await readResult(), 'landscape');
+  });
+
+  // C) minimal 복귀 + 뷰포트 667 — 프레임이 100dvh라 프레임도 400×667이 된다. 같은 세 상태를 다시 만든다. ──────
+  const overlay667 = await guard(async () => {
+    await switchMoodInResult('미니멀');
+    await page.setViewport({ width: VW, height: 667, deviceScaleFactor: 1 });
+    await sleep(900); // 프레임·hero 스케일 재정착
+    try {
+      const pre = await readResult();
+      const run = await overlayRun(667);
+      // 무드 전환이 일시 상태(경고·대체 칸)를 비웠는지 — 안 비워졌으면 기본 상태 기준이 오염돼 이 실행은 믿을 수 없다.
+      run.cleanBefore = !pre.alert && !pre.fallback;
+      run.pass = run.pass && run.cleanBefore;
+      return run;
+    } finally {
+      await page.setViewport({ width: VW, height: VH, deviceScaleFactor: 1 });
+    }
+  });
+
+  const resultLayout = {
+    portrait: resultLayoutPortrait,
+    landscape: resultLayoutLandscape,
+    pass: !!resultLayoutPortrait?.pass && !!resultLayoutLandscape?.pass,
+  };
+  const resultOverlay = {
+    h675: overlay675,
+    h667: overlay667,
+    pass: !!overlay675?.pass && !!overlay667?.pass,
+  };
 
   // 게이팅은 뷰포트가 아니라 프레임이다(#609) — 1440×675 뷰포트도 프레임이 400×675면 대조한다.
   const frameIs400 = near(frame.w, 400) && near(frame.h, 675);
@@ -958,6 +1327,9 @@ try {
     landingBudget,
     invariant,
     bannerToastCollision,
+    resultLayout,
+    resultToast,
+    resultOverlay,
   };
   console.log(JSON.stringify(out, null, 2));
   const contrastFails = [contrast].flatMap((c) => c?.fails ?? []);
@@ -975,7 +1347,10 @@ try {
     !carousel.pass ||
     !exitPaths.pass ||
     !landingBudget.pass ||
-    !bannerToastCollision.pass
+    !bannerToastCollision.pass ||
+    !resultLayout.pass ||
+    !resultToast.pass ||
+    !resultOverlay.pass
   ) {
     process.exitCode = 1;
   }
