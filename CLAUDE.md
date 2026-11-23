@@ -42,7 +42,7 @@ Before making architectural changes or implementing new features, consult:
 ### 📱 셸은 한 벌이다 (#603 → #607)
 데스크톱/모바일 이원화는 **삭제됐다.** 데스크톱은 같은 `MobileEditorShell`을 `PhoneFrame`(400px, `container-type:size` + `contain:paint`)에 넣어 띄운다. 삭제 목록과 이력: `docs/CONTRIBUTING.md` 4절.
 - **뷰포트 브레이크포인트가 남은 자리는 `tailwind.config.js`의 `screens.rail`(1024px) 하나**고, 소비자도 `PhoneFrame`의 `rail:w-[400px]` 하나뿐이다.
-- **길이는 프레임으로 옮겨졌지만 조건은 아니다.** `contain:paint`는 fixed의 컨테이닝 블록과 cq 단위 기준점만 바꾸지 미디어쿼리를 안 옮긴다 — 프레임 형상에 따라 갈려야 하는 조건은 `@container`로 써야 한다(`--hero-dvh-budget`이 그 예: 1440×900 뷰포트는 landscape인데 400×900 프레임은 portrait이다). 새 `vw`/`vh`/`rail:`/`useMatchMedia`를 셸 안에 심기 전에 "이게 뷰포트 축인가 프레임 축인가"를 먼저 정할 것.
+- **길이는 프레임으로 옮겨졌지만 조건은 아니다.** `contain:paint`는 fixed의 컨테이닝 블록과 cq 단위 기준점만 바꾸지 미디어쿼리를 안 옮긴다 — 프레임 형상에 따라 갈려야 하는 조건은 `@container`로 써야 한다(1440×900 뷰포트는 landscape인데 400×900 프레임은 portrait이다 — 옛 결과 hero의 `--hero-dvh-budget`이 그래서 `@container`였고, #826 S7에서 방향 분기 없는 `cqh` 한 식으로 바뀌며 걷혔다). 새 `vw`/`vh`/`rail:`/`useMatchMedia`를 셸 안에 심기 전에 "이게 뷰포트 축인가 프레임 축인가"를 먼저 정할 것.
 - **fixed 오버레이 좌표도 프레임 기준**이다. 이동식 툴바의 드래그·클램프·스냅은 `PhoneFrame`의 `getFrameRect()`를 쓴다 — `window.innerWidth`로 계산하면 400px 프레임 밖 좌표가 `localStorage`에 영속된다.
 
 ### 📏 크롬 측정 하네스 (400×675)

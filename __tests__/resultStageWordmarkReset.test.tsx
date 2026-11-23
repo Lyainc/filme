@@ -1,5 +1,8 @@
 /**
- * #669 → #826 S2 회귀 테스트 — 결과 화면(ResultStage) 워드마크는 브랜드 표시일 뿐이다.
+ * #669 → #826 S2 → #826 S7 회귀 테스트 — 결과 화면(ResultStage)엔 워드마크 진입점이 없다.
+ *
+ * #826 S7(D11 A · D21-1 A)이 결과 화면 위 줄에서 워드마크 자체를 걷었다(위 줄은 ‹ 하나). 아래 원문의 "워드마크는 버튼이
+ * 아니다"는 이제 "워드마크가 없다"로 강해졌고, 초기화 진입점(confirm)이 결과 화면에 되살아나지 않았음을 같이 잠근다.
  *
  * #669가 결과 화면 워드마크를 초기화 진입점으로 만들었으나(워드마크 탭 → window.confirm → 초기화), #826 S2가 워드마크 탭
  * 초기화를 통째로 걷었다(Seed constraint-7, 소유자 D05/D08). 지금 지우는 길은 편집 메뉴 초기화 2탭뿐이다. 이 테스트는
@@ -83,15 +86,17 @@ afterEach(() => {
   mock.restore();
 });
 
-describe('ResultStage 워드마크는 브랜드 표시일 뿐이다 (#826 S2)', () => {
-  test('워드마크는 버튼이 아니라 FILME 제목 표시이고, 눌러도 confirm이 없고 결과화면이 그대로다', async () => {
+describe('ResultStage에 워드마크 진입점이 없다 (#826 S2 → S7)', () => {
+  test('워드마크 제목 · 버튼이 없고, 결과 화면 어디를 눌러도 confirm이 없다', async () => {
     const user = userEvent.setup();
     await enterResultStage(user);
     const confirmSpy = spyOn(window, 'confirm');
 
     expect(resultStage().queryByRole('button', { name: 'FILME — 처음 화면으로 돌아가기' }) === null).toBe(true);
-    const mark = resultStage().getByRole('heading', { level: 1, name: 'FILME' });
-    await user.click(mark);
+    expect(resultStage().queryByRole('heading', { name: 'FILME' }) === null).toBe(true);
+    // 티켓 무드 안에도 FILME 라벨이 있으니 위 줄로 좁힌다.
+    expect(within(screen.getByTestId('result-topbar')).queryByLabelText('FILME') === null).toBe(true);
+    await user.click(screen.getByTestId('result-topbar'));
     await user.keyboard('{Enter}');
 
     expect(confirmSpy).not.toHaveBeenCalled();

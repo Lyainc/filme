@@ -1,59 +1,71 @@
 /**
- * Regression test for #194 — 자동 발급 폐기 후, ResultPanel은 **마운트만으로 permalink를
- * 발급하지 않는다**(공유 의도 게이팅: 링크/카톡 버튼 클릭 시에만 issuePermalink). 누군가
- * 결과-뷰-열림 자동 발급(#179)을 되살리면 결과 뷰를 여는 모두가 Blob에 업로드해 Hobby 한도에
- * 직결되므로, 마운트 시 업로드 경로가 깨어나지 않음을 고정한다.
+ * #826 S7 결과 화면(ResultStage = 위 줄 ‹ + 티켓 + [저장] [링크] [공유] + 고지) 동작 잠금.
+ * 옛 #194 게이팅(마운트만으론 발급 안 함)은 a7로 이어받는다.
  *
- * 관찰: issuePermalink는 캡처 전에 setPermaState('loading')을 걸고 happy-dom 캔버스 캡처는
- * 실패해 error로 떨어진다. 따라서 발급이 일어났다면 'loading' 또는 '실패, 다시 시도'가 떠야
- * 한다 — 둘 다 안 뜨고 '링크 만들기' idle이면 자동 발급이 없는 것. 공유 모듈은 mock하지 않는다
- * (bun mock.module 전역 누수 회피). TicketRenderer만 forwardRef div 스텁으로 대체(다른 테스트가
- * import하지 않아 누수 무해, ResizeObserver/무드 DOM 회피).
+ * 잠그는 것: a3 버튼 이름 · 고지 상시 노출 · 저장 통보/취소 무통보/진행 중 aria-busy, a4 실패는 경고 한 줄(다시 시도
+ * 버튼 없음 · 같은 버튼 재클릭 = 재시도 · showError 0), a5 클립보드 성공/거부(대체 칸)/네이티브 공유 취소·폴백,
+ * a6 만료 문장은 링크 발급 뒤에만, a7 /api/ticket은 링크·공유 클릭에서만(저장 · 마운트 · 테마 전환은 0),
+ * a14 통보 live region은 늘 마운트(같은 노드의 글자만 바뀜), a15 대체 칸 포커스 · 전체 선택, a17 저장 체크 약 1.5초,
+ * a18 경고 해소 시점(다른 조작 · 새 티켓 내용)과 통보 글자 2초 소멸.
+ *
+ * mock: TicketRenderer는 forwardRef div 스텁, captureToImage는 테스트별 가변 구현(스프레드 스냅샷으로 복원, #611),
+ * errorToast는 showError 호출 수 확인용. fetch · clipboard · share는 전역을 바꿨다가 afterEach에서 되돌린다.
  */
-import { describe, expect, test, afterEach, afterAll, beforeAll, mock } from 'bun:test';
-import { render, screen, cleanup, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { describe, expect, test, afterEach, afterAll, beforeAll, beforeEach, mock, jest } from 'bun:test';
+import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import type { MovieInfo, TicketComponents, TicketField } from '@/types';
+import { DEFAULT_TICKET_TTL_DAYS, UNOFFICIAL_TICKET_NOTICE } from '@/utils/ticketCleanup';
 
 const React = require('react') as typeof import('react');
 
-let ResultPanel: typeof import('@/components/v2/ResultPanel').ResultPanel;
+let ResultStage: typeof import('@/components/v2/ResultStage').ResultStage;
 let realTicketRenderer: typeof import('@/components/TicketRenderer');
 let realCaptureToImage: typeof import('@/utils/captureToImage');
+let realErrorToast: typeof import('@/utils/errorToast');
+
+// 테스트별 가변 구현
+let downloadImpl: () => Promise<unknown> = () => Promise.resolve();
+let shareImpl: () => Promise<'shared' | 'cancelled'> = () => Promise.resolve('shared');
+let captureImpl: () => Promise<string> = () => Promise.resolve('data:image/jpeg;base64,AAAA');
+let canShare = false;
+let showErrorCalls = 0;
+let downloadCalls = 0;
 
 beforeAll(() => {
-  // **`{ ... }` 스프레드가 핵심이다(#611).** `require()`가 주는 건 살아있는 모듈 네임스페이스라,
-  // 뒤이은 `mock.module`이 그 객체의 export를 제자리에서 갈아끼운다 — 그대로 붙들고 있다가
-  // afterAll에서 되돌리면 이미 스텁이 된 자기 자신을 다시 설치하는 no-op이 되고, 스텁이 프로세스
-  // 끝까지 남는다. 얕은 복사본은 그 변조를 안 받으므로 복원이 실제로 복원이 된다.
   realTicketRenderer = { ...require('@/components/TicketRenderer') };
   mock.module('@/components/TicketRenderer', () => ({
+    ...realTicketRenderer,
     default: React.forwardRef<HTMLDivElement>((_props, ref) =>
       React.createElement('div', { ref, 'data-testid': 'ticket' }),
     ),
   }));
-  // downloadTicketAsJpeg만 결정론적으로 실패하게 mock한다 — 나머지(captureNodeToJpeg 등)는 실제
-  // 구현을 유지해 위 permalink 테스트(캡처 후 fetch 실패에 의존)를 그대로 둔다.
-  //
-  // 이 mock은 원래 누수 대응이었다: happy-dom의 "자연 실패"(canvas 2D 미지원 → getContext 2d null)에
-  // 기대고 있었는데 captureComposite.test.ts가 'html-to-image'를 복원 없이 mock.module로 영구
-  // 대체해, 전체 스위트에선 그 파일이 먼저 로드되며 toJpeg가 항상 성공으로 leak됐다(claude-review
-  // PR #426 P1 대응 중 발견). #618에서 그 4개 캡처 파일이 전부 afterAll 복원을 갖게 돼 누수 자체는
-  // 사라졌지만, 이 mock은 **그대로 둔다** — 실패를 이 파일 안에서 만들면 파일 실행 순서와 무관하게
-  // 같은 결과가 나오고, 그게 누수에 기대는 것보다 옳다(#618 방침: 누수를 되살리지 말고 자급한다).
-  realCaptureToImage = { ...require('@/utils/captureToImage') }; // 위와 같은 이유의 스냅샷(#611)
+  realCaptureToImage = { ...require('@/utils/captureToImage') };
   mock.module('@/utils/captureToImage', () => ({
     ...realCaptureToImage,
-    canShareTicketFile: () => false,
-    downloadTicketAsJpeg: () => Promise.reject(new Error('mock download failure')),
+    canShareTicketFile: () => canShare,
+    downloadTicketAsJpeg: () => {
+      downloadCalls += 1;
+      return downloadImpl();
+    },
+    shareTicketAsJpeg: () => shareImpl(),
+    captureNodeToJpeg: () => captureImpl(),
   }));
-  ResultPanel = require('@/components/v2/ResultPanel').ResultPanel;
+  realErrorToast = { ...require('@/utils/errorToast') };
+  mock.module('@/utils/errorToast', () => ({
+    ...realErrorToast,
+    showError: () => {
+      showErrorCalls += 1;
+    },
+  }));
+  ResultStage = require('@/components/v2/ResultStage').ResultStage;
 });
 
-afterEach(() => cleanup());
 afterAll(() => {
   mock.module('@/components/TicketRenderer', () => realTicketRenderer);
   mock.module('@/utils/captureToImage', () => realCaptureToImage);
+  mock.module('@/utils/errorToast', () => realErrorToast);
 });
 
 const FIELDS: TicketField[] = [
@@ -61,7 +73,6 @@ const FIELDS: TicketField[] = [
   'seat', 'runtime', 'rating', 'releaseDate', 'reissue', 'bookingNo', 'signature',
 ];
 const ALL_ON = Object.fromEntries(FIELDS.map((f) => [f, true])) as Record<TicketField, boolean>;
-
 const MOVIE: MovieInfo = {
   title: 'TITLE', titleOg: 'ORIGINAL', releaseDate: '2026-05-01',
   releaseDateGranularity: 'date', releaseDateFormat: 'kr-compact',
@@ -76,94 +87,384 @@ const COMPONENTS: TicketComponents = {
   chainVisible: false, formatVisible: false, chainScale: 1, formatScale: 1,
 };
 
-function renderPanel(extra: { hidePreview?: boolean } = {}) {
-  return render(
-    React.createElement(ResultPanel, {
-      croppedImageUrl: 'blob:fake',
-      movieInfo: MOVIE,
-      components: COMPONENTS,
-      fieldVisibility: ALL_ON,
-      ...extra,
-    }),
-  );
+function stage(theme: 'dark' | 'light' = 'dark', movieInfo: MovieInfo = MOVIE) {
+  return React.createElement(ResultStage, {
+    theme,
+    onBack: () => {},
+    croppedImageUrl: 'blob:fake',
+    movieInfo,
+    components: COMPONENTS,
+    fieldVisibility: ALL_ON,
+  });
 }
 
-describe('ResultPanel 공유 의도 게이팅 (#194)', () => {
-  test('마운트만으로는 permalink를 발급하지 않는다 (자동 발급 폐기)', async () => {
-    renderPanel();
-    await waitFor(() => expect(screen.getByText('링크 만들기')).toBeTruthy());
-    // 발급이 일어났다면 loading 또는 error 라벨이 떠야 한다 — 둘 다 없어야 자동 발급 부재.
-    expect(screen.queryByText('링크 만드는 중…') === null).toBe(true);
+// --- 전역 스파이 -------------------------------------------------------------
+const realFetch = globalThis.fetch;
+let fetchCalls: string[] = [];
+let fetchImpl: () => Promise<Response> = async () =>
+  new Response(JSON.stringify({ id: 'abc', url: '' }), { status: 200 });
+let writeTextCalls: string[] = [];
+let writeTextImpl: () => Promise<void> = () => Promise.resolve();
+let shareCalls = 0;
+let nativeShareImpl: (() => Promise<void>) | undefined;
+
+function setNav(name: string, value: unknown) {
+  Object.defineProperty(navigator, name, { configurable: true, writable: true, value });
+}
+
+beforeEach(() => {
+  downloadImpl = () => Promise.resolve();
+  shareImpl = () => Promise.resolve('shared');
+  captureImpl = () => Promise.resolve('data:image/jpeg;base64,AAAA');
+  canShare = false;
+  showErrorCalls = 0;
+  downloadCalls = 0;
+  fetchCalls = [];
+  fetchImpl = async () => new Response(JSON.stringify({ id: 'abc', url: '' }), { status: 200 });
+  writeTextCalls = [];
+  writeTextImpl = () => Promise.resolve();
+  shareCalls = 0;
+  nativeShareImpl = undefined;
+  globalThis.fetch = (async (input: unknown) => {
+    fetchCalls.push(String(input));
+    return fetchImpl();
+  }) as unknown as typeof fetch;
+  setNav('clipboard', {
+    writeText: (t: string) => {
+      writeTextCalls.push(t);
+      return writeTextImpl();
+    },
+  });
+  setNav('share', undefined);
+  jest.spyOn(console, 'error').mockImplementation(() => {});
+});
+
+afterEach(() => {
+  jest.useRealTimers();
+  cleanup();
+  globalThis.fetch = realFetch;
+  // 이 파일이 만든 own property를 걷어 happy-dom 기본으로 되돌린다.
+  delete (navigator as unknown as Record<string, unknown>).clipboard;
+  delete (navigator as unknown as Record<string, unknown>).share;
+  jest.restoreAllMocks();
+});
+
+function useNativeShare(impl: () => Promise<void>) {
+  nativeShareImpl = impl;
+  setNav('share', () => {
+    shareCalls += 1;
+    return nativeShareImpl!();
+  });
+}
+
+const btn = (name: string) => screen.getByRole('button', { name });
+async function click(name: string) {
+  await act(async () => {
+    fireEvent.click(btn(name));
+  });
+}
+async function flush() {
+  await act(async () => {
+    for (let i = 0; i < 10; i++) await Promise.resolve();
+  });
+}
+const toast = () => screen.getByTestId('result-stage').querySelector('[role="status"]') as HTMLElement;
+const ticketCalls = () => fetchCalls.filter((u) => u.includes('/api/ticket')).length;
+const hasText = (t: string) => screen.queryByText(t) !== null;
+
+// --- a3 ---------------------------------------------------------------------
+describe('a3 버튼 · 고지 · 저장 통보', () => {
+  test('버튼 이름 4개, 워드마크 · 해상도 · 새 티켓 만들기 없음, 고지는 링크 전후 모두 보인다', async () => {
+    render(stage());
+    for (const n of ['편집으로 돌아가기', '저장', '링크', '공유']) expect(!!btn(n)).toBe(true);
+    expect(screen.queryByRole('heading', { name: /FILME/ }) === null).toBe(true);
+    expect(screen.queryByText(/1960\s*×\s*3108/) === null).toBe(true);
+    expect(screen.queryByText(/새 티켓 만들기/) === null).toBe(true);
+    expect(hasText(UNOFFICIAL_TICKET_NOTICE)).toBe(true);
+    await click('링크');
+    await flush();
+    expect(hasText(UNOFFICIAL_TICKET_NOTICE)).toBe(true);
+  });
+
+  test('저장 성공은 status에 저장했어요', async () => {
+    render(stage());
+    await click('저장');
+    await flush();
+    expect(toast().textContent).toBe('저장했어요');
+  });
+
+  test('공유 시트를 닫으면(cancelled) 저장했어요가 없다', async () => {
+    canShare = true;
+    shareImpl = () => Promise.resolve('cancelled');
+    render(stage());
+    await click('저장');
+    await flush();
+    expect(hasText('저장했어요')).toBe(false);
+  });
+
+  test('저장 중에는 저장 aria-busy, 링크 · 공유 비활성', async () => {
+    let release!: () => void;
+    downloadImpl = () => new Promise<void>((r) => { release = r; });
+    render(stage());
+    await click('저장');
+    expect(btn('저장').getAttribute('aria-busy')).toBe('true');
+    expect((btn('링크') as HTMLButtonElement).disabled).toBe(true);
+    expect((btn('공유') as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => release());
+    await flush();
+  });
+});
+
+// --- a4 ---------------------------------------------------------------------
+describe('a4 실패는 경고 한 줄, 재시도는 같은 버튼', () => {
+  test('저장 실패: alert, 다시 시도 버튼 없음, 재클릭으로 재호출', async () => {
+    downloadImpl = () => Promise.reject(new Error('boom'));
+    render(stage());
+    await click('저장');
+    await flush();
+    expect(screen.getByRole('alert').textContent).toBe('저장하지 못했어요');
+    expect(screen.queryByRole('button', { name: '다시 시도' }) === null).toBe(true);
+    expect(downloadCalls).toBe(1);
+    await click('저장');
+    await flush();
+    expect(downloadCalls).toBe(2);
+    expect(showErrorCalls).toBe(0);
+  });
+
+  test.each([
+    ['fetch reject', () => Promise.reject(new Error('net'))],
+    ['!ok', async () => new Response('{}', { status: 500 })],
+  ])('링크 실패(%s): alert, showError 0, 옛 문구 없음', async (_n, impl) => {
+    fetchImpl = impl as () => Promise<Response>;
+    render(stage());
+    await click('링크');
+    await flush();
+    expect(screen.getByRole('alert').textContent).toBe('링크를 만들지 못했어요');
+    expect(showErrorCalls).toBe(0);
     expect(screen.queryByText('실패, 다시 시도') === null).toBe(true);
   });
 
-  test("'링크 만들기' 클릭 시에는 발급이 일어난다 (공유 의도 = 양의 경로)", async () => {
-    const user = userEvent.setup();
-    renderPanel();
-    const button = await screen.findByText('링크 만들기');
-    await user.click(button);
-    // on-demand 발급이 돌면 캡처 전에 loading→(happy-dom 캡처 실패로) error로 전이한다.
-    // error 라벨이 뜨면 issuePermalink가 끝까지 돌았다는 증거 = 버튼→발급 배선 정상.
-    await waitFor(() => expect(screen.getByText('실패, 다시 시도')).toBeTruthy());
-  });
-});
-
-describe('ResultPanel 다운로드 실패 노출 (#414 1단계, claude-review PR #426 P1)', () => {
-  // downloadTicketAsJpeg는 위 beforeAll에서 결정론적으로 reject하도록 mock돼 있다(파일 상단 주석).
-  test('다운로드 실패 시 에러 배너 + 재시도 버튼이 뜬다', async () => {
-    const user = userEvent.setup();
-    renderPanel();
-    const saveButton = await screen.findByRole('button', { name: '사진에 저장' });
-    await user.click(saveButton);
-    await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
-    expect(screen.getByText('저장에 실패했어요.')).toBeTruthy();
-    expect(screen.getByRole('button', { name: '다시 시도' })).toBeTruthy();
-  });
-
-  test('재시도 버튼이 handleDownload를 다시 실행한다(캡처 재시도)', async () => {
-    const user = userEvent.setup();
-    const originalError = console.error;
-    const saveCalls: unknown[][] = [];
-    console.error = (...args: unknown[]) => {
-      if (args[0] === '[save]') saveCalls.push(args);
+  test('src에 옛 실패 문구가 남아 있지 않다', () => {
+    const hits: string[] = [];
+    const walk = (dir: string) => {
+      for (const f of readdirSync(dir)) {
+        const p = join(dir, f);
+        if (statSync(p).isDirectory()) walk(p);
+        else if (/\.(tsx?|css)$/.test(f)) {
+          const s = readFileSync(p, 'utf8');
+          if (s.includes('링크 생성에 실패했어요') || s.includes('실패, 다시 시도')) hits.push(p);
+        }
+      }
     };
-    try {
-      renderPanel();
-      const saveButton = await screen.findByRole('button', { name: '사진에 저장' });
-      await user.click(saveButton);
-      await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
-      const countAfterFirst = saveCalls.length;
-      expect(countAfterFirst).toBeGreaterThan(0);
-
-      await user.click(screen.getByRole('button', { name: '다시 시도' }));
-      // 재시도도 같은 이유로 실패하지만, [save] 에러 로그가 한 번 더 찍혔다는 건
-      // handleDownload가 처음부터 다시 실행됐다는 증거다(무음 재-실패가 아니라 재-시도).
-      await waitFor(() => expect(saveCalls.length).toBeGreaterThan(countAfterFirst));
-    } finally {
-      console.error = originalError;
-    }
+    walk(join(process.cwd(), 'src'));
+    expect(hits).toEqual([]);
   });
 });
 
-describe('ResultPanel hidePreview (#233 데스크톱 done 이중 프리뷰 제거)', () => {
-  test('hidePreview 미전달(모바일 경로) = 프리뷰 카드가 flow에 보인다', async () => {
-    renderPanel();
-    const ticket = await screen.findByTestId('ticket');
-    // 캡처 타깃이 off-screen aria-hidden 래퍼 밖 = 시각적으로 노출된 프리뷰 카드.
-    expect(ticket.closest('[aria-hidden="true"]') === null).toBe(true);
+// --- a5 ---------------------------------------------------------------------
+describe('a5 링크 복사 · 공유', () => {
+  test('복사 성공: 링크를 복사했어요 status, 대체 칸 없음', async () => {
+    render(stage());
+    await click('링크');
+    await flush();
+    expect(toast().textContent).toBe('링크를 복사했어요');
+    expect(screen.queryByLabelText('공유 링크') === null).toBe(true);
+    expect(writeTextCalls[0]).toMatch(/\/t\/abc$/);
   });
 
-  test('hidePreview=true = 캡처 타깃은 DOM에 남되 off-screen, 액션 버튼은 전부 렌더', async () => {
-    renderPanel({ hidePreview: true });
-    // 캡처 타깃 노드는 DOM에 유지(html-to-image 대상) — 다운로드/공유/퍼마링크 무결.
-    const ticket = await screen.findByTestId('ticket');
-    // 시각적으로만 숨김: off-screen aria-hidden 래퍼 안(display:none 아님).
-    const wrapper = ticket.closest('[aria-hidden="true"]') as HTMLElement | null;
-    expect(wrapper).not.toBeNull();
-    expect(wrapper!.style.position).toBe('fixed'); // off-screen 고정 — 레이아웃은 유지
-    // 액션 버튼(저장/링크/공유)은 전부 남는다.
-    expect(screen.getByRole('button', { name: '사진에 저장' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /링크 만들기/ })).toBeTruthy();
-    expect(screen.getByRole('button', { name: '공유' })).toBeTruthy();
+  test('복사 거부: 읽기 전용 대체 칸(16px)', async () => {
+    writeTextImpl = () => Promise.reject(new Error('denied'));
+    render(stage());
+    await click('링크');
+    await flush();
+    const input = screen.getByLabelText('공유 링크') as HTMLInputElement;
+    expect(input.readOnly).toBe(true);
+    expect(input.className).toContain('text-[16px]');
+  });
+
+  test('navigator.share 없음: 발급 1회 뒤 writeText로 폴백', async () => {
+    render(stage());
+    await click('공유');
+    await flush();
+    expect(ticketCalls()).toBe(1);
+    expect(writeTextCalls.length).toBe(1);
+    expect(writeTextCalls[0]).toMatch(/\/t\/abc$/);
+    expect(toast().textContent).toBe('링크를 복사했어요');
+  });
+
+  test('네이티브 공유 AbortError: 복사도 통보도 없다', async () => {
+    const e = new Error('abort');
+    e.name = 'AbortError';
+    useNativeShare(() => Promise.reject(e));
+    render(stage());
+    await click('공유');
+    await flush();
+    expect(shareCalls).toBe(1);
+    expect(writeTextCalls.length).toBe(0);
+    expect(toast().textContent).toBe('');
+  });
+
+  test('링크 없이 공유 + 발급 실패: share · writeText 0, alert만', async () => {
+    fetchImpl = () => Promise.reject(new Error('net'));
+    useNativeShare(() => Promise.resolve());
+    render(stage());
+    await click('공유');
+    await flush();
+    expect(shareCalls).toBe(0);
+    expect(writeTextCalls.length).toBe(0);
+    expect(screen.getByRole('alert').textContent).toBe('링크를 만들지 못했어요');
+    expect(hasText('링크를 복사했어요')).toBe(false);
+  });
+});
+
+// --- a6 ---------------------------------------------------------------------
+describe('a6 만료 문장', () => {
+  test('링크 전엔 없고, 발급 뒤 3일 만료 문장 + 고지', async () => {
+    render(stage());
+    expect(screen.queryByText(/만료돼요/) === null).toBe(true);
+    await click('링크');
+    await flush();
+    expect(hasText(`이 링크는 ${DEFAULT_TICKET_TTL_DAYS}일 후 만료돼요.`)).toBe(true);
+    expect(hasText(UNOFFICIAL_TICKET_NOTICE)).toBe(true);
+  });
+});
+
+// --- a7 ---------------------------------------------------------------------
+describe('a7 /api/ticket은 링크 · 공유 클릭에서만', () => {
+  test('마운트 · 저장 · 테마 전환 0, 링크 1, 링크 있는 공유는 그대로 1', async () => {
+    const { rerender } = render(stage('dark'));
+    expect(ticketCalls()).toBe(0);
+    await click('저장');
+    await flush();
+    expect(ticketCalls()).toBe(0);
+    rerender(stage('light'));
+    await flush();
+    expect(ticketCalls()).toBe(0);
+    await click('링크');
+    await flush();
+    expect(ticketCalls()).toBe(1);
+    await click('공유');
+    await flush();
+    expect(ticketCalls()).toBe(1);
+  });
+});
+
+// --- a14 --------------------------------------------------------------------
+describe('a14 통보 live region', () => {
+  test('처음부터 마운트된 같은 노드의 글자만 바뀌고 showError는 0', async () => {
+    render(stage());
+    const root = screen.getByTestId('result-stage');
+    const node = toast();
+    expect(root.contains(node)).toBe(true);
+    await click('저장');
+    await flush();
+    expect(toast() === node).toBe(true);
+    expect(node.textContent).toBe('저장했어요');
+    await click('링크');
+    await flush();
+    expect(toast() === node).toBe(true);
+    expect(node.textContent).toBe('링크를 복사했어요');
+    // 실패 경로들
+    downloadImpl = () => Promise.reject(new Error('x'));
+    await click('저장');
+    await flush();
+    fetchImpl = () => Promise.reject(new Error('x'));
+    cleanup();
+    render(stage());
+    await click('링크');
+    await click('공유');
+    await flush();
+    expect(showErrorCalls).toBe(0);
+  });
+});
+
+// --- a15 --------------------------------------------------------------------
+describe('a15 대체 칸 포커스', () => {
+  test('거부되면 입력에 포커스 + 전체 선택', async () => {
+    writeTextImpl = () => Promise.reject(new Error('denied'));
+    render(stage());
+    await click('링크');
+    await flush();
+    const input = screen.getByLabelText('공유 링크') as HTMLInputElement;
+    expect(document.activeElement === input).toBe(true);
+    expect(input.selectionStart).toBe(0);
+    expect(input.selectionEnd).toBe(input.value.length);
+  });
+});
+
+// --- a17 (fake timers) ---------------------------------------------------------
+describe('a17 저장 체크 약 1.5초', () => {
+  test('성공 직후 체크 아이콘, 2초 뒤 사라진다', async () => {
+    jest.useFakeTimers();
+    render(stage());
+    await click('저장');
+    await flush();
+    expect(screen.queryByTestId('result-save-check') !== null).toBe(true);
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+    expect(screen.queryByTestId('result-save-check') === null).toBe(true);
+  });
+});
+
+// --- a18 --------------------------------------------------------------------
+describe('a18 경고 · 통보 소멸', () => {
+  async function saveFail() {
+    downloadImpl = () => Promise.reject(new Error('x'));
+    await click('저장');
+    await flush();
+    expect(screen.queryByRole('alert') !== null).toBe(true);
+    downloadImpl = () => Promise.resolve();
+  }
+
+  test('경고 뒤 링크 성공은 경고를 지운다', async () => {
+    render(stage());
+    await saveFail();
+    await click('링크');
+    await flush();
+    expect(screen.queryByRole('alert') === null).toBe(true);
+  });
+
+  test('경고 뒤 공유는 경고를 지운다', async () => {
+    render(stage());
+    await saveFail();
+    await click('공유');
+    await flush();
+    expect(screen.queryByRole('alert') === null).toBe(true);
+  });
+
+  test('조작이 없으면 10초가 지나도 경고가 남는다', async () => {
+    jest.useFakeTimers();
+    render(stage());
+    await saveFail();
+    await act(async () => {
+      jest.advanceTimersByTime(10000);
+    });
+    expect(screen.queryByRole('alert') !== null).toBe(true);
+  });
+
+  test('통보 글자는 2초 뒤 비고 status 노드는 남는다', async () => {
+    jest.useFakeTimers();
+    render(stage());
+    await click('링크');
+    await flush();
+    const node = toast();
+    expect(node.textContent).toBe('링크를 복사했어요');
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+    expect(node.textContent).toBe('');
+    expect(node.isConnected).toBe(true);
+  });
+
+  test('새 movieInfo(제목이 다른 객체)로 다시 그리면 대체 칸이 사라진다', async () => {
+    writeTextImpl = () => Promise.reject(new Error('denied'));
+    const { rerender } = render(stage());
+    await click('링크');
+    await flush();
+    expect(screen.queryByLabelText('공유 링크') !== null).toBe(true);
+    rerender(stage('dark', { ...MOVIE, title: 'OTHER' }));
+    await flush();
+    expect(screen.queryByLabelText('공유 링크') === null).toBe(true);
   });
 });
