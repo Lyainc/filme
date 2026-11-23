@@ -63,12 +63,12 @@ constraints:
     rationale: "07-seeds S7 완료 조건 · data/trace.js exportmatch('빈 항목 · 선택 표시를 끈 같은 렌더러를 저장') · #768."
   - id: constraint-3
     type: technical
-    description: "범위는 결과 화면(src/components/v2/ResultStage.tsx · ResultPanel.tsx), 결과 화면을 여는 페이지 배선 중 테마 · html 클래스 동기화(src/pages/index.tsx의 resultOpen chrome-dark 토글), 공유 페이지(src/pages/t/[id].tsx), 그리고 이 변경이 깨뜨리는 테스트 · 하네스 선택자 · 문서다. 편집 셸 · 도크 · 크롭 · 메뉴 · 랜딩, /api/ticket 업로드 · OG 이미지 생성 · 만료 정리(cron), 공유 문구(buildShareMessage)는 범위 밖이다."
+    description: "범위는 결과 화면(src/components/v2/ResultStage.tsx · ResultPanel.tsx), 결과 화면 세로 예산(src/styles/globals.css의 .result-hero · --hero-dvh-budget), 결과 화면을 여는 페이지 배선 중 테마 · html 클래스 동기화(src/pages/index.tsx의 resultOpen chrome-dark 토글), 공유 페이지(src/pages/t/[id].tsx), 그리고 이 변경이 깨뜨리는 테스트 · 하네스 선택자 · 문서와 constraint-13이 요구하는 하네스 새 축이다. 편집 셸 · 도크 · 크롭 · 메뉴 · 랜딩, /api/ticket 업로드 · OG 이미지 생성 · 만료 정리(cron), 공유 문구(buildShareMessage)는 범위 밖이다."
     hard: true
     rationale: "07-seeds S7 행. S2~S6 Seed가 다른 화면을 맡았고, 공유 파이프라인 서버 쪽은 비용 포스처 때문에 건드리지 않는다."
   - id: constraint-4
     type: technical
-    description: "결과 화면 배치(D11 A, D21-1 A): 위 줄은 왼쪽 ‹(접근 이름 '편집으로 돌아가기', 44×44)만 있고 워드마크 · 크기 줄(1960 × 3108 · JPEG)은 없다. 티켓은 위 줄 바로 아래에서 시작해 좌우 16px만 두고 남는 높이와 가로 중 작은 쪽에 맞춰 커지고(가로 무드는 돌리지 않음), 그 아래 [저장](강조 채움) · [링크] · [공유](글자 + 아이콘) 한 줄(모두 44px 이상 실제 button)과 비공식 고지(UNOFFICIAL_TICKET_NOTICE)가 늘 보인다. 링크를 만든 뒤에만 고지 위에 만료 문장 한 줄이 붙고, 이때 티켓 크기는 바뀌지 않는다. '새 티켓 만들기' 줄은 두지 않는다."
+    description: "결과 화면 배치(D11 A, D21-1 A): 위 줄은 높이 44px에 왼쪽 ‹(접근 이름 '편집으로 돌아가기', 44×44)만 있고 워드마크 · 크기 줄(1960 × 3108 · JPEG)은 없다. 티켓은 위 줄 아래 8px에서 시작해 가로는 프레임 폭 − 32px(좌우 16px, 393 프레임에서 361px)를 넘지 않고, 세로는 버튼 줄 · 고지까지 넣고 남는 높이를 넘지 않는 두 상한 중 작은 쪽으로 정해진다(가로 무드는 돌리지 않고 남는 높이 가운데에 놓임). 버튼 줄은 티켓 아래 12px에 있고, [저장](강조 채움) · [링크] · [공유](글자 + 아이콘) 한 줄(모두 높이 44px 이상 실제 button) 아래에 비공식 고지(UNOFFICIAL_TICKET_NOTICE)가 늘 보인다. 링크를 만든 뒤에만 고지 위에 만료 문장 한 줄이 붙고, 이때 티켓 크기는 바뀌지 않는다. '새 티켓 만들기' 줄은 두지 않는다."
     hard: true
     rationale: "D21-1 A(소유자 2026-11-23) · D11 A '정한 것' · D08 A."
   - id: constraint-5
@@ -78,12 +78,12 @@ constraints:
     rationale: "D11 A 상태판 · 구현 메모('ResultPanel의 저장 · 공유 · 링크 로직은 그대로 두고 배치만 바꿔요')."
   - id: constraint-6
     type: other
-    description: "실패는 결과 화면 안에서 한 문장으로 알린다(축 3, D21-2 A): 저장 실패는 버튼 줄 위 경고 상자(role=alert, --pr-warn 계열) '저장하지 못했어요'이고 다시 시도는 [저장] 버튼 자체다(따로 있던 '다시 시도' 버튼은 없어진다). 링크 발급 실패는 같은 자리 '링크를 만들지 못했어요'이고 다시 시도는 [링크] 버튼 자체다. 링크 실패에 지속 토스트(showError)와 '실패, 다시 시도' 라벨을 쓰지 않는다. 경고는 같은 버튼을 다시 누르거나 다른 동작이 성공하면 사라진다."
+    description: "실패는 결과 화면 안에서 한 문장으로 알린다(축 3, D21-2 A): 저장 실패는 버튼 줄 위 경고 상자(role=alert, --pr-warn 계열) '저장하지 못했어요'이고 다시 시도는 [저장] 버튼 자체다(따로 있던 '다시 시도' 버튼은 없어진다). 링크 발급 실패는 같은 자리 '링크를 만들지 못했어요'이고 다시 시도는 [링크] 버튼 자체다. 링크 실패에 지속 토스트(showError)와 '실패, 다시 시도' 라벨을 쓰지 않는다. 경고는 한 번에 하나이고 자동으로 사라지지 않으며, [저장] · [링크] · [공유] 중 하나를 누르는 순간 지워진다(그 동작이 다시 실패하면 새 경고가 뜬다)."
     hard: true
     rationale: "D21-2 A(소유자 2026-11-23) · 마스터 R-01 · R-02 · 30-errors-index('경고 상자') · COPY_TONE_GUIDE 축 3(#826 결정 8). 51-copy-changed '결과 저장 실패' · '링크 실패' 행."
   - id: constraint-7
     type: other
-    description: "복사 통보와 대체(R-03): 링크를 만들면 바로 클립보드에 복사하고 '링크를 복사했어요'(role=status, 화면 위쪽, 축 4)를 띄운다. [공유]는 링크가 없으면 먼저 발급하고(공유 의도), navigator.share가 없거나 AbortError가 아닌 실패면 링크를 복사하고 같은 통보를 띄운다. 클립보드 쓰기가 거부되면 통보 대신 그 자리에서 읽기 전용 링크 칸(글자 16px, aria-label '공유 링크')을 보이고 글자를 선택해 둔다. 링크 칸과 '복사' 버튼은 이 대체 때만 보인다."
+    description: "복사 통보와 대체(R-03): 링크를 만들면 바로 클립보드에 복사하고 '링크를 복사했어요'(role=status, 화면 위쪽, 축 4)를 띄운다. [공유]는 링크가 없으면 먼저 발급하고(공유 의도), navigator.share가 없거나 AbortError가 아닌 실패면 링크를 복사하고 같은 통보를 띄운다. [공유]에서 링크 발급이 실패하면 공유 시트를 열지 않고 아무것도 복사하지 않으며 '링크를 만들지 못했어요' 경고(constraint-6)만 띄운다(지금처럼 링크 없는 문구를 공유 · 복사하지 않는다). 클립보드 쓰기가 거부되면 통보 대신 그 자리에서 읽기 전용 링크 칸(글자 16px, aria-label '공유 링크')을 보이고 글자를 선택해 둔다. 링크 칸과 '복사' 버튼은 이 대체 때만 보이고, 링크가 비워질 때(티켓 내용 변경) 또는 그 뒤 복사가 성공할 때 사라진다. '저장했어요' · '링크를 복사했어요' 통보 글자는 약 2초 뒤 비워진다(통보 영역 자체는 constraint-17대로 남음)."
     hard: true
     rationale: "마스터 R-02 · R-03 · 51-copy-changed '공유 대체'(신규) · D11 '빠지는 것'(클립보드 막힌 인앱 웹뷰 대체) · #138 항목 1. 16px는 iOS 입력 확대 방지."
   - id: constraint-8
@@ -113,7 +113,7 @@ constraints:
     rationale: "소유자 목표의 보호 조건 · CLAUDE.md COPY_TONE_GUIDE 포인터."
   - id: constraint-13
     type: technical
-    description: "테스트 · 하네스 · 문서를 같은 변경에서 맞춘다: '사진에 저장' · '저장에 실패했어요.' · '다시 시도' · '실패, 다시 시도'를 잡던 resultPanelShareGating, 결과 화면 상시 chrome-dark를 잡던 chromeDarkScope · mobileChromeDarkHtmlBg, 워드마크를 전제한 resultStageWordmarkReset, 공유 페이지 shareLandingLayout을 새 동작으로 고친다. scripts/capture-export.mjs와 scripts/ios-sim/run768.py의 '사진에 저장' 버튼 선택자를 '저장'(정확일치 또는 접근 이름)으로 바꾼다. 새 결과 · 공유 문구를 테스트가 잡으면 COPY_TONE_GUIDE 잠금 표에 행을 더하고, 축 3 '이행' 문단에 S7이 결과 실패 문구를 옮겼다고 적는다."
+    description: "테스트 · 하네스 · 문서를 같은 변경에서 맞춘다: '사진에 저장' · '저장에 실패했어요.' · '다시 시도' · '실패, 다시 시도'를 잡던 resultPanelShareGating, 결과 화면 상시 chrome-dark를 잡던 chromeDarkScope · mobileChromeDarkHtmlBg, 워드마크를 전제한 resultStageWordmarkReset, 공유 페이지 shareLandingLayout을 새 동작으로 고친다. scripts/capture-export.mjs와 scripts/ios-sim/run768.py의 '사진에 저장' 버튼 선택자를 '저장'(정확일치 또는 접근 이름)으로 바꾼다. 새 결과 · 공유 문구를 테스트가 잡으면 COPY_TONE_GUIDE 잠금 표에 행을 더하고, 축 3 '이행' 문단에 S7이 결과 실패 문구를 옮겼다고 적는다. scripts/measure-chrome.mjs에는 결과 화면 새 축을 더하고 종료 조건(process.exitCode)에 싣는다: 배치 치수(acceptance-17), 통보 영역 봉쇄(acceptance-14), 400×675 · 400×667 프레임에서 경고 · 대체 칸 상태의 봉쇄(acceptance-16). 그 상태는 페이지 스크립트로 만든다(캡처 실패 스텁으로 저장 실패, navigator.clipboard.writeText reject 스텁 + /api/ticket 응답 스텁으로 대체 칸). docs/HARNESS.md에 새 축을 적는다."
     hard: true
     rationale: "CLAUDE.md 하네스 · 테스트 규칙(선택자는 exitCode에 실을 것) · COPY_TONE_GUIDE 잠금 표 운영."
   - id: constraint-14
@@ -128,12 +128,12 @@ constraints:
     rationale: "CLAUDE.md 검증 도구 절 · 07-seeds S8 · D11 '위험'."
   - id: constraint-16
     type: other
-    description: "작업 방식: 구현은 origin/main에서 만든 별도 워크트리 · 브랜치에서 하고 커밋은 Conventional Commits(type(scope): 설명 (#826))로 atomic하게 나눈다. 이 Seed 브랜치(docs/826-s7-seed)는 구현 PR에 함께 들어간다. PR 개설과 머지는 소유자 승인 뒤에만 한다. 마스터 frames.js R-01~R-03 · 51-copy-changed · 30-errors-index를 D21 결정에 맞추는 일은 docs/826-page-master 브랜치에서 따로 한다."
+    description: "작업 방식: 구현은 별도 워크트리 · 브랜치에서 하되 이 Seed 브랜치(docs/826-s7-seed)에서 갈라 그때의 origin/main 위로 올리고, 착수 base 커밋을 검증 기록에 적는다. 커밋은 Conventional Commits(type(scope): 설명 (#826))로 atomic하게 나눈다. 이 Seed 브랜치(docs/826-s7-seed)는 구현 PR에 함께 들어간다. PR 개설과 머지는 소유자 승인 뒤에만 한다. 마스터 frames.js R-01~R-03 · 51-copy-changed · 30-errors-index를 D21 결정에 맞추는 일은 docs/826-page-master 브랜치에서 따로 한다."
     hard: true
     rationale: "소유자 목표 · S5 · S6 선례 · CLAUDE.md Git 규약."
   - id: constraint-17
     type: technical
-    description: "결과 화면 통보의 자리: ResultStage가 자기 루트(PhoneFrame 안) 위쪽에 통보 영역을 갖고, '저장했어요' · '링크를 복사했어요'는 여기에 뜬다. 이 영역의 live region(role=status)은 결과 화면이 열려 있는 동안 늘 마운트돼 있고 글자만 바뀐다(통보 순간에 새로 마운트하지 않음). 결과 화면이 열려 있는 동안 편집 셸에서 떠 있던 지속 오류 토스트는 결과 화면 위에 겹쳐 보이지 않고, 결과 화면의 동작은 showError를 부르지 않는다."
+    description: "결과 화면 통보의 자리: ResultStage가 자기 루트(PhoneFrame 안) 위쪽에 통보 영역을 갖고, '저장했어요' · '링크를 복사했어요'는 여기에 뜬다. 이 영역의 live region(role=status)은 결과 화면이 열려 있는 동안 늘 마운트돼 있고 글자만 바뀐다(통보 순간에 새로 마운트하지 않음). 결과 화면이 열려 있는 동안 편집 셸에서 떠 있던 지속 오류 토스트는 결과 화면 위에 겹쳐 보이지 않고, 결과 화면의 동작은 showError를 부르지 않는다. 결과 화면에는 도크가 없어 X-01의 '통보는 도크 위' 규칙 대신 R-03대로 위쪽(위 줄 아래, 티켓 위)에 띄우고, X-01의 '오류 문장은 무슨 일 한 줄 · 다음 행동은 버튼' 규칙은 constraint-6이 따른다."
     hard: true
     rationale: "맹점 1(소유자 채택 2026-11-23): resultOpen이면 index.tsx:96이 편집 셸 래퍼를 hidden으로 만들고, 유일한 ErrorToastHost(MobileEditorShell.tsx:927)와 sr-only status가 그 안에 있어 결과 화면에선 보이지 않는다(ResultPanel.tsx:219의 showError도 마찬가지)."
   - id: constraint-18
@@ -165,7 +165,7 @@ success_criteria:
     verifiable: true
     measurable_via: "상호작용 테스트(showError 스파이 · fetch mock) + grep"
   - id: acceptance-5
-    description: "constraint-7: 링크 발급 성공 + clipboard.writeText 성공이면 '링크를 복사했어요'(role=status)가 뜨고 링크 칸이 없다. clipboard.writeText가 reject면 읽기 전용 입력(aria-label '공유 링크', computed font-size 16px 또는 text-[16px] 계열 클래스)이 보인다. navigator.share가 없을 때 '공유'를 누르면 발급 후 복사되고 같은 통보가 뜬다. AbortError면 복사 · 통보가 없다."
+    description: "constraint-7: 링크 발급 성공 + clipboard.writeText 성공이면 '링크를 복사했어요'(role=status)가 뜨고 링크 칸이 없다. clipboard.writeText가 reject면 읽기 전용 입력(aria-label '공유 링크', computed font-size 16px 또는 text-[16px] 계열 클래스)이 보인다. navigator.share가 없을 때 '공유'를 누르면 발급 후 복사되고 같은 통보가 뜬다. AbortError면 복사 · 통보가 없다. 링크가 없는 상태에서 '공유'를 눌러 발급이 실패하면(fetch reject) navigator.share · clipboard.writeText가 0회이고 role=alert '링크를 만들지 못했어요'만 뜨며 '링크를 복사했어요'가 없다."
     verifiable: true
     measurable_via: "상호작용 테스트(navigator.clipboard · navigator.share 스텁)"
   - id: acceptance-6
@@ -193,7 +193,7 @@ success_criteria:
     verifiable: true
     measurable_via: "하네스 출력 · exit code"
   - id: acceptance-12
-    description: "constraint-3 · constraint-16: CI(bun install --frozen-lockfile → typecheck → bun run test)가 구현 PR head에서 통과하고 bun run lint가 통과하며, 바뀐 src 파일이 constraint-3 목록(ResultStage · ResultPanel · pages/index.tsx · pages/t/[id].tsx) 안에 있다."
+    description: "constraint-3 · constraint-16: CI(bun install --frozen-lockfile → typecheck → bun run test)가 구현 PR head에서 통과하고 bun run lint가 통과하며, 바뀐 src 파일이 constraint-3 목록(ResultStage · ResultPanel · styles/globals.css · pages/index.tsx · pages/t/[id].tsx) 안에 있다."
     verifiable: true
     measurable_via: "CI 결과 · 로컬 bun run typecheck / lint / test · git diff --stat"
   - id: acceptance-13
@@ -209,9 +209,17 @@ success_criteria:
     verifiable: true
     measurable_via: "상호작용 테스트(navigator.clipboard 스텁)"
   - id: acceptance-16
-    description: "constraint-19: prod 빌드 하네스에서 400×675와 400×667 프레임 각각, 저장 실패 경고가 뜬 상태와 대체 링크 칸이 뜬 상태에서 '저장' · '링크' · '공유' 버튼과 비공식 고지의 rect가 #phone-frame 안에 있고 결과 화면 스크롤 컨테이너의 scrollTop이 0이며, 티켓(.result-hero) 크기가 기본 상태와 ±1px로 같다. 이 측정은 종료 조건(process.exitCode)에 실린다."
+    description: "constraint-19: prod 빌드 하네스에서 400×675와 400×667 프레임 각각, 저장 실패 경고만 뜬 상태 · 대체 링크 칸만 뜬 상태 · 링크 발급 뒤(만료 줄 있음) 대체 칸과 저장 실패 경고가 함께 뜬 최악 상태에서 '저장' · '링크' · '공유' 버튼과 비공식 고지의 rect가 #phone-frame 안에 있고 결과 화면 스크롤 컨테이너의 scrollTop이 0이며, 티켓(.result-hero) 크기가 기본 상태와 ±1px로 같다. 이 측정은 종료 조건(process.exitCode)에 실린다."
     verifiable: true
     measurable_via: "scripts/measure-chrome.mjs 새 축(경고 · 대체 칸 상태를 스텁으로 만든 뒤 측정) 출력 · exit code"
+  - id: acceptance-17
+    description: "constraint-4 · constraint-5: prod 빌드 하네스의 400×675 프레임, 세로 무드 기본 상태에서 위 줄 높이 44 ± 1px, 위 줄 아래와 .result-hero 위의 간격 8 ± 1px, .result-hero 폭 ≤ 프레임 폭 − 32px이고 프레임 가로 가운데(좌우 여백 차 ≤ 1px), 버튼 줄 위와 .result-hero 아래의 간격 12 ± 1px, '저장' · '링크' · '공유' 각 버튼 높이 ≥ 44px이다. 가로 무드(35mm-landscape)에서는 .result-hero가 위 줄과 버튼 줄 사이 세로 가운데(위아래 여백 차 ≤ 1px)에 있다. 이 측정은 exitCode에 실린다. 저장 성공 체크는 가짜 타이머 테스트에서 표시 직후 있고 2초 뒤 없다."
+    verifiable: true
+    measurable_via: "scripts/measure-chrome.mjs 새 결과 배치 축 출력 · exit code + 상호작용 테스트(fake timers)"
+  - id: acceptance-18
+    description: "constraint-6 · constraint-7: 저장 실패 경고가 뜬 뒤 '링크'를 누르면 그 순간 경고가 지워지고(발급 성공이면 경고 없음), 자동으로는 사라지지 않는다(가짜 타이머 10초 뒤에도 남음). '링크를 복사했어요' 통보 글자는 가짜 타이머 2초 뒤 비워지고 status 요소는 남는다. 클립보드 거부로 뜬 대체 링크 칸은 티켓 내용(props)이 바뀌면 사라진다."
+    verifiable: true
+    measurable_via: "상호작용 테스트(fake timers · rerender)"
 
 context:
   existing_stack: ["Next.js 16 Pages Router(getServerSideProps)", "React 19", "Tailwind CSS v3 + cva · cn", "html-to-image 캡처(captureToImage)", "@vercel/blob", "bun test + happy-dom + testing-library", "puppeteer-core 하네스(scripts/measure-chrome.mjs · capture-export.mjs)"]
