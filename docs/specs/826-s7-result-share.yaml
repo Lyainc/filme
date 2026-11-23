@@ -68,7 +68,7 @@ constraints:
     rationale: "07-seeds S7 행. S2~S6 Seed가 다른 화면을 맡았고, 공유 파이프라인 서버 쪽은 비용 포스처 때문에 건드리지 않는다."
   - id: constraint-4
     type: technical
-    description: "결과 화면 배치(D11 A, D21-1 A): 위 줄은 높이 44px에 왼쪽 ‹(접근 이름 '편집으로 돌아가기', 44×44)만 있고 워드마크 · 크기 줄(1960 × 3108 · JPEG)은 없다. 티켓은 위 줄 아래 8px에서 시작해 가로는 프레임 폭 − 32px(좌우 16px, 393 프레임에서 361px)를 넘지 않고, 세로는 버튼 줄 · 고지까지 넣고 남는 높이를 넘지 않는 두 상한 중 작은 쪽으로 정해진다(가로 무드는 돌리지 않고 남는 높이 가운데에 놓임). 버튼 줄은 티켓 아래 12px에 있고, [저장](강조 채움) · [링크] · [공유](글자 + 아이콘) 한 줄(모두 높이 44px 이상 실제 button) 아래에 비공식 고지(UNOFFICIAL_TICKET_NOTICE)가 늘 보인다. 링크를 만든 뒤에만 고지 위에 만료 문장 한 줄이 붙고, 이때 티켓 크기는 바뀌지 않는다. '새 티켓 만들기' 줄은 두지 않는다."
+    description: "결과 화면 배치(D11 A, D21-1 A): 위 줄은 높이 44px에 왼쪽 ‹(접근 이름 '편집으로 돌아가기', 44×44)만 있고 워드마크 · 크기 줄(1960 × 3108 · JPEG)은 없다. 티켓은 위 줄 아래 8px에서 시작해 가로는 프레임 폭 − 32px(좌우 16px, 393 프레임에서 361px)를 넘지 않고, 세로는 버튼 줄 · 고지까지 넣고 남는 높이를 넘지 않는 두 상한 중 작은 쪽으로 정해진다(가로 무드는 돌리지 않고 남는 높이 가운데에 놓임). 버튼 줄은 티켓 아래 12px에 있고(D11에 없는 티켓 바닥 타원 그림자는 걷어 .result-hero 상자가 곧 티켓 상자다), [저장](강조 채움) · [링크] · [공유](글자 + 아이콘) 한 줄(모두 높이 44px 이상 실제 button) 아래에 비공식 고지(UNOFFICIAL_TICKET_NOTICE)가 늘 보인다. 링크를 만든 뒤에만 고지 위에 만료 문장 한 줄이 붙고, 이때 티켓 크기는 바뀌지 않는다. '새 티켓 만들기' 줄은 두지 않는다."
     hard: true
     rationale: "D21-1 A(소유자 2026-11-23) · D11 A '정한 것' · D08 A."
   - id: constraint-5
@@ -213,11 +213,11 @@ success_criteria:
     verifiable: true
     measurable_via: "scripts/measure-chrome.mjs 새 축(경고 · 대체 칸 상태를 스텁으로 만든 뒤 측정) 출력 · exit code"
   - id: acceptance-17
-    description: "constraint-4 · constraint-5: prod 빌드 하네스의 400×675 프레임, 세로 무드 기본 상태에서 위 줄 높이 44 ± 1px, 위 줄 아래와 .result-hero 위의 간격 8 ± 1px, .result-hero 폭 ≤ 프레임 폭 − 32px이고 프레임 가로 가운데(좌우 여백 차 ≤ 1px), 버튼 줄 위와 .result-hero 아래의 간격 12 ± 1px, '저장' · '링크' · '공유' 각 버튼 높이 ≥ 44px이다. 가로 무드(35mm-landscape)에서는 .result-hero가 위 줄과 버튼 줄 사이 세로 가운데(위아래 여백 차 ≤ 1px)에 있다. 이 측정은 exitCode에 실린다. 저장 성공 체크는 가짜 타이머 테스트에서 표시 직후 있고 2초 뒤 없다."
+    description: "constraint-4 · constraint-5: prod 빌드 하네스의 400×675 프레임, 세로 무드 기본 상태에서 위 줄 높이 44 ± 1px, 위 줄 아래와 .result-hero 위의 간격 8 ± 1px, .result-hero 폭 ≤ 프레임 폭 − 32px이고 프레임 가로 가운데(좌우 여백 차 ≤ 1px), 버튼 줄 위와 .result-hero 아래의 간격 12 ± 1px, '저장' · '링크' · '공유' 각 버튼 높이 ≥ 44px이며, .result-hero 높이와 그 안 티켓(TicketRenderer 스케일 래퍼) 높이 차가 1px 이하다(바닥 그림자 없음). 가로 무드(35mm-landscape)에서는 .result-hero가 위 줄과 버튼 줄 사이 세로 가운데(위아래 여백 차 ≤ 1px)에 있다. 이 측정은 exitCode에 실린다. 저장 성공 체크는 가짜 타이머 테스트에서 표시 직후 있고 2초 뒤 없다."
     verifiable: true
     measurable_via: "scripts/measure-chrome.mjs 새 결과 배치 축 출력 · exit code + 상호작용 테스트(fake timers)"
   - id: acceptance-18
-    description: "constraint-6 · constraint-7: 저장 실패 경고가 뜬 뒤 '링크'를 누르면 그 순간 경고가 지워지고(발급 성공이면 경고 없음), 자동으로는 사라지지 않는다(가짜 타이머 10초 뒤에도 남음). '링크를 복사했어요' 통보 글자는 가짜 타이머 2초 뒤 비워지고 status 요소는 남는다. 클립보드 거부로 뜬 대체 링크 칸은 티켓 내용(props)이 바뀌면 사라진다."
+    description: "constraint-6 · constraint-7: 저장 실패 경고가 뜬 뒤 '링크'를 누르거나 '공유'를 누르면 각각 그 순간 경고가 지워지고(그 동작이 성공하면 경고 없음), 자동으로는 사라지지 않는다(가짜 타이머 10초 뒤에도 남음). '링크를 복사했어요' 통보 글자는 가짜 타이머 2초 뒤 비워지고 status 요소는 남는다. 클립보드 거부로 뜬 대체 링크 칸은 티켓 내용(props)이 바뀌면 사라진다."
     verifiable: true
     measurable_via: "상호작용 테스트(fake timers · rerender)"
 
