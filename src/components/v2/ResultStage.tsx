@@ -17,7 +17,7 @@ interface ResultStageProps {
 }
 
 /** 통보 글자가 머무는 시간(#826 S7 constraint-7, 약 2초). 통보 영역 자체는 남는다(constraint-17). */
-export const RESULT_NOTICE_MS = 2000;
+const RESULT_NOTICE_MS = 2000;
 
 // 세로 예산(#826 S7 constraint-4 · constraint-19). 티켓 위: 위 줄 44 + 간격 8. 티켓 아래: 간격 12 + 버튼 줄 44 +
 // 고지 간격 8 + 고지 블록(만료 줄까지 예약) + 바닥 여백 12. 경고 · 대체 칸은 버튼 줄 위에 겹쳐 떠서 예산 밖이다.
@@ -70,7 +70,7 @@ export function ResultStage({
           테마와 상관없이 루트의 직계 자식으로 둔다 — 하네스가 이걸로 결과 화면 루트를 찾는다. */}
       <div aria-hidden="true" data-testid="result-ambient" className="chrome-ambient pointer-events-none absolute inset-0" />
 
-      <header data-testid="result-topbar" className="relative flex shrink-0 items-center px-0" style={{ height: TOPBAR_PX }}>
+      <header data-testid="result-topbar" className="relative flex shrink-0 items-center" style={{ height: TOPBAR_PX }}>
         <button
           type="button"
           onClick={onBack}
@@ -93,7 +93,7 @@ export function ResultStage({
           aria-live="polite"
           data-testid="result-toast"
           className={cn(
-            'rounded-[6px] text-body text-ink',
+            'rounded-field-sm text-body text-ink',
             notice.msg && 'border border-hair bg-s2 px-4 py-2 animate-fade-in',
           )}
           style={notice.msg ? { boxShadow: 'var(--shadow-pop)' } : undefined}

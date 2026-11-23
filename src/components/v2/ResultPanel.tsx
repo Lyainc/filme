@@ -19,15 +19,21 @@ type SaveState = 'idle' | 'loading' | 'success';
 type ResultAlert = 'save' | 'link' | null;
 
 /** 저장 성공 체크가 머무는 시간(#826 S7 constraint-5, 약 1.5초). */
-export const SAVE_CHECK_MS = 1500;
+const SAVE_CHECK_MS = 1500;
 
 const ALERT_COPY: Record<'save' | 'link', string> = {
   save: '저장하지 못했어요',
   link: '링크를 만들지 못했어요',
 };
 
-export const RESULT_NOTICE_SAVED = '저장했어요';
-export const RESULT_NOTICE_COPIED = '링크를 복사했어요';
+/** 고지 블록 높이 — 만료 한 줄 + 고지 두 줄(16px 줄높이). ResultStage의 세로 예산이 이 값을 뺀다. */
+export const RESULT_NOTICE_BLOCK_PX = 48;
+
+// 보조 버튼([링크] · [공유]) 공통 모양.
+const SECONDARY_BUTTON = 'flex min-h-touch items-center justify-center gap-1.5 rounded-field-sm border border-hair bg-s2 px-2 text-body font-medium text-ink transition-colors disabled:cursor-not-allowed disabled:text-ink-3';
+
+const RESULT_NOTICE_SAVED = '저장했어요';
+const RESULT_NOTICE_COPIED = '링크를 복사했어요';
 
 interface ResultPanelProps {
   croppedImageUrl: string | null;
@@ -181,7 +187,7 @@ export function ResultPanel({
         }),
       });
       if (!res.ok) throw new Error(`ticket upload failed: ${res.status}`);
-      const { id } = (await res.json()) as { id: string; url: string };
+      const { id } = (await res.json()) as { id: string };
       url = `${window.location.origin}/t/${id}`;
     } catch (err) {
       console.error('[permalink]', err);
@@ -209,18 +215,22 @@ export function ResultPanel({
     }
   }, [onNotice]);
 
+  // [링크] · [공유] 공통 — 경고를 지우고, 발급된 링크가 있으면 다시 쓰고 없으면 발급한다(공유 의도일 때만, #194).
+  const ensureLink = useCallback(async () => {
+    setAlert(null);
+    return permalink ?? (await issuePermalink());
+  }, [permalink, issuePermalink]);
+
   // [링크] — 링크가 없으면 발급하고, 있으면 지금 링크를 다시 복사한다.
   const handleLink = useCallback(async () => {
-    setAlert(null);
-    const url = permalink ?? (await issuePermalink());
+    const url = await ensureLink();
     if (!url) return;
     await copyLink(url);
-  }, [permalink, issuePermalink, copyLink]);
+  }, [ensureLink, copyLink]);
 
   // [공유] — 링크가 없으면 먼저 발급(공유 의도). 발급이 실패하면 시트도 복사도 없이 경고만 남는다.
   const handleShare = useCallback(async () => {
-    setAlert(null);
-    const url = permalink ?? (await issuePermalink());
+    const url = await ensureLink();
     if (!url) return;
     if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
       try {
@@ -232,7 +242,7 @@ export function ResultPanel({
       }
     }
     await copyLink(url);
-  }, [permalink, issuePermalink, movieInfo, copyLink]);
+  }, [ensureLink, movieInfo, copyLink]);
 
   return (
     <div>
@@ -310,7 +320,7 @@ export function ResultPanel({
             onClick={handleLink}
             disabled={isBusy}
             aria-busy={permaLoading || undefined}
-            className={cn(pressableVariants(), 'flex min-h-touch items-center justify-center gap-1.5 rounded-field-sm border border-hair bg-s2 px-2 text-body font-medium text-ink transition-colors disabled:cursor-not-allowed disabled:text-ink-3')}
+            className={cn(pressableVariants(), SECONDARY_BUTTON)}
           >
             {permaLoading ? <Spinner /> : <LinkIcon />}
             <span className="truncate">{permaLoading ? '링크 만드는 중…' : '링크'}</span>
@@ -320,7 +330,7 @@ export function ResultPanel({
             data-testid="result-share"
             onClick={handleShare}
             disabled={isBusy}
-            className={cn(pressableVariants(), 'flex min-h-touch items-center justify-center gap-1.5 rounded-field-sm border border-hair bg-s2 px-2 text-body font-medium text-ink transition-colors disabled:cursor-not-allowed disabled:text-ink-3')}
+            className={cn(pressableVariants(), SECONDARY_BUTTON)}
           >
             <ShareIcon />
             <span>공유</span>
@@ -347,14 +357,22 @@ export function ResultPanel({
   );
 }
 
-/** 고지 블록 높이 — 만료 한 줄 + 고지 두 줄(16px 줄높이). ResultStage의 세로 예산이 이 값을 뺀다. */
-export const RESULT_NOTICE_BLOCK_PX = 48;
 
+
+// 스피너 · 체크는 PreviewFilmCell · PrimaryCta에도 있지만 그 둘은 이 변경의 범위(#826 S7 constraint-3) 밖이라 여기 둔다.
 function Spinner() {
   return (
     <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg data-testid="result-save-check" width="16" height="16" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
+      <path d="M10.28 2.28 4.75 7.81 1.72 4.78.28 6.22l4.47 4.47 7-7-1.47-1.41z" />
     </svg>
   );
 }
@@ -367,13 +385,6 @@ function DownloadIcon() {
   );
 }
 
-function CheckIcon() {
-  return (
-    <svg data-testid="result-save-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M20 6 9 17l-5-5" />
-    </svg>
-  );
-}
 
 function LinkIcon() {
   return (
