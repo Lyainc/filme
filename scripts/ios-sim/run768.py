@@ -170,7 +170,8 @@ def save_jpeg(cid):
     r = rect_of('[...document.querySelectorAll("button")].find(b=>b.textContent.trim()==="완료")')
     tap_css(r['x'] + r['w'] / 2, r['y'] + r['h'] / 2); time.sleep(2.5)
     shot(f'768/{cid}-preview')
-    r = rect_of('[...document.querySelectorAll("button")].find(b=>b.textContent.includes("사진에 저장"))')
+    # 저장 버튼(#826 S7): testid 우선, 없으면 텍스트가 정확히 '저장'(includes 금지 — 부분 문자열 오탐)
+    r = rect_of('document.querySelector(\'[data-testid="result-save"]\') || [...document.querySelectorAll("button")].find(b=>b.textContent.trim()==="저장")')
     if not r:
         return {'error': 'save CTA missing'}
     tap_css(r['x'] + r['w'] / 2, r['y'] + r['h'] / 2)
@@ -198,7 +199,7 @@ def save_jpeg(cid):
     if new:
         dst = f'{OUT}/{cid}-saved{os.path.splitext(new[-1])[1].lower()}'
         shutil.copy2(new[-1], dst); out['saved'] = dst
-    out['ctaLabel'] = js('const b=[...document.querySelectorAll("button")].find(b=>/사진에 저장/.test(b.textContent)); return b&&b.textContent.trim()')
+    out['ctaLabel'] = js('const b=document.querySelector(\'[data-testid="result-save"]\') || [...document.querySelectorAll("button")].find(b=>b.textContent.trim()==="저장"); return b&&b.textContent.trim()')
     return out
 
 

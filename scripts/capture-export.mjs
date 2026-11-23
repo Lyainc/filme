@@ -21,7 +21,9 @@
  * 목적은 후가공(코팅 gradient 4종 · 재질 noise 3종)의 **저장물**을 브랜치별로 뽑아 픽셀로
  * 대조하는 것 — 프리뷰가 아니라 `captureNodeToJpeg`가 실제로 뱉는 바이트다.
  *
- * ── 헤드리스에서 '사진에 저장'이 안 끝나는 이유 (실측 확정) ──────────────────
+ * ── 헤드리스에서 결과 화면의 '저장'이 안 끝나는 이유 (실측 확정) ─────────────
+ * 저장 버튼은 `[data-testid="result-save"]`(텍스트 '저장', #826 S7에서 문구가 바뀌었다)다. 텍스트로 집을 땐
+ * '저장'이 '임시저장' 같은 문구의 부분 문자열이라 includes가 아니라 trim 일치(===)로 집는다.
  * 앱 버그가 아니다. macOS 헤드리스 Chrome에서 `navigator.canShare({files:[…]})`가
  * **true**를 준다 — 그래서 ResultPanel이 `shareTicketAsJpeg` 경로를 타고
  * `navigator.share(…)`를 부르는데, OS 공유 시트가 뜰 수 없는 환경이라 그 Promise가
@@ -574,11 +576,11 @@ async function capture({ layout, material, coating, intensity, bg, bgScale, full
       mark('fillToggled');
     }
     await clickByText('완료');
+    // 결과 화면의 저장 버튼 — testid 우선, 없으면 텍스트가 정확히 '저장'인 버튼(includes 금지: 부분 문자열 오탐).
     await page.waitForFunction(
       () =>
-        [...document.querySelectorAll('button')].some((b) =>
-          (b.textContent || '').includes('사진에 저장'),
-        ),
+        !!document.querySelector('[data-testid="result-save"]') ||
+        [...document.querySelectorAll('button')].some((b) => (b.textContent || '').trim() === '저장'),
       { timeout: 20000 },
     );
     // 프리뷰 디바운스(280ms)와 폰트 로드가 끝난 뒤 캡처하도록 여유를 준다.
@@ -601,7 +603,15 @@ async function capture({ layout, material, coating, intensity, bg, bgScale, full
       });
     });
     mark('resultOpen');
-    await clickByText('사진에 저장');
+    const saveClicked = await page.evaluate(() => {
+      const b =
+        document.querySelector('[data-testid="result-save"]') ||
+        [...document.querySelectorAll('button')].find((x) => (x.textContent || '').trim() === '저장');
+      if (!b) return false;
+      b.click();
+      return true;
+    });
+    if (!saveClicked) throw new Error('저장 버튼을 못 찾음: [data-testid="result-save"] 또는 텍스트 "저장"');
     await page.waitForFunction(() => window.__exportDataUrl != null, { timeout: timeoutMs });
     mark('captured');
     const dataUrl = await page.evaluate(() => window.__exportDataUrl);
