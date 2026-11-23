@@ -70,16 +70,16 @@ describe('toNativeSharePayload (#394·#504 — navigator.share 개행 방지)', 
  * 하나 더 얹으면 개행은 그대로 재발한다. 그래서 ResultPanel의 '공유' 버튼을 실제로 눌러
  * navigator.share가 **받은 객체 자체**를 붙잡고 키 집합을 검사한다.
  *
- * TicketRenderer만 스텁(ResizeObserver·무드 DOM 회피)이고 캡처 모듈은 건드리지 않는다 —
- * `captureNodeToJpeg`를 mock.module로 덮으면 bun의 파일 간 누수로 captureOpaqueBackdrop 등
- * 실제 캡처 테스트가 같이 무너진다(resultPanelShareGating.test.tsx가 같은 이유로 그 함수만
- * 실제 구현을 남겨둔다). 그래서 happy-dom에선 발급이 실패해 payload에 링크가 안 실린다 —
- * 링크 흡수 문자열은 위 유닛 테스트가 보고, 여기서 볼 건 **필드가 몇 개냐**다.
+ * TicketRenderer는 스텁(ResizeObserver·무드 DOM 회피)이다. #826 S7부터 [공유]는 링크 발급이 실패하면 시트를 아예 열지
+ * 않으므로(constraint-7), 발급이 성공하도록 `captureNodeToJpeg`와 `/api/ticket` fetch를 스텁한다. 캡처 모듈 mock은
+ * 스프레드 스냅샷으로 afterAll에서 되돌린다(#611 · #618 — 복원이 있으면 뒤 캡처 테스트로 새지 않는다).
  */
 const React = require('react') as typeof import('react');
 
 let ResultPanel: typeof import('@/components/v2/ResultPanel').ResultPanel;
 let realTicketRenderer: typeof import('@/components/TicketRenderer');
+let realCaptureToImage: typeof import('@/utils/captureToImage');
+const realFetch = globalThis.fetch;
 
 beforeAll(() => {
   // 스프레드 스냅샷 — 살아있는 네임스페이스를 붙들면 mock.module이 그 객체를 제자리에서 갈아끼워
@@ -89,6 +89,11 @@ beforeAll(() => {
     default: React.forwardRef<HTMLDivElement>((_props, ref) =>
       React.createElement('div', { ref, 'data-testid': 'ticket' }),
     ),
+  }));
+  realCaptureToImage = { ...require('@/utils/captureToImage') };
+  mock.module('@/utils/captureToImage', () => ({
+    ...realCaptureToImage,
+    captureNodeToJpeg: () => Promise.resolve('data:image/jpeg;base64,AAAA'),
   }));
   ResultPanel = require('@/components/v2/ResultPanel').ResultPanel;
 });
@@ -100,6 +105,8 @@ const originalShareDescriptor = Object.getOwnPropertyDescriptor(navigator, 'shar
 afterEach(() => cleanup());
 afterAll(() => {
   mock.module('@/components/TicketRenderer', () => realTicketRenderer);
+  mock.module('@/utils/captureToImage', () => realCaptureToImage);
+  globalThis.fetch = realFetch;
   if (originalShareDescriptor) Object.defineProperty(navigator, 'share', originalShareDescriptor);
   else delete (navigator as { share?: unknown }).share;
 });
@@ -135,6 +142,9 @@ describe('ResultPanel → navigator.share 실제 조립 경로 (#504: #394가 �
       writable: true,
     });
 
+    globalThis.fetch = (() =>
+      Promise.resolve(new Response(JSON.stringify({ id: 'abc', url: '' }), { status: 200 }))) as unknown as typeof fetch;
+
     const user = userEvent.setup();
     render(
       React.createElement(ResultPanel, {
@@ -152,9 +162,10 @@ describe('ResultPanel → navigator.share 실제 조립 경로 (#504: #394가 �
     // #394는 url을 지웠지만 title이 남아 필드가 둘이었고, iOS가 그 둘을 개행으로 합쳤다(#504).
     // 필드가 하나라는 것 자체가 불변 조건 — title/url을 다시 얹으면 여기서 깨진다.
     expect(Object.keys(payload)).toEqual(['text']);
-    // happy-dom에선 캡처가 실패해 링크 발급이 안 되므로 문구만 실린다(파일 상단 주석) —
-    // 그래도 "한 문자열, 개행 없음, 꼬리 공백 없음"은 여기서 그대로 확인된다.
-    expect(payload.text).toBe('《인터스텔라》(Interstellar, 2014) 포토티켓 — made with FILME.');
+    // 발급된 링크가 문구와 한 문자열로 실린다 — 조립은 단일 소스(buildShareMessage → toNativeSharePayload).
+    const url = `${window.location.origin}/t/abc`;
+    expect(payload.text).toBe(toNativeSharePayload(buildShareMessage(MOVIE, url)).text);
+    expect(String(payload.text)).toContain('/t/abc');
     expect(String(payload.text)).not.toContain('\n');
   });
 });

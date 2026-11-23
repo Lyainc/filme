@@ -68,14 +68,14 @@ describe('앰비언트 다크 크롬 스코프 — theme 바인딩 (#415)', () =
   });
 });
 
-// 결과화면 톤(#357) — ResultStage는 항상 포스터가 있는 화면이라 chrome-dark + 앰비언트가
-// 조건 없이 상시 on이어야 한다. 스코프가 빠지면 라이트 테마에서 다크 앰비언트 위에 라이트
-// 토큰이 얹히는 #353과 동일 계열의 회귀.
-function ResultHarness() {
+// 결과화면 톤(#357 → #826 S7 D21-5 A) — 결과 화면도 앱 테마를 따른다. 다크일 때만 루트가 .chrome-dark이고,
+// 라이트는 라이트 토큰으로 그린다(편집 셸과 같은 규칙, #415). result-ambient는 테마와 상관없이 루트의 직계 자식으로
+// 남는다 — 하네스(scripts/measure-chrome.mjs)가 그 부모로 결과 스테이지 봉쇄를 잰다.
+function ResultHarness({ theme }: { theme: 'light' | 'dark' }) {
   const photo = usePhototicket();
   return (
     <ResultStage
-      theme="light"
+      theme={theme}
       onBack={() => {}}
       croppedImageUrl="blob:test-poster"
       movieInfo={photo.state.movieInfo}
@@ -85,16 +85,26 @@ function ResultHarness() {
   );
 }
 
-describe('ResultStage 결과화면 톤 (#357)', () => {
-  test('루트에 chrome-dark 상시 적용 + 앰비언트 상시 표시', () => {
-    render(<ResultHarness />);
-    // testid는 편집 셸과 분리(result-ambient) — resultOpen 시 둘이 동시 마운트라 중복 방지.
+describe('ResultStage 결과화면 톤 (#826 S7 D21-5 A)', () => {
+  test('라이트 테마: 루트에 chrome-dark 없음, 앰비언트는 루트의 직계 자식', () => {
+    render(<ResultHarness theme="light" />);
     const ambient = screen.getByTestId('result-ambient');
-    // 편집 셸과 달리 opacity 토글 없음 — 인라인 opacity를 걸지 않아 항상 보인다.
+    const root = ambient.parentElement as HTMLElement;
+    expect(root.getAttribute('data-testid')).toBe('result-stage');
+    expect(root.classList.contains('chrome-dark')).toBe(false);
     expect(ambient.style.opacity).toBe('');
-    expect((ambient.parentElement as HTMLElement).classList.contains('chrome-dark')).toBe(true);
   });
 
+  test('다크 테마: 루트가 chrome-dark, 앰비언트는 루트의 직계 자식', () => {
+    render(<ResultHarness theme="dark" />);
+    const ambient = screen.getByTestId('result-ambient');
+    const root = ambient.parentElement as HTMLElement;
+    expect(root.getAttribute('data-testid')).toBe('result-stage');
+    expect(root.classList.contains('chrome-dark')).toBe(true);
+  });
+});
+
+describe('편집 셸 도크 마운트 유지', () => {
   // PR #362 리뷰 P2 — dock을 조건부 unmount로 숨기면 도구 선택 같은 로컬 state가 전체 보기 왕복마다
   // 리셋된다(#297 P1과 동일 패턴). hidden 토글 + 항상 마운트를 고정한다(#826 S2: 옛 DesignRail → 도크).
   test('편집 셸: max 전환에도 dock(EditorDock)은 마운트 유지', () => {

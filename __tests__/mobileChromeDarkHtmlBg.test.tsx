@@ -1,5 +1,8 @@
 /**
- * #402→#415 회귀 테스트 — 모바일 셸 html 배경 동기화.
+ * #402→#415→#826 S7 회귀 테스트 — 모바일 셸 html 배경 동기화.
+ *
+ * #826 S7(D21-5 A)로 결과 화면도 앱 테마를 따르게 되어, 아래 원문이 말하는 "결과 화면이 떠 있을 때만 html에
+ * chrome-dark를 거는 forcing"은 걷혔다. 지금 고정하는 건 그 forcing이 없다는 것과 결과 루트가 테마를 따른다는 것이다.
  *
  * .chrome-dark는 셸 내부 div 스코프라 documentElement(html) 자신의 배경(--bg)까진 CSS 변수
  * 상속이 안 닿는다(상속은 자손 방향으로만). MobileEditorShell이 theme를 그대로 따르게 되며(#415)
@@ -124,40 +127,42 @@ describe('모바일 셸 html 배경 동기화 (#402→#415)', () => {
     expect(document.documentElement.classList.contains('chrome-dark')).toBe(false);
   });
 
-  test('모바일 + 라이트 테마 + 결과화면(resultOpen) 진입: documentElement에 chrome-dark 적용', async () => {
+  // #826 S7 D21-5 A — 결과 화면도 앱 테마를 따르게 되며 resultOpen일 때 html에 chrome-dark를 거는 강제(#402)를 걷었다.
+  // 라이트에선 결과 화면도 라이트라 html 배경과 맞고, 다크에선 html은 theme-dark로, 결과 루트는 .chrome-dark로 맞는다.
+  async function openResult(user: ReturnType<typeof userEvent.setup>) {
+    // 재방문자는 "이어서 만들기"로 draft를 이어받는다(#727 c5) — 다른 경로는 문서를 되돌려 완료 게이트가 안 선다.
+    await user.click(screen.getByTestId('landing-restore'));
+    fireEvent.change(posterFileInput(), { target: { files: [pngFile('poster.png')] } });
+    await user.click(await screen.findByText('mock-apply'));
+    await user.click(await screen.findByRole('button', { name: '완료' }));
+    return screen.findByTestId('result-stage');
+  }
+
+  test('라이트 테마 + 결과화면 진입: html에도 결과 루트에도 chrome-dark가 없다 (#826 S7)', async () => {
     setViewportWidth(500);
     seedExportableDraft();
     const user = userEvent.setup();
     render(<Home />);
-
-    // 재방문자는 "이어서 만들기"로 draft를 이어받는다(#727 c5) — 랜딩의 다른 네 경로는 "새로
-    // 시작"이라 문서를 되돌려(c7) 완료 게이트가 요구하는 title·titleOg·releaseDate가 사라진다.
-    await user.click(screen.getByTestId('landing-restore'));
-    fireEvent.change(posterFileInput(), { target: { files: [pngFile('poster.png')] } });
-    await user.click(await screen.findByText('mock-apply'));
-
+    const stage = await openResult(user);
+    expect(stage.classList.contains('chrome-dark')).toBe(false);
     expect(document.documentElement.classList.contains('chrome-dark')).toBe(false);
-
-    await user.click(await screen.findByRole('button', { name: '완료' }));
-
-    expect(document.documentElement.classList.contains('chrome-dark')).toBe(true);
   });
 
-  test('unmount(페이지 이동) 시 chrome-dark cleanup', async () => {
+  test('다크 테마 + 결과화면 진입: 결과 루트만 chrome-dark, html은 theme-dark (#826 S7)', async () => {
     setViewportWidth(500);
     seedExportableDraft();
+    window.localStorage.setItem('phototicket:theme', 'dark');
+    document.documentElement.classList.add('theme-dark');
     const user = userEvent.setup();
-    const { unmount } = render(<Home />);
-
-    // 재방문자는 "이어서 만들기"로 draft를 이어받는다(#727 c5) — 랜딩의 다른 네 경로는 "새로
-    // 시작"이라 문서를 되돌려(c7) 완료 게이트가 요구하는 title·titleOg·releaseDate가 사라진다.
-    await user.click(screen.getByTestId('landing-restore'));
-    fireEvent.change(posterFileInput(), { target: { files: [pngFile('poster.png')] } });
-    await user.click(await screen.findByText('mock-apply'));
-    await user.click(await screen.findByRole('button', { name: '완료' }));
-    expect(document.documentElement.classList.contains('chrome-dark')).toBe(true);
-
-    unmount();
+    render(<Home />);
+    const stage = await openResult(user);
+    expect(stage.classList.contains('chrome-dark')).toBe(true);
+    expect(document.documentElement.classList.contains('theme-dark')).toBe(true);
     expect(document.documentElement.classList.contains('chrome-dark')).toBe(false);
+  });
+
+  test('index.tsx에 resultOpen으로 chrome-dark를 토글하는 코드가 없다 (#826 S7)', () => {
+    const src = require('fs').readFileSync(require('path').join(__dirname, '../src/pages/index.tsx'), 'utf8') as string;
+    expect(/classList\.(toggle|add)\(\s*['"]chrome-dark/.test(src)).toBe(false);
   });
 });

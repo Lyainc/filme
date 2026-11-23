@@ -56,16 +56,8 @@ export default function Home() {
   // 포스터는 완료 조건이 아니다(#631 D3) — 없어도 제목·개봉연도만 채우면 준비완료.
   const railMessage = !canExport ? '제목과 개봉연도가 필요해요' : '티켓이 준비됐어요';
 
-  // html 배경 동기화(#402→#415). MobileEditorShell은 이제 theme를 그대로 따르므로(#415) html의
-  // 기존 .theme-dark 동기화(useThemePreference 훅)와 저절로 맞아 별도 forcing이 필요 없다. ResultStage만
-  // 예외 — 테마와 무관하게 상시 .chrome-dark다(#357, 이 이슈의 범위 밖) → html도
-  // resultOpen일 때만 같이 다크로 맞춰 라이트 테마에서 결과화면 진입 시 배경 블리드(#402)를 막는다.
-  useEffect(() => {
-    document.documentElement.classList.toggle('chrome-dark', resultOpen);
-    return () => {
-      document.documentElement.classList.remove('chrome-dark');
-    };
-  }, [resultOpen]);
+  // html 배경 동기화(#402→#415→#826 S7) — 결과 화면도 이제 앱 테마를 따르므로(D21-5 A) html은 useThemePreference가
+  // 거는 .theme-dark 하나로 맞는다. resultOpen일 때 html에 chrome-dark를 거는 강제는 걷었다.
 
   // 셸은 한 벌이다(#607) — 데스크톱 3-pane(DesktopStudioShell)과 뷰포트 JS 분기(mounted·isMobile
   // SSR 왕복)는 삭제됐고, 데스크톱은 이 모바일 셸을 400px 폰 프레임에 넣어 그대로 띄운다.

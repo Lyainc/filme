@@ -97,14 +97,13 @@ describe('ResultStage 뒤로가기 배선 (#258)', () => {
     expect(screen.queryByText('포스터가 없어요. 편집 화면에서 포스터를 추가해 주세요.') === null).toBe(true);
   });
 
-  // #380 원인1 — 상단 네브가 BI v2 이전 구형 mono 10px "FILME" 텍스트(WordmarkCompact)를 그대로
-  // 쓰고 있었다. MobileEditorShell(#386)과 동형인 신형 Wordmark(ClapTix 마크 + fılme 로고타입,
-  // aria-label="FILME")로 통일됐는지 고정 — 구형은 시각 텍스트 자체가 대문자 "FILME"라 그 노드가
-  // 없어야 회귀가 아니다.
-  test('상단 네브는 신형 Wordmark를 쓴다 — 구형 mono 텍스트 아님 (#380)', async () => {
+  // #826 S7(D11 A · D21-1 A) — 위 줄은 ‹ 하나다. 워드마크(#380의 신형 Wordmark)와 크기 줄(1960 × 3108 · JPEG)은 없다.
+  test('위 줄엔 ‹ 버튼만 있고 워드마크 · 크기 줄이 없다 (#826 S7)', async () => {
     renderStage(() => {});
-    expect(await screen.findByLabelText('FILME')).toBeTruthy();
-    expect(screen.queryByText('FILME') === null).toBe(true);
+    const topbar = await screen.findByTestId('result-topbar');
+    expect(topbar.querySelectorAll('button').length).toBe(1);
+    expect(screen.queryByLabelText('FILME') === null).toBe(true);
+    expect(screen.queryByText(/1960\s*×\s*3108/) === null).toBe(true);
   });
 });
 

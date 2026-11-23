@@ -143,6 +143,10 @@
 `이미지 크롭에 실패했어요. 다시 시도해 주세요.`가 크롭 화면 안 경고 한 줄 `이미지를 불러오지 못했어요` ·
 `자르지 못했어요`가 됐고, 다음 행동은 그 아래 `다른 사진` · `적용` 버튼이 맡는다. 저장 실패 토스트 두 문구는
 버튼을 둘 수 없는 토스트라 두 문장 그대로다(#826 D20-4 A, 마스터 M-02도 이 문구로 고쳤다).
+결과 화면 실패(R-01 · R-02)는 S7에서 옮겼다 — `저장에 실패했어요.` + `다시 시도` 버튼과 지속 토스트
+`링크 생성에 실패했어요. 다시 시도해 주세요.` · 라벨 `실패, 다시 시도`가 결과 화면 안 경고 한 줄 `저장하지 못했어요` ·
+`링크를 만들지 못했어요`가 됐고, 다시 시도는 `저장` · `링크` 버튼 자체다(#826 D21-2 A). 성공 통보는 `저장했어요` ·
+`링크를 복사했어요`이고, 만료 문장과 비공식 고지는 법적 고지라 그대로다(D21-3 A).
 
 **옛 결정의 근거(두 문장).** 실측한 토스트·에러 문구에서 2문장 구조가 9건이고, 그 9건이 전부 실패 통보다(`인식에
 실패했어요. 다시 시도해 주세요.` / `이미지를 불러오지 못했어요. 다른 사진을 선택해 주세요.` — 둘 다 지금은 한 줄로 옮겨졌다(#826 S5 · S6)).
@@ -278,6 +282,10 @@ eyebrow 필드 8종)를 놓쳤다 — fresh-context 리뷰가 낮은 확신으�
 | `포스터 자르기` · `로고 자르기` · `서명 자르기` · `스탬프 자르기` (#826 S6 C-01 · C-02, 구 `포스터 크롭` · `로고 크롭` · `스탬프 이미지 크롭`, 크롭 화면 제목 = 접근 이름) | `ImageCropModal.tsx`(`CROP_TITLE`) | `cropScreenS6` · `dialogBackgroundInert` · `editorDockPhoto` · `logoCropFreeAspect` · `ocrUndoRestore` · `posterCropPipeline` |
 | `다른 사진` (#826 S6, 구 `다른 사진 선택`) · `원본 비율 보존`(스위치, 구 체크박스) | `ImageCropModal.tsx` | `cropScreenS6` · `logoCropFreeAspect` |
 | `이미지를 불러오지 못했어요` · `자르지 못했어요` · `이미지를 표시할 수 없어요` (#826 S6 C-03, 구 두 문장 토스트) | `ImageCropModal.tsx` | `cropScreenS6` |
+| `저장` · `링크` · `공유` (#826 S7 R-01, 구 `사진에 저장` · `링크 만들기`) · `편집으로 돌아가기`(‹ `aria-label`) | `v2/ResultPanel.tsx` · `v2/ResultStage.tsx` | `doneFailureInfoMode` · `mobileEditorInputRegression` · `resultPanelShareGating` · `resultStageBack` · `resultStageWordmarkReset` · `shareMessage` |
+| `저장하지 못했어요` · `링크를 만들지 못했어요` (#826 S7 R-01 · R-02, 구 `저장에 실패했어요.` + `다시 시도` · `링크 생성에 실패했어요. 다시 시도해 주세요.` · `실패, 다시 시도`) | `v2/ResultPanel.tsx` | `resultPanelShareGating` |
+| `저장했어요` · `링크를 복사했어요` · `공유 링크`(대체 칸 `aria-label`) (#826 S7 R-02 · R-03) | `v2/ResultPanel.tsx`(통보 영역은 `v2/ResultStage.tsx`) | `resultPanelShareGating` · `ticketCleanup`(`공유 링크`) · `mobileEditorShellMenu` · `ocrUndoRestore`(`임시저장했어요`의 부분 문자열로 잡힘) |
+| `만료된 링크예요` · `나도 티켓 만들기` (#826 S7 S-01, 구 `나도 티켓 만들기 →`) | `pages/t/[id].tsx` | `shareLandingLayout` · `shareLandingNotFound` |
 
 각 행의 테스트 목록은 그 행 문구 각각을 `git grep -l -F`(`__tests__`)로 찾은 결과의 합집합이다 — 문구가 다른 문구의
 부분 문자열이면(`스크린샷으로 자동입력` ⊂ `티켓 스크린샷으로 자동입력`, `다시 검색` ⊂ `다시 검색해 주세요`) 그 파일도 같이
