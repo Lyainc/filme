@@ -118,7 +118,7 @@ constraints:
     rationale: "D20-4 A(소유자 2026-11-23). 마스터 문구는 COPY_TONE_GUIDE 축 3(버튼 없는 토스트는 두 문장)과 어긋나고 비공개 모드 원인을 뺀다."
   - id: constraint-14
     type: technical
-    description: "테스트 · 하네스 · 문서를 같은 변경에서 맞춘다: 바뀐 이름 · 역할 · 문구를 잡던 테스트(posterCropPipeline · logoCropFreeAspect · editorDockPhoto 등 '포스터 크롭' · '로고 크롭' · '다른 사진 선택' · getByRole('checkbox')를 쓰는 곳)를 새 값으로 고치고, scripts/measure-chrome.mjs의 크롭 모달 프레임 봉쇄 축 선택자를 '포스터 자르기'로 바꿔 종료 조건(process.exitCode)에 계속 싣는다. 새 크롭 문구를 테스트가 잡으면 docs/COPY_TONE_GUIDE.md 잠금 표에 행을 더한다(기존 행은 constraint-4대로 그대로)."
+    description: "테스트 · 하네스 · 문서를 같은 변경에서 맞춘다: 바뀐 이름 · 역할 · 문구를 잡던 테스트(posterCropPipeline · logoCropFreeAspect · editorDockPhoto 등 '포스터 크롭' · '로고 크롭' · '다른 사진 선택' · getByRole('checkbox')를 쓰는 곳)를 새 값으로 고치고, scripts/measure-chrome.mjs의 크롭 모달 프레임 봉쇄 축 선택자를 '포스터 자르기'로 바꿔 종료 조건(process.exitCode)에 계속 싣는다. 새 크롭 문구를 테스트가 잡으면 docs/COPY_TONE_GUIDE.md 잠금 표에 행을 더하고(기존 행은 constraint-4대로 그대로), 축 3 '이행' 문단이 옛 크롭 오류 두 문장을 현행 사례로 인용하는 자리를 S6에서 크롭 안 경고 한 줄로 옮겼다고 고친다."
     hard: true
     rationale: "CLAUDE.md 하네스 규칙(새 축 · 선택자는 exitCode에 실을 것, checked:false는 실패) · COPY_TONE_GUIDE 잠금 표 운영."
   - id: constraint-15
@@ -143,7 +143,7 @@ constraints:
     rationale: "맹점 1(소유자 채택 2026-11-23): 지금 usePosterCrop.openFile은 새 originalSrc를 세우는 즉시 effect가 이전 원본을 revoke하고(usePosterCrop.ts:58-71), cancel은 pendingNewFile이면 originalSrc를 null로 만든다(:117-121). D20-1 전에는 다시 자르기 안에서 파일을 바꾸는 길이 없었다."
   - id: constraint-19
     type: technical
-    description: "'다른 사진'의 파일 입력은 크롭 화면 안에 산다: 크롭 화면이 자기 숨은 input[type=file](호출부의 원래 업로드와 같은 accept)을 갖고, 고른 파일을 호출부에 넘겨 그 호출부의 열기 경로(usePosterCrop.openFile · useLogoCrop.openFile 등)로 크롭을 다시 시작한다. 크롭 화면 뒤의 inert 영역(#685)에 있는 기존 파일 입력을 click()으로 부르지 않는다."
+    description: "'다른 사진'의 파일 입력은 크롭 화면 안에 산다: 크롭 화면이 자기 숨은 input[type=file](호출부의 원래 업로드와 같은 accept)을 갖고, 고른 파일을 호출부에 넘겨 그 호출부의 열기 경로(usePosterCrop.openFile · useLogoCrop.openFile 등)로 크롭을 다시 시작한다. 크롭 화면 뒤의 inert 영역(#685)에 있는 기존 파일 입력을 click()으로 부르지 않는다. 이 숨은 입력은 tabIndex=-1로 Tab 순환 · 첫/끝 판정에서 빠지고, 접근 이름은 바깥 업로드 입력과 겹치지 않는다. 고른 파일이 이미지가 아니면 선택 취소와 같이 크롭 화면을 그대로 둔다."
     hard: true
     rationale: "맹점 2(소유자 채택 2026-11-23): 기존 입력은 모두 크롭 화면 뒤(MobileEditorShell.tsx:845-857 APP_BACKGROUND_ID 안, PhotoPane.tsx:110-141, InPlaceFieldEditor.tsx:790-799)에 있고 useBodyScrollLock이 그 영역을 inert로 만든다. inert 입력의 click()이 iOS에서 사진 선택을 여는지는 실측되지 않았다."
   - id: constraint-20
@@ -166,19 +166,19 @@ success_criteria:
     verifiable: true
     measurable_via: "testing-library 상호작용 테스트(getByRole('switch', {name: '원본 비율 보존'}))"
   - id: acceptance-4
-    description: "constraint-6 · constraint-7 · constraint-20: 포스터 · 극장 로고 · 포맷 로고 · 서명 · 배경 스탬프 크롭을 각 진입점(사진 모드 행 · 정보 입력)에서 열면 dialog 접근 이름과 위 줄에 보이는 제목이 '포스터 자르기' · '로고 자르기' · '로고 자르기' · '서명 자르기' · '스탬프 자르기'이고, 크롭 화면 루트가 라이트 테마에서도 어두운 스코프(.chrome-dark)를 가진다. 포커스 진입 · Tab 순환 · Escape · 포커스 복귀 · 뒤 화면 inert 테스트가 통과한다. src에 '포스터 크롭' · '로고 크롭' · '스탬프 이미지 크롭' 제목 문자열이 없다."
+    description: "constraint-6 · constraint-7 · constraint-20: 포스터 · 극장 로고 · 포맷 로고 · 서명 · 배경 스탬프 크롭을 각 진입점(사진 모드 행 · 정보 입력)에서 열면 dialog 접근 이름과 위 줄에 보이는 제목이 '포스터 자르기' · '로고 자르기' · '로고 자르기' · '서명 자르기' · '스탬프 자르기'이고, 크롭 화면 루트가 라이트 테마에서도 어두운 스코프(.chrome-dark)를 가진다. 포커스 진입 · Tab 순환 · Escape · 포커스 복귀 · 뒤 화면 inert 테스트가 통과한다. 크롭 화면에 넘기는 제목 값(title= · cropTitle: 등 prop 값)과 __tests__ · scripts의 dialog 이름 선택자 리터럴에 '포스터 크롭' · '로고 크롭' · '스탬프 이미지 크롭'이 없다(주석 속 낱말은 대상이 아니다). 크롭 화면 루트에 가운데 카드 · 둥근 모서리 · backdrop-blur · max-w 제한이 없다."
     verifiable: true
-    measurable_via: "상호작용 테스트(진입점별 열기 → getByRole('dialog', {name}) · 보이는 제목 · 클래스) + dialogBackgroundInert 통과 + grep"
+    measurable_via: "상호작용 테스트(진입점별 열기 → getByRole('dialog', {name}) · 보이는 제목 · 클래스) + dialogBackgroundInert 통과 + prop 값 · 선택자 리터럴 grep"
   - id: acceptance-5
-    description: "constraint-6 · constraint-15: prod 빌드에서 measure-chrome --theme dark · --theme light가 exit 0이고, 크롭 모달 프레임 봉쇄 축이 '포스터 자르기' 선택자로 실제 측정되어 통과하며, dock 249 / 프리뷰 219×350이 그대로다."
+    description: "constraint-6 · constraint-15: prod 빌드에서 measure-chrome --theme dark · --theme light가 exit 0이고, 크롭 모달 프레임 봉쇄 축이 '포스터 자르기' 선택자로 실제 측정되어 통과하며, 같은 축에서 크롭 dialog의 rect가 #phone-frame rect와 ±1px로 같다(프레임 전체를 덮음, exitCode에 실림). dock 249 / 프리뷰 219×350이 그대로다. 위 줄 배치 · 어두운 색감의 눈 확인은 이 기준으로 판정하지 않고 S8 사람 확인으로 넘긴다."
     verifiable: true
     measurable_via: "bun scripts/measure-chrome.mjs --url <prod> --theme dark|light 출력과 exit code"
   - id: acceptance-6
-    description: "constraint-8 · constraint-19: 크롭 화면 안의 '다른 사진'을 누르면 크롭 화면 안의 숨은 파일 입력이 클릭되고(크롭 화면 밖 입력은 클릭되지 않음), 그 입력에 파일을 넣으면 새 사진으로 크롭이 다시 시작되며, 파일 없이 끝나면 크롭 화면 · 프레임이 그대로다. 포스터 · 로고 크롭 각각 확인한다. 랜딩에서 연 포스터 크롭은 '다른 사진'으로 바꿔도 랜딩을 벗어나지 않고 '적용'에서만 벗어난다. '다른 사진 선택' 문자열은 src에 없다."
+    description: "constraint-8 · constraint-19: 크롭 화면 안의 '다른 사진'을 누르면 크롭 화면 안의 숨은 파일 입력이 클릭되고(크롭 화면 밖 입력은 클릭되지 않음), 그 입력에 파일을 넣으면 새 사진으로 크롭이 다시 시작되며, 파일 없이 끝나거나 이미지가 아닌 파일이면 크롭 화면 · 프레임이 그대로다. 포스터 · 로고 크롭 각각 확인한다. 포스터 크롭에서 스위치를 켠 채 '다른 사진'으로 바꾸면 새 사진은 스위치 꺼짐 · 프리셋 비율로 열린다. 숨은 입력은 Tab 순환에 들어가지 않아 Tab 순환의 마지막 요소가 '적용'이고, 그 접근 이름은 바깥 업로드 입력('포스터 이미지 파일' 등)과 겹치지 않는다. 랜딩에서 연 포스터 크롭은 '다른 사진'으로 바꿔도 랜딩을 벗어나지 않고 '적용'에서만 벗어난다. '다른 사진 선택' 문자열은 src에 없다."
     verifiable: true
     measurable_via: "상호작용 테스트(dialog 안 file input click 스파이 · change 이벤트 · 랜딩 잔류) + grep"
   - id: acceptance-7
-    description: "constraint-9 · constraint-20: 이미지 로드 실패(img error)면 크롭 화면 안 role=alert에 '이미지를 불러오지 못했어요'와 무대에 '이미지를 표시할 수 없어요'가 보이고 '적용'이 disabled이며 showError가 불리지 않는다. 자르기 실패(getCroppedImg reject)면 포스터 · 로고 크롭 모두 화면이 열린 채 '자르지 못했어요' 경고가 뜨고 showError가 불리지 않으며, '적용'을 다시 누르면 경고가 사라진다. src에 '이미지를 불러오지 못했어요. 다른 사진을 선택해 주세요.' · '이미지 크롭에 실패했어요. 다시 시도해 주세요.'가 없다."
+    description: "constraint-9 · constraint-20: 이미지 로드 실패(img error)면 크롭 화면 안 role=alert에 '이미지를 불러오지 못했어요'와 무대에 '이미지를 표시할 수 없어요'가 보이고 '적용'이 disabled이며 showError가 불리지 않는다. 자르기 실패(getCroppedImg reject)면 포스터 · 로고 크롭 모두 화면이 열린 채 '자르지 못했어요' 경고가 뜨고 showError가 불리지 않으며, '적용'을 다시 누르거나 '다른 사진'으로 새 사진이 뜨면 경고가 사라진다. src에 '이미지를 불러오지 못했어요. 다른 사진을 선택해 주세요.' · '이미지 크롭에 실패했어요. 다시 시도해 주세요.'가 없다."
     verifiable: true
     measurable_via: "상호작용 테스트(showError 스파이 · getCroppedImg mock) + grep"
   - id: acceptance-8
@@ -206,9 +206,13 @@ success_criteria:
     verifiable: true
     measurable_via: "코멘트 · PR 본문 문구 확인"
   - id: acceptance-14
-    description: "constraint-18: 포스터가 있는 상태에서 다시 자르기 → '다른 사진'으로 새 파일 → ✕를 하면 이전 원본 URL이 revoke되지 않고, 다시 자르기가 여전히 열리며, saveDraft가 이전 posterOriginal을 싣는다. 버린 새 파일 URL은 정확히 한 번 revoke된다. 같은 흐름에서 '적용'을 누르면 새 크롭이 확정되고 이전 원본이 한 번 revoke된다."
+    description: "constraint-18: 포스터가 있는 상태에서 다시 자르기 → '다른 사진'으로 새 파일 → ✕를 하면 이전 원본 URL이 revoke되지 않고, 다시 자르기가 여전히 열리며, saveDraft가 이전 posterOriginal을 싣는다. 버린 새 파일 URL은 정확히 한 번 revoke된다. 같은 흐름에서 '적용'을 누르면 새 크롭이 확정되고 이전 원본이 한 번 revoke된다. 로고 크롭에서 '다른 사진' 뒤 ✕를 하면 붙어 있던 로고 이미지 값이 바뀌지 않는다."
     verifiable: true
-    measurable_via: "posterCropPipeline 류 상호작용 테스트(revoke 스파이 · saveDraft 페이로드 · 다시 자르기 활성)"
+    measurable_via: "posterCropPipeline 류 상호작용 테스트(revoke 스파이 · saveDraft 페이로드 · 다시 자르기 활성) + 로고 크롭 상호작용 테스트(onChange 미호출)"
+  - id: acceptance-15
+    description: "constraint-10: 적용 중(isProcessing)에는 '적용' 버튼이 '적용 중'을 보이고 '다른 사진' · ✕ · 스위치가 disabled이며 Escape가 onClose를 부르지 않는다."
+    verifiable: true
+    measurable_via: "ImageCropModal 상호작용 테스트(isProcessing=true)"
 
 context:
   existing_stack: ["Next.js 16 Pages Router", "React 19", "Tailwind CSS v3 + cva · cn", "react-image-crop", "bun test + happy-dom + testing-library", "puppeteer-core 하네스(scripts/measure-chrome.mjs)"]
@@ -217,7 +221,7 @@ context:
     - "src/components/ImageCropModal.tsx(모양 · 제목 · 스위치 · 다른 사진 입력 · 경고 · 자유 비율)"
     - "src/hooks/usePosterCrop.ts · src/hooks/useLogoCrop.ts(실패 상태 · 다른 사진 교체 · 원본 보존)"
     - "src/components/v2/MobileEditorShell.tsx(포스터 크롭 배선) · src/components/v2/dock/PhotoPane.tsx(로고 · 배경 스탬프) · src/components/v2/InPlaceFieldEditor.tsx(극장 · 포맷 로고 · 서명) · src/components/v2/FieldEditorBody.tsx(로고)"
-    - "__tests__/posterCropPipeline.test.tsx · logoCropFreeAspect.test.tsx · editorDockPhoto.test.tsx · dialogBackgroundInert.test.tsx · useLogoCropRevoke.test.tsx · mobileEditorShellMenu.test.tsx"
+    - "__tests__/posterCropPipeline.test.tsx · logoCropFreeAspect.test.tsx · editorDockPhoto.test.tsx · dialogBackgroundInert.test.tsx · useLogoCropRevoke.test.tsx · ocrUndoRestore.test.tsx(dialog 이름 '포스터 크롭') · mobileEditorShellMenu.test.tsx"
     - "scripts/measure-chrome.mjs(크롭 모달 봉쇄 축 선택자) · docs/COPY_TONE_GUIDE.md(잠금 표)"
     - "docs/826-page-master: docs/mockups/826-master/frames.js M-02 · C-02, evidence/30-errors-index.js · 51-copy-changed.js"
   backlog_scan: "충돌 없음. 열린 이슈 중 겹치는 것은 상위 에픽 #826뿐이고, #841(S2 후속 하네스 정리) · #585(Android 잔여) · #501(로그인 · 갤러리 검토)은 크롭 · 메뉴와 겹치지 않는다. 닫힌 #420(원본 비율 보존)은 constraint-2가 지키고, #421 · #220 · #347(로고 자유 크롭)의 원래 요청은 constraint-11이 완전 자유 비율로 잇는다(#421 구현의 자연비 잠금만 되돌림, D20-3 B). #503 · #474 · #492는 크롭 모달 이력으로 충돌 없다."
