@@ -332,7 +332,7 @@
    담아두고 이 클래스로 드러내면 자리 이동이 0이다.
    클래스는 명제가 뒤집힐 때만 usePhototicket이 거둔다(저장분이 실제로 없었을 때·손상·초기화) —
    그때 행이 다시 숨어, 없는 draft를 가리키는 진입점이 안 남는다.
-   @layer 밖인 이유는 위 .ReactCrop·.result-hero와 같다(purge 회피) — 그리고 레이어 밖이라
+   @layer 밖인 이유는 위 .ReactCrop와 같다(purge 회피) — 그리고 레이어 밖이라
    utilities를 순서로 이긴다. */
 [data-testid='landing-restore'] {
   display: none;

@@ -24,7 +24,8 @@ const RESULT_NOTICE_MS = 2000;
 const TOPBAR_PX = 44;
 const HERO_GAP_TOP_PX = 8;
 const HERO_GAP_BOTTOM_PX = 12;
-const BOTTOM_STACK_PX = HERO_GAP_BOTTOM_PX + 44 + 8 + RESULT_NOTICE_BLOCK_PX + 12;
+const BOTTOM_PAD_PX = 12;
+const BOTTOM_STACK_PX = HERO_GAP_BOTTOM_PX + 44 + 8 + RESULT_NOTICE_BLOCK_PX + BOTTOM_PAD_PX;
 
 /**
  * 결과 화면(#258 → #826 S7, 마스터 R-01 · D11 A) — 편집 셸을 교체하는 전체화면 스테이지.
@@ -71,6 +72,8 @@ export function ResultStage({
       <div aria-hidden="true" data-testid="result-ambient" className="chrome-ambient pointer-events-none absolute inset-0" />
 
       <header data-testid="result-topbar" className="relative flex shrink-0 items-center" style={{ height: TOPBAR_PX }}>
+        {/* 보이는 제목은 없지만(D11 A) 화면을 알리는 heading 랜드마크는 남긴다. */}
+        <h1 className="sr-only">결과</h1>
         <button
           type="button"
           onClick={onBack}
@@ -102,7 +105,7 @@ export function ResultStage({
         </div>
       </div>
 
-      <div data-testid="result-scroll" className="relative min-h-0 flex-1 overflow-y-auto px-4" style={{ paddingTop: landscape ? 0 : HERO_GAP_TOP_PX }}>
+      <div data-testid="result-scroll" className="relative min-h-0 flex-1 overflow-y-auto px-4" style={{ paddingTop: landscape ? 0 : HERO_GAP_TOP_PX, paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${BOTTOM_PAD_PX}px)` }}>
         {/* 가로 무드는 돌리지 않고 위 줄과 버튼 줄 사이 남는 높이의 가운데에 놓는다(constraint-4) — 슬롯이 위 줄
             바로 아래부터 버튼 줄 바로 위까지(위아래 간격 8 · 12 포함)를 차지해야 위아래 여백이 같아진다. */}
         <div
