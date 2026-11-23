@@ -904,8 +904,7 @@ try {
   await page.waitForSelector('[data-testid="result-ambient"]', { timeout: 15000 });
   await sleep(600);
   await measureFit('결과 스테이지', '[data-testid="result-stage"]');
-  // hero는 --hero-dvh-budget을 든 유일한 요소고, 그 컨테이너 쿼리는 뷰포트가 아니라 프레임의
-  // orientation을 읽는다 — 1440×900 뷰포트(landscape)의 400×900 프레임은 portrait이다(#607).
+  // hero 크기는 프레임 기준(cqw · cqh) 세로 예산에서 나온다(#826 S7) — 뷰포트가 아니라 프레임 안에 서야 한다(#607).
   await measureFit('결과 hero', '.result-hero');
 
   // ── 결과 화면 축 3종 (#826 S7 constraint-13 · acceptance-11/14/16/17) ─────────────────────
