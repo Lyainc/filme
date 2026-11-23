@@ -110,10 +110,11 @@ export function ResultPanel({
   }, [croppedImageUrl, movieInfo, components, fieldVisibility]);
 
   const handleSave = useCallback(async () => {
+    // 누르는 순간 경고를 지운다(constraint-6) — 다시 실패하면 아래 catch가 새 경고를 띄운다.
+    setAlert(null);
     const node = ticketRef.current;
     // 다른 캡처가 진행 중이면(연타·동시 공유) 무시 — 같은 노드 toJpeg 중복을 막는다(#167).
     if (!node || capturingRef.current) return;
-    setAlert(null);
     const title = movieInfo.title || 'untitled';
     const filename = `phototicket_${layout.id}_${title}.jpg`;
     capturingRef.current = true;
