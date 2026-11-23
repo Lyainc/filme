@@ -5,6 +5,7 @@ import type { DateFormatToken, DateGranularity, KobisMovie, MovieInfo, TicketCom
 import { formatDate, openDtToIso } from '@/utils/dateFormat';
 import { useKobisSearch } from '@/hooks/useKobisSearch';
 import { useLogoCrop } from '@/hooks/useLogoCrop';
+import type { CropTarget } from '@/components/ImageCropModal';
 import { Eyebrow } from './Eyebrow';
 import { DateInput } from '@/components/ui/DateInput';
 import RatingPicker from '@/components/v2/pickers/RatingPicker';
@@ -465,8 +466,11 @@ function StampEditor({
   scale,
   maxLength = STAMP_LABEL_MAX,
   maxScale = 1.3,
+  cropTarget = 'logo',
 }: {
   ariaLabel: string;
+  /** 크롭 화면 제목 키(#826 S6 constraint-7) — 극장 · 포맷 로고는 'logo', 서명은 'signature'. */
+  cropTarget?: CropTarget;
   /** 영문 슬러그 — 크기 슬라이더 id에 쓴다. ariaLabel(한글+공백)을 그대로 id에 넣으면 HTML id
    * 스펙 위반이라(claude-review PR #487 P2) 호출부가 별도로 넘긴다. */
   idSlug: string;
@@ -557,7 +561,7 @@ function StampEditor({
       {rawSrc && (
         <ImageCropModal
           imageSrc={rawSrc}
-          target="logo"
+          target={cropTarget}
           onClose={handleCancel}
           onComplete={handleComplete}
           isProcessing={isCropping}
@@ -604,6 +608,7 @@ function SignatureSheet({ photo }: { photo: Photo }) {
       ariaLabel={FIELD_LABELS.signature}
       idSlug="signature"
       maxLength={20}
+      cropTarget="signature"
       label={{
         value: photo.state.movieInfo.signature ?? '',
         onChange: (v) => photo.updateMovieInfo({ signature: v }),
