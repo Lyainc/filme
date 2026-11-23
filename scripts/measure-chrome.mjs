@@ -151,7 +151,9 @@ try {
    * 못 찾은 표면은 pass:false다 — 있어야 할 게 없는 것도 게이트가 잡아야 할 회귀다.
    */
   const fits = [];
-  const measureFit = async (label, selector, target = page) => {
+  // cover=true면 봉쇄(넘침 ≤0.5)에 더해 프레임 전체를 덮는지(네 변 모두 프레임과 ±1px)까지 본다 —
+  // 전체 화면 모달(#826 S6 C-DLG)이 가운데 카드로 되돌아가면 봉쇄만으로는 통과해 버린다.
+  const measureFit = async (label, selector, target = page, { cover = false } = {}) => {
     const r = await target.evaluate(
       (sel) => {
         const f = document.getElementById('phone-frame');
@@ -173,7 +175,15 @@ try {
       selector,
     );
     const worst = r.overflow ? Math.max(...Object.values(r.overflow)) : null;
-    const entry = { label, selector, ...r, worstOverflow: worst, pass: worst != null && worst <= 0.5 };
+    const covers = cover ? (r.overflow ? Object.values(r.overflow).every((v) => v >= -1 && v <= 1) : false) : undefined;
+    const entry = {
+      label,
+      selector,
+      ...r,
+      worstOverflow: worst,
+      ...(cover ? { coversFrame: covers } : {}),
+      pass: worst != null && worst <= 0.5 && (!cover || covers),
+    };
     fits.push(entry);
     return entry;
   };
@@ -565,7 +575,9 @@ try {
   await sleep(1400);
   // 크롭 모달은 createPortal로 프레임에 직접 붙는다(#606) — 포털 타깃이 body로 폴백하면
   // 여기서만 드러난다. 닫기 전에 잰다.
-  await measureFit('크롭 모달', 'div[role=dialog][aria-label="포스터 자르기"]');
+  // #826 S6: 크롭 화면은 프레임 전체를 덮는 어두운 화면이라 봉쇄와 함께 덮음(±1px)도 잰다(acceptance-5).
+  // 선택자를 못 찾으면 missing으로 pass:false — 이름이 바뀐 걸 조용히 넘기지 않는다(fitFails → exitCode).
+  await measureFit('크롭 모달', 'div[role=dialog][aria-label="포스터 자르기"]', page, { cover: true });
   await page.evaluate(() =>
     [...document.querySelectorAll('button')].find((b) => b.textContent?.trim() === '적용').click(),
   );
