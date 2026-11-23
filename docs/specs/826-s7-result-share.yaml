@@ -37,13 +37,87 @@ brownfield: true
 refine_generation: 0
 
 lifecycle:
-  state: active
-  outcome: null
-  reason: "D21 결정(1-A · 2-A · 3-A · 4-A · 5-A)과 맹점 셋을 반영했고, requirement-gap 3라운드로 blocking · should-fix 0이 된 뒤 소유자가 이 Seed를 구현 기준으로 승인했다."
-  approved_by: "소유자 응답(2026-11-23): 'S7 결과 · 공유 Seed(docs/specs/826-s7-result-share.yaml, 커밋 c57bac6f)를 active로 바꿀까요?' → 'active로 승인 (Recommended)'"
+  state: closed
+  outcome: completed
+  reason: "constraint-1~19 · acceptance-1~18이 검증한 커밋(PR #846 head a6daad3f, 트리가 같은 main df3764a3)에서 항목별 근거로 충족됐다(철회 항목 없음)."
+  approved_by: "소유자 응답(2026-11-24 세션 종료): 'S7 Seed를 closed · completed로 닫을까요?' → '닫고 main push (Recommended)'"
   evidence:
-    commit: null
-    items: []
+    commit: df3764a3a16fb70a269c9d89f081652c6450224d
+    items:
+      - id: constraint-1
+        refs: ["git diff c4c8a44f..df3764a3 -- src/components/moods src/components/TicketRenderer.tsx src/utils/captureToImage.ts src/utils/layouts.ts 0줄, ResultPanel 캡처 옵션(pixelRatio 1 · q0.82 링크용, 다운로드 경로 무변경)과 capturingRef 가드 유지"]
+      - id: constraint-2
+        refs: ["ResultStage hero · ResultPanel 화면 밖(position fixed, left -99999) 캡처 인스턴스 모두 같은 props · ghost={false}, __tests__/resultGhostOff · resultStageBack 통과"]
+      - id: constraint-3
+        refs: ["git diff c4c8a44f..df3764a3 --stat: 바뀐 src는 ResultStage · ResultPanel · styles/globals.css · pages/index.tsx · pages/t/[id].tsx뿐(requirement-gap 1라운드 확인)"]
+      - id: constraint-4
+        refs: ["ResultStage 위 줄 44px ‹만 · 티켓 cqw/cqh 상한 · 버튼 줄 12px · 고지 블록 예약, measure-chrome resultLayout(400×675: 위 줄 44 · 간격 8/12 · 티켓 304.1×486 · 좌우 47.9/47.9, 가로 무드 위아래 137.8/137.9) pass"]
+      - id: constraint-5
+        refs: ["ResultPanel 저장 aria-busy · 진행 표시 · 체크 1.5초 · '저장했어요', 시트 취소 무통보, '링크 만드는 중…', 링크 재복사, __tests__/resultPanelShareGating(a3 · a17) 통과"]
+      - id: constraint-6
+        refs: ["ResultPanel role=alert '저장하지 못했어요' · '링크를 만들지 못했어요', showError · '다시 시도' 버튼 제거, ensureLink · handleSave의 setAlert(null), resultPanelShareGating(a4 · a18) 통과"]
+      - id: constraint-7
+        refs: ["ResultPanel copyLink · handleShare(발급 실패 시 시트 · 복사 0) · 16px 대체 칸, 통보 2초 소멸, resultPanelShareGating(a5 · a18) 통과"]
+      - id: constraint-8
+        refs: ["ResultPanel 만료 줄은 permalink 있을 때만 DEFAULT_TICKET_TTL_DAYS, UNOFFICIAL_TICKET_NOTICE 상시, t/[id].tsx 기본 상태 문구 유지, resultPanelShareGating(a6) · shareLandingLayout 통과"]
+      - id: constraint-9
+        refs: ["issuePermalink 호출은 ensureLink([링크] · [공유])뿐, resultPanelShareGating(a7: 진입 · 저장 · 테마 전환 0, 링크 1, 링크 있는 공유 추가 0) 통과"]
+      - id: constraint-10
+        refs: ["ResultStage 루트 theme==='dark'일 때만 chrome-dark, result-ambient 직계 자식, index.tsx resultOpen 토글 제거, chromeDarkScope · mobileChromeDarkHtmlBg 통과, measure-chrome themeScope pass"]
+      - id: constraint-11
+        refs: ["t/[id].tsx expired(): 404 · {expired:true} · s-maxage 없음, ExpiredLanding('만료된 링크예요' · '나도 티켓 만들기', og 없음), __tests__/shareLandingNotFound · shareLandingLayout 통과"]
+      - id: constraint-12
+        refs: ["git diff c4c8a44f..df3764a3 -- __tests__ '-' 줄에 잠긴 행 문자열 0건, 새 실패 문구 한 문장 · 33자 이내, usePhototicket 임시저장 실패 문구 무변경"]
+      - id: constraint-13
+        refs: ["테스트 갱신(resultPanelShareGating · chromeDarkScope · mobileChromeDarkHtmlBg · resultStageWordmarkReset · resultStageBack · shareLandingLayout · shareMessage), capture-export · ios-sim/run768 선택자 result-save, COPY_TONE_GUIDE 잠금 표 4행 · 축 3 이행 문단, measure-chrome resultLayout · resultToast · resultOverlay → exitCode(:1350), docs/HARNESS.md 13절"]
+      - id: constraint-14
+        refs: ["diff에 새 vw · vh · rail: · useMatchMedia 없음(cqw · cqh), prod 빌드(a6daad3f, 트리 = df3764a3) measure-chrome dark · light exit 0, dock 249 / 프리뷰 219×350 · 결과 스테이지 · 결과 hero pass"]
+      - id: constraint-15
+        refs: ["#826 issuecomment-7104967367 · PR #846 본문 모두 '헤드리스 · happy-dom, 실기기 PASS 아님, Android 없음, 실기기 확인은 S8' 표기"]
+      - id: constraint-16
+        refs: ["워크트리 .claude/worktrees/826-s7-impl · 브랜치 feat/826-s7-result-share(docs/826-s7-seed에서 분기, origin/main 395b7f5a 위), 착수 base e97eb229(main c4c8a44f) 기록, Conventional Commits 6개, PR #846은 소유자 승인 뒤 개설 · rebase merge"]
+      - id: constraint-17
+        refs: ["ResultStage result-toast(role=status) 늘 마운트 · 글자만 교체, 결과 화면 동작 showError 0, resultPanelShareGating(a14 노드 동일성) 통과, measure-chrome resultToast pass"]
+      - id: constraint-18
+        refs: ["ResultPanel fallbackNonce effect가 마운트 뒤 focus · setSelectionRange(0, len), resultPanelShareGating(a15) 통과"]
+      - id: constraint-19
+        refs: ["경고 · 대체 칸은 버튼 줄 위 absolute로 겹침 · 만료 줄 자리 예약, measure-chrome resultOverlay 400×675 · 400×667 default · saveFailOnly · fallbackOnly · worst pass(티켓 304.1×486 · 300.5×480.2 불변)"]
+      - id: acceptance-1
+        refs: ["git diff c4c8a44f..df3764a3 -- src/components/moods src/components/TicketRenderer.tsx src/utils/captureToImage.ts src/utils/layouts.ts 0줄"]
+      - id: acceptance-2
+        refs: ["__tests__/resultGhostOff · resultStageBack(TicketRenderer 2개) 통과"]
+      - id: acceptance-3
+        refs: ["__tests__/resultPanelShareGating a3 4건 · resultStageBack · resultStageWordmarkReset 통과"]
+      - id: acceptance-4
+        refs: ["resultPanelShareGating a4 4건(src 옛 문구 grep 포함) 통과"]
+      - id: acceptance-5
+        refs: ["resultPanelShareGating a5 5건 통과"]
+      - id: acceptance-6
+        refs: ["resultPanelShareGating a6 · shareLandingLayout 통과"]
+      - id: acceptance-7
+        refs: ["resultPanelShareGating a7 통과"]
+      - id: acceptance-8
+        refs: ["chromeDarkScope · mobileChromeDarkHtmlBg(index.tsx grep 포함) 통과"]
+      - id: acceptance-9
+        refs: ["shareLandingNotFound(세 경우 404 · props · s-maxage 없음, 빈 상태 렌더) · shareLandingLayout(CTA 정확 일치) 통과"]
+      - id: acceptance-10
+        refs: ["git diff c4c8a44f..df3764a3 -- __tests__ 잠긴 행 삭제 0건, COPY_TONE_GUIDE 잠금 표 S7 행 · 축 3 이행 문단, capture-export · run768에 '사진에 저장' 0건"]
+      - id: acceptance-11
+        refs: ["prod(a6daad3f) measure-chrome dark · light exit 0, capture-export exit 0(1960×3108)"]
+      - id: acceptance-12
+        refs: ["PR #846 head a6daad3f CI(run 45201099958) pass, bun run lint exit 0, 바뀐 src 5개 constraint-3 목록 안"]
+      - id: acceptance-13
+        refs: ["#826 issuecomment-7104967367 · PR #846 본문 표기 확인"]
+      - id: acceptance-14
+        refs: ["resultPanelShareGating a14 통과, measure-chrome resultToast(빈 · 통보 상태 프레임 안) pass"]
+      - id: acceptance-15
+        refs: ["resultPanelShareGating a15 통과"]
+      - id: acceptance-16
+        refs: ["measure-chrome resultOverlay 675 · 667 × 3상태 pass(exitCode 실림)"]
+      - id: acceptance-17
+        refs: ["measure-chrome resultLayout 세로 · 가로 pass(exitCode 실림), resultPanelShareGating a17(가짜 타이머) 통과"]
+      - id: acceptance-18
+        refs: ["resultPanelShareGating a18 5건 통과"]
   withdrawn: []
 
 goal:
