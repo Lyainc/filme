@@ -37,10 +37,10 @@ brownfield: true
 refine_generation: 0
 
 lifecycle:
-  state: paused
+  state: active
   outcome: null
-  reason: "D21 결정(1-A · 2-A · 3-A · 4-A · 5-A)을 반영한 초안이다. 소유자가 이 Seed를 승인하기 전까지 구현에 적용하지 않는다."
-  approved_by: "소유자 목표(2026-11-23 /goal): 'Ambiguity 게이트를 통과한 Seed는 lifecycle paused로 쓰고, … blocking · should-fix 0을 만든 뒤 소유자에게 active 승인을 묻는다.'"
+  reason: "D21 결정(1-A · 2-A · 3-A · 4-A · 5-A)과 맹점 셋을 반영했고, requirement-gap 3라운드로 blocking · should-fix 0이 된 뒤 소유자가 이 Seed를 구현 기준으로 승인했다."
+  approved_by: "소유자 응답(2026-11-23): 'S7 결과 · 공유 Seed(docs/specs/826-s7-result-share.yaml, 커밋 c57bac6f)를 active로 바꿀까요?' → 'active로 승인 (Recommended)'"
   evidence:
     commit: null
     items: []
