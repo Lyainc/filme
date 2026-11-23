@@ -486,7 +486,7 @@ function StampEditor({
   maxScale?: number;
 }) {
   // 로고 업로드 → 자유 크롭 → PNG. 픽커들과 동일한 useLogoCrop 흐름(#220).
-  const { rawSrc, isCropping, openFile, handleComplete, handleCancel } = useLogoCrop(image.onChange);
+  const { rawSrc, isCropping, cropFailed, openFile, handleComplete, handleCancel } = useLogoCrop(image.onChange);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -557,10 +557,13 @@ function StampEditor({
       {rawSrc && (
         <ImageCropModal
           imageSrc={rawSrc}
-          title="로고 크롭"
+          target="logo"
           onClose={handleCancel}
           onComplete={handleComplete}
           isProcessing={isCropping}
+          cropFailed={cropFailed}
+          accept={IMAGE_ACCEPT}
+          onPickFile={openFile}
         />
       )}
     </div>

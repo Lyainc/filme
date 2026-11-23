@@ -8,6 +8,7 @@ import type { usePhototicket } from '@/hooks/usePhototicket';
 import type { TicketComponents } from '@/types';
 import { IMAGE_ACCEPT, STAMP_KEYS, STAMP_LABELS, STAMP_TARGETS, type SheetTarget, type StampTarget } from '@/constants/fields';
 import { TARGET_HEIGHT } from '@/utils/constants';
+import type { CropTarget } from '@/components/ImageCropModal';
 import { BACKGROUND_OPACITY_DEFAULT, BACKGROUND_PATTERN_MOODS } from '../designRailItems';
 
 // 로고·스탬프 크롭 모달 — 열기 전엔 안 쓰므로 dynamic(ssr:false)로 react-image-crop을 분리한다.
@@ -108,8 +109,8 @@ function LogoThumb({ src, text }: { src: string; text: string }) {
  * 로고·스탬프 행이 공유하는 업로드 흐름 — 숨은 file input(이미지 형식 확인 · 값 비움)과 자유비 크롭 모달(useLogoCrop, #220).
  * pick()으로 파일 선택을 열고, `node`를 행 안에 그린다.
  */
-function useImageUpload(onChange: (url: string) => void, opts: { inputLabel: string; cropTitle: string; maxSide?: number }) {
-  const { rawSrc, isCropping, openFile, handleComplete, handleCancel } = useLogoCrop(onChange, opts.maxSide);
+function useImageUpload(onChange: (url: string) => void, opts: { inputLabel: string; cropTarget: CropTarget; maxSide?: number }) {
+  const { rawSrc, isCropping, cropFailed, openFile, handleComplete, handleCancel } = useLogoCrop(onChange, opts.maxSide);
   const fileRef = useRef<HTMLInputElement>(null);
   const node = (
     <>
@@ -130,10 +131,13 @@ function useImageUpload(onChange: (url: string) => void, opts: { inputLabel: str
       {rawSrc && (
         <ImageCropModal
           imageSrc={rawSrc}
-          title={opts.cropTitle}
+          target={opts.cropTarget}
           onClose={handleCancel}
           onComplete={handleComplete}
           isProcessing={isCropping}
+          cropFailed={cropFailed}
+          accept={IMAGE_ACCEPT}
+          onPickFile={openFile}
         />
       )}
     </>
@@ -187,7 +191,7 @@ function LogoRow({ target, photo, onEdit }: { target: StampTarget; photo: Photo;
   const visible = !!components[keys.visible];
   const label = STAMP_LABELS[target];
   const setImage = (url: string) => photo.updateComponents({ [keys.image]: url } as Partial<TicketComponents>);
-  const upload = useImageUpload(setImage, { inputLabel: `${label} 이미지 파일`, cropTitle: '로고 크롭' });
+  const upload = useImageUpload(setImage, { inputLabel: `${label} 이미지 파일`, cropTarget: 'logo' });
   const status = image ? '이미지' : text ? `텍스트 · ${text}` : '비어 있음';
   return (
     <AssetRow thumb={<LogoThumb src={image} text={text} />} name={label} status={status} onOpen={() => onEdit(target)}>
@@ -237,7 +241,7 @@ function StampRow({ photo }: { photo: Photo }) {
         backgroundPatternImage,
         backgroundPatternOpacity: photo.state.components.backgroundPatternOpacity ?? BACKGROUND_OPACITY_DEFAULT,
       }),
-    { inputLabel: '스탬프 이미지 업로드', cropTitle: '스탬프 이미지 크롭', maxSide: TARGET_HEIGHT },
+    { inputLabel: '스탬프 이미지 업로드', cropTarget: 'stamp', maxSide: TARGET_HEIGHT },
   );
   return (
     <AssetRow thumb={<LogoThumb src={image ?? ''} text="" />} name="배경 스탬프" status={image ? '이미지' : '비어 있음'}>

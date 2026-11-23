@@ -5,7 +5,7 @@
  * 합친 파일이다 — 두 파일이 각각 검증하던 pendingNewFile 상태머신이 #548에서 usePosterCrop
  * 한 벌로 합쳐졌다. #607에서 소비자도 한 벌(모바일 셸)이 되며 데스크톱 ImageUploader 경로를
  * 걷어내고, 그쪽에서만 밟히던 불변식을 같은 셸 경로로 이관했다. 여기서 지키는 불변식:
- *   - 교체(새 파일) 후 취소 → 재크롭 비활성 (직전 포스터의 원본은 이미 revoke돼 stale이다)
+ *   - 교체(새 파일) 후 취소 → 직전 원본이 그대로 남고 재크롭도 활성(#826 S6 constraint-18, 확정 전 새 파일만 버려진다)
  *   - 재크롭 취소(새 파일 안 고름) → 원본 유지, 재크롭 계속 활성
  *   - 첫 업로드 취소 → 원본 폐기, 프리뷰 없음
  *   - 드롭은 아무 일도 안 한다(#826 S5 D18-2로 드롭 업로드 제거)
@@ -62,7 +62,7 @@ const { MobileEditorShell } = require('@/components/v2/MobileEditorShell') as ty
 // 포스터 전용 파일 input — OcrUploadCard의 image/* input, 사진 모드 로고 행 input(accept에 jpeg 포함)과 구분한다.
 const posterFileInput = () => document.querySelector('input[type="file"][aria-label="포스터 이미지 파일"]') as HTMLInputElement;
 const pngFile = (name: string) => new File([name], name, { type: 'image/png' });
-const cropDialog = () => screen.queryByRole('dialog', { name: '포스터 크롭' });
+const cropDialog = () => screen.queryByRole('dialog', { name: '포스터 자르기' });
 /** 모달이 지금 어느 원본을 가리키는지. 티켓 프리뷰의 <img>와 안 섞이게 다이얼로그 안에서만 찾는다. */
 const cropSrc = () => document.querySelector('[role="dialog"] img')?.getAttribute('src') ?? null;
 // 교체 · 재크롭은 메뉴가 아니라 도크 사진 모드의 포스터 행에 있다(#826 S2, constraint-3) — 버튼 이름은 '교체' · '자르기'.
@@ -82,7 +82,7 @@ function loadImage(naturalWidth = 2000, naturalHeight = 3000) {
 /** 파일 선택 → 실물 모달 적용까지. 이후 photo에 포스터 + 크롭 원본이 모두 서 있다. */
 async function pickAndApply(user: ReturnType<typeof userEvent.setup>, name: string) {
   fireEvent.change(posterFileInput(), { target: { files: [pngFile(name)] } });
-  await screen.findByRole('dialog', { name: '포스터 크롭' });
+  await screen.findByRole('dialog', { name: '포스터 자르기' });
   loadImage();
   await user.click(screen.getByRole('button', { name: '적용' }));
 }
@@ -90,8 +90,8 @@ async function pickAndApply(user: ReturnType<typeof userEvent.setup>, name: stri
 /** 파일 선택 → 모달 취소. */
 async function pickAndCancel(user: ReturnType<typeof userEvent.setup>, name: string) {
   fireEvent.change(posterFileInput(), { target: { files: [pngFile(name)] } });
-  await screen.findByRole('dialog', { name: '포스터 크롭' });
-  await user.click(screen.getByRole('button', { name: '다른 사진 선택' }));
+  await screen.findByRole('dialog', { name: '포스터 자르기' });
+  await user.click(screen.getByRole('button', { name: '닫기' }));
 }
 
 function MobileHarness({ onPhoto }: { onPhoto?: (p: ReturnType<typeof usePhototicket>) => void } = {}) {
@@ -192,22 +192,24 @@ describe('포스터 크롭 상태머신 (#182 PR #191 · #315, 실제 파일-선
     expect(recropButton().disabled).toBe(false);
   });
 
-  test('교체 후 취소 → 재크롭 비활성 (stale objectURL 방지)', async () => {
+  test('교체 후 취소 → 직전 원본이 그대로 남아 재크롭도 계속 활성 (#826 S6 constraint-18)', async () => {
     const user = userEvent.setup();
-    render(<MobileHarness />);
+    let photo!: ReturnType<typeof usePhototicket>;
+    render(<MobileHarness onPhoto={(p) => { photo = p; }} />);
 
     await user.click(uploadCta());
     await pickAndApply(user, 'a.png');
+    const first = photo.posterCrop.originalSrc!;
 
-    // 교체: 새 파일을 고른 뒤 취소 — 직전 포스터의 원본은 이미 revoke됐으므로 재크롭 불가여야 한다.
-    // 옛 "커밋된 포스터가 있으면 활성" 가드는 이 경우를 못 봐서, 버려진 교체 파일을 가리킨 채
-    // 버튼이 살아있었다(#182 P1).
+    // 교체: 새 파일을 고른 뒤 취소 — 새 파일은 '적용'으로 확정되기 전이라 직전 포스터의 원본은 안 풀린다.
+    // (옛 구조는 교체 파일을 고르는 즉시 직전 원본을 revoke해 취소 뒤 재크롭을 막았다.)
     await openMenu(user);
     await user.click(posterRow().getByRole('button', { name: '교체' }));
     await pickAndCancel(user, 'b.png');
 
+    expect(photo.posterCrop.originalSrc).toBe(first);
     await openMenu(user);
-    expect(recropButton().disabled).toBe(true);
+    expect(recropButton().disabled).toBe(false);
   });
 
   test('재크롭 취소는 원본을 유지한다 (재크롭 계속 활성)', async () => {
@@ -219,8 +221,8 @@ describe('포스터 크롭 상태머신 (#182 PR #191 · #315, 실제 파일-선
 
     await openMenu(user);
     await user.click(recropButton());
-    await screen.findByRole('dialog', { name: '포스터 크롭' });
-    await user.click(screen.getByRole('button', { name: '다른 사진 선택' }));
+    await screen.findByRole('dialog', { name: '포스터 자르기' });
+    await user.click(screen.getByRole('button', { name: '닫기' }));
 
     await openMenu(user);
     expect(recropButton().disabled).toBe(false);
@@ -256,7 +258,7 @@ describe('포스터 크롭 상태머신 (#182 PR #191 · #315, 실제 파일-선
     await openMenu(user);
     expect(recropButton().disabled).toBe(false);
     await user.click(recropButton());
-    await screen.findByRole('dialog', { name: '포스터 크롭' });
+    await screen.findByRole('dialog', { name: '포스터 자르기' });
     expect(cropSrc()).toBe('blob:restored-original');
   });
 
@@ -271,10 +273,11 @@ describe('포스터 크롭 상태머신 (#182 PR #191 · #315, 실제 파일-선
     expect(recropButton().disabled).toBe(true);
   });
 
-  // 원본 blob의 단일 소유자가 usePosterCrop의 revoke effect라는 것 — 교체하면 직전 원본이
-  // 정확히 한 번 풀려야 한다. 이 어서션이 없으면 아래 saveDraft의 not.toContain이
-  // 스파이가 아무것도 안 잡는 상태에서도 통과하는 헛 어서션이 된다.
-  test('교체하면 직전 원본이 revoke된다 (단일 소유자)', async () => {
+  // 원본 blob의 단일 소유자가 usePosterCrop의 revoke effect라는 것 — 교체가 '적용'으로 확정될 때
+  // 직전 원본이 정확히 한 번 풀려야 한다(#826 S6 constraint-18: 새 파일을 고른 시점엔 안 풀린다).
+  // 이 어서션이 없으면 아래 saveDraft의 not.toContain이 스파이가 아무것도 안 잡는 상태에서도
+  // 통과하는 헛 어서션이 된다.
+  test('교체를 적용하면 직전 원본이 revoke된다 (단일 소유자) — 새 파일을 고른 시점엔 아직 아니다', async () => {
     const revoke = spyOn(URL, 'revokeObjectURL');
     const user = userEvent.setup();
     let photo!: ReturnType<typeof usePhototicket>;
@@ -288,8 +291,13 @@ describe('포스터 크롭 상태머신 (#182 PR #191 · #315, 실제 파일-선
     await openMenu(user);
     await user.click(posterRow().getByRole('button', { name: '교체' }));
     fireEvent.change(posterFileInput(), { target: { files: [pngFile('b.png')] } });
-    await screen.findByRole('dialog', { name: '포스터 크롭' });
+    await screen.findByRole('dialog', { name: '포스터 자르기' });
+    expect(revoke.mock.calls.flat()).not.toContain(first);
+
+    loadImage();
+    await user.click(screen.getByRole('button', { name: '적용' }));
     expect(revoke.mock.calls.flat().filter((u) => u === first)).toHaveLength(1);
+    expect(photo.posterCrop.originalSrc).not.toBe(first);
   });
 
   // #548 실패 모드 (b) — 원본 소유자가 훅이 아니라 셸로 되돌아가면 여기서 먼저 깨진다.
@@ -382,7 +390,7 @@ describe('키보드 전용 포스터 업로드 경로 (#608)', () => {
 
     // ② 파일 선택(OS 대화상자는 어느 환경에서도 스크립트 불가) → 크롭 모달.
     fireEvent.change(posterFileInput(), { target: { files: [pngFile('p.png')] } });
-    await screen.findByRole('dialog', { name: '포스터 크롭' });
+    await screen.findByRole('dialog', { name: '포스터 자르기' });
     loadImage();
 
     // ③ 모달 안에서도 Tab으로 '적용'까지 가고 Enter로 확정된다(포커스 트랩 안이라 밖으로 안 샌다).

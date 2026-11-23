@@ -698,7 +698,7 @@ describe('랜딩에서 OCR 인식 중에 포스터 크롭을 확정해도 레이
     // OCR 응답 전에 포스터를 올리고 크롭을 확정한다 — #809가 겨냥하는 레이스.
     await user.click(screen.getByRole('button', { name: '포스터 업로드' }));
     fireEvent.change(posterFileInput(), { target: { files: [new File(['p'], 'poster.png', { type: 'image/png' })] } });
-    await screen.findByRole('dialog', { name: '포스터 크롭' });
+    await screen.findByRole('dialog', { name: '포스터 자르기' });
     loadCropImage();
     await user.click(screen.getByRole('button', { name: '적용' }));
 

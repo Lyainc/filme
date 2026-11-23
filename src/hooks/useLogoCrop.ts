@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { getCroppedImg, Area } from '@/utils/imageCrop';
-import { showError } from '@/utils/errorToast';
 
 /**
  * 극장/포맷 로고 업로드용 자유 크롭 흐름(#220).
  *
- * 포스터 크롭과 달리 고정 종횡비가 없고(프레임 = 업로드 이미지의 자연 종횡비, #347),
- * 크롭 결과가 곧 로고 이미지(투명 PNG)다.
+ * 포스터 크롭과 달리 종횡비가 없고(완전 자유 비율, #826 S6 D20-3 B), 크롭 결과가 곧 로고 이미지(투명 PNG)다.
+ * 극장 · 포맷 로고, 서명 이미지, 배경 스탬프가 같은 흐름을 탄다.
  * 파일 선택 → 원본 objectURL 생성 → 크롭 모달 → '적용' 시 getCroppedImg(png, 종횡비 보존)
  * → 원본 URL을 revoke하고 새 크롭 URL을 onChange로 넘긴다. 직전 로고 URL은 undo 히스토리
  * (#356)가 참조하므로 여기서 revoke하지 않는다(handleComplete 주석 참고).
@@ -19,17 +18,22 @@ import { showError } from '@/utils/errorToast';
  *   (pixelRatio 2)에서 3~5배 확대돼 뭉갠다(#671 배경 패턴이 첫 사례).
  */
 export function useLogoCrop(onChange: (url: string) => void, maxSide = 640) {
-  // 크롭 모달 소스이자 getCroppedImg가 읽는 원본. 완료/취소 시 null로 비워 revoke.
+  // 크롭 모달 소스이자 getCroppedImg가 읽는 원본. 완료/닫기 시 null로 비워 revoke(실패면 그대로 둔다).
   const [rawSrc, setRawSrc] = useState<string | null>(null);
   const [isCropping, setIsCropping] = useState(false);
+  // 자르기 실패(#826 S6 constraint-20) — 토스트 대신 크롭 화면 안 경고로 보인다. 새 파일 · 다시 시도 · 닫기에서 비운다.
+  const [cropFailed, setCropFailed] = useState(false);
 
+  // 첫 업로드와 크롭 화면의 '다른 사진'이 같은 경로다. 붙어 있는 로고(value)는 '적용' 전까지 안 바뀐다.
   const openFile = (file: File) => {
     // 이전 rawSrc는 아래 effect cleanup이 단일 소유자로 revoke(이중 revoke 방지).
     setRawSrc(URL.createObjectURL(file));
+    setCropFailed(false);
   };
 
   const handleComplete = async (croppedAreaPixels: Area) => {
     if (!rawSrc) return;
+    setCropFailed(false);
     setIsCropping(true);
     try {
       const cropped = await getCroppedImg(rawSrc, croppedAreaPixels, {
@@ -43,17 +47,18 @@ export function useLogoCrop(onChange: (url: string) => void, maxSide = 640) {
       onChange(cropped);
       setRawSrc(null); // effect cleanup이 원본 revoke
     } catch (err) {
-      // 포스터 크롭과 동일한 사용자 피드백. alert()는 폰 프레임 밖에 뜨고 블로킹이라(#645 M1)
-      // showError로 교체.
+      // 포스터 크롭과 같이 크롭 화면을 연 채 안에서 알린다(#826 S6 C-03) — '적용'으로 다시 시도할 수 있다.
       console.error('로고 크롭 실패:', err);
-      showError('이미지 크롭에 실패했어요. 다시 시도해 주세요.');
-      setRawSrc(null);
+      setCropFailed(true);
     } finally {
       setIsCropping(false);
     }
   };
 
-  const handleCancel = () => setRawSrc(null);
+  const handleCancel = () => {
+    setRawSrc(null);
+    setCropFailed(false);
+  };
 
   // rawSrc blob의 단일 소유자: 값이 바뀌거나(새 파일) 언마운트될 때 직전 URL을 revoke.
   useEffect(() => {
@@ -62,5 +67,5 @@ export function useLogoCrop(onChange: (url: string) => void, maxSide = 640) {
     };
   }, [rawSrc]);
 
-  return { rawSrc, isCropping, openFile, handleComplete, handleCancel };
+  return { rawSrc, isCropping, cropFailed, openFile, handleComplete, handleCancel };
 }
