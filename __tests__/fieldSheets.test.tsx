@@ -230,6 +230,18 @@ describe('StampEditor 크기 슬라이더 (#484 c2, claude-review PR #487 P1)', 
 });
 
 describe('SignatureSheet (#484)', () => {
+  // #826 S6 constraint-7 · constraint-20 — 같은 StampEditor라도 서명은 '서명 자르기', 로고는 '로고 자르기'로 연다.
+  for (const [field, title] of [['signature', '서명 자르기'], ['chain', '로고 자르기']] as const) {
+    test(`${field} 이미지 업로드 → 크롭 화면 제목 '${title}'`, async () => {
+      const { container } = render(<BodyHarness field={field} />);
+      const input = container.querySelector('input[type=file]') as HTMLInputElement;
+      expect(input === null).toBe(false);
+      fireEvent.change(input, { target: { files: [new File(['x'], 'a.png', { type: 'image/png' })] } });
+      const dialog = await screen.findByRole('dialog', { name: title });
+      expect(dialog.querySelector('h2')?.textContent).toBe(title);
+    });
+  }
+
   test('텍스트 입력이 movieInfo.signature를 갱신(maxLength 20 유지, c7 — STAMP_LABEL_MAX 24 통일은 스코프 밖)', () => {
     render(<BodyHarness field="signature" />);
     const input = screen.getByRole('textbox', { name: '서명' }) as HTMLInputElement;
