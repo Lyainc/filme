@@ -24,6 +24,13 @@ interface TicketLandingProps {
   ogDescription: string;
 }
 
+/** 링크가 없거나 만료됐거나 조회에 실패했을 때의 빈 상태 props(404 상태코드와 함께). */
+interface TicketExpiredProps {
+  expired: true;
+}
+
+type LandingProps = TicketLandingProps | TicketExpiredProps;
+
 /**
  * 공유 퍼마링크 랜딩(#91 C2) — 레포 최초 SSR 페이지.
  *
@@ -31,13 +38,19 @@ interface TicketLandingProps {
  * og는 SSR로만 채울 수 있어(크롤러는 JS 미실행) getServerSideProps가 필수다.
  * Blob public URL은 store suffix 때문에 id만으로 구성할 수 없어 list로 조회한다.
  */
-export const getServerSideProps: GetServerSideProps<TicketLandingProps> = async ({
+export const getServerSideProps: GetServerSideProps<LandingProps> = async ({
   params,
   req,
   res,
 }) => {
+  // notFound 대신 404 상태코드 + 빈 상태 props — 페이지가 '만료된 링크예요' 안내를 그린다.
+  // Cache-Control은 성공 경로에만 건다(404·일시 조회 실패는 캐시 안 함).
+  const expired = () => {
+    res.statusCode = 404;
+    return { props: { expired: true as const } };
+  };
   const id = typeof params?.id === 'string' ? params.id : '';
-  if (!id) return { notFound: true };
+  if (!id) return expired();
 
   let imageUrl = '';
   let ogImageUrl = '';
@@ -50,7 +63,7 @@ export const getServerSideProps: GetServerSideProps<TicketLandingProps> = async 
     // jpg(원본) + json(메타) + og.jpg(가로 OG 카드, #438) 최대 3개.
     const { blobs } = await list({ prefix: `t/${id}`, limit: 3 });
     const jpg = blobs.find((b) => b.pathname === `t/${id}.jpg`);
-    if (!jpg) return { notFound: true };
+    if (!jpg) return expired();
     imageUrl = jpg.url;
     // og.jpg는 발급 시점에 실패했을 수 있는 부차 산출물(t/[id] 랜딩은 항상 원본으로 폴백) —
     // 없는 레거시/실패 티켓도 여기서 그냥 imageUrl(세로)로 떨어진다.
@@ -77,8 +90,8 @@ export const getServerSideProps: GetServerSideProps<TicketLandingProps> = async 
       }
     }
   } catch {
-    // Blob 조회 실패(토큰 미설정·네트워크)는 404로 숨긴다 — throw해서 500을 띄우지 않는다.
-    return { notFound: true };
+    // Blob 조회 실패(토큰 미설정·네트워크)는 404 빈 상태로 숨긴다 — throw해서 500을 띄우지 않는다.
+    return expired();
   }
 
   // 공유 시트 문구와 같은 소스(buildShareMessage) — 제목·원제·연도를 한 목소리로 묶는다(#438).
@@ -107,7 +120,38 @@ export const getServerSideProps: GetServerSideProps<TicketLandingProps> = async 
   return { props: { imageUrl, title, pageUrl, width, height, ogImageUrl, ogDescription } };
 };
 
-export default function TicketLanding({ imageUrl, title, pageUrl, width, height, ogImageUrl, ogDescription }: TicketLandingProps) {
+export default function TicketLanding(props: LandingProps) {
+  if ('expired' in props) return <ExpiredLanding />;
+  return <TicketView {...props} />;
+}
+
+function ExpiredLanding() {
+  return (
+    <>
+      <Head>
+        <title>만료된 링크예요 · FILME</title>
+      </Head>
+      <div className="app-canvas flex min-h-[100dvh] flex-col">
+        <header className="flex h-14 shrink-0 items-center border-b border-hair bg-s1 px-4">
+          <Link href="/" className="flex items-center gap-2" aria-label="FILME 홈">
+            <Wordmark />
+          </Link>
+        </header>
+        <main className="flex flex-1 flex-col items-center justify-center gap-6 px-5 py-6 text-center">
+          <h1 className="text-display font-semibold text-ink">만료된 링크예요</h1>
+          <Link
+            href="/"
+            className={cn(pressableVariants(), 'inline-flex min-h-touch items-center justify-center rounded-field-sm bg-accent px-6 text-body font-semibold text-accent-ink transition-colors hover:bg-accent-hover')}
+          >
+            나도 티켓 만들기
+          </Link>
+        </main>
+      </div>
+    </>
+  );
+}
+
+function TicketView({ imageUrl, title, pageUrl, width, height, ogImageUrl, ogDescription }: TicketLandingProps) {
   const ogTitle = title ? `${title} · 포토티켓` : '포토티켓';
   // 가로 OG 카드(#438)가 있으면 1200×630, 없으면(레거시 티켓 og.jpg 미생성) 원본 세로 치수로
   // 폴백 — og:image가 실제로 가리키는 이미지와 항상 일치해야 크롤러 프리뷰가 안 어긋난다.
@@ -187,7 +231,7 @@ export default function TicketLanding({ imageUrl, title, pageUrl, width, height,
               href="/"
               className={cn(pressableVariants(), 'mt-1 inline-flex min-h-touch items-center justify-center rounded-field-sm bg-accent px-6 text-body font-semibold text-accent-ink transition-colors hover:bg-accent-hover')}
             >
-              나도 티켓 만들기 →
+              나도 티켓 만들기
             </Link>
           </div>
         </main>
