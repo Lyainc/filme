@@ -300,27 +300,48 @@
   /* =========================================================
      결과 · 공유
      ========================================================= */
+  /* D21(결과 화면 확정안 D11 A) · S7 출시 동작(PR #846, main df3764a3) 그대로.
+     o.save: 'loading'|'done' · o.link: 'loading'|'made'(만료 문장 붙음) · o.fallback: 클립보드 거부(대체 링크 칸)
+     o.err: 화면 안 경고 한 줄 · o.toast: 위쪽 통보 · o.wide: 가로 무드 · o.extra: 덮는 층 */
+  var NOTICE = '비공식 팬메이드 티켓이라 양도·재판매할 수 없고, 정보 정확성은 보장하지 않으며 분실·훼손에 책임지지 않아요.';
   function result(o) {
     o = o || {};
-    var cta = o.cta === 'loading' ? '<button class="c-btn pri cta block" aria-busy="true" aria-disabled="true"><span class="spin"></span>저장 중…</button>' : o.cta === 'done' ? '<button class="c-btn pri cta block">' + i('check') + '사진에 저장됨</button>' : '<button class="c-btn pri cta block"' + S.rl('h') + '>사진에 저장</button>';
-    var link = o.link === 'made' || o.link === 'copied'
-      ? '<div class="c-link"><input aria-label="공유 링크" value="filme.app/t/k3x9q2" readonly><button class="c-btn sec">' + (o.link === 'copied' ? '복사됨!' : '복사') + '</button></div><div class="c-lrow"><small>이 링크는 3일 후 만료돼요.</small><button class="c-btn txt u">공유</button></div><p class="c-legal" style="text-align:left;margin-top:-4px">비공식 팬메이드 티켓이라 양도·재판매할 수 없고, 정보 정확성은 보장하지 않으며 분실·훼손에 책임지지 않아요.</p>'
-      : '<div class="c-lrow"><button class="c-btn txt u"' + (o.link === 'loading' ? ' disabled' : '') + '>' + (o.link === 'loading' ? '링크 만드는 중…' : '링크 만들기') + '</button><small>3일 뒤 만료</small><button class="c-btn txt u">공유</button></div>';
-    return S.phone(S.topbar({ back: '편집으로 돌아가기', title: '완성' }) + '<div class="c-rbody"><div class="beam" aria-hidden="true"></div><div class="c-rtk' + (o.wide ? ' wide' : '') + '">' + S.ticket({ wide: o.wide }) + (o.cta === 'loading' ? '<div class="veil" aria-hidden="true"></div>' : '') + '</div><p class="c-spec">' + (o.wide ? '3108 × 1960' : '1960 × 3108') + ' · JPEG</p></div>' +
-      '<div class="c-racts">' + (o.err ? '<div class="c-alert" role="alert"><span class="ic"></span><span class="tx">' + o.err + '</span></div>' : '') + cta + link + SAFE + '</div>' + (o.extra || ''));
+    var busy = o.save === 'loading' || o.link === 'loading';
+    var save = '<button class="c-btn pri"' + (o.save === 'loading' ? ' aria-busy="true"' : '') + (o.link === 'loading' ? ' disabled' : '') + S.rl('h') + '>' + (o.save === 'loading' ? '<span class="spin"></span>' : i(o.save === 'done' ? 'check' : 'down')) + '<span class="lb">저장</span></button>';
+    var link = '<button class="c-btn sec"' + (o.link === 'loading' ? ' aria-busy="true"' : '') + (busy ? ' disabled' : '') + '>' + (o.link === 'loading' ? '<span class="spin"></span><span class="lb">링크 만드는 중…</span>' : i('link') + '<span class="lb">링크</span>') + '</button>';
+    var share = '<button class="c-btn sec"' + (busy ? ' disabled' : '') + '>' + i('share') + '<span class="lb">공유</span></button>';
+    var made = o.link === 'made' || o.fallback;
+    var float = (o.fallback ? '<div class="c-link"><input aria-label="공유 링크" value="filme.app/t/k3x9q2" readonly><button class="c-btn sec">복사</button></div>' : '') +
+      (o.err ? '<div class="c-alert" role="alert"><span class="ic"></span><span class="tx">' + o.err + '</span></div>' : '');
+    var toast = o.toast ? '<div class="c-toast c-rtoast" role="status"><span class="tx">' + o.toast + '</span></div>' : '';
+    return S.phone(S.topbar({ back: '편집으로 돌아가기' }) + '<div class="c-rbody"><div class="c-rtk' + (o.wide ? ' wide' : '') + '">' + S.ticket({ wide: o.wide }) + '</div></div>' +
+      '<div class="c-racts">' + (float ? '<div class="c-rfloat">' + float + '</div>' : '') + '<div class="c-rrow">' + save + link + share + '</div>' +
+      '<div class="c-rnote">' + (made ? '<p class="c-legal">이 링크는 3일 후 만료돼요.</p>' : '') + '<p class="c-legal">' + NOTICE + '</p></div>' + SAFE + '</div>' + toast + (o.extra || ''));
   }
-  F({ id: 'R-01', page: 'result', name: '결과 · 사진에 저장', comps: ['C-TB', 'C-BTN', 'C-ALR'],
-    variants: [{ st: '기본', html: result({}) }, { st: '로딩 · 저장 중', html: result({ cta: 'loading' }) }, { st: '완료 · 저장됨', html: result({ cta: 'done' }) }, { st: '오류 · 저장 실패', html: result({ err: '저장에 실패했어요' }) }, { st: '가로 무드', html: result({ wide: true }) }],
-    states: ['저장물 그대로의 렌더(요구 6). 다시 시도는 주 버튼 자체.'], flow: [['사진에 저장', 'R-03', 'OS 공유 시트'], ['링크 만들기', 'R-02', ''], ['‹', 'E-01', '']], notes: [] });
-  F({ id: 'R-02', page: 'result', name: '결과 · 공유 링크', comps: ['C-FLD', 'C-BTN', 'C-ALR'],
-    variants: [{ st: '로딩 · 만드는 중', html: result({ link: 'loading' }) }, { st: '완료 · 생성됨', html: result({ link: 'made' }) }, { st: '완료 · 복사됨', html: result({ link: 'copied' }) }, { st: '오류 · 링크 실패', html: result({ err: '링크를 만들지 못했어요' }) }],
-    states: ['링크를 만들면 바로 복사하고 읽기 전용 입력(16px)으로. 만료 문장과 비공식 고지는 현행 그대로.'], flow: [['공유', 'R-03', ''], ['받은 사람이 열기', 'S-01', '']], notes: [] });
-  F({ id: 'R-03', page: 'result', name: '저장·공유 진행', comps: ['C-TST'],
+  F({ id: 'R-01', page: 'result', name: '결과 · 저장', comps: ['C-TB', 'C-BTN', 'C-ALR', 'C-TST'],
+    variants: [{ st: '기본', html: result({}) }, { st: '로딩 · 저장 중', html: result({ save: 'loading' }) }, { st: '완료 · 저장함', html: result({ save: 'done', toast: '저장했어요' }) }, { st: '오류 · 저장 실패', html: result({ err: '저장하지 못했어요' }) }, { st: '가로 무드', html: result({ wide: true }) }],
+    states: ['D21(D11 A). 위 줄은 ‹ 하나(워드마크 · 크기 줄 · "새 티켓 만들기" 없음, 보이는 제목 없이 sr-only 제목 "결과"). 티켓은 좌우 16 가로 상한과 남는 높이 세로 상한 중 작은 쪽까지 커지고, 가로 무드는 돌리지 않고 남는 높이 가운데에 서요. 앱 기준 위 줄 44 · 위 간격 8 · 아래 간격 12 · 버튼 줄 44 · 고지 블록 48.',
+      '티켓 아래 [저장](강조) [링크] [공유] 한 줄(1.4 : 1 : 1)과 늘 보이는 비공식 고지. 저장물 그대로의 렌더(요구 6).',
+      '저장 중엔 [저장]이 진행 표시, [링크] · [공유]는 비활성. 성공하면 체크 약 1.5초 + 위쪽 통보 "저장했어요"(약 2초). OS 시트를 닫으면 통보 없이 원래대로.',
+      '실패는 버튼 줄 위에 겹쳐 뜨는 화면 안 경고 한 줄 "저장하지 못했어요"(티켓 크기가 안 바뀜). 다시 시도는 그 [저장] 버튼이고, 누르는 순간 경고가 지워져요.',
+      '결과 화면은 앱 테마(라이트 · 다크)를 따라요.'],
+    flow: [['저장', 'R-03', 'OS 공유 시트 또는 다운로드'], ['링크', 'R-02', ''], ['공유', 'R-03', '링크가 없으면 먼저 발급'], ['‹', 'E-01', '']], notes: [] });
+  F({ id: 'R-02', page: 'result', name: '결과 · 링크', comps: ['C-FLD', 'C-BTN', 'C-ALR', 'C-TST'],
+    variants: [{ st: '로딩 · 만드는 중', html: result({ link: 'loading' }) }, { st: '완료 · 복사함', html: result({ link: 'made', toast: '링크를 복사했어요' }) }, { st: '대체 · 클립보드 거부', html: result({ fallback: true }) }, { st: '오류 · 링크 실패', html: result({ err: '링크를 만들지 못했어요' }) }],
+    states: ['[링크]는 링크가 없으면 만들어 바로 복사하고, 있으면 다시 복사해요. 만드는 중엔 "링크 만드는 중…"이고 다른 버튼은 비활성. 복사하면 위쪽 통보 "링크를 복사했어요"(약 2초).',
+      '클립보드가 거부될 때만(인앱 웹뷰 등) 버튼 줄 위에 16px 읽기 전용 대체 링크 칸 + [복사]가 떠요(포커스 · 전체 선택).',
+      '링크가 생기면 고지 블록 위에 만료 문장 "이 링크는 3일 후 만료돼요."가 붙어요(자리는 미리 잡아 티켓 크기가 안 바뀜). 만료 문장과 비공식 고지는 현행 그대로이고, 링크 전 "3일 뒤 만료" 보조 문구는 없어요.',
+      '실패는 화면 안 경고 한 줄 "링크를 만들지 못했어요"이고 다시 시도는 그 [링크] 버튼이에요. 티켓 내용이 바뀌면 링크는 비워져 다시 만들어요.'],
+    flow: [['공유', 'R-03', ''], ['받은 사람이 열기', 'S-01', '']], notes: [] });
+  F({ id: 'R-03', page: 'result', name: '저장 · 공유 진행', comps: ['C-TST'],
     variants: [
-      { st: 'OS 공유 시트(그림)', html: result({ extra: '<div class="c-scrim" aria-hidden="true"></div><div class="c-osheet" aria-hidden="true"><div class="hd"><i></i><span>먼 바다 · 포토티켓<br><span class="t-meta">JPEG</span></span></div><div class="apps"><span></span><span></span><span></span><span></span></div><p class="note">iOS 공유 시트 근사(앱이 그리지 않음)</p></div>' }) },
-      { st: '공유 불가 · 링크 복사', html: result({ link: 'made', extra: S.toast('링크를 복사했어요', { top: 112 }) }) }
+      { st: 'OS 공유 시트(그림)', html: result({ link: 'made', extra: '<div class="c-scrim" aria-hidden="true"></div><div class="c-osheet" aria-hidden="true"><div class="hd"><i></i><span>먼 바다 · 포토티켓<br><span class="t-meta">JPEG</span></span></div><div class="apps"><span></span><span></span><span></span><span></span></div><p class="note">iOS 공유 시트 근사(앱이 그리지 않음)</p></div>' }) },
+      { st: '통보 · 저장했어요', html: result({ toast: '저장했어요' }) },
+      { st: '공유 불가 · 링크 복사', html: result({ link: 'made', toast: '링크를 복사했어요' }) }
     ],
-    states: ['공유 API가 없으면 링크를 복사하고 통보. 결과 화면은 아래가 전부 조작이라 통보는 위쪽.'], flow: [['닫기', 'R-01', '']], notes: [] });
+    states: ['[공유]는 링크가 없으면 먼저 발급하고(발급이 실패하면 시트 · 복사 없이 R-02 경고만), 공유 API가 있으면 OS 시트, 없거나 실패하면 링크를 복사하고 통보해요. 시트를 닫으면 조용히 끝나요.',
+      '통보 "저장했어요" · "링크를 복사했어요"는 결과 화면 위쪽(위 줄 아래, 티켓 위)에 약 2초 떠요. 아래가 전부 조작이라서예요.'],
+    flow: [['닫기', 'R-01', '']], notes: [] });
 
   /* =========================================================
      오류 · 공유 페이지
