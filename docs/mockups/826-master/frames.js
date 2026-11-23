@@ -267,10 +267,10 @@
   F({ id: 'C-01', page: 'crop', name: '포스터 크롭', comps: ['C-DLG', 'C-SWT', 'C-BTN'],
     variants: [{ st: '기본 · 2:3', html: crop({ box: 'left:6%;top:10%;width:88%;height:80%' }) }, { st: '원본 비율 보존', html: crop({ keep: true, box: 'left:2%;top:2%;width:96%;height:96%' }) }, { st: '가로 슬롯 무드 · 3:2', html: crop({ box: 'left:4%;top:31%;width:92%;height:46%' }) }],
     states: ['프리셋 방향은 포스터 슬롯을 따라요(#529). 크롭 화면은 테마와 무관하게 어두운 토큰.'], flow: [['적용', 'C-03 · G-01', '적용 중 → 반영'], ['닫기', 'G-01', '변경 없음']], notes: ['비율 설명 문장은 뺐어요. 상자 모양이 비율을 보여 줘요.'] });
-  F({ id: 'C-02', page: 'crop', name: '로고·서명·스탬프 크롭', comps: ['C-DLG'], variants: [{ st: '자유 비율', html: crop({ logo: true, box: 'left:14%;top:22%;width:72%;height:56%' }) }], states: ['비율 토글 없이 자유 비율.'], flow: [['적용', 'G-01 · K-06', '']], notes: [] });
+  F({ id: 'C-02', page: 'crop', name: '로고·서명·스탬프 크롭', comps: ['C-DLG'], variants: [{ st: '자유 비율', html: crop({ logo: true, box: 'left:0;top:0;width:100%;height:100%' }) }], states: ['비율 토글 없이 자유 비율.', '가로·세로를 따로 끌 수 있고, 처음엔 사진 전체(100%)로 열려요.'], flow: [['적용', 'G-01 · K-06', '']], notes: [] });
   F({ id: 'C-03', page: 'crop', name: '크롭 진행·오류', comps: ['C-DLG', 'C-ALR'],
     variants: [{ st: '로딩 · 적용 중', html: crop({ busy: true, box: 'left:6%;top:10%;width:88%;height:80%' }) }, { st: '오류 · 불러오기 실패', html: crop({ fail: true, err: '이미지를 불러오지 못했어요' }) }, { st: '오류 · 크롭 실패', html: crop({ box: 'left:6%;top:10%;width:88%;height:80%', err: '자르지 못했어요' }) }],
-    states: ['다음 행동은 버튼(다른 사진 · 적용)이 맡아서 문장은 한 줄만.'], flow: [['다른 사진', 'C-01', '']], notes: [] });
+    states: ['다음 행동은 버튼(다른 사진 · 적용)이 맡아서 문장은 한 줄만.'], flow: [['다른 사진', 'C-01', '사진 선택창이 바로 열려요']], notes: [] });
 
   /* =========================================================
      메뉴
@@ -293,9 +293,9 @@
   F({ id: 'M-02', page: 'menu', name: '저장 통보·실패', comps: ['C-TST'],
     variants: [
       { st: '기본 · 임시저장함', html: ed({ dock: design('무드', S.thumbs('minimal')), toast: S.toast('임시저장했어요', { bottom: 12 }) }) },
-      { st: '오류 · 저장 공간', html: ed({ dock: design('무드', S.thumbs('minimal')), toast: S.toast('저장 공간이 부족해 저장하지 못했어요', { err: true, close: true, top: 8 }) }) }
+      { st: '오류 · 저장 공간', html: ed({ dock: design('무드', S.thumbs('minimal')), toast: S.toast('저장에 실패했어요. 브라우저 저장 공간이 가득 찼거나 비공개 모드일 수 있어요.', { err: true, close: true, top: 8 }) }) }
     ],
-    states: ['저장 공간 실패는 지속(닫기). 포스터 저장 실패는 같은 자리 4초 "포스터를 저장하지 못했어요".'], flow: [['닫기', 'E-01', '']], notes: [] });
+    states: ['저장 공간 실패는 지속(닫기). 포스터 저장 실패는 같은 자리 4초 "포스터 저장에 실패했어요. 저장 공간이 찼거나 비공개 모드일 수 있어요.". 토스트엔 버튼을 둘 수 없어서 [무슨 일] + [다음 행동] 두 문장이에요.'], flow: [['닫기', 'E-01', '']], notes: [] });
 
   /* =========================================================
      결과 · 공유
