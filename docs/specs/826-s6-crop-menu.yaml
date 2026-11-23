@@ -37,13 +37,83 @@ brownfield: true
 refine_generation: 0
 
 lifecycle:
-  state: active
-  outcome: null
-  reason: "D20 결정(1-A · 2-A · 3-B · 4-A · 5-A)과 맹점 셋을 반영했고, 소유자가 이 Seed를 구현 기준으로 승인했다."
-  approved_by: "소유자 응답(2026-11-23): 'S6 Seed를 승인해 active로 바꿀까요?' → '승인, active로 (Recommended)'"
+  state: closed
+  outcome: completed
+  reason: "constraint-1~20 · acceptance-1~15가 검증한 커밋(PR #845 head 9abf9312, 트리가 같은 main 667ea2a4)에서 항목별 근거로 충족됐다(철회 항목 없음)."
+  approved_by: "소유자 응답(2026-11-23 세션 종료): 'S6 Seed를 closed · completed로 닫을까요?' → '닫고 main push (Recommended)'"
   evidence:
-    commit: null
-    items: []
+    commit: 667ea2a42031e77a59d1b4008c7f3566ca539d05
+    items:
+      - id: constraint-1
+        refs: ["git diff e4f3251f..667ea2a4 -- src/components/moods src/components/TicketRenderer.tsx src/utils/captureToImage.ts src/utils/layouts.ts 0줄"]
+      - id: constraint-2
+        refs: ["src/components/ImageCropModal.tsx presetAspect(posterOrientation) · 스위치 꺼짐 기본, usePosterCrop complete의 POSTER_PRESERVE_MAX_SIDE, __tests__/logoCropFreeAspect.test.tsx(#529 프리셋 · 출력 크기 · 다시 자르기) 통과"]
+      - id: constraint-3
+        refs: ["git diff e4f3251f..667ea2a4 --stat: 바뀐 src는 ImageCropModal · MobileEditorShell · dock/PhotoPane · InPlaceFieldEditor · FieldEditorBody · usePosterCrop · useLogoCrop뿐(requirement-gap 1~2라운드 확인)"]
+      - id: constraint-4
+        refs: ["git diff e4f3251f..667ea2a4 -- __tests__ '-' 줄에 잠긴 문자열 0건, COPY_TONE_GUIDE 기존 잠금 행 유지(행 추가만), mobileEditorShellMenu arm 테스트 통과"]
+      - id: constraint-5
+        refs: ["ImageCropModal.tsx button role=switch aria-checked(행 전체), __tests__/cropScreenS6.test.tsx(acceptance-3 묶음)"]
+      - id: constraint-6
+        refs: ["ImageCropModal.tsx 루트 chrome-dark fixed inset-0 flex-col · 위 줄 44px 빈 자리/제목/✕ · 안전 영역, cropScreenS6(acceptance-4 묶음) · dialogBackgroundInert 통과, measure-chrome 크롭 모달 400×675 coversFrame true"]
+      - id: constraint-7
+        refs: ["ImageCropModal.tsx CROP_TITLE + aria-label, 호출부 target(MobileEditorShell poster · PhotoPane logo/stamp · InPlaceFieldEditor logo/signature · FieldEditorBody cropTarget), cropScreenS6(acceptance-4) · fieldSheets.test.tsx(서명 · 로고 제목)"]
+      - id: constraint-8
+        refs: ["ImageCropModal.tsx '다른 사진' → 내부 숨은 입력 click, onPickFile → usePosterCrop/useLogoCrop.openFile, cropScreenS6(acceptance-6 묶음, 랜딩 잔류 포함)"]
+      - id: constraint-9
+        refs: ["ImageCropModal.tsx role=alert 경고 · '이미지를 표시할 수 없어요', 두 훅 showError 제거 · 실패 시 열린 채, cropScreenS6(acceptance-7 묶음)"]
+      - id: constraint-10
+        refs: ["ImageCropModal.tsx isProcessing 분기('적용 중', disabled, Escape 가드), cropScreenS6(acceptance-15 묶음)"]
+      - id: constraint-11
+        refs: ["ImageCropModal.tsx layout 없으면 aspect undefined · initCrop 100%, useLogoCrop PNG · maxSide, cropScreenS6(acceptance-8 묶음: 고정 비율 클래스 부재 · 640 · TARGET_HEIGHT 인자)"]
+      - id: constraint-12
+        refs: ["git diff e4f3251f..667ea2a4 -- src/components/v2/EditorMenu.tsx src/hooks/useThemePreference.ts 0줄, MobileEditorShell diff는 크롭 배선 구간뿐, measure-chrome menu 축 pass"]
+      - id: constraint-13
+        refs: ["src/hooks/usePhototicket.ts diff 0줄(두 저장 실패 문구 유지), docs/826-page-master 72433881(M-02 · 30-errors-index · 51-copy-changed · C-02)"]
+      - id: constraint-14
+        refs: ["테스트 갱신(posterCropPipeline · logoCropFreeAspect · editorDockPhoto · dialogBackgroundInert · ocrUndoRestore), scripts/measure-chrome.mjs 선택자 '포스터 자르기' + cover → frameFit.fails → exitCode, docs/COPY_TONE_GUIDE.md 잠금 표 3행 · 축 3 이행 문단, docs/HARNESS.md"]
+      - id: constraint-15
+        refs: ["diff에 새 vw · vh · rail: · useMatchMedia 없음, prod 빌드(9abf9312, 트리 = 667ea2a4) measure-chrome dark · light exit 0, invariant checked:true dock 249 / 프리뷰 219×350"]
+      - id: constraint-16
+        refs: ["#826 issuecomment-7092064828 · 7092213881 · PR #845 본문 모두 '헤드리스 · 실기기 PASS 아님, Android 미주장' 표기"]
+      - id: constraint-17
+        refs: ["브랜치 feat/826-s6-crop(.claude/worktrees/826-s6-crop, docs/826-s6-seed에서 갈라 origin/main 위로), Seed 커밋 포함, Conventional Commits 3개, PR #845는 소유자 승인 뒤 개설 · 승인 뒤 rebase merge"]
+      - id: constraint-18
+        refs: ["usePosterCrop pendingSrc/pendingRef · discardPending · complete에서 승격, cropScreenS6(acceptance-14 묶음: revoke 횟수 · saveDraft posterOriginal · 로고 값 유지), posterCropPipeline(교체 후 취소 · 교체 적용 revoke)"]
+      - id: constraint-19
+        refs: ["ImageCropModal.tsx 숨은 input tabIndex=-1 · aria-label '다른 사진 파일' · getFocusables :not([tabindex=\"-1\"]) · 비이미지 무시, cropScreenS6(acceptance-6: 내부 입력 click · Tab 끝 '적용' · 이름 비충돌)"]
+      - id: constraint-20
+        refs: ["usePosterCrop · useLogoCrop cropFailed 상태(새 파일 · 다시 시도 · 닫기에서 비움, useLogoCrop 실패 시 열린 채), CROP_TITLE 한 표 + 호출부 target 키(dynamic import 번들 분리 · constraint-3 범위, requirement-gap 1~2라운드 의도 충족 판정)"]
+      - id: acceptance-1
+        refs: ["git diff e4f3251f..667ea2a4 -- src/components/moods src/components/TicketRenderer.tsx src/utils/captureToImage.ts src/utils/layouts.ts 0줄"]
+      - id: acceptance-2
+        refs: ["__tests__/logoCropFreeAspect.test.tsx(#529 프리셋 · 출력 크기 · 다시 자르기) 통과(bun run test 1495 pass at 9abf9312)"]
+      - id: acceptance-3
+        refs: ["__tests__/cropScreenS6.test.tsx acceptance-3 묶음 통과"]
+      - id: acceptance-4
+        refs: ["__tests__/cropScreenS6.test.tsx acceptance-4 묶음(진입점 전부 구동) · fieldSheets.test.tsx · dialogBackgroundInert 통과, src · __tests__ · scripts에 옛 제목 리터럴 0건"]
+      - id: acceptance-5
+        refs: ["prod 빌드(9abf9312) measure-chrome --theme dark · light exit 0, 크롭 모달 div[role=dialog][aria-label=\"포스터 자르기\"] 400×675 넘침 0 coversFrame true, dock 249 / 프리뷰 219×350, PR #845 Chrome harness pass"]
+      - id: acceptance-6
+        refs: ["__tests__/cropScreenS6.test.tsx acceptance-6 묶음 통과, src에 '다른 사진 선택' 0건"]
+      - id: acceptance-7
+        refs: ["__tests__/cropScreenS6.test.tsx acceptance-7 묶음(ErrorToastHost 양성 대조 포함) 통과, src에 옛 두 문장 0건"]
+      - id: acceptance-8
+        refs: ["__tests__/cropScreenS6.test.tsx acceptance-8 묶음 통과(가로만 줄이기는 happy-dom 포인터 기하가 없어 aspect 부재 · 고정 비율 클래스 부재로 간접 확인)"]
+      - id: acceptance-9
+        refs: ["git diff e4f3251f..667ea2a4 -- __tests__ '-' 줄 잠긴 문자열 0건, mobileEditorShellMenu 통과"]
+      - id: acceptance-10
+        refs: ["EditorMenu · useThemePreference · usePhototicket diff 0줄, mobileEditorShellMenu · themePreference 통과, measure-chrome menu 축 pass"]
+      - id: acceptance-11
+        refs: ["docs/826-page-master 72433881 diff(M-02 · 30-errors-index · 51-copy-changed · C-02 · C-03), MASTER_CHECK 393/375 × light/dark 17페이지 84프레임 이슈 0 · 페이지 오류 0(메인 세션 재실행)"]
+      - id: acceptance-12
+        refs: ["PR #845 head 9abf9312 CI pass, 로컬 bun run typecheck · lint · test exit 0, 바뀐 src 7개 모두 constraint-3 목록 안"]
+      - id: acceptance-13
+        refs: ["#826 issuecomment-7092064828 · 7092213881 · PR #845 본문 검증 표기 확인"]
+      - id: acceptance-14
+        refs: ["__tests__/cropScreenS6.test.tsx acceptance-14 묶음 통과"]
+      - id: acceptance-15
+        refs: ["__tests__/cropScreenS6.test.tsx acceptance-15 묶음 통과"]
   withdrawn: []
 
 goal:
