@@ -10,7 +10,7 @@ Before making architectural changes or implementing new features, consult:
 - **`README.md`**: Project setup, running instructions, and tech stack overview.
 - **`docs/KOBIS_API.md`**: Instructions and examples for using the KOBIS movie search API.
 - **`docs/PRINT_CALIBRATION.md`**: 실물 인쇄 캘리브레이션 — `scripts/make-calibration-sheet.py` 사용법 + 도안 판독표 + 실측 기록. 무드 선 굵기·폰트 크기·코너·export 여백을 건드리기 전에 읽을 것. **배경 도상(#530)은 "배경 도상 설계 하한" 절이 hard 제약** — stroke≥3px·주기 하한 2종(톤 8px/무늬 16px)·alpha 0.08~0.14·계조는 밀도로만·도트 지름 0.37mm(7.9px) 정규 격자·**선폭은 상수가 아니라 배치 폭에서 역산**(`viewBox 선폭 ≥ 602 ÷ 렌더폭px`). 규칙 5·6은 실측 없인 안 나오고 둘 다 한 번씩 틀린 뒤에 나왔으니(3.6px는 하한을 설계값으로 오독한 값, viewBox 상수 선폭은 9개 배치 중 6개에서 하한을 깼다), 시안을 그리기 **전에** 읽을 것.
-- **`docs/COPY_TONE_GUIDE.md`**: 서비스 UI 문구 톤 규칙(#677). **새 사용자 노출 문구를 쓰기 전에 읽을 것.** 핵심 판별 둘: ① 라벨(`aria-label` 포함)에 조건절·종결어미·마침표가 있으면 위반(`-하기`는 금지가 아니다), ② 실패·차단 문구는 [무슨 일] 한 문장 + 다음 행동은 그 자리 버튼(버튼을 둘 수 없는 토스트·툴팁만 [무슨 일] + [다음 행동] 두 문장, #826 결정 8)이고, 길이 상한(한 문장 33자·전체 44자)은 문장 자리 전부에 걸린다. 문구를 실제로 바꿀 때는 그 문서의 "테스트가 잠근 문구" 표부터 볼 것(랜딩 이탈 경로 2종 #665, OCR 배너, 초기화 arm #374가 문자열을 정확히 기대하며, 랜딩 이탈 경로 하나가 테스트 9개에 걸린다). 티켓 렌더 문구·법적 고지는 범위 밖.
+- **`docs/COPY_TONE_GUIDE.md`**: 서비스 UI 문구 톤 규칙(#677). **새 사용자 노출 문구를 쓰기 전에 읽을 것.** 핵심 판별 둘: ① 라벨(`aria-label` 포함)에 조건절·종결어미·마침표가 있으면 위반(`-하기`는 금지가 아니다), ② 실패·차단 문구는 [무슨 일] 한 문장 + 다음 행동은 그 자리 버튼(버튼을 둘 수 없는 토스트·툴팁만 [무슨 일] + [다음 행동] 두 문장, #826 결정 8)이고, 길이 상한(한 문장 33자·전체 44자)은 문장 자리 전부에 걸린다. 문구를 실제로 바꿀 때는 그 문서의 "테스트가 잠근 문구" 표부터 볼 것(랜딩 아래 버튼 '티켓 스크린샷으로 자동입력' · '직접 입력'(#826 S9), OCR 배너, 초기화 arm #374가 문자열을 정확히 기대한다). 티켓 렌더 문구·법적 고지는 범위 밖.
 - **`docs/HARNESS.md`**: 크롬 측정 하네스(`scripts/measure-chrome.mjs`·`capture-export.mjs`·`measure-font-metrics.mjs`) 사용법 + 실측 기준선 + 파괴 실험 + stale 서버·워크트리 dev 함정. 하네스·도크 높이·프레임 봉쇄를 건드리기 전에 읽을 것.
 - **`docs/TESTING.md`**: 테스트 규칙의 근거(CI timeout 문턱 실측, mock.module 누수, 실행 순서 진단, DOM `received` 직렬화 함정). 테스트 인프라를 건드리거나 "왜 이렇게 쓰나"가 의심될 때 읽을 것.
 - **`docs/CONTRIBUTING.md`**: 리뷰 게이트·Git/릴리즈 규약의 근거, 철거된 기능(TMDB 등)의 이력, OCR 최신성 판정 근거, LSP 툴링 메모.
@@ -115,5 +115,6 @@ Before making architectural changes or implementing new features, consult:
 
 ### 🚧 Current Project Status
 - **TMDB 인앱 포스터 검색은 철거됐다(#665, 2026-08-10) — 되살리지 말 것.** 약관 세 조항(AI 애플리케이션 금지·파생물 금지·상업적 사용은 별도 서면 동의)을 코드로 못 풀고, "OCR 제목 → 포스터 자동 검색" 체인이 1번 조항의 정면이다. **KOBIS는 그대로**(영화 메타데이터 축). 포스터는 사용자 직접 업로드가 주 경로이고 포스터 없이 시작하는 길은 #631이다. 철거 범위·근거: `docs/CONTRIBUTING.md` 4절, `docs/NATIVE_IOS_RFC.md` §7.1·§9.
-- **일부러 남긴 것**: 랜딩 이탈 경로 문구 쌍 **"포스터 업로드 · 포스터 없이 직접 입력"**(테스트가 정확히 기대 — 바꾸려면 같이 볼 것, `docs/COPY_TONE_GUIDE.md`), 그리고 호출부가 0인 `usePhototicket.fillEmptyMovieInfo`와 `__tests__/fillEmptyMovieInfoRatingZero.test.tsx`(미사용 export라고 지우지 말 것 — 다음 자동 보강 경로에서 필요, #638 P2).
+- **랜딩 진입은 둘이다**(#826 S9, 옛 링크 쌍 "포스터 업로드 · 포스터 없이 직접 입력"은 걷혔다): **'티켓 스크린샷으로 자동입력'** → 티켓 스크린샷 · 포스터 첨부 시트(시트가 열린 동안 문서는 `usePhototicket`의 스냅샷 · 자동저장 보류, 닫으면 그대로 되돌린다), **'직접 입력'** → 고른 무드로 새 문서. 포스터만 따로 고르는 랜딩 입구를 되살리지 말 것 — "티켓은 있는데 포스터가 없는" 사람의 갈림길을 없앤 게 S9의 이유다. 근거: `docs/specs/826-s9-landing-attach.yaml`.
+- **일부러 남긴 것**: 호출부가 0인 `usePhototicket.fillEmptyMovieInfo`와 `__tests__/fillEmptyMovieInfoRatingZero.test.tsx`(미사용 export라고 지우지 말 것 — 다음 자동 보강 경로에서 필요, #638 P2).
 - **현재 맥락**: 진입 동선 재설계(#612·#615·#635)와 포스터 선택 사항화(#631)는 main에 반영됐다. 앱 화면·무드 리뉴얼은 #826 에픽이 다루고, OCR 제목 → 포스터 자동 검색 체인은 #665로 폐기됐다.
