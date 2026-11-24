@@ -1,4 +1,4 @@
-import type { CSSProperties, FocusEvent, MouseEvent, PointerEvent, ReactNode } from 'react';
+import type { CSSProperties, FocusEvent, MouseEvent, PointerEvent, ReactNode, RefObject } from 'react';
 import { createContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { LayoutId } from '@/types';
 import { useMatchMedia } from '@/hooks/useMatchMedia';
@@ -11,6 +11,7 @@ import { LandingAttachSheet } from './LandingAttachSheet';
 import type { AttachScreenshotState } from './LandingAttachSheet';
 import { LandingNoticeSheet } from './LandingNoticeSheet';
 import { Wordmark } from './Wordmark';
+import { ScanIcon } from './ScanIcon';
 
 /** 자동 전환 간격 — 마스터 L-01 '4초마다'(#826 S5 constraint-4). */
 const CAROUSEL_INTERVAL_MS = 4000;
@@ -97,12 +98,11 @@ function slotStyle(d: number, sheetOpen: boolean): CSSProperties {
 
 /**
  * 랜딩이 OCR 카드에 빌려주는 자리(#826 S5 constraint-11 → S9 constraint-11) — 카드는 셸이 쥔 한 벌이 children으로 들어오는
- * 구조라(#614/#624) 랜딩이 context로 "안내 자리"와 "인식 중" 통로를 직접 내준다. S9부터 그 글자는 전시 아래가 아니라
+ * 구조라(#614/#624) 랜딩이 context로 "안내 자리"를 직접 내준다(인식 중 여부는 셸이 onBusyChange로 받아 sheet에 싣는다). S9부터 그 글자는 전시 아래가 아니라
  * 첨부 시트의 '티켓 스크린샷' 행 상태 줄에 뜬다. 랜딩이 걷힌 뒤(편집 화면에서 연 인식)는 셸의 notify가 먼저라 이 자리를 안 쓴다.
  */
 export const LandingSlotContext = createContext<{
   setNotice: (message: string | null) => void;
-  setBusy: (busy: boolean) => void;
 } | null>(null);
 
 /** 가운데(고른) 카드의 재단 표시(S9 constraint-5) — 카드 바깥 8px에 --pr-accent L자 네 개. 장식이라 aria-hidden. */
@@ -368,13 +368,13 @@ export function formatSavedDate(savedAt: number, now: number = Date.now()): stri
   return d.getFullYear() === new Date(now).getFullYear() ? md : `${d.getFullYear()}년 ${md}`;
 }
 
-function ScanIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 3.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 13.5 9.375v-4.5z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 6.75h.75v.75h-.75v-.75zM6.75 16.75h.75v.75h-.75v-.75zM16.75 6.75h.75v.75h-.75v-.75zM13.5 13.5h.75v.75H13.5V13.5zM13.5 19.5h.75v.75H13.5V19.5zM19.5 13.5h.75v.75h-.75V13.5zM19.5 19.5h.75v.75h-.75V19.5zM16.5 16.5h.75v.75h-.75V16.5z" />
-    </svg>
-  );
+/** open이 true → false로 바뀐 커밋에서 ref로 포커스를 돌려준다(APG Dialog의 포커스 복귀). */
+function useReturnFocus(open: boolean, ref: RefObject<HTMLElement | null>) {
+  const was = useRef(false);
+  useEffect(() => {
+    if (was.current && !open) ref.current?.focus();
+    was.current = open;
+  }, [open, ref]);
 }
 
 /**
@@ -432,8 +432,7 @@ export function Landing({
   const overlay = mode === 'overlay';
   const prefersReducedMotion = useMatchMedia('(prefers-reduced-motion: reduce)');
   const [notice, setNotice] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const slot = useMemo(() => ({ setNotice, setBusy }), []);
+  const slot = useMemo(() => ({ setNotice }), []);
   const [active, setActive] = useState(0);
   const selectedLayout = GALLERY_LAYOUTS[active].id;
   const [noticeOpen, setNoticeOpen] = useState(false);
@@ -442,16 +441,8 @@ export function Landing({
   const sheetOpen = sheet !== null;
   const modalOpen = sheetOpen || noticeOpen;
   // 시트 · 고지 시트가 닫히면 연 버튼으로 포커스를 돌려준다(APG Dialog) — 버튼은 시트가 걷힌 같은 커밋에서 다시 보인다.
-  const wasSheet = useRef(false);
-  useEffect(() => {
-    if (wasSheet.current && !sheetOpen) ctaRef.current?.focus();
-    wasSheet.current = sheetOpen;
-  }, [sheetOpen]);
-  const wasNotice = useRef(false);
-  useEffect(() => {
-    if (wasNotice.current && !noticeOpen) noticeBtnRef.current?.focus();
-    wasNotice.current = noticeOpen;
-  }, [noticeOpen]);
+  useReturnFocus(sheetOpen, ctaRef);
+  useReturnFocus(noticeOpen, noticeBtnRef);
 
   const [savedAt, setSavedAt] = useState<number | null>(null);
   useEffect(() => {
@@ -486,13 +477,11 @@ export function Landing({
     };
   }, []);
 
-  // 인식 안내(S9 constraint-11) — 카드가 보낸 안내는 '티켓 스크린샷' 행 상태 줄에 오류로, 카드의 인식 중 신호는 busy로 싣는다.
+  // 인식 안내(S9 constraint-11) — 카드가 보낸 안내는 '티켓 스크린샷' 행 상태 줄에 오류로 뜬다(그 밖의 상태는 셸이 준다).
   const screenshot: AttachScreenshotState | null = sheet
     ? notice
       ? { kind: 'error', message: notice }
-      : busy && sheet.screenshot.kind !== 'busy'
-        ? { kind: 'busy' }
-        : sheet.screenshot
+      : sheet.screenshot
     : null;
 
   return (
@@ -534,7 +523,7 @@ export function Landing({
           <MoodCarousel
             active={active}
             onSelect={setActive}
-            paused={sheetOpen || noticeOpen}
+            paused={modalOpen}
             sheetOpen={sheetOpen}
             livePreview={sheetOpen ? livePreview : null}
           />
@@ -588,7 +577,7 @@ export function Landing({
             'flex min-h-[48px] w-full cursor-pointer items-center justify-center gap-2 rounded-ctl border border-transparent bg-accent text-body font-semibold text-accent-ink hover:bg-accent-hover',
           )}
         >
-          <ScanIcon />
+          <ScanIcon size={16} />
           티켓 스크린샷으로 자동입력
         </button>
         {/* 직접 입력(S9 constraint-7) — 고른 무드로 새 문서. 옛 '포스터 없이 직접 입력'과 같은 경로라 testid를 유지한다. */}

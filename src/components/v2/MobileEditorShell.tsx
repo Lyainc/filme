@@ -369,6 +369,9 @@ export function MobileEditorShell({
     setDockMode(snap.dockMode);
     setAttach((a) => (a ? { ...a, poster: false, screenshot: false } : a));
   }
+  const unlessRestoring = (fn: () => void) => () => {
+    if (!photo.awaitingPosterRestore) fn();
+  };
   function closeAttach() {
     cancelAttachStaging();
     setAttach(null);
@@ -385,19 +388,14 @@ export function MobileEditorShell({
   }
 
   async function handlePosterCropComplete(area: Area, preserveRatio: boolean) {
-    // 랜딩에서 올라온 첫 포스터는 "새로 시작"이다(c7). 교체·재크롭은 이미 이탈한 상태라 문서를
-    // 안 건드린다 — 여기를 게이트 없이 리셋하면 포스터를 바꿀 때마다 문서가 통째로 날아간다.
-    // 랜딩에서 포스터가 오는 길은 이제 첨부 시트 하나다(S9 constraint-8). 랜딩은 걷지 않고 시트에 머문다 —
-    // 확정 전에 스냅샷을 뜨고(크롭 확정이 이전 포스터를 갈아끼우므로 그 **전에**, W1 계약) 성공하면 고른 무드로
-    // 새 문서를 연다. 이미 스크린샷으로 스냅샷이 시작됐으면 새 문서 위에 포스터만 얹는다(되돌리면 인식 결과가 날아간다).
+    // 랜딩에서 오는 포스터는 첨부 시트 하나뿐이고(S9 constraint-8) 랜딩을 걷지 않는다. 크롭 확정이 이전 포스터를 갈아끼우므로
+    // 스냅샷은 그 **전에** 뜬다. 교체 · 재크롭(랜딩을 떠난 뒤)은 문서를 안 건드린다(c7).
     const sheet = attachRef.current;
     const fromSheet = !landingDismissed && sheet !== null;
     if (fromSheet) startAttachStaging();
     const isFirstUpload = !photo.state.croppedImageUrl;
     const ok = await crop.complete(area, preserveRatio);
-    // 실패(getCroppedImg 예외·await 사이 원본 교체)면 모달이 열린 채 남아 재시도 가능하다. 스냅샷은 그대로 둔다 — 문서는
-    // 안 바뀌었고, 여기서 되돌리면 크롭 상태까지 스냅샷으로 돌아가 모달이 닫히고 고른 파일이 버려진다(S9 TB 발견).
-    // 새 문서는 성공한 첫 첨부에서야 연다(claimFreshDoc). 시트를 닫으면 그때 스냅샷으로 되돌린다.
+    // 실패면 모달이 열린 채 재시도한다. 스냅샷은 그대로 둔다 — 되돌리면 크롭 상태까지 돌아가 모달이 닫힌다(S9 TB 발견).
     if (!ok) return;
     if (fromSheet) {
       // keepPoster는 방금 확정한 포스터 · 크롭 원본을 유지하고 노출셋만 첫 업로드 기본값으로 세운다.
@@ -781,14 +779,10 @@ export function MobileEditorShell({
                 canMake: (attach.poster || attach.screenshot) && !ocrBusy,
               }
             }
-            // 포스터 있던 저장분의 IndexedDB 복원이 끝나기 전엔 첨부를 받지 않는다 — 그 사이 스냅샷을 뜨면 복원이 새 문서
-            // 세대에 막혀 버려지고, 닫아 되돌린 문서가 '복원 중'에 영영 머문다(code-review PR #848). 콜드 로드 직후 짧은 창이다.
-            onPickScreenshot={() => {
-              if (!photo.awaitingPosterRestore) handleOcrOpen();
-            }}
-            onPickPoster={() => {
-              if (!photo.awaitingPosterRestore) handlePosterTap();
-            }}
+            // 포스터 있던 저장분의 IndexedDB 복원이 끝나기 전엔 첨부를 받지 않는다 — 그 사이 스냅샷을 뜨면 복원이 버려져
+            // 닫아 되돌린 문서가 '복원 중'에 머문다(code-review PR #848). 콜드 로드 직후 짧은 창이다.
+            onPickScreenshot={unlessRestoring(handleOcrOpen)}
+            onPickPoster={unlessRestoring(handlePosterTap)}
             onMake={makeFromAttach}
             onCloseSheet={closeAttach}
             // 시트 동안 가운데 카드 자리에 지금 문서를 그린다(S9 constraint-10) — 스냅샷 전엔 정적 견본.
@@ -833,13 +827,7 @@ export function MobileEditorShell({
                 // 랜딩에서 연 인식은 이제 첨부 시트 안이다(S9 constraint-9) — 새 문서는 인식 시작(onStart) 때 이미
                 // 열렸으니 다시 열지 않고 랜딩도 걷지 않는다. 걷는 건 '만들기'다. 시트를 닫았으면 응답은
                 // captureDraft 세대에서 이미 버려져 여기 오지 않는다.
-                if (attachRef.current) {
-                  setAttach((a) => (a ? { ...a, screenshot: true } : a));
-                } else {
-                  // 시트 밖에서 랜딩 인식이 시작된 경우(UI 경로는 없다) — 옛 문서에 섞이지 않게 예전처럼 새 문서로 시작하고 걷는다.
-                  startFreshDoc({ entry: 'ocr' });
-                  setLandingDismissed(true);
-                }
+                setAttach((a) => (a ? { ...a, screenshot: true } : a));
                 const prevValues = Object.fromEntries(
                   Object.keys(params.prevValues).map((k) => [
                     k,
