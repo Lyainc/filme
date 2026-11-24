@@ -22,9 +22,9 @@
  *  5. 편집 메뉴 시트(⋯) — 포커스 진입 · 닫기 3경로(Escape·⋯ 재탭·바깥 탭) · 포커스 복귀  (#826 S2 D09, 옛 모달 축 자리)
  *  6. 오버레이 · 도크 · 메뉴 시트가 #phone-frame 사각형 안인지   (#609 · 랜딩 #614 · #826 S2 constraint-13)
  *  7. 드래프 복원 시 랜딩 노출(#727)                          (#614 → #727)
- *  8. 랜딩 무드 캐러셀 카드 5장의 비율·폭·불투명도·프레임 봉쇄  (#615 · #653)
- *  9. 랜딩 이탈 경로 2종의 프레임 봉쇄·줄바꿈 줄 수·44px 탭 타깃              (#665)
- * 10. 랜딩 세로 예산 — 카피+히어로+이탈경로가 675 프레임을 스크롤 없이 담는지  (#665)
+ *  8. 랜딩 전시 카드 5장 — 가운데 높이 비·재단 표시·옆 카드 간격·불투명도·filter·프레임 봉쇄  (#615 · #653 → #826 S9)
+ *  9. 랜딩 아래 버튼 둘(주 버튼 · 직접 입력)의 프레임 봉쇄·44px·같은 높이        (#665 → #826 S9)
+ * 10. 랜딩 세로 예산 — 기본 · 이용 고지 시트 · 첨부 시트 세 상태 무스크롤, 시트 봉쇄, 시트 위 티켓  (#665 → #826 S9)
  * 11. 포스터 없이 진입 — 랜딩이 숨고 스테이지가 본문 전체(+--workbench)를 받는지  (#674)
  * 12. OCR 되돌리기 배너 · 전역 토스트 동시 노출 시 겹침 여부                    (#731 · #737)
  * 13. resultLayout — 결과 화면 배치(위 줄 44 · hero 8px 아래·폭·가운데 · 버튼 줄 12px 아래 · 버튼 ≥44 · 가로 무드 세로 가운데 · 테마 스코프)  (#826 S7 acceptance-17)
@@ -101,10 +101,10 @@ const POSTERLESS_BASELINE = { preview: { w: 219, h: 350 } };
 
 const near = (a, b) => a != null && Math.abs(a - b) <= 0.5;
 
-// 랜딩 무대 기둥 전시(#826 S5 constraint-3) — Landing.tsx의 slotStyle · 기둥 폭을 전시 폭 대비 비로 미러링한다.
-// 값이 바뀌면 이 상수도 같이 바꿀 것(BASELINE과 같은 관례). happy-dom엔 레이아웃이 없어
-// (__tests__/landingMoodGalleryTapTargets.test.tsx 참고) 실 폭 비 · 잘림 · computed 그림자는 여기서만 잰다.
-const STAGE = { beam: 0.62, main: 0.52, peek: 0.34, peekOpacity: 0.32, peekOut: 0.22, tol: 0.01 };
+// 랜딩 전시(#826 S9 constraint-3 · 4, D25-12) — Landing.tsx slotStyle의 판정값을 미러링한다. 값이 바뀌면 이 상수도
+// 같이 바꿀 것(BASELINE과 같은 관례). happy-dom엔 레이아웃이 없어 높이 비 · 간격 · 잘림 · computed filter는 여기서만 잰다.
+// mainHeight는 Seed acceptance-3의 하한(가운데 카드 높이 ÷ 전시 높이), peekGap은 가운데와 옆 카드 사이 최소 간격(px).
+const STAGE = { mainHeight: 0.85, peekOpacity: 0.5, peekGap: 16 };
 const CAROUSEL_CARD_RATIO = 1534 / 960; // getLayout('minimal').height / width
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -209,7 +209,7 @@ try {
   // visible:true — 셀렉터는 숨김 상태에서도 DOM에 남으므로(단일 OcrUploadCard 제약상 unmount가
   // 아니라 display:none이다) 존재만 기다리면 "안 뜨는데 통과"가 된다.
   await landingPage.waitForSelector('[data-testid="landing"]', { visible: true, timeout: 15000 });
-  // 웹폰트 로딩 전에 재면 fallback 폰트 폭으로 줄바꿈이 갈릴 수 있다(아래 이탈 경로 lineCount가
+  // 웹폰트 로딩 전에 재면 fallback 폰트 폭으로 줄바꿈이 갈릴 수 있다(아래 버튼 · 시트 글자가
   // 텍스트 폭에 좌우됨) — captureToImage.ts와 같은 전제.
   await landingPage.evaluate(() => document.fonts.ready);
   await sleep(300);
@@ -227,15 +227,14 @@ try {
   // 갤러리 컨테이너 자신이 프레임 밖으로 새는지는 기존 measureFit 축을 그대로 재사용한다
   // (overflow-hidden이 있어도 컨테이너 자체가 잘못 배치되면 여기서 걸린다).
   await measureFit('무드 갤러리', '[data-testid="mood-gallery"]', landingPage);
-  // 무대 기둥 전시(#826 S5 acceptance-3) — 마운트 직후(active=0, 자동 전환 4000ms보다 이르다) 기둥 · 가운데 · 좌우 ·
-  // 먼 카드를 전시 rect 대비 비로 잰다. 좌우 카드는 일부러 전시 밖으로 22% 나가 잘리므로 프레임 봉쇄는 카드 rect가
-  // 아니라 전시 rect로 잘린 보이는 부분으로 판정한다 — 전시의 overflow-hidden이 없어지면 여기서 걸린다.
+  // 전시(#826 S9 acceptance-3) — 마운트 직후(active=0, 자동 전환 4000ms보다 이르다) 가운데 · 좌우 · 먼 카드를 전시
+  // rect 대비로 잰다. 좌우 카드는 일부러 전시 밖으로 나가 잘리므로 프레임 봉쇄는 카드 rect가 아니라 전시 rect로 잘린
+  // 보이는 부분으로 판정한다 — 전시의 overflow-hidden이 없어지면 여기서 걸린다. S5의 기둥 · '1 / 5'는 없어야 한다.
   const carousel = await landingPage.evaluate(() => {
     const gallery = document.querySelector('[data-testid="mood-gallery"]');
-    const beam = document.querySelector('[data-testid="mood-gallery-beam"]');
-    const index = document.querySelector('[data-testid="mood-gallery-index"]');
+    const progress = document.querySelector('[data-testid="mood-gallery-progress"]');
     const frame = document.getElementById('phone-frame');
-    if (!gallery || !beam || !index || !frame) return null;
+    if (!gallery || !progress || !frame) return null;
     const G = gallery.getBoundingClientRect();
     const F = frame.getBoundingClientRect();
     const galleryClips = getComputedStyle(gallery).overflow === 'hidden';
@@ -247,120 +246,151 @@ try {
         ? { left: Math.max(r.left, G.left), right: Math.min(r.right, G.right), top: Math.max(r.top, G.top), bottom: Math.min(r.bottom, G.bottom) }
         : { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
       return {
-        label: (b.getAttribute('aria-label') ?? '').split(' 무드로')[0],
+        label: b.getAttribute('aria-label') ?? b.textContent.trim(),
         slot: Number(b.dataset.slot),
-        widthRatio: +(r.width / G.width).toFixed(3),
+        pressed: b.getAttribute('aria-pressed'),
+        left: +r.left.toFixed(1),
+        right: +r.right.toFixed(1),
+        heightRatio: +(r.height / G.height).toFixed(3),
         ratio: +(r.height / r.width).toFixed(3),
         opacity: +Number(cs.opacity).toFixed(2),
+        filter: cs.filter,
         boxShadow: cs.boxShadow,
         visibility: cs.visibility,
         display: cs.display,
         pointerEvents: cs.pointerEvents,
-        outLeft: +((G.left - r.left) / G.width).toFixed(3),
-        outRight: +((r.right - G.right) / G.width).toFixed(3),
+        hasCropMarks: !!b.querySelector('[data-testid="mood-crop-marks"]'),
+        outLeft: +(G.left - r.left).toFixed(1),
+        outRight: +(r.right - G.right).toFixed(1),
         worstOverflow: +Math.max(F.left - vis.left, vis.right - F.right, F.top - vis.top, vis.bottom - F.bottom).toFixed(1),
       };
     });
-    const bcs = getComputedStyle(beam);
-    const ics = getComputedStyle(index);
     return {
       galleryClips,
-      beamRatio: +(beam.getBoundingClientRect().width / G.width).toFixed(3),
-      beamBorders: [bcs.borderLeftWidth, bcs.borderRightWidth],
-      index: { text: index.textContent, fontSize: ics.fontSize, numeric: ics.fontVariantNumeric },
+      noStageS5:
+        document.querySelector('[data-testid="mood-gallery-beam"]') === null &&
+        document.querySelector('[data-testid="mood-gallery-index"]') === null,
+      progressHidden: progress.getAttribute('aria-hidden') === 'true',
       cards,
     };
   });
-  if (!carousel) throw new Error('mood-gallery · 기둥 · 위치 표시 또는 #phone-frame을 못 찾았다');
-  const within = (v, want) => Math.abs(v - want) <= STAGE.tol;
+  if (!carousel) throw new Error('mood-gallery · 진행 막대 또는 #phone-frame을 못 찾았다');
   const bySlot = (d) => carousel.cards.find((c) => c.slot === d);
   const [main, left, right, far1, far2] = [0, -1, 1, -2, 2].map(bySlot);
   carousel.count = carousel.cards.length;
   carousel.checks = {
     count: carousel.count === 5,
     clips: carousel.galleryClips,
-    beam: within(carousel.beamRatio, STAGE.beam) && carousel.beamBorders.every((w) => w === '1px'),
-    index: carousel.index.text === '1 / 5' && carousel.index.fontSize === '12px' && carousel.index.numeric.includes('tabular-nums'),
-    main: !!main && within(main.widthRatio, STAGE.main) && main.boxShadow !== 'none' && main.opacity === 1,
+    noStageS5: carousel.noStageS5,
+    progress: carousel.progressHidden,
+    main:
+      !!main && main.heightRatio >= STAGE.mainHeight && main.boxShadow !== 'none' && main.opacity === 1 &&
+      main.pressed === 'true' && main.hasCropMarks,
     peeks:
       !!left && !!right &&
-      [left, right].every((c) => within(c.widthRatio, STAGE.peek) && c.opacity === STAGE.peekOpacity && c.boxShadow === 'none') &&
-      within(left.outLeft, STAGE.peekOut) && within(right.outRight, STAGE.peekOut),
+      [left, right].every((c) => c.opacity === STAGE.peekOpacity && c.filter === 'none' && c.boxShadow === 'none' && c.pressed === 'false' && !c.hasCropMarks) &&
+      !!main && main.left - left.right >= STAGE.peekGap && right.left - main.right >= STAGE.peekGap &&
+      left.outLeft > 0 && right.outRight > 0,
     far: !!far1 && !!far2 && [far1, far2].every((c) => c.opacity === 0 && c.visibility === 'visible' && c.display !== 'none' && c.pointerEvents === 'none'),
     ratio: carousel.cards.every((c) => Math.abs(c.ratio - CAROUSEL_CARD_RATIO) < 0.01),
     frame: carousel.cards.every((c) => c.worstOverflow <= 0.5),
   };
   carousel.pass = Object.values(carousel.checks).every(Boolean);
 
-  // ── 랜딩 이탈 경로 2종(#665 문구 재정리 회귀) ────────────────────────────────
-  // 프레임 봉쇄는 기존 measureFit 재사용. exitPaths 자신은 그 줄만의 두 축: (a) flex-wrap
-  // 줄바꿈 후 줄 수 — 버튼 top을 반올림해 그룹핑(같은 줄이면 top이 같다), (b) 두 링크의
-  // 44px 탭 타깃(#646 min-h-touch).
-  await measureFit('이탈 경로', '[data-testid="landing-exit-paths"]', landingPage);
+  // ── 랜딩 아래 버튼 둘(#826 S9 constraint-3 · 7) ─────────────────────────────────
+  // 옛 링크 쌍(#665)은 걷혔다. 이제 주 버튼 · '직접 입력'이 판 없이 선다 — 둘 다 프레임 안, 44px 이상, 같은 높이,
+  // 주 버튼이 위. S5의 링크 쌍 · 헤드라인이 되살아나지 않았는지도 같이 본다.
+  await measureFit('랜딩 주 CTA', '[data-testid="landing-cta"]', landingPage);
+  await measureFit('랜딩 직접 입력', '[data-testid="landing-skip-poster"]', landingPage);
   const exitPaths = await landingPage.evaluate(() => {
-    const row = document.querySelector('[data-testid="landing-exit-paths"]');
-    if (!row) return null;
-    const buttons = [...row.querySelectorAll('button')].map((b) => {
-      const r = b.getBoundingClientRect();
-      return { label: b.textContent.trim(), top: Math.round(r.top), height: +r.height.toFixed(1) };
-    });
-    return { buttons, lineCount: new Set(buttons.map((b) => b.top)).size };
+    const cta = document.querySelector('[data-testid="landing-cta"]');
+    const direct = document.querySelector('[data-testid="landing-skip-poster"]');
+    if (!cta || !direct) return null;
+    const r = (el) => el.getBoundingClientRect();
+    return {
+      ctaHeight: +r(cta).height.toFixed(1),
+      directHeight: +r(direct).height.toFixed(1),
+      ctaAbove: r(cta).bottom <= r(direct).top + 0.5,
+      noS5: document.querySelector('[data-testid="landing-exit-paths"]') === null &&
+        document.querySelector('[data-testid="landing-copy"]') === null &&
+        document.querySelector('[data-testid="landing"] h1') === null,
+    };
   });
-  if (!exitPaths) throw new Error('이탈 경로 줄을 못 찾음');
-  exitPaths.tapTargetsPass = exitPaths.buttons.length === 2 && exitPaths.buttons.every((b) => b.height >= 43.5);
-  exitPaths.pass = exitPaths.lineCount === 1 && exitPaths.tapTargetsPass;
+  if (!exitPaths) throw new Error('랜딩 주 버튼 · 직접 입력을 못 찾음');
+  exitPaths.tapTargetsPass = exitPaths.ctaHeight >= 43.5 && exitPaths.directHeight >= 43.5;
+  exitPaths.pass =
+    exitPaths.tapTargetsPass && Math.abs(exitPaths.ctaHeight - exitPaths.directHeight) <= 0.5 && exitPaths.ctaAbove && exitPaths.noS5;
 
-  // ── 랜딩 세로 예산(#665) — 카피+히어로+이탈경로가 675 프레임 안에 스크롤 없이 드는지.
-  // exitPaths와 스코프가 다르므로(오버레이 전체 = 브랜드 헤더+AppFooter까지 포함) 별도 축으로
-  // 둔다 — 여기 묶여 있으면 헤더·푸터 변경으로 떨어졌을 때 "이탈 경로 회귀"로 오인하기 쉽다.
+  // ── 랜딩 세로 예산(#665 → #826 S9) — 오버레이 전체(워드마크 줄 · 전시 · 아래 버튼)가 675 프레임 안에 스크롤 없이 드는지.
+  // exitPaths와 스코프가 다르므로 별도 축으로 둔다 — 여기 묶여 있으면 시트 변경으로 떨어졌을 때 "아래 버튼 회귀"로 오인하기 쉽다.
   // 세 블록 높이를 낱개로 더하는 것보다 오버레이 자신의 overflow-y-auto(위 클래스)가 실제로
   // 스크롤을 만드는지(scrollHeight vs clientHeight)가 "예산 초과"의 더 정확한 판정이다.
-  // #826 S5 acceptance-9: '이용 고지'를 접은 상태와 펼친 상태 둘 다 재고, 펼치면 전시가 그만큼 줄어야 한다(아래 판은 고정).
+  // #826 S9: 고지는 접기가 아니라 작은 시트(constraint-12), 자동입력은 첨부 시트(constraint-8)다. 세 상태 — 기본 · 고지
+  // 시트 · 첨부 시트 — 모두 오버레이에 스크롤이 없어야 하고, 두 시트는 프레임 안이어야 하며(봉쇄 축), 첨부 시트가 열려도
+  // 가운데 티켓이 시트 위에 보여야 한다(실시간 반영 자리, constraint-10). 고지 버튼은 워드마크 줄 안 44px 이상이다.
   const measureBudget = () =>
     landingPage.evaluate(() => {
       const overlay = document.querySelector('[data-testid="landing"]');
-      const copy = document.querySelector('[data-testid="landing-copy"]');
       const hero = document.querySelector('[data-testid="mood-gallery"]');
-      const exitRow = document.querySelector('[data-testid="landing-exit-paths"]');
-      const summary = document.querySelector('[data-testid="legal-notice"] summary');
-      if (!overlay || !copy || !hero || !exitRow || !summary) return null;
+      const noticeBtn = document.querySelector('[data-testid="landing-notice-open"]');
+      if (!overlay || !hero || !noticeBtn) return null;
+      const main = hero.querySelector('button[data-slot="0"]');
+      const sheet = document.querySelector('[data-testid="landing-attach-sheet"]');
       const h = (el) => +el.getBoundingClientRect().height.toFixed(1);
-      const icon = summary.querySelector('svg');
       return {
-        blocks: { copy: h(copy), hero: h(hero), exitPaths: h(exitRow) },
+        hero: h(hero),
         scrollHeight: overlay.scrollHeight,
         clientHeight: overlay.clientHeight,
-        summaryHeight: h(summary),
-        iconTransform: icon ? getComputedStyle(icon).transform : null,
+        noticeBtnHeight: h(noticeBtn),
+        mainBottom: main ? +main.getBoundingClientRect().bottom.toFixed(1) : null,
+        mainHeight: main ? h(main) : null,
+        sheetTop: sheet ? +sheet.getBoundingClientRect().top.toFixed(1) : null,
       };
     });
-  const collapsed = await measureBudget();
-  await landingPage.evaluate(() => {
-    document.querySelector('[data-testid="legal-notice"]').open = true;
-  });
+  const landingBase = await measureBudget();
+  await landingPage.evaluate(() => document.querySelector('[data-testid="landing-notice-open"]').click());
+  await landingPage.waitForSelector('[data-testid="landing-notice-sheet"]', { timeout: 5000 });
   await sleep(100);
-  const expanded = await measureBudget();
-  await landingPage.evaluate(() => {
-    document.querySelector('[data-testid="legal-notice"]').open = false;
+  await measureFit('이용 고지 시트', '[data-testid="landing-notice-sheet"]', landingPage);
+  const notice = await measureBudget();
+  // 고지 본문(AppFooter NoticeContent)이 시트 안에 있는지 — GitHub는 글자 없는 아이콘 링크라 주소로 본다.
+  const noticeHasText = await landingPage.evaluate(() => {
+    const sheet = document.querySelector('[data-testid="landing-notice-sheet"]');
+    return !!sheet && (sheet.textContent ?? '').includes('© FILME') && !!sheet.querySelector('a[href*="github.com"]');
   });
-  if (!collapsed || !expanded) throw new Error('카피/히어로/이탈경로/랜딩 오버레이/이용 고지 중 하나를 못 찾음');
+  await landingPage.keyboard.press('Escape');
+  await sleep(100);
+  await landingPage.evaluate(() => document.querySelector('[data-testid="landing-cta"]').click());
+  await landingPage.waitForSelector('[data-testid="landing-attach-sheet"]', { timeout: 5000 });
+  await sleep(400);
+  await measureFit('첨부 시트', '[data-testid="landing-attach-sheet"]', landingPage);
+  const attachOpen = await measureBudget();
+  await landingPage.keyboard.press('Escape');
+  await sleep(100);
+  const sheetClosed = await landingPage.evaluate(() => document.querySelector('[data-testid="landing-attach-sheet"]') === null);
+  if (!landingBase || !notice || !attachOpen) throw new Error('랜딩 오버레이/전시/이용 고지 버튼 중 하나를 못 찾음');
   const noScroll = (b) => b.scrollHeight <= b.clientHeight + 0.5;
   const landingBudget = {
-    collapsed,
-    expanded,
+    base: landingBase,
+    notice,
+    attachOpen,
     checks: {
-      collapsedNoScroll: noScroll(collapsed),
-      expandedNoScroll: noScroll(expanded),
-      heroShrinks: expanded.blocks.hero < collapsed.blocks.hero,
-      summaryHit: collapsed.summaryHeight >= 44,
-      iconTurns: collapsed.iconTransform !== expanded.iconTransform,
+      baseNoScroll: noScroll(landingBase),
+      noticeNoScroll: noScroll(notice),
+      attachNoScroll: noScroll(attachOpen),
+      noticeHit: landingBase.noticeBtnHeight >= 43.5,
+      noticeText: noticeHasText,
+      ticketAboveSheet:
+        attachOpen.sheetTop !== null && attachOpen.mainBottom !== null && attachOpen.mainBottom <= attachOpen.sheetTop + 0.5 &&
+        attachOpen.mainHeight > 120,
+      sheetCloses: sheetClosed,
     },
   };
   landingBudget.pass = Object.values(landingBudget.checks).every(Boolean);
 
   // ── 포스터 없이 진입(#674) — '직접 입력' 뒤 스테이지가 본문을 통째로 받는지 ──────────
-  // 같은 컨텍스트에서 이어 잰다: 여긴 draft 시드가 없어 랜딩이 오버레이로 떠 있고, '포스터 없이
-  // 직접 입력'이 정확히 이 이슈의 진입 경로다(OCR 성공도 landingDismissed로 같은 상태에 떨어진다).
+  // 같은 컨텍스트에서 이어 잰다: 여긴 draft 시드가 없어 랜딩이 오버레이로 떠 있고, '직접
+  // 입력'이 정확히 이 이슈의 진입 경로다(OCR 성공도 landingDismissed로 같은 상태에 떨어진다).
   // 메인 페이지에선 못 재는 상태다 — 거긴 완료 게이트용 포스터를 올려 croppedImageUrl이 선다.
   await landingPage.evaluate(() =>
     document.querySelector('[data-testid="landing-skip-poster"]').click(),
@@ -427,6 +457,10 @@ try {
   await bannerPage.goto(URL, { waitUntil: 'networkidle2' });
   await bannerPage.waitForSelector('[data-testid="landing"]', { visible: true, timeout: 15000 });
   await bannerPage.evaluate(() => document.fonts.ready);
+  // 랜딩의 인식은 첨부 시트 안에서만 열린다(#826 S9 constraint-8) — 시트를 먼저 연다. 입력에 파일을 쏘는 건 시트의
+  // '티켓 스크린샷' 행이 여는 바로 그 OCR input이다.
+  await bannerPage.evaluate(() => document.querySelector('[data-testid="landing-cta"]').click());
+  await bannerPage.waitForSelector('[data-testid="landing-attach-sheet"]', { timeout: 5000 });
   await bannerPage.evaluate(async () => {
     const c = document.createElement('canvas');
     c.width = 100;
@@ -443,6 +477,12 @@ try {
     target.files = dt.files;
     target.dispatchEvent(new Event('change', { bubbles: true }));
   });
+  // 인식이 끝나 '만들기'가 살아나면 눌러 편집으로 들어간다(S9 constraint-9) — 배너(E-05)는 그 뒤에 보인다.
+  await bannerPage.waitForFunction(
+    () => document.querySelector('[data-testid="landing-sheet-make"]')?.getAttribute('aria-disabled') == null,
+    { timeout: 15000 },
+  );
+  await bannerPage.evaluate(() => document.querySelector('[data-testid="landing-sheet-make"]').click());
   await bannerPage.waitForSelector('[data-testid="ocr-undo-banner"]', { timeout: 15000 });
   await bannerPage.evaluate(() =>
     [...document.querySelectorAll('button')].find((b) => b.getAttribute('aria-label') === '편집 메뉴').click(),
@@ -509,7 +549,7 @@ try {
   // ac9 — 복원 행과 주 CTA가 프레임 사각형 안인지. **draft를 심은 이 페이지에서 재야 한다** —
   // 위 landingCtx는 저장분이 없어 복원 행이 display:none이고, 거기서 재면 조용히 통과한다.
   await measureFit('복원 행', '[data-testid="landing-restore"]');
-  await measureFit('랜딩 주 CTA', '[data-testid="landing"] button[aria-label="티켓 스크린샷으로 자동입력"]');
+  await measureFit('랜딩 주 CTA', '[data-testid="landing-cta"]');
 
   // 여기서 draft를 **이어받아** 편집으로 들어간다(c5). 아래 측정 전부가 랜딩 오버레이 뒤에서 돌면
   // 안 되고, 그렇다고 "새로 시작" 네 경로로 들어가면 문서가 새 문서로 되돌아가(c7) 이 페이지가
