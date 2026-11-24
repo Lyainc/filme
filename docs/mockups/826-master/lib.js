@@ -16,6 +16,8 @@
     check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
     down: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
     link: '<path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/>',
+    scan: '<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 12h8"/>',
+    pic: '<rect x="4" y="4" width="16" height="16" rx="2"/><circle cx="9" cy="9" r="1.6"/><path d="M20 15l-4.5-4.5L6 20"/>',
     share: '<path d="M12 15V4M8 8l4-4 4 4"/><path d="M6 11v8a1 1 0 001 1h10a1 1 0 001-1v-8"/>'
   };
   P.i = function (n, extra) { return '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"' + (extra || '') + '>' + ICONS[n] + '</svg>'; };

@@ -50,49 +50,65 @@
      ========================================================= */
   /* 비공식 고지(랜딩 · 결과 공통, 현행 문구) */
   var NOTICE = '비공식 팬메이드 티켓이라 양도·재판매할 수 없고, 정보 정확성은 보장하지 않으며 분실·훼손에 책임지지 않아요.';
+  /* 재단 표시: 고른 카드 바깥 8px에 accent L자 넷(장식) */
+  var CM = '<span class="cm" aria-hidden="true"><span class="a"></span><span class="b"></span><span class="c"></span><span class="d"></span></span>';
+  var ATT = { // 첨부 시트 '티켓 스크린샷' 행 상태 · 실패 문구
+    busy: '<span class="spin" aria-hidden="true"></span>인식 중', done: '인식했어요'
+  };
+  /* o: grid(동작 줄이기) · resume · sheet {ss:'none|busy|done|err', err, poster, make} · notice(이용 고지 시트) */
   function landing(o) {
     o = o || {};
-    var gal;
+    var sh = o.sheet, gal;
     if (o.grid) {
-      gal = '<div class="c-gal grid" aria-label="무드 전시(동작 줄이기)">' + S.MOODS.filter(function (m) { return m.k !== '35mmw'; }).map(function (m) { return '<button class="cell" style="border:0;padding:0;background:transparent" aria-label="' + m.n + ' 무드로 바로 시작"><span class="tk' + (m.dark ? ' dark' : '') + '" style="display:block;background:' + m.paper + '"><span class="po" style="display:block"></span></span></button>'; }).join('') + '</div>';
+      gal = '<div class="c-gal grid k" aria-label="무드 전시(동작 줄이기)">' + S.MOODS.filter(function (m) { return m.k !== '35mmw'; }).map(function (m, n) { return '<button class="cell" style="border:0;padding:0;background:transparent" aria-pressed="' + (n === 0) + '" aria-label="' + m.n + '"><span class="tk' + (m.dark ? ' dark' : '') + '" style="display:block;background:' + m.paper + '"><span class="po" style="display:block"></span></span>' + (n === 0 ? CM : '') + '</button>'; }).join('') + '</div>';
     } else {
-      gal = '<div class="c-gal" aria-roledescription="carousel" aria-label="무드 전시"><div class="beam" aria-hidden="true"></div>' +
-        '<div class="peek l" aria-hidden="true">' + S.ticket({ dark: true }) + '</div><div class="peek r" aria-hidden="true">' + S.ticket({}) + '</div>' +
-        '<button class="main" style="border:0;padding:0;background:transparent" aria-label="미니멀 무드로 바로 시작"' + S.rl('w') + '>' + S.ticket({}) + '</button>' +
-        (o.toast ? o.toast : '<span class="idx" aria-hidden="true">1 / 5</span>') /* 토스트가 뜬 동안 위치 표시 자리를 토스트가 씀 */ + '</div>';
+      var live = sh ? S.ticket({ poster: sh.poster ? 'img' : 'none', empty: !sh.poster && sh.ss !== 'done', ghost: true }) : S.ticket({});
+      gal = '<div class="c-gal k" aria-roledescription="carousel" aria-label="무드 전시"' + S.rl('w') + '>' +
+        (sh ? '' : '<button class="cd s l" tabindex="-1" aria-label="스텁">' + S.ticket({}) + '</button><button class="cd s r" aria-label="크라이테리언">' + S.ticket({}) + '</button>') +
+        '<button class="cd" aria-pressed="true" aria-label="미니멀"' + (sh ? ' data-live="true"' : '') + '>' + live + CM + '</button>' +
+        '<div class="prog" aria-hidden="true"><span class="on"></span><span></span><span></span><span></span><span></span></div></div>';
     }
-    var cta = o.loading ? '<button class="c-btn pri cta block" aria-busy="true" aria-disabled="true"><span class="spin" aria-hidden="true"></span>티켓 인식 중…</button>'
-      : '<button class="c-btn pri cta block"' + S.rl('h') + '>티켓 스크린샷으로 자동입력</button>';
-    var lp = '<div class="c-lp">' +
-      (o.resume ? '<button class="c-resume"' + S.rl('h') + '><span class="rt"><small>이어서 만들기</small><b>' + (o.resume === 'untitled' ? '제목 없는 티켓' : o.resume) + '</b></span><span class="t-meta">11.15</span>' + i('next') + '</button>' : '') +
-      cta +
-      '<div class="c-pair"><button class="c-btn txt u"' + (o.loading ? ' disabled' : '') + '>포스터 업로드</button><span aria-hidden="true">·</span><button class="c-btn txt u"' + (o.loading ? ' disabled' : '') + '>포스터 없이 직접 입력</button></div>' +
-      /* 고지는 접힘 한 줄(44 hit). 문구는 DOM에 그대로 있어 appFooterNotice 테스트(queryByText)가 유지돼요. */
-      '<details class="c-legal-d"' + (o.legalOpen ? ' open' : '') + S.rl('h') + '><summary>이용 고지' + i('next') + '</summary><div class="bd">' +
-      '<p class="c-legal">' + NOTICE + '</p>' +
-      '<p class="c-legal">© FILME · 글꼴 KCC은영체 한국저작권위원회 (CC BY) · <a href="#">GitHub</a></p></div></details>' + SAFE + '</div>';
-    var head = '<div class="c-head">' + S.wordmark() + '<h1 class="c-copy">티켓 한 장이, 내 굿즈가 돼요</h1><p class="c-subc">스크린샷으로 자동입력. 사진으로 찍은 실물 티켓도 돼요.</p></div>';
-    return S.phone('<div class="c-land">' + head + gal + lp + '</div>');
+    var bottom;
+    if (sh) {
+      var ssSub = sh.ss === 'busy' ? ATT.busy : sh.ss === 'done' ? ATT.done : sh.ss === 'err' ? sh.err : '';
+      bottom = '<div class="c-asheet" role="dialog" aria-modal="true" aria-label="티켓과 포스터"' + S.rl('h') + '>' +
+        '<div class="hd"><span class="t">티켓과 포스터</span><button class="c-ib" aria-label="닫기">' + i('close') + '</button></div>' +
+        '<button class="c-ar"><span class="th">' + i('scan') + '</span><span class="tx"><b>티켓 스크린샷</b>' + (ssSub ? '<small' + (sh.ss === 'err' ? ' class="err"' : '') + '>' + ssSub + '</small>' : '') + '</span></button>' +
+        '<button class="c-ar"><span class="th' + (sh.poster ? ' img' : '') + '">' + (sh.poster ? '' : i('pic')) + '</span><span class="tx"><b>포스터</b>' + (sh.poster ? '' : '<small>선택</small>') + '</span></button>' +
+        '<button class="mk-btn' + (sh.make ? ' on' : '') + '"' + (sh.make ? '' : ' aria-disabled="true"') + '>만들기</button>' + SAFE + '</div>';
+    } else {
+      bottom = '<div class="c-lb">' +
+        (o.resume ? '<button class="c-resume"' + S.rl('h') + '><span class="rt"><small>이어서 만들기</small><b>' + (o.resume === 'untitled' ? '제목 없는 티켓' : o.resume) + '</b></span><span class="t-meta">11월 15일</span>' + i('next') + '</button>' : '') +
+        '<button class="c-btn pri cta block"' + S.rl('h') + '>' + i('scan') + '티켓 스크린샷으로 자동입력</button>' +
+        '<button class="c-btn sec cta block">직접 입력</button>' + SAFE + '</div>';
+    }
+    var notice = o.notice ? '<div class="c-sheet k" role="dialog" aria-modal="true" aria-label="이용 고지"><div class="hd"><span class="t">이용 고지</span><button class="c-ib" aria-label="닫기">' + i('close') + '</button></div>' +
+      '<div class="nb c-legal"><p class="c-legal">' + NOTICE + ' © FILME</p><p class="c-legal">글꼴 KCC은영체 한국저작권위원회 (CC BY)</p><p class="c-legal"><a href="#" aria-label="GitHub 저장소">GitHub</a></p></div></div>' : '';
+    var head = '<div class="c-head k">' + S.wordmark() + '<button class="c-ntc">이용 고지</button></div>';
+    return S.phone('<div class="c-land">' + head + gal + bottom + notice + '</div>');
   }
-  F({ id: 'L-01', page: 'landing', name: '랜딩 · 첫 방문', comps: ['C-WM', 'C-CAR', 'C-BTN', 'C-LNK'],
-    variants: [{ st: '기본 · 전시 재생', html: landing({}) }, { st: '동작 줄이기', html: landing({ grid: true }) }, { st: '이용 고지 펼침', html: landing({ legalOpen: true }) }],
-    states: ['전시는 버튼 없이 4초마다 넘어가요(소유자 결정 2026-11-17). 전시를 누르고 있거나 포커스가 들어오면 멈추고, 떼면 다시 돌아요.', '동작 줄이기(OS 설정)면 자동 전환 없이 3열 격자로 전부 보여요.', '35mm 와이드는 가로라 전시에서 빠져요(현행 유지).', '법적 고지는 맨 아래 "이용 고지" 한 줄로 접혀 있고, 누르면 그 자리에서 펼쳐져요(문구는 현행 그대로). 펼치면 전시가 그만큼 줄어요.'],
-    flow: [['전시 카드 탭', 'E-01', '그 무드로 새 문서 240ms'], ['티켓 스크린샷으로 자동입력', 'L-03', 'OS 파일 선택 → 인식 중'], ['포스터 업로드', 'C-01', 'OS 파일 선택 → 크롭'], ['포스터 없이 직접 입력', 'E-02', '빈 티켓 편집'], ['가로 스와이프', 'L-01', '전시 한 칸']],
-    notes: ['요구 1은 "버튼 대신 누르고 있는 동안 정지 + 포커스 정지 + OS 동작 줄이기"로 바뀌었어요. WCAG 2.2.2의 정지 수단을 제스처가 맡는 셈이라 발견성이 낮다는 위험을 미결에 적었어요.', '헤드라인·서브·법적 고지 문구는 문구 규칙 예외라 그대로예요. 고지는 접기만 했어요(소유자 지적 2026-11-17: 메인 영역을 너무 차지함).'] });
+  F({ id: 'L-01', page: 'landing', name: '랜딩 · 첫 방문', comps: ['C-WM', 'C-CAR', 'C-BTN'],
+    variants: [{ st: '기본 · 전시 재생', html: landing({}) }, { st: '동작 줄이기', html: landing({ grid: true }) }, { st: '이용 고지 시트', html: landing({ notice: true }) }],
+    states: ['워드마크 줄 바로 아래에 큰 가운데 티켓 한 장이 서요. 옆 카드는 0.82배 · 불투명도 .5로 양옆에서 엿보고, 전시 가장자리에서 잘려요.', '전시는 4초마다 넘어가요. 누르고 있거나 포커스가 들어오면 멈추고, 떼면 다시 돌아요. 카드를 탭하면 고르기만 해요(진입 아님). 고른 카드 둘레에 accent 재단 표시 네 개가 서고, 아래 5칸 진행 막대가 지금 칸을 보여요.', '시작은 아래 버튼 둘뿐이에요: "티켓 스크린샷으로 자동입력"(accent) · "직접 입력"(같은 높이). 헤드라인 · 서브 · 링크 쌍 · 아래 판은 없어요.', '동작 줄이기(OS 설정)면 자동 전환 없이 3열 격자로 전부 보여요. 탭은 고르기고 재단 표시가 고른 카드로 옮겨 가요. 35mm 와이드는 가로라 전시에서 빠져요.', '"이용 고지"는 워드마크 줄 오른쪽 끝 글자 버튼이에요. 누르면 작은 아래 시트가 열리고(어둡게 덮지 않음, 밖을 탭하면 닫힘) 고지 문구 · 글꼴 크레딧 · GitHub가 들어 있어요. 문구는 그대로예요.'],
+    flow: [['티켓 스크린샷으로 자동입력', 'L-03', '첨부 시트 열기(전시가 시트 위로 올라 옆 카드 숨김)'], ['직접 입력', 'E-02', '고른 무드의 빈 티켓 편집'], ['전시 카드 탭', 'L-01', '그 카드를 고르기(진입 아님)'], ['가로 스와이프', 'L-01', '전시 한 칸'], ['이용 고지', 'L-01', '이용 고지 시트(밖 탭 · 닫기로 닫힘)']],
+    notes: ['S9(D25-12)로 랜딩을 다시 짰어요. 소유자 결정: 헤드라인 · 서브 · 기둥(beam) · 아래 판 · "1 / 5" 표시 · 링크 쌍 · 접힌 고지를 걷고, 카드 탭은 진입이 아니라 고르기로 바꿨어요.', '카드 높이는 min(전시 높이 − 44px, (전시 폭 − 112px) × 1534/960)예요. 세로로 긴 프레임에서 폭만 따라 늘어나 옆 카드 · 재단 표시가 밀리는 걸 막아요.', '고지 문구 상수는 결과 화면 · 공유 페이지와 같은 것을 써요.'] });
   F({ id: 'L-02', page: 'landing', name: '랜딩 · 이어서 만들기', comps: ['C-RES', 'C-BTN'],
     variants: [{ st: '저장본 있음', html: landing({ resume: '먼 바다' }) }, { st: '제목 없는 저장본', html: landing({ resume: 'untitled' }) }],
-    states: ['저장본이 있을 때만 행이 생겨요. 제목이 없으면 "제목 없는 티켓".'],
+    states: ['저장본이 있을 때만 "이어서 만들기" 행이 버튼 둘 위에 생겨요. 제목이 없으면 "제목 없는 티켓". 나머지는 L-01과 같아요.', '행이 생겨도 전시와 버튼 둘은 같은 자리에 서요(행 높이 56만큼 전시가 줄어요).'],
     flow: [['이어서 만들기', 'E-01', '저장본 열기(포스터 복원 중이면 E-02.4)']], notes: [] });
-  F({ id: 'L-03', page: 'landing', name: '랜딩 · 스크린샷 인식', comps: ['C-BTN', 'C-TST'],
+  F({ id: 'L-03', page: 'landing', name: '랜딩 · 첨부 시트', comps: ['C-BTN', 'C-WM'],
     variants: [
-      { st: '로딩 · 인식 중', html: landing({ loading: true }) },
-      { st: '오류 · 인식 실패', html: landing({ toast: S.toast('인식에 실패했어요', { err: true, bottom: 12 }) }) },
-      { st: '오류 · 요청 많음', html: landing({ toast: S.toast('지금 요청이 많아요. 잠시 후 다시 시도하거나 직접 입력해 주세요.', { err: true, bottom: 12 }) }) },
-      { st: '오류 · 파일 형식', html: landing({ toast: S.toast('PNG, JPG, WebP만 인식할 수 있어요', { err: true, bottom: 12 }) }) }
+      { st: '빈 시트', html: landing({ sheet: { ss: 'none' } }) },
+      { st: '인식 중', html: landing({ sheet: { ss: 'busy' } }) },
+      { st: '포스터 넣음', html: landing({ sheet: { ss: 'none', poster: true, make: true } }) },
+      { st: '인식 끝', html: landing({ sheet: { ss: 'done', make: true } }) },
+      { st: '실패 · 인식 실패', html: landing({ sheet: { ss: 'err', err: '인식에 실패했어요' } }) },
+      { st: '실패 · 요청 많음', html: landing({ sheet: { ss: 'err', err: '지금 요청이 많아요. 잠시 후 다시 시도하거나 직접 입력해 주세요.' } }) },
+      { st: '실패 · 파일 형식', html: landing({ sheet: { ss: 'err', err: 'PNG, JPG, WebP만 인식할 수 있어요' } }) }
     ],
-    states: ['로딩: CTA가 "티켓 인식 중…"(aria-busy), 링크 쌍 비활성.', '오류는 전시 아래쪽(CTA 바로 위) 3초 토스트. 다시 시도는 CTA 자체예요.', '같은 자리: "HEIC는 지원하지 않아요" · "10MB 이하 이미지만 돼요" · "인식된 정보가 없어요. 직접 입력해 주세요."'],
-    flow: [['인식 성공', 'E-05', '편집 + 자동입력 배너'], ['인식된 정보 없음', 'L-03', '랜딩에 남아 같은 자리 안내 3초'], ['포스터 없이 직접 입력', 'E-02', '빈 편집']],
-    notes: ['"지금 요청이 많아요…"·"인식된 정보가 없어요…"는 테스트가 잠근 문구라 두 문장 그대로예요.'] });
+    states: ['"티켓 스크린샷으로 자동입력"이 여는 시트 "티켓과 포스터"예요. 어둡게 덮지 않고, 열려 있는 동안 옆 카드는 숨고 가운데 티켓(지금 문서 그대로)이 시트 위에 서요.', '행 둘: "티켓 스크린샷"(상태 줄 없음 · "인식 중" 스피너 · "인식했어요" · 경고색 오류 글) · "포스터"("선택" 또는 올린 썸네일). 행을 누르면 OS 파일 선택이 떠요.', '"만들기"는 뭔가 넣었고 인식 중이 아닐 때만 accent로 켜져요. 그 전엔 테두리 버튼 모양으로 눌러도 아무 일 없어요.', '넣은 포스터와 인식 결과는 뒤의 큰 티켓에 바로 차올라요. 닫기(또는 시트 밖 탭 · Escape)는 시트를 열기 전 문서로 되돌려요(스냅샷).', '오류 문구는 "인식에 실패했어요" · "지금 요청이 많아요…" · "PNG, JPG, WebP만 인식할 수 있어요". 같은 자리: "HEIC는 지원하지 않아요" · "10MB 이하 이미지만 돼요" · "인식된 정보가 없어요. 직접 입력해 주세요."'],
+    flow: [['만들기(스크린샷 있음)', 'E-05', '편집 + 자동입력 배너'], ['만들기(포스터만)', 'E-01', '포스터가 들어간 새 문서'], ['닫기', 'L-01', '문서 그대로, 시트 열기 전 스냅샷으로 되돌림'], ['인식된 정보 없음', 'L-03', '시트에 남아 행 아래 안내']],
+    notes: ['"지금 요청이 많아요…"·"인식된 정보가 없어요…"는 테스트가 잠근 문구라 두 문장 그대로예요.', '시트가 오류 글을 행 안에 싣게 되면서 옛 토스트 자리 안내는 걷었어요(S9 constraint-11).'] });
 
   /* =========================================================
      편집 기본
