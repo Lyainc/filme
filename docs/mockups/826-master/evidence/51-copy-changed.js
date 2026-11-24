@@ -48,6 +48,6 @@ window.COPY_CHANGES = [
 ];
 EV({ id: 'copy-changed', page: 'copy', title: '바뀌거나 새로 생긴 문구', html: function () {
   var esc = PR.esc;
-  return '<h3>바뀌거나 새로 생긴 문구</h3><p class="m-note">"신규" 행은 src에 없는 새 문구예요. 영향 테스트 열은 __tests__를 grep한 결과예요.</p>' +
+  return '<h3>바뀌거나 새로 생긴 문구</h3><p class="m-note">"신규" 행은 src에 없는 새 문구예요. 영향 테스트 열은 그 행을 쓸 때 __tests__를 grep한 기록(이력)이에요. 그 뒤 S2~S9에서 테스트가 지워지거나 줄이 밀렸으니, 문구를 바꿀 땐 이 열이 아니라 지금 __tests__를 다시 grep해요(#826).</p>' +
     EV_TBL(['자리', '지금', '마스터', '프레임', '잠김', '영향 테스트'], window.COPY_CHANGES.map(function (r) { return [r[0], esc(r[1]), '<b>' + esc(r[2]) + '</b>', r[3], r[4], esc(r[5])]; }), [null, null, null, 'n']);
 } });
