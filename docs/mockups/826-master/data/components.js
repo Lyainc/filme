@@ -1,4 +1,4 @@
-/* 컴포넌트 사양. demo는 lib.js 빌더로 그린 견본, files는 대응할 현재 구현(main 203ee7c). */
+/* 컴포넌트 사양. demo는 lib.js 빌더로 그린 견본, files는 대응할 현재 구현(main 0d7f2733, S1~S7 반영 후). */
 (function () {
   var S = window.PR, i = S.i;
   window.COMPONENTS = [
@@ -6,7 +6,7 @@
       anatomy: ['돌아가기 ‹ (44)', '빈 공간', '실행 취소 · 다시 실행 · 전체 보기 (44 each)', '메뉴 ⋯ (44)', '완료(주 버튼, 44)'],
       size: '높이 52, 좌우 안쪽 4, 완료 오른쪽 여백 12', tokens: '--pr-topbar · --pr-stage · --pr-ink-2(아이콘) · --pr-accent(완료)',
       variants: '편집(위 구성) · 결과(‹ 하나, 보이는 제목 없음 · sr-only 제목 "결과") · 크롭(✕ + 제목, 다크 고정)', states: '실행 취소 비활성(되돌릴 것 없음) · 완료 차단(aria-disabled, 테두리만) · 메뉴 열림(aria-expanded)',
-      files: 'src/components/v2/MobileEditorShell.tsx(헤더) · FloatingToolbar.tsx(undo/redo 이전) · AutoSaveIndicator.tsx(메뉴로 이동) · ResultStage.tsx', frames: 'E-01~E-06 · R-01' },
+      files: 'src/components/v2/MobileEditorShell.tsx(상단 줄: ‹ · 실행 취소 · 다시 실행 · 전체 보기 · ⋯ · 완료) · ResultStage.tsx', frames: 'E-01~E-06 · R-01' },
     { id: 'C-BTN', name: '버튼', demo: '<button class="c-btn pri">완료</button><button class="c-btn sec">교체</button><button class="c-btn txt">빈 항목</button><button class="c-btn txt u">다시 검색</button><button class="c-btn pri" aria-disabled="true">완료</button><button class="c-btn pri"><span class="spin"></span>저장 중…</button>',
       anatomy: ['라벨(15/22)', '선택: 앞 진행 표시 14 · 아이콘 20'],
       size: '높이 44(CTA 48), 좌우 16(텍스트 8), 반경 6', tokens: '주: --pr-accent / --pr-accent-ink · 보조: --pr-hair-strong 테두리 · 텍스트: --pr-ink-2, 밑줄형 --pr-ink',
@@ -27,14 +27,14 @@
       anatomy: ['본문 196(모드마다 내용만 바뀜)', '모드 바 52: 사진 · 정보 · 디자인(선택은 위쪽 2px 브릭)', '아래 안전 영역 34'],
       size: '높이 하나로 고정(282). 정보·사진 본문이 넘치면 본문 안에서 세로 스크롤', tokens: '--pr-dock-body · --pr-modebar · --pr-s1 · --pr-accent',
       variants: '사진 · 정보 · 디자인', states: '모드 전환 160ms(본문만) · 정보 탭 필수 누락 점(앰버) · 입력 중엔 입력 패널(C-INP)로 바뀜',
-      files: 'src/components/v2/DesignRail.tsx · designRailItems.tsx · FieldDrawer.tsx(셋을 하나로) · MobileEditorShell.tsx', frames: 'E-01~E-06 · D-01~D-05 · I-01 · G-01' },
+      files: 'src/components/v2/dock/EditorDock.tsx · dock/TabBar.tsx · dock/PhotoPane.tsx · dock/InfoPane.tsx · dock/DesignPane.tsx · designRailItems.tsx · MobileEditorShell.tsx', frames: 'E-01~E-06 · D-01~D-05 · I-01 · G-01' },
     { id: 'C-TOOLS', name: '디자인 도구 줄', demo: '<div style="width:100%;max-width:361px">' + S.tools(['무드', '색상', '재질', '코팅', '투명도', '크기'], '재질') + '</div>',
       anatomy: ['도구 이름 15/22', '선택: 600 + 잉크 2px 밑줄'], size: '높이 44, 넘치면 가로 스크롤', tokens: '--pr-ink · --pr-ink-2 · --pr-hair',
-      variants: '무드 · 색상 · 재질 · 코팅 · 투명도 · 크기', states: '선택(tab) · 화살표 이동(APG tabs)', files: 'src/components/v2/DesignRail.tsx(레일 항목)', frames: 'D-01~D-05' },
+      variants: '무드 · 색상 · 재질 · 코팅 · 투명도 · 크기', states: '선택(tab) · 화살표 이동(APG tabs)', files: 'src/components/v2/dock/DesignPane.tsx · designRailItems.tsx(도구 항목)', frames: 'D-01~D-05' },
     { id: 'C-IROW', name: '정보 행', demo: '<div style="width:100%;max-width:361px">' + S.irow('제목', '먼 바다', { req: 1 }) + S.irow('개봉일', '', { req: 1, miss: true }) + S.irow('관람일', '11.15 토', { off: true }) + '</div>',
       anatomy: ['이름 64(13, 필수 누락이면 앰버 점)', '값 15(비면 "비어 있음", 필수면 앰버 "필수")', '표시 토글 44'],
       size: '행 44, 그룹 머리 12', tokens: '--pr-ink · --pr-ink-2 · --pr-ink-3 · --pr-warn · --pr-hair', variants: '값 있음 · 비어 있음 · 필수 누락 · 숨김(취소선)',
-      states: '행 탭 → 입력(K) · 제목은 숨김 비활성', files: 'src/components/v2/FieldDrawer.tsx · src/constants/fields.ts', frames: 'E-01 · E-02 · E-03 · I-01 · K-08' },
+      states: '행 탭 → 입력(K) · 제목은 숨김 비활성', files: 'src/components/v2/dock/InfoPane.tsx · src/constants/fields.ts', frames: 'E-01 · E-02 · E-03 · I-01 · K-08' },
     { id: 'C-AROW', name: '사진 행', demo: '<div style="width:100%;max-width:361px"><div class="c-arow"><span class="th"></span><span class="tx"><b>포스터</b><small>960 × 1440</small></span><button class="c-btn txt u">자르기</button><button class="c-btn sec">교체</button></div></div>',
       anatomy: ['썸네일(포스터 26×40 · 로고 40×26)', '이름 + 상태 한 줄', '동작(보조 버튼 · 텍스트 버튼 · 표시 토글)'], size: '행 48(4행이 도크 본문 196에 스크롤 없이 들어감)', tokens: '--pr-hair · --pr-hair-strong',
       variants: '포스터 · 극장 로고 · 포맷 로고 · 배경 스탬프', states: '없음(점선 썸네일 + 추가) · 원본 없음(자르기 비활성)', files: 'MobileEditorShell.tsx(포스터 교체·재크롭) · designRailItems.tsx(스탬프·로고)', frames: 'E-01 · G-01 · X-01' },
@@ -60,7 +60,7 @@
       anatomy: ['라벨 열 52', '옵션(15/22)', '선택: surface-2 면 + 헤어라인 + 600'], size: '높이 44, 좌우 12, 간격 4, 반경 6', tokens: '--pr-s2 · --pr-hair-strong', variants: '한 줄 가로 스크롤 · 줄바꿈(서체 9종, 각 옵션 라벨을 그 서체로 렌더: 티켓 폰트라 Pretendard 단일 결정 밖)', states: '선택 · 비활성 · 포커스', files: 'src/components/v2/designRailItems.tsx(칩)', frames: 'P-03~P-05 · P-08 · P-09 · C-01' },
     { id: 'C-SL', name: '슬라이더 + 값', demo: '<div style="width:100%;max-width:361px">' + S.slider('재질 강도', 60) + S.slider('코팅 강도', 0, { dis: true }) + '</div>',
       anatomy: ['라벨 72', '트랙 2px · 채움 잉크 · 손잡이 10×20', '값 버튼(%), 누르면 숫자 입력'], size: '줄 44 · 트랙 hit 32(요구 2) · 값 버튼 52×44', tokens: '--pr-hair-strong · --pr-ink · --pr-track-hit',
-      variants: '일반 · 입력 상태(K-03)', states: '드래그(트랙 어디서든 시작) · 포커스(화살표 ±1, Shift ±10) · 비활성', files: 'src/components/v2/BrightnessSlider.tsx', frames: 'P-03~P-05 · K-03' },
+      variants: '일반 · 입력 상태(K-03)', states: '드래그(트랙 어디서든 시작) · 포커스(화살표 ±1, Shift ±10) · 비활성', files: 'src/components/v2/pickers/BrightnessSlider.tsx', frames: 'P-03~P-05 · K-03' },
     { id: 'C-FLD', name: '입력 필드', demo: '<div style="width:100%;max-width:361px;display:grid;gap:8px"><div class="c-field"><input aria-label="견본" value="먼 바다"></div><div class="c-field focus"><input aria-label="견본" value="먼 바"></div><div class="c-field err"><input aria-label="견본" placeholder="영화 제목"><span class="msg">제목이 비어 있어요. 제목을 입력해 주세요.</span></div></div>',
       anatomy: ['입력 16/24', '포커스 2px 브릭', '오류: 앰버 테두리 + 문장'], size: '높이 44, 좌우 12, 반경 6', tokens: '--pr-s2 · --pr-hair-strong · --pr-accent · --pr-warn', variants: '텍스트 · 숫자(inputmode) · 날짜(native) · 콤보박스(KOBIS) · 읽기 전용(링크)', states: '기본 · 포커스 · 오류(aria-invalid) · 비활성', files: 'src/components/v2/FieldEditorBody.tsx(INPUT_CLS · DateSheet)', frames: 'E-03 · K-01~K-03 · P-05 · R-02' },
     { id: 'C-LIST', name: '목록(KOBIS·항목)', demo: '<ul class="c-list" style="width:100%;max-width:361px"><li><span class="th"></span><span class="kt"><b>먼 바다</b><small>2024 · 드라마 · 홍길동</small></span></li></ul>',
@@ -68,25 +68,25 @@
     { id: 'C-KBD', name: '키보드 영역(근사)', demo: '<span class="t-body-s">iOS 키보드 300(근사). 실제 높이는 visualViewport로 재요.</span>',
       anatomy: ['추천 줄 36', '키 42'], size: '300(텍스트·숫자 공통 근사)', tokens: '--pr-kbd · --pr-key', variants: '텍스트 · 숫자', states: '열림 · 닫힘(OS)', files: '(OS) · InPlaceFieldEditor.tsx keyboard-lift', frames: 'K-01~K-03' },
     { id: 'C-SWT', name: '스위치', demo: '<span class="c-sw on" role="switch" aria-checked="true" aria-label="견본"></span><span class="c-sw" role="switch" aria-checked="false" aria-label="견본"></span>',
-      anatomy: ['트랙 44×26(pill 예외는 여기 하나)', '손잡이 20'], size: '행 전체가 hit(52)', tokens: '--pr-ink(켬) · --pr-hair-strong(끔)', variants: '하나', states: '켬 · 끔 · 비활성', files: 'AutoSaveIndicator.tsx · ImageCropModal.tsx(체크박스 대체) · FieldDrawer.tsx(전체 표시)', frames: 'M-01 · C-01 · P-08 · P-10' },
+      anatomy: ['트랙 44×26(pill 예외는 여기 하나)', '손잡이 20'], size: '행 전체가 hit(52)', tokens: '--pr-ink(켬) · --pr-hair-strong(끔)', variants: '하나', states: '켬 · 끔 · 비활성', files: 'src/components/v2/EditorMenu.tsx(자동저장 · 빈 항목 표시) · src/components/ImageCropModal.tsx(원본 비율 보존)', frames: 'M-01 · C-01 · P-08 · P-10' },
     { id: 'C-SEG', name: '세그먼트(3갈래)', demo: '<div class="c-mi" style="max-width:361px"><span class="lb">테마</span><span class="seg"><span class="on">시스템</span><span>라이트</span><span>다크</span></span></div>',
       anatomy: ['칸 52×44 최소, 헤어라인 구분'], size: '행 52', tokens: '--pr-s2 · --pr-hair-strong', variants: '테마', states: '선택', files: 'MobileEditorShell.tsx(다크모드 토글 대체)', frames: 'M-01' },
     { id: 'C-MENU', name: '메뉴 시트', demo: '<span class="t-body-s">M-01 참고: 스크림 + 바텀 시트, 행 52</span>',
-      anatomy: ['스크림', '머리(메뉴 · 닫기)', '행: 라벨 + 보조 문장 + 오른쪽 조작'], size: '행 52, 아래 안전 영역 34', tokens: '--pr-scrim · --pr-s1 · --pr-warn(arm)', variants: '하나', states: '초기화 arm(앰버 + 설명) · 행 비활성', files: 'src/components/v2/MobileEditorShell.tsx(햄버거 메뉴) · AdvancedSettingsModal.tsx(제거)', frames: 'M-01' },
+      anatomy: ['스크림', '머리(메뉴 · 닫기)', '행: 라벨 + 보조 문장 + 오른쪽 조작'], size: '행 52, 아래 안전 영역 34', tokens: '--pr-scrim · --pr-s1 · --pr-warn(arm)', variants: '하나', states: '초기화 arm(앰버 + 설명) · 행 비활성', files: 'src/components/v2/EditorMenu.tsx · MobileEditorShell.tsx(⋯로 열기)', frames: 'M-01' },
     { id: 'C-DLG', name: '크롭 다이얼로그', demo: '<span class="t-body-s">C-01 참고: 전체 화면 모달, 다크 고정</span>',
       anatomy: ['상단 줄(✕ · 제목)', '크롭 무대(바깥 55% 어둡게, 3분할선, 모서리 손잡이)', '하단: 비율 스위치 · 다른 사진 선택 · 적용'], size: '하단 행 44, 아래 34', tokens: '--pr-d-* 고정', variants: '포스터(비율 스위치) · 로고·서명·스탬프(자유)', states: '적용 중 · 이미지 실패 · 크롭 실패', files: 'src/components/ImageCropModal.tsx · src/hooks/usePosterCrop.ts · useLogoCrop.ts', frames: 'C-01~C-03' },
     { id: 'C-TST', name: '토스트', demo: '<div style="position:relative;width:100%;max-width:393px;height:116px">' + S.toast('임시저장했어요', { top: 0 }) + S.toast('저장된 포스터를 불러오지 못했어요. 포스터를 다시 올려 주세요.', { err: true, close: true, top: 52 }) + '</div>',
       anatomy: ['점(통보 ink-2 / 오류 앰버)', '문장 14/20', '닫기(지속 오류만)'], size: '좌우 16, 반경 6, 그림자 작게(6/16), 닫기 44×44(시각 크기는 음수 여백으로 유지)', tokens: '--pr-s2 · --pr-warn · --pr-hair-strong',
       variants: '통보(아래, 2.6s) · 결과 화면 통보(위 줄 아래 가운데, 약 2s: "저장했어요" · "링크를 복사했어요") · 일시 오류(위, 4s) · 지속 오류(위, 닫기) · OCR 로컬(트리거 위, 3s)', states: '진입 160ms 페이드, 퇴장 160ms · 지속 오류가 떠 있으면 일시 오류를 막고 같은 문구는 다시 띄우지 않음 · 통보와 오류는 자리가 달라 동시에 떠도 겹치지 않음 · 전체 보기 중엔 오류만 · 결과 화면 통보 영역은 늘 마운트(role=status)하고 글자만 바꿈', files: 'src/utils/errorToast.tsx · MobileEditorShell.tsx(flashToast) · OcrUploadCard.tsx · ResultStage.tsx(결과 통보 영역)', frames: 'E-06 · M-02 · X-01 · L-03 · R-01 · R-02 · R-03' },
     { id: 'C-ALR', name: '경고 상자', demo: '<div class="c-alert" style="max-width:361px"><span class="ic"></span><span class="tx">저장하지 못했어요</span></div>',
-      anatomy: ['앰버 점', '문장', '선택: 텍스트 버튼'], size: '안쪽 8·12', tokens: '--pr-warn', variants: '자리 안 오류(결과·크롭·항목)', states: '표시(role=alert) · 원인 해소 시 사라짐 · 결과 화면은 버튼 줄 위에 겹쳐 떠서 티켓 크기를 바꾸지 않고, 다시 누르는 순간 지워짐', files: 'ResultPanel.tsx(버튼 줄 위 경고 한 줄) · FieldDrawer.tsx(누락 안내)', frames: 'R-01 · R-02 · C-03 · P-10' },
+      anatomy: ['앰버 점', '문장', '선택: 텍스트 버튼'], size: '안쪽 8·12', tokens: '--pr-warn', variants: '자리 안 오류(결과·크롭·항목)', states: '표시(role=alert) · 원인 해소 시 사라짐 · 결과 화면은 버튼 줄 위에 겹쳐 떠서 티켓 크기를 바꾸지 않고, 다시 누르는 순간 지워짐', files: 'ResultPanel.tsx(버튼 줄 위 경고 한 줄) · dock/InfoPane.tsx(누락 안내)', frames: 'R-01 · R-02 · C-03 · P-10' },
     { id: 'C-BNR', name: '자동입력 배너', demo: '<div class="c-banner" style="margin:0;max-width:361px"><span class="tx">8개 항목이 자동 입력되었어요.</span><button class="c-btn txt u">되돌리기</button><button class="c-btn txt">확인</button></div>',
       anatomy: ['문장', '되돌리기(밑줄)', '확인'], size: '높이 52, 티켓과 패널 사이', tokens: '--pr-s1 · --pr-hair-strong', variants: '완료 · 조회 중(진행 표시)', states: '타이머 없음', files: 'src/components/v2/OcrUndoBanner.tsx', frames: 'E-05' },
     { id: 'C-TAG', name: '태그', demo: '<span class="c-tag req">필수</span><span class="c-tag req miss">필수</span><span class="c-tag src">KOBIS</span><span class="c-tag src">자동입력</span>',
-      anatomy: ['11/14 600, 헤어라인 3px'], size: '높이 16', tokens: '--pr-hair-strong · --pr-warn(누락)', variants: '필수 · 필수 누락 · 출처', states: '필수(잉크) · 누락(앰버)', files: 'FieldDrawer.tsx(필수 표시) · OcrUndoBanner 출처', frames: 'E-03 · E-05 · P-06' },
+      anatomy: ['11/14 600, 헤어라인 3px'], size: '높이 16', tokens: '--pr-hair-strong · --pr-warn(누락)', variants: '필수 · 필수 누락 · 출처', states: '필수(잉크) · 누락(앰버)', files: 'src/components/v2/dock/InfoPane.tsx(필수 표시) · OcrUndoBanner 출처', frames: 'E-03 · E-05 · P-06' },
     { id: 'C-STAR', name: '별점', demo: [1, 2, 3, 4, 5].map(function (n) { return '<span class="c-ib" style="color:' + (n <= 4 ? 'var(--pr-ink)' : 'var(--pr-hair-strong)') + '">' + i('star', n <= 4 ? ' style="fill:currentColor"' : '') + '</span>'; }).join(''),
-      anatomy: ['별 5(radio)', '직접 입력(0.1)'], size: '별 44×44', tokens: '--pr-ink · --pr-hair-strong', variants: '별 · 소수 입력', states: '선택 · 숨김', files: 'src/components/v2/RatingPicker.tsx', frames: 'P-07' },
+      anatomy: ['별 5(radio)', '직접 입력(0.1)'], size: '별 44×44', tokens: '--pr-ink · --pr-hair-strong', variants: '별 · 소수 입력', states: '선택 · 숨김', files: 'src/components/v2/pickers/RatingPicker.tsx', frames: 'P-07' },
     { id: 'C-SW', name: '색 견본', demo: '<span style="width:44px;height:44px;border-radius:6px;background:#141414;outline:2px solid var(--pr-ink);outline-offset:2px;display:inline-block"></span><span style="width:44px;height:44px;border-radius:6px;background:#B8913A;display:inline-block;border:1px solid var(--pr-hair-strong)"></span>',
-      anatomy: ['견본 44', '선택: 잉크 2px 바깥선'], size: '간격 8', tokens: '--pr-ink · --pr-hair-strong', variants: '프리셋 3 · 추천 2 · 직접 지정', states: '선택 · 비활성(톤 고정 무드)', files: 'src/components/v2/ColorPicker.tsx', frames: 'P-02' }
+      anatomy: ['견본 44', '선택: 잉크 2px 바깥선'], size: '간격 8', tokens: '--pr-ink · --pr-hair-strong', variants: '프리셋 3 · 추천 2 · 직접 지정', states: '선택 · 비활성(톤 고정 무드)', files: 'src/components/v2/pickers/ColorPicker.tsx', frames: 'P-02' }
   ];
 })();
