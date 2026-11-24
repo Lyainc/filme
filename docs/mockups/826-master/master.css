@@ -327,6 +327,7 @@ button { cursor: pointer; }
 .c-toast.err .ic { background: var(--pr-warn); }
 .c-toast.err { border-color: color-mix(in srgb, var(--pr-warn) 60%, transparent); }
 .c-toast .tx { flex: 1; min-width: 0; }
+.c-toast.mid { left: 50%; right: auto; transform: translateX(-50%); white-space: nowrap; }
 .c-toast .c-ib { width: 44px; height: 44px; margin: -12px -12px -12px 0; }
 .c-banner { flex: none; display: flex; align-items: center; gap: var(--pr-s-2); min-height: 52px; padding: 4px 4px 4px 12px; margin: 0 16px 8px; background: var(--pr-s1); border: 1px solid var(--pr-hair-strong); border-radius: var(--pr-r-ctl); font-size: 14px; line-height: 20px; position: relative; z-index: 6; }
 .c-banner .tx { flex: 1; min-width: 0; }
@@ -401,7 +402,7 @@ button { cursor: pointer; }
 .c-rfloat > * { background: var(--pr-s2); box-shadow: 0 6px 16px -10px rgba(0,0,0,.5); }
 .c-rfloat .c-link { padding: var(--pr-s-2); border: 1px solid var(--pr-hair); border-radius: var(--pr-r-ctl); }
 .c-rnote { height: 48px; margin-top: var(--pr-s-2); display: flex; flex-direction: column; justify-content: flex-end; }
-.c-rtoast { left: 50%; right: auto; transform: translateX(-50%); white-space: nowrap; top: calc(var(--sb) + var(--pr-topbar) + var(--pr-s-2)); }
+
 .c-link { display: flex; gap: var(--pr-s-2); align-items: center; min-width: 0; }
 .c-link input { flex: 1; min-width: 0; height: 44px; padding: 0 12px; font-size: 16px; background: var(--pr-s1); border: 1px solid var(--pr-hair-strong); border-radius: var(--pr-r-ctl); color: var(--pr-ink); }
 .c-osheet { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 31; background: var(--pr-s2); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--pr-hair-strong); }

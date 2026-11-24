@@ -48,6 +48,8 @@
   /* =========================================================
      랜딩
      ========================================================= */
+  /* 비공식 고지(랜딩 · 결과 공통, 현행 문구) */
+  var NOTICE = '비공식 팬메이드 티켓이라 양도·재판매할 수 없고, 정보 정확성은 보장하지 않으며 분실·훼손에 책임지지 않아요.';
   function landing(o) {
     o = o || {};
     var gal;
@@ -67,7 +69,7 @@
       '<div class="c-pair"><button class="c-btn txt u"' + (o.loading ? ' disabled' : '') + '>포스터 업로드</button><span aria-hidden="true">·</span><button class="c-btn txt u"' + (o.loading ? ' disabled' : '') + '>포스터 없이 직접 입력</button></div>' +
       /* 고지는 접힘 한 줄(44 hit). 문구는 DOM에 그대로 있어 appFooterNotice 테스트(queryByText)가 유지돼요. */
       '<details class="c-legal-d"' + (o.legalOpen ? ' open' : '') + S.rl('h') + '><summary>이용 고지' + i('next') + '</summary><div class="bd">' +
-      '<p class="c-legal">비공식 팬메이드 티켓이라 양도·재판매할 수 없고, 정보 정확성은 보장하지 않으며 분실·훼손에 책임지지 않아요.</p>' +
+      '<p class="c-legal">' + NOTICE + '</p>' +
       '<p class="c-legal">© FILME · 글꼴 KCC은영체 한국저작권위원회 (CC BY) · <a href="#">GitHub</a></p></div></details>' + SAFE + '</div>';
     var head = '<div class="c-head">' + S.wordmark() + '<h1 class="c-copy">티켓 한 장이, 내 굿즈가 돼요</h1><p class="c-subc">스크린샷으로 자동입력. 사진으로 찍은 실물 티켓도 돼요.</p></div>';
     return S.phone('<div class="c-land">' + head + gal + lp + '</div>');
@@ -301,19 +303,18 @@
      결과 · 공유
      ========================================================= */
   /* D21(결과 화면 확정안 D11 A) · S7 출시 동작(PR #846, main df3764a3) 그대로.
-     o.save: 'loading'|'done' · o.link: 'loading'|'made'(만료 문장 붙음) · o.fallback: 클립보드 거부(대체 링크 칸)
+     o.save: 'loading'|'done' · o.link: 'loading'|'made'(만료 문장 붙음) · o.fallback: 클립보드 거부(대체 링크 칸, link:'made'와 같이)
      o.err: 화면 안 경고 한 줄 · o.toast: 위쪽 통보 · o.wide: 가로 무드 · o.extra: 덮는 층 */
-  var NOTICE = '비공식 팬메이드 티켓이라 양도·재판매할 수 없고, 정보 정확성은 보장하지 않으며 분실·훼손에 책임지지 않아요.';
   function result(o) {
     o = o || {};
     var busy = o.save === 'loading' || o.link === 'loading';
     var save = '<button class="c-btn pri"' + (o.save === 'loading' ? ' aria-busy="true"' : '') + (o.link === 'loading' ? ' disabled' : '') + S.rl('h') + '>' + (o.save === 'loading' ? '<span class="spin"></span>' : i(o.save === 'done' ? 'check' : 'down')) + '<span class="lb">저장</span></button>';
     var link = '<button class="c-btn sec"' + (o.link === 'loading' ? ' aria-busy="true"' : '') + (busy ? ' disabled' : '') + '>' + (o.link === 'loading' ? '<span class="spin"></span><span class="lb">링크 만드는 중…</span>' : i('link') + '<span class="lb">링크</span>') + '</button>';
     var share = '<button class="c-btn sec"' + (busy ? ' disabled' : '') + '>' + i('share') + '<span class="lb">공유</span></button>';
-    var made = o.link === 'made' || o.fallback;
+    var made = o.link === 'made';
     var float = (o.fallback ? '<div class="c-link"><input aria-label="공유 링크" value="filme.app/t/k3x9q2" readonly><button class="c-btn sec">복사</button></div>' : '') +
       (o.err ? '<div class="c-alert" role="alert"><span class="ic"></span><span class="tx">' + o.err + '</span></div>' : '');
-    var toast = o.toast ? '<div class="c-toast c-rtoast" role="status"><span class="tx">' + o.toast + '</span></div>' : '';
+    var toast = o.toast ? S.toast(o.toast, { mid: true, top: 'calc(var(--sb) + var(--pr-topbar) + var(--pr-s-2))' }) : '';
     return S.phone(S.topbar({ back: '편집으로 돌아가기' }) + '<div class="c-rbody"><div class="c-rtk' + (o.wide ? ' wide' : '') + '">' + S.ticket({ wide: o.wide }) + '</div></div>' +
       '<div class="c-racts">' + (float ? '<div class="c-rfloat">' + float + '</div>' : '') + '<div class="c-rrow">' + save + link + share + '</div>' +
       '<div class="c-rnote">' + (made ? '<p class="c-legal">이 링크는 3일 후 만료돼요.</p>' : '') + '<p class="c-legal">' + NOTICE + '</p></div>' + SAFE + '</div>' + toast + (o.extra || ''));
@@ -327,7 +328,7 @@
       '결과 화면은 앱 테마(라이트 · 다크)를 따라요.'],
     flow: [['저장', 'R-03', 'OS 공유 시트 또는 다운로드'], ['링크', 'R-02', ''], ['공유', 'R-03', '링크가 없으면 먼저 발급'], ['‹', 'E-01', '']], notes: [] });
   F({ id: 'R-02', page: 'result', name: '결과 · 링크', comps: ['C-FLD', 'C-BTN', 'C-ALR', 'C-TST'],
-    variants: [{ st: '로딩 · 만드는 중', html: result({ link: 'loading' }) }, { st: '완료 · 복사함', html: result({ link: 'made', toast: '링크를 복사했어요' }) }, { st: '대체 · 클립보드 거부', html: result({ fallback: true }) }, { st: '오류 · 링크 실패', html: result({ err: '링크를 만들지 못했어요' }) }],
+    variants: [{ st: '로딩 · 만드는 중', html: result({ link: 'loading' }) }, { st: '완료 · 복사함', html: result({ link: 'made', toast: '링크를 복사했어요' }) }, { st: '대체 · 클립보드 거부', html: result({ link: 'made', fallback: true }) }, { st: '오류 · 링크 실패', html: result({ err: '링크를 만들지 못했어요' }) }],
     states: ['[링크]는 링크가 없으면 만들어 바로 복사하고, 있으면 다시 복사해요. 만드는 중엔 "링크 만드는 중…"이고 다른 버튼은 비활성. 복사하면 위쪽 통보 "링크를 복사했어요"(약 2초).',
       '클립보드가 거부될 때만(인앱 웹뷰 등) 버튼 줄 위에 16px 읽기 전용 대체 링크 칸 + [복사]가 떠요(포커스 · 전체 선택).',
       '링크가 생기면 고지 블록 위에 만료 문장 "이 링크는 3일 후 만료돼요."가 붙어요(자리는 미리 잡아 티켓 크기가 안 바뀜). 만료 문장과 비공식 고지는 현행 그대로이고, 링크 전 "3일 뒤 만료" 보조 문구는 없어요.',
