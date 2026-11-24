@@ -1,12 +1,12 @@
 {
- "date": "2026-11-17",
- "round": "후속 정리(소유자 지적 4)",
- "tool": "Aside CLI 1.26.1113.1717 repl (Chromium), check.js MASTER_CHECK, 화면 9페이지 전부",
+ "date": "2026-11-24",
+ "round": "D21 결과 · 공유 반영(R-01~R-03 · S-01)",
+ "tool": "Aside CLI 1.26.1115.1556 repl (Chromium), check.js MASTER_CHECK, 화면 9페이지 전부",
  "runs": [
-  { "w": 393, "theme": "light", "frames": 84, "issues": 0, "console_errors": 0 },
-  { "w": 393, "theme": "dark", "frames": 84, "issues": 0, "console_errors": 0 },
-  { "w": 375, "theme": "light", "frames": 84, "issues": 0, "console_errors": 0 },
-  { "w": 375, "theme": "dark", "frames": 84, "issues": 0, "console_errors": 0 }
+  { "w": 393, "theme": "light", "frames": 85, "issues": 0, "console_errors": null },
+  { "w": 393, "theme": "dark", "frames": 85, "issues": 0, "console_errors": null },
+  { "w": 375, "theme": "light", "frames": 85, "issues": 0, "console_errors": null },
+  { "w": 375, "theme": "dark", "frames": 85, "issues": 0, "console_errors": null }
  ],
  "check_change": "닫힌 details 안 글자는 검사에서 제외(크롬이 상자를 남겨도 보이지 않음). 첫 실행에서 랜딩 이용 고지의 © 줄이 '프레임 밖'으로 16건 잡힌 뒤 추가",
  "eye_check": "34프레임 행 전부 375 다크 + 바뀐 26프레임 393 라이트 · 393 다크 · 375 라이트(78장) 눈 확인. E-02.4 로딩 문구 대비 2.0 → 6.05:1 수정 후 네 구성 재측정 0건"
