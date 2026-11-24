@@ -440,6 +440,7 @@ export function Landing({
   const ctaRef = useRef<HTMLButtonElement>(null);
   const noticeBtnRef = useRef<HTMLButtonElement>(null);
   const sheetOpen = sheet !== null;
+  const modalOpen = sheetOpen || noticeOpen;
   // 시트 · 고지 시트가 닫히면 연 버튼으로 포커스를 돌려준다(APG Dialog) — 버튼은 시트가 걷힌 같은 커밋에서 다시 보인다.
   const wasSheet = useRef(false);
   useEffect(() => {
@@ -512,7 +513,9 @@ export function Landing({
     >
       {showMarketing && (
         // 워드마크 줄 하나(S9 constraint-3) — 헤드라인 · 서브카피 없음. 셸 헤더가 오버레이에 가려지므로 브랜드를 여기서 세운다.
-        <div className="flex h-touch shrink-0 items-center justify-between px-4">
+        // 시트(첨부 · 이용 고지)가 열린 동안 뒤 요소는 inert — aria-modal만으로는 화면 읽기 · Tab이 뒤로 새고, 격자에서 고른
+        // 무드가 시트의 스냅샷 무드와 어긋날 수 있다(code-review PR #848).
+        <div inert={modalOpen} className="flex h-touch shrink-0 items-center justify-between px-4">
           <Wordmark />
           <button
             ref={noticeBtnRef}
@@ -527,7 +530,7 @@ export function Landing({
       )}
 
       {showMarketing && (
-        <div className="flex min-h-0 flex-1 flex-col">
+        <div inert={modalOpen} className="flex min-h-0 flex-1 flex-col">
           <MoodCarousel
             active={active}
             onSelect={setActive}
@@ -541,6 +544,7 @@ export function Landing({
       {/* 아래 버튼 묶음(S9 constraint-3) — 판 없이 같은 --pr-stage 면. 시트가 열린 동안은 숨고 시트가 그 자리에 선다. */}
       <div
         data-testid="landing-bottom"
+        inert={noticeOpen}
         className={cn('relative z-[5] flex shrink-0 flex-col gap-2 px-4 pt-3', sheetOpen && 'hidden')}
         style={{ paddingBottom: 'calc(8px + env(safe-area-inset-bottom, 0px))' }}
       >

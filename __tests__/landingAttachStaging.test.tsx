@@ -391,6 +391,23 @@ describe("포스터 + 스크린샷 → '만들기' (acceptance-8)", () => {
     expect(photo.state.croppedImageUrl).toBe('blob:cropped-1');
     expect(selectedMode()).toEqual(['정보']);
     expect(screen.queryByTestId('ocr-undo-banner') === null).toBe(true);
+    // 포스터 업로드가 dirtyTick을 올리므로 확정 뒤 자동저장이 걸린다 — 포스터만 넣은 티켓도 새로고침에 살아남는다
+    // (code-review PR #848의 '포스터만 확정하면 저장 안 됨' 지적을 잠근다).
+    expect(window.localStorage.getItem(STORAGE_KEY) === null).toBe(true);
+    await waitFor(() => expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? '{}').hadPoster).toBe(true), { timeout: 4000 });
+  });
+
+  test('시트가 열린 동안 워드마크 줄 · 전시는 inert라 뒤로 새지 않는다 (code-review PR #848)', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    const gallery = screen.getByTestId('mood-gallery');
+    const galleryWrap = gallery.parentElement!;
+    expect(galleryWrap.hasAttribute('inert')).toBe(false);
+    await user.click(screen.getByTestId('landing-cta'));
+    expect(galleryWrap.hasAttribute('inert')).toBe(true);
+    expect(screen.getByTestId('landing-notice-open').parentElement!.hasAttribute('inert')).toBe(true);
+    await user.keyboard('{Escape}');
+    expect(galleryWrap.hasAttribute('inert')).toBe(false);
   });
 });
 

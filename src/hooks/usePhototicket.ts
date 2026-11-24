@@ -1043,10 +1043,9 @@ export function usePhototicket() {
     });
     pendingRevokeUrlsRef.current = new Set(snap.pendingRevokeUrls);
     historySnapshotsRef.current = snap.historySnapshots;
-    setState((prev) => {
-      for (const url of blobUrlsOf(prev)) if (!keep.has(url)) URL.revokeObjectURL(url);
-      return snap.state;
-    });
+    // 해제할 blob은 업데이터 밖에서 마지막으로 렌더된 문서로 정한다 — 업데이터는 다시 불릴 수 있어 부수효과를 두지 않는다.
+    for (const url of blobUrlsOf(stateRef.current)) if (!keep.has(url)) URL.revokeObjectURL(url);
+    setState(snap.state);
     posterCrop.importState({ originalSrc: snap.posterOriginalSrc });
     setDraftRestored(snap.draftRestored);
     setAwaitingPosterRestore(snap.awaitingPosterRestore);
@@ -1079,13 +1078,11 @@ export function usePhototicket() {
     protectedUrlsRef.current = new Set();
     // 새 문서가 아직 쥔 URL(예: 스냅샷 포스터를 그대로 이어 쓴 경우)은 남기고 나머지만 푼다.
     const stillUsedOriginal = posterCropRef.current.exportState().originalSrc;
-    setState((prev) => {
-      const live = new Set(blobUrlsOf(prev));
-      if (stillUsedOriginal) live.add(stillUsedOriginal);
-      deferred.forEach((url) => {
-        if (!live.has(url)) URL.revokeObjectURL(url);
-      });
-      return prev;
+    // cancelStaging과 같은 이유로 업데이터 밖에서 마지막으로 렌더된 문서를 본다.
+    const live = new Set(blobUrlsOf(stateRef.current));
+    if (stillUsedOriginal) live.add(stillUsedOriginal);
+    deferred.forEach((url) => {
+      if (!live.has(url)) URL.revokeObjectURL(url);
     });
     // 보류가 풀렸으니 히스토리가 더는 안 쥔 보류 URL을 지금 회수한다(스택이 안 바뀌면 setHistorySnapshots가 다시 안 본다).
     if (pendingRevokeUrlsRef.current.size > 0) {
