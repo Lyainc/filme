@@ -22,6 +22,7 @@ import { describe, expect, test, afterAll, afterEach, mock } from 'bun:test';
 import { render, screen, cleanup, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { PhototicketState } from '@/types';
+import { enterWithOcrViaSheet } from './helpers/landingAttach';
 
 // runOcr는 MobileEditorShell(→ OcrUploadCard)이 로드되기 전에 mock해야 한다 — bun의 mock.module은
 // hoisting되지 않는다. 스프레드 스냅샷 + afterAll 복원(#611) — require()가 주는 건 살아있는
@@ -59,14 +60,6 @@ function MobileHarness() {
       fieldVisibility={photo.state.fieldVisibility}
     />
   );
-}
-
-/** 셸이 마운트하는 파일 input 중 OCR 카드의 것(accept="image/*")만 골라낸다. */
-function ocrFileInput(): HTMLInputElement {
-  const inputs = Array.from(document.querySelectorAll('input[type="file"]')) as HTMLInputElement[];
-  const input = inputs.find((i) => i.getAttribute('accept') === 'image/*');
-  if (!input) throw new Error('OcrUploadCard file input not found');
-  return input;
 }
 
 /** resolve를 밖으로 꺼낸 지연 Promise — kobisDetailUnmount.test.tsx와 동일 패턴. */
@@ -200,9 +193,9 @@ describe('OCR의 KOBIS 보강 도중 사용자가 다른 영화를 고르면, �
     const kobis = stubKobis();
     render(<MobileHarness />);
 
-    // title만 인식(기생충). onOcrApply가 랜딩을 걷어(#727 "새로 시작") 편집 캔버스를 연다.
+    // title만 인식(기생충). 랜딩 시트의 OCR이 새 문서를 열고(#727 "새로 시작") 만들기가 편집 캔버스로 들어간다(#826 S9).
     ocrImpl = async () => ({ title: '기생충' });
-    await user.upload(ocrFileInput(), ticketFile());
+    await enterWithOcrViaSheet(user, ticketFile());
     await pickHostInTitleEditor(user);
 
     // 회귀 지점: 고치기 전엔 setInfo가 무조건 적용돼 여기서 title이 '기생충'/movieCd가 'PARASITE'로
@@ -225,7 +218,7 @@ describe('버려진 OCR 보강은 되돌리기 대상에서 빠진다 (#801)', (
     render(<MobileHarness />);
 
     ocrImpl = async () => ({ title: '기생충', theater: 'CGV 용산', seat: 'H12' });
-    await user.upload(ocrFileInput(), ticketFile());
+    await enterWithOcrViaSheet(user, ticketFile());
     expect(captured.movieInfo.theater).toBe('CGV 용산');
     expect(captured.movieInfo.seat).toBe('H12');
 
@@ -252,7 +245,7 @@ describe('버려진 OCR 보강은 되돌리기 대상에서 빠진다 (#801)', (
     render(<MobileHarness />);
 
     ocrImpl = async () => ({ title: '기생충' });
-    await user.upload(ocrFileInput(), ticketFile());
+    await enterWithOcrViaSheet(user, ticketFile());
     await pickHostInTitleEditor(user);
     expect(bannerShown()).toBe(true);
 
@@ -283,7 +276,7 @@ describe('버려진 OCR 보강은 되돌리기 대상에서 빠진다 (#801)', (
     render(<MobileHarness />);
 
     ocrImpl = async () => ({ title: '기생충', chain: 'cgv' });
-    await user.upload(ocrFileInput(), ticketFile());
+    await enterWithOcrViaSheet(user, ticketFile());
     await pickHostInTitleEditor(user);
     expect(screen.getByTestId('ocr-undo-banner').textContent).toContain('영화 정보를 자동으로 불러왔어요.');
 
@@ -326,7 +319,7 @@ describe('버려지는 OCR 결과가 무매칭이어도 "못 찾았다" 안내�
 
     render(<MobileHarness />);
     ocrImpl = async () => ({ title: '기생충' });
-    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+    await enterWithOcrViaSheet(user, ticketFile());
 
     await user.click(await screen.findByRole('tab', { name: /^정보/ }));
     await user.click(within(screen.getByTestId('dock-body')).getByRole('button', { name: /^제목 (?!티켓에 표시)/ }));

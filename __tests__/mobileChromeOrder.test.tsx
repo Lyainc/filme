@@ -56,6 +56,9 @@ function seedUploaded() {
   fireEvent.click(screen.getByText('seed'));
 }
 
+/** OCR 카드의 숨은 파일 입력(S9: 랜딩 안에서 카드는 보이는 버튼 없이 이 입력만 낸다). */
+const ocrInput = () => screen.getByLabelText('티켓 스크린샷으로 자동입력') as HTMLInputElement;
+
 /** compareDocumentPosition: DOCUMENT_POSITION_FOLLOWING(4) 비트가 서면 b가 a보다 DOM 뒤. */
 function precedes(a: Element, b: Element): boolean {
   return (a.compareDocumentPosition(b) & 4) !== 0;
@@ -65,12 +68,16 @@ describe('MobileEditorShell chrome 정보위계 (#261/#315/#363/#388)', () => {
   test('업로드 전(랜딩, #363→#614→#635): OCR 주연 → 포스터 CTA 보조 순서, 편집 도크는 CSS hidden', async () => {
     render(<Harness />);
 
-    // #635로 위계가 뒤집혔다 — OCR이 주연(#142), 포스터 CTA는 그 아래 이탈 경로로 보조다.
-    const poster = screen.getByRole('button', { name: '포스터 업로드' });
-    const ocr = await screen.findByRole('button', { name: '티켓 스크린샷으로 자동입력' });
+    // #635 위계(OCR 주연)는 S9에서 주 버튼 '티켓 스크린샷으로 자동입력'이 그대로 잇고, 보조는 '직접 입력'이다(링크 쌍 삭제).
+    const direct = screen.getByRole('button', { name: '직접 입력' });
+    const ocr = await screen.findByTestId('landing-cta');
     const dock = screen.getByTestId('editor-dock');
 
-    expect(precedes(ocr, poster)).toBe(true);
+    expect(ocr.textContent).toContain('티켓 스크린샷으로 자동입력');
+    expect(precedes(ocr, direct)).toBe(true);
+    // 랜딩 안에는 OCR 카드의 보이는 버튼이 없다 — 숨은 입력(같은 라벨)과 role=status 리전만 남는다.
+    expect(screen.getAllByRole('button', { name: '티켓 스크린샷으로 자동입력' }).length).toBe(1);
+    expect(!!ocrInput()).toBe(true);
     // 도크는 마운트 유지(도구 선택 state 보존, #297 P1 패턴) + hidden 클래스로만 숨김.
     expect(dock.closest('.hidden')).not.toBeNull();
   });
@@ -90,7 +97,7 @@ describe('MobileEditorShell chrome 정보위계 (#261/#315/#363/#388)', () => {
     // 레포 컨벤션대로 .hidden 클래스를 가진 조상 존재 여부로 직접 단언한다(도크와 동일 패턴).
     // 본문 OCR 카드는 여전히 DOM에 있다(unmount 아님) — 업로드 후 접근 가능한 진입점은
     // 정보 모드 버튼이고, 그 버튼이 이 단일 카드의 파일 선택을 연다(#826 S2).
-    const ocr = screen.getByRole('button', { name: '티켓 스크린샷으로 자동입력' });
+    const ocr = ocrInput();
     expect(ocr.closest('.hidden')).not.toBeNull();
     expect(dock.closest('.hidden') === null).toBe(true);
   });
@@ -101,16 +108,17 @@ describe('MobileEditorShell chrome 정보위계 (#261/#315/#363/#388)', () => {
     // 인스턴스 유지 — remount면 노드가 새로 생성돼 레퍼런스가 갈린다. #388로 업로드 후엔 이 카드가
     // hidden 조상을 갖게 되지만, 여전히 unmount는 아니어야 한다(같은 DOM 노드 참조 유지).
     render(<Harness />);
-    const before = await screen.findByRole('button', { name: '티켓 스크린샷으로 자동입력' });
+    await screen.findByTestId('landing-cta');
+    const before = ocrInput();
 
     seedUploaded();
-    const afterSeed = screen.getByRole('button', { name: '티켓 스크린샷으로 자동입력' });
+    const afterSeed = ocrInput();
     expect(afterSeed === before).toBe(true);
     expect(afterSeed.closest('.hidden')).not.toBeNull();
 
     // max도 unmount가 아니라 CSS hidden — 전체 보기 왕복 중 동일 레이스 차단.
     fireEvent.click(screen.getByRole('button', { name: '전체 보기' }));
-    const afterMax = screen.getByRole('button', { name: '티켓 스크린샷으로 자동입력' });
+    const afterMax = ocrInput();
     expect(afterMax === before).toBe(true);
     expect(afterMax.closest('.hidden')).not.toBeNull();
   });
@@ -118,7 +126,7 @@ describe('MobileEditorShell chrome 정보위계 (#261/#315/#363/#388)', () => {
   test('업로드 후: 편집 메뉴에는 빈 항목 표시 스위치가 있고, 포스터 교체·재크롭은 메뉴가 아니라 도크 사진 모드에 있다(#826 S2)', async () => {
     render(<Harness />);
     seedUploaded();
-    await screen.findByRole('button', { name: '티켓 스크린샷으로 자동입력' });
+    await screen.findByTestId('editor-dock');
 
     fireEvent.click(screen.getByRole('button', { name: '편집 메뉴' }));
     const menu = screen.getByRole('dialog', { name: '편집 메뉴' });

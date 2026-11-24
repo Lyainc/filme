@@ -97,8 +97,8 @@ export function OcrUploadCard({
   onNeedManualTitle,
 }: OcrUploadCardProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  // 랜딩이 빌려준 자리(#826 S5 constraint-11) — 있으면 안내를 이 카드 아래가 아니라 전시 아래 위치 표시 자리에
-  // 띄우고, 인식 중 여부를 랜딩의 링크 쌍에 알린다. 랜딩 밖(테스트 단독 렌더)에선 null이라 자체 토스트로 남는다.
+  // 랜딩이 빌려준 자리(#826 S5 → S9 constraint-11) — 있으면 안내를 이 카드 아래가 아니라 첨부 시트의 '티켓 스크린샷'
+  // 행 상태 줄에 띄우고, 인식 중 여부도 그 행에 알린다. 랜딩 밖(테스트 단독 렌더)에선 null이라 자체 토스트로 남는다.
   const landingSlot = useContext(LandingSlotContext);
   const [isProcessing, setIsProcessing] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -248,7 +248,7 @@ export function OcrUploadCard({
 
       // shared 윈도우 소진(#635 c2) — "인식된 정보가 없어요"와 원인이 다르므로 갈라 안내하고,
       // 아래 필드 적용 로직(전부 빈 결과이므로 어차피 no-op)은 타지 않는다. 이탈 경로는 이 토스트가
-      // 아니라 Landing의 exit row(포스터 업로드 · 포스터 없이 직접 입력)가 상시 담당한다.
+      // 아니라 랜딩의 '직접 입력' 버튼(#826 S9)이 상시 담당한다.
       if (result.rateLimited) {
         showToast('지금 요청이 많아요. 잠시 후 다시 시도하거나 직접 입력해 주세요.');
         return;
@@ -359,6 +359,9 @@ export function OcrUploadCard({
       {/* OCR이 주 CTA다(#635, #142 위계 반전 — 포스터 CTA가 이제 보조). PrimaryCta와 같은
           시각 언어(accent 채움 + 스프로킷 로딩)를 여기서 직접 낸다 — isProcessing/파일 input을
           OcrUploadCard가 쥐고 있어 별도 컴포넌트로 쪼개면 상태를 다시 끌어올려야 한다. */}
+      {/* 랜딩 안에서는 보이는 버튼을 그리지 않는다(S9 constraint-8) — 랜딩의 주 버튼이 첨부 시트를 열고, 시트의
+          '티켓 스크린샷' 행이 openRef로 이 입력을 연다. 단독 렌더(랜딩 밖)에서만 자체 버튼이 선다. */}
+      {!landingSlot && (
       <button
         type="button"
         onClick={handleClick}
@@ -385,6 +388,7 @@ export function OcrUploadCard({
         )}
         <span>{isProcessing ? '티켓 인식 중…' : idleLabel}</span>
       </button>
+      )}
 
       {toast && !landingSlot && (
         <div className="absolute top-full left-0 mt-2 max-w-[260px] bg-ink text-s2 text-caption font-medium px-3 py-1.5 rounded-chip shadow-lg animate-fade-in z-10">

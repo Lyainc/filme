@@ -20,6 +20,7 @@ import { POSTER_RATIO, TARGET_HEIGHT } from '@/utils/constants';
 import type { Area } from '@/utils/imageCrop';
 import { mobileShellProps } from './shellHarness';
 import { DockHarness, dockProbe, resetDockProbe } from './dockHarness';
+import { attachSheet, enterWithPosterViaSheet, makeFromSheet, pickPosterInSheet } from './helpers/landingAttach';
 
 // holdCrop: 다음 크롭을 붙잡아 '적용 중' 창을 관측 가능하게 한다. failCrop: getCroppedImg를 던지게 한다.
 let cropMode: 'ok' | 'fail' | 'hold' = 'ok';
@@ -395,17 +396,17 @@ describe('acceptance-6 — 다른 사진', () => {
     expect(picked).toHaveLength(0);
   });
 
-  describe('랜딩에서 연 포스터 크롭', () => {
+  // 랜딩의 포스터 크롭은 첨부 시트의 '포스터' 행에서만 열린다(#826 S9). 적용해도 랜딩은 시트에 머물고 만들기가 걷는다.
+  describe('랜딩 시트에서 연 포스터 크롭', () => {
     const KEY = 'filme:phototicket:v1';
-    test('다른 사진을 골라도 랜딩은 그대로이고 적용에서만 벗어난다', async () => {
+    test('다른 사진을 골라도 랜딩은 그대로이고, 적용해도 시트에 머물다 만들기에서만 벗어난다', async () => {
       window.localStorage.setItem(KEY, JSON.stringify({ movieInfo: { title: '인터스텔라' } }));
       const user = userEvent.setup();
       render(<Shell />);
       const landing = () => screen.getByTestId('landing');
       expect(landing().classList.contains('fixed')).toBe(true);
 
-      await user.click(screen.getByRole('button', { name: /포스터 업로드/ }));
-      await openPoster('a.png');
+      await pickPosterInSheet(user, 'a.png');
       pickAnother(pngFile('b.png'));
       await screen.findByRole('dialog', { name: '포스터 자르기' });
       expect(landing().classList.contains('fixed')).toBe(true);
@@ -413,6 +414,12 @@ describe('acceptance-6 — 다른 사진', () => {
 
       loadImage();
       await user.click(inDialog().getByRole('button', { name: '적용' }));
+      // 적용은 새 문서를 열 뿐 랜딩을 걷지 않는다 — 시트에 썸네일이 서고 만들기가 활성이다.
+      expect(landing().classList.contains('fixed')).toBe(true);
+      expect(!!attachSheet()).toBe(true);
+      await screen.findByTestId('landing-sheet-poster-thumb');
+
+      await makeFromSheet(user);
       expect(landing().classList.contains('hidden')).toBe(true);
     });
   });
@@ -544,8 +551,7 @@ describe('acceptance-14 — 다시 자르기 중 다른 사진을 고르고 닫�
   async function recropWithAnother(user: ReturnType<typeof userEvent.setup>, revoke: ReturnType<typeof spyOn>) {
     let photo!: Photo;
     render(<Shell onPhoto={(p) => { photo = p; }} />);
-    await user.click(screen.getByRole('button', { name: /포스터 업로드/ }));
-    await pickAndApply(user, 'a.png');
+    await enterWithPosterViaSheet(user, 'a.png');
     const first = photo.posterCrop.originalSrc!;
     expect(revoke.mock.calls.flat()).not.toContain(first);
 

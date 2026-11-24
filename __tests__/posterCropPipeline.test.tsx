@@ -9,7 +9,8 @@
  *   - 재크롭 취소(새 파일 안 고름) → 원본 유지, 재크롭 계속 활성
  *   - 첫 업로드 취소 → 원본 폐기, 프리뷰 없음
  *   - 드롭은 아무 일도 안 한다(#826 S5 D18-2로 드롭 업로드 제거)
- *   - 마우스 없이 Tab + Enter만으로 업로드 → 크롭 → 적용 완주(#608, 파일 맨 아래 describe)
+ *   - 마우스 없이 Tab + Enter만으로 시트 → 포스터 행 → 크롭 → 적용 완주(#608, 파일 맨 아래 describe)
+ *   - 랜딩 포스터는 첨부 시트에서만 들어온다(#826 S9): 크롭 확정은 시트에 머물고 랜딩은 '만들기'가 걷는다
  *
  * 그리고 #548이 실제로 고치는 것: 원본 objectURL의 소유자가 컴포넌트가 아니라 usePhototicket
  * 이라는 것. 예전엔 셸이 소유해 셸이 죽을 때 revoke됐고, 그 결과
@@ -26,9 +27,19 @@
  * load 이벤트 관용구를 그 파일들에서 그대로 가져왔다.
  */
 import { describe, expect, test, afterAll, afterEach, mock, spyOn } from 'bun:test';
-import { render, screen, cleanup, fireEvent, act, within } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, act, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mobileShellProps } from './shellHarness';
+import {
+  attachSheet,
+  enterWithPosterViaSheet,
+  loadCropImage,
+  makeFromSheet,
+  addPosterViaSheet,
+  pickPosterInSheet,
+  posterFileInput,
+  pngFile,
+} from './helpers/landingAttach';
 
 // holdCrop: 다음 크롭을 붙잡아 isCropping(busy) 창을 관측 가능하게 한다. releaseCrop으로 푼다.
 let cropN = 0;
@@ -59,31 +70,18 @@ mock.module('@/utils/imageCrop', () => ({
 const { usePhototicket } = require('@/hooks/usePhototicket') as typeof import('@/hooks/usePhototicket');
 const { MobileEditorShell } = require('@/components/v2/MobileEditorShell') as typeof import('@/components/v2/MobileEditorShell');
 
-// 포스터 전용 파일 input — OcrUploadCard의 image/* input, 사진 모드 로고 행 input(accept에 jpeg 포함)과 구분한다.
-const posterFileInput = () => document.querySelector('input[type="file"][aria-label="포스터 이미지 파일"]') as HTMLInputElement;
-const pngFile = (name: string) => new File([name], name, { type: 'image/png' });
 const cropDialog = () => screen.queryByRole('dialog', { name: '포스터 자르기' });
 /** 모달이 지금 어느 원본을 가리키는지. 티켓 프리뷰의 <img>와 안 섞이게 다이얼로그 안에서만 찾는다. */
-const cropSrc = () => document.querySelector('[role="dialog"] img')?.getAttribute('src') ?? null;
+const cropSrc = () => screen.getByRole('dialog', { name: '포스터 자르기' }).querySelector('img')?.getAttribute('src') ?? null;
 // 교체 · 재크롭은 메뉴가 아니라 도크 사진 모드의 포스터 행에 있다(#826 S2, constraint-3) — 버튼 이름은 '교체' · '자르기'.
 const posterRow = () => within(document.querySelector('[data-asset-row="포스터"]') as HTMLElement);
 const recropButton = () => posterRow().getByRole('button', { name: '자르기' }) as HTMLButtonElement;
-
-/** 실물 크롭 모달의 onImageLoad(mediaAspect 계산 → 크롭 초기화)를 태운다 — 안 하면 '적용'이 비활성. */
-function loadImage(naturalWidth = 2000, naturalHeight = 3000) {
-  const img = document.querySelector('[role="dialog"] img') as HTMLImageElement;
-  Object.defineProperty(img, 'naturalWidth', { value: naturalWidth, configurable: true });
-  Object.defineProperty(img, 'naturalHeight', { value: naturalHeight, configurable: true });
-  Object.defineProperty(img, 'width', { value: naturalWidth, configurable: true });
-  Object.defineProperty(img, 'height', { value: naturalHeight, configurable: true });
-  fireEvent.load(img);
-}
 
 /** 파일 선택 → 실물 모달 적용까지. 이후 photo에 포스터 + 크롭 원본이 모두 서 있다. */
 async function pickAndApply(user: ReturnType<typeof userEvent.setup>, name: string) {
   fireEvent.change(posterFileInput(), { target: { files: [pngFile(name)] } });
   await screen.findByRole('dialog', { name: '포스터 자르기' });
-  loadImage();
+  loadCropImage();
   await user.click(screen.getByRole('button', { name: '적용' }));
 }
 
@@ -91,7 +89,7 @@ async function pickAndApply(user: ReturnType<typeof userEvent.setup>, name: stri
 async function pickAndCancel(user: ReturnType<typeof userEvent.setup>, name: string) {
   fireEvent.change(posterFileInput(), { target: { files: [pngFile(name)] } });
   await screen.findByRole('dialog', { name: '포스터 자르기' });
-  await user.click(screen.getByRole('button', { name: '닫기' }));
+  await user.click(within(screen.getByRole('dialog', { name: '포스터 자르기' })).getByRole('button', { name: '닫기' }));
 }
 
 function MobileHarness({ onPhoto }: { onPhoto?: (p: ReturnType<typeof usePhototicket>) => void } = {}) {
@@ -103,7 +101,7 @@ function MobileHarness({ onPhoto }: { onPhoto?: (p: ReturnType<typeof usePhototi
 /** 포스터 행은 도크 사진 모드에 있다 — 그 모드 탭을 눌러 연다. */
 const openMenu = (user: ReturnType<typeof userEvent.setup>) =>
   user.click(screen.getByRole('tab', { name: '사진' }));
-const uploadCta = () => screen.getByRole('button', { name: /포스터 업로드/ });
+const landingCta = () => screen.getByTestId('landing-cta');
 
 afterEach(() => {
   cleanup();
@@ -120,14 +118,15 @@ afterAll(() => {
 });
 
 /**
- * 랜딩 이탈이 걸리는 시점(#727 c2) — 다섯 이탈 중 포스터 축은 **크롭 확정**에 붙는다. 파일 선택
- * (c4)도, 크롭 취소도, 크롭 실패도 아니다. 이 셋을 갈라 재지 않으면 "언제 걷히나"가 통째로
- * 검증 밖으로 나간다 — landingOverlay는 파일 선택까지만, 위 상태머신 describe는 원본 수명만 본다.
+ * 랜딩 이탈이 걸리는 시점(#727 c2 → #826 S9) — 포스터 축은 이제 **시트의 크롭 확정이 문서를 새로 열고, 랜딩을 걷는 건
+ * '만들기'**다(constraint-9). 파일 선택(c4)도, 크롭 취소도, 크롭 실패도 시트를 비운 채 두고 문서를 안 건드린다. 이 셋을 갈라
+ * 재지 않으면 "언제 새 문서가 되나"가 통째로 검증 밖으로 나간다 — landingOverlay는 파일 선택까지만, 위 상태머신 describe는
+ * 원본 수명만 본다.
  *
- * 실패 분기가 특히 중요하다: 문서 리셋을 크롭 **전**에 걸면 실패 토스트 뒤에 랜딩은 그대로인데
- * 복원된 문서만 비어, "이어서 만들기"가 빈 편집 화면을 열고 그 첫 편집이 멀쩡한 저장분을 덮는다.
+ * 실패 분기가 특히 중요하다: 문서 리셋(스냅샷)을 크롭 **전에** 걸고 되돌리지 않으면 실패 토스트 뒤에 시트는 비었는데
+ * 복원된 문서만 비어, 닫은 뒤 "이어서 만들기"가 빈 편집 화면을 열고 그 첫 편집이 멀쩡한 저장분을 덮는다.
  */
-describe('랜딩 이탈은 크롭 확정에만 걸린다 (#727 c2)', () => {
+describe('랜딩 포스터는 시트의 크롭 확정에 문서가 열리고 만들기에 랜딩이 걷힌다 (#727 c2 → #826 S9)', () => {
   const STORAGE_KEY = 'filme:phototicket:v1';
   const landing = () => screen.getByTestId('landing');
   const seedDraft = () =>
@@ -136,47 +135,92 @@ describe('랜딩 이탈은 크롭 확정에만 걸린다 (#727 c2)', () => {
       JSON.stringify({ movieInfo: { title: '인터스텔라' } })
     );
 
-  test('크롭 확정이 랜딩을 걷고, 복원된 문서는 새 문서로 되돌아간다', async () => {
+  test('시트의 크롭 확정은 랜딩을 안 걷고 새 문서를 열며, 만들기가 랜딩을 걷는다(저장분은 그대로)', async () => {
     seedDraft();
     const user = userEvent.setup();
-    render(<MobileHarness />);
+    let photo!: ReturnType<typeof usePhototicket>;
+    render(<MobileHarness onPhoto={(p) => { photo = p; }} />);
     expect(landing().classList.contains('fixed')).toBe(true);
+    expect(photo.state.movieInfo.title).toBe('인터스텔라');
 
-    await user.click(uploadCta());
-    await pickAndApply(user, 'a.png');
+    await addPosterViaSheet(user, 'a.png');
+
+    // 확정만으로는 랜딩이 그대로고 시트가 열려 있다 — 문서는 이미 새 문서다(옛 draft 제목이 없다).
+    expect(landing().classList.contains('fixed')).toBe(true);
+    expect(!!attachSheet()).toBe(true);
+    expect(photo.state.croppedImageUrl).toBe('blob:cropped-1');
+    expect(photo.state.movieInfo.title).toBe('');
+
+    await makeFromSheet(user);
 
     expect(landing().classList.contains('hidden')).toBe(true);
-    // 새 문서다 — 옛 draft의 제목이 안 따라온다. 저장분은 그대로 살아 있다(c7).
+    expect(attachSheet() === null).toBe(true);
     expect(document.body.textContent).not.toContain('인터스텔라');
+    // 저장분은 새 문서의 첫 자동저장에야 덮인다(c7) — 만들기 직후엔 그대로 살아 있다.
     expect(window.localStorage.getItem(STORAGE_KEY)).toContain('인터스텔라');
   });
 
-  test('크롭이 실패하면 랜딩도 복원된 문서도 손대지 않는다', async () => {
+  test('크롭이 실패하면 시트는 빈 채로 남고 복원된 문서도 손대지 않는다', async () => {
     seedDraft();
     failCrop = true;
     const user = userEvent.setup();
-    render(<MobileHarness />);
+    let photo!: ReturnType<typeof usePhototicket>;
+    render(<MobileHarness onPhoto={(p) => { photo = p; }} />);
 
-    await user.click(uploadCta());
-    await pickAndApply(user, 'a.png');
+    await pickPosterInSheet(user, 'a.png');
+    await user.click(screen.getByRole('button', { name: '적용' }));
 
-    // 모달은 열린 채로 남아 재시도 가능하고, 랜딩은 오버레이 그대로다.
-    expect(!!cropDialog()).toBe(true);
     expect(landing().classList.contains('fixed')).toBe(true);
-    // 복원된 문서가 살아 있다 — 복원 행 라벨이 제목을 그대로 싣고 있는 게 근거다.
-    expect(screen.getByTestId('landing-restore').textContent).toContain('인터스텔라');
+    // 시트엔 아무것도 안 들어갔다 — 썸네일 없음, 만들기 비활성.
+    expect(screen.queryByTestId('landing-sheet-poster-thumb') === null).toBe(true);
+    expect(screen.getByTestId('landing-sheet-make').getAttribute('aria-disabled')).toBe('true');
+    // 복원된 문서가 살아 있다 — 스냅샷으로 되돌렸으니 메모리 문서가 저장분 그대로다.
+    expect(photo.state.movieInfo.title).toBe('인터스텔라');
+    expect(photo.state.croppedImageUrl).toBeFalsy();
   });
 
-  test('크롭을 취소해도 랜딩은 오버레이 그대로다', async () => {
+  // S9 통합 중 TB가 잡은 회귀의 잠금: 첫 첨부의 크롭이 실패했을 때 스냅샷을 되돌리면 크롭 상태까지 스냅샷으로 돌아가
+  // 모달이 닫히고 고른 파일이 버려졌다. 이제 실패는 스냅샷을 그대로 두고(문서는 안 바뀌었다), 재시도가 성공한 그때 새 문서를
+  // 연다(MobileEditorShell claimFreshDoc). 시트를 닫으면 그때 원래 문서로 돌아간다.
+  test('크롭이 실패해도 모달이 열린 채 남아 재시도할 수 있다 (S6 C-03 — 첫 첨부 실패는 스냅샷을 되돌리지 않는다, S9)', async () => {
+    seedDraft();
+    failCrop = true;
+    const user = userEvent.setup();
+    let photo!: ReturnType<typeof usePhototicket>;
+    render(<MobileHarness onPhoto={(p) => { photo = p; }} />);
+
+    await pickPosterInSheet(user, 'a.png');
+    await user.click(screen.getByRole('button', { name: '적용' }));
+
+    expect(!!cropDialog()).toBe(true);
+    expect(photo.state.movieInfo.title).toBe('인터스텔라');
+
+    // 재시도가 성공하면 그때 고른 무드의 새 문서가 열리고 시트에 포스터가 들어간다.
+    failCrop = false;
+    await user.click(screen.getByRole('button', { name: '적용' }));
+    await waitFor(() => expect(cropDialog() === null).toBe(true));
+    expect(!!screen.queryByTestId('landing-sheet-poster-thumb')).toBe(true);
+    expect(photo.state.movieInfo.title).toBe('');
+
+    // 닫으면 시트 전 문서로 돌아간다.
+    await user.click(within(attachSheet()!).getByRole('button', { name: '닫기' }));
+    await waitFor(() => expect(photo.state.movieInfo.title).toBe('인터스텔라'));
+  });
+
+  test('크롭을 취소하면 시트는 빈 채로, 랜딩은 오버레이 그대로, 문서는 손대지 않는다', async () => {
     seedDraft();
     const user = userEvent.setup();
-    render(<MobileHarness />);
+    let photo!: ReturnType<typeof usePhototicket>;
+    render(<MobileHarness onPhoto={(p) => { photo = p; }} />);
 
-    await user.click(uploadCta());
-    await pickAndCancel(user, 'a.png');
+    await pickPosterInSheet(user, 'a.png');
+    await user.click(within(screen.getByRole('dialog', { name: '포스터 자르기' })).getByRole('button', { name: '닫기' }));
 
     expect(landing().classList.contains('fixed')).toBe(true);
-    expect(screen.getByTestId('landing-restore').textContent).toContain('인터스텔라');
+    expect(!!attachSheet()).toBe(true);
+    expect(screen.queryByTestId('landing-sheet-poster-thumb') === null).toBe(true);
+    expect(screen.getByTestId('landing-sheet-make').getAttribute('aria-disabled')).toBe('true');
+    expect(photo.state.movieInfo.title).toBe('인터스텔라');
   });
 });
 
@@ -185,8 +229,7 @@ describe('포스터 크롭 상태머신 (#182 PR #191 · #315, 실제 파일-선
     const user = userEvent.setup();
     render(<MobileHarness />);
 
-    await user.click(uploadCta());
-    await pickAndApply(user, 'a.png');
+    await enterWithPosterViaSheet(user, 'a.png');
 
     await openMenu(user);
     expect(recropButton().disabled).toBe(false);
@@ -197,8 +240,7 @@ describe('포스터 크롭 상태머신 (#182 PR #191 · #315, 실제 파일-선
     let photo!: ReturnType<typeof usePhototicket>;
     render(<MobileHarness onPhoto={(p) => { photo = p; }} />);
 
-    await user.click(uploadCta());
-    await pickAndApply(user, 'a.png');
+    await enterWithPosterViaSheet(user, 'a.png');
     const first = photo.posterCrop.originalSrc!;
 
     // 교체: 새 파일을 고른 뒤 취소 — 새 파일은 '적용'으로 확정되기 전이라 직전 포스터의 원본은 안 풀린다.
@@ -216,13 +258,12 @@ describe('포스터 크롭 상태머신 (#182 PR #191 · #315, 실제 파일-선
     const user = userEvent.setup();
     render(<MobileHarness />);
 
-    await user.click(uploadCta());
-    await pickAndApply(user, 'a.png');
+    await enterWithPosterViaSheet(user, 'a.png');
 
     await openMenu(user);
     await user.click(recropButton());
     await screen.findByRole('dialog', { name: '포스터 자르기' });
-    await user.click(screen.getByRole('button', { name: '닫기' }));
+    await user.click(within(screen.getByRole('dialog', { name: '포스터 자르기' })).getByRole('button', { name: '닫기' }));
 
     await openMenu(user);
     expect(recropButton().disabled).toBe(false);
@@ -232,15 +273,13 @@ describe('포스터 크롭 상태머신 (#182 PR #191 · #315, 실제 파일-선
     const user = userEvent.setup();
     render(<MobileHarness />);
 
-    await user.click(uploadCta());
-    await pickAndCancel(user, 'a.png');
+    await pickPosterInSheet(user, 'a.png');
+    await user.click(within(screen.getByRole('dialog', { name: '포스터 자르기' })).getByRole('button', { name: '닫기' }));
 
-    // 포스터가 없으면 셸은 업로드 CTA로 되돌아간다 — #614 이후 그 CTA는 랜딩의 것이고, 크롭을
-    // 취소하면 오버레이가 다시 덮인다(파생 showLanding). 사진 모드의 자르기도 그대로 게이팅.
-    expect(uploadCta()).toBeTruthy();
-    // CTA는 overlay·inline 양쪽에 다 있으므로 존재만으로는 "덮였다"를 못 잰다 — landingOverlay와
-    // 같이 fixed 여부로 판정한다(PR #622 claude-review P1).
+    // 포스터가 없으면 랜딩이 그대로 덮인다 — 시트는 빈 채로 열려 있고 문서에 포스터가 안 들어갔다(#826 S9).
+    // 랜딩은 fixed 여부로 판정한다(PR #622 claude-review P1). 사진 모드의 자르기도 그대로 게이팅.
     expect(screen.getByTestId('landing').classList.contains('fixed')).toBe(true);
+    expect(screen.queryByTestId('landing-sheet-poster-thumb') === null).toBe(true);
     await openMenu(user);
     expect(posterRow().queryByRole('button', { name: '자르기' }) === null).toBe(true);
   });
@@ -283,8 +322,7 @@ describe('포스터 크롭 상태머신 (#182 PR #191 · #315, 실제 파일-선
     let photo!: ReturnType<typeof usePhototicket>;
     render(<MobileHarness onPhoto={(p) => { photo = p; }} />);
 
-    await user.click(uploadCta());
-    await pickAndApply(user, 'a.png');
+    await enterWithPosterViaSheet(user, 'a.png');
     const first = photo.posterCrop.originalSrc!;
     expect(revoke.mock.calls.flat()).not.toContain(first);
 
@@ -294,7 +332,7 @@ describe('포스터 크롭 상태머신 (#182 PR #191 · #315, 실제 파일-선
     await screen.findByRole('dialog', { name: '포스터 자르기' });
     expect(revoke.mock.calls.flat()).not.toContain(first);
 
-    loadImage();
+    loadCropImage();
     await user.click(screen.getByRole('button', { name: '적용' }));
     expect(revoke.mock.calls.flat().filter((u) => u === first)).toHaveLength(1);
     expect(photo.posterCrop.originalSrc).not.toBe(first);
@@ -320,8 +358,7 @@ describe('포스터 크롭 상태머신 (#182 PR #191 · #315, 실제 파일-선
     let photo!: ReturnType<typeof usePhototicket>;
     render(<MobileHarness onPhoto={(p) => { photo = p; }} />);
 
-    await user.click(uploadCta());
-    await pickAndApply(user, 'poster.png');
+    await enterWithPosterViaSheet(user, 'poster.png');
     const original = photo.posterCrop.originalSrc!;
 
     await act(async () => {
@@ -353,10 +390,10 @@ describe('드롭으로 포스터 업로드 (#607)', () => {
     expect(notPrevented).toBe(false);
   };
 
-  test('랜딩(업로드 버튼 · 랜딩 루트)에 이미지를 드롭해도 크롭 모달이 안 열린다', () => {
+  test('랜딩(주 버튼 · 랜딩 루트)에 이미지를 드롭해도 크롭 모달이 안 열린다', () => {
     render(<MobileHarness />);
 
-    drop(uploadCta());
+    drop(landingCta());
     drop(screen.getByTestId('landing'));
 
     expect(cropDialog() === null).toBe(true);
@@ -377,23 +414,29 @@ describe('드롭으로 포스터 업로드 (#607)', () => {
 });
 
 describe('키보드 전용 포스터 업로드 경로 (#608)', () => {
-  test('Tab + Enter만으로 업로드 → 크롭 → 적용까지 완주한다', async () => {
+  test('Tab + Enter만으로 시트 열기 → 포스터 행 → 크롭 → 적용까지 완주한다', async () => {
     const user = userEvent.setup();
     let photo!: ReturnType<typeof usePhototicket>;
     render(<MobileHarness onPhoto={(p) => { photo = p; }} />);
 
-    // ① 드롭존까지 Tab으로 도달 + Enter가 파일 선택을 실제로 연다.
-    await tabTo(user, uploadCta(), '포스터 업로드');
+    // ① 주 버튼까지 Tab으로 도달 + Enter가 파일 선택이 아니라 시트를 연다.
+    await tabTo(user, landingCta(), '티켓 스크린샷으로 자동입력');
+    await user.keyboard('{Enter}');
+    await screen.findByTestId('landing-attach-sheet');
+
+    // ② 시트 안 포스터 행까지 Tab으로 가고 Enter가 포스터 파일 선택을 실제로 연다.
+    const posterRowBtn = screen.getByTestId('landing-sheet-poster');
+    await tabTo(user, posterRowBtn, '포스터');
     const openFileDialog = spyOn(posterFileInput(), 'click');
     await user.keyboard('{Enter}');
     expect(openFileDialog).toHaveBeenCalledTimes(1);
 
-    // ② 파일 선택(OS 대화상자는 어느 환경에서도 스크립트 불가) → 크롭 모달.
+    // ③ 파일 선택(OS 대화상자는 어느 환경에서도 스크립트 불가) → 크롭 모달.
     fireEvent.change(posterFileInput(), { target: { files: [pngFile('p.png')] } });
     await screen.findByRole('dialog', { name: '포스터 자르기' });
-    loadImage();
+    loadCropImage();
 
-    // ③ 모달 안에서도 Tab으로 '적용'까지 가고 Enter로 확정된다(포커스 트랩 안이라 밖으로 안 샌다).
+    // ④ 모달 안에서도 Tab으로 '적용'까지 가고 Enter로 확정된다(포커스 트랩 안이라 밖으로 안 샌다).
     const apply = screen.getByRole('button', { name: '적용' }) as HTMLButtonElement;
     expect(apply.disabled).toBe(false);
     await tabTo(user, apply, '적용');
@@ -401,12 +444,15 @@ describe('키보드 전용 포스터 업로드 경로 (#608)', () => {
 
     expect(photo.state.croppedImageUrl).toBe('blob:cropped-1');
     expect(cropDialog() === null).toBe(true);
+    // 시트에 포스터가 들어왔고 만들기가 활성이다.
+    await screen.findByTestId('landing-sheet-poster-thumb');
+    expect(screen.getByTestId('landing-sheet-make').getAttribute('aria-disabled')).toBeNull();
   });
 
   test('포스터가 있는 상태의 교체도 도크 사진 모드에서 키보드로 열린다(#826 S2, 옛 헤더 메뉴 행)', async () => {
     const user = userEvent.setup();
     render(<MobileHarness />);
-    await pickAndApply(user, 'p.png');
+    await enterWithPosterViaSheet(user, 'p.png');
 
     // 모드 바는 APG tabs라 탭 하나만 Tab 정지점이다 — 사진 모드는 클릭으로 열고 그 안 버튼을 키보드로 연다.
     await user.click(screen.getByRole('tab', { name: '사진' }));

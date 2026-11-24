@@ -2,11 +2,11 @@
  * 랜딩 오버레이(#614) 회귀 테스트 — 오버레이를 걷는 조건과 그 반대(안 걷히는 것)를 고정한다.
  *
  * 세 경로:
- *   1. 드래프 없음 → 랜딩이 뜬다(헤드카피 + CTA)
+ *   1. 드래프 없음 → 랜딩이 뜬다(S9: 전시 + 주 버튼 + 직접 입력, 헤드카피 없음)
  *   2. 드래프 복원 → **랜딩이 그대로 뜨고**(#727 c1, #675 D7 뒤집기) 주 CTA 위에 복원 진입점
  *      ("이어서 만들기")이 선다. 눌러야 편집으로 들어가고, 그때 복원된 필드가 그대로 남는다.
- *   3. CTA 1탭 → 셸의 숨은 포스터 input이 **같은 제스처 안에서** click된다(라우트 전환이 없어야
- *      파일 다이얼로그가 열린다는 게 /studio 분리안을 버린 이유다) → 크롭 확정에 오버레이가 걷힌다.
+ *   3. 주 버튼 1탭 → 첨부 시트가 열리고(S9), 시트 행이 숨은 OCR · 포스터 input을 **같은 제스처 안에서** click한다(라우트
+ *      전환이 없어야 파일 다이얼로그가 열린다는 게 /studio 분리안을 버린 이유다).
  *      파일 선택만으로는 안 걷힌다(#727 c4) — 크롭 모달은 DOM 순서로 랜딩 위에 그려지고, 취소하면
  *      랜딩이 그 자리에 그대로 남아 빈 셸이 안 생긴다.
  *
@@ -40,7 +40,7 @@ const landingOverlayShown = () => landing().classList.contains('fixed');
 const restoreRow = () => screen.getByTestId('landing-restore');
 const posterInput = () =>
   document.querySelector('input[type="file"][accept*="jpeg"]') as HTMLInputElement;
-const ocrButton = () => screen.getByRole('button', { name: '티켓 스크린샷으로 자동입력' });
+const ocrButton = () => screen.getByTestId('landing-cta');
 
 beforeEach(() => {
   localStorage.clear();
@@ -52,34 +52,32 @@ afterEach(() => {
 });
 
 describe('랜딩 오버레이(#614)', () => {
-  test('드래프가 없으면 랜딩이 뜨고 카피·히어로·주 CTA·이탈 경로·미인증 고지가 함께 있다', () => {
+  test('드래프가 없으면 랜딩이 뜨고 주 버튼 · 직접 입력 · 이용 고지 · 무드 전시만 있다 (S9)', () => {
     render(<Harness />);
 
     expect(landingOverlayShown()).toBe(true);
-    expect(landing().textContent).toContain('내 굿즈가 돼요');
-    // 실물 티켓 사진도 인식된다는 안내는 서브카피로 옮겨왔다(#635 c7).
-    expect(landing().textContent).toContain('사진으로 찍은 실물 티켓도 돼요.');
-    // 법적 고지는 랜딩 레이아웃 정리 중 제일 지워지기 쉬운 자리라 명시적으로 잡아둔다(#614).
-    expect(landing().textContent).toContain(UNOFFICIAL_TICKET_NOTICE);
-    // OCR이 주 CTA(#635), 포스터 업로드·직접 입력은 그 아래 이탈 경로.
-    expect(ocrButton()).toBeDefined();
-    expect(screen.getByRole('button', { name: '포스터 업로드' })).toBeDefined();
-    expect(screen.getByTestId('landing-skip-poster').textContent).toBe('포스터 없이 직접 입력');
-    // 히어로 auto-scroll 갤러리(#615, 2026-08-04 개정) — 무드칩 대신 무드 샘플이 랜딩에 함께 뜬다.
-    // 목록은 LAYOUTS 전체가 아니라 GALLERY_LAYOUTS다(35mm Wide 제외, 2026-08-08 사용자 피드백).
-    // 각 샘플은 role 없는 순수 button(라디오그룹이 아니다, Landing.tsx 컴포넌트 주석). seamless
-    // loop를 위해 DOM엔 이름당 두 벌이 있지만 뒤 절반은 aria-hidden(fresh-context 리뷰 지적)이라
-    // role 쿼리엔 하나씩만 잡혀야 정상이다.
+    // 헤드라인 · 서브카피 · 링크 쌍 · 상시 고지는 걷혔다(S9 constraint-3 · 12 · 13).
+    expect(landing().textContent).not.toContain('내 굿즈가 돼요');
+    expect(landing().textContent).not.toContain('사진으로 찍은 실물 티켓도 돼요.');
+    expect(landing().textContent).not.toContain(UNOFFICIAL_TICKET_NOTICE);
+    expect(screen.queryByRole('button', { name: '포스터 업로드' }) === null).toBe(true);
+    expect(screen.queryByText('포스터 없이 직접 입력') === null).toBe(true);
+    // 고지는 워드마크 줄의 '이용 고지' 버튼 뒤 시트에 있다(landingS9Presentational · appFooterNotice가 열림을 잰다).
+    expect(!!within(landing()).getByRole('button', { name: '이용 고지' })).toBe(true);
+    expect(ocrButton().textContent).toContain('티켓 스크린샷으로 자동입력');
+    expect(screen.getByTestId('landing-skip-poster').textContent).toBe('직접 입력');
+    // 무드 전시 — 목록은 LAYOUTS 전체가 아니라 GALLERY_LAYOUTS다(35mm Wide 제외, 2026-08-08 사용자 피드백).
+    // 카드는 진입이 아니라 고르기 버튼이라 접근명이 정확히 '{label}'이고 aria-pressed를 든다(S9 constraint-5).
     for (const layout of GALLERY_LAYOUTS) {
-      // 접근명은 정확히 '{label} 무드로 바로 시작'이다 — caption 접미와 title 툴팁은 뺐다(#826 S5 constraint-8).
-      const buttons = within(landing()).getAllByRole('button', { name: `${layout.label} 무드로 바로 시작` });
+      const buttons = within(landing()).getAllByRole('button', { name: layout.label });
       expect(buttons).toHaveLength(1);
       expect(buttons[0].hasAttribute('title')).toBe(false);
+      expect(buttons[0].hasAttribute('aria-pressed')).toBe(true);
       // 히어로 이미지 매핑(HERO_IMAGES, #613) 회귀 방어 — 무드 추가·오타로 엔트리가 빠지면
       // <img src>가 비거나 잘못된 경로로 조용히 깨진다(claude-review PR #759 P1).
       expect(buttons[0].querySelector('img')?.getAttribute('src')).toBe(`/assets/landing/hero-${layout.id}.webp`);
     }
-    expect(within(landing()).queryAllByRole('button', { name: /^35mm 와이드 무드로 바로 시작/ })).toHaveLength(0);
+    expect(within(landing()).queryAllByRole('button', { name: '35mm 와이드' })).toHaveLength(0);
     expect(GALLERY_LAYOUTS.map((l) => l.label)).toEqual(['미니멀', '크라이테리언', '35mm', '에디토리얼', '스텁']);
   });
 
@@ -91,9 +89,9 @@ describe('랜딩 오버레이(#614)', () => {
     render(<Harness />);
 
     expect(landingOverlayShown()).toBe(true);
-    // 마케팅 층도 그대로다 — 재방문자도 무드 갤러리·OCR·업로드·직접 입력을 같은 화면에서 고른다.
-    expect(landing().textContent).toContain('내 굿즈가 돼요');
-    expect(!!screen.queryByRole('button', { name: '포스터 업로드' })).toBe(true);
+    // 전시 · 주 버튼 · 직접 입력도 그대로다 — 재방문자도 같은 화면에서 무드를 고르고 시작한다.
+    expect(!!screen.getByTestId('mood-gallery')).toBe(true);
+    expect(!!screen.getByTestId('landing-skip-poster')).toBe(true);
     expect(!!ocrButton()).toBe(true);
   });
 
@@ -149,7 +147,7 @@ describe('랜딩 오버레이(#614)', () => {
     expect(document.body.textContent).toContain('인터스텔라');
   });
 
-  test('주 CTA 1탭이 포스터 input이 아니라 OCR 파일 input을 그 자리에서 연다', () => {
+  test('주 CTA 1탭은 파일 선택이 아니라 첨부 시트를 연다 (S9 constraint-8)', () => {
     render(<Harness />);
     const input = document.querySelector('input[type="file"][accept="image/*"]') as HTMLInputElement;
     let clicked = 0;
@@ -158,10 +156,14 @@ describe('랜딩 오버레이(#614)', () => {
     });
 
     fireEvent.click(ocrButton());
+    expect(clicked).toBe(0);
+    expect(!!screen.getByRole('dialog', { name: '티켓과 포스터' })).toBe(true);
+    // 시트의 '티켓 스크린샷' 행이 OCR 파일 입력을 그 자리에서 연다.
+    fireEvent.click(screen.getByTestId('landing-sheet-screenshot'));
     expect(clicked).toBe(1);
   });
 
-  test('이탈 경로 "포스터 업로드" 1탭이 포스터 input을 그 자리에서 click하고, 파일 선택 뒤에도 오버레이가 남는다 (#727 c4)', () => {
+  test('시트의 "포스터" 행 1탭이 포스터 input을 그 자리에서 click하고, 파일 선택 뒤에도 오버레이가 남는다 (#727 c4)', () => {
     render(<Harness />);
     const input = posterInput();
     let clicked = 0;
@@ -171,7 +173,8 @@ describe('랜딩 오버레이(#614)', () => {
       clicked += 1;
     });
 
-    fireEvent.click(screen.getByRole('button', { name: '포스터 업로드' }));
+    fireEvent.click(ocrButton());
+    fireEvent.click(screen.getByTestId('landing-sheet-poster'));
     expect(clicked).toBe(1);
     expect(landingOverlayShown()).toBe(true); // 아직 안 고름
 
@@ -179,23 +182,10 @@ describe('랜딩 오버레이(#614)', () => {
       target: { files: [new File(['x'], 'poster.png', { type: 'image/png' })] },
     });
 
-    // #727 c4 — 예전엔 crop.cropOpen이 랜딩 판정에 들어 있어 이 프레임에 걷혔다. 지금은 크롭
-    // 모달이 z-50 + DOM 순서로 랜딩 위에 그려지므로 걷을 필요가 없고, 걷지 않으니 크롭 취소가
-    // 저절로 랜딩으로 되돌아간다(파생 판정 없이). 실제로 걷히는 건 크롭 **확정** 시점이고
-    // posterCropPipeline.test.tsx가 그 축을 크롭 모달까지 태워 잠근다.
-    //
-    // #717 진단 프로브 — 이 케이스는 #727이 흡수하지 않고 #717에 남긴 셋 중 하나다(단언 방향은
-    // c4가 뒤집었지만 부하 상태 전 스위트에서만 깨지는 원인 조사는 그쪽 소유다). landingOverlayShown()은
-    // getByTestId를 거쳐 n≠1이면 그 자리에서 throw하므로, 그보다 먼저 querySelectorAll로 개수를
-    // 세야 "landing이 중복/소실됐다"는 가설 자체를 진단할 수 있다.
-    const diagAll = document.querySelectorAll('[data-testid="landing"]');
-    if (diagAll.length !== 1 || !diagAll[0].classList.contains('fixed')) {
-      console.error(
-        `[#717] n=${diagAll.length} cls=${JSON.stringify(Array.from(diagAll).map((e) => e.className))}` +
-        ` ls=${JSON.stringify(localStorage.getItem(STORAGE_KEY))}` +
-        ` done=${!!screen.queryByRole('button', { name: '완료' })}`
-      );
-    }
+    // #727 c4 — 크롭 모달이 z-50 + DOM 순서로 랜딩 위에 그려지므로 파일 선택만으로는 랜딩을 걷지 않는다.
+    // 걷히는 건 '만들기'(S9) 시점이고 그 축은 posterCropPipeline · 셸 시트 테스트가 잠근다.
+    // landingOverlayShown()은 getByTestId라 n≠1이면 throw하므로 개수를 먼저 세어 중복/소실 가설을 구분한다(#717).
+    expect(document.querySelectorAll('[data-testid="landing"]').length).toBe(1);
     expect(landingOverlayShown()).toBe(true);
   });
 });
@@ -207,28 +197,15 @@ describe('랜딩 오버레이(#614)', () => {
  * getComputedStyle이 클래스를 반영하지 않으므로 클래스 문자열로 고정한다 — 위 파일 주석의 같은
  * 컨벤션). 대비 수치 자체는 브라우저에서만 잴 수 있다.
  */
-describe('랜딩 카피 (#615 → #786 → #826 S5)', () => {
-  test('반복 배경 없이 헤드·서브카피가 마스터 간격(gap-1)으로 붙어 선다', () => {
+describe('랜딩 구조 (#615 → #786 → #826 S9)', () => {
+  // 삭제: '헤드·서브카피가 gap-1로 붙는다' · '서브카피와 이탈 경로 줄이 text-ink-2' — h1 · 서브카피 · 이탈 경로 줄이 S9에서 없어졌다
+  // (없음 자체는 landingS9Presentational '헤드라인 · 빔 · details…' 가 잠근다). 여기선 남는 면 규칙만 둔다.
+  test('반복 배경 · 아래 판이 없고 아래 버튼 묶음이 같은 stage 면 위에 선다', () => {
     render(<Harness />);
-
-    // DOM 노드를 received에 그대로 넣지 않는다(#693) — 실패 직렬화가 그래프 전체를 찍는다.
     expect(screen.queryByTestId('landing-backdrop') === null).toBe(true);
-
-    const copyBlock = within(landing()).getByRole('heading', { level: 1 }).parentElement!;
-    // 마스터 .c-copy 아래 여백(--pr-s-1 = 4px) — 전시에 세로를 넘기려 헤드 묶음을 조인다.
-    expect(copyBlock.className).toContain('gap-1');
-  });
-
-  // #826 S1: 랜딩 전용 회색(landing-muted)은 옛 --fg-muted가 AA 경계였을 때의 여유분이었다.
-  // --pr-ink-2가 세 표면 위 6:1을 넘어(fgContrast.test.ts) 보조 글자 토큰 하나로 합쳤다.
-  test('서브카피와 이탈 경로 줄이 보조 글자 토큰 text-ink-2를 쓴다', () => {
-    render(<Harness />);
-
-    const sub = within(landing()).getByText(/^스크린샷으로 자동입력/);
-    expect(sub.className).toContain('text-ink-2');
-
-    const exitRow = screen.getByTestId('landing-skip-poster').parentElement!;
-    expect(exitRow.className).toContain('text-ink-2');
+    expect(screen.queryByTestId('landing-panel') === null).toBe(true);
+    expect(screen.queryByRole('heading', { level: 1 }) === null).toBe(true);
+    expect(!!screen.getByTestId('landing-bottom')).toBe(true);
   });
 });
 
@@ -296,33 +273,24 @@ describe('복원 행 저장 날짜 (#826 S5 D18-1 A)', () => {
   });
 });
 
-/** 이용 고지 접기(#826 S5 constraint-10) — 고지 · 크레딧 · GitHub를 아래 판 맨 끝 '이용 고지' 한 줄로 접는다. */
-describe('이용 고지 접기 (#826 S5 L-01)', () => {
-  test('summary "이용 고지" details 하나가 기본으로 닫혀 있고, 고지 · 크레딧 · GitHub가 그 안에 있다', () => {
+/** 이용 고지(#826 S9 constraint-12) — details 접기는 걷히고 워드마크 줄 버튼이 여는 작은 시트로 바뀌었다. */
+describe('이용 고지 시트 (#826 S9 L-01)', () => {
+  test('details 고지는 없고, 워드마크 줄 버튼이 고지 · 크레딧 · GitHub가 든 dialog를 연다', () => {
     render(<Harness />);
-    const details = within(landing()).getAllByTestId('legal-notice');
-    expect(details).toHaveLength(1);
-    const d = details[0] as HTMLDetailsElement;
-    expect(d.tagName).toBe('DETAILS');
-    expect(d.open).toBe(false);
-    const summary = d.querySelector('summary')!;
-    expect(summary.textContent).toBe('이용 고지');
-    expect(summary.className).toContain('min-h-touch');
-    expect(summary.className).toContain('text-caption');
-    expect(summary.className).toContain('text-ink-3');
-    expect(summary.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
-    expect(d.textContent).toContain(UNOFFICIAL_TICKET_NOTICE);
-    expect(d.textContent).toContain('KCC은영체');
-    expect(!!d.querySelector('a[aria-label="GitHub 저장소"]')).toBe(true);
-    // 고지는 아래 판의 맨 끝이다.
-    expect(screen.getByTestId('landing-panel').lastElementChild!.contains(d)).toBe(true);
+    expect(screen.queryByTestId('legal-notice') === null).toBe(true);
+    expect(landing().querySelector('details') === null).toBe(true);
+    fireEvent.click(within(landing()).getByRole('button', { name: '이용 고지' }));
+    const dlg = screen.getByRole('dialog', { name: '이용 고지' });
+    expect(dlg.textContent).toContain(UNOFFICIAL_TICKET_NOTICE);
+    expect(dlg.textContent).toContain('KCC은영체');
+    expect(!!dlg.querySelector('a[aria-label="GitHub 저장소"]')).toBe(true);
   });
 
-  test('누르면 그 자리에서 펼쳐진다', () => {
+  test('시트를 닫으면 사라진다', () => {
     render(<Harness />);
-    const d = within(landing()).getByTestId('legal-notice') as HTMLDetailsElement;
-    fireEvent.click(d.querySelector('summary')!);
-    expect(d.open).toBe(true);
+    fireEvent.click(within(landing()).getByRole('button', { name: '이용 고지' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: '닫기' }));
+    expect(screen.queryByRole('dialog') === null).toBe(true);
   });
 });
 

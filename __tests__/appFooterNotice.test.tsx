@@ -9,7 +9,7 @@
  * 서기만 해도 랜딩이 걷혀 seed-poster 한 번으로 이 축이 재현됐는데, 그 파생 판정이 없어졌다.
  */
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
 import { UNOFFICIAL_TICKET_NOTICE } from '@/utils/ticketCleanup';
@@ -32,18 +32,26 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-describe('AppFooter 고지 노출 (#327/#363)', () => {
-  test('랜딩엔 고지가 있고, 랜딩을 떠난 편집 화면에선 사라진다', () => {
+describe('AppFooter 고지 노출 (#327/#363, S9 constraint-12)', () => {
+  test('랜딩엔 닫힌 채 이용 고지 시트로만 있고, 열면 고지가 보이며, 편집 화면엔 없다', () => {
     render(<Harness />);
-    expect(!!screen.queryByText(UNOFFICIAL_TICKET_NOTICE, { exact: false })).toBe(true);
+    // 랜딩 배치에는 고지 문장이 상시 노출되지 않는다 — 워드마크 줄의 '이용 고지' 버튼이 시트를 연다.
+    expect(!!screen.queryByText(UNOFFICIAL_TICKET_NOTICE, { exact: false })).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: '이용 고지' }));
+    const dlg = screen.getByRole('dialog', { name: '이용 고지' });
+    expect(dlg.textContent).toContain(UNOFFICIAL_TICKET_NOTICE);
+    expect(!!within(dlg).getByRole('link', { name: 'GitHub 저장소' })).toBe(true);
+    fireEvent.click(within(dlg).getByRole('button', { name: '닫기' }));
+    expect(screen.queryByRole('dialog') === null).toBe(true);
 
-    // 포스터가 도착해도 랜딩은 그대로다 — 고지도 그대로 있어야 한다(#727 c1).
+    // 포스터가 도착해도 랜딩은 그대로다(#727 c1) — 고지 버튼도 그대로 있어야 한다.
     fireEvent.click(screen.getByText('seed-poster'));
-    expect(!!screen.queryByText(UNOFFICIAL_TICKET_NOTICE, { exact: false })).toBe(true);
+    expect(!!screen.queryByRole('button', { name: '이용 고지' })).toBe(true);
 
-    // 이탈(직접 입력)로 랜딩이 hidden이 되면 AppFooter 자체가 안 그려진다.
+    // 이탈(직접 입력)로 랜딩이 hidden이 되면 고지는 어디에도 없다.
     // received에 DOM 엘리먼트를 넣지 않는다(#693) — 실패 직렬화가 happy-dom 노드 그래프를 통째로 찍는다.
     fireEvent.click(screen.getByTestId('landing-skip-poster'));
     expect(!!screen.queryByText(UNOFFICIAL_TICKET_NOTICE, { exact: false })).toBe(false);
+    expect(screen.queryByRole('dialog') === null).toBe(true);
   });
 });

@@ -16,6 +16,7 @@ import { describe, expect, test, afterAll, afterEach, mock, spyOn } from 'bun:te
 import { render, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { PhototicketState } from '@/types';
+import { enterDirect, enterWithOcrViaSheet, makeFromSheet, ocrFileInput, uploadScreenshotViaSheet } from './helpers/landingAttach';
 
 // runOcr must be mocked BEFORE MobileEditorShell (which transitively imports it via
 // OcrUploadCard) is loaded — bun's mock.module is not hoisted, so the shell is
@@ -65,16 +66,6 @@ function MobileHarness() {
       />
     </>
   );
-}
-
-/** The shell mounts multiple file inputs; the OCR card's is the only `image/*` one. */
-function ocrFileInput(): HTMLInputElement {
-  const inputs = Array.from(
-    document.querySelectorAll('input[type="file"]'),
-  ) as HTMLInputElement[];
-  const input = inputs.find((i) => i.getAttribute('accept') === 'image/*');
-  if (!input) throw new Error('OcrUploadCard file input not found');
-  return input;
 }
 
 /** KOBIS search+detail fetch를 수동으로 resolve 가능한 상태로 스텁 — in-flight 타이밍을 테스트가 직접 제어한다. */
@@ -131,33 +122,28 @@ afterAll(() => {
 });
 
 describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 반영된다 (#388)', () => {
-  test('랜딩에서 OCR 시작 → KOBIS 응답 전에 포스터 업로드(본문 카드 hidden 전환) → 응답 도착 시 titleOg/releaseDate가 폼에 반영된다', async () => {
+  test('랜딩(시트)에서 OCR 시작 → KOBIS 응답 전에 만들기(본문 카드 hidden 전환) → 응답 도착 시 titleOg/releaseDate가 폼에 반영된다', async () => {
     const { resolveWithGrandBudapest } = mockPendingKobisFetch();
+    const user = userEvent.setup();
 
     render(<MobileHarness />);
     expect(captured.movieInfo.titleOg).toBe('');
 
     ocrImpl = async () => ({ title: '그랜드 부다페스트 호텔' });
 
-    // 랜딩(포스터 업로드 전) 상태에서 OCR 트리거 — title만 인식되면 직접 필드는 없어
-    // "제목으로 영화 정보를 검색할게요" 토스트가 뜬다. 이 시점에 KOBIS search fetch가 이미
+    // 랜딩 첨부 시트에서 OCR 트리거 — title만 인식되면 직접 필드는 없어 "제목으로 영화 정보를 검색할게요"
+    // 안내가 뜬다(시트의 '티켓 스크린샷' 행 상태 줄 — S9 constraint-11). 이 시점에 KOBIS search fetch가 이미
     // 호출된 상태(searchPromise가 아직 pending).
-    fireEvent.change(ocrFileInput(), {
-      target: { files: [new File(['x'], 'ticket.png', { type: 'image/png' })] },
-    });
-    // OcrUploadCard는 토스트를 시각 div + sr-only 라이브리전 두 곳에 동시 렌더하므로(#199) 텍스트가
-    // 항상 2곳에 잡힌다 — findByText(단일 매치 기대)가 아니라 findAllByText로 대기(mobileEditorShellMenu.test.tsx와 동일 컨벤션).
+    await uploadScreenshotViaSheet(user);
     await waitFor(() => {
-      expect(screen.getAllByText('제목으로 영화 정보를 검색할게요.').length).toBeGreaterThan(0);
+      expect(screen.getByTestId('landing-sheet-screenshot').textContent).toContain('제목으로 영화 정보를 검색할게요.');
     });
 
-    // KOBIS 검색이 아직 in-flight인 동안 포스터를 업로드 — 본문 OcrUploadCard가 CSS hidden으로
-    // 전환된다(#388). 테스트 환경엔 Tailwind CSS가 없어 getByRole은 여전히 노드를 찾으므로(값
-    // 자체는 mobileChromeOrder.test.tsx와 동일 이유), .hidden 조상 존재로 직접 확인한다 — 핵심은
-    // 이 시점에도 노드가 여전히 DOM에 존재(=unmount 아님)해야 한다는 것.
-    fireEvent.click(screen.getByText('seed-poster'));
-    const ocrCard = screen.getByRole('button', { name: '티켓 스크린샷으로 자동입력' });
-    expect(ocrCard.closest('.hidden')).not.toBeNull();
+    // KOBIS 검색이 아직 in-flight인 동안 만들기로 랜딩을 걷는다 — OcrUploadCard가 CSS hidden으로 전환된다(#388).
+    // 테스트 환경엔 Tailwind CSS가 없어 노드는 여전히 잡히므로(mobileChromeOrder.test.tsx와 동일 이유), .hidden 조상
+    // 존재로 직접 확인한다 — 핵심은 이 시점에도 노드가 여전히 DOM에 존재(=unmount 아님)해야 한다는 것.
+    await makeFromSheet(user);
+    expect(ocrFileInput().closest('.hidden')).not.toBeNull();
 
     resolveWithGrandBudapest();
 
@@ -168,17 +154,13 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
     });
   });
 
-  // 랜딩을 걷는 세 번째 조건(#614 ③, claude-review PR #622 2R P1) — 앞의 두 조건(드래프 복원 D7,
-  // CTA 파일 선택)은 landingOverlay.test.tsx가 잡지만, OCR-only 경로는 포스터가 없는 채로
-  // landingDismissed만으로 걷혀야 해서 croppedImageUrl로는 대체 관측이 안 된다. 위 테스트는
-  // seed-poster를 먼저 눌러 croppedImageUrl이 앞서므로 이 축을 우회한다.
+  // 랜딩을 걷는 조건(#614 ③ → #826 S9) — OCR-only 경로는 포스터가 없는 채로 landingDismissed만으로 걷혀야 해서
+  // croppedImageUrl로는 대체 관측이 안 된다. S9에서는 인식이 끝나도 랜딩은 시트에 머물고 '만들기'가 걷는다.
   //
-  // #652가 요구하던 "본문 주 CTA·이탈 경로도 함께 숨는다"는 #674(Landing 컨테이너 자체가 hidden)를
-  // 거쳐 #727에서 **컨테이너 하나로 일원화**됐다: 랜딩 모드가 overlay/hidden 2값이 되면서 안쪽만
-  // 숨겨야 하는 상태(inline)가 코드에서 사라졌고, 그래서 ocrApplied 프로퍼티도 함께 삭제됐다.
-  // 지키려던 명제("6개 항목이 자동 입력되었어요" 배너 옆에 방금 쓴 그 CTA가 남으면 안 된다)는
-  // 그대로다 — 이제 루트 hidden이 그걸 통째로 진다. unmount는 아니다(#297 P1, #614/#624 계약).
-  test('포스터 없이 OCR로 직접 필드가 인식되면 랜딩 컨테이너가 통째로 걷힌다 (#614 걷는 조건 ③, #652 → #727)', async () => {
+  // 지키려던 명제("6개 항목이 자동 입력되었어요" 배너 옆에 방금 쓴 그 CTA가 남으면 안 된다)는 그대로다 —
+  // 루트 hidden이 그걸 통째로 진다. unmount는 아니다(#297 P1, #614/#624 계약).
+  test('포스터 없이 OCR로 직접 필드가 인식돼도 시트에 머물고, 만들기가 랜딩 컨테이너를 통째로 걷는다 (#614 ③ → #826 S9)', async () => {
+    const user = userEvent.setup();
     render(<MobileHarness />);
     const landing = () => screen.getByTestId('landing');
     expect(landing().classList.contains('fixed')).toBe(true);
@@ -186,37 +168,40 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
     // 제목-only가 아니라 직접 필드 — KOBIS 검색을 안 타고 onOcrApply가 그 자리에서 호출된다.
     ocrImpl = async () => ({ theater: 'CGV 용산아이파크몰' });
 
-    const ocrCard = screen.getByRole('button', { name: '티켓 스크린샷으로 자동입력' });
-    const posterExit = screen.getByRole('button', { name: '포스터 업로드' });
-    fireEvent.change(ocrFileInput(), {
-      target: { files: [new File(['x'], 'ticket.png', { type: 'image/png' })] },
-    });
+    const cta = screen.getByTestId('landing-cta');
+    const direct = screen.getByTestId('landing-skip-poster');
+    await uploadScreenshotViaSheet(user);
 
     await waitFor(() => {
       expect(captured.movieInfo.theater).toBe('CGV 용산아이파크몰');
     });
+    await waitFor(() => {
+      expect(screen.getByTestId('landing-sheet-screenshot').textContent).toContain('인식했어요');
+    });
+    // 인식만으로는 랜딩이 그대로다 — 걷는 건 만들기다.
+    expect(landing().classList.contains('fixed')).toBe(true);
+
+    await makeFromSheet(user);
+
     // 포스터는 여전히 없다 — 걷힌 근거가 croppedImageUrl이 아니라 landingDismissed임을 고정한다.
     expect(captured.croppedImageUrl).toBeFalsy();
     expect(landing().classList.contains('fixed')).toBe(false);
     // 캔버스가 섰으므로 컨테이너 자체가 hidden — unmount는 아니다(#674, #297 P1).
     expect(landing().classList.contains('hidden')).toBe(true);
     expect(screen.getByTestId('landing')).toBeTruthy();
-    // 주 CTA·이탈 경로는 unmount가 아니라 그 루트의 CSS hidden 안에 남는다(#614/#624 remount 금지
-    // 계약 유지) — 트리에서 빠지면 OcrUploadCard 단일 인스턴스 계약이 깨진다.
-    // `closest('.hidden')`으로 재는 게 하중이다 — 둘이 같은 래퍼에 있다는 것만 재면 그 래퍼가
-    // testid로 잡은 형제라 구조상 항상 참이라, 숨김이 통째로 사라져도 통과한다.
-    const ctaWrap = screen.getByTestId('landing-exit-paths').parentElement!;
-    expect(ctaWrap.contains(ocrCard)).toBe(true);
-    expect(ctaWrap.contains(posterExit)).toBe(true);
-    expect(!!ocrCard.closest('.hidden')).toBe(true);
-    expect(!!posterExit.closest('.hidden')).toBe(true);
+    // 주 버튼 · 직접 입력은 unmount가 아니라 그 루트의 CSS hidden 안에 남는다(#614/#624 remount 금지 계약 유지) —
+    // 트리에서 빠지면 OcrUploadCard 단일 인스턴스 계약이 깨진다. 같은 노드가 그대로 hidden 안에 있다.
+    expect(screen.getByTestId('landing-cta')).toBe(cta);
+    expect(screen.getByTestId('landing-skip-poster')).toBe(direct);
+    expect(!!cta.closest('.hidden')).toBe(true);
+    expect(!!direct.closest('.hidden')).toBe(true);
   });
 
   // claude-review P1(#727) — 다섯 이탈 중 OCR 경로만 "draft가 **있던** 상태"를 안 재고 있었다.
   // c7이 지키려는 건 두 명제고 여기서 함께 잠근다: ① 진입 커밋이 저장분을 안 지운다(오탭이
   // 새로고침 한 번으로 복구된다) ② 새 문서가 옛 필드를 안 물려받는다(리셋 위에 OCR 패치가
   // 얹히는 순서라, 뒤집히면 옛 극장명이 화면에 남는다).
-  test('draft가 있어도 OCR 진입은 저장분을 안 지우고 새 문서로 시작한다 (#727 c7)', async () => {
+  test('draft가 있어도 시트의 OCR 진입은 저장분을 안 지우고 새 문서로 시작한다 (#727 c7 → #826 S9)', async () => {
     window.localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({ movieInfo: { title: '인터스텔라', theater: 'CGV 용산아이파크몰' } })
@@ -230,15 +215,19 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
 
     // 옛 draft와 겹치지 않는 값이어야 "새어나옴"과 "OCR이 채운 값"이 구분된다.
     ocrImpl = async () => ({ theater: 'CGV 왕십리' });
-    fireEvent.change(ocrFileInput(), {
-      target: { files: [new File(['x'], 'ticket.png', { type: 'image/png' })] },
-    });
+    const user = userEvent.setup();
+    await uploadScreenshotViaSheet(user);
 
     await waitFor(() => {
       expect(captured.movieInfo.theater).toBe('CGV 왕십리');
     });
 
-    // ① 저장분은 그대로다.
+    // ① 저장분은 그대로다 — 시트가 열린 동안은 한 번도 안 써지고, 만들기 직후에도 새 문서의 첫 자동저장 전이다.
+    expect(window.localStorage.getItem(STORAGE_KEY)).toContain('인터스텔라');
+    await waitFor(() => {
+      expect(screen.getByTestId('landing-sheet-screenshot').textContent).toContain('인식했어요');
+    });
+    await makeFromSheet(user);
     expect(window.localStorage.getItem(STORAGE_KEY)).toContain('인터스텔라');
     // ② 새 문서는 옛 필드를 안 물려받았다 — 제목은 비었고 극장은 OCR 값으로만 서 있다.
     expect(captured.movieInfo.title).toBeFalsy();
@@ -252,15 +241,13 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
     render(<MobileHarness />);
 
     ocrImpl = async () => ({ theater: 'CGV 용산아이파크몰' });
-    fireEvent.change(ocrFileInput(), {
-      target: { files: [new File(['x'], 'ticket.png', { type: 'image/png' })] },
-    });
+    await enterWithOcrViaSheet(user);
     await waitFor(() => {
       expect(captured.movieInfo.theater).toBe('CGV 용산아이파크몰');
     });
     const landing = () => screen.getByTestId('landing');
     expect(landing().classList.contains('fixed')).toBe(false);
-    expect(!!screen.getByRole('button', { name: '포스터 업로드' }).closest('.hidden')).toBe(true);
+    expect(!!screen.getByTestId('landing-cta').closest('.hidden')).toBe(true);
 
     // 초기화 2탭(#374) — 더블탭 가드(350ms) 밖에서 재탭해야 실행된다.
     await user.click(screen.getByRole('button', { name: '편집 메뉴' }));
@@ -268,10 +255,11 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
     await new Promise((r) => setTimeout(r, 400));
     await user.click(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' }));
 
-    // 새 문서 — 오버레이 랜딩이 다시 뜨고, 그 안 CTA·이탈 경로도 더 이상 숨어 있지 않다.
+    // 새 문서 — 오버레이 랜딩이 다시 뜨고, 그 안 주 버튼·직접 입력도 더 이상 숨어 있지 않다. 시트는 닫혀 있다.
     expect(landing().classList.contains('fixed')).toBe(true);
-    expect(!!screen.getByRole('button', { name: '티켓 스크린샷으로 자동입력' }).closest('.hidden')).toBe(false);
-    expect(!!screen.getByRole('button', { name: '포스터 업로드' }).closest('.hidden')).toBe(false);
+    expect(!!screen.getByTestId('landing-cta').closest('.hidden')).toBe(false);
+    expect(!!screen.getByTestId('landing-skip-poster').closest('.hidden')).toBe(false);
+    expect(screen.queryByTestId('landing-attach-sheet') === null).toBe(true);
   });
 
   // #826 S2 — 필드 드로어(와 그 안의 두 번째 OcrUploadCard)가 사라졌다. 편집 화면의 OCR 진입점은 정보 모드의
@@ -284,7 +272,7 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
     const countCards = () => document.querySelectorAll('input[type="file"][accept="image/*"]').length;
     expect(countCards()).toBe(1);
 
-    await user.click(screen.getByRole('button', { name: '포스터 없이 직접 입력' })); // 랜딩 이탈 → 편집 화면(정보 모드)
+    await enterDirect(user); // 랜딩 이탈 → 편집 화면(정보 모드)
     const trigger = screen.getByRole('button', { name: '스크린샷으로 자동입력' });
     expect(countCards()).toBe(1);
     // 같은 카드의 이전 인스턴스가 사라지지 않았다는 증거 — 카드가 쥔 input 노드가 그대로다.
@@ -307,7 +295,7 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
     const user = userEvent.setup();
 
     render(<MobileHarness />);
-    await user.click(screen.getByRole('button', { name: '포스터 없이 직접 입력' }));
+    await enterDirect(user);
     expect(captured.movieInfo.titleOg).toBe('');
 
     ocrImpl = async () => ({ title: '그랜드 부다페스트 호텔' });
@@ -333,7 +321,7 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
     let release!: () => void;
     ocrImpl = () => new Promise((resolve) => { release = () => resolve({}); });
     render(<MobileHarness />);
-    await user.click(screen.getByRole('button', { name: '포스터 없이 직접 입력' }));
+    await enterDirect(user);
 
     await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
     const busy = await screen.findByRole('button', { name: '티켓 인식 중…' });
@@ -355,7 +343,7 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
     let release!: () => void;
     ocrImpl = () => new Promise((resolve) => { release = () => resolve({}); });
     render(<MobileHarness />);
-    await user.click(screen.getByRole('button', { name: '포스터 없이 직접 입력' }));
+    await enterDirect(user);
 
     const input = ocrFileInput();
     let clicks = 0;

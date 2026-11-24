@@ -128,9 +128,9 @@ describe('포스터 있던 draft 재방문의 비동기 복원 창 (#683 → #72
     expect(landing.classList.contains('hidden')).toBe(false);
     // inline 모드의 흔적(flex-1)이 남아 있으면 c3가 무효다.
     expect(landing.classList.contains('flex-1')).toBe(false);
-    // 재업로드 유도 진입점('포스터 업로드'·'포스터 없이 직접 입력')이 그대로 살아있다.
+    // 재업로드 유도 진입점(주 버튼 → 첨부 시트의 포스터 행 · '직접 입력', #826 S9)이 그대로 살아있다.
     expect(!!screen.queryByTestId('landing-skip-poster')).toBe(true);
-    expect(!!screen.queryByRole('button', { name: '포스터 업로드' })).toBe(true);
+    expect(!!screen.queryByTestId('landing-cta')).toBe(true);
   });
 
   // ac5 / c8 — 복원이 도착하기 전에 "새로 시작"으로 진입하면 옛 포스터가 새 문서에 끼어들면 안 된다.

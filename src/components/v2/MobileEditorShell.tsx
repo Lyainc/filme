@@ -153,8 +153,8 @@ export function MobileEditorShell({
   // 왕복을 기다리는 창을 메운다 — 그 창에도 크롬이 서 있어야 랜딩 뒤가 빈 셸이 아니다.
   const canvasReady = !!croppedImageUrl || landingDismissed || photo.awaitingPosterRestore;
   // 편집 도크 모드(#826 S2 E-01) — 사진 · 정보 · 디자인. 처음 진입은 스크린샷으로 채웠으면 디자인(startFreshDoc
-  // entry 'ocr'), 아니면 정보다. 새로 시작하는 경로(포스터 업로드 · 직접 입력 ·
-  // 무드 탭 · 초기화)는 startFreshDoc/performClear가 정보로 되돌린다. 완료 실패(handleDone)와 온-티켓 항목 목록
+  // entry 'ocr'), 아니면 정보다. 새로 시작하는 경로(첨부 시트의 포스터만 ·
+  // 직접 입력 · 초기화)는 startFreshDoc/performClear가 정보로 되돌린다. 완료 실패(handleDone)와 온-티켓 항목 목록
   // 버튼도 정보로 보낸다.
   const [dockMode, setDockMode] = useState<DockMode>('info');
   // 랜딩에 한 벌뿐인 OcrUploadCard의 업로드 열기(#826 S2 constraint-17) — 카드가 매 렌더 채운다. 정보 모드
@@ -332,24 +332,78 @@ export function MobileEditorShell({
     ocr.confirm();
   }
 
+  // 첨부 시트(S9 constraint-8~10) — 열림 · 고른 무드 · 무엇을 넣었는지. 문서 수명은 photo의 staging이 쥐고, 셸은
+  // 실행 취소 스택 · OCR 되돌리기 · 도크 모드만 따로 뜬다(startFreshDoc이 그 셋을 갈아엎으므로). 진행 판정은
+  // stagingSnapRef(동기)로 한다 — photo.isStaging은 다음 렌더에야 바뀌어 같은 핸들러 안에서 못 읽는다.
+  const [attach, setAttach] = useState<null | { layout: LayoutId; poster: boolean; screenshot: boolean }>(null);
+  const attachRef = useRef(attach);
+  attachRef.current = attach;
+  const stagingSnapRef = useRef<{
+    history: ReturnType<typeof history.exportStack>;
+    ocr: ReturnType<typeof ocr.exportState>;
+    dockMode: DockMode;
+    /** 고른 무드로 새 문서를 이미 열었는가 — 첫 포스터 크롭이 실패하면 스냅샷만 서고 새 문서는 아직이다. */
+    fresh: boolean;
+  } | null>(null);
+  /** 시트의 첨부 전에 스냅샷을 세운다(이미 섰으면 그대로). 새 문서는 claimFreshDoc이 한 번만 연다. */
+  function startAttachStaging(): void {
+    if (stagingSnapRef.current) return;
+    stagingSnapRef.current = { history: history.exportStack(), ocr: ocr.exportState(), dockMode, fresh: false };
+    photo.beginStaging();
+  }
+  /** 고른 무드의 새 문서를 아직 안 열었으면 true를 주고 열었다고 적는다(첫 성공 첨부에서 한 번). */
+  function claimFreshDoc(): boolean {
+    const snap = stagingSnapRef.current;
+    if (!snap || snap.fresh) return false;
+    snap.fresh = true;
+    return true;
+  }
+  /** 스냅샷으로 되돌린다 — 시트 닫기 · 첫 포스터 크롭 실패. 늦게 오는 OCR · KOBIS는 photo가 세대로 버린다. */
+  function cancelAttachStaging() {
+    const snap = stagingSnapRef.current;
+    if (!snap) return;
+    stagingSnapRef.current = null;
+    photo.cancelStaging();
+    history.importStack(snap.history);
+    ocr.importState(snap.ocr);
+    setDockMode(snap.dockMode);
+    setAttach((a) => (a ? { ...a, poster: false, screenshot: false } : a));
+  }
+  function closeAttach() {
+    cancelAttachStaging();
+    setAttach(null);
+  }
+  function makeFromAttach() {
+    const a = attachRef.current;
+    if (!a || !stagingSnapRef.current) return;
+    stagingSnapRef.current = null;
+    photo.commitStaging();
+    // 스크린샷으로 채웠으면 디자인 모드(E-01 · E-05), 포스터만이면 정보 모드.
+    setDockMode(a.screenshot ? 'design' : 'info');
+    setAttach(null);
+    setLandingDismissed(true);
+  }
+
   async function handlePosterCropComplete(area: Area, preserveRatio: boolean) {
     // 랜딩에서 올라온 첫 포스터는 "새로 시작"이다(c7). 교체·재크롭은 이미 이탈한 상태라 문서를
     // 안 건드린다 — 여기를 게이트 없이 리셋하면 포스터를 바꿀 때마다 문서가 통째로 날아간다.
-    const fresh = !landingDismissed;
+    // 랜딩에서 포스터가 오는 길은 이제 첨부 시트 하나다(S9 constraint-8). 랜딩은 걷지 않고 시트에 머문다 —
+    // 확정 전에 스냅샷을 뜨고(크롭 확정이 이전 포스터를 갈아끼우므로 그 **전에**, W1 계약) 성공하면 고른 무드로
+    // 새 문서를 연다. 이미 스크린샷으로 스냅샷이 시작됐으면 새 문서 위에 포스터만 얹는다(되돌리면 인식 결과가 날아간다).
+    const sheet = attachRef.current;
+    const fromSheet = !landingDismissed && sheet !== null;
+    if (fromSheet) startAttachStaging();
     const isFirstUpload = !photo.state.croppedImageUrl;
     const ok = await crop.complete(area, preserveRatio);
-    // 실패(getCroppedImg 예외·await 사이 원본 교체)면 모달이 열린 채 남아 재시도 가능하고,
-    // 랜딩도 문서도 손대지 않은 그대로다.
+    // 실패(getCroppedImg 예외·await 사이 원본 교체)면 모달이 열린 채 남아 재시도 가능하다. 스냅샷은 그대로 둔다 — 문서는
+    // 안 바뀌었고, 여기서 되돌리면 크롭 상태까지 스냅샷으로 돌아가 모달이 닫히고 고른 파일이 버려진다(S9 TB 발견).
+    // 새 문서는 성공한 첫 첨부에서야 연다(claimFreshDoc). 시트를 닫으면 그때 스냅샷으로 되돌린다.
     if (!ok) return;
-    if (fresh) {
-      // **크롭이 성공한 뒤에** 되돌린다. 먼저 되돌리면 실패 토스트("다시 시도해 주세요") 뒤에
-      // 랜딩은 그대로인데 문서만 비어, "이어서 만들기"가 제목 없는 라벨로 빈 편집 화면을 열고
-      // 그 상태의 첫 편집이 멀쩡한 저장분을 덮는다(c7이 막으려는 그 유실). keepPoster는 방금
-      // 확정한 포스터·크롭 원본을 유지하고 노출셋만 첫 업로드 기본값으로 세운다 — setState가
-      // 전부 함수형이라 커밋 뒤에 큐에 들어가도 결과는 같다.
-      startFreshDoc({ keepPoster: true });
-      setLandingDismissed(true);
-      return; // startFreshDoc이 이미 history.clear()를 했다
+    if (fromSheet) {
+      // keepPoster는 방금 확정한 포스터 · 크롭 원본을 유지하고 노출셋만 첫 업로드 기본값으로 세운다.
+      if (claimFreshDoc()) startFreshDoc({ keepPoster: true, layout: sheet.layout });
+      setAttach((a) => (a ? { ...a, poster: true } : a));
+      return;
     }
     // 첫 업로드는 문서 시작 — 같이 일어나는 fieldVisibility 기본셋 리셋이 undo 1스텝으로
     // 잡히면 시작하자마자 undo가 활성돼 어색하다(#356). 교체는 히스토리 유지(포스터 자체는
@@ -704,28 +758,44 @@ export function MobileEditorShell({
             // 인스턴스 계약(#614/#624)이 여기 걸려 있다.
             // **포스터 재진입 동선은 도크 사진 모드에 있다**(#826 S2) — canvasReady를 따라 도크가 뜬다.
             mode={isMax || landingDismissed ? 'hidden' : 'overlay'}
-            onCta={handlePosterTap}
             // "이어서 만들기"(#727 c5) — 유일하게 문서를 안 되돌리는 이탈이다. 복원된 draft를
             // 그대로 들고 편집으로 들어간다.
             onRestore={() => setLandingDismissed(true)}
             restoreTitle={photo.state.movieInfo.title}
-            onSkip={() => {
-              startFreshDoc();
-              setLandingDismissed(true);
-            }}
-            // 갤러리 샘플 클릭 — 네 번째 진입점(#615). 다른 셋과 달리 "훑어보고 나중에 커밋"할
-            // 로컬 미러가 없다 — 샘플 자체가 훑어보기 없는 완결된 선택이라 클릭된 무드를 그 자리에서
-            // 바로 components.layout에 커밋한다.
-            onEnterMood={(id) => {
-              // 무드 탭은 "새 문서를 이 무드로 시작"이다 — #615의 동일값 가드는 #727에서 필요
-              // 없어졌다. 그 가드가 막던 건 updateComponents가 dirtyTick을 올려 1초 뒤 autosave가
-              // draft를 쓰고, 그 draft 때문에 다음 방문에 랜딩이 영영 안 뜨는 연쇄였다. 이제
-              // ① 랜딩은 draft 유무와 무관하게 뜨고(c1) ② 무드는 updateComponents가 아니라
-              // resetDocument의 layout 인자로 실려 dirtyTick을 아예 안 올린다(c7) — 연쇄의 두 고리가
-              // 다 끊겼다. 덕분에 오탭해도 자동저장이 안 걸려 새로고침 한 번으로 draft가 돌아온다.
+            // '직접 입력'(S9 constraint-7) — 전시에서 고른 무드로 새 문서. 무드는 updateComponents가 아니라
+            // resetDocument의 layout 인자로 실려 dirtyTick을 안 올린다(#727 c7, 오탭 뒤 새로고침으로 draft 복구).
+            onDirect={(id) => {
               startFreshDoc({ layout: id });
               setLandingDismissed(true);
             }}
+            // 주 버튼은 파일 선택이 아니라 첨부 시트를 연다(S9 constraint-8). 문서는 첫 첨부 때에야 스냅샷 · 새 문서가 된다.
+            onOpenSheet={(id) => setAttach({ layout: id, poster: false, screenshot: false })}
+            sheet={
+              attach && {
+                screenshot: ocrBusy
+                  ? { kind: 'busy' }
+                  : attach.screenshot
+                    ? { kind: 'done' }
+                    : { kind: 'empty' },
+                posterThumb: attach.poster ? croppedImageUrl : null,
+                canMake: (attach.poster || attach.screenshot) && !ocrBusy,
+              }
+            }
+            onPickScreenshot={handleOcrOpen}
+            onPickPoster={handlePosterTap}
+            onMake={makeFromAttach}
+            onCloseSheet={closeAttach}
+            // 시트 동안 가운데 카드 자리에 지금 문서를 그린다(S9 constraint-10) — 스냅샷 전엔 정적 견본.
+            livePreview={
+              attach && (attach.poster || attach.screenshot || ocrBusy) && photo.isStaging ? (
+                <TicketRenderer
+                  croppedImageUrl={croppedImageUrl}
+                  movieInfo={photo.state.movieInfo}
+                  components={photo.state.components}
+                  fieldVisibility={fieldVisibility}
+                />
+              ) : null
+            }
           >
             <OcrUploadCard
               setInfo={photo.updateMovieInfo}
@@ -754,9 +824,16 @@ export function MobileEditorShell({
                   ocr.apply(params);
                   return;
                 }
-                // 스크린샷으로 채운 새 문서는 디자인 모드로 연다(E-01) — 검토보다 꾸미기로 넘어가는 흐름이다.
-                startFreshDoc({ entry: 'ocr' });
-                setLandingDismissed(true);
+                // 랜딩에서 연 인식은 이제 첨부 시트 안이다(S9 constraint-9) — 새 문서는 인식 시작(onStart) 때 이미
+                // 열렸으니 다시 열지 않고 랜딩도 걷지 않는다. 걷는 건 '만들기'다. 시트를 닫았으면 응답은
+                // captureDraft 세대에서 이미 버려져 여기 오지 않는다.
+                if (attachRef.current) {
+                  setAttach((a) => (a ? { ...a, screenshot: true } : a));
+                } else {
+                  // 시트 밖에서 랜딩 인식이 시작된 경우(UI 경로는 없다) — 옛 문서에 섞이지 않게 예전처럼 새 문서로 시작하고 걷는다.
+                  startFreshDoc({ entry: 'ocr' });
+                  setLandingDismissed(true);
+                }
                 const prevValues = Object.fromEntries(
                   Object.keys(params.prevValues).map((k) => [
                     k,
@@ -785,6 +862,13 @@ export function MobileEditorShell({
               onBusyChange={setOcrBusy}
               onStart={() => {
                 ocrStartedOnLandingRef.current = !landingDismissedRef.current;
+                // 시트에서 연 첫 첨부면 스냅샷을 뜨고 고른 무드로 새 문서를 연다(S9 constraint-9). captureDraft보다 먼저
+                // 불리지만 resetDocument는 그 세대를 안 올려 이번 응답은 산다(#806).
+                const sheet = attachRef.current;
+                if (ocrStartedOnLandingRef.current && sheet) {
+                  startAttachStaging();
+                  if (claimFreshDoc()) startFreshDoc({ layout: sheet.layout, entry: 'ocr' });
+                }
               }}
               // 랜딩이 걷히면 카드가 display:none 안이라 자체 토스트가 안 보인다 — 셸 토스트가 대신한다.
               notify={landingDismissed ? flashToast : undefined}
@@ -880,7 +964,9 @@ export function MobileEditorShell({
           풀스크린이라 시각 배너를 숨긴다 — snapshot을 null로 넘겨도 컴포넌트 자신은 계속 마운트돼
           sr-only 라이브리전의 mutation 감지 계약(#199)은 유지된다. */}
       <OcrUndoBanner
-        snapshot={isMax ? null : ocr.snapshot}
+        // 랜딩(첨부 시트)이 떠 있는 동안도 숨긴다(#826 S9) — 시트에서 인식이 끝나면 배너가 랜딩 위로 떠 '만들기'를
+        // 가렸다(헤드리스 캡처 2026-11-24). 배너는 수명 타이머가 없어 '만들기' 뒤 편집 화면(E-05)에서 그대로 보인다.
+        snapshot={isMax || landingVisible ? null : ocr.snapshot}
         filledFields={ocr.filledFields}
         stampCount={ocr.stampCount}
         onCancel={ocr.cancel}
