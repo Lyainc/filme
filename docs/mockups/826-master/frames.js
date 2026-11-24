@@ -314,7 +314,7 @@
     var made = o.link === 'made';
     var float = (o.fallback ? '<div class="c-link"><input aria-label="공유 링크" value="filme.app/t/k3x9q2" readonly><button class="c-btn sec">복사</button></div>' : '') +
       (o.err ? '<div class="c-alert" role="alert"><span class="ic"></span><span class="tx">' + o.err + '</span></div>' : '');
-    var toast = o.toast ? S.toast(o.toast, { mid: true, top: 'calc(var(--sb) + var(--pr-topbar) + var(--pr-s-2))' }) : '';
+    var toast = o.toast ? S.toast(o.toast, { mid: true, dot: false, top: 'calc(var(--sb) + var(--pr-topbar) + var(--pr-s-2))' }) : '';
     return S.phone(S.topbar({ back: '편집으로 돌아가기' }) + '<h1 class="sr-only">결과</h1><div class="c-rbody"><div class="c-rtk' + (o.wide ? ' wide' : '') + '">' + S.ticket({ wide: o.wide }) + '</div></div>' +
       '<div class="c-racts">' + (float ? '<div class="c-rfloat">' + float + '</div>' : '') + '<div class="c-rrow">' + save + link + share + '</div>' +
       '<div class="c-rnote">' + (made ? '<p class="c-legal">이 링크는 3일 후 만료돼요.</p>' : '') + '<p class="c-legal">' + NOTICE + '</p></div>' + SAFE + '</div>' + toast + (o.extra || ''));
@@ -355,10 +355,10 @@
     states: ['오류는 상단 줄 아래, 통보는 도크 위. 문장은 무슨 일 한 줄. 다음 행동은 화면의 버튼이 맡고, 버튼이 없을 때만 두 번째 문장.'], flow: [['4초 · 닫기', 'E-01', '160ms']], notes: [] });
   F({ id: 'S-01', page: 'share', name: '공유 페이지 /t/[id]', comps: ['C-WM', 'C-BTN'],
     variants: [
-      { st: '기본', html: S.phone('<div class="c-head" style="display:flex;justify-content:center">' + S.wordmark() + '</div><div class="c-share"><div class="img" data-rl="h">' + S.ticket({}) + '</div><p class="t-body">영화 포스터로 시네마틱한 포토티켓을, 너도 만들어봐.</p><button class="c-btn pri cta block" data-rl="hx">나도 티켓 만들기</button><p class="c-legal">이 링크는 3일 후 만료돼요. 비공식 팬메이드 티켓이라 양도·재판매할 수 없고, 정보 정확성은 보장하지 않으며 분실·훼손에 책임지지 않아요.</p></div>' + SAFE) },
+      { st: '기본', html: S.phone('<div class="c-head" style="display:flex;justify-content:center">' + S.wordmark() + '</div><div class="c-share"><div class="img" data-rl="h">' + S.ticket({}) + '</div><p class="t-meta" style="letter-spacing:.1em;text-transform:uppercase">FILME · Photoplay Premium Ticket</p><p class="t-body">영화 포스터로 시네마틱한 포토티켓을, 너도 만들어봐.</p><button class="c-btn pri cta block" data-rl="hx">나도 티켓 만들기</button><p class="c-legal">이 링크는 3일 후 만료돼요. ' + NOTICE + '</p></div>' + SAFE) },
       { st: '빈 상태 · 만료된 링크', html: S.phone('<div class="c-head" style="display:flex;justify-content:center">' + S.wordmark() + '</div><div class="c-share" style="justify-content:center"><p class="t-title" role="heading" aria-level="1">만료된 링크예요</p><button class="c-btn pri cta block">나도 티켓 만들기</button></div>' + SAFE) }
     ],
-    states: ['기본은 현행 문구 그대로이고 [나도 티켓 만들기]에 화살표가 없어요. 만료 문장과 비공식 고지는 맨 아래 한 줄이에요.',
+    states: ['기본은 티켓 아래 "FILME · Photoplay Premium Ticket"(작은 대문자 줄) · 한 줄 소개 · [나도 티켓 만들기]로 현행 그대로이고, [나도 티켓 만들기]에 화살표가 없어요. 만료 문장과 비공식 고지는 맨 아래 한 줄이에요.',
       '만료 · 없는 링크(조회 실패 포함)는 404 상태코드와 함께 빈 상태 "만료된 링크예요" + [나도 티켓 만들기]예요(S7 출시). 탭 제목은 "만료된 링크예요 · FILME"이고 캐시하지 않아요.',
       '공유 페이지는 앱 테마(라이트 · 다크)를 따라요.'], flow: [['나도 티켓 만들기', 'L-01', '']], notes: [] });
 
