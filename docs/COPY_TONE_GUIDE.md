@@ -116,8 +116,8 @@
 **부호 표기(예외가 아니라 표기 규칙).** 라벨과 부연을 잇는 결합 부호는 ` — `로 통일한다(실측
 다수). 라벨에서 쓸 땐 **양쪽 다 명사구**여야 한다(`세로형 — 신용카드 비율` 꼴 ✅ /
 `자동 임시저장 켜짐 — 클릭하면 꺼요` ❌ — 지금 코드엔 ` — `를 쓴 라벨이 없어 둘 다 설명용 예다). 같은 층위를 나열하는 ` · `만 이 규칙 밖이다
-(`세로형 · 고정식`·`제목 · 개봉연도`). 나열이 아니라 라벨에 부연을 잇는 자리면 부호가 ` · `여도 이 규칙에 걸린다 — `Landing.tsx:301`의
-`` `${layout.label} 무드로 바로 시작 · ${layout.caption}` ``가 그 자리다.
+(`세로형 · 고정식`·`제목 · 개봉연도`). 나열이 아니라 라벨에 부연을 잇는 자리면 부호가 ` · `여도 이 규칙에 걸린다 — 옛 랜딩 카드의
+`` `${layout.label} 무드로 바로 시작 · ${layout.caption}` ``가 그 자리였다(#826 S5가 caption을, S9가 '무드로 바로 시작'을 걷어 지금 카드 접근명은 무드 이름 하나다).
 
 ## 축 3 — 에러: [무슨 일] 한 줄, 다음 행동은 버튼이 맡는다
 
@@ -188,11 +188,12 @@
 요구하지 않는다는 걸 어미가 그대로 말해준다. 현재형(`임시저장 완료`)으로 바꾸면 라벨처럼
 읽혀 "두 갈래" 분류가 흐려진다.
 
-## 축 5 — 브랜드 카피: 히어로 2줄만 예외
+## 축 5 — 브랜드 카피: 워드마크만 예외
 
-**결정.** 규칙 밖에 두는 건 **랜딩 히어로 헤드/서브 2줄과 워드마크뿐**이다
-(`Landing.tsx`의 `티켓 한 장이, 내 굿즈가 돼요` / `스크린샷으로 자동입력. 사진으로 찍은 실물
-티켓도 돼요.`). 그 바로 아래 OCR CTA·이탈 경로부터는 규칙 안이다.
+**결정.** 규칙 밖에 두는 건 **워드마크뿐**이다. 랜딩 히어로 헤드/서브 2줄(`티켓 한 장이, 내 굿즈가 돼요` /
+`스크린샷으로 자동입력. 사진으로 찍은 실물 티켓도 돼요.`)이 예외였는데, #826 S9가 헤드라인 · 서브를 통째로 걷었다
+(D24 — 비슷한 만들기 도구는 이름이나 할 일을 짧게 적고 감성 카피를 안 쓴다, 랜딩은 큰 티켓이 말한다). 새 카피를
+되살린다면 이 축의 경계(아래 근거)를 다시 적용한다. 랜딩의 버튼 · 시트 문구는 규칙 안이다.
 
 **근거.** 히어로는 조작 지시가 아니라 가치 제안이라 라벨 규칙을 적용하면 카피가 죽는다.
 반대로 예외를 "랜딩 전체"로 넓히면 지적의 출처였던 이탈 경로가 예외 안으로 들어가 문제가 그대로
@@ -265,20 +266,19 @@ eyebrow 필드 8종)를 놓쳤다 — fresh-context 리뷰가 낮은 확신으�
 
 | 문구 | 소유 | 기대하는 테스트 |
 |---|---|---|
-| `포스터 업로드`(구 `포스터 있으면 올리기`) · `포스터 없이 직접 입력` (#665) | `v2/Landing.tsx` | `a11yFieldTapAndTapTargets` · `awaitingPosterRestore` · `chromeDarkScope` · `doneFailureInfoMode` · `draftImageRestore` · `editorDockInitialMode` · `landingHeroMood` · `landingOverlay` · `logoCropFreeAspect` · `mobileChromeDarkHtmlBg` · `mobileChromeOrder` · `mobileEditorShellOcrEntryConsolidation` · `mobileEditorShellZoom` · `ocrNeedManualTitleSearch` · `ocrUndoRestore` · `posterCropPipeline` |
-| `티켓 스크린샷으로 자동입력`(랜딩) | `v2/OcrUploadCard.tsx` | `landingHeroMood` · `landingOcrNotice` · `landingOverlay` · `mobileChromeOrder` · `mobileEditorShellOcrEntryConsolidation` · `ocrFailureFlow` |
-| `스크린샷으로 자동입력`(정보 모드 버튼 · 편집 메뉴 행) · `티켓 인식 중…` | `v2/dock/InfoPane.tsx` · `v2/EditorMenu.tsx` · `v2/OcrUploadCard.tsx` | `editorDockInfo` · `editorDockInitialMode` · `landingHeroMood` · `landingOcrNotice` · `landingOverlay` · `mobileChromeOrder` · `mobileEditorShellFieldCoverage` · `mobileEditorShellMenu` · `mobileEditorShellOcrEntryConsolidation` · `ocrFailureFlow` · `ocrNeedManualTitleSearch` · `ocrUndoRestore` |
+| `직접 입력` (#826 S9, 구 링크 쌍 `포스터 업로드` · `포스터 없이 직접 입력`(#665)은 걷혔다 — 남은 출현은 부재 단언) | `v2/Landing.tsx` | `awaitingPosterRestore` · `doneFailureInfoMode` · `kobisDetailUnmount` · `landingFreshStart` · `landingHeroMood` · `landingOverlay` · `landingS9Presentational` · `mobileChromeDarkHtmlBg` · `mobileChromeOrder` · `mobileEditorShellMenu` · `ocrNeedManualTitleSearch` · `ocrUndoRestore` |
+| `티켓과 포스터` · `만들기` · `인식했어요` (#826 S9 첨부 시트) · `이용 고지`(워드마크 줄 버튼 · 시트 제목) | `v2/LandingAttachSheet.tsx` · `v2/Landing.tsx` · `v2/LandingNoticeSheet.tsx` | `a11yFieldTapAndTapTargets` · `appFooterNotice` · `editorDockInitialMode` · `landingHeroMood` · `landingMoodGalleryTapTargets` · `landingOverlay` · `landingS9Presentational` · `mobileEditorShellOcrEntryConsolidation` · `ocrUndoRestore` · `posterCropPipeline` |
+| `티켓 스크린샷으로 자동입력`(랜딩 주 버튼 · OCR 파일 input `aria-label`) | `v2/Landing.tsx` · `v2/OcrUploadCard.tsx` | `landingOverlay` · `landingS9Presentational` · `mobileChromeOrder` · `posterCropPipeline` |
+| `스크린샷으로 자동입력`(정보 모드 버튼 · 편집 메뉴 행) · `티켓 인식 중…` | `v2/dock/InfoPane.tsx` · `v2/EditorMenu.tsx` · `v2/OcrUploadCard.tsx` | `editorDockInfo` · `editorDockInitialMode` · `landingOverlay` · `landingS9Presentational` · `mobileChromeOrder` · `mobileEditorShellFieldCoverage` · `mobileEditorShellMenu` · `mobileEditorShellOcrEntryConsolidation` · `ocrFailureFlow` · `ocrNeedManualTitleSearch` · `ocrUndoRestore` · `posterCropPipeline` |
 | `지금 요청이 많아요…` · `인식된 정보가 없어요…` | `v2/OcrUploadCard.tsx` | `landingHeroMood` · `landingOcrNotice` · `ocrFailureFlow` |
-| `인식에 실패했어요` · `PNG, JPG, WebP만 인식할 수 있어요` · `HEIC는 지원하지 않아요` · `10MB 이하 이미지만 돼요` (#826 S5, 구 두 문장 안내) | `v2/OcrUploadCard.tsx` | `landingHeroMood` · `landingOcrNotice` · `landingReducedMotion` · `ocrFailureFlow` |
+| `인식에 실패했어요` · `PNG, JPG, WebP만 인식할 수 있어요` · `HEIC는 지원하지 않아요` · `10MB 이하 이미지만 돼요` (#826 S5, 구 두 문장 안내 — S9부터 첨부 시트의 '티켓 스크린샷' 행에 뜬다) | `v2/OcrUploadCard.tsx` | `landingHeroMood` · `landingOcrNotice` · `ocrFailureFlow`(첫 문구만), 나머지 셋은 `landingOcrNotice` |
 | `한 번 더 눌러 전체 삭제` (#374) · `임시저장했어요` | `v2/EditorMenu.tsx`(토스트는 `v2/MobileEditorShell.tsx`) | `doneFailureInfoMode` · `editorDockInitialMode` · `mobileEditorShellMenu` · `mobileEditorShellOcrEntryConsolidation` · `ocrUndoRestore` |
 | `초기화했어요` | `v2/MobileEditorShell.tsx` | `backToLandingPreservesDoc`(‹는 토스트를 안 띄운다는 부재 단언) · `mobileEditorShellMenu` |
 | `전체 보기` (#826 S2, 구 `최대화`) | `v2/MobileEditorShell.tsx` 상단 줄 | `chromeDarkScope` · `editorTopBar` · `inPlaceFieldEditor` · `mobileChromeOrder` · `mobileEditorShellGhost` · `mobileEditorShellLandscapeRotation` · `mobileEditorShellZoom` · `ocrUndoRestore` · `previewWorkbenchSurface` |
 | `빈 항목 표시` (#826 S2, 구 `빈 항목 미리보기`) | `v2/EditorMenu.tsx` | `ghostMode` · `inPlaceFieldEditor` · `mobileChromeOrder` · `mobileEditorShellGhost` · `mobileEditorShellMenu` |
-| `자동저장 켜짐` · `자동저장 꺼짐`(`aria-label`) · `랜딩으로 돌아가기` · `티켓 인식 중…` | `v2/EditorMenu.tsx` · `v2/MobileEditorShell.tsx` | `backToLandingPreservesDoc` · `editorDockInfo` · `editorTopBar` · `landingHeroMood` · `mobileEditorShellMenu` · `mobileEditorShellOcrEntryConsolidation` · `ocrUndoRestore` |
+| `자동저장 켜짐` · `자동저장 꺼짐`(`aria-label`) · `랜딩으로 돌아가기` · `티켓 인식 중…` | `v2/EditorMenu.tsx` · `v2/MobileEditorShell.tsx` | `backToLandingPreservesDoc` · `editorDockInfo` · `editorTopBar` · `mobileEditorShellMenu` · `mobileEditorShellOcrEntryConsolidation` · `ocrUndoRestore` |
 | `검색 중…` · `검색 결과가 없어요` (#826 S3, 구 `Loading…` · 두 문장 무매칭 안내) · `검색에 실패했어요` + `다시 검색` 버튼 | `hooks/useKobisSearch.ts`(`DEFAULT_MESSAGES`) · `v2/InPlaceFieldEditor.tsx` · `v2/FieldEditorBody.tsx` | `inPlacePanelS3` · `landingOcrNotice` · `ocrKobisSelectionLifetime` · `ocrNeedManualTitleSearch` · `titleSheetSearch` |
 | `제목 없는 티켓` (#826 S5 L-02, 복원 행) | `v2/Landing.tsx` | `landingOverlay` · `mobileEditorShellFieldCoverage` |
-| `이용 고지` (#826 S5 L-01, 랜딩 고지 접기) | `v2/AppFooter.tsx` | `landingOverlay` |
-| `{미니멀 · 크라이테리언 · 35mm · 에디토리얼 · 스텁} 무드로 바로 시작` (#826 S5, 구 `Minimal …` + caption 접미) | `utils/layouts.ts`(`label`) · `v2/Landing.tsx` | `landingFreshStart` · `landingHeroMood` · `landingOverlay` · `landingReducedMotion` |
 | `포스터 자르기` · `로고 자르기` · `서명 자르기` · `스탬프 자르기` (#826 S6 C-01 · C-02, 구 `포스터 크롭` · `로고 크롭` · `스탬프 이미지 크롭`, 크롭 화면 제목 = 접근 이름) | `ImageCropModal.tsx`(`CROP_TITLE`) | `cropScreenS6` · `dialogBackgroundInert` · `editorDockPhoto` · `logoCropFreeAspect` · `ocrUndoRestore` · `posterCropPipeline` |
 | `다른 사진` (#826 S6, 구 `다른 사진 선택`) · `원본 비율 보존`(스위치, 구 체크박스) | `ImageCropModal.tsx` | `cropScreenS6` · `logoCropFreeAspect` |
 | `이미지를 불러오지 못했어요` · `자르지 못했어요` · `이미지를 표시할 수 없어요` (#826 S6 C-03, 구 두 문장 토스트) | `ImageCropModal.tsx` | `cropScreenS6` |
@@ -289,7 +289,7 @@ eyebrow 필드 8종)를 놓쳤다 — fresh-context 리뷰가 낮은 확신으�
 
 각 행의 테스트 목록은 그 행 문구 각각을 `git grep -l -F`(`__tests__`)로 찾은 결과의 합집합이다 — 문구가 다른 문구의
 부분 문자열이면(`스크린샷으로 자동입력` ⊂ `티켓 스크린샷으로 자동입력`, `다시 검색` ⊂ `다시 검색해 주세요`) 그 파일도 같이
-잡힌다. 무드 이름 행은 `스텁`이 테스트 스텁이라는 일반어와 겹쳐 `무드로 바로 시작`으로 잰다.
+잡힌다. 무드 이름 행(`{label} 무드로 바로 시작`)은 S9에서 접근명이 무드 이름 하나가 되며 잠금 문구가 사라져 걷었다.
 
 **삭제된 잠금(#826 S2)**: `지금까지 작업한 내용이 사라져요. 처음 화면으로 돌아갈까요?`(워드마크 탭 초기화 확인 — 기대하던
 `wordmarkClearOnTap`은 ‹ 동작을 잠그는 `backToLandingPreservesDoc`으로, `resultStageWordmarkReset`은 "워드마크 탭은 아무 일도
