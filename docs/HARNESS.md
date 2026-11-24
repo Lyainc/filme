@@ -161,6 +161,7 @@ dock 249 / 프리뷰 219×350, 이 세 숫자는 **`EditorDock.tsx`의 `DOCK_BOD
 - 위 회귀들은 **그 축만** 뒤집는다. dock/프리뷰 불변식은 이 부류를 원리적으로 못 본다.
 - `MobileEditorShell`의 fit 스테이지에서 **`background: 'var(--workbench)'`를 지우면** `posterless.stagePainted:false`(#674의 두 번째 증상, "아래쪽만 회색 블록"). 이것도 그 축만 뒤집는다.
 - 같은 스테이지에서 **`flex-1`을 빼면** `stageFillsBody:false`(stage 24 vs body 504.5), **`mode === 'hidden'` 분기를 무력화하면** `landingHidden:false` + `stageFillsBody:false`(stage 264.3 vs body 504.5 — #674의 두 증상이 같이 재현). 이 둘은 fit 스테이지가 무너지므로 `invariant`도 함께 실패한다 — 축이 겹치는 건 정상이고, 중요한 건 posterless가 자기 명제로 먼저 운다는 것이다.
+- **랜딩 세 축은 #826 S9에서 명제가 바뀌었다.** `carousel`은 S5의 기둥 · 폭 비(0.62 · 0.52 · 0.34) · `'1 / 5'` 대신 가운데 카드 높이 ÷ 전시 높이 ≥ 0.85 · 재단 표시 · `aria-pressed` · 옆 카드 불투명도 0.5 · `filter: none`(다크 검은 띠, D23) · 가운데와 ≥16px 간격 · 전시 밖 잘림을 재고, 기둥 · 위치 표시가 **없는지**도 본다. `exitPaths`는 링크 쌍 대신 아래 버튼 둘(주 버튼 · '직접 입력')이 44px 이상 · 같은 높이 · 주 버튼이 위이고 S5 링크 쌍 · 헤드라인이 없는지를 잰다. `landingBudget`은 `<details>` 접기 대신 기본 · 이용 고지 시트 · 첨부 시트 세 상태의 무스크롤, 고지 버튼 44px, 첨부 시트가 열려도 가운데 티켓이 시트 윗변 위에 서는지(실시간 반영 자리)를 잰다. 두 시트는 `measureFit`(`이용 고지 시트` · `첨부 시트`)으로 프레임 봉쇄 축에 들어간다. 배너 측정 페이지(12번 축)는 시트를 연 뒤 OCR 입력에 파일을 쏘고 '만들기'로 들어간다 — 랜딩의 인식은 시트 안에서만 열린다. 근거: `docs/specs/826-s9-landing-attach.yaml` constraint-14.
 
 ## 12. `measure-keyboard-panel.mjs` — 입력 패널 · 키보드 표본 (#826 S4)
 
