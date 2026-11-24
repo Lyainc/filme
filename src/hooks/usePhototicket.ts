@@ -290,19 +290,23 @@ export function usePhototicket() {
   // redo 가지 절단·초기화 후 새 베이스라인) 다시 걸러 그사이 참조를 잃은 것만 회수한다. 안 하면
   // 딱 그 순간의 참조 여부만 보고 영영 다시 안 보므로, 참조가 나중에 끊겨도 탭 수명 내내 안 풀린다.
   const pendingRevokeUrlsRef = useRef<Set<string>>(new Set());
-  const setHistorySnapshots = useCallback((snapshots: string[]) => {
-    if (snapshots === historySnapshotsRef.current) return; // 스택 배열 참조 불변 = pushSnapshot no-op/undo·redo(캡·절단 없음)
-    historySnapshotsRef.current = snapshots;
+  /** 보류 URL 중 지금 히스토리가 안 쥔 것을 회수한다. 첨부 시트 스냅샷이 쥔 URL은 남긴다(S9 constraint-9) — 시트를 닫아
+   *  복원되면 되돌린 스택이 다시 참조한다. */
+  const sweepPendingRevokes = useCallback(() => {
     if (pendingRevokeUrlsRef.current.size === 0) return;
-    const referenced = getReferencedBlobUrls(snapshots);
+    const referenced = getReferencedBlobUrls(historySnapshotsRef.current);
     pendingRevokeUrlsRef.current.forEach((url) => {
-      // 스냅샷이 쥔 URL은 보류 목록에 남겨 둔다(S9 constraint-9) — 시트를 닫아 복원되면 되돌린 스택이 다시 참조한다.
       if (!referenced.has(url) && !protectedUrlsRef.current.has(url)) {
         URL.revokeObjectURL(url);
         pendingRevokeUrlsRef.current.delete(url);
       }
     });
   }, []);
+  const setHistorySnapshots = useCallback((snapshots: string[]) => {
+    if (snapshots === historySnapshotsRef.current) return; // 스택 배열 참조 불변 = pushSnapshot no-op/undo·redo(캡·절단 없음)
+    historySnapshotsRef.current = snapshots;
+    sweepPendingRevokes();
+  }, [sweepPendingRevokes]);
   // #671 배경 패턴 커스텀 이미지 — 로고 3종과 같은 blob 수명 규칙(선언부터 revoke까지 대칭).
   const latestBgPatternUrlRef = useRef<string | null>(null);
   // 사용자가 밝기 슬라이더를 직접 만졌는지 추적(#146). 한번 만지면 이후 material/coating 전환에서
@@ -1085,18 +1089,10 @@ export function usePhototicket() {
       if (!live.has(url)) URL.revokeObjectURL(url);
     });
     // 보류가 풀렸으니 히스토리가 더는 안 쥔 보류 URL을 지금 회수한다(스택이 안 바뀌면 setHistorySnapshots가 다시 안 본다).
-    if (pendingRevokeUrlsRef.current.size > 0) {
-      const referenced = getReferencedBlobUrls(historySnapshotsRef.current);
-      pendingRevokeUrlsRef.current.forEach((url) => {
-        if (!referenced.has(url)) {
-          URL.revokeObjectURL(url);
-          pendingRevokeUrlsRef.current.delete(url);
-        }
-      });
-    }
+    sweepPendingRevokes();
     skipAutoSaveAtOrBelowRef.current = snap.dirtyTick;
     setIsStaging(false);
-  }, []);
+  }, [sweepPendingRevokes]);
 
   // #310: 저장분 삭제 + 문서 리셋(파괴적 — 호출부에서 확인 UX를 거친다). 문서 리셋 조각은
   // resetDocument와 공유하고, 여기만 저장분과 첫 페인트 게이트까지 지운다(#727 c7이 가른 축).

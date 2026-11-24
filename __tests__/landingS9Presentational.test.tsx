@@ -295,7 +295,7 @@ describe('첨부 시트 (constraint-8 · 10 · 11)', () => {
     expect(!!within(centre).getByTestId('mood-crop-marks')).toBe(true);
   });
 
-  test('LandingSlotContext 안내가 스크린샷 행에 오류로, busy가 인식 중으로 뜬다', () => {
+  test('LandingSlotContext 안내가 스크린샷 행에 오류로 뜨고, 인식 중은 셸이 준 sheet 상태를 따른다', () => {
     let ctx: React.ContextType<typeof LandingSlotContext> = null;
     const Probe = () => {
       const c = useContext(LandingSlotContext);
@@ -304,8 +304,7 @@ describe('첨부 시트 (constraint-8 · 10 · 11)', () => {
       }, [c]);
       return null;
     };
-    setup({ sheet: sheetOf(), children: <Probe /> });
-    act(() => ctx!.setBusy(true));
+    setup({ sheet: { ...sheetOf(), screenshot: { kind: 'busy' } }, children: <Probe /> });
     expect(screen.getByTestId('landing-sheet-screenshot').textContent).toContain('인식 중');
     act(() => ctx!.setNotice('잠시 뒤에 다시 해 주세요'));
     expect(screen.getByTestId('landing-sheet-screenshot-error').textContent).toBe('잠시 뒤에 다시 해 주세요');
