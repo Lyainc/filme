@@ -58,12 +58,12 @@ constraints:
     rationale: "S5 constraint-1과 같은 경계."
   - id: constraint-2
     type: technical
-    description: "범위: src/components/v2/Landing.tsx · 새 첨부 시트 · 이용 고지 시트 컴포넌트(src/components/v2/) · AppFooter.tsx(고지 내용 재사용) · OcrUploadCard.tsx(랜딩에서 보이는 버튼 대신 시트가 여는 입력 · 상태 통로) · MobileEditorShell.tsx(랜딩 · 시트 배선, 포스터 크롭 확정과 OCR 적용의 랜딩 경로) · src/hooks/usePhototicket.ts(constraint-9의 스냅샷 · 자동저장 보류 · blob 해제 미루기) · 스타일 · 테스트 · scripts/measure-chrome.mjs와 docs/HARNESS.md(랜딩 축) · docs/COPY_TONE_GUIDE.md · CLAUDE.md(constraint-13의 문구 한 줄) · 이 Seed다. 편집 셸의 상단 줄 · 도크 · 입력 패널 · 크롭 모달 · 메뉴 · 결과 · 공유는 동작을 바꾸지 않는다(크롭 모달은 시트 위에 그대로 뜬다)."
+    description: "범위: src/components/v2/Landing.tsx · 새 첨부 시트 · 이용 고지 시트 컴포넌트(src/components/v2/) · AppFooter.tsx(고지 내용 재사용) · OcrUploadCard.tsx(랜딩에서 보이는 버튼 대신 시트가 여는 입력 · 상태 통로) · MobileEditorShell.tsx(랜딩 · 시트 배선, 포스터 크롭 확정과 OCR 적용의 랜딩 경로) · src/hooks/usePhototicket.ts(constraint-9의 스냅샷 · 자동저장 보류 · blob 해제 미루기) · src/hooks/useEditHistory.ts · useOcrUndo.ts · usePosterCrop.ts(실행 취소 기록 · OCR 되돌리기 · 크롭 원본을 같은 스냅샷에 싣는 export · import, 소유자 승인 2026-11-24) · 스타일 · 테스트 · scripts/measure-chrome.mjs와 docs/HARNESS.md(랜딩 축) · docs/COPY_TONE_GUIDE.md · CLAUDE.md(constraint-13의 문구 한 줄) · 이 Seed다. 편집 셸의 상단 줄 · 도크 · 입력 패널 · 크롭 모달 · 메뉴 · 결과 · 공유는 동작을 바꾸지 않는다(크롭 모달은 시트 위에 그대로 뜬다)."
     hard: true
     rationale: "D25-12는 랜딩 화면만 다시 짠다. 스냅샷은 문서 수명을 쥔 usePhototicket에서만 안전하게 할 수 있다."
   - id: constraint-3
     type: technical
-    description: "배치(D24 결정 A + D25 공통): 위에 워드마크 줄 하나(왼쪽 워드마크, 오른쪽 끝 '이용 고지' 버튼 hit ≥44 · 12px --pr-ink-3), 헤드라인 · 서브카피 없음. 그 아래 전시가 남은 세로를 채우고 가운데 카드가 그 높이 안에서 가장 크게 선다(세로 0.626 비율 유지). 아래는 이어서 만들기 행(저장분이 있을 때) · 주 버튼 '티켓 스크린샷으로 자동입력' · 보조 버튼 '직접 입력'(테두리 버튼, 높이 = 주 버튼)이 판 없이 같은 --pr-stage 면 위에 선다. 무대 기둥(mood-gallery-beam), 아래 판의 둥근 위 모서리 · 윗선 · --pr-s1 바탕, '{n} / 5' 위치 표시, 링크 쌍, 접는 이용 고지(details)는 없다. 위치 표시 자리는 다섯 칸 진행 막대(aria-hidden, 지금 칸만 길고 --pr-ink)다. 그라데이션 · 글로우 · 흐림 · pill 없이 --pr 토큰만 쓴다."
+    description: "배치(D24 결정 A + D25 공통): 위에 워드마크 줄 하나(왼쪽 워드마크, 오른쪽 끝 '이용 고지' 버튼 hit ≥44 · 12px --pr-ink-3), 헤드라인 · 서브카피 없음. 그 아래 전시가 남은 세로를 채우고 가운데 카드가 워드마크 줄 바로 아래(위 여백 12px)에 그 안에서 가장 크게 선다(세로 0.626 비율 유지). 카드 높이는 '전시 높이 − 44px'과 '(전시 폭 − 112px) × 1534/960' 중 작은 쪽이다 — 세로로 긴 프레임(393×852)에서는 폭 항이 이겨 카드가 전시 높이의 약 72%만 쓰고 남는 높이는 카드 아래로 간다. 이 폭 항이 없으면 옆 카드 · 재단 표시가 프레임 밖으로 밀린다(헤드리스 캡처, 소유자 승인 2026-11-24). 아래는 이어서 만들기 행(저장분이 있을 때) · 주 버튼 '티켓 스크린샷으로 자동입력' · 보조 버튼 '직접 입력'(테두리 버튼, 높이 = 주 버튼)이 판 없이 같은 --pr-stage 면 위에 선다. 무대 기둥(mood-gallery-beam), 아래 판의 둥근 위 모서리 · 윗선 · --pr-s1 바탕, '{n} / 5' 위치 표시, 링크 쌍, 접는 이용 고지(details)는 없다. 위치 표시 자리는 다섯 칸 진행 막대(aria-hidden, 지금 칸만 길고 --pr-ink)다. 그라데이션 · 글로우 · 흐림 · pill 없이 --pr 토큰만 쓴다."
     hard: true
     rationale: "D22 문제 1~4, D23 피드백(무드 이름 빼기 · 설명 문장 빼기), D24 결정 A(헤드라인 없음 · 큰 티켓 · 이용 고지는 워드마크 줄)."
   - id: constraint-4
