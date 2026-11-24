@@ -48,6 +48,9 @@ export function useEditHistory(photo: ReturnType<typeof usePhototicket>) {
   // clear() 예약 — 초기화(clearDraft)처럼 "다음 상태를 새 베이스라인으로" 삼아야 하는 경우.
   // 즉시 리셋하면 clearDraft의 setState가 아직 반영 전이라 이전 상태가 베이스라인이 된다.
   const resetPendingRef = useRef(false);
+  // exportStack이 같은 핸들러 안에서도 최신 스택을 읽도록 렌더마다 채우는 미러(S9 constraint-9).
+  const histRef = useRef(hist);
+  histRef.current = hist;
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -78,6 +81,23 @@ export function useEditHistory(photo: ReturnType<typeof usePhototicket>) {
     resetPendingRef.current = true;
   }
 
+  /**
+   * 첨부 시트 스냅샷(S9 constraint-9)용 — 지금 스택을 그대로 돈다. 스택은 불변으로만 갱신되므로 복사 없이 참조를
+   * 쥐어도 clear() 뒤 새 베이스라인이 이것을 건드리지 않는다.
+   */
+  function exportStack(): HistoryStack {
+    return histRef.current;
+  }
+  /**
+   * exportStack으로 뜬 스택을 되돌린다 — 예약된 clear()는 취소한다. 같은 참조의 스택이라 usePhototicket의
+   * setHistorySnapshots가 스택 변화로 보지 않아 revoke를 일으키지 않는다. 복원된 문서가 스택 끝과 같으면
+   * 디바운스는 no-op이고(위 pushSnapshot), 스냅샷 직전 편집이 남아 있었다면 그것만 한 스텝으로 잡힌다.
+   */
+  function importStack(stack: HistoryStack) {
+    resetPendingRef.current = false;
+    setHist(stack);
+  }
+
   return {
     canUndo: hist.at > 0,
     canRedo: hist.at < hist.stack.length - 1,
@@ -90,5 +110,7 @@ export function useEditHistory(photo: ReturnType<typeof usePhototicket>) {
     undo,
     redo,
     clear,
+    exportStack,
+    importStack,
   };
 }

@@ -194,6 +194,36 @@ export const INITIAL_STATE: PhototicketState = {
   fieldVisibility: ALL_FIELDS_ON,
 };
 
+// 첨부 시트 스냅샷(S9 constraint-9) — resetDocument · handleImageUpload · update*가 바꿀 수 있는 것 전부.
+interface StagingSnapshot {
+  state: PhototicketState;
+  draftRestored: boolean;
+  awaitingPosterRestore: boolean;
+  posterOriginalSrc: string | null;
+  restoredDraftHadPoster: boolean;
+  brightnessTouched: boolean;
+  materialIntensityTouched: boolean;
+  coatingIntensityTouched: boolean;
+  latestUrl: string | null;
+  latestChainUrl: string | null;
+  latestFormatUrl: string | null;
+  latestSignatureUrl: string | null;
+  latestBgPatternUrl: string | null;
+  lastPersistedImageFingerprint: string;
+  autoSaveFirstDirtyAt: number | null;
+  dirtyTick: number;
+  hadPendingAutoSave: boolean;
+  historySnapshots: string[];
+  pendingRevokeUrls: Set<string>;
+}
+
+function blobUrlsOf(state: PhototicketState): string[] {
+  const { chain, format, signatureImage, backgroundPatternImage } = state.components;
+  return [state.croppedImageUrl, chain, format, signatureImage, backgroundPatternImage].filter(
+    (u): u is string => !!u && u.startsWith('blob:'),
+  );
+}
+
 export function usePhototicket() {
   const [state, setState] = useState<PhototicketState>(INITIAL_STATE);
   // 자동저장 on/off(기본 ON) + 마지막 저장 시각(인디케이터 반짝임 트리거, #436).
@@ -221,6 +251,26 @@ export function usePhototicket() {
   // "텍스트만 있던 draft" 전용 inline 모드로 잘못 떨어져 잠깐 보였다 사라진다(#675와 원인이 다른
   // 잔여 플래시, IDB 복원 실패 시엔 그대로 false로 풀려 기존 재업로드 유도 inline이 살아난다).
   const [awaitingPosterRestore, setAwaitingPosterRestore] = useState(false);
+  // 첨부 시트 스냅샷(S9 constraint-9). staging 중에는 스냅샷이 쥔 blob URL을 어떤 경로도 풀지 않고(protectedUrlsRef),
+  // 자동저장은 보류된다. stagingRef는 동기 판정용, isStaging은 자동저장 effect를 다시 돌리는 렌더 신호다.
+  const stagingRef = useRef<StagingSnapshot | null>(null);
+  const [isStaging, setIsStaging] = useState(false);
+  const protectedUrlsRef = useRef<Set<string>>(new Set());
+  // 보류를 푼 뒤 첫 자동저장 effect 판정 기준 — 이 값 이하의 dirtyTick은 "시트 전의 편집"이라 저장을 새로 걸지 않는다.
+  const skipAutoSaveAtOrBelowRef = useRef<number | null>(null);
+  // begin/cancel/commit이 안정 콜백이라 읽는 최신 렌더 값 미러(saveDraftRef와 같은 패턴).
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  const draftRestoredRef = useRef(draftRestored);
+  draftRestoredRef.current = draftRestored;
+  const awaitingPosterRestoreRef = useRef(awaitingPosterRestore);
+  awaitingPosterRestoreRef.current = awaitingPosterRestore;
+  const dirtyTickRef = useRef(dirtyTick);
+  dirtyTickRef.current = dirtyTick;
+  // 스냅샷이 쥔 URL이면 풀지 않는다 — 해제는 commit(안 쓰는 것만) · cancel(복원)이 맡는다.
+  const release = useCallback((url: string) => {
+    if (!protectedUrlsRef.current.has(url)) URL.revokeObjectURL(url);
+  }, []);
   // saveDraft가 마지막으로 IndexedDB에 실제로 쓴 이미지 조합의 지문 — 텍스트만 바뀐 autosave
   // tick마다 이미지 5종을 무조건 재컨버팅·재기록하던 것을 막는다(claude-review PR #515 P1).
   const lastPersistedImageFingerprintRef = useRef('');
@@ -246,7 +296,8 @@ export function usePhototicket() {
     if (pendingRevokeUrlsRef.current.size === 0) return;
     const referenced = getReferencedBlobUrls(snapshots);
     pendingRevokeUrlsRef.current.forEach((url) => {
-      if (!referenced.has(url)) {
+      // 스냅샷이 쥔 URL은 보류 목록에 남겨 둔다(S9 constraint-9) — 시트를 닫아 복원되면 되돌린 스택이 다시 참조한다.
+      if (!referenced.has(url) && !protectedUrlsRef.current.has(url)) {
         URL.revokeObjectURL(url);
         pendingRevokeUrlsRef.current.delete(url);
       }
@@ -304,7 +355,7 @@ export function usePhototicket() {
     // 훅을 직접 부르는 경로(테스트·프로그램적 주입)만 여기서 원본을 채운다(#548).
     seedOriginalRef.current(originalUrl ?? null);
     setState((prev) => {
-      if (prev.croppedImageUrl) URL.revokeObjectURL(prev.croppedImageUrl);
+      if (prev.croppedImageUrl) release(prev.croppedImageUrl);
       latestUrlRef.current = croppedUrl;
       // 복원된 draft에 포스터가 있었으면(restoredDraftHadPosterRef) 이번 업로드가
       // croppedImageUrl===null이어도 "첫 업로드"가 아니다 — IDB 이미지 복원이 실패해 재업로드를
@@ -317,13 +368,15 @@ export function usePhototicket() {
         ...(isFirstUpload ? { fieldVisibility: DEFAULT_VISIBILITY_ON_UPLOAD } : {}),
       };
     });
-  }, []);
+  }, [release]);
 
   // 크롭 전 원본 objectURL과 크롭 모달 상태의 단일 소유자(#548) — 소비자(ImageUploader ·
   // MobileEditorShell)가 아니라 이 훅과 같은 수명을 갖는다. 셸이 언마운트돼도(브레이크포인트
   // 전환) 원본이 안 죽으므로, 아래 saveDraft가 읽는 URL도 항상 살아있다.
-  const posterCrop = usePosterCrop(handleImageUpload);
+  const posterCrop = usePosterCrop(handleImageUpload, protectedUrlsRef);
   seedOriginalRef.current = posterCrop.seedOriginal;
+  const posterCropRef = useRef(posterCrop);
+  posterCropRef.current = posterCrop;
 
   // 마운트 시 localStorage에서 텍스트·설정을 복원한다. SSR 하이드레이션 불일치를 피하려
   // useState 초기화가 아니라 effect에서 한다(서버는 INITIAL_STATE로 렌더, 클라가 마운트 후 복원).
@@ -536,7 +589,7 @@ export function usePhototicket() {
   }, [updateMovieInfo]);
 
   // 초기화(clearDraft) 세대(#806) — OCR 응답은 초기화를 건너 도착하면 옛 문서의 것이라 버린다. docEpochRef가
-  // 아니라 따로 세는 건, 랜딩의 "새로 시작"(resetDocument만 부른다: 포스터 확정·직접 입력·무드 탭)은
+  // 아니라 따로 세는 건, 랜딩의 "새로 시작"(resetDocument만 부른다: 첨부 시트의 첫 첨부 · 직접 입력, #826 S9)은
   // 인식 중인 OCR이 들어갈 바로 그 새 문서를 여는 거라 버리면 안 되기 때문이다(code-review 지적).
   // 영화 선택도 안 본다 — 사용자가 영화를 골랐다고 극장·좌석 인식까지 버릴 이유는 없다.
   const clearEpochRef = useRef(0);
@@ -606,6 +659,8 @@ export function usePhototicket() {
       if (clearedChain || clearedFormat || clearedSignature || clearedBgPattern) {
         const referenced = getReferencedBlobUrls(historySnapshotsRef.current);
         const releaseOrDefer = (url: string) => {
+          // 스냅샷이 쥔 URL은 풀지도 보류에 넣지도 않는다(S9 constraint-9) — commit이 안 쓰는 것만 푼다.
+          if (protectedUrlsRef.current.has(url)) return;
           if (referenced.has(url)) pendingRevokeUrlsRef.current.add(url);
           else URL.revokeObjectURL(url);
         };
@@ -681,6 +736,8 @@ export function usePhototicket() {
   // 아래에서 별도로 showError한다.
   const saveDraft = useCallback((): boolean => {
     if (typeof window === 'undefined') return false;
+    // 첨부 시트가 열려 있는 동안엔 저장분을 쓰지 않는다(S9 constraint-9) — 닫기가 "아무것도 안 바뀜"이어야 해서.
+    if (stagingRef.current) return false;
     let textSaved = true;
     try {
       const payload: PersistedState = {
@@ -790,6 +847,13 @@ export function usePhototicket() {
   // firstDirtyAt을 기준으로 상한에 가까워질수록 지연이 짧아지므로, 드래그가 계속돼도 상한 시점에는
   // 반드시 저장이 걸린다.
   useEffect(() => {
+    // 첨부 시트 보류(S9 constraint-9) — 타이머를 안 걸고, 풀린 뒤 이 effect가 isStaging 변화로 다시 돈다.
+    if (isStaging) return;
+    // 보류를 푼 직후 한 번: 시트 전부터 있던 편집(dirtyTick ≤ 기준)은 새로 저장하지 않는다 — 취소된 시트의 복원본은
+    // 이미 저장분과 같고, 편집 없이 커밋된 새 문서가 저장분을 덮어서도 안 된다(#727 c7).
+    const skipAtOrBelow = skipAutoSaveAtOrBelowRef.current;
+    skipAutoSaveAtOrBelowRef.current = null;
+    if (skipAtOrBelow !== null && dirtyTick <= skipAtOrBelow) return;
     if (!autoSaveEnabled) {
       // 꺼져 있던 동안 흐른 시간이 firstDirtyAt에 그대로 쌓이면, 나중에 다시 켰을 때 그 정지
       // 시간까지 경과로 잡혀 remaining이 음수가 되고 재활성화 즉시 강제 저장이 걸려버린다 —
@@ -803,6 +867,7 @@ export function usePhototicket() {
     const remaining = AUTOSAVE_MAX_WAIT_MS - (now - autoSaveFirstDirtyAtRef.current);
     const delay = Math.max(0, Math.min(AUTOSAVE_DEBOUNCE_MS, remaining));
     const timer = setTimeout(() => {
+      if (stagingRef.current) return;
       // 실패 시(#645 C1) 인디케이터를 안 반짝인다 — saveDraft 내부가 이미 showError로 알린다.
       if (saveDraftRef.current()) setLastSavedAt(Date.now());
       autoSaveTimerRef.current = null;
@@ -816,7 +881,7 @@ export function usePhototicket() {
       // 강행해버린다.
       autoSaveTimerRef.current = null;
     };
-  }, [autoSaveEnabled, dirtyTick]);
+  }, [autoSaveEnabled, dirtyTick, isStaging]);
 
   // 탭 이탈 flush(#651) — 마지막 편집 후 AUTOSAVE_DEBOUNCE_MS(1s) 안에 탭을 벗어나면(전환·닫기)
   // 위 디바운스 타이머가 아직 안 끝난 채로 페이지가 언마운트될 수 있어 그 편집분이 통째로
@@ -825,7 +890,7 @@ export function usePhototicket() {
   // 없어 autoSaveTimerRef.current가 null이라 별도 게이팅이 필요 없다.
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState !== 'hidden' || !autoSaveTimerRef.current) return;
+      if (document.visibilityState !== 'hidden' || !autoSaveTimerRef.current || stagingRef.current) return;
       clearTimeout(autoSaveTimerRef.current);
       autoSaveTimerRef.current = null;
       autoSaveFirstDirtyAtRef.current = null;
@@ -882,14 +947,14 @@ export function usePhototicket() {
     coatingIntensityTouchedRef.current = false;
     setState((prev) => {
       if (!opts?.keepPoster) {
-        if (prev.croppedImageUrl) URL.revokeObjectURL(prev.croppedImageUrl);
+        if (prev.croppedImageUrl) release(prev.croppedImageUrl);
         latestUrlRef.current = null;
       }
       // chain/format 로고도 poster와 동일하게 처리 — 안 하면 blob이 탭 닫힐 때까지 안 풀린다.
-      if (prev.components.chain.startsWith('blob:')) URL.revokeObjectURL(prev.components.chain);
-      if (prev.components.format.startsWith('blob:')) URL.revokeObjectURL(prev.components.format);
-      if (prev.components.signatureImage?.startsWith('blob:')) URL.revokeObjectURL(prev.components.signatureImage);
-      if (prev.components.backgroundPatternImage?.startsWith('blob:')) URL.revokeObjectURL(prev.components.backgroundPatternImage);
+      if (prev.components.chain.startsWith('blob:')) release(prev.components.chain);
+      if (prev.components.format.startsWith('blob:')) release(prev.components.format);
+      if (prev.components.signatureImage?.startsWith('blob:')) release(prev.components.signatureImage);
+      if (prev.components.backgroundPatternImage?.startsWith('blob:')) release(prev.components.backgroundPatternImage);
       latestChainUrlRef.current = null;
       latestFormatUrlRef.current = null;
       latestSignatureUrlRef.current = null;
@@ -898,17 +963,143 @@ export function usePhototicket() {
         // 새 문서 + 방금 올린 포스터 = 첫 업로드 상태다 — handleImageUpload의 isFirstUpload가
         // 세우는 것과 같은 노출셋을 여기서 명시한다. prev의 노출셋을 물려받으면 옛 draft의
         // 필드 구성이 새 문서로 새어 들어온다.
+        // 첨부 시트의 포스터 경로는 고른 무드도 같이 싣는다(S9 constraint-5 · 9).
         return {
           ...INITIAL_STATE,
           croppedImageUrl: prev.croppedImageUrl,
           fieldVisibility: DEFAULT_VISIBILITY_ON_UPLOAD,
+          ...(opts.layout ? { components: { ...INITIAL_STATE.components, layout: opts.layout } } : {}),
         };
       }
       return opts?.layout
         ? { ...INITIAL_STATE, components: { ...INITIAL_STATE.components, layout: opts.layout } }
         : INITIAL_STATE;
     });
-  }, [posterCrop.reset]);
+  }, [posterCrop.reset, release]);
+
+  /**
+   * 첨부 시트 스냅샷 시작(S9 constraint-9) — 시트에서 첫 파일을 고르는 순간, 새 문서를 열기 **전에** 부른다
+   * (포스터라면 posterCrop.complete 전에: 확정이 이전 포스터를 갈아끼운다). 이미 staging이면 no-op.
+   *
+   * 메모리 문서와 그것을 만들 수 있는 ref를 전부 뜨고, 스냅샷이 쥔 blob URL(포스터 · 로고 3종 · 배경 · 크롭 원본 ·
+   * 히스토리가 쥔 보류 URL)을 protectedUrlsRef에 올려 resetDocument · handleImageUpload · 로고 제거 ·
+   * posterCrop이 못 풀게 한다. 자동저장(타이머 · 탭 이탈 flush · saveDraft)은 cancel/commit까지 보류된다.
+   * 실행 취소 스택 · OCR 되돌리기 상태는 셸이 history.exportStack / ocr.exportState로 따로 뜬다.
+   */
+  const beginStaging = useCallback(() => {
+    if (stagingRef.current) return;
+    const snapState = stateRef.current;
+    const posterOriginalSrc = posterCropRef.current.exportState().originalSrc;
+    const protectedUrls = new Set<string>(blobUrlsOf(snapState));
+    if (posterOriginalSrc) protectedUrls.add(posterOriginalSrc);
+    // 히스토리 스택이 붙든 URL과 그 때문에 풀기를 미룬 URL도 스냅샷의 일부다 — 복원된 스택이 되살린다.
+    getReferencedBlobUrls(historySnapshotsRef.current).forEach((u) => protectedUrls.add(u));
+    pendingRevokeUrlsRef.current.forEach((u) => protectedUrls.add(u));
+    protectedUrlsRef.current = protectedUrls;
+    stagingRef.current = {
+      state: snapState,
+      draftRestored: draftRestoredRef.current,
+      awaitingPosterRestore: awaitingPosterRestoreRef.current,
+      posterOriginalSrc,
+      restoredDraftHadPoster: restoredDraftHadPosterRef.current,
+      brightnessTouched: brightnessTouchedRef.current,
+      materialIntensityTouched: materialIntensityTouchedRef.current,
+      coatingIntensityTouched: coatingIntensityTouchedRef.current,
+      latestUrl: latestUrlRef.current,
+      latestChainUrl: latestChainUrlRef.current,
+      latestFormatUrl: latestFormatUrlRef.current,
+      latestSignatureUrl: latestSignatureUrlRef.current,
+      latestBgPatternUrl: latestBgPatternUrlRef.current,
+      lastPersistedImageFingerprint: lastPersistedImageFingerprintRef.current,
+      autoSaveFirstDirtyAt: autoSaveFirstDirtyAtRef.current,
+      dirtyTick: dirtyTickRef.current,
+      hadPendingAutoSave: autoSaveTimerRef.current !== null,
+      historySnapshots: historySnapshotsRef.current,
+      pendingRevokeUrls: new Set(pendingRevokeUrlsRef.current),
+    };
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+    setIsStaging(true);
+  }, []);
+
+  /**
+   * 시트를 닫아 스냅샷으로 되돌린다(S9 constraint-9) — 저장분은 begin 이후 한 번도 안 써졌으므로 건드리지 않는다.
+   * 스냅샷에 없는 blob(시트 중에 만든 포스터 · 로고 · 크롭 원본)은 여기서 푼다. 진행 중이던 IndexedDB 복원 ·
+   * KOBIS 보강(docEpoch)과 OCR 응답(clearEpoch, #806)은 세대를 올려 늦게 도착해도 버려진다.
+   * 실행 취소 스택 · OCR 상태 복원(history.importStack / ocr.importState)은 같은 핸들러에서 셸이 부른다.
+   */
+  const cancelStaging = useCallback(() => {
+    const snap = stagingRef.current;
+    if (!snap) return;
+    const keep = protectedUrlsRef.current;
+    stagingRef.current = null;
+    protectedUrlsRef.current = new Set();
+    docEpochRef.current += 1;
+    clearEpochRef.current += 1; // clearDraft가 아니라 저장소를 안 건드리는 내부 증가(#806의 captureDraft 판정용)
+    pendingRevokeUrlsRef.current.forEach((url) => {
+      if (!keep.has(url)) URL.revokeObjectURL(url);
+    });
+    pendingRevokeUrlsRef.current = new Set(snap.pendingRevokeUrls);
+    historySnapshotsRef.current = snap.historySnapshots;
+    setState((prev) => {
+      for (const url of blobUrlsOf(prev)) if (!keep.has(url)) URL.revokeObjectURL(url);
+      return snap.state;
+    });
+    posterCrop.importState({ originalSrc: snap.posterOriginalSrc });
+    setDraftRestored(snap.draftRestored);
+    setAwaitingPosterRestore(snap.awaitingPosterRestore);
+    restoredDraftHadPosterRef.current = snap.restoredDraftHadPoster;
+    brightnessTouchedRef.current = snap.brightnessTouched;
+    materialIntensityTouchedRef.current = snap.materialIntensityTouched;
+    coatingIntensityTouchedRef.current = snap.coatingIntensityTouched;
+    latestUrlRef.current = snap.latestUrl;
+    latestChainUrlRef.current = snap.latestChainUrl;
+    latestFormatUrlRef.current = snap.latestFormatUrl;
+    latestSignatureUrlRef.current = snap.latestSignatureUrl;
+    latestBgPatternUrlRef.current = snap.latestBgPatternUrl;
+    lastPersistedImageFingerprintRef.current = snap.lastPersistedImageFingerprint;
+    autoSaveFirstDirtyAtRef.current = snap.autoSaveFirstDirtyAt;
+    setDirtyTick(snap.dirtyTick);
+    // 시트 전에 예약돼 있던 자동저장만 되살린다 — 없었으면 복원본을 새로 저장하지 않는다.
+    skipAutoSaveAtOrBelowRef.current = snap.hadPendingAutoSave ? null : snap.dirtyTick;
+    setIsStaging(false);
+  }, [posterCrop.importState]);
+
+  /**
+   * '만들기' — 새 문서를 확정한다(S9 constraint-9). 미뤄 둔 이전 문서 blob 중 새 문서가 안 쓰는 것을 풀고 보류를
+   * 푼다. 새 문서가 편집됐으면(dirtyTick이 스냅샷 시점보다 큼) 보류가 풀린 effect가 보통 자동저장을 건다.
+   */
+  const commitStaging = useCallback(() => {
+    const snap = stagingRef.current;
+    if (!snap) return;
+    const deferred = protectedUrlsRef.current;
+    stagingRef.current = null;
+    protectedUrlsRef.current = new Set();
+    // 새 문서가 아직 쥔 URL(예: 스냅샷 포스터를 그대로 이어 쓴 경우)은 남기고 나머지만 푼다.
+    const stillUsedOriginal = posterCropRef.current.exportState().originalSrc;
+    setState((prev) => {
+      const live = new Set(blobUrlsOf(prev));
+      if (stillUsedOriginal) live.add(stillUsedOriginal);
+      deferred.forEach((url) => {
+        if (!live.has(url)) URL.revokeObjectURL(url);
+      });
+      return prev;
+    });
+    // 보류가 풀렸으니 히스토리가 더는 안 쥔 보류 URL을 지금 회수한다(스택이 안 바뀌면 setHistorySnapshots가 다시 안 본다).
+    if (pendingRevokeUrlsRef.current.size > 0) {
+      const referenced = getReferencedBlobUrls(historySnapshotsRef.current);
+      pendingRevokeUrlsRef.current.forEach((url) => {
+        if (!referenced.has(url)) {
+          URL.revokeObjectURL(url);
+          pendingRevokeUrlsRef.current.delete(url);
+        }
+      });
+    }
+    skipAutoSaveAtOrBelowRef.current = snap.dirtyTick;
+    setIsStaging(false);
+  }, []);
 
   // #310: 저장분 삭제 + 문서 리셋(파괴적 — 호출부에서 확인 UX를 거친다). 문서 리셋 조각은
   // resetDocument와 공유하고, 여기만 저장분과 첫 페인트 게이트까지 지운다(#727 c7이 가른 축).
@@ -937,6 +1128,8 @@ export function usePhototicket() {
       if (latestFormatUrlRef.current) URL.revokeObjectURL(latestFormatUrlRef.current);
       if (latestSignatureUrlRef.current) URL.revokeObjectURL(latestSignatureUrlRef.current);
       if (latestBgPatternUrlRef.current) URL.revokeObjectURL(latestBgPatternUrlRef.current);
+      // 시트가 열린 채 언마운트되면 스냅샷이 미뤄 둔 URL이 아무도 안 쥔 채 남는다(S9 constraint-9).
+      protectedUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
     };
   }, []);
 
@@ -962,6 +1155,11 @@ export function usePhototicket() {
     toggleAutoSave,
     draftRestored,
     awaitingPosterRestore,
+    // 첨부 시트 스냅샷(S9 constraint-9) — 시트가 열린 동안 문서 수명과 자동저장을 쥔다.
+    isStaging,
+    beginStaging,
+    cancelStaging,
+    commitStaging,
     // 포스터 크롭 파이프라인(#548) — 원본 objectURL·모달 상태의 단일 소유자. 셸/패널은 소비만 한다.
     posterCrop,
   };
