@@ -45,9 +45,24 @@ export interface PosterCrop {
   seedOriginal: (url: string | null) => void;
   /** clearDraft — 원본을 버리고(revoke는 아래 effect) 모달 상태까지 초기 슬레이트로. */
   reset: () => void;
+  /** 확정된 원본의 즉시 읽기(S9 constraint-9 스냅샷) — state가 아니라 ref 미러라 같은 핸들러 안에서도 최신이다. */
+  exportState: () => PosterCropState;
+  /** 스냅샷 복원(S9 constraint-9) — 확정 원본을 되돌리고 확정 전 새 파일 · 모달 상태를 걷는다. 지금 원본이 다르면 아래 effect가 그것을 푼다. */
+  importState: (state: PosterCropState) => void;
 }
 
-export function usePosterCrop(commit: (croppedUrl: string, originalUrl: string) => void): PosterCrop {
+export interface PosterCropState {
+  originalSrc: string | null;
+}
+
+/**
+ * @param protectedUrls S9 constraint-9 — 첨부 시트 스냅샷이 쥔 blob URL 집합(usePhototicket 소유). 여기 든 원본은 effect가
+ *                      바뀐 값을 풀 때도 풀지 않는다(복원 때 되살아나야 해서). 해제는 집합 소유자가 맡는다.
+ */
+export function usePosterCrop(
+  commit: (croppedUrl: string, originalUrl: string) => void,
+  protectedUrls?: { current: Set<string> },
+): PosterCrop {
   const [originalSrc, setOriginalSrc] = useState<string | null>(null);
   // 확정 전 새 파일(첫 업로드 · 교체 · '다른 사진'). '적용'이 성공하면 originalSrc로 올라가고, 닫기 ·
   // 다음 새 파일 · reset · 언마운트에서 버려진다. 올라갈 때는 revoke하면 안 되므로 effect가 아니라
@@ -67,9 +82,9 @@ export function usePosterCrop(commit: (croppedUrl: string, originalUrl: string) 
   // 크롭 완료/취소는 값을 안 바꾸므로 원본이 살아남아 재크롭에 쓰인다.
   useEffect(() => {
     return () => {
-      if (originalSrc) URL.revokeObjectURL(originalSrc);
+      if (originalSrc && !protectedUrls?.current.has(originalSrc)) URL.revokeObjectURL(originalSrc);
     };
-  }, [originalSrc]);
+  }, [originalSrc, protectedUrls]);
 
   const discardPending = useCallback(() => {
     if (pendingRef.current) URL.revokeObjectURL(pendingRef.current);
@@ -171,6 +186,16 @@ export function usePosterCrop(commit: (croppedUrl: string, originalUrl: string) 
     setCropFailed(false);
   }, [discardPending]);
 
+  const exportState = useCallback((): PosterCropState => ({ originalSrc: originalSrcRef.current }), []);
+
+  const importState = useCallback((snap: PosterCropState) => {
+    originalSrcRef.current = snap.originalSrc;
+    setOriginalSrc(snap.originalSrc);
+    discardPending();
+    setCropOpen(false);
+    setCropFailed(false);
+  }, [discardPending]);
+
   return {
     originalSrc,
     src: pendingSrc ?? originalSrc,
@@ -183,5 +208,7 @@ export function usePosterCrop(commit: (croppedUrl: string, originalUrl: string) 
     cancel,
     seedOriginal,
     reset,
+    exportState,
+    importState,
   };
 }

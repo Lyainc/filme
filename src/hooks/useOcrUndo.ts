@@ -27,6 +27,19 @@ export interface OcrApplyParams {
   nextComponents?: Partial<TicketComponents>;
 }
 
+interface UndoState {
+  info: Partial<MovieInfo>;
+  components: Partial<TicketComponents> | null;
+  applied: Partial<MovieInfo>;
+  appliedComponents: Partial<TicketComponents>;
+}
+
+/** 첨부 시트 스냅샷(S9 constraint-9)이 뜨는 OCR 되돌리기 상태 전체. 둘 다 불변으로만 갱신돼 참조를 그대로 쥐어도 된다. */
+export interface OcrUndoState {
+  filledFields: Set<OcrDirectField>;
+  undo: UndoState | null;
+}
+
 export interface UseOcrUndo {
   /** OCR로 마지막 채워진 필드 중 사용자가 아직 안 고친 것 — 배너 카운트용(#810). */
   filledFields: Set<OcrDirectField>;
@@ -68,6 +81,13 @@ export interface UseOcrUndo {
    * 사용자가 고친 원제·개봉일 같은 보강 필드를 되돌리기가 OCR 전 값으로 덮는다.
    */
   recordKobisApplied: (info: Partial<MovieInfo>) => void;
+  /** 지금 되돌리기 상태를 뜬다(S9 constraint-9) — 마지막 렌더의 값이라 confirm() 직전에 부르면 된다. */
+  exportState: () => OcrUndoState;
+  /**
+   * exportState로 뜬 상태를 되돌린다(S9 constraint-9). 진행 중이던 OCR · KOBIS 응답이 되돌린 상태에 늦게 쓰지 못하게
+   * epoch도 올린다(cancel과 같은 처방).
+   */
+  importState: (state: OcrUndoState) => void;
 }
 
 // OCR이 쓴 값과 지금 값이 달라진 키(= 사용자가 그 뒤 고친 것)인가(#807). 되돌리기와 배너 카운트(#810)가 같이 쓴다.
@@ -84,13 +104,11 @@ export function useOcrUndo(photo: ReturnType<typeof usePhototicket>): UseOcrUndo
   const [filledFields, setFilledFields] = useState<Set<OcrDirectField>>(new Set());
   // movieInfo·components 스냅샷을 한 state로 묶는다 — dropKobisFields는 늦은 비동기 콜백에서 불려
   // 클로저의 값이 낡았으므로 함수형 갱신 하나 안에서 둘을 같이 봐야 "남는 게 없다"를 판정할 수 있다.
-  const [undo, setUndo] = useState<{
-    info: Partial<MovieInfo>;
-    components: Partial<TicketComponents> | null;
-    applied: Partial<MovieInfo>;
-    appliedComponents: Partial<TicketComponents>;
-  } | null>(null);
+  const [undo, setUndo] = useState<UndoState | null>(null);
   const epochRef = useRef(0);
+  // exportState용 최신 미러 — 렌더마다 채운다. 클로저의 낡은 값을 뜨지 않게 한다.
+  const latestRef = useRef<OcrUndoState>({ filledFields, undo });
+  latestRef.current = { filledFields, undo };
 
   function apply({ keys, prevValues, prevComponents, nextValues = {}, nextComponents = {} }: OcrApplyParams) {
     setFilledFields(keys);
@@ -148,6 +166,16 @@ export function useOcrUndo(photo: ReturnType<typeof usePhototicket>): UseOcrUndo
     });
   }
 
+  function exportState(): OcrUndoState {
+    return latestRef.current;
+  }
+
+  function importState(snap: OcrUndoState) {
+    epochRef.current++;
+    setFilledFields(snap.filledFields);
+    setUndo(snap.undo);
+  }
+
   // 배너는 되돌리기가 실제로 되돌릴 것만 보여준다(#810·#814) — cancel과 같은 isEdited 판정이다. 사용자가 전부
   // 고쳐 남은 게 없으면 배너를 닫는다. 안 그러면 누를 수 있는 "되돌리기"가 아무것도 안 한다.
   const info = undo ? withoutEdited(undo.info, undo.applied, photo.state.movieInfo) : null;
@@ -179,5 +207,7 @@ export function useOcrUndo(photo: ReturnType<typeof usePhototicket>): UseOcrUndo
     confirm,
     dropKobisFields,
     recordKobisApplied,
+    exportState,
+    importState,
   };
 }
