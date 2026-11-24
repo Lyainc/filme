@@ -14,6 +14,12 @@ UNIT_FILES.forEach(f => require(M + 'evidence/' + f));
 const W = global.window, S = W.PR, esc = S.esc;
 const TC = W.TRACE_CHECK();
 if (TC.bad.length || TC.miss.length) { console.error('추적표 점검 실패', TC); process.exit(1); }
+/* 컴포넌트 표가 가리키는 구현 파일이 레포에 있는지(마스터는 앱 현황을 따라가요, #826). 경로 없이 이름만 적은 파일은 src 아래에서 찾아요. */
+const ROOT = path.join(M, '../../..'), SRC = [];
+(function walk(d) { fs.readdirSync(d, { withFileTypes: true }).forEach(e => { const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else SRC.push(path.relative(ROOT, p)); }); })(path.join(ROOT, 'src'));
+const GONE = [...new Set(W.COMPONENTS.flatMap(c => (c.files || '').match(/[\w./\[\]-]+\.(?:tsx?|css)\b/g) || []))]
+  .filter(f => f.startsWith('src/') ? !SRC.includes(f) : !SRC.some(s => s.endsWith('/' + f)));
+if (GONE.length) { console.error('컴포넌트 표가 가리키는 파일이 레포에 없어요(data/components.js files):', GONE); process.exit(1); }
 const ONLY = process.argv[3] || null; /* 단위 id 하나만 다시 쓰려면 두 번째 인자로 */
 if (ONLY && !W.EVIDENCE.some(u => u.id === ONLY && u.canvas !== false)) { console.error('없는 단위 id: ' + ONLY); process.exit(1); }
 fs.mkdirSync(OUT + 'master', { recursive: true }); fs.mkdirSync(OUT + 'decisions', { recursive: true }); fs.mkdirSync(OUT + 'wip', { recursive: true });
