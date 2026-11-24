@@ -182,7 +182,7 @@
   F({ id: 'I-01', page: 'dock', name: '정보 · 목록', comps: ['C-DOCK', 'C-IROW'],
     variants: [{ st: '기본', html: ed({ ticket: { ghost: true }, dock: info({}) }) }, { st: '숨긴 항목', html: ed({ ticket: { ghost: true }, dock: info({ offDate: true }) }) }],
     states: ['의도된 잘림: 무드에 따라 최대 15행이라 도크 안에서 세로 스크롤해요.', '행 = 이름 · 값(비면 "비어 있음") · 표시 토글. 행을 누르면 그 필드 입력(K). 제목은 필수라 숨김 비활성.', '무드가 그리지 않는 항목은 목록에서 빠져요(MOOD_EXCLUDED_FIELDS).'],
-    flow: [['행', 'K-01 · K-02 · K-04 · K-05 · K-06', '입력'], ['표시 토글', 'I-01', '실행 취소 가능']], notes: ['현행 FieldDrawer(핸들·스와이프)를 대체해요.'] });
+    flow: [['행', 'K-01 · K-02 · K-04 · K-05 · K-06', '입력'], ['표시 토글', 'I-01', '실행 취소 가능']], notes: ['옛 FieldDrawer(핸들·스와이프)를 대체했어요(S2).'] });
   F({ id: 'G-01', page: 'dock', name: '사진', comps: ['C-DOCK', 'C-AROW', 'C-SEL'],
     variants: [
       { st: '기본', html: ed({ sel: S.sel('poster'), dock: photo([ROW.poster, ROW.chain, ROW.format]) }) },
