@@ -14,6 +14,7 @@ Before making architectural changes or implementing new features, consult:
 - **`docs/HARNESS.md`**: 크롬 측정 하네스(`scripts/measure-chrome.mjs`·`capture-export.mjs`·`measure-font-metrics.mjs`) 사용법 + 실측 기준선 + 파괴 실험 + stale 서버·워크트리 dev 함정. 하네스·도크 높이·프레임 봉쇄를 건드리기 전에 읽을 것.
 - **`docs/TESTING.md`**: 테스트 규칙의 근거(CI timeout 문턱 실측, mock.module 누수, 실행 순서 진단, DOM `received` 직렬화 함정). 테스트 인프라를 건드리거나 "왜 이렇게 쓰나"가 의심될 때 읽을 것.
 - **`docs/CONTRIBUTING.md`**: 리뷰 게이트·Git/릴리즈 규약의 근거, 철거된 기능(TMDB 등)의 이력, OCR 최신성 판정 근거, LSP 툴링 메모.
+- **`docs/mockups/826-master/`**: 페이지 마스터(앱 화면의 기준 그림 · 근거표). **마스터는 앱 현황을 따라간다** — `src/components/v2/**` · 스타일 · 사용자 문구를 바꾸는 PR은 `data/components.js`의 files → frames로 찾은 프레임 · 문구표(`evidence/51-copy-changed.js`) · 추적표(`data/trace.js`)를 같은 PR에서 고친다. CI가 `tools/gen-canvas.js`로 추적표와 구현 파일 경로를 막는다. 결정 · 질문 · 변경 · Seed 보드, 추적표 now 열, 문구표의 영향 테스트 열은 이력이라 예외(#826).
 - **`docs/user-testing/README.md`**: 사람 눈·기기 검증(Aside, iOS Simulator) 실행서와 케이스표.
 - **스킬 위치**: `.agents/skills/<name>`이 canonical이고 `.claude/skills/<name>`은 그 심링크다. 이 파일은 `.claude/skills/ocr-pipeline/SKILL.md`처럼 예전 경로로 가리키며 그대로 풀린다.
 - Ticket design specs/layout coords/mood catalog live in this file's **"Core Mechanisms (6-Mood Ticket Rendering)"** section + `src/utils/layouts.ts` — not a separate doc.
