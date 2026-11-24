@@ -315,7 +315,7 @@
     var float = (o.fallback ? '<div class="c-link"><input aria-label="공유 링크" value="filme.app/t/k3x9q2" readonly><button class="c-btn sec">복사</button></div>' : '') +
       (o.err ? '<div class="c-alert" role="alert"><span class="ic"></span><span class="tx">' + o.err + '</span></div>' : '');
     var toast = o.toast ? S.toast(o.toast, { mid: true, top: 'calc(var(--sb) + var(--pr-topbar) + var(--pr-s-2))' }) : '';
-    return S.phone(S.topbar({ back: '편집으로 돌아가기' }) + '<div class="c-rbody"><div class="c-rtk' + (o.wide ? ' wide' : '') + '">' + S.ticket({ wide: o.wide }) + '</div></div>' +
+    return S.phone(S.topbar({ back: '편집으로 돌아가기' }) + '<h1 class="sr-only">결과</h1><div class="c-rbody"><div class="c-rtk' + (o.wide ? ' wide' : '') + '">' + S.ticket({ wide: o.wide }) + '</div></div>' +
       '<div class="c-racts">' + (float ? '<div class="c-rfloat">' + float + '</div>' : '') + '<div class="c-rrow">' + save + link + share + '</div>' +
       '<div class="c-rnote">' + (made ? '<p class="c-legal">이 링크는 3일 후 만료돼요.</p>' : '') + '<p class="c-legal">' + NOTICE + '</p></div>' + SAFE + '</div>' + toast + (o.extra || ''));
   }
