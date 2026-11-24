@@ -128,7 +128,7 @@ ${S.wordmark()}
 </div>
 <div style="background: var(--pr-s1); border: 1px solid var(--pr-hair-strong); border-radius: 6px; padding: 20px; display: flex; flex-direction: column; gap: 8px">
 <h2 style="margin: 0; font-size: 17px; font-weight: 600">결정 · 비교판</h2>
-<p style="margin: 0; font-size: 14px; line-height: 21px; color: var(--pr-ink-2)">소유자 결정을 받으려고 그린 후보 비교. 파일 이름 decisions/D번호-주제(D01 선택 표시 · 세리프 · 브릭, D02 팔레트). 결정이 나면 아트보드 제목에 결과를 적고 지우지 않아요.</p>
+<p style="margin: 0; font-size: 14px; line-height: 21px; color: var(--pr-ink-2)">소유자 결정을 받으려고 그린 후보 비교. 파일 이름 decisions/D번호-주제(D01~D25). 각 결정의 결과는 근거 페이지 "결정" 보드(evidence/02-decisions.js)에 한 줄씩 있어요. 결정이 나면 아트보드 제목에 결과를 적고 지우지 않아요.</p>
 </div>
 <div style="background: var(--pr-s1); border: 1px solid var(--pr-hair-strong); border-radius: 6px; padding: 20px; display: flex; flex-direction: column; gap: 8px">
 <h2 style="margin: 0; font-size: 17px; font-weight: 600">작업 중 목업</h2>
@@ -136,7 +136,7 @@ ${S.wordmark()}
 </div>
 </div>
 <div style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; line-height: 21px; color: var(--pr-ink-2)">
-<p style="margin: 0"><b style="color: var(--pr-ink)">원본</b> 레포 브랜치 docs/826-page-master의 docs/mockups/826-master/ (프레임 빌더 · 추적표 · 레퍼런스 · Aside 검증 기록). 캔버스 아트보드는 그 원본에서 생성했어요.</p>
+<p style="margin: 0"><b style="color: var(--pr-ink)">원본</b> 레포 main의 docs/mockups/826-master/(마스터는 앱 현황을 따라가요) (프레임 빌더 · 추적표 · 레퍼런스 · Aside 검증 기록). 캔버스 아트보드는 그 원본에서 생성했어요.</p>
 <p style="margin: 0"><b style="color: var(--pr-ink)">결정</b> 테마 시스템 따름 · Pretendard 하나 · 재단 표시 · 세리프 없음 · 오류는 앰버 · 전시 강제 재생 · 모바일 전용 · 문구 간결 · 도크 모드 셋(사진 · 정보 · 디자인).</p><p style="margin: 0"><b style="color: var(--pr-ink)">근거</b> "근거" 페이지는 짧은 보드 여러 장이에요(결정 · 미결 · 바꾼 것 · 의문 · Seed / 토큰 / 흐름 / 오류 색인 / 요구 · 기능 묶음별 / 문구 / 레퍼런스). 보드 하나가 레포 evidence/의 파일 하나라 한 단위만 고쳐 다시 올려요. 프레임에 걸린 문구 변경과 기능 추적은 각 프레임 보드 오른쪽에도 붙어요.</p>
 <p style="margin: 0"><b style="color: var(--pr-ink)">범위 밖</b> 티켓 무드 렌더(자리표시 그림) · 프로덕션 코드 · Seed(4단계).</p>
 </div>
