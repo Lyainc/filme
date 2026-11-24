@@ -9,10 +9,10 @@
  * 리듬이 깨졌다(2026-08-08 사용자 피드백). 35mm 와이드는 전시에서 빠졌고, 에디토리얼은 90° 돌려 세운다.
  */
 import { describe, expect, test, afterEach, beforeEach } from 'bun:test';
-import { render, screen, cleanup, within } from '@testing-library/react';
+import { render, screen, cleanup, within, fireEvent } from '@testing-library/react';
 import { usePhototicket } from '@/hooks/usePhototicket';
 import { MobileEditorShell } from '@/components/v2/MobileEditorShell';
-import { GALLERY_LAYOUTS } from '@/components/v2/Landing';
+import { CARD_H, GALLERY_LAYOUTS } from '@/components/v2/Landing';
 import { mobileShellProps } from './shellHarness';
 import { MIN_AA, assertNoShrink } from './tapTargets';
 
@@ -51,31 +51,34 @@ afterEach(() => {
   window.localStorage.clear();
 });
 
-describe('랜딩 무드 전시 탭 타깃 (#615 → #826 S5, WCAG 2.2 SC 2.5.8 AA)', () => {
+describe('랜딩 무드 전시 탭 타깃 (#615 → #826 S5 → S9, WCAG 2.2 SC 2.5.8 AA)', () => {
   const cards = () =>
     Array.from(within(landing()).getByTestId('mood-gallery').querySelectorAll('button[data-index]')) as HTMLElement[];
+  const nameOf = (b: HTMLElement) => b.getAttribute('aria-label') ?? '';
 
-  test('전시 카드가 가장 좁은 프레임에서도 24px 하한을 넘고, 전부 같은 세로 비율로 선다', () => {
+  // S9: 카드는 폭 %가 아니라 높이 식 CARD_H(전시 높이 · 폭 중 작은 쪽) + 세로 비율로 선다(Landing.tsx slotStyle).
+  // happy-dom엔 레이아웃이 없어 px를 못 재므로 선언만 잠그고, 실제 rect(높이 0.85 · 간격 16px)는 measure-chrome.mjs landing 축이 잰다.
+  test('전시 카드는 전부 같은 높이 선언 · 같은 세로 비율이고 축소 수단이 없다', () => {
     render(<Harness />);
     const buttons = cards();
     expect(buttons.length).toBe(GALLERY_LAYOUTS.length);
+    // 높이 식은 전시 높이와 폭(엿보기 자리 112px를 뺀 폭의 세로 환산) 중 작은 쪽이다 — 세로로 긴 프레임에서 카드가 프레임
+    // 폭을 넘지 않게(S9 헤드리스 캡처 2026-11-24). happy-dom은 min() · cq 단위를 버려 인라인 값을 못 읽으니 상수로 잠근다.
+    expect(CARD_H).toBe('min(calc(100cqh - 44px), calc((100cqw - 112px) * 1534 / 960))');
     for (const button of buttons) {
-      const label = button.getAttribute('aria-label') ?? '';
-      assertNoShrink(button, label);
-      const width = button.style.width;
-      expect(width.endsWith('%')).toBe(true);
-      // 좌우 카드(34%)가 가장 작다 — 320px 프레임에서 108.8px.
-      expect((parseFloat(width) / 100) * NARROWEST_FRAME_PX).toBeGreaterThanOrEqual(MIN_AA);
+      // 옆 카드는 의도된 0.82배 엿보기라 assertNoShrink(인라인 scale<1 금지)는 가운데 카드에만 건다 — 옆은 배율 하한만 잠근다.
+      if (button.getAttribute('aria-pressed') === 'true') assertNoShrink(button, nameOf(button));
+      else expect(Number(button.style.transform.match(/scale\(([\d.]+)\)/)![1])).toBeGreaterThanOrEqual(0.8);
       expect(button.style.aspectRatio.replace(/\s/g, '')).toBe('960/1534');
     }
   });
 
   test('가로 캔버스 무드는 전시에서 빠지거나(35mm 와이드) 돌려 세운다(에디토리얼)', () => {
     render(<Harness />);
-    const labels = cards().map((b) => (b.getAttribute('aria-label') ?? '').split(' 무드로')[0]);
+    const labels = cards().map(nameOf);
     expect(labels).not.toContain('35mm 와이드');
     expect(labels).toContain('에디토리얼');
-    const editorial = cards().find((b) => (b.getAttribute('aria-label') ?? '').startsWith('에디토리얼 무드로'))!;
+    const editorial = cards().find((b) => nameOf(b) === '에디토리얼')!;
     const inner = editorial.querySelector('img')!.parentElement as HTMLElement;
     expect(inner.style.transform).toContain('rotate(90deg)');
   });
@@ -101,11 +104,28 @@ describe('랜딩 무드 전시 탭 타깃 (#615 → #826 S5, WCAG 2.2 SC 2.5.8 A
       const buttons = cards();
       expect(buttons.length).toBe(GALLERY_LAYOUTS.length);
       for (const button of buttons) {
-        assertNoShrink(button, button.getAttribute('aria-label') ?? '');
+        assertNoShrink(button, nameOf(button));
         expect(button.className).toContain('w-full');
       }
     } finally {
       restore();
     }
+  });
+
+  // S9 새 버튼 — 44px 하한(마스터 .c-btn 48, 이용 고지 min-h-touch). 클래스 선언으로 잰다(위 helper 관례).
+  test('랜딩의 새 버튼(이용 고지 · 주 · 직접 입력)과 시트 버튼은 44px 이상이다', () => {
+    render(<Harness />);
+    expect(screen.getByRole('button', { name: '이용 고지' }).className).toContain('min-h-touch');
+    for (const id of ['landing-cta', 'landing-skip-poster']) {
+      expect(screen.getByTestId(id).className).toContain('min-h-[48px]');
+    }
+    fireEvent.click(screen.getByTestId('landing-cta'));
+    const sheet = screen.getByRole('dialog', { name: '티켓과 포스터' });
+    expect(within(sheet).getByRole('button', { name: '닫기' }).className).toMatch(/h-touch/);
+    expect(within(sheet).getByRole('button', { name: '닫기' }).className).toMatch(/w-touch/);
+    for (const id of ['landing-sheet-screenshot', 'landing-sheet-poster']) {
+      expect(screen.getByTestId(id).className).toContain('min-h-[64px]');
+    }
+    expect(screen.getByTestId('landing-sheet-make').className).toContain('min-h-[48px]');
   });
 });

@@ -123,7 +123,9 @@ describe('모바일 셸 html 배경 동기화 (#402→#415)', () => {
     setViewportWidth(1200);
     render(<Home />);
     expect(document.getElementById('phone-frame')).not.toBeNull();
-    expect(screen.getByRole('button', { name: /포스터 업로드/ })).toBeTruthy();
+    // S9: 링크 쌍 대신 주 버튼 · '직접 입력'이 프레임 안 랜딩의 진입점이다.
+    expect(!!screen.getByTestId('landing-cta')).toBe(true);
+    expect(!!screen.getByTestId('landing-skip-poster')).toBe(true);
     expect(document.documentElement.classList.contains('chrome-dark')).toBe(false);
   });
 

@@ -30,6 +30,7 @@ import { centerCrop, convertToPixelCrop, makeAspectCrop } from 'react-image-crop
 import { POSTER_HEIGHT, POSTER_LANDSCAPE_RATIO, POSTER_RATIO, posterOutputSize } from '@/utils/constants';
 import { LAYOUTS } from '@/utils/layouts';
 import type { Area } from '@/utils/imageCrop';
+import { makeFromSheet, openAttachSheet } from './helpers/landingAttach';
 
 // 스프레드 스냅샷 + afterAll 복원(#611·#618) — `require()`가 주는 건 살아있는 네임스페이스라
 // mock.module이 그 객체를 제자리에서 갈아끼운다. 복사본으로 떠 둬야 복원이 진짜 복원이 된다.
@@ -65,7 +66,8 @@ const aspectOf = (el: HTMLElement) => Number(el.getAttribute('data-aspect'));
 // 정적 자산 전환 뒤 실제 <img> 5장을 그린다)가 아직 떠 있는 셸 하네스 플로우에서 엉뚱한 이미지를
 // 잡는다.
 function loadImage(naturalWidth: number, naturalHeight: number) {
-  const img = screen.getByRole('dialog').querySelector('img') as HTMLImageElement;
+  // 첨부 시트 다이얼로그(#826 S9)와 구분하려고 이름으로 거른다 — 크롭 다이얼로그는 전부 '… 자르기'다.
+  const img = screen.getByRole('dialog', { name: /자르기$/ }).querySelector('img') as HTMLImageElement;
   Object.defineProperty(img, 'naturalWidth', { value: naturalWidth, configurable: true });
   Object.defineProperty(img, 'naturalHeight', { value: naturalHeight, configurable: true });
   Object.defineProperty(img, 'width', { value: naturalWidth, configurable: true });
@@ -266,14 +268,18 @@ describe('원본 비율 보존 스위치 (#420, claude-review PR #429 P1)', () =
     const user = userEvent.setup();
     render(<ShellHarness />);
 
-    await user.click(screen.getByRole('button', { name: /포스터 업로드/ }));
+    // 랜딩의 포스터는 첨부 시트의 '포스터' 행으로만 들어온다(#826 S9) — 크롭 확정 뒤 만들기로 편집 화면에 들어간다.
+    await openAttachSheet(user);
+    await user.click(screen.getByTestId('landing-sheet-poster'));
     // 셸엔 OCR 카드의 image/* input도 있어 첫 input을 잡으면 그쪽으로 간다 — 포스터 전용 input만.
     const posterInput = document.querySelector('input[type="file"][aria-label="포스터 이미지 파일"]') as HTMLInputElement;
     await user.upload(posterInput, pngFile('poster.jpg'));
     await screen.findByTestId('crop-frame');
-    await user.click(within(screen.getByRole('dialog')).getByRole('switch')); // 원본 비율 보존 ON으로 1차 크롭
+    await user.click(within(screen.getByRole('dialog', { name: '포스터 자르기' })).getByRole('switch')); // 원본 비율 보존 ON으로 1차 크롭
     loadImage(2000, 3000);
     await user.click(screen.getByRole('button', { name: '적용' }));
+    await screen.findByTestId('landing-sheet-poster-thumb');
+    await makeFromSheet(user);
 
     // 옛 구조에선 이 토글이 posterFit(렌더 설정)에 저장돼, 재크롭이 그걸 조용히 'cover'로
     // 되돌리는 회귀가 있었다(claude-review PR #429 P1). #525로 posterFit 자체가 사라져

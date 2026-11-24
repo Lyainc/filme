@@ -10,6 +10,7 @@
 import { describe, expect, test, afterAll, afterEach, mock } from 'bun:test';
 import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { enterDirect } from './helpers/landingAttach';
 
 let ocrImpl: (file: File) => Promise<Record<string, unknown>> = async () => ({});
 // 스프레드 스냅샷 + afterAll 복원(#611·#618) — `require()`가 주는 건 살아있는 네임스페이스라
@@ -84,7 +85,7 @@ describe('KOBIS 무매칭 → 제목 검색 UI 연결 (#445)', () => {
   // #826 S2 — OCR 카드는 랜딩 안 한 벌뿐이다(옛 필드 드로어의 두 번째 카드는 사라졌다). 편집 화면의 진입점은
   // 정보 모드의 '스크린샷으로 자동입력' 버튼이고, 그 버튼이 같은 카드의 파일 input을 연다.
   async function enterEditorWithoutPoster(user: ReturnType<typeof userEvent.setup>) {
-    await user.click(screen.getByRole('button', { name: '포스터 없이 직접 입력' }));
+    await enterDirect(user); // '직접 입력'(옛 '포스터 없이 직접 입력', #826 S9)
     return screen.getByRole('button', { name: '스크린샷으로 자동입력' });
   }
 

@@ -7,8 +7,8 @@
  * 예전 `clearDraft`를 그대로 걸었다면 진입 탭 한 번에 석 달 전 draft가 되돌릴 수 없이 사라졌다.
  *
  * "랜딩에 머무는 동안 아무것도 안 써진다"는 자동저장의 `dirtyTick === 0` 게이트에 통째로 기댄다
- * (`usePhototicket.ts`) — 복원·리셋은 dirtyTick을 안 올리고, 무드 갤러리 탭도 #727부터는
- * `updateComponents`가 아니라 `resetDocument(layout)`로 실려 안 올린다(landingHeroMood.test.tsx).
+ * (`usePhototicket.ts`) — 복원·리셋은 dirtyTick을 안 올리고, 무드 갤러리 탭은 S9부터 고르기뿐이고
+ * 새 문서는 '직접 입력'이 `resetDocument(layout)`로 연다(landingHeroMood.test.tsx).
  *
  * 실패할 수 있는 단언의 received에 DOM 엘리먼트를 넣지 않는다(#693) — `!!`로 강제 변환한다.
  */
@@ -95,14 +95,19 @@ describe('랜딩 "새로 시작"은 저장분을 그 자리에서 지우지 않�
   // `resetDocument(layout)`을 부른다. 그 변경이 c7 계약을 지키는지 — 즉 draft가 **있던** 상태에서
   // 탭해도 옛 필드가 새 문서로 안 새어나오고 저장분은 남는지 — 를 이 자리에서 잠근다
   // (claude-review P1: 다섯 이탈 중 이 경로만 draft 있는 상태를 안 재고 있었다).
-  test('무드 갤러리 탭도 저장분을 안 지우고, 새 문서가 이전 필드를 안 물려받는다', () => {
+  test('무드 갤러리 탭(고르기) 뒤 직접 입력도 저장분을 안 지우고, 새 문서가 이전 필드를 안 물려받는다', () => {
     seedDraft();
     render(<Harness />);
 
     expect(screen.getByTestId('landing-restore').textContent).toContain('인터스텔라');
 
+    // S9: 카드 탭은 고르기뿐이라 진입(새 문서)이 아니다 — 저장분도 문서도 그대로여야 한다.
     const landing = screen.getByTestId('landing');
-    fireEvent.click(within(landing).getByRole('button', { name: /^스텁 무드로 바로 시작/ }));
+    fireEvent.click(within(landing).getByRole('button', { name: '스텁' }));
+    expect(screen.getByTestId('landing-restore').textContent).toContain('인터스텔라');
+    expect(window.localStorage.getItem(STORAGE_KEY)).toContain('인터스텔라');
+    // 고른 무드로 '직접 입력'하면 새 문서가 열리되 저장분은 첫 편집 전까지 남고 옛 필드는 안 물려받는다.
+    fireEvent.click(screen.getByTestId('landing-skip-poster'));
 
     expect(window.localStorage.getItem(STORAGE_KEY)).toContain('인터스텔라');
     expect(document.body.textContent).not.toContain('인터스텔라');

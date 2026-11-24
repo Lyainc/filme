@@ -1,12 +1,13 @@
 /**
- * 랜딩에서 연 스크린샷 인식의 안내 자리(#826 S5 constraint-11 · acceptance-10, 마스터 L-03).
+ * 랜딩에서 연 스크린샷 인식의 안내 자리(#826 S9 constraint-11 · acceptance-10, S5의 위치 표시 자리를 대체).
  *
- * 카드의 3000ms 안내 경로를 타는 문구 여덟 개가 전부 **같은 자리** — 전시 아래쪽 위치 표시 자리(주 CTA 바로 위)에
- * 오류 변형(--pr-warn)으로 뜨고, 그동안 위치 표시는 숨는다. 셸은 KOBIS 무매칭을 늘 제목 입력(onNeedManualTitle)으로
- * 돌려 '영화 정보를 찾지 못했어요…' · '제목으로 영화 정보를 검색할게요.'가 랜딩 화면에 거의 안 닿으므로, 여기선
- * Landing과 카드 한 벌을 직접 렌더해 "카드가 띄우는 어떤 안내든 그 자리로 간다"를 문구마다 잰다.
+ * 카드의 3000ms 안내 경로를 타는 문구 여덟 개가 전부 첨부 시트의 '티켓 스크린샷' 행 상태 줄(--pr-warn)에 뜬다.
+ * 셸은 KOBIS 무매칭을 늘 제목 입력(onNeedManualTitle)으로 돌려 두 문구가 랜딩에 거의 안 닿으므로, 여기선
+ * Landing과 카드 한 벌을 직접 렌더해 "카드가 띄우는 어떤 안내든 그 행으로 간다"를 문구마다 잰다.
+ * 삭제: 전시 아래 안내 자리(landing-notice) · 위치 표시 숨김 단언 — 그 요소가 S9에서 없어졌다.
  */
 import { afterAll, afterEach, describe, expect, jest, mock, test } from 'bun:test';
+import { useState } from 'react';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 let ocrImpl: (file: File) => Promise<Record<string, unknown>> = async () => ({});
@@ -31,10 +32,26 @@ afterAll(() => {
   mock.module('@/utils/kobisLookup', () => realKobis);
 });
 
+const openRef: { current: (() => void) | null } = { current: null };
+
 function Harness() {
+  const [sheet, setSheet] = useState(false);
   return (
-    <Landing mode="overlay" onCta={() => {}} onSkip={() => {}} onRestore={() => {}} restoreTitle="" onEnterMood={() => {}}>
+    <Landing
+      mode="overlay"
+      restoreTitle=""
+      onRestore={() => {}}
+      onDirect={() => {}}
+      onOpenSheet={() => setSheet(true)}
+      onCloseSheet={() => setSheet(false)}
+      onPickScreenshot={() => openRef.current?.()}
+      onPickPoster={() => {}}
+      onMake={() => {}}
+      livePreview={null}
+      sheet={sheet ? { screenshot: { kind: 'empty' }, posterThumb: null, canMake: false } : null}
+    >
       <OcrUploadCard
+        openRef={openRef}
         setInfo={() => {}}
         currentInfo={{}}
         onOcrApply={() => {}}
@@ -50,7 +67,6 @@ function Harness() {
 
 const input = () => document.querySelector('input[type="file"][accept="image/*"]') as HTMLInputElement;
 const png = () => new File(['x'], 'ticket.png', { type: 'image/png' });
-const cta = () => screen.getByRole('button', { name: '티켓 스크린샷으로 자동입력' });
 
 const scenarios: {
   name: string;
@@ -70,37 +86,38 @@ const scenarios: {
   { name: '제목으로 검색', message: '제목으로 영화 정보를 검색할게요.', file: png, ocr: async () => ({ title: '괴물' }), kobis: async () => ({ titleOg: 'The Host', actors: '송강호' }) },
 ];
 
-describe('랜딩 안내는 전부 위치 표시 자리에 뜬다 (#826 S5 L-03)', () => {
+describe('랜딩 안내는 첨부 시트의 스크린샷 행에 뜬다 (#826 S9 constraint-11)', () => {
   for (const sc of scenarios) {
-    test(`${sc.name}: 같은 자리에 3000ms 보이다 사라지고, 그동안 위치 표시가 없다`, async () => {
+    test(`${sc.name}: 시트 행 상태 줄에 3000ms 보이다 사라진다`, async () => {
       if (sc.ocr) ocrImpl = sc.ocr;
       if (sc.kobis) kobisImpl = sc.kobis;
       jest.useFakeTimers();
       render(<Harness />);
-      expect(screen.getByTestId('mood-gallery-index').textContent).toBe('1 / 5');
+      // 랜딩에는 옛 안내 자리 · 위치 표시 · 보이는 OCR 버튼이 없다. 숨은 입력과 role=status만 남는다.
+      expect(screen.queryByTestId('landing-notice') === null).toBe(true);
+      expect(screen.queryByTestId('mood-gallery-index') === null).toBe(true);
+
+      // 주 버튼은 파일 선택이 아니라 시트를 연다 — 그 시트의 '티켓 스크린샷' 행이 OCR 입력을 연다.
+      fireEvent.click(screen.getByTestId('landing-cta'));
+      const clickSpy = jest.spyOn(input(), 'click');
+      fireEvent.click(screen.getByTestId('landing-sheet-screenshot'));
+      expect(clickSpy).toHaveBeenCalledTimes(1);
 
       fireEvent.change(input(), { target: { files: [sc.file()] } });
       // OCR · KOBIS 응답은 마이크로태스크라 타이머를 안 돌리고 흘려보낸다.
       for (let i = 0; i < 10; i++) await act(async () => {});
-      expect(screen.queryByTestId('landing-notice')?.textContent).toBe(sc.message);
 
-      const notice = screen.getByTestId('landing-notice');
-      // 자리: 전시 컨테이너 안, DOM 순서상 주 CTA보다 앞(= 위), 위치 표시는 숨음.
-      expect(screen.getByTestId('mood-gallery').contains(notice)).toBe(true);
-      expect((notice.compareDocumentPosition(cta()) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0).toBe(true);
-      expect(screen.queryByTestId('mood-gallery-index') === null).toBe(true);
-      // 오류 변형(--pr-warn 계열, 결정 5) — 카드 아래 옛 토스트는 없다.
-      expect(notice.className).toContain('var(--pr-warn)');
-      expect(notice.querySelector('.bg-warn') !== null).toBe(true);
-      expect(document.querySelector('.absolute.top-full') === null).toBe(true);
+      const err = screen.getByTestId('landing-sheet-screenshot-error');
+      expect(err.textContent).toBe(sc.message);
+      expect(screen.getByTestId('landing-sheet-screenshot').contains(err)).toBe(true);
+      expect(err.className).toContain('text-warn');
       // 상시 마운트 role=status 리전에 같은 글자가 실린다.
       expect(screen.getByRole('status').textContent).toBe(sc.message);
 
       act(() => jest.advanceTimersByTime(2999));
-      expect(screen.queryByTestId('landing-notice') === null).toBe(false);
+      expect(screen.queryByTestId('landing-sheet-screenshot-error') === null).toBe(false);
       act(() => jest.advanceTimersByTime(1));
-      expect(screen.queryByTestId('landing-notice') === null).toBe(true);
-      expect(screen.getByTestId('mood-gallery-index').textContent).toBe('1 / 5');
+      expect(screen.queryByTestId('landing-sheet-screenshot-error') === null).toBe(true);
       expect(screen.getByRole('status').textContent).toBe('');
     });
   }

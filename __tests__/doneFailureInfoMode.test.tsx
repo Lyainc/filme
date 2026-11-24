@@ -164,7 +164,7 @@ test('#776 — 누락 행 편집 중 초기화하면 재숨김이 새 문서로 
   fireEvent.click(screen.getByRole('button', { name: '한 번 더 눌러 전체 삭제' }));
 
   // 새 문서로 들어가 다른 필드를 연다 — 개봉일은 기본값(표시)이어야 한다.
-  fireEvent.click(await screen.findByRole('button', { name: '포스터 없이 직접 입력' }));
+  fireEvent.click(await screen.findByTestId('landing-skip-poster')); // '직접 입력'(옛 '포스터 없이 직접 입력', #826 S9)
   await act(async () => { await new Promise((r) => setTimeout(r, 350)); });
   fireEvent.click(within(infoList()).getByRole('button', { name: /^제목 (?!티켓에 표시)/ }));
   expect(!!(await screen.findByRole('textbox', { name: '제목' }))).toBe(true);

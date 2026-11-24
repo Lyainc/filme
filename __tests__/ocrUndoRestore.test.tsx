@@ -22,6 +22,13 @@ import userEvent from '@testing-library/user-event';
 import type { PhototicketState } from '@/types';
 import { STAMP_LABEL_MAX } from '@/constants/fields';
 import { OCR_BANNER_HEIGHT_PX } from '@/components/v2/OcrUndoBanner';
+import {
+  addPosterViaSheet,
+  enterWithOcrViaSheet,
+  makeFromSheet,
+  ocrFileInput,
+  uploadScreenshotViaSheet,
+} from './helpers/landingAttach';
 
 // runOcr must be mocked BEFORE MobileEditorShell (which transitively imports it via
 // OcrUploadCard) is loaded — bun's mock.module is not hoisted, so the shell is
@@ -131,16 +138,6 @@ function MobileHarness() {
   );
 }
 
-/** The shell mounts multiple file inputs; the OCR card's is the only `image/*` one. */
-function ocrFileInput(): HTMLInputElement {
-  const inputs = Array.from(
-    document.querySelectorAll('input[type="file"]')
-  ) as HTMLInputElement[];
-  const input = inputs.find((i) => i.getAttribute('accept') === 'image/*');
-  if (!input) throw new Error('OcrUploadCard file input not found');
-  return input;
-}
-
 afterEach(() => {
   cleanup();
   // #731 테스트가 '임시저장'으로 초안을 localStorage에 쓴다 — 안 비우면 다음 파일이 그 초안을 안고
@@ -157,21 +154,6 @@ afterAll(() => {
   mock.module('@/utils/ocr', () => realOcr);
   mock.module('@/utils/imageCrop', () => realImageCrop);
 });
-
-/** 포스터 전용 파일 input(accept에 jpeg 포함) — OcrUploadCard의 image/* input과 구분(posterCropPipeline 동일 관례). */
-function posterFileInput(): HTMLInputElement {
-  return document.querySelector('input[type="file"][accept*="jpeg"]') as HTMLInputElement;
-}
-
-/** 실물 크롭 모달의 onImageLoad를 태운다 — 안 하면 '적용'이 비활성(posterCropPipeline과 동일). */
-function loadCropImage(naturalWidth = 2000, naturalHeight = 3000) {
-  const img = document.querySelector('[role="dialog"] img') as HTMLImageElement;
-  Object.defineProperty(img, 'naturalWidth', { value: naturalWidth, configurable: true });
-  Object.defineProperty(img, 'naturalHeight', { value: naturalHeight, configurable: true });
-  Object.defineProperty(img, 'width', { value: naturalWidth, configurable: true });
-  Object.defineProperty(img, 'height', { value: naturalHeight, configurable: true });
-  fireEvent.load(img);
-}
 
 describe('OCR undo restoration (#163 / #141 P1)', () => {
   // #261 P1: 셸이 직접 소유한 배선(ocr.apply / setComponents / currentComponents / 배너 onCancel)을
@@ -191,10 +173,7 @@ describe('OCR undo restoration (#163 / #141 P1)', () => {
       seat: 'H12',
     });
 
-    await user.upload(
-      ocrFileInput(),
-      new File(['x'], 'ticket.png', { type: 'image/png' })
-    );
+    await enterWithOcrViaSheet(user); // 랜딩 첨부 시트 → 스크린샷 → 만들기(#826 S9)
 
     const undoButton = await screen.findByRole('button', { name: '되돌리기' });
     expect(captured.components.chainLabel).toBe('CGV');
@@ -268,10 +247,7 @@ describe('OCR undo restoration (#163 / #141 P1)', () => {
 
     ocrImpl = async () => ({ format: '  IMAX LASER 2D 전도연관[CGV아트하우스] 10층  ' });
 
-    await user.upload(
-      ocrFileInput(),
-      new File(['x'], 'ticket.png', { type: 'image/png' })
-    );
+    await enterWithOcrViaSheet(user);
 
     await screen.findByRole('button', { name: '되돌리기' });
     expect(captured.components.formatLabel.length).toBeLessThanOrEqual(STAMP_LABEL_MAX);
@@ -312,10 +288,7 @@ describe('OCR undo restoration (#163 / #141 P1)', () => {
 
     ocrImpl = async () => ({ title: '그랜드 부다페스트 호텔' });
 
-    await user.upload(
-      ocrFileInput(),
-      new File(['x'], 'ticket.png', { type: 'image/png' })
-    );
+    await enterWithOcrViaSheet(user);
 
     const undoButton = await screen.findByRole('button', { name: '되돌리기' });
     await waitFor(() => {
@@ -335,10 +308,9 @@ describe('OCR undo restoration (#163 / #141 P1)', () => {
     const user = userEvent.setup();
     render(<MobileHarness />);
 
-    await user.click(screen.getByText('seed-poster'));
-
     ocrImpl = async () => ({ theater: 'CGV 용산아이파크몰' });
-    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+    await enterWithOcrViaSheet(user);
+    await user.click(screen.getByText('seed-poster')); // 전체 보기 버튼은 포스터가 있어야 선다
     expect(await screen.findByRole('button', { name: '되돌리기' })).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '전체 보기' }));
@@ -354,18 +326,15 @@ describe('OCR undo가 새 문서 리셋 위에서 일어나면 옛 draft가 아�
     const user = userEvent.setup();
     render(<MobileHarness />);
 
-    // "이어서 만들기" 없이 곧장 OCR로 진입하는 시나리오 — landingDismissed는 아직 false다.
-    // 그 상태에서 movieInfo가 이미 채워져 있는 건 방금 떠난 옛 draft를 흉내낸다.
+    // "이어서 만들기" 없이 곧장 시트의 OCR로 진입하는 시나리오 — landingDismissed는 아직 false다(#826 S9: 새 문서는
+    // 인식 시작 때 열리고 랜딩은 만들기가 걷는다). 그 상태에서 movieInfo가 이미 채워져 있는 건 방금 떠난 옛 draft를 흉내낸다.
     await user.click(screen.getByText('seed-draft-theater'));
     expect(captured.movieInfo.theater).toBe('인터스텔라 극장');
 
     // 새 티켓의 실제 인식 결과 — 옛 draft와 다른 극장이라 restore-vs-reset 차이가 드러난다.
     ocrImpl = async () => ({ theater: 'CGV 강남', seat: 'H12' });
 
-    await user.upload(
-      ocrFileInput(),
-      new File(['x'], 'ticket.png', { type: 'image/png' })
-    );
+    await enterWithOcrViaSheet(user);
 
     const undoButton = await screen.findByRole('button', { name: '되돌리기' });
     // "새로 시작" 경로가 옛 draft를 먼저 지운 위에 OCR 값이 얹힌다.
@@ -396,10 +365,7 @@ describe('OCR undo가 새 문서 리셋 위에서 일어나면 옛 draft가 아�
     // 옛 draft와 다른 값이라 restore-vs-reset 차이가 드러난다.
     ocrImpl = async () => ({ chain: 'cgv', format: 'IMAX' });
 
-    await user.upload(
-      ocrFileInput(),
-      new File(['x'], 'ticket.png', { type: 'image/png' })
-    );
+    await enterWithOcrViaSheet(user);
 
     const undoButton = await screen.findByRole('button', { name: '되돌리기' });
     expect(captured.components.chainLabel).toBe('CGV');
@@ -420,7 +386,7 @@ describe('OCR undo가 새 문서 리셋 위에서 일어나면 옛 draft가 아�
     render(<MobileHarness />);
 
     ocrImpl = async () => ({ theater: 'CGV 강남' });
-    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+    await enterWithOcrViaSheet(user);
     const undoButton = await screen.findByRole('button', { name: '되돌리기' });
     expect(captured.movieInfo.theater).toBe('CGV 강남');
 
@@ -495,19 +461,26 @@ describe('문서를 리셋하면 옛 문서의 OCR 되돌리기가 같이 사라
 
   // 초기화가 아닌 랜딩의 "새로 시작"(여기선 직접 입력)은 인식 중인 OCR이 들어갈 새 문서를 여는 것이다 —
   // 그걸 문서 리셋으로 보고 응답을 버리면 사용자가 올린 티켓 인식이 조용히 사라진다(#806 code-review 지적).
-  test('랜딩에서 OCR을 올리고 인식 중에 직접 입력으로 넘어가도, 인식 결과가 들어오고 배너가 뜬다', async () => {
+  // #826 S9: 랜딩의 OCR은 첨부 시트에서만 열려 인식 중에 '직접 입력'을 누를 길이 없다(시트가 그 버튼 자리를 덮는다).
+  // 같은 축의 S9 판 — 인식 중 시트를 **닫으면** 응답이 옛 문서 세대라 버려지고 새 문서도 배너도 안 생긴다(constraint-9).
+  test('시트에서 OCR을 올리고 인식 중에 시트를 닫으면, 늦은 인식 결과는 문서에 안 들어가고 배너도 안 뜬다', async () => {
     const user = userEvent.setup();
     render(<MobileHarness />);
+    await user.click(screen.getByText('seed-draft-theater')); // 닫으면 이 문서로 돌아와야 한다
 
     let resolveOcr!: (r: Record<string, unknown>) => void;
     ocrImpl = () => new Promise((res) => { resolveOcr = res; });
-    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+    await uploadScreenshotViaSheet(user);
+    expect(captured.movieInfo.theater).toBe(''); // 새 문서가 열렸다
 
-    await user.click(screen.getByTestId('landing-skip-poster'));
+    await user.click(screen.getByRole('button', { name: '닫기' }));
+    expect(captured.movieInfo.theater).toBe('인터스텔라 극장'); // 스냅샷으로 복원
     resolveOcr({ theater: 'CGV 강남' });
+    await new Promise((r) => setTimeout(r, 50));
 
-    await screen.findByRole('button', { name: '되돌리기' });
-    expect(captured.movieInfo.theater).toBe('CGV 강남');
+    expect(captured.movieInfo.theater).toBe('인터스텔라 극장');
+    expect(!!screen.queryByRole('button', { name: '되돌리기' })).toBe(false);
+    expect(screen.getByTestId('landing').classList.contains('fixed')).toBe(true);
   });
 
   // startFreshDoc이 스냅샷을 버려도, 랜딩 OCR은 그 직후 같은 배치에서 새 스냅샷을 뜬다(#737·#727 c7).
@@ -523,9 +496,9 @@ describe('문서를 리셋하면 옛 문서의 OCR 되돌리기가 같이 사라
 
     await clearFromMenu(user);
 
-    // 랜딩이 다시 뜬 상태(landingDismissed=false) — 여기서의 OCR은 "새로 시작" 경로다.
+    // 랜딩이 다시 뜬 상태(landingDismissed=false) — 여기서의 시트 OCR은 "새로 시작" 경로다.
     ocrImpl = async () => ({ theater: 'CGV 용산', seat: 'J7' });
-    await user.upload(ocrFileInput(), new File(['x'], 'ticket2.png', { type: 'image/png' }));
+    await enterWithOcrViaSheet(user, new File(['x'], 'ticket2.png', { type: 'image/png' }));
     const undoButton = await screen.findByRole('button', { name: '되돌리기' });
     expect(captured.movieInfo.theater).toBe('CGV 용산');
     expect(captured.movieInfo.seat).toBe('J7');
@@ -639,7 +612,7 @@ describe('OCR 되돌리기 배너와 전역 스낵바가 좌표 충돌하지 않
     render(<MobileHarness />);
 
     ocrImpl = async () => ({ theater: 'CGV 용산아이파크몰' });
-    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+    await enterWithOcrViaSheet(user);
     await screen.findByRole('button', { name: '되돌리기' });
 
     // 전역 스낵바 트리거 — 임시저장(#310)은 arm 없이 바로 flashToast를 띄운다.
@@ -676,12 +649,13 @@ describe('OCR 되돌리기 배너와 전역 스낵바가 좌표 충돌하지 않
   });
 });
 
-// #809 — OCR 응답이 도착하기 전 랜딩에서 포스터 크롭을 확정하면, OcrUploadCard는 업로드 시점에
+// #809 — OCR 응답이 도착하기 전 랜딩 시트에서 포스터 크롭을 확정하면, OcrUploadCard는 업로드 시점에
 // 캡처한 옛 currentInfo/onOcrApply가 아니라 지금(latestRef) props로 적용해야 한다. 안 그러면
 // 옛 onOcrApply(랜딩 fresh 분기)가 한 번 더 startFreshDoc()을 부르며 keepPoster 없이 포스터를
-// 지우고, 되돌리기 스냅샷도 리셋 전 옛 문서 기준으로 뜬다.
-describe('랜딩에서 OCR 인식 중에 포스터 크롭을 확정해도 레이스가 없다 (#809)', () => {
-  test('랜딩 OCR 중 크롭 확정 → 응답 → 포스터 유지·값 반영·되돌리기는 OCR 필드만', async () => {
+// 지우고, 되돌리기 스냅샷도 리셋 전 옛 문서 기준으로 뜬다. S9에서는 새 문서가 인식 시작 때 열리므로
+// 크롭 확정은 그 새 문서에 포스터만 얹고(startFreshDoc 없음), 응답은 그 위에 값만 얹는다.
+describe('랜딩 시트에서 OCR 인식 중에 포스터 크롭을 확정해도 레이스가 없다 (#809 → #826 S9)', () => {
+  test('시트 OCR 중 크롭 확정 → 응답 → 포스터 유지·값 반영·되돌리기는 OCR 필드만', async () => {
     const user = userEvent.setup();
     render(<MobileHarness />);
 
@@ -693,20 +667,22 @@ describe('랜딩에서 OCR 인식 중에 포스터 크롭을 확정해도 레이
 
     let resolveOcr!: (r: Record<string, unknown>) => void;
     ocrImpl = () => new Promise((res) => { resolveOcr = res; });
-    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+    await uploadScreenshotViaSheet(user);
+    // 인식 시작 때 새 문서가 열렸다 — 옛 draft 값이 없다.
+    expect(captured.movieInfo.title).toBe('');
 
-    // OCR 응답 전에 포스터를 올리고 크롭을 확정한다 — #809가 겨냥하는 레이스.
-    await user.click(screen.getByRole('button', { name: '포스터 업로드' }));
-    fireEvent.change(posterFileInput(), { target: { files: [new File(['p'], 'poster.png', { type: 'image/png' })] } });
-    await screen.findByRole('dialog', { name: '포스터 자르기' });
-    loadCropImage();
-    await user.click(screen.getByRole('button', { name: '적용' }));
+    // OCR 응답 전에 같은 시트에서 포스터를 올리고 크롭을 확정한다 — #809가 겨냥하는 레이스.
+    await addPosterViaSheet(user, 'poster.png');
 
-    // 크롭 확정이 "새로 시작"을 거쳤다 — 포스터는 남고, OCR이 안 건드릴 필드(title)는 리셋됐다.
+    // 크롭 확정은 새 문서에 포스터만 얹는다 — 포스터는 남고, OCR이 안 건드릴 필드(title)는 비어 있다.
     expect(!!captured.croppedImageUrl).toBe(true);
     expect(captured.movieInfo.title).toBe('');
 
     resolveOcr({ chain: 'cgv', theater: 'CGV 강남', seat: 'H12' });
+    await waitFor(() => {
+      expect(screen.getByTestId('landing-sheet-screenshot').textContent).toContain('인식했어요');
+    });
+    await makeFromSheet(user);
 
     const undoButton = await screen.findByRole('button', { name: '되돌리기' });
     // 포스터가 지워지지 않았고(고쳤던 #809 버그는 keepPoster 없이 재리셋했다), OCR 값이 반영됐다.
@@ -818,7 +794,7 @@ describe('OCR 직접 필드를 전부 고치면 배너가 남은 되돌릴 것�
     render(<MobileHarness />);
 
     ocrImpl = async () => ({ title: '그랜드 부다페스트 호텔', chain: 'cgv' });
-    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+    await enterWithOcrViaSheet(user);
     await screen.findByRole('button', { name: '되돌리기' });
     expect(screen.getByTestId('ocr-undo-banner').textContent).toContain('영화 정보를 자동으로 불러왔어요.');
 
@@ -864,6 +840,10 @@ describe('편집에서 시작한 OCR의 신선도는 시작 시점에 정해진�
     expect(landingEl.classList.contains('fixed')).toBe(true);
     expect(landingEl.classList.contains('hidden')).toBe(false);
 
+    // 배너는 랜딩 위에 뜨지 않는다(#826 S9 — 시트의 '만들기'를 가리던 회귀) — '이어서 만들기'로 편집 화면에 돌아오면 그대로 있다.
+    expect(screen.queryByTestId('ocr-undo-banner') === null).toBe(true);
+    await user.click(screen.getByTestId('landing-restore'));
+
     // 되돌리기 스냅샷도 이 문서의 값이다 — 새 문서 기준(INITIAL_STATE)으로 다시 뜨지 않았다.
     await user.click(await screen.findByRole('button', { name: '되돌리기' }));
     expect(captured.movieInfo.theater).toBe('인터스텔라 극장');
@@ -877,7 +857,7 @@ describe('편집에서 시작한 OCR의 신선도는 시작 시점에 정해진�
     await user.click(screen.getByText('seed-draft-theater')); // 복원된 draft를 흉내 — 랜딩은 그대로 떠 있다
 
     ocrImpl = async () => ({ seat: 'H12' });
-    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+    await enterWithOcrViaSheet(user); // 시트 → 스크린샷 → 만들기
     await waitFor(() => {
       expect(captured.movieInfo.seat).toBe('H12');
     });
