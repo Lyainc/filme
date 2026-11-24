@@ -781,8 +781,14 @@ export function MobileEditorShell({
                 canMake: (attach.poster || attach.screenshot) && !ocrBusy,
               }
             }
-            onPickScreenshot={handleOcrOpen}
-            onPickPoster={handlePosterTap}
+            // 포스터 있던 저장분의 IndexedDB 복원이 끝나기 전엔 첨부를 받지 않는다 — 그 사이 스냅샷을 뜨면 복원이 새 문서
+            // 세대에 막혀 버려지고, 닫아 되돌린 문서가 '복원 중'에 영영 머문다(code-review PR #848). 콜드 로드 직후 짧은 창이다.
+            onPickScreenshot={() => {
+              if (!photo.awaitingPosterRestore) handleOcrOpen();
+            }}
+            onPickPoster={() => {
+              if (!photo.awaitingPosterRestore) handlePosterTap();
+            }}
             onMake={makeFromAttach}
             onCloseSheet={closeAttach}
             // 시트 동안 가운데 카드 자리에 지금 문서를 그린다(S9 constraint-10) — 스냅샷 전엔 정적 견본.
