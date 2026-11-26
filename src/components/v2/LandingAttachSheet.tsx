@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { cn } from '@/utils/cn';
 import { pressableVariants } from '@/components/ui/variants';
 import { LandingSheetFrame } from './LandingSheetFrame';
+import type { NoticeAction } from './OcrUploadCard';
 
 export type AttachScreenshotState =
   | { kind: 'empty' }
@@ -10,7 +11,7 @@ export type AttachScreenshotState =
   /** 실패가 아닌 진행 안내(#852 '영화 정보 검색 중…') — 보조색. */
   | { kind: 'info'; message: string }
   /** action은 실패 문구의 그 자리 버튼(#852 [제목 확인]) — 행 자체가 버튼이라 행 안에 못 넣고 행 바로 아래에 선다. */
-  | { kind: 'error'; message: string; action?: { label: string; onClick: () => void } };
+  | { kind: 'error'; message: string; action?: NoticeAction };
 
 const THUMB = 'grid h-[54px] w-9 shrink-0 place-items-center overflow-hidden rounded-[3px] border border-hair-strong text-ink-3';
 
