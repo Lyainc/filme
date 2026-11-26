@@ -70,7 +70,7 @@ constraints:
     rationale: "소유자 결정(2026-11-24) '항목마다 Simulator 자동화 / 실기기 수동 / 위험 수용 중 하나'와 인터뷰 답 '추천안 그대로'(2026-11-26)."
   - id: constraint-4
     type: technical
-    description: "기기 기준: Simulator 기본은 iPhone 18 Pro · iOS 27.1, 짧은 화면 항목(acceptance-11)은 iPhone SE 3세대 · iOS 27.1(27.1이 그 기종을 지원하지 않으면 지원하는 가장 작은 iPhone으로 바꾸고 그 사실을 기록). 실기기는 DeviceHub에 등록된 iPhone_BH(iPhone 16 Pro) 1대이고 사람이 수동으로 조작한다. 실행마다 기기 모델 · iOS 버전 · Safari(또는 인앱 앱) 버전 · 검증 빌드 SHA · URL을 기록한다."
+    description: "기기 기준: Simulator 기본은 iPhone 18 Pro · iOS 27.0(iOS 27.1 런타임은 iPhone 18 Pro를 지원하지 않는다 — simctl create 'Incompatible device'. 2026-11-27 소유자가 27.0으로 정함), 짧은 화면 항목(acceptance-11)은 iPhone SE 3세대 · iOS 27.1(27.1이 그 기종을 지원하지 않으면 지원하는 가장 작은 iPhone으로 바꾸고 그 사실을 기록). 실기기는 DeviceHub에 등록된 iPhone_BH(iPhone 16 Pro) 1대이고 사람이 수동으로 조작한다. 실행마다 기기 모델 · iOS 버전 · Safari(또는 인앱 앱) 버전 · 검증 빌드 SHA · URL을 기록한다."
     hard: true
     rationale: "인터뷰 답(2026-11-26): Simulator '18 pro, 27.1', 짧은 화면 'SE 3세대 · 27.1 추가', 실기기 'iPhone_BH 1대 수동 + 화면 크기 축은 Simulator'. 11-24 결정의 '기기 모델과 iOS 버전을 기록'."
   - id: constraint-5
@@ -108,7 +108,7 @@ success_criteria:
   - id: acceptance-1
     description: "[T01] #768 저장 JPEG = 프리뷰, Stub S01–S16 16칸 · 출처 #826 본문 '저장물과 프리뷰 일치(#768)' · 배정 Simulator · 근거 16칸 조합을 같은 절차로 반복하는 결정적 비교라 run768 · compare768 · stamp768가 있고, 실제 iPhone 요구는 acceptance-2가 맡는다."
     verifiable: true
-    measurable_via: "iPhone 18 Pro · iOS 27.1에서 새 UI로 셀렉터를 고친 scripts/ios-sim/run768.py S01~S16 실행 → 셀마다 Sxx-saved.jpg와 compare768 나란히 이미지, stamp768 스탬프 존재 판정. 스탬프 · 텍스트 누락 · 잘림 · 겹침 · 배치 불일치 0을 사람이 compare 이미지로 확인하고 셀별 PASS/FAIL을 RUN.md에 적는다."
+    measurable_via: "iPhone 18 Pro · iOS 27.0에서 새 UI로 셀렉터를 고친 scripts/ios-sim/run768.py S01~S16 실행 → 셀마다 Sxx-saved.jpg와 compare768 나란히 이미지, stamp768 스탬프 존재 판정. 스탬프 · 텍스트 누락 · 잘림 · 겹침 · 배치 불일치 0을 사람이 compare 이미지로 확인하고 셀별 PASS/FAIL을 RUN.md에 적는다."
   - id: acceptance-2
     description: "[T02] #768 대표 4칸(S01 · S04 · S13 · S16)을 실제 iPhone Safari에서 저장 · 출처 #826 본문 '실제 iPhone Safari에서 저장한 JPEG가 ghost를 끈 프리뷰와 같아야' · 배정 실기기 · 근거 본문이 실제 iPhone을 명시하고, 네 칸이 섹션 조합 양 끝(둘 다 on/off × 포스터 유무)을 덮는다."
     verifiable: true
@@ -116,11 +116,11 @@ success_criteria:
   - id: acceptance-3
     description: "[T03] #777 작은 티켓 필드 직접 탭 · 인접 필드 오탭 방지 · 복구 경로 · 출처 #826 본문 '작은 티켓 필드의 직접 터치 조작성(#777)' · 배정 Simulator · 근거 hit area를 중심 · 안쪽 2px 탭으로 재는 run777 · run777rest가 있다(손가락 접촉 면적은 재현되지 않는 한계를 RUN.md에 적는다)."
     verifiable: true
-    measurable_via: "iPhone 18 Pro · iOS 27.1에서 셀렉터를 새 UI로 고친 run777.py light/dark · run777rest.py 실행, 포커스된 입력의 aria-label로 고른 필드가 맞는지 판정하고 오탭 0 · 전체 보기 · 실행 취소 복구가 동작하면 PASS."
+    measurable_via: "iPhone 18 Pro · iOS 27.0에서 셀렉터를 새 UI로 고친 run777.py light/dark · run777rest.py 실행, 포커스된 입력의 aria-label로 고른 필드가 맞는지 판정하고 오탭 0 · 전체 보기 · 실행 취소 복구가 동작하면 PASS."
   - id: acceptance-4
     description: "[T04] #779 슬라이더 트랙 터치 32px 이상 · 트랙에서 시작한 드래그로 값 변경 · 출처 #826 본문 '슬라이더 터치 32px와 트랙 드래그(#779)' · 배정 Simulator · 근거 트랙 탭 · ±10/14px · 트랙/thumb 드래그를 XCTest로 재는 run779가 있다."
     verifiable: true
-    measurable_via: "iPhone 18 Pro · iOS 27.1에서 도크 디자인 도구의 슬라이더(BrightnessSlider 등)에 맞춰 고친 run779.py light dark 실행, 트랙 중심 ±14px 탭이 값을 바꾸고 트랙 시작 드래그가 값을 바꾸면 PASS."
+    measurable_via: "iPhone 18 Pro · iOS 27.0에서 도크 디자인 도구의 슬라이더(BrightnessSlider 등)에 맞춰 고친 run779.py light dark 실행, 트랙 중심 ±14px 탭이 값을 바꾸고 트랙 시작 드래그가 값을 바꾸면 PASS."
   - id: acceptance-5
     description: "[T05] 자동 전시 정지 수단 발견성(정지 · 재개 버튼 없음: 누르는 동안 · 키보드 포커스 동안 · 시트 동안 정지, 동작 줄이기면 격자) · 출처 #826 본문 '자동 재생 정지 수단(#778)', issuecomment-7079878054 · 7087317361 · 7087421152 · 배정 실기기 · 근거 '버튼이 없어 발견성이 낮다'는 위험은 체감 판단이라 Simulator가 답하지 못한다."
     verifiable: true
@@ -128,11 +128,11 @@ success_criteria:
   - id: acceptance-6
     description: "[T06] iOS 텍스트 입력 computed font-size 16px 이상 · 포커스 시 확대 없음 · 출처 #826 본문 'iOS 입력 글꼴 16px 이상(#585, PR #824)' · 배정 Simulator · 근거 visualViewport.scale로 확대 여부를 결정적으로 잴 수 있고, 깨진 run585를 도크 탭 경로로 다시 쓰는 일이 S8 실행 범위다(#841)."
     verifiable: true
-    measurable_via: "도크 탭(#dock-mode-tab-design, #design-tool-tab-<id>)과 입력 패널 경로로 재작성한 run585.py를 iPhone 18 Pro · iOS 27.1에서 실행, 모든 % 입력과 필드 입력에서 포커스 뒤 visualViewport.scale = 1 · computed font-size ≥ 16px이면 PASS."
+    measurable_via: "도크 탭(#dock-mode-tab-design, #design-tool-tab-<id>)과 입력 패널 경로로 재작성한 run585.py를 iPhone 18 Pro · iOS 27.0에서 실행, 모든 % 입력과 필드 입력에서 포커스 뒤 visualViewport.scale = 1 · computed font-size ≥ 16px이면 PASS."
   - id: acceptance-7
     description: "[T07] 키보드와 편집 화면 노출 · 복원(입력 · 라벨 보임, 프리뷰가 완전히 가려지지 않음, 키보드 종료 뒤 도크 · 프리뷰 위치와 입력값 유지) · 출처 #826 본문 '키보드와 편집 화면 노출·복원(#585)' · 배정 Simulator · 근거 run826s4가 패널 · 프리뷰 rect와 종료 후 transform을 이미 잰다."
     verifiable: true
-    measurable_via: "iPhone 18 Pro · iOS 27.1에서 run826s4.py(닫기 · 키보드 '완료' · 바깥 탭 · back) 실행, 입력 · 라벨 가시 · 프리뷰 노출 > 0 · 종료 후 티켓 transform 항등 · 도크 rect 불변 · 입력값 보존이면 PASS."
+    measurable_via: "iPhone 18 Pro · iOS 27.0에서 run826s4.py(닫기 · 키보드 '완료' · 바깥 탭 · back) 실행, 입력 · 라벨 가시 · 프리뷰 노출 > 0 · 종료 후 티켓 transform 항등 · 도크 rect 불변 · 입력값 보존이면 PASS."
   - id: acceptance-8
     description: "[T08] 입력 패널 종료 경로 넷(닫기 · 키보드 내림 제스처 · 바깥 탭 · 뒤로)이 모두 들어오기 전 모드 · 도구 · 맞춤 배율 · 입력값을 지킴 · 출처 issuecomment-7072086772 'S8로 넘김: 실기기 종료 경로 넷(특히 뒤로 · 키보드 내림 제스처)' · 배정 실기기 · 근거 Simulator에서 키보드 내림 제스처가 검증되지 않았고 실제 손가락 제스처가 요점이다."
     verifiable: true
@@ -152,7 +152,7 @@ success_criteria:
   - id: acceptance-12
     description: "[T12] 랜딩 걷힘 240ms 동안의 빈 영역 탭이 아래 편집 화면으로 통과하지 않음 · 출처 issuecomment-7080160714 '걷힘 240ms 동안 빈 영역 탭이 아래 편집 화면으로 통과할 여지' · 7087317361 · 7087421152 · 배정 Simulator · 근거 XCTest로 '직접 입력' 탭 뒤 0~240ms에 시각을 맞춘 두 번째 탭을 보낼 수 있다."
     verifiable: true
-    measurable_via: "iPhone 18 Pro · iOS 27.1에서 '직접 입력' 탭 직후 50 · 120 · 200ms에 아래 편집 화면의 필드 · 도크 탭 자리를 XCTest로 탭하고, 걷힘 뒤 포커스된 입력 · 선택된 도크 탭 · 열린 패널이 없으면 PASS."
+    measurable_via: "iPhone 18 Pro · iOS 27.0에서 '직접 입력' 탭 직후 50 · 120 · 200ms에 아래 편집 화면의 필드 · 도크 탭 자리를 XCTest로 탭하고, 걷힘 뒤 포커스된 입력 · 선택된 도크 탭 · 열린 패널이 없으면 PASS."
   - id: acceptance-13
     description: "[T13] 크롭 화면 C-01~C-03(프레임 전체를 덮는 어두운 화면 · 대상별 제목 · '원본 비율' · '다른 사진' · 로고 · 서명 · 스탬프 완전 자유 비율)이 실기기에서 조작됨 · 출처 issuecomment-7092064828 · 7092247015 '실기기 확인은 S8로' · 배정 실기기 · 근거 크롭 핸들 드래그 · 핀치는 손가락 조작이고 치명 흐름 '크롭 · HEIC'와 같은 실행으로 확인한다."
     verifiable: true
@@ -198,7 +198,7 @@ success_criteria:
     verifiable: true
     measurable_via: "RUN.md의 FAIL 행 수와 '#826' 링크를 가진 새 이슈 수가 같고, 각 이슈 본문에 재현 순서가 있는지 gh issue view로 확인한다."
   - id: acceptance-24
-    description: "run585 재작성: scripts/ios-sim/run585.py가 도크 탭 경로로 다시 쓰여 iOS 27.1 Simulator에서 끝까지 돌고, scripts/ios-sim/README.md의 '도크 개편 이후 미검증' 표기가 실제 다시 돈 스크립트 기준으로 고쳐지며, #841에 그 결과를 링크한 댓글이 있다."
+    description: "run585 재작성: scripts/ios-sim/run585.py가 도크 탭 경로로 다시 쓰여 iPhone 18 Pro · iOS 27.0 Simulator에서 끝까지 돌고, scripts/ios-sim/README.md의 '도크 개편 이후 미검증' 표기가 실제 다시 돈 스크립트 기준으로 고쳐지며, #841에 그 결과를 링크한 댓글이 있다."
     verifiable: true
     measurable_via: "python3 run585.py 실행 exit 0과 585-ios.json, README diff, #841 댓글 링크."
   - id: acceptance-25
@@ -208,7 +208,7 @@ success_criteria:
 
 context:
   existing_stack: ["Next.js 16 Pages Router · React 19", "iOS Simulator(Xcode 27 DeviceHub) + Appium XCUITest driver(NATIVE_APP 터치, WEBVIEW JS)", "scripts/ios-sim/*.py(표준 라이브러리, 비교만 uv + pillow · numpy)", "Vercel prod 공유 링크(@vercel/blob, TICKET_TTL_DAYS 정리 cron)"]
-  dependencies: ["S1~S7 · S9 main 반영", "DeviceHub 등록 실기기 iPhone_BH(iPhone 16 Pro)", "Simulator 런타임 iOS 27.1 · 기종 iPhone 18 Pro · iPhone SE 3세대", "공유 링크 발급이 되는 배포 환경(acceptance-17 · 20)"]
+  dependencies: ["S1~S7 · S9 main 반영", "DeviceHub 등록 실기기 iPhone_BH(iPhone 16 Pro)", "Simulator 런타임 · 기종 iOS 27.0 iPhone 18 Pro, iOS 27.1 iPhone SE 3세대(acceptance-11)", "공유 링크 발급이 되는 배포 환경(acceptance-17 · 20)"]
   integration_points:
     - "scripts/ios-sim/sim.py · run768.py · compare768.py · stamp768.py · run777.py · run777rest.py · run779.py · run585.py · run826s4.py · README.md"
     - "docs/user-testing/README.md(준비와 판정 · 공통 입력 · S01–S16) · docs/user-testing/RUN.md(결과표 틀)"
