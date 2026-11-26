@@ -39,10 +39,10 @@ brownfield: true
 refine_generation: 0
 
 lifecycle:
-  state: paused
+  state: active
   outcome: null
-  reason: "작성 단계 Seed다. 소유자 지시가 'Seed active 전환은 소유자 승인 전까지 보류'라서 paused로 둔다."
-  approved_by: "소유자 작업 지시(2026-11-26 세션): 'S8 Seed 파일이 docs/specs에 기존 이름 규칙대로 lifecycle paused로 있고 … Seed active 전환은 소유자 승인 전까지 보류한다'"
+  reason: "requirement-gap 리뷰 2라운드에서 blocking · should-fix 0건으로 작성이 끝났고, 소유자가 활성화를 지시했다."
+  approved_by: "소유자 지시(2026-11-26 세션): '리모트랑 맞춰서 충돌 검사한다음 리모트에 push, 시드 active'"
   evidence:
     commit: null
     items: []
