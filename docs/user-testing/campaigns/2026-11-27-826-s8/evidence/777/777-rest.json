@@ -1,0 +1,133 @@
+{
+ "enlarge": {
+  "maxTapScreen": {
+   "opened": null,
+   "focus": "BODY",
+   "backToDefault": true,
+   "rect": {
+    "x": 157.9166717529297,
+    "y": 513.8606567382812,
+    "w": 86.41665649414062,
+    "h": 11.8978271484375
+   },
+   "fieldTapTargetsInMax": 0
+  },
+  "pinchTapScreen": {
+   "scale": 4.2056074142456055,
+   "efp": "screen",
+   "opened": "screen",
+   "focus": "상영관"
+  }
+ },
+ "darkRecovery": {
+  "minimal": {
+   "infoTabSelected": true,
+   "dockInfoRows": 26,
+   "prevNextByFocus": {
+    "open": "제목",
+    "afterNext": "원제",
+    "afterPrev": "제목"
+   }
+  },
+  "criterion": {
+   "infoTabSelected": true,
+   "dockInfoRows": 28,
+   "prevNext": {
+    "opened": "title",
+    "afterNext": "titleOg",
+    "afterPrev": "title"
+   },
+   "focusedValue": "테스트 영화",
+   "editUndo": {
+    "typed": "테스트 영화 ",
+    "savedDraftTitle": "테스트 영화 ",
+    "afterUndoText": "테스트 영화"
+   },
+   "prevNextByFocus": {
+    "open": "제목",
+    "afterNext": "원제",
+    "afterPrev": "제목"
+   }
+  },
+  "35mm": {
+   "infoTabSelected": true,
+   "dockInfoRows": 26,
+   "prevNext": {
+    "opened": "title",
+    "afterNext": "titleOg",
+    "afterPrev": "title"
+   },
+   "focusedValue": "테스트 영화",
+   "editUndo": {
+    "typed": "테스트 영화 ",
+    "savedDraftTitle": "테스트 영화 ",
+    "afterUndoText": "테스트 영화"
+   },
+   "prevNextByFocus": {
+    "open": "제목",
+    "afterNext": "원제",
+    "afterPrev": "제목"
+   }
+  },
+  "editorial": {
+   "infoTabSelected": true,
+   "dockInfoRows": 28,
+   "prevNext": {
+    "opened": "title",
+    "afterNext": "titleOg",
+    "afterPrev": "title"
+   },
+   "focusedValue": "테스트 영화",
+   "editUndo": {
+    "typed": "테스트 영화 ",
+    "savedDraftTitle": "테스트 영화 ",
+    "afterUndoText": "테스트 영화"
+   },
+   "prevNextByFocus": {
+    "open": "제목",
+    "afterNext": "원제",
+    "afterPrev": "제목"
+   }
+  },
+  "stub": {
+   "infoTabSelected": true,
+   "dockInfoRows": 28,
+   "prevNext": {
+    "opened": "title",
+    "afterNext": "titleOg",
+    "afterPrev": "title"
+   },
+   "focusedValue": "테스트 영화",
+   "editUndo": {
+    "typed": "테스트 영화 ",
+    "savedDraftTitle": "테스트 영화 ",
+    "afterUndoText": "테스트 영화"
+   },
+   "prevNextByFocus": {
+    "open": "제목",
+    "afterNext": "원제",
+    "afterPrev": "제목"
+   }
+  },
+  "35mm-landscape": {
+   "infoTabSelected": true,
+   "dockInfoRows": 26,
+   "prevNext": {
+    "opened": "title",
+    "afterNext": "titleOg",
+    "afterPrev": "title"
+   },
+   "focusedValue": "테스트 영화",
+   "editUndo": {
+    "typed": "테스트 영화 ",
+    "savedDraftTitle": "테스트 영화 ",
+    "afterUndoText": "테스트 영화"
+   },
+   "prevNextByFocus": {
+    "open": "제목",
+    "afterNext": "원제",
+    "afterPrev": "제목"
+   }
+  }
+ }
+}

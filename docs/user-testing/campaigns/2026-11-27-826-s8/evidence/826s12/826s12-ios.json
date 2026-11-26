@@ -1,0 +1,138 @@
+{
+ "note": "iOS Simulator 결과, 실기기 아님",
+ "windowMs": 240,
+ "targets": {
+  "field": {
+   "x": 97,
+   "y": 324.5921936035156,
+   "w": 207.5625,
+   "h": 18.225006103515625
+  },
+  "dockTab": {
+   "x": 268,
+   "y": 663,
+   "w": 134,
+   "h": 51
+  }
+ },
+ "control": [
+  {
+   "target": "field",
+   "gapMs": 349,
+   "events": [
+    [
+     52,
+     "touchstart",
+     "skip"
+    ],
+    [
+     103,
+     "click",
+     "skip"
+    ],
+    [
+     452,
+     "touchstart",
+     "other"
+    ],
+    [
+     503,
+     "click",
+     "other"
+    ]
+   ],
+   "after": {
+    "focusedInput": "제목",
+    "panel": "title",
+    "dockTab": "dock-mode-tab-info",
+    "landingShown": false,
+    "zoom": 1
+   }
+  },
+  {
+   "target": "dockTab",
+   "gapMs": 349,
+   "events": [
+    [
+     52,
+     "touchstart",
+     "skip"
+    ],
+    [
+     103,
+     "click",
+     "skip"
+    ],
+    [
+     452,
+     "touchstart",
+     "other"
+    ],
+    [
+     503,
+     "click",
+     "other"
+    ]
+   ],
+   "after": {
+    "focusedInput": null,
+    "panel": null,
+    "dockTab": "dock-mode-tab-design",
+    "landingShown": false,
+    "zoom": 1
+   }
+  }
+ ],
+ "hitTest": [
+  {
+   "ms": 0,
+   "real": 9,
+   "landingPE": "none",
+   "landingOpacity": 1,
+   "field": "DIV",
+   "dockTab": "dockTab:design"
+  },
+  {
+   "ms": 50,
+   "real": 51,
+   "landingPE": "none",
+   "landingOpacity": 0.483643,
+   "field": "field:title",
+   "dockTab": "dockTab:design"
+  },
+  {
+   "ms": 120,
+   "real": 122,
+   "landingPE": "none",
+   "landingOpacity": 0.095002,
+   "field": "field:title",
+   "dockTab": "dockTab:design"
+  },
+  {
+   "ms": 200,
+   "real": 201,
+   "landingPE": "none",
+   "landingOpacity": 0.00987,
+   "field": "field:title",
+   "dockTab": "dockTab:design"
+  },
+  {
+   "ms": 260,
+   "real": 262,
+   "landingPE": "none",
+   "landingOpacity": 0,
+   "field": "field:title",
+   "dockTab": "dockTab:design"
+  },
+  {
+   "ms": 400,
+   "real": 402,
+   "landingPE": "none",
+   "landingOpacity": 0,
+   "field": "field:title",
+   "dockTab": "dockTab:design"
+  }
+ ],
+ "verdict": "BLOCKED",
+ "reason": "XCTest 두 번째 탭의 최소 간격 349ms ≥ 걷힘 240ms — 창 안 탭을 보낼 수 없음"
+}

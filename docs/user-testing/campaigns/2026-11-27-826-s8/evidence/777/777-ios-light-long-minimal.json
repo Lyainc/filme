@@ -1,0 +1,382 @@
+[
+ {
+  "mood": "minimal",
+  "theme": "light",
+  "fields": [
+   {
+    "field": "chain",
+    "rect": {
+     "x": 94.5,
+     "y": 77.2,
+     "w": 30.4,
+     "h": 18.7
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "chain",
+      "focusLabel": "극장 로고",
+      "labelMatches": true
+     },
+     "inTop": {
+      "opened": "chain",
+      "focusLabel": "극장 로고",
+      "labelMatches": true
+     },
+     "inBottom": {
+      "opened": "chain",
+      "focusLabel": "극장 로고",
+      "labelMatches": true
+     }
+    }
+   },
+   {
+    "field": "format",
+    "rect": {
+     "x": 142.3,
+     "y": 78.3,
+     "w": 36.1,
+     "h": 16.5
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "format",
+      "focusLabel": "포맷 로고",
+      "labelMatches": true
+     },
+     "inTop": {
+      "opened": "format",
+      "focusLabel": "포맷 로고",
+      "labelMatches": true
+     },
+     "inBottom": {
+      "opened": "format",
+      "focusLabel": "포맷 로고",
+      "labelMatches": true
+     }
+    }
+   },
+   {
+    "field": "title",
+    "rect": {
+     "x": 97,
+     "y": 312.7,
+     "w": 207.6,
+     "h": 30.3
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "title",
+      "focusLabel": "제목",
+      "labelMatches": true
+     },
+     "inTop": {
+      "opened": "title",
+      "focusLabel": "제목",
+      "labelMatches": true
+     },
+     "inBottom": {
+      "opened": "title",
+      "focusLabel": "제목",
+      "labelMatches": true
+     }
+    }
+   },
+   {
+    "field": "titleOg",
+    "rect": {
+     "x": 97,
+     "y": 345.6,
+     "w": 207.6,
+     "h": 8.4
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "titleOg",
+      "focusLabel": "원제",
+      "labelMatches": true
+     },
+     "inTop": {
+      "opened": "titleOg",
+      "focusLabel": "원제",
+      "labelMatches": true
+     },
+     "inBottom": {
+      "opened": "titleOg",
+      "focusLabel": "원제",
+      "labelMatches": true
+     }
+    }
+   },
+   {
+    "field": "watchDate",
+    "rect": {
+     "x": 97,
+     "y": 370.1,
+     "w": 38.3,
+     "h": 8.5
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchDate",
+      "focusLabel": "관람일",
+      "labelMatches": true
+     },
+     "inTop": {
+      "opened": "watchDate",
+      "focusLabel": "관람일",
+      "labelMatches": true
+     },
+     "inBottom": {
+      "opened": "watchDate",
+      "focusLabel": "관람일",
+      "labelMatches": true
+     }
+    }
+   },
+   {
+    "field": "watchTime",
+    "rect": {
+     "x": 137.0,
+     "y": 370.1,
+     "w": 19.2,
+     "h": 8.5
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "watchTime",
+      "focusLabel": "관람 시간",
+      "labelMatches": true
+     },
+     "inTop": {
+      "opened": "watchTime",
+      "focusLabel": "관람 시간",
+      "labelMatches": true
+     },
+     "inBottom": {
+      "opened": "watchTime",
+      "focusLabel": "관람 시간",
+      "labelMatches": true
+     }
+    }
+   },
+   {
+    "field": "theater",
+    "rect": {
+     "x": 169.9,
+     "y": 370.1,
+     "w": 61.8,
+     "h": 8.5
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "theater",
+      "focusLabel": "극장",
+      "labelMatches": true
+     },
+     "inTop": {
+      "opened": "theater",
+      "focusLabel": "극장",
+      "labelMatches": true
+     },
+     "inBottom": {
+      "opened": "theater",
+      "focusLabel": "극장",
+      "labelMatches": true
+     }
+    }
+   },
+   {
+    "field": "screen",
+    "hidden": true,
+    "fullRect": {
+     "w": 14.3,
+     "h": 9.4
+    }
+   },
+   {
+    "field": "seat",
+    "rect": {
+     "x": 242.8,
+     "y": 363.8,
+     "w": 61.8,
+     "h": 14.8
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "seat",
+      "focusLabel": "좌석",
+      "labelMatches": true
+     },
+     "inTop": {
+      "opened": "seat",
+      "focusLabel": "좌석",
+      "labelMatches": true
+     },
+     "inBottom": {
+      "opened": "seat",
+      "focusLabel": "좌석",
+      "labelMatches": true
+     }
+    }
+   },
+   {
+    "field": "runtime",
+    "rect": {
+     "x": 97,
+     "y": 386.0,
+     "w": 18.7,
+     "h": 14.8
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "runtime",
+      "focusLabel": "러닝타임",
+      "labelMatches": true
+     },
+     "inTop": {
+      "opened": "runtime",
+      "focusLabel": "러닝타임",
+      "labelMatches": true
+     },
+     "inBottom": {
+      "opened": "runtime",
+      "focusLabel": "러닝타임",
+      "labelMatches": true
+     }
+    }
+   },
+   {
+    "field": "rating",
+    "rect": {
+     "x": 126.8,
+     "y": 386.0,
+     "w": 20.1,
+     "h": 14.8
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "rating",
+      "focusLabel": null,
+      "labelMatches": true
+     },
+     "inTop": {
+      "opened": "rating",
+      "focusLabel": null,
+      "labelMatches": true
+     },
+     "inBottom": {
+      "opened": "rating",
+      "focusLabel": null,
+      "labelMatches": true
+     }
+    }
+   },
+   {
+    "field": "releaseDate",
+    "rect": {
+     "x": 158.0,
+     "y": 386.0,
+     "w": 38.3,
+     "h": 14.8
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "releaseDate",
+      "focusLabel": "개봉일",
+      "labelMatches": true
+     },
+     "inTop": {
+      "opened": "releaseDate",
+      "focusLabel": "개봉일",
+      "labelMatches": true
+     },
+     "inBottom": {
+      "opened": "releaseDate",
+      "focusLabel": "개봉일",
+      "labelMatches": true
+     }
+    }
+   },
+   {
+    "field": "actors",
+    "rect": {
+     "x": 97,
+     "y": 405.3,
+     "w": 207.6,
+     "h": 15.1
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "actors",
+      "focusLabel": "출연",
+      "labelMatches": true
+     },
+     "inTop": {
+      "opened": "actors",
+      "focusLabel": "출연",
+      "labelMatches": true
+     },
+     "inBottom": {
+      "opened": "actors",
+      "focusLabel": "출연",
+      "labelMatches": true
+     }
+    }
+   },
+   {
+    "field": "signature",
+    "rect": {
+     "x": 268.6,
+     "y": 425.5,
+     "w": 36.0,
+     "h": 12.1
+    },
+    "coveredBy": [],
+    "probes": {
+     "center": {
+      "opened": "signature",
+      "focusLabel": "서명",
+      "labelMatches": true
+     },
+     "inTop": {
+      "opened": "signature",
+      "focusLabel": "서명",
+      "labelMatches": true
+     },
+     "inBottom": {
+      "opened": "signature",
+      "focusLabel": "서명",
+      "labelMatches": true
+     }
+    }
+   }
+  ],
+  "extras": {
+   "infoTabSelected": true,
+   "dockInfoRows": 26,
+   "prevNext": {
+    "opened": "title",
+    "afterNext": "titleOg",
+    "afterPrev": "title"
+   },
+   "focusedValue": "아주 긴 영화 제목으로 확인하는 한여름 밤의 마지막 상영과 우리의 이야기",
+   "editUndo": {
+    "typed": "아주 긴 영화 제목으로 확인하는 한여름 밤의 마지막 상영과 우리의 이야기 ",
+    "savedDraftTitle": "아주 긴 영화 제목으로 확인하는 한여름 밤의 마지막 상영과 우리의 이야기 ",
+    "afterUndoText": "아주 긴 영화 제목으로 확인하는 한여름 밤의 마지막 상영과 우리의 이야기"
+   }
+  }
+ }
+]
