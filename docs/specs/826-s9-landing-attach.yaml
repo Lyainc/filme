@@ -37,13 +37,81 @@ brownfield: true
 refine_generation: 0
 
 lifecycle:
-  state: active
-  outcome: null
-  reason: "소유자가 S9 승인 질문(S5 결정 덮어쓰기 · 잠긴 문구 넷 걷기 · 스냅샷 · 마스터 L-01~L-03 수정 · S9 번호)에 승인했다."
-  approved_by: "소유자 답(2026-11-24) 'S9 Seed를 active로 승인할까요? …' → '1로 시작하되 /orchestrate'"
+  state: closed
+  outcome: completed
+  reason: "constraint-1~18 · acceptance-1~16이 검증한 커밋(PR #848 head f85a6b41, 트리가 같은 main 1a2f584b)에서 항목별 근거로 충족됐다(철회 항목 없음)."
+  approved_by: "소유자 답(2026-11-26, t10 세션 전달) '둘 다 순서대로' — '#848 rebase 머지 → S9 Seed closed 전환 → #850 …'"
   evidence:
-    commit: null
-    items: []
+    commit: 1a2f584b509781debd6b849d01de37caec563df9
+    items:
+      - id: constraint-1
+        refs: ["git diff 0d7f2733..1a2f584b --stat -- src/components/moods src/components/TicketRenderer.tsx src/utils/captureToImage.ts public/assets/landing 0줄"]
+      - id: constraint-2
+        refs: ["git diff 0d7f2733..1a2f584b --stat: src는 Landing · LandingAttachSheet · LandingNoticeSheet · LandingSheetFrame · ScanIcon · AppFooter · OcrUploadCard · MobileEditorShell · usePhototicket · useEditHistory · useOcrUndo · usePosterCrop, EditorDock · InPlaceFieldEditor · ImageCropModal · EditorMenu · ResultPanel · ResultStage · src/pages/t 0줄"]
+      - id: constraint-3
+        refs: ["Landing.tsx 워드마크 줄 · CARD_H · CARD_TOP · mood-gallery-progress · landing-bottom, __tests__/landingS9Presentational.test.tsx · landingOverlay.test.tsx, measure-chrome carousel · exitPaths 축(prod ttumn4n9LVXITSFv6l29A dark · light pass)"]
+      - id: constraint-4
+        refs: ["Landing.tsx MoodCarousel paused={modalOpen} · slotStyle(filter 없음 · SIDE_STEP), __tests__/landingHeroMood.test.tsx · landingS9Presentational.test.tsx(시트 동안 8000ms 정지), measure-chrome carousel.peeks(간격 ≥16px · filter none)"]
+      - id: constraint-5
+        refs: ["Landing.tsx card onClick=onSelect · aria-pressed · CropMarks · 접근명 label, __tests__/landingHeroMood.test.tsx(옆 탭 고르기 · 가운데 탭 무반응 · 키보드 포커스)"]
+      - id: constraint-6
+        refs: ["Landing.tsx 동작 줄이기 격자 고르기, __tests__/landingReducedMotion.test.tsx(격자 탭 고르기 · 실시간 반영)"]
+      - id: constraint-7
+        refs: ["MobileEditorShell onDirect → startFreshDoc({layout}), __tests__/landingAttachStaging.test.tsx(acceptance-6 묶음) · landingFreshStart.test.tsx"]
+      - id: constraint-8
+        refs: ["LandingAttachSheet · LandingSheetFrame(role=dialog · aria-modal · Escape · Tab 순환 · inert 뒤 요소), __tests__/landingAttachStaging.test.tsx(acceptance-7 묶음 · inert)"]
+      - id: constraint-9
+        refs: ["usePhototicket beginStaging · cancelStaging · commitStaging, MobileEditorShell startAttachStaging · claimFreshDoc · closeAttach · makeFromAttach, __tests__/usePhototicketStaging.test.tsx · landingAttachStaging.test.tsx(acceptance-8 묶음) · posterCropPipeline.test.tsx(첫 크롭 실패 재시도)"]
+      - id: constraint-10
+        refs: ["MobileEditorShell livePreview · Landing landing-live-preview, __tests__/landingAttachStaging.test.tsx(acceptance-9) · landingReducedMotion.test.tsx(격자 실시간 반영), measure-chrome landingBudget.ticketAboveSheet"]
+      - id: constraint-11
+        refs: ["OcrUploadCard LandingSlotContext.setNotice → 시트 스크린샷 행, __tests__/landingOcrNotice.test.tsx(여덟 문구 · 3000ms · role=status) · ocrFailureFlow.test.tsx"]
+      - id: constraint-12
+        refs: ["LandingNoticeSheet · NoticeContent, __tests__/appFooterNotice.test.tsx · landingOverlay.test.tsx, measure-chrome landingBudget.noticeText · frameFit '이용 고지 시트'"]
+      - id: constraint-13
+        refs: ["src git grep '티켓 한 장이, 내 굿즈가 돼요' · '사진으로 찍은 실물 티켓도' · '포스터 없이 직접 입력' 0건(moods 제외), docs/COPY_TONE_GUIDE.md 잠금 표 · CLAUDE.md 🚧 갱신(커밋 11451d2d → main 동일 내용)"]
+      - id: constraint-14
+        refs: ["prod 빌드 ttumn4n9LVXITSFv6l29A measure-chrome --theme dark · light exit 0(dock 249 / 프리뷰 219×350, 랜딩 · posterless · 프레임 봉쇄에 첨부 · 이용 고지 시트 포함), PR #848 Chrome harness 통과(헤드 f85a6b41)"]
+      - id: constraint-15
+        refs: ["PR #848 본문 · 보고 모두 '헤드리스 · 실기기 아님, Android 커버리지 없음' 표기"]
+      - id: constraint-16
+        refs: ["브랜치 feat/826-landing-d25(.claude/worktrees/826-landing-d25), 커밋 전부 Conventional Commits, origin push, PR #848은 소유자 승인('PR 열기') 뒤 개설 · 소유자 승인('둘 다 순서대로') 뒤 rebase 머지"]
+      - id: constraint-17
+        refs: ["근거 원본 항목 — 구현은 캔버스 D22~D25(D25-12)와 대조"]
+      - id: constraint-18
+        refs: ["docs/826-master-s9 02fe1cc2(base 30e2abf3) L-01~L-03 · 51/50-copy · trace.js, node tools/gen-canvas.js exit 0, PR #850(마스터 묶음)이 이어 받음"]
+      - id: acceptance-1
+        refs: ["bun run typecheck · lint · test exit 0(1574 pass) at f85a6b41, PR #848 CI 통과"]
+      - id: acceptance-2
+        refs: ["git diff 0d7f2733..1a2f584b --stat 렌더 · 범위 밖 경로 0줄"]
+      - id: acceptance-3
+        refs: ["__tests__/landingS9Presentational.test.tsx · landingOverlay.test.tsx(헤드라인 · 기둥 · 링크 쌍 · details 부재), measure-chrome carousel(가운데 높이 ≥0.85 · 간격 ≥16 · filter none) · exitPaths, 추가 줄 gradient( · blur( · rounded-full · 9999px 0건"]
+      - id: acceptance-4
+        refs: ["__tests__/landingHeroMood.test.tsx(4000/8000ms · 누름 · 포커스 · 28px · 350ms) · landingS9Presentational.test.tsx(시트 동안 정지)"]
+      - id: acceptance-5
+        refs: ["__tests__/landingHeroMood.test.tsx · landingReducedMotion.test.tsx(고르기 · aria-pressed · 재단 표시)"]
+      - id: acceptance-6
+        refs: ["__tests__/landingAttachStaging.test.tsx(직접 입력은 고른 무드 · 기본 미니멀)"]
+      - id: acceptance-7
+        refs: ["__tests__/landingAttachStaging.test.tsx(dialog · 포커스 · Escape · 닫기 · 밖 탭 · 만들기 비활성 · 행이 여는 입력)"]
+      - id: acceptance-8
+        refs: ["__tests__/landingAttachStaging.test.tsx(닫기 복원 · blob 보존/해제 · 저장 쓰기 0 · 늦은 OCR 폐기 · 만들기 확정 · 자동저장 재개 · 포스터만 확정 저장) · usePhototicketStaging.test.tsx"]
+      - id: acceptance-9
+        refs: ["__tests__/landingAttachStaging.test.tsx(실시간 TicketRenderer 한 벌 · 새 포스터 · 인식 뒤 제목) · landingS9Presentational.test.tsx(스냅샷 전 정적 견본)"]
+      - id: acceptance-10
+        refs: ["__tests__/landingOcrNotice.test.tsx · ocrFailureFlow.test.tsx · mobileEditorShellOcrEntryConsolidation.test.tsx"]
+      - id: acceptance-11
+        refs: ["__tests__/appFooterNotice.test.tsx(시트 안 고지 · 편집 화면 부재)"]
+      - id: acceptance-12
+        refs: ["src git grep 0건, COPY_TONE_GUIDE 잠금 표 S9 행 = git grep -l 재계산, CLAUDE.md 🚧 새 사실"]
+      - id: acceptance-13
+        refs: ["prod ttumn4n9LVXITSFv6l29A measure-chrome dark · light exit 0, 랜딩 · posterless · 프레임 봉쇄 checked:true"]
+      - id: acceptance-14
+        refs: ["393×852 · 375×667 라이트 · 다크 헤드리스 캡처 36장(첫 화면 · 시트 · 이용 고지 12 + 동작 줄이기 · 이어서 만들기 · 시트 인식 중 · 실패 · 포스터 반영 · 인식 끝 24, 버튼 · 시트 프레임 넘침 0px), D25-12 대조, 실기기 PASS 아님"]
+      - id: acceptance-15
+        refs: ["requirement-gap 1라운드 blocking 0 · should-fix 처리(격자 실시간 반영 · COPY_TONE_GUIDE stale · 캡처 보충 · Seed 문구는 소유자 승인), 2라운드 생략(P18). 이어 /code-review medium 6건 중 4건 반영 · 2건 근거 보류, /simplify 반영"]
+      - id: acceptance-16
+        refs: ["git log --format=%s 0d7f2733..1a2f584b 전부 Conventional Commits, PR #848은 소유자 승인 뒤 개설 · 머지(main 1a2f584b, 트리 caabd131 = PR 헤드 f85a6b41)"]
   withdrawn: []
 
 goal:
