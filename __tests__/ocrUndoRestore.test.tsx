@@ -805,6 +805,88 @@ describe('OCR 직접 필드를 전부 고치면 배너가 남은 되돌릴 것�
   });
 });
 
+// #855 — 제목만 인식되고 KOBIS가 못 찾으면 셸 토스트는 '영화 정보를 찾지 못했어요'인데 배너가 '영화 정보를
+// 자동으로 불러왔어요.'라고 하면 두 안내가 어긋난다. 무매칭이면 배너는 OCR이 실제로 쓴 제목을 항목으로 세고,
+// 되돌리기는 그 제목만 OCR 전으로 돌린다(쓰지 않은 보강 키는 스냅샷에서 빠진다).
+describe('KOBIS 무매칭이면 배너가 영화 정보를 불러왔다고 하지 않는다 (#855)', () => {
+  function stubKobisSearch(movieList: unknown[]) {
+    spyOn(global, 'fetch').mockImplementation((async (url: string) => {
+      if (url.includes('/api/kobis/search')) {
+        return { ok: true, json: async () => ({ movieListResult: { movieList } }) };
+      }
+      if (url.includes('/api/kobis/detail')) {
+        return { ok: true, json: async () => ({ movieInfoResult: { movieInfo: { showTm: '99' } } }) };
+      }
+      throw new Error(`unexpected url: ${url}`);
+    }) as unknown as typeof fetch);
+  }
+
+  const toastText = () => screen.queryByTestId('global-toast-msg')?.textContent ?? null;
+  // 셸 토스트 자리를 testid로 읽는다 — 같은 문장이 라이브리전에도 있어 findByText는 여러 개를 찾는다.
+  async function waitNoMatchToast() {
+    await waitFor(() => {
+      expect(toastText()).toBe('영화 정보를 찾지 못했어요');
+    });
+  }
+
+  async function ocrTitleOnly(user: ReturnType<typeof userEvent.setup>, title: string) {
+    render(<MobileHarness />);
+    await user.click(screen.getByTestId('landing-skip-poster'));
+    await user.click(screen.getByText('seed-draft-theater')); // OCR 전 제목 '인터스텔라'
+    ocrImpl = async () => ({ title });
+    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+  }
+
+  test('무매칭: 토스트는 못 찾았다, 배너는 제목 1개 항목 — 되돌리면 제목이 OCR 전으로 돌아간다', async () => {
+    const user = userEvent.setup();
+    stubKobisSearch([]);
+    await ocrTitleOnly(user, '알수없는영화');
+
+    await waitNoMatchToast();
+    expect(captured.movieInfo.title).toBe('알수없는영화');
+    const text = screen.getByTestId('ocr-undo-banner').textContent ?? '';
+    expect(text).not.toContain('영화 정보를 자동으로 불러왔어요.');
+    expect(text).toContain('1개 항목이 자동 입력되었어요.');
+
+    await user.click(screen.getByRole('button', { name: '되돌리기' }));
+    expect(captured.movieInfo.title).toBe('인터스텔라');
+    expect(captured.movieInfo.theater).toBe('인터스텔라 극장');
+    expect(screen.queryByTestId('ocr-undo-banner') === null).toBe(true);
+  });
+
+  test('무매칭 뒤 사용자가 원제를 채우면 되돌리기는 제목만 돌리고 원제는 둔다', async () => {
+    const user = userEvent.setup();
+    stubKobisSearch([]);
+    await ocrTitleOnly(user, '알수없는영화');
+    await waitNoMatchToast();
+
+    await user.click(screen.getByText('seed-user-edit-titleog'));
+    await user.click(screen.getByRole('button', { name: '되돌리기' }));
+    expect(captured.movieInfo.title).toBe('인터스텔라');
+    expect(captured.movieInfo.titleOg).toBe('사용자가 고친 원제');
+  });
+
+  test('매칭: 배너는 영화 정보를 불러왔다 — 되돌리면 제목과 보강 필드가 OCR 전으로 돌아간다', async () => {
+    const user = userEvent.setup();
+    stubKobisSearch([
+      { movieCd: '20147727', movieNm: '그랜드 부다페스트 호텔', movieNmEn: 'The Grand Budapest Hotel', openDt: '20140320' },
+    ]);
+    await ocrTitleOnly(user, '그랜드 부다페스트 호텔');
+
+    await waitFor(() => {
+      expect(captured.movieInfo.runtime).toBe('99 MIN');
+    });
+    expect(toastText()).not.toBe('영화 정보를 찾지 못했어요');
+    expect(screen.getByTestId('ocr-undo-banner').textContent).toContain('영화 정보를 자동으로 불러왔어요.');
+
+    await user.click(screen.getByRole('button', { name: '되돌리기' }));
+    expect(captured.movieInfo.title).toBe('인터스텔라');
+    expect(captured.movieInfo.titleOg ?? '').toBe('');
+    expect(captured.movieInfo.movieCd ?? '').toBe('');
+    expect(captured.movieInfo.runtime ?? '').toBe('');
+  });
+});
+
 describe('편집에서 시작한 OCR의 신선도는 시작 시점에 정해진다 (#826 S2)', () => {
   // 적용 시점에 `!landingDismissed`로 판정하면, 편집에서 시작한 인식이 응답 전에 ‹로 랜딩이 다시 뜬 뒤 도착할 때
   // "랜딩에서 온 새로 시작"으로 오인해 문서(포스터 · 입력값)를 통째로 지운다. 선택: 편집에서 시작한 OCR은 현재 문서에

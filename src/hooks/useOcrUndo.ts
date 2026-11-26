@@ -78,7 +78,8 @@ export interface UseOcrUndo {
   dropKobisFields: () => void;
   /**
    * OCR의 KOBIS 보강이 실제로 쓰였을 때(#807) — 그 값을 되돌리기 비교 기준에 더한다. 안 그러면 보강 뒤
-   * 사용자가 고친 원제·개봉일 같은 보강 필드를 되돌리기가 OCR 전 값으로 덮는다.
+   * 사용자가 고친 원제·개봉일 같은 보강 필드를 되돌리기가 OCR 전 값으로 덮는다. 보강이 안 쓴 KOBIS 키는
+   * 스냅샷에서 뺀다(#855, 무매칭이면 제목만 남는다).
    */
   recordKobisApplied: (info: Partial<MovieInfo>) => void;
   /** 지금 되돌리기 상태를 뜬다(S9 constraint-9) — 마지막 렌더의 값이라 confirm() 직전에 부르면 된다. */
@@ -159,10 +160,15 @@ export function useOcrUndo(photo: ReturnType<typeof usePhototicket>): UseOcrUndo
     setUndo((prev) => {
       if (!prev) return prev;
       const applied = { ...prev.applied };
+      // 보강이 안 쓴 KOBIS 키는 스냅샷에서 뺀다(#855) — 무매칭이면 제목만 쓰이니 제목만 남는다. 안 쓴 키의 OCR 전
+      // 값은 지금 값과 같아 되돌리기 결과는 그대로이고, 남겨 두면 배너가 불러오지도 않은 영화 정보를 불러왔다고
+      // 말하고 그 사이 사용자가 고친 원제 같은 값을 되돌리기가 덮는다(#807과 같은 축).
+      const snapshotInfo = { ...prev.info };
       for (const key of OCR_KOBIS_FIELDS) {
         if (key in info) (applied as Record<string, unknown>)[key] = info[key];
+        else delete snapshotInfo[key];
       }
-      return { ...prev, applied };
+      return { ...prev, info: snapshotInfo, applied };
     });
   }
 
