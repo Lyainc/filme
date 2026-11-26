@@ -22,11 +22,13 @@ export const OCR_DIRECT_FIELDS: OcrDirectField[] = [
 ];
 /** KOBIS 보강이 쓰는 키 전부(kobisLookup.ts) — 되돌리기 스냅샷에 미리 담고, 보강이 버려지면 뺀다(#801). */
 export const OCR_KOBIS_FIELDS = ['title', 'titleOg', 'releaseDate', 'actors', 'runtime', 'movieCd'] as const;
+/** 그중 화면에 서는 키 — 되돌리기 배너가 남은 항목을 셀 때 쓴다(#855). movieCd는 식별자라 안 센다. */
+export const OCR_KOBIS_SHOWN_FIELDS = OCR_KOBIS_FIELDS.filter((key) => key !== 'movieCd');
 /**
  * 보강이 영화를 찾았다는 표시 키(#855) — 둘 다 없으면 무매칭 안내('영화 정보를 찾지 못했어요')를 띄우고, 되돌리기
  * 배너도 같은 판정으로 '영화 정보를 자동으로 불러왔어요.'를 고른다. 두 자리가 따로 판정하면 서로 어긋난다.
  */
-export const KOBIS_MATCH_FIELDS = ['titleOg', 'actors'] as const;
+export const KOBIS_MATCH_FIELDS = ['titleOg', 'actors'] as const satisfies readonly (typeof OCR_KOBIS_SHOWN_FIELDS)[number][];
 
 /**
  * 카드가 내보내는 안내 한 건(#852, 마스터 E-05). `progress`는 실패가 아닌 진행 안내라 경고색으로 그리지 않고,
