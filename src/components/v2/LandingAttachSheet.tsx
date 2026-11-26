@@ -7,7 +7,10 @@ export type AttachScreenshotState =
   | { kind: 'empty' }
   | { kind: 'busy' }
   | { kind: 'done' }
-  | { kind: 'error'; message: string };
+  /** 실패가 아닌 진행 안내(#852 '영화 정보 검색 중…') — 보조색. */
+  | { kind: 'info'; message: string }
+  /** action은 실패 문구의 그 자리 버튼(#852 [제목 확인]) — 행 자체가 버튼이라 행 안에 못 넣고 행 바로 아래에 선다. */
+  | { kind: 'error'; message: string; action?: { label: string; onClick: () => void } };
 
 const THUMB = 'grid h-[54px] w-9 shrink-0 place-items-center overflow-hidden rounded-[3px] border border-hair-strong text-ink-3';
 
@@ -98,12 +101,30 @@ export function LandingAttachSheet({
           {screenshot.kind === 'done' && (
             <span className="text-caption leading-4 text-ink-2">인식했어요</span>
           )}
+          {screenshot.kind === 'info' && (
+            <span data-testid="landing-sheet-screenshot-info" className="break-keep text-caption leading-4 text-ink-2">
+              {screenshot.message}
+            </span>
+          )}
           {screenshot.kind === 'error' && (
             <span data-testid="landing-sheet-screenshot-error" className="break-keep text-caption leading-4 text-warn">
               {screenshot.message}
             </span>
           )}
         </Row>
+        {screenshot.kind === 'error' && screenshot.action && (
+          <button
+            type="button"
+            data-testid="landing-sheet-screenshot-action"
+            onClick={screenshot.action.onClick}
+            className={cn(
+              pressableVariants(),
+              'min-h-touch self-end px-2 text-caption font-medium text-ink underline underline-offset-2',
+            )}
+          >
+            {screenshot.action.label}
+          </button>
+        )}
         <Row
           testId="landing-sheet-poster"
           title="포스터"

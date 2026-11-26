@@ -123,8 +123,8 @@
 
 **무엇이 이 축의 대상인가.** **사용자 조작이 실패했거나 차단됐을 때 뜨는 문구** 전부다. 어느
 함수로 나가는지는 보지 않는다 — rate limit 안내도, KOBIS 조회가 빈손으로 돌아왔을 때 뜨는
-`영화 제목을 확인 후 검색해 주세요.`도 `showToast`로 나가지만 둘 다 이 축이다. 반대로 `제목으로 영화 정보를 검색할게요.`는 진행
-안내라 실패가 없어 축 1만 받는다.
+`영화 제목을 확인 후 검색해 주세요.`도 `showToast`로 나가지만 둘 다 이 축이다. 반대로 `영화 정보 검색 중…`(구 `제목으로 영화 정보를
+검색할게요.`)은 진행 안내라 실패가 없어 축 1만 받고, 첨부 시트 행에서도 경고색이 아니라 보조색으로 뜬다(#852).
 
 **결정(#826 결정 8, 2026-11-17 개정).** 무슨 일이 있었나를 **한 문장**(과거형 해요체)으로
 쓰고, 다음 행동은 문장이 아니라 **그 자리의 버튼**(`다시 시도` · `직접 입력` · `닫기` 등, 축 2의
@@ -138,7 +138,12 @@
 그 전까지 두 문장 문구는 위반이 아니라 이행 대기다. 새로 쓰는 실패 문구는 이 결정을 따른다.
 랜딩 스크린샷 인식(L-03)은 S5에서 옮겼다 — `인식에 실패했어요` · `PNG, JPG, WebP만 인식할 수 있어요` ·
 `HEIC는 지원하지 않아요` · `10MB 이하 이미지만 돼요`(다시 시도는 주 CTA 자체). 마스터가 두 문장 그대로 둔
-`지금 요청이 많아요…` · `인식된 정보가 없어요…`와 E-05 몫인 KOBIS 안내 둘은 그대로다.
+`지금 요청이 많아요…` · `인식된 정보가 없어요…`는 그대로다.
+E-05 몫인 KOBIS 안내 둘은 #852에서 옮겼다 — `제목으로 영화 정보를 검색할게요.`가 진행 안내 `영화 정보 검색 중…`이 됐고, 두 문장
+무매칭 안내 `영화 정보를 찾지 못했어요. 제목을 확인하고 다시 검색해 주세요.`가 한 줄 `영화 정보를 찾지 못했어요` + 그 자리
+`제목 확인` 버튼(정보 모드의 제목 입력을 연다)이 됐다. 자리는 둘이다: 편집 화면은 셸 토스트, 랜딩은 첨부 시트의 '티켓 스크린샷'
+행(행 자체가 버튼이라 `제목 확인`은 행 바로 아래). 버튼이 달린 토스트는 사라지는 통보가 아니다 — 타이머 없이 누르거나, 다음
+토스트가 덮거나, 필드 입력이 열리거나, 시트를 닫을 때 걷힌다.
 크롭 실패(C-03)는 S6에서 옮겼다 — 두 문장 토스트 `이미지를 불러오지 못했어요. 다른 사진을 선택해 주세요.` ·
 `이미지 크롭에 실패했어요. 다시 시도해 주세요.`가 크롭 화면 안 경고 한 줄 `이미지를 불러오지 못했어요` ·
 `자르지 못했어요`가 됐고, 다음 행동은 그 아래 `다른 사진` · `적용` 버튼이 맡는다. 저장 실패 토스트 두 문구는
@@ -278,6 +283,7 @@ eyebrow 필드 8종)를 놓쳤다 — fresh-context 리뷰가 낮은 확신으�
 | `빈 항목 표시` (#826 S2, 구 `빈 항목 미리보기`) | `v2/EditorMenu.tsx` | `ghostMode` · `inPlaceFieldEditor` · `mobileChromeOrder` · `mobileEditorShellGhost` · `mobileEditorShellMenu` |
 | `자동저장 켜짐` · `자동저장 꺼짐`(`aria-label`) · `랜딩으로 돌아가기` · `티켓 인식 중…` | `v2/EditorMenu.tsx` · `v2/MobileEditorShell.tsx` | `backToLandingPreservesDoc` · `editorDockInfo` · `editorTopBar` · `mobileEditorShellMenu` · `mobileEditorShellOcrEntryConsolidation` · `ocrUndoRestore` |
 | `검색 중…` · `검색 결과가 없어요` (#826 S3, 구 `Loading…` · 두 문장 무매칭 안내) · `검색에 실패했어요` + `다시 검색` 버튼 | `hooks/useKobisSearch.ts`(`DEFAULT_MESSAGES`) · `v2/InPlaceFieldEditor.tsx` · `v2/FieldEditorBody.tsx` | `inPlacePanelS3` · `landingOcrNotice` · `ocrKobisSelectionLifetime` · `ocrNeedManualTitleSearch` · `titleSheetSearch` |
+| `영화 정보 검색 중…` · `영화 정보를 찾지 못했어요` + `제목 확인` 버튼 (#852 E-05, 구 `제목으로 영화 정보를 검색할게요.` · `영화 정보를 찾지 못했어요. 제목을 확인하고 다시 검색해 주세요.`) | `v2/OcrUploadCard.tsx`(자리는 `v2/MobileEditorShell.tsx` 토스트 · `v2/LandingAttachSheet.tsx` 행) | `landingOcrNotice` · `mobileEditorShellOcrEntryConsolidation` · `ocrKobisSelectionLifetime`(부재 단언) · `ocrNeedManualTitleSearch` |
 | `제목 없는 티켓` (#826 S5 L-02, 복원 행) | `v2/Landing.tsx` | `landingOverlay` · `mobileEditorShellFieldCoverage` |
 | `포스터 자르기` · `로고 자르기` · `서명 자르기` · `스탬프 자르기` (#826 S6 C-01 · C-02, 구 `포스터 크롭` · `로고 크롭` · `스탬프 이미지 크롭`, 크롭 화면 제목 = 접근 이름) | `ImageCropModal.tsx`(`CROP_TITLE`) | `cropScreenS6` · `dialogBackgroundInert` · `editorDockPhoto` · `logoCropFreeAspect` · `ocrUndoRestore` · `posterCropPipeline` |
 | `다른 사진` (#826 S6, 구 `다른 사진 선택`) · `원본 비율 보존`(스위치, 구 체크박스) | `ImageCropModal.tsx` | `cropScreenS6` · `logoCropFreeAspect` |

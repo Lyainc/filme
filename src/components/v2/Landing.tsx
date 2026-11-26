@@ -9,6 +9,7 @@ import { LAYOUTS } from '@/utils/layouts';
 import { Chevron } from './AppFooter';
 import { LandingAttachSheet } from './LandingAttachSheet';
 import type { AttachScreenshotState } from './LandingAttachSheet';
+import type { OcrNotice } from './OcrUploadCard';
 import { LandingNoticeSheet } from './LandingNoticeSheet';
 import { Wordmark } from './Wordmark';
 import { ScanIcon } from './ScanIcon';
@@ -102,7 +103,7 @@ function slotStyle(d: number, sheetOpen: boolean): CSSProperties {
  * 첨부 시트의 '티켓 스크린샷' 행 상태 줄에 뜬다. 랜딩이 걷힌 뒤(편집 화면에서 연 인식)는 셸의 notify가 먼저라 이 자리를 안 쓴다.
  */
 export const LandingSlotContext = createContext<{
-  setNotice: (message: string | null) => void;
+  setNotice: (notice: OcrNotice | null) => void;
 } | null>(null);
 
 /** 가운데(고른) 카드의 재단 표시(S9 constraint-5) — 카드 바깥 8px에 --pr-accent L자 네 개. 장식이라 aria-hidden. */
@@ -369,12 +370,14 @@ export function formatSavedDate(savedAt: number, now: number = Date.now()): stri
 }
 
 /** open이 true → false로 바뀐 커밋에서 ref로 포커스를 돌려준다(APG Dialog의 포커스 복귀). */
-function useReturnFocus(open: boolean, ref: RefObject<HTMLElement | null>) {
+function useReturnFocus(open: boolean, ref: RefObject<HTMLElement | null>, overlay: boolean) {
   const was = useRef(false);
   useEffect(() => {
-    if (was.current && !open) ref.current?.focus();
+    // 시트가 닫히며 랜딩도 걷히면(만들기 · [제목 확인], #852) 돌려줄 자리가 없다 — 걷히는 240ms 동안 아직 포커스를 받는
+    // 주 버튼으로 돌려주면 같은 커밋에서 연 제목 입력의 포커스를 뺏어 패널이 키보드 내림으로 닫힌다.
+    if (was.current && !open && overlay) ref.current?.focus();
     was.current = open;
-  }, [open, ref]);
+  }, [open, ref, overlay]);
 }
 
 /**
@@ -431,7 +434,7 @@ export function Landing({
 }) {
   const overlay = mode === 'overlay';
   const prefersReducedMotion = useMatchMedia('(prefers-reduced-motion: reduce)');
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<OcrNotice | null>(null);
   const slot = useMemo(() => ({ setNotice }), []);
   const [active, setActive] = useState(0);
   const selectedLayout = GALLERY_LAYOUTS[active].id;
@@ -441,8 +444,8 @@ export function Landing({
   const sheetOpen = sheet !== null;
   const modalOpen = sheetOpen || noticeOpen;
   // 시트 · 고지 시트가 닫히면 연 버튼으로 포커스를 돌려준다(APG Dialog) — 버튼은 시트가 걷힌 같은 커밋에서 다시 보인다.
-  useReturnFocus(sheetOpen, ctaRef);
-  useReturnFocus(noticeOpen, noticeBtnRef);
+  useReturnFocus(sheetOpen, ctaRef, overlay);
+  useReturnFocus(noticeOpen, noticeBtnRef, overlay);
 
   const [savedAt, setSavedAt] = useState<number | null>(null);
   useEffect(() => {
@@ -477,12 +480,19 @@ export function Landing({
     };
   }, []);
 
-  // 인식 안내(S9 constraint-11) — 카드가 보낸 안내는 '티켓 스크린샷' 행 상태 줄에 오류로 뜬다(그 밖의 상태는 셸이 준다).
+  // 인식 안내(S9 constraint-11) — 카드가 보낸 안내는 '티켓 스크린샷' 행 상태 줄에 뜬다(그 밖의 상태는 셸이 준다). 실패는 경고색,
+  // 진행 안내('영화 정보 검색 중…')는 실패가 아니라 보조색이다(#852, 마스터 E-05).
   const screenshot: AttachScreenshotState | null = sheet
     ? notice
-      ? { kind: 'error', message: notice }
+      ? notice.progress
+        ? { kind: 'info', message: notice.message }
+        : { kind: 'error', message: notice.message, action: notice.action }
       : sheet.screenshot
     : null;
+  // 시트를 닫으면 남은 안내도 걷는다 — 버튼이 달린 안내는 타이머가 없어, 닫은 뒤 다시 연 시트에 옛 문서의 [제목 확인]이 남는다.
+  useEffect(() => {
+    if (!sheetOpen) setNotice(null);
+  }, [sheetOpen]);
 
   return (
     <div

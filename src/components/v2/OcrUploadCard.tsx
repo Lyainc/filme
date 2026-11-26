@@ -23,6 +23,17 @@ export const OCR_DIRECT_FIELDS: OcrDirectField[] = [
 /** KOBIS 보강이 쓰는 키 전부(kobisLookup.ts) — 되돌리기 스냅샷에 미리 담고, 보강이 버려지면 뺀다(#801). */
 export const OCR_KOBIS_FIELDS = ['title', 'titleOg', 'releaseDate', 'actors', 'runtime', 'movieCd'] as const;
 
+/**
+ * 카드가 내보내는 안내 한 건(#852, 마스터 E-05). `progress`는 실패가 아닌 진행 안내라 경고색으로 그리지 않고,
+ * `action`은 실패 문구의 다음 행동을 맡는 그 자리 버튼이다(COPY_TONE_GUIDE 축 3). 버튼이 달린 안내는 타이머로
+ * 사라지지 않는다 — 사라지는 자리엔 버튼을 둘 수 없다는 같은 규칙의 반대편이다.
+ */
+export interface OcrNotice {
+  message: string;
+  progress?: boolean;
+  action?: { label: string; onClick: () => void };
+}
+
 export interface OcrUploadCardProps {
   setInfo: (info: Partial<MovieInfo>) => void;
   currentInfo: Partial<MovieInfo>;
@@ -61,9 +72,9 @@ export interface OcrUploadCardProps {
   onBusyChange?: (busy: boolean) => void;
   /** 결과 안내 문구를 밖에서 대신 보여줄 때 넘긴다 — 랜딩이 걷히면 이 카드는 display:none 안이라 자체 토스트가
    * 안 보인다. 넘기면 카드는 자체 토스트를 띄우지 않는다. */
-  notify?: (message: string) => void;
-  /** KOBIS 무매칭/다중매칭(#445) — 제목 검색 UI를 직접 열 수 있는 셸에서 넘긴다. 안 넘기면
-   * 기존 안내 토스트로 fallback(예: 모바일 랜딩— 포스터 업로드 전이라 열 티켓/필드 UI가 없다). */
+  notify?: (notice: OcrNotice) => void;
+  /** KOBIS 무매칭(#445) 안내의 [제목 확인] 버튼이 부른다(#852, 마스터 E-05 → K-01) — 제목 입력을 열 수 있는 셸에서
+   * 넘긴다. 안 넘기면 안내 한 줄만 남는다(단독 렌더엔 열 입력이 없다). */
   onNeedManualTitle?: () => void;
 }
 
@@ -93,7 +104,7 @@ export function OcrUploadCard({
   // 행 상태 줄에 띄우고, 인식 중 여부도 그 행에 알린다. 랜딩 밖(테스트 단독 렌더)에선 null이라 자체 토스트로 남는다.
   const landingSlot = useContext(LandingSlotContext);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<OcrNotice | null>(null);
 
   // 언마운트 후 비동기 콜백의 로컬 UI state(toast/isProcessing) 누수 가드. KOBIS 보강의 최신성
   // 판단(setInfo 적용 여부)엔 안 쓴다 — 아래 ocrEpochRef 참고.
@@ -114,18 +125,34 @@ export function OcrUploadCard({
     };
   }, []);
 
-  function showToast(msg: string, durationMs = LANDING_NOTICE_MS) {
+  function showToast(msg: string | OcrNotice, durationMs = LANDING_NOTICE_MS) {
+    const notice = typeof msg === 'string' ? { message: msg } : msg;
     // 밖에서 보여주는 중이면(랜딩이 걷힌 뒤) 자체 토스트는 display:none 안이라 안 보인다 — 비동기 응답 뒤에도
     // 최신 notify를 읽는다(#809와 같은 이유).
     const outside = latestRef.current.notify;
     if (outside) {
-      outside(msg);
+      outside(notice);
       return;
     }
     if (!mountedRef.current) return;
-    setToast(msg);
+    // 버튼을 누르면 안내는 할 일을 다 했으니 걷는다.
+    const action = notice.action;
+    setToast(
+      action
+        ? {
+            ...notice,
+            action: {
+              label: action.label,
+              onClick: () => {
+                setToast(null);
+                action.onClick();
+              },
+            },
+          }
+        : notice,
+    );
     clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = setTimeout(() => setToast(null), durationMs);
+    if (!action) toastTimerRef.current = setTimeout(() => setToast(null), durationMs);
   }
 
   function validateFile(file: File): string | null {
@@ -212,9 +239,12 @@ export function OcrUploadCard({
           return;
         }
         onKobisApplied(kobisInfo);
+        // 제목 입력을 저절로 열지 않고 [무슨 일] 한 줄 + 그 자리 [제목 확인]으로 묻는다(#852, 마스터 E-05).
         if (!kobisInfo.titleOg && !kobisInfo.actors) {
-          if (onNeedManualTitle) onNeedManualTitle();
-          else showToast('영화 정보를 찾지 못했어요. 제목을 확인하고 다시 검색해 주세요.');
+          showToast({
+            message: '영화 정보를 찾지 못했어요',
+            action: onNeedManualTitle ? { label: '제목 확인', onClick: onNeedManualTitle } : undefined,
+          });
         }
       });
     }
@@ -222,7 +252,7 @@ export function OcrUploadCard({
     if (filled.size === 0 && !title && !prevComponents) {
       showToast('인식된 정보가 없어요. 직접 입력해 주세요.');
     } else if (filled.size === 0 && title) {
-      showToast('제목으로 영화 정보를 검색할게요.');
+      showToast({ message: '영화 정보 검색 중…', progress: true });
     }
   }
 
@@ -328,7 +358,7 @@ export function OcrUploadCard({
   useEffect(() => {
     onBusyChange?.(isProcessing);
   }, [isProcessing, onBusyChange]);
-  // 안내 글자를 랜딩 자리에 싣는다 — 수명(3000ms)은 이 카드의 toast 타이머가 쥐고 랜딩은 보여주기만 한다.
+  // 안내를 랜딩 자리에 싣는다 — 수명(3000ms, 버튼이 달리면 무기한)은 이 카드의 toast 타이머가 쥐고 랜딩은 보여주기만 한다.
   useEffect(() => {
     landingSlot?.setNotice(toast);
   }, [toast, landingSlot]);
@@ -382,15 +412,20 @@ export function OcrUploadCard({
       )}
 
       {toast && !landingSlot && (
-        <div className="absolute top-full left-0 mt-2 max-w-[260px] bg-ink text-s2 text-caption font-medium px-3 py-1.5 rounded-chip shadow-lg animate-fade-in z-10">
-          {toast}
+        <div className="absolute top-full left-0 mt-2 flex max-w-[260px] items-center gap-2 bg-ink text-s2 text-caption font-medium px-3 py-1.5 rounded-chip shadow-lg animate-fade-in z-10">
+          <span>{toast.message}</span>
+          {toast.action && (
+            <button type="button" onClick={toast.action.onClick} className="min-h-touch shrink-0 underline underline-offset-2">
+              {toast.action.label}
+            </button>
+          )}
         </div>
       )}
 
       {/* 토스트 announce — 라이브리전은 콘텐츠 변경 전부터 DOM에 있어야 SR이 잡으므로(토스트와
           동시 삽입되면 무시됨, #199 리뷰 P1) 항상 마운트하고 텍스트만 바꾼다. 시각 토스트와 분리. */}
       <div role="status" aria-live="polite" className="sr-only">
-        {toast ?? ''}
+        {toast?.message ?? ''}
       </div>
     </div>
   );
