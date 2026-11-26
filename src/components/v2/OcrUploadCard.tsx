@@ -22,6 +22,11 @@ export const OCR_DIRECT_FIELDS: OcrDirectField[] = [
 ];
 /** KOBIS 보강이 쓰는 키 전부(kobisLookup.ts) — 되돌리기 스냅샷에 미리 담고, 보강이 버려지면 뺀다(#801). */
 export const OCR_KOBIS_FIELDS = ['title', 'titleOg', 'releaseDate', 'actors', 'runtime', 'movieCd'] as const;
+/**
+ * 보강이 영화를 찾았다는 표시 키(#855) — 둘 다 없으면 무매칭 안내('영화 정보를 찾지 못했어요')를 띄우고, 되돌리기
+ * 배너도 같은 판정으로 '영화 정보를 자동으로 불러왔어요.'를 고른다. 두 자리가 따로 판정하면 서로 어긋난다.
+ */
+export const KOBIS_MATCH_FIELDS = ['titleOg', 'actors'] as const;
 
 /**
  * 카드가 내보내는 안내 한 건(#852, 마스터 E-05). `progress`는 실패가 아닌 진행 안내라 경고색으로 그리지 않고,
@@ -235,7 +240,7 @@ export function OcrUploadCard({
         }
         onKobisApplied(kobisInfo);
         // 제목 입력을 저절로 열지 않고 [무슨 일] 한 줄 + 그 자리 [제목 확인]으로 묻는다(#852, 마스터 E-05).
-        if (!kobisInfo.titleOg && !kobisInfo.actors) {
+        if (!KOBIS_MATCH_FIELDS.some((key) => kobisInfo[key])) {
           showToast({
             message: '영화 정보를 찾지 못했어요',
             action: onNeedManualTitle ? { label: '제목 확인', onClick: onNeedManualTitle } : undefined,

@@ -1,4 +1,4 @@
-import { OCR_KOBIS_FIELDS, type OcrDirectField } from './OcrUploadCard';
+import { KOBIS_MATCH_FIELDS, OCR_KOBIS_FIELDS, type OcrDirectField } from './OcrUploadCard';
 import type { MovieInfo } from '@/types';
 import { cn } from '@/utils/cn';
 import { dockAnchoredBottom } from './dock/EditorDock';
@@ -26,15 +26,21 @@ export const OCR_BANNER_HEIGHT_PX = 70;
  * 잡으므로(배너와 동시 삽입되면 무시됨, #199 리뷰 P1) 항상 마운트하고 텍스트만 바꾼다.
  */
 export function OcrUndoBanner({ snapshot, filledFields, stampCount, onCancel, onConfirm, dockOffsetPx }: OcrUndoBannerProps) {
-  // 영화 정보 문구는 되돌릴 KOBIS 키가 남았을 때만이다(#814) — 제목을 인식 못 한 채 스탬프만 남았으면
-  // 불러온 영화 정보가 없으니 남은 스탬프 수를 센다.
-  const hasKobis = !!snapshot && OCR_KOBIS_FIELDS.some((key) => key in snapshot);
+  // 영화 정보 문구는 영화를 찾았다는 키(원제·출연)가 남았을 때만이다(#814·#855) — 무매칭 안내와 같은 판정이라
+  // '영화 정보를 찾지 못했어요' 옆에서 불러왔다고 하지 않는다. 조회 중에는 스냅샷이 KOBIS 키를 전부 쥐고 있어
+  // 이 문구다(마스터 E-05 '로딩'). 못 찾았거나 보강이 버려졌으면 남은 제목·스탬프 같은 항목 수를 센다
+  // (movieCd는 화면에 없는 키라 안 센다).
+  const hasKobis = !!snapshot && KOBIS_MATCH_FIELDS.some((key) => key in snapshot);
+  const kobisCount = snapshot
+    ? OCR_KOBIS_FIELDS.filter((key) => key !== 'movieCd' && key in snapshot).length
+    : 0;
+  const itemCount = kobisCount + stampCount;
   const message =
     filledFields.size > 0
       ? `${filledFields.size}개 항목이 자동 입력되었어요.`
-      : hasKobis || stampCount === 0
+      : hasKobis || itemCount === 0
         ? '영화 정보를 자동으로 불러왔어요.'
-        : `${stampCount}개 항목이 자동 입력되었어요.`;
+        : `${itemCount}개 항목이 자동 입력되었어요.`;
 
   return (
     <>
