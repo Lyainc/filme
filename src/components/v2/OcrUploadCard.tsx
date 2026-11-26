@@ -28,10 +28,14 @@ export const OCR_KOBIS_FIELDS = ['title', 'titleOg', 'releaseDate', 'actors', 'r
  * `action`은 실패 문구의 다음 행동을 맡는 그 자리 버튼이다(COPY_TONE_GUIDE 축 3). 버튼이 달린 안내는 타이머로
  * 사라지지 않는다 — 사라지는 자리엔 버튼을 둘 수 없다는 같은 규칙의 반대편이다.
  */
+export interface NoticeAction {
+  label: string;
+  onClick: () => void;
+}
 export interface OcrNotice {
   message: string;
   progress?: boolean;
-  action?: { label: string; onClick: () => void };
+  action?: NoticeAction;
 }
 
 export interface OcrUploadCardProps {
@@ -135,22 +139,13 @@ export function OcrUploadCard({
       return;
     }
     if (!mountedRef.current) return;
-    // 버튼을 누르면 안내는 할 일을 다 했으니 걷는다.
+    // 버튼을 누르면 안내는 할 일을 다 했으니 걷는다(랜딩 행 버튼이 이 onClick을 부른다).
     const action = notice.action;
-    setToast(
-      action
-        ? {
-            ...notice,
-            action: {
-              label: action.label,
-              onClick: () => {
-                setToast(null);
-                action.onClick();
-              },
-            },
-          }
-        : notice,
-    );
+    const onClick = action && (() => {
+      setToast(null);
+      action.onClick();
+    });
+    setToast(action && onClick ? { ...notice, action: { ...action, onClick } } : notice);
     clearTimeout(toastTimerRef.current);
     if (!action) toastTimerRef.current = setTimeout(() => setToast(null), durationMs);
   }
@@ -412,13 +407,9 @@ export function OcrUploadCard({
       )}
 
       {toast && !landingSlot && (
-        <div className="absolute top-full left-0 mt-2 flex max-w-[260px] items-center gap-2 bg-ink text-s2 text-caption font-medium px-3 py-1.5 rounded-chip shadow-lg animate-fade-in z-10">
-          <span>{toast.message}</span>
-          {toast.action && (
-            <button type="button" onClick={toast.action.onClick} className="min-h-touch shrink-0 underline underline-offset-2">
-              {toast.action.label}
-            </button>
-          )}
+        <div className="absolute top-full left-0 mt-2 max-w-[260px] bg-ink text-s2 text-caption font-medium px-3 py-1.5 rounded-chip shadow-lg animate-fade-in z-10">
+          {/* 단독 렌더(랜딩 · 셸 밖) 전용 — 버튼은 실제 자리(셸 토스트 · 시트 행)만 그린다. */}
+          {toast.message}
         </div>
       )}
 

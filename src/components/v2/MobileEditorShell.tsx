@@ -12,7 +12,7 @@ import {
 import { EditorDock, dockAnchoredBottom, type DockMode } from './dock/EditorDock';
 import { EditorMenu } from './EditorMenu';
 import { Landing } from './Landing';
-import { OcrUploadCard } from './OcrUploadCard';
+import { OcrUploadCard, type NoticeAction } from './OcrUploadCard';
 import { OcrUndoBanner, OCR_BANNER_HEIGHT_PX } from './OcrUndoBanner';
 import { APP_BACKGROUND_ID } from './PhoneFrame';
 import type { ViewMode } from './viewMode';
@@ -124,7 +124,7 @@ export function MobileEditorShell({
   // 토스트 두 종류(E-03 · E-06): 통보(notice)는 도크 바로 위에 2.6초, 오류(error)는 상단 줄 바로 아래에 4초.
   // action이 달린 통보(#852 E-05 [제목 확인])는 버튼을 품으니 타이머로 사라지지 않는다 — 누르거나, 다음 토스트가 덮거나, 필드 입력이
   // 열리면(제목 행을 직접 눌러도 할 일은 끝났다) 걷힌다.
-  const [toast, setToast] = useState<{ msg: string; tone: ToastTone; action?: { label: string; onClick: () => void } } | null>(null);
+  const [toast, setToast] = useState<{ msg: string; tone: ToastTone; action?: NoticeAction } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // 편집 메뉴 시트(#826 S2 D09) — 열려 있는 동안만 EditorMenu가 마운트된다(초기화 arm도 그 안에 산다).
   const [menuOpen, setMenuOpen] = useState(false);
@@ -202,22 +202,11 @@ export function MobileEditorShell({
   //    그려진다. 이 항이 하던 일(취소 시 빈 셸 방지)은 이탈 state가 안 서 있으므로 저절로 성립한다(c4).
   //  · draftRestored를 뺀 이유: 그게 #675 D7이고, 이 작업이 뒤집는 명제 자체다(c1).
 
-  function flashToast(msg: string, opts?: { tone?: ToastTone; action?: { label: string; onClick: () => void } }) {
+  function flashToast(msg: string, opts?: { tone?: ToastTone; action?: NoticeAction }) {
     const tone = opts?.tone ?? 'notice';
-    const action = opts?.action;
-    setToast({
-      msg,
-      tone,
-      action: action && {
-        label: action.label,
-        onClick: () => {
-          setToast(null);
-          action.onClick();
-        },
-      },
-    });
+    setToast({ msg, tone, action: opts?.action });
     clearTimeout(toastTimer.current);
-    if (!action) toastTimer.current = setTimeout(() => setToast(null), TOAST_MS[tone]);
+    if (!opts?.action) toastTimer.current = setTimeout(() => setToast(null), TOAST_MS[tone]);
   }
   useEffect(() => () => clearTimeout(toastTimer.current), []);
   useEffect(() => {
@@ -1027,7 +1016,10 @@ export function MobileEditorShell({
               <button
                 type="button"
                 data-testid="global-toast-action"
-                onClick={toast.action.onClick}
+                onClick={() => {
+                  setToast(null);
+                  toast.action?.onClick();
+                }}
                 className={cn(pressableVariants(), 'min-h-touch shrink-0 font-medium underline underline-offset-2')}
               >
                 {toast.action.label}
