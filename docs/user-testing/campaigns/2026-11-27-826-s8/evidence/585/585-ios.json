@@ -1,0 +1,1520 @@
+{
+ "note": "iOS Simulator 결과, 실기기 아님",
+ "percent": [
+  {
+   "label": "포스터",
+   "tool": "opacity",
+   "exit": "done",
+   "how": "키보드 완료",
+   "value": "37",
+   "keyboard": {
+    "y": 589,
+    "x": 0,
+    "width": 402,
+    "height": 227
+   },
+   "before": {
+    "range": "0.5",
+    "rangeRect": {
+     "x": 16,
+     "y": 538.5,
+     "w": 370,
+     "h": 32
+    },
+    "button": {
+     "x": 342.1,
+     "y": 522,
+     "w": 31.6,
+     "h": 16.5
+    },
+    "buttonText": "50",
+    "dock": {
+     "x": 0,
+     "y": 465,
+     "w": 402,
+     "h": 249
+    },
+    "preview": {
+     "x": 79.3,
+     "y": 64,
+     "w": 243.4,
+     "h": 389
+    }
+   },
+   "during": {
+    "zoom": 1,
+    "vvH": 410,
+    "active": "포스터 퍼센트",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "50",
+    "panel": "percent",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1
+   },
+   "typed": {
+    "zoom": 1,
+    "vvH": 410,
+    "active": "포스터 퍼센트",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "37",
+    "panel": "percent",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1
+   },
+   "after": {
+    "range": "0.37",
+    "rangeRect": {
+     "x": 16,
+     "y": 538.5,
+     "w": 370,
+     "h": 32
+    },
+    "button": {
+     "x": 342.1,
+     "y": 522,
+     "w": 31.6,
+     "h": 16.5
+    },
+    "buttonText": "37",
+    "dock": {
+     "x": 0,
+     "y": 465,
+     "w": 402,
+     "h": 249
+    },
+    "preview": {
+     "x": 79.3,
+     "y": 64,
+     "w": 243.4,
+     "h": 389
+    }
+   },
+   "checks": {
+    "noZoom": true,
+    "font16": true,
+    "inputVisible": true,
+    "keyboard": true,
+    "exitFound": true,
+    "closed": true,
+    "committed": true,
+    "dockSame": true,
+    "previewSame": true
+   },
+   "verdict": "PASS"
+  },
+  {
+   "label": "포스터",
+   "tool": "opacity",
+   "exit": "outside",
+   "how": "바깥 탭 css (8,4)",
+   "value": "42",
+   "keyboard": {
+    "y": 589,
+    "x": 0,
+    "width": 402,
+    "height": 227
+   },
+   "before": {
+    "range": "0.5",
+    "rangeRect": {
+     "x": 16,
+     "y": 538.5,
+     "w": 370,
+     "h": 32
+    },
+    "button": {
+     "x": 342.1,
+     "y": 522,
+     "w": 31.6,
+     "h": 16.5
+    },
+    "buttonText": "50",
+    "dock": {
+     "x": 0,
+     "y": 465,
+     "w": 402,
+     "h": 249
+    },
+    "preview": {
+     "x": 79.3,
+     "y": 64,
+     "w": 243.4,
+     "h": 389
+    }
+   },
+   "during": {
+    "zoom": 1,
+    "vvH": 410,
+    "active": "포스터 퍼센트",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "50",
+    "panel": "percent",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1
+   },
+   "typed": {
+    "zoom": 1,
+    "vvH": 410,
+    "active": "포스터 퍼센트",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "42",
+    "panel": "percent",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1
+   },
+   "after": {
+    "range": "0.42",
+    "rangeRect": {
+     "x": 16,
+     "y": 538.5,
+     "w": 370,
+     "h": 32
+    },
+    "button": {
+     "x": 342.1,
+     "y": 522,
+     "w": 31.6,
+     "h": 16.5
+    },
+    "buttonText": "42",
+    "dock": {
+     "x": 0,
+     "y": 465,
+     "w": 402,
+     "h": 249
+    },
+    "preview": {
+     "x": 79.3,
+     "y": 64,
+     "w": 243.4,
+     "h": 389
+    }
+   },
+   "checks": {
+    "noZoom": true,
+    "font16": true,
+    "inputVisible": true,
+    "keyboard": true,
+    "exitFound": true,
+    "closed": true,
+    "committed": true,
+    "dockSame": true,
+    "previewSame": true
+   },
+   "verdict": "PASS"
+  },
+  {
+   "label": "컴포넌트",
+   "tool": "opacity",
+   "exit": "done",
+   "how": "키보드 완료",
+   "value": "37",
+   "keyboard": {
+    "y": 589,
+    "x": 0,
+    "width": 402,
+    "height": 227
+   },
+   "before": {
+    "range": "1",
+    "rangeRect": {
+     "x": 16,
+     "y": 595,
+     "w": 370,
+     "h": 32
+    },
+    "button": {
+     "x": 342.1,
+     "y": 578.5,
+     "w": 31.6,
+     "h": 16.5
+    },
+    "buttonText": "100",
+    "dock": {
+     "x": 0,
+     "y": 465,
+     "w": 402,
+     "h": 249
+    },
+    "preview": {
+     "x": 79.3,
+     "y": 64,
+     "w": 243.4,
+     "h": 389
+    }
+   },
+   "during": {
+    "zoom": 1,
+    "vvH": 410,
+    "active": "컴포넌트 퍼센트",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "100",
+    "panel": "percent",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1
+   },
+   "typed": {
+    "zoom": 1,
+    "vvH": 410,
+    "active": "컴포넌트 퍼센트",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "37",
+    "panel": "percent",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1
+   },
+   "after": {
+    "range": "0.37",
+    "rangeRect": {
+     "x": 16,
+     "y": 595,
+     "w": 370,
+     "h": 32
+    },
+    "button": {
+     "x": 342.1,
+     "y": 578.5,
+     "w": 31.6,
+     "h": 16.5
+    },
+    "buttonText": "37",
+    "dock": {
+     "x": 0,
+     "y": 465,
+     "w": 402,
+     "h": 249
+    },
+    "preview": {
+     "x": 79.3,
+     "y": 64,
+     "w": 243.4,
+     "h": 389
+    }
+   },
+   "checks": {
+    "noZoom": true,
+    "font16": true,
+    "inputVisible": true,
+    "keyboard": true,
+    "exitFound": true,
+    "closed": true,
+    "committed": true,
+    "dockSame": true,
+    "previewSame": true
+   },
+   "verdict": "PASS"
+  },
+  {
+   "label": "컴포넌트",
+   "tool": "opacity",
+   "exit": "outside",
+   "how": "바깥 탭 css (8,4)",
+   "value": "42",
+   "keyboard": {
+    "y": 589,
+    "x": 0,
+    "width": 402,
+    "height": 227
+   },
+   "before": {
+    "range": "1",
+    "rangeRect": {
+     "x": 16,
+     "y": 595,
+     "w": 370,
+     "h": 32
+    },
+    "button": {
+     "x": 342.1,
+     "y": 578.5,
+     "w": 31.6,
+     "h": 16.5
+    },
+    "buttonText": "100",
+    "dock": {
+     "x": 0,
+     "y": 465,
+     "w": 402,
+     "h": 249
+    },
+    "preview": {
+     "x": 79.3,
+     "y": 64,
+     "w": 243.4,
+     "h": 389
+    }
+   },
+   "during": {
+    "zoom": 1,
+    "vvH": 410,
+    "active": "컴포넌트 퍼센트",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "100",
+    "panel": "percent",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1
+   },
+   "typed": {
+    "zoom": 1,
+    "vvH": 410,
+    "active": "컴포넌트 퍼센트",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "42",
+    "panel": "percent",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1
+   },
+   "after": {
+    "range": "0.42",
+    "rangeRect": {
+     "x": 16,
+     "y": 595,
+     "w": 370,
+     "h": 32
+    },
+    "button": {
+     "x": 342.1,
+     "y": 578.5,
+     "w": 31.6,
+     "h": 16.5
+    },
+    "buttonText": "42",
+    "dock": {
+     "x": 0,
+     "y": 465,
+     "w": 402,
+     "h": 249
+    },
+    "preview": {
+     "x": 79.3,
+     "y": 64,
+     "w": 243.4,
+     "h": 389
+    }
+   },
+   "checks": {
+    "noZoom": true,
+    "font16": true,
+    "inputVisible": true,
+    "keyboard": true,
+    "exitFound": true,
+    "closed": true,
+    "committed": true,
+    "dockSame": true,
+    "previewSame": true
+   },
+   "verdict": "PASS"
+  },
+  {
+   "label": "재질 강도",
+   "tool": "material",
+   "exit": "done",
+   "how": "키보드 완료",
+   "value": "37",
+   "keyboard": {
+    "y": 589,
+    "x": 0,
+    "width": 402,
+    "height": 227
+   },
+   "before": {
+    "range": "0.6",
+    "rangeRect": {
+     "x": 16,
+     "y": 630,
+     "w": 370,
+     "h": 32
+    },
+    "button": {
+     "x": 342.1,
+     "y": 613.5,
+     "w": 31.6,
+     "h": 16.5
+    },
+    "buttonText": "60",
+    "dock": {
+     "x": 0,
+     "y": 465,
+     "w": 402,
+     "h": 249
+    },
+    "preview": {
+     "x": 79.3,
+     "y": 64,
+     "w": 243.4,
+     "h": 389
+    }
+   },
+   "during": {
+    "zoom": 1,
+    "vvH": 410,
+    "active": "재질 강도 퍼센트",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "60",
+    "panel": "percent",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1
+   },
+   "typed": {
+    "zoom": 1,
+    "vvH": 410,
+    "active": "재질 강도 퍼센트",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "37",
+    "panel": "percent",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1
+   },
+   "after": {
+    "range": "0.37",
+    "rangeRect": {
+     "x": 16,
+     "y": 630,
+     "w": 370,
+     "h": 32
+    },
+    "button": {
+     "x": 342.1,
+     "y": 613.5,
+     "w": 31.6,
+     "h": 16.5
+    },
+    "buttonText": "37",
+    "dock": {
+     "x": 0,
+     "y": 465,
+     "w": 402,
+     "h": 249
+    },
+    "preview": {
+     "x": 79.3,
+     "y": 64,
+     "w": 243.4,
+     "h": 389
+    }
+   },
+   "checks": {
+    "noZoom": true,
+    "font16": true,
+    "inputVisible": true,
+    "keyboard": true,
+    "exitFound": true,
+    "closed": true,
+    "committed": true,
+    "dockSame": true,
+    "previewSame": true
+   },
+   "verdict": "PASS"
+  },
+  {
+   "label": "재질 강도",
+   "tool": "material",
+   "exit": "outside",
+   "how": "바깥 탭 css (8,4)",
+   "value": "42",
+   "keyboard": {
+    "y": 589,
+    "x": 0,
+    "width": 402,
+    "height": 227
+   },
+   "before": {
+    "range": "0.6",
+    "rangeRect": {
+     "x": 16,
+     "y": 630,
+     "w": 370,
+     "h": 32
+    },
+    "button": {
+     "x": 342.1,
+     "y": 613.5,
+     "w": 31.6,
+     "h": 16.5
+    },
+    "buttonText": "60",
+    "dock": {
+     "x": 0,
+     "y": 465,
+     "w": 402,
+     "h": 249
+    },
+    "preview": {
+     "x": 79.3,
+     "y": 64,
+     "w": 243.4,
+     "h": 389
+    }
+   },
+   "during": {
+    "zoom": 1,
+    "vvH": 410,
+    "active": "재질 강도 퍼센트",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "60",
+    "panel": "percent",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1
+   },
+   "typed": {
+    "zoom": 1,
+    "vvH": 410,
+    "active": "재질 강도 퍼센트",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "42",
+    "panel": "percent",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1
+   },
+   "after": {
+    "range": "0.42",
+    "rangeRect": {
+     "x": 16,
+     "y": 630,
+     "w": 370,
+     "h": 32
+    },
+    "button": {
+     "x": 342.1,
+     "y": 613.5,
+     "w": 31.6,
+     "h": 16.5
+    },
+    "buttonText": "42",
+    "dock": {
+     "x": 0,
+     "y": 465,
+     "w": 402,
+     "h": 249
+    },
+    "preview": {
+     "x": 79.3,
+     "y": 64,
+     "w": 243.4,
+     "h": 389
+    }
+   },
+   "checks": {
+    "noZoom": true,
+    "font16": true,
+    "inputVisible": true,
+    "keyboard": true,
+    "exitFound": true,
+    "closed": true,
+    "committed": true,
+    "dockSame": true,
+    "previewSame": true
+   },
+   "verdict": "PASS"
+  },
+  {
+   "label": "코팅 강도",
+   "tool": "coating",
+   "exit": "done",
+   "how": "키보드 완료",
+   "value": "37",
+   "keyboard": {
+    "y": 589,
+    "x": 0,
+    "width": 402,
+    "height": 227
+   },
+   "before": {
+    "range": "1",
+    "rangeRect": {
+     "x": 16,
+     "y": 630,
+     "w": 370,
+     "h": 32
+    },
+    "button": {
+     "x": 342.1,
+     "y": 613.5,
+     "w": 31.6,
+     "h": 16.5
+    },
+    "buttonText": "100",
+    "dock": {
+     "x": 0,
+     "y": 465,
+     "w": 402,
+     "h": 249
+    },
+    "preview": {
+     "x": 79.3,
+     "y": 64,
+     "w": 243.4,
+     "h": 389
+    }
+   },
+   "during": {
+    "zoom": 1,
+    "vvH": 410,
+    "active": "코팅 강도 퍼센트",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "100",
+    "panel": "percent",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1
+   },
+   "typed": {
+    "zoom": 1,
+    "vvH": 410,
+    "active": "코팅 강도 퍼센트",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "37",
+    "panel": "percent",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1
+   },
+   "after": {
+    "range": "0.37",
+    "rangeRect": {
+     "x": 16,
+     "y": 630,
+     "w": 370,
+     "h": 32
+    },
+    "button": {
+     "x": 342.1,
+     "y": 613.5,
+     "w": 31.6,
+     "h": 16.5
+    },
+    "buttonText": "37",
+    "dock": {
+     "x": 0,
+     "y": 465,
+     "w": 402,
+     "h": 249
+    },
+    "preview": {
+     "x": 79.3,
+     "y": 64,
+     "w": 243.4,
+     "h": 389
+    }
+   },
+   "checks": {
+    "noZoom": true,
+    "font16": true,
+    "inputVisible": true,
+    "keyboard": true,
+    "exitFound": true,
+    "closed": true,
+    "committed": true,
+    "dockSame": true,
+    "previewSame": true
+   },
+   "verdict": "PASS"
+  },
+  {
+   "label": "코팅 강도",
+   "tool": "coating",
+   "exit": "outside",
+   "how": "바깥 탭 css (8,4)",
+   "value": "42",
+   "keyboard": {
+    "y": 589,
+    "x": 0,
+    "width": 402,
+    "height": 227
+   },
+   "before": {
+    "range": "1",
+    "rangeRect": {
+     "x": 16,
+     "y": 630,
+     "w": 370,
+     "h": 32
+    },
+    "button": {
+     "x": 342.1,
+     "y": 613.5,
+     "w": 31.6,
+     "h": 16.5
+    },
+    "buttonText": "100",
+    "dock": {
+     "x": 0,
+     "y": 465,
+     "w": 402,
+     "h": 249
+    },
+    "preview": {
+     "x": 79.3,
+     "y": 64,
+     "w": 243.4,
+     "h": 389
+    }
+   },
+   "during": {
+    "zoom": 1,
+    "vvH": 410,
+    "active": "코팅 강도 퍼센트",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "100",
+    "panel": "percent",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1
+   },
+   "typed": {
+    "zoom": 1,
+    "vvH": 410,
+    "active": "코팅 강도 퍼센트",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "42",
+    "panel": "percent",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1
+   },
+   "after": {
+    "range": "0.42",
+    "rangeRect": {
+     "x": 16,
+     "y": 630,
+     "w": 370,
+     "h": 32
+    },
+    "button": {
+     "x": 342.1,
+     "y": 613.5,
+     "w": 31.6,
+     "h": 16.5
+    },
+    "buttonText": "42",
+    "dock": {
+     "x": 0,
+     "y": 465,
+     "w": 402,
+     "h": 249
+    },
+    "preview": {
+     "x": 79.3,
+     "y": 64,
+     "w": 243.4,
+     "h": 389
+    }
+   },
+   "checks": {
+    "noZoom": true,
+    "font16": true,
+    "inputVisible": true,
+    "keyboard": true,
+    "exitFound": true,
+    "closed": true,
+    "committed": true,
+    "dockSame": true,
+    "previewSame": true
+   },
+   "verdict": "PASS"
+  },
+  {
+   "label": "극장 로고 크기",
+   "tool": "size",
+   "exit": "done",
+   "how": "키보드 완료",
+   "value": "80",
+   "keyboard": {
+    "y": 589,
+    "x": 0,
+    "width": 402,
+    "height": 227
+   },
+   "before": {
+    "range": "1",
+    "rangeRect": {
+     "x": 16,
+     "y": 597.5,
+     "w": 370,
+     "h": 32
+    },
+    "button": {
+     "x": 342.1,
+     "y": 579.3,
+     "w": 31.6,
+     "h": 16.5
+    },
+    "buttonText": "100",
+    "dock": {
+     "x": 0,
+     "y": 465,
+     "w": 402,
+     "h": 249
+    },
+    "preview": {
+     "x": 79.3,
+     "y": 64,
+     "w": 243.4,
+     "h": 389
+    }
+   },
+   "during": {
+    "zoom": 1,
+    "vvH": 410,
+    "active": "극장 로고 크기 퍼센트",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "100",
+    "panel": "percent",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1
+   },
+   "typed": {
+    "zoom": 1,
+    "vvH": 410,
+    "active": "극장 로고 크기 퍼센트",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "80",
+    "panel": "percent",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1
+   },
+   "after": {
+    "range": "0.8",
+    "rangeRect": {
+     "x": 16,
+     "y": 597.5,
+     "w": 370,
+     "h": 32
+    },
+    "button": {
+     "x": 342.1,
+     "y": 579.3,
+     "w": 31.6,
+     "h": 16.5
+    },
+    "buttonText": "80",
+    "dock": {
+     "x": 0,
+     "y": 465,
+     "w": 402,
+     "h": 249
+    },
+    "preview": {
+     "x": 79.3,
+     "y": 64,
+     "w": 243.4,
+     "h": 389
+    }
+   },
+   "checks": {
+    "noZoom": true,
+    "font16": true,
+    "inputVisible": true,
+    "keyboard": true,
+    "exitFound": true,
+    "closed": true,
+    "committed": true,
+    "dockSame": true,
+    "previewSame": true
+   },
+   "verdict": "PASS"
+  },
+  {
+   "label": "극장 로고 크기",
+   "tool": "size",
+   "exit": "outside",
+   "how": "바깥 탭 css (8,4)",
+   "value": "90",
+   "keyboard": {
+    "y": 589,
+    "x": 0,
+    "width": 402,
+    "height": 227
+   },
+   "before": {
+    "range": "1",
+    "rangeRect": {
+     "x": 16,
+     "y": 597.5,
+     "w": 370,
+     "h": 32
+    },
+    "button": {
+     "x": 342.1,
+     "y": 579.3,
+     "w": 31.6,
+     "h": 16.5
+    },
+    "buttonText": "100",
+    "dock": {
+     "x": 0,
+     "y": 465,
+     "w": 402,
+     "h": 249
+    },
+    "preview": {
+     "x": 79.3,
+     "y": 64,
+     "w": 243.4,
+     "h": 389
+    }
+   },
+   "during": {
+    "zoom": 1,
+    "vvH": 410,
+    "active": "극장 로고 크기 퍼센트",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "100",
+    "panel": "percent",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1
+   },
+   "typed": {
+    "zoom": 1,
+    "vvH": 410,
+    "active": "극장 로고 크기 퍼센트",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "90",
+    "panel": "percent",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1
+   },
+   "after": {
+    "range": "0.9",
+    "rangeRect": {
+     "x": 16,
+     "y": 597.5,
+     "w": 370,
+     "h": 32
+    },
+    "button": {
+     "x": 342.1,
+     "y": 579.3,
+     "w": 31.6,
+     "h": 16.5
+    },
+    "buttonText": "90",
+    "dock": {
+     "x": 0,
+     "y": 465,
+     "w": 402,
+     "h": 249
+    },
+    "preview": {
+     "x": 79.3,
+     "y": 64,
+     "w": 243.4,
+     "h": 389
+    }
+   },
+   "checks": {
+    "noZoom": true,
+    "font16": true,
+    "inputVisible": true,
+    "keyboard": true,
+    "exitFound": true,
+    "closed": true,
+    "committed": true,
+    "dockSame": true,
+    "previewSame": true
+   },
+   "verdict": "PASS"
+  },
+  {
+   "label": "포맷 로고 크기",
+   "tool": "size",
+   "exit": "done",
+   "how": "키보드 완료",
+   "value": "80",
+   "keyboard": {
+    "y": 589,
+    "x": 0,
+    "width": 402,
+    "height": 227
+   },
+   "before": {
+    "range": "1",
+    "rangeRect": {
+     "x": 16,
+     "y": 629.5,
+     "w": 370,
+     "h": 32
+    },
+    "button": {
+     "x": 342.1,
+     "y": 611.3,
+     "w": 31.6,
+     "h": 16.5
+    },
+    "buttonText": "100",
+    "dock": {
+     "x": 0,
+     "y": 465,
+     "w": 402,
+     "h": 249
+    },
+    "preview": {
+     "x": 79.3,
+     "y": 64,
+     "w": 243.4,
+     "h": 389
+    }
+   },
+   "during": {
+    "zoom": 1,
+    "vvH": 410,
+    "active": "포맷 로고 크기 퍼센트",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "100",
+    "panel": "percent",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1
+   },
+   "typed": {
+    "zoom": 1,
+    "vvH": 410,
+    "active": "포맷 로고 크기 퍼센트",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "80",
+    "panel": "percent",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1
+   },
+   "after": {
+    "range": "0.8",
+    "rangeRect": {
+     "x": 16,
+     "y": 629.5,
+     "w": 370,
+     "h": 32
+    },
+    "button": {
+     "x": 342.1,
+     "y": 611.3,
+     "w": 31.6,
+     "h": 16.5
+    },
+    "buttonText": "80",
+    "dock": {
+     "x": 0,
+     "y": 465,
+     "w": 402,
+     "h": 249
+    },
+    "preview": {
+     "x": 79.3,
+     "y": 64,
+     "w": 243.4,
+     "h": 389
+    }
+   },
+   "checks": {
+    "noZoom": true,
+    "font16": true,
+    "inputVisible": true,
+    "keyboard": true,
+    "exitFound": true,
+    "closed": true,
+    "committed": true,
+    "dockSame": true,
+    "previewSame": true
+   },
+   "verdict": "PASS"
+  },
+  {
+   "label": "포맷 로고 크기",
+   "tool": "size",
+   "exit": "outside",
+   "how": "바깥 탭 css (8,4)",
+   "value": "90",
+   "keyboard": {
+    "y": 589,
+    "x": 0,
+    "width": 402,
+    "height": 227
+   },
+   "before": {
+    "range": "1",
+    "rangeRect": {
+     "x": 16,
+     "y": 629.5,
+     "w": 370,
+     "h": 32
+    },
+    "button": {
+     "x": 342.1,
+     "y": 611.3,
+     "w": 31.6,
+     "h": 16.5
+    },
+    "buttonText": "100",
+    "dock": {
+     "x": 0,
+     "y": 465,
+     "w": 402,
+     "h": 249
+    },
+    "preview": {
+     "x": 79.3,
+     "y": 64,
+     "w": 243.4,
+     "h": 389
+    }
+   },
+   "during": {
+    "zoom": 1,
+    "vvH": 410,
+    "active": "포맷 로고 크기 퍼센트",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "100",
+    "panel": "percent",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1
+   },
+   "typed": {
+    "zoom": 1,
+    "vvH": 410,
+    "active": "포맷 로고 크기 퍼센트",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "90",
+    "panel": "percent",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1
+   },
+   "after": {
+    "range": "0.9",
+    "rangeRect": {
+     "x": 16,
+     "y": 629.5,
+     "w": 370,
+     "h": 32
+    },
+    "button": {
+     "x": 342.1,
+     "y": 611.3,
+     "w": 31.6,
+     "h": 16.5
+    },
+    "buttonText": "90",
+    "dock": {
+     "x": 0,
+     "y": 465,
+     "w": 402,
+     "h": 249
+    },
+    "preview": {
+     "x": 79.3,
+     "y": 64,
+     "w": 243.4,
+     "h": 389
+    }
+   },
+   "checks": {
+    "noZoom": true,
+    "font16": true,
+    "inputVisible": true,
+    "keyboard": true,
+    "exitFound": true,
+    "closed": true,
+    "committed": true,
+    "dockSame": true,
+    "previewSame": true
+   },
+   "verdict": "PASS"
+  }
+ ],
+ "fields": {
+  "steps": [
+   {
+    "zoom": 1,
+    "vvH": 714,
+    "active": "제목",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "",
+    "panel": "title",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1,
+    "keyboard": false
+   },
+   {
+    "zoom": 1,
+    "vvH": 411,
+    "active": "원제",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "",
+    "panel": "titleOg",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1,
+    "keyboard": true
+   },
+   {
+    "zoom": 1,
+    "vvH": 714,
+    "active": "개봉일",
+    "activeType": "date",
+    "isInput": true,
+    "font": "16px",
+    "value": "2026-11-27",
+    "panel": "releaseDate",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1,
+    "keyboard": false,
+    "nextTapsNeeded": 2
+   },
+   {
+    "zoom": 1,
+    "vvH": 411,
+    "active": "출연",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "",
+    "panel": "actors",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1,
+    "keyboard": true
+   },
+   {
+    "zoom": 1,
+    "vvH": 410,
+    "active": "평점 직접 입력 (0.1 단위)",
+    "activeType": "number",
+    "isInput": true,
+    "font": "16px",
+    "value": "0",
+    "panel": "rating",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1,
+    "keyboard": true,
+    "openedDecimal": true
+   },
+   {
+    "zoom": 1,
+    "vvH": 714,
+    "active": "관람일",
+    "activeType": "date",
+    "isInput": true,
+    "font": "16px",
+    "value": "2026-11-27",
+    "panel": "watchDate",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1,
+    "keyboard": false,
+    "nextTapsNeeded": 2
+   },
+   {
+    "zoom": 1,
+    "vvH": 714,
+    "active": "관람 시간",
+    "activeType": "time",
+    "isInput": true,
+    "font": "16px",
+    "value": "04:30",
+    "panel": "watchTime",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1,
+    "keyboard": false,
+    "nextTapsNeeded": 2
+   },
+   {
+    "zoom": 1,
+    "vvH": 411,
+    "active": "극장",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "",
+    "panel": "theater",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1,
+    "keyboard": true
+   },
+   {
+    "zoom": 1,
+    "vvH": 411,
+    "active": "상영관",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "",
+    "panel": "screen",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1,
+    "keyboard": true
+   },
+   {
+    "zoom": 1,
+    "vvH": 411,
+    "active": "좌석",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "",
+    "panel": "seat",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1,
+    "keyboard": true
+   },
+   {
+    "zoom": 1,
+    "vvH": 410,
+    "active": "러닝타임",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "",
+    "panel": "runtime",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1,
+    "keyboard": true
+   },
+   {
+    "zoom": 1,
+    "vvH": 411,
+    "active": "서명",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "",
+    "panel": "signature",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1,
+    "keyboard": true
+   },
+   {
+    "zoom": 1,
+    "vvH": 411,
+    "active": "극장 로고",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "",
+    "panel": "chain",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1,
+    "keyboard": true
+   },
+   {
+    "zoom": 1,
+    "vvH": 411,
+    "active": "포맷 로고",
+    "activeType": "text",
+    "isInput": true,
+    "font": "16px",
+    "value": "",
+    "panel": "format",
+    "scrollY": 0,
+    "inputVisible": 1,
+    "panelVisible": 1,
+    "keyboard": true,
+    "stepEnd": "title"
+   }
+  ],
+  "fields": [
+   "title",
+   "titleOg",
+   "releaseDate",
+   "actors",
+   "rating",
+   "watchDate",
+   "watchTime",
+   "theater",
+   "screen",
+   "seat",
+   "runtime",
+   "signature",
+   "chain",
+   "format"
+  ],
+  "checks": {
+   "allNoZoom": true,
+   "allFont16": true,
+   "allPanelVisible": true,
+   "noDocScroll": true,
+   "wrapped": true,
+   "inputsSeen": 14
+  },
+  "verdict": "PASS"
+ },
+ "verdict": "PASS"
+}

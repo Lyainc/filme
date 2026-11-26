@@ -1,0 +1,11 @@
+585=0
+779light=0
+779dark=0
+826s4=0
+826s4back=0
+777light=0
+777dark=0
+777rest=0
+777long=0
+826s12=2
+done

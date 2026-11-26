@@ -1,0 +1,15 @@
+{
+ "infoTabSelected": true,
+ "dockInfoRows": 26,
+ "prevNext": {
+  "opened": "title",
+  "afterNext": "titleOg",
+  "afterPrev": "title"
+ },
+ "focusedValue": "테스트 영화",
+ "editUndo": {
+  "typed": "테스트 영화 ",
+  "savedDraftTitle": "테스트 영화 ",
+  "afterUndoText": "테스트 영화"
+ }
+}

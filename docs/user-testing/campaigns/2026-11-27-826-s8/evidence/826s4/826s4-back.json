@@ -1,0 +1,254 @@
+{
+ "note": "iOS Simulator 결과, 실기기 아님",
+ "A": {
+  "before": {
+   "dock": {
+    "x": 0,
+    "y": 465,
+    "w": 402,
+    "h": 249
+   },
+   "preview": {
+    "x": 79.3,
+    "y": 64,
+    "w": 243.4,
+    "h": 389
+   },
+   "panelOpen": false,
+   "tab": "dock-mode-tab-info",
+   "transform": "matrix(1, 0, 0, 1, 0, 0)",
+   "histLen": 100,
+   "histState": {
+    "url": "/?r=1",
+    "as": "/?r=1",
+    "options": {
+     "_h": 1,
+     "shallow": true,
+     "_shouldResolveHref": true
+    },
+    "__N": true,
+    "key": "6bfjxeto"
+   },
+   "ls": "ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌ",
+   "inputValue": null,
+   "active": "BUTTON",
+   "vvScale": 1,
+   "url": "http://localhost:3038/?r=1"
+  },
+  "kb": {
+   "y": 590,
+   "x": 0,
+   "width": 402,
+   "height": 226
+  },
+  "typed": {
+   "dock": {
+    "x": 0,
+    "y": 162,
+    "w": 402,
+    "h": 249
+   },
+   "preview": {
+    "x": 57.4,
+    "y": -351,
+    "w": 287.3,
+    "h": 459
+   },
+   "panelOpen": true,
+   "tab": "dock-mode-tab-info",
+   "transform": "matrix(1.18, 0, 0, 1.18, 0, -112)",
+   "histLen": 100,
+   "histState": {
+    "phototicketInputPanel": "1795722089268-1"
+   },
+   "ls": "ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌ",
+   "inputValue": "ㅂㅈㄷ",
+   "active": "INPUT",
+   "vvScale": 1,
+   "url": "http://localhost:3038/?r=1"
+  },
+  "after mobile:dragFromToForDuration": {
+   "dock": {
+    "x": 0,
+    "y": 162,
+    "w": 402,
+    "h": 249
+   },
+   "preview": {
+    "x": 57.4,
+    "y": -351,
+    "w": 287.3,
+    "h": 459
+   },
+   "panelOpen": true,
+   "tab": "dock-mode-tab-info",
+   "transform": "matrix(1.18, 0, 0, 1.18, 0, -112)",
+   "histLen": 100,
+   "histState": {
+    "phototicketInputPanel": "1795722089268-1"
+   },
+   "ls": "ㅂㅈㄷ",
+   "inputValue": "ㅂㅈㄷ",
+   "active": "INPUT",
+   "vvScale": 1,
+   "url": "http://localhost:3038/?r=1"
+  },
+  "after W3C pointer x=1 slow": {
+   "dock": {
+    "x": 0,
+    "y": 162,
+    "w": 402,
+    "h": 249
+   },
+   "preview": {
+    "x": 57.4,
+    "y": -351,
+    "w": 287.3,
+    "h": 459
+   },
+   "panelOpen": true,
+   "tab": "dock-mode-tab-info",
+   "transform": "matrix(1.18, 0, 0, 1.18, 0, -112)",
+   "histLen": 100,
+   "histState": {
+    "phototicketInputPanel": "1795722089268-1"
+   },
+   "ls": "ㅂㅈㄷ",
+   "inputValue": "ㅂㅈㄷ",
+   "active": "INPUT",
+   "vvScale": 1,
+   "url": "http://localhost:3038/?r=1"
+  },
+  "checks": {
+   "panelClosed": false,
+   "sameUrl": true,
+   "sameTab": true,
+   "dockSame": false,
+   "identity": false,
+   "noPanelToken": false,
+   "ls": "ㅂㅈㄷ"
+  },
+  "verdict": "실패"
+ },
+ "B": {
+  "before": {
+   "dock": {
+    "x": 0,
+    "y": 465,
+    "w": 402,
+    "h": 249
+   },
+   "preview": {
+    "x": 79.3,
+    "y": 64,
+    "w": 243.4,
+    "h": 389
+   },
+   "panelOpen": false,
+   "tab": "dock-mode-tab-info",
+   "transform": "matrix(1, 0, 0, 1, 0, 0)",
+   "histLen": 100,
+   "histState": {
+    "url": "/?r=1",
+    "as": "/?r=1",
+    "options": {
+     "_h": 1,
+     "shallow": true,
+     "_shouldResolveHref": true
+    },
+    "__N": true,
+    "key": "6bfjxeto"
+   },
+   "ls": "ㅂㅈㄷ",
+   "inputValue": null,
+   "active": "BODY",
+   "vvScale": 1,
+   "url": "http://localhost:3038/?r=1"
+  },
+  "kb": null,
+  "opened": {
+   "dock": {
+    "x": 0,
+    "y": 465,
+    "w": 402,
+    "h": 249
+   },
+   "preview": {
+    "x": 57.4,
+    "y": 64,
+    "w": 287.3,
+    "h": 459
+   },
+   "panelOpen": true,
+   "tab": "dock-mode-tab-info",
+   "transform": "matrix(1.18, 0, 0, 1.18, 0, 0)",
+   "histLen": 100,
+   "histState": {
+    "phototicketInputPanel": "1795722115685-2"
+   },
+   "ls": "ㅂㅈㄷ",
+   "inputValue": null,
+   "active": "BODY",
+   "vvScale": 1,
+   "url": "http://localhost:3038/?r=1"
+  },
+  "visible": {
+   "vv": {
+    "top": 0,
+    "h": 714,
+    "scale": 1
+   },
+   "input": null,
+   "panel": 1,
+   "inputFont": null,
+   "previewExposedPx": 459,
+   "previewExposedFrac": 1
+  },
+  "backFound": true,
+  "tapped": true,
+  "after": {
+   "dock": {
+    "x": 0,
+    "y": 465,
+    "w": 402,
+    "h": 249
+   },
+   "preview": {
+    "x": 79.3,
+    "y": 64,
+    "w": 243.4,
+    "h": 389
+   },
+   "panelOpen": false,
+   "tab": "dock-mode-tab-info",
+   "transform": "matrix(1, 0, 0, 1, 0, 0)",
+   "histLen": 100,
+   "histState": {
+    "url": "/?r=1",
+    "as": "/?r=1",
+    "options": {
+     "_h": 1,
+     "shallow": true,
+     "_shouldResolveHref": true
+    },
+    "__N": true,
+    "key": "6bfjxeto"
+   },
+   "ls": "ㅂㅈㄷ",
+   "inputValue": null,
+   "active": "BODY",
+   "vvScale": 1,
+   "url": "http://localhost:3038/?r=1"
+  },
+  "checks": {
+   "panelClosed": true,
+   "sameUrl": true,
+   "sameTab": true,
+   "dockSame": true,
+   "identity": true,
+   "noPanelToken": true,
+   "ls": "ㅂㅈㄷ"
+  },
+  "verdict": "통과"
+ }
+}
