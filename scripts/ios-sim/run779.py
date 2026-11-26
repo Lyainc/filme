@@ -1,16 +1,18 @@
-"""#779 iOS: slider track/thumb gestures on '투명도 › 포스터' (XCTest touches), per theme."""
+"""#779 iOS: slider track/thumb gestures on 도크 디자인 '투명도' 도구의 '포스터' 슬라이더 (XCTest touches), per theme.
+#826 S8 acceptance-4: 경로는 #dock-mode-tab-design → #design-tool-tab-opacity, % 입력은 '포스터 퍼센트 입력' 버튼 → 키보드에
+붙는 % 패널(#826 S4 K-03). iOS Simulator 결과, 실기기 아님. PASS = 트랙 탭(중심 · ±10/14px)과 트랙 시작 드래그가 값을 바꾼다."""
 import json, sys, time
 from sim import *
 
 ST = r'''
 const lab=t=>[...document.querySelectorAll("label")].find(l=>l.textContent.trim()===t);
-const box=t=>lab(t)&&lab(t).closest(".space-y-field");
-const q=(t,s)=>box(t)&&box(t).querySelector(s);
+const rngOf=t=>lab(t)&&document.getElementById(lab(t).htmlFor);
+const pct=t=>document.querySelector(`[aria-label="${t} 퍼센트 입력"]`);
 const r=e=>{if(!e)return null;const b=e.getBoundingClientRect();return {x:+b.x.toFixed(1),y:+b.y.toFixed(1),w:+b.width.toFixed(1),h:+b.height.toFixed(1)}};
-const rng=q("포스터","input[type=range]");
-return {poster:rng&&+rng.value, component:+(q("컴포넌트","input[type=range]")||{}).value,
- posterPct:(q("포스터","input[inputmode=numeric]")||{}).value, componentPct:(q("컴포넌트","input[inputmode=numeric]")||{}).value,
- range:r(rng), pctInput:r(q("포스터","input[inputmode=numeric]")), compRange:r(q("컴포넌트","input[type=range]")),
+const rng=rngOf("포스터");
+return {poster:rng&&+rng.value, component:+(rngOf("컴포넌트")||{}).value,
+ posterPct:(pct("포스터")||{}).textContent, componentPct:(pct("컴포넌트")||{}).textContent,
+ range:r(rng), pctInput:r(pct("포스터")), compRange:r(rngOf("컴포넌트")),
  min:rng&&rng.min, max:rng&&rng.max, step:rng&&rng.step, active:document.activeElement&&(document.activeElement.getAttribute("aria-label")||document.activeElement.id||document.activeElement.tagName),
  theme:document.documentElement.className, vv:visualViewport.scale};
 '''
@@ -24,12 +26,9 @@ def setup(theme):
     js('localStorage.setItem("phototicket:theme", arguments[0])', theme)
     reset_editor()
     time.sleep(0.5)
-    js('const b=[...document.querySelectorAll("button")].find(e=>e.textContent.trim()==="투명도"); const p=b.closest(".overflow-x-auto"); p.scrollLeft += (b.getBoundingClientRect().x - 160);')
-    time.sleep(0.9)
-    for _ in range(3):
-        if rect_of(by_text('button', '투명도'))['y'] < 600:
-            break
-        tap_el(by_text('button', '투명도')); time.sleep(1.0)
+    tap_el('document.getElementById("dock-mode-tab-design")'); time.sleep(0.8)
+    js('document.getElementById("design-tool-tab-opacity").scrollIntoView({inline:"center",block:"nearest"})'); time.sleep(0.9)
+    tap_el('document.getElementById("design-tool-tab-opacity")'); time.sleep(1.0)
     s = st()
     if not s['range']:
         raise RuntimeError('poster slider missing')
@@ -83,26 +82,22 @@ def main():
       try:
           b = setup(theme)
           p = b['pctInput']
-          tap_css(p['x'] + p['w'] / 2, p['y'] + p['h'] / 2); time.sleep(1.0)
-          if not js('return document.activeElement && document.activeElement.getAttribute("inputmode")==="numeric"'):
+          tap_css(p['x'] + p['w'] / 2, p['y'] + p['h'] / 2); time.sleep(1.2)
+          if not js('return document.activeElement && document.activeElement.getAttribute("aria-label")==="포스터 퍼센트"'):
               raise RuntimeError('pct input not focused')
           for _ in range(4):
-              if not native_tap('삭제') and not native_tap('delete'):
+              if not native_tap('삭제') and not native_tap('delete') and not native_tap('Delete'):
                   break
               time.sleep(0.08)
           type_keys('37'); native_tap('완료') or native_tap('Done'); time.sleep(1.0)
           a = st()
           shot(f'779-{theme}-pct37')
-          # undo: reset zoom first via fresh nav would lose history, so use the toolbar's undo in current (zoomed) view
-          for _ in range(3):
-              if js('return visualViewport.scale') <= 1.01: break
-              pinch_in_pt(); time.sleep(1.0)
-          zs = js('return visualViewport.scale')
+          zs = js('return visualViewport.scale')  # 16px % 입력이라 확대가 없어야 한다(#585) — 핀치 복구 없이 기록만
           tap_el('document.querySelector("[aria-label=\'실행 취소\']")'); time.sleep(1.2)
           u = st()
           shot(f'779-{theme}-undo')
           rec = {'theme': theme, 'case': 'pct-input-37-then-undo', 'before': b['poster'], 'afterPct': a['poster'],
-                 'afterPctLabel': a['posterPct'], 'afterUndo': u['poster'], 'vvScale': a['vv'], 'scaleAfterPinch': zs}
+                 'afterPctLabel': a['posterPct'], 'afterUndo': u['poster'], 'vvScale': a['vv'], 'scaleAfterPct': zs}
           # undo after a thumb drag (no zoom involved)
           b2 = setup(theme); rg = b2['range']; cy = rg['y'] + rg['h'] / 2
           drag_css(rg['x'] + rg['w'] * b2['poster'], cy, rg['x'] + rg['w'] * 0.8, cy, 700); time.sleep(1.0)

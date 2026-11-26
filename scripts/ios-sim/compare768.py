@@ -16,11 +16,12 @@ for cid in sys.argv[2:]:
     tk = saved.crop((m, m, saved.width - m, saved.height - m))
     S = np.asarray(shot.convert('L'), dtype=np.float32)
     best = None
-    for w in range(900, 1060, 4):
+    # 폭 탐색 하한 560: 새 편집 화면(#826 S2 도크)의 프리뷰는 약 243pt(= 730px @3x)라 옛 하한 900에 붙었다.
+    for w in range(560, 1060, 4):
         h = round(tk.height * w / tk.width)
         t = np.asarray(tk.convert('L').resize((w, h), Image.BILINEAR), dtype=np.float32)[::6, ::6]
         for oy in range(150, 700, 6):
-            for ox in range(40, 200, 6):
+            for ox in range(20, 300, 6):
                 if oy + h > S.shape[0] or ox + w > S.shape[1]:
                     continue
                 e = float(np.mean(np.abs(S[oy:oy + h:6, ox:ox + w:6][:t.shape[0], :t.shape[1]] - t)))

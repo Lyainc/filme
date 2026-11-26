@@ -132,23 +132,29 @@ def interactions(long):
     if rec['titleOgToggle']:
         js('(' + tog + ').click()'); time.sleep(0.6); rec['afterOgOff'] = js(STAMP_PROBE)
         js('(' + tog + ').click()'); time.sleep(0.6); rec['afterOgOn'] = js(STAMP_PROBE)
-    # title short -> long -> original via the in-place editor
+    # title short -> long -> original via the field input panel (#826 S3 · S4: [data-field-panel] 입력 + '닫기')
     orig = js('return JSON.parse(localStorage.getItem("filme:phototicket:v1")).movieInfo.title')
-    js('document.querySelector("[data-field-tap=title]").click()'); time.sleep(0.8)
-    ti = '[...document.querySelectorAll("input,textarea")].find(e=>e.style.zIndex==="60") || document.activeElement'
+    ti = 'document.querySelector("[data-field-panel] input")'
+    close_panel = '[...document.querySelectorAll("[data-field-panel] button,[data-percent-panel] button")].find(b=>b.textContent.trim()==="닫기")?.click()'
     for i, v in enumerate(['짧은 제목', LONG['title'], orig]):
+        js('document.querySelector("[data-field-tap=title]").click()'); time.sleep(0.8)
         set_input(ti, v); time.sleep(0.6)
-        js('document.querySelector(\'[aria-label="편집 완료"]\')?.click()'); time.sleep(0.9)
+        js(close_panel); time.sleep(0.9)
         rec[f'title{i}'] = js(STAMP_PROBE)
-        if i < 2:
-            js('document.querySelector("[data-field-tap=title]").click()'); time.sleep(0.8)
     # stamp scale 1 -> 1.5 (도크 디자인 모드 '크기' 도구, '스탬프 크기' % input), then maximize/restore
     js('document.getElementById("dock-mode-tab-design")?.click()'); time.sleep(0.6)
     js('document.getElementById("design-tool-tab-size")?.click()'); time.sleep(0.8)
-    pct = '([...document.querySelectorAll("label")].find(l=>l.textContent.trim()==="스탬프 크기")||{closest:()=>null}).closest(".space-y-field")?.querySelector("input[inputmode=numeric]")'
-    if js('return !!(' + pct + ')'):
-        js('const e=(' + pct + '); e.focus();')
-        set_input(pct, '150'); js('(' + pct + ').blur()'); time.sleep(0.8)
+    # % 직접 입력은 '<이름> 퍼센트 입력' 버튼 → 키보드에 붙는 패널(#826 S4 K-03)의 입력이다.
+    pbtn = 'document.querySelector(\'[aria-label="스탬프 크기 퍼센트 입력"]\')'
+    pin = 'document.querySelector("[data-percent-panel] input")'
+
+    def set_pct(v):
+        js('(' + pbtn + ').click()'); time.sleep(0.6)
+        set_input(pin, v); time.sleep(0.3)
+        js(close_panel); time.sleep(0.8)
+
+    if js('return !!(' + pbtn + ')'):
+        set_pct('150')
         rec['scale150'] = js(STAMP_PROBE)
         js('document.querySelector(\'[aria-label="전체 보기"]\')?.click()'); time.sleep(1.0)
         rec['maximized'] = js(STAMP_PROBE)
@@ -156,11 +162,11 @@ def interactions(long):
         js('document.querySelector(\'[aria-label="기본 크기로 돌아가기"]\')?.click()'); time.sleep(1.0)
         rec['restored'] = js(STAMP_PROBE)
         if not long:
-            js('const e=(' + pct + '); e.focus();'); set_input(pct, '100'); js('(' + pct + ').blur()'); time.sleep(0.8)
-        rec['finalScalePct'] = js('return (' + pct + ')?.value')
+            set_pct('100')
+        rec['finalScalePct'] = js('return (' + pbtn + ')?.textContent.trim()')
         js('document.getElementById("dock-mode-tab-info")?.click()'); time.sleep(0.6)
     else:
-        rec['scale'] = 'stamp size input not found'
+        rec['scale'] = 'stamp size % button not found'
     return rec
 
 
@@ -171,20 +177,32 @@ def save_jpeg(cid):
     tap_css(r['x'] + r['w'] / 2, r['y'] + r['h'] / 2); time.sleep(2.5)
     shot(f'768/{cid}-preview')
     # 저장 버튼(#826 S7): testid 우선, 없으면 텍스트가 정확히 '저장'(includes 금지 — 부분 문자열 오탐)
-    r = rect_of('document.querySelector(\'[data-testid="result-save"]\') || [...document.querySelectorAll("button")].find(b=>b.textContent.trim()==="저장")')
-    if not r:
-        return {'error': 'save CTA missing'}
-    tap_css(r['x'] + r['w'] / 2, r['y'] + r['h'] / 2)
-    got = None
-    for _ in range(40):
-        time.sleep(0.5)
-        ctx('NATIVE')
-        if 'ActivityListView' in req('GET', 'source'):
+    save = 'document.querySelector(\'[data-testid="result-save"]\') || [...document.querySelectorAll("button")].find(b=>b.textContent.trim()==="저장")'
+    # iOS 27.0 Simulator에서 [저장]의 navigator.share가 NotAllowedError로 거절되는 일이 잦다(캡처 중 사용자 활성 소실, #826 S8
+    # 캠페인 RUN.md). 시트가 뜰 때까지 다시 누르고 시도 횟수 · 실패 통보를 기록한다 — 시도 횟수 자체가 그 결함의 증거다.
+    got, attempts = None, []
+    for attempt in range(8):
+        r = rect_of(save)
+        if not r:
+            return {'error': 'save CTA missing', 'attempts': attempts}
+        tap_css(r['x'] + r['w'] / 2, r['y'] + r['h'] / 2)
+        for _ in range(12):
+            time.sleep(0.5)
+            ctx('NATIVE')
+            if 'ActivityListView' in req('GET', 'source'):
+                got = 'sheet'
+                break
+            if js('return !!document.querySelector("[data-testid=result-alert]")'):
+                break
+        attempts.append({'try': attempt + 1, 'sheet': got == 'sheet',
+                         'alert': js('return document.querySelector("[data-testid=result-alert]")?.textContent || null')})
+        if got:
             time.sleep(1.0)
             shot(f'768/{cid}-sheet')
-            tap_pt(156, 772)  # '이미지 저장' in the share sheet (remote view: no usable element rect; position from screenshot)
+            tap_pt(156, 772)  # '이미지 저장' in the share sheet (remote view: no usable element rect; iPhone 17 Pro · 18 Pro 402×874 동일 좌표, 스크린샷 확인)
             got = 'tap(156,772)'
             break
+        time.sleep(1.0)
     time.sleep(1.5)
     for name in ('허용', '모든 사진에 대한 접근 허용', 'Allow', 'OK', '확인'):
         if native_find(name):
@@ -195,7 +213,7 @@ def save_jpeg(cid):
         if new:
             break
         time.sleep(0.5)
-    out = {'shareAction': got, 'newFiles': [os.path.basename(p) for p in new]}
+    out = {'shareAction': got, 'saveAttempts': attempts, 'newFiles': [os.path.basename(p) for p in new]}
     if new:
         dst = f'{OUT}/{cid}-saved{os.path.splitext(new[-1])[1].lower()}'
         shutil.copy2(new[-1], dst); out['saved'] = dst
@@ -214,6 +232,10 @@ def main():
             rec = {'id': cid_out, 'sections': sec, 'poster': poster, 'long': long}
             rec.update(seed_cell(sec, poster, long))
             rec['interactions'] = interactions(long)
+            # 정보 모드는 '빈 항목 표시'가 항상 켜져(#826 S2) 로고 · 포맷 자리표시 줄이 생기고 티켓이 그만큼 밀린다 — ghost를 끈
+            # 프리뷰와 비교하려면 끈 설정이 실제로 먹는 디자인 모드에서 찍는다.
+            js('document.getElementById("dock-mode-tab-design")?.click()'); time.sleep(1.0)
+            rec['editorGhost'] = js('return !!document.querySelector("' + "[data-ticket-scale-wrapper]" + ' [data-hide-on-export]")')
             rec['editorFinal'] = js(STAMP_PROBE)
             shot(f'768/{cid_out}-editor')
             rec['save'] = save_jpeg(cid_out)

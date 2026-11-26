@@ -1,5 +1,5 @@
 """#826 S4 iOS: 입력 패널 종료 경로 넷(닫기·키보드 내림·밖 탭·브라우저 뒤로) 각 1회.
-iOS Simulator 결과, 실기기 아님. 사용: FILME_URL=http://localhost:3022/ python3 run826s4.py
+iOS Simulator 결과, 실기기 아님. 사용: python3 run826s4.py [a-close b-keyboard c-outside d-back] | python3 run826s4.py back
 출력: $FILME_SIM_DIR/ev/826s4-*.png, 826s4-ios.json (기본 FILME_SIM_DIR=/Users/Lyainc/.local/state/lh-hc/results/s4-iossim)."""
 import os, json, sys, time
 os.environ.setdefault('FILME_SIM_DIR', '/Users/Lyainc/.local/state/lh-hc/results/s4-iossim')
@@ -12,8 +12,19 @@ STATE = '''const w=document.querySelector(".crop-marks"); const t=w?getComputedS
 const p=document.querySelector("[data-field-panel]"); const tab=document.querySelector('[role=tab][aria-selected=true]');
 let ls=null; try{ls=JSON.parse(localStorage.getItem("filme:phototicket:v1")||"{}").movieInfo?.theater??null}catch(e){}
 const inp=p&&p.querySelector("input,textarea");
-return {panelOpen:!!p, tab:tab&&tab.id, transform:t, histLen:history.length, histState:history.state, ls, inputValue:inp?inp.value:null,
+const rr=e=>{if(!e)return null;const b=e.getBoundingClientRect();return {x:+b.x.toFixed(1),y:+b.y.toFixed(1),w:+b.width.toFixed(1),h:+b.height.toFixed(1)}};
+return {dock:rr(document.querySelector('[data-testid="editor-dock"]')), preview:rr(document.querySelector("div.relative.mx-auto.block.rounded-card")), panelOpen:!!p, tab:tab&&tab.id, transform:t, histLen:history.length, histState:history.state, ls, inputValue:inp?inp.value:null,
  active:document.activeElement&&document.activeElement.tagName, vvScale:visualViewport.scale, url:location.href}'''
+# 열린 상태의 가시성(acceptance-7): 보이는 영역 = visualViewport(클라이언트 좌표 pageTop - scrollY) 중 패널 위쪽.
+# 입력 · 패널(이름 칸 포함)은 보이는 영역 안 비율, 프리뷰는 패널 위로 드러난 높이(px)와 비율.
+VIS = r'''const v=visualViewport, top=v.pageTop-scrollY, bot=top+v.height;
+const p=document.querySelector("[data-field-panel],[data-percent-panel]"); const inp=p&&p.querySelector("input,textarea");
+const pv=document.querySelector("div.relative.mx-auto.block.rounded-card");
+const frac=(e,lo,hi)=>{if(!e)return null;const b=e.getBoundingClientRect();if(!b.height)return 0;return +(Math.max(0,Math.min(b.bottom,hi)-Math.max(b.top,lo))/b.height).toFixed(3)};
+const pt=p?p.getBoundingClientRect().top:bot; const b=pv&&pv.getBoundingClientRect();
+const exposedPx=b?Math.max(0,Math.min(b.bottom,pt,bot)-Math.max(b.top,top)):0;
+return {vv:{top:+top.toFixed(1),h:+v.height.toFixed(1),scale:v.scale}, input:frac(inp,top,bot), panel:frac(p,top,bot),
+ inputFont:inp&&getComputedStyle(inp).fontSize, previewExposedPx:+exposedPx.toFixed(1), previewExposedFrac:b?+(exposedPx/b.height).toFixed(3):null}'''
 PANEL_RECT = 'const p=document.querySelector("[data-field-panel]");if(!p)return null;const r=p.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height,b:r.bottom}'
 
 
@@ -131,6 +142,7 @@ const b=[...d.querySelectorAll("button")].find(e=>e.textContent.trim().startsWit
 
 def back_checks(before, after):
     return {'panelClosed': not after['panelOpen'], 'sameUrl': after['url'] == before['url'], 'sameTab': after['tab'] == before['tab'],
+            'dockSame': after['dock'] == before['dock'],
             'identity': after['transform'] in ('none', 'matrix(1, 0, 0, 1, 0, 0)'),
             'noPanelToken': not (after['histState'] or {}).get('phototicketInputPanel'), 'ls': after['ls']}
 
@@ -170,7 +182,7 @@ def back_mode():
         B = {}
         try:
             B['before'] = st(); shot('826s4-back-B-0-before')
-            open_row('평점', False); B['kb'] = keyboard_rect(); B['opened'] = st(); shot('826s4-back-B-1-open')
+            open_row('평점', False); B['kb'] = keyboard_rect(); B['opened'] = st(); B['visible'] = js(VIS); shot('826s4-back-B-1-open')
             B['backFound'] = bool(native_find('뒤로'))
             B['tapped'] = native_tap('뒤로'); time.sleep(1.5)
             B['after'] = st(); shot('826s4-back-B-2-after')
@@ -202,6 +214,7 @@ for name, fn, val in PATHS:
         rec['kbRect'] = keyboard_rect()
         rec['opened'] = st()
         rec['panelKbGap'] = gap()
+        rec['visible'] = js(VIS)
         shot(f'826s4-{name}-1-open')
         # 새 값 입력: 기존 내용 위에 이어 붙인다(전체 삭제 없이 값이 바뀌는지만 본다).
         type_text(val)
@@ -223,9 +236,13 @@ for name, fn, val in PATHS:
             rec['kbAfter'] = keyboard_rect()
             shot(f'826s4-{name}-3-after')
             a, b = rec['before'], rec['after']
-            ok = (not a['panelOpen'] and not b['panelOpen'] and b['tab'] == a['tab']
-                  and b['transform'] in ('none', 'matrix(1, 0, 0, 1, 0, 0)')
-                  and (val in (b['ls'] or '')))
+            vis = rec['visible']
+            rec['checks'] = {'inputVisible': (vis['input'] or 0) >= 0.99, 'panelVisible': (vis['panel'] or 0) >= 0.99,
+                             'previewExposed': vis['previewExposedPx'] > 0, 'sameTab': b['tab'] == a['tab'],
+                             'identity': b['transform'] in ('none', 'matrix(1, 0, 0, 1, 0, 0)'),
+                             'dockSame': a['dock'] == b['dock'], 'previewSame': a['preview'] == b['preview'],
+                             'valueKept': val in (b['ls'] or ''), 'closed': not b['panelOpen']}
+            ok = not a['panelOpen'] and all(rec['checks'].values())
             rec['verdict'] = '통과' if ok else '실패'
     except Exception as e:
         rec['verdict'] = '오류'; rec['error'] = repr(e)
@@ -235,5 +252,5 @@ for name, fn, val in PATHS:
         rec['cleanup'] = 'panel still open; closed via JS click for next path'
         js('[...document.querySelector("[data-field-panel]").querySelectorAll("button")].find(e=>e.textContent.trim()==="닫기").click()'); time.sleep(1.0)
     out['paths'][name] = rec
-    print(name, rec.get('verdict'), rec.get('how'), json.dumps(rec.get('after') or {}, ensure_ascii=False), flush=True)
+    print(name, rec.get('verdict'), rec.get('how'), json.dumps({'checks': rec.get('checks'), 'visible': rec.get('visible'), 'error': rec.get('error')}, ensure_ascii=False), flush=True)
 json.dump(out, open(f'{sim.S}/ev/826s4-ios.json', 'w'), ensure_ascii=False, indent=1)
