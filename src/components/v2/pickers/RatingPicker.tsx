@@ -4,6 +4,7 @@ import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
 import { shouldCommitSliderValue } from './BrightnessSlider';
 import { cn } from '@/utils/cn';
 import { inputVariants, pressableVariants } from '@/components/ui/variants';
+import { focusInPlace } from '@/components/v2/KeyboardPanel';
 
 interface RatingPickerProps {
   value: number;
@@ -294,7 +295,7 @@ export function useRatingPicker({
           }}
           enterKeyHint={enterKeyHint}
           // 패널에선 숫자를 누른 그 자리에 입력이 열려 바로 친다(키보드가 올라온다). 옛 시트는 토글 옆에 열려 그대로 둔다.
-          autoFocus={panel}
+          ref={panel ? focusInPlace : undefined}
           // 포커스가 떠나면(다른 컨트롤 · 바깥 탭) 숫자로 접는다 — 값은 치는 대로 이미 반영돼 있다.
           onBlur={panel ? () => setNumberInputOpen(false) : undefined}
           aria-label="평점 직접 입력 (0.1 단위)"

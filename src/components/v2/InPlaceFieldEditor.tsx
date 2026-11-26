@@ -13,7 +13,7 @@ import { useLogoCrop } from '@/hooks/useLogoCrop';
 import { useRatingPicker } from '@/components/v2/pickers/RatingPicker';
 import { useKeyboardBox } from '@/hooks/useInputKeyboard';
 import { editLift } from '@/utils/inputKeyboard';
-import { KeyboardPanel, keepFocus } from './KeyboardPanel';
+import { KeyboardPanel, focusInPlace, keepFocus } from './KeyboardPanel';
 import { DateInput } from '@/components/ui/DateInput';
 import VisibilityCheckbox from '@/components/ui/VisibilityCheckbox';
 import { KobisResultList } from './FieldEditorBody';
@@ -547,7 +547,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
   } else if (field === 'watchDate') {
     slot = (
       <input
-        autoFocus
+        ref={focusInPlace}
         type="date"
         value={info.watchDate || ''}
         onChange={(e) => photo.updateMovieInfo({ watchDate: e.target.value })}
@@ -561,7 +561,7 @@ export function InPlaceFieldEditor({ photo, field, wrapperEl, ticketEl, onField,
     slot = (
       <input
         key={field}
-        autoFocus
+        ref={focusInPlace}
         type={field === 'watchTime' ? 'time' : 'text'}
         // runtime(러닝타임)만 정수 전용(#684) — bookingNo는 OCR 스키마가 구분자 보존을 요구해 제외.
         // 값이 순수 숫자(또는 빈 값)일 때만 numeric — KOBIS 자동 채움은 "169 MIN"처럼 문자가 섞여
