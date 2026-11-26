@@ -122,7 +122,9 @@ export function MobileEditorShell({
   // 정보 모드는 자동으로 켜지고 필드 입력 중은 강제로 켠다(아래 ghost 합성).
   const [ghostMode, setGhostMode] = useState(false);
   // 토스트 두 종류(E-03 · E-06): 통보(notice)는 도크 바로 위에 2.6초, 오류(error)는 상단 줄 바로 아래에 4초.
-  const [toast, setToast] = useState<{ msg: string; tone: ToastTone } | null>(null);
+  // action이 달린 통보(#852 E-05 [제목 확인])는 버튼을 품으니 타이머로 사라지지 않는다 — 누르거나, 다음 토스트가 덮거나, 필드 입력이
+  // 열리면(제목 행을 직접 눌러도 할 일은 끝났다) 걷힌다.
+  const [toast, setToast] = useState<{ msg: string; tone: ToastTone; action?: { label: string; onClick: () => void } } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // 편집 메뉴 시트(#826 S2 D09) — 열려 있는 동안만 EditorMenu가 마운트된다(초기화 arm도 그 안에 산다).
   const [menuOpen, setMenuOpen] = useState(false);
@@ -200,13 +202,27 @@ export function MobileEditorShell({
   //    그려진다. 이 항이 하던 일(취소 시 빈 셸 방지)은 이탈 state가 안 서 있으므로 저절로 성립한다(c4).
   //  · draftRestored를 뺀 이유: 그게 #675 D7이고, 이 작업이 뒤집는 명제 자체다(c1).
 
-  function flashToast(msg: string, opts?: { tone?: ToastTone }) {
+  function flashToast(msg: string, opts?: { tone?: ToastTone; action?: { label: string; onClick: () => void } }) {
     const tone = opts?.tone ?? 'notice';
-    setToast({ msg, tone });
+    const action = opts?.action;
+    setToast({
+      msg,
+      tone,
+      action: action && {
+        label: action.label,
+        onClick: () => {
+          setToast(null);
+          action.onClick();
+        },
+      },
+    });
     clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), TOAST_MS[tone]);
+    if (!action) toastTimer.current = setTimeout(() => setToast(null), TOAST_MS[tone]);
   }
   useEffect(() => () => clearTimeout(toastTimer.current), []);
+  useEffect(() => {
+    if (activeField) setToast((t) => (t?.action ? null : t));
+  }, [activeField]);
 
   function handleDone() {
     if (!canExport) {
@@ -865,11 +881,15 @@ export function MobileEditorShell({
                 }
               }}
               // 랜딩이 걷히면 카드가 display:none 안이라 자체 토스트가 안 보인다 — 셸 토스트가 대신한다.
-              notify={landingDismissed ? flashToast : undefined}
-              // 인식 결과에 제목이 없으면 정보 모드로 바꿔 제목 입력을 연다(옛 드로어 카드의 같은 콜백 승계).
+              notify={landingDismissed ? (n) => flashToast(n.message, { action: n.action }) : undefined}
+              // KOBIS 무매칭 안내의 [제목 확인](#852, 마스터 E-05 → K-01) — 정보 모드로 바꿔 제목 입력을 연다. 첨부 시트에서
+              // 누르면 '만들기'와 같이 문서를 확정하고 편집으로 들어가 연다.
               onNeedManualTitle={() => {
-                // 응답 전에 ‹로 랜딩이 다시 떴으면 그 뒤에서 입력기를 열지 않는다 — 열어 둔 activeField가 이어서 만들기 때 튀어나온다.
-                if (!landingDismissedRef.current) return;
+                if (!landingDismissedRef.current) {
+                  // 시트 밖에서 ‹로 랜딩이 다시 떴으면 그 뒤에서 입력기를 열지 않는다 — 열어 둔 activeField가 이어서 만들기 때 튀어나온다.
+                  if (!attachRef.current || !stagingSnapRef.current) return;
+                  makeFromAttach();
+                }
                 setDockMode('info');
                 handleField('title');
               }}
@@ -976,7 +996,8 @@ export function MobileEditorShell({
           같이 비킨다. 도크가 없는 화면(랜딩 · max)은 옛 bottom-6 / bottom-28 자리로 물러난다. */}
       {!isMax && toast && (
         <div
-          aria-hidden="true"
+          // 버튼이 든 통보는 숨기면 안 된다(axe aria-hidden-focus). 글자는 위 라이브리전이 이미 읽는다.
+          aria-hidden={toast.action ? undefined : 'true'}
           data-testid="global-toast"
           data-tone={toast.tone}
           // 앵커 — happy-dom은 env()가 든 좌표를 버려 테스트가 style을 못 읽는다. 값은 아래 style과 같은 원천이다.
@@ -985,6 +1006,8 @@ export function MobileEditorShell({
           className={cn(
             'fixed left-1/2 z-[60] -translate-x-1/2 rounded-[6px] border bg-s2 px-4 py-2 text-body',
             toast.tone === 'error' ? 'truncate border-warn text-warn' : 'border-hair text-ink',
+            // 버튼이 든 통보는 내용 폭(최대 프레임 − 32px)이다 — 자동 폭이면 left-1/2에 묶여 버튼이 상자 밖으로 나간다.
+            toast.action && 'w-max',
             toastAnchor === 'fallback' && (ocr.snapshot ? 'bottom-28' : 'bottom-6'),
           )}
           style={{
@@ -997,7 +1020,22 @@ export function MobileEditorShell({
                 : {}),
           }}
         >
-          {toast.msg}
+          {toast.action ? (
+            <span className="flex items-center gap-3">
+              {/* left-1/2 기준이라 자동 폭이 프레임 절반에 묶여 짧은 한 줄도 꺾인다 — 버튼이 든 통보는 한 줄로 둔다. */}
+              <span data-testid="global-toast-msg" className="whitespace-nowrap">{toast.msg}</span>
+              <button
+                type="button"
+                data-testid="global-toast-action"
+                onClick={toast.action.onClick}
+                className={cn(pressableVariants(), 'min-h-touch shrink-0 font-medium underline underline-offset-2')}
+              >
+                {toast.action.label}
+              </button>
+            </span>
+          ) : (
+            toast.msg
+          )}
         </div>
       )}
 

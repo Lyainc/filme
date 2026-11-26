@@ -332,7 +332,7 @@ describe('버려지는 OCR 결과가 무매칭이어도 "못 찾았다" 안내�
     // 무매칭은 상세 요청이 없어 기다릴 신호가 없다 — 응답 체인이 흘러갈 틈만 준다.
     await new Promise((r) => setTimeout(r, 50));
 
-    expect(!!screen.queryByText('영화 정보를 찾지 못했어요. 제목을 확인하고 다시 검색해 주세요.')).toBe(false);
+    expect(!!screen.queryByText('영화 정보를 찾지 못했어요')).toBe(false);
     expect(captured.movieInfo.title).toBe('괴물');
     expect(captured.movieInfo.movieCd).toBe('HOST');
   });

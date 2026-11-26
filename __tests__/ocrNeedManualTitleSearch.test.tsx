@@ -1,5 +1,7 @@
 /**
- * #445 회귀 테스트 — KOBIS 무매칭/다중매칭 시 안내 토스트 대신 제목 검색 UI를 직접 연다.
+ * #445 회귀 테스트 — KOBIS 무매칭/다중매칭 시 제목 검색 UI로 잇는다.
+ * #852(마스터 E-05)부터는 저절로 열지 않고 '영화 정보를 찾지 못했어요' 한 줄 + 그 자리 [제목 확인]을 띄우고,
+ * 그 버튼이 정보 모드의 제목 입력(K-01)을 연다 — 편집 화면(셸 토스트)과 랜딩 첨부 시트('티켓 스크린샷' 행) 두 자리.
  *
  * OcrUploadCard의 onNeedManualTitle 콜백이 실제 셸(MobileEditorShell)에
  * 어떻게 배선됐는지 검증한다 — runOcr만 mock하고 KOBIS는 global.fetch 스텁으로 0/다중 매치를
@@ -10,7 +12,7 @@
 import { describe, expect, test, afterAll, afterEach, mock } from 'bun:test';
 import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { enterDirect } from './helpers/landingAttach';
+import { enterDirect, uploadScreenshotViaSheet } from './helpers/landingAttach';
 
 let ocrImpl: (file: File) => Promise<Record<string, unknown>> = async () => ({});
 // 스프레드 스냅샷 + afterAll 복원(#611·#618) — `require()`가 주는 건 살아있는 네임스페이스라
@@ -89,7 +91,7 @@ describe('KOBIS 무매칭 → 제목 검색 UI 연결 (#445)', () => {
     return screen.getByRole('button', { name: '스크린샷으로 자동입력' });
   }
 
-  test('정보 모드 버튼: 정보 모드에서 온-티켓 제목 편집이 열려 자동검색까지 실행된다(안내 토스트 없음)', async () => {
+  test('정보 모드 버튼: 무매칭이면 셸 토스트에 한 줄 + [제목 확인]이 서고, 누르면 온-티켓 제목 편집이 열린다', async () => {
     const user = userEvent.setup();
     global.fetch = stubNoMatchFetch();
     render(<MobileHarness />);
@@ -109,14 +111,27 @@ describe('KOBIS 무매칭 → 제목 검색 UI 연결 (#445)', () => {
     // `!!` 강제 변환 — waitFor 첫 검사 실패 시 엘리먼트를 received로 넘기면 bun이 노드 그래프
     // 전체를 직렬화해 4.6초를 먹는다(#693, docs/TESTING.md §8).
     await waitFor(() => {
+      expect(screen.queryByTestId('global-toast-msg')?.textContent ?? null).toBe('영화 정보를 찾지 못했어요');
+    });
+    // 저절로 열지 않는다 — 다음 행동은 그 자리 버튼이 맡는다(COPY_TONE_GUIDE 축 3).
+    expect(screen.queryByRole('textbox', { name: '제목' }) === null).toBe(true);
+    const action = screen.getByRole('button', { name: '제목 확인' });
+    // 버튼이 든 토스트는 aria-hidden이면 안 된다(포커스 가능한 자손).
+    expect(screen.getByTestId('global-toast').getAttribute('aria-hidden')).toBeNull();
+    // 버튼이 달린 안내는 타이머로 사라지지 않는다 — 통보 수명(2.6초)을 넘겨도 남는다.
+    await new Promise((r) => setTimeout(r, 2700));
+    expect(screen.queryByRole('button', { name: '제목 확인' }) === null).toBe(false);
+
+    await user.click(action);
+    await waitFor(() => {
       expect(!!screen.queryByRole('textbox', { name: '제목' })).toBe(true);
     });
-    expect(screen.queryByText('영화 정보를 찾지 못했어요. 제목을 확인하고 다시 검색해 주세요.') === null).toBe(true);
+    expect(screen.queryByTestId('global-toast') === null).toBe(true);
     // 정보 모드로 바뀐 채다 — 제목 입력은 티켓 위에서 열리고 도크는 정보 모드가 선택돼 있다.
     expect(screen.getByRole('tab', { name: /^정보/ }).getAttribute('aria-selected')).toBe('true');
   });
 
-  test('디자인 모드에서 인식 결과에 제목이 없어 수동 입력이 필요하면 정보 모드로 바뀐다', async () => {
+  test('디자인 모드에서 무매칭이면 모드는 그대로고, [제목 확인]이 정보 모드로 바꿔 제목 입력을 연다', async () => {
     const user = userEvent.setup();
     global.fetch = stubNoMatchFetch();
     render(<MobileHarness />);
@@ -129,11 +144,45 @@ describe('KOBIS 무매칭 → 제목 검색 UI 연결 (#445)', () => {
     await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
 
     await waitFor(() => {
+      expect(screen.queryByRole('button', { name: '제목 확인' }) === null).toBe(false);
+    });
+    expect(screen.getByRole('tab', { name: '디자인' }).getAttribute('aria-selected')).toBe('true');
+
+    await user.click(screen.getByRole('button', { name: '제목 확인' }));
+    await waitFor(() => {
       expect(screen.getByRole('tab', { name: /^정보/ }).getAttribute('aria-selected')).toBe('true');
     });
     await waitFor(() => {
       expect(!!screen.queryByRole('textbox', { name: '제목' })).toBe(true);
     });
+  });
+
+  test('첨부 시트: 무매칭이면 \'티켓 스크린샷\' 행에 한 줄 + 그 아래 [제목 확인]이 서고, 누르면 문서를 확정해 제목 입력을 연다', async () => {
+    const user = userEvent.setup();
+    global.fetch = stubNoMatchFetch();
+    render(<MobileHarness />);
+
+    ocrImpl = async () => ({ title: '알수없는영화' });
+    await uploadScreenshotViaSheet(user);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('landing-sheet-screenshot-error')?.textContent ?? null).toBe('영화 정보를 찾지 못했어요');
+    });
+    const action = screen.getByTestId('landing-sheet-screenshot-action');
+    expect(action.textContent).toBe('제목 확인');
+    // 행 자체가 버튼이라 버튼을 그 안에 넣지 않는다(중첩 interactive 금지) — 행 바로 아래 형제다.
+    expect(screen.getByTestId('landing-sheet-screenshot').contains(action)).toBe(false);
+    // 시트가 떠 있는 동안 편집 화면의 토스트로 새지 않는다.
+    expect(screen.queryByTestId('global-toast') === null).toBe(true);
+
+    await user.click(action);
+    await waitFor(() => {
+      expect(!!screen.queryByRole('textbox', { name: '제목' })).toBe(true);
+    });
+    expect(screen.queryByTestId('landing-attach-sheet') === null).toBe(true);
+    expect(screen.getByRole('tab', { name: /^정보/ }).getAttribute('aria-selected')).toBe('true');
+    // '만들기'와 같은 확정이라 인식한 제목이 문서에 남는다.
+    expect(captured.movieInfo.title).toBe('알수없는영화');
   });
 
   test('chain/format 인식 시 라벨은 세팅되지만 "스탬프를 채웠어요" 안내는 더 이상 뜨지 않는다', async () => {

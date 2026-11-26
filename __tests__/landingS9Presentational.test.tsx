@@ -306,7 +306,7 @@ describe('첨부 시트 (constraint-8 · 10 · 11)', () => {
     };
     setup({ sheet: { ...sheetOf(), screenshot: { kind: 'busy' } }, children: <Probe /> });
     expect(screen.getByTestId('landing-sheet-screenshot').textContent).toContain('인식 중');
-    act(() => ctx!.setNotice('잠시 뒤에 다시 해 주세요'));
+    act(() => ctx!.setNotice({ message: '잠시 뒤에 다시 해 주세요' }));
     expect(screen.getByTestId('landing-sheet-screenshot-error').textContent).toBe('잠시 뒤에 다시 해 주세요');
     expect(screen.queryByTestId('landing-notice') === null).toBe(true);
   });

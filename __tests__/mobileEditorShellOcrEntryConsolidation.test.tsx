@@ -131,12 +131,12 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
 
     ocrImpl = async () => ({ title: '그랜드 부다페스트 호텔' });
 
-    // 랜딩 첨부 시트에서 OCR 트리거 — title만 인식되면 직접 필드는 없어 "제목으로 영화 정보를 검색할게요"
+    // 랜딩 첨부 시트에서 OCR 트리거 — title만 인식되면 직접 필드는 없어 "영화 정보 검색 중…"(#852, 마스터 E-05)
     // 안내가 뜬다(시트의 '티켓 스크린샷' 행 상태 줄 — S9 constraint-11). 이 시점에 KOBIS search fetch가 이미
     // 호출된 상태(searchPromise가 아직 pending).
     await uploadScreenshotViaSheet(user);
     await waitFor(() => {
-      expect(screen.getByTestId('landing-sheet-screenshot').textContent).toContain('제목으로 영화 정보를 검색할게요.');
+      expect(screen.getByTestId('landing-sheet-screenshot').textContent).toContain('영화 정보 검색 중…');
     });
 
     // KOBIS 검색이 아직 in-flight인 동안 만들기로 랜딩을 걷는다 — OcrUploadCard가 CSS hidden으로 전환된다(#388).
@@ -302,7 +302,7 @@ describe('in-flight KOBIS 보강이 OCR 카드 인스턴스 소멸 이후에도 
     await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
     // 랜딩이 걷힌 뒤라 카드 자체 토스트는 display:none 안이다 — 안내는 셸 토스트로 온다.
     await waitFor(() => {
-      expect(screen.getByTestId('global-toast').textContent).toBe('제목으로 영화 정보를 검색할게요.');
+      expect(screen.getByTestId('global-toast').textContent).toBe('영화 정보 검색 중…');
     });
 
     // 응답 전에 모드를 옮긴다 — 정보 모드 버튼(인식 중 표시)이 있던 본문이 통째로 바뀐다.
