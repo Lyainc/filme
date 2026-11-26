@@ -157,10 +157,10 @@
     variants: [
       { st: '기본 · 자동입력 완료', html: ed({ banner: '<div class="c-banner" role="status"><span class="tx">8개 항목을 채웠어요</span><button class="c-btn txt u">되돌리기</button><button class="c-btn txt">확인</button></div>', dock: design('무드', S.thumbs('minimal')) }) },
       { st: '로딩 · 영화 정보 검색 중', html: ed({ ticket: { poster: 'none' }, banner: '<div class="c-banner" role="status"><span class="tx">영화 정보를 자동으로 불러왔어요.</span><button class="c-btn txt u">되돌리기</button><button class="c-btn txt">확인</button></div>', toast: S.toast('영화 정보 검색 중…', { bottom: 12 }), dock: info({}) }) },
-      { st: '빈 결과 · 영화 정보 없음', html: ed({ ticket: { poster: 'none' }, banner: '<div class="c-banner" role="status"><span class="tx">영화 정보를 자동으로 불러왔어요.</span><button class="c-btn txt u">되돌리기</button><button class="c-btn txt">확인</button></div>', toast: S.toast('영화 정보를 찾지 못했어요', { bottom: 12, act: '제목 확인' }), dock: info({}) }) }
+      { st: '빈 결과 · 영화 정보 없음', html: ed({ ticket: { poster: 'none' }, banner: '<div class="c-banner" role="status"><span class="tx">1개 항목이 자동 입력되었어요.</span><button class="c-btn txt u">되돌리기</button><button class="c-btn txt">확인</button></div>', toast: S.toast('영화 정보를 찾지 못했어요', { bottom: 12, act: '제목 확인' }), dock: info({}) }) }
     ],
     states: ['배너는 티켓과 도크 사이. 되돌리기·확인을 누를 때까지 남아요(현행).', '자동입력된 값은 정보 행 오른쪽에 출처(자동입력·KOBIS)를 작게 붙여요.', '영화 정보 검색 중 · 못 찾음은 배너가 아니라 그 위 통보 토스트예요(#852). 검색 중은 2.6초 통보, 못 찾음은 [제목 확인]이 붙어 누르거나 다음 토스트가 덮거나 그 일이 끝날 때(필드 입력 열림 · 랜딩 복귀 · 새 인식 · 배너 처리)까지 남아요.'],
-    flow: [['되돌리기', 'E-06', '토스트 "되돌렸어요"'], ['제목 확인', 'K-01', '정보 모드로 바꿔 제목 입력']], notes: ['앱 현황: KOBIS가 못 찾아도 배너 문구는 "영화 정보를 자동으로 불러왔어요."로 남아 토스트와 어긋나요(기존 결함, #852 범위 밖).'] });
+    flow: [['되돌리기', 'E-06', '토스트 "되돌렸어요"'], ['제목 확인', 'K-01', '정보 모드로 바꿔 제목 입력']], notes: ['앱 현황: KOBIS가 못 찾으면 배너는 영화 정보를 불러왔다고 하지 않고 인식한 제목 · 스탬프를 "{n}개 항목이 자동 입력되었어요."로 세요. 되돌리기는 그 제목만 OCR 전으로 돌려요(#855).'] });
 
   F({ id: 'E-06', page: 'editor', name: '편집 · 실행 취소 통보', comps: ['C-TST'],
     variants: [{ st: '기본', html: ed({ undo: { u: true, r: true }, dock: design('무드', S.thumbs('minimal')), toast: S.toast('되돌렸어요', { bottom: 12 }) }) }],
