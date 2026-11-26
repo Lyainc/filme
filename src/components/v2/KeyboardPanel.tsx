@@ -7,6 +7,14 @@ const INTERACTIVE = 'input, textarea, select, button, a, [role="listbox"], [role
 export const keepFocus = (e: { preventDefault: () => void }) => e.preventDefault();
 
 /**
+ * 패널 입력의 마운트 포커스 — `autoFocus` 대신 ref로 건다(모듈 스코프라 ref가 렌더마다 다시 불리지 않는다). 키보드가 이미 떠
+ * 있을 때 ‹ › 로 다음 입력에 포커스가 가면 iOS Safari가 그 입력을 '드러내려고' 문서를 스크롤해, 프레임 기준 fixed 패널이 키보드
+ * · 액세서리 바 뒤로 밀려났다(#826 S8, iOS Simulator 27.0 실측: 제목 → 원제에서 scrollY 176). preventScroll이 그 스크롤만 막고
+ * 키보드는 그대로 둔다.
+ */
+export const focusInPlace = (el: HTMLElement | null) => el?.focus({ preventScroll: true });
+
+/**
  * 키보드에 붙는 입력 패널의 껍데기(#826 S4) — 필드 입력 패널과 % 직접 입력(K-03)이 같이 쓴다. 바깥 탭 막(닫기), 키보드
  * 밑판, 패널 면(C-INP: 한 면 + 윗선 한 줄)과 키보드 내림 판정을 쥔다. 자리 계산(inset)은 호출부의 useKeyboardBox가 준다 —
  * 필드 패널은 그 값으로 리프트도 다시 재기 때문이다. PhoneFrame의 contain:paint가 fixed 기준이라 좌표가 프레임 기준이다.

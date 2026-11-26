@@ -2,6 +2,7 @@ import type { KeyboardEvent } from 'react';
 import type { DateGranularity } from '@/types';
 import { cn } from '@/utils/cn';
 import { inputVariants } from './variants';
+import { focusInPlace } from '@/components/v2/KeyboardPanel';
 
 // Merges coarser-granularity edits onto a full-ISO value so switching year↔date doesn't discard precision.
 function mergeDatePrefix(stored: string, edit: string): string {
@@ -37,7 +38,8 @@ export function DateInput({
     'flex-1 min-w-[160px] rounded-field px-3.5 py-3 text-title text-ink',
   );
   // 세 입력(연 · 연월 · 날짜)이 같이 받는 속성 — 하나 더할 때 한 곳만 고친다.
-  const common = { 'aria-label': ariaLabel, className: base, autoFocus, onKeyDown, enterKeyHint };
+  // autoFocus는 스크롤 없는 마운트 포커스로 건다 — 입력 패널의 ‹ › 전환에서 iOS가 문서를 스크롤하지 않게(KeyboardPanel focusInPlace, #826 S8).
+  const common = { 'aria-label': ariaLabel, className: base, ref: autoFocus ? focusInPlace : undefined, onKeyDown, enterKeyHint };
   const parts = value ? value.split('-') : [];
   if (granularity === 'year') {
     // Display only the year part; preserve stored month/day on edit.
