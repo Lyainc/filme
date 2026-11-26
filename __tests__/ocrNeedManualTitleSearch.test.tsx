@@ -157,6 +157,38 @@ describe('KOBIS 무매칭 → 제목 검색 UI 연결 (#445)', () => {
     });
   });
 
+  test('버튼 달린 무매칭 토스트는 ‹로 랜딩에 돌아가면 걷힌다 — 안내가 가리키던 편집을 떠났다 (#852)', async () => {
+    const user = userEvent.setup();
+    global.fetch = stubNoMatchFetch();
+    render(<MobileHarness />);
+    await enterEditorWithoutPoster(user);
+    ocrImpl = async () => ({ title: '알수없는영화' });
+    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: '제목 확인' }) === null).toBe(false);
+    });
+
+    await user.click(screen.getByRole('button', { name: '랜딩으로 돌아가기' }));
+    await waitFor(() => {
+      expect(screen.queryByTestId('global-toast') === null).toBe(true);
+    });
+  });
+
+  test('되돌리기 배너를 처리하면 버튼 달린 무매칭 토스트도 걷힌다 (#852)', async () => {
+    const user = userEvent.setup();
+    global.fetch = stubNoMatchFetch();
+    render(<MobileHarness />);
+    await enterEditorWithoutPoster(user);
+    ocrImpl = async () => ({ title: '알수없는영화' });
+    await user.upload(ocrFileInput(), new File(['x'], 'ticket.png', { type: 'image/png' }));
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: '제목 확인' }) === null).toBe(false);
+    });
+
+    await user.click(screen.getByRole('button', { name: '되돌리기' }));
+    expect(screen.queryByRole('button', { name: '제목 확인' }) === null).toBe(true);
+  });
+
   test('첨부 시트: 무매칭이면 \'티켓 스크린샷\' 행에 한 줄 + 그 아래 [제목 확인]이 서고, 누르면 문서를 확정해 제목 입력을 연다', async () => {
     const user = userEvent.setup();
     global.fetch = stubNoMatchFetch();

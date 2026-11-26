@@ -122,8 +122,8 @@ export function MobileEditorShell({
   // 정보 모드는 자동으로 켜지고 필드 입력 중은 강제로 켠다(아래 ghost 합성).
   const [ghostMode, setGhostMode] = useState(false);
   // 토스트 두 종류(E-03 · E-06): 통보(notice)는 도크 바로 위에 2.6초, 오류(error)는 상단 줄 바로 아래에 4초.
-  // action이 달린 통보(#852 E-05 [제목 확인])는 버튼을 품으니 타이머로 사라지지 않는다 — 누르거나, 다음 토스트가 덮거나, 필드 입력이
-  // 열리면(제목 행을 직접 눌러도 할 일은 끝났다) 걷힌다.
+  // action이 달린 통보(#852 E-05 [제목 확인])는 버튼을 품으니 타이머로 사라지지 않는다 — 누르거나, 다음 토스트가 덮거나, 그 안내가
+  // 가리키던 일이 끝나면 걷힌다: 필드 입력이 열림(제목 행을 직접 눌러도 할 일은 끝났다) · 랜딩 복귀 · 새 인식 시작 · 되돌리기 배너 처리.
   const [toast, setToast] = useState<{ msg: string; tone: ToastTone; action?: NoticeAction } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // 편집 메뉴 시트(#826 S2 D09) — 열려 있는 동안만 EditorMenu가 마운트된다(초기화 arm도 그 안에 산다).
@@ -209,9 +209,10 @@ export function MobileEditorShell({
     if (!opts?.action) toastTimer.current = setTimeout(() => setToast(null), TOAST_MS[tone]);
   }
   useEffect(() => () => clearTimeout(toastTimer.current), []);
+  const dropActionToast = useCallback(() => setToast((t) => (t?.action ? null : t)), []);
   useEffect(() => {
-    if (activeField) setToast((t) => (t?.action ? null : t));
-  }, [activeField]);
+    if (activeField || !landingDismissed) dropActionToast();
+  }, [activeField, landingDismissed, dropActionToast]);
 
   function handleDone() {
     if (!canExport) {
@@ -860,6 +861,7 @@ export function MobileEditorShell({
               openRef={ocrOpenRef}
               onBusyChange={setOcrBusy}
               onStart={() => {
+                dropActionToast(); // 옛 인식의 [제목 확인]은 새 인식과 무관하다(#852).
                 ocrStartedOnLandingRef.current = !landingDismissedRef.current;
                 // 시트에서 연 첫 첨부면 스냅샷을 뜨고 고른 무드로 새 문서를 연다(S9 constraint-9). captureDraft보다 먼저
                 // 불리지만 resetDocument는 그 세대를 안 올려 이번 응답은 산다(#806).
@@ -972,8 +974,15 @@ export function MobileEditorShell({
         snapshot={isMax || landingVisible ? null : ocr.snapshot}
         filledFields={ocr.filledFields}
         stampCount={ocr.stampCount}
-        onCancel={ocr.cancel}
-        onConfirm={ocr.confirm}
+        // 되돌리거나 확인하면 그 인식의 [제목 확인] 안내도 끝난다(#852).
+        onCancel={() => {
+          dropActionToast();
+          ocr.cancel();
+        }}
+        onConfirm={() => {
+          dropActionToast();
+          ocr.confirm();
+        }}
         dockOffsetPx={dockShown ? BANNER_ABOVE_DOCK_PX : undefined}
       />
 

@@ -253,6 +253,9 @@ export function OcrUploadCard({
 
   async function processFile(file: File) {
     onStart?.();
+    // 새 인식이 시작되면 옛 안내는 끝난다 — 버튼 달린 안내(#852)는 타이머가 없어 안 걷으면 시트 행에 지난 [제목 확인]이 남는다.
+    clearTimeout(toastTimerRef.current);
+    setToast(null);
     setIsProcessing(true);
 
     try {

@@ -172,6 +172,23 @@ describe('랜딩 안내는 첨부 시트의 스크린샷 행에 뜬다 (#826 S9 
     expect(screen.queryByTestId('landing-sheet-screenshot-action') === null).toBe(true);
   });
 
+  test('영화 정보 못 찾음: 새 스크린샷을 올리면 옛 [제목 확인]이 바로 걷힌다 (#852)', async () => {
+    ocrImpl = async () => ({ title: '없는 영화' });
+    render(<Harness onNeedManualTitle={() => {}} />);
+    fireEvent.click(screen.getByTestId('landing-cta'));
+    fireEvent.click(screen.getByTestId('landing-sheet-screenshot'));
+    fireEvent.change(input(), { target: { files: [png()] } });
+    for (let i = 0; i < 10; i++) await act(async () => {});
+    expect(screen.queryByTestId('landing-sheet-screenshot-action') === null).toBe(false);
+
+    // 응답이 오지 않는 새 인식 — 시작만으로 옛 안내가 걷혀야 한다.
+    ocrImpl = () => new Promise(() => {});
+    fireEvent.change(input(), { target: { files: [png()] } });
+    for (let i = 0; i < 3; i++) await act(async () => {});
+    expect(screen.queryByTestId('landing-sheet-screenshot-action') === null).toBe(true);
+    expect(screen.queryByTestId('landing-sheet-screenshot-error') === null).toBe(true);
+  });
+
   test('랜딩 밖(자리를 빌려주는 Landing이 없을 때) 카드는 자기 아래 토스트로 남는다', async () => {
     render(
       <OcrUploadCard
