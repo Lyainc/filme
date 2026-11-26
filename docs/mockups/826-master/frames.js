@@ -55,7 +55,7 @@
   var ATT = { // 첨부 시트 '티켓 스크린샷' 행 상태 · 실패 문구
     busy: '<span class="spin" aria-hidden="true"></span>인식 중', done: '인식했어요'
   };
-  /* o: grid(동작 줄이기) · resume · sheet {ss:'none|busy|done|err', err, poster, make} · notice(이용 고지 시트) */
+  /* o: grid(동작 줄이기) · resume · sheet {ss:'none|busy|done|info|err', err(info · err 글), act(err 행 아래 버튼), poster, make} · notice(이용 고지 시트) */
   function landing(o) {
     o = o || {};
     var sh = o.sheet, gal;
@@ -70,10 +70,11 @@
     }
     var bottom;
     if (sh) {
-      var ssSub = sh.ss === 'busy' ? ATT.busy : sh.ss === 'done' ? ATT.done : sh.ss === 'err' ? sh.err : '';
+      var ssSub = sh.ss === 'busy' ? ATT.busy : sh.ss === 'done' ? ATT.done : sh.ss === 'err' || sh.ss === 'info' ? sh.err : '';
       bottom = '<div class="c-asheet" role="dialog" aria-modal="true" aria-label="티켓과 포스터"' + S.rl('h') + '>' +
         '<div class="hd"><span class="t">티켓과 포스터</span><button class="c-ib" aria-label="닫기">' + i('close') + '</button></div>' +
         '<button class="c-ar"><span class="th">' + i('scan') + '</span><span class="tx"><b>티켓 스크린샷</b>' + (ssSub ? '<small' + (sh.ss === 'err' ? ' class="err"' : '') + '>' + ssSub + '</small>' : '') + '</span></button>' +
+        (sh.act ? '<button class="c-btn txt u" style="align-self:flex-end">' + sh.act + '</button>' : '') +
         '<button class="c-ar"><span class="th' + (sh.poster ? ' img' : '') + '">' + (sh.poster ? '' : i('pic')) + '</span><span class="tx"><b>포스터</b>' + (sh.poster ? '' : '<small>선택</small>') + '</span></button>' +
         '<button class="mk-btn' + (sh.make ? ' on' : '') + '"' + (sh.make ? '' : ' aria-disabled="true"') + '>만들기</button>' + SAFE + '</div>';
     } else {
@@ -104,11 +105,13 @@
       { st: '인식 끝', html: landing({ sheet: { ss: 'done', make: true } }) },
       { st: '실패 · 인식 실패', html: landing({ sheet: { ss: 'err', err: '인식에 실패했어요' } }) },
       { st: '실패 · 요청 많음', html: landing({ sheet: { ss: 'err', err: '지금 요청이 많아요. 잠시 후 다시 시도하거나 직접 입력해 주세요.' } }) },
-      { st: '실패 · 파일 형식', html: landing({ sheet: { ss: 'err', err: 'PNG, JPG, WebP만 인식할 수 있어요' } }) }
+      { st: '실패 · 파일 형식', html: landing({ sheet: { ss: 'err', err: 'PNG, JPG, WebP만 인식할 수 있어요' } }) },
+      { st: '진행 · 영화 정보 검색 중', html: landing({ sheet: { ss: 'info', err: '영화 정보 검색 중…', make: true } }) },
+      { st: '빈 결과 · 영화 정보 없음', html: landing({ sheet: { ss: 'err', err: '영화 정보를 찾지 못했어요', act: '제목 확인', make: true } }) }
     ],
     states: ['"티켓 스크린샷으로 자동입력"이 여는 시트 "티켓과 포스터"예요. 어둡게 덮지 않고, 열려 있는 동안 옆 카드는 숨고 가운데 티켓(지금 문서 그대로)이 시트 위에 서요.', '행 둘: "티켓 스크린샷"(상태 줄 없음 · "인식 중" 스피너 · "인식했어요" · 경고색 오류 글) · "포스터"("선택" 또는 올린 썸네일). 행을 누르면 OS 파일 선택이 떠요.', '"만들기"는 뭔가 넣었고 인식 중이 아닐 때만 accent로 켜져요. 그 전엔 테두리 버튼 모양으로 눌러도 아무 일 없어요.', '넣은 포스터와 인식 결과는 뒤의 큰 티켓에 바로 차올라요. 닫기(또는 시트 밖 탭 · Escape)는 시트를 열기 전 문서로 되돌려요(스냅샷).', '오류 문구는 "인식에 실패했어요" · "지금 요청이 많아요…" · "PNG, JPG, WebP만 인식할 수 있어요". 같은 자리: "HEIC는 지원하지 않아요" · "10MB 이하 이미지만 돼요" · "인식된 정보가 없어요. 직접 입력해 주세요."'],
-    flow: [['만들기(스크린샷 있음)', 'E-05', '편집 + 자동입력 배너'], ['만들기(포스터만)', 'E-01', '포스터가 들어간 새 문서'], ['닫기', 'L-01', '문서 그대로, 시트 열기 전 스냅샷으로 되돌림'], ['인식된 정보 없음', 'L-03', '시트에 남아 행 아래 안내']],
-    notes: ['"지금 요청이 많아요…"·"인식된 정보가 없어요…"는 테스트가 잠근 문구라 두 문장 그대로예요.', '시트가 오류 글을 행 안에 싣게 되면서 옛 토스트 자리 안내는 걷었어요(S9 constraint-11).'] });
+    flow: [['만들기(스크린샷 있음)', 'E-05', '편집 + 자동입력 배너'], ['만들기(포스터만)', 'E-01', '포스터가 들어간 새 문서'], ['닫기', 'L-01', '문서 그대로, 시트 열기 전 스냅샷으로 되돌림'], ['인식된 정보 없음', 'L-03', '시트에 남아 행 아래 안내'], ['제목 확인', 'K-01', '만들기처럼 문서를 확정하고 정보 모드의 제목 입력']],
+    notes: ['"지금 요청이 많아요…"·"인식된 정보가 없어요…"는 테스트가 잠근 문구라 두 문장 그대로예요.', '시트가 오류 글을 행 안에 싣게 되면서 옛 토스트 자리 안내는 걷었어요(S9 constraint-11).', '제목만 인식하면 "영화 정보 검색 중…"이 보조색으로, KOBIS가 못 찾으면 "영화 정보를 찾지 못했어요"가 경고색으로 행에 뜨고 [제목 확인]은 행 바로 아래에 서요(#852, 행 자체가 버튼이라 안에 못 넣어요). 버튼이 달린 안내는 3초 뒤 사라지지 않고, 누르거나 시트를 닫으면 걷혀요.'] });
 
   /* =========================================================
      편집 기본
@@ -150,14 +153,14 @@
     states: ['상단 줄·도크·토스트를 숨기고 티켓만. 가로 무드는 90° 회전(현행). 티켓을 누르면 돌아가요(안내 문구 없음).', '선택 표시·빈 항목은 강제로 꺼요(요구 6).'],
     flow: [['티켓 탭 · 뒤로', 'E-01', '240ms']], notes: [] });
 
-  F({ id: 'E-05', page: 'editor', name: '편집 · 자동입력 결과', comps: ['C-BNR', 'C-IROW'],
+  F({ id: 'E-05', page: 'editor', name: '편집 · 자동입력 결과', comps: ['C-BNR', 'C-IROW', 'C-TST'],
     variants: [
       { st: '기본 · 자동입력 완료', html: ed({ banner: '<div class="c-banner" role="status"><span class="tx">8개 항목을 채웠어요</span><button class="c-btn txt u">되돌리기</button><button class="c-btn txt">확인</button></div>', dock: design('무드', S.thumbs('minimal')) }) },
-      { st: '로딩 · 영화 정보 검색 중', html: ed({ ticket: { poster: 'none' }, banner: '<div class="c-banner" role="status"><span class="spin" style="width:14px;height:14px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;flex:none" aria-hidden="true"></span><span class="tx">영화 정보 검색 중…</span></div>', dock: info({}) }) },
-      { st: '빈 결과 · 영화 정보 없음', html: ed({ ticket: { poster: 'none' }, banner: '<div class="c-banner" role="status"><span class="tx">영화 정보를 찾지 못했어요</span><button class="c-btn txt u">제목 확인</button></div>', dock: info({}) }) }
+      { st: '로딩 · 영화 정보 검색 중', html: ed({ ticket: { poster: 'none' }, banner: '<div class="c-banner" role="status"><span class="tx">영화 정보를 자동으로 불러왔어요.</span><button class="c-btn txt u">되돌리기</button><button class="c-btn txt">확인</button></div>', toast: S.toast('영화 정보 검색 중…', { bottom: 12 }), dock: info({}) }) },
+      { st: '빈 결과 · 영화 정보 없음', html: ed({ ticket: { poster: 'none' }, banner: '<div class="c-banner" role="status"><span class="tx">영화 정보를 자동으로 불러왔어요.</span><button class="c-btn txt u">되돌리기</button><button class="c-btn txt">확인</button></div>', toast: S.toast('영화 정보를 찾지 못했어요', { bottom: 12, act: '제목 확인' }), dock: info({}) }) }
     ],
-    states: ['배너는 티켓과 도크 사이. 되돌리기·확인을 누를 때까지 남아요(현행).', '자동입력된 값은 정보 행 오른쪽에 출처(자동입력·KOBIS)를 작게 붙여요.'],
-    flow: [['되돌리기', 'E-06', '토스트 "되돌렸어요"'], ['제목 확인', 'K-01', '']], notes: [] });
+    states: ['배너는 티켓과 도크 사이. 되돌리기·확인을 누를 때까지 남아요(현행).', '자동입력된 값은 정보 행 오른쪽에 출처(자동입력·KOBIS)를 작게 붙여요.', '영화 정보 검색 중 · 못 찾음은 배너가 아니라 그 위 통보 토스트예요(#852). 검색 중은 2.6초 통보, 못 찾음은 [제목 확인]이 붙어 누르거나 다음 토스트가 덮거나 필드 입력이 열릴 때까지 남아요.'],
+    flow: [['되돌리기', 'E-06', '토스트 "되돌렸어요"'], ['제목 확인', 'K-01', '정보 모드로 바꿔 제목 입력']], notes: ['앱 현황: KOBIS가 못 찾아도 배너 문구는 "영화 정보를 자동으로 불러왔어요."로 남아 토스트와 어긋나요(기존 결함, #852 범위 밖).'] });
 
   F({ id: 'E-06', page: 'editor', name: '편집 · 실행 취소 통보', comps: ['C-TST'],
     variants: [{ st: '기본', html: ed({ undo: { u: true, r: true }, dock: design('무드', S.thumbs('minimal')), toast: S.toast('되돌렸어요', { bottom: 12 }) }) }],
