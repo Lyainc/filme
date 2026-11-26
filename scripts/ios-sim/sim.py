@@ -11,7 +11,8 @@ import json, os, subprocess, time, urllib.request
 
 S = os.environ.get('FILME_SIM_DIR', '/tmp/filme-ios-sim')
 B = os.environ.get('APPIUM_URL', 'http://127.0.0.1:4725')
-UDID = os.environ.get('FILME_SIM_UDID', '2E1CE4CC-1DB0-4D03-A511-4C0AB87CA474')
+# 기본: #826 S8 캠페인(2026-11-27)의 iPhone 18 Pro · iOS 27.0. 27.1 런타임은 18 Pro를 지원하지 않는다(simctl 'Incompatible device').
+UDID = os.environ.get('FILME_SIM_UDID', '0E3F59D2-6F00-4DBA-97D9-F5987239530F')
 URL = os.environ.get('FILME_URL', 'http://localhost:3038/')
 os.makedirs(f'{S}/ev', exist_ok=True)
 
@@ -74,7 +75,8 @@ _top = [None]
 
 
 def web_top():
-    # Safari content origin on screen. Measured once per toolbar state; 62 with bottom address bar.
+    # Safari content origin on screen. Measured once per toolbar state; 62 with bottom address bar
+    # (iPhone 17 Pro 2026-10-21, iPhone 18 Pro iOS 27.0 2026-11-27: touchstart clientY = screen y - 62).
     if _top[0] is None:
         _top[0] = 62
     return _top[0]
@@ -93,7 +95,9 @@ def tap_pt(x, y, hold_ms=80):
 
 
 def vv():
-    return js('const v=visualViewport;return {s:v.scale,l:v.offsetLeft,t:v.offsetTop,w:v.width,h:v.height}')
+    # 보이는 영역의 원점을 클라이언트 좌표로: pageLeft/Top − scroll. offsetLeft/Top을 쓰면 안 된다 — iOS 27.0 Safari는 핀치 확대 때
+    # scrollX와 offsetLeft를 같은 값으로 줘서(실측 165/165) 이미 보이는 영역 기준인 rect에서 한 번 더 빼 탭이 화면 밖으로 나갔다.
+    return js('const v=visualViewport;return {s:v.scale,l:v.pageLeft-scrollX,t:v.pageTop-scrollY,w:v.width,h:v.height}')
 
 
 def to_pt(x, y, v=None):
@@ -179,7 +183,7 @@ def tap_el(expr, dx=0.5, dy=0.5):
 
 
 def reset_editor():
-    """Reload (clears Safari zoom) and enter the editor via the landing's direct-input link when shown."""
+    """Reload (clears Safari zoom) and enter the editor via the landing's '직접 입력' button when shown (#826 S9)."""
     global _nav
     _nav = globals().get('_nav', 0) + 1
     ctx('WEB')
@@ -198,7 +202,7 @@ def reset_editor():
         shown = js('const l=document.querySelector("[data-testid=landing]");return !!l && getComputedStyle(l).display!=="none" && l.getBoundingClientRect().height>0')
         if not shown:
             return
-        r = rect_of(by_text('a,button', '포스터 없이 직접 입력'))
+        r = rect_of('document.querySelector("[data-testid=landing-skip-poster]")')
         if r and r['h'] > 0:
             tap_css(r['x'] + r['w'] / 2, r['y'] + r['h'] / 2)
         time.sleep(1.5)

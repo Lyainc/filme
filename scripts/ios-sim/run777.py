@@ -1,20 +1,38 @@
-"""#777 iOS: on-ticket field direct taps (XCTest) per mood x theme. Port of scripts/measure-field-taps.mjs."""
+"""#777 iOS: on-ticket field direct taps (XCTest) per mood x theme. Port of scripts/measure-field-taps.mjs.
+
+#826 S8 acceptance-3: 필드를 누르면 키보드에 붙는 입력 패널([data-field-panel], #826 S3 · S4)이 열린다. 열린 필드는 패널의
+data-field-panel 값과 포커스된 입력의 aria-label(FIELD_LABELS, 평점은 숫자 버튼이라 포커스 입력 없음)로 판정하고, 닫기는
+패널 '닫기', 이전 · 다음은 패널의 '이전 항목' · '다음 항목' 웹 버튼이다. iOS Simulator 결과, 실기기 아님 — 손가락 접촉 면적은
+포인터 한 점으로 재현되지 않는다."""
 import json, sys, time
 from sim import *
 
-MOVIE = {'title': '인터스텔라', 'titleOg': 'Interstellar', 'releaseDate': '2014-11-06',
-         'watchDate': '2026-09-17', 'watchTime': '19:30', 'theater': 'CGV 용산아이파크몰', 'screen': 'IMAX관',
-         'seat': 'H12', 'actors': '매튜 맥커너히, 앤 해서웨이, 제시카 차스테인', 'rating': 4.5, 'runtime': '169',
-         'bookingNumber': '1234-5678-9012', 'signature': 'Lyainc', 'quote': '사랑은 시공간을 초월한다'}
+# docs/user-testing/README.md '공통 입력'의 짧은 입력(Seed 826-s8 constraint-7: 가상 데이터만). FILME_777_LONG=1이면 긴 입력.
+SHORT = {'title': '테스트 영화', 'titleOg': 'TEST MOVIE', 'releaseDate': '2026-09-17',
+         'watchDate': '2026-09-17', 'watchTime': '19:30', 'theater': '테스트 극장', 'screen': '12관',
+         'seat': 'H12', 'actors': '테스트 배우 A, 테스트 배우 B', 'rating': 4.5, 'runtime': '123',
+         'bookingNumber': 'TEST-768', 'signature': 'QA', 'quote': '다시 보고 싶은 영화'}
+LONG = dict(SHORT, title='아주 긴 영화 제목으로 확인하는 한여름 밤의 마지막 상영과 우리의 이야기',
+            titleOg='A Very Long Original Movie Title for the Last Screening of a Summer Night',
+            actors='테스트 배우 A, 테스트 배우 B, 테스트 배우 C, 테스트 배우 D, 테스트 배우 E',
+            theater='아주 긴 이름의 테스트 극장 특별상영관', quote='긴 문장으로 남기는 한줄평이며 잘림과 겹침이 없는지 확인해요')
+import os as _os
+MOVIE = LONG if _os.environ.get('FILME_777_LONG') == '1' else SHORT
 MOODS = ['minimal', 'criterion', '35mm', 'editorial', 'stub', '35mm-landscape']
+LABELS = {'title': '제목', 'titleOg': '원제', 'actors': '출연', 'watchDate': '관람일', 'watchTime': '관람 시간', 'theater': '극장',
+          'screen': '상영관', 'seat': '좌석', 'runtime': '러닝타임', 'rating': '평점', 'releaseDate': '개봉일', 'reissue': '재개봉',
+          'bookingNo': '예매 번호', 'signature': '서명', 'quote': '한줄평', 'chain': '극장 로고', 'format': '포맷 로고'}
 
-READ = '''return [...document.querySelectorAll("[data-field-tap]")].map(el=>{const r=el.getBoundingClientRect();
-return {field:el.getAttribute("data-field-tap"),x:r.x,y:r.y,w:r.width,h:r.height}}).filter(t=>t.w>0&&t.h>0&&t.y+t.h>0&&t.y<innerHeight&&t.x<innerWidth&&t.x+t.w>0)'''
-OPENED = '''const bar=document.querySelector('[aria-label="필드 편집 도구"]'); if(!bar) return null;
-const hl=[...document.querySelectorAll('input, div[aria-hidden="true"]')].find(el=>el.style.zIndex==='60'); if(!hl) return '?open';
-const h=hl.getBoundingClientRect(), cx=h.x+h.width/2, cy=h.y+h.height/2; let best=null;
-for(const el of document.querySelectorAll('[data-field-tap]')){const r=el.getBoundingClientRect(); const d=Math.hypot(r.x+r.width/2-cx,r.y+r.height/2-cy); if(!best||d<best.d) best={d,f:el.getAttribute('data-field-tap')};}
-return best?best.f:'?open';'''
+# 필드 탭 타깃 — 보이는 부분(overflow가 visible이 아닌 조상 박스와의 교집합)만 잰다. 말줄임 · 잘림으로 완전히 가려진 필드는
+# hidden으로 돌려 탭하지 않는다(그 자리를 누르면 위에 보이는 이웃 필드가 열리는 게 맞는 동작이다, #826 S8).
+READ = '''const vis=el=>{const r=el.getBoundingClientRect();let L=r.left,T=r.top,R=r.right,B=r.bottom;
+for(let n=el.parentElement;n&&n!==document.body;n=n.parentElement){const cs=getComputedStyle(n);if(cs.overflowX!=="visible"||cs.overflowY!=="visible"){const q=n.getBoundingClientRect();L=Math.max(L,q.left);T=Math.max(T,q.top);R=Math.min(R,q.right);B=Math.min(B,q.bottom);}}
+return {x:L,y:T,w:Math.max(0,R-L),h:Math.max(0,B-T),fw:r.width,fh:r.height}};
+return [...document.querySelectorAll("[data-field-tap]")].map(el=>({field:el.getAttribute("data-field-tap"),...vis(el)}))
+.filter(t=>t.fw>0&&t.fh>0&&t.y+t.h>=0&&t.y<innerHeight&&t.x<innerWidth&&t.x+t.w>=0)'''
+# 열린 필드 = 입력 패널의 data-field-panel. 포커스 입력의 aria-label도 같이 돌려 라벨표와 대조한다.
+OPENED = '''const p=document.querySelector('[data-field-panel]'); if(!p) return null; return p.getAttribute('data-field-panel');'''
+FOCUS_LABEL = '''const a=document.activeElement; return a && /^(INPUT|TEXTAREA)$/.test(a.tagName) ? a.getAttribute('aria-label') : null'''
 # 셸 크롬 히트 박스 — 옛 항목 목록 핸들·플로팅 툴바는 #826 S2에서 삭제돼 상단 줄(header)·도크만 남았다.
 CHROME = '''return [['topbar',document.querySelector('header')],['dock',document.querySelector('[data-testid="editor-dock"]')]]
 .filter(([,e])=>e).map(([n,e])=>{const r=e.getBoundingClientRect();return {name:n,x:r.x,y:r.y,w:r.width,h:r.height}})'''
@@ -50,12 +68,13 @@ def wait_open(ms=1200):
 
 
 def close_edit():
-    js('document.querySelector(\'[aria-label="편집 완료"]\')?.click()')
+    js('[...document.querySelectorAll("[data-field-panel] button")].find(e=>e.textContent.trim()==="닫기")?.click()')
     for _ in range(20):
         time.sleep(0.15)
         if js('''const w=document.querySelector(".crop-marks"); const t=w&&getComputedStyle(w).transform;
-return !document.querySelector('[aria-label="필드 편집 도구"]') && (!t||t==="none"||t==="matrix(1, 0, 0, 1, 0, 0)")'''):
+return !document.querySelector('[data-field-panel]') && (!t||t==="none"||t==="matrix(1, 0, 0, 1, 0, 0)")'''):
             break
+    time.sleep(0.4)
     if js('return visualViewport.scale') > 1.01:
         for _ in range(4):
             pinch_in_pt(d0=170, d1=10); time.sleep(0.8)
@@ -68,6 +87,10 @@ def probe_fields(mood, theme):
     chrome = js(CHROME)
     res = []
     for i, t0 in enumerate(taps):
+        if t0['w'] * t0['h'] == 0:
+            res.append({'field': t0['field'], 'hidden': True, 'fullRect': {'w': round(t0['fw'], 1), 'h': round(t0['fh'], 1)}})
+            print(f"  {mood}/{theme} {t0['field']:<14} HIDDEN (잘려 보이지 않음, 탭 안 함)", flush=True)
+            continue
         nth = [v for v in taps if v['field'] == t0['field']].index(t0)
         cur = [v for v in js(READ) if v['field'] == t0['field']]
         t = cur[nth] if nth < len(cur) else t0
@@ -87,20 +110,24 @@ def probe_fields(mood, theme):
             if not o:
                 time.sleep(0.8); tap_css(px, py); o = wait_open(1500)  # 'none' must reproduce twice
             if o:
-                # field toolbar vs opened field overlap (auto-move check)
-                ov = js('''const bar=document.querySelector('[aria-label="필드 편集 도구"]'.replace("集","집"));
-const hl=[...document.querySelectorAll('input, div[aria-hidden="true"]')].find(el=>el.style.zIndex==='60');
-if(!bar||!hl) return null; const a=bar.getBoundingClientRect(), b=hl.getBoundingClientRect();
-const ox=Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left)), oy=Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top));
-return +(ox*oy/(b.width*b.height||1)).toFixed(2)''')
-                probes[k] = {'opened': o, 'barOverlap': ov}
+                fl = js(FOCUS_LABEL)
+                probes[k] = {'opened': o, 'focusLabel': fl, 'labelMatches': fl is None and o == 'rating' or fl == LABELS.get(o)}
                 close_edit()
             else:
                 probes[k] = {'opened': 'none'}  # 드로어 폴백은 핸들과 함께 삭제됐다(#826 S2)
         res.append({'field': t['field'], 'rect': {k: round(t[k], 1) for k in ('x', 'y', 'w', 'h')}, 'coveredBy': cover, 'probes': probes})
-        bad = [k for k, v in probes.items() if v['opened'] != t['field']]
+        bad = [k for k, v in probes.items() if v['opened'] != t['field'] or not v.get('labelMatches', False)]
         print(f"  {mood}/{theme} {t['field']:<14} {'OK' if not bad else 'MISS ' + str({k: probes[k]['opened'] for k in bad})} cover={cover}", flush=True)
     return res
+
+
+def panel_btn(name):
+    """입력 패널의 웹 버튼(이전 항목 · 다음 항목)을 XCTest로 누른다."""
+    r = rect_of(f'document.querySelector(\'[data-field-panel] [aria-label="{name}"]\')')
+    if not r or r['w'] == 0:
+        return False
+    tap_css(r['x'] + r['w'] / 2, r['y'] + r['h'] / 2)
+    return True
 
 
 def extras(mood, theme):
@@ -117,8 +144,8 @@ def extras(mood, theme):
     if tt:
         t = tt[0]; tap_css(t['x'] + t['w'] / 2, t['y'] + t['h'] / 2)
         o1 = wait_open(); shot(f'777-{mood}-{theme}-title-open')
-        o2 = js(OPENED) if native_tap('다음 항목') and not time.sleep(0.9) else None
-        o3 = js(OPENED) if native_tap('이전 항목') and not time.sleep(0.9) else None
+        o2 = js(OPENED) if panel_btn('다음 항목') and not time.sleep(0.9) else None
+        o3 = js(OPENED) if panel_btn('이전 항목') and not time.sleep(0.9) else None
         out['prevNext'] = {'opened': o1, 'afterNext': o2, 'afterPrev': o3}
         # type into title via soft keyboard, close, undo
         foc = js('const a=document.activeElement; return a && a.tagName==="INPUT" ? (a.value) : null')

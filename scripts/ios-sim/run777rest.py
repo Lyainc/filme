@@ -20,7 +20,7 @@ def pinch_out_pt(cx=201, cy=420, d0=20, d1=150, ms=500):
 seed('minimal', 'light')
 tap_el('document.querySelector(\'[aria-label="전체 보기"]\')'); time.sleep(1.2)
 ntap = js('return document.querySelectorAll("[data-field-tap]").length')
-r = js('const w=[...document.querySelectorAll("[data-ticket-scale-wrapper]")].at(-1); const e=[...w.querySelectorAll("*")].find(e=>e.childElementCount===0&&e.textContent.trim().includes("IMAX관")); if(!e) return null; const b=e.getBoundingClientRect(); return {x:b.x,y:b.y,w:b.width,h:b.height}')
+r = js('const w=[...document.querySelectorAll("[data-ticket-scale-wrapper]")].at(-1); const e=[...w.querySelectorAll("*")].find(e=>e.childElementCount===0&&e.textContent.trim().includes("12관")); if(!e) return null; const b=e.getBoundingClientRect(); return {x:b.x,y:b.y,w:b.width,h:b.height}')
 t = r or {'x': 180, 'y': 300, 'w': 40, 'h': 10}
 shot('777-enlarge-max-before')
 tap_css(t['x'] + t['w'] / 2, t['y'] + t['h'] / 2); time.sleep(1.2)
@@ -30,7 +30,7 @@ out['enlarge']['maxTapScreen'] = {'opened': js(OPENED), 'focus': js(F),
 shot('777-enlarge-max-after')
 close_edit()
 
-# (b) Safari pinch zoom, then tap 'screen' (the field that mis-opened 'seat' at 1x)
+# (b) Safari pinch zoom, then tap 'screen' (작은 필드 — 2026-10-21 캠페인에선 1배에서 'seat'가 열렸다)
 seed('minimal', 'light')
 t0 = [v for v in js(READ) if v['field'] == 'screen'][0]
 for _ in range(4):
@@ -56,9 +56,9 @@ for mood in MOODS:
         seed(mood, 'dark')
         t = [v for v in js(READ) if v['field'] == 'title'][0]
         tap_css(t['x'] + t['w'] / 2, t['y'] + t['h'] / 2); time.sleep(1.2)
-        a = js(F); native_tap('다음 항목'); time.sleep(1.0); b = js(F)
+        a = js(F); panel_btn('다음 항목'); time.sleep(1.0); b = js(F)
         shot(f'777-{mood}-dark-next')
-        native_tap('이전 항목'); time.sleep(1.0); c = js(F)
+        panel_btn('이전 항목'); time.sleep(1.0); c = js(F)
         shot(f'777-{mood}-dark-prev')
         ex['prevNextByFocus'] = {'open': a, 'afterNext': b, 'afterPrev': c}
         close_edit()
