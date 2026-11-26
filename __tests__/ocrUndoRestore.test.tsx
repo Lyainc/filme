@@ -155,6 +155,20 @@ afterAll(() => {
   mock.module('@/utils/imageCrop', () => realImageCrop);
 });
 
+// 실제 kobisLookup을 태우고 fetch만 스텁한다(위 clearKobisLookupCache 주석). spy는 afterEach가 복원한다.
+const GRAND_BUDAPEST = { movieCd: '20147727', movieNm: '그랜드 부다페스트 호텔', movieNmEn: 'The Grand Budapest Hotel', openDt: '20140320' };
+function stubKobis(movieList: unknown[], detail: Record<string, unknown> = {}) {
+  spyOn(global, 'fetch').mockImplementation((async (url: string) => {
+    if (url.includes('/api/kobis/search')) {
+      return { ok: true, json: async () => ({ movieListResult: { movieList } }) };
+    }
+    if (url.includes('/api/kobis/detail')) {
+      return { ok: true, json: async () => ({ movieInfoResult: { movieInfo: detail } }) };
+    }
+    throw new Error(`unexpected url: ${url}`);
+  }) as unknown as typeof fetch);
+}
+
 describe('OCR undo restoration (#163 / #141 P1)', () => {
   // #261 P1: 셸이 직접 소유한 배선(ocr.apply / setComponents / currentComponents / 배너 onCancel)을
   // 검증 — 프로덕션 모바일이 타는 실제 경로.
@@ -263,24 +277,7 @@ describe('OCR undo restoration (#163 / #141 P1)', () => {
   test('OCR title이 트리거한 KOBIS 보강의 movieCd도 undo가 원자 복원한다', async () => {
     const user = userEvent.setup();
 
-    spyOn(global, 'fetch').mockImplementation((async (url: string) => {
-      if (url.includes('/api/kobis/search')) {
-        return {
-          ok: true,
-          json: async () => ({
-            movieListResult: {
-              movieList: [
-                { movieCd: '20147727', movieNm: '그랜드 부다페스트 호텔', movieNmEn: 'The Grand Budapest Hotel', openDt: '20140320' },
-              ],
-            },
-          }),
-        };
-      }
-      if (url.includes('/api/kobis/detail')) {
-        return { ok: true, json: async () => ({ movieInfoResult: { movieInfo: {} } }) };
-      }
-      throw new Error(`unexpected url: ${url}`);
-    }) as unknown as typeof fetch);
+    stubKobis([GRAND_BUDAPEST]);
 
     render(<MobileHarness />);
 
@@ -553,24 +550,7 @@ describe('OCR이 채운 필드를 사용자가 고쳤으면 되돌리기가 그 
 
   test('KOBIS 보강이 채운 원제를 고친 뒤 되돌리면 고친 원제는 남고 나머지 보강은 OCR 전으로 돌아간다', async () => {
     const user = userEvent.setup();
-    spyOn(global, 'fetch').mockImplementation((async (url: string) => {
-      if (url.includes('/api/kobis/search')) {
-        return {
-          ok: true,
-          json: async () => ({
-            movieListResult: {
-              movieList: [
-                { movieCd: '20147727', movieNm: '그랜드 부다페스트 호텔', movieNmEn: 'The Grand Budapest Hotel', openDt: '20140320' },
-              ],
-            },
-          }),
-        };
-      }
-      if (url.includes('/api/kobis/detail')) {
-        return { ok: true, json: async () => ({ movieInfoResult: { movieInfo: {} } }) };
-      }
-      throw new Error(`unexpected url: ${url}`);
-    }) as unknown as typeof fetch);
+    stubKobis([GRAND_BUDAPEST]);
     render(<MobileHarness />);
     await user.click(screen.getByTestId('landing-skip-poster'));
 
@@ -773,24 +753,7 @@ describe('OCR 직접 필드를 전부 고치면 배너가 남은 되돌릴 것�
 
   test('제목만 인식된 경로(#100)는 체인 스탬프가 같이 있어도 그대로 영화 정보 문구다', async () => {
     const user = userEvent.setup();
-    spyOn(global, 'fetch').mockImplementation((async (url: string) => {
-      if (url.includes('/api/kobis/search')) {
-        return {
-          ok: true,
-          json: async () => ({
-            movieListResult: {
-              movieList: [
-                { movieCd: '20147727', movieNm: '그랜드 부다페스트 호텔', movieNmEn: 'The Grand Budapest Hotel', openDt: '20140320' },
-              ],
-            },
-          }),
-        };
-      }
-      if (url.includes('/api/kobis/detail')) {
-        return { ok: true, json: async () => ({ movieInfoResult: { movieInfo: {} } }) };
-      }
-      throw new Error(`unexpected url: ${url}`);
-    }) as unknown as typeof fetch);
+    stubKobis([GRAND_BUDAPEST]);
     render(<MobileHarness />);
 
     ocrImpl = async () => ({ title: '그랜드 부다페스트 호텔', chain: 'cgv' });
@@ -809,18 +772,6 @@ describe('OCR 직접 필드를 전부 고치면 배너가 남은 되돌릴 것�
 // 자동으로 불러왔어요.'라고 하면 두 안내가 어긋난다. 무매칭이면 배너는 OCR이 실제로 쓴 제목을 항목으로 세고,
 // 되돌리기는 그 제목만 OCR 전으로 돌린다(쓰지 않은 보강 키는 스냅샷에서 빠진다).
 describe('KOBIS 무매칭이면 배너가 영화 정보를 불러왔다고 하지 않는다 (#855)', () => {
-  function stubKobisSearch(movieList: unknown[]) {
-    spyOn(global, 'fetch').mockImplementation((async (url: string) => {
-      if (url.includes('/api/kobis/search')) {
-        return { ok: true, json: async () => ({ movieListResult: { movieList } }) };
-      }
-      if (url.includes('/api/kobis/detail')) {
-        return { ok: true, json: async () => ({ movieInfoResult: { movieInfo: { showTm: '99' } } }) };
-      }
-      throw new Error(`unexpected url: ${url}`);
-    }) as unknown as typeof fetch);
-  }
-
   const toastText = () => screen.queryByTestId('global-toast-msg')?.textContent ?? null;
   // 셸 토스트 자리를 testid로 읽는다 — 같은 문장이 라이브리전에도 있어 findByText는 여러 개를 찾는다.
   async function waitNoMatchToast() {
@@ -839,7 +790,7 @@ describe('KOBIS 무매칭이면 배너가 영화 정보를 불러왔다고 하�
 
   test('무매칭: 토스트는 못 찾았다, 배너는 제목 1개 항목 — 되돌리면 제목이 OCR 전으로 돌아간다', async () => {
     const user = userEvent.setup();
-    stubKobisSearch([]);
+    stubKobis([]);
     await ocrTitleOnly(user, '알수없는영화');
 
     await waitNoMatchToast();
@@ -856,7 +807,7 @@ describe('KOBIS 무매칭이면 배너가 영화 정보를 불러왔다고 하�
 
   test('무매칭 뒤 사용자가 원제를 채우면 되돌리기는 제목만 돌리고 원제는 둔다', async () => {
     const user = userEvent.setup();
-    stubKobisSearch([]);
+    stubKobis([]);
     await ocrTitleOnly(user, '알수없는영화');
     await waitNoMatchToast();
 
@@ -868,9 +819,7 @@ describe('KOBIS 무매칭이면 배너가 영화 정보를 불러왔다고 하�
 
   test('매칭: 배너는 영화 정보를 불러왔다 — 되돌리면 제목과 보강 필드가 OCR 전으로 돌아간다', async () => {
     const user = userEvent.setup();
-    stubKobisSearch([
-      { movieCd: '20147727', movieNm: '그랜드 부다페스트 호텔', movieNmEn: 'The Grand Budapest Hotel', openDt: '20140320' },
-    ]);
+    stubKobis([GRAND_BUDAPEST], { showTm: '99' });
     await ocrTitleOnly(user, '그랜드 부다페스트 호텔');
 
     await waitFor(() => {

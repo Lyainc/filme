@@ -1,4 +1,4 @@
-import { KOBIS_MATCH_FIELDS, OCR_KOBIS_FIELDS, type OcrDirectField } from './OcrUploadCard';
+import { KOBIS_MATCH_FIELDS, OCR_KOBIS_SHOWN_FIELDS, type OcrDirectField } from './OcrUploadCard';
 import type { MovieInfo } from '@/types';
 import { cn } from '@/utils/cn';
 import { dockAnchoredBottom } from './dock/EditorDock';
@@ -28,12 +28,9 @@ export const OCR_BANNER_HEIGHT_PX = 70;
 export function OcrUndoBanner({ snapshot, filledFields, stampCount, onCancel, onConfirm, dockOffsetPx }: OcrUndoBannerProps) {
   // 영화 정보 문구는 영화를 찾았다는 키(원제·출연)가 남았을 때만이다(#814·#855) — 무매칭 안내와 같은 판정이라
   // '영화 정보를 찾지 못했어요' 옆에서 불러왔다고 하지 않는다. 조회 중에는 스냅샷이 KOBIS 키를 전부 쥐고 있어
-  // 이 문구다(마스터 E-05 '로딩'). 못 찾았거나 보강이 버려졌으면 남은 제목·스탬프 같은 항목 수를 센다
-  // (movieCd는 화면에 없는 키라 안 센다).
+  // 이 문구다(마스터 E-05 '로딩'). 못 찾았거나 보강이 버려졌으면 남은 제목·스탬프 같은 항목 수를 센다.
   const hasKobis = !!snapshot && KOBIS_MATCH_FIELDS.some((key) => key in snapshot);
-  const kobisCount = snapshot
-    ? OCR_KOBIS_FIELDS.filter((key) => key !== 'movieCd' && key in snapshot).length
-    : 0;
+  const kobisCount = snapshot ? OCR_KOBIS_SHOWN_FIELDS.filter((key) => key in snapshot).length : 0;
   const itemCount = kobisCount + stampCount;
   const message =
     filledFields.size > 0
