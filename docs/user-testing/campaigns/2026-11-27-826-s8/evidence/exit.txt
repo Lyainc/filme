@@ -1,3 +1,4 @@
+# 최종 일괄 실행(final.sh) 종료 코드
 585=0
 779light=0
 779dark=0
@@ -7,5 +8,11 @@
 777dark=0
 777rest=0
 777long=0
-826s12=2
-done
+826s12=2   # 2 = BLOCKED(설계상 PASS가 아니면 0이 아니다)
+# 보충 실행
+585fieldsCriterion=0   # run585.py fields=크라이테리언(한줄평 포함 15필드)
+# run768 · stamp768 · compare768은 일괄 실행 직전 같은 빌드 · 같은 스크립트 버전으로 따로 돌렸다
+768=0
+stamp768=0
+compare768=0
+# 참고: run826s4.py back은 A(텍스트 필드 + 키보드 엣지 스와이프) '실패'를 기록해도 exit 0이다 — 판정은 826s4-back.json

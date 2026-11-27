@@ -13,7 +13,7 @@ Seed [`docs/specs/826-s8-device-verification.yaml`](../../../specs/826-s8-device
 - 도구: Appium 3.8.0 + XCUITest driver 12.19.1. 탭 · 드래그 · 핀치는 **XCTest 합성 터치**(NATIVE_APP W3C pointer)만 판정에 썼고(constraint-5), 상태 준비 · 측정은 WEBVIEW JS예요. Safari 콘텐츠 원점(62pt)은 touchstart clientY로 이 기기에서 다시 쟀어요.
 - 소프트웨어 키보드: 입력 포커스 때 `XCUIElementTypeKeyboard`(402×226)가 뜨고 visualViewport 높이가 714 → 410/411로 줄어든 상태에서만 키보드 항목을 판정했어요.
 - 입력: README 공통 입력(짧은 · 긴 입력), 포스터 A `sample-bus.jpg`, 스탬프 B `sample-crossing.jpg`(constraint-7). run777의 옛 시드(실제 영화 · 극장명)는 공통 입력으로 바꿨어요.
-- 스크립트: `scripts/ios-sim/` — 이 브랜치의 최종 버전으로 전 항목을 처음부터 한 번에 다시 돌린 결과예요(`evidence/exit.txt`). 증거는 `evidence/<항목>/`의 JSON · 로그 원본과 줄인 스크린샷(JPEG)이에요. 경로의 `$FILME_SIM_DIR`은 로컬 출력 폴더예요.
+- 스크립트: `scripts/ios-sim/` — 이 브랜치의 최종 버전으로 전 항목을 처음부터 다시 돌린 결과예요. 종료 코드는 `evidence/exit.txt`(일괄 실행 + run768 계열 · run585 크라이테리언 보충 실행). 기기 모델 · iOS · 빌드는 각 JSON이 아니라 이 절이 기록이에요(`826s4-ios.json`엔 `simctl list devices booted` 문자열만 있어요). 증거는 `evidence/<항목>/`의 JSON · 로그 원본과 줄인 스크린샷(JPEG)이에요. 경로의 `$FILME_SIM_DIR`은 로컬 출력 폴더예요.
 
 ## 결과 (T01~T21)
 
@@ -25,11 +25,11 @@ Seed [`docs/specs/826-s8-device-verification.yaml`](../../../specs/826-s8-device
 | T04 | Simulator | **PASS(Simulator, 실기기 아님)** | iPhone 18 Pro · 27.0 · `6791a2f4` | [아래 T04](#t04--779-슬라이더) · `evidence/779/` |
 | T05 | 실기기 | UNRUN | — | 이번 실행 범위 밖 |
 | T06 | Simulator | **PASS(Simulator, 실기기 아님)** | iPhone 18 Pro · 27.0 · `6791a2f4` | [아래 T06](#t06--입력-16px--확대-없음-run585-재작성) · `evidence/585/` |
-| T07 | Simulator | **PASS(Simulator, 실기기 아님)** | iPhone 18 Pro · 27.0 · `6791a2f4` | [아래 T07](#t07--키보드와-편집-화면-노출--복원) · `evidence/826s4/` |
+| T07 | Simulator | **PASS(Simulator, 실기기 아님)** — 뒤로는 평점 패널 + Safari 툴바 경로만 | iPhone 18 Pro · 27.0 · `6791a2f4` | [아래 T07](#t07--키보드와-편집-화면-노출--복원) · `evidence/826s4/` — 텍스트 필드 + 키보드의 뒤로(엣지 스와이프)는 Simulator에서 실패해 실기기 T09 몫 |
 | T08 | 실기기 | UNRUN | — | 이번 실행 범위 밖 |
 | T09 | 실기기 | UNRUN | — | 이번 실행 범위 밖(참고: Simulator에선 텍스트 필드 + 키보드 상태의 엣지 스와이프가 패널을 닫지 못했어요 — T07 back-A) |
 | T10 | 실기기 | UNRUN | — | 이번 실행 범위 밖 |
-| T11 | Simulator | UNRUN | — | iPhone SE 3세대 Simulator가 없어요(27.1 런타임은 iPhone Duo만, 소유자가 범위에서 뺐어요) |
+| T11 | Simulator | UNRUN | — | Seed의 iPhone SE 3세대 · iOS 27.1은 만들 수 없어요(27.1 런타임은 iPhone Duo만 지원, SE 3세대는 27.0까지). constraint-4 대체 규칙의 적용 여부를 정하지 않은 채 소유자가 이번 범위에서 뺐어요 |
 | T12 | Simulator | **BLOCKED** | iPhone 18 Pro · 27.0 · `6791a2f4` | [아래 T12](#t12--랜딩-걷힘-240ms-동안의-탭) · `evidence/826s12/` — XCTest로 걷힘 창 안에 두 번째 탭을 보낼 수 없음 |
 | T13~T20 | 실기기 | UNRUN | — | 이번 실행 범위 밖 |
 | T21 | 위험 수용 | 위험 수용 | — | VoiceOver 미검증 · 위험 수용(2026-11-26 소유자) |
@@ -92,7 +92,7 @@ Seed [`docs/specs/826-s8-device-verification.yaml`](../../../specs/826-s8-device
 `run585.py`를 도크 탭(`#dock-mode-tab-design` → `#design-tool-tab-<id>`)과 % 입력 패널, 정보 모드 필드 입력 순회로 다시 썼어요(#841).
 
 - % 입력 6종(포스터 · 컴포넌트 · 재질 강도 · 코팅 강도 · 극장 로고 크기 · 포맷 로고 크기) × 종료(키보드 '완료' · 바깥 탭) = **12/12 PASS**: 포커스 뒤 visualViewport.scale 1, 입력 font-size 16px, 입력 100% 보임, 친 값이 슬라이더에 커밋, 종료 뒤 도크 · 프리뷰 rect 그대로.
-- 필드 입력 한 바퀴('직접 입력'이 연 무드에 그려진 필드만 순회 — 이번 실행은 한줄평이 없는 무드라 제목 → … → 포맷 로고 14필드, 평점은 소수 입력을 열어서): **14/14 PASS** — scale 1, 16px, 패널 100% 보임, 문서 스크롤 0. 같은 날 한줄평이 있는 무드로 돈 앞선 실행도 15/15였어요.
+- 필드 입력 한 바퀴(순회는 그 무드가 그린 필드만 돌아요. 평점은 소수 입력을 열어서): '직접 입력' 기본 무드 **14/14 PASS**(`585-ios.json`, 한줄평을 안 그리는 무드), 한줄평까지 그리는 크라이테리언 **15/15 PASS**(`585-ios-fields-criterion.json`, `run585.py fields=크라이테리언`). 모든 단계 scale 1, 16px, 패널 100% 보임, 문서 스크롤 0. 소프트웨어 키보드는 텍스트 · 숫자 입력 단계에서 떠 있었고, 날짜 · 시간 단계는 iOS 선택기라 키보드가 없어요(제목 첫 단계는 측정 순간 키보드가 아직 올라오기 전이었어요 — scale · 16px 판정엔 영향 없음).
 - 관찰(사용성, 마스터로): 개봉일 · 관람일 · 관람 시간에 오면 iOS가 달력 · 시간 선택기를 자동으로 띄워 티켓을 덮고, ›를 두 번 눌러야 다음으로 가요(`585-ios.json`의 `nextTapsNeeded: 2`, `bugs/date-picker-covers-ticket.jpg`).
 
 ### T07 — 키보드와 편집 화면 노출 · 복원
