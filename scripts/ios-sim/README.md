@@ -19,7 +19,7 @@ Seed `docs/specs/mobile-device-verification.yaml`의 acceptance-1~4 iOS 행(#777
 
 | 스크립트 | 대상 | 출력(`$FILME_SIM_DIR/ev/`) |
 |---|---|---|
-| `python3 run585.py [0-5 ...] [fields]` | #585 · S8 acceptance-6: 디자인 도구 % 입력 여섯 × 키보드 '완료'/바깥 탭, 정보 모드 필드 입력 한 바퀴(‹ › 순회, 평점 소수 입력 포함)의 확대 · 16px · 패널 가시 · 문서 스크롤 | `585-<i><a\|b>-{during,typed,after}.png`, `585-field-*.png`, `585-ios.json` |
+| `python3 run585.py [0-5 ...] [fields \| fields=<무드 이름>]` | #585 · S8 acceptance-6: 디자인 도구 % 입력 여섯 × 키보드 '완료'/바깥 탭, 정보 모드 필드 입력 한 바퀴(‹ › 순회, 평점 소수 입력 포함)의 확대 · 16px · 패널 가시 · 문서 스크롤 | `585-<i><a\|b>-{during,typed,after}.png`, `585-field-*.png`, `585-ios.json` |
 | `python3 run779.py [light] [dark]` | #779 · S8 acceptance-4: 디자인 '투명도' 도구 '포스터' 슬라이더 트랙 탭·±10/14px·트랙/thumb 드래그·% 입력·undo | `779-<theme>-*.png`, `779-ios.json` |
 | `python3 run777.py [light\|dark] [무드 ...]` | #777 · S8 acceptance-3: 필드 직접 탭(보이는 부분의 중심·안쪽 위/아래 2px) → 입력 패널 필드와 포커스 입력 aria-label 대조, 정보 모드 탭·이전/다음·편집 undo(라이트). `FILME_777_LONG=1`이면 공통 입력 긴 입력 | `777-*.png`, `777-ios-<themes>.json` |
 | `python3 run777rest.py` | #777 작은 필드 확대 경로(전체 보기·핀치), 다크 복구 경로 | `777-enlarge-*.png`, `777-rest.json` |
@@ -63,6 +63,6 @@ Seed `docs/specs/mobile-device-verification.yaml`의 acceptance-1~4 iOS 행(#777
 | `run777.py light` · `dark` | 6무드 × 두 테마 | 필드 88개씩 오탭 0 |
 | `run777rest.py` | 전체 보기 · 핀치 · 다크 복구 | 동작 |
 | `run779.py light dark` | 트랙 탭 · ±10/14px · 드래그 · % 입력 · undo | 두 테마 PASS |
-| `run585.py` | % 입력 12 + 필드 순회 | PASS(#841 재작성) |
-| `run826s4.py` · `back` | 종료 경로 넷 | PASS(텍스트 필드 + 키보드의 엣지 스와이프는 실기기 몫) |
+| `run585.py` · `run585.py fields=크라이테리언` | % 입력 12 + 필드 순회(기본 무드 14 · 크라이테리언 15) | PASS(#841 재작성) |
+| `run826s4.py` · `back` | 종료 경로 넷 | PASS — 뒤로는 평점 패널 + Safari 툴바만. 텍스트 필드 + 키보드의 엣지 스와이프는 Simulator에서 실패(실기기 몫). `back`은 그 실패를 기록해도 exit 0이라 JSON을 봐요 |
 | `run826s12.py` | 랜딩 걷힘 탭 | BLOCKED(위 함정) |
