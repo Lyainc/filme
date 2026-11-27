@@ -150,7 +150,7 @@ success_criteria:
     verifiable: true
     measurable_via: "iPhone SE 3세대 · iOS 27.1 Simulator Safari 세로(가로 회전도)에서 랜딩 첫 화면 · 동작 줄이기 격자 · 이어서 만들기 행이 있는 상태를 캡처하고 WEBVIEW JS로 가운데 카드 rect가 #phone-frame과 visualViewport 안이고 버튼과 겹치지 않으면 PASS."
   - id: acceptance-12
-    description: "[T12] 랜딩 걷힘 240ms 동안의 빈 영역 탭이 아래 편집 화면으로 통과하지 않음 · 출처 issuecomment-7080160714 '걷힘 240ms 동안 빈 영역 탭이 아래 편집 화면으로 통과할 여지' · 7087317361 · 7087421152 · 배정 Simulator · 근거 XCTest로 '직접 입력' 탭 뒤 0~240ms에 시각을 맞춘 두 번째 탭을 보낼 수 있다."
+    description: "[T12] 랜딩 걷힘 240ms 동안의 빈 영역 탭이 아래 편집 화면으로 통과하지 않음 · 출처 issuecomment-7080160714 '걷힘 240ms 동안 빈 영역 탭이 아래 편집 화면으로 통과할 여지' · 7087317361 · 7087421152 · 배정 Simulator · 근거 배치 판정은 XCTest 합성 터치로 할 수 있다고 봤으나, Appium XCUITest 12.19.1(iOS 27.0 Simulator)에선 두 번째 탭의 최소 간격이 약 340ms라 0~240ms 창에 넣을 수 없다(2026-11-27 실측: 한 손가락 묶음은 드래그, 두 손가락은 핀치가 된다)."
     verifiable: true
     measurable_via: "iPhone 18 Pro · iOS 27.0에서 '직접 입력' 탭 직후 50 · 120 · 200ms에 아래 편집 화면의 필드 · 도크 탭 자리를 XCTest로 탭하고, 걷힘 뒤 포커스된 입력 · 선택된 도크 탭 · 열린 패널이 없으면 PASS."
   - id: acceptance-13
@@ -208,7 +208,7 @@ success_criteria:
 
 context:
   existing_stack: ["Next.js 16 Pages Router · React 19", "iOS Simulator(Xcode 27 DeviceHub) + Appium XCUITest driver(NATIVE_APP 터치, WEBVIEW JS)", "scripts/ios-sim/*.py(표준 라이브러리, 비교만 uv + pillow · numpy)", "Vercel prod 공유 링크(@vercel/blob, TICKET_TTL_DAYS 정리 cron)"]
-  dependencies: ["S1~S7 · S9 main 반영", "DeviceHub 등록 실기기 iPhone_BH(iPhone 16 Pro)", "Simulator 런타임 · 기종 iOS 27.0 iPhone 18 Pro, iOS 27.1 iPhone SE 3세대(acceptance-11)", "공유 링크 발급이 되는 배포 환경(acceptance-17 · 20)"]
+  dependencies: ["S1~S7 · S9 main 반영", "DeviceHub 등록 실기기 iPhone_BH(iPhone 16 Pro)", "Simulator 런타임 · 기종 iOS 27.0 iPhone 18 Pro, 짧은 화면은 constraint-4 대체 규칙(iOS 27.1 런타임은 iPhone Duo만 지원해 iPhone SE 3세대를 만들 수 없다)", "공유 링크 발급이 되는 배포 환경(acceptance-17 · 20)"]
   integration_points:
     - "scripts/ios-sim/sim.py · run768.py · compare768.py · stamp768.py · run777.py · run777rest.py · run779.py · run585.py · run826s4.py · README.md"
     - "docs/user-testing/README.md(준비와 판정 · 공통 입력 · S01–S16) · docs/user-testing/RUN.md(결과표 틀)"
