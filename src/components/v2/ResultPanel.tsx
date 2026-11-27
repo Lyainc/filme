@@ -5,7 +5,9 @@ import {
   canShareTicketFile,
   captureNodeToJpeg,
   downloadTicketAsJpeg,
+  jpegFileFromDataUrl,
   shareTicketAsJpeg,
+  shareTicketFile,
 } from '@/utils/captureToImage';
 import { buildShareMessage, toNativeSharePayload } from '@/utils/shareMessage';
 import { DEFAULT_TICKET_TTL_DAYS, UNOFFICIAL_TICKET_NOTICE } from '@/utils/ticketCleanup';
@@ -69,9 +71,19 @@ export function ResultPanel({
   // 인-플라이트 발급의 세대 — 업로드 중 티켓 내용이 바뀌면(아래 reset effect가 증가) 완료된 URL은
   // 옛 스냅샷이므로 폐기해 스테일 링크 노출을 막는다.
   const permaGenRef = useRef(0);
-  // 캡처 in-flight 가드 — 저장·링크가 같은 ticketRef 노드에 html-to-image를 동시에 돌리면 산출물이
-  // 깨진다. 노드 캡처 구간을 직렬화한다(#167).
+  // 사용자 조작 in-flight 가드 — 저장 · 링크 연타와 동시 진입을 무시한다(#167).
   const capturingRef = useRef(false);
+  // 노드 캡처 줄 — 저장 · 링크 · 미리 캡처가 같은 ticketRef 노드에 html-to-image를 동시에 돌리면 산출물이
+  // 깨진다(#167). 모든 노드 캡처는 이 줄에 서서 앞 캡처가 끝난 뒤 돈다.
+  const captureQueueRef = useRef<Promise<unknown>>(Promise.resolve());
+  const runCapture = useCallback(<T,>(capture: () => Promise<T>): Promise<T> => {
+    const run = captureQueueRef.current.then(capture, capture);
+    captureQueueRef.current = run.catch(() => undefined);
+    return run;
+  }, []);
+  // 미리 만든 저장 파일(#858) — 결과 화면에 들어오거나 티켓 내용이 바뀌면 다시 만든다. file이 있으면
+  // [저장]은 await 없이 클릭 안에서 공유 시트를 연다.
+  const preparedRef = useRef<{ file: File | null; ready: Promise<File | null> } | null>(null);
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [permaLoading, setPermaLoading] = useState(false);
   const [permalink, setPermalink] = useState<string | null>(null);
@@ -109,24 +121,65 @@ export function ResultPanel({
     setPermaLoading(false);
   }, [croppedImageUrl, movieInfo, components, fieldVisibility]);
 
+  const saveTitle = movieInfo.title || 'untitled';
+  const saveFilename = `phototicket_${layout.id}_${saveTitle}.jpg`;
+
+  // 저장본 미리 캡처(#858, 소유자 결정 ①) — iOS Safari는 [저장] 클릭 뒤 캡처(약 0.75초)를 기다린 share를
+  // 사용자 활성 소실로 자주 거절했다(새 페이지의 첫 저장 9/10, docs/user-testing/campaigns/2026-11-27-826-s8/
+  // evidence/save/858-probe/REPORT.md). 공유 시트 경로에서만 미리 만든다 — 다운로드 경로는 활성이 필요 없다.
+  useEffect(() => {
+    const node = ticketRef.current;
+    if (!node || !canShareTicketFile()) {
+      preparedRef.current = null;
+      return;
+    }
+    const entry: { file: File | null; ready: Promise<File | null> } = { file: null, ready: Promise.resolve(null) };
+    // 내용이 또 바뀌어 밀려난 캡처는 줄에서 차례가 와도 돌지 않고, 이미 돌았으면 결과를 버린다 — 그동안
+    // 기다리던 [저장]은 null을 받아 지금 내용으로 캡처한다.
+    const isStale = () => preparedRef.current !== entry;
+    entry.ready = runCapture(() =>
+      isStale()
+        ? Promise.resolve(null)
+        : captureNodeToJpeg(node, { filename: saveFilename, width: layout.width, height: layout.height }),
+    ).then(
+      (dataUrl) => {
+        if (!dataUrl || isStale()) return null;
+        entry.file = jpegFileFromDataUrl(dataUrl, saveFilename);
+        return entry.file;
+      },
+      (err) => {
+        // 미리 캡처가 실패해도 [저장]은 누를 때 캡처하는 옛 경로로 간다.
+        console.error('[save:prepare]', err);
+        return null;
+      },
+    );
+    preparedRef.current = entry;
+  }, [croppedImageUrl, movieInfo, components, fieldVisibility, saveFilename, layout.width, layout.height, runCapture]);
+
   const handleSave = useCallback(async () => {
     // 누르는 순간 경고를 지운다(constraint-6) — 다시 실패하면 아래 catch가 새 경고를 띄운다.
     setAlert(null);
     const node = ticketRef.current;
-    // 다른 캡처가 진행 중이면(연타·동시 공유) 무시 — 같은 노드 toJpeg 중복을 막는다(#167).
+    // 저장 · 링크가 진행 중이면(연타·동시 공유) 무시한다(#167).
     if (!node || capturingRef.current) return;
-    const title = movieInfo.title || 'untitled';
-    const filename = `phototicket_${layout.id}_${title}.jpg`;
+    const prepared = preparedRef.current;
     capturingRef.current = true;
     setSaveState('loading');
     try {
       if (canShareTicketFile()) {
-        const result = await shareTicketAsJpeg(node, {
-          filename,
-          width: layout.width,
-          height: layout.height,
-          shareTitle: title,
-        });
+        // 미리 만든 파일이 있으면 이 줄까지 await가 없다 — share가 클릭 안에서 불린다(#858). 아직 만드는
+        // 중이면(진입 직후 탭) 끝나길 기다리고, 실패했으면 지금 캡처한다.
+        const file = prepared?.file ?? (prepared ? await prepared.ready : null);
+        const result = file
+          ? await shareTicketFile(file, saveTitle)
+          : await runCapture(() =>
+              shareTicketAsJpeg(node, {
+                filename: saveFilename,
+                width: layout.width,
+                height: layout.height,
+                shareTitle: saveTitle,
+              }),
+            );
         // 시트를 닫으면(cancelled) 저장 안 한 것 — 통보 없이 원래대로.
         if (result === 'shared') {
           setSaveState('success');
@@ -135,11 +188,13 @@ export function ResultPanel({
           setSaveState('idle');
         }
       } else {
-        await downloadTicketAsJpeg(node, {
-          filename,
-          width: layout.width,
-          height: layout.height,
-        });
+        await runCapture(() =>
+          downloadTicketAsJpeg(node, {
+            filename: saveFilename,
+            width: layout.width,
+            height: layout.height,
+          }),
+        );
         setSaveState('success');
         onNotice?.(RESULT_NOTICE_SAVED);
       }
@@ -151,7 +206,7 @@ export function ResultPanel({
     } finally {
       capturingRef.current = false;
     }
-  }, [layout.id, layout.width, layout.height, movieInfo.title, onNotice]);
+  }, [saveTitle, saveFilename, layout.width, layout.height, onNotice, runCapture]);
 
   // 완성 티켓을 캡처 → Blob 업로드(/api/ticket) → /t/<id> URL. 성공이면 URL, 실패·스테일이면 null(throw 안 함).
   const issuePermalink = useCallback(async (): Promise<string | null> => {
@@ -165,13 +220,15 @@ export function ResultPanel({
       let dataUrl: string;
       try {
         // 공유용 블롭은 다운로드(pixelRatio 2·q0.95)보다 작게 캡처한다(#194) — OG 카드·랜딩 썸네일용.
-        dataUrl = await captureNodeToJpeg(node, {
-          filename: `phototicket_${layout.id}.jpg`,
-          width: layout.width,
-          height: layout.height,
-          pixelRatio: 1,
-          quality: 0.82,
-        });
+        dataUrl = await runCapture(() =>
+          captureNodeToJpeg(node, {
+            filename: `phototicket_${layout.id}.jpg`,
+            width: layout.width,
+            height: layout.height,
+            pixelRatio: 1,
+            quality: 0.82,
+          }),
+        );
       } finally {
         capturingRef.current = false;
       }
@@ -203,7 +260,7 @@ export function ResultPanel({
     setPermalink(url);
     setPermaLoading(false);
     return url;
-  }, [layout.id, layout.width, layout.height, movieInfo.title, movieInfo.titleOg, movieInfo.releaseDate]);
+  }, [layout.id, layout.width, layout.height, movieInfo.title, movieInfo.titleOg, movieInfo.releaseDate, runCapture]);
 
   // 복사 성공이면 통보, 거부(인앱 웹뷰·포커스 이탈)면 그 자리에 대체 링크 칸을 띄운다.
   const copyLink = useCallback(async (url: string) => {

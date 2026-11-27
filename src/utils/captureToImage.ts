@@ -1060,8 +1060,28 @@ export function canShareTicketFile(): boolean {
   }
 }
 
+/** 캡처 결과(JPEG data URL)를 공유 시트에 실을 File로 바꾼다. */
+export function jpegFileFromDataUrl(dataUrl: string, filename: string): File {
+  return new File([dataUrlToJpegBlob(dataUrl)], filename, { type: 'image/jpeg' });
+}
+
 /**
- * 티켓 노드를 캡처해 OS 공유 시트로 보낸다.
+ * 이미 만든 티켓 파일을 OS 공유 시트로 보낸다. `navigator.share`를 첫 문장에서 부르므로, 클릭 핸들러가
+ * await 없이 부르면 share가 그 클릭 안에서 불린다 — iOS Safari는 캡처 뒤에 부른 share를 사용자 활성
+ * 소실로 거절했다(#858). 사용자가 시트를 닫으면(AbortError) 에러가 아니라 'cancelled'로 돌려준다.
+ */
+export async function shareTicketFile(file: File, shareTitle: string): Promise<'shared' | 'cancelled'> {
+  try {
+    await navigator.share({ files: [file], title: shareTitle });
+    return 'shared';
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') return 'cancelled';
+    throw err;
+  }
+}
+
+/**
+ * 티켓 노드를 캡처해 OS 공유 시트로 보낸다(미리 만든 파일이 없을 때의 경로).
  * 사용자가 공유 시트를 닫으면(AbortError) 에러가 아니라 'cancelled'로 돌려준다.
  */
 export async function shareTicketAsJpeg(
@@ -1069,15 +1089,8 @@ export async function shareTicketAsJpeg(
   options: CaptureOptions & { shareTitle?: string }
 ): Promise<'shared' | 'cancelled'> {
   const dataUrl = await captureNodeToJpeg(node, options);
-  const blob = dataUrlToJpegBlob(dataUrl);
-  const file = new File([blob], options.filename, { type: 'image/jpeg' });
-  try {
-    await navigator.share({ files: [file], title: options.shareTitle ?? options.filename });
-    return 'shared';
-  } catch (err) {
-    if (err instanceof Error && err.name === 'AbortError') return 'cancelled';
-    throw err;
-  }
+  const file = jpegFileFromDataUrl(dataUrl, options.filename);
+  return shareTicketFile(file, options.shareTitle ?? options.filename);
 }
 
 export async function downloadTicketAsJpeg(

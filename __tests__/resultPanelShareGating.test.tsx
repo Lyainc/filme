@@ -50,6 +50,8 @@ beforeAll(() => {
       return downloadImpl();
     },
     shareTicketAsJpeg: () => shareImpl(),
+    // 미리 만든 파일 경로(#858)도 같은 가변 구현을 탄다.
+    shareTicketFile: () => shareImpl(),
     captureNodeToJpeg: () => captureImpl(),
   }));
   realErrorToast = { ...require('@/utils/errorToast') };
