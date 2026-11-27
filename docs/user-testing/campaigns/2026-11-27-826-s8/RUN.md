@@ -130,7 +130,7 @@ Seed [`docs/specs/826-s8-device-verification.yaml`](../../../specs/826-s8-device
 - 현상: 결과 화면 [저장] → "저장하지 못했어요". 같은 결과 화면 새로 열기 5회 중 4회(`save/768-save-activation.json`), T01 16칸은 첫 시도 16/16 실패.
 - 원인까지 본 것: 캡처(약 0.75초) 뒤 부르는 `navigator.share`가 `NotAllowedError`. 실패한 회차는 클릭 뒤 0.1~0.2초에 이미 `navigator.userActivation.isActive`가 false였어요(성공 회차는 share 순간까지 true). fetch 완료와는 무관했고, 활성을 끈 API는 좁히지 못했어요.
 - 재현: 결과 화면에서 [저장] XCTest 탭 → 0.8초 뒤 경고(`bugs/save-not-allowed-alert.jpg`). 제때 불리면 시트가 정상으로 떠요(`bugs/save-sheet-when-in-time.jpg`). 마지막 정상 상태: 2026-10-21 캠페인(iPhone 17 Pro · iOS 26.5)에선 저장이 됐어요.
-- 처리: 고치는 방식(결과 화면 진입 때 미리 캡처 vs 거절 뒤 "다시 눌러 저장")이 동작 설계라 마스터 "소유자에게 묻는 것"에 올렸어요. [공유]도 같은 구조예요. 실기기 재현은 T02 · T17에서 확인해요. 새 이슈는 소유자 승인 뒤 열어요(초안은 #826 보고와 함께).
+- 처리: 고치는 방식(결과 화면 진입 때 미리 캡처 vs 거절 뒤 "다시 눌러 저장")이 동작 설계라 마스터 "소유자에게 묻는 것"에 올렸어요. [공유]도 같은 구조예요. 실기기 재현은 T02 · T17에서 확인해요. 새 이슈 #858로 넘겼어요(acceptance-23).
 
 ### 마스터에 올린 사용성 결정 4건
 
