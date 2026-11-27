@@ -5,7 +5,7 @@
 → 키보드에 붙는 % 패널([data-percent-panel], 입력 aria-label '<이름> 퍼센트', #826 S4 K-03).
 필드: #dock-mode-tab-info → 정보 행 '제목' → 입력 패널([data-field-panel])의 '다음 항목'으로 한 바퀴 순회(평점은 소수 입력을 열어 잰다).
 
-사용: python3 run585.py [0-7 ...] [fields]   (인자 없으면 전부)
+사용: python3 run585.py [0-5 ...] [fields | fields=<무드 이름>]   (인자 없으면 전부, 필드는 '직접 입력' 기본 무드)
 출력: $FILME_SIM_DIR/ev/585-*.png, 585-ios.json. PASS = 모든 포커스 상태에서 visualViewport.scale == 1 · font-size >= 16px,
 % 입력은 친 값이 슬라이더에 커밋되고 종료 뒤 도크 · 프리뷰 rect가 그대로."""
 import json, sys, time
@@ -121,8 +121,13 @@ if(!bd)return null; for(let y=4;y<300;y+=6){for(const x of [8,200,390]){if(docum
             'verdict': 'PASS' if all(checks.values()) else 'FAIL'}
 
 
-def run_fields():
+def run_fields(mood=None):
     reset_editor()
+    if mood:  # 순회는 그 무드가 그린 필드만 돈다 — 한줄평은 크라이테리언만 그린다. 디자인 '무드' 도구의 칩으로 바꾼다.
+        tap_id('dock-mode-tab-design'); tap_id('design-tool-tab-mood')
+        chip = f'[...document.querySelectorAll(\'[role=radiogroup][aria-label="무드 목록"] [role=radio]\')].find(e=>(e.getAttribute("aria-label")||"").startsWith({json.dumps(mood)}))'
+        js(f'({chip}).scrollIntoView({{inline:"center",block:"nearest"}})'); time.sleep(0.8)
+        tap_el(chip); time.sleep(1.2)
     tap_id('dock-mode-tab-info')
     r = rect_of('[...document.querySelector(\'[data-testid="editor-dock"]\').querySelectorAll("button")].find(e=>e.textContent.trim().startsWith("제목"))')
     tap_css(r['x'] + r['w'] / 2, r['y'] + r['h'] / 2)
@@ -183,9 +188,12 @@ for i, (tool, group, label, v1, v2) in enumerate(SLIDERS):
         out['percent'].append(r)
         print(json.dumps({k: r.get(k) for k in ('label', 'exit', 'verdict', 'how', 'checks', 'error')}, ensure_ascii=False), flush=True)
         print('  during', {k: (r.get('during') or {}).get(k) for k in ('zoom', 'font', 'vvH', 'inputVisible')}, flush=True)
-if not only or 'fields' in only:
+fields_arg = next((a for a in only if a.startswith('fields')), None) if only else 'fields'
+if fields_arg:
     try:
-        out['fields'] = run_fields()
+        out['fields'] = run_fields(fields_arg.split('=', 1)[1] if '=' in fields_arg else None)
+        out['fieldsMood'] = fields_arg.split('=', 1)[1] if '=' in fields_arg else '직접 입력 기본'
+
     except Exception as e:
         out['fields'] = {'verdict': 'ERROR', 'error': str(e)[:300]}
     fr = out['fields']
