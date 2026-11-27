@@ -1,0 +1,122 @@
+[
+ {
+  "mode": "now",
+  "click": 33469,
+  "actAtClick": true,
+  "shareAt": 0,
+  "actAtShare": true,
+  "r": "AbortError",
+  "i": 1,
+  "sheet": true
+ },
+ {
+  "mode": "late",
+  "click": 42318,
+  "actAtClick": true,
+  "shareAt": 751,
+  "actAtShare": true,
+  "r": "AbortError",
+  "i": 2,
+  "sheet": true
+ },
+ {
+  "mode": "now",
+  "click": 50735,
+  "actAtClick": true,
+  "shareAt": 0,
+  "actAtShare": true,
+  "r": "AbortError",
+  "i": 3,
+  "sheet": true
+ },
+ {
+  "mode": "late",
+  "click": 59752,
+  "actAtClick": true,
+  "shareAt": 751,
+  "actAtShare": true,
+  "r": "AbortError",
+  "i": 4,
+  "sheet": true
+ },
+ {
+  "mode": "now",
+  "click": 68201,
+  "actAtClick": true,
+  "shareAt": 0,
+  "actAtShare": true,
+  "r": "AbortError",
+  "i": 5,
+  "sheet": true
+ },
+ {
+  "mode": "late",
+  "click": 77035,
+  "actAtClick": true,
+  "shareAt": 751,
+  "actAtShare": true,
+  "r": "AbortError",
+  "i": 6,
+  "sheet": true
+ },
+ {
+  "mode": "now",
+  "click": 85451,
+  "actAtClick": true,
+  "shareAt": 0,
+  "actAtShare": true,
+  "r": "AbortError",
+  "i": 7,
+  "sheet": true
+ },
+ {
+  "mode": "late",
+  "click": 94302,
+  "actAtClick": true,
+  "shareAt": 751,
+  "actAtShare": true,
+  "r": "AbortError",
+  "i": 8,
+  "sheet": true
+ },
+ {
+  "mode": "now",
+  "click": 102735,
+  "actAtClick": true,
+  "shareAt": 0,
+  "actAtShare": true,
+  "r": "AbortError",
+  "i": 9,
+  "sheet": true
+ },
+ {
+  "mode": "late",
+  "click": 111568,
+  "actAtClick": true,
+  "shareAt": 751,
+  "actAtShare": true,
+  "r": "AbortError",
+  "i": 10,
+  "sheet": true
+ },
+ {
+  "mode": "now",
+  "click": 120018,
+  "actAtClick": true,
+  "shareAt": 0,
+  "actAtShare": true,
+  "r": "AbortError",
+  "i": 11,
+  "sheet": true
+ },
+ {
+  "mode": "late",
+  "click": 128885,
+  "actAtClick": true,
+  "shareAt": 750,
+  "actAtShare": true,
+  "r": "AbortError",
+  "i": 12,
+  "sheet": true
+ }
+]

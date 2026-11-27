@@ -1,0 +1,201 @@
+[
+ {
+  "via": "appium",
+  "k": 0,
+  "nav": {
+   "href": "http://localhost:3038/?fs=appium01795790759",
+   "di": 19,
+   "load": 27,
+   "now": 75,
+   "wall": 0.1
+  },
+  "saveAtSinceNav": 5371,
+  "sheet": false,
+  "share": [
+   {
+    "at": 6231,
+    "act": false,
+    "r": "NotAllowedError"
+   }
+  ]
+ },
+ {
+  "via": "simctl",
+  "k": 0,
+  "nav": {
+   "href": "http://localhost:3038/?fs=simctl01795790765",
+   "di": 15,
+   "load": 94,
+   "now": 972,
+   "wall": 1.2
+  },
+  "saveAtSinceNav": 6356,
+  "sheet": true,
+  "share": [
+   {
+    "at": 7209,
+    "act": true
+   }
+  ]
+ },
+ {
+  "via": "appium",
+  "k": 1,
+  "nav": {
+   "href": "http://localhost:3038/?fs=appium11795790777",
+   "di": 33,
+   "load": 86,
+   "now": 94,
+   "wall": 0.1
+  },
+  "saveAtSinceNav": 5435,
+  "sheet": false,
+  "share": [
+   {
+    "at": 6227,
+    "act": false,
+    "r": "NotAllowedError"
+   }
+  ]
+ },
+ {
+  "via": "simctl",
+  "k": 1,
+  "nav": {
+   "href": "http://localhost:3038/?fs=simctl11795790783",
+   "di": 19,
+   "load": 98,
+   "now": 962,
+   "wall": 1.2
+  },
+  "saveAtSinceNav": 6342,
+  "sheet": false,
+  "share": [
+   {
+    "at": 7169,
+    "act": false,
+    "r": "NotAllowedError"
+   }
+  ]
+ },
+ {
+  "via": "appium",
+  "k": 2,
+  "nav": {
+   "href": "http://localhost:3038/?fs=appium21795790791",
+   "di": 22,
+   "load": 60,
+   "now": 71,
+   "wall": 0.1
+  },
+  "saveAtSinceNav": 5411,
+  "sheet": false,
+  "share": [
+   {
+    "at": 6192,
+    "act": false,
+    "r": "NotAllowedError"
+   }
+  ]
+ },
+ {
+  "via": "simctl",
+  "k": 2,
+  "nav": {
+   "href": "http://localhost:3038/?fs=simctl21795790798",
+   "di": 19,
+   "load": 94,
+   "now": 952,
+   "wall": 1.3
+  },
+  "saveAtSinceNav": 6320,
+  "sheet": false,
+  "share": [
+   {
+    "at": 7192,
+    "act": false,
+    "r": "NotAllowedError"
+   }
+  ]
+ },
+ {
+  "via": "appium",
+  "k": 3,
+  "nav": {
+   "href": "http://localhost:3038/?fs=appium31795790805",
+   "di": 27,
+   "load": 65,
+   "now": 85,
+   "wall": 0.1
+  },
+  "saveAtSinceNav": 5399,
+  "sheet": false,
+  "share": [
+   {
+    "at": 6164,
+    "act": false,
+    "r": "NotAllowedError"
+   }
+  ]
+ },
+ {
+  "via": "simctl",
+  "k": 3,
+  "nav": {
+   "href": "http://localhost:3038/?fs=simctl31795790812",
+   "di": 20,
+   "load": 101,
+   "now": 972,
+   "wall": 1.2
+  },
+  "saveAtSinceNav": 6330,
+  "sheet": false,
+  "share": [
+   {
+    "at": 7170,
+    "act": false,
+    "r": "NotAllowedError"
+   }
+  ]
+ },
+ {
+  "via": "appium",
+  "k": 4,
+  "nav": {
+   "href": "http://localhost:3038/?fs=appium41795790820",
+   "di": 25,
+   "load": 63,
+   "now": 75,
+   "wall": 0.1
+  },
+  "saveAtSinceNav": 5412,
+  "sheet": false,
+  "share": [
+   {
+    "at": 6177,
+    "act": false,
+    "r": "NotAllowedError"
+   }
+  ]
+ },
+ {
+  "via": "simctl",
+  "k": 4,
+  "nav": {
+   "href": "http://localhost:3038/?fs=simctl41795790826",
+   "di": 19,
+   "load": 100,
+   "now": 967,
+   "wall": 1.3
+  },
+  "saveAtSinceNav": 6381,
+  "sheet": false,
+  "share": [
+   {
+    "at": 7228,
+    "act": false,
+    "r": "NotAllowedError"
+   }
+  ]
+ }
+]

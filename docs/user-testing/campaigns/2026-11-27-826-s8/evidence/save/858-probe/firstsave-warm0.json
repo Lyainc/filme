@@ -1,0 +1,172 @@
+[
+ {
+  "via": "simctl",
+  "k": 0,
+  "nav": {
+   "href": "http://localhost:3038/?fs=simctl01795791007",
+   "di": 22,
+   "load": 106,
+   "now": 42209,
+   "wall": 42.6
+  },
+  "saveAtSinceNav": 47630,
+  "sheet": true,
+  "share": [
+   {
+    "at": 48544,
+    "act": true
+   }
+  ],
+  "obs": {
+   "resources": [
+    [
+     47855,
+     47856,
+     "script",
+     "http://localhost:3038/_next/static/chunks/1-_cbtoq5pn_x.js"
+    ],
+    [
+     47903,
+     47914,
+     "fetch",
+     "38/_next/static/media/04c5164763c40239-s.1kd-r_s9smv5m.woff2"
+    ],
+    [
+     47903,
+     47915,
+     "fetch",
+     "next/static/media/PretendardVariable-s.p.0ztvx5mb7lxp4.woff2"
+    ],
+    [
+     47903,
+     47917,
+     "fetch",
+     "38/_next/static/media/26f284dcc38c84c0-s.3hlisc-pwq13z.woff2"
+    ],
+    [
+     47903,
+     47917,
+     "fetch",
+     "38/_next/static/media/7e7f32a39836f228-s.0-oo9_1x_xmvg.woff2"
+    ],
+    [
+     47903,
+     47917,
+     "fetch",
+     "38/_next/static/media/fa39153a3fc630ba-s.36fqqi66-3tjb.woff2"
+    ],
+    [
+     47903,
+     47917,
+     "fetch",
+     "38/_next/static/media/6a5386fd6038edbe-s.3_z45zcoc-xoz.woff2"
+    ],
+    [
+     47903,
+     47918,
+     "fetch",
+     "/_next/static/media/051742360c26797e-s.p.1bkzbscqrt8rl.woff2"
+    ],
+    [
+     47903,
+     47918,
+     "fetch",
+     "38/_next/static/media/04c5164763c40239-s.1kd-r_s9smv5m.woff2"
+    ],
+    [
+     47903,
+     47918,
+     "fetch",
+     "38/_next/static/media/26f284dcc38c84c0-s.3hlisc-pwq13z.woff2"
+    ],
+    [
+     47903,
+     47918,
+     "fetch",
+     "38/_next/static/media/7e7f32a39836f228-s.0-oo9_1x_xmvg.woff2"
+    ],
+    [
+     47903,
+     47918,
+     "fetch",
+     "38/_next/static/media/fa39153a3fc630ba-s.36fqqi66-3tjb.woff2"
+    ],
+    [
+     47904,
+     47918,
+     "fetch",
+     "38/_next/static/media/6a5386fd6038edbe-s.3_z45zcoc-xoz.woff2"
+    ],
+    [
+     47904,
+     47918,
+     "fetch",
+     "/_next/static/media/051742360c26797e-s.p.1bkzbscqrt8rl.woff2"
+    ],
+    [
+     47904,
+     47918,
+     "fetch",
+     "38/_next/static/media/fc0a7394b875fa43-s.2ytmazkdrg7t9.woff2"
+    ],
+    [
+     47904,
+     47919,
+     "fetch",
+     "/_next/static/media/7ebf22b5a21034f8-s.p.3j3877k49yy0l.woff2"
+    ],
+    [
+     47904,
+     47919,
+     "fetch",
+     "38/_next/static/media/ccf27e5a7366fb23-s.1icgra-w5i50b.woff2"
+    ],
+    [
+     47904,
+     47919,
+     "fetch",
+     "/_next/static/media/e41d5df559864f9e-s.p.1g73gv09-xcb6.woff2"
+    ],
+    [
+     47904,
+     47919,
+     "fetch",
+     "38/_next/static/media/8dc65ad0d7cd01db-s.3t39y6vmltodk.woff2"
+    ],
+    [
+     47904,
+     47919,
+     "fetch",
+     "38/_next/static/media/12cb638dc4d39394-s.429rz2bud6l-r.woff2"
+    ],
+    [
+     47904,
+     47919,
+     "fetch",
+     "38/_next/static/media/beec7104b13d6aa4-s.21hr174t974bu.woff2"
+    ],
+    [
+     47904,
+     47919,
+     "fetch",
+     "38/_next/static/media/306e7ee420e3dc92-s.263is1yngz7w5.woff2"
+    ],
+    [
+     47904,
+     47919,
+     "fetch",
+     "/_next/static/media/94559602f76dfad5-s.p.3dovwaoxfx6om.woff2"
+    ]
+   ],
+   "heads": [
+    [
+     47856,
+     "SCRIPT",
+     "http://localhost:3038/_next/static/chunks/1-_cbtoq5pn_x.js"
+    ]
+   ],
+   "flip": 48545,
+   "click": 47820
+  }
+ }
+]
