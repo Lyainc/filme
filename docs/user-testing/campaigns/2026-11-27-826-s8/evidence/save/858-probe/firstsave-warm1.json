@@ -1,0 +1,102 @@
+[
+ {
+  "via": "simctl",
+  "k": 0,
+  "nav": {
+   "href": "http://localhost:3038/?fs=simctl01795790871",
+   "di": 18,
+   "load": 97,
+   "now": 982,
+   "wall": 1.3
+  },
+  "saveAtSinceNav": 10436,
+  "sheet": true,
+  "share": [
+   {
+    "at": 11130,
+    "act": true
+   }
+  ],
+  "obs": {
+   "resources": [],
+   "heads": [],
+   "flip": 11131,
+   "click": 10590
+  }
+ },
+ {
+  "via": "simctl",
+  "k": 1,
+  "nav": {
+   "href": "http://localhost:3038/?fs=simctl11795790886",
+   "di": 20,
+   "load": 116,
+   "now": 969,
+   "wall": 1.4
+  },
+  "saveAtSinceNav": 10426,
+  "sheet": true,
+  "share": [
+   {
+    "at": 11116,
+    "act": true
+   }
+  ],
+  "obs": {
+   "resources": [],
+   "heads": [],
+   "flip": 11116,
+   "click": 10576
+  }
+ },
+ {
+  "via": "simctl",
+  "k": 2,
+  "nav": {
+   "href": "http://localhost:3038/?fs=simctl21795790901",
+   "di": 19,
+   "load": 100,
+   "now": 988,
+   "wall": 1.3
+  },
+  "saveAtSinceNav": 10461,
+  "sheet": true,
+  "share": [
+   {
+    "at": 11194,
+    "act": true
+   }
+  ],
+  "obs": {
+   "resources": [],
+   "heads": [],
+   "flip": 11194,
+   "click": 10641
+  }
+ },
+ {
+  "via": "simctl",
+  "k": 3,
+  "nav": {
+   "href": "http://localhost:3038/?fs=simctl31795790915",
+   "di": 23,
+   "load": 112,
+   "now": 981,
+   "wall": 1.3
+  },
+  "saveAtSinceNav": 10459,
+  "sheet": true,
+  "share": [
+   {
+    "at": 11169,
+    "act": true
+   }
+  ],
+  "obs": {
+   "resources": [],
+   "heads": [],
+   "flip": 11170,
+   "click": 10618
+  }
+ }
+]

@@ -1,0 +1,38 @@
+[
+ {
+  "target": "pb",
+  "sinceLoad": 22563,
+  "actAtClick": true,
+  "offAt": 1798
+ },
+ {
+  "target": "pe",
+  "sinceLoad": 28695,
+  "actAtClick": true,
+  "offAt": 1745
+ },
+ {
+  "target": "pb",
+  "sinceLoad": 34746,
+  "actAtClick": true,
+  "offAt": 1722
+ },
+ {
+  "target": "pe",
+  "sinceLoad": 40879,
+  "actAtClick": true,
+  "offAt": 5002
+ },
+ {
+  "target": "pb",
+  "sinceLoad": 46912,
+  "actAtClick": true,
+  "offAt": 5005
+ },
+ {
+  "target": "pe",
+  "sinceLoad": 53532,
+  "actAtClick": true,
+  "offAt": 4997
+ }
+]

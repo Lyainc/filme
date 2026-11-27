@@ -1,0 +1,147 @@
+[
+ {
+  "i": 1,
+  "mode": "poll",
+  "sheet": false,
+  "alert": "저장하지 못했어요",
+  "share": [
+   {
+    "at": 34962,
+    "act": false,
+    "r": "NotAllowedError"
+   }
+  ]
+ },
+ {
+  "i": 2,
+  "mode": "nopoll",
+  "sheet": true,
+  "alert": null,
+  "share": [
+   {
+    "at": 40010,
+    "act": true
+   }
+  ]
+ },
+ {
+  "i": 3,
+  "mode": "poll",
+  "sheet": true,
+  "alert": null,
+  "share": [
+   {
+    "at": 50002,
+    "act": true
+   }
+  ]
+ },
+ {
+  "i": 4,
+  "mode": "nopoll",
+  "sheet": true,
+  "alert": null,
+  "share": [
+   {
+    "at": 58543,
+    "act": true
+   }
+  ]
+ },
+ {
+  "i": 5,
+  "mode": "poll",
+  "sheet": true,
+  "alert": null,
+  "share": [
+   {
+    "at": 68431,
+    "act": true
+   }
+  ]
+ },
+ {
+  "i": 6,
+  "mode": "nopoll",
+  "sheet": true,
+  "alert": null,
+  "share": [
+   {
+    "at": 76348,
+    "act": true
+   }
+  ]
+ },
+ {
+  "i": 7,
+  "mode": "poll",
+  "sheet": true,
+  "alert": null,
+  "share": [
+   {
+    "at": 86696,
+    "act": true
+   }
+  ]
+ },
+ {
+  "i": 8,
+  "mode": "nopoll",
+  "sheet": true,
+  "alert": null,
+  "share": [
+   {
+    "at": 95819,
+    "act": true
+   }
+  ]
+ },
+ {
+  "i": 9,
+  "mode": "poll",
+  "sheet": true,
+  "alert": null,
+  "share": [
+   {
+    "at": 105805,
+    "act": true
+   }
+  ]
+ },
+ {
+  "i": 10,
+  "mode": "nopoll",
+  "sheet": true,
+  "alert": null,
+  "share": [
+   {
+    "at": 113717,
+    "act": true
+   }
+  ]
+ },
+ {
+  "i": 11,
+  "mode": "poll",
+  "sheet": true,
+  "alert": null,
+  "share": [
+   {
+    "at": 123642,
+    "act": true
+   }
+  ]
+ },
+ {
+  "i": 12,
+  "mode": "nopoll",
+  "sheet": true,
+  "alert": null,
+  "share": [
+   {
+    "at": 131440,
+    "act": true
+   }
+  ]
+ }
+]

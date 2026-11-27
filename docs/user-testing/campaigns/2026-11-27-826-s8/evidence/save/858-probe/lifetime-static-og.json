@@ -1,0 +1,52 @@
+[
+ {
+  "target": "pb",
+  "actAtClick": true,
+  "offAt": 5002
+ },
+ {
+  "target": "pe",
+  "actAtClick": true,
+  "offAt": 4985
+ },
+ {
+  "target": "pb",
+  "actAtClick": true,
+  "offAt": 5002
+ },
+ {
+  "target": "pe",
+  "actAtClick": true,
+  "offAt": 5005
+ },
+ {
+  "target": "pb",
+  "actAtClick": true,
+  "offAt": 5007
+ },
+ {
+  "target": "pe",
+  "actAtClick": true,
+  "offAt": 5003
+ },
+ {
+  "target": "pb",
+  "actAtClick": true,
+  "offAt": 5003
+ },
+ {
+  "target": "pe",
+  "actAtClick": true,
+  "offAt": 5002
+ },
+ {
+  "target": "pb",
+  "actAtClick": true,
+  "offAt": 5002
+ },
+ {
+  "target": "pe",
+  "actAtClick": true,
+  "offAt": 5003
+ }
+]

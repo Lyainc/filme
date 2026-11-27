@@ -1,0 +1,516 @@
+[
+ {
+  "mode": "block-nopoll",
+  "rep": 1,
+  "wrap": true,
+  "poll": false,
+  "events": [
+   {
+    "t": "pointerdown",
+    "now": 32166,
+    "ts": 32147,
+    "act": false
+   },
+   {
+    "t": "touchstart",
+    "now": 32167,
+    "ts": 32147,
+    "act": false
+   },
+   {
+    "t": "pointerup",
+    "now": 32231,
+    "ts": 32229,
+    "act": true
+   },
+   {
+    "t": "touchend",
+    "now": 32232,
+    "ts": 32229,
+    "act": true
+   },
+   {
+    "t": "mousedown",
+    "now": 32233,
+    "ts": 32233,
+    "act": true
+   },
+   {
+    "t": "mouseup",
+    "now": 32234,
+    "ts": 32234,
+    "act": true
+   },
+   {
+    "t": "click",
+    "now": 32234,
+    "ts": 32234,
+    "act": true
+   }
+  ],
+  "samples": [
+   [
+    32166,
+    false
+   ],
+   [
+    32234,
+    true
+   ],
+   [
+    34415,
+    false
+   ],
+   [
+    35166,
+    false,
+    "end"
+   ]
+  ],
+  "flip": {
+   "at": 34415,
+   "recent": [
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout"
+   ]
+  },
+  "consumers": [],
+  "alert": null,
+  "sheet": false
+ },
+ {
+  "mode": "block-nopoll",
+  "rep": 2,
+  "wrap": true,
+  "poll": false,
+  "events": [
+   {
+    "t": "pointerdown",
+    "now": 37706,
+    "ts": 37667,
+    "act": false
+   },
+   {
+    "t": "touchstart",
+    "now": 37707,
+    "ts": 37667,
+    "act": false
+   },
+   {
+    "t": "pointerup",
+    "now": 37765,
+    "ts": 37751,
+    "act": true
+   },
+   {
+    "t": "touchend",
+    "now": 37765,
+    "ts": 37751,
+    "act": true
+   },
+   {
+    "t": "mousedown",
+    "now": 37771,
+    "ts": 37771,
+    "act": true
+   },
+   {
+    "t": "mouseup",
+    "now": 37772,
+    "ts": 37772,
+    "act": true
+   },
+   {
+    "t": "click",
+    "now": 37772,
+    "ts": 37772,
+    "act": true
+   }
+  ],
+  "samples": [
+   [
+    37706,
+    false
+   ],
+   [
+    37765,
+    true
+   ],
+   [
+    40584,
+    false
+   ],
+   [
+    40707,
+    false,
+    "end"
+   ]
+  ],
+  "flip": {
+   "at": 40584,
+   "recent": [
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout"
+   ]
+  },
+  "consumers": [],
+  "alert": null,
+  "sheet": false
+ },
+ {
+  "mode": "block-nopoll",
+  "rep": 3,
+  "wrap": true,
+  "poll": false,
+  "events": [
+   {
+    "t": "pointerdown",
+    "now": 42820,
+    "ts": 42817,
+    "act": false
+   },
+   {
+    "t": "touchstart",
+    "now": 42820,
+    "ts": 42817,
+    "act": false
+   },
+   {
+    "t": "pointerup",
+    "now": 42915,
+    "ts": 42901,
+    "act": true
+   },
+   {
+    "t": "touchend",
+    "now": 42916,
+    "ts": 42901,
+    "act": true
+   },
+   {
+    "t": "mousedown",
+    "now": 42917,
+    "ts": 42917,
+    "act": true
+   },
+   {
+    "t": "mouseup",
+    "now": 42918,
+    "ts": 42918,
+    "act": true
+   },
+   {
+    "t": "click",
+    "now": 42918,
+    "ts": 42918,
+    "act": true
+   }
+  ],
+  "samples": [
+   [
+    42820,
+    false
+   ],
+   [
+    42918,
+    true
+   ],
+   [
+    45820,
+    true,
+    "end"
+   ]
+  ],
+  "flip": null,
+  "consumers": [],
+  "alert": null,
+  "sheet": false
+ },
+ {
+  "mode": "block-nopoll",
+  "rep": 4,
+  "wrap": true,
+  "poll": false,
+  "events": [
+   {
+    "t": "pointerdown",
+    "now": 47907,
+    "ts": 47904,
+    "act": true
+   },
+   {
+    "t": "touchstart",
+    "now": 47907,
+    "ts": 47904,
+    "act": true
+   },
+   {
+    "t": "pointerup",
+    "now": 47998,
+    "ts": 47987,
+    "act": true
+   },
+   {
+    "t": "touchend",
+    "now": 47998,
+    "ts": 47987,
+    "act": true
+   },
+   {
+    "t": "mousedown",
+    "now": 47999,
+    "ts": 47999,
+    "act": true
+   },
+   {
+    "t": "mouseup",
+    "now": 48000,
+    "ts": 47999,
+    "act": true
+   },
+   {
+    "t": "click",
+    "now": 48000,
+    "ts": 47999,
+    "act": true
+   }
+  ],
+  "samples": [
+   [
+    47907,
+    true
+   ],
+   [
+    47918,
+    false
+   ],
+   [
+    48000,
+    true
+   ],
+   [
+    50907,
+    true,
+    "end"
+   ]
+  ],
+  "flip": {
+   "at": 47918,
+   "recent": [
+    "Document.querySelector",
+    "Element.getBoundingClientRect",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout"
+   ]
+  },
+  "consumers": [],
+  "alert": null,
+  "sheet": false
+ },
+ {
+  "mode": "block-nopoll",
+  "rep": 5,
+  "wrap": true,
+  "poll": false,
+  "events": [
+   {
+    "t": "pointerdown",
+    "now": 52992,
+    "ts": 52990,
+    "act": true
+   },
+   {
+    "t": "touchstart",
+    "now": 52992,
+    "ts": 52990,
+    "act": true
+   },
+   {
+    "t": "pointerup",
+    "now": 53082,
+    "ts": 53073,
+    "act": true
+   },
+   {
+    "t": "touchend",
+    "now": 53082,
+    "ts": 53073,
+    "act": true
+   },
+   {
+    "t": "mousedown",
+    "now": 53084,
+    "ts": 53083,
+    "act": true
+   },
+   {
+    "t": "mouseup",
+    "now": 53084,
+    "ts": 53084,
+    "act": true
+   },
+   {
+    "t": "click",
+    "now": 53084,
+    "ts": 53084,
+    "act": true
+   }
+  ],
+  "samples": [
+   [
+    52992,
+    true
+   ],
+   [
+    53000,
+    false
+   ],
+   [
+    53084,
+    true
+   ],
+   [
+    55993,
+    true,
+    "end"
+   ]
+  ],
+  "flip": {
+   "at": 53000,
+   "recent": [
+    "Document.querySelector",
+    "Element.getBoundingClientRect",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout",
+    "window.setTimeout"
+   ]
+  },
+  "consumers": [],
+  "alert": null,
+  "sheet": false
+ },
+ {
+  "mode": "block-nopoll",
+  "rep": 6,
+  "wrap": true,
+  "poll": false,
+  "events": [
+   {
+    "t": "pointerdown",
+    "now": 58091,
+    "ts": 58089,
+    "act": false
+   },
+   {
+    "t": "touchstart",
+    "now": 58091,
+    "ts": 58089,
+    "act": false
+   },
+   {
+    "t": "pointerup",
+    "now": 58182,
+    "ts": 58172,
+    "act": true
+   },
+   {
+    "t": "touchend",
+    "now": 58182,
+    "ts": 58172,
+    "act": true
+   },
+   {
+    "t": "mousedown",
+    "now": 58183,
+    "ts": 58183,
+    "act": true
+   },
+   {
+    "t": "mouseup",
+    "now": 58183,
+    "ts": 58183,
+    "act": true
+   },
+   {
+    "t": "click",
+    "now": 58184,
+    "ts": 58183,
+    "act": true
+   }
+  ],
+  "samples": [
+   [
+    58091,
+    false
+   ],
+   [
+    58184,
+    true
+   ],
+   [
+    61091,
+    true,
+    "end"
+   ]
+  ],
+  "flip": null,
+  "consumers": [],
+  "alert": null,
+  "sheet": false
+ }
+]
