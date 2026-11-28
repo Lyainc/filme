@@ -73,6 +73,8 @@ export function ResultPanel({
   const permaGenRef = useRef(0);
   // 사용자 조작 in-flight 가드 — 저장 · 링크 연타와 동시 진입을 무시한다(#167).
   const capturingRef = useRef(false);
+  // capturingRef는 사용자 조작의 연타 가드이고, 캡처가 겹치지 않게 하는 건 아래 줄이다 — 미리 캡처는 가드를 잡지 않아
+  // 그동안 누른 [저장] · [링크]가 무시되지 않는다.
   // 노드 캡처 줄 — 저장 · 링크 · 미리 캡처가 같은 ticketRef 노드에 html-to-image를 동시에 돌리면 산출물이
   // 깨진다(#167). 모든 노드 캡처는 이 줄에 서서 앞 캡처가 끝난 뒤 돈다.
   const captureQueueRef = useRef<Promise<unknown>>(Promise.resolve());
@@ -137,11 +139,24 @@ export function ResultPanel({
     // 내용이 또 바뀌어 밀려난 캡처는 줄에서 차례가 와도 돌지 않고, 이미 돌았으면 결과를 버린다 — 그동안
     // 기다리던 [저장]은 null을 받아 지금 내용으로 캡처한다.
     const isStale = () => preparedRef.current !== entry;
-    entry.ready = runCapture(() =>
+    // 무드는 next/dynamic 청크라 아직 안 왔으면 래퍼가 비어 있다 — 빈 티켓을 찍지 않게 무드가 붙을 때까지
+    // 기다린다. 기다림은 캡처 줄 밖에서 해서 그동안 [링크] 캡처를 막지 않는다.
+    let observer: MutationObserver | null = null;
+    const moodRendered = node.firstElementChild
+      ? Promise.resolve()
+      : new Promise<void>((resolve) => {
+          observer = new MutationObserver(() => {
+            if (!node.firstElementChild) return;
+            observer?.disconnect();
+            resolve();
+          });
+          observer.observe(node, { childList: true });
+        });
+    entry.ready = moodRendered.then(() => runCapture(() =>
       isStale()
         ? Promise.resolve(null)
         : captureNodeToJpeg(node, { filename: saveFilename, width: layout.width, height: layout.height }),
-    ).then(
+    )).then(
       (dataUrl) => {
         if (!dataUrl || isStale()) return null;
         entry.file = jpegFileFromDataUrl(dataUrl, saveFilename);
@@ -156,6 +171,7 @@ export function ResultPanel({
     preparedRef.current = entry;
     // 결과 화면을 떠나면 줄에 남은 미리 캡처는 돌지 않는다(isStale).
     return () => {
+      (observer as MutationObserver | null)?.disconnect();
       if (preparedRef.current === entry) preparedRef.current = null;
     };
   }, [croppedImageUrl, movieInfo, components, fieldVisibility, saveFilename, layout.width, layout.height, runCapture]);

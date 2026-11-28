@@ -32,6 +32,7 @@ let captureCalls = 0;
 let shareFileCalls: Array<{ size: number; inClick: boolean }> = [];
 let shareAsJpegCalls = 0;
 let inClick = false;
+let moodReady = true;
 
 function capture(opts: { pixelRatio?: number }) {
   captureCalls += 1;
@@ -50,8 +51,9 @@ beforeAll(() => {
   realTicketRenderer = { ...require('@/components/TicketRenderer') };
   mock.module('@/components/TicketRenderer', () => ({
     ...realTicketRenderer,
+    // moodReady=false면 next/dynamic 청크가 아직 안 온 무드처럼 래퍼가 비어 있다.
     default: React.forwardRef<HTMLDivElement>((_props, ref) =>
-      React.createElement('div', { ref, 'data-testid': 'ticket' }),
+      React.createElement('div', { ref, 'data-testid': 'ticket' }, moodReady ? React.createElement('i') : null),
     ),
   }));
   realCaptureToImage = { ...require('@/utils/captureToImage') };
@@ -110,6 +112,7 @@ beforeEach(() => {
   shareFileCalls = [];
   shareAsJpegCalls = 0;
   inClick = false;
+  moodReady = true;
   globalThis.fetch = (async () => new Response(JSON.stringify({ id: 'abc' }), { status: 200 })) as unknown as typeof fetch;
   Object.defineProperty(navigator, 'clipboard', { configurable: true, writable: true, value: { writeText: () => Promise.resolve() } });
   jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -225,6 +228,18 @@ describe('#858 저장본 미리 캡처', () => {
     await flush();
     expect(shareAsJpegCalls).toBe(1);
     expect(shareFileCalls.length).toBe(0);
+  });
+
+  test('무드 청크가 아직 안 와 티켓이 비어 있으면 무드가 붙은 뒤에 캡처한다', async () => {
+    moodReady = false;
+    render(stage());
+    await flush();
+    expect(captureCalls).toBe(0);
+    await act(async () => {
+      document.querySelectorAll('[data-testid="ticket"]').forEach((el) => el.appendChild(document.createElement('i')));
+    });
+    await flush();
+    expect(captureCalls).toBe(1);
   });
 
   test('결과 화면을 떠나면 줄에 남은 미리 캡처는 돌지 않는다', async () => {
