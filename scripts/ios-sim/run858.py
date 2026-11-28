@@ -20,11 +20,6 @@ navigator.share = (d) => { const run = {at: Math.round(performance.now() - (p.cl
 document.addEventListener('click', () => { p.click = performance.now(); }, true); return true;'''
 
 
-def sheet_open():
-    ctx('NATIVE')
-    return 'ActivityListView' in req('GET', 'source')
-
-
 def dismiss():
     for name in ('닫기', 'Close'):
         if native_tap(name):
@@ -47,16 +42,15 @@ def fresh_result(tag):
         except Exception:
             pass
         time.sleep(1)
-    r = None
+    restore = 'document.querySelector("[data-testid=landing-restore]")'
     for _ in range(30):
-        r = rect_of('document.querySelector("[data-testid=landing-restore]")')
+        r = rect_of(restore)
         if r and r['h'] > 0:
             break
         time.sleep(0.5)
-    tap_css(r['x'] + r['w'] / 2, r['y'] + r['h'] / 2)
+    tap_el(restore)
     time.sleep(2.0)
-    r = rect_of('[...document.querySelectorAll("button")].find(b=>b.textContent.trim()==="완료")')
-    tap_css(r['x'] + r['w'] / 2, r['y'] + r['h'] / 2)
+    tap_el(by_text('button', '완료'))
     time.sleep(2.5)
     js(HOOK)
     return js('return Math.round(performance.now())')
@@ -78,6 +72,11 @@ def first_tap(testid, wait_s):
     if sheet:
         dismiss()
     return rec
+
+
+def save(out):
+    with open(f'{OUT}/858-ios.json', 'w') as f:
+        json.dump(out, f, ensure_ascii=False, indent=1)
 
 
 def main():
@@ -106,9 +105,9 @@ def main():
                 rec['error'] = 'harness: 결과 화면 진입 3회 실패'
             out[kind].append(rec)
             print(kind, json.dumps(rec, ensure_ascii=False), flush=True)
-            json.dump(out, open(f'{OUT}/858-ios.json', 'w'), ensure_ascii=False, indent=1)
+            save(out)
     out['summary'] = {k: f"{sum(1 for r in out[k] if r.get('sheet'))}/{len(out[k])} 첫 탭 시트" for k in ('save', 'share')}
-    json.dump(out, open(f'{OUT}/858-ios.json', 'w'), ensure_ascii=False, indent=1)
+    save(out)
     print(json.dumps(out['summary'], ensure_ascii=False))
     sys.exit(0 if all(r.get('sheet') for r in out['save']) else 1)
 

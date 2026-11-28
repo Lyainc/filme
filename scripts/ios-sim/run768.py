@@ -188,8 +188,7 @@ def save_jpeg(cid):
         tap_css(r['x'] + r['w'] / 2, r['y'] + r['h'] / 2)
         for _ in range(12):
             time.sleep(0.5)
-            ctx('NATIVE')
-            if 'ActivityListView' in req('GET', 'source'):
+            if sheet_open():
                 got = 'sheet'
                 break
             if js('return !!document.querySelector("[data-testid=result-alert]")'):
