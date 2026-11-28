@@ -154,6 +154,10 @@ export function ResultPanel({
       },
     );
     preparedRef.current = entry;
+    // 결과 화면을 떠나면 줄에 남은 미리 캡처는 돌지 않는다(isStale).
+    return () => {
+      if (preparedRef.current === entry) preparedRef.current = null;
+    };
   }, [croppedImageUrl, movieInfo, components, fieldVisibility, saveFilename, layout.width, layout.height, runCapture]);
 
   const handleSave = useCallback(async () => {
