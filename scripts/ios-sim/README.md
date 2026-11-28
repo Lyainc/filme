@@ -25,6 +25,7 @@ Seed `docs/specs/mobile-device-verification.yaml`의 acceptance-1~4 iOS 행(#777
 | `python3 run777rest.py` | #777 작은 필드 확대 경로(전체 보기·핀치), 다크 복구 경로 | `777-enlarge-*.png`, `777-rest.json` |
 | `python3 run826s4.py [a-close b-keyboard c-outside d-back]` · `python3 run826s4.py back` | S8 acceptance-7: 입력 패널 종료 경로 넷 — 입력 · 패널 가시, 프리뷰 노출, 종료 뒤 티켓 transform 항등 · 도크 · 프리뷰 rect 불변 · 값 보존. `back`은 평점 패널 + Safari 툴바 '뒤로'(XCTest) | `826s4-*.png`, `826s4-ios.json`, `826s4-back.json` |
 | `python3 run826s12.py` | S8 acceptance-12: 랜딩 '직접 입력' 뒤 50·120·200ms(걷힘 240ms 안)에 제목 필드 · 도크 '디자인' 탭을 XCTest로 탭, 600ms 양성 대조 | `826s12-*.png`, `826s12-ios.json` |
+| `python3 run858.py [save=10] [share=5]` | #858: 회차마다 새 페이지 → '이어서 만들기' → 완료 → [저장] · [공유] **첫 탭 한 번**에 공유 시트가 뜨는지. `navigator.share`를 감싸 클릭 뒤 호출 시각 · 그 순간 활성 · 결과를 남겨요. 탭 전 단계의 Appium 끊김만 다시 해요. [공유]는 `/api/ticket`이 Blob 토큰 없이 실패하는 로컬 환경이면 share까지 가지 않아요 | `858/858-ios.json` |
 | `python3 run768.py [S01 ...]` | #768 Stub S01–S16: README 공통 입력 seed → 스텝 2·3 → 완료 → '저장' → 공유 시트 '이미지 저장' → 사진 앱 DCIM에서 원본 회수. `STAMP_UPLOAD=1`이면 스탬프를 실제 UI 업로드로 넣어요 | `768/Sxx-{editor,preview,sheet}.png`, `768/Sxx-saved.jpg`, `768/768-ios*.json` |
 | `uv run --with pillow --with numpy python compare768.py <dir> S01 ...` | 저장 JPEG를 편집 프리뷰 스크린샷에 티켓 경계로 정렬해 프리뷰/저장본/차이 나란히 | `Sxx-compare.png` |
 | `uv run ... python stamp768.py <dir>` | 저장 JPEG의 스탬프 자리 픽셀 표준편차(종이와 같으면 부재) | `stamp-presence.json` |
@@ -49,7 +50,7 @@ Seed `docs/specs/mobile-device-verification.yaml`의 acceptance-1~4 iOS 행(#777
 - 정보 모드는 '빈 항목 표시'가 항상 켜져 로고 · 포맷 자리표시 줄만큼 티켓이 밀려요(#826 S2). ghost를 끈 프리뷰가 필요하면 디자인 모드에서 찍어요.
 - 랜딩이 떠 있는 동안 편집 화면(도크 · 티켓 필드)은 `display:none`이라 rect가 0이에요. 편집 화면 자리는 들어간 뒤에 재요.
 - XCTest로는 탭 두 개를 240ms 안에 연달아 보낼 수 없어요: 따로 보내면 최소 약 340ms, 한 손가락 묶음에 누름 둘은 드래그 하나가 되고, 손가락 둘을 시간차로 넣으면 핀치가 돼요(`run826s12.py` 머리말).
-- [저장]의 공유 시트가 `NotAllowedError`로 자주 거절돼요(사용자 활성 소실, #826 S8 캠페인 발견 1). `run768.py`는 시트가 뜰 때까지 최대 8번 다시 누르고 시도 횟수를 남겨요. 공유 시트 '이미지 저장' 좌표 `(156, 772)`는 iPhone 18 Pro(402×874)에서도 같아요.
+- [저장]의 공유 시트가 `NotAllowedError`로 자주 거절됐어요(사용자 활성 소실, #826 S8 캠페인 발견 1). 새 페이지의 첫 캡처 뒤 share가 거절되는 꼴이었고, #858이 결과 화면 진입 때 미리 캡처해 [저장]이 클릭 안에서 share하게 고쳤어요(`run858.py` 첫 탭 10/10). `run768.py`는 시트가 뜰 때까지 최대 8번 다시 누르는 동작을 그대로 두고 시도 횟수를 남겨요 — `saveAttempts`가 모두 1이어야 해요. 공유 시트 '이미지 저장' 좌표 `(156, 772)`는 iPhone 18 Pro(402×874)에서도 같아요.
 - 날짜 · 시간 입력에 포커스가 가면 iOS가 선택기 팝오버를 띄우고, 그동안의 첫 탭은 팝오버 닫기에 쓰여요.
 - zsh는 `noclobber`라 `> 기존파일`이 실패하고 앞 명령이 아예 안 돌아요. 로그를 덮어쓸 땐 `>|`를 써요.
 
