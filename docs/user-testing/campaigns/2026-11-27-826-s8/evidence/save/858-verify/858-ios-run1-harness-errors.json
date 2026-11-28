@@ -1,0 +1,164 @@
+{
+ "build": "7537nMbskCHE_4wG-bJ2y",
+ "url": "http://localhost:3038/",
+ "udid": "0E3F59D2-6F00-4DBA-97D9-F5987239530F",
+ "note": "iOS Simulator 결과이고 실기기 결과가 아니다. 회차마다 새 페이지 · 버튼 첫 탭 1회.",
+ "seed": {
+  "ghostAfterToggle": "false",
+  "posterImgInPreview": false,
+  "stampSrc": "none",
+  "stampUpload": false
+ },
+ "save": [
+  {
+   "i": 1,
+   "sinceNav": 8038,
+   "sheet": true,
+   "share": [
+    {
+     "at": 0,
+     "act": true,
+     "files": true
+    }
+   ],
+   "alert": null
+  },
+  {
+   "i": 2,
+   "error": "Remote end closed connection without response"
+  },
+  {
+   "i": 3,
+   "sinceNav": 7936,
+   "sheet": true,
+   "share": [
+    {
+     "at": 0,
+     "act": true,
+     "files": true
+    }
+   ],
+   "alert": null
+  },
+  {
+   "i": 4,
+   "sinceNav": 8101,
+   "sheet": true,
+   "share": [
+    {
+     "at": 0,
+     "act": true,
+     "files": true
+    }
+   ],
+   "alert": null
+  },
+  {
+   "i": 5,
+   "sinceNav": 8157,
+   "sheet": true,
+   "share": [
+    {
+     "at": 1,
+     "act": true,
+     "files": true
+    }
+   ],
+   "alert": null
+  },
+  {
+   "i": 6,
+   "error": "Remote end closed connection without response"
+  },
+  {
+   "i": 7,
+   "sinceNav": 8023,
+   "sheet": true,
+   "share": [
+    {
+     "at": 0,
+     "act": true,
+     "files": true
+    }
+   ],
+   "alert": null
+  },
+  {
+   "i": 8,
+   "sinceNav": 7999,
+   "sheet": true,
+   "share": [
+    {
+     "at": 0,
+     "act": true,
+     "files": true
+    }
+   ],
+   "alert": null
+  },
+  {
+   "i": 9,
+   "sinceNav": 8007,
+   "sheet": true,
+   "share": [
+    {
+     "at": 0,
+     "act": true,
+     "files": true
+    }
+   ],
+   "alert": null
+  },
+  {
+   "i": 10,
+   "sinceNav": 8074,
+   "sheet": true,
+   "share": [
+    {
+     "at": 0,
+     "act": true,
+     "files": true
+    }
+   ],
+   "alert": null
+  }
+ ],
+ "share": [
+  {
+   "i": 1,
+   "error": "Remote end closed connection without response"
+  },
+  {
+   "i": 2,
+   "sinceNav": 8058,
+   "sheet": false,
+   "share": [],
+   "alert": "링크를 만들지 못했어요"
+  },
+  {
+   "i": 3,
+   "sinceNav": 8252,
+   "sheet": false,
+   "share": [],
+   "alert": "링크를 만들지 못했어요"
+  },
+  {
+   "i": 4,
+   "sinceNav": 8095,
+   "sheet": false,
+   "share": [],
+   "alert": "링크를 만들지 못했어요"
+  },
+  {
+   "i": 5,
+   "sinceNav": 8105,
+   "sheet": false,
+   "share": [],
+   "alert": "링크를 만들지 못했어요"
+  }
+ ],
+ "summary": {
+  "save": "8/10 첫 탭 시트",
+  "share": "0/5 첫 탭 시트"
+ }
+}
