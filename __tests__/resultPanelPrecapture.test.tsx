@@ -227,6 +227,16 @@ describe('#858 저장본 미리 캡처', () => {
     expect(shareFileCalls.length).toBe(0);
   });
 
+  test('결과 화면을 떠나면 줄에 남은 미리 캡처는 돌지 않는다', async () => {
+    const { rerender, unmount } = render(stage());
+    await flush();
+    rerender(stage({ ...MOVIE, title: 'OTHER' }));
+    await flush();
+    unmount();
+    await settle(0);
+    expect(captureCalls).toBe(1);
+  });
+
   test('다운로드 환경(공유 시트 없음)은 미리 캡처하지 않는다', async () => {
     canShare = false;
     render(stage());
