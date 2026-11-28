@@ -150,6 +150,12 @@ def type_keys(text):
         time.sleep(0.12)
 
 
+def sheet_open():
+    """OS 공유 시트(원격 뷰 ActivityListView)가 떠 있는지 — NATIVE source로 본다."""
+    ctx('NATIVE')
+    return 'ActivityListView' in req('GET', 'source')
+
+
 def keyboard_rect():
     ctx('NATIVE')
     try:
