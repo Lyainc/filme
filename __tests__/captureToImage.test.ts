@@ -3,6 +3,7 @@ import {
   buildJpegOptions,
   canShareTicketFile,
   dataUrlToJpegBlob,
+  jpegFileFromDataUrl,
 } from '../src/utils/captureToImage';
 import { LAYOUTS } from '../src/utils/layouts';
 
@@ -76,6 +77,19 @@ describe('dataUrlToJpegBlob — CSP-safe base64 decode (no fetch(data:))', () =>
 
   test('throws on empty string', () => {
     expect(() => dataUrlToJpegBlob('')).toThrow('Capture returned empty data URL');
+  });
+});
+
+describe('jpegFileFromDataUrl — 공유 시트에 실을 파일(#858)', () => {
+  test('이름 · JPEG 타입 · 디코드한 바이트 크기를 그대로 싣는다', () => {
+    const file = jpegFileFromDataUrl('data:image/jpeg;base64,AAAAAAAA', 'phototicket_stub_TITLE.jpg');
+    expect(file.name).toBe('phototicket_stub_TITLE.jpg');
+    expect(file.type).toBe('image/jpeg');
+    expect(file.size).toBe(6);
+  });
+
+  test('빈 캡처는 dataUrlToJpegBlob과 같은 오류로 거절한다', () => {
+    expect(() => jpegFileFromDataUrl('data:,', 'x.jpg')).toThrow('Capture returned empty data URL');
   });
 });
 

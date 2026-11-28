@@ -37,8 +37,9 @@ beforeAll(() => {
   realTicketRenderer = { ...require('@/components/TicketRenderer') };
   mock.module('@/components/TicketRenderer', () => ({
     ...realTicketRenderer,
+    // 무드 자리(자식)가 있어야 미리 캡처(#858)가 무드 로드를 기다리지 않는다.
     default: React.forwardRef<HTMLDivElement>((_props, ref) =>
-      React.createElement('div', { ref, 'data-testid': 'ticket' }),
+      React.createElement('div', { ref, 'data-testid': 'ticket' }, React.createElement('i')),
     ),
   }));
   realCaptureToImage = { ...require('@/utils/captureToImage') };
